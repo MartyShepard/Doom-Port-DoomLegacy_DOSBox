@@ -1,0 +1,19 @@
+BCD v1.4 - Brennan Underwood's CD audio playing library for DJGPP.
+
+System requirements:
+* DJGPP compatible system (i.e. 386, 1 meg memory etc.)
+  If you do not know what DJGPP is, run, don't walk to
+    http://www.delorie.com/
+  and/or
+    http://brennan.home.ml.org/djgpp/
+* MSCDEX 2.1 or higher
+  MSCDEX should have come with your DOS setup and/or the CD-ROM driver disk.
+* One or more CD-ROM drives capable of audio (aren't they all?)
+
+Instructions:
+To make BCD, just type 'make'. libbcd.a and bcd.exe (standalone cheesy
+demo) will be compiled for you automagically. Then copy libbcd.a and bcd.h
+to your lib and include directories.
+
+See bcd.doc for mor info
+
