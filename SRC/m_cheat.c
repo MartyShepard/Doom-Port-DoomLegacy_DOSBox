@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c,v 1.6 2003/07/13 13:16:15 hurdler Exp $
+// $Id: m_cheat.c,v 1.7 2004/07/27 08:19:36 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: m_cheat.c,v $
+// Revision 1.7  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.6  2003/07/13 13:16:15  hurdler
 // go RC1
 //
@@ -473,9 +476,9 @@ void Command_CheatNoClip_f(void)
     plyr->cheats ^= CF_NOCLIP;
 
     if (plyr->cheats & CF_NOCLIP)
-        CONS_Printf(STSTR_NCON);
+        CONS_Printf("%s\n", STSTR_NCON);
     else
-        CONS_Printf(STSTR_NCOFF);
+        CONS_Printf("%s\n", STSTR_NCOFF);
 
 }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c,v 1.11 2003/09/14 12:49:12 darkwolf95 Exp $
+// $Id: dstrings.c,v 1.13 2004/08/26 23:15:45 hurdler Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,12 @@
 //
 //
 // $Log: dstrings.c,v $
+// Revision 1.13  2004/08/26 23:15:45  hurdler
+// add FS functions in console (+ minor linux fixes)
+//
+// Revision 1.12  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.11  2003/09/14 12:49:12  darkwolf95
 // Grammar mistake - 'catched up' changed to 'caught' in rocket death
 //
@@ -54,7 +60,7 @@
 //
 // DESCRIPTION:
 //      Globally defined strings.
-// 
+//
 //-----------------------------------------------------------------------------
 
 #include "dstrings.h"
@@ -78,7 +84,11 @@ char *text[NUMTEXT] = {
     "you can't end a netgame!\n\npress a key.",
     "are you sure you want to end the game?\n\npress y or n.",
 
+#ifdef LINUX
+    "%s\n\n(press y to quit Doom Legacy)",
+#else
     "%s\n\n(press y to quit to dos.)",
+#endif
 
     "High detail",
     "Low detail",
@@ -410,15 +420,24 @@ char *text[NUMTEXT] = {
     "are you sure you want to\nquit this great game?",
     "please don't leave, there's more\ndemons to toast!",
     "let's beat it -- this is turning\ninto a bloodbath!",
+#ifdef LINUX
+    "i wouldn't leave if i were you.\nyour window manager is much worse.",
+    "you're trying to say you like\nlinux better than me, right?",
+#else
     "i wouldn't leave if i were you.\ndos is much worse.",
     "you're trying to say you like dos\nbetter than me, right?",
+#endif
     "don't leave yet -- there's a\ndemon around that corner!",
     "ya know, next time you come in here\ni'm gonna toast ya.",
     "go ahead and leave. see if i care.",
 
     // QuitDOOM II messages
     "you want to quit?\nthen, thou hast lost an eighth!",
+#ifdef LINUX
+    "don't go now, there's a \ndimensional shambler waiting\nat the shell prompt!",
+#else
     "don't go now, there's a \ndimensional shambler waiting\nat the dos prompt!",
+#endif
     "get outta here and go back\nto your boring programs.",
     "if i were your boss, i'd \n deathmatch ya in a minute!",
     "look, bud. you leave now\nand you forfeit your body count!",
@@ -454,7 +473,7 @@ char *text[NUMTEXT] = {
 
     "===========================================================================\n"
     "                     This program is Free Software!\n"
-    "             See the terms of the GNU General Public License\n" 
+    "             See the terms of the GNU General Public License\n"
     "===========================================================================\n",
 
     "Austin Virtual Gaming: Levels will end after 20 minutes\n",
@@ -639,7 +658,7 @@ char *text[NUMTEXT] = {
         "surrender without a fight. eyes\n" "wide, you go to meet your fate.",
 
     "%s suicides\n",
-    "%s was telefraged by %s\n",
+    "%s was telefragged by %s\n",
     "%s was beaten to a pulp by %s\n",
     "%s was gunned by %s\n",
     "%s was shot down by %s\n",

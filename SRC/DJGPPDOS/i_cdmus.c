@@ -32,7 +32,6 @@
 
 #include "bcd.h"                // CD-Audio library by Brennan Underwood
 
-
 #include "../doomdef.h"
 #include "../i_sound.h"
 #include "../command.h"
@@ -89,10 +88,8 @@ static char* hms(int hsg)
     return s;
 }
 
-
 void Command_Cd_f (void)
 {
-    
     char*     s;
     int       i,j;
 
@@ -103,7 +100,7 @@ void Command_Cd_f (void)
     {
         CONS_Printf ("cd [on] [off] [remap] [reset] [open]\n"
                      "   [info] [play <track>] [loop <track>]\n"
-                     "   [stop] [resume] [noloop]\n");
+                     "   [stop] [resume]\n");
         return;
     }
 
@@ -184,16 +181,16 @@ void Command_Cd_f (void)
 
         cdValid = true;
         
-        
-
+    
         if (TrkOrder.lowest_track == 0)
+
             CONS_Printf ("No audio tracks\n");
         else
         {
             // display list of tracks
             // highlight current playing track
-
             for (i= TrkOrder.lowest_track; i <= TrkOrder.highest_track; i++)
+
             {
                 CONS_Printf    ("%s%2d. %s  %s\n",
                                 cdPlaying && (cdPlayTrack == i) ? "\2 " : " ",
@@ -229,18 +226,6 @@ void Command_Cd_f (void)
     if (!strncmp(s,"loop",4))
     {
         I_PlayCD (atoi (COM_Argv (2)), true);
-        return;
-    }
-
-    if (!strncmp(s, "loop", 4))
-    {
-        I_PlayCD(atoi(COM_Argv(2)), true);
-        return;
-    }
-
-    if (!strncmp(s, "noloop", 4))
-    {
-        I_PlayCD(atoi(COM_Argv(2)), false);
         return;
     }
 

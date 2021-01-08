@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c,v 1.6 2003/07/13 13:16:15 hurdler Exp $
+// $Id: t_parse.c,v 1.9 2005/05/21 08:41:23 iori_ Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -9,17 +9,26 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_parse.c,v $
+// Revision 1.9  2005/05/21 08:41:23  iori_
+// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
+//
+// Revision 1.8  2004/08/26 23:15:41  hurdler
+// add FS functions in console (+ minor linux fixes)
+//
+// Revision 1.7  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.6  2003/07/13 13:16:15  hurdler
 // go RC1
 //
@@ -61,6 +70,7 @@
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "g_game.h"
 
 #include "t_parse.h"
 #include "t_prepro.h"
@@ -397,7 +407,7 @@ void continue_script(script_t * script, char *continue_point)
     // continue from place specified
     rover = continue_point;
 
-    parse_script();     // run 
+    parse_script();     // run
 }
 
 void parse_script()
@@ -419,7 +429,31 @@ void parse_script()
 
     current_script->lastiftrue = false;
 }
+/*
+void run_string(char *data)
+{
+    extern script_t levelscript;
+    static char buffer[4096];
 
+    snprintf(buffer, 4096, "%s;\n", data);
+    script_t script;
+
+    memset(&script, 0, sizeof(script));
+
+    script.data = buffer;
+    script.scriptnum = -1; // dummy value
+    script.len = strlen(script.data);
+    script.variables[0] = NULL;
+    script.sections[0] = NULL;
+    script.parent = &levelscript;
+    script.children[0] = NULL;
+    script.trigger = players[0].mo;
+    script.lastiftrue = false;
+
+    run_script(&script);
+    current_script = &levelscript;
+}
+*/
 void parse_data(char *data, char *end)
 {
     char *token_alloc;          // allocated memory for tokens
@@ -544,7 +578,7 @@ void run_statement()
 
 /***************** Evaluating Expressions ************************/
 
-        // find a token, ignoring things in brackets        
+        // find a token, ignoring things in brackets
 int find_operator(int start, int stop, char *value)
 {
     int i;
@@ -810,6 +844,9 @@ char *stringvalue(svalue_t v)
             return buffer;
         }
 
+            case svt_array:
+                 return "array";
+
         case svt_int:
         default:
             sprintf(buffer, "%li", v.value.i);
@@ -820,6 +857,15 @@ char *stringvalue(svalue_t v)
 //---------------------------------------------------------------------------
 //
 // $Log: t_parse.c,v $
+// Revision 1.9  2005/05/21 08:41:23  iori_
+// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
+//
+// Revision 1.8  2004/08/26 23:15:41  hurdler
+// add FS functions in console (+ minor linux fixes)
+//
+// Revision 1.7  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.6  2003/07/13 13:16:15  hurdler
 // go RC1
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c,v 1.35 2004/04/20 00:34:26 andyp Exp $
+// $Id: v_video.c,v 1.36 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: v_video.c,v $
+// Revision 1.36  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.35  2004/04/20 00:34:26  andyp
 // Linux compilation fixes and string cleanups
 //
@@ -1077,7 +1080,7 @@ void V_DrawFadeScreen(void)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
     {
-        HWR_FadeScreenMenuBack(0x01010160, 0);  //faB: hack, 0 means full height :o
+        HWR_FadeScreenMenuBack(0x01010160, (0xff/2), 0);  //faB: hack, 0 means full height :o
         return;
     }
 #endif
@@ -1126,7 +1129,7 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
     {
-        HWR_FadeScreenMenuBack(0x00500000, y2);
+        HWR_FadeScreenMenuBack(0x00500000, (0xff/2), y2);
         return;
     }
 #endif
@@ -1236,9 +1239,7 @@ void V_DrawString(int x, int y, int option, char *string)
             continue;
         }
 
-//[segabor]: why to SHORTen?
-//        w = SHORT(hu_font[c]->width) * dupx;
-        w = hu_font[c]->width * dupx;
+        w = SHORT(hu_font[c]->width) * dupx;
         if (cx + w > scrwidth)
             break;
         if (option & V_WHITEMAP)
@@ -1320,9 +1321,7 @@ int V_StringWidth(char *string)
         if (c < 0 || c >= HU_FONTSIZE)
             w += 4;
         else
-			//[segabor]
-            //w += SHORT(hu_font[c]->width);
-            w += hu_font[c]->width;
+            w += SHORT(hu_font[c]->width);
     }
 
     return w;

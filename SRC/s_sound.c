@@ -178,7 +178,7 @@ consvar_t sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 #endif
 
 #ifdef __MACOS__
-	consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
+consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
 #endif
 
 void I_StartFMODSong(char *musicname, int looping);
@@ -292,9 +292,7 @@ void S_RegisterSoundStuff(void)
     CV_RegisterVar(&surround);
 #endif
 
-//[segabor]
 #ifdef __MACOS__        //mp3 playlist stuff
-	/*
     {
         int i;
         for (i = 0; i < PLAYLIST_LENGTH; i++)
@@ -309,7 +307,6 @@ void S_RegisterSoundStuff(void)
         }
         CV_RegisterVar(&play_mode);
     }
-	 */
 #endif
 }
 

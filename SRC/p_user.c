@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c,v 1.16 2003/07/14 12:37:54 darkwolf95 Exp $
+// $Id: p_user.c,v 1.17 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_user.c,v $
+// Revision 1.17  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.16  2003/07/14 12:37:54  darkwolf95
 // Fixed bug where frags don't display for Player 2 on death while in splitscreen.
 //
@@ -98,7 +101,12 @@
 // 16 pixels of bob
 #define MAXBOB  0x100000
 
+//added:22-02-98: initial momz when player jumps (moves up)
+fixed_t JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
+
 boolean         onground;
+int				extramovefactor = 0;
+
 
 
 
@@ -305,7 +313,7 @@ void P_MovePlayer (player_t* player)
 
         if (cmd->forwardmove)
         {
-            movepushforward = cmd->forwardmove * movefactor;
+            movepushforward = cmd->forwardmove * (movefactor + extramovefactor);
         
             if (player->mo->eflags & MF_UNDERWATER)
             {
@@ -328,7 +336,7 @@ void P_MovePlayer (player_t* player)
 
         if (cmd->sidemove)
         {
-            movepushside = cmd->sidemove * movefactor;
+            movepushside = cmd->sidemove * (movefactor + extramovefactor);
             if (player->mo->eflags & MF_UNDERWATER)
             {
                 if (!onground)

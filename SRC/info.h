@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h,v 1.7 2001/08/07 00:53:33 hurdler Exp $
+// $Id: info.h,v 1.8 2004/07/27 08:19:36 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: info.h,v $
+// Revision 1.8  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.7  2001/08/07 00:53:33  hurdler
 // lil' change
 //
@@ -2522,6 +2525,8 @@ S_AMB2_2,
 S_AMB2_3,
 S_SND_WIND,
 S_SND_WATERFALL,
+S_DUMMY,        // Exl: Tox's FS script running states
+S_DUMMY2,
 
     NUMSTATES
 } statenum_t;

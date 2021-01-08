@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h,v 1.44 2004/04/18 20:40:31 hurdler Exp $
+// $Id: doomdef.h,v 1.45 2004/05/16 20:25:47 hurdler Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: doomdef.h,v $
+// Revision 1.45  2004/05/16 20:25:47  hurdler
+// change version to 1.43
+//
 // Revision 1.44  2004/04/18 20:40:31  hurdler
 // go 1.42
 //
@@ -180,7 +183,6 @@
 #define max(x,y) ( ((x)>(y)) ? (x) : (y) )
 #endif
 
-
 #include "doomtype.h"
 
 #include <stdarg.h>
@@ -210,8 +212,8 @@
 #if defined(__WIN32__) || defined(LINUX)
 #define LOGMESSAGES             // write message in log.txt (win32 and Linux only for the moment)
 #endif
-#define VERSION        142      // Game version
-#define VERSIONSTRING  " Birthday version"
+#define VERSION        143      // Game version
+#define VERSIONSTRING  " - r537 DOS Edit"
 
 #if defined (LOGMESSAGES) && defined(LINUX)
 #define INVALID_HANDLE_VALUE -1

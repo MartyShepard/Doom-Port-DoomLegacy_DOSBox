@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c,v 1.1 2000/11/02 17:57:28 stroggonmeth Exp $
+// $Id: t_vari.c,v 1.2 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,9 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_vari.c,v $
+// Revision 1.2  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.1  2000/11/02 17:57:28  stroggonmeth
 // FraggleScript files...
 //
@@ -139,6 +142,11 @@ svariable_t *new_variable(script_t *script, char *name, int vtype)
       newvar->value.s = Z_Malloc(256, tagtype, 0);
       newvar->value.s[0] = 0;
     }
+    else if(vtype == svt_array)
+  {
+     newvar->value.a = NULL;
+  }
+
   else
     newvar->value.i = 0;
   
@@ -234,6 +242,11 @@ svalue_t getvariablevalue(svariable_t *v)
       returnvar.type = svt_mobj;
       returnvar.value.mobj = *v->value.pMobj;
     }
+    else if(v->type == svt_pArray)
+  {
+     returnvar.type = svt_array;
+     returnvar.value.a = *v->value.pA;
+  }
   else
     {
       returnvar.type = v->type;
@@ -274,6 +287,18 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
   if(v->type == svt_mobj)
       v->value.mobj = MobjForSvalue(newvalue);
 
+
+  if(v->type == svt_array)
+  {
+     if(newvalue.type != svt_array)
+     {
+	script_error("cannot coerce value to array type\n");
+	return;
+     }
+     v->value.a = newvalue.value.a;
+  }
+
+
   if(v->type == svt_pInt)
       *v->value.pI = intvalue(newvalue);
 
@@ -292,6 +317,16 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
   if(v->type == svt_pMobj)
       *v->value.pMobj = MobjForSvalue(newvalue);
   
+  if(v->type == svt_pArray)
+  {
+     if(newvalue.type != svt_array)
+     {
+	script_error("cannot coerce value to array type\n");
+	return;
+     }
+     *v->value.pA = newvalue.value.a;
+  }
+
   if(v->type == svt_function)
     script_error("attempt to set function to a value\n");
 
@@ -526,6 +561,9 @@ svariable_t *new_function(char *name, void (*handler)() )
 //---------------------------------------------------------------------------
 //
 // $Log: t_vari.c,v $
+// Revision 1.2  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.1  2000/11/02 17:57:28  stroggonmeth
 // FraggleScript files...
 //

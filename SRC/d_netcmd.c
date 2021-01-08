@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c,v 1.35 2003/10/15 18:53:39 darkwolf95 Exp $
+// $Id: d_netcmd.c,v 1.36 2005/12/20 14:58:25 darkwolf95 Exp $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,6 +17,9 @@
 //
 //
 // $Log: d_netcmd.c,v $
+// Revision 1.36  2005/12/20 14:58:25  darkwolf95
+// Monster behavior CVAR - Affects how monsters react when they shoot each other
+//
 // Revision 1.35  2003/10/15 18:53:39  darkwolf95
 // "kill" command added to the console
 //
@@ -297,6 +300,8 @@ consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
 
+extern consvar_t   cv_monbehavior;
+
 // =========================================================================
 //                           CLIENT STARTUP
 // =========================================================================
@@ -357,6 +362,7 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_itemrespawn);
     CV_RegisterVar(&cv_respawnmonsters);
     CV_RegisterVar(&cv_respawnmonsterstime);
+	CV_RegisterVar(&cv_monbehavior);
     CV_RegisterVar(&cv_fastmonsters);
     CV_RegisterVar(&cv_predictingmonsters);     //added by AC for predmonsters
     CV_RegisterVar(&cv_splats);

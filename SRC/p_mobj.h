@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h,v 1.9 2002/01/21 23:14:28 judgecutor Exp $
+// $Id: p_mobj.h,v 1.10 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_mobj.h,v $
+// Revision 1.10  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.9  2002/01/21 23:14:28  judgecutor
 // Frag's Weapon Falling fixes
 //
@@ -291,6 +294,10 @@ typedef enum
     // used for client prediction code, player can't be blocked in z by walls
     // it is set temporarely when player follow the spirit
     MF_NOZCHECKING       = 32,
+	// "Friendly"; the mobj ignores players
+	MF_IGNOREPLAYER		 = 64,
+	// Actor will predict where the player will be
+	MF_PREDICT			 = 128,
 } mobjeflag_t;
 
 
@@ -373,6 +380,13 @@ typedef struct mobj_s
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
     struct mobj_s*      target;
+
+	// Nodes
+	struct mobj_s*		nextnode;		// Next node object to chase after touching current
+										// target (which must be MT_NODE).
+	struct mobj_s*		targetnode;		// Target node to remember when encountering a player
+	int					nodescript;		// Script to run when this node is touched
+	int					nodewait;		// How many ticks to wait at this node
 
     // Reaction time: if non 0, don't attack yet.
     // Used by player to freeze a bit after teleporting.

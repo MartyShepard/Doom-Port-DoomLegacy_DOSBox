@@ -98,11 +98,8 @@ void STlib_drawNum ( st_number_t*  n,
     int    numdigits = n->width;
     int    num = *n->num;
 
-//[segabor]: 'SHORT' BUG !
-//    int    w = SHORT(n->p[0]->width);
-//    int    h = SHORT(n->p[0]->height);
-    int    w = n->p[0]->width;
-    int    h = n->p[0]->height;
+    int    w = SHORT(n->p[0]->width);
+    int    h = SHORT(n->p[0]->height);
     int    x = n->x;
 
     int    neg;
@@ -223,16 +220,11 @@ void STlib_updateMultIcon ( st_multicon_t*        mi,
     {
         if (mi->oldinum != -1)
         {
-//[segabor]: 'SHORT' BUG !
-//            x = mi->x - SHORT(mi->p[mi->oldinum]->leftoffset);
-//            y = mi->y - SHORT(mi->p[mi->oldinum]->topoffset);
-//            w = SHORT(mi->p[mi->oldinum]->width);
-//            h = SHORT(mi->p[mi->oldinum]->height);
-            x = mi->x - mi->p[mi->oldinum]->leftoffset;
-            y = mi->y - mi->p[mi->oldinum]->topoffset;
-            w = mi->p[mi->oldinum]->width;
-            h = mi->p[mi->oldinum]->height;
-			
+            x = mi->x - SHORT(mi->p[mi->oldinum]->leftoffset);
+            y = mi->y - SHORT(mi->p[mi->oldinum]->topoffset);
+            w = SHORT(mi->p[mi->oldinum]->width);
+            h = SHORT(mi->p[mi->oldinum]->height);
+
 #ifdef DEBUG
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
                             x, y, BG, w, h, x, y, fgbuffer);
@@ -276,16 +268,11 @@ void STlib_updateBinIcon ( st_binicon_t*         bi,
     if (*bi->on
         && (bi->oldval != *bi->val || refresh))
     {
-//[segabor]: 'SHORT' BUG!
-//        x = bi->x - SHORT(bi->p->leftoffset);
-//        y = bi->y - SHORT(bi->p->topoffset);
-//        w = SHORT(bi->p->width);
-//        h = SHORT(bi->p->height);
-        x = bi->x - bi->p->leftoffset;
-        y = bi->y - bi->p->topoffset;
-        w = bi->p->width;
-        h = bi->p->height;
-		
+        x = bi->x - SHORT(bi->p->leftoffset);
+        y = bi->y - SHORT(bi->p->topoffset);
+        w = SHORT(bi->p->width);
+        h = SHORT(bi->p->height);
+
         if (*bi->val)
             V_DrawScaledPatch(bi->x, bi->y, fgbuffer, bi->p);
         else

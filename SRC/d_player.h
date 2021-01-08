@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h,v 1.6 2003/03/22 22:35:59 hurdler Exp $
+// $Id: d_player.h,v 1.7 2004/07/27 08:19:34 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: d_player.h,v $
+// Revision 1.7  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.6  2003/03/22 22:35:59  hurdler
 // Fix CR+LF issue
 //
@@ -226,6 +229,9 @@ typedef struct player_s
         weaponinfo_t    *weaponinfo; // can be changed when use level2 weapons (heretic)
 
     bot_t*			bot;	//added by AC for acbot
+
+		// True if the player cannot use game controls (moving, shooting, aiming)
+		boolean locked;
 
 } player_t;
 

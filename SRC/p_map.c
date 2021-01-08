@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c,v 1.28 2004/01/09 01:22:20 darkwolf95 Exp $
+// $Id: p_map.c,v 1.29 2005/12/20 14:58:26 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_map.c,v $
+// Revision 1.29  2005/12/20 14:58:26  darkwolf95
+// Monster behavior CVAR - Affects how monsters react when they shoot each other
+//
 // Revision 1.28  2004/01/09 01:22:20  darkwolf95
 // bug fix: stop checking non-solids against other things; was responsible for corona movement bug in bug wad
 //
@@ -170,7 +173,7 @@ static int ls_x; // Lost Soul position for Lost Soul checks
 static int ls_y; // Lost Soul position for Lost Soul checks
 
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
-
+extern consvar_t   cv_monbehavior;
 
 //
 // TELEPORT MOVE
@@ -452,12 +455,20 @@ static boolean PIT_CheckThing (mobj_t* thing)
             {
                 // Explode, but do no damage.
                 // Let players missile other players.
-                if(!infight) //DarkWolf95:November 21, 2003: Monsters Infight!
+                if(!infight && !(cv_monbehavior.value == 2)) //DarkWolf95: Altered to use CVAR
 				{
 					return false;
 				}
             }
         }
+
+		// DarkWolf95: Don't damage other monsters
+		if(cv_monbehavior.value == 1&&
+			tmthing->target->type != MT_PLAYER && 
+			thing->type != MT_PLAYER)
+		{
+			return false;
+		}
 
         if (! (thing->flags & MF_SHOOTABLE) )
         {
@@ -1397,6 +1408,14 @@ boolean PTR_AimTraverse (intercept_t* in)
     if (th == shootthing)
         return true;                    // can't shoot self
 
+	// DarkWolf95: Don't damage other monsters
+	if(cv_monbehavior.value == 1 && 
+		shootthing->type != MT_PLAYER && 
+		th->type != MT_PLAYER)
+	{
+		return true;
+	}
+
     if ( (!(th->flags&MF_SHOOTABLE)) || (th->flags&MF_CORPSE) || (th->type == MT_POD))
         return true;                    // corpse or something
 
@@ -1686,6 +1705,14 @@ boolean PTR_ShootTraverse (intercept_t* in)
 
     if (!(th->flags&MF_SHOOTABLE))
         return true;            // corpse or something
+
+	// DarkWolf95: Don't damage other monsters
+	if(cv_monbehavior.value == 1 &&
+		shootthing->type != MT_PLAYER && 
+		th->type != MT_PLAYER)
+	{
+		return true;
+	}
 
 // check for physical attacks on a ghost
     if (gamemode == heretic && (th->flags & MF_SHADOW) && shootthing->player->readyweapon == wp_staff)

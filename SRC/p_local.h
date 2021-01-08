@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h,v 1.23 2003/06/11 00:28:50 ssntails Exp $
+// $Id: p_local.h,v 1.24 2004/07/27 08:19:36 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_local.h,v $
+// Revision 1.24  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.23  2003/06/11 00:28:50  ssntails
 // Big Blockmap Support (128kb+ ?)
 //
@@ -142,9 +145,6 @@ extern consvar_t cv_viewheight; // p_mobj.c
 //      above this, a heigth difference is considered as a 'dropoff'
 #define MAXSTEPMOVE     (24*FRACUNIT)
 
-//added:22-02-98: initial momz when player jumps (moves up)
-#define JUMPGRAVITY     (6*FRACUNIT/NEWTICRATERATIO)
-
 #define USERANGE        (64*FRACUNIT)
 #define MELEERANGE      (64*FRACUNIT)
 #define MISSILERANGE    (32*64*FRACUNIT)
@@ -201,6 +201,8 @@ extern camera_t camera;
 extern consvar_t cv_cam_dist;  
 extern consvar_t cv_cam_height;
 extern consvar_t cv_cam_speed;
+
+extern fixed_t JUMPGRAVITY;
 
 
 void   P_ResetCamera (player_t* player);

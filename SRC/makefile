@@ -307,7 +307,7 @@ ifdef DJGPPDOS
 	OBJS=$(O)/i_video.o $(O)/vid_vesa.o
 
 	# name of the exefile
-	EXENAME=DOOM.exe
+	EXENAME=DOOM3.exe
 
 endif #ifdef DJGPPDOS
 
@@ -427,6 +427,7 @@ OBJS :=  $(OBJS) \
 		$(O)/d_clisrv.o  \
 		$(O)/r_splats.o  \
 		$(O)/g_state.o	 \
+		$(O)/t_array.o   \
 		$(O)/t_func.o	 \
 		$(O)/t_oper.o	 \
 		$(O)/t_parse.o	 \

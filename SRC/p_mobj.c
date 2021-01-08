@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c,v 1.46 2003/11/21 22:50:47 darkwolf95 Exp $
+// $Id: p_mobj.c,v 1.48 2005/12/20 14:58:26 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,12 @@
 //
 //
 // $Log: p_mobj.c,v $
+// Revision 1.48  2005/12/20 14:58:26  darkwolf95
+// Monster behavior CVAR - Affects how monsters react when they shoot each other
+//
+// Revision 1.47  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.46  2003/11/21 22:50:47  darkwolf95
 // FS spawned items and monsters retain their z coordinates for respawning
 //
@@ -189,6 +195,10 @@ consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NUL
 consvar_t cv_gravity = { "gravity", "1", CV_NETVAR | CV_FLOAT | CV_SHOWMODIF };
 consvar_t cv_splats = { "splats", "1", CV_SAVE, CV_OnOff };
 consvar_t cv_maxsplats = { "maxsplats", "512", CV_SAVE, maxsplats_cons_t, NULL };
+
+// DarkWolf95: Monster Behavior
+CV_PossibleValue_t monbehavior_cons_t[]={{0,"Normal"},{1,"Coop"},{2,"Infight"},{0,NULL}};
+consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR, monbehavior_cons_t };
 
 static const fixed_t FloatBobOffsets[64] = {
     0, 51389, 102283, 152192,
@@ -984,7 +994,7 @@ void P_MobjCheckWater(mobj_t * mobj)
             else
                 mobj->eflags &= ~MF_UNDERWATER;
 
-            if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER)) && ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER)) && mobj->type != MT_BLOOD && gamemode != heretic)
+            if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER)) && ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER)) && mobj->type != MT_BLOOD && gamemode != heretic && mobj->type != MT_SMOK)
                 P_SpawnSplash(mobj, *rover->topheight);
         }
         return;
@@ -1665,7 +1675,9 @@ void P_SpawnPlayer(mapthing_t * mthing)
 // The fields of the mapthing should
 // already be in host byte order.
 //
-void P_SpawnMapThing(mapthing_t * mthing)
+
+
+void P_SpawnMapThing (mapthing_t* mthing)
 {
     int i;
     int bit;
@@ -1724,15 +1736,16 @@ void P_SpawnMapThing(mapthing_t * mthing)
     }
 
     // check for apropriate skill level
-    if (!multiplayer && (mthing->options & 16))
-        return;
+    if (!multiplayer && (mthing->options & MTF_MPSPAWN))
+         return;
+
 
     //SoM: 4/7/2000: Implement "not deathmatch" thing flag
-    if (netgame && cv_deathmatch.value && (mthing->options & 32))
+    if (netgame && cv_deathmatch.value && (mthing->options & MTF_NODM))
         return;
 
     //SoM: 4/7/2000: Implement "not cooperative" thing flag
-    if (netgame && !cv_deathmatch.value && (mthing->options & 64))
+    if (netgame && !cv_deathmatch.value && (mthing->options & MTF_NOCOOP))
         return;
 
     if (gameskill == sk_baby)
@@ -2211,7 +2224,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
 
     th->target = source;        // where it came from
 
-    if (cv_predictingmonsters.value)    //added by AC for predmonsters
+    if (cv_predictingmonsters.value || (source->eflags & MF_PREDICT))    //added by AC for predmonsters
     {
         boolean canHit;
         fixed_t px, py, pz;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_items.h,v 1.7 2003/08/11 13:50:02 hurdler Exp $
+// $Id: d_items.h,v 1.8 2004/07/27 08:19:34 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: d_items.h,v $
+// Revision 1.8  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.7  2003/08/11 13:50:02  hurdler
 // go final + translucent HUD + fix spawn in net game
 //
@@ -67,6 +70,11 @@
 
 // Deaf monsters/do not react to sound.
 #define MTF_AMBUSH              8
+
+// 24/5/04: Exl: werent defined before
+#define MTF_MPSPAWN            16		// Spawn in multiplayer
+#define MTF_NODM               32		// Do not spawn in deathmatch mode
+#define MTF_NOCOOP             64		// Do not spawn in coop mode
 
 //Hurdler: special option to tell the things has been spawned by an FS
 #define MTF_FS_SPAWNED    0x1000

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c,v 1.28 2004/04/20 00:34:26 andyp Exp $
+// $Id: p_saveg.c,v 1.29 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_saveg.c,v $
+// Revision 1.29  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.28  2004/04/20 00:34:26  andyp
 // Linux compilation fixes and string cleanups
 //
@@ -113,6 +116,7 @@
 #include "w_wad.h"
 #include "p_setup.h"
 #include "byteptr.h"
+#include "t_array.h"
 #include "t_vari.h"
 #include "t_script.h"
 #include "t_func.h"
@@ -129,6 +133,12 @@ byte *save_p;
 #else
 #define PADSAVEP()
 #endif
+
+
+int num_thinkers;       // number of thinkers in level being archived
+
+mobj_t **mobj_p;    // killough 2/14/98: Translation table
+
 
 // BP: damned this #if don't work ! why ?
 #if NUMWEAPONS > 8
@@ -1673,6 +1683,24 @@ void P_ArchiveLevelScript()
                     WRITEFIXED(save_p, sv->value.fixed);
                     break;
                 }
+				case svt_array: // haleyjd: arrays
+			   {
+				  sfarray_t *cur;
+				  int *int_p;
+
+				  cur = sfsavelist.next;
+				  while(cur && sv->value.a != cur)
+					 cur = cur->next;
+
+				  int_p = (int *)save_p;
+
+				  // zero is unused, so use it for NULL
+				  *int_p++ = cur ? cur->saveindex : 0;
+
+				  WRITELONG(save_p, (unsigned char *)int_p);
+				  
+				  break;
+			   }
             }
             sv = sv->next;
         }
@@ -1739,6 +1767,36 @@ void P_UnArchiveLevelScript()
                 sv->value.fixed = READFIXED(save_p);
                 break;
             }
+
+			case svt_array: // Exl; arrays
+		   {
+			  int ordinal;
+			  
+			  
+			  ordinal = READLONG(save_p);
+
+			  if(!ordinal)
+			  {
+			 sv->value.a = NULL;
+			  }
+			  else
+			  {
+			 sfarray_t *cur = sfsavelist.next;
+
+			 while(cur)
+			 {
+				if(ordinal == cur->saveindex)
+				   break;
+
+				cur = cur->next;
+			 }
+			 
+			 // set even if cur is NULL somehow (not a problem)
+			 sv->value.a = cur;
+			  }
+			  break;
+		   }
+
             default:
                 break;
         }
@@ -1752,6 +1810,9 @@ void P_UnArchiveLevelScript()
 }
 
 /**************** save the runningscripts ***************/
+
+void P_ArchiveFSArrays(void);
+void P_UnArchiveFSArrays(void);
 
 extern runningscript_t runningscripts;  // t_script.c
 runningscript_t *new_runningscript();   // t_script.c
@@ -1835,6 +1896,25 @@ void P_ArchiveRunningScript(runningscript_t * rs)
                     WRITEFIXED(save_p, sv->value.fixed);
                     break;
                 }
+				case svt_array:
+			   {
+  				  sfarray_t *cur;
+				  int *int_p;
+
+				  cur = sfsavelist.next;
+				  while(cur && sv->value.a != cur)
+					 cur = cur->next;
+
+				  int_p = (int *)save_p;
+
+				  // zero is unused, so use it for NULL
+				  *int_p++ = cur ? cur->saveindex : 0;
+
+				  WRITELONG(save_p, (unsigned char *)int_p);
+				  
+				  break;
+			   }
+
                     // others do not appear in user scripts
 
                 default:
@@ -1918,6 +1998,33 @@ runningscript_t *P_UnArchiveRunningScript()
                 sv->value.fixed = READFIXED(save_p);
                 break;
             }
+			case svt_array:
+		   {
+			  int ordinal;
+
+			  
+			  ordinal = READLONG(save_p);
+
+			  if(!ordinal)
+			  {
+				sv->value.a = NULL;
+			  }
+			  else
+			  {
+				sfarray_t *cur = sfsavelist.next;
+
+			 while(cur)
+			 {
+				if(ordinal == cur->saveindex)
+				   break;
+
+				cur = cur->next;
+			 }
+
+			 sv->value.a = cur;
+			  }	      
+			  break;
+		   }
             default:
                 break;
         }
@@ -1987,11 +2094,15 @@ void P_UnArchiveRunningScripts()
 void P_ArchiveScripts()
 {
 #ifdef FRAGGLESCRIPT
-    // save levelscript
+    
+	// save levelscript
     P_ArchiveLevelScript();
 
     // save runningscripts
     P_ArchiveRunningScripts();
+
+	// save FS arrays
+	P_ArchiveFSArrays();
 
     // Archive the script camera.
     WRITELONG(save_p, (long) script_camera_on);
@@ -1999,17 +2110,22 @@ void P_ArchiveScripts()
     WRITEANGLE(save_p, script_camera.aiming);
     WRITEFIXED(save_p, script_camera.viewheight);
     WRITEANGLE(save_p, script_camera.startangle);
+
 #endif
 }
 
 void P_UnArchiveScripts()
 {
 #ifdef FRAGGLESCRIPT
-    // restore levelscript
+    
+	// restore levelscript
     P_UnArchiveLevelScript();
 
     // restore runningscripts
     P_UnArchiveRunningScripts();
+
+	// restore FS arrays
+	P_UnArchiveFSArrays();
 
     // Unarchive the script camera
     script_camera_on = (boolean) READLONG(save_p);
@@ -2020,6 +2136,184 @@ void P_UnArchiveScripts()
 #endif
     P_FinishMobjs();
 }
+
+
+
+// get the mobj number from the mobj
+int P_MobjNum(mobj_t *mo)
+{
+  long l = mo ? (long)mo->thinker.prev : -1;   // -1 = NULL
+ 
+  // extra check for invalid thingnum (prob. still ptr)
+  if(l<0 || l>num_thinkers) l = -1;
+  return l;
+}
+
+mobj_t *P_MobjForNum(int n)
+{
+  return (n == -1) ? (NULL) : (mobj_p[n]);
+}
+
+
+//
+// FS Array Saving
+//
+// Array variables are saved by the code above for the level and
+// running scripts, but first this stuff needs to be done -- enumerate
+// and archive the arrays themselves.
+//
+
+unsigned int num_fsarrays;
+
+static void P_NumberFSArrays(void)
+{
+   sfarray_t *cur;
+
+   num_fsarrays = 0;
+
+   cur = sfsavelist.next; // start at first array
+
+   while(cur)
+   {
+      cur->saveindex = ++num_fsarrays;
+      cur = cur->next;
+   }
+}
+
+static size_t P_CalcFSArraySize(void)
+{
+   size_t total = 0;
+   sfarray_t *cur = sfsavelist.next;
+
+   while(cur)
+   {
+      total += (sizeof(svalue_t) * cur->length);
+      cur = cur->next;
+   }
+
+   return total;
+}
+
+
+// must be called before running/level script archiving
+void P_ArchiveFSArrays(void)
+{
+   size_t sizeToSave;
+   sfarray_t *cur;
+   unsigned int *uint_p;
+   svalue_t *sval_p;
+
+   P_NumberFSArrays(); // number all the arrays
+
+   // unsigned ints: size of each array and number of arrays total
+   // P_CalcFSArraySize: length of all arrays * sizeof svalue_t
+   sizeToSave = sizeof(unsigned int) * (num_fsarrays+1) + 
+                P_CalcFSArraySize();
+
+   // write number of FS arrays
+   uint_p = (unsigned int *)save_p;
+   *uint_p++ = num_fsarrays;
+   save_p = (unsigned char *)uint_p;
+      
+   // start at first array
+   cur = sfsavelist.next;
+
+   while(cur)
+   {
+      unsigned int i;
+
+      // write the length of this array
+      uint_p = (unsigned int *)save_p;
+      *uint_p++ = cur->length;
+      save_p = (unsigned char *)uint_p;
+
+      // write the contents of this array
+      for(i=0; i<cur->length; i++)
+      {
+	 mobj_t *temp = NULL;
+	 
+	 // must weed out mobj references and use savegame index
+	 if(cur->values[i].type == svt_mobj)
+	 {
+	    // save pointer value
+	    temp = cur->values[i].value.mobj;
+	    // write ordinal into pointer
+	    cur->values[i].value.mobj = (mobj_t *)P_MobjNum(temp);
+	 }
+	 
+	 sval_p = (svalue_t *)save_p;
+	 memcpy(sval_p, &(cur->values[i]), sizeof(svalue_t));
+	 save_p += sizeof(svalue_t);
+
+	 // restore to pointer value
+	 if(cur->values[i].type == svt_mobj)
+	    cur->values[i].value.mobj = temp;
+      }
+
+      cur = cur->next;
+   }
+}
+
+// must be called before unarchiving running/level scripts
+void P_UnArchiveFSArrays(void)
+{
+   unsigned int *uint_p;
+   unsigned int i;
+   sfarray_t *newArray, *last;
+   svalue_t *sval_p;
+
+   T_InitSaveList(); // reinitialize the save list
+
+   // read number of FS arrays
+   uint_p = (unsigned int *)save_p;
+   num_fsarrays = *uint_p++;
+   save_p = (unsigned char *)uint_p;
+
+   last = &sfsavelist;
+   // read all the arrays
+   for(i=0; i<num_fsarrays; i++)
+   {
+      unsigned int j;
+      
+      newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
+      memset(newArray, 0, sizeof(sfarray_t));
+
+      // read length of this array
+      uint_p = (unsigned int *)save_p;
+      newArray->length = *uint_p++;
+      save_p = (unsigned char *)uint_p;
+      
+      newArray->values = Z_Malloc(newArray->length * sizeof(svalue_t),
+	                          PU_LEVEL, NULL);
+
+	  CONS_Printf("%i", newArray->length);
+      
+      // read all archived values
+      for(j=0; j<newArray->length; j++)
+      {
+	 sval_p = (svalue_t *)save_p;
+	 memcpy(&(newArray->values[j]), sval_p, sizeof(svalue_t));
+	 save_p += sizeof(svalue_t);
+
+	 // set mobj references back to appropriate pointer
+	 if(newArray->values[j].type == svt_mobj)
+	 {
+	    newArray->values[j].value.mobj = 
+	       P_MobjForNum((int)(newArray->values[j].value.mobj));
+	 }
+      }
+
+      // link in the new array -- must reconstruct list in same
+      // order as read (T_AddArray will not work for this)
+	  last->next = newArray;
+      last = newArray;
+
+   }
+
+   // now number all the arrays
+   P_NumberFSArrays();
+}
+
 
 // =======================================================================
 //          Misc

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c,v 1.48 2003/11/22 00:49:33 darkwolf95 Exp $
+// $Id: g_game.c,v 1.50 2004/09/12 19:40:05 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,12 @@
 //
 //
 // $Log: g_game.c,v $
+// Revision 1.50  2004/09/12 19:40:05  darkwolf95
+// additional chex quest 1 support
+//
+// Revision 1.49  2004/07/27 08:19:35  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.48  2003/11/22 00:49:33  darkwolf95
 // ooops, quick fix
 //
@@ -294,6 +300,12 @@ wbstartstruct_t wminfo;                 // parms for world map / intermission
 
 byte*           savebuffer;
 
+
+// Background color fades for FS
+unsigned long fadecolor;
+int fadealpha;
+
+
 void ShowMessage_OnChange(void);
 void AllowTurbo_OnChange(void);
 
@@ -469,7 +481,7 @@ angle_t localangle,localangle2;
 
 //added:06-02-98: mouseaiming (looking up/down with the mouse or keyboard)
 #define KB_LOOKSPEED    (1<<25)
-#define MAXPLMOVE       (forwardmove[1])
+#define MAXPLMOVE		(forwardmove[1])
 #define TURBOTHRESHOLD  0x32
 #define SLOWTURNTICS    (6*NEWTICRATERATIO)
 
@@ -623,6 +635,10 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
 
     base = I_BaseTiccmd ();             // empty, or external driver
     memcpy (cmd,base,sizeof(*cmd));
+
+	// Exit now if locked
+	if (players[consoleplayer].locked == true)
+		return;
 
     // a little clumsy, but then the g_input.c became a lot simpler!
     strafe = gamekeydown[gamecontrol[gc_strafe][0]] ||
@@ -808,7 +824,9 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
 
     mousex = mousey = mlooky = 0;
 
-    if (forward > MAXPLMOVE)
+    
+	// Do not go faster than max. speed
+	if (forward > MAXPLMOVE)
         forward = MAXPLMOVE;
     else if (forward < -MAXPLMOVE)
         forward = -MAXPLMOVE;
@@ -816,6 +834,7 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
         side = MAXPLMOVE;
     else if (side < -MAXPLMOVE)
         side = -MAXPLMOVE;
+
 
     cmd->forwardmove += forward;
     cmd->sidemove += side;
@@ -832,6 +851,7 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
         else
             cmd->angleturn &= ~BT_FLYDOWN;
     }
+
 }
 
 
@@ -853,6 +873,10 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
 
     base = I_BaseTiccmd ();             // empty, or external driver
     memcpy (cmd,base,sizeof(*cmd));
+
+	// Exit now if locked
+	if (players[secondarydisplayplayer].locked == true)
+		return;
 
     // a little clumsy, but then the g_input.c became a lot simpler!
     strafe = gamekeydown[gamecontrolbis[gc_strafe][0]] ||
@@ -1043,7 +1067,9 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
 
     mouse2x = mouse2y = mlook2y = 0;
 
-    if (forward > MAXPLMOVE)
+    
+	// Do not go faster than max. speed
+	if (forward > MAXPLMOVE)
         forward = MAXPLMOVE;
     else if (forward < -MAXPLMOVE)
         forward = -MAXPLMOVE;
@@ -1051,6 +1077,7 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
         side = MAXPLMOVE;
     else if (side < -MAXPLMOVE)
         side = -MAXPLMOVE;
+
 
     cmd->forwardmove += forward;
     cmd->sidemove += side;
@@ -1068,6 +1095,7 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
         else
             cmd->angleturn &= ~BT_FLYDOWN;
     }
+
 }
 
 
@@ -1128,6 +1156,13 @@ void G_DoLoadLevel (boolean resetplayer)
     int             i;
 
     levelstarttic = gametic;        // for time calculation
+	
+	// Reset certain attributes
+	// (should be in resetplayer 'if'?)
+	fadealpha = 0;
+	extramovefactor = 0;
+	JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
+	players[consoleplayer].locked = false;
 
     if (wipegamestate == GS_LEVEL)
         wipegamestate = -1;             // force a wipe
@@ -1821,6 +1856,18 @@ void G_DoCompleted (void)
                 players[i].didsecret = true;
             break;
         }
+	//DarkWolf95: September 11, 2004: More chex stuff
+	if (gamemode == chexquest1 && gamemap == 5)
+	{
+		if(cv_deathmatch.value)
+			wminfo.next=0;
+		else
+		{
+			CL_Reset();
+			F_StartFinale();
+			return;
+		}
+	}
 
     if(!dedicated)
 	wminfo.didsecret = players[consoleplayer].didsecret;

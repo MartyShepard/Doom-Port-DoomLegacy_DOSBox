@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c,v 1.35 2004/03/06 17:25:04 darkwolf95 Exp $
+// $Id: t_func.c,v 1.40 2005/11/07 22:54:39 iori_ Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,25 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_func.c,v $
+// Revision 1.40  2005/11/07 22:54:39  iori_
+// Kind of redundant unless we want a 1.43 release sometime.
+//
+// PlayerPitch - enabled setting the player's pitch
+// ObjAngle - Enabled/Fixed setting the player's angle (was broken). May not work for MP..
+// SectorEffect - kind of limited, but useful I guess. Incomplete (secret, dmg sectors)
+//
+// Revision 1.39  2005/05/21 08:41:23  iori_
+// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
+//
+// Revision 1.38  2004/09/17 23:04:48  darkwolf95
+// playerkeysb (see comment), waittic and clocktic
+//
+// Revision 1.37  2004/08/26 10:53:51  iori_
+// warpmap fs function
+//
+// Revision 1.36  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.35  2004/03/06 17:25:04  darkwolf95
 // SetObjPosition to work around spawning and removing objects
 //
@@ -171,11 +190,30 @@
 #include "t_oper.h"
 #include "t_vari.h"
 #include "t_func.h"
+#include "t_array.h"
+
 
 //extern int firstcolormaplump, lastcolormaplump;      // r_data.c
 
 svalue_t evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
+
+
+// :(
+extern unsigned long fadecolor;
+extern int fadealpha;
+
+extern int extramovefactor;
+
+
+// array functions in t_array.c
+void SF_NewArray(void);          // impls: array newarray(...)
+void SF_NewEmptyArray(void);     // impls: array newemptyarray(...)
+void SF_ArrayCopyInto(void);     // impls: void copyinto(array, array)
+void SF_ArrayElementAt(void);    // impls: 'a elementat(array, int)
+void SF_ArraySetElementAt(void); // impls: void setelementat(array, int, 'a)
+void SF_ArrayLength(void);       // impls: int length(array)
+
 
 // functions. SF_ means Script Function not, well.. heh, me
 
@@ -333,13 +371,13 @@ void SF_Include()
 
 void SF_Input()
 {
-/*        static char inputstr[128];
+        static char inputstr[128];
 
                 gets(inputstr);
 
         t_return.type = svt_string;
         t_return.value.s = inputstr;
-*/
+
     CONS_Printf("input() function not available in doom\a\n");
 }
 
@@ -354,6 +392,12 @@ void SF_Clock()
     t_return.value.i = (gametic * 100) / 35;
 }
 
+void SF_ClockTic()
+{
+	t_return.type = svt_int;
+	t_return.value.i = gametic;
+}
+
     /**************** doom stuff ****************/
 
 void SF_ExitLevel()
@@ -361,7 +405,37 @@ void SF_ExitLevel()
     G_ExitLevel();
 }
 
-        // centremsg
+void SF_Warp()  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
+{
+	
+	int reset = 1;
+
+	if(t_argc < 2)
+	{
+        script_error("Too few arguments to function.\n");
+        return;
+    }
+
+	if (t_argv[0].value.i < 1 || t_argv[0].value.i > 5)
+	{
+        script_error("Skill must be between 1 and 5.\n");
+        return;
+	}
+
+	if(t_argc > 2)
+	{
+		reset = t_argv[2].value.i;
+
+		if(reset != 0 && reset != 1)
+		{
+			script_error("Reset must be either 0 or 1.\n");
+			return;
+		}
+	}
+	G_InitNew(t_argv[0].value.i - 1, t_argv[1].value.s, reset);
+}
+   
+     // centremsg
 void SF_Tip()
 {
     int i;
@@ -638,9 +712,10 @@ void SF_MobjIsPlayer()
     return;
 }
 
-void SF_SkinColor()             //returns only!
+void SF_SkinColor()
 {
     int playernum;
+	int colour;
 
     if (!t_argc)
     {
@@ -648,7 +723,7 @@ void SF_SkinColor()             //returns only!
         return;
     }
 
-    if (t_argc == 1)
+    if (t_argc >= 1)
     {
         if (t_argv[0].type == svt_mobj)
         {
@@ -667,11 +742,27 @@ void SF_SkinColor()             //returns only!
             script_error("player %i not in game\n", playernum);
             return;
         }
-
-        t_return.type = svt_int;
-        t_return.value.i = players[playernum].skincolor;
-        return;
     }
+
+	if(t_argc == 2)
+	{
+		colour = intvalue(t_argv[1]);
+		
+		if(colour > MAXSKINCOLORS)
+		{
+			script_error("skin colour %i is out of range\n", colour);
+		}
+
+		players[playernum].skincolor = colour;
+		players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
+
+		CV_SetValue (&cv_playercolor, colour);
+	}
+	
+	t_return.type = svt_int;
+	t_return.value.i = players[playernum].skincolor;
+
+	return;
 }
 
 void SF_PlayerKeys()
@@ -749,6 +840,73 @@ void SF_PlayerKeys()
         t_return.value.i = 0;
         return;
     }
+}
+
+/*	DarkWolf95:September 17, 2004:playerkeysb
+
+	Returns players[i].cards as a whole, since FS supports binary operators.
+	Also allows you to set upper two bits of cards (64 & 128).  Thus the user
+	can have two new boolean values to work with.  CTF, Runes, Tag...
+	
+	playerkeys(playernum, [newbyte]) */
+
+void SF_PlayerKeysByte()
+{
+	int playernum;
+	int keybyte;
+	
+	if (!t_argc)
+	{
+		script_error("not enough arguments for playerkeysb\n");
+		return;
+	}
+	
+	playernum = intvalue(t_argv[0]);
+    if (!playeringame[playernum])
+	{
+            script_error("player %i not in game\n", playernum);
+            return;
+	}
+
+	if(t_argc == 2)
+	{
+		keybyte = intvalue(t_argv[1]);
+		if(keybyte > 255)	//don't overflow
+			keybyte = 0;
+
+		players[playernum].cards = keybyte;
+	}
+	
+	t_return.type = svt_int;
+	t_return.value.i = players[playernum].cards;
+}
+
+// iori 05/17/2005: playerarmor
+void SF_PlayerArmor()
+{
+	int armor;
+	int playernum;
+
+	if (!t_argc)
+	{
+		script_error("insufficient parameters for playerarmor\n");
+		return;
+	}
+
+	playernum = t_argv[0].value.i;
+	armor = t_argv[1].value.i;
+
+	players[playernum].armorpoints = armor;
+
+	if (players[playernum].armorpoints > 100)
+	{
+		players[playernum].armortype = 2;
+	}
+	else
+		players[playernum].armortype = 1;
+
+	t_return.type = svt_int;
+    t_return.value.i = armor;
 }
 
 void SF_PlayerAmmo()
@@ -1031,9 +1189,77 @@ void SF_PlayerSelectedWeapon()
 }
 
 
+// Exl: Toxicfluff's pitchview function.
+// Returns a player's view pitch in a range useful for the FS trig functions
+// iori: added ability to modify player's pitch
+void SF_PlayerPitch()
+{
+	int playernum;
+	
+	if (!t_argc)
+	{
+		script_error("not enough arguments for playerpitch\n");
+		return;
+		}
+	
+	playernum = intvalue(t_argv[0]);
+    if (!playeringame[playernum])
+	{
+            script_error("player %i not in game\n", playernum);
+            return;
+	}
+
+	if(t_argc == 2)
+	{
+		localaiming = FixedToAngle(fixedvalue(t_argv[1]));
+	}
+
+	t_return.type = svt_fixed;
+	t_return.value.f = AngleToFixed(players[playernum].aiming);
+}
+
+
+// Set player properties
+// This could (or rather, should) be expanded to support all players
+//
+void SF_PlayerProperty()
+{
+
+	if (t_argc != 2)
+	{
+		script_error("PlayerProperty: insufficient arguments\n");
+		return;
+	}
+
+	switch(intvalue(t_argv[0]))
+	{
+		// Speed
+		case 0:
+			extramovefactor = intvalue(t_argv[1]);
+			return;
+
+		case 1:
+			JUMPGRAVITY = intvalue(t_argv[1]) * FRACUNIT / NEWTICRATERATIO;
+			return;
+
+		case 2:
+			if (intvalue(t_argv[1]))
+				players[consoleplayer].locked = true;
+			else
+				players[consoleplayer].locked = false;
+			return;
+
+		default:
+			script_error("PlayerProperty: invalid property specified\n");
+	}
+
+}
+
+
 extern void SF_StartScript();   // in t_script.c
 extern void SF_ScriptRunning();
 extern void SF_Wait();
+extern void SF_WaitTic();
 extern void SF_TagWait();
 extern void SF_ScriptWait();
 
@@ -1295,14 +1521,43 @@ void SF_ObjAngle()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
-	if(t_argc > 1)  //DarkWolf95:October 15, 2003:Set Angle
-		mo->angle = (intvalue(t_argv[1]) * (ANG45 / 45));
-
-    t_return.type = svt_fixed;
-    t_return.value.f = mo ? AngleToFixed(mo->angle) : 0;        // null ptr check
+	if(t_argc > 1)
+	{
+		//iori: now able to change the player's angle, not just mobj's
+		if(mo == players[consoleplayer].mo)
+		{
+			localangle = FixedToAngle(fixedvalue(t_argv[1]));
+		}
+		else
+		{
+			mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
+		}
+	}
+	t_return.type = svt_fixed;
+	t_return.value.f = (int)AngleToFixed(mo->angle);       // null ptr check
 }
 
-        // teleport: object, sector_tag
+
+void SF_CheckSight()
+{
+	mobj_t *obj1;
+	mobj_t *obj2;
+
+	if(!t_argc)
+	{
+		script_error("CheckSight: insufficient arguments to function\n");
+		return;
+	}
+
+	obj1 = MobjForSvalue(t_argv[0]);
+	obj2 = t_argc == 2 ? MobjForSvalue(t_argv[1]) : current_script->trigger;
+
+	t_return.type = svt_int;
+	t_return.value.i = P_CheckSight(obj1, obj2);
+}
+
+
+// teleport: object, sector_tag
 void SF_Teleport()
 {
     line_t line;                // dummy line for teleport function
@@ -1378,29 +1633,6 @@ void SF_DamageObj()
         P_DamageMobj(mo, NULL, current_script->trigger, damageamount);
 }
 
-void SF_HealObj()  //no pain sound
-{
-	mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
-
-	if(t_argc < 2)
-	{
-		mo->health = mo->info->spawnhealth;
-
-		if(mo->player)
-			mo->player->health = mo->info->spawnhealth;
-	}
-
-	else if (t_argc == 2)
-	{
-		mo->health += intvalue(t_argv[1]);
-
-		if(mo->player)
-			mo->player->health += intvalue(t_argv[1]);
-	}
-
-	else
-		script_error("invalid number of arguments for objheal");
-}
 
         // the tag number of the sector the thing is in
 void SF_ObjSector()
@@ -1440,7 +1672,7 @@ void SF_ObjFlag()
 
     if (t_argc == 0)    // no arguments
     {
-        script_error("no arguments for function\n");
+        script_error("ObjFlag: no arguments for function\n");
         return;
     }
     else if (t_argc == 1)       // use trigger, 1st is flag
@@ -1480,7 +1712,104 @@ void SF_ObjFlag()
     t_return.value.i = mo ? !!(mo->flags & (1 << flagnum)) : 0;
 }
 
-        // apply momentum to a thing
+
+// Just copy n paste :>
+void SF_ObjFlag2()
+{
+    mobj_t *mo;
+    int flagnum;
+
+    if (t_argc == 0)    // no arguments
+    {
+        script_error("ObjFlag2: no arguments for function\n");
+        return;
+    }
+    else if (t_argc == 1)       // use trigger, 1st is flag
+    {
+        // use trigger:
+        mo = current_script->trigger;
+        flagnum = intvalue(t_argv[0]);
+    }
+    else if (t_argc == 2)
+    {
+        // specified object
+        mo = MobjForSvalue(t_argv[0]);
+        flagnum = intvalue(t_argv[1]);
+    }
+    else        // >= 3 : SET flags
+    {
+        mo = MobjForSvalue(t_argv[0]);
+        flagnum = intvalue(t_argv[1]);
+
+        if (mo) // nullptr check
+        {
+            long newflag;
+            // remove old bit
+            mo->flags2 = mo->flags2 & ~(1 << flagnum);
+
+            // make the new flag
+            newflag = (!!intvalue(t_argv[2])) << flagnum;
+            mo->flags2 |= newflag;       // add new flag to mobj flags
+        }
+
+        //P_UpdateThinker(&mo->thinker);     // update thinker
+
+    }
+
+    t_return.type = svt_int;
+    // nullptr check:
+    t_return.value.i = mo ? !!(mo->flags2 & (1 << flagnum)) : 0;
+}
+
+
+// Extra flags, too
+void SF_ObjEFlag()
+{
+    mobj_t *mo;
+    int flagnum;
+
+    if (t_argc == 0)    // no arguments
+    {
+        script_error("ObjEFlag: no arguments for function\n");
+        return;
+    }
+    else if (t_argc == 1)       // use trigger, 1st is flag
+    {
+        // use trigger:
+        mo = current_script->trigger;
+        flagnum = intvalue(t_argv[0]);
+    }
+    else if (t_argc == 2)
+    {
+        // specified object
+        mo = MobjForSvalue(t_argv[0]);
+        flagnum = intvalue(t_argv[1]);
+    }
+    else        // >= 3 : SET flags
+    {
+        mo = MobjForSvalue(t_argv[0]);
+        flagnum = intvalue(t_argv[1]);
+
+        if (mo) // nullptr check
+        {
+            long newflag;
+            // remove old bit
+            mo->eflags = mo->eflags & ~(1 << flagnum);
+
+            // make the new flag
+            newflag = (!!intvalue(t_argv[2])) << flagnum;
+            mo->eflags |= newflag;       // add new flag to mobj flags
+        }
+
+    }
+
+    t_return.type = svt_int;
+    // nullptr check:
+    t_return.value.i = mo ? !!(mo->eflags & (1 << flagnum)) : 0;
+}
+
+
+// apply momentum to a thing
 void SF_PushThing()
 {
     mobj_t *mo;
@@ -1549,12 +1878,17 @@ void SF_MobjTarget()
         if (t_argv[1].type != svt_mobj && intvalue(t_argv[1]) == -1)
         {
             // Set target to NULL
-            mo->target = NULL;
+			mo->target = NULL;
             P_SetMobjState(mo, mo->info->spawnstate);
         }
         else
         {
-            target = MobjForSvalue(t_argv[1]);
+			target = MobjForSvalue(t_argv[1]);
+
+			// Also remember node here
+			if (target->type == MT_NODE)
+				mo->targetnode = target;
+
             mo->target = target;
             P_SetMobjState(mo, mo->info->seestate);
         }
@@ -1657,19 +1991,31 @@ void SF_SpawnMissile()
 }
 
 
+// Exl: Modified by Tox to take a pitch parameter
 void SF_LineAttack()
 {
 	mobj_t	*mo;
+	angle_t aiming;
 	int		damage, angle, slope;
-
+	int		short fixedtodeg = 182.033;
+	
+	
 	mo = MobjForSvalue(t_argv[0]);
 	damage = intvalue(t_argv[2]);
 
 	angle = (intvalue(t_argv[1]) * (ANG45 / 45));
-	slope = P_AimLineAttack(mo, angle, MISSILERANGE);
+	
+	if(t_argc == 4)
+	{
+		aiming = fixedvalue(t_argv[3]) * fixedtodeg;
+		slope = AIMINGTOSLOPE(aiming);
+	}
+	else
+		slope = P_AimLineAttack(mo, angle, MISSILERANGE);
 
 	P_LineAttack(mo, angle, MISSILERANGE, slope, damage);
 }
+
 
 //checks to see if a Map Thing Number exists; used to avoid script errors
 
@@ -1712,6 +2058,178 @@ void SF_ObjType()
     t_return.type = svt_int;
     t_return.value.i = mo->type;
 }
+
+
+// Exl: sets an object's properties (tox)
+void SF_SetObjProperty()
+{
+	int	attrib, setting;
+	mobj_t	*mo;
+
+	if(t_argc < 2)
+	{
+		script_error("insufficient parameters for objproperty");
+	}
+	if(t_argc == 2)
+	{
+		mo = current_script->trigger;
+		attrib = intvalue(t_argv[0]);
+		setting = intvalue(t_argv[1]);
+	}
+	if(t_argc == 3)
+	{
+		mo = MobjForSvalue(t_argv[0]);
+		attrib = intvalue(t_argv[1]);
+		setting = intvalue(t_argv[2]);
+	}
+	switch (attrib)
+	{
+		case 0:
+			mo->info->radius = (setting*FRACUNIT);
+			break;
+		case 1:
+			mo->info->height = (setting*FRACUNIT);
+			break;
+		case 2:
+			mo->info->speed = setting;
+			break;
+		case 3:
+			mo->info->mass = setting;
+			break;
+		case 4:
+			mo->info->damage = setting;
+			break;
+		case 5:
+			mo->info->painchance = setting;
+			break;
+		case 6:
+			mo->info->seestate = setting;
+			break;
+		case 7:
+			mo->info->meleestate = setting;
+			break;
+		case 8:
+			mo->info->missilestate = setting;
+			break;
+		case 9:
+			mo->info->painstate = setting;
+			break;
+		case 10:
+			mo->info->deathstate = setting;
+			break;
+		case 11:
+			mo->info->xdeathstate = setting;
+			break;
+		case 12:
+			mo->info->crashstate = setting;
+			break;
+		case 13:
+			mo->info->raisestate = setting;
+			break;
+		case 14:
+			mo->info->seesound = setting;
+			break;
+		case 15:
+			mo->info->activesound = setting;
+			break;
+		case 16:
+			mo->info->painsound = setting;
+			break;
+		case 17:
+			mo->info->deathsound = setting;
+			break;
+		default:
+			script_error("invalid attribute for objproperty");
+			return;
+	}
+}
+
+
+// Exl: Returns an object's properties (tox)
+void SF_GetObjProperty()
+{
+	int	attrib, retval;
+	mobj_t	*mo;
+
+	if(t_argc < 1)
+	{
+		script_error("insufficient parameters for getobjproperty");
+	}
+	if(t_argc == 1)
+	{
+		mo = current_script->trigger;
+		attrib = intvalue(t_argv[0]);
+	}
+	if(t_argc == 2)
+	{
+		mo = MobjForSvalue(t_argv[0]);
+		attrib = intvalue(t_argv[1]);
+	}
+	switch (attrib)
+	{
+		case 0:
+			retval = mo->info->radius / FRACUNIT;
+			break;
+		case 1:
+			retval = mo->info->height / FRACUNIT;
+			break;
+		case 2:
+			retval = mo->info->speed;
+			break;
+		case 3:
+			retval = mo->info->mass;
+			break;
+		case 4:
+			retval = mo->info->damage;
+			break;
+		case 5:
+			retval = mo->info->painchance;
+			break;
+		case 6:
+			retval = mo->info->seestate;
+			break;
+		case 7:
+			retval = mo->info->meleestate;
+			break;
+		case 8:
+			retval = mo->info->missilestate;
+			break;
+		case 9:
+			retval = mo->info->painstate;
+			break;
+		case 10:
+			retval = mo->info->deathstate;
+			break;
+		case 11:
+			retval = mo->info->xdeathstate;
+			break;
+		case 12:
+			retval = mo->info->crashstate;
+			break;
+		case 13:
+			retval = mo->info->raisestate;
+			break;
+		case 14:
+			retval = mo->info->seesound;
+			break;
+		case 15:
+			retval = mo->info->activesound;
+			break;
+		case 16:
+			retval = mo->info->painsound;
+			break;
+		case 17:
+			retval = mo->info->deathsound;
+			break;
+		default:
+			script_error("invalid attribute for getobjproperty");
+			return;
+
+	}
+	t_return.type = svt_int;
+	t_return.value.i = retval;
+}
+
 
 void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
 {					//DarkWolf95:December 7, 2003: Change to set only
@@ -1774,6 +2292,152 @@ void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
 		t_return.value.i = P_SetMobjState(mo, newstate);
 }
 
+
+void SF_ObjAwaken()
+{
+
+	mobj_t	*mo;
+
+
+	if (t_argc != 1)
+	{
+		script_error("ObjAwaken: Invalid number of arguments specified");
+		return;
+	}
+
+
+	// Set it's awakestate
+	mo = MobjForSvalue(t_argv[0]);
+	P_SetMobjState(mo, mo->info->seestate);
+}
+
+
+void SF_HealObj()
+{
+
+	mobj_t	*mo;
+	int heal = 0;
+
+
+	// Heal trigger to default health
+	if (t_argc == 0)
+	{
+		mo = current_script->trigger;
+		mo->health = mo->info->spawnhealth;
+	}
+
+	// Heal specified mobj to default health
+	else if (t_argc == 1)
+	{
+		mo = MobjForSvalue(t_argv[0]);
+		mo->health = mo->info->spawnhealth;
+	}
+
+	// Heal specied mobj to given health
+	else if (t_argc == 2)
+	{
+		mo = MobjForSvalue(t_argv[0]);
+		heal = intvalue(t_argv[1]);
+		mo->health = heal;
+	}
+
+	else
+	{
+		script_error("HealObj: Invalid number of arguments specified");
+		return;
+	}
+
+}
+
+
+// Set next node mobj
+void SF_SetNodeNext()
+{
+
+	mobj_t*		mo;		// Affected
+	mobj_t*		nextmo;
+
+
+	if (t_argc != 2)
+	{
+		script_error("setnodenext: wrong number of arguments\n");
+		return;
+	}
+
+	mo = MobjForSvalue(t_argv[0]);
+	nextmo = MobjForSvalue(t_argv[1]);
+	
+	// Check if both mobjs are NODE
+	if (mo->type != MT_NODE || nextmo->type != MT_NODE)
+	{
+		script_error("setnodenext: mobj is not a node\n");
+		return;
+	}
+
+	mo->nextnode = nextmo;
+
+}
+
+
+// Set the time to wait at a node
+void SF_SetNodePause()
+{
+
+	mobj_t*		mo;
+
+
+	if (t_argc != 2)
+	{
+		script_error("setnodepause: wrong number of arguments\n");
+		return;
+	}
+
+	mo = MobjForSvalue(t_argv[0]);
+	if (mo->type != MT_NODE)
+	{
+		script_error("setnodenext: mobj is not a node\n");
+		return;
+	}
+
+	mo->nodewait = t_argv[1].value.i;
+
+}
+
+
+// Run a script when touching a node
+void SF_SetNodeScript()
+{
+
+	mobj_t*		mo;
+	int			sn;
+
+
+	if (t_argc != 2)
+	{
+		script_error("setnodescript: wrong number of arguments\n");
+		return;
+	}
+
+	mo = MobjForSvalue(t_argv[0]);
+	if (mo->type != MT_NODE)
+	{
+		script_error("setnodescript: mobj is not a node\n");
+		return;
+	}
+
+	  
+	sn = intvalue(t_argv[1]);
+
+	// Check if the script is defined
+	if(!levelscript.children[sn])
+    {
+		script_error("SetNodeScript: script not defined\n");
+		return;
+    }
+
+  	mo->nodescript = sn + 1;			// +1 because 0 = none
+
+}
 
 
 
@@ -2124,7 +2788,94 @@ void SF_AmbiantSound()
 
 /************* Sector functions ***************/
 
+		//sectoreffect(tagnum, [effect])
+
+void SF_SectorEffect() //mainly copy/paste from p_spec
+{
+	int secnum = P_FindSectorFromTag(intvalue(t_argv[0]), -1);
+	int tagnum = intvalue(t_argv[0]);
+	int value = intvalue(t_argv[1]);
+	int i;
+	//sector_t *sec = &sectors[secnum];
+	sector_t *sector;
+	
+	if (!t_argc)
+	{
+		script_error("sectoreffect: arguements missing\n");
+		return;
+	}
+	    //  Init special SECTORs.
+
+    sector = sectors;
+    for (i=0 ; i<numsectors ; i++, sector++)
+    {
+        if (sector->tag != tagnum)
+           continue;
+
+        if (sector->special&SECRET_MASK) //SoM: 3/8/2000: count secret flags
+          totalsecret++;
+
+		switch (value)
+		{
+			  case 1:
+				// FLICKERING LIGHTS
+				P_SpawnLightFlash (sector);
+				break;
+
+			  case 2:
+				// STROBE FAST
+				P_SpawnStrobeFlash(sector,FASTDARK,0);
+				break;
+
+			  case 3:
+				// STROBE SLOW
+				P_SpawnStrobeFlash(sector,SLOWDARK,0);
+				break;
+
+			  case 8:
+				// GLOWING LIGHT
+				P_SpawnGlowingLight(sector);
+				break;
+
+			  //case 9:
+				// SECRET SECTOR
+				//if(sector->special<32)
+				//  totalsecret++;
+			//	break;
+
+			  case 10:
+				// DOOR CLOSE IN 30 SECONDS
+				P_SpawnDoorCloseIn30 (sector);
+				break;
+
+			  case 12:
+				// SYNC STROBE SLOW
+				P_SpawnStrobeFlash (sector, SLOWDARK, 1);
+				break;
+
+			  case 13:
+				// SYNC STROBE FAST
+				P_SpawnStrobeFlash (sector, FASTDARK, 1);
+				break;
+
+			  case 14:
+				// DOOR RAISE IN 5 MINUTES
+				P_SpawnDoorRaiseIn5Mins (sector, secnum);
+				break;
+
+			  case 17:
+				//LIGHT FLICKERS RANDOMLY
+				P_SpawnFireFlicker(sector);
+				break;
+		}
+	}
+
+
+	t_return.type = svt_int;
+	t_return.value.i = intvalue(t_argv[1]);
+}
         // floor height of sector
+
 void SF_FloorHeight()
 {
     sector_t *sector;
@@ -2545,7 +3296,7 @@ void SF_StartSkill()
 // Doors
 //
 
-// opendoor(sectag, [delay], [speed])
+// opendoor(sectag, [speed], [delay])
 
 void SF_OpenDoor()
 {
@@ -3003,6 +3754,58 @@ void SF_Pow()
     t_return.value.f = double2fixed(pow(FIXED_TO_FLOAT(n1), FIXED_TO_FLOAT(n2)));
 }
 
+
+
+
+// Type forcing functions -- useful with arrays et al
+
+void SF_MobjValue(void)
+{
+   if(t_argc != 1)
+   {
+      script_error("incorrect arguments to function\n");
+      return;
+   }
+   t_return.type = svt_mobj;
+   t_return.value.mobj = MobjForSvalue(t_argv[0]);
+}
+
+void SF_StringValue(void)
+{  
+   if(t_argc != 1)
+   {
+      script_error("incorrect arguments to function\n");
+      return;
+   }
+   t_return.type = svt_string;
+   t_return.value.s = Z_Strdup(stringvalue(t_argv[0]), PU_LEVEL, 0);
+}
+
+void SF_IntValue(void)
+{
+   if(t_argc != 1)
+   {
+      script_error("incorrect arguments to function\n");
+      return;
+   }
+   t_return.type = svt_int;
+   t_return.value.i = intvalue(t_argv[0]);
+}
+
+void SF_FixedValue(void)
+{
+   if(t_argc != 1)
+   {
+      script_error("incorrect arguments to function\n");
+      return;
+   }
+   t_return.type = svt_fixed;
+   t_return.value.f = fixedvalue(t_argv[0]);
+}
+
+
+
+
 //////////////////////////////////////////////////////////////////////////
 // FraggleScript HUD graphics
 //////////////////////////////////////////////////////////////////////////
@@ -3145,6 +3948,28 @@ void SF_SetCorona()
         lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
     }
 }
+
+
+void SF_SetFade()
+{
+
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	int alpha = 0;
+
+
+	r = (unsigned long)t_argv[0].value.i;
+	g = (unsigned long)t_argv[1].value.i;
+	b = (unsigned long)t_argv[2].value.i;
+	alpha = t_argv[3].value.i;
+
+	// Calculate the color value
+	fadecolor = (256 * b) + (65536 * g) + (16777216 * r);
+	fadealpha = alpha;
+
+}
+
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -3178,7 +4003,9 @@ void init_functions()
     new_function("input", SF_Input);    // Hurdler: TODO: document this function
     new_function("beep", SF_Beep);
     new_function("clock", SF_Clock);
+	new_function("clocktic", SF_ClockTic);
     new_function("wait", SF_Wait);
+	new_function("waittic", SF_WaitTic);
     new_function("tagwait", SF_TagWait);
     new_function("scriptwait", SF_ScriptWait);
     new_function("startscript", SF_StartScript);
@@ -3187,6 +4014,7 @@ void init_functions()
     // doom stuff
     new_function("startskill", SF_StartSkill);
     new_function("exitlevel", SF_ExitLevel);
+	new_function("warp", SF_Warp);
     new_function("tip", SF_Tip);
     new_function("timedtip", SF_TimedTip);
     new_function("message", SF_Message);
@@ -3204,10 +4032,14 @@ void init_functions()
     new_function("isplayerobj", SF_MobjIsPlayer);       // Hurdler: due to backward and eternity compatibility
     new_function("skincolor", SF_SkinColor);
     new_function("playerkeys", SF_PlayerKeys);
+	new_function("playerkeysb", SF_PlayerKeysByte);
+	new_function("playerarmor", SF_PlayerArmor);
     new_function("playerammo", SF_PlayerAmmo);
     new_function("maxplayerammo", SF_MaxPlayerAmmo);
     new_function("playerweapon", SF_PlayerWeapon);
 	new_function("playerselwep", SF_PlayerSelectedWeapon);
+	new_function("playerpitch", SF_PlayerPitch);
+	new_function("playerproperty", SF_PlayerProperty);
 
     // mobj stuff
     new_function("spawn", SF_Spawn);
@@ -3226,9 +4058,12 @@ void init_functions()
     new_function("player", SF_Player);
     new_function("objsector", SF_ObjSector);
     new_function("objflag", SF_ObjFlag);
+	new_function("objflag2", SF_ObjFlag2);
+	new_function("objeflag", SF_ObjEFlag);
     new_function("pushobj", SF_PushThing);
     new_function("pushthing", SF_PushThing);    // Hurdler: due to backward and eternity compatibility
     new_function("objangle", SF_ObjAngle);
+	new_function("checksight", SF_CheckSight);
     new_function("objhealth", SF_ObjHealth);
     new_function("objdead", SF_ObjDead);
     new_function("objreactiontime", SF_ReactionTime);
@@ -3245,8 +4080,14 @@ void init_functions()
 	new_function("resurrect", SF_Resurrect);
 	new_function("lineattack", SF_LineAttack);
 	new_function("setobjposition", SF_SetObjPosition);
+	new_function("setobjproperty", SF_SetObjProperty);
+	new_function("getobjproperty", SF_GetObjProperty);
+	new_function("setnodenext", SF_SetNodeNext);
+	new_function("setnodewait", SF_SetNodePause);
+	new_function("setnodescript", SF_SetNodeScript);
 
     // sector stuff
+	new_function("sectoreffect", SF_SectorEffect);
     new_function("floorheight", SF_FloorHeight);
     new_function("floortext", SF_FloorTexture);
     new_function("floortexture", SF_FloorTexture);      // Hurdler: due to backward and eternity compatibility
@@ -3289,7 +4130,7 @@ void init_functions()
     new_function("checkcvar", SF_CheckCVar);
 	new_function("setlinetexture", SF_SetLineTexture);
     new_function("linetrigger", SF_LineTrigger);
-    new_function("lineflag", SF_LineFlag);      // Hurdler: TODO: document this function
+    new_function("lineflag", SF_LineFlag);
 
     new_function("max", SF_Max);
     new_function("min", SF_Min);
@@ -3308,6 +4149,12 @@ void init_functions()
     new_function("floor", SF_Floor);
     new_function("pow", SF_Pow);
 
+    // forced coercion functions
+    new_function("mobjvalue", SF_MobjValue);
+    new_function("stringvalue", SF_StringValue);
+    new_function("intvalue", SF_IntValue);
+    new_function("fixedvalue", SF_FixedValue);
+
     // HU Graphics
     new_function("newhupic", SF_NewHUPic);
     new_function("createpic", SF_NewHUPic);
@@ -3317,15 +4164,43 @@ void init_functions()
     new_function("sethupicdisplay", SF_SetHUPicDisplay);
     new_function("setpicvisible", SF_SetHUPicDisplay);
 
+	// Arrays
+	new_function("newarray", SF_NewArray);
+	new_function("newemptyarray", SF_NewEmptyArray);
+    new_function("copyinto", SF_ArrayCopyInto);
+    new_function("elementat", SF_ArrayElementAt);
+    new_function("setelementat", SF_ArraySetElementAt);
+    new_function("length", SF_ArrayLength);
+
     // Hurdler's stuff :)
 #ifdef HWRENDER
     new_function("setcorona", SF_SetCorona);
+    new_function("setfade", SF_SetFade);
 #endif
 }
 
 //---------------------------------------------------------------------------
 //
 // $Log: t_func.c,v $
+// Revision 1.40  2005/11/07 22:54:39  iori_
+// Kind of redundant unless we want a 1.43 release sometime.
+//
+// PlayerPitch - enabled setting the player's pitch
+// ObjAngle - Enabled/Fixed setting the player's angle (was broken). May not work for MP..
+// SectorEffect - kind of limited, but useful I guess. Incomplete (secret, dmg sectors)
+//
+// Revision 1.39  2005/05/21 08:41:23  iori_
+// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
+//
+// Revision 1.38  2004/09/17 23:04:48  darkwolf95
+// playerkeysb (see comment), waittic and clocktic
+//
+// Revision 1.37  2004/08/26 10:53:51  iori_
+// warpmap fs function
+//
+// Revision 1.36  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.35  2004/03/06 17:25:04  darkwolf95
 // SetObjPosition to work around spawning and removing objects
 //

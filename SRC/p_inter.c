@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c,v 1.29 2002/11/30 18:39:58 judgecutor Exp $
+// $Id: p_inter.c,v 1.30 2004/09/12 19:40:07 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_inter.c,v $
+// Revision 1.30  2004/09/12 19:40:07  darkwolf95
+// additional chex quest 1 support
+//
 // Revision 1.29  2002/11/30 18:39:58  judgecutor
 // * Fix CR+LF problem
 // * Fix FFW bug (player spawining istead of weapon)
@@ -1856,6 +1859,9 @@ extern consvar_t cv_solidcorpse;
     }
     else
     {
+		//DarkWolf95: Support for Chex Quest
+		if(gamemode == chexquest1)  //don't drop monster ammo in chex quest
+			return;
 
         switch (target->type)
         {

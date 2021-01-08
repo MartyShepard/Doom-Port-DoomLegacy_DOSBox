@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h,v 1.12 2003/03/22 22:35:59 hurdler Exp $
+// $Id: g_game.h,v 1.13 2004/07/27 08:19:35 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: g_game.h,v $
+// Revision 1.13  2004/07/27 08:19:35  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.12  2003/03/22 22:35:59  hurdler
 // Fix CR+LF issue
 //
@@ -104,7 +107,7 @@ extern consvar_t  cv_alwaysfreelook;
 extern consvar_t  cv_mousemove;
 extern consvar_t  cv_showmessages;
 extern consvar_t  cv_fastmonsters;
-extern consvar_t cv_joystickfreelook;
+extern consvar_t  cv_joystickfreelook;
 extern consvar_t  cv_predictingmonsters;  //added by AC for predmonsters
 
 void Command_Turbo_f (void);
@@ -119,6 +122,8 @@ short G_ClipAimingPitch (int* aiming);
 
 extern angle_t localangle,localangle2;
 extern int     localaiming,localaiming2; // should be a angle_t but signed
+
+extern int extramovefactor;		// Extra speed to move at
 
 
 //
@@ -171,5 +176,7 @@ boolean G_Responder (event_t*   ev);
 boolean G_Downgrade(int version);
 
 void G_AddPlayer( int playernum );
+
+void CheckSaveGame(size_t size);
 
 #endif

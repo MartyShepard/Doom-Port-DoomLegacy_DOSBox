@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c,v 1.19 2002/11/30 18:41:20 judgecutor Exp $
+// $Id: p_enemy.c,v 1.20 2004/07/27 08:19:36 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_enemy.c,v $
+// Revision 1.20  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.19  2002/11/30 18:41:20  judgecutor
 // Fix CR+LF problem
 //
@@ -93,6 +96,8 @@
 #include "r_state.h"
 #include "s_sound.h"
 #include "m_random.h"
+#include "t_script.h"
+
 
 #include "hardware/hw3sound.h"
 
@@ -617,7 +622,11 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         return(P_LookForMonsters(actor));
     }
 
-    sector = actor->subsector->sector;
+    // Don't look for a player if ignoring
+	if (actor->eflags & MF_IGNOREPLAYER)
+		return false;
+
+	sector = actor->subsector->sector;
 
     // BP: first time init, this allow minimum lastlook changes
     if( actor->lastlook<0 && demoversion>=129 )
@@ -678,11 +687,21 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
             }
         }
 
-        actor->target = player->mo;
+        
+		// Remember old target node for later
+		if (actor->target)
+		{
+			if(actor->target->type == MT_NODE)
+				actor->targetnode = actor->target;
+		}
+		
+		// New target found
+		actor->target = player->mo;
         return true;
     }
 
-    return false;
+
+	return false;
 }
 
 //
@@ -697,7 +716,16 @@ void A_Look (mobj_t* actor)
 {
     mobj_t*     targ;
 
-    actor->threshold = 0;       // any shot will wake up
+    
+	// Is there a node we must follow?
+	if (actor->targetnode)
+	{
+		actor->target = actor->targetnode;
+		P_SetMobjState(actor, actor->info->seestate);
+		return;
+	}
+
+	actor->threshold = 0;       // any shot will wake up
     targ = actor->subsector->sector->soundtarget;
 
     if (targ && (targ->flags & MF_SHOOTABLE) )
@@ -767,7 +795,16 @@ void A_Chase (mobj_t*   actor)
     int         delta;
 
     if (actor->reactiontime)
+	{
         actor->reactiontime--;
+
+		// We are pausing at a node, just look for players
+		if (actor->target->type == MT_NODE)
+		{
+			P_LookForPlayers(actor, false);
+			return;
+		}
+	}
 
 
     // modify target threshold
@@ -803,14 +840,18 @@ void A_Chase (mobj_t*   actor)
             actor->angle += ANG90/2;
     }
 
-    if (!actor->target
-        || !(actor->target->flags&MF_SHOOTABLE))
+    
+	if (!actor->target
+        || !(actor->target->flags&MF_SHOOTABLE)
+		&& actor->target->type != MT_NODE
+		&& !(actor->eflags & MF_IGNOREPLAYER))
     {
         // look for a new target
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
-
-        P_SetMobjState (actor, actor->info->spawnstate);
+		
+		// This monster will start waiting again
+		P_SetMobjState (actor, actor->info->spawnstate);
         return;
     }
 
@@ -825,7 +866,9 @@ void A_Chase (mobj_t*   actor)
 
     // check for melee attack
     if (actor->info->meleestate
-        && P_CheckMeleeRange (actor))
+        && P_CheckMeleeRange (actor)
+		&& actor->target->type != MT_NODE
+		&& !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (actor->info->attacksound)
             S_StartAttackSound(actor, actor->info->attacksound);
@@ -835,7 +878,9 @@ void A_Chase (mobj_t*   actor)
     }
 
     // check for missile attack
-    if (actor->info->missilestate)
+    if (actor->info->missilestate
+		&& actor->target->type != MT_NODE
+		&& !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (!cv_fastmonsters.value && actor->movecount)
         {
@@ -855,11 +900,60 @@ void A_Chase (mobj_t*   actor)
     // possibly choose another target
     if (multiplayer
         && !actor->threshold
-        && !P_CheckSight (actor, actor->target) )
+        && !P_CheckSight (actor, actor->target)
+		&& actor->target->type != MT_NODE
+		&& !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
+		
     }
+
+
+	
+	// Patrolling nodes
+	if (actor->target->type == MT_NODE)
+	{
+
+		// Check if a player is near
+		if (P_LookForPlayers(actor, false))
+		{
+			// We found one, let him know we saw him!
+			S_StartScreamSound(actor, actor->info->seesound);
+			return;
+		}
+
+		// Did we touch a node as target?
+		if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) <= actor->target->info->radius)
+		{
+			
+			// Execute possible FS script
+			if (actor->target->nodescript)
+			{
+				t_trigger = actor;
+				T_RunScript(actor->target->nodescript - 1);
+			}
+
+			// Do we wait here?
+			if (actor->target->nodewait)
+				actor->reactiontime = actor->target->nodewait;
+
+			// Set next node, if any
+			if (actor->target->nextnode)
+			{
+				actor->target = actor->target->nextnode;
+				actor->targetnode = actor->target->nextnode;	// Also remember it, if we will
+			}													// encounter an enemy
+			else
+			{
+				actor->target = NULL;
+				actor->targetnode = NULL;
+			}
+
+			return;
+		}
+	}
+
 
     // chase towards player
     if (--actor->movecount<0
@@ -867,6 +961,7 @@ void A_Chase (mobj_t*   actor)
     {
         P_NewChaseDir (actor);
     }
+
 
     // make active sound
     if (actor->info->activesound
@@ -879,6 +974,7 @@ void A_Chase (mobj_t*   actor)
         else
             S_StartScreamSound(actor, actor->info->activesound);
     }
+
 }
 
 
@@ -1560,7 +1656,7 @@ void A_SkullAttack (mobj_t* actor)
     S_StartScreamSound(actor, actor->info->attacksound);
     A_FaceTarget (actor);
 
-  if (cv_predictingmonsters.value)	//added by AC for predmonsters
+    if (cv_predictingmonsters.value || (actor->eflags & MF_PREDICT))	//added by AC for predmonsters
 	{
 
 		boolean canHit;
@@ -2257,6 +2353,32 @@ void A_PlayerScream (mobj_t* mo)
         sound = sfx_pdiehi;
     }
     S_StartScreamSound(mo, sound);
+}
+
+
+// Exl: More Toxness :)
+// Running scripts from states (both mobj and weapon)
+void A_StartFS(mobj_t *actor)
+{
+   // load script number from misc1
+   int misc1 = actor->tics;
+   actor->tics = 0;
+   t_trigger = actor;
+   T_RunScript(misc1);
+}
+
+void A_StartWeaponFS(player_t *player, pspdef_t *psp)
+{
+   int misc1;
+
+   // check all pointers for validacy
+   if(player && psp && psp->state)
+   {
+		misc1 = psp->tics;
+		psp->tics = 0;
+		t_trigger = player->mo;
+		T_RunScript(misc1);
+   }
 }
 
 

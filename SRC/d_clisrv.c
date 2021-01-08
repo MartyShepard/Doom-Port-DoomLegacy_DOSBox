@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c,v 1.46 2004/04/20 00:34:26 andyp Exp $
+// $Id: d_clisrv.c,v 1.47 2004/07/27 08:19:34 exl Exp $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,6 +17,9 @@
 //
 //
 // $Log: d_clisrv.c,v $
+// Revision 1.47  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.46  2004/04/20 00:34:26  andyp
 // Linux compilation fixes and string cleanups
 //
@@ -248,6 +251,10 @@ static boolean  cl_packetmissed;
 boolean         drone;
 // here it is for the secondary local player (splitscreen)
 static byte     mynode;        // my address pointofview server
+
+
+// Fade color alpha to reset :>
+extern int fadealpha;
 
 
 static byte     localtextcmd[MAXTEXTCMD];
@@ -1025,6 +1032,7 @@ void CL_Reset (void)
     SV_ResetServer();
 
 	T_ClearHubScript();	//DarkWolf95: Originally implemented by Exl
+	fadealpha = 0;
 	HU_ClearFSPics();
 
 

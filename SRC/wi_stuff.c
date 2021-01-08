@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c,v 1.15 2003/05/04 04:21:39 sburke Exp $
+// $Id: wi_stuff.c,v 1.16 2004/09/12 20:24:26 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: wi_stuff.c,v $
+// Revision 1.16  2004/09/12 20:24:26  darkwolf95
+// fix: no more animations or "YAH" on top of FS specified interpics
+//
 // Revision 1.15  2003/05/04 04:21:39  sburke
 // Use SHORT macro to convert little-endian shorts on big-endian machines.
 //
@@ -118,8 +121,7 @@
 
 // NET GAME STUFF
 #define NG_STATSY               50
-//[segabor]: 'SHORT' BUG !
-#define NG_STATSX               (32 + (star->width)/2 + 32*!dofrags)
+#define NG_STATSX               (32 + SHORT(star->width)/2 + 32*!dofrags)
 
 #define NG_SPACINGX             64
 
@@ -510,14 +512,11 @@ static void WI_drawLF(void)
     }
     else
     {
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch ((BASEVIDWIDTH - (lnames[wbs->last]->width))/2,
+        V_DrawScaledPatch ((BASEVIDWIDTH - SHORT(lnames[wbs->last]->width))/2,
                             y, FB, lnames[wbs->last]);
-		//[segabor]: 'SHORT' BUG !
-        y += (5 * (lnames[wbs->last]->height))/4;
+        y += (5 * SHORT(lnames[wbs->last]->height))/4;
         // draw "Finished!"
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch ((BASEVIDWIDTH - (finished->width))/2,
+        V_DrawScaledPatch ((BASEVIDWIDTH - SHORT(finished->width))/2,
                             y, FB, finished);
     }
 }
@@ -539,16 +538,13 @@ static void WI_drawEL(void)
     }
     else
     {
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch((BASEVIDWIDTH - (entering->width))/2,
+        V_DrawScaledPatch((BASEVIDWIDTH - SHORT(entering->width))/2,
                           y, FB, entering);
 
         // draw level
-		//[segabor]: 'SHORT' BUG !
-        y += (5 * (lnames[wbs->next]->height))/4;
+        y += (5 * SHORT(lnames[wbs->next]->height))/4;
 
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch((BASEVIDWIDTH - (lnames[wbs->next]->width))/2,
+        V_DrawScaledPatch((BASEVIDWIDTH - SHORT(lnames[wbs->next]->width))/2,
                            y, FB, lnames[wbs->next]);
     }
 
@@ -572,11 +568,10 @@ static void WI_drawOnLnode ( int           n,
     i = 0;
     do
     {
-		//[segabor]: 'SHORT' BUG !
-        left   = lnodes->x - (c[i]->leftoffset);
-        top    = lnodes->y - (c[i]->topoffset);
-        right  = left + (c[i]->width);
-        bottom =  top + (c[i]->height);
+        left   = lnodes->x - SHORT(c[i]->leftoffset);
+        top    = lnodes->y - SHORT(c[i]->topoffset);
+        right  = left + SHORT(c[i]->width);
+        bottom =  top + SHORT(c[i]->height);
 
         if (left >= 0
             && right < BASEVIDWIDTH
@@ -642,7 +637,8 @@ static void WI_initAnimatedBack(void)
     int         i;
     anim_t*     a;
 
-    if (gamemode == commercial || gamemode == heretic)
+	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+    if (gamemode == commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -671,7 +667,8 @@ static void WI_updateAnimatedBack(void)
     int         i;
     anim_t*     a;
 
-    if (gamemode == commercial || gamemode == heretic)
+	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+    if (gamemode == commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -723,7 +720,8 @@ static void WI_drawAnimatedBack(void)
     anim_t*             a;
 
     //BP: fixed it was "if (commercial)" 
-    if (gamemode == commercial || gamemode == heretic)
+	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+    if (gamemode == commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -751,8 +749,8 @@ static int WI_drawNum ( int           x,
                         int           n,
                         int           digits )
 {
-	//[segabor]: 'SHORT' BUG !
-    int         fontwidth = (num[0]->width);
+
+    int         fontwidth = SHORT(num[0]->width);
     int         neg;
     int         temp;
 
@@ -836,8 +834,7 @@ static void WI_drawTime ( int           x,
         do
         {
             n = (t / div) % 60;
-			//[segabor]: 'SHORT' BUG !
-            x = WI_drawNum(x, y, n, 2) - (colon->width);
+            x = WI_drawNum(x, y, n, 2) - SHORT(colon->width);
             div *= 60;
 
             // draw
@@ -849,8 +846,7 @@ static void WI_drawTime ( int           x,
     else
     {
         // "sucks"
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch(x - (sucks->width), y, FB, sucks);
+        V_DrawScaledPatch(x - SHORT(sucks->width), y, FB, sucks);
     }
 }
 
@@ -922,8 +918,9 @@ static void WI_drawShowNextLoc(void)
         if( gameepisode < 4 )
             IN_DrawYAH();
     }
+	//DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
-    if ( gamemode != commercial && wbs->epsd<=2)
+    if ( gamemode != commercial && wbs->epsd<=2 && !*info_interpic)
     {
         last = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
 
@@ -1557,8 +1554,7 @@ static void WI_drawNetgameStats(void)
     int         i;
     int         x;
     int         y;
-	//[segabor]: 'SHORT' BUG !
-    int         pwidth = (percent->width);
+    int         pwidth = SHORT(percent->width);
 
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
@@ -1583,24 +1579,19 @@ static void WI_drawNetgameStats(void)
     }
     else
     {
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-(kills->width),
+        V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-SHORT(kills->width),
             NG_STATSY, FB, kills);
         
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-(items->width),
+        V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-SHORT(items->width),
             NG_STATSY, FB, items);
         
-		//[segabor]: 'SHORT' BUG !
-        V_DrawScaledPatch(NG_STATSX+3*NG_SPACINGX-(secret->width),
+        V_DrawScaledPatch(NG_STATSX+3*NG_SPACINGX-SHORT(secret->width),
             NG_STATSY, FB, secret);
         if (dofrags)
-			//[segabor]: 'SHORT' BUG !
-            V_DrawScaledPatch(NG_STATSX+4*NG_SPACINGX-(frags->width),
+            V_DrawScaledPatch(NG_STATSX+4*NG_SPACINGX-SHORT(frags->width),
                               NG_STATSY, FB, frags);
         // draw stats
-		//[segabor]: 'SHORT' BUG !
-        y = NG_STATSY + (kills->height);
+        y = NG_STATSY + SHORT(kills->height);
     }
 
 
@@ -1616,12 +1607,10 @@ static void WI_drawNetgameStats(void)
         else
             colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
 
-		//[segabor]: 'SHORT' BUG !
-        V_DrawMappedPatch(x-(stpb->width), y, FB, stpb, colormap);
+        V_DrawMappedPatch(x-SHORT(stpb->width), y, FB, stpb, colormap);
 
         if (i == me)
-			//[segabor]: 'SHORT' BUG !
-            V_DrawScaledPatch(x-(stpb->width), y, FB, star);
+            V_DrawScaledPatch(x-SHORT(stpb->width), y, FB, star);
 
         x += NG_SPACINGX;
         WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
@@ -1761,8 +1750,7 @@ static void WI_drawStats(void)
     // line height
     int lh;
 
-	//[segabor]: 'SHORT' BUG !
-    lh = (3 * (num[0]->height))/2;
+    lh = (3 * SHORT(num[0]->height))/2;
 
     WI_slamBackground();
 

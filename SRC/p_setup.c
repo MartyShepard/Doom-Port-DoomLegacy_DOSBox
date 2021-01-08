@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c,v 1.48 2003/06/11 03:38:09 ssntails Exp $
+// $Id: p_setup.c,v 1.49 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_setup.c,v $
+// Revision 1.49  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.48  2003/06/11 03:38:09  ssntails
 // THING Z definable in levels by using upper 9 bits
 //
@@ -197,6 +200,7 @@
 #include "z_zone.h"
 #include "r_splats.h"
 #include "p_info.h"
+#include "t_array.h"
 #include "t_func.h"
 #include "t_script.h"
 
@@ -1432,7 +1436,7 @@ boolean P_SetupLevel (int           episode,
 
     R_ClearColormaps();
 #ifdef FRAGGLESCRIPT
-    P_LoadLevelInfo (lastloadedmaplumpnum);    // load level lump info(level name etc)
+	P_LoadLevelInfo (lastloadedmaplumpnum);    // load level lump info(level name etc)
 #endif
 
     //SoM: We've loaded the music lump, start the music.
@@ -1536,6 +1540,7 @@ boolean P_SetupLevel (int           episode,
 
 
 #ifdef FRAGGLESCRIPT
+	T_InitSaveList();             // Setup FS array list
     T_PreprocessScripts();        // preprocess FraggleScript scripts
 #endif
 

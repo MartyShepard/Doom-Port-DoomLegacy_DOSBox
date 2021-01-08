@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c,v 1.28 2004/04/18 12:40:15 hurdler Exp $
+// $Id: r_main.c,v 1.29 2004/09/12 19:40:08 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: r_main.c,v $
+// Revision 1.29  2004/09/12 19:40:08  darkwolf95
+// additional chex quest 1 support
+//
 // Revision 1.28  2004/04/18 12:40:15  hurdler
 // Jive's request for saving screenshots
 //
@@ -833,6 +836,9 @@ void R_ExecuteSetViewSize (void)
 
     // status bar overlay at viewsize 11
     st_overlay = (cv_viewsize.value==11);
+	//DarkWolf95: Support for Chex Quest
+	if (gamemode == chexquest1)
+		st_overlay = 0;  //don't allow overlay status bar in Chex Quest
 
     // clamp detail level (actually ignore it, keep it for later who knows)
     if (setdetail)

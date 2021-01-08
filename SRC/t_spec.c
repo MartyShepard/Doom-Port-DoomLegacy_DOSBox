@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c,v 1.4 2002/01/12 02:21:36 stroggonmeth Exp $
+// $Id: t_spec.c,v 1.5 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,9 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_spec.c,v $
+// Revision 1.5  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.4  2002/01/12 02:21:36  stroggonmeth
 // Big commit
 //
@@ -319,6 +322,12 @@ boolean spec_variable()
       newvar_type = svt_fixed;
       start++;
     }
+    else if(!strcmp(tokens[start], "array")) // arrays
+  {
+     newvar_type = svt_array;
+     start++;
+  }
+
 
   // other variable types could be added: eg float
 
@@ -336,6 +345,9 @@ boolean spec_variable()
 //---------------------------------------------------------------------------
 //
 // $Log: t_spec.c,v $
+// Revision 1.5  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.4  2002/01/12 02:21:36  stroggonmeth
 // Big commit
 //

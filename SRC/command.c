@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c,v 1.13 2003/05/30 22:44:08 hurdler Exp $
+// $Id: command.c,v 1.15 2005/05/21 08:41:23 iori_ Exp $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,6 +17,12 @@
 //
 //
 // $Log: command.c,v $
+// Revision 1.15  2005/05/21 08:41:23  iori_
+// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
+//
+// Revision 1.14  2004/08/26 23:15:45  hurdler
+// add FS functions in console (+ minor linux fixes)
+//
 // Revision 1.13  2003/05/30 22:44:08  hurdler
 // add checkcvar function to FS
 //
@@ -78,6 +84,10 @@
 #include "m_fixed.h"
 #include "byteptr.h"
 #include "p_saveg.h"
+
+// Hurdler: add FS functionnality to console command
+#include "t_vari.h"
+//void run_string(char *data);
 
 //========
 // protos.
@@ -472,8 +482,15 @@ static void COM_ExecuteString (char *text)
         }
     }
 
+// check FraggleScript functions
+    if (find_variable(com_argv[0])) // if this is a potential FS function, try to execute it
+    {
+//        run_string(text);
+        return;
+    }
+
     // check cvars
-    // Hurdler: added at Ebola's request ;) 
+    // Hurdler: added at Ebola's request ;)
     // (don't flood the console in software mode with bad gr_xxx command)
     if (!CV_Command () && con_destlines)
     {
@@ -637,7 +654,7 @@ static void COM_Help_f (void)
             CONS_Printf("%s ",cmd->name);
             i++;
         }
-    
+
             // varibale
         CONS_Printf("\2\nVariable\n");
         for (cvar=consvar_vars; cvar; cvar = cvar->next)
@@ -645,9 +662,9 @@ static void COM_Help_f (void)
             CONS_Printf("%s ",cvar->name);
             i++;
         }
-    
+
         CONS_Printf("\2\nread console.txt for more or type help <command or variable>\n");
-    
+
         if( devparm )
             CONS_Printf("\2Total : %d\n",i);
     }
@@ -1024,7 +1041,7 @@ void CV_SaveNetVars( char **p )
 {
     consvar_t  *cvar;
 
-    // we must send all cvar because on the other side maybe 
+    // we must send all cvar because on the other side maybe
     // it have a cvar modified and here not (same for true savegame)
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
         if (cvar->flags & CV_NETVAR)
@@ -1108,7 +1125,7 @@ void CV_AddValue (consvar_t *var, int increment)
         // seach the next to last
         for(max=0;var->PossibleValue[max+1].strvalue!=NULL;max++)
             ;
-                
+
             if( newvalue<var->PossibleValue[MIN].value )
                 newvalue+=var->PossibleValue[max].value-var->PossibleValue[MIN].value+1;   // add the max+1
             newvalue=var->PossibleValue[MIN].value +

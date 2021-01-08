@@ -624,7 +624,7 @@ int W_GetNumForName (char* name)
         if (!strcmp(name, "PLAYPAL"))
         {
         //Hurdler: I'm tired of that question ;)
-        I_Error ("Main WAD file not found (do not use doom3.wad or legacy.dat)\n"
+        I_Error ("Main WAD file not found (do not use doom3.wad or legacy.wad)\n"
                  "You need either Doom.wad, Doom1.wad, Doom2.wad,\n"
                  "Tnt.wad, Plutonia.wad, Heretic.wad or Heretic1.wad\n"
                  "from any shareware or commercial version of Doom or Heretic!\n");

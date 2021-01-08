@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c,v 1.52 2003/08/11 13:50:01 hurdler Exp $
+// $Id: m_menu.c,v 1.55 2005/12/20 14:58:25 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,15 @@
 //
 //
 // $Log: m_menu.c,v $
+// Revision 1.55  2005/12/20 14:58:25  darkwolf95
+// Monster behavior CVAR - Affects how monsters react when they shoot each other
+//
+// Revision 1.54  2004/09/12 19:40:06  darkwolf95
+// additional chex quest 1 support
+//
+// Revision 1.53  2004/07/27 08:19:36  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.52  2003/08/11 13:50:01  hurdler
 // go final + translucent HUD + fix spawn in net game
 //
@@ -291,6 +300,8 @@ char    savegamestrings[10][SAVESTRINGSIZE];
 #define  IT_CONTROL     (IT_STRING2+IT_CALL)
 #define  IT_CVARMAX     (IT_CVAR   +IT_CV_NOMOD)
 #define  IT_DISABLED    (IT_SPACE  +IT_GRAYPATCH)
+
+extern consvar_t   cv_monbehavior;
 
 typedef union
 {
@@ -1325,7 +1336,7 @@ void M_NewGame(int choice)
         return;
     }
 
-    if ( gamemode == commercial )
+    if ( gamemode == commercial || gamemode == chexquest1) //DarkWolf95: Support for Chex Quest
         M_SetupNextMenu(&NewDef);
     else
         M_SetupNextMenu(&EpiDef);
@@ -1475,10 +1486,9 @@ menuitem_t MouseOptionsMenu[]=
      | IT_CV_SLIDER     ,0,"Mouse Speed"     , &cv_mousesens       ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mlook Speed"     , &cv_mlooksens       ,0}
-//[segabor]
-//#ifdef __MACOS__
-//        ,{IT_CALL   | IT_WHITESTRING,0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
-//#endif
+#ifdef __MACOS__
+        ,{IT_CALL   | IT_WHITESTRING,0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
+#endif
 };
 
 menu_t  MouseOptionsDef =
@@ -1503,8 +1513,9 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Item Respawn time"   ,&cv_itemrespawntime    ,0},
     {IT_STRING | IT_CVAR,0,"Monster Respawn"     ,&cv_respawnmonsters    ,0},
     {IT_STRING | IT_CVAR,0,"Monster Respawn time",&cv_respawnmonsterstime,0},
+	{IT_STRING | IT_CVAR,0,"Monster Behavior"	 ,&cv_monbehavior		 ,0},
     {IT_STRING | IT_CVAR,0,"Fast Monsters"       ,&cv_fastmonsters       ,0},
-		{IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
+	{IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},

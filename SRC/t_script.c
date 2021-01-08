@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c,v 1.2 2001/03/13 22:14:20 stroggonmeth Exp $
+// $Id: t_script.c,v 1.3 2004/09/17 23:04:49 darkwolf95 Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,9 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_script.c,v $
+// Revision 1.3  2004/09/17 23:04:49  darkwolf95
+// playerkeysb (see comment), waittic and clocktic
+//
 // Revision 1.2  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
@@ -448,7 +451,21 @@ void SF_Wait()
   runscr->wait_data = (intvalue(t_argv[0]) * 35) / 100;
 }
 
+void SF_WaitTic()  //if you want to wait on tics instead of "real" time
+{
+  runningscript_t *runscr;
 
+  if(t_argc != 1)
+    {
+      script_error("incorrect arguments to function\n");
+      return;
+    }
+
+  runscr = T_SaveCurrentScript();
+
+  runscr->wait_type = wt_delay;
+  runscr->wait_data = intvalue(t_argv[0]);
+}
 
 // wait for sector with particular tag to stop moving
 void SF_TagWait()
@@ -751,6 +768,9 @@ void T_AddCommands()
 //---------------------------------------------------------------------------
 //
 // $Log: t_script.c,v $
+// Revision 1.3  2004/09/17 23:04:49  darkwolf95
+// playerkeysb (see comment), waittic and clocktic
+//
 // Revision 1.2  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //

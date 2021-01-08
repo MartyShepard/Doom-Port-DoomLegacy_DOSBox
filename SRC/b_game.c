@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c,v 1.4 2003/06/11 04:04:50 ssntails Exp $
+// $Id: b_game.c,v 1.5 2004/07/27 08:19:34 exl Exp $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -17,6 +17,9 @@
 //
 //
 // $Log: b_game.c,v $
+// Revision 1.5  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.4  2003/06/11 04:04:50  ssntails
 // Rellik's Bot Code!
 //
@@ -483,6 +486,12 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		notUsed = false;		//wouldn't be able to use switch
 
 	memset (cmd,0,sizeof(*cmd));
+
+
+	// Exit now if locked
+	if (p->locked == true)
+		return;
+
 	if (p->playerstate == PST_LIVE)
 	{
 		cmd->angleturn = p->mo->angle>>FRACBITS;

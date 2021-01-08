@@ -117,9 +117,9 @@ void I_PauseSong(int handle);
 void I_ResumeSong(int handle);
 // Registers a song handle to song data.
 #ifdef __MACOS__
-	int I_RegisterSong(int song);
+int I_RegisterSong(int song);
 #else
-	int I_RegisterSong(void* data,int len);
+int I_RegisterSong(void* data,int len);
 #endif
 // Called by anything that wishes to start music.
 //  plays a song, and when the song is done,

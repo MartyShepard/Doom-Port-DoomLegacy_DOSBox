@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h,v 1.2 2003/05/30 22:44:07 hurdler Exp $
+// $Id: t_vari.h,v 1.3 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,9 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_vari.h,v $
+// Revision 1.3  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.2  2003/05/30 22:44:07  hurdler
 // add checkcvar function to FS
 //
@@ -58,12 +61,14 @@ struct svariable_s
     long i;
     mobj_t *mobj;
     fixed_t fixed;
+	sfarray_t *a;           // arrays
     
     char **pS;              // pointer to game string
     int *pI;                // pointer to game int
     fixed_t *pFixed;
     mobj_t **pMobj;         // pointer to game obj
-    double *pf;
+	double *pf;
+	sfarray_t **pA;         // arrays
     
     void (*handler)();      // for functions
     char *labelptr;         // for labels
@@ -82,10 +87,12 @@ enum
   svt_function,     // functions are stored as variables
   svt_label,        // labels for goto calls are variables
   svt_const,        // const
+  svt_array,        // array
   svt_pInt,         // pointer to game int
   svt_pFixed,
   svt_pString,      // pointer to game string
   svt_pMobj,        // pointer to game mobj
+  svt_pArray,       // haleyjd: 05/27: pointer to game array
 };
 
 // variables

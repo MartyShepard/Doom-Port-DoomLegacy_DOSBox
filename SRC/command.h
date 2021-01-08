@@ -47,10 +47,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _BCD_H
-#define _BCD_H
 
-#endif
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c,v 1.11 2001/03/30 17:12:49 bpereira Exp $
+// $Id: info.c,v 1.12 2004/07/27 08:19:35 exl Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: info.c,v $
+// Revision 1.12  2004/07/27 08:19:35  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.11  2001/03/30 17:12:49  bpereira
 // no message
 //
@@ -299,6 +302,8 @@ void A_MinotaurAtk3 ();
 void A_MinotaurCharge ();
 void A_MntrFloorFire ();
 void A_ESound ();
+void A_StartFS();		// Exl: Toxicfluff's FS actions
+void A_StartWeaponFS(); //
 
 
 // Fab note : frame is masked through FF_FRAMEMASK
@@ -2498,7 +2503,9 @@ state_t states[NUMSTATES] = {
     { SPR_AMB2,    2,   4, {NULL}              ,S_AMB2_1        },  // S_AMB2_3
     { SPR_AMG1,    0, 100, {A_ESound}          ,S_SND_WIND      },  // S_SND_WIND
     { SPR_AMG1,    0,  85, {A_ESound}          ,S_SND_WATERFALL },  // S_SND_WATERFALL
-
+	{ SPR_TROO,32768,  4,  {A_StartFS}         ,S_DUMMY         },  // S_DUMMY
+	{ SPR_TROO,32768,  4,  {A_StartWeaponFS}   ,S_DUMMY2        },  // S_DUMMY2
+	
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
@@ -6333,7 +6340,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
       S_NULL,         // xdeathstate                              
       sfx_None,       // deathsound                               
       0,              // speed                                    
-      8,              // radius                                   
+      8*FRACUNIT,     // radius                                   
       8,              // height                                   
       10,             // mass                                     
       0,              // damage                                   
@@ -6361,7 +6368,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
       S_NULL,         // xdeathstate                              
       sfx_None,       // deathsound                               
       0,              // speed                                    
-      8,              // radius                                   
+      8*FRACUNIT,     // radius                                   
       8,              // height                                   
       10,             // mass                                     
       0,              // damage                                   
@@ -6472,7 +6479,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
       S_NULL,         // xdeathstate
       sfx_None,       // deathsound
       0,              // speed
-      8,              // radius
+      8*FRACUNIT,     // radius
       8,              // height
       10,             // mass
       0,              // damage
@@ -6502,7 +6509,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
       S_NULL,         // xdeathstate
       sfx_None,       // deathsound
       0,              // speed
-      8,              // radius
+      16*FRACUNIT,    // radius
       8,              // height
       10,             // mass
       0,              // damage

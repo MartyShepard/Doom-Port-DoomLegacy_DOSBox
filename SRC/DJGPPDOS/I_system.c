@@ -562,7 +562,7 @@ void I_StartupMouse2()
     LOCK_VARIABLE(handlermouse2y);
     LOCK_VARIABLE(handlermouse2buttons);
     LOCK_VARIABLE(mouse2port);
-    //_go32_dpmi_lock_data(combytes,sizeof(combytes));
+    _go32_dpmi_lock_data(combytes,sizeof(combytes));
     LOCK_FUNCTION(I_MicrosoftMouseIntHandler);
     asm("sti");
 
@@ -904,7 +904,7 @@ static void I_KeyboardHandler()
           {
             nextkeyextended=0;
 
-            if (ch == 70)  // crtl-break
+            if(ch==70)  // crtl-break
             {
 
                 asm("movb $0x79, %%al\n\t"

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h,v 1.4 2003/05/30 22:44:07 hurdler Exp $
+// $Id: t_parse.h,v 1.5 2004/07/27 08:19:37 exl Exp $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -20,6 +20,9 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // $Log: t_parse.h,v $
+// Revision 1.5  2004/07/27 08:19:37  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.4  2003/05/30 22:44:07  hurdler
 // add checkcvar function to FS
 //
@@ -45,20 +48,13 @@
 #define T_MAXTOKENS 128
 #define TOKENLENGTH 128
 
-#define intvalue(v)                                               \
-  ( (v).type == svt_string ? atoi((v).value.s) :                  \
-    (v).type == svt_fixed ? ((v).value.f / FRACUNIT) :            \
-    (v).type == svt_mobj ? (v).value.mobj ? 1 : 0 : (v).value.i )
 
-#define fixedvalue(v)                                             \
-  ( (v).type == svt_fixed ? (v).value.f :                         \
-    (v).type == svt_string ? (atof((v).value.s) * FRACUNIT) :     \
-    intvalue(v) * FRACUNIT )
-
-
+typedef struct sfarray_s sfarray_t;
 typedef struct script_s script_t;
 typedef struct svalue_s svalue_t;
 typedef struct operator_s operator_t;
+
+
 
 struct svalue_s
 {
@@ -70,8 +66,34 @@ struct svalue_s
     char *s;
     char *labelptr; // goto() label
     mobj_t *mobj;
+	sfarray_t *a;   // arrays
   } value;
 };
+
+
+struct sfarray_s
+{
+   struct sfarray_s *next; // next array in save list
+   int saveindex;	   // index for saving
+
+   unsigned int length;	   // number of values currently initialized   
+   svalue_t *values;	   // array of contained values
+};
+
+
+#define intvalue(v)                                    \
+  ( (v).type == svt_string ? atoi((v).value.s) :       \
+    (v).type == svt_fixed ? (int)((v).value.f / FRACUNIT) : \
+    (v).type == svt_mobj ? -1 : \
+    (v).type == svt_array ? -1 : (v).value.i )
+
+#define fixedvalue(v)                                         \
+  ( (v).type == svt_fixed ? (v).value.f :                     \
+    (v).type == svt_string ? (fixed_t)(atof((v).value.s) * FRACUNIT) : \
+    (v).type == svt_mobj ? -1*FRACUNIT : \
+    (v).type == svt_array ? -1*FRACUNIT : intvalue(v) * FRACUNIT )
+
+
 
 char *stringvalue(svalue_t v);
 

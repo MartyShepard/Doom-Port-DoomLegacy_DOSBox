@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c,v 1.64 2004/04/20 00:34:26 andyp Exp $
+// $Id: d_main.c,v 1.66 2005/12/20 14:58:25 darkwolf95 Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,12 @@
 //
 //
 // $Log: d_main.c,v $
+// Revision 1.66  2005/12/20 14:58:25  darkwolf95
+// Monster behavior CVAR - Affects how monsters react when they shoot each other
+//
+// Revision 1.65  2004/07/27 08:19:34  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
 // Revision 1.64  2004/04/20 00:34:26  andyp
 // Linux compilation fixes and string cleanups
 //
@@ -236,8 +242,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
 #ifdef LINUX
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -315,13 +319,6 @@
 
 #include "b_game.h"     //added by AC for acbot
 
-#ifdef __MACH__
-	//[segabor]: for Mac specific resources
-	extern char mac_legacy_wad[256];    //legacy.dat in Resources
-	extern char mac_md2_wad[256];		//md2.dat in Resources
-	extern char mac_user_home[256];		//for config and savegames
-#endif
-
 //
 //  DEMO LOOP
 //
@@ -348,6 +345,12 @@ boolean singletics = false;     // timedemo
 boolean nomusic;
 boolean nosound;
 boolean digmusic;               // OGG/MP3 Music SSNTails 12-13-2002
+
+
+// Background color fades for FS
+unsigned long fadecolor;
+int fadealpha;
+
 
 boolean advancedemo;
 
@@ -599,15 +602,17 @@ void D_Display(void)
         else
             y = viewwindowy + 4;
         patch = W_CachePatchName("M_PAUSE", PU_CACHE);
-//[segabor]: 'SHORT' BUG !
-		//        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width)) / 2, y, 0, patch);
-        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width) / 2, y, 0, patch);
+        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width)) / 2, y, 0, patch);
     }
 
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
-
-    //FIXME: draw either console or menu, not the two
+#ifdef HWRENDER // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
+    // Exl: draw a faded background
+	if (fadealpha != 0 && rendermode != render_soft)
+		HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
+#endif	
+	//FIXME: draw either console or menu, not the two
     CON_Drawer();
 
     M_Drawer(); // menu is drawn even on top of everything
@@ -1039,7 +1044,7 @@ void IdentifyVersion(void)
     char *doomwaddir;
 
 #ifdef LINUX
-    // change to the directory where 'legacy.dat' is found
+    // change to the directory where 'legacy.wad' is found
     I_LocateWad();
 #endif
     doomwaddir = getenv("DOOMWADDIR");
@@ -1052,14 +1057,11 @@ void IdentifyVersion(void)
             doomwaddir = ".";
     }
 
-//[segabor]
-/*
 #ifdef __MACOS__
     // cwd is always "/" when app is dbl-clicked
     if (!stricmp(doomwaddir, "/"))
         doomwaddir = I_GetWadDir();
 #endif
- */
     // Commercial.
     doom2wad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
     sprintf(doom2wad, "%s/%s", doomwaddir, text[DOOM2WAD_NUM]);
@@ -1077,14 +1079,9 @@ void IdentifyVersion(void)
     sprintf(doom1wad, "%s/%s", doomwaddir, text[DOOM1WAD_NUM]);
 
     // and... Doom LEGACY !!! :)
-#ifdef __MACH__
-	//[segabor]: on Mac OS X legacy.day is within .app folder
-	legacywad = mac_legacy_wad;
-#else
     legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
-    sprintf(legacywad, "%s/legacy.dat", doomwaddir);
-#endif
-	
+    sprintf(legacywad, "%s/legacy.wad", doomwaddir);
+
     // FinalDoom : Plutonia
     plutoniawad = malloc(strlen(doomwaddir) + 1 + 12 + 1);
     sprintf(plutoniawad, "%s/plutonia.wad", doomwaddir);
@@ -1339,7 +1336,7 @@ void D_CheckWadVersion()
                 "Use -nocheckwadversion to remove this check,\n"
                 "but this can cause Legacy to hang\n",wadfiles[0]->filename,wadversion/100,wadversion%100);
 */
-    // check version, of legacy.dat using version lump
+    // check version, of legacy.wad using version lump
     lump = W_CheckNumForName("version");
     if (lump == -1)
         wadversion = 0; // or less
@@ -1357,7 +1354,7 @@ void D_CheckWadVersion()
         }
     }
     if (wadversion != VERSION)
-        I_Error("Your legacy.dat file is version %d.%d, you need version %d.%d\n" "Use the legacy.dat that came in the same zip file as this executable.\n" "\n"
+        I_Error("Your legacy.wad file is version %d.%d, you need version %d.%d\n" "Use the legacy.wad that came in the same zip file as this executable.\n" "\n"
                 "Use -nocheckwadversion to remove this check,\n" "but this can cause Legacy to hang\n", wadversion / 100, wadversion % 100, VERSION / 100, VERSION % 100);
 }
 
@@ -1450,12 +1447,6 @@ void D_DoomMain(void)
         if (!userhome)
             I_Error("Please set $HOME to your home directory\n");
 #endif
-		
-#ifdef __MACH__
-		//[segabor] ...
-		sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
-		sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
-#else
         if (userhome)
         {
             // use user specific config file
@@ -1475,7 +1466,6 @@ void D_DoomMain(void)
             strcatbf(savegamename, legacyhome, "/");
             I_mkdir(legacyhome, 0700);
         }
-#endif
     }
 
     if (M_CheckParm("-cdrom"))
@@ -1714,6 +1704,10 @@ void D_DoomMain(void)
         I_InitCD();
     if (M_CheckParm("-respawn"))
         COM_BufAddText("respawnmonsters 1\n");
+	if (M_CheckParm("-coopmonsters"))
+		COM_BufAddText("monsterbehavior 1\n");
+	if (M_CheckParm("-infight"))
+		COM_BufAddText("monsterbehavior 2\n");
     if (M_CheckParm("-teamplay"))
         COM_BufAddText("teamplay 1\n");
     if (M_CheckParm("-teamskin"))
