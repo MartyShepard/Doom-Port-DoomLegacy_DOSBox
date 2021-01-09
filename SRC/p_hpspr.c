@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c,v 1.3 2001/05/27 13:42:47 bpereira Exp $
+// $Id: p_hpspr.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.

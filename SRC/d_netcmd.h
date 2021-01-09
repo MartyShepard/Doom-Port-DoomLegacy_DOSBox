@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h,v 1.11 2003/03/22 22:35:59 hurdler Exp $
+// $Id: d_netcmd.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //

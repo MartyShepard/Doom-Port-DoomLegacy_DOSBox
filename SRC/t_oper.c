@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c,v 1.5 2002/08/27 21:15:24 hurdler Exp $
+// $Id: t_oper.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //

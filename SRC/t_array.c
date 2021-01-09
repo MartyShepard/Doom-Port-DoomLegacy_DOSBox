@@ -1,6 +1,8 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
+// $Id: t_array.c 538 2009-09-23 23:24:07Z smite-meister $
+//
 // Copyright(C) 2000 James Haley
 //
 // This program is free software; you can redistribute it and/or modify

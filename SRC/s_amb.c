@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: s_amb.c,v 1.6 2001/06/10 21:16:01 bpereira Exp $
+// $Id: s_amb.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.

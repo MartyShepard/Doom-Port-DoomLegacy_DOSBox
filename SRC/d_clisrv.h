@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h,v 1.25 2003/07/13 13:16:15 hurdler Exp $
+// $Id: d_clisrv.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -105,9 +105,6 @@
 #include "d_ticcmd.h"
 #include "d_netcmd.h"
 #include "tables.h"
-
-// more precise version number to compare in network
-#define SUBVERSION              21
 
 //
 // Network play related stuff.

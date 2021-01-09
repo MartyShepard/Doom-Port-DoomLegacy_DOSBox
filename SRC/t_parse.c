@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c,v 1.9 2005/05/21 08:41:23 iori_ Exp $
+// $Id: t_parse.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //

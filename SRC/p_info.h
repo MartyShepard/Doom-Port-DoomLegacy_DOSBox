@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: p_info.h,v 1.5 2001/08/06 23:57:09 stroggonmeth Exp $
+// $Id: p_info.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //

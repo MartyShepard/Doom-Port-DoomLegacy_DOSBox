@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.h,v 1.4 2000/10/16 20:02:29 bpereira Exp $
+// $Id: i_tcp.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //

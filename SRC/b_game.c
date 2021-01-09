@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c,v 1.5 2004/07/27 08:19:34 exl Exp $
+// $Id: b_game.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //

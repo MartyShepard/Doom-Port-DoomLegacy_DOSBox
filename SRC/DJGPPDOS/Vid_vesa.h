@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.h,v 1.2 2000/02/27 00:42:11 hurdler Exp $
+// $Id: Vid_vesa.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //

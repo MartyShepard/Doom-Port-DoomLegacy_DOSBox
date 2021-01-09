@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c,v 1.15 2005/05/21 08:41:23 iori_ Exp $
+// $Id: command.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //

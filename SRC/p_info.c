@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c,v 1.15 2001/12/26 17:24:46 hurdler Exp $
+// $Id: p_info.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //

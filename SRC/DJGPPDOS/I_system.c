@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c,v 1.5 2000/10/21 08:43:32 bpereira Exp $
+// $Id: I_system.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1100,8 +1100,8 @@ void I_RemoveExitFunc(void (*func)())
 static void exception_handler(int num)
 {
 static char msg[255];
-    sprintf(msg,"Doom LEGACY v%i.%i"VERSIONSTRING"\r\n"
-                "This is a error of Legacy try to send the following info to programmers\r\n",VERSION/100,VERSION%100);
+    sprintf(msg, "%s\r\n"
+	    "This is an error of Legacy, try to send the following info to programmers\r\n", VERSION_BANNER);
 
     //D_QuitNetGame ();  //say 'byebye' to other players when your machine
                         // crashes?... hmm... do they have to die with you???

@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: makefile,v 1.75 2004/04/20 00:34:26 andyp Exp $
+# $Id: makefile,v 1.77 2007/01/28 14:45:00 chiphog Exp $
 #     GNU Make makefile for DOS/LINUX version
 #			       of Doom LEGACY (legacy@newdoom.com)
 #
@@ -17,6 +17,25 @@
 # GNU General Public License for more details.
 #
 # $Log: makefile,v $
+# Revision 1.77  2007/01/28 14:45:00  chiphog
+# This patch addresses 2 issues:
+# * Separated the SDL and HAVE_MIXER assumptions.  We can now compile with
+#   SDL=1 but without specifying HAVE_MIXER=1.
+# * Fixed the playing of MIDI (from MUS) music under SDL.  One needs to
+#   compile with SDL=1 and HAVE_MIXER=1 to get SDL music.  This involved
+#   two things:
+#   + Removed/replaced the conflicting functions explained here:
+#     http://jonatkins.org/SDL_mixer/SDL_mixer.html#SEC5
+#   + Backported some SDL mixer mystery magic from legacy-2
+# This patch has been tested on linux with:
+# - make LINUX=1                       # you get sound, but it ain't SDL
+# - make LINUX=1 SDL=1                 # you get SDL sound but no music
+# - make LINUX=1 SDL=1 HAVE_MIXER=1    # you get SDL sound and SDL music
+# Compiling with HAVE_MIXER=1 but without SDL=1 will fail.
+#
+# Revision 1.76  2004/08/26 23:15:42  hurdler
+# add FS functions in console (+ minor linux fixes)
+#
 # Revision 1.75  2004/04/20 00:34:26  andyp
 # Linux compilation fixes and string cleanups
 #
@@ -298,7 +317,7 @@ ifdef DJGPPDOS
     OPTS=-DPC_DOS -g
 
 	DEBUGLIBS=-lalleg -lbcd -lsocket
-    LIBS=-lalleg -lsocket -lbcd 
+    LIBS=-lalleg -lbcd -lsocket
 
 	SFLAGS=
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c,v 1.50 2004/09/12 19:40:05 darkwolf95 Exp $
+// $Id: g_game.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -250,7 +250,15 @@ void    G_DoWorldDone (void);
 // the game version, if it's older, the changes are not done, and the older
 // code is used for compatibility.
 //
-byte            demoversion=VERSION;
+// version numbering
+
+//#if defined(__DJGPP__)
+    /*
+        Game Version, Manual Edit
+        Fix g_game.c:253: error: initializer element is not constant
+    */
+//#else
+byte            demoversion;
 
 byte            gameepisode;
 byte            gamemap;

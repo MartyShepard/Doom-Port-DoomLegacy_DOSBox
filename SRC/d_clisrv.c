@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c,v 1.47 2004/07/27 08:19:34 exl Exp $
+// $Id: d_clisrv.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -218,6 +218,11 @@
 //   neededtic is the tic needed by the client for run the game
 //   firstticstosend is used to optimize a condition
 // normaly maketic>=gametic>0,
+
+
+const int  NETWORK_VERSION = 21; // separate version number for network protocol (obsolete)
+
+
 
 #define PREDICTIONQUEUE         BACKUPTICS
 #define PREDICTIONMASK          (PREDICTIONQUEUE-1)
@@ -526,7 +531,7 @@ static boolean CL_SendJoin()
     else
         netbuffer->u.clientcfg.localplayers=1;
     netbuffer->u.clientcfg.version = VERSION;
-    netbuffer->u.clientcfg.subversion = LONG(SUBVERSION);
+    netbuffer->u.clientcfg.subversion = LONG(NETWORK_VERSION);
 
     return HSendPacket(servernode,true,0,sizeof(clientconfig_pak));
 }
@@ -538,7 +543,7 @@ static void SV_SendServerInfo(int node, tic_t time)
 
     netbuffer->packettype=PT_SERVERINFO;
     netbuffer->u.serverinfo.version = VERSION;
-    netbuffer->u.serverinfo.subversion = LONG(SUBVERSION);
+    netbuffer->u.serverinfo.subversion = LONG(NETWORK_VERSION);
     // return back the time value so client can compute there ping
     netbuffer->u.serverinfo.time = LONG(time);
     netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
@@ -568,7 +573,7 @@ static boolean SV_SendServerConfig(int node)
               playermask|=1<<i;
 
     netbuffer->u.servercfg.version         = VERSION;
-    netbuffer->u.servercfg.subversion      = LONG(SUBVERSION);
+    netbuffer->u.servercfg.subversion      = LONG(NETWORK_VERSION);
 
     netbuffer->u.servercfg.serverplayer    = serverplayer;
     netbuffer->u.servercfg.totalplayernum  = doomcom->numplayers;
@@ -1151,7 +1156,7 @@ void Got_AddBot(char **p,int playernum);	//added by AC for acbot
 // called one time at init
 void D_ClientServerInit (void)
 {
-    DEBFILE(va("- - -== Doom LEGACY v%i.%i.%i"VERSIONSTRING" debugfile ==- - -\n",VERSION/100,VERSION%100,SUBVERSION));
+  DEBFILE(va("- - -== %s debugfile ==- - -\n", VERSION_BANNER));
 
     drone = false;
 
@@ -1580,8 +1585,8 @@ static void GetPackets (void)
         if( netbuffer->packettype == PT_CLIENTJOIN && server )
         {
             if(         netbuffer->u.clientcfg.version     != VERSION
-                || LONG(netbuffer->u.clientcfg.subversion) != SUBVERSION)
-                SV_SendRefuse(node,va("Different DOOM versions cannot play a net game! (server version %d.%d.%d)",VERSION/100,VERSION%100,SUBVERSION));
+                || LONG(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
+	      SV_SendRefuse(node, va("Different DOOM versions cannot play a net game! (server version %s)", VERSION_BANNER));
             else
             if(!cv_allownewplayer.value && node!=0 )
                 SV_SendRefuse(node,"The server is not accepting people for the moment");

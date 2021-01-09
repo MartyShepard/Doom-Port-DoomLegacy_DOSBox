@@ -81,7 +81,7 @@ int bcd_stop(void);
 int bcd_resume(void);
 
 extern int num_tracks;
-//extern int lowest_track, highest_track;
+
 /* Troubleshooting */
 /* Returns a human readable description of the last error encountered */
 char *bcd_error(void);

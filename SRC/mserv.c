@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c,v 1.33 2003/06/05 20:34:48 hurdler Exp $
+// $Id: mserv.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -414,7 +414,7 @@ static int AddToMasterServer(void)
     strcpy(info->ip,     "");
     strcpy(info->port,   int2str(current_port));
     strcpy(info->name,   cv_servername.string);
-    sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, SUBVERSION);
+    sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
     strcpy(registered_server.name, cv_servername.string);
 
     msg.type = ADD_SERVER_MSG;
@@ -438,7 +438,7 @@ static int RemoveFromMasterSever(void)
     strcpy(info->ip,     "");
     strcpy(info->port,   int2str(current_port));
     strcpy(info->name,   registered_server.name);
-    sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, SUBVERSION);
+    sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
 
     msg.type = REMOVE_SERVER_MSG;
     msg.length = sizeof(msg_server_t);

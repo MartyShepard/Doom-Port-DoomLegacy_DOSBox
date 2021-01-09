@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c,v 1.7 2002/09/19 21:46:34 judgecutor Exp $
+// $Id: hw3sound.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 2001 by DooM Legacy Team.
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c,v 1.36 2005/12/20 14:58:25 darkwolf95 Exp $
+// $Id: d_netcmd.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -916,8 +916,7 @@ void Command_TeamFrags_f(void)
 //
 void Command_Version_f(void)
 {
-    CONS_Printf("Doom LEGACY version %i.%i (" __TIME__ " " __DATE__ ")\n" VERSIONSTRING, VERSION / 100, VERSION % 100);
-
+  CONS_Printf("%s (" __TIME__ " " __DATE__ ")\n", VERSION_BANNER);
 }
 
 //  Quit the game immediately
