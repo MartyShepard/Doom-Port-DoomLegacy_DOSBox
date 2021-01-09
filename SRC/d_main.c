@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_main.c 540 2009-09-23 23:43:40Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -307,9 +307,7 @@
 #include "z_zone.h"
 #include "d_main.h"
 #include "d_netfil.h"
-#include "p_heretic.h"
 #include "m_cheat.h"
-#include "p_chex.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"   // 3D View Rendering
@@ -322,7 +320,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "538"
+#define SVN_REV "540"
 #endif
 
 // Version number: major.minor.revision
@@ -341,6 +339,9 @@ int pagetic;
 char *pagename = "TITLEPIC";
 
 //  PROTOS
+void HereticPatchEngine(void);
+void Chex1PatchEngine(void);
+
 void D_PageDrawer(char *lumpname);
 void D_AdvanceDemo(void);
 
