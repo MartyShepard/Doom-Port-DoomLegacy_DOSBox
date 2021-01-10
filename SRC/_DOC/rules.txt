@@ -34,7 +34,7 @@ CODE-RULES
   
 GOOD PRACTICE
 
-- Try to put as mush static variable and function on module so it help to 
+- Try to put as much static variable and function on module so it help to 
   understand the role of the varaible/function in the module also this 
   help the compiler to optimize
 - minimise global variable

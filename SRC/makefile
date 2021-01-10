@@ -1,10 +1,9 @@
 #############################################################################
 #
-# $Id: makefile,v 1.77 2007/01/28 14:45:00 chiphog Exp $
-#     GNU Make makefile for DOS/LINUX version
-#			       of Doom LEGACY (legacy@newdoom.com)
+# $Id: makefile 542 2009-09-27 21:13:07Z smite-meister $
+# GNU Make makefile for DOS/LINUX version of Doom LEGACY (legacy@newdoom.com)
 #
-# Copyright (C) 1998-2000 by DooM Legacy Team.
+# Copyright (C) 1998-2009 by DooM Legacy Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -335,33 +334,24 @@ ifdef USEASM
    OPTS:= $(OPTS) -DUSEASM
 endif
 
-
 	M5=
 	M4=-m486
 
-
+# compiler and linker flags
 ifdef PROFILEMODE
-	# build with profiling information
-	ifdef PGCC
-		CFLAGS = -g -pg -DPARANOIA -fwritable-strings -fno-strict-aliasing $(OPTS)
-	else
-		CFLAGS = -g -pg $(M4) -O3 -ffast-math -fwritable-strings -fno-strict-aliasing $(OPTS)
-	endif
-	LDFLAGS = -g -pg -L/usr/X11R6/lib
-else
+# build with gprof profiling information
+  CFLAGS  = $(WFLAGS) -g -pg $(OPTS)
+  LDFLAGS = $(WFLAGS) -g -pg
+ else
 
-	# build a normal optimised version
-	ifdef PGCC
-		CFLAGS = $(OPTS) $(M5) -O3 -ffast-math -fomit-frame-pointer -mtune=i586
+	CFLAGS = $(WFLAGS) -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -mtune=i586 $(OPTS) 
 		# -fno-exceptions -foptimize-register-move -mhard-float
 		# -nostdlib -m32 -march=i386 -ffreestanding
 		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \
 		# -fexpensive-optimizations -fforce-mem -fstrength-reduce -fthread-jumps  \
 		# -fregmove -fschedule-insns -fschedule-insns2 -fmove-all-movables \
 		# -fcaller-saves -finline-functions -mieee-fp -mfp-ret-in-387 -m80387 -mhard-float -finline
-	else
-		CFLAGS = $(M4) -O3 -ffast-math -fomit-frame-pointer -fwritable-strings $(OPTS)
-	endif
+
 endif
 
 	i_cdmus_o=$(O)/i_cdmus.o
@@ -498,7 +488,7 @@ $(O):
 
 #dependecy made by gcc itself ! (see makedep.mak for more)
 $(O)/dstrings.o: dstrings.c dstrings.h d_englsh.h
-		redir -o /_GCC/dstrings.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+		redir -o /_GCC/dstrings.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_sound.o: $(INTERFACE)/i_sound.c doomdef.h \
  doomtype.h g_state.h m_swap.h doomstat.h doomdata.h d_player.h \
@@ -506,32 +496,32 @@ $(O)/i_sound.o: $(INTERFACE)/i_sound.c doomdef.h \
  p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h command.h i_system.h \
  d_event.h i_sound.h sounds.h z_zone.h m_argv.h m_misc.h \
  w_wad.h s_sound.h qmus2mid.h
-		redir -o /_GCC/i_sound.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+		redir -o /_GCC/i_sound.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_cdmus.o: $(INTERFACE)/i_cdmus.c doomdef.h \
  doomtype.h g_state.h m_swap.h	i_sound.h sounds.h command.h \
  i_system.h d_ticcmd.h d_event.h  s_sound.h
-		redir -o /_GCC/i_cdmus.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+		redir -o /_GCC/i_cdmus.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_video.o: $(INTERFACE)/i_video.c doomdef.h \
  doomtype.h g_state.h m_swap.h i_system.h d_ticcmd.h d_event.h \
  v_video.h r_defs.h m_fixed.h d_think.h p_mobj.h tables.h \
  doomdata.h info.h screen.h command.h m_argv.h \
  i_video.h
-	redir -o /_GCC/i_video.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/i_video.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_net.o: $(INTERFACE)/i_net.c doomdef.h doomtype.h \
  g_state.h m_swap.h i_system.h d_ticcmd.h d_event.h d_net.h \
  m_argv.h doomstat.h doomdata.h d_player.h d_items.h p_pspr.h \
  m_fixed.h tables.h info.h d_think.h p_mobj.h d_clisrv.h \
  d_netcmd.h command.h z_zone.h i_net.h i_tcp.h
-		redir -o /_GCC/i_net.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+		redir -o /_GCC/i_net.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_tcp.o: i_tcp.c doomdef.h doomtype.h g_state.h m_swap.h i_system.h \
  d_ticcmd.h d_event.h i_net.h d_net.h m_argv.h doomstat.h doomdata.h \
  d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
  p_mobj.h d_clisrv.h d_netcmd.h command.h
-	redir -o /_GCC/i_tcp.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/i_tcp.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_system.o: $(INTERFACE)/i_system.c doomdef.h \
  doomtype.h g_state.h m_swap.h \
@@ -546,10 +536,10 @@ $(O)/i_system.o: $(INTERFACE)/i_system.c doomdef.h \
  z_zone.h g_input.h \
  console.h i_system.h \
  i_joy.h
-	redir -o /_GCC/i_system.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/i_system.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/tables.o: tables.c tables.h m_fixed.h doomtype.h
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/f_finale.o: f_finale.c doomdef.h doomtype.h g_state.h m_swap.h \
  am_map.h d_event.h dstrings.h d_englsh.h d_main.h w_wad.h f_finale.h \
@@ -559,13 +549,13 @@ $(O)/f_finale.o: f_finale.c doomdef.h doomtype.h g_state.h m_swap.h \
  r_local.h m_bbox.h r_main.h r_data.h r_state.h r_bsp.h r_segs.h \
  r_plane.h r_sky.h r_things.h sounds.h r_draw.h s_sound.h i_video.h \
  v_video.h z_zone.h
-	redir -o /_GCC/f_finale.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/f_finale.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/f_wipe.o: f_wipe.c doomdef.h doomtype.h g_state.h m_swap.h m_random.h \
  f_wipe.h i_system.h d_ticcmd.h d_event.h i_video.h v_video.h r_defs.h \
  m_fixed.h d_think.h p_mobj.h tables.h doomdata.h info.h screen.h \
  command.h z_zone.h
-	redir -o /_GCC/f_wipe.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/f_wipe.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_main.o: d_main.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  console.h d_event.h doomstat.h doomdata.h d_player.h d_items.h \
@@ -577,17 +567,17 @@ $(O)/d_main.o: d_main.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  r_data.h r_state.h r_local.h m_bbox.h r_bsp.h r_segs.h r_plane.h \
  r_sky.h r_things.h r_draw.h s_sound.h st_stuff.h v_video.h z_zone.h \
  d_main.h
-	redir -o /_GCC/d_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_net.o: d_net.c doomdef.h doomtype.h g_state.h m_swap.h d_clisrv.h \
  d_ticcmd.h d_netcmd.h command.h g_game.h doomstat.h doomdata.h \
  d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
  p_mobj.h d_event.h i_net.h i_system.h m_argv.h d_net.h
-	redir -o /_GCC/d_net.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_net.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_items.o: d_items.c info.h d_think.h d_items.h doomdef.h doomtype.h \
  g_state.h m_swap.h
-	redir -o /_GCC/d_items.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_items.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/g_game.o: g_game.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  console.h d_event.h dstrings.h d_englsh.h d_main.h w_wad.h d_net.h \
@@ -599,7 +589,7 @@ $(O)/g_game.o: g_game.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  doomstat.h d_clisrv.h g_input.h keys.h p_fab.h m_cheat.h m_misc.h \
  m_menu.h m_argv.h hu_stuff.h st_stuff.h z_zone.h i_video.h p_inter.h \
  byteptr.h i_joy.h
-	redir -o /_GCC/g_game.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/g_game.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_menu.o: m_menu.c am_map.h d_event.h doomtype.h g_state.h doomdef.h \
  m_swap.h dstrings.h d_englsh.h d_main.h w_wad.h console.h r_local.h \
@@ -610,7 +600,7 @@ $(O)/m_menu.o: m_menu.c am_map.h d_event.h doomtype.h g_state.h doomdef.h \
  doomstat.h d_clisrv.h d_netcmd.h g_input.h keys.h m_argv.h s_sound.h \
  i_system.h m_menu.h v_video.h i_video.h z_zone.h p_local.h p_tick.h \
  p_maputl.h p_spec.h p_fab.h
-	redir -o /_GCC/m_menu.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_menu.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_misc.o: m_misc.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -618,20 +608,20 @@ $(O)/m_misc.o: m_misc.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h m_misc.h w_wad.h hu_stuff.h wi_stuff.h r_defs.h \
  screen.h v_video.h z_zone.h g_input.h keys.h i_video.h d_main.h \
  m_argv.h
-	redir -o /_GCC/m_misc.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_misc.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_argv.o: m_argv.c doomdef.h doomtype.h g_state.h m_swap.h command.h
-	redir -o /_GCC/m_argv.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_argv.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_bbox.o: m_bbox.c doomtype.h m_bbox.h m_fixed.h
-	redir -o /_GCC/m_bbox.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_bbox.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_fixed.o: m_fixed.c i_system.h d_ticcmd.h doomtype.h d_event.h \
  g_state.h m_fixed.h
-	redir -o /_GCC/m_fixed.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_fixed.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_swap.o: m_swap.c
-	redir -o /_GCC/m_swap.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_swap.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_cheat.o: m_cheat.c doomdef.h doomtype.h g_state.h m_swap.h \
  dstrings.h d_englsh.h am_map.h d_event.h m_cheat.h g_game.h \
@@ -641,10 +631,10 @@ $(O)/m_cheat.o: m_cheat.c doomdef.h doomtype.h g_state.h m_swap.h \
  r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h r_things.h sounds.h \
  r_draw.h p_local.h p_tick.h p_maputl.h p_spec.h p_inter.h i_sound.h \
  s_sound.h
-	redir -o /_GCC/m_cheat.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_cheat.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_random.o: m_random.c doomdef.h doomtype.h g_state.h m_swap.h
-	redir -o /_GCC/m_random.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/m_random.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/am_map.o: am_map.c doomdef.h doomtype.h g_state.h m_swap.h doomstat.h \
  doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \
@@ -653,21 +643,21 @@ $(O)/am_map.o: am_map.c doomdef.h doomtype.h g_state.h m_swap.h doomstat.h \
  m_bbox.h p_tick.h r_defs.h screen.h p_maputl.h p_spec.h v_video.h \
  st_stuff.h i_system.h i_video.h r_state.h r_data.h dstrings.h \
  d_englsh.h w_wad.h z_zone.h
-	redir -o /_GCC/am_map.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/am_map.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_ceilng.o: p_ceilng.c doomdef.h doomtype.h g_state.h m_swap.h \
  p_local.h command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h \
  info.h d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h \
  r_defs.h screen.h p_maputl.h p_spec.h r_state.h r_data.h s_sound.h \
  sounds.h z_zone.h
-	redir -o /_GCC/p_ceilng.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_ceilng.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_doors.o: p_doors.c doomdef.h doomtype.h g_state.h m_swap.h \
  dstrings.h d_englsh.h p_local.h command.h d_player.h d_items.h \
  p_pspr.h m_fixed.h tables.h info.h d_think.h p_mobj.h doomdata.h \
  d_ticcmd.h m_bbox.h p_tick.h r_defs.h screen.h p_maputl.h p_spec.h \
  r_state.h r_data.h s_sound.h sounds.h z_zone.h
-	redir -o /_GCC/p_doors.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_doors.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_enemy.o: p_enemy.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -675,23 +665,23 @@ $(O)/p_enemy.o: p_enemy.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h r_main.h r_data.h r_state.h s_sound.h sounds.h \
  m_random.h
-	redir -o /_GCC/p_enemy.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_enemy.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_floor.o: p_floor.c doomdef.h doomtype.h g_state.h m_swap.h p_local.h \
  command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \
  d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h r_state.h r_data.h s_sound.h sounds.h \
  z_zone.h
-	redir -o /_GCC/p_floor.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_floor.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_genlin.o: p_genlin.c doomdef.h g_game.h p_local.h r_data.h m_random.h \
  m_random.h s_sound.h z_zone.h command.h d_player.h d_think.h m_fixed.h \
  m_bbox.h p_tick.h r_defs.h p_maputl.h p_mobj.h screen.h
-	redir -o /_GCC/p_genlin.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_genlin.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_info.o: p_info.c doomdef.h dehacked.h dstrings.h p_setup.h p_info.h \
  p_mobj.h t_script.h w_wad.h z_zone.h command.h
-	redir -o /_GCC/p_info.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_info.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_inter.o: p_inter.c doomdef.h doomtype.h g_state.h m_swap.h \
  i_system.h d_ticcmd.h d_event.h am_map.h dstrings.h d_englsh.h \
@@ -700,14 +690,14 @@ $(O)/p_inter.o: p_inter.c doomdef.h doomtype.h g_state.h m_swap.h \
  command.h m_random.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h p_inter.h s_sound.h sounds.h r_main.h r_data.h \
  r_state.h st_stuff.h
-	redir -o /_GCC/p_inter.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_inter.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_lights.o: p_lights.c doomdef.h doomtype.h g_state.h m_swap.h \
  p_local.h command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h \
  info.h d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h \
  r_defs.h screen.h p_maputl.h p_spec.h r_state.h r_data.h z_zone.h \
  m_random.h
-	redir -o /_GCC/p_lights.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_lights.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_map.o: p_map.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -715,20 +705,20 @@ $(O)/p_map.o: p_map.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h m_bbox.h m_random.h p_local.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h p_inter.h r_state.h r_data.h r_main.h \
  r_sky.h s_sound.h sounds.h r_splats.h
-	redir -o /_GCC/p_map.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_map.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_maputl.o: p_maputl.c p_local.h command.h doomtype.h d_player.h \
  d_items.h doomdef.h g_state.h m_swap.h p_pspr.h m_fixed.h tables.h \
  info.h d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h \
  r_defs.h screen.h p_maputl.h p_spec.h r_main.h r_data.h r_state.h
-	redir -o /_GCC/p_maputl.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_maputl.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_plats.o: p_plats.c doomdef.h doomtype.h g_state.h m_swap.h p_local.h \
  command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \
  d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h s_sound.h sounds.h r_state.h r_data.h \
  z_zone.h m_random.h
-	redir -o /_GCC/p_plats.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_plats.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_pspr.o: p_pspr.c doomdef.h doomtype.h g_state.h m_swap.h d_event.h \
  p_local.h command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h \
@@ -736,7 +726,7 @@ $(O)/p_pspr.o: p_pspr.c doomdef.h doomtype.h g_state.h m_swap.h d_event.h \
  r_defs.h screen.h p_maputl.h p_spec.h p_inter.h s_sound.h sounds.h \
  g_game.h doomstat.h d_clisrv.h d_netcmd.h g_input.h keys.h r_main.h \
  r_data.h r_state.h m_random.h
-	redir -o /_GCC/p_pspr.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_pspr.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_setup.o: p_setup.c doomdef.h doomtype.h g_state.h m_swap.h d_main.h \
  d_event.h w_wad.h g_game.h doomstat.h doomdata.h d_player.h d_items.h \
@@ -744,13 +734,13 @@ $(O)/p_setup.o: p_setup.c doomdef.h doomtype.h g_state.h m_swap.h d_main.h \
  d_clisrv.h d_netcmd.h command.h p_local.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h p_setup.h i_sound.h sounds.h r_sky.h \
  r_data.h r_state.h r_things.h s_sound.h z_zone.h
-	redir -o /_GCC/p_setup.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_setup.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_sight.o: p_sight.c doomdef.h doomtype.h g_state.h m_swap.h p_local.h \
  command.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \
  d_think.h p_mobj.h doomdata.h d_ticcmd.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h r_main.h r_data.h r_state.h
-	redir -o /_GCC/p_sight.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_sight.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_spec.o: p_spec.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -758,7 +748,7 @@ $(O)/p_spec.o: p_spec.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h p_setup.h r_data.h r_state.h m_random.h s_sound.h \
  sounds.h w_wad.h z_zone.h
-	redir -o /_GCC/p_spec.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_spec.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_switch.o: p_switch.c doomdef.h doomtype.h g_state.h m_swap.h \
  g_game.h doomstat.h doomdata.h d_player.h d_items.h p_pspr.h \
@@ -766,7 +756,7 @@ $(O)/p_switch.o: p_switch.c doomdef.h doomtype.h g_state.h m_swap.h \
  d_netcmd.h command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h s_sound.h sounds.h r_main.h r_data.h \
  r_state.h
-	redir -o /_GCC/p_switch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_switch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_mobj.o: p_mobj.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -775,21 +765,21 @@ $(O)/p_mobj.o: p_mobj.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  wi_stuff.h r_defs.h screen.h p_local.h m_bbox.h p_tick.h p_maputl.h \
  p_spec.h p_inter.h p_setup.h r_main.h r_data.h r_state.h r_things.h \
  sounds.h r_sky.h s_sound.h z_zone.h m_random.h
-	redir -o /_GCC/p_mobj.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_mobj.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_telept.o: p_telept.c doomdef.h doomtype.h g_state.h m_swap.h \
  g_game.h doomstat.h doomdata.h d_player.h d_items.h p_pspr.h \
  m_fixed.h tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h \
  d_netcmd.h command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h \
  screen.h p_maputl.h p_spec.h r_state.h r_data.h s_sound.h sounds.h
-	redir -o /_GCC/p_telept.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_telept.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_tick.o: p_tick.c doomstat.h doomdata.h doomtype.h doomdef.h \
  g_state.h m_swap.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h \
  info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h command.h \
  g_game.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h z_zone.h
-	redir -o /_GCC/p_tick.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_tick.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_saveg.o: p_saveg.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -797,14 +787,14 @@ $(O)/p_saveg.o: p_saveg.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h r_state.h r_data.h z_zone.h w_wad.h p_setup.h \
  byteptr.h
-	redir -o /_GCC/p_saveg.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_saveg.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_user.o: p_user.c doomdef.h doomtype.h g_state.h m_swap.h d_event.h \
  g_game.h doomstat.h doomdata.h d_player.h d_items.h p_pspr.h \
  m_fixed.h tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h \
  d_netcmd.h command.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h r_main.h r_data.h r_state.h s_sound.h sounds.h
-	redir -o /_GCC/p_user.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_user.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_bsp.o: r_bsp.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -812,7 +802,7 @@ $(O)/r_bsp.o: r_bsp.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  command.h d_event.h r_local.h screen.h m_bbox.h r_main.h r_data.h \
  r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h r_things.h \
  sounds.h r_draw.h r_splats.h
-	redir -o /_GCC/r_bsp.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_bsp.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_data.o: r_data.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -821,7 +811,7 @@ $(O)/r_data.o: r_data.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h p_local.h p_tick.h p_maputl.h p_spec.h \
  w_wad.h z_zone.h
-	redir -o /_GCC/r_data.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_data.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_draw.o: r_draw.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  tables.h m_fixed.h screen.h command.h m_bbox.h r_main.h d_player.h \
@@ -829,7 +819,7 @@ $(O)/r_draw.o: r_draw.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h st_stuff.h d_event.h i_video.h \
  v_video.h w_wad.h z_zone.h r_draw8.c r_draw16.c
-	redir -o /_GCC/r_draw.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_draw.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_main.o: r_main.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -838,7 +828,7 @@ $(O)/r_main.o: r_main.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  r_main.h r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h \
  r_sky.h r_things.h sounds.h r_draw.h r_splats.h st_stuff.h p_local.h \
  p_tick.h p_maputl.h p_spec.h i_video.h m_menu.h
-	redir -o /_GCC/r_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_plane.o: r_plane.c doomdef.h doomtype.h g_state.h m_swap.h console.h \
  d_event.h g_game.h doomstat.h doomdata.h d_player.h d_items.h \
@@ -847,21 +837,21 @@ $(O)/r_plane.o: r_plane.c doomdef.h doomtype.h g_state.h m_swap.h console.h \
  r_local.h m_bbox.h r_main.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h r_splats.h v_video.h w_wad.h \
  z_zone.h p_setup.h
-	redir -o /_GCC/r_plane.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_plane.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_segs.o: r_segs.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  tables.h m_fixed.h screen.h command.h m_bbox.h r_main.h d_player.h \
  d_items.h p_pspr.h info.h d_think.h p_mobj.h doomdata.h d_ticcmd.h \
  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h r_splats.h w_wad.h z_zone.h
-	redir -o /_GCC/r_segs.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_segs.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_sky.o: r_sky.c doomdef.h doomtype.h g_state.h m_swap.h r_sky.h \
  m_fixed.h r_local.h tables.h screen.h command.h m_bbox.h r_main.h \
  d_player.h d_items.h p_pspr.h info.h d_think.h p_mobj.h doomdata.h \
  d_ticcmd.h r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h \
  r_things.h sounds.h r_draw.h w_wad.h
-	redir -o /_GCC/r_sky.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_sky.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_things.o: r_things.c doomdef.h doomtype.h g_state.h m_swap.h \
  console.h d_event.h g_game.h doomstat.h doomdata.h d_player.h \
@@ -870,11 +860,11 @@ $(O)/r_things.o: r_things.c doomdef.h doomtype.h g_state.h m_swap.h \
  m_bbox.h r_main.h r_data.h r_defs.h r_state.h r_bsp.h r_segs.h \
  r_plane.h r_sky.h r_things.h sounds.h r_draw.h st_stuff.h w_wad.h \
  z_zone.h i_video.h
-	redir -o /_GCC/r_things.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_things.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/w_wad.o: w_wad.c doomdef.h doomtype.h g_state.h m_swap.h w_wad.h \
  z_zone.h i_video.h d_netfil.h md5.h
-	redir -o /_GCC/w_wad.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/w_wad.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/wi_stuff.o: wi_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  wi_stuff.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \
@@ -883,7 +873,7 @@ $(O)/wi_stuff.o: wi_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  screen.h m_random.h r_local.h m_bbox.h r_main.h r_data.h r_state.h \
  r_bsp.h r_segs.h r_plane.h r_sky.h r_things.h sounds.h r_draw.h \
  s_sound.h st_stuff.h i_video.h v_video.h z_zone.h
-	redir -o /_GCC/wi_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/wi_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/v_video.o: v_video.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  tables.h m_fixed.h screen.h command.h m_bbox.h r_main.h d_player.h \
@@ -891,13 +881,13 @@ $(O)/v_video.o: v_video.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h v_video.h hu_stuff.h d_event.h w_wad.h \
  wi_stuff.h i_video.h
-	redir -o /_GCC/v_video.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/v_video.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/st_lib.o: st_lib.c doomdef.h doomtype.h g_state.h m_swap.h st_lib.h \
  r_defs.h m_fixed.h d_think.h p_mobj.h tables.h doomdata.h info.h \
  screen.h command.h w_wad.h st_stuff.h d_event.h d_player.h d_items.h \
  p_pspr.h d_ticcmd.h v_video.h z_zone.h i_video.h
-	redir -o /_GCC/st_lib.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/st_lib.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/st_stuff.o: st_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  am_map.h d_event.h g_game.h doomstat.h doomdata.h d_player.h \
@@ -907,7 +897,7 @@ $(O)/st_stuff.o: st_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  r_segs.h r_plane.h r_sky.h r_things.h sounds.h r_draw.h p_local.h \
  p_tick.h p_maputl.h p_spec.h p_inter.h m_random.h st_stuff.h st_lib.h \
  w_wad.h i_video.h v_video.h keys.h z_zone.h
-	redir -o /_GCC/st_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/st_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/hu_stuff.o: hu_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  hu_stuff.h d_event.h w_wad.h wi_stuff.h d_player.h d_items.h p_pspr.h \
@@ -916,27 +906,27 @@ $(O)/hu_stuff.o: hu_stuff.c doomdef.h doomtype.h g_state.h m_swap.h \
  g_input.h keys.h i_video.h dstrings.h d_englsh.h st_stuff.h r_local.h \
  m_bbox.h r_main.h r_data.h r_state.h r_bsp.h r_segs.h r_plane.h \
  r_sky.h r_things.h sounds.h r_draw.h v_video.h z_zone.h
-	redir -o /_GCC/hu_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/hu_stuff.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/s_sound.o: s_sound.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  g_game.h doomstat.h doomdata.h d_player.h d_items.h p_pspr.h \
  m_fixed.h tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h \
  d_netcmd.h d_event.h m_argv.h r_main.h r_data.h r_defs.h screen.h \
  r_state.h r_things.h sounds.h i_sound.h s_sound.h w_wad.h z_zone.h
-	redir -o /_GCC/s_sound.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/s_sound.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/z_zone.o: z_zone.c doomdef.h doomtype.h g_state.h m_swap.h z_zone.h \
  i_system.h d_ticcmd.h d_event.h command.h
-	redir -o /_GCC/z_zone.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/z_zone.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/info.o: info.c doomdef.h doomtype.h g_state.h m_swap.h sounds.h \
  m_fixed.h p_mobj.h tables.h d_think.h doomdata.h info.h
-	redir -o /_GCC/info.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/info.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/sounds.o: sounds.c doomtype.h sounds.h r_defs.h m_fixed.h d_think.h \
  p_mobj.h tables.h doomdata.h doomdef.h g_state.h m_swap.h info.h \
  screen.h command.h r_things.h z_zone.h
-	redir -o /_GCC/sounds.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/sounds.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/tmap.o: tmap.nas
 	nasm -o $@ -f $(NASMFORMAT) $<
@@ -946,22 +936,22 @@ $(O)/p_fab.o: p_fab.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h \
  command.h d_event.h p_local.h m_bbox.h p_tick.h r_defs.h screen.h \
  p_maputl.h p_spec.h r_state.h r_data.h p_fab.h m_random.h
-	redir -o /_GCC/p_fab.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_fab.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/dehacked.o: dehacked.c doomdef.h doomtype.h g_state.h m_swap.h \
  command.h console.h d_event.h g_game.h doomstat.h doomdata.h \
  d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
  p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h sounds.h m_cheat.h \
  dstrings.h d_englsh.h m_argv.h
-	redir -o /_GCC/dehacked.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/dehacked.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/qmus2mid.o: qmus2mid.c doomdef.h doomtype.h g_state.h m_swap.h \
  i_system.h d_ticcmd.h d_event.h byteptr.h m_swap.h $(qmus2mid_h)
-	redir -o /_GCC/qmus2mid.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/qmus2mid.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/qmus2mid_sdl.o: qmus2mid_sdl.c doomdef.h doomtype.h g_state.h m_swap.h \
  i_system.h d_ticcmd.h d_event.h byteptr.h m_swap.h $(qmus2mid_h)
-	redir -o /_GCC/qmus2mid_sdl.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/qmus2mid_sdl.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/vid_copy.o: vid_copy.s
 	redir -o /_GCC/vid_copy.LOG -eo $(CC) $(OPTS) $(SFLAGS) -x assembler-with-cpp -c $< -o $@
@@ -974,13 +964,13 @@ $(O)/vid_vesa.o: $(INTERFACE)/vid_vesa.c i_system.h \
  p_pspr.h m_fixed.h tables.h \
  info.h d_think.h p_mobj.h \
  doomdata.h console.h i_video.h
-	redir -o /_GCC/vid_vesa.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/vid_vesa.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/g_input.o: g_input.c doomdef.h doomtype.h g_state.h m_swap.h g_input.h \
  d_event.h keys.h command.h hu_stuff.h w_wad.h wi_stuff.h d_player.h \
  d_items.h p_pspr.h m_fixed.h tables.h info.h d_think.h p_mobj.h \
  doomdata.h d_ticcmd.h r_defs.h screen.h d_net.h console.h
-	redir -o /_GCC/g_input.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/g_input.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/screen.o: screen.c doomdef.h doomtype.h g_state.h m_swap.h screen.h \
  command.h console.h d_event.h am_map.h i_system.h d_ticcmd.h \
@@ -989,7 +979,7 @@ $(O)/screen.o: screen.c doomdef.h doomtype.h g_state.h m_swap.h screen.h \
  r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h r_things.h \
  sounds.h r_draw.h m_argv.h v_video.h st_stuff.h hu_stuff.h w_wad.h \
  wi_stuff.h z_zone.h
-	redir -o /_GCC/screen.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/screen.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/console.o: console.c doomdef.h doomtype.h g_state.h m_swap.h console.h \
  d_event.h g_game.h doomstat.h doomdata.h d_player.h d_items.h \
@@ -997,13 +987,13 @@ $(O)/console.o: console.c doomdef.h doomtype.h g_state.h m_swap.h console.h \
  d_clisrv.h d_netcmd.h command.h g_input.h keys.h hu_stuff.h w_wad.h \
  wi_stuff.h r_defs.h screen.h sounds.h st_stuff.h s_sound.h v_video.h \
  i_video.h z_zone.h i_system.h
-	redir -o /_GCC/console.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/console.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/command.o: command.c doomdef.h doomtype.h g_state.h m_swap.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
  tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h \
  command.h console.h d_event.h z_zone.h m_misc.h w_wad.h
-	redir -o /_GCC/command.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/command.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_netcmd.o: d_netcmd.c doomdef.h doomtype.h g_state.h m_swap.h \
  console.h d_event.h command.h d_netcmd.h d_clisrv.h d_ticcmd.h \
@@ -1013,7 +1003,7 @@ $(O)/d_netcmd.o: d_netcmd.c doomdef.h doomtype.h g_state.h m_swap.h \
  keys.h m_menu.h r_local.h m_bbox.h r_main.h r_data.h r_state.h \
  r_bsp.h r_segs.h r_plane.h r_sky.h r_things.h sounds.h r_draw.h \
  p_inter.h p_setup.h s_sound.h m_misc.h am_map.h byteptr.h
-	redir -o /_GCC/d_netcmd.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_netcmd.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_clisrv.o: d_clisrv.c doomdef.h doomtype.h g_state.h m_swap.h \
  command.h i_net.h i_system.h d_ticcmd.h d_event.h d_net.h d_netcmd.h \
@@ -1021,65 +1011,65 @@ $(O)/d_clisrv.o: d_clisrv.c doomdef.h doomtype.h g_state.h m_swap.h \
  d_items.h p_pspr.h m_fixed.h tables.h info.h d_think.h p_mobj.h \
  hu_stuff.h wi_stuff.h r_defs.h screen.h keys.h m_argv.h m_menu.h \
  console.h d_netfil.h
-	redir -o /_GCC/d_clisrv.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_clisrv.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_splats.o: r_splats.c r_draw.h r_defs.h m_fixed.h doomtype.h \
  d_think.h p_mobj.h tables.h doomdata.h doomdef.h g_state.h m_swap.h \
  info.h screen.h command.h r_main.h d_player.h d_items.h p_pspr.h \
  d_ticcmd.h r_data.h r_state.h r_plane.h r_splats.h w_wad.h z_zone.h
-	redir -o /_GCC/r_splats.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/r_splats.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/g_state.o: g_state.c g_state.h doomtype.h
-	redir -o /_GCC/g_state.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/g_state.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/d_netfil.o: d_netfil.c doomdef.h doomtype.h g_state.h m_swap.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
  tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h \
  command.h g_game.h d_event.h i_net.h i_system.h m_argv.h d_net.h \
  d_netfil.h z_zone.h md5.h filesrch.h
-	redir -o /_GCC/d_netfil.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/d_netfil.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_func.o: t_func.c command.h doomstat.h doomtype.h d_main.h \
  g_game.h hu_stuff.h info.h m_random.h p_mobj.h p_tick.h \
  p_spec.h p_inter.h r_data.h r_main.h r_segs.h s_sound.h w_wad.h \
  z_zone.h t_parse.h t_spec.h t_script.h t_oper.h t_vari.h t_func.h
-	redir -o /_GCC/t_func.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_func.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_oper.o: t_oper.c command.h doomstat.h doomtype.h z_zone.h \
  t_parse.h t_vari.h
-	redir -o /_GCC/t_oper.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_oper.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_parse.o: t_parse.c command.h doomtype.h doomdef.h s_sound.h \
  w_wad.h z_zone.h t_parse.h t_spec.h t_script.h t_oper.h t_vari.h t_func.h
-	redir -o /_GCC/t_parse.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_parse.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_prepro.o: t_prepro.c command.h doomtype.h w_wad.h z_zone.h \
  t_parse.h t_spec.h t_script.h t_oper.h t_vari.h t_func.h
-	redir -o /_GCC/t_prepro.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_prepro.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_script.o: t_script.c command.h g_game.h r_state.h p_info.h \
  p_mobj.h p_spec.h p_setup.h w_wad.h z_zone.h t_parse.h t_script.h \
  t_vari.h t_func.h
-	redir -o /_GCC/t_script.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_script.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_spec.o: t_spec.c command.h doomtype.h z_zone.h \
  t_parse.h t_spec.h t_vari.h
-	redir -o /_GCC/t_spec.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/t_spec.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/i_main.o: $(INTERFACE)/i_main.c doomdef.h \
  doomtype.h g_state.h m_swap.h \
  m_argv.h d_main.h d_event.h \
  w_wad.h i_system.h d_ticcmd.h
-	redir -o /_GCC/i_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/i_main.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/md5.o: md5.c md5.h
-	redir -o /_GCC/md5.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/md5.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/p_chex.o: p_chex.c
-	redir -o /_GCC/p_chex.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/p_chex.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/filesrch.o: $(INTERFACE)/filesrch.c filesrch.h d_netfil.h
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/b_game.o: b_game.c b_bot.h b_game.h b_look.h \
  b_node.h doomdef.h doomstat.h m_random.h p_local.h \
@@ -1098,13 +1088,13 @@ $(O)/b_search.o: b_search.c g_game.h r_defs.h p_local.h \
  m_random.h r_main.h z_zone.h b_search.h b_node.h
 
 $(O)/%.o: %.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/%.o: $(INTERFACE)/%.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/%.o: hardware/%.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(WFLAGS) -c $< -o $@
+	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 #############################################################
 #

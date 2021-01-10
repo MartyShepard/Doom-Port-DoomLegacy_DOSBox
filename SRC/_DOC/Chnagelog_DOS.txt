@@ -1,0 +1,7 @@
+* Wurde nicht neu Kompiliert
+
+
+[00541*] : docs updated to utf-8
+[00540 ] : removed unnecessary chex quest and heretic headers, added license to p_chex.c
+[00539*] : Changelog added
+[00538 ] : svn:keywords properties, versioning system updated, update version to 144

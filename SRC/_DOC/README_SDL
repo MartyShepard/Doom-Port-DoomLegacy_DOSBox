@@ -17,7 +17,7 @@ Known bugs:
 You will need SDL-1.2 minimum, SDL_Mixer-1.2 and the timidity
 patches.
 
-If you don´t have SDL installed on your system you can use the
+If you don't have SDL installed on your system you can use the
 SDL libraries that come with Legacy. Just go to the appropriate
 directory and type "run-lsdldoom.sh". As SDL is built to ones
 system configuration I can not guarantee that these libraries
