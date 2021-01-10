@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_cheat.c 552 2009-11-11 01:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -268,7 +268,7 @@ boolean cht_Responder(event_t * ev)
                 //plyr->message = STSTR_DQDOFF;
                 msg = STSTR_DQDOFF;
         }
-        // 'fa' cheat for killer fucking arsenal
+        // 'fa' cheat for killer full arsenal
         else if (cht_CheckCheat(&cheat_ammonokey, ev->data1))
         {
             plyr->armorpoints = idfa_armor;

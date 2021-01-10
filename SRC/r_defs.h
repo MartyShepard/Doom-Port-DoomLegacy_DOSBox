@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_defs.h 552 2009-11-11 01:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -222,8 +222,8 @@ typedef struct
 
 } degenmobj_t;
 
-//SoM: 3/23/2000: Store fake planes in a resizalbe array insted of just by
-//heightsec. Allows for multiple fake planes.
+//SoM: 3/23/2000: Store fake planes in a resizable array instead of just by
+//heightsec field. Allows for multiple fake planes.
 typedef enum
 {
   FF_EXISTS            = 0x1,    //MAKE SURE IT'S VALID

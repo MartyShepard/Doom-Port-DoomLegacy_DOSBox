@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_segs.c 552 2009-11-11 01:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -488,19 +488,19 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     //faB: hack translucent linedef types (201-205 for transtables 1-5)
     //SoM: 201-205 are taken... So I'm switching to 284 - 288
     ldef = curline->linedef;
-    if (ldef->special>=284 && ldef->special<=288)
+    if (ldef->special>=284 && ldef->special<=288)  // Legacy translucents
     {
         dc_transmap = ((ldef->special-284)<<FF_TRANSSHIFT) + transtables;
         colfunc = fuzzcolfunc;
     }
     else
-    if (ldef->special==260)
+    if (ldef->special==260)	// Boom make translucent
     {
         dc_transmap = transtables; // get first transtable 50/50
         colfunc = fuzzcolfunc;
     }
     else
-    if (ldef->special==283)
+    if (ldef->special==283)	// Legacy Fog sheet
     {
         colfunc = R_DrawFogColumn_8;
         windowtop = frontsector->ceilingheight;
@@ -1707,17 +1707,17 @@ void R_StoreWallRange( int   start, int   stop)
         {
           extern int doorclosed;    // killough 1/17/98, 2/8/98, 4/7/98
           if (doorclosed || backsector->ceilingheight<=frontsector->floorheight)
-            {
+          {
               ds_p->sprbottomclip = negonearray;
               ds_p->bsilheight = MAXINT;
               ds_p->silhouette |= SIL_BOTTOM;
-            }
+          }
           if (doorclosed || backsector->floorheight>=frontsector->ceilingheight)
-            {                   // killough 1/17/98, 2/8/98
+          {                   // killough 1/17/98, 2/8/98
               ds_p->sprtopclip = screenheightarray;
               ds_p->tsilheight = MININT;
               ds_p->silhouette |= SIL_TOP;
-            }
+          }
         }
 
         worldhigh = backsector->ceilingheight - viewz;

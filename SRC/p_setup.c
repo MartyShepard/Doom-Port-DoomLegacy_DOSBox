@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_setup.c 552 2009-11-11 01:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -892,22 +892,24 @@ void P_LoadSideDefs2(int lump)
       sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
       sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
 
-      // refined to allow colormaps to work as wall
-      // textures if invalid as colormaps but valid as textures.
+      // refined to allow colormaps to work as wall textures
+      // if invalid as colormaps, but valid as textures.
 
       sd->sector = sec = &sectors[SHORT(msd->sector)];
+      // original linedef types are 1..141, higher values are extensions
       switch (sd->special)
         {
-        case 242:                       // variable colormap via 242 linedef
-        case 280:                       //SoM: 3/22/2000: New water type.
+        case 242:	// Boom deep water, sidedef1 texture is colormap
+        case 280:       //SoM: 3/22/2000: Legacy water type.
 #ifdef HWRENDER
           if(rendermode == render_soft)
           {
 #endif
             num = R_CheckTextureNumForName(msd->toptexture);
 
-            if(num == -1)
+            if(num == -1)	// if not texture
             {
+	      // must be colormap
               sec->topmap = mapnum = R_ColormapNumForName(msd->toptexture);
               sd->toptexture = 0;
             }
@@ -931,7 +933,6 @@ void P_LoadSideDefs2(int lump)
             }
             else
               sd->bottomtexture = num;
-            break;
 #ifdef HWRENDER
           }
           else
@@ -950,9 +951,8 @@ void P_LoadSideDefs2(int lump)
               sd->bottomtexture = 0;
             else
               sd->bottomtexture = num;
-
-            break;
           }
+	  break;   // [WDJ]  no fall through
 #endif
         case 282:                       //SoM: 4/4/2000: Just colormap transfer
 
@@ -964,6 +964,7 @@ void P_LoadSideDefs2(int lump)
 #endif
             if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
             {
+ 	      // generate colormap from sidedef1 texture text strings
               sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture);
               sd->toptexture = sd->bottomtexture = 0;
             }
@@ -1022,11 +1023,14 @@ void P_LoadSideDefs2(int lump)
                 else
                   sd->bottomtexture = num;
             }
-            break;
           }
 #endif
+	  break;  // [WDJ]  no fall through
+	   	  // case 282, if(render_soft), was falling through,
+	          // but as 260 has same tests, the damage was benign
+	   
 
-        case 260:
+        case 260:	// Boom transparency
           num = R_CheckTextureNumForName(msd->midtexture);
           if(num == -1)
             sd->midtexture = 1;
@@ -1058,10 +1062,11 @@ void P_LoadSideDefs2(int lump)
 
 
        //Hurdler: added for alpha value with translucent 3D-floors/water
-        case 300:
-        case 301:
+        case 300:	// Legacy solid translucent 3D floor in tagged
+        case 301:	// Legacy translucent 3D water in tagged
             if(msd->toptexture[0] == '#')
             {
+	        // interpret texture name string as decimal number
                 char *col = msd->toptexture;
                 sd->toptexture = sd->bottomtexture = ((col[1]-'0')*100+(col[2]-'0')*10+col[3]-'0')+1;
             }
