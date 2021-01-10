@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_system.h 545 2009-09-28 00:45:16Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -120,7 +120,7 @@ ticcmd_t* I_BaseTiccmd (void);
 // Called by M_Responder when quit is selected, return code 0.
 void I_Quit (void);
 
-void I_Error (char *error, ...);
+void I_Error (const char *error, ...);
 
 // Allocates from low memory under dos,
 // just mallocs under unix

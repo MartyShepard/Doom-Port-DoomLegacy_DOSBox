@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 544 2009-09-27 23:20:31Z smite-meister $
+// $Id: doomdef.h 545 2009-09-28 00:45:16Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -287,10 +287,10 @@ extern byte     demoversion;
 // commonly used routines - moved here for include convenience
 
 // i_system.h
-void I_Error (char *error, ...);
+void I_Error (const char *error, ...);
 
 // console.h
-void    CONS_Printf (char *fmt, ...);
+void    CONS_Printf (const char *fmt, ...);
 
 #include "m_swap.h"
 

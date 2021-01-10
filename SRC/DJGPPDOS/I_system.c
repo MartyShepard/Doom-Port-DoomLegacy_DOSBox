@@ -280,8 +280,8 @@ void I_OutputMsg (char *error, ...)
 int errorcount=0; // fuck recursive errors
 int shutdowning=false;
 
-//added 31-12-97 : display error messy after shutdowngfx
-void I_Error (char *error, ...)
+//added 31-12-97 : display error messy after shutdowngfx/ Marty: Type Fixed
+void I_Error (const char *error, ...)
 {
     va_list     argptr;
     // added 11-2-98 recursive error detecting

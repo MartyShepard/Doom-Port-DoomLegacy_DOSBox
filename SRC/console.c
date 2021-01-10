@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: console.c 545 2009-09-28 00:45:16Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1018,7 +1018,7 @@ void CON_Print (char *msg)
 
 //  Console print! Wahooo! Lots o fun!
 //
-void CONS_Printf (char *fmt, ...)
+void CONS_Printf (const char *fmt, ...)
 {
     va_list     argptr;
     char        txt[512];
