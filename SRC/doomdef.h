@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 543 2009-09-27 23:12:40Z smite-meister $
+// $Id: doomdef.h 544 2009-09-27 23:20:31Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -236,6 +236,17 @@ extern int logstream;
 //#define OLDWATER                // SoM: Allow old legacy water.
 #define FRAGGLESCRIPT           // SoM: Activate FraggleScript
 #define FIXROVERBUGS // Fix some 3dfloor bugs. SSNTails 06-13-2002
+
+// [WDJ] Heretic has missing sprites, SOFTERROR is needed to continue play
+// instead of fatal error message.
+#define SOFTERROR
+
+#ifdef SOFTERROR
+void I_SoftError (char *error, ...);
+#else
+#define I_SoftError   I_Error
+#endif
+
 
 // =========================================================================
 

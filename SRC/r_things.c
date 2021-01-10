@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_things.c 544 2009-09-27 23:20:31Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -432,8 +432,15 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
         {
           case -1:
             // no rotations were found for that frame at all
+#ifdef DEBUG_CHEXQUEST
+	    // [WDJ] 4/28/2009 Chexquest
+	    // [WDJ] not fatal, some wads have broken sprite but still play
+            fprintf( stderr, "R_InitSprites: No patches found "
+                     "for %s frame %c \n", sprname, frame+'A');
+#else
             I_Error ("R_InitSprites: No patches found "
                      "for %s frame %c", sprname, frame+'A');
+#endif
             break;
 
           case 0:
@@ -767,8 +774,11 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     {
         texturecolumn = frac>>FRACBITS;
 #ifdef RANGECHECK
-        if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
-            I_Error ("R_DrawSpriteRange: bad texturecolumn");
+        if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width)) {
+	    // [WDJ] Give msg and don't draw it
+            I_SoftError ("R_DrawSpriteRange: bad texturecolumn");
+            return;
+	}
 #endif
         column = (column_t *) ((byte *)patch +
                                LONG(patch->columnofs[texturecolumn]));
@@ -940,9 +950,12 @@ static void R_ProjectSprite (mobj_t* thing)
 
     // decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
-    if ((unsigned)thing->sprite >= numsprites)
-        I_Error ("R_ProjectSprite: invalid sprite number %i ",
+    if ((unsigned)thing->sprite >= numsprites) {
+        // [WDJ] Give msg and don't draw it
+        I_SoftError ("R_ProjectSprite: invalid sprite number %i ",
                  thing->sprite);
+        return;
+    }
 #endif
 
     //Fab:02-08-98: 'skin' override spritedef currently used for skin
@@ -952,16 +965,22 @@ static void R_ProjectSprite (mobj_t* thing)
         sprdef = &sprites[thing->sprite];
 
 #ifdef RANGECHECK
-    if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes )
-        I_Error ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
+    if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes ) {
+        // [WDJ] Give msg and don't draw it
+        I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
                  thing->sprite, thing->frame, sprnames[thing->sprite]);
+        return;
+    }
 #endif
     sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
 
 #ifdef PARANOIA
     //heretic hack
-    if( !sprframe )
-        I_Error("sprframes NULL for sprite %d\n", thing->sprite);
+    if( !sprframe ) {
+        // [WDJ] Give msg and don't draw it
+        I_SoftError("sprframes NULL for sprite %d\n", thing->sprite);
+        return;
+    }
 #endif
 
     if (sprframe->rotate)
@@ -1207,22 +1226,31 @@ void R_DrawPSprite (pspdef_t* psp)
 
     // decide which patch to use
 #ifdef RANGECHECK
-    if ( (unsigned)psp->state->sprite >= numsprites)
-        I_Error ("R_ProjectSprite: invalid sprite number %i ",
+    if ( (unsigned)psp->state->sprite >= numsprites) {
+        // [WDJ] Give msg and don't draw it, (** Heretic **)
+        I_SoftError ("R_ProjectSprite: invalid sprite number %i ",
                  psp->state->sprite);
+        return;
+    }
 #endif
     sprdef = &sprites[psp->state->sprite];
 #ifdef RANGECHECK
-    if ( (psp->state->frame & FF_FRAMEMASK)  >= sprdef->numframes)
-        I_Error ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
+    if ( (psp->state->frame & FF_FRAMEMASK)  >= sprdef->numframes) {
+        // [WDJ] Give msg and don't draw it
+        I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
                  psp->state->sprite, psp->state->frame, sprnames[psp->state->sprite]);
+        return;
+    }
 #endif
     sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
 
 #ifdef PARANOIA
     //Fab:debug
-    if (sprframe==NULL)
-        I_Error("sprframes NULL for state %d\n", psp->state - states);
+    if (sprframe==NULL) {
+        // [WDJ] Give msg and don't draw it
+        I_SoftError("sprframes NULL for state %d\n", psp->state - states);
+        return;
+    }
 #endif
 
     //Fab: see the notes in R_ProjectSprite about lumpid,lumppat
@@ -1964,7 +1992,7 @@ void R_DrawMasked (void)
 
 int         numskins=0;
 skin_t      skins[MAXSKINS+1];
-// don't work because it must be inistilised before the config load
+// don't work because it must be initialized before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
 CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
@@ -2216,7 +2244,7 @@ next_token:
             token = strtok (NULL,"\r\n= ");
         }
 
-        // if no sprite defined use spirte juste after this one
+        // if no sprite defined use sprite just after this one
         if( !sprname )
         {
             lumpnum &= 0xFFFF;      // get rid of wad number
