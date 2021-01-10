@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 548 2009-10-26 05:53:42Z smite-meister $
+// $Id: g_game.c 553 2009-11-11 01:47:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2172,6 +2172,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     // draw the pattern into the back screen
     R_FillBackScreen ();
+	ST_Drawer( 1 );	// [WDJ] refresh status background without global flags
 }
 
 
