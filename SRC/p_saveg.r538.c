@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 557 2009-11-14 19:45:32Z smite-meister $
+// $Id: p_saveg.c 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -133,9 +133,6 @@ byte *save_p;
 #else
 #define PADSAVEP()
 #endif
-
-
-#define writelong(p,b) *(int32_t *)(p) = LE_LONG(b) // do not increment pointer
 
 
 int num_thinkers;       // number of thinkers in level being archived
@@ -1003,7 +1000,7 @@ void P_ArchiveThinkers(void)
                     ceiling = (ceiling_t *) save_p;
                     memcpy(save_p, th, sizeof(*ceiling));
                     save_p += sizeof(*ceiling);
-                    writelong(&ceiling->sector,((ceiling_t *) th)->sector - sectors);
+                    writelong(&ceiling->sector, ((ceiling_t *) th)->sector - sectors);
                 }
 
             continue;
@@ -2143,7 +2140,7 @@ void P_UnArchiveScripts()
 
 
 // get the mobj number from the mobj
-static int P_MobjNum(mobj_t *mo)
+int P_MobjNum(mobj_t *mo)
 {
   long l = mo ? (long)mo->thinker.prev : -1;   // -1 = NULL
  
@@ -2152,7 +2149,7 @@ static int P_MobjNum(mobj_t *mo)
   return l;
 }
 
-static mobj_t *P_MobjForNum(int n)
+mobj_t *P_MobjForNum(int n)
 {
   return (n == -1) ? (NULL) : (mobj_p[n]);
 }

@@ -1,6 +1,8 @@
 * Not need to Compile.
 
-
+[00557 ]: Two big oopses in the endianness handling fixed.
+		* DOS, byteptr.h and m_swap.h can now bild with gcc381
+		
 [00556 ]: Legacy One implicitly assumes that 
 		  sizeof(pointer) == sizeof(long) == sizeof(int) == 4, 
 		  which spells disaster in 64-bit systems. One fix down, many to go :(
@@ -14,15 +16,15 @@
 [00549 ]: WDJ NetUpdate time wrap patch
 [00548 ]: WDJ Heretic patch
 [00547 ]: small bugfixes, first gamma handling upgrade
-		 * DOS need -lm in the makefile do round() in v_video.c
+		* DOS need -lm in the makefile do round() in v_video.c
 		 
 [00546 ]: WDJ doordelay patch
 [00545 ]: some const rigor
-	      * DOS i_system.c, conflict fix ( void I_Error (char *error, ...) )
+	    * DOS i_system.c, conflict fix ( void I_Error (char *error, ...) )
 		  
 [00544 ]: WDJ softerror patch
 [00543 ]: Now compiles with GCC 4.3
-		  *DOS 
+		* DOS 
 		  (Compile with Gnu C Compiler gcc3.81b.zip and use not new Header Files.
 		  Gnu C Compiler gcc4.32b.zip doesn't work and brings a Crash on entering
 		  a new Level. With byteptr.h and m_swap.h) 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: byteptr.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: byteptr.h 557 2009-11-14 19:45:32Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -32,109 +32,61 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __BIG_ENDIAN__
-//
-// Little-endian machines
-//
-#define writeshort(p,b)     *(short*)  (p)   = b
-#define writelong(p,b)      *(long *)  (p)   = b
-#define WRITEBYTE(p,b)      *((byte   *)p)++ = b
-#define WRITECHAR(p,b)      *((char   *)p)++ = b
-#define WRITESHORT(p,b)     *((short  *)p)++ = b
-#define WRITEUSHORT(p,b)    *((USHORT *)p)++ = b
-#define WRITELONG(p,b)      *((long   *)p)++ = b
-#define WRITEULONG(p,b)     *((ULONG  *)p)++ = b
-#define WRITEFIXED(p,b)     *((fixed_t*)p)++ = b
-#define WRITEANGLE(p,b)     *((angle_t*)p)++ = b
-#define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); } while(b[tmp_i++]); }
-#define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); if(!b[tmp_i]) break;tmp_i++; } while(tmp_i<n); }
-#define WRITEMEM(p,s,n)     memcpy(p, s, n);p+=n
+#include "m_swap.h"
 
-#define readshort(p)	    *((short  *)p)
-#define readlong(p)	    *((long   *)p)
-#define READBYTE(p)         *((byte   *)p)++
-#define READCHAR(p)         *((char   *)p)++
-#define READSHORT(p)        *((short  *)p)++
-#define READUSHORT(p)       *((USHORT *)p)++
-#define READLONG(p)         *((long   *)p)++
-#define READULONG(p)        *((ULONG  *)p)++
-#define READFIXED(p)        *((fixed_t*)p)++
-#define READANGLE(p)        *((angle_t*)p)++
-#define READSTRING(p,s)     { int tmp_i=0; do { s[tmp_i]=READBYTE(p);  } while(s[tmp_i++]); }
+
+// TODO FIXME the reliance on specific sizes for longs, shorts etc in this file is like asking for horrible bugs
+
+
+static inline int16_t read_16(byte **p)
+{
+  int16_t temp = *(int16_t *)*p;
+  *p += sizeof(int16_t);
+  return LE_SHORT(temp);
+}
+
+static inline int32_t read_32(byte **p)
+{
+  int32_t temp = *(int32_t *)*p;
+  *p += sizeof(int32_t);
+  return LE_LONG(temp);
+}
+
+
+static inline void write_16(byte **p, int16_t val)
+{
+  *(int16_t *)*p = LE_SHORT(val);
+  *p += sizeof(int16_t);
+}
+
+static inline void write_32(byte **p, int32_t val)
+{
+  *(int32_t *)*p = LE_LONG(val);
+  *p += sizeof(int32_t);
+}
+
+
+#define WRITEBYTE(p,b)      *(p)++ = (b)
+#define WRITECHAR(p,b)      *(p)++ = (byte)(b)
+#define WRITESHORT(p,b)     write_16(&p, b)
+#define WRITEUSHORT(p,b)    write_16(&p, b)
+#define WRITELONG(p,b)      write_32(&p, b)
+#define WRITEULONG(p,b)     write_32(&p, b)
+#define WRITEFIXED(p,b)     write_32(&p, b)
+#define WRITEANGLE(p,b)     write_32(&p, b)
+#define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); } while ((b)[tmp_i++]); }
+#define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); if (!(b)[tmp_i]) break; tmp_i++; } while (tmp_i<(n)); }
+#define WRITEMEM(p,s,n)     memcpy((p),(s),(n)); (p)+=(n)
+
+
+#define READBYTE(p)         *(p)++
+#define READCHAR(p)         (char)*(p)++
+#define READSHORT(p)          (short)read_16(&p)
+#define READUSHORT(p)        (USHORT)read_16(&p)
+#define READLONG(p)            (long)read_32(&p)
+#define READULONG(p)          (ULONG)read_32(&p)
+#define READFIXED(p)        (fixed_t)read_32(&p)
+#define READANGLE(p)        (angle_t)read_32(&p)
+#define READSTRING(p,s)     { int tmp_i=0; do { (s)[tmp_i] = READBYTE(p); } while ((s)[tmp_i++]); }
 #define SKIPSTRING(p)       while(READBYTE(p))
 #define READMEM(p,s,n)      memcpy(s, p, n);p+=n
-#else 
-//
-// definitions for big-endian machines with alignment constraints.
-//
-// Write a value to a little-endian, unaligned destination.
-//
-static inline void writeshort(void * ptr, int val)
-{
-  char * cp = ptr;
-  cp[0] = val ;  val >>= 8;
-  cp[1] = val ;
-}
-
-static inline void writelong(void * ptr, int val)
-{
-  char * cp = ptr;
-  cp[0] = val ;  val >>= 8;
-  cp[1] = val ;  val >>= 8;
-  cp[2] = val ;  val >>= 8;
-  cp[3] = val ;
-}
-
-#define WRITEBYTE(p,b)      *((byte   *)p)++ = (b)
-#define WRITECHAR(p,b)      *((char   *)p)++ = (b)
-#define WRITESHORT(p,b)     writeshort(((short *)p)++,  (b))
-#define WRITEUSHORT(p,b)    writeshort(((u_short*)p)++, (b))
-#define WRITELONG(p,b)      writelong (((long  *)p)++,  (b))
-#define WRITEULONG(p,b)     writelong (((u_long *)p)++, (b))
-#define WRITEFIXED(p,b)     writelong (((fixed_t*)p)++,  (b))
-#define WRITEANGLE(p,b)     writelong (((angle_t*)p)++, (long) (b))
-#define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); } while(b[tmp_i++]); }
-#define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); if(!b[tmp_i]) break;tmp_i++; } while(tmp_i<n); }
-#define WRITEMEM(p,s,n)     memcpy(p, s, n);p+=n
-
-// Read a signed quantity from little-endian, unaligned data.
-// 
-static inline short readshort(void * ptr)
-{
-  char   *cp  = ptr;
-  u_char *ucp = ptr;
-  return (cp[1] << 8)  |  ucp[0] ;
-}
-
-static inline u_short readushort(void * ptr)
-{
-  u_char *ucp = ptr;
-  return (ucp[1] << 8) |  ucp[0] ;
-}
-
-static inline long readlong(void * ptr)
-{
-  char   *cp  = ptr;
-  u_char *ucp = ptr;
-  return (cp[3] << 24) | (ucp[2] << 16) | (ucp[1] << 8) | ucp[0] ;
-}
-
-static inline u_long readulong(void * ptr)
-{
-  u_char *ucp = ptr;
-  return (ucp[3] << 24) | (ucp[2] << 16) | (ucp[1] << 8) | ucp[0] ;
-}
-
-
-#define READBYTE(p)         *((byte   *)p)++
-#define READCHAR(p)         *((char   *)p)++
-#define READSHORT(p)        readshort ( ((short*) p)++)
-#define READUSHORT(p)       readushort(((USHORT*) p)++)
-#define READLONG(p)         readlong  (  ((long*) p)++)
-#define READULONG(p)        readulong ( ((ULONG*) p)++)
-#define READFIXED(p)        readlong  (  ((long*) p)++)
-#define READANGLE(p)        readulong ( ((ULONG*) p)++)
-#define READSTRING(p,s)     { int tmp_i=0; do { s[tmp_i]=READBYTE(p);  } while(s[tmp_i++]); }
-#define SKIPSTRING(p)       while(READBYTE(p))
-#define READMEM(p,s,n)      memcpy(s, p, n);p+=n
-#endif //__BIG_ENDIAN__

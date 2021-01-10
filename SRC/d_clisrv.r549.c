@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 557 2009-11-14 19:45:32Z smite-meister $
+// $Id: d_clisrv.c 549 2009-10-26 06:04:08Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -361,7 +361,6 @@ void SendNetXCmd2(byte id,void *param,int nparam)
    }
 }
 
-
 static void D_Clearticcmd(int tic)
 {
     int i;
@@ -400,7 +399,7 @@ static void ExtraDataTicker(void)
                     DEBFILE("done\n");
                 }
                 else
-	        {
+				{
 #if 1
 		   // [WDJ] Why should a bad demo command byte be fatal.
                     I_SoftError("Got unknown net/demo command [%d]=%d (max %d)\n"
@@ -414,11 +413,10 @@ static void ExtraDataTicker(void)
                            ,curpos-(byte *)&(textcmds[tic][i])
                            ,*curpos,textcmds[tic][i][0]);
 #endif		   
-		}
+				}
             }
         }
 }
-
 
 // -----------------------------------------------------------------
 //  end of extra data function
@@ -1570,13 +1568,13 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
     for (i = 0; i < n; src++, dst++, i++)
     {
 #ifdef CLIENTPREDICTION2
-	dst->x = LE_LONG(src->x);
-	dst->y = LE_LONG(src->y);
+	dst->x = readlong(&src->x);
+	dst->y = readlong(&src->y);
 #endif
 	dst->forwardmove = src->forwardmove;
 	dst->sidemove    = src->sidemove;
-	dst->angleturn   = LE_SHORT(src->angleturn);
-	dst->aiming      = LE_SHORT(src->aiming);
+	dst->angleturn   = readshort(&src->angleturn);
+	dst->aiming      = readshort(&src->aiming);
 	dst->buttons     = src->buttons;
     }
 }

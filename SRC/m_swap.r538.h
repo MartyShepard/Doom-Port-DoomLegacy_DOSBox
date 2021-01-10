@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 543 2009-09-27 23:12:40Z smite-meister $
+// $Id: m_swap.h 538 2009-09-23 23:24:07Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2009 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,36 +43,14 @@
 #ifndef __M_SWAP__
 #define __M_SWAP__
 
-#include <stdint.h>
 
-// WAD files are always little-endian.
-// Other files, such as MIDI files, are always big-endian.
-
-#define SWAP_INT16(x) ((int16_t)( \
-(((uint16_t)(x) & (uint16_t)0x00ffU) << 8) | \
-(((uint16_t)(x) & (uint16_t)0xff00U) >> 8) ))
-
-#define SWAP_INT32(x) ((int32_t)( \
-(((uint32_t)(x) & (uint32_t)0x000000ffUL) << 24) | \
-(((uint32_t)(x) & (uint32_t)0x0000ff00UL) <<  8) | \
-(((uint32_t)(x) & (uint32_t)0x00ff0000UL) >>  8) | \
-(((uint32_t)(x) & (uint32_t)0xff000000UL) >> 24) ))
-
-#ifdef __BIG_ENDIAN__
-# define LE_SHORT(x) SWAP_INT16(x)
-# define LE_LONG(x)  SWAP_INT32(x)
-# define BE_SHORT(x) (x)
-# define BE_LONG(x)  (x)
-#else // little-endian
-# define LE_SHORT(x) (x)
-# define LE_LONG(x)  (x)
-# define BE_SHORT(x) SWAP_INT16(x)
-# define BE_LONG(x)  SWAP_INT32(x)
+#ifdef __GNUG__
+#pragma interface
 #endif
 
-// TODO FIXME convert all endianness handling to use the code above, remove code below.
 
-
+// Endianess handling.
+// WAD files are stored little endian.
 #ifdef __BIG_ENDIAN__
 
 #define SHORT(x) ((short)( \
