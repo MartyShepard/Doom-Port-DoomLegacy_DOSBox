@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_data.h 556 2009-11-14 17:25:28Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -86,7 +86,7 @@ typedef struct
     boolean             masked;
     short               width;
     short               height;
-    void                **columndirectory;      // OBSOLETE
+    char                columndirectory[4]; //void **columndirectory; // OBSOLETE 
     short               patchcount;
     mappatch_t  patches[1];
 } maptexture_t;

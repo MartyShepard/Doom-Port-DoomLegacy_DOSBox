@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+
+[00556 ]: Legacy One implicitly assumes that 
+		  sizeof(pointer) == sizeof(long) == sizeof(int) == 4, 
+		  which spells disaster in 64-bit systems. One fix down, many to go :(
+		  
 [00555 ]: misplaced break in last patch
 [00554 ]: WDJ Draw/Patch combination functions
 [00553 ]: Fix bad status background after save game
