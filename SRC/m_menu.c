@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: m_menu.c 554 2009-11-11 01:56:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -443,8 +443,10 @@ void M_DrawGenericMenu(void)
                else 
                if( currentMenu->menuitems[i].patch &&
                    currentMenu->menuitems[i].patch[0] )
-                   V_DrawScaledPatch (x,y,0,
-                                      W_CachePatchName(currentMenu->menuitems[i].patch ,PU_CACHE));
+	       {
+                   V_DrawScaledPatch_Name (x,y,0,
+					   currentMenu->menuitems[i].patch );
+	       }
            case IT_NOTHING:
            case IT_DYBIGSPACE:
                y += LINEHEIGHT;
@@ -511,9 +513,10 @@ void M_DrawGenericMenu(void)
                else 
                if( currentMenu->menuitems[i].patch &&
                    currentMenu->menuitems[i].patch[0] )
-                   V_DrawMappedPatch (x,y,0,
-                                      W_CachePatchName(currentMenu->menuitems[i].patch ,PU_CACHE),
-                                      graymap);
+	       {
+                   V_DrawMappedPatch_Name (x,y,0,
+                                      currentMenu->menuitems[i].patch, graymap );
+	       }
                y += LINEHEIGHT;
                break;
 
@@ -524,10 +527,10 @@ void M_DrawGenericMenu(void)
     if (((currentMenu->menuitems[itemOn].status & IT_DISPLAY)==IT_PATCH)
       ||((currentMenu->menuitems[itemOn].status & IT_DISPLAY)==IT_NOTHING) )
     {
-        V_DrawScaledPatch(currentMenu->x + SKULLXOFF,
+        V_DrawScaledPatch_Name(currentMenu->x + SKULLXOFF,
                           cursory-5,
                           0,
-                          W_CachePatchName(skullName[whichSkull],PU_CACHE) );
+                          skullName[whichSkull] );
     }
     else
     if (skullAnimCounter<4 * NEWTICRATERATIO)  //blink cursor
@@ -568,8 +571,8 @@ void HereticMainMenuDrawer(void)
 {
     int frame = (I_GetTime()/3)%18;
 
-    V_DrawScaledPatch(40, 10, 0, W_CachePatchNum(SkullBaseLump+(17-frame), PU_CACHE));
-    V_DrawScaledPatch(232, 10, 0, W_CachePatchNum(SkullBaseLump+frame, PU_CACHE));
+    V_DrawScaledPatch_Num(40, 10, 0, SkullBaseLump+(17-frame) );
+    V_DrawScaledPatch_Num(232, 10, 0, SkullBaseLump+frame );
     M_DrawGenericMenu();
 }
 
@@ -1083,6 +1086,7 @@ void M_DrawSetupMultiPlayerMenu(void)
     sprdef    = &skins[R_SkinAvailable(setupm_cvskin->string)].spritedef;
     sprframe  = &sprdef->spriteframes[ multi_state->frame & FF_FRAMEMASK];
     lump  = sprframe->lumppat[0];
+    // temp usage of sprite lump, until end of function
     patch = W_CachePatchNum (lump, PU_CACHE);
 
     // draw box around guy
@@ -1318,7 +1322,7 @@ void M_DrawNewGame(void)
     p = W_CachePatchName("M_SKILL",PU_CACHE);
     V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,38,0,p);
 
-    //    V_DrawScaledPatch (54,38,0,W_CachePatchName("M_SKILL",PU_CACHE));
+    //    V_DrawScaledPatch_Name (54,38,0, "M_SKILL" );
     M_DrawGenericMenu();
 }
 
@@ -1417,19 +1421,16 @@ void M_DrawSlider (int x, int y, int range)
     if (range > 100)
         range = 100;
 
-    V_DrawScaledPatch (x-8, y, 0, W_CachePatchName( "M_SLIDEL" ,PU_CACHE) );
+    V_DrawScaledPatch_Name (x-8, y, 0, "M_SLIDEL" );
 
     for (i=0 ; i<SLIDER_RANGE ; i++)
-        V_DrawScaledPatch (x+i*8, y, 0,
-                           W_CachePatchName( "M_SLIDEM" ,PU_CACHE) );
+        V_DrawScaledPatch_Name (x+i*8, y, 0, "M_SLIDEM" );
 
-    V_DrawScaledPatch (x+SLIDER_RANGE*8, y, 0,
-                       W_CachePatchName( "M_SLIDER" ,PU_CACHE) );
+    V_DrawScaledPatch_Name (x+SLIDER_RANGE*8, y, 0, "M_SLIDER" );
 
     // draw the slider cursor
-    V_DrawMappedPatch (x + ((SLIDER_RANGE-1)*8*range)/100, y, 0,
-                       W_CachePatchName( "M_SLIDEC" ,PU_CACHE),
-                       whitemap);
+    V_DrawMappedPatch_Name (x + ((SLIDER_RANGE-1)*8*range)/100, y, 0,
+                       "M_SLIDEC", whitemap );
 }
 
 //===========================================================================
@@ -1521,7 +1522,7 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
 #ifdef DOORDELAY_CONTROL
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
-#endif	
+#endif
     {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,110}
 };
 
@@ -1655,12 +1656,12 @@ void M_DrawReadThis1(void)
     switch ( gamemode )
     {
       case commercial:
-        V_DrawScaledPatch (0,0,0,W_CachePatchName("HELP",PU_CACHE));
+        V_DrawScaledPatch_Name (0,0,0,"HELP");
         break;
       case shareware:
       case registered:
       case retail:
-        V_DrawScaledPatch (0,0,0,W_CachePatchName("HELP1",PU_CACHE));
+        V_DrawScaledPatch_Name (0,0,0,"HELP1");
         break;
       case heretic:
         V_DrawRawScreen(0,0,W_GetNumForName("HELP1"), 320, 200);
@@ -1709,11 +1710,11 @@ void M_DrawReadThis2(void)
       case retail:
       case commercial:
         // This hack keeps us from having to change menus.
-        V_DrawScaledPatch (0,0,0,W_CachePatchName("CREDIT",PU_CACHE));
+        V_DrawScaledPatch_Name (0,0,0,"CREDIT");
         break;
       case shareware:
       case registered:
-        V_DrawScaledPatch (0,0,0,W_CachePatchName("HELP2",PU_CACHE));
+        V_DrawScaledPatch_Name (0,0,0,"HELP2");
         break;
       case heretic :
         V_DrawRawScreen(0,0,W_GetNumForName("HELP2"), 320, 200);
@@ -2407,18 +2408,18 @@ void M_DrawSaveLoadBorder(int x,int y)
     int             i;
 
     if( gamemode == heretic )
-        V_DrawScaledPatch(x-8, y-4, 0, W_CachePatchName("M_FSLOT", PU_CACHE));
+        V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
     else
     {
-        V_DrawScaledPatch (x-8,y+7,0,W_CachePatchName("M_LSLEFT",PU_CACHE));
+        V_DrawScaledPatch_Name (x-8,y+7,0, "M_LSLEFT");
         
         for (i = 0;i < 24;i++)
         {
-            V_DrawScaledPatch (x,y+7,0,W_CachePatchName("M_LSCNTR",PU_CACHE));
+            V_DrawScaledPatch_Name (x,y+7,0, "M_LSCNTR");
             x += 8;
         }
         
-        V_DrawScaledPatch (x,y+7,0,W_CachePatchName("M_LSRGHT",PU_CACHE));
+        V_DrawScaledPatch_Name (x,y+7,0, "M_LSRGHT");
     }
 }
 
@@ -2695,7 +2696,6 @@ void M_DrawThermo ( int   x,
 {
     int xx,i;
     int leftlump,rightlump,centerlump[2],cursorlump;
-    patch_t *p;
 
     xx = x;
     if( raven )
@@ -2715,35 +2715,39 @@ void M_DrawThermo ( int   x,
         centerlump[1] = W_GetNumForName("M_THERMM"); 
         cursorlump    = W_GetNumForName("M_THERMO");  
     }
-    V_DrawScaledPatch (xx,y,0,p=W_CachePatchNum(leftlump,PU_CACHE));
-    xx += SHORT(p->width)-SHORT(p->leftoffset);
+    { // temp use of left thermo patch
+      patch_t *pt = W_CachePatchNum(leftlump,PU_CACHE);
+      V_DrawScaledPatch (xx,y,0,pt);
+      xx += SHORT(pt->width)-SHORT(pt->leftoffset);  // add width to offset
+    }
     for (i=0;i<16;i++)
     {
-        V_DrawScaledPatch (xx,y,0,W_CachePatchNum(centerlump[i & 1],PU_CACHE));
+        // alternate center patches (raven)
+        V_DrawScaledPatch_Num (xx,y,0, centerlump[i & 1] );
         xx += 8;
     }
-    V_DrawScaledPatch (xx,y,0,W_CachePatchNum(rightlump,PU_CACHE));
+    V_DrawScaledPatch_Num (xx,y,0, rightlump );
 
     xx = (cv->value - cv->PossibleValue[0].value) * (15*8) /
          (cv->PossibleValue[1].value - cv->PossibleValue[0].value);
 
-    V_DrawScaledPatch ((x+8) + xx, raven ? y+7 : y,
-                       0,W_CachePatchNum(cursorlump,PU_CACHE));
+    V_DrawScaledPatch_Num ((x+8) + xx, raven ? y+7 : y,
+                       0, cursorlump );
 }
 
 
 void M_DrawEmptyCell( menu_t*       menu,
                       int           item )
 {
-    V_DrawScaledPatch (menu->x - 10,        menu->y+item*LINEHEIGHT - 1, 0,
-                       W_CachePatchName("M_CELL1",PU_CACHE));
+    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1, 0,
+                       "M_CELL1" );
 }
 
 void M_DrawSelCell ( menu_t*       menu,
                      int           item )
 {
-    V_DrawScaledPatch (menu->x - 10,        menu->y+item*LINEHEIGHT - 1, 0,
-                       W_CachePatchName("M_CELL2",PU_CACHE));
+    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1, 0,
+                       "M_CELL2" );
 }
 
 
@@ -2779,47 +2783,48 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     // draw left side
     cx = x;
     cy = y;
-    V_DrawScaledPatch (cx, cy, 0, 
-        W_CachePatchNum(viewborderlump[BRDR_TL],PU_CACHE));
+    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_TL] );
     cy += boff;
+   
+    // temp use patch in loop
     p = W_CachePatchNum (viewborderlump[BRDR_L],PU_CACHE);
     for (n = 0; n < lines; n++)
     {
         V_DrawScaledPatch (cx, cy, 0, p);
         cy += step;
     }
-    V_DrawScaledPatch (cx, cy, 0, 
-        W_CachePatchNum (viewborderlump[BRDR_BL],PU_CACHE));
+   
+    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_BL] );
 
     // draw middle
     V_DrawFlatFill (x+boff, y+boff ,width*step,lines*step,st_borderpatchnum);
 
+    // draw top and bottom
     cx += boff;
     cy = y;
     while (width > 0)
     {
-        V_DrawScaledPatch (cx, cy, 0, 
-            W_CachePatchNum (viewborderlump[BRDR_T],PU_CACHE));
+        V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_T] );
 
-        V_DrawScaledPatch (cx, y+boff+lines*step, 0, 
-            W_CachePatchNum (viewborderlump[BRDR_B],PU_CACHE));
+        V_DrawScaledPatch_Num (cx, y+boff+lines*step, 0, viewborderlump[BRDR_B] );
         width --;
         cx += step;
     }
 
     // draw right side
     cy = y;
-    V_DrawScaledPatch (cx, cy, 0, 
-        W_CachePatchNum (viewborderlump[BRDR_TR],PU_CACHE));
+    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_TR] );
     cy += boff;
+   
+    // temp use patch in loop
     p = W_CachePatchNum (viewborderlump[BRDR_R],PU_CACHE);
     for (n = 0; n < lines; n++)
     {
         V_DrawScaledPatch (cx, cy, 0, p);
         cy += step;
     }
-    V_DrawScaledPatch (cx, cy, 0, 
-        W_CachePatchNum (viewborderlump[BRDR_BR],PU_CACHE));
+   
+    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_BR] );
 }
 
 //==========================================================================
@@ -3411,7 +3416,7 @@ boolean M_Responder (event_t* ev)
         {
             currentMenu = currentMenu->prevMenu;
             itemOn = currentMenu->lastOn;
-	    S_StartSound(NULL,sfx_swtchx); // it´s a matter of taste which sound to choose
+	    S_StartSound(NULL,sfx_swtchx); // itis a matter of taste which sound to choose
             //S_StartSound(NULL,sfx_swtchn);
         }
 	else

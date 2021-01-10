@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 547 2009-10-26 05:40:14Z smite-meister $
+// $Id: v_video.c 554 2009-11-11 01:56:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -417,6 +417,17 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 
 }
 
+// with temp patch load to cache
+void V_DrawMappedPatch_Name ( int x, int y, int scrn,
+			      char*         name,
+			      byte*         colormap )
+{
+   // The patch is used only in this function
+   V_DrawMappedPatch ( x, y, scrn,
+                       W_CachePatchName( name, PU_CACHE ),
+		       colormap );
+}
+
 //
 // V_DrawScaledPatch
 //   like V_DrawPatch, but scaled 2,3,4 times the original size and position
@@ -498,6 +509,22 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
             column = (column_t *) ((byte *) column + column->length + 4);
         }
     }
+}
+
+// with temp patch load to cache
+void V_DrawScaledPatch_Name(int x, int y, int scrn, char * name )
+{
+   // The patch is used only in this function
+   V_DrawScaledPatch ( x, y, scrn,
+                       W_CachePatchName( name, PU_CACHE ) );
+}
+
+// with temp patch load to cache
+void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num )
+{
+   // The patch is used only in this function
+   V_DrawScaledPatch ( x, y, scrn,
+                       W_CachePatchNum( patch_num, PU_CACHE ) );
 }
 
 void HWR_DrawSmallPatch(GlidePatch_t * gpatch, int x, int y, int option, byte * colormap);

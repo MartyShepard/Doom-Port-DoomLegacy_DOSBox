@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: d_main.c 554 2009-11-11 01:56:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 553;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 554;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -864,10 +864,12 @@ void D_PageDrawer(char *lumpname)
     {
         V_DrawRawScreen(0, 0, W_GetNumForName(lumpname), 320, 200);
         if (demosequence == 0 && pagetic <= 140)
-            V_DrawScaledPatch(4, 160, 0, W_CachePatchName("ADVISOR", PU_CACHE));
+            V_DrawScaledPatch_Name(4, 160, 0, "ADVISOR" );
     }
     else
-        V_DrawScaledPatch(0, 0, 0, W_CachePatchName(lumpname, PU_CACHE));
+    {
+        V_DrawScaledPatch_Name(0, 0, 0, lumpname );
+    }
 
     //added:08-01-98:if you wanna centre the pages it's here.
     //          I think it's not so beautiful to have the pic centered,
