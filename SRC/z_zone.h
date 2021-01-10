@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: z_zone.h 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,66 +64,88 @@
 //
 // ZONE MEMORY
 // PU - purge tags.
-// Tags < 100 are not overwritten until freed.
-#define PU_STATIC               1      // static entire execution time
-#define PU_SOUND                2      // static while playing
-#define PU_MUSIC                3      // static while playing
-#define PU_DAVE                 4      // anything else Dave wants static
+// Order is important, inequality tests are used.
+typedef enum
+{
+// Internal use tags, do NOT use for user allocations
+  PU_FREE = 0, // free, unallocated block
+  PU_ZONE,     // head of a zone allocation, exclude from some checks
 
-#define PU_HWRPATCHINFO         5      // Hardware GlidePatch_t struct for OpenGl/Glide texture cache
-#define PU_HWRPATCHCOLMIPMAP    6      // Hardware GlideMipmap_t struct colromap variation of patch
+// User allocation tags
+// Non-purgable tags.
+  PU_STATIC,   // static entire execution time
+  PU_SOUND,    // static while playing
+  PU_MUSIC,    // static while playing
+  PU_DAVE,     // anything else Dave wants static
+  PU_HWRPATCHINFO,      // Hardware GlidePatch_t struct for OpenGl/Glide texture cache
+  PU_HWRPATCHCOLMIPMAP, // Hardware GlideMipmap_t struct colormap variation of patch
+// Tags that convert to PU_CACHE at level exit.
+// Will not override more restrictive existing tag.
+  PU_LUMP,      // Generic temp Lump.
+  PU_IN_USE,    // Temp in use, user degraded to
+		// PU_CACHE using Z_ChangeTags_To.
+// Tags purged at level exit.
+  PU_LEVEL,    // static until level exited
+  PU_LEVSPEC,  // a special thinker in a level
+  PU_HWRPLANE,
 
-#define PU_LEVEL               50      // static until level exited
-#define PU_LEVSPEC             51      // a special thinker in a level
-#define PU_HWRPLANE            52
 // Tags >= PU_PURGELEVEL are purgable whenever needed.
-#define PU_PURGELEVEL         100
-#define PU_CACHE              101
-#define PU_HWRCACHE           102      // 'second-level' cache for graphics
-                                       // stored in hardware format and downloaded as needed
+  PU_PURGELEVEL, // Tags >= PU_PURGELEVEL are purgable whenever needed.
+  PU_CACHE,
+  PU_HWRCACHE,   // 'second-level' cache for graphics stored in hardware format and downloaded as needed
+  PU_STALE_CACHE,	// not referenced recently
+     
+// Tag param, conditional on existing tag
+  PU_CACHE_DEFAULT	// set to PU_CACHE, but not when
+     			// already < PU_PURGELEVEL
+} memtag_e;
 
 //#define ZDEBUG
 
 
 void    Z_Init (void);
-void    Z_FreeTags (int lowtag, int hightag);
-void    Z_DumpHeap (int lowtag, int hightag);
+void    Z_FreeTags(memtag_e lowtag, memtag_e hightag);
+void    Z_DumpHeap(memtag_e lowtag, memtag_e hightag);
 void    Z_FileDumpHeap (FILE *f);
 void    Z_CheckHeap (int i);
-void    Z_ChangeTag2 (void *ptr, int tag);
+void    Z_ChangeTag2 (void *ptr, memtag_e tag);
+
+// Change all allocations of old_tag to new_tag.
+void	Z_ChangeTags_To( memtag_e old_tag, memtag_e new_tag );
 
 // returns number of bytes allocated for one tag type
-int     Z_TagUsage (int tagnum);
+int     Z_TagUsage(memtag_e tag);
 
-void    Z_FreeMemory (int *realfree,int *cachemem,int *usedmem,int *largefreeblock);
+void    Z_FreeMemory (int *realfree, int *cachemem, int *usedmem, int *largefreeblock);
 
 #ifdef ZDEBUG
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
 void    Z_Free2 (void *ptr,char *file,int line);
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,0,__FILE__,__LINE__)
 #define Z_MallocAlign(s,t,p,a) Z_Malloc2(s,t,p,a,__FILE__,__LINE__)
-void*   Z_Malloc2 (int size, int tag, void *ptr, int alignbits, char *file,int line);
+void*   Z_Malloc2 (int reqsize, memtag_e tag, void *ptr, int alignbits, char *file,int line);
 #else
 void    Z_Free (void *ptr);
-void*   Z_MallocAlign(int size,int tag,void* user,int alignbits);
+void*   Z_MallocAlign(int reqsize, memtag_e tag, void* user, int alignbits);
 #define Z_Malloc(s,t,p) Z_MallocAlign(s,t,p,0)
 #endif
 
-char *Z_Strdup(const char *s, int tag, void **user);
+char *Z_Strdup(const char *s, memtag_e tag, void **user);
 
 
 typedef struct memblock_s
 {
+   // [WDJ] only works for int >= 32bit, or else havoc in Z_ALLOC
     int                 size;   // including the header and possibly tiny fragments
-    void**              user;   // NULL if a free block
-    int                 tag;    // purgelevel
+    memtag_e            tag;    // purgelevel
     int                 id;     // should be ZONEID
+    void**              user;   // NULL if a free block
+    struct memblock_s*  next;
+    struct memblock_s*  prev;
 #ifdef ZDEBUG
     char             *ownerfile;
     int               ownerline; 
 #endif
-    struct memblock_s*  next;
-    struct memblock_s*  prev;
 } memblock_t;
 
 //

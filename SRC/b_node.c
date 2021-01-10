@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_node.c 558 2009-11-15 15:25:23Z smite-meister $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -449,6 +449,14 @@ void B_BuildNodes(SearchNode_t* node)
 
 	LinkedList_t *queue = B_LLCreate();
 	B_LLInsertFirstNode(queue, node);
+   // [WDJ] 1/22/2009 FreeDoom MAP10 can get stuck in this loop, sometimes.
+   // It keeps cycling forever through the queue, putting entries back in,
+   // because botNodeArray[nx][ny] == NULL.
+   // Started happening after changes to Z_ALLOC to reduce fragmentation.
+   // Resolved by removing code that searched twice to get less fragmentation.
+   // Some of the purgable memory blocks deleted were probably still in use
+   // in this routine.  The handling of such memory by this routine is fragile,
+   // it is suspicious, and probably needs a more robust fix.	
 	while (!B_LLIsEmpty(queue))
 	{
 		node = B_LLRemoveLastNode(queue);
