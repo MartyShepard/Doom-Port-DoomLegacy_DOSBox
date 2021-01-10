@@ -315,8 +315,9 @@ ifdef DJGPPDOS
 	# options
     OPTS=-DPC_DOS -g
 
-	DEBUGLIBS=-lalleg -lbcd -lsocket
-    LIBS=-lalleg -lbcd -lsocket
+	# r547, DOS need Math Lib
+	DEBUGLIBS=-lm -lalleg -lbcd -lsocket
+    LIBS=-lm -lalleg -lbcd -lsocket
 
 	SFLAGS=
 

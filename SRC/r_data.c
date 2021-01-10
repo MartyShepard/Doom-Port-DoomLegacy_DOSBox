@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_data.c 547 2009-10-26 05:40:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1023,7 +1023,7 @@ int R_CreateColormap(char *p1, char *p2, char *p3)
   extra_colormaps[mapnum].fadeend = fadeend;
   extra_colormaps[mapnum].fog = fog;
 
-#define ABS2(x) (x) < 0 ? -(x) : (x)
+#define ABS2(x) ((x) < 0 ? -(x) : (x))
 #ifdef HWRENDER
   if(rendermode == render_soft)
 #endif

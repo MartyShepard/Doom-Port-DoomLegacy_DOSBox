@@ -1,5 +1,9 @@
-* Not Compiled, Not used.
+* Not need to Compile.
 
+[00547 ]: small bugfixes, first gamma handling upgrade
+		 * DOS need -lm in the makefile do round() in v_video.c
+		 
+[00546 ]: WDJ doordelay patch
 [00545 ]: some const rigor
 	      * DOS i_system.c, conflict fix ( void I_Error (char *error, ...) )
 		  

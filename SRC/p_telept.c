@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_telept.c 547 2009-10-26 05:40:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -380,9 +380,9 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
         // Make sure we are on correct side of exit linedef.
         while (P_PointOnLineSide(x, y, l) != side && --fudge>=0)
           if (abs(l->dx) > abs(l->dy))
-            y -= l->dx < 0 != side ? -1 : 1;
+            y -= ((l->dx < 0) != side) ? -1 : 1;
           else
-            x += l->dy < 0 != side ? -1 : 1;
+            x += ((l->dy < 0) != side) ? -1 : 1;
 
         // Attempt to teleport, aborting if blocked
         if (!P_TeleportMove(thing, x, y))

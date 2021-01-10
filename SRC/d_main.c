@@ -1117,6 +1117,17 @@ void IdentifyVersion(void)
 	//DarkWolf95:July 14, 2003:Chex Quest Support
 	chex1wad = malloc(strlen(doomwaddir)+1+12+1);
     sprintf(chex1wad, "%s/chex.wad", doomwaddir);
+	
+	//DarkWolf95:July 14, 2003:Chex Quest Support
+	chex1wad = malloc(strlen(doomwaddir)+1+12+1);
+    sprintf(chex1wad, "%s/chex2.wad", doomwaddir);	
+	
+	//DarkWolf95:July 14, 2003:Chex Quest Support
+	chex1wad = malloc(strlen(doomwaddir)+1+12+1);
+    sprintf(chex1wad, "%s/chex3.wad", doomwaddir);		
+	
+	doom2wad = malloc(strlen(doomwaddir)+1+12+1);
+    sprintf(doom2wad, "%s/HACX.wad", doomwaddir);		
 
     /*
        French stuff.
