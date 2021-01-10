@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 551 2009-11-09 14:15:43Z smite-meister $
+// $Id: console.c 545 2009-09-28 00:45:16Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1084,12 +1084,11 @@ void CONS_Error (char *msg)
     }
 #endif
     CONS_Printf ("\2%s",msg);   // write error msg in different colour
-
-    // CONS_Printf ("Press ENTER to continue\n");
+    CONS_Printf ("Press ENTER to continue\n");
 
     // dirty quick hack, but for the good cause
-    // while (I_GetKey() != KEY_ENTER)
-    //   ;
+    while (I_GetKey() != KEY_ENTER)
+        ;
 }
 
 

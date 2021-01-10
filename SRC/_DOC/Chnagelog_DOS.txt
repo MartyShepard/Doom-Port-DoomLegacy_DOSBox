@@ -1,8 +1,5 @@
 * Not need to Compile.
 
-[00551 ]: proper handling of music lumps using SDL_mixer, SDL_RWops
-[00550*]: linedef documentation added
-[00549 ]: WDJ NetUpdate time wrap patch
 [00548 ]: WDJ Heretic patch
 [00547 ]: small bugfixes, first gamma handling upgrade
 		 * DOS need -lm in the makefile do round() in v_video.c
