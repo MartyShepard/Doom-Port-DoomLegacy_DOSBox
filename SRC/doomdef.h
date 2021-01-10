@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: doomdef.h 543 2009-09-27 23:12:40Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -217,7 +217,7 @@
 // version numbering
 extern const int  VERSION;
 extern const int  REVISION;
-extern const char VERSION_BANNER[];
+extern char VERSION_BANNER[];
 
 
 #if defined (LOGMESSAGES) && defined(LINUX)

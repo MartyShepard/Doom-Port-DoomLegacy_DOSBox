@@ -48,7 +48,7 @@
 // VESA information block structure
 typedef struct vbeinfoblock_s
 {
-    unsigned char  VESASignature[4]   __attribute__ ((packed));
+    unsigned char  VESASignature[4];
     unsigned short VESAVersion        __attribute__ ((packed));
     unsigned long  OemStringPtr       __attribute__ ((packed));
     byte    Capabilities[4];
@@ -67,8 +67,8 @@ typedef struct vbeinfoblock_s
 typedef struct vesamodeinfo_s
 {
    unsigned short ModeAttributes       __attribute__ ((packed));
-   unsigned char  WinAAttributes       __attribute__ ((packed));
-   unsigned char  WinBAttributes       __attribute__ ((packed));
+   unsigned char  WinAAttributes;
+   unsigned char  WinBAttributes;
    unsigned short WinGranularity       __attribute__ ((packed));
    unsigned short WinSize              __attribute__ ((packed));
    unsigned short WinASegment          __attribute__ ((packed));
@@ -77,24 +77,24 @@ typedef struct vesamodeinfo_s
    unsigned short BytesPerScanLine     __attribute__ ((packed));
    unsigned short XResolution          __attribute__ ((packed));
    unsigned short YResolution          __attribute__ ((packed));
-   unsigned char  XCharSize            __attribute__ ((packed));
-   unsigned char  YCharSize            __attribute__ ((packed));
-   unsigned char  NumberOfPlanes       __attribute__ ((packed));
-   unsigned char  BitsPerPixel         __attribute__ ((packed));
-   unsigned char  NumberOfBanks        __attribute__ ((packed));
-   unsigned char  MemoryModel          __attribute__ ((packed));
-   unsigned char  BankSize             __attribute__ ((packed));
-   unsigned char  NumberOfImagePages   __attribute__ ((packed));
-   unsigned char  Reserved_page        __attribute__ ((packed));
-   unsigned char  RedMaskSize          __attribute__ ((packed));
-   unsigned char  RedMaskPos           __attribute__ ((packed));
-   unsigned char  GreenMaskSize        __attribute__ ((packed));
-   unsigned char  GreenMaskPos         __attribute__ ((packed));
-   unsigned char  BlueMaskSize         __attribute__ ((packed));
-   unsigned char  BlueMaskPos          __attribute__ ((packed));
-   unsigned char  ReservedMaskSize     __attribute__ ((packed));
-   unsigned char  ReservedMaskPos      __attribute__ ((packed));
-   unsigned char  DirectColorModeInfo  __attribute__ ((packed));
+   unsigned char  XCharSize;
+   unsigned char  YCharSize;
+   unsigned char  NumberOfPlanes;
+   unsigned char  BitsPerPixel;
+   unsigned char  NumberOfBanks;
+   unsigned char  MemoryModel;
+   unsigned char  BankSize;
+   unsigned char  NumberOfImagePages;
+   unsigned char  Reserved_page;
+   unsigned char  RedMaskSize;
+   unsigned char  RedMaskPos;
+   unsigned char  GreenMaskSize;
+   unsigned char  GreenMaskPos;
+   unsigned char  BlueMaskSize;
+   unsigned char  BlueMaskPos;
+   unsigned char  ReservedMaskSize;
+   unsigned char  ReservedMaskPos;
+   unsigned char  DirectColorModeInfo;
 
    /* VBE 2.0 extensions */
    unsigned long  PhysBasePtr          __attribute__ ((packed));
@@ -102,20 +102,20 @@ typedef struct vesamodeinfo_s
    unsigned short OffScreenMemSize     __attribute__ ((packed));
 
    /* VBE 3.0 extensions */
-   unsigned short LinBytesPerScanLine  __attribute__ ((packed));
-   unsigned char  BnkNumberOfPages     __attribute__ ((packed));
-   unsigned char  LinNumberOfPages     __attribute__ ((packed));
-   unsigned char  LinRedMaskSize       __attribute__ ((packed));
-   unsigned char  LinRedFieldPos       __attribute__ ((packed));
-   unsigned char  LinGreenMaskSize     __attribute__ ((packed));
-   unsigned char  LinGreenFieldPos     __attribute__ ((packed));
-   unsigned char  LinBlueMaskSize      __attribute__ ((packed));
-   unsigned char  LinBlueFieldPos      __attribute__ ((packed));
-   unsigned char  LinRsvdMaskSize      __attribute__ ((packed));
-   unsigned char  LinRsvdFieldPos      __attribute__ ((packed));
+   unsigned short LinBytesPerScanLine;
+   unsigned char  BnkNumberOfPages;
+   unsigned char  LinNumberOfPages;
+   unsigned char  LinRedMaskSize;
+   unsigned char  LinRedFieldPos;
+   unsigned char  LinGreenMaskSize;
+   unsigned char  LinGreenFieldPos;
+   unsigned char  LinBlueMaskSize;
+   unsigned char  LinBlueFieldPos;
+   unsigned char  LinRsvdMaskSize;
+   unsigned char  LinRsvdFieldPos;
    unsigned long  MaxPixelClock        __attribute__ ((packed));
 
-   unsigned char  Reserved[190]        __attribute__ ((packed));
+   unsigned char  Reserved[190];
 } vesamodeinfo_t;
 
 

@@ -1,7 +1,10 @@
-* Wurde nicht neu Kompiliert
+* Not Compiled, Not used.
 
-
-[00541*] : docs updated to utf-8
-[00540 ] : removed unnecessary chex quest and heretic headers, added license to p_chex.c
-[00539*] : Changelog added
-[00538 ] : svn:keywords properties, versioning system updated, update version to 144
+[00543 ]: Now compiles with GCC 4.3
+		  (Update only at this point the Gnu C Compiler gcc3.81b.zip to Gnu C Compiler gcc4.32b.zip)
+		  
+[00542 ]: makefile brought to this century, now uses sdl-config
+[00541*]: docs updated to utf-8
+[00540 ]: removed unnecessary chex quest and heretic headers, added license to p_chex.c
+[00539*]: Changelog added
+[00538 ]: svn:keywords properties, versioning system updated, update version to 144

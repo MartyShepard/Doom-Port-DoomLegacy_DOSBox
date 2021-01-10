@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: g_game.c 543 2009-09-27 23:12:40Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2384,7 +2384,7 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
     }
     else
     {
-        char ziptic=*demo_p++;
+        char ziptic=(char)*demo_p++;
 
         if(ziptic & ZT_FWD)
             oldcmd[playernum].forwardmove = READCHAR(demo_p);

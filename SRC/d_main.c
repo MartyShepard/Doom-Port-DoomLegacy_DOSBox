@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 540 2009-09-23 23:43:40Z smite-meister $
+// $Id: d_main.c 543 2009-09-27 23:12:40Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -320,14 +320,14 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "542"
+#define SVN_REV "543"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
 const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "DOS (rev " SVN_REV ")";
-const char VERSION_BANNER[80];
+char VERSION_BANNER[80];
 
 
 
@@ -1386,6 +1386,7 @@ void D_DoomMain(void)
 
     // print version banner just once here, use it anywhere
     sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
+    demoversion = VERSION;
 
     //added:18-02-98:keep error messages until the final flush(stderr)
     if (setvbuf(stderr, NULL, _IOFBF, 1000))
