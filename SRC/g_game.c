@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 543 2009-09-27 23:12:40Z smite-meister $
+// $Id: g_game.c 548 2009-10-26 05:53:42Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -556,11 +556,20 @@ byte BestWeapon(player_t *player)
 
 boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t *ev)
 {
-    if( !inventory )
-        return false;
-    switch (ev->type) {
-        case ev_keydown :
-            if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] )
+  // [WDJ] 1/9/2009 Do not get to process any keyup events, unless also saw
+  // the keydown event.  Now other Responders intercepting
+  // the keydown event work correctly.  Specifically heretic will no longer
+  // use up an inventory item when game saving.
+  static boolean keyup_armed = false;
+   
+  if (!inventory)
+    return false;
+
+  switch (ev->type)
+    {
+    case ev_keydown:
+      keyup_armed = false;  // [WDJ] blanket disable of keyup events
+      if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] )
             {
                 if( ply->st_inventoryTics )
                 {
@@ -577,7 +586,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                 ply->st_inventoryTics = 5*TICRATE;
                 return true;
             }
-            else if( ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
+      else if( ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
             {
                 if( ply->st_inventoryTics )
                 {
@@ -598,32 +607,39 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                 ply->st_inventoryTics = 5*TICRATE;
                 return true;
             }
-            else if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
+      else if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] ){
+ 		keyup_armed = true;  // [WDJ] enable keyup event
                 return true;
+	    }
 
-            break;
-        case ev_keyup:
-            if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
+      break;
+
+    case ev_keyup:
+      if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
             {
+	      if( keyup_armed ) { // [WDJ] Only if the keydown was not intercepted by some other responder
                 if( ply->st_inventoryTics )
                     ply->st_inventoryTics = 0;
-                else
-                    if( ply->inventory[ply->inv_ptr].count>0 )
+                else if( ply->inventory[ply->inv_ptr].count>0 )
                     {
                         if( ply == &players[consoleplayer] )
                             SendNetXCmd(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
                         else
                             SendNetXCmd2(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
                     }
+	        return true;	// [WDJ] same as other event intercepts
+	      }
             }
-            else
-            if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
-                ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
-                return true;
-            break;
-        default: break; // shut up compiler
+      else if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
+               ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
+	return true;
+      break;
+
+    default:
+      break; // shut up compiler
     }
-    return false;
+
+  return false;
 }
 
 void G_BuildTiccmd (ticcmd_t* cmd, int realtics)

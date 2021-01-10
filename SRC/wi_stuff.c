@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: wi_stuff.c 548 2009-10-26 05:53:42Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -827,7 +827,8 @@ static void WI_drawTime ( int           x,
     if (t<0)
         return;
 
-    if (t <= 61*59)
+    // [WDJ] 1/12/2009 fix crashes in heretic, no sucks
+    if( (t <= 61*59) || (sucks == NULL) )
     {
         div = 1;
 
@@ -1068,7 +1069,7 @@ static void WI_drawDeathmatchStats(void)
     WI_drawLF();
 
     //Fab:25-04-98: when you play, you quickly see your frags because your
-    //  name is displayed white, when playback demo, you quicly see who's the
+    //  name is displayed white, when playback demo, you quickly see who's the
     //  view.
     whiteplayer = demoplayback ? displayplayer : consoleplayer;
 
@@ -1181,7 +1182,7 @@ static void WI_drawTeamsStats(void)
     WI_drawLF();
 
     //Fab:25-04-98: when you play, you quickly see your frags because your
-    //  name is displayed white, when playback demo, you quicly see who's the
+    //  name is displayed white, when playback demo, you quickly see who's the
     //  view.
     if(cv_teamplay.value==1)
         whiteplayer = demoplayback ? players[displayplayer].skincolor

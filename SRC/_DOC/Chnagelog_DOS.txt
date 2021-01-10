@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00548 ]: WDJ Heretic patch
 [00547 ]: small bugfixes, first gamma handling upgrade
 		 * DOS need -lm in the makefile do round() in v_video.c
 		 
