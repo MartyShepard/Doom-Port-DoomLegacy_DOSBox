@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_plats.c 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -233,6 +233,7 @@ EV_DoPlat
         //going down forever -- default low to plat height when triggered
         plat->low = sec->floorheight;
 
+        // [WDJ] 1/15/2009 Add DOORDELAY_CONTROL of adj_ticks_per_sec.
         switch(type)
         {
           case raiseToNearestAndChange:
@@ -266,7 +267,7 @@ EV_DoPlat
                 plat->low = sec->floorheight;
 
             plat->high = sec->floorheight;
-            plat->wait = 35*PLATWAIT;
+            plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->status = down;
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
             break;
@@ -279,7 +280,7 @@ EV_DoPlat
                 plat->low = sec->floorheight;
 
             plat->high = sec->floorheight;
-            plat->wait = 35*PLATWAIT;
+            plat->wait = PLATWAIT * adj_ticks_per_sec;
             plat->status = down;
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
             break;
@@ -296,7 +297,7 @@ EV_DoPlat
             if (plat->high < sec->floorheight)
                 plat->high = sec->floorheight;
 
-            plat->wait = 35*PLATWAIT;
+            plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->status = P_Random()&1;
 
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
@@ -304,7 +305,7 @@ EV_DoPlat
 
           case toggleUpDn: //SoM: 3/7/2000: Instant toggle.
             plat->speed = PLATSPEED;
-            plat->wait = 35*PLATWAIT;
+            plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->crush = true;
 
             // set up toggling between ceiling, floor inclusive

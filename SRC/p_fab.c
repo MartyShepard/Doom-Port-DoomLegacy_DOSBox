@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_fab.c 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -46,6 +46,27 @@
 #include "r_state.h"
 #include "p_fab.h"
 #include "m_random.h"
+
+#ifdef DOORDELAY_CONTROL
+// [WDJ] 1/15/2009 support control of door and event delay
+// see p_doors.c
+extern  int  adj_ticks_per_sec;
+
+CV_PossibleValue_t doordelay_cons_t[]={{0,"0.9x Fast"}, {1,"Normal"}, {2,"1.2x Slow"}, {3,"1.6x Slow"}, {4,"2x Slow"}, {5,"3x Slow"}, {0,NULL}};
+int  doordelay_table[6] = { 32, 35, 42, 56, 70, 105 };  // 35 is normal
+
+void DoorDelay_OnChange( void )
+{
+   adj_ticks_per_sec = doordelay_table[ cv_doordelay.value ];
+}
+
+//consvar_t cv_doordelay = {"doordelay","1",CV_NETVAR|CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
+consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
+
+#endif
+
+
+// Translucency
 
 void Translucency_OnChange(void);
 
@@ -223,12 +244,19 @@ void BloodTime_OnChange (void)
 }
 
 
-void D_AddDeathmatchCommands (void)
+// [WDJ] All misc init
+void D_RegisterMiscCommands (void)
 {
+    // add commands for deathmatch rules and style (like more blood) :)
     CV_RegisterVar (&cv_solidcorpse);                 //p_enemy
 
     CV_RegisterVar (&cv_bloodtime);
 
     // BP:not realy in deathmatch but is just here
     CV_RegisterVar (&cv_translucency);
+#ifdef DOORDELAY_CONTROL
+    // [WDJ] 1/15/2009 support control of door and event delay
+    // see p_doors.c
+    CV_RegisterVar (&cv_doordelay);
+#endif   
 }

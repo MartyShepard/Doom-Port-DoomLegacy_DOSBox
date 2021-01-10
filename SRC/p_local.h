@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_local.h 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -158,6 +158,15 @@ extern consvar_t cv_viewheight; // p_mobj.c
 //26-07-98: p_mobj.c
 extern  consvar_t cv_gravity;
 
+#ifdef DOORDELAY_CONTROL
+// [WDJ] 1/15/2009 support control of door and event delay. see p_doors.c
+// init in r_main.c
+extern  int  adj_ticks_per_sec;
+extern  consvar_t  cv_doordelay;
+#else
+// standard ticks per second
+#define adj_ticks_per_sec  35
+#endif
 
 //
 // P_TICK

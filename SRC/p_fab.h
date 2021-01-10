@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_fab.h 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -45,7 +45,8 @@ void A_SmokeTrailer (mobj_t* actor);
 // hack the states table to set Doom Legacy's default translucency on sprites
 void P_SetTranslucencies (void);
 
+// [WDJ] All misc init
 // add commands for deathmatch rules and style (like more blood) :)
-void D_AddDeathmatchCommands (void);
+void D_RegisterMiscCommands (void);
 
 #endif

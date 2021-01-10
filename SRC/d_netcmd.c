@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_netcmd.c 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -408,9 +408,6 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_skin2);
     CV_RegisterVar(&cv_playername2);
     CV_RegisterVar(&cv_playercolor2);
-
-    //FIXME: not to be here.. but needs be done for config loading
-    CV_RegisterVar(&cv_usegamma);
 
     //m_menu.c
     CV_RegisterVar(&cv_crosshair);

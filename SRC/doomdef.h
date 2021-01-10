@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 545 2009-09-28 00:45:16Z smite-meister $
+// $Id: doomdef.h 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -246,6 +246,14 @@ void I_SoftError (char *error, ...);
 #else
 #define I_SoftError   I_Error
 #endif
+
+// [WDJ] Gives a menu item that allows adjusting the time a door waits open.
+// A few of the timed doors in doom2 are near impossible to get thru in time,
+// and I have to use cheats to get past that part of the game.
+// This is for us old people don't have super-twitch fingers anymore, or don't
+// want to repeat from save game 20 times to get past these bad spots.
+#define DOORDELAY_CONTROL
+  // See p_fab.c, giving it NETVAR status causes saved games to crash program.
 
 
 // =========================================================================

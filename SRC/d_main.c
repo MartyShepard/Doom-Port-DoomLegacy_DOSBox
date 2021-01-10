@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 544 2009-09-27 23:20:31Z smite-meister $
+// $Id: d_main.c 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 545;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 546;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -1688,7 +1688,7 @@ void D_DoomMain(void)
     CON_Init();
 
     D_RegisterClientCommands(); //Hurdler: be sure that this is called before D_CheckNetGame
-    D_AddDeathmatchCommands();
+    D_RegisterMiscCommands();	//[WDJ] more than just DeathMatch
     ST_AddCommands();
     T_AddCommands();
     B_AddCommands();    //added by AC for acbot

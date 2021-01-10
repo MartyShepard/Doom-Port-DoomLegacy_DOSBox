@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_genlin.c 546 2009-09-28 00:48:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -554,20 +554,21 @@ manual_lift:
         break;
     }
 
+    // [WDJ] 1/15/2009 Add DOORDELAY_CONTROL of adj_ticks_per_sec.
     // setup the delay time before the floor returns
     switch(Dely)
     {
       case 0:
-        plat->wait = 1*35;
+        plat->wait = 1 * adj_ticks_per_sec;  // [WDJ]
         break;
       case 1:
-        plat->wait = PLATWAIT*35;
+        plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
         break;
       case 2:
-        plat->wait = 5*35;
+        plat->wait = 5 * adj_ticks_per_sec;  // [WDJ]
         break;
       case 3:
-        plat->wait = 10*35;
+        plat->wait = 10 * adj_ticks_per_sec;  // [WDJ]
         break;
     }
 
@@ -1113,6 +1114,3 @@ manual_door:
   }
   return rtn;
 }
-
-
-          
