@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 544 2009-09-27 23:20:31Z smite-meister $
+// $Id: d_clisrv.c 549 2009-10-26 06:04:08Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -275,7 +275,7 @@ consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
 
 
 // some software don't support largest packet
-// (original sersetup, not exactely, but the probabylity of sending a packet
+// (original sersetup, not exactly, but the probability of sending a packet
 // of 512 octet is like 0.1)
 USHORT software_MAXPACKETLENGTH;
 
@@ -436,7 +436,7 @@ static void ExtraDataTicker(void)
 // ---------+--------------
 //   byte   | size of the extradata
 //   byte   | the extradata (xd) bits : see XD_...
-//            with this byte you know what parameter folow
+//            with this byte you know what parameter follow
 // if(xd & XDNAMEANDCOLOR)
 //   byte   | color
 //   char[MAXPLAYERNAME] | name of the player
@@ -2304,13 +2304,20 @@ void NetUpdate(void)
     static tic_t gametime=0;
     tic_t        nowtime;
     int          i;
-    int          realtics;
+    int          realtics;	// time is actually long [WDJ]
 
-    nowtime  = I_GetTime ();
+    nowtime  = I_GetTime();
     realtics = nowtime - gametime;
 
-    if( realtics <= 0 )   // nothing new to update
-        return;
+    if( realtics <= 0 )
+    {
+      if( realtics > -100000 )  // [WDJ] 1/16/2009  validity check
+	return;     // nothing new to update
+
+      // [WDJ] 1/16/2009 something is wrong, like time has wrapped.
+      // Program gets stuck waiting for this, so force it out.
+      realtics = 5;
+    }
     if( realtics>5 )
     {
         if( server )
