@@ -1,6 +1,7 @@
 * Not need to Compile.
 
-
+[00555 ]: misplaced break in last patch
+[00554 ]: WDJ Draw/Patch combination functions
 [00553 ]: Fix bad status background after save game
 [00552 ]: Legacy special linedefs, fix, clean, and comment
 [00551 ]: proper handling of music lumps using SDL_mixer, SDL_RWops

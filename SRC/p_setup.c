@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 552 2009-11-11 01:40:13Z wesleyjohnson $
+// $Id: p_setup.c 555 2009-11-12 04:30:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -952,8 +952,9 @@ void P_LoadSideDefs2(int lump)
             else
               sd->bottomtexture = num;
           }
+#endif		  
 	  break;   // [WDJ]  no fall through
-#endif
+	  
         case 282:                       //SoM: 4/4/2000: Just colormap transfer
 
 // SoM: R_CreateColormap will only create a colormap in software mode...
