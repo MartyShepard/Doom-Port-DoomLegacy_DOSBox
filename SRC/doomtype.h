@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: doomtype.h 569 2009-11-27 04:42:36Z smite-meister $
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 1998-2009 by DooM Legacy Team.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -54,19 +54,36 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#ifdef __WIN32__
-#include <windows.h>
-#endif
-#ifndef _OS2EMX_H
-typedef unsigned long ULONG;
-typedef unsigned short USHORT;
-#endif // _OS2EMX_H
+#include <stdint.h>
 
 #ifdef __WIN32__
-#define INT64  __int64
-#else
-#define INT64  long long
+# include <windows.h>
 #endif
+
+
+// TODO this is just a temporary measure, all USHORT / ULONG / INT64 instances 
+// in the code should be changed to stdint.h types or basic types
+typedef uint32_t ULONG;
+typedef uint16_t USHORT;
+typedef  int64_t INT64;
+
+
+// boolean type
+#ifdef __APPLE_CC__
+	# define boolean int
+	# define false 0
+	# define true  1
+#elseif defined(__WIN32__)
+	# define false   FALSE           // use windows types
+	# define true    TRUE
+	# define boolean BOOL
+#else
+	typedef enum {false, true} boolean;
+#endif
+
+
+typedef uint8_t    byte;
+typedef uint32_t  tic_t;
 
 #ifdef __APPLE_CC__
 #define __MACOS__
@@ -98,8 +115,6 @@ typedef unsigned short USHORT;
 #endif
 
 #ifdef __APPLE_CC__                //skip all boolean/Boolean crap
-#define true 1
-#define false 0
 #define min(x,y) ( ((x)<(y)) ? (x) : (y) )
 #define max(x,y) ( ((x)>(y)) ? (x) : (y) )
 #define lstrlen(x) strlen(x)
@@ -107,37 +122,11 @@ typedef unsigned short USHORT;
 #define stricmp strcmp
 #define strnicmp strncmp
 
-#define __BYTEBOOL__
-typedef unsigned char byte;
-#define boolean int
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 #endif //__MACOS__
 
-#ifndef __BYTEBOOL__
-    #define __BYTEBOOL__
-
-    // Fixed to use builtin bool type with C++.
-    //#ifdef __cplusplus
-    //    typedef bool boolean;
-    //#else
-
-        typedef unsigned char byte;
-
-        //faB: clean that up !!
-        #ifdef __WIN32__
-            #define false   FALSE           // use windows types
-            #define true    TRUE
-            #define boolean BOOL
-        #else
-            typedef enum {false, true} boolean;
-        #endif
-    //#endif // __cplusplus
-#endif // __BYTEBOOL__
-
-typedef ULONG tic_t;
 
 // Predefined with some OS.
 #ifndef __WIN32__
@@ -159,9 +148,6 @@ typedef ULONG tic_t;
 #ifndef MAXINT
 #define MAXINT    ((int)0x7fffffff)
 #endif
-#ifndef MAXLONG
-#define MAXLONG   ((long)0x7fffffff)
-#endif
 
 #ifndef MINCHAR
 #define MINCHAR   ((char)0x80)
@@ -171,9 +157,6 @@ typedef ULONG tic_t;
 #endif
 #ifndef MININT
 #define MININT    ((int)0x80000000)
-#endif
-#ifndef MINLONG
-#define MINLONG   ((long)0x80000000)
 #endif
 
 union FColorRGBA {

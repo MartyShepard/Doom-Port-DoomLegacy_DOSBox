@@ -1183,7 +1183,7 @@ void I_ShutdownSystem()
 
 }
 
-void I_GetDiskFreeSpace(INT64 *freespace)
+void I_GetDiskFreeSpace(int64_t *freespace)
 {
     struct diskfree_t df;
     if(_dos_getdiskfree(0,&df))

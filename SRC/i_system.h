@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 545 2009-09-28 00:45:16Z smite-meister $
+// $Id: i_system.h 569 2009-11-27 04:42:36Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -151,7 +151,7 @@ void I_RemoveExitFunc (void (*func)());
 int  I_StartupSystem (void);
 void I_ShutdownSystem (void);
 
-void I_GetDiskFreeSpace(INT64 *freespace);
+void I_GetDiskFreeSpace(int64_t *freespace);
 char *I_GetUserName(void);
 int  I_mkdir(const char *dirname, int unixright);
 

@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00569 ]: more 64-bit compatibility
+		* DOS
+		  Void updated djgppdos/i_system.c
+		  
 [00568*]: WDJ log
 [00567 ]: Fix use of gets()
 [00566 ]: makefile confusing, not 2.4 compatible
