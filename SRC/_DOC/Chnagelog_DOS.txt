@@ -1,6 +1,7 @@
 * Not need to Compile.
 
-[00559 ]: tool update (convert_deh & wadtool)
+[00560*]: makefile updated
+[00559*]: tool update (convert_deh & wadtool)
 [00558 ]: New Z_Malloc algorithm, does not purge blocks unless necessary.
 		* DOS, using the zone.c/h from upcomig r577 beacuse crash with user
 		Comment out I_Softerror
