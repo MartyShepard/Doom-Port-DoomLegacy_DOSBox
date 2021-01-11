@@ -1,4 +1,6 @@
 * Not need to Compile.
+
+[00562 ]:WDJ demo patch
 [00561*]: now compiles without SDL_mixer
 [00560*]: makefile updated
 [00559*]: tool update (convert_deh & wadtool)
