@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00566 ]: makefile confusing, not 2.4 compatible
 [00565 ]: Update docs for special linedefs - (Getting o. start v1.44)
 [00564 ]: WDJ flat patch
 [00563 ]: WDJ voodoo doll patch

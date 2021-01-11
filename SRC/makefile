@@ -295,15 +295,15 @@ WFLAGS=-Wall # -W -Wno-unused -Wno-sign-compare
 
 #indicate platform and what interface use with
 
-	DJGPPDOS=1
+	DJGPPDOS_NATIVE=1
 #determine the interface directory (where you put all i_*.c)
 
-ifdef DJGPPDOS
-	INTERFACE=DJGPPDOS
+ifdef DJGPPDOS_NATIVE
+	INTERFACE=DJGPPDOS_NATIVE
 	NASMFORMAT=coff
 endif
 
-ifdef DJGPPDOS
+ifdef DJGPPDOS_NATIVE
 	# subdirectory for objects
 
 	O=objs
@@ -328,7 +328,7 @@ ifdef DJGPPDOS
 	# name of the exefile
 	EXENAME=DOOM3.exe
 
-endif #ifdef DJGPPDOS
+endif
 
 ifdef USEASM
    OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
