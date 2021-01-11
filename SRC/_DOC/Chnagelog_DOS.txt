@@ -1,5 +1,5 @@
 * Not need to Compile.
-
+[00561*]: now compiles without SDL_mixer
 [00560*]: makefile updated
 [00559*]: tool update (convert_deh & wadtool)
 [00558 ]: New Z_Malloc algorithm, does not purge blocks unless necessary.

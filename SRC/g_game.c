@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 553 2009-11-11 01:47:50Z wesleyjohnson $
+// $Id: g_game.c 562 2009-11-23 03:17:05Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -173,6 +173,11 @@
 //-----------------------------------------------------------------------------
 
 
+// [WDJ] To show the demo version on the console
+#define SHOW_DEMOVERSION   
+#define DEBUG_DEMO
+#define CURRENT_DEMOVERSION 143
+
 #include "doomdef.h"
 #include "command.h"
 #include "console.h"
@@ -250,14 +255,6 @@ void    G_DoWorldDone (void);
 // the game version, if it's older, the changes are not done, and the older
 // code is used for compatibility.
 //
-// version numbering
-
-//#if defined(__DJGPP__)
-    /*
-        Game Version, Manual Edit
-        Fix g_game.c:253: error: initializer element is not constant
-    */
-//#else
 byte            demoversion;
 
 byte            gameepisode;
@@ -2172,7 +2169,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     // draw the pattern into the back screen
     R_FillBackScreen ();
-	ST_Drawer( 1 );	// [WDJ] refresh status background without global flags
+    ST_Drawer( 1 );	// [WDJ] refresh status background without global flags
 }
 
 
@@ -2401,7 +2398,7 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
     }
     else
     {
-        char ziptic=(char)*demo_p++;
+        char ziptic=*demo_p++;
 
         if(ziptic & ZT_FWD)
             oldcmd[playernum].forwardmove = READCHAR(demo_p);
@@ -2525,7 +2522,7 @@ void G_BeginRecording (void)
 
     demo_p = demobuffer;
 
-    *demo_p++ = VERSION;
+    *demo_p++ = CURRENT_DEMOVERSION; // NOTE only needs to be updated when the demo format actually changes
     *demo_p++ = gameskill;
     *demo_p++ = gameepisode;
     *demo_p++ = gamemap;
@@ -2593,9 +2590,33 @@ void G_DoPlayDemo (char *defdemoname)
 
     gameaction = ga_nothing;
     demoversion = READBYTE(demo_p);
-    if ( demoversion < 109 )
+    // header[0]: byte : demo version
+    // 101 = Strife 1.01  (unsupported)
+    // 104 = Doom 1.4 beta (unsupported)
+    // 105 = Doom 1.5 beta (unsupported)
+    // 106 = Doom 1.6 beta, 1.666 (unsupported)
+    // 107 = Doom2 1.7, 1.7a (unsupported)
+    // 108 = Doom 1.8, Doom2 1.8 (unsupported)
+    // 109 = Doom 1.9, Doom2 1.9
+    // 110 = Doom, published source code
+    // 111..143 = Legacy
+    // 200 = Boom 2.02	(unsupported)
+    // 201..202 = e6y (unsupported)
+    // 203 = LxDoom or MBF  (unsupported)
+    // 210..214 = prboom (unsupported)
+    // Do not have version: Hexen, Heretic, Doom 1.2 and before
+#ifdef SHOW_DEMOVERSION
+    CONS_Printf( "Demo Version %i.\n", (int)demoversion );
+#endif
+#ifdef DEBUG_DEMO
+    fprintf( stderr, "[0] version %i.\n", (int)demoversion );
+#endif
+
+    // This works, but it also kills screen wipes    FIXME why?
+//    if ( demoversion >= 200 )
+    if (demoversion < 109 || demoversion >= 215)
     {
-        CONS_Printf ("\2ERROR: demo version too old.\n");
+        CONS_Printf("\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, CURRENT_DEMOVERSION);
         demoversion = VERSION;
         Z_Free (demobuffer);
 no_demo:
@@ -2606,21 +2627,40 @@ no_demo:
     if (demoversion < VERSION)
         CONS_Printf ("\2Demo is from an older game version\n");
 
+    // header[1]: byte: skill level 0..4
     skill       = *demo_p++;
+    // header[2]: byte: Doom episode 1..3, Doom2 and above use 1
     episode     = *demo_p++;
+    // header[3]: byte: map level 1..32
     map         = *demo_p++;
+#ifdef DEBUG_DEMO
+    fprintf( stderr, "[1] skill %i.\n", (int)skill );
+    fprintf( stderr, "[2] episode %i.\n", (int)episode );
+    fprintf( stderr, "[3] map %i.\n", (int)map );
+#endif
+    // header[4]: byte: play mode 0..2
+    //   0 = single player
+    //   1 = deathmatch or cooperative
+    //   2 = alt deathmatch
+#ifdef DEBUG_DEMO
+    fprintf( stderr, "[4] play mode/deathmatch %i.\n", (int)demo_p[0] );
+    fprintf( stderr, "[5] respawn %i.\n", (int)demo_p[1] );
+    fprintf( stderr, "[6] fast monsters %i.\n", (int)demo_p[2] );
+#endif
     if (demoversion < 127)
         // push it in the console will be too late set
         cv_deathmatch.value=*demo_p++;
     else
         demo_p++;
 
+    // header[5]: byte: respawn boolean
     if (demoversion < 128)
         // push it in the console will be too late set
         cv_respawnmonsters.value=*demo_p++;
     else
         demo_p++;
 
+    // header[6]: byte: fast boolean
     if (demoversion < 128)
     {
         // push it in the console will be too late set
@@ -2630,21 +2670,36 @@ no_demo:
     else
         demo_p++;
 
+    // header[7]: byte: no monsters present boolean
     nomonsters  = *demo_p++;
 
+    // header[8]: byte: viewing player 0..3, 0=player1
     //added:08-02-98: added displayplayer because the status bar links
     // to the display player when playing back a demo.
     displayplayer = consoleplayer = *demo_p++;
+
+#ifdef DEBUG_DEMO
+    fprintf( stderr, "[7] no monsters %i.\n", (int)nomonsters );
+    fprintf( stderr, "[8] viewing player %i.\n", (int)displayplayer );
+#endif
 
      //added:11-01-98:
     //  support old v1.9 demos with ONLY 4 PLAYERS ! Man! what a shame!!!
     if (demoversion==109)
     {
-        for (i=0 ; i<4 ; i++)
+       // header[9..12]: byte: player[1..4] present boolean
+        for (i=0 ; i<4 ; i++) {
+#ifdef DEBUG_DEMO
+	    fprintf( stderr, "[%i] player %i present %i.\n", i+9, i+1, (int)*demo_p );
+#endif
             playeringame[i] = *demo_p++;
+	}
     }
     else
     {
+#ifdef DEBUG_DEMO
+       fprintf( stderr, "[9] time limit %i.\n", (int)*demo_p );
+#endif
         if(demoversion<128)
         {
            cv_timelimit.value=*demo_p++;
@@ -2655,16 +2710,31 @@ no_demo:
 
         if (demoversion<113)
         {
-            for (i=0 ; i<8 ; i++)
+	   // header[9..16]: byte: player[1..8] present boolean
+            for (i=0 ; i<8 ; i++) {
+#ifdef DEBUG_DEMO
+	       fprintf( stderr, "[%i] player %i present %i.\n", i+10, i+1, (int)*demo_p );
+#endif
                 playeringame[i] = *demo_p++;
+	    }
         }
         else
         {
-            if( demoversion>=131 )
+ 	    // header[17]: byte: multiplayer boolean
+            if( demoversion>=131 ) {
                 multiplayer = *demo_p++;
+#ifdef DEBUG_DEMO
+ 		fprintf( stderr, "[17] multi-player %i.\n", (int)multiplayer );
+#endif
+	    }
 
-            for (i=0 ; i<32 ; i++)
+ 	    // header[18..50]: byte: player[1..32] present boolean
+            for (i=0 ; i<32 ; i++) {
+#ifdef DEBUG_DEMO
+	        fprintf( stderr, "[%i] player %i present %i.\n", i+18, i+1, (int)*demo_p );
+#endif
                 playeringame[i] = *demo_p++;
+	    }
         }
 #if MAXPLAYERS>32
 #error Please add support for old lmps
