@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_func.c 567 2009-11-26 04:28:42Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -371,13 +371,18 @@ void SF_Include()
 
 void SF_Input()
 {
+#if 1
+   // [WDJ] was disabled in 143beta_macosx
+   // Doing gets() will probably freeze program until user cancels the input.
+   // If it is not available in doom, then why try to do it ??	
         static char inputstr[128];
 
-                gets(inputstr);
+	// [WDJ] NEVER use gets, it can over the buffer, use fgets
+        fgets(inputstr, 128, stdin);
 
         t_return.type = svt_string;
         t_return.value.s = inputstr;
-
+#endif
     CONS_Printf("input() function not available in doom\a\n");
 }
 
