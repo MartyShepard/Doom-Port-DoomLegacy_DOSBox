@@ -1,0 +1,139 @@
+[WDJ]	wesleyjohnson
+
+START: 11/1/2009
+
+*** w1_softerror
+patchfile= w1_softerror.patch
+- committed revision 544   by smite-meister
+Adds a I_SoftError function, as an alternative to I_Error function
+Softerror function prints message once, ignores messages already
+printed, and returns to caller.
+Changes some I_Error calls to I_SoftError
+
+*** w2_doordelay
+patchfile= w2_doordelay.patch
+- committed revision 546    by smite-meister
+Adds a Doordelay control variable and menu item
+Alters the time that a door stays open.  Allows players to
+succeed in overly difficult wads without resorting to noclip.
+
+*** w3_gamma
+patchfile= w3_gamma.patch
+- HOLDING
+Adds another, darker, gamma table.
+See newer gamma generator.
+
+*** w4_zalloc
+patchfile= zalloc.patch,  zalloc_v2.patch
+- HOLDING
+Two critical errors fixed in the Z_Malloc code.
+See newer z_zone.c file, with more capability.
+
+*** w5_heretic
+patchfile= w5_heretic.patch
+- committed revision 548   by smite-meister
+Fixes bug that used up an inventory item with saving the game.
+Fixes bug that crashed program when player time > 15 min.  (no sucks message)
+
+*** w6_time_wrap
+patchfile= w6_time_wrap.patch
+- committed revision 549   by smite-meister
+Fixes bug when time wrapped and program hung.
+
+*** w7_flat
+patchfile= w7_flat.patch
+- committed revision 564   by smite-meister
+Removes old change had flats searching the entire file, ignoring
+F_START and F_END.  This failed for at least one wad, that had the same name
+on a sprite.  Changed to honor F_START and F_END, and only when that fails,
+then search entire file (so that gothic2.wad also works).
+
+*** w8_voodoo
+patchfile= w8_voodoo.patch
+- committed revision 563    by smite-meister
+Create voodoo dolls for extra player1 start positions.
+This is necessary for many wads, which use the voodoo dolls for timers
+and action activators.
+
+*** w9_demo
+patchfile= w9_demo.patch
+- committed revision 562    by smite-meister
+Demo code is commented and all demo versions that cannot be played are
+properly handled such as to prevent crashing the program.
+
+*** w9.1_misc
+patchfile= w91_misc.patch
+- todo
+Comments
+
+*** w9.5_opt_debug
+patchfile= w95_opt_debug.patch
+- for debugging purposes, do not commit
+
+*** w9.6_oldwater
+patchfile= w96_oldwater.patch
+- HOLDING
+- patches to oldwater
+- some comments as to parameter that oldwater needed
+- OLDWATER should be removed
+
+*** w9.7_sound
+patchfile= w97_sound.patch
+- todo
+Patches sdl/i_sound to work.
+ 
+
+*** w10_specials
+patchfile= w10_specials.patch
+- committed revision 552   by wesleyjohnson, 
+Fix, clean and comment, Legacy special linedefs.
+Fixes linedef type specials, for Boom and Legacy
+Adds comments for linedef type specials.
+Fixes comments in some other associated files.
+
+*** w11_status
+patchfile= w10_status.patch
+- committed revision 553     by wesleyjohnson
+Fix bug where life and ammo status would have bad background after
+a save game.  R_FillBackScreen called by G_DoSaveGame, which then did not
+refresh status display, because of unsatisfied global tests.
+
+*** w12_drawpatch
+patchfile= w12_drawpatch.patch
+- committed revision 554, 555,  by wesleyjohnson
+Simplify the combination of DrawPatch and GetLump using PU_CACHE, by
+creating a function that does both.  This brings most of the casual usage
+of PU_CACHE into 3 DrawPatch functions.  This is in preparation for fixing
+usage of PU_CACHE throughout the whole program.
+
+*** w13_alloc_cache
+patchfile= w13_alloc_cache.patch
+- HOLDING
+- Careful analysis of the PU_CACHE usage and fixing any usage where it
+crosses another call of Z_Malloc.
+- Adds additional PU_IN_USE, PU_LUMP, PU_CACHE_DEFAULT, to help prevent
+memory allocated from be deallocated while in use.
+
+*** docs
+patchfile= docs.diff
+- committed revison 565   by wesleyjohnson
+- Update docs for release, and special linedefs
+- Fixes docs for release 1.44
+- Fixes editspec and associated docs to correctly describe the Legacy
+special linedefs.
+
+*** makefile
+patchfile= makefile.patch
+- committed revision 566   by wesleyjohnson
+Fix makefile to work with older make, that does not understand some new
+make syntax.
+Clear up use of LINUX, FREEBSD, keep consistent with docs,
+make new usage explicit.
+Add debug, optimization controls.
+
+*** gets
+patchfile= gets.patch
+- committed revision 567    by wesleyjohnson
+Fix t_func.c to not use the function gets(), which is so bad the
+compiler will warn of any use of it (it overruns the buffer).
+Replaced it with fgets().
