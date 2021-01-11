@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: s_sound.c 571 2009-11-29 01:07:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -292,6 +292,9 @@ void S_RegisterSoundStuff(void)
     CV_RegisterVar(&surround);
 #endif
 
+#if 0
+//[WDJ]  disabled in 143beta_macosx
+//[segabor]
 #ifdef __MACOS__        //mp3 playlist stuff
     {
         int i;
@@ -307,6 +310,7 @@ void S_RegisterSoundStuff(void)
         }
         CV_RegisterVar(&play_mode);
     }
+#endif
 #endif
 }
 

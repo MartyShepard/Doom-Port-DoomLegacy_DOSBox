@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 554 2009-11-11 01:56:40Z wesleyjohnson $
+// $Id: v_video.c 571 2009-11-29 01:07:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -148,9 +148,6 @@
 #include "hardware/hw_glob.h"
 #endif
 
-#if defined (__DJGPP__)
-    #include <math.h>
-#endif
 // Each screen is [vid.width*vid.height];
 byte *screens[5];
 
@@ -339,6 +336,10 @@ void VID_BlitLinearScreen(byte * srcptr, byte * destptr, int width, int height, 
 }
 #endif
 
+// FIX ME
+//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap
+// Many instances in this file.
+
 //
 //  V_DrawMappedPatch : like V_DrawScaledPatch, but with a colormap.
 //
@@ -427,6 +428,7 @@ void V_DrawMappedPatch_Name ( int x, int y, int scrn,
                        W_CachePatchName( name, PU_CACHE ),
 		       colormap );
 }
+
 
 //
 // V_DrawScaledPatch
@@ -526,6 +528,7 @@ void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num )
    V_DrawScaledPatch ( x, y, scrn,
                        W_CachePatchNum( patch_num, PU_CACHE ) );
 }
+
 
 void HWR_DrawSmallPatch(GlidePatch_t * gpatch, int x, int y, int option, byte * colormap);
 // Draws a patch 2x as small. SSNTails 06-10-2003
@@ -1203,7 +1206,12 @@ void V_DrawString(int x, int y, int option, char *string)
             continue;
         }
 
+	//[segabor]
+        w = hu_font[c]->width * dupx;
+#if 0
+//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
         w = SHORT(hu_font[c]->width) * dupx;
+#endif
         if (cx + w > scrwidth)
             break;
         if (option & V_WHITEMAP)
@@ -1285,7 +1293,12 @@ int V_StringWidth(char *string)
         if (c < 0 || c >= HU_FONTSIZE)
             w += 4;
         else
+	    //[segabor]
+            w += hu_font[c]->width;
+#if 0
+//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
             w += SHORT(hu_font[c]->width);
+#endif       
     }
 
     return w;

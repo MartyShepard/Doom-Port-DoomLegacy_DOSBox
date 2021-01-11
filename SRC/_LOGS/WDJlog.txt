@@ -137,3 +137,8 @@ patchfile= gets.patch
 Fix t_func.c to not use the function gets(), which is so bad the
 compiler will warn of any use of it (it overruns the buffer).
 Replaced it with fgets().
+
+*** w16_segabor
+patchfile= w16_segabor.patch
+Brings over the segabor patches from Legacy 143beta_macosx.
+Fixes the SHORT bug, which overused the SHORT and LONG macros to do endian swaps.

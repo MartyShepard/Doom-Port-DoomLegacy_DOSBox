@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 554 2009-11-11 01:56:40Z wesleyjohnson $
+// $Id: m_menu.c 571 2009-11-29 01:07:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1487,8 +1487,12 @@ menuitem_t MouseOptionsMenu[]=
      | IT_CV_SLIDER     ,0,"Mouse Speed"     , &cv_mousesens       ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mlook Speed"     , &cv_mlooksens       ,0}
+#if 0
+//[WDJ] disabled in 143beta_macosx
+//[segabor]
 #ifdef __MACOS__
         ,{IT_CALL   | IT_WHITESTRING,0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
+#endif
 #endif
 };
 
@@ -3416,7 +3420,7 @@ boolean M_Responder (event_t* ev)
         {
             currentMenu = currentMenu->prevMenu;
             itemOn = currentMenu->lastOn;
-	    S_StartSound(NULL,sfx_swtchx); // itis a matter of taste which sound to choose
+	    S_StartSound(NULL,sfx_swtchx); // it´s a matter of taste which sound to choose
             //S_StartSound(NULL,sfx_swtchn);
         }
 	else

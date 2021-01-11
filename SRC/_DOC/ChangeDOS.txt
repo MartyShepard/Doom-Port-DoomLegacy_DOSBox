@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00571 ]: segabor patches from 143beta_macosx
+[00570 ]: -> Commit Path trunk/Legacy .. nothing to od
 [00569 ]: more 64-bit compatibility
 		* DOS
 		  Void updated djgppdos/i_system.c

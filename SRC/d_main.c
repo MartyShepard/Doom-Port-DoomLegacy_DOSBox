@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 554 2009-11-11 01:56:40Z wesleyjohnson $
+// $Id: d_main.c 571 2009-11-29 01:07:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 569;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 571;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -371,6 +371,13 @@ boolean advancedemo;
 
 char wadfile[1024];             // primary wad file
 char mapdir[1024];              // directory of development maps
+
+#ifdef __MACH__
+//[segabor]: for Mac specific resources
+extern char mac_legacy_wad[256];    //legacy.dat in Resources
+extern char mac_md2_wad[256];		//md2.dat in Resources
+extern char mac_user_home[256];		//for config and savegames
+#endif
 
 //
 // EVENT HANDLING
@@ -617,7 +624,12 @@ void D_Display(void)
         else
             y = viewwindowy + 4;
         patch = W_CachePatchName("M_PAUSE", PU_CACHE);
+	//[segabor]: 'SHORT' BUG !
+        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width) / 2, y, 0, patch);
+#if 0
+	//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
         V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width)) / 2, y, 0, patch);
+#endif 
     }
 
     //added:24-01-98:vid size change is now finished if it was on...
@@ -1074,10 +1086,14 @@ void IdentifyVersion(void)
             doomwaddir = ".";
     }
 
+#if 0
+//[WDJ] disabled in 143beta_macosx
+//[segabor]
 #ifdef __MACOS__
     // cwd is always "/" when app is dbl-clicked
     if (!stricmp(doomwaddir, "/"))
         doomwaddir = I_GetWadDir();
+#endif
 #endif
     // Commercial.
     doom2wad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
@@ -1096,8 +1112,13 @@ void IdentifyVersion(void)
     sprintf(doom1wad, "%s/%s", doomwaddir, text[DOOM1WAD_NUM]);
 
     // and... Doom LEGACY !!! :)
+#ifdef __MACH__
+    //[segabor]: on Mac OS X legacy.dat is within .app folder
+    legacywad = mac_legacy_wad;
+#else	
     legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
     sprintf(legacywad, "%s/legacy.wad", doomwaddir);
+#endif
 
     // FinalDoom : Plutonia
     plutoniawad = malloc(strlen(doomwaddir) + 1 + 12 + 1);
@@ -1464,6 +1485,11 @@ void D_DoomMain(void)
         if (!userhome)
             I_Error("Please set $HOME to your home directory\n");
 #endif
+#ifdef __MACH__
+	//[segabor] ... ([WDJ] MAC port has vars handy)
+	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
+	sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
+#else
         if (userhome)
         {
             // use user specific config file
@@ -1483,6 +1509,7 @@ void D_DoomMain(void)
             strcatbf(savegamename, legacyhome, "/");
             I_mkdir(legacyhome, 0700);
         }
+#endif		
     }
 
     if (M_CheckParm("-cdrom"))
@@ -1590,8 +1617,8 @@ void D_DoomMain(void)
     if (gamemode == heretic)
         HereticPatchEngine();
 
-	if(gamemode == chexquest1)
-		Chex1PatchEngine();
+    if(gamemode == chexquest1)
+        Chex1PatchEngine();
 
     CONS_Printf(text[W_INIT_NUM]);
     // load wad, including the main wad file
