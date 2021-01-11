@@ -3,15 +3,16 @@
 <pre>
 
  DooM LEGACY
- Release v1.40, September 2002.
+ Release v1.44, November 2009.
 
- Last Updated: September 2002
+ Last Updated: October 2009
 
  Original game & sources by: Id Software.
  Additions: (c)1998 by: Fabrice Denis & Boris Pereira
             (c)1999 by: Fabrice Denis, Boris Pereira & Thierry Van Elsuwe
             (c)2000 by: Boris Pereira & Thierry Van Elsuwe
             (c)2001-2002 by: Doom Legacy Team
+	    (c)2009 by: Doom Legacy Team
  
  Special thanks to Steven McGranahan, Robert Bäuml and Bell Kin for
  their large contribution and to others Legacy Team members.
@@ -23,6 +24,40 @@
  -----------------------------------------------------------------------
  WHAT'S NEW
  -----------------------------------------------------------------------
+
+ Doom Legacy 1.44 (November 2009)
+ =====================================
+
+ - FEATURES
+   - Gamma generation: Gamma table is generated from two setpoint
+   controls, each of which has 25 positions.
+   - Door Delay: Option control that slows doors by x1.5, x2, etc.
+   so that player has more time to get through them.
+   - SoftError: Many hard errors (fatal) have been changed to soft errors,
+   where the user will get one message, and the game will be allowed
+   to continue.
+   - Voodoo dolls added.  The voodoo doll was an accident of the original
+   Doom, that many wads made use of to trigger linedef actions.
+   Extra player1 starts now create voodoo dolls, with the last being the
+   actual player1 start position.
+   - Demo fixes.  Demos that Legacy cannot playback are now recognized
+   and rejected, so they do not crash the engine.
+ 
+ - BUG FIXES
+   - Flat search logic once again honors the F_START, F_END, FF_START,
+   FF_END markers.  Only if it fails to find the flat within those
+   bounds does it search the entire wad.  At least one wad had an
+   extraneous lump with the same name as a flat, and Legacy will now
+   behave as well as other Doom ports.
+   - ZALLOC memory management fixed.  It had a latent bug that would
+   corrupt memory management for some aligned allocations.  It also
+   allocates more memory now, so larger levels can be handled.
+   - Heretic save game fixed so that it does not use up an inventory
+   item.
+   - Heretic sound fixed.  Heretic uses a different naming scheme
+   for sound effects.
+   - Time tick fixed so that it can handle time count overflow and wrapping.
+ 
 
  Doom Legacy 1.40 (September 2002)
  =====================================
@@ -47,8 +82,8 @@
      - fixed conflicting sector type 4 (heretic/doom)
      - fixed moving hanging mobj on platform (heretic e2m5)
      - fixed error message while saving
-     - fixed crash of e3m8 in heretic caused by objet 56 badly handled
-     - fixed corsshair not showed when joining multiplayer game
+     - fixed crash of e3m8 in heretic caused by object 56 badly handled
+     - fixed crosshair not showed when joining multiplayer game
      - fixed file search in windows version, was causing problem in
        multiplayer game with additional files
      - fixed option "se" not drawed is some video modes
@@ -62,9 +97,9 @@
   Shipped with Launcher 1.4
      - handle e?m? map name in heretic mode
      - added direct 3d sound switch in setup panel
-     - now launcher enclose wad string between quotes to send
-       parameter to legacy this allow space ans special
-       caractere in wad files
+     - now launcher encloses wad string between quotes to send
+       parameter to legacy. This allows space and special
+       characters in wad files
      - option are now saved when legacy is started
 
    Was in beta 2 but no doc updated
@@ -78,7 +113,7 @@
      - fixed final cast not showed corectely
      - fixed some problem with heretic final episode stuffs
      - fixed reset of weapons on doom2 map07, map12 and map21 
-     - fixed bug 427507 : doors no more turn corps to giblet
+     - fixed bug 427507 : doors no more turn corpse to giblet
      - fixed problem with load/save menu screen that screw up 
        the texture cache in glide, and display badly in opengl
      - fixed 3D floors crash in software
@@ -88,7 +123,7 @@
        - fixed heretic invenory key handled in menu (bug 426338)
        - added native support of heretic1.wad
 
-   Was in beta 1 but we forgot to mension it
+   Was in beta 1 but we forgot to mention it
      - removed main wad version checking
      - fixed cannot restart game after end of a episode
 
@@ -102,7 +137,7 @@
      - added gr_coronasize cvar this allow to adjust coronas size 
        to you screen size and your distance to the screen
      - fixed litle glide issues
-     - fixed texturing problem in hardware mode with midle twosided texture
+     - fixed texturing problem in hardware mode with middle twosided texture
      - change the way legacy handle color in opengl/3dfx
        this allow better contrast
      - fixed little problem of backface culling of lights
@@ -114,7 +149,7 @@
    - MULTIPLAYER
      - enable client angle prediction was removed from 1.31 by mistake
      - fixed some issues in network (game sometime lock)
-     - implemented timout detection and kick player if connection timeout
+     - implemented timeout detection and kick player if connection timeout
 
    - MISC
      - added cvar scalestatusbar so you can see it in original size 
@@ -133,7 +168,7 @@
      - fixed little issue that allow to exitlevel even if allowexitlevel 
        cvar was set to false
 
-   - Know bug (don't mail us about it !)
+   - Known bug (don't mail us about it !)
      - in 3dfx/opengl :
        - splat/bullet hole have serious problems
        - water don't show properly
@@ -165,7 +200,7 @@
        1000-1031 prevents other teams from respawning there.
        
    - GAMEPLAY
-     - when solidecorpse is true you can smash it and turn it to giblets !
+     - when solidcorpse is true you can smash it and turn it to giblets !
      - adjust buchholz for suicide.  
      - added FraggleScript scripting capability ! (as beta for now)
          Read the doc for more
@@ -189,7 +224,7 @@
      - fixed splitscreen variable with demoplayback
      - fixed player viewpoint when using F12
      - removed monsters steping
-     - fixed random crach in OpenGl/Glide when load level
+     - fixed random crash in OpenGl/Glide when load level
      - fixed minor stuff to increase compatibility with old wad
      - fixed death meassages issues : telefraged and when weapon change before
        the player die
@@ -252,7 +287,7 @@
      - translucency now use colormaps
      - and fixed some more tiny bugs
 
-   - Know bug (don't mail us about it !)
+   - Known bug (don't mail us about it !)
      - in 3dfx/opengl :
        - splat/bullet hole have serious problems
        - water don't show properly

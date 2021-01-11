@@ -3,15 +3,16 @@
 <pre>
 
  DooM LEGACY
- Release v1.40, September 2002.
+ Release v1.44, November 2009.
 
- Last Updated: September 2002
+ Last Updated: October 2009
 
  Original game & sources by: Id Software.
  Additions: (c)1998 by: Fabrice Denis & Boris Pereira
             (c)1999 by: Fabrice Denis, Boris Pereira & Thierry Van Elsuwe
             (c)2000 by: Boris Pereira & Thierry Van Elsuwe
             (c)2001-2002 by: Doom Legacy Team
+            (c)2009 by: Doom Legacy Team
 
  Special thanks to Steven McGranahan, Robert Bäuml and Bell Kin for
  their large contribution and to others Legacy Team members.
@@ -176,20 +177,30 @@
      of the original game wad, up to the F_END in your pwad, as
      flats.
 
-  >> Section markers are not needed at all for the FLATS. You can
-     get rid of the F_END in a pwad, because only those flats
-     used in the current map are loaded. Since FLAT names are
-     8 chars, they are uniquely identified in the wad files, and
-     they don't need section markers.
+  >> Legacy honors the section markers F_START and F_END.
+     FF_START and FF_END are also honored.  Flats are expected to
+     be within these bounds and these flat areas will be searched first.
+     Separate flat sections within pwad files are supported, and they
+     add flats to those found in the iwad.
 
-  >> You might want to add a F_END after the last flat, for ports
-     that don't support this, and for the original Doom games.
+  >> If a flat name is not found within the flat bounds then Legacy
+     will search the entire iwad and pwad for the flat.  In a previous
+     Legacy it was claimed that section markers are not needed at all
+     for the FLATS, and it ignored the section markers.  Because FLAT
+     names are usually uniquely identified in the wad files it worked for
+     most wads.  However, this broke at least one wad.  This full search
+     is left in for those wads that did not have all the flats within the
+     flat section markers.  This makes some wads work that would not
+     otherwise.
 
-     Flats loading is now different : it supports any number of new
-     flats (using new names), and it only animates those animated
-     flats that are used in a level. YES, this is a feature, because
-     soon you will be able to define as many animated flat sequences
-     as you will.
+  >> Most ports expect F_START and F_END, so put them in.  It makes
+     your wad compatible with other ports, and speeds up the name
+     search in Legacy.
+
+     Legacy flats loading supports any number of new flats (using new
+     names),  and it only animates (loads) those animated flats that are
+     used in a level.  YES, this is a feature, because soon you will be
+     able to define as many animated flat sequences as you will.
 
 
 

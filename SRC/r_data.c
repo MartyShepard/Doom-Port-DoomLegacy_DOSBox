@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 547 2009-10-26 05:40:14Z smite-meister $
+// $Id: r_data.c 564 2009-11-23 03:44:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -135,6 +135,9 @@
 #ifdef __WIN32__
 #include "malloc.h"
 #endif
+
+// [WDJ] debug flat
+//#define DEBUG_FLAT
 
 //
 // Graphics.
@@ -716,14 +719,23 @@ void R_InitFlats ()
 
   for(;cfile < numwadfiles;cfile ++, clump = 0)
   {
+#ifdef DEBUG_FLAT
+    fprintf( stderr, "Flats in file %i\n", cfile );
+#endif	 
     startnum = W_CheckNumForNamePwad("F_START", cfile, clump);
     if(startnum == -1)
     {
+#ifdef DEBUG_FLAT
+      fprintf( stderr, "F_START not found, file %i\n", cfile );
+#endif	 
       clump = 0;
       startnum = W_CheckNumForNamePwad("FF_START", cfile, clump);
 
       if(startnum == -1) //If STILL -1, search the whole file!
       {
+#ifdef DEBUG_FLAT
+	fprintf( stderr, "FF_START not found, file %i\n", cfile );
+#endif	 
         flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
         flats[numflatlists].wadfile = cfile;
         flats[numflatlists].firstlump = 0;
@@ -734,8 +746,17 @@ void R_InitFlats ()
     }
 
     endnum = W_CheckNumForNamePwad("F_END", cfile, clump);
-    if(endnum == -1)
+    if(endnum == -1) {
+#ifdef DEBUG_FLAT
+      fprintf( stderr, "F_END not found, file %i\n", cfile );
+#endif	 
       endnum = W_CheckNumForNamePwad("FF_END", cfile, clump);
+#ifdef DEBUG_FLAT
+      if( endnum == -1 ) {
+	 fprintf( stderr, "FF_END not found, file %i\n", cfile );
+      }
+#endif	 
+    }
 
     if(endnum == -1 || (startnum &0xFFFF) > (endnum & 0xFFFF))
     {
@@ -763,12 +784,29 @@ void R_InitFlats ()
 
 int R_GetFlatNumForName(char *name)
 {
-    // BP: don't work with gothic2.wad
-  //return R_CheckNumForNameList(name, flats, numflatlists);
+  // [WDJ] No use in saving F_START if are not going to use them.
+  // FreeDoom, where a flat and sprite both had same name,
+  // would display sprite as a flat, badly.
+  // Use F_START and F_END first, to find flats without getting a non-flat,
+  // and only if not found then try whole file.
+  
+  int lump = R_CheckNumForNameList(name, flats, numflatlists);
 
-  int lump = W_CheckNumForName(name); 
-  if(lump == -1)
-    I_Error("R_GetFlatNumForName: Could not find flat %.8s\n", name);
+  if(lump == -1) {
+     // BP:([WDJ] R_CheckNumForNameList) don't work with gothic2.wad
+     // [WDJ] Some wads are reported to use a flat as a patch, but that would
+     // have to be handled in the patch display code.
+     // If this search finds a sprite, sound, etc., it will display
+     // multi-colored confetti.
+     lump = W_CheckNumForName(name);
+  }
+  
+  if(lump == -1) {
+     // [WDJ] When not found, dont quit, use first flat by default.
+//    I_Error("R_GetFlatNumForName: Could not find flat %.8s\n", name);
+     I_SoftError("R_GetFlatNumForName: Could not find flat %.8s\n", name);
+     lump = flats[0].firstlump;	// default to first flat
+  }
 
   return lump;
 }
@@ -836,7 +874,8 @@ void R_ClearColormaps()
 }
 
 
-
+// [WDJ] The name parameter has trailing garbage, but the name lookup
+// only uses the first 8 chars.
 int R_ColormapNumForName(char *name)
 {
   int lump, i;
