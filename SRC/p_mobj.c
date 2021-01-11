@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_mobj.c 563 2009-11-23 03:36:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -178,6 +178,119 @@
 #include "r_splats.h"   //faB: in dev.
 
 #include "b_game.h"     //added by AC for acbot
+
+#define VOODOO_DOLL
+
+#ifdef VOODOO_DOLL
+// [WDJ] Voodoo doll 4/30/2009
+// #define VOODOO_DEBUG
+// VOODOO PLAYER disconnects it from any player,
+// otherwise voodoo doll is connected to player1 as is original accident.
+#define VOODOO_PLAYER
+#ifdef VOODOO_PLAYER
+struct player_s  voodoo_player;	// hook voodoo dolls here to get them off player
+#endif
+
+// A voodoo doll is a player mobj that is not under control of the player.
+// 
+// A voodoo doll is an accident of having multiple start points for a player.
+// It has been used in levels as a token to trip linedefs and create
+// sequenced actions, and thus are required to play some wads, like FreeDoom.
+
+// Set an mobj to be a voodoo doll.
+void P_Set_Voodoo( mobj_t * voodoo_mobj )
+{
+#ifdef VOODOO_DEBUG   
+   fprintf(stderr,"Set Voodoo mobj\n");
+#endif
+#ifdef VOODOO_PLAYER   
+   // Must have player set for P_XYMovement and P_ActivateCrossedLine
+   // NULL player will not trip W1 linedef, P_ActivateCrossedLine uses test
+   // on player field.
+   voodoo_mobj->player = &voodoo_player;	// disconnect from real player
+#else   
+   voodoo_mobj->player = &players[0];	// point to real player
+     // [WDJ] For some reason this works, but do not know why.
+     // Shooting the voodoo doll does not damage the player, and the voodoo
+     // doll is indestructable.
+#endif
+   
+   // reasonable voodoo settings, and makes voodoo detectable
+   voodoo_mobj->flags &= ~(MF_PICKUP | MF_COUNTKILL | MF_COUNTITEM);
+   voodoo_mobj->flags |= MF_NOBLOOD;
+   voodoo_mobj->flags2 |= MF2_NODMGTHRUST;
+   
+   voodoo_mobj->skin = 0;	// orig marine skin
+   voodoo_mobj->angle = 0;
+   voodoo_mobj->health = 100;
+   
+#ifdef VOODOO_PLAYER
+#ifdef VOODOO_DEBUG   
+   fprintf(stderr,"Set Voodoo player\n");
+#endif   
+   // init the voodoo_player
+   memset(&voodoo_player, 0, sizeof(voodoo_player));
+   voodoo_player.mo = voodoo_mobj;	// critical
+//   voodoo_player.playerstate = PST_LIVE;
+   voodoo_player.playerstate = PST_DEAD;  // can trip linedefs while dead
+   voodoo_player.cheats |= CF_GODMODE;
+   voodoo_player.weaponinfo = doomweaponinfo;	// because of weapon checks
+      // otherwise segfault in P_BringUpWeapon
+#if 0
+   voodoo_player.readyweapon = 0;
+   voodoo_player.weaponowned[wp_fist] = true;
+   // dummy settings
+   voodoo_player.message = NULL;
+   voodoo_player.rain1 = NULL;
+   voodoo_player.rain2 = NULL;
+   voodoo_player.attacker = NULL;
+   voodoo_player.bot = NULL;
+#endif   
+#ifdef CLIENTPREDICTION2
+   // For completeness
+#ifdef VOODOO_DEBUG   
+   fprintf(stderr,"Set Voodoo spirit\n");
+#endif   
+    if (demoversion > 132)
+    {
+        //added 1-6-98 : for movement prediction
+        if (voodoo_player.spirit)
+            CL_ResetSpiritPosition(&voodoo_mobj);       // reset spirit position
+        else
+            voodoo_player.spirit = P_SpawnMobj(voodoo_mobj.x, voodoo_mobj.y, voodoo_mobj.z, MT_SPIRIT);
+
+        voodoo_player.spirit->skin = voodoo_mobj.skin;
+        voodoo_player.spirit->angle = voodoo_mobj.angle;
+        voodoo_player.spirit->player = voodoo_mobj.player;
+        voodoo_player.spirit->health = voodoo_mobj.health;
+        voodoo_player.spirit->movedir = weapontobutton[voodoo_player.readyweapon];
+        voodoo_player.spirit->flags2 |= MF2_DONTDRAW;
+    }
+#endif
+   P_SetupPsprites(&voodoo_player);
+#endif   
+#ifdef VOODOO_DEBUG   
+   fprintf(stderr,"Set Voodoo done\n");
+#endif   
+}
+
+// Spawn voodoo doll at a playerspawn mapthing start point
+void P_SpawnVoodoo(mapthing_t * mthing)
+{
+   // A copy of P_SpawnPlayer, with the player removed
+   // position
+    fixed_t x = mthing->x << FRACBITS;
+    fixed_t y = mthing->y << FRACBITS;
+    fixed_t z = ONFLOORZ;
+    
+    mobj_t *mobj = P_SpawnMobj(x, y, z, MT_PLAYER);
+       // does P_SetThingPosition
+    //SoM:
+    mthing->mobj = mobj;
+   
+    P_Set_Voodoo( mobj );
+}
+#endif
 
 // protos.
 CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}
@@ -1613,6 +1726,19 @@ void P_SpawnPlayer(mapthing_t * mthing)
 
     mobj->player = p;
     mobj->health = p->health;
+   
+#ifdef VOODOO_DOLL
+   // [WDJ] voodoo doll detect.
+   // If there is already an mobj for this player, then the old could be
+   // a voodoo doll. ZDoom detects voodoo doll here, but prboom does not check here.
+   // Could also remove the mobj, or not create another.
+   if( p->mo ){  // player already has an mobj
+      // This should not happen as multiple start points are already detected.
+      P_Set_Voodoo( p->mo );
+      CONS_Printf( "Player multiple spawn, prev set to Voodoo doll\n" );
+   }
+#endif   
+    
 
     p->mo = mobj;
     p->playerstate = PST_LIVE;
@@ -1707,11 +1833,30 @@ void P_SpawnMapThing (mapthing_t* mthing)
     //SoM: 4/7/2000: Fix crashing bug.
     if ((mthing->type > 0 && mthing->type <= 4) || (mthing->type <= 4028 && mthing->type >= 4001))
     {
-        if (mthing->type > 4000)
+       int playernum;
+       // Player spawn code uses mthing->type as player index.
+       // The mobj type must not be generally tested after this mangling.
+        if (mthing->type > 4000)	// expanded player starts
             mthing->type = mthing->type - 4001 + 5;
 
+       playernum = mthing->type - 1;
+       
+#ifdef VOODOO_DOLL
+       // [WDJ] Detect voodoo doll as multiple start points.
+       // Extra player1 start points spawn voodoo dolls,
+       // the last is the actual player1 start point.
+       // Only for player1, so do not get any unexpected voodoo dolls.
+       if( (playernum == 0) && playerstarts[playernum] ) {
+	  // Spawn the previous player1 start point as a voodoo doll.
+	  // Such a voodoo doll can trip linedefs, but is not counted as
+	  // a monster nor as a player.
+	  CONS_Printf("Multiple player1 start points, spawn as Voodoo doll.\n");
+	  P_SpawnVoodoo( playerstarts[playernum] );
+       }
+#endif
+       
         // save spots for respawning in network games
-        playerstarts[mthing->type - 1] = mthing;
+        playerstarts[playernum] = mthing;
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
