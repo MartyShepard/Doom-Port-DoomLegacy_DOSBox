@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_bsp.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -316,7 +316,7 @@ void R_ClearClipSegs (void)
 {
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;
-    solidsegs[1].first = viewwidth;
+    solidsegs[1].first = rdraw_viewwidth;
     solidsegs[1].last = 0x7fffffff;
     newend = solidsegs+2;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_draw.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -92,10 +92,14 @@
 //                     COMMON DATA FOR 8bpp AND 16bpp
 // ==========================================================================
 
+// [WDJ] rdraw_ are "render drawing window" variables, which have the
+// dimensions of the window into which the span and column routines draw.
+// (view is already used by player, window is also used, rw_ is used)
 byte*           viewimage;
-int             viewwidth;
-int             scaledviewwidth;
-int             viewheight;
+int             rdraw_viewwidth;		// was viewwidth
+int             rdraw_scaledviewwidth;		// was scaledrviewwidth
+int             rdraw_viewheight;		// was viewheight
+// position of smaller rdraw_view window within vid window
 int             viewwindowx;
 int             viewwindowy;
 
@@ -450,9 +454,10 @@ void R_FillBackScreen (void)
 
      //added:08-01-98:draw pattern around the status bar too (when hires),
     //                so return only when in full-screen without status bar.
-    if ((scaledviewwidth == vid.width)&&(viewheight==vid.height))
+    if ((rdraw_scaledviewwidth == vid.width)&&(rdraw_viewheight==vid.height))
         return;
 
+    // draw pattern around the status bar
     src  = scr_borderpatch;
     dest = screens[1];
 
@@ -472,9 +477,10 @@ void R_FillBackScreen (void)
     }
 
     //added:08-01-98:dont draw the borders when viewwidth is full vid.width.
-    if (scaledviewwidth == vid.width)
+    if (rdraw_scaledviewwidth == vid.width)
        return;
-    
+
+    // viewwindow borders
     if( gamemode == heretic )
     {
         step = 16;
@@ -487,17 +493,17 @@ void R_FillBackScreen (void)
     }
 
     patch = W_CacheLumpNum (viewborderlump[BRDR_T],PU_CACHE);
-    for (x=0 ; x<scaledviewwidth ; x+=step)
+    for (x=0 ; x<rdraw_scaledviewwidth ; x+=step)
         V_DrawPatch (viewwindowx+x,viewwindowy-boff,1,patch);
     patch = W_CacheLumpNum (viewborderlump[BRDR_B],PU_CACHE);
-    for (x=0 ; x<scaledviewwidth ; x+=step)
-        V_DrawPatch (viewwindowx+x,viewwindowy+viewheight,1,patch);
+    for (x=0 ; x<rdraw_scaledviewwidth ; x+=step)
+        V_DrawPatch (viewwindowx+x,viewwindowy+rdraw_viewheight,1,patch);
     patch = W_CacheLumpNum (viewborderlump[BRDR_L],PU_CACHE);
-    for (y=0 ; y<viewheight ; y+=step)
+    for (y=0 ; y<rdraw_viewheight ; y+=step)
         V_DrawPatch (viewwindowx-boff,viewwindowy+y,1,patch);
     patch = W_CacheLumpNum (viewborderlump[BRDR_R],PU_CACHE);
-    for (y=0 ; y<viewheight ; y+=step)
-        V_DrawPatch (viewwindowx+scaledviewwidth,viewwindowy+y,1,patch);
+    for (y=0 ; y<rdraw_viewheight ; y+=step)
+        V_DrawPatch (viewwindowx+rdraw_scaledviewwidth,viewwindowy+y,1,patch);
 
     // Draw beveled corners.
     V_DrawPatch (viewwindowx-boff,
@@ -505,18 +511,18 @@ void R_FillBackScreen (void)
                  1,
                  W_CacheLumpNum (viewborderlump[BRDR_TL],PU_CACHE));
 
-    V_DrawPatch (viewwindowx+scaledviewwidth,
+    V_DrawPatch (viewwindowx+rdraw_scaledviewwidth,
                  viewwindowy-boff,
                  1,
                  W_CacheLumpNum (viewborderlump[BRDR_TR],PU_CACHE));
 
     V_DrawPatch (viewwindowx-boff,
-                 viewwindowy+viewheight,
+                 viewwindowy+rdraw_viewheight,
                  1,
                  W_CacheLumpNum (viewborderlump[BRDR_BL],PU_CACHE));
 
-    V_DrawPatch (viewwindowx+scaledviewwidth,
-                 viewwindowy+viewheight,
+    V_DrawPatch (viewwindowx+rdraw_scaledviewwidth,
+                 viewwindowy+rdraw_viewheight,
                  1,
                  W_CacheLumpNum (viewborderlump[BRDR_BR],PU_CACHE));
 }
@@ -557,14 +563,14 @@ void R_DrawViewBorder (void)
 
 
 #ifdef DEBUG
-    fprintf(stderr,"RDVB: vidwidth %d vidheight %d scaledviewwidth %d viewheight %d\n",
-             vid.width,vid.height,scaledviewwidth,viewheight);
+    fprintf(stderr,"RDVB: vidwidth %d vidheight %d rdraw_scaledviewwidth %d rdraw_viewheight %d\n",
+             vid.width,vid.height,rdraw_scaledviewwidth,rdraw_viewheight);
 #endif
 
      //added:08-01-98: draw the backtile pattern around the status bar too
     //                 (when statusbar width is shorter than vid.width)
     /*
-    if( (vid.width>ST_WIDTH) && (vid.height!=viewheight) )
+    if( (vid.width>ST_WIDTH) && (vid.height!=rdraw_viewheight) )
     {
         ofs  = (vid.height-stbarheight)*vid.width;
         side = (vid.width-ST_WIDTH)>>1;
@@ -579,17 +585,18 @@ void R_DrawViewBorder (void)
         R_VideoErase(ofs,side);
     }*/
 
-    if (scaledviewwidth == vid.width)
+    if (rdraw_scaledviewwidth == vid.width)
         return;
-
-    top  = (vid.height-stbarheight-viewheight) >>1;
-    side = (vid.width-scaledviewwidth) >>1;
+   
+    // draw view border
+    top  = (vid.height-stbarheight-rdraw_viewheight) >>1;
+    side = (vid.width-rdraw_scaledviewwidth) >>1;
 
     // copy top and one line of left side
     R_VideoErase (0, top*vid.width+side);
 
     // copy one line of right side and bottom
-    ofs = (viewheight+top)*vid.width-side;
+    ofs = (rdraw_viewheight+top)*vid.width-side;
     R_VideoErase (ofs, top*vid.width+side);
 
     // copy sides using wraparound
@@ -598,7 +605,7 @@ void R_DrawViewBorder (void)
 
     //added:05-02-98:simpler using our new VID_Blit routine
     VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
-                         side, viewheight-1, vid.width, vid.width);
+                         side, rdraw_viewheight-1, vid.width, vid.width);
 
     // useless, old dirty rectangle stuff
     //V_MarkRect (0,0,vid.width, vid.height-stbarheight);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 544 2009-09-27 23:20:31Z smite-meister $
+// $Id: r_things.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1005,7 +1005,7 @@ static void R_ProjectSprite (mobj_t* thing)
     x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
 
     // off the right side?
-    if (x1 > viewwidth)
+    if (x1 > rdraw_viewwidth)
         return;
 
     tx +=  spritewidth[lump];
@@ -1071,7 +1071,7 @@ static void R_ProjectSprite (mobj_t* thing)
          vis->texturemid -= 10*FRACUNIT;
 
     vis->x1 = x1 < 0 ? 0 : x1;
-    vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+    vis->x2 = x2 >= rdraw_viewwidth ? rdraw_viewwidth-1 : x2;
     vis->xscale = xscale; //SoM: 4/17/2000
     vis->sector = thing->subsector->sector;
     vis->szt = (centeryfrac - FixedMul(vis->gzt - viewz, yscale)) >> FRACBITS;
@@ -1268,7 +1268,7 @@ void R_DrawPSprite (pspdef_t* psp)
     x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
     // off the right side
-    if (x1 > viewwidth)
+    if (x1 > rdraw_viewwidth)
         return;
 
     tx +=  spritewidth[lump];
@@ -1286,14 +1286,15 @@ void R_DrawPSprite (pspdef_t* psp)
     else
         vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
 
-    if( raven )
-        if( viewheight == vid.height || (!cv_scalestatusbar.value && vid.dupy>1))
+    if( raven ) {
+        if( rdraw_viewheight == vid.height || (!cv_scalestatusbar.value && vid.dupy>1))
             vis->texturemid -= PSpriteSY[viewplayer->readyweapon];
+    }
 
     //vis->texturemid += FRACUNIT/2;
 
     vis->x1 = x1 < 0 ? 0 : x1;
-    vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+    vis->x2 = x2 >= rdraw_viewwidth ? rdraw_viewwidth-1 : x2;
     vis->scale = pspriteyscale;  //<<detailshift;
 
     if (flip)
@@ -1847,7 +1848,7 @@ void R_DrawSprite (vissprite_t* spr)
         int phs = viewplayer->mo->subsector->sector->heightsec;
         if ((mh = sectors[spr->heightsec].floorheight) > spr->gz &&
            (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0 &&
-           (h >>= FRACBITS) < viewheight)
+           (h >>= FRACBITS) < rdraw_viewheight)
         {
             if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
             {                          // clip bottom
@@ -1865,7 +1866,7 @@ void R_DrawSprite (vissprite_t* spr)
 
         if ((mh = sectors[spr->heightsec].ceilingheight) < spr->gzt &&
            (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0 &&
-           (h >>= FRACBITS) < viewheight)
+           (h >>= FRACBITS) < rdraw_viewheight)
         {
             if (phs != -1 && viewz >= sectors[phs].ceilingheight)
             {                         // clip bottom
@@ -1922,7 +1923,7 @@ void R_DrawSprite (vissprite_t* spr)
     for (x = spr->x1 ; x<=spr->x2 ; x++)
     {
         if (clipbot[x] == -2)
-            clipbot[x] = viewheight;
+            clipbot[x] = rdraw_viewheight;
 
         if (cliptop[x] == -2)
             //Fab:26-04-98: was -1, now clips against console bottom

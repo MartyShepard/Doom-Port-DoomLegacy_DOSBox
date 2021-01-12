@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: d_main.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 571;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 572;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -543,7 +543,7 @@ void D_Display(void)
         }
 
         // see if the border needs to be updated to the screen
-        if (!automapactive && (scaledviewwidth != vid.width))
+        if (!automapactive && (rdraw_scaledviewwidth != vid.width))
         {
             // the menu may draw over parts out of the view window,
             // which are refreshed only when needed
@@ -588,14 +588,16 @@ void D_Display(void)
                 else
 #endif
                 {
+					// Alter the draw tables to draw into second player window					
                     //faB: Boris hack :P !!
                     viewwindowy = vid.height / 2;
-                    memcpy(ylookup, ylookup2, viewheight * sizeof(ylookup[0]));
+                    memcpy(ylookup, ylookup2, rdraw_viewheight * sizeof(ylookup[0]));
 
                     R_RenderPlayerView(&players[secondarydisplayplayer]);
 
+					// Restore first player tables
                     viewwindowy = 0;
-                    memcpy(ylookup, ylookup1, viewheight * sizeof(ylookup[0]));
+                    memcpy(ylookup, ylookup1, rdraw_viewheight * sizeof(ylookup[0]));
                 }
 #ifdef CLIENTPREDICTION2
                 players[secondarydisplayplayer].mo->flags2 &= ~MF2_DONTDRAW;

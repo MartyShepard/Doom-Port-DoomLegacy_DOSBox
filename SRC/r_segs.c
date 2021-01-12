@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 552 2009-11-11 01:40:13Z wesleyjohnson $
+// $Id: r_segs.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -122,6 +122,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
+#include "doomstat.h"
 #include "r_local.h"
 #include "r_sky.h"
 
@@ -737,7 +738,7 @@ void R_RenderThickSideRange (drawseg_t* ds,
     sector_t        tempsec;
     int             templight;
     int             i, p;
-    fixed_t         bottombounds = viewheight << FRACBITS;
+    fixed_t         bottombounds = rdraw_viewheight << FRACBITS;
     fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
     fixed_t         offsetvalue = 0;
     lightlist_t     *light;
@@ -1318,7 +1319,7 @@ void R_RenderSegLoop (void)
             
             // dont draw anything more for this column, since
             // a midtexture blocks the view
-            ceilingclip[rw_x] = viewheight;
+            ceilingclip[rw_x] = rdraw_viewheight;
             floorclip[rw_x] = -1;
         }
         else
@@ -1496,7 +1497,7 @@ void R_StoreWallRange( int   start, int   stop)
 
     
 #ifdef RANGECHECK
-    if (start >=viewwidth || start > stop)
+    if (start >=rdraw_viewwidth || start > stop)
         I_Error ("Bad R_RenderWallRange: %i to %i", start , stop);
 #endif
     

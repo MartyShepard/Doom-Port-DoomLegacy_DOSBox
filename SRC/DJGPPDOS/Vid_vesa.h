@@ -42,7 +42,7 @@
 #define LINEAR_FRAME_BUFFER     0x0080
 #define LINEAR_MODE             0x4000
 
-#define MAX_VESA_MODES          30  // we'll just take the first 30 if there
+#define MAX_VESA_MODES          300  // we'll just take the first 30 if there
 
 
 // VESA information block structure

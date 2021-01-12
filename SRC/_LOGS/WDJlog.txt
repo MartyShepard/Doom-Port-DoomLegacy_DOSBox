@@ -140,5 +140,14 @@ Replaced it with fgets().
 
 *** w16_segabor
 patchfile= w16_segabor.patch
+- committed revision 571   by wesley johnson
 Brings over the segabor patches from Legacy 143beta_macosx.
 Fixes the SHORT bug, which overused the SHORT and LONG macros to do endian swaps.
+
+*** w17_rdraw
+patchfile= w17_rdraw.patch
+Rename of some rdraw variables to add the prefix rdraw_ to give them more unique names,
+because they were named identical to some other variables in structs.  This makes it
+much easier to grep or search for all uses, and to realize exactly which variable was
+being used.
+

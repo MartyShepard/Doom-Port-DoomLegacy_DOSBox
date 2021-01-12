@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_main.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -705,7 +705,7 @@ void R_InitTextureMapping (void)
         if (finetangent[i] > FRACUNIT*2)
             t = -1;
         else if (finetangent[i] < -FRACUNIT*2)
-            t = viewwidth+1;
+            t = rdraw_viewwidth+1;
         else
         {
             t = FixedMul (finetangent[i], focallength);
@@ -713,8 +713,8 @@ void R_InitTextureMapping (void)
 
             if (t < -1)
                 t = -1;
-            else if (t>viewwidth+1)
-                t = viewwidth+1;
+            else if (t>rdraw_viewwidth+1)
+                t = rdraw_viewwidth+1;
         }
         viewangletox[i] = t;
     }
@@ -722,7 +722,7 @@ void R_InitTextureMapping (void)
     // Scan viewangletox[] to generate xtoviewangle[]:
     //  xtoviewangle will give the smallest view angle
     //  that maps to x.
-    for (x=0;x<=viewwidth;x++)
+    for (x=0;x<=rdraw_viewwidth;x++)
     {
         i = 0;
         while (viewangletox[i]>x)
@@ -738,8 +738,8 @@ void R_InitTextureMapping (void)
 
         if (viewangletox[i] == -1)
             viewangletox[i] = 0;
-        else if (viewangletox[i] == viewwidth+1)
-            viewangletox[i]  = viewwidth;
+        else if (viewangletox[i] == rdraw_viewwidth+1)
+            viewangletox[i]  = rdraw_viewwidth;
     }
 
     clipangle = xtoviewangle[0];
@@ -856,27 +856,27 @@ void R_ExecuteSetViewSize (void)
     //added 01-01-98: full screen view, without statusbar
     if (cv_viewsize.value > 10)
     {
-        scaledviewwidth = vid.width;
-        viewheight = vid.height;
+        rdraw_scaledviewwidth = vid.width;
+        rdraw_viewheight = vid.height;
     }
     else
     {
         //added 01-01-98: always a multiple of eight
-        scaledviewwidth = (cv_viewsize.value*vid.width/10)&~7;
-        //added:05-02-98: make viewheight multiple of 2 because sometimes
+        rdraw_scaledviewwidth = (cv_viewsize.value*vid.width/10)&~7;
+        //added:05-02-98: make rdraw_viewheight multiple of 2 because sometimes
         //                a line is not refreshed by R_DrawViewBorder()
-        viewheight = (cv_viewsize.value*(vid.height-stbarheight)/10)&~1;
+        rdraw_viewheight = (cv_viewsize.value*(vid.height-stbarheight)/10)&~1;
     }
 
     // added 16-6-98:splitscreen
     if( cv_splitscreen.value )
-        viewheight >>= 1;
+        rdraw_viewheight >>= 1;
 
     detailshift = setdetail;
-    viewwidth = scaledviewwidth>>detailshift;
+    rdraw_viewwidth = rdraw_scaledviewwidth>>detailshift;
 
-    centery = viewheight/2;
-    centerx = viewwidth/2;
+    centery = rdraw_viewheight/2;
+    centerx = rdraw_viewwidth/2;
     centerxfrac = centerx<<FRACBITS;
     centeryfrac = centery<<FRACBITS;
 
@@ -891,7 +891,7 @@ void R_ExecuteSetViewSize (void)
     //
     // if (!detailshift) ... else ...
 
-    R_InitViewBuffer (scaledviewwidth, viewheight);
+    R_InitViewBuffer (rdraw_scaledviewwidth, rdraw_viewheight);
 
     R_InitTextureMapping ();
 
@@ -901,16 +901,16 @@ void R_ExecuteSetViewSize (void)
 #endif
 
     // psprite scales
-    centerypsp = viewheight/2;  //added:06-02-98:psprite pos for freelook
+    centerypsp = rdraw_viewheight/2;  //added:06-02-98:psprite pos for freelook
 
-    pspritescale  = (viewwidth<<FRACBITS)/BASEVIDWIDTH;
-    pspriteiscale = (BASEVIDWIDTH<<FRACBITS)/viewwidth;   // x axis scale
+    pspritescale  = (rdraw_viewwidth<<FRACBITS)/BASEVIDWIDTH;
+    pspriteiscale = (BASEVIDWIDTH<<FRACBITS)/rdraw_viewwidth;   // x axis scale
     //added:02-02-98:now aspect ratio correct for psprites
-    pspriteyscale = (((vid.height*viewwidth)/vid.width)<<FRACBITS)/BASEVIDHEIGHT;
+    pspriteyscale = (((vid.height*rdraw_viewwidth)/vid.width)<<FRACBITS)/BASEVIDHEIGHT;
 
     // thing clipping
-    for (i=0 ; i<viewwidth ; i++)
-        screenheightarray[i] = viewheight;
+    for (i=0 ; i<rdraw_viewwidth ; i++)
+        screenheightarray[i] = rdraw_viewheight;
 
     // setup sky scaling for old/new skies (uses pspriteyscale)
     R_SetSkyScale ();
@@ -921,17 +921,17 @@ void R_ExecuteSetViewSize (void)
 
     if ( rendermode == render_soft ) {
         // this is only used for planes rendering in software mode
-        j = viewheight*4;
+        j = rdraw_viewheight*4;
         for (i=0 ; i<j ; i++)
         {
-            //added:10-02-98:(i-centery) became (i-centery*2) and centery*2=viewheight
-            dy = ((i-viewheight*2)<<FRACBITS)+FRACUNIT/2;
+            //added:10-02-98:(i-centery) became (i-centery*2) and centery*2=rdraw_viewheight
+            dy = ((i-rdraw_viewheight*2)<<FRACBITS)+FRACUNIT/2;
             dy = abs(dy);
             yslopetab[i] = FixedDiv (aspectx*FRACUNIT, dy);
         }
     }
 
-    for (i=0 ; i<viewwidth ; i++)
+    for (i=0 ; i<rdraw_viewwidth ; i++)
     {
         cosadj = abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
         distscale[i] = FixedDiv (FRACUNIT,cosadj);
@@ -944,7 +944,7 @@ void R_ExecuteSetViewSize (void)
         startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
         for (j=0 ; j<MAXLIGHTSCALE ; j++)
         {
-            level = startmap - j*vid.width/(viewwidth<<detailshift)/DISTMAP;
+            level = startmap - j*vid.width/(rdraw_viewwidth<<detailshift)/DISTMAP;
 
             if (level < 0)
                 level = 0;
@@ -1200,22 +1200,29 @@ void R_SetupFrame (player_t* player)
 
     //added:06-02-98:recalc necessary stuff for mouseaiming
     //               slopes are already calculated for the full
-    //               possible view (which is 4*viewheight).
+    //               possible view (which is 4*rdraw_viewheight).
 
     if ( rendermode == render_soft )
     {
+        int indx;	// [WDJ] debug
         // clip it in the case we are looking a hardware 90° full aiming
         // (lmps, nework and use F12...)
-        G_ClipAimingPitch(&aimingangle);
+        G_ClipAimingPitch(&aimingangle);	// limit aimingangle
 
+#if 1
+        // [WDJ] cleaned up
+        dy = cv_splitscreen.value ? rdraw_viewheight*2 : rdraw_viewheight ;
+        dy = ( dy * AIMINGTODY(aimingangle) )/ BASEVIDHEIGHT ;
+#else
         if(!cv_splitscreen.value)
-            dy = AIMINGTODY(aimingangle)* viewheight/BASEVIDHEIGHT ;
+            dy = AIMINGTODY(aimingangle)* rdraw_viewheight/BASEVIDHEIGHT ;
         else
-            dy = AIMINGTODY(aimingangle)* viewheight*2/BASEVIDHEIGHT ;
+            dy = AIMINGTODY(aimingangle)* rdraw_viewheight*2/BASEVIDHEIGHT ;
+#endif
 
-        yslope = &yslopetab[(3*viewheight/2) - dy];
+        yslope = &yslopetab[(3*rdraw_viewheight/2) - dy];
     }
-    centery = (viewheight/2) + dy;
+    centery = (rdraw_viewheight/2) + dy;
     centeryfrac = centery<<FRACBITS;
 
     framecount++;
@@ -1235,18 +1242,18 @@ void R_RotateBuffere (void)
     int     i,dl;
 
 
-#define modulo 200  //= viewheight;
+#define modulo 200  //= rdraw_viewheight;
 
     srcr  = yhlookup[0];
     destr = ylookup[0] + columnofs[0];
 
-    bh = viewwidth / CACHELINES;
+    bh = rdraw_viewwidth / CACHELINES;
     while (bh--)
     {
         srca = srcr;
         dest = destr;
 
-        bw = viewheight;
+        bw = rdraw_viewheight;
         while (bw--)
         {
              src  = srca++;
@@ -1260,7 +1267,7 @@ void R_RotateBuffere (void)
              }
              dest = (dest - CACHELINES) + vid.width;
         }
-        srcr  -= (CACHELINES*viewheight);
+        srcr  -= (CACHELINES*rdraw_viewheight);
         destr += CACHELINES;
     }
 }
@@ -1380,7 +1387,7 @@ void R_RegisterEngineStuff (void)
 //    CV_RegisterVar (&cv_fov);
 
     // Default viewheight is changeable,
-    // initialized to standard viewheight
+    // initialized to standard rdraw_viewheight
     CV_RegisterVar (&cv_viewheight);
     CV_RegisterVar (&cv_scalestatusbar);
     CV_RegisterVar (&cv_grtranslucenthud);

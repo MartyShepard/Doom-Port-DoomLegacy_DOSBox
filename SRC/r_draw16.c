@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_draw16.c 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -153,8 +153,8 @@ void R_DrawFuzzColumn_16 (void)
         dc_yl = 1;
 
     // .. and high.
-    if (dc_yh == viewheight-1)
-        dc_yh = viewheight - 2;
+    if (dc_yh == rdraw_viewheight-1)
+        dc_yh = rdraw_viewheight - 2;
 
     count = dc_yh - dc_yl;
 
