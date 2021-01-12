@@ -1,0 +1,20 @@
+smite-meister's log
+
+Started: 2010-02-07
+
+
+*** OLDWATER removal
+- committed rev 596, 597
+OLDWATER was an attempt at implementing realistic water using negative
+sector tag values (-tag == water height). It used values 888 and 887
+in the player_t::specialsector field to denote negative tag- and floor
+flat image -based water content, respectively. It also used
+visplane_t::picnum value 1998 to denote a water plane.
+
+Removed completely, as we now have better methods for creating water.
+
+
+*** Added this log
+- committed rev 598
+
+

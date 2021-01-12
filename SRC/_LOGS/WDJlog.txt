@@ -298,7 +298,7 @@ Comments are added to document discovered information.
 Some names are changed to better reflect their intended usage, and
 reduce confusion with the same name in different usage.
 
-*** w36_texture_generate
+*** w36_draw_clip
 patchfile = w36_draw_clip.patch
 - committed revision 595   by wesley johnson
 Fix segfaults due to low level draw using bad ylookup[].
@@ -312,6 +312,30 @@ the sprites present.
 Comments are added to document discovered information.
 Some names are changed to better reflect their intended usage, and
 reduce confusion with the same name in different usage.
+
+*** w36b_draw_clip
+patchfile = w36b_draw_clip.patch
+- committed revision 599   by wesley johnson
+Move some {} and put \n on some I_SoftError.
+
+*** w37_multi_patch_texture
+patchfile = w37_multi_patch.patch
+- committed revision    by wesley johnson
+Added capability to combine patches (from a multi-patch texture) into
+one patch, that has transparent regions.  This is needed for phobiata.wad
+and makes a great difference in the appearance.  The gates and fences
+can now be seen through.
+
+*** w37_things_print
+patchfile = w37_things_print.patch
+- committed revision    by wesley johnson
+I_SoftError messages in things.c were missing a \n.
+
+*** w38_enemy
+patchfile = w38_enemy.patch
+- committed revision    by wesley johnson
+Fixed some test logic to include testing for valid ptr to target before
+using the ptr.  This stops segfaults that happen in heavy fighting.
 
 
 
