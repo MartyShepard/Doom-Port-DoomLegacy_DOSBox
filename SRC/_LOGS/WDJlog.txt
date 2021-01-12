@@ -222,3 +222,32 @@ patchfile = w27.patch
 - committed revision 585   by wesley johnson
 Fix legacy.dat wadversion test to accept version 142 wad.
 Misc patches to remove compiler warnings.
+
+*** w28_setup
+patchfile = w28_setup.patch
+- committed revision 586   by wesley johnson
+Fix bug introduced in w24, where save game writes bad save files.
+Caused by init of sectors to NULL, and is unexplainable.
+
+*** w29_sound
+patchfile = w29_sound.patch
+- committed revision   by wesley johnson
+Fix (again) the heretic sound, where names are different than Doom.
+Fix (again) some sound code for SDL.
+
+*** w30_wad_swap
+patchfile = w30_wad_swap.patch
+- committed revision   by wesley johnson
+First part of extensive changes for problem of endian conversion of
+patches as they are displayed.  Creates the support SWAP macros and
+the wad functions for using them.
+
+*** w31_swap_patch
+patchfile = w31_swap_patch.patch
+- committed revision   by wesley johnson
+Second part of changes for endian conversion.
+Uses new macro names where needed in network code.
+Removes endian code from draw patch code.
+Creates new draw patch functions to simplify the usual _NUM and _NAME calls.
+Extensive checking and comments on all endian swaps, fixed several places where
+endian swaps were applied where they should not.

@@ -238,8 +238,14 @@ int             numsegs;
 seg_t*          segs;
 
 int             numsectors;
-sector_t*       sectors = NULL;
-	// FIXME: contains realloc memory, must clear with deallocator [WDJ] 11/14/2009
+sector_t*       sectors;
+// [WDJ] 1/5/2010
+//sector_t*       sectors = NULL;
+// Init sectors=NULL causes save games to write a bad save game.
+// After restore of such a save game there are flashing textures and walls
+// drawn displaced randomly.
+// Problem also occurs for previous versions of program loading the saved game.
+// FIXME: sector structure contains realloc memory, must clear with deallocator [WDJ] 11/14/2009
 
 int             numsubsectors;
 subsector_t*    subsectors;
