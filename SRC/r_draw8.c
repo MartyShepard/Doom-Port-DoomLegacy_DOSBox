@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_draw8.c 576 2009-11-30 03:23:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -631,7 +631,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
     // This is as fast as it gets.
 
     {
-        register const byte *source = dc_source;
+	//register const byte *source = dc_source;
         //register const lighttable_t *colormap = dc_colormap;
         register int heightmask = dc_texheight - 1;
         if (dc_texheight & heightmask)
@@ -642,8 +642,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             if (frac < 0)
                 while ((frac += heightmask) < 0);
             else
+	    { 
                 while (frac >= heightmask)
                     frac -= heightmask;
+	    }
 
             do
             {
@@ -736,8 +738,9 @@ void R_DrawTranslatedColumn_8(void)
 #ifndef USEBOOMFUNC
 void R_DrawSpan_8(void)
 {
-    register ULONG xfrac;
-    register ULONG yfrac;
+    // [WDJ] was ULONG=32bit, use uint_fast32_t which can exceed 32bit in size.
+    register uint_fast32_t  xfrac;
+    register uint_fast32_t  yfrac;
     register byte *dest;
     register int count;
 
@@ -772,8 +775,9 @@ void R_DrawSpan_8(void)
 #else
 void R_DrawSpan_8(void)
 {
-    register ULONG xfrac;
-    register ULONG yfrac;
+    // [WDJ] was ULONG=32bit, use uint_fast32_t which can exceed 32bit in size.
+    register uint_fast32_t  xfrac;
+    register uint_fast32_t  yfrac;
     register byte *dest;
     register int count;
 
@@ -792,12 +796,14 @@ void R_DrawSpan_8(void)
     // We do not check for zero spans here?
     count = ds_x2 - ds_x1;
 
+     // [WDJ] note:  prboom has while(count)
     do
     {
-        count = count;
+        // count = count;		// [WDJ] ????
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        *dest++ = ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)]];
+        *dest = ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)]];
+        dest++;
 
         // Next step in u,v.
         xfrac += ds_xstep;
@@ -819,7 +825,7 @@ void R_DrawTranslucentSpan_8(void)
     int count;
 
 #ifdef RANGECHECK
-    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= screen->width || ds_y > screen->height)
+    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= vid.width || ds_y > vid.height)
     {
         I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
     }
@@ -848,7 +854,8 @@ void R_DrawTranslucentSpan_8(void)
         //  re-index using light/colormap.
         //      *dest++ = ds_colormap[ds_source[spot]];
 //              *dest++ = ds_colormap[*(ds_transmap + (ds_source[spot] << 8) + (*dest))];
-        *dest++ = ds_colormap[*(ds_transmap + (ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)] << 8) + (*dest))];
+        *dest = ds_colormap[*(ds_transmap + (ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)] << 8) + (*dest))];
+        dest++;	// [WDJ] warning: undetermined order when combined with above
 
         // Next step in u,v.
         xfrac += xstep;
@@ -953,8 +960,10 @@ void R_DrawFogSpan_8(void)
         count -= 4;
     }
 
-    while (count--)
-        *dest++ = colormap[*dest];
+    while (count--) {
+        *dest = colormap[*dest];
+        dest++;	// [WDJ] warning: undetermined order when combined with above
+    }
 }
 
 //SoM: Fog wall.
