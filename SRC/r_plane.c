@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_plane.c 574 2009-11-29 01:27:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,8 +101,8 @@
 
 #include "p_setup.h"    // levelflats
 
-planefunction_t         floorfunc;
-planefunction_t         ceilingfunc;
+planefunction_t         floorfunc = NULL;
+planefunction_t         ceilingfunc = NULL;
 
 //
 // opening
@@ -179,7 +179,7 @@ fixed_t                 planeheight;
 //                (when mouselookin', yslope is moving into yslopetab)
 //                Check R_SetupFrame, R_SetViewSize for more...
 fixed_t                 yslopetab[MAXVIDHEIGHT*4];
-fixed_t*                yslope;
+fixed_t*                yslope = NULL;
 
 fixed_t                 distscale[MAXVIDWIDTH];
 fixed_t                 basexscale;
@@ -233,6 +233,8 @@ static int bgofs;
 static int wtofs=0;
 #endif
 
+// Draw plane span at row y, span=(x1..x2)
+// at planeheight, using spanfunc
 void R_MapPlane
 ( int           y,              // t1
   int           x1,
@@ -596,9 +598,15 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
     pl->minx = unionl, pl->maxx = unionh;
 }
 
+
 //
 // R_MakeSpans
 //
+// Draw plane spans at rows (t1..b1), span=(spanstart..x-1)
+//    except when disabled by t1>viewheight
+// Setup spanstart for next span at rows (t2..b2),
+//    except when disabled by t2>viewheight
+// at planeheight, using spanfunc
 void R_MakeSpans
 ( int           x,
   int           t1,
@@ -606,23 +614,62 @@ void R_MakeSpans
   int           t2,
   int           b2 )
 {
-    while (t1 < t2 && t1<=b1)
+    // [WDJ] 11/10/2009  Fix crash in 3DHorror wad, sloppy limit checks on
+    // spans caused writes to spanstart[] to overwrite yslope array.
+    int lim;
+
+    // Draw the spans over (t1..b1), skipping (t2..b2) which will be
+    // drawn with (t2..b2) as one span.
+
+    if( b1 >= rdraw_viewheight)
+       b1 = rdraw_viewheight-1;
+    if( b2 >= rdraw_viewheight)
+       b2 = rdraw_viewheight-1;
+   
+    // Draw the spans over (t1..b1), up to but not including t2
+    // If t2>rdraw_viewheight, then not valid and non-overlapping
+    lim = b1+1; // not including
+    if( t2 < lim )   lim = t2;		// valid and overlapping
+    // unnecessary to limit lim to rdraw_viewheight if limit b1
+    while (t1 < lim)  //  while (t1 < t2 && t1<=b1)
     {
-        R_MapPlane (t1,spanstart[t1],x-1);
+        R_MapPlane (t1,spanstart[t1],x-1);  // y=t1, x=(spanstart[t1] .. x-1)
         t1++;
     }
-    while (b1 > b2 && b1>=t1)
+   
+    // Continue drawing (t1..b1), from b1, down to but not including b2.
+    // If t2>rdraw_viewheight (disabled), then previous loop did it all
+    // already and completed with t1<b1
+    lim = t1-1;  // not including, if t1 invalid then is disabling
+    if( b2 > lim )   lim = b2;		// valid and overlapping
+    // unnecessary to limit lim to rdraw_viewheight, must limit b1 instead
+    while (b1 > lim)  //  while (b1 > b2 && b1>=t1)
     {
-        R_MapPlane (b1,spanstart[b1],x-1);
-        b1--;
+       R_MapPlane (b1,spanstart[b1],x-1);	// y=b1, x=(spanstart[b1] .. x-1)
+       b1--;
     }
+   
+    // Init spanstart over next span (t2..b2) that is not within (t1..b1)
+    // Within (t1..b1) will use existing spanstart to draw this span
+    // combined with other deferred span draws.
 
-    while (t2 < t1 && t2<=b2)
+    // Init spanstart over (t2..b2) where less than t1.
+    lim = b2+1;  // not including
+    if( t1 < lim )   lim = t1;		// valid and overlapping
+    // unnecessary to limit lim to rdraw_viewheight if limit b2
+    // unnecessary to limit t2, as it is set from unsigned
+    // loop only if t2<rdraw_viewheight, because b2 is limited
+    while (t2 < lim)  // while (t2 < t1 && t2<=b2)
     {
         spanstart[t2] = x;
         t2++;
     }
-    while (b2 > b1 && b2>=t2)
+   
+    // Init spanstart over (t2..b2) where greater than b1.
+    lim = t2-1;  // not including, if t2 invalid, then is disabling
+    if( b1 > lim )   lim = b1;		// valid and overlapping
+    if( lim < -1 )   lim = -1;
+    while( b2 > lim )  //  while (b2 > b1 && b2>=t2)
     {
         spanstart[b2] = x;
         b2--;
@@ -1002,18 +1049,21 @@ void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
 
   planezlight = zlight[light];
 
-  //set the MAXIMUM value for unsigned
-  pl->top[pl->maxx+1] = 0xffff;
-  pl->top[pl->minx-1] = 0xffff;
+  //set the MAXIMUM value for unsigned short (but is not MAX for int)
+  // mark the columns on either side of the valid area
+  pl->top[pl->maxx+1] = 0xffff;		// disable setup spanstart
+  pl->top[pl->minx-1] = 0xffff;		// disable drawing on first call
+//  pl->bottom[pl->maxx+1] = 0;		// prevent interference from random value
+//  pl->bottom[pl->minx-1] = 0;		// prevent interference from random value
 
   stop = pl->maxx + 1;
 
   for (x=pl->minx ; x<= stop ; x++)
   {
-    R_MakeSpans(x,pl->top[x-1],
-                pl->bottom[x-1],
-                pl->top[x],
-                pl->bottom[x]);
+    R_MakeSpans( x,
+		pl->top[x-1], pl->bottom[x-1],	// draw range (except first)
+                pl->top[x], pl->bottom[x]	// setup spanstart range
+		);
   }
 
   if(handlesource)

@@ -146,8 +146,22 @@ Fixes the SHORT bug, which overused the SHORT and LONG macros to do endian swaps
 
 *** w17_rdraw
 patchfile= w17_rdraw.patch
+- committed revision 572   by wesley johnson
 Rename of some rdraw variables to add the prefix rdraw_ to give them more unique names,
 because they were named identical to some other variables in structs.  This makes it
 much easier to grep or search for all uses, and to realize exactly which variable was
 being used.
+
+*** w18_SM
+patchfile= w18_SM.patch
+- committed revision 573   by wesley johnson
+Make use of ENUM values for legacy flat modes, instead of int literals.
+
+*** w19_plane_limit
+patchfile= w19_plane_limit.patch
+- committed revision 574   by wesley johnson
+Correct R_MakeSpans to not overwrite startspan[] and to not corrupt yslope[] and
+other static memory.  Limits the spans to valid ranges.
+This bug was repeatably triggered by the big room in 3DHorror.wad.
+
 
