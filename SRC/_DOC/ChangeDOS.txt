@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00600 ]: Multi-patch transparent texture combine
 [00599 ]: Draw clip {} and I_Error
 [00598*]: smitelog.txt log added
 [00597 ]: nonfunctional water splash code #if:d out

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 594 2010-02-07 18:03:51Z wesleyjohnson $
+// $Id: r_data.h 600 2010-02-11 20:53:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -147,6 +147,16 @@ typedef struct
 } texpatch_t;
 #endif
 
+// [WDJ] 2/8/2010
+typedef enum {
+   TM_none,
+   TM_patch,	// original single patch texture  (has draw)
+   TM_picture,	// drawn into picture buffer  (has draw)
+   TM_combine_patch,  // transparent combined multi-patch texture  (has draw)
+   TM_multi_patch, // original multi-patch texture
+   TM_masked,   // detect masked flag (hint)
+   TM_invalid	// disabled for some internal reason
+} texture_model_e;
 
 // A maptexturedef_t describes a rectangular texture,
 //  which is composed of one or more mappatch_t structures
@@ -158,6 +168,7 @@ typedef struct
     char        name[8];
     short       width;
     short       height;
+    texture_model_e  texture_model;	// [WDJ] drawing and storage models
 
     // All the patches[patchcount]
     //  are drawn back to front into the cached texture.
@@ -176,6 +187,9 @@ extern CV_PossibleValue_t Color_cons_t[];
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
 void  R_LoadTextures (void);
 void  R_FlushTextureCache (void);
+
+// Generate a texture from texture desc. and patches.
+byte* R_GenerateTexture (int texnum);
 
 // Retrieve column data for span blitting.
 byte* R_GetColumn (int texnum, int col);

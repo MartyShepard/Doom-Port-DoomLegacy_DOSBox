@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_segs.c 600 2010-02-11 20:53:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -524,11 +524,26 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     // Select the 2s draw functions, they are called later.
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
-    if (textures[texnum]->patchcount==1)
+    // [WDJ] multi-patch transparent texture restored
+  retry_texture_model:
+    switch (textures[texnum]->texture_model)
+    {
+     case TM_patch:
         colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
-    else {
+        break;
+     case TM_combine_patch:
+        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
+        break;
+     case TM_picture:    
         colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
         column2s_length = textures[texnum]->height;
+        break;
+     case TM_masked:
+     case TM_none:
+        R_GenerateTexture( texnum );	// first time
+        goto retry_texture_model;
+     default:
+        return;	// no draw routine
     }
 
 
@@ -897,11 +912,26 @@ void R_RenderThickSideRange (drawseg_t* ds,
 
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
-    if (textures[texnum]->patchcount==1)
+    // [WDJ] multi-patch transparent texture restored
+  retry_texture_model:
+    switch (textures[texnum]->texture_model)
+    {
+     case TM_patch:
         colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
-    else {
+        break;
+     case TM_combine_patch:
+        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
+        break;
+     case TM_picture:    
         colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
         column2s_length = textures[texnum]->height;
+        break;
+     case TM_masked:
+     case TM_none:
+        R_GenerateTexture( texnum );	// first time
+        goto retry_texture_model;
+     default:
+        return;	// no draw routine
     }
 
     // draw the columns

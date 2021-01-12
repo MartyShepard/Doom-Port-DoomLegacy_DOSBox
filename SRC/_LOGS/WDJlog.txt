@@ -320,11 +320,13 @@ Move some {} and put \n on some I_SoftError.
 
 *** w37_multi_patch_texture
 patchfile = w37_multi_patch.patch
-- committed revision    by wesley johnson
+- committed revision 600   by wesley johnson
 Added capability to combine patches (from a multi-patch texture) into
 one patch, that has transparent regions.  This is needed for phobiata.wad
 and makes a great difference in the appearance.  The gates and fences
 can now be seen through.
+Added texture_model field to texture to replace using test on
+numpatches to determine drawing routine.
 
 *** w37_things_print
 patchfile = w37_things_print.patch

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_data.c 600 2010-02-11 20:53:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -139,6 +139,25 @@
 // [WDJ] debug flat
 //#define DEBUG_FLAT
 
+// [WDJ] Generate texture controls
+
+// [WDJ] For y clipping to be technically correct, the pixels in the source
+// post must be skipped. To maintain compatibility with the original doom
+// engines, which had this bug, other engines do not skip the post pixels either.
+// Enabling corrected_clipping will make some textures slightly different
+// than displayed in other engines.
+// TEKWALL1 will have two boxes in the upper left corner with this off and one
+// box with it enabled.  The differences in other textures are less noticable.
+boolean corrected_clipping = 0;
+
+// Select texture generation for multiple-patch textures.
+typedef enum {
+   TGC_auto,		// logic will select picture or combine_patch
+   TGC_picture,		// always picture format, no transparent multi-patch
+   TGC_combine_patch	// always combine_patch format, uses more memory (usually)
+} texgen_control_e;
+texgen_control_e  texgen_control = TGC_auto;
+
 //
 // Graphics.
 // DOOM graphics for walls and sprites
@@ -189,7 +208,8 @@ short*   hicolormaps;           // test a 32k colormap remaps high -> high
 
 #if 0
 // [WDJ] This description applied to previous code. It is kept for historical
-// reasons. We may have to restore the code to this functionality.
+// reasons. We may have to restore some of this functionality, but this scheme
+// would not work with z_zone freeing cache blocks.
 // 
 // MAPTEXTURE_T CACHING
 // When a texture is first needed,
@@ -241,7 +261,6 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
         if (position < 0)
         {
             count += position;  // skip pixels off top
-#ifdef CORRECT_TEXTURE_CLIPPING
 	    // [WDJ] For this clipping to be technically correct, the pixels
 	    // in the source must be skipped too.
 	    // Other engines do not skip the post pixels either, to maintain
@@ -251,8 +270,10 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
 	    // TEKWALL1 will have two boxes in the upper left corner with this
 	    // off and one box with it enabled.  The differences in other
 	    // textures are less noticable.
-	    source -= position; // [WDJ] 1/29/2010 skip pixels in post
-#endif	   
+	    if( corrected_clipping )
+	    {
+	        source -= position; // [WDJ] 1/29/2010 skip pixels in post
+	    }
             position = 0;
         }
 
@@ -280,8 +301,17 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
 //
 //   This is not optimized, but it's supposed to be executed only once
 //   per level, when enough memory is available.
-//
-#if 1
+
+// Temp structure element used to combine patches into one dest patch.
+typedef struct {
+    int   nxt_y, bot_y;		// current post segment in dest coord.
+    int   width;
+    int   originx, originy;	// add to patch to get texture
+    post_t *  postptr;		// post within that patch
+    patch_t * patch;     	// patch source
+} compat_t;
+   
+
 byte* R_GenerateTexture (int texnum)
 {
     byte*               texgen;  // generated texture
@@ -297,6 +327,7 @@ byte* R_GenerateTexture (int texnum)
     int			colofs_size;
 
     texture = textures[texnum];
+    texture->texture_model = TM_invalid; // default in case this fails
     
     // Column offset table size as determined by wad specs.
     // Column pixel data starts after the table.
@@ -407,11 +438,274 @@ byte* R_GenerateTexture (int texnum)
        
         Z_ChangeTag (realpatch, PU_CACHE);  // safe
         texturecolumnofs[texnum] = colofs;
+        texture->texture_model = TM_patch;
         //CONS_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
         texgen = txcblock;
         goto done;
     }
+    // End of Single-patch texture
+   
+ // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
+    // array to hold all patches
+    #define MAXPATCHNUM 256
+    compat_t   compat[MAXPATCHNUM];
+    post_t   * srcpost, * destpost;
+    patch_t  * txcpatch; // header of txcblock
+    byte     * txcdata;  // posting area
+    byte     * destpixels;  // post pixel area
+    byte     * texture_end; // end of allocated texture area
+    unsigned int patchcount = texture->patchcount;
+    unsigned int compostsize = 0;
+    int p;
+    int postlength;  // length of current post
+    int segnxt_y, segbot_y; // may be negative
+    int bottom;		// next y in column
 
+    if( patchcount >= MAXPATCHNUM ) {
+       I_SoftError("R_GenerateTexture: Combine patch count %i exceeds %i, ignoring rest\n",
+		   patchcount, MAXPATCHNUM);
+       patchcount = MAXPATCHNUM - 1;
+    }
+   
+    // First examination of the source patches
+    texpatch = texture->patches;
+    for (p=0; p<patchcount; p++, texpatch++)
+    {
+        compat_t * cp = &compat[p];
+        cp->postptr = NULL;	// disable until reach starting column
+        cp->nxt_y = MAXINT;	// disable
+        cp->originx = texpatch->originx;
+        cp->originy = texpatch->originy;
+        realpatch = W_CachePatchNum(texpatch->patchnum, PU_IN_USE);  // patch temp
+        cp->patch = realpatch;
+        cp->width = realpatch->width;
+        int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
+        // add posts, without columnofs table and 8 byte patch header
+        compostsize += W_LumpLength(texpatch->patchnum) - patch_colofs_size - 8;
+    }
+    // Decide TGC_ format
+    // Combined patches + table + header
+    compostsize += colofs_size + 8;	// combined patch size
+    txcblocksize = colofs_size + (texture->width * texture->height); // picture format size
+    // If cache was flushed then do not change model
+    switch( texture->texture_model )
+    {
+     case TM_picture:  goto picture_format;
+     case TM_combine_patch:  goto combine_format;
+    }
+    // new texture, decide on a model
+    switch( texgen_control )
+    {
+     case TGC_auto:  break;
+     case TGC_picture:  goto picture_format;
+     case TGC_combine_patch:  goto combine_format;
+    }
+    // if patches would not cover picture, then must have transparent regions
+    if( compostsize < txcblocksize )  goto combine_format;
+    if( texture->texture_model == TM_masked )  goto combine_format; // hint
+    // If many patches and high overlap, then picture format is best.
+    // This will need to be tuned if it makes mistakes.
+    if( texture->patchcount >= 4 && compostsize > txcblocksize*4 )  goto picture_format;
+  
+ combine_format:
+    // TGC_combine_patch: Combine multiple patches into one patch.
+
+    // Size the new texture.  It may be too big, but must not be too small.
+    // Will always fit into compostsize because it does so as separate patches.
+    // Overlap of posts will only reduce the size.
+    // Worst case is (width * (height/2) * (1 pixel + 4 byte overhead))
+    //   worstsize = colofs_size + 8 + (width * height * 5/2)
+    // Usually the size will be much smaller, but it is not predictable.
+    // all posts + new columnofs table + patch header
+    // Combined patches + table + header + 1 byte per empty column
+    txcblocksize = compostsize + texture->width;
+   
+    txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
+                      (void**)&texturecache[texnum]);
+    txcpatch = (patch_t*) txcblock;
+    txcpatch->width = texture->width;
+    txcpatch->height = texture->height;
+    txcpatch->leftoffset = 0;
+    txcpatch->topoffset = 0;
+    // column offset lookup table
+    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+    txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
+    // starts as empty post, with 0xFF a possibility
+    destpixels = txcdata;
+    texture_end = txcblock + txcblocksize - 2; // do not exceed
+
+    // Composite the columns together.
+    for (x=0; x<texture->width; x++)
+    {
+        int nxtpat;	// patch number with next post
+        int seglen, offset;
+       
+        // offset to pixels instead of post header
+        // Many callers will use colofs-3 to get back to header, but
+        // some drawing functions need pixels.
+        colofs[x] = destpixels - (byte*)txcblock + 3;  // this column
+        destpost = (post_t*)destpixels;	// first post in column
+	postlength = 0;  // length of current post
+        bottom = 0;	 // next y in column
+        segnxt_y = MAXINT - 10;	// init to very large, but less than disabled
+        segbot_y = MAXINT - 10;
+
+        // setup the columns, active or inactive
+        for (p=0; p<patchcount; p++ )
+        {
+	    compat_t * cp = &compat[p];
+	    int patch_x = x - cp->originx;	// within patch
+	    if( patch_x >= 0 && patch_x < cp->width )
+	    {
+	        realpatch = cp->patch;
+	        uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
+	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
+	        cp->nxt_y = cp->originy + cp->postptr->topdelta;
+	        cp->bot_y = cp->nxt_y + cp->postptr->length;
+	    }else{
+	        // clip left and right by turning this patch off
+	        cp->postptr = NULL;
+	        cp->nxt_y = MAXINT;
+	        cp->bot_y = MAXINT;
+	    }
+	}  // for all patches
+       
+        for(;;) // all posts in column
+        {
+            // Find next post y in this column.
+	    // Only need the last patch, as that overwrites every other patch.
+	    nxtpat = -1;	// patch with next post
+            segnxt_y = MAXINT-64;	// may be negative, must be < MAXINT
+            compat_t * cp = &compat[0];
+            for (p=0; p<patchcount; p++, cp++)
+            {
+	        // Skip over any patches that have been passed.
+		// Includes those copied, or covered by those copied.
+	        while( cp->bot_y <= bottom )
+	        {
+		    // this post has been passed, go to next post
+		    cp->postptr = (post_t*)( ((byte*)cp->postptr) + cp->postptr->length + 4);
+		    if( cp->postptr->topdelta == 0xFF )  // end of post column
+		    {
+		        // turn this patch off
+		        cp->postptr = NULL;
+		        cp->nxt_y = MAXINT;	// beyond texture size
+		        cp->bot_y = MAXINT;
+		        break;
+		    }
+		    cp->nxt_y = cp->originy + cp->postptr->topdelta;
+		    cp->bot_y = cp->nxt_y + cp->postptr->length;
+		}
+	        if( cp->nxt_y <= segnxt_y )
+	        {
+		    // Found an active post
+		    nxtpat = p;	// last draw into this segment
+		    // Check for continuing in the middle of a post.
+		    segnxt_y = (cp->nxt_y < bottom)?
+		       bottom	// continue previous
+		       : cp->nxt_y; // start at top of post
+		    // Only a later drawn patch can overwrite this post.
+		    segbot_y = cp->bot_y;
+		}
+	        else
+	        {
+		    // Limit bottom of this post segment by later drawn posts.
+		    if( cp->nxt_y < segbot_y )   segbot_y = cp->nxt_y;
+		}
+	    }
+	    // Exit test, end of column, which may be empty
+	    if( segnxt_y >= texture->height )   break;
+	   
+	    // copy whole/remainder of post, or cut it short
+	    // assert: segbot_y <= cp->bot_y+1  because it is set in loop
+	    if( segbot_y > texture->height )   segbot_y = texture->height;
+
+	    // Check if next patch does not append to bottom of current patch
+	    if( (segnxt_y > bottom) && (bottom > 0) && (postlength != 0))
+	    {
+	        // does not append, start new post after existing post
+	        destpost = (post_t*)((byte*)destpost + destpost->length + 4);
+	        postlength = 0;
+	    }
+	   
+	    // Only one patch is drawn last in this segment, copy that one
+	    cp = &compat[nxtpat];
+	    srcpost = cp->postptr;
+            // offset>0 when copy starts part way into this source post
+	    // NOTE: cp->nxt_y = cp->originy + srcpost->topdelta;
+	    offset = ( segnxt_y > cp->nxt_y )? (segnxt_y - cp->nxt_y) : 0;
+	    // consider y clipping problem
+	    if( cp->nxt_y < 0  &&  !corrected_clipping )
+	    {
+                // Original doom had bug in y clipping, such that it
+		// would clip the width but not skip the source pixels.
+	        // Given that segnxt_y was already correctly clipped.
+	        offset += cp->nxt_y; // reproduce original doom clipping
+	    }
+	   
+	    if( postlength == 0 )
+	    {
+	        if( destpixels + 3 >= texture_end )  goto exceed_alloc_error;
+	        if( segnxt_y > 254 )   goto exceed_topdelta;
+	        // new post header and 0 pad byte
+	        destpost->topdelta = segnxt_y;
+	        // append at
+	        destpixels = (byte*)destpost + 3;
+	        destpixels[-1] = 0;	// pad 0
+	    }
+
+	    seglen = segbot_y - segnxt_y;
+	    if( destpixels + seglen >= texture_end )  goto exceed_alloc_error;
+	   
+	    // append to existing post
+	    memcpy( destpixels, ((byte*)srcpost + offset + 3), seglen );
+	    destpixels += seglen;
+	    postlength += seglen;
+	    bottom = segbot_y;
+	    // finish post bookkeeping so can terminate loop easily
+	    *destpixels = 0;	// pad 0
+	    if( postlength > 255 )   goto exceed_post_length;
+	    destpost->length = postlength;
+	} // for all posts in column
+        destpixels++;		// skip pad 0
+        *destpixels++ = 0xFF;	// mark end of column
+        // may be empty column so do not reference destpost
+    } // for x
+    if( destpixels >= texture_end )  goto exceed_alloc_error;
+    // unlock all the patches, no longer needed, but may be in another texture
+    for (p=0; p<patchcount; p++)
+    {
+        Z_ChangeTag (compat[p].patch, PU_CACHE);
+    }
+    // Interface for texture picture format
+    // texture data is after the offset table, no patch header
+    texgen = txcblock;  // ptr to whole patch
+    texturecolumnofs[texnum] = colofs;
+    texture->texture_model = TM_combine_patch;  // transparent combined
+#if 0
+    // Enable to print memory usage
+    I_SoftError("R_GenerateTexture: %8s allocated %i, used %i bytes\n",
+	    texture->name, txcblocksize, destpixels - texgen );
+#endif
+    goto done;
+   
+ exceed_alloc_error:   
+    I_SoftError("R_GenerateTexture: %8s exceeds allocated block\n", texture->name );
+    goto error_redo_as_picture;
+   
+ exceed_topdelta:
+    I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254\n",
+	    texture->name, segnxt_y );
+    goto error_redo_as_picture;
+   
+ exceed_post_length:
+    I_SoftError("R_GenerateTexture: %8s post length= %i exceeds 255\n",
+	    texture->name, postlength );
+
+ error_redo_as_picture:
+    Z_Free( txcblock );
+   
+ picture_format:   
     //
     // multi-patch textures (or 'composite')
     // These are stored in a picture format and use a different drawing routine,
@@ -475,6 +769,7 @@ byte* R_GenerateTexture (int texnum)
     // texture data is after the offset table, no patch header
     texgen = txcblock + colofs_size;  // ptr to first column
     texturecolumnofs[texnum] = colofs;
+    texture->texture_model = TM_picture;  // non-transparent picture format
 
 done:
     // Now that the texture has been built in column cache,
@@ -484,137 +779,6 @@ done:
 
     return texgen;
 }
-#else
-// [WDJ] Older version, when single patch texture has patch that is smaller
-// than the texture the draw routines will segfault on the missing columns.
-byte* R_GenerateTexture (int texnum)
-{
-    byte*               block;
-    byte*               blocktex;
-    texture_t*          texture;
-    texpatch_t*         texpatch;
-    patch_t*            realpatch;
-    int                 x;
-    int                 x1;
-    int                 x2;
-    int                 i;
-    column_t*           patchcol;
-    unsigned int*       colofs;
-    int                 blocksize;
-
-    texture = textures[texnum];
-
-    // allocate texture column offset lookup
-
-    // single-patch textures can have holes in it and may be used on
-    // 2sided lines so they need to be kept in 'packed' format
-    if (texture->patchcount==1)
-    {
-        texpatch = texture->patches;
-        blocksize = W_LumpLength (texpatch->patchnum);
-        // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
-        // follow it, as that can deallocate the PU_CACHE unexpectedly.
-
-#if 1
-        // FIXME: Fix by transfer ownership from lumpcache to texturecache.
-	// Make function Z_TransferOwnership( from, to )
-	// Then do not need this copy.
-
-        // texturecache gets copy so that PU_CACHE deallocate clears the
-	// texturecache automatically
-        block = Z_Malloc (blocksize,
-                          PU_STATIC,         // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
-        // [WDJ] Only need lump for following memcpy,
-        // without Z_Malloc between which could deallocate PU_CACHE memory
-	// [WDJ] Must use common patch read to preserve endian consistency.
-	// otherwise it will be in cache without endian changes.
-        realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
-        // [WDJ] Do endian as build texture in block.
-        memcpy (block, realpatch, blocksize);
-#else
-        // FIXME: this version puts the z_block user as lumpcache,
-        // instead of as texturecache, so deallocate by PU_CACHE leaves
-        // texturecache with a bad ptr.
-	// [WDJ] Must use common patch read to preserve endian consistency.
-	// otherwise it will be in cache without endian changes.
-        texturecache[texnum] = block = W_CachePatchNum (texpatch->patchnum, PU_STATIC);
-#endif
-        //CONS_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,blocksize);
-        texturememory+=blocksize;
-
-        // use the patch's column lookup
-        colofs = (unsigned int*)(block + 8);
-        texturecolumnofs[texnum] = colofs;
-                blocktex = block;
-        for (i=0; i<texture->width; i++)
-             colofs[i] = colofs[i] + 3;
-        goto done;
-    }
-
-    //
-    // multi-patch textures (or 'composite')
-    //
-    blocksize = (texture->width * sizeof(uint32_t)) + (texture->width * texture->height);
-
-    //CONS_Printf ("R_GenTex MULTI  %.8s size: %d\n",texture->name,blocksize);
-    texturememory+=blocksize;
-
-    block = Z_Malloc (blocksize,
-                      PU_STATIC,
-                      (void**)&texturecache[texnum]);
-
-    // columns lookup table
-    colofs = (unsigned int*)block;
-    texturecolumnofs[texnum] = colofs;
-
-    // texture data before the lookup table
-    blocktex = block + (texture->width * sizeof(uint32_t));
-
-    // Composite the columns together.
-    texpatch = texture->patches;
-    for (i=0;
-         i<texture->patchcount;
-         i++, texpatch++)
-    {
-        // [WDJ] patch only used in this loop, without any other Z_Malloc
-        realpatch = W_CacheLumpNum (texpatch->patchnum, PU_CACHE);  // patch temp
-        x1 = texpatch->originx;
-        x2 = x1 + realpatch->width;
-
-        if (x1<0)
-            x = 0;
-        else
-            x = x1;
-
-        if (x2 > texture->width)
-            x2 = texture->width;
-
-        for ( ; x<x2 ; x++)
-        {
-            patchcol = (column_t *)((byte *)realpatch + realpatch->columnofs[x-x1]);
-
-            // generate column offset lookup
-            colofs[x] = (x * texture->height) + (texture->width*4);
-
-            R_DrawColumnInCache (patchcol,		// source
-                                 block + colofs[x],	// dest
-                                 texpatch->originy,
-                                 texture->height);
-        }
-    }
-
-done:
-    // Now that the texture has been built in column cache,
-    //  texturecache is purgable from zone memory.
-    Z_ChangeTag (txcblock, PU_PRIV_CACHE);  // priority because of expense
-
-    return blocktex;
-}
-#endif
-
-
-
 
 
 //
@@ -835,7 +999,7 @@ void R_LoadTextures (void)
         offset = LE_SWAP32(*directory);  // next uint32_t
 
         if (offset > maxoff)
-            I_Error ("R_LoadTextures: bad texture directory");
+            I_Error ("R_LoadTextures: bad texture directory\n");
 
         // maptexture describes texture name, size, and
         // used patches in z order from bottom to top
@@ -851,6 +1015,7 @@ void R_LoadTextures (void)
         texture->width  = LE_SWAP16(mtexture->width);
         texture->height = LE_SWAP16(mtexture->height);
         texture->patchcount = LE_SWAP16(mtexture->patchcount);
+        texture->texture_model = (mtexture->masked)? TM_masked : TM_none; // hint
 
 	// Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
 	// gcc will replace memcpy with two 4-byte read/writes, which will bus error.
@@ -866,7 +1031,7 @@ void R_LoadTextures (void)
             texpatch->patchnum = patchlookup[LE_SWAP16(mpatch->patchnum)];
             if (texpatch->patchnum == -1)
             {
-                I_Error ("R_InitTextures: Missing patch in texture %s",
+                I_Error ("R_InitTextures: Missing patch in texture %s\n",
                          texture->name);
             }
         }
@@ -1059,7 +1224,6 @@ int R_GetFlatNumForName(char *name)
   
   if(lump == -1) {
      // [WDJ] When not found, dont quit, use first flat by default.
-//    I_Error("R_GetFlatNumForName: Could not find flat %.8s\n", name);
      I_SoftError("R_GetFlatNumForName: Could not find flat %.8s\n", name);
      lump = flats[0].firstlump;	// default to first flat
   }
