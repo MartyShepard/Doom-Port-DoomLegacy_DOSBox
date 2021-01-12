@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: r_segs.c 595 2010-02-07 18:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -214,6 +214,8 @@ static void R_DrawSplatColumn (column_t* column)
     int         bottomscreen;
     fixed_t     basetexturemid;
 
+    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
+
     basetexturemid = dc_texturemid;
 
     for ( ; column->topdelta != 0xff ; )
@@ -238,6 +240,10 @@ static void R_DrawSplatColumn (column_t* column)
         if (dc_yl <= last_ceilingclip[dc_x])
             dc_yl =  last_ceilingclip[dc_x]+1;
 #endif
+        if ( dc_yh < 0 ) continue;
+        //[WDJ] phobiata.wad has many views that need clipping
+        if ( dc_yl < 0 ) dc_yl = 0;
+        if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
         if (dc_yl <= dc_yh)
         {
             dc_source = (byte *)column + 3;
@@ -427,6 +433,8 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
     int         topscreen;
     int         bottomscreen;
 
+    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
+   
     topscreen = sprtopscreen; // + spryscale*column->topdelta;  topdelta is 0 for the wall
     bottomscreen = topscreen + spryscale * column2s_length;
 
@@ -446,9 +454,14 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
           dc_yl =  mceilingclip[dc_x]+1;
     }
 
-    if (dc_yl >= vid.height || dc_yh < 0)
+    // [WDJ] Draws only within borders
+//    if (dc_yl >= vid.height || dc_yh < 0)
+    if (dc_yl >= rdraw_viewheight || dc_yh < 0)
       return;
 
+    //[WDJ] phobiata.wad has many views that need clipping
+    if ( dc_yl < 0 )   dc_yl = 0;
+    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
     if (dc_yl <= dc_yh)
     {
         dc_source = (byte *)column + 3;
@@ -466,14 +479,14 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     int             lightnum;
     int             texnum;
     int             i;
-    fixed_t         height;
+    fixed_t         lightheight;
     fixed_t         realbot;
     lightlist_t     *light;
     r_lightlist_t   *rlight;
 
     void (*colfunc_2s) (column_t*);
 
-        line_t* ldef;   //faB
+    line_t* ldef;   //faB
 
     // Calculate light table.
     // Use different light tables
@@ -483,7 +496,10 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     frontsector = curline->frontsector;
     backsector = curline->backsector;
     texnum = texturetranslation[curline->sidedef->midtexture];
-    windowbottom = windowtop = sprbotscreen = MAXINT;
+    windowbottom = windowtop = sprbotscreen = MAXINT;	// default no clip
+
+    // Select the default, or special effect column drawing functions,
+    // which are called by the colfunc_2s functions.
 
     //faB: hack translucent linedef types (201-205 for transtables 1-5)
     //SoM: 201-205 are taken... So I'm switching to 284 - 288
@@ -512,6 +528,7 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     rw_scalestep = ds->scalestep;
     spryscale = ds->scale1 + (x1 - ds->x1)*rw_scalestep;
 
+    // Select the 2s draw functions, they are called later.
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
     if (textures[texnum]->patchcount==1)
@@ -526,7 +543,7 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     dc_numlights = 0;
     if(frontsector->numlights)
     {
-      int lightnum;
+      int lightnum;  // value going into lightlist
 
       dc_numlights = frontsector->numlights;
       if(dc_numlights >= dc_maxlights)
@@ -535,8 +552,10 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
         dc_lightlist = realloc(dc_lightlist, sizeof(r_lightlist_t) * dc_maxlights);
       }
 
+      // setup lightlist
       for(i = 0; i < dc_numlights; i++)
       {
+	// setup a lightlist entry
         light = &frontsector->lightlist[i];
         rlight = &dc_lightlist[i];
         rlight->height = (centeryfrac) - FixedMul((light->height - viewz), spryscale);
@@ -559,10 +578,11 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
           lightnum++;
 
         rlight->lightnum = lightnum;
-      }
+      }  // for
     }
     else
     {
+      // frontsector->numlights == 0
       if(colfunc == fuzzcolfunc)
       {
         if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
@@ -596,14 +616,18 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
 
     if (curline->linedef->flags & ML_DONTPEGBOTTOM)
     {
-        dc_texturemid = frontsector->floorheight > backsector->floorheight
-            ? frontsector->floorheight : backsector->floorheight;
+        // highest floor
+        dc_texturemid =
+	 (frontsector->floorheight > backsector->floorheight) ?
+            frontsector->floorheight : backsector->floorheight;
         dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
     }
     else
     {
-        dc_texturemid =frontsector->ceilingheight<backsector->ceilingheight
-            ? frontsector->ceilingheight : backsector->ceilingheight;
+        // lowest ceiling
+        dc_texturemid =
+	 (frontsector->ceilingheight < backsector->ceilingheight) ?
+	   frontsector->ceilingheight : backsector->ceilingheight;
         dc_texturemid = dc_texturemid - viewz;
     }
     dc_texturemid += curline->sidedef->rowoffset;
@@ -659,14 +683,14 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
 
               rlight->height += rlight->heightstep;
 
-              height = rlight->height;
-              if(height <= windowtop)
+              lightheight = rlight->height;
+              if(lightheight <= windowtop)
               {
                 dc_colormap = rlight->rcolormap;
                 continue;
               }
 
-              windowbottom = height;
+              windowbottom = lightheight;
               if(windowbottom >= realbot)
               {
                 windowbottom = realbot;
@@ -678,43 +702,43 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
                 }
 
                 continue;
-              }
+              }  // if( windowbottom > realbot )
               colfunc_2s (col);
               windowtop = windowbottom + 1;
               dc_colormap = rlight->rcolormap;
-            }
+            } // for( dc_numlights )
             windowbottom = realbot;
             if(windowtop < windowbottom)
               colfunc_2s (col);
 
             spryscale += rw_scalestep;
             continue;
-          }
+          }  // if( dc_numlights )
 
           // calculate lighting
           if (!fixedcolormap)
-            {
+          {
                 index = spryscale>>LIGHTSCALESHIFT;
                 
                 if (index >=  MAXLIGHTSCALE )
                     index = MAXLIGHTSCALE-1;
                 
                 dc_colormap = walllights[index];
-            }
+	  }
 
-            if(frontsector->extra_colormap && !fixedcolormap)
+	  if(frontsector->extra_colormap && !fixedcolormap)
               dc_colormap = frontsector->extra_colormap->colormap + (dc_colormap - colormaps);
-            sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-            dc_iscale = 0xffffffffu / (unsigned)spryscale;
-            
-            // draw the texture
-            col = (column_t *)(
+          sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+          dc_iscale = 0xffffffffu / (unsigned)spryscale;
+
+          // draw the texture
+          col = (column_t *)(
                 (byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
             
-            colfunc_2s (col);
-        }
+          colfunc_2s (col);
+        } // if (maskedtexturecol[dc_x] != MAXSHORT)
         spryscale += rw_scalestep;
-    }
+    } // for( dx_x = x1..x2 )
     colfunc = basecolfunc;
 }
 
@@ -1288,12 +1312,20 @@ void R_RenderSegLoop (void)
 
         frontscale[rw_x] = rw_scale;
 
-          // draw the wall tiers
+        if ( (unsigned) dc_x >= rdraw_viewwidth )   continue;
+
+        // draw the wall tiers
         if (midtexture)
         {
+	  if( yl < rdraw_viewheight && yh >= 0 && yh >= yl ) // not disabled
+	  {
             // single sided line
             dc_yl = yl;
             dc_yh = yh;
+	    //[WDJ] phobiata.wad has many views that need clipping
+	    if ( dc_yl < 0 )   dc_yl = 0;
+	    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+	   
             dc_texturemid = rw_midtexturemid;
             dc_source = R_GetColumn(midtexture,texturecolumn);
             dc_texheight = textureheight[midtexture] >> FRACBITS;
@@ -1315,7 +1347,7 @@ void R_RenderSegLoop (void)
                 (int)mytotal );
 #endif
             //profile stuff ---------------------------------------------------------
-            
+	  }
             // dont draw anything more for this column, since
             // a midtexture blocks the view
             ceilingclip[rw_x] = rdraw_viewheight;
@@ -1335,9 +1367,15 @@ void R_RenderSegLoop (void)
                 
                 if (mid >= yl)
                 {
+		  if( yl < rdraw_viewheight && mid >= 0 ) // not disabled
+		  {
                     dc_yl = yl;
                     dc_yh = mid;
-                    dc_texturemid = rw_toptexturemid;
+		    //[WDJ] phobiata.wad has many views that need clipping
+		    if ( dc_yl < 0 )   dc_yl = 0;
+		    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+
+		    dc_texturemid = rw_toptexturemid;
                     dc_source = R_GetColumn(toptexture,texturecolumn);
                     dc_texheight = textureheight[toptexture] >> FRACBITS;
 #ifdef HORIZONTALDRAW
@@ -1345,10 +1383,14 @@ void R_RenderSegLoop (void)
 #else
                     colfunc ();
 #endif
+		  } // if mid >= 0
                     ceilingclip[rw_x] = mid;
                 }
                 else
+		{
+		    // mid < yl
                     ceilingclip[rw_x] = yl-1;
+		}
             }
             else
             {
@@ -1375,9 +1417,15 @@ void R_RenderSegLoop (void)
 
                 if (mid <= yh)
                 {
+		  if( mid < rdraw_viewheight && yh >= 0 ) // not disabled
+		  {
                     dc_yl = mid;
                     dc_yh = yh;
-                    dc_texturemid = rw_bottomtexturemid;
+		    //[WDJ] phobiata.wad has many views that need clipping
+		    if ( dc_yl < 0 )   dc_yl = 0;
+		    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+
+		    dc_texturemid = rw_bottomtexturemid;
                     dc_source = R_GetColumn(bottomtexture,
                         texturecolumn);
                     dc_texheight = textureheight[bottomtexture] >> FRACBITS;
@@ -1386,6 +1434,7 @@ void R_RenderSegLoop (void)
 #else
                     colfunc ();
 #endif
+		  } // if mid >= 0
                     floorclip[rw_x] = mid;
 #ifdef OLDWATER
                     if (waterplane && waterz<worldlow)
@@ -1531,14 +1580,15 @@ void R_StoreWallRange( int   start, int   stop)
       size_t pos = lastopening - openings;
       size_t need = (rw_stopx - start)*4 + pos;
       if (need > maxopenings)
-        {
+      {
+	  // [WDJ] FIXME, does not appear to be init properly
           drawseg_t *ds;  //needed for fix from *cough* zdoom *cough*
           short *oldopenings = openings;
           short *oldlast = lastopening;
 
-          do
+          do{
             maxopenings = maxopenings ? maxopenings*2 : 16384;
-          while (need > maxopenings);
+          }while (need > maxopenings);
           openings = realloc(openings, maxopenings * sizeof(*openings));
           lastopening = openings + pos;
 
@@ -1546,16 +1596,16 @@ void R_StoreWallRange( int   start, int   stop)
         // [RH] We also need to adjust the openings pointers that
         //    were already stored in drawsegs.
         for (ds = drawsegs; ds < ds_p; ds++)
-          {
+        {
   #define ADJUST(p) if (ds->p + ds->x1 >= oldopenings && ds->p + ds->x1 <= oldlast)\
                         ds->p = ds->p - oldopenings + openings;
             ADJUST (maskedtexturecol);
             ADJUST (sprtopclip);
             ADJUST (sprbottomclip);
             ADJUST (thicksidecol);
-          }
+	}
   #undef ADJUST
-        }
+      }
     }  // end of code to remove limits on openings
 
 
@@ -2291,7 +2341,9 @@ void R_StoreWallRange( int   start, int   stop)
         R_DrawWallSplats ();
     }
     else
+    {
         R_RenderSegLoop ();
+    }
 #else
     R_RenderSegLoop ();
 #ifdef WALLSPLATS

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 594 2010-02-07 18:03:51Z wesleyjohnson $
+// $Id: r_data.c 595 2010-02-07 18:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -184,7 +184,7 @@ lighttable_t    *colormaps;
 //faB: for debugging/info purpose
 int             flatmemory;
 int             spritememory;
-int             texturememory;
+int             texturememory;	// all textures
 
 
 //faB: highcolor stuff
@@ -1629,7 +1629,7 @@ void R_PrecacheLevel (void)
     //if (devparm)
     //    CONS_Printf("Generating textures..\n");
 
-    texturememory = 0;
+    texturememory = 0;  // global
     for (i=0 ; i<numtextures ; i++)
     {
         if (!texturepresent[i])

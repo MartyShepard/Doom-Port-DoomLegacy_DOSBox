@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 576 2009-11-30 03:23:24Z wesleyjohnson $
+// $Id: r_draw8.c 595 2010-02-07 18:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -101,6 +101,8 @@
 //
 //-----------------------------------------------------------------------------
 
+// [WDJ] Window limit checks have been added to all the callers of colfunc().
+
 // ==========================================================================
 // COLUMNS
 // ==========================================================================
@@ -126,8 +128,11 @@ void R_DrawColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // Framebuffer destination address.
@@ -169,12 +174,15 @@ void R_DrawColumn_8(void)
     if (count <= 0)     // Zero length, column does not exceed a pixel.
         return;
 
-    ccount = count;
-
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
+
+    ccount = count;
 
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
@@ -254,8 +262,11 @@ void R_DrawSkyColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawSkyColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // Framebuffer destination address.
@@ -297,8 +308,11 @@ void R_DrawSkyColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawSkyColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // Framebuffer destination address.
@@ -375,11 +389,11 @@ void R_DrawFuzzColumn_8(void)
     register fixed_t fracstep;
 
     // Adjust borders. Low...
-    if (!dc_yl)
+    if (dc_yl <= 0)
         dc_yl = 1;
 
     // .. and high.
-    if (dc_yh == rdraw_viewheight - 1)
+    if (dc_yh >= rdraw_viewheight - 1)
         dc_yh = rdraw_viewheight - 2;
 
     count = dc_yh - dc_yl;
@@ -389,9 +403,10 @@ void R_DrawFuzzColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-    {
-        I_Error("R_DrawFuzzColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawFuzzColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
     }
 #endif
 
@@ -438,20 +453,21 @@ void R_DrawShadeColumn_8(void)
     register fixed_t frac;
     register fixed_t fracstep;
 
+    // [WDJ] This check has been added to all the callers of colfunc().
     // check out coords for src*
-    if ((dc_yl < 0) || (dc_x >= vid.width))
-        return;
+//    if ((dc_yl < 0) || (dc_x >= vid.width))
+//        return;
 
     count = dc_yh - dc_yl;
     if (count < 0)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
     {
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        I_SoftError("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
     }
-
 #endif
 
     // FIXME. As above.
@@ -487,22 +503,22 @@ void R_DrawTranslucentColumn_8(void)
     register fixed_t frac;
     register fixed_t fracstep;
 
+    // [WDJ] This check has been added to all the callers of colfunc().
     // check out coords for src*
-    if ((dc_yl < 0) || (dc_x >= vid.width))
-        return;
+//    if ((dc_yl < 0) || (dc_x >= vid.width))
+//        return;
 
     count = dc_yh - dc_yl;
     if (count < 0)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-    {
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawTranslucentColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
     }
-
 #endif
-
     // FIXME. As above.
     //src  = ylookup[dc_yl] + columnofs[dc_x+2];
     dest = ylookup[dc_yl] + columnofs[dc_x];
@@ -534,8 +550,11 @@ void R_DrawTranslucentColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawTranslucentColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // Framebuffer destination address.
@@ -696,12 +715,13 @@ void R_DrawTranslatedColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-    {
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawTranslatedColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
     }
-
 #endif
+
     // FIXME. As above.
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
@@ -745,9 +765,10 @@ void R_DrawSpan_8(void)
     register int count;
 
 #ifdef RANGECHECK
-    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= vid.width || (unsigned) ds_y > vid.height)
+    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
     {
-        I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        I_SoftError("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        return;
     }
 #endif
 
@@ -782,9 +803,10 @@ void R_DrawSpan_8(void)
     register int count;
 
 #ifdef RANGECHECK
-    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= vid.width || (unsigned) ds_y > vid.height)
+    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
     {
-        I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        I_SoftError("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        return;
     }
 #endif
 
@@ -825,9 +847,10 @@ void R_DrawTranslucentSpan_8(void)
     int count;
 
 #ifdef RANGECHECK
-    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= vid.width || ds_y > vid.height)
+    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
     {
-        I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        I_SoftError("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+        return;
     }
 //              dscount++;
 #endif
@@ -979,8 +1002,11 @@ void R_DrawFogColumn_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawFogColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // Framebuffer destination address.
@@ -1021,8 +1047,11 @@ void R_DrawColumnShadowed_8(void)
         return;
 
 #ifdef RANGECHECK
-    if ((unsigned) dc_x >= vid.width || dc_yl < 0 || dc_yh >= vid.height)
-        I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight) {
+        I_SoftError("R_DrawShadowedColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+        return;
+    }
 #endif
 
     // SoM: This runs through the lightlist from top to bottom and cuts up

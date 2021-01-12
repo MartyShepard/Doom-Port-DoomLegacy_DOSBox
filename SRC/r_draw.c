@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: r_draw.c 595 2010-02-07 18:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,8 +97,12 @@
 // (view is already used by player, window is also used, rw_ is used)
 byte*           viewimage;
 int             rdraw_viewwidth;		// was viewwidth
+			// width used by drawing routines
+			// half of pixel width when low res
 int             rdraw_scaledviewwidth;		// was scaledrviewwidth
+			// width of view window in pixels
 int             rdraw_viewheight;		// was viewheight
+			// height of view window in rows (pixels)
 // position of smaller rdraw_view window within vid window
 int             viewwindowx;
 int             viewwindowy;

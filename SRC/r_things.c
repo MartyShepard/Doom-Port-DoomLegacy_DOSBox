@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: r_things.c 595 2010-02-07 18:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -329,7 +329,7 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 //
 boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum, int startlump, int endlump)
 {
-    int         l;
+    int         l, lumpnum;
     int         intname;
     int         frame;
     int         rotation;
@@ -359,18 +359,19 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
     for (l=startlump ; l<endlump ; l++)
     {
+        lumpnum = (wadnum<<16) + l;	// as used by read lump routines
         if (*(int *)lumpinfo[l].name == intname)
         {
             frame = lumpinfo[l].name[4] - 'A';
             rotation = lumpinfo[l].name[5] - '0';
 
             // skip NULL sprites from very old dmadds pwads
-            if (W_LumpLength( (wadnum<<16)+l )<=8)
+            if (W_LumpLength( lumpnum )<=8)
                 continue;
 
             // store sprite info in lookup tables
             //FIXME:numspritelumps do not duplicate sprite replacements
-            W_ReadLumpHeader ((wadnum<<16)+l, &patch, sizeof(patch_t)); // to temp
+            W_ReadLumpHeader (lumpnum, &patch, sizeof(patch_t)); // to temp
 	    // [WDJ] Do endian while translate temp to internal.
             spritewidth[numspritelumps] = LE_SWAP16(patch.width)<<FRACBITS;
             spriteoffset[numspritelumps] = LE_SWAP16(patch.leftoffset)<<FRACBITS;
@@ -395,13 +396,13 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
             //----------------------------------------------------
 
-            R_InstallSpriteLump ((wadnum<<16)+l, numspritelumps, frame, rotation, false);
+            R_InstallSpriteLump (lumpnum, numspritelumps, frame, rotation, false);
 
             if (lumpinfo[l].name[6])
             {
                 frame = lumpinfo[l].name[6] - 'A';
                 rotation = lumpinfo[l].name[7] - '0';
-                R_InstallSpriteLump ((wadnum<<16)+l, numspritelumps, frame, rotation, true);
+                R_InstallSpriteLump (lumpnum, numspritelumps, frame, rotation, true);
             }
 
             if (++numspritelumps>=MAXSPRITELUMPS)
@@ -478,8 +479,10 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
     // allocate this sprite's frames
     if (spritedef->spriteframes == NULL)
+    {
         spritedef->spriteframes =
             Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+    }
 
     spritedef->numframes = maxframe;
     memcpy (spritedef->spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
@@ -691,6 +694,10 @@ void R_DrawMaskedColumn (column_t* column)
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
 //        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
         {
+	    //[WDJ] phobiata.wad has many views that need clipping
+	    if ( dc_yl < 0 )   dc_yl = 0;
+	    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+
             dc_source = (byte *)column + 3;
             dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
             // dc_source = (byte *)column + 3 - column->topdelta;
@@ -698,17 +705,16 @@ void R_DrawMaskedColumn (column_t* column)
             // Drawn by either R_DrawColumn
             //  or (SHADOW) R_DrawFuzzColumn.
             //Hurdler: quick fix... something more proper should be done!!!
+	    // [WDJ] Fixed by using rdraw_viewheight instead of vid.height
+	    // in limit test above.
             if (!ylookup[dc_yl] && colfunc==R_DrawColumn_8)
             {
-                static int first = 1;
-                if (first)
-                {
-                    CONS_Printf("WARNING: avoiding a crash in %s %d\n", __FILE__, __LINE__);
-                    first = 0;
-                }
+	        I_SoftError("WARNING: avoiding a crash in %s %d\n", __FILE__, __LINE__);
             }
             else
-            colfunc ();
+	    {
+                colfunc ();
+	    }
         }
         column = (column_t *)(  (byte *)column + column->length + 4);
     }
@@ -728,12 +734,13 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 {
     column_t*           column;
     int                 texturecolumn;
-    fixed_t             frac;
+    fixed_t             texcol_frac;
     patch_t*            patch;
 
 
     //Fab:R_InitSprites now sets a wad lump number
-    patch = W_CacheLumpNum (vis->patch, PU_CACHE);
+    // Use common patch read so do not have patch in cache without endian fixed.
+    patch = W_CachePatchNum (vis->patch, PU_CACHE);
 
     dc_colormap = vis->colormap;
 	
@@ -776,23 +783,22 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     dc_texturemid = vis->texturemid;
     dc_texheight = 0;
 
-    frac = vis->startfrac;
+    texcol_frac = vis->startfrac;
     spryscale = vis->scale;
     sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
     windowtop = windowbottom = sprbotscreen = MAXINT;
 
-    for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, frac += vis->xiscale)
+    for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, texcol_frac += vis->xiscale)
     {
-        texturecolumn = frac>>FRACBITS;
+        texturecolumn = texcol_frac>>FRACBITS;
 #ifdef RANGECHECK
-        if (texturecolumn < 0 || texturecolumn >= LE_SWAP16(patch->width)) {
+        if (texturecolumn < 0 || texturecolumn >= patch->width) {
 	    // [WDJ] Give msg and don't draw it
             I_SoftError ("R_DrawVisSprite: bad texturecolumn");
             return;
 	}
 #endif
-        column = (column_t *) ((byte *)patch +
-                               LE_SWAP32(patch->columnofs[texturecolumn]));
+        column = (column_t *) ((byte *)patch + patch->columnofs[texturecolumn]);
         R_DrawMaskedColumn (column);
     }
 
@@ -993,13 +999,21 @@ static void R_ProjectSprite (mobj_t* thing)
         return;
     }
 #endif
+
+    // [WDJ] segfault control in heretic shareware, not all sprites present
+    if( (byte*)sprdef->spriteframes < (byte*)0x1000 )
+    {
+        I_SoftError("R_ProjectSprite: sprframes ptr NULL for sprite %d\n", thing->sprite );
+        return;
+    }
+
     sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
 
 #ifdef PARANOIA
     //heretic hack
     if( !sprframe ) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError("sprframes NULL for sprite %d\n", thing->sprite);
+        I_SoftError("R_ProjectSprite: sprframe NULL for sprite %d\n", thing->sprite);
         return;
     }
 #endif
@@ -1250,27 +1264,37 @@ void R_DrawPSprite (pspdef_t* psp)
 #ifdef RANGECHECK
     if ( (unsigned)psp->state->sprite >= numsprites) {
         // [WDJ] Give msg and don't draw it, (** Heretic **)
-        I_SoftError ("R_ProjectSprite: invalid sprite number %i ",
+        I_SoftError ("R_DrawPSprite: invalid sprite number %i ",
                  psp->state->sprite);
         return;
     }
 #endif
+
     sprdef = &sprites[psp->state->sprite];
+
 #ifdef RANGECHECK
     if ( (psp->state->frame & FF_FRAMEMASK)  >= sprdef->numframes) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
+        I_SoftError ("R_DrawPSprite: invalid sprite frame %i : %i for %s",
                  psp->state->sprite, psp->state->frame, sprnames[psp->state->sprite]);
         return;
     }
 #endif
+   
+    // [WDJ] segfault control in heretic shareware, not all sprites present
+    if( (byte*)sprdef->spriteframes < (byte*)0x1000 )
+    {
+        I_SoftError("R_DrawPSprite: sprframes ptr NULL for state %d\n", psp->state );
+        return;
+    }
+   
     sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
 
 #ifdef PARANOIA
     //Fab:debug
     if (sprframe==NULL) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError("sprframes NULL for state %d\n", psp->state - states);
+        I_SoftError("R_DrawPSprite: sprframes NULL for state %d\n", psp->state - states);
         return;
     }
 #endif
