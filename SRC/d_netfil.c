@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_netfil.c 584 2010-01-05 22:04:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -178,7 +178,7 @@ char *downloaddir="DOWNLOAD";
 char *PutFileNeeded(void)
 {
     int   i;
-    char *p;
+    byte *p;  // macros want byte*
     char  wadfilename[MAX_WADPATH];
 
     p=(byte *)&netbuffer->u.serverinfo.fileneeded;

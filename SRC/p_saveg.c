@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: p_saveg.c 584 2010-01-05 22:04:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -225,8 +225,10 @@ void P_ArchivePlayers(void)
         WRITEBYTE(save_p, players[i].armortype);
 
         for (j = 0; j < NUMPOWERS; j++)
+        {
             if (diff & (1 << j))
                 WRITELONG(save_p, players[i].powers[j]);
+        }
         WRITEBYTE(save_p, players[i].cards);
         WRITEBYTE(save_p, players[i].readyweapon);
         WRITEBYTE(save_p, players[i].pendingweapon);
@@ -234,8 +236,10 @@ void P_ArchivePlayers(void)
 
         WRITEUSHORT(save_p, players[i].addfrags);
         for (j = 0; j < MAXPLAYERS; j++)
+        {
             if (playeringame[i])
                 WRITEUSHORT(save_p, players[i].frags[j]);
+        }
 
         for (j = 0; j < NUMWEAPONS; j++)
         {
@@ -333,8 +337,10 @@ void P_UnArchivePlayers(void)
         players[i].armortype = READBYTE(save_p);
 
         for (j = 0; j < NUMPOWERS; j++)
+        {
             if (diff & (1 << j))
                 players[i].powers[j] = READLONG(save_p);
+        }
 
         players[i].cards = READBYTE(save_p);
         players[i].readyweapon = READBYTE(save_p);
@@ -343,8 +349,10 @@ void P_UnArchivePlayers(void)
 
         players[i].addfrags = READUSHORT(save_p);
         for (j = 0; j < MAXPLAYERS; j++)
+        {
             if (playeringame[i])
                 players[i].frags[j] = READUSHORT(save_p);
+        }
 
         for (j = 0; j < NUMWEAPONS; j++)
             players[i].favoritweapon[j] = READBYTE(save_p);
@@ -1680,6 +1688,8 @@ void P_ArchiveLevelScript()
                 case svt_mobj:
                 {
                     //CheckSaveGame(sizeof(long)); 
+	    // [WDJ] Warning: value.mobj is a PTR being written as an INT
+	    // Is not 64bit safe, and must fail in most situations.
                     WRITEULONG(save_p, sv->value.mobj);
                     break;
                 }
@@ -1702,6 +1712,8 @@ void P_ArchiveLevelScript()
 				  // zero is unused, so use it for NULL
 				  *int_p++ = cur ? cur->saveindex : 0;
 
+		    // [WDJ] Warning: int_p is a PTR being written as an INT
+		    // Is not 64bit safe, and must fail in most situations.
 				  WRITELONG(save_p, (unsigned char *)int_p);
 				  
 				  break;
@@ -2106,8 +2118,8 @@ void P_ArchiveScripts()
     // save runningscripts
     P_ArchiveRunningScripts();
 
-	// save FS arrays
-	P_ArchiveFSArrays();
+    // save FS arrays
+    P_ArchiveFSArrays();
 
     // Archive the script camera.
     WRITELONG(save_p, (long) script_camera_on);
@@ -2129,8 +2141,8 @@ void P_UnArchiveScripts()
     // restore runningscripts
     P_UnArchiveRunningScripts();
 
-	// restore FS arrays
-	P_UnArchiveFSArrays();
+    // restore FS arrays
+    P_UnArchiveFSArrays();
 
     // Unarchive the script camera
     script_camera_on = (boolean) READLONG(save_p);

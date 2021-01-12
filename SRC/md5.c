@@ -26,7 +26,12 @@
 
 #include <sys/types.h>
 
-#if STDC_HEADERS || defined _LIBC
+// [WDJ] Find the header for memcpy.  This is overly complicated.
+// Linux <features.h> does not define STDC_HEADERS, nor _LIB.
+// The only header that defines STDC_HEADERS is /usr/include/fficonfig.h
+// For Linux the lib is __GLIBC__
+// Yet Linux with GLIBC has memcpy in <string.h>
+#if defined LINUX || defined STDC_HEADERS || defined _LIBC || defined __GLIBC__
 # include <stdlib.h>
 # include <string.h>
 #else

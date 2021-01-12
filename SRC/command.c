@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: command.c 584 2010-01-05 22:04:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -273,7 +273,7 @@ static char        *com_null_string = "";
 static char        *com_args = NULL;          // current command args or NULL
 
 void Got_NetVar(char **p,int playernum);
-//  Initialise command buffer and add basic commands
+//  Initialize command buffer and add basic commands
 //
 void COM_Init (void)
 {
@@ -1043,10 +1043,12 @@ void Got_NetVar(char **p,int playernum)
 {
     consvar_t  *cvar;
     char *svalue;
+    byte * bp = (byte*) *p;	// macros READ,SKIP want byte*
 
-    cvar = CV_FindNetVar (READUSHORT(*p));
-    svalue = *p;
-    SKIPSTRING(*p);
+    cvar = CV_FindNetVar (READUSHORT(bp));
+    svalue = bp;
+    SKIPSTRING(bp);
+    *p = (char*)bp;	// return updated ptr only once
     if(cvar==NULL)
     {
         CONS_Printf("\2Netvar not found\n");
@@ -1059,6 +1061,7 @@ void Got_NetVar(char **p,int playernum)
 void CV_SaveNetVars( char **p )
 {
     consvar_t  *cvar;
+    byte * bp = (byte*) *p;	// macros want byte*
 
     // we must send all cvar because on the other side maybe
     // it have a cvar modified and here not (same for true savegame)
@@ -1066,10 +1069,11 @@ void CV_SaveNetVars( char **p )
     {
         if (cvar->flags & CV_NETVAR)
         {
-            WRITESHORT(*p,cvar->netid);
-            WRITESTRING(*p,cvar->string);
+            WRITESHORT(bp,cvar->netid);
+            WRITESTRING(bp,cvar->string);
         }
     }
+    *p = (char*)bp;	// return updated ptr only once
 }
 
 // get implicit parameter save_p
@@ -1102,7 +1106,7 @@ void CV_Set (consvar_t *var, char *value)
     if (var->flags & CV_NETVAR)
     {
         // send the value of the variable
-        char buf[128],*p;
+        byte buf[128],*p; // macros want byte*
         if (!server)
         {
             CONS_Printf("Only the server can change this variable\n");

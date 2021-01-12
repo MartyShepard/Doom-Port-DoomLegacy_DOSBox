@@ -209,3 +209,10 @@ Adds control to select gamma table generator.
 Removes old gamma tables.
 Adds Effects menu, because video menu too crowded with added gamma
 controls.
+
+*** w26
+Remove  screen.c.rej
+patchfile = w26.patch
+Misc patches to remove compiler warnings, and cleanup interfaces.
+No net effects on execution.
+

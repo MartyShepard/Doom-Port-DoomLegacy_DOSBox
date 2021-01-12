@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_enemy.c 584 2010-01-05 22:04:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -840,11 +840,23 @@ void A_Chase (mobj_t*   actor)
             actor->angle += ANG90/2;
     }
 
-    
+// [WDJ] compiler complains, "suggest parenthesis"
+#if 0
+   // Original code was
 	if (!actor->target
         || !(actor->target->flags&MF_SHOOTABLE)
 		&& actor->target->type != MT_NODE
 		&& !(actor->eflags & MF_IGNOREPLAYER))
+#else     
+// but, based on other tests, the last two tests were added later.
+// [WDJ] I think they meant:
+    if ( !( actor->target &&
+	   ( actor->target->flags&MF_SHOOTABLE
+	     || actor->target->type == MT_NODE
+	   ))
+	 && !(actor->eflags & MF_IGNOREPLAYER)
+	)
+#endif       
     {
         // look for a new target
         if (P_LookForPlayers(actor,true))
@@ -867,8 +879,8 @@ void A_Chase (mobj_t*   actor)
     // check for melee attack
     if (actor->info->meleestate
         && P_CheckMeleeRange (actor)
-		&& actor->target->type != MT_NODE
-		&& !(actor->eflags & MF_IGNOREPLAYER))
+        && actor->target->type != MT_NODE
+        && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (actor->info->attacksound)
             S_StartAttackSound(actor, actor->info->attacksound);
@@ -879,8 +891,8 @@ void A_Chase (mobj_t*   actor)
 
     // check for missile attack
     if (actor->info->missilestate
-		&& actor->target->type != MT_NODE
-		&& !(actor->eflags & MF_IGNOREPLAYER))
+        && actor->target->type != MT_NODE
+        && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (!cv_fastmonsters.value && actor->movecount)
         {
@@ -901,8 +913,8 @@ void A_Chase (mobj_t*   actor)
     if (multiplayer
         && !actor->threshold
         && !P_CheckSight (actor, actor->target)
-		&& actor->target->type != MT_NODE
-		&& !(actor->eflags & MF_IGNOREPLAYER))
+        && actor->target->type != MT_NODE
+        && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
