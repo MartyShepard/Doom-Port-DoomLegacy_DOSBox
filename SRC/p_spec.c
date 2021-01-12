@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: p_spec.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2650,21 +2650,6 @@ void P_PlayerInSpecialSector (player_t* player)
     //Fab: keep track of what sector type the player's currently in
     player->specialsector = sector->special;
 
-#ifdef OLDWATER
-    //Fab: VERY NASTY hack for water QUICK TEST !!!!!!!!!!!!!!!!!!!!!!!
-    if (sector->tag < 0)
-    {
-        player->specialsector = 888;    // no particular value
-        return;
-    }
-    else
-    // old water (flat texture)
-    if (levelflats[sector->floorpic].iswater)
-    {
-        player->specialsector = 887;
-        return;
-    }
-#endif
 
     if (!player->specialsector)     // nothing special, exit
         return;

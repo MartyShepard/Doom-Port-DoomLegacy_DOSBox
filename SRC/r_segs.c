@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 595 2010-02-07 18:06:51Z wesleyjohnson $
+// $Id: r_segs.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -133,13 +133,6 @@
 #include "p_local.h" //Camera...
 #include "console.h" //Con_clipviewtop
 
-#ifdef OLDWATER
-extern fixed_t  waterheight;
-static boolean  markwater;
-static fixed_t  waterz;
-static fixed_t  waterfrac;
-static fixed_t  waterstep;
-#endif
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -1115,10 +1108,6 @@ void R_RenderSegLoop (void)
     int                 yl;
     int                 yh;
 
-#ifdef OLDWATER
-    int                 yw;     //added:18-02-98:WATER!
-#endif
-
     int                 mid;
     fixed_t             texturecolumn;
     int                 top;
@@ -1170,40 +1159,6 @@ void R_RenderSegLoop (void)
             }
         }
 
-#ifdef OLDWATER
-        if (markwater)
-        {
-            //added:18-02-98:WATER!
-            yw = waterfrac>>HEIGHTBITS;
-            
-            // the markwater stuff...
-            if (waterplane->height<viewz)
-            {
-                top = yw;
-                bottom = waterclip[rw_x]-1;
-                
-                if (top <= ceilingclip[rw_x])
-                    top = ceilingclip[rw_x]+1;
-            }
-            else  //view from under
-            {
-                top = waterclip[rw_x]+1;
-                bottom = yw;
-                
-                if (bottom >= floorclip[rw_x])
-                    bottom = floorclip[rw_x]-1;
-            }
-            if (top <= bottom)
-            {
-                waterplane->top[rw_x] = top;
-                waterplane->bottom[rw_x] = bottom;
-            }
-            
-            // do it only if markwater else not needed!
-            waterfrac += waterstep;   //added:18-02-98:WATER!
-            //dc_wcolormap = colormaps+(32<<8);
-        }
-#endif
 
         if (numffloors)
         {
@@ -1398,10 +1353,6 @@ void R_RenderSegLoop (void)
                 if (markceiling)
                 {
                     ceilingclip[rw_x] = yl-1;
-#ifdef OLDWATER
-                    if (!waterplane || markwater)
-                         waterclip[rw_x] = yl-1;
-#endif
                 }
             }
             
@@ -1436,10 +1387,6 @@ void R_RenderSegLoop (void)
 #endif
 		  } // if mid >= 0
                     floorclip[rw_x] = mid;
-#ifdef OLDWATER
-                    if (waterplane && waterz<worldlow)
-                        waterclip[rw_x] = mid;
-#endif
                 }
                 else
                 {
@@ -1453,10 +1400,6 @@ void R_RenderSegLoop (void)
                 if (markfloor)
                 {
                     floorclip[rw_x] = yh+1;
-#ifdef OLDWATER
-                    if (!waterplane || markwater)
-                        waterclip[rw_x] = yh+1;
-#endif
                 }
             }
         }
@@ -1644,16 +1587,6 @@ void R_StoreWallRange( int   start, int   stop)
     worldtop = frontsector->ceilingheight - viewz;
     worldbottom = frontsector->floorheight - viewz;
 
-#ifdef OLDWATER
-    //added:18-02-98:WATER!
-    if (waterplane)
-    {
-        waterz = waterplane->height - viewz;
-        if (waterplane->height >= frontsector->ceilingheight)
-            I_Error("eau plus haut que plafond");
-    }
-#endif
-
     midtexture = toptexture = bottomtexture = maskedtexture = 0;
     ds_p->maskedtexturecol = NULL;
     ds_p->numthicksides = numthicksides = 0;
@@ -1677,15 +1610,6 @@ void R_StoreWallRange( int   start, int   stop)
         midtexture = texturetranslation[sidedef->midtexture];
         // a single sided line is terminal, so it must mark ends
         markfloor = markceiling = true;
-
-
-#ifdef OLDWATER
-        //added:18-02-98:WATER! onesided marque toujours l'eau si ya dlo
-        if (waterplane)
-            markwater = true;
-        else
-            markwater = false;
-#endif
         
         if (linedef->flags & ML_DONTPEGBOTTOM)
         {
@@ -1831,27 +1755,10 @@ void R_StoreWallRange( int   start, int   stop)
             // closed door
             markceiling = markfloor = true;
         }
-        
-#ifdef OLDWATER
-        //added:18-02-98: WATER! jamais mark si l'eau ne touche pas
-        //                d'upper et de bottom
-        // (on s'en fout des differences de hauteur de plafond et
-        //  de sol, tant que ca n'interrompt pas la surface de l'eau)
-        markwater = false;
-#endif
-
 
         // check TOP TEXTURE
         if (worldhigh < worldtop)
         {
-#ifdef OLDWATER
-            //added:18-02-98:WATER! toptexture, check si ca touche watersurf
-            if (waterplane &&
-                waterz > worldhigh &&
-                waterz < worldtop)
-                markwater = true;
-#endif
-            
             // top texture
             toptexture = texturetranslation[sidedef->toptexture];
             if (linedef->flags & ML_DONTPEGTOP)
@@ -1871,14 +1778,6 @@ void R_StoreWallRange( int   start, int   stop)
         // check BOTTOM TEXTURE
         if (worldlow > worldbottom)     //seulement si VISIBLE!!!
         {
-#ifdef OLDWATER
-            //added:18-02-98:WATER! bottomtexture, check si ca touche watersurf
-            if (waterplane &&
-                waterz < worldlow &&
-                waterz > worldbottom)
-                markwater = true;
-#endif
-
             // bottom texture
             bottomtexture = texturetranslation[sidedef->bottomtexture];
             
@@ -2117,20 +2016,6 @@ void R_StoreWallRange( int   start, int   stop)
     topstep = -FixedMul (rw_scalestep, worldtop);
     topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
 
-
-
-#ifdef OLDWATER
-    //added:18-02-98:WATER!
-    waterz >>= 4;
-    if (markwater)
-    {
-        if (waterplane==NULL)
-            I_Error("no waterplane!");
-        waterstep = -FixedMul (rw_scalestep, waterz);
-        waterfrac = (centeryfrac>>4) - FixedMul (waterz, rw_scale);
-    }
-#endif
-
     bottomstep = -FixedMul (rw_scalestep,worldbottom);
     bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);        
 
@@ -2297,20 +2182,6 @@ void R_StoreWallRange( int   start, int   stop)
       else
         markfloor = 0;
     }
-
-#ifdef OLDWATER
-    //added:18-02-98: il me faut un visplane pour l'eau...WATER!
-    if (markwater)
-    {
-        if (waterplane==NULL)
-            I_Error("pas de waterplane avec markwater!?");
-        waterplane = R_CheckPlane (waterplane, rw_x, rw_stopx-1);
-    }
-    // render it
-    //added:24-02-98:WATER! unused now, trying something neater
-    if (markwater)
-        colfunc = R_DrawWaterColumn;
-#endif
 
     ds_p->numffloorplanes = 0;
     if(numffloors)

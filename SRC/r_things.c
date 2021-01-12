@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 595 2010-02-07 18:06:51Z wesleyjohnson $
+// $Id: r_things.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2000,7 +2000,7 @@ void R_DrawMasked (void)
       if(r2->plane)
       {
         next = r2->prev;
-        R_DrawSinglePlane(r2->plane, true);
+        R_DrawSinglePlane(r2->plane);
         R_DoneWithNode(r2);
         r2 = next;
       }

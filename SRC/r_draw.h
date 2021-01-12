@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_draw.h 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -76,11 +76,9 @@ extern int              hcolumnofs[MAXVIDHEIGHT];
 // -------------------------
 
 extern lighttable_t*    dc_colormap;
-extern lighttable_t*    dc_wcolormap;   //added:24-02-98:WATER!
 extern int              dc_x;
 extern int              dc_yl;
 extern int              dc_yh;
-extern int              dc_yw;          //added:24-02-98:WATER!
 extern fixed_t          dc_iscale;
 extern fixed_t          dc_texturemid;
 

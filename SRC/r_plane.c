@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 595 2010-02-07 18:06:51Z wesleyjohnson $
+// $Id: r_plane.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -153,10 +153,6 @@ short                   floorclip[MAXVIDWIDTH];
 short                   ceilingclip[MAXVIDWIDTH];
 fixed_t                 frontscale[MAXVIDWIDTH];
 
-#ifdef OLDWATER
-  short                   waterclip[MAXVIDWIDTH];   //added:18-02-98:WATER!
-  boolean                 itswater;       //added:24-02-98:WATER!
-#endif
 
 //
 // spanstart holds the start of a plane span
@@ -228,10 +224,6 @@ void R_InitPlanes (void)
 //
 // BASIC PRIMITIVE
 //
-#ifdef OLDWATER
-static int bgofs;
-static int wtofs=0;
-#endif
 
 // Draw plane span at row y, span=(x1..x2)
 // at planeheight, using spanfunc
@@ -275,24 +267,6 @@ void R_MapPlane
     ds_xfrac = /*viewx +*/ FixedMul(finecosine[angle], length) + xoffs;
     ds_yfrac = /*-viewy*/yoffs - FixedMul(finesine[angle], length);
 
-#ifdef OLDWATER
-    if (itswater)
-    {
-        int         fuck;
-        //ripples da water texture
-        fuck = (wtofs + (distance>>10) ) & 8191;
-        bgofs = FixedDiv(finesine[fuck],distance>>9)>>16;
-
-        angle = (angle + 2048) & 8191;  //90ø
-        ds_xfrac += FixedMul(finecosine[angle], (bgofs<<FRACBITS));
-        ds_yfrac += FixedMul(finesine[angle], (bgofs<<FRACBITS));
-
-        if (y+bgofs>=rdraw_viewheight)
-            bgofs = rdraw_viewheight-y-1;
-        if (y+bgofs<0)
-            bgofs = -y;
-    }
-#endif
 
     if (fixedcolormap)
         ds_colormap = fixedcolormap;
@@ -343,9 +317,6 @@ void R_ClearPlanes (player_t *player)
     int         i, p;
     angle_t     angle;
 
-#ifdef OLDWATER
-    int         waterz;
-#endif
 
     // opening / clipping determination
     for (i=0 ; i<rdraw_viewwidth ; i++)
@@ -361,25 +332,6 @@ void R_ClearPlanes (player_t *player)
     }
 
     numffloors = 0;
-
-#ifdef OLDWATER
-    //added:18-02-98:WATER! clear the waterclip
-    if (player->mo->subsector->sector->tag<0)
-        waterz = (-player->mo->subsector->sector->tag)<<FRACBITS;
-    else
-        waterz = MININT;
-
-    if (viewz>waterz)
-    {
-        for (i=0; i<rdraw_viewwidth; i++)
-            waterclip[i] = rdraw_viewheight;
-    }
-    else
-    {
-        for (i=0; i<rdraw_viewwidth; i++)
-            waterclip[i] = -1;
-    }
-#endif
 
     //lastvisplane = visplanes;
 
@@ -677,129 +629,6 @@ void R_MakeSpans
 }
 
 
-#ifdef OLDWATER
-static int waterofs;
-
-// la texture flat anim‚e de l'eau contient en fait des index
-// de colormaps , plutot qu'une transparence, il s'agit d'ombrer et
-// d'eclaircir pour donner l'effet de bosses de l'eau.
-#ifdef couille
-void R_DrawWaterSpan (void)
-{
-    fixed_t             xfrac;
-    fixed_t             yfrac;
-    byte*               dest;
-    int                 count;
-    int                 spot;
-
-    //byte*               brighten = transtables+(84<<8);
-    byte*               brighten = colormaps;
-
-//#ifdef RANGECHECK
-    if (ds_x2 < ds_x1
-        || ds_x1<0
-        || ds_x2>=vid.width
-        || (unsigned)ds_y>=vid.height)
-    {
-        I_Error( "R_DrawWaterSpan: %i to %i at %i",
-                 ds_x1,ds_x2,ds_y);
-    }
-//      dscount++;
-//#endif
-
-
-    xfrac = ds_xfrac;
-    yfrac = (ds_yfrac + waterofs) & 0x3fffff;
-
-    dest = ylookup[ds_y] + columnofs[ds_x1];
-
-    // We do not check for zero spans here?
-    count = ds_x2 - ds_x1;
-
-// *dest++ = 192;
-// --count;
-    do //while(count--)
-    {
-        // Current texture index in u,v.
-        spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-
-        // Lookup pixel from flat texture tile,
-        //  re-index using light/colormap.
-        *dest++ = *( brighten + (ds_source[spot]<<8) + (*dest) );
-        // Next step in u,v.
-        xfrac += ds_xstep;
-        yfrac += ds_ystep;
-
-    } while(count--); //
-// if (count==-1)
-//     *dest = 200;
-}
-#endif //couille
-
-void R_DrawWaterSpan_8 (void)
-{
-    fixed_t             xfrac;
-    fixed_t             yfrac;
-    byte*               dest;
-    byte*               dsrc;
-    int                 count;
-    int                 spot;
-
-    //byte*               brighten = transtables+(84<<8);
-    byte*               brighten = colormaps-(8*256);
-
-//#ifdef RANGECHECK
-    if (ds_x2 < ds_x1
-        || ds_x1<0
-        || ds_x2>=vid.width
-        || ds_y>=vid.height)
-    {
-        I_Error( "R_DrawWaterSpan: %i to %i at %i",
-                 ds_x1,ds_x2,ds_y);
-    }
-//      dscount++;
-//#endif
-
-    xfrac = ds_xfrac;
-    yfrac = (ds_yfrac + waterofs) & 0x3fffff;
-
-    // methode a : le fond est d‚form‚
-    dest = ylookup[ds_y] + columnofs[ds_x1];
-    dsrc = screens[2] + ((ds_y+bgofs)*vid.width) + columnofs[ds_x1];
-
-    // m‚thode b : la surface est d‚form‚e !
-    //dest = ylookup[ds_y+bgofs] + columnofs[ds_x1];
-    //dsrc = screens[2] + (ds_y*vid.width) + columnofs[ds_x1];
-
-    // We do not check for zero spans here?
-    count = ds_x2 - ds_x1;
-
-// *dest++ = 192;
-// --count;
-
-    do //while(count--)
-    {
-        // Current texture index in u,v.
-        spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-
-        // Lookup pixel from flat texture tile,
-        //  re-index using light/colormap.
-        *dest++ = *( brighten + (ds_source[spot]<<8) + (*dsrc++) );
-        // Next step in u,v.
-        xfrac += ds_xstep;
-        yfrac += ds_ystep;
-
-    } while(count--); //
-// if (count==-1)
-//     *dest = 200;
-}
-
-
-
-
-static int wateranim;
-#endif //Oldwater
-
 
 byte* R_GetFlat (int  flatnum);
 
@@ -810,32 +639,11 @@ void R_DrawPlanes (void)
     int                 angle;
     int                 i; //SoM: 3/23/2000
 
-#ifdef OLDWATER
-    //added:18-02-98:WATER!
-    boolean             watertodraw;
-#endif
-
-    //
-    // DRAW NON-WATER VISPLANES FIRST
-    //
-#ifdef OLDWATER
-    watertodraw = false;
-    itswater = false;
-#endif
-
     spanfunc = basespanfunc;
 
     for (i=0;i<MAXVISPLANES;i++, pl++)
     for (pl=visplanes[i]; pl; pl=pl->next)
     {
-#ifdef OLDWATER
-        if (pl->picnum==1998)   //dont draw water visplanes now.
-        {
-            watertodraw = true;
-            continue;
-        }
-#endif
-
         // sky flat
         if (pl->picnum == skyflatnum)
         {
@@ -883,60 +691,14 @@ void R_DrawPlanes (void)
         if(pl->ffloor)
           continue;
 
-        R_DrawSinglePlane(pl, true);
+        R_DrawSinglePlane(pl);
     }
-
-    //
-    // DRAW WATER VISPLANES AFTER
-    //
-
-#ifdef OLDWATER
-    R_DrawSprites ();   //draw sprites before water. just a damn hack
-
-
-    //added:24-02-98: SALE GROS HACK POURRI
-    if (!watertodraw)
-      goto skipwaterdraw;
-
-    VID_BlitLinearScreen ( screens[0], screens[2],
-                           vid.width, vid.height,
-                           vid.width, vid.width );
-
-    spanfunc = R_DrawWaterSpan_8;
-    itswater = true;
-    // always the same flat!!!
-    ds_source = W_CacheLumpNum(firstwaterflat + ((wateranim>>3)&7), PU_STATIC);
-
-    for (i=0;i<MAXVISPLANES;i++, pl++)
-    for (pl=visplanes[i]; pl; pl=pl->next)
-    {
-        if (pl->picnum!=1998)
-            continue;
-
-        R_DrawSinglePlane(pl, false);
-    }
-    Z_ChangeTag (ds_source, PU_CACHE);
-    itswater = false;
-    spanfunc = basespanfunc;
-
-skipwaterdraw:
-
-    waterofs += (1<<14);
-    wateranim++;
-    wtofs += 75;
-    //if (!wateranim)
-    //    waterofs -= (32<<16);
-#endif //OLDWATER
 }
 
 
 
 
-/* handlesource: get flat when true, is only false when caller has already got
- flat into ds_source, as in water.  Caller must also set_flat_globals.
- If OLDWATER is removed then this param is unnecessary.
- */
-void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
+void R_DrawSinglePlane(visplane_t* pl)
 {
   int                 light = 0;
   int                 x;
@@ -997,51 +759,50 @@ void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
 
   currentplane = pl;
 
-  if(handlesource)
-  {
-        // [WDJ] Flat use is safe from alloc, change to PU_CACHE at function exit.
-        ds_source = (byte *) R_GetFlat (levelflats[pl->picnum].lumpnum);
 
-        int size = W_LumpLength(levelflats[pl->picnum].lumpnum);
-        switch(size)
-        {
-                case 4194304: // 2048x2048 lump
-                        flatsize = 2048;
-                        flatmask = 2047<<11;
-                        flatsubtract = 11;
-                        break;
-                case 1048576: // 1024x1024 lump
-                        flatsize = 1024;
-                        flatmask = 1023<<10;
-                        flatsubtract = 10;
-                        break;
-                case 262144:// 512x512 lump
-                        flatsize = 512;
-                        flatmask = 511<<9;
-                        flatsubtract = 9;
-                        break;
-                case 65536: // 256x256 lump
-                        flatsize = 256;
-                        flatmask = 255<<8;
-                        flatsubtract = 8;
-                        break;
-                case 16384: // 128x128 lump
-                        flatsize = 128;
-                        flatmask = 127<<7;
-                        flatsubtract = 7;
-                        break;
-                case 1024: // 32x32 lump
-                        flatsize = 32;
-                        flatmask = 31<<5;
-                        flatsubtract = 5;
-                        break;
-                default: // 64x64 lump
-                        flatsize = 64;
-                        flatmask = 0x3f<<6;
-                        flatsubtract = 6;
-                        break;
-        }
+  // [WDJ] Flat use is safe from alloc, change to PU_CACHE at function exit.
+  ds_source = (byte *) R_GetFlat (levelflats[pl->picnum].lumpnum);
+
+  int size = W_LumpLength(levelflats[pl->picnum].lumpnum);
+  switch(size)
+  {
+    case 2048*2048: // 2048x2048 lump
+      flatsize = 2048;
+      flatmask = 2047<<11;
+      flatsubtract = 11;
+      break;
+    case 1024*1024: // 1024x1024 lump
+      flatsize = 1024;
+      flatmask = 1023<<10;
+      flatsubtract = 10;
+      break;
+    case 512*512:// 512x512 lump
+      flatsize = 512;
+      flatmask = 511<<9;
+      flatsubtract = 9;
+      break;
+    case 256*256: // 256x256 lump
+      flatsize = 256;
+      flatmask = 255<<8;
+      flatsubtract = 8;
+      break;
+    case 128*128: // 128x128 lump
+      flatsize = 128;
+      flatmask = 127<<7;
+      flatsubtract = 7;
+      break;
+    case 32*32: // 32x32 lump
+      flatsize = 32;
+      flatmask = 31<<5;
+      flatsubtract = 5;
+      break;
+    default: // 64x64 lump
+      flatsize = 64;
+      flatmask = 0x3f<<6;
+      flatsubtract = 6;
+      break;
   }
+
 
   xoffs = pl->xoffs;
   yoffs = pl->yoffs;
@@ -1072,8 +833,8 @@ void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
 		);
   }
 
-  if(handlesource)
-    Z_ChangeTag (ds_source, PU_CACHE);
+
+  Z_ChangeTag (ds_source, PU_CACHE);
 }
 
 

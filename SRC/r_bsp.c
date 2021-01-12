@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: r_bsp.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -817,28 +817,6 @@ boolean R_CheckBBox (fixed_t*   bspcoord)
 // Add sprites of things in sector.
 // Draw one or more line segments.
 //
-#ifdef OLDWATER
-// this one is set par subsector, and used by r_segs code to mark water planes
-fixed_t             waterheight;
-#endif
-
-//Fab: hack, until water is finished
-fixed_t             dev_waterheight = MININT;
-void Command_Water_f (void)
-{
-    if (COM_Argc()<2)
-    {
-        CONS_Printf("dev_water [height] : set water level (development test)");
-
-        if (players[consoleplayer].mo)
-            dev_waterheight = players[consoleplayer].mo->z + (16<<16) + 1;
-
-        return;
-    }
-
-    dev_waterheight = (atoi(COM_Argv(1)) << 16) + 1;
-}
-
 
 drawseg_t*   firstseg;
 
@@ -933,29 +911,6 @@ void R_Subsector (int num)
     else
         ceilingplane = NULL;
 
-#ifdef OLDWATER
-    // -------------------- WATER IN DEV. TEST ------------------------
-    //dck hack : use abs(tag) for waterheight
-    if (frontsector->tag<0)
-        waterheight = ((-frontsector->tag) <<16) + (1<<15);
-    else
-        waterheight = dev_waterheight;
-
-    //
-    if (waterheight > frontsector->floorheight &&
-        waterheight < frontsector->ceilingheight )
-    {
-        waterplane = R_FindPlane (waterheight,
-                                  1998,
-                                  frontsector->lightlevel,
-                                  0, 0,
-                                  frontsector->extra_colormap,
-                                  NULL);
-    }
-    else
-        waterplane = NULL;
-#endif
-    // -------------------- WATER IN DEV. TEST ------------------------
 
     numffloors = 0;
     ffloor[numffloors].plane = NULL;

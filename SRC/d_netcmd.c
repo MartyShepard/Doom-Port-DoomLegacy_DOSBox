@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: d_netcmd.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -198,7 +198,6 @@ void Command_TeamFrags_f(void);
 void Command_Version_f(void);
 void Command_Quit_f(void);
 
-void Command_Water_f(void);
 void Command_ExitLevel_f(void);
 void Command_Load_f(void);
 void Command_Save_f(void);
@@ -385,9 +384,6 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_weaponpref);
     CV_RegisterVar(&cv_autoaim);
     CV_RegisterVar(&cv_originalweaponswitch);
-
-    // WATER HACK TEST UNTIL FULLY FINISHED
-    COM_AddCommand("dev_water", Command_Water_f);
 
     //misc
     CV_RegisterVar(&cv_teamplay);

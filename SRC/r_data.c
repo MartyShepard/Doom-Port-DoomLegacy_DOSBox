@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 595 2010-02-07 18:06:51Z wesleyjohnson $
+// $Id: r_data.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -146,10 +146,6 @@
 // A column is composed of zero or more posts,
 // a patch or sprite is composed of zero or more columns.
 //
-
-#ifdef OLDWATER
-int             firstwaterflat; //added:18-02-98:WATER!
-#endif
 
 int             firstflat, lastflat, numflats;
 int             firstpatch, lastpatch, numpatches;
@@ -976,11 +972,6 @@ void R_InitFlats ()
   numflatlists = 0;
   flats = NULL;
   cfile = clump = 0;
-
-#ifdef OLDWATER
-  //added:18-02-98: WATER! flatnum of the first waterflat
-  firstwaterflat = W_GetNumForName ("WATER0");
-#endif
 
   for(;cfile < numwadfiles;cfile ++, clump = 0)
   {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 595 2010-02-07 18:06:51Z wesleyjohnson $
+// $Id: r_draw.c 596 2010-02-07 23:51:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -131,12 +131,6 @@ lighttable_t*           dc_colormap;
 int                     dc_x;
 int                     dc_yl;
 int                     dc_yh;
-
-//Hurdler: 04/06/2000: asm code still use it
-//#ifdef OLDWATER
-int                     dc_yw;          //added:24-02-98: WATER!
-lighttable_t*           dc_wcolormap;   //added:24-02-98:WATER!
-//#endif
 
 fixed_t                 dc_iscale;
 fixed_t                 dc_texturemid;

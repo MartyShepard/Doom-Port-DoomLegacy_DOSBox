@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00596 ]: OLDWATER removed
 [00595 ]: Draw window clipping protection
 [00594 ]: Texture generate expand too small patch
 [00593 ]: Zone FreeTags and misc.

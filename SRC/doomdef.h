@@ -233,7 +233,6 @@ extern int logstream;
 #define ABSOLUTEANGLE           // work fine, soon #ifdef and old code remove
 //#define CLIENTPREDICTION2     // differant methode
 #define NEWLIGHT                // compute lighting with bsp (in construction)
-//#define OLDWATER                // SoM: Allow old legacy water.
 #define FRAGGLESCRIPT           // SoM: Activate FraggleScript
 #define FIXROVERBUGS // Fix some 3dfloor bugs. SSNTails 06-13-2002
 
