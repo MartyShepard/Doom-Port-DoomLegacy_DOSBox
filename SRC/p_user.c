@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_user.c 597 2010-02-08 00:07:26Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -979,7 +979,6 @@ void P_PlayerThink (player_t* player)
 {
     ticcmd_t*           cmd;
     weapontype_t        newweapon;
-    int                 waterz;
 
 #ifdef PARANOIA
     if(!player->mo) I_Error("p_playerthink : players[%d].mo == NULL",player-players);
@@ -1058,10 +1057,10 @@ void P_PlayerThink (player_t* player)
     P_PlayerInSpecialSector (player);
 
     //
-    // water splashes
+    // TODO water splashes
     //
-    if (demoversion>=125 && player->specialsector >= 887 &&
-                            player->specialsector <= 888)
+#if 0
+    if (demoversion>=125 && player->specialsector == )
     {
         if ((player->mo->momx >  (2*FRACUNIT) ||
              player->mo->momx < (-2*FRACUNIT) ||
@@ -1073,12 +1072,7 @@ void P_PlayerThink (player_t* player)
             //
             // make sur we disturb the surface of water (we touch it)
             //
-            if (player->specialsector==887)
-                //FLAT TEXTURE 'FWATER'
-                waterz = player->mo->subsector->sector->floorheight + (FRACUNIT/4);
-            else
-                //faB's current water hack using negative sector tags
-                waterz = - (player->mo->subsector->sector->tag << FRACBITS);
+	    int waterz = player->mo->subsector->sector->floorheight + (FRACUNIT/4);
 
             // half in the water
             if(player->mo->eflags & MF_TOUCHWATER)
@@ -1097,6 +1091,7 @@ void P_PlayerThink (player_t* player)
             }                   
         }
     }
+#endif
 
     // Check for weapon change.
 //#ifndef CLIENTPREDICTION2
