@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: t_func.c 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -3195,13 +3195,15 @@ void SF_SectorColormap()
             if (mapnum == -1)
             {
                 sectors[i].midmap = 0;
-                sectors[i].altheightsec = 0;
+//                sectors[i].altheightsec = 0;
+                sectors[i].model = SM_normal;
                 sectors[i].heightsec = 0;
             }
             else
             {
                 sectors[i].midmap = mapnum;
-                sectors[i].altheightsec = 2;
+//                sectors[i].altheightsec = 2;
+                sectors[i].model = SM_colormap;
                 sectors[i].heightsec = 0;
             }
         }

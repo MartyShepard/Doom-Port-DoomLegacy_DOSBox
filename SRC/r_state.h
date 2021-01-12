@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_state.h 572 2009-11-29 01:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,9 +97,9 @@ extern lighttable_t*    colormaps;
 extern int                 num_extra_colormaps;
 extern extracolormap_t     extra_colormaps[MAXCOLORMAPS];
 
-extern int              viewwidth;
-extern int              scaledviewwidth;
-extern int              viewheight;
+extern int		rdraw_viewwidth;		// was viewwidth
+extern int              rdraw_scaledviewwidth;		// was scaledrviewwidth
+extern int              rdraw_viewheight;		// was viewheight
 
 extern int              firstflat;
 extern int              firstwaterflat; //added:18-02-98:WATER!

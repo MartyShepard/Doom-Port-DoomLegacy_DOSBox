@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_bsp.c 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -365,20 +365,24 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   int        mapnum = -1; //SoM: 4/4/2000
   mobj_t*    viewmobj = camera.chase ? camera.mo : viewplayer->mo;
 
-  if (floorlightlevel)
+  if (floorlightlevel) {
     *floorlightlevel = sec->floorlightsec == -1 ?
       sec->lightlevel : sectors[sec->floorlightsec].lightlevel;
+  }
 
-  if (ceilinglightlevel)
+  if (ceilinglightlevel) {
     *ceilinglightlevel = sec->ceilinglightsec == -1 ?
       sec->lightlevel : sectors[sec->ceilinglightsec].lightlevel;
+  }
 
   //SoM: 4/4/2000: If the sector has a midmap, it's probably from 280 type
-  if(sec->midmap != -1 && sec->altheightsec == 2)
+//  if(sec->midmap != -1 && sec->altheightsec == 2)
+  if(sec->midmap != -1 && sec->model == SM_colormap)
     mapnum = sec->midmap;
 
-  if (sec->heightsec != -1 && !sec->altheightsec)
-    {
+//  if (sec->heightsec != -1 && !sec->altheightsec)
+  if (sec->heightsec != -1 && sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
+  {
       const sector_t *s = &sectors[sec->heightsec];
       int heightsec = viewmobj->subsector->sector->heightsec;
       int underwater = heightsec!=-1 && viewz<=sectors[heightsec].floorheight;
@@ -395,44 +399,47 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       if ((underwater && (tempsec->  floorheight = sec->floorheight,
                           tempsec->ceilingheight = s->floorheight-1,
                           !back)) || viewz <= s->floorheight)
-        {                   // head-below-floor hack
+      {                   // head-below-floor hack
           tempsec->floorpic    = s->floorpic;
           tempsec->floor_xoffs = s->floor_xoffs;
           tempsec->floor_yoffs = s->floor_yoffs;
 
 
           if (underwater)
-            {
+          {
             if (s->ceilingpic == skyflatnum)
-              {
+            {
                 tempsec->floorheight   = tempsec->ceilingheight+1;
                 tempsec->ceilingpic    = tempsec->floorpic;
                 tempsec->ceiling_xoffs = tempsec->floor_xoffs;
                 tempsec->ceiling_yoffs = tempsec->floor_yoffs;
-              }
+            }
             else
-              {
+            {
                 tempsec->ceilingpic    = s->ceilingpic;
                 tempsec->ceiling_xoffs = s->ceiling_xoffs;
                 tempsec->ceiling_yoffs = s->ceiling_yoffs;
-              }
-              mapnum = s->bottommap;
             }
+              mapnum = s->bottommap;
+          }
 
           tempsec->lightlevel  = s->lightlevel;
 
-          if (floorlightlevel)
+          if (floorlightlevel) {
             *floorlightlevel = s->floorlightsec == -1 ? s->lightlevel :
             sectors[s->floorlightsec].lightlevel;
+	  }
 
-          if (ceilinglightlevel)
+          if (ceilinglightlevel) {
             *ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
             sectors[s->ceilinglightsec].lightlevel;
-        }
+	  }
+      }
       else
+      {
         if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight &&
             sec->ceilingheight > s->ceilingheight)
-          {   // Above-ceiling hack
+        {   // Above-ceiling hack
             tempsec->ceilingheight = s->ceilingheight;
             tempsec->floorheight   = s->ceilingheight + 1;
 
@@ -443,26 +450,30 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
             mapnum = s->topmap;
 
             if (s->floorpic != skyflatnum)
-              {
+            {
                 tempsec->ceilingheight = sec->ceilingheight;
                 tempsec->floorpic      = s->floorpic;
                 tempsec->floor_xoffs   = s->floor_xoffs;
                 tempsec->floor_yoffs   = s->floor_yoffs;
-              }
+            }
 
             tempsec->lightlevel  = s->lightlevel;
 
-            if (floorlightlevel)
+            if (floorlightlevel) {
               *floorlightlevel = s->floorlightsec == -1 ? s->lightlevel :
               sectors[s->floorlightsec].lightlevel;
+	    }
 
-            if (ceilinglightlevel)
+            if (ceilinglightlevel) {
               *ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
               sectors[s->ceilinglightsec].lightlevel;
-          }
-        sec = tempsec;
-    }
-  else if (sec->heightsec != -1 && sec->altheightsec == 1) //SoM: 3/20/2000
+	    }
+        }
+      }
+      sec = tempsec;
+  }
+//  else if (sec->heightsec != -1 && sec->altheightsec == 1) //SoM: 3/20/2000
+  else if (sec->heightsec != -1 && sec->model == SM_Legacy_water) //SoM: 3/20/2000
   {
     sector_t*    s = &sectors[sec->heightsec];
     int          heightsec = viewmobj->subsector->sector->heightsec;

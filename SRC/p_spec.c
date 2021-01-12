@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_spec.c 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2723,26 +2723,32 @@ void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags);
 void P_AddFFloor(sector_t* sec, ffloor_t* ffloor);
 
 
+// Implement Legacy 3D floor
 void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
 {
   ffloor_t*      ffloor;
 
+  // sec2 is control sector
+
+  // Make list of affected sectors, and grow it
   if(sec2->numattached == 0)
   {
     sec2->attached = malloc(sizeof(int));
-    sec2->attached[0] = sec - sectors;
+    sec2->attached[0] = sec - sectors;	// sector index
     sec2->numattached = 1;
   }
   else
   {
     int  i;
 
+    // if already attached, then do not need to process again
     for(i = 0; i < sec2->numattached; i++)
       if(sec2->attached[i] == sec - sectors)
         return;
 
+    // grow the list
     sec2->attached = realloc(sec2->attached, sizeof(int) * (sec2->numattached + 1));
-    sec2->attached[sec2->numattached] = sec - sectors;
+    sec2->attached[sec2->numattached] = sec - sectors;	// sector index
     sec2->numattached ++;
   }
 
@@ -2905,109 +2911,129 @@ void P_SpawnSpecials (void)
     //  Init line EFFECTs
     for (i = 0;i < numlines; i++)
     {
+       // [WDJ] should replace all lines[i] and lines+i with one ptr
+       // variable set here.  It is being done in every case below.
+       // line_t * effline = & lines[i]; // effect line
         switch(lines[i].special)
         {
           int s, sec;
 
           // support for drawn heights coming from different sector
-          case 242:
+          case 242:	// Boom deep water
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+	    {
               sectors[s].heightsec = sec;
+              sectors[s].model = SM_Boom_deep_water;
+	    }
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
-          case 280:
+          case 280:	// Legacy water
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
             {
               sectors[s].heightsec = sec;
-              sectors[s].altheightsec = 1;
+//              sectors[s].altheightsec = 1;
+              sectors[s].model = SM_Legacy_water;
             }
             break;
 
           //SoM: 4/4/2000: HACK! Copy colormaps. Just plain colormaps.
-          case 282:
+          case 282:	// Legacy generate colormap, use in tagged
+	    // use the colormap in all tagged sectors
             for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
             {
               sectors[s].midmap = lines[i].frontsector->midmap;
-              sectors[s].altheightsec = 2;
+//              sectors[s].altheightsec = 2;
+              sectors[s].model = SM_colormap;
             }
             break;
 
-          case 281:
+          case 281:	// Legacy solid 3D floor with shadow, in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
             break;
 
-          case 289:
+          case 289:	// Legacy solid 3D floor without shadow, in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+                        FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
             break;
 
           // TL block
-          case 300:
+          case 300:	// Legacy solid translucent 3D floor in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
             break;
 
           // TL water
-          case 301:
+          case 301:	// Legacy translucent 3D water in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+                        FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Fog
-          case 302:
+          case 302:	// Legacy 3D fog in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             // SoM: Because it's fog, check for an extra colormap and set
             // the fog flag...
             if(sectors[sec].extra_colormap)
               sectors[sec].extra_colormap->fog = 1;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Light effect
-          case 303:
+          case 303:	// Legacy 3D ceiling light in tagged
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_CUTSPRITES);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_CUTSPRITES);
             break;
 
           // Opaque water
-          case 304:
+          case 304:	// Legacy opaque fluid
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Double light effect
-          case 305:
+          case 305:	// Legacy double light, within slab
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
             break;
 
-          // Invisible barrior
-          case 306:
+          // Invisible barrier
+          case 306:	// Legacy invisible floor
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i, FF_EXISTS|FF_SOLID);
+              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+			FF_EXISTS|FF_SOLID);
             break;
 
-          // floor lighting independently (e.g. lava)
+          // Boom independent floor lighting (e.g. lava)
+	  // Set floor light to light in control sector
           case 213:
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
               sectors[s].floorlightsec = sec;
             break;
 
-          // ceiling lighting independently
+          // Boom independent ceiling lighting
+	  // Set ceiling light to light in control sector
           case 261:
             sec = sides[*lines[i].sidenum].sector-sectors;
             for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
@@ -3687,11 +3713,12 @@ void T_Pusher(pusher_t *p)
 			// Find the area that the 'thing' is in
 			// Kudos to P_MobjCheckWater().
 			// SSNTails 09-25-2002
-			if (sec->heightsec > -1 && sec->altheightsec == 1)
+//			if (sec->heightsec > -1 && sec->altheightsec == 1)
+			if (sec->heightsec > -1 && sec->model == SM_Legacy_water)
 			{
 				boolean water;
 				water = false;
-
+				// from above test, how could it be anything else [WDJ] ???
 				if (sec->heightsec > -1)  //water hack
 				{
 					z = (sectors[sec->heightsec].floorheight);

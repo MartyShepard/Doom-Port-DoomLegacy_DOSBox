@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 552 2009-11-11 01:40:13Z wesleyjohnson $
+// $Id: r_defs.h 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -327,6 +327,14 @@ typedef struct linechain_s
 } linechain_t;
 // ----- end special tricks -----
 
+// sector model	[WDJ] 11/14/2009
+typedef enum{
+   SM_normal,		// normal sector
+   SM_Boom_deep_water,	// special Boom sector
+   SM_Legacy_water,	// special Legacy sector
+   SM_colormap		// Legacy colormap generation
+     // Legacy 3D floors are handled through FFloor list
+} sector_model_e;
 
 //
 // The SECTORS record, at runtime.
@@ -379,7 +387,9 @@ typedef struct sector_s
     fixed_t ceiling_xoffs, ceiling_yoffs;
 
     int heightsec;    // other sector, or -1 if no other sector
-    int altheightsec; // Use old boom model? 1 for no 0 for yes.
+//    int altheightsec; // Use old boom model? 1 for no 0 for yes.
+    			// 1=Legacy water, 0=boom model, 2=colormap
+    sector_model_e  model;  // Boom or Legacy special sector  [WDJ] 11/14/2009
   
     int floorlightsec, ceilinglightsec;
     int teamstartsec;

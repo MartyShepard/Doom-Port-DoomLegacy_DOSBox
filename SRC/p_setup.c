@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 555 2009-11-12 04:30:40Z wesleyjohnson $
+// $Id: p_setup.c 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -623,7 +623,8 @@ void P_LoadSectors (int lump)
         ss->prevsec = -1;
 
         ss->heightsec = -1; //SoM: 3/17/2000: This causes some real problems
-        ss->altheightsec = 0; //SoM: 3/20/2000
+//        ss->altheightsec = 0; //SoM: 3/20/2000
+        ss->model = SM_normal; //SoM: 3/20/2000, [WDJ] 11/14/2009
         ss->floorlightsec = -1;
         ss->ceilinglightsec = -1;
         ss->ffloors = NULL;
@@ -952,9 +953,9 @@ void P_LoadSideDefs2(int lump)
             else
               sd->bottomtexture = num;
           }
-#endif		  
+#endif
 	  break;   // [WDJ]  no fall through
-	  
+
         case 282:                       //SoM: 4/4/2000: Just colormap transfer
 
 // SoM: R_CreateColormap will only create a colormap in software mode...

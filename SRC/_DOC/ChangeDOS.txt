@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00573 ]: Use SM_ ENUM literals
 [00572 ]: unique rdraw_ variable names
 [00571 ]: segabor patches from 143beta_macosx
 [00570 ]: -> Commit Path trunk/Legacy .. nothing to od
@@ -55,3 +56,11 @@
 [00540 ]: removed unnecessary chex quest and heretic headers, added license to p_chex.c
 [00539*]: Changelog added
 [00538 ]: svn:keywords properties, versioning system updated, update version to 144
+
+*
+DJGPPDOS/i_system.c
+DJGPPDOS/i_vid_vesa.h
+d_main.c
+w_wad.c
+zone.c
+

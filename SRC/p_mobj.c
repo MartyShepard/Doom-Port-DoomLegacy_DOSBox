@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 563 2009-11-23 03:36:29Z smite-meister $
+// $Id: p_mobj.c 573 2009-11-29 01:20:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1067,7 +1067,9 @@ void P_MobjCheckWater(mobj_t * mobj)
     oldeflags = mobj->eflags;
 
     //SoM: 3/28/2000: Only use 280 water type of water. Some boom levels get messed up.
-    if ((sector->heightsec > -1 && sector->altheightsec == 1) || (sector->floortype == FLOOR_WATER && sector->heightsec == -1))
+//    if ((sector->heightsec > -1 && sector->altheightsec == 1) || (sector->floortype == FLOOR_WATER && sector->heightsec == -1))
+    if ((sector->heightsec > -1 && sector->model == SM_Legacy_water)
+	|| (sector->floortype == FLOOR_WATER && sector->heightsec == -1))
     {
         if (sector->heightsec > -1)     //water hack
             z = (sectors[sector->heightsec].floorheight);
