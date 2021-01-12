@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 582 2009-12-03 06:41:59Z smite-meister $
+// $Id: z_zone.c 593 2010-02-07 17:58:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -99,9 +99,8 @@
 #define MIN_MAIN_MEM_MB		 8
 #define NORM_MAIN_MEM_MB	24
 #define MAX_MAIN_MEM_MB		80
-#define GROW_MIN_MAIN_MEM_MB	 4
-#define GROW_MAIN_MEM_MB	 2
-//#define GROW_MAIN_MEM_MB	 8
+#define GROW_MIN_MAIN_MEM_MB	 8
+#define GROW_MAIN_MEM_MB	 8
 
 // Choose one (and only one) memory system.
 // [WDJ] Because of the widely varying systems that Legacy can run on, it is
@@ -133,11 +132,6 @@
 // Applied as an option to ZONE_ZALLOC.
 #define GROW_ZONE
 
-// Conditional code that reduces fragmentation at the expense of a much
-// longer search through memory.
-// Applied as an option to ZONE_ZALLOC.
-//#define ALLOC_FRAG1
-
 // Aggressively purges any PU_CACHE, clearing cache faster.
 // This stresses the memory system more, testing user code to not
 // depend upon PU_CACHE that can disappear. Used for testing memory code.
@@ -158,7 +152,6 @@
 
 #ifdef PLAIN_MALLOC
   #undef ZONE_ZALLOC
-  #undef ALLOC_FRAG1
   #undef GROW_ZONE
   #define USE_MALLOC
 #endif
@@ -166,7 +159,6 @@
 #ifdef TAGGED_MALLOC
   #undef ZONE_ZALLOC
   #undef PLAIN_MALLOC
-  #undef ALLOC_FRAG1
   #undef GROW_ZONE
   #define USE_MALLOC
 #endif
@@ -244,7 +236,8 @@ static void Z_UnlinkFree(memblock_t *block)
 static void Z_MarkFree(memblock_t *block)
 {
   block->tag = PU_FREE; // free block mark
-  block->id = 0;
+//  block->id = 0;
+  block->id = ZONEID;   // on free blocks too, as check
   block->user = NULL;
 }
 
@@ -262,6 +255,8 @@ static void Z_CombineFreeBlock(memblock_t *block)
       other->next = block->next;
       other->next->prev = other;
 
+      block->id = 0;		// does not exist as a block
+      block->tag = PU_INVALID;
       if (block == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = other;
 
@@ -276,6 +271,8 @@ static void Z_CombineFreeBlock(memblock_t *block)
       block->next = other->next;
       block->next->prev = block;
 
+      other->id = 0;		// does not exist as a block
+      other->tag = PU_INVALID;
       if (other == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = block;
   }
@@ -457,7 +454,7 @@ void Z_Free (void* ptr)
 for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; other = other->next)
 {
    if((other!=block) &&
-      other->tag &&
+      (other->tag > PU_INVALID) &&
       (other->user>(void **)0x100) &&
       ((other->user)>=(void **)block) &&
       ((other->user)<=(void **)((byte *)block)+block->size) )
@@ -470,6 +467,7 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
 
     if (block->id != ZONEID)
         I_Error ("Z_Free: memory block has corrupted ZONEID");
+    if (block->tag == PU_FREE)  return;	// already freed
 #ifdef PARANOIA
     // get direct a segv when using a pointer that isn't right
     memset(ptr,0,block->size-sizeof(memblock_t));
@@ -559,7 +557,21 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 // Z_Malloc
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 //
+
+// [WDJ]  1/22/2009  PU_CACHE usage.
+// PU_CACHE is being used with other Z_Malloc calls, and allocated memory
+// is being purged before the user is done.  Using PU_CACHE on newly
+// allocated blocks only works if Z_ALLOC takes a long time to cycle back
+// around to them.  But when memory gets tight and it gets back to them
+// quicker, then we get mysterious failures.  Because a lump may already
+// be in memory, as a PU_CACHE tagged allocation, there is no assurance that
+// a call to Z_Malloc will not free the PU_CACHE memory being used.
+// Use PU_IN_USE to protect the allocation, then change the tag to PU_CACHE.
+
 #define MINFRAGMENT             sizeof(memblock_t)
+
+// [WDJ] 1/22/2009  MODIFIED ZONE_ZALLOC
+// This also has experimental code blocks, which are currently disabled.
 
 #ifdef ZDEBUG
 void*   Z_Malloc2 (int reqsize, memtag_e tag, void **user, int alignbits,
@@ -579,10 +591,11 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
       // [WDJ] TODO: could compact memory after first try
       // 1. Call owners of memory to reallocate, and clean up ptrs.
       // 2. Let tag give permission to move blocks and update user ptr.
+    memtag_e  current_purgelevel = PU_CACHE;    // partial purging
 
-    // this is still a bit icky, but size_t should always be able to fit pointers
-    size_t alignmask = (1 << alignbits) - 1;
-#define ALIGN(p) (byte *)(((size_t)(p) + alignmask) & ~alignmask)
+    // From stdint, uintptr is an int the size of a ptr.
+    uintptr_t alignmask = (1 << alignbits) - 1;
+#define ALIGN(p) (byte *)(((uintptr_t)(p) + alignmask) & ~alignmask)
 
    
 // ZONE_ZALLOC
@@ -601,35 +614,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     // scan through the block list,
     // looking for the first free block of sufficient size,
    
-   // [WDJ] 1/22/2009  MODIFIED ZONE_ZALLOC
-   // This also has experimental code blocks, which are currently disabled.
-
-#ifdef ALLOC_FRAG1
- // [WDJ]  11/10/2009  Fixes to use of PU_CACHE have made this usable
- // It is slower because small blocks search from beginning, but that should
- // reduce fragmentation.
- // [WDJ]  1/22/2009  Fragmentation reduction.
- // This hangs FreeDoom MAP10 on the second or third reload.
- // A sure test is to start with -mb 35, then "MAP MAP10", "MAP MAP11",
- // "MAP MAP10", which will then hang in B_BuildNodes,
- // where it normally takes 12 seconds to load.
- // PU_CACHE is being used with other Z_Malloc calls, and allocated memory
- // is being purged before the user is done.  Using PU_CACHE on newly
- // allocated blocks only works if Z_ALLOC takes a long time to cycle back
- // around to them.  But when memory gets tight and it gets back to them
- // quicker, then we get mysterious failures.  Because a lump may already
- // be in memory, as a PU_CACHE tagged allocation, there is no assurance that
- // a call to Z_Malloc will not free the PU_CACHE memory being used.
-    if( reqsize < 2048 ) {
-       rover = &mainzone->blocklist;	// try to find freed block first
-    }else{
-       rover = mainzone->rover;
-    }
-#else
-    // Older, faster, method of allocate all zone first, then cycle back through,
-    // which tends to fragment memory and does not leave any large blocks free.
     rover = mainzone->rover;
-#endif
 
     // if there is a free block preceding base (there can be at most one), move one block back
     if ( rover->prev->tag == PU_FREE )  // move back if prev is free
@@ -658,6 +643,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 	   
 	    tries ++;
 	    if( tries < 4 ) {
+	       current_purgelevel = PU_PURGELEVEL; // enable all purging
 #ifdef GROW_ZONE
 	       // Grow the zone allocation, and alloc from new memory
 	       rover = Z_GrowZone( reqsize, GROW_MAIN_MEM_MB<<20 );
@@ -683,7 +669,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 
         if (rover->tag != PU_FREE)		// being used
         {
-            if (rover->tag < PU_PURGELEVEL)
+            if (rover->tag < current_purgelevel)  // < PU_CACHE or PU_PURGELEVEL
             {
                 // hit a block that can't be purged, so move past it
 
@@ -883,23 +869,37 @@ void Z_FreeTags( memtag_e lowtag, memtag_e hightag )
 #else
 // TAGGED_MALLOC, ZONE_ZALLOC
     memblock_t* block;
-    memblock_t* next;
+
+    // protect PU_FREE, and PU_ZONE
+    if ( lowtag < PU_INVALID )   lowtag = PU_INVALID;
    
     for (block = mainzone->blocklist.next ;
-         block != &mainzone->blocklist ;
-         block = next)
+         block != &mainzone->blocklist ; )
     {
-        // get link before freeing
-        next = block->next;
-
 #ifdef TAGGED_MALLOC
+        // get link before freeing
+        memblock_t* next = block->next;
         // does not have any blocks with PU_FREE
-#else       
-        if (block->tag == PU_FREE)   continue;
-#endif       
-
         if (block->tag >= lowtag && block->tag <= hightag)
+        {
             Z_Free ( (byte *)block+sizeof(memblock_t));
+	}
+        block = next;
+#else
+        // PU_FREE and PU_ZONE are protected by limiting lowtag.
+        if (block->tag >= lowtag && block->tag <= hightag)
+        {
+	    // Z_CombineFreeBlock can delete block, and block->next
+	    memblock_t* prev = block->prev;	// prev is safe from deletion
+            Z_Free ( (byte *)block+sizeof(memblock_t));
+	    // if block was combined, then prev has next block
+	    block = (prev->next == block)? block->next : prev->next;
+	}
+        else
+        {
+	    block = block->next;
+        }
+#endif	   
     }
 #endif
 }

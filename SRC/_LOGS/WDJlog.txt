@@ -271,3 +271,47 @@ Adds a test for indexes out-of-bounds before accessing the b_node array.
 This stops legacy from having a segfault for some wads with minor flaws,
 like using a Boom linedef 244 instead of 242.
 Also fixes some indenting and add some brackets to make readable.
+
+*** w34_zone
+patchfile = w34_zone.patch
+- committed revision   by wesley johnson
+Fix possible failing of Z_FreeTags when it combines free blocks.
+Change size_t to uintptr_t, per stdint.h.
+Mark free blocks with id.
+Remove id and tag as PU_INVALID, blocks that are destroyed.
+Create PU_PRIV_CACHE level, which does not get purged until 2nd pass of
+trying to allocate in Z_Malloc.  These can be used for those cached
+blocks that require considerable processing to create, like multi-patch
+textures.
+
+*** w35_texture_generate
+patchfile = w35_texture_generate.patch
+- committed revision   by wesley johnson
+Fix segfault in phobiata.wad.  It has a texture of one patch, but that
+patch is smaller than the texture.  The draw routine segfaults upon
+trying to access texture columns that are not in the patch.
+The new function will create in the patch cache a new patch of the dimensions
+of the texture, using the patch columns.  All columns will exist.
+Wad structures in the headers are changed to use stdint types, so they are
+not dependent upon machine word size.
+Comments are added to document discovered information.
+Some names are changed to better reflect their intended usage, and
+reduce confusion with the same name in different usage.
+
+*** w36_texture_generate
+patchfile = w36_draw_clip.patch
+- committed revision   by wesley johnson
+Fix segfaults due to low level draw using bad ylookup[].
+The video column lookup table, ylookup[], is only as wide as the view window.
+The low level draw routines RANGECHECK now checks against the view window
+instead of vid.width and vid.height.
+All callers of the low level draw routines now check their parameters
+against the view window boundaries before calling.
+Added some tests to intercept bad sprite ptrs caused by wads without all
+the sprites present.
+Comments are added to document discovered information.
+Some names are changed to better reflect their intended usage, and
+reduce confusion with the same name in different usage.
+
+
+
