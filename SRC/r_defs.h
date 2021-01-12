@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: r_defs.h 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -136,6 +136,7 @@
 #ifndef __R_DEFS__
 #define __R_DEFS__
 
+#include <stdint.h>
 
 // Some more or less basic data types
 // we depend on.
@@ -732,7 +733,7 @@ typedef struct drawseg_s
 // and we compose textures from the TEXTURE1/2 lists
 // of patches.
 //
-//WARNING: this structure is clooned in GlidePatch_t
+//WARNING: this structure is cloned in GlidePatch_t
 struct patch_s
 {
     short               width;          // bounding box size
@@ -756,13 +757,13 @@ typedef enum {
 //
 typedef struct
 {
-    short  width;
-    byte   zero;   // set to 0 allow autodetection of pic_t 
-                   // mode instead of patch or raw
-    byte   mode;   // see pic_mode_t above
-    short  height;
-    short  reserved1;  // set to 0
-    byte   data[0];
+    uint16_t  width;
+    byte      zero;   // set to 0 allow autodetection of pic_t 
+                      // mode instead of patch or raw
+    byte      mode;   // see pic_mode_t above
+    uint16_t  height;
+    uint16_t  reserved1;  // set to 0
+    byte      data[0];
 } pic_t;
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_misc.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -408,14 +408,15 @@ boolean WritePCXfile ( char*         filename,
     pcx->bits_per_pixel = 8;            // 256 color
     pcx->xmin = 0;
     pcx->ymin = 0;
-    pcx->xmax = SHORT(width-1);
-    pcx->ymax = SHORT(height-1);
-    pcx->hres = SHORT(width);
-    pcx->vres = SHORT(height);
+    // [WDJ] The PCX format must be little-endian, must swap when big-endian
+    pcx->xmax = LE_SWAP16(width-1);
+    pcx->ymax = LE_SWAP16(height-1);
+    pcx->hres = LE_SWAP16(width);
+    pcx->vres = LE_SWAP16(height);
     memset (pcx->palette,0,sizeof(pcx->palette));
     pcx->color_planes = 1;              // chunky image
-    pcx->bytes_per_line = SHORT(width);
-    pcx->palette_type = SHORT(1);       // not a grey scale
+    pcx->bytes_per_line = LE_SWAP16(width);
+    pcx->palette_type = LE_SWAP16(1);       // not a grey scale
     memset (pcx->filler,0,sizeof(pcx->filler));
 
 

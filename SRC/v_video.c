@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 580 2009-12-01 20:26:12Z wesleyjohnson $
+// $Id: v_video.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -569,15 +569,12 @@ void VID_BlitLinearScreen(byte * srcptr, byte * destptr, int width, int height, 
 }
 #endif
 
-// FIX ME
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap
-// Many instances in this file.
-
 //
 //  V_DrawMappedPatch : like V_DrawScaledPatch, but with a colormap.
 //
 //
 //added:05-02-98:
+// [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 {
     int count;
@@ -608,8 +605,8 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
         dupx = vid.dupx;
         dupy = vid.dupy;
     }
-    y -= SHORT(patch->topoffset);
-    x -= SHORT(patch->leftoffset);
+    y -= patch->topoffset;
+    x -= patch->leftoffset;
 
     if (scrn & V_NOSCALESTART)
         desttop = screens[scrn & 0xffff] + (y * vid.width) + x;
@@ -619,17 +616,17 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
     scrn &= 0xffff;
 
     if (!scrn)
-        V_MarkRect(x, y, SHORT(patch->width) * dupx, SHORT(patch->height) * dupy);
+        V_MarkRect(x, y, patch->width * dupx, patch->height * dupy);
 
     col = 0;
     colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
     rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
 
-    w = SHORT(patch->width) << FRACBITS;
+    w = patch->width << FRACBITS;
 
     for (; col < w; col += colfrac, desttop++)
     {
-        column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col >> FRACBITS]));
+        column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
         while (column->topdelta != 0xff)
         {
@@ -658,7 +655,7 @@ void V_DrawMappedPatch_Name ( int x, int y, int scrn,
 {
    // The patch is used only in this function
    V_DrawMappedPatch ( x, y, scrn,
-                       W_CachePatchName( name, PU_CACHE ),
+                       W_CachePatchName( name, PU_CACHE ),  // endian fix
 		       colormap );
 }
 
@@ -670,6 +667,7 @@ void V_DrawMappedPatch_Name ( int x, int y, int scrn,
 //
 //added:05-02-98:
 // default params : scale patch and scale start
+// [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
                        patch_t * patch)
 {
@@ -702,8 +700,8 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
         dupy = vid.dupy;
     }
 
-    y -= SHORT(patch->topoffset);
-    x -= SHORT(patch->leftoffset);
+    y -= patch->topoffset;
+    x -= patch->leftoffset;
 
     colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
     rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
@@ -713,19 +711,19 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
         desttop += (y * vid.width) + x;
     else
         desttop += (y * dupy * vid.width) + (x * dupx) + scaledofs;
-    destend = desttop + SHORT(patch->width) * dupx;
+    destend = desttop + patch->width * dupx;
 
     if (scrn & V_FLIPPEDPATCH)
     {
         colfrac = -colfrac;
-        col = (SHORT(patch->width) << FRACBITS) + colfrac;
+        col = (patch->width << FRACBITS) + colfrac;
     }
     else
         col = 0;
 
     for (; desttop < destend; col += colfrac, desttop++)
     {
-        column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col >> FRACBITS]));
+        column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
         while (column->topdelta != 0xff)
         {
@@ -751,7 +749,7 @@ void V_DrawScaledPatch_Name(int x, int y, int scrn, char * name )
 {
    // The patch is used only in this function
    V_DrawScaledPatch ( x, y, scrn,
-                       W_CachePatchName( name, PU_CACHE ) );
+                       W_CachePatchName( name, PU_CACHE ) );  // endian fix
 }
 
 // with temp patch load to cache
@@ -759,12 +757,13 @@ void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num )
 {
    // The patch is used only in this function
    V_DrawScaledPatch ( x, y, scrn,
-                       W_CachePatchNum( patch_num, PU_CACHE ) );
+                       W_CachePatchNum( patch_num, PU_CACHE ) );  // endian fix
 }
 
 
 void HWR_DrawSmallPatch(GlidePatch_t * gpatch, int x, int y, int option, byte * colormap);
 // Draws a patch 2x as small. SSNTails 06-10-2003
+// [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 {
     int count;
@@ -799,8 +798,8 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
         skippixels = true;
     }
 
-    y -= SHORT(patch->topoffset);
-    x -= SHORT(patch->leftoffset);
+    y -= patch->topoffset;
+    x -= patch->leftoffset;
 
     colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
     rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
@@ -810,18 +809,18 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
     if (skippixels)
     {
         desttop += (y * vid.width) + x;
-        destend = desttop + SHORT(patch->width) / 2 * dupx;
+        destend = desttop + patch->width / 2 * dupx;
     }
     else
     {
         desttop += (y * vid.width) + x;
-        destend = desttop + SHORT(patch->width) * dupx;
+        destend = desttop + patch->width * dupx;
     }
 
     if (scrn & V_FLIPPEDPATCH)
     {
         colfrac = -colfrac;
-        col = (SHORT(patch->width) << FRACBITS) + colfrac;
+        col = (patch->width << FRACBITS) + colfrac;
     }
     else
         col = 0;
@@ -831,7 +830,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
         int i = 0;
         for (; desttop < destend; col += colfrac, col += colfrac, desttop++)
         {
-            column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col >> FRACBITS]));
+            column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
             while (column->topdelta != 0xff)
             {
@@ -857,7 +856,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
     {
         for (; desttop < destend; col += colfrac, desttop++)
         {
-            column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col >> FRACBITS]));
+            column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
             while (column->topdelta != 0xff)
             {
@@ -884,6 +883,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
 //  This draws a patch over a background with translucency...SCALED
 //  SCALE THE STARTING COORDS!!
 //
+// [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
                             patch_t * patch)
 {
@@ -911,11 +911,11 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
     dupx = vid.dupx;
     dupy = vid.dupy;
 
-    y -= SHORT(patch->topoffset) * dupy;
-    x -= SHORT(patch->leftoffset) * dupx;
+    y -= patch->topoffset * dupy;
+    x -= patch->leftoffset * dupx;
 
     if (!(scrn & 0xffff))
-        V_MarkRect(x, y, SHORT(patch->width) * dupx, SHORT(patch->height) * dupy);
+        V_MarkRect(x, y, patch->width * dupx, patch->height * dupy);
 
     col = 0;
     colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
@@ -927,11 +927,11 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
     else
         desttop += (y * dupy * vid.width) + (x * dupx) + scaledofs;
 
-    w = SHORT(patch->width) << FRACBITS;
+    w = patch->width << FRACBITS;
 
     for (; col < w; col += colfrac, desttop++)
     {
-        column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col >> FRACBITS]));
+        column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
         while (column->topdelta != 0xff)
         {
@@ -956,6 +956,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 // V_DrawPatch
 // Masks a column based masked pic to the screen. NO SCALING!!!
 //
+// [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 {
 
@@ -976,10 +977,10 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
     }
 #endif
 
-    y -= SHORT(patch->topoffset);
-    x -= SHORT(patch->leftoffset);
+    y -= patch->topoffset;
+    x -= patch->leftoffset;
 #ifdef RANGECHECK
-    if (x < 0 || x + SHORT(patch->width) > vid.width || y < 0 || y + SHORT(patch->height) > vid.height || (unsigned) scrn > 4)
+    if (x < 0 || x + patch->width > vid.width || y < 0 || y + patch->height > vid.height || (unsigned) scrn > 4)
     {
         fprintf(stderr, "Patch at %d,%d exceeds LFB\n", x, y);
         // No I_Error abort - what is up with TNT.WAD?
@@ -989,16 +990,16 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 #endif
 
     if (!scrn)
-        V_MarkRect(x, y, SHORT(patch->width), SHORT(patch->height));
+        V_MarkRect(x, y, patch->width, patch->height);
 
     col = 0;
     desttop = screens[scrn] + y * vid.width + x;
 
-    w = SHORT(patch->width);
+    w = patch->width;
 
     for (; col < w; x++, col++, desttop++)
     {
-        column = (column_t *) ((byte *) patch + LONG(patch->columnofs[col]));
+        column = (column_t *) ((byte *) patch + patch->columnofs[col]);
 
         // step through the posts in a column
         while (column->topdelta != 0xff)
@@ -1077,7 +1078,7 @@ static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic);
 //  Draw a linear pic, scaled, TOTALLY CRAP CODE!!! OPTIMISE AND ASM!!
 //  CURRENTLY USED FOR StatusBarOverlay, scale pic but not starting coords
 //
-void V_DrawScalePic(int x1, int y1, int scrn,   // hack flag
+void V_DrawScalePic_Num(int x1, int y1, int scrn,   // hack flag
                     int lumpnum)
 {
 #ifdef HWRENDER
@@ -1088,9 +1089,11 @@ void V_DrawScalePic(int x1, int y1, int scrn,   // hack flag
     }
 #endif
 
-    V_BlitScalePic(x1, y1, scrn, W_CacheLumpNum(lumpnum, PU_CACHE));
+    // [WDJ] Get pic and fix endian, then display
+    V_BlitScalePic(x1, y1, scrn, W_CachePicNum(lumpnum, PU_CACHE));
 }
 
+// [WDJ] all pic are cached endian fixed 1/5/2010
 static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
 {
     int dupx, dupy;
@@ -1098,8 +1101,8 @@ static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
     byte *src, *dest;
     int width, height;
 
-    width = SHORT(pic->width);
-    height = SHORT(pic->height);
+    width = pic->width;
+    height = pic->height;
     scrn &= 0xffff;
 
     if (pic->mode != 0)
@@ -1130,7 +1133,8 @@ static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
     }
 }
 
-void V_DrawRawScreen(int x1, int y1, int lumpnum, int width, int height)
+// Heretic raw pic
+void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 {
 #ifdef HWRENDER
     if (rendermode != render_soft)
@@ -1145,7 +1149,8 @@ void V_DrawRawScreen(int x1, int y1, int lumpnum, int width, int height)
     }
 #endif
 
-    V_BlitScalePic(x1, y1, 0, W_CacheRawAsPic(lumpnum, width, height, PU_CACHE));
+    V_BlitScalePic(x1, y1, 0,
+		   W_CacheRawAsPic(lumpnum, width, height, PU_CACHE));
 }
 
 //
@@ -1305,7 +1310,7 @@ void V_DrawFadeScreen(void)
         w = vid.width;
         for (y = 0; y < vid.height; y++)
         {
-            wput = (short *) (screens[0] + vid.width * y);
+            wput = (short *) (screens[0] + vid.width * y); 
             for (x = 0; x < w; x++)
             {
                 *wput++ = (*wput >> 1) & 0x3def;
@@ -1441,11 +1446,7 @@ void V_DrawString(int x, int y, int option, char *string)
         }
 
 	//[segabor]
-        w = hu_font[c]->width * dupx;
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        w = SHORT(hu_font[c]->width) * dupx;
-#endif
+        w = hu_font[c]->width * dupx;	// hu_font is endian fixed
         if (cx + w > scrwidth)
             break;
         if (option & V_WHITEMAP)
@@ -1528,11 +1529,7 @@ int V_StringWidth(char *string)
             w += 4;
         else
 	    //[segabor]
-            w += hu_font[c]->width;
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-            w += SHORT(hu_font[c]->width);
-#endif       
+            w += hu_font[c]->width;  // hu_font is endian fixed
     }
 
     return w;
@@ -1568,7 +1565,7 @@ void V_DrawTextB(char *text, int x, int y)
         }
         else
         {
-            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);
+            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawScaledPatch(x, y, 0, p);
             x += p->width - 1;
         }
@@ -1588,7 +1585,7 @@ void V_DrawTextBGray(char *text, int x, int y)
         }
         else
         {
-            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);
+            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawMappedPatch(x, y, 0, p, graymap);
             x += p->width - 1;
         }
@@ -1618,7 +1615,7 @@ int V_TextBWidth(char *text)
         }
         else
         {
-            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);
+            p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             width += p->width - 1;
         }
     }

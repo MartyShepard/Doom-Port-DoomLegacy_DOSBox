@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 580 2009-12-01 20:26:12Z wesleyjohnson $
+// $Id: v_video.h 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -91,6 +91,7 @@ extern  consvar_t cv_gammafunc;
 extern  consvar_t cv_black;	// input to gammafunc
 extern  consvar_t cv_bright;	// input to gammafunc
 #endif
+
 
 // Allocates buffer screens, call before R_Init.
 void V_Init (void);
@@ -186,12 +187,13 @@ void V_GetBlock ( int           x,
                   byte*         dest );
 
 // draw a pic_t, SCALED
-void V_DrawScalePic ( int           x1,
+void V_DrawScalePic_Num ( int           x1,
                       int           y1,
                       int           scrn,
                       int           lumpnum /*pic_t*        pic */);
 
-void V_DrawRawScreen(int x, int y, int lumpnum, int width, int height);
+// Heretic raw pic
+void V_DrawRawScreen_Num(int x, int y, int lumpnum, int width, int height);
 
 void V_MarkRect ( int           x,
                   int           y,

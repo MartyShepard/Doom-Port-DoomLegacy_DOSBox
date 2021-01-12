@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: am_map.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1472,8 +1472,8 @@ void AM_drawMarks(void)
     {
         if (markpoints[i].x != -1)
         {
-            //      w = SHORT(marknums[i]->width);
-            //      h = SHORT(marknums[i]->height);
+            //      w = LE_SHORT(marknums[i]->width);
+            //      h = LE_SHORT(marknums[i]->height);
             w = 5; // because something's wrong with the wad, i guess
             h = 6; // because something's wrong with the wad, i guess
             fx = CXMTOF(markpoints[i].x);

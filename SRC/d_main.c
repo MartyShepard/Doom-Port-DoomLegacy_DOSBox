@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 585 2010-01-06 20:10:53Z wesleyjohnson $
+// $Id: d_main.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 588;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 589;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -627,13 +627,8 @@ void D_Display(void)
             y = 4;
         else
             y = viewwindowy + 4;
-        patch = W_CachePatchName("M_PAUSE", PU_CACHE);
-	//[segabor]: 'SHORT' BUG !
+		patch = W_CachePatchName("M_PAUSE", PU_CACHE);  // endian fix
         V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width) / 2, y, 0, patch);
-#if 0
-	//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width)) / 2, y, 0, patch);
-#endif 
     }
 
     //added:24-01-98:vid size change is now finished if it was on...
@@ -878,7 +873,7 @@ void D_PageDrawer(char *lumpname)
     }
     if (raven && demosequence != 2)     // big hack for legacy's credits
     {
-        V_DrawRawScreen(0, 0, W_GetNumForName(lumpname), 320, 200);
+        V_DrawRawScreen_Num(0, 0, W_GetNumForName(lumpname), 320, 200);
         if (demosequence == 0 && pagetic <= 140)
             V_DrawScaledPatch_Name(4, 160, 0, "ADVISOR" );
     }

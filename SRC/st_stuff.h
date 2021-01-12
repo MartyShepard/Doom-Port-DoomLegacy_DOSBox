@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: st_stuff.h 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,7 +54,7 @@
 extern int ST_Y;
 extern int fgbuffer;
 extern int st_x;
-extern boolean st_statusbaron;
+extern boolean st_statusbar_on;
 extern int st_scalex;
 extern int st_scaley;
 

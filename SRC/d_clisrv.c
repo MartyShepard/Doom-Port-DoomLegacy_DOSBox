@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 584 2010-01-05 22:04:28Z wesleyjohnson $
+// $Id: d_clisrv.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -546,7 +546,7 @@ static boolean CL_SendJoin()
     else
         netbuffer->u.clientcfg.localplayers=1;
     netbuffer->u.clientcfg.version = VERSION;
-    netbuffer->u.clientcfg.subversion = LONG(NETWORK_VERSION);
+    netbuffer->u.clientcfg.subversion = LE_SWAP32_FAST(NETWORK_VERSION);
 
     return HSendPacket(servernode,true,0,sizeof(clientconfig_pak));
 }
@@ -558,9 +558,9 @@ static void SV_SendServerInfo(int node, tic_t time)
 
     netbuffer->packettype=PT_SERVERINFO;
     netbuffer->u.serverinfo.version = VERSION;
-    netbuffer->u.serverinfo.subversion = LONG(NETWORK_VERSION);
+    netbuffer->u.serverinfo.subversion = LE_SWAP32_FAST(NETWORK_VERSION);
     // return back the time value so client can compute there ping
-    netbuffer->u.serverinfo.time = LONG(time);
+    netbuffer->u.serverinfo.time = LE_SWAP32_FAST(time);
     netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
@@ -588,12 +588,12 @@ static boolean SV_SendServerConfig(int node)
               playermask|=1<<i;
 
     netbuffer->u.servercfg.version         = VERSION;
-    netbuffer->u.servercfg.subversion      = LONG(NETWORK_VERSION);
+    netbuffer->u.servercfg.subversion      = LE_SWAP32_FAST(NETWORK_VERSION);
 
     netbuffer->u.servercfg.serverplayer    = serverplayer;
     netbuffer->u.servercfg.totalplayernum  = doomcom->numplayers;
-    netbuffer->u.servercfg.playerdetected  = LONG(playermask);
-    netbuffer->u.servercfg.gametic         = LONG(gametic);
+    netbuffer->u.servercfg.playerdetected  = LE_SWAP32_FAST(playermask);
+    netbuffer->u.servercfg.gametic         = LE_SWAP32_FAST(gametic);
     netbuffer->u.servercfg.clientnode      = node;
     netbuffer->u.servercfg.gamestate       = gamestate;
     p = netbuffer->u.servercfg.netcvarstates;
@@ -674,7 +674,7 @@ void SendAskInfo( int node )
 {
     netbuffer->packettype = PT_ASKINFO;
     netbuffer->u.askinfo.version = VERSION;
-    netbuffer->u.askinfo.time = LONG(I_GetTime());
+    netbuffer->u.askinfo.time = LE_SWAP32_FAST(I_GetTime());
     HSendPacket(node,false,0,sizeof(askinfo_pak));
 }
 
@@ -1575,8 +1575,8 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
 #endif
 	dst->forwardmove = src->forwardmove;
 	dst->sidemove    = src->sidemove;
-	dst->angleturn   = LE_SHORT(src->angleturn);
-	dst->aiming      = LE_SHORT(src->aiming);
+	dst->angleturn   = LE_SWAP16_FAST(src->angleturn);
+	dst->aiming      = LE_SWAP16_FAST(src->aiming);
 	dst->buttons     = src->buttons;
     }
 }
@@ -1584,7 +1584,7 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
 //
 // GetPackets
 //
-// TODO : break this 300 line function to mutliple functions
+// TODO : break this 300 line function to multiple functions
 static void GetPackets (void)
 {
     int         netconsole;
@@ -1600,7 +1600,7 @@ static void GetPackets (void)
         if( netbuffer->packettype == PT_CLIENTJOIN && server )
         {
             if(         netbuffer->u.clientcfg.version     != VERSION
-                || LONG(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
+                || LE_SWAP32_FAST(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
 	      SV_SendRefuse(node, va("Different DOOM versions cannot play a net game! (server version %s)", VERSION_BANNER));
             else
             if(!cv_allownewplayer.value && node!=0 )
@@ -1660,7 +1660,7 @@ static void GetPackets (void)
         if( netbuffer->packettype == PT_SERVERINFO )
         {
             // compute ping in ms
-            netbuffer->u.serverinfo.time = (I_GetTime() - LONG(netbuffer->u.serverinfo.time))*1000/TICRATE; 
+            netbuffer->u.serverinfo.time = (I_GetTime() - LE_SWAP32_FAST(netbuffer->u.serverinfo.time))*1000/TICRATE; 
             netbuffer->u.serverinfo.servername[MAXSERVERNAME-1]=0;
 
             SL_InsertServer( &netbuffer->u.serverinfo, node);
@@ -1677,7 +1677,7 @@ static void GetPackets (void)
                 case PT_ASKINFO:
                     if(server && serverrunning)
                     {
-                        SV_SendServerInfo(node, LONG(netbuffer->u.askinfo.time));
+                        SV_SendServerInfo(node, LE_SWAP32_FAST(netbuffer->u.askinfo.time));
                         Net_CloseConnection(node);
                     }
                     break;
@@ -1699,7 +1699,7 @@ static void GetPackets (void)
                         break;
 
                     if(!server)
-                        maketic = gametic = neededtic = LONG(netbuffer->u.servercfg.gametic);
+                        maketic = gametic = neededtic = LE_SWAP32_FAST(netbuffer->u.servercfg.gametic);
 #ifdef CLIENTPREDICTION2
                     localgametic = gametic;
 #endif
@@ -1714,7 +1714,7 @@ static void GetPackets (void)
                     DEBFILE(va("Server accept join gametic=%d mynode=%d\n",gametic,mynode));
 
                     for(j=0;j<MAXPLAYERS;j++)
-                        playeringame[j]=(LONG(netbuffer->u.servercfg.playerdetected) & (1<<j))!=0;
+                        playeringame[j]=(LE_SWAP32_FAST(netbuffer->u.servercfg.playerdetected) & (1<<j))!=0;
 
                     p = netbuffer->u.servercfg.netcvarstates;
                     CV_LoadNetVars( (char**)&p );
@@ -1799,7 +1799,7 @@ static void GetPackets (void)
 
                 // check consistancy
                 if((realstart <= gametic) && (realstart > gametic-BACKUPTICS+1) &&
-                   (consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy))) 
+                   (consistancy[realstart%BACKUPTICS] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy))) 
                 {
 #if 1
                     char buf[3];
@@ -1810,7 +1810,7 @@ static void GetPackets (void)
 #else
                     CONS_Printf("\2player %d kicked [%d] consistancy failure\n",netconsole,realstart);
 #endif
-                    DEBFILE(va("player %d kicked [%d] %d!=%d\n",netconsole,realstart,consistancy[realstart%BACKUPTICS],SHORT(netbuffer->u.clientpak.consistancy)));
+                    DEBFILE(va("player %d kicked [%d] %d!=%d\n",netconsole,realstart,consistancy[realstart%BACKUPTICS],LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy)));
 
                 }
 
@@ -1997,7 +1997,7 @@ static void CL_SendClientCmd (void)
     if( gamestate!=GS_NULL )
     {
         TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds, 1);
-        netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%BACKUPTICS]);
+        netbuffer->u.clientpak.consistancy = LE_SWAP16_FAST(consistancy[gametic%BACKUPTICS]);
 
         // send a special packet with 2 cmd for splitscreen
         if (cv_splitscreen.value)
@@ -2052,6 +2052,7 @@ static void SV_SendTics (void)
     // for each node create a packet with x tics and send it
     // x is computed using supposedtics[n], max packet size and maketic
     for(n=1;n<MAXNETNODES;n++)
+    {
         if( nodeingame[n] )
         {
             lasttictosend=maketic;
@@ -2113,7 +2114,7 @@ static void SV_SendTics (void)
             netbuffer->packettype=PT_SERVERTICS;
             netbuffer->u.serverpak.starttic=realfirsttic;
             netbuffer->u.serverpak.numtics=lasttictosend-realfirsttic;
-            netbuffer->u.serverpak.numplayers=SHORT(doomcom->numplayers);
+            netbuffer->u.serverpak.numplayers=LE_SWAP16_FAST(doomcom->numplayers);
             bufpos=(char *)&netbuffer->u.serverpak.cmds;
             
             for(i=realfirsttic;i<lasttictosend;i++)
@@ -2150,6 +2151,7 @@ static void SV_SendTics (void)
                 supposedtics[n] = lasttictosend;
             if( supposedtics[n] < nettics[n] ) supposedtics[n] = nettics[n];
         }
+    }
     // node 0 is me !
     supposedtics[0] = maketic;
 }

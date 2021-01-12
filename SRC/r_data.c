@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 585 2010-01-06 20:10:53Z wesleyjohnson $
+// $Id: r_data.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -212,8 +212,8 @@ short*   hicolormaps;           // test a 32k colormap remaps high -> high
 //  from a patch into a cached post.
 //
 
-void R_DrawColumnInCache ( column_t*     patch,
-                           byte*         cache,
+void R_DrawColumnInCache ( column_t*     patch,		// source
+                           byte*         cache,		// dest
                            int           originy,
                            int           cacheheight )
 {
@@ -242,6 +242,7 @@ void R_DrawColumnInCache ( column_t*     patch,
         if (count > 0)
             memcpy (cache + position, source, count);
 
+        // next source patch
         patch = (column_t *)(  (byte *)patch + patch->length + 4);
     }
 }
@@ -254,9 +255,9 @@ void R_DrawColumnInCache ( column_t*     patch,
 //   Allocate space for full size texture, either single patch or 'composite'
 //   Build the full textures from patches.
 //   The texture caching system is a little more hungry of memory, but has
-//   been simplified for the sake of highcolor, dynamic ligthing, & speed.
+//   been simplified for the sake of highcolor, dynamic lighting, & speed.
 //
-//   This is not optimised, but it's supposed to be executed only once
+//   This is not optimized, but it's supposed to be executed only once
 //   per level, when enough memory is available.
 //
 byte* R_GenerateTexture (int texnum)
@@ -294,7 +295,8 @@ byte* R_GenerateTexture (int texnum)
                           (void**)&texturecache[texnum]);
         // [WDJ] Only need lump for following memcpy,
         // without Z_Malloc between which could deallocate PU_CACHE memory
-        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
+        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);  // texture lump temp
+        // [WDJ] Do endian as build texture in block.
         memcpy (block, realpatch, blocksize);
 #else
         // FIXME: this version puts the z_block user as lumpcache,
@@ -310,7 +312,7 @@ byte* R_GenerateTexture (int texnum)
         texturecolumnofs[texnum] = colofs;
                 blocktex = block;
         for (i=0; i<texture->width; i++)
-             colofs[i] = LONG(colofs[i]) + 3;
+             colofs[i] = LE_SWAP32(colofs[i]) + 3;
         goto done;
     }
 
@@ -341,9 +343,10 @@ byte* R_GenerateTexture (int texnum)
          i++, patch++)
     {
         // [WDJ] patch only used in this loop, without any other Z_Malloc
-        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
+        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);  // patch temp
+        // [WDJ] Do endian as use patch, only done at texture load time.
         x1 = patch->originx;
-        x2 = x1 + SHORT(realpatch->width);
+        x2 = x1 + LE_SWAP16(realpatch->width);
 
         if (x1<0)
             x = 0;
@@ -356,13 +359,13 @@ byte* R_GenerateTexture (int texnum)
         for ( ; x<x2 ; x++)
         {
             patchcol = (column_t *)((byte *)realpatch
-                                    + LONG(realpatch->columnofs[x-x1]));
+                                    + LE_SWAP32(realpatch->columnofs[x-x1]));
 
             // generate column offset lookup
             colofs[x] = (x * texture->height) + (texture->width*4);
 
-            R_DrawColumnInCache (patchcol,
-                                 block + colofs[x],
+            R_DrawColumnInCache (patchcol,		// source
+                                 block + colofs[x],	// dest
                                  patch->originy,
                                  texture->height);
         }
@@ -411,7 +414,7 @@ byte* R_GetFlat (int  flatlumpnum)
 {
    // [WDJ] Checking all callers shows that they might tolerate PU_CACHE,
    // but this is safer, and has less reloading of the flats
-    return W_CacheLumpNum (flatlumpnum, PU_LUMP);
+    return W_CacheLumpNum (flatlumpnum, PU_LUMP);	// flat image
 //    return W_CacheLumpNum (flatlumpnum, PU_CACHE);
 
 /*  // this code work but is useless
@@ -528,8 +531,9 @@ void R_LoadTextures (void)
 
     // Load the patch names from pnames.lmp.
     name[8] = 0;
-    pnames = W_CacheLumpName ("PNAMES", PU_STATIC);
-    nummappatches = LONG ( *((int *)pnames) );
+    pnames = W_CacheLumpName ("PNAMES", PU_STATIC);  // temp
+    // [WDJ] Do endian as use pnames temp
+    nummappatches = LE_SWAP32 ( *((int *)pnames) );
     name_p = pnames+4;
     patchlookup = alloca (nummappatches*sizeof(*patchlookup));
 
@@ -544,14 +548,14 @@ void R_LoadTextures (void)
     // The data is contained in one or two lumps,
     //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
     maptex = maptex1 = W_CacheLumpName ("TEXTURE1", PU_STATIC);
-    numtextures1 = LONG(*maptex);
+    numtextures1 = LE_SWAP32(*maptex);
     maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
     directory = maptex+1;
 
     if (W_CheckNumForName ("TEXTURE2") != -1)
     {
         maptex2 = W_CacheLumpName ("TEXTURE2", PU_STATIC);
-        numtextures2 = LONG(*maptex2);
+        numtextures2 = LE_SWAP32(*maptex2);
         maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
     }
     else
@@ -565,13 +569,13 @@ void R_LoadTextures (void)
 
     // [smite] separate allocations, fewer horrible bugs
     if (textures)
-      {
+    {
 	Z_Free(textures);
 	Z_Free(texturecolumnofs);
 	Z_Free(texturecache);
 	Z_Free(texturewidthmask);
 	Z_Free(textureheight);
-      }
+    }
 
     textures         = Z_Malloc(numtextures * sizeof(*textures),         PU_STATIC, 0);
     texturecolumnofs = Z_Malloc(numtextures * sizeof(*texturecolumnofs), PU_STATIC, 0);
@@ -594,7 +598,7 @@ void R_LoadTextures (void)
         }
 
         // offset to the current texture in TEXTURESn lump
-        offset = LONG(*directory);
+        offset = LE_SWAP32(*directory);
 
         if (offset > maxoff)
             I_Error ("R_LoadTextures: bad texture directory");
@@ -605,12 +609,12 @@ void R_LoadTextures (void)
 
         texture = textures[i] =
             Z_Malloc (sizeof(texture_t)
-                      + sizeof(texpatch_t)*(SHORT(mtexture->patchcount)-1),
+                      + sizeof(texpatch_t)*(LE_SWAP16(mtexture->patchcount)-1),
                       PU_STATIC, 0);
 
-        texture->width  = SHORT(mtexture->width);
-        texture->height = SHORT(mtexture->height);
-        texture->patchcount = SHORT(mtexture->patchcount);
+        texture->width  = LE_SWAP16(mtexture->width);
+        texture->height = LE_SWAP16(mtexture->height);
+        texture->patchcount = LE_SWAP16(mtexture->patchcount);
 
 	// Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
 	// gcc will replace memcpy with two 4-byte read/writes, which will bus error.
@@ -620,9 +624,9 @@ void R_LoadTextures (void)
 
         for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
         {
-            patch->originx = SHORT(mpatch->originx);
-            patch->originy = SHORT(mpatch->originy);
-            patch->patch = patchlookup[SHORT(mpatch->patch)];
+            patch->originx = LE_SWAP16(mpatch->originx);
+            patch->originy = LE_SWAP16(mpatch->originy);
+            patch->patch = patchlookup[LE_SWAP16(mpatch->patch)];
             if (patch->patch == -1)
             {
                 I_Error ("R_InitTextures: Missing patch in texture %s",

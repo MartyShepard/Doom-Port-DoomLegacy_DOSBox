@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: hu_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -309,7 +309,7 @@ void HU_Init(void)
         else
             sprintf(buffer, "STCFN%.3d", j);
         j++;
-        hu_font[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC);
+        hu_font[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC); // endian fix
     }
 
     // cache the crosshairs, dont bother to know which one is being used,
@@ -317,7 +317,7 @@ void HU_Init(void)
     for(i=0; i<HU_CROSSHAIRS; i++)
     {
        sprintf(buffer, "CROSHAI%c", '1'+i);
-       crosshair[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC);
+       crosshair[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC); // endian fix
     }
 }
 
@@ -980,7 +980,7 @@ void HU_DrawFSPics()
       continue;
 
     if(!piclist[i].data)
-      piclist[i].data = (patch_t *) W_CachePatchNum(piclist[i].lumpnum, PU_STATIC);
+      piclist[i].data = (patch_t *) W_CachePatchNum(piclist[i].lumpnum, PU_STATIC); // endian fix
 
     if((piclist[i].xpos + piclist[i].data->width) < 0 || (piclist[i].ypos + piclist[i].data->height) < 0)
       continue;
@@ -1157,8 +1157,8 @@ void HU_drawDeathmatchRankings (void)
     // draw the ranking title panel
     if(!cv_splitscreen.value)
     {
-	patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);
-	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,5,0,p);
+	patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);  // endian fix
+	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2, 5, 0, p);
     }
 
     // count frags for each present player

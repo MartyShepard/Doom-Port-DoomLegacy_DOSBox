@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: st_lib.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,6 +55,8 @@
 #include "i_video.h"    //rendermode
 //#define DEBUG
 
+// [WDJ] all STlib, number, etc. patches are already endian fixed
+
 //
 // Hack display negative frags.
 //  Loads and store the stminus lump.
@@ -98,14 +100,9 @@ void STlib_drawNum ( st_number_t*  n,
     int    numdigits = n->width;
     int    num = *n->num;
 
-    //[segabor]: 'SHORT' BUG !
+    // [WDJ] all ST patches are already endian fixed
     int    w = n->p[0]->width;
     int    h = n->p[0]->height;
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-    int    w = SHORT(n->p[0]->width);
-    int    h = SHORT(n->p[0]->height);
-#endif   
     int    x = n->x;
 
     int    neg;
@@ -226,18 +223,10 @@ void STlib_updateMultIcon ( st_multicon_t*        mi,
     {
         if (mi->oldinum != -1)
         {
-	    //[segabor]: 'SHORT' BUG !
             x = mi->x - mi->p[mi->oldinum]->leftoffset;
             y = mi->y - mi->p[mi->oldinum]->topoffset;
             w = mi->p[mi->oldinum]->width;
             h = mi->p[mi->oldinum]->height;
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-            x = mi->x - SHORT(mi->p[mi->oldinum]->leftoffset);
-            y = mi->y - SHORT(mi->p[mi->oldinum]->topoffset);
-            w = SHORT(mi->p[mi->oldinum]->width);
-            h = SHORT(mi->p[mi->oldinum]->height);
-#endif
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
@@ -282,18 +271,10 @@ void STlib_updateBinIcon ( st_binicon_t*         bi,
     if (*bi->on
         && (bi->oldval != *bi->val || refresh))
     {
-	//[segabor]: 'SHORT' BUG!
         x = bi->x - bi->p->leftoffset;
         y = bi->y - bi->p->topoffset;
         w = bi->p->width;
         h = bi->p->height;
-#if 0       
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        x = bi->x - SHORT(bi->p->leftoffset);
-        y = bi->y - SHORT(bi->p->topoffset);
-        w = SHORT(bi->p->width);
-        h = SHORT(bi->p->height);
-#endif
 
         if (*bi->val)
             V_DrawScaledPatch(bi->x, bi->y, fgbuffer, bi->p);

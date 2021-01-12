@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 585 2010-01-06 20:10:53Z wesleyjohnson $
+// $Id: p_info.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -546,24 +546,25 @@ void P_LoadLevelInfo(int lumpnum)
 
   if(lumpsize > 0)
   {
-    rover = lump = W_CacheLumpNum(lumpnum, PU_STATIC);
+    rover = lump = W_CacheLumpNum(lumpnum, PU_STATIC);  // level info
     while(rover < lump + lumpsize)
-      {
+    {
         if(*rover == '\n') // end of line
-          {
+        {
           P_ParseInfoCmd(readline);  // parse line
           readline[0] = '\0';
-          }
+        }
         else
-        // add to line if valid char
-        if(isprint(*rover) || *rover == '{' || *rover == '}')
+        {
+          // add to line if valid char
+          if(isprint(*rover) || *rover == '{' || *rover == '}')
           {
             // add char
             readline[strlen(readline)+1] = '\0';
             readline[strlen(readline)] = *rover;
           }
-
-      rover++;
+	}
+        rover++;
     }
 
     // parse last line

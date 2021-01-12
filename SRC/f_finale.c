@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 554 2009-11-11 01:56:40Z wesleyjohnson $
+// $Id: f_finale.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -338,7 +338,7 @@ void F_TextWrite (void)
     int         cy;
 
     // erase the entire screen to a tiled background
-    V_DrawFlatFill(0,0,vid.width,vid.height,W_GetNumForName(finaleflat));
+    V_DrawFlatFill(0, 0, vid.width, vid.height, W_GetNumForName(finaleflat));
 
     V_MarkRect (0, 0, vid.width, vid.height);
 
@@ -377,6 +377,7 @@ void F_TextWrite (void)
             continue;
         }
 
+        // hu_font is endian fixed
         w =  (hu_font[c]->width);
         if (cx+w > vid.width)
             break;
@@ -614,18 +615,17 @@ void F_CastDrawer (void)
     lump = sprframe->lumppat[0];      //Fab: see R_InitSprites for more
     flip = (boolean)sprframe->flip[0];
 
-    patch = W_CachePatchNum (lump, PU_CACHE);
+    patch = W_CachePatchNum (lump, PU_CACHE);  // endian fix
 
-    V_DrawScaledPatch (BASEVIDWIDTH>>1,170,flip ? V_FLIPPEDPATCH : 0,patch);
+    V_DrawScaledPatch (BASEVIDWIDTH>>1,170,flip ? V_FLIPPEDPATCH : 0, patch);
 }
 
 
 //
 // F_DrawPatchCol
 //
-static void F_DrawPatchCol (int           x,
-  patch_t*      patch,
-  int           col )
+// [WDJ] patch is already endian fixed
+static void F_DrawPatchCol (int x, patch_t* patch, int col )
 {
     column_t*   column;
     byte*       source;
@@ -633,7 +633,7 @@ static void F_DrawPatchCol (int           x,
     byte*       desttop;
     int         count;
 
-    column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
+    column = (column_t *)((byte *)patch + patch->columnofs[col]);
     desttop = screens[0]+x*vid.dupx;
 
     // step through the posts in a column
@@ -675,6 +675,7 @@ void F_BunnyScroll (void)
     int         stage;
     static int  laststage;
 
+    // patches are endian fixed
     p1 = W_CachePatchName ("PFUB2", PU_LEVEL);
     p2 = W_CachePatchName ("PFUB1", PU_LEVEL);
 
@@ -735,6 +736,7 @@ void F_BunnyScroll (void)
 ==================
 */
 
+// Heretic
 void F_DemonScroll(void)
 {
     
@@ -746,9 +748,9 @@ void F_DemonScroll(void)
     if (scrolled < 0)
         scrolled = 0;
 
-    V_DrawRawScreen(0, scrolled*vid.dupy, W_CheckNumForName("FINAL1"),320,200);
+    V_DrawRawScreen_Num(0, scrolled*vid.dupy, W_CheckNumForName("FINAL1"),320,200);
     if( scrolled>0 )
-        V_DrawRawScreen(0, (scrolled-200)*vid.dupy, W_CheckNumForName("FINAL2"),320,200);
+        V_DrawRawScreen_Num(0, (scrolled-200)*vid.dupy, W_CheckNumForName("FINAL2"),320,200);
 }
 
 
@@ -760,6 +762,7 @@ void F_DemonScroll(void)
 ==================
 */
 
+// Heretic
 void F_DrawUnderwater(void)
 {
     static boolean underwawa = false;
@@ -772,10 +775,10 @@ void F_DrawUnderwater(void)
                 underwawa = true;
                 V_SetPaletteLump("E2PAL");
             }
-            V_DrawRawScreen(0, 0, W_CheckNumForName("E2END"),320,200);
+            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("E2END"),320,200);
             break;
         case 2:
-            V_DrawRawScreen(0, 0, W_CheckNumForName("TITLE"),320,200);
+            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("TITLE"),320,200);
             underwawa = false;
             //D_StartTitle(); // go to intro/demo mode.
     }
@@ -803,10 +806,10 @@ void F_Drawer (void)
             {
                 case 1:
                     if(W_CheckNumForName("e2m1")==-1)
-                        V_DrawRawScreen(0, 0, W_CheckNumForName("ORDER"),320,200);
+                        V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
                     else
                         // BP: search only in the first pwad since legacy define a pathc with same name
-                        V_DrawRawScreen(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
+                        V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
                     break;
                 case 2:
                     F_DrawUnderwater();
@@ -817,7 +820,7 @@ void F_Drawer (void)
                 case 4: // Just show credits screen for extended episodes
                 case 5:
                     // BP: search only in the first pwad since legacy define a pathc with same name
-                    V_DrawRawScreen(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
+                    V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
                     break;
             }
 

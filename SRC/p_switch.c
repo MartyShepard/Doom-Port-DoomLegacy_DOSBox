@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_switch.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -163,7 +163,7 @@ void P_InitSwitchList(void)
     alphSwitchList = (switchlist_t *)W_CacheLumpName("SWITCHES",PU_STATIC);
     // endian conversion only when loading from extra lump
     for (i=0;alphSwitchList[i].episode!=0;i++)
-        alphSwitchList[i].episode = SHORT(alphSwitchList[i].episode);
+        alphSwitchList[i].episode = LE_SWAP16(alphSwitchList[i].episode);
   }
   else 
     alphSwitchList = oldalphSwitchList;

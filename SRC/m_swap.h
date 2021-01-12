@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 588 2010-01-08 04:08:18Z wesleyjohnson $
+// $Id: m_swap.h 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -126,6 +126,7 @@ int32_t swap_int32( uint32_t x);
 #endif
 
 
+#if 0
 // TODO FIXME convert all endianness handling to use the code above, remove code below.
 #ifdef __BIG_ENDIAN__
 
@@ -146,6 +147,8 @@ int32_t swap_int32( uint32_t x);
 #else
 #define SHORT(x)  ((short)x)
 #define LONG(x)	  ((long) x)
+#endif
+
 #endif
 
 

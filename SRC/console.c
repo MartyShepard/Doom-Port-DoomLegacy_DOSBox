@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: console.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -394,11 +394,11 @@ void CON_Init(void)
     CON_InputInit ();
 
     // load console background pic
-    con_backpic = (pic_t*) W_CacheLumpName ("CONSBACK",PU_STATIC);
+    con_backpic = (pic_t*) W_CachePicName ("CONSBACK",PU_STATIC);
 
     // borders MUST be there
-    con_bordleft  = (pic_t*) W_CacheLumpName ("CBLEFT",PU_STATIC);
-    con_bordright = (pic_t*) W_CacheLumpName ("CBRIGHT",PU_STATIC);
+    con_bordleft  = (pic_t*) W_CachePicName ("CBLEFT",PU_STATIC);
+    con_bordright = (pic_t*) W_CachePicName ("CBRIGHT",PU_STATIC);
 
     // register our commands
     //
@@ -1186,24 +1186,26 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
     int         v;
     byte        *src, *dest;
     int         frac, fracstep;
-
+    int		pic_h = pic->height;
+    int		pic_w = pic->width;
+   
     dest = vid.buffer+startx;
 
     for (y=0 ; y<con_curlines ; y++, dest += vid.width)
     {
         // scale the picture to the resolution
-        v = SHORT(pic->height) - ((con_curlines - y)*(BASEVIDHEIGHT-1)/vid.height) - 1;
+        v = pic_h - ((con_curlines - y)*(BASEVIDHEIGHT-1)/vid.height) - 1;
 
-        src = pic->data + v*SHORT(pic->width);
+        src = pic->data + v*pic_w;
 
         // in case of the console backpic, simplify
-        if (SHORT(pic->width) == destwidth)
+        if (pic_w == destwidth)
             memcpy (dest, src, destwidth);
         else
         {
             // scale pic to screen width
             frac = 0;
-            fracstep = (SHORT(pic->width)<<16)/destwidth;
+            fracstep = (pic_w<<16)/destwidth;
             for (x=0 ; x<destwidth ; x+=4)
             {
                 dest[x] = src[frac>>16];
@@ -1241,7 +1243,8 @@ static void CON_DrawConsole (void)
     {
 #ifdef HWRENDER // not win32 only 19990829 by Kin
         if (rendermode!=render_soft)
-            V_DrawScalePic (0, con_curlines-200*vid.fdupy, 0, W_GetNumForName ("CONSBACK") );
+            V_DrawScalePic_Num (0, con_curlines-200*vid.fdupy, 0,
+				W_GetNumForName ("CONSBACK") );
         else
 #endif
             CON_DrawBackpic (con_backpic,0,vid.width);   // picture as background

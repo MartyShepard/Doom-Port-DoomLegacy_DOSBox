@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: st_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -345,7 +345,7 @@ static int              st_msgcounter=0;
 static st_chatstateenum_t       st_chatstate;
 
 // whether left-side main status bar is active
-boolean          st_statusbaron;
+boolean                 st_statusbar_on;
 
 // whether status bar chat is active
 static boolean          st_chat;
@@ -354,12 +354,12 @@ static boolean          st_chat;
 static boolean          st_oldchat;
 
 // whether chat window has the cursor on
-static boolean          st_cursoron;
+static boolean          st_cursor_on;
 
 // !deathmatch
 static boolean          st_notdeathmatch;
 
-// !deathmatch && st_statusbaron
+// !deathmatch && st_statusbar_on
 static boolean          st_armson;
 
 // !deathmatch
@@ -470,7 +470,7 @@ static void ST_refreshBackground(void)
 {
     byte*       colormap;
 
-    if (st_statusbaron)
+    if (st_statusbar_on)
     {
         int flags = (fgbuffer & 0xffff0000) | BG;
 
@@ -794,10 +794,10 @@ static void ST_updateWidgets(void)
     st_notdeathmatch = !cv_deathmatch.value;
 
     // used by w_arms[] widgets
-    st_armson = st_statusbaron && !cv_deathmatch.value;
+    st_armson = st_statusbar_on && !cv_deathmatch.value;
 
     // used by w_frags widget
-    st_fragson = cv_deathmatch.value && st_statusbaron;
+    st_fragson = cv_deathmatch.value && st_statusbar_on;
 
     st_fragscount = ST_PlayerFrags(statusbarplayer);
 
@@ -927,10 +927,10 @@ static void ST_drawWidgets(boolean refresh)
     int         i;
 
     // used by w_arms[] widgets
-    st_armson = st_statusbaron && !cv_deathmatch.value;
+    st_armson = st_statusbar_on && !cv_deathmatch.value;
 
     // used by w_frags widget
-    st_fragson = cv_deathmatch.value && st_statusbaron;
+    st_fragson = cv_deathmatch.value && st_statusbar_on;
 
     STlib_updateNum(&w_ready, refresh);
 
@@ -982,7 +982,7 @@ void ST_overlayDrawer ();
 
 void ST_Drawer ( boolean refresh )
 {
-    st_statusbaron = (cv_viewsize.value<11) || automapactive;
+    st_statusbar_on = (cv_viewsize.value<11) || automapactive;
 
     if( gamemode == heretic )
     {
@@ -1003,7 +1003,7 @@ void ST_Drawer ( boolean refresh )
 #endif
         ST_doPaletteStuff();
 
-    if( st_statusbaron )
+    if( st_statusbar_on )
     {
         // after ST_Start(), screen refresh needed, or vid mode change
         if (st_firsttime || refresh || st_recalc )
@@ -1042,6 +1042,7 @@ static void ST_loadGraphics(void)
 
     int         i;
     char        namebuf[9];
+    // [WDJ] all ST graphics are loaded endian fixed
 
     // Load the numbers, tall and short
     for (i=0;i<10;i++)
@@ -1094,6 +1095,7 @@ void ST_loadFaceGraphics (char *facestr)
     int   facenum;
     char  namelump[9];
     char* namebuf;
+    // [WDJ] all ST graphics are loaded endian fixed
 
     //hack: make sure base face name is no more than 3 chars
     // bug: core dump fixed 19990220 by Kin
@@ -1229,9 +1231,9 @@ void ST_initData(void)
     st_clock = 0;
     st_chatstate = StartChatState;
 
-    st_statusbaron = true;
+    st_statusbar_on = true;
     st_oldchat = st_chat = false;
-    st_cursoron = false;
+    st_cursor_on = false;
 
     st_faceindex = 0;
     st_palette = -1;
@@ -1295,7 +1297,7 @@ void ST_createWidgets(void)
                   ST_AMMOY,
                   tallnum,
                   &plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_AMMOWIDTH );
 
     // the last weapon type
@@ -1307,7 +1309,7 @@ void ST_createWidgets(void)
                       ST_HEALTHY,
                       tallnum,
                       &plyr->health,
-                      &st_statusbaron,
+                      &st_statusbar_on,
                       tallpercent);
 
     // arms background
@@ -1316,7 +1318,7 @@ void ST_createWidgets(void)
                       ST_ARMSBGY,
                       armsbg,
                       &st_notdeathmatch,
-                      &st_statusbaron);
+                      &st_statusbar_on);
 
     // weapons owned
     for(i=0;i<6;i++)
@@ -1343,7 +1345,7 @@ void ST_createWidgets(void)
                        ST_FACESY,
                        faces,
                        &st_faceindex,
-                       &st_statusbaron);
+                       &st_statusbar_on);
 
     // armor percentage - should be colored later
     STlib_initPercent(&w_armor,
@@ -1351,7 +1353,7 @@ void ST_createWidgets(void)
                       ST_ARMORY,
                       tallnum,
                       &plyr->armorpoints,
-                      &st_statusbaron, tallpercent);
+                      &st_statusbar_on, tallpercent);
 
     // keyboxes 0-2
     STlib_initMultIcon(&w_keyboxes[0],
@@ -1359,21 +1361,21 @@ void ST_createWidgets(void)
                        ST_KEY0Y,
                        keys,
                        &keyboxes[0],
-                       &st_statusbaron);
+                       &st_statusbar_on);
 
     STlib_initMultIcon(&w_keyboxes[1],
                        st_x + ST_KEY1X,
                        ST_KEY1Y,
                        keys,
                        &keyboxes[1],
-                       &st_statusbaron);
+                       &st_statusbar_on);
 
     STlib_initMultIcon(&w_keyboxes[2],
                        st_x + ST_KEY2X,
                        ST_KEY2Y,
                        keys,
                        &keyboxes[2],
-                       &st_statusbaron);
+                       &st_statusbar_on);
 
     // ammo count (all four kinds)
     STlib_initNum(&w_ammo[0],
@@ -1381,7 +1383,7 @@ void ST_createWidgets(void)
                   ST_AMMO0Y,
                   shortnum,
                   &plyr->ammo[0],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_AMMO0WIDTH);
 
     STlib_initNum(&w_ammo[1],
@@ -1389,7 +1391,7 @@ void ST_createWidgets(void)
                   ST_AMMO1Y,
                   shortnum,
                   &plyr->ammo[1],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_AMMO1WIDTH);
 
     STlib_initNum(&w_ammo[2],
@@ -1397,7 +1399,7 @@ void ST_createWidgets(void)
                   ST_AMMO2Y,
                   shortnum,
                   &plyr->ammo[2],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_AMMO2WIDTH);
 
     STlib_initNum(&w_ammo[3],
@@ -1405,7 +1407,7 @@ void ST_createWidgets(void)
                   ST_AMMO3Y,
                   shortnum,
                   &plyr->ammo[3],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_AMMO3WIDTH);
 
     // max ammo count (all four kinds)
@@ -1414,7 +1416,7 @@ void ST_createWidgets(void)
                   ST_MAXAMMO0Y,
                   shortnum,
                   &plyr->maxammo[0],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_MAXAMMO0WIDTH);
 
     STlib_initNum(&w_maxammo[1],
@@ -1422,7 +1424,7 @@ void ST_createWidgets(void)
                   ST_MAXAMMO1Y,
                   shortnum,
                   &plyr->maxammo[1],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_MAXAMMO1WIDTH);
 
     STlib_initNum(&w_maxammo[2],
@@ -1430,7 +1432,7 @@ void ST_createWidgets(void)
                   ST_MAXAMMO2Y,
                   shortnum,
                   &plyr->maxammo[2],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_MAXAMMO2WIDTH);
 
     STlib_initNum(&w_maxammo[3],
@@ -1438,7 +1440,7 @@ void ST_createWidgets(void)
                   ST_MAXAMMO3Y,
                   shortnum,
                   &plyr->maxammo[3],
-                  &st_statusbaron,
+                  &st_statusbar_on,
                   ST_MAXAMMO3WIDTH);
 }
 
@@ -1639,7 +1641,7 @@ void ST_overlayDrawer ()
                              plyr->health,
                              tallnum,NULL);
 
-           V_DrawScalePic (SCX(52),SCY(198)-16*vid.dupy,0,sbohealth);
+           V_DrawScalePic_Num (SCX(52),SCY(198)-16*vid.dupy,0,sbohealth);
            break;
 
          case 'f': // draw frags
@@ -1652,7 +1654,7 @@ void ST_overlayDrawer ()
                                  st_fragscount,
                                  tallnum,NULL);
 
-               V_DrawScalePic (SCX(302),SCY(2),0,sbofrags);
+               V_DrawScalePic_Num (SCX(302),SCY(2),0,sbofrags);
            }
            break;
 
@@ -1665,7 +1667,7 @@ void ST_overlayDrawer ()
                                  plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
                                  tallnum,NULL);
 
-               V_DrawScalePic (SCX(236),SCY(198)-(16*vid.dupy),0,i);
+               V_DrawScalePic_Num (SCX(236),SCY(198)-(16*vid.dupy),0,i);
            }
            break;
 
@@ -1685,7 +1687,7 @@ void ST_overlayDrawer ()
                              plyr->armorpoints,
                              tallnum,NULL);
 
-           V_DrawScalePic (SCX(302),SCY(198)-(16*vid.dupy),0,sboarmor);
+           V_DrawScalePic_Num (SCX(302),SCY(198)-(16*vid.dupy),0,sboarmor);
            break;
 
          // added by Hurdler for single player only

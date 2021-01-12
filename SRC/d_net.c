@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 584 2010-01-05 22:04:28Z wesleyjohnson $
+// $Id: d_net.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -260,6 +260,7 @@ static boolean GetFreeAcknum(byte *freeack, boolean lowtimer)
    }
 
    for(i=0;i<MAXACKPACKETS;i++)
+   {
        if(ackpak[i].acknum==0)
        {
            // for low priority packet, make sure let freeslotes so urgents packets can be sent
@@ -293,6 +294,7 @@ static boolean GetFreeAcknum(byte *freeack, boolean lowtimer)
            
            return true;
        }
+   }
 #ifdef PARANOIA
    if( devparm )
        CONS_Printf("No more free ackpacket\n");
@@ -339,10 +341,14 @@ static boolean inline Processackpak()
        node->remotefirstack=netbuffer->ackreturn;
        // search the ackbuffer and free it
        for(i=0;i<MAXACKPACKETS;i++)
+       {
            if( ackpak[i].acknum &&
                ackpak[i].destinationnode==node-nodes &&
                cmpack(ackpak[i].acknum,netbuffer->ackreturn)<=0 )
+	   {
                Removeack(i);
+	   }
+       }
    }
 
 // received a packet with ack put it in to queue for send the ack back
@@ -387,6 +393,7 @@ static boolean inline Processackpak()
                    {
                        change=false;
                        for( i=node->acktosend_tail;i!=node->acktosend_head;i=(i+1)%MAXACKTOSEND)
+		       {
                            if( cmpack(node->acktosend[i],nextfirstack)<=0 )
                            {
                                if( node->acktosend[i]==nextfirstack )
@@ -401,14 +408,16 @@ static boolean inline Processackpak()
                                    node->acktosend_tail = (i+1)%MAXACKTOSEND;
                                }
                                else
+			       {
                                    if( i==hm1 )
                                    {
                                        node->acktosend[hm1] = 0;
                                        node->acktosend_head = hm1;
                                        hm1=(hm1-1+MAXACKTOSEND)%MAXACKTOSEND; 
                                    }
-                                   
+			       }
                            }
+		       }
                    }
                }
                else
@@ -448,8 +457,11 @@ static void GotAcks(void)
     int i,j;
 
     for(j=0;j<MAXACKTOSEND;j++)
+    {
         if( netbuffer->u.textcmd[j] )
+        {
            for(i=0;i<MAXACKPACKETS;i++)
+	   {
                if( ackpak[i].acknum && 
                    ackpak[i].destinationnode==doomcom->remotenode)
                {
@@ -462,6 +474,9 @@ static void GotAcks(void)
                    if( cmpack(ackpak[i].nextacknum,netbuffer->u.textcmd[j])<=0 && ackpak[i].senttime>0)
                        ackpak[i].senttime--; // hurry up
                }
+	   }
+	}
+    }
 }
 
 void Net_ConnectionTimeout( int node )
@@ -488,6 +503,7 @@ extern void Net_AckTicker(void)
     {
         node_t *node=&nodes[ackpak[i].destinationnode];
         if(ackpak[i].acknum)
+        {
             if(ackpak[i].senttime+node->timeout<I_GetTime())
             {
                 if( ackpak[i].resentnum > 10 && (node->flags & CLOSE) )
@@ -509,6 +525,7 @@ extern void Net_AckTicker(void)
                 retransmit++; // for stat
                 HSendPacket(node-nodes,false,ackpak[i].acknum,ackpak[i].length-BASEPACKETSIZE);
             }
+	}
     }
 
     for(i=1;i<MAXNETNODES;i++)
@@ -522,7 +539,9 @@ extern void Net_AckTicker(void)
 
             if( (nodes[i].flags & CLOSE) == 0 && 
                 nodes[i].lasttimepacketreceived + CONNECTIONTIMEOUT < I_GetTime() )
+	    {
                 Net_ConnectionTimeout( i );
+	    }
         }
     }
 }
@@ -569,8 +588,10 @@ extern boolean Net_AllAckReceived(void)
    int i;
 
    for(i=0;i<MAXACKPACKETS;i++)
+   {
       if(ackpak[i].acknum)
           return false;
+   }
 
    return true;
 }
@@ -619,9 +640,13 @@ extern void Net_AbortPacketType(char packettype)
 {
     int i;
     for( i=0;i<MAXACKPACKETS;i++ )
+    {
          if( ackpak[i].acknum && 
              (((doomdata_t *)ackpak[i].pak)->packettype==packettype || packettype==-1 ))
+         {
              ackpak[i].acknum=0;
+	 }
+    }
 }
 
 // -----------------------------------------------------------------
@@ -649,6 +674,7 @@ extern void Net_CloseConnection(int node)
     }
     // check if we wait ack from this node
     for(i=0;i<MAXACKPACKETS;i++)
+    {
         if( ackpak[i].acknum && ackpak[i].destinationnode==node)
         {
             if( !forceclose )
@@ -656,6 +682,7 @@ extern void Net_CloseConnection(int node)
             else
                 ackpak[i].acknum = 0;
         }
+    }
 
     InitNode(node);
     AbortSendFiles(node);
@@ -665,6 +692,7 @@ extern void Net_CloseConnection(int node)
 //
 // Checksum
 //
+// Return in net endian
 static unsigned NetbufferChecksum (void)
 {
     unsigned    c;
@@ -678,7 +706,7 @@ static unsigned NetbufferChecksum (void)
     for (i=0 ; i<l ; i++,buf++)
         c += (*buf) * (i+1);
 
-    return LONG(c);
+    return LE_SWAP32_FAST(c);
 }
 
 #ifdef DEBUGFILE
@@ -690,11 +718,13 @@ static void fprintfstring(char *s,byte len)
 
     for (i=0 ; i<len ; i++)
        if(s[i]<32)
+       {
            if(mode==0) {
                fprintf (debugfile,"[%d",(byte)s[i]);
                mode = 1;
            } else
                fprintf (debugfile,",%d",(byte)s[i]);
+       }
        else
        {
            if(mode==1) {
@@ -890,8 +920,10 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
             return false;
         }
         else
+        {
             if( !GetFreeAcknum(&netbuffer->ack,false) )
                 return false;
+	}
     }
     else
         netbuffer->ack=acknum;
@@ -910,8 +942,10 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
     }
 #ifdef DEBUGFILE
     else
+    {
         if (debugfile)
             DebugPrintpacket("NOTSEND");
+    }
 #endif
     return true;
 }

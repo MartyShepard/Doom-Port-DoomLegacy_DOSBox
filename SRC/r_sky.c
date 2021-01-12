@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_sky.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -112,7 +112,8 @@ void R_SetupSkyDraw (void)
     for (height=0,i=0;i<count;i++,patches++)
     {
         W_ReadLumpHeader (patches->patch, &wpatch, sizeof(patch_t));
-        wpatch.height = SHORT(wpatch.height);
+        // [WDJ] Do endian fix as this is read.
+        wpatch.height = LE_SWAP16(wpatch.height);
         if (wpatch.height>height)
             height = wpatch.height;
     }

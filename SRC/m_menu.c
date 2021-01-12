@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 580 2009-12-01 20:26:12Z wesleyjohnson $
+// $Id: m_menu.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -403,7 +403,7 @@ void M_DrawMenuTitle(void)
     else
     if( currentMenu->menutitlepic )
     {
-        patch_t* p = W_CachePatchName(currentMenu->menutitlepic,PU_CACHE);
+        patch_t* tp = W_CachePatchName(currentMenu->menutitlepic,PU_CACHE);  // endian fix
 #if 1
         //SoM: 4/7/2000: Old code was causing problems with large graphics.
 //        int xtitle = (vid.width / 2) - (p->width / 2);
@@ -411,13 +411,13 @@ void M_DrawMenuTitle(void)
         int xtitle = 94;
         int ytitle = 2;
 #else
-        int xtitle = (BASEVIDWIDTH-p->width)/2;
-        int ytitle = (currentMenu->y-p->height)/2;
+        int xtitle = (BASEVIDWIDTH - tp->width)/2;
+        int ytitle = (currentMenu->y - tp->height)/2;
 #endif
 
         if(xtitle<0) xtitle=0;
         if(ytitle<0) ytitle=0;
-        V_DrawScaledPatch (xtitle,ytitle,0,p);
+        V_DrawScaledPatch (xtitle,ytitle,0,tp);
     }
 }
 
@@ -1099,7 +1099,7 @@ void M_DrawSetupMultiPlayerMenu(void)
         colormap = (byte *) translationtables - 256 + (setupm_cvcolor->value<<8);
     // draw player sprite
     // temp usage of sprite lump, until end of function
-    patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);
+    patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix
     V_DrawMappedPatch (mx+98+(PLBOXW*8/2),my+16+(PLBOXH*8)-8,0,patch,colormap);
 }
 
@@ -1319,10 +1319,8 @@ menu_t  NewDef =
 
 void M_DrawNewGame(void)
 {
-    patch_t* p;
-
     //faB: testing with glide
-    p = W_CachePatchName("M_SKILL",PU_CACHE);
+    patch_t* p = W_CachePatchName("M_SKILL",PU_CACHE);  // endian fix
     V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,38,0,p);
 
     //    V_DrawScaledPatch_Name (54,38,0, "M_SKILL" );
@@ -1729,7 +1727,7 @@ void M_DrawReadThis1(void)
         V_DrawScaledPatch_Name (0,0,0,"HELP1");
         break;
       case heretic:
-        V_DrawRawScreen(0,0,W_GetNumForName("HELP1"), 320, 200);
+        V_DrawRawScreen_Num(0,0,W_GetNumForName("HELP1"), 320, 200);
         break;
       default:
         break;
@@ -1782,7 +1780,7 @@ void M_DrawReadThis2(void)
         V_DrawScaledPatch_Name (0,0,0,"HELP2");
         break;
       case heretic :
-        V_DrawRawScreen(0,0,W_GetNumForName("HELP2"), 320, 200);
+        V_DrawRawScreen_Num(0,0,W_GetNumForName("HELP2"), 320, 200);
       default:
         break;
     }
@@ -2781,9 +2779,9 @@ void M_DrawThermo ( int   x,
         cursorlump    = W_GetNumForName("M_THERMO");  
     }
     { // temp use of left thermo patch
-      patch_t *pt = W_CachePatchNum(leftlump,PU_CACHE);
+      patch_t *pt = W_CachePatchNum(leftlump,PU_CACHE);  // endian fix
       V_DrawScaledPatch (xx,y,0,pt);
-      xx += SHORT(pt->width)-SHORT(pt->leftoffset);  // add width to offset
+      xx += pt->width - pt->leftoffset;  // add width to offset
     }
     for (i=0;i<16;i++)
     {
@@ -2852,7 +2850,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     cy += boff;
    
     // temp use patch in loop
-    p = W_CachePatchNum (viewborderlump[BRDR_L],PU_CACHE);
+    p = W_CachePatchNum (viewborderlump[BRDR_L],PU_CACHE);  // endian fix
     for (n = 0; n < lines; n++)
     {
         V_DrawScaledPatch (cx, cy, 0, p);
@@ -2882,7 +2880,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     cy += boff;
    
     // temp use patch in loop
-    p = W_CachePatchNum (viewborderlump[BRDR_R],PU_CACHE);
+    p = W_CachePatchNum (viewborderlump[BRDR_R],PU_CACHE);  // endian fix
     for (n = 0; n < lines; n++)
     {
         V_DrawScaledPatch (cx, cy, 0, p);
@@ -3031,7 +3029,7 @@ void M_DrawMessageMenu(void)
         }
 
         V_DrawString((BASEVIDWIDTH - V_StringWidth(string))/2,y,0,string);
-        y += 8; //SHORT(hu_font[0]->height);
+        y += 8; //hu_font[0]->height;
     }
 }
 

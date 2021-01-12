@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: wi_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -121,12 +121,7 @@
 
 // NET GAME STUFF
 #define NG_STATSY               50
-//[segabor]: 'SHORT' BUG !
 #define NG_STATSX               (32 + (star->width)/2 + 32*!dofrags)
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-#define NG_STATSX               (32 + SHORT(star->width)/2 + 32*!dofrags)
-#endif
 
 #define NG_SPACINGX             64
 
@@ -418,6 +413,7 @@ static int              NUMCMAPS;
 //
 //      GRAPHICS
 //
+// [WDJ] all patches are saved endian fixed
 
 // background (map of levels).
 //static patch_t*       bg;
@@ -526,11 +522,11 @@ static void WI_drawLF(void)
                             y, FB, finished);
 #if 0
         //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch ((BASEVIDWIDTH - SHORT(lnames[wbs->last]->width))/2,
+        V_DrawScaledPatch ((BASEVIDWIDTH - LE_SHORT(lnames[wbs->last]->width))/2,
                             y, FB, lnames[wbs->last]);
-        y += (5 * SHORT(lnames[wbs->last]->height))/4;
+        y += (5 * LE_SHORT(lnames[wbs->last]->height))/4;
         // draw "Finished!"
-        V_DrawScaledPatch ((BASEVIDWIDTH - SHORT(finished->width))/2,
+        V_DrawScaledPatch ((BASEVIDWIDTH - LE_SHORT(finished->width))/2,
                             y, FB, finished);
 #endif       
     }
@@ -563,13 +559,13 @@ static void WI_drawEL(void)
                            y, FB, lnames[wbs->next]);
 #if 0
         //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch((BASEVIDWIDTH - SHORT(entering->width))/2,
+        V_DrawScaledPatch((BASEVIDWIDTH - LE_SHORT(entering->width))/2,
                           y, FB, entering);
 
         // draw level
-        y += (5 * SHORT(lnames[wbs->next]->height))/4;
+        y += (5 * LE_SHORT(lnames[wbs->next]->height))/4;
 
-        V_DrawScaledPatch((BASEVIDWIDTH - SHORT(lnames[wbs->next]->width))/2,
+        V_DrawScaledPatch((BASEVIDWIDTH - LE_SHORT(lnames[wbs->next]->width))/2,
                            y, FB, lnames[wbs->next]);
 #endif       
     }
@@ -594,18 +590,10 @@ static void WI_drawOnLnode ( int           n,
     i = 0;
     do
     {
-	//[segabor]: 'SHORT' BUG !
         left   = lnodes->x - (c[i]->leftoffset);
         top    = lnodes->y - (c[i]->topoffset);
         right  = left + (c[i]->width);
-        bottom =  top + (c[i]->height);
-#if 0
-        //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        left   = lnodes->x - SHORT(c[i]->leftoffset);
-        top    = lnodes->y - SHORT(c[i]->topoffset);
-        right  = left + SHORT(c[i]->width);
-        bottom =  top + SHORT(c[i]->height);
-#endif
+        bottom = top + (c[i]->height);
         if (left >= 0
             && right < BASEVIDWIDTH
             && top >= 0
@@ -783,12 +771,7 @@ static int WI_drawNum ( int           x,
                         int           digits )
 {
 
-    //[segabor]: 'SHORT' BUG !
-    int         fontwidth = (num[0]->width);
-#if 0
-    //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-    int         fontwidth = SHORT(num[0]->width);
-#endif   
+    int         fontwidth = num[0]->width;
     int         neg;
     int         temp;
 
@@ -873,12 +856,7 @@ static void WI_drawTime ( int           x,
         do
         {
             n = (t / div) % 60;
-	    //[segabor]: 'SHORT' BUG !
             x = WI_drawNum(x, y, n, 2) - (colon->width);
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-            x = WI_drawNum(x, y, n, 2) - SHORT(colon->width);
-#endif
             div *= 60;
 
             // draw
@@ -890,12 +868,7 @@ static void WI_drawTime ( int           x,
     else
     {
         // "sucks"
-	//[segabor]: 'SHORT' BUG !
         V_DrawScaledPatch(x - (sucks->width), y, FB, sucks);
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch(x - SHORT(sucks->width), y, FB, sucks);
-#endif
     }
 }
 
@@ -1326,7 +1299,7 @@ static void WI_ddrawDeathmatchStats(void)
     WI_drawLF();
 
     // draw stat titles (top line)
-    V_DrawScaledPatch(DM_TOTALSX-SHORT(total->width)/2,
+    V_DrawScaledPatch(DM_TOTALSX-LE_SHORT(total->width)/2,
                 DM_MATRIXY-WI_SPACINGY+10,
                 FB,
                 total);
@@ -1350,13 +1323,13 @@ static void WI_ddrawDeathmatchStats(void)
             else
                 colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
 
-            V_DrawMappedPatch(x-SHORT(stpb->width)/2,
+            V_DrawMappedPatch(x-LE_SHORT(stpb->width)/2,
                         DM_MATRIXY - WI_SPACINGY,
                         FB,
                         stpb,      //p[i], now uses a common STPB0 translated
                         colormap); //      to the right colors
 
-            V_DrawMappedPatch(DM_MATRIXX-SHORT(stpb->width)/2,
+            V_DrawMappedPatch(DM_MATRIXX-LE_SHORT(stpb->width)/2,
                         y,
                         FB,
                         stpb,      //p[i]
@@ -1364,12 +1337,12 @@ static void WI_ddrawDeathmatchStats(void)
 
             if (i == me)
             {
-                V_DrawScaledPatch(x-SHORT(stpb->width)/2,
+                V_DrawScaledPatch(x-LE_SHORT(stpb->width)/2,
                             DM_MATRIXY - WI_SPACINGY,
                             FB,
                             bstar);
 
-                V_DrawScaledPatch(DM_MATRIXX-SHORT(stpb->width)/2,
+                V_DrawScaledPatch(DM_MATRIXX-LE_SHORT(stpb->width)/2,
                             y,
                             FB,
                             star);
@@ -1377,9 +1350,9 @@ static void WI_ddrawDeathmatchStats(void)
         }
         else
         {
-            // V_DrawPatch(x-SHORT(bp[i]->width)/2,
+            // V_DrawPatch(x-LE_SHORT(bp[i]->width)/2,
             //   DM_MATRIXY - WI_SPACINGY, FB, bp[i]);
-            // V_DrawPatch(DM_MATRIXX-SHORT(bp[i]->width)/2,
+            // V_DrawPatch(DM_MATRIXX-LE_SHORT(bp[i]->width)/2,
             //   y, FB, bp[i]);
         }
         x += DM_SPACINGX;
@@ -1388,7 +1361,7 @@ static void WI_ddrawDeathmatchStats(void)
 
     // draw stats
     y = DM_MATRIXY+10;
-    w = SHORT(num[0]->width);
+    w = LE_SHORT(num[0]->width);
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
@@ -1603,14 +1576,7 @@ static void WI_drawNetgameStats(void)
     int         i;
     int         x;
     int         y;
-
-    //[segabor]: 'SHORT' BUG !
-    int         pwidth = (percent->width);
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-    int         pwidth = SHORT(percent->width);
-#endif
-
+    int         pwidth = percent->width;
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
     WI_slamBackground();
@@ -1634,7 +1600,6 @@ static void WI_drawNetgameStats(void)
     }
     else
     {
-	//[segabor]: 'SHORT' BUG !
         V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-(kills->width),
             NG_STATSY, FB, kills);
         
@@ -1648,22 +1613,6 @@ static void WI_drawNetgameStats(void)
                               NG_STATSY, FB, frags);
         // draw stats
         y = NG_STATSY + (kills->height);
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-SHORT(kills->width),
-            NG_STATSY, FB, kills);
-        
-        V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-SHORT(items->width),
-            NG_STATSY, FB, items);
-        
-        V_DrawScaledPatch(NG_STATSX+3*NG_SPACINGX-SHORT(secret->width),
-            NG_STATSY, FB, secret);
-        if (dofrags)
-            V_DrawScaledPatch(NG_STATSX+4*NG_SPACINGX-SHORT(frags->width),
-                              NG_STATSY, FB, frags);
-        // draw stats
-        y = NG_STATSY + SHORT(kills->height);
-#endif
     }
 
 
@@ -1679,18 +1628,10 @@ static void WI_drawNetgameStats(void)
         else
             colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
 
-	//[segabor]: 'SHORT' BUG !
         V_DrawMappedPatch(x-(stpb->width), y, FB, stpb, colormap);
 
         if (i == me)
             V_DrawScaledPatch(x-(stpb->width), y, FB, star);
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawMappedPatch(x-SHORT(stpb->width), y, FB, stpb, colormap);
-
-        if (i == me)
-            V_DrawScaledPatch(x-SHORT(stpb->width), y, FB, star);
-#endif
 
         x += NG_SPACINGX;
         WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
@@ -1828,14 +1769,7 @@ static void WI_updateStats(void)
 static void WI_drawStats(void)
 {
     // line height
-    int lh;
-
-    //[segabor]: 'SHORT' BUG !
-    lh = (3 * (num[0]->height))/2;
-#if 0
-//[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-    lh = (3 * SHORT(num[0]->height))/2;
-#endif
+    int lh = (3 * (num[0]->height))/2;
 
     WI_slamBackground();
 

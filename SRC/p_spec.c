@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 579 2009-11-30 03:45:36Z wesleyjohnson $
+// $Id: p_spec.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -220,7 +220,7 @@ typedef struct
     char        istexture;      // if false, it is a flat
     char        endname[9];
     char        startname[9];
-    int         speed;
+    int32_t     speed;
 } animdef_t; 
 #pragma pack()
 
@@ -240,14 +240,12 @@ static size_t    maxanims;
 
 // Floor/ceiling animation sequences,
 //  defined by first and last frame,
-//  i.e. the flat (64x64 tile) name to
-//  be used.
+//  i.e. the flat (64x64 tile) name to be used.
 // The full animation sequence is given
 //  using all the flats between the start
-//  and end entry, in the order found in
-//  the WAD file.
+//  and end entry, in the order found in the WAD file.
 //
-animdef_t               harddefs[] =
+animdef_t    harddefs[] =
 {
     // DOOM II flat animations.
     {false,     "NUKAGE3",      "NUKAGE1",      8},
@@ -310,19 +308,37 @@ void P_InitPicAnims (void)
   int         i;
 
   if(W_CheckNumForName("ANIMATED") != -1)
+  {
     animdefs = (animdef_t *)W_CacheLumpName("ANIMATED",PU_STATIC);
+    // [WDJ] From wad, Do endian conversion on speed
+#ifdef __BIG_ENDIAN__
+    // [WDJ] Endian conversion, only when BIG_ENDIAN, when from wad,
+    // and not when cache hit.
+    if( lump_read )
+    {
+       for (i = 0; animdefs[i].istexture != -1; i++)
+       {
+	  animdefs[i].speed = LE_SWAP32(animdefs[i].speed);
+       }
+    }
+#endif
+  }
   else
+  {
     animdefs = harddefs;
+    // [WDJ] Compiler source, do NOT endian convert speed
+  }
 
-  for (i = 0; animdefs[i].istexture != -1; i++, maxanims++)
+  for (i = 0; animdefs[i].istexture != -1; i++, maxanims++)	// count
      ;
   anims = (anim_t *)malloc(sizeof(anim_t) * (maxanims + 1));
-  // FIXME: check alloc failure
+  if( anims == NULL ) {
+     I_Error( "Anims: memory allocation failure" );
+  }
 
   lastanim = anims;
   for (i = 0; animdefs[i].istexture != -1; i++)
   {
-
     if (animdefs[i].istexture)
     {
       // different episode ?
@@ -352,7 +368,7 @@ void P_InitPicAnims (void)
                   animdefs[i].endname);
     }
 
-    lastanim->speed = LONG(animdefs[i].speed) * NEWTICRATERATIO;
+    lastanim->speed = animdefs[i].speed * NEWTICRATERATIO;
     lastanim++;
   }
   lastanim->istexture = -1;

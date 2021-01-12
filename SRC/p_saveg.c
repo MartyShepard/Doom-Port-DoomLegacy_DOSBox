@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 585 2010-01-06 20:10:53Z wesleyjohnson $
+// $Id: p_saveg.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -483,7 +483,9 @@ void P_ArchiveWorld(void)
     byte diff2;
 
     // [WDJ] protect lump during this function
-    ms = W_CacheLumpNum(lastloadedmaplumpnum + ML_SECTORS, PU_IN_USE);
+    ms = W_CacheLumpNum(lastloadedmaplumpnum + ML_SECTORS, PU_IN_USE);	// mapsectors temp
+    // [WDJ] Fix endian as compare temp to internal.
+    // 
     ss = sectors;
     put = save_p;
 
@@ -491,9 +493,9 @@ void P_ArchiveWorld(void)
     {
         diff = 0;
         diff2 = 0;
-        if (ss->floorheight != SHORT(ms->floorheight) << FRACBITS)
+        if (ss->floorheight != LE_SWAP16(ms->floorheight) << FRACBITS)
             diff |= SD_FLOORHT;
-        if (ss->ceilingheight != SHORT(ms->ceilingheight) << FRACBITS)
+        if (ss->ceilingheight != LE_SWAP16(ms->ceilingheight) << FRACBITS)
             diff |= SD_CEILHT;
         //
         //  flats
@@ -504,9 +506,9 @@ void P_ArchiveWorld(void)
         if (ss->ceilingpic != P_AddLevelFlat(ms->ceilingpic, levelflats))
             diff |= SD_CEILPIC;
 
-        if (ss->lightlevel != SHORT(ms->lightlevel))
+        if (ss->lightlevel != LE_SWAP16(ms->lightlevel))
             diff |= SD_LIGHT;
-        if (ss->special != SHORT(ms->special))
+        if (ss->special != LE_SWAP16(ms->special))
             diff |= SD_SPECIAL;
 
         if (ss->floor_xoffs != 0)
@@ -571,8 +573,9 @@ void P_ArchiveWorld(void)
     }
     WRITEUSHORT(put, 0xffff);
 
-    mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_IN_USE);
-    msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_IN_USE);
+    mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_IN_USE); // linedefs temp
+    msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_IN_USE); // sidedefs temp
+    // [WDJ] Fix endian as compare temp to internal.
     li = lines;
     // do lines
     for (i = 0; i < numlines; i++, mld++, li++)
@@ -581,15 +584,15 @@ void P_ArchiveWorld(void)
         diff2 = 0;
 
         // we don't care of map in deathmatch !
-        if (((cv_deathmatch.value == 0) && (li->flags != SHORT(mld->flags))) || ((cv_deathmatch.value != 0) && ((li->flags & ~ML_MAPPED) != SHORT(mld->flags))))
+        if (((cv_deathmatch.value == 0) && (li->flags != LE_SWAP16(mld->flags))) || ((cv_deathmatch.value != 0) && ((li->flags & ~ML_MAPPED) != LE_SWAP16(mld->flags))))
             diff |= LD_FLAG;
-        if (li->special != SHORT(mld->special))
+        if (li->special != LE_SWAP16(mld->special))
             diff |= LD_SPECIAL;
 
         if (li->sidenum[0] != -1)
         {
             si = &sides[li->sidenum[0]];
-            if (si->textureoffset != SHORT(msd[li->sidenum[0]].textureoffset) << FRACBITS)
+            if (si->textureoffset != LE_SWAP16(msd[li->sidenum[0]].textureoffset) << FRACBITS)
                 diff |= LD_S1TEXOFF;
             //SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
             if (R_CheckTextureNumForName(msd[li->sidenum[0]].toptexture) != -1)
@@ -605,7 +608,7 @@ void P_ArchiveWorld(void)
         if (li->sidenum[1] != -1)
         {
             si = &sides[li->sidenum[1]];
-            if (si->textureoffset != SHORT(msd[li->sidenum[1]].textureoffset) << FRACBITS)
+            if (si->textureoffset != LE_SWAP16(msd[li->sidenum[1]].textureoffset) << FRACBITS)
                 diff2 |= LD_S2TEXOFF;
             if (R_CheckTextureNumForName(msd[li->sidenum[1]].toptexture) != -1)
                 if (si->toptexture != R_TextureNumForName(msd[li->sidenum[1]].toptexture))
@@ -1395,7 +1398,7 @@ void P_UnArchiveThinkers(void)
                 ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
                 memcpy(ceiling, save_p, sizeof(*ceiling));
                 save_p += sizeof(*ceiling);
-                ceiling->sector = &sectors[LONG(ceiling->sector)];
+                ceiling->sector = &sectors[ LE_SWAP32((uint32_t)ceiling->sector) ];
                 ceiling->sector->ceilingdata = ceiling;
 
                 if (ceiling->thinker.function.acp1)
@@ -1410,9 +1413,9 @@ void P_UnArchiveThinkers(void)
                 door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
                 memcpy(door, save_p, sizeof(*door));
                 save_p += sizeof(*door);
-                door->sector = &sectors[LONG(door->sector)];
+                door->sector = &sectors[ LE_SWAP32((uint32_t)door->sector) ];
                 door->sector->ceilingdata = door;
-                door->line = &lines[LONG(door->line)];
+                door->line = &lines[ LE_SWAP32((uint32_t)door->line) ];
                 door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
                 P_AddThinker(&door->thinker);
                 break;
@@ -1422,7 +1425,7 @@ void P_UnArchiveThinkers(void)
                 floor = Z_Malloc(sizeof(*floor), PU_LEVEL, NULL);
                 memcpy(floor, save_p, sizeof(*floor));
                 save_p += sizeof(*floor);
-                floor->sector = &sectors[LONG(floor->sector)];
+                floor->sector = &sectors[ LE_SWAP32((uint32_t)floor->sector) ];
                 floor->sector->floordata = floor;
                 floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
                 P_AddThinker(&floor->thinker);
@@ -1433,7 +1436,7 @@ void P_UnArchiveThinkers(void)
                 plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
                 memcpy(plat, save_p, sizeof(*plat));
                 save_p += sizeof(*plat);
-                plat->sector = &sectors[LONG(plat->sector)];
+                plat->sector = &sectors[ LE_SWAP32((uint32_t)plat->sector)];
                 plat->sector->floordata = plat;
 
                 if (plat->thinker.function.acp1)
@@ -1448,7 +1451,7 @@ void P_UnArchiveThinkers(void)
                 flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
                 memcpy(flash, save_p, sizeof(*flash));
                 save_p += sizeof(*flash);
-                flash->sector = &sectors[LONG(flash->sector)];
+                flash->sector = &sectors[ LE_SWAP32((uint32_t)flash->sector)];
                 flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
                 P_AddThinker(&flash->thinker);
                 break;
@@ -1458,7 +1461,7 @@ void P_UnArchiveThinkers(void)
                 strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
                 memcpy(strobe, save_p, sizeof(*strobe));
                 save_p += sizeof(*strobe);
-                strobe->sector = &sectors[LONG(strobe->sector)];
+                strobe->sector = &sectors[ LE_SWAP32((uint32_t)strobe->sector)];
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
                 P_AddThinker(&strobe->thinker);
                 break;
@@ -1468,7 +1471,7 @@ void P_UnArchiveThinkers(void)
                 glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
                 memcpy(glow, save_p, sizeof(*glow));
                 save_p += sizeof(*glow);
-                glow->sector = &sectors[LONG(glow->sector)];
+                glow->sector = &sectors[ LE_SWAP32((uint32_t)glow->sector)];
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
                 P_AddThinker(&glow->thinker);
                 break;
@@ -1478,7 +1481,7 @@ void P_UnArchiveThinkers(void)
                 fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
                 memcpy(fireflicker, save_p, sizeof(*fireflicker));
                 save_p += sizeof(*fireflicker);
-                fireflicker->sector = &sectors[LONG(fireflicker->sector)];
+                fireflicker->sector = &sectors[ LE_SWAP32((uint32_t)fireflicker->sector)];
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
                 P_AddThinker(&fireflicker->thinker);
                 break;
@@ -1488,7 +1491,7 @@ void P_UnArchiveThinkers(void)
                 elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
                 memcpy(elevator, save_p, sizeof(elevator_t));
                 save_p += sizeof(elevator_t);
-                elevator->sector = &sectors[LONG(elevator->sector)];
+                elevator->sector = &sectors[ LE_SWAP32((uint32_t)elevator->sector)];
                 elevator->sector->floordata = elevator; //jff 2/22/98
                 elevator->sector->ceilingdata = elevator;       //jff 2/22/98
                 elevator->thinker.function.acp1 = (actionf_p1) T_MoveElevator;

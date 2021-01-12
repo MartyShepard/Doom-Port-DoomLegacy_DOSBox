@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 588 2010-01-08 04:08:18Z wesleyjohnson $
+// $Id: w_wad.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -165,10 +165,6 @@
 int strupr(char *n); // from dosstr.c
 int strlwr(char *n); // from dosstr.c
 #endif
-
-// [WDJ] temp defines until fix m_swap
-//#define LE_SWAP16(x)   LE_SHORT(x)
-//#define LE_SWAP32(x)   LE_LONG(x)
 
 //===========================================================================
 //                                                                    GLOBALS
@@ -628,7 +624,7 @@ int W_GetNumForName (char* name)
         if (!strcmp(name, "PLAYPAL"))
         {
         //Hurdler: I'm tired of that question ;)
-        I_Error ("Main WAD file not found (do not use doom3.wad or legacy.wad)\n"
+        I_Error ("Main WAD file not found (do not use doom3.wad or legacy.dat)\n"
                  "You need either Doom.wad, Doom1.wad, Doom2.wad,\n"
                  "Tnt.wad, Plutonia.wad, Heretic.wad or Heretic1.wad\n"
                  "from any shareware or commercial version of Doom or Heretic!\n");

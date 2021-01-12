@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 575 2009-11-30 03:19:30Z wesleyjohnson $
+// $Id: r_things.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -334,7 +334,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     int         frame;
     int         rotation;
     lumpinfo_t* lumpinfo;
-    patch_t     patch;
+    patch_t     patch;	// temp for read header
 
     intname = *(int *)sprname;
 
@@ -370,18 +370,26 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
             // store sprite info in lookup tables
             //FIXME:numspritelumps do not duplicate sprite replacements
-            W_ReadLumpHeader ((wadnum<<16)+l, &patch, sizeof(patch_t));
-            spritewidth[numspritelumps] = SHORT(patch.width)<<FRACBITS;
-            spriteoffset[numspritelumps] = SHORT(patch.leftoffset)<<FRACBITS;
-            spritetopoffset[numspritelumps] = SHORT(patch.topoffset)<<FRACBITS;
-            spriteheight[numspritelumps] = SHORT(patch.height)<<FRACBITS;
+            W_ReadLumpHeader ((wadnum<<16)+l, &patch, sizeof(patch_t)); // to temp
+	    // [WDJ] Do endian while translate temp to internal.
+            spritewidth[numspritelumps] = LE_SWAP16(patch.width)<<FRACBITS;
+            spriteoffset[numspritelumps] = LE_SWAP16(patch.leftoffset)<<FRACBITS;
+            spritetopoffset[numspritelumps] = LE_SWAP16(patch.topoffset)<<FRACBITS;
+            spriteheight[numspritelumps] = LE_SWAP16(patch.height)<<FRACBITS;
 
 #ifdef HWRENDER
-            //BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
-            if( rendermode != render_soft && SHORT(patch.topoffset)>0 // not for psprite
-                && SHORT(patch.topoffset)<SHORT(patch.height))
-                // perfect is patch.height but sometime it is too high
-                spritetopoffset[numspritelumps] = min(SHORT(patch.topoffset+4),SHORT(patch.height))<<FRACBITS;
+            //BP: we cannot use special trick in hardware mode because feet in ground caused by z-buffer
+            if( rendermode != render_soft )
+	    {
+	        uint16_t p_topoffset = LE_SWAP16(patch.topoffset);
+		uint16_t p_height = LE_SWAP16(patch.height);
+	        if( p_topoffset>0 && p_topoffset<p_height) // not for psprite
+	        {
+		    // perfect is patch.height but sometime it is too high
+		    spritetopoffset[numspritelumps] =
+		       min(p_topoffset+4, p_height)<<FRACBITS;
+		}
+	    }
             
 #endif
 
@@ -777,14 +785,14 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     {
         texturecolumn = frac>>FRACBITS;
 #ifdef RANGECHECK
-        if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width)) {
+        if (texturecolumn < 0 || texturecolumn >= LE_SWAP16(patch->width)) {
 	    // [WDJ] Give msg and don't draw it
             I_SoftError ("R_DrawVisSprite: bad texturecolumn");
             return;
 	}
 #endif
         column = (column_t *) ((byte *)patch +
-                               LONG(patch->columnofs[texturecolumn]));
+                               LE_SWAP32(patch->columnofs[texturecolumn]));
         R_DrawMaskedColumn (column);
     }
 

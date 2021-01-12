@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 583 2009-12-03 07:56:51Z smite-meister $
+// $Id: p_setup.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -339,7 +339,8 @@ void P_LoadVertexes (int lump)
     vertexes = Z_Malloc (numvertexes*sizeof(vertex_t),PU_LEVEL,0);
 
     // Load data into cache.
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);  // vertex lump temp
+    // [WDJ] Do endian as read from vertex lump temp
 
     ml = (mapvertex_t *)data;
     li = vertexes;
@@ -348,8 +349,8 @@ void P_LoadVertexes (int lump)
     // internal representation as fixed.
     for (i=0 ; i<numvertexes ; i++, li++, ml++)
     {
-        li->x = SHORT(ml->x)<<FRACBITS;
-        li->y = SHORT(ml->y)<<FRACBITS;
+        li->x = LE_SWAP16(ml->x)<<FRACBITS;
+        li->y = LE_SWAP16(ml->y)<<FRACBITS;
     }
 
     // Free buffer memory.
@@ -390,14 +391,15 @@ void P_LoadSegs (int lump)
     numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
     segs = Z_Malloc (numsegs*sizeof(seg_t),PU_LEVEL,0);
     memset (segs, 0, numsegs*sizeof(seg_t));
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);	// segs lump temp
+    // [WDJ] Do endian as read from segs lump temp
 
     ml = (mapseg_t *)data;
     li = segs;
     for (i=0 ; i<numsegs ; i++, li++, ml++)
     {
-        li->v1 = &vertexes[SHORT(ml->v1)];
-        li->v2 = &vertexes[SHORT(ml->v2)];
+        li->v1 = &vertexes[LE_SWAP16(ml->v1)];
+        li->v2 = &vertexes[LE_SWAP16(ml->v2)];
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
         // used for the hardware render
@@ -409,12 +411,12 @@ void P_LoadSegs (int lump)
         }
 #endif
 
-        li->angle = (SHORT(ml->angle))<<16;
-        li->offset = (SHORT(ml->offset))<<16;
-        linedef = SHORT(ml->linedef);
+        li->angle = (LE_SWAP16(ml->angle))<<16;
+        li->offset = (LE_SWAP16(ml->offset))<<16;
+        linedef = LE_SWAP16(ml->linedef);
         ldef = &lines[linedef];
         li->linedef = ldef;
-        li->side = side = SHORT(ml->side);
+        li->side = side = LE_SWAP16(ml->side);
         li->sidedef = &sides[ldef->sidenum[side]];
         li->frontsector = sides[ldef->sidenum[side]].sector;
         if (ldef-> flags & ML_TWOSIDED)
@@ -442,7 +444,8 @@ void P_LoadSubsectors (int lump)
 
     numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
     subsectors = Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);	// subsectors lump temp
+    // [WDJ] Do endian as read from subsectors temp lump
 
     ms = (mapsubsector_t *)data;
     memset (subsectors,0, numsubsectors*sizeof(subsector_t));
@@ -450,8 +453,8 @@ void P_LoadSubsectors (int lump)
 
     for (i=0 ; i<numsubsectors ; i++, ss++, ms++)
     {
-        ss->numlines = SHORT(ms->numsegs);
-        ss->firstline = SHORT(ms->firstseg);
+        ss->numlines = LE_SWAP16(ms->numsegs);
+        ss->firstline = LE_SWAP16(ms->firstseg);
     }
 
     Z_Free (data);
@@ -576,7 +579,8 @@ void P_LoadSectors (int lump)
     numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
     sectors = Z_Malloc (numsectors*sizeof(sector_t),PU_LEVEL,0);
     memset (sectors, 0, numsectors*sizeof(sector_t));
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);	// mapsector lump temp
+    // [WDJ] Fix endian as transfer from temp to internal.
 
     //Fab:FIXME: allocate for whatever number of flats
     //           512 different flats per level should be plenty
@@ -587,12 +591,12 @@ void P_LoadSectors (int lump)
 
     numlevelflats = 0;
 
-    ms = (mapsector_t *)data;
+    ms = (mapsector_t *)data;	// ms will be ++
     ss = sectors;
     for (i=0 ; i<numsectors ; i++, ss++, ms++)
     {
-        ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
-        ss->ceilingheight = SHORT(ms->ceilingheight)<<FRACBITS;
+        ss->floorheight = LE_SWAP16(ms->floorheight)<<FRACBITS;
+        ss->ceilingheight = LE_SWAP16(ms->ceilingheight)<<FRACBITS;
 
         //
         //  flats
@@ -614,9 +618,9 @@ void P_LoadSectors (int lump)
         ss->floorpic = P_AddLevelFlat (ms->floorpic,foundflats);
         ss->ceilingpic = P_AddLevelFlat (ms->ceilingpic,foundflats);
 
-        ss->lightlevel = SHORT(ms->lightlevel);
-        ss->special = SHORT(ms->special);
-        ss->tag = SHORT(ms->tag);
+        ss->lightlevel = LE_SWAP16(ms->lightlevel);
+        ss->special = LE_SWAP16(ms->special);
+        ss->tag = LE_SWAP16(ms->tag);
 
         //added:31-03-98: quick hack to test water with DCK
 /*        if (ss->tag < 0)
@@ -685,22 +689,23 @@ void P_LoadNodes (int lump)
 
     numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
     nodes = Z_Malloc (numnodes*sizeof(node_t),PU_LEVEL,0);
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);  // mapnode_t array temp
+    // [WDJ] Fix endian as transfer from temp to internal.
 
     mn = (mapnode_t *)data;
     no = nodes;
 
     for (i=0 ; i<numnodes ; i++, no++, mn++)
     {
-        no->x = SHORT(mn->x)<<FRACBITS;
-        no->y = SHORT(mn->y)<<FRACBITS;
-        no->dx = SHORT(mn->dx)<<FRACBITS;
-        no->dy = SHORT(mn->dy)<<FRACBITS;
+        no->x = LE_SWAP16(mn->x)<<FRACBITS;
+        no->y = LE_SWAP16(mn->y)<<FRACBITS;
+        no->dx = LE_SWAP16(mn->dx)<<FRACBITS;
+        no->dy = LE_SWAP16(mn->dy)<<FRACBITS;
         for (j=0 ; j<2 ; j++)
         {
-            no->children[j] = SHORT(mn->children[j]);
+            no->children[j] = LE_SWAP16(mn->children[j]);
             for (k=0 ; k<4 ; k++)
-                no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
+                no->bbox[j][k] = LE_SWAP16(mn->bbox[j][k])<<FRACBITS;
         }
     }
 
@@ -717,7 +722,8 @@ void P_LoadThings (int lump)
     boolean             spawn;
     byte                *data, *datastart;
 
-    data = datastart = W_CacheLumpNum (lump,PU_LEVEL);
+    data = datastart = W_CacheLumpNum (lump,PU_LEVEL);  // temp things lump
+    // [WDJ] Do endian as read from temp things lump
     nummapthings     = W_LumpLength (lump) / (5 * sizeof(short));
     mapthings        = Z_Malloc(nummapthings * sizeof(mapthing_t), PU_LEVEL, NULL);
 
@@ -762,17 +768,18 @@ void P_LoadLineDefs (int lump)
     numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
     lines = Z_Malloc (numlines*sizeof(line_t),PU_LEVEL,0);
     memset (lines, 0, numlines*sizeof(line_t));
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);	// temp linedefs array
+    // [WDJ] Fix endian as transfer from lump temp to internal.
 
     mld = (maplinedef_t *)data;
     ld = lines;
     for (i=0 ; i<numlines ; i++, mld++, ld++)
     {
-        ld->flags = SHORT(mld->flags);
-        ld->special = SHORT(mld->special);
-        ld->tag = SHORT(mld->tag);
-        v1 = ld->v1 = &vertexes[SHORT(mld->v1)];
-        v2 = ld->v2 = &vertexes[SHORT(mld->v2)];
+        ld->flags = LE_SWAP16(mld->flags);
+        ld->special = LE_SWAP16(mld->special);
+        ld->tag = LE_SWAP16(mld->tag);
+        v1 = ld->v1 = &vertexes[ LE_SWAP16(mld->v1) ];
+        v2 = ld->v2 = &vertexes[ LE_SWAP16(mld->v2) ];
         ld->dx = v2->x - v1->x;
         ld->dy = v2->y - v1->y;
 
@@ -810,8 +817,8 @@ void P_LoadLineDefs (int lump)
             ld->bbox[BOXTOP] = v1->y;
         }
 
-        ld->sidenum[0] = SHORT(mld->sidenum[0]);
-        ld->sidenum[1] = SHORT(mld->sidenum[1]);
+        ld->sidenum[0] = LE_SWAP16(mld->sidenum[0]);
+        ld->sidenum[1] = LE_SWAP16(mld->sidenum[1]);
 
         if (ld->sidenum[0] != -1 && ld->special)
           sides[ld->sidenum[0]].special = ld->special;
@@ -840,11 +847,12 @@ void P_LoadLineDefs2()
   }
 }
 
-
+#if 0
+// See two part load of sidedefs, with special texture interpretation
 //
 // P_LoadSideDefs
 //
-/*void P_LoadSideDefs (int lump)
+void P_LoadSideDefs (int lump)
 {
     byte*               data;
     int                 i;
@@ -854,24 +862,28 @@ void P_LoadLineDefs2()
     numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
     sides = Z_Malloc (numsides*sizeof(side_t),PU_LEVEL,0);
     memset (sides, 0, numsides*sizeof(side_t));
-    data = W_CacheLumpNum (lump,PU_STATIC);
+    data = W_CacheLumpNum (lump,PU_STATIC);  // sidedefs temp lump
+    // [WDJ] Do endian as read from temp sidedefs lump
 
     msd = (mapsidedef_t *)data;
     sd = sides;
     for (i=0 ; i<numsides ; i++, msd++, sd++)
     {
-        sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
-        sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
+        sd->textureoffset = LE_SWAP16(msd->textureoffset)<<FRACBITS;
+        sd->rowoffset = LE_SWAP16(msd->rowoffset)<<FRACBITS;
         sd->toptexture = R_TextureNumForName(msd->toptexture);
         sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
         sd->midtexture = R_TextureNumForName(msd->midtexture);
 
-        sd->sector = &sectors[SHORT(msd->sector)];
+        sd->sector = &sectors[LE_SWAP16(msd->sector)];
     }
 
     Z_Free (data);
-}*/
+}
+#endif
 
+// Two part load of sidedefs
+// [WDJ] Do endian conversion in part2
 void P_LoadSideDefs (int lump)
 {
   numsides = W_LumpLength(lump) / sizeof(mapsidedef_t);
@@ -886,27 +898,28 @@ int R_ColormapNumForName(char *name);
 
 void P_LoadSideDefs2(int lump)
 {
-  byte *data = W_CacheLumpNum(lump,PU_STATIC);
+  byte *data = W_CacheLumpNum(lump,PU_STATIC);  // sidedefs temp lump
+  // [WDJ] Do endian as read from temp sidedefs lump
   int  i;
   int  num;
   int  mapnum;
 
   for (i=0; i<numsides; i++)
-    {
+  {
       register mapsidedef_t *msd = (mapsidedef_t *) data + i;
       register side_t *sd = sides + i;
       register sector_t *sec;
 
-      sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
-      sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
+      sd->textureoffset = LE_SWAP16(msd->textureoffset)<<FRACBITS;
+      sd->rowoffset = LE_SWAP16(msd->rowoffset)<<FRACBITS;
 
       // refined to allow colormaps to work as wall textures
       // if invalid as colormaps, but valid as textures.
 
-      sd->sector = sec = &sectors[SHORT(msd->sector)];
+      sd->sector = sec = &sectors[LE_SWAP16(msd->sector)];
       // original linedef types are 1..141, higher values are extensions
       switch (sd->special)
-        {
+      {
         case 242:	// Boom deep water, sidedef1 texture is colormap
         case 280:       //SoM: 3/22/2000: Legacy water type.
 #ifdef HWRENDER
@@ -1091,8 +1104,8 @@ void P_LoadSideDefs2(int lump)
           sd->toptexture = R_TextureNumForName(msd->toptexture);
           sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
           break;
-        }
-    }
+      }
+  }
   Z_Free (data);
 }
 
@@ -1107,9 +1120,10 @@ void P_LoadBlockMap (int lump)
   long count;
 
   count = W_LumpLength(lump)/2;
-    {
+  {
       long i;
-      short *wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL);
+      short *wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL); // blockmap lump temp
+      // [WDJ] Do endian as read from blockmap lump temp
       blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
       // killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1117,16 +1131,16 @@ void P_LoadBlockMap (int lump)
       // them. This potentially doubles the size of blockmaps allowed,
       // because Doom originally considered the offsets as always signed.
 
-      blockmaplump[0] = SHORT(wadblockmaplump[0]);
-      blockmaplump[1] = SHORT(wadblockmaplump[1]);
-      blockmaplump[2] = (long)(SHORT(wadblockmaplump[2])) & 0xffff;
-      blockmaplump[3] = (long)(SHORT(wadblockmaplump[3])) & 0xffff;
+      blockmaplump[0] = LE_SWAP16(wadblockmaplump[0]);
+      blockmaplump[1] = LE_SWAP16(wadblockmaplump[1]);
+      blockmaplump[2] = (long)(LE_SWAP16(wadblockmaplump[2])) & 0xffff;
+      blockmaplump[3] = (long)(LE_SWAP16(wadblockmaplump[3])) & 0xffff;
 
       for (i=4 ; i<count ; i++)
-        {
-          short t = SHORT(wadblockmaplump[i]);          // killough 3/1/98
+      {
+          short t = LE_SWAP16(wadblockmaplump[i]);          // killough 3/1/98
           blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
-        }
+      }
 
       Z_Free(wadblockmaplump);
 
@@ -1134,7 +1148,7 @@ void P_LoadBlockMap (int lump)
       bmaporgy = blockmaplump[1]<<FRACBITS;
       bmapwidth = blockmaplump[2];
       bmapheight = blockmaplump[3];
-    }
+  }
 
   // clear out mobj chains
   count = sizeof(*blocklinks)* bmapwidth*bmapheight;
@@ -1148,7 +1162,7 @@ void P_LoadBlockMap (int lump)
 		count = W_LumpLength (lump)/2;
 
 		for (i=0 ; i<count ; i++)
-			blockmaplump[i] = SHORT(blockmaplump[i]);
+			blockmaplump[i] = LE_SWAP16(blockmaplump[i]);
 
 		bmaporgx = blockmaplump[0]<<FRACBITS;
 		bmaporgy = blockmaplump[1]<<FRACBITS;
@@ -1159,7 +1173,8 @@ void P_LoadBlockMap (int lump)
 	// clear out mobj chains
 	count = sizeof(*blocklinks)*bmapwidth*bmapheight;
 	blocklinks = Z_Malloc (count,PU_LEVEL, 0);
-	memset (blocklinks, 0, count);*/
+	memset (blocklinks, 0, count);
+ */
 }
 
 

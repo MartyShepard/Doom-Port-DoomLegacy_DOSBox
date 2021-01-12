@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: r_segs.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -319,7 +319,7 @@ static void R_DrawWallSplats ()
         mfloorclip = floorclip;
         mceilingclip = ceilingclip;
 
-        patch = W_CachePatchNum (splat->patch, PU_CACHE);
+        patch = W_CachePatchNum (splat->patch, PU_CACHE); // endian fix
 
         // clip splat range to seg range left
         /*if (x1 < ds_p->x1)
@@ -330,10 +330,10 @@ static void R_DrawWallSplats ()
         // clip splat range to seg range right
 
 
-        // SoM: This is set allready. THIS IS WHAT WAS CAUSING PROBLEMS WITH
+        // SoM: This is set already. THIS IS WHAT WAS CAUSING PROBLEMS WITH
         // BOOM WATER!
         // frontsector = ds_p->curline->frontsector;
-        dc_texturemid = splat->top + (SHORT(patch->height)<<(FRACBITS-1)) - viewz;
+        dc_texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
         if( splat->yoffset )
             dc_texturemid += *splat->yoffset;
 
@@ -390,14 +390,14 @@ static void R_DrawWallSplats ()
 
             // FIXME !
 //            CONS_Printf ("%.2f width %d, %d[x], %.1f[off]-%.1f[soff]-tg(%d)=%.1f*%.1f[d] = %.1f\n", 
-//                         FIXED_TO_FLOAT(texturecolumn), SHORT(patch->width),
+//                         FIXED_TO_FLOAT(texturecolumn), patch->width,
 //                         dc_x,FIXED_TO_FLOAT(rw_offset2),FIXED_TO_FLOAT(splat->offset),angle,FIXED_TO_FLOAT(finetangent[angle]),FIXED_TO_FLOAT(rw_distance),FIXED_TO_FLOAT(FixedMul(finetangent[angle],rw_distance)));
             texturecolumn >>= FRACBITS;
-            if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width)) 
+            if (texturecolumn < 0 || texturecolumn >= patch->width) 
                 continue;
 
             // draw the texture
-            col = (column_t *) ((byte *)patch + LONG(patch->columnofs[texturecolumn]));
+            col = (column_t *) ((byte *)patch + patch->columnofs[texturecolumn]);
             R_DrawSplatColumn (col);
 
         }

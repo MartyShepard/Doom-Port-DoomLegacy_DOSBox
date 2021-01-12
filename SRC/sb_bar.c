@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: sb_bar.c 589 2010-01-08 04:13:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -115,6 +115,7 @@ static player_t *CPlayer;
 int playpalette;
 int UpdateState;
 
+// [WDJ] all patches loaded by CachePatch and are saved endian fixed
 patch_t *PatchLTFACE;
 patch_t *PatchRTFACE;
 patch_t *PatchBARBACK;
@@ -159,6 +160,7 @@ void SB_Init(void)
         int i;
         int startLump;
 
+        // [WDJ] all patches are endian fixed
         PatchLTFACE = W_CachePatchName("LTFACE", PU_STATIC);
         PatchRTFACE = W_CachePatchName("RTFACE", PU_STATIC);
         PatchBARBACK = W_CachePatchName("BARBACK", PU_STATIC);
@@ -274,7 +276,7 @@ static void DrINumber(signed int val, int x, int y)
         {
                 if(val < -9)
                 {
-                        V_DrawScaledPatch(x+1, y+1, fgbuffer, W_CachePatchName("LAME", PU_CACHE));
+                        V_DrawScaledPatch_Name(x+1, y+1, fgbuffer, "LAME");
                 }
                 else
                 {
@@ -475,7 +477,7 @@ void SB_Drawer( boolean refresh )
 
 
     CPlayer = &players[displayplayer];
-    if( !st_statusbaron )
+    if( !st_statusbar_on )
     {
         if( cv_viewsize.value == 11 )
         {
@@ -493,8 +495,8 @@ void SB_Drawer( boolean refresh )
             V_DrawScaledPatch(st_x, ST_Y, fgbuffer, PatchBARBACK);
             if(players[consoleplayer].cheats&CF_GODMODE)
             {
-                V_DrawScaledPatch(st_x+16, ST_Y+9, fgbuffer, W_CachePatchName("GOD1", PU_CACHE));
-                V_DrawScaledPatch(st_x+287, ST_Y+9, fgbuffer, W_CachePatchName("GOD2", PU_CACHE));
+                V_DrawScaledPatch_Name(st_x+16, ST_Y+9, fgbuffer, "GOD1");
+                V_DrawScaledPatch_Name(st_x+287, ST_Y+9, fgbuffer, "GOD2");
             }
             oldhealth = -1;
         }
@@ -539,13 +541,11 @@ void SB_Drawer( boolean refresh )
             {
                 if(hitCenterFrame && (frame != 15 && frame != 0))
                 {
-                    V_DrawScaledPatch(20, 17, FG, W_CachePatchNum(spinflylump+15,
-                        PU_CACHE));
+                    V_DrawScaledPatch_Num(20, 17, FG, spinflylump+15);
                 }
                 else
                 {
-                    V_DrawScaledPatch(20, 17, FG, W_CachePatchNum(spinflylump+frame,
-                        PU_CACHE));
+                    V_DrawScaledPatch_Num(20, 17, FG, spinflylump+frame);
                     hitCenterFrame = false;
                 }
             }
@@ -553,14 +553,12 @@ void SB_Drawer( boolean refresh )
             {
                 if(!hitCenterFrame && (frame != 15 && frame != 0))
                 {
-                    V_DrawScaledPatch(20, 17, FG, W_CachePatchNum(spinflylump+frame,
-                        PU_CACHE));
+                    V_DrawScaledPatch_Num(20, 17, FG, spinflylump+frame);
                     hitCenterFrame = false;
                 }
                 else
                 {
-                    V_DrawScaledPatch(20, 17, FG, W_CachePatchNum(spinflylump+15,
-                        PU_CACHE));
+                    V_DrawScaledPatch_Num(20, 17, FG, spinflylump+15);
                     hitCenterFrame = true;
                 }
             }
@@ -580,7 +578,7 @@ void SB_Drawer( boolean refresh )
             || !(CPlayer->powers[pw_weaponlevel2]&16))
         {
             frame = (leveltime/3)&15;
-            V_DrawScaledPatch(300, 17, FG, W_CachePatchNum(spinbooklump+frame, PU_CACHE));
+            V_DrawScaledPatch_Num(300, 17, FG, spinbooklump+frame);
             //                  BorderTopRefresh = true;
             //                  UpdateState |= I_MESSAGES;
         }
@@ -594,7 +592,7 @@ void SB_Drawer( boolean refresh )
     if(CPlayer->powers[pw_weaponlevel2] > BLINKTHRESHOLD
     || (CPlayer->powers[pw_weaponlevel2]&8))
     {
-    V_DrawScaledPatch(st_x+291, 0, 0, W_CachePatchName("ARTIPWBK", PU_CACHE));
+    V_DrawScaledPatch_Name(st_x+291, 0, 0, "ARTIPWBK");
     }
     else
     {
@@ -725,8 +723,10 @@ static void DrawMainBar(void)
         if(ArtifactFlash)
         {
                 V_DrawScaledPatch(st_x+180, ST_Y+3, fgbuffer, PatchBLACKSQ);
-                V_DrawScaledPatch(st_x+182, ST_Y+3, fgbuffer, W_CachePatchNum(W_GetNumForName("useartia")
-                        + ArtifactFlash - 1, PU_CACHE));
+                V_DrawScaledPatch(st_x+182, ST_Y+3, fgbuffer,
+			W_CachePatchNum(
+			   W_GetNumForName("useartia") + ArtifactFlash - 1,
+					PU_CACHE));
                 ArtifactFlash--;
                 oldarti = -1; // so that the correct artifact fills in after the flash
                 UpdateState |= I_STATBAR;
@@ -737,8 +737,8 @@ static void DrawMainBar(void)
                 V_DrawScaledPatch(st_x+180, ST_Y+3, fgbuffer, PatchBLACKSQ);
                 if( CPlayer->inventory[CPlayer->inv_ptr].type > 0 )
                 {
-                        V_DrawScaledPatch(st_x+179,ST_Y+2, fgbuffer, 
-                            W_CachePatchName(patcharti[CPlayer->inventory[CPlayer->inv_ptr].type], PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+179,ST_Y+2, fgbuffer, 
+                            patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
                         DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, st_x+201, ST_Y+24);
                 }
                 oldarti = CPlayer->inv_ptr;
@@ -775,15 +775,15 @@ static void DrawMainBar(void)
         {
                 if(CPlayer->cards & it_yellowcard)
                 {
-                        V_DrawScaledPatch(st_x+153, ST_Y+6, fgbuffer, W_CachePatchName("ykeyicon", PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+153, ST_Y+6, fgbuffer, "ykeyicon");
                 }
                 if(CPlayer->cards & it_redcard)
                 {
-                        V_DrawScaledPatch(st_x+153, ST_Y+14, fgbuffer, W_CachePatchName("gkeyicon", PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+153, ST_Y+14, fgbuffer, "gkeyicon");
                 }
                 if(CPlayer->cards & it_bluecard)
                 {
-                        V_DrawScaledPatch(st_x+153, ST_Y+22, fgbuffer, W_CachePatchName("bkeyicon", PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+153, ST_Y+22, fgbuffer, "bkeyicon");
                 }
                 oldkeys = playerkeys;
                 UpdateState |= I_STATBAR;
@@ -796,8 +796,8 @@ static void DrawMainBar(void)
                 if(temp && CPlayer->readyweapon > 0 && CPlayer->readyweapon < 7)
                 {
                         DrINumber(temp, st_x+109, ST_Y+4);
-                        V_DrawScaledPatch(st_x+111, ST_Y+14, fgbuffer, W_CachePatchName(
-                                ammopic[CPlayer->readyweapon-1], PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+111, ST_Y+14, fgbuffer,
+                                ammopic[CPlayer->readyweapon-1]);
                 }
                 oldammo = temp;
                 oldweapon = CPlayer->readyweapon;
@@ -834,21 +834,21 @@ static void DrawInventoryBar(void)
                 if(CPlayer->inventorySlotNum > x+i
                         && CPlayer->inventory[x+i].type != arti_none)
                 {
-                        V_DrawScaledPatch(st_x+50+i*31, ST_Y+2, fgbuffer, W_CachePatchName(
-                                patcharti[CPlayer->inventory[x+i].type], PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+50+i*31, ST_Y+2, fgbuffer,
+                                patcharti[CPlayer->inventory[x+i].type]);
                         DrSmallNumber(CPlayer->inventory[x+i].count, st_x+69+i*31, ST_Y+24);
                 }
         }
         V_DrawScaledPatch(st_x+50+CPlayer->st_curpos*31, ST_Y+31, fgbuffer, PatchSELECTBOX);
         if(x != 0)
         {
-                V_DrawScaledPatch(st_x+38, ST_Y+1, fgbuffer, !(leveltime&4) ? PatchINVLFGEM1 :
-                        PatchINVLFGEM2);
+                V_DrawScaledPatch(st_x+38, ST_Y+1, fgbuffer,
+			!(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
         }
         if(CPlayer->inventorySlotNum-x > 7)
         {
-                V_DrawScaledPatch(st_x+269, ST_Y+1, fgbuffer, !(leveltime&4) ?
-                        PatchINVRTGEM1 : PatchINVRTGEM2);
+                V_DrawScaledPatch(st_x+269, ST_Y+1, fgbuffer,
+			!(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
         }
 }
 
@@ -874,8 +874,8 @@ static void DrawFullScreenStuff(void)
                 {
                         V_DrawFuzzPatch(st_x+286, ST_Y+12, W_CachePatchName("ARTIBOX",
                                 PU_CACHE));
-                        V_DrawScaledPatch(st_x+286, ST_Y+12, fgbuffer, 
-                                W_CachePatchName(patcharti[CPlayer->inventory[CPlayer->inv_ptr].type], PU_CACHE));
+                        V_DrawScaledPatch_Name(st_x+286, ST_Y+12, fgbuffer, 
+                                patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
                         DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, st_x+307, ST_Y+34);
                 }
         }
@@ -889,21 +889,21 @@ static void DrawFullScreenStuff(void)
                         if(CPlayer->inventorySlotNum > x+i
                                 && CPlayer->inventory[x+i].type != arti_none)
                         {
-                                V_DrawScaledPatch(st_x+50+i*31, ST_Y+10, fgbuffer, W_CachePatchName(
-                                        patcharti[CPlayer->inventory[x+i].type], PU_CACHE));
+                                V_DrawScaledPatch_Name(st_x+50+i*31, ST_Y+10, fgbuffer,
+                                        patcharti[CPlayer->inventory[x+i].type]);
                                 DrSmallNumber(CPlayer->inventory[x+i].count, 69+i*31, ST_Y+32);
                         }
                 }
                 V_DrawScaledPatch(st_x+50+CPlayer->st_curpos*31, ST_Y+39, fgbuffer, PatchSELECTBOX);
                 if(x != 0)
                 {
-                        V_DrawScaledPatch(st_x+38, ST_Y+9, fgbuffer, !(leveltime&4) ? PatchINVLFGEM1 :
-                                PatchINVLFGEM2);
+                        V_DrawScaledPatch(st_x+38, ST_Y+9, fgbuffer,
+				!(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
                 }
                 if(CPlayer->inventorySlotNum-x > 7)
                 {
-                        V_DrawScaledPatch(st_x+269, ST_Y+9, fgbuffer, !(leveltime&4) ?
-                                PatchINVRTGEM1 : PatchINVRTGEM2);
+                        V_DrawScaledPatch(st_x+269, ST_Y+9, fgbuffer,
+				!(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
                 }
         }
 }
