@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: r_data.c 583 2009-12-03 07:56:51Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -563,16 +563,21 @@ void R_LoadTextures (void)
     numtextures = numtextures1 + numtextures2;
 
 
-    //faB : there is actually 5 buffers allocated in one for convenience
+    // [smite] separate allocations, fewer horrible bugs
     if (textures)
-        Z_Free (textures);
+      {
+	Z_Free(textures);
+	Z_Free(texturecolumnofs);
+	Z_Free(texturecache);
+	Z_Free(texturewidthmask);
+	Z_Free(textureheight);
+      }
 
-    textures         = Z_Malloc (numtextures*4*5, PU_STATIC, 0);
-
-    texturecolumnofs = (void*)((int*)textures + numtextures);
-    texturecache     = (void*)((int*)textures + numtextures*2);
-    texturewidthmask = (void*)((int*)textures + numtextures*3);
-    textureheight    = (void*)((int*)textures + numtextures*4);
+    textures         = Z_Malloc(numtextures * sizeof(*textures),         PU_STATIC, 0);
+    texturecolumnofs = Z_Malloc(numtextures * sizeof(*texturecolumnofs), PU_STATIC, 0);
+    texturecache     = Z_Malloc(numtextures * sizeof(*texturecache),     PU_STATIC, 0);
+    texturewidthmask = Z_Malloc(numtextures * sizeof(*texturewidthmask), PU_STATIC, 0);
+    textureheight    = Z_Malloc(numtextures * sizeof(*textureheight),    PU_STATIC, 0);
 
     for (i=0 ; i<numtextures ; i++, directory++)
     {

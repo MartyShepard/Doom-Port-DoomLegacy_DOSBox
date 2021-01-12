@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00583 ]: more 64-bit bugfixes
 [00582 ]: 64-bit fixes
 [00581*]: WDJlog
 [00580 ]: Gamma table generators, GAMMA_FUNCS

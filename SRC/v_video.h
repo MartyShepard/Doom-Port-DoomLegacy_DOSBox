@@ -84,7 +84,6 @@ extern  byte*   screens[5];
 
 extern  int     dirtybox[4];
 
-//extern  byte    gammatable[5][256];
 extern  consvar_t cv_ticrate;
 extern  consvar_t cv_usegamma;
 #ifdef GAMMA_FUNCS
