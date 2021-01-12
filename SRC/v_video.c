@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: v_video.c 591 2010-01-19 21:05:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -189,7 +189,12 @@ static void R_BuildGammaTable(float gamma)
 
   // calculate gammatable anew each time
   for (i=0; i<256; i++)
-    gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
+#ifdef __USE_ISOC99
+    // round is ISOC99
+     gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
+#else
+    gammatable[i] = rint(255.0*pow((i+1)/256.0, gamma));
+#endif
 }
 
 
