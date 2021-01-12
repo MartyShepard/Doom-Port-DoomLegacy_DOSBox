@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: v_video.c 580 2009-12-01 20:26:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -148,30 +148,228 @@
 #include "hardware/hw_glob.h"
 #endif
 
+
 // Each screen is [vid.width*vid.height];
 byte *screens[5];
 
-
-
-CV_PossibleValue_t gamma_cons_t[] = { {0, "MIN"}, {4, "MAX"}, {0, NULL} };
-void CV_usegamma_OnChange();
-consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
 consvar_t cv_ticrate = { "vid_ticrate", "0", 0, CV_OnOff, NULL };
 
+void CV_usegamma_OnChange();
+
+#ifdef GAMMA_FUNCS
+void CV_gammafunc_OnChange();
+// In m_menu.c
+void MenuGammaFunc_dependencies( byte gamma_en,
+				 byte black_en, byte bright_en );
+
+CV_PossibleValue_t gamma_func_t[] = {
+   {0,"Gamma"},
+   {1,"Gamma_black"},
+   {2,"Gamma_bright_black"},
+   {3,"Linear"},
+   {0,NULL} };
+consvar_t cv_gammafunc = { "gammafunc", "0", CV_SAVE | CV_CALL, gamma_func_t, CV_gammafunc_OnChange };
+CV_PossibleValue_t gamma_bl_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
+consvar_t cv_black = { "black", "0", CV_SAVE | CV_CALL, gamma_bl_cons_t, CV_usegamma_OnChange };
+CV_PossibleValue_t gamma_br_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
+consvar_t cv_bright = { "bright", "0", CV_SAVE | CV_CALL, gamma_br_cons_t, CV_usegamma_OnChange };
+CV_PossibleValue_t gamma_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
+consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
+#else
+CV_PossibleValue_t gamma_cons_t[] = { {0, "MIN"}, {4, "MAX"}, {0, NULL} };
+consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
+#endif
+
+static byte gammatable[256];	// shared by all gamma table generators
 
 /// Build a gamma table
-static byte *R_BuildGammaTable(float gamma)
+static void R_BuildGammaTable(float gamma)
 {
-  static byte gammatable[256];
   int i;
 
   // calculate gammatable anew each time
   for (i=0; i<256; i++)
     gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
-
-  return gammatable;
 }
 
+
+#ifdef GAMMA_FUNCS
+
+// table of gamma value for each slider position
+float gamma_lookup_table[25] = {
+   1.48, 1.44, 1.4, 1.36, 1.32, 1.28, 1.24, 1.2, 1.16, 1.12, 1.08, 1.04,
+   1.0,		// doom gamma table 1   // at index 0
+   0.96, 0.92,
+   0.88,	// doom gamma table 2
+   0.836, 0.793,
+   0.75,	// doom gamma table 3
+   0.706, 0.663,
+   0.62,	// doom gamma table 4
+   0.58, 0.54,
+   0.50		// doom gamma table 5
+};
+
+inline float gamma_lookup( int ind )
+{
+   return gamma_lookup_table[ ind + 12 ];
+}
+
+static void put_gammatable( int i, float fv )
+{
+   int gv = roundf( fv );
+   if( gv < 0 ) gv = 0; 
+   if( gv > 255 ) gv = 255;
+   gammatable[i] = gv;
+}
+
+// Generate a power law table from gamma, plus a black level offset
+static void
+  R_Generate_gamma_black_table( void )
+{
+   int i;
+//   float b0 = ((float) cv_black.value ) * (16.0 / 12.0); // black
+   float b0 = ((float) cv_black.value ) / 2.0; // black
+   float pow_max = 255.0 - b0;
+   float gam = gamma_lookup( cv_usegamma.value );  // gamma
+   
+   gammatable[0] = 0;	// absolute black
+
+   for( i=1; i<=255; i++ ) {
+      float fi = ((float) i) / 255.0;
+      put_gammatable( i, b0 + (powf( fi, gam ) * pow_max) );
+   }
+}
+
+#if 0
+// Generate a power curve table from gamma,
+// with a power curve black level adjustment
+static void
+  R_Generate_gamma_black_adj_table( void )
+{
+   // limits of black adjustment
+#  define BLACK_SIZE  48
+   int i, gv;
+   float gvf;
+   float gam = gamma_lookup( cv_usegamma.value );  // gamma
+   float blkgam = gamma_lookup( cv_black.value ); // black
+   
+   gammatable[0] = 0;	// absolute black
+
+   for( i=1; i<=255; i++ ) {
+      float fi = ((float) i) / 255.0;
+      gvf = powf( fi, gam ) * 255.0;
+      if( i < BLACK_SIZE ) {
+	 // Black adjustment, using a power function over the black range.
+	 // At neutral, powf = i, so adj = powf - i.
+	 fi = ((float) i) / BLACK_SIZE;
+	 gvf += (powf( fi, blkgam ) * BLACK_SIZE) - ((float)i);
+      }
+      put_gammatable( i, gvf );
+   }
+}
+#endif
+
+// Generate a gamma with black adj, and bright adj
+static void
+  R_Generate_gamma_bright_black_table( void )
+{
+#  define BRIGHT_MIN  60
+#  define BRIGHT_MID  130
+   int i, di, start_index, end_index;
+   float bf = ((float)cv_bright.value) * (256.0 / 6.0 / 12.0);
+   float n3 = bf*bf*bf;
+   float d2 = bf*bf;
+   float gf, w0;
+   
+   R_Generate_gamma_black_table();
+   
+   // bright correct using curve: witch of agnesi
+   // y = (d**3)/(x**2 + d**2)
+   // MIN to MID
+   start_index = BRIGHT_MIN;
+   end_index = BRIGHT_MID;
+   do {
+      di = end_index - start_index;
+      w0 = (n3 / ( (di*di) + d2 )) / di; 	// witch at low point / di
+      for( i=start_index; i<=end_index; i++ ) {
+	 di = abs(BRIGHT_MID - i);
+	 gf = n3 / ( (di*di) + d2 );	// witch of agnesi
+	 gf -= w0 * di; // smooth transition on tail
+	 // add adjustment to table
+	 put_gammatable( i, gammatable[i] + gf );
+      }
+      // MID to 255
+      start_index = BRIGHT_MID + 1;
+      end_index = 255;
+   } while( i < 255 );
+}
+
+static void
+  R_Generate_smooth5_linear_gamma_table( void )
+{
+   const int bl_index = 28;
+   const int bl_ref_offset = 20; // (8 .. 28 .. 50);
+   const int wl_index = 128;
+   const int wl_ref_offset = 48; // (60 .. 128 .. 176);
+   float bl_offset = ((float) cv_black.value ) * bl_ref_offset / 12.0;
+   float wl_offset = ((float) cv_bright.value ) * wl_ref_offset / 12.0;
+   float b0 = 0.0, lf = 1.0;
+   int i, start_index, end_index, seg = 0;
+
+   // monotonic checks
+   if( (wl_offset + wl_index) < (bl_offset + bl_index + 5) ) {
+      // enforce monotonic by altering wl
+      wl_offset = bl_offset + bl_index + 5 - wl_index;
+   }
+   if( (wl_offset + wl_index) > 250.0 ) {
+      // enforce monotonic by altering wl
+      wl_offset = 250.0 - wl_index;
+   }
+   // eqn: bl_offset = ( b0 + (lf * bl_index))
+   b0 = bl_offset * 5 / 16;
+   if( b0 < 0.0 ) b0 = 0;
+   gammatable[0] = 0;	// absolute black
+   gammatable[1] = (b0 * 5)/16;	// near black
+   gammatable[2] = (b0 * 11)/16;
+   gammatable[3] = (b0 * 15)/16;
+
+   // generate rest of table in three linear segments
+   end_index = 3; // start at 4
+   for( seg=0; seg<=2; seg++ ){
+      start_index = end_index + 1;
+      switch( seg ) {
+       case 0:
+         // linear from [1] to [bl_index]
+	 end_index = bl_index;
+	 lf = (bl_offset - b0) / bl_index;
+	 break;
+       case 1:
+	 // linear from [bl_index+1] to [wl_index]
+	 // eqn: bl_index + bl_offset = bl_index + ( b0 + (lf * bl_index))
+	 // eqn: wl_index + wl_offset = wl_index + ( b0 + (lf * wl_index))
+	 end_index = wl_index;
+	 lf = ( wl_offset - bl_offset ) / ( wl_index - bl_index );
+	 b0 = bl_offset - (lf * bl_index);
+	 break;
+       case 2:
+	 // linear from [wl_index+1] to [255]
+	 end_index = 255;
+	 lf =  - wl_offset / (255 - wl_index);
+	 b0 = wl_offset - (lf * wl_index);
+	 break;
+      }
+      
+      for( i=start_index; i<=end_index; i++ ) {
+	 put_gammatable( i, (b0 + ( lf * i ) + i)); // linear
+	 // smooth over 5 using weights 3 3 4 3 3
+ 	 gammatable[i-2] =
+	   ((gammatable[i-4] + gammatable[i-3] + gammatable[i-1] + gammatable[i])*3
+	      + gammatable[i-2]*4 ) / 16;
+      }
+   }
+}
+
+#endif
 
 
 // local copy of the palette for V_GetColor()
@@ -183,9 +381,6 @@ static void LoadPalette(char *lumpname)
 {
   int i, palsize;
 
-  // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
-  byte *usegamma = R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
-  
   i = W_GetNumForName(lumpname);
   palsize = W_LumpLength(i) / 3;
   if (pLocalPalette)
@@ -196,9 +391,9 @@ static void LoadPalette(char *lumpname)
   byte *pal = W_CacheLumpNum(i, PU_CACHE);
   for (i = 0; i < palsize; i++)
     {
-      pLocalPalette[i].s.red = usegamma[*pal++];
-      pLocalPalette[i].s.green = usegamma[*pal++];
-      pLocalPalette[i].s.blue = usegamma[*pal++];
+      pLocalPalette[i].s.red = gammatable[*pal++];
+      pLocalPalette[i].s.green = gammatable[*pal++];
+      pLocalPalette[i].s.blue = gammatable[*pal++];
 //        if( (i&0xff) == HWR_PATCHES_CHROMAKEY_COLORINDEX )
 //            pLocalPalette[i].s.alpha = 0;
 //        else
@@ -242,10 +437,48 @@ void V_SetPaletteLump(char *pal)
 
 void CV_usegamma_OnChange(void)
 {
+#ifdef GAMMA_FUNCS
+    switch( cv_gammafunc.value ){
+     case 1:
+        R_Generate_gamma_black_table();
+        break;
+     case 2:
+        R_Generate_gamma_bright_black_table();
+        break;
+     case 3:
+        R_Generate_smooth5_linear_gamma_table();
+        break;
+     case 0:
+     default:
+        R_BuildGammaTable( gamma_lookup( cv_usegamma.value));
+        break;
+    }
+#else
+    // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
+    R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
+#endif
     // reload palette
     LoadPalette("PLAYPAL");
     V_SetPalette(0);
 }
+
+#ifdef GAMMA_FUNCS
+enum{ GFU_GAMMA = 0x01, GFU_BLACK = 0x02, GFU_BRIGHT = 0x04 };
+byte  gammafunc_usage[4] =
+{
+     GFU_GAMMA,  // gamma
+     GFU_GAMMA | GFU_BLACK, // gamma_black
+     GFU_GAMMA | GFU_BLACK | GFU_BRIGHT,  // gamma_bright_black
+     GFU_BLACK | GFU_BRIGHT,  // Linear
+};
+  
+void CV_gammafunc_OnChange(void)
+{
+    byte gu = gammafunc_usage[cv_gammafunc.value];
+    MenuGammaFunc_dependencies( gu&GFU_GAMMA, gu&GFU_BLACK, gu&GFU_BRIGHT );
+    CV_usegamma_OnChange();
+}
+#endif
 
 //added:18-02-98: this is an offset added to the destination address,
 //                for all SCALED graphics. When the menu is displayed,
@@ -1127,7 +1360,8 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
             wput = (short *) (screens[0] + vid.width * y) + x1;
             for (x = 0; x < w; x++)
             {
-                *wput++ = ((*wput & 0x7bde) + (15 << 5)) >> 1;
+                *wput = ((*wput & 0x7bde) + (15 << 5)) >> 1;
+	        wput++;  // compiler complains when combined above
             }
         }
     }

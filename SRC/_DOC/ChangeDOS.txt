@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00580 ]: Gamma table generators, GAMMA_FUNCS
 [00579 ]: fix compiler init warnings, indent
 [00578 ]: Indent, comment, {} fixes
 [00577 ]: alloc cache usage fixed, with z_zone update

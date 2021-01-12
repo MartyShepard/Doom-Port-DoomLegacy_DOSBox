@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: screen.c 580 2009-12-01 20:26:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -64,6 +64,9 @@
 //      handles multiple resolutions, 8bpp/16bpp(highcolor) modes
 //
 //-----------------------------------------------------------------------------
+
+// [WDJ] If you need to use a debugger then kill the video first
+//#define DEBUG_WITH_VIDEO_OFF
 
 
 #include "doomdef.h"
@@ -159,7 +162,9 @@ void SCR_SetMode (void)
     if (!setmodeneeded)
         return;                 //should never happen
 
+#ifndef DEBUG_WITH_VIDEO_OFF
     VID_SetMode(--setmodeneeded);
+#endif   
 
     V_SetPalette (0);
         //CONS_Printf ("SCR_SetMode : vid.bpp is %d\n", vid.bpp);
@@ -239,6 +244,13 @@ void SCR_Startup (void)
 
     V_Init();
     CV_RegisterVar (&cv_ticrate);
+    // Needs be done for config loading
+    CV_RegisterVar(&cv_usegamma);
+#ifdef GAMMA_FUNCS
+    CV_RegisterVar(&cv_black);
+    CV_RegisterVar(&cv_bright);
+    CV_RegisterVar(&cv_gammafunc);
+#endif   
 
     V_SetPalette (0);
 }

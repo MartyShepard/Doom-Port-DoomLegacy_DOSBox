@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: doomdef.h 580 2009-12-01 20:26:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -254,6 +254,19 @@ void I_SoftError (char *error, ...);
 // want to repeat from save game 20 times to get past these bad spots.
 #define DOORDELAY_CONTROL
   // See p_fab.c, giving it NETVAR status causes saved games to crash program.
+
+// [WDJ] 6/22/2009  Generate gamma table using two settings,
+// and a selected function.
+// Requires EFFECTS_MENU
+#define GAMMA_FUNCS
+
+// [WDJ] 6/23/2009  Add Effects menu because of too many menu items.
+#define EFFECTS_MENU
+
+
+#if defined( GAMMA_FUNCS ) && ! defined( EFFECTS_MENU )
+#  define EFFECTS_MENU
+#endif
 
 
 // =========================================================================

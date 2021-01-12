@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: m_menu.c 580 2009-12-01 20:26:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -271,7 +271,7 @@ char    savegamestrings[10][SAVESTRINGSIZE];
 #define  IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
 #define  IT_KEYHANDLER        4     // call with the key in param
 #define  IT_SUBMENU           6     // go to sub menu
-#define  IT_CVAR              8     // hangdle as a cvar
+#define  IT_CVAR              8     // handle as a cvar
 #define  IT_SPACE            10     // no handling
 #define  IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message
 
@@ -280,7 +280,7 @@ char    savegamestrings[10][SAVESTRINGSIZE];
 #define  IT_PATCH            16     // a patch or a string with big font
 #define  IT_STRING           32     // little string (spaced with 10)
 #define  IT_WHITESTRING      48     // little string in white
-#define  IT_DYBIGSPACE       64     // same as noting
+#define  IT_DYBIGSPACE       64     // same as nothing
 #define  IT_DYLITLSPACE  (16+64)    // little space
 #define  IT_STRING2      (32+64)    // a simple string
 #define  IT_GRAYPATCH    (16+32+64) // grayed patch or big font string
@@ -378,6 +378,9 @@ void M_OpenGLOption(int choice);
 menu_t MainDef,SinglePlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
        EpiDef,NewDef,OptionsDef,VidModeDef,ControlDef,SoundDef,
        ReadDef2,ReadDef1,SaveDef,LoadDef,ControlDef2,GameOptionDef,
+#ifdef EFFECTS_MENU
+       EffectsOptionsDef,
+#endif  
        NetOptionDef,VideoOptionsDef,MouseOptionsDef,ServerOptionsDef;
 
 const char *ALLREADYPLAYING="You are already playing\n\nLeave this game first\n";
@@ -1391,6 +1394,9 @@ menuitem_t OptionsMenu[]=
 
     {IT_SUBMENU | IT_WHITESTRING,0,"Server options...",&ServerOptionsDef  ,70},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options..."  ,M_GameOption       ,0},
+#ifdef EFFECTS_MENU
+    {IT_SUBMENU | IT_WHITESTRING,0,"Effects Options...",&EffectsOptionsDef ,0},
+#endif   
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
@@ -1433,6 +1439,32 @@ void M_DrawSlider (int x, int y, int range)
                        "M_SLIDEC", whitemap );
 }
 
+#ifdef EFFECTS_MENU
+//===========================================================================
+//                        Effects OPTIONS MENU
+//===========================================================================
+
+menuitem_t EffectsOptionsMenu[]=
+{
+    {IT_STRING | IT_CVAR,0,    "Translucency"     , &cv_translucency  , 0},
+    {IT_STRING | IT_CVAR,0,    "Splats"           , &cv_splats        , 0},
+    {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
+    {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
+};
+
+menu_t  EffectsOptionsDef =
+{
+    "M_OPTTTL",
+    "OPTIONS",
+    sizeof(EffectsOptionsMenu)/sizeof(menuitem_t),
+    &OptionsDef,
+    EffectsOptionsMenu,
+    M_DrawGenericMenu,
+    60,40,
+    0
+};
+#endif
+
 //===========================================================================
 //                        Video OPTIONS MENU
 //===========================================================================
@@ -1441,18 +1473,31 @@ void M_DrawSlider (int x, int y, int range)
 menuitem_t VideoOptionsMenu[]=
 {
     {IT_STRING | IT_SUBMENU,0, "Video Modes..."   , &VidModeDef       , 0},
+#ifdef GAMMA_FUNCS
+// if these are moved then fix MenuGammaFunc_dependencies
+    {IT_STRING | IT_CVAR,0,    "Gamma Function"   , &cv_gammafunc     , 0},
+    {IT_STRING | IT_CVAR
+     | IT_CV_SLIDER     ,0,    "Gamma"            , &cv_usegamma      , 0},
+    {IT_STRING | IT_CVAR
+     | IT_CV_SLIDER     ,0,    "Black level"      , &cv_black         , 0},
+    {IT_STRING | IT_CVAR
+     | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_bright        , 0},
+#else
+    {IT_STRING | IT_CVAR
+     | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_usegamma      , 0},
+#endif
 #ifndef __DJGPP__
     {IT_STRING | IT_CVAR,0,    "Fullscreen"       , &cv_fullscreen    , 0},
 #endif
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_usegamma      , 0},
-    {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,    "Screen Size"      , &cv_viewsize      , 0},
     {IT_STRING | IT_CVAR,0,    "Scale Status Bar" , &cv_scalestatusbar, 0},
+#ifndef EFFECTS_MENU   
     {IT_STRING | IT_CVAR,0,    "Translucency"     , &cv_translucency  , 0},
     {IT_STRING | IT_CVAR,0,    "Splats"           , &cv_splats        , 0},
     {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
     {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
+#endif   
     {IT_STRING | IT_CVAR,0,    "Wait Retrace"     , &cv_vidwait       , 0},
 #ifdef HWRENDER
     //17/10/99: added by Hurdler
@@ -1471,6 +1516,22 @@ menu_t  VideoOptionsDef =
     60,40,
     0
 };
+
+#ifdef GAMMA_FUNCS
+void MenuGammaFunc_dependencies( byte gamma_en,
+				 byte black_en, byte bright_en )
+{
+   VideoOptionsMenu[2].status = 
+     ( gamma_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
+       : IT_STRING | IT_SPACE;
+   VideoOptionsMenu[3].status = 
+     ( black_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
+       : IT_STRING | IT_SPACE;
+   VideoOptionsMenu[4].status = 
+     ( bright_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
+       : IT_STRING | IT_SPACE;
+}
+#endif
 
 //===========================================================================
 //                        Mouse OPTIONS MENU
@@ -3290,7 +3351,22 @@ boolean M_Responder (event_t* ev)
           //added:10-02-98: the gamma toggle is now also in the Options menu
           case KEY_F11:
             S_StartSound(NULL,sfx_swtchn);
+#ifdef GAMMA_FUNCS
+#if 1
+	    // bring up the gamma menu
+            M_StartControlPanel();
+            M_SetupNextMenu (&VideoOptionsDef);
+#else
+	    // quicker, but only one selection
+	    if( cv_gammafunc.value != 0 ) {
+	        CV_AddValue (&cv_black,+1);
+	    }else{
+	        CV_AddValue (&cv_usegamma,+1);
+	    }
+#endif
+#else
             CV_AddValue (&cv_usegamma,+1);
+#endif	   
             return true;
 
           // Pop-up menu
@@ -3566,7 +3642,7 @@ void M_SetupNextMenu(menu_t *menudef)
     if (itemOn >= currentMenu->numitems)
         itemOn = currentMenu->numitems - 1;
 
-    // the curent item can be desabled,
+    // the curent item can be disabled,
     // this code go up until a enabled item found
     while(currentMenu->menuitems[itemOn].status==IT_DISABLED && itemOn)
         itemOn--;

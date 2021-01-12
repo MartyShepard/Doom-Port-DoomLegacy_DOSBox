@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 554 2009-11-11 01:56:40Z wesleyjohnson $
+// $Id: v_video.h 580 2009-12-01 20:26:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -84,10 +84,14 @@ extern  byte*   screens[5];
 
 extern  int     dirtybox[4];
 
-extern  byte    gammatable[5][256];
+//extern  byte    gammatable[5][256];
 extern  consvar_t cv_ticrate;
 extern  consvar_t cv_usegamma;
-
+#ifdef GAMMA_FUNCS
+extern  consvar_t cv_gammafunc;
+extern  consvar_t cv_black;	// input to gammafunc
+extern  consvar_t cv_bright;	// input to gammafunc
+#endif
 
 // Allocates buffer screens, call before R_Init.
 void V_Init (void);
