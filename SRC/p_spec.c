@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: p_spec.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -314,8 +314,10 @@ void P_InitPicAnims (void)
   else
     animdefs = harddefs;
 
-  for (i = 0; animdefs[i].istexture != -1; i++, maxanims++);
+  for (i = 0; animdefs[i].istexture != -1; i++, maxanims++)
+     ;
   anims = (anim_t *)malloc(sizeof(anim_t) * (maxanims + 1));
+  // FIXME: check alloc failure
 
   lastanim = anims;
   for (i = 0; animdefs[i].istexture != -1; i++)
@@ -2530,7 +2532,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 //
 // P_PlayerOnSpecial3DFloor
 // Checks to see if a player is standing on or is inside a 3D floor (water)
-// and applies any speicials..
+// and applies any specials..
 void P_PlayerOnSpecial3DFloor(player_t* player)
 {
   sector_t* sector;
@@ -2671,7 +2673,7 @@ void P_UpdateSpecials (void)
 
     //  ANIMATE FLATS
     //Fab:FIXME: do not check the non-animate flat.. link the animated ones?
-    // note: its faster than the original anywaysince it animates only
+    // note: its faster than the original anyway since it animates only
     //    flats used in the level, and there's usually very few of them
     foundflats = levelflats;
     for (i = 0; i<numlevelflats; i++,foundflats++)
@@ -2730,10 +2732,11 @@ void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
 
   // sec2 is control sector
 
-  // Make list of affected sectors, and grow it
+  // Make list of control sectors that affect this sector, and grow it
   if(sec2->numattached == 0)
   {
     sec2->attached = malloc(sizeof(int));
+    // FIXME: check alloc failure
     sec2->attached[0] = sec - sectors;	// sector index
     sec2->numattached = 1;
   }
@@ -2743,11 +2746,14 @@ void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
 
     // if already attached, then do not need to process again
     for(i = 0; i < sec2->numattached; i++)
+    {
       if(sec2->attached[i] == sec - sectors)
         return;
+    }
 
     // grow the list
     sec2->attached = realloc(sec2->attached, sizeof(int) * (sec2->numattached + 1));
+    // FIXME: check alloc failure
     sec2->attached[sec2->numattached] = sec - sectors;	// sector index
     sec2->numattached ++;
   }
@@ -2780,7 +2786,7 @@ void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
       ffloor->alpha = 0x80; // 127
   }
 
-  P_AddFFloor(sec, ffloor);
+  P_AddFFloor(sec, ffloor);	// append to sector ffloor list
 }
 
 
@@ -2792,16 +2798,19 @@ void P_AddFFloor(sector_t* sec, ffloor_t* ffloor)
   if(!sec->ffloors)
   {
     sec->ffloors = ffloor;
-    ffloor->next = 0;
-    ffloor->prev = 0;
+    ffloor->next = NULL;
+    ffloor->prev = NULL;
     return;
   }
 
-  for(rover = sec->ffloors; rover->next; rover = rover->next);
+  // find end of list
+  for(rover = sec->ffloors; rover->next; rover = rover->next)
+     ;
 
+  // append to end of list
   rover->next = ffloor;
   ffloor->prev = rover;
-  ffloor->next = 0;
+  ffloor->next = NULL;
 }
 
 //

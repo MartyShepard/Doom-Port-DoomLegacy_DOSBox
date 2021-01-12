@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: r_plane.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -929,6 +929,10 @@ skipwaterdraw:
 
 
 
+/* handlesource: get flat when true, is only false when caller has already got
+ flat into ds_source, as in water.  Caller must also set_flat_globals.
+ If OLDWATER is removed then this param is unnecessary.
+ */
 void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
 {
   int                 light = 0;

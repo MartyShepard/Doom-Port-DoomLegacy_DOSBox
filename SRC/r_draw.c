@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_draw.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -534,9 +534,8 @@ void R_FillBackScreen (void)
 void R_VideoErase (unsigned ofs, int count)
 {
     // LFB copy.
-    // This might not be a good idea if memcpy
-    //  is not optiomal, e.g. byte by byte on
-    //  a 32bit CPU, as GNU GCC/Linux libc did
+    // This might not be a good idea if memcpy is not optimal,
+    //  e.g. byte by byte on a 32bit CPU, as GNU GCC/Linux libc did
     //  at one point.
     memcpy (screens[0]+ofs, screens[1]+ofs, count);
 }

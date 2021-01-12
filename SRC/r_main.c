@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_main.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -159,14 +159,17 @@ int                     validcount = 1;
 
 lighttable_t*           fixedcolormap;
 
+// center of perspective projection, in screen coordinates, 0=top
 int                     centerx;
 int                     centery;
 int                     centerypsp;     //added:06-02-98:cf R_DrawPSprite
 
+// center of perspective projection, in screen coordinates << FRACBITS
 fixed_t                 centerxfrac;
 fixed_t                 centeryfrac;
+
 fixed_t                 projection;
-//added:02-02-98:fixing the aspect ration stuff...
+//added:02-02-98:fixing the aspect ratio stuff...
 fixed_t                 projectiony;
 
 // just for profiling purposes
@@ -1290,6 +1293,9 @@ void R_DrawPlayerSprites (void);
 //extern consvar_t cv_grsoftwareview; //r_glide.c
 extern void R_DrawFloorSplats (void);   //r_plane.c
 
+// Draw player view
+// In splitscreen the ylookup tables and viewwindowy are adjusted per player.
+// Global variables include:  ylookup[], viewwindowy, rdraw_viewheight
 void R_RenderPlayerView (player_t* player)
 {
     R_SetupFrame (player);

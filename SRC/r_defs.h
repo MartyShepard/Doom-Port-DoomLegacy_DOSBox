@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 575 2009-11-30 03:19:30Z wesleyjohnson $
+// $Id: r_defs.h 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -287,7 +287,7 @@ typedef struct lightlist_s {
   extracolormap_t*        extra_colormap;
   int                     flags;
   ffloor_t*               caster;
-  } lightlist_t;
+} lightlist_t;
 
 
 // SoM: This struct is used for rendering walls with shadows casted on them...
@@ -301,7 +301,7 @@ typedef struct r_lightlist_s {
   lighttable_t*           rcolormap;
   int                     flags;
   int                     lightnum;
-  } r_lightlist_t;
+} r_lightlist_t;
 
 
 
@@ -406,7 +406,9 @@ typedef struct sector_s
 
     //SoM: 2/23/2000: Improved fake floor hack
     ffloor_t*                  ffloors;
-    int                        *attached;
+    int                        *attached;	// list of control sectors
+             // malloc, realloc
+	     // FIXME: must deallocate attached before free PU_LEVEL [WDJ] 11/14/2009
     int                        numattached;
     lightlist_t*               lightlist;
     int                        numlights;

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00578 ]: Indent, comment, {} fixes
 [00577 ]: alloc cache usage fixed, with z_zone update
 [00576 ]: fix thing overdraw of status bar in special sector
 [00574 ]: Fix R_MakeSpans corruption of static memory

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_segs.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -122,7 +122,6 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
-#include "doomstat.h"
 #include "r_local.h"
 #include "r_sky.h"
 
@@ -2076,7 +2075,7 @@ void R_StoreWallRange( int   start, int   stop)
     if (markwater)
     {
         if (waterplane==NULL)
-            I_Error("fuck no waterplane!");
+            I_Error("no waterplane!");
         waterstep = -FixedMul (rw_scalestep, waterz);
         waterfrac = (centeryfrac>>4) - FixedMul (waterz, rw_scale);
     }

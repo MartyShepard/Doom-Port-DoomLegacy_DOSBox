@@ -167,21 +167,21 @@ This bug was repeatably triggered by the big room in 3DHorror.wad.
 
 *** w20
 patchfile= w20_thing_status.patch
-- TODO
+- committed revision 575    by wesley johnson
 Add limit checks to thing drawing code that handles things split by
 a Legacy 3D floor.  Cures bug that such things overdraw the
 status bar.
 
 *** w21
 patchfile= w21_dc_source.patch
-- TODO
+- committed revision 576    by wesley johnson
 Cleanup of code in rdraw8, extraneous stmts, add comments,
 fix some indentation.
 Change some temps to use stdint types.
 
 *** w22_zone
 patchfile= w22_zone_alloc_patch
-- TODO
+- committed revision 577    by wesley johnson
 Reissue of w13_alloc_cache patch, with matching z_zone file.
 Careful analysis of the PU_CACHE usage and fixing any usage where it
 crosses another call of Z_Malloc.
@@ -195,7 +195,7 @@ Fix indentation to match surrounding, spelling.
 Add comments to record.
 Add {} on FOR and IF with multiple lines, to clarify reading.
 
-*** w23_init_warngins
+*** w24_init_warngins
 patchfile = w24_init_warnings.patch
 - TODO
 Fix stmts that give compiler warnings about variable be used uninit.

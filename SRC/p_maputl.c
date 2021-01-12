@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_maputl.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -718,7 +718,7 @@ boolean P_BlockThingsIterator ( int                   x,
 //
 
 //SoM: 4/6/2000: Limit removal
-intercept_t*    intercepts = NULL;
+intercept_t*    intercepts = NULL;	// realloc,
 intercept_t*    intercept_p = NULL;
 
 divline_t       trace;
@@ -741,6 +741,7 @@ static int max_intercepts = 0;
       max_intercepts = max_intercepts * 2;
 
     intercepts = realloc(intercepts, sizeof(intercept_t) * max_intercepts);
+    // FIXME: check alloc fail
     intercept_p = intercepts + count;
   }
 }

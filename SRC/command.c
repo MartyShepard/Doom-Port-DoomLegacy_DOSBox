@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: command.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -228,8 +228,10 @@ void COM_BufExecute (void)
         // at the beginning, in place of the actual, so it doesn't
         // overflow
         if (i == com_text.cursize)
+        {
             // the last command was just flushed
             com_text.cursize = 0;
+	}
         else
         {
             i++;
@@ -319,7 +321,7 @@ int COM_CheckParm (char *check)
 {
     int         i;
 
-    for (i = 1;i<com_argc;i++)
+    for (i = 1; i<com_argc; i++)
     {
         if ( !strcasecmp(check, com_argv[i]) )
             return i;
@@ -626,9 +628,11 @@ static void COM_Help_f (void)
             {
                 if(stricmp(cvar->PossibleValue[0].strvalue,"MIN")==0)
                 {
-                    for(i=1;cvar->PossibleValue[i].strvalue!=NULL;i++)
+                    for(i=1; cvar->PossibleValue[i].strvalue!=NULL; i++)
+		    {
                         if(!stricmp(cvar->PossibleValue[i].strvalue,"MAX"))
                             break;
+		    }
                     CONS_Printf("  range from %d to %d\n",cvar->PossibleValue[0].value,cvar->PossibleValue[i].value);
                 }
                 else
@@ -655,7 +659,7 @@ static void COM_Help_f (void)
             i++;
         }
 
-            // varibale
+        // variable
         CONS_Printf("\2\nVariable\n");
         for (cvar=consvar_vars; cvar; cvar = cvar->next)
         {
@@ -793,8 +797,10 @@ consvar_t *CV_FindVar (char *name)
     consvar_t  *cvar;
 
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
+    {
         if ( !strcmp(name,cvar->name) )
             return cvar;
+    }
 
     return NULL;
 }
@@ -828,8 +834,10 @@ static consvar_t *CV_FindNetVar (unsigned short netid)
     consvar_t  *cvar;
 
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
+    {
         if (cvar->netid==netid)
             return cvar;
+    }
 
     return NULL;
 }
@@ -919,9 +927,11 @@ char *CV_CompleteVar (char *partial, int skips)
 
     // check functions
     for (cvar=consvar_vars ; cvar ; cvar=cvar->next)
+    {
         if (!strncmp (partial,cvar->name, len))
             if (!skips--)
                 return cvar->name;
+    }
 
     return NULL;
 }
@@ -940,8 +950,11 @@ void Setvalue (consvar_t *var, char *valstr)
             int i;
             // search for maximum
             for(i=1;var->PossibleValue[i].strvalue!=NULL;i++)
+	    {
                 if(!stricmp(var->PossibleValue[i].strvalue,"MAX"))
                     break;
+	    }
+
 #ifdef PARANOIA
             if(var->PossibleValue[i].strvalue==NULL)
                 I_Error("Bounded cvar \"%s\" without Maximum !",var->name);
@@ -954,8 +967,8 @@ void Setvalue (consvar_t *var, char *valstr)
             if(v>var->PossibleValue[i].value)
             {
                v=var->PossibleValue[i].value;
-            sprintf(valstr,"%d",v);
-        }
+               sprintf(valstr,"%d",v);
+	    }
         }
         else
         {
@@ -964,15 +977,21 @@ void Setvalue (consvar_t *var, char *valstr)
 
             // check first strings
             for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
+	    {
                 if(!stricmp(var->PossibleValue[i].strvalue,valstr))
                     goto found;
+	    }
             if(!v)
+	    {
                if(strcmp(valstr,"0")!=0) // !=0 if valstr!="0"
                     goto error;
+	    }
             // check int now
             for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
+	    {
                 if(v==var->PossibleValue[i].value)
                     goto found;
+	    }
 
 error:      // not found
             CONS_Printf("\"%s\" is not a possible value for \"%s\"\n", valstr, var->name);
@@ -988,7 +1007,7 @@ found:
 
     // free the old value string
     if(var->string)
-    Z_Free (var->string);
+        Z_Free (var->string);
 
     var->string = Z_StrDup (valstr);
 
@@ -1044,11 +1063,13 @@ void CV_SaveNetVars( char **p )
     // we must send all cvar because on the other side maybe
     // it have a cvar modified and here not (same for true savegame)
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
+    {
         if (cvar->flags & CV_NETVAR)
         {
             WRITESHORT(*p,cvar->netid);
             WRITESTRING(*p,cvar->string);
         }
+    }
 }
 
 // get implicit parameter save_p
@@ -1057,8 +1078,10 @@ void CV_LoadNetVars( char **p )
     consvar_t  *cvar;
 
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
+    {
         if (cvar->flags & CV_NETVAR)
             Got_NetVar(p, 0);
+    }
 }
 
 
@@ -1091,13 +1114,15 @@ void CV_Set (consvar_t *var, char *value)
         SendNetXCmd (XD_NETVAR, buf, p-buf);
     }
     else
+    {
         if ((var->flags & CV_NOTINNET) && netgame)
         {
             CONS_Printf("This Variable can't be changed while in netgame\n");
             return;
         }
         else
-        Setvalue(var,value);
+            Setvalue(var,value);
+    }
 }
 
 
@@ -1111,27 +1136,29 @@ void CV_SetValue (consvar_t *var, int value)
     CV_Set (var, val);
 }
 
+#define MINpv 0
+
 void CV_AddValue (consvar_t *var, int increment)
 {
     int   newvalue=var->value+increment;
 
     if( var->PossibleValue )
     {
-#define MIN 0
+        if( strcmp(var->PossibleValue[MINpv].strvalue,"MIN")==0 )
+        {
+            int max;
+            // seach the next to last
+            for(max=0; var->PossibleValue[max+1].strvalue!=NULL; max++)
+            	;
 
-        if( strcmp(var->PossibleValue[MIN].strvalue,"MIN")==0 )
-    {
-        int max;
-        // seach the next to last
-        for(max=0;var->PossibleValue[max+1].strvalue!=NULL;max++)
-            ;
-
-            if( newvalue<var->PossibleValue[MIN].value )
-                newvalue+=var->PossibleValue[max].value-var->PossibleValue[MIN].value+1;   // add the max+1
-            newvalue=var->PossibleValue[MIN].value +
-                     (newvalue-var->PossibleValue[MIN].value) %
+            if( newvalue<var->PossibleValue[MINpv].value )
+	    {
+                newvalue+=var->PossibleValue[max].value-var->PossibleValue[MINpv].value+1;   // add the max+1
+	    }
+            newvalue=var->PossibleValue[MINpv].value +
+                     (newvalue-var->PossibleValue[MINpv].value) %
                        (var->PossibleValue[max].value -
-                        var->PossibleValue[MIN].value+1);
+                        var->PossibleValue[MINpv].value+1);
 
             CV_SetValue(var,newvalue);
         }
@@ -1140,9 +1167,11 @@ void CV_AddValue (consvar_t *var, int increment)
             int max,currentindice=-1,newindice;
 
             // this code do not support more than same value for differant PossibleValue
-            for(max=0;var->PossibleValue[max].strvalue!=NULL;max++)
+            for(max=0; var->PossibleValue[max].strvalue!=NULL; max++)
+	    {
                 if( var->PossibleValue[max].value==var->value )
                     currentindice=max;
+	    }
             max--;
 #ifdef PARANOIA
             if( currentindice==-1 )
@@ -1190,8 +1219,10 @@ void CV_SaveVariables (FILE *f)
     consvar_t      *cvar;
 
     for (cvar = consvar_vars ; cvar ; cvar=cvar->next)
+    {
         if (cvar->flags & CV_SAVE)
             fprintf (f, "%s \"%s\"\n", cvar->name, cvar->string);
+    }
 }
 
 

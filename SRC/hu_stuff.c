@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: hu_stuff.c 578 2009-11-30 03:37:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -302,7 +302,7 @@ void HU_Init(void)
 
     // cache the heads-up font for entire game execution
     j = gamemode == heretic ? 1 : HU_FONTSTART;
-    for (i=0;i<HU_FONTSIZE;i++)
+    for (i=0; i<HU_FONTSIZE; i++)
     {
         if( raven )
             sprintf(buffer, "FONTA%.2d", j>59 ? 59 : j);
@@ -314,7 +314,7 @@ void HU_Init(void)
 
     // cache the crosshairs, dont bother to know which one is being used,
     // just cache them 3 all, they're so small anyway.
-    for(i=0;i<HU_CROSSHAIRS;i++)
+    for(i=0; i<HU_CROSSHAIRS; i++)
     {
        sprintf(buffer, "CROSHAI%c", '1'+i);
        crosshair[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC);
@@ -357,7 +357,7 @@ void TeamPlay_OnChange(void)
     if(cv_teamplay.value==1)
     {
         // color
-        for(i=0;i<MAXSKINCOLORS;i++)
+        for(i=0; i<MAXSKINCOLORS; i++)
         {
             sprintf(s,"%s team",Color_Names[i]);
             strcpy(team_names[i],s);
@@ -368,7 +368,7 @@ void TeamPlay_OnChange(void)
     {
         // skins
 
-        for(i=0;i<numskins;i++)
+        for(i=0; i<numskins; i++)
         {
             sprintf(s,"%s team",skins[i].name);
             strcpy(team_names[i],s);
@@ -389,12 +389,13 @@ void Command_Say_f (void)
 
     buf[0]=0;
     strcpy(&buf[1],COM_Argv(1));
-    for(i=2;i<j;i++)
+    for(i=2; i<j; i++)
     {
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
     }
-    SendNetXCmd(XD_SAY,buf,strlen(buf+1)+2); // +2 because 1 for buf[0] and the other for null terminated string
+    SendNetXCmd(XD_SAY,buf,strlen(buf+1)+2);
+       // +2 because 1 for buf[0] and the other for null terminated string
 }
 
 void Command_Sayto_f (void)
@@ -412,7 +413,7 @@ void Command_Sayto_f (void)
     if(buf[0]==-1)
         return;
     strcpy(&buf[1],COM_Argv(2));
-    for(i=3;i<j;i++)
+    for(i=3; i<j; i++)
     {
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
@@ -433,12 +434,13 @@ void Command_Sayteam_f (void)
 
     buf[0]=-consoleplayer;
     strcpy(&buf[1],COM_Argv(1));
-    for(i=2;i<j;i++)
+    for(i=2; i<j; i++)
     {
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
     }
-    SendNetXCmd(XD_SAY,buf,strlen(buf+1)+2); // +2 because 1 for buf[0] and the other for null terminated string
+    SendNetXCmd(XD_SAY,buf,strlen(buf+1)+2);
+        // +2 because 1 for buf[0] and the other for null terminated string
 }
 
 // netsyntax : to : byte  1->32  player 1 to 32
@@ -869,7 +871,7 @@ typedef struct
   boolean   draw;
 } fspic_t;
 
-fspic_t*   piclist = NULL;
+fspic_t*   piclist = NULL;	// realloc, never deallocated
 int        maxpicsize = 0;
 
 
@@ -893,6 +895,7 @@ void HU_InitFSPics()
   }
 
   piclist = realloc(piclist, sizeof(fspic_t) * maxpicsize);
+  // FIXME: check allocation fail [WDJ] 11/14/2009
   for(i = newstart; i < newend; i++)
   {
     piclist[i].lumpnum = -1;
@@ -1076,26 +1079,24 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
     {
         if (playeringame[i])
         {
-            if(cv_teamplay.value==1)
-                team=players[i].skincolor;
-            else
-                team=players[i].skin;
+	    team = (cv_teamplay.value==1) ? players[i].skincolor
+	                                  : players[i].skin;
 
-            for(j=0;j<scorelines;j++)
+            for(j=0; j<scorelines; j++)
+	    {
                 if (fragtab[j].num == team)
                 { // found there team
                      if(fragtbl)
                      {
-                         for(k=0;k<MAXPLAYERS;k++)
+                         for(k=0; k<MAXPLAYERS; k++)
+			 {
                              if(playeringame[k])
                              {
-                                 if(cv_teamplay.value==1)
-                                     fragtbl[team][players[k].skincolor] +=
-                                                        players[i].frags[k];
-                                 else
-                                     fragtbl[team][players[k].skin] +=
-                                                        players[i].frags[k];
-                     }
+                                 int k_indx = (cv_teamplay.value==1) ?
+				     players[k].skincolor : players[k].skin;
+				 fragtbl[team][k_indx] += players[i].frags[k];
+			     }
+			 }
                      }
 
                      fragtab[j].count += ST_PlayerFrags(i);
@@ -1103,11 +1104,12 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
                          dmtotals[team]=fragtab[j].count;
                      break;
                 }
+	    }  // for j
             if (j==scorelines)
             {   // team not found add it
 
                 if(fragtbl)
-                    for(k=0;k<MAXPLAYERS;k++)
+                    for(k=0; k<MAXPLAYERS; k++)
                         fragtbl[team][k] = 0;
 
                 fragtab[scorelines].count = ST_PlayerFrags(i);
@@ -1117,16 +1119,15 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
 
                 if(fragtbl)
                 {
-                    for(k=0;k<MAXPLAYERS;k++)
+                    for(k=0; k<MAXPLAYERS; k++)
+		    {
                         if(playeringame[k])
                         {
-                            if(cv_teamplay.value==1)
-                                fragtbl[team][players[k].skincolor] +=
-                                                   players[i].frags[k];
-                            else
-                                fragtbl[team][players[k].skin] +=
-                                                   players[i].frags[k];
-                }
+			    int k_indx = (cv_teamplay.value==1) ?
+			        players[k].skincolor : players[k].skin;
+			    fragtbl[team][k_indx] += players[i].frags[k];
+			}
+		    }
                 }
 
                 if(dmtotals)
@@ -1308,7 +1309,7 @@ void HU_HackChatmacros (void)
     chat_macros[9] = &cv_chatmacro9;
 
     // register chatmacro vars ready for config.cfg
-    for (i=0;i<10;i++)
+    for (i=0; i<10; i++)
        CV_RegisterVar (chat_macros[i]);
 }
 
