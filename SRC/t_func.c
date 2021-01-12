@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: t_func.c 579 2009-11-30 03:45:36Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -718,8 +718,8 @@ void SF_MobjIsPlayer()
 
 void SF_SkinColor()
 {
-    int playernum;
-	int colour;
+    int playernum = 0;	// might be used uninit
+    int colour;
 
     if (!t_argc)
     {
@@ -748,8 +748,8 @@ void SF_SkinColor()
         }
     }
 
-	if(t_argc == 2)
-	{
+    if(t_argc == 2)
+    {
 		colour = intvalue(t_argv[1]);
 		
 		if(colour > MAXSKINCOLORS)
@@ -761,12 +761,12 @@ void SF_SkinColor()
 		players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
 
 		CV_SetValue (&cv_playercolor, colour);
-	}
+    }
 	
-	t_return.type = svt_int;
-	t_return.value.i = players[playernum].skincolor;
+    t_return.type = svt_int;
+    t_return.value.i = players[playernum].skincolor;
 
-	return;
+    return;
 }
 
 void SF_PlayerKeys()
@@ -2067,8 +2067,8 @@ void SF_ObjType()
 // Exl: sets an object's properties (tox)
 void SF_SetObjProperty()
 {
-	int	attrib, setting;
-	mobj_t	*mo;
+	int	attrib = 0, setting = 0;	// might be used uninit
+	mobj_t	*mo = NULL;
 
 	if(t_argc < 2)
 	{
@@ -2152,8 +2152,8 @@ void SF_SetObjProperty()
 // Exl: Returns an object's properties (tox)
 void SF_GetObjProperty()
 {
-	int	attrib, retval;
-	mobj_t	*mo;
+	int	attrib = 0, retval = 0;	// might be used uninit
+	mobj_t	*mo = NULL;
 
 	if(t_argc < 1)
 	{

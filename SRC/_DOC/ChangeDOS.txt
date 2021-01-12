@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00579 ]: fix compiler init warnings, indent
 [00578 ]: Indent, comment, {} fixes
 [00577 ]: alloc cache usage fixed, with z_zone update
 [00576 ]: fix thing overdraw of status bar in special sector

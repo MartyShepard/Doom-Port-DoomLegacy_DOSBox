@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: p_setup.c 579 2009-11-30 03:45:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -238,7 +238,8 @@ int             numsegs;
 seg_t*          segs;
 
 int             numsectors;
-sector_t*       sectors;
+sector_t*       sectors = NULL;
+	// FIXME: contains realloc memory, must clear with deallocator [WDJ] 11/14/2009
 
 int             numsubsectors;
 subsector_t*    subsectors;

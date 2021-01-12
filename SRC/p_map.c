@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_map.c 579 2009-11-30 03:45:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -160,8 +160,9 @@ line_t*         blockingline;
 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
-int             *spechit;                //SoM: 3/15/2000: Limit removal
-int             numspechit;
+int             *spechit = NULL;                //SoM: 3/15/2000: Limit removal
+		// realloc, never deallocated
+int             numspechit = 0;
 
 //SoM: 3/15/2000
 msecnode_t*  sector_list = NULL;

@@ -190,13 +190,13 @@ memory allocated from be deallocated while in use.
 
 *** w23_comment
 patchfile= w23_comment.patch
-- TODO
+- committed revision 578    by wesley johnson
 Fix indentation to match surrounding, spelling.
 Add comments to record.
 Add {} on FOR and IF with multiple lines, to clarify reading.
 
 *** w24_init_warngins
 patchfile = w24_init_warnings.patch
-- TODO
+- committed revision 579    by wesley johnson
 Fix stmts that give compiler warnings about variable be used uninit.
 Large amount of re-indentation and added {} in p_spec.c.

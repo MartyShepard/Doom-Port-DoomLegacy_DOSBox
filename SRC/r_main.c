@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: r_main.c 579 2009-11-30 03:45:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1207,7 +1207,6 @@ void R_SetupFrame (player_t* player)
 
     if ( rendermode == render_soft )
     {
-        int indx;	// [WDJ] debug
         // clip it in the case we are looking a hardware 90° full aiming
         // (lmps, nework and use F12...)
         G_ClipAimingPitch(&aimingangle);	// limit aimingangle
