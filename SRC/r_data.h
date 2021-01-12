@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 556 2009-11-14 17:25:28Z smite-meister $
+// $Id: r_data.h 594 2010-02-07 18:03:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -65,14 +65,29 @@
 // into the rectangular texture space using origin
 // and possibly other attributes.
 //
+#if 1
+// Used to read texture patch info from wad, sizes must be correct.
+typedef struct
+{
+    // The patches leftoffset and topoffset are ignored.
+    int16_t	originx;	// from top left of texture area
+    int16_t	originy;
+    uint16_t    patchnum;	// index [0..] of the entry in PNAMES
+    int16_t	stepdir;	// 1
+    uint16_t    colormap;	// 0
+} mappatch_t;
+#else
+// Used for reading texture patches from wad.
 typedef struct
 {
     short       originx;
     short       originy;
-    short       patch;
+    short       patchnum;
     short       stepdir;
     short       colormap;
 } mappatch_t;
+#endif
+
 
 
 //
@@ -80,6 +95,21 @@ typedef struct
 // A DOOM wall texture is a list of patches
 // which are to be combined in a predefined order.
 //
+#if 1
+// Used to read texture lump from wad, sizes must be correct.
+// UDS is unclear on the exact size of some of these fields.
+typedef struct
+{
+    char                name[8];
+    uint32_t		masked;		// [8] must be 4 bytes
+   					// boolean size cannot be trusted
+    uint16_t            width;		// [12]
+    uint16_t            height;		// [14]
+    char                columndirectory[4]; //void **columndirectory; // OBSOLETE 
+    uint16_t            patchcount;	// [20]
+    mappatch_t		patches[1];	// [22] array
+} maptexture_t;
+#else
 typedef struct
 {
     char                name[8];
@@ -90,25 +120,38 @@ typedef struct
     short               patchcount;
     mappatch_t  patches[1];
 } maptexture_t;
-
+#endif
 
 // A single patch from a texture definition,
 //  basically a rectangular area within
 //  the texture rectangle.
+#if 1
+// Used only in internal texture struct. Wad read uses mappatch_t, which has more fields.
+// There is clipping code for originx<0 and originy<0, which occur in doom wads.
+// The original doom has a clipping bug when originy < 0.
+typedef struct
+{
+    int32_t     originx;
+    int32_t     originy;
+    int		patchnum;
+} texpatch_t;
+#else
 typedef struct
 {
     // Block origin (allways UL),
-    // which has allready accounted
+    // which has already accounted
     // for the internal origin of the patch.
     int         originx;
     int         originy;
-    int         patch;
+    int         patchnum;
 } texpatch_t;
+#endif
 
 
 // A maptexturedef_t describes a rectangular texture,
 //  which is composed of one or more mappatch_t structures
 //  that arrange graphic patches.
+//  Internal structure, maptexture_t is used for reading wad.
 typedef struct
 {
     // Keep name for switch changing, etc.
@@ -135,7 +178,7 @@ void  R_LoadTextures (void);
 void  R_FlushTextureCache (void);
 
 // Retrieve column data for span blitting.
-byte* R_GetColumn (int tex, int col);
+byte* R_GetColumn (int texnum, int col);
 
 byte* R_GetFlat (int  flatnum);
 

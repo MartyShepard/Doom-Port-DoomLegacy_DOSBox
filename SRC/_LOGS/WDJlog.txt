@@ -274,7 +274,7 @@ Also fixes some indenting and add some brackets to make readable.
 
 *** w34_zone
 patchfile = w34_zone.patch
-- committed revision   by wesley johnson
+- committed revision 593   by wesley johnson
 Fix possible failing of Z_FreeTags when it combines free blocks.
 Change size_t to uintptr_t, per stdint.h.
 Mark free blocks with id.
@@ -286,7 +286,7 @@ textures.
 
 *** w35_texture_generate
 patchfile = w35_texture_generate.patch
-- committed revision   by wesley johnson
+- committed revision 594   by wesley johnson
 Fix segfault in phobiata.wad.  It has a texture of one patch, but that
 patch is smaller than the texture.  The draw routine segfaults upon
 trying to access texture columns that are not in the patch.
@@ -300,7 +300,7 @@ reduce confusion with the same name in different usage.
 
 *** w36_texture_generate
 patchfile = w36_draw_clip.patch
-- committed revision   by wesley johnson
+- committed revision 595   by wesley johnson
 Fix segfaults due to low level draw using bad ylookup[].
 The video column lookup table, ylookup[], is only as wide as the view window.
 The low level draw routines RANGECHECK now checks against the view window

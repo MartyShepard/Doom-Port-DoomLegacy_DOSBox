@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: r_sky.c 594 2010-02-07 18:03:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -94,7 +94,7 @@ void R_InitSkyMap (void)
 //
 void R_SetupSkyDraw (void)
 {
-    texpatch_t*  patches;
+    texpatch_t*  texpatch;
     patch_t      wpatch;
     int          count;
     int          height;
@@ -108,10 +108,10 @@ void R_SetupSkyDraw (void)
     //       skies, but the patches it use will give the right size
 
     count   = textures[skytexture]->patchcount;
-    patches = &textures[skytexture]->patches[0];
-    for (height=0,i=0;i<count;i++,patches++)
+    texpatch = &textures[skytexture]->patches[0];
+    for (height=0,i=0;i<count;i++,texpatch++)
     {
-        W_ReadLumpHeader (patches->patch, &wpatch, sizeof(patch_t));
+        W_ReadLumpHeader (texpatch->patchnum, &wpatch, sizeof(patch_t));
         // [WDJ] Do endian fix as this is read.
         wpatch.height = LE_SWAP16(wpatch.height);
         if (wpatch.height>height)
