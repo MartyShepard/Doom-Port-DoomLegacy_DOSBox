@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 543 2009-09-27 23:12:40Z smite-meister $
+// $Id: m_swap.h 588 2010-01-08 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -48,31 +48,85 @@
 // WAD files are always little-endian.
 // Other files, such as MIDI files, are always big-endian.
 
-#define SWAP_INT16(x) ((int16_t)( \
+#if 1
+#define SWAP_INT16_FAST(x) ((int16_t)( \
 (((uint16_t)(x) & (uint16_t)0x00ffU) << 8) | \
 (((uint16_t)(x) & (uint16_t)0xff00U) >> 8) ))
 
-#define SWAP_INT32(x) ((int32_t)( \
+#define SWAP_INT32_FAST(x) ((int32_t)( \
 (((uint32_t)(x) & (uint32_t)0x000000ffUL) << 24) | \
 (((uint32_t)(x) & (uint32_t)0x0000ff00UL) <<  8) | \
 (((uint32_t)(x) & (uint32_t)0x00ff0000UL) >>  8) | \
 (((uint32_t)(x) & (uint32_t)0xff000000UL) >> 24) ))
 
+#else
+// [WDJ] as inline functions, which will show a difference if there are any
+// uses with executable parameters.  Compiler will optimize
+// them to nearly the same thing, except for parameter handling.
+// Inline func are always safer in unfamiliar code.
+inline int16_t SWAP_INT16_FAST( uint16_t x)
+{
+    return (int16_t)
+     (  (( x & (uint16_t)0x00ffU) << 8)
+      | (( x & (uint16_t)0xff00U) >> 8)
+     );
+}
+
+inline int32_t SWAP_INT32_FAST( uint32_t x)
+{
+    return (int32_t)
+     (  (( x & (uint32_t)0x000000ffUL) << 24)
+      | (( x & (uint32_t)0x0000ff00UL) <<  8)
+      | (( x & (uint32_t)0x00ff0000UL) >>  8)
+      | (( x & (uint32_t)0xff000000UL) >> 24)
+     );
+}
+#endif
+
+// [WDJ] Old macro endian conversions, most of the uses are removed.
 #ifdef __BIG_ENDIAN__
-# define LE_SHORT(x) SWAP_INT16(x)
-# define LE_LONG(x)  SWAP_INT32(x)
+# define LE_SHORT(x) SWAP_INT16_FAST(x)
+# define LE_LONG(x)  SWAP_INT32_FAST(x)
 # define BE_SHORT(x) (x)
 # define BE_LONG(x)  (x)
 #else // little-endian
 # define LE_SHORT(x) (x)
 # define LE_LONG(x)  (x)
-# define BE_SHORT(x) SWAP_INT16(x)
-# define BE_LONG(x)  SWAP_INT32(x)
+# define BE_SHORT(x) SWAP_INT16_FAST(x)
+# define BE_LONG(x)  SWAP_INT32_FAST(x)
 #endif
 
+// [WDJ] swap functions, reduces executable bloat.
+int16_t swap_int16( uint16_t x);
+int32_t swap_int32( uint32_t x);
+
+// [WDJ] name changed to indicate SWAP, size, Endianness, and just so I can
+// grep the old SHORT uses to find them.  To make 64bit clean, change all uses
+// of SHORT and LONG; they are not 16 and 32 bit on some machines.
+// (short) ===> (int16_t),  (long)  ===> (int32_t)
+// 
+// Use LE_SWAP* to convert to and from external little-endian value.
+// Use BE_SWAP* to convert to and from external big-endian value.
+#ifdef __BIG_ENDIAN__
+// [WDJ] Fast inline is still needed where must do swap at execution time.
+# define LE_SWAP16_FAST(x)  SWAP_INT16_FAST(x)
+# define LE_SWAP32_FAST(x)  SWAP_INT32_FAST(x)
+# define LE_SWAP16(x)  swap_int16(x)
+# define LE_SWAP32(x)  swap_int32(x)
+# define BE_SWAP16(x)  (x)
+# define BE_SWAP32(x)  (x)
+#else // little-endian machine
+// [WDJ] Fast inline is still needed where must do swap at execution time.
+# define LE_SWAP16_FAST(x)  (x)
+# define LE_SWAP32_FAST(x)  (x)
+# define LE_SWAP16(x)  (x)
+# define LE_SWAP32(x)  (x)
+# define BE_SWAP16(x)  swap_int16(x)
+# define BE_SWAP32(x)  swap_int32(x)
+#endif
+
+
 // TODO FIXME convert all endianness handling to use the code above, remove code below.
-
-
 #ifdef __BIG_ENDIAN__
 
 #define SHORT(x) ((short)( \
@@ -93,9 +147,6 @@
 #define SHORT(x)  ((short)x)
 #define LONG(x)	  ((long) x)
 #endif
-
-
-
 
 
 #endif

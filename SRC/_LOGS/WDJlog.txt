@@ -231,20 +231,20 @@ Caused by init of sectors to NULL, and is unexplainable.
 
 *** w29_sound
 patchfile = w29_sound.patch
-- committed revision   by wesley johnson
+- committed revision 587  by wesley johnson
 Fix (again) the heretic sound, where names are different than Doom.
 Fix (again) some sound code for SDL.
 
 *** w30_wad_swap
 patchfile = w30_wad_swap.patch
-- committed revision   by wesley johnson
+- committed revision 588  by wesley johnson
 First part of extensive changes for problem of endian conversion of
 patches as they are displayed.  Creates the support SWAP macros and
 the wad functions for using them.
 
 *** w31_swap_patch
 patchfile = w31_swap_patch.patch
-- committed revision   by wesley johnson
+- committed revision 589  by wesley johnson
 Second part of changes for endian conversion.
 Uses new macro names where needed in network code.
 Removes endian code from draw patch code.

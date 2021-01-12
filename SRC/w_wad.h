@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: w_wad.h 588 2010-01-08 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -67,6 +67,8 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
+#include <stdint.h>
+
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
 #else
@@ -77,12 +79,16 @@ typedef void GlidePatch_t;
 #pragma interface
 #endif
 
+
+// [WDJ] Indicates cache miss, new lump read requires endian fixing.
+boolean lump_read;
+
 // ==============================================================
 //               WAD FILE STRUCTURE DEFINITIONS
 // ==============================================================
 
-
-typedef long   lumpnum_t;           // 16:16 long (wad num: lump num)
+// [WDJ] found unused 1/5/2010
+//typedef long   lumpnum_t;           // 16:16 long (wad num: lump num)
 
 
 // header of a wad file
@@ -91,7 +97,7 @@ typedef struct
 {
     char       identification[4];   // should be "IWAD" or "PWAD"
     int        numlumps;            // how many resources
-    int        infotableofs;        // the 'directory' of resources
+    uint32_t   infotableofs;        // the 'directory' of resources
 } wadinfo_t;
 
 
@@ -99,8 +105,8 @@ typedef struct
 
 typedef struct
 {
-    int        filepos;             // file offset of the resource
-    int        size;                // size of the resource
+    uint32_t   filepos;             // file offset of the resource
+    uint32_t   size;                // size of the resource
     char       name[8];             // name of the resource
 } filelump_t;
 
@@ -110,8 +116,8 @@ typedef struct
 typedef struct
 {
     char        name[8];            // filelump_t name[]
-    int         position;           // filelump_t filepos
-    int         size;               // filelump_t size
+    uint32_t    position;           // filelump_t filepos
+    uint32_t    size;               // filelump_t size
 } lumpinfo_t;
 
 
@@ -180,12 +186,13 @@ void*   W_CacheLumpName (char* name, int tag);
 
 void*   W_CachePatchName (char* name, int tag);
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
 void*   W_CachePatchNum (int lump, int tag);                        // return a patch_t
-#else
-#define W_CachePatchNum(lump,tag)    W_CacheLumpNum(lump,tag)
-#endif
-void   *W_CacheRawAsPic( int lump, int width, int height, int tag); // return a pic_t
+
+void*   W_CacheRawAsPic( int lump, int width, int height, int tag); // return a pic_t
+
+// Cache and endian convert a pic_t
+void*   W_CachePicNum( int lumpnum, int tag );
+void*   W_CachePicName( char* name, int tag );
 
 //SoM: 4/13/2000: Store lists of lumps for F_START/F_END ect.
 typedef struct {

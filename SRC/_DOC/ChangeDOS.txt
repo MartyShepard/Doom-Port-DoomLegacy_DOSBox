@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00588 ]: endian swap in wads, part1
+[00587 ]: heretic sound, old sound fixes again (SDL Only)
 [00586 ]: sectors=NULL corrupts save game
 [00585 ]: wadversion and warnings
 [00584 ]: compiler warning fixes

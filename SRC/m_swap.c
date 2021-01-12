@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_swap.c 588 2010-01-08 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -33,26 +33,29 @@
 //
 //-----------------------------------------------------------------------------
 
-
-// Not needed with big endian.
+// Not needed with little endian, unless the BE_SWAP* get used.
 #ifdef __BIG_ENDIAN__
 
-// Swap 16bit, that is, MSB and LSB byte.
-unsigned short SwapSHORT(unsigned short x)
+#include "m_swap.h"
+
+// [WDJ] Swap as callable functions.
+// Reduces executable bloat and is not a speed issue for most of wad reading.
+int16_t swap_int16( uint16_t x)
 {
-    // No masking with 0xFF should be necessary.
-    return (x>>8) | (x<<8);
+    return (int16_t)
+     (  (( x & (uint16_t)0x00ffU) << 8)
+      | (( x & (uint16_t)0xff00U) >> 8)
+     );
 }
 
-// Swapping 32bit.
-unsigned long SwapLONG(unsigned long x)
+int32_t swap_int32( uint32_t x)
 {
-    return
-        (x>>24)
-        | ((x>>8) & 0xff00)
-        | ((x<<8) & 0xff0000)
-        | (x<<24);
+    return (int32_t)
+     (  (( x & (uint32_t)0x000000ffUL) << 24)
+      | (( x & (uint32_t)0x0000ff00UL) <<  8)
+      | (( x & (uint32_t)0x00ff0000UL) >>  8)
+      | (( x & (uint32_t)0xff000000UL) >> 24)
+     );
 }
-
 
 #endif
