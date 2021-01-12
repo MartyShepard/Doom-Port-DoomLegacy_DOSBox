@@ -105,49 +105,22 @@
 #ifdef __GNUC__
 
 #define RDTSC(_dst) \
-__asm__("
-     .byte 0x0F,0x31
-     movl %%edx,(%%edi)
-     movl %%eax,4(%%edi)"\
-: : "D" (_dst) : "eax", "edx", "edi")
+__asm__(".byte 0x0F,0x31", "movl %%edx,(%%edi)", "movl %%eax,4(%%edi)" : : "D" (_dst) : "eax", "edx", "edi")
 
 // the old code... swapped it
 //     movl %%edx,(%%edi)
 //     movl %%eax,4(%%edi)"
 #define RDMSR(_msri, _msrd) \
-__asm__("
-     .byte 0x0F,0x32
-     movl %%eax,(%%edi)
-     movl %%edx,4(%%edi)"\
-: : "c" (_msri), "D" (_msrd) : "eax", "ecx", "edx", "edi")
+__asm__(".byte 0x0F,0x32", "movl %%eax,(%%edi)", "movl %%edx,4(%%edi)" : : "c" (_msri), "D" (_msrd) : "eax", "ecx", "edx", "edi")
 
 #define WRMSR(_msri, _msrd) \
-__asm__("
-     xorl %%edx,%%edx
-     .byte 0x0F,0x30"\
-: : "c" (_msri), "a" (_msrd) : "eax", "ecx", "edx")
+__asm__("xorl %%edx,%%edx", ".byte 0x0F,0x30" : : "c" (_msri), "a" (_msrd) : "eax", "ecx", "edx")
 
 #define RDMSR_0x12_0x13(_msr12, _msr13) \
-__asm__("
-     movl $0x12,%%ecx
-     .byte 0x0F,0x32
-     movl %%edx,(%%edi)
-     movl %%eax,4(%%edi)
-     movl $0x13,%%ecx
-     .byte 0x0F,0x32
-     movl %%edx,(%%esi)
-     movl %%eax,4(%%esi)"\
-: : "D" (_msr12), "S" (_msr13) : "eax", "ecx", "edx", "edi")
+__asm__("movl $0x12,%%ecx", ".byte 0x0F,0x32", "movl %%edx,(%%edi)", "movl %%eax,4(%%edi)", "movl $0x13,%%ecx", ".byte 0x0F,0x32", "movl %%edx,(%%esi)", "movl %%eax,4(%%esi)" : : "D" (_msr12), "S" (_msr13) : "eax", "ecx", "edx", "edi")
 
 #define ZERO_MSR_0x12_0x13() \
-__asm__("
-     xorl %%edx,%%edx
-     xorl %%eax,%%eax
-     movl $0x12,%%ecx
-     .byte 0x0F,0x30
-     movl $0x13,%%ecx
-     .byte 0x0F,0x30"\
-: : : "eax", "ecx", "edx")
+__asm__("xorl %%edx,%%edx", "xorl %%eax,%%eax", "movl $0x12,%%ecx", ".byte 0x0F,0x30", "movl $0x13,%%ecx", ".byte 0x0F,0x30" : : : "eax", "ecx", "edx")
 
 #elif defined(__WATCOMC__)
 
@@ -270,10 +243,10 @@ enum
 
 /*void ProfZeroTimer(void);*/
 #define ProfZeroTimer()\
-   WRMSR(0x10, 0);
+   "WRMSR(0x10, 0)";
 
 /*void ProfReadTimer(unsigned int timer[2]);*/
 #define ProfReadTimer(timer)\
-   RDMSR(0x10, timer);
+   "RDMSR(0x10, timer)";
 
 /*EOF*/

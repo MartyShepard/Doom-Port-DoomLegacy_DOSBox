@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: r_defs.h 575 2009-11-30 03:19:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -787,13 +787,13 @@ typedef struct vissprite_s
     fixed_t             gx;
     fixed_t             gy;
 
-    // global bottom / top for silhouette clipping
-    fixed_t             gz;
-    fixed_t             gzt;
+    // global bottom / top for silhouette clipping, world coordinates
+    fixed_t             gz_bot;
+    fixed_t             gz_top;
 
-	// Physical bottom / top for sorting with 3D floors.
-	fixed_t				pz;
-	fixed_t				pzt;
+    // Physical bottom / top for sorting with 3D floors, world coordinates.
+    fixed_t		pz_bot;
+    fixed_t		pz_top;
 
     // horizontal position of x1
     fixed_t             startfrac;
@@ -822,13 +822,16 @@ typedef struct vissprite_s
     extracolormap_t*    extra_colormap;
     fixed_t             xscale;
 
-    //SoM: Precalculated top and bottom screen coords for the sprite.
     fixed_t             thingheight; //The actual height of the thing (for 3D floors)
     sector_t*           sector; //The sector containing the thing.
-    fixed_t             sz;
-    fixed_t             szt;
+
+    //SoM: Precalculated top and bottom screen coords for the sprite.
+    // [WDJ] sz_ only used in r_things.c, these are NOT fixed point nor frac
+    int                 sz_bot;
+    int                 sz_top;
 
     int                 cut;  //0 for none, bit 1 for top, bit 2 for bottom
+   				// OR of spritecut_e
 } vissprite_t;
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_things.c 575 2009-11-30 03:19:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -678,7 +678,10 @@ void R_DrawMaskedColumn (column_t* column)
         if (dc_yl <= mceilingclip[dc_x])
             dc_yl = mceilingclip[dc_x]+1;
 
-        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
+        // [WDJ] limit to split screen area above status bar,
+        // instead of whole screen,
+        if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
+//        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
         {
             dc_source = (byte *)column + 3;
             dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
@@ -726,14 +729,14 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 
     dc_colormap = vis->colormap;
 	
-	// Support for translated and translucent sprites. SSNTails 11-11-2002
-	if(vis->mobjflags & MF_TRANSLATION && vis->transmap)
-	{
-		colfunc = transtransfunc;
-		dc_transmap = vis->transmap;
-		dc_translation = translationtables - 256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
-	}
+    // Support for translated and translucent sprites. SSNTails 11-11-2002
+    if(vis->mobjflags & MF_TRANSLATION && vis->transmap)
+    {
+	colfunc = transtransfunc;
+	dc_transmap = vis->transmap;
+	dc_translation = translationtables - 256 +
+	 ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+    }
     if (vis->transmap==VIS_SMOKESHADE)
         // shadecolfunc uses 'colormaps'
         colfunc = shadecolfunc;
@@ -776,7 +779,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 #ifdef RANGECHECK
         if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width)) {
 	    // [WDJ] Give msg and don't draw it
-            I_SoftError ("R_DrawSpriteRange: bad texturecolumn");
+            I_SoftError ("R_DrawVisSprite: bad texturecolumn");
             return;
 	}
 #endif
@@ -797,45 +800,54 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 {
   int           i, lightnum, index;
-  fixed_t               cutfrac;
+  int		sz_cut;		// where lightheight cuts on screen
+  fixed_t	lightheight;
   sector_t*     sector;
   vissprite_t*  newsprite;
 
   sector = sprite->sector;
 
-  for(i = 1; i < sector->numlights; i++)
+  for(i = 1; i < sector->numlights; i++)	// from top to bottom
   {
-    if(sector->lightlist[i].height >= sprite->gzt || !(sector->lightlist[i].caster->flags & FF_CUTSPRITES))
+    lightheight = sector->lightlist[i].height;
+     
+    if(lightheight >= sprite->gz_top || !(sector->lightlist[i].caster->flags & FF_CUTSPRITES))
       continue;
-    if(sector->lightlist[i].height <= sprite->gz)
+    if(lightheight <= sprite->gz_bot)
       return;
 
-    cutfrac = (centeryfrac - FixedMul(sector->lightlist[i].height - viewz, sprite->scale)) >> FRACBITS;
-        if(cutfrac < 0)
+    // where on screen the lightheight cut appears
+    sz_cut = (centeryfrac - FixedMul(lightheight - viewz, sprite->scale)) >> FRACBITS;
+    if(sz_cut < 0)
             continue;
-        if(cutfrac > vid.height)
+//    if(sz_cut > vid.height)
+    if(sz_cut > rdraw_viewheight)	// [WDJ] 11/14/2009
             return;
         
-        // Found a split! Make a new sprite, copy the old sprite to it, and
+    // Found a split! Make a new sprite, copy the old sprite to it, and
     // adjust the heights.
     newsprite = R_NewVisSprite ();
     memcpy(newsprite, sprite, sizeof(vissprite_t));
 
     sprite->cut |= SC_BOTTOM;
-    sprite->gz = sector->lightlist[i].height;
+    sprite->gz_bot = lightheight;
 
-    newsprite->gzt = sprite->gz;
+    newsprite->gz_top = sprite->gz_bot;
 
-    sprite->sz = cutfrac;
-    newsprite->szt = sprite->sz - 1;
+    // [WDJ] 11/14/2009 clip at window again, fix split sprites corrupt status bar
+    sprite->sz_bot = (sz_cut < rdraw_viewheight)? sz_cut : rdraw_viewheight;
+    newsprite->sz_top = sz_cut - 1;
 
-        if(sector->lightlist[i].height < sprite->pzt && sector->lightlist[i].height > sprite->pz)
-                sprite->pz = newsprite->pzt = sector->lightlist[i].height;
-        else
-        {
-                newsprite->pz = newsprite->gz; 
-                newsprite->pzt = newsprite->gzt;
-        }
+    if(lightheight < sprite->pz_top
+	   && lightheight > sprite->pz_bot)
+    {
+        sprite->pz_bot = newsprite->pz_top = lightheight;
+    }
+    else
+    {
+        newsprite->pz_bot = newsprite->gz_bot; 
+        newsprite->pz_top = newsprite->gz_top;
+    }
 
     newsprite->cut |= SC_TOP;
     if(!(sector->lightlist[i].caster->flags & FF_NOSHADE))
@@ -884,8 +896,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 
 //
 // R_ProjectSprite
-// Generates a vissprite for a thing
-//  if it might be visible.
+// Generates a vissprite for a thing, if it might be visible.
 //
 static void R_ProjectSprite (mobj_t* thing)
 {
@@ -904,6 +915,8 @@ static void R_ProjectSprite (mobj_t* thing)
     int                 x1;
     int                 x2;
 
+    sector_t*		thingsector;	 // [WDJ] 11/14/2009
+   
     spritedef_t*        sprdef;
     spriteframe_t*      sprframe;
     int                 lump;
@@ -919,7 +932,7 @@ static void R_ProjectSprite (mobj_t* thing)
     fixed_t             iscale;
 
     //SoM: 3/17/2000
-    fixed_t             gzt;
+    fixed_t             gz_top;
     int                 heightsec;
     int                 light = 0;
 
@@ -1015,18 +1028,18 @@ static void R_ProjectSprite (mobj_t* thing)
     if (x2 < 0)
         return;
 
-    //SoM: 3/17/2000: Disreguard sprites that are out of view..
-    gzt = thing->z + spritetopoffset[lump];
+    //SoM: 3/17/2000: Disregard sprites that are out of view..
+    gz_top = thing->z + spritetopoffset[lump];
 
 
-    if(thing->subsector->sector->numlights)
+    thingsector = thing->subsector->sector;	 // [WDJ] 11/14/2009
+    if(thingsector->numlights)
     {
       int lightnum;
-      light = R_GetPlaneLight(thing->subsector->sector, gzt, false);
-      if(thing->subsector->sector->lightlist[light].caster && thing->subsector->sector->lightlist[light].caster->flags & FF_FOG)
-        lightnum = (*thing->subsector->sector->lightlist[light].lightlevel  >> LIGHTSEGSHIFT);
-      else
-        lightnum = (*thing->subsector->sector->lightlist[light].lightlevel  >> LIGHTSEGSHIFT)+extralight;
+      light = R_GetPlaneLight(thingsector, gz_top, false);
+      lightnum = (*thingsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT);
+      if(!(thingsector->lightlist[light].caster && thingsector->lightlist[light].caster->flags & FF_FOG))
+        lightnum += extralight;
 
       if (lightnum < 0)
           spritelights = scalelight[0];
@@ -1036,17 +1049,17 @@ static void R_ProjectSprite (mobj_t* thing)
           spritelights = scalelight[lightnum];
     }
 
-    heightsec = thing->subsector->sector->heightsec;
+    heightsec = thingsector->heightsec;
 
     if (heightsec != -1)   // only clip things which are in special sectors
     {
       int phs = viewplayer->mo->subsector->sector->heightsec;
       if (phs != -1 && viewz < sectors[phs].floorheight ?
           thing->z >= sectors[heightsec].floorheight :
-          gzt < sectors[heightsec].floorheight)
+          gz_top < sectors[heightsec].floorheight)
         return;
       if (phs != -1 && viewz > sectors[phs].ceilingheight ?
-          gzt < sectors[heightsec].ceilingheight &&
+          gz_top < sectors[heightsec].ceilingheight &&
           viewz >= sectors[heightsec].ceilingheight :
           thing->z >= sectors[heightsec].ceilingheight)
         return;
@@ -1059,28 +1072,29 @@ static void R_ProjectSprite (mobj_t* thing)
     vis->scale = yscale;           //<<detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
-    vis->gz = gzt - spriteheight[lump];
-    vis->gzt = gzt;
+    vis->gz_bot = gz_top - spriteheight[lump];
+    vis->gz_top = gz_top;
     vis->thingheight = thing->height;
-        vis->pz = thing->z;
-        vis->pzt = vis->pz + vis->thingheight;
-    vis->texturemid = vis->gzt - viewz;
+    vis->pz_bot = thing->z;
+    vis->pz_top = vis->pz_bot + vis->thingheight;
+    vis->texturemid = vis->gz_top - viewz;
     // foot clipping
     if(thing->flags2&MF2_FEETARECLIPPED
-    && thing->z <= thing->subsector->sector->floorheight)
+       && thing->z <= thingsector->floorheight)
+    { 
          vis->texturemid -= 10*FRACUNIT;
+    }
 
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= rdraw_viewwidth ? rdraw_viewwidth-1 : x2;
     vis->xscale = xscale; //SoM: 4/17/2000
-    vis->sector = thing->subsector->sector;
-    vis->szt = (centeryfrac - FixedMul(vis->gzt - viewz, yscale)) >> FRACBITS;
-    vis->sz = (centeryfrac - FixedMul(vis->gz - viewz, yscale)) >> FRACBITS;
-    vis->cut = false;
-    if(thing->subsector->sector->numlights)
-      vis->extra_colormap = thing->subsector->sector->lightlist[light].extra_colormap;
-    else
-      vis->extra_colormap = thing->subsector->sector->extra_colormap;
+    vis->sector = thingsector;
+    vis->sz_top = (centeryfrac - FixedMul(vis->gz_top - viewz, yscale)) >> FRACBITS;
+    vis->sz_bot = (centeryfrac - FixedMul(vis->gz_bot - viewz, yscale)) >> FRACBITS;
+    vis->cut = SC_NONE;	// none, false
+    vis->extra_colormap = (thingsector->numlights) ?
+        thingsector->lightlist[light].extra_colormap
+        : thingsector->extra_colormap;
 
     iscale = FixedDiv (FRACUNIT, xscale);
 
@@ -1146,8 +1160,8 @@ static void R_ProjectSprite (mobj_t* thing)
         }
     }
 
-    if(thing->subsector->sector->numlights)
-      R_SplitSprite(vis, thing);
+    if(thingsector->numlights)
+        R_SplitSprite(vis, thing);
 }
 
 
@@ -1281,10 +1295,9 @@ void R_DrawPSprite (pspdef_t* psp)
     // store information in a vissprite
     vis = &avis;
     vis->mobjflags = 0;
-    if(cv_splitscreen.value)
-        vis->texturemid = (120<<(FRACBITS))+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
-    else
-        vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
+    vis->texturemid = (cv_splitscreen.value) ?
+        (120<<(FRACBITS))+FRACUNIT/2-(psp->sy-spritetopoffset[lump])
+        : (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
 
     if( raven ) {
         if( rdraw_viewheight == vid.height || (!cv_scalestatusbar.value && vid.dupy>1))
@@ -1294,7 +1307,7 @@ void R_DrawPSprite (pspdef_t* psp)
     //vis->texturemid += FRACUNIT/2;
 
     vis->x1 = x1 < 0 ? 0 : x1;
-    vis->x2 = x2 >= rdraw_viewwidth ? rdraw_viewwidth-1 : x2;
+    vis->x2 = (x2 >= rdraw_viewwidth) ? rdraw_viewwidth-1 : x2;
     vis->scale = pspriteyscale;  //<<detailshift;
 
     if (flip)
@@ -1562,11 +1575,11 @@ static void R_CreateDrawNodes()
     R_SortVisSprites();
     for(rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
     {
-      if(rover->szt > vid.height || rover->sz < 0)
+      if(rover->sz_top > vid.height || rover->sz_bot < 0)
         continue;
 
       sintersect = (rover->x1 + rover->x2) / 2;
-      gzm = (rover->gz + rover->gzt) / 2;
+      gzm = (rover->gz_bot + rover->gz_top) / 2;
 
       for(r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
       {
@@ -1574,15 +1587,15 @@ static void R_CreateDrawNodes()
         {
           if(r2->plane->minx > rover->x2 || r2->plane->maxx < rover->x1)
             continue;
-          if(rover->szt > r2->plane->low || rover->sz < r2->plane->high)
+          if(rover->sz_top > r2->plane->low || rover->sz_bot < r2->plane->high)
             continue;
 
-          if((r2->plane->height < viewz && rover->pz < r2->plane->height) ||
-            (r2->plane->height > viewz && rover->pzt > r2->plane->height))
+          if((r2->plane->height < viewz && rover->pz_bot < r2->plane->height) ||
+            (r2->plane->height > viewz && rover->pz_top > r2->plane->height))
           {
             // SoM: NOTE: Because a visplane's shape and scale is not directly
             // bound to any single lindef, a simple poll of it's frontscale is
-            // not adiquate. We must check the entire frontscale array for any
+            // not adequate. We must check the entire frontscale array for any
             // part that is in front of the sprite.
 
             x1 = rover->x1;
@@ -1618,8 +1631,8 @@ static void R_CreateDrawNodes()
             continue;
 
           if((*r2->ffloor->topheight > viewz && *r2->ffloor->bottomheight < viewz) ||
-            (*r2->ffloor->topheight < viewz && rover->gzt < *r2->ffloor->topheight) ||
-            (*r2->ffloor->bottomheight > viewz && rover->gz > *r2->ffloor->bottomheight))
+            (*r2->ffloor->topheight < viewz && rover->gz_top < *r2->ffloor->topheight) ||
+            (*r2->ffloor->bottomheight > viewz && rover->gz_bot > *r2->ffloor->bottomheight))
           {
             entry = R_CreateDrawNode(NULL);
             (entry->prev = r2->prev)->next = entry;
@@ -1651,7 +1664,7 @@ static void R_CreateDrawNodes()
         {
           if(r2->sprite->x1 > rover->x2 || r2->sprite->x2 < rover->x1)
             continue;
-          if(r2->sprite->szt > rover->sz || r2->sprite->sz < rover->szt)
+          if(r2->sprite->sz_top > rover->sz_bot || r2->sprite->sz_bot < rover->sz_top)
             continue;
 
           if(r2->sprite->scale > rover->scale)
@@ -1761,8 +1774,7 @@ void R_DrawSprite (vissprite_t* spr)
         clipbot[x] = cliptop[x] = -2;
 
     // Scan drawsegs from end to start for obscuring segs.
-    // The first drawseg that has a greater scale
-    //  is the clip seg.
+    // The first drawseg that has a greater scale is the clip seg.
     //SoM: 4/8/2000:
     // Pointer check was originally nonportable
     // and buggy, by going past LEFT end of array:
@@ -1809,10 +1821,10 @@ void R_DrawSprite (vissprite_t* spr)
         // clip this piece of the sprite
         silhouette = ds->silhouette;
 
-        if (spr->gz >= ds->bsilheight)
+        if (spr->gz_bot >= ds->bsilheight)
             silhouette &= ~SIL_BOTTOM;
 
-        if (spr->gzt <= ds->tsilheight)
+        if (spr->gz_top <= ds->tsilheight)
             silhouette &= ~SIL_TOP;
 
         if (silhouette == 1)
@@ -1846,7 +1858,7 @@ void R_DrawSprite (vissprite_t* spr)
     {
         fixed_t h,mh;
         int phs = viewplayer->mo->subsector->sector->heightsec;
-        if ((mh = sectors[spr->heightsec].floorheight) > spr->gz &&
+        if ((mh = sectors[spr->heightsec].floorheight) > spr->gz_bot &&
            (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0 &&
            (h >>= FRACBITS) < rdraw_viewheight)
         {
@@ -1864,7 +1876,7 @@ void R_DrawSprite (vissprite_t* spr)
             }
         }
 
-        if ((mh = sectors[spr->heightsec].ceilingheight) < spr->gzt &&
+        if ((mh = sectors[spr->heightsec].ceilingheight) < spr->gz_top &&
            (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0 &&
            (h >>= FRACBITS) < rdraw_viewheight)
         {
@@ -1887,13 +1899,18 @@ void R_DrawSprite (vissprite_t* spr)
       fixed_t   h;
       for(x = spr->x1; x <= spr->x2; x++)
       {
-        h = spr->szt;
+        h = spr->sz_top;
         if(cliptop[x] == -2 || h > cliptop[x])
           cliptop[x] = h;
 
-        h = spr->sz;
+        h = spr->sz_bot;
         if(clipbot[x] == -2 || h < clipbot[x])
           clipbot[x] = h;
+#if 0
+        // brute fix to status bar clipping, until better fix (found R_SplitSprite)
+        if ( rdraw_viewheight < clipbot[x] )	// [WDJ] brute temp fix
+	    clipbot[x] = rdraw_viewheight;
+#endif
       }
     }
     else if(spr->cut & SC_TOP)
@@ -1901,7 +1918,7 @@ void R_DrawSprite (vissprite_t* spr)
       fixed_t   h;
       for(x = spr->x1; x <= spr->x2; x++)
       {
-        h = spr->szt;
+        h = spr->sz_top;
         if(cliptop[x] == -2 || h > cliptop[x])
           cliptop[x] = h;
       }
@@ -1911,7 +1928,7 @@ void R_DrawSprite (vissprite_t* spr)
       fixed_t   h;
       for(x = spr->x1; x <= spr->x2; x++)
       {
-        h = spr->sz;
+        h = spr->sz_bot;
         if(clipbot[x] == -2 || h < clipbot[x])
           clipbot[x] = h;
       }
