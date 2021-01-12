@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 579 2009-11-30 03:45:36Z wesleyjohnson $
+// $Id: p_setup.c 582 2009-12-03 06:41:59Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -709,7 +709,7 @@ void P_LoadThings (int lump)
     int                 i;
     mapthing_t*         mt;
     boolean             spawn;
-    char                *data, *datastart;
+    byte                *data, *datastart;
 
     data = datastart = W_CacheLumpNum (lump,PU_LEVEL);
     nummapthings     = W_LumpLength (lump) / (5 * sizeof(short));

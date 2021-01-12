@@ -19,13 +19,13 @@ succeed in overly difficult wads without resorting to noclip.
 
 *** w3_gamma
 patchfile= w3_gamma.patch
-- HOLDING
+- merged with w25_gamma
 Adds another, darker, gamma table.
 See newer gamma generator.
 
 *** w4_zalloc
 patchfile= zalloc.patch,  zalloc_v2.patch
-- HOLDING
+- merged with w22_zone
 Two critical errors fixed in the Z_Malloc code.
 See newer z_zone.c file, with more capability.
 
@@ -63,7 +63,7 @@ properly handled such as to prevent crashing the program.
 
 *** w9.1_misc
 patchfile= w91_misc.patch
-- todo
+- merged with w23_comment
 Comments
 
 *** w9.5_opt_debug
@@ -108,7 +108,7 @@ usage of PU_CACHE throughout the whole program.
 
 *** w13_alloc_cache
 patchfile= w13_alloc_cache.patch
-- HOLDING
+- merged with w22_zone
 - Careful analysis of the PU_CACHE usage and fixing any usage where it
 crosses another call of Z_Malloc.
 - Adds additional PU_IN_USE, PU_LUMP, PU_CACHE_DEFAULT, to help prevent
@@ -195,8 +195,17 @@ Fix indentation to match surrounding, spelling.
 Add comments to record.
 Add {} on FOR and IF with multiple lines, to clarify reading.
 
-*** w24_init_warngins
+*** w24_init_warnings
 patchfile = w24_init_warnings.patch
 - committed revision 579    by wesley johnson
 Fix stmts that give compiler warnings about variable be used uninit.
 Large amount of re-indentation and added {} in p_spec.c.
+
+*** w25_gamma
+patchfile = w25_gamma.patch
+- committed revision 480    by wesley johnson
+Replaces w3_gamma.  Compile option with multiple gamma table generators.
+Adds control to select gamma table generator.
+Removes old gamma tables.
+Adds Effects menu, because video menu too crowded with added gamma
+controls.

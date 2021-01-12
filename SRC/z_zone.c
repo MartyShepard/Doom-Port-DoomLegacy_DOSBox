@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 577 2009-11-30 03:32:36Z wesleyjohnson $
+// $Id: z_zone.c 582 2009-12-03 06:41:59Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2009 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -191,7 +191,7 @@ typedef struct
     memblock_t  blocklist;
    
     // total bytes malloced, including header
-    ULONG	size;
+    uint32_t	size;
 
     memblock_t* rover;
 
@@ -402,7 +402,7 @@ void Z_Init (void)
     }
     else
     {
-        ULONG       freemem, total;
+        uint32_t  freemem, total;
         freemem = I_GetFreeMem(&total)>>20;
         total >>= 20;	// MiB
         CONS_Printf("system memory %d MiB free %d MiB\n",
@@ -511,10 +511,10 @@ void Z_Purge( memblock_t* block )
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 //
 #ifdef ZDEBUG
-void*   Z_Malloc2 (int reqsize, memtag_e tag, void *user, int alignbits,
+void*   Z_Malloc2 (int reqsize, memtag_e tag, void **user, int alignbits,
 		   char *file, int line)
 #else
-void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
+void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 #endif
 {
     memblock_t* newblock;
@@ -548,7 +548,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
     newblock->user = user;
     newblock->size = memalloc_size;
     void* basedata = (byte*)newblock + sizeof(memblock_t);
-    if(user) *(void **)user = basedata;
+    if (user) *user = basedata;
     return basedata;
 }
 
@@ -562,26 +562,27 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
 #define MINFRAGMENT             sizeof(memblock_t)
 
 #ifdef ZDEBUG
-void*   Z_Malloc2 (int reqsize, memtag_e tag, void *user, int alignbits,
+void*   Z_Malloc2 (int reqsize, memtag_e tag, void **user, int alignbits,
 		   char *file, int line)
 #else
-void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
+void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 #endif
 {
     memblock_t* start;	// marks start of search
     memblock_t* rover;	// walks through block list
     memblock_t* base = NULL;	// [WDJ] points to usable memory, or is NULL
+    byte *basedata;
+
     int   memalloc_size;	// with the memalloc header
     int   basesize = 0;	// accumulate blocks
-    int   basedata;
-    int   misalign = 0;	// align mismatch
     int	  tries = 0;	// [WDJ] Try multiple passes before bombing out
       // [WDJ] TODO: could compact memory after first try
       // 1. Call owners of memory to reallocate, and clean up ptrs.
       // 2. Let tag give permission to move blocks and update user ptr.
-    
-    ULONG alignmask=(1<<alignbits)-1;
-#define ALIGN(a) (((ULONG)a+alignmask) & ~alignmask)
+
+    // this is still a bit icky, but size_t should always be able to fit pointers
+    size_t alignmask = (1 << alignbits) - 1;
+#define ALIGN(p) (byte *)(((size_t)(p) + alignmask) & ~alignmask)
 
    
 // ZONE_ZALLOC
@@ -736,13 +737,13 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
         // base is available, so test it against size
        
 	// trial data alignment
-        basedata = ALIGN((ULONG)base + sizeof(memblock_t));
+        basedata = ALIGN((byte *)base + sizeof(memblock_t));
 	//Hurdler: huh? it crashed on my system :( (with 777.wad and 777.deh, only software mode)
 	//         same problem with MR.ROCKET's wad -> it's probably not a problem with the wad !?
 	//         this is because base doesn't point to something valid (and it's not NULL)
 	// Check addr of end of blocks for fit
 	// 	if( ((ULONG)base)+base->size >= basedata+memalloc_size-sizeof(memblock_t) ) break;
-	if( (((ULONG)base) + basesize) >= (basedata + reqsize) ) {
+	if( (byte *)base + basesize >= basedata + reqsize ) {
 	   // fits
 #if 0
 	   // [WDJ] Attempt at better allocation, does not have any effect
@@ -758,13 +759,12 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
 	      // If misalignment is not large enough for a MINFRAGMENT, then
 	      // cannot always find a place to put it, and it will cause errors.
 	      // Eliminate problem by selecting a different block.
-              memblock_t*  newbase = ((memblock_t*)basedata) - 1;
-	      misalign = (byte*)newbase - (byte*)base;	// extra before
+	      int misalign = (basedata - sizeof(memblock_t)) - (byte*)base;	// extra before
 	      if( misalign <= MINFRAGMENT ) {   // have a problem
 		 // require room for MINFRAGMENT to hold misalign memory.
 		 // with at least 1 byte in the fragment, to avoid a strange case
-		 basedata = ALIGN( (ULONG)base + sizeof(memblock_t) + MINFRAGMENT + 1 );
-		 if( (((ULONG)base) + basesize) >= (basedata + reqsize) )  break;  // OK
+		 basedata = ALIGN( (byte *)base + sizeof(memblock_t) + MINFRAGMENT + 1 );
+		 if( (byte *)base + basesize >= basedata + reqsize )  break;  // OK
 		 continue;	// too small for misalign, try another block
 	      }
 	   }
@@ -801,8 +801,8 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
     {
         // The new, aligned, block.
 	// Sub 1 from memblock ptr is same as sub of header size.
-        memblock_t*  newbase = ((memblock_t*)basedata) - 1;
-        misalign = (byte*)newbase - (byte*)base;	// extra before
+        memblock_t *newbase = (memblock_t *)basedata - 1;
+        int misalign = (byte*)newbase - (byte*)base;	// extra before
 
 	// [WDJ] 1/20/2009 loop ensures misalign is 0, or >= MINFRAGMENT.
         if( misalign > MINFRAGMENT )
@@ -847,18 +847,18 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void *user, int alignbits )
     }
 
     // pointer to the data area after header; aligned has base already aligned
-    void * blockdata = (byte *)base + sizeof(memblock_t);
+    void *blockdata = (byte *)base + sizeof(memblock_t);
 
     if (user)
     {
         // setup user owner ptr
-        *(void **)user = blockdata;
+        *user = blockdata;
     }
     else
     {
 	// [WDJ] Most of the calls have user==NULL !!
         if (tag >= PU_PURGELEVEL) {
-            //I_SoftError ("Z_Malloc: an owner is required for purgable blocks");
+            I_SoftError ("Z_Malloc: an owner is required for purgable blocks");
 	    tag = PU_LEVEL;	// does not require user
 	}
     }
@@ -975,13 +975,13 @@ void Z_FileDumpHeap (FILE* f)
     memblock_t* block;
     int i=0;
 
-    fprintf (f, "zone size: %li     location: %p\n",mainzone->size,mainzone);
+    fprintf (f, "zone size: %d     location: %p\n",mainzone->size,mainzone);
 
     for (block = mainzone->blocklist.next ; ; block = block->next)
     {
         i++;
-        fprintf (f,"block:%p size:%7i user:%7x tag:%3i prev:%p next:%p id:%7i\n",
-                 block, block->size, (int)block->user, block->tag, block->prev, block->next, block->id);
+        fprintf (f,"block:%p size:%7i user:%p tag:%3i prev:%p next:%p id:%7i\n",
+                 block, block->size, block->user, block->tag, block->prev, block->next, block->id);
 
         if (block->next == &mainzone->blocklist)
         {
@@ -990,7 +990,7 @@ void Z_FileDumpHeap (FILE* f)
         }
 
         if ( (block->user > (void **)0x100) && 
-             ((int)(*(block->user))!=((int)block)+(int)sizeof(memblock_t)))
+             (*(block->user) != (byte *)block + sizeof(memblock_t)))
             fprintf (f,"ERROR: block don't have a proper user\n");
 
 #ifdef GROW_ZONE
@@ -1030,7 +1030,7 @@ void Z_CheckHeap (int i)
         }
 
         if ( (block->user > (void **)0x100) && 
-             ((int)(*(block->user))!=((int)block)+(int)sizeof(memblock_t)))
+             (*(block->user) != (byte *)block + sizeof(memblock_t)))
             I_Error ("Z_CheckHeap: block don't have a proper user %d\n",i);
 
 #ifdef ZONE_ZALLOC
@@ -1069,7 +1069,7 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
     if (block->id != ZONEID)
         I_Error ("Z_ChangeTag: freed a pointer without ZONEID");
 
-    if (tag >= PU_PURGELEVEL && (unsigned)block->user < 0x100)
+    if (tag >= PU_PURGELEVEL && block->user < (void **)0x100)
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");
 
     if (tag == PU_FREE ) {
@@ -1190,42 +1190,42 @@ int Z_TagUsage (memtag_e tagnum)
 
 void Command_Memfree_f( void )
 {
-    ULONG freebytes, totalbytes;
+    uint32_t freebytes, totalbytes;
 #ifdef PLAIN_MALLOC
     CONS_Printf("\2Memory Heap Info - Plain Malloc\n");
-    CONS_Printf("used  memory       : %7d kb\n", memhead.size>>10);
+    CONS_Printf("used  memory       : %7d KiB\n", memhead.size>>10);
 #else   
 // ZONE_ZALLOC, TAGGED_MALLOC
-    int   memfree,cache,used,largefreeblock;
+    int  memfree, cache, used, largefreeblock;
    
-    Z_CheckHeap (-1);
-    Z_FreeMemory(&memfree,&cache,&used,&largefreeblock);
+    Z_CheckHeap(-1);
+    Z_FreeMemory(&memfree, &cache, &used, &largefreeblock);
 #ifdef TAGGED_MALLOC
     CONS_Printf("\2Memory Heap Info - Tagged Malloc\n");
-    CONS_Printf("alloc memory       : %7d kb\n", memhead.size>>10);
+    CONS_Printf("alloc memory       : %7d KiB\n", memhead.size>>10);
 #else
     CONS_Printf("\2Memory Heap Info\n");
-    CONS_Printf("Total heap size    : %7d kb\n", mb_used<<10);
+    CONS_Printf("total heap size    : %7d KiB\n", mb_used<<10);
 #endif   
-    CONS_Printf("used  memory       : %7d kb\n", used>>10);
-    CONS_Printf("free  memory       : %7d kb\n", memfree>>10);
-    CONS_Printf("cache memory       : %7d kb\n", cache>>10);
-    CONS_Printf("largest free block : %7d kb\n", largefreeblock>>10);
+    CONS_Printf("used  memory       : %7d KiB\n", used>>10);
+    CONS_Printf("free  memory       : %7d KiB\n", memfree>>10);
+    CONS_Printf("cache memory       : %7d KiB\n", cache>>10);
+    CONS_Printf("largest free block : %7d KiB\n", largefreeblock>>10);
 #ifdef HWRENDER
     if( rendermode != render_soft )
     {
-    CONS_Printf("Patch info headers : %7d kb\n", Z_TagUsage(PU_HWRPATCHINFO)>>10);
-    CONS_Printf("HW Texture cache   : %7d kb\n", Z_TagUsage(PU_HWRCACHE)>>10);
-    CONS_Printf("Plane polygone     : %7d kb\n", Z_TagUsage(PU_HWRPLANE)>>10);
-    CONS_Printf("HW Texture used    : %7d kb\n", HWD.pfnGetTextureUsed()>>10);
+    CONS_Printf("patch info headers : %7d KiB\n", Z_TagUsage(PU_HWRPATCHINFO)>>10);
+    CONS_Printf("HW texture cache   : %7d KiB\n", Z_TagUsage(PU_HWRCACHE)>>10);
+    CONS_Printf("plane polygons     : %7d KiB\n", Z_TagUsage(PU_HWRPLANE)>>10);
+    CONS_Printf("HW texture used    : %7d KiB\n", HWD.pfnGetTextureUsed()>>10);
     }
 #endif
 #endif	// PLAIN_MALLOC
 
     CONS_Printf("\2System Memory Info\n");
     freebytes = I_GetFreeMem(&totalbytes);
-    CONS_Printf("Total     physical memory: %6d kb\n", totalbytes>>10);
-    CONS_Printf("Available physical memory: %6d kb\n", freebytes>>10);
+    CONS_Printf("Total     physical memory: %6d KiB\n", totalbytes>>10);
+    CONS_Printf("Available physical memory: %6d KiB\n", freebytes>>10);
 }
 
 

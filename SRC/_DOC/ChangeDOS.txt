@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00582 ]: 64-bit fixes
+[00581*]: WDJlog
 [00580 ]: Gamma table generators, GAMMA_FUNCS
 [00579 ]: fix compiler init warnings, indent
 [00578 ]: Indent, comment, {} fixes
