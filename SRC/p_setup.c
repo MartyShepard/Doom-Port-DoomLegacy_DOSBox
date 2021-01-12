@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: p_setup.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1386,9 +1386,13 @@ boolean P_SetupLevel (int           episode,
         Z_FreeTags (PU_LEVEL, MAXINT);
         Z_FileDumpHeap (debugfile);
     }
-    else
 #endif
-        Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+
+    Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+   
+    // [WDJ] all temp lumps are unlocked, to be freed unless they are accessed first
+    Z_ChangeTags_To (PU_LUMP, PU_CACHE);
+    Z_ChangeTags_To (PU_IN_USE, PU_CACHE);	// for any missed otherwise
 
 #ifdef WALLSPLATS
     // clear the splats from previous level

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 544 2009-09-27 23:20:31Z smite-meister $
+// $Id: w_wad.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -791,6 +791,8 @@ void* W_CacheLumpNum ( int lump, int tag )
     }
     else {
         //CONS_Printf ("cache hit on lump %i\n",lump);
+        // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
+        if( tag == PU_CACHE )   tag = PU_CACHE_DEFAULT;		
         Z_ChangeTag (lumpcache[llump],tag);
     }
 

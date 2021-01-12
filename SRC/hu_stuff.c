@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: hu_stuff.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1145,21 +1145,20 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
 //
 void HU_drawDeathmatchRankings (void)
 {
-    patch_t*     p;
     fragsort_t   fragtab[MAXPLAYERS];
     int          i;
     int          scorelines;
     int          whiteplayer;
-	int          y;
-	char*		 title;
-	boolean		 large;
+    int          y;
+    char*	 title;
+    boolean	 large;
 
     // draw the ranking title panel
-	if(!cv_splitscreen.value)
-	{
-		p = W_CachePatchName("RANKINGS",PU_CACHE);
-		V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,5,0,p);
-	}
+    if(!cv_splitscreen.value)
+    {
+	patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);
+	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,5,0,p);
+    }
 
     // count frags for each present player
     scorelines = 0;

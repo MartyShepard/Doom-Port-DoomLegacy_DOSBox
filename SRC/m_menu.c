@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 571 2009-11-29 01:07:16Z wesleyjohnson $
+// $Id: m_menu.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1071,6 +1071,9 @@ void M_DrawSetupMultiPlayerMenu(void)
         skullAnimCounter<4)   //blink cursor
         V_DrawCharacter(mx+98+V_StringWidth(setupm_name),my,'_' | 0x80);
 
+    // draw box around guy
+    M_DrawTextBox(mx+90,my+8, PLBOXW, PLBOXH);
+
     // anim the player in the box
     if (--multi_tics<=0)
     {
@@ -1086,17 +1089,14 @@ void M_DrawSetupMultiPlayerMenu(void)
     sprdef    = &skins[R_SkinAvailable(setupm_cvskin->string)].spritedef;
     sprframe  = &sprdef->spriteframes[ multi_state->frame & FF_FRAMEMASK];
     lump  = sprframe->lumppat[0];
-    // temp usage of sprite lump, until end of function
-    patch = W_CachePatchNum (lump, PU_CACHE);
-
-    // draw box around guy
-    M_DrawTextBox(mx+90,my+8, PLBOXW, PLBOXH);
 
     if (setupm_cvcolor->value==0)
         colormap = colormaps;
     else
         colormap = (byte *) translationtables - 256 + (setupm_cvcolor->value<<8);
     // draw player sprite
+    // temp usage of sprite lump, until end of function
+    patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);
     V_DrawMappedPatch (mx+98+(PLBOXW*8/2),my+16+(PLBOXH*8)-8,0,patch,colormap);
 }
 

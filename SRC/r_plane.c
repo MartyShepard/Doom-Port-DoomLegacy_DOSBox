@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 574 2009-11-29 01:27:46Z wesleyjohnson $
+// $Id: r_plane.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -992,11 +992,10 @@ void R_DrawSinglePlane(visplane_t* pl, boolean handlesource)
 
   if(handlesource)
   {
-        int size;
-    ds_source = (byte *) R_GetFlat (levelflats[pl->picnum].lumpnum);
+        // [WDJ] Flat use is safe from alloc, change to PU_CACHE at function exit.
+        ds_source = (byte *) R_GetFlat (levelflats[pl->picnum].lumpnum);
 
-        size = W_LumpLength(levelflats[pl->picnum].lumpnum);
-
+        int size = W_LumpLength(levelflats[pl->picnum].lumpnum);
         switch(size)
         {
                 case 4194304: // 2048x2048 lump

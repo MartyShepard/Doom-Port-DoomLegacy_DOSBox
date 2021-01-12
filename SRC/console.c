@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 551 2009-11-09 14:15:43Z smite-meister $
+// $Id: console.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -321,7 +321,7 @@ static void CON_SetupBackColormap (void)
     whitemap = (byte *) Z_Malloc(256,PU_STATIC,NULL);
     graymap  = (byte *) Z_Malloc(256,PU_STATIC,NULL);
 
-    pal = W_CacheLumpName ("PLAYPAL",PU_CACHE);
+    pal = W_CacheLumpName ("PLAYPAL",PU_CACHE); // temp, only used next loop
 
     for(i=0,k=0; i<768; i+=3,k++)
     {
@@ -1086,7 +1086,6 @@ void CONS_Error (char *msg)
     CONS_Printf ("\2%s",msg);   // write error msg in different colour
 
     // CONS_Printf ("Press ENTER to continue\n");
-
     // dirty quick hack, but for the good cause
     // while (I_GetKey() != KEY_ENTER)
     //   ;

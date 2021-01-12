@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 564 2009-11-23 03:44:14Z smite-meister $
+// $Id: r_data.c 577 2009-11-30 03:32:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -284,15 +284,22 @@ byte* R_GenerateTexture (int texnum)
     {
         patch = texture->patches;
         blocksize = W_LumpLength (patch->patch);
+        // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
+        // follow it, as that can deallocate the PU_CACHE unexpectedly.
 #if 1
-        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
-
+        // texturecache gets copy so that PU_CACHE deallocate clears the
+	// texturecache automatically
         block = Z_Malloc (blocksize,
                           PU_STATIC,         // will change tag at end of this function
                           &texturecache[texnum]);
+        // [WDJ] Only need lump for following memcpy,
+        // without Z_Malloc between which could deallocate PU_CACHE memory
+        realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
         memcpy (block, realpatch, blocksize);
 #else
-        // FIXME: this version don't put the user z_block
+        // FIXME: this version puts the z_block user as lumpcache,
+        // instead of as texturecache, so deallocate by PU_CACHE leaves
+        // texturecache with a bad ptr.
         texturecache[texnum] = block = W_CacheLumpNum (patch->patch, PU_STATIC);
 #endif
         //CONS_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,blocksize);
@@ -333,6 +340,7 @@ byte* R_GenerateTexture (int texnum)
          i<texture->patchcount;
          i++, patch++)
     {
+        // [WDJ] patch only used in this loop, without any other Z_Malloc
         realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
         x1 = patch->originx;
         x2 = x1 + SHORT(realpatch->width);
@@ -350,7 +358,7 @@ byte* R_GenerateTexture (int texnum)
             patchcol = (column_t *)((byte *)realpatch
                                     + LONG(realpatch->columnofs[x-x1]));
 
-            // generate column ofset lookup
+            // generate column offset lookup
             colofs[x] = (x * texture->height) + (texture->width*4);
 
             R_DrawColumnInCache (patchcol,
@@ -362,7 +370,7 @@ byte* R_GenerateTexture (int texnum)
 
 done:
     // Now that the texture has been built in column cache,
-    //  it is purgable from zone memory.
+    //  texturecache is purgable from zone memory.
     Z_ChangeTag (block, PU_CACHE);
 
     return blocktex;
@@ -401,7 +409,10 @@ byte* R_GetColumn ( int           tex,
 
 byte* R_GetFlat (int  flatlumpnum)
 {
-    return W_CacheLumpNum (flatlumpnum, PU_CACHE);
+   // [WDJ] Checking all callers shows that they might tolerate PU_CACHE,
+   // but this is safer, and has less reloading of the flats
+    return W_CacheLumpNum (flatlumpnum, PU_LUMP);
+//    return W_CacheLumpNum (flatlumpnum, PU_CACHE);
 
 /*  // this code work but is useless
     byte*    data;
@@ -461,11 +472,13 @@ void R_FlushTextureCache (void)
     int i;
 
     if (numtextures>0)
+    {
         for (i=0; i<numtextures; i++)
         {
             if (texturecache[i])
                 Z_Free (texturecache[i]);
         }
+    }
 }
 
 //
@@ -1174,7 +1187,7 @@ void R_Init8to16 (void)
     byte*       palette;
     int         i;
 
-    palette = W_CacheLumpName ("PLAYPAL",PU_CACHE);
+    palette = W_CacheLumpName ("PLAYPAL",PU_CACHE);  // temp, used next loop
 
     for (i=0;i<256;i++)
     {
@@ -1182,6 +1195,7 @@ void R_Init8to16 (void)
         color8to16[i] = makecol15 (palette[0],palette[1],palette[2]);
         palette += 3;
     }
+    // end PLAYPAL lump use
 
     // test a big colormap
     hicolormaps = Z_Malloc (32768 /**34*/, PU_STATIC, 0);
