@@ -264,3 +264,10 @@ patchfile = w32_p3.patch
 Gives alternative for round and roundf in video.  They are not standard library
 and are C99 only.
 
+*** w33_b_node
+patchfile = w33_b_node2.patch
+- committed revision 592   by wesley johnson
+Adds a test for indexes out-of-bounds before accessing the b_node array.
+This stops legacy from having a segfault for some wads with minor flaws,
+like using a Boom linedef 244 instead of 242.
+Also fixes some indenting and add some brackets to make readable.

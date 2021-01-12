@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00592 ]: b_node index validity check
 [00591 ]: Lib func round,roundf are C99
 [00590 ]: Swap in hardware and subdirectories
 [00589 ]: endian swap in patches, part2

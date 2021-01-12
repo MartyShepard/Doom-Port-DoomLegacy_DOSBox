@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 558 2009-11-15 15:25:23Z smite-meister $
+// $Id: b_node.c 592 2010-01-20 21:08:26Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -43,7 +43,7 @@
 sector_t *oksector = NULL;
 
 boolean				botdoorfound = false,
-							botteledestfound = false;
+				botteledestfound = false;
 int					botteledestx,
 					botteledesty,
 					botteletype,
@@ -130,7 +130,9 @@ SearchNode_t* B_GetClosestReachableNode(fixed_t x, fixed_t y)
 	}
 
 	for (i = nx-1; !tempNode && (i <= nx+1); i++)
-	for (j = ny-1; !tempNode && (j <= ny+1); j++)
+        {
+	  for (j = ny-1; !tempNode && (j <= ny+1); j++)
+          {
 		if ((i >= 0) && (i < xSize) && (j >= 0) && (j < ySize))
 		{
 			tempNode = botNodeArray[i][j];
@@ -141,6 +143,8 @@ SearchNode_t* B_GetClosestReachableNode(fixed_t x, fixed_t y)
 					tempNode = NULL;
 			}
 		}
+	  }
+	}
 
 	if (!tempNode)
 		tempNode = B_FindClosestNode(x, y);
@@ -163,7 +167,9 @@ SearchNode_t* B_GetNodeAt(fixed_t x, fixed_t y)
 	}
 
 	for (i = nx-1; !tempNode && (i <= nx+1); i++)
-	for (j = ny-1; !tempNode && (j <= ny+1); j++)
+        {
+	  for (j = ny-1; !tempNode && (j <= ny+1); j++)
+	  {
 		if ((i >= 0) && (i < xSize) && (j >= 0) && (j < ySize) && ((i != nx) && (j != ny)))
 		{
 			tempNode = botNodeArray[i][j];
@@ -174,6 +180,8 @@ SearchNode_t* B_GetNodeAt(fixed_t x, fixed_t y)
 					tempNode = NULL;
 			}
 		}
+	  }
+	}
 
 	return tempNode;
 }
@@ -197,34 +205,36 @@ boolean B_PTRPathTraverse (intercept_t *in)
 			mobj_t*	m;
 			thinker_t* th;
 
-			switch(line->special)
-			{
-				case 1:           // Vertical Door
-				case 26:          // Blue Door/Locked
-				case 27:          // Yellow Door /Locked
-				case 28:          // Red Door /Locked
+		    	switch(line->special)
+		    	{
+			  case 1:           // Vertical Door
+			  case 26:          // Blue Door/Locked
+			  case 27:          // Yellow Door /Locked
+			  case 28:          // Red Door /Locked
 
-				case 31:          // Manual door open
-				case 32:          // Blue locked door open
-				case 33:          // Red locked door open
-				case 34:          // Yellow locked door open
+			  case 31:          // Manual door open
+			  case 32:          // Blue locked door open
+			  case 33:          // Red locked door open
+			  case 34:          // Yellow locked door open
 
-				case 62:			//SR slow lift
-				case 123:			//SR blazing lift
+			  case 62:	    //SR slow lift
+			  case 123:	    //SR blazing lift
 
-				case 117:         // Blazing door raise
-				case 118:         // Blazing door open
+			  case 117:         // Blazing door raise
+			  case 118:         // Blazing door open
 					//Determine if looking at backsector/frontsector.
 					oksector = (line->backsector == last_s) ? line->frontsector : line->backsector;
 
 					botdoorfound = true;
 					break;
 			  //case 39:      // TELEPORT TRIGGER	useful only once anyway so forget it
-				case 97:      // TELEPORT RETRIGGER
-				case 208:     //boom Silent thing teleporters
-				case 207:
+			  case 97:      // TELEPORT RETRIGGER
+			  case 208:     //boom Silent thing teleporters
+			  case 207:
 				for (i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+                                {
 					for (th = thinkercap.next; th != &thinkercap; th = th->next)
+                                        {
 						if (th->function.acp1 == (actionf_p1) P_MobjThinker &&
 							(m = (mobj_t *) th)->type == MT_TELEPORTMAN  &&
 							m->subsector->sector-sectors == i)
@@ -234,8 +244,10 @@ boolean B_PTRPathTraverse (intercept_t *in)
 							botteledesty = m->y;
 							botteletype = line->special;
 
-							//CONS_Printf("found a teleporter line going to x:%d, y:%d\n", botteledestx, botteledesty);
+							//CONS_Printf("found a teleport thing going to x:%d, y:%d\n", botteledestx, botteledesty);
 						}
+					}
+				}
 				break;
 			  // boom linedef types.
 			  case 243:     //Same as below but trigger once.
@@ -243,17 +255,21 @@ boolean B_PTRPathTraverse (intercept_t *in)
 			  case 262:     //Same as 243 but reversed
 			  case 263:     //Same as 244 but reversed
 				if (!botteledestfound)
-				for (i = -1; (i = P_FindLineFromLineTag(line, i)) >= 0;)
-				if (&lines[i] != line)
-				{
+			        {
+				  for (i = -1; (i = P_FindLineFromLineTag(line, i)) >= 0;)
+				  {
+				    if (&lines[i] != line)
+				    {
 					botteledestfound = true;
 					botteledestx = (lines[i].v1->x+lines[i].v2->x)/2 - ((line->v1->x+line->v2->x)/2 - botteledestx);
 					botteledesty = (lines[i].v1->y+lines[i].v2->y)/2 - ((line->v1->y+line->v2->y)/2 - botteledesty);
 					botteletype = line->special;
 
-							//CONS_Printf("found a teleporter line going to x:%d, y:%d\n", botteledestx, botteledesty);
+					//CONS_Printf("found a teleporter line going to x:%d, y:%d\n", botteledestx, botteledesty);
+				    }
+				    break;
+				  }
 				}
-				break;
 			  default:	//not a special type
 
 				botteledestfound = false;
@@ -268,7 +284,7 @@ boolean B_PTRPathTraverse (intercept_t *in)
 					if (((floorheight > (last_s->floorheight+(45<<FRACBITS))) || (((floorheight > (last_s->floorheight+(37<<FRACBITS))) && (last_s->floortype == FLOOR_WATER)))))
 						return false;	//i can't jump or reach there
 				}
-			}
+			} // switch
 
 			return true;
 		}
@@ -331,17 +347,19 @@ boolean B_CheckNodePosition(mobj_t* thing, fixed_t x, fixed_t y)
     yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
     for (bx=xl ; bx<=xh ; bx++)
+    {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_NodeReachable))
                 return false;
+    }
 			
-	return true;
+    return true;
 }
 
 boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t desty)
 {
 	fixed_t		nx = x2PosX(destx),
-				ny = y2PosY(desty);
+			ny = y2PosY(desty);
 
 	botdoorfound = false;
 	botteledestfound = false;
@@ -363,7 +381,9 @@ boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t
 				&& P_PathTraverse (x - 1, y - 1, destx, desty, PT_ADDLINES|PT_ADDTHINGS, B_PTRPathTraverse)
 				&& P_PathTraverse (x + 1, y - 1, destx, desty, PT_ADDLINES|PT_ADDTHINGS, B_PTRPathTraverse)
 				&& P_PathTraverse (x, y, destx, desty, PT_ADDLINES|PT_ADDTHINGS, B_PTRPathTraverse))
+		        {
 				return true;
+			}
 			else
 			{
 				botteledestfound = false;
@@ -379,7 +399,7 @@ boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t
 
 int B_GetNodeCost(SearchNode_t* node)
 {
-	int				cost = 10000;
+	int			cost = 10000;
 	sector_t*		sector;
 	if (node)
 	{
@@ -425,9 +445,11 @@ void B_DeleteNode(SearchNode_t* node)
 void B_SetNodeTeleDest(SearchNode_t* node)
 {
 	fixed_t		x = x2ClosestPosX(botteledestx),
-				y = y2ClosestPosY(botteledesty);
+			y = y2ClosestPosY(botteledesty);
 
 	//CONS_Printf("trying to make a tele node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
+        if( x >= 0 && x < xSize && y >=0 && y <= ySize )
+        {
 	
 		if (!botNodeArray[x][y])
 		{
@@ -439,6 +461,11 @@ void B_SetNodeTeleDest(SearchNode_t* node)
 		else
 			node->dir[BDI_TELEPORT] = botNodeArray[x][y];
 		node->costDir[BDI_TELEPORT] = 20000;//B_GetNodeCost(node->dir[TELEPORT]);
+	}
+        else
+        {
+	        I_SoftError( "Tele node bad pos, x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
+        }
 }
 
 void B_BuildNodes(SearchNode_t* node)
@@ -456,7 +483,7 @@ void B_BuildNodes(SearchNode_t* node)
    // Resolved by removing code that searched twice to get less fragmentation.
    // Some of the purgable memory blocks deleted were probably still in use
    // in this routine.  The handling of such memory by this routine is fragile,
-   // it is suspicious, and probably needs a more robust fix.	
+   // it is suspicious, and probably needs a more robust fix.
 	while (!B_LLIsEmpty(queue))
 	{
 		node = B_LLRemoveLastNode(queue);
