@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00590 ]: Swap in hardware and subdirectories
 [00589 ]: endian swap in patches, part2
 [00588 ]: endian swap in wads, part1
 [00587 ]: heretic sound, old sound fixes again (SDL Only)

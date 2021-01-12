@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 588 2010-01-08 04:08:18Z wesleyjohnson $
+// $Id: w_wad.h 590 2010-01-19 21:03:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -187,6 +187,7 @@ void*   W_CacheLumpName (char* name, int tag);
 void*   W_CachePatchName (char* name, int tag);
 
 void*   W_CachePatchNum (int lump, int tag);                        // return a patch_t
+void*   W_CachePatchNum_Endian ( int lump, int tag );
 
 void*   W_CacheRawAsPic( int lump, int width, int height, int tag); // return a pic_t
 

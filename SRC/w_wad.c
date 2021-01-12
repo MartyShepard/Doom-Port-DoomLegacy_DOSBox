@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: w_wad.c 590 2010-01-19 21:03:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -835,8 +835,9 @@ void* W_CacheLumpName ( char* name, int tag )
 // Cache a patch into heap memory, convert the patch format as necessary
 //
 
-// Software-only compile cache the data without conversion
-inline void* W_CachePatchNum_Soft ( int lump, int tag )
+// Cache the patch with endian conversion
+// [WDJ] Only read patches using this function, hardware render too.
+inline void* W_CachePatchNum_Endian ( int lump, int tag )
 {
 #ifdef __BIG_ENDIAN__
     patch_t * patch = W_CacheLumpNum(lump,tag);
@@ -847,6 +848,18 @@ inline void* W_CachePatchNum_Soft ( int lump, int tag )
         patch->width = LE_SWAP16(patch->width);
 	patch->topoffset = LE_SWAP16(patch->topoffset);
 	patch->leftoffset = LE_SWAP16(patch->leftoffset);
+        {
+#if 1
+	    // [WDJ] Paranoid, until someone can test this
+            int i = 7;	    
+#else
+	    // [WDJ] Only uses columnofs[ 0 .. width-1 ],
+            int i = patch->width - 1;  // max 0..7
+	    // but do one more for safety, at least until proven safe.
+            if( i < 7 ) i++;  // max 0..7
+#endif
+            for( ; i>=0; i-- )  patch->columnofs[i] = LE_SWAP32( patch->columnofs[i] );
+	}
     }
     return patch;
 #else
@@ -858,12 +871,13 @@ inline void* W_CachePatchNum_Soft ( int lump, int tag )
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 
+// Called from many draw functions
 void* W_CachePatchNum ( int lump, int tag )
 {
     GlidePatch_t*   grPatch;
 
     if( rendermode == render_soft ) {
-        return W_CachePatchNum_Soft ( lump, tag );
+        return W_CachePatchNum_Endian ( lump, tag );
     }
    
 // ------------------------------------------------------ accelereted RENDER
@@ -889,7 +903,7 @@ void* W_CachePatchNum ( int lump, int tag )
         // we need patch w,h,offset,...
         // well this code will be executed latter in GetPatch, anyway 
         // do it now ...
-        patch_t *ptr = W_CacheLumpNum(grPatch->patchlump, PU_STATIC);
+        patch_t *ptr = W_CachePatchNum_Endian(grPatch->patchlump, PU_STATIC);
         HWR_MakePatch ( ptr, grPatch, &grPatch->mipmap);
         Z_Free (ptr); 
         //Hurdler: why not do a Z_ChangeTag (grPatch->mipmap.grInfo.data, tag) here?
@@ -904,7 +918,7 @@ void* W_CachePatchNum ( int lump, int tag )
 // Software renderer
 void* W_CachePatchNum ( int lump, int tag )
 {
-    return W_CachePatchNum_Soft( lump, tag );
+    return W_CachePatchNum_Endian( lump, tag );
 }
 #endif // HWRENDER Glide version
 

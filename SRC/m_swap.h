@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: m_swap.h 590 2010-01-19 21:03:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -106,9 +106,11 @@ int32_t swap_int32( uint32_t x);
 // (short) ===> (int16_t),  (long)  ===> (int32_t)
 // 
 // Use LE_SWAP* to convert to and from external little-endian value.
+//    Wads, lumps, MUS format, TGA format, network
 // Use BE_SWAP* to convert to and from external big-endian value.
+//    Midi
 #ifdef __BIG_ENDIAN__
-// [WDJ] Fast inline is still needed where must do swap at execution time.
+// [WDJ] Fast inline where must do swap during play (other than load).
 # define LE_SWAP16_FAST(x)  SWAP_INT16_FAST(x)
 # define LE_SWAP32_FAST(x)  SWAP_INT32_FAST(x)
 # define LE_SWAP16(x)  swap_int16(x)
@@ -116,7 +118,7 @@ int32_t swap_int32( uint32_t x);
 # define BE_SWAP16(x)  (x)
 # define BE_SWAP32(x)  (x)
 #else // little-endian machine
-// [WDJ] Fast inline is still needed where must do swap at execution time.
+// [WDJ] Fast inline where must do swap during play (other than load).
 # define LE_SWAP16_FAST(x)  (x)
 # define LE_SWAP32_FAST(x)  (x)
 # define LE_SWAP16(x)  (x)

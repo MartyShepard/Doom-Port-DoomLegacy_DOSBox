@@ -242,8 +242,8 @@ First part of extensive changes for problem of endian conversion of
 patches as they are displayed.  Creates the support SWAP macros and
 the wad functions for using them.
 
-*** w31_swap_patch
-patchfile = w31_swap_patch.patch
+*** w31a_swap_patch
+patchfile = w31a_swap_patch.patch
 - committed revision 589  by wesley johnson
 Second part of changes for endian conversion.
 Uses new macro names where needed in network code.
@@ -251,3 +251,16 @@ Removes endian code from draw patch code.
 Creates new draw patch functions to simplify the usual _NUM and _NAME calls.
 Extensive checking and comments on all endian swaps, fixed several places where
 endian swaps were applied where they should not.
+
+*** w31b_swap_patch
+patchfile = w31b_swap_patch.patch
+- committed revision 590   by wesley johnson
+Third part of changed for endian conversion.
+Covers hardware and other subdirectories that were missed in part 2.
+
+*** w32_round
+patchfile = w32_p3.patch
+- committed revision 591   by wesley johnson
+Gives alternative for round and roundf in video.  They are not standard library
+and are C99 only.
+
