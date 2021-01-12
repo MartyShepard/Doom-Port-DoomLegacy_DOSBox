@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00585 ]: wadversion and warnings
 [00584 ]: compiler warning fixes
 [00583 ]: more 64-bit bugfixes
 [00582 ]: 64-bit fixes

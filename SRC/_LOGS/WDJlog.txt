@@ -203,7 +203,7 @@ Large amount of re-indentation and added {} in p_spec.c.
 
 *** w25_gamma
 patchfile = w25_gamma.patch
-- committed revision 480    by wesley johnson
+- committed revision 580    by wesley johnson
 Replaces w3_gamma.  Compile option with multiple gamma table generators.
 Adds control to select gamma table generator.
 Removes old gamma tables.
@@ -213,6 +213,12 @@ controls.
 *** w26
 Remove  screen.c.rej
 patchfile = w26.patch
+- committed revision 584   by wesley johnson
 Misc patches to remove compiler warnings, and cleanup interfaces.
 No net effects on execution.
 
+*** w27
+patchfile = w27.patch
+- committed revision 585   by wesley johnson
+Fix legacy.dat wadversion test to accept version 142 wad.
+Misc patches to remove compiler warnings.

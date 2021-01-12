@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 579 2009-11-30 03:45:36Z wesleyjohnson $
+// $Id: p_map.c 585 2010-01-06 20:10:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -167,11 +167,16 @@ int             numspechit = 0;
 //SoM: 3/15/2000
 msecnode_t*  sector_list = NULL;
 
+#if 0
+// [WDJ] only used in PIT_CrossLine (line_t* ld)
+// which was found to be unused, 12/5/2009
+
 //SoM: 3/15/2000
 static int pe_x; // Pain Elemental position for Lost Soul checks
 static int pe_y; // Pain Elemental position for Lost Soul checks
 static int ls_x; // Lost Soul position for Lost Soul checks
 static int ls_y; // Lost Soul position for Lost Soul checks
+#endif
 
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 extern consvar_t   cv_monbehavior;
@@ -268,17 +273,13 @@ int P_GetMoveFactor(mobj_t* mo)
 // P_TeleportMove
 //
 boolean
-P_TeleportMove
-( mobj_t*       thing,
-  fixed_t       x,
-  fixed_t       y )
+P_TeleportMove( mobj_t*       thing,
+                fixed_t       x,
+                fixed_t       y )
 {
-    int                 xl;
-    int                 xh;
-    int                 yl;
-    int                 yh;
-    int                 bx;
-    int                 by;
+    int xl, xh;
+    int yl, yh;
+    int bx, by;
 
     subsector_t*        newsubsec;
 
@@ -314,9 +315,11 @@ P_TeleportMove
     yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
     for (bx=xl ; bx<=xh ; bx++)
+    {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
                 return false;
+    }
 
     // the move is ok,
     // so link the thing into its new position
@@ -463,13 +466,13 @@ static boolean PIT_CheckThing (mobj_t* thing)
             }
         }
 
-		// DarkWolf95: Don't damage other monsters
-		if(cv_monbehavior.value == 1&&
-			tmthing->target->type != MT_PLAYER && 
-			thing->type != MT_PLAYER)
-		{
-			return false;
-		}
+        // DarkWolf95: Don't damage other monsters
+	if(cv_monbehavior.value == 1&&
+	    tmthing->target->type != MT_PLAYER && 
+	    thing->type != MT_PLAYER)
+	{
+	    return false;
+	}
 
         if (! (thing->flags & MF_SHOOTABLE) )
         {
@@ -582,6 +585,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
     return true;
 }
 
+#if 0
+// [WDJ] found to be unused, 12/5/2009
+
 // SoM: 3/15/2000
 // PIT_CrossLine
 // Checks to see if a PE->LS trajectory line crosses a blocking
@@ -609,7 +615,8 @@ static boolean PIT_CrossLine (line_t* ld)
       if (P_PointOnLineSide(pe_x,pe_y,ld) != P_PointOnLineSide(ls_x,ls_y,ld))
         return(false);  // line blocks trajectory
   return(true); // line doesn't block trajectory
-  }
+}
+#endif
 
 
 
@@ -726,12 +733,9 @@ boolean P_CheckPosition ( mobj_t*       thing,
                           fixed_t       x,
                           fixed_t       y )
 {
-    int                 xl;
-    int                 xh;
-    int                 yl;
-    int                 yh;
-    int                 bx;
-    int                 by;
+    int xl, xh;
+    int yl, yh;
+    int bx, by;
     subsector_t*        newsubsec;
 
     tmthing = thing;
@@ -804,9 +808,11 @@ boolean P_CheckPosition ( mobj_t*       thing,
         yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
         
         for (bx=xl ; bx<=xh ; bx++)
+        {
             for (by=yl ; by<=yh ; by++)
                 if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
                     return false;
+	}
     }
     // check lines
     xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
@@ -815,9 +821,11 @@ boolean P_CheckPosition ( mobj_t*       thing,
     yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
     for (bx=xl ; bx<=xh ; bx++)
+    {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
                 return false;
+    }
 
     return true;
 }
@@ -1030,12 +1038,14 @@ boolean P_ThingHeightClip (mobj_t* thing)
     //    return false;
 
     if (thing->ceilingz - thing->floorz < thing->height
-        // BP: i know that this code cause many trouble but this fix alos 
-        // lot of problem, mainly this is implementation of the stepping 
+        // BP: i know that this code cause many trouble but this fix
+        // much of problem, mainly this is implementation of the stepping 
         // for mobj (walk on solid corpse without jumping or fake 3d bridge)
         // problem is imp into imp at map01 and monster going at top of others
         && thing->z >= thing->floorz)
+    {
         return false;
+    }
 
     return true;
 }
@@ -2098,8 +2108,10 @@ void P_RadiusAttack ( mobj_t*       spot,
     bombdamage = damage;
 
     for (y=yl ; y<=yh ; y++)
+    {
         for (x=xl ; x<=xh ; x++)
             P_BlockThingsIterator (x, y, PIT_RadiusAttack );
+    }
 }
 
 
@@ -2208,8 +2220,10 @@ boolean P_ChangeSector ( sector_t*     sector,
 
     // re-check heights for all things near the moving sector
     for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
+    {
         for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
             P_BlockThingsIterator (x, y, PIT_ChangeSector);
+    }
 
 
     return nofit;
@@ -2249,14 +2263,16 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
       sec->moved = true;
 
       do {
-      for (n=sec->touching_thinglist; n; n=n->m_snext)
-        if (!n->visited)
+        for (n=sec->touching_thinglist; n; n=n->m_snext)
+	{
+          if (!n->visited)
           {
-          n->visited  = true;
-          if (!(n->m_thing->flags & MF_NOBLOCKMAP))
-            PIT_ChangeSector(n->m_thing);
-          break;
+            n->visited  = true;
+            if (!(n->m_thing->flags & MF_NOBLOCKMAP))
+              PIT_ChangeSector(n->m_thing);
+            break;
           }
+	}
       } while (n);
     }
   }
@@ -2303,10 +2319,10 @@ msecnode_t* P_GetSecnode()
   msecnode_t* node;
 
   if (headsecnode)
-    {
+  {
     node = headsecnode;
     headsecnode = headsecnode->m_snext;
-    }
+  }
   else
     node = Z_Malloc (sizeof(*node), PU_LEVEL, NULL);
   return(node);
@@ -2331,14 +2347,14 @@ msecnode_t* P_AddSecnode(sector_t* s, mobj_t* thing, msecnode_t* nextnode)
 
   node = nextnode;
   while (node)
-    {
+  {
     if (node->m_sector == s)   // Already have a node for this sector?
-      {
+    {
       node->m_thing = thing; // Yes. Setting m_thing says 'keep it'.
       return(nextnode);
-      }
-    node = node->m_tnext;
     }
+    node = node->m_tnext;
+  }
 
   // Couldn't find an existing node for this sector. Add one at the head
   // of the list.
@@ -2378,7 +2394,7 @@ msecnode_t* P_DelSecnode(msecnode_t* node)
   msecnode_t* sn;  // next node on sector thread
 
   if (node)
-    {
+  {
 
     // Unlink from the Thing thread. The Thing thread begins at
     // sector_list and not from mobj_t->touching_sectorlist.
@@ -2406,14 +2422,13 @@ msecnode_t* P_DelSecnode(msecnode_t* node)
 
     P_PutSecnode(node);
     return(tn);
-    }
+  }
   return(NULL);
 }
 
 // Delete an entire sector list
 
 void P_DelSeclist(msecnode_t* node)
-
 {
     while (node)
         node = P_DelSecnode(node);
@@ -2479,10 +2494,10 @@ void P_CreateSecNodeList(mobj_t* thing,fixed_t x,fixed_t y)
 
   node = sector_list;
   while (node)
-    {
+  {
     node->m_thing = NULL;
     node = node->m_tnext;
-    }
+  }
 
   tmthing = thing;
   tmflags = thing->flags;
@@ -2503,9 +2518,11 @@ void P_CreateSecNodeList(mobj_t* thing,fixed_t x,fixed_t y)
   yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
   for (bx=xl ; bx<=xh ; bx++)
+  {
     for (by=yl ; by<=yh ; by++)
       P_BlockLinesIterator(bx,by,PIT_GetSectors);
-
+  }
+   
   // Add the sector of the (x,y) point to sector_list.
 
   sector_list = P_AddSecnode(thing->subsector->sector,thing,sector_list);
@@ -2515,16 +2532,16 @@ void P_CreateSecNodeList(mobj_t* thing,fixed_t x,fixed_t y)
 
   node = sector_list;
   while (node)
-    {
+  {
     if (node->m_thing == NULL)
-      {
+    {
       if (node == sector_list)
         sector_list = node->m_tnext;
       node = P_DelSecnode(node);
-      }
+    }
     else
       node = node->m_tnext;
-    }
+  }
 }
 
 // heretic code
@@ -2705,12 +2722,16 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
     yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
     
     for (bx=xl ; bx<=xh ; bx++)
+    {
         for (by=yl ; by<=yh ; by++)
+        {
             if (!P_BlockThingsIterator(bx,by,PIT_CheckOnmobjZ))
             {
                 *tmthing = oldmo;
                 return onmobj;
             }
+	}
+    }
 
     *tmthing = oldmo;
     return NULL;

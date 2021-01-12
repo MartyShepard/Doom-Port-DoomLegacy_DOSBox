@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_info.c 585 2010-01-06 20:10:53Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -120,6 +120,8 @@ void P_StripSpaces(char *line)
     }
 }
 
+#if 0
+// [WDJ] found to be unused, 12/5/2009
 static void P_RemoveComments(char *line)
 {
   char *temp = line;
@@ -133,6 +135,7 @@ static void P_RemoveComments(char *line)
       temp++;
     }
 }
+#endif
 
 static void P_RemoveEqualses(char *line)
 {

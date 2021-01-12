@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: d_main.c 585 2010-01-06 20:10:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,11 +325,13 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 584;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 585;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
-
+// [WDJ] change this if legacy.wad is changed
+// Legacy 144 still uses legacy.wad version 142
+static int min_wadversion = 142;
 
 //
 //  DEMO LOOP
@@ -1354,6 +1356,7 @@ static const char *D_MakeTitleString(const char *s)
 void D_CheckWadVersion()
 {
     int wadversion = 0;
+	int max_wadversion = VERSION;	// usual case
     int lump;
 /* BP: disabled since this should work fine now...
     // check main iwad using demo1 version 
@@ -1391,9 +1394,11 @@ void D_CheckWadVersion()
                 wadversion += l * 100;
         }
     }
-    if (wadversion != VERSION)
+    if (wadversion < min_wadversion || wadversion > max_wadversion)
+	{
         I_Error("Your legacy.wad file is version %d.%d, you need version %d.%d\n" "Use the legacy.wad that came in the same zip file as this executable.\n" "\n"
-                "Use -nocheckwadversion to remove this check,\n" "but this can cause Legacy to hang\n", wadversion / 100, wadversion % 100, VERSION / 100, VERSION % 100);
+                "Use -nocheckwadversion to remove this check,\n" "but this can cause Legacy to hang\n", wadversion / 100, wadversion % 100, min_wadversion / 100, min_wadversion % 100);
+	}
 }
 
 //

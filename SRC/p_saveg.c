@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 584 2010-01-05 22:04:28Z wesleyjohnson $
+// $Id: p_saveg.c 585 2010-01-06 20:10:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1698,8 +1698,8 @@ void P_ArchiveLevelScript()
                     WRITEFIXED(save_p, sv->value.fixed);
                     break;
                 }
-				case svt_array: // haleyjd: arrays
-			   {
+		case svt_array: // haleyjd: arrays
+                {
 				  sfarray_t *cur;
 				  int *int_p;
 
@@ -1717,7 +1717,7 @@ void P_ArchiveLevelScript()
 				  WRITELONG(save_p, (unsigned char *)int_p);
 				  
 				  break;
-			   }
+		}
             }
             sv = sv->next;
         }

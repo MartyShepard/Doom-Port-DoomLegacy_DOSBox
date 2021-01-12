@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 583 2009-12-03 07:56:51Z smite-meister $
+// $Id: r_data.c 585 2010-01-06 20:10:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -291,7 +291,7 @@ byte* R_GenerateTexture (int texnum)
 	// texturecache automatically
         block = Z_Malloc (blocksize,
                           PU_STATIC,         // will change tag at end of this function
-                          &texturecache[texnum]);
+                          (void**)&texturecache[texnum]);
         // [WDJ] Only need lump for following memcpy,
         // without Z_Malloc between which could deallocate PU_CACHE memory
         realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
@@ -324,7 +324,7 @@ byte* R_GenerateTexture (int texnum)
 
     block = Z_Malloc (blocksize,
                       PU_STATIC,
-                      &texturecache[texnum]);
+                      (void**)&texturecache[texnum]);
 
     // columns lookup table
     colofs = (unsigned int*)block;
