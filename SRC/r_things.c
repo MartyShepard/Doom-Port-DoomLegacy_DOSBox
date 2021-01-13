@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_things.c 601 2010-02-11 20:58:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -794,7 +794,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 #ifdef RANGECHECK
         if (texturecolumn < 0 || texturecolumn >= patch->width) {
 	    // [WDJ] Give msg and don't draw it
-            I_SoftError ("R_DrawVisSprite: bad texturecolumn");
+            I_SoftError ("R_DrawVisSprite: bad texturecolumn\n");
             return;
 	}
 #endif
@@ -979,7 +979,7 @@ static void R_ProjectSprite (mobj_t* thing)
 #ifdef RANGECHECK
     if ((unsigned)thing->sprite >= numsprites) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError ("R_ProjectSprite: invalid sprite number %i ",
+        I_SoftError ("R_ProjectSprite: invalid sprite number %i\n",
                  thing->sprite);
         return;
     }
@@ -994,7 +994,7 @@ static void R_ProjectSprite (mobj_t* thing)
 #ifdef RANGECHECK
     if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes ) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s",
+        I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s\n",
                  thing->sprite, thing->frame, sprnames[thing->sprite]);
         return;
     }
@@ -1264,7 +1264,7 @@ void R_DrawPSprite (pspdef_t* psp)
 #ifdef RANGECHECK
     if ( (unsigned)psp->state->sprite >= numsprites) {
         // [WDJ] Give msg and don't draw it, (** Heretic **)
-        I_SoftError ("R_DrawPSprite: invalid sprite number %i ",
+        I_SoftError ("R_DrawPSprite: invalid sprite number %i\n",
                  psp->state->sprite);
         return;
     }
@@ -1275,7 +1275,7 @@ void R_DrawPSprite (pspdef_t* psp)
 #ifdef RANGECHECK
     if ( (psp->state->frame & FF_FRAMEMASK)  >= sprdef->numframes) {
         // [WDJ] Give msg and don't draw it
-        I_SoftError ("R_DrawPSprite: invalid sprite frame %i : %i for %s",
+        I_SoftError ("R_DrawPSprite: invalid sprite frame %i : %i for %s\n",
                  psp->state->sprite, psp->state->frame, sprnames[psp->state->sprite]);
         return;
     }

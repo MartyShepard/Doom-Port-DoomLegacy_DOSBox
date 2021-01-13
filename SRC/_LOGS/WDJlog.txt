@@ -330,7 +330,7 @@ numpatches to determine drawing routine.
 
 *** w37_things_print
 patchfile = w37_things_print.patch
-- committed revision    by wesley johnson
+- committed revision 601   by wesley johnson
 I_SoftError messages in things.c were missing a \n.
 
 *** w38_enemy
