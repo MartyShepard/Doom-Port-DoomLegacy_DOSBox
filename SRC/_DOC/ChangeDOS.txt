@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+
+[00637 ]: w45 naming FIXED_TO_FLOAT
 [00636 ]: GDESC fix, commandline switches
 [00635 ]: z_zone fix
 [00634*]: w44 quicksave quickload

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: r_things.c 637 2010-05-08 21:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -222,7 +222,7 @@ fixed_t         pspritescale;
 fixed_t         pspriteyscale;  //added:02-02-98:aspect ratio for psprites
 fixed_t         pspriteiscale;
 
-lighttable_t**  spritelights;
+lighttable_t**  spritelights;	// selected scalelight for the sprite draw
 
 // constant arrays
 //  used for psprite clipping and initializing clipping
@@ -1223,7 +1223,7 @@ void R_AddSprites (sector_t* sec, int lightlevel)
     // Well, now it will be done.
     sec->validcount = validcount;
 
-    if(!sec->numlights)
+    if(!sec->numlights)  // otherwise see ProjectSprite
     {
 //      if(sec->modelsec == -1)   lightlevel = sec->lightlevel;
       if(sec->model < SM_fluid)   lightlevel = sec->lightlevel;
@@ -1910,9 +1910,9 @@ void R_DrawSprite (vissprite_t* spr)
         boolean phs_has_mod = viewplayer->mo->subsector->sector->model > SM_fluid;
 
         // beware, this test does two assigns to mh, and an assign to h
-        if ((mh = spr_heightsecp->floorheight) > spr->gz_bot &&
-           (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0 &&
-           (h >>= FRACBITS) < rdraw_viewheight)
+        if ((mh = spr_heightsecp->floorheight) > spr->gz_bot
+	    && (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0
+	    && (h >>= FRACBITS) < rdraw_viewheight)
         {
 //            if (mh <= 0 || (phs != -1 && viewz > sectors[phs_modelsec].floorheight))
             if (mh <= 0 || (phs_has_mod && (viewz > sectors[phs_modelsec].floorheight)))
@@ -1930,9 +1930,9 @@ void R_DrawSprite (vissprite_t* spr)
         }
 
         // beware, this test does an assign to mh, and an assign to h
-        if ((mh = spr_heightsecp->ceilingheight) < spr->gz_top &&
-           (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0 &&
-           (h >>= FRACBITS) < rdraw_viewheight)
+        if ((mh = spr_heightsecp->ceilingheight) < spr->gz_top
+	    && (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0
+	    && (h >>= FRACBITS) < rdraw_viewheight)
         {
 //            if (phs != -1 && viewz >= sectors[phs_modelsec].ceilingheight)
             if (phs_has_mod && (viewz >= sectors[phs_modelsec].ceilingheight))

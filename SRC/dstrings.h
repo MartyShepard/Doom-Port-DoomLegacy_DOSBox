@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: dstrings.h 637 2010-05-08 21:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -65,7 +65,7 @@ extern char savegamename[256];
 // Not done in french?
 
 // QuitDOOM messages
-  //added:02-01-98: "22 messages - 7 fucking messages = 15 cool messages" !
+  //added:02-01-98: "22 messages - 7 messages = 15 cool messages" !
 #define NUM_QUITMESSAGES   15
 
 extern char* endmsg[];

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 631 2010-04-08 00:58:44Z wesleyjohnson $
+// $Id: m_menu.c 637 2010-05-08 21:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4465,7 +4465,7 @@ menu_t OGL_LightingDef, OGL_FogDef, OGL_ColorDef, OGL_DevDef;
 
 menuitem_t OpenGLOptionsMenu[]=
 {
-    {IT_STRING | IT_CVAR,0, "Mouse look"          , &cv_grcrappymlook     ,  0},
+    {IT_STRING | IT_CVAR,0, "Mouse look"          , &cv_grmlook_extends_fov ,  0},
     {IT_STRING | IT_CVAR,0, "Field of view"       , &cv_grfov             , 10},
     {IT_STRING | IT_CVAR,0, "Quality"             , &cv_scr_depth         , 20},
     {IT_STRING | IT_CVAR,0, "Texture Filter"      , &cv_grfiltermode      , 30},

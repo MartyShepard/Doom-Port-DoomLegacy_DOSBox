@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: r_bsp.c 637 2010-05-08 21:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -444,6 +444,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
         if (vss_has_mod && (viewz >= sectors[vss_modelsec].ceilingheight) &&
             (sec->ceilingheight > modsecp->ceilingheight))
         {   // Above-ceiling hack
+	    // view over the model sector ceiling
             tempsec->ceilingheight = modsecp->ceilingheight;
             tempsec->floorheight   = modsecp->ceilingheight + 1;
 
@@ -908,8 +909,8 @@ void R_Subsector (int num)
 
     sub->sector->extra_colormap = frontsector->extra_colormap;
 
-//    if ((frontsector->floorheight < viewz || (frontsector->modelsec != -1 &&
     if ((frontsector->floorheight < viewz)
+//      || (frontsector->modelsec != -1 &&
 	|| (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
@@ -954,10 +955,13 @@ void R_Subsector (int num)
         continue;
 
       ffloor[numffloors].plane = NULL;
-      if(*rover->bottomheight <= frontsector->ceilingheight &&
-         *rover->bottomheight >= frontsector->floorheight &&
-         ((viewz < *rover->bottomheight && !(rover->flags & FF_INVERTPLANES)) ||
-         (viewz > *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
+      if(*rover->bottomheight <= frontsector->ceilingheight
+	 && *rover->bottomheight >= frontsector->floorheight
+         && ((viewz < *rover->bottomheight && !(rover->flags & FF_INVERTPLANES))
+	     || (viewz > *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
+	 // [WDJ] What about (viewz == *rover->bottomheight) ???
+//DEBUG	 && ((viewz <= *rover->bottomheight && !(rover->flags & FF_INVERTPLANES))
+//DEBUG	     || (viewz >= *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
       {
         light = R_GetPlaneLight(frontsector, *rover->bottomheight, viewz < *rover->bottomheight ? true : false);
         ffloor[numffloors].plane = R_FindPlane(*rover->bottomheight,
@@ -974,10 +978,13 @@ void R_Subsector (int num)
       }
       if(numffloors >= MAXFFLOORS)
         break;
-      if(*rover->topheight >= frontsector->floorheight &&
-         *rover->topheight <= frontsector->ceilingheight &&
-         ((viewz > *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
-         (viewz < *rover->topheight && (rover->flags & FF_BOTHPLANES))))
+      if(*rover->topheight >= frontsector->floorheight
+	 && *rover->topheight <= frontsector->ceilingheight
+         && ((viewz > *rover->topheight && !(rover->flags & FF_INVERTPLANES))
+	     || (viewz < *rover->topheight && (rover->flags & FF_BOTHPLANES))))
+	 // [WDJ] What about (viewz == *rover->topheight) ???
+//DEBUG	 && ((viewz >= *rover->topheight && !(rover->flags & FF_INVERTPLANES))
+//DEBUG         (viewz <= *rover->topheight && (rover->flags & FF_BOTHPLANES))))
           {
               light = R_GetPlaneLight(frontsector, *rover->topheight, viewz < *rover->topheight ? true : false);
               ffloor[numffloors].plane = R_FindPlane(*rover->topheight,

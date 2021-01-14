@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 636; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 637; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "test (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_plane.c 637 2010-05-08 21:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -400,6 +400,7 @@ visplane_t* R_FindPlane( fixed_t height,
     hash = visplane_hash(picnum,lightlevel,height);
 
     for (check=visplanes[hash]; check; check=check->next)
+    {
       if (height == check->height &&
           picnum == check->picnum &&
           lightlevel == check->lightlevel &&
@@ -410,6 +411,7 @@ visplane_t* R_FindPlane( fixed_t height,
           check->viewz == viewz &&
           check->viewangle == viewangle)
         return check;
+    }
 
     check = new_visplane(hash);
 
