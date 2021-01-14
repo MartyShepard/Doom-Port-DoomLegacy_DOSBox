@@ -345,7 +345,7 @@ ifdef PROFILEMODE
   LDFLAGS = $(WFLAGS) -g -pg
  else
 
-	CFLAGS = $(WFLAGS) -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -mtune=i586 $(OPTS) 
+	CFLAGS = $(WFLAGS) -O3 -g3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -mtune=i586 $(OPTS) 
 		# -fno-exceptions -foptimize-register-move -mhard-float
 		# -nostdlib -m32 -march=i386 -ffreestanding
 		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \
@@ -469,7 +469,7 @@ clean:
 
 #make a big doom3.s that is the disasm of the exe (dos only ?)
 asm:
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -g $(O)/i_main.o \
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -g3 $(O)/i_main.o \
 	-o $(O)/tmp.exe $(DEBUGLIBS)
 	objdump  -d $(O)/tmp.exe --no-show-raw-insn > doom3.s
 	del $(O)\tmp.exe

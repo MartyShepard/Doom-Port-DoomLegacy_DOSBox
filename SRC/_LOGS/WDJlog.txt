@@ -350,3 +350,17 @@ patchfile = w39_overflow.patch
 - committed revision 607   by wesley johnson
 Stops overflow in sofware rendering from drawing large bars on screen.
 Cleans up display of phobiata.wad map07.
+
+*** w39b_overflow
+patchfile = w39b_overflow.patch
+- committed revision 611  by wesley johnson
+Intercept top < bottom errors in software rendering so they do not interact with
+overflow trap.
+
+*** w40_makefile
+patchfile = w39b_overflow.patch
+- committed revision 612   by wesley johnson
+Restore user and debug controls in makefile.  Support edit of makefile
+to select system media, debug, optimization.
+Dependency files generated from makefile.
+Remove makedep.mak which was not being maintained.

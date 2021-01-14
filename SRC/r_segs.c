@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: r_segs.c 611 2010-02-23 21:42:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -171,10 +171,18 @@ static fixed_t         rw_midtexturemid;
 static fixed_t         rw_toptexturemid;
 static fixed_t         rw_bottomtexturemid;
 
-static int             worldtop;
+// [WDJ] 2/22/2010 actually is fixed_t in all usage
+#if 1 
+static fixed_t         worldtop;	// front sector
+static fixed_t         worldbottom;
+static fixed_t         worldbacktop;	// back sector, only used on two sided lines
+static fixed_t         worldbackbottom;
+#else
+static int             worldtop;	// front sector
 static int             worldbottom;
-static int             worldhigh;
-static int             worldlow;
+static int             worldbacktop;	// back sector
+static int             worldbackbottom;
+#endif
 
 static fixed_t         pixhigh;
 static fixed_t         pixlow;
@@ -1737,18 +1745,21 @@ void R_StoreWallRange( int   start, int   stop)
           }
         }
 
-        worldhigh = backsector->ceilingheight - viewz;
-        worldlow = backsector->floorheight - viewz;
+        worldbacktop = backsector->ceilingheight - viewz;
+        worldbackbottom = backsector->floorheight - viewz;
         
         // hack to allow height changes in outdoor areas
         if (frontsector->ceilingpic == skyflatnum
             && backsector->ceilingpic == skyflatnum)
         {
-            worldtop = worldhigh;
+	    // SKY to SKY
+	    // [WDJ] Prevent worldtop < worldbottom, is used as error test
+	    if( worldbacktop < worldbottom )    worldbacktop = worldbottom;
+	    worldtop = worldbacktop;  // disable upper texture tests
         }
         
         
-        if (worldlow != worldbottom
+        if (worldbackbottom != worldbottom
             || backsector->floorpic != frontsector->floorpic
             || backsector->lightlevel != frontsector->lightlevel
             //SoM: 3/22/2000: Check floor x and y offsets.
@@ -1770,7 +1781,7 @@ void R_StoreWallRange( int   start, int   stop)
         }
         
         
-        if (worldhigh != worldtop
+        if (worldbacktop != worldtop
             || backsector->ceilingpic != frontsector->ceilingpic
             || backsector->lightlevel != frontsector->lightlevel
             //SoM: 3/22/2000: Check floor x and y offsets.
@@ -1800,7 +1811,7 @@ void R_StoreWallRange( int   start, int   stop)
         }
 
         // check TOP TEXTURE
-        if (worldhigh < worldtop)
+        if (worldbacktop < worldtop)
         {
             // top texture
             toptexture = texturetranslation[sidedef->toptexture];
@@ -1819,7 +1830,7 @@ void R_StoreWallRange( int   start, int   stop)
             }
         }
         // check BOTTOM TEXTURE
-        if (worldlow > worldbottom)     //seulement si VISIBLE!!!
+        if (worldbackbottom > worldbottom)     //seulement si VISIBLE!!!
         {
             // bottom texture
             bottomtexture = texturetranslation[sidedef->bottomtexture];
@@ -1831,7 +1842,7 @@ void R_StoreWallRange( int   start, int   stop)
                 rw_bottomtexturemid = worldtop;
             }
             else    // top of texture at top
-                rw_bottomtexturemid = worldlow;
+                rw_bottomtexturemid = worldbackbottom;
         }
         
         rw_toptexturemid += sidedef->rowoffset;
@@ -2062,6 +2073,14 @@ void R_StoreWallRange( int   start, int   stop)
     bottomstep = -FixedMul (rw_scalestep,worldbottom);
     bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);        
 
+    // [WDJ] Intercept overflow in FixedMul math
+    if( bottomfrac < topfrac )
+    {
+       // enable print to see where this happens
+//       fprintf(stderr,"Overflow mult: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+       return;
+    }
+
     dc_numlights = 0;
 
     if(frontsector->numlights)
@@ -2116,19 +2135,19 @@ void R_StoreWallRange( int   start, int   stop)
 
     if (backsector)
     {
-        worldhigh >>= 4;
-        worldlow >>= 4;
+        worldbacktop >>= 4;
+        worldbackbottom >>= 4;
         
-        if (worldhigh < worldtop)
+        if (worldbacktop < worldtop)
         {
-            pixhigh = (centeryfrac>>4) - FixedMul (worldhigh, rw_scale);
-            pixhighstep = -FixedMul (rw_scalestep,worldhigh);
+            pixhigh = (centeryfrac>>4) - FixedMul (worldbacktop, rw_scale);
+            pixhighstep = -FixedMul (rw_scalestep,worldbacktop);
         }
         
-        if (worldlow > worldbottom)
+        if (worldbackbottom > worldbottom)
         {
-            pixlow = (centeryfrac>>4) - FixedMul (worldlow, rw_scale);
-            pixlowstep = -FixedMul (rw_scalestep,worldlow);
+            pixlow = (centeryfrac>>4) - FixedMul (worldbackbottom, rw_scale);
+            pixlowstep = -FixedMul (rw_scalestep,worldbackbottom);
         }
 
         {
@@ -2244,6 +2263,13 @@ void R_StoreWallRange( int   start, int   stop)
       }
     }
 
+    // [WDJ] Intercept overflow in math
+    if( bottomfrac < topfrac )
+    {
+       // Enable to see where this happens.
+//       fprintf(stderr,"Overflow in call: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+       return;
+    }
 
 #ifdef BORIS_FIX
     if (linedef->splats && cv_splats.value)
