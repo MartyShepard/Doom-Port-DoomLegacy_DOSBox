@@ -335,7 +335,7 @@ I_SoftError messages in things.c were missing a \n.
 
 *** w38_enemy
 patchfile = w38_enemy.patch
-- committed revision    by wesley johnson
+- committed revision 602   by wesley johnson
 Fixed some test logic to include testing for valid ptr to target before
 using the ptr.  This stops segfaults that happen in heavy fighting.
 

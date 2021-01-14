@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 584 2010-01-05 22:04:28Z wesleyjohnson $
+// $Id: p_enemy.c 602 2010-02-11 21:12:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -292,6 +292,8 @@ static boolean P_CheckMeleeRange (mobj_t*      actor)
     pl = actor->target;
     dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
+    // [WDJ] FIXME pl->info may be NULL (seen in phobiata.wad)
+    if (pl->info == NULL ) return false;
     if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
         return false;
 
@@ -688,15 +690,15 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         }
 
         
-		// Remember old target node for later
-		if (actor->target)
-		{
-			if(actor->target->type == MT_NODE)
-				actor->targetnode = actor->target;
-		}
+        // Remember old target node for later
+        if (actor->target)
+        {
+	    if(actor->target->type == MT_NODE)
+	       actor->targetnode = actor->target;
+	}
 		
-		// New target found
-		actor->target = player->mo;
+        // New target found
+        actor->target = player->mo;
         return true;
     }
 
@@ -717,15 +719,15 @@ void A_Look (mobj_t* actor)
     mobj_t*     targ;
 
     
-	// Is there a node we must follow?
-	if (actor->targetnode)
-	{
-		actor->target = actor->targetnode;
-		P_SetMobjState(actor, actor->info->seestate);
-		return;
-	}
+    // Is there a node we must follow?
+    if (actor->targetnode)
+    {
+        actor->target = actor->targetnode;
+        P_SetMobjState(actor, actor->info->seestate);
+        return;
+    }
 
-	actor->threshold = 0;       // any shot will wake up
+    actor->threshold = 0;       // any shot will wake up
     targ = actor->subsector->sector->soundtarget;
 
     if (targ && (targ->flags & MF_SHOOTABLE) )
@@ -795,16 +797,16 @@ void A_Chase (mobj_t*   actor)
     int         delta;
 
     if (actor->reactiontime)
-	{
+    {
         actor->reactiontime--;
 
-		// We are pausing at a node, just look for players
-		if (actor->target->type == MT_NODE)
-		{
+        // We are pausing at a node, just look for players
+        if ( actor->target && actor->target->type == MT_NODE)
+        {
 			P_LookForPlayers(actor, false);
 			return;
-		}
 	}
+    }
 
 
     // modify target threshold
@@ -862,8 +864,8 @@ void A_Chase (mobj_t*   actor)
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
 		
-		// This monster will start waiting again
-		P_SetMobjState (actor, actor->info->spawnstate);
+	// This monster will start waiting again
+	P_SetMobjState (actor, actor->info->spawnstate);
         return;
     }
 
@@ -879,7 +881,7 @@ void A_Chase (mobj_t*   actor)
     // check for melee attack
     if (actor->info->meleestate
         && P_CheckMeleeRange (actor)
-        && actor->target->type != MT_NODE
+        && (actor->target && actor->target->type != MT_NODE)
         && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (actor->info->attacksound)
@@ -891,7 +893,7 @@ void A_Chase (mobj_t*   actor)
 
     // check for missile attack
     if (actor->info->missilestate
-        && actor->target->type != MT_NODE
+        && (actor->target && actor->target->type != MT_NODE)
         && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (!cv_fastmonsters.value && actor->movecount)
@@ -913,7 +915,7 @@ void A_Chase (mobj_t*   actor)
     if (multiplayer
         && !actor->threshold
         && !P_CheckSight (actor, actor->target)
-        && actor->target->type != MT_NODE
+        && (actor->target && actor->target->type != MT_NODE)
         && !(actor->eflags & MF_IGNOREPLAYER))
     {
         if (P_LookForPlayers(actor,true))
@@ -923,9 +925,9 @@ void A_Chase (mobj_t*   actor)
 
 
 	
-	// Patrolling nodes
-	if (actor->target->type == MT_NODE)
-	{
+    // Patrolling nodes
+    if (actor->target && actor->target->type == MT_NODE)
+    {
 
 		// Check if a player is near
 		if (P_LookForPlayers(actor, false))
@@ -964,7 +966,7 @@ void A_Chase (mobj_t*   actor)
 
 			return;
 		}
-	}
+    }
 
 
     // chase towards player
