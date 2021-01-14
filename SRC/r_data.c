@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: r_data.c 659 2010-05-21 15:39:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -148,6 +148,7 @@
 // than displayed in other engines.
 // TEKWALL1 will have two boxes in the upper left corner with this off and one
 // box with it enabled.  The differences in other textures are less noticable.
+// This only affects software rendering, hardware rendering is correct.
 boolean corrected_clipping = 0;
 
 // Select texture generation for multiple-patch textures.
@@ -885,8 +886,17 @@ void R_FlushTextureCache (void)
 }
 
 //
-// R_InitTextures
+// R_LoadTextures
 // Initializes the texture list with the textures from the world map.
+//
+// [WDJ] Original Doom bug: conflict between texture[0] and 0=no-texture.
+// Their solution was to not use the first texture.
+// In Doom1 == AASTINKY, FreeDoom == AASHITTY, Heretic = BADPATCH.
+// Because any wad compatible with other doom engines, like prboom,
+// will not be using texture[0], there is little incentive to fix this bug.
+// It is likely that texture[0] will be a duplicate of some other texture.
+#define BUGFIX_TEXTURE0
+// 
 //
 void R_LoadTextures (void)
 {
@@ -896,8 +906,7 @@ void R_LoadTextures (void)
     texpatch_t*         texpatch;
     char*               pnames;
 
-    int                 i;
-    int                 j;
+    int                 i,j;
 
     uint32_t	      * maptex, * maptex1, * maptex2;  // 4 bytes, in wad
     uint32_t          * directory;	// in wad
@@ -964,7 +973,14 @@ void R_LoadTextures (void)
         numtextures2 = 0;
         maxoff2 = 0;
     }
+#ifdef BUGFIX_TEXTURE0
+#define FIRST_TEXTURE  1
+    // [WDJ] make room for using 0 as no-texture and keeping first texture
+    numtextures = numtextures1 + numtextures2 + 1;
+#else   
     numtextures = numtextures1 + numtextures2;
+#define FIRST_TEXTURE  0
+#endif
 
 
     // [smite] separate allocations, fewer horrible bugs
@@ -983,7 +999,11 @@ void R_LoadTextures (void)
     texturewidthmask = Z_Malloc(numtextures * sizeof(*texturewidthmask), PU_STATIC, 0);
     textureheight    = Z_Malloc(numtextures * sizeof(*textureheight),    PU_STATIC, 0);
 
+#ifdef BUGFIX_TEXTURE0
+    for (i=0 ; i<numtextures-1 ; i++, directory++)
+#else
     for (i=0 ; i<numtextures ; i++, directory++)
+#endif
     {
         //only during game startup
         //if (!(i&63))
@@ -1022,6 +1042,10 @@ void R_LoadTextures (void)
 	// Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
 	// gcc will replace memcpy with two 4-byte read/writes, which will bus error.
         memmove(texture->name, mtexture->name, sizeof(texture->name));	
+#if 0
+        // [WDJ] DEBUG TRACE, watch where the textures go
+        fprintf( stderr, "Texture[%i] = %8.8s\n", i, mtexture->name);
+#endif
         mpatch = &mtexture->patches[0]; // first patch ind in texture lump
         texpatch = &texture->patches[0];
 
@@ -1033,7 +1057,7 @@ void R_LoadTextures (void)
             texpatch->patchnum = patchlookup[LE_SWAP16(mpatch->patchnum)];
             if (texpatch->patchnum == -1)
             {
-                I_Error ("R_InitTextures: Missing patch in texture %s\n",
+                I_Error ("R_LoadTextures: Missing patch in texture %s\n",
                          texture->name);
             }
         }
@@ -1051,6 +1075,14 @@ void R_LoadTextures (void)
     if (maptex2)
         Z_Free (maptex2);
 
+#ifdef BUGFIX_TEXTURE0
+    // Move texture[0] to texture[numtextures-1]
+    textures[numtextures-1] = textures[0];
+    texturewidthmask[numtextures-1] = texturewidthmask[0];
+    textureheight[numtextures-1] = textureheight[0];
+    // cannot have ptr to texture in two places, will deallocate twice
+    textures[0] = NULL;	// force segfault on any access to textures[0]
+#endif   
 
     //added:01-04-98: this takes 90% of texture loading time..
     // Precalculate whatever possible.
@@ -1061,6 +1093,7 @@ void R_LoadTextures (void)
     if (texturetranslation)
         Z_Free (texturetranslation);
 
+    // texturetranslation is 1 larger than texture tables, for some unknown reason
     texturetranslation = Z_Malloc ((numtextures+1)*sizeof(*texturetranslation),
 				   PU_STATIC, 0);
 
@@ -1554,7 +1587,8 @@ byte NearestColor(byte r, byte g, byte b)
 
 
 // Rounds off floating numbers and checks for 0 - 255 bounds
-int RoundUp(double number) {
+int RoundUp(double number)
+{
   if(number > 255.0)
     return 255.0;
   if(number < 0)
@@ -1564,7 +1598,7 @@ int RoundUp(double number) {
     return (int)number + 1;
 
   return (int)number;
-  }
+}
 
 
 
@@ -1651,6 +1685,10 @@ void R_InitData (void)
 // Check whether texture is available.
 // Filter out NoTexture indicator.
 //
+// [WDJ] Original Doom bug: conflict between texture[0] and 0=no-texture.
+// 
+// Parameter name is 8 char without term.
+// Return -1 for not found, 0 for no texture
 int     R_CheckTextureNumForName (char *name)
 {
     int         i;
@@ -1659,10 +1697,14 @@ int     R_CheckTextureNumForName (char *name)
     if (name[0] == '-')
         return 0;
 
-    for (i=0 ; i<numtextures ; i++)
+    for (i=FIRST_TEXTURE ; i<numtextures ; i++)
         if (!strncasecmp (textures[i]->name, name, 8) )
             return i;
-
+#ifdef RANGECHECK
+    if( i == 0 )
+        fprintf( stderr, "Texture %8.8s  is texture[0], imitates no-texture.\n", name);
+#endif   
+   
     return -1;
 }
 
@@ -1671,19 +1713,33 @@ int     R_CheckTextureNumForName (char *name)
 //
 // R_TextureNumForName
 // Calls R_CheckTextureNumForName,
-//  aborts with error message.
 //
+// Return  0 for no texture "-".
+// Return default texture when texture not found (would HOM otherwise).
+// Parameter name is 8 char without term.
+// Is used for side_t texture fields, which are used for array access
+// without further error checks, so never returns -1.
 int R_TextureNumForName (char* name)
 {
     int i;
 
     i = R_CheckTextureNumForName (name);
+#if 0
+// [WDJ] DEBUG TRACE, to see where textures have ended up and which are accessed.
+#  define trace_SIZE 512
+   static char debugtrace_RTNFN[ trace_SIZE ];
+   if( i<trace_SIZE && debugtrace_RTNFN[i] != 0x55 ) {
+      fprintf( stderr, "Texture %8.8s is texture[%i]\n", name, i);
+      debugtrace_RTNFN[i] = 0x55;
+   }
+#  undef trace_SIZE   
+#endif   
 
     if (i==-1)
     {
         //I_Error ("R_TextureNumForName: %.8s not found", name);
         CONS_Printf("WARNING: R_TextureNumForName: %.8s not found\n", name);
-        return 1;
+        i=1;	// default to texture[1]
     }
     return i;
 }
@@ -1767,6 +1823,16 @@ void R_PrecacheLevel (void)
 
     for (i=0 ; i<numsides ; i++)
     {
+        // for all sides
+        // texture num 0=no-texture, otherwise is valid texture
+#if 1
+        if (sides[i].toptexture)
+            texturepresent[sides[i].toptexture] = 1;
+        if (sides[i].midtexture)
+            texturepresent[sides[i].midtexture] = 1;
+        if (sides[i].bottomtexture)
+            texturepresent[sides[i].bottomtexture] = 1;
+#else 
         //Hurdler: huh, a potential bug here????
         if (sides[i].toptexture < numtextures)
             texturepresent[sides[i].toptexture] = 1;
@@ -1774,6 +1840,7 @@ void R_PrecacheLevel (void)
             texturepresent[sides[i].midtexture] = 1;
         if (sides[i].bottomtexture < numtextures)
             texturepresent[sides[i].bottomtexture] = 1;
+#endif       
     }
 
     // Sky texture is always present.
@@ -1788,7 +1855,7 @@ void R_PrecacheLevel (void)
     //    CONS_Printf("Generating textures..\n");
 
     texturememory = 0;  // global
-    for (i=0 ; i<numtextures ; i++)
+    for (i=FIRST_TEXTURE ; i<numtextures ; i++)
     {
         if (!texturepresent[i])
             continue;

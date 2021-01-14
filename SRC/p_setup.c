@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_setup.c 659 2010-05-21 15:39:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -872,6 +872,7 @@ void P_LoadSideDefs (int lump)
     {
         sd->textureoffset = LE_SWAP16(msd->textureoffset)<<FRACBITS;
         sd->rowoffset = LE_SWAP16(msd->rowoffset)<<FRACBITS;
+        // 0= no-texture, never -1
         sd->toptexture = R_TextureNumForName(msd->toptexture);
         sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
         sd->midtexture = R_TextureNumForName(msd->midtexture);
@@ -1101,6 +1102,8 @@ void P_LoadSideDefs2(int lump)
         default:                        // normal cases
           // SoM: Lots of people are sick of texture errors. 
           // Hurdler: see r_data.c for my suggestion
+	  // [WDJ] 0=no-texture, texture not found returns default texture.
+	  // Textures never set to -1, so these texture num are safe to use as array index.
           sd->midtexture = R_TextureNumForName(msd->midtexture);
           sd->toptexture = R_TextureNumForName(msd->toptexture);
           sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);

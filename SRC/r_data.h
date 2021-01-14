@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 600 2010-02-11 20:53:29Z wesleyjohnson $
+// $Id: r_data.h 659 2010-05-21 15:39:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -178,7 +178,13 @@ typedef struct
 } texture_t;
 
 
-// all loaded and prepared textures from the start of the game
+// All loaded and prepared textures from the start of the game,
+// Contains info from the TEXTURE1 and TEXTURE2 lumps.
+// [WDJ] Original Doom bug: conflict between texture[0] and 0=no-texture.
+// Their solution was to not use the first texture.
+// See BUGFIX_TEXTURE0 in r_data.c.
+//   array[ 0.. numtextures-1 ] of texture_t*,
+//   but [0] is unusable because it conflicts with 0=no-texture.
 extern texture_t**     textures;
 
 //extern lighttable_t    *colormaps;

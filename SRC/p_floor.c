@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_floor.c 659 2010-05-21 15:39:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -677,7 +677,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
 }
 
 
-// SoM: 3/6/2000: Function for chaning just the floor texture and type.
+// SoM: 3/6/2000: Function for changing just the floor texture and type.
 //
 // EV_DoChange()
 //

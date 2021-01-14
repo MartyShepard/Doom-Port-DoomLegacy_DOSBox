@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 644 2010-05-11 21:43:40Z wesleyjohnson $
+// $Id: r_segs.c 659 2010-05-21 15:39:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -144,9 +144,11 @@ static boolean         markfloor; // False if the back side is the same plane.
 static boolean         markceiling;
 
 static boolean         maskedtexture;
+// texture num, 0=no-texture, otherwise is a valid texture index
 static int             toptexture;
 static int             bottomtexture;
 static int             midtexture;
+
 static int             numthicksides;
 //static short*          thicksidecol;
 
@@ -589,7 +591,10 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
     curline = ds->curline;
     frontsector = curline->frontsector;
     backsector = curline->backsector;
+
+    // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[curline->sidedef->midtexture];
+
     windowbottom = windowtop = sprbotscreen = MAXINT;	// default no clip
 
     // Select the default, or special effect column drawing functions,
@@ -890,6 +895,8 @@ void R_RenderThickSideRange (drawseg_t* ds,
     curline = ds->curline;
     backsector = ffloor->target;
     frontsector = curline->frontsector == ffloor->target ? curline->backsector : curline->frontsector;
+
+    // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[sides[ffloor->master->sidenum[0]].midtexture];
 
     colfunc = basecolfunc;
@@ -1719,7 +1726,7 @@ void R_StoreWallRange( int   start, int   stop)
     worldtop = frontsector->ceilingheight - viewz;
     worldbottom = frontsector->floorheight - viewz;
 
-    midtexture = toptexture = bottomtexture = maskedtexture = 0;
+    midtexture = toptexture = bottomtexture = maskedtexture = 0; // no-texture
     ds_p->maskedtexturecol = NULL;
     ds_p->numthicksides = numthicksides = 0;
     ds_p->thicksidecol = NULL;
@@ -1739,6 +1746,8 @@ void R_StoreWallRange( int   start, int   stop)
     if (!backsector)
     {
         // single sided line
+	// Single sided: assumes that there MUST be a midtexture on this side.
+        // midtexture, 0=no-texture, otherwise valid
         midtexture = texturetranslation[sidedef->midtexture];
         // a single sided line is terminal, so it must mark ends
         markfloor = markceiling = true;
@@ -1897,7 +1906,7 @@ void R_StoreWallRange( int   start, int   stop)
         // check TOP TEXTURE
         if (worldbacktop < worldtop)
         {
-            // top texture
+            // top texture, 0=no-texture, otherwise valid
             toptexture = texturetranslation[sidedef->toptexture];
             if (linedef->flags & ML_DONTPEGTOP)
             {
@@ -1916,7 +1925,7 @@ void R_StoreWallRange( int   start, int   stop)
         // check BOTTOM TEXTURE
         if (worldbackbottom > worldbottom)     //seulement si VISIBLE!!!
         {
-            // bottom texture
+            // bottom texture, 0=no-texture, otherwise valid
             bottomtexture = texturetranslation[sidedef->bottomtexture];
             
             if (linedef->flags & ML_DONTPEGBOTTOM )
@@ -2064,7 +2073,8 @@ void R_StoreWallRange( int   start, int   stop)
 
           ds_p->numthicksides = numthicksides = i;
         }
-        if (sidedef->midtexture)
+        // midtexture, 0=no-texture, otherwise valid
+	if (sidedef->midtexture)
         {
             // masked midtexture
             if(!ds_p->thicksidecol)
@@ -2395,11 +2405,13 @@ void R_StoreWallRange( int   start, int   stop)
     if (maskedtexture && !(ds_p->silhouette&SIL_TOP))
     {
         ds_p->silhouette |= SIL_TOP;
+        // midtexture, 0=no-texture, otherwise valid
         ds_p->tsilheight = sidedef->midtexture ? MININT: MAXINT;
     }
     if (maskedtexture && !(ds_p->silhouette&SIL_BOTTOM))
     {
         ds_p->silhouette |= SIL_BOTTOM;
+        // midtexture, 0=no-texture, otherwise valid
         ds_p->bsilheight = sidedef->midtexture ? MAXINT: MININT;
     }
     ds_p++;
