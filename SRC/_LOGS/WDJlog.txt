@@ -423,4 +423,13 @@ Checks that wad and game are same as when saved.
 Made saving of raw structures more robust.  Easier for
 programmer to support and helps avoid making silent errors in savegame.
 
+*** w41_draw_clip
+patchfile = w41_draw_clip.patch
+- committed revision 622   by wesley johnson
+Revisit of w36_draw_clip.
+Severe display artifacts observed on flats in Twilight.wad, but not in
+other wads, which are fixed by this patch.
+Remove a test on dc_x as it was skipping needed loop end operations.
+Limit range of dc_x earlier, as calls to SegLoop can have x1..x2 range
+exceed the screen.
 

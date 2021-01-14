@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00622 ]: w41 Re-fix draw-clip
+[00621 ]: Savegame with header and sync
+[00620 ]: GDESC game selection tables
 [00619 ]: t_array allocation inconsistent
 [00618 ]: w40 Misc. cosmetic
 [00617*]: makefile 4d, debug

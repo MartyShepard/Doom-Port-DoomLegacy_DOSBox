@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 615 2010-02-25 00:22:45Z wesleyjohnson $
+// $Id: r_segs.c 622 2010-03-25 02:54:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -217,7 +217,12 @@ static void R_DrawSplatColumn (column_t* column)
     int         bottomscreen;
     fixed_t     basetexturemid;
 
+    // dc_x is limited to 0..rdraw_viewwidth by caller x1,x2
+//    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
+#ifdef RANGECHECK
     if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
+        I_Error ("R_DrawSplatColumn dc_x: %i\n", dc_x);
+#endif
 
     basetexturemid = dc_texturemid;
 
@@ -305,11 +310,12 @@ static void R_DrawWallSplats ()
         if( angle1 > FINEANGLES/2 || angle2 > FINEANGLES/2)
             continue;
 #endif
+        // viewangletox table is limited to (0..rdraw_viewwidth)
         x1 = viewangletox[angle1];
         x2 = viewangletox[angle2];
 
         if (x1 >= x2)
-            continue;                         // does not cross a pixel
+            continue;                         // smaller than a pixel
 
         // splat is not in this seg range
         if (x2 < ds_p->x1 || x1 > ds_p->x2)
@@ -374,7 +380,8 @@ static void R_DrawWallSplats ()
         dc_texheight = 0;
 
         // draw the columns
-        for (dc_x = x1 ; dc_x <= x2 ; dc_x++,spryscale += rw_scalestep)
+	// x1,x2 are already limited to 0..rdraw_viewwidth
+        for (dc_x = x1 ; dc_x <= x2 ; dc_x++, spryscale += rw_scalestep)
         {
             if (!fixedcolormap)
             {
@@ -656,6 +663,13 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
         dc_colormap = fixedcolormap;
 
     // draw the columns
+    // [WDJ] x1,x2 are limited to 0..rdraw_viewwidth to protect [dc_x] access.
+#ifdef RANGECHECK
+    if( x1 < 0 || x2 >= rdraw_viewwidth )
+       I_Error( "R_RenderMaskedSegRange: %i  %i\n", x1, x2);
+#endif
+    if( x1 < 0 )  x1 = 0;
+    if( x2 >= rdraw_viewwidth )  x2 = rdraw_viewwidth-1;
     for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
     {
         // calculate lighting
@@ -944,6 +958,13 @@ void R_RenderThickSideRange (drawseg_t* ds,
         return;	// no draw routine
     }
 
+    // [WDJ] x1,x2 are limited to 0..rdraw_viewwidth to protect [dc_x] access.
+#ifdef RANGECHECK
+    if( x1 < 0 || x2 >= rdraw_viewwidth )
+       I_Error( "R_RenderThickSideRange: %i  %i\n", x1, x2);
+#endif
+    if( x1 < 0 )  x1 = 0;
+    if( x2 >= rdraw_viewwidth )  x2 = rdraw_viewwidth-1;
     // draw the columns
     for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
     {
@@ -1155,7 +1176,18 @@ void R_RenderSegLoop (void)
     int                 i;
     
     texturecolumn = 0;                                // shut up compiler warning
-    
+
+#if 0   
+    // [WDJ] R_StoreWallRange violates rdraw_viewwidth.
+#define INDIVIDUAL_X_CLIP 
+    // [WDJ] R_StoreWallRange fixed 3/24/2010, keep just in case problems arise.
+    if( rw_stopx >= rdraw_viewwidth )
+    {
+//        printf("limiting rw_stopx %i\n", rw_stopx);
+        rw_stopx = rdraw_viewwidth;
+    }
+#endif   
+     
     for ( ; rw_x < rw_stopx ; rw_x++)
     {
         // mark floor / ceiling areas
@@ -1307,12 +1339,18 @@ void R_RenderSegLoop (void)
 
         frontscale[rw_x] = rw_scale;
 
-        if ( (unsigned) dc_x >= rdraw_viewwidth )   continue;
+        // [WDJ] if(dx_x >= viewwidth),  either return
+        // or individual clip and execute bottom of loop
 
         // draw the wall tiers
         if (midtexture)
         {
+#ifdef INDIVIDUAL_X_CLIP
+	  if( yl < rdraw_viewheight && yh >= 0 && yh >= yl
+	      && ((unsigned) dc_x < rdraw_viewwidth) ) // not disabled
+#else
 	  if( yl < rdraw_viewheight && yh >= 0 && yh >= yl ) // not disabled
+#endif
 	  {
             // single sided line
             dc_yl = yl;
@@ -1362,7 +1400,12 @@ void R_RenderSegLoop (void)
                 
                 if (mid >= yl)
                 {
+#ifdef INDIVIDUAL_X_CLIP
+		  if( yl < rdraw_viewheight && mid >= 0
+		      && ((unsigned) dc_x < rdraw_viewwidth) ) // not disabled
+#else
 		  if( yl < rdraw_viewheight && mid >= 0 ) // not disabled
+#endif
 		  {
                     dc_yl = yl;
                     dc_yh = mid;
@@ -1408,7 +1451,12 @@ void R_RenderSegLoop (void)
 
                 if (mid <= yh)
                 {
+#ifdef INDIVIDUAL_X_CLIP
+		  if( mid < rdraw_viewheight && yh >= 0
+		      && ((unsigned) dc_x < rdraw_viewwidth) ) // not disabled
+#else
 		  if( mid < rdraw_viewheight && yh >= 0 ) // not disabled
+#endif
 		  {
                     dc_yl = mid;
                     dc_yh = yh;
@@ -1585,6 +1633,7 @@ void R_StoreWallRange( int   start, int   stop)
     ds_p->x2 = stop;
     ds_p->curline = curline;
     rw_stopx = stop+1;
+    if( rw_stopx >= rdraw_viewwidth )  rw_stopx = rdraw_viewwidth-1;
 
     //SoM: Code to remove limits on openings.
     {
