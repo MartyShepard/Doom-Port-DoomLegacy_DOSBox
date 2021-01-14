@@ -1,6 +1,8 @@
 * Not need to Compile.
 
-[00657 ]: 
+[00659 ]: w51 texture logic, comments
+[00658*]: w51 hardware world names
+[00657*]: w50 log
 [00656 ]: w50 blaze door sound on collision
 [00655 ]: w50 friction cleanup, with hexen/heretic specific
 [00654 ]: w50 BSP viewer tests in setup function
