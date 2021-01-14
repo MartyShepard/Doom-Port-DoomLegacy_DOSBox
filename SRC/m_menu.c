@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 637 2010-05-08 21:21:08Z wesleyjohnson $
+// $Id: m_menu.c 641 2010-05-11 21:31:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -261,11 +261,11 @@ boolean                 menuactive;
 // The savegamedisp table is indexed by slotindex [0..5],
 // which for 99 savegames and with directories (slotindex=[1..6]),
 // is different than the slot number [0..99].
-// The savegamedisp table index=6 is reserved for quickSave.
+// Entry savegamedisp[6] is reserved for quickSave.
 
 // quickSaveSlot: -1 = no slot picked!, -2 = select slot now, else is slot
-static int     quickSaveSlot;
-static int     slotindex;     // used for reading and editing slot desc
+static int     quickSaveSlot; // -1,-2, 0..5 or 0..99
+static int     slotindex;     // used for reading and editing slot desc, 0..5
 
 #if defined SAVEGAMEDIR || defined SAVEGAME99
 #define     QUICKSAVE_INDEX  6
@@ -310,17 +310,18 @@ typedef struct
     char  desc[SAVESTRINGSIZE];
     char  levtime[SAVEGAME_MTLEN];
 } savegame_disp_t;
-  
+
+// disp slots 0..5 and 6=quicksave
 static savegame_disp_t    savegamedisp[7];
 #ifdef SAVEGAMEDIR
 char  savegamedir[SAVESTRINGSIZE] = "";  // default is main legacy dir
 #endif
 
 
-void clear_savegamedisp( int mslot )
+void clear_remaining_savegamedisp( int mslot )
 {
     // fill out as empty any remaining menu positions
-    while( mslot < 7 )
+    while( mslot < 6 )  // do not overrun quicksave
     {
         savegamedisp[mslot].desc[0] = '\0';
         savegamedisp[mslot].levtime[0] = '\0';
@@ -2404,9 +2405,7 @@ void M_DirEnter(int choice);
 #define NUM_DIRLINE  6
 menuitem_t LoadDirMenu[]=
 {
-#ifdef SAVEGAMEDIR
     {IT_CALL | IT_NOTHING,"",0, M_DirEnter,'/'},
-#endif   
     {IT_CALL | IT_NOTHING,"",0, M_DirSelect,'1'},
     {IT_CALL | IT_NOTHING,"",0, M_DirSelect,'2'},
     {IT_CALL | IT_NOTHING,"",0, M_DirSelect,'3'},
@@ -2469,8 +2468,8 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction );
 // Called from DIR game menu to select a directory
 void M_DirSelect(int choice)
 {
-    choice--;	// slots 0..5 are menu 1..6
-    strcpy( savegamedir, savegamedisp[choice].desc );
+    // slots 0..5 are menu 1..6
+    strcpy( savegamedir, savegamedisp[choice-1].desc );
     M_Setup_prevMenu();
 }
 
@@ -2537,7 +2536,7 @@ int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
 
 void M_Dir_scroll (int amount)
 {
-    clear_savegamedisp( 0 );
+    clear_remaining_savegamedisp( 0 );
     slotindex = -scroll_index;
     ftw( legacyhome, ftw_directory_entry, 1 );
 }
@@ -2552,7 +2551,7 @@ void M_Get_SaveDir (int choice)
     scroll_callback = M_Dir_scroll;
     delete_callback = M_Dir_delete;
    
-    clear_savegamedisp( 0 );
+    clear_remaining_savegamedisp( 0 );
     slotindex = 0;
     ftw( legacyhome, ftw_directory_entry, 1 );
 }
@@ -2566,7 +2565,7 @@ extern char legacyhome[FILENAME_SIZE];
 
 void M_Dir_scroll (int amount)
 {
-    clear_savegamedisp( 0 );
+    clear_remaining_savegamedisp( 0 );
     slotindex = -scroll_index;
 }
 
@@ -2692,7 +2691,7 @@ void M_DrawLoad(void)
 //
 // User wants to load this game
 //
-// Called from load game menu to load selected save game, and from quick select
+// Called from load game menu to load selected save game
 void M_LoadSelect(int choice)
 {
     // Issue command to save game
@@ -2731,12 +2730,16 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
 
     if( scroll_direction < 0 )
     {
+        // Because unused slots are skipped, cannot predict what id will be
+        // at top when paging backwards, so must start from 0 and read
+        // forward (while scrolling) until the last_nameid test is statisfied.
+        // The top of previous display will be the last item in next display.
         if((scroll_index > 0) && (savegamedisp[0].savegameid <= 99))
 	   last_nameid = savegamedisp[0].savegameid;
-        // scroll savegamedisp until found last_nameid
     }
     else if( scroll_direction > 0 )
     {
+        // The bottom of previous display becomes top of next display.
         if( savegamedisp[5].savegameid <= 99 )
 	   first_nameid = savegamedisp[5].savegameid;
         else if( savegamedisp[0].savegameid <= 99 )
@@ -2744,6 +2747,7 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
     }
     scroll_index = first_nameid;
 
+    // read savegame headers into menu slots 0..5
     menuslot = 0;
     for (nameid = first_nameid; nameid <= 99; nameid++)
     {
@@ -2791,20 +2795,20 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
         sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
         sgdp->savegameid = nameid;
         LoadGameMenu[menuslot].status = slot_status;
-        menuslot++;
-        // When scroll_direction < 0
+        menuslot++; // uses savegamedisp[0..5]
+        // When scroll_direction < 0 only, until last test satisfied
         if((menuslot >= load_end) && (nameid < last_nameid))
         {
-	    // searching for last_nameid
-	    // scroll memory down
+	    // Display is full and still searching for last_nameid.
+	    // Scroll them to make room at [5] for next read
 	    memmove( &savegamedisp[0], &savegamedisp[1],
 			 sizeof( savegame_disp_t ) * (load_end-1));
-	    menuslot --;  // do not end
+	    menuslot --;  // read one more, come back here
 	    scroll_index = savegamedisp[0].savegameid;
 	}
     }
     free( savebuffer );
-    clear_savegamedisp( menuslot );
+    clear_remaining_savegamedisp( menuslot );  // if menuslot < 5, upto [5]
 }
 
 #else
@@ -3035,7 +3039,7 @@ void M_DrawSave(void)
 // Called from save menu by M_Responder,
 // and from quick Save by M_QuickSaveResponse
 #if defined SAVEGAMEDIR || defined SAVEGAME99
-// slti = menu index
+// slti = savegame index 0..5, or quicksave 6
 void M_DoSave(int slti)
 {
     // Issue command to save game
@@ -3045,12 +3049,12 @@ void M_DoSave(int slti)
     // PICK QUICKSAVE SLOT YET?
     if (quickSaveSlot == -2)
     {
-        quickSaveSlot = savegamedisp[slti].savegameid;
+        quickSaveSlot = savegamedisp[slti].savegameid;  // 0..99
         savegamedisp[QUICKSAVE_INDEX] = savegamedisp[slti];  // save whole thing
     }
 }
 #else
-// slot = game id and menu index
+// slot = game id and menu index 0..5
 void M_DoSave(int slot)
 {
     // Issue command to save game
@@ -3070,7 +3074,7 @@ void M_DoSave(int slot)
 // Called when desc editing is done
 void M_SaveEditDone( void )
 {
-    M_DoSave(slotindex);
+    M_DoSave(slotindex);  // index 0..5
 }
 
 //
@@ -3080,15 +3084,16 @@ void M_SaveEditDone( void )
 void M_SaveSelect(int choice)
 {
 #ifdef SAVEGAMEDIR   
-    choice--;	// slots are 1..6
+    slotindex = choice-1; // menu 1..6 -> index 0..5
+#else   
+    slotindex = choice;  // line being edited  0..5
 #endif
-    slotindex = choice;  // line being edited
     // clear out EMPTY STRING and other err msgs
-    if ( LoadGameMenu[choice].status != 1 )  // invalid name
-        savegamedisp[choice].desc[0] = 0;
+    if ( LoadGameMenu[slotindex].status != 1 )  // invalid name
+        savegamedisp[slotindex].desc[0] = 0;
     // [WDJ] edit_enable overwrites entire line
     // initiate edit of desc string, we are going to be intercepting all chars
-    strcpy(edit_buffer, savegamedisp[choice].desc);
+    strcpy(edit_buffer, savegamedisp[slotindex].desc);
     edit_index = strlen(edit_buffer);
     edit_done_callback = M_SaveEditDone;
     edit_enable = 1;
@@ -3106,7 +3111,7 @@ void M_Save_scroll (int amount)
 //
 // Selected from DOOM menu
 //
-// Called from menu, and key F2
+// Called from menu, and key F2, and quicksave
 void M_SaveGame (int choice)
 {
     if(demorecording)
@@ -3159,6 +3164,13 @@ void M_QuickSaveResponse(int ch)
         M_DoSave( QUICKSAVE_INDEX ); // initiate game save, network message
         S_StartSound(NULL,sfx_swtchx);
     }
+    else
+    {
+	// response was "No"
+        // Give opportunity to pick a new slot
+        quickSaveSlot = -2;     // means to pick a slot now
+        M_SaveGame( -2 );
+    }
 }
 
 // Invoked by key F6
@@ -3173,23 +3185,18 @@ void M_QuickSave(void)
     if (gamestate != GS_LEVEL)
         return;
 
-    if (quickSaveSlot < 0)
-    {
-        M_StartControlPanel();
-        M_SetupNextMenu(&SaveDef);
-#ifdef SAVEGAME99
-        scroll_callback = M_Save_scroll;
-        scroll_index = 0;
-        M_ReadSaveStrings( 0, 0 ); // show unloadable
-#else
-        M_ReadSaveStrings();
-#endif
-        quickSaveSlot = -2;     // means to pick a slot now
-        return;
-    }
+    if (quickSaveSlot < 0)   goto pick_slot; // No slot yet.
     // Show save name, ask for quick save ack.
     sprintf(tempstring, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
     M_StartMessage(tempstring, M_QuickSaveResponse, MM_YESNO);
+    return;
+
+pick_slot:   
+    // have not selected a quick save slot yet
+    M_StartControlPanel();
+    quickSaveSlot = -2;     // signal to save as a quicksave slot
+    M_SaveGame( -2 );
+    return;
 }
 
 
@@ -3202,7 +3209,9 @@ void M_QuickLoadResponse(int ch)
 {
     if (ch == 'y')
     {
-        M_LoadSelect(quickSaveSlot);	// initiate game load, network message
+        // quickSaveSlot is known valid
+        G_LoadGame( quickSaveSlot ); // initiate game load, network message
+        M_ClearMenus (true);
         S_StartSound(NULL,sfx_swtchx);
     }
 }
@@ -3223,7 +3232,7 @@ void M_QuickLoad(void)
         return;
     }
     // Show load name, ask for quick load ack.
-    sprintf(tempstring, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
+    sprintf(tempstring, QLPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
     M_StartMessage(tempstring, M_QuickLoadResponse, MM_YESNO);
 }
 
@@ -3634,8 +3643,12 @@ void M_DrawMessageMenu(void)
 // default message handler
 void M_StopMessage(int choice)
 {
-    M_SetupNextMenu(MessageDef.prevMenu);
-    S_StartSound(NULL,sfx_swtchx);
+    // Do not interfere with response menu changes
+    if( currentMenu == &MessageDef )
+    {
+       M_SetupNextMenu(MessageDef.prevMenu);
+       S_StartSound(NULL,sfx_swtchx);
+    }
 }
 
 //==========================================================================
@@ -3987,9 +4000,7 @@ boolean M_Responder (event_t* ev)
             {
                 if(routine) routine(ch);
                 M_StopMessage(0);
-                goto ret_true;
             }
-            goto ret_true;
         }
         else
         {
@@ -3999,8 +4010,8 @@ boolean M_Responder (event_t* ev)
             if (ev->type==ev_mouse || ev->type==ev_joystick )
                 goto ret_true;
             if (hack) hack(ev);
-            goto ret_true;
         }
+        goto ret_true;
     }
 
     // BP: one of the more big hack i have never made

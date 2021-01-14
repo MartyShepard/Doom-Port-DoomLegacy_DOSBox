@@ -577,3 +577,16 @@ Added strife mode, (not implemented).
 Fix change to -game switch so that unrecognized names cause error.
 Other cosmetic and organizational adjustments and removed some old
 comments and code.
+
+*** w47_wad_selection
+patchfile = w45_wad_selection.patch
+- committed revision 640   by wesley johnson
+User documentation changed to reflect strife and -game switch changes.
+
+*** w44_quicksave
+patchfile = w44_quicksave.patch
+- committed revision 641   by wesley johnson
+Commit quicksave again, quicksave changes are missing.
+Fix quicksave getting clobbered by save or load.
+Fix quicksave to be able to change save file.
+Fix quickload to correct message
