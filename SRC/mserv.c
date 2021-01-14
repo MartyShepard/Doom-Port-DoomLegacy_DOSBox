@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: mserv.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -376,7 +376,8 @@ int ConnectionFailed(void)
 static int AddToMasterServer(void)
 {
     static int      retry = 0;
-    int             i, j, res;
+    int             i, res;
+    socklen_t       j;
     msg_t           msg;
     msg_server_t    *info = (msg_server_t *) msg.buffer;
     fd_set          tset;
@@ -403,7 +404,7 @@ static int AddToMasterServer(void)
     // so, the socket is writable, but what does that mean, that the connection is
     // ok, or bad... let see that!
     j = 4;
-    getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, (char *)&i, (size_t *)&j);
+    getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, (char *)&i, &j);
     if (i != 0) // it was bad
     {
         CONS_Printf("getsockopt: %s\n", strerror(errno));

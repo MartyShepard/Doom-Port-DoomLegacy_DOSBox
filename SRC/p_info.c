@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: p_info.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -423,7 +423,7 @@ void P_InitWeapons()
 #define HU_TITLET (text[THUSTR_1_NUM + gamemap-1])
 #define HU_TITLEH (text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1])
 
-unsigned char *levelname;
+static char *levelname;
 
 void P_FindLevelName()
 {

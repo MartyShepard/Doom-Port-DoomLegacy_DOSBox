@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 608 2010-02-22 07:04:36Z smite-meister $
+// $Id: t_parse.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -851,7 +851,7 @@ char *stringvalue(svalue_t v)
 
         case svt_int:
         default:
-            sprintf(buffer, "%li", v.value.i);
+            sprintf(buffer, "%d", v.value.i);
             return buffer;
     }
 }

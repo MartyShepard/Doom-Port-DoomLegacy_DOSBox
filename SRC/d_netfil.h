@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_netfil.h 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -84,8 +84,8 @@ extern fileneeded_t fileneeded[MAX_WADFILES];
 
 void D_NetFileInit(void);
 
-char *PutFileNeeded(void);
-void D_ParseFileneeded(int fileneedednum_parm, char *fileneededstr);
+byte *PutFileNeeded(void);
+void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr);
 void CL_PrepareDownloadSaveGame(const char *tmpsave);
 
 // check file list in wadfiles return 0 when a file is not found 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: d_net.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -711,7 +711,7 @@ static unsigned NetbufferChecksum (void)
 
 #ifdef DEBUGFILE
 
-static void fprintfstring(char *s,byte len)
+static void fprintfstring(byte *s,byte len)
 {
     int i;
     int mode=0;
@@ -720,10 +720,10 @@ static void fprintfstring(char *s,byte len)
        if(s[i]<32)
        {
            if(mode==0) {
-               fprintf (debugfile,"[%d",(byte)s[i]);
+               fprintf (debugfile,"[%d", s[i]);
                mode = 1;
            } else
-               fprintf (debugfile,",%d",(byte)s[i]);
+               fprintf (debugfile,",%d", s[i]);
        }
        else
        {
@@ -731,7 +731,7 @@ static void fprintfstring(char *s,byte len)
               fprintf (debugfile,"]");
               mode=0;
            }
-           fprintf (debugfile,"%c",s[i]);
+           fprintf (debugfile,"%c", s[i]);
        }
     if(mode==1) fprintf (debugfile,"]");
     fprintf(debugfile,"\n");
@@ -793,7 +793,7 @@ static void DebugPrintpacket(char *header)
                   ,netbuffer->u.serverpak.numplayers
                   ,netbuffer->u.serverpak.numtics
                   ,(int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]));
-           fprintfstring(                                            (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]
+           fprintfstring(                                            (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]
                         ,&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]);
            break;
        case PT_CLIENTCMD:
@@ -850,7 +850,7 @@ static void DebugPrintpacket(char *header)
            break;
        case PT_REQUESTFILE :
        default : // write as a raw packet
-           fprintfstring(netbuffer->u.textcmd,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.textcmd);
+	 fprintfstring(netbuffer->u.textcmd,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.textcmd);
            break;
 
     }

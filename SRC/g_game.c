@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 562 2009-11-23 03:17:05Z smite-meister $
+// $Id: g_game.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -453,23 +453,25 @@ char* G_BuildMapName (int episode, int map)
 //
 //added:22-02-98:
 //changed:3-3-98: do a angle limitation now
-short G_ClipAimingPitch (int* aiming)
+short G_ClipAimingPitch(angle_t *aiming)
 {
-    int limitangle;
+  int32_t p = *aiming;
+  int32_t limitangle;
 
-    //note: the current software mode implementation doesn't have true perspective
-    if ( rendermode == render_soft )
-        limitangle = 732<<ANGLETOFINESHIFT;
-    else
-        limitangle = ANG90 - 1;
+  //note: the current software mode implementation doesn't have true perspective
+  if (rendermode == render_soft)
+    limitangle = 732<<ANGLETOFINESHIFT;
+  else
+    limitangle = ANG90 - 1;
 
-    if (*aiming > limitangle )
-        *aiming = limitangle;
-    else
-    if (*aiming < -limitangle)
-        *aiming = -limitangle;
+  if (p > limitangle)
+    p = limitangle;
+  else if (p < -limitangle)
+    p = -limitangle;
+  
+  *aiming = p;
 
-    return (*aiming)>>16;
+  return p >> 16;
 }
 
 
@@ -481,7 +483,7 @@ short G_ClipAimingPitch (int* aiming)
 //
 // set secondaryplayer true to build player 2's ticcmd in splitscreen mode
 //
-int     localaiming,localaiming2;
+angle_t localaiming,localaiming2;
 angle_t localangle,localangle2;
 
 //added:06-02-98: mouseaiming (looking up/down with the mouse or keyboard)
@@ -2073,7 +2075,7 @@ void G_DoLoadGame (int slot)
     
     memset (vcheck,0,sizeof(vcheck));
     sprintf (vcheck,"version %i",VERSION);
-    if (strcmp (save_p, vcheck))
+    if (strcmp ((char *)save_p, vcheck))
     {
         M_StartMessage ("Save game from different version\n\nPress ESC\n",NULL,MM_NOTHING);
         return;                         // bad version

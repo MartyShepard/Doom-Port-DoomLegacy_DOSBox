@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: p_spec.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1210,7 +1210,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
 // are the same.
 //
 //
-int P_SectorActive(special_e t, sector_t *sec)
+boolean P_SectorActive(special_e t, sector_t *sec)
 {
   if (!boomsupport)
     return sec->floordata || sec->ceilingdata || sec->lightingdata;
@@ -1219,14 +1219,14 @@ int P_SectorActive(special_e t, sector_t *sec)
     switch (t)
     {
       case floor_special:
-        return (int)sec->floordata;
+        return sec->floordata != NULL;
       case ceiling_special:
-        return (int)sec->ceilingdata;
+        return sec->ceilingdata != NULL;
       case lighting_special:
-        return (int)sec->lightingdata;
+        return sec->lightingdata != NULL;
     }
   }
-  return 1;
+  return true;
 }
 
 

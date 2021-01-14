@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_tcp.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -366,7 +366,7 @@ static int getfreenode( void )
 void SOCK_Get(void)
 {
     int           i,j,c;
-    size_t        fromlen;
+    socklen_t     fromlen;
     mysockaddr_t  fromaddress;
 
     fromlen = sizeof(fromaddress);
@@ -470,7 +470,8 @@ SOCKET UDP_Socket (void)
     SOCKET s;
     struct sockaddr_in  address;
     int    trueval = true;
-    int i,j;
+    int i;
+    socklen_t j;
 
     // allocate a socket
     s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -503,7 +504,7 @@ SOCKET UDP_Socket (void)
     setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&trueval, sizeof(trueval));
 
     j=4;
-    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, (size_t *)&j); // FIXME: so an int value is written to a (char *); portability!!!!!!!
+    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, &j); // FIXME: so an int value is written to a (char *); portability!!!!!!!
     CONS_Printf("Network system buffer : %dKb\n",i>>10);
 
     if(i < 64<<10) // 64k
@@ -539,7 +540,8 @@ SOCKET IPX_Socket (void)
     SOCKET s;
     SOCKADDR_IPX  address;
     int    trueval = true;
-    int    i,j;
+    int    i;
+    socklen_t j;
 
     // allocate a socket
     s = socket (AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
@@ -565,7 +567,7 @@ SOCKET IPX_Socket (void)
 
     // set receive buffer to 64Kb
     j=4;
-    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, (size_t *)&j);
+    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, &j);
     CONS_Printf("Network system receive buffer : %d\n",i);
     if(i<128<<10)
     {

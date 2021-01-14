@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: d_main.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 608; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 609; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -390,7 +390,7 @@ extern char mac_user_home[256];		//for config and savegames
 
 event_t events[MAXEVENTS];
 int eventhead = 0;
-int eventtail;
+int eventtail = 0;
 
 boolean dedicated;
 
@@ -419,18 +419,19 @@ void D_ProcessEvents(void)
 {
     event_t *ev;
 
-    for (; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1))
+    while (eventtail != eventhead)
     {
         ev = &events[eventtail];
-        // Menu input
-        if (M_Responder(ev))
-            continue;   // menu ate the event
 
-        // console input
-        if (CON_Responder(ev))
-            continue;   // ate the event
+        if (M_Responder(ev)) // Menu input
+	  ;   // menu ate the event
+        else if (CON_Responder(ev)) // console input
+	  ;
+	else
+	  G_Responder(ev);
 
-        G_Responder(ev);
+	eventtail++;
+	eventtail = eventtail & (MAXEVENTS - 1);
     }
 }
 

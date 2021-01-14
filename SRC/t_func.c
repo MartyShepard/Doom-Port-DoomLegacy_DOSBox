@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 579 2009-11-30 03:45:36Z wesleyjohnson $
+// $Id: t_func.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -2498,18 +2498,13 @@ boolean script_camera_on;
 // setcamera(obj, [angle], [viewheight], [aiming])
 void SF_SetCamera()
 {
-    mobj_t *mo;
-    angle_t angle;
-    fixed_t aiming;
-	const short fixedtodeg = 182.033;
-
     if (t_argc < 1)
     {
         script_error("insufficient arguments to function\n");
         return;
     }
 
-    mo = MobjForSvalue(t_argv[0]);
+    mobj_t *mo = MobjForSvalue(t_argv[0]);
     if (!mo)
         return; // nullptr check
 
@@ -2521,20 +2516,18 @@ void SF_SetCamera()
         script_camera.startangle = mo->angle;
     }
 
-    angle = t_argc < 2 ? mo->angle : FixedToAngle(fixedvalue(t_argv[1]));
-
     script_camera.mo = mo;
-    script_camera.mo->angle = angle;
+    script_camera.mo->angle = t_argc < 2 ? mo->angle : FixedToAngle(fixedvalue(t_argv[1]));
     script_camera.mo->z = t_argc < 3 ? (mo->subsector->sector->floorheight + (41 << FRACBITS)) : fixedvalue(t_argv[2]);
-    //aiming = t_argc < 4 ? 0 : fixedvalue(t_argv[3]);
-	aiming = fixedvalue(t_argv[3]) * fixedtodeg;
-	//DarkWolf95:Byteshift to right in G_ClipAimingPitch 
-	//was causing the camera's angle to be too low, shift back left.
+
+    angle_t aiming = t_argc < 4 ? 0 : FixedToAngle(fixedvalue(t_argv[3]));
+    //DarkWolf95:Byteshift to right in G_ClipAimingPitch 
+    //was causing the camera's angle to be too low, shift back left.
     script_camera.aiming = G_ClipAimingPitch(&aiming)<<16;
     G_ClipAimingPitch(&script_camera.aiming);
     script_camera_on = true;
-	t_return.type = svt_fixed;
-	t_return.value.f = script_camera.aiming;
+    t_return.type = svt_fixed;
+    t_return.value.f = script_camera.aiming;
 }
 
 void SF_ClearCamera()

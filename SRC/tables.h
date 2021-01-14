@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: tables.h 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -80,7 +80,7 @@ extern fixed_t          finetangent[FINEANGLES/2];
 #define ANGLE_1     (ANGLE_45/45)
 #define ANGLE_60    (ANGLE_180/3)
 
-typedef unsigned angle_t;
+typedef uint32_t angle_t;
 
 
 // to get a global angle from cartesian coordinates, the coordinates are

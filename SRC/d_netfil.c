@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: d_netfil.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -175,7 +175,7 @@ char *downloaddir="DOWNLOAD";
 
 
 // fill the serverinfo packet with wad file loaded
-char *PutFileNeeded(void)
+byte *PutFileNeeded(void)
 {
     int   i;
     byte *p;  // macros want byte*
@@ -195,13 +195,12 @@ char *PutFileNeeded(void)
 }
 
 // parce the serverinfo packet and fill fileneeded table on client 
-void D_ParseFileneeded(int fileneedednum_parm, char *fileneededstr)
+void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
 {
     int i;
-    byte *p;
 
     fileneedednum=fileneedednum_parm;
-    p=fileneededstr;
+    byte *p = fileneededstr;
     for(i=0;i<fileneedednum;i++)
     {
         fileneeded[i].status = FS_NOTFOUND;
@@ -227,7 +226,6 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
 // send the name of file who status is FS_NOTFOUND of the fileneeded table
 boolean SendRequestFile(void)
 {
-    char  *p;
     int   i;
     ULONG totalfreespaceneeded=0;
     INT64 availablefreespace;
@@ -271,7 +269,7 @@ boolean SendRequestFile(void)
     }
 
     netbuffer->packettype = PT_REQUESTFILE;
-    p=netbuffer->u.textcmd;
+    byte *p = netbuffer->u.textcmd;
     for(i=0;i<fileneedednum;i++)
         if( fileneeded[i].status==FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
         {
@@ -294,15 +292,14 @@ boolean SendRequestFile(void)
 
     // prepare to download
     I_mkdir(downloaddir,0755);
-    return HSendPacket(servernode,true,0,p-(char *)netbuffer->u.textcmd);
+    return HSendPacket(servernode,true,0,p-netbuffer->u.textcmd);
 }
 
 // get request filepak and put it to the send queue
 void Got_RequestFilePak(int node)
 {
-    char *p;
+    char *p = (char *)netbuffer->u.textcmd;
 
-    p=netbuffer->u.textcmd;
     while(*p!=-1)
     {
         SendFile(node,p+1,*p);
@@ -465,7 +462,7 @@ void SendRam(int node,byte *data, ULONG size,freemethode_t freemethode, char fil
        I_Error("SendRam : No more ram\n");
     p=*q;
     p->ram=freemethode;
-    p->filename=data;
+    p->filename = (char *)data;
     p->size=size;
     p->fileid=fileid;
     p->next=NULL; // end of list

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_oper.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -307,7 +307,7 @@ svalue_t OPplus(int start, int n, int stop)
         else
         {
             tmp = Z_Malloc(strlen(left.value.s) + 12, PU_LEVEL, 0);
-            sprintf(tmp, "%s%li", left.value.s, intvalue(right));
+            sprintf(tmp, "%s%d", left.value.s, intvalue(right));
         }
         returnvar.type = svt_string;
         returnvar.value.s = tmp;

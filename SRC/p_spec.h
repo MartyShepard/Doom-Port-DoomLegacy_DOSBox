@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 605 2010-02-16 07:20:19Z smite-meister $
+// $Id: p_spec.h 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -367,9 +367,7 @@ typedef enum
 
 
 //SoM: 3/6/2000
-int P_SectorActive
-( special_e t,
-  sector_t* s );
+boolean P_SectorActive(special_e t, sector_t *s);
 
 
 typedef enum

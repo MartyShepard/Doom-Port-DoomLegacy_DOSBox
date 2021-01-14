@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_argv.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -139,7 +139,7 @@ void M_FindResponseFile (void)
             int             index;
             int             indexinfile;
             boolean         inquote = false;
-            byte    *infile;
+            char    *infile;
             char    *file;
             char    *moreargs[20];
             char    *firstargv;

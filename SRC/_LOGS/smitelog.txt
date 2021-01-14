@@ -40,4 +40,9 @@ when loading.
 = rev 608
 Replaced a number of unsafe uses of vsprintf with vsnprintf, fixing
 several console-related crashing bugs. There may be more of the same
-in the interface code (sdl is clean, however).
+in the interface code (SDL and OpenGL are clean).
+
+
+*** The great compiler warning cleanup
+= rev 609
+Fixed a LOT of compiler warnings. Part 1.

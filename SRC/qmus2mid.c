@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: qmus2mid.c 609 2010-02-22 09:53:29Z smite-meister $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -261,7 +261,7 @@ int qmus2mid (byte  *mus,
         return NOTMUSFILE;
 
     //fseek( file_mus, MUSh.scoreStart, SEEK_SET );
-    file_mus = (char *)mus + MUSh->scoreStart;
+    file_mus = mus + MUSh->scoreStart;
 
     if (MUSh->channels > 15)      /* <=> MUSchannels+drums > 16 */
         return TOOMCHAN;
