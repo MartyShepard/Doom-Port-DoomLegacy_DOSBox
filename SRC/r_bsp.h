@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.h 653 2010-05-19 18:01:19Z wesleyjohnson $
+// $Id: r_bsp.h 654 2010-05-19 18:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -86,6 +86,17 @@ void R_ClearClipSegs (void);
 void R_SetupClipSegs();
 void R_ClearDrawSegs (void);
 
+#define BSPVIEWER
+#ifdef BSPVIEWER
+// Setup viewer before call to recursive R_RenderBSPNode
+void R_SetupBSPRender( void );
+
+// [WDJ] viewer setup as used by R_RenderBSPNode, R_FakeFlat, R_ProjectSprite
+extern int      viewer_modelsec;
+extern boolean  viewer_has_model;
+extern boolean  viewer_underwater;  // only set when viewer_has_model
+extern boolean  viewer_overceiling; // only set when viewer_has_model
+#endif
 
 void R_RenderBSPNode (int bspnum);
 

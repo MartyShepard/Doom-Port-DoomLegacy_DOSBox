@@ -670,9 +670,17 @@ lines.  Use more unique names.
 Rename sector lines[] to linelist[], and added comments.
 Fix another use of floor name.
 
+*** w50_planelight
+patchfile = w50_planelight.patch
+- committed revision 653   by wesley johnson
+Split the R_GetPlaneLight function into two, to avoid the repeated
+passing of a FALSE parameter.
+Eliminated clutter of viewz test in parameter that is now done in function.
+Reduced program size and faster execution.
+
 *** w50_bsp_viewer_common
 patchfile = w49_bspviewer.patch
-- committed revision 653   by wesley johnson
+- committed revision 654   by wesley johnson
 Removes common determinations on the viewer model sector to a Setup
 function.
 The viewer variables are used by R_FakeFlat and R_RenderSprite.
@@ -680,10 +688,4 @@ This code is much easier to read and understand, and is smaller.
 Makes model floor and ceiling transitions more consistent.
 Old code is retained for comparison until such time as correctness is clear.
 
-*** w50_planelight
-patchfile = w49_planelight.patch
-- committed revision 654   by wesley johnson
-Split the R_GetPlaneLight function into two, to avoid the repeated
-passing of a FALSE parameter.
-Eliminated clutter of viewz test in parameter that is now done in function.
-Reduced program size and faster execution.
+

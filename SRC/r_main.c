@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: r_main.c 654 2010-05-19 18:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1216,6 +1216,11 @@ void R_SetupFrame (player_t* player)
     }
     centery = (rdraw_viewheight/2) + dy;
     centeryfrac = centery<<FRACBITS;
+
+#ifdef BSPVIEWER
+    R_SetupBSPRender();	// setup viewer relation to BSP render
+    	// Call before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
+#endif
 
     framecount++;
     validcount++;
