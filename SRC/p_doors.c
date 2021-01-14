@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_doors.c 656 2010-05-19 18:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -243,7 +243,14 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                     default:
                         door->direction = 1;
+#if 1
+		        // [WDJ] Bug from DoomWiki, blaze door hits something and raises with normal sound.
+			// Test for type of door and play appropriate sound.
+		        S_StartSound((mobj_t *)&door->sector->soundorg,
+                             door->speed >= 4 ? sfx_bdopn : sfx_doropn);
+#else		   
                         S_StartSound((mobj_t *)&door->sector->soundorg, sfx_doropn);
+#endif		   
                         break;
                 }
             }
@@ -319,10 +326,7 @@ void T_VerticalDoor(vldoor_t * door)
 // SoM: Removed the player checks at every different color door (checking to make sure 'p' is
 // not NULL) because you only need to do that once.
 int
-EV_DoLockedDoor
-( line_t*       line,
-  vldoor_e      type,
-  mobj_t*       thing, fixed_t speed )
+EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
 {
     player_t *p;
 
@@ -370,13 +374,12 @@ EV_DoLockedDoor
 
 int EV_DoDoor(line_t * line, vldoor_e type, fixed_t speed)
 {
-    int secnum, rtn;
+    int secnum;
+    int rtn = 0;
     sector_t *sec;
     vldoor_t *door;
 
-    secnum = -1;
-    rtn = 0;
-
+    secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
         sec = &sectors[secnum];
@@ -451,10 +454,10 @@ int EV_DoDoor(line_t * line, vldoor_e type, fixed_t speed)
 void EV_OpenDoor(int sectag, int speed, int wait_time)
 {
     vldoor_e door_type;
-    int secnum = -1;
+    int secnum;
     vldoor_t *door;
 
-  if(speed < 1) speed = 1;
+    if(speed < 1) speed = 1;
 
     // find out door type first
 
@@ -475,6 +478,7 @@ void EV_OpenDoor(int sectag, int speed, int wait_time)
 
     // open door in all the sectors with the specified tag
 
+    secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromTag(sectag, secnum)) >= 0)
     {
         sector_t *sec = &sectors[secnum];
@@ -509,10 +513,10 @@ void EV_OpenDoor(int sectag, int speed, int wait_time)
 void EV_CloseDoor(int sectag, int speed)
 {
     vldoor_e door_type;
-    int secnum = -1;
+    int secnum;
     vldoor_t *door;
 
-  if(speed < 1) speed = 1;
+    if(speed < 1) speed = 1;
 
     // find out door type first
 
@@ -523,6 +527,7 @@ void EV_CloseDoor(int sectag, int speed)
 
     // open door in all the sectors with the specified tag
 
+    secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromTag(sectag, secnum)) >= 0)
     {
         sector_t *sec = &sectors[secnum];
@@ -554,9 +559,7 @@ void EV_CloseDoor(int sectag, int speed)
 //SoM: 3/6/2000: Needs int return for boom compatability. Also removed "side" and used boom
 //methods insted.
 int
-EV_VerticalDoor
-( line_t*       line,
-  mobj_t*       thing )
+EV_VerticalDoor ( line_t* line, mobj_t* thing )
 {
     player_t *player;
     int secnum;
@@ -916,9 +919,7 @@ void T_SlidingDoor (slidedoor_t*        door)
 }
 
 void
-EV_SlidingDoor
-( line_t*       line,
-  mobj_t*       thing )
+EV_SlidingDoor ( line_t* line, mobj_t* thing )
 {
     sector_t*           sec;
     slidedoor_t*        door;
