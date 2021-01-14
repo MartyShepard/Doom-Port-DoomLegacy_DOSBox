@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 645 2010-05-11 21:47:18Z wesleyjohnson $
+// $Id: r_defs.h 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -375,9 +375,10 @@ typedef struct sector_s
 
     //SoM: 3/6/2000: Start boom extra stuff
     // thinker_t for reversable actions
-    void *floordata;    // make thinkers on
-    void *ceilingdata;  // floors, ceilings, lighting,
-    void *lightingdata; // independent of one another
+    // make thinkers on floors, ceilings, lighting, independent of one another
+    void *floordata;
+    void *ceilingdata;
+    void *lightingdata;
   
     // lockout machinery for stairbuilding
     int stairlock;   // -2 on first locked -1 after thinker done 0 normally
@@ -398,14 +399,16 @@ typedef struct sector_s
     int teamstartsec;
 
     int bottommap, midmap, topmap; // dynamic colormaps
+        // -1 is invalid, valid 0..
   
     // list of mobjs that are at least partially in the sector
     // thinglist is a subset of touching_thinglist
     struct msecnode_s *touching_thinglist;               // phares 3/14/98  
     //SoM: 3/6/2000: end stuff...
 
+    // list of ptrs to lines that have this sector as a side
     int                 linecount;
-    struct line_s**     lines;  // [linecount] size
+    struct line_s**     linelist;  // [linecount] size
 
     //SoM: 2/23/2000: Improved fake floor hack
     ffloor_t*                  ffloors;
@@ -457,6 +460,7 @@ typedef struct
 
     // Texture indices.
     // We do not maintain names here.
+    // 0= no-texture, will never have -1
     short       toptexture;
     short       bottomtexture;
     short       midtexture;
@@ -497,7 +501,9 @@ typedef struct line_s
     fixed_t     dy;
 
     // Animation related.
-    short       flags;
+    short	flags;
+        // [WDJ] flags should be unsigned, but binary gets larger??
+   	// test shows that unsigned costs 4 more bytes per (flag & ML_bit)
     short       special;
     short       tag;
 

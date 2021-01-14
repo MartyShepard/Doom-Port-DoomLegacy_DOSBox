@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_state.h 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -129,7 +129,7 @@ extern int              numsegs;
 extern seg_t*           segs;
 
 extern int              numsectors;
-extern sector_t*        sectors;
+extern sector_t*        sectors;  // [0..(numsectors-1)]
 
 extern int              numsubsectors;
 extern subsector_t*     subsectors;

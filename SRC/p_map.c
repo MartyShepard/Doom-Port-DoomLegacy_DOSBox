@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_map.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1615,7 +1615,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
         // BP:13-3-99: fix the side usage
         hitplane = false;
         sectorside=P_PointOnLineSide(shootthing->x,shootthing->y,li);
-        if( li->sidenum[sectorside] != -1 ) // can happen in nocliping mode
+        if( li->sidenum[sectorside] >= 0 ) // can happen in nocliping mode
         {
             sector = sides[li->sidenum[sectorside]].sector;
             floorz = sector->floorheight;

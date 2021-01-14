@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_plats.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -181,12 +181,8 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 {
     plat_t*     plat;
     int         secnum;
-    int         rtn;
+    int         rtn = 0;
     sector_t*   sec;
-
-    secnum = -1;
-    rtn = 0;
-
 
     //  Activate all <type> plats that are in_stasis
     switch(type)
@@ -204,6 +200,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
         break;
     }
 
+    secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
     {
         sec = &sectors[secnum];

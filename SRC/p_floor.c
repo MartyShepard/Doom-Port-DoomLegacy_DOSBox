@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 651 2010-05-19 17:51:50Z wesleyjohnson $
+// $Id: p_floor.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -810,16 +810,17 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
       ok = 0;
       for (i = 0; i < sec->linecount; i++)
       {
-        if ( !((sec->lines[i])->flags & ML_TWOSIDED) )
+	// for each line of the sector linelist
+        if ( !((sec->linelist[i])->flags & ML_TWOSIDED) )
           continue;
                                   
-        tsec = (sec->lines[i])->frontsector;
+        tsec = (sec->linelist[i])->frontsector;
         new_secnum = tsec-sectors;
           
         if (secnum != new_secnum)
           continue;
 
-        tsec = (sec->lines[i])->backsector;
+        tsec = (sec->linelist[i])->backsector;
         if (!tsec) continue;     //jff 5/7/98 if no backside, continue
         new_secnum = tsec - sectors;
 
@@ -895,7 +896,7 @@ int EV_DoDonut(line_t*  line)
     if (P_SectorActive(floor_special,s1)) //jff 2/22/98
       continue;
                       
-    s2 = getNextSector(s1->lines[0],s1);  // s2 is pool's sector
+    s2 = getNextSector(s1->linelist[0],s1);  // s2 is pool's sector
     if (!s2) continue;                    // note lowest numbered line around
                                           // pillar must be two-sided 
 
@@ -906,20 +907,23 @@ int EV_DoDonut(line_t*  line)
     // find a two sided line around the pool whose other side isn't the pillar
     for (i = 0; i < s2->linecount; i++)
     {
+      // for each line of sector s2 linelist
+      // [WDJ] using ptr s = s2->linelist[i] gives larger code (by 32 bytes).
       //jff 3/29/98 use true two-sidedness, not the flag
       // killough 4/5/98: changed demo_compatibility to compatibility
       if (!boomsupport)
       {
-        if (!(s2->lines[i]->flags & ML_TWOSIDED) ||
-            (s2->lines[i]->backsector == s1))
+        if (!(s2->linelist[i]->flags & ML_TWOSIDED)
+	    || (s2->linelist[i]->backsector == s1))
           continue;
       }
-      else if (!s2->lines[i]->backsector || s2->lines[i]->backsector == s1)
+      else if (!s2->linelist[i]->backsector
+	       || s2->linelist[i]->backsector == s1)
         continue;
 
       rtn = 1; //jff 1/26/98 no donut action - no switch change on return
 
-      s2model = s2->lines[i]->backsector;      // s2model is model sector for changes
+      s2model = s2->linelist[i]->backsector;  // s2model is model sector for changes
         
       //  Spawn rising slime
       mfloor = Z_Malloc (sizeof(*mfloor), PU_LEVSPEC, 0);

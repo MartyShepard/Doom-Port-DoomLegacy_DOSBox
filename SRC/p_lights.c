@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_lights.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -226,10 +226,9 @@ P_SpawnStrobeFlash
 //
 int EV_StartLightStrobing(line_t*      line)
 {
-    int         secnum;
     sector_t*   sec;
 
-    secnum = -1;
+    int secnum = -1; // init search FindSector
     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
     {
         sec = &sectors[secnum];
@@ -257,17 +256,21 @@ int EV_TurnTagLightsOff(line_t* line)
 
     sector = sectors;
 
-    for (j = 0;j < numsectors; j++, sector++)
+    for (j = 0; j < numsectors; j++, sector++)
     {
+        // for each sector
         if (sector->tag == line->tag)
         {
+	    // for each sector with matching tag
             min = sector->lightlevel;
-            for (i = 0;i < sector->linecount; i++)
+            for (i = 0; i < sector->linecount; i++)
             {
-                templine = sector->lines[i];
+	        // for all lines in sector linelist
+                templine = sector->linelist[i];
                 tsec = getNextSector(templine,sector);
                 if (!tsec)
                     continue;
+	        // find any lower light level
                 if (tsec->lightlevel < min)
                     min = tsec->lightlevel;
             }
@@ -281,10 +284,7 @@ int EV_TurnTagLightsOff(line_t* line)
 //
 // TURN LINE'S TAG LIGHTS ON
 //
-int
-EV_LightTurnOn
-( line_t*       line,
-  int           bright )
+int EV_LightTurnOn ( line_t* line, int bright )
 {
     int         i;
     int         j;
@@ -294,24 +294,27 @@ EV_LightTurnOn
 
     sector = sectors;
 
-    for (i=0;i<numsectors;i++, sector++)
+    for (i=0; i<numsectors; i++, sector++)
     {
+        // for each sector
         int tbright = bright; //SoM: 3/7/2000: Search for maximum per sector
         if (sector->tag == line->tag)
         {
+	    // for each sector with matching tag
             // bright = 0 means to search
-            // for highest light level
-            // surrounding sector
+            // for highest light level in surrounding sectors
             if (!bright)
             {
-                for (j = 0;j < sector->linecount; j++)
+                for (j = 0; j < sector->linecount; j++)
                 {
-                    templine = sector->lines[j];
+		    // for each line in sector linelist
+                    templine = sector->linelist[j];
                     temp = getNextSector(templine,sector);
 
                     if (!temp)
                         continue;
 
+		    // find any brighter light level
                     if (temp->lightlevel > tbright) //SoM: 3/7/2000
                         tbright = temp->lightlevel;
                 }
@@ -329,46 +332,46 @@ EV_LightTurnOn
 // Spawn glowing light
 //
 
-void T_Glow(glow_t*     g)
+void T_Glow( glow_t* gp)
 {
-    switch(g->direction)
+    switch(gp->direction)
     {
       case -1:
         // DOWN
-        g->sector->lightlevel -= GLOWSPEED;
-        if (g->sector->lightlevel <= g->minlight)
+        gp->sector->lightlevel -= GLOWSPEED;
+        if (gp->sector->lightlevel <= gp->minlight)
         {
-            g->sector->lightlevel += GLOWSPEED;
-            g->direction = 1;
+            gp->sector->lightlevel += GLOWSPEED;
+            gp->direction = 1;
         }
         break;
 
       case 1:
         // UP
-        g->sector->lightlevel += GLOWSPEED;
-        if (g->sector->lightlevel >= g->maxlight)
+        gp->sector->lightlevel += GLOWSPEED;
+        if (gp->sector->lightlevel >= gp->maxlight)
         {
-            g->sector->lightlevel -= GLOWSPEED;
-            g->direction = -1;
+            gp->sector->lightlevel -= GLOWSPEED;
+            gp->direction = -1;
         }
         break;
     }
 }
 
 
-void P_SpawnGlowingLight(sector_t*      sector)
+void P_SpawnGlowingLight( sector_t*  sector)
 {
-    glow_t*     g;
+    glow_t* gp;
 
-    g = Z_Malloc( sizeof(*g), PU_LEVSPEC, 0);
+    gp = Z_Malloc( sizeof(*gp), PU_LEVSPEC, 0);
 
-    P_AddThinker(&g->thinker);
+    P_AddThinker(& gp->thinker);
 
-    g->sector = sector;
-    g->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel);
-    g->maxlight = sector->lightlevel;
-    g->thinker.function.acp1 = (actionf_p1) T_Glow;
-    g->direction = -1;
+    gp->sector = sector;
+    gp->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel);
+    gp->maxlight = sector->lightlevel;
+    gp->thinker.function.acp1 = (actionf_p1) T_Glow;
+    gp->direction = -1;
 
     sector->special &= ~31; //SoM: 3/7/2000: Reset only non-generic types.
 }
@@ -381,13 +384,13 @@ void P_SpawnGlowingLight(sector_t*      sector)
 //
 void P_FadeLight(int tag, int destvalue, int speed)
 {
-  int i;
   lightlevel_t *ll;
 
   // search all sectors for ones with tag
-  for (i = -1; (i = P_FindSectorFromTag(tag,i)) >= 0;)
+  int secnum = -1; // init search FindSector
+  while ((secnum = P_FindSectorFromTag(tag,secnum)) >= 0)
   {
-      sector_t *sector = &sectors[i];
+      sector_t *sector = &sectors[secnum];
       sector->lightingdata = sector;    // just set it to something
 
       ll = Z_Malloc(sizeof(*ll), PU_LEVSPEC, 0);

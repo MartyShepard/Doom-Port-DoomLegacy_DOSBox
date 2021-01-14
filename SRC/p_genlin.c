@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 651 2010-05-19 17:51:50Z wesleyjohnson $
+// $Id: p_genlin.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -702,8 +702,9 @@ manual_stair:
       ok = 0;
       for (i = 0; i < sec->linecount; i++)
       {
-	// for each line in sector lines list
-        register line_t * slinei = sec->lines[i];
+	// for each line in sector linelist
+        register line_t * slinei = sec->linelist[i];
+	   // [WDJ] ptr slinei, saves 0 bytes, but is easier to read.
         if ( !(slinei->backsector) )   // ignore line with no backsector
           continue;
                                   

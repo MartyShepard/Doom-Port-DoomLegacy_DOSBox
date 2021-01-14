@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 647 2010-05-19 17:39:12Z wesleyjohnson $
+// $Id: p_spec.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -463,11 +463,11 @@ void P_SetupLevelFlatAnims (void)
 // getSide()
 // Will return a side_t*
 //  given the number of the current sector,
-//  the line number, and the side (0/1) that you want.
+//  the linelist index, and the side (0/1) that you want.
 //
-side_t*  getSide ( int currentSector, int line, int side )
+side_t*  getSide ( int currentSector, int linelisti, int side )
 {
-    return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
+    return &sides[ (sectors[currentSector].linelist[linelisti])->sidenum[side] ];
 }
 
 
@@ -475,26 +475,26 @@ side_t*  getSide ( int currentSector, int line, int side )
 // getSector()
 // Will return a sector_t*
 //  given the number of the current sector,
-//  the line number and the side (0/1) that you want.
+//  the linelist index and the side (0/1) that you want.
 //
-sector_t*  getSector ( int currentSector, int line, int side )
+sector_t*  getSector ( int currentSector, int linelisti, int side )
 {
-    return sides[ (sectors[currentSector].lines[line])->sidenum[side] ].sector;
+    return sides[ (sectors[currentSector].linelist[linelisti])->sidenum[side] ].sector;
 }
 
 
 //
 // twoSided()
-// Given the sector number and the line number,
+// Given the sector number and the linelist index,
 //  it will tell you whether the line is two-sided or not.
 //
 //SoM: 3/7/2000: Use the boom method
-int  twoSided ( int sector, int line )
+int  twoSided ( int sector, int linelisti )
 {
   return boomsupport?
-    ((sectors[sector].lines[line])->sidenum[1] != -1)
+    ((sectors[sector].linelist[linelisti])->sidenum[1] != -1)
     :
-    ((sectors[sector].lines[line])->flags & ML_TWOSIDED);
+    ((sectors[sector].linelist[linelisti])->flags & ML_TWOSIDED);
 }
 
 
@@ -536,20 +536,22 @@ fixed_t P_FindLowestFloorSurrounding(sector_t* sec)
     int                 i;
     line_t*             check;
     sector_t*           other;
-    fixed_t             floor = sec->floorheight;
+    fixed_t             lowfloor = sec->floorheight;
 
-    for (i=0 ;i < sec->linecount ; i++)
+    for (i=0; i < sec->linecount ; i++)
     {
-        check = sec->lines[i];
+        // for each line in the sector linelist
+        check = sec->linelist[i];
         other = getNextSector(check,sec);
 
         if (!other)
             continue;
 
-        if (other->floorheight < floor)
-            floor = other->floorheight;
+        // find any lower floor
+        if (other->floorheight < lowfloor)
+            lowfloor = other->floorheight;
     }
-    return floor;
+    return lowfloor;
 }
 
 
@@ -564,25 +566,27 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
     int                 i;
     line_t*             check;
     sector_t*           other;
-    fixed_t             floor = -500*FRACUNIT;
-    int                 foundsector = 0;
+    fixed_t             highfloor = -500*FRACUNIT;
+    int                 foundsector = 0; // no trust that init highfloor is low enough
 
 
     for (i=0 ;i < sec->linecount ; i++)
     {
-        check = sec->lines[i];
+        // for each line in sector linelist
+        check = sec->linelist[i];
         other = getNextSector(check,sec);
 
         if (!other)
             continue;
 
-        if (other->floorheight > floor || !foundsector)
-            floor = other->floorheight;
+        // find any higher other floor
+        if (other->floorheight > highfloor || !foundsector)
+            highfloor = other->floorheight;
 
         if(!foundsector)
           foundsector = 1;
     }
-    return floor;
+    return highfloor;
 }
 
 
@@ -598,18 +602,24 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
   sector_t *other;
   int i;
 
-  for (i=0 ;i < sec->linecount ; i++)
-    if ((other = getNextSector(sec->lines[i],sec)) &&
+  for (i=0; i < sec->linecount ; i++)
+  {
+      // for each line in sector linelist
+    if ((other = getNextSector(sec->linelist[i],sec)) &&
          other->floorheight > currentheight)
     {
       int height = other->floorheight;
       while (++i < sec->linecount)
-        if ((other = getNextSector(sec->lines[i],sec)) &&
-            other->floorheight < height &&
-            other->floorheight > currentheight)
+      {
+	// for rest of lines in sector linelist
+        if ((other = getNextSector(sec->linelist[i],sec))
+	    && other->floorheight < height
+	    && other->floorheight > currentheight)
           height = other->floorheight;
+      }
       return height;
     }
+  }
   return currentheight;
 }
 
@@ -633,15 +643,17 @@ fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight)
 
   for (i=0 ;i < sec->linecount ; i++)
   {
-    if ((other = getNextSector(sec->lines[i],sec)) &&
-         other->floorheight < currentheight)
+    // for all lines in sector linelist
+    if ((other = getNextSector(sec->linelist[i],sec))
+	&& other->floorheight < currentheight)
     {
       int height = other->floorheight;
       while (++i < sec->linecount)
       {
-        if ((other = getNextSector(sec->lines[i],sec)) &&
-            other->floorheight > height &&
-            other->floorheight < currentheight)
+	// for rest of lines in sector linelist
+        if ((other = getNextSector(sec->linelist[i],sec))
+	    && other->floorheight > height
+	    && other->floorheight < currentheight)
 	{
           height = other->floorheight;
 	}
@@ -669,15 +681,17 @@ fixed_t P_FindNextLowestCeiling(sector_t *sec, int currentheight)
 
   for (i=0 ;i < sec->linecount ; i++)
   {
-    if ((other = getNextSector(sec->lines[i],sec)) &&
-        other->ceilingheight < currentheight)
+    // for all lines in sector linelist
+    if ((other = getNextSector(sec->linelist[i],sec))
+	&& other->ceilingheight < currentheight)
     {
       int height = other->ceilingheight;
       while (++i < sec->linecount)
       {
-        if ((other = getNextSector(sec->lines[i],sec)) &&
-            other->ceilingheight > height &&
-            other->ceilingheight < currentheight)
+	// for rest of lines in sector linelist
+        if ((other = getNextSector(sec->linelist[i],sec))
+	    && other->ceilingheight > height
+	    && other->ceilingheight < currentheight)
 	{
           height = other->ceilingheight;
 	}
@@ -707,15 +721,17 @@ fixed_t P_FindNextHighestCeiling(sector_t *sec, int currentheight)
 
   for (i=0 ;i < sec->linecount ; i++)
   {
-    if ((other = getNextSector(sec->lines[i],sec)) &&
-         other->ceilingheight > currentheight)
+    // for all lines in sector linelist
+    if ((other = getNextSector(sec->linelist[i],sec))
+	&& other->ceilingheight > currentheight)
     {
       int height = other->ceilingheight;
       while (++i < sec->linecount)
       {
-        if ((other = getNextSector(sec->lines[i],sec)) &&
-            other->ceilingheight < height &&
-            other->ceilingheight > currentheight)
+	// for rest of lines in sector linelist
+        if ((other = getNextSector(sec->linelist[i],sec))
+	    && other->ceilingheight < height
+	    && other->ceilingheight > currentheight)
 	{
           height = other->ceilingheight;
 	}
@@ -742,18 +758,20 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
     line_t*             check;
     sector_t*           other;
     fixed_t             height = MAXINT;
-    int                 foundsector = 0;
+    int                 foundsector = 0; // no trust that init height is low enough
 
     if (boomsupport) height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
                                               
     for (i=0 ;i < sec->linecount ; i++)
     {
-        check = sec->lines[i];
+        // for all lines in sector linelist
+        check = sec->linelist[i];
         other = getNextSector(check,sec);
 
         if (!other)
             continue;
 
+        // find any lower ceiling
         if (other->ceilingheight < height || !foundsector)
             height = other->ceilingheight;
 
@@ -773,16 +791,18 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
     line_t*     check;
     sector_t*   other;
     fixed_t     height = 0;
-    int         foundsector = 0;
+    int         foundsector = 0;  // no trust that init height is low enough
 
     for (i=0 ;i < sec->linecount ; i++)
     {
-        check = sec->lines[i];
+        // for all lines in sector linelist
+        check = sec->linelist[i];
         other = getNextSector(check,sec);
 
         if (!other)
             continue;
 
+        // find any line with higher ceiling
         if (other->ceilingheight > height || !foundsector)
             height = other->ceilingheight;
 
@@ -814,8 +834,10 @@ fixed_t P_FindShortestTextureAround(int secnum)
 
   for (i = 0; i < sec->linecount; i++)
   {
+    // sector line list [i]
     if (twoSided(secnum, i))
     {
+      // two sided line, list index i
       side = getSide(secnum,i,0);
       if (side->bottomtexture > 0)
       {
@@ -888,7 +910,7 @@ fixed_t P_FindShortestUpperAround(int secnum)
 // Note: If no sector at that height bounds the sector passed, return NULL
 //
 //
-sector_t *P_FindModelFloorSector(fixed_t floordestheight,int secnum)
+sector_t * P_FindModelFloorSector(fixed_t floordestheight, int secnum)
 {
   int i;
   sector_t *sec=NULL;
@@ -1039,6 +1061,7 @@ static void P_InitTagLists(void)
 //
 // Find minimum light from an adjacent sector
 //
+// max is the default value
 int  P_FindMinSurroundingLight ( sector_t*  sector, int max )
 {
     int         i;
@@ -1046,15 +1069,17 @@ int  P_FindMinSurroundingLight ( sector_t*  sector, int max )
     line_t*     line;
     sector_t*   check;
 
-    min = max;
+    min = max;  // initial value
     for (i=0 ; i < sector->linecount ; i++)
     {
-        line = sector->lines[i];
+        // for all lines in sector linelist
+        line = sector->linelist[i];
         check = getNextSector(line,sector);
 
         if (!check)
             continue;
 
+        // find any lower light level
         if (check->lightlevel < min)
             min = check->lightlevel;
     }
@@ -2788,59 +2813,57 @@ void P_UpdateSpecials (void)
 //SoM: 3/8/2000: EV_DoDonut moved to p_floor.c
 
 //SoM: 3/23/2000: Adds a sectors floor and ceiling to a sector's ffloor list
-void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags);
+void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int flags);
 void P_AddFFloor(sector_t* sec, ffloor_t* ffloor);
 
 
 // Implement Legacy 3D floor
-void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
+// taggedsec is the affected sector, found by tag
+// modsec is the model sector
+void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int flags)
 {
   ffloor_t*      ffloor;
+  int            taggedindex = taggedsec - sectors; // tagged sector index
 
-  // sec2 is control sector
+  // modsec is control sector, model sector
 
   // Make list of control sectors that affect this sector, and grow it
-  if(sec2->numattached == 0)
-  {
-    sec2->attached = malloc(sizeof(int));
-    // FIXME: check alloc failure
-    sec2->attached[0] = sec - sectors;	// sector index
-    sec2->numattached = 1;
-  }
-  else
   {
     int  i;
 
+    // Initial condition numattached==0, is also handled by this code
     // if already attached, then do not need to process again
-    for(i = 0; i < sec2->numattached; i++)
+    for(i = 0; i < modsec->numattached; i++)
     {
-      if(sec2->attached[i] == sec - sectors)
+      if(modsec->attached[i] == taggedindex)
         return;
     }
-
-    // grow the list
-    sec2->attached = realloc(sec2->attached, sizeof(int) * (sec2->numattached + 1));
-    // FIXME: check alloc failure
-    sec2->attached[sec2->numattached] = sec - sectors;	// sector index
-    sec2->numattached ++;
+    // Init to NULL by P_LoadSectors, realloc will make initial allocation
+    // or grow the list
+    int * new_attached = realloc(modsec->attached, sizeof(int) * (modsec->numattached + 1));
+    // non-fatal handling, just ignore the new floor
+    if( new_attached == NULL )  return;
+    modsec->attached = new_attached;
+    modsec->attached[modsec->numattached] = taggedindex;	// sector index
+    modsec->numattached ++;
   }
 
   //Add the floor
   ffloor = Z_Malloc(sizeof(ffloor_t), PU_LEVEL, NULL);
-  ffloor->secnum = sec2 - sectors;
-  ffloor->target = sec;
-  ffloor->bottomheight     = &sec2->floorheight;
-  ffloor->bottompic        = &sec2->floorpic;
-  //ffloor->bottomlightlevel = &sec2->lightlevel;
-  ffloor->bottomxoffs      = &sec2->floor_xoffs;
-  ffloor->bottomyoffs      = &sec2->floor_yoffs;
+  ffloor->secnum = modsec - sectors;
+  ffloor->target = taggedsec;
+  ffloor->bottomheight     = &modsec->floorheight;
+  ffloor->bottompic        = &modsec->floorpic;
+  //ffloor->bottomlightlevel = &modsec->lightlevel;
+  ffloor->bottomxoffs      = &modsec->floor_xoffs;
+  ffloor->bottomyoffs      = &modsec->floor_yoffs;
 
   //Add the ceiling
-  ffloor->topheight     = &sec2->ceilingheight;
-  ffloor->toppic        = &sec2->ceilingpic;
-  ffloor->toplightlevel = &sec2->lightlevel;
-  ffloor->topxoffs      = &sec2->ceiling_xoffs;
-  ffloor->topyoffs      = &sec2->ceiling_yoffs;
+  ffloor->topheight     = &modsec->ceilingheight;
+  ffloor->toppic        = &modsec->ceilingpic;
+  ffloor->toplightlevel = &modsec->lightlevel;
+  ffloor->topxoffs      = &modsec->ceiling_xoffs;
+  ffloor->topyoffs      = &modsec->ceiling_yoffs;
 
   ffloor->flags = flags;
   ffloor->master = master;
@@ -2852,18 +2875,18 @@ void P_AddFakeFloor(sector_t* sec, sector_t* sec2, line_t* master, int flags)
     else
       ffloor->alpha = 0x80; // 127
   }
-
-  P_AddFFloor(sec, ffloor);	// append to sector ffloor list
+  P_AddFFloor(taggedsec, ffloor);	// append to sector ffloor list
 }
 
 
-
+// Link ffloor into sector list of ffloor
 void P_AddFFloor(sector_t* sec, ffloor_t* ffloor)
 {
   ffloor_t* rover;
 
   if(!sec->ffloors)
   {
+    // head of list
     sec->ffloors = ffloor;
     ffloor->next = NULL;
     ffloor->prev = NULL;
@@ -2976,8 +2999,8 @@ void P_SpawnSpecials (void)
     //SoM: 3/8/2000: Boom level init functions
     P_RemoveAllActiveCeilings();
     P_RemoveAllActivePlats();
-    for (i = 0;i < MAXBUTTONS;i++)
-      memset(&buttonlist[i],0,sizeof(button_t));
+    for (i = 0; i < MAXBUTTONS; i++)
+      memset(&buttonlist[i], 0, sizeof(button_t));
 
     P_InitTagLists();   //Create xref tables for tags
     P_SpawnScrollers(); //Add generalized scrollers
@@ -2985,12 +3008,12 @@ void P_SpawnSpecials (void)
     P_SpawnPushers();   //New pusher model using linedefs
 
     //  Init line EFFECTs
-    for (i = 0;i < numlines; i++)
+    for (i=0; i < numlines; i++)
     {
         // [WDJ] replace all lines[i] and lines+i with one ptr variable set here.
         // It is used in every case below.
         line_t * effline = & lines[i]; // effect line
-        sector_t * msecp = NULL; 
+        sector_t * msecp = NULL; // model sector ptr
         int msec = -1; // model sector number for effline
        
         // Not all specials use nor require this, so no error messages
@@ -2998,71 +3021,71 @@ void P_SpawnSpecials (void)
         {
 	    // get model sector and sector number from side 0
 	    msecp = sides[ effline->sidenum[0] ].sector;  // frontsector
-            msec = msecp - sectors;
+            msec = msecp - sectors; // sector index
 	}
        
+        int fsecn = -1;  // init search FindSector
         switch(effline->special)
         {
-          int s;
 	  // [WDJ] Protect here, if model is set then ensure modelsec >= 0
 
           // support for drawn heights coming from different sector
           case 242:	// Boom deep water
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
-              sectors[s].modelsec = msec;
-              sectors[s].model = SM_Boom_deep_water;
+              sectors[fsecn].modelsec = msec;
+              sectors[fsecn].model = SM_Boom_deep_water;
 	    }
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
           case 280:	// Legacy water
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
             {
-              sectors[s].modelsec = msec;
-              sectors[s].model = SM_Legacy_water;
+              sectors[fsecn].modelsec = msec;
+              sectors[fsecn].model = SM_Legacy_water;
             }
             break;
 
           //SoM: 4/4/2000: HACK! Copy colormaps. Just plain colormaps.
           case 282:	// Legacy generate colormap, use in tagged
 	    // use the colormap in all tagged sectors
-            for(s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
             {
-              sectors[s].midmap = effline->frontsector->midmap;
-              sectors[s].model = SM_colormap;
+              sectors[fsecn].midmap = effline->frontsector->midmap;
+              sectors[fsecn].model = SM_colormap;
             }
             break;
 
           case 281:	// Legacy solid 3D floor with shadow, in tagged
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
             break;
 
           case 289:	// Legacy solid 3D floor without shadow, in tagged
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
                         FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
             break;
 
           // TL block
           case 300:	// Legacy solid translucent 3D floor in tagged
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
             break;
 
           // TL water
           case 301:	// Legacy translucent 3D water in tagged
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
                         FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
@@ -3073,40 +3096,40 @@ void P_SpawnSpecials (void)
             // the fog flag...
             if(msecp->extra_colormap)
               msecp->extra_colormap->fog = 1;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Light effect
           case 303:	// Legacy 3D ceiling light in tagged
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_CUTSPRITES);
             break;
 
           // Opaque water
           case 304:	// Legacy opaque fluid
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Double light effect
           case 305:	// Legacy double light, within slab
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
             break;
 
           // Invisible barrier
           case 306:	// Legacy invisible floor
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], msecp, effline,
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
 			FF_EXISTS|FF_SOLID);
             break;
 
@@ -3114,16 +3137,16 @@ void P_SpawnSpecials (void)
 	  // Set floor light to light in control sector
           case 213:
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              sectors[s].floorlightsec = msec;
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              sectors[fsecn].floorlightsec = msec;
             break;
 
           // Boom independent ceiling lighting
 	  // Set ceiling light to light in control sector
           case 261:
 	    if ( msec < 0 )  goto missing_model;
-            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
-              sectors[s].ceilinglightsec = msec;
+            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+              sectors[fsecn].ceilinglightsec = msec;
             break;
 		  
           // Instant lower for floor SSNTails 06-13-2002
@@ -3139,9 +3162,9 @@ void P_SpawnSpecials (void)
           default:
             if(effline->special>=1000 && effline->special<1032)
             {
-                for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+                while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
                 {
-                  sectors[s].teamstartsec = effline->special-999; // only 999 so we know when it is set (it's != 0)
+                  sectors[fsecn].teamstartsec = effline->special-999; // only 999 so we know when it is set (it's != 0)
                 }
                 break;
             }
@@ -3149,7 +3172,7 @@ void P_SpawnSpecials (void)
         continue;
        
     missing_model:
-       I_SoftError( "Model sector missing: linedef %d\n", i );
+       I_SoftError( "Model sector missing: linedef %d\n", i ); // line num i
     } // for
 }
 
@@ -3327,14 +3350,15 @@ static void Add_WallScroller(fixed_t dx, fixed_t dy, const line_t *l,
 static void P_SpawnScrollers(void)
 {
   int i;
-  line_t *l = lines;
+  line_t * lnp = lines;  // line ptr
 
-  for (i=0;i<numlines;i++,l++)
+  for (i=0; i<numlines; i++,lnp++)
   {
-      fixed_t dx = l->dx >> SCROLL_SHIFT;  // direction and speed of scrolling
-      fixed_t dy = l->dy >> SCROLL_SHIFT;
+      // for all lines l
+      fixed_t dx = lnp->dx >> SCROLL_SHIFT;  // direction and speed of scrolling
+      fixed_t dy = lnp->dy >> SCROLL_SHIFT;
       int control = -1, accel = 0;         // no control sector or acceleration
-      int special = l->special;
+      int special = lnp->special;
 
       // Types 245-249 are same as 250-254 except that the
       // first side's sector's heights cause scrolling when they change, and
@@ -3344,7 +3368,7 @@ static void P_SpawnScrollers(void)
       if (special >= 245 && special <= 249)         // displacement scrollers
       {
           special += 250-245;
-          control = sides[*l->sidenum].sector - sectors;
+          control = sides[*lnp->sidenum].sector - sectors;
       }
       else
       {
@@ -3352,45 +3376,49 @@ static void P_SpawnScrollers(void)
         {
             accel = 1;
             special += 250-214;
-            control = sides[*l->sidenum].sector - sectors;
+            control = sides[*lnp->sidenum].sector - sectors;
         }
       }
 
+      register int fsecn = -1;  // init search FindSector
       switch (special)
       {
-          register int s;
-
         case 250:   // scroll effect ceiling
-          for (s=-1; (s = P_FindSectorFromLineTag(l,s)) >= 0;)
-            Add_Scroller(sc_ceiling, -dx, dy, control, s, accel);
+          while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
+            Add_Scroller(sc_ceiling, -dx, dy, control, fsecn, accel);
           break;
 
         case 251:   // scroll effect floor
         case 253:   // scroll and carry objects on floor
-          for (s=-1; (s = P_FindSectorFromLineTag(l,s)) >= 0;)
-            Add_Scroller(sc_floor, -dx, dy, control, s, accel);
+          while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
+            Add_Scroller(sc_floor, -dx, dy, control, fsecn, accel);
           if (special != 253)
             break;
 
         case 252: // carry objects on floor
           dx = FixedMul(dx,CARRYFACTOR);
           dy = FixedMul(dy,CARRYFACTOR);
-          for (s=-1; (s = P_FindSectorFromLineTag(l,s)) >= 0;)
-            Add_Scroller(sc_carry, dx, dy, control, s, accel);
+          while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
+            Add_Scroller(sc_carry, dx, dy, control, fsecn, accel);
           break;
 
           // scroll wall according to linedef
           // (same direction and speed as scrolling floors)
-        case 254:
-          for (s=-1; (s = P_FindLineFromLineTag(l,s)) >= 0;)
-            if (s != i)
-              Add_WallScroller(dx, dy, lines+s, control, accel);
+        case 254:  // Boom scroll tagged wall, sync with floor/ceiling
+	 {
+	  register int linenum = -1;
+          while ((linenum = P_FindLineFromLineTag(lnp,linenum)) >= 0)
+            if (linenum != i)
+              Add_WallScroller(dx, dy, &lines[linenum], control, accel);
+	 }
           break;
 
-        case 255:
-          s = lines[i].sidenum[0];
-          Add_Scroller(sc_side, -sides[s].textureoffset,
-                       sides[s].rowoffset, -1, s, accel);
+        case 255:  // Boom scroll wall by sidedef offsets
+	 {
+	  register int linenum = lines[i].sidenum[0];
+          Add_Scroller(sc_side, -sides[linenum].textureoffset,
+                       sides[linenum].rowoffset, -1, linenum, accel);
+	 }
           break;
 
         case 48:                  // scroll first side
@@ -3501,17 +3529,17 @@ void T_Friction(friction_t *f)
 static void P_SpawnFriction(void)
 {
     int i;
-    line_t *l = lines;
-    register int s;
+    line_t * lnp = lines;
+    register int secnum;
     int length;     // line length controls magnitude
     int friction;   // friction value to be applied during movement
     int movefactor; // applied to each player move to simulate inertia
 
-    for (i = 0 ; i < numlines ; i++,l++)
+    for (i = 0 ; i < numlines ; i++,lnp++)
     {
-        if (l->special == 223)
+        if (lnp->special == 223)  // Boom Friction by length
         {
-            length = P_AproxDistance(l->dx,l->dy)>>FRACBITS;
+            length = P_AproxDistance(lnp->dx,lnp->dy)>>FRACBITS;
             friction = (0x1EB8*length)/0x80 + 0xD000;
 
             if(friction > FRACUNIT)
@@ -3532,8 +3560,9 @@ static void P_SpawnFriction(void)
             if (movefactor < 32)
               movefactor = 32;
 
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Friction(friction,movefactor,s);
+            secnum = -1;  // init search FindSector
+	    while (( secnum = P_FindSectorFromLineTag(lnp,secnum)) >= 0 )
+                Add_Friction(friction,movefactor,secnum);
 	}
     }
 }
@@ -3975,7 +4004,7 @@ mobj_t* P_GetPushThing(int s)
     mobj_t* thing;
     sector_t* sec;
 
-    sec = sectors + s;
+    sec = & sectors[s];
     thing = sec->thinglist;
     while (thing)
     {
@@ -3998,45 +4027,46 @@ static void P_SpawnPushers(void)
 {
     int i;
     line_t *l = lines;
-    register int s;
+    register int fsecn;
     mobj_t* thing;
 
     for (i = 0 ; i < numlines ; i++,l++)
     {
+        fsecn = -1; // init search P_FindSector
         switch(l->special)
         {
           case 224: // wind
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_wind,l->dx,l->dy,NULL,s);
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_wind, l->dx, l->dy, NULL, fsecn);
             break;
           case 225: // current
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_current,l->dx,l->dy,NULL,s);
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_current, l->dx, l->dy, NULL, fsecn);
             break;
           case 226: // push/pull
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
 	    {
-                thing = P_GetPushThing(s);
+                thing = P_GetPushThing(fsecn);
                 if (thing) // No MT_P* means no effect
-                    Add_Pusher(p_push,l->dx,l->dy,thing,s);
+                    Add_Pusher( p_push, l->dx, l->dy, thing, fsecn);
 	    }
             break;
           case 292: // current up SSNTails 06-10-2002
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_upcurrent,l->dx,l->dy,NULL,s);
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_upcurrent, l->dx, l->dy, NULL, fsecn);
             break;
-		  case 293: // current down SSNTails 06-10-2002
-            for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_downcurrent,l->dx,l->dy,NULL,s);
+	  case 293: // current down SSNTails 06-10-2002
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_downcurrent, l->dx, l->dy, NULL, fsecn);
             break;
-		  case 294: // wind up SSNTails 06-14-2003
-			  for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_upwind,l->dx,l->dy,NULL,s);
-			  break;
-		  case 295: // wind down SSNTails 06-14-2003
-			  for (s = -1; (s = P_FindSectorFromLineTag(l,s)) >= 0 ; )
-                Add_Pusher(p_downwind,l->dx,l->dy,NULL,s);
-			  break;
+	  case 294: // wind up SSNTails 06-14-2003
+	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_upwind, l->dx, l->dy, NULL, fsecn);
+	    break;
+	  case 295: // wind down SSNTails 06-14-2003
+	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+                Add_Pusher( p_downwind, l->dx, l->dy, NULL, fsecn);
+	    break;
 	} // switch
     } // for
 }

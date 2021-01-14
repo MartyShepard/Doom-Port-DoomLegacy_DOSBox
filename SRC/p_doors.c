@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_doors.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -620,7 +620,7 @@ EV_VerticalDoor
 
     // if the sector has an active thinker, use it
     sec = sides[line->sidenum[1]].sector;
-    secnum = sec - sectors;
+    secnum = sec - sectors; // sector number
 
     if (sec->ceilingdata)       //SoM: 3/6/2000
     {

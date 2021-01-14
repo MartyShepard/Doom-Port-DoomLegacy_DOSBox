@@ -661,3 +661,11 @@ Rename usages of floor name (a library function) to mfloor.
 Overloading of floor library function causes confusion with editors, and
 potentional compile errors where the original library function gets used.
 The bin size was reduced by about 1K.
+
+*** w49_sector_rename
+patchfile = w49_sectors.patch
+- committed revision 652   by wesley johnson
+Clarify usage of sector numbers in structures and code, and the list of
+lines.  Use more unique names.
+Rename sector lines[] to linelist[], and added comments.
+Fix another use of floor name.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 642 2010-05-11 21:39:31Z wesleyjohnson $
+// $Id: p_setup.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1187,7 +1187,7 @@ void P_LoadBlockMap (int lump)
 //
 void P_GroupLines (void)
 {
-    line_t**            linebuffer;
+    line_t**            linebuffer;  // to build line list
     int                 i;
     int                 j;
     int                 total;
@@ -1209,7 +1209,7 @@ void P_GroupLines (void)
     // count number of lines in each sector
     li = lines;
     total = 0;
-    for (i=0 ; i<numlines ; i++, li++)
+    for (i=0 ; i<numlines ; i++, li++) // for each line
     {
         total++;
         li->frontsector->linecount++;
@@ -1222,23 +1222,28 @@ void P_GroupLines (void)
     }
 
     // build line tables for each sector
+    // One allocation for all, each sector using a segment of the list
     linebuffer = Z_Malloc(total*sizeof(line_t *), PU_LEVEL, NULL);
-    sector = sectors;
+    sector = sectors;  // &sectors[0]
     for (i=0 ; i<numsectors ; i++, sector++)
     {
+        // for each sector
         M_ClearBox (bbox);
-        sector->lines = linebuffer;
-        li = lines;
+        sector->linelist = linebuffer;  // the next segment
+        li = lines;  // &lines[0]
         for (j=0 ; j<numlines ; j++, li++)
         {
+	    // for each line
+	    // check if it has this sector as a side
             if (li->frontsector == sector || li->backsector == sector)
             {
-                *linebuffer++ = li;
+                *linebuffer++ = li; // add it to this segment
                 M_AddToBox (bbox, li->v1->x, li->v1->y);
                 M_AddToBox (bbox, li->v2->x, li->v2->y);
             }
         }
-        if (linebuffer - sector->lines != sector->linecount)
+        // check that added lines in this segment equal the sector linecount
+        if (linebuffer - sector->linelist != sector->linecount)
             I_Error ("P_GroupLines: miscounted");
 
         // set the degenmobj_t to the middle of the bounding box

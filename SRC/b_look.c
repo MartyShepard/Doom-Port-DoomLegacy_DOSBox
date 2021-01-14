@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_look.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -169,7 +169,8 @@ boolean B_LookForSpecialLine(player_t* p, fixed_t* x, fixed_t* y)
 		insector = insectornode->m_sector;
 		for (i = 0; i < insector->linecount; i++)
 		{
-			edge = insector->lines[i];
+		        // for all lines in sector linelist
+			edge = insector->linelist[i];
 			specialsector = (insector == edge->frontsector) ? edge->backsector : edge->frontsector;
 			if (//edge->special && !(edge->special & ML_REPEAT_SPECIAL))//P_CheckTag(edge) && (!specialsector || !specialsector->ceilingdata))//line!(line->flags & ML_TWOSIDED) || (line->flags & ML_BLOCKING))
 				//((edge->special & TriggerType) >> TriggerTypeShift) == SwitchOnce) || (((edge->special & TriggerType) >> TriggerTypeShift) == PushOnce))
@@ -190,7 +191,8 @@ boolean B_LookForSpecialLine(player_t* p, fixed_t* x, fixed_t* y)
 
 				for (j = 0; j < sector->linecount; j++)
 				{
-					edge = sector->lines[j];
+				        // for all lines in sector linelist
+					edge = sector->linelist[j];
 					specialsector = (sector == edge->frontsector) ? edge->backsector : edge->frontsector;
 					if (//edge->special && !(edge->special & ML_REPEAT_SPECIAL))//P_CheckTag(edge) && (!specialsector || !specialsector->ceilingdata))//line!(line->flags & ML_TWOSIDED) || (line->flags & ML_BLOCKING))
 						//(((edge->special & TriggerType) >> TriggerTypeShift) == SwitchOnce) || (((edge->special & TriggerType) >> TriggerTypeShift) == PushOnce))

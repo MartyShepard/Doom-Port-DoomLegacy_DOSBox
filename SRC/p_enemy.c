@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 602 2010-02-11 21:12:06Z wesleyjohnson $
+// $Id: p_enemy.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -234,9 +234,10 @@ static void P_RecursiveSound ( sector_t*     sec,
     sec->soundtraversed = soundblocks+1;
     sec->soundtarget = soundtarget;
 
-    for (i=0 ;i<sec->linecount ; i++)
+    for (i=0 ; i<sec->linecount ; i++)
     {
-        check = sec->lines[i];
+        // for each line of the sector linelist
+        check = sec->linelist[i];
         if (! (check->flags & ML_TWOSIDED) )
             continue;
 

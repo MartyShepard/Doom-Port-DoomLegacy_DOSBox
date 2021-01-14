@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: am_map.c 652 2010-05-19 17:55:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1451,7 +1451,7 @@ void AM_drawThings ( int        colors,
     int         i;
     mobj_t*     t;
 
-    for (i=0;i<numsectors;i++)
+    for (i=0; i<numsectors; i++)
     {
         t = sectors[i].thinglist;
         while (t)
