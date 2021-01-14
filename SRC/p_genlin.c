@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_genlin.c 651 2010-05-19 17:51:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -45,14 +45,13 @@
 // Passed the line activating the generalized floor function
 // Returns true if a thinker is created
 //
-int EV_DoGenFloor
-( line_t*       line )
+int EV_DoGenFloor ( line_t* line )
 {
   int                   secnum;
-  int                   rtn;
+  int                   rtn = 0;
   boolean               manual;
   sector_t*             sec;
-  floormove_t*          floor;
+  floormove_t*          mfloor;
   unsigned              value = (unsigned)line->special - GenFloorBase;
 
   // parse the bit fields in the line's special type
@@ -65,21 +64,19 @@ int EV_DoGenFloor
   int Sped = (value & FloorSpeed) >> FloorSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-  rtn = 0;
-
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
   if (Trig==PushOnce || Trig==PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
-    secnum = sec-sectors;
-    manual = true;
-    goto manual_floor;
+    secnum = sec-sectors;  // sector index
+    manual = true;  // force exit from loop
+    goto manual_floor;  // jump into loop
   }
 
-  secnum = -1;
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -96,32 +93,32 @@ manual_floor:
 
     // new floor thinker
     rtn = 1;
-    floor = Z_Malloc (sizeof(floormove_t), PU_LEVSPEC, 0);
-    P_AddThinker (&floor->thinker);
-    sec->floordata = floor;
-    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-    floor->crush = Crsh;
-    floor->direction = Dirn? 1 : -1;
-    floor->sector = sec;
-    floor->texture = sec->floorpic;
-    floor->newspecial = sec->special;
-    floor->oldspecial = sec->oldspecial;
-    floor->type = genFloor;
+    mfloor = Z_Malloc (sizeof(floormove_t), PU_LEVSPEC, 0);
+    P_AddThinker (&mfloor->thinker);
+    sec->floordata = mfloor;
+    mfloor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+    mfloor->crush = Crsh;
+    mfloor->direction = Dirn? 1 : -1;
+    mfloor->sector = sec;
+    mfloor->texture = sec->floorpic;
+    mfloor->newspecial = sec->special;
+    mfloor->oldspecial = sec->oldspecial;
+    mfloor->type = genFloor;
 
     // set the speed of motion
     switch (Sped)
     {
       case SpeedSlow:
-        floor->speed = FLOORSPEED;
+        mfloor->speed = FLOORSPEED;
         break;
       case SpeedNormal:
-        floor->speed = FLOORSPEED*2;
+        mfloor->speed = FLOORSPEED*2;
         break;
       case SpeedFast:
-        floor->speed = FLOORSPEED*4;
+        mfloor->speed = FLOORSPEED*4;
         break;
       case SpeedTurbo:
-        floor->speed = FLOORSPEED*8;
+        mfloor->speed = FLOORSPEED*8;
         break;
       default:
         break;
@@ -131,38 +128,38 @@ manual_floor:
     switch(Targ)
     {
       case FtoHnF:
-        floor->floordestheight = P_FindHighestFloorSurrounding(sec);
+        mfloor->floordestheight = P_FindHighestFloorSurrounding(sec);
         break;
       case FtoLnF:
-        floor->floordestheight = P_FindLowestFloorSurrounding(sec);
+        mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
         break;
       case FtoNnF:
-        floor->floordestheight = Dirn?
+        mfloor->floordestheight = Dirn?
           P_FindNextHighestFloor(sec,sec->floorheight) :
           P_FindNextLowestFloor(sec,sec->floorheight);
         break;
       case FtoLnC:
-        floor->floordestheight = P_FindLowestCeilingSurrounding(sec);
+        mfloor->floordestheight = P_FindLowestCeilingSurrounding(sec);
         break;
       case FtoC:
-        floor->floordestheight = sec->ceilingheight;
+        mfloor->floordestheight = sec->ceilingheight;
         break;
       case FbyST:
-        floor->floordestheight = (floor->sector->floorheight>>FRACBITS) +
-          floor->direction * (P_FindShortestTextureAround(secnum)>>FRACBITS);
-        if (floor->floordestheight>32000)
-          floor->floordestheight=32000;
-        if (floor->floordestheight<-32000)
-          floor->floordestheight=-32000;
-        floor->floordestheight<<=FRACBITS;
+        mfloor->floordestheight = (mfloor->sector->floorheight>>FRACBITS) +
+          mfloor->direction * (P_FindShortestTextureAround(secnum)>>FRACBITS);
+        if (mfloor->floordestheight>32000)
+          mfloor->floordestheight=32000;
+        if (mfloor->floordestheight<-32000)
+          mfloor->floordestheight=-32000;
+        mfloor->floordestheight<<=FRACBITS;
         break;
       case Fby24:
-        floor->floordestheight = floor->sector->floorheight +
-          floor->direction * 24*FRACUNIT;
+        mfloor->floordestheight = mfloor->sector->floorheight +
+          mfloor->direction * 24*FRACUNIT;
         break;
       case Fby32:
-        floor->floordestheight = floor->sector->floorheight +
-          floor->direction * 32*FRACUNIT;
+        mfloor->floordestheight = mfloor->sector->floorheight +
+          mfloor->direction * 32*FRACUNIT;
         break;
       default:
         break;
@@ -176,25 +173,25 @@ manual_floor:
         sector_t *sec;
 
         sec = (Targ==FtoLnC || Targ==FtoC)?
-          P_FindModelCeilingSector(floor->floordestheight,secnum) :
-          P_FindModelFloorSector(floor->floordestheight,secnum);
+          P_FindModelCeilingSector(mfloor->floordestheight,secnum) :
+          P_FindModelFloorSector(mfloor->floordestheight,secnum);
         if (sec)
         {
-          floor->texture = sec->floorpic;
+          mfloor->texture = sec->floorpic;
           switch(ChgT)
           {
             case FChgZero:  // zero type
-              floor->newspecial = 0;
-              floor->oldspecial = 0;
-              floor->type = genFloorChg0;
+              mfloor->newspecial = 0;
+              mfloor->oldspecial = 0;
+              mfloor->type = genFloorChg0;
               break;
             case FChgTyp:   // copy type
-              floor->newspecial = sec->special;
-              floor->oldspecial = sec->oldspecial;
-              floor->type = genFloorChgT;
+              mfloor->newspecial = sec->special;
+              mfloor->oldspecial = sec->oldspecial;
+              mfloor->type = genFloorChgT;
               break;
             case FChgTxt:   // leave type be
-              floor->type = genFloorChg;
+              mfloor->type = genFloorChg;
               break;
             default:
               break;
@@ -203,21 +200,21 @@ manual_floor:
       }
       else     // else if a trigger model change
       {
-        floor->texture = line->frontsector->floorpic;
+        mfloor->texture = line->frontsector->floorpic;
         switch (ChgT)
         {
           case FChgZero:    // zero type
-            floor->newspecial = 0;
-            floor->oldspecial = 0;
-            floor->type = genFloorChg0;
+            mfloor->newspecial = 0;
+            mfloor->oldspecial = 0;
+            mfloor->type = genFloorChg0;
             break;
           case FChgTyp:     // copy type
-            floor->newspecial = line->frontsector->special;
-            floor->oldspecial = line->frontsector->oldspecial;
-            floor->type = genFloorChgT;
+            mfloor->newspecial = line->frontsector->special;
+            mfloor->oldspecial = line->frontsector->oldspecial;
+            mfloor->type = genFloorChgT;
             break;
           case FChgTxt:     // leave type be
-            floor->type = genFloorChg;
+            mfloor->type = genFloorChg;
           default:
             break;
         }
@@ -237,11 +234,10 @@ manual_floor:
 // Passed the linedef activating the ceiling function
 // Returns true if a thinker created
 //
-int EV_DoGenCeiling
-( line_t*       line )
+int EV_DoGenCeiling ( line_t*  line )
 {
   int                   secnum;
-  int                   rtn;
+  int                   rtn = 0;
   boolean               manual;
   fixed_t               targheight;
   sector_t*             sec;
@@ -258,8 +254,6 @@ int EV_DoGenCeiling
   int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-  rtn = 0;
-
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
   if (Trig==PushOnce || Trig==PushMany)
@@ -267,12 +261,12 @@ int EV_DoGenCeiling
     if (!(sec = line->backsector))
       return rtn;
     secnum = sec-sectors;
-    manual = true;
-    goto manual_ceiling;
+    manual = true;  // force exit from loop
+    goto manual_ceiling;  // jump into loop
   }
 
-  secnum = -1;
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -439,12 +433,11 @@ manual_ceiling:
 // Passed the linedef activating the lift
 // Returns true if a thinker is created
 //
-int EV_DoGenLift
-( line_t*       line )
+int EV_DoGenLift ( line_t* line )
 {
   plat_t*         plat;
   int             secnum;
-  int             rtn;
+  int             rtn = 0;
   boolean         manual;
   sector_t*       sec;
   unsigned        value = (unsigned)line->special - GenLiftBase;
@@ -455,9 +448,6 @@ int EV_DoGenLift
   int Dely = (value & LiftDelay) >> LiftDelayShift;
   int Sped = (value & LiftSpeed) >> LiftSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
-
-  secnum = -1;
-  rtn = 0;
 
   // Activate all <type> plats that are in_stasis
 
@@ -471,11 +461,12 @@ int EV_DoGenLift
     if (!(sec = line->backsector))
       return rtn;
     secnum = sec-sectors;
-    manual = true;
-    goto manual_lift;
+    manual = true;     // force exit from loop
+    goto manual_lift;  // jump into loop
   }
 
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -589,23 +580,20 @@ manual_lift:
 // Passed the linedef activating the stairs
 // Returns true if a thinker is created
 //
-int EV_DoGenStairs
-( line_t*       line )
+int EV_DoGenStairs ( line_t* line )
 {
-  int                   secnum;
-  int                   osecnum;
   int                   height;
-  int                   i;
-  int                   newsecnum;
   int                   texture;
   int                   ok;
-  int                   rtn;
+  int                   rtn = 0;
+  int                   secnum, old_secnum, new_secnum;
+  int                   i;
   boolean               manual;
     
   sector_t*             sec;
   sector_t*             tsec;
 
-  floormove_t*  floor;
+  floormove_t*  	mfloor;
     
   fixed_t               stairsize;
   fixed_t               speed;
@@ -620,8 +608,6 @@ int EV_DoGenStairs
   int Sped = (value & StairSpeed) >> StairSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-  rtn = 0;
-
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
   if (Trig==PushOnce || Trig==PushMany)
@@ -633,8 +619,8 @@ int EV_DoGenStairs
     goto manual_stair;
   }
 
-  secnum = -1;
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -653,28 +639,28 @@ manual_stair:
       
     // new floor thinker
     rtn = 1;
-    floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
-    P_AddThinker (&floor->thinker);
-    sec->floordata = floor;
-    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-    floor->direction = Dirn? 1 : -1;
-    floor->sector = sec;
+    mfloor = Z_Malloc (sizeof(*mfloor), PU_LEVSPEC, 0);
+    P_AddThinker (&mfloor->thinker);
+    sec->floordata = mfloor;
+    mfloor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+    mfloor->direction = Dirn? 1 : -1;
+    mfloor->sector = sec;
 
     // setup speed of stair building
     switch(Sped)
       {
       default:
       case SpeedSlow:
-        floor->speed = FLOORSPEED/4;
+        mfloor->speed = FLOORSPEED/4;
         break;
       case SpeedNormal:
-        floor->speed = FLOORSPEED/2;
+        mfloor->speed = FLOORSPEED/2;
         break;
       case SpeedFast:
-        floor->speed = FLOORSPEED*2;
+        mfloor->speed = FLOORSPEED*2;
         break;
       case SpeedTurbo:
-        floor->speed = FLOORSPEED*4;
+        mfloor->speed = FLOORSPEED*4;
         break;
       }
 
@@ -696,71 +682,73 @@ manual_stair:
         break;
     }
 
-    speed = floor->speed;
-    height = sec->floorheight + floor->direction * stairsize;
-    floor->floordestheight = height;
+    speed = mfloor->speed;
+    height = sec->floorheight + mfloor->direction * stairsize;
+    mfloor->floordestheight = height;
     texture = sec->floorpic;
-    floor->crush = false;
-    floor->type = genBuildStair;
+    mfloor->crush = false;
+    mfloor->type = genBuildStair;
 
     sec->stairlock = -2;
     sec->nextsec = -1;
     sec->prevsec = -1;
 
-    osecnum = secnum;
+    old_secnum = secnum;
     // Find next sector to raise
     // 1.     Find 2-sided line with same sector side[0]
     // 2.     Other side is the next sector to raise
     do
     {
       ok = 0;
-      for (i = 0;i < sec->linecount;i++)
+      for (i = 0; i < sec->linecount; i++)
       {
-        if ( !((sec->lines[i])->backsector) )
+	// for each line in sector lines list
+        register line_t * slinei = sec->lines[i];
+        if ( !(slinei->backsector) )   // ignore line with no backsector
           continue;
                                   
-        tsec = (sec->lines[i])->frontsector;
-        newsecnum = tsec-sectors;
+        tsec = slinei->frontsector;
+        new_secnum = tsec-sectors; // frontsector sector num
           
-        if (secnum != newsecnum)
+        if (secnum != new_secnum)  // ignore line with different frontsector
           continue;
 
-        tsec = (sec->lines[i])->backsector;
-        newsecnum = tsec - sectors;
+        tsec = slinei->backsector;
+        new_secnum = tsec - sectors; // backsector sector num
 
         if (!Igno && tsec->floorpic != texture)
           continue;
 
         if (!boomsupport)
-          height += floor->direction * stairsize;
+          height += mfloor->direction * stairsize;
 
         if (P_SectorActive(floor_special,tsec) || tsec->stairlock)
           continue;
         
         if (boomsupport)
-          height += floor->direction * stairsize;
+          height += mfloor->direction * stairsize;
 
         // link the stair chain in both directions
         // lock the stair sector until building complete
-        sec->nextsec = newsecnum; // link step to next
+        sec->nextsec = new_secnum; // link step to next
         tsec->prevsec = secnum;   // link next back
         tsec->nextsec = -1;       // set next forward link as end
         tsec->stairlock = -2;     // lock the step
 
         sec = tsec;
-        secnum = newsecnum;
-        floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
+        secnum = new_secnum;
+        mfloor = Z_Malloc (sizeof(*mfloor), PU_LEVSPEC, 0);
 
-        P_AddThinker (&floor->thinker);
+        P_AddThinker (&mfloor->thinker);
 
-        sec->floordata = floor;
-        floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-        floor->direction = Dirn? 1 : -1;
-        floor->sector = sec;
-        floor->speed = speed;
-        floor->floordestheight = height;
-        floor->crush = false;
-        floor->type = genBuildStair;
+        sec->floordata = mfloor;
+        mfloor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+        mfloor->direction = Dirn? 1 : -1;
+        mfloor->sector = sec;
+        mfloor->speed = speed;
+        mfloor->floordestheight = height;
+        mfloor->crush = false;
+        mfloor->type = genBuildStair;
 
         ok = 1;
         break;
@@ -768,7 +756,7 @@ manual_stair:
     } while(ok);
       if (manual)
         return rtn;
-      secnum = osecnum;
+      secnum = old_secnum;
   }
   // retriggerable generalized stairs build up or down alternately
   if (rtn)
@@ -784,12 +772,11 @@ manual_stair:
 // Passed the linedef activating the crusher
 // Returns true if a thinker created
 //
-int EV_DoGenCrusher
-( line_t*       line )
+int EV_DoGenCrusher ( line_t* line )
 {
-  int                   secnum;
-  int                   rtn;
   boolean               manual;
+  int                   rtn = 0;
+  int                   secnum;
   sector_t*             sec;
   ceiling_t*            ceiling;
   unsigned              value = (unsigned)line->special - GenCrusherBase;
@@ -813,8 +800,8 @@ int EV_DoGenCrusher
     goto manual_crusher;
   }
 
-  secnum = -1;
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -879,13 +866,13 @@ manual_crusher:
 // Passed the linedef activating the generalized locked door
 // Returns true if a thinker created
 //
-int EV_DoGenLockedDoor
-( line_t* line )
+int EV_DoGenLockedDoor ( line_t* line )
 {
-  int   secnum,rtn;
+  boolean manual;
+  int   rtn = 0;
+  int   secnum;
   sector_t* sec;
   vldoor_t* door;
-  boolean manual;
   unsigned  value = (unsigned)line->special - GenLockedBase;
 
   // parse the bit fields in the line's special type
@@ -893,8 +880,6 @@ int EV_DoGenLockedDoor
   int Kind = (value & LockedKind) >> LockedKindShift;
   int Sped = (value & LockedSpeed) >> LockedSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
-
-  rtn = 0;
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
@@ -907,10 +892,8 @@ int EV_DoGenLockedDoor
     goto manual_locked;
   }
 
-  secnum = -1;
-  rtn = 0;
-  
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -981,13 +964,13 @@ manual_locked:
 // Passed the linedef activating the generalized door
 // Returns true if a thinker created
 //
-int EV_DoGenDoor
-( line_t* line )
+int EV_DoGenDoor ( line_t* line )
 {
-  int   secnum,rtn;
-  sector_t* sec;
   boolean   manual;
+  int   secnum;
+  int   rtn = 0;
   vldoor_t* door;
+  sector_t* sec;
   unsigned  value = (unsigned)line->special - GenDoorBase;
 
   // parse the bit fields in the line's special type
@@ -996,8 +979,6 @@ int EV_DoGenDoor
   int Kind = (value & DoorKind) >> DoorKindShift;
   int Sped = (value & DoorSpeed) >> DoorSpeedShift;
   int Trig = (value & TriggerType) >> TriggerTypeShift;
-
-  rtn = 0;
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
@@ -1010,11 +991,8 @@ int EV_DoGenDoor
     goto manual_door;
   }
 
-
-  secnum = -1;
-  rtn = 0;
-  
   // if not manual do all sectors tagged the same as the line
+  secnum = -1;  // init search FindSector
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
   {
     sec = &sectors[secnum];
@@ -1114,3 +1092,6 @@ manual_door:
   }
   return rtn;
 }
+
+
+          

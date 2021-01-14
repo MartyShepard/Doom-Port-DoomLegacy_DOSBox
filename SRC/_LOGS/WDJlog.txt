@@ -653,3 +653,11 @@ patchfile = w49_fraggle.patch
 - committed revision 650   by wesley johnson
 Functions in fragglescript files did not have prototypes, changed to (void).
 Changed misuse of name floor (a library function) to mfloor.
+
+*** w49_floor_rename
+patchfile = w49_floor.patch
+- committed revision 651   by wesley johnson
+Rename usages of floor name (a library function) to mfloor.
+Overloading of floor library function causes confusion with editors, and
+potentional compile errors where the original library function gets used.
+The bin size was reduced by about 1K.
