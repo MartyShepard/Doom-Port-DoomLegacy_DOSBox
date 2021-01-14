@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00647 ]: w49 animation texture/flat renaming, cleanup
 [00646 ]: w49 animation interpic, renaming
 [00645 ]: w48 main structs commented
 [00644 ]: w48 realloc subroutines

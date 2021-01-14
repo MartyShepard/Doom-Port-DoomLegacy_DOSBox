@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: p_spec.c 647 2010-05-19 17:39:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -196,28 +196,31 @@ static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affec
 void P_FindAnimatedFlat (int i);
 
 
-
+// 
 //
 // Animating textures and planes
-// There is another anim_t used in wi_stuff, unrelated.
+// Interpic animation is in wi_stuff.
 //
+// [WDJ] 5/18/2010 Eliminate -1 value in boolean field.
 typedef struct
 {
-    boolean     istexture;
+    boolean     istexture; // false= flat, true= texture
     int         picnum;
-    int         basepic;
+    int         basepic; // starting texture or flat id number
     int         numpics;
-    int         speed;
-} anim_t;
+    int         speed;	// in tics
+} animtex_t;
 
 
 //
 //      source animation definition
 //
+// Used to read ANIMATED lump from wad, sizes must be correct.
+// Also used for hardcoded tables.
 #pragma pack(1) //Hurdler: 04/04/2000: I think pragma is more portable
 typedef struct
 {
-    char        istexture;      // if false, it is a flat
+    char        istexture;      // 0= flat, 1= texture, -1= end
     char        endname[9];
     char        startname[9];
     int32_t     speed;
@@ -226,13 +229,13 @@ typedef struct
 
 
 
-#define MAXANIMS     32
+// #define MAXANIMS     32   // unused [WDJ] 5/18/2010
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-static anim_t*   lastanim;
-static anim_t*   anims;
-static size_t    maxanims;
+static animtex_t*   lastanim;  // next empty slot in anims
+static animtex_t*   anims;
+static size_t    maxanims;  // size of anims
 
 //
 // P_InitPicAnims
@@ -302,6 +305,7 @@ animdef_t    harddefs[] =
 static animdef_t   *animdefs;
 
 //SoM: 3/7/2000: Use new boom method of reading lump from wad file.
+// [WDJ] 5/18/2010 Eliminate -1 value in boolean field, use lastanim as loop test.
 void P_InitPicAnims (void)
 {
   //  Init animation
@@ -329,9 +333,10 @@ void P_InitPicAnims (void)
     // [WDJ] Compiler source, do NOT endian convert speed
   }
 
+  maxanims = 0;
   for (i = 0; animdefs[i].istexture != -1; i++, maxanims++)	// count
      ;
-  anims = (anim_t *)malloc(sizeof(anim_t) * (maxanims + 1));
+  anims = (animtex_t *)malloc(sizeof(animtex_t) * maxanims);
   if( anims == NULL ) {
      I_Error( "Anims: memory allocation failure" );
   }
@@ -339,6 +344,8 @@ void P_InitPicAnims (void)
   lastanim = anims;
   for (i = 0; animdefs[i].istexture != -1; i++)
   {
+    // Anim defs that do not apply to this level are ignored.
+    // Thus anims can be shorter than the maxanims.
     if (animdefs[i].istexture)
     {
       // different episode ?
@@ -358,7 +365,8 @@ void P_InitPicAnims (void)
     }
 
 
-    lastanim->istexture = (boolean)animdefs[i].istexture;
+//    lastanim->istexture = (boolean)animdefs[i].istexture; // != 0
+    lastanim->istexture = ( animdefs[i].istexture != 0 ); // char to boolean
     lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
 
     if (lastanim->numpics < 2)
@@ -371,7 +379,6 @@ void P_InitPicAnims (void)
     lastanim->speed = animdefs[i].speed * NEWTICRATERATIO;
     lastanim++;
   }
-  lastanim->istexture = -1;
 
   if(animdefs != harddefs)
     Z_ChangeTag (animdefs, PU_CACHE);
@@ -426,19 +433,25 @@ void P_FindAnimatedFlat (int animnum)
 //
 //  Called by P_LoadSectors
 //
+// Called at end of P_LoadSectors
 void P_SetupLevelFlatAnims (void)
 {
     int    i;
+    // [WDJ] 5/18/2010 Eliminate -1 value in boolean field.
+    // List can be shorter than maxanims because it is missing entries
+    // for flats and textures that do not appear in this level.
+    int  animlen = lastanim - anims;  // count of entries
 
     // the original game flat anim sequences
-    for (i=0 ; anims[i].istexture != -1; i++)
+    for (i=0 ; i<animlen; i++)
     {
-        if (!anims[i].istexture)
+        if (!anims[i].istexture)  // flats
         {
             P_FindAnimatedFlat (i);
         }
     }
 }
+
 
 
 //
@@ -2702,7 +2715,7 @@ void P_PlayerInSpecialSector (player_t* player)
 
 void P_UpdateSpecials (void)
 {
-    anim_t*     anim;
+    animtex_t*  anim;
     int         i;
     int         pic; //SoM: 3/8/2000
 
