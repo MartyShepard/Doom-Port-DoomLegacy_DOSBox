@@ -805,8 +805,8 @@ void M_ConnectMenu(int choise)
 {
     if( Playing() )
     {
-       M_SimpleMessage(ALLREADYPLAYING);
-       return;
+        M_SimpleMessage(ALLREADYPLAYING);
+        return;
     }
 
     M_SetupNextMenu(&Connectdef);
@@ -900,8 +900,8 @@ void M_StartServerMenu(int choice)
 {
     if( Playing() )
     {
-       M_SimpleMessage(ALLREADYPLAYING);
-       return;
+        M_SimpleMessage(ALLREADYPLAYING);
+        return;
     }
 
     StartSplitScreenGame = (choice != 0);
@@ -3567,7 +3567,6 @@ void M_StartMessage ( const char*       string,
     itemOn=0;
 }
 
-//
 void M_SimpleMessage ( const char * string )
 {
     M_StartMessage ( string, NULL, MM_NOTHING );

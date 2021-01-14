@@ -494,3 +494,13 @@ future revision.
 patchfile = w42_message.patch
 - committed revision 630   by wesley johnson
 Simple message function.
+
+*** w42_savegame
+patchfile = w41_savegame_dir.patch
+- committed revision 631   by wesley johnson
+Cleaned up savegame menus.
+Made legacy home string separately available.
+Added directory and savegame delete.
+Added directory and savegame scrolling.
+Except for system dependent directory scanning, this finishes
+the savegame revision.
