@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: p_saveg.c 628 2010-04-03 02:23:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -133,7 +133,7 @@
 
 #include "p_saveg.h"
 
-byte *save_p;
+byte * save_p;
 boolean  save_game_abort = 0;
 
 // Pads save_p to a 4-byte boundary
@@ -153,25 +153,25 @@ const byte sg_padded = 0;
 // all save game versions they were used in.
 typedef enum {
   // do not use 0, 1, 2, 254, 255
-  SAVEGAME_net = 3,
-  SAVEGAME_misc,
-  SAVEGAME_players,
-  SAVEGAME_world,
-  SAVEGAME_thinkers,
-  SAVEGAME_specials,	// 8
+  SYNC_net = 3,
+  SYNC_misc,
+  SYNC_players,
+  SYNC_world,
+  SYNC_thinkers,
+  SYNC_specials,	// 8
   // optionals that game may use
-  SAVEGAME_fragglescript = 70,
+  SYNC_fragglescript = 70,
   // optional controls that may vary per game
-  SAVEGAME_gamma = 200,
-  SAVEGAME_slowdoor,
+  SYNC_gamma = 200,
+  SYNC_slowdoor,
   // sync
-  SAVEGAME_end = 252,
-  SAVEGAME_sync = 253
+  SYNC_end = 252,
+  SYNC_sync = 253
 } save_game_section_e;
 
 void SG_SaveSync( save_game_section_e sgs )
 {
-    WRITEBYTE( save_p, SAVEGAME_sync );	// validity check
+    WRITEBYTE( save_p, SYNC_sync );	// validity check
     WRITEBYTE( save_p, sgs );	// section id
 }
 
@@ -179,7 +179,7 @@ void SG_SaveSync( save_game_section_e sgs )
 boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
 {
    if( save_game_abort )   return 0;	// all sync reads repeat the abort
-   if( READBYTE( save_p ) != SAVEGAME_sync )  goto invalid;
+   if( READBYTE( save_p ) != SYNC_sync )  goto invalid;
    if( READBYTE( save_p ) != sgs )
    {
       if( ! cond )  goto invalid;
@@ -189,7 +189,7 @@ boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
    return 1;
    
  invalid:
-   I_SoftError( "Invalid save game sync\n" );
+   I_SoftError( "LoadGame: Invalid sync\n" );
    save_game_abort = 1;
    return 0;
 }
@@ -944,7 +944,7 @@ static boolean  Alloc_Pointermap( int num )
     pointermap.map = realloc(pointermap.map, num * sizeof(pointermap_cell_t));
     if( pointermap.map == NULL )
     {
-      I_SoftError("P_LoadGame: Pointermap alloc failed.\n");
+      I_SoftError("LoadGame: Pointermap alloc failed.\n");
       save_game_abort = 1;  // will be detected by ReadSync
       return 0;
     }
@@ -1020,12 +1020,12 @@ static void MapMobjID(uint32_t id, mobj_t *p)
 
   if (!id)
   {
-    I_SoftError("P_LoadGame: Object with ID number 0.\n");
+    I_SoftError("LoadGame: Object with ID number 0.\n");
     goto failed;
   }
   if (id == 0 || id > 500000)	// bad id
   {
-    I_SoftError("P_LoadGame: Object ID sanity check failed.\n");
+    I_SoftError("LoadGame: Object ID sanity check failed.\n");
     goto failed;
   }
 #endif
@@ -1043,11 +1043,11 @@ static void MapMobjID(uint32_t id, mobj_t *p)
   return;
 
 bad_id_err:
-  I_SoftError("P_LoadGame: Mobj read has bad object ID.\n");
+  I_SoftError("LoadGame: Mobj read has bad object ID.\n");
   goto failed;
 
 duplicate_err:
-  I_SoftError("P_LoadGame: Same ID number found for several Mobj.\n");
+  I_SoftError("LoadGame: Same ID number found for several Mobj.\n");
   goto failed;
 
 failed:
@@ -1070,8 +1070,16 @@ static mobj_t * GetMobjPointer(uint32_t id)
    
 bad_ptr:
   // on error, let user load a different save game
-  I_SoftError("P_LoadGame: Unknown Mobj ID number.\n");
+#if 1
+  // Assume some mobj ptrs saved might not be valid, such as killed target.
+  // This has been observed in a fresh saved game. 
+  // Not fatal, return NULL ptr and continue;
+  I_SoftError("LoadGame: Ptr to non-existant Mobj, make NULL.\n");
+#else   
+  // Assume a bad mobj ptr is a corrupt savegame.
+  I_SoftError("LoadGame: Unknown Mobj ID number.\n");
   save_game_abort = 1;
+#endif  
   return NULL;
 }
 
@@ -1549,13 +1557,16 @@ void P_ArchiveThinkers(void)
         }
 #ifdef PARANOIA
         else if ((int) th->function.acp1 != -1) // wait garbage colection
-            I_Error("unknown thinker type 0x%X", th->function.acp1);
+        {
+            I_SoftError("SaveGame: Unknown thinker type 0x%X", th->function.acp1);
+	}
 #endif
 
     }
 
     // mark the end of the save section using reserved type mark
     WRITEBYTE(save_p, tc_end);
+    return;
 }
 
 
@@ -1569,7 +1580,8 @@ void P_UnArchiveThinkers(void)
     uint32_t diff;
     int i;
     byte tclass;
-
+    char * reason; // err
+   
     // remove all the current thinkers
     thinker_t *currentthinker = thinkercap.next;
     while (currentthinker != &thinkercap)
@@ -1629,12 +1641,18 @@ void P_UnArchiveThinkers(void)
                 }
                 else //if (diff & MD_SPAWNPOINT) //Hurdler: I think we must add that test ?
                 {
+		    if( mobj->spawnpoint == NULL )
+		    {
+		        reason = "No Type and No Spawnpoint";
+		        goto err_report;
+		    }
                     for (i = 0; i < NUMMOBJTYPES; i++)
                         if (mobj->spawnpoint->type == mobjinfo[i].doomednum)
                             break;
                     if (i == NUMMOBJTYPES)
                     {
-                        I_Error("Savegame corrupted\n");
+		        reason = "Spawnpoint type invalid";
+		        goto err_report;
                     }
                     mobj->type = i;
                 }
@@ -1890,7 +1908,8 @@ void P_UnArchiveThinkers(void)
                 break;
 
             default:
-                I_Error("P_UnarchiveSpecials:Unknown tclass %i " "in savegame", tclass);
+              I_SoftError("LoadGame: Unknown thinker type 0x%X", tclass);
+	      goto err_exit;
         }
     }
 
@@ -1907,6 +1926,13 @@ void P_UnArchiveThinkers(void)
 	  mobj->target = GetMobjPointer((uint32_t)mobj->target);
       }
     }
+    return;
+
+err_report:
+    I_SoftError("LoadGame: %s\n", reason );
+err_exit:
+    save_game_abort = 1;
+    return;
 }
 
 
@@ -2632,7 +2658,7 @@ void WRITE_command_line( void )
 // Save game header
 // Langid format requires underlines.
 const char * sg_head_format =
-  "!!Legacy_save_game.V%i\n:name:%s\n:game:%s\n:wad:%s\n:map:%s\n";
+"!!Legacy_save_game.V%i\n:name:%s\n:game:%s\n:wad:%s\n:map:%s\n:time:%2i:%02i\n";
 const char * sg_head_END = "::END\n";
 const short idname_length = 18;  // !!<name> length
 
@@ -2648,12 +2674,21 @@ const byte sg_big_endian = 0;
 void P_Write_Savegame_Header( const char * description )
 {
     int len;
+    int l_min, l_sec;
+    
+    // time into level
+    l_sec = leveltime / TICRATE;  // seconds
+    l_min = l_sec / 60;
+    l_sec -= l_min * 60;
+   
+    save_p = savebuffer;
+   
     // [WDJ] A consistent header across all save game versions.
     // Save Langid game header
     // Do not use WRITESTRING as that will put term 0 into the header.
     len = sprintf( save_p, sg_head_format,
 		   VERSION, description, gamedesc.gname,
-		   level_wad(), levelmapname );
+		   level_wad(), levelmapname, l_min, l_sec );
     save_p += len;  // does not include string term 0
     WRITE_command_line();
     len = sprintf( save_p, sg_head_END );
@@ -2707,7 +2742,8 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 
     // Read header
     save_game_abort = 0;	// all sync reads will check this
-   
+    save_p = savebuffer;
+
     if( strncmp( save_p, sg_head_format, idname_length ) )  goto not_save;
     if( ! strstr( save_p, "::END" ) )  goto not_save;
 
@@ -2716,6 +2752,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     infop->game = read_header_line( ":game:" );
     infop->wad = read_header_line( ":wad:" );
     infop->map = read_header_line( ":map:" );
+    infop->levtime = read_header_line( ":time:" );
     save_p += strlen( save_p ) + 1; // find 0, to get past Langid header;
 
     // terminate the strings, this modifies the header in the savebuffer
@@ -2724,6 +2761,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     term_header_line( infop->game );
     term_header_line( infop->wad );
     term_header_line( infop->map );
+    term_header_line( infop->levtime );
 
     // validity tests
     infop->have_game = ( strcmp( gamedesc.gname, infop->game ) == 0 );
@@ -2750,11 +2788,11 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     return 1;
    
  not_save:
-   snprintf( infop->msg, 60, "Not a Legacy save game\n" );
+   snprintf( infop->msg, 60, "Not Legacy savegame\n" );
    goto failed;
   
  wrong:
-   snprintf( infop->msg, 60, "Invalid Legacy save game: wrong %s\n", reason );
+   snprintf( infop->msg, 60, "Invalid savegame: wrong %s\n", reason );
    goto failed;
    
  failed:
@@ -2769,28 +2807,28 @@ void P_SaveGame( void )
 {   
     InitPointermap_Save(1024);
 
-    SG_SaveSync( SAVEGAME_net );
+    SG_SaveSync( SYNC_net );
     CV_SaveNetVars((char **) &save_p);
-    SG_SaveSync( SAVEGAME_misc );
+    SG_SaveSync( SYNC_misc );
     P_ArchiveMisc();
-    SG_SaveSync( SAVEGAME_players );
+    SG_SaveSync( SYNC_players );
     P_ArchivePlayers();
-    SG_SaveSync( SAVEGAME_world );
+    SG_SaveSync( SYNC_world );
     P_ArchiveWorld();
-    SG_SaveSync( SAVEGAME_thinkers );
+    SG_SaveSync( SYNC_thinkers );
     P_ArchiveThinkers();
-    SG_SaveSync( SAVEGAME_specials );
+    SG_SaveSync( SYNC_specials );
     P_ArchiveSpecials();
 #ifdef FRAGGLESCRIPT
     // Only save fragglescript if the level uses it.
     if( SG_fragglescript_detect() )
     {
-        SG_SaveSync( SAVEGAME_fragglescript );
+        SG_SaveSync( SYNC_fragglescript );
         P_ArchiveScripts();
     }
 #endif
    
-    SG_SaveSync( SAVEGAME_end );
+    SG_SaveSync( SYNC_end );
 
     ClearPointermap();
 }
@@ -2803,21 +2841,21 @@ boolean P_LoadGame(void)
 {
     InitPointermap_Load(1024);
 
-    if( ! SG_ReadSync( SAVEGAME_net, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_net, 0 ) )  goto sync_err;
     CV_LoadNetVars((char **) &save_p);
-    if( ! SG_ReadSync( SAVEGAME_misc, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_misc, 0 ) )  goto sync_err;
     // Misc does level setup, and purges all previous PU_LEVEL memory.
     if (!P_UnArchiveMisc())  goto failed;
-    if( ! SG_ReadSync( SAVEGAME_players, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_players, 0 ) )  goto sync_err;
     P_UnArchivePlayers();
-    if( ! SG_ReadSync( SAVEGAME_world, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_world, 0 ) )  goto sync_err;
     P_UnArchiveWorld();
-    if( ! SG_ReadSync( SAVEGAME_thinkers, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_thinkers, 0 ) )  goto sync_err;
     P_UnArchiveThinkers();
-    if( ! SG_ReadSync( SAVEGAME_specials, 0 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_specials, 0 ) )  goto sync_err;
     P_UnArchiveSpecials();
     // Optional fragglescript section
-    if( SG_ReadSync( SAVEGAME_fragglescript, 1 ) )
+    if( SG_ReadSync( SYNC_fragglescript, 1 ) )
 #ifdef FRAGGLESCRIPT
     {
         P_UnArchiveScripts();
@@ -2835,7 +2873,7 @@ boolean P_LoadGame(void)
     }
 #endif
 
-    if( ! SG_ReadSync( SAVEGAME_end, 1 ) )  goto sync_err;
+    if( ! SG_ReadSync( SYNC_end, 1 ) )  goto sync_err;
    
     ClearPointermap();
     return true;

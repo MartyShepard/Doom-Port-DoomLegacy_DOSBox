@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.h 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: p_saveg.h 628 2010-04-03 02:23:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,6 +63,7 @@ typedef struct {
    char * game; // game name
    char * wad;  // wad name containing level
    char * map;  // level MAP01, E1M2, etc.
+   char * levtime; // time into this level, as string
    boolean  have_game, have_wad;  // validity checks on read
    char   msg[60];  // currently uses 46 chars max
 } savegame_info_t;
@@ -78,6 +79,5 @@ boolean P_LoadGame (void);
 extern byte*		savebuffer;
 extern byte*            save_p; 
 extern int		savebuffer_size;
-
 
 #endif
