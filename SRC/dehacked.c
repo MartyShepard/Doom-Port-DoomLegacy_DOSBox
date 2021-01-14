@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: dehacked.c 623 2010-03-25 02:56:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -134,24 +134,26 @@ char *myfgets(char *buf, int bufsize, MYFILE *f)
     return buf;
 }
 
-size_t  myfread( char *buf, size_t size, size_t count, MYFILE *f )
+// Read multiple lines into buf
+// Only used for text.
+size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
 {
-    size_t byteread = size-(f->curpos-f->data);
-    if( size*count < byteread )
-        byteread = size*count;
+    size_t byteread = f->size - (f->curpos-f->data);  // bytes left
+    if( reqsize < byteread )
+        byteread = reqsize;
     if( byteread>0 )
     {
         ULONG i;
-        for(i=0;i<byteread;i++)
+        // read lines except for any '\r'
+	// But should only be taking the '\r' off end of line (/cr/lf)
+        for(i=0; i<byteread; )
         {
             char c=*f->curpos++;
             if( c!='\r' )
-                buf[i]=c;
-            else
-                i--;
+                buf[i++]=c;
         }
     }
-    return byteread/size;
+    return byteread;
 }
 
 static int deh_num_error=0;
@@ -298,7 +300,7 @@ static void readframe(MYFILE* f,int num)
   } while(s[0]!='\n' && !myfeof(f));
 }
 
-static void readsound(MYFILE* f,int num,char *savesfxnames[])
+static void readsound(MYFILE* f,int num,char *deh_sfxnames[])
 {
   char s[MAXLINELEN];
   char *word;
@@ -310,16 +312,17 @@ static void readsound(MYFILE* f,int num,char *savesfxnames[])
       if(s[0]=='\n') break;
       value=searchvalue(s);
       word=strtok(s," ");
-           if(!strcmp(word,"Offset"))   {
-                                          value-=150360;
-                                          if(value<=64) value/=8;
-                                          else if(value<=260) value=(value+4)/8;
-                                          else value=(value+8)/8;
-                                          if(value>=-1 && value<sfx_freeslot0-1)
-                                              S_sfx[num].name=savesfxnames[value+1];
-                                          else
-                                              deh_error("Sound %d : offset out of bound\n",num);
-                                        }
+      if(!strcmp(word,"Offset"))
+      {
+	  value-=150360;
+          if(value<=64) value/=8;
+          else if(value<=260) value=(value+4)/8;
+          else value=(value+8)/8;
+          if(value>=-1 && value<sfx_freeslot0-1)
+	      S_sfx[num].name=deh_sfxnames[value+1];
+	  else
+	      deh_error("Sound %d : offset out of bound\n",num);
+      }
       else if(!strcmp(word,"Zero/One")) S_sfx[num].singularity=value;
       else if(!strcmp(word,"Value"))    S_sfx[num].priority   =value;
       else deh_error("Sound %d : unknown word '%s'\n",num,word);
@@ -327,47 +330,80 @@ static void readsound(MYFILE* f,int num,char *savesfxnames[])
   } while(s[0]!='\n' && !myfeof(f));
 }
 
-static void readtext(MYFILE* f,int len1,int len2,char *savesfxname[],char *savesprnames[])
+static void readtext(MYFILE* f, int len1, int len2,
+		     char *deh_sfxnames[], char *deh_sprnames[])
 {
   char s[2001];
+  char * str2;
   int i;
 
   // it is hard to change all the text in doom
-  // here i implement only vital things
-  // yes text change somes tables like music, sound and sprite name
+  // here I implement only vital things
+  // yes, Text can change some tables like music, sound and sprite name
+  
+  // [WDJ] Do not write into const strings, segfaults will occur on Linux.
+  // Without fixing all sources of strings to be consistent, the best that
+  // can be done is to abandon the original string (may be some lost memory)
+  // and replace it with new via Z_Strdup().  Dehacked is only run once at
+  // startup and the lost memory is not enough to dedicate code to recover.
+
   if(len1+len2 > 2000)
   {
       deh_error("Text too big\n");
       return;
   }
 
-  if(myfread(s,len1+len2,1,f))
+  if( myfread(s, len1+len2, f) )
   {
+    str2 = &s[len1];
     s[len1+len2]='\0';
-    // sound table
-    for(i=0;i<sfx_freeslot0;i++)
-      if(!strncmp(savesfxname[i],s,len1))
+    if((len1 == 4) && (len2 == 4))  // sprite names are always 4 chars
+    {
+      // sprite table
+      for(i=0;i<NUMSPRITES;i++)
       {
-        strncpy(S_sfx[i].name,&(s[len1]),len2);
-        S_sfx[i].name[len2]='\0';
-        return;
+        if(!strncmp(deh_sprnames[i],s,len1))
+        {
+          strncpy( sprnames[i], str2, len2);
+          sprnames[i][len2]='\0';
+          return;
+        }
       }
-    // sprite table
-    for(i=0;i<NUMSPRITES;i++)
-      if(!strncmp(savesprnames[i],s,len1))
+    }
+    if((len1 <= 6) && (len2 <= 6))  // sound effect names limited to 6 chars
+    {
+      // these names are strings, so compare them correctly
+      char str1[6];
+      strncpy( str1, s, len1 ); // copy name to proper string
+      str1[len1] = '\0';
+      // sound table
+      for(i=0;i<sfx_freeslot0;i++)
       {
-        strncpy(sprnames[i],&(s[len1]),len2);
-        sprnames[i][len2]='\0';
-        return;
+        if(!strcmp(deh_sfxnames[i],str1))
+        {
+	  // sfx name may be Z_Malloc(7) or a const string
+	  // May be const string, which will segfault on write
+	  S_sfx[i].name = Z_Strdup(str2, PU_STATIC, NULL);
+//          strncpy( S_sfx[i].name, str2, len2);
+//          S_sfx[i].name[len2]='\0';
+          return;
+        }
       }
-    // music table
-    for(i=1;i<NUMMUSIC;i++)
-      if( S_music[i].name && (!strncmp(S_music[i].name,s,len1)) )
+      // music names limited to 6 chars
+      // music table
+      for(i=1;i<NUMMUSIC;i++)
       {
-        strncpy(S_music[i].name,&(s[len1]),len2);
-        S_music[i].name[len2]='\0';
-        return;
+        if( S_music[i].name && (!strcmp(S_music[i].name, str1)) )
+        {
+	  // May be const string, which will segfault on write
+	  S_music[i].name = Z_Strdup(str2, PU_STATIC, NULL);
+//          strncpy( S_music[i].name, str2, len2);
+//          S_music[i].name[len2]='\0';
+          return;
+        }
       }
+    }
+    // Limited by buffer size.
     // text table
     for(i=0;i<SPECIALDEHACKED;i++)
     {
@@ -377,15 +413,19 @@ static void readtext(MYFILE* f,int len1,int len2,char *savesfxname[],char *saves
         // think we should be able to write to the text...
         // Hurdler: can we free the memory before allocating a new one
         //          -> free(text[i]); ?
-        //if(strlen(text[i])<(unsigned)len2)         // increase size of the text
-        //{
-           text[i]=(char *)malloc(len2+1);
-           if(text[i]==NULL)
-               I_Error("ReadText : No More free Mem");
-        //}
+	// [WDJ] Cannot free const memory, will crash most C-libs.
+	// Cannot write to const memory on Linux and non-DOS systems.
+#if 1
+	// May be const string, which will segfault on write
+        text[i] = Z_Strdup(str2, PU_STATIC, NULL);
+#else	 
+	text[i]=(char *)malloc(len2+1);
+	if(text[i]==NULL)
+               I_Error("DEH readtext: Alloc failed\n");
 
-        strncpy(text[i],s + len1,len2);
+        strncpy(text[i], str2, len2);
         text[i][len2]='\0';
+#endif	 
         return;
       }
     }
@@ -661,18 +701,18 @@ void DEH_LoadDehackedFile(MYFILE* f)
   char       *word,*word2;
   int        i;
   // do a copy of this for cross references probleme
-  actionf_t  saveactions[NUMSTATES];
-  char       *savesprnames[NUMSPRITES];
-  char       *savesfxnames[NUMSFX];
+  actionf_t  deh_actions[NUMSTATES];
+  char       *deh_sprnames[NUMSPRITES];
+  char       *deh_sfxnames[NUMSFX];
 
   deh_num_error=0;
   // save value for cross reference
   for(i=0;i<NUMSTATES;i++)
-      saveactions[i]=states[i].action;
+      deh_actions[i]=states[i].action;
   for(i=0;i<NUMSPRITES;i++)
-      savesprnames[i]=sprnames[i];
+      deh_sprnames[i]=sprnames[i];
   for(i=0;i<NUMSFX;i++)
-      savesfxnames[i]=S_sfx[i].name;
+      deh_sfxnames[i]=S_sfx[i].name;
 
   // it don't test the version of doom
   // and version of dehacked file
@@ -712,7 +752,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                  if(i<NUMSTATES && i>=0)
                  {
                    if(myfgets(s,sizeof(s),f)!=NULL)
-                     states[i].action=saveactions[searchvalue(s)];
+                     states[i].action=deh_actions[searchvalue(s)];
                  }
                  else
                     deh_error("Pointer : Frame %d don't exist\n",i);
@@ -723,7 +763,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
         else if(!strcmp(word,"Sound"))
              {
                if(i<NUMSFX && i>=0)
-                   readsound(f,i,savesfxnames);
+                   readsound(f,i,deh_sfxnames);
                else
                    deh_error("Sound %d don't exist\n");
              }
@@ -736,7 +776,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                    int k;
                    k=(searchvalue(s)-151328)/8;
                    if(k>=0 && k<NUMSPRITES)
-                       sprnames[i]=savesprnames[k];
+                       sprnames[i]=deh_sprnames[k];
                    else
                        deh_error("Sprite %i : offset out of bound\n",i);
                  }
@@ -751,7 +791,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                if((word=strtok(NULL," "))!=NULL)
                {
                  j=atoi(word);
-                 readtext(f,i,j,savesfxnames,savesprnames);
+                 readtext(f,i,j,deh_sfxnames,deh_sprnames);
                }
                else
                    deh_error("Text : missing second number\n");

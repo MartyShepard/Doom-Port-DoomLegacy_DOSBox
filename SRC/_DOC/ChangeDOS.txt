@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00623 ]: Dehacked string alloc
 [00622 ]: w41 Re-fix draw-clip
 [00621 ]: Savegame with header and sync
 [00620 ]: GDESC game selection tables
@@ -120,3 +121,22 @@ zone.c
 screen_c ( #if !defined(__DJGPP__) )
 tables.c
 
+The following command line switches will force the execution mode:
+"-freedoom"	=> GDESC_freedoom
+"-freedm"	=> GDESC_freedm
+"-doom2"	=> GDESC_doom2
+"-freedu"	=> GDESC_freedoom_ultimate
+"-doomu"	=> GDESC_ultimate or GDESC_ultimate_se
+"-doom1"	=> GDESC_doom_shareware
+"-plutonia"	=> GDESC_plutonia
+"-tnt"		=> GDESC_tnt
+"-blasphem"	=> GDESC_blasphemer
+"-heretic"	=> GDESC_heretic
+"-heretic1"	=> GDESC_heretic_shareware
+"-hexen"	=> GDESC_hexen
+"-hexen1"	=> GDESC_hexen_demo
+"-chex1"	=> GDESC_chex1
+"-ultimode"	=> GDESC_ultimate_mode
+"-doommode"	=> GDESC_doom_mode
+"-heremode"	=> GDESC_heretic_mode
+"-hexemode"	=> GDESC_hexen_mode

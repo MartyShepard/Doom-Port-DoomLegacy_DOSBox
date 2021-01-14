@@ -433,3 +433,12 @@ Remove a test on dc_x as it was skipping needed loop end operations.
 Limit range of dc_x earlier, as calls to SegLoop can have x1..x2 range
 exceed the screen.
 
+*** w41_dehacked
+patchfile = w41_draw_clip.patch
+- committed revision 623   by wesley johnson
+Dehacked file pl2.deh (plutonia2) segfaults due to writing string over const.
+String replacement changed to use Z_Strdup, and old string is abandoned,
+as it could be a const.  There is no good test to recover allocated
+strings, but dehacked does not encounter many of those, and executes only
+once at load time.
+
