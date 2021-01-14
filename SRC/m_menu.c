@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 629 2010-04-03 02:25:58Z wesleyjohnson $
+// $Id: m_menu.c 631 2010-04-08 00:58:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -256,15 +256,34 @@ boolean                 menuactive;
 #define SLIDER_WIDTH    (8*SLIDER_RANGE+6)
 #define MAXSTRINGLENGTH  32
 
-// -1 = no quicksave slot picked!
+// [WDJ] Definition of slot.
+// SLOT is the number attached to the savegame name.
+// The savegamedisp table is indexed by slotindex [0..5],
+// which for 99 savegames and with directories (slotindex=[1..6]),
+// is different than the slot number [0..99].
+// The savegamedisp table index=6 is reserved for quickSave.
+
+// quickSaveSlot: -1 = no slot picked!, -2 = select slot now, else is slot
 static int     quickSaveSlot;
-static int     saveSlot;       // which slot to save in
+static int     slotindex;     // used for reading and editing slot desc
+
+#if defined SAVEGAMEDIR || defined SAVEGAME99
+#define     QUICKSAVE_INDEX  6
+static int     scroll_index;  // scroll position
+static void    (*scroll_callback)(int amount) = NULL; // call to scroll
+static void    (*delete_callback)(int ch) = NULL; // call to delete
+#else
+// otherwise the slot and index are the same
+#define     QUICKSAVE_INDEX   quickSaveSlot
+#endif
 
 // menu string edit, used for entering a savegame string
 static boolean edit_enable;
 static int     edit_index;  // which char we're editing
 // menu edit
 static char    edit_buffer[SAVESTRINGSIZE];
+static void    (*edit_done_callback)(void) = NULL;  // call upon edit done
+
 
 // Map and Time on left side, otherwise on the right side
 #define SAVEGAME_MTLEFT
@@ -275,6 +294,7 @@ static char    edit_buffer[SAVESTRINGSIZE];
 #ifdef SAVEGAME_MTLEFT
 // position in the line of map name and time
 #define SAVE_DESC_POS   12
+#define SAVE_DESC_XPOS  (SAVE_DESC_POS*8)
 #define SAVELINELEN (SAVE_DESC_POS+SAVESTRINGSIZE-2)
 #else
 // position in the line of map name and time
@@ -291,7 +311,6 @@ typedef struct
     char  levtime[SAVEGAME_MTLEN];
 } savegame_disp_t;
   
-//static char    savegamestrings[10][SAVESTRINGSIZE];
 static savegame_disp_t    savegamedisp[7];
 #ifdef SAVEGAMEDIR
 char  savegamedir[SAVESTRINGSIZE] = "";  // default is main legacy dir
@@ -305,9 +324,16 @@ void clear_savegamedisp( int mslot )
     {
         savegamedisp[mslot].desc[0] = '\0';
         savegamedisp[mslot].levtime[0] = '\0';
-//        LoadGameMenu[mslot].status = 0;
+#ifdef SAVEGAME99
+        savegamedisp[mslot].savegameid = 255;   // invalid
+#endif
         mslot ++;
     }
+}
+
+void setup_net_savegame( void )
+{
+    strcpy( savegamedir, "NET" );	// default for network play
 }
 
 // flags for items in the menu
@@ -405,11 +431,7 @@ char      skullName[2][9] = {"M_SKULL1","M_SKULL2"};
 //
 // PROTOTYPES
 //
-#ifdef SAVEGAMEDIR
 void M_DrawSaveLoadBorder(int x, int y, boolean longer);
-#else
-void M_DrawSaveLoadBorder(int x, int y);
-#endif
 void M_SetupNextMenu(menu_t *menudef);
 void M_Setup_prevMenu( void );
 
@@ -477,7 +499,7 @@ void M_DrawMenuTitle(void)
 
 void M_DrawGenericMenu(void)
 {
-    int x,y,i,cursory=0;
+    int x, y, i, cursory=0;
 
     // DRAW MENU
     x = currentMenu->x;
@@ -486,7 +508,7 @@ void M_DrawGenericMenu(void)
     // draw title (or big pic)
     M_DrawMenuTitle();
 
-    for (i=0;i<currentMenu->numitems;i++)
+    for (i=0; i<currentMenu->numitems; i++)
     {
         if (i==itemOn)
             cursory=y;
@@ -702,6 +724,7 @@ void M_Connect( int choise )
     M_ClearMenus(false);
 
     COM_BufAddText(va("connect node %d\n", serverlist[choise-FIRSTSERVERLINE].node));
+    setup_net_savegame();
 }
 
 static int localservercount;
@@ -782,8 +805,8 @@ void M_ConnectMenu(int choise)
 {
     if( Playing() )
     {
-        M_StartMessage(ALLREADYPLAYING,NULL,MM_NOTHING);
-        return;
+       M_SimpleMessage(ALLREADYPLAYING);
+       return;
     }
 
     M_SetupNextMenu(&Connectdef);
@@ -873,16 +896,17 @@ menu_t  Serverdef =
     0,
 };
 
-void M_StartServerMenu(int choise)
+void M_StartServerMenu(int choice)
 {
     if( Playing() )
     {
-        M_StartMessage(ALLREADYPLAYING,NULL,MM_NOTHING);
-        return;
+       M_SimpleMessage(ALLREADYPLAYING);
+       return;
     }
 
-    StartSplitScreenGame = (choise != 0);
+    StartSplitScreenGame = (choice != 0);
     M_SetupNextMenu(&Serverdef);
+    setup_net_savegame();
 }
 
 //===========================================================================
@@ -890,7 +914,7 @@ void M_StartServerMenu(int choise)
 //===========================================================================
 void M_SetupMultiPlayer (int choice);
 void M_SetupMultiPlayerBis (int choice);
-void M_Splitscreen(int choise);
+void M_Splitscreen(int choice);
 
 enum {
     startserver=0,
@@ -927,7 +951,7 @@ menu_t  MultiPlayerDef =
 };
 
 
-void M_Splitscreen(int choise)
+void M_Splitscreen(int choice)
 {
     M_StartServerMenu(1);
 }
@@ -1313,7 +1337,7 @@ void M_Episode(int choice)
          && choice)
     {
         M_SetupNextMenu(&ReadDef1);
-        M_StartMessage(SWSTRING,NULL,MM_NOTHING);
+        M_SimpleMessage(SWSTRING);
         return;
     }
 
@@ -1382,13 +1406,13 @@ void M_NewGame(int choice)
 {
     if( Playing() )
     {
-        M_StartMessage(ALLREADYPLAYING,NULL,MM_NOTHING);
+        M_SimpleMessage(ALLREADYPLAYING);
         return;
     }
 
     if (netgame)
     {
-        M_StartMessage(NEWGAME,NULL,MM_NOTHING);
+        M_SimpleMessage(NEWGAME);
         return;
     }
 
@@ -1406,11 +1430,11 @@ void M_ChooseSkill(int choice)
 {
     if (choice == nightmare)
     {
-        M_StartMessage(NIGHTMARE,M_VerifyNightmare,MM_YESNO);
+        M_StartMessage(NIGHTMARE, M_VerifyNightmare, MM_YESNO);
         return;
     }
 
-    G_DeferedInitNew(choice, G_BuildMapName(epi+1,1),StartSplitScreenGame);
+    G_DeferedInitNew(choice, G_BuildMapName(epi+1,1), StartSplitScreenGame);
     M_ClearMenus (true);
 }
 
@@ -1419,7 +1443,7 @@ void M_VerifyNightmare(int ch)
     if (ch != 'y')
         return;
 
-    G_DeferedInitNew (nightmare, G_BuildMapName(epi+1,1),StartSplitScreenGame);
+    G_DeferedInitNew (nightmare, G_BuildMapName(epi+1,1), StartSplitScreenGame);
     M_ClearMenus (true);
 }
 
@@ -1628,9 +1652,9 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Item Respawn time"   ,&cv_itemrespawntime    ,0},
     {IT_STRING | IT_CVAR,0,"Monster Respawn"     ,&cv_respawnmonsters    ,0},
     {IT_STRING | IT_CVAR,0,"Monster Respawn time",&cv_respawnmonsterstime,0},
-	{IT_STRING | IT_CVAR,0,"Monster Behavior"	 ,&cv_monbehavior		 ,0},
+    {IT_STRING | IT_CVAR,0,"Monster Behavior"	 ,&cv_monbehavior        ,0},
     {IT_STRING | IT_CVAR,0,"Fast Monsters"       ,&cv_fastmonsters       ,0},
-	{IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
+    {IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
@@ -1656,7 +1680,7 @@ void M_GameOption(int choice)
 {
     if(!server)
     {
-        M_StartMessage("You are not the server\nYou can't change the options\n",NULL,MM_NOTHING);
+        M_SimpleMessage("You are not the server\nYou can't change the options\n");
         return;
     }
     M_SetupNextMenu(&GameOptionDef);
@@ -1701,7 +1725,7 @@ void M_NetOption(int choice)
 {
     if(!server)
     {
-        M_StartMessage("You are not the server\nYou can't change the options\n",NULL,MM_NOTHING);
+        M_SimpleMessage("You are not the server\nYou can't change the options\n");
         return;
     }
     M_SetupNextMenu(&NetOptionDef);
@@ -1986,7 +2010,7 @@ void M_SetupControlsMenu (int choice)
 
 
 //
-//  Draws the Customise Controls menu
+//  Draws the Customized Controls menu
 //
 void M_DrawControl(void)
 {
@@ -2109,9 +2133,9 @@ void M_ChangeControl(int choice)
     static char tmp[55];
 
     controltochange = currentMenu->menuitems[choice].alphaKey;
-    sprintf (tmp,"Hit the new key for\n%s\nESC for Cancel",currentMenu->menuitems[choice].text);
+    sprintf (tmp,"Hit the new key for\n%s\nESC for Cancel", currentMenu->menuitems[choice].text);
 
-    M_StartMessage (tmp,M_ChangecontrolResponse,MM_EVENTHANDLER);
+    M_StartMessage (tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 }
 
 //===========================================================================
@@ -2342,7 +2366,6 @@ void M_HandleVideoMode (int ch)
 
       case KEY_ESCAPE:      //this one same as M_Responder
         S_StartSound(NULL,sfx_swtchx);
-
 	M_Setup_prevMenu();
         return;
 
@@ -2406,16 +2429,12 @@ menu_t  DirDef =
 };
 
 
-void draw_dir_line( int line_y )
+inline void draw_dir_line( int line_y )
 {
-    if( savegamedir[0] || currentMenu == &DirDef )
-    {
-        V_DrawString( DirDef.x, line_y, 0, "DIR");
-        M_DrawSaveLoadBorder( DirDef.x+32, line_y, 0);
-        V_DrawString( DirDef.x+32, line_y, 0, savegamedir);
-    }
+    V_DrawString( DirDef.x, line_y, 0, "DIR");
+    M_DrawSaveLoadBorder( DirDef.x+32, line_y, 0);
+    V_DrawString( DirDef.x+32, line_y, 0, savegamedir);
 }
-
 
 void M_DrawDir(void)
 {
@@ -2423,16 +2442,20 @@ void M_DrawDir(void)
     int line_y = DirDef.y;
 
     M_DrawGenericMenu();
-    draw_dir_line( line_y );
+
     if (edit_enable)
     {
         // draw string and cursor in the edit position
-	// Draw over the dir line because need the background
+        V_DrawString( DirDef.x, line_y, 0, "NEW DIR");
+        int line_x = DirDef.x+64;
+        M_DrawSaveLoadBorder( line_x, line_y, 0);
+        V_DrawString( line_x, line_y, 0, edit_buffer);
         i = V_StringWidth(edit_buffer);
-        V_DrawString( DirDef.x+32, line_y, 0, edit_buffer);
-        V_DrawString( DirDef.x+32 + i, line_y, 0, "_");
+        V_DrawString( line_x + i, line_y, 0, "_");
         return;
     }
+
+    draw_dir_line( line_y );
     for (i = 0; i < NUM_DIRLINE; i++)
     {
         line_y += LINEHEIGHT;
@@ -2441,28 +2464,14 @@ void M_DrawDir(void)
     }
 }
 
-void M_ReadSaveStrings( boolean skip_unloadable );
+void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction );
 
 // Called from DIR game menu to select a directory
 void M_DirSelect(int choice)
 {
-    choice--;	// slots are 1..6
+    choice--;	// slots 0..5 are menu 1..6
     strcpy( savegamedir, savegamedisp[choice].desc );
-    M_ReadSaveStrings( DirDef.prevMenu==&LoadDef );
     M_Setup_prevMenu();
-//    M_ClearMenus (true);
-}
-
-// Called from DIR game menu to select a directory
-void M_DirEnter(int choice)
-{
-    saveSlot = 0;
-    // initiate edit of dir string, we are going to be intercepting all chars
-    edit_enable = 1;
-    edit_buffer[0] = '\0';
-    edit_index = 0;
-   
-    // when done editing, will goto M_NewDir
 }
 
 void M_NewDir( void )
@@ -2470,14 +2479,39 @@ void M_NewDir( void )
     char dirname[256];
    
     // normal savegame select, set savegamedir
-    M_DirSelect( 1 ); // saveSlot=0
+    M_DirSelect( 1 ); // slot=0 is menu 1
     if( savegamedir[0] )
     {
         // make new directory
-        strncpy( dirname, savegamename, 256 ); // get legacyhome
-        strncpy( &dirname[legacyhome_len], savegamedir, 256-legacyhome_len );
+        snprintf( dirname, 255, "%s%s", legacyhome, savegamedir );
         dirname[255] = '\0';
         I_mkdir( dirname, 0700 ); // octal permissions
+    }
+}
+
+
+// Called from DIR game menu to select a directory
+void M_DirEnter(int choice)
+{
+    slotindex = 0; // edit
+    // initiate edit of dir string, we are going to be intercepting all chars
+    edit_enable = 1;
+    edit_buffer[0] = '\0';
+    edit_index = 0;
+    edit_done_callback = M_NewDir;
+    // when done editing, will goto M_NewDir
+}
+
+void M_Dir_delete (int ch)
+{
+    if( ch=='y' && savegamedisp[slotindex].desc[0] )
+    {
+        char dirname[256];
+        // remove directory
+        snprintf( dirname, 255, "%s%s", legacyhome, savegamedisp[slotindex].desc );
+        dirname[255] = '\0';
+        remove( dirname );
+        savegamedisp[slotindex].desc[0] = '\0';
     }
 }
 
@@ -2489,53 +2523,66 @@ int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
 {
     if( flag == FTW_D )  // only want directories
     {
-        strncpy( savegamedisp[saveSlot].desc, &file[legacyhome_len], SAVESTRINGSIZE-1 );
-        savegamedisp[saveSlot].desc[SAVESTRINGSIZE] = '\0';
-        saveSlot++;
+        if( slotindex >= 0 )  // because of dir list scrolling
+        {
+	    // Only want the name after legacyhome
+            strncpy( savegamedisp[slotindex].desc, &file[legacyhome_len], SAVESTRINGSIZE-1 );
+            savegamedisp[slotindex].desc[SAVESTRINGSIZE] = '\0';
+	}
+        slotindex++;
     }
-    if( saveSlot >= NUM_DIRLINE )  return 1;  // done, stop ftw
+    if( slotindex >= NUM_DIRLINE )  return 1;  // done, stop ftw
     return 0;
+}
+
+void M_Dir_scroll (int amount)
+{
+    clear_savegamedisp( 0 );
+    slotindex = -scroll_index;
+    ftw( legacyhome, ftw_directory_entry, 1 );
 }
 
 // Called from menu
 void M_Get_SaveDir (int choice)
 {
-    char legacyhome[256];
-   
-    if( legacyhome_len > 255 ) return;
-    strncpy( legacyhome, savegamename, 256 );
-    legacyhome[ legacyhome_len ] = '\0';	// just the legacyhome part
-
     // Any mode, directory is personal choice
     // Directory menu with choices
+    DirDef.prevMenu = currentMenu;	// return to Load or Save
     M_SetupNextMenu(&DirDef);
+    scroll_callback = M_Dir_scroll;
+    delete_callback = M_Dir_delete;
    
     clear_savegamedisp( 0 );
-    saveSlot = 0;
+    slotindex = 0;
     ftw( legacyhome, ftw_directory_entry, 1 );
 }
 
 #else
+
 #include <sys/types.h>
 #include <dirent.h>
 #define FILENAME_SIZE 256
 extern char legacyhome[FILENAME_SIZE];
+
+void M_Dir_scroll (int amount)
+{
+    clear_savegamedisp( 0 );
+    slotindex = -scroll_index;
+}
+
 // Called from menu
 void M_Get_SaveDir (int choice)
 {
     struct dirent * dent;
     DIR * legdir;
     int i;
-    char legacyhome[256];
-   
-    if( legacyhome_len > 255 ) return;
-    strncpy( legacyhome, savegamename, 256 );
-    legacyhome[ legacyhome_len ] = '\0';	// just the legacyhome part
 
     // Any mode, directory is personal choice
     // Directory menu with choices
     DirDef.prevMenu = currentMenu;	// return to Load or Save
     M_SetupNextMenu(&DirDef);
+    scroll_callback = M_Dir_scroll;
+    delete_callback = M_Dir_delete;
 
     legdir = opendir( legacyhome );
     if( legdir == NULL )  return;
@@ -2620,7 +2667,7 @@ void M_DrawLoad(void)
         M_DrawSaveLoadBorder( LoadDef.x, line_y, 1);
 #ifdef SAVEGAME_MTLEFT
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].levtime);
-        V_DrawString( LoadDef.x+(SAVE_DESC_POS*8), line_y, 0, savegamedisp[i].desc);
+        V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, savegamedisp[i].desc);
 #else
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].desc);
         V_DrawString( LoadDef.x+(SAVE_MT_POS*8), line_y, 0, savegamedisp[i].levtime);
@@ -2629,10 +2676,10 @@ void M_DrawLoad(void)
 #else
     for (i = 0; i < load_end; i++)
     {
-        M_DrawSaveLoadBorder( LoadDef.x, line_y);
+        M_DrawSaveLoadBorder( LoadDef.x, line_y, 0);
 #ifdef SAVEGAME_MTLEFT
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].levtime);
-        V_DrawString( LoadDef.x+(SAVE_DESC_POS*8), line_y, 0, savegamedisp[i].desc);
+        V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, savegamedisp[i].desc);
 #else
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].desc);
         V_DrawString( LoadDef.x+(SAVE_MT_POS*8), line_y, 0, savegamedisp[i].levtime);
@@ -2650,18 +2697,14 @@ void M_LoadSelect(int choice)
 {
     // Issue command to save game
 #ifdef SAVEGAMEDIR
-    choice--;	// slots are 1..6
-//    G_LoadGame ( savegamedir, savegamedisp[choice].savegameid );
-    if( savegamedisp[choice].desc[0] )
-      G_LoadGame ( savegamedisp[choice].savegameid );
-#else
+    choice--;	// slots 0..5 are menu 1..6
+#endif   
 #ifdef SAVEGAME99
-    if( savegamedisp[choice].desc[0] )
+    if( savegamedisp[choice].savegameid <= 99 )
       G_LoadGame ( savegamedisp[choice].savegameid );
 #else
     G_LoadGame (choice);
 #endif
-#endif   
     M_ClearMenus (true);
 }
 
@@ -2672,9 +2715,11 @@ void M_LoadSelect(int choice)
 //  and put it in savegame global variable
 //
 #ifdef SAVEGAME99
-void M_ReadSaveStrings( boolean skip_unloadable )
+void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
 {
     int     menuslot, nameid, slot_status;
+    int     first_nameid = 0;
+    int     last_nameid = 0;  // disable unless searching
     int     handle;
     char  * slot_str;
     savegame_disp_t *sgdp;
@@ -2684,8 +2729,23 @@ void M_ReadSaveStrings( boolean skip_unloadable )
     P_Alloc_savebuffer( 1, 0 );  // header only
     // savegamedisp is statically alloc
 
+    if( scroll_direction < 0 )
+    {
+        if((scroll_index > 0) && (savegamedisp[0].savegameid <= 99))
+	   last_nameid = savegamedisp[0].savegameid;
+        // scroll savegamedisp until found last_nameid
+    }
+    else if( scroll_direction > 0 )
+    {
+        if( savegamedisp[5].savegameid <= 99 )
+	   first_nameid = savegamedisp[5].savegameid;
+        else if( savegamedisp[0].savegameid <= 99 )
+	   first_nameid = savegamedisp[0].savegameid;
+    }
+    scroll_index = first_nameid;
+
     menuslot = 0;
-    for (nameid = 0; nameid < 99; nameid++)
+    for (nameid = first_nameid; nameid <= 99; nameid++)
     {
         if( menuslot >= load_end ) break;
         sgdp = &savegamedisp[menuslot];
@@ -2699,16 +2759,18 @@ void M_ReadSaveStrings( boolean skip_unloadable )
 	    // read error
 	    if( skip_unloadable )  continue;
 	    slot_str = EMPTYSTRING;
+	    sprintf( &sgdp->levtime[0], "%2i", nameid );
 	    slot_status = 0;
         }
         else
         {
+	    // read the savegame header and react
             read( handle, savebuffer, savebuffer_size );
             close (handle);
             if( P_Read_Savegame_Header( &sginfo ) )
             {
 	        if( sginfo.map == NULL ) sginfo.map = " -  ";
-	        if( sginfo.levtime == NULL ) sginfo.levtime = "-";
+	        if( sginfo.levtime == NULL ) sginfo.levtime = "";
 	        // info from a valid legacy save game
 		snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
 			  "%s %s", sginfo.map, sginfo.levtime);
@@ -2717,22 +2779,36 @@ void M_ReadSaveStrings( boolean skip_unloadable )
 	    }
 	    else
 	    {
+	        // bad header, not a valid legacy savegame, or an old one
 	        if( skip_unloadable )  continue;
 	        slot_str = sginfo.msg;	// error message
-	        slot_status = IT_STRING2;
+	        slot_status = 0;
 	    }
 	}
+        // fill in savegame strings for menu display
         strncpy( &sgdp->desc[0], slot_str, SAVESTRINGSIZE );
         sgdp->desc[SAVESTRINGSIZE-1] = '\0';
         sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
         sgdp->savegameid = nameid;
         LoadGameMenu[menuslot].status = slot_status;
         menuslot++;
+        // When scroll_direction < 0
+        if((menuslot >= load_end) && (nameid < last_nameid))
+        {
+	    // searching for last_nameid
+	    // scroll memory down
+	    memmove( &savegamedisp[0], &savegamedisp[1],
+			 sizeof( savegame_disp_t ) * (load_end-1));
+	    menuslot --;  // do not end
+	    scroll_index = savegamedisp[0].savegameid;
+	}
     }
     free( savebuffer );
     clear_savegamedisp( menuslot );
 }
+
 #else
+
 void M_ReadSaveStrings(void)
 {
     int     handle;
@@ -2765,6 +2841,8 @@ void M_ReadSaveStrings(void)
         {
 	    // info from a valid legacy save game
 	    strncpy( &sgdp->desc[0], sginfo.name, SAVESTRINGSIZE );
+	    if( sginfo.map == NULL ) sginfo.map = " -  ";
+	    if( sginfo.levtime == NULL ) sginfo.levtime = "";
 	    snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
 		      "%s %s", sginfo.map, sginfo.levtime);
 	    sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
@@ -2781,6 +2859,30 @@ void M_ReadSaveStrings(void)
 }
 #endif
 
+
+#ifdef SAVEGAME99
+// scroll_callback
+void M_Load_scroll (int amount)
+{
+    M_ReadSaveStrings( 1, amount ); // skip unloadable
+}
+
+// delete_callback
+void M_Savegame_delete (int ch)
+{
+    if( ch=='y' && (savegamedisp[slotindex].savegameid < 99) )
+    {
+        char savename[256];
+        G_Savegame_Name( savename, savegamedisp[slotindex].savegameid );
+        // remove savegame
+        remove( savename );
+        savegamedisp[slotindex].desc[0] = '\0';
+        savegamedisp[slotindex].levtime[0] = '\0';
+        savegamedisp[slotindex].savegameid = 255;
+    }
+}
+#endif
+
 //
 // Selected from DOOM menu
 //
@@ -2791,14 +2893,17 @@ void M_LoadGame (int choice)
     if (netgame && !server)
     {
         // running network game and am not the server, cannot load
-        M_StartMessage(LOADNET,NULL,MM_NOTHING);
+        M_SimpleMessage(LOADNET);
         return;
     }
 
     // Save game load menu with slot choices
     M_SetupNextMenu(&LoadDef);
 #ifdef SAVEGAME99
-    M_ReadSaveStrings( 1 ); // skip unloadable
+    scroll_index = 0;
+    scroll_callback = M_Load_scroll;
+    delete_callback = M_Savegame_delete;
+    M_ReadSaveStrings( 1, 0 ); // skip unloadable
 #else
     M_ReadSaveStrings();
 #endif
@@ -2848,7 +2953,6 @@ menu_t  SaveDef =
 
 
 
-#ifdef SAVEGAMEDIR
 //
 // Draw border for the savegame description
 //
@@ -2860,15 +2964,19 @@ void M_DrawSaveLoadBorder(int x, int y, boolean longer )
     {
 #ifdef SAVEGAME_MTLEFT
         V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
+#if SAVELINELEN > 24
         if( longer )
         { 
-            V_DrawScaledPatch_Name(x-8 + (SAVE_DESC_POS*8), y-4, 0, "M_FSLOT");
+            V_DrawScaledPatch_Name(x-8 + SAVE_DESC_XPOS, y-4, 0, "M_FSLOT");
         }
+#endif
 #else
+#if SAVELINELEN > 24
         if( longer )
         {
             V_DrawScaledPatch_Name(x-8 + ((SAVELINELEN-24)*8), y-4, 0, "M_FSLOT");
 	}
+#endif
         V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
 #endif
     }
@@ -2885,42 +2993,6 @@ void M_DrawSaveLoadBorder(int x, int y, boolean longer )
         V_DrawScaledPatch_Name (x,y+7,0, "M_LSRGHT");
     }
 }
-#else
-//
-// Draw border for the savegame description
-//
-void M_DrawSaveLoadBorder(int x, int y )
-{
-    int i;
-
-    if( gamemode == heretic )
-    {
-#ifdef SAVEGAME_MTLEFT
-        V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
-#if SAVELINELEN > 24
-        V_DrawScaledPatch_Name(x-8 + (SAVE_DESC_POS*8), y-4, 0, "M_FSLOT");
-#endif
-#else
-#if SAVELINELEN > 24
-        V_DrawScaledPatch_Name(x-8 + ((SAVELINELEN-24)*8), y-4, 0, "M_FSLOT");
-#endif
-        V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
-#endif
-    }
-    else
-    {
-        V_DrawScaledPatch_Name (x-8,y+7,0, "M_LSLEFT");
-        
-        for (i = 0; i < SAVELINELEN; i++)
-        {
-            V_DrawScaledPatch_Name (x,y+7,0, "M_LSCNTR");
-            x += 8;
-        }
-        
-        V_DrawScaledPatch_Name (x,y+7,0, "M_LSRGHT");
-    }
-}
-#endif
 
 
 //
@@ -2928,46 +3000,32 @@ void M_DrawSaveLoadBorder(int x, int y )
 //
 void M_DrawSave(void)
 {
-    int i;
     int line_y = LoadDef.y;
-#if 1
-    M_DrawLoad();
-#else
-    M_DrawGenericMenu();
 
-    for (i = 0; i < load_end; i++)
-    {
-#ifdef SAVEGAMEDIR
-        M_DrawSaveLoadBorder( LoadDef.x, line_y, 1);
-#else
-        M_DrawSaveLoadBorder(LoadDef.x, line_y);
-#endif
-#ifdef SAVEGAME_MTLEFT
-        V_DrawString(LoadDef.x, line_y, 0, savegamedisp[i].levtime);
-        V_DrawString(LoadDef.x+(SAVE_DESC_POS*8), line_y, 0, savegamedisp[i].desc);
-#else
-        V_DrawString(LoadDef.x, line_y, 0, savegamedisp[i].desc);
-        V_DrawString(LoadDef.x+(SAVE_MT_POS*8), line_y, 0, savegamedisp[i].levtime);
-#endif
-        line_y += LINEHEIGHT;
-    }
-#endif
     if (edit_enable)
     {
+//        M_DrawLoad();	// optional, keep other slots displayed
         // draw string and cursor in the original slot position
-        i = V_StringWidth(edit_buffer);
 #ifdef SAVEGAMEDIR
-        line_y = LoadDef.y+(LINEHEIGHT*saveSlot)+LINEHEIGHT; // dir is 0
+        line_y = LoadDef.y+(LINEHEIGHT*slotindex)+LINEHEIGHT; // dir is 0
 #else
-        line_y = LoadDef.y+LINEHEIGHT*saveSlot;
+        line_y = LoadDef.y+LINEHEIGHT*slotindex;
 #endif
+        M_DrawSaveLoadBorder( LoadDef.x, line_y, 1);
 #ifdef SAVEGAME_MTLEFT
-        V_DrawString(LoadDef.x+(SAVE_DESC_POS*8), line_y, 0, edit_buffer);
-        V_DrawString(LoadDef.x+(SAVE_DESC_POS*8) + i, line_y, 0, "_");
+        V_DrawString( LoadDef.x, line_y, 0, "DESCRIPTION:");
+        V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, edit_buffer);
+        int i = V_StringWidth(edit_buffer);
+        V_DrawString( LoadDef.x+SAVE_DESC_XPOS + i, line_y, 0, "_");
 #else
-        V_DrawString(LoadDef.x, line_y, 0, edit_buffer);
-        V_DrawString(LoadDef.x + i, line_y, 0, "_");
+        V_DrawString( LoadDef.x, line_y, 0, edit_buffer);
+        int i = V_StringWidth(edit_buffer);
+        V_DrawString( LoadDef.x + i, line_y, 0, "_");
 #endif
+    }
+    else
+    {
+        M_DrawLoad();
     }
 }
 
@@ -2976,6 +3034,23 @@ void M_DrawSave(void)
 //
 // Called from save menu by M_Responder,
 // and from quick Save by M_QuickSaveResponse
+#if defined SAVEGAMEDIR || defined SAVEGAME99
+// slti = menu index
+void M_DoSave(int slti)
+{
+    // Issue command to save game
+    G_SaveGame (savegamedisp[slti].savegameid, savegamedisp[slti].desc);
+    M_ClearMenus (true);
+
+    // PICK QUICKSAVE SLOT YET?
+    if (quickSaveSlot == -2)
+    {
+        quickSaveSlot = savegamedisp[slti].savegameid;
+        savegamedisp[QUICKSAVE_INDEX] = savegamedisp[slti];  // save whole thing
+    }
+}
+#else
+// slot = game id and menu index
 void M_DoSave(int slot)
 {
     // Issue command to save game
@@ -2984,7 +3059,18 @@ void M_DoSave(int slot)
 
     // PICK QUICKSAVE SLOT YET?
     if (quickSaveSlot == -2)
+    {
         quickSaveSlot = slot;
+    }
+}
+#endif
+
+
+
+// Called when desc editing is done
+void M_SaveEditDone( void )
+{
+    M_DoSave(slotindex);
 }
 
 //
@@ -2996,20 +3082,26 @@ void M_SaveSelect(int choice)
 #ifdef SAVEGAMEDIR   
     choice--;	// slots are 1..6
 #endif
-    saveSlot = choice;
-#if 1
+    slotindex = choice;  // line being edited
+    // clear out EMPTY STRING and other err msgs
     if ( LoadGameMenu[choice].status != 1 )  // invalid name
         savegamedisp[choice].desc[0] = 0;
-#else
-    if (!strcmp(savegamestrings[choice], EMPTYSTRING))
-        savegamestrings[choice][0] = 0;
-#endif
-    savegamedisp[choice].levtime[0] = '\0';
+    // [WDJ] edit_enable overwrites entire line
     // initiate edit of desc string, we are going to be intercepting all chars
-    edit_enable = 1;
     strcpy(edit_buffer, savegamedisp[choice].desc);
     edit_index = strlen(edit_buffer);
+    edit_done_callback = M_SaveEditDone;
+    edit_enable = 1;
 }
+
+
+#ifdef SAVEGAME99
+// scroll_callback
+void M_Save_scroll (int amount)
+{
+    M_ReadSaveStrings( 0, amount );
+}
+#endif
 
 //
 // Selected from DOOM menu
@@ -3019,13 +3111,13 @@ void M_SaveGame (int choice)
 {
     if(demorecording)
     {
-        M_StartMessage("You can't save while recording demos\n\nPress a key\n",NULL,MM_NOTHING);
+        M_SimpleMessage("You can't save while recording demos\n\nPress a key\n");
         return;
     }
 
     if (demoplayback || demorecording)
     {
-        M_StartMessage(SAVEDEAD,NULL,MM_NOTHING);
+        M_SimpleMessage(SAVEDEAD);
         return;
     }
 
@@ -3034,14 +3126,17 @@ void M_SaveGame (int choice)
 
     if (netgame && !server)
     {
-        M_StartMessage("You are not the server",NULL,MM_NOTHING);
+        M_SimpleMessage("You are not the server");
         return;
     }
 
     // Save game menu with slot choices
     M_SetupNextMenu(&SaveDef);
 #ifdef SAVEGAME99
-    M_ReadSaveStrings( 0 ); // show unloadable
+    delete_callback = M_Savegame_delete;
+    scroll_callback = M_Save_scroll;
+    scroll_index = 0;
+    M_ReadSaveStrings( 0, 0 ); // show unloadable
 #else
     M_ReadSaveStrings();
 #endif
@@ -3061,7 +3156,7 @@ void M_QuickSaveResponse(int ch)
 {
     if (ch == 'y')
     {
-        M_DoSave(quickSaveSlot);	// initiate game save, network message
+        M_DoSave( QUICKSAVE_INDEX ); // initiate game save, network message
         S_StartSound(NULL,sfx_swtchx);
     }
 }
@@ -3081,17 +3176,19 @@ void M_QuickSave(void)
     if (quickSaveSlot < 0)
     {
         M_StartControlPanel();
+        M_SetupNextMenu(&SaveDef);
 #ifdef SAVEGAME99
-        M_ReadSaveStrings( 0 ); // show unloadable
+        scroll_callback = M_Save_scroll;
+        scroll_index = 0;
+        M_ReadSaveStrings( 0, 0 ); // show unloadable
 #else
         M_ReadSaveStrings();
 #endif
-        M_SetupNextMenu(&SaveDef);
         quickSaveSlot = -2;     // means to pick a slot now
         return;
     }
     // Show save name, ask for quick save ack.
-    sprintf(tempstring, QSPROMPT, savegamedisp[quickSaveSlot].desc);
+    sprintf(tempstring, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
     M_StartMessage(tempstring, M_QuickSaveResponse, MM_YESNO);
 }
 
@@ -3115,18 +3212,18 @@ void M_QuickLoad(void)
 {
     if (netgame)
     {
-        M_StartMessage(QLOADNET,NULL,MM_NOTHING);
+        M_SimpleMessage(QLOADNET);
         return;
     }
 
     if (quickSaveSlot < 0)
     {
         // No save slot selected
-        M_StartMessage(QSAVESPOT,NULL,MM_NOTHING);
+        M_SimpleMessage(QSAVESPOT);
         return;
     }
     // Show load name, ask for quick load ack.
-    sprintf(tempstring, QLPROMPT, savegamedisp[quickSaveSlot].desc);
+    sprintf(tempstring, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
     M_StartMessage(tempstring, M_QuickLoadResponse, MM_YESNO);
 }
 
@@ -3159,11 +3256,11 @@ void M_EndGame(int choice)
 /*
     if (netgame)
     {
-        M_StartMessage(NETEND,NULL,MM_NOTHING);
+        M_SimpleMessage(NETEND);
         return;
     }
 */
-    M_StartMessage(ENDGAME,M_EndGameResponse,MM_YESNO);
+    M_StartMessage(ENDGAME, M_EndGameResponse, MM_YESNO);
 }
 
 //===========================================================================
@@ -3231,8 +3328,8 @@ void M_QuitDOOM(int choice)
   // We pick index 0 which is language sensitive,
   //  or one at random, between 1 and maximum number.
   static char s[200];
-  sprintf(s,text[DOSY_NUM],text[ QUITMSG_NUM+(gametic%NUM_QUITMESSAGES)]);
-  M_StartMessage( s,M_QuitResponse,MM_YESNO);
+  sprintf(s, text[DOSY_NUM], text[ QUITMSG_NUM+(gametic%NUM_QUITMESSAGES)]);
+  M_StartMessage( s, M_QuitResponse, MM_YESNO);
 }
 
 
@@ -3408,7 +3505,8 @@ void M_StartMessage ( const char*       string,
                       void*             routine,
                       menumessagetype_t itemtype )
 {
-    int   max,start,i,lines;
+    int   maxlen, i, lines;
+    char * chp;
 #define message MessageDef.menuitems[0].text
     if( message )
         Z_Free( message );
@@ -3434,36 +3532,47 @@ void M_StartMessage ( const char*       string,
              break;
     }
     //added:06-02-98: now draw a textbox around the message
-    // compute lenght max and the numbers of lines
-    max = 0;
-    start = 0;
-    for (lines=0; *(message+start); lines++)
+    // compute length max and the numbers of lines
+    maxlen = 4; // minimum box
+    chp = message;
+    for (lines=0;  ; lines++)
     {
-        for (i = 0;i < (int)strlen(message+start);i++)
+        for (i = 0;  ; i++)
         {
-            if (*(message+start+i) == '\n')
+            if (*chp == 0)   // end of line escape
+	        break;
+	    
+            if (*chp == '\n')
             {
-                if (i > max)
-                    max = i;
-                start += i+1;
-                i = -1; //added:07-02-98:damned!
+	        chp ++;
                 break;
             }
+	    chp ++;
         }
-
-        if (i == (int)strlen(message+start))
-            start += i;
+        if (i > maxlen)
+	    maxlen = i;
+        if (*chp == 0)   // end of line counts
+	    break;
     }
+    if((i > 0) || (lines==0))  // missing \n or empty string
+        lines++;  // count as a line
 
-    MessageDef.x=(BASEVIDWIDTH-8*max-16)/2;
+    MessageDef.x=(BASEVIDWIDTH - (8*maxlen) - 16)/2;
     MessageDef.y=(BASEVIDHEIGHT - M_StringHeight(message))/2;
 
-    MessageDef.lastOn = (lines<<8)+max;
+    MessageDef.lastOn = (lines<<8)+maxlen;
 
 //    M_SetupNextMenu();
     currentMenu = &MessageDef;
     itemOn=0;
 }
+
+//
+void M_SimpleMessage ( const char * string )
+{
+    M_StartMessage ( string, NULL, MM_NOTHING );
+}
+
 
 #define MAXMSGLINELEN 256
 
@@ -3483,7 +3592,7 @@ void M_DrawMessageMenu(void)
 
     while(*(msg+start))
     {
-        for (i = 0;i < (int)strlen(msg+start);i++)
+        for (i = 0; i < (int)strlen(msg+start); i++)
         {
             if (*(msg+start+i) == '\n')
             {
@@ -3551,33 +3660,33 @@ void M_CentreText (int y, char* string)
 // CONTROL PANEL
 //
 
-void M_ChangeCvar(int choise)
+void M_ChangeCvar(int choice)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
 
     if(((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER )
      ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD  ))
     {
-        CV_SetValue(cv,cv->value+choise*2-1);
+        CV_SetValue(cv,cv->value+choice*2-1);
     }
     else
         if(cv->flags & CV_FLOAT)
         {
             char s[20];
-            sprintf(s,"%f",(float)cv->value/FRACUNIT+(choise*2-1)*(1.0/16.0));
+            sprintf(s,"%f",(float)cv->value/FRACUNIT+(choice*2-1)*(1.0/16.0));
             CV_Set(cv,s);
         }
         else
-            CV_AddValue(cv,choise*2-1);
+            CV_AddValue(cv,choice*2-1);
 }
 
-boolean M_ChangeStringCvar(int choise)
+boolean M_ChangeStringCvar(int choice)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
     char buf[255];
     int  len;
 
-    switch( choise ) {
+    switch( choice ) {
         case KEY_BACKSPACE :
                 len=strlen(cv->string);
                 if( len>0 )
@@ -3588,13 +3697,13 @@ boolean M_ChangeStringCvar(int choise)
                 }
                 return true;
         default:
-            if( choise >= 32 && choise <= 127 )
+            if( choice >= 32 && choice <= 127 )
             {
                 len=strlen(cv->string);
                 if( len<MAXSTRINGLENGTH-1 )
                 {
                     memcpy(buf,cv->string,len);
-                    buf[len++] = choise;
+                    buf[len++] = choice;
                     buf[len] = 0;
                     CV_Set(cv, buf);
                 }
@@ -3717,22 +3826,16 @@ boolean M_Responder (event_t* ev)
           case KEY_ESCAPE:
             edit_enable = 0;
 	    // restore from source
-            strcpy(edit_buffer, &savegamedisp[saveSlot].desc[0]);
+            strcpy(edit_buffer, &savegamedisp[slotindex].desc[0]);
             break;
 
           case KEY_ENTER:
             edit_enable = 0;
             if (edit_buffer[0])
 	    {
-	        strcpy(&savegamedisp[saveSlot].desc[0], edit_buffer);
-#ifdef SAVEGAMEDIR
-	        if( currentMenu == &DirDef )
-		    M_NewDir();	// Dir menu
-		else
-                    M_DoSave(saveSlot+1);  // Save menu
-#else
-                M_DoSave(saveSlot);
-#endif
+	        strcpy(&savegamedisp[slotindex].desc[0], edit_buffer);
+	        if( edit_done_callback )   edit_done_callback();
+	        edit_done_callback = NULL;
 	    }
             break;
 
@@ -3750,13 +3853,13 @@ boolean M_Responder (event_t* ev)
             }
             break;
         }
-        return true;
+        goto ret_true;
     }
 
     if (devparm && ch == KEY_F1)
     {
         COM_BufAddText("screenshot\n");
-        return true;
+        goto ret_true;
     }
 
 
@@ -3770,14 +3873,14 @@ boolean M_Responder (event_t* ev)
                 return false;
             CV_SetValue (&cv_viewsize, cv_viewsize.value-1);
             S_StartSound(NULL,sfx_stnmov);
-            return true;
+            goto ret_true;
 
           case KEY_EQUALS:        // Screen size up
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
                 return false;
             CV_SetValue (&cv_viewsize, cv_viewsize.value+1);
             S_StartSound(NULL,sfx_stnmov);
-            return true;
+            goto ret_true;
 
           case KEY_F1:            // Help key
             M_StartControlPanel ();
@@ -3789,26 +3892,26 @@ boolean M_Responder (event_t* ev)
 
             itemOn = 0;
             S_StartSound(NULL,sfx_swtchn);
-            return true;
+            goto ret_true;
 
           case KEY_F2:            // Save
             M_StartControlPanel();
             S_StartSound(NULL,sfx_swtchn);
             M_SaveGame(0);
-            return true;
+            goto ret_true;
 
           case KEY_F3:            // Load
             M_StartControlPanel();
             S_StartSound(NULL,sfx_swtchn);
             M_LoadGame(0);
-            return true;
+            goto ret_true;
 
           case KEY_F4:            // Sound Volume
             M_StartControlPanel ();
             currentMenu = &SoundDef;
             itemOn = sfx_vol;
             S_StartSound(NULL,sfx_swtchn);
-            return true;
+            goto ret_true;
 
           //added:26-02-98: now F5 calls the Video Menu
           case KEY_F5:
@@ -3816,12 +3919,12 @@ boolean M_Responder (event_t* ev)
             M_StartControlPanel();
             M_SetupNextMenu (&VidModeDef);
             //M_ChangeDetail(0);
-            return true;
+            goto ret_true;
 
           case KEY_F6:            // Quicksave
             S_StartSound(NULL,sfx_swtchn);
             M_QuickSave();
-            return true;
+            goto ret_true;
 
           //added:26-02-98: F7 changed to Options menu
           case KEY_F7:            // End game
@@ -3829,49 +3932,40 @@ boolean M_Responder (event_t* ev)
             M_StartControlPanel();
             M_SetupNextMenu (&OptionsDef);
             //M_EndGame(0);
-            return true;
+            goto ret_true;
 
           case KEY_F8:            // Toggle messages
             CV_AddValue(&cv_showmessages,+1);
             S_StartSound(NULL,sfx_swtchn);
-            return true;
+            goto ret_true;
 
           case KEY_F9:            // Quickload
             S_StartSound(NULL,sfx_swtchn);
             M_QuickLoad();
-            return true;
+            goto ret_true;
 
           case KEY_F10:           // Quit DOOM
             S_StartSound(NULL,sfx_swtchn);
             M_QuitDOOM(0);
-            return true;
+            goto ret_true;
 
           //added:10-02-98: the gamma toggle is now also in the Options menu
           case KEY_F11:
             S_StartSound(NULL,sfx_swtchn);
 #ifdef GAMMA_FUNCS
-#if 1
 	    // bring up the gamma menu
             M_StartControlPanel();
             M_SetupNextMenu (&VideoOptionsDef);
 #else
-	    // quicker, but only one selection
-	    if( cv_gammafunc.value != 0 ) {
-	        CV_AddValue (&cv_black,+1);
-	    }else{
-	        CV_AddValue (&cv_usegamma,+1);
-	    }
-#endif
-#else
             CV_AddValue (&cv_usegamma,+1);
 #endif	   
-            return true;
+            goto ret_true;
 
           // Pop-up menu
           case KEY_ESCAPE:
             M_StartControlPanel ();
             S_StartSound(NULL,sfx_swtchn);
-            return true;
+            goto ret_true;
         }
         return false;
     }
@@ -3883,7 +3977,7 @@ boolean M_Responder (event_t* ev)
     if(routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER )
     {
         routine(ch);
-        return true;
+        goto ret_true;
     }
 
     if(currentMenu->menuitems[itemOn].status==IT_MSGHANDLER)
@@ -3894,9 +3988,9 @@ boolean M_Responder (event_t* ev)
             {
                 if(routine) routine(ch);
                 M_StopMessage(0);
-                return true;
+                goto ret_true;
             }
-            return true;
+            goto ret_true;
         }
         else
         {
@@ -3904,9 +3998,9 @@ boolean M_Responder (event_t* ev)
             //      buttons/keys, not moves
 	    void (*hack)(event_t *) = currentMenu->menuitems[itemOn].itemaction;
             if (ev->type==ev_mouse || ev->type==ev_joystick )
-                return true;
+                goto ret_true;
             if (hack) hack(ev);
-            return true;
+            goto ret_true;
         }
     }
 
@@ -3916,7 +4010,7 @@ boolean M_Responder (event_t* ev)
         if( (currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING )
         {
             if( M_ChangeStringCvar(ch) )
-                return true;
+                goto ret_true;
             else
                 routine = NULL;
         }
@@ -3926,6 +4020,47 @@ boolean M_Responder (event_t* ev)
     // Keys usable within menu
     switch (ch)
     {
+#if defined SAVEGAMEDIR || defined SAVEGAME99
+      case KEY_DEL:	// delete directory or savegame
+#ifdef SAVEGAMEDIR       
+        if( delete_callback && itemOn > 0 )
+        {
+	    slotindex = itemOn-1;
+	    M_StartMessage("Delete Y/N?", delete_callback, MM_YESNO);
+	    goto ret_pstop;
+	}
+#else
+        if( delete_callback itemOn >= 0 )
+        {
+	    slotindex = itemOn;
+	    M_StartMessage("Delete Y/N?", delete_callback, MM_YESNO);
+	    goto ret_pstop;
+	}
+#endif
+	break;
+        
+      case '[':
+      case KEY_PGUP:
+        if( scroll_callback && (scroll_index > 0))
+        {
+	    scroll_index -= 6;
+	    if( scroll_index < 0 )   scroll_index = 0;
+            scroll_callback( -6 );  // some functions need to correct
+	    goto ret_pstop;
+	}
+        break;
+
+      case ']':
+      case KEY_PGDN:
+        if( scroll_callback && (scroll_index < 100))
+        {
+	    scroll_index += 6;
+            scroll_callback( 6 );
+	    goto ret_pstop;
+	}
+        break;
+#endif
+
       case KEY_DOWNARROW:
         do
         {
@@ -3933,8 +4068,7 @@ boolean M_Responder (event_t* ev)
                 itemOn = 0;
             else itemOn++;
         } while((currentMenu->menuitems[itemOn].status & IT_TYPE)==IT_SPACE);
-        S_StartSound(NULL,sfx_pstop);
-        return true;
+        goto ret_pstop;
 
       case KEY_UPARROW:
         do
@@ -3943,8 +4077,7 @@ boolean M_Responder (event_t* ev)
                 itemOn = currentMenu->numitems-1;
             else itemOn--;
         } while((currentMenu->menuitems[itemOn].status & IT_TYPE)==IT_SPACE);
-        S_StartSound(NULL,sfx_pstop);
-        return true;
+        goto ret_pstop;
 
       case KEY_LEFTARROW:
         if (  routine &&
@@ -3954,7 +4087,7 @@ boolean M_Responder (event_t* ev)
             S_StartSound(NULL,sfx_stnmov);
             routine(0);
         }
-        return true;
+        goto ret_true;
 
       case KEY_RIGHTARROW:
         if ( routine &&
@@ -3964,7 +4097,7 @@ boolean M_Responder (event_t* ev)
             S_StartSound(NULL,sfx_stnmov);
             routine(1);
         }
-        return true;
+        goto ret_true;
 
       case KEY_ENTER:
         currentMenu->lastOn = itemOn;
@@ -3987,13 +4120,13 @@ boolean M_Responder (event_t* ev)
                     break;
             }
         }
-        return true;
+        goto ret_true;
 
       case KEY_ESCAPE:
         currentMenu->lastOn = itemOn;
         if (currentMenu->prevMenu)
         {
-            currentMenu = currentMenu->prevMenu;
+	    M_Setup_prevMenu();
             itemOn = currentMenu->lastOn;
 	    S_StartSound(NULL,sfx_swtchx); // it´s a matter of taste which sound to choose
             //S_StartSound(NULL,sfx_swtchn);
@@ -4003,15 +4136,15 @@ boolean M_Responder (event_t* ev)
 	    M_ClearMenus (true);
 	    S_StartSound(NULL,sfx_swtchx);
 	}
-	
-        return true;
+        goto ret_true;
+
       case KEY_BACKSPACE:
         if((currentMenu->menuitems[itemOn].status)==IT_CONTROL)
         {
             S_StartSound(NULL,sfx_stnmov);
             // detach any keys associated to the game control
             G_ClearControlKeys (setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
-            return true;
+            goto ret_true;
         }
         currentMenu->lastOn = itemOn;
         if (currentMenu->prevMenu)
@@ -4020,27 +4153,30 @@ boolean M_Responder (event_t* ev)
             itemOn = currentMenu->lastOn;
             S_StartSound(NULL,sfx_swtchn);
         }
-        return true;
+        goto ret_true;
 
       default:
         for (i = itemOn+1;i < currentMenu->numitems;i++)
             if (currentMenu->menuitems[i].alphaKey == ch)
             {
                 itemOn = i;
-                S_StartSound(NULL,sfx_pstop);
-                return true;
+	        goto ret_pstop;
             }
         for (i = 0;i <= itemOn;i++)
             if (currentMenu->menuitems[i].alphaKey == ch)
             {
                 itemOn = i;
-                S_StartSound(NULL,sfx_pstop);
-                return true;
+	        goto ret_pstop;
             }
         break;
 
     }
+   
+ret_true:   
+    return true;
 
+ret_pstop:
+    S_StartSound(NULL,sfx_pstop);
     return true;
 }
 
@@ -4145,12 +4281,20 @@ void M_SetupNextMenu(menu_t *menudef)
     // this code go up until a enabled item found
     while(currentMenu->menuitems[itemOn].status==IT_DISABLED && itemOn)
         itemOn--;
+    delete_callback = NULL;
+    scroll_callback = NULL;
 }
 
+// Go back to the previous menu, reloading data if necessary
 void  M_Setup_prevMenu( void )
 {
     if (currentMenu->prevMenu)
+    {
        M_SetupNextMenu (currentMenu->prevMenu);
+       // refresh data
+       if( currentMenu == &LoadDef )   M_LoadGame(0);
+       if( currentMenu == &SaveDef )   M_SaveGame(0);
+    }
     else
        M_ClearMenus (true);
 }
@@ -4487,7 +4631,7 @@ void M_OpenGLOption(int choice)
     if (rendermode != render_soft )
         M_SetupNextMenu(&OpenGLOptionDef);
     else
-        M_StartMessage("You are in software mode\nYou can't change the options\n",NULL,MM_NOTHING);
+        M_SimpleMessage("You are in software mode\nYou can't change the options\n");
 }
 
 

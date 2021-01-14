@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: d_netfil.c 630 2010-04-08 00:56:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -325,10 +325,10 @@ int CL_CheckFiles(void)
     nameonly(wadfilename);
     if( stricmp(wadfilename,fileneeded[0].filename)!=0 )
     {
-        M_StartMessage(va("You cannot connect to this server\n"
+        M_SimpleMessage(va("You cannot connect to this server\n"
                           "since it uses %s\n"
                           "You are using %s\n",
-                          fileneeded[0].filename,wadfilename), NULL, MM_NOTHING);
+                          fileneeded[0].filename,wadfilename));
         return 2;
     }
     fileneeded[0].status=FS_OPEN;

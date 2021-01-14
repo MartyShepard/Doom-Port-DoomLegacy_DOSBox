@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 627 2010-04-03 02:21:48Z wesleyjohnson $
+// $Id: d_main.c 631 2010-04-08 00:58:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -320,12 +320,12 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "DOS Edit"
+#define SVN_REV "DOS Test"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 629;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 630;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -378,14 +378,14 @@ boolean advancedemo;
 // name buffer sizes including directory and everything
 #define FILENAME_SIZE  256
 
-// [WDJ] Seem to be unused
 #if defined PC_DOS || defined __WIN32__ || defined __OS2__
 # define  dirchar  "\\"
 #else
 # define  dirchar  "/"
 #endif
 
-// so can extract legacyhome from savegamename
+// to make savegamename and directories
+char * legacyhome;
 int  legacyhome_len;
 
 // [WDJ] Seem to be unused//char wadfile[1024];             // primary wad file
@@ -651,12 +651,11 @@ void D_Display(void)
 
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
-#ifdef HWRENDER
+#ifdef HWRENDER // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
     // Exl: draw a faded background
 	if (fadealpha != 0 && rendermode != render_soft)
 		HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
-#endif
-	
+#endif	
 	//FIXME: draw either console or menu, not the two
     CON_Drawer();
 
@@ -1634,7 +1633,6 @@ void D_DoomMain(void)
 
     nomonsters = M_CheckParm("-nomonsters");
 
-
     // Title page
     title = gamedesc.startup_title;  // set by IdentifyVersion
     if( title == NULL )   title = gamedesc.gname;
@@ -1658,61 +1656,70 @@ void D_DoomMain(void)
 
     {
         char * userhome;
-		char legacyhome[FILENAME_SIZE];
         if (M_CheckParm("-home") && M_IsNextParm())
             userhome = M_GetNextParm();
         else
             userhome = getenv("HOME");
 #ifdef LINUX
-    {
-       I_SoftError("Please set $HOME to your home directory\n");
+        if (!userhome)
+        {
+            I_SoftError("Please set $HOME to your home directory\n");
 	    userhome = "~/"; // home on most Linux
+	    // [WDJ] FIXME: will not work with savegame directory
+	    // because legacyhome_len will be wrong.
+	    // Get copy of legacyhome from directory.
 	}
 #endif
 #ifdef __MACH__
 	//[segabor] ... ([WDJ] MAC port has vars handy)
 	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
 	sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
+        legacyhome = mac_user_home;
 #else
+        // Make the home directory
         if (userhome)
         {
-			char * cfgstr;
-            // use user specific config file
+	    char * cfgstr;
+//	    char legacyhome[FILENAME_SIZE];
+	   
 //            sprintf(legacyhome, "%s/" DEFAULTDIR, userhome);
+	    legacyhome = (char*)
+	       malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
             // example: "/user/user/.legacy/"
             sprintf(legacyhome, "%s%s" DEFAULTDIR "%s", userhome, dirchar, dirchar);
+            // use user specific config file
             // little hack to allow a different config file for opengl
             // may be a problem if opengl cannot really be started
             if (M_CheckParm("-opengl"))
             {
 	        // example: /home/user/.legacy/glconfig.cfg
-                cfgstr = "gl" CONFIGFILENAME;
+		cfgstr = "gl" CONFIGFILENAME;
             }
             else
             {
 	        // example: /home/user/.legacy/config.cfg
                 cfgstr = CONFIGFILENAME;
             }
-			sprintf(configfile, "%s%s", legacyhome, cfgstr);
+	    sprintf(configfile, "%s%s", legacyhome, cfgstr);
+
             // can't use sprintf since there is %d in savegamename
 	    // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
 //            strcatbf(savegamename, legacyhome, "/");
-//            strcatbf(savegamename, legacyhome, dirchar);
             I_mkdir(legacyhome, 0700);
         }
         else
         {
-	    legacyhome[0] = '\0';
+	    legacyhome = "";
         }
+        legacyhome_len = strlen(legacyhome);
 #ifdef SAVEGAMEDIR
         // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
         sprintf(savegamename, "%s%%s%s%s", legacyhome, dirchar, text[NORM_SAVEI_NUM]);
         // so can extract legacyhome from savegamename later
-        legacyhome_len = strlen(legacyhome);
 #else    
         // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
         sprintf(savegamename, "%s%s", legacyhome, text[NORM_SAVEI_NUM]);
-#endif		
+#endif
 #endif
     }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 627 2010-04-03 02:21:48Z wesleyjohnson $
+// $Id: d_main.h 631 2010-04-08 00:58:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,7 +55,8 @@
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t      rendergametic;
 
-// so can extract legacyhome from savegamename
+// to make savegamename and directories
+extern char * legacyhome;
 extern int  legacyhome_len;
 
 // for dedicated server

@@ -490,4 +490,7 @@ Adds ability to have savegame directories.
 This code works and is playable, but network game save will change in
 future revision.
 
-
+*** w42_message
+patchfile = w42_message.patch
+- committed revision 630   by wesley johnson
+Simple message function.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: d_clisrv.c 630 2010-04-08 00:56:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -911,7 +911,7 @@ static void CL_ConnectToServer()
             key = I_GetKey();
             if (key==KEY_ESCAPE)
             {
-                M_StartMessage ("Network game synchronization aborted.\n\nPress ESC\n", NULL, MM_NOTHING);
+                M_SimpleMessage ("Network game synchronization aborted.\n\nPress ESC\n");
                 CL_Reset();
                 D_StartTitle();
                 return;
@@ -1157,7 +1157,7 @@ void Got_KickCmd(char **p,int playernum)
     {
         CL_Reset();
         D_StartTitle();
-        M_StartMessage("You have been kicked by the server\n\nPress ESC\n",NULL,MM_NOTHING);
+        M_SimpleMessage("You have been kicked by the server\n\nPress ESC\n");
     }
     else
         CL_RemovePlayer(pnum);
@@ -1646,7 +1646,7 @@ static void GetPackets (void)
         if( netbuffer->packettype == PT_SERVERSHUTDOWN && node==servernode && 
             !server && cl_mode != cl_searching)
         {
-            M_StartMessage("Server has Shutdown\n\nPress Esc",NULL,MM_NOTHING);
+            M_SimpleMessage("Server has Shutdown\n\nPress Esc");
             CL_Reset();
             D_StartTitle();
             continue;
@@ -1654,7 +1654,7 @@ static void GetPackets (void)
         if( netbuffer->packettype == PT_NODETIMEOUT && node==servernode && 
             !server && cl_mode != cl_searching)
         {
-            M_StartMessage("Server Timeout\n\nPress Esc",NULL,MM_NOTHING);
+            M_SimpleMessage("Server Timeout\n\nPress Esc");
             CL_Reset();
             D_StartTitle();
             continue;
@@ -1687,8 +1687,8 @@ static void GetPackets (void)
                 case PT_SERVERREFUSE : // negative responce of client join request
                     if( cl_mode==cl_waitjoinresponce )
                     {
-                        M_StartMessage(va("Server refuses connection\n\nReason :\n%s"
-                                          ,netbuffer->u.serverrefuse.reason), NULL, MM_NOTHING);
+                        M_SimpleMessage(va("Server refuses connection\n\nReason :\n%s"
+                                          ,netbuffer->u.serverrefuse.reason));
                         CL_Reset();
                         D_StartTitle();
                     }

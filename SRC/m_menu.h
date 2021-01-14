@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_menu.h 630 2010-04-08 00:56:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,10 +87,13 @@ typedef enum
     MM_EVENTHANDLER     // the same of above but without 'y' or 'n' restriction
                         // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
+
 void M_StartMessage ( const char*       string,
                       void*             routine,
                       menumessagetype_t itemtype );
 
+// M_StartMessage with NULL routine and MM_NOTHING
+void M_SimpleMessage(const char* string);
 // Called by linux_x/i_video_xshm.c
 void M_QuitResponse(int ch);
 
