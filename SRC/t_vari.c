@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_vari.c 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -69,7 +69,7 @@ script_t hub_script;
 
 // initialise the global script: clear all the variables
 
-void init_variables()
+void init_variables( void )
 {
   int i;
   
@@ -82,21 +82,21 @@ void init_variables()
   // any hardcoded global variables can be added here
 }
 
-void T_ClearHubScript()
+void T_ClearHubScript( void )
 {
   int i;
 
   for(i=0; i<VARIABLESLOTS; i++)
-    {
+  {
       while(hub_script.variables[i])
-	{
+      {
 	  svariable_t *next = hub_script.variables[i]->next;
 	  if(hub_script.variables[i]->type == svt_string)
 	    Z_Free(hub_script.variables[i]->value.s);
 	  Z_Free(hub_script.variables[i]);
 	  hub_script.variables[i] = next;
-	}
-    }
+      }
+  }
 }
 
 // find_variable checks through the current script, level script
@@ -110,12 +110,12 @@ svariable_t *find_variable(char *name)
   current = current_script;
   
   while(current)
-    {
+  {
       // check this script
       if((var = variableforname(current, name)))
 	return var;
       current = current->parent;    // try the parent of this one
-    }
+  }
 
   return NULL;    // no variable
 }
@@ -137,12 +137,12 @@ svariable_t *new_variable(script_t *script, char *name, int vtype)
   newvar->type = vtype;
   
   if(vtype == svt_string)
-    {
+  {
       // 256 bytes for string
       newvar->value.s = Z_Malloc(256, tagtype, 0);
       newvar->value.s[0] = 0;
-    }
-    else if(vtype == svt_array)
+  }
+  else if(vtype == svt_array)
   {
      newvar->value.a = NULL;
   }
@@ -172,11 +172,11 @@ svariable_t *variableforname(script_t *script, char *name)
   current = script->variables[n];
   
   while(current)
-    {
+  {
       if(!strcmp(name, current->name))        // found it?
 	return current;         
       current = current->next;        // check next in chain
-    }
+  }
   
   return NULL;
 }
@@ -188,12 +188,12 @@ void clear_variables(script_t *script)
   svariable_t *current, *next;
   
   for(i=0; i<VARIABLESLOTS; i++)
-    {
+  {
       current = script->variables[i];
       
       // go thru this chain
       while(current)
-	{
+      {
 	  // labels are added before variables, during
 	  // preprocessing, so will be at the end of the chain
 	  // we can be sure there are no more variables to free
@@ -207,10 +207,10 @@ void clear_variables(script_t *script)
 	    Z_Free(current->value.s);
 	  
 	  current = next; // go to next in chain
-	}
+      }
       // start of labels or NULL
       script->variables[i] = current;
-    }
+  }
 }
 
 // returns an svalue_t holding the current
@@ -223,36 +223,36 @@ svalue_t getvariablevalue(svariable_t *v)
   if(!v) return nullvar;
   
   if(v->type == svt_pString)
-    {
+  {
       returnvar.type = svt_string;
       returnvar.value.s = *v->value.pS;
-    }
+  }
   else if(v->type == svt_pInt)
-    {
+  {
       returnvar.type = svt_int;
       returnvar.value.i = *v->value.pI;
-    }
+  }
   else if(v->type == svt_pFixed)
-    {
+  {
       returnvar.type = svt_fixed;
       returnvar.value.f = *v->value.pFixed;
-    }
+  }
   else if(v->type == svt_pMobj)
-    {
+  {
       returnvar.type = svt_mobj;
       returnvar.value.mobj = *v->value.pMobj;
-    }
-    else if(v->type == svt_pArray)
+  }
+  else if(v->type == svt_pArray)
   {
-     returnvar.type = svt_array;
-     returnvar.value.a = *v->value.pA;
+      returnvar.type = svt_array;
+      returnvar.value.a = *v->value.pA;
   }
   else
-    {
+  {
       returnvar.type = v->type;
       // copy the value
       returnvar.value.i = v->value.i;
-    }
+  }
   
   return returnvar;
 }
@@ -266,14 +266,14 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
   if(!v) return;
   
   if(v->type == svt_const)
-    {
+  {
       // const adapts to the value it is set to
       v->type = newvalue.type;
 
       // alloc memory for string
       if(v->type == svt_string)   // static incase a global_script var
 	v->value.s = Z_Malloc(256, PU_STATIC, 0);
-    }
+  }
   
   if(v->type == svt_int)
       v->value.i = intvalue(newvalue);
@@ -303,13 +303,13 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
       *v->value.pI = intvalue(newvalue);
 
   if(v->type == svt_pString)
-    {
+  {
       // free old value
       free(*v->value.pS);
       
       // dup new string
       *v->value.pS = strdup(stringvalue(newvalue));
-    }
+  }
 
   if(v->type == svt_pFixed)
     *v->value.pFixed = fixedvalue(newvalue);
@@ -433,22 +433,22 @@ svalue_t evaluate_function(int start, int stop)
   endpoint = start + 2;   // ignore the function name and first bracket
   
   while(endpoint < stop)
-    {
+  {
       startpoint = endpoint;
       endpoint = find_operator(startpoint, stop-1, ",");
       
       // check for -1: no more ','s 
       if(endpoint == -1)
-	{               // evaluate the last expression
+      {               // evaluate the last expression
 	  endpoint = stop;
-	}
+      }
       if(endpoint-1 < startpoint)
 	break;
       
       argv[argc] = evaluate_expression(startpoint, endpoint-1);
       endpoint++;    // skip the ','
       argc++;
-    }
+  }
 
   // store the arguments in the global arglist
   t_argc = argc;
@@ -500,30 +500,30 @@ svalue_t OPstructure(int start, int n, int stop)
   argc = 1; // start on second argv
 
   if(stop != n+1)         // can be a.b not a.b()
-    {
+  {
       int startpoint, endpoint;
 
       // ignore the function name and first bracket
       endpoint = n + 3;
       
       while(endpoint < stop)
-	{
+      {
 	  startpoint = endpoint;
 	  endpoint = find_operator(startpoint, stop-1, ",");
 	  
 	  // check for -1: no more ','s 
 	  if(endpoint == -1)
-	    {               // evaluate the last expression
+	  {               // evaluate the last expression
 	      endpoint = stop;
-	    }
+	  }
 	  if(endpoint-1 < startpoint)
 	    break;
 	  
 	  argv[argc] = evaluate_expression(startpoint, endpoint-1);
 	  endpoint++;    // skip the ','
 	  argc++;
-	}
-    }
+      }
+  }
 
   // store the arguments in the global arglist
   t_argc = argc;
@@ -556,20 +556,4 @@ svariable_t *new_function(char *name, void (*handler)() )
 
   return newvar;
 }
-
-
-//---------------------------------------------------------------------------
-//
-// $Log: t_vari.c,v $
-// Revision 1.2  2004/07/27 08:19:37  exl
-// New fmod, fs functions, bugfix or 2, patrol nodes
-//
-// Revision 1.1  2000/11/02 17:57:28  stroggonmeth
-// FraggleScript files...
-//
-// Revision 1.1.1.1  2000/04/30 19:12:08  fraggle
-// initial import
-//
-//
-//---------------------------------------------------------------------------
 

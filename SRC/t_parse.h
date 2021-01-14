@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 606 2010-02-18 10:01:56Z smite-meister $
+// $Id: t_parse.h 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -153,7 +153,7 @@ enum
 void run_script(script_t *script);
 void continue_script(script_t *script, char *continue_point);
 void parse_include(char *lumpname);
-void run_statement();
+void run_statement( void );
 void script_error(char *s, ...);
 
 svalue_t evaluate_expression(int start, int stop);

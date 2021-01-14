@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: t_oper.c 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -567,30 +567,4 @@ svalue_t OPgreaterthanorequal(int start, int n, int stop)
   returnvar.value.i = intvalue(left) >= intvalue(right);
   return returnvar;
 }
-
-
-
-//---------------------------------------------------------------------------
-//
-// $Log: t_oper.c,v $
-// Revision 1.5  2002/08/27 21:15:24  hurdler
-// Fix the little problem with the "+" oper and strings
-//
-// Revision 1.4  2002/07/28 17:11:33  hurdler
-// Change version number to reflect the big changes since v.30
-//
-// Revision 1.3  2001/03/21 18:24:56  stroggonmeth
-// Misc changes and fixes. Code cleanup
-//
-// Revision 1.2  2001/03/13 22:14:20  stroggonmeth
-// Long time no commit. 3D floors, FraggleScript, portals, ect.
-//
-// Revision 1.1  2000/11/02 17:57:28  stroggonmeth
-// FraggleScript files...
-//
-// Revision 1.1.1.1  2000/04/30 19:12:08  fraggle
-// initial import
-//
-//
-//---------------------------------------------------------------------------
 

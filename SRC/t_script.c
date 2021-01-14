@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_script.c 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -59,7 +59,7 @@
 #include "t_vari.h"
 #include "t_func.h"
 
-void clear_runningscripts();
+void clear_runningscripts( void );
 
 //                  script tree:
 //
@@ -91,7 +91,7 @@ runningscript_t runningscripts;        // first in chain
 //
 //    called at program start
 
-void T_Init()
+void T_Init( void )
 {
   init_variables();
   init_functions();
@@ -103,7 +103,7 @@ void T_Init()
 // called at level start, clears all scripts
 //
 
-void T_ClearScripts()
+void T_ClearScripts( void )
 {
   int i;
   
@@ -125,7 +125,7 @@ void T_ClearScripts()
     }
 }
 
-void T_LoadThingScript()
+void T_LoadThingScript( void )
 {
 /*  char *scriptlump;
   int lumpnum, lumplen;
@@ -166,7 +166,7 @@ void T_LoadThingScript()
 
 
 
-void T_PreprocessScripts()
+void T_PreprocessScripts( void )
 {
   // run the levelscript first
   // get the other scripts
@@ -281,7 +281,7 @@ void COM_T_RunScript_f (void)
 
 runningscript_t *freelist=NULL;      // maintain a freelist for speed
 
-runningscript_t *new_runningscript()
+runningscript_t *new_runningscript( void )
 {
   // check the freelist
   if(freelist)
@@ -350,7 +350,7 @@ static boolean wait_finished(runningscript_t *script)
 
 
 
-void T_DelayedScripts()
+void T_DelayedScripts( void )
 {
   runningscript_t *current, *next;
   int i;
@@ -391,7 +391,7 @@ void T_DelayedScripts()
 
 
 
-static runningscript_t *T_SaveCurrentScript()
+static runningscript_t *T_SaveCurrentScript( void )
 {
   runningscript_t *runscr;
   int i;
@@ -435,7 +435,7 @@ static runningscript_t *T_SaveCurrentScript()
 
 
 // script function
-void SF_Wait()
+void SF_Wait( void )
 {
   runningscript_t *runscr;
 
@@ -451,7 +451,7 @@ void SF_Wait()
   runscr->wait_data = (intvalue(t_argv[0]) * 35) / 100;
 }
 
-void SF_WaitTic()  //if you want to wait on tics instead of "real" time
+void SF_WaitTic( void )  //if you want to wait on tics instead of "real" time
 {
   runningscript_t *runscr;
 
@@ -468,7 +468,7 @@ void SF_WaitTic()  //if you want to wait on tics instead of "real" time
 }
 
 // wait for sector with particular tag to stop moving
-void SF_TagWait()
+void SF_TagWait( void )
 {
   runningscript_t *runscr;
 
@@ -488,7 +488,7 @@ void SF_TagWait()
 
 
 // wait for a script to finish
-void SF_ScriptWait()
+void SF_ScriptWait( void )
 {
   runningscript_t *runscr;
 
@@ -509,7 +509,7 @@ void SF_ScriptWait()
 
 extern mobj_t *trigger_obj;           // in t_func.c
 
-void SF_StartScript()
+void SF_StartScript( void )
 {
   runningscript_t *runscr;
   script_t *script;
@@ -563,7 +563,7 @@ void SF_StartScript()
 
 
 
-void SF_ScriptRunning()
+void SF_ScriptRunning( void )
 {
   runningscript_t *current;
   int snum;
@@ -636,7 +636,7 @@ void COM_T_Running_f (void)
 
 
 
-void clear_runningscripts()
+void clear_runningscripts( void )
 {
   runningscript_t *runscr, *next;
   
@@ -687,7 +687,7 @@ mobj_t *MobjForSvalue(svalue_t svalue)
 // levelscript. When the interpreter detects the
 // 'script' keyword this function is called
 
-void spec_script()
+void spec_script( void )
 {
   int scriptnum;
   int datasize;
@@ -756,7 +756,7 @@ void spec_script()
 
 /****** scripting command list *******/
 
-void T_AddCommands()
+void T_AddCommands( void )
 {
 #ifdef FRAGGLESCRIPT
   COM_AddCommand("t_dumpscript",  COM_T_DumpScript_f);
@@ -764,22 +764,4 @@ void T_AddCommands()
   COM_AddCommand("t_running",     COM_T_Running_f);
 #endif
 }
-
-//---------------------------------------------------------------------------
-//
-// $Log: t_script.c,v $
-// Revision 1.3  2004/09/17 23:04:49  darkwolf95
-// playerkeysb (see comment), waittic and clocktic
-//
-// Revision 1.2  2001/03/13 22:14:20  stroggonmeth
-// Long time no commit. 3D floors, FraggleScript, portals, ect.
-//
-// Revision 1.1  2000/11/02 17:57:28  stroggonmeth
-// FraggleScript files...
-//
-// Revision 1.1.1.1  2000/04/30 19:12:08  fraggle
-// initial import
-//
-//
-//---------------------------------------------------------------------------
 

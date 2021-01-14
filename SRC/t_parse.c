@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: t_parse.c 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -79,7 +79,7 @@
 #include "t_vari.h"
 #include "t_func.h"
 
-void parse_script();
+void parse_script( void );
 void parse_data(char *data, char *end);
 svalue_t evaluate_expression(int start, int stop);
 
@@ -116,7 +116,7 @@ static void add_char(char c);
 
 // next_token: end this token, go onto the next
 
-static void next_token()
+static void next_token( void )
 {
     if (tok[0] || tt == string)
     {
@@ -263,6 +263,7 @@ void get_tokens(char *s)
     linestart = rover;  // save the start
 
     if (*rover)
+    {
         while (1)
         {
             if (killscript)
@@ -339,7 +340,7 @@ void get_tokens(char *s)
             }
             rover++;
         }
-
+    }
     // check for empty last token
 
     if (!tok[0])
@@ -350,7 +351,7 @@ void get_tokens(char *s)
     rover++;
 }
 
-void print_tokens()             // DEBUG
+void print_tokens( void )             // DEBUG
 {
     int i;
     for (i = 0; i < num_tokens; i++)
@@ -410,7 +411,7 @@ void continue_script(script_t * script, char *continue_point)
     parse_script();     // run
 }
 
-void parse_script()
+void parse_script( void )
 {
     // check for valid rover
     if (rover < current_script->data || rover > current_script->data + current_script->len)
@@ -501,7 +502,7 @@ void parse_data(char *data, char *end)
     Z_Free(token_alloc);
 }
 
-void run_statement()
+void run_statement( void )
 {
     // decide what to do with it
 
@@ -856,38 +857,3 @@ char *stringvalue(svalue_t v)
     }
 }
 
-//---------------------------------------------------------------------------
-//
-// $Log: t_parse.c,v $
-// Revision 1.9  2005/05/21 08:41:23  iori_
-// May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
-//
-// Revision 1.8  2004/08/26 23:15:41  hurdler
-// add FS functions in console (+ minor linux fixes)
-//
-// Revision 1.7  2004/07/27 08:19:37  exl
-// New fmod, fs functions, bugfix or 2, patrol nodes
-//
-// Revision 1.6  2003/07/13 13:16:15  hurdler
-// go RC1
-//
-// Revision 1.5  2001/08/14 00:36:26  hurdler
-// Small update
-//
-// Revision 1.4  2001/05/03 21:22:25  hurdler
-// remove some warnings
-//
-// Revision 1.3  2000/11/04 16:23:44  bpereira
-// no message
-//
-// Revision 1.2  2000/11/03 11:48:40  hurdler
-// Fix compiling problem under win32 with 3D-Floors and FragglScript (to verify!)
-//
-// Revision 1.1  2000/11/02 17:57:28  stroggonmeth
-// FraggleScript files...
-//
-// Revision 1.1.1.1  2000/04/30 19:12:08  fraggle
-// initial import
-//
-//
-//---------------------------------------------------------------------------

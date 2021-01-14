@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_spec.c 650 2010-05-19 17:49:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -61,7 +61,7 @@ int find_operator(int start, int stop, char *value);
 
 // ending brace found in parsing
 
-void spec_brace()
+void spec_brace( void )
 {
   if(script_debug) CONS_Printf("brace\n");
   
@@ -80,7 +80,7 @@ void spec_brace()
 }
 
         // 'if' statement
-int spec_if()
+int spec_if( void )
 {
   int endtoken;
   svalue_t eval;
@@ -159,7 +159,7 @@ void spec_else(boolean lastif)
 
 // while() loop
 
-void spec_while()
+void spec_while( void )
 {
   int endtoken;
   svalue_t eval;
@@ -182,7 +182,7 @@ void spec_while()
   if(!intvalue(eval)) rover = current_section->end+1;
 }
 
-void spec_for()                 // for() loop
+void spec_for( void )                 // for() loop
 {
   svalue_t eval;
   int start;
@@ -277,7 +277,7 @@ static void parse_var_line(int start)
   create_variable(starttoken, num_tokens-1);
 }
 
-boolean spec_variable()
+boolean spec_variable( void )
 {
   int start = 0;
 
@@ -341,28 +341,4 @@ boolean spec_variable()
 
   return false; // not used: try normal parsing
 }
-
-//---------------------------------------------------------------------------
-//
-// $Log: t_spec.c,v $
-// Revision 1.5  2004/07/27 08:19:37  exl
-// New fmod, fs functions, bugfix or 2, patrol nodes
-//
-// Revision 1.4  2002/01/12 02:21:36  stroggonmeth
-// Big commit
-//
-// Revision 1.3  2001/03/13 22:14:20  stroggonmeth
-// Long time no commit. 3D floors, FraggleScript, portals, ect.
-//
-// Revision 1.2  2000/11/03 11:48:40  hurdler
-// Fix compiling problem under win32 with 3D-Floors and FragglScript (to verify!)
-//
-// Revision 1.1  2000/11/02 17:57:28  stroggonmeth
-// FraggleScript files...
-//
-// Revision 1.1.1.1  2000/04/30 19:12:08  fraggle
-// initial import
-//
-//
-//---------------------------------------------------------------------------
 
