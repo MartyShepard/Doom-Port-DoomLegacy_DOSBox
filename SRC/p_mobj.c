@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: p_mobj.c 655 2010-05-19 18:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -472,7 +472,8 @@ void P_ThrustMobj(mobj_t * mo, angle_t angle, fixed_t move)
 // P_XYMovement
 //
 #define STOPSPEED               (0x1000/NEWTICRATERATIO)
-#define FRICTION                0xe800  //0.90625
+// ORIG_FRICTION, FRICTION_NORM fixed_t 0xE800 = 0.90625
+#define FRICTION_NORM           0xe800
 #define FRICTION_LOW            0xf900
 #define FRICTION_FLY            0xeb00
 
@@ -481,6 +482,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
 {
     //valid only if player avatar
     player_t *player = mo->player;
+    fixed_t friction = FRICTION_NORM;
 
     if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED && mo->momy < STOPSPEED && (!player || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
     {
@@ -507,40 +509,48 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
         {
             if (mo->flags2 & MF2_FLY && !(mo->z <= mo->floorz) && !(mo->flags2 & MF2_ONMOBJ))
             {
-                mo->momx = FixedMul(mo->momx, FRICTION_FLY);
-                mo->momy = FixedMul(mo->momy, FRICTION_FLY);
+	        friction = FRICTION_FLY;
+//                mo->momx = FixedMul(mo->momx, FRICTION_FLY);
+//                mo->momy = FixedMul(mo->momy, FRICTION_FLY);
             }
             else if (mo->subsector->sector->special == 15)      // Friction_Low
             {
-                mo->momx = FixedMul(mo->momx, FRICTION_LOW);
-                mo->momy = FixedMul(mo->momy, FRICTION_LOW);
+	        friction = FRICTION_LOW;
+//                mo->momx = FixedMul(mo->momx, FRICTION_LOW);
+//                mo->momy = FixedMul(mo->momy, FRICTION_LOW);
             }
             else
             {
-                mo->momx = FixedMul(mo->momx, FRICTION);
-                mo->momy = FixedMul(mo->momy, FRICTION);
+	        friction = FRICTION_NORM;
+//                mo->momx = FixedMul(mo->momx, FRICTION_NORM);
+//                mo->momy = FixedMul(mo->momy, FRICTION_NORM);
             }
         }
         else if (oldfriction)
         {
-            mo->momx = FixedMul(mo->momx, FRICTION);
-            mo->momy = FixedMul(mo->momy, FRICTION);
+	    friction = FRICTION_NORM;
+//            mo->momx = FixedMul(mo->momx, FRICTION_NORM);
+//            mo->momy = FixedMul(mo->momy, FRICTION_NORM);
         }
         else
         {
             //SoM: 3/28/2000: Use boom friction.
             if ((oldx == mo->x) && (oldy == mo->y))     // Did you go anywhere?
             {
-                mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
-                mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
+	        friction = ORIG_FRICTION;
+//                mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
+//                mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
             }
             else
             {
-                mo->momx = FixedMul(mo->momx, mo->friction);
-                mo->momy = FixedMul(mo->momy, mo->friction);
+	       	friction = mo->friction;
+//                mo->momx = FixedMul(mo->momx, mo->friction);
+//                mo->momy = FixedMul(mo->momy, mo->friction);
             }
             mo->friction = ORIG_FRICTION;
         }
+        mo->momx = FixedMul(mo->momx, friction);
+        mo->momy = FixedMul(mo->momy, friction);
     }
 }
 
@@ -732,8 +742,8 @@ void P_XYMovement(mobj_t * mo)
     // slow down in water, not too much for playability issues
     if (demoversion >= 128 && (mo->eflags & MF_UNDERWATER))
     {
-        mo->momx = FixedMul(mo->momx, FRICTION * 3 / 4);
-        mo->momy = FixedMul(mo->momy, FRICTION * 3 / 4);
+        mo->momx = FixedMul(mo->momx, FRICTION_NORM * 3 / 4);
+        mo->momy = FixedMul(mo->momy, FRICTION_NORM * 3 / 4);
         return;
     }
 
@@ -968,7 +978,7 @@ void P_ZMovement(mobj_t * mo)
     // z friction in water
     if (demoversion >= 128 && ((mo->eflags & MF_TOUCHWATER) || (mo->eflags & MF_UNDERWATER)) && !(mo->flags & (MF_MISSILE | MF_SKULLFLY)))
     {
-        mo->momz = FixedMul(mo->momz, FRICTION * 3 / 4);
+        mo->momz = FixedMul(mo->momz, FRICTION_NORM * 3 / 4);
     }
 
 }

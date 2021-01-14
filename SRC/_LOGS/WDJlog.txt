@@ -688,4 +688,12 @@ This code is much easier to read and understand, and is smaller.
 Makes model floor and ceiling transitions more consistent.
 Old code is retained for comparison until such time as correctness is clear.
 
+*** w50_friction
+patchfile = w49_friction.patch
+- committed revision 6xx   by wesley johnson
+Investigating why prboom has different friction in mud than Legacy.
+That may be due to control device issues and momentum.
+Added some improvements from ZDoom and prboom, for heretic and hexen.
+Comments and cleaned up some.
+
 

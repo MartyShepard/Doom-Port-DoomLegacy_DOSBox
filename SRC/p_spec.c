@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_spec.c 655 2010-05-19 18:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -3476,21 +3476,22 @@ void T_Friction(friction_t *f)
 
     if (!(sec->special & FRICTION_MASK))
     {
+        // sector does not have friction, check if any 3d floor has friction
         if(sec->ffloors)
 	{
-		  ffloor_t*  rover;
+	    ffloor_t*  rover;
 
-		  for(rover = sec->ffloors; rover; rover = rover->next)
-		  {
-			// Do some small extra checks here to possibly save unneeded work.
-			if(!(rover->master->frontsector->special & FRICTION_MASK))
-			  continue;
-			foundfloor = true;
-		  }
+	    for(rover = sec->ffloors; rover; rover = rover->next)
+	    {
+	        // Do some small extra checks here to possibly save unneeded work.
+	        if(!(rover->master->frontsector->special & FRICTION_MASK))
+		   continue;
+	        foundfloor = true;
+	    }
 	}
 
 	if( ! foundfloor) // Not even a 3d floor has the FRICTION_MASK.
-			return;
+	   return;
     }
 
     // Assign the friction value to players on the floor, non-floating,
@@ -3530,17 +3531,27 @@ static void P_SpawnFriction(void)
 {
     int i;
     line_t * lnp = lines;
-    register int secnum;
+    register int fsecn;
     int length;     // line length controls magnitude
     int friction;   // friction value to be applied during movement
     int movefactor; // applied to each player move to simulate inertia
 
     for (i = 0 ; i < numlines ; i++,lnp++)
     {
-        if (lnp->special == 223)  // Boom Friction by length
+        if (lnp->special == 223)  // Boom Friction by length linedef
         {
+	    // From Boom ref:
+	    // The length of the linedef controls the friction in the tagged sector.
+	    // Length < 100 : stickiness, like mud
+	    // Length > 100 : slippery, like ice
+	    // Only works on a like tagged sector with the friction enable bit set,
+	    // which allows the effect to be turned on/off.
+	    // Demo sync is a known problem (see prboom).
             length = P_AproxDistance(lnp->dx,lnp->dy)>>FRACBITS;
-            friction = (0x1EB8*length)/0x80 + 0xD000;
+            // [WDJ] ZDoom uses 0xD001, prboom uses 0xD000
+	    // At length=100, friction should equal ORIG_FRICTION = 0xE800
+//            friction = (0x1EB8*length)/0x80 + 0xD000;
+            friction = (0x1EB8*length)/0x80 + 0xD001;
 
             if(friction > FRACUNIT)
               friction = FRACUNIT;
@@ -3552,17 +3563,21 @@ static void P_SpawnFriction(void)
             // higher friction value actually means 'less friction'.
 
             if (friction > ORIG_FRICTION)       // ice
-                movefactor = ((0x10092 - friction)*(0x70))/0x158;
+	        if( raven ) // heretic or hexen
+	          // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
+	          movefactor = ((0x10092 - friction)*(0x40))/0x110 + 0x238;
+		else
+	          movefactor = ((0x10092 - friction)*(0x70))/0x158;
             else
-                movefactor = ((friction - 0xDB34)*(0xA))/0x80;
+                movefactor = ((friction - 0xDB34)*(0xA))/0x80;  // mud
 
             // killough 8/28/98: prevent odd situations
             if (movefactor < 32)
               movefactor = 32;
 
-            secnum = -1;  // init search FindSector
-	    while (( secnum = P_FindSectorFromLineTag(lnp,secnum)) >= 0 )
-                Add_Friction(friction,movefactor,secnum);
+	    fsecn = -1; // init search FindSector
+            while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
+                Add_Friction(friction, movefactor, fsecn);
 	}
     }
 }
