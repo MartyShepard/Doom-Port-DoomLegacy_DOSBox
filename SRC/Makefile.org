@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 614 2010-02-25 00:19:24Z wesleyjohnson $
+# $Id: Makefile 617 2010-03-23 19:24:02Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -63,41 +63,21 @@ OPTLEV = -O3
 # Debug enables, save on reinventing this everytime.
 #DEBUG=1
 #PROFILEMODE=1
-
 # Customize to your debugging environment.
-# compiler and linker flags
-ifdef PROFILEMODE
-# build with gprof profiling information
-  CFLAGS = -g -pg -fomit-frame-pointer
-
-else
 ifdef DEBUG
 # Normal debug (-g), MACRO info (-g3), stabs or gdb debug info
-# No -fomit-frame-pointer because debugging on some machines depends upon it.
-  CFLAGS = -g3
-#  CFLAGS = -ggdb
-
-# Debuggers do not cope with optimization well, so DEBUG ignores OPTLEV.
-# To debug with optimization, include it here, (-O0, -O1, or $(OPTLEV)).
-#  CFLAGS += $(OPTLEV)
-#  CFLAGS += -O0
-#  CFLAGS += -fno-guess-branch-probability
-
-else
-# build a normal optimized version
-  CFLAGS = $(OPTLEV) -fomit-frame-pointer
+#  DEBUGFLAGS:= -g3 -DDEBUG_WITH_VIDEO_OFF
+  DEBUGFLAGS:= -ggdb -DDEBUG_WITH_VIDEO_OFF
+  # Debuggers do not cope with optimization well, so DEBUG ignores OPTLEV.
+  # To debug with optimization, include it here, (-O0, -O1, or $(OPTLEV)).
+#  DEBUGFLAGS+= $(OPTLEV)
 endif
-endif
-CFLAGS += -ffast-math -fno-strict-aliasing $(WFLAGS)
-
 
 # standard
 #STD= -std=c99
   # not ready yet
   # fails because of alloca, it is not std under c99
   # std=c89, does not support // commments, no inline, no asm
-
-
 
 # gcc or g++
 CC=gcc
@@ -307,14 +287,32 @@ endif
 
 
 
+
 # use assembly routines?
 ifdef USEASM
    OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
    OPTS:= $(OPTS) -DUSEASM
 endif
 
-# compiler flags
-CFLAGS += $(OPTS)
+
+
+# compiler and linker flags
+ifdef PROFILEMODE
+# build with gprof profiling information
+  CFLAGS = -g -pg -fomit-frame-pointer
+else
+ifdef DEBUG
+# No -fomit-frame-pointer because debugging on some machines depends upon it.
+  #CFLAGS =  -g3 -O0
+  CFLAGS = $(DEBUGFLAGS) -fno-guess-branch-probability
+else
+# build a normal optimised version
+  #CFLAGS = -O3
+  CFLAGS = $(OPTLEV) -fomit-frame-pointer
+endif
+endif
+
+CFLAGS += $(WFLAGS) $(OPTS) -ffast-math -fno-strict-aliasing
 
 
 

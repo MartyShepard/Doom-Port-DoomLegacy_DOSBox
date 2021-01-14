@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00616 ]: -> Commit Path trunk/Legacy .. nothing to to
 [00615 ]: svn612 adjustments
 [00614*]: Makefile v4
 [00613*]: Makefile fixed
@@ -50,7 +51,7 @@
 [00573 ]: Use SM_ ENUM literals
 [00572 ]: unique rdraw_ variable names
 [00571 ]: segabor patches from 143beta_macosx
-[00570 ]: -> Commit Path trunk/Legacy .. nothing to od
+[00570 ]: -> Commit Path trunk/Legacy .. nothing to do
 [00569 ]: more 64-bit compatibility
 		* DOS
 		  Void updated djgppdos/i_system.c

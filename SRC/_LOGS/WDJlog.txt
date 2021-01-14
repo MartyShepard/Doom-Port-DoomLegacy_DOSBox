@@ -380,4 +380,8 @@ Some adjustments to large compiler-error removal patches.
 Some compilers put comments after macros into the macro expansion, with dramatic failure.
 Adjusted and commented realloc of drawsegs, with alternative code.
 
-
+*** w40_makefile_v4d
+patchfile = w40_makefile_v4b.patch
+- committed revision 616   by wesley johnson
+Make debugging easier by including video change.
+Re-Re-adjusted CFLAGS.
