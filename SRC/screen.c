@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 580 2009-12-01 20:26:12Z wesleyjohnson $
+// $Id: screen.c 604 2010-02-13 07:21:09Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -85,9 +85,8 @@
 #include "d_main.h"
 
 void VID_PrepareModeList(void); // from i_video_xshm.c
-
-#ifdef DIRECTFULLSCREEN
 // allow_fullscreen is set in VID_PrepareModeList
+#if !defined(__DJGPP__)
 extern boolean allow_fullscreen;
 #endif
 
@@ -383,18 +382,15 @@ void SCR_SetDefaultMode (void)
 
 void SCR_ChangeFullscreen (void)
 {
-#ifdef DIRECTFULLSCREEN
-    int modenum;
-
+	#if !defined(__DJGPP__)
     // allow_fullscreen is set by VID_PrepareModeList
     // it is used to prevent switching to fullscreen during startup
     if(!allow_fullscreen) return;
 
     if(graphics_started) {
         VID_PrepareModeList();
-        modenum = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
+        int modenum = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
         setmodeneeded = ++modenum;
     }
-    return;
-#endif
+	#endif
 }

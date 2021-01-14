@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00604 ]: Makefile cleanup
 [00603 ]: switch stmts compiler msgs
 [00602 ]: Enemy tests on ptr before using it
 [00601 ]: I_SoftError messages missing \n
@@ -92,4 +93,5 @@ DJGPPDOS/i_vid_vesa.h
 d_main.c
 w_wad.c
 zone.c
+screen_c ( #if !defined(__DJGPP__) )
 

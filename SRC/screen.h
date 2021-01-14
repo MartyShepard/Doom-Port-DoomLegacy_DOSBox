@@ -93,8 +93,8 @@ extern int stbarheight;     // when scaled
 // we try to re-allocate a minimum of buffers for stability of the memory,
 // so all the small-enough tables based on screen size, are allocated once
 // and for all at the maximum size.
-#define MAXVIDWIDTH    1600
-#define MAXVIDHEIGHT   1200
+#define MAXVIDWIDTH    3840
+#define MAXVIDHEIGHT   2160
 
 #define BASEVIDWIDTH    320   //NEVER CHANGE THIS! this is the original
 #define BASEVIDHEIGHT   200  // resolution of the graphics.

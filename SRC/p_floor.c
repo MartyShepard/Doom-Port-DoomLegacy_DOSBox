@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: p_floor.c 604 2010-02-13 07:21:09Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -919,7 +919,7 @@ int EV_DoDonut(line_t*  line)
       // killough 4/5/98: changed demo_compatibility to compatibility
       if (!boomsupport)
       {
-        if ((!s2->lines[i]->flags & ML_TWOSIDED) ||
+        if (!(s2->lines[i]->flags & ML_TWOSIDED) ||
             (s2->lines[i]->backsector == s1))
           continue;
       }

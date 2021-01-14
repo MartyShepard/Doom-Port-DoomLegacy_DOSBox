@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 569 2009-11-27 04:42:36Z smite-meister $
+// $Id: doomtype.h 604 2010-02-13 07:21:09Z smite-meister $
 //
 // Copyright (C) 1998-2009 by DooM Legacy Team.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,7 +87,6 @@ typedef uint32_t  tic_t;
 
 #ifdef __APPLE_CC__
 #define __MACOS__
-#define DIRECTFULLSCREEN
 #define DEBUG_LOG
 #define HWRENDER
 #endif

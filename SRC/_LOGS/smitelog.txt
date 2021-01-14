@@ -4,7 +4,7 @@ Started: 2010-02-07
 
 
 *** OLDWATER removal
-- committed rev 596, 597
+= rev 596, 597
 OLDWATER was an attempt at implementing realistic water using negative
 sector tag values (-tag == water height). It used values 888 and 887
 in the player_t::specialsector field to denote negative tag- and floor
@@ -15,6 +15,11 @@ Removed completely, as we now have better methods for creating water.
 
 
 *** Added this log
-- committed rev 598
+= rev 598
 
 
+*** Makefile cleanup
+= rev 604
+Replaced all the separate multimedia interface options by one option, IF,
+which defaults to SDL. Removed unnecessary defines DIRECTFULLSCREEN, VID_X11.
+Also: Removed some old unused endianness code, small bugfix in p_floor.c.

@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 590 2010-01-19 21:03:38Z wesleyjohnson $
+// $Id: m_swap.h 604 2010-02-13 07:21:09Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2009 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -127,31 +127,6 @@ int32_t swap_int32( uint32_t x);
 # define BE_SWAP32(x)  swap_int32(x)
 #endif
 
-
-#if 0
-// TODO FIXME convert all endianness handling to use the code above, remove code below.
-#ifdef __BIG_ENDIAN__
-
-#define SHORT(x) ((short)( \
-(((unsigned short)(x) & (unsigned short)0x00ffU) << 8) \
-| \
-(((unsigned short)(x) & (unsigned short)0xff00U) >> 8) )) \
-
-#define LONG(x) ((int)( \
-(((unsigned int)(x) & (unsigned int)0x000000ffUL) << 24) \
-| \
-(((unsigned int)(x) & (unsigned int)0x0000ff00UL) <<  8) \
-| \
-(((unsigned int)(x) & (unsigned int)0x00ff0000UL) >>  8) \
-| \
-(((unsigned int)(x) & (unsigned int)0xff000000UL) >> 24) ))
-
-#else
-#define SHORT(x)  ((short)x)
-#define LONG(x)	  ((long) x)
-#endif
-
-#endif
 
 
 #endif
