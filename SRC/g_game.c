@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: g_game.c 629 2010-04-03 02:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2046,6 +2046,28 @@ void compose_StartMessage( char * str1, char * str2 )
     M_StartMessage ( msgtemp, NULL, MM_NOTHING);
 }
 
+
+extern char  savegamedir[SAVESTRINGSIZE];
+
+void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
+{
+#ifdef SAVEGAMEDIR
+    sprintf(namebuf, savegamename, savegamedir, slot);
+#else
+    sprintf(namebuf, savegamename, slot);
+#endif
+#ifdef SAVEGAME99
+# ifdef PC_DOS
+    if( slot > 9 )
+    {
+        // shorten name to 8 char
+        int ln = strlen( namebuf );
+        memmove( &namebuf[ln-4], &namebuf[ln-3], 4 );
+    }
+# endif
+#endif
+}
+
 //
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
@@ -2066,7 +2088,11 @@ void G_DoLoadGame (int slot)
     char        savename[255];
     savegame_info_t   sginfo;  // read header info
 
+#ifdef SAVEGAME99
+    G_Savegame_Name( savename, slot );
+#else   
     sprintf(savename, savegamename, slot);
+#endif
 
     // read file into savebuffer, Z_Malloc allocated as size of file
     length = FIL_ReadFile (savename, &savebuffer);
@@ -2076,7 +2102,6 @@ void G_DoLoadGame (int slot)
         return;
     }
 
-    save_p = savebuffer;
     if( ! P_Read_Savegame_Header( &sginfo ) )  goto load_header_failed;
     if( ! sginfo.have_game )  goto wrong_game;
     if( ! sginfo.have_wad )  goto wrong_wad;
@@ -2151,11 +2176,11 @@ void G_SaveGame ( int   slot, char* description )
 void G_DoSaveGame (int   savegameslot, char* savedescription)
 {
     size_t      length;
-    char        name[256];
+    char        savename[256];
 
     gameaction = ga_nothing;
 
-    sprintf(name, savegamename, savegameslot);
+    G_Savegame_Name( savename, savegameslot );
 
     gameaction = ga_nothing;
 
@@ -2168,7 +2193,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
     length = P_Savegame_length();
     if( length < 0 )   return;	// overrun buffer
     
-    FIL_WriteFile (name, savebuffer, length);
+    FIL_WriteFile (savename, savebuffer, length);
     free(savebuffer);
 
     gameaction = ga_nothing;

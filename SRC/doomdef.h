@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 580 2009-12-01 20:26:12Z wesleyjohnson $
+// $Id: doomdef.h 629 2010-04-03 02:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -261,6 +261,10 @@ void I_SoftError (char *error, ...);
 
 // [WDJ] 6/23/2009  Add Effects menu because of too many menu items.
 #define EFFECTS_MENU
+
+// [WDJ] 3/25/2010  Savegame slots 0..99
+#define SAVEGAME99
+#define SAVEGAMEDIR
 
 
 #if defined( GAMMA_FUNCS ) && ! defined( EFFECTS_MENU )

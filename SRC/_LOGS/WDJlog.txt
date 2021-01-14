@@ -478,4 +478,16 @@ Adds the level time to the savegame header.
 Fixes error messages.
 Handles a NULL mobj pointer, instead of I_Error on it.
 
+*** w41_savegame_dir
+patchfile = w41_savegame_dir.patch
+- committed revision 629   by wesley johnson
+First cut at improving savegame menu system.
+These are a work in progress, and are not finished.
+Controled by defines  SAVEGAME99, SAVEGAMEDIR, as set in doomdef.h.
+Adds ability to have 99 savegames.  Still cannot see more than 6.
+Not all controls are finished.
+Adds ability to have savegame directories.
+This code works and is playable, but network game save will change in
+future revision.
+
 

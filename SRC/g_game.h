@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: g_game.h 629 2010-04-03 02:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -146,9 +146,16 @@ void G_DeferedPlayDemo (char* demo);
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
+#ifdef SAVEGAMEDIR
+//void G_LoadGame ( char * savegamedir, int slot );
 void G_LoadGame (int slot);
 void G_DoLoadGame (int slot);
+#else
+void G_LoadGame (int slot);
+void G_DoLoadGame (int slot);
+#endif
 
+void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot );
 
 // Called by M_Responder.
 void G_DoSaveGame(int slot, char* description);
