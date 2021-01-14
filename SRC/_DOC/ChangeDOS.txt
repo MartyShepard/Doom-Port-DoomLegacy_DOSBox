@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00660 ]: w52 check for no-texture
 [00659 ]: w51 texture logic, comments
 [00658*]: w51 hardware world names
 [00657*]: w50 log

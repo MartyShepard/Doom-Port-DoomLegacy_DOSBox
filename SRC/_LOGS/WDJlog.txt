@@ -720,3 +720,9 @@ Commented code as to the conflict between texture[0] and 0=no-texture.
 Added a fix for the conflict that allows the first texture to be displayed.
 Some changes to names and array accesses.
 
+*** w52_no_texture
+patchfile = w52_no_texture.patch
+- committed revision 660   by wesley johnson
+Check for no texture, and prevent segfault.
+Catches error when 3Dslab does not have side texture.
+

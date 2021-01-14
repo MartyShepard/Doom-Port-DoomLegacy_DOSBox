@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 659 2010-05-21 15:39:28Z wesleyjohnson $
+// $Id: r_segs.c 660 2010-06-03 12:31:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -897,7 +897,9 @@ void R_RenderThickSideRange (drawseg_t* ds,
     frontsector = curline->frontsector == ffloor->target ? curline->backsector : curline->frontsector;
 
     // midtexture, 0=no-texture, otherwise valid
-    texnum = texturetranslation[sides[ffloor->master->sidenum[0]].midtexture];
+    texnum = sides[ffloor->master->sidenum[0]].midtexture;
+    if( texnum == 0 )  return;  // no texture to display (when 3Dslab is missing side texture)
+    texnum = texturetranslation[texnum];
 
     colfunc = basecolfunc;
 
