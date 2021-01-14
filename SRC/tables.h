@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 615 2010-02-25 00:22:45Z wesleyjohnson $
+// $Id: tables.h 645 2010-05-11 21:47:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -23,10 +23,10 @@
 
 #include "m_fixed.h"
 
-
+// Binary Angle in fixed point
 typedef uint32_t angle_t;
 
-extern const angle_t ANG45;  // 0x20000000;
+extern const angle_t ANG45;  // 0x20000000;  
 extern const angle_t ANG90;  // 0x40000000;
 extern const angle_t ANG180; // 0x80000000;
 extern const angle_t ANG270; // 0xc0000000;

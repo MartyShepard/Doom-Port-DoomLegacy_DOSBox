@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: r_defs.h 645 2010-05-11 21:47:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -488,8 +488,9 @@ typedef enum
 typedef struct line_s
 {
     // Vertices, from v1 to v2.
-    vertex_t*   v1;
-    vertex_t*   v2;
+    vertex_t*   v1;  // linedef start vertex
+    vertex_t*   v2;  // linedef end vertex
+       // side1 is right side when looking from v1 to v2  (start to end)
 
     // Precalculated v2 - v1 for side checking.
     fixed_t     dx;
@@ -513,8 +514,8 @@ typedef struct line_s
 
     // Front and back sector.
     // Note: redundant? Can be retrieved from SideDefs.
-    sector_t*   frontsector;
-    sector_t*   backsector;
+    sector_t*   frontsector; // sidedef[0] sector (right side, required)
+    sector_t*   backsector;  // sidedef[1] sector (left side, optional)
 
     // if == validcount, already checked
     int         validcount;
@@ -538,16 +539,19 @@ typedef struct line_s
 
 //
 // A SubSector.
-// References a Sector.
+// References a Sector or portion of a sector.  Is a convex polygon.
+// When the original sector is not convex, the nodebuilder divides it into
+// subsectors until it has convex polygons.
 // Basically, this is a list of LineSegs,
 //  indicating the visible walls that define
 //  (all or some) sides of a convex BSP leaf.
 //
 typedef struct subsector_s
 {
-    sector_t*   sector;
-    short       numlines;
-    short       firstline;
+    sector_t*   sector;   // part of this sector, from segs->sector of firstline
+    // numlines and firstline are from the subsectors lump (nodebuilder)
+    short       numlines;   // number of segs in this subsector
+    short       firstline;  // index into segs lump (loaded from wad)
     // floorsplat_t list
     void*       splats;
     //Hurdler: added for optimized mlook in hw mode
@@ -602,6 +606,7 @@ typedef struct light_s
 
 } light_t;
 
+
 typedef struct lightmap_s 
 {
     float               s[2], t[2];
@@ -614,28 +619,41 @@ typedef struct lightmap_s
 //
 typedef struct
 {
-    vertex_t*   v1;
-    vertex_t*   v2;
+    // v1, v2, side, angle, offset, linedef are from wad segs lump
+    vertex_t*   v1;  // start vertex  (derived from vertex index in wad)
+    vertex_t*   v2;  // end vertex
+       // side1 is right side when looking from v1 to v2  (start to end)
 
     int         side;
+	// 0= seg is on right side of linedef
+	// 1= seg is on left side of linedef (seg direction is opposite linedef)
 
     fixed_t     offset;
+	// offset from linedef start or end, to segment vertex v1
+	// when side=0, is offset from start of linedef to start of seg
+	// when side=1, is offset from end of linedef to start of seg
 
-    angle_t     angle;
+    angle_t     angle;	// Binary Angle wad angle converted
+	// EAST  = 0x00000000
+	// NORTH = 0x40000000
+	// WEST  = 0x80000000
+	// SOUTH = 0xC0000000
 
-    side_t*     sidedef;
-    line_t*     linedef;
+    line_t*     linedef;  // (derived from linedef index in wad)
+    side_t*     sidedef;  // segment sidedef (derived from linedef and side)
 
     // Sector references.
     // Could be retrieved from linedef, too.
     // backsector is NULL for one sided lines
-    sector_t*   frontsector;
-    sector_t*   backsector;
+    // (dervived from linedef and side)
+    sector_t*   frontsector;  // sidedef sector, the segment sector/subsector, required
+    sector_t*   backsector;   // side of linedef away from sector, optional
 
-    // lenght of the seg : used by the hardware renderer
+    // length of the seg : used by the hardware renderer
     float       length;
 
     //Hurdler: 04/12/2000: added for static lightmap
+    // hardware renderer
     lightmap_t  *lightmaps;
 
     // SoM: Why slow things down by calculating lightlists for every
@@ -651,7 +669,7 @@ typedef struct
 //
 typedef struct
 {
-    // Partition line.
+    // Partition line from (x,y) to x+dx,y+dy)
     fixed_t     x;
     fixed_t     y;
     fixed_t     dx;
@@ -659,9 +677,14 @@ typedef struct
 
     // Bounding box for each child.
     fixed_t     bbox[2][4];
+	// bbox[0]= right child, all segs of right must be within the box
+	// bbox[1]= left child, all segs of left must be within the box
 
-    // If NF_SUBSECTOR its a subsector.
+    // If NF_SUBSECTOR is set then rest of it is a subsector index,
+    // otherwise it is another node index.
     unsigned short children[2];
+	// children[0]= right
+	// children[1]= left
 
 } node_t;
 

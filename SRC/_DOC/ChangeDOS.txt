@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00645 ]: w48 main structs commented
 [00644 ]: w48 realloc subroutines
 [00643 ]: w48 wad structure stdint
 [00642 ]: w47 naming FIXED_TO_FLOAT

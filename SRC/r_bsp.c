@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 637 2010-05-08 21:21:08Z wesleyjohnson $
+// $Id: r_bsp.c 645 2010-05-11 21:47:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -166,8 +166,8 @@ cliprange_t     solidsegs[MAXSEGS];
 //  e.g. single sided LineDefs (middle texture)
 //  that entirely block the view.
 //
-void R_ClipSolidWallSegment( int first,
-  int                   last )
+// Called by R_AddLine
+void R_ClipSolidWallSegment( int first, int last )
 {
     cliprange_t*        next;
     cliprange_t*        start;
@@ -582,6 +582,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
+// Called by R_Subsector
 void R_AddLine (seg_t*  line)
 {
     int                 x1;
@@ -848,6 +849,7 @@ boolean R_CheckBBox (fixed_t*   bspcoord)
 
 drawseg_t*   firstseg;
 
+// Called by R_RenderBSPNode
 void R_Subsector (int num)
 {
     int                 count;
@@ -1011,7 +1013,7 @@ void R_Subsector (int num)
 
     firstseg = NULL;
 
-    while (count--)
+    while (count--) // over all lines in the subsector
     {
       R_AddLine (line);
       line++;
@@ -1156,7 +1158,9 @@ int   R_GetPlaneLight(sector_t* sector, fixed_t  planeheight, boolean underside)
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
+// Called by R_RenderPlayerView
 #if 1
+// Recursive
 void R_RenderBSPNode (int bspnum)
 {
     node_t*     bsp;
@@ -1200,6 +1204,7 @@ void R_RenderBSPNode (int bspnum)
 //
 #define MAX_BSPNUM_PUSHED 512
 
+// Stack based descent
 void R_RenderBSPNode (int bspnum)
 {
     node_t*     bsp;

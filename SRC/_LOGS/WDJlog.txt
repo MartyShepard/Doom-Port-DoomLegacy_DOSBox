@@ -608,3 +608,7 @@ Check for failure on calls to realloc.  Moved expansion of realloc structures
 to subroutines.  Gets them out of the code that is executed frequently
 so they do not occupy space in the processor cache.
 
+*** w48_struct_comments
+patchfile = w48_comments1.patch
+- committed revision 645   by wesley johnson
+Comments added to main structures, as aid to debugging their use.
