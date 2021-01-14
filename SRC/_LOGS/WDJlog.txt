@@ -612,3 +612,31 @@ so they do not occupy space in the processor cache.
 patchfile = w48_comments1.patch
 - committed revision 645   by wesley johnson
 Comments added to main structures, as aid to debugging their use.
+
+*** w49_animation_interpic
+patchfile = w49_animinterpic.patch
+- committed revision 646   by wesley johnson
+Two animation structures had the same name.
+Renaming of structures and some variables, to make reading and search
+easier.
+Comments added.
+
+*** w49_animation_textures_and_flats
+patchfile = w49_animtex.patch
+- committed revision 647   by wesley johnson
+Two animation structures had the same name.
+Renaming of structures and some variables, to make reading and search
+easier.
+Comments added.
+Eliminated storing -1 value in boolean field.
+Eliminated extra entry needed for -1 terminator to list.
+Changed test condition on one loop to instead test a count derived from
+the other existing end-of-list indicator.
+
+*** w49_medikit_message
+patchfile = w49_medikit.patch
+- committed revision 648   by wesley johnson
+Fix from DoomWiki (wrong) and prboom (right) to known Doom bug.
+When health < 25 and pickup a medikit, gives an special message.
+Message did not appear because medikit gave +25 health before the
+test was done.  Changed to test for 50 health after adding +25.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_inter.c 648 2010-05-19 17:42:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -886,11 +886,16 @@ void P_TouchSpecialThing ( mobj_t*       special,
         break;
 
       case SPR_MEDI:
-        if (!P_GiveBody (player, 25))
+        // [WDJ] fix medkit message
+        // DoomWiki fix would put messages first, but that would give
+        // message even when not using the medkit
+        if (!P_GiveBody (player, 25))  // add 25 to health
             return;
+        // if health was used, then give message
         if(cv_showmessages.value==1)
         {
-            if (player->health < 25)
+	    // use fix from prboom, thanks to Quasar
+            if (player->health < 50) // old health was < 25, before adding 25
                 player->message = GOTMEDINEED;
             else
                 player->message = GOTMEDIKIT;
