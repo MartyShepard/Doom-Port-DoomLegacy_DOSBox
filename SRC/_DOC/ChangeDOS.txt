@@ -1,6 +1,6 @@
 * Not need to Compile.
 
-
+[00619 ]: t_array allocation inconsistent
 [00618 ]: w40 Misc. cosmetic
 [00617*]: makefile 4d, debug
 [00616*]: -> Commit Path trunk/Legacy .. nothing to to

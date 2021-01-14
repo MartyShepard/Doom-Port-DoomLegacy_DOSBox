@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: p_spec.h 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,9 +79,15 @@
 #ifndef __P_SPEC__
 #define __P_SPEC__
 
+#include "p_mobj.h"
+  // mobj_t
+#include "r_defs.h"
+  // line_t
+#include "d_player.h"
+  // player_t
+
 //      Define values for map objects
 #define MO_TELEPORTMAN          14
-
 
 // at game start
 void    P_InitPicAnims (void);
@@ -96,102 +102,57 @@ void    P_SpawnSpecials (void);
 void    P_UpdateSpecials (void);
 
 // when needed
-boolean
-P_UseSpecialLine
-( mobj_t*       thing,
-  line_t*       line,
-  int           side );
+boolean P_UseSpecialLine ( mobj_t* thing, line_t* line, int side );
 
-void
-P_ShootSpecialLine
-( mobj_t*       thing,
-  line_t*       line );
+void    P_ShootSpecialLine ( mobj_t* thing, line_t* line );
 
-void
-P_CrossSpecialLine
-( int           linenum,
-  int           side,
-  mobj_t*       thing );
+void    P_CrossSpecialLine ( int linenum, int side, mobj_t* thing );
 
-void
-P_ActivateCrossedLine
-( line_t*       line,
-  int           side,
-  mobj_t*       thing);
+void    P_ActivateCrossedLine ( line_t* line, int side, mobj_t* thing);
 
 void    P_PlayerInSpecialSector (player_t* player);
 
-int
-twoSided
-( int           sector,
-  int           line );
+int     twoSided ( int sector, int line );
 
-sector_t*
-getSector
-( int           currentSector,
-  int           line,
-  int           side );
+sector_t*  getSector ( int currentSector, int line, int side );
 
-side_t*
-getSide
-( int           currentSector,
-  int           line,
-  int           side );
+side_t*  getSide ( int currentSector, int line, int side );
 
-fixed_t P_FindLowestFloorSurrounding(sector_t* sec);
-fixed_t P_FindHighestFloorSurrounding(sector_t* sec);
+fixed_t  P_FindLowestFloorSurrounding(sector_t* sec);
+fixed_t  P_FindHighestFloorSurrounding(sector_t* sec);
 
-fixed_t
-P_FindNextHighestFloor
-( sector_t*     sec,
-  int           currentheight );
+fixed_t  P_FindNextHighestFloor ( sector_t* sec, int currentheight );
 
 //SoM: 3/6/2000
-fixed_t P_FindNextLowestFloor
-( sector_t* sec,
-  int currentheight );
+fixed_t  P_FindNextLowestFloor ( sector_t* sec, int currentheight );
 
-fixed_t P_FindLowestCeilingSurrounding(sector_t* sec);
-fixed_t P_FindHighestCeilingSurrounding(sector_t* sec);
+fixed_t  P_FindLowestCeilingSurrounding(sector_t* sec);
+fixed_t  P_FindHighestCeilingSurrounding(sector_t* sec);
 
-int
-P_FindSectorFromLineTag
-( line_t*       line,
-  int           start );
+int     P_FindSectorFromLineTag ( line_t* line, int start );
 
-int
-P_FindSectorFromTag
-( int           tag,
-  int           start );
+int     P_FindSectorFromTag ( int tag, int start );
 
 //DarkWolf95:July 23, 2003: Needed for SF_SetLineTexture
 int P_FindLineFromTag(int tag, int start);
 
-int P_FindLineFromLineTag(const line_t *line, int start); //SoM: 3/16/2000
+int  P_FindLineFromLineTag(const line_t *line, int start); //SoM: 3/16/2000
 
-int
-P_FindMinSurroundingLight
-( sector_t*     sector,
-  int           max );
+int  P_FindMinSurroundingLight ( sector_t* sector, int max );
 
-sector_t*
-getNextSector
-( line_t*       line,
-  sector_t*     sec );
+sector_t*  getNextSector ( line_t* line, sector_t* sec );
 
 //SoM: 3/6/2000
-sector_t* P_FindModelFloorSector
-( fixed_t floordestheight,
-  int secnum );
+sector_t*  P_FindModelFloorSector ( fixed_t floordestheight, int secnum );
 
 //SoM: 3/15/2000
-fixed_t P_FindNextHighestCeiling(sector_t *sec, int currentheight);
-fixed_t P_FindNextLowestCeiling(sector_t *sec, int currentheight);
-fixed_t P_FindShortestUpperAround(int secnum);
-fixed_t P_FindShortestTextureAround(int secnum);
-sector_t *P_FindModelCeilingSector(fixed_t ceildestheight,int secnum);
-boolean P_CanUnlockGenDoor( line_t* line, player_t* player);
-int P_CheckTag(line_t *line);
+fixed_t   P_FindNextHighestCeiling(sector_t *sec, int currentheight);
+fixed_t   P_FindNextLowestCeiling(sector_t *sec, int currentheight);
+fixed_t   P_FindShortestUpperAround(int secnum);
+fixed_t   P_FindShortestTextureAround(int secnum);
+sector_t* P_FindModelCeilingSector(fixed_t ceildestheight,int secnum);
+boolean   P_CanUnlockGenDoor( line_t* line, player_t* player);
+int  P_CheckTag(line_t *line);
 
 //
 // SPECIAL
@@ -208,11 +169,12 @@ int EV_DoDonut(line_t* line);
 //
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
-    int         count;
-    int         maxlight;
-    int         minlight;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;	  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
+    int         count;  
+    int         minlight, maxlight;
 
 } fireflicker_t;
 
@@ -220,11 +182,12 @@ typedef struct
 
 typedef struct
 {
-    thinker_t   thinker;
+    thinker_t   thinker;  // must be first for ptr conversion
     sector_t*   sector;
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
     int         count;
-    int         maxlight;
-    int         minlight;
+    int         minlight, maxlight;
     int         maxtime;
     int         mintime;
 
@@ -234,11 +197,12 @@ typedef struct
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
     int         count;
-    int         minlight;
-    int         maxlight;
+    int         minlight, maxlight;
     int         darktime;
     int         brighttime;
 
@@ -249,11 +213,12 @@ typedef struct
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
-    int         minlight;
-    int         maxlight;
-    int         direction;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (minlight ... )
+    int         minlight, maxlight;
+    int         direction;    // 1 = up, -1 = down
 
 } glow_t;
 
@@ -261,8 +226,10 @@ typedef struct
 // transition
 typedef struct
 {
-  thinker_t thinker;
-  sector_t *sector;
+  thinker_t thinker;  // must be first for ptr conversion
+  sector_t *sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (destlevel ... )
   int destlevel;
   int speed;
 } lightlevel_t;
@@ -272,32 +239,25 @@ typedef struct
 #define FASTDARK                15
 #define SLOWDARK                35
 
-void    T_FireFlicker (fireflicker_t* flick);
-void    P_SpawnFireFlicker (sector_t* sector);
-void    T_LightFlash (lightflash_t* flash);
-void    P_SpawnLightFlash (sector_t* sector);
-void    T_StrobeFlash (strobe_t* flash);
+void   T_FireFlicker (fireflicker_t* flick);
+void   P_SpawnFireFlicker (sector_t* sector);
+void   T_LightFlash (lightflash_t* flash);
+void   P_SpawnLightFlash (sector_t* sector);
+void   T_StrobeFlash (strobe_t* flash);
 
-void
-P_SpawnStrobeFlash
-( sector_t*     sector,
-  int           fastOrSlow,
-  int           inSync );
+void   P_SpawnStrobeFlash ( sector_t* sector, int fastOrSlow, int inSync );
 
 int    EV_StartLightStrobing(line_t* line);
 int    EV_TurnTagLightsOff(line_t* line);
 
-int
-EV_LightTurnOn
-( line_t*       line,
-  int           bright );
+int    EV_LightTurnOn ( line_t* line, int bright );
 
-void    T_Glow(glow_t* g);
-void    P_SpawnGlowingLight(sector_t* sector);
+void   T_Glow(glow_t* g);
+void   P_SpawnGlowingLight(sector_t* sector);
 
 
-void P_FadeLight(int tag, int destvalue, int speed);
-void T_LightFade(lightlevel_t *ll);
+void   P_FadeLight(int tag, int destvalue, int speed);
+void   T_LightFade(lightlevel_t *ll);
 
 
 
@@ -320,7 +280,6 @@ typedef enum
     top,
     middle,
     bottom
-
 } bwhere_e;
 
 
@@ -331,7 +290,6 @@ typedef struct
     int         btexture;
     int         btimer;
     mobj_t*     soundorg;
-
 } button_t;
 
 
@@ -349,10 +307,7 @@ typedef struct
 
 extern button_t buttonlist[MAXBUTTONS];
 
-void
-P_ChangeSwitchTexture
-( line_t*       line,
-  int           useAgain );
+void P_ChangeSwitchTexture ( line_t* line, int useAgain );
 
 void P_InitSwitchList(void);
 
@@ -367,7 +322,7 @@ typedef enum
 
 
 //SoM: 3/6/2000
-boolean P_SectorActive(special_e t, sector_t *s);
+boolean P_SectorActive ( special_e t, sector_t* sec );
 
 
 typedef enum
@@ -402,7 +357,6 @@ typedef enum
     genLift,      //General stuff
     genPerpetual, 
     toggleUpDn,   //Instant toggle of stuff.
-
 } plattype_e;
 
 
@@ -410,20 +364,20 @@ typedef enum
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
-    fixed_t     speed;
-    fixed_t     low;
-    fixed_t     high;
-    int         wait;
-    int         count;
-    plat_e      status;
-    plat_e      oldstatus;
-    boolean     crush;
-    int         tag;
-    plattype_e  type;
-
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;	// saved
     struct platlist *list; //SoM: 3/6/2000: Boom's improved code without limits.
+       // list is not saved, generated by linking plats
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
+    plattype_e  type;
+    fixed_t     speed;
+    fixed_t     low, high;	// floor heights
+    boolean     crush;		// enables crushing damage
+    int         tag;
+    int         wait;
+    int         count;	
+    plat_e      status, oldstatus;  // up, down, in_statis etc.
 } plat_t;
 
 //SoM: 3/6/2000: Boom's improved code without limits.
@@ -432,7 +386,7 @@ typedef struct platlist {
   struct platlist *next,**prev;
 } platlist_t;
 
-void P_RemoveAllActivePlats(void); //SoM: 3/9/2000
+void   P_RemoveAllActivePlats(void); //SoM: 3/9/2000
 
 #define PLATWAIT                3
 #define PLATSPEED               (FRACUNIT/NEWTICRATERATIO)
@@ -441,13 +395,9 @@ void P_RemoveAllActivePlats(void); //SoM: 3/9/2000
 
 extern platlist_t  *activeplats;
 
-void    T_PlatRaise(plat_t*     plat);
+void    T_PlatRaise(plat_t* plat);
 
-int
-EV_DoPlat
-( line_t*       line,
-  plattype_e    type,
-  int           amount );
+int     EV_DoPlat ( line_t* line, plattype_e type, int amount );
 
 void    P_AddActivePlat(plat_t* plat);
 void    P_RemoveActivePlat(plat_t* plat);
@@ -484,23 +434,25 @@ typedef enum
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+    //SoM: 3/6/2000: the line that triggered the door.
+    line_t *    line;	 // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
     vldoor_e    type;
     fixed_t     topheight;
     fixed_t     speed;
 
     // 1 = up, 0 = waiting at top, -1 = down
-    int             direction;
+    int         direction;
 
     // tics to wait at the top
-    int             topwait;
+    int         topwait;
     // (keep in case a door going down is reset)
     // when it reaches 0, start going down
-    int             topcountdown;
+    int         topcountdown;
 
-    //SoM: 3/6/2000: the line that triggered the door.
-    line_t *line;
 } vldoor_t;
 
 
@@ -508,33 +460,21 @@ typedef struct
 #define VDOORSPEED              (FRACUNIT*2/NEWTICRATERATIO)
 #define VDOORWAIT               150
 
-int //SoM: 3/6/2000: boom support
-EV_VerticalDoor
-( line_t*       line,
-  mobj_t*       thing );
+//SoM: 3/6/2000: boom support
+int   EV_VerticalDoor ( line_t* line, mobj_t* thing );
 
-int
-EV_DoDoor
-( line_t*       line,
-  vldoor_e      type,
-  fixed_t       speed);
+int   EV_DoDoor ( line_t* line, vldoor_e type, fixed_t speed);
 
-void EV_OpenDoor(int sectag, int speed, int wait_time);
-void EV_CloseDoor(int sectag, int speed);
+void  EV_OpenDoor(int sectag, int speed, int wait_time);
+void  EV_CloseDoor(int sectag, int speed);
 
-int
-EV_DoLockedDoor
-( line_t*       line,
-  vldoor_e      type,
-  mobj_t*       thing, fixed_t speed );
+int   EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing,
+			fixed_t speed );
 
 void    T_VerticalDoor (vldoor_t* door);
 void    P_SpawnDoorCloseIn30 (sector_t* sec);
 
-void
-P_SpawnDoorRaiseIn5Mins
-( sector_t*     sec,
-  int           secnum );
+void  P_SpawnDoorRaiseIn5Mins ( sector_t* sec, int secnum );
 
 
 
@@ -562,11 +502,13 @@ typedef enum
 
 
 
-
+// Savegame does not have slidedoor_t saving code yet !!
 typedef struct
 {
-    thinker_t   thinker;
-    line_t*     line;
+    thinker_t   thinker;  // must be first for ptr conversion
+    line_t*     line;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
     sdt_e       type;
     int         frame;
     int         whichDoorIndex;
@@ -612,13 +554,11 @@ typedef struct
 // how many diff. types of anims
 #define MAXSLIDEDOORS   5
 
-void P_InitSlidingDoorFrames(void);
+void  P_InitSlidingDoorFrames(void);
 
-void
-EV_SlidingDoor
-( line_t*       line,
-  mobj_t*       thing );
-#endif
+void  EV_SlidingDoor ( line_t* line, mobj_t* thing );
+
+#endif  // Sliding doors
 
 
 
@@ -657,34 +597,34 @@ typedef enum
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+    struct ceilinglist* list;   // SoM: 3/6/2000: by jff: copied from killough's plats
+       // list is not saved, generated by linking ceilings
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
     ceiling_e   type;
     fixed_t     bottomheight;
     fixed_t     topheight;
-    fixed_t     speed;
-    fixed_t     oldspeed; //SoM: 3/6/2000
+    fixed_t     speed, oldspeed; //SoM: 3/6/2000
     boolean     crush;
-
-    //SoM: 3/6/2000: Support ceiling changers
-    int newspecial;
-    int oldspecial;
-    short texture;
-
-    // 1 = up, 0 = waiting, -1 = down
-    int         direction;
-
+   
     // ID
     int         tag;
-    int         olddirection;
+   
+    //SoM: 3/6/2000: Support ceiling changers
+    short       newspecial, oldspecial;	// 0 or sector->special
+    short       texture;
 
-    struct ceilinglist *list;   // SoM: 3/6/2000: by jff: copied from killough's plats
+    // 1 = up, 0 = waiting, -1 = down
+    int         direction, olddirection;
+
 } ceiling_t;
 
 //SoM: 3/6/2000: Boom's improved ceiling list.
 typedef struct ceilinglist {
   ceiling_t *ceiling; 
-  struct ceilinglist *next,**prev;
+  struct ceilinglist *next, **prev;
 } ceilinglist_t;
 
 
@@ -695,12 +635,9 @@ void P_RemoveAllActiveCeilings(void); //SoM: 3/9/2000
 #define CEILWAIT                150
 #define MAXCEILINGS             30
 
-extern ceilinglist_t *activeceilings;  //SoM: 3/6/2000: New improved boom code.
+extern ceilinglist_t  *activeceilings;  //SoM: 3/6/2000: New improved boom code.
 
-int
-EV_DoCeiling
-( line_t*       line,
-  ceiling_e     type );
+int     EV_DoCeiling ( line_t* line, ceiling_e type );
 
 void    T_MoveCeiling (ceiling_t* ceiling);
 void    P_AddActiveCeiling(ceiling_t* ceiling);
@@ -757,7 +694,7 @@ typedef enum
     raiseFloorTurbo,
     donutRaise,
     raiseFloor512,
-	instantLower, // Instantly lowers SSNTails 06-13-2002
+    instantLower, // Instantly lowers SSNTails 06-13-2002
 
     //SoM: 3/4/2000 Boom copy YEAH YEAH
     genFloor,
@@ -791,13 +728,14 @@ typedef enum
 
 typedef struct
 {
-    thinker_t   thinker;
-    sector_t*   sector;
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
     floor_e     type;
     boolean     crush;
-    int         direction;
-    int         newspecial;
-    int         oldspecial; //SoM: 3/6/2000
+    int         direction;    // 1 = up, 0 = waiting, -1 = down
+    int         newspecial, oldspecial; //SoM: 3/6/2000
     short       texture;
     fixed_t     floordestheight;
     fixed_t     speed;
@@ -807,10 +745,12 @@ typedef struct
 
 typedef struct //SoM: 3/6/2000: Elevator struct.
 {
-  thinker_t thinker;
-  sector_t* sector;
+  thinker_t thinker;  // must be first for ptr conversion
+  sector_t* sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
   elevator_e type;
-  int direction;
+  int direction;    // 1 = up, 0 = waiting, -1 = down
   fixed_t floordestheight;
   fixed_t ceilingdestheight;
   fixed_t speed;
@@ -828,51 +768,35 @@ typedef enum
 
 } result_e;
 
-result_e
-T_MovePlane
-( sector_t*     sector,
-  fixed_t       speed,
-  fixed_t       dest,
-  boolean       crush,
-  int           floorOrCeiling,
-  int           direction );
+result_e  T_MovePlane ( sector_t*     sector,
+			fixed_t       speed,
+			fixed_t       dest,
+			boolean       crush,
+			int           floorOrCeiling,
+			int           direction );
 
-int
-EV_BuildStairs
-( line_t*       line,
-  stair_e       type );
+int   EV_BuildStairs ( line_t* line, stair_e type );
 
-int
-EV_DoFloor
-( line_t*       line,
-  floor_e       floortype );
+int   EV_DoFloor ( line_t* line, floor_e floortype );
 
-int EV_DoChange
-( line_t*       line,
-  change_e      changetype ); //SoM: 3/16/2000
+int   EV_DoChange ( line_t* line, change_e changetype ); //SoM: 3/16/2000
 
-int EV_DoElevator
-( line_t*       line,
-  elevator_e    elevtype ); //SoM: 3/16/2000
+int   EV_DoElevator ( line_t* line, elevator_e elevtype ); //SoM: 3/16/2000
 
-void T_MoveFloor( floormove_t* floor);
+void  T_MoveFloor( floormove_t* floor);
 
 //SoM: New thinker functions.
-void T_MoveElevator(elevator_t* elevator);
+void  T_MoveElevator(elevator_t* elevator);
 
 //
 // P_TELEPT
 //
-int
-EV_Teleport
-( line_t*       line,
-  int           side,
-  mobj_t*       thing );
+int  EV_Teleport ( line_t* line, int side, mobj_t* thing );
 
 //SoM: 3/15/2000: Boom silent teleport functions
-int EV_SilentTeleport(line_t *line, int side, mobj_t *thing);
-int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing, boolean reverse);
-int EV_PortalTeleport(line_t*  line, mobj_t* thing, int side);
+int  EV_SilentTeleport(line_t *line, int side, mobj_t *thing);
+int  EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing, boolean reverse);
+int  EV_PortalTeleport(line_t*  line, mobj_t* thing, int side);
 
 
 
@@ -1001,29 +925,15 @@ int EV_PortalTeleport(line_t*  line, mobj_t* thing, int side);
 
 //SoM: 3/9/2000: p_genlin
 
-int EV_DoGenFloor
-( line_t* line );
-
-int EV_DoGenCeiling
-( line_t* line );
-
-int EV_DoGenLift
-( line_t* line );
-
-int EV_DoGenStairs
-( line_t* line );
-
-int EV_DoGenCrusher
-( line_t* line );
-
-int EV_DoGenDoor
-( line_t* line );
-
-int EV_DoGenLockedDoor
-( line_t* line );
+int  EV_DoGenFloor ( line_t* line );
+int  EV_DoGenCeiling ( line_t* line );
+int  EV_DoGenLift ( line_t* line );
+int  EV_DoGenStairs ( line_t* line );
+int  EV_DoGenCrusher ( line_t* line );
+int  EV_DoGenDoor ( line_t* line );
+int  EV_DoGenLockedDoor ( line_t* line );
 
 // define names for the TriggerType field of the general linedefs
-
 typedef enum
 {
   WalkOnce,
@@ -1037,7 +947,6 @@ typedef enum
 } triggertype_e;
 
 // define names for the Speed field of the general linedefs
-
 typedef enum
 {
   SpeedSlow,
@@ -1047,7 +956,6 @@ typedef enum
 } motionspeed_e;
 
 // define names for the Target field of the general floor
-
 typedef enum
 {
   FtoHnF,
@@ -1061,7 +969,6 @@ typedef enum
 } floortarget_e;
 
 // define names for the Changer Type field of the general floor
-
 typedef enum
 {
   FNoChg,
@@ -1071,7 +978,6 @@ typedef enum
 } floorchange_e;
 
 // define names for the Change Model field of the general floor
-
 typedef enum
 {
   FTriggerModel,
@@ -1079,7 +985,6 @@ typedef enum
 } floormodel_t;
 
 // define names for the Target field of the general ceiling
-
 typedef enum
 {
   CtoHnC,
@@ -1093,7 +998,6 @@ typedef enum
 } ceilingtarget_e;
 
 // define names for the Changer Type field of the general ceiling
-
 typedef enum
 {
   CNoChg,
@@ -1103,7 +1007,6 @@ typedef enum
 } ceilingchange_e;
 
 // define names for the Change Model field of the general ceiling
-
 typedef enum
 {
   CTriggerModel,
@@ -1111,7 +1014,6 @@ typedef enum
 } ceilingmodel_t;
 
 // define names for the Target field of the general lift
-
 typedef enum
 {
   F2LnF,
@@ -1121,7 +1023,6 @@ typedef enum
 } lifttarget_e;
 
 // define names for the door Kind field of the general ceiling
-
 typedef enum
 {
   OdCDoor,
@@ -1131,7 +1032,6 @@ typedef enum
 } doorkind_e;
 
 // define names for the locked door Kind field of the general ceiling
-
 typedef enum
 {
   AnyKey_,
@@ -1149,13 +1049,10 @@ typedef enum
 
 //SoM: 3/8/2000: Add generalized scroller code
 typedef struct {
-  thinker_t thinker;   // Thinker structure for scrolling
-  fixed_t dx, dy;      // (dx,dy) scroll speeds
-  int affectee;        // Number of affected sidedef, sector, tag, or whatever
-  int control;         // Control sector (-1 if none) used to control scrolling
-  fixed_t last_height; // Last known height of control sector
-  fixed_t vdx, vdy;    // Accumulated velocity if accelerative
-  int accel;           // Whether it's accelerative
+  // Thinker structure for scrolling
+  thinker_t thinker;  // must be first for ptr conversion
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
   enum
   {
     sc_side,
@@ -1164,6 +1061,12 @@ typedef struct {
     sc_carry,
     sc_carry_ceiling,
   } type;
+  int affectee;        // Number of affected sidedef, sector, tag, or whatever
+  int control;         // Control sector (-1 if none) used to control scrolling
+  int accel;           // Whether it's accelerative
+  fixed_t dx, dy;      // (dx,dy) scroll speeds
+  fixed_t last_height; // Last known height of control sector
+  fixed_t vdx, vdy;    // Accumulated velocity if accelerative
 } scroll_t;
 
 void T_Scroll(scroll_t *s);
@@ -1172,10 +1075,13 @@ void T_Scroll(scroll_t *s);
 //SoM: 3/8/2000: added new model of friction for ice/sludge effects
 
 typedef struct {
-  thinker_t thinker;   // Thinker structure for friction
+  // Thinker structure for friction
+  thinker_t thinker;  // must be first for ptr conversion
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (affectee ... )
+  int affectee;        // Number of affected sector
   int friction;        // friction value (E800 = normal)
   int movefactor;      // inertia factor when adding to momentum
-  int affectee;        // Number of affected sector
 } friction_t;
 
 //SoM: Friction defines.
@@ -1189,26 +1095,28 @@ void T_Friction(friction_t *f);
 //SoM: 3/8/2000: Model for Pushers for push/pull effects
 
 typedef struct {
-  thinker_t thinker;   // Thinker structure for Pusher
+  // Thinker structure for Pusher
+  thinker_t thinker;  // must be first for ptr conversion
+  mobj_t* source;      // Point source if point pusher
+   			// not saved, derived from affectee
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
   enum
   {
     p_push,
-    p_pull,
+    p_pull,	// [WDJ] not used, uses p_push for push and pull
     p_wind,
     p_current,
     p_upcurrent, // SSNTails 06-10-2002
     p_downcurrent, // SSNTails 06-10-2002
-	p_upwind, // SSNTails 06-10-2003 WOAH! EXACTLY ONE YEAR LATER! FREAKY!
-	p_downwind, // SSNTails 06-10-2003
+    p_upwind, // SSNTails 06-10-2003 WOAH! EXACTLY ONE YEAR LATER! FREAKY!
+    p_downwind, // SSNTails 06-10-2003
   } type;
-  int x_mag;           // X Strength
-  int y_mag;           // Y Strength
+  int affectee;        // Number of affected sector
+  int x_mag, y_mag;    // X Strength
   int magnitude;       // Vector strength for point pusher
   int radius;          // Effective radius for point pusher
-  int x;               // X of point source if point pusher
-  int y;               // Y of point source if point pusher
-  int affectee;        // Number of affected sector
-  mobj_t* source;      // Point source if point pusher
+  int x_src, y_src;    // X,Y of point source if point pusher
 } pusher_t;
 
 //SoM: 3/9/2000: Prototype functions for pushers

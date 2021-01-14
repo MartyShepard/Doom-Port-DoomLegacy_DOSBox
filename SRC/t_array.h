@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_array.h 619 2010-03-23 21:16:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 //
@@ -34,6 +34,12 @@
 void T_AddArray(sfarray_t *);
 void T_InitSaveList(void);
 
+//#define SAVELIST_STRUCTHEAD
+// The structure head seems to be unused, can just be a ptr.
+#ifdef SAVELIST_STRUCTHEAD
 extern sfarray_t sfsavelist;
+#else
+extern sfarray_t * sfsavelist;
+#endif
 
 #endif

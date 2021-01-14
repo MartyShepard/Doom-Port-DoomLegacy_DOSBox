@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 608 2010-02-22 07:04:36Z smite-meister $
+// $Id: m_misc.c 620 2010-03-23 21:20:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -164,6 +164,17 @@ void FIL_DefaultExtension (char *path, char *extension)
     strcat (path, extension);
 }
 
+
+// Point to start of the filename in longer string
+char * FIL_Filename_of( char * nstr )
+{
+    int i;
+    // point to start of filename only
+    for (i = strlen(nstr) - 1; i >= 0; i--)
+      if (nstr[i] == '\\' || nstr[i] == '/' || nstr[i] == ':')
+        break;
+    return &nstr[i+1];
+}
 
 //  Creates a resource name (max 8 chars 0 padded) from a file path
 //

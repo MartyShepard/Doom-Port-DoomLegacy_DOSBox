@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_saveg.h 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -49,10 +49,35 @@
 // Persistent storage/archiving.
 // These are the load / save game routines.
 
+// Allocate malloc an appropriately sized buffer
+byte *  P_Alloc_savebuffer( boolean header, boolean data );
+
+// return -1 if overrun the buffer
+size_t  P_Savegame_length( void );
+
+// Write savegame header to savegame buffer.
+void	P_Write_Savegame_Header( const char * description );
+
+typedef struct {
+   char * name;	// description
+   char * game; // game name
+   char * wad;  // wad name containing level
+   char * map;  // level MAP01, E1M2, etc.
+   boolean  have_game, have_wad;  // validity checks on read
+   char   msg[60];  // currently uses 46 chars max
+} savegame_info_t;
+
+// Read savegame header from savegame buffer.
+// Returns header info in infop, as pointers into savebuffer.
+// Returns 1 when header is correct.
+boolean P_Read_Savegame_Header( savegame_info_t * infop );
+
 void    P_SaveGame (void);
 boolean P_LoadGame (void);
 
+extern byte*		savebuffer;
 extern byte*            save_p; 
+extern int		savebuffer_size;
 
 
 #endif

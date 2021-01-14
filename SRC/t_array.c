@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_array.c 619 2010-03-23 21:16:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 //
@@ -45,13 +45,17 @@
 // and they'll live until the end of the level. This is very lazy
 // garbage collection, but its the only real solution given the
 // state of the FS source (the word "haphazard" comes to mind...)
-sfarray_t sfsavelist =
+#ifdef SAVELIST_STRUCTHEAD
+array_t sfsavelist =
 {
    NULL,
    0,
    0,
    NULL,
 };
+#else
+sfarray_t * sfsavelist = NULL;
+#endif
 
 // add an array into the save list
 void T_AddArray(sfarray_t *array)
@@ -59,17 +63,66 @@ void T_AddArray(sfarray_t *array)
    sfarray_t *temp;
 
    // always insert at head of list
+#ifdef SAVELIST_STRUCTHEAD
    temp = sfsavelist.next;
    sfsavelist.next = array;
+#else
+   temp = sfsavelist;
+   sfsavelist = array;
+#endif
    array->next = temp;
 }
 
-// call from P_SetupLevel -- all arrays in the list will have been
-// destroyed by the zone allocator already
+static void * initsave_levelclear = NULL;  // indicates when PU_LEVEL cleared
+  
+// call from P_SetupLevel and P_SaveGame
+// Clears added array values but not base of sfsavelist
 void T_InitSaveList(void)
 {
+   // Z_Malloc of arrays is PU_LEVEL, but does not pass a user ptr, so level
+   // clear will have released all this memory without informing the owners.
+   if( initsave_levelclear )	// level not cleared, as in load saved game
+   {
+       sfarray_t * sfap, * sfap_nxt;
+       // enable to test if this is happening
+       fprintf(stderr, "T_InitSaveList: clearing array list\n" );
+#ifdef SAVELIST_STRUCTHEAD
+       sfap = sfsavelist.next;
+#else      
+       sfap = sfsavelist;
+#endif
+       for( ; sfap; sfap=sfap_nxt )
+       {
+	  if( sfap->values )   Z_Free( sfap->values );
+	  sfap_nxt = sfap->next;  // get next before deallocate
+	  Z_Free( sfap );
+       }
+   }
+   else
+   {
+       // will trip when level is cleared
+       Z_Malloc( 1, PU_LEVEL, &initsave_levelclear );
+   }
+#ifdef SAVELIST_STRUCTHEAD
    sfsavelist.next = NULL;
+#else      
+   sfsavelist = NULL;
+#endif
 }
+
+#if 0
+// Clears all array values including base of sfsavelist
+void T_InitSaveArrays(void)
+{
+   // Z_Malloc of arrays does not pass a user ptr, so level clear
+   // will not have destroyed these arrays.
+   T_InitSaveList();	// clear sfsavelist.next
+   if( sfsavelist.values )  Z_Free( sfsavelist.values );
+   sfsavelist.values = NULL;
+   sfsavelist.saveindex = 0;
+   sfsavelist.length = 0;
+}
+#endif
 
 // SF Handler functions for calling from scripts
 
@@ -90,13 +143,13 @@ void SF_NewArray(void)
       return;
 
    // allocate a sfarray_t
-   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, 0);
+   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
 
    // init all fields to zero
    memset(newArray, 0, sizeof(sfarray_t));
    
    // allocate t_argc number of values, set length
-   newArray->values = Z_Malloc(t_argc*sizeof(svalue_t), PU_LEVEL, 0);
+   newArray->values = Z_Malloc(t_argc*sizeof(svalue_t), PU_LEVEL, NULL);
    memset(newArray->values, 0, t_argc*sizeof(svalue_t));
    
    newArray->length = t_argc;
@@ -154,13 +207,13 @@ void SF_NewEmptyArray(void)
 
 
    // allocate a sfarray_t
-   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, 0);
+   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
 
    // init all fields to zero
    memset(newArray, 0, sizeof(sfarray_t));
    
    // allocate t_argc number of values, set length
-   newArray->values = Z_Malloc(t_argv[0].value.i*sizeof(svalue_t), PU_LEVEL, 0);
+   newArray->values = Z_Malloc(t_argv[0].value.i*sizeof(svalue_t), PU_LEVEL, NULL);
    memset(newArray->values, 0, t_argv[0].value.i*sizeof(svalue_t));
    
    

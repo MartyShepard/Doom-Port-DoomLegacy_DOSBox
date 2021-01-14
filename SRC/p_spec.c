@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: p_spec.c 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -3545,8 +3545,8 @@ static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affec
     if (source) // point source exist?
     {
         p->radius = (p->magnitude)<<(FRACBITS+1); // where force goes to zero
-        p->x = p->source->x;
-        p->y = p->source->y;
+        p->x_src = p->source->x;
+        p->y_src = p->source->y;
     }
     p->affectee = affectee;
     P_AddThinker(&p->thinker);
@@ -3568,8 +3568,8 @@ boolean PIT_PushThing(mobj_t* thing)
         int speed;
         int sx,sy;
 
-        sx = tmpusher->x;
-        sy = tmpusher->y;
+        sx = tmpusher->x_src;
+        sy = tmpusher->y_src;
         dist = P_AproxDistance(thing->x - sx,thing->y - sy);
         speed = (tmpusher->magnitude -
                  ((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
@@ -3673,10 +3673,10 @@ void T_Pusher(pusher_t *p)
 
         tmpusher = p; // MT_PUSH/MT_PULL point source
         radius = p->radius; // where force goes to zero
-        tmbbox[BOXTOP]    = p->y + radius;
-        tmbbox[BOXBOTTOM] = p->y - radius;
-        tmbbox[BOXRIGHT]  = p->x + radius;
-        tmbbox[BOXLEFT]   = p->x - radius;
+        tmbbox[BOXTOP]    = p->y_src + radius;
+        tmbbox[BOXBOTTOM] = p->y_src - radius;
+        tmbbox[BOXRIGHT]  = p->x_src + radius;
+        tmbbox[BOXLEFT]   = p->x_src - radius;
 
         xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
         xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;

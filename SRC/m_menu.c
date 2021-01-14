@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: m_menu.c 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -233,6 +233,9 @@
 #include "w_wad.h"
 #include "p_local.h"
 #include "p_fab.h"
+
+#include "p_saveg.h"
+  // savegame header read
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -2399,39 +2402,51 @@ void M_LoadSelect(int choice)
 void M_ReadSaveStrings(void)
 {
     int     handle;
-    int     count;
     int     i;
     char    name[256];
+    P_Alloc_savebuffer( 1, 0 );  // header only
+    savegame_info_t  sginfo;
+    // savegamestrings is statically alloc
 
-    for (i = 0;i < load_end;i++)
+    for (i = 0; i < load_end; i++)
     {
-        sprintf(name,savegamename,i);
+        sprintf(name, savegamename, i);
 
         handle = open (name, O_RDONLY | 0, 0666);
         if (handle == -1)
         {
-            strcpy(&savegamestrings[i][0],EMPTYSTRING);
+	    // read error
+            strcpy(&savegamestrings[i][0], EMPTYSTRING);
             LoadGameMenu[i].status = 0;
             continue;
         }
-        count = read (handle, &savegamestrings[i], SAVESTRINGSIZE);
+        read( handle, savebuffer, savebuffer_size );
+        if( P_Read_Savegame_Header( &sginfo ) )
+        {
+	    // info from a valid legacy save game
+	    strncpy( &savegamestrings[i][0], sginfo.name, SAVESTRINGSIZE );
+	}
         close (handle);
         LoadGameMenu[i].status = 1;
     }
+    free( savebuffer );
 }
 
 //
 // Selected from DOOM menu
 //
+// Called from menu, and key F3
 void M_LoadGame (int choice)
 {
 // change can't load message to can't load in server mode
     if (netgame && !server)
     {
+        // running network game and am not the server, cannot load
         M_StartMessage(LOADNET,NULL,MM_NOTHING);
         return;
     }
 
+    // Save game load menu with slot choices
     M_SetupNextMenu(&LoadDef);
     M_ReadSaveStrings();
 }
@@ -2517,9 +2532,12 @@ void M_DrawSave(void)
 //
 // M_Responder calls this when user is finished
 //
+// Called from save menu by M_Responder,
+// and from quick Save by M_QuickSaveResponse
 void M_DoSave(int slot)
 {
-    G_SaveGame (slot,savegamestrings[slot]);
+    // Issue command to save game
+    G_SaveGame (slot, savegamestrings[slot]);
     M_ClearMenus (true);
 
     // PICK QUICKSAVE SLOT YET?

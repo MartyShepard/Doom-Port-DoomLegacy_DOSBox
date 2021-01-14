@@ -392,3 +392,35 @@ patchfile = w40_misc.patch
 Misc. cosmetic and alignment.
 Preparation for savegame improvements.
 
+*** w40_tarray
+patchfile = w40_tarray.patch
+- committed revision 619   by wesley johnson
+Inconsistencies in t_array allocation.
+Gave it some protection until issue is finally determined.
+Some cosmetic improvements too.
+Preparation for savegame improvements.
+
+*** w40_GDESC
+patchfile = w40_GDESC.patch
+- committed revision 620   by wesley johnson
+Preparation for savegame improvements.
+Made a table of most game strings and settings.
+Table is now searched.
+Added command line forcing switches to force a mode selection
+without having to rename files.
+Added wad_selection.txt documentation.
+Removed game name string allocation that was lost memory.
+
+*** w40_savegame
+patchfile = w40_savegame.patch
+- committed revision 621   by wesley johnson
+The big savegame change.
+Added headers to savegame.
+Savegame sync bytes are written and checked.
+Provision for optional savegame sections.
+Checks to not load savegames of different word length or endianess.
+Checks that wad and game are same as when saved.
+Made saving of raw structures more robust.  Easier for
+programmer to support and helps avoid making silent errors in savegame.
+
+

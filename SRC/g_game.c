@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: g_game.c 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -234,10 +234,6 @@
 
 #include "b_game.h"	//added by AC for acbot
 
-// added 8-3-98 increse savegame size from 0x2c000 (180kb) to 512*1024
-#define SAVEGAMESIZE    (512*1024)
-#define SAVESTRINGSIZE  24
-
 
 boolean G_CheckDemoStatus (void);
 void    G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum);
@@ -262,10 +258,10 @@ byte            gamemap;
 char            gamemapname[MAX_WADPATH];      // an external wad filename
 
 
-gamemode_t      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
+gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
 gamemission_t   gamemission = doom;
 boolean         raven = false;
-language_t      language = english;            // Language.
+language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
 
 
@@ -302,8 +298,6 @@ boolean         singledemo;             // quit after playing a demo from cmdlin
 boolean         precache = true;        // if true, load all graphics at start
 
 wbstartstruct_t wminfo;                 // parms for world map / intermission
-
-byte*           savebuffer;
 
 
 // Background color fades for FS
@@ -2043,25 +2037,38 @@ void G_DoWorldDone (void)
 }
 
 
+// compose menu message from strings
+void compose_StartMessage( char * str1, char * str2 )
+{
+    char msgtemp[128];
+    if( str2 == NULL )  str2 = "";
+    sprintf( msgtemp, "%s %s\n\nPress ESC\n", str1, str2 );
+    M_StartMessage ( msgtemp, NULL, MM_NOTHING);
+}
+
 //
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
+// Called from menu M_LoadSelect from M_Responder,
+// and from D_Main code for -loadgame command line switch.
 void G_LoadGame (int slot)
 {
     COM_BufAddText(va("load %d\n",slot));
+    // net command call to G_DoLoadGame
 }
 
-#define VERSIONSIZE             16
-
+// Called from network command, sent from G_LoadGame
+// Reads the save game file.
 void G_DoLoadGame (int slot)
 {
     int         length;
-    char        vcheck[VERSIONSIZE];
     char        savename[255];
+    savegame_info_t   sginfo;  // read header info
 
     sprintf(savename, savegamename, slot);
 
+    // read file into savebuffer, Z_Malloc allocated as size of file
     length = FIL_ReadFile (savename, &savebuffer);
     if (!length)
     {
@@ -2069,17 +2076,10 @@ void G_DoLoadGame (int slot)
         return;
     }
 
-    // skip the description field
-    save_p = savebuffer + SAVESTRINGSIZE;
-    
-    memset (vcheck,0,sizeof(vcheck));
-    sprintf (vcheck,"version %i",VERSION);
-    if (strcmp ((char *)save_p, vcheck))
-    {
-        M_StartMessage ("Save game from different version\n\nPress ESC\n",NULL,MM_NOTHING);
-        return;                         // bad version
-    }
-    save_p += VERSIONSIZE;
+    save_p = savebuffer;
+    if( ! P_Read_Savegame_Header( &sginfo ) )  goto load_header_failed;
+    if( ! sginfo.have_game )  goto wrong_game;
+    if( ! sginfo.have_wad )  goto wrong_wad;
 
     if(demoplayback)  // reset game engine
         G_StopDemo();
@@ -2091,13 +2091,7 @@ void G_DoLoadGame (int slot)
     automapactive = false;
 
     // dearchive all the modifications
-    if( !P_LoadGame() )
-    {
-        M_StartMessage ("savegame file corrupted\n\nPress ESC\n", NULL, MM_NOTHING);
-        Command_ExitGame_f();
-        Z_Free (savebuffer);
-        return;
-    }
+    if( ! P_LoadGame() )  goto load_failed; // read game data in savebuffer
 
     gameaction = ga_nothing;
     gamestate = GS_LEVEL;
@@ -2116,6 +2110,26 @@ void G_DoLoadGame (int slot)
     // draw the pattern into the back screen
     R_FillBackScreen ();
     CON_ToggleOff ();
+    return;
+
+load_header_failed:
+    compose_StartMessage( sginfo.msg, NULL );
+    goto failed_exit;
+
+wrong_game:
+    compose_StartMessage( "savegame requires game:", sginfo.game );
+    goto failed_exit;
+
+wrong_wad:
+    compose_StartMessage( "savegame requires wad:", sginfo.wad );
+    goto failed_exit;
+
+load_failed:
+    M_StartMessage ("savegame file corrupted\n\nPress ESC\n", NULL, MM_NOTHING);
+    Command_ExitGame_f();
+failed_exit:
+    Z_Free (savebuffer);
+    return;
 }
 
 //
@@ -2123,17 +2137,20 @@ void G_DoLoadGame (int slot)
 // Called by the menu task.
 // Description is a 24 byte text string
 //
+// Called from menu M_DoSave from M_Responder.
 void G_SaveGame ( int   slot, char* description )
 {
+    // Solo player has server, net player without server cannot save.
     if (server)
         COM_BufAddText(va("save %d \"%s\"\n",slot,description));
+        // Net command call to G_DoSaveGame
 }
 
+// Called from network command sent from G_SaveGame.
+// Writes the save game file.
 void G_DoSaveGame (int   savegameslot, char* savedescription)
 {
-    char        name2[VERSIONSIZE];
-    char        description[SAVESTRINGSIZE];
-    int         length;
+    size_t      length;
     char        name[256];
 
     gameaction = ga_nothing;
@@ -2142,25 +2159,15 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     gameaction = ga_nothing;
 
-    save_p = savebuffer = (byte *)malloc(SAVEGAMESIZE);
-    if(!save_p)
-    {
-        CONS_Printf ("No More free memory for savegame\n");
-        return;
-    }
-
-    strcpy(description,savedescription);
-    description[SAVESTRINGSIZE]=0;
-    WRITEMEM(save_p, description, SAVESTRINGSIZE);
-    memset (name2,0,sizeof(name2));
-    sprintf (name2,"version %i",VERSION);
-    WRITEMEM(save_p, name2, VERSIONSIZE);
-
-    P_SaveGame();
-
-    length = save_p - savebuffer;
-    if (length > SAVEGAMESIZE)
-        I_Error ("Savegame buffer overrun");
+    P_Alloc_savebuffer( 1, 1 );	// buffer sized by savegame
+    if(!savebuffer)  return;
+    
+    P_Write_Savegame_Header( savedescription );
+    P_SaveGame();  // Write game data to savegame buffer.
+   
+    length = P_Savegame_length();
+    if( length < 0 )   return;	// overrun buffer
+    
     FIL_WriteFile (name, savebuffer, length);
     free(savebuffer);
 

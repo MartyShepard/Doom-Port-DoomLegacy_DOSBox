@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_saveg.c 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -107,6 +107,9 @@
 //      Archiving: SaveGame I/O.
 //
 //-----------------------------------------------------------------------------
+#include <stdint.h>
+#include <stddef.h>
+  // offsetof
 
 #include "doomdef.h"
 #include "g_game.h"
@@ -121,8 +124,17 @@
 #include "t_script.h"
 #include "t_func.h"
 #include "m_random.h"
+#include "d_items.h"
+  // NUMWEAPONS, NUMAMMO, NUMPOWERS
+#include "m_argv.h"
+  // to save command line
+#include "m_misc.h"
+  // FIL_Filename_of
+
+#include "p_saveg.h"
 
 byte *save_p;
+boolean  save_game_abort = 0;
 
 // Pads save_p to a 4-byte boundary
 //  so that the load/save works on SGI&Gecko.
@@ -130,20 +142,125 @@ byte *save_p;
 // BP: this stuff isn't be removed but i think it will no more work
 //     anyway what processor can't read/write unaligned data ?
 #define PADSAVEP()      save_p += (4 - ((int) save_p & 3)) & 3
+const byte sg_padded = 1;
 #else
 #define PADSAVEP()
+const byte sg_padded = 0;
 #endif
+
+// [WDJ] Sync byte with section identifier, so sections can be conditional
+// Do not alter the values of these. They must have the same value over
+// all save game versions they were used in.
+typedef enum {
+  // do not use 0, 1, 2, 254, 255
+  SAVEGAME_net = 3,
+  SAVEGAME_misc,
+  SAVEGAME_players,
+  SAVEGAME_world,
+  SAVEGAME_thinkers,
+  SAVEGAME_specials,	// 8
+  // optionals that game may use
+  SAVEGAME_fragglescript = 70,
+  // optional controls that may vary per game
+  SAVEGAME_gamma = 200,
+  SAVEGAME_slowdoor,
+  // sync
+  SAVEGAME_end = 252,
+  SAVEGAME_sync = 253
+} save_game_section_e;
+
+void SG_SaveSync( save_game_section_e sgs )
+{
+    WRITEBYTE( save_p, SAVEGAME_sync );	// validity check
+    WRITEBYTE( save_p, sgs );	// section id
+}
+
+// required or conditional section
+boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
+{
+   if( save_game_abort )   return 0;	// all sync reads repeat the abort
+   if( READBYTE( save_p ) != SAVEGAME_sync )  goto invalid;
+   if( READBYTE( save_p ) != sgs )
+   {
+      if( ! cond )  goto invalid;
+      save_p -= 2;	// backup for re-reading the sync
+      return 0;		// not the wanted sync
+   }
+   return 1;
+   
+ invalid:
+   I_SoftError( "Invalid save game sync\n" );
+   save_game_abort = 1;
+   return 0;
+}
+
+
+// write null term string
+void SG_write_string( const char * sp )
+{
+#if 1
+    strcpy((char *)save_p, sp);
+    save_p += strlen(sp) + 1;
+#else   
+    int i=0;
+    do {
+        WRITECHAR(save_p, sp[i]);
+    } while (sp[i++]);	// until null
+#endif   
+}
+
+// return string allocated using Z_Strdup, PU_LEVEL
+char * SG_read_string( void )
+{
+    char * spdest;
+    // Use strnlen (GNU) if you have it, otherwise have to use strlen
+    // Do not define strnlen as strlen somewhere else, because that hides the
+    // vulnerability.
+#ifdef __USE_GNU
+    // better protection against buffer overrun
+    int len = strnlen( (char*)save_p, 258 ) + 1;	// incl term 0
+#else   
+    int len = strlen( (char*)save_p ) + 1;	// incl term 0
+#endif
+    // Protect against unterm string in file
+    if( len > 256 )  return NULL;  // error
+    spdest = Z_Strdup((char *)save_p, PU_LEVEL, NULL);
+//    spdest = Z_Malloc( len, PU_LEVEL, 0 );
+//    strcpy( spdest, save_p );
+    save_p += len;
+    return spdest;
+}
+
+// write fixed length string
+void SG_write_nstring( const char * sp, int field_length )
+{
+#if 1
+    strncpy((char *)save_p, sp, field_length);  // padded with nulls
+    save_p += field_length;
+#else   
+    int i;
+    for( i=0; i<field_length; i++ ) {
+        if( sp[i] == 0 ) break;	// end of string
+        WRITECHAR(save_p, sp[i]);
+    }
+    for( ; i<field_length; i++ ) {
+        WRITECHAR(save_p, 0 );  // padding
+    }
+#endif   
+}
+
+// return string allocated using Z_Strdup, PU_LEVEL
+char * SG_read_nstring( int field_length )
+{
+    char * spdest = Z_Malloc( field_length, PU_LEVEL, NULL );
+    strncpy( spdest, save_p, field_length );
+    save_p += field_length;
+    return spdest;
+}
 
 
 int num_thinkers;       // number of thinkers in level being archived
 
-mobj_t **mobj_p;    // killough 2/14/98: Translation table
-
-
-// BP: damned this #if don't work ! why ?
-#if NUMWEAPONS > 8
-#error please update the player_saveflags enum
-#endif
 
 typedef enum
 {
@@ -167,7 +284,7 @@ typedef enum
     PD_DAMAGECOUNT = 0x1000,
     PD_BONUSCOUNT = 0x2000,
     PD_CHICKENTICS = 0x4000,
-    PD_CHICKEPECK = 0x8000,
+    PD_CHICKENPECK = 0x8000,
     PD_FLAMECOUNT = 0x10000,
     PD_FLYHEIGHT = 0x20000,
 } player_diff;
@@ -180,131 +297,135 @@ void P_ArchivePlayers(void)
     int i, j;
     int flags;
     uint32_t diff;
+    player_t * ply;
 
     for (i = 0; i < MAXPLAYERS; i++)
     {
         if (!playeringame[i])
             continue;
 
-        PADSAVEP();
+        ply = &players[i];
 
+        PADSAVEP();
+       
         flags = 0;
         diff = 0;
         for (j = 0; j < NUMPOWERS; j++)
-            if (players[i].powers[j])
+            if (ply->powers[j])
                 diff |= 1 << j;
-        if (players[i].refire)
+        if (ply->refire)
             diff |= PD_REFIRE;
-        if (players[i].killcount)
+        if (ply->killcount)
             diff |= PD_KILLCOUNT;
-        if (players[i].itemcount)
+        if (ply->itemcount)
             diff |= PD_ITEMCOUNT;
-        if (players[i].secretcount)
+        if (ply->secretcount)
             diff |= PD_SECRETCOUNT;
-        if (players[i].damagecount)
+        if (ply->damagecount)
             diff |= PD_DAMAGECOUNT;
-        if (players[i].bonuscount)
+        if (ply->bonuscount)
             diff |= PD_BONUSCOUNT;
-        if (players[i].chickenTics)
+        if (ply->chickenTics)
             diff |= PD_CHICKENTICS;
-        if (players[i].chickenPeck)
-            diff |= PD_CHICKEPECK;
-        if (players[i].flamecount)
+        if (ply->chickenPeck)
+            diff |= PD_CHICKENPECK;
+        if (ply->flamecount)
             diff |= PD_FLAMECOUNT;
-        if (players[i].flyheight)
+        if (ply->flyheight)
             diff |= PD_FLYHEIGHT;
 
         WRITEULONG(save_p, diff);
 
-        WRITEANGLE(save_p, players[i].aiming);
-        WRITEUSHORT(save_p, players[i].health);
-        WRITEUSHORT(save_p, players[i].armorpoints);
-        WRITEBYTE(save_p, players[i].armortype);
+        WRITEANGLE(save_p, ply->aiming);
+        WRITEUSHORT(save_p, ply->health);
+        WRITEUSHORT(save_p, ply->armorpoints);
+        WRITEBYTE(save_p, ply->armortype);
 
         for (j = 0; j < NUMPOWERS; j++)
         {
             if (diff & (1 << j))
-                WRITELONG(save_p, players[i].powers[j]);
+                WRITELONG(save_p, ply->powers[j]);
         }
-        WRITEBYTE(save_p, players[i].cards);
-        WRITEBYTE(save_p, players[i].readyweapon);
-        WRITEBYTE(save_p, players[i].pendingweapon);
-        WRITEBYTE(save_p, players[i].playerstate);
+        WRITEBYTE(save_p, ply->cards);
+        WRITEBYTE(save_p, ply->readyweapon);
+        WRITEBYTE(save_p, ply->pendingweapon);
+        WRITEBYTE(save_p, ply->playerstate);
 
-        WRITEUSHORT(save_p, players[i].addfrags);
+        WRITEUSHORT(save_p, ply->addfrags);
         for (j = 0; j < MAXPLAYERS; j++)
         {
-            if (playeringame[i])
-                WRITEUSHORT(save_p, players[i].frags[j]);
+            if (playeringame[j])	// [WDJ] was [i] which was useless
+                WRITEUSHORT(save_p, ply->frags[j]);
         }
 
         for (j = 0; j < NUMWEAPONS; j++)
         {
-            WRITEBYTE(save_p, players[i].favoritweapon[j]);
-            if (players[i].weaponowned[j])
+            WRITEBYTE(save_p, ply->favoritweapon[j]);
+            if (ply->weaponowned[j])
                 flags |= 1 << j;
         }
         for (j = 0; j < NUMAMMO; j++)
         {
-            WRITEUSHORT(save_p, players[i].ammo[j]);
-            WRITEUSHORT(save_p, players[i].maxammo[j]);
+            WRITEUSHORT(save_p, ply->ammo[j]);
+            WRITEUSHORT(save_p, ply->maxammo[j]);
         }
-        if (players[i].backpack)
+        if (ply->backpack)
             flags |= BACKPACK;
-        if (players[i].originalweaponswitch)
+        if (ply->originalweaponswitch)
             flags |= ORIGNWEAP;
-        if (players[i].autoaim_toggle)
+        if (ply->autoaim_toggle)
             flags |= AUTOAIM;
-        if (players[i].attackdown)
+        if (ply->attackdown)
             flags |= ATTACKDWN;
-        if (players[i].usedown)
+        if (ply->usedown)
             flags |= USEDWN;
-        if (players[i].jumpdown)
+        if (ply->jumpdown)
             flags |= JMPDWN;
-        if (players[i].didsecret)
+        if (ply->didsecret)
             flags |= DIDSECRET;
 
         if (diff & PD_REFIRE)
-            WRITELONG(save_p, players[i].refire);
+            WRITELONG(save_p, ply->refire);
         if (diff & PD_KILLCOUNT)
-            WRITELONG(save_p, players[i].killcount);
+            WRITELONG(save_p, ply->killcount);
         if (diff & PD_ITEMCOUNT)
-            WRITELONG(save_p, players[i].itemcount);
+            WRITELONG(save_p, ply->itemcount);
         if (diff & PD_SECRETCOUNT)
-            WRITELONG(save_p, players[i].secretcount);
+            WRITELONG(save_p, ply->secretcount);
         if (diff & PD_DAMAGECOUNT)
-            WRITELONG(save_p, players[i].damagecount);
+            WRITELONG(save_p, ply->damagecount);
         if (diff & PD_BONUSCOUNT)
-            WRITELONG(save_p, players[i].bonuscount);
+            WRITELONG(save_p, ply->bonuscount);
         if (diff & PD_CHICKENTICS)
-            WRITELONG(save_p, players[i].chickenTics);
-        if (diff & PD_CHICKEPECK)
-            WRITELONG(save_p, players[i].chickenPeck);
+            WRITELONG(save_p, ply->chickenTics);
+        if (diff & PD_CHICKENPECK)
+            WRITELONG(save_p, ply->chickenPeck);
         if (diff & PD_FLAMECOUNT)
-            WRITELONG(save_p, players[i].flamecount);
+            WRITELONG(save_p, ply->flamecount);
         if (diff & PD_FLYHEIGHT)
-            WRITELONG(save_p, players[i].flyheight);
+            WRITELONG(save_p, ply->flyheight);
 
-        WRITEBYTE(save_p, players[i].skincolor);
+        WRITEBYTE(save_p, ply->skincolor);
 
         for (j = 0; j < NUMPSPRITES; j++)
         {
-            if (players[i].psprites[j].state)
-                WRITEUSHORT(save_p, (players[i].psprites[j].state - states) + 1);
+	    pspdef_t * psp = & ply->psprites[j];
+            if (psp->state)
+                WRITEUSHORT(save_p, (psp->state - states) + 1);
             else
                 WRITEUSHORT(save_p, 0);
-            WRITELONG(save_p, players[i].psprites[j].tics);
-            WRITEFIXED(save_p, players[i].psprites[j].sx);
-            WRITEFIXED(save_p, players[i].psprites[j].sy);
+            WRITELONG(save_p, psp->tics);
+            WRITEFIXED(save_p, psp->sx);
+            WRITEFIXED(save_p, psp->sy);
         }
         WRITEUSHORT(save_p, flags);
 
         if (inventory)
         {
-            WRITEBYTE(save_p, players[i].inventorySlotNum);
-            for (j = 0; j < players[i].inventorySlotNum; j++)
+            WRITEBYTE(save_p, ply->inventorySlotNum);
+            for (j = 0; j < ply->inventorySlotNum; j++)
             {
-                WRITEMEM(save_p, &players[i].inventory[j], sizeof(players[i].inventory[j]));
+                WRITEMEM(save_p, &ply->inventory[j], sizeof(ply->inventory[j]));
             }
         }
     }
@@ -318,6 +439,8 @@ void P_UnArchivePlayers(void)
     int i, j;
     int flags;
     uint32_t diff;
+    player_t * ply;
+       
 
     for (i = 0; i < MAXPLAYERS; i++)
     {
@@ -325,105 +448,108 @@ void P_UnArchivePlayers(void)
         if (!playeringame[i])
             continue;
 
+        ply = &players[i];
+
         PADSAVEP();
         diff = READULONG(save_p);
 
-        players[i].aiming = READANGLE(save_p);
-        players[i].health = READUSHORT(save_p);
-        players[i].armorpoints = READUSHORT(save_p);
-        players[i].armortype = READBYTE(save_p);
+        ply->aiming = READANGLE(save_p);
+        ply->health = READUSHORT(save_p);
+        ply->armorpoints = READUSHORT(save_p);
+        ply->armortype = READBYTE(save_p);
 
         for (j = 0; j < NUMPOWERS; j++)
         {
             if (diff & (1 << j))
-                players[i].powers[j] = READLONG(save_p);
+                ply->powers[j] = READLONG(save_p);
         }
 
-        players[i].cards = READBYTE(save_p);
-        players[i].readyweapon = READBYTE(save_p);
-        players[i].pendingweapon = READBYTE(save_p);
-        players[i].playerstate = READBYTE(save_p);
+        ply->cards = READBYTE(save_p);
+        ply->readyweapon = READBYTE(save_p);
+        ply->pendingweapon = READBYTE(save_p);
+        ply->playerstate = READBYTE(save_p);
 
-        players[i].addfrags = READUSHORT(save_p);
+        ply->addfrags = READUSHORT(save_p);
         for (j = 0; j < MAXPLAYERS; j++)
         {
-            if (playeringame[i])
-                players[i].frags[j] = READUSHORT(save_p);
+            if (playeringame[j])	// [WDJ] was [i] which was useless
+                ply->frags[j] = READUSHORT(save_p);
         }
 
         for (j = 0; j < NUMWEAPONS; j++)
-            players[i].favoritweapon[j] = READBYTE(save_p);
+            ply->favoritweapon[j] = READBYTE(save_p);
         for (j = 0; j < NUMAMMO; j++)
         {
-            players[i].ammo[j] = READUSHORT(save_p);
-            players[i].maxammo[j] = READUSHORT(save_p);
+            ply->ammo[j] = READUSHORT(save_p);
+            ply->maxammo[j] = READUSHORT(save_p);
         }
         if (diff & PD_REFIRE)
-            players[i].refire = READLONG(save_p);
+            ply->refire = READLONG(save_p);
         if (diff & PD_KILLCOUNT)
-            players[i].killcount = READLONG(save_p);
+            ply->killcount = READLONG(save_p);
         if (diff & PD_ITEMCOUNT)
-            players[i].itemcount = READLONG(save_p);
+            ply->itemcount = READLONG(save_p);
         if (diff & PD_SECRETCOUNT)
-            players[i].secretcount = READLONG(save_p);
+            ply->secretcount = READLONG(save_p);
         if (diff & PD_DAMAGECOUNT)
-            players[i].damagecount = READLONG(save_p);
+            ply->damagecount = READLONG(save_p);
         if (diff & PD_BONUSCOUNT)
-            players[i].bonuscount = READLONG(save_p);
+            ply->bonuscount = READLONG(save_p);
         if (diff & PD_CHICKENTICS)
-            players[i].chickenTics = READLONG(save_p);
-        if (diff & PD_CHICKEPECK)
-            players[i].chickenPeck = READLONG(save_p);
+            ply->chickenTics = READLONG(save_p);
+        if (diff & PD_CHICKENPECK)
+            ply->chickenPeck = READLONG(save_p);
         if (diff & PD_FLAMECOUNT)
-            players[i].flamecount = READLONG(save_p);
+            ply->flamecount = READLONG(save_p);
         if (diff & PD_FLYHEIGHT)
-            players[i].flyheight = READLONG(save_p);
+            ply->flyheight = READLONG(save_p);
 
-        players[i].skincolor = READBYTE(save_p);
+        ply->skincolor = READBYTE(save_p);
 
         for (j = 0; j < NUMPSPRITES; j++)
         {
+	    pspdef_t * psp = & ply->psprites[j];
             flags = READUSHORT(save_p);
             if (flags)
-                players[i].psprites[j].state = &states[flags - 1];
+                psp->state = &states[flags - 1];
 
-            players[i].psprites[j].tics = READLONG(save_p);
-            players[i].psprites[j].sx = READFIXED(save_p);
-            players[i].psprites[j].sy = READFIXED(save_p);
+            psp->tics = READLONG(save_p);
+            psp->sx = READFIXED(save_p);
+            psp->sy = READFIXED(save_p);
         }
 
         flags = READUSHORT(save_p);
 
         if (inventory)
         {
-            players[i].inventorySlotNum = READBYTE(save_p);
-            for (j = 0; j < players[i].inventorySlotNum; j++)
+            ply->inventorySlotNum = READBYTE(save_p);
+            for (j = 0; j < ply->inventorySlotNum; j++)
             {
-                READMEM(save_p, &players[i].inventory[j], sizeof(players[i].inventory[j]));
+                READMEM(save_p, &ply->inventory[j], sizeof(ply->inventory[j]));
             }
         }
 
         for (j = 0; j < NUMWEAPONS; j++)
-            players[i].weaponowned[j] = (flags & (1 << j)) != 0;
+            ply->weaponowned[j] = (flags & (1 << j)) != 0;
 
-        players[i].backpack = (flags & BACKPACK) != 0;
-        players[i].originalweaponswitch = (flags & ORIGNWEAP) != 0;
-        players[i].autoaim_toggle = (flags & AUTOAIM) != 0;
-        players[i].attackdown = (flags & ATTACKDWN) != 0;
-        players[i].usedown = (flags & USEDWN) != 0;
-        players[i].jumpdown = (flags & JMPDWN) != 0;
-        players[i].didsecret = (flags & DIDSECRET) != 0;
+        ply->backpack = (flags & BACKPACK) != 0;
+        ply->originalweaponswitch = (flags & ORIGNWEAP) != 0;
+        ply->autoaim_toggle = (flags & AUTOAIM) != 0;
+        ply->attackdown = (flags & ATTACKDWN) != 0;
+        ply->usedown = (flags & USEDWN) != 0;
+        ply->jumpdown = (flags & JMPDWN) != 0;
+        ply->didsecret = (flags & DIDSECRET) != 0;
 
-        players[i].viewheight = cv_viewheight.value << FRACBITS;
+        ply->viewheight = cv_viewheight.value << FRACBITS;
         if (gamemode == heretic)
         {
-            if (players[i].powers[pw_weaponlevel2])
-                players[i].weaponinfo = wpnlev2info;
+            if (ply->powers[pw_weaponlevel2])
+                ply->weaponinfo = wpnlev2info;
             else
-                players[i].weaponinfo = wpnlev1info;
+                ply->weaponinfo = wpnlev1info;
         }
         else
-            players[i].weaponinfo = doomweaponinfo;
+            ply->weaponinfo = doomweaponinfo;
     }
 }
 
@@ -469,7 +595,10 @@ void P_ArchiveWorld(void)
     int statsec = 0, statline = 0;
     line_t *li;
     side_t *si;
-    byte *put;
+    byte *put;	// local copy of save_p, apparently for no reason
+      // [WDJ] using a local var instead of global costs 800 bytes in obj
+      // but saves 64 bytes in executable.
+//#define put save_p
 
     // reload the map just to see difference
     mapsector_t *ms;
@@ -488,6 +617,7 @@ void P_ArchiveWorld(void)
 
     for (i = 0; i < numsectors; i++, ss++, ms++)
     {
+        // Save only how the sector differs from the wad.
         diff = 0;
         diff2 = 0;
         if (ss->floorheight != LE_SWAP16(ms->floorheight) << FRACBITS)
@@ -568,7 +698,7 @@ void P_ArchiveWorld(void)
                 WRITELONG(put, ss->prevsec);
         }
     }
-    WRITEUSHORT(put, 0xffff);
+    WRITEUSHORT(put, 0xffff);  // mark end of world sector section
 
     mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_IN_USE); // linedefs temp
     msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_IN_USE); // sidedefs temp
@@ -588,33 +718,35 @@ void P_ArchiveWorld(void)
 
         if (li->sidenum[0] != -1)
         {
+	    mapsidedef_t * msd0 = &msd[li->sidenum[0]];
             si = &sides[li->sidenum[0]];
-            if (si->textureoffset != LE_SWAP16(msd[li->sidenum[0]].textureoffset) << FRACBITS)
+            if (si->textureoffset != LE_SWAP16(msd0->textureoffset) << FRACBITS)
                 diff |= LD_S1TEXOFF;
             //SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
-            if (R_CheckTextureNumForName(msd[li->sidenum[0]].toptexture) != -1)
-                if (si->toptexture != R_TextureNumForName(msd[li->sidenum[0]].toptexture))
+            if (R_CheckTextureNumForName(msd0->toptexture) != -1)
+                if (si->toptexture != R_TextureNumForName(msd0->toptexture))
                     diff |= LD_S1TOPTEX;
-            if (R_CheckTextureNumForName(msd[li->sidenum[0]].bottomtexture) != -1)
-                if (si->bottomtexture != R_TextureNumForName(msd[li->sidenum[0]].bottomtexture))
+            if (R_CheckTextureNumForName(msd0->bottomtexture) != -1)
+                if (si->bottomtexture != R_TextureNumForName(msd0->bottomtexture))
                     diff |= LD_S1BOTTEX;
-            if (R_CheckTextureNumForName(msd[li->sidenum[0]].midtexture) != -1)
-                if (si->midtexture != R_TextureNumForName(msd[li->sidenum[0]].midtexture))
+            if (R_CheckTextureNumForName(msd0->midtexture) != -1)
+                if (si->midtexture != R_TextureNumForName(msd0->midtexture))
                     diff |= LD_S1MIDTEX;
         }
         if (li->sidenum[1] != -1)
         {
+	    mapsidedef_t * msd1 = &msd[li->sidenum[1]];
             si = &sides[li->sidenum[1]];
-            if (si->textureoffset != LE_SWAP16(msd[li->sidenum[1]].textureoffset) << FRACBITS)
+            if (si->textureoffset != LE_SWAP16(msd1->textureoffset) << FRACBITS)
                 diff2 |= LD_S2TEXOFF;
-            if (R_CheckTextureNumForName(msd[li->sidenum[1]].toptexture) != -1)
-                if (si->toptexture != R_TextureNumForName(msd[li->sidenum[1]].toptexture))
+            if (R_CheckTextureNumForName(msd1->toptexture) != -1)
+                if (si->toptexture != R_TextureNumForName(msd1->toptexture))
                     diff2 |= LD_S2TOPTEX;
-            if (R_CheckTextureNumForName(msd[li->sidenum[1]].bottomtexture) != -1)
-                if (si->bottomtexture != R_TextureNumForName(msd[li->sidenum[1]].bottomtexture))
+            if (R_CheckTextureNumForName(msd1->bottomtexture) != -1)
+                if (si->bottomtexture != R_TextureNumForName(msd1->bottomtexture))
                     diff2 |= LD_S2BOTTEX;
-            if (R_CheckTextureNumForName(msd[li->sidenum[1]].midtexture) != -1)
-                if (si->midtexture != R_TextureNumForName(msd[li->sidenum[1]].midtexture))
+            if (R_CheckTextureNumForName(msd1->midtexture) != -1)
+                if (si->midtexture != R_TextureNumForName(msd1->midtexture))
                     diff2 |= LD_S2MIDTEX;
             if (diff2)
                 diff |= LD_DIFF2;
@@ -654,7 +786,7 @@ void P_ArchiveWorld(void)
                 WRITESHORT(put, si->midtexture);
         }
     }
-    WRITEUSHORT(put, 0xffff);
+    WRITEUSHORT(put, 0xffff);  // mark end of world linedef section
 
     //CONS_Printf("sector saved %d/%d, line saved %d/%d\n",statsec,numsectors,statline,numlines);
     save_p = put;
@@ -669,7 +801,11 @@ void P_UnArchiveWorld(void)
     int i;
     line_t *li;
     side_t *si;
+    sector_t *secp;
     byte *get;
+      // [WDJ] using a local var instead of global costs 736 bytes in obj
+      // but saves 32 bytes in executable.
+//#define get save_p
     byte diff, diff2;
 
     get = save_p;
@@ -678,7 +814,7 @@ void P_UnArchiveWorld(void)
     {
         i = READUSHORT(get);
 
-        if (i == 0xffff)
+        if (i == 0xffff) // end of world sector section
             break;
 
         diff = READBYTE(get);
@@ -686,52 +822,53 @@ void P_UnArchiveWorld(void)
             diff2 = READBYTE(get);
         else
             diff2 = 0;
+        secp = & sectors[i];
         if (diff & SD_FLOORHT)
-            sectors[i].floorheight = READFIXED(get);
+            secp->floorheight = READFIXED(get);
         if (diff & SD_CEILHT)
-            sectors[i].ceilingheight = READFIXED(get);
+            secp->ceilingheight = READFIXED(get);
         if (diff & SD_FLOORPIC)
         {
-	    sectors[i].floorpic = P_AddLevelFlat((char *)get, levelflats);
+	    secp->floorpic = P_AddLevelFlat((char *)get, levelflats);
             get += 8;
         }
         if (diff & SD_CEILPIC)
         {
-            sectors[i].ceilingpic = P_AddLevelFlat((char *)get, levelflats);
+            secp->ceilingpic = P_AddLevelFlat((char *)get, levelflats);
             get += 8;
         }
         if (diff & SD_LIGHT)
-            sectors[i].lightlevel = READSHORT(get);
+            secp->lightlevel = READSHORT(get);
         if (diff & SD_SPECIAL)
-            sectors[i].special = READSHORT(get);
+            secp->special = READSHORT(get);
 
         if (diff2 & SD_FXOFFS)
-            sectors[i].floor_xoffs = READFIXED(get);
+            secp->floor_xoffs = READFIXED(get);
         if (diff2 & SD_FYOFFS)
-            sectors[i].floor_yoffs = READFIXED(get);
+            secp->floor_yoffs = READFIXED(get);
         if (diff2 & SD_CXOFFS)
-            sectors[i].ceiling_xoffs = READFIXED(get);
+            secp->ceiling_xoffs = READFIXED(get);
         if (diff2 & SD_CYOFFS)
-            sectors[i].ceiling_yoffs = READFIXED(get);
+            secp->ceiling_yoffs = READFIXED(get);
         if (diff2 & SD_STAIRLOCK)
-            sectors[i].stairlock = READLONG(get);
+            secp->stairlock = READLONG(get);
         else
-            sectors[i].stairlock = 0;
+            secp->stairlock = 0;
         if (diff2 & SD_NEXTSEC)
-            sectors[i].nextsec = READLONG(get);
+            secp->nextsec = READLONG(get);
         else
-            sectors[i].nextsec = -1;
+            secp->nextsec = -1;
         if (diff2 & SD_PREVSEC)
-            sectors[i].prevsec = READLONG(get);
+            secp->prevsec = READLONG(get);
         else
-            sectors[i].prevsec = -1;
+            secp->prevsec = -1;
     }
 
     while (1)
     {
         i = READUSHORT(get);
 
-        if (i == 0xffff)
+        if (i == 0xffff)  // end of world linedef section
             break;
         diff = READBYTE(get);
         li = &lines[i];
@@ -787,115 +924,170 @@ typedef struct
   unsigned int alloc_len; // number of allocated cells
 } pointermap_t;
 
-static pointermap_t pointermap;
+static pointermap_t pointermap = {NULL,0,0};
+
+// Safe to call without knowing if was allocated or not.
+static void ClearPointermap()
+{
+  // Clean release of memory, setup for next call of Alloc_Pointermap 
+  pointermap.len = 0;
+  pointermap.alloc_len = 0;
+  if( pointermap.map )  free(pointermap.map);
+  pointermap.map = NULL;
+}
+
+// Allocate or reallocate
+static boolean  Alloc_Pointermap( int num )
+{
+    unsigned int fi = pointermap.len; // first uninitialized cell
+   
+    pointermap.map = realloc(pointermap.map, num * sizeof(pointermap_cell_t));
+    if( pointermap.map == NULL )
+    {
+      I_SoftError("P_LoadGame: Pointermap alloc failed.\n");
+      save_game_abort = 1;  // will be detected by ReadSync
+      return 0;
+    }
+    pointermap.alloc_len = num;
+    // num is one past the last new cell
+    memset(&pointermap.map[fi], 0, (num-fi) * sizeof(pointermap_cell_t));
+    // All mapping has ID==0 map to NULL ptr.
+    // This is less expensive than special tests.
+    pointermap.map[0].pointer = NULL;	// Map id==0 to NULL
+    pointermap.len = 1;
+    return 1;
+}
 
 static void InitPointermap_Save(unsigned int size)
 {
-  pointermap.len = 0;
-  pointermap.alloc_len = size;
-  pointermap.map = malloc(pointermap.alloc_len * sizeof(pointermap_cell_t));
+  pointermap.len = 1;  // all will be free, initialized to 0
+  Alloc_Pointermap( size );
 }
 
 static void InitPointermap_Load(unsigned int size)
 {
   InitPointermap_Save(size);
-
-  memset(pointermap.map, 0, pointermap.alloc_len * sizeof(pointermap_cell_t));
-  pointermap.len = pointermap.alloc_len; // mark everything as initialized (this condition holds all the time during loading)
+  // mark everything as initialized (this condition holds all the time during loading)
+  // Does not affect anything, yet.
+  pointermap.len = pointermap.alloc_len;
 }
 
-static void ClearPointermap()
-{
-  pointermap.len = 0;
-  pointermap.alloc_len = 0;
-  free(pointermap.map);
-  pointermap.map = NULL;
-}
 
 
 // Saving: Returns the ID number corresponding to a pointer.
+// [WDJ] see  WritePtr( mobj_t *p );
 static uint32_t GetID(mobj_t *p)
 {
+  uint32_t id;
+   
+  // All NULL ptrs are mapped to ID==0
   if (!p)
     return 0; // NULL ptr has id == 0
 
-  // id for cell k is k+1
-
-  uint32_t k;
-  // see if it's already there
-  for (k=0; k < pointermap.len; k++)
-    if (pointermap.map[k].pointer == p)
-      return k+1;
+  // see if pointer is already there
+  for (id=0; id < pointermap.len; id++)
+    if (pointermap.map[id].pointer == p)  // use existing mapping
+      return id;
 
   // okay, not there, we must add it
 
-  // is there still space or should we enlarge the container?
+  // is there still space or should we enlarge the mapping table?
   if (pointermap.len == pointermap.alloc_len)
   {
-    pointermap.alloc_len *= 2; // double it
-    pointermap.map = realloc(pointermap.map, pointermap.alloc_len * sizeof(pointermap_cell_t));
+    if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )
+       return 0; // alloc fail
   }
 
-  // add the new entry
-  k = pointermap.len++;
-  pointermap.map[k].pointer = p;
-  return k+1;
+  // add the new pointer mapping
+  id = pointermap.len++;
+  pointermap.map[id].pointer = p;
+  return id;
 }
 
 
-// Loading, first phase: Assigns a pointer to an ID number.
-static void SetID(uint32_t id, mobj_t *p)
+// Loading, first phase: Upon read of Mobj and the ID from the save game file.
+// Sets the Mobj ID to pointer mapping.
+static void MapMobjID(uint32_t id, mobj_t *p)
 {
+  // Cannot have mobj ptr p == NULL, that would be Z_Malloc failure.
+  // Cannot have ID==0, that would be failure in mobj save, or bad file.
+  // map[0] is preset to NULL
+#if 1
+  if (id == 0 || id > 500000)  goto bad_id_err;  // bad id, probably corrupt or wrong file.
+#else
   if (!p)
     return; // NULL ptr has id == 0
 
   if (!id)
-    I_Error("P_LoadGame: Object with ID number 0.\n");
+  {
+    I_SoftError("P_LoadGame: Object with ID number 0.\n");
+    goto failed;
+  }
+  if (id == 0 || id > 500000)	// bad id
+  {
+    I_SoftError("P_LoadGame: Object ID sanity check failed.\n");
+    goto failed;
+  }
+#endif
 
-  if (id > 500000)
-    I_Error("P_LoadGame: Object ID sanity check failed.\n");
-
-  // id for cell k is k+1
-  uint32_t k = id - 1;
-
-  // is k in the initialized/allocated region?
-  while (k >= pointermap.alloc_len)
+  // is id in the initialized/allocated region?
+  while (id >= pointermap.alloc_len)
   {
     // no, enlarge the container
-    pointermap.alloc_len *= 2; // double it
-
-    unsigned int a = pointermap.len; // first uninitialized cell
-    unsigned int b = pointermap.alloc_len; // one past the last cell
-
-    pointermap.map = realloc(pointermap.map, b * sizeof(pointermap_cell_t));
-    memset(&pointermap.map[a], 0, (b-a) * sizeof(pointermap_cell_t));
-
-    pointermap.len = b; // all initialized
+    if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )  goto failed;
+    pointermap.len = pointermap.alloc_len; // all initialized
   }
 
-  if (pointermap.map[k].pointer)
-    I_Error("P_LoadGame: Same ID number found for several objects.\n");
-  else
-    pointermap.map[k].pointer = p;
+  if (pointermap.map[id].pointer)  goto duplicate_err;  // already exists
+  pointermap.map[id].pointer = p;  // save the mapping
+  return;
+
+bad_id_err:
+  I_SoftError("P_LoadGame: Mobj read has bad object ID.\n");
+  goto failed;
+
+duplicate_err:
+  I_SoftError("P_LoadGame: Same ID number found for several Mobj.\n");
+  goto failed;
+
+failed:
+  save_game_abort = 1;
+  return;
 }
 
 
 // Loading, second phase: Returns the pointer corresponding to the ID number.
-// May only be called after all the saved objects have been created.
-static mobj_t *GetPointer(uint32_t id)
+// Only call after all the saved objects have been created, and are in map.
+static mobj_t * GetMobjPointer(uint32_t id)
 {
-  if (!id)
-    return NULL; // NULL ptr has id == 0
-
-  // id for cell k is k+1
-  uint32_t k = id - 1;
-
-  // is k in the initialized/allocated region? has it been assigned?
-  if (k >= pointermap.alloc_len || !pointermap.map[k].pointer)
-    I_Error("P_LoadGame: Unknown ID number.\n");
-
-  return pointermap.map[k].pointer;
+  // Less expensive to have map[0]==NULL than have special tests.
+  // Is id in the initialized/allocated region? has it been assigned?
+//  if (id >= pointermap.alloc_len || !pointermap.map[id].pointer)
+  if ( id >= pointermap.alloc_len )   goto bad_ptr;
+  mobj_t * mp = pointermap.map[id].pointer;	// [0] is NULL
+  if( (mp == NULL) && (id > 0) )   goto bad_ptr;
+  return mp;
+   
+bad_ptr:
+  // on error, let user load a different save game
+  I_SoftError("P_LoadGame: Unknown Mobj ID number.\n");
+  save_game_abort = 1;
+  return NULL;
 }
+
+#define WRITE_MobjPointerID(p,mobj)  WRITEULONG((p), GetID(mobj));
+#define READ_MobjPointerID(p)   GetMobjPointer( READULONG(p) )
+// No difference in executable
+//#define READ_MobjPointerID_S(p,mobj)   (mobj) = GetMobjPointer( READULONG(p) )
+
+// Save sector and line ptrs as index into their arrays
+#define WRITE_SECTOR_PTR( secp )   WRITELONG(save_p, (secp) - sectors)
+#define READ_SECTOR_PTR( secp )   (secp) = &sectors[READLONG(save_p)]
+#define WRITE_LINE_PTR( linp )   WRITELONG(save_p, (linp) - lines)
+#define READ_LINE_PTR( linp )   (linp) = &lines[READLONG(save_p)]
+#define WRITE_MAPTHING_PTR( mtp )   WRITELONG(save_p, (mtp) - mapthings)
+#define READ_MAPTHING_PTR( mtp )   (mtp) = &mapthings[READLONG(save_p)]
+// another read of mapthing in P_UnArchiveSpecials
 
 
 
@@ -935,6 +1127,8 @@ typedef enum
 
 enum
 {
+    tc_end = 1,	// reserved type mark to end section
+    // Changing order will invalidate all previous save games.
     tc_mobj,
     tc_ceiling,
     tc_door,
@@ -944,11 +1138,12 @@ enum
     tc_strobe,
     tc_glow,
     tc_fireflicker,
+    tc_lightfade,
     tc_elevator,                //SoM: 3/15/2000: Add extra boom types.
     tc_scroll,
     tc_friction,
-    tc_pusher,
-    tc_end
+    tc_pusher
+     // add new values only at end
 } specials_e;
 
 //
@@ -964,12 +1159,21 @@ enum
 // T_LightFlash, (lightflash_t: sector_t * swizzle),
 // T_StrobeFlash, (strobe_t: sector_t *),
 // T_Glow, (glow_t: sector_t *),
+// T_LightFade, (lightlevel_t: sector_t *),
 // T_PlatRaise, (plat_t: sector_t *), - active list
 // BP: added missing : T_FireFlicker
 //
 
-
+#if 0
 // [smite] Safe sectoreffect saving and loading using a macro hack.
+// [WDJ] comment: This is fragile. It depends upon the struct definitions
+// of all the sector effects having the thinker_t links and sector ptr as
+// the first fields.
+// There will be no compiler errors when this fails !!
+// It does not save the thinker_t fields (links) of the structure, nor
+// the sector ptr.  It writes a sector index before raw writing the
+// structure fields that are after the thinker_t and sector ptr.
+// It does not handle the ceilinglist ptr.
 #define SE_HEADER_SIZE (sizeof(thinker_t) + sizeof(sector_t*))
 #define SAVE_SE(th) \
   { int s = sizeof(*th) - SE_HEADER_SIZE;	      \
@@ -982,8 +1186,65 @@ enum
     READMEM(save_p, ((byte *)(th))+SE_HEADER_SIZE, s);\
     P_AddThinker(&(th)->thinker); }
 
-#define SAVE_THINKER(th) { WRITEMEM(save_p, ((byte *)(th))+sizeof(thinker_t), sizeof(*th)-sizeof(thinker_t)); }
-#define LOAD_THINKER(th) {  READMEM(save_p, ((byte *)(th))+sizeof(thinker_t), sizeof(*th)-sizeof(thinker_t)); P_AddThinker(&(th)->thinker); }
+#define WRITE_THINKER(th) { WRITEMEM(save_p, ((byte *)(th))+sizeof(thinker_t), sizeof(*th)-sizeof(thinker_t)); }
+#define READ_THINKER(th) {  READMEM(save_p, ((byte *)(th))+sizeof(thinker_t), sizeof(*th)-sizeof(thinker_t)); P_AddThinker(&(th)->thinker); }
+
+#endif // smite
+
+
+// [WDJ] comment: This is fragile. It depends upon the struct definitions
+// of all the sector effects having the thinker_t links and sector ptr as
+// the first fields.
+// There will be no compiler errors when this fails !!
+// It writes the thinker fields raw, from the start field, to the end
+// of the structure.
+
+// Include writing and reading the sector ptr.
+#define WRITE_SECTOR_THINKER(th, typ, field) \
+  { int offset = offsetof( typ, field );\
+    WRITE_SECTOR_PTR( (th)->sector );\
+    WRITEMEM(save_p, ((byte *)(th))+offset, (sizeof(*th)-offset)); }
+
+#define READ_SECTOR_THINKER(th, typ, field) \
+  { int offset = offsetof( typ, field );\
+    READ_SECTOR_PTR( (th)->sector );\
+    READMEM(save_p, ((byte *)(th))+offset, (sizeof(*th)-offset));\
+    P_AddThinker(&(th)->thinker); }
+
+// No extra fields
+#define WRITE_THINKER(th, typ, field) \
+  { int offset = offsetof( typ, field );\
+    WRITEMEM(save_p, ((byte *)(th))+offset, (sizeof(*th)-offset)); }
+
+#define READ_THINKER(th, typ, field) \
+  { int offset = offsetof( typ, field );\
+    READMEM(save_p, ((byte *)(th))+offset, (sizeof(*th)-offset));\
+    P_AddThinker(&(th)->thinker); }
+
+
+
+// Called for stopped ceiling or active ceiling.
+// Must be consistent, there is one reader for both.
+void  WRITE_ceiling( ceiling_t* ceilp, byte active )
+{
+    WRITEBYTE(save_p, tc_ceiling); // ceiling marker
+    PADSAVEP();
+    WRITE_SECTOR_THINKER( ceilp, ceiling_t, type );
+    // ceilinglist* does not need to be saved
+    WRITEBYTE(save_p, active); // active or stopped ceiling
+}
+
+
+// Called for stopped platform or active platform.
+// Must be consistent, there is one reader for both.
+void  WRITE_plat( plat_t* platp, byte active )
+{
+    WRITEBYTE(save_p, tc_plat);  // platform marker
+    PADSAVEP();
+    WRITE_SECTOR_THINKER( platp, plat_t, type );
+    // platlist* does not need to be saved
+    WRITEBYTE(save_p, active); // active or stopped plat
+}
 
 
 void P_ArchiveThinkers(void)
@@ -992,14 +1253,15 @@ void P_ArchiveThinkers(void)
     mobj_t *mobj;
     uint32_t diff;
 
-    // save off the current thinkers
+    // save the current thinkers
     for (th = thinkercap.next; th != &thinkercap; th = th->next)
     {
         if (th->function.acp1 == (actionf_p1) P_MobjThinker)
         {
+	    // Mobj thinker
             mobj = (mobj_t *) th;
 /*
-            // not a monster nor a picable item so don't save it
+            // not a monster nor a pickable item so don't save it
             if( (((mobj->flags & (MF_COUNTKILL | MF_PICKUP | MF_SHOOTABLE )) == 0)
                  && (mobj->flags & MF_MISSILE)
                  && (mobj->info->doomednum !=-1) )
@@ -1008,7 +1270,7 @@ void P_ArchiveThinkers(void)
 */
             if (mobj->spawnpoint && (!(mobj->spawnpoint->options & MTF_FS_SPAWNED)) && (mobj->info->doomednum != -1))
             {
-                // spawnpoint is not moddified but we must save it since it is a indentifier
+                // spawnpoint is not modified but we must save it since it is a indentifier
                 diff = MD_SPAWNPOINT;
 
                 if ((mobj->x != mobj->spawnpoint->x << FRACBITS) || (mobj->y != mobj->spawnpoint->y << FRACBITS) || (mobj->angle != (unsigned) (ANG45 * (mobj->spawnpoint->angle / 45))))
@@ -1074,16 +1336,16 @@ void P_ArchiveThinkers(void)
                 diff |= MD_AMMO;
 
             PADSAVEP();
-            WRITEBYTE(save_p, tc_mobj);
+            WRITEBYTE(save_p, tc_mobj);	// mark as mobj
             WRITEULONG(save_p, diff);
-            // convert pointer to id number
-            WRITEULONG(save_p, GetID(mobj)); // NOTE does not check if this mobj has been already saved, so it'd better not appear twice
-
+            // Save ID number of this Mobj so that pointers can be restored.
+	    // NOTE: does not check if this mobj has been already saved, so it'd better not appear twice.
+	    WRITE_MobjPointerID(save_p, mobj);
             WRITEFIXED(save_p, mobj->z);        // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
             WRITEFIXED(save_p, mobj->floorz);
 
             if (diff & MD_SPAWNPOINT)
-                WRITESHORT(save_p, mobj->spawnpoint - mapthings);
+                WRITE_MAPTHING_PTR( mobj->spawnpoint );
             if (diff & MD_TYPE)
                 WRITEULONG(save_p, mobj->type);
             if (diff & MD_POS)
@@ -1131,9 +1393,9 @@ void P_ArchiveThinkers(void)
             if (diff & MD_LASTLOOK)
                 WRITELONG(save_p, mobj->lastlook);
             if (diff & MD_TARGET)
-	        WRITEULONG(save_p, GetID(mobj->target));
+	        WRITE_MobjPointerID(save_p, mobj->target);
             if (diff & MD_TRACER)
-	        WRITEULONG(save_p, GetID(mobj->tracer));
+	        WRITE_MobjPointerID(save_p, mobj->tracer);
             if (diff & MD_FRICTION)
                 WRITELONG(save_p, mobj->friction);
             if (diff & MD_MOVEFACTOR)
@@ -1145,91 +1407,71 @@ void P_ArchiveThinkers(void)
             if (diff & MD_AMMO)
                 WRITELONG(save_p, mobj->dropped_ammo_count);
         }
+        // Use action as determinant of its owner.
+	// acv == -1  means deallocated (see P_RemoveThinker)
         else if (th->function.acv == (actionf_v) NULL)
         {
+	    // No action function.
+	    // This thinker can be a stopped ceiling or platform.
+	    // Each sector action has a separate thinker.
+
 	    boolean done = false;
             //SoM: 3/15/2000: Boom stuff...
             ceilinglist_t *cl;
-
+	   
+	    // search for this thinker being a stopped active ceiling
             for (cl = activeceilings; cl; cl = cl->next)
-                if (cl->ceiling == (ceiling_t *) th)
+	    {
+                if (cl->ceiling == (ceiling_t *) th)  // found in ceilinglist
                 {
-                    WRITEBYTE(save_p, tc_ceiling);
-                    PADSAVEP();
-		    ceiling_t *ceiling = (ceiling_t *)th;
-		    SAVE_SE(ceiling);
-
-		    save_p -= sizeof(ceilinglist_t *);
-		    WRITEBYTE(save_p, 0); // stopped ceiling
-		    // ceilinglist* does not need to be saved
-
+		    WRITE_ceiling( (ceiling_t*)th, 0 ); // stopped ceiling 
 		    done = true;
 		    break;
                 }
+	    }
 
 	    if (done)
 	      continue;
 
 	    // [smite] Added a similar search for stopped plats.
             platlist_t *pl;
+	    // search for this thinker being a stopped active platform
 	    for (pl = activeplats; pl; pl = pl->next)
-                if (pl->plat == (plat_t *) th)
+	    {
+                if (pl->plat == (plat_t *) th)  // found in platform list
                 {
-                    WRITEBYTE(save_p, tc_plat);
-                    PADSAVEP();
-		    plat_t *plat = (plat_t *)th;
-		    SAVE_SE(plat);
-
-		    save_p -= sizeof(platlist_t *);
-		    WRITEBYTE(save_p, 0); // stopped plat
-		    // platlist* does not need to be saved
-
+		    WRITE_plat( (plat_t *)th, 0 ); // stopped plat
 		    break;
                 }
+	    }
 
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_MoveCeiling)
         {
-            WRITEBYTE(save_p, tc_ceiling);
-            PADSAVEP();
-            ceiling_t *ceiling = (ceiling_t *)th;
-	    SAVE_SE(ceiling);
-
-	    save_p -= sizeof(ceilinglist_t *);
-	    WRITEBYTE(save_p, 1); // moving ceiling
-	    // ceilinglist* does not need to be saved
-            continue;
-        }
-        else if (th->function.acp1 == (actionf_p1) T_VerticalDoor)
-        {
-            WRITEBYTE(save_p, tc_door);
-            PADSAVEP();
-	    vldoor_t *door = (vldoor_t *)th;
-	    SAVE_SE(door);
-
-	    save_p -= sizeof(line_t*); // line
-            WRITELONG(save_p, door->line - lines);
-            continue;
-        }
-        else if (th->function.acp1 == (actionf_p1) T_MoveFloor)
-        {
-            WRITEBYTE(save_p, tc_floor);
-            PADSAVEP();
-	    floormove_t *floor = (floormove_t *)th;
-	    SAVE_SE(floor);
+            WRITE_ceiling( (ceiling_t *)th, 1 );  // moving ceiling
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_PlatRaise)
         {
-	    WRITEBYTE(save_p, tc_plat);
+	    WRITE_plat( (plat_t *)th, 1 ); // moving plat
+            continue;
+        }
+        else if (th->function.acp1 == (actionf_p1) T_VerticalDoor)
+        {
+            WRITEBYTE(save_p, tc_door);  // door marker
             PADSAVEP();
-            plat_t *plat = (plat_t *)th;
-            SAVE_SE(plat);
-
-	    save_p -= sizeof(platlist_t *);
-	    WRITEBYTE(save_p, 1); // moving plat
-	    // platlist* does not need to be saved
+	    vldoor_t *door = (vldoor_t *)th;
+	    WRITE_SECTOR_THINKER( door, vldoor_t, type );
+	    WRITE_LINE_PTR( door->line );
+            continue;
+        }
+        else if (th->function.acp1 == (actionf_p1) T_MoveFloor)
+        {
+            WRITEBYTE(save_p, tc_floor);  // floor marker
+            PADSAVEP();
+	    floormove_t *floormv = (floormove_t *)th;
+	    WRITE_SECTOR_THINKER( floormv, floormove_t, type );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_LightFlash)
@@ -1237,7 +1479,7 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_flash);
             PADSAVEP();
             lightflash_t *flash = (lightflash_t *)th;
-	    SAVE_SE(flash);
+	    WRITE_SECTOR_THINKER( flash, lightflash_t, count );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_StrobeFlash)
@@ -1245,7 +1487,7 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_strobe);
             PADSAVEP();
             strobe_t *strobe = (strobe_t *)th;
-	    SAVE_SE(strobe);
+	    WRITE_SECTOR_THINKER( strobe, strobe_t, count );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Glow)
@@ -1253,7 +1495,7 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_glow);
             PADSAVEP();
             glow_t *glow = (glow_t *)th;
-	    SAVE_SE(glow);
+	    WRITE_SECTOR_THINKER( glow, glow_t, minlight );
             continue;
         }
         else
@@ -1263,7 +1505,15 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_fireflicker);
             PADSAVEP();
             fireflicker_t *fireflicker = (fireflicker_t *)th;
-	    SAVE_SE(fireflicker);
+	    WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, count );
+            continue;
+        }
+        else if (th->function.acp1 == (actionf_p1) T_LightFade)
+        {
+            WRITEBYTE(save_p, tc_lightfade);
+            PADSAVEP();
+            lightlevel_t *fade = (lightlevel_t *)th;
+	    WRITE_SECTOR_THINKER( fade, lightlevel_t, destlevel );
             continue;
         }
         else
@@ -1273,39 +1523,38 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_elevator);
             PADSAVEP();
             elevator_t *elevator = (elevator_t *)th;
-	    SAVE_SE(elevator);
-            continue;
+	    WRITE_SECTOR_THINKER( elevator, elevator_t, type );
+	    continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Scroll)
         {
             WRITEBYTE(save_p, tc_scroll);
 	    scroll_t *scroll = (scroll_t *)th;
-	    SAVE_THINKER(scroll);
+	    WRITE_THINKER( scroll, scroll_t, type );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Friction)
         {
             WRITEBYTE(save_p, tc_friction);
 	    friction_t *friction = (friction_t *)th;
-	    SAVE_THINKER(friction);
+	    WRITE_THINKER( friction, friction_t, affectee );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Pusher)
         {
 	    WRITEBYTE(save_p, tc_pusher);
 	    pusher_t *pusher = (pusher_t *)th;
-	    SAVE_THINKER(pusher);
-
-	    save_p -= sizeof(mobj_t*); // source
+	    WRITE_THINKER( pusher, pusher_t, type );
             continue;
         }
 #ifdef PARANOIA
-        else if (th->function.acv != (actionf_v)(-1)) // wait garbage colection
+        else if ((int) th->function.acp1 != -1) // wait garbage colection
             I_Error("unknown thinker type 0x%X", th->function.acp1);
 #endif
 
     }
 
+    // mark the end of the save section using reserved type mark
     WRITEBYTE(save_p, tc_end);
 }
 
@@ -1325,10 +1574,11 @@ void P_UnArchiveThinkers(void)
     thinker_t *currentthinker = thinkercap.next;
     while (currentthinker != &thinkercap)
     {
-        thinker_t *next = currentthinker->next;
+        thinker_t * next = currentthinker->next;  // because of unlinking
 
         mobj = (mobj_t *) currentthinker;
         if (currentthinker->function.acp1 == (actionf_p1) P_MobjThinker)
+        {
             // since this item isn't save don't remove it
 /*            if( !((((mobj->flags & (MF_COUNTKILL | MF_PICKUP | MF_SHOOTABLE )) == 0)
                    && (mobj->flags & MF_MISSILE)
@@ -1336,6 +1586,7 @@ void P_UnArchiveThinkers(void)
                   || (mobj->type == MT_BLOOD) ) )
 */
             P_RemoveMobj((mobj_t *) currentthinker);
+	}
         else
             Z_Free(currentthinker);
 
@@ -1349,27 +1600,28 @@ void P_UnArchiveThinkers(void)
     while (1)
     {
         tclass = READBYTE(save_p);
-        if (tclass == tc_end)
+        if (tclass == tc_end)	// reserved type mark to end section
             break;      // leave the while
         switch (tclass)
         {
             case tc_mobj:
-                PADSAVEP();
 
                 mobj = Z_Malloc(sizeof(mobj_t), PU_LEVEL, NULL);
                 memset(mobj, 0, sizeof(mobj_t));
 
+                PADSAVEP();
                 diff = READULONG(save_p);
-                SetID(READULONG(save_p), mobj); // assign the ID to the newly created mobj
+	        // [WDJ] initializing the lookup for GetMobjPointer and READ_MobjPointerID(),
+	        // this is the id number for the mobj being read here.
+                MapMobjID(READULONG(save_p), mobj); // assign the ID to the newly created mobj
 
                 mobj->z = READFIXED(save_p);    // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
                 mobj->floorz = READFIXED(save_p);
 
                 if (diff & MD_SPAWNPOINT)
                 {
-                    short spawnpointnum = READSHORT(save_p);
-                    mobj->spawnpoint = &mapthings[spawnpointnum];
-                    mapthings[spawnpointnum].mobj = mobj;
+		    READ_MAPTHING_PTR( mobj->spawnpoint );
+                    mobj->spawnpoint->mobj = mobj;
                 }
                 if (diff & MD_TYPE)
                 {
@@ -1404,7 +1656,7 @@ void P_UnArchiveThinkers(void)
                     mobj->momx = READFIXED(save_p);
                     mobj->momy = READFIXED(save_p);
                     mobj->momz = READFIXED(save_p);
-                }       // else null (memset)
+                }       // else 0 (memset)
 
                 if (diff & MD_RADIUS)
                     mobj->radius = READFIXED(save_p);
@@ -1470,15 +1722,10 @@ void P_UnArchiveThinkers(void)
                     mobj->lastlook = READLONG(save_p);
                 else
                     mobj->lastlook = -1;
-
-		// [smite] For type safety, we store the mobj ids to variables which are in unions
-		// with the actual pointers. After loading and creating all mobjs, we then
-		// replace the ids with the actual pointers at the end of this function.
                 if (diff & MD_TARGET)
-		    mobj->target_id = READULONG(save_p);
+		  mobj->target = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
                 if (diff & MD_TRACER)
-                    mobj->tracer_id = READULONG(save_p);
-
+                    mobj->tracer = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
                 if (diff & MD_FRICTION)
                     mobj->friction = READLONG(save_p);
                 else
@@ -1520,8 +1767,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(ceiling);
-
+		READ_SECTOR_THINKER( ceiling, ceiling_t, type );
                 ceiling->sector->ceilingdata = ceiling;
 		byte moving = READBYTE(save_p); // moving ceiling?
 		ceiling->thinker.function.acp1 = moving ? (actionf_p1)T_MoveCeiling : NULL;
@@ -1533,10 +1779,8 @@ void P_UnArchiveThinkers(void)
 	      {
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(door);
-		save_p -= sizeof(line_t*); // line
-                door->line = &lines[READLONG(save_p)];
-
+		READ_SECTOR_THINKER( door, vldoor_t, type );
+ 		READ_LINE_PTR( door->line );
                 door->sector->ceilingdata = door;
                 door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
 	      }
@@ -1544,12 +1788,11 @@ void P_UnArchiveThinkers(void)
 
             case tc_floor:
 	      {
-		floormove_t *floor = Z_Malloc(sizeof(*floor), PU_LEVEL, NULL);
+		floormove_t *floormv = Z_Malloc(sizeof(*floormv), PU_LEVEL, NULL);
 		PADSAVEP();
-		LOAD_SE(floor);
-
-                floor->sector->floordata = floor;
-                floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+		READ_SECTOR_THINKER( floormv, floormove_t, type );
+                floormv->sector->floordata = floormv;
+                floormv->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
 	      }
 	      break;
 
@@ -1557,8 +1800,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		plat_t *plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(plat);
-
+		READ_SECTOR_THINKER( plat, plat_t, type );
                 plat->sector->floordata = plat;
 		byte moving = READBYTE(save_p); // moving plat?
 		plat->thinker.function.acp1 = moving ? (actionf_p1)T_PlatRaise : NULL;
@@ -1570,8 +1812,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(flash);
-                
+		READ_SECTOR_THINKER( flash, lightflash_t, count );
                 flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
 	      }
 	      break;
@@ -1580,8 +1821,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(strobe);
-
+		READ_SECTOR_THINKER( strobe, strobe_t, count );
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
 	      }
 	      break;
@@ -1590,8 +1830,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
                 PADSAVEP();
-                LOAD_SE(glow);
-
+		READ_SECTOR_THINKER( glow, glow_t, minlight );
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
 	      }
 	      break;
@@ -1600,9 +1839,17 @@ void P_UnArchiveThinkers(void)
 	      {
 		fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(fireflicker);
-
+		READ_SECTOR_THINKER( fireflicker, fireflicker_t, count );
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
+	      }
+	      break;
+	      
+            case tc_lightfade:
+	      {
+		lightlevel_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
+                PADSAVEP();
+		READ_SECTOR_THINKER( fade, lightlevel_t, destlevel );
+                fade->thinker.function.acp1 = (actionf_p1) T_LightFade;
 	      }
 	      break;
 
@@ -1610,8 +1857,7 @@ void P_UnArchiveThinkers(void)
 	      {
 		elevator_t *elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
                 PADSAVEP();
-		LOAD_SE(elevator);
-
+		READ_SECTOR_THINKER( elevator, elevator_t, type );
                 elevator->sector->floordata = elevator; //jff 2/22/98
                 elevator->sector->ceilingdata = elevator;       //jff 2/22/98
                 elevator->thinker.function.acp1 = (actionf_p1) T_MoveElevator;
@@ -1621,8 +1867,7 @@ void P_UnArchiveThinkers(void)
             case tc_scroll:
 	      {
 		scroll_t *scroll = Z_Malloc(sizeof(scroll_t), PU_LEVEL, NULL);
-		LOAD_THINKER(scroll);
-
+		READ_THINKER( scroll, scroll_t, type );
                 scroll->thinker.function.acp1 = (actionf_p1) T_Scroll;
 	      }
 	      break;
@@ -1630,8 +1875,7 @@ void P_UnArchiveThinkers(void)
             case tc_friction:
 	      {
 		friction_t *friction = Z_Malloc(sizeof(friction_t), PU_LEVEL, NULL);
-		LOAD_THINKER(friction);
-
+		READ_THINKER( friction, friction_t, affectee );
                 friction->thinker.function.acp1 = (actionf_p1) T_Friction;
 	      }
 	      break;
@@ -1639,10 +1883,8 @@ void P_UnArchiveThinkers(void)
             case tc_pusher:
 	      {
 		pusher_t *pusher = Z_Malloc(sizeof(pusher_t), PU_LEVEL, NULL);
-		LOAD_THINKER(pusher);
-		save_p -= sizeof(mobj_t*); // source
+		READ_THINKER( pusher, pusher_t, type );
                 pusher->source = P_GetPushThing(pusher->affectee);
-
                 pusher->thinker.function.acp1 = (actionf_p1) T_Pusher;
 	      }
                 break;
@@ -1652,17 +1894,17 @@ void P_UnArchiveThinkers(void)
         }
     }
 
-    // Convert ID numbers to proper mobj_t*:s
+    // Reversing the HACK: Convert ID numbers to proper mobj_t*:s
     for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
     {
       if (currentthinker->function.acp1 == (actionf_p1) P_MobjThinker)
       {
 	mobj = (mobj_t *) currentthinker;
-	if (mobj->tracer_id)
-	  mobj->tracer = GetPointer(mobj->tracer_id);
+	if (mobj->tracer)
+	  mobj->tracer = GetMobjPointer((uint32_t)mobj->tracer);
 
-	if (mobj->target_id)
-	  mobj->target = GetPointer(mobj->target_id);
+	if (mobj->target)
+	  mobj->target = GetMobjPointer((uint32_t)mobj->target);
       }
     }
 }
@@ -1682,7 +1924,7 @@ void P_ArchiveSpecials(void)
     i = iquetail;
     while (iquehead != i)
     {
-        WRITELONG(save_p, itemrespawnque[i] - mapthings);
+        WRITE_MAPTHING_PTR( itemrespawnque[i] );
         WRITELONG(save_p, itemrespawntime[i]);
         i = (i + 1) & (ITEMQUESIZE - 1);
     }
@@ -1697,7 +1939,7 @@ void P_ArchiveSpecials(void)
 void P_UnArchiveSpecials(void)
 {
     int i;
-
+   
     // BP: added save itemrespawn queue for deathmatch
     iquetail = iquehead = 0;
     while ((i = READLONG(save_p)) != 0xffffffff)
@@ -1715,6 +1957,67 @@ void P_UnArchiveSpecials(void)
 // use this method?
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef FRAGGLESCRIPT
+
+
+static unsigned int P_NumberFSArrays(void)
+{
+  unsigned int count = 0;
+#ifdef SAVELIST_STRUCTHEAD
+  sfarray_t *cur = sfsavelist.next; // start at first array
+#else
+  sfarray_t *cur = sfsavelist; // start at first array
+#endif
+  while (cur)
+  {
+    cur->saveindex = ++count;  // replaces ptr in save game
+    cur = cur->next;
+  }
+
+  return count;
+}
+
+
+static void  WRITE_SFArrayPtr( sfarray_t * arrayptr )
+{
+    // write the array id (saveindex) for the ptr
+#ifdef SAVELIST_STRUCTHEAD
+    sfarray_t *cur = sfsavelist.next;
+#else
+    sfarray_t *cur = sfsavelist;
+#endif
+    while(cur && (cur != arrayptr))  // verify if valid ptr
+	    cur = cur->next;
+
+    // zero is unused, so use it for NULL
+    // The arrays have been numbered in saveindex, see ReadSFArrayPtr
+    WRITELONG(save_p, (cur ? cur->saveindex : 0) );
+}
+   
+static sfarray_t * READ_SFArrayPtr( void )
+{
+    int svindx;
+    sfarray_t *cur = NULL;
+    // All arrays were numbered in saveindex
+    svindx = READULONG(save_p);  // consistent with Write saveindex
+
+    if(svindx)		// 0 is NULL ptr
+    {
+#ifdef SAVELIST_STRUCTHEAD
+        cur = sfsavelist.next;  // start of all arrays
+#else
+        cur = sfsavelist;  // start of all arrays
+#endif
+	while(cur)	// search for matching saveindex
+	{
+            if(svindx == cur->saveindex)  break;
+            cur = cur->next;
+	}
+        // not found is NULL ptr
+    }
+    return cur;   // which may be NULL
+}
+  
 // SoM: Added FraggleScript stuff.
 // Save all the neccesary FraggleScript data.
 // we need to save the levelscript(all global
@@ -1725,7 +2028,7 @@ void P_UnArchiveSpecials(void)
 void P_ArchiveSValue(svalue_t *s)
 {
   switch (s->type)   // store depending on type
-    {
+  {
     case svt_string:
       {
 	strcpy((char *)save_p, s->value.s);
@@ -1744,19 +2047,19 @@ void P_ArchiveSValue(svalue_t *s)
       }
     case svt_mobj:
       {
-	WRITEULONG(save_p, GetID(s->value.mobj));
+	WRITE_MobjPointerID(save_p, s->value.mobj);
 	break;
       }
     default:
       // other types do not appear in user scripts
       break;
-    }
+  }
 }
 
 void P_UnArchiveSValue(svalue_t *s)
 {
   switch (s->type)       // read depending on type
-    {
+  {
     case svt_string:
       {
 	s->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
@@ -1775,12 +2078,12 @@ void P_UnArchiveSValue(svalue_t *s)
       }
     case svt_mobj:
       {
-	s->value.mobj = GetPointer(READULONG(save_p));
+	s->value.mobj = READ_MobjPointerID(save_p);
 	break;
       }
     default:
       break;
-    }
+  }
 }
 
 
@@ -1823,19 +2126,14 @@ void P_ArchiveFSVariables(svariable_t **vars)
 
       WRITEBYTE(save_p, sv->type); // store type;
 
+      // Those that are not handled by P_ArchiveSValue
       if (sv->type == svt_array) // haleyjd: arrays
-	{
-	  // just write the array id (saveindex)
-	  sfarray_t *cur = sfsavelist.next;
-	  while (cur && sv->value.a != cur)
-	    cur = cur->next;
-
-	  // zero is unused, so use it for NULL
-	  WRITELONG(save_p, cur ? cur->saveindex : 0);
+      {
+	  WRITE_SFArrayPtr( sv->value.a );
 	  break;
-	}
+      }
       else
-	{
+      {
 	  // [smite] TODO svariable_t should simply inherit svalue_t
 	  // also svalue_t should have array as a possible subtype
 	  svalue_t s;
@@ -1843,7 +2141,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
 
 	  s.value.mobj = sv->value.mobj; // HACK largest type in union
 	  P_ArchiveSValue(&s);
-	}
+      }
 
       sv = sv->next;
     }
@@ -1870,29 +2168,18 @@ void P_UnArchiveFSVariables(svariable_t **vars)
     sv->type = READBYTE(save_p);
 
     if (sv->type == svt_array) // Exl; arrays
-      {
-	int ordinal = READLONG(save_p);
-	if (!ordinal)
-	  sv->value.a = NULL;
-	else
-	  {
-	    sfarray_t *cur = sfsavelist.next;
-	    while (cur && cur->saveindex != ordinal)
-	      cur = cur->next;
-			 
-	    // set even if cur is NULL somehow (not a problem)
-	    sv->value.a = cur;
-	  }
-      }
+    {
+        sv->value.a = READ_SFArrayPtr();
+    }
     else
-      {
+    {
 	// [smite] TODO svariable_t should simply inherit svalue_t, but...
 	svalue_t s;
 	s.type = sv->type;
 
 	P_UnArchiveSValue(&s);
 	sv->value.mobj = s.value.mobj; // HACK largest type in union
-      }
+    }
 
     // link in the new variable
     int hashkey = variable_hash(sv->name);
@@ -1946,12 +2233,13 @@ void P_ArchiveRunningScript(runningscript_t * rs)
 {
     //CheckSaveGame(sizeof(short) * 8); // room for 8 shorts
     WRITESHORT(save_p, rs->script->scriptnum);  // save scriptnum
+    // char* into data, saved as index
     WRITESHORT(save_p, rs->savepoint - rs->script->data);       // offset
     WRITESHORT(save_p, rs->wait_type);
     WRITESHORT(save_p, rs->wait_data);
 
     // save trigger ID
-    WRITEULONG(save_p, GetID(rs->trigger));
+    WRITE_MobjPointerID(save_p, rs->trigger);
 
     P_ArchiveFSVariables(rs->variables);
 }
@@ -1973,13 +2261,13 @@ runningscript_t *P_UnArchiveRunningScript()
     else
         rs->script = levelscript.children[scriptnum];
 
-    // read out offset from save
+    // read out offset from save, convert index into ptr = &data[index]
     rs->savepoint = rs->script->data + READSHORT(save_p);
     rs->wait_type = READSHORT(save_p);
     rs->wait_data = READSHORT(save_p);
 
     // read out trigger thing
-    rs->trigger = GetPointer(READULONG(save_p));
+    rs->trigger = READ_MobjPointerID(save_p);
 
 
     // read out the variables now (fun!)
@@ -2056,19 +2344,6 @@ void P_UnArchiveRunningScripts()
 // and archive the arrays themselves.
 //
 
-static unsigned int P_NumberFSArrays(void)
-{
-  unsigned int count = 0;
-  sfarray_t *cur = sfsavelist.next; // start at first array
-  while (cur)
-  {
-    cur->saveindex = ++count;
-    cur = cur->next;
-  }
-
-  return count;
-}
-
 
 // must be called before running/level script archiving
 void P_ArchiveFSArrays(void)
@@ -2081,14 +2356,20 @@ void P_ArchiveFSArrays(void)
   // write number of FS arrays
   WRITEULONG(save_p, num_fsarrays);
       
-  // start at first array
-  sfarray_t *cur = sfsavelist.next;
+#ifdef SAVELIST_STRUCTHEAD
+  sfarray_t *cur = sfsavelist.next; // start at first array
+#else
+  sfarray_t *cur = sfsavelist; // start at first array
+#endif
   while(cur)
   {
     unsigned int i;
 
     // write the length of this array
     WRITEULONG(save_p, cur->length);
+
+    // values[] is array of svalue_s, which is a union of possible values
+    // marked with the type, each array element can be of a different type
 
     // write the contents of this array
     for (i=0; i<cur->length; i++)
@@ -2105,11 +2386,16 @@ void P_ArchiveFSArrays(void)
 void P_UnArchiveFSArrays(void)
 {
   T_InitSaveList(); // reinitialize the save list
+     // All PU_LEVEL memory already cleared by P_UnArchiveMisc()
 
   // read number of FS arrays
   unsigned int num_fsarrays = READULONG(save_p);
 
-  sfarray_t *last = &sfsavelist;
+#ifdef SAVELIST_STRUCTHEAD
+  sfarray_t *last = sfsavelist.next; // start at first array
+#else
+  sfarray_t *last = sfsavelist; // start at first array
+#endif
 
   // read all the arrays
   unsigned int q;
@@ -2155,9 +2441,8 @@ void P_ArchiveScripts()
     // save runningscripts
     P_ArchiveRunningScripts();
 
-    // Archive the script camera.
-    WRITELONG(save_p, (long) script_camera_on);
-    WRITEULONG(save_p, GetID(script_camera.mo));
+    WRITEBOOLEAN(save_p, script_camera_on);
+    WRITE_MobjPointerID(save_p, script_camera.mo);
     WRITEANGLE(save_p, script_camera.aiming);
     WRITEFIXED(save_p, script_camera.viewheight);
     WRITEANGLE(save_p, script_camera.startangle);
@@ -2175,14 +2460,35 @@ void P_UnArchiveScripts()
     P_UnArchiveRunningScripts();
 
     // Unarchive the script camera
-    script_camera_on = (boolean) READLONG(save_p);
-    script_camera.mo = GetPointer(READULONG(save_p));
+    script_camera_on = READBOOLEAN(save_p);
+    script_camera.mo = READ_MobjPointerID(save_p);
     script_camera.aiming = READANGLE(save_p);
     script_camera.viewheight = READFIXED(save_p);
     script_camera.startangle = READANGLE(save_p);
 }
 
+// [WDJ] return true if there is fragglescript state to be saved
+boolean SG_fragglescript_detect( void )
+{
+#ifdef SAVELIST_STRUCTHEAD
+    if( sfsavelist.next ) goto found_state;	// start of arrays
+#else
+    if( sfsavelist ) goto found_state;	// start of arrays
+#endif
+    if( levelscript.variables ) goto found_state;  // levelscript has vars
+    if( runningscripts.next ) goto found_state;  // there is a running script
+    if( script_camera_on ) goto found_state;
+    if( script_camera.mo || script_camera.viewheight
+	|| script_camera.aiming || script_camera.startangle )
+     		goto found_state; // camera was on
+ 
+    return 0;
 
+ found_state:
+    return 1;	// must save fragglescript
+}
+
+#endif // FRAGGLESCRIPT
 
 // =======================================================================
 //          Misc
@@ -2222,6 +2528,7 @@ boolean P_UnArchiveMisc()
         players[i].playerstate = PST_REBORN;
     }
 
+    // Purge all previous PU_LEVEL memory.
     if (!P_SetupLevel(gameepisode, gamemap, gameskill, NULL))
         return false;
 
@@ -2232,41 +2539,311 @@ boolean P_UnArchiveMisc()
     return true;
 }
 
-void P_SaveGame(void)
+// =======================================================================
+//          Save game
+// =======================================================================
+
+// Save game is inherently variable length, this is worst case wild guess.
+// added 8-3-98 increase savegame size from 0x2c000 (180kb) to 512*1024
+#define SAVEGAMESIZE    (512*1024)
+#define SAVEGAME_HEADERSIZE   (64 + 80 + 128 + 32 + 32)
+//#define SAVESTRINGSIZE  24
+int savebuffer_size = 0;
+byte * savebuffer = NULL;
+
+// Allocate malloc an appropriately sized buffer
+byte *  P_Alloc_savebuffer( boolean header, boolean data )
 {
-    InitPointermap_Save(1024);
-
-    CV_SaveNetVars((char **) &save_p);
-    P_ArchiveMisc();
-    P_ArchivePlayers();
-    P_ArchiveWorld();
-    P_ArchiveThinkers();
-    P_ArchiveSpecials();
-#ifdef FRAGGLESCRIPT
-    P_ArchiveScripts();
-#endif
-
-    ClearPointermap();
-
-    WRITEBYTE(save_p, 0x1d);    // consistancy marker
+    savebuffer_size = 0;
+    if( header )   savebuffer_size += SAVEGAME_HEADERSIZE;
+    if( data )     savebuffer_size += SAVEGAMESIZE;
+   
+    save_p = savebuffer = (byte *)malloc(savebuffer_size);
+    if( ! savebuffer)
+    {
+        CONS_Printf (" free memory for savegame\n");
+        return NULL;
+    }
+    return savebuffer;
 }
 
+// return -1 if overrun the buffer
+size_t  P_Savegame_length( void )
+{
+    size_t length = save_p - savebuffer;
+    if (length > SAVEGAMESIZE)
+    {
+        I_SoftError ("Savegame buffer overrun, need %i\n", length);
+   	return -1;
+    }
+    return length;
+}
+
+
+// Save game header support
+
+// Get the name of the wad containing the current level map
+// Write operation for :map: line.
+char * level_wad( void )
+{
+    char * mapwad;
+    // lastloadedmaplumpnum contains index to the wad containing current map.
+    int mapwadnum = WADFILENUM( lastloadedmaplumpnum );
+    if( mapwadnum >= numwadfiles )  goto defname;
+    mapwad = wadfiles[ mapwadnum ]->filename;
+    if( mapwad == NULL )  goto defname;
+    return FIL_Filename_of( mapwad );  // ignore directories
+
+ defname:
+    return gamedesc.iwad_filename;
+}
+
+// Check if the wad name is in the wadfiles
+// Read operation for :map: line.
+boolean  check_have_wad( char * ckwad )
+{
+    int i;
+    // search all known wad names for a match
+    for( i=0; i<numwadfiles; i++ )
+    {
+        char * tt = FIL_Filename_of( wadfiles[i]->filename );
+        if( strcmp( tt, ckwad ) == 0 )  return true;
+    }
+    return false;
+}
+
+
+// Write the command line switches to savebuffer.
+// Write operation for :cmd: line.
+void WRITE_command_line( void )
+{
+    int i;
+    SG_write_string( ":cmd:" );
+    save_p --;  // No term 0 on header writes
+    for( i=1; i<myargc; i++ )	// skip executable
+    {
+        int len = sprintf( save_p, " %s", myargv[i] );
+        save_p += len;
+    }
+    SG_write_string( "\n" );
+    save_p --;
+}
+
+// Save game header
+// Langid format requires underlines.
+const char * sg_head_format =
+  "!!Legacy_save_game.V%i\n:name:%s\n:game:%s\n:wad:%s\n:map:%s\n";
+const char * sg_head_END = "::END\n";
+const short idname_length = 18;  // !!<name> length
+
+#ifdef __BIG_ENDIAN__
+const byte sg_big_endian = 1;
+#else
+const byte sg_big_endian = 0;
+#endif
+
+// Called from menu via G_DoSaveGame via network Got_SaveGamecmd.
+// Only used for savegame file.
+// Write savegame header to savegame buffer.
+void P_Write_Savegame_Header( const char * description )
+{
+    int len;
+    // [WDJ] A consistent header across all save game versions.
+    // Save Langid game header
+    // Do not use WRITESTRING as that will put term 0 into the header.
+    len = sprintf( save_p, sg_head_format,
+		   VERSION, description, gamedesc.gname,
+		   level_wad(), levelmapname );
+    save_p += len;  // does not include string term 0
+    WRITE_command_line();
+    len = sprintf( save_p, sg_head_END );
+    save_p += len;  // does not include string term 0
+    WRITEBYTE( save_p, 0 );  // The only 0 in the header is after the END
+    // the level number is also saved in ArchiveMisc
+ 
+    // binary header data
+    WRITESHORT( save_p, VERSION );	// 16 bit game version that wrote file
+    WRITEBYTE( save_p, sg_big_endian );
+    WRITEBYTE( save_p, sg_padded );
+    WRITEBYTE( save_p, sizeof(int) );	// word size
+    WRITEBYTE( save_p, sizeof(boolean) );	// machine dependent
+    // reserved
+    WRITEBYTE( save_p, 0 );
+    WRITEBYTE( save_p, 0 );
+    WRITEBYTE( save_p, 0 );
+    WRITEBYTE( save_p, 0 );
+}
+
+
+// Find the header line in the savebuffer
+char *  read_header_line( const char * idstr )
+{
+    char * fnd = strstr( save_p, idstr ); // find the :name:
+    if( fnd ) // NULL if not found
+        fnd += strlen(idstr);  // start of line content
+    return fnd;
+}
+
+// Terminate strings, this modifies the header in the savebuffer
+// Must be only done after all header reads.
+void  term_header_line( char * infodest )
+{
+    if( infodest ) // NULL if not found
+    {
+        // terminate strings, this modifies the header in the savebuffer
+        * strpbrk( infodest, "\r\n" ) = 0;
+    }
+}
+
+
+// Called from G_DoLoadGame, M_ReadSaveStrings
+// Only used for savegame file.
+// Read savegame header from savegame buffer.
+// Returns header info in infop.
+// Returns 1 when header is correct.
+boolean P_Read_Savegame_Header( savegame_info_t * infop)
+{
+    char * reason;
+
+    // Read header
+    save_game_abort = 0;	// all sync reads will check this
+   
+    if( strncmp( save_p, sg_head_format, idname_length ) )  goto not_save;
+    if( ! strstr( save_p, "::END" ) )  goto not_save;
+
+    // find header strings
+    infop->name = read_header_line( ":name:" );
+    infop->game = read_header_line( ":game:" );
+    infop->wad = read_header_line( ":wad:" );
+    infop->map = read_header_line( ":map:" );
+    save_p += strlen( save_p ) + 1; // find 0, to get past Langid header;
+
+    // terminate the strings, this modifies the header in the savebuffer
+    // and prevents finding any more header lines
+    term_header_line( infop->name );
+    term_header_line( infop->game );
+    term_header_line( infop->wad );
+    term_header_line( infop->map );
+
+    // validity tests
+    infop->have_game = ( strcmp( gamedesc.gname, infop->game ) == 0 );
+    infop->have_wad = check_have_wad( infop->wad );
+
+    // binary header data
+    reason = "version";
+    if( READSHORT( save_p ) != VERSION )  goto wrong;
+    reason = "endian";
+    if( READBYTE( save_p ) != sg_big_endian )  goto wrong;
+    reason = "padding";
+    if( READBYTE( save_p ) != sg_padded )  goto wrong;
+    reason = "integer size";
+    if( READBYTE( save_p ) != sizeof(int))  goto wrong;
+    reason = "boolean size";
+    if( READBYTE( save_p ) != sizeof(boolean))  goto wrong;
+    // reserved header bytes
+    READBYTE( save_p );
+    READBYTE( save_p );
+    READBYTE( save_p );
+    READBYTE( save_p );
+   
+    infop->msg[0] = 0;    
+    return 1;
+   
+ not_save:
+   snprintf( infop->msg, 60, "Not a Legacy save game\n" );
+   goto failed;
+  
+ wrong:
+   snprintf( infop->msg, 60, "Invalid Legacy save game: wrong %s\n", reason );
+   goto failed;
+   
+ failed:
+    return false;
+}
+
+
+// Called from menu via G_DoSaveGame via network Got_SaveGamecmd,
+// and called from SV_SendSaveGame by network for JOININGAME.
+// Write game data to savegame buffer.
+void P_SaveGame( void )
+{   
+    InitPointermap_Save(1024);
+
+    SG_SaveSync( SAVEGAME_net );
+    CV_SaveNetVars((char **) &save_p);
+    SG_SaveSync( SAVEGAME_misc );
+    P_ArchiveMisc();
+    SG_SaveSync( SAVEGAME_players );
+    P_ArchivePlayers();
+    SG_SaveSync( SAVEGAME_world );
+    P_ArchiveWorld();
+    SG_SaveSync( SAVEGAME_thinkers );
+    P_ArchiveThinkers();
+    SG_SaveSync( SAVEGAME_specials );
+    P_ArchiveSpecials();
+#ifdef FRAGGLESCRIPT
+    // Only save fragglescript if the level uses it.
+    if( SG_fragglescript_detect() )
+    {
+        SG_SaveSync( SAVEGAME_fragglescript );
+        P_ArchiveScripts();
+    }
+#endif
+   
+    SG_SaveSync( SAVEGAME_end );
+
+    ClearPointermap();
+}
+
+
+   
+// Called from G_DoLoadGame
+// Read game data in savegame buffer.
 boolean P_LoadGame(void)
 {
     InitPointermap_Load(1024);
 
+    if( ! SG_ReadSync( SAVEGAME_net, 0 ) )  goto sync_err;
     CV_LoadNetVars((char **) &save_p);
-    if (!P_UnArchiveMisc())
-        return false;
+    if( ! SG_ReadSync( SAVEGAME_misc, 0 ) )  goto sync_err;
+    // Misc does level setup, and purges all previous PU_LEVEL memory.
+    if (!P_UnArchiveMisc())  goto failed;
+    if( ! SG_ReadSync( SAVEGAME_players, 0 ) )  goto sync_err;
     P_UnArchivePlayers();
+    if( ! SG_ReadSync( SAVEGAME_world, 0 ) )  goto sync_err;
     P_UnArchiveWorld();
+    if( ! SG_ReadSync( SAVEGAME_thinkers, 0 ) )  goto sync_err;
     P_UnArchiveThinkers();
+    if( ! SG_ReadSync( SAVEGAME_specials, 0 ) )  goto sync_err;
     P_UnArchiveSpecials();
+    // Optional fragglescript section
+    if( SG_ReadSync( SAVEGAME_fragglescript, 1 ) )
 #ifdef FRAGGLESCRIPT
-    P_UnArchiveScripts();
+    {
+        P_UnArchiveScripts();
+    }
+    else
+    {
+        // This is all the setup does
+        T_InitSaveList();             // Setup FS array list
+        // FIXME: kill any existing fragglescript
+    }
+#else   
+    {
+        I_SoftError( "Fragglescript required for this save game" );
+        goto failed;
+    }
 #endif
 
+    if( ! SG_ReadSync( SAVEGAME_end, 1 ) )  goto sync_err;
+   
     ClearPointermap();
+    return true;
+   
+ sync_err:
+   I_SoftError( "Legacy save game sync error\n" );
 
-    return READBYTE(save_p) == 0x1d;
+ failed:
+    ClearPointermap();	// safe clear
+    return false;
 }

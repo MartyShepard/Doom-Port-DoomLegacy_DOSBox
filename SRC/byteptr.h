@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: byteptr.h 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: byteptr.h 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -34,6 +34,7 @@
 
 #include "m_swap.h"
 
+// These are used in save game, network communications, and reading some wad lumps.
 
 // TODO FIXME the reliance on specific sizes for longs, shorts etc in this file is like asking for horrible bugs
 
@@ -73,6 +74,7 @@ static inline void write_32(byte **p, int32_t val)
 #define WRITEULONG(p,b)     write_32(&p, b)
 #define WRITEFIXED(p,b)     write_32(&p, b)
 #define WRITEANGLE(p,b)     write_32(&p, b)
+#define WRITEBOOLEAN(p,b)   *(p)++ = (b?1:0)
 #define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); } while ((b)[tmp_i++]); }
 #define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); if (!(b)[tmp_i]) break; tmp_i++; } while (tmp_i<(n)); }
 #define WRITEMEM(p,s,n)     memcpy((p),(s),(n)); (p)+=(n)
@@ -86,6 +88,7 @@ static inline void write_32(byte **p, int32_t val)
 #define READULONG(p)          (ULONG)read_32(&p)
 #define READFIXED(p)        (fixed_t)read_32(&p)
 #define READANGLE(p)        (angle_t)read_32(&p)
+#define READBOOLEAN(p)      ((boolean)(*(p)++))
 #define READSTRING(p,s)     { int tmp_i=0; do { (s)[tmp_i] = READBYTE(p); } while ((s)[tmp_i++]); }
 #define SKIPSTRING(p)       while(READBYTE(p))
 #define READMEM(p,s,n)      memcpy(s, p, n);p+=n
@@ -155,6 +158,7 @@ static inline void write_32(byte **p, int32_t val)
 #define WRITEU32(p,b)       write_32(&p, b)
 #define WRITEFIXED(p,b)     write_32(&p, b)
 #define WRITEANGLE(p,b)     write_32(&p, b)
+#define WRITEBOOLEAN(p,b)   *(p)++ = (b?1:0)
 
 // [WDJ] Put _B on all macros that are stmts or blocks, different usage syntax.
 // Put {} around all stmt macros with more than one line to protect against
@@ -176,6 +180,7 @@ static inline void write_32(byte **p, int32_t val)
 #define READU32(p)          ((uint32_t)read_32(&p))
 #define READFIXED(p)        ((fixed_t)read_32(&p))
 #define READANGLE(p)        ((angle_t)read_32(&p))
+#define READBOOLEAN(p)      ((boolean)(*(p)++))
 
 // [WDJ] Put _B on all macros that are stmts or blocks, different usage syntax.
 // Put {} around all stmt macros with more than one line to protect against

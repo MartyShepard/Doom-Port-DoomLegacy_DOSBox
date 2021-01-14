@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: d_clisrv.c 621 2010-03-23 21:26:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -607,27 +607,19 @@ static boolean SV_SendServerConfig(int node)
 
 #define JOININGAME
 #ifdef JOININGAME
-#define SAVEGAMESIZE    (128*1024)
 
 static void SV_SendSaveGame(int node)
 {
-    int length;
-    byte*   savebuffer;
+    size_t  length;
 
-    // first save it in a malloced buffer
-    save_p = savebuffer = (byte *)malloc(SAVEGAMESIZE);
-    if(!save_p)
-    {
-        CONS_Printf ("No More free memory for savegame\n");
-        return;
-    }
+    P_Alloc_savebuffer( 0, 1 );	// no header
+    if(! savebuffer)   return;
+   
+    P_SaveGame();  // fill buffer with game data
 
-    P_SaveGame();
-
-    length = save_p - savebuffer;
-    if (length > SAVEGAMESIZE)
-        I_Error ("Savegame buffer overrun");
-
+    length = P_Savegame_length();
+    if( length < 0 )   return;	// overrun buffer
+   
     // then send it !
     SendRam(node, savebuffer, length, SF_RAM, 0);
 }
@@ -636,19 +628,22 @@ static const char *tmpsave="$$$.sav";
 
 static void CL_LoadReceivedSavegame(void)
 {
-    byte*   savebuffer;
-    int length = FIL_ReadFile(tmpsave,&savebuffer);
+    // Use savebuffer and save_p from p_saveg.c.
+    // There cannot be another savegame in progress when this occurs.
+
+    // read file into savebuffer, Z_Malloc allocated as size of file
+    int length = FIL_ReadFile(tmpsave, &savebuffer);
 
 
     CONS_Printf("loading savegame length %d\n",length);
     if (!length)
     {
-        I_Error ("Can't read savegame sent");
+        I_SoftError ("Can't read savegame sent");
+        // buffer not allocated
         return;
     }
 
     G_Downgrade (VERSION);
-    save_p = savebuffer;
 
     paused        = false;
     demoplayback  = false;
@@ -657,9 +652,11 @@ static void CL_LoadReceivedSavegame(void)
     // load a base level
     playerdeadview = false;
 
+    save_p = savebuffer;
     if( !P_LoadGame() )
     {
         CONS_Printf("Can't load the level !!!\n");
+        Z_Free (savebuffer);
         return;
     }
 
@@ -668,6 +665,7 @@ static void CL_LoadReceivedSavegame(void)
     unlink(tmpsave);
     consistancy[gametic%BACKUPTICS]=Consistancy();
     CON_ToggleOff ();
+    return;
 }
 
 

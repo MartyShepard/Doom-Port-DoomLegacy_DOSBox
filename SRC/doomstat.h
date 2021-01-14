@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: doomstat.h 620 2010-03-23 21:20:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -93,14 +93,15 @@ typedef enum
     shareware,    // DOOM 1 shareware, E1, M9
     registered,   // DOOM 1 registered, E3, M27
     commercial,   // DOOM 2 retail, E1 M34
+    // FreeDoom is DOOM 2, can play as commercial or indetermined
     // DOOM 2 german edition not handled
     retail,       // DOOM 1 retail, E4, M36
     heretic,
     hexen,
     indetermined, // Well, no IWAD found.
-	chexquest1	  // DarkWolf95:July 14, 2003: Chex Quest Support
+    chexquest1	  // DarkWolf95:July 14, 2003: Chex Quest Support
 
-} gamemode_t;
+} gamemode_e;
 
 
 // Mission packs - might be useful for TC stuff?
@@ -110,7 +111,7 @@ typedef enum
     doom2,        // DOOM 2
     pack_tnt,     // TNT mission pack
     pack_plut,    // Plutonia pack
-    none
+    mission_none
 
 } gamemission_t;
 
@@ -121,22 +122,69 @@ typedef enum
     english,
     french,
     german,
-    unknown
+    lang_unknown
 
 } language_t;
 
+// [WDJ] Structure some of the scattered game differences.
+typedef struct
+{
+    char * 	gname;	       // game name, used in savegame
+    char *	startup_title; // startup page
+    char *	idstr;	       // used for directory and command line
+    char * 	iwad_filename; // doom, doom2, heretic, heretic1, hexen, etc.
+    char *	support_wad;   // another wad to support the game
+    const char * keylump[2];    // required lump names
+    byte	require_lump;  // lumps that must appear (bit set)
+    byte	reject_lump;   // lumps that must not appear (bit set)
+    uint16_t	gameflags;     // assorted flags
+    gamemode_e	gamemode;
+} game_desc_t;
+
+enum gameflags_e {
+   GD_idwad = 0x01,	// one of the id wads, including heretic and hexen
+};
+
+// Index to game_desc_t entries
+// This is also the search order.
+typedef enum {
+    GDESC_freedoom,
+    GDESC_freedm,
+    GDESC_doom2,
+    GDESC_freedoom_ultimate,
+    GDESC_ultimate,
+    GDESC_ultimate_se,
+    GDESC_doom,
+    GDESC_doom_shareware,
+    GDESC_plutonia,
+    GDESC_tnt,
+    GDESC_blasphemer,
+    GDESC_heretic,
+    GDESC_heretic_shareware,
+    GDESC_hexen,
+    GDESC_hexen_demo,
+    GDESC_chex1,
+    GDESC_ultimate_mode,
+    GDESC_doom_mode,
+    GDESC_heretic_mode,
+    GDESC_hexen_mode,
+    GDESC_other, // other iwad entry, and table search limit
+    GDESC_num	// number of entries in game_desc_table
+} game_desc_e;
 
 // ===================================================
 // Game Mode - identify IWAD as shareware, retail etc.
 // ===================================================
 //
-extern gamemode_t      gamemode;
+extern game_desc_e     gamedesc_index;  // game_desc_table index, unique game id
+extern game_desc_t     gamedesc;	// active desc used by most of legacy
+extern gamemode_e      gamemode;
 extern gamemission_t   gamemission;
 extern boolean         inventory;   // true with heretic and hexen
 extern boolean         raven;       // true with heretic and hexen
 
 // Set if homebrew PWAD stuff has been added.
-extern  boolean modifiedgame;
+extern  boolean	       modifiedgame;
 
 
 // =========
@@ -152,9 +200,9 @@ extern  language_t   language;
 // =============================
 
 // Selected by user.
-extern  skill_t         gameskill;
-extern  byte            gameepisode;
-extern  byte            gamemap;
+extern  skill_t         gameskill;	// easy, medium, hard
+extern  byte            gameepisode;	// Doom episode, 1..4
+extern  byte            gamemap;	// level 1..32
 
 // Nightmare mode flag, single player.
 // extern  boolean         respawnmonsters;
