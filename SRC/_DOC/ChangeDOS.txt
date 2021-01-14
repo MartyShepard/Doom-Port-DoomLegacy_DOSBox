@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00608 ]: vsprintf fix
 [00607 ]: Seg stepping overflow detect
 [00606 ]: FS save/load fixed
 		* Compile Break

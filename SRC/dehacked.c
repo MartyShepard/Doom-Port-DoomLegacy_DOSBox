@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: dehacked.c 608 2010-02-22 07:04:36Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -162,11 +162,12 @@ static void deh_error(char *first, ...)
 
     if (devparm)
     {
-       char buf[1000];
+#define BUF_SIZE 1024
+       char buf[BUF_SIZE];
 
-       va_start (argptr,first);
-       vsprintf (buf, first,argptr);
-       va_end (argptr);
+       va_start(argptr, first);
+       vsnprintf(buf, BUF_SIZE, first, argptr);
+       va_end(argptr);
 
        CONS_Printf("%s\n",buf);
     }

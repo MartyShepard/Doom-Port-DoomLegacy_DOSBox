@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_parse.c 608 2010-02-22 07:04:36Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -786,11 +786,6 @@ svalue_t evaluate_expression(int start, int stop)
 
 void script_error(char *s, ...)
 {
-    va_list args;
-    char tempstr[2048];
-
-    va_start(args, s);
-
     if (killscript)
         return; //already killing script
 
@@ -810,10 +805,17 @@ void script_error(char *s, ...)
                 linenum++;      // count EOLs
         CONS_Printf(", %i", linenum);
     }
+    CONS_Printf(": ");
+
+#define BUF_SIZE 1024
+    va_list     ap;
+    char        txt[BUF_SIZE];
 
     // print the error
-    vsprintf(tempstr, s, args);
-    CONS_Printf(": %s", tempstr);
+    va_start(ap, s);
+    vsnprintf(txt, BUF_SIZE, s, ap);
+    va_end(ap);
+    CONS_Printf(txt);
 
     // make a noise
     S_StartSound(NULL, sfx_pldeth);

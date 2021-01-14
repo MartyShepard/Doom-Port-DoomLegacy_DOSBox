@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: m_misc.c 608 2010-02-22 07:04:36Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -505,14 +505,15 @@ void M_ScreenShot (void)
 //
 char*   va(char *format, ...)
 {
+#define BUF_SIZE 1024
     va_list      argptr;
-    static char  string[1024];
+    static char  buffer[BUF_SIZE];
 
-    va_start (argptr, format);
-    vsprintf (string, format,argptr);
-    va_end (argptr);
+    va_start(argptr, format);
+    vsnprintf(buffer, BUF_SIZE, format, argptr);
+    va_end(argptr);
 
-    return string;
+    return buffer;
 }
 
 

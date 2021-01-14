@@ -26,11 +26,18 @@ Also: Removed some old unused endianness code, small bugfix in p_floor.c.
 
 
 *** Fixing the savegame system
-= rev 605
+= rev 605, 606
 Replaced the hack used for saving and loading mobj_t pointers, the new system
 should be 64-bit safe. The savegame files are not yet platform-independent
 since the memcpy-based saving system does not take care of endianness.
+FS save/load should work also, including FS arrays.
+
 Fixed handling of active plats, now stopped plats should stay stopped
 when loading.
 
-FS save/load to do.
+
+*** vsprintf fixes
+= rev 608
+Replaced a number of unsafe uses of vsprintf with vsnprintf, fixing
+several console-related crashing bugs. There may be more of the same
+in the interface code (sdl is clean, however).

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: console.c 608 2010-02-22 07:04:36Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1020,12 +1020,13 @@ void CON_Print (char *msg)
 //
 void CONS_Printf (const char *fmt, ...)
 {
-    va_list     argptr;
-    char        txt[512];
+#define BUF_SIZE 1024
+    va_list ap;
+    char    txt[BUF_SIZE];
 
-    va_start (argptr,fmt);
-    vsprintf (txt,fmt,argptr);
-    va_end   (argptr);
+    va_start(ap, fmt);
+    int nchars = vsnprintf(txt, BUF_SIZE, fmt, ap);
+    va_end(ap);
 
     // echo console prints to log file
 #ifdef LOGMESSAGES
