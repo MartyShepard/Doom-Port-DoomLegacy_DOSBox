@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 620 2010-03-23 21:20:41Z wesleyjohnson $
+// $Id: doomstat.h 636 2010-05-03 06:35:38Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -142,7 +142,8 @@ typedef struct
 } game_desc_t;
 
 enum gameflags_e {
-   GD_idwad = 0x01,	// one of the id wads, including heretic and hexen
+   GD_idwad       = 0x01, // one of the commercial/shareware wads by id or Raven
+   GD_unsupported = 0x02, // unsupported game type
 };
 
 // Index to game_desc_t entries
@@ -164,6 +165,8 @@ typedef enum {
     GDESC_hexen,
     GDESC_hexen_demo,
     GDESC_chex1,
+    GDESC_strife,
+    GDESC_strife_shareware,
     GDESC_ultimate_mode,
     GDESC_doom_mode,
     GDESC_heretic_mode,

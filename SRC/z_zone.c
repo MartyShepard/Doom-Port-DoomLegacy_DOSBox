@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 593 2010-02-07 17:58:53Z wesleyjohnson $
+// $Id: z_zone.c 635 2010-05-03 04:54:46Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2009 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -455,9 +455,9 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
 {
    if((other!=block) &&
       (other->tag > PU_INVALID) &&
-      (other->user>(void **)0x100) &&
-      ((other->user)>=(void **)block) &&
-      ((other->user)<=(void **)((byte *)block)+block->size) )
+      other->user &&
+      (other->user >= (void **)block) &&
+      (other->user < (void **)(((byte *)block) + block->size)))
    {
        //I_Error("Z_Free: Pointer in zone\n");
        I_Error("Z_Free: Pointer %s:%d in zone at %s:%i",other->ownerfile,other->ownerline,file,line);
@@ -473,11 +473,8 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
     memset(ptr,0,block->size-sizeof(memblock_t));
 #endif
    
-    if (block->user > (void **)0x100)
+    if (block->user)
     {
-        // smaller values are not pointers
-        // Note: OS-dependent?
-
         // clear the user's owner ptr (they no longer have access)
         *block->user = NULL;
     }
@@ -989,9 +986,9 @@ void Z_FileDumpHeap (FILE* f)
             break;
         }
 
-        if ( (block->user > (void **)0x100) && 
-             (*(block->user) != (byte *)block + sizeof(memblock_t)))
-            fprintf (f,"ERROR: block don't have a proper user\n");
+        if (block->user && 
+	    (*block->user != (byte *)block + sizeof(memblock_t)))
+	    fprintf (f,"ERROR: block doesn't have a proper user\n");
 
 #ifdef GROW_ZONE
         if ( block->next->tag != PU_ZONE )	// exclude zone heads
@@ -1029,9 +1026,9 @@ void Z_CheckHeap (int i)
             break;
         }
 
-        if ( (block->user > (void **)0x100) && 
-             (*(block->user) != (byte *)block + sizeof(memblock_t)))
-            I_Error ("Z_CheckHeap: block don't have a proper user %d\n",i);
+        if (block->user &&
+	    (*block->user != (byte *)block + sizeof(memblock_t)))
+            I_Error ("Z_CheckHeap: block doesn't have a proper user %d\n",i);
 
 #ifdef ZONE_ZALLOC
 #ifdef GROW_ZONE
@@ -1069,7 +1066,7 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
     if (block->id != ZONEID)
         I_Error ("Z_ChangeTag: freed a pointer without ZONEID");
 
-    if (tag >= PU_PURGELEVEL && block->user < (void **)0x100)
+    if (tag >= PU_PURGELEVEL && !block->user)
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");
 
     if (tag == PU_FREE ) {

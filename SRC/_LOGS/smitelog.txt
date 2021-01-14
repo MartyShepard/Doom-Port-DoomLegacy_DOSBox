@@ -48,3 +48,18 @@ in the interface code (SDL and OpenGL are clean).
 Fixed a LOT of compiler warnings. Now the 64-bit version compiles cleanly.
 There were lots of questionable pointer hacks in the code, some of which still remain.
 Also backported some stuff to tables.h and tables.c from Legacy2.
+
+
+*** Small z_zone changes
+= rev 635
+ZONEID is now the first field in memblock_t so that it'll be the first
+field to be corrupted by an overflow in the preceding block(s).
+Replaced all if(block->user > 0x100) tests by if(block->user).
+
+
+*** Game modes, commandline switches
+= rev 636
+GDESC system now recognizes Strife, will abort if an unsupported game
+is run (currently Hexen or Strife).
+Added support for the standard --version and --help commandline switches.
+

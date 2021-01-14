@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 593 2010-02-07 17:58:53Z wesleyjohnson $
+// $Id: z_zone.h 635 2010-05-03 04:54:46Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -135,16 +135,17 @@ void*   Z_MallocAlign(int reqsize, memtag_e tag, void **user, int alignbits);
 
 char *Z_Strdup(const char *s, memtag_e tag, void **user);
 
-
+/// memblock header
 typedef struct memblock_s
 {
-   // [WDJ] only works for int >= 32bit, or else havoc in Z_ALLOC
-    int                 size;   // including the header and possibly tiny fragments
-    memtag_e            tag;    // purgelevel
-    int                 id;     // should be ZONEID
-    void**              user;   // NULL if a free block
-    struct memblock_s*  next;
-    struct memblock_s*  prev;
+  // [WDJ] only works for int >= 32bit, or else havoc in Z_ALLOC
+  int                 id;     // should be == ZONEID (first field, first to be corrupted if the previous block overflows)
+  int                 size;   // including the header and possibly tiny fragments
+  memtag_e            tag;    // purgelevel
+
+  void**              user;   // if the block has a single owner, *user points to the beginning of the data area after header
+  struct memblock_s*  next;
+  struct memblock_s*  prev;
 #ifdef ZDEBUG
     char             *ownerfile;
     int               ownerline; 

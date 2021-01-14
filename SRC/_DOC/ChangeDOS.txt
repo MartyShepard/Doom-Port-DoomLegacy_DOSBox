@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00636 ]: GDESC fix, commandline switches
+[00635 ]: z_zone fix
+[00634*]: w44 quicksave quickload
+[00633 ]: w44 finish change to use SWAP16 and SWAP32
 [00632 ]: w43 model test and model sector
 [00631 ]: Savegame menu system
 [00630 ]: Simple message function

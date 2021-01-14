@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 631 2010-04-08 00:58:44Z wesleyjohnson $
+// $Id: d_main.c 636 2010-05-03 06:35:38Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -320,13 +320,13 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "DOS Edit"
+#define SVN_REV "DOS Test"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 633;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-const char VERSIONSTRING[] = " (rev " SVN_REV ")";
+const int  REVISION = 636; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const char VERSIONSTRING[] = "test (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
@@ -1094,7 +1094,7 @@ game_desc_t  game_desc_table[ GDESC_num ] =
    { "FreeDM", NULL, "freedm", "freedm.wad", NULL,
 	{"FREEDOOM", NULL}, LN_MAP01, 0, 0, commercial },
 // GDESC_doom2: doom2wad, text[DOOM2WAD_NUM]
-   { "DoomII", "DOOM 2: Hell on Earth", "doom2", "doom2.wad", NULL,
+   { "Doom2", "DOOM 2: Hell on Earth", "doom2", "doom2.wad", NULL,
 	{NULL, NULL}, LN_MAP01, LN_TITLE, GD_idwad, commercial },
 // GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    { "Ultimate FreeDoom", NULL, "freedu", "doom.wad", NULL,
@@ -1128,13 +1128,19 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{NULL, NULL}, LN_E1M1+LN_TITLE, LN_E2M2, GD_idwad, heretic },
 // GDESC_hexen: Hexen
    { "Hexen", NULL, "hexen", "hexen.wad", NULL,
-	{"MAP40", NULL}, LN_MAP01+LN_TITLE, 0, GD_idwad, hexen },
+	{"MAP40", NULL}, LN_MAP01+LN_TITLE, 0, GD_idwad|GD_unsupported, hexen },
 // GDESC_hexen_demo: Hexen
    { "Hexen Demo", NULL, "hexen1", "hexen.wad", NULL,
-	{NULL, NULL}, LN_MAP01+LN_TITLE, 0, GD_idwad, hexen },
+	{NULL, NULL}, LN_MAP01+LN_TITLE, 0, GD_idwad|GD_unsupported, hexen },
 // GDESC_chex1: Chex Quest
    { "Chex Quest", NULL, "chex1", "chex.wad", NULL,
 	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE, 0, chexquest1 },
+// GDESC_strife: Strife
+   { "Strife", NULL, "strife", "strife.wad", NULL,
+	{NULL, NULL}, 0, 0, GD_idwad|GD_unsupported, commercial },
+// GDESC_strife_shareware: Strife shareware
+   { "Strife shareware", NULL, "strife1", "strife1.wad", NULL,
+	{NULL, NULL}, 0, 0, GD_idwad|GD_unsupported, commercial },
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode", "doom.wad", NULL,
 	{ NULL, NULL}, LN_E1M1, 0, 0, registered },
@@ -1146,7 +1152,7 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{ NULL, NULL}, LN_E1M1, 0, 0, heretic },
 // GDESC_hexen_mode: Hexen replacement
    { "Hexen mode", NULL, "hexemode", "hexen.wad", NULL,
-	{ NULL, NULL}, LN_MAP01, 0, 0, hexen },
+	{ NULL, NULL}, LN_MAP01, 0, GD_unsupported, hexen },
 // GDESC_other: Other iwads, all DoomII features enabled, ptrs to name buffers
    { other_gname, public_title, "", other_iwad_filename, NULL,
 	{ NULL, NULL}, LN_MAP01, 0, 0, commercial }
@@ -1384,19 +1390,23 @@ void IdentifyVersion(void)
 //        return; // Legacy requires legacy.wad
         goto got_iwad;
     }
+
     // [WDJ] search for one of the listed GDESC_ forcing switches
-    for( gmi=0; gmi<GDESC_other; gmi++ )
-    {
-        // use other_gname buffer to make switch names
-        game_desc_t * gmtp = &game_desc_table[gmi];
-        sprintf( other_gname, "-%s", gmtp->idstr );  // make switch string
-        if( M_CheckParm( other_gname ) )
-        {
-	    // switch forces the GDESC_ selection
-	    gamedesc_index = gmi;
-	    break;
-	}
-    }
+    if (M_CheckParm("-game"))
+      {
+        char *temp = M_GetNextParm();
+	for( gmi=0; gmi<GDESC_other; gmi++ )
+	  {
+	    // compare to recognized game mode names
+	    if (!strcmp(temp, game_desc_table[gmi].idstr))
+	      {
+		// switch forces the GDESC_ selection
+		gamedesc_index = gmi;
+		break;
+	      }
+	  }
+      }
+
     // Specify the name of the IWAD file to use, so we can have several IWAD's
     // in the same directory, and/or have legacy.exe only once in a different location
     if (M_CheckParm("-iwad"))
@@ -1472,16 +1482,18 @@ void IdentifyVersion(void)
 	}
     }
 
-    I_Error("Main WAD file not found\n" "You need either doom.wad, doom1.wad, doom2.wad,\n" "tnt.wad, plutonia.wad, heretic.wad or heretic1.wad\n"
-                "from any shareware or commercial version of Doom or Heretic!\n"
+    I_Error("Main WAD file not found\n"
+	    "You need doom.wad, doom2.wad, heretic.wad or some other IWAD file\n"
+	    "from any shareware, commercial or free version of Doom or Heretic!\n"
 #if !defined(__WIN32__) && !(defined __DJGPP__)
-                "If you have one of those files, be sure it has the correct case\n" "or use the -IWAD command line switch.\n"
+	    "If you have one of those files, be sure its name is lowercase\n"
+	    "or use the -iwad command line switch.\n"
 #endif
             );
 
  got_iwad:
-    D_AddFile(pathiwad);
     gamedesc = game_desc_table[gamedesc_index]; // copy the game descriptor
+
     if( other_names )  // keep names from -iwad
     {
        gamedesc.gname = other_gname;
@@ -1491,6 +1503,10 @@ void IdentifyVersion(void)
     raven = (gamemode == heretic) || (gamemode == hexen);
     CONS_Printf("IWAD recognized: %s\n", gamedesc.gname);
 
+    if (gamedesc.gameflags & GD_unsupported)
+      I_Error("Doom Legacy currently does not support this game.\n");
+
+    D_AddFile(pathiwad);
     D_AddFile(legacywad);
     if( gamedesc.support_wad )  D_AddFile( gamedesc.support_wad );
     return;
@@ -1604,55 +1620,64 @@ void D_CheckWadVersion()
 //
 void D_DoomMain(void)
 {
+  // print version banner just once here, use it anywhere
+  sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
+  demoversion = VERSION;
+
+  const char *legacy = D_MakeTitleString(VERSION_BANNER);
+
+  //added:18-02-98:keep error messages until the final flush(stderr)
+  if (setvbuf(stderr, NULL, _IOFBF, 1000))
+    CONS_Printf("setvbuf didnt work\n");
+  setbuf(stdout, NULL);       // non-buffered output
+
+  // get parameters from a response file (eg: doom3 @parms.txt)
+  M_FindResponseFile();
+
+  // some basic commandline options
+  if (M_CheckParm("--version"))
+    {
+      printf("%s\n", legacy);
+      exit(0);
+    }
+
+  // TODO: Better commandline help
+  if (M_CheckParm("--help") || M_CheckParm("-h"))
+    {
+      printf("%s\n", legacy);
+      printf("Usage: legacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
+      exit(0);
+    }
+
     int p;
     char file[FILENAME_SIZE];
-    const char *legacy, *title;  //added:18-02-98: legacy title banner
 
     int startepisode;
     int startmap;
     boolean autostart;
 
-    // print version banner just once here, use it anywhere
-    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
-    demoversion = VERSION;
-
-    //added:18-02-98:keep error messages until the final flush(stderr)
-    if (setvbuf(stderr, NULL, _IOFBF, 1000))
-        CONS_Printf("setvbuf didnt work\n");
-
-    // get parameters from a response file (eg: doom3 @parms.txt)
-    M_FindResponseFile();
+    CONS_Printf("%s\n", legacy);
 
     // identify the main IWAD file to use
     IdentifyVersion();
-
-    setbuf(stdout, NULL);       // non-buffered output
     modifiedgame = false;
 
-    devparm = M_CheckParm("-devparm");
-
-    nomonsters = M_CheckParm("-nomonsters");
-
     // Title page
-    title = gamedesc.startup_title;  // set by IdentifyVersion
+    const char *title = gamedesc.startup_title;  // set by IdentifyVersion
     if( title == NULL )   title = gamedesc.gname;
 
-    //added:11-01-98:center the string, add compilation time and date.
-    legacy = D_MakeTitleString(VERSION_BANNER);
-
-#ifdef PC_DOS
-    D_Titlebar(legacy, title);
-#else
-    CONS_Printf("%s\n%s\n", legacy, title);
-#endif
+    CONS_Printf("%s\n", title);
 
 #ifdef __OS2__
     // set PM window title
     snprintf(pmData->title, sizeof(pmData->title), "%s: %s", VERSION_BANNER, title);
 #endif
 
+    devparm = M_CheckParm("-devparm");
     if (devparm)
-        CONS_Printf(D_DEVSTR);
+      CONS_Printf(D_DEVSTR);
+    nomonsters = M_CheckParm("-nomonsters");
+
 
     {
         char * userhome;

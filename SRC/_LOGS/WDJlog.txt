@@ -522,3 +522,10 @@ patchfile = w44_patchfile.patch
 - committed revision 633   by wesley johnson
 Finishes change from LE_SHORT, LE_LONG, to LE_SWAP16 and LE_SWAP32.
 Fixes midi file big-endian uses to use BE_SHORT and BE_LONG.
+
+*** w44_quicksave
+patchfile = w44_quicksave.patch
+- committed revision 634   by wesley johnson
+Fix quicksave getting clobbered by save or load.
+Fix quicksave to be able to change save file.
+Fix quickload to correct messag

@@ -278,7 +278,7 @@
 #     Compile the SDL/FreeBSD version with 'gmake FREEBSD=1 FBSD_SDL=1'
 #
 #############################################################################
-
+DEBUG=1
 # gcc or g++
 #CC=@gcc
 CC=gcc
