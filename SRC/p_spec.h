@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_spec.h 605 2010-02-16 07:20:19Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -199,6 +199,9 @@ int P_CheckTag(line_t *line);
 int EV_DoDonut(line_t* line);
 
 
+
+// [smite] NOTE: For the code in p_saveg.c to work, all the sector effects
+// must have a thinker and a sector_t* as their first data fields.
 
 //
 // P_LIGHTS
@@ -484,8 +487,8 @@ typedef enum
 typedef struct
 {
     thinker_t   thinker;
-    vldoor_e    type;
     sector_t*   sector;
+    vldoor_e    type;
     fixed_t     topheight;
     fixed_t     speed;
 
@@ -565,8 +568,8 @@ typedef enum
 typedef struct
 {
     thinker_t   thinker;
-    sdt_e       type;
     line_t*     line;
+    sdt_e       type;
     int         frame;
     int         whichDoorIndex;
     int         timer;
@@ -657,8 +660,8 @@ typedef enum
 typedef struct
 {
     thinker_t   thinker;
-    ceiling_e   type;
     sector_t*   sector;
+    ceiling_e   type;
     fixed_t     bottomheight;
     fixed_t     topheight;
     fixed_t     speed;
@@ -791,9 +794,9 @@ typedef enum
 typedef struct
 {
     thinker_t   thinker;
+    sector_t*   sector;
     floor_e     type;
     boolean     crush;
-    sector_t*   sector;
     int         direction;
     int         newspecial;
     int         oldspecial; //SoM: 3/6/2000
@@ -807,8 +810,8 @@ typedef struct
 typedef struct //SoM: 3/6/2000: Elevator struct.
 {
   thinker_t thinker;
-  elevator_e type;
   sector_t* sector;
+  elevator_e type;
   int direction;
   fixed_t floordestheight;
   fixed_t ceilingdestheight;
@@ -1200,7 +1203,6 @@ typedef struct {
 	p_upwind, // SSNTails 06-10-2003 WOAH! EXACTLY ONE YEAR LATER! FREAKY!
 	p_downwind, // SSNTails 06-10-2003
   } type;
-  mobj_t* source;      // Point source if point pusher
   int x_mag;           // X Strength
   int y_mag;           // Y Strength
   int magnitude;       // Vector strength for point pusher
@@ -1208,6 +1210,7 @@ typedef struct {
   int x;               // X of point source if point pusher
   int y;               // Y of point source if point pusher
   int affectee;        // Number of affected sector
+  mobj_t* source;      // Point source if point pusher
 } pusher_t;
 
 //SoM: 3/9/2000: Prototype functions for pushers

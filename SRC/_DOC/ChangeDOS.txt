@@ -1,6 +1,10 @@
 * Not need to Compile.
 
+[00605 ]: Making save/load 64-bit safe, part 1
 [00604 ]: Makefile cleanup
+		* DOS
+		screen_c Replace #Defined DIRECTFULLSCREEN with ( #if !defined(__DJGPP__) )
+		
 [00603 ]: switch stmts compiler msgs
 [00602 ]: Enemy tests on ptr before using it
 [00601 ]: I_SoftError messages missing \n

@@ -23,3 +23,14 @@ Removed completely, as we now have better methods for creating water.
 Replaced all the separate multimedia interface options by one option, IF,
 which defaults to SDL. Removed unnecessary defines DIRECTFULLSCREEN, VID_X11.
 Also: Removed some old unused endianness code, small bugfix in p_floor.c.
+
+
+*** Fixing the savegame system
+= rev 605
+Replaced the hack used for saving and loading mobj_t pointers, the new system
+should be 64-bit safe. The savegame files are not yet platform-independent
+since the memcpy-based saving system does not take care of endianness.
+Fixed handling of active plats, now stopped plats should stay stopped
+when loading.
+
+FS save/load to do.
