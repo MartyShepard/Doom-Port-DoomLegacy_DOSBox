@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00642 ]: w47 naming FIXED_TO_FLOAT
 [00641 ]: w44 quicksave - 2nd time
 [00640*]: user docs strife recognition
 [00639 ]: GDESC strife recognition

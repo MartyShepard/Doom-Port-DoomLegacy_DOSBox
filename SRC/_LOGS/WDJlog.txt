@@ -590,3 +590,8 @@ Commit quicksave again, quicksave changes are missing.
 Fix quicksave getting clobbered by save or load.
 Fix quicksave to be able to change save file.
 Fix quickload to correct message
+
+*** w47_naming2
+patchfile = w45_naming2.patch
+- committed revision 642   by wesley johnson
+Another FIXED_TO_FLOAT, and some commentary.
