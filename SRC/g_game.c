@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 631 2010-04-08 00:58:44Z wesleyjohnson $
+// $Id: g_game.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2448,7 +2448,7 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
             if(demoversion<125)
                 oldcmd[playernum].angleturn = READBYTE(demo_p)<<8;
             else
-                oldcmd[playernum].angleturn = READSHORT(demo_p);
+                oldcmd[playernum].angleturn = READ16(demo_p);
         }
         if(ziptic & ZT_BUTTONS)
             oldcmd[playernum].buttons = READBYTE(demo_p);
@@ -2457,7 +2457,7 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
             if(demoversion<128)
                 oldcmd[playernum].aiming = READCHAR(demo_p);
             else
-                oldcmd[playernum].aiming = READSHORT(demo_p);
+                oldcmd[playernum].aiming = READ16(demo_p);
         }
         if(ziptic & ZT_CHAT)
             demo_p++;
@@ -2871,6 +2871,16 @@ boolean G_CheckDemoStatus (void)
         CONS_Printf ("timed %i gametics in %i realtics\n"
                      "%f secondes, %f avg fps\n"
                      ,leveltime,time,f1/TICRATE,f2/f1);
+					 
+		#if defined( __DJGPP__ )
+			#ifdef DEBUG_DEMO			
+				fprintf (stderr,"timed %i gametics in %i realtics\n"
+                     "%f secondes, %f avg fps\n"
+                     ,leveltime,time,f1/TICRATE,f2/f1);		
+				I_Quit ();
+			#endif
+		#endif	
+		
         if( restorecv_vidwait != cv_vidwait.value )
             CV_SetValue(&cv_vidwait, restorecv_vidwait);
         D_AdvanceDemo ();

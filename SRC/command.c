@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: command.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1043,7 +1043,7 @@ void Got_NetVar(char **p,int playernum)
 {
     byte * bp = (byte*) *p;	// macros READ,SKIP want byte*
 
-    consvar_t *cvar = CV_FindNetVar(READUSHORT(bp));
+    consvar_t *cvar = CV_FindNetVar(READU16(bp));
     char *svalue = (char *)bp;
     SKIPSTRING(bp);
     *p = (char*)bp;	// return updated ptr only once
@@ -1067,7 +1067,7 @@ void CV_SaveNetVars( char **p )
     {
         if (cvar->flags & CV_NETVAR)
         {
-            WRITESHORT(bp,cvar->netid);
+            WRITE16(bp,cvar->netid);
             WRITESTRING(bp,cvar->string);
         }
     }
@@ -1111,7 +1111,7 @@ void CV_Set (consvar_t *var, char *value)
             return;
         }
         p=buf;
-        WRITEUSHORT(p, var->netid);
+        WRITEU16(p, var->netid);
         WRITESTRING(p, value);
         SendNetXCmd (XD_NETVAR, buf, p-buf);
     }

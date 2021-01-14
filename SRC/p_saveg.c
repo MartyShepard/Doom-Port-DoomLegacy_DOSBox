@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 628 2010-04-03 02:23:33Z wesleyjohnson $
+// $Id: p_saveg.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -334,28 +334,28 @@ void P_ArchivePlayers(void)
         if (ply->flyheight)
             diff |= PD_FLYHEIGHT;
 
-        WRITEULONG(save_p, diff);
+        WRITEU32(save_p, diff);
 
         WRITEANGLE(save_p, ply->aiming);
-        WRITEUSHORT(save_p, ply->health);
-        WRITEUSHORT(save_p, ply->armorpoints);
+        WRITEU16(save_p, ply->health);
+        WRITEU16(save_p, ply->armorpoints);
         WRITEBYTE(save_p, ply->armortype);
 
         for (j = 0; j < NUMPOWERS; j++)
         {
             if (diff & (1 << j))
-                WRITELONG(save_p, ply->powers[j]);
+                WRITE32(save_p, ply->powers[j]);
         }
         WRITEBYTE(save_p, ply->cards);
         WRITEBYTE(save_p, ply->readyweapon);
         WRITEBYTE(save_p, ply->pendingweapon);
         WRITEBYTE(save_p, ply->playerstate);
 
-        WRITEUSHORT(save_p, ply->addfrags);
+        WRITEU16(save_p, ply->addfrags);
         for (j = 0; j < MAXPLAYERS; j++)
         {
             if (playeringame[j])	// [WDJ] was [i] which was useless
-                WRITEUSHORT(save_p, ply->frags[j]);
+                WRITEU16(save_p, ply->frags[j]);
         }
 
         for (j = 0; j < NUMWEAPONS; j++)
@@ -366,8 +366,8 @@ void P_ArchivePlayers(void)
         }
         for (j = 0; j < NUMAMMO; j++)
         {
-            WRITEUSHORT(save_p, ply->ammo[j]);
-            WRITEUSHORT(save_p, ply->maxammo[j]);
+            WRITEU16(save_p, ply->ammo[j]);
+            WRITEU16(save_p, ply->maxammo[j]);
         }
         if (ply->backpack)
             flags |= BACKPACK;
@@ -385,25 +385,25 @@ void P_ArchivePlayers(void)
             flags |= DIDSECRET;
 
         if (diff & PD_REFIRE)
-            WRITELONG(save_p, ply->refire);
+            WRITE32(save_p, ply->refire);
         if (diff & PD_KILLCOUNT)
-            WRITELONG(save_p, ply->killcount);
+            WRITE32(save_p, ply->killcount);
         if (diff & PD_ITEMCOUNT)
-            WRITELONG(save_p, ply->itemcount);
+            WRITE32(save_p, ply->itemcount);
         if (diff & PD_SECRETCOUNT)
-            WRITELONG(save_p, ply->secretcount);
+            WRITE32(save_p, ply->secretcount);
         if (diff & PD_DAMAGECOUNT)
-            WRITELONG(save_p, ply->damagecount);
+            WRITE32(save_p, ply->damagecount);
         if (diff & PD_BONUSCOUNT)
-            WRITELONG(save_p, ply->bonuscount);
+            WRITE32(save_p, ply->bonuscount);
         if (diff & PD_CHICKENTICS)
-            WRITELONG(save_p, ply->chickenTics);
+            WRITE32(save_p, ply->chickenTics);
         if (diff & PD_CHICKENPECK)
-            WRITELONG(save_p, ply->chickenPeck);
+            WRITE32(save_p, ply->chickenPeck);
         if (diff & PD_FLAMECOUNT)
-            WRITELONG(save_p, ply->flamecount);
+            WRITE32(save_p, ply->flamecount);
         if (diff & PD_FLYHEIGHT)
-            WRITELONG(save_p, ply->flyheight);
+            WRITE32(save_p, ply->flyheight);
 
         WRITEBYTE(save_p, ply->skincolor);
 
@@ -411,14 +411,14 @@ void P_ArchivePlayers(void)
         {
 	    pspdef_t * psp = & ply->psprites[j];
             if (psp->state)
-                WRITEUSHORT(save_p, (psp->state - states) + 1);
+                WRITEU16(save_p, (psp->state - states) + 1);
             else
-                WRITEUSHORT(save_p, 0);
-            WRITELONG(save_p, psp->tics);
+                WRITEU16(save_p, 0);
+            WRITE32(save_p, psp->tics);
             WRITEFIXED(save_p, psp->sx);
             WRITEFIXED(save_p, psp->sy);
         }
-        WRITEUSHORT(save_p, flags);
+        WRITEU16(save_p, flags);
 
         if (inventory)
         {
@@ -451,17 +451,17 @@ void P_UnArchivePlayers(void)
         ply = &players[i];
 
         PADSAVEP();
-        diff = READULONG(save_p);
+        diff = READU32(save_p);
 
         ply->aiming = READANGLE(save_p);
-        ply->health = READUSHORT(save_p);
-        ply->armorpoints = READUSHORT(save_p);
+        ply->health = READU16(save_p);
+        ply->armorpoints = READU16(save_p);
         ply->armortype = READBYTE(save_p);
 
         for (j = 0; j < NUMPOWERS; j++)
         {
             if (diff & (1 << j))
-                ply->powers[j] = READLONG(save_p);
+                ply->powers[j] = READ32(save_p);
         }
 
         ply->cards = READBYTE(save_p);
@@ -469,56 +469,56 @@ void P_UnArchivePlayers(void)
         ply->pendingweapon = READBYTE(save_p);
         ply->playerstate = READBYTE(save_p);
 
-        ply->addfrags = READUSHORT(save_p);
+        ply->addfrags = READU16(save_p);
         for (j = 0; j < MAXPLAYERS; j++)
         {
             if (playeringame[j])	// [WDJ] was [i] which was useless
-                ply->frags[j] = READUSHORT(save_p);
+                ply->frags[j] = READU16(save_p);
         }
 
         for (j = 0; j < NUMWEAPONS; j++)
             ply->favoritweapon[j] = READBYTE(save_p);
         for (j = 0; j < NUMAMMO; j++)
         {
-            ply->ammo[j] = READUSHORT(save_p);
-            ply->maxammo[j] = READUSHORT(save_p);
+            ply->ammo[j] = READU16(save_p);
+            ply->maxammo[j] = READU16(save_p);
         }
         if (diff & PD_REFIRE)
-            ply->refire = READLONG(save_p);
+            ply->refire = READ32(save_p);
         if (diff & PD_KILLCOUNT)
-            ply->killcount = READLONG(save_p);
+            ply->killcount = READ32(save_p);
         if (diff & PD_ITEMCOUNT)
-            ply->itemcount = READLONG(save_p);
+            ply->itemcount = READ32(save_p);
         if (diff & PD_SECRETCOUNT)
-            ply->secretcount = READLONG(save_p);
+            ply->secretcount = READ32(save_p);
         if (diff & PD_DAMAGECOUNT)
-            ply->damagecount = READLONG(save_p);
+            ply->damagecount = READ32(save_p);
         if (diff & PD_BONUSCOUNT)
-            ply->bonuscount = READLONG(save_p);
+            ply->bonuscount = READ32(save_p);
         if (diff & PD_CHICKENTICS)
-            ply->chickenTics = READLONG(save_p);
+            ply->chickenTics = READ32(save_p);
         if (diff & PD_CHICKENPECK)
-            ply->chickenPeck = READLONG(save_p);
+            ply->chickenPeck = READ32(save_p);
         if (diff & PD_FLAMECOUNT)
-            ply->flamecount = READLONG(save_p);
+            ply->flamecount = READ32(save_p);
         if (diff & PD_FLYHEIGHT)
-            ply->flyheight = READLONG(save_p);
+            ply->flyheight = READ32(save_p);
 
         ply->skincolor = READBYTE(save_p);
 
         for (j = 0; j < NUMPSPRITES; j++)
         {
 	    pspdef_t * psp = & ply->psprites[j];
-            flags = READUSHORT(save_p);
+            flags = READU16(save_p);
             if (flags)
                 psp->state = &states[flags - 1];
 
-            psp->tics = READLONG(save_p);
+            psp->tics = READ32(save_p);
             psp->sx = READFIXED(save_p);
             psp->sy = READFIXED(save_p);
         }
 
-        flags = READUSHORT(save_p);
+        flags = READU16(save_p);
 
         if (inventory)
         {
@@ -659,7 +659,7 @@ void P_ArchiveWorld(void)
         {
             statsec++;
 
-            WRITESHORT(put, i);
+            WRITE16(put, i);
             WRITEBYTE(put, diff);
             if (diff & SD_DIFF2)
                 WRITEBYTE(put, diff2);
@@ -678,9 +678,9 @@ void P_ArchiveWorld(void)
                 put += 8;
             }
             if (diff & SD_LIGHT)
-                WRITESHORT(put, (short) ss->lightlevel);
+                WRITE16(put, (short) ss->lightlevel);
             if (diff & SD_SPECIAL)
-                WRITESHORT(put, (short) ss->special);
+                WRITE16(put, (short) ss->special);
 
             if (diff2 & SD_FXOFFS)
                 WRITEFIXED(put, ss->floor_xoffs);
@@ -691,14 +691,14 @@ void P_ArchiveWorld(void)
             if (diff2 & SD_CYOFFS)
                 WRITEFIXED(put, ss->ceiling_yoffs);
             if (diff2 & SD_STAIRLOCK)
-                WRITELONG(put, ss->stairlock);
+                WRITE32(put, ss->stairlock);
             if (diff2 & SD_NEXTSEC)
-                WRITELONG(put, ss->nextsec);
+                WRITE32(put, ss->nextsec);
             if (diff2 & SD_PREVSEC)
-                WRITELONG(put, ss->prevsec);
+                WRITE32(put, ss->prevsec);
         }
     }
-    WRITEUSHORT(put, 0xffff);  // mark end of world sector section
+    WRITEU16(put, 0xffff);  // mark end of world sector section
 
     mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_IN_USE); // linedefs temp
     msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_IN_USE); // sidedefs temp
@@ -756,37 +756,37 @@ void P_ArchiveWorld(void)
         if (diff)
         {
             statline++;
-            WRITESHORT(put, (short) i);
+            WRITE16(put, (short) i);
             WRITEBYTE(put, diff);
             if (diff & LD_DIFF2)
                 WRITEBYTE(put, diff2);
             if (diff & LD_FLAG)
-                WRITESHORT(put, li->flags);
+                WRITE16(put, li->flags);
             if (diff & LD_SPECIAL)
-                WRITESHORT(put, li->special);
+                WRITE16(put, li->special);
 
             si = &sides[li->sidenum[0]];
             if (diff & LD_S1TEXOFF)
                 WRITEFIXED(put, si->textureoffset);
             if (diff & LD_S1TOPTEX)
-                WRITESHORT(put, si->toptexture);
+                WRITE16(put, si->toptexture);
             if (diff & LD_S1BOTTEX)
-                WRITESHORT(put, si->bottomtexture);
+                WRITE16(put, si->bottomtexture);
             if (diff & LD_S1MIDTEX)
-                WRITESHORT(put, si->midtexture);
+                WRITE16(put, si->midtexture);
 
             si = &sides[li->sidenum[1]];
             if (diff2 & LD_S2TEXOFF)
                 WRITEFIXED(put, si->textureoffset);
             if (diff2 & LD_S2TOPTEX)
-                WRITESHORT(put, si->toptexture);
+                WRITE16(put, si->toptexture);
             if (diff2 & LD_S2BOTTEX)
-                WRITESHORT(put, si->bottomtexture);
+                WRITE16(put, si->bottomtexture);
             if (diff2 & LD_S2MIDTEX)
-                WRITESHORT(put, si->midtexture);
+                WRITE16(put, si->midtexture);
         }
     }
-    WRITEUSHORT(put, 0xffff);  // mark end of world linedef section
+    WRITEU16(put, 0xffff);  // mark end of world linedef section
 
     //CONS_Printf("sector saved %d/%d, line saved %d/%d\n",statsec,numsectors,statline,numlines);
     save_p = put;
@@ -812,7 +812,7 @@ void P_UnArchiveWorld(void)
 
     while (1)
     {
-        i = READUSHORT(get);
+        i = READU16(get);
 
         if (i == 0xffff) // end of world sector section
             break;
@@ -838,9 +838,9 @@ void P_UnArchiveWorld(void)
             get += 8;
         }
         if (diff & SD_LIGHT)
-            secp->lightlevel = READSHORT(get);
+            secp->lightlevel = READ16(get);
         if (diff & SD_SPECIAL)
-            secp->special = READSHORT(get);
+            secp->special = READ16(get);
 
         if (diff2 & SD_FXOFFS)
             secp->floor_xoffs = READFIXED(get);
@@ -851,22 +851,22 @@ void P_UnArchiveWorld(void)
         if (diff2 & SD_CYOFFS)
             secp->ceiling_yoffs = READFIXED(get);
         if (diff2 & SD_STAIRLOCK)
-            secp->stairlock = READLONG(get);
+            secp->stairlock = READ32(get);
         else
             secp->stairlock = 0;
         if (diff2 & SD_NEXTSEC)
-            secp->nextsec = READLONG(get);
+            secp->nextsec = READ32(get);
         else
             secp->nextsec = -1;
         if (diff2 & SD_PREVSEC)
-            secp->prevsec = READLONG(get);
+            secp->prevsec = READ32(get);
         else
             secp->prevsec = -1;
     }
 
     while (1)
     {
-        i = READUSHORT(get);
+        i = READU16(get);
 
         if (i == 0xffff)  // end of world linedef section
             break;
@@ -878,29 +878,29 @@ void P_UnArchiveWorld(void)
         else
             diff2 = 0;
         if (diff & LD_FLAG)
-            li->flags = READSHORT(get);
+            li->flags = READ16(get);
         if (diff & LD_SPECIAL)
-            li->special = READSHORT(get);
+            li->special = READ16(get);
 
         si = &sides[li->sidenum[0]];
         if (diff & LD_S1TEXOFF)
             si->textureoffset = READFIXED(get);
         if (diff & LD_S1TOPTEX)
-            si->toptexture = READSHORT(get);
+            si->toptexture = READ16(get);
         if (diff & LD_S1BOTTEX)
-            si->bottomtexture = READSHORT(get);
+            si->bottomtexture = READ16(get);
         if (diff & LD_S1MIDTEX)
-            si->midtexture = READSHORT(get);
+            si->midtexture = READ16(get);
 
         si = &sides[li->sidenum[1]];
         if (diff2 & LD_S2TEXOFF)
             si->textureoffset = READFIXED(get);
         if (diff2 & LD_S2TOPTEX)
-            si->toptexture = READSHORT(get);
+            si->toptexture = READ16(get);
         if (diff2 & LD_S2BOTTEX)
-            si->bottomtexture = READSHORT(get);
+            si->bottomtexture = READ16(get);
         if (diff2 & LD_S2MIDTEX)
-            si->midtexture = READSHORT(get);
+            si->midtexture = READ16(get);
     }
 
     save_p = get;
@@ -1083,18 +1083,18 @@ bad_ptr:
   return NULL;
 }
 
-#define WRITE_MobjPointerID(p,mobj)  WRITEULONG((p), GetID(mobj));
-#define READ_MobjPointerID(p)   GetMobjPointer( READULONG(p) )
+#define WRITE_MobjPointerID(p,mobj)  WRITEU32((p), GetID(mobj));
+#define READ_MobjPointerID(p)   GetMobjPointer( READU32(p) )
 // No difference in executable
-//#define READ_MobjPointerID_S(p,mobj)   (mobj) = GetMobjPointer( READULONG(p) )
+//#define READ_MobjPointerID_S(p,mobj)   (mobj) = GetMobjPointer( READU32(p) )
 
 // Save sector and line ptrs as index into their arrays
-#define WRITE_SECTOR_PTR( secp )   WRITELONG(save_p, (secp) - sectors)
-#define READ_SECTOR_PTR( secp )   (secp) = &sectors[READLONG(save_p)]
-#define WRITE_LINE_PTR( linp )   WRITELONG(save_p, (linp) - lines)
-#define READ_LINE_PTR( linp )   (linp) = &lines[READLONG(save_p)]
-#define WRITE_MAPTHING_PTR( mtp )   WRITELONG(save_p, (mtp) - mapthings)
-#define READ_MAPTHING_PTR( mtp )   (mtp) = &mapthings[READLONG(save_p)]
+#define WRITE_SECTOR_PTR( secp )   WRITE32(save_p, (secp) - sectors)
+#define READ_SECTOR_PTR( secp )   (secp) = &sectors[READ32(save_p)]
+#define WRITE_LINE_PTR( linp )   WRITE32(save_p, (linp) - lines)
+#define READ_LINE_PTR( linp )   (linp) = &lines[READ32(save_p)]
+#define WRITE_MAPTHING_PTR( mtp )   WRITE32(save_p, (mtp) - mapthings)
+#define READ_MAPTHING_PTR( mtp )   (mtp) = &mapthings[READ32(save_p)]
 // another read of mapthing in P_UnArchiveSpecials
 
 
@@ -1185,12 +1185,12 @@ enum
 #define SE_HEADER_SIZE (sizeof(thinker_t) + sizeof(sector_t*))
 #define SAVE_SE(th) \
   { int s = sizeof(*th) - SE_HEADER_SIZE;	      \
-    WRITELONG(save_p, (th)->sector - sectors);	      \
+    WRITE32(save_p, (th)->sector - sectors);	      \
     WRITEMEM(save_p, ((byte *)(th))+SE_HEADER_SIZE, s); }
 
 #define LOAD_SE(th) \
   { int s = sizeof(*th) - SE_HEADER_SIZE;	      \
-    (th)->sector = &sectors[READLONG(save_p)];	      \
+    (th)->sector = &sectors[READ32(save_p)];	      \
     READMEM(save_p, ((byte *)(th))+SE_HEADER_SIZE, s);\
     P_AddThinker(&(th)->thinker); }
 
@@ -1345,7 +1345,7 @@ void P_ArchiveThinkers(void)
 
             PADSAVEP();
             WRITEBYTE(save_p, tc_mobj);	// mark as mobj
-            WRITEULONG(save_p, diff);
+            WRITEU32(save_p, diff);
             // Save ID number of this Mobj so that pointers can be restored.
 	    // NOTE: does not check if this mobj has been already saved, so it'd better not appear twice.
 	    WRITE_MobjPointerID(save_p, mobj);
@@ -1355,7 +1355,7 @@ void P_ArchiveThinkers(void)
             if (diff & MD_SPAWNPOINT)
                 WRITE_MAPTHING_PTR( mobj->spawnpoint );
             if (diff & MD_TYPE)
-                WRITEULONG(save_p, mobj->type);
+                WRITEU32(save_p, mobj->type);
             if (diff & MD_POS)
             {
                 WRITEFIXED(save_p, mobj->x);
@@ -1373,47 +1373,47 @@ void P_ArchiveThinkers(void)
             if (diff & MD_HEIGHT)
                 WRITEFIXED(save_p, mobj->height);
             if (diff & MD_FLAGS)
-                WRITELONG(save_p, mobj->flags);
+                WRITE32(save_p, mobj->flags);
             if (diff & MD_FLAGS2)
-                WRITELONG(save_p, mobj->flags2);
+                WRITE32(save_p, mobj->flags2);
             if (diff & MD_HEALTH)
-                WRITELONG(save_p, mobj->health);
+                WRITE32(save_p, mobj->health);
             if (diff & MD_RTIME)
-                WRITELONG(save_p, mobj->reactiontime);
+                WRITE32(save_p, mobj->reactiontime);
             if (diff & MD_STATE)
-                WRITEUSHORT(save_p, mobj->state - states);
+                WRITEU16(save_p, mobj->state - states);
             if (diff & MD_TICS)
-                WRITELONG(save_p, mobj->tics);
+                WRITE32(save_p, mobj->tics);
             if (diff & MD_SPRITE)
-                WRITEUSHORT(save_p, mobj->sprite);
+                WRITEU16(save_p, mobj->sprite);
             if (diff & MD_FRAME)
-                WRITEULONG(save_p, mobj->frame);
+                WRITEU32(save_p, mobj->frame);
             if (diff & MD_EFLAGS)
-                WRITEULONG(save_p, mobj->eflags);
+                WRITEU32(save_p, mobj->eflags);
             if (diff & MD_PLAYER)
                 WRITEBYTE(save_p, mobj->player - players);
             if (diff & MD_MOVEDIR)
-                WRITELONG(save_p, mobj->movedir);
+                WRITE32(save_p, mobj->movedir);
             if (diff & MD_MOVECOUNT)
-                WRITELONG(save_p, mobj->movecount);
+                WRITE32(save_p, mobj->movecount);
             if (diff & MD_THRESHOLD)
-                WRITELONG(save_p, mobj->threshold);
+                WRITE32(save_p, mobj->threshold);
             if (diff & MD_LASTLOOK)
-                WRITELONG(save_p, mobj->lastlook);
+                WRITE32(save_p, mobj->lastlook);
             if (diff & MD_TARGET)
 	        WRITE_MobjPointerID(save_p, mobj->target);
             if (diff & MD_TRACER)
 	        WRITE_MobjPointerID(save_p, mobj->tracer);
             if (diff & MD_FRICTION)
-                WRITELONG(save_p, mobj->friction);
+                WRITE32(save_p, mobj->friction);
             if (diff & MD_MOVEFACTOR)
-                WRITELONG(save_p, mobj->movefactor);
+                WRITE32(save_p, mobj->movefactor);
             if (diff & MD_SPECIAL1)
-                WRITELONG(save_p, mobj->special1);
+                WRITE32(save_p, mobj->special1);
             if (diff & MD_SPECIAL2)
-                WRITELONG(save_p, mobj->special2);
+                WRITE32(save_p, mobj->special2);
             if (diff & MD_AMMO)
-                WRITELONG(save_p, mobj->dropped_ammo_count);
+                WRITE32(save_p, mobj->dropped_ammo_count);
         }
         // Use action as determinant of its owner.
 	// acv == -1  means deallocated (see P_RemoveThinker)
@@ -1622,10 +1622,10 @@ void P_UnArchiveThinkers(void)
                 memset(mobj, 0, sizeof(mobj_t));
 
                 PADSAVEP();
-                diff = READULONG(save_p);
+                diff = READU32(save_p);
 	        // [WDJ] initializing the lookup for GetMobjPointer and READ_MobjPointerID(),
 	        // this is the id number for the mobj being read here.
-                MapMobjID(READULONG(save_p), mobj); // assign the ID to the newly created mobj
+                MapMobjID(READU32(save_p), mobj); // assign the ID to the newly created mobj
 
                 mobj->z = READFIXED(save_p);    // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
                 mobj->floorz = READFIXED(save_p);
@@ -1637,7 +1637,7 @@ void P_UnArchiveThinkers(void)
                 }
                 if (diff & MD_TYPE)
                 {
-                    mobj->type = READULONG(save_p);
+                    mobj->type = READU32(save_p);
                 }
                 else //if (diff & MD_SPAWNPOINT) //Hurdler: I think we must add that test ?
                 {
@@ -1685,40 +1685,40 @@ void P_UnArchiveThinkers(void)
                 else
                     mobj->height = mobj->info->height;
                 if (diff & MD_FLAGS)
-                    mobj->flags = READLONG(save_p);
+                    mobj->flags = READ32(save_p);
                 else
                     mobj->flags = mobj->info->flags;
                 if (diff & MD_FLAGS2)
-                    mobj->flags2 = READLONG(save_p);
+                    mobj->flags2 = READ32(save_p);
                 else
                     mobj->flags2 = mobj->info->flags2;
                 if (diff & MD_HEALTH)
-                    mobj->health = READLONG(save_p);
+                    mobj->health = READ32(save_p);
                 else
                     mobj->health = mobj->info->spawnhealth;
                 if (diff & MD_RTIME)
-                    mobj->reactiontime = READLONG(save_p);
+                    mobj->reactiontime = READ32(save_p);
                 else
                     mobj->reactiontime = mobj->info->reactiontime;
 
                 if (diff & MD_STATE)
-                    mobj->state = &states[READUSHORT(save_p)];
+                    mobj->state = &states[READU16(save_p)];
                 else
                     mobj->state = &states[mobj->info->spawnstate];
                 if (diff & MD_TICS)
-                    mobj->tics = READLONG(save_p);
+                    mobj->tics = READ32(save_p);
                 else
                     mobj->tics = mobj->state->tics;
                 if (diff & MD_SPRITE)
-                    mobj->sprite = READUSHORT(save_p);
+                    mobj->sprite = READU16(save_p);
                 else
                     mobj->sprite = mobj->state->sprite;
                 if (diff & MD_FRAME)
-                    mobj->frame = READULONG(save_p);
+                    mobj->frame = READU32(save_p);
                 else
                     mobj->frame = mobj->state->frame;
                 if (diff & MD_EFLAGS)
-                    mobj->eflags = READULONG(save_p);
+                    mobj->eflags = READU32(save_p);
                 if (diff & MD_PLAYER)
                 {
                     i = READBYTE(save_p);
@@ -1731,33 +1731,33 @@ void P_UnArchiveThinkers(void)
                         localangle2 = mobj->angle;
                 }
                 if (diff & MD_MOVEDIR)
-                    mobj->movedir = READLONG(save_p);
+                    mobj->movedir = READ32(save_p);
                 if (diff & MD_MOVECOUNT)
-                    mobj->movecount = READLONG(save_p);
+                    mobj->movecount = READ32(save_p);
                 if (diff & MD_THRESHOLD)
-                    mobj->threshold = READLONG(save_p);
+                    mobj->threshold = READ32(save_p);
                 if (diff & MD_LASTLOOK)
-                    mobj->lastlook = READLONG(save_p);
+                    mobj->lastlook = READ32(save_p);
                 else
                     mobj->lastlook = -1;
                 if (diff & MD_TARGET)
-		  mobj->target = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
+		  mobj->target = (mobj_t *) READU32(save_p); // HACK, fixed at the end of the function
                 if (diff & MD_TRACER)
-                    mobj->tracer = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
+                    mobj->tracer = (mobj_t *) READU32(save_p); // HACK, fixed at the end of the function
                 if (diff & MD_FRICTION)
-                    mobj->friction = READLONG(save_p);
+                    mobj->friction = READ32(save_p);
                 else
                     mobj->friction = ORIG_FRICTION;
                 if (diff & MD_MOVEFACTOR)
-                    mobj->movefactor = READLONG(save_p);
+                    mobj->movefactor = READ32(save_p);
                 else
                     mobj->movefactor = ORIG_FRICTION_FACTOR;
                 if (diff & MD_SPECIAL1)
-                    mobj->special1 = READLONG(save_p);
+                    mobj->special1 = READ32(save_p);
                 if (diff & MD_SPECIAL2)
-                    mobj->special2 = READLONG(save_p);
+                    mobj->special2 = READ32(save_p);
                 if (diff & MD_AMMO)
-                    mobj->dropped_ammo_count = READLONG(save_p);
+                    mobj->dropped_ammo_count = READ32(save_p);
 
                 // now set deductable field
                 // TODO : save this too
@@ -1951,12 +1951,12 @@ void P_ArchiveSpecials(void)
     while (iquehead != i)
     {
         WRITE_MAPTHING_PTR( itemrespawnque[i] );
-        WRITELONG(save_p, itemrespawntime[i]);
+        WRITE32(save_p, itemrespawntime[i]);
         i = (i + 1) & (ITEMQUESIZE - 1);
     }
 
     // end delimiter
-    WRITELONG(save_p, 0xffffffff);
+    WRITE32(save_p, 0xffffffff);
 }
 
 //
@@ -1968,10 +1968,10 @@ void P_UnArchiveSpecials(void)
    
     // BP: added save itemrespawn queue for deathmatch
     iquetail = iquehead = 0;
-    while ((i = READLONG(save_p)) != 0xffffffff)
+    while ((i = READ32(save_p)) != 0xffffffff)
     {
         itemrespawnque[iquehead] = &mapthings[i];
-        itemrespawntime[iquehead++] = READLONG(save_p);
+        itemrespawntime[iquehead++] = READ32(save_p);
     }
 }
 
@@ -2017,7 +2017,7 @@ static void  WRITE_SFArrayPtr( sfarray_t * arrayptr )
 
     // zero is unused, so use it for NULL
     // The arrays have been numbered in saveindex, see ReadSFArrayPtr
-    WRITELONG(save_p, (cur ? cur->saveindex : 0) );
+    WRITE32(save_p, (cur ? cur->saveindex : 0) );
 }
    
 static sfarray_t * READ_SFArrayPtr( void )
@@ -2025,7 +2025,7 @@ static sfarray_t * READ_SFArrayPtr( void )
     int svindx;
     sfarray_t *cur = NULL;
     // All arrays were numbered in saveindex
-    svindx = READULONG(save_p);  // consistent with Write saveindex
+    svindx = READU32(save_p);  // consistent with Write saveindex
 
     if(svindx)		// 0 is NULL ptr
     {
@@ -2063,7 +2063,7 @@ void P_ArchiveSValue(svalue_t *s)
       }
     case svt_int:
       {
-	WRITELONG(save_p, s->value.i);
+	WRITE32(save_p, s->value.i);
 	break;
       }
     case svt_fixed:
@@ -2094,7 +2094,7 @@ void P_UnArchiveSValue(svalue_t *s)
       }
     case svt_int:
       {
-	s->value.i = READLONG(save_p);
+	s->value.i = READ32(save_p);
 	break;
       }
     case svt_fixed:
@@ -2135,7 +2135,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
   }
 
   //CheckSaveGame(sizeof(short));
-  WRITESHORT(save_p, num_variables);  // write num_variables
+  WRITE16(save_p, num_variables);  // write num_variables
 
   // go thru hash chains, store each variable
   for (i = 0; i < VARIABLESLOTS; i++)
@@ -2181,7 +2181,7 @@ void P_UnArchiveFSVariables(svariable_t **vars)
   int i;
 
   // now read the number of variables from the savegame file
-  int num_variables = READSHORT(save_p);
+  int num_variables = READ16(save_p);
 
   for (i = 0; i < num_variables; i++)
   {
@@ -2258,11 +2258,11 @@ void clear_runningscripts();    // t_script.c
 void P_ArchiveRunningScript(runningscript_t * rs)
 {
     //CheckSaveGame(sizeof(short) * 8); // room for 8 shorts
-    WRITESHORT(save_p, rs->script->scriptnum);  // save scriptnum
+    WRITE16(save_p, rs->script->scriptnum);  // save scriptnum
     // char* into data, saved as index
-    WRITESHORT(save_p, rs->savepoint - rs->script->data);       // offset
-    WRITESHORT(save_p, rs->wait_type);
-    WRITESHORT(save_p, rs->wait_data);
+    WRITE16(save_p, rs->savepoint - rs->script->data);       // offset
+    WRITE16(save_p, rs->wait_type);
+    WRITE16(save_p, rs->wait_data);
 
     // save trigger ID
     WRITE_MobjPointerID(save_p, rs->trigger);
@@ -2278,7 +2278,7 @@ runningscript_t *P_UnArchiveRunningScript()
     // create a new runningscript
     runningscript_t *rs = new_runningscript();
 
-    int scriptnum = READSHORT(save_p);      // get scriptnum
+    int scriptnum = READ16(save_p);      // get scriptnum
 
     // levelscript?
 
@@ -2288,9 +2288,9 @@ runningscript_t *P_UnArchiveRunningScript()
         rs->script = levelscript.children[scriptnum];
 
     // read out offset from save, convert index into ptr = &data[index]
-    rs->savepoint = rs->script->data + READSHORT(save_p);
-    rs->wait_type = READSHORT(save_p);
-    rs->wait_data = READSHORT(save_p);
+    rs->savepoint = rs->script->data + READ16(save_p);
+    rs->wait_type = READ16(save_p);
+    rs->wait_data = READ16(save_p);
 
     // read out trigger thing
     rs->trigger = READ_MobjPointerID(save_p);
@@ -2319,7 +2319,7 @@ void P_ArchiveRunningScripts()
     //CheckSaveGame(sizeof(long));
 
     // store num_runningscripts
-    WRITEULONG(save_p, num_runningscripts);
+    WRITEU32(save_p, num_runningscripts);
 
     // now archive them
     rs = runningscripts.next;
@@ -2343,7 +2343,7 @@ void P_UnArchiveRunningScripts()
     clear_runningscripts();
 
     // get num_runningscripts
-    num_runningscripts = READULONG(save_p);
+    num_runningscripts = READU32(save_p);
 
     for (i = 0; i < num_runningscripts; i++)
     {
@@ -2380,7 +2380,7 @@ void P_ArchiveFSArrays(void)
   unsigned int num_fsarrays = P_NumberFSArrays(); // number all the arrays
 
   // write number of FS arrays
-  WRITEULONG(save_p, num_fsarrays);
+  WRITEU32(save_p, num_fsarrays);
       
 #ifdef SAVELIST_STRUCTHEAD
   sfarray_t *cur = sfsavelist.next; // start at first array
@@ -2392,7 +2392,7 @@ void P_ArchiveFSArrays(void)
     unsigned int i;
 
     // write the length of this array
-    WRITEULONG(save_p, cur->length);
+    WRITEU32(save_p, cur->length);
 
     // values[] is array of svalue_s, which is a union of possible values
     // marked with the type, each array element can be of a different type
@@ -2415,7 +2415,7 @@ void P_UnArchiveFSArrays(void)
      // All PU_LEVEL memory already cleared by P_UnArchiveMisc()
 
   // read number of FS arrays
-  unsigned int num_fsarrays = READULONG(save_p);
+  unsigned int num_fsarrays = READU32(save_p);
 
 #ifdef SAVELIST_STRUCTHEAD
   sfarray_t *last = sfsavelist.next; // start at first array
@@ -2431,7 +2431,7 @@ void P_UnArchiveFSArrays(void)
     memset(newArray, 0, sizeof(sfarray_t));
 
     // read length of this array
-    newArray->length = READULONG(save_p);
+    newArray->length = READU32(save_p);
       
     newArray->values = Z_Malloc(newArray->length * sizeof(svalue_t), PU_LEVEL, NULL);
     CONS_Printf("%i", newArray->length);
@@ -2531,9 +2531,9 @@ void P_ArchiveMisc()
     for (i = 0; i < MAXPLAYERS; i++)
         pig |= (playeringame[i] != 0) << i;
 
-    WRITEULONG(save_p, pig);
+    WRITEU32(save_p, pig);
 
-    WRITEULONG(save_p, leveltime);
+    WRITEU32(save_p, leveltime);
     WRITEBYTE(save_p, P_GetRandIndex());
 }
 
@@ -2546,7 +2546,7 @@ boolean P_UnArchiveMisc()
     gameepisode = READBYTE(save_p);
     gamemap = READBYTE(save_p);
 
-    pig = READULONG(save_p);
+    pig = READU32(save_p);
 
     for (i = 0; i < MAXPLAYERS; i++)
     {
@@ -2559,7 +2559,7 @@ boolean P_UnArchiveMisc()
         return false;
 
     // get the time
-    leveltime = READULONG(save_p);
+    leveltime = READU32(save_p);
     P_SetRandIndex(READBYTE(save_p));
 
     return true;
@@ -2697,7 +2697,7 @@ void P_Write_Savegame_Header( const char * description )
     // the level number is also saved in ArchiveMisc
  
     // binary header data
-    WRITESHORT( save_p, VERSION );	// 16 bit game version that wrote file
+    WRITE16( save_p, VERSION );	// 16 bit game version that wrote file
     WRITEBYTE( save_p, sg_big_endian );
     WRITEBYTE( save_p, sg_padded );
     WRITEBYTE( save_p, sizeof(int) );	// word size
@@ -2769,7 +2769,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 
     // binary header data
     reason = "version";
-    if( READSHORT( save_p ) != VERSION )  goto wrong;
+    if( READ16( save_p ) != VERSION )  goto wrong;
     reason = "endian";
     if( READBYTE( save_p ) != sg_big_endian )  goto wrong;
     reason = "padding";

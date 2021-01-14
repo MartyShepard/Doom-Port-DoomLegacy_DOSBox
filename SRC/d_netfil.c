@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 630 2010-04-08 00:56:36Z wesleyjohnson $
+// $Id: d_netfil.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -184,7 +184,7 @@ byte *PutFileNeeded(void)
     p=(byte *)&netbuffer->u.serverinfo.fileneeded;
     for(i=0;i<numwadfiles;i++)
     {
-        WRITEULONG(p,wadfiles[i]->filesize);
+        WRITEU32(p,wadfiles[i]->filesize);
         strcpy(wadfilename,wadfiles[i]->filename);
         nameonly(wadfilename);
         WRITESTRING(p,wadfilename);
@@ -204,7 +204,7 @@ void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
     for(i=0;i<fileneedednum;i++)
     {
         fileneeded[i].status = FS_NOTFOUND;
-        fileneeded[i].totalsize = READULONG(p);
+        fileneeded[i].totalsize = READU32(p);
         fileneeded[i].phandle = NULL;
         READSTRING(p,fileneeded[i].filename);
         READMEM(p,fileneeded[i].md5sum,16);

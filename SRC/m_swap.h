@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 604 2010-02-13 07:21:09Z smite-meister $
+// $Id: m_swap.h 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -64,7 +64,7 @@
 // uses with executable parameters.  Compiler will optimize
 // them to nearly the same thing, except for parameter handling.
 // Inline func are always safer in unfamiliar code.
-inline int16_t SWAP_INT16_FAST( uint16_t x)
+static inline int16_t SWAP_INT16_FAST( uint16_t x)
 {
     return (int16_t)
      (  (( x & (uint16_t)0x00ffU) << 8)
@@ -72,7 +72,7 @@ inline int16_t SWAP_INT16_FAST( uint16_t x)
      );
 }
 
-inline int32_t SWAP_INT32_FAST( uint32_t x)
+static inline int32_t SWAP_INT32_FAST( uint32_t x)
 {
     return (int32_t)
      (  (( x & (uint32_t)0x000000ffUL) << 24)
@@ -82,23 +82,6 @@ inline int32_t SWAP_INT32_FAST( uint32_t x)
      );
 }
 #endif
-
-// [WDJ] Old macro endian conversions, most of the uses are removed.
-#ifdef __BIG_ENDIAN__
-# define LE_SHORT(x) SWAP_INT16_FAST(x)
-# define LE_LONG(x)  SWAP_INT32_FAST(x)
-# define BE_SHORT(x) (x)
-# define BE_LONG(x)  (x)
-#else // little-endian
-# define LE_SHORT(x) (x)
-# define LE_LONG(x)  (x)
-# define BE_SHORT(x) SWAP_INT16_FAST(x)
-# define BE_LONG(x)  SWAP_INT32_FAST(x)
-#endif
-
-// [WDJ] swap functions, reduces executable bloat.
-int16_t swap_int16( uint16_t x);
-int32_t swap_int32( uint32_t x);
 
 // [WDJ] name changed to indicate SWAP, size, Endianness, and just so I can
 // grep the old SHORT uses to find them.  To make 64bit clean, change all uses
@@ -110,23 +93,35 @@ int32_t swap_int32( uint32_t x);
 // Use BE_SWAP* to convert to and from external big-endian value.
 //    Midi
 #ifdef __BIG_ENDIAN__
+
+// [WDJ] swap functions, reduces executable bloat.
+int16_t swap_int16( uint16_t x);
+int32_t swap_int32( uint32_t x);
+
 // [WDJ] Fast inline where must do swap during play (other than load).
 # define LE_SWAP16_FAST(x)  SWAP_INT16_FAST(x)
 # define LE_SWAP32_FAST(x)  SWAP_INT32_FAST(x)
 # define LE_SWAP16(x)  swap_int16(x)
 # define LE_SWAP32(x)  swap_int32(x)
-# define BE_SWAP16(x)  (x)
-# define BE_SWAP32(x)  (x)
+
+# define BE_SWAP16_FAST(x)  (x)
+# define BE_SWAP32_FAST(x)  (x)
+//# define BE_SWAP16(x)  (x)
+//# define BE_SWAP32(x)  (x)
+
 #else // little-endian machine
+
 // [WDJ] Fast inline where must do swap during play (other than load).
 # define LE_SWAP16_FAST(x)  (x)
 # define LE_SWAP32_FAST(x)  (x)
 # define LE_SWAP16(x)  (x)
 # define LE_SWAP32(x)  (x)
-# define BE_SWAP16(x)  swap_int16(x)
-# define BE_SWAP32(x)  swap_int32(x)
+
+# define BE_SWAP16_FAST(x)  SWAP_INT16_FAST(x)
+# define BE_SWAP32_FAST(x)  SWAP_INT16_FAST(x)
+//# define BE_SWAP16(x)  swap_int16(x)
+//# define BE_SWAP32(x)  swap_int32(x)
+
 #endif
-
-
 
 #endif

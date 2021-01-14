@@ -517,3 +517,8 @@ Enforce protection against model sector=-1 at the time sector model is set,
 thus removing many unnecessary tests and making code intent clear.
 Change some repetitive array accesses to use ptrs, reducing code size.
 
+*** w44_byteswap
+patchfile = w44_patchfile.patch
+- committed revision 633   by wesley johnson
+Finishes change from LE_SHORT, LE_LONG, to LE_SWAP16 and LE_SWAP32.
+Fixes midi file big-endian uses to use BE_SHORT and BE_LONG.

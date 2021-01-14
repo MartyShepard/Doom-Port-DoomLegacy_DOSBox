@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: wi_stuff.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -470,6 +470,8 @@ static patch_t*         stpb;
 // Name graphics of each level (centered)
 static patch_t**        lnames;
 
+// [WDJ] All patch endian conversion is done in W_CachePatchNum
+
 //
 // CODE
 //
@@ -513,22 +515,13 @@ static void WI_drawLF(void)
     }
     else
     {
-	//[segabor]: 'SHORT' BUG !
+	//[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
         V_DrawScaledPatch ((BASEVIDWIDTH - (lnames[wbs->last]->width))/2,
                             y, FB, lnames[wbs->last]);
         y += (5 * (lnames[wbs->last]->height))/4;
         // draw "Finished!"
         V_DrawScaledPatch ((BASEVIDWIDTH - (finished->width))/2,
                             y, FB, finished);
-#if 0
-        //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch ((BASEVIDWIDTH - LE_SHORT(lnames[wbs->last]->width))/2,
-                            y, FB, lnames[wbs->last]);
-        y += (5 * LE_SHORT(lnames[wbs->last]->height))/4;
-        // draw "Finished!"
-        V_DrawScaledPatch ((BASEVIDWIDTH - LE_SHORT(finished->width))/2,
-                            y, FB, finished);
-#endif       
     }
 }
 
@@ -549,7 +542,7 @@ static void WI_drawEL(void)
     }
     else
     {
-	//[segabor]: 'SHORT' BUG !
+	//[segabor]: 'SHORT' BUG !    [WDJ] Patch read does endian conversion
         V_DrawScaledPatch((BASEVIDWIDTH - (entering->width))/2,
                           y, FB, entering);
         // draw level
@@ -557,17 +550,6 @@ static void WI_drawEL(void)
 
         V_DrawScaledPatch((BASEVIDWIDTH - (lnames[wbs->next]->width))/2,
                            y, FB, lnames[wbs->next]);
-#if 0
-        //[WDJ] BUG caused by using SHORT for BIG_ENDIAN byte swap, SHORT unneeded here
-        V_DrawScaledPatch((BASEVIDWIDTH - LE_SHORT(entering->width))/2,
-                          y, FB, entering);
-
-        // draw level
-        y += (5 * LE_SHORT(lnames[wbs->next]->height))/4;
-
-        V_DrawScaledPatch((BASEVIDWIDTH - LE_SHORT(lnames[wbs->next]->width))/2,
-                           y, FB, lnames[wbs->next]);
-#endif       
     }
 
 }
@@ -1299,7 +1281,7 @@ static void WI_ddrawDeathmatchStats(void)
     WI_drawLF();
 
     // draw stat titles (top line)
-    V_DrawScaledPatch(DM_TOTALSX-LE_SHORT(total->width)/2,
+    V_DrawScaledPatch(DM_TOTALSX - total->width/2,
                 DM_MATRIXY-WI_SPACINGY+10,
                 FB,
                 total);
@@ -1323,13 +1305,13 @@ static void WI_ddrawDeathmatchStats(void)
             else
                 colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
 
-            V_DrawMappedPatch(x-LE_SHORT(stpb->width)/2,
+            V_DrawMappedPatch(x-stpb->width/2,
                         DM_MATRIXY - WI_SPACINGY,
                         FB,
                         stpb,      //p[i], now uses a common STPB0 translated
                         colormap); //      to the right colors
 
-            V_DrawMappedPatch(DM_MATRIXX-LE_SHORT(stpb->width)/2,
+            V_DrawMappedPatch(DM_MATRIXX-stpb->width/2,
                         y,
                         FB,
                         stpb,      //p[i]
@@ -1337,12 +1319,12 @@ static void WI_ddrawDeathmatchStats(void)
 
             if (i == me)
             {
-                V_DrawScaledPatch(x-LE_SHORT(stpb->width)/2,
+                V_DrawScaledPatch(x-stpb->width/2,
                             DM_MATRIXY - WI_SPACINGY,
                             FB,
                             bstar);
 
-                V_DrawScaledPatch(DM_MATRIXX-LE_SHORT(stpb->width)/2,
+                V_DrawScaledPatch(DM_MATRIXX-stpb->width/2,
                             y,
                             FB,
                             star);
@@ -1350,9 +1332,9 @@ static void WI_ddrawDeathmatchStats(void)
         }
         else
         {
-            // V_DrawPatch(x-LE_SHORT(bp[i]->width)/2,
+            // V_DrawPatch(x-bp[i]->width/2,
             //   DM_MATRIXY - WI_SPACINGY, FB, bp[i]);
-            // V_DrawPatch(DM_MATRIXX-LE_SHORT(bp[i]->width)/2,
+            // V_DrawPatch(DM_MATRIXX-bp[i]->width/2,
             //   y, FB, bp[i]);
         }
         x += DM_SPACINGX;
@@ -1361,7 +1343,7 @@ static void WI_ddrawDeathmatchStats(void)
 
     // draw stats
     y = DM_MATRIXY+10;
-    w = LE_SHORT(num[0]->width);
+    w = num[0]->width;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {

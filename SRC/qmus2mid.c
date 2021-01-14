@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: qmus2mid.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -84,8 +84,27 @@ static byte    MUSchannel;
 static byte    MIDItrack;
 
 #define fwritemem(p,s,n,f)  memcpy(*f,p,n*s);*f+=(s*n)
-#define fwriteshort(x,f)    WRITESHORT(*f,((x>>8) & 0xff) | (x<<8))
-#define fwritelong(x,f)     WRITEULONG(*f,((x>>24) & 0xff) | ((x>>8) & 0xff00) | ((x<<8) & 0xff0000) | (x<<24))
+
+#if 1
+#define fwriteshort(x,f)    BE_write_16(f,x)
+#define fwritelong(x,f)     BE_write_32(f,x)
+// [WDJ] Proper big-endian midi read/write
+static void BE_write_16(byte **p, int16_t val)
+{
+  *(int16_t *)*p = BE_SWAP16_FAST(val);
+  *p += sizeof(int16_t);
+}
+
+static void BE_write_32(byte **p, int32_t val)
+{
+  *(int32_t *)*p = BE_SWAP32_FAST(val);
+  *p += sizeof(int32_t);
+}
+#else
+// Used little-endian writes on big-endian data, does endian swap twice.
+#define fwriteshort(x,f)    WRITE16(*f,((x>>8) & 0xff) | (x<<8))
+#define fwritelong(x,f)     WRITEU32(*f,((x>>24) & 0xff) | ((x>>8) & 0xff00) | ((x<<8) & 0xff0000) | (x<<24))
+#endif
 
 #define last(e)         ((unsigned char)(e & 0x80))
 #define event_type(e)   ((unsigned char)((e & 0x7F)>>4))

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: p_setup.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -737,11 +737,11 @@ void P_LoadThings (int lump)
 
         // Do spawn all other stuff.
         // SoM: Do this first so all the mapthing slots are filled!
-        mt->x = READSHORT(data);
-        mt->y = READSHORT(data);
-        mt->angle = READSHORT(data);
-        mt->type = READSHORT(data);
-        mt->options = READSHORT(data);
+        mt->x = READ16(data);
+        mt->y = READ16(data);
+        mt->angle = READ16(data);
+        mt->type = READ16(data);
+        mt->options = READ16(data);
         mt->mobj = NULL; //SoM:
 
         P_SpawnMapThing (mt);

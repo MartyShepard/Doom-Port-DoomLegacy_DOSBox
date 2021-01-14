@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 630 2010-04-08 00:56:36Z wesleyjohnson $
+// $Id: d_clisrv.c 633 2010-04-27 20:36:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1573,8 +1573,8 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
     for (i = 0; i < n; src++, dst++, i++)
     {
 #ifdef CLIENTPREDICTION2
-	dst->x = LE_LONG(src->x);
-	dst->y = LE_LONG(src->y);
+	dst->x = LE_SWAP32_FAST(src->x);
+	dst->y = LE_SWAP32_FAST(src->y);
 #endif
 	dst->forwardmove = src->forwardmove;
 	dst->sidemove    = src->sidemove;
