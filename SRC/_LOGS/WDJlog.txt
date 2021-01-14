@@ -345,4 +345,8 @@ patchfile = w37_compiler_msg.patch
 Fixed switch stmts to not give compiler message.  This was done before
 in w37 but got lost before commit.
 
-
+*** w39_overflow
+patchfile = w39_overflow.patch
+- committed revision 607   by wesley johnson
+Stops overflow in sofware rendering from drawing large bars on screen.
+Cleans up display of phobiata.wad map07.

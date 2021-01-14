@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 600 2010-02-11 20:53:29Z wesleyjohnson $
+// $Id: r_segs.c 607 2010-02-21 20:20:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1479,6 +1479,15 @@ void R_RenderSegLoop (void)
         rw_scale += rw_scalestep;
         topfrac += topstep;
         bottomfrac += bottomstep;
+        // [WDJ] Overflow protection.  Overflow and underflow of topfrac and
+        // bottomfrac cause off-screen textures to be drawn as large bars.
+	// See phobiata.wad map07, which has a floor at -20000.
+	// The cause of the overflow many times seems to be the step value.
+        if( bottomfrac < topfrac ) {
+	   // Uncomment to see which map areas cause this overflow.
+//	   fprintf(stderr,"Overflow break: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+	   break;
+	}
     }
 }
 

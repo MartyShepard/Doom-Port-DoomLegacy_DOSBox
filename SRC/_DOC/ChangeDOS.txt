@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00607 ]: Seg stepping overflow detect
 [00606 ]: FS save/load fixed
 		* Compile Break
 		Add Missing int32_t in tables.c
@@ -102,4 +103,5 @@ d_main.c
 w_wad.c
 zone.c
 screen_c ( #if !defined(__DJGPP__) )
+tables.c
 
