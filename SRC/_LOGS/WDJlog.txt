@@ -592,6 +592,12 @@ Fix quicksave to be able to change save file.
 Fix quickload to correct message
 
 *** w47_naming2
-patchfile = w45_naming2.patch
+patchfile = w47_naming2.patch
 - committed revision 642   by wesley johnson
 Another FIXED_TO_FLOAT, and some commentary.
+
+*** w48_wad_structure
+patchfile = w48_wadstruct.patch
+- committed revision 643   by wesley johnson
+Change structures used to access wad to use uint16_t and uint32_t.
+
