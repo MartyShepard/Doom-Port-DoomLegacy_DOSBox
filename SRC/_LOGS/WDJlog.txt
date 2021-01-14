@@ -528,4 +528,52 @@ patchfile = w44_quicksave.patch
 - committed revision 634   by wesley johnson
 Fix quicksave getting clobbered by save or load.
 Fix quicksave to be able to change save file.
-Fix quickload to correct messag
+Fix quickload to correct message
+
+*** w45_naming
+patchfile = w45_naming.patch
+- committed revision 637   by wesley johnson
+Change some immature language to something more useful.
+FIXED_TO_FLOAT_MULT
+FIXED_TO_FLOAT( x )  : changed to use FIXED_TO_FLOAT_MULT
+  changed divide to multiply, got smaller code
+Comments, and other edits that do not change code generated.
+
+*** w46_hardware1
+patchfile = w46_hardware1.patch
+- committed revision 638   by wesley johnson
+Changes to the hardware renderer to fix some problems, and to clean it
+up so other fixes are easier.
+
+SPRITE_LIGHTLEVEL : convert sprite drawing to use same lightlevel
+calculations that software renderer has been using.
+
+TERM_TRANSFORM : generates precalculated combined transform terms that
+reduces transforms per vertex to only 5 multiplies and 5 adds for
+sprites, and 8 multiples and 8 adds for world.
+
+DOOR_CLOSED_FIX : code from software renderer for closed doors. Not
+enabled yet, needs checking.
+
+Reduced lightlevel K-factor in LUT table from 2 to 1.2 to better match the
+software renderer brightness.
+
+Tests that rejects empty lines for trigger copied from software
+renderer, as it has more conditions that seem important.
+
+Code from r_bsp that determines the light levels of ceiling and floor,
+taking into account multiple floors.
+
+Code from r_things that fixes the problem with sprites being lighted
+from the sector only.  It takes into account the 3D floors.
+
+*** w47_main_GDESC
+patchfile = w45_main_GDESC.patch
+- committed revision 639   by wesley johnson
+Tests of strife shareware were not recognized and caused segfault.
+Finished Strife and Strife shareware additions.
+Added needed lump recognition.
+Added strife mode, (not implemented).
+Fix change to -game switch so that unrecognized names cause error.
+Other cosmetic and organizational adjustments and removed some old
+comments and code.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 636 2010-05-03 06:35:38Z smite-meister $
+// $Id: doomstat.h 639 2010-05-09 22:53:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -98,6 +98,7 @@ typedef enum
     retail,       // DOOM 1 retail, E4, M36
     heretic,
     hexen,
+    strife,
     indetermined, // Well, no IWAD found.
     chexquest1	  // DarkWolf95:July 14, 2003: Chex Quest Support
 
@@ -164,9 +165,9 @@ typedef enum {
     GDESC_heretic_shareware,
     GDESC_hexen,
     GDESC_hexen_demo,
-    GDESC_chex1,
     GDESC_strife,
     GDESC_strife_shareware,
+    GDESC_chex1,
     GDESC_ultimate_mode,
     GDESC_doom_mode,
     GDESC_heretic_mode,

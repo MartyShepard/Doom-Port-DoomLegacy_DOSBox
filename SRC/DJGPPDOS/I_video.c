@@ -177,7 +177,7 @@ void I_FinishUpdate (void)
    //added:03-01-98: I tried to I_WaitVBL(1) here, but it slows down
    //  the game when the view becomes complicated, it looses ticks
    if( cv_vidwait.value )
-       I_WaitVBL(0);
+       I_WaitVBL(1);
 
 
 //added:16-01-98:profile screen blit.

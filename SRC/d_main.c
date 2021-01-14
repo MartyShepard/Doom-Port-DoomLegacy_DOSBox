@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 636 2010-05-03 06:35:38Z smite-meister $
+// $Id: d_main.c 639 2010-05-09 22:53:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -320,13 +320,13 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "DOS Test"
+#define SVN_REV "none"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 637; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-const char VERSIONSTRING[] = "test (rev " SVN_REV ")";
+const int  REVISION = 639; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
@@ -1132,15 +1132,15 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 // GDESC_hexen_demo: Hexen
    { "Hexen Demo", NULL, "hexen1", "hexen.wad", NULL,
 	{NULL, NULL}, LN_MAP01+LN_TITLE, 0, GD_idwad|GD_unsupported, hexen },
+// GDESC_strife: Strife
+   { "Strife", NULL, "strife", "strife.wad", NULL,
+	{"ENDSTRF", "MAP20"}, LN_MAP01, 0, GD_idwad|GD_unsupported, strife },
+// GDESC_strife_shareware: Strife shareware
+   { "Strife shareware", NULL, "strife0", "strife0.wad", NULL,
+	{"ENDSTRF", NULL}, 0, LN_MAP01, GD_idwad|GD_unsupported, strife },
 // GDESC_chex1: Chex Quest
    { "Chex Quest", NULL, "chex1", "chex.wad", NULL,
 	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE, 0, chexquest1 },
-// GDESC_strife: Strife
-   { "Strife", NULL, "strife", "strife.wad", NULL,
-	{NULL, NULL}, 0, 0, GD_idwad|GD_unsupported, commercial },
-// GDESC_strife_shareware: Strife shareware
-   { "Strife shareware", NULL, "strife1", "strife1.wad", NULL,
-	{NULL, NULL}, 0, 0, GD_idwad|GD_unsupported, commercial },
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode", "doom.wad", NULL,
 	{ NULL, NULL}, LN_E1M1, 0, 0, registered },
@@ -1347,7 +1347,6 @@ void IdentifyVersion(void)
     // [WDJ] were too many chained ELSE. Figured it out once and used direct goto.
     if (M_CheckParm("-shdev"))
     {
-//        gamemode = shareware;
 	gamedesc_index = GDESC_doom_shareware; // gamemode = shareware;
         devparm = true;
         D_AddFile(DEVDATA "doom1.wad");
@@ -1358,7 +1357,6 @@ void IdentifyVersion(void)
     }
     if (M_CheckParm("-regdev"))
     {
-//        gamemode = registered;
 	gamedesc_index = GDESC_doom; // gamemode = registered;
         devparm = true;
         D_AddFile(DEVDATA "doom.wad");
@@ -1366,12 +1364,10 @@ void IdentifyVersion(void)
         D_AddFile(DEVMAPS "data_se/texture2.lmp");
         D_AddFile(DEVMAPS "data_se/pnames.lmp");
         strcpy(configfile, DEVDATA CONFIGFILENAME);
-//        return; // Legacy requires legacy.wad
-        goto got_iwad;
+        goto got_iwad; // Legacy requires legacy.wad
     }
     if (M_CheckParm("-comdev"))
     {
-//        gamemode = commercial;
 	gamedesc_index = GDESC_doom2; // gamemode = commercial
         devparm = true;
         /*
@@ -1387,25 +1383,29 @@ void IdentifyVersion(void)
         D_AddFile(DEVMAPS "cdata/texture1.lmp");
         D_AddFile(DEVMAPS "cdata/pnames.lmp");
         strcpy(configfile, DEVDATA CONFIGFILENAME);
-//        return; // Legacy requires legacy.wad
-        goto got_iwad;
+        goto got_iwad; // Legacy requires legacy.wad
     }
 
     // [WDJ] search for one of the listed GDESC_ forcing switches
     if (M_CheckParm("-game"))
-      {
+    {
         char *temp = M_GetNextParm();
 	for( gmi=0; gmi<GDESC_other; gmi++ )
-	  {
+        {
 	    // compare to recognized game mode names
 	    if (!strcmp(temp, game_desc_table[gmi].idstr))
-	      {
+	    {
 		// switch forces the GDESC_ selection
 		gamedesc_index = gmi;
-		break;
-	      }
-	  }
-      }
+		goto game_switch_found;
+	    }
+	}
+        I_Error( "Switch  -game %s  not recognized\n", temp );
+       
+       game_switch_found:
+        ; // no error
+    }
+   
 
     // Specify the name of the IWAD file to use, so we can have several IWAD's
     // in the same directory, and/or have legacy.exe only once in a different location
@@ -1620,41 +1620,41 @@ void D_CheckWadVersion()
 //
 void D_DoomMain(void)
 {
-  // print version banner just once here, use it anywhere
-  sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
-  demoversion = VERSION;
-
-  const char *legacy = D_MakeTitleString(VERSION_BANNER);
-
-  //added:18-02-98:keep error messages until the final flush(stderr)
-  if (setvbuf(stderr, NULL, _IOFBF, 1000))
-    CONS_Printf("setvbuf didnt work\n");
-  setbuf(stdout, NULL);       // non-buffered output
-
-  // get parameters from a response file (eg: doom3 @parms.txt)
-  M_FindResponseFile();
-
-  // some basic commandline options
-  if (M_CheckParm("--version"))
-    {
-      printf("%s\n", legacy);
-      exit(0);
-    }
-
-  // TODO: Better commandline help
-  if (M_CheckParm("--help") || M_CheckParm("-h"))
-    {
-      printf("%s\n", legacy);
-      printf("Usage: legacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
-      exit(0);
-    }
-
     int p;
     char file[FILENAME_SIZE];
 
     int startepisode;
     int startmap;
     boolean autostart;
+
+    // print version banner just once here, use it anywhere
+    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
+    demoversion = VERSION;
+
+    const char *legacy = D_MakeTitleString(VERSION_BANNER);
+
+    //added:18-02-98:keep error messages until the final flush(stderr)
+    if (setvbuf(stderr, NULL, _IOFBF, 1000))
+        CONS_Printf("setvbuf didnt work\n");
+    setbuf(stdout, NULL);       // non-buffered output
+
+    // get parameters from a response file (eg: doom3 @parms.txt)
+    M_FindResponseFile();
+
+    // some basic commandline options
+    if (M_CheckParm("--version"))
+    {
+      printf("%s\n", legacy);
+      exit(0);
+    }
+
+    // TODO: Better commandline help
+    if (M_CheckParm("--help") || M_CheckParm("-h"))
+    {
+      printf("%s\n", legacy);
+      printf("Usage: legacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
+      exit(0);
+    }
 
     CONS_Printf("%s\n", legacy);
 
@@ -1678,9 +1678,9 @@ void D_DoomMain(void)
       CONS_Printf(D_DEVSTR);
     nomonsters = M_CheckParm("-nomonsters");
 
-
+    // userhome section
     {
-        char * userhome;
+        char * userhome = NULL;
         if (M_CheckParm("-home") && M_IsNextParm())
             userhome = M_GetNextParm();
         else
@@ -1688,11 +1688,9 @@ void D_DoomMain(void)
 #ifdef LINUX
         if (!userhome)
         {
-            I_SoftError("Please set $HOME to your home directory\n");
-	    userhome = "~/"; // home on most Linux
-	    // [WDJ] FIXME: will not work with savegame directory
-	    // because legacyhome_len will be wrong.
-	    // Get copy of legacyhome from directory.
+            I_SoftError("Please set $HOME to your home directory, or use -home switch\n");
+	    // use current directory and defaults, no HOME
+	    // no good alternative
 	}
 #endif
 #ifdef __MACH__
@@ -1705,11 +1703,8 @@ void D_DoomMain(void)
         if (userhome)
         {
 	    char * cfgstr;
-//	    char legacyhome[FILENAME_SIZE];
 	   
-//            sprintf(legacyhome, "%s/" DEFAULTDIR, userhome);
-	    legacyhome = (char*)
-	       malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
+	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
             // example: "/user/user/.legacy/"
             sprintf(legacyhome, "%s%s" DEFAULTDIR "%s", userhome, dirchar, dirchar);
             // use user specific config file

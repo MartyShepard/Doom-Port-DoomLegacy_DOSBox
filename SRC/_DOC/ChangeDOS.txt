@@ -1,6 +1,7 @@
 * Not need to Compile.
 
-
+[00639 ]: GDESC strife recognition
+[00638*]: w46 hardware render patch1
 [00637 ]: w45 naming FIXED_TO_FLOAT
 [00636 ]: GDESC fix, commandline switches
 [00635 ]: z_zone fix
