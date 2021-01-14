@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 620 2010-03-23 21:20:41Z wesleyjohnson $
+// $Id: d_main.c 627 2010-04-03 02:21:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -325,7 +325,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 624;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 627;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = " (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -379,7 +379,16 @@ boolean advancedemo;
 #define FILENAME_SIZE  256
 
 // [WDJ] Seem to be unused
-//char wadfile[1024];             // primary wad file
+#if defined PC_DOS || defined __WIN32__ || defined __OS2__
+# define  dirchar  "\\"
+#else
+# define  dirchar  "/"
+#endif
+
+// so can extract legacyhome from savegamename
+int  legacyhome_len;
+
+// [WDJ] Seem to be unused//char wadfile[1024];             // primary wad file
 //char mapdir[1024];              // directory of development maps
 
 #ifdef __MACH__
@@ -1625,38 +1634,10 @@ void D_DoomMain(void)
 
     nomonsters = M_CheckParm("-nomonsters");
 
-#if 1
+
     // Title page
     title = gamedesc.startup_title;  // set by IdentifyVersion
     if( title == NULL )   title = gamedesc.gname;
-#else
-    //added:11-01-98:removed the repeated spaces in title strings,
-    //               because GCC doesn't expand the TABS from my text editor.
-    //  Now the string is centered in a larger one just before output,
-    //  and the date and time of compilation is added. (see below)
-    switch (gamemode)
-    {
-      case retail:
-	title = "The Ultimate DOOM Startup";
-	break;
-      case shareware:
-	title = "DOOM Shareware Startup";
-	break;
-      case registered:
-	title = "DOOM Registered Startup";
-	break;
-      case commercial:
-	title = "DOOM 2: Hell on Earth";
-	break;
-/*FIXME
-      case pack_plut :strcpy (title,"DOOM 2: Plutonia Experiment");break;
-      case pack_tnt  :strcpy (title,"DOOM 2: TNT - Evilution");    break;
-*/
-      default:
-	title = "Public DOOM";
-	break;
-    }
-#endif
 
     //added:11-01-98:center the string, add compilation time and date.
     legacy = D_MakeTitleString(VERSION_BANNER);
@@ -1675,18 +1656,18 @@ void D_DoomMain(void)
     if (devparm)
         CONS_Printf(D_DEVSTR);
 
-    // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
-    strcpy(savegamename, text[NORM_SAVEI_NUM]);
-
     {
-        char *userhome, legacyhome[FILENAME_SIZE];
+        char * userhome;
+		char legacyhome[FILENAME_SIZE];
         if (M_CheckParm("-home") && M_IsNextParm())
             userhome = M_GetNextParm();
         else
             userhome = getenv("HOME");
 #ifdef LINUX
-        if (!userhome)
-            I_Error("Please set $HOME to your home directory\n");
+    {
+       I_SoftError("Please set $HOME to your home directory\n");
+	    userhome = "~/"; // home on most Linux
+	}
 #endif
 #ifdef __MACH__
 	//[segabor] ... ([WDJ] MAC port has vars handy)
@@ -1695,34 +1676,57 @@ void D_DoomMain(void)
 #else
         if (userhome)
         {
+			char * cfgstr;
             // use user specific config file
-            sprintf(legacyhome, "%s/" DEFAULTDIR, userhome);
+//            sprintf(legacyhome, "%s/" DEFAULTDIR, userhome);
+            // example: "/user/user/.legacy/"
+            sprintf(legacyhome, "%s%s" DEFAULTDIR "%s", userhome, dirchar, dirchar);
             // little hack to allow a different config file for opengl
             // may be a problem if opengl cannot really be started
             if (M_CheckParm("-opengl"))
             {
 	        // example: /home/user/.legacy/glconfig.cfg
-                sprintf(configfile, "%s/gl" CONFIGFILENAME, legacyhome);
+                cfgstr = "gl" CONFIGFILENAME;
             }
             else
             {
 	        // example: /home/user/.legacy/config.cfg
-                sprintf(configfile, "%s/" CONFIGFILENAME, legacyhome);
+                cfgstr = CONFIGFILENAME;
             }
-
+			sprintf(configfile, "%s%s", legacyhome, cfgstr);
             // can't use sprintf since there is %d in savegamename
-            strcatbf(savegamename, legacyhome, "/");
+	    // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
+//            strcatbf(savegamename, legacyhome, "/");
+//            strcatbf(savegamename, legacyhome, dirchar);
             I_mkdir(legacyhome, 0700);
         }
+        else
+        {
+	    legacyhome[0] = '\0';
+        }
+#ifdef SAVEGAMEDIR
+        // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
+        sprintf(savegamename, "%s%%s%s%s", legacyhome, dirchar, text[NORM_SAVEI_NUM]);
+        // so can extract legacyhome from savegamename later
+        legacyhome_len = strlen(legacyhome);
+#else    
+        // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
+        sprintf(savegamename, "%s%s", legacyhome, text[NORM_SAVEI_NUM]);
+#endif		
 #endif
     }
 
     if (M_CheckParm("-cdrom"))
     {
         CONS_Printf(D_CDROM);
-        I_mkdir("c:\\doomdata", 700);
+#ifdef PC_DOS
+        // [WDJ] These names only work on DOS
+        I_mkdir("c:\\doomdata", 0700); // octal permissions
         strcpy(configfile, "c:/doomdata/" CONFIGFILENAME);
-        strcpy(savegamename, text[CDROM_SAVEI_NUM]);
+        strcpy(savegamename, text[CDROM_SAVEI_NUM]);  // DOS name
+#else
+        // userhome already has situation covered
+#endif
     }
 
     // add any files specified on the command line with -file wadfile
