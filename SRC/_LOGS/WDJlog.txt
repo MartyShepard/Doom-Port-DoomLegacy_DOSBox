@@ -448,3 +448,12 @@ patchfile = w41_draw_clip_b.patch
 Phobiata.wad had a bright line on right edge of screen.
 Test to limit rw_stopx changed from rdraw_viewwidth-1 to rdraw_viewwidth
 because the loop range of dc_x is rw_x .. rw_stopx-1.
+
+*** w41_sound
+patchfile = w41_sound.patch
+- committed revision 625   by wesley johnson
+Adds conditional code that makes sound work for systems with old SDL
+versions.   When detecting an old version of the SDL mixer include file,
+code is inserted to write the midi file to a tmp file and load it
+the old way.
+
