@@ -457,3 +457,9 @@ versions.   When detecting an old version of the SDL mixer include file,
 code is inserted to write the midi file to a tmp file and load it
 the old way.
 
+*** w41_makefile
+patchfile = w41_makefile.patch
+- committed revision 626   by wesley johnson
+Fixes dependencies so that they are recognized by MAKE.
+This fix may only work on Linux.
+

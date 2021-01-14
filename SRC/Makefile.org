@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 617 2010-03-23 19:24:02Z wesleyjohnson $
+# $Id: Makefile 626 2010-04-03 02:19:26Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -306,7 +306,7 @@ ifdef DEBUG
   #CFLAGS =  -g3 -O0
   CFLAGS = $(DEBUGFLAGS) -fno-guess-branch-probability
 else
-# build a normal optimised version
+# build a normal optimized version
   #CFLAGS = -O3
   CFLAGS = $(OPTLEV) -fomit-frame-pointer
 endif
@@ -554,9 +554,15 @@ macos.dep : macos/*.c
 sdl.dep : sdl/*.c
 win32.dep : win32/*.c
 
+vpath %.o $(O)
+
 %.dep :
 	@echo "Making dependencies $(@F)"
 	$(CC) $(CFLAGS) -MM $^ > $(@F)
+	sed --separate -e "s@^[a-zA-Z0-9_]*.o:@\$$(O)/&@" $(@F) > sed.dep
+	mv sed.dep $(@F)
+
+$(O)/*.o : doomdef.h
 
 include main.dep
 include hardware.dep
