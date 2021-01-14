@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 645 2010-05-11 21:47:18Z wesleyjohnson $
+// $Id: r_bsp.c 653 2010-05-19 18:01:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -899,11 +899,11 @@ void R_Subsector (int num)
         sub->sector->moved = frontsector->moved = false;
       }
 
-      light = R_GetPlaneLight(frontsector, frontsector->floorheight, false);
+      light = R_GetPlaneLight(frontsector, frontsector->floorheight);
       if(frontsector->floorlightsec == -1)
         floorlightlevel = *frontsector->lightlist[light].lightlevel;
       floorcolormap = frontsector->lightlist[light].extra_colormap;
-      light = R_GetPlaneLight(frontsector, frontsector->ceilingheight, false);
+      light = R_GetPlaneLight(frontsector, frontsector->ceilingheight);
       if(frontsector->ceilinglightsec == -1)
         ceilinglightlevel = *frontsector->lightlist[light].lightlevel;
       ceilingcolormap = frontsector->lightlist[light].extra_colormap;
@@ -965,7 +965,7 @@ void R_Subsector (int num)
 //DEBUG	 && ((viewz <= *rover->bottomheight && !(rover->flags & FF_INVERTPLANES))
 //DEBUG	     || (viewz >= *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
       {
-        light = R_GetPlaneLight(frontsector, *rover->bottomheight, viewz < *rover->bottomheight ? true : false);
+        light = R_GetPlaneLight_viewz(frontsector, *rover->bottomheight);
         ffloor[numffloors].plane = R_FindPlane(*rover->bottomheight,
                                   *rover->bottompic,
                                   *frontsector->lightlist[light].lightlevel,
@@ -988,7 +988,7 @@ void R_Subsector (int num)
 //DEBUG	 && ((viewz >= *rover->topheight && !(rover->flags & FF_INVERTPLANES))
 //DEBUG         (viewz <= *rover->topheight && (rover->flags & FF_BOTHPLANES))))
           {
-              light = R_GetPlaneLight(frontsector, *rover->topheight, viewz < *rover->topheight ? true : false);
+              light = R_GetPlaneLight_viewz(frontsector, *rover->topheight);
               ffloor[numffloors].plane = R_FindPlane(*rover->topheight,
                                                      *rover->toppic,
                                                      *frontsector->lightlist[light].lightlevel,
@@ -1129,26 +1129,49 @@ void R_Prep3DFloors(sector_t*  sector)
 }
 
 
-
-int   R_GetPlaneLight(sector_t* sector, fixed_t  planeheight, boolean underside)
+// Find light under planeheight, plain version
+int   R_GetPlaneLight(sector_t* sector, fixed_t planeheight)
 {
   int   i;
-
-  if(underside)
-    goto under;
 
   for(i = 1; i < sector->numlights; i++)
     if(sector->lightlist[i].height <= planeheight)
       return i - 1;
 
   return sector->numlights - 1;
+}
 
-  under:
+
+// Find light under planeheight, slight difference according to viewz
+int   R_GetPlaneLight_viewz(sector_t* sector, fixed_t  planeheight)
+{
+  int   i;
+
+#if 0
+  // faster
+  if( viewz < planeheight )
+  {
+      for(i = 1; i < sector->numlights; i++)
+        if(sector->lightlist[i].height < planeheight)   goto found;
+  }
+  else
+  {
+      for(i = 1; i < sector->numlights; i++)
+        if(sector->lightlist[i].height <= planeheight)  goto found;
+  }
+#else
+  // smaller
+  if( viewz >= planeheight )
+     return R_GetPlaneLight( sector, planeheight );
+   
   for(i = 1; i < sector->numlights; i++)
-    if(sector->lightlist[i].height < planeheight)
-      return i - 1;
-
+        if(sector->lightlist[i].height < planeheight)   goto found;
+#endif
+  // not found
   return sector->numlights - 1;
+
+found:     
+  return i - 1;
 }
 
 

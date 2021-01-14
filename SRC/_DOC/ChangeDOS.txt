@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00653 ]: w50 Planelight, split function
+[00652 ]: w49 sector number cleanup, consistency, comment, mfloor
 [00651 ]: w49 rename floor -> mfloor (avoid lib name)
 [00650 ]: w49 fragglescript (void), mfloor
 [00649 ]: w49 ouch face on damage, test rev

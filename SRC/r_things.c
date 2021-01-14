@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 637 2010-05-08 21:21:08Z wesleyjohnson $
+// $Id: r_things.c 653 2010-05-19 18:01:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1059,7 +1059,7 @@ static void R_ProjectSprite (mobj_t* thing)
     if(thingsector->numlights)
     {
       int lightnum;
-      light = R_GetPlaneLight(thingsector, gz_top, false);
+      light = R_GetPlaneLight(thingsector, gz_top);
       lightnum = (*thingsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT);
       if(!(thingsector->lightlist[light].caster && thingsector->lightlist[light].caster->flags & FF_FOG))
         lightnum += extralight;
@@ -1403,7 +1403,7 @@ void R_DrawPSprite (pspdef_t* psp)
     if(viewplayer->mo->subsector->sector->numlights)
     {
       int lightnum;
-      int light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + (41 << FRACBITS), false);
+      int light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + (41 << FRACBITS));
       vis->extra_colormap = viewplayer->mo->subsector->sector->lightlist[light].extra_colormap;
       lightnum = (*viewplayer->mo->subsector->sector->lightlist[light].lightlevel  >> LIGHTSEGSHIFT)+extralight;
 
@@ -1442,7 +1442,7 @@ void R_DrawPlayerSprites (void)
     // get light level
     if(viewplayer->mo->subsector->sector->numlights)
     {
-      light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + viewplayer->mo->info->height, false);
+      light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + viewplayer->mo->info->height);
       lightnum = (*viewplayer->mo->subsector->sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT) + extralight;
     }
     else

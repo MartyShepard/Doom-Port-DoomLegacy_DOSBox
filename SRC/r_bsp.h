@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_bsp.h 653 2010-05-19 18:01:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -93,6 +93,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
                      int *floorlightlevel, int *ceilinglightlevel,
                      boolean back);
 
-int    R_GetPlaneLight(sector_t* sector, fixed_t  planeheight, boolean underside);
+// Find light under planeheight, plain version
+int    R_GetPlaneLight(sector_t* sector, fixed_t planeheight);
+// Find light under planeheight, slight difference according to viewz
+int    R_GetPlaneLight_viewz(sector_t* sector, fixed_t planeheight);
+
 void   R_Prep3DFloors(sector_t* sector);
 #endif
