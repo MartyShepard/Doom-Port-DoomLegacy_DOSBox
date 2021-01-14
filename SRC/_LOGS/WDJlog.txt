@@ -339,5 +339,10 @@ patchfile = w38_enemy.patch
 Fixed some test logic to include testing for valid ptr to target before
 using the ptr.  This stops segfaults that happen in heavy fighting.
 
+*** w37_compiler_msg
+patchfile = w37_compiler_msg.patch
+- committed revision 603   by wesley johnson
+Fixed switch stmts to not give compiler message.  This was done before
+in w37 but got lost before commit.
 
 

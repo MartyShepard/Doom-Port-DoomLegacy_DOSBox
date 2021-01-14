@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 600 2010-02-11 20:53:29Z wesleyjohnson $
+// $Id: r_data.c 603 2010-02-11 23:44:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -492,6 +492,7 @@ byte* R_GenerateTexture (int texnum)
     {
      case TM_picture:  goto picture_format;
      case TM_combine_patch:  goto combine_format;
+     default: break;
     }
     // new texture, decide on a model
     switch( texgen_control )
@@ -499,6 +500,7 @@ byte* R_GenerateTexture (int texnum)
      case TGC_auto:  break;
      case TGC_picture:  goto picture_format;
      case TGC_combine_patch:  goto combine_format;
+     default: break;
     }
     // if patches would not cover picture, then must have transparent regions
     if( compostsize < txcblocksize )  goto combine_format;
