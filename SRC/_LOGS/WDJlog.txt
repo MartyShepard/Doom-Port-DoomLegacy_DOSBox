@@ -640,3 +640,11 @@ Fix from DoomWiki (wrong) and prboom (right) to known Doom bug.
 When health < 25 and pickup a medikit, gives an special message.
 Message did not appear because medikit gave +25 health before the
 test was done.  Changed to test for 50 health after adding +25.
+
+*** w49_ouch_face_on_damage
+patchfile = w49_ouchface.patch
+- committed revision 6xx   by wesley johnson
+Fix from DoomWiki (and prboom) to known Doom bug.
+When damage > 20, was supposed to give the ouch face.
+The test subtraction was reversed, testing a negative damage.
+

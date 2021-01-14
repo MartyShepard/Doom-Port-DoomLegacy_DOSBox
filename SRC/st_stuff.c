@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: st_stuff.c 649 2010-05-19 17:46:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -598,7 +598,9 @@ static void ST_updateFaceWidget(void)
             // being attacked
             priority = 7;
 
-            if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
+//            if (plyr->health - st_oldhealth > ST_MUCHPAIN) // orig bug
+            if (st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
