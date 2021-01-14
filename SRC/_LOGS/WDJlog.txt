@@ -358,9 +358,9 @@ Intercept top < bottom errors in software rendering so they do not interact with
 overflow trap.
 
 *** w40_makefile
-patchfile = w39b_overflow.patch
+patchfile = w40_makefile_v3.patch
 - committed revision 612   by wesley johnson
-Restore user and debug controls in makefile.  Support edit of makefile
-to select system media, debug, optimization.
+Restore user and debug controls in makefile.
+Support edit of makefile to select system media, debug, optimization.
 Dependency files generated from makefile.
 Remove makedep.mak which was not being maintained.
