@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_ticcmd.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_ticcmd.h 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -94,7 +94,7 @@ typedef struct
     char         sidemove;       // *2048 for move
     short        angleturn;      // <<16 for angle delta
                                  // SAVED AS A BYTE into demos
-    signed short aiming;    //added:16-02-98:mouse aiming, see G_BuildTicCmd
+    short        aiming;    // pitch angle (up-down)
     byte         buttons;
 } ticcmd_t;
 

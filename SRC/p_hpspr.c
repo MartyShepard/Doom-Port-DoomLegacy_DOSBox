@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_hpspr.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -954,7 +954,7 @@ void A_DeathBallImpact(mobj_t *ball)
                                         newAngle = true;
                                         break;
                                 }
-                                angle += ANGLE_45/2;
+                                angle += ANG45/2;
                         }
                 }
                 if(newAngle)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 579 2009-11-30 03:45:36Z wesleyjohnson $
+// $Id: r_main.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -209,16 +209,6 @@ int                     viewangletox[FINEANGLES/2];
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
 angle_t                 xtoviewangle[MAXVIDWIDTH+1];
-
-
-// UNUSED.
-// The finetangentgent[angle+FINEANGLES/4] table
-// holds the fixed_t tangent values for view angles,
-// ranging from MININT to 0 to MAXINT.
-// fixed_t              finetangent[FINEANGLES/2];
-
-// fixed_t              finesine[5*FINEANGLES/4];
-fixed_t*                finecosine = &finesine[FINEANGLES/4];
 
 
 lighttable_t*           scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
@@ -1209,7 +1199,7 @@ void R_SetupFrame (player_t* player)
     {
         // clip it in the case we are looking a hardware 90° full aiming
         // (lmps, nework and use F12...)
-        G_ClipAimingPitch(&aimingangle);	// limit aimingangle
+        aimingangle = G_ClipAimingPitch(aimingangle);	// limit aimingangle
 
 #if 1
         // [WDJ] cleaned up

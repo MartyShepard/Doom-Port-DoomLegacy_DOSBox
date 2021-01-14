@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 608 2010-02-22 07:04:36Z smite-meister $
+// $Id: console.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -227,8 +227,8 @@ static void CONS_speed_Change (void)
 //
 static void CONS_Clear_f (void)
 {
-    if (con_buffer)
-        memset(con_buffer,0,CON_BUFFERSIZE);
+  //if (con_buffer)
+    memset(con_buffer,0,CON_BUFFERSIZE);
 
     con_cx = 0;
     con_cy = con_totallines-1;
@@ -1025,7 +1025,8 @@ void CONS_Printf (const char *fmt, ...)
     char    txt[BUF_SIZE];
 
     va_start(ap, fmt);
-    int nchars = vsnprintf(txt, BUF_SIZE, fmt, ap);
+    //int nchars = 
+    vsnprintf(txt, BUF_SIZE, fmt, ap);
     va_end(ap);
 
     // echo console prints to log file

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: tables.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -30,21 +30,34 @@
 //      Do not try to look them up :-).
 //      In the order of appearance:
 //
-//      int finetangent[4096]   - Tangens LUT.
-//       Should work with BAM fairly well (12 of 16bit,
-//      effectively, by shifting).
+// fixed_t finetangent[FINEANGLES/2]   - tangens LUT
+//  Maps fineangle_t(alpha + pi/2) to fixed_t(tan(angle)).
+//  Should work with BAM fairly well (12 of 16bit, effectively, by shifting).
 //
-//      int finesine[10240]             - Sine lookup.
-//       Guess what, serves as cosine, too.
-//       Remarkable thing is, how to use BAMs with this?
+// fixed_t finesine[FINEANGLES * 5/4] - sine/cosine LUT
+//  Maps fineangle_t(alpha) to fixed_t(sin(angle)).
+//  Remarkable thing is, how to use BAMs with this?
 //
-//      int tantoangle[2049]    - ArcTan LUT,
-//        maps tan(angle) to angle fast. Gotta search.
+// angle_t tantoangle[SLOPERANGE+1]   - arctan LUT
+//  Maps (tan(alpha) * SLOPERANGE) to angle_t(alpha).
 //
+//  finetangent[i] == FRACUNIT * tan((i - FINEANGLES/4 + 0.5) * (2*pi / FINEANGLES))
+//  finesine[i]    == FRACUNIT * sin((i + 0.5) * (2*pi / FINEANGLES))
+//  tantoangle[i]  == atan(i/SLOPERANGE) * (2^32 / (2*pi))
 //    
 //-----------------------------------------------------------------------------
 
 #include "tables.h"
+
+const angle_t ANG45  = 0x20000000;
+const angle_t ANG90  = 0x40000000;
+const angle_t ANG180 = 0x80000000;
+const angle_t ANG270 = 0xc0000000;
+
+const angle_t ANGLE_MAX = 0xffffffff;
+const angle_t ANGLE_1   = 0x20000000 / 45;
+const angle_t ANGLE_60  = 0x80000000 / 3;
+
 
 // 0 the original
 // 1 new in c
@@ -102,7 +115,14 @@
 #endif
 
 
-int32_t finetangent[4096] =
+
+// The finetangentgent[angle+FINEANGLES/4] table
+// holds the fixed_t tangent values for view angles,
+// ranging from MININT to 0 to MAXINT.
+// fixed_t              finetangent[FINEANGLES/2];
+
+
+const int32_t finetangent[4096] =
 {
     -170910304,-56965752,-34178904,-24413316,-18988036,-15535599,-13145455,-11392683,
     -10052327,-8994149,-8137527,-7429880,-6835455,-6329090,-5892567,-5512368,
@@ -619,7 +639,7 @@ int32_t finetangent[4096] =
 };
 
 
-int32_t finesine[10240] =
+const int32_t finesine[10240] =
 {
     25,75,125,175,226,276,326,376,
     427,477,527,578,628,678,728,779,
@@ -1903,9 +1923,10 @@ int32_t finesine[10240] =
     65534,65535,65535,65535,65535,65535,65535,65535
 };
 
+const fixed_t* const finecosine = &finesine[FINEANGLES/4];
 
 
-angle_t tantoangle[2049] =
+const angle_t tantoangle[2049] =
 {
     0,333772,667544,1001315,1335086,1668857,2002626,2336395,
     2670163,3003929,3337694,3671457,4005219,4338979,4672736,5006492,

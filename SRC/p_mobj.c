@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 573 2009-11-29 01:20:51Z wesleyjohnson $
+// $Id: p_mobj.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1456,7 +1456,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     // added 16-6-98: special hack for spirit
     if (mobj->type == MT_SPIRIT)
-        mobj->thinker.function.acv = (actionf_p1) P_MobjNullThinker;
+        mobj->thinker.function.acp1 = (actionf_p1) P_MobjNullThinker;
     else
     {
         mobj->thinker.function.acp1 = (actionf_p1) P_MobjThinker;

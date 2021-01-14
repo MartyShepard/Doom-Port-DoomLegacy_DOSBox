@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 608 2010-02-22 07:04:36Z smite-meister $
+// $Id: dehacked.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -570,9 +570,9 @@ extern byte cheat_clev_seq[];
 extern byte cheat_mypos_seq[];
 extern byte cheat_amap_seq[];
 
-static void change_cheat_code(char *cheatseq,char* newcheat)
+static void change_cheat_code(byte *cheatseq, byte *newcheat)
 {
-  unsigned char *i,*j;
+  byte *i,*j;
 
   // encript data
   for(i=newcheat;i[0]!='\0';i++)
@@ -607,14 +607,14 @@ static void readcheat(MYFILE *f)
 {
   char s[MAXLINELEN];
   char *word,*word2;
-  char *value;
+  byte *value;
 
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
       if(s[0]=='\n') break;
       strtok(s,"=");
-      value=strtok(NULL," \n");         // skip the space
+      value = (byte *)strtok(NULL," \n");         // skip the space
       strtok(NULL," \n");              // finish the string
       word=strtok(s," ");
 

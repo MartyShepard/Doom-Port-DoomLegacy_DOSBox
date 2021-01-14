@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 584 2010-01-05 22:04:28Z wesleyjohnson $
+// $Id: command.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -582,7 +582,7 @@ static void COM_Exec_f (void)
 
 // insert text file into the command buffer
 
-    COM_BufInsertText (buf);
+    COM_BufInsertText((char *)buf);
 
 // free buffer
 
@@ -1041,12 +1041,10 @@ finish:
 //
 void Got_NetVar(char **p,int playernum)
 {
-    consvar_t  *cvar;
-    char *svalue;
     byte * bp = (byte*) *p;	// macros READ,SKIP want byte*
 
-    cvar = CV_FindNetVar (READUSHORT(bp));
-    svalue = bp;
+    consvar_t *cvar = CV_FindNetVar(READUSHORT(bp));
+    char *svalue = (char *)bp;
     SKIPSTRING(bp);
     *p = (char*)bp;	// return updated ptr only once
     if(cvar==NULL)

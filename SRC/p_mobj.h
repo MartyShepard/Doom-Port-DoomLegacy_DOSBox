@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: p_mobj.h 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -379,7 +379,10 @@ typedef struct mobj_s
 
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
+  union {
     struct mobj_s*      target;
+    uint32_t            target_id; // used during loading
+  };
 
 	// Nodes
 	struct mobj_s*		nextnode;		// Next node object to chase after touching current
@@ -407,7 +410,10 @@ typedef struct mobj_s
     mapthing_t          *spawnpoint;
 
     // Thing being chased/attacked for tracers.
+  union {
     struct mobj_s*      tracer;
+    uint32_t            tracer_id; // used during loading
+  };
 
     //SoM: Friction.
     int friction;

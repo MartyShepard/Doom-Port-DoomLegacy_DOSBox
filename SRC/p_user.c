@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 597 2010-02-08 00:07:26Z smite-meister $
+// $Id: p_user.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -452,10 +452,6 @@ void P_MovePlayer (player_t* player)
 void P_DeathThink (player_t* player)
 {
     angle_t             angle;
-    angle_t             delta;
-    mobj_t*             attacker;       //added:22-02-98:
-    fixed_t             dist;           //added:22-02-98:
-    int                 pitch;          //added:22-02-98:
 
     P_MovePsprites (player);
 
@@ -471,7 +467,7 @@ void P_DeathThink (player_t* player)
 
     P_CalcHeight (player);
 
-    attacker = player->attacker;
+    mobj_t *attacker = player->attacker;
 
     // watch my killer (if there is one)
     if (attacker && attacker != player->mo)
@@ -481,7 +477,7 @@ void P_DeathThink (player_t* player)
                                  player->attacker->x,
                                  player->attacker->y);
 
-        delta = angle - player->mo->angle;
+        angle_t delta = angle - player->mo->angle;
 
         if (delta < ANG5 || delta > (unsigned)-ANG5)
         {
@@ -500,15 +496,15 @@ void P_DeathThink (player_t* player)
         //added:22-02-98:
         // change aiming to look up or down at the attacker (DOESNT WORK)
         // FIXME : the aiming returned seems to be too up or down... later
-
-
-            dist = P_AproxDistance (attacker->x - player->mo->x, attacker->y - player->mo->y);
-            //if (dist)
-            //    pitch = FixedMul ((160<<FRACBITS), FixedDiv (attacker->z + (attacker->height>>1), dist)) >>FRACBITS;
-            //else
-            //    pitch = 0;
-            pitch = (attacker->z - player->mo->z)>>17;
-            player->aiming = G_ClipAimingPitch (&pitch);
+	/*
+	fixed_t dist = P_AproxDistance(attacker->x - player->mo->x, attacker->y - player->mo->y);
+	fixed_t dz = attacker->z +(attacker->height>>1) -player->mo->z;
+	angle_t pitch = 0;
+	if (dist)
+	  pitch = ArcTan(FixedDiv(dz, dist));
+	*/
+	int32_t pitch = (attacker->z - player->mo->z)>>17;
+	player->aiming = G_ClipAimingPitch(pitch);
 
     }
     else if (player->damagecount)
@@ -779,7 +775,7 @@ void P_MoveChaseCamera (player_t *player)
     angle=R_PointToAngle2(0,camera.mo->z, dist
                          ,mo->z+(mo->height>>1)+finesine[(player->aiming>>ANGLETOFINESHIFT) & FINEMASK] * 64);
 
-    G_ClipAimingPitch(&angle);
+    angle = G_ClipAimingPitch(angle);
     dist=camera.aiming-angle;
     camera.aiming-=(dist>>3);
 }

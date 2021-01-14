@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: tables.h 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,71 +16,53 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-//
-// $Log: tables.h,v $
-// Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
-// Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
-// Initial import into CVS (v1.29 pr3)
-//
-//
-// DESCRIPTION:
-//      Lookup tables.
-//      Do not try to look them up :-).
-//      In the order of appearance: 
-//
-//      int finetangent[4096]   - Tangens LUT.
-//       Should work with BAM fairly well (12 of 16bit,
-//      effectively, by shifting).
-//
-//      int finesine[10240]             - Sine lookup.
-//
-//      int tantoangle[2049]    - ArcTan LUT,
-//        maps tan(angle) to angle fast. Gotta search.
-//    
 //-----------------------------------------------------------------------------
-
 
 #ifndef __TABLES__
 #define __TABLES__
 
-#ifdef LINUX
-#include <math.h>
-#else
-//#define PI                              3.141592657
-#endif
-
 #include "m_fixed.h"
+
+
+typedef uint32_t angle_t;
+
+extern const angle_t ANG45;  // 0x20000000;
+extern const angle_t ANG90;  // 0x40000000;
+extern const angle_t ANG180; // 0x80000000;
+extern const angle_t ANG270; // 0xc0000000;
+
+extern const angle_t ANGLE_MAX; // 0xffffffff;
+extern const angle_t ANGLE_1;   // 0x20000000 / 45;
+extern const angle_t ANGLE_60;  // 0x80000000 / 3;
+
+/// Absolute value of angle difference, always in [0, ANG180].
+static inline angle_t Abs(angle_t a)
+{
+  return (a <= ANG180) ? a : -a; // -a is effectively 2pi - a since it wraps
+};
+
 
 #define FINEANGLES              8192
 #define FINEMASK                (FINEANGLES-1)
 #define ANGLETOFINESHIFT        19      // 0x100000000 to 0x2000
 
-
-// Effective size is 10240.
-extern  fixed_t         finesine[5*FINEANGLES/4];
+// Effective size is 10240. [5*FINEANGLES/4]
+extern const fixed_t finesine[5*FINEANGLES/4];
 
 // Re-use data, is just PI/2 phase shift.
-extern  fixed_t*        finecosine;
+extern const fixed_t* const finecosine;
 
+// Effective size is 4096. [FINEANGLES/2]
+extern const fixed_t finetangent[FINEANGLES/2];
 
-// Effective size is 4096.
-extern fixed_t          finetangent[FINEANGLES/2];
-
-#define ANG45           0x20000000
-#define ANG90           0x40000000
-#define ANG180          0x80000000
-#define ANG270          0xc0000000
-
-#define ANGLE_45    0x20000000
-#define ANGLE_90    0x40000000
-#define ANGLE_180   0x80000000
-#define ANGLE_MAX   0xffffffff
-#define ANGLE_1     (ANGLE_45/45)
-#define ANGLE_60    (ANGLE_180/3)
-
-typedef uint32_t angle_t;
+/// Encapsulation for tabulated sine, cosine and tangent
+static inline fixed_t Sin(angle_t a) { return finesine[a >> ANGLETOFINESHIFT]; }
+static inline fixed_t Cos(angle_t a) { return finecosine[a >> ANGLETOFINESHIFT]; }
+static inline fixed_t Tan(angle_t a)
+{
+  a += ANG90; // wraps around like angles should
+  return finetangent[a >> ANGLETOFINESHIFT];
+}
 
 
 // to get a global angle from cartesian coordinates, the coordinates are
@@ -92,7 +74,11 @@ typedef uint32_t angle_t;
 #define DBITS       (FRACBITS-SLOPEBITS)
 
 // The +1 size is to handle the case when x==y without additional checking.
-extern  angle_t     tantoangle[SLOPERANGE+1];
+extern const angle_t tantoangle[SLOPERANGE+1];
+
+/// Encapsulation for arcustangent (for the range 0 <= x <= 1)
+static inline angle_t ArcTan(fixed_t x) { return tantoangle[x >> DBITS]; }
+
 
 // Utility function, called by R_PointToAngle.
 int SlopeDiv ( unsigned      num,

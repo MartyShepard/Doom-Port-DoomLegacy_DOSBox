@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: t_func.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -2521,13 +2521,11 @@ void SF_SetCamera()
     script_camera.mo->z = t_argc < 3 ? (mo->subsector->sector->floorheight + (41 << FRACBITS)) : fixedvalue(t_argv[2]);
 
     angle_t aiming = t_argc < 4 ? 0 : FixedToAngle(fixedvalue(t_argv[3]));
-    //DarkWolf95:Byteshift to right in G_ClipAimingPitch 
-    //was causing the camera's angle to be too low, shift back left.
-    script_camera.aiming = G_ClipAimingPitch(&aiming)<<16;
-    G_ClipAimingPitch(&script_camera.aiming);
+    script_camera.aiming = G_ClipAimingPitch(aiming);
+
     script_camera_on = true;
     t_return.type = svt_fixed;
-    t_return.value.f = script_camera.aiming;
+    t_return.value.f = script_camera.aiming; // FIXME really?
 }
 
 void SF_ClearCamera()

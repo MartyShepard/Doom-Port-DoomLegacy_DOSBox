@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_game.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -416,7 +416,7 @@ void B_AimWeapon(player_t* p)
 		}
 
 		realAngle = angle = R_PointToAngle2 (source->x, source->y, px, py);
-		p->cmd.aiming = ((int)((atan ((pz - source->z + (dest->height - source->height)/2) / (double)dist)) * ANGLE_180/M_PI))>>FRACBITS;
+		p->cmd.aiming = ((int)((atan ((pz - source->z + (dest->height - source->height)/2) / (double)dist)) * ANG180/M_PI))>>FRACBITS;
 
 		if ((P_AproxDistance(dest->momx, dest->momy)>>FRACBITS) > 8)	//enemy is moving reasonably fast, so not perfectly acurate
 		{

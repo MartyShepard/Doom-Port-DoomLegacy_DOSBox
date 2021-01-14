@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 540 2009-09-23 23:43:40Z smite-meister $
+// $Id: p_heretic.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -90,7 +90,7 @@ int P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta)
         if(angle2 > angle1)
         {
                 diff = angle2-angle1;
-                if(diff > ANGLE_180)
+                if(diff > ANG180)
                 {
                         *delta = ANGLE_MAX-diff;
                         return(0);
@@ -104,7 +104,7 @@ int P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta)
         else
         {
                 diff = angle1-angle2;
-                if(diff > ANGLE_180)
+                if(diff > ANG180)
                 {
                         *delta = ANGLE_MAX-diff;
                         return(1);

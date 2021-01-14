@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: g_game.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -453,9 +453,8 @@ char* G_BuildMapName (int episode, int map)
 //
 //added:22-02-98:
 //changed:3-3-98: do a angle limitation now
-short G_ClipAimingPitch(angle_t *aiming)
+angle_t G_ClipAimingPitch(angle_t aiming)
 {
-  int32_t p = *aiming;
   int32_t limitangle;
 
   //note: the current software mode implementation doesn't have true perspective
@@ -464,14 +463,14 @@ short G_ClipAimingPitch(angle_t *aiming)
   else
     limitangle = ANG90 - 1;
 
+  int32_t p = aiming; // into signed to make comparisions simpler
+
   if (p > limitangle)
     p = limitangle;
   else if (p < -limitangle)
     p = -limitangle;
   
-  *aiming = p;
-
-  return p >> 16;
+  return p; // back into angle_t (unsigned)
 }
 
 
@@ -835,7 +834,7 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
     if (!cv_allowmlook.value)
         localaiming = 0;
 
-    cmd->aiming = G_ClipAimingPitch (&localaiming);
+    cmd->aiming = G_ClipAimingPitch(localaiming) >> 16; // to short
 
     if (!mouseaiming && cv_mousemove.value)
         forward += mousey;
@@ -1078,7 +1077,7 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
         localaiming2 = 0;
 
     // look up max (viewheight/2) look down min -(viewheight/2)
-    cmd->aiming = G_ClipAimingPitch (&localaiming2);;
+    cmd->aiming = G_ClipAimingPitch(localaiming2) >> 16; // to short
 
     if (!mouseaiming && cv_mousemove2.value)
         forward += mouse2y;

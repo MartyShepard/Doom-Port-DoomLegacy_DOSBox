@@ -44,5 +44,7 @@ in the interface code (SDL and OpenGL are clean).
 
 
 *** The great compiler warning cleanup
-= rev 609
-Fixed a LOT of compiler warnings. Part 1.
+= rev 609, 610
+Fixed a LOT of compiler warnings. Now the 64-bit version compiles cleanly.
+There were lots of questionable pointer hacks in the code, some of which still remain.
+Also backported some stuff to tables.h and tables.c from Legacy2.

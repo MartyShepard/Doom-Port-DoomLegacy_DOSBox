@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 606 2010-02-18 10:01:56Z smite-meister $
+// $Id: p_saveg.c 610 2010-02-22 22:21:14Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1300,7 +1300,7 @@ void P_ArchiveThinkers(void)
             continue;
         }
 #ifdef PARANOIA
-        else if ((int) th->function.acp1 != -1) // wait garbage colection
+        else if (th->function.acv != (actionf_v)(-1)) // wait garbage colection
             I_Error("unknown thinker type 0x%X", th->function.acp1);
 #endif
 
@@ -1470,10 +1470,15 @@ void P_UnArchiveThinkers(void)
                     mobj->lastlook = READLONG(save_p);
                 else
                     mobj->lastlook = -1;
+
+		// [smite] For type safety, we store the mobj ids to variables which are in unions
+		// with the actual pointers. After loading and creating all mobjs, we then
+		// replace the ids with the actual pointers at the end of this function.
                 if (diff & MD_TARGET)
-		  mobj->target = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
+		    mobj->target_id = READULONG(save_p);
                 if (diff & MD_TRACER)
-                    mobj->tracer = (mobj_t *) READULONG(save_p); // HACK, fixed at the end of the function
+                    mobj->tracer_id = READULONG(save_p);
+
                 if (diff & MD_FRICTION)
                     mobj->friction = READLONG(save_p);
                 else
@@ -1647,17 +1652,17 @@ void P_UnArchiveThinkers(void)
         }
     }
 
-    // Reversing the HACK: Convert ID numbers to proper mobj_t*:s
+    // Convert ID numbers to proper mobj_t*:s
     for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
     {
       if (currentthinker->function.acp1 == (actionf_p1) P_MobjThinker)
       {
 	mobj = (mobj_t *) currentthinker;
-	if (mobj->tracer)
-	  mobj->tracer = GetPointer((uint32_t)mobj->tracer);
+	if (mobj->tracer_id)
+	  mobj->tracer = GetPointer(mobj->tracer_id);
 
-	if (mobj->target)
-	  mobj->target = GetPointer((uint32_t)mobj->target);
+	if (mobj->target_id)
+	  mobj->target = GetPointer(mobj->target_id);
       }
     }
 }
