@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00624 ]: w41b draw clip
 [00623 ]: Dehacked string alloc
 [00622 ]: w41 Re-fix draw-clip
 [00621 ]: Savegame with header and sync

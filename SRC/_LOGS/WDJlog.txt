@@ -442,3 +442,9 @@ as it could be a const.  There is no good test to recover allocated
 strings, but dehacked does not encounter many of those, and executes only
 once at load time.
 
+*** w41_draw_clip_b
+patchfile = w41_draw_clip_b.patch
+- committed revision 624   by wesley johnson
+Phobiata.wad had a bright line on right edge of screen.
+Test to limit rw_stopx changed from rdraw_viewwidth-1 to rdraw_viewwidth
+because the loop range of dc_x is rw_x .. rw_stopx-1.

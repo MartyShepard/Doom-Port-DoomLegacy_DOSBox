@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 622 2010-03-25 02:54:19Z wesleyjohnson $
+// $Id: r_segs.c 624 2010-03-25 20:38:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1633,7 +1633,8 @@ void R_StoreWallRange( int   start, int   stop)
     ds_p->x2 = stop;
     ds_p->curline = curline;
     rw_stopx = stop+1;
-    if( rw_stopx >= rdraw_viewwidth )  rw_stopx = rdraw_viewwidth-1;
+    // [WDJ] draw range is rw_x .. rw_stopx-1
+    if( rw_stopx > rdraw_viewwidth )  rw_stopx = rdraw_viewwidth;
 
     //SoM: Code to remove limits on openings.
     {
