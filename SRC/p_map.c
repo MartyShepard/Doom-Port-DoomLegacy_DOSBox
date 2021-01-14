@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 585 2010-01-06 20:10:53Z wesleyjohnson $
+// $Id: p_map.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2129,7 +2129,7 @@ void P_RadiusAttack ( mobj_t*       spot,
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-boolean         crushchange;
+boolean         crushchange;	// enable crushing damage
 boolean         nofit;
 sector_t        *sectorchecked;
 
@@ -2184,6 +2184,7 @@ boolean PIT_ChangeSector (mobj_t*       thing)
 
     if (crushchange && !(leveltime % (4*NEWTICRATERATIO)) )
     {
+        // Crushing damage
         P_DamageMobj(thing,NULL,NULL,10);
 
         if( demoversion<132 || (!(leveltime % (16*NEWTICRATERATIO)) && 
@@ -2208,6 +2209,7 @@ boolean PIT_ChangeSector (mobj_t*       thing)
 //
 // P_ChangeSector
 //
+// crunch enables crushing damage
 boolean P_ChangeSector ( sector_t*     sector,
                          boolean       crunch )
 {
@@ -2215,7 +2217,7 @@ boolean P_ChangeSector ( sector_t*     sector,
     int         y;
 
     nofit = false;
-    crushchange = crunch;
+    crushchange = crunch;	// enable/disable crushing damage
     sectorchecked = sector;
 
     // re-check heights for all things near the moving sector
@@ -2231,6 +2233,7 @@ boolean P_ChangeSector ( sector_t*     sector,
 
 
 //SoM: 3/15/2000: New function. Much faster.
+// crunch enables crushing damage
 boolean P_CheckSector(sector_t* sector, boolean crunch)
 {
   msecnode_t      *n;

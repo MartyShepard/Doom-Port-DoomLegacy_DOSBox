@@ -382,6 +382,13 @@ Adjusted and commented realloc of drawsegs, with alternative code.
 
 *** w40_makefile_v4d
 patchfile = w40_makefile_v4b.patch
-- committed revision 616   by wesley johnson
+- committed revision 617   by wesley johnson
 Make debugging easier by including video change.
 Re-Re-adjusted CFLAGS.
+
+*** w40_misc
+patchfile = w40_misc.patch
+- committed revision 618   by wesley johnson
+Misc. cosmetic and alignment.
+Preparation for savegame improvements.
+

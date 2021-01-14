@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: d_clisrv.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -303,7 +303,7 @@ int ExpandTics (int low)
 
 static void (*listnetxcmd[MAXNETXCMD])(char **p,int playernum);
 
-void RegisterNetXCmd(netxcmd_t id,void (*cmd_f) (char **p,int playernum))
+void RegisterNetXCmd(netxcmd_t id, void (*cmd_f) (char **p,int playernum))
 {
 #ifdef PARANOIA
    if(id>=MAXNETXCMD)
@@ -314,7 +314,7 @@ void RegisterNetXCmd(netxcmd_t id,void (*cmd_f) (char **p,int playernum))
    listnetxcmd[id]=cmd_f;
 }
 
-void SendNetXCmd(byte id,void *param,int nparam)
+void SendNetXCmd(byte id, void *param, int nparam)
 {
    if(demoplayback)
        return;
@@ -332,13 +332,13 @@ void SendNetXCmd(byte id,void *param,int nparam)
    localtextcmd[localtextcmd[0]]=id;
    if(param && nparam)
    {
-       memcpy(&localtextcmd[localtextcmd[0]+1],param,nparam);
+       memcpy(&localtextcmd[localtextcmd[0]+1], param, nparam);
        localtextcmd[0]+=nparam;
    }
 }
 
 // splitscreen player
-void SendNetXCmd2(byte id,void *param,int nparam)
+void SendNetXCmd2(byte id, void *param, int nparam)
 {
    if(demoplayback)
        return;
@@ -356,7 +356,7 @@ void SendNetXCmd2(byte id,void *param,int nparam)
    localtextcmd2[localtextcmd2[0]]=id;
    if(param && nparam)
    {
-       memcpy(&localtextcmd2[localtextcmd2[0]+1],param,nparam);
+       memcpy(&localtextcmd2[localtextcmd2[0]+1], param, nparam);
        localtextcmd2[0]+=nparam;
    }
 }
@@ -371,18 +371,19 @@ static void D_Clearticcmd(int tic)
         textcmds[tic%BACKUPTICS][i][0]=0;
         netcmds[tic%BACKUPTICS][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
     }
-    DEBFILE(va("clear tic %5d (%2d)\n",tic,tic%BACKUPTICS));
+    DEBFILE(va("clear tic %5d (%2d)\n", tic, tic%BACKUPTICS));
 }
 
 
 static void ExtraDataTicker(void)
 {
     int  i,tic;
-    byte *curpos,*bufferend;
+    byte *curpos, *bufferend;
 
     tic=gametic % BACKUPTICS;
 
     for(i=0;i<MAXPLAYERS;i++)
+    {
         if((playeringame[i]) || (i==0))
         {
             curpos=(byte *)&(textcmds[tic][i]);
@@ -417,6 +418,7 @@ static void ExtraDataTicker(void)
 		}
             }
         }
+    }
 }
 
 
@@ -429,7 +431,7 @@ static void ExtraDataTicker(void)
 // -----------------------------------------------------------------
 
 // desciption of extradate byte of LEGACY 1.12 not the same of the 1.20
-// 1.20 don't have the extradata bits fields but a byte for eatch command
+// 1.20 don't have the extradata bits fields but a byte for each command
 // see XD_xxx in d_netcmd.h
 //
 // if extradatabit is set, after the ziped tic you find this :
@@ -449,7 +451,7 @@ static void ExtraDataTicker(void)
 //   char[NUMWEAPONS] | the weapon switch priority
 //   byte   | autoaim : true if use the old autoaim system
 // endif
-boolean AddLmpExtradata(byte **demo_point,int playernum)
+boolean AddLmpExtradata(byte **demo_point, int playernum)
 {
     int  tic;
 
@@ -457,14 +459,15 @@ boolean AddLmpExtradata(byte **demo_point,int playernum)
     if(textcmds[tic][playernum][0]==0)
         return false;
 
-    memcpy(*demo_point,textcmds[tic][playernum],textcmds[tic][playernum][0]+1);
+    memcpy(*demo_point, textcmds[tic][playernum], textcmds[tic][playernum][0]+1);
     *demo_point += textcmds[tic][playernum][0]+1;
     return true;
 }
 
-void ReadLmpExtraData(byte **demo_pointer,int playernum)
+void ReadLmpExtraData(byte **demo_pointer, int playernum)
 {
     unsigned char nextra,ex;
+    
 
     if(!demo_pointer)
     {
@@ -863,6 +866,7 @@ static void CL_ConnectToServer()
                     cl_mode=cl_askjoin; //don't break case continue to cljoin request now
                 else
                     break; // exit the case
+	        // continue into next case
             case cl_askjoin :
                 CL_LoadServerFiles();
 #ifdef JOININGAME
@@ -885,6 +889,7 @@ static void CL_ConnectToServer()
                 else
                     break;
 #endif
+	        // continue into next case
             case cl_waitjoinresponce :
             case cl_connected :
                 break;
@@ -933,7 +938,7 @@ static void CL_ConnectToServer()
     }  while (!( (cl_mode == cl_connected) &&
                  ( (!server) || (server && (nodewaited<=numnodes)) )));
 
-    DEBFILE(va("Synchronisation Finished\n"));
+    DEBFILE(va("Synchronization Finished\n"));
 
     consoleplayer&= ~DRONE;
     displayplayer = consoleplayer;
@@ -1631,7 +1636,7 @@ static void GetPackets (void)
                 {
                     if( gamestate == GS_LEVEL && newnode)
                     {
-                        SV_SendSaveGame(node);
+                        SV_SendSaveGame(node); // send game data
                         CONS_Printf("send savegame\n");
                     }
                     SV_AddWaitingPlayers();

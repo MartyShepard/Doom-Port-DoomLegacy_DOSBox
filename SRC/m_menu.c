@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: m_menu.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -256,13 +256,13 @@ boolean                 menuactive;
 #define MAXSTRINGLENGTH  32
 
 // we are going to be entering a savegame string
-int     saveStringEnter;
-int     saveSlot;       // which slot to save in
-int     saveCharIndex;  // which char we're editing
+static int     saveStringEnter;
+static int     saveSlot;       // which slot to save in
+static int     saveCharIndex;  // which char we're editing
 // old save description before edit
-char    saveOldString[SAVESTRINGSIZE];
+static char    saveOldString[SAVESTRINGSIZE];
 
-char    savegamestrings[10][SAVESTRINGSIZE];
+static char    savegamestrings[10][SAVESTRINGSIZE];
 
 // flags for items in the menu
 // menu handle (what we do when key is pressed
@@ -2375,16 +2375,18 @@ void M_DrawLoad(void)
 
     for (i = 0;i < load_end; i++)
     {
-        M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i);
-        V_DrawString(LoadDef.x,LoadDef.y+LINEHEIGHT*i,0,savegamestrings[i]);
+        M_DrawSaveLoadBorder( LoadDef.x, LoadDef.y+LINEHEIGHT*i);
+        V_DrawString( LoadDef.x, LoadDef.y+LINEHEIGHT*i, 0, savegamestrings[i]);
     }
 }
 
 //
 // User wants to load this game
 //
+// Called from load game menu to load selected save game, and from quick select
 void M_LoadSelect(int choice)
 {
+    // Issue command to save game
     G_LoadGame (choice);
     M_ClearMenus (true);
 }
@@ -2528,14 +2530,15 @@ void M_DoSave(int slot)
 //
 // User wants to save. Start string input for M_Responder
 //
+// Called from save game menu to select save game
 void M_SaveSelect(int choice)
 {
     // we are going to be intercepting all chars
     saveStringEnter = 1;
 
     saveSlot = choice;
-    strcpy(saveOldString,savegamestrings[choice]);
-    if (!strcmp(savegamestrings[choice],EMPTYSTRING))
+    strcpy(saveOldString, savegamestrings[choice]);
+    if (!strcmp(savegamestrings[choice], EMPTYSTRING))
         savegamestrings[choice][0] = 0;
     saveCharIndex = strlen(savegamestrings[choice]);
 }
@@ -2543,6 +2546,7 @@ void M_SaveSelect(int choice)
 //
 // Selected from DOOM menu
 //
+// Called from menu, and key F2
 void M_SaveGame (int choice)
 {
     if(demorecording)
@@ -2566,6 +2570,7 @@ void M_SaveGame (int choice)
         return;
     }
 
+    // Save game menu with slot choices
     M_SetupNextMenu(&SaveDef);
     M_ReadSaveStrings();
 }
@@ -2579,15 +2584,17 @@ void M_SaveGame (int choice)
 //
 char    tempstring[80];
 
+// Handles quick save ack from M_QuickSave, and initiates the save.
 void M_QuickSaveResponse(int ch)
 {
     if (ch == 'y')
     {
-        M_DoSave(quickSaveSlot);
+        M_DoSave(quickSaveSlot);	// initiate game save, network message
         S_StartSound(NULL,sfx_swtchx);
     }
 }
 
+// Invoked by key F6
 void M_QuickSave(void)
 {
     if (demoplayback || demorecording)
@@ -2607,8 +2614,9 @@ void M_QuickSave(void)
         quickSaveSlot = -2;     // means to pick a slot now
         return;
     }
-    sprintf(tempstring,QSPROMPT,savegamestrings[quickSaveSlot]);
-    M_StartMessage(tempstring,M_QuickSaveResponse,MM_YESNO);
+    // Show save name, ask for quick save ack.
+    sprintf(tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
+    M_StartMessage(tempstring, M_QuickSaveResponse, MM_YESNO);
 }
 
 
@@ -2616,11 +2624,12 @@ void M_QuickSave(void)
 //
 // M_QuickLoad
 //
+// Handles quick load ack from M_QuickLoad, and initiates the save.
 void M_QuickLoadResponse(int ch)
 {
     if (ch == 'y')
     {
-        M_LoadSelect(quickSaveSlot);
+        M_LoadSelect(quickSaveSlot);	// initiate game load, network message
         S_StartSound(NULL,sfx_swtchx);
     }
 }
@@ -2636,11 +2645,13 @@ void M_QuickLoad(void)
 
     if (quickSaveSlot < 0)
     {
+        // No save slot selected
         M_StartMessage(QSAVESPOT,NULL,MM_NOTHING);
         return;
     }
-    sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
-    M_StartMessage(tempstring,M_QuickLoadResponse,MM_YESNO);
+    // Show load name, ask for quick load ack.
+    sprintf(tempstring, QLPROMPT, savegamestrings[quickSaveSlot]);
+    M_StartMessage(tempstring, M_QuickLoadResponse, MM_YESNO);
 }
 
 

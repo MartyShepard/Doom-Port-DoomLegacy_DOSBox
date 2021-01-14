@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_misc.h 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -61,6 +61,9 @@ int  FIL_ReadFile ( char const*   name,
                     byte**        buffer );
 
 void FIL_DefaultExtension (char *path, char *extension);
+
+// Point to start of the filename in longer string
+char * FIL_Filename_of( char * nstr );
 
 //added:11-01-98:now declared here for use by G_DoPlayDemo(), see there...
 void FIL_ExtractFileBase (char* path, char* dest);

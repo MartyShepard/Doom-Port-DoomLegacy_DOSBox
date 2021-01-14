@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_ceilng.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_ceilng.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -239,10 +239,7 @@ void T_MoveCeiling (ceiling_t* ceiling)
 // EV_DoCeiling
 // Move a ceiling up/down and all around!
 //
-int
-EV_DoCeiling
-( line_t*       line,
-  ceiling_e     type )
+int  EV_DoCeiling ( line_t* line, ceiling_e type )
 {
     int         secnum;
     int         rtn;

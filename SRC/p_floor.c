@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 604 2010-02-13 07:21:09Z smite-meister $
+// $Id: p_floor.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -80,13 +80,12 @@
 // Move a plane (floor or ceiling) and check for crushing
 //
 //SoM: I had to copy the entire function from Boom because it was causing errors.
-result_e T_MovePlane
-( sector_t*     sector,
-  fixed_t       speed,
-  fixed_t       dest,
-  boolean       crush,
-  int           floorOrCeiling,
-  int           direction )
+result_e T_MovePlane ( sector_t*     sector,
+		       fixed_t       speed,
+		       fixed_t       dest,
+		       boolean       crush, // enables crushing damage
+		       int           floorOrCeiling,
+		       int           direction )
 {
   boolean       flag;
   fixed_t       lastpos;     

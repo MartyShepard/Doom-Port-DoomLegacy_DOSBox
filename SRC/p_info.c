@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: p_info.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -437,25 +437,25 @@ void P_FindLevelName()
   if(*info_levelname) levelname = info_levelname;
         // not a new level or dehacked level names ?
   else if(!newlevel || deh_loaded)
-    {
+  {
       if( gamemode == heretic )
         levelname = HU_TITLEH;
       else
       if(isMAPxy(maplumpname))
-        levelname = gamemission == pack_tnt ? HU_TITLET :
-        gamemission == pack_plut ? HU_TITLEP : HU_TITLE2;
+        levelname = (gamemission == pack_tnt) ? HU_TITLET :
+                    (gamemission == pack_plut) ? HU_TITLEP : HU_TITLE2;
       else if(isExMy(maplumpname))
         levelname = HU_TITLE;
       else
         levelname = maplumpname;
-    }
+  }
   else        //  otherwise just put "new level"
-    {
+  {
       static char newlevelstr[50];
 
       sprintf(newlevelstr, "%s: new level", maplumpname);
       levelname = newlevelstr;
-    }
+  }
 }
 
 //-------------------------------------------------------------------------
@@ -626,6 +626,7 @@ char *P_LevelNameByNum( int episode, int map )
                case pack_plut : return text[PHUSTR_1_NUM + map-1];
                default :        return text[HUSTR_1_NUM + map-1];
            }
+           break;
        case  heretic:           return text[HERETIC_E1M1_NUM + (episode-1)*9+map-1];
        case  hexen: break;
        default: break;

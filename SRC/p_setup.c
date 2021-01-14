@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: p_setup.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -229,7 +229,7 @@ int strupr(char *n);
 //
 boolean         newlevel = false;
 boolean         doom1level = false;    // doom 1 level running under doom 2
-char            *levelmapname = NULL;
+char            *levelmapname = NULL;  // to savegame and info
 
 int             numvertexes;
 vertex_t*       vertexes;
@@ -336,7 +336,7 @@ void P_LoadVertexes (int lump)
     numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
 
     // Allocate zone memory for buffer.
-    vertexes = Z_Malloc (numvertexes*sizeof(vertex_t),PU_LEVEL,0);
+    vertexes = Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, NULL);
 
     // Load data into cache.
     data = W_CacheLumpNum (lump,PU_STATIC);  // vertex lump temp
@@ -389,7 +389,7 @@ void P_LoadSegs (int lump)
     int                 side;
 
     numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
-    segs = Z_Malloc (numsegs*sizeof(seg_t),PU_LEVEL,0);
+    segs = Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, NULL);
     memset (segs, 0, numsegs*sizeof(seg_t));
     data = W_CacheLumpNum (lump,PU_STATIC);	// segs lump temp
     // [WDJ] Do endian as read from segs lump temp
@@ -443,7 +443,7 @@ void P_LoadSubsectors (int lump)
     subsector_t*        ss;
 
     numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
-    subsectors = Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
+    subsectors = Z_Malloc (numsubsectors*sizeof(subsector_t), PU_LEVEL, NULL);
     data = W_CacheLumpNum (lump,PU_STATIC);	// subsectors lump temp
     // [WDJ] Do endian as read from subsectors temp lump
 
@@ -558,7 +558,7 @@ int P_AddLevelFlat (char* flatname, levelflat_t* levelflat)
 
 
 // SoM: Do I really need to comment this?
-char *P_FlatNameForNum(int num)
+char * P_FlatNameForNum(int num)
 {
   if(num < 0 || num > numlevelflats)
     I_Error("P_FlatNameForNum: Invalid flatnum\n");
@@ -577,7 +577,7 @@ void P_LoadSectors (int lump)
     levelflat_t*        foundflats;
 
     numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
-    sectors = Z_Malloc (numsectors*sizeof(sector_t),PU_LEVEL,0);
+    sectors = Z_Malloc (numsectors*sizeof(sector_t), PU_LEVEL, NULL);
     memset (sectors, 0, numsectors*sizeof(sector_t));
     data = W_CacheLumpNum (lump,PU_STATIC);	// mapsector lump temp
     // [WDJ] Fix endian as transfer from temp to internal.
@@ -667,7 +667,7 @@ void P_LoadSectors (int lump)
     skyflatnum = P_AddLevelFlat ("F_SKY1",foundflats);
 
     // copy table for global usage
-    levelflats = Z_Malloc (numlevelflats*sizeof(levelflat_t),PU_LEVEL,0);
+    levelflats = Z_Malloc (numlevelflats*sizeof(levelflat_t), PU_LEVEL, NULL);
     memcpy (levelflats, foundflats, numlevelflats*sizeof(levelflat_t));
 
     // search for animated flats and set up
@@ -688,7 +688,7 @@ void P_LoadNodes (int lump)
     node_t*     no;
 
     numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
-    nodes = Z_Malloc (numnodes*sizeof(node_t),PU_LEVEL,0);
+    nodes = Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, NULL);
     data = W_CacheLumpNum (lump,PU_STATIC);  // mapnode_t array temp
     // [WDJ] Fix endian as transfer from temp to internal.
 
@@ -766,7 +766,7 @@ void P_LoadLineDefs (int lump)
     vertex_t*           v2;
 
     numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-    lines = Z_Malloc (numlines*sizeof(line_t),PU_LEVEL,0);
+    lines = Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, NULL);
     memset (lines, 0, numlines*sizeof(line_t));
     data = W_CacheLumpNum (lump,PU_STATIC);	// temp linedefs array
     // [WDJ] Fix endian as transfer from lump temp to internal.
@@ -860,7 +860,7 @@ void P_LoadSideDefs (int lump)
     side_t*             sd;
 
     numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-    sides = Z_Malloc (numsides*sizeof(side_t),PU_LEVEL,0);
+    sides = Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, NULL);
     memset (sides, 0, numsides*sizeof(side_t));
     data = W_CacheLumpNum (lump,PU_STATIC);  // sidedefs temp lump
     // [WDJ] Do endian as read from temp sidedefs lump
@@ -887,7 +887,7 @@ void P_LoadSideDefs (int lump)
 void P_LoadSideDefs (int lump)
 {
   numsides = W_LumpLength(lump) / sizeof(mapsidedef_t);
-  sides = Z_Malloc(numsides*sizeof(side_t),PU_LEVEL,0);
+  sides = Z_Malloc(numsides*sizeof(side_t), PU_LEVEL, NULL);
   memset(sides, 0, numsides*sizeof(side_t));
 }
 
@@ -1124,7 +1124,7 @@ void P_LoadBlockMap (int lump)
       long i;
       short *wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL); // blockmap lump temp
       // [WDJ] Do endian as read from blockmap lump temp
-      blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+      blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, NULL);
 
       // killough 3/1/98: Expand wad blockmap into larger internal one,
       // by treating all offsets except -1 as unsigned and zero-extending
@@ -1139,7 +1139,7 @@ void P_LoadBlockMap (int lump)
       for (i=4 ; i<count ; i++)
       {
           short t = LE_SWAP16(wadblockmaplump[i]);          // killough 3/1/98
-          blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
+          blockmaplump[i] = (t == -1)? -1l : (long) t & 0xffff;
       }
 
       Z_Free(wadblockmaplump);
@@ -1152,7 +1152,7 @@ void P_LoadBlockMap (int lump)
 
   // clear out mobj chains
   count = sizeof(*blocklinks)* bmapwidth*bmapheight;
-  blocklinks = Z_Malloc (count,PU_LEVEL, 0);
+  blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
   memset (blocklinks, 0, count);
   blockmap = blockmaplump+4;
 
@@ -1172,7 +1172,7 @@ void P_LoadBlockMap (int lump)
 
 	// clear out mobj chains
 	count = sizeof(*blocklinks)*bmapwidth*bmapheight;
-	blocklinks = Z_Malloc (count,PU_LEVEL, 0);
+	blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
 	memset (blocklinks, 0, count);
  */
 }
@@ -1221,7 +1221,7 @@ void P_GroupLines (void)
     }
 
     // build line tables for each sector
-    linebuffer = Z_Malloc(total*sizeof(line_t *), PU_LEVEL, 0);
+    linebuffer = Z_Malloc(total*sizeof(line_t *), PU_LEVEL, NULL);
     sector = sectors;
     for (i=0 ; i<numsectors ; i++, sector++)
     {
@@ -1364,10 +1364,12 @@ void P_SetupLevelSky (void)
 // P_SetupLevel
 //
 // added comment : load the level from a lump file or from a external wad !
+// Purge all previous PU_LEVEL memory.
 extern int numtextures;
 char       *maplumpname;
 
 int        lastloadedmaplumpnum; // for comparative savegame
+
 boolean P_SetupLevel (int           episode,
                       int           map,
                       skill_t       skill,
@@ -1458,8 +1460,9 @@ boolean P_SetupLevel (int           episode,
         lastloadedmaplumpnum = W_GetNumForName (maplumpname = G_BuildMapName(episode,map));
     }
 
+    // determine this level map name for savegame and info next level
     if(levelmapname) Z_Free(levelmapname);
-    levelmapname = Z_Strdup(maplumpname, PU_STATIC, 0);
+    levelmapname = Z_Strdup(maplumpname, PU_STATIC, 0);  // MAP01 or E1M1, etc.
 
     leveltime = 0;
 
@@ -1469,7 +1472,7 @@ boolean P_SetupLevel (int           episode,
 
     R_ClearColormaps();
 #ifdef FRAGGLESCRIPT
-	P_LoadLevelInfo (lastloadedmaplumpnum);    // load level lump info(level name etc)
+    P_LoadLevelInfo (lastloadedmaplumpnum);    // load level lump info(level name etc)
 #endif
 
     //SoM: We've loaded the music lump, start the music.
@@ -1573,7 +1576,7 @@ boolean P_SetupLevel (int           episode,
 
 
 #ifdef FRAGGLESCRIPT
-	T_InitSaveList();             // Setup FS array list
+    T_InitSaveList();             // Setup FS array list
     T_PreprocessScripts();        // preprocess FraggleScript scripts
 #endif
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_plats.c 618 2010-03-23 21:14:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -62,10 +62,8 @@ void T_PlatRaise(plat_t* plat)
     switch(plat->status)
     {
       case up:
-        res = T_MovePlane(plat->sector,
-                          plat->speed,
-                          plat->high,
-                          plat->crush,0,1);
+        res = T_MovePlane( plat->sector, plat->speed,
+                           plat->high, plat->crush, 0, 1);
 
         if ( gamemode == heretic && !(leveltime % (32*NEWTICRATERATIO)))
             S_StartSound ((mobj_t *) & plat->sector->soundorg,
@@ -121,7 +119,7 @@ void T_PlatRaise(plat_t* plat)
         break;
 
       case      down:
-        res = T_MovePlane(plat->sector,plat->speed,plat->low,false,0,-1);
+        res = T_MovePlane( plat->sector, plat->speed, plat->low, false, 0, -1 );
 
         if (res == pastdest)
         {
@@ -179,11 +177,7 @@ void T_PlatRaise(plat_t* plat)
 // Do Platforms
 //  "amount" is only used for SOME platforms.
 //
-int
-EV_DoPlat
-( line_t*       line,
-  plattype_e    type,
-  int           amount )
+int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 {
     plat_t*     plat;
     int         secnum;
