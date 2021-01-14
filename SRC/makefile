@@ -540,7 +540,7 @@ $(O)/i_system.o: $(INTERFACE)/i_system.c doomdef.h \
 	redir -o /_GCC/i_system.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/tables.o: tables.c tables.h m_fixed.h doomtype.h
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	redir -o /_GCC/tables.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/f_finale.o: f_finale.c doomdef.h doomtype.h g_state.h m_swap.h \
  am_map.h d_event.h dstrings.h d_englsh.h d_main.h w_wad.h f_finale.h \

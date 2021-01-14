@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_parse.h 606 2010-02-18 10:01:56Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -61,12 +61,12 @@ struct svalue_s
   int type;
   union
   {
-    long i;
-    fixed_t f;
-    char *s;
-    char *labelptr; // goto() label
-    mobj_t *mobj;
-	sfarray_t *a;   // arrays
+    int32_t  i;
+    fixed_t  f;
+    char    *s;
+    mobj_t  *mobj;
+    sfarray_t *a;   // arrays
+    char    *labelptr; // goto() label
   } value;
 };
 

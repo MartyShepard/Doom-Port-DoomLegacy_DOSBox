@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 605 2010-02-16 07:20:19Z smite-meister $
+// $Id: p_saveg.c 606 2010-02-18 10:01:56Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -899,24 +899,6 @@ static mobj_t *GetPointer(uint32_t id)
 
 
 
-// get the mobj number from the mobj
-static int P_MobjNum(mobj_t *mo)
-{
-  long l = mo ? (long)mo->thinker.prev : -1;   // -1 = NULL
- 
-  // extra check for invalid thingnum (prob. still ptr)
-  if(l<0 || l>num_thinkers) l = -1;
-  return l;
-}
-
-static mobj_t *P_MobjForNum(int n)
-{
-  return (n == -1) ? (NULL) : (mobj_p[n]);
-}
-
-
-
-
 
 
 typedef enum
@@ -1734,209 +1716,221 @@ void P_UnArchiveSpecials(void)
 // variables) and the runningscripts (scripts
 // currently suspended)
 
+
+void P_ArchiveSValue(svalue_t *s)
+{
+  switch (s->type)   // store depending on type
+    {
+    case svt_string:
+      {
+	strcpy((char *)save_p, s->value.s);
+	save_p += strlen(s->value.s) + 1;
+	break;
+      }
+    case svt_int:
+      {
+	WRITELONG(save_p, s->value.i);
+	break;
+      }
+    case svt_fixed:
+      {
+	WRITEFIXED(save_p, s->value.f);
+	break;
+      }
+    case svt_mobj:
+      {
+	WRITEULONG(save_p, GetID(s->value.mobj));
+	break;
+      }
+    default:
+      // other types do not appear in user scripts
+      break;
+    }
+}
+
+void P_UnArchiveSValue(svalue_t *s)
+{
+  switch (s->type)       // read depending on type
+    {
+    case svt_string:
+      {
+	s->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
+	save_p += strlen(s->value.s) + 1;
+	break;
+      }
+    case svt_int:
+      {
+	s->value.i = READLONG(save_p);
+	break;
+      }
+    case svt_fixed:
+      {
+	s->value.f = READFIXED(save_p);
+	break;
+      }
+    case svt_mobj:
+      {
+	s->value.mobj = GetPointer(READULONG(save_p));
+	break;
+      }
+    default:
+      break;
+    }
+}
+
+
+
+
+void P_ArchiveFSVariables(svariable_t **vars)
+{
+  int i;
+
+  // count number of variables
+  int num_variables = 0;
+  for (i = 0; i < VARIABLESLOTS; i++)
+  {
+    svariable_t *sv = vars[i];
+
+    // once we get to a label there can be no more actual
+    // variables in the list to store
+    while (sv && sv->type != svt_label)
+    {
+      num_variables++;
+      sv = sv->next;
+    }
+  }
+
+  //CheckSaveGame(sizeof(short));
+  WRITESHORT(save_p, num_variables);  // write num_variables
+
+  // go thru hash chains, store each variable
+  for (i = 0; i < VARIABLESLOTS; i++)
+  {
+    // go thru this hashchain
+    svariable_t *sv = vars[i];
+
+    while (sv && sv->type != svt_label)
+    {
+      //CheckSaveGame(strlen(sv->name)+10); // 10 for type and safety
+      // write svariable: name
+      strcpy((char *)save_p, sv->name);
+      save_p += strlen(sv->name) + 1;     // 1 extra for ending NULL
+
+      WRITEBYTE(save_p, sv->type); // store type;
+
+      if (sv->type == svt_array) // haleyjd: arrays
+	{
+	  // just write the array id (saveindex)
+	  sfarray_t *cur = sfsavelist.next;
+	  while (cur && sv->value.a != cur)
+	    cur = cur->next;
+
+	  // zero is unused, so use it for NULL
+	  WRITELONG(save_p, cur ? cur->saveindex : 0);
+	  break;
+	}
+      else
+	{
+	  // [smite] TODO svariable_t should simply inherit svalue_t
+	  // also svalue_t should have array as a possible subtype
+	  svalue_t s;
+	  s.type  = sv->type;
+
+	  s.value.mobj = sv->value.mobj; // HACK largest type in union
+	  P_ArchiveSValue(&s);
+	}
+
+      sv = sv->next;
+    }
+  }
+}
+
+
+
+void P_UnArchiveFSVariables(svariable_t **vars)
+{
+  int i;
+
+  // now read the number of variables from the savegame file
+  int num_variables = READSHORT(save_p);
+
+  for (i = 0; i < num_variables; i++)
+  {
+    svariable_t *sv = Z_Malloc(sizeof(svariable_t), PU_LEVEL, 0);
+
+    // name
+    sv->name = Z_Strdup((char *)save_p, PU_LEVEL, 0);
+    save_p += strlen(sv->name) + 1;
+
+    sv->type = READBYTE(save_p);
+
+    if (sv->type == svt_array) // Exl; arrays
+      {
+	int ordinal = READLONG(save_p);
+	if (!ordinal)
+	  sv->value.a = NULL;
+	else
+	  {
+	    sfarray_t *cur = sfsavelist.next;
+	    while (cur && cur->saveindex != ordinal)
+	      cur = cur->next;
+			 
+	    // set even if cur is NULL somehow (not a problem)
+	    sv->value.a = cur;
+	  }
+      }
+    else
+      {
+	// [smite] TODO svariable_t should simply inherit svalue_t, but...
+	svalue_t s;
+	s.type = sv->type;
+
+	P_UnArchiveSValue(&s);
+	sv->value.mobj = s.value.mobj; // HACK largest type in union
+      }
+
+    // link in the new variable
+    int hashkey = variable_hash(sv->name);
+    sv->next = vars[hashkey];
+    vars[hashkey] = sv;
+  }
+}
+
+
+
 /***************** save the levelscript *************/
 // make sure we remember all the global
 // variables.
 
 void P_ArchiveLevelScript()
 {
-    int num_variables = 0;
-    int i;
-
-    // all we really need to do is save the variables
-    // count the variables first
-
-    // count number of variables
-    num_variables = 0;
-    for (i = 0; i < VARIABLESLOTS; i++)
-    {
-        svariable_t *sv = levelscript.variables[i];
-        while (sv && sv->type != svt_label)
-        {
-            num_variables++;
-            sv = sv->next;
-        }
-    }
-
-    //CheckSaveGame(sizeof(short));
-    WRITESHORT(save_p, num_variables);  // write num_variables
-
-    // go thru hash chains, store each variable
-    for (i = 0; i < VARIABLESLOTS; i++)
-    {
-        // go thru this hashchain
-        svariable_t *sv = levelscript.variables[i];
-
-        // once we get to a label there can be no more actual
-        // variables in the list to store
-        while (sv && sv->type != svt_label)
-        {
-
-            //CheckSaveGame(strlen(sv->name)+10); // 10 for type and safety
-
-            // write svariable: name
-
-	  strcpy((char *)save_p, sv->name);
-            save_p += strlen(sv->name) + 1;     // 1 extra for ending NULL
-
-            // type
-            *save_p++ = sv->type;       // store type;
-
-            switch (sv->type)   // store depending on type
-            {
-                case svt_string:
-                {
-                    //CheckSaveGame(strlen(sv->value.s)+5); // 5 for safety
-                    strcpy((char *)save_p, sv->value.s);
-                    save_p += strlen(sv->value.s) + 1;
-                    break;
-                }
-                case svt_int:
-                {
-                    //CheckSaveGame(sizeof(long)); 
-                    WRITELONG(save_p, sv->value.i);
-                    break;
-                }
-                case svt_mobj:
-                {
-                    //CheckSaveGame(sizeof(long)); 
-		    WRITEULONG(save_p, GetID(sv->value.mobj));
-                    break;
-                }
-                case svt_fixed:
-                {
-                    WRITEFIXED(save_p, sv->value.fixed);
-                    break;
-                }
-		case svt_array: // haleyjd: arrays
-                {
-				  sfarray_t *cur;
-				  int *int_p;
-
-				  cur = sfsavelist.next;
-				  while(cur && sv->value.a != cur)
-					 cur = cur->next;
-
-				  int_p = (int *)save_p;
-
-				  // zero is unused, so use it for NULL
-				  *int_p++ = cur ? cur->saveindex : 0;
-
-		    // [WDJ] Warning: int_p is a PTR being written as an INT
-		    // Is not 64bit safe, and must fail in most situations.
-				  WRITELONG(save_p, (unsigned char *)int_p);
-				  
-				  break;
-		}
-            }
-            sv = sv->next;
-        }
-    }
+  // all we really need to do is save the variables
+  P_ArchiveFSVariables(levelscript.variables);
 }
 
 void P_UnArchiveLevelScript()
 {
-    int i;
-    int num_variables;
+  int i;
 
-    // free all the variables in the current levelscript first
+  // free all the variables in the current levelscript first
+  for (i = 0; i < VARIABLESLOTS; i++)
+  {
+    svariable_t *sv = levelscript.variables[i];
 
-    for (i = 0; i < VARIABLESLOTS; i++)
+    while (sv && sv->type != svt_label)
     {
-        svariable_t *sv = levelscript.variables[i];
-
-        while (sv && sv->type != svt_label)
-        {
-            svariable_t *next = sv->next;
-            Z_Free(sv);
-            sv = next;
-        }
-        levelscript.variables[i] = sv;  // null or label
+      svariable_t *next = sv->next;
+      Z_Free(sv);
+      sv = next;
     }
+    levelscript.variables[i] = sv;  // null or label
+  }
 
-    // now read the number of variables from the savegame file
-    num_variables = READSHORT(save_p);
 
-    for (i = 0; i < num_variables; i++)
-    {
-        svariable_t *sv = Z_Malloc(sizeof(svariable_t), PU_LEVEL, 0);
-        int hashkey;
-
-        // name
-        sv->name = Z_Strdup((char *)save_p, PU_LEVEL, 0);
-        save_p += strlen(sv->name) + 1;
-
-        sv->type = *save_p++;
-
-        switch (sv->type)       // read depending on type
-        {
-            case svt_string:
-            {
-                sv->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
-                save_p += strlen(sv->value.s) + 1;
-                break;
-            }
-            case svt_int:
-            {
-                sv->value.i = READLONG(save_p);
-                break;
-            }
-            case svt_mobj:
-            {
-	        sv->value.mobj = GetPointer(READULONG(save_p));
-                break;
-            }
-            case svt_fixed:
-            {
-                sv->value.fixed = READFIXED(save_p);
-                break;
-            }
-
-			case svt_array: // Exl; arrays
-		   {
-			  int ordinal;
-			  
-			  
-			  ordinal = READLONG(save_p);
-
-			  if(!ordinal)
-			  {
-			 sv->value.a = NULL;
-			  }
-			  else
-			  {
-			 sfarray_t *cur = sfsavelist.next;
-
-			 while(cur)
-			 {
-				if(ordinal == cur->saveindex)
-				   break;
-
-				cur = cur->next;
-			 }
-			 
-			 // set even if cur is NULL somehow (not a problem)
-			 sv->value.a = cur;
-			  }
-			  break;
-		   }
-
-            default:
-                break;
-        }
-
-        // link in the new variable
-        hashkey = variable_hash(sv->name);
-        sv->next = levelscript.variables[hashkey];
-        levelscript.variables[hashkey] = sv;
-    }
-
+  P_UnArchiveFSVariables(levelscript.variables);
 }
 
 /**************** save the runningscripts ***************/
-
-void P_ArchiveFSArrays(void);
-void P_UnArchiveFSArrays(void);
 
 extern runningscript_t runningscripts;  // t_script.c
 runningscript_t *new_runningscript();   // t_script.c
@@ -1945,9 +1939,6 @@ void clear_runningscripts();    // t_script.c
 // save a given runningscript
 void P_ArchiveRunningScript(runningscript_t * rs)
 {
-    int i;
-    int num_variables;
-
     //CheckSaveGame(sizeof(short) * 8); // room for 8 shorts
     WRITESHORT(save_p, rs->script->scriptnum);  // save scriptnum
     WRITESHORT(save_p, rs->savepoint - rs->script->data);       // offset
@@ -1957,111 +1948,18 @@ void P_ArchiveRunningScript(runningscript_t * rs)
     // save trigger ID
     WRITEULONG(save_p, GetID(rs->trigger));
 
-    // count number of variables
-    num_variables = 0;
-    for (i = 0; i < VARIABLESLOTS; i++)
-    {
-        svariable_t *sv = rs->variables[i];
-        while (sv && sv->type != svt_label)
-        {
-            num_variables++;
-            sv = sv->next;
-        }
-    }
-    WRITESHORT(save_p, num_variables);
-
-    // save num_variables
-
-    // store variables
-    // go thru hash chains, store each variable
-    for (i = 0; i < VARIABLESLOTS; i++)
-    {
-        // go thru this hashchain
-        svariable_t *sv = rs->variables[i];
-
-        // once we get to a label there can be no more actual
-        // variables in the list to store
-        while (sv && sv->type != svt_label)
-        {
-
-            //CheckSaveGame(strlen(sv->name)+10); // 10 for type and safety
-
-            // write svariable: name
-
-            strcpy((char *)save_p, sv->name);
-            save_p += strlen(sv->name) + 1;     // 1 extra for ending NULL
-
-            // type
-            *save_p++ = sv->type;       // store type;
-
-            switch (sv->type)   // store depending on type
-            {
-                case svt_string:
-                {
-                    //CheckSaveGame(strlen(sv->value.s)+5); // 5 for safety
-                    strcpy((char *)save_p, sv->value.s);
-                    save_p += strlen(sv->value.s) + 1;
-                    break;
-                }
-                case svt_int:
-                {
-                    //CheckSaveGame(sizeof(long)+4); 
-                    WRITELONG(save_p, sv->value.i);
-                    break;
-                }
-                case svt_mobj:
-                {
-                    //CheckSaveGame(sizeof(long)+4); 
-		    WRITEULONG(save_p, GetID(sv->value.mobj));
-                    break;
-                }
-                case svt_fixed:
-                {
-                    WRITEFIXED(save_p, sv->value.fixed);
-                    break;
-                }
-	        case svt_array:
-		{
-  				  sfarray_t *cur;
-				  int *int_p;
-
-				  cur = sfsavelist.next;
-				  while(cur && sv->value.a != cur)
-					 cur = cur->next;
-
-				  int_p = (int *)save_p;
-
-				  // zero is unused, so use it for NULL
-				  *int_p++ = cur ? cur->saveindex : 0;
-
-				  WRITELONG(save_p, (unsigned char *)int_p);
-				  
-				  break;
-		}
-
-                    // others do not appear in user scripts
-
-                default:
-                    break;
-            }
-
-            sv = sv->next;
-        }
-    }
+    P_ArchiveFSVariables(rs->variables);
 }
 
 // get the next runningscript
 runningscript_t *P_UnArchiveRunningScript()
 {
     int i;
-    int scriptnum;
-    int num_variables;
-    runningscript_t *rs;
 
     // create a new runningscript
-    rs = new_runningscript();
+    runningscript_t *rs = new_runningscript();
 
-    scriptnum = READSHORT(save_p);      // get scriptnum
+    int scriptnum = READSHORT(save_p);      // get scriptnum
 
     // levelscript?
 
@@ -2078,86 +1976,13 @@ runningscript_t *P_UnArchiveRunningScript()
     // read out trigger thing
     rs->trigger = GetPointer(READULONG(save_p));
 
-    // get number of variables
-    num_variables = READSHORT(save_p);
 
     // read out the variables now (fun!)
-
-    // start with basic script slots/labels
-
+    // start with basic script slots/labels FIXME why?
     for (i = 0; i < VARIABLESLOTS; i++)
-        rs->variables[i] = rs->script->variables[i];
+      rs->variables[i] = rs->script->variables[i];
 
-    for (i = 0; i < num_variables; i++)
-    {
-        svariable_t *sv = Z_Malloc(sizeof(svariable_t), PU_LEVEL, 0);
-        int hashkey;
-
-        // name
-        sv->name = Z_Strdup((char *)save_p, PU_LEVEL, 0);
-        save_p += strlen(sv->name) + 1;
-
-        sv->type = *save_p++;
-
-        switch (sv->type)       // read depending on type
-        {
-            case svt_string:
-            {
-                sv->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
-                save_p += strlen(sv->value.s) + 1;
-                break;
-            }
-            case svt_int:
-            {
-                sv->value.i = READLONG(save_p);
-                break;
-            }
-            case svt_mobj:
-            {
-	        sv->value.mobj = GetPointer(READULONG(save_p));
-                break;
-            }
-            case svt_fixed:
-            {
-                sv->value.fixed = READFIXED(save_p);
-                break;
-            }
-	    case svt_array:
-	    {
-			  int ordinal;
-
-			  
-			  ordinal = READLONG(save_p);
-
-			  if(!ordinal)
-			  {
-				sv->value.a = NULL;
-			  }
-			  else
-			  {
-				sfarray_t *cur = sfsavelist.next;
-
-			 while(cur)
-			 {
-				if(ordinal == cur->saveindex)
-				   break;
-
-				cur = cur->next;
-			 }
-
-			 sv->value.a = cur;
-			  }	      
-			  break;
-	    }
-            default:
-                break;
-        }
-
-        // link in the new variable
-        hashkey = variable_hash(sv->name);
-        sv->next = rs->variables[hashkey];
-        rs->variables[hashkey] = sv;
-    }
+    P_UnArchiveFSVariables(rs->variables);
 
     return rs;
 }
@@ -2215,50 +2040,6 @@ void P_UnArchiveRunningScripts()
     }
 }
 
-void P_ArchiveScripts()
-{
-#ifdef FRAGGLESCRIPT
-    
-	// save levelscript
-    P_ArchiveLevelScript();
-
-    // save runningscripts
-    P_ArchiveRunningScripts();
-
-    // save FS arrays
-    P_ArchiveFSArrays();
-
-    // Archive the script camera.
-    WRITELONG(save_p, (long) script_camera_on);
-    WRITEULONG(save_p, GetID(script_camera.mo));
-    WRITEANGLE(save_p, script_camera.aiming);
-    WRITEFIXED(save_p, script_camera.viewheight);
-    WRITEANGLE(save_p, script_camera.startangle);
-
-#endif
-}
-
-void P_UnArchiveScripts()
-{
-#ifdef FRAGGLESCRIPT
-    
-	// restore levelscript
-    P_UnArchiveLevelScript();
-
-    // restore runningscripts
-    P_UnArchiveRunningScripts();
-
-    // restore FS arrays
-    P_UnArchiveFSArrays();
-
-    // Unarchive the script camera
-    script_camera_on = (boolean) READLONG(save_p);
-    script_camera.mo = GetPointer(READULONG(save_p));
-    script_camera.aiming = READANGLE(save_p);
-    script_camera.viewheight = READFIXED(save_p);
-    script_camera.startangle = READANGLE(save_p);
-#endif
-}
 
 
 
@@ -2270,156 +2051,132 @@ void P_UnArchiveScripts()
 // and archive the arrays themselves.
 //
 
-unsigned int num_fsarrays;
-
-static void P_NumberFSArrays(void)
+static unsigned int P_NumberFSArrays(void)
 {
-   sfarray_t *cur;
+  unsigned int count = 0;
+  sfarray_t *cur = sfsavelist.next; // start at first array
+  while (cur)
+  {
+    cur->saveindex = ++count;
+    cur = cur->next;
+  }
 
-   num_fsarrays = 0;
-
-   cur = sfsavelist.next; // start at first array
-
-   while(cur)
-   {
-      cur->saveindex = ++num_fsarrays;
-      cur = cur->next;
-   }
-}
-
-static size_t P_CalcFSArraySize(void)
-{
-   size_t total = 0;
-   sfarray_t *cur = sfsavelist.next;
-
-   while(cur)
-   {
-      total += (sizeof(svalue_t) * cur->length);
-      cur = cur->next;
-   }
-
-   return total;
+  return count;
 }
 
 
 // must be called before running/level script archiving
 void P_ArchiveFSArrays(void)
 {
-   size_t sizeToSave;
-   sfarray_t *cur;
-   unsigned int *uint_p;
-   svalue_t *sval_p;
+  // [smite] FIXME can we have several array variables reference the same object? 
+  // Because if arrays are handled by value, this is unnecessary and they can be treated like normal variables.
+  
+  unsigned int num_fsarrays = P_NumberFSArrays(); // number all the arrays
 
-   P_NumberFSArrays(); // number all the arrays
-
-   // unsigned ints: size of each array and number of arrays total
-   // P_CalcFSArraySize: length of all arrays * sizeof svalue_t
-   sizeToSave = sizeof(unsigned int) * (num_fsarrays+1) + 
-                P_CalcFSArraySize();
-
-   // write number of FS arrays
-   uint_p = (unsigned int *)save_p;
-   *uint_p++ = num_fsarrays;
-   save_p = (unsigned char *)uint_p;
+  // write number of FS arrays
+  WRITEULONG(save_p, num_fsarrays);
       
-   // start at first array
-   cur = sfsavelist.next;
+  // start at first array
+  sfarray_t *cur = sfsavelist.next;
+  while(cur)
+  {
+    unsigned int i;
 
-   while(cur)
-   {
-      unsigned int i;
+    // write the length of this array
+    WRITEULONG(save_p, cur->length);
 
-      // write the length of this array
-      uint_p = (unsigned int *)save_p;
-      *uint_p++ = cur->length;
-      save_p = (unsigned char *)uint_p;
+    // write the contents of this array
+    for (i=0; i<cur->length; i++)
+    {
+      WRITEBYTE(save_p, cur->values[i].type); // store type;
+      P_ArchiveSValue(&cur->values[i]);
+    }
 
-      // write the contents of this array
-      for(i=0; i<cur->length; i++)
-      {
-	 mobj_t *temp = NULL;
-	 
-	 // must weed out mobj references and use savegame index
-	 if(cur->values[i].type == svt_mobj)
-	 {
-	    // save pointer value
-	    temp = cur->values[i].value.mobj;
-	    // write ordinal into pointer
-	    cur->values[i].value.mobj = (mobj_t *)P_MobjNum(temp);
-	 }
-	 
-	 sval_p = (svalue_t *)save_p;
-	 memcpy(sval_p, &(cur->values[i]), sizeof(svalue_t));
-	 save_p += sizeof(svalue_t);
-
-	 // restore to pointer value
-	 if(cur->values[i].type == svt_mobj)
-	    cur->values[i].value.mobj = temp;
-      }
-
-      cur = cur->next;
-   }
+    cur = cur->next;
+  }
 }
 
 // must be called before unarchiving running/level scripts
 void P_UnArchiveFSArrays(void)
 {
-   unsigned int *uint_p;
-   unsigned int i;
-   sfarray_t *newArray, *last;
-   svalue_t *sval_p;
+  T_InitSaveList(); // reinitialize the save list
 
-   T_InitSaveList(); // reinitialize the save list
+  // read number of FS arrays
+  unsigned int num_fsarrays = READULONG(save_p);
 
-   // read number of FS arrays
-   uint_p = (unsigned int *)save_p;
-   num_fsarrays = *uint_p++;
-   save_p = (unsigned char *)uint_p;
+  sfarray_t *last = &sfsavelist;
 
-   last = &sfsavelist;
-   // read all the arrays
-   for(i=0; i<num_fsarrays; i++)
-   {
-      unsigned int j;
+  // read all the arrays
+  unsigned int q;
+  for(q=0; q<num_fsarrays; q++)
+  {
+    sfarray_t *newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
+    memset(newArray, 0, sizeof(sfarray_t));
+
+    // read length of this array
+    newArray->length = READULONG(save_p);
       
-      newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
-      memset(newArray, 0, sizeof(sfarray_t));
-
-      // read length of this array
-      uint_p = (unsigned int *)save_p;
-      newArray->length = *uint_p++;
-      save_p = (unsigned char *)uint_p;
+    newArray->values = Z_Malloc(newArray->length * sizeof(svalue_t), PU_LEVEL, NULL);
+    CONS_Printf("%i", newArray->length);
       
-      newArray->values = Z_Malloc(newArray->length * sizeof(svalue_t),
-	                          PU_LEVEL, NULL);
+    // read all archived values
+    unsigned int i;
+    for(i=0; i<newArray->length; i++)
+    {
+      newArray->values[i].type = READBYTE(save_p);
+      P_UnArchiveSValue(&newArray->values[i]);
+    }
 
-	  CONS_Printf("%i", newArray->length);
-      
-      // read all archived values
-      for(j=0; j<newArray->length; j++)
-      {
-	 sval_p = (svalue_t *)save_p;
-	 memcpy(&(newArray->values[j]), sval_p, sizeof(svalue_t));
-	 save_p += sizeof(svalue_t);
+    // link in the new array -- must reconstruct list in same
+    // order as read (T_AddArray will not work for this)
+    last->next = newArray;
+    last = newArray;
+  }
 
-	 // set mobj references back to appropriate pointer
-	 if(newArray->values[j].type == svt_mobj)
-	 {
-	    newArray->values[j].value.mobj = 
-	       P_MobjForNum((int)(newArray->values[j].value.mobj));
-	 }
-      }
-
-      // link in the new array -- must reconstruct list in same
-      // order as read (T_AddArray will not work for this)
-	  last->next = newArray;
-      last = newArray;
-
-   }
-
-   // now number all the arrays
-   P_NumberFSArrays();
+  // now number all the arrays
+  P_NumberFSArrays();
 }
+
+
+
+void P_ArchiveScripts()
+{
+    // save FS arrays
+    P_ArchiveFSArrays();
+
+    // save levelscript
+    P_ArchiveLevelScript();
+
+    // save runningscripts
+    P_ArchiveRunningScripts();
+
+    // Archive the script camera.
+    WRITELONG(save_p, (long) script_camera_on);
+    WRITEULONG(save_p, GetID(script_camera.mo));
+    WRITEANGLE(save_p, script_camera.aiming);
+    WRITEFIXED(save_p, script_camera.viewheight);
+    WRITEANGLE(save_p, script_camera.startangle);
+}
+
+void P_UnArchiveScripts()
+{
+    // restore FS arrays
+    P_UnArchiveFSArrays();
+    
+    // restore levelscript
+    P_UnArchiveLevelScript();
+
+    // restore runningscripts
+    P_UnArchiveRunningScripts();
+
+    // Unarchive the script camera
+    script_camera_on = (boolean) READLONG(save_p);
+    script_camera.mo = GetPointer(READULONG(save_p));
+    script_camera.aiming = READANGLE(save_p);
+    script_camera.viewheight = READFIXED(save_p);
+    script_camera.startangle = READANGLE(save_p);
+}
+
 
 
 // =======================================================================
@@ -2480,7 +2237,9 @@ void P_SaveGame(void)
     P_ArchiveWorld();
     P_ArchiveThinkers();
     P_ArchiveSpecials();
+#ifdef FRAGGLESCRIPT
     P_ArchiveScripts();
+#endif
 
     ClearPointermap();
 
@@ -2498,7 +2257,9 @@ boolean P_LoadGame(void)
     P_UnArchiveWorld();
     P_UnArchiveThinkers();
     P_UnArchiveSpecials();
+#ifdef FRAGGLESCRIPT
     P_UnArchiveScripts();
+#endif
 
     ClearPointermap();
 

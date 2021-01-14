@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00606 ]: FS save/load fixed
+		* Compile Break
+		Add Missing int32_t in tables.c
+		
 [00605 ]: Making save/load 64-bit safe, part 1
 [00604 ]: Makefile cleanup
 		* DOS

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_fixed.h 606 2010-02-18 10:01:56Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,7 +66,7 @@
 //
 #define FRACBITS                16
 #define FRACUNIT                (1<<FRACBITS)
-typedef int fixed_t;
+typedef int32_t fixed_t;
 #define FIXED_TO_FLOAT(x) (((float)(x)) / 65536.0)
 
 //

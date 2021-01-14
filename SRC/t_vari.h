@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_vari.h 606 2010-02-18 10:01:56Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -57,18 +57,18 @@ struct svariable_s
   int type;       // vt_string or vt_int: same as in svalue_t
   union
   {
-    char *s;
-    long i;
-    mobj_t *mobj;
-    fixed_t fixed;
-	sfarray_t *a;           // arrays
+    int32_t    i;
+    fixed_t    fixed;
+    char      *s;
+    mobj_t    *mobj;
+    sfarray_t *a;           // arrays
     
     char **pS;              // pointer to game string
     int *pI;                // pointer to game int
     fixed_t *pFixed;
     mobj_t **pMobj;         // pointer to game obj
-	double *pf;
-	sfarray_t **pA;         // arrays
+    double *pf;
+    sfarray_t **pA;         // arrays
     
     void (*handler)();      // for functions
     char *labelptr;         // for labels
