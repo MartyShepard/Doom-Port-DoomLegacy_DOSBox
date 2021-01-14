@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 601 2010-02-11 20:58:19Z wesleyjohnson $
+// $Id: r_things.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -947,7 +947,8 @@ static void R_ProjectSprite (mobj_t* thing)
 
     //SoM: 3/17/2000
     fixed_t             gz_top;
-    int                 heightsec;
+    int                 thingmodelsec;
+    boolean	        thing_has_model;  // has a model, such as water
     int                 light = 0;
 
     // transform the origin point
@@ -1071,25 +1072,36 @@ static void R_ProjectSprite (mobj_t* thing)
           spritelights = scalelight[lightnum];
     }
 
-    heightsec = thingsector->heightsec;
+    thingmodelsec = thingsector->modelsec;
+    thing_has_model = thingsector->model > SM_fluid; // water
 
-    if (heightsec != -1)   // only clip things which are in special sectors
+//    if (thingmodelsec != -1)   // only clip things which are in special sectors
+    if (thing_has_model)   // only clip things which are in special sectors
     {
-      int phs = viewplayer->mo->subsector->sector->heightsec;
-      if (phs != -1 && viewz < sectors[phs].floorheight ?
-          thing->z >= sectors[heightsec].floorheight :
-          gz_top < sectors[heightsec].floorheight)
-        return;
-      if (phs != -1 && viewz > sectors[phs].ceilingheight ?
-          gz_top < sectors[heightsec].ceilingheight &&
-          viewz >= sectors[heightsec].ceilingheight :
-          thing->z >= sectors[heightsec].ceilingheight)
-        return;
+      sector_t * thingmodsecp = & sectors[thingmodelsec];
+      int phs_modelsec = viewplayer->mo->subsector->sector->modelsec;
+      // [WDJ] modelsec is used for more than water, do proper test
+      boolean phs_has_mod = viewplayer->mo->subsector->sector->model > SM_fluid;
+      // [WDJ] 4/20/2010  Added some structure and ()
+      if (phs_has_mod)
+      {
+	  if( (viewz < sectors[phs_modelsec].floorheight) ?
+	      (thing->z >= thingmodsecp->floorheight)
+	      : (gz_top < thingmodsecp->floorheight)
+	      )
+	      return;
+	  if( (viewz > sectors[phs_modelsec].ceilingheight) ?
+	      ((gz_top < thingmodsecp->ceilingheight) && (viewz >= thingmodsecp->ceilingheight))
+	      : (thing->z >= thingmodsecp->ceilingheight)
+	      )
+	      return;
+      }
     }
 
     // store information in a vissprite
     vis = R_NewVisSprite ();
-    vis->heightsec = heightsec; //SoM: 3/17/2000
+    // [WDJ] Only pass water models, not colormap model sectors
+    vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
     vis->mobjflags = thing->flags;
     vis->scale = yscale;           //<<detailshift;
     vis->gx = thing->x;
@@ -1107,8 +1119,8 @@ static void R_ProjectSprite (mobj_t* thing)
          vis->texturemid -= 10*FRACUNIT;
     }
 
-    vis->x1 = x1 < 0 ? 0 : x1;
-    vis->x2 = x2 >= rdraw_viewwidth ? rdraw_viewwidth-1 : x2;
+    vis->x1 = (x1 < 0) ? 0 : x1;
+    vis->x2 = (x2 >= rdraw_viewwidth) ? rdraw_viewwidth-1 : x2;
     vis->xscale = xscale; //SoM: 4/17/2000
     vis->sector = thingsector;
     vis->sz_top = (centeryfrac - FixedMul(vis->gz_top - viewz, yscale)) >> FRACBITS;
@@ -1213,7 +1225,8 @@ void R_AddSprites (sector_t* sec, int lightlevel)
 
     if(!sec->numlights)
     {
-      if(sec->heightsec == -1) lightlevel = sec->lightlevel;
+//      if(sec->modelsec == -1)   lightlevel = sec->lightlevel;
+      if(sec->model < SM_fluid)   lightlevel = sec->lightlevel;
 
       lightnum = (lightlevel >> LIGHTSEGSHIFT)+extralight;
 
@@ -1889,12 +1902,20 @@ void R_DrawSprite (vissprite_t* spr)
     if (spr->heightsec != -1)  // only things in specially marked sectors
     {
         fixed_t h,mh;
-        int phs = viewplayer->mo->subsector->sector->heightsec;
-        if ((mh = sectors[spr->heightsec].floorheight) > spr->gz_bot &&
+        // model sector for special sector clipping
+        sector_t * spr_heightsecp = & sectors[spr->heightsec];
+        // viewer model sector
+        int phs_modelsec = viewplayer->mo->subsector->sector->modelsec;
+        // [WDJ] modelsec is used for more than water, do proper test
+        boolean phs_has_mod = viewplayer->mo->subsector->sector->model > SM_fluid;
+
+        // beware, this test does two assigns to mh, and an assign to h
+        if ((mh = spr_heightsecp->floorheight) > spr->gz_bot &&
            (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0 &&
            (h >>= FRACBITS) < rdraw_viewheight)
         {
-            if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
+//            if (mh <= 0 || (phs != -1 && viewz > sectors[phs_modelsec].floorheight))
+            if (mh <= 0 || (phs_has_mod && (viewz > sectors[phs_modelsec].floorheight)))
             {                          // clip bottom
               for (x=spr->x1 ; x<=spr->x2 ; x++)
                 if (clipbot[x] == -2 || h < clipbot[x])
@@ -1908,11 +1929,13 @@ void R_DrawSprite (vissprite_t* spr)
             }
         }
 
-        if ((mh = sectors[spr->heightsec].ceilingheight) < spr->gz_top &&
+        // beware, this test does an assign to mh, and an assign to h
+        if ((mh = spr_heightsecp->ceilingheight) < spr->gz_top &&
            (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0 &&
            (h >>= FRACBITS) < rdraw_viewheight)
         {
-            if (phs != -1 && viewz >= sectors[phs].ceilingheight)
+//            if (phs != -1 && viewz >= sectors[phs_modelsec].ceilingheight)
+            if (phs_has_mod && (viewz >= sectors[phs_modelsec].ceilingheight))
             {                         // clip bottom
               for (x=spr->x1 ; x<=spr->x2 ; x++)
                 if (clipbot[x] == -2 || h < clipbot[x])

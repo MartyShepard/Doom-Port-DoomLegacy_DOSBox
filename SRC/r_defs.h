@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 594 2010-02-07 18:03:51Z wesleyjohnson $
+// $Id: r_defs.h 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -314,7 +314,7 @@ typedef enum {
    FLOOR_LAVA,   
    FLOOR_SLUDGE, 
    FLOOR_ICE,
-} floortype_t;
+} floortype_e;
 
 // ----- for special tricks with HW renderer -----
 
@@ -331,9 +331,10 @@ typedef struct linechain_s
 // sector model	[WDJ] 11/14/2009
 typedef enum{
    SM_normal,		// normal sector
+   SM_colormap,		// Legacy colormap generation
+   SM_fluid,		// start of fluid sectors
    SM_Boom_deep_water,	// special Boom sector
    SM_Legacy_water,	// special Legacy sector
-   SM_colormap		// Legacy colormap generation
      // Legacy 3D floors are handled through FFloor list
 } sector_model_e;
 
@@ -387,9 +388,10 @@ typedef struct sector_s
     fixed_t   floor_xoffs,   floor_yoffs;
     fixed_t ceiling_xoffs, ceiling_yoffs;
 
-    int heightsec;    // other sector, or -1 if no other sector
-//    int altheightsec; // Use old boom model? 1 for no 0 for yes.
-    			// 1=Legacy water, 0=boom model, 2=colormap
+    // [WDJ] 4/20/2010  modelsec is model sector for special linedefs.
+    // It will be valid when model != SM_normal.
+    // Testing modelsec for water is invalid, it is also used for colormap.
+    int modelsec;    // other sector number, or -1 if no other sector
     sector_model_e  model;  // Boom or Legacy special sector  [WDJ] 11/14/2009
   
     int floorlightsec, ceilinglightsec;

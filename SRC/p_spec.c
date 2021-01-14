@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: p_spec.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2610,10 +2610,13 @@ void P_PlayerOnSpecial3DFloor(player_t* player)
       if(player->mo->z != *rover->topheight)
         continue;
 
-      if (demoversion >= 125 &&
-        (player->mo->eflags & MF_JUSTHITFLOOR) &&
-        sector->heightsec == -1 && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
+      if ((demoversion >= 125)
+        && (player->mo->eflags & MF_JUSTHITFLOOR)
+//      &&  (sector->modelsec == -1)
+	&& (sector->model < SM_fluid) // not water
+	&& (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
       {
+	// hit solid ground
         instantdamage = true;
       }
       else
@@ -2622,7 +2625,8 @@ void P_PlayerOnSpecial3DFloor(player_t* player)
     else
     {
       //Water and DEATH FOG!!! heh
-      if(player->mo->z > *rover->topheight || (player->mo->z + player->mo->height) < *rover->bottomheight)
+      if((player->mo->z > *rover->topheight)
+	 || ((player->mo->z + player->mo->height) < *rover->bottomheight) )
         continue;
       instantdamage = !(leveltime % (32*NEWTICRATERATIO));
     }
@@ -2662,19 +2666,24 @@ void P_PlayerInSpecialSector (player_t* player)
 
     // Falling, not all the way down yet?
     //SoM: 3/17/2000: Damage if in slimey water!
-    if (sector->heightsec != -1)
+//    if (sector->modelsec != -1)
+    if (sector->model > SM_fluid)  // check for water
     {
-        if(player->mo->z > sectors[sector->heightsec].floorheight)
-            return;
+        // check if in water
+        if(player->mo->z > sectors[sector->modelsec].floorheight)
+            return;  // not in the water yet
     }
     else if (player->mo->z != sector->floorheight)
             return;
 
     //Fab: jumping in lava/slime does instant damage (no jump cheat)
-    if (demoversion >= 125 &&
-        (player->mo->eflags & MF_JUSTHITFLOOR) &&
-        sector->heightsec == -1 && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
+    if ((demoversion >= 125)
+	&& (player->mo->eflags & MF_JUSTHITFLOOR)
+//      && (sector->modelsec == -1)  // thus lava/slime was not instant
+        && (sector->model < SM_fluid)  // not in water
+	&& (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
     {
+        // hit solid ground
         instantdamage = true;
     }
     else
@@ -2965,30 +2974,41 @@ void P_SpawnSpecials (void)
     //  Init line EFFECTs
     for (i = 0;i < numlines; i++)
     {
-       // [WDJ] should replace all lines[i] and lines+i with one ptr
-       // variable set here.  It is being done in every case below.
-       // line_t * effline = & lines[i]; // effect line
-        switch(lines[i].special)
+        // [WDJ] replace all lines[i] and lines+i with one ptr variable set here.
+        // It is used in every case below.
+        line_t * effline = & lines[i]; // effect line
+        sector_t * msecp = NULL; 
+        int msec = -1; // model sector number for effline
+       
+        // Not all specials use nor require this, so no error messages
+        if( effline->sidenum[0] >= 0 )
         {
-          int s, sec;
+	    // get model sector and sector number from side 0
+	    msecp = sides[ effline->sidenum[0] ].sector;  // frontsector
+            msec = msecp - sectors;
+	}
+       
+        switch(effline->special)
+        {
+          int s;
+	  // [WDJ] Protect here, if model is set then ensure modelsec >= 0
 
           // support for drawn heights coming from different sector
           case 242:	// Boom deep water
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
 	    {
-              sectors[s].heightsec = sec;
+              sectors[s].modelsec = msec;
               sectors[s].model = SM_Boom_deep_water;
 	    }
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
           case 280:	// Legacy water
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
             {
-              sectors[s].heightsec = sec;
-//              sectors[s].altheightsec = 1;
+              sectors[s].modelsec = msec;
               sectors[s].model = SM_Legacy_water;
             }
             break;
@@ -2996,125 +3016,128 @@ void P_SpawnSpecials (void)
           //SoM: 4/4/2000: HACK! Copy colormaps. Just plain colormaps.
           case 282:	// Legacy generate colormap, use in tagged
 	    // use the colormap in all tagged sectors
-            for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+            for(s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
             {
-              sectors[s].midmap = lines[i].frontsector->midmap;
-//              sectors[s].altheightsec = 2;
+              sectors[s].midmap = effline->frontsector->midmap;
               sectors[s].model = SM_colormap;
             }
             break;
 
           case 281:	// Legacy solid 3D floor with shadow, in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
             break;
 
           case 289:	// Legacy solid 3D floor without shadow, in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
                         FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
             break;
 
           // TL block
           case 300:	// Legacy solid translucent 3D floor in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
             break;
 
           // TL water
           case 301:	// Legacy translucent 3D water in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
                         FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Fog
           case 302:	// Legacy 3D fog in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
+	    if ( msec < 0 )  goto missing_model;
             // SoM: Because it's fog, check for an extra colormap and set
             // the fog flag...
-            if(sectors[sec].extra_colormap)
-              sectors[sec].extra_colormap->fog = 1;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+            if(msecp->extra_colormap)
+              msecp->extra_colormap->fog = 1;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Light effect
           case 303:	// Legacy 3D ceiling light in tagged
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_CUTSPRITES);
             break;
 
           // Opaque water
           case 304:	// Legacy opaque fluid
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Double light effect
           case 305:	// Legacy double light, within slab
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
             break;
 
           // Invisible barrier
           case 306:	// Legacy invisible floor
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              P_AddFakeFloor(&sectors[s], &sectors[sec], lines+i,
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              P_AddFakeFloor(&sectors[s], msecp, effline,
 			FF_EXISTS|FF_SOLID);
             break;
 
           // Boom independent floor lighting (e.g. lava)
 	  // Set floor light to light in control sector
           case 213:
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              sectors[s].floorlightsec = sec;
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              sectors[s].floorlightsec = msec;
             break;
 
           // Boom independent ceiling lighting
 	  // Set ceiling light to light in control sector
           case 261:
-            sec = sides[*lines[i].sidenum].sector-sectors;
-            for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-              sectors[s].ceilinglightsec = sec;
+	    if ( msec < 0 )  goto missing_model;
+            for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
+              sectors[s].ceilinglightsec = msec;
             break;
 		  
           // Instant lower for floor SSNTails 06-13-2002
           case 290:
-            EV_DoFloor(&lines[i], instantLower);
+            EV_DoFloor(effline, instantLower);
             break;
 
           // Instant raise for ceilings SSNTails 06-13-2002
           case 291:
-            EV_DoCeiling(&lines[i], instantRaise);
+            EV_DoCeiling(effline, instantRaise);
             break;
 
           default:
-            if(lines[i].special>=1000 && lines[i].special<1032)
+            if(effline->special>=1000 && effline->special<1032)
             {
-                for (s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+                for (s = -1; (s = P_FindSectorFromLineTag(effline,s)) >= 0;)
                 {
-                  sectors[s].teamstartsec = lines[i].special-999; // only 999 so we know when it is set (it's != 0)
+                  sectors[s].teamstartsec = effline->special-999; // only 999 so we know when it is set (it's != 0)
                 }
                 break;
             }
         }
-    }
+        continue;
+       
+    missing_model:
+       I_SoftError( "Model sector missing: linedef %d\n", i );
+    } // for
 }
 
 
@@ -3197,18 +3220,12 @@ void T_Scroll(scroll_t *s)
 
       sec = sectors + affectee;
       height = sec->floorheight;
-#if 1
       // [WDJ] fix precedence  11/25/2009
       // MININT unless has special sector, and sector floor height > height
-      waterheight = ((sec->heightsec != -1) &&
-        (sectors[sec->heightsec].floorheight > height)) ?
-            sectors[sec->heightsec].floorheight : MININT ;
-#else
-        // [WDJ] this is unreadable without a precedence chart
-        waterheight = sec->heightsec != -1 &&
-        sectors[sec->heightsec].floorheight > height ?
-        sectors[sec->heightsec].floorheight : MININT;
-#endif
+//      waterheight = ((sec->modelsec != -1) &&
+      waterheight = ((sec->model > SM_fluid) &&
+        (sectors[sec->modelsec].floorheight > height)) ?
+            sectors[sec->modelsec].floorheight : MININT ;
 
       for (node = sec->touching_thinglist; node; node = node->m_snext)
       {
@@ -3431,7 +3448,7 @@ void T_Friction(friction_t *f)
 		  }
 	}
 
-	if(foundfloor == false) // Not even a 3d floor has the FRICTION_MASK.
+	if( ! foundfloor) // Not even a 3d floor has the FRICTION_MASK.
 			return;
     }
 
@@ -3591,7 +3608,6 @@ boolean PIT_PushThing(mobj_t* thing)
 }
 
 
-
 // T_Pusher looks for all objects that are inside the radius of
 // the effect.
 
@@ -3603,16 +3619,15 @@ void T_Pusher(pusher_t *p)
     int xspeed = 0, yspeed = 0;
     int xl,xh,yl,yh,bx,by;
     int radius;
-    int ht = 0;
-    boolean inwater;
-    boolean touching;
-
-    inwater = touching = false;
+    fixed_t sm_ht = 0;
+    boolean water_sector = false;
+    boolean inwater = false;
+    boolean touching = false;
 
     if (!allow_pushers)
         return;
 
-    sec = sectors + p->affectee;
+    sec = & sectors[ p->affectee ];
 
     // Be sure the special sector type is still turned on. If so, proceed.
     // Else, bail out; the sector type has been changed on us.
@@ -3626,8 +3641,7 @@ void T_Pusher(pusher_t *p)
     {
         if (!(sec->special & PUSH_MASK)) // Main sector doesn't have one, so let's check the rovers.
         {
-	    boolean foundfloor;
-	    foundfloor = false;
+	    boolean foundfloor = false;
 
 	    if(sec->ffloors)
 	    {
@@ -3642,7 +3656,7 @@ void T_Pusher(pusher_t *p)
 		}
 	    }
 
-	    if(foundfloor == false) // Not even a 3d floor has the PUSH_MASK.
+	    if(! foundfloor) // Not even a 3d floor has the PUSH_MASK.
 	        return;
 	}
     }
@@ -3694,9 +3708,14 @@ void T_Pusher(pusher_t *p)
 
     if(demoversion <= 140)
     {
-        if (sec->heightsec != -1) // special water sector?
-	   ht = sectors[sec->heightsec].floorheight;
+//        if (sec->modelsec != -1) // special water sector?
+        if (sec->model > SM_fluid) // special water sector
+        {
+	   sm_ht = sectors[sec->modelsec].floorheight;
+	   water_sector = true;
+	}
 
+        // Boom
         node = sec->touching_thinglist; // things touching this sector
         for ( ; node ; node = node->m_snext)
         {
@@ -3705,7 +3724,8 @@ void T_Pusher(pusher_t *p)
 	        continue;
 	    if (p->type == p_wind)
 	    {
-	        if (sec->heightsec == -1) // NOT special water sector
+//	        if (sec->modelsec == -1) // NOT special water sector
+	        if (! water_sector) // NOT special water sector
 	        {
 		    if (thing->z > thing->floorz) // above ground
 		    {
@@ -3720,12 +3740,12 @@ void T_Pusher(pusher_t *p)
 		}
 	        else // special water sector
 	        {
-		    if (thing->z > ht) // above ground
+		    if (thing->z > sm_ht) // above ground
 		    {
 		        xspeed = p->x_mag; // full force
 		        yspeed = p->y_mag;
 		    }
-		    else if (thing->player->viewz < ht) // underwater
+		    else if (thing->player->viewz < sm_ht) // underwater
 		        xspeed = yspeed = 0; // no force
 		    else // wading in water
 		    {
@@ -3737,7 +3757,8 @@ void T_Pusher(pusher_t *p)
 	    else // p_current
 	    {
 	        // Added Z currents SSNTails 06-10-2002
-	        if (sec->heightsec == -1) // NOT special water sector
+//	        if (sec->modelsec == -1) // NOT special water sector
+	        if (! water_sector) // NOT special water sector
 	        {
 		    if (thing->z > sec->floorheight) // above ground
 		        xspeed = yspeed = 0; // no force
@@ -3756,7 +3777,7 @@ void T_Pusher(pusher_t *p)
 		}
 	        else // special water sector
 	        {
-		    if (thing->z > ht) // above ground
+		    if (thing->z > sm_ht) // above ground
 		        xspeed = yspeed = 0; // no force
 	            else // underwater
 	            {
@@ -3783,7 +3804,31 @@ void T_Pusher(pusher_t *p)
     }
     else // New support
     {
-        fixed_t sec_z = 0;
+        // Kudos to P_MobjCheckWater().
+        // SSNTails 09-25-2002
+	// Excludes Boom_deep_water for some reason.
+
+        // [WDJ] Was very confused, separate the deep water,
+        // surface water and lava.
+	// Boom_deep_water re-enabled.
+
+        // [WDJ] An old test for Legacy_water was wrapped around everything
+        // and prevented detecting FLOOR_WATER and LAVA.
+
+        // Sector tests, independent of nodes
+//        if (sec->model == SM_Legacy_water) // Legacy water only
+        if (sec->model > SM_fluid)	// Legacy and Boom water
+        {
+	    sm_ht = (sectors[sec->modelsec].floorheight);
+	    water_sector = true;
+	}
+	else if (sec->floortype == FLOOR_WATER || sec->floortype == FLOOR_LAVA) // Lava support
+	{
+	    sm_ht = sec->floorheight + (FRACUNIT/4); // water texture
+	    water_sector = true;
+	}
+
+       
         node = sec->touching_thinglist; // things touching this sector
         for ( ; node ; node = node->m_snext)
         {
@@ -3791,42 +3836,27 @@ void T_Pusher(pusher_t *p)
 	    if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 	        continue;
 
+	    touching = false;  // [WDJ] reset so each thing is independent
+	    inwater = false;
+
 	    // Find the area that the 'thing' is in
-	    // Kudos to P_MobjCheckWater().
-	    // SSNTails 09-25-2002
-//          if (sec->heightsec > -1 && sec->altheightsec == 1)
-	    if (sec->heightsec > -1 && sec->model == SM_Legacy_water)
+	    if(water_sector) // Sector has water
 	    {
-	        boolean water;
-	        water = false;
-	        // from above test, how could it be anything else [WDJ] ???
-	        if (sec->heightsec > -1)  //water hack
-	        {
-		    sec_z = (sectors[sec->heightsec].floorheight);
-		    water = true;
-		}
-	        else if (sec->floortype == FLOOR_WATER || sec->floortype == FLOOR_LAVA) // Lava support
-	        {
-		    sec_z = sec->floorheight + (FRACUNIT/4); // water texture
-		    water = true;
-		}
+	        // Is possible to have touching and inwater at same time
+		// with these tests.
+	        if ((thing->z <= sm_ht) && (thing->z+thing->height > sm_ht))
+		  touching = true;	// touching, but part above water
 
-	        if(water == true) // Sector has water
-	        {
-		    if ((thing->z <= sec_z) && (thing->z+thing->height > sec_z))
-		        touching = true;
-
-		    if (thing->z+(thing->height>>1) <= sec_z)
-		    {
-		        inwater = true;
-		    }
-		}
+	        if (thing->z+(thing->height>>1) <= sm_ht)
+		  inwater = true;	// more than half in water
 	    }
 			
 	    // Not "else"! Check ALL possibilities!
-	    if((inwater == false || touching == false) // Only if both aren't true
+	    // Can skip fake floors if both are already set.
+	    if(( !(inwater && touching)) // Do fake floors if either is false
 	        && sec->ffloors)
 	    {
+	        // water not decisive, check fake floors
 	        ffloor_t*  rover;
 
 	        for(rover = sec->ffloors; rover; rover = rover->next)
@@ -3837,13 +3867,12 @@ void T_Pusher(pusher_t *p)
 		    if(!(rover->master->frontsector->special & PUSH_MASK))
 		        continue;
 
+		    // check for immersed in a fake floor
 		    if(thing->z + thing->height > *rover->topheight)
 		        touching = true;
 
 		    if(thing->z + (thing->height >> 1) < *rover->topheight)
-		    {
 		        inwater = true;
-		    }
 		}
 	    }
 

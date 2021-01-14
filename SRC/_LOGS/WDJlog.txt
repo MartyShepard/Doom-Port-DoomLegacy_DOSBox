@@ -504,3 +504,16 @@ Added directory and savegame delete.
 Added directory and savegame scrolling.
 Except for system dependent directory scanning, this finishes
 the savegame revision.
+
+*** w43_modelsector
+patchfile = w43_modelsector.patch
+- committed revision 632   by wesley johnson
+Clean up use of sector models for Boom deep water and Legacy water.
+This changes uses of sector->heightsec to be a model sector reference,
+and changes most tests against it to be against sector->model.
+This excludes special colormap sectors from being treated as water
+sectors and properly ignores their floor and ceiling levels.
+Enforce protection against model sector=-1 at the time sector model is set,
+thus removing many unnecessary tests and making code intent clear.
+Change some repetitive array accesses to use ptrs, reducing code size.
+

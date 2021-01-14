@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 624 2010-03-25 20:38:06Z wesleyjohnson $
+// $Id: r_segs.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1835,7 +1835,8 @@ void R_StoreWallRange( int   start, int   stop)
             || backsector->floor_xoffs != frontsector->floor_xoffs
             || backsector->floor_yoffs != frontsector->floor_yoffs
             //SoM: 3/22/2000: Prevents bleeding.
-            || frontsector->heightsec != -1
+            || frontsector->modelsec != -1
+            || backsector->modelsec != frontsector->modelsec
             || backsector->floorlightsec != frontsector->floorlightsec
             //SoM: 4/3/2000: Check for colormaps
             || frontsector->extra_colormap != backsector->extra_colormap
@@ -1857,8 +1858,10 @@ void R_StoreWallRange( int   start, int   stop)
             || backsector->ceiling_xoffs != frontsector->ceiling_xoffs
             || backsector->ceiling_yoffs != frontsector->ceiling_yoffs
             //SoM: 3/22/2000: Prevents bleeding.
-            || (frontsector->heightsec != -1 &&
+//            || (frontsector->modelsec != -1 &&
+            || (frontsector->model > SM_fluid &&
                 frontsector->ceilingpic != skyflatnum)
+            || backsector->modelsec != frontsector->modelsec
             || backsector->floorlightsec != frontsector->floorlightsec
             //SoM: 4/3/2000: Check for colormaps
             || frontsector->extra_colormap != backsector->extra_colormap
@@ -2116,7 +2119,8 @@ void R_StoreWallRange( int   start, int   stop)
     
     //added:18-02-98: WATER! cacher ici dans certaines conditions?
     //                la surface eau est visible de dessous et dessus...
-    if (frontsector->heightsec == -1)
+//    if (frontsector->modelsec == -1)
+    if (frontsector->model > SM_fluid)
     {
         if (frontsector->floorheight >= viewz)
         {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_floor.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -100,11 +100,11 @@ result_e T_MovePlane ( sector_t*     sector,
       {
         case -1:
           //SoM: 3/20/2000: Make splash when platform floor hits water
-//          if(boomsupport && sector->heightsec != -1 && sector->altheightsec == 1)
-          if(boomsupport && sector->heightsec != -1 && sector->model == SM_Legacy_water)
+//          if(boomsupport && sector->modelsec != -1 && sector->model == SM_Legacy_water)
+          if((sector->model == SM_Legacy_water) && boomsupport)
           {
-            if((sector->floorheight - speed) < sectors[sector->heightsec].floorheight
-               && sector->floorheight > sectors[sector->heightsec].floorheight)
+            if(((sector->floorheight - speed) < sectors[sector->modelsec].floorheight )
+               && (sector->floorheight > sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
           // Moving a floor down
@@ -138,15 +138,17 @@ result_e T_MovePlane ( sector_t*     sector,
           // Moving a floor up
           // keep floor from moving thru ceilings
           //SoM: 3/20/2000: Make splash when platform floor hits water
-//          if(boomsupport && sector->heightsec != -1 && sector->altheightsec == 1)
-          if(boomsupport && sector->heightsec != -1 && sector->model == SM_Legacy_water)
+//          if(boomsupport && sector->modelsec != -1 && sector->model == SM_Legacy_water)
+          if((sector->model == SM_Legacy_water) && boomsupport)
           {
-            if((sector->floorheight + speed) > sectors[sector->heightsec].floorheight
-               && sector->floorheight < sectors[sector->heightsec].floorheight)
+            if(((sector->floorheight + speed) > sectors[sector->modelsec].floorheight)
+               && (sector->floorheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
-          destheight = (!boomsupport || dest<sector->ceilingheight)?
-                          dest : sector->ceilingheight;
+//          destheight = (!boomsupport || dest<sector->ceilingheight)?
+//                          dest : sector->ceilingheight;
+          destheight = (boomsupport && (dest > sector->ceilingheight))?
+		sector->ceilingheight : dest;
           if (sector->floorheight + speed > destheight)
           {
             lastpos = sector->floorheight;
@@ -186,18 +188,19 @@ result_e T_MovePlane ( sector_t*     sector,
       switch(direction)
       {
         case -1:
-//          if(boomsupport && sector->heightsec != -1 && sector->altheightsec == 1)
-          if(boomsupport && sector->heightsec != -1 && sector->model == SM_Legacy_water)
+          if((sector->model == SM_Legacy_water) && boomsupport)
           {
 	    // make sound when ceiling hits water
-            if((sector->ceilingheight - speed) < sectors[sector->heightsec].floorheight
-               && sector->ceilingheight > sectors[sector->heightsec].floorheight)
+            if(((sector->ceilingheight - speed) < sectors[sector->modelsec].floorheight)
+               && (sector->ceilingheight > sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
           // moving a ceiling down
           // keep ceiling from moving thru floors
-          destheight = (!boomsupport || dest>sector->floorheight)?
-                          dest : sector->floorheight;
+//          destheight = (!boomsupport || dest>sector->floorheight)?
+//                          dest : sector->floorheight;
+          destheight = (boomsupport && (dest<sector->floorheight))?
+		sector->floorheight : dest;
           if (sector->ceilingheight - speed < destheight)
           {
             lastpos = sector->ceilingheight;
@@ -230,12 +233,12 @@ result_e T_MovePlane ( sector_t*     sector,
           break;
                                                 
         case 1:
-//          if(boomsupport && sector->heightsec != -1 && sector->altheightsec == 1)
-          if(boomsupport && sector->heightsec != -1 && sector->model == SM_Legacy_water)
+//          if(boomsupport && sector->modelsec != -1 && sector->model == SM_Legacy_water)
+          if((sector->model == SM_Legacy_water) && boomsupport)
           {
 	    // make sound when ceiling hits water
-            if((sector->ceilingheight + speed) > sectors[sector->heightsec].floorheight
-               && sector->ceilingheight < sectors[sector->heightsec].floorheight)
+            if(((sector->ceilingheight + speed) > sectors[sector->modelsec].floorheight)
+               && (sector->ceilingheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
           // moving a ceiling up

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_setup.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -633,8 +633,7 @@ void P_LoadSectors (int lump)
         ss->nextsec = -1;
         ss->prevsec = -1;
 
-        ss->heightsec = -1; //SoM: 3/17/2000: This causes some real problems
-//        ss->altheightsec = 0; //SoM: 3/20/2000
+        ss->modelsec = -1; //SoM: 3/17/2000: This causes some real problems
         ss->model = SM_normal; //SoM: 3/20/2000, [WDJ] 11/14/2009
         ss->floorlightsec = -1;
         ss->ceilinglightsec = -1;

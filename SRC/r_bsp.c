@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_bsp.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -358,57 +358,66 @@ int R_DoorClosed(void)
 //
 //
 
+// When using for backsector, back=true.
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
                      int *floorlightlevel, int *ceilinglightlevel,
                      boolean back)
 {
   int        mapnum = -1; //SoM: 4/4/2000
+  int	     floorlightsubst, ceilinglightsubst; // light from another sector
   mobj_t*    viewmobj = camera.chase ? camera.mo : viewplayer->mo;
 
-  if (floorlightlevel) {
-    *floorlightlevel = sec->floorlightsec == -1 ?
-      sec->lightlevel : sectors[sec->floorlightsec].lightlevel;
-  }
-
-  if (ceilinglightlevel) {
-    *ceilinglightlevel = sec->ceilinglightsec == -1 ?
-      sec->lightlevel : sectors[sec->ceilinglightsec].lightlevel;
-  }
+  // first light substitution, may be -1 which defaults to sec->lightlevel
+  floorlightsubst = sec->floorlightsec;
+  ceilinglightsubst = sec->ceilinglightsec;
 
   //SoM: 4/4/2000: If the sector has a midmap, it's probably from 280 type
-//  if(sec->midmap != -1 && sec->altheightsec == 2)
   if(sec->midmap != -1 && sec->model == SM_colormap)
     mapnum = sec->midmap;
 
-//  if (sec->heightsec != -1 && !sec->altheightsec)
-  if (sec->heightsec != -1 && sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
+//  if (sec->modelsec != -1 && sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
+  if (sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
   {
-      const sector_t *s = &sectors[sec->heightsec];
-      int heightsec = viewmobj->subsector->sector->heightsec;
-      int underwater = heightsec!=-1 && viewz<=sectors[heightsec].floorheight;
+      // SM_Boom_deep_water passes modelsec >= 0
+      const sector_t *modsecp = &sectors[sec->modelsec];
+      int vss_modelsec = viewmobj->subsector->sector->modelsec;
+      // [WDJ] modelsec used for more than water, do proper test
+      boolean  vss_has_mod  = viewmobj->subsector->sector->model > SM_fluid;
+      boolean  underwater = vss_has_mod && (viewz <= sectors[vss_modelsec].floorheight);
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
+      mapnum = modsecp->midmap;
 
       // Replace floor and ceiling height with other sector's heights.
-      tempsec->floorheight   = s->floorheight;
-      tempsec->ceilingheight = s->ceilingheight;
-
-      mapnum = s->midmap;
-
-      if ((underwater && (tempsec->  floorheight = sec->floorheight,
-                          tempsec->ceilingheight = s->floorheight-1,
-                          !back)) || viewz <= s->floorheight)
+      if( underwater )
+      {
+	  // under the model sector floor
+      	  tempsec->floorheight = sec->floorheight;
+	  tempsec->ceilingheight = modsecp->floorheight-1;
+      }
+      else
+      {
+	  // view above the model sector floor
+	  tempsec->floorheight   = modsecp->floorheight;
+	  tempsec->ceilingheight = modsecp->ceilingheight;
+      }
+     
+      if ((underwater && !back) || viewz <= modsecp->floorheight)
       {                   // head-below-floor hack
-          tempsec->floorpic    = s->floorpic;
-          tempsec->floor_xoffs = s->floor_xoffs;
-          tempsec->floor_yoffs = s->floor_yoffs;
+	  // view under the model sector floor
+          tempsec->floorpic    = modsecp->floorpic;
+          tempsec->floor_xoffs = modsecp->floor_xoffs;
+          tempsec->floor_yoffs = modsecp->floor_yoffs;
 
 
           if (underwater)
           {
-            if (s->ceilingpic == skyflatnum)
+            if (modsecp->ceilingpic == skyflatnum)
             {
+	        // Boom ref: F_SKY1 as control sector ceiling gives strange effect.
+		// Underwater, only the control sector floor appears
+	        // and it "envelops" the player.
                 tempsec->floorheight   = tempsec->ceilingheight+1;
                 tempsec->ceilingpic    = tempsec->floorpic;
                 tempsec->ceiling_xoffs = tempsec->floor_xoffs;
@@ -416,127 +425,134 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
             }
             else
             {
-                tempsec->ceilingpic    = s->ceilingpic;
-                tempsec->ceiling_xoffs = s->ceiling_xoffs;
-                tempsec->ceiling_yoffs = s->ceiling_yoffs;
+                tempsec->ceilingpic    = modsecp->ceilingpic;
+                tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
+                tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
             }
-              mapnum = s->bottommap;
+              mapnum = modsecp->bottommap;
           }
 
-          tempsec->lightlevel  = s->lightlevel;
+          tempsec->lightlevel  = modsecp->lightlevel;
 
-          if (floorlightlevel) {
-            *floorlightlevel = s->floorlightsec == -1 ? s->lightlevel :
-            sectors[s->floorlightsec].lightlevel;
-	  }
-
-          if (ceilinglightlevel) {
-            *ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
-            sectors[s->ceilinglightsec].lightlevel;
-	  }
+	  // use model substitute, or model light
+	  floorlightsubst = (modsecp->floorlightsec != -1) ? modsecp->floorlightsec : sec->modelsec;
+	  ceilinglightsubst = (modsecp->ceilinglightsec != -1) ? modsecp->ceilinglightsec : sec->modelsec;
       }
       else
       {
-        if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight &&
-            sec->ceilingheight > s->ceilingheight)
+//        if (vss_modelsec != -1 && viewz >= sectors[vss_modelsec].ceilingheight &&
+        if (vss_has_mod && (viewz >= sectors[vss_modelsec].ceilingheight) &&
+            (sec->ceilingheight > modsecp->ceilingheight))
         {   // Above-ceiling hack
-            tempsec->ceilingheight = s->ceilingheight;
-            tempsec->floorheight   = s->ceilingheight + 1;
+            tempsec->ceilingheight = modsecp->ceilingheight;
+            tempsec->floorheight   = modsecp->ceilingheight + 1;
 
-            tempsec->floorpic    = tempsec->ceilingpic    = s->ceilingpic;
-            tempsec->floor_xoffs = tempsec->ceiling_xoffs = s->ceiling_xoffs;
-            tempsec->floor_yoffs = tempsec->ceiling_yoffs = s->ceiling_yoffs;
+	        // Boom ref: F_SKY1 as control sector floor gives strange effect.
+		// Over the ceiling, only the control sector ceiling appears
+	        // and it "envelops" the player.
+            tempsec->floorpic    = tempsec->ceilingpic    = modsecp->ceilingpic;
+            tempsec->floor_xoffs = tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
+            tempsec->floor_yoffs = tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
 
-            mapnum = s->topmap;
+            mapnum = modsecp->topmap;
 
-            if (s->floorpic != skyflatnum)
+            if (modsecp->floorpic != skyflatnum)
             {
+	        // view over ceiling, model floor/ceiling
                 tempsec->ceilingheight = sec->ceilingheight;
-                tempsec->floorpic      = s->floorpic;
-                tempsec->floor_xoffs   = s->floor_xoffs;
-                tempsec->floor_yoffs   = s->floor_yoffs;
+                tempsec->floorpic      = modsecp->floorpic;
+                tempsec->floor_xoffs   = modsecp->floor_xoffs;
+                tempsec->floor_yoffs   = modsecp->floor_yoffs;
             }
 
-            tempsec->lightlevel  = s->lightlevel;
+            tempsec->lightlevel  = modsecp->lightlevel;
 
-            if (floorlightlevel) {
-              *floorlightlevel = s->floorlightsec == -1 ? s->lightlevel :
-              sectors[s->floorlightsec].lightlevel;
-	    }
-
-            if (ceilinglightlevel) {
-              *ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
-              sectors[s->ceilinglightsec].lightlevel;
-	    }
+	    // use model substitute, or model light
+            floorlightsubst = (modsecp->floorlightsec != -1) ? modsecp->floorlightsec : sec->modelsec;
+	    ceilinglightsubst = (modsecp->ceilinglightsec != -1) ? modsecp->ceilinglightsec : sec->modelsec;
         }
+	// else normal view
       }
       sec = tempsec;
   }
-//  else if (sec->heightsec != -1 && sec->altheightsec == 1) //SoM: 3/20/2000
-  else if (sec->heightsec != -1 && sec->model == SM_Legacy_water) //SoM: 3/20/2000
+//  else if (sec->modelsec != -1 && sec->model == SM_Legacy_water) //SoM: 3/20/2000
+  else if (sec->model == SM_Legacy_water) //SoM: 3/20/2000
   {
-    sector_t*    s = &sectors[sec->heightsec];
-    int          heightsec = viewmobj->subsector->sector->heightsec;
-    int          underwater = heightsec!=-1 && viewz<=sectors[heightsec].floorheight;
+    // SM_Legacy_water passes modelsec >= 0
+    sector_t*    modsecp = &sectors[sec->modelsec];
+    int          vss_modelsec = viewmobj->subsector->sector->modelsec;
+    // [WDJ] modelsec used for more than water, do proper test
+    boolean      vss_has_mod  = viewmobj->subsector->sector->model > SM_fluid;
+//    int          underwater = modelsec!=-1 && viewz<=sectors[modelsec].floorheight;
+    boolean      underwater = vss_has_mod && (viewz <= sectors[vss_modelsec].floorheight);
 
     *tempsec = *sec;
 
     if(underwater)
     {
-      mapnum = s->bottommap;
-      if(sec->floorlightsec != -1 && floorlightlevel && ceilinglightlevel)
-        *floorlightlevel = *ceilinglightlevel = tempsec->lightlevel = sectors[sec->floorlightsec].lightlevel;
-      if(s->floorheight < tempsec->ceilingheight)
+      // view below model sector floor
+      mapnum = modsecp->bottommap;
+      if(sec->floorlightsec != -1)
       {
-        tempsec->ceilingheight = s->floorheight;
-        tempsec->ceilingpic = s->floorpic;
-        tempsec->ceiling_xoffs = s->floor_xoffs;
-        tempsec->ceiling_yoffs = s->floor_yoffs;
+	// use substitute light
+        floorlightsubst = ceilinglightsubst = sec->floorlightsec;
+	tempsec->lightlevel = sectors[sec->floorlightsec].lightlevel;
+      }
+      if(modsecp->floorheight < tempsec->ceilingheight)
+      {
+        tempsec->ceilingheight = modsecp->floorheight;
+        tempsec->ceilingpic = modsecp->floorpic;
+        tempsec->ceiling_xoffs = modsecp->floor_xoffs;
+        tempsec->ceiling_yoffs = modsecp->floor_yoffs;
       }
     }
-    else if(!underwater && heightsec != -1 && viewz >= sectors[heightsec].ceilingheight)
+//    else if(!underwater && modelsec != -1 && viewz >= sectors[modelsec].ceilingheight)
+    else if(!underwater && vss_has_mod && (viewz >= sectors[vss_modelsec].ceilingheight))
     {
-      mapnum = s->topmap;
-      if(sec->ceilinglightsec != -1 && floorlightlevel && ceilinglightlevel)
-        *floorlightlevel = *ceilinglightlevel = tempsec->lightlevel = sectors[sec->ceilinglightsec].lightlevel;
-      if(s->ceilingheight > tempsec->floorheight)
+      // view over model sector ceiling
+      mapnum = modsecp->topmap;
+      if(sec->ceilinglightsec != -1)
       {
-        tempsec->floorheight = s->ceilingheight;
-        tempsec->floorpic = s->ceilingpic;
-        tempsec->floor_xoffs = s->ceiling_xoffs;
-        tempsec->floor_yoffs = s->ceiling_yoffs;
+	// use substitute light
+        floorlightsubst = ceilinglightsubst = sec->ceilinglightsec;
+	tempsec->lightlevel = sectors[sec->ceilinglightsec].lightlevel;
+      }
+      if(modsecp->ceilingheight > tempsec->floorheight)
+      {
+        tempsec->floorheight = modsecp->ceilingheight;
+        tempsec->floorpic = modsecp->ceilingpic;
+        tempsec->floor_xoffs = modsecp->ceiling_xoffs;
+        tempsec->floor_yoffs = modsecp->ceiling_yoffs;
       }
     }
     else
     {
-      mapnum = s->midmap;
+      mapnum = modsecp->midmap;
       //SoM: Use middle normal sector's lightlevels.
-      if(s->floorheight > tempsec->floorheight)
+      if(modsecp->floorheight > tempsec->floorheight)
       {
-        tempsec->floorheight = s->floorheight;
-        tempsec->floorpic = s->floorpic;
-        tempsec->floor_xoffs = s->floor_xoffs;
-        tempsec->floor_yoffs = s->floor_yoffs;
+        tempsec->floorheight = modsecp->floorheight;
+        tempsec->floorpic = modsecp->floorpic;
+        tempsec->floor_xoffs = modsecp->floor_xoffs;
+        tempsec->floor_yoffs = modsecp->floor_yoffs;
       }
       else
       {
-        if(floorlightlevel)
-          *floorlightlevel = tempsec->lightlevel;
+	floorlightsubst = -1; // revert floor to no subst
       }
-      if(s->ceilingheight < tempsec->ceilingheight)
+      if(modsecp->ceilingheight < tempsec->ceilingheight)
       {
-        tempsec->ceilingheight = s->ceilingheight;
-        tempsec->ceilingpic = s->ceilingpic;
-        tempsec->ceiling_xoffs = s->ceiling_xoffs;
-        tempsec->ceiling_yoffs = s->ceiling_yoffs;
+        tempsec->ceilingheight = modsecp->ceilingheight;
+        tempsec->ceilingpic = modsecp->ceilingpic;
+        tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
+        tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
       }
       else
       {
-        if(ceilinglightlevel)
-          *ceilinglightlevel = tempsec->lightlevel;
+	ceilinglightsubst = -1; // revert ceiling to no subst
       }
     }
-  sec = tempsec;
+    sec = tempsec;
   }
 
   if(mapnum >= 0 && mapnum < num_extra_colormaps)
@@ -544,6 +560,17 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   else
     sec->extra_colormap = NULL;
 
+  // [WDJ] return light parameters in one place
+  if (floorlightlevel) {
+    *floorlightlevel = (floorlightsubst != -1) ?
+       sectors[floorlightsubst].lightlevel : sec->lightlevel ;
+  }
+
+  if (ceilinglightlevel) {
+    *ceilinglightlevel = (ceilinglightsubst != -1) ?
+       sectors[ceilinglightsubst].lightlevel : sec->lightlevel ;
+  }
+   
   return sec;
 }
 
@@ -881,8 +908,10 @@ void R_Subsector (int num)
 
     sub->sector->extra_colormap = frontsector->extra_colormap;
 
-    if ((frontsector->floorheight < viewz || (frontsector->heightsec != -1 &&
-        sectors[frontsector->heightsec].ceilingpic == skyflatnum)))
+//    if ((frontsector->floorheight < viewz || (frontsector->modelsec != -1 &&
+    if ((frontsector->floorheight < viewz)
+	|| (frontsector->model > SM_fluid &&
+            sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
         floorplane = R_FindPlane (frontsector->floorheight,
                                   frontsector->floorpic,
@@ -895,10 +924,11 @@ void R_Subsector (int num)
     else
         floorplane = NULL;
 
-    if ((frontsector->ceilingheight > viewz
-        || frontsector->ceilingpic == skyflatnum ||
-        (frontsector->heightsec != -1 &&
-         sectors[frontsector->heightsec].floorpic == skyflatnum)))
+    if ((frontsector->ceilingheight > viewz)
+        || (frontsector->ceilingpic == skyflatnum)
+//	|| (frontsector->modelsec != -1 &&
+        || (frontsector->model > SM_fluid &&
+            sectors[frontsector->modelsec].floorpic == skyflatnum))
     {
         ceilingplane = R_FindPlane (frontsector->ceilingheight,
                                     frontsector->ceilingpic,

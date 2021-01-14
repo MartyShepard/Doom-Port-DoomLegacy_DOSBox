@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_mobj.c 632 2010-04-27 20:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1067,12 +1067,13 @@ void P_MobjCheckWater(mobj_t * mobj)
     oldeflags = mobj->eflags;
 
     //SoM: 3/28/2000: Only use 280 water type of water. Some boom levels get messed up.
-//    if ((sector->heightsec > -1 && sector->altheightsec == 1) || (sector->floortype == FLOOR_WATER && sector->heightsec == -1))
-    if ((sector->heightsec > -1 && sector->model == SM_Legacy_water)
-	|| (sector->floortype == FLOOR_WATER && sector->heightsec == -1))
+//    if ((sector->modelsec > -1 && sector->model == SM_Legacy_water)
+//	|| (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
+    if ((sector->model == SM_Legacy_water)
+	|| (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
     {
-        if (sector->heightsec > -1)     //water hack
-            z = (sectors[sector->heightsec].floorheight);
+        if (sector->model == SM_Legacy_water)     // special sector water
+            z = (sectors[sector->modelsec].floorheight);
         else
             z = sector->floorheight + (FRACUNIT / 4);   // water texture
 
@@ -1974,7 +1975,6 @@ void P_SpawnMapThing (mapthing_t* mthing)
 // when player moves in water
 // SoM: Passing the Z height saves extra calculations...
 void P_SpawnSplash(mobj_t * mo, fixed_t z)
-                                // flatwater : old water FWATER flat texture
 {
     mobj_t *th;
     //fixed_t     z;
@@ -1982,14 +1982,16 @@ void P_SpawnSplash(mobj_t * mo, fixed_t z)
     if (demoversion < 125)
         return;
 
+#if 0   
+    //SoM: disabled 3/17/2000
+    // flatwater : old water FWATER flat texture
     // we are supposed to be in water sector and my current
     // hack uses negative tag as water height
-    /*
-       if (flatwater)
+    if (flatwater)
        z = mo->subsector->sector->floorheight + (FRACUNIT/4);
-       else
-       z = sectors[mo->subsector->sector->heightsec].floorheight; 
-     *///SoM: 3/17/2000
+    else
+       z = sectors[mo->subsector->sector->modelsec].floorheight; 
+#endif   
 
     // need to touch the surface because the splashes only appear at surface
     if (mo->z > z || mo->z + mo->height < z)
