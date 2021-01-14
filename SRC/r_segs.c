@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 611 2010-02-23 21:42:23Z wesleyjohnson $
+// $Id: r_segs.c 615 2010-02-25 00:22:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1522,19 +1522,38 @@ void R_StoreWallRange( int   start, int   stop)
 
     if (ds_p == drawsegs+maxdrawsegs)
     {
-      ptrdiff_t pos = ds_p - drawsegs;
-      ptrdiff_t pos2 = firstnewseg - drawsegs;
+      // drawsegs is NULL on first execution
+      // Realloc larger drawseg memory, and adjust old drawseg ptrs
+#if 0
+      // convert drawseg ptrs to indexes (does divide by sizeof(drawseg))
+      ptrdiff_t ds_p_index = ds_p - drawsegs;
+      ptrdiff_t firstnewseg_index = firstnewseg - drawsegs;
       unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
 
-      ptrdiff_t temp = firstseg ? firstseg - drawsegs : 0;
+      ptrdiff_t firstseg_index = firstseg ? firstseg - drawsegs : 0;
 
       drawsegs = realloc(drawsegs,newmax*sizeof(*drawsegs));
-      ds_p = drawsegs + pos;
-      firstnewseg = drawsegs + pos2;
+      // get new ptrs from the indexes
+      ds_p = drawsegs + ds_p_index;
+      firstnewseg = drawsegs + firstnewseg_index;
       maxdrawsegs = newmax;
 
       if (firstseg)
-        firstseg = drawsegs + temp;
+        firstseg = drawsegs + firstseg_index;
+#else
+      drawseg_t * old_drawsegs = drawsegs;
+      unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
+      drawsegs = realloc(drawsegs,newmax*sizeof(*drawsegs));
+      maxdrawsegs = newmax;
+      // Adjust ptrs by adding the difference in drawseg area position
+      // [WDJ] Avoid divide and mult by sizeof(drawsegs) by using void* difference
+      // If NULL, then point to drawsegs after first alloc.
+      ptrdiff_t  drawsegs_diff = (void*)drawsegs - (void*)old_drawsegs;
+      ds_p = (drawseg_t*)((void*)ds_p + drawsegs_diff);
+      firstnewseg = (drawseg_t*)((void*)firstnewseg + drawsegs_diff);
+      if (firstseg)  // if NULL then keep it NULL
+        firstseg = (drawseg_t*)((void*)firstseg + drawsegs_diff);
+#endif
     }
 
     

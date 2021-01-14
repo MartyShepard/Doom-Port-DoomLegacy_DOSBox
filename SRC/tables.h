@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: tables.h 615 2010-02-25 00:22:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -76,7 +76,7 @@ static inline fixed_t Tan(angle_t a)
 // The +1 size is to handle the case when x==y without additional checking.
 extern const angle_t tantoangle[SLOPERANGE+1];
 
-/// Encapsulation for arcustangent (for the range 0 <= x <= 1)
+/// Encapsulation for arctangent (for the range 0 <= x <= 1)
 static inline angle_t ArcTan(fixed_t x) { return tantoangle[x >> DBITS]; }
 
 

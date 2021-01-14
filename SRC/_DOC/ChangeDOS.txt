@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00615 ]: svn612 adjustments
 [00614*]: Makefile v4
 [00613*]: Makefile fixed
 [00612*]: Makefile debug controls, dependencies
