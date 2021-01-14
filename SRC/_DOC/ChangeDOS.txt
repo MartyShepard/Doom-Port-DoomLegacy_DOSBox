@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00614*]: Makefile v4
+[00613*]: Makefile fixed
+[00612*]: Makefile debug controls, dependencies
 [00611 ]: Intercept draw seg overflow
 [00610 ]: Compiler warnings fixed. 64-bit version compiles cleanly.
 [00609 ]: compiler warnings eliminated, part 1

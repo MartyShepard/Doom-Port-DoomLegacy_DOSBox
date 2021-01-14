@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 612 2010-02-23 21:48:45Z wesleyjohnson $
+# $Id: Makefile 614 2010-02-25 00:19:24Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -39,7 +39,7 @@
 #SMIF=DJGPPDOS_NATIVE
 
 # SDL Mixer, to get music
-#HAVE_MIXER=1
+HAVE_MIXER=1
 
 # Developers with svn can enable this to have svn number in executable.
 # Causes compile error message otherwise.
@@ -63,21 +63,41 @@ OPTLEV = -O3
 # Debug enables, save on reinventing this everytime.
 #DEBUG=1
 #PROFILEMODE=1
+
 # Customize to your debugging environment.
+# compiler and linker flags
+ifdef PROFILEMODE
+# build with gprof profiling information
+  CFLAGS = -g -pg -fomit-frame-pointer
+
+else
 ifdef DEBUG
 # Normal debug (-g), MACRO info (-g3), stabs or gdb debug info
-  DEBUG:= -g3
-#  DEBUG:= -ggdb
-  # Debuggers do not cope with optimization well, so DEBUG ignores OPTLEV.
-  # To debug with optimization, include it here, (-O0, -O1, or $(OPTLEV)).
-#  DEBUG+= $(OPTLEV)
+# No -fomit-frame-pointer because debugging on some machines depends upon it.
+  CFLAGS = -g3
+#  CFLAGS = -ggdb
+
+# Debuggers do not cope with optimization well, so DEBUG ignores OPTLEV.
+# To debug with optimization, include it here, (-O0, -O1, or $(OPTLEV)).
+#  CFLAGS += $(OPTLEV)
+#  CFLAGS += -O0
+#  CFLAGS += -fno-guess-branch-probability
+
+else
+# build a normal optimized version
+  CFLAGS = $(OPTLEV) -fomit-frame-pointer
 endif
+endif
+CFLAGS += -ffast-math -fno-strict-aliasing $(WFLAGS)
+
 
 # standard
 #STD= -std=c99
   # not ready yet
   # fails because of alloca, it is not std under c99
   # std=c89, does not support // commments, no inline, no asm
+
+
 
 # gcc or g++
 CC=gcc
@@ -287,32 +307,14 @@ endif
 
 
 
-
 # use assembly routines?
 ifdef USEASM
    OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
    OPTS:= $(OPTS) -DUSEASM
 endif
 
-
-
-# compiler and linker flags
-ifdef PROFILEMODE
-# build with gprof profiling information
-  CFLAGS = -g -pg -fomit-frame-pointer
-else
-ifdef DEBUG
-# No -fomit-frame-pointer because debugging on some machines depends upon it.
-  #CFLAGS =  -g3 -O0
-  CFLAGS = $(DEBUG) -fno_guess_branch_probability
-else
-# build a normal optimised version
-  #CFLAGS = -O3
-  CFLAGS = $(OPTLEV) -fomit-frame-pointer
-endif
-endif
-
-CFLAGS += $(WFLAGS) $(OPTS) -ffast-math -fno-strict-aliasing
+# compiler flags
+CFLAGS += $(OPTS)
 
 
 
@@ -537,17 +539,30 @@ endif
 #=======================================================
 #[WDJ] Dependencies, replaces makedep.mak, which was unmaintained.
 
+# This PHONY disables automatic dep file generation when a file changes.
+# Comment it out for automtic dep file generation.
+.PHONY : *.dep
+
 .PHONY : depend
 depend: main.dep $(INTERFACE).dep
 
-main.dep :: *.c
-$(INTERFACE).dep :: $(INTERFACE)/*.c
+main.dep : *.c
+hardware.dep : hardware/*.c hardware/*/*.c
+# $(INTERFACE).dep : $(INTERFACE)/*.c
+djgppdos.dep : djgppdos/*.c
+linux_x.dep : linux_x/*.c linux_x/musserv/*.c linux_x/sndserv/*.c
+os_2.dep : os2/*.c
+macos.dep : macos/*.c
+sdl.dep : sdl/*.c
+win32.dep : win32/*.c
 
 %.dep :
+	@echo "Making dependencies $(@F)"
 	$(CC) $(CFLAGS) -MM $^ > $(@F)
 
--include main.dep
--include $(INTERFACE).dep
+include main.dep
+include hardware.dep
+include $(INTERFACE).dep
 
 #=======================================================
 # If you have a really old make or want these old dependencies.
