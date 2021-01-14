@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 637 2010-05-08 21:21:08Z wesleyjohnson $
+// $Id: r_plane.c 644 2010-05-11 21:43:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -139,8 +139,9 @@ short                   openings[MAXOPENINGS];
 short*                  lastopening;*/
 
 //SoM: 3/23/2000: Use boom opening limit removal
-size_t maxopenings;
-short *openings,*lastopening;
+size_t maxopenings = 0;
+short *openings = NULL;
+short *lastopening = NULL;
 
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 632 2010-04-27 20:33:11Z wesleyjohnson $
+// $Id: r_segs.c 644 2010-05-11 21:43:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -426,6 +426,90 @@ static void R_DrawWallSplats ()
 #endif //WALLSPLATS
 
 
+// ==========================================================================
+// Lightlist and Openings
+// [WDJ] separate functions for expand of lists, with error handling
+
+void  expand_lightlist( void )
+{
+    dc_maxlights = dc_numlights;
+    struct r_lightlist_s *  newlist = 
+	realloc(dc_lightlist, sizeof(r_lightlist_t) * dc_maxlights);
+    if( newlist )
+    {
+        dc_lightlist = newlist;
+    }
+    else
+    {
+        // non-fatal protection, allow savegame
+        // realloc fail does not disturb existing allocation
+        dc_numlights = 0;
+    }
+}
+
+
+extern short *openings;
+extern size_t maxopenings;
+
+void  expand_openings( size_t  need )
+{
+    size_t lastindex = lastopening - openings;
+    drawseg_t *ds;  //needed for fix from *cough* zdoom *cough*
+    uintptr_t  adjustdiff;
+   
+    if( maxopenings < 1024 )
+        maxopenings = 16384;
+    while (need > maxopenings)
+        maxopenings *= 2;
+    short * newopenings = realloc(openings, maxopenings * sizeof(*openings));
+    if( newopenings == NULL )
+    {
+        I_Error( "Failed realloc for openings\n" );
+    }
+    adjustdiff = (void*)newopenings - (void*)openings; // byte difference in locations
+   
+    // borrowed fix from *cough* zdoom *cough*
+    // [RH] We also need to adjust the openings pointers that
+    //    were already stored in drawsegs.
+    for (ds = drawsegs; ds < ds_p; ds++)
+    {
+#define ADJUST(p) if (ds->p + ds->x1 >= openings && ds->p + ds->x1 <= lastopening)\
+                        ds->p = ((void*) ds->p) + adjustdiff;
+        ADJUST (maskedtexturecol);
+        ADJUST (sprtopclip);
+        ADJUST (sprbottomclip);
+        ADJUST (thicksidecol);
+    }
+  #undef ADJUST
+    openings = newopenings;
+    lastopening = & openings[ lastindex ];
+}
+
+
+void expand_drawsegs( void )
+{
+    // drawsegs is NULL on first execution
+    // Realloc larger drawseg memory, and adjust old drawseg ptrs
+    drawseg_t * old_drawsegs = drawsegs;
+    unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
+    drawseg_t * new_drawsegs = realloc(drawsegs, newmax*sizeof(*drawsegs));
+    if( new_drawsegs == 0 )
+    {
+        I_Error( "Failed realloc for drawsegs\n" );
+    }
+    drawsegs = new_drawsegs;
+    maxdrawsegs = newmax;
+    // Adjust ptrs by adding the difference in drawseg area position
+    // [WDJ] Avoid divide and mult by sizeof(drawsegs) by using void* difference
+    // If NULL, then point to drawsegs after first alloc.
+    ptrdiff_t  drawsegs_diff = (void*)drawsegs - (void*)old_drawsegs;
+    ds_p = (drawseg_t*)((void*)ds_p + drawsegs_diff);
+    firstnewseg = (drawseg_t*)((void*)firstnewseg + drawsegs_diff);
+    if (firstseg)  // if NULL then keep it NULL
+        firstseg = (drawseg_t*)((void*)firstseg + drawsegs_diff);
+}
+
+
 
 // ==========================================================================
 // R_RenderMaskedSegRange
@@ -571,11 +655,7 @@ void R_RenderMaskedSegRange (drawseg_t* ds,
       int lightnum;  // value going into lightlist
 
       dc_numlights = frontsector->numlights;
-      if(dc_numlights >= dc_maxlights)
-      {
-        dc_maxlights = dc_numlights;
-        dc_lightlist = realloc(dc_lightlist, sizeof(r_lightlist_t) * dc_maxlights);
-      }
+      if(dc_numlights >= dc_maxlights)   expand_lightlist();
 
       // setup lightlist
       for(i = 0; i < dc_numlights; i++)
@@ -837,11 +917,7 @@ void R_RenderThickSideRange (drawseg_t* ds,
     if(frontsector->numlights)
     {
       dc_numlights = frontsector->numlights;
-      if(dc_numlights > dc_maxlights)
-      {
-        dc_maxlights = dc_numlights;
-        dc_lightlist = realloc(dc_lightlist, sizeof(r_lightlist_t) * dc_maxlights);
-      }
+      if(dc_numlights > dc_maxlights)    expand_lightlist();
 
       for(i = p = 0; i < dc_numlights; i++)
       {
@@ -1161,6 +1237,7 @@ unsigned long   nombre = 100000;
 #endif
 //profile stuff ---------------------------------------------------------
 
+extern sector_t * fakeflat_sec;  // [WDJ] DEBUG
 
 void R_RenderSegLoop (void)
 {
@@ -1568,42 +1645,7 @@ void R_StoreWallRange( int   start, int   stop)
     r_lightlist_t       *rlight;
     fixed_t             lheight;
 
-    if (ds_p == drawsegs+maxdrawsegs)
-    {
-      // drawsegs is NULL on first execution
-      // Realloc larger drawseg memory, and adjust old drawseg ptrs
-#if 0
-      // convert drawseg ptrs to indexes (does divide by sizeof(drawseg))
-      ptrdiff_t ds_p_index = ds_p - drawsegs;
-      ptrdiff_t firstnewseg_index = firstnewseg - drawsegs;
-      unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
-
-      ptrdiff_t firstseg_index = firstseg ? firstseg - drawsegs : 0;
-
-      drawsegs = realloc(drawsegs,newmax*sizeof(*drawsegs));
-      // get new ptrs from the indexes
-      ds_p = drawsegs + ds_p_index;
-      firstnewseg = drawsegs + firstnewseg_index;
-      maxdrawsegs = newmax;
-
-      if (firstseg)
-        firstseg = drawsegs + firstseg_index;
-#else
-      drawseg_t * old_drawsegs = drawsegs;
-      unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
-      drawsegs = realloc(drawsegs,newmax*sizeof(*drawsegs));
-      maxdrawsegs = newmax;
-      // Adjust ptrs by adding the difference in drawseg area position
-      // [WDJ] Avoid divide and mult by sizeof(drawsegs) by using void* difference
-      // If NULL, then point to drawsegs after first alloc.
-      ptrdiff_t  drawsegs_diff = (void*)drawsegs - (void*)old_drawsegs;
-      ds_p = (drawseg_t*)((void*)ds_p + drawsegs_diff);
-      firstnewseg = (drawseg_t*)((void*)firstnewseg + drawsegs_diff);
-      if (firstseg)  // if NULL then keep it NULL
-        firstseg = (drawseg_t*)((void*)firstseg + drawsegs_diff);
-#endif
-    }
-
+    if (ds_p == drawsegs+maxdrawsegs)   expand_drawsegs();
     
 #ifdef RANGECHECK
     if (start >=rdraw_viewwidth || start > stop)
@@ -1638,41 +1680,11 @@ void R_StoreWallRange( int   start, int   stop)
 
     //SoM: Code to remove limits on openings.
     {
-      extern short *openings;
-      extern size_t maxopenings;
-      size_t pos = lastopening - openings;
-      size_t need = (rw_stopx - start)*4 + pos;
-      if (need > maxopenings)
-      {
-	  // [WDJ] FIXME, does not appear to be init properly
-          drawseg_t *ds;  //needed for fix from *cough* zdoom *cough*
-          short *oldopenings = openings;
-          short *oldlast = lastopening;
-
-          do{
-            maxopenings = maxopenings ? maxopenings*2 : 16384;
-          }while (need > maxopenings);
-          openings = realloc(openings, maxopenings * sizeof(*openings));
-          lastopening = openings + pos;
-
-        // borrowed fix from *cough* zdoom *cough*
-        // [RH] We also need to adjust the openings pointers that
-        //    were already stored in drawsegs.
-        for (ds = drawsegs; ds < ds_p; ds++)
-        {
-  #define ADJUST(p) if (ds->p + ds->x1 >= oldopenings && ds->p + ds->x1 <= oldlast)\
-                        ds->p = ds->p - oldopenings + openings;
-            ADJUST (maskedtexturecol);
-            ADJUST (sprtopclip);
-            ADJUST (sprbottomclip);
-            ADJUST (thicksidecol);
-	}
-  #undef ADJUST
-      }
+      size_t lastindex = lastopening - openings;
+      size_t needindex = (rw_stopx - start)*4 + lastindex;
+      if (needindex > maxopenings)  expand_openings( needindex );
     }  // end of code to remove limits on openings
 
-
-    
     // calculate scale at both ends and step
     ds_p->scale1 = rw_scale =
         R_ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
@@ -2159,11 +2171,7 @@ void R_StoreWallRange( int   start, int   stop)
     if(frontsector->numlights)
     {
       dc_numlights = frontsector->numlights;
-      if(dc_numlights >= dc_maxlights)
-      {
-        dc_maxlights = dc_numlights;
-        dc_lightlist = realloc(dc_lightlist, sizeof(r_lightlist_t) * dc_maxlights);
-      }
+      if(dc_numlights >= dc_maxlights)    expand_lightlist();
 
       for(i = p = 0; i < dc_numlights; i++)
       {

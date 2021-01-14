@@ -601,3 +601,10 @@ patchfile = w48_wadstruct.patch
 - committed revision 643   by wesley johnson
 Change structures used to access wad to use uint16_t and uint32_t.
 
+*** w48_realloc
+patchfile = w48_realloc1.patch
+- committed revision 644   by wesley johnson
+Check for failure on calls to realloc.  Moved expansion of realloc structures
+to subroutines.  Gets them out of the code that is executed frequently
+so they do not occupy space in the processor cache.
+
