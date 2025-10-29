@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_pspr.c 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -560,10 +560,7 @@ void A_Raise( player_t*     player,
 //
 // A_GunFlash
 //
-void
-A_GunFlash
-( player_t*     player,
-  pspdef_t*     psp )
+void A_GunFlash ( player_t* player, pspdef_t* psp )
 {
     P_SetMobjState (player->mo, S_PLAY_ATK2);
     P_SetPsprite (player,ps_flash,
@@ -580,10 +577,7 @@ A_GunFlash
 //
 // A_Punch
 //
-void
-A_Punch
-( player_t*     player,
-  pspdef_t*     psp )
+void A_Punch ( player_t* player, pspdef_t* psp )
 {
     angle_t     angle;
     int         damage;
@@ -596,19 +590,20 @@ A_Punch
 
     angle = player->mo->angle;
     angle += (P_Random()<<18); // WARNING: don't put this in one line 
-    angle -= (P_Random()<<18); // else this expretion is ambiguous (evaluation order not diffined)
+    angle -= (P_Random()<<18); // else this expression is ambiguous (evaluation order not diffined)
 
     slope = P_AimLineAttack (player->mo, angle, MELEERANGE);
     P_LineAttack (player->mo, angle, MELEERANGE, slope, damage);
 
     // turn to face target
-    if (linetarget)
+    // lar_linetarget returned by P_LineAttack
+    if (lar_linetarget)
     {
         S_StartAttackSound(player->mo, sfx_punch);
         player->mo->angle = R_PointToAngle2 (player->mo->x,
                                              player->mo->y,
-                                             linetarget->x,
-                                             linetarget->y);
+                                             lar_linetarget->x,
+                                             lar_linetarget->y);
     }
 }
 
@@ -616,10 +611,7 @@ A_Punch
 //
 // A_Saw
 //
-void
-A_Saw
-( player_t*     player,
-  pspdef_t*     psp )
+void A_Saw ( player_t* player, pspdef_t* psp )
 {
     angle_t     angle;
     int         damage;
@@ -634,7 +626,8 @@ A_Saw
     slope = P_AimLineAttack (player->mo, angle, MELEERANGE+1);
     P_LineAttack (player->mo, angle, MELEERANGE+1, slope, damage);
 
-    if (!linetarget)
+    // lar_linetarget returned by P_LineAttack
+    if (!lar_linetarget)
     {
         S_StartAttackSound(player->mo, sfx_sawful);
         return;
@@ -643,7 +636,7 @@ A_Saw
 
     // turn to face target
     angle = R_PointToAngle2 (player->mo->x, player->mo->y,
-                             linetarget->x, linetarget->y);
+                             lar_linetarget->x, lar_linetarget->y);
     if (angle - player->mo->angle > ANG180)
     {
         if (angle - player->mo->angle < -ANG90/20)
@@ -726,16 +719,17 @@ void P_BulletSlope (mobj_t* mo)
     an = mo->angle;
     bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 
-    if (!linetarget)
+    // lar_linetarget returned by P_AimLineAttack
+    if (!lar_linetarget)
     {
         an += 1<<26;
         bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-        if (!linetarget)
+        if (!lar_linetarget)
         {
             an -= 2<<26;
             bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
         }
-        if(!linetarget)
+        if(!lar_linetarget)
         {
 notagetfound:
             if(demoversion>=128)
@@ -914,12 +908,13 @@ void A_BFGSpray (mobj_t* mo)
         //  of the missile
         P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
 
-        if (!linetarget)
+        // lar_linetarget returned by P_AimLineAttack
+        if (!lar_linetarget)
             continue;
 
-        extrabfg = P_SpawnMobj (linetarget->x,
-                                linetarget->y,
-                                linetarget->z + (linetarget->height>>2),
+        extrabfg = P_SpawnMobj (lar_linetarget->x,
+                                lar_linetarget->y,
+                                lar_linetarget->z + (lar_linetarget->height>>2),
                                 MT_EXTRABFG);
         extrabfg->target = mo->target;
 
@@ -928,7 +923,7 @@ void A_BFGSpray (mobj_t* mo)
             damage += (P_Random()&7) + 1;
 
         //BP: use extramobj as inflictor so we have the good death message
-        P_DamageMobj (linetarget, extrabfg, mo->target, damage);
+        P_DamageMobj (lar_linetarget, extrabfg, mo->target, damage);
     }
 }
 
@@ -936,10 +931,7 @@ void A_BFGSpray (mobj_t* mo)
 //
 // A_BFGsound
 //
-void
-A_BFGsound
-( player_t*     player,
-  pspdef_t*     psp )
+void A_BFGsound ( player_t* player, pspdef_t* psp )
 {
     S_StartAttackSound(player->mo, sfx_bfg);
 }

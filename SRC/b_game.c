@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: b_game.c 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -684,7 +684,10 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 			px = p->mo->x + p->mo->momx + cmomx;
 			py = p->mo->y + p->mo->momy + cmomy;
 
-			blocked = !P_CheckPosition (p->mo, px, py) || (((tmfloorz - p->mo->z)>>FRACBITS) > 24) || ((tmceilingz - tmfloorz) < p->mo->height);
+		        // tmr_floorz, tmr_ceilingz returned by P_CheckPosition
+			blocked = !P_CheckPosition (p->mo, px, py)
+		            || (((tmr_floorz - p->mo->z)>>FRACBITS) > 24)
+		            || ((tmr_ceilingz - tmr_floorz) < p->mo->height);
 			//if its time to change strafe directions, 
 			if (sidemove && ((p->mo->flags & MF_JUSTHIT) || blocked))
 			{
@@ -694,10 +697,14 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 
 			if (blocked)
 			{
-				if ((++p->bot->blockedcount > 20) && ((P_AproxDistance(p->mo->momx, p->mo->momy) < (4<<FRACBITS)) || (tmthing && (tmthing->flags & MF_SOLID))))
+			        // tm_thing is global var of P_CheckPosition
+				if ((++p->bot->blockedcount > 20)
+				    && ((P_AproxDistance(p->mo->momx, p->mo->momy) < (4<<FRACBITS))
+					|| (tm_thing && (tm_thing->flags & MF_SOLID)))
+				    )
 					p->bot->avoidtimer = 20;
 
-				if ((((tmfloorz - p->mo->z)>>FRACBITS) > 24) && ((((tmfloorz - p->mo->z)>>FRACBITS) <= 37) || ((((tmfloorz - p->mo->z)>>FRACBITS) <= 45) && (p->mo->subsector->sector->floortype != FLOOR_WATER))))
+				if ((((tmr_floorz - p->mo->z)>>FRACBITS) > 24) && ((((tmr_floorz - p->mo->z)>>FRACBITS) <= 37) || ((((tmr_floorz - p->mo->z)>>FRACBITS) <= 45) && (p->mo->subsector->sector->floortype != FLOOR_WATER))))
 					cmd->buttons |= BT_JUMP;
 
 				for (x=0; x<numspechit; x++)

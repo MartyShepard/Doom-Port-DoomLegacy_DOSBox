@@ -3,9 +3,9 @@
 <pre>
 
  DooM LEGACY
- Release v1.44, November 2009.
+ Release v1.44, July 2010.
 
- Last Updated: October 2009
+ Last Updated: July 2010
 
  Original game & sources by: Id Software.
  Additions: (c)1998 by: Fabrice Denis & Boris Pereira
@@ -15,10 +15,10 @@
 	    (c)2009 by: Doom Legacy Team
  
  Special thanks to Steven McGranahan, Robert Bäuml and Bell Kin for
- their large contribution and to others Legacy Team members.
+ their large contribution and to other Legacy Team members.
 
- Web site: http://legacy.newdoom.com
-   e-mail: legacy@newdoom.com
+ Web site: http://doomlegacy.sourceforge.net
+   e-mail: see the doomlegacy project at sourceforge.net
 
 
  -----------------------------------------------------------------------
@@ -28,12 +28,12 @@
  ----------
  WHAT'S NEW
  ----------
-     Update v1.44   15-Oct-2009
+     Update v1.44   02-Jul-2010
      --------------------------
      - added section [2-7]: Gamma controls
+     - added section [3-7]: Savegame directories
      - memory command line option updated
      - cleanup
-     
 
      Update v1.30   1-Mar-2001
      -------------------------
@@ -42,7 +42,7 @@
 
      Update v1.29  22-Aug-2000
      -------------------------
-     - added new section [2-6]: Using a Seconde mouse
+     - added new section [2-6]: Using a Second mouse
      - added new section [5-0]: Network under Windows and Linux
      - added new section [5-10]: Firewall handling
      - changed section [5-5]: file transfer
@@ -54,7 +54,6 @@
      - see section [5-5] for details about TCP/IP multiplayer options
        if you are using the DOS version, or the WIN32 version without
        the launcher.
-
 
      Update v1.27  15-Feb-1999
      -------------------------
@@ -96,6 +95,7 @@
      [2-4] Tuning up the mouse speed
      [2-5] The Setup Controls menu
      [2-6] Using a Second mouse
+     [2-7] Gamma controls
 
  [3] Additions
      [3-1] Shooting up and down
@@ -104,6 +104,7 @@
      [3-4] New cheats
      [3-5] Heretic support
      [3-6] Opengl compatibility
+     [3-7] Savegame directories
 
  [4] Console
 
@@ -150,14 +151,37 @@
   of deathmatching. Don't ask us why we like it more than Duke Nukem
   or other clones, we like the atmosphere of Doom and its like that!
 
-  This new version of Doom is not commercial anymore, but you should
-  have the original Doom data (either doom.wad, doom2.wad, tnt.wad or 
-  plutonia.wad), that comes with the original Doom, Doom2, Final Doom,
-  Ultimate Doom software.
+  This new version of the Doom engine is not commercial.
+  You will need an IWAD to play, which can be one of the original Doom
+  or Heretic wad files
+  (doom.wad from Doom, doomu.wad from Ultimate Doom,
+  doom2.wad from Doom2, tnt.wad or plutonia.wad from Final Doom,
+  heretic.wad from Heretic, which are still copyright of IdSoftware).
+  
+  There are some free replacement IWAD which can be used instead.
+  FreeDoom (doom2.wad or freedoom.wad) is a free substitute for Doom2.
+  Blasphemer (heretic.wad) is a free substitute for Heretic, but it does
+  not have monsters yet (it needs volunteers to work on it).
 
-  If you have problems running this version or want more informations,
-  first: READ THE FAQ. If the FAQ doesn't help, mail us at:
-  legacy@newdoom.com
+  The Legacy engine will recognize and play Chexquest (chex.wad),
+  Chexquest2, and Chexquest-Newmaps (newmaps.wad), but not Chexquest3.
+  
+  Legacy has implemented the Boom extensions.
+
+  Legacy also has Legacy 3Dfloors, Legacy swimable water and other
+  special effects using extended linedef codes, and fragglescript.
+  The Legacy 3Dfloors and fragglescript are demonstrated in:
+    Legacy_3ddemo.wad, rainbowstar.wad
+  Some of the wads that use Legacy 3Dfloors are:
+    3DHorror.wad, phobia.wad, hth2.wad
+  Some Deathmatch wads:
+    andydm1.wad, shbullet.wad
+  Chexquest sequel:
+    Chexquest-newmaps.wad
+
+  If you have problems running this version or want more information,
+  first: READ THE FAQ. If the FAQ doesn't help, contact us at:
+  legacy project at sourceforge.net.
 
   We hope that this new version brings you a lot of enjoyment,
   especially for the deathmatch fans out there.
@@ -175,7 +199,7 @@
  ====================
 
      We have planned other features. See our site:
-     http://legacy.newdoom.com
+     http://doomlegacy.sourceforge.net
 
 
 
@@ -204,14 +228,21 @@
  [2-1]: Setting up the game
  ==========================
 
-     Legacy doesn't use SETUP.EXE anymore, it uses 'config.cfg' now.
-     There won't be anymore problems with the original Doom config
-     file 'default.cfg' : it will never be changed.
+     Legacy uses 'config.cfg' to setup the game.
+     Your personal control settings are saved in your config.cfg file.
+     They can be changed by menus in Legacy, and are saved when quitting
+     the game.
 
+     OpenGL uses a separate file, 'glconfig.cfg', so that the opengl
+     settings do not disturb an existing good config file.  This does
+     mean that switching to opengl requires setting up the controls again.
+
+     There won't be any problems with the original Doom config
+     file 'default.cfg' : it will never be changed.
      To configure your original Doom, use SETUP.EXE.
 
      Under windows you can use the launcher to configure and launch
-     more easely Doom Legacy.
+     Doom Legacy.
 
 
  [2-2]: Setting up the controls
@@ -220,7 +251,7 @@
      Setting up the controls, mouse and joystick, video mode is done
      while in the game, using the main game menus : Setup Controls,
      Video Options, Game Options. You can change all game settings
-     at any time during the game, forget about SETUP.EXE !!
+     at any time during the game.
 
      The mouse will be activated as default, to disable it, change
      the 'use_mouse' variable in the console (see console.txt)
@@ -229,25 +260,37 @@
      variable at the console, to one of the joystick types supported
      by Legacy (up to 10button joysticks + hat, see console.txt)
 
+     OpenGL has its own config file, 'glconfig.cfg', which means
+     that switching to opengl requires setting up all the controls again.
+
 
 
  [2-3]: Setting up the sound
  ===========================
 
-     WINDOWS: The sound is autodetected using DirectX so make sure
-     -------  you card wortk well with DirectX and it legacy will
-              us it.
+     SDL:
+     ---
+     The SDL library handles sound.  If that is installed correctly then
+     Legacy will have sound effects.
+     
+     Music requires SDL-Mixer version 1.2.7 or later.  Earlier SDL-Mixer
+     versions do not have a working RWOPS interface.  Legacy can play music
+     using files instead, but it requires compiling Legacy, allowing it to
+     detect the SDL-Mixer version.
 
-              Additionally the Legacy could utilize the hardware 3D sound
-              for making more realistic sound environment.
+     WINDOWS:
+     -------
+     The sound is autodetected using DirectX so make sure your card works
+     well with DirectX and it legacy will us it.
 
-              Specify -ds3d command line parameter to use generic
-              3D sound driver (DirectSound 3D). This driver are suitable 
-              for most 3D sound chips.
+     Additionally the Legacy could utilize the hardware 3D sound
+     for making more realistic sound environment.
+
+     Specify -ds3d command line parameter to use generic 3D sound driver
+     (DirectSound 3D). This driver are suitable for most 3D sound chips.
 
      DOS:
      ---
-
      The sound and music card is auto-detected at the game startup.
 
      If you don't get any sound in Legacy, check that the BLASTER
@@ -267,7 +310,7 @@
  [2-4]: Tuning up the mouse speed
  ================================
 
-     The main Options menu still limit the mouse sensitivity value
+     The main Options menu still limits the mouse sensitivity value
      to a 'normal range', but you can now increase this value even
      more using the console variables 'mousesens' and 'mlooksens'.
 
@@ -279,14 +322,9 @@
  [2-5]: the Setup Controls menu
  ==============================
 
-     You don't need to use the SETUP.EXE now, there's that cool
-     'Setup Controls' menu.
-
-     Using this menu is pretty straight forward, you can bind actions
-     to one or two keys, like in all decent Game.
-
-     When controleperkey cvar is "On", a single key can be set to 
-     multiple actions, eg: go backward and 'use' at the same time.
+     You can bind actions to one or two keys, like in all decent Games.
+     Select an action, press ENTER, and then activate the desired key,
+     mouse button, or joystick button.
 
      To CLEAR the keys attached to a control, use the BACKSPACE key.
 
@@ -296,8 +334,13 @@
      dbl-click, eg: 'MOUSEBUTTON1' will become 'DOUBLEMOUSE1'.
 
      You can use double-clicks for any joystick/mouse button, and you
-     can even attach any action to it, eg: strafe left/right with mouse
-     buttons, it works. Just enter the button two times like said before.
+     can attach any action to it.
+
+     When controlperkey is "Several", a single key can be set to 
+     multiple actions, eg: go backward and 'use' at the same time.
+     Normally when a key is set for an action, previous uses of the
+     same key are cleared.
+
 
  [2-6]: Using a Second mouse
  ===========================
@@ -336,36 +379,55 @@
 
  [2-7]: Gamma controls
  =====================
-     Gamma control sliders for black level and gamma are on an options page.
-     The control of gamma is much finer than before.  The gamma table is
-     now generated by equation from the control settings, instead of using 4
-     preset gamma tables.
      
-     The black level can be changed by slider, the F11 key, or directly by
-     a console variable set.
-       gamma_bl -2
-     The gamma level can be changed by slider, or directly by a console
-     variable set.
+     The control of gamma is much finer than before.  The gamma table is
+     now generated by equation from the control settings, instead of using
+     4 preset gamma tables.
+     
+     The gamma control functions:
+     
+       Gamma: Only has a gamma slider.
+     
+       Gamma_black : Gamma control and black level control.
+     
+       Gamma_bright_black : Gamma control, bright control, and black
+            level control.
+     
+       Linear : Has bright and black level controls, as two set-points
+            of linear segmented brightness correction.  It is included
+	    for use with LCD and other technology displays. 
+     
+     Controls for gamma function, black level, bright level, and gamma
+     are on an options page.  The values can also be changed by a
+     console set command, or in your personal config.cfg file.
+       gammafunc Gamma_bright_black
+       black -2
        gamma 2
+       bright -1
+       
      To see the current setting just type the name, without a value.
      
      Normal levels are
-       gamma_bl 0
+       black 0
        gamma 0
      
      Find a dark area in a wad or use the gamma.wad file
      ( i.e. -file gamma.wad).
-     Set the black level (gamma_bl) to give a good looking even gray scale
-     in the darkest areas (little gray room in gamma.wad).
+     Set the black level to give a good looking even gray scale in the
+     darkest areas (little gray room in gamma.wad).
      White textures will not go completely to black, but will instead stay
-     gray.  This is because light is rounded up.  So do not try to get
-     it perfect in the darkest three gray test strips as it is not possible.
-     Instead try to get the gray intervals even.  You should be able to
-     just barely see an object right in front of you in the darkest room,
-     and see white textures across the room as a dark gray patch.
+     gray.  The game video is limited to 32 light levels, so do not try to
+     get it perfect in the darkest three gray test strips as it is not
+     possible.  Instead try to get the gray intervals even.  You should be
+     able to just barely see an object right in front of you in the darkest
+     room, and see white textures across the room as a dark gray patch.
      
      Go to a normally lit area and adjust gamma to give the brightness and
      evenness of tone that you would expect.
+     
+     Use the bright control to adjust the brightest outdoor scenes
+     after the gamma and black levels are set.  Unlike most monitors,
+     this bright control actually controls the brightest light levels.
 
      Your preferences may be different.  From experiments, trying too
      hard to set a perfect black leads to extreme gamma settings to correct
@@ -380,7 +442,7 @@
 
 
  -----------------------------
- [3] ADDITIONS TO DEATHMATCHES
+ [3] ADDITIONS TO GAME PLAY
  -----------------------------
 
  [3-1]: Shooting up and down
@@ -461,12 +523,41 @@
     
  [3-6] Opengl compatibility
  ==========================
+    
+    OpenGL uses the SDL library OpenGL support and depends on the
+    SDL OpenGL support working.  The video card usually requires
+    drivers from the manufacturer to get full hardware rendering.
+    With the default video card drivers, OpenGL will be software
+    rendered by the SDL library, which will be slow.
 
  Card             Driver     Observations
   ATI RageFury     ?????      Work fine
   S3 ProSavage     4.12.01    Work fine
   Voodoo Banshee   1.04.01    Work only in 16 bit mode
   Voodoo 5500      1.04.00    work fine
+
+
+ [3-7] Savegame directories
+ ==========================
+
+    Legacy allows savegame directories, with up to 99 savegames in each
+    directory.  This feature can be enabled/disabled by a compile time option.
+    
+    The savegame entries now include the level name and play time.
+    The savegames now have a readable header with this and more information,
+    including the command line switches used.
+    
+    The cursor movement keys are up-arrow, down-arrow, page-up, and page-down.
+    The delete key will delete the selected savegame or directory.
+    
+    The savegame menus now include a directory name.
+    The directory is selected by moving the cursor up to the directory name,
+    and pressing ENTER.  The menu will present all the existing directory
+    names.  The blank directory line is the legacy default directory
+    which contains all the directories and savegames.
+    
+    To create a new directory, move to the directory line, press ENTER,
+    type in a new directory name, and press ENTER.
 
 
  ---------------
@@ -504,18 +595,16 @@
      You can also use the build in multiplayer menu that allow you 
      to connect to server and create server.
 
-     The following is ONLY for dos version.
-
  [5-1]: Quick-start of a 5-32 players network game (DOS only)
  ============================================================
 
-     To start a game with more than 4 players, we recommend using
+     With DOS, to start a game with more than 4 players, we recommend using
      Doomatic. Doomatic is a utility written by us before the source
      release, we wanted to create a deathmatch launcher with all the
      features that we always needed.
 
-     It replaces IPXSETUP and DM. Just read the 'QUICK START' sec-
-     tion of DOOMATIC.TXT file to get started with Doomatic.
+     It replaces IPXSETUP and DM. Just read the 'QUICK START' section
+     of DOOMATIC.TXT file to get started with Doomatic.
 
      Since we've added more than 4 players support into Doom LEGACY,
      we have modified DOOMATIC to allow starting games with up to
@@ -875,13 +964,14 @@
  [5-10]: Firewall handling
  =========================
 
-    Legacy use udp port 5029 only and can accept messages from any
+    Legacy uses udp port 5029 only and can accept messages from any
     port so it works perfectly with NAT (Network Address Translation)
     and such (like IPmaskareding of linux).
 
-    Since the ip of the computer behind the firewall isn't routable 
-    the server cannot be join by any player. (Except if you are 
-    familiar with IpAutoforward funtionality of Linux).
+    Because the ip of any computer behind the firewall is not routable 
+    the server cannot get a usable ip address during player join-game.
+    If you are familiar with IpAutoforward funtionality of Linux,
+    you can make a usable ip appear.
 
 
  ------------------------
@@ -911,14 +1001,47 @@
       execute it first.
 
 
+  -iwad  <iwad-file>
+  
+      The iwad file supplies the game basics, determines which
+      version of Doom, Heretic, or Chex is being played, and changes the
+      Legacy engine behavior accordingly.
+
+  
   -file  <pwad-file>
   -file  <dehacked-file>
+
+      Loads a file that replaces some of the iwad data, and otherwise
+      modifies the game.
 
       Has been enhanced to load dehacked files too! It makes
       it much more easy to use deahcked patches in multiplayer,
       for example:
 
       -file gfx.wad snd.wad patch.deh
+
+
+  -game  <game-name>
+
+      Forces a particular game mode to be used.  This replaces renaming
+      the wad file.  If an iwad is not explicitly given, the appropriate
+      iwad will be automatically loaded.
+      
+      The valid game-name at this time are:
+        doom, doommode                         : Doom1 behavior
+	freedu, doomu, ultimode                : Ultimate Doom behavior
+        freedoom, freedm, doom2, plutonia, tnt : Doom2 behavior
+	blasphem, heretic, heremode            : Heretic behavior
+	heretic1                               : Heretic shareware behavior
+	chex1				       : Chexquest behavior
+      The following are valid game-name, but the mode is not supported yet.
+	hexen, hexemode                        : Hexen behavior
+	hexen1                                 : Hexen demo behavior
+	strife                                 : Strife behavior
+	strife0                                : Strife demo behavior
+
+      Savegames are now marked with the game name, and will not load
+      with a different game name.
 
 
   -teamplay
@@ -963,6 +1086,10 @@
       free.
       The MIN and MAX limits are set by compile time options.
 
+      There are several compile time options for ZALLOC memory allocation,
+      the updated Zone allocation, automatic growing Zone allocation,
+      and simple and tagged malloc allocations.
+
 
   -width <xxx> -height <yyy>
 
@@ -972,20 +1099,32 @@
       Doom LEGACY will switch to 320x200 if it can't find a
       corresponding mode. So remember to load your Univbe or
       equivalent for extra video modes.
-
+      
   -ds3d
 
       Tell legacy to use Direct 3D Sound for the sound, you will
       get much better sound position in 3d and better sound effects.
 
   -opengl
+  
+      Uses the opengl driver provided by the operating system, or SDL
+      library.
+
+      This will use hardware rendering if the OpenGL driver supports it.
+      Without a hardware rendering video driver, SDL will perform
+      software renderering, which will be slow.
+      
+      The hardware renderer uses a different graphics engine from the software
+      renderer and does not do everything that the software renderer does.
+      It does have coronas, and other light effects that the software
+      renderer does not do.
+
   -3dfx
       
-      Tells Legacy to use a hardware accelerated 3d card to draw the game,
-      this is quite big differance in the rendering engine.
+      The Voodoo hardware accelerated 3d card is used to draw the game,
+      which is a big differance in the rendering engine.
 
-      opengl: Uses the opengl driver provided by the operating system
-      3dfx: Use the glide api. Works only on voodoo chipset of 3dfx.
+      Uses the glide api. Works only on voodoo chipset of 3dfx.
       This is highly optimized to use voodoo functions (only 16bit).
 
   The rest of the command line options are like the Doom2 original.  All
@@ -1055,7 +1194,8 @@
 
      Bell Kin for porting DooM Legacy to Linux.
 
-     Stephane Dierickx for the two picture in laucher and the help screen of Legacy.
+     Stephane Dierickx for the two picture in laucher and the help screen
+     of Legacy.
 
      Sebastien Bacquet for Qmus2mid.
 

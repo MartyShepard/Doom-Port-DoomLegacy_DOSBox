@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_player.h 665 2010-06-03 12:51:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -194,8 +194,8 @@ typedef struct player_s
     // So gun flashes light up areas.
     int                 extralight;
 
-    // Current PLAYPAL, ???
-    //  can be set to REDCOLORMAP for pain, etc.
+    // Normally 0, which allows normal colormap.
+    // pain=>REDCOLORMAP, invulnerability=>INVERSECOLORMAP, goggles=>1
     int                 fixedcolormap;
 
     // Player skin colorshift,

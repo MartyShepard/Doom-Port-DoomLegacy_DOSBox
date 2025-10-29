@@ -1,113 +1,162 @@
-<html>
-<body text="#70f070" bgcolor="#000000" link="#70f070" vlink="#70f070" alink="#70f070">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link rel="stylesheet" href="legacy.css" type="text/css"/>
+  <meta name="keywords" content="Doom, Legacy, Doom2, fps, classic, game, download, news"/>
+  <meta name="description" content="Doom Legacy is your premiere source port engine for id Software's classic DOOM games and more!"/>
+  <title>Compiling Doom Legacy</title>
+</head>
+
+<!-- $Id:$ -->
+<body>
+
+<h2>Compiling Doom Legacy 1.4x SDL</h2>
+
+<p>In order to compile Doom Legacy 1.4x SDL you'll need to have the following
+libraries installed on your system.<br/>
+Make sure you install the <b>developer</b> packages of the
+libraries, which include both the runtime libraries (DLLs) and
+the stuff required during compilation (header files and import libraries).</p>
+
+<p>NOTE: Most Linux distributions offer these libraries in the form of
+precompiled packages.</p>
+
+<table>
+<tr>
+  <th>Library</th><th>Version</th><th>Ubuntu/Debian package</th><th>Description</th>
+</tr>
+<tr>
+  <td><a href="http://www.libsdl.org/download-1.2.php">SDL</a></td> <td>1.2.10+</td>
+  <td><a href="http://packages.ubuntu.com/libsdl1.2-dev">libsdl1.2-dev</a></td>
+  <td>Simple DirectMedia Layer. A multiplatform multimedia library.</td>
+</tr>
+<tr>
+  <td><a href="http://www.libsdl.org/projects/SDL_mixer/">SDL_mixer</a></td>
+  <td>1.2.7+</td>
+  <td><a href="http://packages.ubuntu.com/libsdl-mixer1.2-dev">libsdl-mixer1.2-dev</a></td>
+  <td>A multichannel mixer library based on SDL.</td>
+</tr>
+<tr>
+  <td>OpenGL</td> <td>1.3+</td> <td>(several)</td>
+  <td>The standard cross-platform graphics library, usually comes with
+    the OS.</td>
+</tr>
+</table>
+
+<p>
+You will require the following programs during the build process:
+</p>
+
+<ul>
+<li><a href="http://gcc.gnu.org/">GCC</a> 4, the Gnu Compiler Collection which, among other things, is
+a free C/C++ compiler.<br/>
+Linux systems most likely already have it installed.<br/>
+Windows users should install <a href="http://www.mingw.org/">MinGW</a>, a
+GCC port, and <a href="http://www.mingw.org/node/18">MSYS</a>, a
+collection of POSIX utilities for Win32.</li>
+</ul>
+
+<p>
+Finally, download the
+<a href="http://sourceforge.net/projects/doomlegacy/">Doom Legacy source</a>.
+You can either get the source package or, for the latest code
+snapshot, checkout the <b>legacy_one/trunk/</b> directory from the
+<a href="http://subversion.apache.org/">Subversion</a> repository:
+</p>
+<div class="code">svn co https://doomlegacy.svn.sourceforge.net/svnroot/doomlegacy/legacy_one/trunk some_local_dir</div>
+<p>
+From now on, your local copy of this directory will be referred to as <b>TRUNK</b>.
+</p>
+
+<h3>Compiling Legacy</h3>
+
+<ol>
+<li>Open a shell window. Go to the <b>TRUNK</b>.</li>
+<li>Run <b>make</b> to build the executable.<br/>
+  Add <b>HAVE_MIXER=1</b> for SDL_mixer music.<br/>
+  Add <b>DEBUG=1</b> for debugging information.
+</li>
+</ol>
+
+<hr/>
+<h2>Coding rules and practices</h2>
+
+<ul>
+<li>There is one subdirectory in the repository for each platform
+  (SDL, X11, Win32 etc.). Ideally these subdirectories should contain all
+  platform-dependent code.
+</li>
+<li>Do not commit tests or buggy code. Every revision should at least
+  compile and link. If you absolutely feel you need to commit
+  experimental code that does not fully work yet, use #ifdefs with a
+  descriptive name to disable it.</li>
+<li>Fix any and all warnings the compiler gives. They are there for
+  a reason.</li>
+<li>Keep the list of major bugs in ??? up-to-date.</li>
+<li>Doom Legacy is a Doom source port. Do not make noticeable changes
+  to the gameplay without adding an user-controlled option (consvar
+  for example) to disable them.</li>
+<li>Use the developer mailing list to keep other devs informed of
+  your work. If you are not sure about whether a feature/change is a
+  good idea or what is the best way to implement it, discuss it on the mailing list.
+</li>
+<li>
+  Keep a log of your work in the _log directory.
+  This will help other devs to keep up with you and makes it much
+  simpler to update the what's new section of the docs 
+  when making a release.
+</li>
+<li>
+  Use hard tabs when indenting code (i.e. spaces, not tab
+  characters). Use either a 2 or 4 space tab size.
+</li>
+<li>
+  Document all code, variables and functions must have names that
+  are descriptive and help to understand the code (so no names like
+  a2, ex, asdf2721...). Exception: variables that are entirely local
+  in scope and have an obvious purpose, like for loop indices (i, j, k, s, t...) or
+  coordinates (x, y, z, w...).
+</li>
+<li>
+  Try not to have extern declarations and function prototypes in a .c
+  file, they belong in the headers. Use static-scope variables and functions
+  whenever you can to make it clear what their role is. Global
+  variables are usually a bad idea.
+</li>
+<li>
+  Do not overuse #ifdef. Especially avoid platform-dependent #ifdefs in
+  the main code. Likewise, __BIG_ENDIAN__ and __LITTLE_ENDIAN__
+  conditionals only belong in m_swap.*
+</li>
+</ul>
+
+<hr/>
+<h2>Know bugs/issues</h2>
+
 <pre>
-
-1. Compile Legacy
-2. Know bugs
-3. Explanation of the code
- 3.1 The memory model
- 3.2 Hardware Texture model
-
-1. Compile Legacy
-=================
-
-Sources can be found here:
-http://sourceforge.net/projects/doomlegacy/
-
-
-DOS
----
-
-need:
-- djgpp 2.02     (http://www.delorie.com)
-- allegro 3.12   (http://www.talula.demon.co.uk/allegro/)
-- libsocket 0.7.4 (beta 4) or better
-  (http://www.phekda.freeserve.co.uk/richdawe/lsck/lsck.htm)
-- bcd 1.03 (inlcude in this package)
-- gcc 2.95.2 is recommended
-- nasm 0.98 (or better)     (http://www.cryogen.com/Nasm)
-
-compile:
-make
-
-debug:
-when craching legacy will return eip
-type make asm, then you will have a 8 megs doom3.s (a assembler file)
-the you can find the faulting instruction and function
-
-------------------------------------------------------------------------
-
-Linux
------
-
-need:
-- you can compile X or GGI version just modify the makefile
-  for GGI you will need GGI library
-- tested with gcc 2.7 and 2.95.
-- Mesa (or other OpenGL implementation) (optional: for OpenGL renderer)
-- nasm 0.98 (or better)     (http://www.cryogen.com/Nasm)
-
-compile
-make LINUX=1
-
-debug:
-gdb ?
-
-------------------------------------------------------------------------
-
-Win32
------
-
-need :
-- glide 3.x sdk (optional)  (http://www.3dfx.com) 
-- directx6 sdk (or higher)  (http://www.micosoft.com/directx)
-- nasm 0.98 (or better)     (http://www.cryogen.com/Nasm)
-- VC6 should also work with VC5
-  use the file in the VC6 dir and copy it in to the main directory
-
-debug:
-press on "step over" with the release version (there is some debug info 
-on it). Then change the eip in the regster window when you will type 
-enter the edi will go to the faulting instruction. don't forget that 
-you can follow the stack for calls.
-You can also use trace with the debug version but add -win and -nomouse.
-
-
-
-2. Know bugs/issues
-===================
-
- - opengl/glide lighting may be slow (we have some
-   project to use the bsp to optimize all the stuff)
- - splats on opengl/glide have seriouse z-problem and is not clipped 
+ - splats on opengl/glide have serious z-problems and are not clipped 
    to the seg 
- - the splats schould be in segs and not in linedef, so we can clip it 
+ - the splats should be in segs and not in linedefs, so we can clip it 
    and render only when needed (actualy there is overdraw in opengl/3dfx)
- - the sky in opengl/3dfx is not well maped and we have big problem with 
+ - the sky in opengl/3dfx is not well mapped and we have big problem with 
    large sky like in tnt map01
- - when clientprediction2 is enabled (see doomdef.h) the spirit mobj
-   have some serious z problem when quiting/entering moving platform
- - monsters/sprite have feet(head) in ground, caused by z-buffer,
+ - when clientprediction2 is enabled (see doomdef.h) the spirit mobjs
+   have some serious z problems when exiting/entering moving platforms
+ - monsters/sprites have feet(head) in ground, caused by z-buffer,
    solution : trace all view using back-to-front rendering and use
    clipping like in software for spite (lot of work here)
    also debug the clipwall in harware, this will also fix the water
    and transparent wall problems
- - there is white dots around some wall/floors/ceiling, caused by :
-   - T-intersection in walls, since wall height is define in sector
-   - maybe because the bsp is in fixed and we use float (not sure)
-   - maybe hwr_bsp.c buged :(
- - midi under win32 don't work properly
- - palette problem under winNT4
  - there is no splats on floors and ceiling, fab have begon but 
    haven't finish
- - 3dfx splitscren have seriouse projection probleme
  - sprite that have transparent region (torch, lost soul...) are full 
    transparent in 3dfx/opengl
- - and some others surprise :)
+</pre>
 
-3. Explanation of the code
-==========================
+<h2>Explanation of the code</h2>
 
+<pre>
  3.1 The memory model (original) (z_zone.c) (by BP)
  --------------------
 
@@ -185,6 +234,7 @@ You can also use trace with the debug version but add -win and -nomouse.
  function) if not we must recompute it eatch type of gr_texture (texture, 
  patch, flat, pic have there own methode) the we can send the gr_texture 
  to 3dfx or OpenGl.
- 
 </pre>
+
+</body>
 </html>

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_plane.h 721 2010-07-31 19:10:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -62,45 +62,47 @@
 //
 typedef struct visplane_s
 {
-  struct visplane_s*    next;//SoM: 3/17/2000
+  //SoM: 3/17/2000
+  struct visplane_s*    next;  // linked in hash table
 
   fixed_t               height;
   fixed_t               viewz;
   angle_t               viewangle;
   int                   picnum;
   int                   lightlevel;
-  int                   minx;
-  int                   maxx;
+  int                   minx, maxx;
 
   //SoM: 4/3/2000: Colormaps per sector!
   extracolormap_t*      extra_colormap;
 
-  // leave pads for [minx-1]/[maxx+1]
-
   //faB: words sucks .. should get rid of that.. but eats memory
   //added:08-02-98: THIS IS UNSIGNED! VERY IMPORTANT!!
-  unsigned short         pad1;
-  unsigned short         top[MAXVIDWIDTH];
+  unsigned short         pad1;   // leave pads for [minx-1] and [maxx+1]
+  unsigned short         top[MAXVIDWIDTH];  // screen coord of top edge
   unsigned short         pad2;
   unsigned short         pad3;
-  unsigned short         bottom[MAXVIDWIDTH];
+  unsigned short         bottom[MAXVIDWIDTH];  // screen coord of bottom edge
   unsigned short         pad4;
 
-  int                    high, low; // SoM: R_PlaneBounds should set these.
+  // SoM: [WDJ] highest top and lowest bottom as found by R_PlaneBounds
+  // Set and used only in R_CreateDrawNodes
+  int                    highest_top, lowest_bottom;
 
-  fixed_t xoffs, yoffs;  // SoM: 3/6/2000: Srolling flats.
+  fixed_t xoffs, yoffs;  // SoM: 3/6/2000: Scrolling flats.
 
   // SoM: frontscale should be stored in the first seg of the subsector
   // where the planes themselves are stored. I'm doing this now because
   // the old way caused trouble with the drawseg array was re-sized.
   int    scaleseg;
 
-  struct ffloor_s* ffloor;
+  struct ffloor_s* ffloor;  // ffloor_t, when derived from fake floor
 } visplane_t;
 
 
-extern visplane_t*    floorplane;
-extern visplane_t*    ceilingplane;
+// [WDJ] visplane_t global parameters  vsp
+// visplane used for drawing in r_bsp and r_segs
+extern visplane_t*    vsp_floorplane;
+extern visplane_t*    vsp_ceilingplane;
 
 
 // Visplane related.
@@ -123,17 +125,14 @@ extern fixed_t          distscale[MAXVIDWIDTH];
 void R_InitPlanes (void);
 void R_ClearPlanes (player_t *player);
 
-void R_MapPlane
-( int           y,
-  int           x1,
-  int           x2 );
+// Draw plane span at row y, span=(x1..x2)
+// at planeheight, using spanfunc
+void R_MapPlane ( int y, int x1, int x2 );
 
-void R_MakeSpans
-( int           x,
-  int           t1,
-  int           b1,
-  int           t2,
-  int           b2 );
+// Draw plane spans at rows (t1..b1), span=(spanstart..x-1)
+// and Setup spanstart for next span at rows (t2..b2).
+// Param t1,b1,t2,b2 are y values.
+void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 );
 
 void R_DrawPlanes (void);
 
@@ -145,10 +144,8 @@ visplane_t* R_FindPlane( fixed_t height,
                          extracolormap_t* planecolormap,
                          ffloor_t* ffloor);
 
-visplane_t* R_CheckPlane
-( visplane_t*   pl,
-  int           start,
-  int           stop );
+// return visplane or alloc a new one if needed
+visplane_t* R_CheckPlane ( visplane_t*  pl, int start, int stop );
 
 void R_ExpandPlane(visplane_t*  pl, int start, int stop);
 
@@ -157,23 +154,23 @@ void R_DrawSinglePlane(visplane_t* pl);
 void R_PlaneBounds(visplane_t* plane);
 
 
-typedef struct planemgr_s
+typedef struct ff_planemgr_s
 {
   visplane_t*  plane;
   fixed_t      height;
-  boolean      mark;
-  fixed_t      f_pos;  // `F' for `Front sector'.
-  fixed_t      b_pos;  // `B' for `Back sector'
-  fixed_t      f_frac;
-  fixed_t      f_step;
-  fixed_t      b_frac;
-  fixed_t      b_step;
-  short        f_clip[MAXVIDWIDTH];
-  short        c_clip[MAXVIDWIDTH];
+  boolean      valid_mark;
+  fixed_t      front_pos;  // Front sector
+  fixed_t      back_pos;   // Back sector
+  fixed_t      front_frac;	// from front_pos and scale
+  fixed_t      front_step;
+  fixed_t      back_frac;	// from back_pos and scale
+  fixed_t      back_step;
+  short        front_clip[MAXVIDWIDTH];
+  short        con_clip[MAXVIDWIDTH];	// console clipping
 
   struct ffloor_s  *ffloor;
-} planemgr_t;
+} ff_planemgr_t;
 
-extern planemgr_t    ffloor[MAXFFLOORS];
+extern ff_planemgr_t  ffloor[MAXFFLOORS];
 extern int           numffloors;
 #endif

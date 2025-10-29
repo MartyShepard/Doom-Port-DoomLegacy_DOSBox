@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_enemy.c 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -386,8 +386,7 @@ static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-470
 
 static boolean P_Move (mobj_t* actor)
 {
-    fixed_t     tryx;
-    fixed_t     tryy;
+    fixed_t     tryx, tryy;
 
     line_t*     ld;
 
@@ -407,10 +406,11 @@ static boolean P_Move (mobj_t* actor)
     if (!P_TryMove (actor, tryx, tryy, false))
     {
         // open any specials
-        if (actor->flags & MF_FLOAT && floatok)
+	// tmr_floatok, tmr_floorz returned by P_TryMove
+        if (actor->flags & MF_FLOAT && tmr_floatok)
         {
             // must adjust height
-            if (actor->z < tmfloorz)
+            if (actor->z < tmr_floorz)
                 actor->z += FLOATSPEED;
             else
                 actor->z -= FLOATSPEED;
@@ -477,8 +477,7 @@ static boolean P_TryWalk (mobj_t* actor)
 
 static void P_NewChaseDir (mobj_t*     actor)
 {
-    fixed_t     deltax;
-    fixed_t     deltay;
+    fixed_t     deltax, deltay;
 
     dirtype_t   d[3];
 
@@ -1951,6 +1950,8 @@ static state_t *P_FinalState(statenum_t state)
 // Possibly trigger special effects
 // if on first boss level
 //
+// Triggered by actor state change action.
+// Heretic: see A_HBossDeath() in p_henemy.c
 void A_BossDeath (mobj_t* mo)
 {
     thinker_t*  th;
@@ -1960,24 +1961,55 @@ void A_BossDeath (mobj_t* mo)
 
     if ( gamemode == commercial)
     {
+        // Doom2 MAP07: When last Mancubus is dead,
+        //   execute lowerFloortoLowest(sectors tagged 666).
+        // Doom2 MAP07: When last Arachnotron is dead,
+        //   execute raisetoTexture(sectors tagged 667).
+        // Doom2 MAP32: When last Keen is dead,
+        //   execute doorOpen(doors tagged 666).
           if((mo->type != MT_FATSO)
             && (mo->type != MT_BABY)
             && (mo->type != MT_KEEN))
             return;
     }
+#if 1
+    // [WDJ] Untested
+    // This could be done with compatibility switch, as in prboom.
+    else if( (gamemode == shareware || gamemode == registered)
+	     && gameepisode < 4 )
+    {
+        // [WDJ] Revert to behavior before UltimateDoom,
+        // to fix "Doomsday of UAC" bug.
+        if (gamemap != 8)
+	    return;
+        // Allow all boss types in each episode, (for PWAD)
+	// E1: all, such as Baron and Cyberdemon
+        // E2,E3,E4: all except Baron
+        // [WDJ] Logic from prboom
+        if (gameepisode != 1)
+            if (mo->type == MT_BRUISER)
+                return;
+    }
+#endif   
     else
     {
         switch(gameepisode)
         {
           case 1:
+	    // Doom E1M8: When all Baron are dead,
+	    //   execute lowerFloortoLowest(sectors tagged 666).
             if (gamemap != 8)
                 return;
 
+	    // This test was added in UltimateDoom,
+	    // some PWAD from before then, such as "Doomsday of UAC" which
+	    // requires death of last Baron and last Cyberdemon, will fail.
             if (mo->type != MT_BRUISER)
                 return;
             break;
 
           case 2:
+	    // Doom E2M8: When last Cyberdemon is dead, level ends.
             if (gamemap != 8)
                 return;
 
@@ -1986,6 +2018,7 @@ void A_BossDeath (mobj_t* mo)
             break;
 
           case 3:
+	    // Doom E3M8: When last Spidermastermind is dead, level ends.
             if (gamemap != 8)
                 return;
 
@@ -1998,11 +2031,15 @@ void A_BossDeath (mobj_t* mo)
             switch(gamemap)
             {
               case 6:
+	        // Doom E4M6: When last Cyberdemon is dead,
+	        //   execute blazeOpen(doors tagged 666).
                 if (mo->type != MT_CYBORG)
                     return;
                 break;
 
               case 8:
+	        // Doom E4M8: When last Spidermastermind is dead,
+		//   execute lowerFloortoLowest(sectors tagged 666).
                 if (mo->type != MT_SPIDER)
                     return;
                 break;
@@ -2037,6 +2074,9 @@ void A_BossDeath (mobj_t* mo)
         if (th->function.acp1 != (actionf_p1)P_MobjThinker)
             continue;
 
+        // Fixes MAP07 bug where if last arachnotron is killed while first
+	// still in death sequence, then both would trigger this code
+        // and the floor would be raised twice (bad).
         mo2 = (mobj_t *)th;
         if (mo2 != mo
             && mo2->type == mo->type
@@ -2055,6 +2095,8 @@ void A_BossDeath (mobj_t* mo)
         {
             if(gamemap == 7)
             {
+	        // Doom2 MAP07: When last Mancubus is dead, execute lowerFloortoLowest.
+		//   execute lowerFloortoLowest(sectors tagged 666).
                 junk.tag = 666;
                 EV_DoFloor(&junk,lowerFloorToLowest);
             }
@@ -2064,6 +2106,8 @@ void A_BossDeath (mobj_t* mo)
         {
             if(gamemap == 7)
             {
+	        // Doom2 MAP07: When last Arachnotron is dead,
+	        //   execute raisetoTexture(sectors tagged 667).
                 junk.tag = 667;
                 EV_DoFloor(&junk,raiseToTexture);
             }
@@ -2071,6 +2115,8 @@ void A_BossDeath (mobj_t* mo)
         }
         else if(mo->type == MT_KEEN)
         {
+	    // Doom2 MAP32: When last Keen is dead,
+	    //   execute doorOpen(doors tagged 666).
             junk.tag = 666;
             EV_DoDoor(&junk,dooropen,VDOORSPEED);
             return;
@@ -2081,6 +2127,8 @@ void A_BossDeath (mobj_t* mo)
         switch(gameepisode)
         {
           case 1:
+	    // Doom E1M8: When all Baron are dead, execute lowerFloortoLowest
+	    //   on all sectors tagged 666.
             junk.tag = 666;
             EV_DoFloor (&junk, lowerFloorToLowest);
             return;
@@ -2090,12 +2138,16 @@ void A_BossDeath (mobj_t* mo)
             switch(gamemap)
             {
               case 6:
+	        // Doom E4M6: When last Cyberdemon is dead, execute blazeOpen.
+	        //   on all doors tagged 666.
                 junk.tag = 666;
                 EV_DoDoor (&junk, blazeOpen,4*VDOORSPEED);
                 return;
                 break;
 
               case 8:
+	        // Doom E4M8: When last Spidermastermind is dead, execute lowerFloortoLowest.
+	        //   on all sectors tagged 666.
                 junk.tag = 666;
                 EV_DoFloor (&junk, lowerFloorToLowest);
                 return;
@@ -2116,6 +2168,8 @@ void A_KeenDie (mobj_t* mo)
 {
     A_Fall (mo);
 
+    // Doom2 MAP32: When last Keen is dead,
+    //   execute doorOpen(doors tagged 666).
     A_BossDeath(mo);
 }
 

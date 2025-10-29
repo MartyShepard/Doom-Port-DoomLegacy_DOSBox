@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: d_clisrv.c 663 2010-06-03 12:38:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -170,7 +170,7 @@
 
 
 #include <time.h>
-#if defined (__DJGPP__) || defined (LINUX)
+#if defined (__DJGPPDOS_NATIVE__) || defined (LINUX)
 #include <unistd.h>
 #endif
 
@@ -707,9 +707,9 @@ int SL_SearchServer( int node )
 void SL_InsertServer( serverinfo_pak *info, int node)
 {
     int i;
-    boolean moved;
+    boolean move_in_list;  // continue until no movement in list
 
-    // search if not allready on it
+    // search if not already on it
     i = SL_SearchServer( node );
     if( i==-1 )
     {
@@ -725,7 +725,7 @@ void SL_InsertServer( serverinfo_pak *info, int node)
     // list is sorted by time (ping)
     // so move the entry until it is sorted
     do {
-        moved = false;
+        move_in_list = false;
         if( i>0 && serverlist[i].info.time < serverlist[i-1].info.time )
         {
             serverelem_t s;
@@ -733,7 +733,7 @@ void SL_InsertServer( serverinfo_pak *info, int node)
             serverlist[i] =  serverlist[i-1];
             serverlist[i-1] = s;
             i--;
-            moved = true;
+            move_in_list = true;
         }
         else
         if( i<serverlistcount-1 && serverlist[i].info.time > serverlist[i+1].info.time )
@@ -743,9 +743,9 @@ void SL_InsertServer( serverinfo_pak *info, int node)
             serverlist[i] =  serverlist[i+1];
             serverlist[i+1] = s;
             i++;
-            moved = true;
+            move_in_list = true;
         }
-    } while(moved);
+    } while(move_in_list);
 }
 
 void CL_UpdateServerList( boolean internetsearch )

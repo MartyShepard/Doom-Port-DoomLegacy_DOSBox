@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 654 2010-05-19 18:05:08Z wesleyjohnson $
+// $Id: r_things.c 721 2010-07-31 19:10:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -648,46 +648,51 @@ static vissprite_t* R_NewVisSprite (void)
 // Masked means: partly transparent, i.e. stored
 //  in posts/runs of opaque pixels.
 //
-short*          mfloorclip;
-short*          mceilingclip;
+// draw masked global parameters
+// clipping array[x], in int screen coord.
+short*          dm_floorclip;
+short*          dm_ceilingclip;
 
-fixed_t         spryscale;
-fixed_t         sprtopscreen;
-fixed_t         sprbotscreen;
-fixed_t         windowtop;
-fixed_t         windowbottom;
+fixed_t         dm_yscale;  // world to fixed_t screen coord
+// draw masked column top and bottom, in fixed_t screen coord.
+fixed_t         dm_top_patch, dm_bottom_patch;
+// window clipping in fixed_t screen coord., set to MAXINT to disable
+// to draw, require dm_windowtop < dm_windowbottom
+fixed_t         dm_windowtop, dm_windowbottom;
+
 
 void R_DrawMaskedColumn (column_t* column)
 {
-    int         topscreen;
-    int         bottomscreen;
-    fixed_t     basetexturemid;
+    fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
+    fixed_t     basetexturemid = dc_texturemid; // save to restore after
 
-    basetexturemid = dc_texturemid;
-
+    // over all column posts for this column
     for ( ; column->topdelta != 0xff ; )
     {
         // calculate unclipped screen coordinates
         //  for post
-        topscreen = sprtopscreen + spryscale*column->topdelta;
-        bottomscreen = sprbotscreen == MAXINT ? topscreen + spryscale*column->length : 
-                                                sprbotscreen + spryscale*column->length;
+        top_post_sc = dm_top_patch + dm_yscale*column->topdelta;
+        bottom_post_sc = (dm_bottom_patch == MAXINT) ?
+	    top_post_sc + dm_yscale*column->length
+	    : dm_bottom_patch + dm_yscale*column->length;
 
-        dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-        dc_yh = (bottomscreen-1)>>FRACBITS;
+        // fixed_t to int screen coord.
+        dc_yl = (top_post_sc+FRACUNIT-1)>>FRACBITS;
+        dc_yh = (bottom_post_sc-1)>>FRACBITS;
 
-        if(windowtop != MAXINT && windowbottom != MAXINT)
+        if(dm_windowtop != MAXINT && dm_windowbottom != MAXINT)
         {
-          if(windowtop > topscreen)
-            dc_yl = (windowtop + FRACUNIT - 1) >> FRACBITS;
-          if(windowbottom < bottomscreen)
-            dc_yh = (windowbottom - 1) >> FRACBITS;
+	  // screen coord. where +y is down screen
+          if(dm_windowtop > top_post_sc)
+            dc_yl = (dm_windowtop + FRACUNIT - 1) >> FRACBITS;
+          if(dm_windowbottom < bottom_post_sc)
+            dc_yh = (dm_windowbottom - 1) >> FRACBITS;
         }
 
-        if (dc_yh >= mfloorclip[dc_x])
-            dc_yh = mfloorclip[dc_x]-1;
-        if (dc_yl <= mceilingclip[dc_x])
-            dc_yl = mceilingclip[dc_x]+1;
+        if (dc_yh >= dm_floorclip[dc_x])
+            dc_yh = dm_floorclip[dc_x]-1;
+        if (dc_yl <= dm_ceilingclip[dc_x])
+            dc_yl = dm_ceilingclip[dc_x]+1;
 
         // [WDJ] limit to split screen area above status bar,
         // instead of whole screen,
@@ -704,6 +709,7 @@ void R_DrawMaskedColumn (column_t* column)
 
             // Drawn by either R_DrawColumn
             //  or (SHADOW) R_DrawFuzzColumn.
+#ifdef PARANOIA 
             //Hurdler: quick fix... something more proper should be done!!!
 	    // [WDJ] Fixed by using rdraw_viewheight instead of vid.height
 	    // in limit test above.
@@ -715,6 +721,9 @@ void R_DrawMaskedColumn (column_t* column)
 	    {
                 colfunc ();
 	    }
+#else
+	    colfunc ();
+#endif
         }
         column = (column_t *)(  (byte *)column + column->length + 4);
     }
@@ -726,7 +735,7 @@ void R_DrawMaskedColumn (column_t* column)
 
 //
 // R_DrawVisSprite
-//  mfloorclip and mceilingclip should also be set.
+//  dm_floorclip and dm_ceilingclip should also be set.
 //
 static void R_DrawVisSprite ( vissprite_t*          vis,
                               int                   x1,
@@ -745,38 +754,41 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     dc_colormap = vis->colormap;
 	
     // Support for translated and translucent sprites. SSNTails 11-11-2002
-    if(vis->mobjflags & MF_TRANSLATION && vis->transmap)
+    if(vis->mobjflags & MF_TRANSLATION && vis->translucentmap)
     {
 	colfunc = transtransfunc;
-	dc_transmap = vis->transmap;
-	dc_translation = translationtables - 256 +
-	 ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+	dc_translucentmap = vis->translucentmap;
+//	dc_skintran = translationtables - 256 +
+//	 ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+	dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
-    if (vis->transmap==VIS_SMOKESHADE)
-        // shadecolfunc uses 'colormaps'
+    if (vis->translucentmap==VIS_SMOKESHADE)
+    {
+        // shadecolfunc uses 'reg_colormaps'
         colfunc = shadecolfunc;
-    else if (vis->transmap)
+    }
+    else if (vis->translucentmap)
     {
         colfunc = fuzzcolfunc;
-        dc_transmap = vis->transmap;    //Fab:29-04-98: translucency table
+        dc_translucentmap = vis->translucentmap;    //Fab:29-04-98: translucency table
     }
     else if (vis->mobjflags & MF_TRANSLATION)
     {
         // translate green skin to another color
         colfunc = transcolfunc;
-        dc_translation = translationtables - 256 +
-            ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+//        dc_skintran = translationtables - 256 +
+//            ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+        dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
 
     if(vis->extra_colormap && !fixedcolormap)
     {
-      if(!dc_colormap)
-        dc_colormap = vis->extra_colormap->colormap;
-      else
-        dc_colormap = &vis->extra_colormap->colormap[dc_colormap - colormaps];
+       // reverse indexing, and change to extra_colormap, default 0
+       int lightindex = dc_colormap? (dc_colormap - reg_colormaps) : 0;
+       dc_colormap = & vis->extra_colormap->colormap[ lightindex ];
     }
     if(!dc_colormap)
-      dc_colormap = colormaps;
+      dc_colormap = & reg_colormaps[0];
 
     //dc_iscale = abs(vis->xiscale)>>detailshift;  ???
     dc_iscale = FixedDiv (FRACUNIT, vis->scale);
@@ -784,9 +796,9 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     dc_texheight = 0;
 
     texcol_frac = vis->startfrac;
-    spryscale = vis->scale;
-    sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
-    windowtop = windowbottom = sprbotscreen = MAXINT;
+    dm_yscale = vis->scale;
+    dm_top_patch = centeryfrac - FixedMul(dc_texturemid,dm_yscale);
+    dm_windowtop = dm_windowbottom = dm_bottom_patch = MAXINT; // disable
 
     for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, texcol_frac += vis->xiscale)
     {
@@ -891,7 +903,9 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 
         if (fixedcolormap )
           ;
-        else if ((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK) || thing->flags & MF_SHADOW) && (!newsprite->extra_colormap || !newsprite->extra_colormap->fog))
+        else if ((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK)
+		  || thing->flags & MF_SHADOW)
+		 && !(newsprite->extra_colormap && newsprite->extra_colormap->fog))
           ;
         else
         {
@@ -1096,7 +1110,7 @@ static void R_ProjectSprite (mobj_t* thing)
 	      : (gz_top < thingmodsecp->floorheight)
 	      )
 	      return;
-	  // [WDJ] FakeFlat uses viewz>=floor, and thing used viewz>floor,
+	  // [WDJ] FakeFlat uses viewz>=ceiling, and thing used viewz>ceiling,
 	  // They both should be the same or else things do not
 	  // appear when just over ceiling.
 	  if( viewer_overceiling ?
@@ -1175,20 +1189,24 @@ static void R_ProjectSprite (mobj_t* thing)
 //
 // determine the colormap (lightlevel & special effects)
 //
-    vis->transmap = NULL;
+    vis->translucentmap = NULL;
     
     // specific translucency
     if (thing->frame & FF_SMOKESHADE)
-        // not realy a colormap ... see R_DrawVisSprite
+    {
+        // not really a colormap ... see R_DrawVisSprite
         vis->colormap = VIS_SMOKESHADE; 
+    }
     else
     {
         if (thing->frame & FF_TRANSMASK)
-            vis->transmap = (thing->frame & FF_TRANSMASK) - 0x10000 + transtables;
+            vis->translucentmap = & translucenttables[ FF_TRANSLU_TABLE_INDEX(thing->frame) ];
         else if (thing->flags & MF_SHADOW)
+        {
             // actually only the player should use this (temporary invisibility)
             // because now the translucency is set through FF_TRANSMASK
-            vis->transmap = ((tr_transhi-1)<<FF_TRANSSHIFT) + transtables;
+            vis->translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
+	}
 
     
         if (fixedcolormap )
@@ -1197,10 +1215,11 @@ static void R_ProjectSprite (mobj_t* thing)
             //  eg: negative effect of invulnerability
             vis->colormap = fixedcolormap;
         }
-        else if (((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK)) || (thing->flags & MF_SHADOW)) && (!vis->extra_colormap || !vis->extra_colormap->fog))
+        else if (((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK)) || (thing->flags & MF_SHADOW))
+		 && (!vis->extra_colormap || !vis->extra_colormap->fog))
         {
             // full bright : goggles
-            vis->colormap = colormaps;
+            vis->colormap = & reg_colormaps[0];
         }
         else
         {
@@ -1280,7 +1299,7 @@ const int PSpriteSY[NUMWEAPONS] =
 };
 
 //
-// R_DrawPSprite
+// R_DrawPSprite, Draw one player sprite.
 //
 void R_DrawPSprite (pspdef_t* psp)
 {
@@ -1392,7 +1411,7 @@ void R_DrawPSprite (pspdef_t* psp)
 
     //Fab: see above for more about lumpid,lumppat
     vis->patch = sprframe->lumppat[0];
-    vis->transmap = NULL;
+    vis->translucentmap = NULL;
     if (viewplayer->mo->flags & MF_SHADOW)      // invisibility effect
     {
         vis->colormap = NULL;   // use translucency
@@ -1400,10 +1419,10 @@ void R_DrawPSprite (pspdef_t* psp)
         // in Doom2, it used to switch between invis/opaque the last seconds
         // now it switch between invis/less invis the last seconds
         if (viewplayer->powers[pw_invisibility] > 4*TICRATE
-            || viewplayer->powers[pw_invisibility] & 8)
-            vis->transmap = ((tr_transhi-1)<<FF_TRANSSHIFT) + transtables;
+                 || viewplayer->powers[pw_invisibility] & 8)
+            vis->translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
         else
-            vis->transmap = ((tr_transmed-1)<<FF_TRANSSHIFT) + transtables;
+            vis->translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
     }
     else if (fixedcolormap)
     {
@@ -1413,7 +1432,7 @@ void R_DrawPSprite (pspdef_t* psp)
     else if (psp->state->frame & FF_FULLBRIGHT)
     {
         // full bright
-        vis->colormap = colormaps;
+        vis->colormap = & reg_colormaps[0]; // [0]
     }
     else
     {
@@ -1477,8 +1496,8 @@ void R_DrawPlayerSprites (void)
         spritelights = scalelight[lightnum];
 
     // clip to screen bounds
-    mfloorclip = screenheightarray;
-    mceilingclip = negonearray;
+    dm_floorclip = screenheightarray;
+    dm_ceilingclip = negonearray;
 
     //added:06-02-98: quickie fix for psprite pos because of freelook
     kikhak = centery;
@@ -1512,9 +1531,9 @@ void R_SortVisSprites (void)
     int                 i;
     int                 count;
     vissprite_t*        ds;
-    vissprite_t*        best=NULL;      //shut up compiler
+    vissprite_t*        farthest=NULL;      //shut up compiler
     vissprite_t         unsorted;
-    fixed_t             bestscale;
+    fixed_t             farthest_scale;
 
     count = vissprite_p - vissprites;
 
@@ -1538,22 +1557,27 @@ void R_SortVisSprites (void)
     vsprsortedhead.next = vsprsortedhead.prev = &vsprsortedhead;
     for (i=0 ; i<count ; i++)
     {
-        bestscale = MAXINT;
+        // find farthest unsorted vissprite
+        farthest_scale = MAXINT;
         for (ds=unsorted.next ; ds!= &unsorted ; ds=ds->next)
         {
-            if (ds->scale < bestscale)
+	    // largest scale is closest
+            if (ds->scale < farthest_scale)
             {
-                bestscale = ds->scale;
-                best = ds;
+                farthest_scale = ds->scale;
+                farthest = ds;
             }
         }
-        best->next->prev = best->prev;
-        best->prev->next = best->next;
-        best->next = &vsprsortedhead;
-        best->prev = vsprsortedhead.prev;
-        vsprsortedhead.prev->next = best;
-        vsprsortedhead.prev = best;
+        // unlink from unsorted
+        farthest->next->prev = farthest->prev;
+        farthest->prev->next = farthest->next;
+        // link to tail of sorted (circular)
+        farthest->next = &vsprsortedhead;
+        farthest->prev = vsprsortedhead.prev;
+        vsprsortedhead.prev->next = farthest;
+        vsprsortedhead.prev = farthest;
     }
+    // sorted list is farthest to nearest (circular)
 }
 
 
@@ -1567,14 +1591,14 @@ static drawnode_t*    R_CreateDrawNode (drawnode_t* link);
 static drawnode_t     nodebankhead;
 static drawnode_t     nodehead;
 
-static void R_CreateDrawNodes()
+static void R_CreateDrawNodes( void )
 {
   drawnode_t*   entry;
   drawseg_t*    ds;
-  int           i, p, best, x1, x2;
-  fixed_t       bestdelta, delta;
-  vissprite_t*  rover;
-  drawnode_t*   r2;
+  int           farthest, i, p, x1, x2;
+  fixed_t       farthest_delta, delta;
+  vissprite_t*  vsp;  // rover vissprite
+  drawnode_t*   dnp;  // rover drawnode
   visplane_t*   plane;
   int           sintersect;
   fixed_t       gzm;
@@ -1599,38 +1623,46 @@ static void R_CreateDrawNodes()
       }
       if(ds->numffloorplanes)
       {
+	// create drawnodes for the floorplanes with the closest last
         for(i = 0; i < ds->numffloorplanes; i++)
         {
-          best = -1;
-          bestdelta = 0;
+          farthest = -1;
+          farthest_delta = 0;
           for(p = 0; p < ds->numffloorplanes; p++)
           {
             if(!ds->ffloorplanes[p])
               continue;
             plane = ds->ffloorplanes[p];
-            R_PlaneBounds(plane);
-            if(plane->low < con_clipviewtop || plane->high > vid.height || plane->high > plane->low)
+            R_PlaneBounds(plane);  // set highest_top, lowest_bottom
+	         // in screen coord, where 0 is top (hi)
+            if(plane->lowest_bottom < con_clipviewtop
+	       || plane->highest_top > vid.height
+	       || plane->highest_top > plane->lowest_bottom)
             {
-              ds->ffloorplanes[p] = NULL;
-              continue;
+              ds->ffloorplanes[p] = NULL;  // not visible, remove from search
+              continue;  // next plane
             }
 
+	    // test for farthest plane
             delta = abs(plane->height - viewz);
-            if(delta > bestdelta)
+            if(delta > farthest_delta)
             {
-              best = p;
-              bestdelta = delta;
+	      // farthest is largest delta (farthest from viewer eyes)
+              farthest = p;
+              farthest_delta = delta;
             }
           }
-          if(best != -1)
+          if(farthest != -1)
           {
-            entry = R_CreateDrawNode(&nodehead);
-            entry->plane = ds->ffloorplanes[best];
-            entry->seg = ds;
-            ds->ffloorplanes[best] = NULL;
+	    // create drawnode for farthest
+	    entry = R_CreateDrawNode(&nodehead);
+	    entry->plane = ds->ffloorplanes[farthest];
+	    entry->seg = ds;
+	    ds->ffloorplanes[farthest] = NULL;  // remove from search
           }
           else
-            break;
+            break;  // no more visible floor planes, quit looking
+                    // Some planes were removed as not visible.
         }
       }
     }
@@ -1639,114 +1671,123 @@ static void R_CreateDrawNodes()
       return;
 
     R_SortVisSprites();
-    for(rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
+    // traverse vissprite sorted list, nearest to farthest
+    for(vsp = vsprsortedhead.prev; vsp != &vsprsortedhead; vsp = vsp->prev)
     {
-      if(rover->sz_top > vid.height || rover->sz_bot < 0)
+      if(vsp->sz_top > vid.height || vsp->sz_bot < 0)
         continue;
 
-      sintersect = (rover->x1 + rover->x2) / 2;
-      gzm = (rover->gz_bot + rover->gz_top) / 2;
+      sintersect = (vsp->x1 + vsp->x2) / 2;
+      gzm = (vsp->gz_bot + vsp->gz_top) / 2;
 
-      for(r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
+      // search drawnodes
+      for(dnp = nodehead.next; dnp != &nodehead; dnp = dnp->next)
       {
-        if(r2->plane)
+        if(dnp->plane)
         {
-          if(r2->plane->minx > rover->x2 || r2->plane->maxx < rover->x1)
-            continue;
-          if(rover->sz_top > r2->plane->low || rover->sz_bot < r2->plane->high)
-            continue;
+          if(dnp->plane->minx > vsp->x2 || dnp->plane->maxx < vsp->x1)
+            continue;  // next dnp
+          if(vsp->sz_top > dnp->plane->lowest_bottom
+	     || vsp->sz_bot < dnp->plane->highest_top)
+            continue;  // next dnp
 
-          if((r2->plane->height < viewz && rover->pz_bot < r2->plane->height) ||
-            (r2->plane->height > viewz && rover->pz_top > r2->plane->height))
+          if((dnp->plane->height < viewz
+	         && vsp->pz_bot < dnp->plane->height)
+	     || (dnp->plane->height > viewz
+		 && vsp->pz_top > dnp->plane->height))
           {
             // SoM: NOTE: Because a visplane's shape and scale is not directly
-            // bound to any single lindef, a simple poll of it's frontscale is
+            // bound to any single linedef, a simple poll of it's frontscale is
             // not adequate. We must check the entire frontscale array for any
             // part that is in front of the sprite.
 
-            x1 = rover->x1;
-            x2 = rover->x2;
-            if(x1 < r2->plane->minx) x1 = r2->plane->minx;
-            if(x2 > r2->plane->maxx) x2 = r2->plane->maxx;
+            x1 = vsp->x1;
+            x2 = vsp->x2;
+            if(x1 < dnp->plane->minx) x1 = dnp->plane->minx;
+            if(x2 > dnp->plane->maxx) x2 = dnp->plane->maxx;
 
             for(i = x1; i <= x2; i++)
             {
-              if(r2->seg->frontscale[i] > rover->scale)
-                break;
+              if(dnp->seg->frontscale[i] > vsp->scale)
+                break;  // found frontscale closer
             }
             if(i > x2)
-              continue;
+              continue;  // next dnp
 
             entry = R_CreateDrawNode(NULL);
-            (entry->prev = r2->prev)->next = entry;
-            (entry->next = r2)->prev = entry;
-            entry->sprite = rover;
-            break;
+            (entry->prev = dnp->prev)->next = entry;
+            (entry->next = dnp)->prev = entry;
+            entry->sprite = vsp;
+            break;  // next vsp
           }
         }
-        else if(r2->thickseg)
+        else if(dnp->thickseg)
         {
-          if(rover->x1 > r2->thickseg->x2 || rover->x2 < r2->thickseg->x1)
-            continue;
+          if(vsp->x1 > dnp->thickseg->x2 || vsp->x2 < dnp->thickseg->x1)
+            continue;  // next dnp
 
-          scale = r2->thickseg->scale1 > r2->thickseg->scale2 ? r2->thickseg->scale1 : r2->thickseg->scale2;
-          if(scale <= rover->scale)
-            continue;
-          scale = r2->thickseg->scale1 + (r2->thickseg->scalestep * (sintersect - r2->thickseg->x1));
-          if(scale <= rover->scale)
-            continue;
+	  // max of scale1, scale2 (which is closest)
+          scale = dnp->thickseg->scale1 > dnp->thickseg->scale2 ? dnp->thickseg->scale1 : dnp->thickseg->scale2;
+          if(scale <= vsp->scale)
+            continue;  // next dnp
+          scale = dnp->thickseg->scale1 + (dnp->thickseg->scalestep * (sintersect - dnp->thickseg->x1));
+          if(scale <= vsp->scale)
+            continue;  // next dnp
 
-          if((*r2->ffloor->topheight > viewz && *r2->ffloor->bottomheight < viewz) ||
-            (*r2->ffloor->topheight < viewz && rover->gz_top < *r2->ffloor->topheight) ||
-            (*r2->ffloor->bottomheight > viewz && rover->gz_bot > *r2->ffloor->bottomheight))
+          if((*dnp->ffloor->topheight > viewz
+	         && *dnp->ffloor->bottomheight < viewz)
+	     || (*dnp->ffloor->topheight < viewz
+		 && vsp->gz_top < *dnp->ffloor->topheight)
+	     || (*dnp->ffloor->bottomheight > viewz
+		 && vsp->gz_bot > *dnp->ffloor->bottomheight))
           {
             entry = R_CreateDrawNode(NULL);
-            (entry->prev = r2->prev)->next = entry;
-            (entry->next = r2)->prev = entry;
-            entry->sprite = rover;
-            break;
+            (entry->prev = dnp->prev)->next = entry;
+            (entry->next = dnp)->prev = entry;
+            entry->sprite = vsp;
+            break; // next vsp
           }
         }
-        else if(r2->seg)
+        else if(dnp->seg)
         {
-          if(rover->x1 > r2->seg->x2 || rover->x2 < r2->seg->x1)
-            continue;
+          if(vsp->x1 > dnp->seg->x2 || vsp->x2 < dnp->seg->x1)
+            continue;  // next dnp
 
-          scale = r2->seg->scale1 > r2->seg->scale2 ? r2->seg->scale1 : r2->seg->scale2;
-          if(scale <= rover->scale)
-            continue;
-          scale = r2->seg->scale1 + (r2->seg->scalestep * (sintersect - r2->seg->x1));
+          scale = dnp->seg->scale1 > dnp->seg->scale2 ? dnp->seg->scale1 : dnp->seg->scale2;
+          if(scale <= vsp->scale)
+            continue;  // next dnp
+          scale = dnp->seg->scale1 + (dnp->seg->scalestep * (sintersect - dnp->seg->x1));
 
-          if(rover->scale < scale)
+          if(vsp->scale < scale)
           {
             entry = R_CreateDrawNode(NULL);
-            (entry->prev = r2->prev)->next = entry;
-            (entry->next = r2)->prev = entry;
-            entry->sprite = rover;
-            break;
+            (entry->prev = dnp->prev)->next = entry;
+            (entry->next = dnp)->prev = entry;
+            entry->sprite = vsp;
+            break; // next vsp
           }
         }
-        else if(r2->sprite)
+        else if(dnp->sprite)
         {
-          if(r2->sprite->x1 > rover->x2 || r2->sprite->x2 < rover->x1)
-            continue;
-          if(r2->sprite->sz_top > rover->sz_bot || r2->sprite->sz_bot < rover->sz_top)
-            continue;
+          if(dnp->sprite->x1 > vsp->x2 || dnp->sprite->x2 < vsp->x1)
+            continue;  // next dnp
+          if(dnp->sprite->sz_top > vsp->sz_bot || dnp->sprite->sz_bot < vsp->sz_top)
+            continue;  // next dnp
 
-          if(r2->sprite->scale > rover->scale)
+          if(dnp->sprite->scale > vsp->scale)
           {
             entry = R_CreateDrawNode(NULL);
-            (entry->prev = r2->prev)->next = entry;
-            (entry->next = r2)->prev = entry;
-            entry->sprite = rover;
-            break;
+            (entry->prev = dnp->prev)->next = entry;
+            (entry->next = dnp)->prev = entry;
+            entry->sprite = vsp;
+            break; // next vsp
           }
         }
       }
-      if(r2 == &nodehead)
+      if(dnp == &nodehead)
       {
         entry = R_CreateDrawNode(&nodehead);
-        entry->sprite = rover;
+        entry->sprite = vsp;
       }
     }
 }
@@ -1795,14 +1836,14 @@ static void R_DoneWithNode(drawnode_t* node)
 
 static void R_ClearDrawNodes()
 {
-  drawnode_t* rover;
+  drawnode_t* dnp; // rover drawnode
   drawnode_t* next;
 
-  for(rover = nodehead.next; rover != &nodehead; )
+  for(dnp = nodehead.next; dnp != &nodehead; )
   {
-    next = rover->next;
-    R_DoneWithNode(rover);
-    rover = next;
+    next = dnp->next;
+    R_DoneWithNode(dnp);
+    dnp = next;
   }
 
   nodehead.next = nodehead.prev = &nodehead;
@@ -1859,9 +1900,11 @@ void R_DrawSprite (vissprite_t* spr)
             continue;
         }
 
-        r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;
-        r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;
+        // r1..r2 where drawseg overlaps sprite (intersect)
+        r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;  // max x1
+        r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;  // min x2
 
+        // (lowscale,scale) = minmax( ds->scale1, ds->scale2 )
         if (ds->scale1 > ds->scale2)
         {
             lowscale = ds->scale2;
@@ -1881,41 +1924,43 @@ void R_DrawSprite (vissprite_t* spr)
             /*if (ds->maskedtexturecol)
                 R_RenderMaskedSegRange (ds, r1, r2);*/
             // seg is behind sprite
-            continue;
+            continue;  // next drawseg
         }
 
         // clip this piece of the sprite
         silhouette = ds->silhouette;
 
-        if (spr->gz_bot >= ds->bsilheight)
+        // check sprite bottom above clip height
+        if (spr->gz_bot >= ds->sil_bottom_height)
             silhouette &= ~SIL_BOTTOM;
 
-        if (spr->gz_top <= ds->tsilheight)
+        // check sprite top above clip height
+        if (spr->gz_top <= ds->sil_top_height)
             silhouette &= ~SIL_TOP;
 
-        if (silhouette == 1)
+        if (silhouette == SIL_BOTTOM)
         {
             // bottom sil
             for (x=r1 ; x<=r2 ; x++)
                 if (clipbot[x] == -2)
-                    clipbot[x] = ds->sprbottomclip[x];
+                    clipbot[x] = ds->spr_bottomclip[x];
         }
-        else if (silhouette == 2)
+        else if (silhouette == SIL_TOP)
         {
             // top sil
             for (x=r1 ; x<=r2 ; x++)
                 if (cliptop[x] == -2)
-                    cliptop[x] = ds->sprtopclip[x];
+                    cliptop[x] = ds->spr_topclip[x];
         }
-        else if (silhouette == 3)
+        else if (silhouette == (SIL_BOTTOM|SIL_TOP))
         {
             // both
             for (x=r1 ; x<=r2 ; x++)
             {
                 if (clipbot[x] == -2)
-                    clipbot[x] = ds->sprbottomclip[x];
+                    clipbot[x] = ds->spr_bottomclip[x];
                 if (cliptop[x] == -2)
-                    cliptop[x] = ds->sprtopclip[x];
+                    cliptop[x] = ds->spr_topclip[x];
             }
         }
     }
@@ -2033,8 +2078,8 @@ void R_DrawSprite (vissprite_t* spr)
             cliptop[x] = con_clipviewtop;
     }
 
-    mfloorclip = clipbot;
-    mceilingclip = cliptop;
+    dm_floorclip = clipbot;
+    dm_ceilingclip = cliptop;
     R_DrawVisSprite (spr, spr->x1, spr->x2);
 }
 

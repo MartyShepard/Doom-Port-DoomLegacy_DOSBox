@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_draw.c 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -141,22 +141,24 @@ byte*                   dc_source;
 // -----------------------
 // translucency stuff here
 // -----------------------
-#define NUMTRANSTABLES  5     // how many translucency tables are used
+#define NUM_TRANSLUCENTTABLES  5     // how many translucency tables are used
 
-byte*                   transtables;    // translucency tables
+byte*                   translucenttables;    // translucency tables
 
 // R_DrawTransColumn uses this
-byte*                   dc_transmap;    // one of the translucency tables
+byte*                   dc_translucentmap;    // one of the translucency tables
 
 
 // ----------------------
-// translation stuff here
+// skin translation stuff
 // ----------------------
 
-byte*                   translationtables;
+// [WDJ] player skin translation, skintrans[MAXSKINCOLORS][256]
+byte*                   skintranstables;  // player skin translation tables
 
 // R_DrawTranslatedColumn uses this
-byte*                   dc_translation;
+byte*                   dc_skintran; // ptr to one skintranstables table
+
 
 struct r_lightlist_s*   dc_lightlist = NULL;
 int                     dc_numlights = 0;
@@ -180,7 +182,7 @@ fixed_t                 ds_xstep;
 fixed_t                 ds_ystep;
 
 byte*                   ds_source;      // start of a 64*64 tile image
-byte*                   ds_transmap;    // one of the translucency tables
+byte*                   ds_translucentmap;    // one of the translucency tables
 
 // Variable flat sizes SSNTails 06-10-2003
 int flatsize;
@@ -247,6 +249,53 @@ CV_PossibleValue_t Color_cons_t[]={{0,NULL},{1,NULL},{2,NULL},{3,NULL},
                                    {4,NULL},{5,NULL},{6,NULL},{7,NULL},
                                    {8,NULL},{9,NULL},{10,NULL},{0,NULL}};
 
+// [WDJ] Preparation for these skin tables being read from files.
+
+typedef struct {
+  byte  num_using_ramp1;      // number of trans using ramp1
+  byte  skin_ramp_colornum1;  // ramp1 start
+  byte  skin_ramp_colornum2;  // ramp2 start
+} skin_trans_entry_t;
+  
+typedef struct {
+   byte      range_start, range_end; // translate in this range
+   skin_trans_entry_t  skin[MAXSKINCOLORS];  // skin translation
+} skin_trans_desc_t;
+
+skin_trans_desc_t  doom_skins = 
+{
+   0x70, 0x7f,       // range of original green
+ {
+  { 16, 0x60, 0x60}, // gray
+  { 16, 0x40, 0x40}, // brown
+  { 16, 0x20, 0x20}, // red
+  { 16, 0x58, 0x58}, // light gray
+  { 16, 0x38, 0x38}, // light brown
+  { 16, 0xb0, 0xb0}, // light red
+  { 16, 0xc0, 0xc0}, // light blue
+  {  9, 0xc7, 0xf0}, // dark blue
+  {  8, 0xe0, 0xa0}, // yellow
+  { 16, 0x80, 0x80}  // beige
+ }
+};
+
+skin_trans_desc_t  heretic_skins = 
+{
+   225, 240,	// range of original player color
+ {
+  { 15, 0, 0}, // gray
+  { 15, 67, 67}, // brown
+  { 15, 145, 145}, // red
+  { 15, 9, 9}, // light gray
+  { 15, 74, 74}, // light brown
+  { 15, 150, 150}, // light red
+  { 15, 192, 192}, // light blue
+  { 15, 185, 185}, // dark blue
+  { 15, 114, 114}, // yellow
+  { 15, 95, 95}  // beige
+ }
+};
+
 //  Creates the translation tables to map the green color ramp to
 //  another ramp (gray, brown, red, ...)
 //
@@ -255,33 +304,64 @@ CV_PossibleValue_t Color_cons_t[]={{0,NULL},{1,NULL},{2,NULL},{3,NULL},
 //
 void R_InitTranslationTables (void)
 {
-    int         i,j;
+    skin_trans_desc_t  * skindesc = & doom_skins;
+    int i;
+    // Each translucent table is 256x256, has size 65536 = 0x10000.
 
     //added:11-01-98: load here the transparency lookup tables 'TINTTAB'
     // NOTE: the TINTTAB resource MUST BE aligned on 64k for the asm optimised
-    //       (in other words, transtables pointer low word is 0)
-    transtables = Z_MallocAlign (NUMTRANSTABLES*0x10000, PU_STATIC, 0, 16);
+    //       (in other words, translucenttables pointer low word is 0)
+    translucenttables = Z_MallocAlign (NUM_TRANSLUCENTTABLES*0x10000, PU_STATIC, 0, 16);
 
     // load in translucency tables
     if( gamemode == heretic )
     {
-        W_ReadLump( W_GetNumForName("TINTTAB"), transtables );
-        W_ReadLump( W_GetNumForName("TINTTAB"), transtables+0x10000 );
-        W_ReadLump( W_GetNumForName("TINTTAB"), transtables+0x20000 );
-        W_ReadLump( W_GetNumForName("TINTTAB"), transtables+0x30000 );
-        W_ReadLump( W_GetNumForName("TINTTAB"), transtables+0x40000 );
+        skindesc = & heretic_skins; // skin translation desc
+        W_ReadLump( W_GetNumForName("TINTTAB"), translucenttables );
+        W_ReadLump( W_GetNumForName("TINTTAB"), translucenttables+0x10000 );
+        W_ReadLump( W_GetNumForName("TINTTAB"), translucenttables+0x20000 );
+        W_ReadLump( W_GetNumForName("TINTTAB"), translucenttables+0x30000 );
+        W_ReadLump( W_GetNumForName("TINTTAB"), translucenttables+0x40000 );
     }
     else
     {
-        W_ReadLump( W_GetNumForName("TRANSMED"), transtables );
-        W_ReadLump( W_GetNumForName("TRANSMOR"), transtables+0x10000 );
-        W_ReadLump( W_GetNumForName("TRANSHI"),  transtables+0x20000 );
-        W_ReadLump( W_GetNumForName("TRANSFIR"), transtables+0x30000 );
-        W_ReadLump( W_GetNumForName("TRANSFX1"), transtables+0x40000 );
+        skindesc = & doom_skins;  // skin translation desc
+        W_ReadLump( W_GetNumForName("TRANSMED"), translucenttables );
+        W_ReadLump( W_GetNumForName("TRANSMOR"), translucenttables+0x10000 );
+        W_ReadLump( W_GetNumForName("TRANSHI"),  translucenttables+0x20000 );
+        W_ReadLump( W_GetNumForName("TRANSFIR"), translucenttables+0x30000 );
+        W_ReadLump( W_GetNumForName("TRANSFX1"), translucenttables+0x40000 );
     }
 
-    translationtables = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, 0, 8);
+    skintranstables = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, 0, 8);
 
+    // [WDJ] skin desc based skin translation generation
+    int sk;
+    for (sk = 1; sk<MAXSKINCOLORS; sk++)
+    {
+        // sk=0 is original skin, and does not appear in translation tables
+        byte * trantab = SKIN_TO_SKINMAP( sk );
+        skin_trans_entry_t * skintr = & skindesc->skin[sk-1]; // skins 1..
+        for (i=0 ; i<256 ; i++)
+        {
+	    byte newcolor = i; // default is to keep the color the same
+	    if ( i >= skindesc->range_start && i <= skindesc->range_end )
+	    {
+	        int ri = i - skindesc->range_start; // ramp index
+	        // new color is color_start + ramp index
+		newcolor = ( ri < skintr->num_using_ramp1 )?
+		    skintr->skin_ramp_colornum1
+		    : (skintr->skin_ramp_colornum2 - skintr->num_using_ramp1);
+ 		newcolor += ri;
+	    }
+	    trantab[i] = newcolor;
+	}
+    }
+
+#if 0
+    static byte*  translationtables;  // old tables
+    // [WDJ] The old code, in case someone wants to compare it to the new.
+    translationtables = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, 0, 8);
     // translate just the 16 green colors
     for (i=0 ; i<256 ; i++)
     {
@@ -330,11 +410,28 @@ void R_InitTranslationTables (void)
         }
         else
         {
+	    int j;
             // Keep all other colors as is.
             for (j=0;j<(MAXSKINCOLORS-1)*256;j+=256)
                 translationtables [i+j] = i;
         }
     }
+#if 0
+    // [WDJ] DEBUG, TEST FOR EQUALITY WITH OLD TRANSLATION TABLES
+//    int sk;
+    for (sk=0; sk<(MAXSKINCOLORS-1); sk++)
+    {
+        for (i=0 ; i<256 ; i++)
+        {
+	   if( translationtables[ i + (sk<<8) ]
+	       != skintranstables[ i + (sk<<8) ] )
+	     fprintf( stderr, "skin %i color %i: translationtables= %i  : skintranstables= %i\n",
+		      sk, i, translationtables[ i + (sk<<8) ], skintranstables[ i + (sk<<8) ] );
+	}
+    }
+#endif
+#endif
+   
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdata.h 659 2010-05-21 15:39:28Z wesleyjohnson $
+// $Id: doomdata.h 696 2010-07-09 03:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -185,9 +185,9 @@ typedef struct
 // WAD lump structure
 typedef struct
 {
-  int16_t       numsegs;
+  uint16_t       numsegs;
   // Index of first one, segs are stored sequentially.
-  int16_t       firstseg;       
+  uint16_t       firstseg;       
 } mapsubsector_t;
 
 
@@ -196,12 +196,12 @@ typedef struct
 // WAD lump structure
 typedef struct
 {
-  int16_t       v1;
-  int16_t       v2;
-  int16_t       angle;          
+  uint16_t      v1;
+  uint16_t      v2;
+  uint16_t      angle;          
   int16_t       linedef;
   int16_t       side;
-  int16_t       offset;
+  uint16_t      offset;
 } mapseg_t;
 
 

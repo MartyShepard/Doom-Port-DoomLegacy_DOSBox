@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: r_state.h 719 2010-07-31 18:49:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,15 +87,19 @@ extern fixed_t*         spriteoffset;
 extern fixed_t*         spritetopoffset;
 extern fixed_t*         spriteheight;
 
-extern lighttable_t*    colormaps;
+// colormap lightmaps from wad COLORMAP lump
+extern lighttable_t*    reg_colormaps;
 
 //SoM: 3/30/2000: Boom colormaps.
 //SoM: 4/7/2000: Had to put a limit on colormaps :(
-#define                 MAXCOLORMAPS 30
+//#define                 MAXCOLORMAPS 30
+// [WDJ]: 5/17/2010 hth2.wad uses 38 colormaps
+// To little memory to save to use dynamic methods.
+#define                 MAXCOLORMAPS 64
 
-
-extern int                 num_extra_colormaps;
-extern extracolormap_t     extra_colormaps[MAXCOLORMAPS];
+// defined colormap lightmaps descriptors
+extern int              num_extra_colormaps;
+extern extracolormap_t  extra_colormaps[MAXCOLORMAPS];
 
 extern int		rdraw_viewwidth;		// was viewwidth
 extern int              rdraw_scaledviewwidth;		// was scaledrviewwidth
@@ -166,8 +170,8 @@ extern consvar_t        cv_allowmlook;
 // ?
 extern angle_t          clipangle;
 
-extern int              viewangletox[FINEANGLES/2];
-extern angle_t          xtoviewangle[MAXVIDWIDTH+1];
+extern int              viewangle_to_x[FINEANGLES/2];
+extern angle_t          x_to_viewangle[MAXVIDWIDTH+1];
 //extern fixed_t                finetangent[FINEANGLES/2];
 
 extern fixed_t          rw_distance;

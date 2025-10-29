@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hsight.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_hsight.c 699 2010-07-11 00:19:05Z smite-meister $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,10 +52,11 @@ This uses specialized forms of the maputils routines for optimized performance
 ==============================================================================
 */
 
-fixed_t         hsightzstart;                    // eye z of looker
-fixed_t         htopslope, hbottomslope;  // slopes to top and bottom of target
+// Sight Traverse global vars
+fixed_t         strav_startz;             // eye z of looker
+fixed_t         strav_topslope, strav_bottomslope;  // slopes to top and bottom of target
 
-int             hsightcounts[3];
+int             strav_sightcounts[3];  // ??? debugging
 
 /*
 ==============
@@ -82,19 +83,19 @@ static boolean PTR_SightTraverse (intercept_t *in)
     
     if (li->frontsector->floorheight != li->backsector->floorheight)
     {
-        slope = FixedDiv (openbottom - hsightzstart , in->frac);
-        if (slope > hbottomslope)
-            hbottomslope = slope;
+        slope = FixedDiv (openbottom - strav_startz , in->frac);
+        if (slope > strav_bottomslope)
+            strav_bottomslope = slope;
     }
     
     if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
     {
-        slope = FixedDiv (opentop - hsightzstart , in->frac);
-        if (slope < htopslope)
-            htopslope = slope;
+        slope = FixedDiv (opentop - strav_startz , in->frac);
+        if (slope < strav_topslope)
+            strav_topslope = slope;
     }
     
-    if (htopslope <= hbottomslope)
+    if (strav_topslope <= strav_bottomslope)
         return false;   // stop
     
     return true;    // keep going
@@ -110,19 +111,19 @@ static boolean PTR_SightTraverse (intercept_t *in)
 ===================
 */
 
+// x,y are blockmap indexes
 static boolean P_SightBlockLinesIterator (int x, int y )
 {
-    int                     offset;
-    long           *list; // Big Blockmap SSNTails 06-10-2003
-    line_t          *ld;
-    int                     s1, s2;
+    int             offset;
+    int             s1, s2;
     divline_t       dl;
+    const uint32_t   *list; // Big Blockmap, SSNTails 06-10-2003
+    line_t          *ld;
     
     offset = y*bmapwidth+x;
+    offset = blockmapindex[offset];
     
-    offset = *(blockmap+offset);
-    
-    for ( list = blockmaplump+offset ; *list != -1 ; list++)
+    for ( list = & blockmaphead[offset] ; *list != (uint32_t) -1 ; list++)
     {
         ld = &lines[*list];
         if (ld->validcount == validcount)
@@ -220,8 +221,8 @@ boolean P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
     fixed_t xstep,ystep;
     fixed_t partial;
     fixed_t xintercept, yintercept;
-    int             mapx, mapy, mapxstep, mapystep;
-    int             count;
+    int  mapx, mapy, mapxstep, mapystep;
+    int  count;
     
     validcount++;
     intercept_p = intercepts;
@@ -304,7 +305,7 @@ boolean P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
     {
         if (!P_SightBlockLinesIterator (mapx, mapy))
         {
-hsightcounts[1]++;
+            strav_sightcounts[1]++;
             return false;   // early out
         }
         
@@ -328,7 +329,7 @@ hsightcounts[1]++;
     //
     // couldn't early out, so go through the sorted list
     //
-hsightcounts[2]++;
+    strav_sightcounts[2]++;
     
     return P_SightTraverseIntercepts ( );
 }
@@ -362,16 +363,16 @@ boolean P_CheckSight (mobj_t *t1, mobj_t *t2)
     
     if (rejectmatrix[bytenum]&bitnum)
     {
-hsightcounts[0]++;
+        strav_sightcounts[0]++;
         return false;           // can't possibly be connected
     }
     
     //
     // check precisely
     //              
-    hsightzstart = t1->z + t1->height - (t1->height>>2);
-    htopslope = (t2->z+t2->height) - hsightzstart;
-    hbottomslope = (t2->z) - hsightzstart;
+    strav_startz = t1->z + t1->height - (t1->height>>2);
+    strav_topslope = (t2->z+t2->height) - strav_startz;
+    strav_bottomslope = (t2->z) - strav_startz;
     
     return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
 }

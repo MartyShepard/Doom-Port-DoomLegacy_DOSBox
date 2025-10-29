@@ -1,10 +1,10 @@
 smite-meister's log
-
+Doom Legacy 1.x
 Started: 2010-02-07
 
 
 *** OLDWATER removal
-= rev 596, 597
+rev 596, 597
 OLDWATER was an attempt at implementing realistic water using negative
 sector tag values (-tag == water height). It used values 888 and 887
 in the player_t::specialsector field to denote negative tag- and floor
@@ -15,18 +15,18 @@ Removed completely, as we now have better methods for creating water.
 
 
 *** Added this log
-= rev 598
+rev 598
 
 
 *** Makefile cleanup
-= rev 604
+rev 604
 Replaced all the separate multimedia interface options by one option, IF,
 which defaults to SDL. Removed unnecessary defines DIRECTFULLSCREEN, VID_X11.
 Also: Removed some old unused endianness code, small bugfix in p_floor.c.
 
 
 *** Fixing the savegame system
-= rev 605, 606
+rev 605, 606
 Replaced the hack used for saving and loading mobj_t pointers, the new system
 should be 64-bit safe. The savegame files are not yet platform-independent
 since the memcpy-based saving system does not take care of endianness.
@@ -37,29 +37,67 @@ when loading.
 
 
 *** vsprintf fixes
-= rev 608
+rev 608
 Replaced a number of unsafe uses of vsprintf with vsnprintf, fixing
 several console-related crashing bugs. There may be more of the same
 in the interface code (SDL and OpenGL are clean).
 
 
 *** The great compiler warning cleanup
-= rev 609, 610
+rev 609, 610
 Fixed a LOT of compiler warnings. Now the 64-bit version compiles cleanly.
 There were lots of questionable pointer hacks in the code, some of which still remain.
 Also backported some stuff to tables.h and tables.c from Legacy2.
 
 
 *** Small z_zone changes
-= rev 635
+rev 635
 ZONEID is now the first field in memblock_t so that it'll be the first
 field to be corrupted by an overflow in the preceding block(s).
 Replaced all if(block->user > 0x100) tests by if(block->user).
 
 
 *** Game modes, commandline switches
-= rev 636
+rev 636
 GDESC system now recognizes Strife, will abort if an unsupported game
 is run (currently Hexen or Strife).
 Added support for the standard --version and --help commandline switches.
 
+
+*** ENDOOM fixed
+rev 688
+Now the ENDOOM lump has current information in it. Also created a new
+directory, resources, for legacy.wad lumps.
+
+
+*** Documentation cleanup/update
+rev 692
+Removed obsolete docs:
+  doomlic.txt (old, non-GPL Doom licence)
+  sound.cfg (Allegro configuration file?)
+  Doublescan.txt (ancient configuration info for XFree86)
+  README_SDL (obsolete caveats for version 1.40 SDL)
+Readme.OS2 moved to os2/ directory.
+Updated source.html.
+
+
+*** Warnings fixed
+rev 699
+Fixed a number of warnings in p_saveg.c and one in p_hsight.c
+Use id/pointer unions when loading mobj*'s from a savegame instead of
+cast hacks to be 64-bit safe.
+
+
+*** Backported international keyboard support from Legacy 2
+rev 700
+Now we support arbitrary keyboard layouts via SDL (only ASCII chars,
+though), and use SDL keycodes internally.
+Removed some redundant code from console.c and hu_stuff.c
+Moved all SDL input handling to sdl/i_system.c
+
+
+*** New legacy.wad resources, FS fixes, updated FS docs
+rev 702, 703
+Added the WAD inventory and updated VERSION and THINGS.H lumps.
+Small FS fixes in the new funcs introduced after 1.42.
+Fixed and partially updated _doc/fsfuncs.html.

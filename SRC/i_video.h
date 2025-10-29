@@ -61,6 +61,7 @@ typedef enum {
     render_none   = 5  // for dedicated server
 } rendermode_t;
 
+
 extern rendermode_t    rendermode;
 
 // use highcolor modes if true

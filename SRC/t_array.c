@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 619 2010-03-23 21:16:50Z wesleyjohnson $
+// $Id: t_array.c 686 2010-06-15 00:47:13Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 //
@@ -85,7 +85,7 @@ void T_InitSaveList(void)
    {
        sfarray_t * sfap, * sfap_nxt;
        // enable to test if this is happening
-       fprintf(stderr, "T_InitSaveList: clearing array list\n" );
+//       fprintf(stderr, "T_InitSaveList: clearing array list\n" );
 #ifdef SAVELIST_STRUCTHEAD
        sfap = sfsavelist.next;
 #else      

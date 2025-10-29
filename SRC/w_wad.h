@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 590 2010-01-19 21:03:38Z wesleyjohnson $
+// $Id: w_wad.h 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -194,6 +194,10 @@ void*   W_CacheRawAsPic( int lump, int width, int height, int tag); // return a 
 // Cache and endian convert a pic_t
 void*   W_CachePicNum( int lumpnum, int tag );
 void*   W_CachePicName( char* name, int tag );
+
+// [WDJ] Return a sum unique to a lump, to detect replacements.
+// The lumpptr must be to a Z_Malloc lump.
+uint64_t  W_lump_checksum( void* lumpptr );
 
 //SoM: 4/13/2000: Store lists of lumps for F_START/F_END ect.
 typedef struct {

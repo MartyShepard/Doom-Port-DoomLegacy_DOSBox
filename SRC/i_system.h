@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 569 2009-11-27 04:42:36Z smite-meister $
+// $Id: i_system.h 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -99,6 +99,7 @@ void I_GetEvent (void);
 void I_StartFrame (void);
 
 
+
 //
 // Called by D_DoomLoop,
 // called before processing each tic in a frame.
@@ -154,6 +155,9 @@ void I_ShutdownSystem (void);
 void I_GetDiskFreeSpace(int64_t *freespace);
 char *I_GetUserName(void);
 int  I_mkdir(const char *dirname, int unixright);
+
+
+void doUngrabMouse();
 
 #ifdef LINUX
 void I_LocateWad(void);

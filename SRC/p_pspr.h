@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_pspr.h 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,6 +77,7 @@
 // Note:
 //  MF_SHADOW still affects the targeting for monsters (they miss more)
 
+// translucent effect
 #define FF_TRANSMASK   0x70000  // 0 = no trans(opaque), 1-7 = transl. table
 #define FF_TRANSSHIFT       16
 
@@ -94,12 +95,33 @@
 
 typedef enum
 {
-    tr_transmed=1,   //sprite 50 backg 50  most shots
-    tr_transmor=2,   //       20       80  puffs
-    tr_transhi =3,   //       10       90  blur effect
-    tr_transfir=4,   // 50 50 but brighter for fireballs, shots..
-    tr_transfx1=5    // 50 50 brighter some colors, else opaque for torches
-} transnum_t;
+    // 0 is not translucent
+    TRANSLU_med=1,   //sprite 50 backg 50  most shots
+    TRANSLU_more=2,  //       20       80  puffs
+    TRANSLU_hi=3,    //       10       90  blur effect
+    TRANSLU_fire=4,  // 50 50 but brighter for fireballs, shots..
+    TRANSLU_fx1=5    // 50 50 brighter some colors, else opaque for torches
+} translucent_e;
+
+// Translucent table is 256x256,
+// To overlay a translucent source on an existing dest:
+//   *dest = table[source][*dest];
+//   *dest = table[ (source<<8) + (*dest) ];
+
+// 0 code does not have a table, so must subtract 1, (or one table size).
+// Table size is 0x10000, = 1<<FF_TRANSSHIFT.
+#define TRANSLU_TABLE_INDEX( trans )   (((trans)-1)<<FF_TRANSSHIFT)
+#define FF_TRANSLU_TABLE_INDEX( fr )   (((fr)&FF_TRANSMASK) - 0x10000)
+
+typedef enum
+{
+    TRANSLU_TABLE_med =  TRANSLU_TABLE_INDEX(TRANSLU_med),
+    TRANSLU_TABLE_more = TRANSLU_TABLE_INDEX(TRANSLU_more),
+    TRANSLU_TABLE_hi =   TRANSLU_TABLE_INDEX(TRANSLU_hi),
+    TRANSLU_TABLE_fire = TRANSLU_TABLE_INDEX(TRANSLU_fire),
+    TRANSLU_TABLE_fx1 =  TRANSLU_TABLE_INDEX(TRANSLU_fx1)
+} translucent_table_index_e;
+
 
 
 //

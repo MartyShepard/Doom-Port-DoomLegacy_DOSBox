@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: keys.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: keys.h 700 2010-07-11 00:23:37Z smite-meister $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -15,112 +15,204 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-//
-// $Log: keys.h,v $
-// Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
-// Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
-// Initial import into CVS (v1.29 pr3)
-//
-//
-// DESCRIPTION:
-//
-//
 //-----------------------------------------------------------------------------
 
 
 #ifndef __KEYS_H__
 #define __KEYS_H__
 
-//
-// DOOM keyboard definition.
-// This is the stuff configured by Setup.Exe.
-//
+/// These are the key event codes posted by the keyboard handler, and closely match the SDLKey symbols.
+/// 0-127 are ASCII codes. The codes KEY_NUMKB- are reserved for virtual keys.
+enum key_input_e
+{
+  KEY_NULL = 0, // null key, triggers nothing
 
-// This is the key codes as posted by the keyboard handler,
-// ascii codes are 0->127,
-// scancodes are 0x80 + 0->127
+  KEY_BACKSPACE  = 8,
+  KEY_TAB        = 9,
+  KEY_ENTER      = 13,
+  KEY_PAUSE      = 19,
+  KEY_ESCAPE     = 27,
+  KEY_SPACE      = 32,
 
-#define KEY_NULL        0       // null key, triggers nothing
+  // numbers
+  // big letters
+  KEY_BACKQUOTE  = 96,
+  KEY_CONSOLE    = KEY_BACKQUOTE,
+  // small letters
+  KEY_DELETE     = 127, // ascii ends here
 
-#define KEY_ESCAPE      27
-#define KEY_SPACE       32
+  // SDL international keys 160-255
 
-#define KEY_NUMLOCK     (0x80+69)
-#define KEY_SCROLLLOCK  (0x80+70)
+  // keypad
+  KEY_KEYPAD0 = 256,
+  KEY_KEYPAD1,
+  KEY_KEYPAD2,
+  KEY_KEYPAD3,
+  KEY_KEYPAD4,
+  KEY_KEYPAD5,
+  KEY_KEYPAD6,
+  KEY_KEYPAD7,
+  KEY_KEYPAD8,
+  KEY_KEYPAD9,
+  KEY_KPADPERIOD,
+  KEY_KPADSLASH,
+  KEY_KPADMULT,
+  KEY_MINUSPAD,
+  KEY_PLUSPAD,
+  KEY_KPADENTER,
+  KEY_KPADEQUALS,
+  // arrows + home/end pad
+#if !defined (__DJGPP__)
+  KEY_UPARROW,
+  KEY_DOWNARROW,
+  KEY_RIGHTARROW,
+  KEY_LEFTARROW,
+#endif
+  KEY_INS,
+  KEY_HOME,
+  KEY_END,
+  KEY_PGUP,
+  KEY_PGDN,
+  // function keys
+  KEY_F1,
+  KEY_F2,
+  KEY_F3,
+  KEY_F4,
+  KEY_F5,
+  KEY_F6,
+  KEY_F7,
+  KEY_F8,
+  KEY_F9,
+  KEY_F10,
+  KEY_F11,
+  KEY_F12,
 
-#define KEY_MINUS       45
-#define KEY_EQUALS      61
-#define KEY_BACKSPACE   8
-#define KEY_TAB         9
-#define KEY_ENTER       13
+  // modifier keys
+  KEY_NUMLOCK = 300,
+  KEY_CAPSLOCK,
+  KEY_SCROLLLOCK,
+  KEY_RSHIFT,
+  KEY_LSHIFT,
+  KEY_RCTRL,
+  KEY_LCTRL,
+  KEY_RALT,
+  KEY_LALT,
+  KEY_unused1,
+  KEY_unused2,
+  KEY_LWIN,
+  KEY_RWIN,
+  KEY_MODE, // altgr
+  KEY_unused3,
+  // other function keys
+  KEY_HELP = 315,
+  KEY_PRINT,
+  KEY_SYSREQ,
+  KEY_BREAK,
+  KEY_MENU,
 
-//
-//  scancodes 71-83 (non-extended)
-//
-#define KEY_KEYPAD7     (0x80+71)
-#define KEY_KEYPAD8     (0x80+72)
-#define KEY_KEYPAD9     (0x80+73)
-#define KEY_MINUSPAD    (0x80+74)
-#define KEY_KEYPAD4     (0x80+75)
-#define KEY_KEYPAD5     (0x80+76)
-#define KEY_KEYPAD6     (0x80+77)
-#define KEY_PLUSPAD     (0x80+78)
-#define KEY_KEYPAD1     (0x80+79)
-#define KEY_KEYPAD2     (0x80+80)
-#define KEY_KEYPAD3     (0x80+81)
-#define KEY_KEYPAD0     (0x80+82)
-#define KEY_KPADDEL     (0x80+83)
+  KEY_NUMKB, // all real keyboard codes are under this value
 
-//  windows95 keys...
+  // mouse and joystick buttons are handled as 'virtual' keys
+  MOUSEBUTTONS =  8,
+  MAXJOYSTICKS = 4,   // "Only" 4 joysticks per machine.
+  JOYBUTTONS   = 16,  // Max number of buttons for a joystick.
+  JOYHATBUTTONS = 4,  // Four hat directions.
 
-#define KEY_LEFTWIN     (0x80+91)
-#define KEY_RIGHTWIN    (0x80+92)
-#define KEY_MENU        (0x80+93)
+  KEY_MOUSE1          = KEY_NUMKB, // mouse buttons, including the wheel
+  KEY_MOUSEWHEELUP    = KEY_MOUSE1 + 3, // usually
+  KEY_MOUSEWHEELDOWN,
+  KEY_DBLMOUSE1       = KEY_MOUSE1     + MOUSEBUTTONS, // double clicks
 
-//
-//  scancodes 71-83 EXTENDED are remapped
-//  to these by the keyboard handler (just add 30)
-//
-#define KEY_KPADSLASH   (0x80+100)      //extended scancode 53 '/' remapped
+  KEY_2MOUSE1         = KEY_DBLMOUSE1  + MOUSEBUTTONS, // second mouse buttons
+  KEY_2MOUSEWHEELUP   = KEY_2MOUSE1 + 3,
+  KEY_2MOUSEWHEELDOWN,
+  KEY_DBL2MOUSE1      = KEY_2MOUSE1    + MOUSEBUTTONS,
 
-#define KEY_HOME        (0x80+101)
+  KEY_JOYSTICKSTART   = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
+  KEY_JOY0BUT0,
+  KEY_JOY0BUT1,
+  KEY_JOY0BUT2,
+  KEY_JOY0BUT3,
+  KEY_JOY0BUT4,
+  KEY_JOY0BUT5,
+  KEY_JOY0BUT6,
+  KEY_JOY0BUT7,
+  KEY_JOY0BUT8,
+  KEY_JOY0BUT9,
+  KEY_JOY0BUT10,
+  KEY_JOY0BUT11,
+  KEY_JOY0BUT12,
+  KEY_JOY0BUT13,
+  KEY_JOY0BUT14,
+  KEY_JOY0BUT15,
+
+  KEY_JOY1BUT0,
+  KEY_JOY1BUT1,
+  KEY_JOY1BUT2,
+  KEY_JOY1BUT3,
+  KEY_JOY1BUT4,
+  KEY_JOY1BUT5,
+  KEY_JOY1BUT6,
+  KEY_JOY1BUT7,
+  KEY_JOY1BUT8,
+  KEY_JOY1BUT9,
+  KEY_JOY1BUT10,
+  KEY_JOY1BUT11,
+  KEY_JOY1BUT12,
+  KEY_JOY1BUT13,
+  KEY_JOY1BUT14,
+  KEY_JOY1BUT15,
+
+  KEY_JOY2BUT0,
+  KEY_JOY2BUT1,
+  KEY_JOY2BUT2,
+  KEY_JOY2BUT3,
+  KEY_JOY2BUT4,
+  KEY_JOY2BUT5,
+  KEY_JOY2BUT6,
+  KEY_JOY2BUT7,
+  KEY_JOY2BUT8,
+  KEY_JOY2BUT9,
+  KEY_JOY2BUT10,
+  KEY_JOY2BUT11,
+  KEY_JOY2BUT12,
+  KEY_JOY2BUT13,
+  KEY_JOY2BUT14,
+  KEY_JOY2BUT15,
+
+  KEY_JOY3BUT0,
+  KEY_JOY3BUT1,
+  KEY_JOY3BUT2,
+  KEY_JOY3BUT3,
+  KEY_JOY3BUT4,
+  KEY_JOY3BUT5,
+  KEY_JOY3BUT6,
+  KEY_JOY3BUT7,
+  KEY_JOY3BUT8,
+  KEY_JOY3BUT9,
+  KEY_JOY3BUT10,
+  KEY_JOY3BUT11,
+  KEY_JOY3BUT12,
+  KEY_JOY3BUT13,
+  KEY_JOY3BUT14,
+  KEY_JOY3BUT15,
+
+  KEY_JOYSTICKEND,
+  /*
+  KEY_DBLJOY1       = KEY_JOY1 + JOYBUTTONS,
+  KEY_DBLJOY14      = KEY_DBLJOY1 + JOYBUTTONS - 1,
+  */
+
+  // number of total 'button' inputs, includes keyboard keys, plus virtual
+  // keys (mousebuttons and joybuttons become keys)
+  NUMINPUTS
+};
+
+#if defined (__DJGPP__)
 #define KEY_UPARROW     (0x80+102)
-#define KEY_PGUP        (0x80+103)
 #define KEY_LEFTARROW   (0x80+105)
 #define KEY_RIGHTARROW  (0x80+107)
-#define KEY_END         (0x80+109)
 #define KEY_DOWNARROW   (0x80+110)
-#define KEY_PGDN        (0x80+111)
-#define KEY_INS         (0x80+112)
-#define KEY_DEL         (0x80+113)
-
-
-#define KEY_F1          (0x80+0x3b)
-#define KEY_F2          (0x80+0x3c)
-#define KEY_F3          (0x80+0x3d)
-#define KEY_F4          (0x80+0x3e)
-#define KEY_F5          (0x80+0x3f)
-#define KEY_F6          (0x80+0x40)
-#define KEY_F7          (0x80+0x41)
-#define KEY_F8          (0x80+0x42)
-#define KEY_F9          (0x80+0x43)
-#define KEY_F10         (0x80+0x44)
-#define KEY_F11         (0x80+0x57)
-#define KEY_F12         (0x80+0x58)
-
-#define KEY_PAUSE       255
-
-// these ones must be non-extended scancodes (rctrl,rshift,lalt)
 #define KEY_SHIFT       (0x80+54)
-#define KEY_CTRL        (0x80+29)
-#define KEY_ALT         (0x80+56)
-
-#define KEY_CAPSLOCK    (0x80+58)
-#define KEY_CONSOLE     '`'
-
-#define KEY_OPENBRACKETS
-#define KEY_CLOSEBRACKETS
-
+#endif
 #endif

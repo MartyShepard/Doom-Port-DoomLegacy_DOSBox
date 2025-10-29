@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: hu_stuff.h 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -67,8 +67,6 @@ extern char    french_shiftxform[];
 //------------------------------------
 //           chat stuff
 //------------------------------------
-#define HU_BROADCAST    5       // first char in chat message
-
 #define HU_MAXMSGLEN    80
 
 extern patch_t*       hu_font[HU_FONTSIZE];

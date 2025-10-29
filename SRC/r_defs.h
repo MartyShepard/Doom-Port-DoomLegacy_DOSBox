@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: r_defs.h 717 2010-07-31 18:40:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -153,11 +153,11 @@
 
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
-#define SIL_NONE                0
-#define SIL_BOTTOM              1
-#define SIL_TOP                 2
-#define SIL_BOTH                3
-
+// OR bits for silhouette
+typedef enum {
+   SIL_BOTTOM  = 0x01,
+   SIL_TOP     = 0x02
+} Silhouette_e;
 
 //faB: was upped to 512, but still people come with levels that break the
 //     limits, so had to do an ugly re-alloc to get rid of the overflow.
@@ -165,26 +165,42 @@
 
 // SoM: Moved this here...
 // This could be wider for >8 bit display.
-// Indeed, true color support is posibble
+// Indeed, true color support is possible
 //  precalculating 24bpp lightmap/colormap LUT.
 //  from darkening PLAYPAL to all black.
-// Could even us emore than 32 levels.
-typedef byte    lighttable_t;
+// Could even use more than 32 levels.
+typedef byte    lighttable_t;  // light map table
+   // can be an array of map tables [256], or just one
+// index a lighttable by mult by sizeof lighttable ( *256  =>  <<8 )
+#define LIGHTTABLE(t)   ((t)<<8)
 
+// right shift to convert 0..255 to 0..(NUM_RGBA_LEVELS-1)
+//#define NUM_RGBA_LEVELS  4
+//#define LIGHT_TO_RGBA_SHIFT  6
+#define NUM_RGBA_LEVELS  8
+#define LIGHT_TO_RGBA_SHIFT  5
+//#define NUM_RGBA_LEVELS  16
+//#define LIGHT_TO_RGBA_SHIFT  4
+//#define NUM_RGBA_LEVELS  32
+//#define LIGHT_TO_RGBA_SHIFT  3
 
 // SoM: ExtraColormap type. Use for extra_colormaps from now on.
 typedef struct
 {
-  unsigned short  maskcolor;
-  unsigned short  fadecolor;
+  uint32_t        maskcolor;
+  uint32_t        fadecolor;
   double          maskamt;
-  unsigned short  fadestart, fadeend;
+  uint16_t        fadestart, fadeend;
   int             fog;
 
   //Hurdler: rgba is used in hw mode for coloured sector lighting
-  int             rgba; // similar to maskcolor in sw mode
+  // [WDJ] Separate rgba for light levels [0]=darkest, [NUM-1]=brightest
+  // This is cast into a union of byte components.
+  uint32_t        rgba[NUM_RGBA_LEVELS]; // similar to maskcolor in sw mode
+     // alpha=0..26, 0=black/white tint, 26=saturated color
+     // r,g,b are the saturated color, 0..255
 
-  lighttable_t*   colormap;
+  lighttable_t*   colormap; // colormap tables [32][256]
 } extracolormap_t;
 
 //
@@ -249,33 +265,36 @@ typedef enum
 } ffloortype_e;
 
 
+// created by P_AddFakeFloor
 typedef struct ffloor_s
 {
-  fixed_t          *topheight;
+  // references to model sector, to pass through changes immediately
+  fixed_t          *topheight;  // model sector ceiling
   short            *toppic;
   short            *toplightlevel;
   fixed_t          *topxoffs;
   fixed_t          *topyoffs;
 
-  fixed_t          *bottomheight;
+  fixed_t          *bottomheight;  // model sector floor
   short            *bottompic;
   //short            *bottomlightlevel;
   fixed_t          *bottomxoffs;
   fixed_t          *bottomyoffs;
 
-  fixed_t          delta;
+  int              model_secnum; // model sector num used in linedef
+  ffloortype_e     flags;  // flags from special linedef
 
-  int              secnum;
-  ffloortype_e     flags;
-  struct line_s*   master;
+  struct line_s  * master; // the special linedef generating this floor
 
-  struct sector_s* target;
+  struct sector_s* target; // tagged sector that is affected
 
+  // double linked list of ffloor_t in sector
   struct ffloor_s* next;
   struct ffloor_s* prev;
 
-  int              lastlight;
-  int              alpha;
+  int              lastlight;		// light index, FF_DOUBLESHADOW
+  int              alpha;		// FF_TRANSLUCENT
+//  fixed_t          ff_delta;		// unused
 } ffloor_t;
 
 
@@ -284,11 +303,11 @@ typedef struct ffloor_s
 // information for casted shadows.
 typedef struct lightlist_s {
   fixed_t                 height;
-  short                   *lightlevel;
-  extracolormap_t*        extra_colormap;
   int                     flags;
+  short *                 lightlevel;
+  extracolormap_t*        extra_colormap;
   ffloor_t*               caster;
-} lightlist_t;
+} ff_lightlist_t;
 
 
 // SoM: This struct is used for rendering walls with shadows casted on them...
@@ -377,6 +396,7 @@ typedef struct sector_s
     // thinker_t for reversable actions
     // make thinkers on floors, ceilings, lighting, independent of one another
     void *floordata;
+   		     // ZMalloc PU_LEVSPEC, in EV_DoFloor
     void *ceilingdata;
     void *lightingdata;
   
@@ -404,6 +424,7 @@ typedef struct sector_s
     // list of mobjs that are at least partially in the sector
     // thinglist is a subset of touching_thinglist
     struct msecnode_s *touching_thinglist;               // phares 3/14/98  
+   				    // nodes are ZMalloc PU_LEVEL, by P_GetSecnode
     //SoM: 3/6/2000: end stuff...
 
     // list of ptrs to lines that have this sector as a side
@@ -411,35 +432,38 @@ typedef struct sector_s
     struct line_s**     linelist;  // [linecount] size
 
     //SoM: 2/23/2000: Improved fake floor hack
-    ffloor_t*                  ffloors;
-    int                        *attached;	// list of control sectors
-             // malloc, realloc
-	     // FIXME: must deallocate attached before free PU_LEVEL [WDJ] 11/14/2009
-    int                        numattached;
-    lightlist_t*               lightlist;
-    int                        numlights;
-    boolean                    moved;
+    ffloor_t *          ffloors;    // 3D floor list
+   				    // ZMalloc PU_LEVEL, in P_AddFakeFloor
+    int  *              attached;   // list of control sectors (by secnum)
+   				    // realloc in P_AddFakeFloor
+   				    // [WDJ] 7/2010 deallocate in P_SetupLevel
+    int                 numattached;
+    ff_lightlist_t *    lightlist;  // fake floor lights
+   				    // ZMalloc PU_LEVEL, in R_Prep3DFloors
+    int                 numlights;
+    boolean             moved;  // floor was moved
 
-    int                        validsort; //if == validsort allready been sorted
-    boolean                    added;
+    int                 validsort; //if == validsort allready been sorted
+    boolean             added;
 
     // SoM: 4/3/2000: per-sector colormaps!
-    extracolormap_t*           extra_colormap;
+    extracolormap_t*    extra_colormap;  // (ref) using colormap for this frame
+         // selected from bottommap,midmap,topmap, from special linedefs
 
     // ----- for special tricks with HW renderer -----
-    boolean                    pseudoSector;
-    boolean                    virtualFloor;
-    fixed_t                    virtualFloorheight;
-    boolean                    virtualCeiling;
-    fixed_t                    virtualCeilingheight;
-    linechain_t               *sectorLines;
-    struct sector_s           **stackList;
+    boolean             pseudoSector;
+    boolean             virtualFloor;
+    fixed_t             virtualFloorheight;
+    boolean             virtualCeiling;
+    fixed_t             virtualCeilingheight;
+    linechain_t *       sectorLines;
+    struct sector_s **  stackList;
 #ifdef SOLARIS
     // Until we get Z_MallocAlign sorted out, make this a float
     // so that we don't get alignment problems.
-    float                      lineoutLength;
+    float               lineoutLength;
 #else
-    double                     lineoutLength;
+    double              lineoutLength;
 #endif
     // ----- end special tricks -----
 } sector_t;
@@ -533,11 +557,11 @@ typedef struct line_s
     void*       splats;
     
     //SoM: 3/6/2000
-    int tranlump;          // translucency filter, -1 == none 
+//    int tranlump;          // translucency filter, -1 == none 
                            // (Will have to fix to use with Legacy's Translucency?)
     int firsttag,nexttag;  // improves searches for tags.
 
-    int ecolormap;         // SoM: Used for 282 linedefs
+//    int ecolormap;         // SoM: Used for 282 linedefs
 } line_t;
 
 
@@ -554,10 +578,11 @@ typedef struct line_s
 //
 typedef struct subsector_s
 {
-    sector_t*   sector;   // part of this sector, from segs->sector of firstline
+    sector_t*   sector;   // (ref) part of this sector, from segs->sector of firstline
     // numlines and firstline are from the subsectors lump (nodebuilder)
-    short       numlines;   // number of segs in this subsector
-    short       firstline;  // index into segs lump (loaded from wad)
+    // [WDJ] some wad may be large enough to overflow signed short.
+    unsigned short  numlines;   // number of segs in this subsector
+    unsigned short  firstline;  // index into segs lump (loaded from wad)
     // floorsplat_t list
     void*       splats;
     //Hurdler: added for optimized mlook in hw mode
@@ -676,10 +701,8 @@ typedef struct
 typedef struct
 {
     // Partition line from (x,y) to x+dx,y+dy)
-    fixed_t     x;
-    fixed_t     y;
-    fixed_t     dx;
-    fixed_t     dy;
+    fixed_t     x, y;
+    fixed_t     dx, dy;
 
     // Bounding box for each child.
     fixed_t     bbox[2][4];
@@ -695,17 +718,20 @@ typedef struct
 } node_t;
 
 
-
+// Example of column data:
+//  post_t, bytes[length], post_t, bytes[length], 0xFF
 
 // posts are runs of non masked source pixels
+// Post format: post_t header, bytes[length] pixels
 typedef struct
 {
-    byte                topdelta;       // -1 is the last post in a column
-                                        // BP: humf, -1 with byte ! (unsigned char) test WARNING
+    byte                topdelta; 	// y offset within patch of this post
+   	// reads (0xFF) at column termination (not a valid post_t)
+	// BP: humf, -1 with byte ! (unsigned char) test WARNING
     byte                length;         // length data bytes follows
 } post_t;
 
-// column_t is a list of 0 or more post_t, (byte)-1 terminated
+// column_t is a list of 0 or more post_t, (0xFF) terminated
 typedef post_t  column_t;
 
 
@@ -727,34 +753,29 @@ typedef post_t  column_t;
 typedef struct drawseg_s
 {
     seg_t*              curline;
-    int                 x1;
-    int                 x2;
+    int                 x1, x2;  // x1..x2
 
-    fixed_t             scale1;
-    fixed_t             scale2;
+    fixed_t             scale1, scale2;  // scale x1..x2
     fixed_t             scalestep;
 
-    // 0=none, 1=bottom, 2=top, 3=both
-    int                 silhouette;
-
-    // do not clip sprites above this
-    fixed_t             bsilheight;
-
-    // do not clip sprites below this
-    fixed_t             tsilheight;
+    // silhouette is where a drawseg can overlap a sprite
+    int                 silhouette;	    // bit flags, Silhouette_e
+    fixed_t             sil_top_height;     // do not clip sprites below this
+    fixed_t             sil_bottom_height;  // do not clip sprites above this
 
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    short*              sprtopclip;
-    short*              sprbottomclip;
-    short*              maskedtexturecol;
+    short*              spr_topclip;     // owned array [x1..x2]
+    short*              spr_bottomclip;  // owned array [x1..x2]
+    short*              maskedtexturecol;  // ref to array [x1..x2]
 
+    // 3D floors, only use what is needed, often none
     struct visplane_s*  ffloorplanes[MAXFFLOORS];
     int                 numffloorplanes;
     struct ffloor_s*    thicksides[MAXFFLOORS];
     short*              thicksidecol;
     int                 numthicksides;
-    fixed_t             frontscale[MAXVIDWIDTH];
+    fixed_t             frontscale[MAXVIDWIDTH]; // z check for sprite clipping
 } drawseg_t;
 
 
@@ -780,12 +801,16 @@ struct patch_s
 #else
 struct patch_s
 {
-    short               width;          // bounding box size
+    short               width;          // bounding box size, usually 64, 128, 256
     short               height;
     short               leftoffset;     // pixels to the left of origin
     short               topoffset;      // pixels below the origin
     int                 columnofs[8];   // only [width] used
-    // the [0] is &columnofs[width]
+	    // Offset within patch to column data header, column_t.
+            // Column data starts at &columnofs[width]
+    // This is used as the head of a patch, and columnofs[8] provides
+    // access to an array that is usually [64], [128], or [256].
+    // This would not work if the [8] was actually enforced.
 };
 #endif
 typedef struct patch_s patch_t;
@@ -859,7 +884,7 @@ typedef struct vissprite_s
     lighttable_t*       colormap;
 
     //Fab:29-04-98: for MF_SHADOW sprites, which translucency table to use
-    byte*               transmap;
+    byte*               translucentmap;
 
     int                 mobjflags;
 

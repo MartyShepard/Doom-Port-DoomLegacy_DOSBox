@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 594 2010-02-07 18:03:51Z wesleyjohnson $
+// $Id: w_wad.c 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1022,7 +1022,19 @@ void W_LoadDehackedLumps( int wadnum )
     }
 }
 
-
+// [WDJ] Return a sum unique to a lump, to detect replacements.
+// The lumpptr must be to a Z_Malloc lump.
+uint64_t  W_lump_checksum( void* lumpptr )
+{
+    // Work only with the lumpptr given, cannot trust that can get stats
+    // on the exact same lump, it may be in multiple wads and pwads.
+    // Very simple checksum over the size of the Z_Malloc block.
+    int lumpsize = Z_Datasize( lumpptr );
+    uint64_t  checksum = 0;
+    int i;
+    for( i=0; i<lumpsize; i++ )   checksum += ((byte*)lumpptr)[i];
+    return checksum;
+}
 
 
 // --------------------------------------------------------------------------

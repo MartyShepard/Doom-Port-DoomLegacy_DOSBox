@@ -93,7 +93,8 @@ void M_StartMessage ( const char*       string,
                       menumessagetype_t itemtype );
 
 // M_StartMessage with NULL routine and MM_NOTHING
-void M_SimpleMessage(const char* string);
+void M_SimpleMessage ( const char*       string );
+
 // Called by linux_x/i_video_xshm.c
 void M_QuitResponse(int ch);
 

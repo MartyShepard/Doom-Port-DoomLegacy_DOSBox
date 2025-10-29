@@ -726,3 +726,366 @@ patchfile = w52_no_texture.patch
 Check for no texture, and prevent segfault.
 Catches error when 3Dslab does not have side texture.
 
+*** w52_attack_self
+patchfile = w52_attack_self.patch
+- committed revision 661  by wesley johnson
+Documents a fix for a monster attacking itself.
+See WikiDoom bugs.
+
+*** w52_2player_segfault
+patchfile = w52_2player_segfault.patch
+- committed revision 662   by wesley johnson
+Documents a bug that is not fixed.
+When 2 players, with 2nd player not active, the second player will segfault
+at the marked location, when the 1st player enters the lift on MAP01.
+This would be the first act making a sound that the other player could hear.
+
+*** w52_moving_sector
+patchfile = w52_moving_sector.patch
+- committed revision 663   by wesley johnson
+Found too many uses of variable "move" in code, so renamed and commented
+some of them.
+
+*** w52_model_sector_colormap
+patchfile = w52_model_sector_colormap.patch
+- committed revision 664   by wesley johnson
+Cleanup colormap setup in p_spec.c, and commented the special linedefs.
+Rename the color mapping control sector as model_sector.
+
+*** w52_colormap
+patchfile = w52_colormap.patch
+- committed revision 665   by wesley johnson
+Extensive visit of all the colormap code.
+Comment uses of colormaps.
+Cleanup colormap setup in p_setup.c, and commented special linedefs,
+and removed incomplete hardware renderer code for colormap generation.
+Have hardware renderer use the same colormap generator function as the
+software renderer, and same linedef setup.
+Cleanup the colormap generator, comment, and have it calc hardware
+renderer fields too.
+
+*** w52_skintable_translations
+patchfile = w52_skintable.patch
+- committed revision 666   by wesley johnson
+Too many uses of the term trans, confusing translucent and skin
+translation.
+The skin tables are renamed from translationtables to skintranstables,
+and dc_translation becomes dc_skintran.
+Define SKIN_TO_SKINMAP, MT_TO_SKINMAP, to bring indexing calculations
+to one common place.
+Create skin table lookup, which prepares code to have skin tables read
+from files.
+Rename the standard colormap tables as reg_colormaps, to differentiate
+them from all the other things named colormap.
+
+*** w52_lighttable
+patchfile = w52_lighttable.patch
+- committed revision 667   by wesley johnson
+Use LIGHTTABLE on colormaps, hiding table indexing calculations.
+Renamed the fakefloor lightlist_t to ff_lightlist_t to differentiate it
+from the other r_lightlist_t.
+Renamed some list uses to ff_list, to differentiate them from other lists.
+Fixed expand_lightlist, gave it an error message on failure.
+
+*** w52_translucent
+patchfile = w52_translucent.patch
+- committed revision 668   by wesley johnson
+Spell out translucent, so can differentiate it from other trans operations.
+Rename trans enum values to be readable.
+Use translucenttable[xxx] syntax, instad of *(translucenttable + xxx).
+Make table for translucent selection to GL conversion.
+
+*** w52_draw_masked
+patchfile = w52_draw_masked.patch
+- committed revision 669   by wesley johnson
+The R_RenderMasked routines have some global parameters.  Rename them
+with dm_ so they can be easily identified.
+Simplify some colormap code segments where there were redundant tests.
+
+*** w52_fog_sheet
+patchfile = w52_fog_sheet.patch
+- committed revision 670   by wesley johnson
+Fixes fog sheet bug, where fog sheet would not display in software renderer.
+Adds code to clip the fog sheet properly.
+
+*** w52_fog_floor_colormap
+patchfile = w52_fog_floor_colormap.patch
+- committed revision 671   by wesley johnson
+Provided alternative code where FF_FOG test for setting colormap was
+unusual compared to other places in the code.  Not sure which is
+correct.
+
+*** w52_hw_colormap
+patchfile = w52_hw_colormap.patch
+- committed revision 672   by wesley johnson
+Bug fix, hardware renderer can now display Boom colormaps, and can now
+display levels of colormap brightness.
+Create R_ColormapAnalyze, to generate hardware rgba info from Boom colormaps.
+Enhance the extra_colormap rgba field to be an array, selected by lightlevel.
+This gives the opengl colormaps some lightlevel effect.
+Enhance ColormapGenerate, to fill out the rgba lightlevel array.
+
+*** w52_hw_transparent_wall
+patchfile = w52_hw_transwall.patch
+- committed revision 673   by wesley johnson
+Sprites behind transparent walls are not drawn.
+Transparent walls are drawn after the sprites so they can be overlayed.
+There was work already done, that needed to be enabled.
+Made it clearer and added comments.
+
+*** w52_hw_bsp_viewer
+patchfile = w52_hw_bsp_viewer.patch
+- committed revision 674   by wesley johnson
+Convert hardware renderer to use the same bsp viewer global variables
+that are used in the software renderer, as in bsp.c.
+
+*** w52_hw_brightness
+patchfile = w52_hw_brightness.patch
+- committed revision 675   by wesley johnson
+Adjust hardware brightness again, because rgba[] now gives some darkness.
+
+*** w52_hw_no_texture2
+patchfile = w52_hw_no_texture2.patch
+- committed revision 676   by wesley johnson
+More no-texture tests needed in FakeFloor rover code, with wider protection.
+A 3Dslab that is missing a side texture could cause a segfault, eventually,
+when it is referenced during FakeFloor roving.
+
+*** w52_VIEW_COLORMAP_GEN
+patchfile = w52_view_colormap_gen.patch
+- committed revision 677   by wesley johnson
+Turn off VIEW_COLORMAP_GEN debug enable, which had got left on.
+
+*** w52_hw_extracolormap_surf
+patchfile = w52_extracolormap_surf.patch
+- committed revision 678   by wesley johnson
+Extracolormap_to_Surf, common function for hardware rgba[] handling,
+because these operations are getting more and more complicated.
+This was in w52_hw_colormap.patch, but was found to be missing after
+the latest commit.
+GetPlaneLight changes in hw_main.c.
+These were in w50_planelight.patch, but were found to be missing after
+this latest commit.
+
+*** w53_drawsplats_looping
+patchfile = w53_drawsplats_looping.patch
+- committed revision 679   by wesley johnson
+The usual test and continue for draw range too high, in this case, left
+the iteration variable unchanged, and thus stuck in a tight loop.
+Changed to not use continue stmt.
+
+*** w53_chexquest
+patchfile = w53_chexquest.patch
+- committed revision 680   by wesley johnson
+Fix chexquest problems.
+Chexquest was showing bloody splats, provided by legacy.dat.
+Added a GDESC_ flag to indicate that the iwad needs to have precedence.
+Reduced the violence of the splats for chexquest mode.
+Added code to detect and intercept Doom graphics that were left in the
+chexquest1 wad by the developers.
+When player escapes the difficulty menu, it goes to the episode menu,
+which is displaying the Doom1 episode names to Chex players.
+Added code to give Chex episode names, instead of Doom episode names,
+or block the episode menu.
+
+*** w53_bossdeath
+patchfile = w53_bossdeath.patch
+- committed revision 681   by wesley johnson
+Fix from DoomWiki and prboom.
+BossDeath logic from UltimateDoom does not work with some earlier PWAD.
+Upon detect of shareware or registered, revert to earlier BossDeath
+test, that allows all Boss types to trigger effect.
+
+*** w53_buildstairs
+patchfile = w53_buildstairs.patch
+- committed revision 682   by wesley johnson
+BuildStairs bug from DoomWiki, already fixed (mostly).
+Init some more fields, init them even when not boomsupport,
+moved stair attribute switch stmt out of the loop (const for the loop).
+
+*** w53_line_of_sight
+patchfile = w53_lineofsight.patch
+- committed revision 683   by wesley johnson
+Sleeping Sargeant bug from DoomWiki.
+Line-of-sight code had typo, testing x==node->y, instead of y==node->y.
+
+*** w54_dehacked
+patchfile = w54_dehacked.patch
+- committed revision 684   by wesley johnson
+Dehacked file in chexquest-newmaps segfaults due to writing string over const.
+String replacement in sprites changed to use Z_Strdup, and old string
+is abandoned. This one was missed in previous dehacked patch.
+
+*** w54_lightlist
+patchfile = w54_lightlist.patch
+- committed revision 685   by wesley johnson
+Fix segfault in chexquest-newmaps due to lightlist bad value.
+Init some special lightlist fields, and comment where segfault occurs.
+Do not know how the level causes this, but it is repeatable.
+With the init, the segfault is prevented, and there is no visible effect.
+
+*** w54_crosshairs
+patchfile = w54_crosshairs.patch
+- committed revision 686   by wesley johnson
+Chexquest-newmaps has a scope with crosshairs, that for the software
+render is considerably off to the left.
+Center the fragglescript pictures overlayed upon screen so that the
+scope crosshairs line up with the actual firing point.
+
+*** w54_new_chexquest
+patchfile = w54_newchexquest.patch
+- committed revision 687   by wesley johnson
+Chexquest-newmaps and others have more than the original 5 maps.
+When a there is a -file (gamemodified=1), then allow all episodes and maps.
+
+*** w55_savemobj
+patchfile = w55_savemobj.patch
+- committed revision 689   by wesley johnson
+Savegame repeats mobj numbers when more than 1023 mobj.
+Seen in hth2.wad (Hi-Tech Hell 2 - Alien Tech), which saves 1899 thinkers.
+Realloc of mobj list fixed.
+
+*** w55_maxcolormap
+patchfile = w55_maxcolormap.patch
+- committed revision 690   by wesley johnson
+Wad hth2.wad uses 38 colormaps, increase to 64 colormaps.
+Comment some colormap vars, and make it more clear.
+Not enough memory saved to use dynamic methods.
+
+*** w56_savemenu_scroll
+patchfile = w56_savemenu_scroll.patch
+- committed revision 691   by wesley johnson
+Fix savegame menu so that when pressing uparrow or downarrow the scrolling
+is performed whenever it can, instead of rollover to top or bottom
+of menu.
+
+*** w56_legacy_docs
+patchfile = w56_legacy_doc.patch
+- committed revision 693   by wesley johnson
+Updated the Legacy.html to reflect new controls and switches.
+This is not complete.
+Updated a little bit of Faq.html, but much of it still needs review.
+There are still many references to newdoom in the doc pages.
+
+*** w57_trymove
+patchfile = w57_trymove.patch
+- committed revision 694   by wesley johnson
+Comments added for TryMove, LineAttack.
+Rename TryMove global vars to tm_* and the return global vars to tmr_*.
+Rename LineAttack global vars la_* and the return global vars to lar_*.
+Cleanup some function stubs, and some indenting, and some IF stmts
+to make easier to read.
+
+*** w57_sight
+patchfile = w57_sight.patch
+- committed revision 695   by wesley johnson
+Comments added for Sight functions.
+Rename CheckSight global vars to cs_*, and the return global vars to
+see_* (which are also used independently by P_AimLineAttack).
+Rename SightTraverse hsight global vars to strav_*.
+
+*** w57_largemap
+patchfile = w57_largemap.patch
+- committed revision 696   by wesley johnson
+Fix some math overflow for large maps like Europe.wad, where MAP01 is
+enormous.
+Change some short wad field types to uint16_t where needed, as those fields
+could be overflowed and they do not need a sign.
+Detect some buggy wad conditions and correct it as much as possible, 
+or Error msg exit, at least prevent segfaults.
+Detect bad linedef number, missing sidedefs, in P_LoadSegs.
+Detect missing sidedefs, in P_LoadSubsectors.
+Detect bad sector number, in P_LoadSideDefs2.
+Detect bad seg number, in P_GroupLines.
+
+*** w57_blockmap_overlow_coping
+patchfile = w57_blockmap.patch
+- committed revision 697   by wesley johnson
+Fix blockmap loading to handle large blockmaps.
+Detect blockmap overflow and correct the list indexes.
+Will load Europe.wad which overflows the blockmap x3 times.
+Europe.wad will load and run after this patch, but has automap problems,
+and some other bugs.
+Rename the blockmap global vars to be less confusing, as blockmaphead
+and blockmapindex (as neither is the lump).
+Make the blockmap unsigned, because every value read from it is unsigned
+except for one test, which can be ==0xffff instead.
+Adjust some of the blockmap functions.
+
+*** w57_automap_overflow
+patchfile = w57_automap.patch
+- committed revision 698   by wesley johnson
+Fix automap to handle large maps like Europe.wad.
+Do math as to avoid overflowing integer math.
+Detect when overflow will happen and limit zoom to prevent it.
+Change conversion calculation to floating point math.
+Removed some unused code using #ifdef 0.
+Rewrote some parts to use center of attention instead of corner of
+window, and cope with map edges better.
+
+*** w58_r_defs
+patchfile = w58_r_defs.patch
+- committed revision 715   by wesley johnson
+Comments on many r_defs structure fields.
+Comment out unused ff_delta field.
+Comments where ff_delta was initialized.
+
+*** w58_attached_memory_leak
+patchfile = w58_attached_memory_leak.patch
+- committed revision 716   by wesley johnson
+Free memory allocated to sector->attached before freeing sectors in
+ZMalloc purge.
+Init sectors list pointer, now that it no longer causes save game
+corruption.
+
+*** w58_silhouette
+patchfile = w58_silhouette.patch
+- committed revision 717   by wesley johnson
+Rename some silhouette fields and function variables so can understand
+how they are being used.
+tsilheight -> sil_top_height
+bsilheight -> sil_bottom_height
+sprtopclip -> spr_topclip
+sprbottomclip -> spr_bottomclip
+
+*** w58_top_patch
+patchfile = w58_top_patch.patch
+- committed revision 718   by wesley johnson
+Clarify some draw_masked and render segs variables, so can understand
+how they are being used.  Preparation for attacking 3Dfloor sprite bugs.
+Standardize some render function defines.
+dm_topscreen -> dm_top_patch
+dm_botscreen -> dm_bottom_patch
+topscreen -> top_post_sc
+bottomscreen -> bottom_post_sc
+local light index -> dlit
+
+*** w58_viewangle
+patchfile = w58_viewangle.patch
+- committed revision 719   by wesley johnson
+Rename of viewangle arrays to make them readable.
+xtoviewangle -> x_to_viewangle
+viewangletox -> viewangle_to_x
+
+*** w58_visplane_hash
+patchfile = w58_visplane_hash.patch
+- committed revision 720   by wesley johnson
+Clarified the visplane hashing, renamed, and rewrote some free list
+functions, to make it more explicit and understandable.
+Plane freelist had head and tail reversed from usual list interpretations.
+Gave visplane base the naming  vispl_*.
+Gave visplane global parameters the naming  vsp_*.
+Because of longer names the code got larger.
+Running it through strip, removing the symbols, shows the true code size.
+
+*** w58_visplane_naming
+patchfile = w57_visplane_naming.patch
+- committed revision 721   by wesley johnson
+Preparation for attacking 3Dfloor sprite bug.
+Naming changes, spacing, etc.
+Renamed some structure fields to be explict, such as front_frac and
+back_frac (instead of f_frac and b_frac), and high_top instead of just high.
+Standardize some strange function declarations.
+Many comments added.
+No logic changes.
+

@@ -35,6 +35,10 @@
 
 #include "d_event.h"
 
+// current modifier key status
+boolean shiftdown;
+boolean altdown;
+
 typedef struct
 {
     int x, y;

@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: p_saveg.c 699 2010-07-11 00:19:05Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -253,7 +253,7 @@ void SG_write_nstring( const char * sp, int field_length )
 char * SG_read_nstring( int field_length )
 {
     char * spdest = Z_Malloc( field_length, PU_LEVEL, NULL );
-    strncpy( spdest, save_p, field_length );
+    strncpy( spdest, (char *)save_p, field_length );
     save_p += field_length;
     return spdest;
 }
@@ -920,7 +920,7 @@ typedef struct
 typedef struct
 {
   pointermap_cell_t *map; // array of cells
-  unsigned int       len; // number of used cells in the array
+  unsigned int      used; // number of used cells in the array
   unsigned int alloc_len; // number of allocated cells
 } pointermap_t;
 
@@ -930,37 +930,39 @@ static pointermap_t pointermap = {NULL,0,0};
 static void ClearPointermap()
 {
   // Clean release of memory, setup for next call of Alloc_Pointermap 
-  pointermap.len = 0;
+  pointermap.used = 0;
   pointermap.alloc_len = 0;
   if( pointermap.map )  free(pointermap.map);
   pointermap.map = NULL;
 }
 
 // Allocate or reallocate
+// Current pointermap.used is unchanged.
 static boolean  Alloc_Pointermap( int num )
 {
-    unsigned int fi = pointermap.len; // first uninitialized cell
-   
-    pointermap.map = realloc(pointermap.map, num * sizeof(pointermap_cell_t));
-    if( pointermap.map == NULL )
+    // on failure allocpm==NULL, but pointmap.map will remain valid
+    pointermap_cell_t * allocpm = realloc(pointermap.map, num * sizeof(pointermap_cell_t));
+    if( allocpm == NULL )
     {
       I_SoftError("LoadGame: Pointermap alloc failed.\n");
       save_game_abort = 1;  // will be detected by ReadSync
       return 0;
     }
+    // update to new allocation
+    pointermap.map = allocpm;
     pointermap.alloc_len = num;
-    // num is one past the last new cell
-    memset(&pointermap.map[fi], 0, (num-fi) * sizeof(pointermap_cell_t));
+    // num is one past the last new cell of new allocation
+    // pointermap.used is index of first uninitialized cell (one past end of old allocation)
+    memset(&pointermap.map[pointermap.used], 0, (num-pointermap.used) * sizeof(pointermap_cell_t));
     // All mapping has ID==0 map to NULL ptr.
     // This is less expensive than special tests.
     pointermap.map[0].pointer = NULL;	// Map id==0 to NULL
-    pointermap.len = 1;
     return 1;
 }
 
 static void InitPointermap_Save(unsigned int size)
 {
-  pointermap.len = 1;  // all will be free, initialized to 0
+  pointermap.used = 1;  // all will be free, except [0] == NULL ptr
   Alloc_Pointermap( size );
 }
 
@@ -969,7 +971,7 @@ static void InitPointermap_Load(unsigned int size)
   InitPointermap_Save(size);
   // mark everything as initialized (this condition holds all the time during loading)
   // Does not affect anything, yet.
-  pointermap.len = pointermap.alloc_len;
+  pointermap.used = pointermap.alloc_len;
 }
 
 
@@ -985,21 +987,21 @@ static uint32_t GetID(mobj_t *p)
     return 0; // NULL ptr has id == 0
 
   // see if pointer is already there
-  for (id=0; id < pointermap.len; id++)
+  for (id=0; id < pointermap.used; id++)
     if (pointermap.map[id].pointer == p)  // use existing mapping
       return id;
 
   // okay, not there, we must add it
 
   // is there still space or should we enlarge the mapping table?
-  if (pointermap.len == pointermap.alloc_len)
+  if (pointermap.used == pointermap.alloc_len)
   {
     if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )
        return 0; // alloc fail
   }
 
   // add the new pointer mapping
-  id = pointermap.len++;
+  id = pointermap.used++;
   pointermap.map[id].pointer = p;
   return id;
 }
@@ -1016,7 +1018,10 @@ static void MapMobjID(uint32_t id, mobj_t *p)
   if (id == 0 || id > 500000)  goto bad_id_err;  // bad id, probably corrupt or wrong file.
 #else
   if (!p)
-    return; // NULL ptr has id == 0
+    {
+      I_Error("P_LoadGame: Tried to assign NULL pointer to an ID.\n"); // NULL ptr always has id == 0
+      return;
+    }
 
   if (!id)
   {
@@ -1035,7 +1040,7 @@ static void MapMobjID(uint32_t id, mobj_t *p)
   {
     // no, enlarge the container
     if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )  goto failed;
-    pointermap.len = pointermap.alloc_len; // all initialized
+    pointermap.used = pointermap.alloc_len; // all initialized
   }
 
   if (pointermap.map[id].pointer)  goto duplicate_err;  // already exists
@@ -1253,7 +1258,6 @@ void  WRITE_plat( plat_t* platp, byte active )
     // platlist* does not need to be saved
     WRITEBYTE(save_p, active); // active or stopped plat
 }
-
 
 void P_ArchiveThinkers(void)
 {
@@ -1556,9 +1560,9 @@ void P_ArchiveThinkers(void)
             continue;
         }
 #ifdef PARANOIA
-        else if ((int) th->function.acp1 != -1) // wait garbage colection
+        else if (th->function.acp1 != (actionf_p1)(-1)) // wait garbage collection
         {
-            I_SoftError("SaveGame: Unknown thinker type 0x%X", th->function.acp1);
+            I_SoftError("SaveGame: Unknown thinker type %p\n", th->function.acp1);
 	}
 #endif
 
@@ -1741,9 +1745,9 @@ void P_UnArchiveThinkers(void)
                 else
                     mobj->lastlook = -1;
                 if (diff & MD_TARGET)
-		  mobj->target = (mobj_t *) READU32(save_p); // HACK, fixed at the end of the function
+		  mobj->target_id = READU32(save_p); // id number is replaced with the corresponding pointer at the end of the function
                 if (diff & MD_TRACER)
-                    mobj->tracer = (mobj_t *) READU32(save_p); // HACK, fixed at the end of the function
+		  mobj->tracer_id = READU32(save_p); // same here
                 if (diff & MD_FRICTION)
                     mobj->friction = READ32(save_p);
                 else
@@ -1908,7 +1912,7 @@ void P_UnArchiveThinkers(void)
                 break;
 
             default:
-              I_SoftError("LoadGame: Unknown thinker type 0x%X", tclass);
+              I_SoftError("LoadGame: Unknown thinker type %p", tclass);
 	      goto err_exit;
         }
     }
@@ -1920,10 +1924,10 @@ void P_UnArchiveThinkers(void)
       {
 	mobj = (mobj_t *) currentthinker;
 	if (mobj->tracer)
-	  mobj->tracer = GetMobjPointer((uint32_t)mobj->tracer);
+	  mobj->tracer = GetMobjPointer(mobj->tracer_id);
 
 	if (mobj->target)
-	  mobj->target = GetMobjPointer((uint32_t)mobj->target);
+	  mobj->target = GetMobjPointer(mobj->target_id);
       }
     }
     return;
@@ -2648,7 +2652,7 @@ void WRITE_command_line( void )
     save_p --;  // No term 0 on header writes
     for( i=1; i<myargc; i++ )	// skip executable
     {
-        int len = sprintf( save_p, " %s", myargv[i] );
+      int len = sprintf( (char *)save_p, " %s", myargv[i] );
         save_p += len;
     }
     SG_write_string( "\n" );
@@ -2659,7 +2663,7 @@ void WRITE_command_line( void )
 // Langid format requires underlines.
 const char * sg_head_format =
 "!!Legacy_save_game.V%i\n:name:%s\n:game:%s\n:wad:%s\n:map:%s\n:time:%2i:%02i\n";
-const char * sg_head_END = "::END\n";
+#define sg_head_END "::END\n"
 const short idname_length = 18;  // !!<name> length
 
 #ifdef __BIG_ENDIAN__
@@ -2686,12 +2690,12 @@ void P_Write_Savegame_Header( const char * description )
     // [WDJ] A consistent header across all save game versions.
     // Save Langid game header
     // Do not use WRITESTRING as that will put term 0 into the header.
-    len = sprintf( save_p, sg_head_format,
+    len = sprintf( (char *)save_p, sg_head_format,
 		   VERSION, description, gamedesc.gname,
 		   level_wad(), levelmapname, l_min, l_sec );
     save_p += len;  // does not include string term 0
     WRITE_command_line();
-    len = sprintf( save_p, sg_head_END );
+    len = sprintf( (char *)save_p, sg_head_END );
     save_p += len;  // does not include string term 0
     WRITEBYTE( save_p, 0 );  // The only 0 in the header is after the END
     // the level number is also saved in ArchiveMisc
@@ -2713,7 +2717,7 @@ void P_Write_Savegame_Header( const char * description )
 // Find the header line in the savebuffer
 char *  read_header_line( const char * idstr )
 {
-    char * fnd = strstr( save_p, idstr ); // find the :name:
+    char * fnd = strstr( (char *)save_p, idstr ); // find the :name:
     if( fnd ) // NULL if not found
         fnd += strlen(idstr);  // start of line content
     return fnd;
@@ -2744,8 +2748,8 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     save_game_abort = 0;	// all sync reads will check this
     save_p = savebuffer;
 
-    if( strncmp( save_p, sg_head_format, idname_length ) )  goto not_save;
-    if( ! strstr( save_p, "::END" ) )  goto not_save;
+    if( strncmp( (char *)save_p, sg_head_format, idname_length ) )  goto not_save;
+    if( ! strstr( (char *)save_p, "::END" ) )  goto not_save;
 
     // find header strings
     infop->name = read_header_line( ":name:" );
@@ -2753,7 +2757,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     infop->wad = read_header_line( ":wad:" );
     infop->map = read_header_line( ":map:" );
     infop->levtime = read_header_line( ":time:" );
-    save_p += strlen( save_p ) + 1; // find 0, to get past Langid header;
+    save_p += strlen( (char *)save_p ) + 1; // find 0, to get past Langid header;
 
     // terminate the strings, this modifies the header in the savebuffer
     // and prevents finding any more header lines
@@ -2778,11 +2782,8 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     if( READBYTE( save_p ) != sizeof(int))  goto wrong;
     reason = "boolean size";
     if( READBYTE( save_p ) != sizeof(boolean))  goto wrong;
-    // reserved header bytes
-    READBYTE( save_p );
-    READBYTE( save_p );
-    READBYTE( save_p );
-    READBYTE( save_p );
+    // skip reserved header bytes
+    save_p += 4;
    
     infop->msg[0] = 0;    
     return 1;
@@ -2829,6 +2830,18 @@ void P_SaveGame( void )
 #endif
    
     SG_SaveSync( SYNC_end );
+
+#if 0
+    // debug
+    uint32_t k;
+    for (k=0; k < pointermap.used; k++)
+      {
+	I_OutputMsg("%d  %p\n", k, pointermap.map[k].pointer);
+	if (pointermap.map[k].pointer == NULL)
+	  I_Error("P_SaveGame: Hole in pointermap!\n");
+	//CONS_Printf("%d  %p\n", k, pointermap.map[k].pointer);
+      }
+#endif
 
     ClearPointermap();
 }

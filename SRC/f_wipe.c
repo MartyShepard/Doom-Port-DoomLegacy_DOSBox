@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: f_wipe.c 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -156,9 +156,9 @@ int wipe_doColorXForm ( int   width,
         {
             if (*w != *e)
             {
-                if((newval=transtables[(*e<<8)+*w+((tr_transmor-1)<<FF_TRANSSHIFT)])==*w)
-                    if((newval=transtables[(*e<<8)+*w+((tr_transmed-1)<<FF_TRANSSHIFT)])==*w)
-                        if((newval=transtables[(*w<<8)+*e+((tr_transmor-1)<<FF_TRANSSHIFT)])==*w)
+                if((newval=translucenttables[TRANSLU_TABLE_more+(*e<<8)+*w])==*w)
+                    if((newval=translucenttables[TRANSLU_TABLE_med+(*e<<8)+*w])==*w)
+                        if((newval=translucenttables[TRANSLU_TABLE_more+(*w<<8)+*e])==*w)
                             newval=*e;
                 *w=newval;
                 changed = true;

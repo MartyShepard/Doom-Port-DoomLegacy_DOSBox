@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 596 2010-02-07 23:51:01Z smite-meister $
+// $Id: r_draw.h 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -85,8 +85,8 @@ extern fixed_t          dc_texturemid;
 extern byte*            dc_source;      // first pixel in a column
 
 // translucency stuff here
-extern byte*            transtables;    // translucency tables, should be (*transtables)[5][256][256]
-extern byte*            dc_transmap;
+extern byte*            translucenttables;   // translucency tables, should be (*transtables)[5][256][256]
+extern byte*            dc_translucentmap;   // ptr to selected table
 
 // Variable flat sizes SSNTails 06-10-2003
 extern int flatsize;
@@ -95,8 +95,16 @@ extern int flatsubtract;
 
 // translation stuff here
 
-extern byte*            translationtables;
-extern byte*            dc_translation;
+// [WDJ] player skin translation, skintrans[MAXSKINCOLORS][256]
+// Boom calls these TRANSLATION, but that confuses with translucent.
+extern byte*            skintranstables;  // player skin translation tables
+extern byte*            dc_skintran;  // ptr to selected skin table
+
+// for skin = 1..(MAXSKINNUM-1), skin=0 does not use translation
+#define SKIN_TO_SKINMAP( skin )  (&skintranstables[ ((skin)-1)<<8 ])
+// for flags containing MF_TRANSLATION bits, 0=original skin
+#define MF_TO_SKINMAP( flags )  (&skintranstables[ (((flags) & MF_TRANSLATION) >> (MF_TRANSSHIFT-8)) - 256 ])
+
 
 extern struct r_lightlist_s*      dc_lightlist;
 extern int                        dc_numlights;
@@ -122,7 +130,7 @@ extern fixed_t          ds_xstep;
 extern fixed_t          ds_ystep;
 
 extern byte*            ds_source;      // start of a 64*64 tile image
-extern byte*            ds_transmap;
+extern byte*            ds_translucentmap; // ptr to one translucent map
 
 
 // viewborder patches lump numbers

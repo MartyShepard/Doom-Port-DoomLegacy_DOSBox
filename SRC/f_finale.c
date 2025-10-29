@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: f_finale.c 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -79,6 +79,8 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "p_info.h"
+#include "p_chex.h"
+  // Chex_safe_pictures
 
 // Stage of animation:
 //  0 = text, 1 = art screen, 2 = character cast
@@ -97,6 +99,7 @@ void    F_StartCast (void);
 void    F_CastTicker (void);
 boolean F_CastResponder (event_t *ev);
 void    F_CastDrawer (void);
+void    F_Draw_interpic_Name( char * name );
 
 //
 // F_StartFinale
@@ -196,7 +199,7 @@ void F_StartFinale (void)
       }
 
       case heretic :
-		{
+       {
           S_ChangeMusic(mus_hcptd, true);
           switch(gameepisode)
           {
@@ -222,15 +225,15 @@ void F_StartFinale (void)
                   break;
           }
           break;
-		}
+	}
 
-	   case chexquest1: //DarkWolf95: Support for Chex Quest
-		{
-			S_ChangeMusic(mus_victor, true);
-			finaleflat = "FLOOR0_6";
-			finaletext = E1TEXT;
-			break;
-		}
+      case chexquest1: //DarkWolf95: Support for Chex Quest
+        {
+	  S_ChangeMusic(mus_victor, true);
+	  finaleflat = "FLOOR0_6";
+	  finaletext = E1TEXT;
+	  break;
+	}
 
       // Indeterminate.
       default:
@@ -284,6 +287,7 @@ void F_Ticker (void)
                     // force text to be write 
                     finalecount += MAXINT/2;
                 else
+	        {
                     if (gamemode == commercial)
                     {
                         if (gamemap == 30)
@@ -297,6 +301,7 @@ void F_Ticker (void)
                     else
                         // next animation state (just above)
                         finalecount = MAXINT;
+		}
             }
 
             if( gamemode != commercial)
@@ -679,6 +684,13 @@ void F_BunnyScroll (void)
     p1 = W_CachePatchName ("PFUB2", PU_LEVEL);
     p2 = W_CachePatchName ("PFUB1", PU_LEVEL);
 
+    if( gamemode == chexquest1 )
+    {
+        // if these are the bunny pictures, then replace them.
+        p1 = Chex_safe_pictures( "PFUB2", p1 );
+        p2 = Chex_safe_pictures( "PFUB1", p2 );
+    }
+
     V_MarkRect (0, 0, vid.width, vid.height);
 
     scrolled = 320 - (finalecount-230)/2;
@@ -785,6 +797,16 @@ void F_DrawUnderwater(void)
 }
 
 
+// Called from F_Drawer, to draw full screen
+void F_Draw_interpic_Name( char * name )
+{
+   patch_t*  pic = W_CachePatchName( name, PU_CACHE );  // endian fix
+   // Intercept some doom pictures that chex.wad left in (a young kids game).
+   if( gamemode == chexquest1 )
+     pic = Chex_safe_pictures( name, pic );
+   V_DrawScaledPatch(0,0,0, pic );
+}
+
 //
 // F_Drawer
 //
@@ -808,7 +830,7 @@ void F_Drawer (void)
                     if(W_CheckNumForName("e2m1")==-1)
                         V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
                     else
-                        // BP: search only in the first pwad since legacy define a pathc with same name
+                        // BP: search only in the first pwad since legacy defines a patch with same name
                         V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
                     break;
                 case 2:
@@ -826,24 +848,26 @@ void F_Drawer (void)
 
         }
         else
-        switch (gameepisode)
         {
-          case 1:
-            if ( gamemode == retail || gamemode == chexquest1 )
-              V_DrawScaledPatch_Name (0,0,0, text[CREDIT_NUM] );
-            else
-              V_DrawScaledPatch_Name (0,0,0, text[HELP2_NUM] );
-            break;
-          case 2:
-            V_DrawScaledPatch_Name(0,0,0, text[VICTORY2_NUM] );
-            break;
-          case 3:
-            F_BunnyScroll ();
-            break;
-          case 4:
-            V_DrawScaledPatch_Name (0,0,0, text[ENDPIC_NUM] );
-            break;
-        }
+	   switch (gameepisode)
+	   {
+	    case 1:
+	      if ( gamemode == retail || gamemode == chexquest1 )
+		F_Draw_interpic_Name( text[CREDIT_NUM] );
+	      else
+		F_Draw_interpic_Name( text[HELP2_NUM] );
+	      break;
+	    case 2:
+	      F_Draw_interpic_Name( text[VICTORY2_NUM] );
+	      break;
+	    case 3:
+	      F_BunnyScroll ();
+	      break;
+	    case 4:
+	      F_Draw_interpic_Name( text[ENDPIC_NUM] );
+	      break;
+	   }
+	}
     }
 
 }

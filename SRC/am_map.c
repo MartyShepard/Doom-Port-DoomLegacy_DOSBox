@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: am_map.c 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -160,26 +160,31 @@ static byte DWHITE      =    (256-47);
 #define FTOM(x) FixedMul(((x)<<16),scale_ftom)
 #define MTOF(x) (FixedMul((x),scale_mtof)>>16)
 // translates between frame-buffer and map coordinates
-#define CXMTOF(x)  (f_x + MTOF((x)-m_x))
-#define CYMTOF(y)  (f_y + (f_h - MTOF((y)-m_y)))
+// [WDJ] float because of overflows that FixedMul cannot handle.
+//#define CXMTOF(x)  (f_x + MTOF((x)-m_x))
+#define CXMTOF(x)  (f_x + (int)( (((double)(x))-m_x) * f_scale_mtof ))
+//#define CYMTOF(y)  (f_y + (f_h - MTOF((y)-m_y)))
+#define CYMTOF(y)  (f_y + (f_h - (int)( (((double)(y))-m_y) * f_scale_mtof ) ))
 
-// the following is crap
-#define LINE_NEVERSEE ML_DONTDRAW
-
+// map point, map coord.
 typedef struct
 {
     fixed_t             x,y;
 } mpoint_t;
 
+// map line, map coord
 typedef struct
 {
     mpoint_t a, b;
 } mline_t;
 
+#if 0
+// [WDJ] found to be unused
 typedef struct
 {
-    fixed_t slp, islp;
-} islope_t;
+    fixed_t yxslp, xyslp;  // the y/x slope and the inverse x/y slope
+} mslope_t;
+#endif
 
 
 //
@@ -271,35 +276,26 @@ static mpoint_t m_paninc; // how far the window pans each tic (map coords)
 static fixed_t  mtof_zoommul; // how far the window zooms in each tic (map coords)
 static fixed_t  ftom_zoommul; // how far the window zooms in each tic (fb coords)
 
+// [WDJ] calculate directly from center, avoid math overflow in m_x,m_y calcs.
+static mpoint_t m_curpos; // current center of attention
+// m_x, m_y are origin of map box (MIN), m_x2, m_y2 are bounds of map box (MAX)
 static fixed_t  m_x, m_y;   // LL x,y where the window is on the map (map coords)
 static fixed_t  m_x2, m_y2; // UR x,y where the window is on the map (map coords)
 
-//
 // width/height of window on map (map coords)
-//
 static fixed_t  m_w;
 static fixed_t  m_h;
 
-// based on level size
-static fixed_t  min_x;
-static fixed_t  min_y;
-static fixed_t  max_x;
-static fixed_t  max_y;
-
-static fixed_t  max_w; // max_x-min_x,
-static fixed_t  max_h; // max_y-min_y
-
-// based on player size
-static fixed_t  min_w;
-static fixed_t  min_h;
-
+// based on level size, used for window location checks
+static fixed_t  min_x, min_y;
+static fixed_t  max_x, max_y;
 
 static fixed_t  min_scale_mtof; // used to tell when to stop zooming out
 static fixed_t  max_scale_mtof; // used to tell when to stop zooming in
 
 // old stuff for recovery later
 static fixed_t old_m_w, old_m_h;
-static fixed_t old_m_x, old_m_y;
+static mpoint_t old_m_curpos;
 
 // old location used by the Follower routine
 static mpoint_t f_oldloc;
@@ -308,6 +304,7 @@ static mpoint_t f_oldloc;
 static fixed_t scale_mtof = INITSCALEMTOF;
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed_t scale_ftom;
+static double  f_scale_mtof = 2.33E-7; // init because of overflow
 
 static player_t *plr; // the player represented by an arrow
 
@@ -328,49 +325,76 @@ typedef void (*AMDRAWFLINEFUNC) (fline_t* fl, int color);
 static  AMDRAWFLINEFUNC  AM_drawFline;
 
 
-void V_MarkRect
-( int   x,
-  int   y,
-  int   width,
-  int   height );
-
 void AM_drawFline_soft ( fline_t*       fl,
                          int            color );
 
+
+#if 0
+// [WDJ] found to be unused
 
 // Calculates the slope and slope according to the x-axis of a line
 // segment in map coordinates (with the upright y-axis n' all) so
 // that it can be used with the brain-dead drawing stuff.
 
-void
-AM_getIslope
-( mline_t*      ml,
-  islope_t*     is )
+void AM_get_mslope ( mline_t* ml, mslope_t* ms )
 {
-    int dx, dy;
+    fixed_t dx, dy;
 
     dy = ml->a.y - ml->b.y;
     dx = ml->b.x - ml->a.x;
-    if (!dy) is->islp = (dx<0?-MAXINT:MAXINT);
-    else is->islp = FixedDiv(dx, dy);
-    if (!dx) is->slp = (dy<0?-MAXINT:MAXINT);
-    else is->slp = FixedDiv(dy, dx);
+    if (!dy) ms->xyslp = (dx<0?-MAXINT:MAXINT);
+    else ms->xyslp = FixedDiv(dx, dy);
+    if (!dx) ms->yxslp = (dy<0?-MAXINT:MAXINT);
+    else ms->yxslp = FixedDiv(dy, dx);
 
 }
+#endif
+
+// Set mapbox from m_curpos
+// with tests for overly large maps
+void AM_calc_mapbox( void )
+{
+    // limit center of map to min,max of level
+    if (m_curpos.x > max_x)
+        m_curpos.x = max_x;
+    else if (m_curpos.x < min_x)
+        m_curpos.x = min_x;
+
+    if (m_curpos.y > max_y)
+        m_curpos.y = max_y;
+    else if (m_curpos.y < min_y)
+        m_curpos.y = min_y;
+
+    // calc mapbox boundaries
+    m_x = m_curpos.x - m_w/2;
+    m_y = m_curpos.y - m_h/2;
+    // [WDJ] Because large map can overflow the subtraction
+    if ( m_x > m_curpos.x )  m_x = -MAXINT;
+    if ( m_y > m_curpos.y )  m_y = -MAXINT;
+
+    m_x2 = m_x + m_w;
+    m_y2 = m_y + m_h;
+    // [WDJ] Because large map can overflow the addition
+    if ( m_x2 < m_curpos.x )  m_x2 = MAXINT;
+    if ( m_y2 < m_curpos.y )  m_y2 = MAXINT;
+}
+
 
 //
 //
-//
-void AM_activateNewScale(void)
+// Called because of scale_mtof change
+void AM_newscale( fixed_t newscale )
 {
-    m_x += m_w/2;
-    m_y += m_h/2;
+    // new size
+    scale_mtof = newscale;
+    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+    // floating point scale because fixed_t overflows
+    //   div by 1<<32 to convert (fixed_t * fixed_t) to int
+    f_scale_mtof = (double)scale_mtof / ((double)((uint64_t)1<<32));
     m_w = FTOM(f_w);
     m_h = FTOM(f_h);
-    m_x -= m_w/2;
-    m_y -= m_h/2;
-    m_x2 = m_x + m_w;
-    m_y2 = m_y + m_h;
+    // from m_curpos
+    AM_calc_mapbox();
 }
 
 //
@@ -378,10 +402,9 @@ void AM_activateNewScale(void)
 //
 void AM_saveScaleAndLoc(void)
 {
-    old_m_x = m_x;
-    old_m_y = m_y;
     old_m_w = m_w;
     old_m_h = m_h;
+    old_m_curpos = m_curpos;
 }
 
 //
@@ -394,18 +417,16 @@ void AM_restoreScaleAndLoc(void)
     m_h = old_m_h;
     if (!followplayer)
     {
-        m_x = old_m_x;
-        m_y = old_m_y;
+        m_curpos = old_m_curpos;
     } else {
-        m_x = plr->mo->x - m_w/2;
-        m_y = plr->mo->y - m_h/2;
+        // map box follows player position
+        m_curpos.x = plr->mo->x;
+        m_curpos.y = plr->mo->y;
     }
-    m_x2 = m_x + m_w;
-    m_y2 = m_y + m_h;
+    AM_calc_mapbox();  // from m_curpos
 
     // Change the scaling multipliers
-    scale_mtof = FixedDiv(f_w<<FRACBITS, m_w);
-    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+    AM_newscale( FixedDiv(f_w<<FRACBITS, m_w) );
 }
 
 //
@@ -413,10 +434,9 @@ void AM_restoreScaleAndLoc(void)
 //
 void AM_addMark(void)
 {
-    markpoints[markpointnum].x = m_x + m_w/2;
-    markpoints[markpointnum].y = m_y + m_h/2;
+    markpoints[markpointnum].x = m_curpos.x;
+    markpoints[markpointnum].y = m_curpos.y;
     markpointnum = (markpointnum + 1) % AM_NUMMARKPOINTS;
-
 }
 
 //
@@ -426,8 +446,6 @@ void AM_addMark(void)
 void AM_findMinMaxBoundaries(void)
 {
     int i;
-    fixed_t a;
-    fixed_t b;
 
     min_x = min_y =  MAXINT;
     max_x = max_y = -MAXINT;
@@ -445,18 +463,25 @@ void AM_findMinMaxBoundaries(void)
             max_y = vertexes[i].y;
     }
 
-    max_w = max_x - min_x;
-    max_h = max_y - min_y;
+#if 0
+    // [WDJ] Found to be unused
+    fixed_t min_w = 2*PLAYERRADIUS; // const? never changed?
+    fixed_t min_h = 2*PLAYERRADIUS;
+#endif
 
-    min_w = 2*PLAYERRADIUS; // const? never changed?
-    min_h = 2*PLAYERRADIUS;
-
-    a = FixedDiv(f_w<<FRACBITS, max_w);
-    b = FixedDiv(f_h<<FRACBITS, max_h);
-
+    // [WDJ] were static global vars that were not used outside this func.
+    // Calculate using 1/2 max because Europe.wad causes overflow to negative.
+    fixed_t halfmax_w = max_x/2 - min_x/2;
+    fixed_t halfmax_h = max_y/2 - min_y/2;
+    fixed_t a = FixedDiv(f_w<<(FRACBITS-1), halfmax_w);
+    fixed_t b = FixedDiv(f_h<<(FRACBITS-1), halfmax_h);
     min_scale_mtof = a < b ? a : b;
+    // overflow during FixedMul limits max scale_ftom, and thus min scale_mtof
+    fixed_t max_ftom = (fixed_t)MAXINT / f_w; // limit of overflow
+    fixed_t min_mtof = FixedDiv(FRACUNIT, max_ftom);
+    if( min_scale_mtof < min_mtof )
+       min_scale_mtof = min_mtof;
     max_scale_mtof = FixedDiv(f_h<<FRACBITS, 2*PLAYERRADIUS);
-
 }
 
 
@@ -471,21 +496,9 @@ void AM_changeWindowLoc(void)
         f_oldloc.x = MAXINT;
     }
 
-    m_x += m_paninc.x;
-    m_y += m_paninc.y;
-
-    if (m_x + m_w/2 > max_x)
-        m_x = max_x - m_w/2;
-    else if (m_x + m_w/2 < min_x)
-        m_x = min_x - m_w/2;
-
-    if (m_y + m_h/2 > max_y)
-        m_y = max_y - m_h/2;
-    else if (m_y + m_h/2 < min_y)
-        m_y = min_y - m_h/2;
-
-    m_x2 = m_x + m_w;
-    m_y2 = m_y + m_h;
+    m_curpos.x += m_paninc.x;
+    m_curpos.y += m_paninc.y;
+    AM_calc_mapbox(); // from m_curpos
 }
 
 
@@ -518,13 +531,12 @@ static void AM_initVariables(void)
                 break;
 
     plr = &players[pnum];
-    m_x = plr->mo->x - m_w/2;
-    m_y = plr->mo->y - m_h/2;
+    m_curpos.x = plr->mo->x;
+    m_curpos.y = plr->mo->y;
     AM_changeWindowLoc();
 
     // for saving & restoring
-    old_m_x = m_x;
-    old_m_y = m_y;
+    old_m_curpos = m_curpos;
     old_m_w = m_w;
     old_m_h = m_h;
 
@@ -557,7 +569,6 @@ static void AM_initVariables(void)
     }
     // inform the status bar of the change
     ST_Responder(&st_notify);
-
 }
 
 
@@ -613,8 +624,10 @@ void AM_LevelInit(void)
     leveljuststarted = 0;
 
     f_x = f_y = 0;
-    f_w = vid.width;
-    f_h = vid.height - stbarheight;
+    // [WDJ] correct for split screen and reduced screen
+    f_w = rdraw_viewwidth;   // was vid.width
+    f_h = rdraw_viewheight;  // was vid.height - stbarheight;
+
 
     if (rendermode == render_soft)
         AM_drawFline = AM_drawFline_soft;
@@ -629,7 +642,7 @@ void AM_LevelInit(void)
     scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
     if (scale_mtof > max_scale_mtof)
         scale_mtof = min_scale_mtof;
-    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+    AM_newscale( scale_mtof );
 }
 
 
@@ -653,44 +666,24 @@ void AM_Stop(void)
 //
 void AM_Start (void)
 {
-    static int lastlevel = -1, lastepisode = -1;
+    static int am_lastlevel = -1, am_lastepisode = -1;
+    // am_recalc, which is set in SCR_Recalc upon screen size change
 
     if (!stopped)
         AM_Stop();
     stopped = false;
-    if (lastlevel != gamemap || lastepisode != gameepisode
+    if (am_lastlevel != gamemap || am_lastepisode != gameepisode
         || am_recalc)      //added:05-02-98:screen size changed
     {
         am_recalc = false;
 
         AM_LevelInit();
-        lastlevel = gamemap;
-        lastepisode = gameepisode;
+        am_lastlevel = gamemap;
+        am_lastepisode = gameepisode;
     }
     AM_initVariables();
     AM_loadPics();
 }
-
-//
-// set the window scale to the maximum size
-//
-void AM_minOutWindowScale(void)
-{
-    scale_mtof = min_scale_mtof;
-    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-    AM_activateNewScale();
-}
-
-//
-// set the window scale to the minimum size
-//
-void AM_maxOutWindowScale(void)
-{
-    scale_mtof = max_scale_mtof;
-    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-    AM_activateNewScale();
-}
-
 
 //
 // Handle events (user inputs) in automap mode
@@ -710,7 +703,7 @@ boolean AM_Responder ( event_t*      ev )
         {
             //faB: prevent alt-tab in win32 version to activate automap just before minimizing the app
             //         doesn't do any harm to the DOS version
-            if (!gamekeydown[KEY_ALT])
+            if (!altdown)
             {
                 bigstate = 0;       //added:24-01-98:toggle off large view
                 AM_Start ();
@@ -757,7 +750,7 @@ boolean AM_Responder ( event_t*      ev )
             if (bigstate)
             {
                 AM_saveScaleAndLoc();
-                AM_minOutWindowScale();
+	        AM_newscale( min_scale_mtof );
             }
             else AM_restoreScaleAndLoc();
             break;
@@ -820,17 +813,13 @@ boolean AM_Responder ( event_t*      ev )
 //
 void AM_changeWindowScale(void)
 {
-
     // Change the scaling multipliers
     scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
-    scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-
     if (scale_mtof < min_scale_mtof)
-        AM_minOutWindowScale();
+        scale_mtof = min_scale_mtof;
     else if (scale_mtof > max_scale_mtof)
-        AM_maxOutWindowScale();
-    else
-        AM_activateNewScale();
+        scale_mtof = max_scale_mtof;
+    AM_newscale( scale_mtof );
 }
 
 
@@ -842,10 +831,9 @@ void AM_doFollowPlayer(void)
 
     if (f_oldloc.x != plr->mo->x || f_oldloc.y != plr->mo->y)
     {
-        m_x = FTOM(MTOF(plr->mo->x)) - m_w/2;
-        m_y = FTOM(MTOF(plr->mo->y)) - m_h/2;
-        m_x2 = m_x + m_w;
-        m_y2 = m_y + m_h;
+        m_curpos.x = FTOM(MTOF(plr->mo->x));
+        m_curpos.y = FTOM(MTOF(plr->mo->y));
+        AM_calc_mapbox(); // from m_curpos
         f_oldloc.x = plr->mo->x;
         f_oldloc.y = plr->mo->y;
 
@@ -853,9 +841,7 @@ void AM_doFollowPlayer(void)
         //  m_y = FTOM(MTOF(plr->mo->y - m_h/2));
         //  m_x = plr->mo->x - m_w/2;
         //  m_y = plr->mo->y - m_h/2;
-
     }
-
 }
 
 //
@@ -993,8 +979,7 @@ void AM_clearFB(int color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle  the common cases.
 //
-boolean AM_clipMline ( mline_t* ml,
-  fline_t*      fl )
+boolean AM_clipMline ( mline_t* ml, fline_t* fl )
 {
     enum
     {
@@ -1009,9 +994,7 @@ boolean AM_clipMline ( mline_t* ml,
     register    int outside;
 
     fpoint_t    tmp;
-    int         dx;
-    int         dy;
-
+    int         dx, dy;
 
 #define DOOUTCODE(oc, mx, my) \
     (oc) = 0; \
@@ -1126,19 +1109,14 @@ void AM_drawFline_soft ( fline_t*       fl,
                          int            color )
 
 {
-    register int x;
-    register int y;
-    register int dx;
-    register int dy;
-    register int sx;
-    register int sy;
-    register int ax;
-    register int ay;
+    register int x, y;
+    register int dx, dy;
+    register int sx, sy;
+    register int ax, ay;
     register int d;
 
-
 #ifdef PARANOIA
-    static int fuck = 0;
+    static int lc_prob_count = 0;
 
     // For debugging only
     if (      fl->a.x < 0 || fl->a.x >= f_w
@@ -1146,7 +1124,7 @@ void AM_drawFline_soft ( fline_t*       fl,
            || fl->b.x < 0 || fl->b.x >= f_w
            || fl->b.y < 0 || fl->b.y >= f_h)
     {
-        CONS_Printf("line clipping problem %d \r", fuck++);
+        CONS_Printf("line clipping problem %d \r", lc_prob_count++);
         return;
     }
 #endif
@@ -1225,13 +1203,15 @@ void AM_drawGrid(int color)
     // Figure out start of vertical gridlines
     start = m_x;
     if ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))
+    {
         start += (MAPBLOCKUNITS<<FRACBITS)
             - ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
-    end = m_x + m_w;
+    }
+    end = m_x2;
 
     // draw vertical gridlines
     ml.a.y = m_y;
-    ml.b.y = m_y+m_h;
+    ml.b.y = m_y2;
     for (x=start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS))
     {
         ml.a.x = x;
@@ -1244,11 +1224,11 @@ void AM_drawGrid(int color)
     if ((start-bmaporgy)%(MAPBLOCKUNITS<<FRACBITS))
         start += (MAPBLOCKUNITS<<FRACBITS)
             - ((start-bmaporgy)%(MAPBLOCKUNITS<<FRACBITS));
-    end = m_y + m_h;
+    end = m_y2;
 
     // draw horizontal gridlines
     ml.a.x = m_x;
-    ml.b.x = m_x + m_w;
+    ml.b.x = m_x2;
     for (y=start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS))
     {
         ml.a.y = y;
@@ -1275,7 +1255,7 @@ void AM_drawWalls(void)
         l.b.y = lines[i].v2->y;
         if (am_cheating || (lines[i].flags & ML_MAPPED))
         {
-            if ((lines[i].flags & LINE_NEVERSEE) && !am_cheating)
+            if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
                 continue;
             if (!lines[i].backsector)
             {
@@ -1322,7 +1302,7 @@ void AM_drawWalls(void)
         }
         else if (plr->powers[pw_allmap])
         {
-            if (!(lines[i].flags & LINE_NEVERSEE)) AM_drawMline(&l, GRAYS+3);
+            if (!(lines[i].flags & ML_DONTDRAW)) AM_drawMline(&l, GRAYS+3);
         }
     }
 }
@@ -1332,9 +1312,7 @@ void AM_drawWalls(void)
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void AM_rotate ( fixed_t*       x,
-  fixed_t*      y,
-  angle_t       a )
+void AM_rotate ( fixed_t* x, fixed_t* y, angle_t a )
 {
     fixed_t tmpx;
 
@@ -1407,12 +1385,12 @@ void AM_drawPlayers(void)
     if (!multiplayer)
     {
         if (am_cheating)
-            AM_drawLineCharacter
-                (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
+            AM_drawLineCharacter (
+                 cheat_player_arrow, NUMCHEATPLYRLINES, 0,
                  plr->mo->angle, DWHITE, plr->mo->x, plr->mo->y);
         else
-            AM_drawLineCharacter
-                (player_arrow, NUMPLYRLINES, 0,
+            AM_drawLineCharacter (
+                 player_arrow, NUMPLYRLINES, 0,
                  plr->mo->angle, DWHITE, plr->mo->x, plr->mo->y);
         return;
     }
@@ -1435,18 +1413,19 @@ void AM_drawPlayers(void)
             if(p->skincolor==0)
                 color = GREENS;
             else
-                color = *(translationtables + ((p->skincolor-1)<<8) +GREENS+8);
+	    {
+//                color = *(translationtables + ((p->skincolor-1)<<8) +GREENS+8);
+                color = SKIN_TO_SKINMAP(p->skincolor)[GREENS+8];
+	    }
         }
 
-        AM_drawLineCharacter
-            (player_arrow, NUMPLYRLINES, 0, p->mo->angle,
+        AM_drawLineCharacter (
+             player_arrow, NUMPLYRLINES, 0, p->mo->angle,
              color, p->mo->x, p->mo->y);
     }
-
 }
 
-void AM_drawThings ( int        colors,
-  int   colorrange)
+void AM_drawThings ( int colors, int colorrange)
 {
     int         i;
     mobj_t*     t;
@@ -1482,7 +1461,6 @@ void AM_drawMarks(void)
                 V_DrawPatch(fx, fy, FB, marknums[i]);
         }
     }
-
 }
 
 void AM_drawCrosshair(int color)
@@ -1524,5 +1502,4 @@ void AM_Drawer (void)
     }
 
     V_MarkRect(f_x, f_y, f_w, f_h);
-
 }

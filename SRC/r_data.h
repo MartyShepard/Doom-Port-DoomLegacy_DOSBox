@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 659 2010-05-21 15:39:28Z wesleyjohnson $
+// $Id: r_data.h 665 2010-06-03 12:51:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -223,6 +223,11 @@ int R_CheckTextureNumForName (char *name);
 
 void R_ClearColormaps();
 int R_ColormapNumForName(char *name);
-int R_CreateColormap(char *p1, char *p2, char *p3);
+
+// The colorstr is the toptexture name.
+// The ctrlstr is the midtexture name.
+// The fadestr is the bottomtexture name.
+int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr);
+
 char *R_ColormapNameForNum(int num);
 #endif

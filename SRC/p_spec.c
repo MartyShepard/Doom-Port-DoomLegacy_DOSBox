@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 655 2010-05-19 18:07:40Z wesleyjohnson $
+// $Id: p_spec.c 715 2010-07-31 18:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2850,15 +2850,16 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int f
 
   //Add the floor
   ffloor = Z_Malloc(sizeof(ffloor_t), PU_LEVEL, NULL);
-  ffloor->secnum = modsec - sectors;
+  ffloor->model_secnum = modsec - sectors; // model sector from linedef
   ffloor->target = taggedsec;
+  // model sector floor -> ffloor bottom
   ffloor->bottomheight     = &modsec->floorheight;
   ffloor->bottompic        = &modsec->floorpic;
   //ffloor->bottomlightlevel = &modsec->lightlevel;
   ffloor->bottomxoffs      = &modsec->floor_xoffs;
   ffloor->bottomyoffs      = &modsec->floor_yoffs;
 
-  //Add the ceiling
+  // model sector ceiling -> ffloor top
   ffloor->topheight     = &modsec->ceilingheight;
   ffloor->toppic        = &modsec->ceilingpic;
   ffloor->toplightlevel = &modsec->lightlevel;
@@ -2867,6 +2868,10 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int f
 
   ffloor->flags = flags;
   ffloor->master = master;
+  // [WDJ] do not leave uninit
+//  ffloor->ff_delta = 0;   // unused
+  ffloor->lastlight = 0;  // caused segfault
+  ffloor->alpha = 0;
 
   if(flags & FF_TRANSLUCENT)
   {
@@ -2914,6 +2919,10 @@ void P_AddFFloor(sector_t* sec, ffloor_t* ffloor)
 //
 
 // Parses command line parameters.
+
+// Called by P_SetupLevel after all Load of sectors, linedef, and sidedef.
+// P_LoadSideDefs2 has already interpreted colormap and texture
+// for linedef specials.
 void P_SpawnSpecials (void)
 {
     sector_t*   sector;
@@ -3010,41 +3019,53 @@ void P_SpawnSpecials (void)
     //  Init line EFFECTs
     for (i=0; i < numlines; i++)
     {
-        // [WDJ] replace all lines[i] and lines+i with one ptr variable set here.
-        // It is used in every case below.
         line_t * effline = & lines[i]; // effect line
-        sector_t * msecp = NULL; // model sector ptr
-        int msec = -1; // model sector number for effline
+        sector_t * model_secp = NULL; // model sector ptr (control sector)
+        int model_secnum = -1; // model sector number for effline
        
         // Not all specials use nor require this, so no error messages
         if( effline->sidenum[0] >= 0 )
         {
 	    // get model sector and sector number from side 0
-	    msecp = sides[ effline->sidenum[0] ].sector;  // frontsector
-            msec = msecp - sectors; // sector index
+	    model_secp = sides[ effline->sidenum[0] ].sector;  // frontsector
+            model_secnum = model_secp - sectors; // sector index
 	}
        
         int fsecn = -1;  // init search FindSector
         switch(effline->special)
         {
 	  // [WDJ] Protect here, if model is set then ensure modelsec >= 0
+	  // model sector == control sector
 
           // support for drawn heights coming from different sector
           case 242:	// Boom deep water
-	    if ( msec < 0 )  goto missing_model;
+	    // Divides the tagged sectors using the model sector ceiling
+	    // and floor, heights and flats.
+	    // Renders within and beyond tagged sectors floor and ceiling,
+	    // which can make them invisible.
+	    // Uses top texture, middle texture, bottom texture as colormaps,
+	    // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
+	    // Uses the model sector lightlevel underwater, and over ceiling.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
-              sectors[fsecn].modelsec = msec;
+              sectors[fsecn].modelsec = model_secnum;
               sectors[fsecn].model = SM_Boom_deep_water;
 	    }
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
           case 280:	// Legacy water
-	    if ( msec < 0 )  goto missing_model;
+	    // 3D water uses model sector ceiling and floor, heights and flats.
+	    // The model sector floor and ceiling are rendered as top of water,
+	    // and fake ceiling, only within limits of tagged sector.
+	    // Uses top texture, middle texture, bottom texture as colormaps,
+	    // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
+	    // Uses the model sector lightlevel underwater, and over ceiling.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
             {
-              sectors[fsecn].modelsec = msec;
+              sectors[fsecn].modelsec = model_secnum;
               sectors[fsecn].model = SM_Legacy_water;
             }
             break;
@@ -3060,93 +3081,127 @@ void P_SpawnSpecials (void)
             break;
 
           case 281:	// Legacy solid 3D floor with shadow, in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+	    // The middle texture is the slab sides.
+	    // Under the 3Dfloor is the light and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
             break;
 
           case 289:	// Legacy solid 3D floor without shadow, in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+	    // The middle texture is the slab sides.
+	    // Light below the slab is the same as above.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                         FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
             break;
 
           // TL block
           case 300:	// Legacy solid translucent 3D floor in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+	    // The middle texture is the slab sides, displayed translucent.
+	    // Light below the slab is the same as above.
+	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
             break;
 
           // TL water
           case 301:	// Legacy translucent 3D water in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // 3D water uses model sector ceiling and floor, heights and flats.
+	    // The middle texture is the water sides, displayed translucent.
+	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
+            // Within the water is the lightlevel and colormap of the model sector.
+	    // Under the 3Dfloor is the light and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                         FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Fog
           case 302:	// Legacy 3D fog in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // Fog uses model sector ceiling and floor heights.
+            // Within the fog is the lightlevel and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
+#if 0
             // SoM: Because it's fog, check for an extra colormap and set
             // the fog flag...
-            if(msecp->extra_colormap)
-              msecp->extra_colormap->fog = 1;
+	    // [WDJ] FIXME: this messes with a common colormap, because
+	    // one sector used it for fog ??
+	    // It should be copied and the copy modified.
+	    // Also ext_colormap is a current selection and may not even be
+	    // set to a valid value at this time.
+            if(model_secp->ext_colormap)
+              model_secp->ext_colormap->fog = 1;
+#endif	   
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Light effect
           case 303:	// Legacy 3D ceiling light in tagged
-	    if ( msec < 0 )  goto missing_model;
+	    // Light uses model sector ceiling heights.
+            // Below the ceiling is the lightlevel and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_CUTSPRITES);
             break;
 
           // Opaque water
           case 304:	// Legacy opaque fluid
-	    if ( msec < 0 )  goto missing_model;
+	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+	    // The middle texture is the slab sides.
+            // Within the water is the lightlevel and colormap of the model sector.
+	    // Under the 3Dfloor is the light and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
             break;
 
           // Double light effect
           case 305:	// Legacy double light, within slab
-	    if ( msec < 0 )  goto missing_model;
+	    // Light uses model sector ceiling and floor heights.
+            // Within the light bounds is the lightlevel and colormap of the model sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
             break;
 
           // Invisible barrier
           case 306:	// Legacy invisible floor
-	    if ( msec < 0 )  goto missing_model;
+	    // 3Dfloor slab uses model sector ceiling and floor heights.
+	    // No light effects, it is invisible.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              P_AddFakeFloor(&sectors[fsecn], msecp, effline,
+              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID);
             break;
 
           // Boom independent floor lighting (e.g. lava)
-	  // Set floor light to light in control sector
           case 213:
-	    if ( msec < 0 )  goto missing_model;
+	    // Set floor light to light in control sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              sectors[fsecn].floorlightsec = msec;
+              sectors[fsecn].floorlightsec = model_secnum;
             break;
 
           // Boom independent ceiling lighting
-	  // Set ceiling light to light in control sector
           case 261:
-	    if ( msec < 0 )  goto missing_model;
+	    // Set ceiling light to light in control sector.
+	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-              sectors[fsecn].ceilinglightsec = msec;
+              sectors[fsecn].ceilinglightsec = model_secnum;
             break;
 		  
           // Instant lower for floor SSNTails 06-13-2002
@@ -3744,15 +3799,15 @@ void T_Pusher(pusher_t *p)
 
         tmpusher = p; // MT_PUSH/MT_PULL point source
         radius = p->radius; // where force goes to zero
-        tmbbox[BOXTOP]    = p->y_src + radius;
-        tmbbox[BOXBOTTOM] = p->y_src - radius;
-        tmbbox[BOXRIGHT]  = p->x_src + radius;
-        tmbbox[BOXLEFT]   = p->x_src - radius;
+        tm_bbox[BOXTOP]    = p->y_src + radius;
+        tm_bbox[BOXBOTTOM] = p->y_src - radius;
+        tm_bbox[BOXRIGHT]  = p->x_src + radius;
+        tm_bbox[BOXLEFT]   = p->x_src - radius;
 
-        xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = (tm_bbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+        xh = (tm_bbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+        yl = (tm_bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+        yh = (tm_bbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
         for (bx=xl ; bx<=xh ; bx++)
         {
             for (by=yl ; by<=yh ; by++)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: g_game.c 687 2010-06-15 00:49:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1853,6 +1853,7 @@ void G_DoCompleted (void)
         AM_Stop ();
 
     if ( gamemode != commercial)
+    {
         switch(gamemap)
         {
           case 8:
@@ -1872,9 +1873,12 @@ void G_DoCompleted (void)
                 players[i].didsecret = true;
             break;
         }
-	//DarkWolf95: September 11, 2004: More chex stuff
-	if (gamemode == chexquest1 && gamemap == 5)
-	{
+    }
+    //DarkWolf95: September 11, 2004: More chex stuff
+    if (gamemode == chexquest1)
+    {
+        if( !modifiedgame && gamemap == 5 )  // original chexquest ends at E1M5
+        {
 		if(cv_deathmatch.value)
 			wminfo.next=0;
 		else
@@ -1884,6 +1888,7 @@ void G_DoCompleted (void)
 			return;
 		}
 	}
+    }
 
     if(!dedicated)
 	wminfo.didsecret = players[consoleplayer].didsecret;
@@ -2868,19 +2873,9 @@ boolean G_CheckDemoStatus (void)
         timingdemo = false;
         f1=time;
         f2=framecount*TICRATE;
-        CONS_Printf ("timed %i gametics in %i realtics\n"
-                     "%f secondes, %f avg fps\n"
+        CONS_Printf ("\2Timed %i - Gametics in %i Realtics\n"
+                     "\2%f Secondes, %f avg FPS\n"
                      ,leveltime,time,f1/TICRATE,f2/f1);
-					 
-		#if defined( __DJGPP__ )
-			#ifdef DEBUG_DEMO			
-				fprintf (stderr,"timed %i gametics in %i realtics\n"
-                     "%f secondes, %f avg fps\n"
-                     ,leveltime,time,f1/TICRATE,f2/f1);		
-				I_Quit ();
-			#endif
-		#endif	
-		
         if( restorecv_vidwait != cv_vidwait.value )
             CV_SetValue(&cv_vidwait, restorecv_vidwait);
         D_AdvanceDemo ();

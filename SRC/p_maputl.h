@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_maputl.h 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -109,8 +109,6 @@ boolean P_BlockThingsIterator (int x, int y, boolean(*func)(mobj_t*) );
 #define PT_EARLYOUT     4
 
 extern divline_t        trace;
-
-extern fixed_t      tmbbox[4];     //p_map.c
 
 // call your user function for each line of the blockmap in the bbox defined by the radius
 /*boolean P_RadiusLinesCheck (  fixed_t    radius,

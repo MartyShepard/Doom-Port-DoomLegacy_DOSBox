@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_node.h 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -50,29 +50,27 @@ typedef enum
 
 typedef struct SearchNode_s
 {
-	boolean		visited;
+    boolean  visited;
 	
-	fixed_t		costDir[NUMBOTDIRS];	//the cost of going from this node in a particular dest
+    fixed_t  costDir[NUMBOTDIRS];	//the cost of going from this node in a particular dest
 	
-	fixed_t		cost,
-				f,
-				heuristic,
-				x, y;
+    fixed_t  cost,
+	     f,
+	     heuristic,
+	     x, y;
 
-	struct SearchNode_s		*pprevious, *pnext, *vnext, *vprevious,
-							*dir[NUMBOTDIRS];
+    struct SearchNode_s  *pprevious, *pnext, *vnext, *vprevious,
+			 *dir[NUMBOTDIRS];
 
 #ifdef SHOWBOTPATH
-	mobj_t		*mo;
+    mobj_t   *mo;
 #endif
 } SearchNode_t;
 
-extern SearchNode_t***		botNodeArray;
-extern int					numbotnodes,
-							xOffset,
-							xSize,
-							yOffset,
-							ySize;
+extern SearchNode_t***    botNodeArray;
+extern int    numbotnodes,
+	      xOffset, yOffset,
+              xSize, ySize;
 
 //boolean B_PTRPathTraverse (intercept_t *in);
 SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y);
@@ -80,7 +78,7 @@ SearchNode_t* B_GetNodeAt(fixed_t x, fixed_t y);
 SearchNode_t* B_GetClosestReachableNode(fixed_t x, fixed_t y);
 boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t desty);
 void B_BuildNodes(SearchNode_t* node);
-void B_InitNodes();
+void B_InitNodes(void);
 
 #endif
 

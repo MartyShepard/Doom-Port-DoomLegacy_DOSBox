@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 572 2009-11-29 01:14:35Z wesleyjohnson $
+// $Id: r_draw16.c 667 2010-06-03 12:59:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -44,8 +44,10 @@
 extern short    color8to16[256];        //remap color index to highcolor
 extern short*   hicolormaps;            //remap high colors to high colors..
 
-#define HIMASK1   0x7bde     //kick out the upper bit of each
-                                        //composant (we're in 5:5:5)
+//hicolor composant (we're in 5:5:5)
+#define HIMASK_11110   0x7bde     //kick out the upper bit of each ??
+#define HIMASK_01111   0x3def     //mask out the upper bit of R,G,B
+#define HIMASK_01110   0x39ce	  //mask out the upper and lowest bit of R,G,B
 
 //  standard upto 128high posts column drawer
 //
@@ -182,11 +184,12 @@ void R_DrawFuzzColumn_16 (void)
 
     do
     {
-        // Lookup framebuffer, and retrieve
-        //  a pixel that is either one column
+        // Lookup framebuffer, and retrieve a pixel that is either one column
         //  left or right of the current one.
         // Add index from colormap to index.
-        *dest = color8to16[colormaps[6*256+dest[fuzzoffset[fuzzpos]]]];
+	// Remap existing dest, modify position, dim through LIGHTTABLE[6].
+//        *dest = color8to16[reg_colormaps[6*256+dest[fuzzoffset[fuzzpos]]]];
+        *dest = color8to16[ reg_colormaps[ LIGHTTABLE(6) + dest[fuzzoffset[fuzzpos]]] ];
 
         // Clamp table lookup index.
         if (++fuzzpos == FUZZTABLE)
@@ -243,8 +246,17 @@ void R_DrawTranslucentColumn_16 (void)
     // Here we do an additional index re-mapping.
     do
     {
-        *dest =( ((color8to16[dc_source[frac>>FRACBITS]]>>1) & 0x39ce) +
-                 (*dest & HIMASK1) ) /*>> 1*/ & 0x7fff;
+        // Remap the existing dest color, dimming it through something?.
+	// color is in 5,5,5 format
+	// (c>>1 & HIMASK_01110) ==> multiply R,G,B by 0.5 and mask lsb
+	// perhaps meant: (c>>1 & HIMASK_01111) ==> multiply R,G,B by 0.5
+	// Maybe the least bit is sacrificed so that carries from the add
+        // does not bleed blue into green, and green into red, too much.
+	// But if such carries are occuring then the color math is overflowing
+	// and wrapping back to black.
+	// An OR of selected bits, dependent upon a translucent mask, would be more stable.
+        *dest =( ((color8to16[dc_source[frac>>FRACBITS]]>>1) & HIMASK_01110) +
+                 (*dest & HIMASK_11110) ) /*>> 1*/ & 0x7fff;
 
         dest += vid.width;
         frac += fracstep;
@@ -288,7 +300,7 @@ void R_DrawTranslatedColumn_16 (void)
     // Here we do an additional index re-mapping.
     do
     {
-        *dest = color8to16[ dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]] ];
+        *dest = color8to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
         dest += vid.width;
 
         frac += fracstep;

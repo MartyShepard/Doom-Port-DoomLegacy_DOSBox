@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_func.c 703 2010-07-12 16:22:53Z smite-meister $
 //
-// Copyright(C) 2000 Simon Howard
+// Copyright (C) 2000 Simon Howard
+// Copyright (C) 2000-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -234,7 +235,7 @@ void SF_ArrayLength(void);       // impls: int length(array)
 // values can be returned from the functions using
 // the variable 't_return'
 
-void SF_Print( void )
+void SF_Print()
 {
     int i;
 
@@ -248,14 +249,14 @@ void SF_Print( void )
 }
 
 // return a random number from 0 to 255
-void SF_Rnd( void )
+void SF_Rnd()
 {
     t_return.type = svt_int;
     t_return.value.i = rand() % 256;
 }
 
 // return a random number from 0 to 255
-void SF_PRnd( void )
+void SF_PRnd()
 {
     t_return.type = svt_int;
     t_return.value.i = P_Random();
@@ -264,7 +265,7 @@ void SF_PRnd( void )
 // looping section. using the rover, find the highest level
 // loop we are currently in and return the section_t for it.
 
-section_t *looping_section( void )
+section_t *looping_section()
 {
     section_t *best = NULL;     // highest level loop we're in
     // that has been found so far
@@ -297,7 +298,7 @@ section_t *looping_section( void )
 }
 
         // "continue;" in FraggleScript is a function
-void SF_Continue( void )
+void SF_Continue()
 {
     section_t *section;
 
@@ -310,7 +311,7 @@ void SF_Continue( void )
     rover = section->end;       // jump to the closing brace
 }
 
-void SF_Break( void )
+void SF_Break()
 {
     section_t *section;
 
@@ -323,7 +324,7 @@ void SF_Break( void )
     rover = section->end + 1;   // jump out of the loop
 }
 
-void SF_Goto( void )
+void SF_Goto()
 {
     if (t_argc < 1)
     {
@@ -344,12 +345,12 @@ void SF_Goto( void )
     rover = t_argv[0].value.labelptr;
 }
 
-void SF_Return( void )
+void SF_Return()
 {
     killscript = true;  // kill the script
 }
 
-void SF_Include( void )
+void SF_Include()
 {
     char tempstr[9];
 
@@ -369,7 +370,7 @@ void SF_Include( void )
     parse_include(tempstr);
 }
 
-void SF_Input( void )
+void SF_Input()
 {
 #if 1
    // [WDJ] was disabled in 143beta_macosx
@@ -385,18 +386,18 @@ void SF_Input( void )
     CONS_Printf("input() function not available in doom\a\n");
 }
 
-void SF_Beep( void )
+void SF_Beep()
 {
     CONS_Printf("\3");
 }
 
-void SF_Clock( void )
+void SF_Clock()
 {
     t_return.type = svt_int;
     t_return.value.i = (gametic * 100) / 35;
 }
 
-void SF_ClockTic( void )
+void SF_ClockTic()
 {
 	t_return.type = svt_int;
 	t_return.value.i = gametic;
@@ -404,12 +405,12 @@ void SF_ClockTic( void )
 
     /**************** doom stuff ****************/
 
-void SF_ExitLevel( void )
+void SF_ExitLevel()
 {
     G_ExitLevel();
 }
 
-void SF_Warp( void )  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
+void SF_Warp()  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
 {
 	
 	int reset = 1;
@@ -440,7 +441,7 @@ void SF_Warp( void )  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
 }
    
      // centremsg
-void SF_Tip( void )
+void SF_Tip()
 {
     int i;
     char *tempstr;
@@ -463,7 +464,7 @@ void SF_Tip( void )
 }
 
 // SoM: Timed tip!
-void SF_TimedTip( void )
+void SF_TimedTip()
 {
     int i;
     char *tempstr;
@@ -496,7 +497,7 @@ void SF_TimedTip( void )
 }
 
 // tip to a particular player
-void SF_PlayerTip( void )
+void SF_PlayerTip()
 {
     int i, plnum;
     char *tempstr;
@@ -528,7 +529,7 @@ void SF_PlayerTip( void )
 }
 
         // message player
-void SF_Message( void )
+void SF_Message()
 {
     int i;
     char *tempstr;
@@ -552,7 +553,7 @@ void SF_Message( void )
 
 
 //DarkWolf95:July 28, 2003:Added unimplemented function
-void SF_GameSkill( void )
+void SF_GameSkill()
 {
 	t_return.type = svt_int;
 	t_return.value.i = gameskill + 1;  //make 1-5, rather than 0-4
@@ -560,7 +561,7 @@ void SF_GameSkill( void )
 
 // Returns what type of game is going on - Deathmatch, CoOp, or Single Player.
 // Feature Requested by SoM! SSNTails 06-13-2002
-void SF_GameMode( void )
+void SF_GameMode()
 {
     t_return.type = svt_int;
 
@@ -575,7 +576,7 @@ void SF_GameMode( void )
 }
 
         // message to a particular player
-void SF_PlayerMsg( void )
+void SF_PlayerMsg()
 {
     int i, plnum;
     char *tempstr;
@@ -605,7 +606,7 @@ void SF_PlayerMsg( void )
     Z_Free(tempstr);
 }
 
-void SF_PlayerInGame( void )
+void SF_PlayerInGame()
 {
     if (!t_argc)
     {
@@ -617,7 +618,7 @@ void SF_PlayerInGame( void )
     t_return.value.i = playeringame[intvalue(t_argv[0])];
 }
 
-void SF_PlayerName( void )
+void SF_PlayerName()
 {
     int plnum;
 
@@ -640,7 +641,7 @@ void SF_PlayerName( void )
     t_return.value.s = player_names[plnum];
 }
 
-void SF_PlayerAddFrag( void )
+void SF_PlayerAddFrag()
 {
     int playernum1;
     int playernum2;
@@ -674,7 +675,7 @@ void SF_PlayerAddFrag( void )
 }
 
         // object being controlled by player
-void SF_PlayerObj( void )
+void SF_PlayerObj()
 {
     int plnum;
 
@@ -697,7 +698,7 @@ void SF_PlayerObj( void )
     t_return.value.mobj = players[plnum].mo;
 }
 
-void SF_MobjIsPlayer( void )
+void SF_MobjIsPlayer()
 {
     mobj_t *mobj;
 
@@ -716,7 +717,7 @@ void SF_MobjIsPlayer( void )
     return;
 }
 
-void SF_SkinColor( void )
+void SF_SkinColor()
 {
     int playernum = 0;	// might be used uninit
     int colour;
@@ -769,7 +770,7 @@ void SF_SkinColor( void )
     return;
 }
 
-void SF_PlayerKeys( void )
+void SF_PlayerKeys()
 {
     int playernum;
     int keynum;
@@ -854,7 +855,7 @@ void SF_PlayerKeys( void )
 	
 	playerkeys(playernum, [newbyte]) */
 
-void SF_PlayerKeysByte( void )
+void SF_PlayerKeysByte()
 {
 	int playernum;
 	int keybyte;
@@ -886,7 +887,7 @@ void SF_PlayerKeysByte( void )
 }
 
 // iori 05/17/2005: playerarmor
-void SF_PlayerArmor( void )
+void SF_PlayerArmor()
 {
 	int armor;
 	int playernum;
@@ -913,7 +914,7 @@ void SF_PlayerArmor( void )
     t_return.value.i = armor;
 }
 
-void SF_PlayerAmmo( void )
+void SF_PlayerAmmo()
 {
     int playernum;
     int ammonum;
@@ -987,7 +988,7 @@ void SF_PlayerAmmo( void )
     }
 }
 
-void SF_MaxPlayerAmmo( void )
+void SF_MaxPlayerAmmo()
 {
     int playernum;
     int ammonum;
@@ -1062,7 +1063,7 @@ void SF_MaxPlayerAmmo( void )
 
 //playerweapon(playernum, weaponnum, [give])
 
-void SF_PlayerWeapon( void )
+void SF_PlayerWeapon()
 {
     int playernum;
     int weaponnum;
@@ -1140,7 +1141,7 @@ void SF_PlayerWeapon( void )
     }
 }
 
-void SF_PlayerSelectedWeapon( void )
+void SF_PlayerSelectedWeapon()
 {
 	int playernum;
     int weaponnum;
@@ -1196,7 +1197,7 @@ void SF_PlayerSelectedWeapon( void )
 // Exl: Toxicfluff's pitchview function.
 // Returns a player's view pitch in a range useful for the FS trig functions
 // iori: added ability to modify player's pitch
-void SF_PlayerPitch( void )
+void SF_PlayerPitch()
 {
 	int playernum;
 	
@@ -1226,7 +1227,7 @@ void SF_PlayerPitch( void )
 // Set player properties
 // This could (or rather, should) be expanded to support all players
 //
-void SF_PlayerProperty( void )
+void SF_PlayerProperty()
 {
 
 	if (t_argc != 2)
@@ -1260,16 +1261,16 @@ void SF_PlayerProperty( void )
 }
 
 
-extern void SF_StartScript( void );   // in t_script.c
-extern void SF_ScriptRunning( void );
-extern void SF_Wait( void );
-extern void SF_WaitTic( void );
-extern void SF_TagWait( void );
-extern void SF_ScriptWait( void );
+extern void SF_StartScript();   // in t_script.c
+extern void SF_ScriptRunning();
+extern void SF_Wait();
+extern void SF_WaitTic();
+extern void SF_TagWait();
+extern void SF_ScriptWait();
 
 /*********** Mobj code ***************/
 
-void SF_Player( void )
+void SF_Player()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1286,7 +1287,7 @@ void SF_Player( void )
 }
 
         // spawn an object: type, x, y, [angle]
-void SF_Spawn( void )
+void SF_Spawn()
 {
     int x, y, z, objtype;
     angle_t angle = 0;
@@ -1336,7 +1337,7 @@ void SF_Spawn( void )
     }
 }
 
-void SF_SpawnExplosion( void )
+void SF_SpawnExplosion()
 {
     int type;
     fixed_t x, y, z;
@@ -1369,7 +1370,7 @@ void SF_SpawnExplosion( void )
         S_StartSound(spawn, spawn->info->deathsound);
 }
 
-void SF_RadiusAttack( void )
+void SF_RadiusAttack()
 {
     mobj_t *spot;
     mobj_t *source;
@@ -1391,7 +1392,7 @@ void SF_RadiusAttack( void )
     }
 }
 
-void SF_RemoveObj( void )
+void SF_RemoveObj()
 {
     mobj_t *mo;
 
@@ -1406,7 +1407,7 @@ void SF_RemoveObj( void )
         P_RemoveMobj(mo);
 }
 
-void SF_KillObj( void )
+void SF_KillObj()
 {
     mobj_t *mo;
 
@@ -1420,7 +1421,7 @@ void SF_KillObj( void )
 }
 
         // mobj x, y, z
-void SF_ObjX( void )
+void SF_ObjX()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1428,7 +1429,7 @@ void SF_ObjX( void )
     t_return.value.f = mo ? mo->x : 0;  // null ptr check
 }
 
-void SF_ObjY( void )
+void SF_ObjY()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1436,7 +1437,7 @@ void SF_ObjY( void )
     t_return.value.f = mo ? mo->y : 0;  // null ptr check
 }
 
-void SF_ObjZ( void )
+void SF_ObjZ()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1444,7 +1445,7 @@ void SF_ObjZ( void )
     t_return.value.f = mo ? mo->z : 0;  // null ptr check
 }
 
-void SF_SetObjPosition( void )
+void SF_SetObjPosition()
 {
 	mobj_t* mobj;
 
@@ -1469,7 +1470,7 @@ void SF_SetObjPosition( void )
 }
 	
 
-void SF_Resurrect( void )
+void SF_Resurrect()
 {
 
 	mobj_t *mo;
@@ -1500,7 +1501,7 @@ void SF_Resurrect( void )
 
 }
 
-void SF_TestLocation( void )
+void SF_TestLocation()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1521,7 +1522,7 @@ void SF_TestLocation( void )
 }
 
         // mobj angle
-void SF_ObjAngle( void )
+void SF_ObjAngle()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1542,7 +1543,7 @@ void SF_ObjAngle( void )
 }
 
 
-void SF_CheckSight( void )
+void SF_CheckSight()
 {
 	mobj_t *obj1;
 	mobj_t *obj2;
@@ -1562,7 +1563,7 @@ void SF_CheckSight( void )
 
 
 // teleport: object, sector_tag
-void SF_Teleport( void )
+void SF_Teleport()
 {
     line_t line;                // dummy line for teleport function
     mobj_t *mo;
@@ -1587,7 +1588,7 @@ void SF_Teleport( void )
         EV_Teleport(&line, 0, mo);
 }
 
-void SF_SilentTeleport( void )
+void SF_SilentTeleport()
 {
     line_t line;                // dummy line for teleport function
     mobj_t *mo;
@@ -1612,7 +1613,7 @@ void SF_SilentTeleport( void )
         EV_SilentTeleport(&line, 0, mo);
 }
 
-void SF_DamageObj( void )
+void SF_DamageObj()
 {
     mobj_t *mo;
     int damageamount;
@@ -1639,7 +1640,7 @@ void SF_DamageObj( void )
 
 
         // the tag number of the sector the thing is in
-void SF_ObjSector( void )
+void SF_ObjSector()
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
@@ -1649,7 +1650,7 @@ void SF_ObjSector( void )
 }
 
         // the health number of an object
-void SF_ObjHealth( void )
+void SF_ObjHealth()
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
@@ -1658,7 +1659,7 @@ void SF_ObjHealth( void )
     t_return.value.i = mo ? mo->health : 0;
 }
 
-void SF_ObjDead( void )
+void SF_ObjDead()
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
 
@@ -1669,7 +1670,7 @@ void SF_ObjDead( void )
         t_return.value.i = 0;
 }
 
-void SF_ObjFlag( void )
+void SF_ObjFlag()
 {
     mobj_t *mo;
     int flagnum;
@@ -1718,7 +1719,7 @@ void SF_ObjFlag( void )
 
 
 // Just copy n paste :>
-void SF_ObjFlag2( void )
+void SF_ObjFlag2()
 {
     mobj_t *mo;
     int flagnum;
@@ -1767,7 +1768,7 @@ void SF_ObjFlag2( void )
 
 
 // Extra flags, too
-void SF_ObjEFlag( void )
+void SF_ObjEFlag()
 {
     mobj_t *mo;
     int flagnum;
@@ -1814,7 +1815,7 @@ void SF_ObjEFlag( void )
 
 
 // apply momentum to a thing
-void SF_PushThing( void )
+void SF_PushThing()
 {
     mobj_t *mo;
     angle_t angle;
@@ -1838,7 +1839,7 @@ void SF_PushThing( void )
     mo->momy += FixedMul(finesine[angle >> ANGLETOFINESHIFT], force);
 }
 
-void SF_ReactionTime( void )
+void SF_ReactionTime()
 {
     mobj_t *mo;
 
@@ -1862,7 +1863,7 @@ void SF_ReactionTime( void )
 }
 
 // Sets a mobj's Target! >:)
-void SF_MobjTarget( void )
+void SF_MobjTarget()
 {
     mobj_t *mo;
     mobj_t *target;
@@ -1902,7 +1903,7 @@ void SF_MobjTarget( void )
     t_return.value.mobj = mo->target;
 }
 
-void SF_MobjMomx( void )
+void SF_MobjMomx()
 {
     mobj_t *mo;
 
@@ -1924,7 +1925,7 @@ void SF_MobjMomx( void )
     t_return.value.f = mo ? mo->momx : 0;
 }
 
-void SF_MobjMomy( void )
+void SF_MobjMomy()
 {
     mobj_t *mo;
 
@@ -1946,7 +1947,7 @@ void SF_MobjMomy( void )
     t_return.value.f = mo ? mo->momy : 0;
 }
 
-void SF_MobjMomz( void )
+void SF_MobjMomz()
 {
     mobj_t *mo;
 
@@ -1968,7 +1969,7 @@ void SF_MobjMomz( void )
     t_return.value.f = mo ? mo->momz : 0;
 }
 
-void SF_SpawnMissile( void )
+void SF_SpawnMissile()
 {
     mobj_t *mobj;
     mobj_t *target;
@@ -1996,7 +1997,7 @@ void SF_SpawnMissile( void )
 
 
 // Exl: Modified by Tox to take a pitch parameter
-void SF_LineAttack( void )
+void SF_LineAttack()
 {
 	mobj_t	*mo;
 	angle_t aiming;
@@ -2023,7 +2024,7 @@ void SF_LineAttack( void )
 
 //checks to see if a Map Thing Number exists; used to avoid script errors
 
-void SF_MapThingNumExist( void )
+void SF_MapThingNumExist()
 {
 
     int intval;
@@ -2048,13 +2049,13 @@ void SF_MapThingNumExist( void )
     }
 }
 
-void SF_MapThings( void )
+void SF_MapThings()
 {
     t_return.type = svt_int;
     t_return.value.i = nummapthings;
 }
 
-void SF_ObjType( void )
+void SF_ObjType()
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
@@ -2065,92 +2066,99 @@ void SF_ObjType( void )
 
 
 // Exl: sets an object's properties (tox)
-void SF_SetObjProperty( void )
+// setobjproperty(attribute, value, [mobj])
+void SF_SetObjProperty()
 {
-	int	attrib = 0, setting = 0;	// might be used uninit
-	mobj_t	*mo = NULL;
+  if (t_argc < 2)
+  {
+    script_error("insufficient parameters for objproperty");
+    return;
+  }
 
-	if(t_argc < 2)
-	{
-		script_error("insufficient parameters for objproperty");
-	}
-	if(t_argc == 2)
-	{
-		mo = current_script->trigger;
-		attrib = intvalue(t_argv[0]);
-		setting = intvalue(t_argv[1]);
-	}
-	if(t_argc == 3)
-	{
-		mo = MobjForSvalue(t_argv[0]);
-		attrib = intvalue(t_argv[1]);
-		setting = intvalue(t_argv[2]);
-	}
-	switch (attrib)
-	{
-		case 0:
-			mo->info->radius = (setting*FRACUNIT);
-			break;
-		case 1:
-			mo->info->height = (setting*FRACUNIT);
-			break;
-		case 2:
-			mo->info->speed = setting;
-			break;
-		case 3:
-			mo->info->mass = setting;
-			break;
-		case 4:
-			mo->info->damage = setting;
-			break;
-		case 5:
-			mo->info->painchance = setting;
-			break;
-		case 6:
-			mo->info->seestate = setting;
-			break;
-		case 7:
-			mo->info->meleestate = setting;
-			break;
-		case 8:
-			mo->info->missilestate = setting;
-			break;
-		case 9:
-			mo->info->painstate = setting;
-			break;
-		case 10:
-			mo->info->deathstate = setting;
-			break;
-		case 11:
-			mo->info->xdeathstate = setting;
-			break;
-		case 12:
-			mo->info->crashstate = setting;
-			break;
-		case 13:
-			mo->info->raisestate = setting;
-			break;
-		case 14:
-			mo->info->seesound = setting;
-			break;
-		case 15:
-			mo->info->activesound = setting;
-			break;
-		case 16:
-			mo->info->painsound = setting;
-			break;
-		case 17:
-			mo->info->deathsound = setting;
-			break;
-		default:
-			script_error("invalid attribute for objproperty");
-			return;
-	}
+  int attrib = intvalue(t_argv[0]); 
+  int value  = intvalue(t_argv[1]);
+  // FIXME fixed_t vals, syntax does not make sense (operate on MTs instead of mobjs...
+  mobj_t *mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : current_script->trigger;
+
+  switch (attrib)
+    {
+    case 0:
+      mo->info->radius = (value*FRACUNIT);
+      break;
+    case 1:
+      mo->info->height = (value*FRACUNIT);
+      break;
+    case 2:
+      mo->info->mass = value;
+      break;
+    case 3:
+      mo->info->spawnhealth = value;
+      break;
+    case 4:
+      mo->info->damage = value;
+      break;
+    case 5:
+      mo->info->speed = value;
+      break;
+    case 6:
+      mo->info->reactiontime = value;
+      break;
+    case 7:
+      mo->info->painchance = value;
+      break;
+
+    case 8:
+      mo->info->spawnstate = value;
+      break;
+    case 9:
+      mo->info->seestate = value;
+      break;
+    case 10:
+      mo->info->meleestate = value;
+      break;
+    case 11:
+      mo->info->missilestate = value;
+      break;
+    case 12:
+      mo->info->painstate = value;
+      break;
+    case 13:
+      mo->info->deathstate = value;
+      break;
+    case 14:
+      mo->info->xdeathstate = value;
+      break;
+    case 15:
+      mo->info->crashstate = value;
+      break;
+    case 16:
+      mo->info->raisestate = value;
+      break;
+
+    case 17:
+      mo->info->seesound = value;
+      break;
+    case 18:
+      mo->info->activesound = value;
+      break;
+    case 19:
+      mo->info->attacksound = value;
+      break;
+    case 20:
+      mo->info->painsound = value;
+      break;
+    case 21:
+      mo->info->deathsound = value;
+      break;
+    default:
+      script_error("invalid attribute for objproperty");
+      return;
+    }
 }
 
 
 // Exl: Returns an object's properties (tox)
-void SF_GetObjProperty( void )
+void SF_GetObjProperty()
 {
 	int	attrib = 0, retval = 0;	// might be used uninit
 	mobj_t	*mo = NULL;
@@ -2178,51 +2186,63 @@ void SF_GetObjProperty( void )
 			retval = mo->info->height / FRACUNIT;
 			break;
 		case 2:
-			retval = mo->info->speed;
+		  retval = mo->info->mass;		  
 			break;
 		case 3:
-			retval = mo->info->mass;
+		        retval = mo->info->spawnhealth;
 			break;
 		case 4:
 			retval = mo->info->damage;
 			break;
 		case 5:
-			retval = mo->info->painchance;
+		        retval = mo->info->speed;
 			break;
 		case 6:
-			retval = mo->info->seestate;
+			retval = mo->info->reactiontime;
 			break;
 		case 7:
-			retval = mo->info->meleestate;
+			retval = mo->info->painchance;
 			break;
 		case 8:
-			retval = mo->info->missilestate;
+			retval = mo->info->spawnstate;
 			break;
 		case 9:
-			retval = mo->info->painstate;
+			retval = mo->info->seestate;
 			break;
 		case 10:
-			retval = mo->info->deathstate;
+			retval = mo->info->meleestate;
 			break;
 		case 11:
-			retval = mo->info->xdeathstate;
+			retval = mo->info->missilestate;
 			break;
 		case 12:
-			retval = mo->info->crashstate;
+			retval = mo->info->painstate;
 			break;
 		case 13:
-			retval = mo->info->raisestate;
+			retval = mo->info->deathstate;
 			break;
 		case 14:
-			retval = mo->info->seesound;
+			retval = mo->info->xdeathstate;
 			break;
 		case 15:
-			retval = mo->info->activesound;
+			retval = mo->info->crashstate;
 			break;
 		case 16:
-			retval = mo->info->painsound;
+			retval = mo->info->raisestate;
 			break;
 		case 17:
+			retval = mo->info->seesound;
+			break;
+		case 18:
+			retval = mo->info->activesound;
+			break;
+		case 19:
+			retval = mo->info->attacksound;
+			break;
+		case 20:
+			retval = mo->info->painsound;
+			break;
+		case 21:
 			retval = mo->info->deathsound;
 			break;
 		default:
@@ -2235,7 +2255,7 @@ void SF_GetObjProperty( void )
 }
 
 
-void SF_ObjState( void )  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
+void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
 {					//DarkWolf95:December 7, 2003: Change to set only
 	int		state, newstate;
 	mobj_t	*mo;
@@ -2260,32 +2280,32 @@ void SF_ObjState( void )  //DarkWolf95:November 15, 2003: Adaptaion of Exl's cod
 
 	switch (state)
 	{
-		case 1:
+		case 8:
 			newstate = mo->info->spawnstate;
 			break;
-		case 2:
+		case 9:
 			newstate = mo->info->seestate;
 			break;
-		case 3:
-			newstate = mo->info->missilestate;
-			break;
-		case 4:
+		case 10:
 			newstate = mo->info->meleestate;
 			break;
-		case 5:
+		case 11:
+			newstate = mo->info->missilestate;
+			break;
+		case 12:
 			newstate = mo->info->painstate;
 			break;
-		case 6:
+		case 13:
 			newstate = mo->info->deathstate;
 			break;
-		case 7:
-			newstate = mo->info->raisestate;
-			break;
-		case 8:
+		case 14:
 			newstate = mo->info->xdeathstate;
 			break;
-		case 9:
+		case 15:
 			newstate = mo->info->crashstate;
+			break;
+		case 16:
+			newstate = mo->info->raisestate;
 			break;
 		default:
 			script_error("objstate: invalid state");
@@ -2297,26 +2317,8 @@ void SF_ObjState( void )  //DarkWolf95:November 15, 2003: Adaptaion of Exl's cod
 }
 
 
-void SF_ObjAwaken( void )
-{
 
-	mobj_t	*mo;
-
-
-	if (t_argc != 1)
-	{
-		script_error("ObjAwaken: Invalid number of arguments specified");
-		return;
-	}
-
-
-	// Set it's awakestate
-	mo = MobjForSvalue(t_argv[0]);
-	P_SetMobjState(mo, mo->info->seestate);
-}
-
-
-void SF_HealObj( void )
+void SF_HealObj()
 {
 
 	mobj_t	*mo;
@@ -2355,7 +2357,7 @@ void SF_HealObj( void )
 
 
 // Set next node mobj
-void SF_SetNodeNext( void )
+void SF_SetNodeNext()
 {
 
 	mobj_t*		mo;		// Affected
@@ -2384,7 +2386,7 @@ void SF_SetNodeNext( void )
 
 
 // Set the time to wait at a node
-void SF_SetNodePause( void )
+void SF_SetNodePause()
 {
 
 	mobj_t*		mo;
@@ -2409,7 +2411,7 @@ void SF_SetNodePause( void )
 
 
 // Run a script when touching a node
-void SF_SetNodeScript( void )
+void SF_SetNodeScript()
 {
 
 	mobj_t*		mo;
@@ -2447,7 +2449,7 @@ void SF_SetNodeScript( void )
 
 /****************** Trig *********************/
 
-void SF_PointToAngle( void )
+void SF_PointToAngle()
 {
     angle_t angle;
     int x1, y1, x2, y2;
@@ -2469,7 +2471,7 @@ void SF_PointToAngle( void )
     t_return.value.f = AngleToFixed(angle);
 }
 
-void SF_PointToDist( void )
+void SF_PointToDist()
 {
     int dist;
     int x1, x2, y1, y2;
@@ -2496,7 +2498,7 @@ camera_t script_camera = { false, 0, 0, 0, 0, NULL };
 boolean script_camera_on;
 
 // setcamera(obj, [angle], [viewheight], [aiming])
-void SF_SetCamera( void )
+void SF_SetCamera()
 {
     if (t_argc < 1)
     {
@@ -2528,7 +2530,7 @@ void SF_SetCamera( void )
     t_return.value.f = script_camera.aiming; // FIXME really?
 }
 
-void SF_ClearCamera( void )
+void SF_ClearCamera()
 {
     script_camera_on = false;
     if (!script_camera.mo)
@@ -2542,7 +2544,7 @@ void SF_ClearCamera( void )
 }
 
 // movecamera(cameraobj, targetobj, targetheight, movespeed, targetangle, anglespeed)
-void SF_MoveCamera( void )
+void SF_MoveCamera()
 {
     fixed_t x, y, z;
     fixed_t xdist, ydist, zdist, xydist, movespeed;
@@ -2554,7 +2556,7 @@ void SF_MoveCamera( void )
     int angledir = 0;
     mobj_t *camera;
     mobj_t *target;
-    int moved = 0;
+    int moved = 0; // camera moved
     int quad1, quad2;
 
     if (t_argc < 6)
@@ -2706,7 +2708,7 @@ void SF_MoveCamera( void )
 /*********** sounds ******************/
 
         // start sound from thing
-void SF_StartSound( void )
+void SF_StartSound()
 {
     mobj_t *mo;
 
@@ -2730,7 +2732,7 @@ void SF_StartSound( void )
 }
 
         // start sound from sector
-void SF_StartSectorSound( void )
+void SF_StartSectorSound()
 {
     sector_t *sector;
     int tagnum, secnum;
@@ -2766,7 +2768,7 @@ void SF_StartSectorSound( void )
     }
 }
 
-void SF_AmbiantSound( void )
+void SF_AmbiantSound()
 {
     if (t_argc != 1)
     {
@@ -2786,7 +2788,7 @@ void SF_AmbiantSound( void )
 
 		//sectoreffect(tagnum, [effect])
 
-void SF_SectorEffect( void ) //mainly copy/paste from p_spec
+void SF_SectorEffect() //mainly copy/paste from p_spec
 {
     int secnum = P_FindSectorFromTag(intvalue(t_argv[0]), -1);
     int tagnum = intvalue(t_argv[0]);
@@ -2873,7 +2875,7 @@ void SF_SectorEffect( void ) //mainly copy/paste from p_spec
 }
         // floor height of sector
 
-void SF_FloorHeight( void )
+void SF_FloorHeight()
 {
     sector_t *sector;
     int tagnum;
@@ -2921,7 +2923,7 @@ void SF_FloorHeight( void )
     t_return.value.i = returnval;
 }
 
-void SF_MoveFloor( void )
+void SF_MoveFloor()
 {
     int secnum = -1;  // init search FindSector
     sector_t *sec;
@@ -2963,7 +2965,7 @@ void SF_MoveFloor( void )
 }
 
         // ceiling height of sector
-void SF_CeilingHeight( void )
+void SF_CeilingHeight()
 {
     sector_t *sector;
     int secnum;
@@ -3013,7 +3015,7 @@ void SF_CeilingHeight( void )
     t_return.value.i = returnval;
 }
 
-void SF_MoveCeiling( void )
+void SF_MoveCeiling()
 {
     int secnum = -1; // init search FindSector
     sector_t *sec;
@@ -3058,7 +3060,7 @@ void SF_MoveCeiling( void )
     }
 }
 
-void SF_LightLevel( void )
+void SF_LightLevel()
 {
     sector_t *sector;
     int secnum;
@@ -3100,7 +3102,7 @@ void SF_LightLevel( void )
     t_return.value.i = sector->lightlevel;
 }
 
-void SF_FadeLight( void )
+void SF_FadeLight()
 {
     int sectag, destlevel, speed = 1;
 
@@ -3117,7 +3119,7 @@ void SF_FadeLight( void )
     P_FadeLight(sectag, destlevel, speed);
 }
 
-void SF_FloorTexture( void )
+void SF_FloorTexture()
 {
     int tagnum, secnum;
     sector_t *sector;
@@ -3157,7 +3159,7 @@ void SF_FloorTexture( void )
     t_return.value.s = P_FlatNameForNum(sectors[secnum].floorpic);
 }
 
-void SF_SectorColormap( void )
+void SF_SectorColormap()
 {
     int tagnum, secnum;
     sector_t *sector;
@@ -3208,7 +3210,7 @@ void SF_SectorColormap( void )
     t_return.value.s = R_ColormapNameForNum(sector->midmap);
 }
 
-void SF_CeilingTexture( void )
+void SF_CeilingTexture()
 {
     int tagnum, secnum;
     sector_t *sector;
@@ -3248,7 +3250,7 @@ void SF_CeilingTexture( void )
     t_return.value.s = P_FlatNameForNum(sectors[secnum].ceilingpic);
 }
 
-void SF_ChangeHubLevel( void )
+void SF_ChangeHubLevel()
 {
 /*  int tagnum;
 
@@ -3274,7 +3276,7 @@ void SF_ChangeHubLevel( void )
 }
 
 // for start map: start new game on a particular skill
-void SF_StartSkill( void )
+void SF_StartSkill()
 {
     int skill;
 
@@ -3299,7 +3301,7 @@ void SF_StartSkill( void )
 
 // opendoor(sectag, [speed], [delay])
 
-void SF_OpenDoor( void )
+void SF_OpenDoor()
 {
     int speed, wait_time;
     int sectag;
@@ -3330,7 +3332,7 @@ void SF_OpenDoor( void )
     EV_OpenDoor(sectag, speed, wait_time);
 }
 
-void SF_CloseDoor( void )
+void SF_CloseDoor()
 {
     int speed;
     int sectag;
@@ -3356,7 +3358,7 @@ void SF_CloseDoor( void )
 
 // play demo, internal lump, should support external too
 
-void SF_PlayDemo( void )
+void SF_PlayDemo()
 {
     if (t_argc != 1)
     {
@@ -3374,7 +3376,7 @@ void SF_PlayDemo( void )
 
 // run console cmd
 
-void SF_RunCommand( void )
+void SF_RunCommand()
 {
     int i;
     char *tempstr;
@@ -3395,7 +3397,7 @@ void SF_RunCommand( void )
 
 // return the (string) value of a cvar
 
-void SF_CheckCVar( void )
+void SF_CheckCVar()
 {
     if (t_argc != 1)
     {
@@ -3422,7 +3424,7 @@ void SF_CheckCVar( void )
 //linetexture(tag, texture, side, sections)
 // sections: 1 = top 2 = mid 4 = bot
 
-void SF_SetLineTexture( void )
+void SF_SetLineTexture()
 {
   int tagnum, linenum, side, sections;
   line_t *line;
@@ -3472,7 +3474,7 @@ void SF_SetLineTexture( void )
 
 // any linedef type
 
-void SF_LineTrigger( void )
+void SF_LineTrigger()
 {
     line_t junk;
 
@@ -3489,7 +3491,7 @@ void SF_LineTrigger( void )
     P_ActivateCrossedLine(&junk, 0, t_trigger); // Try crossing it
 }
 
-void SF_LineFlag( void )
+void SF_LineFlag()
 {
     line_t *line;
     int linenum;
@@ -3528,7 +3530,7 @@ void SF_LineFlag( void )
     t_return.value.i = line->flags & (1 << flagnum);
 }
 
-void SF_ChangeMusic( void )
+void SF_ChangeMusic()
 {
     if (!t_argc)
     {
@@ -3545,7 +3547,7 @@ void SF_ChangeMusic( void )
 }
 
 // SoM: Max and Min math functions.
-void SF_Max( void )
+void SF_Max()
 {
     fixed_t n1, n2;
 
@@ -3562,7 +3564,7 @@ void SF_Max( void )
     t_return.value.f = n1 > n2 ? n1 : n2;
 }
 
-void SF_Min( void )
+void SF_Min()
 {
     fixed_t n1, n2;
 
@@ -3579,7 +3581,7 @@ void SF_Min( void )
     t_return.value.f = n1 < n2 ? n1 : n2;
 }
 
-void SF_Abs( void )
+void SF_Abs()
 {
     fixed_t n1;
 
@@ -3602,7 +3604,7 @@ fixed_t double2fixed(double t)
     return ((int) fl << 16) | (int) ((t - fl) * 65536.0);
 }
 
-void SF_Sin( void )
+void SF_Sin()
 {
     if (t_argc != 1)
     {
@@ -3616,7 +3618,7 @@ void SF_Sin( void )
     }
 }
 
-void SF_ASin( void )
+void SF_ASin()
 {
     if (t_argc != 1)
     {
@@ -3630,7 +3632,7 @@ void SF_ASin( void )
     }
 }
 
-void SF_Cos( void )
+void SF_Cos()
 {
     if (t_argc != 1)
     {
@@ -3644,7 +3646,7 @@ void SF_Cos( void )
     }
 }
 
-void SF_ACos( void )
+void SF_ACos()
 {
     if (t_argc != 1)
     {
@@ -3658,7 +3660,7 @@ void SF_ACos( void )
     }
 }
 
-void SF_Tan( void )
+void SF_Tan()
 {
     if (t_argc != 1)
     {
@@ -3672,7 +3674,7 @@ void SF_Tan( void )
     }
 }
 
-void SF_ATan( void )
+void SF_ATan()
 {
     if (t_argc != 1)
     {
@@ -3686,7 +3688,7 @@ void SF_ATan( void )
     }
 }
 
-void SF_Exp( void )
+void SF_Exp()
 {
     if (t_argc != 1)
     {
@@ -3700,7 +3702,7 @@ void SF_Exp( void )
     }
 }
 
-void SF_Log( void )
+void SF_Log()
 {
     if (t_argc != 1)
     {
@@ -3714,7 +3716,7 @@ void SF_Log( void )
     }
 }
 
-void SF_Sqrt( void )
+void SF_Sqrt()
 {
     if (t_argc != 1)
     {
@@ -3728,7 +3730,7 @@ void SF_Sqrt( void )
     }
 }
 
-void SF_Floor( void )
+void SF_Floor()
 {
     if (t_argc != 1)
     {
@@ -3742,7 +3744,7 @@ void SF_Floor( void )
     }
 }
 
-void SF_Pow( void )
+void SF_Pow()
 {
     fixed_t n1, n2;
 
@@ -3819,7 +3821,7 @@ int HU_DeleteFSPic(int handle);
 int HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos);
 int HU_FSDisplay(int handle, boolean newval);
 
-void SF_NewHUPic( void )
+void SF_NewHUPic()
 {
     if (t_argc != 3)
     {
@@ -3832,7 +3834,7 @@ void SF_NewHUPic( void )
     return;
 }
 
-void SF_DeleteHUPic( void )
+void SF_DeleteHUPic()
 {
     if (t_argc != 1)
     {
@@ -3845,7 +3847,7 @@ void SF_DeleteHUPic( void )
     return;
 }
 
-void SF_ModifyHUPic( void )
+void SF_ModifyHUPic()
 {
     if (t_argc != 4)
     {
@@ -3858,7 +3860,7 @@ void SF_ModifyHUPic( void )
     return;
 }
 
-void SF_SetHUPicDisplay( void )
+void SF_SetHUPicDisplay()
 {
     if (t_argc != 2)
     {
@@ -3882,7 +3884,7 @@ int String2Hex(char *s)
 #undef HEX2INT
 }
 
-void SF_SetCorona( void )
+void SF_SetCorona()
 {
     if (rendermode == render_soft)
         return; // do nothing in software mode
@@ -3955,7 +3957,7 @@ void SF_SetCorona( void )
 }
 
 
-void SF_SetFade( void )
+void SF_SetFade()
 {
 
 	int r = 0;
@@ -3985,7 +3987,7 @@ void SF_SetFade( void )
 //extern int fov; // r_main.c
 int fov;
 
-void init_functions( void )
+void init_functions()
 {
     // add all the functions
     add_game_int("consoleplayer", &consoleplayer);

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 592 2010-01-20 21:08:26Z wesleyjohnson $
+// $Id: b_node.c 696 2010-07-09 03:12:42Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -42,24 +42,24 @@
 
 sector_t *oksector = NULL;
 
-boolean				botdoorfound = false,
-				botteledestfound = false;
-int					botteledestx,
-					botteledesty,
-					botteletype,
-					numbotnodes,
-					xOffset,
-					xSize,
-					yOffset,
-					ySize;
-SearchNode_t		***botNodeArray;
+boolean  botdoorfound = false,
+	 botteledestfound = false;
+int	 botteledestx,
+	 botteledesty,
+	 botteletype,
+	 numbotnodes,
+	 xOffset,
+	 xSize,
+	 yOffset,
+	 ySize;
+SearchNode_t *** botNodeArray;
 
 static sector_t *last_s;
 
 SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y)
 {
-	int				i, j,
-					depth = 0;
+	int  i, j,
+	     depth = 0;
 
 	botdirtype_t	dir = BDI_SOUTH;
 	SearchNode_t	*closestNode = NULL;
@@ -297,13 +297,13 @@ boolean B_PTRPathTraverse (intercept_t *in)
 
 boolean PIT_NodeReachable (line_t* ld)
 {
-    if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT]
-        || tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-        || tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM]
-        || tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP] )
+    if (tm_bbox[BOXRIGHT] <= ld->bbox[BOXLEFT]
+        || tm_bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
+        || tm_bbox[BOXTOP] <= ld->bbox[BOXBOTTOM]
+        || tm_bbox[BOXBOTTOM] >= ld->bbox[BOXTOP] )
         return true;
 
-	if (P_BoxOnLineSide (tmbbox, ld) != -1)
+	if (P_BoxOnLineSide (tm_bbox, ld) != -1)
         return true;
 
 	if (ld->flags & ML_BLOCKING)
@@ -314,26 +314,23 @@ boolean PIT_NodeReachable (line_t* ld)
 
 boolean B_CheckNodePosition(mobj_t* thing, fixed_t x, fixed_t y)
 {
-    int                 xl;
-    int                 xh;
-    int                 yl;
-    int                 yh;
-    int                 bx;
-    int                 by;
+    int xl, xh;
+    int yl, yh;
+    int bx, by;
 //    subsector_t*        newsubsec;
 
-    tmbbox[BOXTOP] = y + thing->radius;
-    tmbbox[BOXBOTTOM] = y - thing->radius;
-    tmbbox[BOXRIGHT] = x + thing->radius;
-    tmbbox[BOXLEFT] = x - thing->radius;
+    tm_bbox[BOXTOP] = y + thing->radius;
+    tm_bbox[BOXBOTTOM] = y - thing->radius;
+    tm_bbox[BOXRIGHT] = x + thing->radius;
+    tm_bbox[BOXLEFT] = x - thing->radius;
 
     validcount++;
     numspechit = 0;
 	
-	/*	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	/*	xl = (tm_bbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tm_bbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tm_bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tm_bbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
@@ -341,10 +338,10 @@ boolean B_CheckNodePosition(mobj_t* thing, fixed_t x, fixed_t y)
 				return false;
 */
     // check lines
-    xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-    xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-    yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-    yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+    xl = (tm_bbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
+    xh = (tm_bbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
+    yl = (tm_bbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+    yh = (tm_bbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
     for (bx=xl ; bx<=xh ; bx++)
     {
@@ -558,13 +555,13 @@ void B_BuildNodes(SearchNode_t* node)
 	B_LLDelete(queue);
 }
 
-void B_InitNodes()
+void B_InitNodes( void )
 {
-	int		i, j, px, py,
-			xMax = -1000000000,
-			xMin = 1000000000,
-			yMax = -1000000000,
-			yMin = 1000000000;
+	int  i, j, px, py,
+	     xMax = -1000000000,
+	     xMin = 1000000000,
+	     yMax = -1000000000,
+	     yMin = 1000000000;
 
 	SearchNode_t* tempNode;
 
@@ -583,10 +580,11 @@ void B_InitNodes()
 //	xMin-=BOTNODEGRIDSIZE; xMax+=2*BOTNODEGRIDSIZE;
 //	yMin-=BOTNODEGRIDSIZE; yMax+=2*BOTNODEGRIDSIZE;
 
+        // [WDJ] On overly-large map max-min will overflow signed
 	xOffset = xMin/BOTNODEGRIDSIZE;
-	xSize = ceil( (double)(xMax - xMin)/(double)BOTNODEGRIDSIZE) + 1;
+	xSize = ceil( ((double)xMax - (double)xMin)/(double)BOTNODEGRIDSIZE) + 1;
 	yOffset = yMin/BOTNODEGRIDSIZE;	
-	ySize = ceil( (double)(yMax - yMin)/(double)BOTNODEGRIDSIZE) + 1;
+	ySize = ceil( ((double)yMax - (double)yMin)/(double)BOTNODEGRIDSIZE) + 1;
 
 	botNodeArray = (SearchNode_t***)Z_Malloc(xSize*sizeof(SearchNode_t*),PU_LEVEL,0);
 	for (i=0; i<xSize; i++)

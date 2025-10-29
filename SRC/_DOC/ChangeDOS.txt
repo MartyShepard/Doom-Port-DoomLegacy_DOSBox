@@ -1,5 +1,89 @@
 * Not need to Compile.
 
+[00721 ]: visplane field naming
+		Fixed: Audio Midi Music Play (Big Endian)
+
+[00720 ]: visplane hashing and globals
+[00719 ]: viewangle name
+[00718 ]: draw masked and render segs variables
+[00717 ]: silhouette fields
+[00716 ]: attached memory leak
+[00715 ]: r_defs, fields, comments, unused
+[00714 ]: Backported SDL joystick code from Legacy2
+		* DOS
+		Breaks Heavy the Basic Joystick, Mouse  Code
+[00713 ]: Beautification, removed unused old functions from the interface.
+		* DOS
+		Breaks Code from new d_main.c
+		
+[00712*]: FAQ updated
+[00711*]: latest boomref.txt
+[00710*]: Another doc update, fsbasic and doc index
+[00709*]: Coding rules moved to source.html, updated.
+[00708*]: License update (still GPLv2 but a more recent ...uhh...version of the file)
+[00707*]: Updated CSS
+[00706*]: -> Commit Path trunk/Legacy .. nothing to to
+[00705*]: -> Commit Path trunk/Legacy .. nothing to to
+[00704*]: -> Commit Path trunk/Legacy .. nothing to to
+[00703 ]: FS fixes and doc update
+[00702*]: new WAD resources
+[00701 ]: Fixed rev numbers in my log. Preparing for alpha.
+[00700 ]: Support for international keyboard layouts via SDL.
+		* DOS:
+		Sync Keyboard Code
+		Using old KeyUp/Down/Left/Right Code becaus doesnt work in DOS
+		
+[00699 ]: Fixed some warnings.
+[00698 ]: Automap overflow coping
+[00697 ]: Blockmap overflow coping
+[00696 ]: Large map math overflows fixed
+[00695 ]: CheckSight global vars renamed
+[00694 ]: TryMove LineAttack global var names
+[00693*]: w56 legacy doc update
+[00692*]: doc update 
+[00691 ]: w56 savegame menu scrolling
+[00690 ]: w55 max num of colormaps
+[00689 ]: w55 savegame mobj list realloc
+[00688*]: ENDOOM lump finally fixed, Added Dir. RESOURCES
+[00687 ]: w54 chexquest-newmaps episodes
+[00686 ]: w54 chexquest-newmaps crosshairs
+[00685 ]: w54 chexquest-newmaps lightlist segfault
+[00684 ]: w54 dehacked, sprite str replacement
+[00683 ]: w53 Line of sight typo fixed
+[00682 ]: w53 Build stairs, init fields
+[00681 ]: w53 BossDeath tests
+[00680 ]: w53 chexquest docs, splats, vrs doom pics
+[00679*]: w53 drawsplats looping fix
+[00678 ]: w52 extracolormap_to_Surf, GetPlaneLight, re-commit
+[00677 ]: w52 Turn off VIEW_COLORMAP_GEN
+[00676*]: w52 HW-render no-texture protection tests
+[00675*]: w52 HW-render brightness with rgba[]
+[00674*]: w52 HW-render bsp viewer common
+[00673*]: w52 HW-render transparent wall vrs sprites
+[00672 ]: w52 HW renderer Boom colormap, rgba[]
+[00671 ]: w52 fog floor FF_FOG confusion alternatives
+[00670 ]: w52 fog sheet bug fix SW renderer, clip fog sheet
+[00669 ]: w52 draw masked global vars, combine redundant tests
+[00668 ]: w52 translucent rename, enum, syntax
+		* DOS: Fix Compile Break
+		  Changed t_map.nas
+		  ( mov     eax,[dc_transmap])
+		  to
+		  ( mov     eax,[dc_translucentmap])
+		  
+[00667 ]: w52 lighttable, fakefloor light lists
+		* DOS: Fix Compile Break
+		  Changed t_map.nas
+		  (mov     eax,[colormaps])
+		  to
+		  ( mov    eax,[reg_colormaps])
+
+[00666 ]: w52 skintable translations
+[00665 ]: w52 colormap cleanup, generate hw+sw
+[00664 ]: w52 colormap model sector, special linedefs
+[00663 ]: w52 move rename, moving sector cleanup
+[00662 ]: w52 2player segfault, active bug
+[00661 ]: w52 monster attack self doc
 [00660 ]: w52 check for no-texture
 [00659 ]: w51 texture logic, comments
 [00658*]: w51 hardware world names
@@ -185,3 +269,21 @@ Where <mode> is one of the following:
 "doommode"	=> GDESC_doom_mode
 "heremode"	=> GDESC_heretic_mode
 "hexemode"	=> GDESC_hexen_mode
+
+
+
+Backported SDL joystick code from Legacy2
+change	/legacy_one/trunk/ [ d ] _event.h
+change	/legacy_one/trunk/ [ d ] _netcmd.h
+change	/legacy_one/trunk/ [ g ] _game.h
+change	/legacy_one/trunk/ [ g ] _input.h
+change	/legacy_one/trunk/ [ i ] _joy.h
+change	/legacy_one/trunk/ [ i ] _system.h
+change	/legacy_one/trunk/keys.h
+
+change	/legacy_one/trunk/ [ d ] _clisrv.c
+change	/legacy_one/trunk/ [ d ] _main.c
+change	/legacy_one/trunk/ [ d ] _netcmd.c
+change	/legacy_one/trunk/ [ g ] _game.c
+change	/legacy_one/trunk/ [ g ]_input.c
+change	/legacy_one/trunk/ [ m ] _menu.c

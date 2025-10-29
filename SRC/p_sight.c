@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_sight.c 695 2010-07-09 03:10:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,15 +52,16 @@
 //
 // P_CheckSight
 //
-fixed_t         sightzstart;            // eye z of looker
-fixed_t         topslope;
-fixed_t         bottomslope;            // slopes to top and bottom of target
+// Check Sight global return vars, also used by P_AimLineAttack
+fixed_t         see_topslope;
+fixed_t         see_bottomslope;   // slopes to top and bottom of target
 
-divline_t       strace;                 // from t1 to t2
-fixed_t         t2x;
-fixed_t         t2y;
+// Check Sight internal global vars
+divline_t       cs_trace;        // from t1 to t2
+fixed_t         cs_t2x, cs_t2y;
+fixed_t         cs_startz;       // eye z of looker
 
-int             sightcounts[2];
+int             cs_sightcounts[2];	  // ??? debugging
 
 
 //
@@ -87,7 +88,8 @@ static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
 
     if (!node->dy)
     {
-        if (x==node->y)
+//        if (x==node->y)
+        if (y==node->y)	// [WDJ] Fix "Sleeping Sargeant" bug from DoomWiki.
             return 2;
 
         if (y <= node->y)
@@ -139,7 +141,7 @@ static fixed_t P_InterceptVector2( divline_t* v2, divline_t* v1 )
 //
 // P_CrossSubsector
 // Returns true
-//  if strace crosses the given subsector successfully.
+//  if cs_trace crosses the given subsector successfully.
 //
 static boolean P_CrossSubsector (int num)
 {
@@ -184,8 +186,8 @@ static boolean P_CrossSubsector (int num)
 
         v1 = line->v1;
         v2 = line->v2;
-        s1 = P_DivlineSide (v1->x,v1->y, &strace);
-        s2 = P_DivlineSide (v2->x, v2->y, &strace);
+        s1 = P_DivlineSide (v1->x,v1->y, &cs_trace);
+        s2 = P_DivlineSide (v2->x, v2->y, &cs_trace);
 
         // line isn't crossed?
         if (s1 == s2)
@@ -195,8 +197,8 @@ static boolean P_CrossSubsector (int num)
         divl.y = v1->y;
         divl.dx = v2->x - v1->x;
         divl.dy = v2->y - v1->y;
-        s1 = P_DivlineSide (strace.x, strace.y, &divl);
-        s2 = P_DivlineSide (t2x, t2y, &divl);
+        s1 = P_DivlineSide (cs_trace.x, cs_trace.y, &divl);
+        s2 = P_DivlineSide (cs_t2x, cs_t2y, &divl);
 
         // line isn't crossed?
         if (s1 == s2)
@@ -233,23 +235,23 @@ static boolean P_CrossSubsector (int num)
         if (openbottom >= opentop)
             return false;               // stop
 
-        frac = P_InterceptVector2 (&strace, &divl);
+        frac = P_InterceptVector2 (&cs_trace, &divl);
 
         if (front->floorheight != back->floorheight)
         {
-            slope = FixedDiv (openbottom - sightzstart , frac);
-            if (slope > bottomslope)
-                bottomslope = slope;
+            slope = FixedDiv (openbottom - cs_startz , frac);
+            if (slope > see_bottomslope)
+                see_bottomslope = slope;
         }
 
         if (front->ceilingheight != back->ceilingheight)
         {
-            slope = FixedDiv (opentop - sightzstart , frac);
-            if (slope < topslope)
-                topslope = slope;
+            slope = FixedDiv (opentop - cs_startz , frac);
+            if (slope < see_topslope)
+                see_topslope = slope;
         }
 
-        if (topslope <= bottomslope)
+        if (see_topslope <= see_bottomslope)
             return false;               // stop
     }
     // passed the subsector ok
@@ -261,7 +263,7 @@ static boolean P_CrossSubsector (int num)
 //
 // P_CrossBSPNode
 // Returns true
-//  if strace crosses the given node successfully.
+//  if cs_trace crosses the given node successfully.
 //
 static boolean P_CrossBSPNode (int bspnum)
 {
@@ -279,7 +281,7 @@ static boolean P_CrossBSPNode (int bspnum)
     bsp = &nodes[bspnum];
 
     // decide which side the start point is on
-    side = P_DivlineSide (strace.x, strace.y, (divline_t *)bsp);
+    side = P_DivlineSide (cs_trace.x, cs_trace.y, (divline_t *)bsp);
     if (side == 2)
         side = 0;       // an "on" should cross both sides
 
@@ -288,7 +290,7 @@ static boolean P_CrossBSPNode (int bspnum)
         return false;
 
     // the partition plane is crossed here
-    if (side == P_DivlineSide (t2x, t2y,(divline_t *)bsp))
+    if (side == P_DivlineSide (cs_t2x, cs_t2y,(divline_t *)bsp))
     {
         // the line doesn't touch the other side
         return true;
@@ -325,7 +327,7 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
     // Check in REJECT table.
     if (rejectmatrix[bytenum]&bitnum)
     {
-        sightcounts[0]++;
+        cs_sightcounts[0]++;
 
         // can't possibly be connected
         return false;
@@ -336,29 +338,29 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
         //
         // check precisely
         //              
-        sightzstart = t1->z + t1->height - (t1->height>>2);
-        topslope = (t2->z+t2->height) - sightzstart;
-        bottomslope = (t2->z) - sightzstart;
+        cs_startz = t1->z + t1->height - (t1->height>>2);
+        see_topslope = (t2->z+t2->height) - cs_startz;
+        see_bottomslope = (t2->z) - cs_startz;
         
         return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
     }
 */    
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
-    sightcounts[1]++;
+    cs_sightcounts[1]++;
 
     validcount++;
 
-    sightzstart = t1->z + t1->height - (t1->height>>2);
-    topslope = (t2->z+t2->height) - sightzstart;
-    bottomslope = (t2->z) - sightzstart;
+    cs_startz = t1->z + t1->height - (t1->height>>2);
+    see_topslope = (t2->z+t2->height) - cs_startz;
+    see_bottomslope = (t2->z) - cs_startz;
 
-    strace.x = t1->x;
-    strace.y = t1->y;
-    t2x = t2->x;
-    t2y = t2->y;
-    strace.dx = t2->x - t1->x;
-    strace.dy = t2->y - t1->y;
+    cs_trace.x = t1->x;
+    cs_trace.y = t1->y;
+    cs_t2x = t2->x;
+    cs_t2y = t2->y;
+    cs_trace.dx = t2->x - t1->x;
+    cs_trace.dy = t2->y - t1->y;
 
     // the head node is the last node output
     return P_CrossBSPNode (numnodes-1);
@@ -390,40 +392,40 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
     // Check in REJECT table.
     if (rejectmatrix[bytenum]&bitnum)
     {
-        sightcounts[0]++;
+        cs_sightcounts[0]++;
 
         // can't possibly be connected
         return false;
     }
-/*  BP: it seam that it don't work :( TODO: fix it
+/*  BP: it seem that it don't work :( TODO: fix it
     if (gamemode == heretic )
     {
         //
         // check precisely
         //              
-        sightzstart = t1->z + t1->height - (t1->height>>2);
-        topslope = (t2->z+t2->height) - sightzstart;
-        bottomslope = (t2->z) - sightzstart;
+        cs_startz = t1->z + t1->height - (t1->height>>2);
+        see_topslope = (t2->z+t2->height) - cs_startz;
+        see_bottomslope = (t2->z) - cs_startz;
         
         return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
     }
 */    
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
-    sightcounts[1]++;
+    cs_sightcounts[1]++;
 
     validcount++;
 
-    sightzstart = t1->z + t1->height - (t1->height>>2);
-    topslope = (pz+t2->height) - sightzstart;
-    bottomslope = (pz) - sightzstart;
+    cs_startz = t1->z + t1->height - (t1->height>>2);
+    see_topslope = (pz+t2->height) - cs_startz;
+    see_bottomslope = (pz) - cs_startz;
 
-    strace.x = t1->x;
-    strace.y = t1->y;
-    t2x = px;
-    t2y = py;
-    strace.dx = px - t1->x;
-    strace.dy = py - t1->y;
+    cs_trace.x = t1->x;
+    cs_trace.y = t1->y;
+    cs_t2x = px;
+    cs_t2y = py;
+    cs_trace.dx = px - t1->x;
+    cs_trace.dy = py - t1->y;
 
     // the head node is the last node output
     return P_CrossBSPNode (numnodes-1);

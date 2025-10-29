@@ -262,15 +262,14 @@ void I_SoftError (char *error, ...);
 // [WDJ] 6/23/2009  Add Effects menu because of too many menu items.
 #define EFFECTS_MENU
 
-// [WDJ] 3/25/2010  Savegame slots 0..99
-#define SAVEGAME99
-#define SAVEGAMEDIR
-
 
 #if defined( GAMMA_FUNCS ) && ! defined( EFFECTS_MENU )
 #  define EFFECTS_MENU
 #endif
 
+// [WDJ] 3/25/2010  Savegame slots 0..99
+#define SAVEGAME99
+#define SAVEGAMEDIR
 
 // =========================================================================
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: console.c 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -236,7 +236,6 @@ static void CONS_Clear_f (void)
     con_scrollup = 0;
 }
 
-
 int     con_keymap;      //0 english, 1 french
 
 //  Choose english keymap
@@ -408,7 +407,7 @@ void CON_Init(void)
     CV_RegisterVar (&cons_backpic);
     COM_AddCommand ("cls", CONS_Clear_f);
     COM_AddCommand ("english", CONS_English_f);
-    COM_AddCommand ("french", CONS_French_f);
+    COM_AddCommand ("french", CONS_French_f);		
     COM_AddCommand ("bind", CONS_Bind_f);
     // set console full screen for game startup MAKE SURE VID_Init() done !!!
     con_destlines = vid.height;
@@ -624,19 +623,16 @@ void CON_Ticker (void)
 
 //  Handles console key input
 //
-boolean CON_Responder (event_t *ev)
+boolean CON_Responder(event_t *ev)
 {
-//static boolean altdown;
+	//static boolean altdown;
 static boolean shiftdown;
-
-
 // sequential completions a la 4dos
 static char    completion[80];
 static int     comskips,varskips;
 
     char   *cmd;
-    int     key;
-
+		
     if(chat_on)
         return false; 
 
@@ -646,17 +642,18 @@ static int     comskips,varskips;
         shiftdown = false;
         return false;
     }
+
     //else if (ev->data1 == KEY_ALT)
     //{
     //    altdown = (ev->type == ev_keydown);
     //    return false;
     //}
-
+		
     // let go keyup events, don't eat them
     if (ev->type != ev_keydown)
         return false;
 
-    key = ev->data1;
+    int key = ev->data1;
 
 //
 //  check for console toggle key
@@ -683,7 +680,7 @@ static int     comskips,varskips;
     }
 
     // eat shift only if console active
-    if (key == KEY_SHIFT)
+    if (key == KEY_RSHIFT || key == KEY_LSHIFT)
     {
         shiftdown = true;
         return true;
@@ -871,27 +868,19 @@ static int     comskips,varskips;
         return true;
     }
 
-    // allow people to use keypad in console (good for typing IP addresses) - Calum
-    if (key>=KEY_KEYPAD7 && key <= KEY_KPADDEL)
-    {
-        char keypad_translation[] = {   '7','8','9','-',
-                                        '4','5','6','+',
-                                        '1','2','3',
-                                        '0','.'};
-        
-        key = keypad_translation[key - KEY_KEYPAD7];
-    }
-    else if (key == KEY_KPADSLASH)
-        key = '/';
-    else if (con_keymap==french)
-            key = ForeignTranslation((byte)key);   
+    // interpret it as input char
+   // char c = ev->data2;
 
-    if (shiftdown)
-        key = shiftxform[key];
-    
-    // enter a char into the command prompt
-    if (key<32 || key>127)
-        return false;
+    // allow people to use keypad in console (good for typing IP addresses) - Calum
+    if (key >= KEY_KEYPAD0 && key <= KEY_PLUSPAD)
+    {
+      const char keypad_translation[] = {'0','1','2','3','4','5','6','7','8','9','.','/','*','-','+'};
+      key = keypad_translation[key - KEY_KEYPAD0];
+    }
+
+    // enter a printable char into the command prompt
+    if (key < ' ' || key > '~')
+      return false;
 
     // add key to cmd line here
     if (input_cx<CON_MAXPROMPTCHARS)

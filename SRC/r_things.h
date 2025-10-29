@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_things.h 718 2010-07-31 18:46:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -76,13 +76,15 @@ extern short            negonearray[MAXVIDWIDTH];
 extern short            screenheightarray[MAXVIDWIDTH];
 
 // vars for R_DrawMaskedColumn
-extern short*           mfloorclip;
-extern short*           mceilingclip;
-extern fixed_t          spryscale;
-extern fixed_t          sprtopscreen;
-extern fixed_t          sprbotscreen;
-extern fixed_t          windowtop;
-extern fixed_t          windowbottom;
+// clipping array[x], in int screen coord.
+extern short*           dm_floorclip;
+extern short*           dm_ceilingclip;
+
+extern fixed_t          dm_yscale;  // world to fixed_t screen coord
+// drawn patch, in fixed_t screen coord
+extern fixed_t          dm_top_patch, dm_bottom_patch;
+// draw window clipping, in fixed_t screen coord
+extern fixed_t          dm_windowtop, dm_windowbottom;
 
 extern fixed_t          pspritescale;
 extern fixed_t          pspriteiscale;

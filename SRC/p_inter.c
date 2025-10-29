@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 648 2010-05-19 17:42:21Z wesleyjohnson $
+// $Id: p_inter.c 661 2010-06-03 12:34:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2483,7 +2483,7 @@ boolean P_DamageMobj ( mobj_t*   target,
     }
 
     if ( (!target->threshold || target->type == MT_VILE)
-         && source && source != target
+         && source && source != target  // fixes bug where monster attacks self
          && source->type != MT_VILE
          && !(source->flags2&MF2_BOSS)
          && !(target->type == MT_SORCERER2 && source->type == MT_WIZARD))

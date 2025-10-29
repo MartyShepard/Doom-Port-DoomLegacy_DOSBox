@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 540 2009-09-23 23:43:40Z smite-meister $
+// $Id: p_chex.c 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
-// Copyright (C) 2003-2009 by DooM Legacy Team.
+// Copyright (C) 2003-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,9 @@
 #include "m_random.h"
 #include "m_cheat.h"
 #include "dstrings.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "p_chex.h"
 
 extern byte cheat_mus_seq[];
 extern byte cheat_choppers_seq[];
@@ -156,7 +159,7 @@ void Chex1PatchEngine(void)
 	mobjinfo[MT_BRUISER].radius = 48*FRACUNIT; //let's try 48
 
 	//coronas
-	#ifdef HWRENDER
+#ifdef HWRENDER
 		lspr[1].dynamic_color = 0xff000050;
 		lspr[2].dynamic_color = 0xff000050;
 		lspr[3].dynamic_color = 0xff4040f7;
@@ -172,8 +175,67 @@ void Chex1PatchEngine(void)
 		lspr[15].light_yoffset = 3.0f;	//light
 		lspr[16].type = 0;
 		lspr[17].type = 0;
-	#endif
+#endif
 
 	//cheat codes
 	
 }
+
+typedef struct {
+   char * orig_name;
+   char * replace_name;
+   uint64_t  checksum;
+} chex_picture_replace_t;
+
+#define NUM_CHEX_REPLACEMENTS  6
+static chex_picture_replace_t  chex_repl[ NUM_CHEX_REPLACEMENTS ] =
+{
+   {"PFUB1", "CREDIT",  0x00B251DC },  // bunny
+   {"PFUB2", "CREDIT", 0x007B517E },  // bunny
+   {"VICTORY2", "CREDIT", 0x002F5EE5 },  // spikes
+   {"ENDPIC", "TITLEPIC", 0x006BFE6B },  // bloody marine
+   {"INTERPIC", "M_DOOM", 0x004C2CBE },  // wall
+   {"M_EPI1", NULL, 0x000A5FF0 },  // wall
+};
+
+
+// Detect Doom graphics and prevent their display while chexquest mode.
+void* Chex_safe_pictures( char* name, void* lumpptr )
+{
+    int i;
+
+    if( lumpptr == NULL )
+    {
+        lumpptr = W_CachePatchName ( name, PU_CACHE);
+        if( lumpptr == NULL )  goto done;
+    }
+   
+    for( i=0; i<NUM_CHEX_REPLACEMENTS; i++ )
+    { 
+       if( strncmp( name, chex_repl[i].orig_name, 8 ) == 0 )
+       {
+	   // found a matching entry name
+	   uint64_t c_checksum = W_lump_checksum( lumpptr );
+	   // [WDJ] Uncomment the next line to get the checksums of pictures.
+//	   fprintf(stderr, "Chex_safe_pictures: %8.8s  checksum=%16lX\n", name, (long)c_checksum);
+	   if( chex_repl[i].checksum == c_checksum )
+	   {
+	       // it is the original, replace it
+	       char * replname = chex_repl[i].replace_name;
+	       if( replname )
+	       {
+		  lumpptr = W_CachePatchName ( replname, PU_LEVEL );
+	       }
+	       else
+	       {
+		  lumpptr = NULL;  // return NULL to indicate detection
+	       }
+	   }
+	   goto done;
+       }
+    }
+    // not found, do nothing
+done: // other returns
+    return lumpptr;
+}
+

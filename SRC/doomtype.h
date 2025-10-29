@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 604 2010-02-13 07:21:09Z smite-meister $
+// $Id: doomtype.h 672 2010-06-03 13:23:11Z wesleyjohnson $
 //
+// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -70,20 +70,22 @@ typedef  int64_t INT64;
 
 // boolean type
 #ifdef __APPLE_CC__
-	# define boolean int
-	# define false 0
-	# define true  1
+# define boolean int
+# define false 0
+# define true  1
 #elseif defined(__WIN32__)
-	# define false   FALSE           // use windows types
-	# define true    TRUE
-	# define boolean BOOL
+# define false   FALSE           // use windows types
+# define true    TRUE
+# define boolean BOOL
 #else
-	typedef enum {false, true} boolean;
+typedef enum {false, true} boolean;
 #endif
 
 
 typedef uint8_t    byte;
 typedef uint32_t  tic_t;
+
+
 
 #ifdef __APPLE_CC__
 #define __MACOS__
@@ -127,6 +129,8 @@ typedef uint32_t  tic_t;
 #endif //__MACOS__
 
 
+
+
 // Predefined with some OS.
 #ifndef __WIN32__
 #ifndef __MACOS__
@@ -159,7 +163,7 @@ typedef uint32_t  tic_t;
 #endif
 
 union FColorRGBA {
-    ULONG rgba;
+    uint32_t  rgba;
     struct {
         byte  red;
         byte  green;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: console.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: console.h 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -55,7 +55,6 @@ extern int     con_clearlines;  // lines of top of screen to refresh
 extern boolean con_hudupdate;   // hud messages have changed, need refresh
 
 extern int     con_keymap;      //0 english, 1 french
-
 extern byte*   whitemap;
 extern byte*   greenmap;
 extern byte*   graymap;

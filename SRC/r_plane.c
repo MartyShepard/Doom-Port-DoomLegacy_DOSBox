@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 644 2010-05-11 21:43:40Z wesleyjohnson $
+// $Id: r_plane.c 721 2010-07-31 19:10:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -108,30 +108,38 @@ planefunction_t         ceilingfunc = NULL;
 // opening
 //
 
+// [WDJ] visplane base   vispl_
 // Here comes the obnoxious "visplane".
 /*#define                 MAXVISPLANES 128 //SoM: 3/20/2000
-visplane_t*             visplanes;
-visplane_t*             lastvisplane;*/
+visplane_t*             vispl_head;
+visplane_t*             vispl_last;*/
 
 //SoM: 3/23/2000: Use Boom visplane hashing.
-#define           MAXVISPLANES      128
+#define           VISPL_HASHSIZE      128
+// visplane hash array, for fast duplicate check
+static visplane_t *vispl_hashtab[VISPL_HASHSIZE];
 
-static visplane_t *visplanes[MAXVISPLANES];
-static visplane_t *freetail;
-static visplane_t **freehead = &freetail;
+// free list of visplane_t
+// [WDJ] head and tail were reversed from normal linked list meanings
+// Insert at tail, take free off head, use next for linking.
+static visplane_t *vispl_free_head;
+static visplane_t **vispl_free_tail = &vispl_free_head;  // addr of head or next ptr
 
+// [WDJ] visplane_t global parameters  vsp_
+// visplane used for drawing in r_bsp and r_segs
+visplane_t*             vsp_floorplane;
+visplane_t*             vsp_ceilingplane;
 
-visplane_t*             floorplane;
-visplane_t*             ceilingplane;
+// visplane used by R_MapPlane, set by R_DrawSinglePlane
+visplane_t*             vsp_currentplane;
 
-visplane_t*             currentplane;
-
-planemgr_t              ffloor[MAXFFLOORS];  // this use 251 Kb memory (in Legacy 1.43)
+// this use 251 Kb memory (in Legacy 1.43)
+ff_planemgr_t           ffloor[MAXFFLOORS];
 int                     numffloors;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
-  ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & (MAXVISPLANES-1))
+  ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & (VISPL_HASHSIZE-1))
 
 // ?
 /*#define MAXOPENINGS     MAXVIDWIDTH*128
@@ -228,10 +236,7 @@ void R_InitPlanes (void)
 
 // Draw plane span at row y, span=(x1..x2)
 // at planeheight, using spanfunc
-void R_MapPlane
-( int           y,              // t1
-  int           x1,
-  int           x2 )
+void R_MapPlane ( int y, int x1, int x2 )
 {
     angle_t     angle;
     fixed_t     distance;
@@ -262,7 +267,7 @@ void R_MapPlane
         ds_ystep = cachedystep[y];
     }
     length = FixedMul (distance,distscale[x1]);
-    angle = (currentplane->viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
+    angle = (vsp_currentplane->viewangle + x_to_viewangle[x1])>>ANGLETOFINESHIFT;
     // SoM: Wouldn't it be faster just to add viewx and viewy to the plane's
     // x/yoffs anyway?? (Besides, it serves my purpose well for portals!)
     ds_xfrac = /*viewx +*/ FixedMul(finecosine[angle], length) + xoffs;
@@ -270,7 +275,7 @@ void R_MapPlane
 
 
     if (fixedcolormap)
-        ds_colormap = fixedcolormap;
+        ds_colormap = fixedcolormap; // overriding colormap
     else
     {
         index = distance >> LIGHTZSHIFT;
@@ -279,9 +284,13 @@ void R_MapPlane
             index = MAXLIGHTZ-1;
 
         ds_colormap = planezlight[index];
+        if(vsp_currentplane->extra_colormap)
+        {
+	    // reverse indexing, and change to extra_colormap
+	    int lightindex = ds_colormap - reg_colormaps;
+	    ds_colormap = & vsp_currentplane->extra_colormap->colormap[ lightindex ];
+	}
     }
-    if(currentplane->extra_colormap && !fixedcolormap)
-      ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
 
     ds_y = y;
     ds_x1 = x1;
@@ -320,6 +329,7 @@ void R_ClearPlanes (player_t *player)
 
 
     // opening / clipping determination
+    // init to screen limits
     for (i=0 ; i<rdraw_viewwidth ; i++)
     {
         floorclip[i] = rdraw_viewheight;
@@ -327,19 +337,24 @@ void R_ClearPlanes (player_t *player)
         frontscale[i] = MAXINT;
         for(p = 0; p < MAXFFLOORS; p++)
         {
-          ffloor[p].f_clip[i] = rdraw_viewheight;
-          ffloor[p].c_clip[i] = con_clipviewtop;
+          ffloor[p].front_clip[i] = rdraw_viewheight;
+          ffloor[p].con_clip[i] = con_clipviewtop;
         }
     }
 
     numffloors = 0;
 
-    //lastvisplane = visplanes;
+    //vispl_last = vispl_head;
 
     //SoM: 3/23/2000
-    for (i=0;i<MAXVISPLANES;i++)
-      for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
-        freehead = &(*freehead)->next;
+    // put all visplanes to free list, while clearing vispl_hashtab[] to NULL
+    for (i=0; i<VISPL_HASHSIZE; i++)
+    {
+        *vispl_free_tail = vispl_hashtab[i];
+        vispl_hashtab[i] = NULL;
+        while( *vispl_free_tail )
+	    vispl_free_tail = &(*vispl_free_tail)->next;
+    }
 
     lastopening = openings;
 
@@ -356,17 +371,27 @@ void R_ClearPlanes (player_t *player)
 
 
 //SoM: 3/23/2000: New function, by Lee Killough
-static visplane_t *new_visplane(unsigned hash)
+// [WDJ] 7/2010 Mostly rewritten.
+static visplane_t*  new_visplane(unsigned hash)
 {
-  visplane_t *check = freetail;
-  if (!check)
-    check = calloc(1, sizeof *check);
+  // return the next visplane_t from the free list
+  visplane_t*  np = vispl_free_head;
+  if (np)
+  {
+    // unlink from free list
+    vispl_free_head = vispl_free_head->next;
+    if ( ! vispl_free_head )
+      vispl_free_tail = &vispl_free_head;	// empty free list
+  }
   else
-    if (!(freetail = freetail->next))
-      freehead = &freetail;
-  check->next = visplanes[hash];
-  visplanes[hash] = check;
-  return check;
+  {
+    // list empty, make a new visplane
+    np = calloc(1, sizeof(visplane_t));  // 1 visplane_t, zeroed
+  }
+  // link into hash, at [hash]
+  np->next = vispl_hashtab[hash];
+  vispl_hashtab[hash] = np;
+  return np;
 }
 
 
@@ -400,7 +425,7 @@ visplane_t* R_FindPlane( fixed_t height,
     //SoM: 3/23/2000: New visplane algorithm uses hash table -- killough
     hash = visplane_hash(picnum,lightlevel,height);
 
-    for (check=visplanes[hash]; check; check=check->next)
+    for (check=vispl_hashtab[hash]; check; check=check->next)
     {
       if (height == check->height &&
           picnum == check->picnum &&
@@ -411,7 +436,7 @@ visplane_t* R_FindPlane( fixed_t height,
           !ffloor && !check->ffloor &&
           check->viewz == viewz &&
           check->viewangle == viewangle)
-        return check;
+        return check; // found matching
     }
 
     check = new_visplane(hash);
@@ -472,15 +497,20 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
     }
 
     //added 30-12-97 : 0xff ne vaut plus -1 avec un short...
+    // find any x in intersect range where have valid top[]
     for (x=intrl ; x<= intrh ; x++)
         if (pl->top[x] != 0xffff)
             break;
 
     //SoM: 3/23/2000: Boom code
     if (x > intrh)
+        // no valid top[] within intersect range
+	// No overlap, can extend visplane to union
       pl->minx = unionl, pl->maxx = unionh;
     else
-      {
+    {
+        // overlap conflict, must create new visplane
+        // new visplane over range start..stop
         unsigned hash = visplane_hash(pl->picnum, pl->lightlevel, pl->height);
         visplane_t *new_pl = new_visplane(hash);
 
@@ -493,11 +523,11 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
         new_pl->ffloor = pl->ffloor;
         new_pl->viewz = pl->viewz;
         new_pl->viewangle = pl->viewangle;
-        pl = new_pl;
+        pl = new_pl;  // return new visplane
         pl->minx = start;
         pl->maxx = stop;
         memset(pl->top, 0xff, sizeof pl->top);
-      }
+    }
     return pl;
 }
 
@@ -510,14 +540,18 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
 // need to create new ones with R_CheckPlane, because 3D floor planes
 // are created by subsector and there is no way a subsector can graphically
 // overlap.
+// Called from R_StoreWallRange for ffloors.
 void R_ExpandPlane(visplane_t*  pl, int start, int stop)
 {
+    // intersect of the ranges
     int         intrl;
     int         intrh;
+    // union of the ranges
     int         unionl;
     int         unionh;
-        int                     x;
+    int		x;
 
+    // (unionl,intrl) = minmax( pl->minx, start )
     if (start < pl->minx)
     {
         intrl = pl->minx;
@@ -529,6 +563,7 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
         intrl = start;
     }
 
+    // (intrh,unionh) = minmax( pl->maxx, stop )
     if (stop > pl->maxx)
     {
         intrh = pl->maxx;
@@ -540,6 +575,7 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
         intrh = stop;
     }
 
+    // Find any x in start..stop range where have valid top[], thus overlaps.
     for (x = start ; x <= stop ; x++)
         if (pl->top[x] != 0xffff)
             break;
@@ -562,12 +598,8 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
 // Setup spanstart for next span at rows (t2..b2),
 //    except when disabled by t2>viewheight
 // at planeheight, using spanfunc
-void R_MakeSpans
-( int           x,
-  int           t1,
-  int           b1,
-  int           t2,
-  int           b2 )
+// Param t1,b1,t2,b2 are y values.
+void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 )
 {
     // [WDJ] 11/10/2009  Fix crash in 3DHorror wad, sloppy limit checks on
     // spans caused writes to spanstart[] to overwrite yslope array.
@@ -635,6 +667,7 @@ void R_MakeSpans
 
 byte* R_GetFlat (int  flatnum);
 
+// Draw the visplanes list
 void R_DrawPlanes (void)
 {
     visplane_t*         pl;
@@ -644,8 +677,9 @@ void R_DrawPlanes (void)
 
     spanfunc = basespanfunc;
 
-    for (i=0;i<MAXVISPLANES;i++, pl++)
-    for (pl=visplanes[i]; pl; pl=pl->next)
+    // over all visplane in hash table, following the linked lists
+    for (i=0; i<VISPL_HASHSIZE; i++)
+    for (pl=vispl_hashtab[i]; pl; pl=pl->next)
     {
         // sky flat
         if (pl->picnum == skyflatnum)
@@ -668,7 +702,7 @@ void R_DrawPlanes (void)
                 dc_colormap = fixedcolormap;
             else
 #endif
-            dc_colormap = colormaps;
+            dc_colormap = reg_colormaps;  // [0]
             dc_texturemid = skytexturemid;
             dc_texheight = textureheight[skytexture] >> FRACBITS;
             for (x=pl->minx ; x <= pl->maxx ; x++)
@@ -681,7 +715,7 @@ void R_DrawPlanes (void)
 		   //[WDJ] phobiata.wad has many views that need clipping
 		    if ( dc_yl < 0 )   dc_yl = 0;
 		    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
-                    angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+                    angle = (viewangle + x_to_viewangle[x])>>ANGLETOSKYSHIFT;
                     dc_x = x;
                     dc_source = R_GetColumn(skytexture, angle);
                     skycolfunc ();
@@ -718,13 +752,13 @@ void R_DrawSinglePlane(visplane_t* pl)
     {
       spanfunc = R_DrawTranslucentSpan_8;
 
-          // Hacked up support for alpha value in software mode SSNTails 09-24-2002
-          if(pl->ffloor->alpha < 64)
-                  ds_transmap = ((3)<<FF_TRANSSHIFT) - 0x10000 + transtables;
-          else if(pl->ffloor->alpha < 128 && pl->ffloor->alpha > 63)
-                  ds_transmap = ((2)<<FF_TRANSSHIFT) - 0x10000 + transtables;
-          else
-                  ds_transmap = ((1)<<FF_TRANSSHIFT) - 0x10000 + transtables;
+      // Hacked up support for alpha value in software mode SSNTails 09-24-2002
+      if(pl->ffloor->alpha < 64)
+          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
+      else if(pl->ffloor->alpha < 128 && pl->ffloor->alpha > 63)
+          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
+      else
+          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
 
       if(pl->extra_colormap && pl->extra_colormap->fog)
         light = (pl->lightlevel >> LIGHTSEGSHIFT);
@@ -760,7 +794,7 @@ void R_DrawSinglePlane(visplane_t* pl)
     viewangle = pl->viewangle;
   }
 
-  currentplane = pl;
+  vsp_currentplane = pl;
 
 
   // [WDJ] Flat use is safe from alloc, change to PU_CACHE at function exit.
@@ -841,6 +875,7 @@ void R_DrawSinglePlane(visplane_t* pl)
 }
 
 
+// Find limits of top[] and bottom[], to highest_top, lowest_bottom
 void R_PlaneBounds(visplane_t* plane)
 {
   int  i;
@@ -851,11 +886,12 @@ void R_PlaneBounds(visplane_t* plane)
 
   for(i = plane->minx + 1; i <= plane->maxx; i++)
   {
+    // in screen coord, where 0 is top (hi)
     if(plane->top[i] < hi)
       hi = plane->top[i];
     if(plane->bottom[i] > low)
       low = plane->bottom[i];
   }
-  plane->high = hi;
-  plane->low = low;
+  plane->highest_top = hi;     // highest top
+  plane->lowest_bottom = low;  // lowest bottom
 }

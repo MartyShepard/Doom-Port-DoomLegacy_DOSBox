@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 659 2010-05-21 15:39:28Z wesleyjohnson $
+// $Id: p_floor.c 682 2010-06-07 18:12:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -80,6 +80,7 @@
 // Move a plane (floor or ceiling) and check for crushing
 //
 //SoM: I had to copy the entire function from Boom because it was causing errors.
+// Move a floor or ceiling, update all affected structures.
 result_e T_MovePlane ( sector_t*     sector,
 		       fixed_t       speed,
 		       fixed_t       dest,
@@ -284,7 +285,7 @@ void T_MoveFloor(floormove_t* mfloor)
     res = T_MovePlane(mfloor->sector,
                       mfloor->speed,
                       mfloor->floordestheight,
-                      mfloor->crush,0,mfloor->direction);
+                      mfloor->crush, 0, mfloor->direction);
 
     if (!(leveltime % (8*NEWTICRATERATIO)))
         S_StartSound((mobj_t *)&mfloor->sector->soundorg,
@@ -742,6 +743,7 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
   int                   rtn = 0;
   int                   secnum, new_secnum, old_secnum;
   int                   i;
+  boolean		crushing = false;  // crushing stairs
     
   sector_t*             sec;
   sector_t*             tsec;
@@ -751,6 +753,31 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
   fixed_t               stairsize;
   fixed_t               speed;
 
+  // [WDJ] crushing, speed, stairsize, are constant for the loop.
+  // Set up the speed and stepsize according to the stairs type.
+  switch(type)
+  {
+    case build8:
+      speed = FLOORSPEED/4;
+      stairsize = 8*FRACUNIT;
+      crushing = false;
+      break;
+    case turbo16:
+      speed = FLOORSPEED*4;
+      stairsize = 16*FRACUNIT;
+      crushing = true;
+      break;
+    // used by heretic
+    default:
+      speed = FLOORSPEED;
+      stairsize = type;
+      crushing = true;
+      break;
+  }
+  if( ! boomsupport ) // logic of above cases, crushing stairs only in Boom
+      crushing = false;
+  // [WDJ] init crush even when not boomsupport, same for all of stair.
+   
   secnum = -1; // init search FindSector
   // start a stair at each sector tagged the same as the linedef
   while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
@@ -770,30 +797,9 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
     mfloor->direction = 1;
     mfloor->sector = sec;
     mfloor->type = buildStair;   //jff 3/31/98 do not leave uninited
-
-    // set up the speed and stepsize according to the stairs type
-    switch(type)
-    {
-      case build8:
-        speed = FLOORSPEED/4;
-        stairsize = 8*FRACUNIT;
-        if (boomsupport)
-          mfloor->crush = false; //jff 2/27/98 fix uninitialized crush field
-        break;
-      case turbo16:
-        speed = FLOORSPEED*4;
-        stairsize = 16*FRACUNIT;
-        if (boomsupport)
-          mfloor->crush = true;  //jff 2/27/98 fix uninitialized crush field
-        break;
-      // used by heretic
-      default:
-        speed = FLOORSPEED;
-        stairsize = type;
-        if (boomsupport)
-          mfloor->crush = true;  //jff 2/27/98 fix uninitialized crush field
-        break;
-    }
+    mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
+    mfloor->texture = 0;     // init
+    mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
     mfloor->speed = speed;
     height = sec->floorheight + stairsize;
     mfloor->floordestheight = height;
@@ -852,9 +858,10 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
         mfloor->speed = speed;
         mfloor->floordestheight = height;
         mfloor->type = buildStair; //jff 3/31/98 do not leave uninited
-        //jff 2/27/98 fix uninitialized crush field
-        if (boomsupport)
-          mfloor->crush = type==build8? false : true;
+	mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
+	mfloor->texture = 0;     // init
+	mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
+
         ok = 1;
         break;
       }

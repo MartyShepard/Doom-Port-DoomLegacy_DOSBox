@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 649 2010-05-19 17:46:12Z wesleyjohnson $
+// $Id: st_stuff.c 666 2010-06-03 12:56:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -480,9 +480,12 @@ static void ST_refreshBackground(void)
 
         // draw the faceback for the statusbarplayer
         if (plyr->skincolor==0)
-            colormap = colormaps;
+            colormap = & reg_colormaps[0]; // [0]
         else
-            colormap = translationtables - 256 + (plyr->skincolor<<8);
+        {
+//            colormap = translationtables - 256 + (plyr->skincolor<<8);
+            colormap = SKIN_TO_SKINMAP( plyr->skincolor );
+	}
 
         V_DrawMappedPatch (st_x+ST_FX, ST_Y, flags, faceback, colormap);
 

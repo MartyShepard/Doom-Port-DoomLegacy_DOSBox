@@ -278,7 +278,7 @@
 #     Compile the SDL/FreeBSD version with 'gmake FREEBSD=1 FBSD_SDL=1'
 #
 #############################################################################
-DEBUG=1
+
 # gcc or g++
 #CC=@gcc
 CC=gcc
@@ -334,9 +334,25 @@ ifdef USEASM
    OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
    OPTS:= $(OPTS) -DUSEASM
 endif
+# -O3	Aggressivste Optimierung: Schleifen, Inlining, Vektoroperationen
+# -march=i586	Nutzt Pentium-spezifische Instruktionen
+# -mtune=pentiumpro	Feintuning für bessere Branch Prediction
+# -funroll-loops	Schleifen entfaltet für schnellere Ausführung
+# -fomit-frame-pointer	Spart Register, reduziert Overhead
+# -ffast-math	ignoriert IEEE-Genauigkeit, schneller bei Allegro-Trigonometrie
+# -frename-registers	optimiert Register-Allokation (reduziert WAR/WAW-Hazards)
+# -falign-*	richtet Funktionen & Sprünge auf 16/32 Byte aus → schnelleres Fetching
+# -fexpensive-optimizations	wendet komplexere Optimierungen an
+# -fno-exceptions	spart Exception-Handling-Code (wenn du kein C++ nutzt)
+# -s	entfernt Symbole aus der EXE (kleinere, etwas schnellere Loads)
 
-	M5=
-	M4=-m486
+# Wenn du Grafik- oder Pixelroutinen direkt nutzt, kannst du auch versuchen:
+# -fno-builtin -fno-common
+# um sicherzustellen, dass keine Standardfunktionen (z. B. memcpy, memset) durch langsamere Varianten ersetzt werden — Allegro hat oft eigene ASM-optimierte Versionen.
+	M5=-march=pentium
+	M4=-march=i486 -mtune=i486 -mfpmath=387
+	M6=-O3 -march=i586 -mtune=pentiumpro -funroll-loops -fomit-frame-pointer -ffast-math -frename-registers -falign-loops=16 -falign-jumps=16 -falign-functions=32 -fexpensive-optimizations -fno-exceptions -s
+
 
 # compiler and linker flags
 ifdef PROFILEMODE
@@ -345,8 +361,8 @@ ifdef PROFILEMODE
   LDFLAGS = $(WFLAGS) -g -pg
  else
 
-	CFLAGS = $(WFLAGS) -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -mtune=i586 $(OPTS) 
-		# -fno-exceptions -foptimize-register-move -mhard-float
+  CFLAGS = $(OPTS) $(M6)
+	# -fno-exceptions -foptimize-register-move -mhard-float
 		# -nostdlib -m32 -march=i386 -ffreestanding
 		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \
 		# -fexpensive-optimizations -fforce-mem -fstrength-reduce -fthread-jumps  \

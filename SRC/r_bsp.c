@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 654 2010-05-19 18:05:08Z wesleyjohnson $
+// $Id: r_bsp.c 720 2010-07-31 19:01:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -383,7 +383,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
                      int *floorlightlevel, int *ceilinglightlevel,
                      boolean back)
 {
-  int        mapnum = -1; //SoM: 4/4/2000
+  int        colormapnum = -1; //SoM: 4/4/2000
   int	     floorlightsubst, ceilinglightsubst; // light from another sector
 #ifndef BSPVIEWER
   // [WDJ] partial duplicate of viewmobj setup by R_SetupFrame
@@ -395,8 +395,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   ceilinglightsubst = sec->ceilinglightsec;
 
   //SoM: 4/4/2000: If the sector has a midmap, it's probably from 280 type
-  if(sec->midmap != -1 && sec->model == SM_colormap)
-    mapnum = sec->midmap;
+  if(sec->model == SM_colormap && sec->midmap != -1 )
+    colormapnum = sec->midmap;  // explicit colormap
 
 //  if (sec->modelsec != -1 && sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
   if (sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
@@ -412,7 +412,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
-      mapnum = modsecp->midmap;
+      colormapnum = modsecp->midmap;  // Deep-water colormap, middle-section default
 
       // Replace floor and ceiling height with other sector's heights.
       if( viewer_underwater )
@@ -454,7 +454,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
                 tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
                 tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
             }
-              mapnum = modsecp->bottommap;
+            colormapnum = modsecp->bottommap; // Boom colormap, underwater
           }
 
           tempsec->lightlevel  = modsecp->lightlevel;
@@ -485,7 +485,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
             tempsec->floor_xoffs = tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
             tempsec->floor_yoffs = tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
 
-            mapnum = modsecp->topmap;
+            colormapnum = modsecp->topmap; // Boom colormap, over ceiling
 
             if (modsecp->floorpic != skyflatnum)
             {
@@ -524,7 +524,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     if(viewer_underwater)
     {
       // view below model sector floor
-      mapnum = modsecp->bottommap;
+      colormapnum = modsecp->bottommap; // Legacy colormap, underwater
       if(sec->floorlightsec != -1)
       {
 	// use substitute light
@@ -547,7 +547,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 #endif
     {
       // view over model sector ceiling
-      mapnum = modsecp->topmap;
+      colormapnum = modsecp->topmap; // Legacy colormap, over ceiling
       if(sec->ceilinglightsec != -1)
       {
 	// use substitute light
@@ -564,7 +564,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     }
     else
     {
-      mapnum = modsecp->midmap;
+      colormapnum = modsecp->midmap;  // Legacy colormap, middle section
       //SoM: Use middle normal sector's lightlevels.
       if(modsecp->floorheight > tempsec->floorheight)
       {
@@ -592,8 +592,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     sec = tempsec;
   }
 
-  if(mapnum >= 0 && mapnum < num_extra_colormaps)
-    sec->extra_colormap = &extra_colormaps[mapnum];
+  // colormap that this sector uses for this frame, from colormapnum.
+  if(colormapnum >= 0 && colormapnum < num_extra_colormaps)
+    sec->extra_colormap = &extra_colormaps[colormapnum];
   else
     sec->extra_colormap = NULL;
 
@@ -674,8 +675,8 @@ void R_AddLine (seg_t*  line)
     // but not necessarily visible.
     angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
     angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-    x1 = viewangletox[angle1];
-    x2 = viewangletox[angle2];
+    x1 = viewangle_to_x[angle1];
+    x2 = viewangle_to_x[angle2];
 
     // Does not cross a pixel?
     if (x1 == x2)  //SoM: 3/17/2000: Killough said to change the == to >= for... "robustness"?
@@ -852,8 +853,8 @@ boolean R_CheckBBox (fixed_t*   bspcoord)
     //  (adjacent pixels are touching).
     angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
     angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-    sx1 = viewangletox[angle1];
-    sx2 = viewangletox[angle2];
+    sx1 = viewangle_to_x[angle1];
+    sx2 = viewangle_to_x[angle2];
 
     // Does not cross a pixel.
     if (sx1 == sx2)
@@ -926,13 +927,13 @@ void R_Subsector (int num)
     // levels and colormaps.
     if(frontsector->ffloors)
     {
-      if(frontsector->moved)
+      if(frontsector->moved) // floor or ceiling moved, must refresh
       {
         frontsector->numlights = sub->sector->numlights = 0;
-        R_Prep3DFloors(frontsector);
+        R_Prep3DFloors(frontsector);  // refresh light lists
         sub->sector->lightlist = frontsector->lightlist;
         sub->sector->numlights = frontsector->numlights;
-        sub->sector->moved = frontsector->moved = false;
+        sub->sector->moved = frontsector->moved = false;  // clear until next move
       }
 
       light = R_GetPlaneLight(frontsector, frontsector->floorheight);
@@ -952,7 +953,8 @@ void R_Subsector (int num)
 	|| (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
-        floorplane = R_FindPlane (frontsector->floorheight,
+        // visplane global parameter
+        vsp_floorplane = R_FindPlane (frontsector->floorheight,
                                   frontsector->floorpic,
                                   floorlightlevel,
                                   frontsector->floor_xoffs,
@@ -961,7 +963,7 @@ void R_Subsector (int num)
                                   NULL);
     }
     else
-        floorplane = NULL;
+        vsp_floorplane = NULL;
 
     if ((frontsector->ceilingheight > viewz)
         || (frontsector->ceilingpic == skyflatnum)
@@ -969,7 +971,8 @@ void R_Subsector (int num)
         || (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].floorpic == skyflatnum))
     {
-        ceilingplane = R_FindPlane (frontsector->ceilingheight,
+        // visplane global parameter
+        vsp_ceilingplane = R_FindPlane (frontsector->ceilingheight,
                                     frontsector->ceilingpic,
                                     ceilinglightlevel,
                                     frontsector->ceiling_xoffs,
@@ -978,7 +981,7 @@ void R_Subsector (int num)
                                     NULL);
     }
     else
-        ceilingplane = NULL;
+        vsp_ceilingplane = NULL;
 
 
     numffloors = 0;
@@ -1041,7 +1044,7 @@ void R_Subsector (int num)
 
 
 #ifdef FLOORSPLATS
-    if (sub->splats)
+    if (sub->splats && cv_splats.value )
         R_AddVisibleFloorSplats (sub);
 #endif
 
@@ -1069,8 +1072,9 @@ void R_Prep3DFloors(sector_t*  sector)
   ffloor_t*      best;
   fixed_t        bestheight, maxheight;
   int            count, i, mapnum;
-  sector_t*      sec;
+  sector_t*      modelsec;
 
+  // count needed lightlist entries
   count = 1;
   for(rover = sector->ffloors; rover; rover = rover->next)
   {
@@ -1086,20 +1090,26 @@ void R_Prep3DFloors(sector_t*  sector)
   {
     if(sector->lightlist)
       Z_Free(sector->lightlist);
-    sector->lightlist = Z_Malloc(sizeof(lightlist_t) * count, PU_LEVEL, 0);
-    memset(sector->lightlist, 0, sizeof(lightlist_t) * count);
+    sector->lightlist = Z_Malloc(sizeof(ff_lightlist_t) * count, PU_LEVEL, 0);
     sector->numlights = count;
+    memset(sector->lightlist, 0, sizeof(ff_lightlist_t) * count);
   }
   else
-    memset(sector->lightlist, 0, sizeof(lightlist_t) * count);
+  {
+    // clear existing lightlist 
+    memset(sector->lightlist, 0, sizeof(ff_lightlist_t) * count);
+  }
 
+  // init [0] to sector light
   sector->lightlist[0].height = sector->ceilingheight + 1;
   sector->lightlist[0].lightlevel = &sector->lightlevel;
   sector->lightlist[0].caster = NULL;
   sector->lightlist[0].extra_colormap = sector->extra_colormap;
   sector->lightlist[0].flags = 0;
 
-  maxheight = MAXINT;
+  // Work down from highest light to lowest light.
+  // Determine each light in lightlist.
+  maxheight = MAXINT;  // down from max, previous light
   for(i = 1; i < count; i++)
   {
     bestheight = MAXINT * -1;
@@ -1109,20 +1119,23 @@ void R_Prep3DFloors(sector_t*  sector)
       if(!(rover->flags & FF_EXISTS) || (rover->flags & FF_NOSHADE && !(rover->flags & FF_CUTLEVEL) && !(rover->flags & FF_CUTSPRITES)))
         continue;
 
+      // find highest topheight, lower than maxheight
       if(*rover->topheight > bestheight && *rover->topheight < maxheight)
       {
         best = rover;
         bestheight = *rover->topheight;
         continue;
       }
-      if(rover->flags & FF_DOUBLESHADOW && *rover->bottomheight > bestheight && *rover->bottomheight < maxheight)
+      // FF_DOUBLESHADOW considers bottomheight too
+      if(rover->flags & FF_DOUBLESHADOW
+	 && *rover->bottomheight > bestheight && *rover->bottomheight < maxheight)
       {
         best = rover;
         bestheight = *rover->bottomheight;
         continue;
       }
     }
-    if(!best)
+    if(!best)  // failure escape
     {
       sector->numlights = i;
       return;
@@ -1131,28 +1144,39 @@ void R_Prep3DFloors(sector_t*  sector)
     sector->lightlist[i].height = maxheight = bestheight;
     sector->lightlist[i].caster = best;
     sector->lightlist[i].flags = best->flags;
-    sec = &sectors[best->secnum];
-    mapnum = sec->midmap;
+    // [WDJ] FIXME ??:
+    // This is messing with the model sector, which could be used for many sectors,
+    // settings are independent of this lightlist,
+    // this could be done elsewhere, once.
+    modelsec = &sectors[best->model_secnum];
+    mapnum = modelsec->midmap;
     if(mapnum >= 0 && mapnum < num_extra_colormaps)
-      sec->extra_colormap = &extra_colormaps[mapnum];
+      modelsec->extra_colormap = &extra_colormaps[mapnum];
     else
-      sec->extra_colormap = NULL;
+      modelsec->extra_colormap = NULL;
 
+    // best is highest floor less than maxheight
     if(best->flags & FF_NOSHADE)
     {
+      // FF_NOSHADE, copy next higher light
       sector->lightlist[i].lightlevel = sector->lightlist[i-1].lightlevel;
       sector->lightlist[i].extra_colormap = sector->lightlist[i-1].extra_colormap;
     }
     else
     {
+      // usual light
       sector->lightlist[i].lightlevel = best->toplightlevel;
-      sector->lightlist[i].extra_colormap = sec->extra_colormap;
+      sector->lightlist[i].extra_colormap = modelsec->extra_colormap;
     }
 
     if(best->flags & FF_DOUBLESHADOW)
     {
+      // FF_DOUBLESHADOW, consider bottomheight too.
       if(bestheight == *best->bottomheight)
       {
+	// [WDJ] FIXME: segfault here in Chexquest-newmaps E2M2, best->lastlight wild value
+	// Stopped segfault by init to 0, but what is this trying to do ??
+	// Happens when bottom is found without finding top.
         sector->lightlist[i].lightlevel = sector->lightlist[best->lastlight].lightlevel;
         sector->lightlist[i].extra_colormap = sector->lightlist[best->lastlight].extra_colormap;
       }

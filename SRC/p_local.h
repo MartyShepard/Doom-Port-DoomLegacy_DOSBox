@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_local.h 697 2010-07-09 03:17:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -240,12 +240,7 @@ extern int              iquetail;
 void P_RespawnSpecials (void);
 void P_RespawnWeapons(void);
 
-mobj_t*
-P_SpawnMobj
-( fixed_t       x,
-  fixed_t       y,
-  fixed_t       z,
-  mobjtype_t    type );
+mobj_t*  P_SpawnMobj ( fixed_t x, fixed_t y, fixed_t z, mobjtype_t type );
 
 void    P_RemoveMobj (mobj_t* th);
 boolean P_SetMobjState (mobj_t* mobj, statenum_t state);
@@ -286,22 +281,33 @@ void P_InitBrainTarget();
 // P_MAP
 //
 
+// TryMove, thing map global vars
+extern fixed_t  tm_bbox[4];	// box around the thing
+extern mobj_t*  tm_thing;	// the thing itself
+extern int      tm_flags;	// thing flags of tm_thing
+extern fixed_t  tm_x, tm_y;	// thing map position
+
+// TryMove, thing map response global vars
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
-extern boolean          floatok;
-extern fixed_t          tmfloorz;
-extern fixed_t          tmceilingz;
-extern fixed_t          tmsectorceilingz;      //added:28-02-98: p_spawnmobj
-extern mobj_t*          tmfloorthing;
+extern boolean  tmr_floatok;  // floating thing ok to move
+extern fixed_t  tmr_floorz;   // floor and ceiling of new position
+extern fixed_t  tmr_ceilingz;
+extern fixed_t  tmr_sectorceilingz;      //added:28-02-98: p_spawnmobj
+extern mobj_t*  tmr_floorthing;   // standing on another thing
+extern line_t*  tmr_ceilingline;  // line that lowers ceiling, for missile sky test
+extern line_t*  tmr_blockingline; // stopping line that is solid
 
-extern  line_t*         ceilingline;
-extern  line_t*         blockingline;
 extern  msecnode_t*     sector_list;
 
+// P_CheckPosition, P_TryMove
+// use tm_ global vars, and return tmr_ global vars
 boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y, boolean allowdropoff);
+
 boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
 void    P_SlideMove (mobj_t* mo);
+
 boolean P_CheckSight (mobj_t* t1, mobj_t* t2);
 boolean P_CheckSight2 (mobj_t* t1, mobj_t* t2, fixed_t x, fixed_t y, fixed_t z);	//added by AC for predicting
 void    P_UseLines (player_t* player);
@@ -314,29 +320,16 @@ void    P_CreateSecNodeList(mobj_t*,fixed_t,fixed_t);
 int     P_GetMoveFactor(mobj_t* mo);
 void    P_Initsecnode( void );
 
-extern mobj_t*  linetarget;     // who got hit (or NULL)
+// Line Attack return global vars  lar_*
+extern mobj_t*  lar_linetarget;  // who got hit (or NULL)
+extern fixed_t  la_attackrange;  // max range of weapon
 
-extern fixed_t attackrange;
+fixed_t P_AimLineAttack ( mobj_t* t1, angle_t angle, fixed_t distance );
 
-fixed_t
-P_AimLineAttack
-( mobj_t*       t1,
-  angle_t       angle,
-  fixed_t       distance );
+void P_LineAttack ( mobj_t* t1, angle_t angle, fixed_t distance,
+		    fixed_t slope, int damage );
 
-void
-P_LineAttack
-( mobj_t*       t1,
-  angle_t       angle,
-  fixed_t       distance,
-  fixed_t       slope,
-  int           damage );
-
-void
-P_RadiusAttack
-( mobj_t*       spot,
-  mobj_t*       source,
-  int           damage );
+void P_RadiusAttack ( mobj_t* spot, mobj_t* source, int damage );
 
 
 
@@ -344,8 +337,10 @@ P_RadiusAttack
 // P_SETUP
 //
 extern byte*            rejectmatrix;   // for fast sight rejection
-extern long*           blockmaplump;   // offsets in blockmap are from here
-extern long*           blockmap; // Big blockmap SSNTails
+// Read wad blockmap using int16_t wadblockmaplump[].
+// Expand from 16bit wad to internal 32bit blockmap.
+extern uint32_t*        blockmaphead;   // offsets in blockmap are from here
+extern uint32_t*        blockmapindex;  // Big blockmap, SSNTails
 extern int              bmapwidth;
 extern int              bmapheight;     // in mapblocks
 extern fixed_t          bmaporgx;
@@ -359,25 +354,18 @@ extern mobj_t**         blocklinks;     // for thing chains
 extern int              maxammo[NUMAMMO];
 extern int              clipammo[NUMAMMO];
 
-void
-P_TouchSpecialThing
-( mobj_t*       special,
-  mobj_t*       toucher );
+void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher );
 
-boolean
-P_DamageMobj
-( mobj_t*       target,
-  mobj_t*       inflictor,
-  mobj_t*       source,
-  int           damage );
+boolean P_DamageMobj ( mobj_t* target, mobj_t* inflictor,
+		       mobj_t* source, int damage );
 
 //
 // P_SIGHT
 //
 
 // slopes to top and bottom of target
-extern fixed_t  topslope;
-extern fixed_t  bottomslope;
+extern fixed_t  see_topslope;
+extern fixed_t  see_bottomslope;
 
 
 //

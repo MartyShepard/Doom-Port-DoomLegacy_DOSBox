@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_mobj.h 666 2010-06-03 12:56:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -228,16 +228,14 @@ typedef enum
     // If 0x4 0x8 or 0xc,
     //  use a translation table for player colormaps
     MF_TRANSLATION      = 0x3C000000,    // 0xc000000, original 4color
-
-    // Hmm ???.
-    MF_TRANSSHIFT       = 26,
+    MF_TRANSSHIFT       = 26,  // to shift MF_TRANSLATION bits to INT
 
     // for chase camera, don't be blocked by things (partial clipping)
     MF_NOCLIPTHING      = 0x40000000,
 
     MF_FLOORHUGGER      = 0x80000000
 
-} mobjflag_t;
+} mobjflag_e;
 
 
 typedef enum {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 639 2010-05-09 22:53:44Z wesleyjohnson $
+// $Id: d_main.c 701 2010-07-11 00:41:45Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -308,12 +308,14 @@
 #include "d_main.h"
 #include "d_netfil.h"
 #include "m_cheat.h"
+#include "p_chex.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"   // 3D View Rendering
 #endif
 
 #include "hardware/hw3sound.h"
+
 
 #include "b_game.h"     //added by AC for acbot
 
@@ -325,8 +327,8 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 660; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-const char VERSIONSTRING[] = " (rev " SVN_REV ")";
+const int  REVISION = 721; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
@@ -343,7 +345,7 @@ char * pagename = "TITLEPIC";
 
 //  PROTOS
 void HereticPatchEngine(void);
-void Chex1PatchEngine(void);
+//void Chex1PatchEngine(void);
 
 void D_PageDrawer(char *lumpname);
 void D_AdvanceDemo(void);
@@ -1140,7 +1142,7 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{"ENDSTRF", NULL}, 0, LN_MAP01, GD_idwad|GD_unsupported, strife },
 // GDESC_chex1: Chex Quest
    { "Chex Quest", NULL, "chex1", "chex.wad", NULL,
-	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE, 0, chexquest1 },
+	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE, GD_iwad_pref, chexquest1 },
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode", "doom.wad", NULL,
 	{ NULL, NULL}, LN_E1M1, 0, 0, registered },
@@ -1155,7 +1157,7 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{ NULL, NULL}, LN_MAP01, 0, GD_unsupported, hexen },
 // GDESC_other: Other iwads, all DoomII features enabled, ptrs to name buffers
    { other_gname, public_title, "", other_iwad_filename, NULL,
-	{ NULL, NULL}, LN_MAP01, 0, 0, commercial }
+	{ NULL, NULL}, LN_MAP01, 0, GD_iwad_pref, commercial }
 };
 
 
@@ -1507,8 +1509,16 @@ void IdentifyVersion(void)
       I_Error("Doom Legacy currently does not support this game.\n");
 
     D_AddFile(pathiwad);
-    D_AddFile(legacywad);
-    if( gamedesc.support_wad )  D_AddFile( gamedesc.support_wad );
+    D_AddFile(legacywad);  // So can replace some graphics with Legacy ones.
+    if( gamedesc.gameflags & GD_iwad_pref )
+    {
+       // Because legacy.dat replaced some things it shouldn't, give the iwad
+       // preference from both search directions.
+       // Chexquest1: legacy.dat was replacing the green splats, with bloody ones.
+       D_AddFile(pathiwad);
+    }
+    if( gamedesc.support_wad )
+       D_AddFile( gamedesc.support_wad );
     return;
    
 iwad_failure:
@@ -2087,6 +2097,7 @@ void D_DoomMain(void)
     p = M_CheckParm("-playdemo");
     if (!p)
         p = M_CheckParm("-timedemo");
+			
     if (p && M_IsNextParm())
     {
         char tmp[MAX_WADPATH];
@@ -2102,17 +2113,19 @@ void D_DoomMain(void)
             strcat(tmp, M_GetNextParm());
         }
         FIL_DefaultExtension(tmp, ".lmp");
-
-        CONS_Printf("Playing demo %s.\n", tmp);
-
+        
         if ((p = M_CheckParm("-playdemo")))
         {
+						CONS_Printf("Playing demo %s.\n", tmp);
             singledemo = true;  // quit after one demo
             G_DeferedPlayDemo(tmp);
         }
         else
+				{
+						CONS_Printf("Timing Benchmark Demo %s.\n", tmp);
             G_TimeDemo(tmp);
-        gamestate = wipegamestate = GS_NULL;
+						gamestate = wipegamestate = GS_NULL;
+				}
 
         return;
     }

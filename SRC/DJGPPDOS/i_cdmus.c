@@ -60,6 +60,10 @@ static boolean cdValid;             // true when last cd audio info was ok
 static boolean wasPlaying;
 static int     cdVolume=0;          // current cd volume (0-31)
 
+int lowest_track = 0;
+int highest_track = 0;
+struct Track tracks[99];
+
 // 0-31 like Music & Sfx, though CD hardware volume is 0-255.
 consvar_t   cd_volume = {"cd_volume","31",CV_SAVE,soundvolume_cons_t};
 
@@ -100,7 +104,7 @@ void Command_Cd_f (void)
     {
         CONS_Printf ("cd [on] [off] [remap] [reset] [open]\n"
                      "   [info] [play <track>] [loop <track>]\n"
-                     "   [stop] [resume]\n");
+                     "   [stop] [resume] [noloop]\n");
         return;
     }
 
@@ -229,6 +233,12 @@ void Command_Cd_f (void)
         return;
     }
 
+    if (!strncmp(s, "noloop", 4))
+    {
+        I_PlayCD(atoi(COM_Argv (2)) , false);
+        return;
+		}
+		
     if (!strncmp(s,"resume",4))
     {
         I_ResumeCD ();

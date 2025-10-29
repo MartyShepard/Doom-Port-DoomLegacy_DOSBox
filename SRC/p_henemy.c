@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_henemy.c 681 2010-06-07 18:10:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1632,13 +1632,25 @@ void A_HBossDeath(mobj_t *actor)
         mobj_t *mo;
         thinker_t *think;
         line_t dummyLine;
+// Heretic:
+// E1M8: When last IronLiche is dead, execute lowerFloor(sectors tagged 666).
+// E2M8: When last Maulotar is dead, execute lowerFloor(sectors tagged 666),
+//	    and Massacre.
+// E3M8: When D'Sparil is dead, execute lowerFloor(sectors tagged 666),
+//       and Massacre, (which has already been done by D'Sparil death).
+// E4M8: When last IronLiche is dead, execute lowerFloor(sectors tagged 666),
+//	    and Massacre.
+// E5M8: When last Maulotar is dead, execute lowerFloor(sectors tagged 666),
+//	    and Massacre.
+
+        // indexed by game episode number -1
         static const mobjtype_t bossType[6] =
         {
-                MT_HHEAD,
+                MT_HHEAD,	// episode 1
                 MT_MINOTAUR,
                 MT_SORCERER2,
                 MT_HHEAD,
-                MT_MINOTAUR,
+                MT_MINOTAUR,	// episode 5
                 -1
         };
 
@@ -1667,6 +1679,7 @@ void A_HBossDeath(mobj_t *actor)
         { // Kill any remaining monsters
                 P_Massacre();
         }
+        // lowerFloor all sectors tagged 666
         dummyLine.tag = 666;
         EV_DoFloor(&dummyLine, lowerFloor);
 }

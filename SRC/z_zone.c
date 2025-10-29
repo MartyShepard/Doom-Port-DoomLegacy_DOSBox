@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 635 2010-05-03 04:54:46Z smite-meister $
+// $Id: z_zone.c 713 2010-07-27 12:59:55Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -356,8 +356,8 @@ memblock_t*  Z_GrowZone( int reqsize, int std_grow )
         mainzone->size += grow_size;
         mb_used = mainzone->size >> 20;	// to MiB
 		   
-        fprintf(stderr,"Z_Malloc: Grow by %i KiB, total=%i MiB\n",
-			   grow_size>>10, mb_used );
+        fprintf(stderr, "Z_Malloc: Grow by %d KiB, total %d MiB\n",
+		grow_size>>10, mb_used);
         return freezone;
     }else{
        return NULL;
@@ -402,8 +402,7 @@ void Z_Init (void)
         uint32_t  freemem, total;
         freemem = I_GetFreeMem(&total)>>20;
         total >>= 20;	// MiB
-        CONS_Printf("system memory %d MiB free %d MiB\n",
-		    (int)total, (int)freemem);
+        CONS_Printf("System memory %d MiB, free %d MiB\n", total, freemem);
         // We assume that system uses a lot of memory for disk cache.
         // Can ask for more than freemem and get it from disk cache.
 	// MEM consts are now defined above, [WDJ]
@@ -1232,4 +1231,11 @@ void Command_Memfree_f( void )
 char *Z_Strdup(const char *s, memtag_e tag, void **user)
 {
   return strcpy(Z_Malloc(strlen(s)+1, tag, user), s);
+}
+
+// return size of data of this block.
+int Z_Datasize( void* ptr )
+{
+    memblock_t*  block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
+    return  block->size - sizeof(memblock_t);
 }

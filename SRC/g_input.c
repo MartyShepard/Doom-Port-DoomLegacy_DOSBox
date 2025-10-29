@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: g_input.c 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -181,11 +181,13 @@ void  G_MapEventsToControls (event_t *ev)
         gamekeydown[KEY_DBLMOUSE1+i] = flag;
     }
 
+    /* TODO ignore joystick doubleclicks for now
     for (i=0;i<JOYBUTTONS;i++)
     {
         flag = G_CheckDoubleClick (gamekeydown[KEY_JOY1+i], &joydclicks[i]);
         gamekeydown[KEY_DBLJOY1+i] = flag;
     }
+    */
 }
 
 
@@ -225,142 +227,178 @@ typedef struct {
     char name[15];
 } keyname_t;
 
-static keyname_t keynames[] = {
+static keyname_t keynames[] =
+{
+  {KEY_NULL,      "null"},
 
-    {KEY_SPACE     ,"SPACE"},
-    {KEY_CAPSLOCK  ,"CAPS LOCK"},
-    {KEY_ENTER     ,"ENTER"},
-    {KEY_TAB       ,"TAB"},
-    {KEY_ESCAPE    ,"ESCAPE"},
-    {KEY_BACKSPACE ,"BACKSPACE"},
+  {KEY_BACKSPACE, "backspace"},
+  {KEY_TAB,       "tab"},
+  {KEY_ENTER,     "enter"},
+  {KEY_PAUSE,     "pause"},  // irrelevant, since this key cannot be remapped...
+  {KEY_ESCAPE,    "escape"}, // likewise
+  {KEY_SPACE,     "space"},
 
-    {KEY_NUMLOCK   ,"NUMLOCK"},
-    {KEY_SCROLLLOCK,"SCROLLLOCK"},
+  {KEY_CONSOLE,    "console"},
 
-    // bill gates keys
+  {KEY_NUMLOCK,    "num lock"},
+  {KEY_CAPSLOCK,   "caps lock"},
+  {KEY_SCROLLLOCK, "scroll lock"},
+  {KEY_RSHIFT,     "right shift"},
+  {KEY_LSHIFT,     "left shift"},
+  {KEY_RCTRL,      "right ctrl"},
+  {KEY_LCTRL,      "left ctrl"},
+  {KEY_RALT,       "right alt"},
+  {KEY_LALT,       "left alt"},
+  {KEY_LWIN,       "left win"},
+  {KEY_RWIN,       "right win"},
+  {KEY_MODE,       "altgr"},
+  {KEY_MENU,       "menu"},
 
-    {KEY_LEFTWIN   ,"LEFTWIN"},
-    {KEY_RIGHTWIN  ,"RIGHTWIN"},
-    {KEY_MENU      ,"MENU"},
+  // keypad keys
+  {KEY_KEYPAD0, "keypad 0"},
+  {KEY_KEYPAD1, "keypad 1"},
+  {KEY_KEYPAD2, "keypad 2"},
+  {KEY_KEYPAD3, "keypad 3"},
+  {KEY_KEYPAD4, "keypad 4"},
+  {KEY_KEYPAD5, "keypad 5"},
+  {KEY_KEYPAD6, "keypad 6"},
+  {KEY_KEYPAD7, "keypad 7"},
+  {KEY_KEYPAD8, "keypad 8"},
+  {KEY_KEYPAD9, "keypad 9"},
+  {KEY_KPADPERIOD,"keypad ."},
+  {KEY_KPADSLASH, "keypad /"},
+  {KEY_KPADMULT,  "keypad *"},
+  {KEY_MINUSPAD,  "keypad -"},
+  {KEY_PLUSPAD,   "keypad +"},
 
-    // shift,ctrl,alt are not distinguished between left & right
+  // extended keys (not keypad)
+  {KEY_UPARROW,   "up arrow"},
+  {KEY_DOWNARROW, "down arrow"},
+  {KEY_RIGHTARROW,"right arrow"},
+  {KEY_LEFTARROW, "left arrow"},
+  {KEY_INS,       "ins"},
+  {KEY_DELETE,    "del"},
+  {KEY_HOME,      "home"},
+  {KEY_END,       "end"},
+  {KEY_PGUP,      "pgup"},
+  {KEY_PGDN,      "pgdown"},
 
-    {KEY_SHIFT     ,"SHIFT"},
-    {KEY_CTRL      ,"CTRL"},
-    {KEY_ALT       ,"ALT"},
+  // other keys
+  {KEY_F1, "F1"},
+  {KEY_F2, "F2"},
+  {KEY_F3, "F3"},
+  {KEY_F4, "F4"},
+  {KEY_F5, "F5"},
+  {KEY_F6, "F6"},
+  {KEY_F7, "F7"},
+  {KEY_F8, "F8"},
+  {KEY_F9, "F9"},
+  {KEY_F10,"F10"},
+  {KEY_F11,"F11"},
+  {KEY_F12,"F12"},
 
-    // keypad keys
+  // virtual keys for mouse buttons and joystick buttons
+  {KEY_MOUSE1,  "mouse 1"},
+  {KEY_MOUSE1+1,"mouse 2"},
+  {KEY_MOUSE1+2,"mouse 3"},
+  {KEY_MOUSEWHEELUP, "mwheel up"},
+  {KEY_MOUSEWHEELDOWN,"mwheel down"},
+  {KEY_MOUSE1+5,"mouse 6"},
+  {KEY_MOUSE1+6,"mouse 7"},
+  {KEY_MOUSE1+7,"mouse 8"},
+  {KEY_2MOUSE1,  "2nd mouse 2"},    //BP: sorry my mouse handler swap button 1 and 2
+  {KEY_2MOUSE1+1,"2nd mouse 1"},
+  {KEY_2MOUSE1+2,"2nd mouse 3"},
+  {KEY_2MOUSEWHEELUP,"2nd mwheel up"},
+  {KEY_2MOUSEWHEELDOWN,"2nd mwheel down"},
+  {KEY_2MOUSE1+5,"2nd mouse 6"},
+  {KEY_2MOUSE1+6,"2nd mouse 7"},
+  {KEY_2MOUSE1+7,"2nd mouse 8"},
 
-    {KEY_KPADSLASH,"KEYPAD /"},
+  {KEY_DBLMOUSE1,   "mouse 1 d"},
+  {KEY_DBLMOUSE1+1, "mouse 2 d"},
+  {KEY_DBLMOUSE1+2, "mouse 3 d"},
+  {KEY_DBLMOUSE1+3, "mouse 4 d"},
+  {KEY_DBLMOUSE1+4, "mouse 5 d"},
+  {KEY_DBLMOUSE1+5, "mouse 6 d"},
+  {KEY_DBLMOUSE1+6, "mouse 7 d"},
+  {KEY_DBLMOUSE1+7, "mouse 8 d"},
+  {KEY_DBL2MOUSE1,  "2nd mouse 2 d"},
+  {KEY_DBL2MOUSE1+1,"2nd mouse 1 d"},
+  {KEY_DBL2MOUSE1+2,"2nd mouse 3 d"},
+  {KEY_DBL2MOUSE1+3,"2nd mouse 4 d"},
+  {KEY_DBL2MOUSE1+4,"2nd mouse 5 d"},
+  {KEY_DBL2MOUSE1+5,"2nd mouse 6 d"},
+  {KEY_DBL2MOUSE1+6,"2nd mouse 7 d"},
+  {KEY_DBL2MOUSE1+7,"2nd mouse 8 d"},
 
-    {KEY_KEYPAD7, "KEYPAD 7"},
-    {KEY_KEYPAD8, "KEYPAD 8"},
-    {KEY_KEYPAD9, "KEYPAD 9"},
-    {KEY_MINUSPAD,"KEYPAD -"},
-    {KEY_KEYPAD4, "KEYPAD 4"},
-    {KEY_KEYPAD5, "KEYPAD 5"},
-    {KEY_KEYPAD6, "KEYPAD 6"},
-    {KEY_PLUSPAD, "KEYPAD +"},
-    {KEY_KEYPAD1, "KEYPAD 1"},
-    {KEY_KEYPAD2, "KEYPAD 2"},
-    {KEY_KEYPAD3, "KEYPAD 3"},
-    {KEY_KEYPAD0, "KEYPAD 0"},
-    {KEY_KPADDEL, "KEYPAD ."},
+  {KEY_JOY0BUT0, "Joy 0 b 0"},
+  {KEY_JOY0BUT1, "Joy 0 b 1"},
+  {KEY_JOY0BUT2, "Joy 0 b 2"},
+  {KEY_JOY0BUT3, "Joy 0 b 3"},
+  {KEY_JOY0BUT4, "Joy 0 b 4"},
+  {KEY_JOY0BUT5, "Joy 0 b 5"},
+  {KEY_JOY0BUT6, "Joy 0 b 6"},
+  {KEY_JOY0BUT7, "Joy 0 b 7"},
+  {KEY_JOY0BUT8, "Joy 0 b 8"},
+  {KEY_JOY0BUT9, "Joy 0 b 9"},
+  {KEY_JOY0BUT10, "Joy 0 b 10"},
+  {KEY_JOY0BUT11, "Joy 0 b 11"},
+  {KEY_JOY0BUT12, "Joy 0 b 12"},
+  {KEY_JOY0BUT13, "Joy 0 b 13"},
+  {KEY_JOY0BUT14, "Joy 0 b 14"},
+  {KEY_JOY0BUT15, "Joy 0 b 15"},
 
-    // extended keys (not keypad)
+  {KEY_JOY1BUT0, "Joy 1 b 0"},
+  {KEY_JOY1BUT1, "Joy 1 b 1"},
+  {KEY_JOY1BUT2, "Joy 1 b 2"},
+  {KEY_JOY1BUT3, "Joy 1 b 3"},
+  {KEY_JOY1BUT4, "Joy 1 b 4"},
+  {KEY_JOY1BUT5, "Joy 1 b 5"},
+  {KEY_JOY1BUT6, "Joy 1 b 6"},
+  {KEY_JOY1BUT7, "Joy 1 b 7"},
+  {KEY_JOY1BUT8, "Joy 1 b 8"},
+  {KEY_JOY1BUT9, "Joy 1 b 9"},
+  {KEY_JOY1BUT10, "Joy 1 b 10"},
+  {KEY_JOY1BUT11, "Joy 1 b 11"},
+  {KEY_JOY1BUT12, "Joy 1 b 12"},
+  {KEY_JOY1BUT13, "Joy 1 b 13"},
+  {KEY_JOY1BUT14, "Joy 1 b 14"},
+  {KEY_JOY1BUT15, "Joy 1 b 15"},
 
-    {KEY_HOME,      "HOME"},
-    {KEY_UPARROW,   "UP ARROW"},
-    {KEY_PGUP,      "PGUP"},
-    {KEY_LEFTARROW ,"LEFT ARROW"},
-    {KEY_RIGHTARROW,"RIGHT ARROW"},
-    {KEY_END,       "END"},
-    {KEY_DOWNARROW, "DOWN ARROW"},
-    {KEY_PGDN,      "PGDN"},
-    {KEY_INS,       "INS"},
-    {KEY_DEL,       "DEL"},
+  {KEY_JOY2BUT0, "Joy 2 b 0"},
+  {KEY_JOY2BUT1, "Joy 2 b 1"},
+  {KEY_JOY2BUT2, "Joy 2 b 2"},
+  {KEY_JOY2BUT3, "Joy 2 b 3"},
+  {KEY_JOY2BUT4, "Joy 2 b 4"},
+  {KEY_JOY2BUT5, "Joy 2 b 5"},
+  {KEY_JOY2BUT6, "Joy 2 b 6"},
+  {KEY_JOY2BUT7, "Joy 2 b 7"},
+  {KEY_JOY2BUT8, "Joy 2 b 8"},
+  {KEY_JOY2BUT9, "Joy 2 b 9"},
+  {KEY_JOY2BUT10, "Joy 2 b 10"},
+  {KEY_JOY2BUT11, "Joy 2 b 11"},
+  {KEY_JOY2BUT12, "Joy 2 b 12"},
+  {KEY_JOY2BUT13, "Joy 2 b 13"},
+  {KEY_JOY2BUT14, "Joy 2 b 14"},
+  {KEY_JOY2BUT15, "Joy 2 b 15"},
 
-    // other keys
-
-    {KEY_F1, "F1"},
-    {KEY_F2, "F2"},
-    {KEY_F3, "F3"},
-    {KEY_F4, "F4"},
-    {KEY_F5, "F5"},
-    {KEY_F6, "F6"},
-    {KEY_F7, "F7"},
-    {KEY_F8, "F8"},
-    {KEY_F9, "F9"},
-    {KEY_F10,"F10"},
-    {KEY_F11,"F11"},
-    {KEY_F12,"F12"},
-
-    // virtual keys for mouse buttons and joystick buttons
-
-    {KEY_MOUSE1,  "MOUSE1"},
-    {KEY_MOUSE1+1,"MOUSE2"},
-    {KEY_MOUSE1+2,"MOUSE3"},
-    {KEY_MOUSE1+3,"MOUSE4"},
-    {KEY_MOUSE1+4,"MOUSE5"},
-    {KEY_MOUSE1+5,"MOUSE6"},
-    {KEY_MOUSE1+6,"MOUSE7"},
-    {KEY_MOUSE1+7,"MOUSE8"},
-    {KEY_2MOUSE1,  "SEC_MOUSE2"},    //BP: sorry my mouse handler swap button 1 and 2
-    {KEY_2MOUSE1+1,"SEC_MOUSE1"},
-    {KEY_2MOUSE1+2,"SEC_MOUSE3"},
-    {KEY_2MOUSE1+3,"SEC_MOUSE4"},
-    {KEY_2MOUSE1+4,"SEC_MOUSE5"},
-    {KEY_2MOUSE1+5,"SEC_MOUSE6"},
-    {KEY_2MOUSE1+6,"SEC_MOUSE7"},
-    {KEY_2MOUSE1+7,"SEC_MOUSE8"},
-    {KEY_MOUSEWHEELUP,"Wheel 1 UP"},
-    {KEY_MOUSEWHEELDOWN,"Wheel 1 Down"},
-    {KEY_2MOUSEWHEELUP,"Wheel 2 UP"},
-    {KEY_2MOUSEWHEELDOWN,"Wheel 2 Down"},
-
-    {KEY_JOY1,  "JOY1"},
-    {KEY_JOY1+1,"JOY2"},
-    {KEY_JOY1+2,"JOY3"},
-    {KEY_JOY1+3,"JOY4"},
-    {KEY_JOY1+4,"JOY5"},
-    {KEY_JOY1+5,"JOY6"},
-    // we use up to 10 buttons in DirectInput
-    {KEY_JOY1+6,"JOY7"},
-    {KEY_JOY1+7,"JOY8"},
-    {KEY_JOY1+8,"JOY9"},
-    {KEY_JOY1+9,"JOY10"},
-    // the DOS version uses Allegro's joystick support
-    // the Hat is reported as extra buttons
-    {KEY_JOY1+10,"HATUP"},
-    {KEY_JOY1+11,"HATDOWN"},
-    {KEY_JOY1+12,"HATLEFT"},
-    {KEY_JOY1+13,"HATRIGHT"},
-
-    {KEY_DBLMOUSE1,   "DBLMOUSE1"},
-    {KEY_DBLMOUSE1+1, "DBLMOUSE2"},
-    {KEY_DBLMOUSE1+2, "DBLMOUSE3"},
-    {KEY_DBLMOUSE1+3, "DBLMOUSE4"},
-    {KEY_DBLMOUSE1+4, "DBLMOUSE5"},
-    {KEY_DBLMOUSE1+5, "DBLMOUSE6"},
-    {KEY_DBLMOUSE1+6, "DBLMOUSE7"},
-    {KEY_DBLMOUSE1+7, "DBLMOUSE8"},
-    {KEY_DBL2MOUSE1,  "DBLSEC_MOUSE2"},  //BP: sorry my mouse handler swap button 1 and 2
-    {KEY_DBL2MOUSE1+1,"DBLSEC_MOUSE1"},
-    {KEY_DBL2MOUSE1+2,"DBLSEC_MOUSE3"},
-    {KEY_DBL2MOUSE1+3,"DBLSEC_MOUSE4"},
-    {KEY_DBL2MOUSE1+4,"DBLSEC_MOUSE5"},
-    {KEY_DBL2MOUSE1+5,"DBLSEC_MOUSE6"},
-    {KEY_DBL2MOUSE1+6,"DBLSEC_MOUSE7"},
-    {KEY_DBL2MOUSE1+7,"DBLSEC_MOUSE8"},
-
-
-    {KEY_DBLJOY1,  "DBLJOY1"},
-    {KEY_DBLJOY1+1,"DBLJOY2"},
-    {KEY_DBLJOY1+2,"DBLJOY3"},
-    {KEY_DBLJOY1+3,"DBLJOY4"},
-    {KEY_DBLJOY1+4,"DBLJOY5"},
-    {KEY_DBLJOY1+5,"DBLJOY6"},
-
+  {KEY_JOY3BUT0, "Joy 3 b 0"},
+  {KEY_JOY3BUT1, "Joy 3 b 1"},
+  {KEY_JOY3BUT2, "Joy 3 b 2"},
+  {KEY_JOY3BUT3, "Joy 3 b 3"},
+  {KEY_JOY3BUT4, "Joy 3 b 4"},
+  {KEY_JOY3BUT5, "Joy 3 b 5"},
+  {KEY_JOY3BUT6, "Joy 3 b 6"},
+  {KEY_JOY3BUT7, "Joy 3 b 7"},
+  {KEY_JOY3BUT8, "Joy 3 b 8"},
+  {KEY_JOY3BUT9, "Joy 3 b 9"},
+  {KEY_JOY3BUT10, "Joy 3 b 10"},
+  {KEY_JOY3BUT11, "Joy 3 b 11"},
+  {KEY_JOY3BUT12, "Joy 3 b 12"},
+  {KEY_JOY3BUT13, "Joy 3 b 13"},
+  {KEY_JOY3BUT14, "Joy 3 b 14"},
+  {KEY_JOY3BUT15, "Joy 3 b 15"},
 };
 
 char *gamecontrolname[num_gamecontrols] =
@@ -436,7 +474,7 @@ static char keynamestr[8];
             return keynames[j].name;
 
     // create a name for Unknown key
-    sprintf (keynamestr,"KEY%d",keynum);
+    sprintf(keynamestr,"key%d",keynum);
     return keynamestr;
 }
 
@@ -465,14 +503,14 @@ void G_Controldefault(void)
     gamecontrol[gc_forward    ][0]=KEY_UPARROW;
     gamecontrol[gc_forward    ][1]=KEY_MOUSE1+2;
     gamecontrol[gc_backward   ][0]=KEY_DOWNARROW;
-    gamecontrol[gc_strafe     ][0]=KEY_ALT;
+    gamecontrol[gc_strafe     ][0]=KEY_LALT;
     gamecontrol[gc_strafe     ][1]=KEY_MOUSE1+1;
     gamecontrol[gc_straferight][0]='.';
     gamecontrol[gc_strafeleft ][0]=',';
-    gamecontrol[gc_speed      ][0]=KEY_SHIFT;
+    gamecontrol[gc_speed      ][0]=KEY_LSHIFT;
     gamecontrol[gc_turnleft   ][0]=KEY_LEFTARROW;
     gamecontrol[gc_turnright  ][0]=KEY_RIGHTARROW;
-    gamecontrol[gc_fire       ][0]=KEY_CTRL;
+    gamecontrol[gc_fire       ][0]=KEY_RCTRL;
     gamecontrol[gc_fire       ][1]=KEY_MOUSE1;
     gamecontrol[gc_use        ][0]=KEY_SPACE;
     gamecontrol[gc_lookup     ][0]=KEY_PGUP;
@@ -491,8 +529,8 @@ void G_Controldefault(void)
     gamecontrol[gc_scores     ][0]='f';
     gamecontrol[gc_jump       ][0]='/';
     gamecontrol[gc_console    ][0]=KEY_CONSOLE;
-    gamecontrol[gc_nextweapon ][1]=KEY_JOY1+4;
-    gamecontrol[gc_prevweapon ][1]=KEY_JOY1+5;
+    //gamecontrol[gc_nextweapon ][1]=KEY_JOY0BUT4;
+    //gamecontrol[gc_prevweapon ][1]=KEY_JOY0BUT5;
 
     if( gamemode == heretic )
     {
@@ -500,7 +538,7 @@ void G_Controldefault(void)
         gamecontrol[gc_invprev    ][0] = '[';
         gamecontrol[gc_invuse     ][0] = KEY_ENTER;
         gamecontrol[gc_jump       ][0] = KEY_INS;
-        gamecontrol[gc_flydown    ][0] = KEY_DEL;
+        gamecontrol[gc_flydown    ][0] = KEY_DELETE;
     }
     else
     {

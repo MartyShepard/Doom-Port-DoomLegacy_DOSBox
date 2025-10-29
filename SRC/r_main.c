@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 654 2010-05-19 18:05:08Z wesleyjohnson $
+// $Id: r_main.c 719 2010-07-31 18:49:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -156,9 +156,6 @@ int                     viewangleoffset;
 // increment every time a check is made
 int                     validcount = 1;
 
-
-lighttable_t*           fixedcolormap;
-
 // center of perspective projection, in screen coordinates, 0=top
 int                     centerx;
 int                     centery;
@@ -178,6 +175,15 @@ int                     framecount;
 int                     sscount;
 int                     linecount;
 int                     loopcount;
+
+// current viewer
+// Set by R_SetupFrame
+
+// Normally NULL, which allows normal colormap.
+// Set to one lighttable_t entry of colormap table.
+// pain=>REDCOLORMAP, invulnerability=>INVERSECOLORMAP, goggles=>colormap[1]
+// Set from current viewer
+lighttable_t*           fixedcolormap;
 
 fixed_t                 viewx;
 fixed_t                 viewy;
@@ -199,16 +205,16 @@ int                     detailshift;
 //
 angle_t                 clipangle;
 
-// The viewangletox[viewangle + FINEANGLES/4] lookup
+// The viewangle_to_x[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X.
-int                     viewangletox[FINEANGLES/2];
+int                     viewangle_to_x[FINEANGLES/2];
 
-// The xtoviewangleangle[] table maps a screen pixel
+// The x_to_viewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t                 xtoviewangle[MAXVIDWIDTH+1];
+angle_t                 x_to_viewangle[MAXVIDWIDTH+1];
 
 
 lighttable_t*           scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
@@ -284,11 +290,7 @@ void SplitScreen_OnChange(void)
 //  check point against partition plane.
 // Returns side 0 (front) or 1 (back).
 //
-int
-R_PointOnSide
-( fixed_t       x,
-  fixed_t       y,
-  node_t*       node )
+int R_PointOnSide ( fixed_t x, fixed_t y, node_t* node )
 {
     fixed_t     dx;
     fixed_t     dy;
@@ -337,11 +339,7 @@ R_PointOnSide
 }
 
 
-int
-R_PointOnSegSide
-( fixed_t       x,
-  fixed_t       y,
-  seg_t*        line )
+int R_PointOnSegSide ( fixed_t x, fixed_t y, seg_t* line )
 {
     fixed_t     lx;
     fixed_t     ly;
@@ -410,10 +408,8 @@ R_PointOnSegSide
 //  tantoangle[] table.
 
 //
-angle_t R_PointToAngle2 ( fixed_t  x2,
-                          fixed_t  y2,
-                          fixed_t  x1,
-                          fixed_t  y1)
+angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
+                          fixed_t  x1, fixed_t  y1)
 {
     x1 -= x2;
     y1 -= y2;
@@ -543,9 +539,7 @@ R_PointToDist2
 //SoM: 3/27/2000: Little extra utility. Works in the same way as
 //R_PointToAngle2
 fixed_t
-R_PointToDist
-( fixed_t       x,
-  fixed_t       y)
+R_PointToDist ( fixed_t x, fixed_t y )
 {
   return R_PointToDist2(viewx, viewy, x, y);
 }
@@ -582,9 +576,9 @@ void R_InitPointToAngle (void)
 // rw_distance must be calculated first.
 //
 //added:02-02-98:note: THIS IS USED ONLY FOR WALLS!
+// Called from R_StoreWallRange.
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 {
-    // UNUSED
 #if 0
     //added:02-02-98:note: I've tried this and it displays weird...
     fixed_t             scale;
@@ -602,20 +596,15 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 
 #else
     fixed_t             scale;
-    int                 anglea;
-    int                 angleb;
-    int                 sinea;
-    int                 sineb;
     fixed_t             num;
     int                 den;
 
+    int anglea = ANG90 + (visangle-viewangle);
+    int angleb = ANG90 + (visangle-rw_normalangle);
 
-    anglea = ANG90 + (visangle-viewangle);
-    angleb = ANG90 + (visangle-rw_normalangle);
-
-    // both sines are allways positive
-    sinea = finesine[anglea>>ANGLETOFINESHIFT];
-    sineb = finesine[angleb>>ANGLETOFINESHIFT];
+    // both sines are always positive
+    int sinea = finesine[anglea>>ANGLETOFINESHIFT];
+    int sineb = finesine[angleb>>ANGLETOFINESHIFT];
     //added:02-02-98:now uses projectiony instead of projection for
     //               correct aspect ratio!
     num = FixedMul(projectiony,sineb)<<detailshift;
@@ -684,8 +673,8 @@ void R_InitTextureMapping (void)
     int                 t;
     fixed_t             focallength;
 
-    // Use tangent table to generate viewangletox:
-    //  viewangletox will give the next greatest x
+    // Use tangent table to generate viewangle_to_x:
+    //  viewangle_to_x will give the next greatest x
     //  after the view angle.
     //
     // Calc focallength
@@ -709,33 +698,33 @@ void R_InitTextureMapping (void)
             else if (t>rdraw_viewwidth+1)
                 t = rdraw_viewwidth+1;
         }
-        viewangletox[i] = t;
+        viewangle_to_x[i] = t;
     }
 
-    // Scan viewangletox[] to generate xtoviewangle[]:
-    //  xtoviewangle will give the smallest view angle
+    // Scan viewangle_to_x[] to generate x_to_viewangle[]:
+    //  x_to_viewangle will give the smallest view angle
     //  that maps to x.
     for (x=0;x<=rdraw_viewwidth;x++)
     {
         i = 0;
-        while (viewangletox[i]>x)
+        while (viewangle_to_x[i]>x)
             i++;
-        xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
+        x_to_viewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
     }
 
-    // Take out the fencepost cases from viewangletox.
+    // Take out the fencepost cases from viewangle_to_x.
     for (i=0 ; i<FINEANGLES/2 ; i++)
     {
         t = FixedMul (finetangent[i], focallength);
         t = centerx - t;
 
-        if (viewangletox[i] == -1)
-            viewangletox[i] = 0;
-        else if (viewangletox[i] == rdraw_viewwidth+1)
-            viewangletox[i]  = rdraw_viewwidth;
+        if (viewangle_to_x[i] == -1)
+            viewangle_to_x[i] = 0;
+        else if (viewangle_to_x[i] == rdraw_viewwidth+1)
+            viewangle_to_x[i]  = rdraw_viewwidth;
     }
 
-    clipangle = xtoviewangle[0];
+    clipangle = x_to_viewangle[0];
 }
 
 
@@ -774,7 +763,7 @@ void R_InitLightTables (void)
             if (level >= NUMCOLORMAPS)
                 level = NUMCOLORMAPS-1;
 
-            zlight[i][j] = colormaps + level*256;
+            zlight[i][j] = & reg_colormaps[ LIGHTTABLE( level ) ];
         }
     }
 }
@@ -926,7 +915,7 @@ void R_ExecuteSetViewSize (void)
 
     for (i=0 ; i<rdraw_viewwidth ; i++)
     {
-        cosadj = abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
+        cosadj = abs(finecosine[x_to_viewangle[i]>>ANGLETOFINESHIFT]);
         distscale[i] = FixedDiv (FRACUNIT,cosadj);
     }
 
@@ -945,7 +934,7 @@ void R_ExecuteSetViewSize (void)
             if (level >= NUMCOLORMAPS)
                 level = NUMCOLORMAPS-1;
 
-            scalelight[i][j] = colormaps + level*256;
+	    scalelight[i][j] = & reg_colormaps[ LIGHTTABLE( level ) ];
         }
     }
 
@@ -1085,13 +1074,12 @@ void P_ResetCamera (player_t *player);
 
 void R_SetupFrame (player_t* player)
 {
-    int         i;
-    int         fixedcolormap_setup;
-    int         dy=0; //added:10-02-98:
+    int  i;
+    int  fixedcolormap_num;
+    int  dy=0; //added:10-02-98:
 
     extralight = player->extralight;
 
-    //
     if (cv_chasecam.value && !camera.chase)
     {
         P_ResetCamera(player);
@@ -1103,34 +1091,37 @@ void R_SetupFrame (player_t* player)
 #ifdef FRAGGLESCRIPT
     if (script_camera_on)
     {
+        // fragglescript camera as viewer
         viewmobj = script_camera.mo;
 #ifdef PARANOIA
         if (!viewmobj)
             I_Error("no mobj for the camera");
 #endif
         viewz = viewmobj->z;
-        fixedcolormap_setup = camera.fixedcolormap;
+        fixedcolormap_num = camera.fixedcolormap;
         aimingangle=script_camera.aiming;
         viewangle = viewmobj->angle;
     }
     else
 #endif
     if (camera.chase)
-    // use outside cam view
     {
+        // chase camera as viewer
+        // use outside cam view
         viewmobj = camera.mo;
 #ifdef PARANOIA
         if (!viewmobj)
             I_Error("no mobj for the camera");
 #endif
         viewz = viewmobj->z + (viewmobj->height>>1);
-        fixedcolormap_setup = camera.fixedcolormap;
+        fixedcolormap_num = camera.fixedcolormap;
         aimingangle=camera.aiming;
         viewangle = viewmobj->angle;
     }
     else
-    // use the player's eyes view
     {
+        // player as viewer
+        // use the player's eyes view
         viewz = player->viewz;
 #ifdef CLIENTPREDICTION2
         if( demoplayback || !player->spirit)
@@ -1143,7 +1134,7 @@ void R_SetupFrame (player_t* player)
 #else
         viewmobj = player->mo;
 #endif
-        fixedcolormap_setup = player->fixedcolormap;
+        fixedcolormap_num = player->fixedcolormap;
         aimingangle=player->aiming;
         viewangle = viewmobj->angle+viewangleoffset;
 
@@ -1177,19 +1168,20 @@ void R_SetupFrame (player_t* player)
 
     sscount = 0;
 
-    if (fixedcolormap_setup)
+    if (fixedcolormap_num)
     {
+        // the fixedcolormap overrides sector colormaps
         fixedcolormap =
-            colormaps
-            + fixedcolormap_setup*256*sizeof(lighttable_t);
+            & reg_colormaps[ LIGHTTABLE( fixedcolormap_num ) ];
 
         walllights = scalelightfixed;
 
+        // refresh scalelights to fixedcolormap
         for (i=0 ; i<MAXLIGHTSCALE ; i++)
             scalelightfixed[i] = fixedcolormap;
     }
     else
-        fixedcolormap = 0;
+        fixedcolormap = NULL;
 
     //added:06-02-98:recalc necessary stuff for mouseaiming
     //               slopes are already calculated for the full

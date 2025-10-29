@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: sb_bar.c 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -313,7 +313,7 @@ static void DrINumber(signed int val, int x, int y)
 //#define V_DrawShadowedPatch(x,y,p) V_DrawTranslucentPatch(x,y,V_SCALESTART|0,p)
 void V_DrawShadowedPatch(int x,int y,patch_t *p)
 {
-//    V_DrawTranslucentPatch(x+2,y+2,V_SCALESTART|0,p/*,transtables*/);
+//    V_DrawTranslucentPatch(x+2,y+2,V_SCALESTART|0,p/*,translucenttables*/);
     V_DrawScaledPatch(x,y,V_SCALESTART|0,p);
 }
 
@@ -386,7 +386,8 @@ static void ShadeLine(int x, int y, int height, int shade)
     byte *dest;
     byte *shades;
     
-    shades = colormaps+9*256+shade*2*256;
+//    shades = reg_colormaps+9*256+shade*2*256;
+    shades = & reg_colormaps[ LIGHTTABLE( 9 + shade*2 ) ];
     dest = screens[0]+y*vid.width+x;
     while(height--)
     {

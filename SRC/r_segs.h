@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_segs.h 718 2010-07-31 18:46:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -50,17 +50,10 @@
 
 extern lighttable_t**   walllights;
 
-void
-R_RenderMaskedSegRange
-( drawseg_t*    ds,
-  int           x1,
-  int           x2 );
+// Render with transparency, over range x1..x2
+void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 );
 
+void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor);
 
-void R_RenderThickSideRange (drawseg_t* ds,
-                             int        x1,
-                             int        x2,
-                             ffloor_t*  ffloor);
-
-void R_StoreWallRange( int   start,int   stop );
+void R_StoreWallRange( int start, int stop );
 #endif

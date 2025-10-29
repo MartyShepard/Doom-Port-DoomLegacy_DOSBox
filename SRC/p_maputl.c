@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 578 2009-11-30 03:37:58Z wesleyjohnson $
+// $Id: p_maputl.c 697 2010-07-09 03:17:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -84,10 +84,7 @@
 // Gives an estimation of distance (not exact)
 //
 
-fixed_t
-P_AproxDistance
-( fixed_t       dx,
-  fixed_t       dy )
+fixed_t  P_AproxDistance ( fixed_t dx, fixed_t dy )
 {
     dx = abs(dx);
     dy = abs(dy);
@@ -101,11 +98,7 @@ P_AproxDistance
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-int
-P_PointOnLineSide
-( fixed_t       x,
-  fixed_t       y,
-  line_t*       line )
+int  P_PointOnLineSide ( fixed_t x, fixed_t y, line_t* line )
 {
     fixed_t     dx;
     fixed_t     dy;
@@ -145,10 +138,7 @@ P_PointOnLineSide
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-int
-P_BoxOnLineSide
-( fixed_t*      tmbox,
-  line_t*       ld )
+int  P_BoxOnLineSide ( fixed_t* tmbox, line_t* ld )
 {
     int         p1;
     int         p2;
@@ -199,11 +189,7 @@ P_BoxOnLineSide
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-int
-P_PointOnDivlineSide
-( fixed_t       x,
-  fixed_t       y,
-  divline_t*    line )
+int  P_PointOnDivlineSide ( fixed_t x, fixed_t y, divline_t* line )
 {
     fixed_t     dx;
     fixed_t     dy;
@@ -249,8 +235,7 @@ P_PointOnDivlineSide
 //
 // P_MakeDivline
 //
-void P_MakeDivline (line_t*       li,
-  divline_t*    dl )
+void P_MakeDivline (line_t* li, divline_t* dl )
 {
     dl->x = li->v1->x;
     dl->y = li->v1->y;
@@ -267,10 +252,7 @@ void P_MakeDivline (line_t*       li,
 // This is only called by the addthings
 // and addlines traversers.
 //
-fixed_t
-P_InterceptVector
-( divline_t*    v2,
-  divline_t*    v1 )
+fixed_t  P_InterceptVector ( divline_t* v2, divline_t* v1 )
 {
 #if 1
     fixed_t     frac;
@@ -332,7 +314,8 @@ void P_LineOpening (line_t* linedef)
 {
     sector_t*      front;
     sector_t*      back;
-    extern mobj_t* tmthing;
+    // tm_thing, tm_* are global var to TryMove and P_CheckPosition,
+    // whose sub-functions may call here.
 
     if (linedef->sidenum[1] == -1)
     {
@@ -350,12 +333,12 @@ void P_LineOpening (line_t* linedef)
         I_Error("lindef without back");
 #endif
 
-    if(tmthing)
+    if(tm_thing)
     {
       fixed_t        thingbot, thingtop;
 
-      thingbot = tmthing->z;
-      thingtop = thingbot + tmthing->height;
+      thingbot = tm_thing->z;
+      thingtop = thingbot + tm_thing->height;
 
       if (front->ceilingheight < back->ceilingheight)
         opentop = front->ceilingheight;
@@ -376,7 +359,7 @@ void P_LineOpening (line_t* linedef)
       //SoM: 3/27/2000: Check for fake floors in the sector.
       if(front->ffloors || back->ffloors)
       {
-        ffloor_t*      rover;
+        ffloor_t*      rovflr;
 
         fixed_t    lowestceiling = opentop;
         fixed_t    highestfloor = openbottom;
@@ -384,44 +367,44 @@ void P_LineOpening (line_t* linedef)
         fixed_t    delta1;
         fixed_t    delta2;
 
-        if(!tmthing)
+        if(!tm_thing)
           goto no_thing;
 
-        thingtop = tmthing->z + tmthing->height;
+        thingtop = tm_thing->z + tm_thing->height;
 
         // Check for frontsector's fake floors
         if(front->ffloors)
-          for(rover = front->ffloors; rover; rover = rover->next)
+          for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
           {
-            if(!(rover->flags & FF_SOLID)) continue;
+            if(!(rovflr->flags & FF_SOLID)) continue;
 
-            delta1 = abs(tmthing->z - ((*rover->bottomheight + *rover->topheight) / 2));
-            delta2 = abs(thingtop - ((*rover->bottomheight + *rover->topheight) / 2));
-            if(*rover->bottomheight < lowestceiling && delta1 >= delta2)
-              lowestceiling = *rover->bottomheight;
+            delta1 = abs(tm_thing->z - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
+            delta2 = abs(thingtop - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
+            if(*rovflr->bottomheight < lowestceiling && delta1 >= delta2)
+              lowestceiling = *rovflr->bottomheight;
 
-            if(*rover->topheight > highestfloor && delta1 < delta2)
-              highestfloor = *rover->topheight;
-            else if(*rover->topheight > lowestfloor && delta1 < delta2)
-              lowestfloor = *rover->topheight;
+            if(*rovflr->topheight > highestfloor && delta1 < delta2)
+              highestfloor = *rovflr->topheight;
+            else if(*rovflr->topheight > lowestfloor && delta1 < delta2)
+              lowestfloor = *rovflr->topheight;
           }
 
         // Check for backsectors fake floors
         if(back->ffloors)
-          for(rover = back->ffloors; rover; rover = rover->next)
+          for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
           {
-            if(!(rover->flags & FF_SOLID))
+            if(!(rovflr->flags & FF_SOLID))
               continue;
 
-            delta1 = abs(tmthing->z - ((*rover->bottomheight + *rover->topheight) / 2));
-            delta2 = abs(thingtop - ((*rover->bottomheight + *rover->topheight) / 2));
-            if(*rover->bottomheight < lowestceiling && delta1 >= delta2)
-              lowestceiling = *rover->bottomheight;
+            delta1 = abs(tm_thing->z - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
+            delta2 = abs(thingtop - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
+            if(*rovflr->bottomheight < lowestceiling && delta1 >= delta2)
+              lowestceiling = *rovflr->bottomheight;
 
-            if(*rover->topheight > highestfloor && delta1 < delta2)
-              highestfloor = *rover->topheight;
-            else if(*rover->topheight > lowestfloor && delta1 < delta2)
-              lowestfloor = *rover->topheight;
+            if(*rovflr->topheight > highestfloor && delta1 < delta2)
+              highestfloor = *rovflr->topheight;
+            else if(*rovflr->topheight > lowestfloor && delta1 < delta2)
+              lowestfloor = *rovflr->topheight;
           }
 
         if(highestfloor > openbottom)
@@ -634,12 +617,12 @@ void P_SetThingPosition (mobj_t* thing)
 // to P_BlockLinesIterator, then make one or more calls
 // to it.
 //
-boolean P_BlockLinesIterator (int       x,
-                              int       y,
+// x,y are blockmap indexes
+boolean P_BlockLinesIterator (int x, int y,
                               boolean   (*func)(line_t*) )
 {
     int                 offset;
-    const long*              list; // Big blockmap Tails
+    const int32_t     * list; // Big blockmap, SSNTails
     line_t*             ld;
 
     if (x<0
@@ -651,22 +634,9 @@ boolean P_BlockLinesIterator (int       x,
     }
 
     offset = y*bmapwidth+x;
-    offset = *(blockmap+offset); //	offset = blockmap[y*bmapwidth+x];
+    offset = blockmapindex[offset]; //	offset = blockmap[y*bmapwidth+x];
 
-    //Hurdler: FIXME: this a temporary "fix" for the bug with phobia...
-    //                ... but it's not correct!!!!! 
-    if (offset < 0)
-    {
-		static int first = 1;
-		if(first)
-		{
-			CONS_Printf("Warning: this map has reached a limit of the doom engine.\n");
-			first = 0;
-		}
-        return true;
-    }
-
-    for ( list = blockmaplump+offset ; *list != -1 ; list++)
+    for ( list = & blockmaphead[offset] ; *list != -1 ; list++)
     {
         ld = &lines[*list];
 
@@ -685,8 +655,7 @@ boolean P_BlockLinesIterator (int       x,
 //
 // P_BlockThingsIterator
 //
-boolean P_BlockThingsIterator ( int                   x,
-                                int                   y,
+boolean P_BlockThingsIterator ( int x, int y,
                                 boolean(*func)(mobj_t*) )
 {
     mobj_t*             mobj;
@@ -728,7 +697,7 @@ int             ptflags;
 
 
 //SoM: 4/6/2000: Remove limit on intercepts.
-void P_CheckIntercepts()
+void P_CheckIntercepts( void )
 {
 static int max_intercepts = 0;
   int count = intercept_p - intercepts;
@@ -756,8 +725,7 @@ static int max_intercepts = 0;
 // are on opposite sides of the trace.
 // Returns true if earlyout and a solid line hit.
 //
-boolean
-PIT_AddLineIntercepts (line_t* ld)
+boolean  PIT_AddLineIntercepts (line_t* ld)
 {
     int                 s1;
     int                 s2;

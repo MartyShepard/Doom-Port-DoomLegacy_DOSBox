@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 655 2010-05-19 18:07:40Z wesleyjohnson $
+// $Id: p_mobj.c 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -378,8 +378,7 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
         seenstate[state] = 1 + st->nextstate;   // killough 4/9/98
 
         state = st->nextstate;
-    }
-    while (!mobj->tics && !seenstate[state]);   // killough 4/9/98
+    } while (!mobj->tics && !seenstate[state]);   // killough 4/9/98
 
     if (ret && !mobj->tics)     // killough 4/9/98: detect state cycles
         CONS_Printf("Warning: State Cycle Detected");
@@ -556,11 +555,9 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
 
 void P_XYMovement(mobj_t * mo)
 {
-    fixed_t ptryx;
-    fixed_t ptryy;
+    fixed_t ptryx, ptryy;
     player_t *player;
-    fixed_t xmove;
-    fixed_t ymove;
+    fixed_t xmove, ymove;
     fixed_t oldx, oldy;         //reducing bobbing/momentum on ice
     //when up against walls
     static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
@@ -648,10 +645,11 @@ void P_XYMovement(mobj_t * mo)
             // gameplay issue : let the marine move forward while trying
             //                  to jump over a small wall
             //    (normally it can not 'walk' while in air)
-            // BP:1.28 no more use Cf_JUMPOVER, but i leave it for backward lmps compatibility
+            // BP:1.28 no more use CF_JUMPOVER, but i leave it for backward lmps compatibility
             if (mo->player)
             {
-                if (tmfloorz - mo->z > MAXSTEPMOVE)
+	        // tmr_floorz returned by P_TryMove
+                if (tmr_floorz - mo->z > MAXSTEPMOVE)
                 {
                     if (mo->momz > 0)
                         mo->player->cheats |= CF_JUMPOVER;
@@ -666,10 +664,16 @@ void P_XYMovement(mobj_t * mo)
             }
             else if (mo->flags & MF_MISSILE)
             {
+	        // tmr_ceilingline returned by P_TryMove
                 // explode a missile
-                if (ceilingline && ceilingline->backsector && ceilingline->backsector->ceilingpic == skyflatnum && ceilingline->frontsector && ceilingline->frontsector->ceilingpic == skyflatnum
+                if (tmr_ceilingline
+		    && tmr_ceilingline->backsector
+		    && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+		    && tmr_ceilingline->frontsector
+		    && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
                     && mo->subsector->sector->ceilingheight == mo->ceilingz)
-                    if (!boomsupport || mo->z > ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
+	        {
+                    if (!boomsupport || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
                     {
                         // Hack to prevent missiles exploding
                         // against the sky.
@@ -684,23 +688,27 @@ void P_XYMovement(mobj_t * mo)
                             P_RemoveMobj(mo);
                         return;
                     }
+		}
 
                 // draw damage on wall
                 //SPLAT TEST ----------------------------------------------------------
 #ifdef WALLSPLATS
-                if (blockingline && demoversion >= 129) //set by last P_TryMove() that failed
+	        // tmr_blockingline returned by P_TryMove
+                if (tmr_blockingline && demoversion >= 129) //set by last P_TryMove() that failed
                 {
                     divline_t divl;
                     divline_t misl;
                     fixed_t frac;
 
-                    P_MakeDivline(blockingline, &divl);
+                    P_MakeDivline(tmr_blockingline, &divl);
                     misl.x = mo->x;
                     misl.y = mo->y;
                     misl.dx = mo->momx;
                     misl.dy = mo->momy;
                     frac = P_InterceptVector(&divl, &misl);
-                    R_AddWallSplat(blockingline, P_PointOnLineSide(mo->x, mo->y, blockingline), "A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
+                    R_AddWallSplat( tmr_blockingline,
+				   P_PointOnLineSide(mo->x, mo->y, tmr_blockingline),
+				   "A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
                 }
 #endif
                 // --------------------------------------------------------- SPLAT TEST
@@ -710,13 +718,14 @@ void P_XYMovement(mobj_t * mo)
             else
                 mo->momx = mo->momy = 0;
         }
-        else
+        else  // P_TryMove
+        {
             // hack for playability : walk in-air to jump over a small wall
-        if (mo->player)
-            mo->player->cheats &= ~CF_JUMPOVER;
+	    if (mo->player)
+	        mo->player->cheats &= ~CF_JUMPOVER;
+	}
 
-    }
-    while (xmove || ymove);
+    } while (xmove || ymove);
 
     // slow down
     if (player)
@@ -1231,9 +1240,10 @@ void P_MobjThinker(mobj_t * mobj)
                 // FIXME : should check only with things, not lines
                 P_CheckPosition(mobj, mobj->x, mobj->y);
 
-                mobj->floorz = tmfloorz;
-                mobj->ceilingz = tmceilingz;
-                if (tmfloorthing)
+	        // tmr_floorz, tmr_ceilingz, trm_floorthing returned by P_CheckPosition
+                mobj->floorz = tmr_floorz;
+                mobj->ceilingz = tmr_ceilingz;
+                if (tmr_floorthing)
                     mobj->eflags &= ~MF_ONGROUND;       //not on real floor
                 else
                     mobj->eflags |= MF_ONGROUND;
@@ -2093,7 +2103,8 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
             puff->tics = 1;
 
         // don't make punches spark on the wall
-        if (attackrange == MELEERANGE)
+	// la_attackrange is global var param of LineAttack
+        if (la_attackrange == MELEERANGE)
             P_SetMobjState(puff, S_PUFF3);
     }
 }
@@ -2144,10 +2155,17 @@ boolean PTR_BloodTraverse(intercept_t * in)
       hitline:
         P_MakeDivline(li, &divl);
         frac = P_InterceptVector(&divl, &trace);
+	// Chexquest: has green splats, BLUDA0, BLUDB0, and BLUDC0
         if (gamemode == heretic)
+        {
+	    // BLODC0 from heretic wad
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLODC0", z, frac, SPLATDRAWMODE_TRANS);
+	}
         else
+        {
+	    // BLUDC0 from wad or legacy.dat, green splat for chexquest
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLUDC0", z, frac, SPLATDRAWMODE_TRANS);
+	}
         return false;
     }
 
@@ -2171,9 +2189,15 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     int numsplats;
     int i;
 #endif
+
+    if ( ! cv_splats.value )  // obey splats option
+        return; 
+
     // spawn the usual falling blood sprites at location
+    // Creates bloodthing passed to PTR_BloodTraverse
     P_SpawnBlood(x, y, z, damage);
     //CONS_Printf ("spawned blood counter %d\n", counter++);
+
     if (demoversion < 129)
         return;
 
@@ -2201,6 +2225,11 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     // BFG is funy without this check
     if (numsplats > 20)
         numsplats = 20;
+
+    if (gamemode == chexquest1)
+    {
+        distance /=8;  // less violence to splats
+    }
 
     //CONS_Printf ("spawning %d bloodsplats at distance of %d\n", numsplats, distance);
     //CONS_Printf ("damage %d\n", damage);
@@ -2244,6 +2273,14 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
 
     if (th->tics < 1)
         th->tics = 1;
+
+    if (gamemode == chexquest1)
+    {
+        // less violence to splats
+        th->momx /=8;
+        th->momy /=8;
+        th->momz /=4;
+    }
 
     if (damage <= 12 && damage >= 9)
         P_SetMobjState(th, S_BLOOD2);
@@ -2405,8 +2442,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
             py = dest->y + dest->momy * t;
             pz = dest->z + dest->momz * t;
             canHit = P_CheckSight2(source, dest, px, py, pz);
-        }
-        while (!canHit && (t > 1));
+        } while (!canHit && (t > 1));
         pz = dest->z + dest->momz * time;
 
         sec = R_PointInSubsector(px, py);
@@ -2482,9 +2518,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     mobj_t *th;
     angle_t an;
 
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t x, y, z;
     fixed_t slope = 0;
 
     // angle at which you fire, is player angle
@@ -2496,18 +2530,19 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
         // see which target is to be aimed at
         slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-        if (!linetarget)
+        // lar_linetarget returned by P_AimLineAttack
+        if (!lar_linetarget)
         {
             an += 1 << 26;
             slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-            if (!linetarget)
+            if (!lar_linetarget)
             {
                 an -= 2 << 26;
                 slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
             }
 
-            if (!linetarget)
+            if (!lar_linetarget)
             {
                 an = angle;
                 slope = 0;
@@ -2517,7 +2552,9 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 
     //added:18-02-98: if not autoaim, or if the autoaim didnt aim something,
     //                use the mouseaiming
-    if (!(source->player->autoaim_toggle && cv_allowautoaim.value) || (!linetarget && demoversion > 111))
+    // lar_linetarget returned by P_AimLineAttack
+    if (!(source->player->autoaim_toggle && cv_allowautoaim.value)
+	|| (!lar_linetarget && demoversion > 111))
     {
         if (demoversion >= 128)
             slope = AIMINGTOSLOPE(source->player->aiming);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 591 2010-01-19 21:05:30Z wesleyjohnson $
+// $Id: v_video.c 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -191,7 +191,7 @@ static void R_BuildGammaTable(float gamma)
   for (i=0; i<256; i++)
 #ifdef __USE_ISOC99
     // round is ISOC99
-     gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
+    gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
 #else
     gammatable[i] = rint(255.0*pow((i+1)/256.0, gamma));
 #endif
@@ -221,7 +221,12 @@ inline float gamma_lookup( int ind )
 
 static void put_gammatable( int i, float fv )
 {
+#ifdef __USE_ISOC99
+    // roundf is ISOC99
    int gv = roundf( fv );
+#else
+   int gv = rint( fv );
+#endif
    if( gv < 0 ) gv = 0; 
    if( gv > 255 ) gv = 255;
    gammatable[i] = gv;
@@ -395,7 +400,7 @@ static void LoadPalette(char *lumpname)
 
   byte *pal = W_CacheLumpNum(i, PU_CACHE);
   for (i = 0; i < palsize; i++)
-    {
+  {
       pLocalPalette[i].s.red = gammatable[*pal++];
       pLocalPalette[i].s.green = gammatable[*pal++];
       pLocalPalette[i].s.blue = gammatable[*pal++];
@@ -403,7 +408,7 @@ static void LoadPalette(char *lumpname)
 //            pLocalPalette[i].s.alpha = 0;
 //        else
       pLocalPalette[i].s.alpha = 0xff;
-    }
+  }
 }
 
 // -------------+
@@ -947,7 +952,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
             ofs = 0;
             while (count--)
             {
-                *dest = *(transtables + ((source[ofs >> FRACBITS] << 8) & 0xFF00) + (*dest & 0xFF));
+                *dest = translucenttables[ ((source[ofs >> FRACBITS] << 8) & 0xFF00) + (*dest & 0xFF) ];
                 dest += vid.width;
                 ofs += rowfrac;
             }
@@ -1284,7 +1289,7 @@ void V_DrawFadeScreen(void)
     int *buf;
     unsigned quad;
     byte p1, p2, p3, p4;
-    byte *fadetable = (byte *) colormaps + 16 * 256;
+    byte *fadetable = (byte*) & reg_colormaps[ LIGHTTABLE(16) ];
     //short*    wput;
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin

@@ -65,6 +65,7 @@
 #endif
 
 #include "../doomdef.h"
+#include "../d_event.h"
 #include "../m_misc.h"
 #include "../i_video.h"
 #include "../i_sound.h"
@@ -425,7 +426,7 @@ volatile int     handlermouse2buttons;
 volatile int     handlermouse2x,handlermouse2y;
 // internal use
 volatile int     bytenum;
-volatile byte    combytes[8];
+byte    combytes[8];
 
 //
 // support a secondary mouse without mouse driver !
@@ -772,7 +773,7 @@ void I_GetEvent (void)
                        event.type=ev_keydown;
                     else
                        event.type=ev_keyup;
-                    event.data1=KEY_JOY1+i;
+                    event.data1=KEY_JOY0BUT0+i;
                     D_PostEvent(&event);
                 }
         }
@@ -844,26 +845,26 @@ void I_StartupTimer(void)
 //added:07-02-98:
 //
 //
-byte ASCIINames[128] =
+uint16_t ASCIINames[128] =
 {
 //  0       1       2       3       4       5       6       7
 //  8       9       A       B       C       D       E       F
-    0  ,    27,     '1',    '2',    '3',    '4',    '5',    '6',
-    '7',    '8',    '9',    '0', KEY_MINUS,KEY_EQUALS,KEY_BACKSPACE, KEY_TAB,
+    0,    27,   '1',   '2',   '3',   '4',   '5',   '6',
+  '7',   '8',   '9',   '0',   '-',   '=', KEY_BACKSPACE, KEY_TAB,
     'q',    'w',    'e',    'r',    't',    'y',    'u',    'i',
-    'o',    'p',    '[',    ']', KEY_ENTER,KEY_CTRL,'a',    's',
+  'o',   'p',   '[',   ']', KEY_ENTER, KEY_LCTRL,  'a',  's',
     'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';',
-    '\'',   '`', KEY_SHIFT, '\\',   'z',    'x',    'c',    'v',
-    'b',    'n',    'm',    ',',    '.',    '/', KEY_SHIFT, '*',
- KEY_ALT,KEY_SPACE,KEY_CAPSLOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5,
-    KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,KEY_NUMLOCK,KEY_SCROLLLOCK,KEY_KEYPAD7,
- KEY_KEYPAD8,KEY_KEYPAD9,KEY_MINUSPAD,KEY_KEYPAD4,KEY_KEYPAD5,KEY_KEYPAD6,KEY_PLUSPAD,KEY_KEYPAD1,
- KEY_KEYPAD2,KEY_KEYPAD3,KEY_KEYPAD0,KEY_KPADDEL,      0,      0,      0,      KEY_F11,
-    KEY_F12,0,      0,      0,      0,      0,      0,      0,
+ '\'',   '`', KEY_LSHIFT,  '\\',  'z',  'x',  'c',  'v',
+  'b',   'n',   'm',   ',',   '.',   '/', KEY_RSHIFT,  '*',
+  KEY_LALT, KEY_SPACE, KEY_CAPSLOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5,
+  KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_NUMLOCK, KEY_SCROLLLOCK, KEY_KEYPAD7,
+  KEY_KEYPAD8, KEY_KEYPAD9, KEY_MINUSPAD, KEY_KEYPAD4, KEY_KEYPAD5, KEY_KEYPAD6, KEY_PLUSPAD, KEY_KEYPAD1,
+  KEY_KEYPAD2, KEY_KEYPAD3, KEY_KEYPAD0, KEY_KPADPERIOD, 0, 0, 0,  KEY_F11,
+  KEY_F12, 0,     0,     0,     0,     0,     0,     0,
     0,      0,      0,      0,      0,      0,      0,      0,
     0,      0,      0,      0,      0,      0,      0,      0,
     0,      0,      0,      0,      0,      0,      0,      0,
-    0,      0,      0,      0,      0,      0,      0,      0
+    0,     0,     0,     0,     0,     0,     0,     0,
 };
 
 volatile int pausepressed=0;
@@ -927,9 +928,9 @@ static void I_KeyboardHandler()
             else if (ch==28)
                 event.data1 = KEY_ENTER;    // keypad enter -> return key
             else if (ch==29)
-                event.data1 = KEY_CTRL;     // rctrl -> lctrl
+                event.data1 = KEY_LCTRL;     // rctrl -> lctrl
             else if (ch==56)
-                event.data1 = KEY_ALT;      // ralt -> lalt
+                event.data1 = KEY_LALT;      // ralt -> lalt
             else
                 ch = 0;
             if (ch)
@@ -952,8 +953,10 @@ END_OF_FUNCTION(I_KeyboardHandler);
 //  Return a key that has been pushed, or 0
 //  (replace getchar() at game startup)
 //
+
 int I_GetKey (void)
 {
+
     if( keyboard_started )
     {
     event_t   *ev;
@@ -961,7 +964,7 @@ int I_GetKey (void)
     if (eventtail != eventhead)
     {
         ev = &events[eventtail];
-        eventtail = (++eventtail)&(MAXEVENTS-1);
+        eventtail = ( eventtail+1 ) & ( MAXEVENTS-1 );
         if (ev->type == ev_keydown)
             return ev->data1;
         else

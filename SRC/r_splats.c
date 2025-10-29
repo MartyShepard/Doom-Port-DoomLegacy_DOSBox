@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_splats.c 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -399,11 +399,11 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
 {
     // resterizing
     int     miny = vid.height + 1;
-        int     maxy = 0;
-        int     x, y;
+    int     maxy = 0;
+    int     x, y;
     int     x1, y1, x2, y2;
     byte*   pDest;
-        int     tx, ty, tdx, tdy;
+    int     tx, ty, tdx, tdy;
 
     // rendering
     lighttable_t**  planezlight;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_hpspr.c 694 2010-07-09 03:07:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -440,10 +440,11 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
         slope = P_AimLineAttack(player->mo, angle, MELEERANGE);
 //      PuffType = MT_BEAKPUFF;
         P_LineAttack(player->mo, angle, MELEERANGE, slope, damage);
-        if(linetarget)
+        // lar_linetarget returned by P_LineAttack
+        if(lar_linetarget)
         {
                 player->mo->angle = R_PointToAngle2(player->mo->x,
-                        player->mo->y, linetarget->x, linetarget->y);
+                        player->mo->y, lar_linetarget->x, lar_linetarget->y);
         }
         S_StartSound(player->mo, sfx_chicpk1+(P_Random()%3));
         player->chickenPeck = 12;
@@ -467,10 +468,11 @@ void A_BeakAttackPL2(player_t *player, pspdef_t *psp)
         slope = P_AimLineAttack(player->mo, angle, MELEERANGE);
         PuffType = MT_BEAKPUFF;
         P_LineAttack(player->mo, angle, MELEERANGE, slope, damage);
-        if(linetarget)
+        // lar_linetarget returned by P_LineAttack
+        if(lar_linetarget)
         {
                 player->mo->angle = R_PointToAngle2(player->mo->x,
-                        player->mo->y, linetarget->x, linetarget->y);
+                        player->mo->y, lar_linetarget->x, lar_linetarget->y);
         }
         S_StartSound(player->mo, sfx_chicpk1+(P_Random()%3));
         player->chickenPeck = 12;
@@ -495,12 +497,13 @@ void A_StaffAttackPL1(player_t *player, pspdef_t *psp)
         slope = P_AimLineAttack(player->mo, angle, MELEERANGE);
         PuffType = MT_STAFFPUFF;
         P_LineAttack(player->mo, angle, MELEERANGE, slope, damage);
-        if(linetarget)
+        // lar_linetarget returned by P_LineAttack
+        if(lar_linetarget)
         {
                 //S_StartSound(player->mo, sfx_stfhit);
                 // turn to face target
                 player->mo->angle = R_PointToAngle2(player->mo->x,
-                        player->mo->y, linetarget->x, linetarget->y);
+                        player->mo->y, lar_linetarget->x, lar_linetarget->y);
         }
 }
 
@@ -523,12 +526,13 @@ void A_StaffAttackPL2(player_t *player, pspdef_t *psp)
         slope = P_AimLineAttack(player->mo, angle, MELEERANGE);
         PuffType = MT_STAFFPUFF2;
         P_LineAttack(player->mo, angle, MELEERANGE, slope, damage);
-        if(linetarget)
+        // lar_linetarget returned by P_LineAttack
+        if(lar_linetarget)
         {
                 //S_StartSound(player->mo, sfx_stfpow);
                 // turn to face target
                 player->mo->angle = R_PointToAngle2(player->mo->x,
-                        player->mo->y, linetarget->x, linetarget->y);
+                        player->mo->y, lar_linetarget->x, lar_linetarget->y);
         }
 }
 
@@ -898,9 +902,10 @@ void A_FireMacePL2(player_t *player, pspdef_t *psp)
                 mo->momx += player->mo->momx;
                 mo->momy += player->mo->momy;
                 mo->momz = 2*FRACUNIT+((player->aiming)<<(FRACBITS-5));
-                if(linetarget)
+	        // lar_linetarget returned by P_AimLineAttack, via P_SPMAngle
+                if(lar_linetarget)
                 {
-                        mo->tracer = linetarget;
+                        mo->tracer = lar_linetarget;
                 }
         }
         S_StartSound(player->mo, sfx_lobsht);
@@ -946,11 +951,12 @@ void A_DeathBallImpact(mobj_t *ball)
                         for(i = 0; i < 16; i++)
                         {
                                 P_AimLineAttack(ball, angle, 10*64*FRACUNIT);
-                                if(linetarget && ball->target != linetarget)
+			        // lar_linetarget returned by P_AimLineAttack
+                                if(lar_linetarget && ball->target != lar_linetarget)
                                 {
-                                        ball->tracer = linetarget;
+                                        ball->tracer = lar_linetarget;
                                         angle = R_PointToAngle2(ball->x, ball->y,
-                                                linetarget->x, linetarget->y);
+                                                lar_linetarget->x, lar_linetarget->y);
                                         newAngle = true;
                                         break;
                                 }
@@ -1108,8 +1114,9 @@ void A_FireSkullRodPL2(player_t *player, pspdef_t *psp)
         { // Always use red missiles in single player games
             MissileMobj->special2 = 2;
         }
-        if(linetarget)
-            MissileMobj->tracer = linetarget;
+        // lar_linetarget returned by P_AimLineAttack, via P_SPMAngle
+        if(lar_linetarget)
+            MissileMobj->tracer = lar_linetarget;
         
         S_StartSound(MissileMobj, sfx_hrnpow);
     }
@@ -1431,7 +1438,8 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         }
         slope = P_AimLineAttack(player->mo, angle, dist);
         P_LineAttack(player->mo, angle, dist, slope, damage);
-        if(!linetarget)
+        // lar_linetarget returned by P_LineAttack, P_AimLineAttack
+        if(!lar_linetarget)
         {
                 if(P_Random() > 64)
                 {
@@ -1462,9 +1470,10 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         {
                 S_StartSound(player->mo, sfx_gnthit);
         }
+        // lar_linetarget returned by P_AimLineAttack, P_LineAttack
         // turn to face target
         angle = R_PointToAngle2(player->mo->x, player->mo->y,
-                linetarget->x, linetarget->y);
+                lar_linetarget->x, lar_linetarget->y);
         if(angle-player->mo->angle > ANG180)
         {
                 if(angle-player->mo->angle < -ANG90/20)

@@ -84,8 +84,7 @@ static byte    MUSchannel;
 static byte    MIDItrack;
 
 #define fwritemem(p,s,n,f)  memcpy(*f,p,n*s);*f+=(s*n)
-
-#if 1
+#if defined (__DJGPPDOS_NATIVE__)
 #define fwriteshort(x,f)    BE_write_16(f,x)
 #define fwritelong(x,f)     BE_write_32(f,x)
 // [WDJ] Proper big-endian midi read/write

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 641 2010-05-11 21:31:28Z wesleyjohnson $
+// $Id: m_menu.c 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -233,6 +233,8 @@
 #include "w_wad.h"
 #include "p_local.h"
 #include "p_fab.h"
+#include "p_chex.h"
+  // Chex_safe_pictures
 
 #include "p_saveg.h"
   // savegame header read
@@ -244,6 +246,7 @@
 #include "d_net.h"
 #include "mserv.h"
 #include "p_inter.h"
+
 
 boolean                 menuactive;
 
@@ -1173,9 +1176,12 @@ void M_DrawSetupMultiPlayerMenu(void)
     lump  = sprframe->lumppat[0];
 
     if (setupm_cvcolor->value==0)
-        colormap = colormaps;
+        colormap = reg_colormaps;
     else
-        colormap = (byte *) translationtables - 256 + (setupm_cvcolor->value<<8);
+    {
+//        colormap = (byte *) translationtables - 256 + (setupm_cvcolor->value<<8);
+        colormap = SKIN_TO_SKINMAP( setupm_cvcolor->value );
+    }
     // draw player sprite
     // temp usage of sprite lump, until end of function
     patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix
@@ -1417,7 +1423,9 @@ void M_NewGame(int choice)
         return;
     }
 
-    if ( gamemode == commercial || gamemode == chexquest1) //DarkWolf95: Support for Chex Quest
+    if ( gamemode == commercial
+	 || (gamemode == chexquest1 && !modifiedgame) //DarkWolf95: Support for Chex Quest
+	 )
         M_SetupNextMenu(&NewDef);
     else
         M_SetupNextMenu(&EpiDef);
@@ -2061,6 +2069,7 @@ static int controltochange;
 
 void M_ChangecontrolResponse(event_t* ev)
 {
+    static char tmp[55];
     int        control;
     int        found;
     int        ch=ev->data1;
@@ -2082,6 +2091,7 @@ void M_ChangecontrolResponse(event_t* ev)
           // keypad arrows are converted for the menu in cursor arrows
           // so use the event instead of ch
           case ev_keydown:
+            sprintf(tmp, "Test %d", ev->data1);
             ch = ev->data1;
             break;
 
@@ -2103,9 +2113,11 @@ void M_ChangecontrolResponse(event_t* ev)
             // replace mouse and joy clicks by double clicks
             if (ch>=KEY_MOUSE1 && ch<=KEY_MOUSE1+MOUSEBUTTONS)
                 setupcontrols[control][found] = ch-KEY_MOUSE1+KEY_DBLMOUSE1;
+	    /* TODO ignore joystick doubleclicks for now
             else
               if (ch>=KEY_JOY1 && ch<=KEY_JOY1+JOYBUTTONS)
                 setupcontrols[control][found] = ch-KEY_JOY1+KEY_DBLJOY1;
+	    */
         }
         else
         {
@@ -3749,12 +3761,14 @@ boolean M_Responder (event_t* ev)
         
         // added 5-2-98 remap virtual keys (mouse & joystick buttons)
         switch(ch) {
-        case KEY_MOUSE1   : ch=KEY_ENTER;break;
-        case KEY_MOUSE1+1 : ch=KEY_BACKSPACE;break;
-        case KEY_JOY1     :
-        case KEY_JOY1+2   :
-        case KEY_JOY1+3   : ch=KEY_ENTER;break;
-        case KEY_JOY1+1   : ch=KEY_BACKSPACE;break;
+        case KEY_MOUSE1:
+        case KEY_JOY0BUT0:
+	  ch = KEY_ENTER;
+	  break;
+        case KEY_MOUSE1+1:
+        case KEY_JOY0BUT1:
+	  ch = KEY_BACKSPACE;
+	  break;
         }
     }
     else if( menuactive )
@@ -3880,14 +3894,14 @@ boolean M_Responder (event_t* ev)
     {
         switch(ch)
         {
-          case KEY_MINUS:         // Screen size down
+          case '-':         // Screen size down
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
                 return false;
             CV_SetValue (&cv_viewsize, cv_viewsize.value-1);
             S_StartSound(NULL,sfx_stnmov);
             goto ret_true;
 
-          case KEY_EQUALS:        // Screen size up
+          case '=':        // Screen size up
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
                 return false;
             CV_SetValue (&cv_viewsize, cv_viewsize.value+1);
@@ -4031,7 +4045,7 @@ boolean M_Responder (event_t* ev)
     switch (ch)
     {
 #if defined SAVEGAMEDIR || defined SAVEGAME99
-      case KEY_DEL:	// delete directory or savegame
+      case KEY_DELETE:	// delete directory or savegame
 #ifdef SAVEGAMEDIR       
         if( delete_callback && itemOn > 0 )
         {
@@ -4062,7 +4076,7 @@ boolean M_Responder (event_t* ev)
 
       case ']':
       case KEY_PGDN:
-        if( scroll_callback && (scroll_index < 100))
+        if( scroll_callback && (scroll_index < (99-6)))
         {
 	    scroll_index += 6;
             scroll_callback( 6 );
@@ -4072,6 +4086,15 @@ boolean M_Responder (event_t* ev)
 #endif
 
       case KEY_DOWNARROW:
+#if defined SAVEGAMEDIR || defined SAVEGAME99
+        if( scroll_callback && (scroll_index < 99) && (itemOn > 5))
+        {
+	    // scrolling menu scrolls preferentially
+	    scroll_index ++;
+	    scroll_callback( 1 );
+	    goto ret_pstop;
+	}
+#endif
         do
         {
             if (itemOn+1 > currentMenu->numitems-1)
@@ -4081,6 +4104,16 @@ boolean M_Responder (event_t* ev)
         goto ret_pstop;
 
       case KEY_UPARROW:
+#if defined SAVEGAMEDIR || defined SAVEGAME99
+        if( scroll_callback && (scroll_index > 0) && (itemOn < 2))
+        {
+	    // scrolling menu scrolls preferentially
+	    scroll_index --;
+	    if( scroll_index < 0 )   scroll_index = 0;
+	    scroll_callback( -1 );  // some functions need to correct
+	    goto ret_pstop;
+	}
+#endif       
         do
         {
             if (!itemOn)
@@ -4449,7 +4482,32 @@ void M_Init (void)
           NewGameMenu[2].text = "BRINGEST THEM ONETH";
           NewGameMenu[3].text = "THOU ART A SMITE-MEISTER";
           NewGameMenu[4].text = "BLACK PLAGUE POSSESSES THEE";
+          break;
 
+      case chexquest1:
+          if( Chex_safe_pictures( "M_EPI1", NULL ) == NULL )
+          {
+	      // Found Doom episode title in wad.
+#if 1
+	      // [WDJ] Coverup for Doom episode titles in chexquest1 wad
+	      // According to Chexquest3.
+	      EpisodeMenu[0].text = "Rescue on Baziok";
+	      EpisodeMenu[1].text = "Terror in Chex-City"; // Avoid needing (R)
+	      EpisodeMenu[2].text = "Invasion";
+	      EpisodeMenu[3].text = "Episode 4";
+	      EpisodeMenu[4].text = "Episode 5";
+	      EpisodeMenu[0].status = IT_CALL | IT_STRING2;
+	      EpisodeMenu[1].status = IT_CALL | IT_STRING2;
+	      EpisodeMenu[2].status = IT_CALL | IT_STRING2;
+	      EpisodeMenu[3].status = IT_CALL | IT_STRING2;
+	      EpisodeMenu[4].status = IT_CALL | IT_STRING2;
+#else
+	      NewDef.prevMenu = &MainDef;  // disable access to episodes menu
+#endif	     
+	  }
+          break;
+
+       
       default:
         break;
     }

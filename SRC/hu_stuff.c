@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: hu_stuff.c 700 2010-07-11 00:23:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -126,8 +126,6 @@ patch_t*                hu_font[HU_FONTSIZE];
 
 static player_t*        plr;
 boolean                 chat_on;
-
-static char             w_chat[HU_MAXMSGLEN];
 
 static boolean          headsupactive = false;
 
@@ -265,7 +263,6 @@ char ForeignTranslation(unsigned char ch)
     return ch < 128 ? frenchKeyMap[ch] : ch;
 }
 
-
 //======================================================================
 //                          HEADS UP INIT
 //======================================================================
@@ -293,12 +290,6 @@ void HU_Init(void)
     COM_AddCommand ("sayto"  , Command_Sayto_f);
     COM_AddCommand ("sayteam", Command_Sayteam_f);
     RegisterNetXCmd(XD_SAY,Got_Saycmd);
-
-    // set shift translation table
-    if (language==french)
-        shiftxform = french_shiftxform;
-    else
-        shiftxform = english_shiftxform;
 
     // cache the heads-up font for entire game execution
     j = gamemode == heretic ? 1 : HU_FONTSTART;
@@ -459,39 +450,6 @@ void Got_Saycmd(char **p,int playernum)
     *p+=strlen(*p)+1;
 }
 
-//  Handles key input and string input
-//
-boolean HU_keyInChatString (char *s, char ch)
-{
-    int         l;
-
-    if (ch >= ' ' && ch <= '_')
-    {
-        l = strlen(s);
-        if (l<HU_MAXMSGLEN-1)
-        {
-            s[l++]=ch;
-            s[l]=0;
-            return true;
-        }
-        return false;
-    }
-    else
-        if (ch == KEY_BACKSPACE)
-        {
-            l = strlen(s);
-            if (l)
-                s[--l]=0;
-            else
-                return false;
-        }
-        else
-            if (ch != KEY_ENTER)
-                return false; // did not eat key
-
-    return true; // ate the key
-}
-
 
 //
 //
@@ -541,167 +499,126 @@ void HU_Ticker(void)
 
 
 
+// [smite] there's no reason to use a queue here, a normal buffer will do
+static char     w_chat[HU_MAXMSGLEN+1]; // always NUL-terminated
+static unsigned tail = 0; // first free cell, should contain NUL
 
-#define QUEUESIZE               128
-
-static char     chatchars[QUEUESIZE];
-static int      head = 0;
-static int      tail = 0;
-
-//
-//
-char HU_dequeueChatChar(void)
+// simplified stl::vector implementation
+static boolean HU_Chat_push_back(char c)
 {
-    char c;
+  if (tail >= HU_MAXMSGLEN)
+    return false;
 
-    if (head != tail)
-    {
-        c = chatchars[tail];
-        tail = (tail + 1) & (QUEUESIZE-1);
-    }
-    else
-    {
-        c = 0;
-    }
-
-    return c;
+  w_chat[tail++] = c;
+  w_chat[tail] = '\0';
+  return true;
 }
 
-//
-//
-void HU_queueChatChar(char c)
+static boolean HU_Chat_pop_back()
 {
-    if (((head + 1) & (QUEUESIZE-1)) == tail)
-    {
-        plr->message = HUSTR_MSGU;      //message not send
-    }
-    else
-    {
-        if (c == KEY_BACKSPACE)
-        {
-            if(tail!=head)
-                head = (head - 1) & (QUEUESIZE-1);
-        }
-        else
-        {
-            chatchars[head] = c;
-            head = (head + 1) & (QUEUESIZE-1);
-        }
-    }
+  if (tail == 0)
+    return false;
 
-    // send automaticly the message (no more chat char)
-    if(c==KEY_ENTER)
-    {
-        char buf[255],c;
-        int i=0;
-
-        do {
-            c=HU_dequeueChatChar();
-            buf[i++]=c;
-        } while(c);
-        if(i>3)
-            COM_BufInsertText (va("say %s",buf));
-    }
+  tail--;
+  w_chat[tail] = '\0';
+  return true;
 }
 
-extern int     con_keymap;
+static void HU_Chat_clear()
+{
+  tail = 0;
+  w_chat[tail] = '\0';
+}
+
+static boolean HU_Chat_empty()
+{
+  return tail == 0;
+}
+
+static void HU_Chat_send()
+{
+  COM_BufInsertText(va("say %s", w_chat));
+}
+
+
 
 //
 //  Returns true if key eaten
 //
 boolean HU_Responder (event_t *ev)
 {
-static boolean        shiftdown = false;
-static boolean        altdown   = false;
+  if (ev->type != ev_keydown)
+    return false;
 
-    boolean             eatkey = false;
-    char*               macromessage;
-    unsigned char       c;
+  // only KeyDown events now...
+  int key = ev->data1;
 
-
-    if (ev->data1 == KEY_SHIFT)
+  if (!chat_on)
     {
-        shiftdown = (ev->type == ev_keydown);
-        return false;
-    }
-    else if (ev->data1 == KEY_ALT)
-    {
-        altdown = (ev->type == ev_keydown);
-        return false;
-    }
-
-    if (ev->type != ev_keydown)
-        return false;
-
-   // only KeyDown events now...
-
-    if (!chat_on)
-    {
-       // enter chat mode
-        if (ev->data1==gamecontrol[gc_talkkey][0]
-         || ev->data1==gamecontrol[gc_talkkey][1])
+      // enter chat mode
+      if (key == gamecontrol[gc_talkkey][0] || key == gamecontrol[gc_talkkey][1])
         {
-            eatkey = chat_on = true;
-            w_chat[0] = 0;
-            HU_queueChatChar(HU_BROADCAST);
+	  chat_on = true;
+	  HU_Chat_clear();
+	  return true;
         }
     }
-    else
+  else
     {
-        c = ev->data1;
+      char c = ev->data2; // character
 
-        // use console translations
-        if (con_keymap==french)
-            c = ForeignTranslation(c);
-        if (shiftdown)
-            c = shiftxform[c];
-
-        // send a macro
-        if (altdown)
+      // send a macro
+      if (altdown)
         {
-            c = c - '0';
-            if (c > 9)
-                return false;
+	  c = c - '0';
+	  if (c > 9 || c < 0)
+	    return false;
 
-            macromessage = chat_macros[c]->string;
+	  // current message stays unchanged
 
-            // kill last message with a '\n'
-            HU_queueChatChar(KEY_ENTER); // DEBUG!!!
-
-            // send the macro message
-            while (*macromessage)
-                HU_queueChatChar(*macromessage++);
-            HU_queueChatChar(KEY_ENTER);
-
-            // leave chat mode and notify that it was sent
-            chat_on = false;
-            eatkey = true;
+	  // send the macro message
+	  COM_BufInsertText(va("say %s", chat_macros[c]->string));
+	  
+	  // if there is no unfinished message, leave chat mode and notify that it was sent
+	  if (HU_Chat_empty())
+	    chat_on = false;
         }
-        else
+      else
         {
-            if (language==french)
-                c = ForeignTranslation(c);
-            if (shiftdown || (c >= 'a' && c <= 'z'))
-                c = shiftxform[c];
-            eatkey = HU_keyInChatString(w_chat,c);
-            if (eatkey)
-            {
-                // static unsigned char buf[20]; // DEBUG
-                HU_queueChatChar(c);
+	  // chat input
+	  if (key == KEY_ESCAPE)
+	    {
+	      // close chat
+	      chat_on = false; 
+	    }
+	  else if (key == KEY_ENTER)
+	    {
+	      // send the message
+	      if (tail > 1)
+		HU_Chat_send(w_chat);
 
-                // sprintf(buf, "KEY: %d => %d", ev->data1, c);
-                //      plr->message = buf;
-            }
-            if (c == KEY_ENTER)
-            {
-                chat_on = false;
-            }
-            else if (c == KEY_ESCAPE)
-                chat_on = false;
-        }
+	      HU_Chat_clear();
+	      chat_on = false;
+	    }
+	  else if (key == KEY_BACKSPACE)
+	    {
+	      // erase a char
+	      HU_Chat_pop_back();
+	    }
+	  else if (c >= ' ' && c <= '~')
+	    {
+	      // add a char
+	      if (!HU_Chat_push_back(c))
+		plr->message = HUSTR_MSGU;  // out of space
+	    }
+	  else
+	    return false; // let the event go
+	}
+
+      return true; // ate the key
     }
 
-    return eatkey;
+  return false; // let the event go
 }
 
 
@@ -972,6 +889,9 @@ void HU_DrawFSPics()
 {
   int       i;
 
+  // [WDJ] Fragglescript overlays must be centered.
+  // Needed for Chexquest-newmaps scope with crosshairs.
+  scaledofs = vid.centerofs;
   for(i = 0; i < maxpicsize; i++)
   {
     if(piclist[i].lumpnum == -1 || piclist[i].draw == false)
@@ -987,6 +907,7 @@ void HU_DrawFSPics()
 
     V_DrawScaledPatch(piclist[i].xpos, piclist[i].ypos, 0, piclist[i].data);
   }
+  scaledofs = 0;
 }
 
 void HU_ClearFSPics()

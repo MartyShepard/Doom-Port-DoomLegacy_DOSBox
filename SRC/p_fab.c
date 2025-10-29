@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_fab.c 668 2010-06-03 13:02:59Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -102,17 +102,17 @@ void A_SmokeTrailer (mobj_t* actor)
 }
 
 
-static boolean resettrans=false;
+static boolean reset_translucent=false;
 //  Set the translucency map for each frame state of mobj
 //
-void R_SetTrans (statenum_t state1, statenum_t state2, transnum_t transmap)
+void R_SetTrans (statenum_t state1, statenum_t state2, translucent_e transel)
 {
     state_t*   state = &states[state1];
     do
     {
         state->frame &= ~FF_TRANSMASK;
-        if(!resettrans)
-            state->frame |= (transmap<<FF_TRANSSHIFT);
+       if(!reset_translucent)
+           state->frame |= (transel<<FF_TRANSSHIFT);
         state++;
     } while (state1++<state2);
 }
@@ -124,101 +124,101 @@ void P_SetTranslucencies (void)
 {
 
     //revenant fireball
-    R_SetTrans (S_TRACER    , S_TRACER2    , tr_transfir);
-    R_SetTrans (S_TRACEEXP1 , S_TRACEEXP3  , tr_transmed);
+    R_SetTrans (S_TRACER    , S_TRACER2    , TRANSLU_fire);
+    R_SetTrans (S_TRACEEXP1 , S_TRACEEXP3  , TRANSLU_med);
                                            
     //rev. fireball. smoke trail           
-    R_SetTrans (S_SMOKE1    , S_SMOKE5     , tr_transmed);
+    R_SetTrans (S_SMOKE1    , S_SMOKE5     , TRANSLU_med);
                                            
     //imp fireball                         
-    R_SetTrans (S_TBALL1    , S_TBALL2     , tr_transfir);
-    R_SetTrans (S_TBALLX1   , S_TBALLX3    , tr_transmed);
+    R_SetTrans (S_TBALL1    , S_TBALL2     , TRANSLU_fire);
+    R_SetTrans (S_TBALLX1   , S_TBALLX3    , TRANSLU_med);
                                            
     //archvile attack                      
-    R_SetTrans (S_FIRE1     , S_FIRE30     , tr_transfir);
+    R_SetTrans (S_FIRE1     , S_FIRE30     , TRANSLU_fire);
                                            
     //bfg ball                             
-    R_SetTrans (S_BFGSHOT   , S_BFGSHOT2   , tr_transfir);
-    R_SetTrans (S_BFGLAND   , S_BFGLAND3   , tr_transmed);
-    R_SetTrans (S_BFGLAND4  , S_BFGLAND6   , tr_transmor);
-    R_SetTrans (S_BFGEXP    , 0            , tr_transmed);
-    R_SetTrans (S_BFGEXP2   , S_BFGEXP4    , tr_transmor);
+    R_SetTrans (S_BFGSHOT   , S_BFGSHOT2   , TRANSLU_fire);
+    R_SetTrans (S_BFGLAND   , S_BFGLAND3   , TRANSLU_med);
+    R_SetTrans (S_BFGLAND4  , S_BFGLAND6   , TRANSLU_more);
+    R_SetTrans (S_BFGEXP    , 0            , TRANSLU_med);
+    R_SetTrans (S_BFGEXP2   , S_BFGEXP4    , TRANSLU_more);
                                            
     //plasma bullet                        
-    R_SetTrans (S_PLASBALL  , S_PLASBALL2  , tr_transfir);
-    R_SetTrans (S_PLASEXP   , S_PLASEXP2   , tr_transmed);
-    R_SetTrans (S_PLASEXP3  , S_PLASEXP5   , tr_transmor);
+    R_SetTrans (S_PLASBALL  , S_PLASBALL2  , TRANSLU_fire);
+    R_SetTrans (S_PLASEXP   , S_PLASEXP2   , TRANSLU_med);
+    R_SetTrans (S_PLASEXP3  , S_PLASEXP5   , TRANSLU_more);
                                            
     //bullet puff                          
-    R_SetTrans (S_PUFF1     , S_PUFF4      , tr_transmor);
+    R_SetTrans (S_PUFF1     , S_PUFF4      , TRANSLU_more);
                                            
     //teleport fog                         
-    R_SetTrans (S_TFOG      , S_TFOG5      , tr_transmed);
-    R_SetTrans (S_TFOG6     , S_TFOG10     , tr_transmor);
+    R_SetTrans (S_TFOG      , S_TFOG5      , TRANSLU_med);
+    R_SetTrans (S_TFOG6     , S_TFOG10     , TRANSLU_more);
                                            
     //respawn item fog                     
-    R_SetTrans (S_IFOG      , S_IFOG5      , tr_transmed);
+    R_SetTrans (S_IFOG      , S_IFOG5      , TRANSLU_med);
                                            
     //soulsphere                           
-    R_SetTrans (S_SOUL      , S_SOUL6      , tr_transmed);
+    R_SetTrans (S_SOUL      , S_SOUL6      , TRANSLU_med);
     //invulnerability                      
-    R_SetTrans (S_PINV      , S_PINV4      , tr_transmed);
+    R_SetTrans (S_PINV      , S_PINV4      , TRANSLU_med);
     //blur artifact                        
-    R_SetTrans (S_PINS      , S_PINS4      , tr_transmed);
+    R_SetTrans (S_PINS      , S_PINS4      , TRANSLU_med);
     //megasphere                           
-    R_SetTrans (S_MEGA      , S_MEGA4      , tr_transmed);
+    R_SetTrans (S_MEGA      , S_MEGA4      , TRANSLU_med);
                             
-    R_SetTrans (S_GREENTORCH, S_REDTORCH4  , tr_transfx1); // blue torch
-    R_SetTrans (S_GTORCHSHRT, S_RTORCHSHRT4, tr_transfx1); // short blue torch
+    R_SetTrans (S_GREENTORCH, S_REDTORCH4  , TRANSLU_fx1); // blue torch
+    R_SetTrans (S_GTORCHSHRT, S_RTORCHSHRT4, TRANSLU_fx1); // short blue torch
 
     // flaming barrel !!
-    R_SetTrans (S_BBAR1     , S_BBAR3      , tr_transfx1);
+    R_SetTrans (S_BBAR1     , S_BBAR3      , TRANSLU_fx1);
 
     //lost soul
-    R_SetTrans (S_SKULL_STND, S_SKULL_DIE6 , tr_transfx1);
+    R_SetTrans (S_SKULL_STND, S_SKULL_DIE6 , TRANSLU_fx1);
     //baron shot
-    R_SetTrans (S_BRBALL1   , S_BRBALL2    , tr_transfir);
-     R_SetTrans (S_BRBALLX1 , S_BRBALLX3   , tr_transmed);
+    R_SetTrans (S_BRBALL1   , S_BRBALL2    , TRANSLU_fire);
+    R_SetTrans (S_BRBALLX1  , S_BRBALLX3   , TRANSLU_med);
     //demon spawnfire
-    R_SetTrans (S_SPAWNFIRE1, S_SPAWNFIRE3 , tr_transfir);
-    R_SetTrans (S_SPAWNFIRE4, S_SPAWNFIRE8 , tr_transmed);
+    R_SetTrans (S_SPAWNFIRE1, S_SPAWNFIRE3 , TRANSLU_fire);
+    R_SetTrans (S_SPAWNFIRE4, S_SPAWNFIRE8 , TRANSLU_med);
     //caco fireball
-    R_SetTrans (S_RBALL1    , S_RBALL2     , tr_transfir);
-    R_SetTrans (S_RBALLX1   , S_RBALLX3    , tr_transmed);
+    R_SetTrans (S_RBALL1    , S_RBALL2     , TRANSLU_fire);
+    R_SetTrans (S_RBALLX1   , S_RBALLX3    , TRANSLU_med);
 
     //arachno shot
-    R_SetTrans (S_ARACH_PLAZ, S_ARACH_PLAZ2, tr_transfir);
-    R_SetTrans (S_ARACH_PLEX, S_ARACH_PLEX2, tr_transmed);
-    R_SetTrans (S_ARACH_PLEX3,S_ARACH_PLEX4, tr_transmor);
-    R_SetTrans (S_ARACH_PLEX5,            0, tr_transhi);
+    R_SetTrans (S_ARACH_PLAZ, S_ARACH_PLAZ2, TRANSLU_fire);
+    R_SetTrans (S_ARACH_PLEX, S_ARACH_PLEX2, TRANSLU_med);
+    R_SetTrans (S_ARACH_PLEX3,S_ARACH_PLEX4, TRANSLU_more);
+    R_SetTrans (S_ARACH_PLEX5,            0, TRANSLU_hi);
 
     //blood puffs!
-    //R_SetTrans (S_BLOOD1   ,            0, tr_transmed);
-    //R_SetTrans (S_BLOOD2   , S_BLOOD3    , tr_transmor);
+    //R_SetTrans (S_BLOOD1   ,            0, TRANSLU_med);
+    //R_SetTrans (S_BLOOD2   , S_BLOOD3    , TRANSLU_more);
 
     //eye in symbol
-    R_SetTrans (S_EVILEYE    , S_EVILEYE4  , tr_transmed);
+    R_SetTrans (S_EVILEYE    , S_EVILEYE4  , TRANSLU_med);
                                           
     //mancubus fireball
-    R_SetTrans (S_FATSHOT1   , S_FATSHOT2  , tr_transfir);
-    R_SetTrans (S_FATSHOTX1  , S_FATSHOTX3 , tr_transmed);
+    R_SetTrans (S_FATSHOT1   , S_FATSHOT2  , TRANSLU_fire);
+    R_SetTrans (S_FATSHOTX1  , S_FATSHOTX3 , TRANSLU_med);
 
     // rockets explosion
-    R_SetTrans (S_EXPLODE1   , S_EXPLODE2  , tr_transfir);
-    R_SetTrans (S_EXPLODE3   ,            0, tr_transmed);
+    R_SetTrans (S_EXPLODE1   , S_EXPLODE2  , TRANSLU_fire);
+    R_SetTrans (S_EXPLODE3   ,            0, TRANSLU_med);
 
     //Fab: lava/slime damage smoke test
-    R_SetTrans (S_SMOK1      , S_SMOK5     , tr_transmed);
-    R_SetTrans (S_SPLASH1    , S_SPLASH3   , tr_transmor);
+    R_SetTrans (S_SMOK1      , S_SMOK5     , TRANSLU_med);
+    R_SetTrans (S_SPLASH1    , S_SPLASH3   , TRANSLU_more);
 }
 
 void Translucency_OnChange(void)
 {
     if( cv_translucency.value==0 )
-        resettrans = true;
+        reset_translucent = true;
     if (!fuzzymode)
         P_SetTranslucencies();
-    resettrans = false;
+    reset_translucent = false;
 }
 
 

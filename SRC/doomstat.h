@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 639 2010-05-09 22:53:44Z wesleyjohnson $
+// $Id: doomstat.h 680 2010-06-06 16:28:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -144,7 +144,8 @@ typedef struct
 
 enum gameflags_e {
    GD_idwad       = 0x01, // one of the commercial/shareware wads by id or Raven
-   GD_unsupported = 0x02, // unsupported game type
+   GD_iwad_pref   = 0x02, // load the iwad after legacy.dat to give it preference
+   GD_unsupported = 0x08, // unsupported game type
 };
 
 // Index to game_desc_t entries
