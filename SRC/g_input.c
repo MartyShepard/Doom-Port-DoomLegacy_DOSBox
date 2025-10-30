@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 733 2010-09-02 00:28:16Z smite-meister $
+// $Id: g_input.c 736 2010-09-03 14:53:57Z smite-meister $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -122,7 +122,7 @@ typedef struct {
     int clicks;
 } dclick_t;
 static  dclick_t  mousedclicks[MOUSEBUTTONS];
-static  dclick_t  joydclicks[JOYBUTTONS];
+//static  dclick_t  joydclicks[JOYBUTTONS];
 
 
 
@@ -141,7 +141,7 @@ static boolean G_CheckDoubleClick (int state, dclick_t *dt);
 void  G_MapEventsToControls (event_t *ev)
 {
     int    i,flag;
-   	
+
     switch (ev->type)
     {
       case ev_keydown:
@@ -666,6 +666,7 @@ void Command_Setcontrol2_f(void)
 }
 
 #if !defined( __DJGPP__ )
+
 //! Magically converts a console command to a joystick axis binding. Also releases bindings.
 void Command_BindJoyaxis_f()
 {

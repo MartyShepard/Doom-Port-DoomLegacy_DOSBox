@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 697 2010-07-09 03:17:12Z wesleyjohnson $
+// $Id: p_maputl.c 736 2010-09-03 14:53:57Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -618,27 +618,22 @@ void P_SetThingPosition (mobj_t* thing)
 // to it.
 //
 // x,y are blockmap indexes
-boolean P_BlockLinesIterator (int x, int y,
-                              boolean   (*func)(line_t*) )
+boolean P_BlockLinesIterator(int x, int y,
+			     boolean (*func)(line_t*))
 {
-    int                 offset;
-    const int32_t     * list; // Big blockmap, SSNTails
-    line_t*             ld;
-
-    if (x<0
-        || y<0
-        || x>=bmapwidth
-        || y>=bmapheight)
+  if (x<0 || y<0 ||
+      x >= bmapwidth || y >= bmapheight)
     {
-        return true;
+      return true;
     }
 
-    offset = y*bmapwidth+x;
-    offset = blockmapindex[offset]; //	offset = blockmap[y*bmapwidth+x];
+  int offset = y*bmapwidth+x;
+  offset = blockmapindex[offset]; //	offset = blockmap[y*bmapwidth+x];
 
-    for ( list = & blockmaphead[offset] ; *list != -1 ; list++)
+  const uint32_t *list; // Big blockmap, SSNTails
+  for (list = &blockmaphead[offset] ; *list != (uint32_t)-1 ; list++)
     {
-        ld = &lines[*list];
+      line_t *ld = &lines[*list];
 
         if (ld->validcount == validcount)
             continue;   // line has already been checked

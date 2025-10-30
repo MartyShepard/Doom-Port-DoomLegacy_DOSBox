@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 701 2010-07-11 00:41:45Z smite-meister $
+// $Id: d_main.c 736 2010-09-03 14:53:57Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -326,7 +326,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 733; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 736; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -385,8 +385,8 @@ boolean advancedemo;
 #endif
 
 // to make savegamename and directories
-char * legacyhome;
-int  legacyhome_len;
+char *legacyhome;
+int   legacyhome_len;
 
 
 #ifdef __MACH__
@@ -462,7 +462,7 @@ void I_DoStartupMouse(void);    //win_sys.c
 // wipegamestate can be set to -1 to force a wipe on the next draw
 // added comment : there is a wipe each change of the gamestate
 gamestate_t wipegamestate = GS_DEMOSCREEN;
-CV_PossibleValue_t screenslink_cons_t[] = { {0, "None"}, {wipe_ColorXForm + 1, "Color"}, {wipe_Melt + 1, "Melt"}, {0, NULL} };
+CV_PossibleValue_t screenslink_cons_t[] = { {0, "None"}, {wipe_ColorXForm + 1, "Crossfade"}, {wipe_Melt + 1, "Melt"}, {0, NULL} };
 consvar_t cv_screenslink = { "screenlink", "2", CV_SAVE, screenslink_cons_t };
 
 void D_Display(void)
@@ -752,9 +752,10 @@ void D_DoomLoop(void)
     // end of loading screen: CONS_Printf() will no more call FinishUpdate()
     con_startup = false;
 
+#if defined( __DJGPP__ )	
     CONS_Printf("I_StartupKeyboard...\n");
     I_StartupKeyboard();
-
+#endif
 #ifdef __WIN32__
     CONS_Printf("I_StartupMouse...\n");
     I_DoStartupMouse();
@@ -1927,17 +1928,6 @@ void D_DoomMain()
     CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
 #endif
-    // now initted automatically by use_mouse var code
-    //CONS_Printf("I_StartupMouse...\n");
-    //I_StartupMouse ();
-
-    //CONS_Printf ("I_StartupKeyboard...\n");
-    //I_StartupKeyboard (); // FIXME: this is a dummy, we can remove it!
-
-    // now initialised automatically by use_joystick var code
-    //CONS_Printf (text[I_INIT_NUM]);
-    //I_InitJoystick ();
-
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
 #if !defined( __DJGPP__ )

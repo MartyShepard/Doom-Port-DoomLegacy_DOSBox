@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -13,13 +14,13 @@
 
 <div class="column">
 
-<h2>1.44 (2010-08-??)</h2>
+<h2>1.44 (2010-09-??)</h2>
 
 <h3>FEATURES</h3>
 <ul>
 <li>Gamma generation: Gamma table is generated from two setpoint
    controls, each of which has 25 positions.</li>
-<li>Door Delay: Option control that slows doors by x1.5, x2, etc.
+<li>Door delay: Option control that slows doors by x1.5, x2, etc.
    so that player has more time to get through them.</li>
 <li>SoftError: Many hard errors (fatal) have been changed to soft errors,
    where the user will get one message, and the game will be allowed
@@ -28,12 +29,23 @@
    Doom, that many wads made use of to trigger linedef actions.
    Extra player1 starts now create voodoo dolls, with the last being the
    actual player1 start position.</li>
-<li> Demo fixes.  Demos that Legacy cannot playback are now recognized
+<li> Demo fixes.  Demos that Legacy cannot play back are now recognized
    and rejected, so they do not crash the engine.</li>
-</ul> 
+
+<li>Full international keyboard support (SDL).</li>
+<li>New joystick/gamepad code, should support all modern controllers (SDL).</li>
+<li>New save system.</li>
+<li>New FS functions.</li>
+<li>Audio output samplerate raised to 22 kHz.</li>
+<li>ENDOOM lump updated with current information.</li>
+</ul>
 
 <h3>BUG FIXES</h3>
 <ul> 
+<li>Build process brought up to date: Automatic dependecy generation,
+  serious Makefile cleanup, SDL as the default multimedia interface,
+  LOTS of compile-time warnings fixed.</li>
+<li>64-bit compatibility.</li>
 <li> Flat search logic once again honors the F_START, F_END, FF_START,
    FF_END markers.  Only if it fails to find the flat within those
    bounds does it search the entire wad.  At least one wad had an
@@ -47,6 +59,9 @@
 <li> Heretic sound fixed.  Heretic uses a different naming scheme
    for sound effects.</li>
 <li> Time tick fixed so that it can handle time count overflow and wrapping.</li>
+
+<li>Several vsprintf/vsnprintf-related potential crashing bugs fixed
+  in the console code.</li>
 </ul>
 
 
@@ -77,7 +92,7 @@ This release was for Mac OS X only.
 
 
 <h2>1.32 Beta 3 (2001-08)</h2>
-
+<pre>
    Lot of fixes as usual for a beta.
 
      - Translucent 3D water and 3D floors in hardware mode
@@ -136,9 +151,10 @@ This release was for Mac OS X only.
    Was in beta 1 but we forgot to mention it
      - removed main wad version checking
      - fixed cannot restart game after end of a episode
+</pre>
 
 <h2>1.32 Beta 1 (2001-05-08)</h2>
-
+<pre>
    Added Heretic support it is already playable but still experimental
    see heretic note in legacy.txt for more
 
@@ -185,9 +201,10 @@ This release was for Mac OS X only.
        - the lighting is slow (mainly on slow 3d cards or low end PC)
        - missing polygone/textures one some levels 
          (need to be rebuild with new nodes builders like zennode or deepbsp)
+</pre>
 
 <h2>1.31 (2000-12)</h2>
-
+<pre>
    - OPENGL/3DFX
      - no more coronas for mancubus balls
      - added light for revenent fireball, lost soul and candle
@@ -236,10 +253,10 @@ This release was for Mac OS X only.
      - fixed minor stuff to increase compatibility with old wad
      - fixed death meassages issues : telefraged and when weapon change before
        the player die
-
+</pre>
 
 <h2>1.30 (2000-08)</h2>
-
+<pre>
    - VIDEO
      - Thierry Van Elsuwe (aka Hurdler) ported to OpenGL our glide code
        so Legacy have now OpenGL support with some new OpenGL specific
@@ -304,9 +321,10 @@ This release was for Mac OS X only.
        - the light of sector is not correct !
        - missing polygone/textures one some levels 
          (need to be rebuild with new nodes builders like zennode or deepbsp)
+</pre>
 
 <h2>1.28 (1999-05-14)</h2>
-
+<pre>
    - FULL WIN32 PORT
      - no more compatibility problem with sound and graphics card
      - plays MIDI music through whatever MIDI output you have set
@@ -412,10 +430,10 @@ This release was for Mac OS X only.
 
    - AND...
      - documented version 1.27 changes! see below
-
+</pre>
 
 <h2>1.27 (1998-12)</h2>
-
+<pre>
    - GAME STUFF
      - new in-game menus allows setting console options easily
 
@@ -487,10 +505,10 @@ This release was for Mac OS X only.
      - fixed final pic shows in doom1 and bunny scroll
      - fixed "got unknow netcmd 109" when changing player config
      - many, many bugfixes and internal changes.
-
+</pre>
 
 <h2>1.25 (1998-08-25)</h2>
-
+<pre>
     NOTE! The chasecam key is now '/' slash on the keypad, and it
           is available only in '-devparm' mode.
 
@@ -592,11 +610,11 @@ This release was for Mac OS X only.
       fixed.
 
     - other little goodies you'll find yourself...
-
+</pre>
 
 
 <h2>1.24 (1998-07-19)</h2>
-
+<pre>
 
     - added CD Audio music, along with console commands 'play','stop',
       'info', etc. CD Music volume is in the sounds menu (F4).
@@ -622,26 +640,26 @@ This release was for Mac OS X only.
     - bloodtime is now a network variable, the server sets it for
       everybody
     - added gravity variable
-
+</pre>
 
 <h2>1.23 (1998-07-17)</h2>
-
-    - this version was a 'source release' for some projects, it was
-      a work in progress, not released on the site.
-
+<p>
+This version was a 'source release' for some projects, it was
+a work in progress, not released on the site.
+</p>
 
 <h2>1.22 (1998-06-05)</h2>
-
+<pre>
     - the slow turning left &amp; right is fixed. Sorry we have forget to
       put the right code in the release.
     - added command "say" and "sayto". This fix chat problem.
     - word wraping in the console.
     - fixed problems with the new head up display.
     - fixed shift key problem.
-
+</pre>
 
 <h2>1.21 (1998-05-25)</h2>
-
+<pre>
  Network:
     - the slow turning left &amp; right is fixed
     - playing back demos of the latest version, along with the support
@@ -666,10 +684,10 @@ This release was for Mac OS X only.
       usually there is always a dm start free)
     - the demons are opaque.. and the spectres translucent.
     - removed the "F***" word from fragging messages by request
-
+</pre>
 
 <h2>1.20 Undocumented</h2>
-
+<pre>
     - Doom Legacy supports 64 deathmatch starts (the original game
       used up to 10 dmstarts)
 
@@ -697,11 +715,10 @@ This release was for Mac OS X only.
     - supports multiple dehacked eg: -dehacked one.deh two.deh three.deh
 
     - supports DIGMID (digital midi) using the sound.cfg
-
-
+</pre>
 
 <h2>1.20 (1998-05-19)</h2>
-
+<pre>
 
  NOTE: THIS IS NOT COMPLETE AT ALL, WE WILL DOCUMENT THE CHANGES OF
        VERSION 1.2 AS SOON AS POSSIBLE, THERE ARE MANY ONES! BUT WE
@@ -802,11 +819,11 @@ This release was for Mac OS X only.
 
     - Finish that damn water, arh! We have to make a simple editor
       for this. The tools will be developed under Windows.
-
+</pre>
 
 
 <h2>1.12 (1998-03-06)</h2>
-
+<pre>
  As you can see, we've taken some time to write a better docu-
  mentation, we hope you'll appreciate, and read the full doc
  before sending us reports about bugs/trouble shooting.
@@ -971,10 +988,10 @@ This release was for Mac OS X only.
 
     - Some kind of detection of the old skys, disabling the sky
       from moving when mouse looking or something like that...
-
+</pre>
 
 <h2>1.11 (1998-02-14)</h2>
-
+<pre>
     - Full support SVGA : can switch to any VESA2 mode with the good
       aspect ratio, can switch video mode in the menu, save video mode
       in default config
@@ -1044,7 +1061,7 @@ This release was for Mac OS X only.
       eg: a setup/launcher program. If you really need something for w95,
       try to convince us!!
     - no waitvbl (no pageflipping)
-
+</pre>
 </div> 
 </body>
 </html>

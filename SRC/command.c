@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 733 2010-09-02 00:28:16Z smite-meister $
+// $Id: command.c 736 2010-09-03 14:53:57Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -667,7 +667,7 @@ static void COM_Help_f (void)
             i++;
         }
 
-        CONS_Printf("\2\nread console.txt for more or type help <command or variable>\n");
+        CONS_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
 
         if( devparm )
             CONS_Printf("\2Total : %d\n",i);

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00733*]: created a directory for the more technical docs to hide them from typical users
 [00733 ]: consvar/command update
 [00732*]: console docs beautified
 [00731*]: user reference manual almost done
