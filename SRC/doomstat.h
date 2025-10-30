@@ -228,7 +228,6 @@ extern  consvar_t       cv_deathmatch;
 
 extern boolean         nomusic; //defined in d_main.c
 extern boolean         nosound;
-extern boolean         digmusic; // SSNTails 12-13-2002
 
 // =========================
 // Status flags for refresh.

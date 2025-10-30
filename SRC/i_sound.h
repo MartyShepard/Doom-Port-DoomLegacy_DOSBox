@@ -110,7 +110,6 @@ void I_InitMusic(void);
 void I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume(int volume);
-void I_SetFMODVolume(int volume); // SSNTails 12-13-2002
 void I_SetSfxVolume(int volume);
 // PAUSE game handling.
 void I_PauseSong(int handle);

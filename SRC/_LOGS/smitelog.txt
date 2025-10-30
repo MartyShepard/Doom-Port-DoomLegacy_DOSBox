@@ -107,3 +107,16 @@ Fixed and partially updated _doc/fsfuncs.html.
 rev 714
 Input handling is much cleaner now, but could still be better.
 Linux-specific joystick code removed from sdl/.
+
+
+*** Simplified SDL audio/music startup/shutdown
+rev 724
+Sound and music are now initialized and shut down simultaneously.
+Also fixed an improper call to SDL_Init in sdl/i_cdmus.c
+
+
+*** Removed FMOD/digmusic references from the music interface
+rev 725
+Since not every platform uses FMOD (SDL version doesn't need it, for
+example) it should not be explicitly mentioned in the music interface.
+Also removed the -digmusic switch.
