@@ -743,7 +743,7 @@ void S_PauseSound(void)
     }
 
     // pause cd music
-#ifdef LINUX
+#if !defined( __DJGPP__ )	
     I_PauseCD();
 #else
     I_StopCD();

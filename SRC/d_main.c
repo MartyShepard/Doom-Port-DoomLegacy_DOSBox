@@ -316,7 +316,6 @@
 
 #include "hardware/hw3sound.h"
 
-
 #include "b_game.h"     //added by AC for acbot
 
 
@@ -390,8 +389,6 @@ boolean advancedemo;
 char * legacyhome;
 int  legacyhome_len;
 
-// [WDJ] Seem to be unused//char wadfile[1024];             // primary wad file
-//char mapdir[1024];              // directory of development maps
 
 #ifdef __MACH__
 //[segabor]: for Mac specific resources
@@ -1286,24 +1283,18 @@ fail:
 #endif
 
 
-void IdentifyVersion(void)
+void IdentifyVersion()
 {
     int gmi;
-    char *legacywad;
-    char *filename;
-
     char pathtemp[_MAX_PATH];
     char pathiwad[_MAX_PATH + 16];
 
-    char *doomwaddir;
     boolean  other_names = 0;	// indicates -iwad other names
 
     gamedesc_index = GDESC_num; // nothing
-#ifdef LINUX
-    // change to the directory where 'legacy.wad' is found
-    I_LocateWad();
-#endif
-    doomwaddir = getenv("DOOMWADDIR");
+
+    // find legacy.wad, IWADs
+    char *doomwaddir = getenv("DOOMWADDIR");
     if (!doomwaddir)
     {
         // get the current directory (possible problem on NT with "." as current dir)
@@ -1329,6 +1320,7 @@ void IdentifyVersion(void)
     game_desc_table[GDESC_doom_shareware].iwad_filename = text[DOOM1WAD_NUM];
 
     // and... Doom LEGACY !!! :)
+    char *legacywad;
 #ifdef __MACH__
     //[segabor]: on Mac OS X legacy.wad is within .app folder
     legacywad = mac_legacy_wad;
@@ -1422,7 +1414,7 @@ void IdentifyVersion(void)
 
         if (access(pathiwad, R_OK))  goto iwad_failure;
 
-        filename = FIL_Filename_of( pathiwad );
+	char *filename = FIL_Filename_of( pathiwad );
         if ( gamedesc_index == GDESC_num ) // check forcing switch
         {
 	    // No forcing switch
@@ -1628,7 +1620,7 @@ void D_CheckWadVersion()
 //
 // D_DoomMain
 //
-void D_DoomMain(void)
+void D_DoomMain()
 {
     int p;
     char file[FILENAME_SIZE];
@@ -1675,17 +1667,12 @@ void D_DoomMain(void)
     // Title page
     const char *title = gamedesc.startup_title;  // set by IdentifyVersion
     if( title == NULL )   title = gamedesc.gname;
-
     CONS_Printf("%s\n", title);
-
-#ifdef __OS2__
-    // set PM window title
-    snprintf(pmData->title, sizeof(pmData->title), "%s: %s", VERSION_BANNER, title);
-#endif
 
     devparm = M_CheckParm("-devparm");
     if (devparm)
       CONS_Printf(D_DEVSTR);
+
     nomonsters = M_CheckParm("-nomonsters");
 
     // userhome section
@@ -1937,11 +1924,10 @@ void D_DoomMain(void)
     cht_Init();	// init cheats for this iwad
 
     //---------------------------------------------------- READY SCREEN
-    //printf("\nI_StartupComm...");
-
+#if defined( __DJGPP__ )		
     CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
-
+#endif
     // now initted automatically by use_mouse var code
     //CONS_Printf("I_StartupMouse...\n");
     //I_StartupMouse ();
@@ -1955,6 +1941,9 @@ void D_DoomMain(void)
 
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
+#if !defined( __DJGPP__ )
+    I_SysInit();
+#endif
 
     CONS_Printf("I_StartupGraphics...\n");
     I_StartupGraphics();
@@ -2055,7 +2044,9 @@ void D_DoomMain(void)
     nomusic = M_CheckParm("-nomusic");  // WARNING: DOS version initmusic in I_StartupSound
     digmusic = M_CheckParm("-digmusic");        // SSNTails 12-13-2002
     I_StartupSound();
+#if defined( __DJGPP__ )		
     I_InitMusic();      // setup music buffer for quick mus2mid
+#endif
     S_Init(cv_soundvolume.value, cv_musicvolume.value);
 
     CONS_Printf(text[ST_INIT_NUM]);
@@ -2097,7 +2088,6 @@ void D_DoomMain(void)
     p = M_CheckParm("-playdemo");
     if (!p)
         p = M_CheckParm("-timedemo");
-			
     if (p && M_IsNextParm())
     {
         char tmp[MAX_WADPATH];
@@ -2116,17 +2106,16 @@ void D_DoomMain(void)
         
         if ((p = M_CheckParm("-playdemo")))
         {
-						CONS_Printf("Playing demo %s.\n", tmp);
+            CONS_Printf("Playing demo %s.\n", tmp);
             singledemo = true;  // quit after one demo
             G_DeferedPlayDemo(tmp);
         }
         else
-				{
-						CONS_Printf("Timing Benchmark Demo %s.\n", tmp);
-            G_TimeDemo(tmp);
-						gamestate = wipegamestate = GS_NULL;
-				}
-
+        {
+           CONS_Printf("Timing Benchmark Demo %s.\n", tmp);
+           G_TimeDemo(tmp);
+           gamestate = wipegamestate = GS_NULL;
+        }
         return;
     }
 

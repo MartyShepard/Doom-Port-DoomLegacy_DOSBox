@@ -261,6 +261,22 @@ void I_StopCD (void)
     cdPlaying = false;
 }
 
+#if !defined( __DJGPP__ )	
+void I_PauseCD (void)
+{
+	if (cdfile == -1 || !enabled)
+		return;
+	
+	if (!playing)
+		return;
+
+	if ( ioctl(cdfile, CDROMPAUSE) == -1 )
+		CONS_Printf("ioctl cdrompause failed (%d)\n", errno);
+
+	wasPlaying = playing;
+	playing = false;
+}
+#endif
 // continue after a pause
 void I_ResumeCD (void)
 {
