@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 721 2010-07-31 19:10:06Z wesleyjohnson $
+// $Id: r_plane.h 722 2010-07-31 19:13:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,6 +54,10 @@
 
 #include "screen.h"     //needs MAXVIDWIDTH/MAXVIDHEIGHT
 #include "r_data.h"
+
+// unsigned short invalid for top[], bottom[] arrays in visplane
+// Maximum value disables use in top calculations, it is off bottom of screen.
+#define TOP_MAX   0xffff
 
 //
 // Now what is a visplane, anyway?

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 721 2010-07-31 19:10:06Z wesleyjohnson $
+// $Id: r_plane.c 722 2010-07-31 19:13:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -468,12 +468,11 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
                            int           start,
                            int           stop )
 {
-    int         intrl;
-    int         intrh;
-    int         unionl;
-    int         unionh;
+    int         intrl, intrh;  // intersect of the ranges
+    int         unionl, unionh;  // union of the ranges
     int         x;
 
+    // (unionl,intrl) = minmax( pl->minx, start )
     if (start < pl->minx)
     {
         intrl = pl->minx;
@@ -485,6 +484,7 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
         intrl = start;
     }
 
+    // (intrh,unionh) = minmax( pl->maxx, stop )
     if (stop > pl->maxx)
     {
         intrh = pl->maxx;
@@ -499,14 +499,17 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
     //added 30-12-97 : 0xff ne vaut plus -1 avec un short...
     // find any x in intersect range where have valid top[]
     for (x=intrl ; x<= intrh ; x++)
-        if (pl->top[x] != 0xffff)
+        if (pl->top[x] != TOP_MAX)
             break;
 
     //SoM: 3/23/2000: Boom code
     if (x > intrh)
+    {
         // no valid top[] within intersect range
 	// No overlap, can extend visplane to union
-      pl->minx = unionl, pl->maxx = unionh;
+        pl->minx = unionl;
+        pl->maxx = unionh;
+    }
     else
     {
         // overlap conflict, must create new visplane
@@ -543,13 +546,19 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
 // Called from R_StoreWallRange for ffloors.
 void R_ExpandPlane(visplane_t*  pl, int start, int stop)
 {
+#if 1
+    // [WDJ] 6/22/2010 simpler code that has same result.
+    // Set visplane to union of visplane range and start..stop
+    if (start < pl->minx)  pl->minx = start;
+    if (stop > pl->maxx)   pl->maxx = stop;
+#else
+    // [WDJ] 6/22/2010 intrl, intrh vars and FOR loop are irrelevant to result
     // intersect of the ranges
     int         intrl;
     int         intrh;
     // union of the ranges
     int         unionl;
     int         unionh;
-    int		x;
 
     // (unionl,intrl) = minmax( pl->minx, start )
     if (start < pl->minx)
@@ -575,9 +584,14 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
         intrh = stop;
     }
 
+#if 0
+    // This code is only useful as a check that calls I_Error, because
+    // the exact same result is always set after it.
+
     // Find any x in start..stop range where have valid top[], thus overlaps.
+    int x;
     for (x = start ; x <= stop ; x++)
-        if (pl->top[x] != 0xffff)
+        if (pl->top[x] != TOP_MAX)
             break;
 
     //SoM: 3/23/2000: Boom code
@@ -585,8 +599,9 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
       pl->minx = unionl, pl->maxx = unionh;
 //    else
 //      I_Error("R_ExpandPlane: planes in same subsector overlap?!\nminx: %i, maxx: %i, start: %i, stop: %i\n", pl->minx, pl->maxx, start, stop);
-
+#endif
     pl->minx = unionl, pl->maxx = unionh;
+#endif   
 }
 
 
@@ -855,8 +870,8 @@ void R_DrawSinglePlane(visplane_t* pl)
 
   //set the MAXIMUM value for unsigned short (but is not MAX for int)
   // mark the columns on either side of the valid area
-  pl->top[pl->maxx+1] = 0xffff;		// disable setup spanstart
-  pl->top[pl->minx-1] = 0xffff;		// disable drawing on first call
+  pl->top[pl->maxx+1] = TOP_MAX;  // disable setup spanstart
+  pl->top[pl->minx-1] = TOP_MAX;  // disable drawing on first call
 //  pl->bottom[pl->maxx+1] = 0;		// prevent interference from random value
 //  pl->bottom[pl->minx-1] = 0;		// prevent interference from random value
 

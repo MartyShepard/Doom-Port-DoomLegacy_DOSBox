@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 721 2010-07-31 19:10:06Z wesleyjohnson $
+// $Id: r_segs.c 722 2010-07-31 19:13:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -174,17 +174,10 @@ static fixed_t         rw_toptexturemid;
 static fixed_t         rw_bottomtexturemid;
 
 // [WDJ] 2/22/2010 actually is fixed_t in all usage
-#if 1 
 static fixed_t         worldtop;	// front sector
 static fixed_t         worldbottom;
 static fixed_t         worldbacktop;	// back sector, only used on two sided lines
 static fixed_t         worldbackbottom;
-#else
-static int             worldtop;	// front sector
-static int             worldbottom;
-static int             worldbacktop;	// back sector
-static int             worldbackbottom;
-#endif
 
 // RenderSegLoop global parameters
 static fixed_t         pixhigh;
@@ -871,12 +864,12 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           if (!fixedcolormap)
           {
 	      // distance effect on light, yscale is smaller at distance.
-	      unsigned index = dm_yscale>>LIGHTSCALESHIFT;
+	      unsigned dlit = dm_yscale>>LIGHTSCALESHIFT;
 
-	      if (index >=  MAXLIGHTSCALE )
-	      index = MAXLIGHTSCALE-1;
+	      if (dlit >=  MAXLIGHTSCALE )
+	      dlit = MAXLIGHTSCALE-1;
 
-	      dc_colormap = walllights[index];
+	      dc_colormap = walllights[dlit];
 
               if(frontsector->extra_colormap)
               {
@@ -1345,14 +1338,10 @@ extern sector_t * fakeflat_sec;  // [WDJ] DEBUG
 void R_RenderSegLoop (void)
 {
     angle_t             angle;
-    unsigned            index;
-    int                 yl;
-    int                 yh;
+    int                 yl, yh;
 
-    int                 mid;
     fixed_t             texturecolumn;
-    int                 top;
-    int                 bottom;
+    int                 mid, top, bottom;
     int                 i;
     
     texturecolumn = 0;                                // shut up compiler warning
@@ -1469,12 +1458,12 @@ void R_RenderSegLoop (void)
             dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
 	    // distance effect on light, rw_scale is smaller at distance.
-            index = rw_scale>>LIGHTSCALESHIFT;
+            unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
             
-            if (index >=  MAXLIGHTSCALE )
-                index = MAXLIGHTSCALE-1;
+            if (dlit >=  MAXLIGHTSCALE )
+                dlit = MAXLIGHTSCALE-1;
 
-            dc_colormap = walllights[index];
+            dc_colormap = walllights[dlit];
 
             if(frontsector->extra_colormap && !fixedcolormap)
 	    {
@@ -1486,7 +1475,6 @@ void R_RenderSegLoop (void)
 
         if(dc_numlights)
         {
-          lighttable_t** xwalllights;
           for(i = 0; i < dc_numlights; i++)
           {
 	    r_lightlist_t * rlight = & dc_lightlist[i];
@@ -1507,6 +1495,7 @@ void R_RenderSegLoop (void)
 	      else if (curline->v1->x == curline->v2->x)
                 lightnum++;
 
+	      lighttable_t** xwalllights;  // local selection of light table
 	      if (lightnum < 0)
                 xwalllights = scalelight[0];
 	      else if (lightnum >= LIGHTLEVELS)
@@ -1515,12 +1504,12 @@ void R_RenderSegLoop (void)
                 xwalllights = scalelight[lightnum];
 
 	      // distance effect on light, rw_scale is smaller at distance.
-	      index = rw_scale>>LIGHTSCALESHIFT;
+	      unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
             
-	      if (index >=  MAXLIGHTSCALE )
-                index = MAXLIGHTSCALE-1;
+	      if (dlit >=  MAXLIGHTSCALE )
+                dlit = MAXLIGHTSCALE-1;
 
-              rlight->rcolormap = xwalllights[index];
+              rlight->rcolormap = xwalllights[dlit];
 	      if(rlight->extra_colormap )
 	      {
 		 // reverse indexing, and change to extra_colormap
@@ -1762,9 +1751,10 @@ void R_StoreWallRange( int   start, int   stop)
     int                 i, cnt;
     ff_lightlist_t      *ff_light;
     r_lightlist_t       *rlight;
+    ffloor_t 		* bff, * fff;  // backsector fake floor, frontsector fake floor
     fixed_t             lheight;
 
-    if (ds_p == drawsegs+maxdrawsegs)   expand_drawsegs();
+    if (ds_p == &drawsegs[maxdrawsegs])   expand_drawsegs();
     
 #ifdef RANGECHECK
     if (start >=rdraw_viewwidth || start > stop)
@@ -2062,8 +2052,6 @@ void R_StoreWallRange( int   start, int   stop)
         // allocate space for masked texture tables
         if (frontsector && backsector && frontsector->tag != backsector->tag && (backsector->ffloors || frontsector->ffloors))
         {
-          ffloor_t* rover;
-          ffloor_t* r2;
           fixed_t   lowcut, highcut;
 
           //markceiling = markfloor = true;
@@ -2080,118 +2068,134 @@ void R_StoreWallRange( int   start, int   stop)
             i = 0;
 
 	    // For all backsector, check all frontsector
-            for(rover = backsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
+            for(bff = backsector->ffloors; bff; bff = bff->next)
             {
-              if(!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS))
+              if(!(bff->flags & FF_RENDERSIDES) || !(bff->flags & FF_EXISTS))
                 continue;
-              if(rover->flags & FF_INVERTSIDES)
+              if(bff->flags & FF_INVERTSIDES)
                 continue;
-              if(*rover->topheight < lowcut || *rover->bottomheight > highcut)
+              if(*bff->topheight < lowcut || *bff->bottomheight > highcut)
                 continue;
 
-              for(r2 = frontsector->ffloors; r2; r2 = r2->next)
+              for(fff = frontsector->ffloors; fff; fff = fff->next)
               {
-                if(!(r2->flags & FF_EXISTS) || !(r2->flags & FF_RENDERSIDES)
-                   || *r2->topheight < lowcut || *r2->bottomheight > highcut)
+                if(!(fff->flags & FF_EXISTS) || !(fff->flags & FF_RENDERSIDES)
+                   || *fff->topheight < lowcut || *fff->bottomheight > highcut)
                   continue;
 
-                if(rover->flags & FF_EXTRA)
+                if(bff->flags & FF_EXTRA)
                 {
-                  if(!(r2->flags & FF_CUTEXTRA))
+                  if(!(fff->flags & FF_CUTEXTRA))
                     continue;
 
-                  if(r2->flags & FF_EXTRA && (r2->flags & (FF_TRANSLUCENT|FF_FOG)) != (rover->flags & (FF_TRANSLUCENT|FF_FOG)))
+                  if(fff->flags & FF_EXTRA && (fff->flags & (FF_TRANSLUCENT|FF_FOG)) != (bff->flags & (FF_TRANSLUCENT|FF_FOG)))
                     continue;
                 }
                 else
                 {
-                  if(!(r2->flags & FF_CUTSOLIDS))
+                  if(!(fff->flags & FF_CUTSOLIDS))
                     continue;
                 }
 
-                if(*rover->topheight > *r2->topheight || *rover->bottomheight < *r2->bottomheight)
+                if(*bff->topheight > *fff->topheight
+		   || *bff->bottomheight < *fff->bottomheight)
                   continue;
 
                 break;
-              }
-              if(r2)
+              } // for fff
+              if(fff)  // found fff that completely overlaps bff
                 continue;
 
-              ds_p->thicksides[i] = rover;
+              ds_p->thicksides[i] = bff;
               i++;
-            }
+	      if( i >= MAXFFLOORS )
+		 break;
+            } // for bff
 
 	    // For all frontsector, check all backsector
-            for(rover = frontsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
+            for(fff = frontsector->ffloors; fff; fff = fff->next)
             {
-              if(!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS))
+              if(!(fff->flags & FF_RENDERSIDES) || !(fff->flags & FF_EXISTS))
                 continue;
-              if(!(rover->flags & FF_ALLSIDES))
+              if(!(fff->flags & FF_ALLSIDES))
                 continue;
-              if(*rover->topheight < lowcut || *rover->bottomheight > highcut)
+              if(*fff->topheight < lowcut || *fff->bottomheight > highcut)
                 continue;
 
-              for(r2 = backsector->ffloors; r2; r2 = r2->next)
+              for(bff = backsector->ffloors; bff; bff = bff->next)
               {
-                if(!(r2->flags & FF_EXISTS) || !(r2->flags & FF_RENDERSIDES)
-                   || *r2->topheight < lowcut || *r2->bottomheight > highcut)
+                if(!(bff->flags & FF_EXISTS) || !(bff->flags & FF_RENDERSIDES)
+                   || *bff->topheight < lowcut || *bff->bottomheight > highcut)
                   continue;
 
-                if(rover->flags & FF_EXTRA)
+                if(fff->flags & FF_EXTRA)
                 {
-                  if(!(r2->flags & FF_CUTEXTRA))
+                  if(!(bff->flags & FF_CUTEXTRA))
                     continue;
 
-                  if(r2->flags & FF_EXTRA && (r2->flags & (FF_TRANSLUCENT|FF_FOG)) != (rover->flags & (FF_TRANSLUCENT|FF_FOG)))
+                  if(bff->flags & FF_EXTRA
+		     && (bff->flags & (FF_TRANSLUCENT|FF_FOG)) != (fff->flags & (FF_TRANSLUCENT|FF_FOG)))
                     continue;
                 }
                 else
                 {
-                  if(!(r2->flags & FF_CUTSOLIDS))
+                  if(!(bff->flags & FF_CUTSOLIDS))
                     continue;
                 }
 
-                if(*rover->topheight > *r2->topheight || *rover->bottomheight < *r2->bottomheight)
+                if(*fff->topheight > *bff->topheight
+		   || *fff->bottomheight < *bff->bottomheight)
                   continue;
 
                 break;
-              }
-              if(r2)
+              } // for bff
+              if(bff)  // found bff that completely overlaps fff
                 continue;
 
-              ds_p->thicksides[i] = rover;
+              ds_p->thicksides[i] = fff;
               i++;
-            }
+	      if( i >= MAXFFLOORS )
+		 break;
+            } // for fff
           }
           else if(backsector->ffloors)
           {
+	    i = 0;
 	    // For all backsector
-            for(rover = backsector->ffloors, i = 0; rover && i < MAXFFLOORS; rover = rover->next)
+            for(bff = backsector->ffloors; bff; bff = bff->next)
             {
-              if(!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS) || rover->flags & FF_INVERTSIDES)
+              if(!(bff->flags & FF_RENDERSIDES) || !(bff->flags & FF_EXISTS) || bff->flags & FF_INVERTSIDES)
                 continue;
-              if(*rover->topheight <= frontsector->floorheight || *rover->bottomheight >= frontsector->ceilingheight)
+              if(*bff->topheight <= frontsector->floorheight
+		 || *bff->bottomheight >= frontsector->ceilingheight)
                 continue;
 
-              ds_p->thicksides[i] = rover;
+              ds_p->thicksides[i] = bff;
               i++;
+	      if( i >= MAXFFLOORS )
+		 break;
             }
           }
           else if(frontsector->ffloors)
           {
+	    i = 0;
 	    // For all frontsector
-            for(rover = frontsector->ffloors, i = 0; rover && i < MAXFFLOORS; rover = rover->next)
+            for(fff = frontsector->ffloors; fff; fff = fff->next)
             {
-              if(!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_ALLSIDES))
+              if(!(fff->flags & FF_RENDERSIDES) || !(fff->flags & FF_EXISTS) || !(fff->flags & FF_ALLSIDES))
                 continue;
-              if(*rover->topheight <= frontsector->floorheight || *rover->bottomheight >= frontsector->ceilingheight)
+              if(*fff->topheight <= frontsector->floorheight
+		 || *fff->bottomheight >= frontsector->ceilingheight)
                 continue;
-              if(*rover->topheight <= backsector->floorheight || *rover->bottomheight >= backsector->ceilingheight)
+              if(*fff->topheight <= backsector->floorheight
+		 || *fff->bottomheight >= backsector->ceilingheight)
                 continue;
 
-              ds_p->thicksides[i] = rover;
+              ds_p->thicksides[i] = fff;
               i++;
-            }
+	      if( i >= MAXFFLOORS )
+		 break;
+            } // for fff
           }
 
           ds_p->numthicksides = numthicksides = i;
@@ -2368,81 +2372,80 @@ void R_StoreWallRange( int   start, int   stop)
             pixlowstep = -FixedMul (rw_scalestep,worldbackbottom);
         }
 
+        i = 0;
+
+        if(backsector->ffloors)
         {
-            ffloor_t*  rover;
-            i = 0;
-
-            if(backsector->ffloors)
-            {
-              for(rover = backsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
-              {
-                if(!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+            ffloor_t * bff; // backsector fake floor
+	    for(bff = backsector->ffloors; bff; bff = bff->next)
+	    {
+                if(!(bff->flags & FF_EXISTS) || !(bff->flags & FF_RENDERPLANES))
                   continue;
 
-                if(*rover->bottomheight <= backsector->ceilingheight &&
-                   *rover->bottomheight >= backsector->floorheight &&
-                   ((viewz < *rover->bottomheight && !(rover->flags & FF_INVERTPLANES)) ||
-                   (viewz > *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
+                if(   *bff->bottomheight <= backsector->ceilingheight
+		   && *bff->bottomheight >= backsector->floorheight
+		   && ((viewz < *bff->bottomheight && !(bff->flags & FF_INVERTPLANES))
+		       || (viewz > *bff->bottomheight && (bff->flags & FF_BOTHPLANES))))
                 {
                   ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = *rover->bottomheight;
-                  ffloor[i].back_pos = (ffloor[i].back_pos - viewz) >> 4;
+                  ffloor[i].back_pos = (*bff->bottomheight - viewz) >> 4;
                   ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
                   ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
                   i++;
+		  if(i >= MAXFFLOORS)
+		      break;
                 }
-                if(i >= MAXFFLOORS)
-                  break;
-                if(*rover->topheight >= backsector->floorheight &&
-                   *rover->topheight <= backsector->ceilingheight &&
-                   ((viewz > *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
-                   (viewz < *rover->topheight && (rover->flags & FF_BOTHPLANES))))
+                if(   *bff->topheight >= backsector->floorheight
+		   && *bff->topheight <= backsector->ceilingheight
+		   && ((viewz > *bff->topheight && !(bff->flags & FF_INVERTPLANES))
+		       || (viewz < *bff->topheight && (bff->flags & FF_BOTHPLANES))))
                 {
                   ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = *rover->topheight;
-                  ffloor[i].back_pos = (ffloor[i].back_pos - viewz) >> 4;
+                  ffloor[i].back_pos = (*bff->topheight - viewz) >> 4;
                   ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
                   ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
                   i++;
+		  if(i >= MAXFFLOORS)
+		      break;
                 }
-              }
-            }
-            else if(frontsector && frontsector->ffloors)
-            {
-              for(rover = frontsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
-              {
-                if(!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+	    }
+	} // if(backsector->ffloors)
+        else if(frontsector && frontsector->ffloors)
+        {
+	    ffloor_t * fff; // frontsector fake floor
+	    for(fff = frontsector->ffloors; fff; fff = fff->next)
+	    {
+                if(!(fff->flags & FF_EXISTS) || !(fff->flags & FF_RENDERPLANES))
                   continue;
 
-                if(*rover->bottomheight <= frontsector->ceilingheight &&
-                   *rover->bottomheight >= frontsector->floorheight &&
-                   ((viewz < *rover->bottomheight && !(rover->flags & FF_INVERTPLANES)) ||
-                   (viewz > *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
+                if(   *fff->bottomheight <= frontsector->ceilingheight
+		   && *fff->bottomheight >= frontsector->floorheight
+		   && ((viewz < *fff->bottomheight && !(fff->flags & FF_INVERTPLANES))
+		       || (viewz > *fff->bottomheight && (fff->flags & FF_BOTHPLANES))))
                 {
                   ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = *rover->bottomheight;
-                  ffloor[i].back_pos = (ffloor[i].back_pos - viewz) >> 4;
+                  ffloor[i].back_pos = (*fff->bottomheight - viewz) >> 4;
                   ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
                   ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
                   i++;
+		  if(i >= MAXFFLOORS)
+		      break;
                 }
-                if(i >= MAXFFLOORS)
-                  break;
-                if(*rover->topheight >= frontsector->floorheight &&
-                   *rover->topheight <= frontsector->ceilingheight &&
-                   ((viewz > *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
-                   (viewz < *rover->topheight && (rover->flags & FF_BOTHPLANES))))
+                if(   *fff->topheight >= frontsector->floorheight
+		   && *fff->topheight <= frontsector->ceilingheight
+		   && ((viewz > *fff->topheight && !(fff->flags & FF_INVERTPLANES))
+		       || (viewz < *fff->topheight && (fff->flags & FF_BOTHPLANES))))
                 {
                   ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = *rover->topheight;
-                  ffloor[i].back_pos = (ffloor[i].back_pos - viewz) >> 4;
+                  ffloor[i].back_pos = (*fff->topheight - viewz) >> 4;
                   ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
                   ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
                   i++;
+		  if(i >= MAXFFLOORS)
+		      break;
                 }
-              }
-            }
-        }
+	    }
+	}
     } // if backsector
     
     // get a new or use the same visplane

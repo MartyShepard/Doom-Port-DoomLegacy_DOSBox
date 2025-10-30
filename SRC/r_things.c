@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 721 2010-07-31 19:10:06Z wesleyjohnson $
+// $Id: r_things.c 722 2010-07-31 19:13:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1633,10 +1633,12 @@ static void R_CreateDrawNodes( void )
             if(!ds->ffloorplanes[p])
               continue;
             plane = ds->ffloorplanes[p];
+	    // [WDJ] ?? why is this called repeatedly, are the bounds changing
             R_PlaneBounds(plane);  // set highest_top, lowest_bottom
 	         // in screen coord, where 0 is top (hi)
             if(plane->lowest_bottom < con_clipviewtop
-	       || plane->highest_top > vid.height
+//	       || plane->high_top > vid.height  // [WDJ] FIXME rdraw_ ??
+	       || plane->highest_top > rdraw_viewheight  // [WDJ] rdraw window, not vid.height
 	       || plane->highest_top > plane->lowest_bottom)
             {
               ds->ffloorplanes[p] = NULL;  // not visible, remove from search
@@ -1727,7 +1729,7 @@ static void R_CreateDrawNodes( void )
             continue;  // next dnp
 
 	  // max of scale1, scale2 (which is closest)
-          scale = dnp->thickseg->scale1 > dnp->thickseg->scale2 ? dnp->thickseg->scale1 : dnp->thickseg->scale2;
+          scale = (dnp->thickseg->scale1 > dnp->thickseg->scale2) ? dnp->thickseg->scale1 : dnp->thickseg->scale2;
           if(scale <= vsp->scale)
             continue;  // next dnp
           scale = dnp->thickseg->scale1 + (dnp->thickseg->scalestep * (sintersect - dnp->thickseg->x1));
