@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: g_input.c 733 2010-09-02 00:28:16Z smite-meister $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,6 +69,13 @@
 #include "keys.h"
 #include "d_net.h"
 #include "console.h"
+#include "i_joy.h"
+
+#if !defined( __DJGPP__ )
+int num_joybindings = 0;
+joybinding_t joybindings[MAX_JOYBINDINGS];
+#endif
+
 
 CV_PossibleValue_t mousesens_cons_t[]={{1,"MIN"},{MAXMOUSESENSITIVITY,"MAXCURSOR"},{MAXINT,"MAX"},{0,NULL}};
 CV_PossibleValue_t onecontrolperkey_cons_t[]={{1,"One"},{2,"Several"},{0,NULL}};
@@ -87,15 +94,19 @@ consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 
 int             mousex;
 int             mousey;
-int             mlooky;         //like mousey but with a custom sensitivity
-                                //for mlook
+#if defined( __DJGPP__ )
+int             mlooky;         //like mousey but with a custom sensitivity for mlook
+
+#endif
 int             mouse2x;
 int             mouse2y;
+#if defined( __DJGPP__ )
 int             mlook2y;
 
 // joystick values are repeated
 int             joyxmove;
 int             joyymove;
+#endif
 
 // current state of the keys : true if pushed
 byte    gamekeydown[NUMINPUTS];
@@ -130,7 +141,7 @@ static boolean G_CheckDoubleClick (int state, dclick_t *dt);
 void  G_MapEventsToControls (event_t *ev)
 {
     int    i,flag;
-
+   	
     switch (ev->type)
     {
       case ev_keydown:
@@ -145,27 +156,19 @@ void  G_MapEventsToControls (event_t *ev)
 
       case ev_mouse:           // buttons hare virtual keys
         mousex = ev->data2*((cv_mousesens.value*cv_mousesens.value)/110.0f + 0.1);
-        mousey = ev->data3*((cv_mousesens.value*cv_mousesens.value)/110.0f + 0.1);
-
-        //added:10-02-98:
-        // for now I use the mlook sensitivity just for mlook,
-        // instead of having a general mouse y sensitivity.
-        mlooky = ev->data3*((cv_mlooksens.value*cv_mlooksens.value)/110.0f + 0.1);
+        mousey = ev->data3*((cv_mlooksens.value*cv_mlooksens.value)/110.0f + 0.1);
+				#if defined( __DJGPP__ )
+				mlooky = mousey;
+				#endif
         break;
 
-      case ev_joystick:        // buttons are virtual keys
-        joyxmove = ev->data2;
-        joyymove = ev->data3;
-        break;
 
       case ev_mouse2:           // buttons hare virtual keys
-        mouse2x = ev->data2*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1);
-        mouse2y = ev->data3*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1);
-
-        //added:10-02-98:
-        // for now I use the mlook sensitivity just for mlook,
-        // instead of having a general mouse y sensitivity.
-        mlook2y = ev->data3*((cv_mlooksens.value*cv_mlooksens.value)/110.0f + 0.1);
+        mouse2x = ev->data2*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1);				
+        mouse2y = ev->data3*((cv_mlooksens.value*cv_mlooksens.value)/110.0f + 0.1);
+				#if defined( __DJGPP__ )
+				mlook2y = mouse2y;
+				#endif
         break;
 
       default:
@@ -576,6 +579,16 @@ void G_SaveKeySetting(FILE *f)
            else
                fprintf(f,"\n");
        }
+
+#if !defined( __DJGPP__ )
+    // Writes the joystick axis binding commands to the config file.
+  for (i=0; i<num_joybindings; i++)
+    {
+      joybinding_t j = joybindings[i];
+      fprintf(f, "bindjoyaxis %d %d %d %d %f\n",
+	      j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
+    }
+#endif
 }
 
 void G_CheckDoubleUsage(int keynum)
@@ -651,3 +664,118 @@ void Command_Setcontrol2_f(void)
 
     setcontrol(gamecontrolbis,na);
 }
+
+#if !defined( __DJGPP__ )
+//! Magically converts a console command to a joystick axis binding. Also releases bindings.
+void Command_BindJoyaxis_f()
+{
+  joybinding_t j;
+  unsigned int i;
+
+  int na = COM_Argc();
+
+  if(na == 1)
+  { // Print bindings.
+    CONS_Printf("%d joysticks found.\n", num_joysticks);
+    if(num_joybindings == 0) {
+      CONS_Printf("No joystick axis bindings defined.\n");
+      return;
+    }
+    CONS_Printf("Current axis bindings.\n");
+    for(i=0; i<num_joybindings; i++) {
+      j = joybindings[i];
+      CONS_Printf("%d %d %d %d %f\n", j.joynum, j.axisnum,
+		  j.playnum, (int)j.action, j.scale);
+    }
+    return;
+  }
+
+  if (na == 4 || na > 6)
+  {
+    CONS_Printf("bindjoyaxis [joynum] [axisnum] [playnum] [action] [scale]  to bind\n"
+		"bindjoyaxis [joynum] [axisnum]  to unbind\n");
+    return;
+  }
+
+  j.joynum  = atoi(COM_Argv(1));
+  if(j.joynum < 0 || j.joynum >= num_joysticks) {
+    CONS_Printf("Attempting to bind/release non-existent joystick %d.\n", j.joynum);
+    return;
+  }
+
+  j.axisnum = (na >= 3) ? atoi(COM_Argv(2)) : -1;
+  if(j.axisnum < -1 || j.axisnum >= I_JoystickNumAxes(j.joynum)) {
+    CONS_Printf("Attempting to bind/release non-existent axis %d.\n", j.axisnum);
+    return;
+  }
+
+  if (na == 3)
+  { // release binding(s)
+    /* Takes one or two parameters. The first one is the joystick number
+       and the second is the axis number. If either is not specified, all
+       values are assumed to match.
+    */
+
+    int num_keep_bindings = 0;
+    joybinding_t keep_bindings[MAX_JOYBINDINGS];
+
+    if(num_joybindings == 0) {
+      CONS_Printf("No bindings to unset.\n");
+      return;
+    }
+
+    unsigned int i;
+    for(i=0; i<num_joybindings; i++) {
+      joybinding_t temp = joybindings[i];
+      if((j.joynum == temp.joynum) &&
+	 (j.axisnum == -1 || j.axisnum == temp.axisnum))
+	continue; // We have a binding to prune.
+
+      keep_bindings[num_keep_bindings++] = temp; // keep it
+    }
+
+    // We have the new bindings.
+    if (num_keep_bindings == num_joybindings) {
+      CONS_Printf("No bindings matched the parameters.\n");
+      return;
+    }
+
+    // replace the bindings
+    num_joybindings = num_keep_bindings;
+    for(i=0; i<num_keep_bindings; i++)
+      joybindings[i] = keep_bindings[i];
+  }
+  else
+  { // create a binding
+    j.playnum = atoi(COM_Argv(3));
+    j.action  = (joyactions_e)(atoi(COM_Argv(4)));
+    if (na == 6)
+      j.scale = atof(COM_Argv(5));
+    else
+      j.scale = 1.0f;
+
+    if(j.action < 0 || j.action >= num_joyactions) {
+      CONS_Printf("Attempting to bind non-existent action %d.\n", (int)(j.action));
+      return;
+    }
+
+    // Overwrite existing binding, if any. Otherwise just append.
+    for(i=0; i<num_joybindings; i++) {
+      joybinding_t j2 = joybindings[i];
+      if(j2.joynum == j.joynum && j2.axisnum == j.axisnum) {
+	joybindings[i] = j;
+	CONS_Printf("Joystick binding modified.\n");
+	return;
+      }
+    }
+    // new binding
+    if (num_joybindings < MAX_JOYBINDINGS)
+      {
+	joybindings[num_joybindings++] = j;
+	CONS_Printf("Joystick binding added.\n");
+      }
+    else
+      CONS_Printf("Maximum number of joystick bindings reached.\n");
+  }
+}
+#endif

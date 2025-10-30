@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_info.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -594,14 +594,16 @@ void P_LoadLevelInfo(int lumpnum)
 // Console Commands
 //
 
-void COM_Creator_f(void) {CONS_Printf("%s\n", info_creator);}
-void COM_Levelname_f(void) {CONS_Printf("%s\n", levelname);}
+void COM_MapInfo_f(void)
+{
+  CONS_Printf("Name: %s\n", levelname);
+  CONS_Printf("Author: %s\n", info_creator);
+}
 
 
 void P_Info_AddCommands()
 {
-  COM_AddCommand("creator",    COM_Creator_f);
-  COM_AddCommand("levelname",  COM_Levelname_f);
+  COM_AddCommand("mapinfo",  COM_MapInfo_f);
 }
 
 

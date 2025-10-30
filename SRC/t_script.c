@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_script.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -759,9 +759,9 @@ void spec_script( void )
 void T_AddCommands( void )
 {
 #ifdef FRAGGLESCRIPT
-  COM_AddCommand("t_dumpscript",  COM_T_DumpScript_f);
-  COM_AddCommand("t_runscript",   COM_T_RunScript_f);
-  COM_AddCommand("t_running",     COM_T_Running_f);
+  COM_AddCommand("fs_dumpscript",  COM_T_DumpScript_f);
+  COM_AddCommand("fs_runscript",   COM_T_RunScript_f);
+  COM_AddCommand("fs_running",     COM_T_Running_f);
 #endif
 }
 

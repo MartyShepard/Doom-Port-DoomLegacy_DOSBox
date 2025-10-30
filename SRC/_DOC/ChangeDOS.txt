@@ -1,5 +1,19 @@
 * Not need to Compile.
 
+[00733 ]: consvar/command update
+[00732*]: console docs beautified
+[00731*]: user reference manual almost done
+[00730*]: SDL sound works again. Samplerate set to 22 kHz.
+					Änderung nur in der .\SDL\i_sound.c
+					
+[00729*]: editing resources
+[00728*]: Second batch of editing docs from MR_ROCKET
+[00727*]: first batch of new docs from MR_ROCKET
+[00726 ]: w58 missed stuff
+[00725 ]: FMOD/digmusic specific stuff removed from the music interface.
+[00724 ]: SDL audio/music initialization simplified, bugs fixed.
+[00723 ]: Executable names, building legacy.wad
+[00722 ]: visplane minor code changes
 [00721 ]: visplane field naming
 		Fixed: Audio Midi Music Play (Big Endian)
 

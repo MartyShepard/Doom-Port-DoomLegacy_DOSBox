@@ -13,6 +13,8 @@
 
 <h2>Compiling Doom Legacy 1.4x SDL</h2>
 
+<div class="column">
+
 <p>In order to compile Doom Legacy 1.4x SDL you'll need to have the following
 libraries installed on your system.<br/>
 Make sure you install the <b>developer</b> packages of the
@@ -49,7 +51,7 @@ You will require the following programs during the build process:
 </p>
 
 <ul>
-<li><a href="http://gcc.gnu.org/">GCC</a> 4, the Gnu Compiler Collection which, among other things, is
+<li><a href="http://gcc.gnu.org/">GCC</a> 3.3+, the Gnu Compiler Collection which, among other things, is
 a free C/C++ compiler.<br/>
 Linux systems most likely already have it installed.<br/>
 Windows users should install <a href="http://www.mingw.org/">MinGW</a>, a
@@ -127,7 +129,7 @@ From now on, your local copy of this directory will be referred to as <b>TRUNK</
 <li>
   Do not overuse #ifdef. Especially avoid platform-dependent #ifdefs in
   the main code. Likewise, __BIG_ENDIAN__ and __LITTLE_ENDIAN__
-  conditionals only belong in m_swap.*
+  conditionals only belong in m_swap.
 </li>
 </ul>
 
@@ -236,5 +238,6 @@ From now on, your local copy of this directory will be referred to as <b>TRUNK</
  to 3dfx or OpenGl.
 </pre>
 
+</div>
 </body>
 </html>

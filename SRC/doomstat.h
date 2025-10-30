@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: doomstat.h 725 2010-08-17 18:53:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.

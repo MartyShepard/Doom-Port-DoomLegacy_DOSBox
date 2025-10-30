@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: mserv.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -223,9 +223,9 @@ static void Command_Listserv_f(void);
 //TODO: when we change the port or ip, unregister to the old master server, register to the new one
 
 #define DEF_PORT "28910"
-consvar_t cv_internetserver= {"internetserver",                 "No", CV_SAVE, CV_YesNo };
-consvar_t cv_masterserver  = {"masterserver",   "doomlegacy.dyndns.org:28910", CV_SAVE, NULL };
-consvar_t cv_servername    = {"servername",     "DooM Legacy server", CV_SAVE, NULL };
+consvar_t cv_internetserver= {"sv_public", "No", CV_SAVE, CV_YesNo };
+consvar_t cv_masterserver  = {"masterserver", "doomlegacy.dyndns.org:28910", CV_SAVE, NULL };
+consvar_t cv_servername    = {"sv_name", "Doom Legacy server", CV_SAVE, NULL };
 
 enum { MSCS_NONE, MSCS_WAITING, MSCS_REGISTERED, MSCS_FAILED } con_state = MSCS_NONE;
 

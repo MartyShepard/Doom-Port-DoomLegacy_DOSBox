@@ -120,3 +120,16 @@ rev 725
 Since not every platform uses FMOD (SDL version doesn't need it, for
 example) it should not be explicitly mentioned in the music interface.
 Also removed the -digmusic switch.
+
+
+*** SDL sound fixes, raised audio output samplerate to 22 kHz
+rev 730
+Removed unnecessary code and unwarranted assumptions, fixed a possible
+buffer overflow. Now my sound works again :)
+
+
+*** Renamed consvars and commands
+rev 733
+Some of the console vars and commands have really confusing names
+right now, so a little renaming is in order. To be continued.
+

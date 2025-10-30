@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 722 2010-07-31 19:13:59Z wesleyjohnson $
+// $Id: r_things.c 726 2010-08-20 18:17:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1637,7 +1637,7 @@ static void R_CreateDrawNodes( void )
             R_PlaneBounds(plane);  // set highest_top, lowest_bottom
 	         // in screen coord, where 0 is top (hi)
             if(plane->lowest_bottom < con_clipviewtop
-//	       || plane->high_top > vid.height  // [WDJ] FIXME rdraw_ ??
+//	       || plane->highest_top > vid.height  // [WDJ] FIXME rdraw_ ??
 	       || plane->highest_top > rdraw_viewheight  // [WDJ] rdraw window, not vid.height
 	       || plane->highest_top > plane->lowest_bottom)
             {

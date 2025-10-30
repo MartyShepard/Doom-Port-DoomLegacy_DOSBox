@@ -168,6 +168,10 @@
 void Command_Color_f(void);
 void Command_Name_f(void);
 
+#if !defined( __DJGPP__ )
+void Command_BindJoyaxis_f();
+void Command_UnbindJoyaxis_f();
+#endif
 void Command_WeaponPref(void);
 
 void Got_NameAndcolor(char **cp, int playernum);
@@ -342,7 +346,9 @@ void D_RegisterClientCommands(void)
     COM_AddCommand("chatmacro", Command_Chatmacro_f);   // hu_stuff.c
     COM_AddCommand("setcontrol", Command_Setcontrol_f);
     COM_AddCommand("setcontrol2", Command_Setcontrol2_f);
-
+#if !defined( __DJGPP__ )
+    COM_AddCommand("bindjoyaxis", Command_BindJoyaxis_f);
+#endif
     COM_AddCommand("frags", Command_Frags_f);
     COM_AddCommand("teamfrags", Command_TeamFrags_f);
 
@@ -428,8 +434,9 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_mousemove2);
     CV_RegisterVar(&cv_mousesens2);
     CV_RegisterVar(&cv_mlooksens2);
+#if defined( __DJGPP__ )
     CV_RegisterVar(&cv_joystickfreelook);
-
+#endif
     // WARNING : the order is important when inititing mouse2 
     //           we need the mouse2port
     CV_RegisterVar(&cv_mouse2port);
@@ -441,10 +448,12 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_controlperkey);
 
     CV_RegisterVar(&cv_usemouse);
+#if defined( __DJGPP__ )
     CV_RegisterVar(&cv_usejoystick);
 #ifdef LJOYSTICK
     CV_RegisterVar(&cv_joyport);
     CV_RegisterVar(&cv_joyscale);
+#endif
 #endif
     CV_RegisterVar(&cv_allowjump);
     CV_RegisterVar(&cv_allowrocketjump);
@@ -909,7 +918,7 @@ void Command_TeamFrags_f(void)
 //
 void Command_Version_f(void)
 {
-  CONS_Printf("%s (" __TIME__ " " __DATE__ ")\n", VERSION_BANNER);
+  CONS_Printf("%s (" __DATE__ " " __TIME__ ")\n", VERSION_BANNER);
 }
 
 //  Quit the game immediately

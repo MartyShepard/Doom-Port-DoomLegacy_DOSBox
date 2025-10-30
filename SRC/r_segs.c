@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 722 2010-07-31 19:13:59Z wesleyjohnson $
+// $Id: r_segs.c 726 2010-08-20 18:17:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -844,7 +844,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
                 }
 
                 continue;  // next 3dfloor light
-              }  // if( windowbottom > realbot )
+              }  // if( dm_windowbottom >= realbot )
               colfunc_2s (col);
               dm_windowtop = dm_windowbottom + 1;
               dc_colormap = rlight->rcolormap;

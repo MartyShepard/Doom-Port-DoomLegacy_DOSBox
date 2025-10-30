@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: command.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -660,7 +660,7 @@ static void COM_Help_f (void)
         }
 
         // variable
-        CONS_Printf("\2\nVariable\n");
+        CONS_Printf("\2\nVariables\n");
         for (cvar=consvar_vars; cvar; cvar = cvar->next)
         {
             CONS_Printf("%s ",cvar->name);

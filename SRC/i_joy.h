@@ -35,6 +35,41 @@
 
 #include "g_input.h"
 
+#if !defined( __DJGPP__ )
+//! All possible actions joystick axes can be bound to.
+typedef enum
+{
+  ja_pitch,  //!< Set up/down looking angle.
+  ja_move,   //!< Moving front and back.
+  ja_turn,   //!< Turn left or right.
+  ja_strafe, //!< Strafing.
+  num_joyactions
+} joyactions_e;
+
+//! Contains the mappings from joystick axes to game actions.
+typedef struct
+{
+  int joynum;          //!< Which joystick to use.
+  int axisnum;         //!< Which axis is the important one.
+  int playnum;         //!< What player is controlled.
+  joyactions_e action; //!< What should be done.
+  float scale;         //!< A scaling factor. Set negative to flip axis.
+} joybinding_t;
+
+
+#define MAX_JOYSTICKS 4 // 4 should be enough for most purposes
+extern int num_joysticks;
+
+#define MAX_JOYBINDINGS 4*MAX_JOYSTICKS // hope this is enough
+extern int num_joybindings;
+extern joybinding_t joybindings[MAX_JOYBINDINGS];
+
+void I_InitJoystick();
+int I_JoystickNumAxes(int joynum);
+int I_JoystickGetAxis(int joynum, int axisnum);
+
+#else
+	
 #define JOYAXISRANGE     1023   //faB: (1024-1) so we can do a right shift instead of division
                                 //     (doesnt matter anyway, just give enough precision)
                                 // a gamepad will return -1, 0, or 1 in the event data
@@ -59,5 +94,6 @@ struct JoyType_s {
 typedef struct JoyType_s JoyType_t;
 
 extern JoyType_t   Joystick;    //faB: may become an array (2 for splitscreen), I said: MAY BE...
+#endif
 
 #endif // __I_JOY_H__

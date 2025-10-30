@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_video.h 713 2010-07-27 12:59:55Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,7 +61,6 @@ typedef enum {
     render_none   = 5  // for dedicated server
 } rendermode_t;
 
-
 extern rendermode_t    rendermode;
 
 // use highcolor modes if true
@@ -95,5 +94,4 @@ void I_ReadScreen (byte* scr);
 
 void I_BeginRead (void);
 void I_EndRead (void);
-
 #endif

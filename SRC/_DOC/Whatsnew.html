@@ -1,72 +1,82 @@
-<html>
-<body text="#70f070" bgcolor="#000000" link="#70f070" vlink="#70f070" alink="#70f070">
-<pre>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link rel="stylesheet" href="legacy.css" type="text/css"/>
+  <meta name="keywords" content="Doom, Legacy, documentation, changelog"/>
+  <meta name="description" content="Doom Legacy is your premiere source port engine for id Software's classic DOOM games and more!"/>
+  <title>Doom Legacy Changelog</title>
+</head>
 
- DooM LEGACY
- Release v1.44, November 2009.
+<body>
+<h1>Doom Legacy Changelog</h1>
 
- Last Updated: October 2009
+<div class="column">
 
- Original game & sources by: Id Software.
- Additions: (c)1998 by: Fabrice Denis & Boris Pereira
-            (c)1999 by: Fabrice Denis, Boris Pereira & Thierry Van Elsuwe
-            (c)2000 by: Boris Pereira & Thierry Van Elsuwe
-            (c)2001-2002 by: Doom Legacy Team
-	    (c)2009 by: Doom Legacy Team
- 
- Special thanks to Steven McGranahan, Robert Bäuml and Bell Kin for
- their large contribution and to others Legacy Team members.
+<h2>1.44 (2010-08-??)</h2>
 
- Web site: http://legacy.newdoom.com
-   e-mail: legacy@newdoom.com
-
-
- -----------------------------------------------------------------------
- WHAT'S NEW
- -----------------------------------------------------------------------
-
- Doom Legacy 1.44 (November 2009)
- =====================================
-
- - FEATURES
-   - Gamma generation: Gamma table is generated from two setpoint
-   controls, each of which has 25 positions.
-   - Door Delay: Option control that slows doors by x1.5, x2, etc.
-   so that player has more time to get through them.
-   - SoftError: Many hard errors (fatal) have been changed to soft errors,
+<h3>FEATURES</h3>
+<ul>
+<li>Gamma generation: Gamma table is generated from two setpoint
+   controls, each of which has 25 positions.</li>
+<li>Door Delay: Option control that slows doors by x1.5, x2, etc.
+   so that player has more time to get through them.</li>
+<li>SoftError: Many hard errors (fatal) have been changed to soft errors,
    where the user will get one message, and the game will be allowed
-   to continue.
-   - Voodoo dolls added.  The voodoo doll was an accident of the original
+   to continue.</li>
+<li>Voodoo dolls added.  The voodoo doll was an accident of the original
    Doom, that many wads made use of to trigger linedef actions.
    Extra player1 starts now create voodoo dolls, with the last being the
-   actual player1 start position.
-   - Demo fixes.  Demos that Legacy cannot playback are now recognized
-   and rejected, so they do not crash the engine.
- 
- - BUG FIXES
-   - Flat search logic once again honors the F_START, F_END, FF_START,
+   actual player1 start position.</li>
+<li> Demo fixes.  Demos that Legacy cannot playback are now recognized
+   and rejected, so they do not crash the engine.</li>
+</ul> 
+
+<h3>BUG FIXES</h3>
+<ul> 
+<li> Flat search logic once again honors the F_START, F_END, FF_START,
    FF_END markers.  Only if it fails to find the flat within those
    bounds does it search the entire wad.  At least one wad had an
    extraneous lump with the same name as a flat, and Legacy will now
-   behave as well as other Doom ports.
-   - ZALLOC memory management fixed.  It had a latent bug that would
+   behave as well as other Doom ports.</li>
+<li> ZALLOC memory management fixed.  It had a latent bug that would
    corrupt memory management for some aligned allocations.  It also
-   allocates more memory now, so larger levels can be handled.
-   - Heretic save game fixed so that it does not use up an inventory
-   item.
-   - Heretic sound fixed.  Heretic uses a different naming scheme
-   for sound effects.
-   - Time tick fixed so that it can handle time count overflow and wrapping.
+   allocates more memory now, so larger levels can be handled.</li>
+<li> Heretic save game fixed so that it does not use up an inventory
+   item.</li>
+<li> Heretic sound fixed.  Heretic uses a different naming scheme
+   for sound effects.</li>
+<li> Time tick fixed so that it can handle time count overflow and wrapping.</li>
+</ul>
+
+
+<h2>1.43 Beta (2004-06-14)</h2>
  
+<h3>TODO</h3>
+This release was for Mac OS X only.
 
- Doom Legacy 1.40 (September 2002)
- =====================================
+
+<h2>1.42 (2004-04-18)</h2>
  
- TODO
+<h3>TODO</h3>
 
 
- Doom Legacy 1.32 Beta 3 (August 2001)
- =====================================
+<h2>1.41 (2003-10-03)</h2>
+
+<h3>TODO</h3>
+
+
+<h2>1.40 (2002-09-21)</h2>
+ 
+<h3>TODO</h3>
+
+
+<h2>1.32 Beta 4 (2002-01-01)</h2>
+
+<h3>TODO</h3>
+
+
+<h2>1.32 Beta 3 (2001-08)</h2>
 
    Lot of fixes as usual for a beta.
 
@@ -127,8 +137,7 @@
      - removed main wad version checking
      - fixed cannot restart game after end of a episode
 
- Doom Legacy 1.32 Beta 1 (May 2001)
- ==================================
+<h2>1.32 Beta 1 (2001-05-08)</h2>
 
    Added Heretic support it is already playable but still experimental
    see heretic note in legacy.txt for more
@@ -177,8 +186,7 @@
        - missing polygone/textures one some levels 
          (need to be rebuild with new nodes builders like zennode or deepbsp)
 
- Doom Legacy 1.31  (December 2000)
- =================================
+<h2>1.31 (2000-12)</h2>
 
    - OPENGL/3DFX
      - no more coronas for mancubus balls
@@ -230,8 +238,7 @@
        the player die
 
 
- Doom Legacy 1.30  (August 2000)
- =================================
+<h2>1.30 (2000-08)</h2>
 
    - VIDEO
      - Thierry Van Elsuwe (aka Hurdler) ported to OpenGL our glide code
@@ -298,8 +305,7 @@
        - missing polygone/textures one some levels 
          (need to be rebuild with new nodes builders like zennode or deepbsp)
 
- Doom Legacy 1.28  (14 April 1999)
- =================================
+<h2>1.28 (1999-05-14)</h2>
 
    - FULL WIN32 PORT
      - no more compatibility problem with sound and graphics card
@@ -357,7 +363,7 @@
      - "addfile" and "map" commands can load skins while in game
      - "fastmonsters" : same as -fastparm parameter
      - "map" command enhanced :
-        map <mapname[.wad]> [-skill <1..5>] [-monsters <0\1>]
+        map &lt;mapname[.wad]&gt; [-skill &lt;1..5&gt;] [-monsters &lt;0\1&gt;]
         this allows to change skill and monsters at run time
         note : these two parameters are optional, if not specified the
                current value is used
@@ -408,8 +414,7 @@
      - documented version 1.27 changes! see below
 
 
- Doom Legacy 1.27  (December 1998)
- =================================
+<h2>1.27 (1998-12)</h2>
 
    - GAME STUFF
      - new in-game menus allows setting console options easily
@@ -433,7 +438,7 @@
      - pass console commands on the command-line using a "+"
        prefix, example:
 
-           > legacy +color 7 +name "the killer"
+           &gt; legacy +color 7 +name "the killer"
 
      - human readable console variables, example:
           color red
@@ -443,7 +448,7 @@
           color 4
           chasecam 1
 
-       type "help <commandname>" to see possible values for each
+       type "help &lt;commandname&gt;" to see possible values for each
        console variable, note the old system still works
 
      - "exitlevel" : ends level and goes to intermission, comes in
@@ -484,8 +489,7 @@
      - many, many bugfixes and internal changes.
 
 
- Doom Legacy Update v1.25  25-Aug-1998:
- ======================================
+<h2>1.25 (1998-08-25)</h2>
 
     NOTE! The chasecam key is now '/' slash on the keypad, and it
           is available only in '-devparm' mode.
@@ -591,8 +595,8 @@
 
 
 
- Doom Legacy Update v1.24  19-July-1998:
- =======================================
+<h2>1.24 (1998-07-19)</h2>
+
 
     - added CD Audio music, along with console commands 'play','stop',
       'info', etc. CD Music volume is in the sounds menu (F4).
@@ -607,7 +611,7 @@
             audio volume to zero.
 
     - some minor changes in the network, we noticed a serious problem
-      with FAST machines & SLOW network cards, seems to work fine now.
+      with FAST machines &amp; SLOW network cards, seems to work fine now.
     - fixed the backspace problem in the chat
     - fixed problem with some playback of lmp version 1.20
     - warp parameter work again with doom1 and ultimate
@@ -620,17 +624,15 @@
     - added gravity variable
 
 
- Doom Legacy Update v1.23  17-July-1998:
- =======================================
+<h2>1.23 (1998-07-17)</h2>
 
     - this version was a 'source release' for some projects, it was
       a work in progress, not released on the site.
 
 
- Doom Legacy Update v1.22  5-Jun-1998:
- =====================================
+<h2>1.22 (1998-06-05)</h2>
 
-    - the slow turning left & right is fixed. Sorry we have forget to
+    - the slow turning left &amp; right is fixed. Sorry we have forget to
       put the right code in the release.
     - added command "say" and "sayto". This fix chat problem.
     - word wraping in the console.
@@ -638,11 +640,10 @@
     - fixed shift key problem.
 
 
- Doom Legacy Update v1.21 25-May-1998:
- =====================================
+<h2>1.21 (1998-05-25)</h2>
 
  Network:
-    - the slow turning left & right is fixed
+    - the slow turning left &amp; right is fixed
     - playing back demos of the latest version, along with the support
       for v1.12 demos didn't work : fixed. If you happened to record
       demos and thought they didn't work, they will now playback cor-
@@ -667,9 +668,8 @@
     - removed the "F***" word from fragging messages by request
 
 
+<h2>1.20 Undocumented</h2>
 
- Release v1.20 Undocumented:
- ===========================
     - Doom Legacy supports 64 deathmatch starts (the original game
       used up to 10 dmstarts)
 
@@ -700,8 +700,8 @@
 
 
 
- Release 1.20 Updated 19-May-98:
- ===============================
+<h2>1.20 (1998-05-19)</h2>
+
 
  NOTE: THIS IS NOT COMPLETE AT ALL, WE WILL DOCUMENT THE CHANGES OF
        VERSION 1.2 AS SOON AS POSSIBLE, THERE ARE MANY ONES! BUT WE
@@ -782,7 +782,7 @@
 
  Bugfixes:
     - Items under crushing sectors that could not be picked up is
-      fixed. A ridiculous test == should have been <=, arh!
+      fixed. A ridiculous test == should have been &lt;=, arh!
       Fixed the crushing ceilings that didn't crush too.
     - The game can now be started in standard VGA 320*200 on
       older non-vesa graphic cards.
@@ -805,9 +805,7 @@
 
 
 
-
- Release 1.12 Updated 06-Mar-98:
- ===============================
+<h2>1.12 (1998-03-06)</h2>
 
  As you can see, we've taken some time to write a better docu-
  mentation, we hope you'll appreciate, and read the full doc
@@ -975,9 +973,7 @@
       from moving when mouse looking or something like that...
 
 
-
- Release 1.11 Updated 14-Feb-98:
- ===============================
+<h2>1.11 (1998-02-14)</h2>
 
     - Full support SVGA : can switch to any VESA2 mode with the good
       aspect ratio, can switch video mode in the menu, save video mode
@@ -1009,7 +1005,7 @@
  Compatibility support
     - can load demos of doom v1.9, some new additions are automatically
       disabled when playing back older demos so that they run fine.
-    - Support dehacked patches : use -dehacked <filename.deh>
+    - Support dehacked patches : use -dehacked &lt;filename.deh&gt;
       If you like superweapons patches, and the like, it should work
       no problem with our support. The difference is that now you don't
       need  to patch the exe.
@@ -1049,10 +1045,6 @@
       try to convince us!!
     - no waitvbl (no pageflipping)
 
-
- ============================================================================
- END OF WHATSNEW.TXT
- ============================================================================
- 
-</pre>
+</div> 
+</body>
 </html>

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 663 2010-06-03 12:38:53Z wesleyjohnson $
+// $Id: d_clisrv.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -170,7 +170,7 @@
 
 
 #include <time.h>
-#if defined (__DJGPPDOS_NATIVE__) || defined (LINUX)
+#if defined (__DJGPP__) || defined (LINUX)
 #include <unistd.h>
 #endif
 
@@ -1063,7 +1063,7 @@ void CL_Reset (void)
     //D_StartTitle ();
 }
 
-void Command_GetPlayerNum(void)
+void Command_PlayerInfo(void)
 {
     int i;
 
@@ -1192,7 +1192,7 @@ void D_ClientServerInit (void)
     // for dedicated server
     dedicated=M_CheckParm("-dedicated")!=0;
     
-    COM_AddCommand("getplayernum",Command_GetPlayerNum);
+    COM_AddCommand("playerinfo",Command_PlayerInfo);
     COM_AddCommand("kick",Command_Kick);
     COM_AddCommand("connect",Command_connect);
 
@@ -2177,9 +2177,17 @@ static void Local_Maketic(int realtics)
 
     rendergametic=gametic;
     // translate inputs (keyboard/mouse/joystick) into game controls
+#if defined( __DJGPP__ )	
     G_BuildTiccmd (&localcmds,realtics);
+#else
+    G_BuildTiccmd(&localcmds, realtics, 0);
+#endif
     if (cv_splitscreen.value)
-        G_BuildTiccmd2(&localcmds2,realtics);
+#if defined( __DJGPP__ )	
+      G_BuildTiccmd2(&localcmds2,realtics);
+#else
+      G_BuildTiccmd(&localcmds2, realtics, 1);
+#endif
 
 #ifdef CLIENTPREDICTION2
     if( !paused && localgametic<gametic+BACKUPTICS)

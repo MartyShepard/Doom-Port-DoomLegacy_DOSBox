@@ -99,7 +99,6 @@ void I_GetEvent (void);
 void I_StartFrame (void);
 
 
-
 //
 // Called by D_DoomLoop,
 // called before processing each tic in a frame.

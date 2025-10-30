@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 713 2010-07-27 12:59:55Z smite-meister $
+// $Id: z_zone.c 733 2010-09-02 00:28:16Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -198,7 +198,7 @@ memzone_t	memhead;	// statically allocated mainzone
 #define ZONEID  0x1d4a11
 
 
-void Command_Memfree_f( void );
+void Command_MemInfo_f( void );
 
 
 #if defined(TAGGED_MALLOC) || defined(ZONE_ZALLOC)
@@ -427,7 +427,7 @@ void Z_Init (void)
 #endif
 
     // calls Z_Malloc, so must be last
-    COM_AddCommand ("memfree", Command_Memfree_f);
+    COM_AddCommand ("meminfo", Command_MemInfo_f);
 }
 
 
@@ -635,7 +635,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         {
             // scanned all the way around the list
             //faB: debug to see if problems of memory fragmentation..
-            Command_Memfree_f();
+            Command_MemInfo_f();
 	   
 	    tries ++;
 	    if( tries < 4 ) {
@@ -1184,7 +1184,7 @@ int Z_TagUsage (memtag_e tagnum)
 }
 
 
-void Command_Memfree_f( void )
+void Command_MemInfo_f(void)
 {
     uint32_t freebytes, totalbytes;
 #ifdef PLAIN_MALLOC
