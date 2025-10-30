@@ -101,3 +101,9 @@ rev 702, 703
 Added the WAD inventory and updated VERSION and THINGS.H lumps.
 Small FS fixes in the new funcs introduced after 1.42.
 Fixed and partially updated _doc/fsfuncs.html.
+
+
+*** Backported SDL joystick code from Legacy 2
+rev 714
+Input handling is much cleaner now, but could still be better.
+Linux-specific joystick code removed from sdl/.

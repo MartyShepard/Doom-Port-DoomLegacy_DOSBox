@@ -503,6 +503,20 @@ $(BIN)/$(EXENAME):	$(O) $(OBJS) $(O)/i_main.o
 $(O):
 	@mkdir $(O)
 
+#wad:
+#ifdef WAD
+#	@echo "Building a new legacy.wad using an old version $(WAD)..."
+#	if test ! -d ../wad; then mkdir ../wad; fi
+#	cd ../wad ; \
+#	../bin/wadtool -x $(WAD) ; \
+#	cp ../trunk/resources/* . ; \
+#	../bin/wadtool -c legacy.wad legacy.wad.inventory ; \
+#	mv legacy.wad ../bin/ ; \
+#	rm *.txt *.h *.lmp
+#	@echo "Finished building legacy.wad."
+#else
+#	@echo "Usage: make wad WAD=/path/to/old/legacy.wad"
+#endif
 #dependecy made by gcc itself ! (see makedep.mak for more)
 $(O)/dstrings.o: dstrings.c dstrings.h d_englsh.h
 		redir -o /_GCC/dstrings.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
