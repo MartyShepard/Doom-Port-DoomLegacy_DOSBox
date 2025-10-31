@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: w_wad.c 737 2010-09-03 16:07:27Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -624,7 +624,7 @@ int W_GetNumForName (char* name)
         if (!strcmp(name, "PLAYPAL"))
         {
         //Hurdler: I'm tired of that question ;)
-        I_Error ("Main WAD file not found (do not use doom3.wad or legacy.dat)\n"
+        I_Error ("Main IWAD file not found (do not use legacy.wad).\n"
                  "You need either Doom.wad, Doom1.wad, Doom2.wad,\n"
                  "Tnt.wad, Plutonia.wad, Heretic.wad or Heretic1.wad\n"
                  "from any shareware or commercial version of Doom or Heretic!\n");

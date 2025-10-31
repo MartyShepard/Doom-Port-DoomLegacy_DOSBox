@@ -1167,11 +1167,51 @@ Screen width in pixels.
 Screen height in pixels.
 </td></tr>
 
-<tr><td>usegamma &lt;0-4&gt;</td><td>int</td>
+<tr><td>gamma &lt;0-4&gt;</td><td>int</td>
 <td>
-Choose the gamma level (brightness).
+The original gamma level control (brightness).
+The GAMMA_FUNCS compile option replaces it with other controls.
 </td></tr>
 
+<tr><td>gammafunc &lt;gamma | gamma_black | gamma_bright_black | linear &gt;
+</td><td>int</td>
+<td>
+Select the gamma curve function for controlling display brightness.<br/>
+Gamma is the brightness encoding curve for CRT displays.<br/>
+Gamma_black adds a black level control.<br/>
+Gamma_bright_black has black level and brightness controls.<br/>
+Linear is linear segment approximation, useful for some LCD displays.<br/>
+The function selected enables appropriate control sliders.<br/>
+Requires GAMMA_FUNCS compile option.
+</td></tr>
+
+<tr><td>gamma &lt;-12 - 12 &gt;
+</td><td>int</td>
+<td>
+Fine gamma control for all gamma functions (slider index, not the actual GAMMA value).
+Default is 0, which is no-correction (GAMMA=1.0).<br/>
+Original gamma settings are at (0, -3, -6, -9, -12).<br/>
+See Gamma table in <a href="file:legacy.html#gamma" href> User Reference Manual </a>.<br/>
+Requires GAMMA_FUNCS compile option.
+</td></tr>
+
+<tr><td>black &lt;-12 - 12 &gt;
+</td><td>int</td>
+<td>
+Fine black level control for Gamma_black and Gamma_bright_black functions.
+Adjusts the black end of the curve to get even blacks and grays in dark rooms.<br/>
+Normal is 0.<br/>
+Requires GAMMA_FUNCS compile option.
+</td></tr>
+
+<tr><td>bright &lt;-12 - 12 &gt;
+</td><td>int</td>
+<td>
+Fine brightness control for Gamma_bright_black function.
+Adjusts the bright end of the curve to get evenness in bright lit rooms.<br/>
+Normal is 0.<br/>
+Requires GAMMA_FUNCS compile option.
+</td></tr>
 
 <tr><td>viewsize &lt;3-11&gt;</td><td>int</td>
 <td>

@@ -133,3 +133,8 @@ rev 733
 Some of the console vars and commands have really confusing names
 right now, so a little renaming is in order. To be continued.
 
+
+*** Preparing for 1.44 alpha1
+rev 736, 737
+Small beautification fixes.
+Renamed legacy.dat to legacy.wad (since it is a WAD file).

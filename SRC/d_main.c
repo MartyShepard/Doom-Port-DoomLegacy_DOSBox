@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: d_main.c 741 2010-09-05 12:00:35Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -326,7 +326,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 736; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 741; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -391,9 +391,9 @@ int   legacyhome_len;
 
 #ifdef __MACH__
 //[segabor]: for Mac specific resources
-extern char mac_legacy_wad[FILENAME_SIZE];    //legacy.wad in Resources
-extern char mac_md2_wad[FILENAME_SIZE];		//md2.dat in Resources
-extern char mac_user_home[FILENAME_SIZE];		//for config and savegames
+extern char mac_legacy_wad[FILENAME_SIZE];  // legacy.wad in Resources
+extern char mac_md2_wad[FILENAME_SIZE];	    // md2.wad in Resources
+extern char mac_user_home[FILENAME_SIZE];   // for config and savegames
 #endif
 
 //
@@ -1504,9 +1504,9 @@ void IdentifyVersion()
     D_AddFile(legacywad);  // So can replace some graphics with Legacy ones.
     if( gamedesc.gameflags & GD_iwad_pref )
     {
-       // Because legacy.dat replaced some things it shouldn't, give the iwad
+       // Because legacy.wad replaced some things it shouldn't, give the iwad
        // preference from both search directions.
-       // Chexquest1: legacy.dat was replacing the green splats, with bloody ones.
+       // Chexquest1: legacy.wad was replacing the green splats, with bloody ones.
        D_AddFile(pathiwad);
     }
     if( gamedesc.support_wad )
@@ -1612,8 +1612,12 @@ void D_CheckWadVersion()
     }
     if (wadversion < min_wadversion || wadversion > max_wadversion)
     {
-        I_Error("Your legacy.wad file is version %d.%d, you need version %d.%d\n" "Use the legacy.wad that came in the same zip file as this executable.\n" "\n"
-                "Use -nocheckwadversion to remove this check,\n" "but this can cause Legacy to hang\n", wadversion / 100, wadversion % 100, min_wadversion / 100, min_wadversion % 100);
+        I_Error("Your legacy.wad file is version %d.%d, you need version %d.%d\n"
+		"Use the legacy.wad that came in the same archive as this executable.\n"
+		"\n"
+                "Use -nocheckwadversion to remove this check,\n"
+		"but this can cause Legacy to crash.\n",
+		wadversion / 100, wadversion % 100, min_wadversion / 100, min_wadversion % 100);
     }
 }
 
@@ -1654,7 +1658,7 @@ void D_DoomMain()
     if (M_CheckParm("--help") || M_CheckParm("-h"))
     {
       printf("%s\n", legacy);
-      printf("Usage: legacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
+      printf("Usage: doomlegacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
       exit(0);
     }
 
@@ -1927,6 +1931,9 @@ void D_DoomMain()
 #if defined( __DJGPP__ )		
     CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
+    // now initialised automatically by use_joystick var code
+    //CONS_Printf (text[I_INIT_NUM]);
+    //I_InitJoystick ();		
 #endif
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;

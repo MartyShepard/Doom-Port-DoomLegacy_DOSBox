@@ -1079,7 +1079,7 @@ Because of longer names the code got larger.
 Running it through strip, removing the symbols, shows the true code size.
 
 *** w58_visplane_naming
-patchfile = w57_visplane_naming.patch
+patchfile = w58_visplane_naming.patch
 - committed revision 721   by wesley johnson
 Preparation for attacking 3Dfloor sprite bug.
 Naming changes, spacing, etc.
@@ -1089,3 +1089,24 @@ Standardize some strange function declarations.
 Many comments added.
 No logic changes.
 
+*** w58_visplane_revision
+patchfile = w58_visplane_revision.patch
+- committed revision 722   by wesley johnson
+Preparation for attacking 3Dfloor sprite bug.
+Small changes here and there to clarify code.
+Simplified R_ExpandPlane, it was copied from CheckPlane and mostly
+irrelevant.
+Floor rover renamed to fff, and bff, which changes many lines, but makes
+it clearer which is which.
+
+*** w58_missed_stuff
+patchfile = w58_missed_stuff.patch
+- committed revision 726   by wesley johnson
+Some local renames and comments that belonged with w58 that were missed.
+
+*** w59_whatsnew
+patchfile = w58_whatsnew.patch
+- committed revision 738   by wesley johnson
+Update whatsnew.html with new features, bug fixes, and known bugs from
+my notes.
+Update legacy.html with gamma table.

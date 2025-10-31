@@ -18,8 +18,15 @@
 
 <h3>FEATURES</h3>
 <ul>
-<li>Gamma generation: Gamma table is generated from two setpoint
-   controls, each of which has 25 positions.</li>
+<li>Gamma generation: Gamma table is generated from the selected gamma
+    function <br/>
+    (Gamma, Gamma_black, Gamma_bright_black, Linear).<br/>
+    The Gamma function has 25 gamma setpoints.<br/>
+    The Gamma_black function has gamma and black level controls.<br/>
+    The Gamma_bright_black function has gamma, black level, and bright
+    level controls.<br/>
+    The Linear function has two setpoint controls, each of which has 25
+    positions.</li>
 <li>Door delay: Option control that slows doors by x1.5, x2, etc.
    so that player has more time to get through them.</li>
 <li>SoftError: Many hard errors (fatal) have been changed to soft errors,
@@ -29,19 +36,55 @@
    Doom, that many wads made use of to trigger linedef actions.
    Extra player1 starts now create voodoo dolls, with the last being the
    actual player1 start position.</li>
-<li> Demo fixes.  Demos that Legacy cannot play back are now recognized
+<li>Demo fixes.  Demos that Legacy cannot play back are now recognized
    and rejected, so they do not crash the engine.</li>
+<li>Z_Malloc allocation compile options, user selectable in z_zone.c.<br/>
+PLAIN_MALLOC: Large memory, no reclaimation.<br/>
+TAGGED_MALLOC: Will free allocations according to tags kept in the allocations.<br/>
+ZONE_ZALLOC: Improved version of original zone allocation.  Allocates
+from large pre-allocation of memory, with tags, and frees allocations
+according to tags. <br/>
+GROW_ZONE: Option on ZONE_ZALLOC that grows the memory usage when free
+blocks cannot be found.  This is the default now. <br/>
+AGGRESSIVE_PURGE: Option on ZONE_ZALLOC that aggressively purges
+downgraded allocations instead of leaving them as cache.
+Mostly for testing memory usage code, but also usable for small memory.<br/></li>
+<li>Texture generation now handles multi-patch transparent
+textures. The code selects between three rendering methods, one of
+which creates a single patch transparent 2-sided texture from the source
+multi-patch texture.<br/>
+This now software renders the gates in Phobia.wad correctly.</li>
+<li>Game determination characteristics and parameters are now in one table.
+This allows special game wads to be added easily without errors.  The table
+specifies a Legacy support wad for the specific game that will now be
+automatically loaded (none exist yet).</li>
+<li>Savegame format now has a header that specifies the name, map
+number, time, the wad, and the command line switches.  The savegame
+display shows the name, map, and time.  Upon loading the savegame must
+match the current wad.</li>
+<li>Savegame format now records the endian and word size.  Loading now
+detects these and other critical parameters to intercept incompatible
+savegames.</li>
+<li>Savegame now allows up to 99 savegames in one directory.
+This is a compile option.</li>
+<li>Savegame now supports savegame directories.  You can have a
+separate savegame directory for each wad.  This is a compile
+option.</li>
+<li>Hardware renderer now can display Boom colormaps.</li>
+<li>Hardware renderer now has lighting level variation with colormaps.</li>
+<li>Chexquest support is enhanced.  The Doom pictures that are in the
+Chexquest wad are now blocked when in Chexquest game mode, along with
+blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 
 <li>Full international keyboard support (SDL).</li>
 <li>New joystick/gamepad code, should support all modern controllers (SDL).</li>
-<li>New save system.</li>
 <li>New FS functions.</li>
 <li>Audio output samplerate raised to 22 kHz.</li>
-<li>ENDOOM lump updated with current information.</li>
 </ul>
 
 <h3>BUG FIXES</h3>
 <ul> 
+<li>ENDOOM lump updated with current information.</li>
 <li>Build process brought up to date: Automatic dependecy generation,
   serious Makefile cleanup, SDL as the default multimedia interface,
   LOTS of compile-time warnings fixed.</li>
@@ -54,21 +97,129 @@
 <li> ZALLOC memory management fixed.  It had a latent bug that would
    corrupt memory management for some aligned allocations.  It also
    allocates more memory now, so larger levels can be handled.</li>
-<li> Heretic save game fixed so that it does not use up an inventory
-   item.</li>
-<li> Heretic sound fixed.  Heretic uses a different naming scheme
-   for sound effects.</li>
+<li> ZALLOC memory users fixed to protect their in-use allocations against
+accidental purging by other memory allocation calls.
+Added new classes of allocation tags and code to protect them.
+This fixed several bugs that would hit only certain wads.
+<li> Z_Malloc tagging improvements to give cache preference to expensive
+combined multi-patch textures. </li>
+<li>Fixed memory leak when purging sectors at end of level.</li>
 <li> Time tick fixed so that it can handle time count overflow and wrapping.</li>
-
+<li>Replaced all uses of gets library function with fgets, which is
+much safer.</li>
+<li>New endian conversions, uses standardized, with most uses moved to
+wad reading functions, so should be endian-safe now (Mac users). </li>
 <li>Several vsprintf/vsnprintf-related potential crashing bugs fixed
-  in the console code.</li>
+in the console code.</li>
+<li>Fixed bug where life and ammo status would have bad background after
+a save game.</li>
+<li>Fixed bug where things can overdraw the status bar.
+Added limit checks where things are split by a Legacy 3D floor.</li>
+<li>Fixed sound to work on both old SDL mixers (non-functional RWOPS) and new SDL with
+a working RWOPS. The SDL mixer version is detected at compile time.</li>
+<li> Heretic save game fixed so that it does not use up an inventory
+item.</li>
+<li> Heretic sound fixed.  Heretic uses a different naming scheme
+for sound effects.</li>
+<li>Fixed the bug that was triggered by the big room in 3DHorror.wad.
+Limited the span code to valid span ranges, so such situations cannot
+accidently cause it to overwrite several arrays and other static memory.</li>
+<li>Prevent having a segfault for some wads with minor flaws,
+like using a Boom linedef 244 instead of 242.  Tests the b-nodes index
+for being valid before using.</li>
+<li>Fixed Phobia segfaults due to a texture with one small patch.</li>
+<li>Fixed segfaults from low level draw clipping exceeding the bounds
+of an array.  The callers are fixed to limit the width drawn.</li>
+<li>Wads with missing sprites will no longer cause segfaults.</li>
+<li>Fixed the fighting code to test some target ptrs before using them. This
+prevents segfaults during heavy monster in-fighting.</li>
+<li>Fix large vertical bars drawn in Phobia.wad map07.  Software rendering
+calculations were overflowing due to the extreme height and depth of
+that room.</li>
+<li>Fixed clipping artifacts seen in Twilight.wad.  Limit the x range
+earlier so do not exceed the screen width.</li>
+<li>Fixed Dehacked segfaults due to trying to overwrite const strings.
+Some compilers allow that, but not GCC on Linux.</li>
+<li>Hardware renderer fixed to use some of the same code fixes as the software
+render for things like 3Dfloor lighting.  The hardware renderer now
+correctly lights things under 3D floors.</li>
+<li>Prevent segfault when 3Dfloor does not have a side texture.</li>
+<li>Display fog sheet in software renderer.</li>
+<li>Sprites behind a transparent wall are now displayed by hardware
+renderer.
+<li>Fixed Medikit bug, from DoomWiki known Doom bugs list.</li>
+<li>Fixed ouch-face bug, from DoomWiki known Doom bugs list.</li>
+<li>Fixed blaze-door bug, from DoomWiki known Doom bugs list.</li>
+<li>Fixed monster-attacks-self bug, from DoomWiki known bugs list.</li>
+<li>Fixed boss-death bug, from DoomWiki known bugs list.</li>
+<li>Fixed sleeping-sargeant bug, from DoomWiki known bugs list.</li>
+<li>Finished buildstairs bug fix, from DoomWiki known bugs list.</li>
+<li>Display Chexquest goo splats, instead of the bloody splats from the
+legacy data wad.  Chexquest table entry specifies that Chexquest wad
+has precedence.</li>
+<li>Fixed segfault due to lightlist bad value, seen in Chexquest-newmaps.</li>
+<li>Centered the scope crosshairs in Chexquest-newmaps.  They were off
+to the left for some screen resolutions.</li>
+<li>Allow Chexquest-newmaps to access more than the 5 maps that
+Chexquest had.  Use of the "-file" switch on command line allows all maps
+to be accessed.</li>
+<li>Fixed savegame code to handle more than 1023 thinkers.  The hth2.wad
+saves 1899 thinkers.</li>
+<li>Number of colormaps increased to 64. The hth2.wad has 38
+colormaps.</li>
+<li>Detect some buggy wad conditions and recover or gracefully
+exit.  Detects bad linedef number, missing sidedefs, bad sector
+number, bad seg number.</li>
+<li>Fixed math overflow for large maps like Europe.wad MAP01 (which really is too
+large, but plays now).  One corner of Europe.wad is beyond the blockmap
+and walls there are walk-thru.</li>
+<li>Fixed blockmap loading to deal with large maps like Europe.wad, which
+overflows the blockmap numbering x3.  The code now detects the
+overflow and adds the missing upper bits of the blockmap numbering.</li>
+<li>Fixed the automap to handle large maps like Europe.wad.  Math
+overflows are detected and the automap zoom is limited to avoid them.</li>
+<li>Fixed the automap to track the center of attention instead of the
+corner of the window.  This keeps the map centered when zooming.</li>
+
 </ul>
 
+<h3>KNOWN BUGS</h3>
+<ul>
+<li>Sprites that fail to draw over the floor due to too many 3D floors
+close together.  Seen in hth2.wad.  Caused by the height of the nearby
+railing affecting the sorting of the sprite relative to the floor.
+Fixes to 3D depth sorting are already being investigated.</li>
+<li>When walking into water, when the eyes are right at the water
+level, it will display bad clipping above and below the water level.
+Occurs for both software renderer and the hardware renderer.
+A fixable cause has not been discovered yet.</li>
+<li>Too many sprites cause random sprites to be ignored.  This is the
+usual sprite limitation and removing it has been assigned.</li>
+<li>Under Linux the SDL port code works.  The non-SDL port to X-Windows has
+problems with screen modes that cause it to fail.</li>
+<li>Corona on lights are misplaced when the wad replaces the sprite
+and the bright spot position is different.  The Corona positions are from
+measuring the original doom sprite bright spot positions.</li>
+<li>Corona on far light is drawn over nearby solid object that
+partially blocks the view of the far light.</li>
+<li>The field-of-view clipping is clipping polygons at the edge of
+vision as if the player were looking straight ahead.  This has not
+been fixed yet for player looking up and down.</li>
+<li>The hardware renderer BSP traversal is having rounding errors
+from sector splitting that show up as cracks in the floor.</li>
+<li>The hardware renderer is getting HOM on some small textures that
+the software renderer is displaying correctly.  These are very hard to
+find and see.
+See FreeDoom MAP01, halfway down the stairs.
+The side of the light support is HOM.
+A silver strip on the wall has a matching shadow on the ceiling and floor that is HOM.</li>
+</ul>
 
 <h2>1.43 Beta (2004-06-14)</h2>
  
 <h3>TODO</h3>
-This release was for Mac OS X only.
+This release was primarily for Mac OS X, but had some small fixes that
+were carried into 1.44.
 
 
 <h2>1.42 (2004-04-18)</h2>

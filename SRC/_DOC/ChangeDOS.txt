@@ -1,6 +1,13 @@
 * Not need to Compile.
 
-[00733*]: created a directory for the more technical docs to hide them from typical users
+[00741 ]: share wadtool source from Legacy2 using svn:externals
+[00740*]: CSS synchronized with website
+[00739*]: wadtool updated
+[00738*]: WDJ update whatsnew features, bugs, known bugs
+[00737 ]: legacy.dat => legacy.wad
+[00736 ]: Small random fixes, release 1.44 alpha1.
+[00735*]: changelog updated
+[00734*]: created a directory for the more technical docs to hide them from typical users
 [00733 ]: consvar/command update
 [00732*]: console docs beautified
 [00731*]: user reference manual almost done

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: m_swap.h 741 2010-09-05 12:00:35Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -118,7 +118,7 @@ int32_t swap_int32( uint32_t x);
 # define LE_SWAP32(x)  (x)
 
 # define BE_SWAP16_FAST(x)  SWAP_INT16_FAST(x)
-# define BE_SWAP32_FAST(x)  SWAP_INT16_FAST(x)
+# define BE_SWAP32_FAST(x)  SWAP_INT32_FAST(x)
 //# define BE_SWAP16(x)  swap_int16(x)
 //# define BE_SWAP32(x)  swap_int32(x)
 

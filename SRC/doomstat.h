@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 725 2010-08-17 18:53:25Z smite-meister $
+// $Id: doomstat.h 737 2010-09-03 16:07:27Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -144,7 +144,7 @@ typedef struct
 
 enum gameflags_e {
    GD_idwad       = 0x01, // one of the commercial/shareware wads by id or Raven
-   GD_iwad_pref   = 0x02, // load the iwad after legacy.dat to give it preference
+   GD_iwad_pref   = 0x02, // load the iwad after legacy.wad to give it preference
    GD_unsupported = 0x08, // unsupported game type
 };
 

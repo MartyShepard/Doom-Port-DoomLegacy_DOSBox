@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: p_mobj.c 737 2010-09-03 16:07:27Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2163,7 +2163,7 @@ boolean PTR_BloodTraverse(intercept_t * in)
 	}
         else
         {
-	    // BLUDC0 from wad or legacy.dat, green splat for chexquest
+	    // BLUDC0 from wad or legacy.wad, green splat for chexquest
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLUDC0", z, frac, SPLATDRAWMODE_TRANS);
 	}
         return false;
