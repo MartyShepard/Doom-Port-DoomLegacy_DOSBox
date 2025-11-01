@@ -141,12 +141,13 @@ Renamed legacy.dat to legacy.wad (since it is a WAD file).
 
 
 *** Windows/SDL fixes
-rev 743
+rev 743, 744
 The __WIN32__ macro was used in lots of conditionals for things specific
-to the WinAPI version, yet they are unapplicable to the Windows SDL
+to the WinAPI version, yet they are unapplicable to the Windows/SDL
 version. Replaced them with the macro WIN_NATIVE_PLACEHOLDER if we
-ever need a native WinAPI version.
+ever need a Windows/WinAPI version.
 Likewise, removed lots of inappropriate uses of the LINUX macro (which
 actually means "UNIX-like"...)
 Removed VID_PrepareModeList from the video interface, it doesn't need to be exposed.
-
+Modified the Makefile to include a platform option, Linux/SDL and
+Windows/SDL both compile and link.

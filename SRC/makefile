@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 742 2010-09-06 13:23:06Z smite-meister $
+# $Id: Makefile 744 2010-09-16 14:05:59Z smite-meister $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -77,7 +77,8 @@ endif
   # std=c89, does not support // commments, no inline, no asm
 
 # gcc or g++
-CC=gcc
+#CC=gcc
+CC=i586-mingw32msvc-gcc
 
 # End of User tunable settings
 
@@ -106,32 +107,24 @@ ifeq ($(SMIF), SDL)
     $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o \
     $(O)/r_opengl.o $(O)/ogl_sdl.o $(O)/hwsym_sdl.o
 
+# platform
+  ifdef WIN32
+    # Windows (MinGW)
+    OPTS := -DWIN32
+    LIBS := -lopengl32 -lglu32 -lwsock32
+  else
+    # default is Linux
+    OPTS := -DLINUX
+    LIBS := -lGL -lGLU
+  endif
 
-  OPTS := -DLINUX -DHWRENDER -DSDL $(shell sdl-config --cflags) -I.
-  LDFLAGS=-L/usr/X11R6/lib
-
-  LIBS := -lm -lpthread -lGL -lGLU $(shell sdl-config --libs)
-  DEBUGLIBS := $(LIBS)
+  OPTS += -DHWRENDER -DSDL $(shell sdl-config --cflags) -I.
+  LIBS += $(shell sdl-config --libs)
 
   ifdef HAVE_MIXER
     OPTS += -DHAVE_MIXER
     LIBS += -lSDL_mixer 
   endif
-
-
-#  ifdef FBSD_SDL
-# extras for FreeBSD/SDL
-#    LIBS += -lipx -lkvm
-#  endif
-
-#  ifdef SOLARIS_SDL
-# extras for Solaris/SDL
-#    OPTS += -DBSD_COMP -DSOLARIS 
-#    LIBS    +=  -lsocket -lnsl
-#  endif
-
-
-  SFLAGS := -g $(OPTS)
 
 # name of the exefile
   EXENAME := doomlegacy
@@ -297,25 +290,25 @@ ifdef USEASM
 endif
 
 
-
 # compiler and linker flags
+CFLAGS = $(WFLAGS)
+
 ifdef PROFILEMODE
 # build with gprof profiling information
-  CFLAGS = -g -pg -fomit-frame-pointer
+  CFLAGS += -g -pg -fomit-frame-pointer
 else
 ifdef DEBUG
 # No -fomit-frame-pointer because debugging on some machines depends upon it.
-  #CFLAGS =  -g3 -O0
-  CFLAGS = $(DEBUGFLAGS) -fno-guess-branch-probability
+  #CFLAGS += -g3 -O0
+  CFLAGS += $(DEBUGFLAGS) -fno-guess-branch-probability
 else
 # build a normal optimized version
-  #CFLAGS = -O3
-  CFLAGS = $(OPTLEV) -fomit-frame-pointer
+  #CFLAGS += -O3
+  CFLAGS += $(OPTLEV) -fomit-frame-pointer
 endif
 endif
 
-CFLAGS += $(WFLAGS) $(OPTS) -ffast-math -fno-strict-aliasing
-
+CFLAGS += -ffast-math -fno-strict-aliasing $(OPTS)
 
 
 

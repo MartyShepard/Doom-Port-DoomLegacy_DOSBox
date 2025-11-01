@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: console.c 744 2010-09-16 14:05:59Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -633,7 +633,7 @@ boolean CON_Responder(event_t *ev)
 static char    completion[80];
 static int     comskips,varskips;
 
-    char   *cmd;
+    char *cmd = NULL;
 
     if(chat_on)
         return false; 
@@ -993,6 +993,7 @@ void CON_Print (char *msg)
 
     }
 }
+
 
 //  Console print! Wahooo! Lots o fun!
 //
