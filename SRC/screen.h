@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: screen.h 745 2010-09-16 16:28:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -167,8 +167,6 @@ extern void     (*transtransfunc) (void); // SSNTails 11-11-2002
 extern viddef_t vid;
 extern int      setmodeneeded;     // mode number to set if needed, or 0
 
-extern boolean  fuzzymode;
-
 
 extern int      scr_bpp;
 extern byte*    scr_borderpatch;   // patch used to fill the view borders
@@ -179,6 +177,8 @@ extern consvar_t cv_scr_depth;
 extern consvar_t cv_fullscreen;
 // wait for page flipping to end or not
 extern consvar_t cv_vidwait;
+
+extern consvar_t cv_fuzzymode;
 
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*skydrawerfunc[2]) (void);

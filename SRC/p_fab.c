@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: p_fab.c 745 2010-09-16 16:28:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -216,7 +216,7 @@ void Translucency_OnChange(void)
 {
     if( cv_translucency.value==0 )
         reset_translucent = true;
-    if (!fuzzymode)
+    if (!cv_fuzzymode.value)
         P_SetTranslucencies();
     reset_translucent = false;
 }

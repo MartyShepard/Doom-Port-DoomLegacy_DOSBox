@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: screen.c 745 2010-09-16 16:28:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -114,9 +114,11 @@ viddef_t  vid;
 int       setmodeneeded;     //video mode change needed if > 0
                              // (the mode number to set + 1)
 
-// TO DO!!! make it a console variable !!
-boolean   fuzzymode=false;   // use original Doom fuzzy effect instead
-                             // of translucency
+
+// use original Doom fuzzy effect instead of translucency?
+void CV_Fuzzymode_OnChange();
+consvar_t   cv_fuzzymode = {"fuzzymode", "Off", CV_SAVE | CV_CALL, CV_OnOff, CV_Fuzzymode_OnChange};
+
 
 CV_PossibleValue_t scr_depth_cons_t[]={{8,"8 bits"}, {16,"16 bits"}, {24,"24 bits"}, {32,"32 bits"}, {0,NULL}};
 
@@ -176,7 +178,6 @@ void SCR_SetMode (void)
         hcolfunc = R_DrawHColumn_8;
 #endif
 
-        fuzzcolfunc = (fuzzymode) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
         transcolfunc = R_DrawTranslatedColumn_8;
         shadecolfunc = R_DrawShadeColumn_8;  //R_DrawColumn_8;
         spanfunc = basespanfunc = R_DrawSpan_8;
@@ -188,16 +189,14 @@ void SCR_SetMode (void)
         skydrawerfunc[0] = R_DrawColumn_8;      //old skies
         skydrawerfunc[1] = R_DrawSkyColumn_8;   //tall sky
     }
-    else
-    if (vid.bpp>1)
+    else if (vid.bpp>1)
     {
         CONS_Printf ("using highcolor mode\n");
 
         colfunc = basecolfunc = R_DrawColumn_16;
 
-        fuzzcolfunc = (fuzzymode) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
         transcolfunc = R_DrawTranslatedColumn_16;
-                shadecolfunc = NULL;      //detect error if used somewhere..
+	shadecolfunc = NULL;      //detect error if used somewhere..
         spanfunc = basespanfunc = R_DrawSpan_16;
 
                 // No 16bit operation for this function SSNTails 11-11-2002
@@ -210,10 +209,24 @@ void SCR_SetMode (void)
     else
         I_Error ("unknown bytes per pixel mode %d\n", vid.bpp);
 
+    // set fuzzcolfunc
+    CV_Fuzzymode_OnChange();
+
     // set the apprpriate drawer for the sky (tall or short)
 
     setmodeneeded = 0;
 }
+
+
+// change drawer function when fuzzymode is changed
+void CV_Fuzzymode_OnChange()
+{
+  if (vid.bpp == 1)
+    fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
+  else if (vid.bpp > 1)
+    fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
+}
+
 
 
 //  do some initial settings for the game loading screen

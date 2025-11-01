@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 744 2010-09-16 14:05:59Z smite-meister $
+# $Id: Makefile 745 2010-09-16 16:28:07Z smite-meister $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -77,8 +77,7 @@ endif
   # std=c89, does not support // commments, no inline, no asm
 
 # gcc or g++
-#CC=gcc
-CC=i586-mingw32msvc-gcc
+CC=gcc
 
 # End of User tunable settings
 

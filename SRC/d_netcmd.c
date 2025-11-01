@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: d_netcmd.c 745 2010-09-16 16:28:07Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -455,6 +455,7 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_scr_depth);
     CV_RegisterVar(&cv_scr_width);
     CV_RegisterVar(&cv_scr_height);
+    CV_RegisterVar(&cv_fuzzymode);
     CV_RegisterVar(&cv_fragsweaponfalling);
 
     // add cheat commands, I'm bored of deh patches renaming the idclev ! :-)

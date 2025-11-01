@@ -151,3 +151,9 @@ actually means "UNIX-like"...)
 Removed VID_PrepareModeList from the video interface, it doesn't need to be exposed.
 Modified the Makefile to include a platform option, Linux/SDL and
 Windows/SDL both compile and link.
+
+
+*** Fuzzymode consvar
+rev 745
+Added a consvar for choosing between the original (fuzziness) and new
+(transparency) partial invisibility effect.
