@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.h 637 2010-05-08 21:21:08Z wesleyjohnson $
+// $Id: m_fixed.h 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,10 +55,10 @@
 #ifndef __M_FIXED__
 #define __M_FIXED__
 
+#include <stdlib.h>
+
 #include "doomtype.h"
 
-
- #include <stdlib.h>
 
 //
 // Fixed point, 32bit as 16.16.

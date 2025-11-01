@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: v_video.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -423,10 +423,7 @@ void V_SetPalette(int palettenum)
 #ifdef HWRENDER
     if (rendermode != render_soft)
         HWR_SetPalette(&pLocalPalette[palettenum * 256]);
-#ifdef LINUX
-    else        // Hurdler: is it only necessary under win32 for startup ?
-        // BP: yes
-#endif
+    else
 #endif
         I_SetPalette(&pLocalPalette[palettenum * 256]);
 }
@@ -437,10 +434,7 @@ void V_SetPaletteLump(char *pal)
 #ifdef HWRENDER
     if (rendermode != render_soft)
         HWR_SetPalette(pLocalPalette);
-#ifdef LINUX
-    else        // Hurdler: is it only necessary under win32 for startup ?
-        // BP: yes
-#endif
+    else
 #endif
         I_SetPalette(pLocalPalette);
 }
@@ -557,7 +551,7 @@ void V_CopyRect(int srcx, int srcy, int srcscrn, int width, int height, int dest
     }
 }
 
-#if !defined(USEASM) || defined(WIN32)
+#if !defined(USEASM) || defined(WIN_NATIVE_PLACEHOLDER)
 // --------------------------------------------------------------------------
 // Copy a rectangular area from one bitmap to another (8bpp)
 // srcPitch, destPitch : width of source and destination bitmaps

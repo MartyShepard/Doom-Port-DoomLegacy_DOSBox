@@ -71,10 +71,8 @@
 #include "console.h"
 #include "i_joy.h"
 
-#if !defined( __DJGPP__ )
 int num_joybindings = 0;
 joybinding_t joybindings[MAX_JOYBINDINGS];
-#endif
 
 
 CV_PossibleValue_t mousesens_cons_t[]={{1,"MIN"},{MAXMOUSESENSITIVITY,"MAXCURSOR"},{MAXINT,"MAX"},{0,NULL}};
@@ -171,6 +169,12 @@ void  G_MapEventsToControls (event_t *ev)
 				#endif
         break;
 
+		  #if defined( __DJGPP__ )
+      case ev_joystick:        // buttons are virtual keys
+        joyxmove = ev->data2;
+        joyymove = ev->data3;
+        break;
+			#endif
       default:
         break;
 
@@ -665,8 +669,6 @@ void Command_Setcontrol2_f(void)
     setcontrol(gamecontrolbis,na);
 }
 
-#if !defined( __DJGPP__ )
-
 //! Magically converts a console command to a joystick axis binding. Also releases bindings.
 void Command_BindJoyaxis_f()
 {
@@ -705,11 +707,14 @@ void Command_BindJoyaxis_f()
   }
 
   j.axisnum = (na >= 3) ? atoi(COM_Argv(2)) : -1;
+
+	#if !defined( __DJGPP__ )	
   if(j.axisnum < -1 || j.axisnum >= I_JoystickNumAxes(j.joynum)) {
     CONS_Printf("Attempting to bind/release non-existent axis %d.\n", j.axisnum);
     return;
   }
-
+	#endif
+	
   if (na == 3)
   { // release binding(s)
     /* Takes one or two parameters. The first one is the joystick number
@@ -779,4 +784,3 @@ void Command_BindJoyaxis_f()
       CONS_Printf("Maximum number of joystick bindings reached.\n");
   }
 }
-#endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 713 2010-07-27 12:59:55Z smite-meister $
+// $Id: i_video.h 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -80,9 +80,6 @@ void VID_Pause(int pause);
 
 int   VID_NumModes(void);
 char  *VID_GetModeName(int modenum);
-#ifdef LINUX
-void VID_PrepareModeList(void); // FIXME: hack, we should avoid those #ifdef LINUX
-#endif
 
 void I_UpdateNoBlit (void);
 void I_FinishUpdate (void);
@@ -92,6 +89,4 @@ void I_WaitVBL(int count);
 
 void I_ReadScreen (byte* scr);
 
-void I_BeginRead (void);
-void I_EndRead (void);
 #endif

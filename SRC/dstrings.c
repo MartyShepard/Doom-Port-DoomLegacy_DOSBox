@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: dstrings.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -84,10 +84,10 @@ char *text[NUMTEXT] = {
     "you can't end a netgame!\n\npress a key.",
     "are you sure you want to end the game?\n\npress y or n.",
 
-#ifdef LINUX
+#if !defined( __DJGPP__ )
     "%s\n\n(press y to quit Doom Legacy)",
 #else
-    "%s\n\n(press y to quit to dos.)",
+    "%s\n\n(press y to quit to DOS.)",
 #endif
 
     "High detail",
@@ -420,11 +420,11 @@ char *text[NUMTEXT] = {
     "are you sure you want to\nquit this great game?",
     "please don't leave, there's more\ndemons to toast!",
     "let's beat it -- this is turning\ninto a bloodbath!",
-#ifdef LINUX
+#if !defined( __DJGPP__ )
     "i wouldn't leave if i were you.\nyour window manager is much worse.",
     "you're trying to say you like\nlinux better than me, right?",
 #else
-    "i wouldn't leave if i were you.\ndos is much worse.",
+    "i wouldn't leave if i were you.\nDOS is much worse.",
     "you're trying to say you like dos\nbetter than me, right?",
 #endif
     "don't leave yet -- there's a\ndemon around that corner!",
@@ -433,10 +433,10 @@ char *text[NUMTEXT] = {
 
     // QuitDOOM II messages
     "you want to quit?\nthen, thou hast lost an eighth!",
-#ifdef LINUX
+#if !defined( __DJGPP__ )
     "don't go now, there's a \ndimensional shambler waiting\nat the shell prompt!",
 #else
-    "don't go now, there's a \ndimensional shambler waiting\nat the dos prompt!",
+    "don't go now, there's a \ndimensional shambler waiting\nat the DOS prompt!",
 #endif
     "get outta here and go back\nto your boring programs.",
     "if i were your boss, i'd \n deathmatch ya in a minute!",

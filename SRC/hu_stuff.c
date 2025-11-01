@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: hu_stuff.c 742 2010-09-06 13:23:06Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -454,7 +454,7 @@ boolean HU_Responder (event_t *ev)
     }
   else
     {
-      char c = ev->data2; // character
+      int c = ev->data2; // character
 
       // send a macro
       if (altdown)

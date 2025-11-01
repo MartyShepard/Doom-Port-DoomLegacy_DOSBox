@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 741 2010-09-05 12:00:35Z smite-meister $
+// $Id: d_main.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -242,21 +242,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifdef LINUX
-#include <sys/stat.h>
-#include <sys/types.h>
-#endif
 
 #ifndef __WIN32__
 #include <unistd.h>     // for access
+#define _MAX_PATH   MAX_WADPATH
 #else
 #include <direct.h>
 #endif
-#include <fcntl.h>
 
-#ifdef __OS2__
-#include "I_os2.h"
-#endif
 
 #include "doomdef.h"
 
@@ -326,13 +319,12 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 741; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 743; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
-// Legacy 144 still uses legacy.wad version 142
-static int min_wadversion = 142;
+static int min_wadversion = 144;
 
 
 //
@@ -348,10 +340,6 @@ void HereticPatchEngine(void);
 
 void D_PageDrawer(char *lumpname);
 void D_AdvanceDemo(void);
-
-#ifdef LINUX
-void VID_PrepareModeList(void); // FIXME: very dirty; will use a proper include file
-#endif
 
 char * startupwadfiles[MAX_WADFILES];
 
@@ -455,9 +443,6 @@ void D_ProcessEvents(void)
 //  draw current display, possibly wiping it from the previous
 //
 
-#ifdef __WIN32__
-void I_DoStartupMouse(void);    //win_sys.c
-#endif
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 // added comment : there is a wipe each change of the gamestate
@@ -649,7 +634,8 @@ void D_Display(void)
 
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
-#ifdef HWRENDER // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
+#if !defined( __DJGPP__ )
+    // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
     // Exl: draw a faded background
 	if (fadealpha != 0 && rendermode != render_soft)
 		HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
@@ -810,11 +796,7 @@ void D_DoomLoop(void)
         else if (rendertimeout < entertic)      // in case the server hang or netsplit
             D_Display();
 
-        // Win32 exe uses DirectSound..
-#if !defined( __WIN32__) && !defined( __OS2__)
-        //
         //Other implementations might need to update the sound here.
-        //
 #ifndef SNDSERV
         // Sound mixing for the buffer is snychronous.
         I_UpdateSound();
@@ -825,7 +807,6 @@ void D_DoomLoop(void)
         I_SubmitSound();
 #endif
 
-#endif //__WIN32__
         // check for media change, loop music..
         I_UpdateCD();
 
@@ -1037,11 +1018,6 @@ void D_AddFile(char *file)
     startupwadfiles[numwadfiles] = newfile;
 }
 
-#ifdef __WIN32__
-#define R_OK    0       //faB: win32 does not have R_OK in includes..
-#elif !defined( __OS2__)
-#define _MAX_PATH   MAX_WADPATH
-#endif
 
 
 // ==========================================================================
@@ -1686,14 +1662,16 @@ void D_DoomMain()
             userhome = M_GetNextParm();
         else
             userhome = getenv("HOME");
-#ifdef LINUX
+
         if (!userhome)
         {
+#if !defined( __DJGPP__ )
             I_SoftError("Please set $HOME to your home directory, or use -home switch\n");
 	    // use current directory and defaults, no HOME
 	    // no good alternative
-	}
 #endif
+	}
+
 #ifdef __MACH__
 	//[segabor] ... ([WDJ] MAC port has vars handy)
 	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
@@ -1932,8 +1910,8 @@ void D_DoomMain()
     CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
     // now initialised automatically by use_joystick var code
-    //CONS_Printf (text[I_INIT_NUM]);
-    //I_InitJoystick ();		
+    CONS_Printf (text[I_INIT_NUM]);
+    I_InitJoystick ();		
 #endif
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
@@ -1971,10 +1949,6 @@ void D_DoomMain()
     HU_HackChatmacros();
     //--------------------------------------------------------- CONFIG.CFG
     M_FirstLoadConfig();        // WARNING : this do a "COM_BufExecute()"
-
-#ifdef LINUX
-    VID_PrepareModeList();      // Regenerate Modelist according to cv_fullscreen
-#endif
 
     // set user default mode or mode set at cmdline
     SCR_CheckDefaultMode();

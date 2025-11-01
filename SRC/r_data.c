@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 690 2010-06-21 16:53:08Z wesleyjohnson $
+// $Id: r_data.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -120,6 +120,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <malloc.h>
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "i_video.h"
@@ -132,9 +134,6 @@
 #include "p_setup.h" //levelflats
 #include "v_video.h" //pLocalPalette
 
-#ifdef __WIN32__
-#include "malloc.h"
-#endif
 
 // [WDJ] debug flat
 //#define DEBUG_FLAT

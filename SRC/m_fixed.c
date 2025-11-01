@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_fixed.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -41,9 +41,6 @@
 
 // Fixme. __USE_C_FIXED__ or something.
 #ifndef USEASM
-#ifdef __WIN32__
-#pragma warning (disable : 4244)
-#endif
 fixed_t FixedMul (fixed_t a, fixed_t b)
 {
     return ((INT64) a * (INT64) b) >> FRACBITS;

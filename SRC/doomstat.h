@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 737 2010-09-03 16:07:27Z smite-meister $
+// $Id: doomstat.h 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -312,11 +312,6 @@ extern  int             maxammo[NUMAMMO];
 
 // File handling stuff.
 extern  char            basedefault[1024];
-
-#ifdef __MACOS__
-#define DEBFILE(msg) I_OutputMsg(msg)
-extern  FILE*           debugfile;
-#else
 #define DEBUGFILE
 #ifdef DEBUGFILE
 #define DEBFILE(msg) { if(debugfile) fputs(msg,debugfile); }
@@ -325,7 +320,7 @@ extern  FILE*           debugfile;
 #define DEBFILE(msg) {}
 extern  FILE*           debugfile;
 #endif
-#endif //__MACOS__
+
 
 
 // if true, load all graphics at level load

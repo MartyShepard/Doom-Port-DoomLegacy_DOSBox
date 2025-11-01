@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: d_netfil.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -228,7 +228,7 @@ boolean SendRequestFile(void)
 {
     int   i;
     ULONG totalfreespaceneeded=0;
-    INT64 availablefreespace;
+    uint64_t availablefreespace;
 
     if( M_CheckParm("-nodownload") )
     {
@@ -696,9 +696,6 @@ void nameonly(char *s)
       }
 }
 
-#if defined(LINUX) || defined(__MACOS__)
-#define O_BINARY 0
-#endif
 
 // UNUXED for now
 boolean fileexist(char *filename,time_t time)

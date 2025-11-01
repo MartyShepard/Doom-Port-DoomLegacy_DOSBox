@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 726 2010-08-20 18:17:33Z wesleyjohnson $
+// $Id: r_things.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -170,10 +170,6 @@
 
 #include "i_video.h"            //rendermode
 
-#ifdef LINUX
-int strupr(char *n); // from dosstr.c
-int strlwr(char *n); // from dosstr.c
-#endif
 
 static void R_InitSkins (void);
 

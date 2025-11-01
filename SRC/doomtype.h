@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 672 2010-06-03 13:23:11Z wesleyjohnson $
+// $Id: doomtype.h 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -56,24 +56,24 @@
 
 #include <stdint.h>
 
-#ifdef __WIN32__
-# include <windows.h>
-#endif
 
-
+#ifdef WIN32
+#include <windows.h>
+#else
+// WIN32 standard headers already define these!
 // TODO this is just a temporary measure, all USHORT / ULONG / INT64 instances 
 // in the code should be changed to stdint.h types or basic types
 typedef uint32_t ULONG;
 typedef uint16_t USHORT;
 typedef  int64_t INT64;
-
+#endif
 
 // boolean type
 #ifdef __APPLE_CC__
 # define boolean int
 # define false 0
 # define true  1
-#elseif defined(__WIN32__)
+#elif defined(WIN32)
 # define false   FALSE           // use windows types
 # define true    TRUE
 # define boolean BOOL
@@ -85,6 +85,12 @@ typedef enum {false, true} boolean;
 typedef uint8_t    byte;
 typedef uint32_t  tic_t;
 
+
+#ifdef WIN32
+# define ASMCALL __cdecl
+#else
+# define ASMCALL
+#endif
 
 
 #ifdef __APPLE_CC__
@@ -108,26 +114,24 @@ typedef uint32_t  tic_t;
         #define strcasecmp              strcmpi
     #endif
 #endif
-// added for Linux 19990220 by Kin
-#if defined( LINUX )
+
+// [smite] we should use standard funcs
 #define stricmp(x,y) strcasecmp(x,y)
 #define strnicmp(x,y,n) strncasecmp(x,y,n)
-#define lstrlen(x) strlen(x)
-#endif
 
-#ifdef __APPLE_CC__                //skip all boolean/Boolean crap
+
+#ifndef WIN32
 #define min(x,y) ( ((x)<(y)) ? (x) : (y) )
 #define max(x,y) ( ((x)>(y)) ? (x) : (y) )
-#define lstrlen(x) strlen(x)
-
-#define stricmp strcmp
-#define strnicmp strncmp
+#if !defined( __DJGPP__ )	
+int strupr(char *n);
+int strlwr(char *n);
+#endif
+#endif
 
 #ifndef O_BINARY
-#define O_BINARY 0
+#define O_BINARY 0 // stupid windows text files
 #endif
-#endif //__MACOS__
-
 
 
 

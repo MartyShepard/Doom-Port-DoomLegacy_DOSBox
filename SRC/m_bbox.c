@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_bbox.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_bbox.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -33,13 +33,6 @@
 
 #include "doomtype.h"
 #include "m_bbox.h"
-
-// faB: getting sick of windows includes errors,
-//     I'm supposed to clean that up later.. sure
-#ifdef __WIN32__
-#define MAXINT    ((int)0x7fffffff)
-#define MININT    ((int)0x80000000)
-#endif
 
 
 void M_ClearBox (fixed_t *box)

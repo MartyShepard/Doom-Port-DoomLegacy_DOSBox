@@ -222,6 +222,7 @@
 #include "st_stuff.h"
 
 #include "keys.h"
+#include "i_joy.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
@@ -229,8 +230,6 @@
 #include "p_inter.h"
 #include "p_info.h"
 #include "byteptr.h"
-
-#include "i_joy.h"
 
 #include "b_game.h"	//added by AC for acbot
 
@@ -634,281 +633,47 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
   return false;
 }
 
-void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
+void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 {
     int         i;
-    boolean     strafe;
-    int         speed;
-    int         tspeed;
-    int         forward;
-    int         side;
-    ticcmd_t*   base;
-    //added:14-02-98: these ones used for multiple conditions
-    boolean     turnleft,turnright,mouseaiming,analogjoystickmove,gamepadjoystickmove;
-
-    static int  turnheld;               // for accelerative turning
-    static boolean  keyboard_look;      // true if lookup/down using keyboard
-
-    base = I_BaseTiccmd ();             // empty, or external driver
+    
+    ticcmd_t *base = I_BaseTiccmd ();             // empty, or external driver
     memcpy (cmd,base,sizeof(*cmd));
-
-	// Exit now if locked
-	if (players[consoleplayer].locked == true)
-		return;
-
-    // a little clumsy, but then the g_input.c became a lot simpler!
-    strafe = gamekeydown[gamecontrol[gc_strafe][0]] ||
-             gamekeydown[gamecontrol[gc_strafe][1]];
-    speed  = (gamekeydown[gamecontrol[gc_speed][0]] ||
-             gamekeydown[gamecontrol[gc_speed][1]]) ^
-             cv_autorun.value;
-
-    turnright = gamekeydown[gamecontrol[gc_turnright][0]]
-              ||gamekeydown[gamecontrol[gc_turnright][1]];
-    turnleft  = gamekeydown[gamecontrol[gc_turnleft][0]]
-              ||gamekeydown[gamecontrol[gc_turnleft][1]];
-    mouseaiming = (gamekeydown[gamecontrol[gc_mouseaiming][0]]
-                ||gamekeydown[gamecontrol[gc_mouseaiming][1]])
-                ^ cv_alwaysfreelook.value;
-    analogjoystickmove  = cv_usejoystick.value && !Joystick.bGamepadStyle && !cv_splitscreen.value;
-    gamepadjoystickmove = cv_usejoystick.value &&  Joystick.bGamepadStyle && !cv_splitscreen.value;
-
-    if( gamepadjoystickmove )
-    {
-        turnright = turnright || (joyxmove > 0);
-        turnleft  = turnleft  || (joyxmove < 0);
-    }
-    forward = side = 0;
-
-    // use two stage accelerative turning
-    // on the keyboard and joystick
-    if (turnleft || turnright)
-        turnheld += realtics;
-    else
-        turnheld = 0;
-
-    if (turnheld < SLOWTURNTICS)
-        tspeed = 2;             // slow turn
-    else
-        tspeed = speed;
-
-    // let movement keys cancel each other out
-    if (strafe)
-    {
-        if (turnright)
-            side += sidemove[speed];
-        if (turnleft)
-            side -= sidemove[speed];
-
-        if (analogjoystickmove)
-        {
-            //faB: JOYAXISRANGE is supposed to be 1023 ( divide by 1024 )
-            side += ( (joyxmove * sidemove[1]) >> 10 );
-        }
-    }
-    else
-    {
-        if ( turnright )
-            cmd->angleturn -= angleturn[tspeed];
-        else
-        if ( turnleft  )
-            cmd->angleturn += angleturn[tspeed];
-        if ( joyxmove && analogjoystickmove) {
-            //faB: JOYAXISRANGE should be 1023 ( divide by 1024 )
-            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
-            //CONS_Printf ("joyxmove %d  angleturn %d\n", joyxmove, cmd->angleturn);
-        }
-
-    }
-
-    //added:07-02-98: forward with key or button
-    if (gamekeydown[gamecontrol[gc_forward][0]] ||
-        gamekeydown[gamecontrol[gc_forward][1]] ||
-        ( joyymove < 0 && gamepadjoystickmove && !cv_joystickfreelook.value) )
-    {
-        forward += forwardmove[speed];
-    }
-    if (gamekeydown[gamecontrol[gc_backward][0]] ||
-        gamekeydown[gamecontrol[gc_backward][1]] ||
-        ( joyymove > 0 && gamepadjoystickmove && !cv_joystickfreelook.value) )
-    {
-        forward -= forwardmove[speed];
-    }
-        
-    if ( joyymove && analogjoystickmove && !cv_joystickfreelook.value) 
-        forward -= ( (joyymove * forwardmove[1]) >> 10 );               // ANALOG!
-
-    //added:07-02-98: some people strafe left & right with mouse buttons
-    if (gamekeydown[gamecontrol[gc_straferight][0]] ||
-        gamekeydown[gamecontrol[gc_straferight][1]])
-        side += sidemove[speed];
-    if (gamekeydown[gamecontrol[gc_strafeleft][0]] ||
-        gamekeydown[gamecontrol[gc_strafeleft][1]])
-        side -= sidemove[speed];
-
-    //added:07-02-98: fire with any button/key
-    if (gamekeydown[gamecontrol[gc_fire][0]] ||
-        gamekeydown[gamecontrol[gc_fire][1]])
-        cmd->buttons |= BT_ATTACK;
-
-    //added:07-02-98: use with any button/key
-    if (gamekeydown[gamecontrol[gc_use][0]] ||
-        gamekeydown[gamecontrol[gc_use][1]])
-        cmd->buttons |= BT_USE;
-
-    //added:22-02-98: jump button
-    if (cv_allowjump.value && (gamekeydown[gamecontrol[gc_jump][0]] ||
-                               gamekeydown[gamecontrol[gc_jump][1]]))
-        cmd->buttons |= BT_JUMP;
-
-
-    //added:07-02-98: any key / button can trigger a weapon
-    // chainsaw overrides
-    if (gamekeydown[gamecontrol[gc_nextweapon][0]] ||
-        gamekeydown[gamecontrol[gc_nextweapon][1]])
-        cmd->buttons |= NextWeapon(&players[consoleplayer],1);
-    else
-    if (gamekeydown[gamecontrol[gc_prevweapon][0]] ||
-        gamekeydown[gamecontrol[gc_prevweapon][1]])
-        cmd->buttons |= NextWeapon(&players[consoleplayer],-1);
-    else
-    if (gamekeydown[gamecontrol[gc_bestweapon][0]] ||
-        gamekeydown[gamecontrol[gc_bestweapon][1]])
-        cmd->buttons |= BestWeapon(&players[consoleplayer]);
-    else
-    for (i=gc_weapon1; i<gc_weapon1+NUMWEAPONS-1; i++)
-        if (gamekeydown[gamecontrol[i][0]] ||
-            gamekeydown[gamecontrol[i][1]])
-        {
-            cmd->buttons |= BT_CHANGE | BT_EXTRAWEAPON; // extra by default
-            cmd->buttons |= (i-gc_weapon1)<<BT_WEAPONSHIFT;
-            // already have extraweapon in hand switch to the normal one
-            if( players[consoleplayer].readyweapon==extraweapons[i-gc_weapon1] )
-                cmd->buttons &= ~BT_EXTRAWEAPON;
-            break;
-        }
-
-    // mouse look stuff (mouse look is not the same as mouse aim)
-    if (mouseaiming)
-    {
-        keyboard_look = false;
-
-        // looking up/down
-        if (cv_invertmouse.value)
-            localaiming -= mlooky<<19;
-        else
-            localaiming += mlooky<<19;
-    }
-    if (cv_usejoystick.value && analogjoystickmove && cv_joystickfreelook.value)
-        localaiming += joyymove<<16;
-
-    // spring back if not using keyboard neither mouselookin'
-    if (!keyboard_look && !cv_joystickfreelook.value && !mouseaiming)
-        localaiming = 0;
-
-    if (gamekeydown[gamecontrol[gc_lookup][0]] ||
-        gamekeydown[gamecontrol[gc_lookup][1]])
-    {
-        localaiming += KB_LOOKSPEED;
-        keyboard_look = true;
-    }
-    else
-    if (gamekeydown[gamecontrol[gc_lookdown][0]] ||
-        gamekeydown[gamecontrol[gc_lookdown][1]])
-    {
-        localaiming -= KB_LOOKSPEED;
-        keyboard_look = true;
-    }
-    else
-    if (gamekeydown[gamecontrol[gc_centerview][0]] ||
-        gamekeydown[gamecontrol[gc_centerview][1]])
-        localaiming = 0;
-
-    //26/02/2000: added by Hurdler: accept no mlook for network games
-    if (!cv_allowmlook.value)
-        localaiming = 0;
-
-    cmd->aiming = G_ClipAimingPitch(localaiming) >> 16; // to short
-
-    if (!mouseaiming && cv_mousemove.value)
-        forward += mousey;
-
-    if (strafe)
-        side += mousex*2;
-    else
-        cmd->angleturn -= mousex*8;
-
-    mousex = mousey = mlooky = 0;
 
     
-	// Do not go faster than max. speed
-	if (forward > MAXPLMOVE)
-        forward = MAXPLMOVE;
-    else if (forward < -MAXPLMOVE)
-        forward = -MAXPLMOVE;
-    if (side > MAXPLMOVE)
-        side = MAXPLMOVE;
-    else if (side < -MAXPLMOVE)
-        side = -MAXPLMOVE;
+    player_t *this_player;
+    int (*gcc)[2];
 
+    angle_t pitch;
 
-    cmd->forwardmove += forward;
-    cmd->sidemove += side;
-#ifdef ABSOLUTEANGLE
-    localangle += (cmd->angleturn<<16);
-    cmd->angleturn = localangle >> 16;
-#endif
-
-    if( gamemode == heretic )
+    if (which_player == 0)
     {
-        if (gamekeydown[gamecontrol[gc_flydown][0]] ||
-            gamekeydown[gamecontrol[gc_flydown][1]])
-            cmd->angleturn |= BT_FLYDOWN;
-        else
-            cmd->angleturn &= ~BT_FLYDOWN;
+      this_player = &players[consoleplayer];
+      gcc = gamecontrol;
+      pitch = localaiming;
+    } else {
+      this_player = &players[secondarydisplayplayer];
+      gcc = gamecontrolbis;
+      pitch = localaiming2;
     }
 
-}
-
-
-// like the g_buildticcmd 1 but using mouse2, gamcontrolbis, ...
-void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
-{
-    int         i;
-    boolean     strafe;
-    int         speed;
-    int         tspeed;
-    int         forward;
-    int         side;
-    ticcmd_t*   base;
-    //added:14-02-98: these ones used for multiple conditions
-    boolean     turnleft,turnright,mouseaiming,analogjoystickmove,gamepadjoystickmove;
-
-    static int  turnheld;               // for accelerative turning
-    static boolean  keyboard_look;      // true if lookup/down using keyboard
-
-    base = I_BaseTiccmd ();             // empty, or external driver
-    memcpy (cmd,base,sizeof(*cmd));
-
-	// Exit now if locked
-	if (players[secondarydisplayplayer].locked == true)
-		return;
+    // Exit now if locked
+    if (this_player->locked == true)
+      return;
 
     // a little clumsy, but then the g_input.c became a lot simpler!
-    strafe = gamekeydown[gamecontrolbis[gc_strafe][0]] ||
-             gamekeydown[gamecontrolbis[gc_strafe][1]];
-    speed  = (gamekeydown[gamecontrolbis[gc_speed][0]] ||
-             gamekeydown[gamecontrolbis[gc_speed][1]])
-             ^ cv_autorun2.value;
+    boolean strafe = gamekeydown[gcc[gc_strafe][0]] || gamekeydown[gcc[gc_strafe][1]];
+    int speed  = (gamekeydown[gcc[gc_speed][0]] || gamekeydown[gcc[gc_speed][1]]) ^
+      (which_player == 0 ? cv_autorun.value : cv_autorun2.value);
 
-    turnright = gamekeydown[gamecontrolbis[gc_turnright][0]]
-              ||gamekeydown[gamecontrolbis[gc_turnright][1]];
-    turnleft  = gamekeydown[gamecontrolbis[gc_turnleft][0]]
-              ||gamekeydown[gamecontrolbis[gc_turnleft][1]];
+    boolean turnright = gamekeydown[gcc[gc_turnright][0]] || gamekeydown[gcc[gc_turnright][1]];
+    boolean turnleft  = gamekeydown[gcc[gc_turnleft][0]] || gamekeydown[gcc[gc_turnleft][1]];
+    boolean mouseaiming = (gamekeydown[gcc[gc_mouseaiming][0]] || gamekeydown[gcc[gc_mouseaiming][1]])
+      ^ (which_player == 0 ? cv_alwaysfreelook.value : cv_alwaysfreelook2.value);
 
-    mouseaiming = (gamekeydown[gamecontrolbis[gc_mouseaiming][0]]
-                ||gamekeydown[gamecontrolbis[gc_mouseaiming][1]])
-                ^ cv_alwaysfreelook2.value;
+#if defined( __DJGPP__ )	
+    boolean   analogjoystickmove,gamepadjoystickmove;
+
     analogjoystickmove  = cv_usejoystick.value && !Joystick.bGamepadStyle;
     gamepadjoystickmove = cv_usejoystick.value &&  Joystick.bGamepadStyle;
 
@@ -917,175 +682,208 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
         turnright = turnright || joyxmove > 0;
         turnleft  = turnleft  || joyxmove < 0;
     }
+#endif		
+    int forward = 0, side = 0; // these must not wrap around, so we need bigger ranges than chars
 
-    forward = side = 0;
-
-    // use two stage accelerative turning
-    // on the keyboard and joystick
-    if (turnleft || turnright)
-        turnheld += realtics;
-    else
-        turnheld = 0;
-
-    if (turnheld < SLOWTURNTICS)
-        tspeed = 2;             // slow turn
-    else
-        tspeed = speed;
-
-    // let movement keys cancel each other out
+    // strafing and yaw
     if (strafe)
     {
         if (turnright)
             side += sidemove[speed];
         if (turnleft)
             side -= sidemove[speed];
-
+#if defined( __DJGPP__ )						
         if (analogjoystickmove)
         {
             //faB: JOYAXISRANGE is supposed to be 1023 ( divide by 1024 )
             side += ( (joyxmove * sidemove[1]) >> 10 );
         }
+#endif
     }
     else
     {
-        if (turnright )
-            cmd->angleturn -= angleturn[tspeed];
-        if (turnleft  )
-            cmd->angleturn += angleturn[tspeed];
+      // use two stage accelerative turning
+      // on the keyboard and joystick
+      static int  turnheld[2];   // for accelerative turning
 
-        if ( joyxmove && analogjoystickmove )
-        {
+      if (turnleft || turnright)
+        turnheld[which_player] += realtics;
+      else
+        turnheld[which_player] = 0;
+      
+      int tspeed = (turnheld[which_player] < SLOWTURNTICS) ? 2 : speed;
+
+      if (turnright)
+	cmd->angleturn -= angleturn[tspeed];
+      if (turnleft)
+	cmd->angleturn += angleturn[tspeed];
+#if defined( __DJGPP__ )
+//        if ( joyxmove && analogjoystickmove )
+//        {
             //faB: JOYAXISRANGE should be 1023 ( divide by 1024 )
-            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
+//            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
             //CONS_Printf ("joyxmove %d  angleturn %d\n", joyxmove, cmd->angleturn);
-        }
+//        }
+#endif				
     }
 
-    //added:07-02-98: forward with key or button
-    if (gamekeydown[gamecontrolbis[gc_forward][0]] ||
-        gamekeydown[gamecontrolbis[gc_forward][1]] ||
-        (joyymove < 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
-    {
+    // forwards/backwards, strafing
+#if !defined( __DJGPP__ )		
+    if (gamekeydown[gcc[gc_forward][0]] || gamekeydown[gcc[gc_forward][1]])
+#else
+    if (gamekeydown[gcc[gc_forward][0]] || gamekeydown[gcc[gc_forward][1]] || (joyymove < 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
+#endif			
         forward += forwardmove[speed];
-    }
-
-    if (gamekeydown[gamecontrolbis[gc_backward][0]] ||
-        gamekeydown[gamecontrolbis[gc_backward][1]] ||
-        (joyymove > 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
-    {
+#if !defined( __DJGPP__ )					
+    if (gamekeydown[gcc[gc_backward][0]] || gamekeydown[gcc[gc_backward][1]])
+#else
+    if (gamekeydown[gcc[gc_backward][0]] || gamekeydown[gcc[gc_backward][1]] || (joyymove > 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
+#endif			
         forward -= forwardmove[speed];
-    }
-
+#if defined( __DJGPP__ )					
     if ( joyymove && analogjoystickmove && !cv_joystickfreelook.value) 
-        forward -= ( (joyymove * forwardmove[1]) >> 10 ); // ANALOG!
-    
-
+        forward -= ( (joyymove * forwardmove[1]) >> 10 ); // ANALOG!	
+#endif			
     //added:07-02-98: some people strafe left & right with mouse buttons
-    if (gamekeydown[gamecontrolbis[gc_straferight][0]] ||
-        gamekeydown[gamecontrolbis[gc_straferight][1]])
+    if (gamekeydown[gcc[gc_straferight][0]] || gamekeydown[gcc[gc_straferight][1]])
         side += sidemove[speed];
-    if (gamekeydown[gamecontrolbis[gc_strafeleft][0]] ||
-        gamekeydown[gamecontrolbis[gc_strafeleft][1]])
+    if (gamekeydown[gcc[gc_strafeleft][0]] || gamekeydown[gcc[gc_strafeleft][1]])
         side -= sidemove[speed];
 
     //added:07-02-98: fire with any button/key
-    if (gamekeydown[gamecontrolbis[gc_fire][0]] ||
-        gamekeydown[gamecontrolbis[gc_fire][1]])
+    if (gamekeydown[gcc[gc_fire][0]] || gamekeydown[gcc[gc_fire][1]])
         cmd->buttons |= BT_ATTACK;
 
     //added:07-02-98: use with any button/key
-    if (gamekeydown[gamecontrolbis[gc_use][0]] ||
-        gamekeydown[gamecontrolbis[gc_use][1]])
+    if (gamekeydown[gcc[gc_use][0]] || gamekeydown[gcc[gc_use][1]])
         cmd->buttons |= BT_USE;
 
     //added:22-02-98: jump button
-    if (cv_allowjump.value && (gamekeydown[gamecontrolbis[gc_jump][0]] ||
-                               gamekeydown[gamecontrolbis[gc_jump][1]]))
+    if (cv_allowjump.value &&
+	(gamekeydown[gcc[gc_jump][0]] || gamekeydown[gcc[gc_jump][1]]))
         cmd->buttons |= BT_JUMP;
 
 
     //added:07-02-98: any key / button can trigger a weapon
     // chainsaw overrides
-    if (gamekeydown[gamecontrolbis[gc_nextweapon][0]] ||
-        gamekeydown[gamecontrolbis[gc_nextweapon][1]])
-        cmd->buttons |= NextWeapon(&players[secondarydisplayplayer],1);
+    if (gamekeydown[gcc[gc_nextweapon][0]] || gamekeydown[gcc[gc_nextweapon][1]])
+        cmd->buttons |= NextWeapon(this_player,1);
     else
-    if (gamekeydown[gamecontrolbis[gc_prevweapon][0]] ||
-        gamekeydown[gamecontrolbis[gc_prevweapon][1]])
-        cmd->buttons |= NextWeapon(&players[secondarydisplayplayer],-1);
+    if (gamekeydown[gcc[gc_prevweapon][0]] || gamekeydown[gcc[gc_prevweapon][1]])
+        cmd->buttons |= NextWeapon(this_player,-1);
     else
-    if (gamekeydown[gamecontrol[gc_bestweapon][0]] ||
-        gamekeydown[gamecontrol[gc_bestweapon][1]])
-        cmd->buttons |= BestWeapon(&players[secondarydisplayplayer]);
+    if (gamekeydown[gcc[gc_bestweapon][0]] || gamekeydown[gcc[gc_bestweapon][1]])
+        cmd->buttons |= BestWeapon(this_player);
     else
     for (i=gc_weapon1; i<gc_weapon1+NUMWEAPONS-1; i++)
-        if (gamekeydown[gamecontrolbis[i][0]] ||
-            gamekeydown[gamecontrolbis[i][1]])
+        if (gamekeydown[gcc[i][0]] ||
+            gamekeydown[gcc[i][1]])
         {
             cmd->buttons |= BT_CHANGE | BT_EXTRAWEAPON; // extra by default
             cmd->buttons |= (i-gc_weapon1)<<BT_WEAPONSHIFT;
             // already have extraweapon in hand switch to the normal one
-            if( players[secondarydisplayplayer].readyweapon==extraweapons[i-gc_weapon1] )
+            if (this_player->readyweapon == extraweapons[i-gc_weapon1])
                 cmd->buttons &= ~BT_EXTRAWEAPON;
             break;
         }
 
-    // mouse look stuff (mouse look is not the same as mouse aim)
-    if (mouseaiming)
+
+    // pitch
+    static boolean keyboard_look[2]; // true if lookup/down using keyboard
+
+
+    // spring back if not using keyboard neither mouselookin'
+    if (!keyboard_look[which_player] && !mouseaiming)
+        pitch = 0;
+
+    if (gamekeydown[gcc[gc_lookup][0]] || gamekeydown[gcc[gc_lookup][1]])
     {
-        keyboard_look = false;
+        pitch += KB_LOOKSPEED;
+        keyboard_look[which_player] = true;
+    }
+    else
+    if (gamekeydown[gcc[gc_lookdown][0]] || gamekeydown[gcc[gc_lookdown][1]])
+    {
+        pitch -= KB_LOOKSPEED;
+        keyboard_look[which_player] = true;
+    }
+    else
+    if (gamekeydown[gcc[gc_centerview][0]] || gamekeydown[gcc[gc_centerview][1]])
+      {
+        pitch = 0;
+        keyboard_look[which_player] = false;
+      }
+
+    // mice
+
+    // mouse look stuff (mouse look is not the same as mouse aim)
+    if (which_player == 0)
+    {
+      if (mouseaiming)
+      {
+        keyboard_look[which_player] = false;
+
+        // looking up/down
+        if (cv_invertmouse.value)
+            pitch -= mousey<<19;
+        else
+            pitch += mousey<<19;
+      }
+      else if (cv_mousemove.value)
+	forward += mousey;
+
+      if (strafe)
+        side += mousex*2;
+      else
+        cmd->angleturn -= mousex*8;
+
+      mousex = mousey = 0;
+    }
+    else
+    {
+      if (mouseaiming)
+      {
+	keyboard_look[which_player] = false;
 
         // looking up/down
         if (cv_invertmouse2.value)
-            localaiming2 -= mlook2y<<19;
+	  pitch -= mouse2y<<19;
         else
-            localaiming2 += mlook2y<<19;
-    }
+          pitch += mouse2y<<19;
+      }
+      else if (cv_mousemove2.value)
+	forward += mouse2y;
 
-    if( analogjoystickmove && cv_joystickfreelook.value )
-        localaiming2 += joyymove<<16;
-    // spring back if not using keyboard neither mouselookin'
-    if (!keyboard_look && !cv_joystickfreelook.value && !mouseaiming)
-        localaiming2 = 0;
-
-    if (gamekeydown[gamecontrolbis[gc_lookup][0]] ||
-        gamekeydown[gamecontrolbis[gc_lookup][1]])
-    {
-        localaiming2 += KB_LOOKSPEED;
-        keyboard_look = true;
-    }
-    else
-    if (gamekeydown[gamecontrolbis[gc_lookdown][0]] ||
-        gamekeydown[gamecontrolbis[gc_lookdown][1]])
-    {
-        localaiming2 -= KB_LOOKSPEED;
-        keyboard_look = true;
-    }
-    else
-    if (gamekeydown[gamecontrolbis[gc_centerview][0]] ||
-        gamekeydown[gamecontrolbis[gc_centerview][1]])
-        localaiming2 = 0;
-
-    //26/02/2000: added by Hurdler: accept no mlook for network games
-    if (!cv_allowmlook.value)
-        localaiming2 = 0;
-
-    // look up max (viewheight/2) look down min -(viewheight/2)
-    cmd->aiming = G_ClipAimingPitch(localaiming2) >> 16; // to short
-
-    if (!mouseaiming && cv_mousemove2.value)
-        forward += mouse2y;
-
-    if (strafe)
+      if (strafe)
         side += mouse2x*2;
-    else
+      else
         cmd->angleturn -= mouse2x*8;
 
-    mouse2x = mouse2y = mlook2y = 0;
+      mouse2x = mouse2y = 0;
+    }
+#if !defined( __DJGPP__ )	
+    // Finally the joysticks.
+    for (i=0; i < num_joybindings; i++)
+    {
+      joybinding_t j = joybindings[i];
 
-    
-	// Do not go faster than max. speed
-	if (forward > MAXPLMOVE)
+      if (j.playnum != which_player)
+	continue;
+
+      int value = (int)(j.scale * I_JoystickGetAxis(j.joynum, j.axisnum));
+      switch (j.action)
+	{
+	case ja_pitch  : pitch = value << 16; break;
+	case ja_move   : forward += value; break;
+	case ja_turn   : cmd->angleturn += value; break;
+	case ja_strafe : side += value; break;
+	default: break;
+	}
+    }
+#endif
+
+    // Do not go faster than max. speed
+    if (forward > MAXPLMOVE)
         forward = MAXPLMOVE;
     else if (forward < -MAXPLMOVE)
         forward = -MAXPLMOVE;
@@ -1094,24 +892,37 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
     else if (side < -MAXPLMOVE)
         side = -MAXPLMOVE;
 
-
     cmd->forwardmove += forward;
     cmd->sidemove += side;
 
+    //26/02/2000: added by Hurdler: accept no mlook for network games
+    if (!cv_allowmlook.value)
+        pitch = 0;
+
+    cmd->aiming = G_ClipAimingPitch(pitch) >> 16; // to short
+
+    if (which_player == 0)
+    {
+#ifdef ABSOLUTEANGLE
+    localangle += (cmd->angleturn<<16);
+    cmd->angleturn = localangle >> 16;
+#endif
+      localaiming = pitch;
+    } else {
 #ifdef ABSOLUTEANGLE
     localangle2 += (cmd->angleturn<<16);
     cmd->angleturn = localangle2 >> 16;
 #endif
+      localaiming2 = pitch;
+    }
 
     if( gamemode == heretic )
     {
-        if (gamekeydown[gamecontrolbis[gc_flydown][0]] ||
-            gamekeydown[gamecontrolbis[gc_flydown][1]])
+        if (gamekeydown[gcc[gc_flydown][0]] || gamekeydown[gcc[gc_flydown][1]])
             cmd->angleturn |= BT_FLYDOWN;
         else
             cmd->angleturn &= ~BT_FLYDOWN;
     }
-
 }
 
 

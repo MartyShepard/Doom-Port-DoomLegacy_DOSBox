@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 620 2010-03-23 21:20:41Z wesleyjohnson $
+// $Id: m_misc.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,10 +55,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __WIN32__
-#include <unistd.h>
-#endif
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "doomdef.h"
 #include "g_game.h"
@@ -83,9 +81,6 @@
 //
 // FIL_WriteFile
 //
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 boolean FIL_WriteFile ( char const*   name,
                         void*         source,

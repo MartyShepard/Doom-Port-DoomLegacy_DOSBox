@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 662 2010-06-03 12:36:33Z wesleyjohnson $
+// $Id: s_sound.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -173,9 +173,7 @@ consvar_t sndserver_cmd = { "sndserver_cmd", "llsndserv", CV_SAVE };
 consvar_t sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 #endif
 
-#if defined (__WIN32__) && !defined (SURROUND)
 #define SURROUND
-#endif
 
 #ifdef __MACOS__
 consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
@@ -200,7 +198,7 @@ void SetChannelsNum(void);
 consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_Unsigned, SetChannelsNum };
 
 #ifdef SURROUND
-consvar_t surround = { "surround", "0", CV_SAVE, CV_OnOff };
+consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };
 #endif
 
 #define S_MAX_VOLUME            127
@@ -288,7 +286,7 @@ void S_RegisterSoundStuff(void)
     CV_RegisterVar(&musserver_arg);
 #endif
 #ifdef SURROUND
-    CV_RegisterVar(&surround);
+    CV_RegisterVar(&cv_surround);
 #endif
 
 #if 0
@@ -1023,7 +1021,7 @@ void S_StopMusic()
         I_UnRegisterSong(mus_playing->handle);
 	Z_ChangeTag(mus_playing->data, PU_CACHE);
 
-        mus_playing->data = 
+        mus_playing->data = 0;
         mus_playing = 0;
     }
 }
@@ -1101,7 +1099,7 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
 #ifdef SURROUND
 
     // Produce a surround sound for angle from 105 till 255
-    if (surround.value == 1 && (angle > (ANG90 + (ANG45 / 3)) && angle < (ANG270 - (ANG45 / 3))))
+    if (cv_surround.value && (angle > (ANG90 + (ANG45 / 3)) && angle < (ANG270 - (ANG45 / 3))))
         *sep = SURROUND_SEP;
     else
     {

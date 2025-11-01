@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 716 2010-07-31 18:36:17Z wesleyjohnson $
+// $Id: p_setup.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -178,6 +178,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <malloc.h>
+
 #include "doomdef.h"
 #include "d_main.h"
 #include "byteptr.h"
@@ -207,10 +209,7 @@
 #include "hu_stuff.h"
 #include "console.h"
 
-#ifdef __WIN32__
-#include "malloc.h"
-#include "math.h"
-#endif
+
 #ifdef HWRENDER
 #include "i_video.h"            //rendermode
 #include "hardware/hw_main.h"
@@ -219,9 +218,7 @@
 
 #include "b_game.h"	//added by AC for acbot
 
-#ifdef LINUX
-int strupr(char *n);
-#endif
+
 
 //
 // MAP related Lookup tables.

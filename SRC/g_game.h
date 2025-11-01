@@ -114,8 +114,7 @@ void Command_Turbo_f (void);
 
 // build an internal map name ExMx MAPxx from episode,map numbers
 char* G_BuildMapName (int episode, int map);
-void G_BuildTiccmd (ticcmd_t* cmd, int realtics);
-void G_BuildTiccmd2(ticcmd_t* cmd, int realtics);
+void G_BuildTiccmd (ticcmd_t* cmd, int realtics, int which_player);
 
 //added:22-02-98: clip the console player aiming to the view
 angle_t G_ClipAimingPitch(angle_t aiming);

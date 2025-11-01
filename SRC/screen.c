@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 604 2010-02-13 07:21:09Z smite-meister $
+// $Id: screen.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -84,11 +84,7 @@
 #include "z_zone.h"
 #include "d_main.h"
 
-void VID_PrepareModeList(void); // from i_video_xshm.c
-// allow_fullscreen is set in VID_PrepareModeList
-#if !defined(__DJGPP__)
-extern boolean allow_fullscreen;
-#endif
+
 
 // --------------------------------------------
 // assembly or c drawer routines for 8bpp/16bpp
@@ -128,7 +124,9 @@ CV_PossibleValue_t scr_depth_cons_t[]={{8,"8 bits"}, {16,"16 bits"}, {24,"24 bit
 consvar_t   cv_scr_width  = {"scr_width",  "320", CV_SAVE, CV_Unsigned};
 consvar_t   cv_scr_height = {"scr_height", "200", CV_SAVE, CV_Unsigned};
 consvar_t   cv_scr_depth =  {"scr_depth",  "8 bits",   CV_SAVE, scr_depth_cons_t};
+#if !defined( __DJGPP__ )	
 consvar_t   cv_fullscreen = {"fullscreen",  "Yes",CV_SAVE | CV_CALL, CV_YesNo, SCR_ChangeFullscreen};
+#endif
 
 // =========================================================================
 //                           SCREEN VARIABLES
@@ -379,18 +377,17 @@ void SCR_SetDefaultMode (void)
 }
 
 // Change fullscreen on/off according to cv_fullscreen
-
+#if !defined( __DJGPP__ )
 void SCR_ChangeFullscreen (void)
 {
-	#if !defined(__DJGPP__)
-    // allow_fullscreen is set by VID_PrepareModeList
-    // it is used to prevent switching to fullscreen during startup
-    if(!allow_fullscreen) return;
+  extern boolean allow_fullscreen;
+  // used to prevent switching to fullscreen during startup
+  if (!allow_fullscreen)
+    return;
 
     if(graphics_started) {
-        VID_PrepareModeList();
         int modenum = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
         setmodeneeded = ++modenum;
     }
-	#endif
 }
+#endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 733 2010-09-02 00:28:16Z smite-meister $
+// $Id: mserv.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -128,8 +128,10 @@
 
 
 #ifdef WIN32
-#include <windows.h>     // socket(),...
+# include <winsock2.h>     // socket(),...
+# include <ws2tcpip.h>    // socklen_t
 #else
+
 #include <unistd.h>
 #ifdef __OS2__
 #include <sys/types.h>
@@ -614,8 +616,12 @@ static int MS_Connect(char *ip_addr, char *str_port, int async)
     if (async) // do asynchronous connection
     {
         int res = 1;
-
+#ifdef WIN32
+	u_long test = 1; // [smite] I have no idea what this type is supposed to be
+        ioctlsocket(socket_fd, FIONBIO, &test);
+#else
         ioctl(socket_fd, FIONBIO, &res);
+#endif
         res = connect(socket_fd, (struct sockaddr *) &addr, sizeof(addr));
         if (res < 0)
         {

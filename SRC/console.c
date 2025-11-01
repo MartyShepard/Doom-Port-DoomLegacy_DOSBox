@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: console.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -109,12 +109,34 @@
 #include "i_system.h"
 #include "d_main.h"
 
-#ifdef __WIN32__
-#include "win32/win_main.h"
+#if defined( __DJGPP__ )	
+int     con_keymap;      //0 english, 1 french
+
+//  Choose english keymap
+//
+static void CONS_English_f (void)
+{
+    shiftxform = english_shiftxform;
+    con_keymap = english;
+    CONS_Printf("English keymap.\n");
+}
+
+//  Choose french keymap
+//
+static void CONS_French_f (void)
+{
+    shiftxform = french_shiftxform;
+    con_keymap = french;
+    CONS_Printf("French keymap.\n");
+}
+#endif
+
+#ifdef WIN_NATIVE_PLACEHOLDER
 void     I_LoadingScreen ( LPCSTR msg );
 #else
 #include <unistd.h>
 #endif
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -236,26 +258,6 @@ static void CONS_Clear_f (void)
     con_scrollup = 0;
 }
 
-int     con_keymap;      //0 english, 1 french
-
-//  Choose english keymap
-//
-static void CONS_English_f (void)
-{
-    shiftxform = english_shiftxform;
-    con_keymap = english;
-    CONS_Printf("English keymap.\n");
-}
-
-
-//  Choose french keymap
-//
-static void CONS_French_f (void)
-{
-    shiftxform = french_shiftxform;
-    con_keymap = french;
-    CONS_Printf("French keymap.\n");
-}
 
 char *bindtable[NUMINPUTS];
 
@@ -406,9 +408,11 @@ void CON_Init(void)
     CV_RegisterVar (&cons_height);
     CV_RegisterVar (&cons_backpic);
     COM_AddCommand ("cls", CONS_Clear_f);
+    COM_AddCommand ("bind", CONS_Bind_f);
+#if defined( __DJGPP__ )			
     COM_AddCommand ("english", CONS_English_f);
     COM_AddCommand ("french", CONS_French_f);		
-    COM_AddCommand ("bind", CONS_Bind_f);
+#endif			
     // set console full screen for game startup MAKE SURE VID_Init() done !!!
     con_destlines = vid.height;
     con_curlines = vid.height;
@@ -625,30 +629,15 @@ void CON_Ticker (void)
 //
 boolean CON_Responder(event_t *ev)
 {
-	//static boolean altdown;
-static boolean shiftdown;
 // sequential completions a la 4dos
 static char    completion[80];
 static int     comskips,varskips;
 
     char   *cmd;
-		
+
     if(chat_on)
         return false; 
 
-    // special keys state
-    if (ev->data1 == KEY_SHIFT && ev->type == ev_keyup)
-    {
-        shiftdown = false;
-        return false;
-    }
-
-    //else if (ev->data1 == KEY_ALT)
-    //{
-    //    altdown = (ev->type == ev_keydown);
-    //    return false;
-    //}
-		
     // let go keyup events, don't eat them
     if (ev->type != ev_keydown)
         return false;
@@ -681,10 +670,7 @@ static int     comskips,varskips;
 
     // eat shift only if console active
     if (key == KEY_RSHIFT || key == KEY_LSHIFT)
-    {
-        shiftdown = true;
-        return true;
-    }
+      return true;
 
     // escape key toggle off console
     if (key == KEY_ESCAPE)
@@ -869,27 +855,31 @@ static int     comskips,varskips;
     }
 
     // interpret it as input char
-   // char c = ev->data2;
+#if !defined( __DJGPP__ )
+    char c = ev->data2;
+#else
+    char c = ev->data1;
+#endif	
 
     // allow people to use keypad in console (good for typing IP addresses) - Calum
     if (key >= KEY_KEYPAD0 && key <= KEY_PLUSPAD)
     {
       const char keypad_translation[] = {'0','1','2','3','4','5','6','7','8','9','.','/','*','-','+'};
-      key = keypad_translation[key - KEY_KEYPAD0];
+      c = keypad_translation[key - KEY_KEYPAD0];
     }
 
     // enter a printable char into the command prompt
-    if (key < ' ' || key > '~')
+    if (c < ' ' || c > '~')
       return false;
 
     // add key to cmd line here
     if (input_cx<CON_MAXPROMPTCHARS)
     {
         // make sure letters are lowercase for commands & cvars
-        if (key >= 'A' && key <= 'Z')
-            key = key + 'a' - 'A';
+        if (c >= 'A' && c <= 'Z')
+            c = c + 'a' - 'A';
 
-        inputlines[inputline][input_cx] = key;
+        inputlines[inputline][input_cx] = c;
         inputlines[inputline][input_cx+1] = 0;
         input_cx++;
     }
@@ -1004,7 +994,6 @@ void CON_Print (char *msg)
     }
 }
 
-
 //  Console print! Wahooo! Lots o fun!
 //
 void CONS_Printf (const char *fmt, ...)
@@ -1018,23 +1007,17 @@ void CONS_Printf (const char *fmt, ...)
     vsnprintf(txt, BUF_SIZE, fmt, ap);
     va_end(ap);
 
-    // echo console prints to log file
 #ifdef LOGMESSAGES
-    if (logstream != INVALID_HANDLE_VALUE)
-#ifdef __WIN32__
-        FPrintf (logstream, "%s", txt);     // uses win_dbg.c FPrintf()
-#else
-        write(logstream, txt, strlen(txt));
-#endif
+    // echo console prints to log file
+    if (logstream)
+      fputs(txt, logstream);
 #endif
     DEBFILE(txt);
 
     if (!con_started/* || !graphics_started*/)
     {
-#if !defined( __WIN32__) && !defined( __OS2__)
-        I_OutputMsg ("%s",txt);
-#endif
-        return;
+      I_OutputMsg ("%s",txt);
+      return;
     }
     else
         // write message in con text buffer
@@ -1046,7 +1029,7 @@ void CONS_Printf (const char *fmt, ...)
     // if not in display loop, force screen update
     if (con_startup)
     {
-#if defined( __WIN32__) || defined( __OS2__) 
+#if defined(WIN_NATIVE_PLACEHOLDER) || defined( __OS2__) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
         CON_DrawBackpic (con_backpic, 0, vid.width);    // put console background
@@ -1066,7 +1049,7 @@ void CONS_Printf (const char *fmt, ...)
 //
 void CONS_Error (char *msg)
 {
-#ifdef WIN32
+#ifdef WIN_NATIVE_PLACEHOLDER
     extern  HWND    hWndMain;
     if(!graphics_started)
     {

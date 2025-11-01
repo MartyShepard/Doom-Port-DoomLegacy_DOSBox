@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 629 2010-04-03 02:25:58Z wesleyjohnson $
+// $Id: doomdef.h 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -159,44 +159,22 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
-#ifdef __WIN32__
-#define HWRENDER
-// judgecutor: 3D sound support
-#define HW3SOUND
-#define ASMCALL __cdecl
-#pragma warning (disable :  4244 4146 4761 4152 4115 4100 4201 4200) // 4244 4146 4761 4018
-// warning C4146: unary minus operator applied to unsigned type, result still unsigned
-// warning C4761: integral size mismatch in argument; conversion supplied
-// warning C4244: 'initializing' : conversion from 'const double ' to 'int ', possible loss of data
-// warning C4244: '=' : conversion from 'double ' to 'int ', possible loss of data
-// warning C4018: '<' : signed/unsigned mismatch
-
-// warning level 4
-// warning C4152: nonstandard extension, function/data pointer conversion in expression
-// warning C4115: '_RPC_ASYNC_STATE' : named type definition in parentheses
-// warning C4100: 'pitch' : unreferenced formal parameter
-// warning C4201: nonstandard extension used : nameless struct/union
-// warning C4200: nonstandard extension used : zero-sized array in struct/union
-#else
+#if defined( __DJGPP__ )
 #define ASMCALL
 #define min(x,y) ( ((x)<(y)) ? (x) : (y) )
 #define max(x,y) ( ((x)>(y)) ? (x) : (y) )
 #endif
 
-#include "doomtype.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <math.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
-#if defined( WIN32) || defined( __DJGPP__ )
+#if defined( __DJGPP__ )
 #include <io.h>
 #endif
 
@@ -204,13 +182,17 @@
 #include <conio.h>
 #endif
 
+#include "doomtype.h"
+
+
 // Uncheck this to compile debugging code
 //#define RANGECHECK
-#ifndef PARANOIA
 #define PARANOIA                // do some test that never happens but maybe
-#endif
-#if defined(__WIN32__) || defined(LINUX)
+#if !defined( __DJGPP__ )
 #define LOGMESSAGES             // write message in log.txt (win32 and Linux only for the moment)
+#ifdef LOGMESSAGES
+extern FILE *logstream;
+#endif
 #endif
 
 
@@ -219,11 +201,6 @@ extern const int  VERSION;
 extern const int  REVISION;
 extern char VERSION_BANNER[];
 
-
-#if defined (LOGMESSAGES) && defined(LINUX)
-#define INVALID_HANDLE_VALUE -1
-extern int logstream;
-#endif
 
 // some tests, enable or desable it if it run or not
 //#define HORIZONTALDRAW        // abandoned : too slow

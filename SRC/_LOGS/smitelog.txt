@@ -138,3 +138,15 @@ right now, so a little renaming is in order. To be continued.
 rev 736, 737
 Small beautification fixes.
 Renamed legacy.dat to legacy.wad (since it is a WAD file).
+
+
+*** Windows/SDL fixes
+rev 743
+The __WIN32__ macro was used in lots of conditionals for things specific
+to the WinAPI version, yet they are unapplicable to the Windows SDL
+version. Replaced them with the macro WIN_NATIVE_PLACEHOLDER if we
+ever need a native WinAPI version.
+Likewise, removed lots of inappropriate uses of the LINUX macro (which
+actually means "UNIX-like"...)
+Removed VID_PrepareModeList from the video interface, it doesn't need to be exposed.
+

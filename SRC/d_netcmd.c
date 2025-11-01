@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: d_netcmd.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -168,10 +168,9 @@
 void Command_Color_f(void);
 void Command_Name_f(void);
 
-#if !defined( __DJGPP__ )
 void Command_BindJoyaxis_f();
 void Command_UnbindJoyaxis_f();
-#endif
+
 void Command_WeaponPref(void);
 
 void Got_NameAndcolor(char **cp, int playernum);
@@ -243,46 +242,9 @@ CV_PossibleValue_t mouse2port_cons_t[] = { {0, "/dev/gpmdata"}, {1, "/dev/ttyS0"
 CV_PossibleValue_t mouse2port_cons_t[] = { {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"}, {0, NULL} };
 #endif
 
-#ifdef LJOYSTICK
-CV_PossibleValue_t joyport_cons_t[] = { {1, "/dev/js0"}, {2, "/dev/js1"}, {3, "/dev/js2"}, {4, "/dev/js3"}, {0, NULL} };
-#endif
-
-#ifdef __WIN32__
-#define usejoystick_cons_t  NULL        // accept whatever value
-                                        // it is in fact the joystick device number
-#else
-#ifdef __DJGPP__
-CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
-, {1, "4 BUttons"}
-, {2, "Standart"}
-, {3, "6 Buttons"}
-, {4, "Wingman Extreme"}
-, {5, "Flightstick Pro"}
-, {6, "8 Buttons"}
-, {7, "Sidewinder"}
-, {8, "GamePad Pro"}
-, {9, "Snes lpt1"}
-, {10, "Snes lpt2"}
-, {11, "Snes lpt3"}
-, {12, "Wingman Warrior"}
-, {0, NULL}
-};
-#else
-#define usejoystick_cons_t  NULL
-
-//#error "cv_usejoystick don't have possible value for this OS !"
-#endif
-#endif
-
 consvar_t cv_usemouse = { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse };
 consvar_t cv_usemouse2 = { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 };
-consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
 
-#ifdef LJOYSTICK
-extern void I_JoyScale();
-consvar_t cv_joyport = { "joyport", "/dev/js0", CV_SAVE, joyport_cons_t };
-consvar_t cv_joyscale = { "joyscale", "0", CV_SAVE | CV_CALL, NULL, I_JoyScale };
-#endif
 #ifdef LMOUSE2
 consvar_t cv_mouse2port = { "mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t };
 consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE, NULL };
@@ -304,6 +266,26 @@ consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
 
 extern consvar_t   cv_monbehavior;
+
+#if defined( __DJGPP__ )	
+CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
+, {1, "4 BUttons"}
+, {2, "Standart"}
+, {3, "6 Buttons"}
+, {4, "Wingman Extreme"}
+, {5, "Flightstick Pro"}
+, {6, "8 Buttons"}
+, {7, "Sidewinder"}
+, {8, "GamePad Pro"}
+, {9, "Snes lpt1"}
+, {10, "Snes lpt2"}
+, {11, "Snes lpt3"}
+, {12, "Wingman Warrior"}
+, {0, NULL}
+};
+//#error "cv_usejoystick don't have possible value for this OS !"
+consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
+#endif
 
 // =========================================================================
 //                           CLIENT STARTUP
@@ -346,9 +328,8 @@ void D_RegisterClientCommands(void)
     COM_AddCommand("chatmacro", Command_Chatmacro_f);   // hu_stuff.c
     COM_AddCommand("setcontrol", Command_Setcontrol_f);
     COM_AddCommand("setcontrol2", Command_Setcontrol2_f);
-#if !defined( __DJGPP__ )
     COM_AddCommand("bindjoyaxis", Command_BindJoyaxis_f);
-#endif
+
     COM_AddCommand("frags", Command_Frags_f);
     COM_AddCommand("teamfrags", Command_TeamFrags_f);
 
@@ -450,10 +431,6 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_usemouse);
 #if defined( __DJGPP__ )
     CV_RegisterVar(&cv_usejoystick);
-#ifdef LJOYSTICK
-    CV_RegisterVar(&cv_joyport);
-    CV_RegisterVar(&cv_joyscale);
-#endif
 #endif
     CV_RegisterVar(&cv_allowjump);
     CV_RegisterVar(&cv_allowrocketjump);
@@ -470,12 +447,11 @@ void D_RegisterClientCommands(void)
     //i_cdmus.c
     CV_RegisterVar(&cd_volume);
     CV_RegisterVar(&cdUpdate);
-#if defined (LINUX) && !defined (SDL)
-    CV_RegisterVar(&cv_jigglecdvol);
-#endif
 
     // screen.c ?
+#if !defined( __DJGPP__ )			
     CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place
+#endif
     CV_RegisterVar(&cv_scr_depth);
     CV_RegisterVar(&cv_scr_width);
     CV_RegisterVar(&cv_scr_height);

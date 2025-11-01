@@ -35,7 +35,6 @@
 
 #include "g_input.h"
 
-#if !defined( __DJGPP__ )
 //! All possible actions joystick axes can be bound to.
 typedef enum
 {
@@ -68,8 +67,7 @@ void I_InitJoystick();
 int I_JoystickNumAxes(int joynum);
 int I_JoystickGetAxis(int joynum, int axisnum);
 
-#else
-	
+#if defined( __DJGPP__ )	
 #define JOYAXISRANGE     1023   //faB: (1024-1) so we can do a right shift instead of division
                                 //     (doesnt matter anyway, just give enough precision)
                                 // a gamepad will return -1, 0, or 1 in the event data

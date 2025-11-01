@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 733 2010-09-02 00:28:16Z smite-meister $
+// $Id: z_zone.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -399,7 +399,7 @@ void Z_Init (void)
     }
     else
     {
-        uint32_t  freemem, total;
+        uint64_t  freemem, total;
         freemem = I_GetFreeMem(&total)>>20;
         total >>= 20;	// MiB
         CONS_Printf("System memory %d MiB, free %d MiB\n", total, freemem);
@@ -1186,7 +1186,7 @@ int Z_TagUsage (memtag_e tagnum)
 
 void Command_MemInfo_f(void)
 {
-    uint32_t freebytes, totalbytes;
+    uint64_t freebytes, totalbytes;
 #ifdef PLAIN_MALLOC
     CONS_Printf("\2Memory Heap Info - Plain Malloc\n");
     CONS_Printf("used  memory       : %7d KiB\n", memhead.size>>10);

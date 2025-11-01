@@ -165,7 +165,7 @@ void I_DetectWin95 (void)
     }
 }
 
-ULONG I_GetFreeMem(ULONG *total)
+uint64_t I_GetFreeMem(uint64_t *total)
 {
     _go32_dpmi_meminfo     info;
 
@@ -1186,7 +1186,7 @@ void I_ShutdownSystem()
 
 }
 
-void I_GetDiskFreeSpace(int64_t *freespace)
+void I_GetDiskFreeSpace(uint64_t *freespace)
 {
     struct diskfree_t df;
     if(_dos_getdiskfree(0,&df))

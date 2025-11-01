@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: m_menu.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -199,9 +199,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __WIN32__
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #include "am_map.h"
@@ -2205,27 +2203,9 @@ void M_DrawVideoMode(void)
     // draw tittle
     M_DrawMenuTitle();
 
-#ifdef LINUX
-    VID_PrepareModeList(); // FIXME: hack
-#endif
     vidm_nummodes = 0;
-    nummodes = VID_NumModes ();
-
-#ifdef __WIN32__
-    //faB: clean that later : skip windowed mode 0, video modes menu only shows
-    //     FULL SCREEN modes
-    if (nummodes<1) {
-        // put the windowed mode so that there is at least one mode
-        modedescs[0].modenum = 0;
-        modedescs[0].desc = VID_GetModeName (0);
-        modedescs[0].iscur = 1;
-        vidm_nummodes = 1;
-    }
-    for (i=1 ; i<=nummodes && vidm_nummodes<MAXMODEDESCS ; i++)
-#else
-    // DOS does not skip mode 0, because mode 0 is ALWAYS present
+    nummodes = VID_NumModes();
     for (i=0 ; i<nummodes && vidm_nummodes<MAXMODEDESCS ; i++)
-#endif
     {
         desc = VID_GetModeName (i);
         if (desc)
@@ -2522,7 +2502,11 @@ void M_Dir_delete (int ch)
 }
 
 
-#define USE_FTW
+// [smite] MinGW compatibility
+#ifndef WIN32
+#define USE_FTW 
+#endif
+
 #ifdef USE_FTW
 #include <ftw.h>
 int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
@@ -2567,8 +2551,6 @@ void M_Get_SaveDir (int choice)
 
 #include <sys/types.h>
 #include <dirent.h>
-#define FILENAME_SIZE 256
-extern char legacyhome[FILENAME_SIZE];
 
 void M_Dir_scroll (int amount)
 {
@@ -3740,7 +3722,9 @@ boolean M_Responder (event_t* ev)
 {
     int             ch;
     int             i;
-    //static  tic_t   joywait = 0;
+#if defined( __DJGPP__ )			
+    static  tic_t   joywait = 0;
+#endif
     static  tic_t   mousewait = 0;
     static  int     mousey = 0;
     static  int     lasty = 0;
@@ -3768,6 +3752,32 @@ boolean M_Responder (event_t* ev)
     }
     else if( menuactive )
     {
+#if defined( __DJGPP__ )		
+	 if (ev->type == ev_joystick && joywait < I_GetTime())
+        {
+            if (ev->data3 == -1)
+            {
+                ch = KEY_UPARROW;
+                joywait = I_GetTime() + TICRATE/7;
+            }
+            else if (ev->data3 == 1)
+            {
+                ch = KEY_DOWNARROW;
+                joywait = I_GetTime() + TICRATE/7;
+            }
+            
+            if (ev->data2 == -1)
+            {
+                ch = KEY_LEFTARROW;
+                joywait = I_GetTime() + TICRATE/17;
+            }
+            else if (ev->data2 == 1)
+            {
+                ch = KEY_RIGHTARROW;
+                joywait = I_GetTime() + TICRATE/17;
+            }
+        }
+#endif			
       if (ev->type == ev_mouse && mousewait < I_GetTime())
 	{
                 mousey += ev->data3;
@@ -3989,7 +3999,11 @@ boolean M_Responder (event_t* ev)
             //added:07-02-98:dirty hak:for the customize controls, I want only
             //      buttons/keys, not moves
 	    void (*hack)(event_t *) = currentMenu->menuitems[itemOn].itemaction;
+            #if !defined( __DJGPP__ )	
             if (ev->type == ev_mouse)
+            #else
+            if (ev->type==ev_mouse || ev->type==ev_joystick )
+            #endif
                 goto ret_true;
             if (hack) hack(ev);
         }

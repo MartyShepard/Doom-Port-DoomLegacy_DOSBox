@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 737 2010-09-03 16:07:27Z smite-meister $
+// $Id: w_wad.c 743 2010-09-16 01:14:47Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -129,20 +129,9 @@
 //-----------------------------------------------------------------------------
 
 
-// added for linux 19990220 by Kin
-#ifdef LINUX
-#define O_BINARY 0
-#endif
-
-#ifndef __APPLE_CC__
-#ifndef FREEBSD
 #include <malloc.h>
-#endif
-#endif
 #include <fcntl.h>
-#ifndef __WIN32__
 #include <unistd.h>
-#endif
 
 #include "doomdef.h"
 #include "doomtype.h"
@@ -161,10 +150,7 @@
 #include "hardware/hw_main.h"
 #endif
 
-#ifdef LINUX
-int strupr(char *n); // from dosstr.c
-int strlwr(char *n); // from dosstr.c
-#endif
+
 
 //===========================================================================
 //                                                                    GLOBALS
