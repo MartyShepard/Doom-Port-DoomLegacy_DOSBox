@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: s_sound.c 746 2010-09-19 18:32:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -497,7 +497,7 @@ void S_Start(void)
 void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 {
 
-    int sep;
+    int sep = 0;  // compiler
     int pitch;
     int priority;
     sfxinfo_t *sfx;

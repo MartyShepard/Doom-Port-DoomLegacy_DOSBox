@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: am_map.c 747 2010-09-19 18:34:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -624,10 +624,16 @@ void AM_LevelInit(void)
     leveljuststarted = 0;
 
     f_x = f_y = 0;
-    // [WDJ] correct for split screen and reduced screen
+#if 0
+    // [WDJ] Would be correct for split screen and reduced screen size,
+    // but automap does not obey split screen at this time, nor screen size.
     f_w = rdraw_viewwidth;   // was vid.width
     f_h = rdraw_viewheight;  // was vid.height - stbarheight;
-
+#else
+    // Full screen automap, with its own status bar setting.
+    f_w = vid.width;
+    f_h = vid.height - stbarheight;
+#endif
 
     if (rendermode == render_soft)
         AM_drawFline = AM_drawFline_soft;
@@ -993,7 +999,7 @@ boolean AM_clipMline ( mline_t* ml, fline_t* fl )
     register    int outcode2 = 0;
     register    int outside;
 
-    fpoint_t    tmp;
+    fpoint_t    tmp = {0,0};  // compiler
     int         dx, dy;
 
 #define DOOUTCODE(oc, mx, my) \
