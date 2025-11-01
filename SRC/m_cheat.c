@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 552 2009-11-11 01:40:13Z wesleyjohnson $
+// $Id: m_cheat.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -244,7 +244,7 @@ boolean cht_Responder(event_t * ev)
         msg = NULL;
 
         // added 17-5-98
-        plyr = &players[consoleplayer];
+        plyr = consoleplayer_ptr;
         // b. - enabled for more debug fun.
         // if (gameskill != sk_nightmare) {
 
@@ -471,7 +471,7 @@ void Command_CheatNoClip_f(void)
     if (multiplayer)
         return;
 
-    plyr = &players[consoleplayer];
+    plyr = consoleplayer_ptr;
 
     plyr->cheats ^= CF_NOCLIP;
 
@@ -489,7 +489,7 @@ void Command_CheatGod_f(void)
     if (multiplayer)
         return;
 
-    plyr = &players[consoleplayer];
+    plyr = consoleplayer_ptr;
 
     plyr->cheats ^= CF_GODMODE;
     if (plyr->cheats & CF_GODMODE)
@@ -519,17 +519,20 @@ void Command_CheatGimme_f(void)
         return;
     }
 
-    plyr = &players[consoleplayer];
+    plyr = consoleplayer_ptr;
 
-    for (k = 0; k < (cv_splitscreen.value ? 2 : 1); k++)
+    for (k = 0; k < 2; k++)
     {
-        if (k == 1)
-        {
-            plyr = &players[secondarydisplayplayer];
-        }
+      if (k == 1)
+      {
+	 // player 2
+	 if ( ! cv_splitscreen.value )  break;
+         plyr = displayplayer2_ptr;
+         if ( ! plyr )  break;
+      }
 
-    for (i = 1; i < COM_Argc(); i++)
-    {
+      for (i = 1; i < COM_Argc(); i++)
+      {
         s = COM_Argv(i);
 
         if (!strncmp(s, "health", 6))
@@ -651,8 +654,8 @@ void Command_CheatGimme_f(void)
         else
             CONS_Printf("can't give '%s' : unknown\n", s);
 
+      }
     }
-}
 }
 
 // heretic cheat
@@ -887,7 +890,7 @@ static boolean HandleCheats(byte key)
     {   // Can't cheat in a net-game, or in nightmare mode
         return (false);
     }
-    if (players[consoleplayer].health <= 0)
+    if (consoleplayer_ptr->health <= 0)
     {   // Dead players can't cheat
         return (false);
     }
@@ -896,7 +899,7 @@ static boolean HandleCheats(byte key)
     {
         if (CheatAddKey(&Cheats[i], key, &eat))
         {
-            Cheats[i].func(&players[consoleplayer], &Cheats[i]);
+            Cheats[i].func(consoleplayer_ptr, &Cheats[i]);
             S_StartSound(NULL, sfx_dorcls);
         }
     }

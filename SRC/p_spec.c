@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 715 2010-07-31 18:29:06Z wesleyjohnson $
+// $Id: p_spec.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2561,7 +2561,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
           sector->special = 0;
 
           //faB: useful only in single & coop.
-          if (!cv_deathmatch.value && players-player == displayplayer)
+          if (!cv_deathmatch.value && player == displayplayer_ptr)
               CONS_Printf ("\2You found a secret area!\n");
 
           break;
@@ -2611,7 +2611,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
        player->secretcount++;
        sector->special &= ~SECRET_MASK;
 
-       if (!cv_deathmatch.value && players-player == displayplayer)
+       if (!cv_deathmatch.value && player == displayplayer_ptr)
           CONS_Printf ("\2You found a secret area!\n");
 
        if (sector->special<32)

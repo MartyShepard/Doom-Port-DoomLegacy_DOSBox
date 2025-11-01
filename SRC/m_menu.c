@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 746 2010-09-19 18:32:57Z wesleyjohnson $
+// $Id: m_menu.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -915,7 +915,7 @@ void M_StartServerMenu(int choice)
 //                            MULTI PLAYER MENU
 //===========================================================================
 void M_SetupMultiPlayer (int choice);
-void M_SetupMultiPlayerBis (int choice);
+void M_SetupMultiPlayer2 (int choice);
 void M_Splitscreen(int choice);
 
 enum {
@@ -935,7 +935,7 @@ menuitem_t MultiPlayerMenu[] =
     {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER",M_ConnectMenu ,'c'},
     {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_Splitscreen ,'n'},
     {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},
-    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayerBis ,'t'},
+    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'},
     {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS",M_NetOption ,'o'},
     {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME",M_EndGame ,'e'}
 };
@@ -1084,7 +1084,7 @@ void M_SetupMultiPlayer (int choice)
 
     // set for player 1
     SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = &cv_playercolor;
-    setupm_player = &players[consoleplayer];
+    setupm_player = consoleplayer_ptr;
     setupm_cvskin = &cv_skin;
     setupm_cvcolor = &cv_playercolor;
     setupm_cvname = &cv_playername;
@@ -1092,7 +1092,7 @@ void M_SetupMultiPlayer (int choice)
 }
 
 // start the multiplayer setup menu, for secondary player (splitscreen mode)
-void M_SetupMultiPlayerBis (int choice)
+void M_SetupMultiPlayer2 (int choice)
 {
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
@@ -1101,7 +1101,7 @@ void M_SetupMultiPlayerBis (int choice)
 
     // set for splitscreen secondary player
     SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = &cv_playercolor2;
-    setupm_player = &players[secondarydisplayplayer];
+    setupm_player = displayplayer2_ptr;  // player 2
     setupm_cvskin = &cv_skin2;
     setupm_cvcolor = &cv_playercolor2;
     setupm_cvname = &cv_playername2;
@@ -1109,7 +1109,7 @@ void M_SetupMultiPlayerBis (int choice)
 }
 
 
-// called at splitscreen changes
+// called at cv_splitscreen changes
 void M_SwitchSplitscreen(void)
 {
 // activate setup for player 2
@@ -2005,7 +2005,7 @@ void M_SetupControlsMenu (int choice)
     // set the gamecontrols to be edited
     if (choice == setupmultiplayer_controls) {
         setupcontrols_secondaryplayer = true;
-        setupcontrols = gamecontrolbis;     // was called from secondary player's multiplayer setup menu
+        setupcontrols = gamecontrol2;     // was called from secondary player's multiplayer setup menu
     }
     else {
         setupcontrols_secondaryplayer = false;

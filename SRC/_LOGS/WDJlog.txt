@@ -1125,3 +1125,14 @@ Fix bug made in w57_automap_overflow, by restoring original draw sizes.
 Automap does not adapt to splitscreen, nor screen size, and has its own
 status bar adaptation.
 
+*** w60_displayplayer
+patchfile = w60_displayplayer.patch
+- committed revision 748   by wesley johnson
+Add variables consoleplayer_ptr, displayplayer_ptr, displayplayer2_ptr.
+To fix splitscreen displayplayer tests to not segfault.
+This does NOT fix the splitscreen specific segfault causes.
+These variables save on many tests of players[consoleplayer] and can
+be tested against other player ptrs, and fixes clumbsy tests of
+ptr against index.
+Reduces code size by about 3K.
+

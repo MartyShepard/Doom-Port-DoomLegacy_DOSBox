@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 699 2010-07-11 00:19:05Z smite-meister $
+// $Id: p_saveg.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1731,7 +1731,7 @@ void P_UnArchiveThinkers(void)
                     // added for angle prediction
                     if (consoleplayer == i)
                         localangle = mobj->angle;
-                    if (secondarydisplayplayer == i)
+                    if (displayplayer2 == i)  // player 2
                         localangle2 = mobj->angle;
                 }
                 if (diff & MD_MOVEDIR)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: doomstat.h 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -260,7 +260,12 @@ extern  int     viewangleoffset;
 // Player taking events, and displaying.
 extern  int     consoleplayer;
 extern  int     displayplayer;
-extern  int     secondarydisplayplayer; // for splitscreen
+extern  int     displayplayer2; // for splitscreen
+
+// [WDJ] Simplify every test against a player ptr, and splitscreen
+extern  player_t * consoleplayer_ptr;
+extern  player_t * displayplayer_ptr;
+extern  player_t * displayplayer2_ptr;  // NULL when not in use
 
 //added:16-01-98: player from which the statusbar displays the infos.
 extern  int     statusbarplayer;

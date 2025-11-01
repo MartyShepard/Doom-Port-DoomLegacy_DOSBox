@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 687 2010-06-15 00:49:03Z wesleyjohnson $
+// $Id: g_game.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -276,11 +276,18 @@ boolean         multiplayer;
 boolean         playeringame[MAXPLAYERS];
 player_t        players[MAXPLAYERS];
 
+// [WDJ] Whenever assign to these must update the _ptr too.
+// They are not changed anywhere as often as players[] appears in IF stmts.
 int             consoleplayer;          // player taking events and displaying
 int             displayplayer;          // view being displayed
-int             secondarydisplayplayer; // for splitscreen
+int             displayplayer2 = -1;    // for splitscreen, -1 when not in use
 int             statusbarplayer;        // player who's statusbar is displayed
                                         // (for spying with F12)
+
+// [WDJ] Simplify every test against a player ptr, and splitscreen
+player_t *      consoleplayer_ptr = &players[0];
+player_t *      displayplayer_ptr = &players[0];
+player_t *      displayplayer2_ptr = NULL;  // NULL when not in use
 
 tic_t           gametic;
 tic_t           levelstarttic;          // gametic at level start
@@ -473,10 +480,10 @@ angle_t G_ClipAimingPitch(angle_t aiming)
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-// set secondaryplayer true to build player 2's ticcmd in splitscreen mode
+// set displayplayer2_ptr to build player 2's ticcmd in splitscreen mode
 //
-angle_t localaiming,localaiming2;
-angle_t localangle,localangle2;
+angle_t localaiming, localaiming2; // player1 and player2
+angle_t localangle, localangle2;
 
 //added:06-02-98: mouseaiming (looking up/down with the mouse or keyboard)
 #define KB_LOOKSPEED    (1<<25)
@@ -613,7 +620,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                     ply->st_inventoryTics = 0;
                 else if( ply->inventory[ply->inv_ptr].count>0 )
                     {
-                        if( ply == &players[consoleplayer] )
+                        if( ply == consoleplayer_ptr )
                             SendNetXCmd(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
                         else
                             SendNetXCmd2(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
@@ -648,12 +655,12 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
     if (which_player == 0)
     {
-      this_player = &players[consoleplayer];
+      this_player = consoleplayer_ptr;
       gcc = gamecontrol;
       pitch = localaiming;
     } else {
-      this_player = &players[secondarydisplayplayer];
-      gcc = gamecontrolbis;
+      this_player = displayplayer2_ptr;
+      gcc = gamecontrol2;
       pitch = localaiming2;
     }
 
@@ -989,7 +996,7 @@ void G_DoLoadLevel (boolean resetplayer)
     fadealpha = 0;
     extramovefactor = 0;
     JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
-    players[consoleplayer].locked = false;
+    consoleplayer_ptr->locked = false;
 
     if (wipegamestate == GS_LEVEL)
         wipegamestate = -1;             // force a wipe
@@ -1013,8 +1020,14 @@ void G_DoLoadLevel (boolean resetplayer)
     //BOT_InitLevelBots ();
 
     displayplayer = consoleplayer;          // view the guy you are playing
+    displayplayer_ptr = consoleplayer_ptr;
+
     if(!cv_splitscreen.value)
-        secondarydisplayplayer = consoleplayer;
+    {
+        // [WDJ] Changed to a testable off for player 2
+        displayplayer2 = -1;
+        displayplayer2_ptr = NULL;  // use as test for player2 active
+    }
 
     gameaction = ga_nothing;
 #ifdef PARANOIA
@@ -1022,7 +1035,7 @@ void G_DoLoadLevel (boolean resetplayer)
 #endif
 
     if (camera.chase)
-        P_ResetCamera (&players[displayplayer]);
+        P_ResetCamera ( displayplayer_ptr );
 
     // clear cmd building stuff
     memset (gamekeydown, 0, sizeof(gamekeydown));
@@ -1052,6 +1065,7 @@ boolean G_Responder (event_t* ev)
             if (displayplayer == MAXPLAYERS)
                 displayplayer = 0;
         } while (!playeringame[displayplayer] && displayplayer != consoleplayer);
+        displayplayer_ptr = &players[displayplayer];
 
         //added:16-01-98:change statusbar also if playingback demo
         if( singledemo )
@@ -1081,8 +1095,8 @@ boolean G_Responder (event_t* ev)
         if (devparm && ev->type == ev_keydown && ev->data1 == ';')
         {
             // added Boris : test different player colors
-            players[consoleplayer].skincolor = (players[consoleplayer].skincolor+1) %MAXSKINCOLORS;
-            players[consoleplayer].mo->flags |= (players[consoleplayer].skincolor)<<MF_TRANSSHIFT;
+            consoleplayer_ptr->skincolor = (consoleplayer_ptr->skincolor+1) %MAXSKINCOLORS;
+            consoleplayer_ptr->mo->flags |= (consoleplayer_ptr->skincolor)<<MF_TRANSSHIFT;
             G_DeathMatchSpawnPlayer (0);
             return true;
         }
@@ -1096,9 +1110,9 @@ boolean G_Responder (event_t* ev)
             return true;        // status window ate it
         if (AM_Responder (ev))
             return true;        // automap ate it
-        if (G_InventoryResponder (&players[consoleplayer], gamecontrol, ev))
+        if (G_InventoryResponder (consoleplayer_ptr, gamecontrol, ev))
             return true;
-        if (cv_splitscreen.value && G_InventoryResponder (&players[secondarydisplayplayer], gamecontrolbis, ev))
+        if (displayplayer2_ptr && G_InventoryResponder (displayplayer2_ptr, gamecontrol2, ev))
             return true;
         //added:07-02-98: map the event (key/mouse/joy) to a gamecontrol
     }
@@ -1200,7 +1214,7 @@ void G_Ticker (void)
             {
                 static char turbomessage[80];
                 sprintf (turbomessage, "%s is turbo!",player_names[i]);
-                players[consoleplayer].message = turbomessage;
+                consoleplayer_ptr->message = turbomessage;
             }
         }
     }
@@ -1470,7 +1484,7 @@ boolean G_CheckSpot ( int           playernum,
 
     //added:16-01-98:consoleplayer -> displayplayer (hear snds from viewpt)
     // removed 9-12-98: why not ????
-    if (players[displayplayer].viewz != 1)
+    if ( displayplayer_ptr->viewz != 1 )
         S_StartSound (mo, sfx_telept);  // don't start sound on first frame
 
     return true;
@@ -1702,7 +1716,7 @@ void G_DoCompleted (void)
     }
 
     if(!dedicated)
-	wminfo.didsecret = players[consoleplayer].didsecret;
+	wminfo.didsecret = consoleplayer_ptr->didsecret;
     wminfo.epsd = gameepisode -1;
     wminfo.last = gamemap -1;
 
@@ -1801,7 +1815,7 @@ void G_NextLevel (void)
 {
     gameaction = ga_worlddone;
     if (secretexit)
-        players[consoleplayer].didsecret = true;
+        consoleplayer_ptr->didsecret = true;
 
     if ( gamemode == commercial)
     {
@@ -1933,7 +1947,9 @@ void G_DoLoadGame (int slot)
 
     gameaction = ga_nothing;
     gamestate = GS_LEVEL;
+
     displayplayer = consoleplayer;
+    displayplayer_ptr = consoleplayer_ptr;
 
     // done
     Z_Free (savebuffer);
@@ -2020,7 +2036,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     gameaction = ga_nothing;
 
-    players[consoleplayer].message = GGSAVED;
+    consoleplayer_ptr->message = GGSAVED;
 
     // draw the pattern into the back screen
     R_FillBackScreen ();
@@ -2532,6 +2548,7 @@ no_demo:
     //added:08-02-98: added displayplayer because the status bar links
     // to the display player when playing back a demo.
     displayplayer = consoleplayer = *demo_p++;
+    displayplayer_ptr = consoleplayer_ptr = &players[consoleplayer];  // [WDJ]
 
 #ifdef DEBUG_DEMO
     fprintf( stderr, "[7] no monsters %i.\n", (int)nomonsters );

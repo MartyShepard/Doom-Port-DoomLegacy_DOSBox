@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_user.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1011,19 +1011,19 @@ void P_PlayerThink (player_t* player)
     {
         //Fab:25-04-98: show the dm rankings while dead, only in deathmatch
 		//DarkWolf95:July 03, 2003:fixed bug where rankings only show on player1's death
-        if (player==&players[displayplayer] ||
-			player==&players[secondarydisplayplayer])
+        if (player== displayplayer_ptr
+	    || player== displayplayer2_ptr ) // NULL when unused
             playerdeadview = true;
 
         P_DeathThink (player);
 
         //added:26-02-98:camera may still move when guy is dead
         if (camera.chase)
-            P_MoveChaseCamera (&players[displayplayer]);
+            P_MoveChaseCamera ( displayplayer_ptr );
         return;
     }
     else
-        if (player==&players[displayplayer])
+        if ( player== displayplayer_ptr )
             playerdeadview = false;
     if( player->chickenTics )
         P_ChickenPlayerThink(player);
@@ -1046,8 +1046,8 @@ void P_PlayerThink (player_t* player)
 #endif
 
     //added:26-02-98: calculate the camera movement
-    if (camera.chase && player==&players[displayplayer])
-        P_MoveChaseCamera (&players[displayplayer]);
+    if (camera.chase && player== displayplayer_ptr)
+        P_MoveChaseCamera ( displayplayer_ptr );
 
     // check special sectors : damage & secrets
     P_PlayerInSpecialSector (player);
@@ -1335,8 +1335,8 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
             if(P_UseArtifact(player, arti))
             { // Artifact was used - remove it from inventory
                 P_PlayerRemoveArtifact(player, i);
-                if(player == &players[consoleplayer] 
-                || player == &players[secondarydisplayplayer] )
+                if(player == consoleplayer_ptr 
+		   || player == displayplayer2_ptr ) // NULL when unused
                 {
                     S_StartSound(NULL, sfx_artiuse);
                     ArtifactFlash = 4;

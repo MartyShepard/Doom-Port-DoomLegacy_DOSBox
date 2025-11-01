@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 547 2009-10-26 05:40:14Z smite-meister $
+// $Id: p_telept.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -115,14 +115,14 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
         if( !thing->player->powers[pw_weaponlevel2] )
             thing->reactiontime = 18;
         // added : absolute angle position
-        if(thing==players[consoleplayer].mo)
+        if(thing== consoleplayer_ptr->mo)
             localangle = angle;
-        if(thing==players[secondarydisplayplayer].mo)
+        if(displayplayer2_ptr && thing== displayplayer2_ptr->mo) // NULL when unused
             localangle2 = angle;
 #ifdef CLIENTPREDICTION2
-        if(thing==players[consoleplayer].mo)
+        if(thing== consoleplayer_ptr->mo)
         {
-            players[consoleplayer].spirit->reactiontime = thing->reactiontime;
+            consoleplayer_ptr->spirit->reactiontime = thing->reactiontime;
             CL_ResetSpiritPosition(thing);
         }
 #endif

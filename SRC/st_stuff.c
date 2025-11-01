@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 666 2010-06-03 12:56:19Z wesleyjohnson $
+// $Id: st_stuff.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1030,12 +1030,12 @@ void ST_Drawer ( boolean refresh )
         {
             if( !playerdeadview || cv_splitscreen.value)
             {
-                plyr=&players[displayplayer];
+                plyr= displayplayer_ptr;
                 ST_overlayDrawer ();
             }
-            if( cv_splitscreen.value )
+            if( cv_splitscreen.value && displayplayer2_ptr )
             {
-                plyr=&players[secondarydisplayplayer];
+                plyr= displayplayer2_ptr;
                 ST_overlayDrawer ();
             }
         }

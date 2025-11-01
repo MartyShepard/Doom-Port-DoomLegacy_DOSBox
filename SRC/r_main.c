@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 719 2010-07-31 18:49:43Z wesleyjohnson $
+// $Id: r_main.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -273,14 +273,21 @@ void SplitScreen_OnChange(void)
     }
     else
     {
+        // multiplayer demo ??
         int i;
-        secondarydisplayplayer = consoleplayer;
+        displayplayer2 = -1;  // [WDJ] Turn off in a testable way
+	 displayplayer2_ptr = NULL;
+
+        // find any player to be player2
         for( i=0; i<MAXPLAYERS;i++)
+        {
             if( playeringame[i] && i!=consoleplayer )
             {
-                secondarydisplayplayer = i;
+                displayplayer2 = i;
+	        displayplayer2_ptr = &players[displayplayer2];
                 break;
             }
+	}
     }
 }
 
@@ -1140,14 +1147,15 @@ void R_SetupFrame (player_t* player)
 
         if(!demoplayback && player->playerstate!=PST_DEAD && !drone)
         {
-            if(player==&players[consoleplayer])
+            if(player== consoleplayer_ptr)
             {
                 viewangle = localangle; // WARNING : camera use this
                 aimingangle=localaiming;
             }
             else
-                if(player==&players[secondarydisplayplayer])
+                if(player== displayplayer2_ptr)  // NULL when unused
                 {
+		    // player 2
                     viewangle = localangle2;
                     aimingangle=localaiming2;
                 }

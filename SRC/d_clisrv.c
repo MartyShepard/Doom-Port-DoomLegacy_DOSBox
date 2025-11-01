@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: d_clisrv.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -782,7 +782,7 @@ void CL_UpdateServerList( boolean internetsearch )
     }
 }
 
-// use addaptive send using net_bandwidth and stat.sendbytes
+// use adaptive send using net_bandwidth and stat.sendbytes
 static void CL_ConnectToServer()
 {
     int     numnodes,nodewaited=doomcom->numnodes,i;
@@ -938,6 +938,7 @@ static void CL_ConnectToServer()
 
     consoleplayer&= ~DRONE;
     displayplayer = consoleplayer;
+    consoleplayer_ptr = displayplayer_ptr = &players[consoleplayer];
 }
 
 void Command_connect(void)
@@ -1353,12 +1354,13 @@ void Got_AddPlayer(char **p,int playernum)
         {
             consoleplayer=newplayernum;
             displayplayer=newplayernum;
-            secondarydisplayplayer=newplayernum;
+	    displayplayer_ptr = consoleplayer_ptr = &players[newplayernum];
             DEBFILE("spawning me\n");
         }
         else
         {
-            secondarydisplayplayer=newplayernum;
+            displayplayer2=newplayernum;
+	    displayplayer2_ptr = &players[displayplayer2];
             DEBFILE("spawning my brother\n");
         }
     }
@@ -1471,7 +1473,7 @@ void CL_RemoveSplitscreenPlayer( void )
     if( cl_mode != cl_connected )
         return;
 
-    buf[0]=secondarydisplayplayer;
+    buf[0]=displayplayer2;  // player 2
     buf[1]=KICK_MSG_PLAYER_QUIT;
     SendNetXCmd(XD_KICK,&buf,2);
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: g_input.h 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -124,7 +124,7 @@ extern  byte    gamekeydown[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
 extern  int     gamecontrol[num_gamecontrols][2];
-extern  int     gamecontrolbis[num_gamecontrols][2];    // secondary splitscreen player
+extern  int     gamecontrol2[num_gamecontrols][2];    // secondary splitscreen player
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not

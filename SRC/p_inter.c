@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 661 2010-06-03 12:34:00Z wesleyjohnson $
+// $Id: p_inter.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -374,7 +374,8 @@ boolean P_GiveWeapon ( player_t*     player,
 
         //added:16-01-98:changed consoleplayer to displayplayer
         //               (hear the sounds from the viewpoint)
-        if (player == &players[displayplayer] || (cv_splitscreen.value && player==&players[secondarydisplayplayer]))
+        if (player == displayplayer_ptr
+	    || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
             S_StartSound (NULL, sfx_wpnup);
         return false;
     }
@@ -1326,7 +1327,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
     player->bonuscount += BONUSADD;
 
     //added:16-01-98:consoleplayer -> displayplayer (hear sounds from viewpoint)
-    if (player == &players[displayplayer] || (cv_splitscreen.value && player==&players[secondarydisplayplayer]))
+    if (player == displayplayer_ptr
+        || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
         S_StartSound (NULL, sound);
 }
 
@@ -1716,8 +1718,8 @@ extern consvar_t cv_solidcorpse;
             source->player->frags[target->player-players]++;
             if( gamemode == heretic )
             {
-                if(source->player == &players[displayplayer] 
-                || source->player == &players[secondarydisplayplayer] )
+                if(source->player == displayplayer_ptr
+                || source->player == displayplayer2_ptr )
                     S_StartSound(NULL, sfx_gfrag);
 
                 // Make a super chicken
@@ -1749,7 +1751,7 @@ extern consvar_t cv_solidcorpse;
         target->player->powers[pw_weaponlevel2] = 0;
         target->player->playerstate = PST_DEAD;
         P_DropWeapon (target->player);                  // put weapon away
-        if (target->player == &players[consoleplayer])
+        if (target->player == consoleplayer_ptr )
         {
             // don't die in auto map,
             // switch view prior to dying
@@ -1759,8 +1761,9 @@ extern consvar_t cv_solidcorpse;
             //added:22-02-98: recenter view for next live...
             localaiming = 0;
         }
-        if (target->player == &players[secondarydisplayplayer])
+        if (target->player == displayplayer2_ptr) // NULL when unused
         {
+	    // player 2
             //added:22-02-98: recenter view for next live...
             localaiming2 = 0;
         }
@@ -2441,7 +2444,7 @@ boolean P_DamageMobj ( mobj_t*   target,
                 player->damagecount = 100;  // teleport stomp does 10k points...
 
             //added:22-02-98: force feedback ??? electro-shock???
-            if (player == &players[consoleplayer])
+            if (player == consoleplayer_ptr )
                 I_Tactile (40,10,40+min(damage, 100)*2);
         }
         player->attacker = source;

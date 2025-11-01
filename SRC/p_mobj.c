@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 737 2010-09-03 16:07:27Z smite-meister $
+// $Id: p_mobj.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1193,11 +1193,11 @@ void P_MobjThinker(mobj_t * mobj)
             // cross special lines and pick up things
             if (!P_TryMove(mobj, mobj->player->cmd.x, mobj->player->cmd.y, true))
             {
-                // P_TryMove fail mean cannot change mobj position to requestied position
+                // P_TryMove fail mean cannot change mobj position to requested position
                 // the mobj is blocked by something
-                if (mobj->player - players == consoleplayer)
+                if (mobj->player == consoleplayer_ptr)
                 {
-                    // reset spirit possition
+                    // reset spirit position
                     CL_ResetSpiritPosition(mobj);
 
                     //if(devparm)
@@ -1742,7 +1742,7 @@ void P_SpawnPlayer(mapthing_t * mthing)
     mobj->angle = ANG45 * (mthing->angle / 45);
     if (playernum == consoleplayer)
         localangle = mobj->angle;
-    else if (playernum == secondarydisplayplayer)
+    else if (playernum == displayplayer2)  // player 2
         localangle2 = mobj->angle;
     else if (p->bot)    //added by AC for acbot
         B_SpawnBot(p->bot);

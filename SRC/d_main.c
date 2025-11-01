@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: d_main.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -319,7 +319,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 747; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 748; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -563,31 +563,31 @@ void D_Display(void)
         // draw the view directly
         if (!automapactive)
         {
-            if (players[displayplayer].mo)
+            if (displayplayer_ptr->mo)
             {
 #ifdef CLIENTPREDICTION2
-                players[displayplayer].mo->flags2 |= MF2_DONTDRAW;
+                displayplayer_ptr->mo->flags2 |= MF2_DONTDRAW;
 #endif
 #ifdef HWRENDER
                 if (rendermode != render_soft)
-                    HWR_RenderPlayerView(0, &players[displayplayer]);
+                    HWR_RenderPlayerView(0, displayplayer_ptr);
                 else    //if (rendermode == render_soft)
 #endif
-                    R_RenderPlayerView(&players[displayplayer]);
+                    R_RenderPlayerView(displayplayer_ptr);
 #ifdef CLIENTPREDICTION2
-                players[displayplayer].mo->flags2 &= ~MF2_DONTDRAW;
+                displayplayer_ptr->mo->flags2 &= ~MF2_DONTDRAW;
 #endif
             }
 
             // added 16-6-98: render the second screen
-            if (secondarydisplayplayer != consoleplayer && players[secondarydisplayplayer].mo)
+            if ( displayplayer2_ptr && displayplayer2_ptr->mo)
             {
 #ifdef CLIENTPREDICTION2
-                players[secondarydisplayplayer].mo->flags2 |= MF2_DONTDRAW;
+                displayplayer2_ptr->mo->flags2 |= MF2_DONTDRAW;
 #endif
 #ifdef HWRENDER
                 if (rendermode != render_soft)
-                    HWR_RenderPlayerView(1, &players[secondarydisplayplayer]);
+                    HWR_RenderPlayerView(1, displayplayer2_ptr);
                 else
 #endif
                 {
@@ -596,14 +596,14 @@ void D_Display(void)
                     viewwindowy = vid.height / 2;
                     memcpy(ylookup, ylookup2, rdraw_viewheight * sizeof(ylookup[0]));
 
-                    R_RenderPlayerView(&players[secondarydisplayplayer]);
+                    R_RenderPlayerView(displayplayer2_ptr);
 
 		    // Restore first player tables
                     viewwindowy = 0;
                     memcpy(ylookup, ylookup1, rdraw_viewheight * sizeof(ylookup[0]));
                 }
 #ifdef CLIENTPREDICTION2
-                players[secondarydisplayplayer].mo->flags2 &= ~MF2_DONTDRAW;
+                displayplayer2_ptr->mo->flags2 &= ~MF2_DONTDRAW;
 #endif
             }
         }
@@ -667,7 +667,7 @@ void D_Display(void)
 
 #ifdef TILTVIEW
         //added:12-02-98: tilt view when marine dies... just for fun
-        if (gamestate == GS_LEVEL && cv_tiltview.value && players[displayplayer].playerstate == PST_DEAD)
+        if (gamestate == GS_LEVEL && cv_tiltview.value && displayplayer_ptr->playerstate == PST_DEAD)
         {
             V_DrawTiltView(screens[0]);
         }
@@ -676,7 +676,7 @@ void D_Display(void)
 #ifdef PERSPCORRECT
         if (gamestate == GS_LEVEL && cv_perspcorr.value)
         {
-            V_DrawPerspView(screens[0], players[displayplayer].aiming);
+            V_DrawPerspView(screens[0], displayplayer_ptr->aiming);
         }
         else
 #endif
@@ -994,6 +994,7 @@ void D_StartTitle(void)
     gameaction = ga_nothing;
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
+    displayplayer_ptr = consoleplayer_ptr = &players[0]; // [WDJ]
     demosequence = -1;
     paused = false;
     D_AdvanceDemo();

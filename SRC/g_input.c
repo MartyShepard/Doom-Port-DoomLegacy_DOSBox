@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: g_input.c 748 2010-09-19 18:39:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -111,7 +111,7 @@ byte    gamekeydown[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
 int     gamecontrol[num_gamecontrols][2];
-int     gamecontrolbis[num_gamecontrols][2];        // secondary splitscreen player
+int     gamecontrol2[num_gamecontrols][2];        // secondary splitscreen player
 
 
 typedef struct {
@@ -575,11 +575,11 @@ void G_SaveKeySetting(FILE *f)
        {
            fprintf(f,"setcontrol2 \"%s\" \"%s\""
                     ,gamecontrolname[i]
-                    ,G_KeynumToString(gamecontrolbis[i][0]));
+                    ,G_KeynumToString(gamecontrol2[i][0]));
 
-           if(gamecontrolbis[i][1])
+           if(gamecontrol2[i][1])
                fprintf(f," \"%s\"\n"
-                        ,G_KeynumToString(gamecontrolbis[i][1]));
+                        ,G_KeynumToString(gamecontrol2[i][1]));
            else
                fprintf(f,"\n");
        }
@@ -606,10 +606,10 @@ void G_CheckDoubleUsage(int keynum)
                 gamecontrol[i][0]= KEY_NULL;
             if( gamecontrol[i][1]==keynum )
                 gamecontrol[i][1]= KEY_NULL;
-            if( gamecontrolbis[i][0]==keynum )
-                gamecontrolbis[i][0]= KEY_NULL;
-            if( gamecontrolbis[i][1]==keynum )
-                gamecontrolbis[i][1]= KEY_NULL;
+            if( gamecontrol2[i][0]==keynum )
+                gamecontrol2[i][0]= KEY_NULL;
+            if( gamecontrol2[i][1]==keynum )
+                gamecontrol2[i][1]= KEY_NULL;
         }
     }
 }
@@ -666,8 +666,10 @@ void Command_Setcontrol2_f(void)
         return;
     }
 
-    setcontrol(gamecontrolbis,na);
+    setcontrol(gamecontrol2,na);
 }
+
+
 
 //! Magically converts a console command to a joystick axis binding. Also releases bindings.
 void Command_BindJoyaxis_f()
