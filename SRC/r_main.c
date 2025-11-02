@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: r_main.c 751 2010-09-19 18:44:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -275,8 +275,12 @@ void SplitScreen_OnChange(void)
     {
         // multiplayer demo ??
         int i;
-        displayplayer2 = -1;  // [WDJ] Turn off in a testable way
-	 displayplayer2_ptr = NULL;
+	// [WDJ] Do not break splitscreen setups when a demo runs
+	if( displayplayer2_ptr )  return;  // already have a player2
+       
+        // [WDJ] This code does not guarantee that the demo will get
+	// a player2, thus all code using player2 cannot assume that
+	// displayplayer2_ptr is valid, even when cv_splitscreen.
 
         // find any player to be player2
         for( i=0; i<MAXPLAYERS;i++)

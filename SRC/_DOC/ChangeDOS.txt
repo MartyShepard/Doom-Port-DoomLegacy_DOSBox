@@ -1,5 +1,15 @@
 * Not need to Compile.
 
+[00751 ]: w60 split demo
+[00750 ]: w60 split sound
+[00749 ]: w60 split player
+[00748 ]: w60 display player ptr
+[00747 ]: w60 automap status
+[00746 ]: w60 gcc4.4.4 complaints
+[00745 ]: Fuzzymode consvar added.
+[00744 ]: Windows/SDL version compiles and links.
+[00743 ]: Windows SDL version compiles almost cleanly.
+[00742*]: Wadtool build rule, legacy.wad version check fixed.
 [00741 ]: share wadtool source from Legacy2 using svn:externals
 [00740*]: CSS synchronized with website
 [00739*]: wadtool updated

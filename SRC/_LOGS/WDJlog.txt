@@ -1148,5 +1148,10 @@ patchfile = w60_splitsound.patch
 - committed revision 750   by wesley johnson
 Fix sound code segfaults in splitplayer mode.
 
+*** w60_splitdemo
+patchfile = w60_splitdemo.patch
+- committed revision 751   by wesley johnson
+Prevent demos from destroying an existing split player setup.
+
 
 
