@@ -1,4 +1,9 @@
 * Not need to Compile.
+
+[00756 ]: Effects menu permanent
+[00755 ]: patch combine size failure fix
+		* Fixed Texture Failsize in Caesar.wad
+
 [00754 ]: WIN32 system interface and SDL_mixer music fixes.
 		* DOS: Interface Update GetDiskFreeSpace
 		

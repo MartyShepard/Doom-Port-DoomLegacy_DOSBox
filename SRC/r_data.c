@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: r_data.c 755 2010-10-12 02:45:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -520,9 +520,15 @@ byte* R_GenerateTexture (int texnum)
     //   worstsize = colofs_size + 8 + (width * height * 5/2)
     // Usually the size will be much smaller, but it is not predictable.
     // all posts + new columnofs table + patch header
+
+#if 1
+    // Combined patches + table + header + 2 byte per empty column
+    txcblocksize = compostsize + (2 * texture->width);
+     // this stops failure in caesar.wad
+#else
     // Combined patches + table + header + 1 byte per empty column
     txcblocksize = compostsize + texture->width;
-   
+#endif
     txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
                       (void**)&texturecache[texnum]);
     txcpatch = (patch_t*) txcblock;
@@ -563,9 +569,11 @@ byte* R_GenerateTexture (int texnum)
 	        realpatch = cp->patch;
 	        uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
 	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
+	        if ( cp->postptr->topdelta == 0xFF )  goto patch_off;
 	        cp->nxt_y = cp->originy + cp->postptr->topdelta;
 	        cp->bot_y = cp->nxt_y + cp->postptr->length;
 	    }else{
+	       patch_off: // empty post
 	        // clip left and right by turning this patch off
 	        cp->postptr = NULL;
 	        cp->nxt_y = MAXINT;
