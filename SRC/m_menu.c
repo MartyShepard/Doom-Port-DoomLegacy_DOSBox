@@ -1252,6 +1252,9 @@ void M_HandleSetupMultiPlayer (int key)
         break;
 
       default:
+        #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
+        input_char = key;
+        #endif
         if (!is_printable(input_char) || itemOn != 0)
 	  break;
         l = strlen(setupm_name);
@@ -2361,6 +2364,9 @@ void M_HandleVideoMode (int key)
         return;
 
     default:
+        #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
+        input_char = key;
+        #endif
       switch (tolower(input_char))
 	{
       case 't':
@@ -3704,7 +3710,10 @@ static boolean M_ChangeStringCvar(int key, char ch)
                 }
                 return true;
         default:
-	  if (is_printable(ch))
+        #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
+        ch = key;
+        #endif
+             if (is_printable(ch))
             {
                 len=strlen(cv->string);
                 if( len<MAXSTRINGLENGTH-1 )
@@ -3851,6 +3860,9 @@ boolean M_Responder (event_t* ev)
             break;
 
           default:
+        #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
+        ch = key;
+        #endif
             if (is_printable(ch) &&
 		ch != ' ' &&
                 edit_index < SAVESTRINGSIZE-1 &&
