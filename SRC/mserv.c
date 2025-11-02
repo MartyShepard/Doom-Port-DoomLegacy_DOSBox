@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: mserv.c 754 2010-09-26 11:49:59Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -127,30 +127,25 @@
 //-----------------------------------------------------------------------------
 
 
+#include "doomdata.h"
+
 #ifdef WIN32
 # include <winsock2.h>     // socket(),...
 # include <ws2tcpip.h>    // socklen_t
 #else
-
-#include <unistd.h>
-#ifdef __OS2__
-#include <sys/types.h>
-#endif
-#include <sys/socket.h>  // socket(),...
-#include <sys/time.h>    // timeval,... (TIMEOUT)
-#include <netinet/in.h>  // sockaddr_in
-#include <arpa/inet.h>   // inet_addr(),...
-#include <netdb.h>       // gethostbyname(),...
-#include <sys/ioctl.h>
-#include <errno.h>
-/*
-#include <string.h>      // memset(),...
-#include <sys/types.h>   // socket(),...
-*/
-#endif
-
-#ifdef __OS2__
-#include <errno.h>
+# include <unistd.h>
+# ifdef __OS2__
+#  include <sys/types.h>
+# endif
+# include <sys/socket.h>  // socket(),...
+# include <sys/time.h>    // timeval,... (TIMEOUT)
+# include <netinet/in.h>  // sockaddr_in
+# include <arpa/inet.h>   // inet_addr(),...
+# include <netdb.h>       // gethostbyname(),...
+# include <sys/ioctl.h>
+# include <errno.h>
+//#include <string.h>      // memset(),...
+//#include <sys/types.h>   // socket(),...
 #endif
 
 #include "doomdef.h"

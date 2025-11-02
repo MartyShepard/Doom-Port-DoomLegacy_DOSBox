@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: doomtype.h 754 2010-09-26 11:49:59Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -58,6 +58,7 @@
 
 
 #ifdef WIN32
+#define WINVER 0x0500  // require windows 2k or later
 #include <windows.h>
 #else
 // WIN32 standard headers already define these!

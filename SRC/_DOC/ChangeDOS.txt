@@ -1,5 +1,11 @@
 * Not need to Compile.
-
+[00754 ]: WIN32 system interface and SDL_mixer music fixes.
+		* DOS: Interface Update GetDiskFreeSpace
+		
+[00753 ]: X11R6 still used by Linux 2.4 and others
+[00752 ]: Menu now understands international keyboards.
+		* DOS: Fixed and Translate Key Ascii Codes
+		
 [00751 ]: w60 split demo
 [00750 ]: w60 split sound
 [00749 ]: w60 split player

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 752 2010-09-20 20:00:50Z smite-meister $
+// $Id: i_system.h 754 2010-09-26 11:49:59Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -60,7 +60,7 @@ extern byte graphics_started;
 
 
 // system initialization
-void I_SysInit();
+void I_SysInit(void);
 
 // return free and total physical memory in the system
 uint64_t I_GetFreeMem(uint64_t *total);
@@ -118,20 +118,20 @@ void I_OutputMsg (char *error, ...);
 
 
 /* list of functions to call at program cleanup */
-void I_AddExitFunc (void (*func)());
-void I_RemoveExitFunc (void (*func)());
+void I_AddExitFunc (void (*func)(void));
+void I_RemoveExitFunc (void (*func)(void));
 
 // Setup signal handler, plus stuff for trapping errors and cleanly exit.
 int  I_StartupSystem (void);
 void I_ShutdownSystem (void);
 
-void I_GetDiskFreeSpace(uint64_t *freespace);
+uint64_t I_GetDiskFreeSpace(void);
 char *I_GetUserName(void);
 int  I_mkdir(const char *dirname, int unixright);
 
-void I_StartupMouse();
-void I_StartupMouse2();
-void doUngrabMouse();
+void I_StartupMouse(void);
+void I_StartupMouse2(void);
+void doUngrabMouse(void);
 
 
 #if defined( __DJGPP__ )

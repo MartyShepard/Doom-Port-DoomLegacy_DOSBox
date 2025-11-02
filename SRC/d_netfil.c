@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: d_netfil.c 754 2010-09-26 11:49:59Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -228,7 +228,7 @@ boolean SendRequestFile(void)
 {
     int   i;
     ULONG totalfreespaceneeded=0;
-    uint64_t availablefreespace;
+    //uint64_t availablefreespace;
 
     if( M_CheckParm("-nodownload") )
     {
@@ -283,7 +283,7 @@ boolean SendRequestFile(void)
             fileneeded[i].status = FS_REQUESTED;
         }
     WRITECHAR(p,-1);
-    I_GetDiskFreeSpace(&availablefreespace);
+    uint64_t availablefreespace = I_GetDiskFreeSpace();//I_GetDiskFreeSpace(&availablefreespace);
 //    CONS_Printf("free byte %d\n",availablefreespace);
     if(totalfreespaceneeded>availablefreespace)
         I_Error("To play on this server you should download %dKb\n"

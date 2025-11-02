@@ -157,3 +157,11 @@ Windows/SDL both compile and link.
 rev 745
 Added a consvar for choosing between the original (fuzziness) and new
 (transparency) partial invisibility effect.
+
+
+*** System interface fixes, improved SDL_mixer music.
+rev 754
+Fixed I_GetFreeMem and I_GetDiskFreeSpace for Windows.
+Now we can actually pause and resume the music using SDL_mixer.
+All music loops by default. Fixed a potential bug where non-looping
+music wasn't played at all.

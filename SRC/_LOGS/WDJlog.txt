@@ -1153,5 +1153,9 @@ patchfile = w60_splitdemo.patch
 - committed revision 751   by wesley johnson
 Prevent demos from destroying an existing split player setup.
 
+*** svn744_makefile
+patchfile = svn744_makefile.patch
+- committed revision 753   by wesley johnson
+Linux 2.4 and others still have GLU lib in /usr/X11R6/lib.
 
 

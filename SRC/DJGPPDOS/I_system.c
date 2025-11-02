@@ -1186,8 +1186,9 @@ void I_ShutdownSystem()
 
 }
 
-void I_GetDiskFreeSpace(uint64_t *freespace)
+uint64_t I_GetDiskFreeSpace(void)
 {
+	  uint64_t *freespace;
     struct diskfree_t df;
     if(_dos_getdiskfree(0,&df))
         *freespace = (unsigned long)df.avail_clusters *
@@ -1195,6 +1196,8 @@ void I_GetDiskFreeSpace(uint64_t *freespace)
                      (unsigned long)df.sectors_per_cluster;
     else
         *freespace = MAXINT;
+			
+	  return *freespace;
 }
 
 char *I_GetUserName(void)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: i_tcp.c 754 2010-09-26 11:49:59Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -148,10 +148,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
 #ifdef __OS2__
-#include <sys/types.h>
-#include <sys/time.h>
+# include <sys/types.h>
+# include <sys/time.h>
 #endif // __OS2__
+
+#include "doomtype.h"
 
 #ifdef __WIN32__
 # include <winsock2.h>

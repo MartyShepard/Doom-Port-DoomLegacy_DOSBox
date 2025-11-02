@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 745 2010-09-16 16:28:07Z smite-meister $
+# $Id: Makefile 754 2010-09-26 11:49:59Z smite-meister $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -98,6 +98,9 @@ endif
 ifeq ($(SMIF), SDL)
 # SDL is the default system media interface. This is what all modern systems should use.
 
+# name of the executable
+  EXENAME := doomlegacy
+
 # interface directory (where you put all i_*.c)
   INTERFACE=sdl
 
@@ -109,12 +112,15 @@ ifeq ($(SMIF), SDL)
 # platform
   ifdef WIN32
     # Windows (MinGW)
+    EXENAME := $(EXENAME).exe
     OPTS := -DWIN32
     LIBS := -lopengl32 -lglu32 -lwsock32
   else
-    # default is Linux
+    # default is Linux, for all unix SDL
     OPTS := -DLINUX
-    LIBS := -lGL -lGLU
+    LIBS := -lGL -lGLU -L/usr/X11R6/lib
+    # -L/usr/X11R6/lib is needed by Linux 2.4 and others that still have
+    # the GLU libraries in an X11 directory.
   endif
 
   OPTS += -DHWRENDER -DSDL $(shell sdl-config --cflags) -I.
@@ -125,8 +131,6 @@ ifeq ($(SMIF), SDL)
     LIBS += -lSDL_mixer 
   endif
 
-# name of the exefile
-  EXENAME := doomlegacy
 
 
 #=================================
