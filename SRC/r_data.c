@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 755 2010-10-12 02:45:24Z wesleyjohnson $
+// $Id: r_data.c 758 2010-10-12 02:52:22Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -358,6 +358,49 @@ byte* R_GenerateTexture (int texnum)
 	// otherwise it will be in cache without endian changes.
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
 #if 1
+        // [WDJ] Detect PNG patches.
+	if(    ((byte*)realpatch)[0]==137
+	    && ((byte*)realpatch)[1]=='P'
+	    && ((byte*)realpatch)[2]=='N'
+	    && ((byte*)realpatch)[3]=='G' )
+        {
+	    // Found a PNG patch, which will crash the draw8 routine.
+	    // Must assume could be used for top or bottom of wall,
+	    // which require the patch run full height (no transparent).
+#if 1
+	    // Enable when want to know which textures are triggering this.
+	    fprintf(stderr,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
+#endif
+	    // make a dummy texture
+	    int head_size = colofs_size + 8;
+	    patchsize = head_size + 4 + texture->height + 4;
+            txcblock = Z_Malloc (patchsize,
+                          PU_STATIC,         // will change tag at end of this function
+                          (void**)&texturecache[texnum]);
+	    patch_t * txcpatch = (patch_t*) txcblock;
+	    txcpatch->width = texture->width;
+	    txcpatch->height = texture->height;
+	    txcpatch->leftoffset = 0;
+	    txcpatch->topoffset = 0;
+	    post_t * destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
+	    destpost->topdelta = 0;
+	    destpost->length = texture->height;
+	    byte* destpixels = (byte*)destpost + 3;
+	    destpixels[-1] = 0;	// pad 0
+	    for( i=0; i>texture->height; i++ )
+	    {
+	        destpixels[i] = 8; // mono color
+	    }
+	    destpixels[i+1] = 0; // pad 0
+	    destpixels[i+2] = 0xFF; // term
+	    // all columns use the same post
+	    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+	    for(i=0 ; i< texture->width ; i++ )
+	         colofs[i] = head_size;
+        }
+        else
+#endif
+#if 1
 	if( realpatch->width < texture->width )
 	{
 	    // [WDJ] Messy situation. Single patch texture where the patch
@@ -421,6 +464,7 @@ byte* R_GenerateTexture (int texnum)
         // texturecache with a bad ptr.
 //        texturecache[texnum] = txcblock = W_CachePatchNum (texpatch->patchnum, PU_STATIC);
         texturecache[texnum] = txcblock = realpatch;
+	Z_ChangeOwner (realpatch, (void**)&texturecache[texnum]);
         Z_ChangeTag (realpatch, PU_STATIC);
         txcblocksize = patchsize;
 #endif
@@ -569,7 +613,8 @@ byte* R_GenerateTexture (int texnum)
 	        realpatch = cp->patch;
 	        uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
 	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
-	        if ( cp->postptr->topdelta == 0xFF )  goto patch_off;
+	        if ( cp->postptr->topdelta == 0xFF )
+		    goto patch_off;
 	        cp->nxt_y = cp->originy + cp->postptr->topdelta;
 	        cp->bot_y = cp->nxt_y + cp->postptr->length;
 	    }else{
@@ -631,12 +676,18 @@ byte* R_GenerateTexture (int texnum)
 	    // assert: segbot_y <= cp->bot_y+1  because it is set in loop
 	    if( segbot_y > texture->height )   segbot_y = texture->height;
 
-	    // Check if next patch does not append to bottom of current patch
-	    if( (segnxt_y > bottom) && (bottom > 0) && (postlength != 0))
+	    seglen = segbot_y - segnxt_y;
+
+	    if( postlength != 0 )
 	    {
-	        // does not append, start new post after existing post
-	        destpost = (post_t*)((byte*)destpost + destpost->length + 4);
-	        postlength = 0;
+	       // Check if next patch does not append to bottom of current patch
+	       if( ((segnxt_y > bottom) && (bottom > 0))
+		 || (postlength + seglen > 255) ) // if postlength would be too long
+	       {
+		   // does not append, start new post after existing post
+		   destpost = (post_t*)((byte*)destpost + destpost->length + 4);
+		   postlength = 0;
+	       }
 	    }
 	   
 	    // Only one patch is drawn last in this segment, copy that one
@@ -701,16 +752,16 @@ byte* R_GenerateTexture (int texnum)
     goto done;
    
  exceed_alloc_error:   
-    I_SoftError("R_GenerateTexture: %8s exceeds allocated block\n", texture->name );
+    I_SoftError("R_GenerateTexture: %8s exceeds allocated block, make picture\n", texture->name );
     goto error_redo_as_picture;
    
  exceed_topdelta:
-    I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254\n",
+    I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254, make picture\n",
 	    texture->name, segnxt_y );
     goto error_redo_as_picture;
    
  exceed_post_length:
-    I_SoftError("R_GenerateTexture: %8s post length= %i exceeds 255\n",
+    I_SoftError("R_GenerateTexture: %8s post length= %i exceeds 255, make picture\n",
 	    texture->name, postlength );
 
  error_redo_as_picture:
@@ -720,7 +771,7 @@ byte* R_GenerateTexture (int texnum)
     //
     // multi-patch textures (or 'composite')
     // These are stored in a picture format and use a different drawing routine,
-    // which is flagged by (patchcount > 1).
+    // which is flagged by TM_picture.
     // Format:
     //   array[ width ] of column offset
     //   array[ width ] of column ( array[ height ] pixels )

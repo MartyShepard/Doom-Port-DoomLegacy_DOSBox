@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00758 ]: PNG patch detect
+[00757 ]: Patch combine fixes
 [00756 ]: Effects menu permanent
 [00755 ]: patch combine size failure fix
 		* Fixed Texture Failsize in Caesar.wad

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 726 2010-08-20 18:17:33Z wesleyjohnson $
+// $Id: r_segs.c 757 2010-10-12 02:49:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -144,10 +144,20 @@ static boolean         markfloor; // False if the back side is the same plane.
 static boolean         markceiling;
 
 static boolean         maskedtexture;
+// maskedtexture can use transparent patches
+// Only single-sided linedefs use midtexture, 2-sided sets maskedtexture instead.
+
+// toptexture, bottomtexture, midtexture will call draw routines that do not
+// look for the post structure of patches.  They assume a full column of pixels,
+// without transparent areas, such as TM_picture.
+// They can use TM_combine or TM_patch only where there is a single full
+// height post per column.
+// Violation of this (by the wad) will give tutti-frutti colors.
+
 // texture num, 0=no-texture, otherwise is a valid texture index
 static int             toptexture;
 static int             bottomtexture;
-static int             midtexture;
+static int             midtexture;  // single-sided only
 
 static int             numthicksides;
 //static short*          thicksidecol;
@@ -207,6 +217,7 @@ static short last_ceilingclip[MAXVIDWIDTH];
 static short last_floorclip[MAXVIDWIDTH];
 #endif
 
+// Called by R_DrawWallSplats
 static void R_DrawSplatColumn (column_t* column)
 {
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
@@ -352,7 +363,7 @@ static void R_DrawWallSplats ()
         // top of splat, screen coord.
         dm_top_patch = centeryfrac - FixedMul(dc_texturemid,dm_yscale);
 
-        // set drawing mode
+        // set drawing mode for single sided textures
         switch (splat->flags & SPLATDRAWMODE_MASK)
         {
             case SPLATDRAWMODE_OPAQUE:
@@ -526,6 +537,7 @@ void expand_drawsegs( void )
 //  textures don't have holes in it. At least not for now.
 static int  column2s_length;     // column->length : for multi-patch on 2sided wall = texture->height
 
+// The colfunc_2s function for TM_picture
 void R_Render2sidedMultiPatchColumn (column_t* column)
 {
     fixed_t  top_post_sc, bottom_post_sc; // patch on screen, fixed_t screen coords.
@@ -1652,6 +1664,7 @@ void R_RenderSegLoop (void)
 		    dc_texturemid = rw_bottomtexturemid;
                     dc_source = R_GetColumn(bottomtexture,
                         texturecolumn);
+		     
                     dc_texheight = textureheight[bottomtexture] >> FRACBITS;
 #ifdef HORIZONTALDRAW
                     hcolfunc ();

@@ -1170,4 +1170,18 @@ patchfile = w61_effects_menu.patch
 Make Effects menu permanent.  Next changes will add to it and too
 difficult to cope with it being optional.
 
+*** w62_patch_combine
+patchfile = w62_patchcombine.patch
+- committed revision 757   by wesley johnson
+Patch combine fixes.
+Detect empty patch properly instead of letting large value represent it.
+Handle posts longer than 255 by creating a separate post, instead of error
+escape.
+Improve some messages, and comments.
 
+*** w62_PNG
+patchfile = w62_PNG.patch
+- committed revision 758   by wesley johnson
+Detect PNG patches, to prevent them from crashing the draw routines.
+Create a dummy patch to replace them.
+Test wad is longdays.wad, which has a PNG patch.
