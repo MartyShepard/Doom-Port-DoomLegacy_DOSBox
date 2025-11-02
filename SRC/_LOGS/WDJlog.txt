@@ -1136,3 +1136,17 @@ be tested against other player ptrs, and fixes clumbsy tests of
 ptr against index.
 Reduces code size by about 3K.
 
+*** w60_splitplayer
+patchfile = w60_splitplayer.patch
+- committed revision 749   by wesley johnson
+Fix splitscreen player2 failure that has existed for a long time.
+Splitscreen player was not being created because even local play uses commands
+sent through the network code, and they were being sign extended into nonsense.
+
+*** w60_splitsound
+patchfile = w60_splitsound.patch
+- committed revision 750   by wesley johnson
+Fix sound code segfaults in splitplayer mode.
+
+
+

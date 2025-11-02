@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: s_sound.c 750 2010-09-19 18:43:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -562,6 +562,7 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     //  and if not, modify the params
 
     //added:16-01-98:changed consoleplayer to displayplayer
+    //[WDJ] added displayplayer2_ptr tests, stop segfaults
     if (origin && origin != displayplayer_ptr->mo
 	&& !(cv_splitscreen.value && displayplayer2_ptr && origin == displayplayer2_ptr->mo))
     {
@@ -570,6 +571,7 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
         rc = S_AdjustSoundParams(displayplayer_ptr->mo, origin, &volume, &sep, &pitch);
         if (cv_splitscreen.value && displayplayer2_ptr)
         {
+ 	    // splitscreen sound for player2
             rc2 = S_AdjustSoundParams(displayplayer2_ptr->mo, origin, &volume2, &sep2, &pitch2);
             if (!rc2)
             {
@@ -851,6 +853,7 @@ void S_UpdateSounds(void)
 
                     if (cv_splitscreen.value && displayplayer2_ptr)
                     {
+		        // splitscreen sound for player2
                         audible2 = S_AdjustSoundParams(displayplayer2_ptr->mo, c->origin, &volume2, &sep2, &pitch2);
                         if (audible2 && (!audible || (audible && volume2 > volume)))
                         {
@@ -1072,10 +1075,7 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
     fixed_t ady;
     angle_t angle;
    
-    // [WDJ] FIXME: Observed segfault here, with listener=NULL, when starting
-    // two-player game, with inactive second player.
-    // Occurs on MAP01, when entering first lift.
-    // First player had music and sound effects.
+    if( ! listener )  return 0;  // [WDJ] Stop splitscreen segfault.
 
     // calculate the distance to sound origin
     //  and clip it if necessary

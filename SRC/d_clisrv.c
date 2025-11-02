@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: d_clisrv.c 749 2010-09-19 18:41:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -249,7 +249,7 @@ tic_t localgametic;
 
 // client specific
 static ticcmd_t localcmds;
-static ticcmd_t localcmds2;
+static ticcmd_t localcmds2;  // player 2
 static boolean  cl_packetmissed;
 boolean         drone;
 // here it is for the secondary local player (splitscreen)
@@ -261,7 +261,7 @@ extern int fadealpha;
 
 
 static byte     localtextcmd[MAXTEXTCMD];
-static byte     localtextcmd2[MAXTEXTCMD]; // splitscreen
+static byte     localtextcmd2[MAXTEXTCMD]; // splitscreen player2
 static tic_t    neededtic;
 char            servernode;       // the number of the server node
 
@@ -1132,8 +1132,8 @@ void Command_Kick(void)
 
 void Got_KickCmd(char **p,int playernum)
 {
-    int pnum=READBYTE(*p);
-    int msg =READBYTE(*p);
+    int pnum=READBYTE(*p);  // unsigned player num
+    int msg =READBYTE(*p);  // unsigned kick message
 
     CONS_Printf("\2%s ",player_names[pnum]);
 
@@ -1333,12 +1333,13 @@ void SV_AddNode(int node)
 // Xcmd XD_ADDPLAYER
 void Got_AddPlayer(char **p,int playernum)
 {
-    int node=READBYTE(*p);
-    int newplayernum=READBYTE(*p);
+    // [WDJ] Having error due to sign extension of byte read (signed char).
+    unsigned int node=READBYTE(*p);  // unsigned
+    unsigned int newplayernum=READBYTE(*p);  // unsigned
     boolean splitscreenplayer = newplayernum&0x80;
     static ULONG sendconfigtic=0xffffffff;
 
-    newplayernum&=~0x80;
+    newplayernum&=0x7F;  // remove flag bit, and any sign extension
 
     playeringame[newplayernum]=true;
     G_AddPlayer(newplayernum);
@@ -1383,21 +1384,22 @@ void Got_AddPlayer(char **p,int playernum)
 // Xcmd XD_ADDBOT
 void Got_AddBot(char **p,int playernum)	//added by AC for acbot
 {
-    int newplayernum=READBYTE(*p);
-	//int node = 0;
-	//int i = 0;
-	newplayernum&=~0x80;
-	playeringame[newplayernum]=true;
-	strcpy(player_names[newplayernum], botinfo[newplayernum].name);
-	players[newplayernum].skincolor = botinfo[newplayernum].colour;
-	G_AddPlayer(newplayernum);
-	players[newplayernum].bot = B_CreateBot();
-	if( newplayernum+1>doomcom->numplayers )
-		doomcom->numplayers=newplayernum+1;
+    // [WDJ] Having error due to sign extension of byte read (signed char).
+    unsigned int newplayernum=READBYTE(*p);  // unsigned
+    //int node = 0;
+    //int i = 0;
+    newplayernum&=0x7F;  // remove flag bit, and any sign extension
+    playeringame[newplayernum]=true;
+    strcpy(player_names[newplayernum], botinfo[newplayernum].name);
+    players[newplayernum].skincolor = botinfo[newplayernum].colour;
+    G_AddPlayer(newplayernum);
+    players[newplayernum].bot = B_CreateBot();
+    if( newplayernum+1>doomcom->numplayers )
+        doomcom->numplayers=newplayernum+1;
 
-	multiplayer=1;
+    multiplayer=1;
 
-	CONS_Printf ("Bot %s has entered the game\n", player_names[newplayernum]);
+    CONS_Printf ("Bot %s has entered the game\n", player_names[newplayernum]);
 }
 
 boolean SV_AddWaitingPlayers(void)
@@ -1452,7 +1454,7 @@ boolean SV_AddWaitingPlayers(void)
                 doomcom->numplayers++;  //we must send the change to other players
             
             DEBFILE(va("Server added player %d node %d\n", newplayernum, node));
-            // use the next free slote (we can't put playeringame[j]=true here)            
+            // use the next free slot (we can't put playeringame[j]=true here)
             newplayernum++; 
         }
     }
@@ -2178,7 +2180,8 @@ static void Local_Maketic(int realtics)
     rendergametic=gametic;
     // translate inputs (keyboard/mouse/joystick) into game controls
     G_BuildTiccmd(&localcmds, realtics, 0);
-    if (cv_splitscreen.value)
+    // [WDJ] requires splitscreen and player2 present
+    if (cv_splitscreen.value && displayplayer2_ptr )
       G_BuildTiccmd(&localcmds2, realtics, 1);
 
 #ifdef CLIENTPREDICTION2
