@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: m_menu.c 752 2010-09-20 20:00:50Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -379,6 +379,9 @@ extern consvar_t   cv_monbehavior;
 
 
 typedef void (*menufunc_t)(int choice);
+
+static char input_char; // [smite] dirty hack, contains a second parameter to IT_KEYHANDLER functions (int choice is the key)
+static inline boolean is_printable(char c) { return c >= ' ' && c <= '~'; }
 
 typedef union
 {
@@ -1190,7 +1193,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 //
 // Handle Setup MultiPlayer Menu
 //
-void M_HandleSetupMultiPlayer (int choice)
+void M_HandleSetupMultiPlayer (int key)
 {
     int      l;
     boolean  exitmenu = false;  // exit to previous menu and send name change
@@ -1198,7 +1201,7 @@ void M_HandleSetupMultiPlayer (int choice)
 
     myskin  = setupm_cvskin->value;
 
-    switch( choice )
+    switch (key)
     {
       case KEY_DOWNARROW:
         S_StartSound(NULL,sfx_pstop);
@@ -1249,14 +1252,14 @@ void M_HandleSetupMultiPlayer (int choice)
         break;
 
       default:
-        if (choice < 32 || choice > 127 || itemOn!=0)
-            break;
+        if (!is_printable(input_char) || itemOn != 0)
+	  break;
         l = strlen(setupm_name);
         if (l<MAXPLAYERNAME-1)
         {
             S_StartSound(NULL,sfx_stnmov);
-            setupm_name[l]=choice;
-            setupm_name[l+1]=0;
+            setupm_name[l] = input_char;
+            setupm_name[l+1] = 0;
         }
         break;
     }
@@ -2299,12 +2302,12 @@ void M_DrawVideoMode(void)
 
 
 //added:30-01-98: special menuitem key handler for video mode list
-void M_HandleVideoMode (int ch)
+void M_HandleVideoMode (int key)
 {
     if (vidm_testingmode>0)
     {
        // change back to the previous mode quickly
-       if (ch==KEY_ESCAPE)
+       if (key==KEY_ESCAPE)
        {
            setmodeneeded = vidm_previousmode+1;
            vidm_testingmode = 0;
@@ -2312,7 +2315,7 @@ void M_HandleVideoMode (int ch)
        return;
     }
 
-    switch( ch )
+    switch( key )
     {
       case KEY_DOWNARROW:
         S_StartSound(NULL,sfx_pstop);
@@ -2357,7 +2360,9 @@ void M_HandleVideoMode (int ch)
 	M_Setup_prevMenu();
         return;
 
-      case 'T':
+    default:
+      switch (tolower(input_char))
+	{
       case 't':
         S_StartSound(NULL,sfx_swtchx);
         vidm_testingmode = TICRATE*5;
@@ -2366,7 +2371,6 @@ void M_HandleVideoMode (int ch)
             setmodeneeded = modedescs[vidm_current].modenum+1;
         return;
 
-      case 'D':
       case 'd':
         // current active mode becomes the default mode.
         S_StartSound(NULL,sfx_swtchx);
@@ -2375,6 +2379,8 @@ void M_HandleVideoMode (int ch)
 
       default:
         break;
+	}
+      break;
     }
 
 }
@@ -3681,13 +3687,13 @@ void M_ChangeCvar(int choice)
             CV_AddValue(cv,choice*2-1);
 }
 
-boolean M_ChangeStringCvar(int choice)
+static boolean M_ChangeStringCvar(int key, char ch)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
     char buf[255];
     int  len;
 
-    switch( choice ) {
+    switch (key) {
         case KEY_BACKSPACE :
                 len=strlen(cv->string);
                 if( len>0 )
@@ -3698,13 +3704,13 @@ boolean M_ChangeStringCvar(int choice)
                 }
                 return true;
         default:
-            if( choice >= 32 && choice <= 127 )
+	  if (is_printable(ch))
             {
                 len=strlen(cv->string);
                 if( len<MAXSTRINGLENGTH-1 )
                 {
                     memcpy(buf,cv->string,len);
-                    buf[len++] = choice;
+                    buf[len++] = ch;
                     buf[len] = 0;
                     CV_Set(cv, buf);
                 }
@@ -3720,7 +3726,6 @@ boolean M_ChangeStringCvar(int choice)
 //
 boolean M_Responder (event_t* ev)
 {
-    int             ch;
     int             i;
 #if defined( __DJGPP__ )			
     static  tic_t   joywait = 0;
@@ -3732,21 +3737,23 @@ boolean M_Responder (event_t* ev)
     static  int     lastx = 0;
     menufunc_t routine;  // for some casting problem
 
-    ch = -1;
+    int key = KEY_NULL; // key pressed (if any)
+    char ch = '\0';  // ASCII char it corresponds to
 
     if (ev->type == ev_keydown)
     {
-        ch = ev->data1;
+        key = ev->data1;
+	ch  = ev->data2;
         
         // added 5-2-98 remap virtual keys (mouse & joystick buttons)
-        switch(ch) {
+        switch(key) {
         case KEY_MOUSE1:
         case KEY_JOY0BUT0:
-	  ch = KEY_ENTER;
+	  key = KEY_ENTER;
 	  break;
         case KEY_MOUSE1+1:
         case KEY_JOY0BUT1:
-	  ch = KEY_BACKSPACE;
+	  key = KEY_BACKSPACE;
 	  break;
         }
     }
@@ -3757,23 +3764,23 @@ boolean M_Responder (event_t* ev)
         {
             if (ev->data3 == -1)
             {
-                ch = KEY_UPARROW;
+                key = KEY_UPARROW;
                 joywait = I_GetTime() + TICRATE/7;
             }
             else if (ev->data3 == 1)
             {
-                ch = KEY_DOWNARROW;
+                key = KEY_DOWNARROW;
                 joywait = I_GetTime() + TICRATE/7;
             }
             
             if (ev->data2 == -1)
             {
-                ch = KEY_LEFTARROW;
+                key = KEY_LEFTARROW;
                 joywait = I_GetTime() + TICRATE/17;
             }
             else if (ev->data2 == 1)
             {
-                ch = KEY_RIGHTARROW;
+                key = KEY_RIGHTARROW;
                 joywait = I_GetTime() + TICRATE/17;
             }
         }
@@ -3783,13 +3790,13 @@ boolean M_Responder (event_t* ev)
                 mousey += ev->data3;
                 if (mousey < lasty-30)
                 {
-                    ch = KEY_DOWNARROW;
+                    key = KEY_DOWNARROW;
                     mousewait = I_GetTime() + TICRATE/7;
                     mousey = lasty -= 30;
                 }
                 else if (mousey > lasty+30)
                 {
-                    ch = KEY_UPARROW;
+                    key = KEY_UPARROW;
                     mousewait = I_GetTime() + TICRATE/7;
                     mousey = lasty += 30;
                 }
@@ -3797,27 +3804,27 @@ boolean M_Responder (event_t* ev)
                 mousex += ev->data2;
                 if (mousex < lastx-30)
                 {
-                    ch = KEY_LEFTARROW;
+                    key = KEY_LEFTARROW;
                     mousewait = I_GetTime() + TICRATE/7;
                     mousex = lastx -= 30;
                 }
                 else if (mousex > lastx+30)
                 {
-                    ch = KEY_RIGHTARROW;
+                    key = KEY_RIGHTARROW;
                     mousewait = I_GetTime() + TICRATE/7;
                     mousex = lastx += 30;
                 }
 	}
     }
 
-    if (ch == -1)
+    if (key == KEY_NULL)
         return false;
 
 
     // Save Game string input
     if (edit_enable)
     {
-        switch(ch)
+        switch(key)
         {
           case KEY_BACKSPACE:
             if (edit_index > 0)
@@ -3844,11 +3851,8 @@ boolean M_Responder (event_t* ev)
             break;
 
           default:
-            ch = toupper(ch);
-            if (ch != 32)
-                if (ch-HU_FONTSTART < 0 || ch-HU_FONTSTART >= HU_FONTSIZE)
-                    break;
-            if (ch >= 32 && ch <= 127 &&
+            if (is_printable(ch) &&
+		ch != ' ' &&
                 edit_index < SAVESTRINGSIZE-1 &&
                 V_StringWidth(edit_buffer) < (SAVESTRINGSIZE-2)*8)
             {
@@ -3860,7 +3864,7 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
     }
 
-    if (devparm && ch == KEY_F1)
+    if (devparm && key == KEY_F1)
     {
         COM_BufAddText("screenshot\n");
         goto ret_true;
@@ -3870,7 +3874,7 @@ boolean M_Responder (event_t* ev)
     // F-Keys
     if (!menuactive)
     {
-        switch(ch)
+        switch(key)
         {
           case '-':         // Screen size down
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
@@ -3980,17 +3984,24 @@ boolean M_Responder (event_t* ev)
     // Handle menuitems which need a specific key handling
     if(routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER )
     {
-        routine(ch);
-        goto ret_true;
+      input_char = ch;
+      routine(key);
+      goto ret_true;
     }
 
     if(currentMenu->menuitems[itemOn].status==IT_MSGHANDLER)
     {
         if(currentMenu->menuitems[itemOn].alphaKey == true)
         {
-            if(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE)
+	  // [smite] just for this purpose since unraveling the IT_MSGHANDLER hack would be too harrowing
+	  if (tolower(ch) == 'n')
+	    key = 'n';
+	  else if (tolower(ch) == 'y')
+	    key = 'y';
+
+	  if(key == KEY_SPACE || key == 'n' || key == 'y' || key == KEY_ESCAPE)
             {
-                if(routine) routine(ch);
+                if(routine) routine(key);
                 M_StopMessage(0);
             }
         }
@@ -4015,7 +4026,7 @@ boolean M_Responder (event_t* ev)
     {
         if( (currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING )
         {
-            if( M_ChangeStringCvar(ch) )
+	    if (M_ChangeStringCvar(key, ch))
                 goto ret_true;
             else
                 routine = NULL;
@@ -4024,7 +4035,7 @@ boolean M_Responder (event_t* ev)
             routine=M_ChangeCvar;
     }
     // Keys usable within menu
-    switch (ch)
+    switch (key)
     {
 #if defined SAVEGAMEDIR || defined SAVEGAME99
       case KEY_DELETE:	// delete directory or savegame
@@ -4511,7 +4522,7 @@ void M_DrawOpenGLMenu(void);
 void M_OGL_DrawFogMenu(void);
 void M_OGL_DrawColorMenu(void);
 void M_HandleFogColor (int choice);
-void M_HandleScreenDepth(int choice);
+
 menu_t OGL_LightingDef, OGL_FogDef, OGL_ColorDef, OGL_DevDef;
 
 menuitem_t OpenGLOptionsMenu[]=
@@ -4688,13 +4699,13 @@ void M_OpenGLOption(int choice)
 //======================================================================
 // M_HandleFogColor()
 //======================================================================
-void M_HandleFogColor (int choice)
+void M_HandleFogColor(int key)
 {
     int      i, l;
     char     temp[8];
     boolean  exitmenu = false;  // exit to previous menu and send name change
 
-    switch( choice )
+    switch( key )
     {
       case KEY_DOWNARROW:
         S_StartSound(NULL,sfx_pstop);
@@ -4721,16 +4732,17 @@ void M_HandleFogColor (int choice)
         break;
 
       default:
-        if ((choice >= '0' && choice <= '9') ||
-            (choice >= 'a' && choice <= 'f') ||
-            (choice >= 'A' && choice <= 'F')) {
+        input_char = tolower(input_char);
+        if ((input_char >= '0' && input_char <= '9') ||
+            (input_char >= 'a' && input_char <= 'f'))
+	{
             S_StartSound(NULL,sfx_stnmov);
             strcpy(temp, cv_grfogcolor.string);
             strcpy(cv_grfogcolor.string, "000000");
             l = strlen(temp);
             for (i=0; i<l; i++)
                 cv_grfogcolor.string[5-i] = temp[l-i];
-            cv_grfogcolor.string[5] = choice;
+            cv_grfogcolor.string[5] = input_char;
         }
         break;
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: i_system.h 752 2010-09-20 20:00:50Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -101,6 +101,8 @@ void I_OsPolling (void);
 // for normal input.
 ticcmd_t* I_BaseTiccmd (void);
 
+/// sleeps for the given amount of milliseconds
+void I_Sleep(unsigned int ms);
 
 // Called by M_Responder when quit is selected, return code 0.
 void I_Quit (void);
@@ -136,21 +138,6 @@ void doUngrabMouse();
 // Called by DoomMain.
 void I_InitJoystick (void);
 extern byte sound_started;
-//extern byte keyboard_started;
-//extern byte music_installed;
-
-//Allocates from low memory under dos,
 byte* I_AllocLow (int length);
-
-
-// keyboard startup,shutdown,handler
-//void I_StartupKeyboard (void);
-// setup timer irq and user timer routine.
-//void I_TimerISR (void);      //timer callback routine.
-//void I_StartupTimer (void);
-
-/* flag for 'win-friendly' mode used by interface code */
-//extern int i_love_bill;
-//extern volatile tic_t ticcount;
 #endif
 #endif

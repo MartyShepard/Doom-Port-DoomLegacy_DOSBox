@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: d_main.c 752 2010-09-20 20:00:50Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -311,6 +311,9 @@
 
 #include "b_game.h"     //added by AC for acbot
 
+#if defined( __DJGPP__ )	
+#define I_Sleep(int) usleep(int);
+#endif
 
 // Versioning
 #ifndef SVN_REV
@@ -319,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 751; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 752; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -367,9 +370,9 @@ boolean advancedemo;
 #define FILENAME_SIZE  256
 
 #if defined PC_DOS || defined __WIN32__ || defined __OS2__
-# define  dirchar  "\\"
+# define  SLASH  "\\"
 #else
-# define  dirchar  "/"
+# define  SLASH  "/"
 #endif
 
 // to make savegamename and directories
@@ -763,7 +766,7 @@ void D_DoomLoop(void)
 #ifdef SAVECPU_EXPERIMENTAL
         if (realtics == 0)
         {
-            usleep(10000);
+            I_Sleep(10);
             continue;
         }
 #endif
@@ -1686,7 +1689,7 @@ void D_DoomMain()
 	   
 	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
             // example: "/user/user/.legacy/"
-            sprintf(legacyhome, "%s%s" DEFAULTDIR "%s", userhome, dirchar, dirchar);
+            sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);
             // use user specific config file
             // little hack to allow a different config file for opengl
             // may be a problem if opengl cannot really be started
@@ -1714,7 +1717,7 @@ void D_DoomMain()
         legacyhome_len = strlen(legacyhome);
 #ifdef SAVEGAMEDIR
         // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
-        sprintf(savegamename, "%s%%s%s%s", legacyhome, dirchar, text[NORM_SAVEI_NUM]);
+        sprintf(savegamename, "%s%%s" SLASH "%s", legacyhome, text[NORM_SAVEI_NUM]);
         // so can extract legacyhome from savegamename later
 #else    
         // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"

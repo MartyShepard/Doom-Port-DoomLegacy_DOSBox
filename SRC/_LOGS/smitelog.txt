@@ -89,7 +89,7 @@ cast hacks to be 64-bit safe.
 
 
 *** Backported international keyboard support from Legacy 2
-rev 700
+rev 700, 752
 Now we support arbitrary keyboard layouts via SDL (only ASCII chars,
 though), and use SDL keycodes internally.
 Removed some redundant code from console.c and hu_stuff.c
