@@ -1188,7 +1188,7 @@ Test wad is longdays.wad, which has a PNG patch.
 
 *** w62_sprite_limit
 patchfile = w62_sprite_limit.patch
-- committed revision 7xx   by wesley johnson
+- committed revision 759   by wesley johnson
 Remove sprite limits.  A user setting allows from 128 to 16000 sprites.
 Sprite tables are dynamically adjusted according to previous frame
 sprite count, and user setting (soft limit) in Effects menu.
@@ -1201,3 +1201,23 @@ Sprites are sorted by scale as they are inserted into table, so sprite
 sort routine is ifdef'ed out.
 Test wad is longdays.wad, which has thousands of sprites.
 Test at user setting of 128 sprites, upto when your computer bogs down.
+
+*** w62_crush_floating_monster
+patchfile = w62_crush.patch
+- committed revision 761  by wesley johnson
+Fix monster height vrs room logic that due to some strange fix, had
+floating monsters getting away from crushing ceilings undamaged.
+Changed logic around so crush test is done first, and then can be
+modified for special cases.  The special cases I found are limited,
+but this is much easier to maintain without breaking it again.
+I have tested this on several wads with crushers and it appears to work,
+and I have verified that cacodemons and heads get crushed now.
+It could use more testing for the strange special cases that I do not
+know about.
+
+*** w61_boom_demo
+patchfile = w61_boom_demo.patch
+- committed revision 762   by wesley johnson
+Fix demo player to understand Boom demo headers.
+This stops them from crashing the playback machine.
+This patch got lost, which is why it is out of order.

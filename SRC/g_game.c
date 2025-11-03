@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 760 2010-10-13 13:34:24Z smite-meister $
+// $Id: g_game.c 762 2010-10-14 00:31:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2442,6 +2442,7 @@ void G_DoPlayDemo (char *defdemoname)
 {
     skill_t skill;
     int     i, episode, map;
+    boolean boomdemo = 0;
 
 //
 // load demo file / resource
@@ -2477,16 +2478,17 @@ void G_DoPlayDemo (char *defdemoname)
     // 109 = Doom 1.9, Doom2 1.9
     // 110 = Doom, published source code
     // 111..143 = Legacy
-    // 200 = Boom 2.02	(unsupported)
-    // 201..202 = e6y (unsupported)
-    // 203 = LxDoom or MBF  (unsupported)
-    // 210..214 = prboom (unsupported)
+    // 200 = Boom 2.00	(supported badly, no sync)
+    // 201 = Boom 2.01  (supported badly, no sync)
+    // 202 = Boom 2.02  (supported badly, no sync)
+    // 203 = LxDoom or MBF  (supported badly, no sync)
+    // 210..214 = prboom (supported badly, no sync)
     // Do not have version: Hexen, Heretic, Doom 1.2 and before
 #ifdef SHOW_DEMOVERSION
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
 #endif
 #ifdef DEBUG_DEMO
-    fprintf( stderr, "[0] version %i.\n", (int)demoversion );
+    fprintf( stderr, "Demo version %i.\n", (int)demoversion );
 #endif
 
     // This works, but it also kills screen wipes    FIXME why?
@@ -2494,11 +2496,40 @@ void G_DoPlayDemo (char *defdemoname)
     if (demoversion < 109 || demoversion >= 215)
     {
         CONS_Printf("\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, CURRENT_DEMOVERSION);
-        demoversion = VERSION;
-        Z_Free (demobuffer);
-no_demo:
-        gameaction = ga_nothing;
-        return;
+        goto kill_demo;
+    }
+   
+    // Boom, MBF, and prboom headers
+    // Used by FreeDoom
+    if (demoversion >= 200 && demoversion <= 214)
+    {
+        // Read the "Boom" or "MBF" header line
+        if( *demo_p == 0x1d )
+        {
+	    unsigned char header[10];
+	    unsigned char compatibility;
+	    demo_p ++;
+	    for ( i=0; i<9; i++ )
+	    {
+	        header[i] = *demo_p++;
+	        if( header[i] == 0xe6 )  break;
+	    }
+	    header[i] = 0;
+	    // MBF and prboom header have compatibility level
+	    compatibility = *demo_p++;
+#ifdef DEBUG_DEMO
+	    fprintf( stderr, " header: %s.\n", header );
+	    fprintf( stderr, " compatibility %i.\n", compatibility );
+#endif
+	    boomdemo = 1;
+	}
+        else
+        {
+#ifdef DEBUG_DEMO
+	    fprintf( stderr, " broken demo header\n" );
+#endif
+	    goto kill_demo;
+	}
     }
 
     if (demoversion < VERSION)
@@ -2511,44 +2542,52 @@ no_demo:
     // header[3]: byte: map level 1..32
     map         = *demo_p++;
 #ifdef DEBUG_DEMO
-    fprintf( stderr, "[1] skill %i.\n", (int)skill );
-    fprintf( stderr, "[2] episode %i.\n", (int)episode );
-    fprintf( stderr, "[3] map %i.\n", (int)map );
+    fprintf( stderr, " skill %i.\n", (int)skill );
+    fprintf( stderr, " episode %i.\n", (int)episode );
+    fprintf( stderr, " map %i.\n", (int)map );
 #endif
     // header[4]: byte: play mode 0..2
     //   0 = single player
     //   1 = deathmatch or cooperative
     //   2 = alt deathmatch
 #ifdef DEBUG_DEMO
-    fprintf( stderr, "[4] play mode/deathmatch %i.\n", (int)demo_p[0] );
-    fprintf( stderr, "[5] respawn %i.\n", (int)demo_p[1] );
-    fprintf( stderr, "[6] fast monsters %i.\n", (int)demo_p[2] );
+    fprintf( stderr, " play mode/deathmatch %i.\n", (int)demo_p[0] );
 #endif
-    if (demoversion < 127)
+    if (demoversion < 127 || boomdemo)
         // push it in the console will be too late set
         cv_deathmatch.value=*demo_p++;
     else
         demo_p++;
 
-    // header[5]: byte: respawn boolean
-    if (demoversion < 128)
-        // push it in the console will be too late set
-        cv_respawnmonsters.value=*demo_p++;
-    else
-        demo_p++;
-
-    // header[6]: byte: fast boolean
-    if (demoversion < 128)
+    if( ! boomdemo )
     {
-        // push it in the console will be too late set
-        cv_fastmonsters.value=*demo_p++;
-        cv_fastmonsters.func();
-    }
-    else
-        demo_p++;
+#ifdef DEBUG_DEMO
+        fprintf( stderr, " respawn %i.\n", (int)demo_p[1] );
+        fprintf( stderr, " fast monsters %i.\n", (int)demo_p[2] );
+#endif
+        // header[5]: byte: respawn boolean
+        if (demoversion < 128)
+	    // push it in the console will be too late set
+	    cv_respawnmonsters.value=*demo_p++;
+        else
+            demo_p++;
 
-    // header[7]: byte: no monsters present boolean
-    nomonsters  = *demo_p++;
+        // header[6]: byte: fast boolean
+        if (demoversion < 128)
+        {
+	    // push it in the console will be too late set
+	    cv_fastmonsters.value=*demo_p++;
+	    cv_fastmonsters.func();
+	}
+        else
+	    demo_p++;
+
+        // header[7]: byte: no monsters present boolean
+        nomonsters  = *demo_p++;
+#ifdef DEBUG_DEMO
+        fprintf( stderr, " no monsters %i.\n", (int)nomonsters );
+#endif
+    }
 
     // header[8]: byte: viewing player 0..3, 0=player1
     //added:08-02-98: added displayplayer because the status bar links
@@ -2557,8 +2596,7 @@ no_demo:
     displayplayer_ptr = consoleplayer_ptr = &players[consoleplayer];  // [WDJ]
 
 #ifdef DEBUG_DEMO
-    fprintf( stderr, "[7] no monsters %i.\n", (int)nomonsters );
-    fprintf( stderr, "[8] viewing player %i.\n", (int)displayplayer );
+    fprintf( stderr, " viewing player %i.\n",  (int)displayplayer );
 #endif
 
      //added:11-01-98:
@@ -2568,7 +2606,56 @@ no_demo:
        // header[9..12]: byte: player[1..4] present boolean
         for (i=0 ; i<4 ; i++) {
 #ifdef DEBUG_DEMO
-	    fprintf( stderr, "[%i] player %i present %i.\n", i+9, i+1, (int)*demo_p );
+	    if( *demo_p )
+	         fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
+#endif
+            playeringame[i] = *demo_p++;
+	}
+    }
+    else if( boomdemo )
+    {
+       	// [WDJ] according to prboom
+        // [0] monsters remember
+        // [1] variable friction
+        // [2] weapon recoil
+        // [3] allow pushers
+        // [4] ??
+        // [5] player bobbing
+#ifdef DEBUG_DEMO
+        fprintf( stderr, " respawn %i.\n", (int)demo_p[6] );
+        fprintf( stderr, " fast monsters %i.\n", (int)demo_p[7] );
+#endif
+        cv_respawnmonsters.value = demo_p[6];  // respawn monsters, boolean
+        cv_fastmonsters.value = demo_p[7]; // fast monsters, boolean
+        cv_fastmonsters.func();
+        nomonsters = demo_p[8];  // nomonsters, boolean
+#ifdef DEBUG_DEMO
+        fprintf( stderr, " no monsters %i.\n", (int)nomonsters );
+#endif
+        // [9] demo insurance
+        // [10..13] random number gen
+        if( demoversion == 203 ) // MBF
+        {
+	    // [14] monster infighting
+	    // [15] dogs
+	    // [16..17] ??
+	    // [18..19] distfriend
+	    // [20] monster backing
+	    // [21] monster avoid hazards
+	    // [22] monster friction
+	    // [23] help friends
+	    // [24] dog jumping
+	    // [25] monkeys
+	    // [26..57] comp vector x32
+	    // [58] force old BSP
+	}
+        demo_p += (demoversion == 200)? 256 : 64;  // option area size
+        // byte: player[1..32] present boolean
+	// Made room for 32 players even though only supported 4
+        for (i=0 ; i<32 ; i++) {
+#ifdef DEBUG_DEMO
+	    if( *demo_p )
+	         fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
             playeringame[i] = *demo_p++;
 	}
@@ -2576,7 +2663,7 @@ no_demo:
     else
     {
 #ifdef DEBUG_DEMO
-       fprintf( stderr, "[9] time limit %i.\n", (int)*demo_p );
+       fprintf( stderr, " time limit %i.\n", (int)*demo_p );
 #endif
         if(demoversion<128)
         {
@@ -2591,7 +2678,8 @@ no_demo:
 	   // header[9..16]: byte: player[1..8] present boolean
             for (i=0 ; i<8 ; i++) {
 #ifdef DEBUG_DEMO
-	       fprintf( stderr, "[%i] player %i present %i.\n", i+10, i+1, (int)*demo_p );
+	        if( *demo_p )
+	            fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
 	    }
@@ -2602,14 +2690,15 @@ no_demo:
             if( demoversion>=131 ) {
                 multiplayer = *demo_p++;
 #ifdef DEBUG_DEMO
- 		fprintf( stderr, "[17] multi-player %i.\n", (int)multiplayer );
+ 		fprintf( stderr, " multi-player %i.\n", (int)multiplayer );
 #endif
 	    }
 
  	    // header[18..50]: byte: player[1..32] present boolean
             for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
-	        fprintf( stderr, "[%i] player %i present %i.\n", i+18, i+1, (int)*demo_p );
+	        if( *demo_p )
+	            fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
 	    }
@@ -2626,7 +2715,7 @@ no_demo:
     memset(oldcmd,0,sizeof(oldcmd));
 
     // don't spend a lot of time in loadlevel
-    if(demoversion<127)
+    if(demoversion<127 || boomdemo)
     {
         precache = false;
         G_InitNew (skill, G_BuildMapName(episode, map),true);
@@ -2638,6 +2727,14 @@ no_demo:
         gamestate = wipegamestate = GS_WAITINGPLAYERS;
 
     demoplayback = true;
+    return;
+
+kill_demo:
+    demoversion = VERSION;
+    Z_Free (demobuffer);
+no_demo:
+    gameaction = ga_nothing;
+    return;
 }
 
 //

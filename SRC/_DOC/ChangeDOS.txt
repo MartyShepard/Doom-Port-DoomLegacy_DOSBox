@@ -1,6 +1,8 @@
 * Not need to Compile.
 
-[00759 ]: mouse consvars renamed
+[00762 ]: w61 boom demo header
+[00761 ]: w62 crush floating monster
+[00760 ]: mouse consvars renamed
 [00759 ]: sprite limit removed
 [00758 ]: PNG patch detect
 [00757 ]: Patch combine fixes

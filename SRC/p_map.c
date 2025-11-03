@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 695 2010-07-09 03:10:17Z wesleyjohnson $
+// $Id: p_map.c 761 2010-10-13 22:14:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1007,9 +1007,10 @@ boolean P_TryMove ( mobj_t*       thing,
 //
 boolean P_ThingHeightClip (mobj_t* thing)
 {
-    boolean             onfloor;
-
-    onfloor = (thing->z <= thing->floorz);
+    // [WDJ] 10/12/2010 Floating monsters were not crushable because of added checks.
+    // Check for crush first, and then modify if needed.
+    boolean onfloor = (thing->z <= thing->floorz);
+    boolean noncrush = 1;
 
     P_CheckPosition (thing, thing->x, thing->y);
 
@@ -1018,27 +1019,38 @@ boolean P_ThingHeightClip (mobj_t* thing)
     // tmr_ vars returned by P_CheckPosition
     thing->floorz = tmr_floorz;
     thing->ceilingz = tmr_ceilingz;
-
-    if (!tmr_floorthing
-	&& onfloor
+    noncrush = (thing->ceilingz - thing->floorz >= thing->height);
+    
+    // walker in contact with floor (direct or indirect)
+    if ( onfloor
 	&& !(thing->flags & MF_NOGRAVITY))
     {
         // walking monsters rise and fall with the floor
-        thing->z = thing->floorz;
+        if (!tmr_floorthing)  // unless standing on something
+	    thing->z = thing->floorz;
+        // crush ok
     }
-    else
+    else if (thing->z+thing->height >= tmr_ceilingz)  // in contact with ceiling
     {
         // don't adjust a floating monster unless forced to
         //added:18-04-98:test onfloor
         if (!onfloor)                    //was tmr_sectorceilingz
-            if (thing->z+thing->height > tmr_ceilingz)
-                thing->z = thing->ceilingz - thing->height;
-
+            thing->z = thing->ceilingz - thing->height;
+        // crush ok
+    }
+    else
+    { 
+        noncrush = 1;
         //thing->eflags &= ~MF_ONGROUND;
     }
 
     //debug : be sure it falls to the floor
     thing->eflags &= ~MF_ONGROUND;
+
+    return noncrush;
+
+#if 0
+    // [WDJ] Old code that caused floating monsters to not be crushable.
 
     //added:28-02-98:
     // test sector bouding top & bottom, not things
@@ -1057,6 +1069,7 @@ boolean P_ThingHeightClip (mobj_t* thing)
     }
 
     return true;
+#endif
 }
 
 
