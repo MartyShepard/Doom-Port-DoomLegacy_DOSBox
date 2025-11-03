@@ -1296,3 +1296,15 @@ Fix savegame and directory menu failure after delete entry.
 When current directory is deleted, fixed to null savegamedir name.
 Fix "EMPTY SLOT" message being presented as a savegame name, by
 preserving the slot status for all scrolling.
+
+*** w65_old_patch_remove
+patchfile = w65_old_patch_rem.patch
+- committed revision 771   by wesley johnson
+Remove old unused patch remanant.
+Preliminary to fixing draw sprite vrs 3dfloor bug.
+
+*** w65_old_vissort_remove
+patchfile = w65_old_vissort.patch
+- committed revision 76x   by wesley johnson
+Remove old unused vissprite sort routine.
+Preliminary to fixing draw sprite vrs 3dfloor bug.

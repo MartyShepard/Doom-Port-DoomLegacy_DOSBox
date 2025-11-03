@@ -2033,7 +2033,9 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
     if( P_Savegame_Closefile( 1 ) < 0 )  return;
 
     gameaction = ga_nothing;
-
+    #if defined( __DJGPP__ )
+		CONS_Printf("Save Game Nr:%d \"%s\"\n",savegameslot,savename);
+		#endif
     consoleplayer_ptr->message = GGSAVED;
 
     // draw the pattern into the back screen

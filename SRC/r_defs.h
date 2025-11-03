@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 717 2010-07-31 18:40:18Z wesleyjohnson $
+// $Id: r_defs.h 771 2010-12-10 01:00:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -748,7 +748,7 @@ typedef post_t  column_t;
 #endif
 
 //
-// ?
+// Drawseg for floor and 3D floor thickseg
 //
 typedef struct drawseg_s
 {
@@ -786,7 +786,6 @@ typedef struct drawseg_s
 // of patches.
 //
 //WARNING: this structure is cloned in GlidePatch_t
-#if 1
 // [WDJ] This is used for reading patches from wad.
 struct patch_s
 {
@@ -797,22 +796,10 @@ struct patch_s
     uint32_t            columnofs[8];   // actually [width]
        // offset of each column from start of patch header
        // the [0] is &columnofs[width]
-};
-#else
-struct patch_s
-{
-    short               width;          // bounding box size, usually 64, 128, 256
-    short               height;
-    short               leftoffset;     // pixels to the left of origin
-    short               topoffset;      // pixels below the origin
-    int                 columnofs[8];   // only [width] used
-	    // Offset within patch to column data header, column_t.
-            // Column data starts at &columnofs[width]
     // This is used as the head of a patch, and columnofs[8] provides
     // access to an array that is usually [64], [128], or [256].
     // This would not work if the [8] was actually enforced.
 };
-#endif
 typedef struct patch_s patch_t;
 
 

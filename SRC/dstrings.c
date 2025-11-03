@@ -499,8 +499,13 @@ char *text[NUMTEXT] = {
     "c:/doomdata/default.cfg",  //UNUSED
     "c:\\doomdata\\" SAVEGAMENAME "%c.dsg",     //UNUSED
     SAVEGAMENAME "%c.dsg",      //UNUSED
+    #if !defined( __DJGPP__ )		
     "c:\\doomdata\\" SAVEGAMENAME "%d.dsg",
     SAVEGAMENAME "%d.dsg",
+		#else
+    "c:\\doomdata\\" SAVEGAMENAME "%d",
+    SAVEGAMENAME "%d",
+    #endif		
 
     //SoM: 3/9/2000: Boom generic key messages:
     "You need a blue card to open this door",

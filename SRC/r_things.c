@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 759 2010-10-12 02:54:49Z wesleyjohnson $
+// $Id: r_things.c 772 2010-12-10 01:04:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1689,66 +1689,6 @@ void R_DrawPlayerSprites (void)
 }
 
 
-#if 0
-//
-// R_SortVisSprites
-//
-
-void R_SortVisSprites (void)
-{
-    int                 i;
-    int                 count;
-    vissprite_t*        ds;
-    vissprite_t*        farthest=NULL;      //shut up compiler
-    vissprite_t         unsorted;
-    fixed_t             farthest_scale;
-
-    count = vissprite_p - vissprites;
-
-    unsorted.next = unsorted.prev = &unsorted;
-
-    if (!count)
-        return;
-
-    for (ds=vissprites ; ds<vissprite_p ; ds++)
-    {
-        ds->next = ds+1;
-        ds->prev = ds-1;
-    }
-
-    vissprites[0].prev = &unsorted;
-    unsorted.next = &vissprites[0];
-    (vissprite_p-1)->next = &unsorted;
-    unsorted.prev = vissprite_p-1;
-
-    // pull the vissprites out by scale
-    vsprsortedhead.next = vsprsortedhead.prev = &vsprsortedhead;
-    for (i=0 ; i<count ; i++)
-    {
-        // find farthest unsorted vissprite
-        farthest_scale = MAXINT;
-        for (ds=unsorted.next ; ds!= &unsorted ; ds=ds->next)
-        {
-	    // largest scale is closest
-            if (ds->scale < farthest_scale)
-            {
-                farthest_scale = ds->scale;
-                farthest = ds;
-            }
-        }
-        // unlink from unsorted
-        farthest->next->prev = farthest->prev;
-        farthest->prev->next = farthest->next;
-        // link to tail of sorted (circular)
-        farthest->next = &vsprsortedhead;
-        farthest->prev = vsprsortedhead.prev;
-        vsprsortedhead.prev->next = farthest;
-        vsprsortedhead.prev = farthest;
-    }
-    // sorted list is farthest to nearest (circular)
-}
-#endif
-
 
 //
 // R_CreateDrawNodes
@@ -1840,7 +1780,6 @@ static void R_CreateDrawNodes( void )
     if(vissprite_p == vissprites)  // empty sprite list
       return;
 
-//    R_SortVisSprites();
     // sprite list is sorted from vprsortedhead    
     // traverse vissprite sorted list, nearest to farthest
     for(vsp = vsprsortedhead.prev; vsp != &vsprsortedhead; vsp = vsp->prev)
