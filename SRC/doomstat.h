@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: doomstat.h 767 2010-11-11 02:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -129,19 +129,6 @@ typedef enum
 } language_t;
 
 // [WDJ] Structure some of the scattered game differences.
-typedef struct
-{
-    char * 	gname;	       // game name, used in savegame
-    char *	startup_title; // startup page
-    char *	idstr;	       // used for directory and command line
-    char * 	iwad_filename; // doom, doom2, heretic, heretic1, hexen, etc.
-    char *	support_wad;   // another wad to support the game
-    const char * keylump[2];    // required lump names
-    byte	require_lump;  // lumps that must appear (bit set)
-    byte	reject_lump;   // lumps that must not appear (bit set)
-    uint16_t	gameflags;     // assorted flags
-    gamemode_e	gamemode;
-} game_desc_t;
 
 enum gameflags_e {
    GD_idwad       = 0x01, // one of the commercial/shareware wads by id or Raven
@@ -149,15 +136,13 @@ enum gameflags_e {
    GD_unsupported = 0x08, // unsupported game type
 };
 
-// Index to game_desc_t entries
-// This is also the search order.
+// Id of specific iwad, no longer tied to table index
 typedef enum {
     GDESC_freedoom,
     GDESC_freedm,
     GDESC_doom2,
     GDESC_freedoom_ultimate,
     GDESC_ultimate,
-    GDESC_ultimate_se,
     GDESC_doom,
     GDESC_doom_shareware,
     GDESC_plutonia,
@@ -178,12 +163,30 @@ typedef enum {
     GDESC_num	// number of entries in game_desc_table
 } game_desc_e;
 
+
+typedef struct
+{
+    char * 	gname;	       // game name, used in savegame
+    char *	startup_title; // startup page
+    char *	idstr;	       // used for directory and command line
+    char * 	iwad_filename[3]; // possible filenames
+   			       // doom, doom2, heretic, heretic1, hexen, etc.
+    char *	support_wad;   // another wad to support the game
+    const char * keylump[2];   // required lump names
+    byte	require_lump;  // lumps that must appear (bit set)
+    byte	reject_lump;   // lumps that must not appear (bit set)
+    uint16_t	gameflags;     // assorted flags from gameflags_e
+    game_desc_e gamedesc_id;   // independent of table index, safer
+    gamemode_e	gamemode;
+} game_desc_t;
+
+
 // ===================================================
 // Game Mode - identify IWAD as shareware, retail etc.
 // ===================================================
 //
-extern game_desc_e     gamedesc_index;  // game_desc_table index, unique game id
-extern game_desc_t     gamedesc;	// active desc used by most of legacy
+extern game_desc_e     gamedesc_id; // unique game id
+extern game_desc_t     gamedesc;    // active desc used by most of legacy
 extern gamemode_e      gamemode;
 extern gamemission_t   gamemission;
 extern boolean         inventory;   // true with heretic and hexen

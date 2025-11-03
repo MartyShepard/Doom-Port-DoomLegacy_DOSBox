@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: dstrings.c 767 2010-11-11 02:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -490,10 +490,10 @@ char *text[NUMTEXT] = {
     "ST_Init: Init status bar.\n",
     "External statistics registered.\n",
 
-    "doom2.wad",
-    "doomu.wad",
-    "doom.wad",
-    "doom1.wad",
+    "doom2.wad",	// UNUSED
+    "doomu.wad",	// UNUSED
+    "doom.wad",		// UNUSED
+    "doom1.wad",	// UNUSED
 
     "c:\\doomdata",     //UNUSED
     "c:/doomdata/default.cfg",  //UNUSED

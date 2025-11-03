@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_englsh.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_englsh.h 767 2010-11-11 02:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -369,10 +369,10 @@ typedef enum {
  ST_INIT_NUM,
  STATREG_NUM,
 
- DOOM2WAD_NUM,
- DOOMUWAD_NUM,
- DOOMWAD_NUM,
- DOOM1WAD_NUM,
+ DOOM2WAD_NUM,	    //UNUSED
+ DOOMUWAD_NUM,      //UNUSED
+ DOOMWAD_NUM,       //UNUSED
+ DOOM1WAD_NUM,      //UNUSED
 
  CDROM_DIR_NUM,     //UNUSED
  CDROM_DEF_NUM,     //UNUSED

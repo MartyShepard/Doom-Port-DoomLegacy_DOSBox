@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: p_saveg.c 767 2010-11-11 02:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2625,7 +2625,7 @@ char * level_wad( void )
     return FIL_Filename_of( mapwad );  // ignore directories
 
  defname:
-    return gamedesc.iwad_filename;
+    return gamedesc.iwad_filename[0];  // first is default
 }
 
 // Check if the wad name is in the wadfiles

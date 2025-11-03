@@ -1254,3 +1254,16 @@ doom_shareware, doom_registered, ultdoom_retail, doom2_commercial
 Found bad enum tests: "if (shareware)" and fixed them
 as "if (gamedesc_index == GDESC_heretic_shareware)".
 
+*** w63_GDESC_improve
+patchfile = w63_GDESC_improve.patch
+- committed revision 767   by wesley johnson
+Revised GDESC_ code to have three alternative filenames for each entry.
+This allows the engine to check several alternative filenames, to
+allow a unique name and a common name, and to cover both filenames for
+Ultimate Doom without needing two separate Ultimate Doom entries.
+The id code is now specified in a field to make it independent of the
+entry position in the table.
+Removed code for -shdev, -regdev, -comdev, and replaced it with one
+simpler switch, -devgame <gamename>, to remove the only need to know the
+index of GDESC table entries.  Probably, those switches have not
+been used since Doom development in the 90's.
