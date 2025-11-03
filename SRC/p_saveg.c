@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 767 2010-11-11 02:19:51Z wesleyjohnson $
+// $Id: p_saveg.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -136,6 +136,198 @@
 byte * save_p;
 boolean  save_game_abort = 0;
 
+// =======================================================================
+//          Save Buffer Support
+// =======================================================================
+
+// Save game is inherently variable length, this is worst case wild guess.
+// added 8-3-98 increase savegame size from 0x2c000 (180kb) to 512*1024
+//#define SAVEGAMESIZE    (512*1024)
+// [WDJ] This was exceeded by longdays.wad, ( 486K+ to 806K ).
+
+// [WDJ] Variable savebuffer size
+#define SAVEBUF_SIZE    (128*1024)
+#define SAVEBUF_SIZEINC (128*1024)
+#define SAVEBUF_HEADERSIZE   (64 + 80 + 128 + 32 + 32)
+
+size_t savebuffer_size = 0;
+byte * savebuffer = NULL;
+const char * savefile = NULL;
+ExtFIL_t  extfile;
+
+// Allocate malloc an appropriately sized buffer
+// Header-only, or data sized buffer (large).
+byte *  P_Alloc_savebuffer( boolean large_size )
+{
+    savebuffer_size = (large_size)? SAVEBUF_SIZE : SAVEBUF_HEADERSIZE;
+   
+    save_p = savebuffer = (byte *)malloc(savebuffer_size);
+    if( ! savebuffer)
+    {
+        CONS_Printf (" Cannot allocate memory for savegame\n");
+        return NULL;
+    }
+    extfile.buffer = savebuffer;
+    extfile.bufcnt = 0;
+    return savebuffer;
+}
+
+// return -1 if overrun the buffer
+size_t  P_Savegame_length( void )
+{
+    size_t length = save_p - savebuffer;
+    if (length > savebuffer_size)
+    {
+        I_SoftError ("Savegame buffer overrun, need %i\n", length);
+   	return -1;
+    }
+    return length;
+}
+
+
+// Setup savegame file write
+int  P_Savegame_Writefile( const char * filename )
+{
+    if( P_Alloc_savebuffer( 1 ) == NULL )  // large savebuffer
+       return -1;
+
+    savefile = filename;
+    return FIL_ExtFile_Open( &extfile, filename, 1 );  // Write file
+}
+
+// Setup savegame file read
+int  P_Savegame_Readfile( const char * filename )
+{
+    if( P_Alloc_savebuffer( 1 ) == NULL )  // large savebuffer
+       return -1;
+
+    savefile = filename;
+    return FIL_ExtFile_Open( &extfile, filename, 0 );  // Read file
+}
+
+// Close savegame file, and return error indication <0
+// Only call if opened with P_Savegame_Readfile or Writefile.
+int  P_Savegame_Closefile( boolean writeflag )
+{
+    int errflag = 0;
+    if( savebuffer )
+    {
+        size_t length = P_Savegame_length();
+        if( length < 0 )
+            errflag = -13;  // overrun buffer
+        if( writeflag && (length>0) )
+        {
+            errflag = FIL_ExtWriteFile( &extfile, length );
+        }
+        FIL_ExtFile_Close( &extfile );
+        free(savebuffer);
+        savebuffer = NULL;
+    }
+    savefile = NULL;
+    if( save_game_abort )
+        errflag = -14;
+    return errflag;
+}
+
+// In case of error
+void  P_Savegame_Error_Closefile( void )
+{
+    if( savebuffer )
+    {
+        FIL_ExtFile_Close( &extfile );
+        free(savebuffer);
+        savebuffer = NULL;
+    }
+    savefile = NULL;
+}
+
+
+// write out buffer or expand it
+void SG_Writebuf( void )
+{
+    size_t length = P_Savegame_length();
+    // do nothing until within 1K of overflow
+    if( (length + 1024) < savebuffer_size )
+        goto done;
+    
+    if( ! savefile )
+    {
+        // No savefile, buffer only
+        // increase the buffer size
+        size_t newsize = savebuffer_size + SAVEBUF_SIZEINC;
+        void * newbuf = realloc( savebuffer, newsize);
+        if( newbuf == NULL )
+        {
+	    I_SoftError ("Savegame buffer realloc fail at %i bytes.\n", newsize);
+	    // will fail when buffer gets overrun, which might not happen
+	    goto done;
+	}
+        savebuffer = newbuf;
+        savebuffer_size = newsize;
+        // [WDJ] Uncomment the following line to see buffer increases
+        fprintf(stderr, "Savegame buffer realloc of %i bytes.\n", newsize);
+        goto done;
+    }
+			     
+    // flush the buffer
+    if( FIL_ExtWriteFile( &extfile, length ) < 0 )
+    {
+         I_SoftError ("Savegame buffer write fail: %i\n", extfile.stat_error);
+         save_game_abort = 1;
+    }
+    save_p = savebuffer;  // ready for more
+done:   
+    return;
+}
+
+// read in buffer
+void SG_Readbuf( void )
+{
+    size_t len1 = P_Savegame_length();  // used
+   
+    if( len1 < 0 )
+    {   // buffer overrun
+        save_game_abort = 1;
+        goto done;
+    }
+    if( ! savefile )
+        goto done;  // No savefile, buffer only
+
+    // check for done reading
+    if( extfile.stat_error < STAT_OPEN )  // ERR or EOF
+        goto done;
+    // still have data to read
+    
+    if( extfile.bufcnt > len1 )  // existing data in buffer
+    {
+        // do not load more until less than 1024 left
+        if( extfile.bufcnt - len1 >= 1024 )
+	    goto done;
+
+	extfile.bufcnt -= len1;  // data still in buffer
+	memmove( savebuffer, save_p, extfile.bufcnt ); // shuffle data down
+    }
+    else
+    {   // really empty (like first time)
+        len1 = savebuffer_size;
+        extfile.bufcnt = 0;
+    }
+    save_p = savebuffer;  // ready read ptr
+
+    // refill the buffer
+    if( FIL_ExtReadFile( &extfile, len1 ) < 0 )
+    {
+         I_SoftError ("Savegame buffer read fail: %i\n", extfile.stat_error);
+         save_game_abort = 1;
+    }
+done:   
+    return;
+}
+
+// =======================================================================
+//          SYNC Support
+// =======================================================================
+
 // Pads save_p to a 4-byte boundary
 //  so that the load/save works on SGI&Gecko.
 #ifdef SGI
@@ -173,12 +365,14 @@ void SG_SaveSync( save_game_section_e sgs )
 {
     WRITEBYTE( save_p, SYNC_sync );	// validity check
     WRITEBYTE( save_p, sgs );	// section id
+    SG_Writebuf();
 }
 
 // required or conditional section
 boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
 {
    if( save_game_abort )   return 0;	// all sync reads repeat the abort
+   SG_Readbuf();
    if( READBYTE( save_p ) != SYNC_sync )  goto invalid;
    if( READBYTE( save_p ) != sgs )
    {
@@ -194,6 +388,9 @@ boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
    return 0;
 }
 
+// =======================================================================
+//          String Support
+// =======================================================================
 
 // write null term string
 void SG_write_string( const char * sp )
@@ -259,7 +456,11 @@ char * SG_read_nstring( int field_length )
 }
 
 
-int num_thinkers;       // number of thinkers in level being archived
+// =======================================================================
+//          Save sections
+// =======================================================================
+
+//int num_thinkers;       // number of thinkers in level being archived
 
 
 typedef enum
@@ -428,6 +629,7 @@ void P_ArchivePlayers(void)
                 WRITEMEM(save_p, &ply->inventory[j], sizeof(ply->inventory[j]));
             }
         }
+        SG_Writebuf();
     }
 }
 
@@ -444,6 +646,7 @@ void P_UnArchivePlayers(void)
 
     for (i = 0; i < MAXPLAYERS; i++)
     {
+        SG_Readbuf();
         memset(&players[i], 0, sizeof(player_t));
         if (!playeringame[i])
             continue;
@@ -697,6 +900,7 @@ void P_ArchiveWorld(void)
             if (diff2 & SD_PREVSEC)
                 WRITE32(put, ss->prevsec);
         }
+        SG_Writebuf();
     }
     WRITEU16(put, 0xffff);  // mark end of world sector section
 
@@ -785,6 +989,7 @@ void P_ArchiveWorld(void)
             if (diff2 & LD_S2MIDTEX)
                 WRITE16(put, si->midtexture);
         }
+        SG_Writebuf();
     }
     WRITEU16(put, 0xffff);  // mark end of world linedef section
 
@@ -812,6 +1017,7 @@ void P_UnArchiveWorld(void)
 
     while (1)
     {
+        SG_Readbuf();
         i = READU16(get);
 
         if (i == 0xffff) // end of world sector section
@@ -866,6 +1072,7 @@ void P_UnArchiveWorld(void)
 
     while (1)
     {
+        SG_Readbuf();
         i = READU16(get);
 
         if (i == 0xffff)  // end of world linedef section
@@ -1566,6 +1773,7 @@ void P_ArchiveThinkers(void)
 	}
 #endif
 
+        SG_Writebuf();
     }
 
     // mark the end of the save section using reserved type mark
@@ -1615,6 +1823,7 @@ void P_UnArchiveThinkers(void)
     // read in saved thinkers
     while (1)
     {
+        SG_Readbuf();
         tclass = READBYTE(save_p);
         if (tclass == tc_end)	// reserved type mark to end section
             break;      // leave the while
@@ -1957,6 +2166,7 @@ void P_ArchiveSpecials(void)
         WRITE_MAPTHING_PTR( itemrespawnque[i] );
         WRITE32(save_p, itemrespawntime[i]);
         i = (i + 1) & (ITEMQUESIZE - 1);
+        SG_Writebuf();
     }
 
     // end delimiter
@@ -1974,6 +2184,7 @@ void P_UnArchiveSpecials(void)
     iquetail = iquehead = 0;
     while ((i = READ32(save_p)) != 0xffffffff)
     {
+        SG_Readbuf();
         itemrespawnque[iquehead] = &mapthings[i];
         itemrespawntime[iquehead++] = READ32(save_p);
     }
@@ -2174,6 +2385,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
       }
 
       sv = sv->next;
+      SG_Writebuf();
     }
   }
 }
@@ -2184,12 +2396,14 @@ void P_UnArchiveFSVariables(svariable_t **vars)
 {
   int i;
 
+  SG_Readbuf();
   // now read the number of variables from the savegame file
   int num_variables = READ16(save_p);
 
   for (i = 0; i < num_variables; i++)
   {
     svariable_t *sv = Z_Malloc(sizeof(svariable_t), PU_LEVEL, 0);
+    SG_Readbuf();
 
     // name
     sv->name = Z_Strdup((char *)save_p, PU_LEVEL, 0);
@@ -2272,6 +2486,7 @@ void P_ArchiveRunningScript(runningscript_t * rs)
     WRITE_MobjPointerID(save_p, rs->trigger);
 
     P_ArchiveFSVariables(rs->variables);
+    SG_Writebuf();
 }
 
 // get the next runningscript
@@ -2282,6 +2497,7 @@ runningscript_t *P_UnArchiveRunningScript()
     // create a new runningscript
     runningscript_t *rs = new_runningscript();
 
+    SG_Readbuf();
     int scriptnum = READ16(save_p);      // get scriptnum
 
     // levelscript?
@@ -2419,6 +2635,7 @@ void P_UnArchiveFSArrays(void)
      // All PU_LEVEL memory already cleared by P_UnArchiveMisc()
 
   // read number of FS arrays
+  SG_Readbuf();
   unsigned int num_fsarrays = READU32(save_p);
 
 #ifdef SAVELIST_STRUCTHEAD
@@ -2476,6 +2693,7 @@ void P_ArchiveScripts()
     WRITEANGLE(save_p, script_camera.aiming);
     WRITEFIXED(save_p, script_camera.viewheight);
     WRITEANGLE(save_p, script_camera.startangle);
+    SG_Writebuf();
 }
 
 void P_UnArchiveScripts()
@@ -2490,6 +2708,7 @@ void P_UnArchiveScripts()
     P_UnArchiveRunningScripts();
 
     // Unarchive the script camera
+    SG_Readbuf();
     script_camera_on = READBOOLEAN(save_p);
     script_camera.mo = READ_MobjPointerID(save_p);
     script_camera.aiming = READANGLE(save_p);
@@ -2539,6 +2758,7 @@ void P_ArchiveMisc()
 
     WRITEU32(save_p, leveltime);
     WRITEBYTE(save_p, P_GetRandIndex());
+    SG_Writebuf();
 }
 
 boolean P_UnArchiveMisc()
@@ -2546,6 +2766,7 @@ boolean P_UnArchiveMisc()
     ULONG pig;
     int i;
 
+    SG_Readbuf();
     gameskill = READBYTE(save_p);
     gameepisode = READBYTE(save_p);
     gamemap = READBYTE(save_p);
@@ -2572,43 +2793,6 @@ boolean P_UnArchiveMisc()
 // =======================================================================
 //          Save game
 // =======================================================================
-
-// Save game is inherently variable length, this is worst case wild guess.
-// added 8-3-98 increase savegame size from 0x2c000 (180kb) to 512*1024
-#define SAVEGAMESIZE    (512*1024)
-#define SAVEGAME_HEADERSIZE   (64 + 80 + 128 + 32 + 32)
-//#define SAVESTRINGSIZE  24
-int savebuffer_size = 0;
-byte * savebuffer = NULL;
-
-// Allocate malloc an appropriately sized buffer
-byte *  P_Alloc_savebuffer( boolean header, boolean data )
-{
-    savebuffer_size = 0;
-    if( header )   savebuffer_size += SAVEGAME_HEADERSIZE;
-    if( data )     savebuffer_size += SAVEGAMESIZE;
-   
-    save_p = savebuffer = (byte *)malloc(savebuffer_size);
-    if( ! savebuffer)
-    {
-        CONS_Printf (" free memory for savegame\n");
-        return NULL;
-    }
-    return savebuffer;
-}
-
-// return -1 if overrun the buffer
-size_t  P_Savegame_length( void )
-{
-    size_t length = save_p - savebuffer;
-    if (length > SAVEGAMESIZE)
-    {
-        I_SoftError ("Savegame buffer overrun, need %i\n", length);
-   	return -1;
-    }
-    return length;
-}
-
 
 // Save game header support
 
@@ -2711,6 +2895,7 @@ void P_Write_Savegame_Header( const char * description )
     WRITEBYTE( save_p, 0 );
     WRITEBYTE( save_p, 0 );
     WRITEBYTE( save_p, 0 );
+    SG_Writebuf();
 }
 
 
@@ -2746,6 +2931,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 
     // Read header
     save_game_abort = 0;	// all sync reads will check this
+    SG_Readbuf();
     save_p = savebuffer;
 
     if( strncmp( (char *)save_p, sg_head_format, idname_length ) )  goto not_save;
@@ -2892,7 +3078,7 @@ boolean P_LoadGame(void)
     return true;
    
  sync_err:
-   I_SoftError( "Legacy save game sync error\n" );
+    I_SoftError( "Legacy save game sync error\n" );
 
  failed:
     ClearPointermap();	// safe clear

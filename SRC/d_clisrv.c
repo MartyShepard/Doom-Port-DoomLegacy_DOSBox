@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 749 2010-09-19 18:41:40Z wesleyjohnson $
+// $Id: d_clisrv.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -610,16 +610,20 @@ static void SV_SendSaveGame(int node)
 {
     size_t  length;
 
-    P_Alloc_savebuffer( 0, 1 );	// no header
+    P_Alloc_savebuffer( 1 );	// large buffer, but no header
     if(! savebuffer)   return;
+    // No savegame header
    
     P_SaveGame();  // fill buffer with game data
+    // buffer will automatically grow as needed.
 
     length = P_Savegame_length();
     if( length < 0 )   return;	// overrun buffer
    
     // then send it !
     SendRam(node, savebuffer, length, SF_RAM, 0);
+    // SendRam frees the savebuffer using free() after it is sent.
+    // This is the only use of SF_RAM.
 }
 
 static const char *tmpsave="$$$.sav";
@@ -628,18 +632,12 @@ static void CL_LoadReceivedSavegame(void)
 {
     // Use savebuffer and save_p from p_saveg.c.
     // There cannot be another savegame in progress when this occurs.
+    // [WDJ] Changed to use new load savegame file, with smaller buffer.
+    if( P_Savegame_Readfile( tmpsave ) < 0 )  goto cannot_read_file;
+    // file is open and savebuffer allocated
+    // No Header on network sent savegame
 
-    // read file into savebuffer, Z_Malloc allocated as size of file
-    int length = FIL_ReadFile(tmpsave, &savebuffer);
-
-
-    CONS_Printf("loading savegame length %d\n",length);
-    if (!length)
-    {
-        I_SoftError ("Can't read savegame sent");
-        // buffer not allocated
-        return;
-    }
+    CONS_Printf("loading savegame\n");
 
     G_Downgrade (VERSION);
 
@@ -650,19 +648,25 @@ static void CL_LoadReceivedSavegame(void)
     // load a base level
     playerdeadview = false;
 
-    save_p = savebuffer;
-    if( !P_LoadGame() )
-    {
-        CONS_Printf("Can't load the level !!!\n");
-        Z_Free (savebuffer);
-        return;
-    }
+    P_LoadGame(); // read game data in savebuffer, defer error test
+    if( P_Savegame_Closefile( 0 ) < 0 )  goto load_failed;
+    // savegame buffer deallocated, and file closed
 
     // done
-    Z_Free (savebuffer);
-    unlink(tmpsave);
+    unlink(tmpsave);  // delete file
     consistancy[gametic%BACKUPTICS]=Consistancy();
     CON_ToggleOff ();
+    return;
+
+cannot_read_file:
+    I_SoftError ("Can't read savegame sent");
+    goto failed_exit; // must deallocate savebuffer
+
+load_failed:
+    CONS_Printf("Can't load the level !!!\n");
+failed_exit:
+    // needed when there are error tests before Closefile.
+    P_Savegame_Error_Closefile();  // deallocate savebuffer
     return;
 }
 
@@ -1617,7 +1621,7 @@ static void GetPackets (void)
             else
             {
                 boolean newnode=false;
-                // client autorised to join
+                // client authorized to join
                 nodewaiting[node]=netbuffer->u.clientcfg.localplayers-playerpernode[node];
                 if(!nodeingame[node])
                 {

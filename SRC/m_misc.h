@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: m_misc.h 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,6 +59,27 @@ boolean FIL_WriteFile ( char const*   name,
 
 int  FIL_ReadFile ( char const*   name,
                     byte**        buffer );
+
+
+// Extended Read and Write of buffers.
+typedef enum {
+   ERR_RW= -8,   // errors are negative
+   STAT_EOF=16, STAT_CLOSED, STAT_OPEN  // state
+} stat_err_e;
+
+typedef struct
+{
+    void*    buffer;
+    uint32_t bufcnt;	// bytes in buffer (last read)
+    int      handle;
+    int      stat_error;     // error and status
+} ExtFIL_t;
+
+int FIL_ExtFile_Open ( ExtFIL_t * ft, char const* name, boolean write_flag );
+int FIL_ExtWriteFile ( ExtFIL_t * ft, size_t length );
+int FIL_ExtReadFile ( ExtFIL_t * ft, size_t length );
+void FIL_ExtFile_Close ( ExtFIL_t * ft );
+
 
 void FIL_DefaultExtension (char *path, char *extension);
 

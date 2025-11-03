@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: m_misc.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,7 +103,6 @@ boolean FIL_WriteFile ( char const*   name,
     return true;
 }
 
-
 //
 // FIL_ReadFile : return length, 0 on error
 //
@@ -136,6 +135,64 @@ int FIL_ReadFile ( char const*   name,
 
     *buffer = buf;
     return length;
+}
+
+// Extended Read and Write of buffers.
+
+int FIL_ExtFile_Open ( ExtFIL_t * ft,  char const* name, boolean write_flag )
+{
+    ft->stat_error = STAT_OPEN;
+    ft->bufcnt = 0;  // buffer empty
+    ft->handle =
+      open ( name,
+	     ( (write_flag)? O_WRONLY | O_CREAT | O_TRUNC | O_BINARY // write
+	                    :O_RDONLY | O_BINARY  // read
+	     ), 0666);
+    if( ft->handle < 0) // file not found, or not created
+        ft->stat_error = ft->handle; // error
+    return ft->stat_error;
+}
+
+int FIL_ExtWriteFile ( ExtFIL_t * ft, size_t length )
+{
+    int count = write (ft->handle, ft->buffer, length);
+    if( count != length )  // did not write all of length (disk full)
+       ft->stat_error = ERR_RW;  // something negative, not -1
+    return ft->stat_error;
+}
+
+int FIL_ExtReadFile ( ExtFIL_t * ft, size_t length )
+{
+    // check for done reading
+    if( ft->stat_error < STAT_OPEN )  // ERR or EOF
+        goto done;
+    // still have data to read
+    // append to existing data    
+    int count = read (ft->handle, ft->buffer+ft->bufcnt, length);
+    // It is not an error if read returns less than asked, it may have
+    // been interupted or other things.  Return of 0 is end-of-file.
+    if( count == -1 ) // error
+    {
+        ft->stat_error = ERR_RW; // read err
+        goto done;
+    }
+   
+    ft->bufcnt += count;
+    if( count == 0 ) // EOF
+        ft->stat_error = STAT_EOF;
+
+done:   
+    return ft->stat_error;
+}
+
+void FIL_ExtFile_Close ( ExtFIL_t * ft )
+{
+    if( ft->handle >= 0 )  // protect against second call when errors
+    {
+        close (ft->handle);
+        ft->handle = -127;
+        ft->stat_error = STAT_CLOSED;
+    }
 }
 
 

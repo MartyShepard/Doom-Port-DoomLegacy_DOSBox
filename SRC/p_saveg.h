@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.h 628 2010-04-03 02:23:33Z wesleyjohnson $
+// $Id: p_saveg.h 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -50,7 +50,17 @@
 // These are the load / save game routines.
 
 // Allocate malloc an appropriately sized buffer
-byte *  P_Alloc_savebuffer( boolean header, boolean data );
+// Header-only, or data sized buffer (large).
+byte *  P_Alloc_savebuffer( boolean large_size );
+
+// Setup savegame file write
+int  P_Savegame_Writefile( const char * filename );
+// Setup savegame file read
+int  P_Savegame_Readfile( const char * filename );
+// Close savegame file, and return error indication <0
+int  P_Savegame_Closefile( boolean writeflag );
+// In case of error
+void  P_Savegame_Error_Closefile( void );
 
 // return -1 if overrun the buffer
 size_t  P_Savegame_length( void );
@@ -78,6 +88,6 @@ boolean P_LoadGame (void);
 
 extern byte*		savebuffer;
 extern byte*            save_p; 
-extern int		savebuffer_size;
+extern size_t		savebuffer_size;
 
 #endif

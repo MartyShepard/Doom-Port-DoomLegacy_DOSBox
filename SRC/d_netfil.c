@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: d_netfil.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -194,7 +194,7 @@ byte *PutFileNeeded(void)
     return p;
 }
 
-// parce the serverinfo packet and fill fileneeded table on client 
+// parse the serverinfo packet and fill fileneeded table on client 
 void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
 {
     int i;
@@ -228,7 +228,6 @@ boolean SendRequestFile(void)
 {
     int   i;
     ULONG totalfreespaceneeded=0;
-    //uint64_t availablefreespace;
 
     if( M_CheckParm("-nodownload") )
     {
@@ -283,8 +282,8 @@ boolean SendRequestFile(void)
             fileneeded[i].status = FS_REQUESTED;
         }
     WRITECHAR(p,-1);
-    uint64_t availablefreespace = I_GetDiskFreeSpace();//I_GetDiskFreeSpace(&availablefreespace);
-//    CONS_Printf("free byte %d\n",availablefreespace);
+    uint64_t availablefreespace = I_GetDiskFreeSpace();
+    // CONS_Printf("free byte %d\n",availablefreespace);
     if(totalfreespaceneeded>availablefreespace)
         I_Error("To play on this server you should download %dKb\n"
                 "but you have only %dKb freespace on this drive\n",
@@ -309,7 +308,7 @@ void Got_RequestFilePak(int node)
 }
 
 
-// client check if the filedeened arent already loaded or on the disk
+// client check if the fileneeded arent already loaded or on the disk
 int CL_CheckFiles(void)
 {
     int  i,j;
@@ -320,7 +319,7 @@ int CL_CheckFiles(void)
         return 1;
 
     // the first is the iwad (the main wad file)
-    // do not check file date, also don't donwload it (copyright problem) 
+    // do not check file date, also don't download it (copyright problem) 
     strcpy(wadfilename,wadfiles[0]->filename);
     nameonly(wadfilename);
     if( stricmp(wadfilename,fileneeded[0].filename)!=0 )
@@ -337,7 +336,7 @@ int CL_CheckFiles(void)
     {
         if(devparm) CONS_Printf("searching for '%s' ",fileneeded[i].filename);
         
-        // check in allready loaded files
+        // check in already loaded files
         for(j=1;wadfiles[j];j++)
         {
             strcpy(wadfilename,wadfiles[j]->filename);
@@ -369,7 +368,7 @@ void CL_LoadServerFiles(void)
     for (i=1;i<fileneedednum;i++)
     {
         if( fileneeded[i].status == FS_OPEN )
-            // allready loaded
+            // already loaded
             continue;
         else
         if( fileneeded[i].status == FS_FOUND )
@@ -522,7 +521,7 @@ found:
     f=transfer[i].txlist;
     ram=f->ram;
 
-    if(!transfer[i].currentfile) // file not allready open
+    if(!transfer[i].currentfile) // file not already open
     {
         if(!ram) {
             long filesize;
@@ -571,7 +570,7 @@ found:
     p->fileid   = f->fileid;
     netbuffer->packettype=PT_FILEFRAGMENT;
     if (!HSendPacket(i,true,0,FILETXHEADER+size ) ) // reliable SEND
-    { // not sent for some od reason
+    { // not sent for some odd reason
       // retry at next call
          if( !ram )
              fseek(transfer[i].currentfile,transfer[i].position,SEEK_SET);
@@ -594,7 +593,7 @@ static int time=0;
 
     if(filenum>=fileneedednum)
     {
-        DEBFILE(va("fileframent not needed %d>%d\n",filenum,fileneedednum));
+        DEBFILE(va("filefragment not needed %d>%d\n",filenum,fileneedednum));
         return;
     }
 
@@ -674,7 +673,7 @@ void CloseNetFile(void)
         if( fileneeded[i].status==FS_DOWNLOADING && fileneeded[i].phandle)
         {
             fclose(fileneeded[i].phandle);
-            // file is not compete delete it
+            // file is not complete, delete it
             remove(fileneeded[i].filename);
         }
 
@@ -697,7 +696,7 @@ void nameonly(char *s)
 }
 
 
-// UNUXED for now
+// UNUSED for now
 boolean fileexist(char *filename,time_t time)
 {
    int handel;

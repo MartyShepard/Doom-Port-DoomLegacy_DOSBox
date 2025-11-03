@@ -1272,3 +1272,14 @@ been used since Doom development in the 90's.
 patchfile = w63_wikibugs.patch
 - committed revision 768   by wesley johnson
 Comment fixes to bugs described in wikibugs.
+
+*** w64_savegame_limit
+patchfile = w64_savegame_limit.patch
+- committed revision 769   by wesley johnson
+Savegame size limits removed.  Longdays.wad has savegame size from 468K to 806K.
+Savegame was made to work within a 128K buffer, by reading and
+writing when the free space is less than 1024 bytes.  Error detection,
+buffer allocation, and deallocation, and file access is encapsulated within
+the savegame functions.
+The network also transmits savegame to a new user.  When there is not
+a file then the savegame function reallocs a larger savebuffer, as needed.

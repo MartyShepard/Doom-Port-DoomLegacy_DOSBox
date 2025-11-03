@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: g_game.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1921,19 +1921,13 @@ void G_LoadGame (int slot)
 // Reads the save game file.
 void G_DoLoadGame (int slot)
 {
-    int         length;
     char        savename[255];
     savegame_info_t   sginfo;  // read header info
 
     G_Savegame_Name( savename, slot );
 
-    // read file into savebuffer, Z_Malloc allocated as size of file
-    length = FIL_ReadFile (savename, &savebuffer);
-    if (!length)
-    {
-        CONS_Printf ("Couldn't read file %s", savename);
-        return;
-    }
+    if( P_Savegame_Readfile( savename ) < 0 )  goto cannot_read_file;
+    // file is open and savebuffer allocated
 
     if( ! P_Read_Savegame_Header( &sginfo ) )  goto load_header_failed;
     if( ! sginfo.have_game )  goto wrong_game;
@@ -1949,7 +1943,9 @@ void G_DoLoadGame (int slot)
     automapactive = false;
 
     // dearchive all the modifications
-    if( ! P_LoadGame() )  goto load_failed; // read game data in savebuffer
+    P_LoadGame(); // read game data in savebuffer, defer error test
+    if( P_Savegame_Closefile( 0 ) < 0 )  goto load_failed;
+    // savegame buffer deallocated, and file closed
 
     gameaction = ga_nothing;
     gamestate = GS_LEVEL;
@@ -1958,8 +1954,6 @@ void G_DoLoadGame (int slot)
     displayplayer_ptr = consoleplayer_ptr;
 
     // done
-    Z_Free (savebuffer);
-
     multiplayer = playeringame[1];
     if(playeringame[1] && !netgame)
         CV_SetValue(&cv_splitscreen,1);
@@ -1971,6 +1965,10 @@ void G_DoLoadGame (int slot)
     R_FillBackScreen ();
     CON_ToggleOff ();
     return;
+
+cannot_read_file:
+    CONS_Printf ("Couldn't read file %s", savename);
+    goto failed_exit;
 
 load_header_failed:
     compose_message( sginfo.msg, NULL );
@@ -1988,7 +1986,7 @@ load_failed:
     M_SimpleMessage("savegame file corrupted\n\nPress ESC\n" );
     Command_ExitGame_f();
 failed_exit:
-    Z_Free (savebuffer);
+    P_Savegame_Error_Closefile();  // to dealloate buffer
     // were not playing, but server got started by sending load message
     if( gamestate == GS_WAITINGPLAYERS )
     {
@@ -2019,7 +2017,6 @@ void G_SaveGame ( int   slot, char* description )
 // Writes the save game file.
 void G_DoSaveGame (int   savegameslot, char* savedescription)
 {
-    size_t      length;
     char        savename[256];
 
     gameaction = ga_nothing;
@@ -2028,17 +2025,12 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     gameaction = ga_nothing;
 
-    P_Alloc_savebuffer( 1, 1 );	// buffer sized by savegame
-    if(!savebuffer)  return;
+    if( P_Savegame_Writefile( savename ) < 0 )  return;
     
     P_Write_Savegame_Header( savedescription );
     P_SaveGame();  // Write game data to savegame buffer.
    
-    length = P_Savegame_length();
-    if( length < 0 )   return;	// overrun buffer
-    
-    FIL_WriteFile (savename, savebuffer, length);
-    free(savebuffer);
+    if( P_Savegame_Closefile( 1 ) < 0 )  return;
 
     gameaction = ga_nothing;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: m_menu.c 769 2010-11-18 21:21:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2715,7 +2715,7 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
     savegame_info_t  sginfo;
     char    name[256];
 
-    P_Alloc_savebuffer( 1, 0 );  // header only
+    P_Alloc_savebuffer( 0 );  // header only
     // savegamedisp is statically alloc
 
     if( scroll_direction < 0 )
@@ -2811,7 +2811,7 @@ void M_ReadSaveStrings(void)
     savegame_info_t  sginfo;
     char    name[256];
 
-    P_Alloc_savebuffer( 1, 0 );  // header only
+    P_Alloc_savebuffer( 0 );  // header only
     // savegamedisp is statically alloc
 
     for (i = 0; i < load_end; i++)
