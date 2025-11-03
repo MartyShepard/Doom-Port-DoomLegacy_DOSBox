@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: f_finale.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -129,9 +129,9 @@ void F_StartFinale (void)
     {
 
       // DOOM 1 - E1, E3 or E4, but each nine missions
-      case shareware:
-      case registered:
-      case retail:
+      case doom_shareware:
+      case doom_registered:
+      case ultdoom_retail:
       {
         S_ChangeMusic(mus_victor, true);
 
@@ -161,7 +161,7 @@ void F_StartFinale (void)
       }
 
       // DOOM II and missions packs with E1, M34
-      case commercial:
+      case doom2_commercial:
       {
           S_ChangeMusic(mus_read_m, true);
 
@@ -288,7 +288,7 @@ void F_Ticker (void)
                     finalecount += MAXINT/2;
                 else
 	        {
-                    if (gamemode == commercial)
+                    if (gamemode == doom2_commercial)
                     {
                         if (gamemap == 30)
                             F_StartCast ();
@@ -304,7 +304,7 @@ void F_Ticker (void)
 		}
             }
 
-            if( gamemode != commercial)
+            if( gamemode != doom2_commercial)
             {
                 ULONG f = finalecount;
                 if( f >= MAXINT/2 )
@@ -852,7 +852,7 @@ void F_Drawer (void)
 	   switch (gameepisode)
 	   {
 	    case 1:
-	      if ( gamemode == retail || gamemode == chexquest1 )
+	      if ( gamemode == ultdoom_retail || gamemode == chexquest1 )
 		F_Draw_interpic_Name( text[CREDIT_NUM] );
 	      else
 		F_Draw_interpic_Name( text[HELP2_NUM] );

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 752 2010-09-20 20:00:50Z smite-meister $
+// $Id: d_main.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -236,7 +236,7 @@
 //
 // DESCRIPTION:
 //      DOOM main program (D_DoomMain) and game loop (D_DoomLoop),
-//      plus functions to determine game mode (shareware, registered),
+//      plus functions to determine game mode (shareware, doom_registered),
 //      parse command line parameters, configure game parameters (turbo),
 //      and call the startup functions.
 //
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 765; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 766; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha1 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -906,7 +906,7 @@ void D_DoAdvanceDemo(void)
     advancedemo = false;
     gameaction = ga_nothing;
 
-    if (gamemode == retail)
+    if (gamemode == ultdoom_retail)
         demosequence = (demosequence + 1) % 7;
     else
         demosequence = (demosequence + 1) % 6;
@@ -923,7 +923,7 @@ void D_DoAdvanceDemo(void)
                     pagename = "TITLE";
                     S_StartMusic(mus_htitl);
                     break;
-                case commercial:
+                case doom2_commercial:
                     pagetic = TICRATE * 11;
                     S_StartMusic(mus_dm2ttl);
                     break;
@@ -949,7 +949,7 @@ void D_DoAdvanceDemo(void)
             break;
         case 4:
             gamestate = GS_DEMOSCREEN;
-            if (gamemode == commercial)
+            if (gamemode == doom2_commercial)
             {
                 pagetic = TICRATE * 11;
                 pagename = "TITLEPIC";
@@ -967,7 +967,7 @@ void D_DoAdvanceDemo(void)
             {
                 pagetic = 200;
 
-                if (gamemode == retail)
+                if (gamemode == ultdoom_retail)
                     pagename = text[CREDIT_NUM];
                 else
                     pagename = text[HELP2_NUM];
@@ -1026,8 +1026,8 @@ void D_AddFile(char *file)
 
 // ==========================================================================
 // Identify the Doom version, and IWAD file to use.
-// Sets 'gamemode' to determine whether registered/commmercial features are
-// available (notable loading PWAD files).
+// Sets 'gamemode' to determine whether doom_registered/doom2_commercial
+// features are available (notable loading PWAD files).
 // ==========================================================================
 
 // [WDJ] Title and file names used in GDESC_other table entry, and other uses.
@@ -1058,7 +1058,7 @@ const char * common_lump_names[ COMMON_LUMP_LIST_SIZE ] =
 // Some of lump check information was obtained from ZDoom docs.
 // The startup_title will be centered on the Title page.
 // The positions within this table must match the enum game_desc_e, because
-// a some entries are accessed by index.
+// some entries are accessed by index.
 // Switch names (idstr) need to be kept to 8 chars, all lowercase, so they
 // can be used in file names on all systems.
 // This is also the game search order.
@@ -1068,34 +1068,34 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 // Free wads should get their own gamemode identity
 // GDESC_freedoom: FreeDoom project, DoomII replacement
    { "FreeDoom", NULL, "freedoom", "doom2.wad", NULL,
-	{"FREEDOOM", NULL}, LN_MAP01, 0, 0, commercial },
+	{"FREEDOOM", NULL}, LN_MAP01, 0, 0, doom2_commercial },
 // GDESC_freedm: FreeDM project, DoomII deathmatch
    { "FreeDM", NULL, "freedm", "freedm.wad", NULL,
-	{"FREEDOOM", NULL}, LN_MAP01, 0, 0, commercial },
+	{"FREEDOOM", NULL}, LN_MAP01, 0, 0, doom2_commercial },
 // GDESC_doom2: doom2wad, text[DOOM2WAD_NUM]
    { "Doom2", "DOOM 2: Hell on Earth", "doom2", "doom2.wad", NULL,
-	{NULL, NULL}, LN_MAP01, LN_TITLE, GD_idwad, commercial },
+	{NULL, NULL}, LN_MAP01, LN_TITLE, GD_idwad, doom2_commercial },
 // GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    { "Ultimate FreeDoom", NULL, "freedu", "doom.wad", NULL,
-	{"FREEDOOM", NULL}, LN_E1M1+LN_E2M2, 0, 0, retail },
+	{"FREEDOOM", NULL}, LN_E1M1+LN_E2M2, 0, 0, ultdoom_retail },
 // GDESC_ultimate: Doom1 1995, doomuwad, text[DOOMUWAD_NUM]
    { "Ultimate Doom", "The Ultimate DOOM", "doomu", "doomu.wad", NULL,
-	{"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, retail },
+	{"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, ultdoom_retail },
 // GDESC_ultimate_se: Doom1 1995 on floppy
    { "Ultimate Doom", "The Ultimate DOOM", "doomu", "doom_se.wad", NULL,
-	{"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, retail },
+	{"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, ultdoom_retail },
 // GDESC_doom: DoomI 1994, doomwad, text[DOOMWAD_NUM]
    { "Doom", "DOOM Registered", "doom", "doom.wad", NULL,
-	{"E3M9", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, registered },
+	{"E3M9", NULL}, LN_E1M1+LN_E2M2, LN_TITLE, GD_idwad, doom_registered },
 // GDESC_doom_shareware: DoomI shareware, doom1wad, text[DOOM1WAD_NUM]
    { "Doom shareware", "DOOM Shareware", "doom1", "doom1.wad", NULL,
-	{NULL, NULL}, LN_E1M1, LN_TITLE, GD_idwad, shareware },
+	{NULL, NULL}, LN_E1M1, LN_TITLE, GD_idwad, doom_shareware },
 // GDESC_plutonia: FinalDoom : Plutonia, DoomII engine
    { "Plutonia", "DOOM 2: Plutonia Experiment", "plutonia", "plutonia.wad", NULL,
-	{"CAM01", NULL}, LN_MAP01, LN_TITLE, GD_idwad, commercial },
+	{"CAM01", NULL}, LN_MAP01, LN_TITLE, GD_idwad, doom2_commercial },
 // GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    { "Tnt Evilution", "DOOM 2: TNT - Evilution", "tnt", "tnt.wad", NULL,
-	{"REDTNT", NULL}, LN_MAP01, LN_TITLE, GD_idwad, commercial },
+	{"REDTNT", NULL}, LN_MAP01, LN_TITLE, GD_idwad, doom2_commercial },
 // GDESC_blasphemer: FreeDoom project, DoomII replacement
    { "Blasphemer", NULL, "blasphem", "heretic.wad", NULL,
 	{"BLASPHEM", NULL}, LN_E1M1+LN_TITLE, 0, 0, heretic },
@@ -1122,10 +1122,10 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE, GD_iwad_pref, chexquest1 },
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode", "doom.wad", NULL,
-	{ NULL, NULL}, LN_E1M1, 0, 0, registered },
+	{ NULL, NULL}, LN_E1M1, 0, 0, doom_registered },
 // GDESC_doom_mode: DoomI replacement
    { "Doom mode", NULL, "doommode", "doom.wad", NULL,
-	{ NULL, NULL}, LN_E1M1, 0, 0, registered },
+	{ NULL, NULL}, LN_E1M1, 0, 0, doom_registered },
 // GDESC_heretic_mode: Heretic replacement
    { "Heretic mode", NULL, "heremode", "heretic.wad", NULL,
 	{ NULL, NULL}, LN_E1M1, 0, 0, heretic },
@@ -1134,7 +1134,7 @@ game_desc_t  game_desc_table[ GDESC_num ] =
 	{ NULL, NULL}, LN_MAP01, 0, GD_unsupported, hexen },
 // GDESC_other: Other iwads, all DoomII features enabled, ptrs to name buffers
    { other_gname, public_title, "", other_iwad_filename, NULL,
-	{ NULL, NULL}, LN_MAP01, 0, GD_iwad_pref, commercial }
+	{ NULL, NULL}, LN_MAP01, 0, GD_iwad_pref, doom2_commercial }
 };
 
 
@@ -1321,7 +1321,7 @@ void IdentifyVersion()
     // [WDJ] were too many chained ELSE. Figured it out once and used direct goto.
     if (M_CheckParm("-shdev"))
     {
-	gamedesc_index = GDESC_doom_shareware; // gamemode = shareware;
+	gamedesc_index = GDESC_doom_shareware; // gamemode = doom_shareware;
         devparm = true;
         D_AddFile(DEVDATA "doom1.wad");
         D_AddFile(DEVMAPS "data_se/texture1.lmp");
@@ -1331,7 +1331,7 @@ void IdentifyVersion()
     }
     if (M_CheckParm("-regdev"))
     {
-	gamedesc_index = GDESC_doom; // gamemode = registered;
+	gamedesc_index = GDESC_doom; // gamemode = doom_registered;
         devparm = true;
         D_AddFile(DEVDATA "doom.wad");
         D_AddFile(DEVMAPS "data_se/texture1.lmp");
@@ -1342,7 +1342,7 @@ void IdentifyVersion()
     }
     if (M_CheckParm("-comdev"))
     {
-	gamedesc_index = GDESC_doom2; // gamemode = commercial
+	gamedesc_index = GDESC_doom2; // gamemode = doom2_commercial
         devparm = true;
         /*
            I don't bother
@@ -1752,14 +1752,14 @@ void D_DoomMain()
         // Map name handling.
         switch (gamemode)
         {
-            case shareware:
-            case retail:
-            case registered:
+            case doom_shareware:
+            case ultdoom_retail:
+            case doom_registered:
                 sprintf(file, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
                 CONS_Printf("Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
                 break;
 
-            case commercial:
+            case doom2_commercial:
             default:
                 p = atoi(myargv[p + 1]);
                 if (p < 10)
@@ -1815,7 +1815,7 @@ void D_DoomMain()
     p = M_CheckParm("-warp");
     if (p && p < myargc - 1)
     {
-        if (gamemode == commercial)
+        if (gamemode == doom2_commercial)
             startmap = atoi(myargv[p + 1]);
         else
         {
@@ -1854,8 +1854,8 @@ void D_DoomMain()
     //    that shareware wad do, so there will miss resource :(
 
     //added:28-02-98: check for Ultimate doom.
-    //if ( (gamemode==registered) && (W_CheckNumForName("E4M1") > 0) )
-    //    gamemode = retail;
+    //if ( (gamemode==doom_registered) && (W_CheckNumForName("E4M1") > 0) )
+    //    gamemode = ultdoom_retail;
 
     if ( gamedesc.gameflags & GD_idwad )
     {
@@ -1874,12 +1874,12 @@ void D_DoomMain()
         };
         int i;
 
-        if (gamemode == shareware)
+        if (gamemode == doom_shareware)
             CONS_Printf("\nYou shouldn't use -file with the shareware version. Register!");
 
         // Check for fake IWAD with right name,
         // but w/o all the lumps of the registered version.
-        if (gamemode == registered)
+        if (gamemode == doom_registered)
             for (i = 0; i < 23; i++)
                 if (W_CheckNumForName(name[i]) < 0)
                     CONS_Printf("\nThis is not the registered version.");
@@ -1892,13 +1892,13 @@ void D_DoomMain()
       // Check and print which version is executed.
       switch (gamemode)
       {
-        case shareware:
+        case doom_shareware:
         case indetermined:
             CONS_Printf(text[SHAREWARE_NUM]);
             break;
-        case registered:
-        case retail:
-        case commercial:
+        case doom_registered:
+        case ultdoom_retail:
+        case doom2_commercial:
             CONS_Printf(text[COMERCIAL_NUM]);
             break;
         default:

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: p_enemy.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1959,7 +1959,7 @@ void A_BossDeath (mobj_t* mo)
     line_t      junk;
     int         i;
 
-    if ( gamemode == commercial)
+    if ( gamemode == doom2_commercial)
     {
         // Doom2 MAP07: When last Mancubus is dead,
         //   execute lowerFloortoLowest(sectors tagged 666).
@@ -1975,7 +1975,7 @@ void A_BossDeath (mobj_t* mo)
 #if 1
     // [WDJ] Untested
     // This could be done with compatibility switch, as in prboom.
-    else if( (gamemode == shareware || gamemode == registered)
+    else if( (gamemode == doom_shareware || gamemode == doom_registered)
 	     && gameepisode < 4 )
     {
         // [WDJ] Revert to behavior before UltimateDoom,
@@ -2089,7 +2089,7 @@ void A_BossDeath (mobj_t* mo)
     }
 
     // victory!
-    if ( gamemode == commercial)
+    if ( gamemode == doom2_commercial)
     {
         if (mo->type == MT_FATSO)
         {
@@ -2414,7 +2414,7 @@ void A_PlayerScream (mobj_t* mo)
     // Default death sound.
     int         sound = sfx_pldeth;
 
-    if ( (gamemode == commercial)
+    if ( (gamemode == doom2_commercial)
         &&      (mo->health < -50))
     {
         // IF THE PLAYER DIES

@@ -1246,3 +1246,11 @@ Loading of switches has endian conversion that should be conditional
 on BIG_ENDIAN, and needed to be done only when loading cache, not on
 cache hits.
 
+*** w63_doommode
+patchfile = w63_doommode.patch
+- committed revision 766   by wesley johnson
+Alter the doommode enum names to reflect the actual games.
+doom_shareware, doom_registered, ultdoom_retail, doom2_commercial
+Found bad enum tests: "if (shareware)" and fixed them
+as "if (gamedesc_index == GDESC_heretic_shareware)".
+

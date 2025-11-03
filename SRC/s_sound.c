@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: s_sound.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -456,7 +456,7 @@ void S_Start(void)
     // start new music for the level
     mus_paused = 0;
 
-    if (gamemode == commercial)
+    if (gamemode == doom2_commercial)
         mnum = mus_runnin + gamemap - 1;
     else if (gamemode == heretic)
         mnum = mus_he1m1 + (gameepisode - 1) * 9 + gamemap - 1;
@@ -483,7 +483,7 @@ void S_Start(void)
     }
 
     // HACK FOR COMMERCIAL
-    //  if (commercial && mnum > mus_e3m9)
+    //  if (gamemode==doom2_commercial && mnum > mus_e3m9)
     //      mnum -= mus_e3m9;
 
     if (info_music && *info_music)
@@ -927,7 +927,7 @@ void S_SetSfxVolume(int volume)
 //
 void S_StartMusic(int m_id)
 {
-    S_ChangeMusic(m_id, true/*false*/);
+    S_ChangeMusic(m_id, true);
 }
 
 //

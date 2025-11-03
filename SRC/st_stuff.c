@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: st_stuff.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1498,12 +1498,13 @@ void ST_Init (void)
 
     // choose and cache the default border patch
     switch(gamemode) {
-        case commercial :
+        case doom2_commercial :
             // DOOM II border patch, original was GRNROCK
             st_borderpatchnum = W_GetNumForName ("GRNROCK");
             break;
         case heretic :
             if(W_CheckNumForName("e2m1")==-1)
+	        // GDESC_heretic_shareware
                 st_borderpatchnum = W_GetNumForName ("FLOOR04");
             else
                 st_borderpatchnum = W_GetNumForName ("FLAT513");

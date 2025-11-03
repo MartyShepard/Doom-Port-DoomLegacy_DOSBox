@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: p_setup.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1405,7 +1405,7 @@ void P_SetupLevelSky (void)
     if(*info_skyname)
       skytexture = R_TextureNumForName(info_skyname);
     else
-    if ( (gamemode == commercial) )
+    if (gamemode == doom2_commercial)  // includes doom2, plut, tnt
       // || (gamemode == pack_tnt) he ! is not a mode is a episode !
       //    || ( gamemode == pack_plut )
     {
@@ -1418,8 +1418,8 @@ void P_SetupLevelSky (void)
             skytexture = R_TextureNumForName ("SKY3");
     }
     else
-    if ( (gamemode==retail) ||
-         (gamemode==registered) )
+    if ( (gamemode==ultdoom_retail) ||
+         (gamemode==doom_registered) )
     {
         if (gameepisode<1 || gameepisode>4)     // useful??
             gameepisode = 1;
@@ -1659,7 +1659,7 @@ boolean P_SetupLevel (int           episode,
     //  UNUSED P_ConnectSubsectors ();
 
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
-    if (gamemode==commercial)
+    if (gamemode==doom2_commercial)
         I_PlayCD (map, true);                // Doom2, 32 maps
     else
         I_PlayCD ((episode-1)*9+map, true);  // Doom1, 9maps per episode
@@ -1794,7 +1794,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
     {
         name = lumpinfo->name;
         num = firstmapreplaced;
-        if (gamemode==commercial)       // Doom2
+        if (gamemode==doom2_commercial)       // Doom2
         {
             if (name[0]=='M' &&
                 name[1]=='A' &&

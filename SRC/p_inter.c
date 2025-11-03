@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: p_inter.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -179,10 +179,10 @@ int FindBestWeapon(player_t *player)
     for (i = 0; i < NUMWEAPONS; i++)
     {
         // skip super shotgun for non-Doom2
-        if (gamemode!=commercial && i==wp_supershotgun)
+        if (gamemode!=doom2_commercial && i==wp_supershotgun)
             continue;
-        // skip plasma-bfg in sharware
-        if (gamemode==shareware && (i==wp_plasma || i==wp_bfg))
+        // skip plasma-bfg in shareware
+        if (gamemode==doom_shareware && (i==wp_plasma || i==wp_bfg))
             continue;
 
         if (player->weaponowned[i] &&
@@ -803,7 +803,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
         break;
 
       case SPR_MEGA:
-        if (gamemode != commercial)
+        if (gamemode != doom2_commercial)
             return;
         player->health = mega_health;
         player->mo->health = player->health;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: m_cheat.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -309,7 +309,7 @@ boolean cht_Responder(event_t * ev)
             plyr->message = STSTR_MUS;
             cht_GetParam(&cheat_mus, buf);
 
-            if (gamemode == commercial)
+            if (gamemode == doom2_commercial)
             {
                 musnum = mus_runnin + (buf[0] - '0') * 10 + buf[1] - '0' - 1;
 
@@ -418,7 +418,7 @@ boolean cht_Responder(event_t * ev)
 
             cht_GetParam(&cheat_clev, buf);
 
-            if (gamemode == commercial)
+            if (gamemode == doom2_commercial)
             {
                 epsd = 0;
                 map = (buf[0] - '0') * 10 + buf[1] - '0';
@@ -438,16 +438,16 @@ boolean cht_Responder(event_t * ev)
                 return false;
 
             // Ohmygod - this is not going to work.
-            if ((gamemode == retail) && ((epsd > 4) || (map > 9)))
+            if ((gamemode == ultdoom_retail) && ((epsd > 4) || (map > 9)))
                 return false;
 
-            if ((gamemode == registered) && ((epsd > 3) || (map > 9)))
+            if ((gamemode == doom_registered) && ((epsd > 3) || (map > 9)))
                 return false;
 
-            if ((gamemode == shareware) && ((epsd > 1) || (map > 9)))
+            if ((gamemode == doom_shareware) && ((epsd > 1) || (map > 9)))
                 return false;
 
-            if ((gamemode == commercial) && ((epsd > 1) || (map > 34)))
+            if ((gamemode == doom2_commercial) && ((epsd > 1) || (map > 34)))
                 return false;
 
             // So be it.
@@ -593,7 +593,7 @@ void Command_CheatGimme_f(void)
         }
         else if (!strncmp(s, "supershotgun", 12))
         {
-            if (gamemode == commercial) // only in Doom2
+            if (gamemode == doom2_commercial) // only in Doom2
             {
                 plyr->weaponowned[wp_supershotgun] = true;
                 plyr->ammo[am_shell] = plyr->maxammo[am_shell];
@@ -997,8 +997,10 @@ static void CheatWeaponsFunc(player_t * player, Cheat_t * cheat)
     {
         player->weaponowned[i] = true;
     }
-    if (shareware)
+    // [WDJ] Fix strange test of shareware enum
+    if (gamedesc_index == GDESC_heretic_shareware)
     {
+        // heretic shareware does not have these
         player->weaponowned[wp_skullrod] = false;
         player->weaponowned[wp_phoenixrod] = false;
         player->weaponowned[wp_mace] = false;
@@ -1082,9 +1084,12 @@ static void CheatArtifact3Func(player_t * player, Cheat_t * cheat)
     {   // All artifacts
         for (i = arti_none + 1; i < NUMARTIFACTS; i++)
         {
-            if (shareware && (i == arti_superhealth || i == arti_teleport))
-            {
-                continue;
+	    // [WDJ] Fix strange test of shareware enum
+	    if (gamedesc_index == GDESC_heretic_shareware)
+	    {
+	        // heretic shareware does not have these
+                if (i == arti_superhealth || i == arti_teleport)
+                  continue;
             }
             for (j = 0; j < 16; j++)
             {
@@ -1095,10 +1100,15 @@ static void CheatArtifact3Func(player_t * player, Cheat_t * cheat)
     }
     else if (type > arti_none && type < NUMARTIFACTS && count > 0 && count < 10)
     {
-        if (shareware && (type == arti_superhealth || type == arti_teleport))
+        // [WDJ] Fix strange test of shareware enum
+        if (gamedesc_index == GDESC_heretic_shareware)
         {
-            P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, false);
-            return;
+	    // heretic shareware does not have these
+	    if (type == arti_superhealth || type == arti_teleport)
+	    {
+	        P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, false);
+	        return;
+	    }
         }
         for (i = 0; i < count; i++)
         {

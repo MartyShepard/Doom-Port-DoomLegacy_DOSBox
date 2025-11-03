@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 762 2010-10-14 00:31:40Z wesleyjohnson $
+// $Id: g_game.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -435,7 +435,7 @@ char* G_BuildMapName (int episode, int map)
 {
     static char  mapname[9];    // internal map name (wad resource name)
 
-    if (gamemode==commercial)
+    if (gamemode==doom2_commercial)
         strcpy (mapname, va("MAP%#02d",map));
     else
     {
@@ -519,11 +519,11 @@ byte NextWeapon(player_t *player,int step)
         w = nextweaponorder[i];
         
         // skip super shotgun for non-Doom2
-        if (gamemode!=commercial && w==wp_supershotgun)
+        if (gamemode!=doom2_commercial && w==wp_supershotgun)
             continue;
 
         // skip plasma-bfg in sharware
-        if (gamemode==shareware && (w==wp_plasma || w==wp_bfg))
+        if (gamemode==doom_shareware && (w==wp_plasma || w==wp_bfg))
             continue;
 
         if ( player->weaponowned[w] &&
@@ -1662,7 +1662,7 @@ void G_ExitLevel (void)
 void G_SecretExitLevel (void)
 {
     // IF NO WOLF3D LEVELS, NO SECRET EXIT!
-    if ( (gamemode == commercial)
+    if ( (gamemode == doom2_commercial)
       && (W_CheckNumForName("map31")<0))
         secretexit = false;
     else
@@ -1683,7 +1683,7 @@ void G_DoCompleted (void)
     if (automapactive)
         AM_Stop ();
 
-    if ( gamemode != commercial)
+    if ( gamemode != doom2_commercial)
     {
         switch(gamemap)
         {
@@ -1731,7 +1731,7 @@ void G_DoCompleted (void)
     wminfo.next = gamemap;
     
     // overwrite next level in some cases
-    if ( gamemode == commercial)
+    if ( gamemode == doom2_commercial)
     {
         if (secretexit)
             switch(gamemap)
@@ -1784,7 +1784,7 @@ void G_DoCompleted (void)
     wminfo.maxfrags = 0;
     if( info_partime != -1)
         wminfo.partime = TICRATE*info_partime;
-    else if ( gamemode == commercial )
+    else if ( gamemode == doom2_commercial )
         wminfo.partime = TICRATE*cpars[gamemap-1];
     else
         wminfo.partime = TICRATE*pars[gameepisode][gamemap];
@@ -1823,7 +1823,7 @@ void G_NextLevel (void)
     if (secretexit)
         consoleplayer_ptr->didsecret = true;
 
-    if ( gamemode == commercial)
+    if ( gamemode == doom2_commercial)
     {
         if(cv_deathmatch.value==0)
         {
@@ -2130,7 +2130,7 @@ void G_InitNew (skill_t skill, char* mapname, boolean resetplayer)
         }
 
         gamemapname[0] = 0;             // means not an external wad file
-        if (gamemode==commercial)       //doom2
+        if (gamemode==doom2_commercial)       //doom2
         {
             gamemap = atoi(mapname+3);  // get xx out of MAPxx
             gameepisode = 1;

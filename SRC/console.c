@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 744 2010-09-16 14:05:59Z smite-meister $
+// $Id: console.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -928,7 +928,7 @@ void CON_Print (char *msg)
       else if (*msg=='\3')
       {
           mask = 128;                         // white text + sound
-          if ( gamemode == commercial )
+          if ( gamemode == doom2_commercial )
               S_StartSound(0, sfx_radio);
           else
               S_StartSound(0, sfx_tink);

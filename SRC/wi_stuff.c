@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: wi_stuff.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -99,9 +99,9 @@
 
 //
 // Different between registered DOOM (1994) and
-//  Ultimate DOOM - Final edition (retail, 1995?).
+//  Ultimate DOOM - Final edition (ultdoom_retail, 1995?).
 // This is supposedly ignored for commercial
-//  release (aka DOOM II), which had 34 maps
+//  release (aka DOOM II) (doom2_commercial), which had 34 maps
 //  in one episode. So there.
 #define NUMEPISODES     4
 #define NUMMAPS         9
@@ -406,7 +406,7 @@ static int              cnt_time;
 static int              cnt_par;
 static int              cnt_pause;
 
-// # of commercial levels
+// # of doom2_commercial levels
 static int              NUMCMAPS;
 
 
@@ -641,7 +641,7 @@ static void WI_initAnimatedBack(void)
     anim_inter_t*  ai;
 
 	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
-    if (gamemode == commercial || gamemode == heretic || *info_interpic)
+    if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -671,7 +671,7 @@ static void WI_updateAnimatedBack(void)
     anim_inter_t*  ai;
 
 	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
-    if (gamemode == commercial || gamemode == heretic || *info_interpic)
+    if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -722,9 +722,9 @@ static void WI_drawAnimatedBack(void)
     int  i;
     anim_inter_t*  ai; // interpic animation data
 
-    //BP: fixed it was "if (commercial)" 
+    //BP: fixed it was "if (doom2_commercial)" 
 	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
-    if (gamemode == commercial || gamemode == heretic || *info_interpic)
+    if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
     if (wbs->epsd > 2)
@@ -924,7 +924,7 @@ static void WI_drawShowNextLoc(void)
     }
 	//DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
-    if ( gamemode != commercial && wbs->epsd<=2 && !*info_interpic)
+    if ( gamemode != doom2_commercial && wbs->epsd<=2 && !*info_interpic)
     {
         last = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
 
@@ -942,7 +942,7 @@ static void WI_drawShowNextLoc(void)
     }
 
     // draws which level you are entering..
-    if ( (gamemode != commercial || wbs->next != 30) && 
+    if ( (gamemode != doom2_commercial || wbs->next != 30) && 
           gamemode != heretic)
         WI_drawEL();
 
@@ -1556,7 +1556,7 @@ static void WI_updateNetgameStats(void)
         if (acceleratestage)
         {
             S_StartSound(0, sfx_sgcock);
-            if ( gamemode == commercial )
+            if ( gamemode == doom2_commercial )
                 WI_initNoState();
             else
                 WI_initShowNextLoc();
@@ -1755,7 +1755,7 @@ static void WI_updateStats(void)
         {
             S_StartSound(0, sfx_sgcock);
 
-            if (gamemode == commercial)
+            if (gamemode == doom2_commercial)
                 WI_initNoState();
             else
                 WI_initShowNextLoc();
@@ -1854,7 +1854,7 @@ void WI_Ticker(void)
     if (bcnt == 1)
     {
         // intermission music
-        if ( gamemode == commercial )
+        if ( gamemode == doom2_commercial )
           S_ChangeMusic(mus_dm2int, true);
         else
           S_ChangeMusic(mus_inter, true);
@@ -1892,14 +1892,14 @@ static void WI_loadData(void)
     // choose the background of the intermission
     if (*info_interpic)
         strcpy(bgname, info_interpic);
-    else if (gamemode == commercial)
+    else if (gamemode == doom2_commercial)
         strcpy(bgname, "INTERPIC");
     else if( gamemode == heretic )
         sprintf(bgname, "MAPE%d", wbs->epsd+1);
     else
         sprintf(bgname, "WIMAP%d", wbs->epsd);
 
-    if ( gamemode == retail )
+    if ( gamemode == ultdoom_retail )
     {
         if (wbs->epsd == 3)
             strcpy(bgname,"INTERPIC");
@@ -1918,7 +1918,7 @@ static void WI_loadData(void)
     }
 
     // UNUSED unsigned char *pic = screens[1];
-    // if (gamemode == commercial)
+    // if (gamemode == doom2_commercial)
     // {
     // darken the background image
     // while (pic != screens[1] + SCREENHEIGHT*SCREENWIDTH)
@@ -1928,7 +1928,7 @@ static void WI_loadData(void)
     // }
     //}
 
-    if (gamemode == commercial)
+    if (gamemode == doom2_commercial)
     {
         NUMCMAPS = 32;
         lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
@@ -2071,7 +2071,7 @@ static void WI_unloadData(void)
       for (i=0 ; i<10 ; i++)
         Z_ChangeTag(num[i], PU_UNLOCK_CACHE);
 
-      if (gamemode == commercial)
+      if (gamemode == doom2_commercial)
       {
         for (i=0 ; i<NUMCMAPS ; i++)
             Z_ChangeTag(lnames[i], PU_UNLOCK_CACHE);
@@ -2163,9 +2163,9 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
     wbs = wbstartstruct;
 
 #ifdef RANGECHECKING
-    if (gamemode != commercial)
+    if (gamemode != doom2_commercial)
     {
-      if ( gamemode == retail )
+      if ( gamemode == ultdoom_retail )
         RNGCHECK(wbs->epsd, 0, 3);
       else
         RNGCHECK(wbs->epsd, 0, 2);
@@ -2194,7 +2194,7 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
     if (!wbs->maxsecret)
         wbs->maxsecret = 1;
 
-    if ( gamemode != retail )
+    if ( gamemode != ultdoom_retail )
       if (wbs->epsd > 2)
         wbs->epsd -= 3;
 }

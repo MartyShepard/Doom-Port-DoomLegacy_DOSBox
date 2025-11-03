@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: p_pspr.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -265,13 +265,13 @@ boolean P_CheckAmmo (player_t* player)
         {
             if (player->weaponowned[wp_plasma]
                 && player->ammo[am_cell]>=player->weaponinfo[wp_plasma].ammopershoot
-                && (gamemode != shareware) )
+                && (gamemode != doom_shareware) )
             {
                 player->pendingweapon = wp_plasma;
             }
             else if (player->weaponowned[wp_supershotgun]
                 && player->ammo[am_shell]>=player->weaponinfo[wp_supershotgun].ammopershoot
-                && (gamemode == commercial) )
+                && (gamemode == doom2_commercial) )
             {
                 player->pendingweapon = wp_supershotgun;
             }
@@ -300,7 +300,7 @@ boolean P_CheckAmmo (player_t* player)
             }
             else if (player->weaponowned[wp_bfg]
                 && player->ammo[am_cell]>=player->weaponinfo[wp_bfg].ammopershoot
-                && (gamemode != shareware) )
+                && (gamemode != doom_shareware) )
             {
                 player->pendingweapon = wp_bfg;
             }

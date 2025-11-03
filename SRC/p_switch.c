@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 765 2010-10-29 21:01:13Z wesleyjohnson $
+// $Id: p_switch.c 766 2010-11-11 02:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -143,11 +143,11 @@ void P_InitSwitchList(void)
   switchlist_t   *alphSwitchList;
 
   switch (gamemode){
-      case registered :
-      case retail:
+      case doom_registered :
+      case ultdoom_retail:
           episode = 2;
           break;
-      case commercial :
+      case doom2_commercial :
           episode = 3;
           break;
       case heretic :
