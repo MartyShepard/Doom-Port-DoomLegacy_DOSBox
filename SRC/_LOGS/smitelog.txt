@@ -165,3 +165,8 @@ Fixed I_GetFreeMem and I_GetDiskFreeSpace for Windows.
 Now we can actually pause and resume the music using SDL_mixer.
 All music loops by default. Fixed a potential bug where non-looping
 music wasn't played at all.
+
+
+*** Mouse consvars and menu items renamed.
+rev 760
+Confusingly named mouse sensitivity consvars and menu items renamed.

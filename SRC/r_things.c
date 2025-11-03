@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 773 2010-12-10 01:10:21Z wesleyjohnson $
+// $Id: r_things.c 777 2011-01-16 20:56:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -601,7 +601,7 @@ void vissprites_tablesize ( void )
     if ( request > (cv_spritelim.value * 2) )
         request = cv_spritelim.value * 2;
     
-    if ( request == vspr_max )
+    if ( request == (vspr_max+1) )
         return;		// same as existing allocation
 
     if( vspr_change_delay < MAXINT )
@@ -1703,8 +1703,8 @@ static void R_CreateDrawNodes( void )
 {
   drawnode_t*   entry;
   drawseg_t*    ds;
-  int           farthest, i, p, x1, x2;
-  fixed_t       farthest_delta, delta;
+  int           i, p, x1, x2;
+  fixed_t       delta;
   vissprite_t*  vsp;  // rover vissprite
   drawnode_t*   dnp;  // rover drawnode
   visplane_t*   plane;
@@ -1767,6 +1767,8 @@ static void R_CreateDrawNodes( void )
 	    entry->seg = ds;
 	}
 #else       
+	int      farthest;
+	fixed_t  farthest_delta;
 	// create drawnodes for the floorplanes with the closest last
         for(i = 0; i < ds->numffloorplanes; i++)
         {

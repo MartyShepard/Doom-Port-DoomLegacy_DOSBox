@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00778 ]: 1.44 alpha2 release
+[00777 ]: w65 farthest var unused
+[00776 ]: w65 sprite limit fix
 [00775 ]: w65 savegame get/put
 [00774 ]: w65 savegame NULL line ptrs
 [00773 ]: w65 plane drawnode

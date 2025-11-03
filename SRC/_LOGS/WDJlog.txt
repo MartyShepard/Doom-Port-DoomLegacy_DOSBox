@@ -1333,4 +1333,15 @@ Increased free space trigger to 2048 bytes.
 Added optional code to test and print minimum free space in the
 savegame buffer.
 
+*** w65_sprite_limit_fix
+patchfile = w65_sprite_limit_fix.patch
+- committed revision 776   by wesley johnson
+Fix a minor error in testing for request = current.
+
+*** w65_farthest
+patchfile = w65_farthest.patch
+- committed revision 777   by wesley johnson
+Move some variables that were made conditional into the conditional code
+so the compiler stops complaining about variables not used.
+
 							    
