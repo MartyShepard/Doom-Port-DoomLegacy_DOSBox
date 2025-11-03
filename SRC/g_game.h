@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 629 2010-04-03 02:25:58Z wesleyjohnson $
+// $Id: g_game.h 760 2010-10-13 13:34:24Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -100,14 +100,8 @@ extern  tic_t     levelstarttic;
 // used in game menu
 extern consvar_t  cv_crosshair;
 //extern consvar_t  cv_crosshairscale;
-extern consvar_t  cv_autorun;
-extern consvar_t  cv_autorun2;
-extern consvar_t  cv_invertmouse;
-extern consvar_t  cv_alwaysfreelook;
-extern consvar_t  cv_mousemove;
 extern consvar_t  cv_showmessages;
 extern consvar_t  cv_fastmonsters;
-extern consvar_t  cv_joystickfreelook;
 extern consvar_t  cv_predictingmonsters;  //added by AC for predmonsters
 
 void Command_Turbo_f (void);

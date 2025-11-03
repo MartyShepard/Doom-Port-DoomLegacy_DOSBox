@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 745 2010-09-16 16:28:07Z smite-meister $
+// $Id: d_netcmd.c 760 2010-10-13 13:34:24Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -396,9 +396,6 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_crosshair);
     //CV_RegisterVar (&cv_crosshairscale); // doesn't work for now
     CV_RegisterVar(&cv_autorun);
-    CV_RegisterVar(&cv_invertmouse);
-    CV_RegisterVar(&cv_alwaysfreelook);
-    CV_RegisterVar(&cv_mousemove);
     CV_RegisterVar(&cv_showmessages);
 
     //see m_menu.c
@@ -409,34 +406,38 @@ void D_RegisterClientCommands(void)
     //CV_RegisterVar (&cv_controlperkey2);
 
     //g_input.c
+    CV_RegisterVar(&cv_usemouse);
+    CV_RegisterVar(&cv_alwaysfreelook);
+    CV_RegisterVar(&cv_mouse_move);
+    CV_RegisterVar(&cv_mouse_invert);
+    CV_RegisterVar(&cv_mouse_sens_x);
+    CV_RegisterVar(&cv_mouse_sens_y);
+
     CV_RegisterVar(&cv_usemouse2);
-    CV_RegisterVar(&cv_invertmouse2);
     CV_RegisterVar(&cv_alwaysfreelook2);
-    CV_RegisterVar(&cv_mousemove2);
-    CV_RegisterVar(&cv_mousesens2);
-    CV_RegisterVar(&cv_mlooksens2);
-#if defined( __DJGPP__ )
-    CV_RegisterVar(&cv_joystickfreelook);
-#endif
+    CV_RegisterVar(&cv_mouse2_move);
+    CV_RegisterVar(&cv_mouse2_invert);
+    CV_RegisterVar(&cv_mouse2_sens_x);
+    CV_RegisterVar(&cv_mouse2_sens_y);
+
     // WARNING : the order is important when inititing mouse2 
     //           we need the mouse2port
     CV_RegisterVar(&cv_mouse2port);
 #ifdef LMOUSE2
     CV_RegisterVar(&cv_mouse2opt);
 #endif
-    CV_RegisterVar(&cv_mousesens);
-    CV_RegisterVar(&cv_mlooksens);
+
     CV_RegisterVar(&cv_controlperkey);
 
-    CV_RegisterVar(&cv_usemouse);
-#if defined( __DJGPP__ )
-    CV_RegisterVar(&cv_usejoystick);
-#endif
     CV_RegisterVar(&cv_allowjump);
     CV_RegisterVar(&cv_allowrocketjump);
     CV_RegisterVar(&cv_allowautoaim);
     CV_RegisterVar(&cv_allowturbo);
     CV_RegisterVar(&cv_allowexitlevel);
+#if defined( __DJGPP__ )
+    CV_RegisterVar(&cv_usejoystick);
+    CV_RegisterVar(&cv_joystickfreelook);
+#endif
 
     //s_sound.c
     CV_RegisterVar(&cv_soundvolume);

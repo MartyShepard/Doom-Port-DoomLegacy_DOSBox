@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 759 2010-10-12 02:54:49Z wesleyjohnson $
+// $Id: m_menu.c 760 2010-10-13 13:34:24Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -960,20 +960,20 @@ void M_Splitscreen(int choice)
 }
 
 //===========================================================================
-// Seconde mouse config for the splitscreen player
+// Second mouse config for the splitscreen player
 //===========================================================================
 
 menuitem_t  SecondMouseCfgMenu[] =
 {
-    {IT_STRING | IT_CVAR,0,"Seconde Mouse Serial Port",&cv_mouse2port,0},
-    {IT_STRING | IT_CVAR,0,"Use Mouse 2"     ,&cv_usemouse2        ,0},
+    {IT_STRING | IT_CVAR,0,"Second Mouse Serial Port", &cv_mouse2port,0},
+    {IT_STRING | IT_CVAR,0,"Use Mouse2", &cv_usemouse2        ,0},
+    {IT_STRING | IT_CVAR,0,"Always Mouse2Look", &cv_alwaysfreelook2  ,0},
+    {IT_STRING | IT_CVAR,0,"Mouse2 Move",       &cv_mouse2_move       ,0},
+    {IT_STRING | IT_CVAR,0,"Invert Mouse2",     &cv_mouse2_invert     ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mouse2 Speed"    ,&cv_mousesens2       ,0},
-    {IT_STRING | IT_CVAR,0,"Always MouseLook",&cv_alwaysfreelook2  ,0},
-    {IT_STRING | IT_CVAR,0,"Mouse Move",      &cv_mousemove2       ,0},
-    {IT_STRING | IT_CVAR,0,"Invert Mouse2"   ,&cv_invertmouse2     ,0},
+     | IT_CV_SLIDER     ,0,"Mouse2 x Speed",    &cv_mouse2_sens_x    ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mlook Speed"     ,&cv_mlooksens2       ,0},
+     | IT_CV_SLIDER     ,0,"Mouse2 y Speed",    &cv_mouse2_sens_y    ,0},
 };
 
 menu_t  SecondMouseCfgdef =
@@ -1617,12 +1617,12 @@ menuitem_t MouseOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Use Mouse",        &cv_usemouse        ,0},
     {IT_STRING | IT_CVAR,0,"Always MouseLook", &cv_alwaysfreelook  ,0},
-    {IT_STRING | IT_CVAR,0,"Mouse Move"      , &cv_mousemove       ,0},
-    {IT_STRING | IT_CVAR,0,"Invert Mouse"    , &cv_invertmouse     ,0},
+    {IT_STRING | IT_CVAR,0,"Mouse Move",    &cv_mouse_move      ,0},
+    {IT_STRING | IT_CVAR,0,"Invert Mouse",  &cv_mouse_invert    ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mouse Speed"     , &cv_mousesens       ,0},
+     | IT_CV_SLIDER     ,0,"Mouse x Speed", &cv_mouse_sens_x    ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mlook Speed"     , &cv_mlooksens       ,0}
+     | IT_CV_SLIDER     ,0,"Mouse y Speed", &cv_mouse_sens_y    ,0}
 #if 0
 //[WDJ] disabled in 143beta_macosx
 //[segabor]

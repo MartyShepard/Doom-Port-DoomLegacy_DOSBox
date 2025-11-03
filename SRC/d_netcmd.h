@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_netcmd.h 760 2010-10-13 13:34:24Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -67,26 +67,9 @@
 // console vars
 extern consvar_t   cv_playername;
 extern consvar_t   cv_playercolor;
-extern consvar_t   cv_usemouse;
-extern consvar_t   cv_usejoystick;
-#ifdef LJOYSTICK
-extern consvar_t   cv_joyport;
-extern consvar_t   cv_joyscale;
-#endif
 extern consvar_t   cv_autoaim;
 extern consvar_t   cv_controlperkey;
 
-// splitscreen with seconde mouse
-extern consvar_t   cv_mouse2port;
-extern consvar_t   cv_usemouse2;
-#ifdef LMOUSE2
-extern consvar_t   cv_mouse2opt;
-#endif
-extern consvar_t   cv_invertmouse2;
-extern consvar_t   cv_alwaysfreelook2;
-extern consvar_t   cv_mousemove2;
-extern consvar_t   cv_mousesens2;
-extern consvar_t   cv_mlooksens2;
 
 // normaly in p_mobj but the .h in not read !
 extern consvar_t   cv_itemrespawntime;

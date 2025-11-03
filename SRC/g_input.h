@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: g_input.h 760 2010-10-13 13:34:24Z smite-meister $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -96,18 +96,33 @@ typedef enum
 } gamecontrols_e;
 
 
-// mouse values are used once
-extern consvar_t       cv_mousesens;
-extern consvar_t       cv_mlooksens;
-extern consvar_t       cv_allowjump;
-extern consvar_t       cv_allowrocketjump;
-extern consvar_t       cv_allowautoaim;
+extern consvar_t  cv_autorun;
+extern consvar_t  cv_autorun2;
+
+// mouse
+extern consvar_t   cv_usemouse;
+extern consvar_t   cv_alwaysfreelook;
+extern consvar_t   cv_mouse_move;
+extern consvar_t   cv_mouse_invert;
+extern consvar_t   cv_mouse_sens_x;
+extern consvar_t   cv_mouse_sens_y;
+
+// splitscreen with second mouse
+extern consvar_t   cv_usemouse2;
+extern consvar_t   cv_mouse2port;
+#ifdef LMOUSE2
+extern consvar_t   cv_mouse2opt;
+#endif
+extern consvar_t   cv_alwaysfreelook2;
+extern consvar_t   cv_mouse2_move;
+extern consvar_t   cv_mouse2_invert;
+extern consvar_t   cv_mouse2_sens_x;
+extern consvar_t   cv_mouse2_sens_y;
+
 extern int             mousex;
 extern int             mousey;
-extern int             mlooky;  //mousey with mlookSensitivity
 extern int             mouse2x;
 extern int             mouse2y;
-extern int             mlook2y;
 
 extern int             dclicktime;
 extern int             dclickstate;
@@ -116,9 +131,21 @@ extern int             dclicktime2;
 extern int             dclickstate2;
 extern int             dclicks2;
 
+extern consvar_t       cv_allowjump;
+extern consvar_t       cv_allowrocketjump;
+extern consvar_t       cv_allowautoaim;
+
+#if defined( __DJGPP__ )
 extern int             joyxmove;
 extern int             joyymove;
+extern consvar_t   cv_usejoystick;
+extern consvar_t   cv_joystickfreelook;
+#endif
 
+#ifdef LJOYSTICK
+extern consvar_t   cv_joyport;
+extern consvar_t   cv_joyscale;
+#endif
 // current state of the keys : true if pushed
 extern  byte    gamekeydown[NUMINPUTS];
 

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00759 ]: mouse consvars renamed
 [00759 ]: sprite limit removed
 [00758 ]: PNG patch detect
 [00757 ]: Patch combine fixes
