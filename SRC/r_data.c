@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 758 2010-10-12 02:52:22Z wesleyjohnson $
+// $Id: r_data.c 763 2010-10-29 20:57:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -373,9 +373,9 @@ byte* R_GenerateTexture (int texnum)
 #endif
 	    // make a dummy texture
 	    int head_size = colofs_size + 8;
-	    patchsize = head_size + 4 + texture->height + 4;
-            txcblock = Z_Malloc (patchsize,
-                          PU_STATIC,         // will change tag at end of this function
+	    txcblocksize = head_size + 4 + texture->height + 4;
+            txcblock = Z_Malloc (txcblocksize,
+                          PU_IN_USE,         // will change tag at end of this function
                           (void**)&texturecache[texnum]);
 	    patch_t * txcpatch = (patch_t*) txcblock;
 	    txcpatch->width = texture->width;

@@ -1221,3 +1221,11 @@ patchfile = w61_boom_demo.patch
 Fix demo player to understand Boom demo headers.
 This stops them from crashing the playback machine.
 This patch got lost, which is why it is out of order.
+
+*** w63_texture_size
+patchfile = w63_texture_size.patch
+- committed revision 763   by wesley johnson
+Set texture size variable txcblocksize.
+Stops compiler from complaining, which was right, although it took me
+a long long time to find it.
+

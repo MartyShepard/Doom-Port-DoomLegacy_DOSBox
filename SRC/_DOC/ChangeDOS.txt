@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00763 ]: w63 texture size not set
 [00762 ]: w61 boom demo header
 [00761 ]: w62 crush floating monster
 [00760 ]: mouse consvars renamed
