@@ -1229,3 +1229,13 @@ Set texture size variable txcblocksize.
 Stops compiler from complaining, which was right, although it took me
 a long long time to find it.
 
+*** w63_PU_LOCK_SB
+patchfile = w63_PU_LOCK_SB.patch
+- committed revision 764   by wesley johnson
+The statusbar background was still getting released from memory.
+Added a locked allocation, PU_LOCK_SB, which users of PU_STATIC cannot
+release using ChangeTag.  ChangeTag requires use of PU_UNLOCK_CACHE to
+change the PU_LOCK_SB to PU_CACHE.
+Changed some temp uses of PU_STATIC to PU_IN_USE or PU_LUMP, which will
+not release the memory if another user had the same patch with PU_STATIC.
+

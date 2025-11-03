@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: st_stuff.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1048,30 +1048,31 @@ static void ST_loadGraphics(void)
     int         i;
     char        namebuf[9];
     // [WDJ] all ST graphics are loaded endian fixed
+    // [WDJ] Lock the status bar graphics against other texture users.
 
     // Load the numbers, tall and short
     for (i=0;i<10;i++)
     {
         sprintf(namebuf, "STTNUM%d", i);
-        tallnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_STATIC);
+        tallnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
 
         sprintf(namebuf, "STYSNUM%d", i);
-        shortnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_STATIC);
+        shortnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
     }
 
     // Load percent key.
     //Note: why not load STMINUS here, too?
-    tallpercent = (patch_t *) W_CachePatchName("STTPRCNT", PU_STATIC);
+    tallpercent = (patch_t *) W_CachePatchName("STTPRCNT", PU_LOCK_SB);
 
     // key cards
     for (i=0;i<NUMCARDS;i++)
     {
         sprintf(namebuf, "STKEYS%d", i);
-        keys[i] = (patch_t *) W_CachePatchName(namebuf, PU_STATIC);
+        keys[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
     }
 
     // arms background
-    armsbg = (patch_t *) W_CachePatchName("STARMS", PU_STATIC);
+    armsbg = (patch_t *) W_CachePatchName("STARMS", PU_LOCK_SB);
 
     // arms ownership widgets
     for (i=0;i<6;i++)
@@ -1079,14 +1080,14 @@ static void ST_loadGraphics(void)
         sprintf(namebuf, "STGNUM%d", i+2);
 
         // gray #
-        arms[i][0] = (patch_t *) W_CachePatchName(namebuf, PU_STATIC);
+        arms[i][0] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
 
         // yellow #
         arms[i][1] = shortnum[i+2];
     }
 
     // status bar background bits
-    sbar = (patch_t *) W_CachePatchName("STBAR", PU_STATIC);
+    sbar = (patch_t *) W_CachePatchName("STBAR", PU_LOCK_SB);
 
     // the original Doom uses 'STF' as base name for all face graphics
     ST_loadFaceGraphics ("STF");
@@ -1117,23 +1118,23 @@ void ST_loadFaceGraphics (char *facestr)
         for (j=0;j<ST_NUMSTRAIGHTFACES;j++)
         {
             sprintf(namebuf, "ST%d%d", i, j);
-            faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+            faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
         }
         sprintf(namebuf, "TR%d0", i);        // turn right
-        faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+        faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
         sprintf(namebuf, "TL%d0", i);        // turn left
-        faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+        faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
         sprintf(namebuf, "OUCH%d", i);       // ouch!
-        faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+        faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
         sprintf(namebuf, "EVL%d", i);        // evil grin ;)
-        faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+        faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
         sprintf(namebuf, "KILL%d", i);       // pissed off
-        faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+        faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
     }
     strcpy (namebuf, "GOD0");
-    faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+    faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
     strcpy (namebuf, "DEAD0");
-    faces[facenum++] = W_CachePatchName(namelump, PU_STATIC);
+    faces[facenum++] = W_CachePatchName(namelump, PU_LOCK_SB);
 
     // face backgrounds for different player colors
     //added:08-02-98: uses only STFB0, which is remapped to the right
@@ -1143,9 +1144,9 @@ void ST_loadFaceGraphics (char *facestr)
     strcpy (namebuf, "B0");
     i = W_CheckNumForName(namelump);
     if( i!=-1 )
-        faceback = (patch_t *) W_CachePatchNum(i, PU_STATIC);
+        faceback = (patch_t *) W_CachePatchNum(i, PU_LOCK_SB);
     else
-        faceback = (patch_t *) W_CachePatchName("STFB0", PU_STATIC);
+        faceback = (patch_t *) W_CachePatchName("STFB0", PU_LOCK_SB);
 
     ST_Invalidate();
 }
@@ -1167,24 +1168,24 @@ void ST_unloadGraphics(void)
         // unload the numbers, tall and short
         for (i=0;i<10;i++)
         {
-            Z_ChangeTag(tallnum[i], PU_CACHE);
-            Z_ChangeTag(shortnum[i], PU_CACHE);
+            Z_ChangeTag(tallnum[i], PU_UNLOCK_CACHE);
+            Z_ChangeTag(shortnum[i], PU_UNLOCK_CACHE);
         }
         // unload tall percent
-        Z_ChangeTag(tallpercent, PU_CACHE);
+        Z_ChangeTag(tallpercent, PU_UNLOCK_CACHE);
         
         // unload arms background
-        Z_ChangeTag(armsbg, PU_CACHE);
+        Z_ChangeTag(armsbg, PU_UNLOCK_CACHE);
         
         // unload gray #'s
         for (i=0;i<6;i++)
-            Z_ChangeTag(arms[i][0], PU_CACHE);
+            Z_ChangeTag(arms[i][0], PU_UNLOCK_CACHE);
         
         // unload the key cards
         for (i=0;i<NUMCARDS;i++)
-            Z_ChangeTag(keys[i], PU_CACHE);
+            Z_ChangeTag(keys[i], PU_UNLOCK_CACHE);
         
-        Z_ChangeTag(sbar, PU_CACHE);
+        Z_ChangeTag(sbar, PU_UNLOCK_CACHE);
     }
 
     ST_unloadFaceGraphics ();
@@ -1203,10 +1204,10 @@ void ST_unloadFaceGraphics (void)
     if (rendermode==render_soft)
     {
         for (i=0;i<ST_NUMFACES;i++)
-            Z_ChangeTag(faces[i], PU_CACHE);
+            Z_ChangeTag(faces[i], PU_UNLOCK_CACHE);
         
         // face background
-        Z_ChangeTag(faceback, PU_CACHE);
+        Z_ChangeTag(faceback, PU_UNLOCK_CACHE);
     }
 }
 
@@ -1514,7 +1515,8 @@ void ST_Init (void)
             // DOOM border patch.
             st_borderpatchnum = W_GetNumForName ("FLOOR7_2");
     }
-    scr_borderpatch = W_CacheLumpNum (st_borderpatchnum, PU_STATIC);
+    // [WDJ] Lock against other users of same patch releasing it!.
+    scr_borderpatch = W_CacheLumpNum (st_borderpatchnum, PU_LOCK_SB);
     if( gamemode == heretic )
     {
         SB_Init();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: w_wad.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -884,9 +884,9 @@ void* W_CachePatchNum ( int lump, int tag )
         // we need patch w,h,offset,...
         // well this code will be executed latter in GetPatch, anyway 
         // do it now ...
-        patch_t *ptr = W_CachePatchNum_Endian(grPatch->patchlump, PU_STATIC);
-        HWR_MakePatch ( ptr, grPatch, &grPatch->mipmap);
-        Z_Free (ptr); 
+        patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
+        HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap);
+        Z_Free (tmp_patch);
         //Hurdler: why not do a Z_ChangeTag (grPatch->mipmap.grInfo.data, tag) here?
         //BP: mmm, yes we can...
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: wi_stuff.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1886,6 +1886,8 @@ static void WI_loadData(void)
     int         i, j;
     anim_inter_t*  ai; // interpic animation data
     char        name[9];
+   
+    // [WDJ] Lock the interpic graphics against release by other users.
 
     // choose the background of the intermission
     if (*info_interpic)
@@ -1934,7 +1936,7 @@ static void WI_loadData(void)
         for (i=0 ; i<NUMCMAPS ; i++)
         {
             sprintf(name, "CWILV%2.2d", i);
-            lnames[i] = W_CachePatchName(name, PU_STATIC);
+            lnames[i] = W_CachePatchName(name, PU_LOCK_SB);
         }
     }
     else
@@ -1944,17 +1946,17 @@ static void WI_loadData(void)
         for (i=0 ; i<NUMMAPS ; i++)
         {
             sprintf(name, "WILV%d%d", wbs->epsd, i);
-            lnames[i] = W_CachePatchName(name, PU_STATIC);
+            lnames[i] = W_CachePatchName(name, PU_LOCK_SB);
         }
 
         // you are here
-        yah[0] = W_CachePatchName(gamemode == heretic ? "IN_YAH" : "WIURH0", PU_STATIC);
+        yah[0] = W_CachePatchName(gamemode == heretic ? "IN_YAH" : "WIURH0", PU_LOCK_SB);
 
         // you are here (alt.)
-        yah[1] = W_CachePatchName("WIURH1", PU_STATIC);
+        yah[1] = W_CachePatchName("WIURH1", PU_LOCK_SB);
 
         // splat
-        splat = W_CachePatchName(gamemode == heretic ? "IN_X" : "WISPLAT", PU_STATIC);
+        splat = W_CachePatchName(gamemode == heretic ? "IN_X" : "WISPLAT", PU_LOCK_SB);
 
         if (wbs->epsd < 3)
         {
@@ -1968,7 +1970,7 @@ static void WI_loadData(void)
                     {
                         // animations
                         sprintf(name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-                        ai->p[i] = W_CachePatchName(name, PU_STATIC);
+                        ai->p[i] = W_CachePatchName(name, PU_LOCK_SB);
                     }
                     else
                     {
@@ -1981,7 +1983,7 @@ static void WI_loadData(void)
     }
 
     // More hacks on minus sign.
-    wiminus = W_CachePatchName(gamemode == heretic ? "FONTB13" : "WIMINUS", PU_STATIC);
+    wiminus = W_CachePatchName(gamemode == heretic ? "FONTB13" : "WIMINUS", PU_LOCK_SB);
 
     for (i=0;i<10;i++)
     {
@@ -1990,70 +1992,70 @@ static void WI_loadData(void)
             sprintf(name, "FONTB%d", 16+i);
         else
             sprintf(name, "WINUM%d", i);
-        num[i] = W_CachePatchName(name, PU_STATIC);
+        num[i] = W_CachePatchName(name, PU_LOCK_SB);
     }
 
     // percent sign
-    percent = W_CachePatchName(gamemode == heretic ? "FONTB05" : "WIPCNT", PU_STATIC);
+    percent = W_CachePatchName(gamemode == heretic ? "FONTB05" : "WIPCNT", PU_LOCK_SB);
 
     if( gamemode != heretic )
     {
         // "finished"
-        finished = W_CachePatchName("WIF", PU_STATIC);
+        finished = W_CachePatchName("WIF", PU_LOCK_SB);
         
         // "entering"
-        entering = W_CachePatchName("WIENTER", PU_STATIC);
+        entering = W_CachePatchName("WIENTER", PU_LOCK_SB);
         
         // "kills"
-        kills = W_CachePatchName("WIOSTK", PU_STATIC);
+        kills = W_CachePatchName("WIOSTK", PU_LOCK_SB);
         
         // "scrt"
-        secret = W_CachePatchName("WIOSTS", PU_STATIC);
+        secret = W_CachePatchName("WIOSTS", PU_LOCK_SB);
         
         // "secret"
-        sp_secret = W_CachePatchName("WISCRT2", PU_STATIC);
+        sp_secret = W_CachePatchName("WISCRT2", PU_LOCK_SB);
         
         // "items"
-        items = W_CachePatchName("WIOSTI", PU_STATIC);
+        items = W_CachePatchName("WIOSTI", PU_LOCK_SB);
         
         // "frgs"
-        frags = W_CachePatchName("WIFRGS", PU_STATIC);
+        frags = W_CachePatchName("WIFRGS", PU_LOCK_SB);
         
         // "time"
-        timePatch = W_CachePatchName("WITIME", PU_STATIC);
+        timePatch = W_CachePatchName("WITIME", PU_LOCK_SB);
         
         // "sucks"
-        sucks = W_CachePatchName("WISUCKS", PU_STATIC);
+        sucks = W_CachePatchName("WISUCKS", PU_LOCK_SB);
         
         // "par"
-        par = W_CachePatchName("WIPAR", PU_STATIC);
+        par = W_CachePatchName("WIPAR", PU_LOCK_SB);
 
         
         // "killers" (vertical)
-        killers = W_CachePatchName("WIKILRS", PU_STATIC);
+        killers = W_CachePatchName("WIKILRS", PU_LOCK_SB);
         
         // "victims" (horiz)
-        victims = W_CachePatchName("WIVCTMS", PU_STATIC);
+        victims = W_CachePatchName("WIVCTMS", PU_LOCK_SB);
         
         // "total"
-        total = W_CachePatchName("WIMSTT", PU_STATIC);
+        total = W_CachePatchName("WIMSTT", PU_LOCK_SB);
     }
     
     // ":"
-    colon = W_CachePatchName(gamemode == heretic ? "FONTB26" : "WICOLON", PU_STATIC);
+    colon = W_CachePatchName(gamemode == heretic ? "FONTB26" : "WICOLON", PU_LOCK_SB);
 
     // your face
-    star = W_CachePatchName("STFST01", PU_STATIC);
+    star = W_CachePatchName("STFST01", PU_LOCK_SB);  // never unlocked
 
     // dead face
-    bstar = W_CachePatchName("STFDEAD0", PU_STATIC);
+    bstar = W_CachePatchName("STFDEAD0", PU_LOCK_SB);  // never unlocked
 
 
     //added:08-02-98: now uses a single STPB0 which is remapped to the
     //                player translation table. Whatever new colors we add
     //                since we'll have to define a translation table for
     //                it, we'll have the right colors here automatically.
-    stpb = W_CachePatchName("STPB0", PU_STATIC);
+    stpb = W_CachePatchName("STPB0", PU_LOCK_SB);  // never unlocked
 }
 
 static void WI_unloadData(void)
@@ -2064,25 +2066,25 @@ static void WI_unloadData(void)
     //     it doesn't work and is unecessary
     if (rendermode==render_soft)
     {
-      Z_ChangeTag(wiminus, PU_CACHE);
+      Z_ChangeTag(wiminus, PU_UNLOCK_CACHE);
 
       for (i=0 ; i<10 ; i++)
-        Z_ChangeTag(num[i], PU_CACHE);
+        Z_ChangeTag(num[i], PU_UNLOCK_CACHE);
 
       if (gamemode == commercial)
       {
         for (i=0 ; i<NUMCMAPS ; i++)
-            Z_ChangeTag(lnames[i], PU_CACHE);
+            Z_ChangeTag(lnames[i], PU_UNLOCK_CACHE);
       }
       else
       {
-        Z_ChangeTag(yah[0], PU_CACHE);
-        Z_ChangeTag(yah[1], PU_CACHE);
+        Z_ChangeTag(yah[0], PU_UNLOCK_CACHE);
+        Z_ChangeTag(yah[1], PU_UNLOCK_CACHE);
 
-        Z_ChangeTag(splat, PU_CACHE);
+        Z_ChangeTag(splat, PU_UNLOCK_CACHE);
 
         for (i=0 ; i<NUMMAPS ; i++)
-            Z_ChangeTag(lnames[i], PU_CACHE);
+            Z_ChangeTag(lnames[i], PU_UNLOCK_CACHE);
 
         if (wbs->epsd < 3)
         {
@@ -2091,7 +2093,7 @@ static void WI_unloadData(void)
                 if (wbs->epsd != 1 || j != 8)
 	        {
                     for (i=0; i<anim_inter_info[wbs->epsd][j].nanims; i++)
-                        Z_ChangeTag( anim_inter_info[wbs->epsd][j].p[i], PU_CACHE);
+                        Z_ChangeTag( anim_inter_info[wbs->epsd][j].p[i], PU_UNLOCK_CACHE);
 		}
             }
         }
@@ -2102,26 +2104,26 @@ static void WI_unloadData(void)
 
     if (rendermode==render_soft)
     {
-        Z_ChangeTag(percent, PU_CACHE);
-        Z_ChangeTag(colon, PU_CACHE);
+        Z_ChangeTag(percent, PU_UNLOCK_CACHE);
+        Z_ChangeTag(colon, PU_UNLOCK_CACHE);
 
         if( gamemode != heretic )
         {
 
-            Z_ChangeTag(finished, PU_CACHE);
-            Z_ChangeTag(entering, PU_CACHE);
-            Z_ChangeTag(kills, PU_CACHE);
-            Z_ChangeTag(secret, PU_CACHE);
-            Z_ChangeTag(sp_secret, PU_CACHE);
-            Z_ChangeTag(items, PU_CACHE);
-            Z_ChangeTag(frags, PU_CACHE);
-            Z_ChangeTag(timePatch, PU_CACHE);
-            Z_ChangeTag(sucks, PU_CACHE);
-            Z_ChangeTag(par, PU_CACHE);
+            Z_ChangeTag(finished, PU_UNLOCK_CACHE);
+            Z_ChangeTag(entering, PU_UNLOCK_CACHE);
+            Z_ChangeTag(kills, PU_UNLOCK_CACHE);
+            Z_ChangeTag(secret, PU_UNLOCK_CACHE);
+            Z_ChangeTag(sp_secret, PU_UNLOCK_CACHE);
+            Z_ChangeTag(items, PU_UNLOCK_CACHE);
+            Z_ChangeTag(frags, PU_UNLOCK_CACHE);
+            Z_ChangeTag(timePatch, PU_UNLOCK_CACHE);
+            Z_ChangeTag(sucks, PU_UNLOCK_CACHE);
+            Z_ChangeTag(par, PU_UNLOCK_CACHE);
             
-            Z_ChangeTag(victims, PU_CACHE);
-            Z_ChangeTag(killers, PU_CACHE);
-            Z_ChangeTag(total, PU_CACHE);
+            Z_ChangeTag(victims, PU_UNLOCK_CACHE);
+            Z_ChangeTag(killers, PU_UNLOCK_CACHE);
+            Z_ChangeTag(total, PU_UNLOCK_CACHE);
         }
     }
 }

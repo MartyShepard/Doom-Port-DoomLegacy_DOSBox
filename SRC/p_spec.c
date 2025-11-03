@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: p_spec.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -313,7 +313,7 @@ void P_InitPicAnims (void)
 
   if(W_CheckNumForName("ANIMATED") != -1)
   {
-    animdefs = (animdef_t *)W_CacheLumpName("ANIMATED",PU_STATIC);
+    animdefs = (animdef_t *)W_CacheLumpName("ANIMATED", PU_IN_USE);
     // [WDJ] From wad, Do endian conversion on speed
 #ifdef __BIG_ENDIAN__
     // [WDJ] Endian conversion, only when BIG_ENDIAN, when from wad,

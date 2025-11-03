@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: z_zone.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1074,6 +1074,9 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
 	// tag = PU_DAVE;	// if need to debug
     }
 
+    // [WDJ] protect PU_LOCK_SB against casual change
+    if (block->tag == PU_LOCK_SB && tag != PU_UNLOCK_CACHE)  goto done;
+    
     // [WDJ] special tag changes which are conditional on existing tag
     switch( tag ) {
      case PU_CACHE_DEFAULT:

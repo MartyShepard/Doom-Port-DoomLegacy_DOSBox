@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: sb_bar.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -161,49 +161,49 @@ void SB_Init(void)
         int startLump;
 
         // [WDJ] all patches are endian fixed
-        PatchLTFACE = W_CachePatchName("LTFACE", PU_STATIC);
-        PatchRTFACE = W_CachePatchName("RTFACE", PU_STATIC);
-        PatchBARBACK = W_CachePatchName("BARBACK", PU_STATIC);
-        PatchINVBAR = W_CachePatchName("INVBAR", PU_STATIC);
-        PatchCHAIN = W_CachePatchName("CHAIN", PU_STATIC);
+        PatchLTFACE = W_CachePatchName("LTFACE", PU_LOCK_SB);
+        PatchRTFACE = W_CachePatchName("RTFACE", PU_LOCK_SB);
+        PatchBARBACK = W_CachePatchName("BARBACK", PU_LOCK_SB);
+        PatchINVBAR = W_CachePatchName("INVBAR", PU_LOCK_SB);
+        PatchCHAIN = W_CachePatchName("CHAIN", PU_LOCK_SB);
         if(cv_deathmatch.value)
         {
-                PatchSTATBAR = W_CachePatchName("STATBAR", PU_STATIC);
+                PatchSTATBAR = W_CachePatchName("STATBAR", PU_LOCK_SB);
         }
         else
         {
-                PatchSTATBAR = W_CachePatchName("LIFEBAR", PU_STATIC);
+                PatchSTATBAR = W_CachePatchName("LIFEBAR", PU_LOCK_SB);
         }
         if(!multiplayer)
         { // single player game uses red life gem
-                PatchLIFEGEM = W_CachePatchName("LIFEGEM2", PU_STATIC);
+                PatchLIFEGEM = W_CachePatchName("LIFEGEM2", PU_LOCK_SB);
         }
         else
         {
                 PatchLIFEGEM = W_CachePatchNum(W_GetNumForName("LIFEGEM0")
-                        + consoleplayer, PU_STATIC);
+                        + consoleplayer, PU_LOCK_SB);
         }
-        PatchLTFCTOP = W_CachePatchName("LTFCTOP", PU_STATIC);
-        PatchRTFCTOP = W_CachePatchName("RTFCTOP", PU_STATIC);
-        PatchSELECTBOX = W_CachePatchName("SELECTBOX", PU_STATIC);
-        PatchINVLFGEM1 = W_CachePatchName("INVGEML1", PU_STATIC);
-        PatchINVLFGEM2 = W_CachePatchName("INVGEML2", PU_STATIC);
-        PatchINVRTGEM1 = W_CachePatchName("INVGEMR1", PU_STATIC);
-        PatchINVRTGEM2 = W_CachePatchName("INVGEMR2", PU_STATIC);
-        PatchBLACKSQ    =   W_CachePatchName("BLACKSQ", PU_STATIC);
-        PatchARMCLEAR = W_CachePatchName("ARMCLEAR", PU_STATIC);
-        PatchCHAINBACK = W_CachePatchName("CHAINBACK", PU_STATIC);
+        PatchLTFCTOP = W_CachePatchName("LTFCTOP", PU_LOCK_SB);
+        PatchRTFCTOP = W_CachePatchName("RTFCTOP", PU_LOCK_SB);
+        PatchSELECTBOX = W_CachePatchName("SELECTBOX", PU_LOCK_SB);
+        PatchINVLFGEM1 = W_CachePatchName("INVGEML1", PU_LOCK_SB);
+        PatchINVLFGEM2 = W_CachePatchName("INVGEML2", PU_LOCK_SB);
+        PatchINVRTGEM1 = W_CachePatchName("INVGEMR1", PU_LOCK_SB);
+        PatchINVRTGEM2 = W_CachePatchName("INVGEMR2", PU_LOCK_SB);
+        PatchBLACKSQ    =   W_CachePatchName("BLACKSQ", PU_LOCK_SB);
+        PatchARMCLEAR = W_CachePatchName("ARMCLEAR", PU_LOCK_SB);
+        PatchCHAINBACK = W_CachePatchName("CHAINBACK", PU_LOCK_SB);
         startLump = W_GetNumForName("IN0");
         for(i = 0; i < 10; i++)
         {
-                PatchINumbers[i] = W_CachePatchNum(startLump+i, PU_STATIC);
+                PatchINumbers[i] = W_CachePatchNum(startLump+i, PU_LOCK_SB);
         }
-        PatchNEGATIVE = W_CachePatchName("NEGNUM", PU_STATIC);
+        PatchNEGATIVE = W_CachePatchName("NEGNUM", PU_LOCK_SB);
         FontBNumBase = W_GetNumForName("FONTB16");
         startLump = W_GetNumForName("SMALLIN0");
         for(i = 0; i < 10; i++)
         {
-                PatchSmNumbers[i] = W_CachePatchNum(startLump+i, PU_STATIC);
+                PatchSmNumbers[i] = W_CachePatchNum(startLump+i, PU_LOCK_SB);
         }
         playpalette = W_GetNumForName("PLAYPAL");
         spinbooklump = W_GetNumForName("SPINBK0");

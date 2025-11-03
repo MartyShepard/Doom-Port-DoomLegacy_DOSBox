@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 763 2010-10-29 20:57:13Z wesleyjohnson $
+// $Id: r_data.c 764 2010-10-29 20:59:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -454,7 +454,7 @@ byte* R_GenerateTexture (int texnum)
             // texturecache gets copy so that PU_CACHE deallocate clears the
 	    // texturecache automatically
             txcblock = Z_Malloc (patchsize,
-                          PU_STATIC,         // will change tag at end of this function
+                          PU_IN_USE,  // will change tag at end of this function
                           (void**)&texturecache[texnum]);
 	    memcpy (txcblock, realpatch, patchsize);
 	    txcblocksize = patchsize;
@@ -462,10 +462,10 @@ byte* R_GenerateTexture (int texnum)
         // FIXME: this version puts the z_block user as lumpcache,
         // instead of as texturecache, so deallocate by PU_CACHE leaves
         // texturecache with a bad ptr.
-//        texturecache[texnum] = txcblock = W_CachePatchNum (texpatch->patchnum, PU_STATIC);
+//        texturecache[texnum] = txcblock = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);
         texturecache[texnum] = txcblock = realpatch;
 	Z_ChangeOwner (realpatch, (void**)&texturecache[texnum]);
-        Z_ChangeTag (realpatch, PU_STATIC);
+        Z_ChangeTag (realpatch, PU_IN_USE);
         txcblocksize = patchsize;
 #endif
 	}
@@ -780,7 +780,7 @@ byte* R_GenerateTexture (int texnum)
     //CONS_Printf ("R_GenTex MULTI  %.8s size: %d\n",texture->name,txcblocksize);
 
     txcblock = Z_Malloc (txcblocksize,
-                      PU_STATIC,
+                      PU_IN_USE,  // will change at end of this function
                       (void**)&texturecache[texnum]);
 
     memset( txcblock + colofs_size, 0, txcblocksize - colofs_size ); // black background
@@ -999,7 +999,7 @@ void R_LoadTextures (void)
 
     // Load the patch names from pnames.lmp.
     name[8] = 0;
-    pnames = W_CacheLumpName ("PNAMES", PU_STATIC);  // temp
+    pnames = W_CacheLumpName ("PNAMES", PU_LUMP);  // temp
     // [WDJ] Do endian as use pnames temp
     nummappatches = LE_SWAP32 ( *((uint32_t *)pnames) );  // pnames lump [0..3]
     name_p = pnames+4;  // in lump, after number (uint32_t) is list of patch names
@@ -1015,14 +1015,14 @@ void R_LoadTextures (void)
     // Load the map texture definitions from textures.lmp.
     // The data is contained in one or two lumps,
     //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-    maptex = maptex1 = W_CacheLumpName ("TEXTURE1", PU_STATIC);
+    maptex = maptex1 = W_CacheLumpName ("TEXTURE1", PU_LUMP); // will be freed
     numtextures1 = LE_SWAP32(*maptex);  // number of textures, lump[0..3]
     maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
     directory = maptex+1;  // after number of textures, at lump[4]
 
     if (W_CheckNumForName ("TEXTURE2") != -1)
     {
-        maptex2 = W_CacheLumpName ("TEXTURE2", PU_STATIC);
+        maptex2 = W_CacheLumpName ("TEXTURE2", PU_LUMP); // will be freed
         numtextures2 = LE_SWAP32(*maptex2); // number of textures, lump[0..3]
         maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
     }
