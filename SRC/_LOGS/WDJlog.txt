@@ -1185,3 +1185,19 @@ patchfile = w62_PNG.patch
 Detect PNG patches, to prevent them from crashing the draw routines.
 Create a dummy patch to replace them.
 Test wad is longdays.wad, which has a PNG patch.
+
+*** w62_sprite_limit
+patchfile = w62_sprite_limit.patch
+- committed revision 7xx   by wesley johnson
+Remove sprite limits.  A user setting allows from 128 to 16000 sprites.
+Sprite tables are dynamically adjusted according to previous frame
+sprite count, and user setting (soft limit) in Effects menu.
+Table size is hard limited to twice the user setting.
+Nearest sprites to player have preference.
+When there are more sprites than the table size (>256) the farther sprites
+have semi-random access to last half of table (sporatic visibility,
+they flicker), so the player knows there are more sprites in the distance.
+Sprites are sorted by scale as they are inserted into table, so sprite
+sort routine is ifdef'ed out.
+Test wad is longdays.wad, which has thousands of sprites.
+Test at user setting of 128 sprites, upto when your computer bogs down.

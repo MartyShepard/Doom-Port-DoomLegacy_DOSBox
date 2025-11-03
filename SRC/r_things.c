@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: r_things.c 759 2010-10-12 02:54:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -554,8 +554,98 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
 //
 // GAME FUNCTIONS
 //
-static vissprite_t     vissprites[MAXVISSPRITES];
-static vissprite_t*    vissprite_p;
+
+// [WDJ] Remove sprite limits. This is the soft limit, the hard limit is twice this value.
+CV_PossibleValue_t spritelim_cons_t[] = {
+   {128, "128"}, {192,"192"}, {256, "256"}, {384,"384"},
+   {512,"512"}, {768,"768"}, {1024,"1024"}, {1536,"1536"},
+   {2048,"2048"}, {3072, "3072"}, {4096,"4096"}, {6144, "6144"},
+   {8192,"8192"}, {12288, "12288"}, {16384,"16384"},
+   {0, NULL} };
+consvar_t  cv_spritelim = { "sprites_limit", "512", CV_SAVE, spritelim_cons_t, NULL };
+
+// [WDJ] Remove sprite limits.
+static int  vspr_change_delay = 128;  // quick first allocate
+static unsigned int  vspr_random = 0x7f43916;
+static int  vspr_halfcnt; // count to halfway
+  
+static int  vspr_count = 0;	// count of sprites in the frame
+static int  vspr_needed = 64;     // max over several frames
+static int  vspr_max = 0;	// size of array - 1
+static vissprite_t*    vissprites = NULL;  // [0 .. vspr_max]
+static vissprite_t*    vissprite_last;	   // last vissprite in array
+static vissprite_t*    vissprite_p;    // next free vissprite
+static vissprite_t*    vissprite_far;  // a far vissprite, can be replaced
+
+static vissprite_t     vsprsortedhead;  // sorted list head (circular linked)
+
+// Call between frames, it does not copy contents, and does not init.
+void vissprites_tablesize ( void )
+{
+    int request;
+    // sprite needed over several frames
+    if ( vspr_count > vspr_needed )
+        vspr_needed = vspr_count;  // max
+    else
+        vspr_needed -= (vspr_needed - vspr_count) >> 8;  // slow decay
+   
+    request = ( vspr_needed > cv_spritelim.value )?
+	      (cv_spritelim.value + vspr_needed)/2  // soft limit
+            : vspr_needed;  // under limit
+        
+    // round-up to avoid trivial adjustments
+    request = (request < (256*6))?
+	      (request + 0x003F) & ~0x003F   // 64
+            : (request + 0x00FF) & ~0x00FF;  // 256
+    // hard limit
+    if ( request > (cv_spritelim.value * 2) )
+        request = cv_spritelim.value * 2;
+    
+    if ( request == vspr_max )
+        return;		// same as existing allocation
+
+    if( vspr_change_delay < MAXINT )
+    {
+        vspr_change_delay ++;
+    }
+    if ( request < vspr_max )
+    {
+        // decrease allocation
+        if ( ( request < cv_spritelim.value )  // once up to limit, stay there
+	     || ( request > (vspr_max / 4))  // avoid vacillation
+	     || ( vspr_change_delay < 8192 )  )  // delay decreases
+        {
+	    if (vspr_max <= cv_spritelim.value * 2)  // unless user setting was reduced
+	        return;
+	}
+        if ( request < 64 )
+	     request = 64;  // absolute minimum
+    }
+    else
+    {
+        // delay to get max sprites needed for new scene
+	// but not too much or is very visible
+        if( vspr_change_delay < 16 )  return;
+    } 
+    vspr_change_delay = 0;
+    // allocate
+    if ( vissprites )
+    {
+        free( vissprites );
+    }
+    do {  // repeat allocation attempt until success
+        vissprites = (vissprite_t*) malloc ( sizeof(vissprite_t) * request );
+        if( vissprites )
+	{
+	    vspr_max = request-1;
+	    return;	// normal successful allocation
+	}
+        // allocation failed
+        request /= 2;  // halve the request
+    }while( request > 63 );
+       
+    I_Error ("Cannot allocate vissprites\n");
+}
 
 
 //
@@ -571,6 +661,8 @@ void R_InitSprites (char** namelist)
     {
         negonearray[i] = -1;
     }
+
+    vissprites_tablesize();  // initial allocation
 
     //
     // count the number of sprite names, and allocate sprites table
@@ -618,7 +710,15 @@ void R_InitSprites (char** namelist)
 //
 void R_ClearSprites (void)
 {
-    vissprite_p = vissprites;
+    vissprites_tablesize();  // re-allocation
+    vspr_random += (vspr_count & 0xFFFF0) + 0x010001;  // just keep it changing
+    vissprite_last = &vissprites[vspr_max];
+    vissprite_p = vissprites;  // first free vissprite
+    vsprsortedhead.next = vsprsortedhead.prev = &vsprsortedhead;  // init sorted
+    vsprsortedhead.scale = MAXINT;  // very near, so it is rejected in farthest search
+    vissprite_far = & vsprsortedhead;
+    vspr_halfcnt = 0; // force vissprite_far init
+    vspr_count = 0;  // stat for allocation
 }
 
 
@@ -627,13 +727,84 @@ void R_ClearSprites (void)
 //
 static vissprite_t     overflowsprite;
 
-static vissprite_t* R_NewVisSprite (void)
+// [WDJ] New vissprite sorted by scale
+// Closer sprites get preference in the vissprite list when too many.
+// Sorted list is farthest to nearest (circular).
+static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
 {
-    if (vissprite_p == &vissprites[MAXVISSPRITES])
-        return &overflowsprite;
+    vspr_count ++;	// allocation stat
+    vissprite_t * vs;
+    register vissprite_t * ns;
 
-    vissprite_p++;
-    return vissprite_p-1;
+    if (vissprite_p == vissprite_last)  // array full ?
+    { 
+        // array is full
+        vspr_random += 0x01001; // semi-random stirring
+        if ( vsprsortedhead.next->scale > scale )
+        { 
+	    // new sprite is farther than farthest sprite in array,
+	    // even far sprites have random chance of being seen (flicker)
+	    if ((vspr_random & 0x0F000) != 0)
+	        return &overflowsprite;
+	}
+        // must remove a sprite to make room
+	{
+	    // Sacrifice a random sprite from farthest half
+	    if( vspr_halfcnt <= 0 ) // halfway count trigger
+	    {  
+	        // init, or re-init
+	        vspr_halfcnt = vspr_max / 2;
+	        vissprite_far = vsprsortedhead.next; // farthest
+	    }
+	    vs = vissprite_far;
+	    // Skip a random number of sprites, at least 1
+	    // Move vissprite_far off the sprite that will be removed
+	    // Try for a tapering distance effect.
+	    int n = (vspr_random & 0x000F) + ((vspr_max - vspr_halfcnt) >> 7) + 1;
+	    vspr_halfcnt -= n;  // count down to halfway
+	    for( ; n > 0 ; n -- )
+	    {
+	        vissprite_far = vissprite_far->next; // to nearer sprites
+	    }
+        }
+        // unlink it so it can be re-linked by distance
+	vs->next->prev = vs->prev;
+        vs->prev->next = vs->next;
+    }
+    else
+    {
+        // still filling up array
+        vs = vissprite_p ++;
+    }
+    // set links so order is farthest to nearest
+    // check the degenerate case first and avoid this test in the loop below
+    // Empty list looks to have head as max nearest sprite, so first is farthest.
+    if (vsprsortedhead.next->scale > scale)
+    {
+        // new is farthest, this will happen often because of close preference
+        ns = &vsprsortedhead; // farthest is linked after head
+    }
+    else
+    {
+        // search nearest to farthest
+        // The above farthest check ensures that search will hit something farther.
+        ns = vsprsortedhead.prev; // nearest
+        while( ns->scale > scale )  // while new is farther
+        {
+            ns = ns->prev;
+        }
+    }
+    // ns is farther than new
+    // copy before linking, is easier
+    if( oldsprite )
+        memcpy( vs, oldsprite, sizeof(vissprite_t));
+    // link new vs after ns (nearer than ns)
+    vs->next = ns->next;
+    vs->next->prev = vs;
+    ns->next = vs;
+    vs->prev = ns;
+
+    return vs;
 }
 
 
@@ -643,6 +814,7 @@ static vissprite_t* R_NewVisSprite (void)
 // Used for sprites and masked mid textures.
 // Masked means: partly transparent, i.e. stored
 //  in posts/runs of opaque pixels.
+// The colfunc_2s function for TM_patch and TM_combine_patch
 //
 // draw masked global parameters
 // clipping array[x], in int screen coord.
@@ -848,8 +1020,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
         
     // Found a split! Make a new sprite, copy the old sprite to it, and
     // adjust the heights.
-    newsprite = R_NewVisSprite ();
-    memcpy(newsprite, sprite, sizeof(vissprite_t));
+    newsprite = R_NewVisSprite ( sprite->scale, sprite );
 
     sprite->cut |= SC_BOTTOM;
     sprite->gz_bot = lightheight;
@@ -1130,7 +1301,10 @@ static void R_ProjectSprite (mobj_t* thing)
     }
 
     // store information in a vissprite
-    vis = R_NewVisSprite ();
+    vis = R_NewVisSprite ( yscale, NULL );
+    // do not waste time on the massive number of sprites in the distance
+    if( vis == &overflowsprite )  // test for rejected, or too far
+        return;
     // [WDJ] Only pass water models, not colormap model sectors
     vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
     vis->mobjflags = thing->flags;
@@ -1515,12 +1689,10 @@ void R_DrawPlayerSprites (void)
 }
 
 
-
+#if 0
 //
 // R_SortVisSprites
 //
-vissprite_t     vsprsortedhead;
-
 
 void R_SortVisSprites (void)
 {
@@ -1575,7 +1747,7 @@ void R_SortVisSprites (void)
     }
     // sorted list is farthest to nearest (circular)
 }
-
+#endif
 
 
 //
@@ -1665,10 +1837,11 @@ static void R_CreateDrawNodes( void )
       }
     }
 
-    if(vissprite_p == vissprites)
+    if(vissprite_p == vissprites)  // empty sprite list
       return;
 
-    R_SortVisSprites();
+//    R_SortVisSprites();
+    // sprite list is sorted from vprsortedhead    
     // traverse vissprite sorted list, nearest to farthest
     for(vsp = vsprsortedhead.prev; vsp != &vsprsortedhead; vsp = vsp->prev)
     {

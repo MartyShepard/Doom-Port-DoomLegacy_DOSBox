@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 756 2010-10-12 02:47:16Z wesleyjohnson $
+// $Id: m_menu.c 759 2010-10-12 02:54:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1530,6 +1530,7 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,    "Translucency"     , &cv_translucency  , 0},
     {IT_STRING | IT_CVAR,0,    "Splats"           , &cv_splats        , 0},
     {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
+    {IT_STRING | IT_CVAR,0,    "Sprites limit"    , &cv_spritelim     , 0},
     {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
 };
 

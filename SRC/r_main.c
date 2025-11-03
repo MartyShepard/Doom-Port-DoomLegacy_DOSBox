@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 751 2010-09-19 18:44:58Z wesleyjohnson $
+// $Id: r_main.c 759 2010-10-12 02:54:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1389,6 +1389,7 @@ void R_RegisterEngineStuff (void)
     CV_RegisterVar (&cv_psprites);
     CV_RegisterVar (&cv_splitscreen);
 //    CV_RegisterVar (&cv_fov);
+    CV_RegisterVar (&cv_spritelim);
 
     // Default viewheight is changeable,
     // initialized to standard rdraw_viewheight
