@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: p_saveg.c 774 2010-12-23 19:29:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1301,12 +1301,13 @@ bad_ptr:
 //#define READ_MobjPointerID_S(p,mobj)   (mobj) = GetMobjPointer( READU32(p) )
 
 // Save sector and line ptrs as index into their arrays
+// Protect against NULL line and mapthing pointers.
 #define WRITE_SECTOR_PTR( secp )   WRITE32(save_p, (secp) - sectors)
 #define READ_SECTOR_PTR( secp )   (secp) = &sectors[READ32(save_p)]
-#define WRITE_LINE_PTR( linp )   WRITE32(save_p, (linp) - lines)
-#define READ_LINE_PTR( linp )   (linp) = &lines[READ32(save_p)]
-#define WRITE_MAPTHING_PTR( mtp )   WRITE32(save_p, (mtp) - mapthings)
-#define READ_MAPTHING_PTR( mtp )   (mtp) = &mapthings[READ32(save_p)]
+#define WRITE_LINE_PTR( linp )   WRITE32(save_p, (linp)?((linp) - lines):0xFFFFFFFF)
+#define READ_LINE_PTR( linp )   { uint32_t d = READ32(save_p); (linp) = (d==0xFFFFFFFF)? NULL:&lines[d]; }
+#define WRITE_MAPTHING_PTR( mtp )   WRITE32(save_p, (mtp)?((mtp) - mapthings):0xFFFFFFFF)
+#define READ_MAPTHING_PTR( mtp )   { uint32_t d = READ32(save_p); (mtp) = (d==0xFFFFFFFF)? NULL:&mapthings[d]; }
 // another read of mapthing in P_UnArchiveSpecials
 
 
@@ -1682,7 +1683,7 @@ void P_ArchiveThinkers(void)
             PADSAVEP();
 	    vldoor_t *door = (vldoor_t *)th;
 	    WRITE_SECTOR_THINKER( door, vldoor_t, type );
-	    WRITE_LINE_PTR( door->line );
+	    WRITE_LINE_PTR( door->line );  // can be NULL
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_MoveFloor)
@@ -2011,7 +2012,7 @@ void P_UnArchiveThinkers(void)
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
                 PADSAVEP();
 		READ_SECTOR_THINKER( door, vldoor_t, type );
- 		READ_LINE_PTR( door->line );
+ 		READ_LINE_PTR( door->line );  // can be NULL
                 door->sector->ceilingdata = door;
                 door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
 	      }

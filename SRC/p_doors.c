@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 656 2010-05-19 18:11:50Z wesleyjohnson $
+// $Id: p_doors.c 774 2010-12-23 19:29:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -204,8 +204,6 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                 }
                 //SoM: 3/6/2000: Code to turn lighting off in tagged sectors.
-                // Hurdler: FIXME: there is a bug in map27 with door->line not being correct
-                //                 after a save game / load game
                 if (boomsupport && door->line && door->line->tag)
                 {
                     if (door->line->special > GenLockedBase && (door->line->special&6)==6)
