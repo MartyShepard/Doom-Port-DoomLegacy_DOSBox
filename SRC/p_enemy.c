@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_enemy.c 768 2010-11-18 21:14:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1743,9 +1743,7 @@ void A_SkullAttack (mobj_t* actor)
 // Spawn a lost soul and launch it at the target
 //
 void
-A_PainShootSkull
-( mobj_t*       actor,
-  angle_t       angle )
+A_PainShootSkull( mobj_t* actor, angle_t angle )
 {
     fixed_t     x;
     fixed_t     y;
@@ -1756,7 +1754,8 @@ A_PainShootSkull
     int         prestep;
 
 
-/*  --------------- SKULL LIMITE CODE -----------------
+/*  --------------- SKULL LIMIT CODE -----------------
+//  Original Doom code that limits the number of skulls to 20
     int         count;
     thinker_t*  currentthinker;
 

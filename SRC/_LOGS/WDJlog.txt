@@ -1267,3 +1267,8 @@ Removed code for -shdev, -regdev, -comdev, and replaced it with one
 simpler switch, -devgame <gamename>, to remove the only need to know the
 index of GDESC table entries.  Probably, those switches have not
 been used since Doom development in the 90's.
+
+*** w63_wikibugs
+patchfile = w63_wikibugs.patch
+- committed revision 768   by wesley johnson
+Comment fixes to bugs described in wikibugs.

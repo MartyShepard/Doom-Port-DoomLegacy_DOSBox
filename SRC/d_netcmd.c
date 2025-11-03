@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 760 2010-10-13 13:34:24Z smite-meister $
+// $Id: d_netcmd.c 768 2010-11-18 21:14:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -497,7 +497,7 @@ void SendNameAndColor(void)
     p = buf;
     WRITEBYTE(p, cv_playercolor.value);
     WRITESTRINGN(p, cv_playername.string, MAXPLAYERNAME);
-    *(p - 1) = 0;       // finish teh string;
+    *(p - 1) = 0;       // finish the string;
 
     // check if player has the skin loaded (cv_skin may have
     //  the name of a skin that was available in the previous game)

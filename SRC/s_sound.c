@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: s_sound.c 768 2010-11-18 21:14:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1085,6 +1085,7 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
     // From _GG1_ p.428. Appox. eucledian distance fast.
     approx_dist = adx + ady - ((adx < ady ? adx : ady) >> 1);
 
+    // Original has MAP08 without sound clipping by distance
     if (gamemap != 8 && approx_dist > S_CLIPPING_DIST)
     {
         return 0;
@@ -1122,10 +1123,12 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
         // added 2-2-98 SfxVolume is now hardware volume
         *vol = 255;     //snd_SfxVolume;
     }
+    // Original had MAP08 making distant sound effects louder than near.
     // removed hack here for gamemap==8 (it made far sound still present)
     else
     {
         // distance effect
+	// Where old equation had snd_SfxVolume this has 15
         *vol = (15 * ((S_CLIPPING_DIST - approx_dist) >> FRACBITS)) / S_ATTENUATOR;
     }
 

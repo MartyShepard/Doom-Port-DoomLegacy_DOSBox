@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: p_mobj.c 768 2010-11-18 21:14:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1008,6 +1008,7 @@ void P_NightmareRespawn(mobj_t * mobj)
 
     if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
     {
+        // Also fixes Nightmare respawn at (0,0) bug, as in Eternity Engine.
         x = mobj->x;
         y = mobj->y;
     }

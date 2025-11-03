@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_switch.c 768 2010-11-18 21:14:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -224,6 +224,7 @@ void P_StartButton ( line_t*       line,
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
+	    // Bug fix: Save button sound origin as sector
             buttonlist[i].soundorg = (mobj_t *)&line->frontsector->soundorg;
             return;
         }
