@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00770 ]: w65 savemenu bugs fix
 [00769 ]: w64 savegame limit
 [00768 ]: w63 wikibugs comments
 [00767 ]: w63 GDESC improvements

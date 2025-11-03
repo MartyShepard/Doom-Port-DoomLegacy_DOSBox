@@ -1283,3 +1283,16 @@ buffer allocation, and deallocation, and file access is encapsulated within
 the savegame functions.
 The network also transmits savegame to a new user.  When there is not
 a file then the savegame function reallocs a larger savebuffer, as needed.
+
+*** w65_savemenu_bugs
+patchfile = w65_savemenu_bugs.patch
+- committed revision 770   by wesley johnson
+Fix a number of nusance bugs in the savegame menu system.
+Puts a ".." string in the UP-TO-LEGACY directory menu entry.
+Fix allows new directory to be created from DIR line and from any
+blank directory entry.
+Fix directory menu scrolling to stop at end.
+Fix savegame and directory menu failure after delete entry.
+When current directory is deleted, fixed to null savegamedir name.
+Fix "EMPTY SLOT" message being presented as a savegame name, by
+preserving the slot status for all scrolling.

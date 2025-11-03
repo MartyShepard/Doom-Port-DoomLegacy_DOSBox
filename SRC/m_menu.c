@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: m_menu.c 770 2010-12-10 00:52:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1940,7 +1940,7 @@ menuitem_t ControlMenu[]=
 menu_t  ControlDef =
 {
     "M_CONTRO",
-    "Setup Controles",
+    "Setup Controls",
     sizeof(ControlMenu)/sizeof(menuitem_t),
     &OptionsDef,
     ControlMenu,
@@ -1979,7 +1979,7 @@ menuitem_t ControlMenu2[]=
 menu_t  ControlDef2 =
 {
     "M_CONTRO",
-    "Setup Controles",
+    "Setup Controls",
     sizeof(ControlMenu2)/sizeof(menuitem_t),
     &OptionsDef,
     ControlMenu2,
@@ -2404,7 +2404,8 @@ menuitem_t LoadDirMenu[]=
 
 menu_t  DirDef =
 {
-    "M_LOADG",
+//    "M_LOADG",	// LOAD GAME, really need SELECT DIR
+    NULL,
     "Game Directory",
     NUM_DIRLINE+1,
     &LoadDef,
@@ -2416,6 +2417,7 @@ menu_t  DirDef =
 };
 
 
+// Draw the current DIR line above list
 inline void draw_dir_line( int line_y )
 {
     V_DrawString( DirDef.x, line_y, 0, "DIR");
@@ -2423,6 +2425,7 @@ inline void draw_dir_line( int line_y )
     V_DrawString( DirDef.x+32, line_y, 0, savegamedir);
 }
 
+// Draw the dir list and DIR line
 void M_DrawDir(void)
 {
     int i;
@@ -2442,6 +2445,7 @@ void M_DrawDir(void)
         return;
     }
 
+    // Draw non-edit directory listing
     draw_dir_line( line_y );
     for (i = 0; i < NUM_DIRLINE; i++)
     {
@@ -2449,18 +2453,35 @@ void M_DrawDir(void)
         M_DrawSaveLoadBorder( DirDef.x, line_y, 0);
         V_DrawString( DirDef.x, line_y, 0, savegamedisp[i].desc);
     }
+    // Put some message in the UP-TO-LEGACY dir entry.
+    // The actual dir name remains blank.
+    if( scroll_index == 0 )
+    {
+        V_DrawString( DirDef.x, DirDef.y+LINEHEIGHT, 0, "..");
+    }
 }
 
-void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction );
+void M_ReadSaveStrings( int scroll_direction );
 
 // Called from DIR game menu to select a directory
 void M_DirSelect(int choice)
 {
-    // slots 0..5 are menu 1..6
-    strcpy( savegamedir, savegamedisp[choice-1].desc );
-    M_Setup_prevMenu();
+    if( (scroll_index == 0 && choice == 1) // UP-TO-LEGACY dir
+	|| ( savegamedisp[choice-1].desc[0] != '\0' ) )  // existing dir
+    {
+        // Existing directory selected
+        // slots 0..5 are menu 1..6
+        strcpy( savegamedir, savegamedisp[choice-1].desc );
+        M_Setup_prevMenu();
+    }
+    else if( slotindex )
+    {
+        // empty entry (other than UP entry), then make new directory
+        M_DirEnter(0);
+    }
 }
 
+// Callback after editing new directory name, setup by M_DirEnter
 void M_NewDir( void )
 {
     char dirname[256];
@@ -2489,17 +2510,29 @@ void M_DirEnter(int choice)
     // when done editing, will goto M_NewDir
 }
 
+void M_Dir_scroll (int amount);
+
+// Called from DIR game menu to delete a directory
 void M_Dir_delete (int ch)
 {
     if( ch=='y' && savegamedisp[slotindex].desc[0] )
     {
         char dirname[256];
+        // if is current directory
+        if( strcmp( savegamedir, savegamedisp[slotindex].desc ) == 0 )
+        {
+	    savegamedir[0] = '\0';
+	}
         // remove directory
         snprintf( dirname, 255, "%s%s", legacyhome, savegamedisp[slotindex].desc );
         dirname[255] = '\0';
         remove( dirname );
         savegamedisp[slotindex].desc[0] = '\0';
     }
+    // fixup after the message undo, which does not record callbacks
+    M_StopMessage(0);
+    scroll_callback = M_Dir_scroll;
+    delete_callback = M_Dir_delete;
 }
 
 
@@ -2510,6 +2543,7 @@ void M_Dir_delete (int ch)
 
 #ifdef USE_FTW
 #include <ftw.h>
+// Callback from ftw system call
 int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
 {
     if( flag == FTW_D )  // only want directories
@@ -2528,8 +2562,13 @@ int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
 
 void M_Dir_scroll (int amount)
 {
+    // Do not scroll if at end of list
+    if( (amount > 0) && ( savegamedisp[5].desc[0] == '\0' ))
+        return;  // at end of dir list
     clear_remaining_savegamedisp( 0 );
-    slotindex = -scroll_index;
+    scroll_index += amount;
+    if( scroll_index < 0 )   scroll_index = 0;
+    slotindex = -scroll_index; // countdown reading dir entries
     ftw( legacyhome, ftw_directory_entry, 1 );
 }
 
@@ -2555,6 +2594,9 @@ void M_Get_SaveDir (int choice)
 
 void M_Dir_scroll (int amount)
 {
+    // Do not scroll if at end of list
+    if( (amount > 0) && ( savegamedisp[5].desc[0] == '\0' ))
+        return;  // at end of dir list
     clear_remaining_savegamedisp( 0 );
     slotindex = -scroll_index;
 }
@@ -2704,8 +2746,10 @@ void M_LoadSelect(int choice)
 //  and put it in savegame global variable
 //
 #ifdef SAVEGAME99
-void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
+void M_ReadSaveStrings( int scroll_direction )
 {
+    // [WDJ] saves considerable size and hassle having this test here
+    boolean skip_unloadable = (currentMenu != &SaveDef);
     int     menuslot, nameid, slot_status;
     int     first_nameid = 0;
     int     last_nameid = 0;  // disable unless searching
@@ -2791,6 +2835,14 @@ void M_ReadSaveStrings( boolean skip_unloadable, int scroll_direction )
         {
 	    // Display is full and still searching for last_nameid.
 	    // Scroll them to make room at [5] for next read
+
+	    // [WDJ] Fix bug: upon scroll down and up, EMPTY SLOT message remained
+	    // Must scroll the status too.
+	    int i;
+	    for( i = 0; i<5; i++ )
+	       LoadGameMenu[i].status = LoadGameMenu[i+1].status;
+	    LoadGameMenu[5].status = 0;
+
 	    memmove( &savegamedisp[0], &savegamedisp[1],
 			 sizeof( savegame_disp_t ) * (load_end-1));
 	    menuslot --;  // read one more, come back here
@@ -2856,10 +2908,12 @@ void M_ReadSaveStrings(void)
 
 #ifdef SAVEGAME99
 // scroll_callback
-void M_Load_scroll (int amount)
+void M_Savegame_scroll (int amount)
 {
-    M_ReadSaveStrings( 1, amount ); // skip unloadable
+    M_ReadSaveStrings( amount ); // skip unloadable
 }
+
+//void M_Save_scroll (int amount);
 
 // delete_callback
 void M_Savegame_delete (int ch)
@@ -2874,6 +2928,10 @@ void M_Savegame_delete (int ch)
         savegamedisp[slotindex].levtime[0] = '\0';
         savegamedisp[slotindex].savegameid = 255;
     }
+    // fixup after the message undo, which does not record callbacks
+    M_StopMessage(0);
+    scroll_callback = M_Savegame_scroll;
+    delete_callback = M_Savegame_delete;
 }
 #endif
 
@@ -2895,9 +2953,9 @@ void M_LoadGame (int choice)
     M_SetupNextMenu(&LoadDef);
 #ifdef SAVEGAME99
     scroll_index = 0;
-    scroll_callback = M_Load_scroll;
+    scroll_callback = M_Savegame_scroll;
     delete_callback = M_Savegame_delete;
-    M_ReadSaveStrings( 1, 0 ); // skip unloadable
+    M_ReadSaveStrings( 0 ); // skip unloadable
 #else
     M_ReadSaveStrings();
 #endif
@@ -3090,14 +3148,6 @@ void M_SaveSelect(int choice)
 }
 
 
-#ifdef SAVEGAME99
-// scroll_callback
-void M_Save_scroll (int amount)
-{
-    M_ReadSaveStrings( 0, amount );
-}
-#endif
-
 //
 // Selected from DOOM menu
 //
@@ -3129,9 +3179,9 @@ void M_SaveGame (int choice)
     M_SetupNextMenu(&SaveDef);
 #ifdef SAVEGAME99
     delete_callback = M_Savegame_delete;
-    scroll_callback = M_Save_scroll;
+    scroll_callback = M_Savegame_scroll;
     scroll_index = 0;
-    M_ReadSaveStrings( 0, 0 ); // show unloadable
+    M_ReadSaveStrings( 0 ); // show unloadable
 #else
     M_ReadSaveStrings();
 #endif
@@ -3477,7 +3527,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 }
 
 //==========================================================================
-//                        Message is now a (hackeble) Menu
+//                        Message is now a (hackable) Menu
 //==========================================================================
 void M_DrawMessageMenu(void);
 
@@ -3636,8 +3686,9 @@ void M_StopMessage(int choice)
     // Do not interfere with response menu changes
     if( currentMenu == &MessageDef )
     {
-       M_SetupNextMenu(MessageDef.prevMenu);
-       S_StartSound(NULL,sfx_swtchx);
+         M_SetupNextMenu(MessageDef.prevMenu); // NULLS callbacks, caller must fix
+//         M_Setup_prevMenu();  // A little too much re-setup
+         S_StartSound(NULL,sfx_swtchx);
     }
 }
 
@@ -4001,10 +4052,10 @@ boolean M_Responder (event_t* ev)
 	    key = 'y';
 
 	  if(key == KEY_SPACE || key == 'n' || key == 'y' || key == KEY_ESCAPE)
-            {
+          {
                 if(routine) routine(key);
                 M_StopMessage(0);
-            }
+          }
         }
         else
         {
@@ -4061,8 +4112,6 @@ boolean M_Responder (event_t* ev)
       case KEY_PGUP:
         if( scroll_callback && (scroll_index > 0))
         {
-	    scroll_index -= 6;
-	    if( scroll_index < 0 )   scroll_index = 0;
             scroll_callback( -6 );  // some functions need to correct
 	    goto ret_pstop;
 	}
@@ -4072,7 +4121,6 @@ boolean M_Responder (event_t* ev)
       case KEY_PGDN:
         if( scroll_callback && (scroll_index < (99-6)))
         {
-	    scroll_index += 6;
             scroll_callback( 6 );
 	    goto ret_pstop;
 	}
