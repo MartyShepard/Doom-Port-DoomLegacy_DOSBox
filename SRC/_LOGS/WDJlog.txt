@@ -1323,3 +1323,14 @@ Fix segfault in DoomII MAP27 on use of door->line.
 The line may be NULL.  Fixed savegame to save and restore NULL ptrs
 for line and mapthings.
                                                             
+*** w65_savegame_get_put
+patchfile = w65_savegame_get_put.patch
+- committed revision 775   by wesley johnson
+Two savegame functions use local vars get and put, and these must be
+copied to and from save_p before and after SG_Readbuf and SG_Writebuf.
+Changed value 1024 in SG_Readbuf and SG_Writebuf to a defined trigger value.
+Increased free space trigger to 2048 bytes.
+Added optional code to test and print minimum free space in the
+savegame buffer.
+
+							    

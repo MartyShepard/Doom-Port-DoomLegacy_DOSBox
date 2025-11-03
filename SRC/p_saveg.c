@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 774 2010-12-23 19:29:08Z wesleyjohnson $
+// $Id: p_saveg.c 775 2010-12-29 22:37:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -149,6 +149,13 @@ boolean  save_game_abort = 0;
 #define SAVEBUF_SIZE    (128*1024)
 #define SAVEBUF_SIZEINC (128*1024)
 #define SAVEBUF_HEADERSIZE   (64 + 80 + 128 + 32 + 32)
+#define SAVEBUF_FREE_TRIGGER  2048
+// [WDJ] Uncomment the following to see how close to overrunning the buffer.
+//#define SAVEBUF_REPORT_MIN_FREE 1
+#ifdef SAVEBUF_REPORT_MIN_FREE
+int savebuf_min_free;
+#endif
+
 
 size_t savebuffer_size = 0;
 byte * savebuffer = NULL;
@@ -169,6 +176,9 @@ byte *  P_Alloc_savebuffer( boolean large_size )
     }
     extfile.buffer = savebuffer;
     extfile.bufcnt = 0;
+#ifdef SAVEBUF_REPORT_MIN_FREE
+    savebuf_min_free = savebuffer_size;
+#endif
     return savebuffer;
 }
 
@@ -181,6 +191,10 @@ size_t  P_Savegame_length( void )
         I_SoftError ("Savegame buffer overrun, need %i\n", length);
    	return -1;
     }
+#ifdef SAVEBUF_REPORT_MIN_FREE
+    if( (savebuffer_size - length) < savebuf_min_free )
+        savebuf_min_free = savebuffer_size - length;
+#endif
     return length;
 }
 
@@ -222,6 +236,9 @@ int  P_Savegame_Closefile( boolean writeflag )
         FIL_ExtFile_Close( &extfile );
         free(savebuffer);
         savebuffer = NULL;
+#ifdef SAVEBUF_REPORT_MIN_FREE
+        fprintf( stderr, "Report savebuffer min free: %i\n", savebuf_min_free );
+#endif
     }
     savefile = NULL;
     if( save_game_abort )
@@ -246,8 +263,8 @@ void  P_Savegame_Error_Closefile( void )
 void SG_Writebuf( void )
 {
     size_t length = P_Savegame_length();
-    // do nothing until within 1K of overflow
-    if( (length + 1024) < savebuffer_size )
+    // do nothing until within trigger of overflow
+    if( (length + SAVEBUF_FREE_TRIGGER) < savebuffer_size )
         goto done;
     
     if( ! savefile )
@@ -300,8 +317,8 @@ void SG_Readbuf( void )
     
     if( extfile.bufcnt > len1 )  // existing data in buffer
     {
-        // do not load more until less than 1024 left
-        if( extfile.bufcnt - len1 >= 1024 )
+        // do not load more until little is left
+        if( (extfile.bufcnt - len1) >= SAVEBUF_FREE_TRIGGER )
 	    goto done;
 
 	extfile.bufcnt -= len1;  // data still in buffer
@@ -900,7 +917,9 @@ void P_ArchiveWorld(void)
             if (diff2 & SD_PREVSEC)
                 WRITE32(put, ss->prevsec);
         }
-        SG_Writebuf();
+        save_p = put;
+        SG_Writebuf();  // flush buffer upto save_p
+        put = save_p;
     }
     WRITEU16(put, 0xffff);  // mark end of world sector section
 
@@ -989,7 +1008,9 @@ void P_ArchiveWorld(void)
             if (diff2 & LD_S2MIDTEX)
                 WRITE16(put, si->midtexture);
         }
-        SG_Writebuf();
+        save_p = put;
+        SG_Writebuf();  // flush buffer upto save_p
+        put = save_p;
     }
     WRITEU16(put, 0xffff);  // mark end of world linedef section
 
@@ -1017,7 +1038,10 @@ void P_UnArchiveWorld(void)
 
     while (1)
     {
-        SG_Readbuf();
+        save_p = get;
+        SG_Readbuf();  // Read more from file to save_p
+        get = save_p;
+
         i = READU16(get);
 
         if (i == 0xffff) // end of world sector section
@@ -1072,7 +1096,10 @@ void P_UnArchiveWorld(void)
 
     while (1)
     {
-        SG_Readbuf();
+        save_p = get;
+        SG_Readbuf();  // Read more from file to save_p
+        get = save_p;
+
         i = READU16(get);
 
         if (i == 0xffff)  // end of world linedef section
