@@ -1239,3 +1239,10 @@ change the PU_LOCK_SB to PU_CACHE.
 Changed some temp uses of PU_STATIC to PU_IN_USE or PU_LUMP, which will
 not release the memory if another user had the same patch with PU_STATIC.
 
+*** w63_switch_endian
+patchfile = w63_switch_endian.patch
+- committed revision 765   by wesley johnson
+Loading of switches has endian conversion that should be conditional
+on BIG_ENDIAN, and needed to be done only when loading cache, not on
+cache hits.
+

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00765 ]: w63 switch endian conditional
 [00764 ]: w63 PU_LOCK_SB
 [00763 ]: w63 texture size not set
 [00762 ]: w61 boom demo header
