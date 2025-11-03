@@ -1305,6 +1305,13 @@ Preliminary to fixing draw sprite vrs 3dfloor bug.
 
 *** w65_old_vissort_remove
 patchfile = w65_old_vissort.patch
-- committed revision 76x   by wesley johnson
+- committed revision 772   by wesley johnson
 Remove old unused vissprite sort routine.
+Preliminary to fixing draw sprite vrs 3dfloor bug.
+
+*** w65_plane_drawnode
+patchfile = w65_plane_drawnode.patch
+- committed revision 773   by wesley johnson
+Sort floor planes into the drawnode list as they are traversed instead of
+the previous repeated search of the same data.
 Preliminary to fixing draw sprite vrs 3dfloor bug.

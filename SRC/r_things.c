@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 772 2010-12-10 01:04:15Z wesleyjohnson $
+// $Id: r_things.c 773 2010-12-10 01:10:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1731,6 +1731,42 @@ static void R_CreateDrawNodes( void )
       }
       if(ds->numffloorplanes)
       {
+#if 1
+	// create drawnodes for the floorplanes with the closest last
+	// [WDJ] Sort as they are put into the list.  This avoids repeating
+	// searching through the same entries, PlaneBounds() and tests.
+	drawnode_t * first_dnp = nodehead.prev; // previous last drawnode
+	for(p = 0; p < ds->numffloorplanes; p++)
+	{
+            if(!ds->ffloorplanes[p])  // ignore NULL
+              continue;
+            plane = ds->ffloorplanes[p];
+	    ds->ffloorplanes[p] = NULL;  // remove from floorplanes
+            R_PlaneBounds(plane);  // set highest_top, lowest_bottom
+	         // in screen coord, where 0 is top (hi)
+            if(plane->lowest_bottom < con_clipviewtop
+	       || plane->highest_top > rdraw_viewheight  // [WDJ] rdraw window, not vid.height
+	       || plane->highest_top > plane->lowest_bottom)
+            {
+              continue;  // not visible, next plane
+            }
+	    delta = abs(plane->height - viewz); // new entry distance
+	    // merge sort into the drawnode list
+	    dnp = first_dnp->next; // first plane, or nodehead
+	    while( dnp != &nodehead )  // until reach end of new entries
+	    {
+	        // test for plane closer
+		// everything between first_dnp and nodehead must be plane
+	        if(abs(dnp->plane->height - viewz) < delta)
+		    break; // is farther than dnp
+	        dnp = dnp->next; // towards closer, towards nodehead
+	    }
+	    // create new drawnode
+	    entry = R_CreateDrawNode(dnp); // before closer entry, or nodehead
+	    entry->plane = plane;
+	    entry->seg = ds;
+	}
+#else       
 	// create drawnodes for the floorplanes with the closest last
         for(i = 0; i < ds->numffloorplanes; i++)
         {
@@ -1774,6 +1810,7 @@ static void R_CreateDrawNodes( void )
             break;  // no more visible floor planes, quit looking
                     // Some planes were removed as not visible.
         }
+#endif
       }
     }
 
@@ -1795,6 +1832,7 @@ static void R_CreateDrawNodes( void )
       {
         if(dnp->plane)
         {
+	  // sprite vrs floor plane
           if(dnp->plane->minx > vsp->x2 || dnp->plane->maxx < vsp->x1)
             continue;  // next dnp
           if(vsp->sz_top > dnp->plane->lowest_bottom
@@ -1824,6 +1862,7 @@ static void R_CreateDrawNodes( void )
             if(i > x2)
               continue;  // next dnp
 
+	    // found overlap with plane closer
             entry = R_CreateDrawNode(NULL);
             (entry->prev = dnp->prev)->next = entry;
             (entry->next = dnp)->prev = entry;
@@ -1833,6 +1872,7 @@ static void R_CreateDrawNodes( void )
         }
         else if(dnp->thickseg)
         {
+	  // sprite vrs 3d thickseg
           if(vsp->x1 > dnp->thickseg->x2 || vsp->x2 < dnp->thickseg->x1)
             continue;  // next dnp
 
@@ -1860,6 +1900,7 @@ static void R_CreateDrawNodes( void )
         }
         else if(dnp->seg)
         {
+	  // sprite vrs seg
           if(vsp->x1 > dnp->seg->x2 || vsp->x2 < dnp->seg->x1)
             continue;  // next dnp
 
@@ -1879,6 +1920,7 @@ static void R_CreateDrawNodes( void )
         }
         else if(dnp->sprite)
         {
+	  // sprite vrs sprite
           if(dnp->sprite->x1 > vsp->x2 || dnp->sprite->x2 < vsp->x1)
             continue;  // next dnp
           if(dnp->sprite->sz_top > vsp->sz_bot || dnp->sprite->sz_bot < vsp->sz_top)
@@ -1896,6 +1938,7 @@ static void R_CreateDrawNodes( void )
       }
       if(dnp == &nodehead)
       {
+	// end of list, draw in front of everything else
         entry = R_CreateDrawNode(&nodehead);
         entry->sprite = vsp;
       }

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00773 ]: w65 plane drawnode
 [00772 ]: w65 old vissort removed
 [00771 ]: w65 old patch remanent removed
 [00770 ]: w65 savemenu bugs fix
