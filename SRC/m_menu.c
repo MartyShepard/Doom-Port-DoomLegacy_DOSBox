@@ -4320,8 +4320,10 @@ void M_StartControlPanel (void)
     if (menuactive)
         return;
 
+#if !defined( __DJGPP__ )	
     if(demoplayback)  // menus without the demo interference
-        G_StopDemo();
+        G_StopDemo(); // Under DOS. Demo Runs then activate Menu and then Blackscreen and Menu is Hollow
+#endif
 
     menuactive = 1;
     currentMenu = &MainDef;         // JDC
