@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_inter.c 795 2011-02-24 22:22:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2466,7 +2466,7 @@ boolean P_DamageMobj ( mobj_t*   target,
 	    }
 	    if(! player->mo )  // this player is not present
 	    {
-	        if( voodoo_mode != VM_target )
+	        if( voodoo_mode < VM_target )
 	        {
 	            // remove this voodoo doll to avoid segfaults
 		    P_RemoveMobj( voodoo_thing );
@@ -2498,6 +2498,8 @@ boolean P_DamageMobj ( mobj_t*   target,
 	// [WDJ] 2/7/2011  Allow damage to player when:
 	// olddemo (version < 125) // because they did not have these restrictions
 	// OR telefrag        // not subject to friendly fire tests
+	// OR no source       // no source interaction, sector damage etc.
+	// OR NOT sourceplayer  // monster attack
 	// OR (source==target)  // self inflicted damage (missile launcher)
 	// OR voodoo_target   // voodoo damage allowed by previous tests
 	// OR NOT multiplayer  // single player
@@ -2514,21 +2516,20 @@ boolean P_DamageMobj ( mobj_t*   target,
 	// [WDJ] For readability and understanding, please do not try to reduce
         // these equations, they are not executed very often, and the
         // compiler will reduce them during optimization anyway.
-        if( demoversion < 125      // old demoversion bypasses restrictions
-            || (damage>1000)       // telefrag and death-ball
-            || (source==target)    // self-inflicted
+        if( (! source)		   // no source interaction, sector damage etc.
+	    || (! source->player)  // monster attack
 #ifdef VOODOO_DOLL
 	    || voodoo_target	   // allowed voodoo damage
 #endif
+            || (damage>1000)       // telefrag and death-ball
+            || (demoversion < 125) // old demoversion bypasses restrictions
+            || (source==target)    // self-inflicted
 	    || (! multiplayer)     // single player
 	    || ( (cv_deathmatch.value==0) && cv_teamdamage.value )  // coop
             || ( (cv_deathmatch.value>0)      // deathmatch 1,2,3
 		 && ( (!cv_teamplay.value)    // no teams
 		      || cv_teamdamage.value  // can damage within team
-		      || !(source
-			  && source->player
-			  && ST_SameTeam(source->player,player) // diff team
-			  )
+		      || ! ST_SameTeam(source->player,player) // diff team
 		    )
 		 )
 	    )

@@ -1440,3 +1440,9 @@ patchfile = w67_deathmatch_voodoo.patch
 - committed revision 794   by wesley johnson
 Fix extraneous voodoo dolls spawned in deathmatch, broken by voodoo
 patch.
+
+*** w67_coop_damage
+patchfile = w67_coop_damage.patch
+- committed revision 795   by wesley johnson
+Fix damage tests to allow monster damage during coop play, broken by
+voodoo patch.
