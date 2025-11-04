@@ -1453,3 +1453,11 @@ patchfile = w68_braintargets.patch
 Remove hard limits for braintargets, similar to prboom.
 Prevents overrun of braintargets array.
 Resolves bug 1001667, from 2004.
+
+*** w68_vile_bugs
+patchfile = w68_vile_bugs.patch
+- committed revision 767   by wesley johnson
+Vile ghost fix commented.
+Vile revived stuck together bug fixed, similar to zdoom and prboom,
+fixing bug 1037683.
+Vile fire location bug fixed, similar to prboom.

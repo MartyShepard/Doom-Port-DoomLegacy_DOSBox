@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 796 2011-02-28 19:54:00Z wesleyjohnson $
+// $Id: p_enemy.c 797 2011-02-28 19:55:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1372,14 +1372,29 @@ boolean PIT_VileCheck (mobj_t*  thing)
 
     corpsehit = thing;
     corpsehit->momx = corpsehit->momy = 0;
+#if 0
+    // [WDJ] The original code.  Corpse heights are not this simple.
+    // Would touch another monster and get stuck.
     corpsehit->height <<= 2;
     check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
     corpsehit->height >>= 2;
+#endif
+    // [WDJ] Test with revived sizes from info, to fix monsters stuck together bug.
+    // Must test as it would be revived, and then restore after the check
+    // (because a collision could be found).
+    // From considering the same fix in zdoom and prboom.
+    fixed_t corpse_height = corpsehit->height;
+    corpsehit->height = corpsehit->info->height; // revived height
+    fixed_t corpse_radius = corpsehit->radius;
+    corpsehit->radius = corpsehit->info->radius; // revived radius
+    int corpse_flags = corpsehit->flags;
+    corpsehit->flags |= MF_SOLID; // revived would be SOLID
+    check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
+    corpsehit->height = corpse_height;
+    corpsehit->radius = corpse_radius;
+    corpsehit->flags = corpse_flags;
 
-    if (!check)
-        return true;            // doesn't fit here
-
-    return false;               // got one, so stop checking
+    return !check;	// stop searching when no collisions found
 }
 
 
@@ -1390,13 +1405,10 @@ boolean PIT_VileCheck (mobj_t*  thing)
 //
 void A_VileChase (mobj_t* actor)
 {
-    int                 xl;
-    int                 xh;
-    int                 yl;
-    int                 yh;
+    int    xl, xh;
+    int    yl, yh;
 
-    int                 bx;
-    int                 by;
+    int    bx, by;
 
     mobjinfo_t*         info;
     mobj_t*             temp;
@@ -1436,9 +1448,14 @@ void A_VileChase (mobj_t* actor)
 
                     P_SetMobjState (corpsehit,info->raisestate);
                     if( demoversion<129 )
+		    {
+		        // original code, with ghost bug
+			// does not work when monster has been crushed
                         corpsehit->height <<= 2;
+		    }
                     else
                     {
+		        // fix vile revives crushed monster as ghost bug
                         corpsehit->height = info->height;
                         corpsehit->radius = info->radius;
                     }
@@ -1521,8 +1538,16 @@ void A_VileTarget (mobj_t*      actor)
 
     A_FaceTarget (actor);
 
+#if 0
+    // Original bug
     fog = P_SpawnMobj (actor->target->x,
                        actor->target->x,           // Bp: shoul'nt be y ?
+                       actor->target->z, MT_FIRE);
+#endif
+
+    // [WDJ] Found by Bp: Fix Vile fog bug, similar to prboom (Killough 12/98).
+    fog = P_SpawnMobj (actor->target->x,
+                       actor->target->y,
                        actor->target->z, MT_FIRE);
 
     actor->tracer = fog;
