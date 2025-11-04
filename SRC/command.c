@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: command.c 787 2011-02-22 04:44:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1082,7 +1082,8 @@ void CV_LoadNetVars( char **p )
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
         if (cvar->flags & CV_NETVAR)
-            Got_NetVar(p, 0);
+     
+	 Got_NetVar(p, 0);
     }
 }
 

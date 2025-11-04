@@ -1394,7 +1394,7 @@ again.
 
 *** w67_savegame_netvars
 patchfile = w66_savegame_netvars.patch
-- committed revision 7??   by wesley johnson
+- committed revision 787   by wesley johnson
 The savegame format changes everytime some more cv_ netvars are added.
 This change makes the savegame load immune to this.  It will read
 netvars until it hits the SYNC mark, instead of reading according the

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 779 2011-02-01 21:35:53Z wesleyjohnson $
+// $Id: p_saveg.c 787 2011-02-22 04:44:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2801,6 +2801,30 @@ boolean P_UnArchiveMisc()
 }
 
 // =======================================================================
+//          Net vars
+// =======================================================================
+
+// load cv_ vars, variable length
+void P_LoadNetVars( void )
+{
+    const int mincnt = 23; // Smallest number of netvar in a 144 savegame
+    int count = 0;
+    // [WDJ] Every addition of a cv_ var changes the number of NetVar loaded here.
+    // Make it adaptable so that old save games can be loaded.
+    // This works for now, but it is a conflict between SYNC_sync
+    // and the netvar id number.
+    SG_Readbuf();
+    // continue loading net vars until hit the sync
+    for (;;count++)
+    {
+        if( count>=mincnt )
+	    if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
+        Got_NetVar((char**)&save_p, 0);
+    }
+    fprintf(stderr, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
+}
+
+// =======================================================================
 //          Save game
 // =======================================================================
 
@@ -3051,7 +3075,8 @@ boolean P_LoadGame(void)
     InitPointermap_Load(1024);
 
     if( ! SG_ReadSync( SYNC_net, 0 ) )  goto sync_err;
-    CV_LoadNetVars((char **) &save_p);
+//    CV_LoadNetVars((char **) &save_p);
+    P_LoadNetVars();
     if( ! SG_ReadSync( SYNC_misc, 0 ) )  goto sync_err;
     // Misc does level setup, and purges all previous PU_LEVEL memory.
     if (!P_UnArchiveMisc())  goto failed;

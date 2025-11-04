@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: command.h 787 2011-02-22 04:44:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -150,7 +150,7 @@ typedef struct consvar_s
     void    (*func) (void);    // called on change, if CV_CALL set
     int     value;             // for int and fixed_t
     char    *string;           // value in string
-    unsigned short netid;      // used internaly : netid for send end receive
+    uint16_t/*unsigned short*/ netid;      // used internaly : netid for send end receive
                                // used only with CV_NETVAR
     struct  consvar_s *next;
 } consvar_t;
@@ -179,6 +179,7 @@ void  CV_SaveVariables (FILE *f);
 // load/save gamesate (load and save option and for network join in game)
 void CV_SaveNetVars( char **p );
 void CV_LoadNetVars( char **p );
+void Got_NetVar(char **p,int playernum);
 
 consvar_t *CV_FindVar (char *name);
 
