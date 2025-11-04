@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 799 2011-03-05 02:59:19Z wesleyjohnson $
+// $Id: m_menu.c 800 2011-03-06 18:53:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -247,6 +247,9 @@
 
 
 boolean                 menuactive;
+
+// [WDJ] mouse sensitivity, 30 for old feel, 40..50 to reduce
+#define MENU_MOUSE_TRIG   40
 
 #define SKULLXOFF       -32
 #define LINEHEIGHT       16
@@ -3825,91 +3828,82 @@ boolean M_Responder (event_t* ev)
 #if defined( __DJGPP__ )			
     static  tic_t   joywait = 0;
 #endif
-    static  tic_t   mousewait = 0;
-    static  int     mousey = 0;
-    static  int     lasty = 0;
-    static  int     mousex = 0;
-    static  int     lastx = 0;
+    static  boolean button_down = 0;
     menufunc_t routine;  // for some casting problem
 
     int key = KEY_NULL; // key pressed (if any)
     char ch = '\0';  // ASCII char it corresponds to
 
-    if (ev->type == ev_keydown)
+    switch (ev->type )
     {
+     case ev_keydown :
         key = ev->data1;
 	ch  = ev->data2;
-        
-        // added 5-2-98 remap virtual keys (mouse & joystick buttons)
-        switch(key) {
-        case KEY_MOUSE1:
-        case KEY_JOY0BUT0:
-	  key = KEY_ENTER;
-	  break;
-        case KEY_MOUSE1+1:
-        case KEY_JOY0BUT1:
-	  key = KEY_BACKSPACE;
-	  break;
-        }
-    }
-    else if( menuactive )
-    {
-#if defined( __DJGPP__ )		
-	 if (ev->type == ev_joystick && joywait < I_GetTime())
+        if( key >= KEY_MOUSE1 )
         {
-            if (ev->data3 == -1)
-            {
-                key = KEY_UPARROW;
-                joywait = I_GetTime() + TICRATE/7;
-            }
-            else if (ev->data3 == 1)
+	    if( key <= KEY_2MOUSE1 )
+	        button_down = 1;
+        
+	    // added 5-2-98 remap virtual keys (mouse & joystick buttons)
+	    switch(key) {
+	     case KEY_MOUSE1:
+	     case KEY_JOY0BUT0:
+	        // [WDJ] No mouse ENTER key on the sliders, it makes them move right.
+	       key = ( currentMenu
+		       && (currentMenu->menuitems[itemOn].status & (IT_BIGSLIDER | IT_CV_SLIDER | IT_CV_NOMOD ) )
+		       ) ? KEY_NULL : KEY_ENTER;
+	       break;
+	     case KEY_MOUSE1+1:
+	     case KEY_JOY0BUT1:
+	       key = KEY_BACKSPACE;
+	       break;
+	    }
+	}
+        break;
+     case ev_keyup:
+        if( ev->data1 >= KEY_MOUSE1 && ev->data1 <= KEY_2MOUSE1 )
+	    button_down = 0;
+        break;
+     case ev_mouse:
+        if( menuactive )
+	{
+	    static  tic_t  mousewait = 0;
+	    static  int  mousey = 0;
+	    static  int  mousex = 0;
+	   
+	    // [WDJ] This code only triggered when movement exceeded MENU_MOUSE_TRIG
+	    // so there is no need for mouse position recording.
+	    // Y movement overrides X movement, there can be ony one key.
+	    if( mousewait >= I_GetTime() )  break;  // delay between triggers
+            mousex += ev->data2;
+            mousey += ev->data3;
+            if (mousey < -MENU_MOUSE_TRIG)
             {
                 key = KEY_DOWNARROW;
-                joywait = I_GetTime() + TICRATE/7;
             }
-            
-            if (ev->data2 == -1)
+            else if (mousey > MENU_MOUSE_TRIG)
             {
-                key = KEY_LEFTARROW;
-                joywait = I_GetTime() + TICRATE/17;
+                key = KEY_UPARROW;
             }
-            else if (ev->data2 == 1)
+	    else if (mousex < -MENU_MOUSE_TRIG)
             {
-                key = KEY_RIGHTARROW;
-                joywait = I_GetTime() + TICRATE/17;
+	        if( button_down )   key = KEY_LEFTARROW;
             }
-        }
-#endif			
-      if (ev->type == ev_mouse && mousewait < I_GetTime())
-	{
-                mousey += ev->data3;
-                if (mousey < lasty-30)
-                {
-                    key = KEY_DOWNARROW;
-                    mousewait = I_GetTime() + TICRATE/7;
-                    mousey = lasty -= 30;
-                }
-                else if (mousey > lasty+30)
-                {
-                    key = KEY_UPARROW;
-                    mousewait = I_GetTime() + TICRATE/7;
-                    mousey = lasty += 30;
-                }
-                
-                mousex += ev->data2;
-                if (mousex < lastx-30)
-                {
-                    key = KEY_LEFTARROW;
-                    mousewait = I_GetTime() + TICRATE/7;
-                    mousex = lastx -= 30;
-                }
-                else if (mousex > lastx+30)
-                {
-                    key = KEY_RIGHTARROW;
-                    mousewait = I_GetTime() + TICRATE/7;
-                    mousex = lastx += 30;
-                }
+            else if (mousex > MENU_MOUSE_TRIG)
+            {
+                if( button_down )   key = KEY_RIGHTARROW;
+            }
+	   
+	    if( key )
+	    {
+	        // On any trigger, zero everything, so cannot drift off slider.
+                mousewait = I_GetTime() + TICRATE/7;
+                mousex = mousey = 0;
+	    }
 	}
+        break;
+     default:
+        break;
     }
 
     if (key == KEY_NULL)
@@ -4107,14 +4101,14 @@ boolean M_Responder (event_t* ev)
         {
             //added:07-02-98:dirty hak:for the customize controls, I want only
             //      buttons/keys, not moves
-	    void (*hack)(event_t *) = currentMenu->menuitems[itemOn].itemaction;
             #if !defined( __DJGPP__ )	
             if (ev->type == ev_mouse)
             #else
             if (ev->type==ev_mouse || ev->type==ev_joystick )
             #endif
                 goto ret_true;
-            if (hack) hack(ev);
+	    void (*cc_action)(event_t *) = currentMenu->menuitems[itemOn].itemaction;
+            if (cc_action)   cc_action(ev);
         }
         goto ret_true;
     }

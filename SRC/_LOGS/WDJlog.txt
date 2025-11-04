@@ -1470,3 +1470,13 @@ the user an immediate message asking "Abort this game Y/N".  Upon a
 YES it will quit the game and let the user continue.
 Combine 3 static menu msg buffers into one large one.  There can
 be only one menu message at a time.
+
+*** w68_menu_mouse
+patchfile = w68_menu_mouse.patch
+- committed revision 800   by wesley johnson
+Fix mouse bugs in menus.
+Fix so mouse cannot change values until button pushed, because previously
+one mouse slide could accidently change a dozen values.
+Extraneous mouse tracking removed.
+Menu mouse sensitivity put in a define and lowered.
+
