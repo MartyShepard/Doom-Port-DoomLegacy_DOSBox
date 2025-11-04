@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00783 ]: w67 linedef
+[00782 ]: w67 colormap msg
 [00781 ]: w66 buggy wad detect
 [00780*]: w66 alpha2 docs
 [00779 ]: w66 save to SGI

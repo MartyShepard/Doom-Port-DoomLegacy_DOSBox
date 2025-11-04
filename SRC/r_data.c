@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: r_data.c 782 2011-02-22 04:34:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1663,7 +1663,7 @@ int R_ColormapNumForName(char *name)
   // Check for existing colormap of same name
   lump = R_CheckNumForNameList(name, colormaplumps, numcolormaplumps);
   if(lump == -1)
-    I_Error("R_ColormapNumForName: Cannot find colormap lump %s\n", name);
+    I_Error("R_ColormapNumForName: Cannot find colormap lump %8s\n", name);
 
   for(i = 0; i < num_extra_colormaps; i++)
     if(lump == fnd_colormap_lump[i])

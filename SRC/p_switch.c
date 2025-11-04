@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 768 2010-11-18 21:14:27Z wesleyjohnson $
+// $Id: p_switch.c 783 2011-02-22 04:35:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -309,6 +309,9 @@ void P_ChangeSwitchTexture ( line_t*       line,
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
+// For monsters, return true when is a door that actor can use ??
+// (is actually when any monster operated switch).
+// For players, return true when switch is activated.
 boolean P_UseSpecialLine ( mobj_t*       thing,
                            line_t*       line,
                            int           side )
@@ -316,10 +319,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
 
     // Err...
     // Use the back sides of VERY SPECIAL lines...
-    if (side)
-    {
-      return false;
-    }
+    if (side)  goto nopass;
 
     //SoM: 3/18/2000: Add check for Generalized linedefs.
     if (boomsupport)
@@ -329,22 +329,24 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
       int (*linefunc)(line_t *line)=NULL;
 
       // check each range of generalized linedefs
-      if ((unsigned)line->special >= GenFloorBase)
+      if ((unsigned)line->special >= (GenFloorBase+0x2000))
+      {} // not boom generalized
+      else if ((unsigned)line->special >= GenFloorBase)
       {
         if (!thing->player)
           if ((line->special & FloorChange) || !(line->special & FloorModel))
-            return false; // FloorModel is "Allow Monsters" if FloorChange is 0
+            goto nopass; // FloorModel is "Allow Monsters" if FloorChange is 0
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenFloor;
       }
       else if ((unsigned)line->special >= GenCeilingBase)
       {
         if (!thing->player)
           if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-            return false;   // CeilingModel is "Allow Monsters" if CeilingChange is 0
+            goto nopass;   // CeilingModel is "Allow Monsters" if CeilingChange is 0
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenCeiling;
       }
       else if ((unsigned)line->special >= GenDoorBase)
@@ -352,22 +354,22 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
         if (!thing->player)
         {
           if (!(line->special & DoorMonster))
-            return false;   // monsters disallowed from this door
+            goto nopass;  // monsters disallowed from this door
           if (line->flags & ML_SECRET) // they can't open secret doors either
-            return false;
+            goto nopass;
         }
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenDoor;
       }
       else if ((unsigned)line->special >= GenLockedBase)
       {
         if (!thing->player)
-          return false;   // monsters disallowed from unlocking doors
+          goto nopass;  // monsters disallowed from unlocking doors
         if (!P_CanUnlockGenDoor(line,thing->player))
-          return false;
+          goto nopass;
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
 
         linefunc = EV_DoGenLockedDoor;
       }
@@ -375,53 +377,55 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
       {
         if (!thing->player)
           if (!(line->special & LiftMonster))
-            return false; // monsters disallowed
+            goto nopass;  // monsters disallowed
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenLift;
       }
       else if ((unsigned)line->special >= GenStairsBase)
       {
         if (!thing->player)
           if (!(line->special & StairMonster))
-            return false; // monsters disallowed
+            goto nopass;  // monsters disallowed
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenStairs;
       }
       else if ((unsigned)line->special >= GenCrusherBase)
       {
         if (!thing->player)
           if (!(line->special & CrusherMonster))
-            return false; // monsters disallowed
+            goto nopass;  // monsters disallowed
         if (!line->tag && ((line->special&6)!=6)) //all non-manual
-          return false;                           //generalized types require tag
+          goto nopass;  //generalized types require tag
         linefunc = EV_DoGenCrusher;
       }
 
       if (linefunc)
+      {
         switch((line->special & TriggerType) >> TriggerTypeShift)
         {
           case PushOnce:
             if (!side)
               if (linefunc(line))
                 line->special = 0;
-            return true;
+            goto pass;
           case PushMany:
             if (!side)
               linefunc(line);
-            return true;
+            goto pass;
           case SwitchOnce:
             if (linefunc(line))
               P_ChangeSwitchTexture(line,0);
-            return true;
+            goto pass;
           case SwitchMany:
             if (linefunc(line))
               P_ChangeSwitchTexture(line,1);
-            return true;
+            goto pass;
           default:  // if not a switch/push type, do nothing here
-            return false;
+            goto nopass;
         }
+      }
     }
 
 
@@ -429,10 +433,11 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
     // Switches that other things can activate.
     if (!thing->player)
     {
-        // never open secret doors
+        // monsters never open secret doors
         if (line->flags & ML_SECRET)
-            return false;
+            goto nopass;
 
+        // the only doors and switches that monsters can activate
         switch(line->special)
         {
           case 1:       // MANUAL DOOR RAISE
@@ -447,13 +452,13 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
             break;
 
           default:
-            return false;
-            break;
+            goto nopass;  // monsters exit
         }
     }
+    // monsters past this point have been checked OK for using the switch
 
     if (!P_CheckTag(line) && boomsupport)  //disallow zero tag on some types
-      return false;
+      goto nopass;
 
     // do something
     switch (line->special)
@@ -673,6 +678,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
 
       default:
         if (boomsupport)
+        {
           switch (line->special)
           {
             // added linedef types to fill all functions out so that
@@ -1037,6 +1043,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
             // end of added SR linedef types
 
           }
+	}
         break;
 
 
@@ -1181,5 +1188,9 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
 
     }
 
-    return true;
+pass:
+    return true;  // monster can open this door, or operate this switch
+
+nopass:
+    return false;
 }

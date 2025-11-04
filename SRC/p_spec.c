@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: p_spec.c 783 2011-02-22 04:35:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1449,7 +1449,9 @@ P_ActivateCrossedLine ( line_t*       line,
       int (*linefunc)(line_t *line)=NULL;
   
       // check each range of generalized linedefs
-      if ((unsigned)line->special >= GenFloorBase)
+      if ((unsigned)line->special >= (GenFloorBase+0x2000))
+      {}  // not Boom generalized
+      else if ((unsigned)line->special >= GenFloorBase)
       {
         if (!thing->player)
 	{
@@ -2337,7 +2339,9 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       int (*linefunc)(line_t *line)=NULL;
 
       // check each range of generalized linedefs
-      if ((unsigned)line->special >= GenFloorBase)
+      if ((unsigned)line->special >= (GenFloorBase+0x2000))
+      {}  // not Boom generalized
+      else if ((unsigned)line->special >= GenFloorBase)
       {
         if (!thing->player)
 	{
