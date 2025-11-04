@@ -15,10 +15,18 @@
 
 <h2>1.44 (2010-09-??)</h2>
 
+<h3>FEATURES 1.44 recent bug-fixes, at svn788</h3>
+<ul>
+<li>Stop demos when menu opens.
+<li>Voodoo doll damage effects upon players are restored.
+<li>Voodoo doll mode control (Vanilla, Multispawn, Target, Auto).
+<li>Voodoo doll telefrag instadeath control (Die, Damage, Zap).
+</ul>
+
 <h3>FEATURES 1.44 alpha2</h3>
 <ul>
 <li>Boom demo headers are now recognized and the demos play better.
-They will not stay in sync, but no longer crash the engine.</li>
+They will not stay in sync, but will no longer crash the engine.</li>
 <li>Revised game description tables now have three wad names for each
 game type, to recognize more naming variations.</li>
 <li>Sprites Limit: Adjust the number of sprites displayed by software
@@ -102,6 +110,17 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 <li>New joystick/gamepad code, should support all modern controllers (SDL).</li>
 <li>New FS functions.</li>
 <li>Audio output samplerate raised to 22 kHz.</li>
+</ul>
+
+
+<h3>BUG FIXES 1.44 recent bug-fixes, at svn788</h3>
+<ul>
+<li>More checks against buggy wads.
+<li>Fixed colormap name in colormap missing message.
+<li>Fixed recognition of Plutonia.
+<li>Make savegame loading tolerate added control vars.
+<li>Fix savegame restore of voodoo dolls to not modify players, fixing savegame load crashes under
+Linux 2.6.
 </ul>
 
 <h3>BUG FIXES 1.44 alpha2</h3>

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 768 2010-11-18 21:14:27Z wesleyjohnson $
+// $Id: p_enemy.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -426,7 +426,9 @@ static boolean P_Move (mobj_t* actor)
         good = false;
         while (numspechit--)
         {
-            ld = lines + spechit[numspechit];
+            ld = &lines[ spechit[numspechit] ];
+	    // [WDJ] FIXME: Monsters get stuck in the door track when
+	    // they see the door activation and nothing else.
             // if the special is not a door
             // that can be opened,
             // return false

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 756 2010-10-12 02:47:16Z wesleyjohnson $
+// $Id: doomdef.h 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -212,6 +212,12 @@ extern char VERSION_BANNER[];
 #define NEWLIGHT                // compute lighting with bsp (in construction)
 #define FRAGGLESCRIPT           // SoM: Activate FraggleScript
 #define FIXROVERBUGS // Fix some 3dfloor bugs. SSNTails 06-13-2002
+
+// [WDJ] Voodoo doll 4/30/2009
+// A voodoo doll is an accident of having multiple start points for a player.
+// It has been used in levels as a token to trip linedefs and create
+// sequenced actions, and thus are required to play some wads, like FreeDoom.
+#define VOODOO_DOLL
 
 // [WDJ] Heretic has missing sprites, SOFTERROR is needed to continue play
 // instead of fatal error message.

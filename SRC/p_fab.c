@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 745 2010-09-16 16:28:07Z smite-meister $
+// $Id: p_fab.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -65,6 +65,24 @@ consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorD
 
 #endif
 
+
+#ifdef VOODOO_DOLL
+// [WDJ] 2/3/2011  Insta-death by voodoo doll, subverted.
+CV_PossibleValue_t instadeath_cons_t[]={{0,"Die"}, {1,"Damage"}, {2,"Zap"}, {0,NULL}};
+consvar_t cv_instadeath = {"instadeath", "0", CV_SAVE|CV_NETVAR, instadeath_cons_t, NULL};
+
+voodoo_mode_e  voodoo_mode;
+
+// [WDJ] 2/7/2011  Voodoo doll behavior
+void VoodooMode_OnChange( void )
+{
+   // config file saves cv_voodoo_mode but changes to voodoo_mode do not get saved.
+   voodoo_mode = (voodoo_mode_e) cv_voodoo_mode.value;
+}
+
+CV_PossibleValue_t voodoo_mode_cons_t[]={{0,"Vanilla"}, {1,"Multispawn"}, {2,"Target"}, {3, "Auto"}, {0,NULL}};
+consvar_t cv_voodoo_mode = {"voodoo_mode", "3", CV_CALL|CV_SAVE|CV_NETVAR, voodoo_mode_cons_t, VoodooMode_OnChange};
+#endif
 
 // Translucency
 
@@ -259,4 +277,9 @@ void D_RegisterMiscCommands (void)
     // see p_doors.c
     CV_RegisterVar (&cv_doordelay);
 #endif   
+#ifdef VOODOO_DOLL
+    // [WDJ] 2/7/2011 Voodoo
+    CV_RegisterVar (&cv_instadeath);
+    CV_RegisterVar (&cv_voodoo_mode);
+#endif
 }

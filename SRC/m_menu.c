@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 785 2011-02-22 04:41:56Z wesleyjohnson $
+// $Id: m_menu.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1660,10 +1660,14 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
+#ifdef VOODOO_DOLL
+    {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
+    {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]
+#endif
 #ifdef DOORDELAY_CONTROL
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
 #endif
-    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,110}
+    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,130}
 };
 
 menu_t  GameOptionDef =

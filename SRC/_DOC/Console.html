@@ -790,6 +790,48 @@ Choose the time of respawn for the monsters, in seconds.
 Number of frames to skip for each frame rendered when playing back
 demos. Default is 0.
 </td></tr>
+
+<tr><td>voodoo_mode</td><td>string</td>
+<td>
+Sets the voodoo doll behavior.  A voodoo doll is an accident of the
+original doom code that occurs when a wad has extra player starts.
+The voodoo dolls that are spawned at the extra starts look like
+players, but do not move on their own. When they get shot or
+damaged, a player gets damaged too.  Many wads use voodoo dolls for
+automated actions because they can trip linedefs.
+<ul>
+<li>Vanilla: No enhancements. Allows zombies and walking dead players.
+<li>Multispawn: The target of damage is determined by the wad spawn type.
+<li>Target: DoomLegacy will attempt to determine the player that
+triggered the voodoo doll, and will put the damage on them.  There are
+still many ways the wrong player can get hurt (which is wad related),
+some as simple as one player tripping the death-trap, right before
+another pushes the switch to turn it off
+(if timed right, the player at the switch dies instead).
+<li>Auto: If the wad has multiple player voodoo spawning, then it
+switches to Multispawn, otherwise it will be Target.
+</ul>
+Default is Auto.
+</td></tr>
+
+<tr><td>instadeath</td><td>string</td>
+<td>
+Used to mitigate the effects of voodoo doll teleport frag.
+For coop and deathmatch play, a setting other than Die is suggested.
+<br>
+The telefrag kills the player instantly, thus the name "instadeath".
+Used in unusual wad traps to kill the player, like when
+they touch something dangerous.
+Vanilla voodoo doll behavior has the voodoo doll instadeath always killing
+the same player, and it does not matter who walked into the death-trap.
+In most wads the victim is always player1.
+<ul>
+<li>Die: Telefrag death of player.
+<li>Damage: Player takes 20 damage, stunned, and gets thrown back.
+<li>Zap: Player takes 5 damage, stunned longer, and gets thrown back.
+</ul>
+Default is Die.
+</td></tr>
 </table>
 
 

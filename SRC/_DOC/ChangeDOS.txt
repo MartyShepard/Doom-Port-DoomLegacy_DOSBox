@@ -1,6 +1,8 @@
 * Not need to Compile.
 
-[00787 ]:w67 savegame netvars
+[00789*]: w67 doc
+[00788 ]: w67 voodoo player
+[00787 ]: w67 savegame netvars
 [00786 ]: w67 player spawn
 [00785 ]: w67 stop demo
 [00784 ]: w67 plutonia recognition

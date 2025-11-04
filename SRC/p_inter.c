@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_inter.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -117,6 +117,10 @@
 #include "s_sound.h"
 #include "r_main.h"
 #include "st_stuff.h"
+#include "p_fab.h"
+  // cv_solidcorpse
+#include "g_input.h"
+  // cv_allowrocketjump
 
 #define BONUSADD        6
 
@@ -744,6 +748,23 @@ void P_TouchSpecialThing ( mobj_t*       special,
 
     sound = sfx_itemup;
     player = toucher->player;
+#ifdef VOODOO_DOLL
+    if( player &&
+	toucher != player->mo )  // voodoo doll toucher
+    {
+        if( voodoo_mode >= VM_target )
+        {
+	    // Target last player to trigger a switch or linedef.
+	    if( spechit_player && spechit_player->mo )
+	    {
+	        player = spechit_player;
+	        toucher = player->mo;
+	    }
+	}
+        if( !player || !player->mo )
+	    return; // player left or voodoo multiplayer spawn
+    }
+#endif
 
 #ifdef PARANOIA
     if( !player )
@@ -1456,6 +1477,11 @@ static void P_DeathMessages ( mobj_t*       target,
     if (!target || !target->player)
         return;
 
+#ifdef VOODOO_DOLL
+    if (target->player->mo != target )  // voodoo doll died
+        return;
+#endif
+   
     if (source && source->player)
     {
         if (source->player==target->player)
@@ -1637,8 +1663,9 @@ static int P_AmmoInWeapon(player_t *player)
 
 // P_KillMobj
 //
-//      source is the attacker,
+//      source is the attacker, (for revenge, frags)
 //      target is the 'target' of the attack, target dies...
+//      inflictor is the weapon, missile, creature melee, or NULL, (for messages)
 //                                          113
 void P_KillMobj ( mobj_t*       target,
                   mobj_t*       inflictor,
@@ -1648,7 +1675,6 @@ void P_KillMobj ( mobj_t*       target,
     mobj_t*     mo;
     int         drop_ammo_count = 0;
 
-extern consvar_t cv_solidcorpse;
     // dead target is no more shootable
     if( !cv_solidcorpse.value )
         target->flags &= ~MF_SHOOTABLE;
@@ -1685,7 +1711,7 @@ extern consvar_t cv_solidcorpse;
 
     if( demoversion < 131 )
     {
-        // in version 131 and higer this is done later in a_fall 
+        // in version 131 and higher this is done later in a_fall 
         // (this fix the stepping monster)
         target->flags   |= MF_CORPSE|MF_DROPOFF;
         target->height >>= 2;
@@ -1694,10 +1720,10 @@ extern consvar_t cv_solidcorpse;
     }
     // show death messages, only if it concern the console player
     // (be it an attacker or a target)
-    if (target->player && (target->player == &players[consoleplayer]) )
+    if (target->player && (target->player == consoleplayer_ptr) )
         P_DeathMessages (target, inflictor, source);
     else
-    if (source && source->player && (source->player == &players[consoleplayer]) )
+    if (source && source->player && (source->player == consoleplayer_ptr) )
         P_DeathMessages (target, inflictor, source);
     else
     if (target->player && target->player->bot)	//added by AC for acbot
@@ -2161,6 +2187,7 @@ void P_AutoUseHealth(player_t *player, int saveHealth)
 // Source can be NULL for slime, barrel explosions
 // and other environmental stuff.
 //
+// Return true when damaged, for blood splats and other effects.
 boolean P_DamageMobj ( mobj_t*   target,
                        mobj_t*   inflictor,
                        mobj_t*   source,
@@ -2170,7 +2197,7 @@ boolean P_DamageMobj ( mobj_t*   target,
     int         saved;
     player_t*   player;
     fixed_t     thrust;
-    boolean     takedamage;  // false on some case in teamplay
+    boolean     takedamage = true;  // block damage between members of same team
 
     if ( !(target->flags & MF_SHOOTABLE) )
         return false; // shouldn't happen...
@@ -2274,14 +2301,14 @@ boolean P_DamageMobj ( mobj_t*   target,
     // inflict thrust and push the victim out of reach,
     // thus kick away unless using the chainsaw.
     if (inflictor
-        && !(target->flags & MF_NOCLIP)
-        && !(inflictor->flags2&MF2_NODMGTHRUST)
-        && (!source
+        && !(target->flags & MF_NOCLIP)  // unless target is NOCLIP
+        && !(inflictor->flags2&MF2_NODMGTHRUST)  // unless inflictor cannot thrust
+        && (!source  // not chainsaw
             || !source->player
             || source->player->readyweapon != wp_chainsaw))
     {
-        fixed_t            amomx, amomy, amomz=0;//SoM: 3/28/2000
-        extern consvar_t   cv_allowrocketjump;
+        // Impose thrust upon the target from the weapon
+        fixed_t  amomx, amomy, amomz=0;//SoM: 3/28/2000
 
         ang = R_PointToAngle2 ( inflictor->x,
                                 inflictor->y,
@@ -2305,7 +2332,9 @@ boolean P_DamageMobj ( mobj_t*   target,
 
         ang >>= ANGLETOFINESHIFT;
 
-        if(gamemode == heretic && source && source->player && (source == inflictor)
+        if(gamemode == heretic
+	    && source && (source == inflictor)
+	    && source->player
             && source->player->powers[pw_weaponlevel2]
             && source->player->readyweapon == wp_staff)
         {
@@ -2319,13 +2348,16 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
         else
         {
+	    // all other thrusting weapons
             amomx = FixedMul (thrust, finecosine[ang]);
             amomy = FixedMul (thrust, finesine[ang]);
             target->momx += amomx;
             target->momy += amomy;
             
-            // added momz (do it better for missiles explotion)
-            if (source && demoversion>=124 && (demoversion<129 || !cv_allowrocketjump.value))
+            // added momz (do it better for missiles explosion)
+            if ( source
+		 && demoversion>=124
+		 && (demoversion<129 || !cv_allowrocketjump.value))
             {
                 int dist,z;
                 
@@ -2372,8 +2404,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
     }
 
-    takedamage = false;
-    // player specific
+    // target player specific
     if (player && (target->flags & MF_CORPSE)==0)
     {
         // end of game hell hack
@@ -2396,9 +2427,9 @@ boolean P_DamageMobj ( mobj_t*   target,
         if (player->armortype)
         {
             if (player->armortype == 1)
-                saved = gamemode == heretic ? damage>>1 : damage/3;
+                saved = (gamemode == heretic)? damage>>1 : damage/3;
             else
-                saved = gamemode == heretic ? (damage>>1)+(damage>>2) : damage/2;
+                saved = (gamemode == heretic)? (damage>>1)+(damage>>2) : damage/2;
 
             if (player->armorpoints <= saved)
             {
@@ -2410,21 +2441,97 @@ boolean P_DamageMobj ( mobj_t*   target,
             damage -= saved;
         }
 
+#ifdef VOODOO_DOLL
+        // [WDJ] 2/7/2011 Intercept voodoo damage
+        boolean voodoo_target = (player->mo != target);
+	if( voodoo_target )
+        {
+	    mobj_t * voodoo_thing = target;
+	    if(voodoo_mode >= VM_target)
+	    {
+	        // Multiplayer and single player:
+	        // try to find someone appropriate, instead of spawn point player.
+	        // Target source player causing damage
+	        if( source && source->player
+		    && (source->player->mo == source) )
+	        {
+		    // Shooting any voodoo doll, select shooting player
+		    player = source->player;
+	        }
+	        // Target last player to trigger a switch or linedef.
+	        else if( spechit_player && spechit_player->mo )
+	        {
+		    player = spechit_player;
+		}
+	    }
+	    if(! player->mo )  // this player is not present
+	    {
+	        if( voodoo_mode != VM_target )
+	        {
+	            // remove this voodoo doll to avoid segfaults
+		    P_RemoveMobj( voodoo_thing );
+		}
+	        return false;
+	    }
+	    if( voodoo_mode == VM_vanilla )
+	    {
+	        target->health -= damage;  // damage the voodoo too
+	    }
+	    else
+	    {
+	        if( multiplayer && (damage > player->health))
+	        {
+		    // Kill the voodoo, so it cannot kill after respawn.
+		    // Voodoo doll in crusher is game fatal otherwise.
+		    voodoo_thing->health = 0;
+		    voodoo_thing->player = NULL;
+		    P_KillMobj ( voodoo_thing, inflictor, source );
+		    spechit_player = NULL;  // cancel voodoo damage
+		}
+	        // let player mobj get the damage, no Zombies
+	        target = player->mo;
+	    }
+	}
+#endif
+
         // added team play and teamdamage (view logboris at 13-8-98 to understand)
-        if( demoversion < 125   || // support old demoversion
-            cv_teamdamage.value ||
-            damage>1000         || // telefrag
-            source==target      ||
-            !source             ||
-            !source->player     ||
-            (
-             cv_deathmatch.value
-             &&
-             (!cv_teamplay.value ||
-              !ST_SameTeam(source->player,player)
-             )
-            )
-          )
+	// [WDJ] 2/7/2011  Allow damage to player when:
+	// olddemo (version < 125) // because they did not have these restrictions
+	// OR telefrag        // not subject to friendly fire tests
+	// OR (source==target)  // self inflicted damage (missile launcher)
+	// OR voodoo_target   // voodoo damage allowed by previous tests
+	// OR NOT multiplayer  // single player
+        // OR ( coop         // all on same team
+        //     AND cv_teamdamage  // team members can hurt each other
+        //    )
+        // OR ( deathmatch   // teams or individual, not coop
+        //     AND ( NOT teamplay
+	//               // otherwise teamplay
+	//           OR cv_teamdamage   // team members can hurt each other
+        //           OR (target.team != source.team)
+	//         )
+        //    )
+	// [WDJ] For readability and understanding, please do not try to reduce
+        // these equations, they are not executed very often, and the
+        // compiler will reduce them during optimization anyway.
+        if( demoversion < 125      // old demoversion bypasses restrictions
+            || (damage>1000)       // telefrag and death-ball
+            || (source==target)    // self-inflicted
+#ifdef VOODOO_DOLL
+	    || voodoo_target	   // allowed voodoo damage
+#endif
+	    || (! multiplayer)     // single player
+	    || ( (cv_deathmatch.value==0) && cv_teamdamage.value )  // coop
+            || ( (cv_deathmatch.value>0)      // deathmatch 1,2,3
+		 && ( (!cv_teamplay.value)    // no teams
+		      || cv_teamdamage.value  // can damage within team
+		      || !(source
+			  && source->player
+			  && ST_SameTeam(source->player,player) // diff team
+			  )
+		    )
+		 )
+	    )
         {
             if(damage >= player->health
                 && ((gameskill == sk_baby) || cv_deathmatch.value)
@@ -2436,7 +2543,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             player->health -= damage;   // mirror mobj health here for Dave
             if (player->health < 0)
                 player->health = 0;
-            takedamage = true;
+	    if( player->mo )
+	        player->mo->health = player->health; // keep mobj and player health same
 
             player->damagecount += damage;  // add damage after armor / invuln
 
@@ -2447,15 +2555,21 @@ boolean P_DamageMobj ( mobj_t*   target,
             if (player == consoleplayer_ptr )
                 I_Tactile (40,10,40+min(damage, 100)*2);
         }
+        else
+        {
+	    takedamage = false;  // block damage
+	}
         player->attacker = source;
     }
     else
-        takedamage = true;
+    {
+        // non-player damage applied
+        target->health -= damage;
+    }
 
     if( takedamage )
     {
-        // do the damage
-        target->health -= damage;
+        // check for kill
         if (target->health <= 0)
         {
             target->special1 = damage;

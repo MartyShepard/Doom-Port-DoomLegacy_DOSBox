@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 761 2010-10-13 22:14:43Z wesleyjohnson $
+// $Id: p_map.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -163,6 +163,11 @@ int             *spechit = NULL;                //SoM: 3/15/2000: Limit removal
 		// realloc, never deallocated
 int             numspechit = 0;
 
+#ifdef VOODOO_DOLL
+//[WDJ] Attempt to track player that triggers voodoo inflicted damage
+player_t *      spechit_player = NULL;
+#endif
+
 //SoM: 3/15/2000
 msecnode_t*  sector_list = NULL;
 
@@ -214,7 +219,55 @@ static boolean PIT_StompThing (mobj_t* thing)
     if ( gamemode==heretic && !(tm_thing->flags2 & MF2_TELESTOMP))
         return (false);
 
+#ifdef VOODOO_DOLL
+    int  damage = 10000;  // fatal
+    if( (tm_thing->player && (tm_thing->player->mo != tm_thing))
+	&& (thing->player && (thing->player->mo != thing)) )
+    {
+        // [WDJ] Insta-death by teleporting a voodoo doll onto another one.
+	// Used by some wads.
+	// Once a voodoo teleport instadeath trap is triggered by one player,
+        // most wads cannot reset, and other players can then walk through the trap.
+	// On cv_instadeath=damage or zap, the same player can trip it and then
+	// walk through it on the second try.  Best we can do.
+        if( voodoo_mode != VM_vanilla )
+        {
+	    // Original Doom target is thing->player
+	    if( voodoo_mode >= VM_target )
+	    {
+	        // Because the wad decouples the trigger from the effect, there
+	        // is no good way to determine which player should be killed.
+	        // Target last player to trigger a switch or linedef.
+	        if( spechit_player && spechit_player->mo)
+		    thing = spechit_player->mo;   // redirect the damage
+	    }
+	    // knock player back
+            thing->momx *= -32;
+            thing->momy *= -32;
+            thing->momz += -8;
+	}
+	switch( cv_instadeath.value )
+        {
+	 // 0: default .. DIE
+	 case 1: // Damage instead
+	   damage = 20;
+	   thing->reactiontime = 36;  // stun them
+	   break;
+	 case 2: // Zap instead
+	   damage = 5;
+	   thing->reactiontime = 72;  // stun them better
+	   break;
+	 default:
+	   // Block damage in deathmatch, it would always kill player1
+	   if( cv_deathmatch.value > 0 )
+	      damage = 0;
+	}
+    }
+    P_DamageMobj (thing, tm_thing, tm_thing, damage);
+#else   
+
     P_DamageMobj (thing, tm_thing, tm_thing, 10000);
+#endif
 
     return true;
 }
@@ -854,7 +907,7 @@ static void CheckMissileImpact(mobj_t *mobj)
         return;
 
     for(i = numspechit-1; i >= 0; i--)
-        P_ShootSpecialLine(mobj->target, lines + spechit[i]);
+        P_ShootSpecialLine(mobj->target, &lines[spechit[i]]);
 }
 
 //
@@ -933,10 +986,12 @@ boolean P_TryMove ( mobj_t*       thing,
             CheckMissileImpact(thing);
 
         if ( !boomsupport || !allowdropoff)
+        {
           if ( !(thing->flags&(MF_DROPOFF|MF_FLOAT))
                && !tmr_floorthing
                && tmr_floorz - tmr_dropoffz > MAXSTEPMOVE )
               return false;       // don't stand over a dropoff
+	}
     }
 
     // the move is ok,
@@ -980,13 +1035,27 @@ boolean P_TryMove ( mobj_t*       thing,
         while (numspechit--)
         {
             // see if the line was crossed
-            ld = lines + spechit[numspechit];
+            ld = &lines[spechit[numspechit]];
             side = P_PointOnLineSide (thing->x, thing->y, ld);
             oldside = P_PointOnLineSide (oldx, oldy, ld);
             if (side != oldside)
             {
                 if (ld->special)
+	        {
+#ifdef VOODOO_DOLL
+		    // [WDJ] Attempt to track player that triggers voodoo doll
+		    if((voodoo_mode >= VM_target) && (thing->player))
+		    {
+		        if( thing->player->mo == thing )
+		        {
+			    // Real player
+			    // remember last player that tripped a special
+			    spechit_player = thing->player;
+			}
+		    }
+#endif
                     P_CrossSpecialLine (ld-lines, oldside, thing);
+		}
             }
         }
     }
@@ -2022,8 +2091,23 @@ boolean PTR_UseTraverse (intercept_t* in)
     if (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1)
         side = 1;
 
+#ifdef VOODOO_DOLL
+    if( P_UseSpecialLine (usething, in->d.line, side) )
+    {
+        // [WDJ] Attempt to track player that triggers voodoo doll
+        if((voodoo_mode >= VM_target) && (usething->player))
+        {
+	    if( usething->player->mo == usething )
+	    {
+	        // Real player pushed a switch
+	        spechit_player = usething->player;
+	    }
+	}
+    }
+#else   
     //  return false;           // don't use back side
     P_UseSpecialLine (usething, in->d.line, side);
+#endif
 
     // can't use for than one special line in a row
     // SoM: USE MORE THAN ONE!

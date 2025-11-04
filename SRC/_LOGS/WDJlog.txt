@@ -1403,7 +1403,7 @@ still load.
 
 *** w67_voodoo_player
 patchfile = w67_voodoo_player.patch
-- committed revision 78?   by wesley johnson
+- committed revision 788   by wesley johnson
 Due to wads that use the voodoo player in strange ways, the voodoo
 player has appeared as the player in some function calls.  This will
 segfault when trying to get the player index [player - players].
@@ -1423,3 +1423,9 @@ Target mode is meant for coop and deathmatch.
 In Auto mode it behaves as Target, unless it detects voodoo dolls for
 players other than player1, upon which it will change to Multispawn.
 Plutonia MAP06 is a known voodoo Multispawn level.
+
+*** w67_doc
+patchfile = w67_doc.patch
+- committed revision 789   by wesley johnson
+Update docs for w67 patches.
+

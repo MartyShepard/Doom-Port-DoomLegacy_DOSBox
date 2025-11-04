@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 787 2011-02-22 04:44:25Z wesleyjohnson $
+// $Id: p_saveg.c 788 2011-02-22 04:48:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1509,6 +1509,14 @@ void P_ArchiveThinkers(void)
         {
 	    // Mobj thinker
             mobj = (mobj_t *) th;
+
+	    // [WDJ] DEBUG
+	    boolean voodoo_doll = 0;
+	    if( mobj->player )
+	    {
+	        if( mobj->player->mo != mobj )
+		   voodoo_doll = 1;
+	    }
 /*
             // not a monster nor a pickable item so don't save it
             if( (((mobj->flags & (MF_COUNTKILL | MF_PICKUP | MF_SHOOTABLE )) == 0)
@@ -1517,7 +1525,9 @@ void P_ArchiveThinkers(void)
                 || (mobj->type == MT_BLOOD) )
                 continue;
 */
-            if (mobj->spawnpoint && (!(mobj->spawnpoint->options & MTF_FS_SPAWNED)) && (mobj->info->doomednum != -1))
+            if (mobj->spawnpoint
+		&& (!(mobj->spawnpoint->options & MTF_FS_SPAWNED))
+		&& (mobj->info->doomednum != -1))
             {
                 // spawnpoint is not modified but we must save it since it is a indentifier
                 diff = MD_SPAWNPOINT;
@@ -1631,7 +1641,12 @@ void P_ArchiveThinkers(void)
             if (diff & MD_EFLAGS)
                 WRITEU32(save_p, mobj->eflags);
             if (diff & MD_PLAYER)
-                WRITEBYTE(save_p, mobj->player - players);
+	    {
+	        unsigned int st = mobj->player - players;
+	        if( mobj->player->mo != mobj )
+		   st += 128;  // voodoo doll flag
+                WRITEBYTE(save_p, st);
+	    }
             if (diff & MD_MOVEDIR)
                 WRITE32(save_p, mobj->movedir);
             if (diff & MD_MOVECOUNT)
@@ -1955,13 +1970,30 @@ void P_UnArchiveThinkers(void)
                 if (diff & MD_PLAYER)
                 {
                     i = READBYTE(save_p);
-                    mobj->player = &players[i];
-                    mobj->player->mo = mobj;
-                    // added for angle prediction
-                    if (consoleplayer == i)
-                        localangle = mobj->angle;
-                    if (displayplayer2 == i)  // player 2
-                        localangle2 = mobj->angle;
+		    if( i < MAXPLAYERS )
+		    {
+		        mobj->player = &players[i];
+		        mobj->player->mo = mobj;  // connect player to this mobj
+		        // added for angle prediction
+		        if (consoleplayer == i)
+			    localangle = mobj->angle;
+		        if (displayplayer2 == i)  // player 2
+			    localangle2 = mobj->angle;
+		    }
+#ifdef VOODOO_DOLL		   
+		    else if( i >= 128 && i < MAXPLAYERS+128 )
+		    { 
+		        // voodoo dolls
+		        i -= 128; // voodoo doll flag
+		        mobj->player = &players[i];
+		    }
+#endif
+		    else
+		    {
+		        // [WDJ] FIXME later, for now accept previous savegames
+		        I_SoftError( "Savegame load: mobj has bad player id, %d, setting to 0.\n", i );
+		        i = 0;
+		    }
                 }
                 if (diff & MD_MOVEDIR)
                     mobj->movedir = READ32(save_p);
@@ -2004,7 +2036,11 @@ void P_UnArchiveThinkers(void)
                    if( (diff & MD_Z) == 0 )
                    mobj->z = mobj->floorz;
                  */// This causes 3dfloor problems! SSNTails 03-17-2002
+#ifdef VOODOO_DOLL
+                if (mobj->player && (mobj->player->mo == mobj)) // real player
+#else
                 if (mobj->player)
+#endif
                 {
                     mobj->player->viewz = mobj->player->mo->z + mobj->player->viewheight;
                     //CONS_Printf("viewz = %f\n",FIXED_TO_FLOAT(mobj->player->viewz));
