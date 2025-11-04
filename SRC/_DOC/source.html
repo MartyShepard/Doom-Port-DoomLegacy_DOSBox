@@ -159,27 +159,55 @@ From now on, your local copy of this directory will be referred to as <b>TRUNK</
 <h2>Explanation of the code</h2>
 
 <pre>
- 3.1 The memory model (original) (z_zone.c) (by BP)
+ 3.1 The memory model (z_zone.c) (by BP) (revised WDJ)
  --------------------
 
- Doom allocate a heap of 6 megs at begining and provide a Z_Malloc function
- to allocate in this heap. 
- 
-   Z_Malloc( int size,int tag,void* user )
+ DoomLegacy allocates memory at begining and provides allocations of it via
+ Z_Malloc functions.
 
-    size is the size in byte
-    tag can be : PU_STATIC   allocated static (like malloc do)
-                             call Z_Free to free it
-                 PU_LEVEL    same as static but the zone is "tagged" with the 
-                             tag PU_LEVEL, when calling 
-                             Z_FreeTag (PU_LEVEL, PU_LEVEL) all zone tagged 
-                             with PU_LEVEL are freed (at the end of the level)
-                 PU_CACHE    this one _can_ be freed automatiquely by one other
-                             call to Z_Malloc. the *user point to a pointer 
-                             to this zone so when freed automatiquely the 
-                             pointer is set to NULL so eatch time you use it
-                             you must check if the pointer is not NULL and 
-                             reload it.
+ There are several compile-time options for the memory block allocation.
+   PLAIN_MALLOC:  Substitute malloc for zone memory allocation.
+        This ignores memory tags, and it cannot recover PU_LEVEL, PU_CACHE memory.
+   TAGGED_MALLOC: Uses malloc, and uses memory tags.
+   ZONE_ZALLOC:   The zone memory system, with preallocated memory.
+                  The memory allocation size is set by #define, and command line switches.
+   GROW_ZONE:	  An option that grows the zone memory allocation when needed.
+   AGGRESSIVE_PURGE:  Aggressive purge of PU_CACHE, primarily as a
+                  memory allocation test.
+ 
+ 
+ Z_Malloc( int size, int tag, void* user )
+ 
+ size: is the size in bytes
+ tag:
+   PU_STATIC:  Allocated static (like malloc does).
+               Call Z_Free to free it.
+   PU_SOUND, PU_MUSIC: Static while playing. Specific to music uses.
+   PU_LOCK_SB: Static and protected against changing tag or releasing.
+               Must change with PU_UNLOCK_CACHE to unlock it.
+               Used to protect status bar textures.
+   PU_HWRPATCHINFO:  Hardware renderer texture cache only.
+   PU_HWRPATCHCOLMIPMAP:  Hardware renderer texture cache only.
+   PU_LUMP:    Generic allocation for lump reading.
+               At end of level, will be converted to PU_CACHE.
+   PU_IN_USE:  Protected against other allocations while it is in use. The user
+               is expected to FREE it or change it to PU_CACHE when they are done.
+               At end of level, will be converted to PU_CACHE.
+   PU_LEVEL:   Static until level is over, where a call to Z_FreeTag will
+               release all PU_LEVEL allocations, and their user ptrs set NULL.
+   PU_LEVELSPEC: A PU_LEVEL for thinkers.
+   PU_HWRPLANE:  A PU_LEVEL for hardware renderer planes.
+   PU_PRIVCACHE: PU_CACHE allocation that is kept longer, until PU_CACHE is gone.
+               Used by expensive combined patch textures.
+   PU_HWRCACHE: PU_CACHE for hardware renderer graphics.
+   PU_CACHE:   Automatic free, when memory is needed by another Z_Malloc
+               allocation.  When Z_Malloc reuses it for another allocation,
+	       the user ptr will be set to NULL.
+	       When the user accesses a PU_CACHE allocation, where other allocation
+	       calls could have occurred, the user ptr must be checked for NULL,
+	       and the item reloaded when necessary.
+	       Change this allocation to a more protected tag when accessing
+               it around any code that does Z_Malloc allocation.
 
  (...)
 

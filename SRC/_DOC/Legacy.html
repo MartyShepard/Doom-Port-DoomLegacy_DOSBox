@@ -317,7 +317,7 @@ bright -1</div>
   Evenness is usually more important than absolute brightness. The brightness
   appearance is affected greatly by the amount of light over your monitor.
   If the wall textures look harsh, then the gamma is set too high, or
-  the black level is set to low.
+  the black level is set too low.
 </p>
 
 <div class="code">
@@ -520,84 +520,95 @@ See <a href="console.html">here</a> for more about the console.
 <p>
 
   * The server types:
+  <br>
+  <p>Start a server with one of the following server commands.
+  One player can play on the server itself. Other switches can also be
+  included to select the game and wad.
+<br><br>
 
-  &gt; legacy -server &lt;num-of-computers&gt;
+  &gt; doomlegacy -server &lt;num-of-computers&gt;<br>
 
-  The server will wait until the specified number of computers have
+  <p>The server will wait until the specified number of computers have
   connected and then will start the game. This is like the old way to
   start a game. It is more fair because all players start at the same
   time and with the same weapons. Of course other computers can also
   join later.
+  <br>
+  <br>
 
-  or 
-
-  &gt; legacy -server 
-  This starts the server and does not wait for any computers.
+  &gt; doomlegacy -server <br>
+  <p>This starts the server and does not wait for any computers.
   It starts the game immediately. Other players can join later.
+  <br>
 
   
+  <br>
+  <br>
+  <p>* Clients are the other players who join in the server:<br>
+  <p>Each additional player connects to the server with one of the following
+   connect commands.
+<br><br>
+  &gt; doomlegacy -connect &lt;ip address of server&gt;<br>
+  <p>Connects to a specific server computer using their ip address.
 
-  * Clients are the other players who join in the server:
+  <br><br>
 
-  &gt; legacy -connect &lt;ip address of server&gt;
-
-  or
-
-  &gt; legacy -connect
-  This will auto-detect a server on a LAN. This only works when
+  &gt; doomlegacy -connect<br>
+  <p>This will auto-detect a server on a LAN. This only works when
   computers are directly connected. If you play through internet,
   the server can NOT be auto-detected, and you must specify it's
   IP address.
-
+<br>
+<br>
   
-  Example A, 3 players on a LAN:
-
-  player 1 (the server)
-  &gt; legacy -server 3
-
-  player 2 (client)
-  &gt; legacy -connect
-
-  player 3 (client)
-  &gt; legacy -connect
-
-  Example B, 2 players, through internet:
-
-  player 1 (the server)
-  &gt; legacy -server 2
-
-  player 2 (client)
-  &gt; legacy -connect xxx.xxx.xxx.xxx
-
-  Example C, a 3 player game, with _TWO_ computers, one is split-screen:
-
-  player 1 (the server)
-  &gt; legacy -server 3
-
-  player 2 and 3 (2 clients on the same computer)
-  &gt; legacy -splitscreen -connect
-
+  Example A, 3 players on a LAN:<br>
+<br>
+  player 1 (the server)<br>
+  &gt; doomlegacy -server 3<br>
+<br>
+  player 2 (client)<br>
+  &gt; doomlegacy -connect<br>
+<br>
+  player 3 (client)<br>
+  &gt; doomlegacy -connect<br>
+<br>
+  Example B, 2 players, through internet:<br>
+<br>
+  player 1 (the server)<br>
+  &gt; doomlegacy -server 2<br>
+<br>
+  player 2 (client)<br>
+  &gt; doomlegacy -connect xxx.xxx.xxx.xxx<br>
+<br>
+  Example C, a 3 player game, with _TWO_ computers, one is split-screen:<br>
+<br>
+  player 1 (the server)<br>
+  &gt; doomlegacy -server 3<br>
+<br>
+  player 2 and 3 (2 clients on the same computer)<br>
+  &gt; doomlegacy -splitscreen -connect<br>
+<br>
   
-  You don't need to put all parameters on the client side like :
+  <p>You don't need to put all parameters on the client side like :
   -deathmatch, -warp xx, -respawn, -fast, etc because the server
   automatically sends those to all clients upon connection.
 
-  Also the -file parameter is not needed by the player anymore. The server
+  <p>Also the -file parameter is not needed by the player anymore. The server
   will send the file needed to the client. Let's say rather the client
   can download it from the server. But of course the client will first
   check for the file in the directory or subdirectory.
 
-  Use '-notime' to disable file date check on clients. Normally
+  <p>Use '-notime' to disable file date check on clients. Normally
   the game will warn you if a client has a file loaded by the
   server, but with a different date. Clients should have the exact
   same version of the files added by the server.
 
-  You want to know some things : you need a good ping value, perfect
+  <p>You want to know some things : you need a good ping value, perfect
   is less than 30, more than this will be very unplayable, because
   there is not, for the moment, code to reduce the latency between
   command entered at keyboard and command execution.
 
-  In other words, Doom Legacy doesn't use 'interpolation' to make
+  <p>In other words, Doom Legacy doesn't use 'interpolation' to make
   you believe like the game is 'smooth' when it is not in reality.
 </p>
   
@@ -712,23 +723,29 @@ savegames are kept.</td>
 
 <tr>
 <td id="mb">-mb &lt;number&gt;</td>
-<td>Give the amount of heap memory (in MB) Legacy should use.
+<td>The amount (in MiB) of memory that Legacy allocates for ZALLOC.
 <p>
-  If you run out of memory, or want more memory, this sets the
-  number of megabytes of memory to allocate to ZALLOC at
+  Otherwise the default of 24 to 80 MiB is used.
+  This and the MIN and MAX limits are set by compile time options.
+</p>
+<p>
+  This sets the number of megabytes of memory to allocate to ZALLOC at
   Doom startup. ZALLOC is used for saving the directories, textures,
   and other lumps of the wad files. Executable and stack use other
   memory.
 </p>
 <p>
-  If no parameter is set Legacy will try to allocate 24 to 80 Mb.
-  If that much is not available, then it will ask for half of what is
-  free.
-  The MIN and MAX limits are set by compile time options.
+  If the amount of requested memory is not available, then it will try for
+  half of what is free.
   There are several compile time options for ZALLOC memory allocation,
   the updated Zone allocation, automatic growing Zone allocation,
   and simple and tagged malloc allocations.
 </p>
+<p>
+  The default memory allocator, GROW_ZONE, will grow the memory allocation
+  when needed.
+  It is no longer critical to set enough memory on the command line,
+  although it may make loading smoother.
 </td>
 </tr>
 

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00781 ]: w66 buggy wad detect
+[00780*]: w66 alpha2 docs
 [00779 ]: w66 save to SGI
 [00778 ]: 1.44 alpha2 release
 [00777 ]: w65 farthest var unused

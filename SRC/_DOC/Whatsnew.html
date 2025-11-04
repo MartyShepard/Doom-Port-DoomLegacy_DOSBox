@@ -1,4 +1,3 @@
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -16,8 +15,31 @@
 
 <h2>1.44 (2010-09-??)</h2>
 
-<h3>FEATURES</h3>
+<h3>FEATURES 1.44 alpha2</h3>
 <ul>
+<li>Boom demo headers are now recognized and the demos play better.
+They will not stay in sync, but no longer crash the engine.</li>
+<li>Revised game description tables now have three wad names for each
+game type, to recognize more naming variations.</li>
+<li>Sprites Limit: Adjust the number of sprites displayed by software
+renderer from 128 to 16384, depending upon where your machine bogs down.</li>
+<li>Removed sprite display limits in software renderer.
+The number of displayed sprites is dynamically adjusted according to the
+sprite count, and the user setting in the Effects menu.
+The menu control gives a soft limit from 128, upto 16384 sprites.
+The sprite display is hard limited to twice the user setting.
+When there are too many sprites, the nearest sprites have preference,
+the farther sprites have semi-random visibility (they flicker),
+so the player can sporatically see the sprites in the distance.
+</li>
+<li>Savegame size is now unlimited, and uses much smaller savegame buffer.</li>
+<li>Replaced the odd command line switches for game development with
+one switch that specifies the gamename.</li>
+</ul>
+
+<h3>FEATURES 1.44 alpha1</h3>
+<ul>
+<li>New Effects menu, makes room for the additional user controls.</li>
 <li>Gamma generation: Gamma table is generated from the selected gamma
     function <br/>
     (Gamma, Gamma_black, Gamma_bright_black, Linear).<br/>
@@ -82,7 +104,35 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 <li>Audio output samplerate raised to 22 kHz.</li>
 </ul>
 
-<h3>BUG FIXES</h3>
+<h3>BUG FIXES 1.44 alpha2</h3>
+<ul>
+<li> Z_Malloc memory locking, to protect the status bar textures from
+other routines using and releasing them.</li>
+<li>Bug fix on endian conversion for switch textures.</li>
+<li>Fixed the automap for screen sizes and splitscreen mode.</li>
+<li>Fixed splitscreen mode and splitscreen mode sound.</li>
+<li>Protect splitscreen mode setup from demos.</li>
+<li>Updated code to reduce compilation complaints from GCC 4.4.4. </li>
+<li>Fixed texture generation failures in caesar.wad,
+detect and replace PNG patches with a dummy,
+handle empty patches,
+and split posts longer than 255 bytes.</li>
+<li>Fixed crusher logic so that they will crush floating monsters too.</li>
+<li>Fixed game modes so is easier to understand names, and fixed bad
+test for heretic shareware.</li>
+<li>Fixed game recognition by Ultimate doom wad name.</li>
+<li>Fixed a number of nusance bugs in the savegame menu system.
+<li>Display ".." as the UP-DIRECTORY menu entry.</li>
+<li>New directory can be created from DIR line and from any blank directory entry.
+<li>Fixed "EMPTY SLOT" message being presented as a savegame name.</li>
+<li>Fixed very old segfault in savegames of DoomII MAP27, which
+opened a door by level logic instead of a line trigger. These failed
+after restoring a savegame.
+Fixed savegame to save and restore NULL ptrs for line and mapthings.</li>
+
+</ul>
+
+<h3>BUG FIXES 1.44 alpha1</h3>
 <ul> 
 <li>ENDOOM lump updated with current information.</li>
 <li>Build process brought up to date: Automatic dependecy generation,
@@ -102,7 +152,7 @@ accidental purging by other memory allocation calls.
 Added new classes of allocation tags and code to protect them.
 This fixed several bugs that would hit only certain wads.
 <li> Z_Malloc tagging improvements to give cache preference to expensive
-combined multi-patch textures. </li>
+combined multi-patch textures.</li>
 <li>Fixed memory leak when purging sectors at end of level.</li>
 <li> Time tick fixed so that it can handle time count overflow and wrapping.</li>
 <li>Replaced all uses of gets library function with fgets, which is
@@ -180,7 +230,6 @@ overflow and adds the missing upper bits of the blockmap numbering.</li>
 overflows are detected and the automap zoom is limited to avoid them.</li>
 <li>Fixed the automap to track the center of attention instead of the
 corner of the window.  This keeps the map centered when zooming.</li>
-
 </ul>
 
 <h3>KNOWN BUGS</h3>
@@ -193,8 +242,6 @@ Fixes to 3D depth sorting are already being investigated.</li>
 level, it will display bad clipping above and below the water level.
 Occurs for both software renderer and the hardware renderer.
 A fixable cause has not been discovered yet.</li>
-<li>Too many sprites cause random sprites to be ignored.  This is the
-usual sprite limitation and removing it has been assigned.</li>
 <li>Under Linux the SDL port code works.  The non-SDL port to X-Windows has
 problems with screen modes that cause it to fail.</li>
 <li>Corona on lights are misplaced when the wad replaces the sprite
@@ -207,12 +254,6 @@ vision as if the player were looking straight ahead.  This has not
 been fixed yet for player looking up and down.</li>
 <li>The hardware renderer BSP traversal is having rounding errors
 from sector splitting that show up as cracks in the floor.</li>
-<li>The hardware renderer is getting HOM on some small textures that
-the software renderer is displaying correctly.  These are very hard to
-find and see.
-See FreeDoom MAP01, halfway down the stairs.
-The side of the light support is HOM.
-A silver strip on the wall has a matching shadow on the ceiling and floor that is HOM.</li>
 </ul>
 
 <h2>1.43 Beta (2004-06-14)</h2>

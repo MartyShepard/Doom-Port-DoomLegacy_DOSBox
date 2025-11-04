@@ -1352,3 +1352,75 @@ Padding will not work with the new savegame buffer, as it does not keep
 a fixed alignment.  The WRITEU16, and similar inline functions should
 perform unaligned byte transfers to the buffer, if needed.
 
+*** w66_alpha2_docs
+patchfile = w66_alpha2_docs.patch
+- committed revision 780   by wesley johnson
+Update the docs for latest news, bug fixes, and update some legacy
+usage instructions.
+
+*** w66_buggy_wad
+patchfile = w66_buggy_wad.patch
+- committed revision 781   by wesley johnson
+More checks against buggy wads.
+
+*** w67_colormap_msg
+patchfile = w66_buggy_wad.patch
+- committed revision 7??   by wesley johnson
+Fix bad colormap missing msg.
+
+*** w67_linedef
+patchfile = w66_linedef.patch
+- committed revision 7??   by wesley johnson
+Decode boom generalized linedef better, so to detect bad linedef
+numbers.
+More efficient switch linedef executable.
+
+*** w67_plutonia
+patchfile = w66_linedef.patch
+- committed revision 7??   by wesley johnson
+Bad detection for plutonia, CAM01 needed to be CAMO1.
+
+*** w67_stop_demo
+patchfile = w66_stop_demo.patch
+- committed revision 7??   by wesley johnson
+Stop demos when menus are open.  They keep stealing the keypresses and
+make it impossible to use the menus.
+
+*** w67_player_spawn
+patchfile = w66_player_spawn.patch
+- committed revision 7??   by wesley johnson
+Convert player spawn code to pass playernum as parameter instead of
+mangling the wad things.  This allows the wad things to be searched
+again.
+
+*** w67_savegame_netvars
+patchfile = w66_savegame_netvars.patch
+- committed revision 7??   by wesley johnson
+The savegame format changes everytime some more cv_ netvars are added.
+This change makes the savegame load immune to this.  It will read
+netvars until it hits the SYNC mark, instead of reading according the
+the NETVARS found in this version.  This allows older savegames to
+still load.
+
+*** w67_voodoo_player
+patchfile = w67_voodoo_player.patch
+- committed revision 78?   by wesley johnson
+Due to wads that use the voodoo player in strange ways, the voodoo
+player has appeared as the player in some function calls.  This will
+segfault when trying to get the player index [player - players].
+Fix by creating the voodoo player more like vanilla doom does it, and
+then intercept the problems as they occur.
+Provides an instadeath control for voodoo telefrag mitigation.
+In deathmatch, the voodoo telefrag is blocked.
+Provides a voodoo_mode to control voodoo effects, with settings
+Vanilla, Multispawn, Target, and Auto.
+In Vanilla, voodoo dolls can create zombies and the walking dead.
+Other modes prevent those from occuring by redirecting damage to the
+player.
+In Multispawn mode the voodoo doll player gets the damage.
+In Target mode the player that shot the voodoo doll, or last triggered
+a linedef, or last pushed a switch, will get the damage.
+Target mode is meant for coop and deathmatch.
+In Auto mode it behaves as Target, unless it detects voodoo dolls for
+players other than player1, upon which it will change to Multispawn.
+Plutonia MAP06 is a known voodoo Multispawn level.
