@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: doomdef.h 796 2011-02-28 19:54:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -201,8 +201,11 @@ extern const int  VERSION;
 extern const int  REVISION;
 extern char VERSION_BANNER[];
 
+// [WDJ] Machine speed limitations.
+// Leave undefined for netplay, or make sure all machines have same setting.
+//#define MACHINE_MHZ  1500
 
-// some tests, enable or desable it if it run or not
+// some tests, enable or disable it
 //#define HORIZONTALDRAW        // abandoned : too slow
 //#define TILTVIEW              // not finished
 //#define PERSPCORRECT          // not finished

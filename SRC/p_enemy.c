@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_enemy.c 796 2011-02-28 19:54:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2214,14 +2214,53 @@ void A_CloseShotgun2 ( player_t*     player,
     A_ReFire(player,psp);
 }
 
-static mobj_t* braintargets[32];
+// [WDJ] Remove hard limits. Similar to prboom, killough 3/26/98.
+// Dynamic allocation.
+static mobj_t* * braintargets; // dynamic array of ptrs
+static int     braintargets_max = 0; // allocated
 static int     numbraintargets;
 static int     braintargeton;
+
+// Original was 32 max.
+// Non-fatal - limited for useability, otherwise can have too many thinkers.
+// This affects compatibility in netplay.
+#ifdef MACHINE_MHZ
+#define MAX_BRAINTARGETS  (32*MACHINE_MHZ/100)
+#endif
+
+// return 1 on success
+boolean  expand_braintargets( void )
+{
+    int needed = braintargets_max += 32;
+#ifdef MAX_BRAINTARGETS
+    if( needed > MAX_BRAINTARGETS )
+    {
+        I_SoftError( "Expand braintargets exceeds MAX_BRAINTARGETS %d.\n", MAX_BRAINTARGETS );
+        return 0;
+    }
+#endif
+    // realloc to new size, copying contents
+    mobj_t ** new_braintargets =
+     realloc( braintargets, sizeof(mobj_t *) * needed );
+    if( new_braintargets )
+    {
+        braintargets = new_braintargets;
+        braintargets_max = needed;
+    }
+    else
+    {
+        // non-fatal protection, allow savegame or continue play
+        // realloc fail does not disturb existing allocation
+        numbraintargets = braintargets_max;
+        I_SoftError( "Expand braintargets realloc failed at $d.\n", needed );
+        return 0;  // fail to expand
+    }
+    return 1;
+}
 
 void P_InitBrainTarget()
 {
     thinker_t*  thinker;
-    mobj_t*     m;
 
     // find all the target spots
     numbraintargets = 0;
@@ -2235,10 +2274,14 @@ void P_InitBrainTarget()
         if (thinker->function.acp1 != (actionf_p1)P_MobjThinker)
             continue;   // not a mobj
 
-        m = (mobj_t *)thinker;
+        register mobj_t* m = (mobj_t *)thinker;
 
         if (m->type == MT_BOSSTARGET )
         {
+            if( numbraintargets >= braintargets_max )
+            {
+                if( ! expand_braintargets() )  break;
+            }
             braintargets[numbraintargets] = m;
             numbraintargets++;
         }

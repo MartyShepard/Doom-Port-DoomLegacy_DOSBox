@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00796 ]: w68 braintarget limits removed
 [00795 ]: w67 coop damage
 [00794 ]: w67 deathmatch voodoo
 [00793*]: initial test wads
