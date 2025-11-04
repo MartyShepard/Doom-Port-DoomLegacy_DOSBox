@@ -1,15 +1,17 @@
 The new wad selection mechanism
 By [WDJ]  March 23, 2010
 Revised   May 9, 2010
+Revised   Oct 30, 2010
+Revised   Fed 22, 2011
 
-The following command line switche will force the execution mode:
+The following command line switch will force the execution mode:
 Syntax:  -game <mode>
 Where <mode> is one of the following:
 "freedoom"	=> GDESC_freedoom
 "freedm"	=> GDESC_freedm
 "doom2"		=> GDESC_doom2
 "freedu"	=> GDESC_freedoom_ultimate
-"doomu"		=> GDESC_ultimate or GDESC_ultimate_se
+"doomu"		=> GDESC_ultimate
 "doom1"		=> GDESC_doom_shareware
 "plutonia"	=> GDESC_plutonia
 "tnt"		=> GDESC_tnt
@@ -18,8 +20,8 @@ Where <mode> is one of the following:
 "heretic1"	=> GDESC_heretic_shareware
 "hexen"		=> GDESC_hexen
 "hexen1"	=> GDESC_hexen_demo
-"strife"	=> GDESC_strife,
-"strife0"	=> GDESC_strife_shareware,
+"strife"	=> GDESC_strife
+"strife0"	=> GDESC_strife_shareware
 "chex1"		=> GDESC_chex1
 "ultimode"	=> GDESC_ultimate_mode
 "doommode"	=> GDESC_doom_mode
@@ -33,14 +35,17 @@ The idstr is used to make save game directories, and the selection switch.
 The title appears at game start, to identify the wad.
 The wad will be checked for having the required lumps.
 The execution mode controls Legacy features and game play restrictions.
-  D1 shareware = Doom shareware version
-  D1 registered = Doom registered version
-  UD retail = Ultimate Doom
-  D2 commercial = Doom2 with Boom extensions
+  doom_shareware = Doom shareware version
+  doom_registered = Doom registered version
+  ultdoom_retail = Ultimate Doom
+  doom2_commercial = Doom2 with Boom extensions
   heretic = Heretic inventory etc.
   hexen = Hexen		(not implemented yet, May 9, 2010)
   strife = Strife	(not implemented yet, May 9, 2010)
   chexquest1 = Chex Quest extensions.
+
+There are upto 3 possible filenames, all will be checked for -game.
+The first filename is preferred and is usually unique.
 
 Boom extensions and Legacy extensions will be active in all modes except
 where a specific mode has incompatibilities.
@@ -48,71 +53,63 @@ where a specific mode has incompatibilities.
 GDESC_freedoom: FreeDoom project, DoomII replacement
    gname, title = "FreeDoom"
    idstr = "freedoom"
-   file = "doom2.wad"
+   file = "freedoom.wad", "doom2.wad"
    lumps = require "FREEDOOM"  "MAP01"
-   gamemode = D2 commercial
+   gamemode = doom2_commercial
    
 GDESC_freedm: FreeDM project, DoomII deathmatch
    gname, title = "FreeDM"
    idstr = "freedm"
-   file = "freedm.wad"
+   file = "freedm.wad", "doom.wad"
    lumps = require "FREEDOOM" "MAP01"
-   gamemode = D2 commercial
+   gamemode = doom2_commercial
 
-GDESC_doom2: doom2wad
+GDESC_doom2: DoomII
    gname ="Doom2"
    title = "DOOM 2: Hell on Earth"
    idstr = "doom2"
    file = "doom2.wad"
    lumps = require "MAP01" "TITLE"
-   gamemode = D2 commercial
+   gamemode = doom2_commercial
 
 GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    gname ="Ultimate FreeDoom"
    idstr = "freedu"
-   file = "doom.wad"
-   lumps = require "FREEDOOM" "E1M1" "E2M2"
-   gamemode = UD retail
+   file = "freedu.wad", "doomu.wad", "doom.wad"
+   lumps = require "FREEDOOM" "E4M1" "E1M1" "E2M2"
+   gamemode = ultdoom_retail
 
-GDESC_ultimate: Doom1 1995, doomuwad
+GDESC_ultimate: Doom1 1995, Doom1 1995 on floppy
    gname = "Ultimate Doom"
    title = "The Ultimate DOOM"
    idstr = "doomu"
-   file = "doomu.wad"
+   file = "doomu.wad", "doom_se.wad", "doom.wad"
    lumps = require "E4M1" "E1M1" "E2M2" but cannot have "TITLE"
-   gamemode = UD retail
+   gamemode = ultdoom_retail
 
-GDESC_ultimate_se: Doom1 1995 on floppy
-   gname ="Ultimate Doom"
-   title = "The Ultimate DOOM"
-   idstr = "doomu"
-   file = "doom_se.wad"
-   lumps = require "E4M1" "E1M1" "E2M2" but cannot have "TITLE"
-   gamemode = UD retail
-
-GDESC_doom: DoomI 1994, doomwad, text[DOOMWAD_NUM]
+GDESC_doom: DoomI 1994
    gname ="Doom"
    title = "DOOM Registered"
    idstr = "doom"
    file = "doom.wad"
    lumps = require "E3M9" "E1M1" "E2M2" but cannot have "TITLE"
-   gamemode = D1 registered
+   gamemode = doom_registered
    
-GDESC_doom_shareware: DoomI shareware, doom1wad, text[DOOM1WAD_NUM]
+GDESC_doom_shareware: DoomI shareware
    gname ="Doom shareware"
    title = "DOOM Shareware"
    idstr = "doom1"
-   file = "doom1.wad"
+   file = "doom1.wad", "doom.wad"
    lumps = require "E1M1" but cannot have "TITLE"
-   gamemode = D1 shareware
+   gamemode = doom_shareware
 
 GDESC_plutonia: FinalDoom : Plutonia, DoomII engine
    gname ="Plutonia"
    title = "DOOM 2: Plutonia Experiment"
    idstr = "plutonia"
    file = "plutonia.wad"
-   lumps = require "CAM01" "MAP01" but cannot have "TITLE"
-   gamemode = D2 commercial
+   lumps = require "CAMO1" "MAP01" but cannot have "TITLE"
+   gamemode = doom2_commercial
 
 GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    gname ="Tnt Evilution"
@@ -120,12 +117,12 @@ GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    idstr = "tnt"
    file = "tnt.wad"
    lumps = require "REDTNT" "MAP01" but cannot have "TITLE"
-   gamemode = D2 commercial
+   gamemode = doom2_commercial
 
 GDESC_blasphemer: FreeDoom project, DoomII replacement
    gname, title ="Blasphemer"
    idstr = "blasphem"
-   file = "heretic.wad"
+   file = "blasphemer.wad", "blasphem.wad", "heretic.wad"
    lumps = require "BLASPHEM" "E1M1" "TITLE"
    gamemode = heretic
 
@@ -139,7 +136,7 @@ GDESC_heretic: Heretic
 GDESC_heretic_shareware: Heretic shareware
    gname, title ="Heretic shareware"
    idstr = "heretic1"
-   file = "heretic1.wad"
+   file = "heretic1.wad", "heretic.wad"
    lumps = require "E1M1" "TITLE"  but cannot have "E2M2"
    gamemode = heretic
 
@@ -153,7 +150,7 @@ GDESC_hexen: Hexen
 GDESC_hexen_demo: Hexen
    gname, title ="Hexen Demo"
    idstr = "hexen1"
-   file = "hexen.wad"
+   file = "hexen1.wad", "hexen.wad"
    lumps = require "MAP01" "TITLE"
    gamemode = hexen
 
@@ -167,30 +164,30 @@ GDESC_strife: Strife
 GDESC_strife_shareware: Strife shareware
    gname, title ="Strife shareware"
    idstr = "strife0"
-   file = "strife0.wad"
+   file = "strife0.wad", "strife.wad"
    lumps = require "ENDSTRF" but cannot have "MAP01"
    gamemode = strife
 
 GDESC_chex1: Chex Quest
    gname, title ="Chex Quest"
    idstr = "chex1"
-   file = "chex.wad"
+   file = "chex1.wad", "chex.wad"
    lumps = require "W94_1" "POSSH0M0" "E1M1"  but cannot have "TITLE"
    gamemode = chexquest1
 
 GDESC_ultimate_mode: Ultimate Doom replacement
    gname, title ="Ultimate mode"
    idstr = "ultimode"
-   file = "doom.wad"
+   file = "doomu.wad", "doom.wad"
    lumps = require "E1M1"
-   gamemode = D1 registered
+   gamemode = doom_registered
 
 GDESC_doom_mode: DoomI replacement
    gname, title ="Doom mode"
    idstr = "doommode"
-   file = "doom.wad"
+   file = "doom1.wad", "doom.wad"
    lumps = require "E1M1"
-   gamemode = D1 registered
+   gamemode = doom_registered
 
 GDESC_heretic_mode: Heretic replacement
    gname, title = "Heretic mode"
@@ -211,4 +208,4 @@ GDESC_other: Other iwads, DoomII, Boom extensions, and Legacy extensions
    title = "Public DOOM"
    file = file from -iwad
    lumps = require "MAP01"
-   gamemode = D2 commercial
+   gamemode = doom2_commercial

@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00794 ]: w67 deathmatch voodoo
+[00793*]: initial test wads
+[00792*]: common wads
+[00791*]: common tools and wads
 [00790 ]: w67 stop demo 2 fix
 [00789*]: w67 doc
 [00788 ]: w67 voodoo player

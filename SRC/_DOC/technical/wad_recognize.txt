@@ -36,7 +36,7 @@ mode: Ultimate doom (retail)
 flags: id-wad
 title: "The Ultimate DOOM"
 date: 1995
-notes: doom_se.wad floppy
+notes: doom_se.wad (floppy)
 file: doom.wad, doomu.wad, doom_se.wad
 size: 12408292
 maps: E1M1-E1M9, E2M1-E2M9, E3M1-E3M9, E4M1-E4M9
@@ -64,8 +64,8 @@ title: "DOOM 2: Plutonia Experiment"
 notes: Final Doom
 date: 1996
 file: plutonia.wad
-maps: MAP01- ??
-ZDoom check: MAP01 > CAM01
+maps: MAP01-MAP32
+ZDoom check: MAP01 > CAMO1
 
 
 ====

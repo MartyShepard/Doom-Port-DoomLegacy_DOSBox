@@ -1435,3 +1435,8 @@ patchfile = w67_stop_demo2.patch
 Fix Stop Demo patch that got somewhat mangled.  Also added restore of
 screen and demo after the menu is exited.
 
+*** w67_deathmatch_voodoo
+patchfile = w67_deathmatch_voodoo.patch
+- committed revision 794   by wesley johnson
+Fix extraneous voodoo dolls spawned in deathmatch, broken by voodoo
+patch.

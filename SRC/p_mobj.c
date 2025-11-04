@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_mobj.c 794 2011-02-24 22:21:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1866,16 +1866,19 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
         P_ResetCamera(p);
 
 #ifdef VOODOO_DOLL
+   if( ! ( voodoo_mode == VM_vanilla && cv_deathmatch.value ) )
    {
        // [WDJ] Create any missing personal voodoo dolls for this player
+       // But not the last spawnpoint, otherwise deathmatch gets extraneous voodoo dolls.
+       int mtpn = (playernum < 4)? (playernum+1) : (playernum - 4 + 4001);
        int i;
        for (i=0 ; i<nummapthings ; i++)
        {
 	   mapthing_t* mt = &mapthings[i];
-	   if( mt->mobj == NULL )
+	   if( mt->type == mtpn ) // a spawnpoint for this player
 	   {
-	       int mtpn = (mt->type < 4000)? (mt->type - 1) : (mt->type - 4001 + 4);
-	       if( mtpn == playernum )
+	       // if not the last playerstart, then spawn as voodoo doll
+	       if( mt != playerstarts[playernum] && mt->mobj == NULL )
 	       {
 		   P_SpawnVoodoo( playernum, mt );
 	       }
