@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 775 2010-12-29 22:37:51Z wesleyjohnson $
+// $Id: p_saveg.c 779 2011-02-01 21:35:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -153,6 +153,7 @@ boolean  save_game_abort = 0;
 // [WDJ] Uncomment the following to see how close to overrunning the buffer.
 //#define SAVEBUF_REPORT_MIN_FREE 1
 #ifdef SAVEBUF_REPORT_MIN_FREE
+// [WDJ] Smallest min_free seen so far is 1973 from Europe.wad.
 int savebuf_min_free;
 #endif
 
@@ -161,6 +162,21 @@ size_t savebuffer_size = 0;
 byte * savebuffer = NULL;
 const char * savefile = NULL;
 ExtFIL_t  extfile;
+
+
+const byte sg_padded = 0;  // Savegames are no longer padded for any platform.
+
+#ifdef SGI
+// [WDJ] File padding no longer works because SG_Writebuf and SG_Readbuf
+// move the buffer content up and down, and it is not fixed at any alignment.
+
+// SGI savegame is now like normal savegames, without padding.
+// If any write causes a problem, fix it at WRITEU16, WRITEU32, etc.,
+// which encapsulate the byte buffer reads and writes.
+// It appears that the current inline functions will suffice, but an
+// actual test on an SGI machine will be needed.
+#endif
+
 
 // Allocate malloc an appropriately sized buffer
 // Header-only, or data sized buffer (large).
@@ -185,6 +201,10 @@ byte *  P_Alloc_savebuffer( boolean large_size )
 // return -1 if overrun the buffer
 size_t  P_Savegame_length( void )
 {
+#ifdef PADSAVEP
+    // Remove alignment pad for length, file, and network I/O
+    SG_remove_pad();
+#endif
     size_t length = save_p - savebuffer;
     if (length > savebuffer_size)
     {
@@ -237,7 +257,7 @@ int  P_Savegame_Closefile( boolean writeflag )
         free(savebuffer);
         savebuffer = NULL;
 #ifdef SAVEBUF_REPORT_MIN_FREE
-        fprintf( stderr, "Report savebuffer min free: %i\n", savebuf_min_free );
+        fprintf( stderr, "Report savebuffer min free: %i, buffer used: %i\n", savebuf_min_free, (savebuffer_size-savebuf_min_free));
 #endif
     }
     savefile = NULL;
@@ -257,7 +277,6 @@ void  P_Savegame_Error_Closefile( void )
     }
     savefile = NULL;
 }
-
 
 // write out buffer or expand it
 void SG_Writebuf( void )
@@ -344,18 +363,6 @@ done:
 // =======================================================================
 //          SYNC Support
 // =======================================================================
-
-// Pads save_p to a 4-byte boundary
-//  so that the load/save works on SGI&Gecko.
-#ifdef SGI
-// BP: this stuff isn't be removed but i think it will no more work
-//     anyway what processor can't read/write unaligned data ?
-#define PADSAVEP()      save_p += (4 - ((int) save_p & 3)) & 3
-const byte sg_padded = 1;
-#else
-#define PADSAVEP()
-const byte sg_padded = 0;
-#endif
 
 // [WDJ] Sync byte with section identifier, so sections can be conditional
 // Do not alter the values of these. They must have the same value over
@@ -524,8 +531,6 @@ void P_ArchivePlayers(void)
 
         ply = &players[i];
 
-        PADSAVEP();
-       
         flags = 0;
         diff = 0;
         for (j = 0; j < NUMPOWERS; j++)
@@ -670,7 +675,6 @@ void P_UnArchivePlayers(void)
 
         ply = &players[i];
 
-        PADSAVEP();
         diff = READU32(save_p);
 
         ply->aiming = READANGLE(save_p);
@@ -1476,7 +1480,6 @@ enum
 void  WRITE_ceiling( ceiling_t* ceilp, byte active )
 {
     WRITEBYTE(save_p, tc_ceiling); // ceiling marker
-    PADSAVEP();
     WRITE_SECTOR_THINKER( ceilp, ceiling_t, type );
     // ceilinglist* does not need to be saved
     WRITEBYTE(save_p, active); // active or stopped ceiling
@@ -1488,7 +1491,6 @@ void  WRITE_ceiling( ceiling_t* ceilp, byte active )
 void  WRITE_plat( plat_t* platp, byte active )
 {
     WRITEBYTE(save_p, tc_plat);  // platform marker
-    PADSAVEP();
     WRITE_SECTOR_THINKER( platp, plat_t, type );
     // platlist* does not need to be saved
     WRITEBYTE(save_p, active); // active or stopped plat
@@ -1582,7 +1584,6 @@ void P_ArchiveThinkers(void)
             if (mobj->dropped_ammo_count)
                 diff |= MD_AMMO;
 
-            PADSAVEP();
             WRITEBYTE(save_p, tc_mobj);	// mark as mobj
             WRITEU32(save_p, diff);
             // Save ID number of this Mobj so that pointers can be restored.
@@ -1707,7 +1708,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_VerticalDoor)
         {
             WRITEBYTE(save_p, tc_door);  // door marker
-            PADSAVEP();
 	    vldoor_t *door = (vldoor_t *)th;
 	    WRITE_SECTOR_THINKER( door, vldoor_t, type );
 	    WRITE_LINE_PTR( door->line );  // can be NULL
@@ -1716,7 +1716,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_MoveFloor)
         {
             WRITEBYTE(save_p, tc_floor);  // floor marker
-            PADSAVEP();
 	    floormove_t *floormv = (floormove_t *)th;
 	    WRITE_SECTOR_THINKER( floormv, floormove_t, type );
             continue;
@@ -1724,7 +1723,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_LightFlash)
         {
             WRITEBYTE(save_p, tc_flash);
-            PADSAVEP();
             lightflash_t *flash = (lightflash_t *)th;
 	    WRITE_SECTOR_THINKER( flash, lightflash_t, count );
             continue;
@@ -1732,7 +1730,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_StrobeFlash)
         {
             WRITEBYTE(save_p, tc_strobe);
-            PADSAVEP();
             strobe_t *strobe = (strobe_t *)th;
 	    WRITE_SECTOR_THINKER( strobe, strobe_t, count );
             continue;
@@ -1740,7 +1737,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_Glow)
         {
             WRITEBYTE(save_p, tc_glow);
-            PADSAVEP();
             glow_t *glow = (glow_t *)th;
 	    WRITE_SECTOR_THINKER( glow, glow_t, minlight );
             continue;
@@ -1750,7 +1746,6 @@ void P_ArchiveThinkers(void)
         if (th->function.acp1 == (actionf_p1) T_FireFlicker)
         {
             WRITEBYTE(save_p, tc_fireflicker);
-            PADSAVEP();
             fireflicker_t *fireflicker = (fireflicker_t *)th;
 	    WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, count );
             continue;
@@ -1758,7 +1753,6 @@ void P_ArchiveThinkers(void)
         else if (th->function.acp1 == (actionf_p1) T_LightFade)
         {
             WRITEBYTE(save_p, tc_lightfade);
-            PADSAVEP();
             lightlevel_t *fade = (lightlevel_t *)th;
 	    WRITE_SECTOR_THINKER( fade, lightlevel_t, destlevel );
             continue;
@@ -1768,7 +1762,6 @@ void P_ArchiveThinkers(void)
         if (th->function.acp1 == (actionf_p1) T_MoveElevator)
         {
             WRITEBYTE(save_p, tc_elevator);
-            PADSAVEP();
             elevator_t *elevator = (elevator_t *)th;
 	    WRITE_SECTOR_THINKER( elevator, elevator_t, type );
 	    continue;
@@ -1862,7 +1855,6 @@ void P_UnArchiveThinkers(void)
                 mobj = Z_Malloc(sizeof(mobj_t), PU_LEVEL, NULL);
                 memset(mobj, 0, sizeof(mobj_t));
 
-                PADSAVEP();
                 diff = READU32(save_p);
 	        // [WDJ] initializing the lookup for GetMobjPointer and READ_MobjPointerID(),
 	        // this is the id number for the mobj being read here.
@@ -2025,7 +2017,6 @@ void P_UnArchiveThinkers(void)
             case tc_ceiling:
 	      {
 		ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( ceiling, ceiling_t, type );
                 ceiling->sector->ceilingdata = ceiling;
 		byte moving = READBYTE(save_p); // moving ceiling?
@@ -2037,7 +2028,6 @@ void P_UnArchiveThinkers(void)
             case tc_door:
 	      {
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( door, vldoor_t, type );
  		READ_LINE_PTR( door->line );  // can be NULL
                 door->sector->ceilingdata = door;
@@ -2048,7 +2038,6 @@ void P_UnArchiveThinkers(void)
             case tc_floor:
 	      {
 		floormove_t *floormv = Z_Malloc(sizeof(*floormv), PU_LEVEL, NULL);
-		PADSAVEP();
 		READ_SECTOR_THINKER( floormv, floormove_t, type );
                 floormv->sector->floordata = floormv;
                 floormv->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
@@ -2058,7 +2047,6 @@ void P_UnArchiveThinkers(void)
             case tc_plat:
 	      {
 		plat_t *plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( plat, plat_t, type );
                 plat->sector->floordata = plat;
 		byte moving = READBYTE(save_p); // moving plat?
@@ -2070,7 +2058,6 @@ void P_UnArchiveThinkers(void)
             case tc_flash:
 	      {
 		lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( flash, lightflash_t, count );
                 flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
 	      }
@@ -2079,7 +2066,6 @@ void P_UnArchiveThinkers(void)
             case tc_strobe:
 	      {
 		strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( strobe, strobe_t, count );
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
 	      }
@@ -2088,7 +2074,6 @@ void P_UnArchiveThinkers(void)
             case tc_glow:
 	      {
 		glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( glow, glow_t, minlight );
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
 	      }
@@ -2097,7 +2082,6 @@ void P_UnArchiveThinkers(void)
             case tc_fireflicker:
 	      {
 		fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( fireflicker, fireflicker_t, count );
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
 	      }
@@ -2106,7 +2090,6 @@ void P_UnArchiveThinkers(void)
             case tc_lightfade:
 	      {
 		lightlevel_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( fade, lightlevel_t, destlevel );
                 fade->thinker.function.acp1 = (actionf_p1) T_LightFade;
 	      }
@@ -2115,7 +2098,6 @@ void P_UnArchiveThinkers(void)
             case tc_elevator:
 	      {
 		elevator_t *elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
-                PADSAVEP();
 		READ_SECTOR_THINKER( elevator, elevator_t, type );
                 elevator->sector->floordata = elevator; //jff 2/22/98
                 elevator->sector->ceilingdata = elevator;       //jff 2/22/98

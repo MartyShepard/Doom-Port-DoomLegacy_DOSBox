@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00779 ]: w66 save to SGI
 [00778 ]: 1.44 alpha2 release
 [00777 ]: w65 farthest var unused
 [00776 ]: w65 sprite limit fix

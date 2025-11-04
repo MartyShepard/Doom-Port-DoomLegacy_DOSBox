@@ -1344,4 +1344,11 @@ patchfile = w65_farthest.patch
 Move some variables that were made conditional into the conditional code
 so the compiler stops complaining about variables not used.
 
-							    
+*** w66_save_SGI
+patchfile = w66_saveSGI.patch
+- committed revision 779   by wesley johnson
+Savegames for SGI will no longer pad the savegame to align reads and writes.
+Padding will not work with the new savegame buffer, as it does not keep
+a fixed alignment.  The WRITEU16, and similar inline functions should
+perform unaligned byte transfers to the buffer, if needed.
+
