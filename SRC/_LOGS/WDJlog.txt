@@ -1456,8 +1456,17 @@ Resolves bug 1001667, from 2004.
 
 *** w68_vile_bugs
 patchfile = w68_vile_bugs.patch
-- committed revision 767   by wesley johnson
+- committed revision 797   by wesley johnson
 Vile ghost fix commented.
 Vile revived stuck together bug fixed, similar to zdoom and prboom,
 fixing bug 1037683.
 Vile fire location bug fixed, similar to prboom.
+
+*** w68_menu_exitgame
+patchfile = w68_menu_exitgame.patch
+- committed revision 799   by wesley johnson
+Fix game menus, so that the check for "already playing" will give
+the user an immediate message asking "Abort this game Y/N".  Upon a
+YES it will quit the game and let the user continue.
+Combine 3 static menu msg buffers into one large one.  There can
+be only one menu message at a time.

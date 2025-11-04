@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 790 2011-02-23 18:29:20Z wesleyjohnson $
+// $Id: m_menu.c 799 2011-03-05 02:59:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -462,7 +462,6 @@ menu_t MainDef,SinglePlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
        EffectsOptionsDef,
        NetOptionDef,VideoOptionsDef,MouseOptionsDef,ServerOptionsDef;
 
-const char *ALLREADYPLAYING="You are already playing\n\nLeave this game first\n";
 
 //===========================================================================
 //Generic Stuffs (more easy to create menus :))
@@ -622,6 +621,67 @@ void M_DrawGenericMenu(void)
                         '*' | 0x80);
     }
 
+}
+
+//===========================================================================
+// All ready playing, quit current game
+//===========================================================================
+
+// [WDJ] message temp buffer (replacing 3 shorter ones)
+// StartMessage copies this, and only one possible message at a time
+#define      MSGTMP_LEN  255
+static char  msgtmp[MSGTMP_LEN+1];
+
+//const char *ALLREADYPLAYING="You are already playing\n\nLeave this game first\n";
+const char * ALLREADYPLAYING="You are already playing.\n\nAbort this game ? Y/N\n";
+const char * ABORTGAME="\nAbort this game ? Y/N\n";
+
+const event_t  reenter_event = { ev_keydown, KEY_ENTER, 0, 1 }; // see M_Responder
+
+void M_Choose_to_quit_Response(int ch)
+{
+    if (ch == 'y')
+    {
+#if 1
+        // [WDJ] The quick way to exitgame, including netgame.
+        Command_ExitGame_f();
+#else
+        // [WDJ] This is why it is not being done this way.
+        // Why is this system being used for other menus ??
+        // The hard way to exitgame
+        COM_BufAddText("exitgame\n");
+        // unfortunately this takes time, and a couple tics
+	int i;
+	for( i=100; i>0; i-- )
+        {
+	    COM_BufExecute(); // subject to com_wait and other delays
+	    if( ! Playing()  ) break;
+	    // It must be not-playing before re-invoking the menu.
+	}
+#endif       
+	// YES, re-invoke the caller routine at itemOn press
+        D_PostEvent(&reenter_event);  // delayed reinvoke
+    }
+}
+
+// [WDJ] Ask user to quit, if they already have a game in-progess.
+// return 1 if already playing, and rejects quitting.
+boolean  M_already_playing( boolean check_netgame )
+{
+    if( Playing() )
+    {
+        M_StartMessage(ALLREADYPLAYING, M_Choose_to_quit_Response, MM_YESNO);
+        return 1;
+    }
+    if (check_netgame && netgame)
+    {
+        // cannot start a new game while in a network game
+        M_SimpleMessage(NEWGAME);
+        snprintf(msgtmp, MSGTMP_LEN, "%s\n%s", NEWGAME, ABORTGAME );
+        M_StartMessage(msgtmp, M_Choose_to_quit_Response, MM_YESNO);
+        return 1;
+    }
+    return 0;
 }
 
 //===========================================================================
@@ -806,11 +866,7 @@ menu_t  Connectdef =
 
 void M_ConnectMenu(int choise)
 {
-    if( Playing() )
-    {
-        M_SimpleMessage(ALLREADYPLAYING);
-        return;
-    }
+    if( M_already_playing(0) )  return;
 
     M_SetupNextMenu(&Connectdef);
     M_Refresh(0);
@@ -901,11 +957,7 @@ menu_t  Serverdef =
 
 void M_StartServerMenu(int choice)
 {
-    if( Playing() )
-    {
-        M_SimpleMessage(ALLREADYPLAYING);
-        return;
-    }
+    if( M_already_playing(0) )  return;
 
     StartSplitScreenGame = (choice != 0);
     M_SetupNextMenu(&Serverdef);
@@ -1413,17 +1465,7 @@ void M_DrawNewGame(void)
 
 void M_NewGame(int choice)
 {
-    if( Playing() )
-    {
-        M_SimpleMessage(ALLREADYPLAYING);
-        return;
-    }
-
-    if (netgame)
-    {
-        M_SimpleMessage(NEWGAME);
-        return;
-    }
+    if( M_already_playing(1) )  return;
 
     if ( gamemode == doom2_commercial
 	 || (gamemode == chexquest1 && !modifiedgame) //DarkWolf95: Support for Chex Quest
@@ -2135,12 +2177,11 @@ void M_ChangecontrolResponse(event_t* ev)
 
 void M_ChangeControl(int choice)
 {
-    static char tmp[55];
-
     controltochange = currentMenu->menuitems[choice].alphaKey;
-    sprintf (tmp,"Hit the new key for\n%s\nESC for Cancel", currentMenu->menuitems[choice].text);
+    snprintf (msgtmp, MSGTMP_LEN,
+	      "Hit the new key for\n%s\nESC for Cancel", currentMenu->menuitems[choice].text);
 
-    M_StartMessage (tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+    M_StartMessage (msgtmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 }
 
 //===========================================================================
@@ -3198,7 +3239,6 @@ void M_SaveGame (int choice)
 //
 //      M_QuickSave
 //
-char    tempstring[80];
 
 // Handles quick save ack from M_QuickSave, and initiates the save.
 void M_QuickSaveResponse(int ch)
@@ -3231,8 +3271,8 @@ void M_QuickSave(void)
 
     if (quickSaveSlot < 0)   goto pick_slot; // No slot yet.
     // Show save name, ask for quick save ack.
-    sprintf(tempstring, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
-    M_StartMessage(tempstring, M_QuickSaveResponse, MM_YESNO);
+    snprintf(msgtmp, MSGTMP_LEN, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
+    M_StartMessage(msgtmp, M_QuickSaveResponse, MM_YESNO);
     return;
 
 pick_slot:   
@@ -3276,8 +3316,8 @@ void M_QuickLoad(void)
         return;
     }
     // Show load name, ask for quick load ack.
-    sprintf(tempstring, QLPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
-    M_StartMessage(tempstring, M_QuickLoadResponse, MM_YESNO);
+    snprintf(msgtmp, MSGTMP_LEN, QLPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
+    M_StartMessage(msgtmp, M_QuickLoadResponse, MM_YESNO);
 }
 
 
@@ -3380,9 +3420,9 @@ void M_QuitDOOM(int choice)
 {
   // We pick index 0 which is language sensitive,
   //  or one at random, between 1 and maximum number.
-  static char s[200];
-  sprintf(s, text[DOSY_NUM], text[ QUITMSG_NUM+(gametic%NUM_QUITMESSAGES)]);
-  M_StartMessage( s, M_QuitResponse, MM_YESNO);
+  snprintf(msgtmp, MSGTMP_LEN,
+	   text[DOSY_NUM], text[ QUITMSG_NUM+(gametic%NUM_QUITMESSAGES)]);
+  M_StartMessage( msgtmp, M_QuitResponse, MM_YESNO);
 }
 
 
@@ -3560,6 +3600,8 @@ void M_StartMessage ( const char*       string,
 {
     int   maxlen, i, lines;
     char * chp;
+   
+    msgtmp[MSGTMP_LEN] = '\0';  // make sure it is terminated
 #define message MessageDef.menuitems[0].text
     if( message )
         Z_Free( message );
@@ -3991,7 +4033,7 @@ boolean M_Responder (event_t* ev)
             goto ret_true;
 
           //added:26-02-98: F7 changed to Options menu
-          case KEY_F7:            // End game
+          case KEY_F7:            // originally was End game
             S_StartSound(NULL,sfx_swtchn);
             M_StartControlPanel();
             M_SetupNextMenu (&OptionsDef);

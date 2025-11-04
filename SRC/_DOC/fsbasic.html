@@ -13,13 +13,13 @@
 <!-- $Id$ -->
 <body>
 <p>
-  Note: We'd like to thanks Quasar for allowing us to modify the docs of the 
+  Note: We'd like to thank Quasar for allowing us to modify the docs of the 
   <a href="http://www.doomworld.com/eternity/etcengine.html">Eternity Engine</a>
   to reflect Legacy FraggleScript implementation.
 </p>
 
 <h1><a name="top">FraggleScript Basics</a></h1>
-<h1 class="tagline">Last updated 2010-07-19</h1>
+<h1 class="tagline">Last updated 2011-03-03</h1>
 
 <div class="floatbox">
 <ul>
@@ -42,24 +42,46 @@
 <h2><a name="start">Getting Started</a></h2>
 
 <p>
-To get started using FraggleScript in your DOOM
-levels, you'll need to fully understand most or all aspects of DOOM level
-editing and WAD file manipulation. If you haven't mastered this basic stuff,
-it would probably be wise to check out the Doomworld tutorials section and to
-look up a few FAQs. These documents assume you understand basic DOOM editing.
+<a href="http://doom.wikia.com/wiki/FraggleScript">FraggleScript</a>
+(FS) is a simple C-like scripting language that can be used
+to add complex functionality into a Doom map. It was originally
+developed by Simon "Fraggle" Howard for his Doom source port SMMU, and
+is currently used by several Doom engines including Doom Legacy.
+FS has evolved into several dialects since its creation, so perfect
+FS compatibility between different engines unfortunately cannot be expected.
 </p>
+
 <p>
-When you first want to create scripts, you should save a blank file from a
-suitable text editor as something appropriate, like "map01.fs"  The .fs
+To get started using FraggleScript in your Doom
+levels, you'll need to fully understand most aspects of Doom level
+editing and WAD file manipulation. If you haven't mastered this basic stuff,
+it would probably be wise to read the other
+<a href="editing.html">editing docs</a>
+first, and maybe check out the
+<a href="http://www.doomworld.com/tutorials/">Doomworld tutorials section</a>
+and to look up a few FAQs. This manual assumes you understand basic Doom editing.
+</p>
+
+<p>
+FS scripts reside inside the MapInfo header, in the <span class="keyword">[scripts]</span> block.
+The MapInfo header itself is just an ASCII text file which is stored
+in the map separator lump, which has the same name as the map
+(e.g. E1M4, MAP21...) and is normally empty.
+Each map can have its own MapInfo, and thus its own scripts. There are
+also ways to share scripts between maps, more of which later.
+</p>
+
+<p>
+When you first want to create scripts, you should create a blank file using
+a suitable text editor, named something appropriate like "map01.fs"  The .fs
 extension is not required, but its useful for figuring out what and where your
-files are later.<br/>
-When you have the file, you need to place a header in it like this:
+files are later on.
+When you have the file, you need to place a block header in it like this:
 </p>
 <div class="code">[scripts]</div>
 <p>
-This tells the game that your mapinfo is declaring a section for scripts. Note
-that FraggleScript scripts in Legacy reside in the map header along with all
-other mapinfo information. If you want to define other mapinfo blocks, you can
+This tells the game that your MapInfo is declaring a section for scripts.
+If you want to define other MapInfo blocks, you can
 put them before or after this section.<br/>
 Example:
 </p>
@@ -71,9 +93,8 @@ creator = Quasar
 </div>
 <p>
 After the header is in place you can begin defining scripts and variables.
-When your job is done, you can use the add_fs utility, available with Legacy, 
-to insert your scripts into the level. How to define and use scripts is
-covered below.
+When you're done, simply insert the file you just created into
+the appropriate map separator lump using a WAD editor.
 </p>
 
 
@@ -103,8 +124,8 @@ unique, one per defined script.
 <p>
 The script above is valid, but it is not very interesting because it does
 nothing, and a script alone cannot run without first being called. Scripts may
-be invoked in several manners, which is covered in the Script Activation
-Models section.
+be invoked in several manners, which is covered in the
+<a href="#activation">Script Activation Models</a> section.
 </p>
 
 <h2><a name="vars">Variables and Data Types</a></h2>
@@ -142,13 +163,13 @@ Built-in variables, current to Legacy 1.40, include:
 <li>
 <p>
 Global — These variables are defined outside of any script, either in a header
-file or in the [scripts] section of the mapinfo lump. Any scripts in the current
+file or in the [scripts] section of the MapInfo lump. Any scripts in the current
 level can access these types of variables. If global variables are declared with
 the <span class="keyword">const</span> keyword, they are constants, and if they are 
 declared with the <span class="keyword">hub</span> keyword, then the current list 
 of hub variables will be searched by name for a match when the declaration is encountered. 
 Hub global variables persist between levels and can be accessed and modified by 
-scripts in any level until the current cluster ends.
+scripts in any level until the current episode ends.
 <br/>
 Examples:
 </p>
@@ -188,8 +209,10 @@ script 0
 </div>
 <p>
 Note that the print function in this example will print the string "1" and not
-"0" because local variables always take precedence over any built-in or global
-variables. This is an important distinction to remember.
+"0" because
+<span class="warning">local variables always take precedence over any
+built-in or global variables</span>.
+This is an important distinction to remember.
 </p>
 <p>
 Variable names may be of arbitrary length, but should not be named with any
@@ -243,16 +266,15 @@ Strings must be delimited by quotation marks as follows:
 </li>
 <li>
 <p>
-<span class="keyword">mobj</span> - an opaque reference to a DOOM mapthing 
-(ie monster, lamp, fireball, player). The values of these references must either 
+<span class="keyword">mobj</span> - an opaque reference to a Doom mapthing 
+(i.e. monster, lamp, fireball, player). The values of these references must either 
 be obtained from object spawning functions, or can be specified by use of 
 integer literals, in which case the mobj reference will point to the mapthing 
-numbered by the map editor with that number
-<br/>
+numbered by the map editor with that number.<br/>
 Examples:
 </p>
 <div class="code">// spawn a new dwarf and keep a reference to it in "dwarf"
-mobj dwarf = spawn(HALIF, 0, 0, 0);
+mobj dwarf = spawn(DWARF, 0, 0, 0);
 
 // get a reference to the thing numbered 0 at map startup
 mobj firstthing = 0;
@@ -504,10 +526,10 @@ calls after all script definitions.
 </p>
 
 
-<h2><a name="control">Control Flow Structures</a></h2>
+<h2><a name="control">Flow Control Structures</a></h2>
 
 <p>
-Control flow structures allow your code to make
+Flow control structures allow your code to make
 decisions and repeat actions over and over. There are several basic control
 structures, and each are covered here in full.
 </p>
@@ -687,7 +709,7 @@ This example, as you should expect, spawns one enemy at (0,0,0), its type
 depending on what random value i was assigned.
 </p>
 <p>
-Note that elseif and else are new to the Eternity and DOOM Legacy dialects of
+Note that elseif and else are new to the Eternity and Doom Legacy dialects of
 FraggleScript and that they are not currently supported by SMMU.
 </p>
 
@@ -804,7 +826,7 @@ from left to right.
        Coercions: all -> int<br/>
        
        The binary invert operator. Reverses all bits in the operand's integer
-       value (ie 10101 becomes 01010)</dd>
+       value (i.e. 10101 becomes 01010)</dd>
        
   <dt>%</dt><dd>
        Coercions: (all*all) -> (int*int)<br/>
@@ -893,13 +915,13 @@ from left to right.
        Coercions: (all*all) -> (int*int)<br/>
        
        The binary and operator. This operator sets all bits in its result that
-       are set in both of its operands (ie 111010 &amp; 100110 = 100010)</dd>
+       are set in both of its operands (i.e. 111010 &amp; 100110 = 100010)</dd>
        
   <dt>|</dt><dd>
        Coercions: (all*all) -> (int*int)<br/>
        
        The binary or operator. This operator sets all bits in its result that
-       are set in either of its operands (ie 111010 | 100110 = 111110)</dd>
+       are set in either of its operands (i.e. 111010 | 100110 = 111110)</dd>
        
   <dt>&amp;&amp;</dt><dd>
        Coercions: (all*all) -> (int*int)<br/>
@@ -930,21 +952,15 @@ from left to right.
 This is a short alphabetical list of keywords in FraggleScript. Variables cannot
 be named these words because they are reserved.
 </p>
-<p>
-const<br/>
-else<br/> 
-elseif<br/>
-fixed<br/>
-float<br/>
-for<br/>
-hub<br/>
-if<br/> 
-int<br/>
-mobj<br/>
-script<br/> 
-string<br/>
-while
-</p>
+<table style="width: 20%;">
+<tr><td>const</td> <td>if</td></tr>
+<tr><td>else</td>  <td>int</td></tr>
+<tr><td>elseif</td><td>mobj</td></tr>
+<tr><td>fixed</td> <td>script</td> </tr>
+<tr><td>float</td> <td>string</td></tr>
+<tr><td>for</td>   <td>while</td></tr>
+<tr><td>hub</td></tr>
+<tr></table>
 <p>
 Remember that break, continue, return, and goto are defined as special functions,
 and not as keywords.

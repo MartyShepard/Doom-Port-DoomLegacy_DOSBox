@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00799 ]: w68 menu exitgame
+[00798*]: FS doc update, THINGS.H spiderboss bug fixed.
 [00797 ]: w68 vile ghost, revived stuck together, and fire fix
 [00796 ]: w68 braintarget limits removed
 [00795 ]: w67 coop damage

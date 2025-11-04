@@ -13,13 +13,13 @@
 <body>
 <div class="text">
 <p>
-Note: We'd like to thanks Quasar for allowing us to modify the docs of the 
+Note: We'd like to thank Quasar for allowing us to modify the docs of the 
 <a href="http://www.doomworld.com/eternity/etcengine.html">Eternity Engine</a>
  to reflect Legacy FraggleScript implementation.
 </p>
  
 <h1><a name="top">FraggleScript Function Reference</a></h1>
-<h1 class="tagline">Last updated 2010-07-12</h1>
+<h1 class="tagline">Last updated 2011-03-03</h1>
 
 <div class="floatbox">
 <ul>
@@ -68,7 +68,7 @@ Example:
 parameters. When items appear in the list as [type] [name] constructs, then
 [type] indicates the type of variable you can pass in this position, and [name]
 is simply being used to refer to the value being passed in. If an item appears
-inside brackets -- {} -- then it is an optional parameter. "..." indicates that
+inside square brackets — [ ] — then it is an optional parameter. "..." indicates that
 the function takes a variable number of parameters up to 128, minus the number
 of any parameters that occur before the ellipsis.
 </p>
@@ -106,9 +106,19 @@ of any parameters that occur before the ellipsis.
        
   <dt><a name="include">void include(string lumpname)</a></dt>
   <dd>
+    <p>
     Brings in variables and statements from the lump named lumpname as if
     they were defined in the current module. Note that included lumps
-    cannot contain scripts or block statements involving braces.
+    cannot contain scripts or block statements involving braces. Example:</p>
+<div class="code">[scripts]
+
+include("things.h")
+
+script 0
+{
+...
+}
+</div>
   </dd>
 </dl>
 
@@ -164,7 +174,7 @@ of any parameters that occur before the ellipsis.
   </dd>
   <dt><a name="scriptwaitpre">void scriptwaitpre(int scriptnum)</a></dt>
   <dd>
-    NOT YET IMPLEMENTED IN DOOM LEGACY
+    <span class="warning">NOT YET IMPLEMENTED</span>
 
        Causes the current script to delay further execution until at least one
        instance of the script with number scriptnum has started execution. Note
@@ -205,7 +215,7 @@ of any parameters that occur before the ellipsis.
   </dd>
   <dt><a name="exitsecret">void exitsecret()</a></dt>
   <dd>
-  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <span class="warning">NOT YET IMPLEMENTED</span>
        Exits the current map as if the player had activated a secret exit. If
        the "nextsecret" MapInfo field for the current map is set, the player
        will proceed to that map, otherwise the default exit behavior will occur
@@ -213,7 +223,7 @@ of any parameters that occur before the ellipsis.
   </dd>
   <dt><a name="gameskill">int gameskill()</a></dt>
   <dd>
-  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <span class="warning">NOT YET IMPLEMENTED</span>
        Returns a value from 1 to 5 representing the skill level of the current
        game, with 1 being "I'm Too Young To Die" and 5 being "Nightmare!"
   </dd>
@@ -247,7 +257,7 @@ of any parameters that occur before the ellipsis.
        the range 0 to 3.
   </dd>
   <dt><a name="playertimedtip">void playertimedtip(int playernum, int clocks, ...)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Prints a centered message to a particular player that lasts clocks/100
        number of seconds. playernum must be in the range 0 to 3.
   </dd>
@@ -265,7 +275,7 @@ of any parameters that occur before the ellipsis.
        Returns non-zero if player playernum is in the game. If not, returns
        zero. playernum must be in the range 0 to 3.
   </dd>
-  <dt><a name="playername">string playername({int playernum})</a></dt>
+  <dt><a name="playername">string playername([int playernum])</a></dt>
   <dd>
        If passed nothing, this function tries to retrieve the player name of the
        object that started the current script. If this object was not a player,
@@ -273,7 +283,7 @@ of any parameters that occur before the ellipsis.
        If passed a player number in the range 0 to 3, it will retrieve that
        particular player's name if they are in the game.
   </dd>
-  <dt><a name="playerobj">mobj playerobj({int playernum})</a></dt>
+  <dt><a name="playerobj">mobj playerobj([int playernum])</a></dt>
   <dd>
        If passed nothing, this function tries to retrieve a reference to the
        mapthing belonging to the player that triggered the current script. If the
@@ -281,26 +291,26 @@ of any parameters that occur before the ellipsis.
        If passed a player number in the range 0 to 3, it will retrieve a reference
        to that particular player's mapthing if they are in the game.
   </dd>
-  <dt><a name="player">int player({mobj mo})</a></dt>
+  <dt><a name="player">int player([mobj mo])</a></dt>
   <dd>
        Passed nothing, this function returns the player number of the trigger object.
 
        Passed either a mapthing number or an mobj reference, it will do likewise for
        the specified object.
   </dd>
-  <dt><a name="playerskin">string playerskin({int playernum})</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dt><a name="playerskin">string playerskin([int playernum])</a></dt>
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This function returns the name of the skin the player is currently using.
        If no parameter is given, it will attempt to retrieve the skin of the
        trigger object. If the trigger object was not a player, an error will
        occur.
   </dd>
-  <dt><a name="isplayerobj">int isplayerobj({mobj mo})</a></dt>
+  <dt><a name="isplayerobj">int isplayerobj([mobj mo])</a></dt>
   <dd>       
        Returns 1 if the trigger object or specified object, if any, is a player 
        avatar, and 0 otherwise.
   </dd>       
-  <dt><a name="playerkeys">int playerkeys(int plnum, int keynum, {int givetake})</a></dt>
+  <dt><a name="playerkeys">int playerkeys(int plnum, int keynum, [int givetake])</a></dt>
   <dd>  
        If passed a player number (0-3) and a key number (0-5), this function will
        return 1 if the player possesses that key or 0 if he does not.<br/>
@@ -309,7 +319,7 @@ of any parameters that occur before the ellipsis.
        if givetake is zero. In this case, the function always returns zero 
        regardless.
   </dd>       
-  <dt><a name="playerammo">int playerammo(int plnum, int ammonum, {int amount})</a></dt>
+  <dt><a name="playerammo">int playerammo(int plnum, int ammonum, [int amount])</a></dt>
   <dd>       
        If passed a player number (0-3) and an ammo type number (0-), this function
        will return the amount of that type of ammo the player has.<br/>
@@ -323,19 +333,23 @@ of any parameters that occur before the ellipsis.
 <h2><a name="map_inter">Mapthing Interaction</a></h2>
 
 <dl>
-  <dt><a name="spawn">mobj spawn(int type, int x, int y, {int angle}, {int z})</a></dt>
+  <dt><a name="spawn">mobj spawn(int type, int x, int y, [int angle], [int z])</a></dt>
   <dd>  
-       Spawns a new mapthing with various parameters. Constants for type are
-       defined in the header THINGS.H in doom3.wad, and can be included into
-       any script for convenience.<br/>
+       Spawns a new mapthing with various parameters. The mapthing types are
+       named constants defined in the header THINGS.H in
+       <a href="editing.html#wadcontents">legacy.wad</a>,
+       which <span class="hilite">must</span> be included by your
+       script file.
+       <span class="warning">Do not use numbers to refer to mapthing
+       types as they will change between versions</span>.
        Note that if the z coordinate is provided, the angle coordinate must also
        be provided (this is the way that all optional parameters work, and will
-       not be addressed any further in this reference).<br/>
+       not be addressed any further in this reference).
        z is absolute here rather than relative to the floor height. If z is not
        provided, the thing will spawn on either the floor or ceiling as it would
        normally.
   </dd>       
-  <dt><a name="kill">void kill({mobj mo})</a></dt>
+  <dt><a name="kill">void kill([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function kills the thing that triggered the current
        script.<br/>
@@ -347,21 +361,21 @@ of any parameters that occur before the ellipsis.
        Passed a mapthing number or mobj reference, this function will remove the
        mapthing to which it refers.
   </dd>       
-  <dt><a name="objx">fixed objx({mobj mo})</a></dt>
+  <dt><a name="objx">fixed objx([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function retrieves the high-precision x coordinate of
        the mapthing that triggered the current script.<br/>
        Passed a mapthing number or mobj reference, this function returns the x 
        coordinate of the object to which it refers.
   </dd>       
-  <dt><a name="objy">fixed objy({mobj mo})</a></dt>
+  <dt><a name="objy">fixed objy([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function retrieves the high-precision y coordinate of
        the mapthing that triggered the current script.<br/>
        Passed a mapthing number or mobj reference, this function returns the y 
        coordinate of the object to which it refers.
   </dd>
-  <dt><a name="objz">fixed objz({mobj mo})</a></dt>
+  <dt><a name="objz">fixed objz([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function retrieves the high-precision z coordinate of
        the mapthing that triggered the current script.<br/>
@@ -389,7 +403,7 @@ of any parameters that occur before the ellipsis.
        Passed a mapthing number or mobj reference, this function attempts to do 
        damage to the specified object.
   </dd>       
-  <dt><a name="objsector">int objsector({mobj mo})</a></dt>
+  <dt><a name="objsector">int objsector([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function returns the tag number of the sector which
        the trigger object is currently in.<br/>
@@ -417,14 +431,14 @@ of any parameters that occur before the ellipsis.
        External forces such as friction, wind, or explosions are vector-additive
        and will still affect the object while it is moving.
   </dd>       
-  <dt><a name="objangle">fixed objangle({mobj mo})</a></dt>
+  <dt><a name="objangle">fixed objangle([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function returns the high-precision angle of the
        trigger object.<br/>
        Passed a mapthing number or mobj reference, this function does likewise for 
        the specified mapthing.
   </dd>       
-  <dt><a name="objhealth">int objhealth({mobj mo})</a></dt>
+  <dt><a name="objhealth">int objhealth([mobj mo])</a></dt>
   <dd>       
        Passed nothing, this function returns the current health value of the
        trigger object.<br/>
@@ -432,10 +446,10 @@ of any parameters that occur before the ellipsis.
        specified mapthing.
   </dd>       
   <dt><a name="spawnshot">mobj spawnshot(int type, mobj source, mobj target, int face)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
     <p>
        This function can be used to cause one object to fire a projectile at
-       another object. type constants are provided in THINGS.H as with spawn().
+       another object. Type constants are provided in THINGS.H as with spawn().
        The source and target parameters may be either integer mapthing numbers
        or mobj references, and can be set to -1 to cause these parameters to
        default with the following effects:
@@ -460,15 +474,15 @@ of any parameters that occur before the ellipsis.
        documentation.
     </p>
   </dd>
-  <dt><a name="checklife">int checklife({mobj mo})</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dt><a name="checklife">int checklife([mobj mo])</a></dt>
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This is a utility function that returns non-zero if the trigger object or
        specified object, if any, is alive, and zero if its health is less than or
        equal to zero or it does not exist on the map. This function is not
        necessary but has been left intact to support maps that used it
        before addition of &gt;= and &lt;= operators to FraggleScript.
   </dd>
-  <dt><a name="reactiontime">int reactiontime(mobj mo, {int val})</a></dt>
+  <dt><a name="reactiontime">int reactiontime(mobj mo, [int val])</a></dt>
   <dd>
        Passed one value, a mapthing number or mobj reference, this function will
        return the specified object's reaction time, or the amount of time it must
@@ -476,7 +490,7 @@ of any parameters that occur before the ellipsis.
        set the object's reaction time to the specified value, and then return
        this new value.
   </dd>
-  <dt><a name="objtarget">mobj objtarget(mobj mo, {mobj target})</a></dt>
+  <dt><a name="objtarget">mobj objtarget(mobj mo, [mobj target])</a></dt>
   <dd>
        Passed one value, a mapthing number or mobj reference, this function will
        return a reference to that object's current target, which for enemies is
@@ -484,28 +498,28 @@ of any parameters that occur before the ellipsis.
        is passed, which may also be either a mapthing number or mobj reference,
        the target will be set to this object.
   </dd>
-  <dt><a name="objmomx">fixed objmomx(mobj mo, {fixed momx})</a></dt>
+  <dt><a name="objmomx">fixed objmomx(mobj mo, [fixed momx])</a></dt>
   <dd>
        This function, as others similar to it, either returns or sets the x
        momentum of the specified object.
   </dd>
-  <dt><a name="objmomy">fixed objmomy(mobj mo, {fixed momy})</a></dt>
+  <dt><a name="objmomy">fixed objmomy(mobj mo, [fixed momy])</a></dt>
   <dd>
        This function, as others similar to it, either returns or sets the y
        momentum of the specified object.
   </dd>
-  <dt><a name="objmomz">fixed objmomz(mobj mo, {fixed momz})</a></dt>
+  <dt><a name="objmomz">fixed objmomz(mobj mo, [fixed momz])</a></dt>
   <dd>
        This function, as others similar to it, either returns or sets the z
        momentum of the specified object.
   </dd>
-  <dt><a name="objawaken">void objawaken({mobj mo})</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dt><a name="objawaken">void objawaken([mobj mo])</a></dt>
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This function awakens an object which was spawned on the map at startup
        with the DORMANT mapthing flag. If passed no argument, it will function on
        the trigger object. This function has no effect on normal objects.
   </dd>
-  <dt><a name="spawnexplosion">void spawnexplosion(int damage, mobj spot, {mobj source})</a></dt>
+  <dt><a name="spawnexplosion">void spawnexplosion(int damage, mobj spot, [mobj source])</a></dt>
   <dd>
        This function causes the map object spot to emit an explosion with radius
        of 128 units, causing 'damage' amount of damage at the epicenter of the
@@ -522,14 +536,14 @@ of any parameters that occur before the ellipsis.
 <h2><a name="sector_inter">Sector Interaction</a></h2>
 
 <dl>       
-  <dt><a name="floorheight">int floorheight(int tagnum, {int dest})</a></dt>
+  <dt><a name="floorheight">int floorheight(int tagnum, [int dest])</a></dt>
   <dd>  
        Passed one parameter, this function returns the current floor height of the
        first sector with tag number tagnum. Given two parameters, it first 
        instantly sets the floor height of all sectors with this tag and then
        returns the new height.
   </dd>       
-  <dt><a name="floortexture">string floortexture(int tagnum, {string flatname})</a><br/>
+  <dt><a name="floortexture">string floortexture(int tagnum, [string flatname])</a><br/>
        <a name="floortext">&nbsp;&nbsp;alias: floortext</a></dt>
   <dd>       
        Passed one parameter, this function returns the current flat displayed on
@@ -538,14 +552,14 @@ of any parameters that occur before the ellipsis.
        the new flat name. If flatname does not exist in some currently loaded
        wad, an R_FlatNumForName error will occur and the game will exit.
   </dd>       
-  <dt><a name="movefloor">void movefloor(int tagnum, int destheight, {int speed})</a></dt>
+  <dt><a name="movefloor">void movefloor(int tagnum, int destheight, [int speed])</a></dt>
   <dd>       
        Passed two parameters, this function gradually moves all sectors' floors tagged
        tagnum to destheight at the default floor movement speed. If given the
        speed parameter, the speed of the floors will be as specified multiplied
        by the basic floor movement factor.
   </dd>       
-  <dt><a name="ceilingheight">int ceilingheight(int tagnum, {int dest})</a><br/>
+  <dt><a name="ceilingheight">int ceilingheight(int tagnum, [int dest])</a><br/>
        <a name="ceilheight">&nbsp;&nbsp;alias: ceilheight</a></dt>
   <dd>       
        Passed one parameter, this function returns the current ceiling height of the
@@ -553,7 +567,7 @@ of any parameters that occur before the ellipsis.
        instantly sets the ceiling height of all sectors with this tag and then
        returns the new height.
   </dd>       
-  <dt><a name="moveceiling">void moveceiling(int tagnum, int destheight, {int speed})</a><br/>
+  <dt><a name="moveceiling">void moveceiling(int tagnum, int destheight, [int speed])</a><br/>
        <a name="moveceil">&nbsp;&nbsp;alias: moveceil</a></dt>
   <dd>  
        Passed two parameters, this function gradually moves all sectors' ceilings 
@@ -561,7 +575,7 @@ of any parameters that occur before the ellipsis.
        the speed parameter, the speed of the ceilings will be as specified multiplied
        by the basic ceiling movement factor.
   </dd>  
-  <dt><a name="ceilingtexture">string ceilingtexture(int tagnum, {string flatname})</a><br/>
+  <dt><a name="ceilingtexture">string ceilingtexture(int tagnum, [string flatname])</a><br/>
        <a name="ceiltext">&nbsp;&nbsp;alias: ceiltext</a></dt>
   <dd>       
        Passed one parameter, this function returns the current flat displayed on
@@ -570,21 +584,21 @@ of any parameters that occur before the ellipsis.
        the new flat name. If flatname does not exist in some currently loaded
        wad, an R_FlatNumForName error will occur and the game will exit.
   </dd>       
-  <dt><a name="lightlevel">int lightlevel(int tagnum, {int level})</a></dt>
+  <dt><a name="lightlevel">int lightlevel(int tagnum, [int level])</a></dt>
   <dd>  
        Passed one parameter, this function returns the current light level of the
        first sector with tag number tagnum. Given two parameters, it first
        instantly sets the light level of all sectors with this tag and then
        returns the new level.
   </dd>
-  <dt><a name="fadelight">void fadelight(int tagnum, int destlevel, {int speed})</a></dt>
+  <dt><a name="fadelight">void fadelight(int tagnum, int destlevel, [int speed])</a></dt>
   <dd>
        Passed two parameters, this function gradually changes the light level of
        all sectors tagged tagnum to destlevel at the default light fade speed.
        If given the speed parameter, the speed of the fade will be as specified
        multiplied by the basic light fade factor.
   </dd>
-  <dt><a name="colormap">string colormap(int tagnum, {string cmap})</a></dt>
+  <dt><a name="colormap">string colormap(int tagnum, [string cmap])</a></dt>
   <dd>
        Passed one parameter, this function returns the current colormap of the
        first sector with tag number tagnum. Given two parameters, it first
@@ -593,7 +607,7 @@ of any parameters that occur before the ellipsis.
        between C_START and C_END in some currently loaded wad, an error will
        occur and the game will exit.
   </dd>
-  <dt><a name="opendoor">void opendoor(int tagnum, {int waittime}, {int speed})</a></dt>
+  <dt><a name="opendoor">void opendoor(int tagnum, [int waittime], [int speed])</a></dt>
   <dd>
        This function opens all sectors tagged tagnum like doors. If no waittime
        or speed are specified, the door will open at normal speed and will not
@@ -602,13 +616,13 @@ of any parameters that occur before the ellipsis.
        door will not close on its own. speed may be set to alter the opening and
        closing speed of the door.
   </dd>
-  <dt><a name="closedoor">void closedoor(int tagnum, {int speed})</a></dt>
+  <dt><a name="closedoor">void closedoor(int tagnum, [int speed])</a></dt>
   <dd>
        Similar to opendoor(), this function closes all sectors tagged tagnum
        like doors.
   </dd>
   <dt><a name="setfriction">void setfriction(int tagnum, int friction)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This function sets the friction values of all sectors tagged tagnum
        to a value represented by the friction parameter. This friction parameter
        takes the same value used on a BOOM friction transfer linedef, with 100
@@ -617,7 +631,7 @@ of any parameters that occur before the ellipsis.
        friction flags of the sectors in question.
   </dd>
   <dt><a name="getfriction">int getfriction(int tagnum)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This function will return the friction value as per above for the first
        sector with tag number tagnum.
   </dd>
@@ -627,28 +641,28 @@ of any parameters that occur before the ellipsis.
 <h2><a name="line_inter">Linedef Interaction</a></h2>
 
 <dl>
-  <dt><a name="linetrigger">void linetrigger(int special, {int tag})</a></dt>
+  <dt><a name="linetrigger">void linetrigger(int special, [int tag])</a></dt>
   <dd>
        This function can activate linedef effects that can occur via crossing
        or using linedefs. Special is the special value as per map editing, and
        optional parameter tag specifies a set of sectors to affect if needed.
   </dd>
   <dt><a name="setlineblocking">void setlineblocking(int tagnum, int block)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY, use setlineflag instead
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>, use setlineflag instead
        This function toggles the blocking flag for all lines tagged tagnum.<br/>
        Set block to 1 to cause the line to block all objects, and set it to 0
        to cause the line to not block objects. Note that 1-sided lines will
        always block clipped objects even if the blocking flag is cleared.
   </dd>
   <dt><a name="setlinemnblock">void setlinemnblock(int tagnum, int block)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY, use setlineflag instead
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>, use setlineflag instead
        This function toggles the monster blocking flag for all lines tagged tagnum.<br/>
        Set block to 1 to cause the line to block monsters, and set it to 0 to
        cause the line to not block monsters. Note that 1-sided lines will always
        block clipped monsters regardless of this flag.
   </dd>
   <dt><a name="setlinetexture">void setlinetexture(int tagnum, int side, int position, string name)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        This function sets a specific lower, middle, or upper texture on the
        specified side of all lines with tag tagnum.
 
@@ -675,7 +689,7 @@ of any parameters that occur before the ellipsis.
 <h2><a name="camera_ctrl">Camera Control</a></h2>
 
 <dl>
-  <dt><a name="setcamera">void setcamera(mobj mo, {fixed angle}, {int height}, {int pitch})</a></dt>
+  <dt><a name="setcamera">void setcamera(mobj mo, [fixed angle], [int height], [int pitch])</a></dt>
   <dd>
        This function instantiates a camera viewpoint at the object specified by
        either a mapthing number or an mobj reference with the given optional
@@ -845,7 +859,7 @@ of any parameters that occur before the ellipsis.
        not currently any method for creating different heads-up pics on a
        particular player's screen.</p>
   </dd>
-  <dt><a name="modifypic">void modifypic(int handle, string lumpname, {int x}, {int y})</a></dt>
+  <dt><a name="modifypic">void modifypic(int handle, string lumpname, [int x], [int y])</a></dt>
   <dd>
        Modifies attributes of the FS heads-up pic with this handle. lumpname must
        be set, but it can be set to its current value if it is not desired to
@@ -859,13 +873,13 @@ of any parameters that occur before the ellipsis.
        to hide it.
   </dd>
   <dt><a name="setpictrans">void setpictrans(int handle, int trans)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Modifies the translucency of the FS heads-up pic with this handle. Set
        trans to a non-zero value to make the pic translucent, and set it to zero
        to make it solid.
   </dd>
   <dt><a name="getpichandle">int getpichandle(string lumpname, int x, int y)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Attempts to get a handle for a pic matching all three provided attributes.
        This function is not one-to-one. If multiple identical pics are created,
        it will always retrieve a handle to the one that either has lower priority,
@@ -875,29 +889,29 @@ of any parameters that occur before the ellipsis.
        variable). Returns -1 if no such pic exists.
   </dd>
   <dt><a name="getpicattr">int getpicattr(int handle, string selector)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Retrieves an attribute from the FS heads-up pic with this handle. Valid
        values for selector are "lumpnum", "x", "y", "draw", and "trans". The
        appropriate attribute will be returned, or -1 will be returned if either
        there is no such pic, or an invalid selector string is passed.
   </dd>
   <dt><a name="getpiclp">fixed getpiclp()</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Returns the lowest priority number currently in use by a FS heads-up
        pic.
   </dd>
   <dt><a name="getpichp">fixed getpichp()</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Returns the highest priority number currently in use by a FS heads-up
        pic.
   </dd>
   <dt><a name="getpicpriority">fixed getpicpriority(int handle)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Returns the priority number of the FS heads-up pic with this handle.
        Returns -FRACUNIT if no such pic exists.
   </dd>
   <dt><a name="setpicpriority">void setpicpriority(int handle, fixed priority)</a></dt>
-  <dd>  NOT YET IMPLEMENTED IN DOOM LEGACY
+  <dd>  <span class="warning">NOT YET IMPLEMENTED</span>
        Sets the priority number of the FS heads-up pic with this handle.
   </dd>
 </dl>
@@ -928,7 +942,7 @@ of any parameters that occur before the ellipsis.
 
     Remember that the syntax source.copyInto(target) is valid.
   </dd>
-  <dt><a name="elementAt">'a elementAt(array source, int index)</a></dt>
+  <dt><a name="elementAt">&lt;type&gt; elementAt(array source, int index)</a></dt>
   <dd>
        Returns the value stored at 'index' in the array 'source'. Return-type
        is dependent on the type of the value at that index. An error will

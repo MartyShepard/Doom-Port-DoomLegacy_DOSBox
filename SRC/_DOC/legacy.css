@@ -68,6 +68,12 @@ span.hilite
   color: #89d850;
 }
 
+span.warning
+{
+  color: #F04000;
+}
+
+
 
 /* division-like elements */
 
@@ -165,6 +171,7 @@ dt
 dd
 {
   margin: 0 0 2em 2em;
+  width: 70%;
 }
 
 dl.quote dd
