@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 760 2010-10-13 13:34:24Z smite-meister $
+// $Id: g_game.h 786 2011-02-22 04:43:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -73,13 +73,13 @@
 
 //added:11-02-98: yeah now you can change it!
 // changed to 2d array 19990220 by Kin
-extern char          player_names[MAXPLAYERS][MAXPLAYERNAME];
-extern char*                    team_names[];
+extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
+extern char*      team_names[];
 
 extern  boolean nomonsters;             // checkparm of -nomonsters
 extern  char      gamemapname[128];
 
-extern  player_t        players[MAXPLAYERS];
+extern  player_t  players[MAXPLAYERS];
 extern  boolean   playeringame[MAXPLAYERS];
 
 // ======================================

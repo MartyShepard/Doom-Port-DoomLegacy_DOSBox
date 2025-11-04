@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 768 2010-11-18 21:14:27Z wesleyjohnson $
+// $Id: p_mobj.c 786 2011-02-22 04:43:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1695,8 +1695,8 @@ extern byte weapontobutton[NUMWEAPONS];
 // Most of the player structure stays unchanged
 //  between levels.
 //
-// BP: spawn it at a playerspawn mapthing
-void P_SpawnPlayer(mapthing_t * mthing)
+// BP: spawn it at a playerspawn mapthing, [WJD] as playernum
+void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 {
     player_t *p;
     fixed_t x;
@@ -1705,7 +1705,8 @@ void P_SpawnPlayer(mapthing_t * mthing)
 
     mobj_t *mobj;
 
-    int playernum = mthing->type - 1;
+//    [WDJ] 2/8/2011 relied on mangled type field, prevented re-searching for voodoo
+//    int playernum = mthing->type - 1;
 
     // not playing?
     if (!playeringame[playernum])
@@ -1713,7 +1714,7 @@ void P_SpawnPlayer(mapthing_t * mthing)
 
 #ifdef PARANOIA
     if (playernum < 0 && playernum >= MAXPLAYERS)
-        I_Error("P_SpawnPlayer : playernum not in bound (%d)", playernum);
+        I_Error("P_SpawnPlayer : bad playernum (%d)", playernum);
 #endif
 
     p = &players[playernum];
@@ -1855,15 +1856,13 @@ void P_SpawnMapThing (mapthing_t* mthing)
     // added 9-2-98 type 5 -> 8 player[x] starts for cooperative
     //              support ctfdoom cooperative playerstart
     //SoM: 4/7/2000: Fix crashing bug.
-    if ((mthing->type > 0 && mthing->type <= 4) || (mthing->type <= 4028 && mthing->type >= 4001))
+    if ((mthing->type > 0 && mthing->type <= 4) || (mthing->type >= 4001 && mthing->type <= 4028 ))
     {
-       int playernum;
-       // Player spawn code uses mthing->type as player index.
-       // The mobj type must not be generally tested after this mangling.
-        if (mthing->type > 4000)	// expanded player starts
-            mthing->type = mthing->type - 4001 + 5;
-
-       playernum = mthing->type - 1;
+       // [WDJ] 2/8/2011  Pass playernum to SpawnPlayer, instead of mangling the thing->type.
+       // This means that we can search the mthing list later without errors.
+       // Map player starts 1..4 to playernum 0..3
+       // Map expanded player starts 4001..4028 to playernum 4..31
+       int playernum = (mthing->type < 4000)? (mthing->type - 1) : (mthing->type - 4001 + 4);
        
 #ifdef VOODOO_DOLL
        // [WDJ] Detect voodoo doll as multiple start points.
@@ -1878,14 +1877,14 @@ void P_SpawnMapThing (mapthing_t* mthing)
 	  P_SpawnVoodoo( playerstarts[playernum] );
        }
 #endif
-       
+
         // save spots for respawning in network games
         playerstarts[playernum] = mthing;
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
         if (cv_deathmatch.value == 0 && demoversion < 128)
-            P_SpawnPlayer(mthing);
+            P_SpawnPlayer(mthing, playernum);
 
         return;
     }

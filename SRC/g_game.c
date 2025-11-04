@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: g_game.c 786 2011-02-22 04:43:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1421,8 +1421,7 @@ void G_PlayerReborn (int player)
 //
 // G_CheckSpot
 // Returns false if the player cannot be respawned
-// at the given mapthing_t spot
-// because something is occupying it
+// at the given mapthing_t spot because something is occupying it
 //
 boolean G_CheckSpot ( int           playernum,
                       mapthing_t*   mthing )
@@ -1442,11 +1441,13 @@ boolean G_CheckSpot ( int           playernum,
     {
         // first spawn of level, before corpses
         for (i=0 ; i<playernum ; i++)
+        {
             // added 15-1-98 check if player is in game (mistake from id)
             if (playeringame[i]
                 && players[i].mo->x == mthing->x << FRACBITS
                 && players[i].mo->y == mthing->y << FRACBITS)
                 return false;
+	}
         return true;
     }
 
@@ -1519,17 +1520,15 @@ boolean G_DeathMatchSpawnPlayer (int playernum)
         i = P_Random() % numdmstarts;
         if (G_CheckSpot (playernum, deathmatchstarts[i]) )
         {
-            deathmatchstarts[i]->type = playernum+1;
-            P_SpawnPlayer (deathmatchstarts[i]);
+            P_SpawnPlayer (deathmatchstarts[i], playernum);
             return true;
         }
     }
 
     if(demoversion<113)
     {
-
-    // no good spot, so the player will probably get stuck
-        P_SpawnPlayer (playerstarts[playernum]);
+        // no good spot, so the player will probably get stuck
+        P_SpawnPlayer (playerstarts[playernum], playernum);
         return true;
     }
     return false;
@@ -1542,7 +1541,7 @@ void G_CoopSpawnPlayer (int playernum)
     // no deathmatch use the spot
     if (G_CheckSpot (playernum, playerstarts[playernum]) )
     {
-        P_SpawnPlayer (playerstarts[playernum]);
+        P_SpawnPlayer (playerstarts[playernum], playernum);
         return;
     }
 
@@ -1551,16 +1550,14 @@ void G_CoopSpawnPlayer (int playernum)
     {
         if (G_CheckSpot (playernum, playerstarts[i]) )
         {
-            playerstarts[i]->type = playernum+1;     // fake as other player
-            P_SpawnPlayer (playerstarts[i]);
-            playerstarts[i]->type = i+1;               // restore
+            P_SpawnPlayer (playerstarts[i], playernum);
             return;
         }
         // he's going to be inside something.  Too bad.
     }
 
     if(demoversion<113)
-        P_SpawnPlayer (playerstarts[playernum]);
+        P_SpawnPlayer (playerstarts[playernum], playernum);
     else
     {
         int  selections;
@@ -1568,8 +1565,7 @@ void G_CoopSpawnPlayer (int playernum)
         if( !numdmstarts)
             I_Error("No deathmatch start in this map !");
         selections = P_Random() % numdmstarts;
-        deathmatchstarts[selections]->type = playernum+1;
-        P_SpawnPlayer (deathmatchstarts[selections]);
+        P_SpawnPlayer (deathmatchstarts[selections], playernum);
     }
 }
 
@@ -1602,6 +1598,7 @@ void G_DoReborn (int playernum)
         {
             if(G_DeathMatchSpawnPlayer (playernum))
                return;
+	    // use coop spots too if deathmatch spots occupied
         }
 
         G_CoopSpawnPlayer (playernum);

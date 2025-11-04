@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 666 2010-06-03 12:56:19Z wesleyjohnson $
+// $Id: p_mobj.h 786 2011-02-22 04:43:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -292,10 +292,10 @@ typedef enum
     // used for client prediction code, player can't be blocked in z by walls
     // it is set temporarely when player follow the spirit
     MF_NOZCHECKING       = 32,
-	// "Friendly"; the mobj ignores players
-	MF_IGNOREPLAYER		 = 64,
-	// Actor will predict where the player will be
-	MF_PREDICT			 = 128,
+    // "Friendly"; the mobj ignores players
+    MF_IGNOREPLAYER	 = 64,
+    // Actor will predict where the player will be
+    MF_PREDICT		 = 128,
 } mobjeflag_t;
 
 
@@ -327,14 +327,12 @@ typedef struct mobj_s
     int                 frame;  // frame number, plus bits see p_pspr.h
 
     //Fab:02-08-98
-    void*               skin;      // this one overrides 'sprite' when
-                                   // non NULL (currently hack for player
-                                   // bodies so they 'remember' the skin)
-                                   //
-                                   // secondary use is when player die and
-                                   // we play the die sound. problem is he has
-                                   // already respawn and want the corpse to
-   				   // play the sound !!! (yeah it happens :\)
+    // Skin overrides 'sprite' when non NULL (currently hack for player
+    // bodies so they 'remember' the skin).
+    // Secondary use is when player die and we play the die sound.
+    // Problem is he has already respawn and want the corpse to
+    // play the sound !!! (yeah it happens :\)
+    void*               skin;
 
     // Interaction info, by BLOCKMAP.
     // Links in blocks (if needed).
@@ -359,7 +357,7 @@ typedef struct mobj_s
     // If == validcount, already checked.
     //int                 validcount;
 
-    mobjtype_t          type;
+    mobjtype_t          type;   // MT_*  (MT_PLAYER, MT_VILE, MT_BFG, etc.)
     mobjinfo_t*         info;   // &mobjinfo[mobj->type]
 
     int                 tics;   // state tic counter
@@ -382,12 +380,12 @@ typedef struct mobj_s
     uint32_t            target_id; // used during loading
   };
 
-	// Nodes
-	struct mobj_s*		nextnode;		// Next node object to chase after touching current
-										// target (which must be MT_NODE).
-	struct mobj_s*		targetnode;		// Target node to remember when encountering a player
-	int					nodescript;		// Script to run when this node is touched
-	int					nodewait;		// How many ticks to wait at this node
+    // Nodes
+    struct mobj_s*	nextnode;   // Next node object to chase after touching
+				    // current target (which must be MT_NODE).
+    struct mobj_s*	targetnode; // Target node to remember when encountering a player
+    int			nodescript; // Script to run when this node is touched
+    int			nodewait;   // How many ticks to wait at this node
 
     // Reaction time: if non 0, don't attack yet.
     // Used by player to freeze a bit after teleporting.
@@ -431,7 +429,9 @@ typedef struct mobj_s
 void P_MobjCheckWater (mobj_t* mobj);
 
 void P_SpawnMapThing (mapthing_t*    mthing);
-void P_SpawnPlayer (mapthing_t* mthing);
+// [WJD] spawn as playernum
+void P_SpawnPlayer(mapthing_t * mthing, int playernum );
+
 int P_HitFloor(mobj_t *thing);
 
 #endif

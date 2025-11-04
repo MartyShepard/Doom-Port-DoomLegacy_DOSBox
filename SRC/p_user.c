@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_user.c 786 2011-02-22 04:43:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -106,8 +106,6 @@ fixed_t JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
 
 boolean         onground;
 int				extramovefactor = 0;
-
-
 
 
 //
@@ -1000,12 +998,13 @@ void P_PlayerThink (player_t* player)
     }
 
     if (player->playerstate == PST_REBORN)
+    {
 #ifdef PARANOIA
-        I_Error("player %d is in PST_REBORN\n");
-#else
+        I_SoftError("player %d is in PST_REBORN\n");
+#endif
         // it is not "normal" but far to be critical
         return;
-#endif
+    }
 
     if (player->playerstate == PST_DEAD)
     {
@@ -1258,7 +1257,6 @@ void P_PlayerThink (player_t* player)
     }
     else
         player->fixedcolormap = 0;
-
 }
 
 //----------------------------------------------------------------------------

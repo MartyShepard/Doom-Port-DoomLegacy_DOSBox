@@ -1387,7 +1387,7 @@ make it impossible to use the menus.
 
 *** w67_player_spawn
 patchfile = w66_player_spawn.patch
-- committed revision 7??   by wesley johnson
+- committed revision 786   by wesley johnson
 Convert player spawn code to pass playernum as parameter instead of
 mangling the wad things.  This allows the wad things to be searched
 again.
