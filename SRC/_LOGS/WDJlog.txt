@@ -1429,3 +1429,9 @@ patchfile = w67_doc.patch
 - committed revision 789   by wesley johnson
 Update docs for w67 patches.
 
+*** w67_stop_demo2
+patchfile = w67_stop_demo2.patch
+- committed revision 790   by wesley johnson
+Fix Stop Demo patch that got somewhat mangled.  Also added restore of
+screen and demo after the menu is exited.
+

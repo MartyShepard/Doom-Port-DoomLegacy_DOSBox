@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: m_menu.c 790 2011-02-23 18:29:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4224,6 +4224,9 @@ boolean M_Responder (event_t* ev)
 	{
 	    M_ClearMenus (true);
 	    S_StartSound(NULL,sfx_swtchx);
+	    // Exit menus, return to demo or game
+	    if( ! Playing() )
+	        D_StartTitle();  // restart title screen and demo
 	}
         goto ret_true;
 
@@ -4324,14 +4327,15 @@ void M_StartControlPanel (void)
     if (menuactive)
         return;
 
-#if !defined( __DJGPP__ )	
-    if(demoplayback)  // menus without the demo interference
-        G_StopDemo(); // Under DOS. Demo Runs then activate Menu and then Blackscreen and Menu is Hollow
-#endif
-
     menuactive = 1;
     currentMenu = &MainDef;         // JDC
     itemOn = currentMenu->lastOn;   // JDC
+
+    if(demoplayback)  // menus without the demo interference
+    { 
+        G_StopDemo();
+        R_FillBackScreen ();
+    }
 
     CON_ToggleOff ();   // dirty hack : move away console
 }
@@ -4390,7 +4394,12 @@ void  M_Setup_prevMenu( void )
        if( currentMenu == &SaveDef )   M_SaveGame(0);
     }
     else
+    {
        M_ClearMenus (true);
+       // Exit menus, return to demo or game
+       if( ! Playing() )
+	   D_StartTitle();  // restart title screen and demo
+    }
 }
 
 

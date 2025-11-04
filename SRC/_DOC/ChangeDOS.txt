@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00790 ]: w67 stop demo 2 fix
 [00789*]: w67 doc
 [00788 ]: w67 voodoo player
 [00787 ]: w67 savegame netvars

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 785 2011-02-22 04:41:56Z wesleyjohnson $
+// $Id: d_main.c 790 2011-02-23 18:29:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 788; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 790; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -846,7 +846,7 @@ void D_PageDrawer(char *lumpname)
     int y;
 
     // software mode which uses generally lower resolutions doesn't look
-    // good when the pic is scaled, so it fills space aorund with a pattern,
+    // good when the pic is scaled, so it fills space around with a pattern,
     // and the pic is only scaled to integer multiples (x2, x3...)
     if (rendermode == render_soft)
     {
