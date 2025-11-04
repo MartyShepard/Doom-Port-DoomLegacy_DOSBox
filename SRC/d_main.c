@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 778 2011-01-21 00:31:13Z smite-meister $
+// $Id: d_main.c 784 2011-02-22 04:36:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 783; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 784; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -1104,7 +1104,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 // GDESC_plutonia: FinalDoom : Plutonia, DoomII engine
    { "Plutonia", "DOOM 2: Plutonia Experiment", "plutonia",
 	{"plutonia.wad",NULL,NULL}, NULL,
-	{"CAM01", NULL}, LN_MAP01, LN_TITLE,
+	{"CAMO1", NULL}, LN_MAP01, LN_TITLE,
 	GD_idwad, GDESC_plutonia, doom2_commercial },
 // GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    { "Tnt Evilution", "DOOM 2: TNT - Evilution", "tnt",

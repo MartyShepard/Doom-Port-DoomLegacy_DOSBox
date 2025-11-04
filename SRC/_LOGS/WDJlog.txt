@@ -1375,8 +1375,8 @@ Decode boom generalized linedef better, so to detect bad linedef numbers.
 More efficient switch linedef executable.
 
 *** w67_plutonia
-patchfile = w66_linedef.patch
-- committed revision 7??   by wesley johnson
+patchfile = w66_plutonia.patch
+- committed revision 784   by wesley johnson
 Bad detection for plutonia, CAM01 needed to be CAMO1.
 
 *** w67_stop_demo
