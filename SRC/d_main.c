@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 784 2011-02-22 04:36:30Z wesleyjohnson $
+// $Id: d_main.c 785 2011-02-22 04:41:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 784; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 785; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -893,7 +893,9 @@ void D_PageDrawer(char *lumpname)
 //
 void D_AdvanceDemo(void)
 {
-    advancedemo = true;
+    // [WDJ] do not start a demo when a menu is open
+    advancedemo = ! menuactive;
+//  advancedemo = true;
 }
 
 //

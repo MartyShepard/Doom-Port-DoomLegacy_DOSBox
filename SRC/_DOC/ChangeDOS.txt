@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00785 ]: w67 stop demo
 [00784 ]: w67 plutonia recognition
 [00783 ]: w67 linedef
 [00782 ]: w67 colormap msg

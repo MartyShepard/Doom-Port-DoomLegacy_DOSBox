@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 770 2010-12-10 00:52:37Z wesleyjohnson $
+// $Id: m_menu.c 785 2011-02-22 04:41:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1537,7 +1537,7 @@ menuitem_t EffectsOptionsMenu[]=
 menu_t  EffectsOptionsDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Effects",
     sizeof(EffectsOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     EffectsOptionsMenu,
@@ -1583,7 +1583,7 @@ menuitem_t VideoOptionsMenu[]=
 menu_t  VideoOptionsDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Video Options",
     sizeof(VideoOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     VideoOptionsMenu,
@@ -1635,7 +1635,7 @@ menuitem_t MouseOptionsMenu[]=
 menu_t  MouseOptionsDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Mouse Options",
     sizeof(MouseOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     MouseOptionsMenu,
@@ -1669,7 +1669,7 @@ menuitem_t GameOptionsMenu[]=
 menu_t  GameOptionDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Game Options",
     sizeof(GameOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     GameOptionsMenu,
@@ -1714,7 +1714,7 @@ menuitem_t NetOptionsMenu[]=
 menu_t  NetOptionDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Net Options",
     sizeof(NetOptionsMenu)/sizeof(menuitem_t),
     &MultiPlayerDef,
     NetOptionsMenu,
@@ -1748,7 +1748,7 @@ menuitem_t ServerOptionsMenu[]=
 menu_t  ServerOptionsDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Server Options",
     sizeof(ServerOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     ServerOptionsMenu,
@@ -4319,6 +4319,9 @@ void M_StartControlPanel (void)
     // intro might call this repeatedly
     if (menuactive)
         return;
+
+    if(demoplayback)  // menus without the demo interference
+        G_StopDemo();
 
     menuactive = 1;
     currentMenu = &MainDef;         // JDC

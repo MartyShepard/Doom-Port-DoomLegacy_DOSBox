@@ -1381,7 +1381,7 @@ Bad detection for plutonia, CAM01 needed to be CAMO1.
 
 *** w67_stop_demo
 patchfile = w66_stop_demo.patch
-- committed revision 7??   by wesley johnson
+- committed revision 785   by wesley johnson
 Stop demos when menus are open.  They keep stealing the keypresses and
 make it impossible to use the menus.
 
