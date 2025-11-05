@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: t_parse.h 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -50,14 +50,14 @@
 #define TOKENLENGTH 128
 
 
-typedef struct sfarray_s sfarray_t;
+typedef struct fs_array_s fs_array_t;
 typedef struct script_s script_t;
-typedef struct svalue_s svalue_t;
+typedef struct fs_value_s fs_value_t;
 typedef struct operator_s operator_t;
 
 
 
-struct svalue_s
+struct fs_value_s
 {
   int type;
   union
@@ -66,19 +66,19 @@ struct svalue_s
     fixed_t  f;
     char    *s;
     mobj_t  *mobj;
-    sfarray_t *a;   // arrays
+    fs_array_t *a;   // arrays
     char    *labelptr; // goto() label
   } value;
 };
 
 
-struct sfarray_s
+struct fs_array_s
 {
-   struct sfarray_s *next; // next array in save list
+   struct fs_array_s *next; // next array in save list
    int saveindex;	   // index for saving
 
    unsigned int length;	   // number of values currently initialized   
-   svalue_t *values;	   // array of contained values
+   fs_value_t *values;	   // array of contained values
 };
 
 
@@ -96,7 +96,7 @@ struct sfarray_s
 
 
 
-char * stringvalue(svalue_t v);
+char * stringvalue(fs_value_t v);
 
 #include "t_vari.h"
 #include "t_prepro.h"
@@ -113,11 +113,11 @@ struct script_s
   
   // {} sections
   
-  section_t *sections[SECTIONSLOTS];
+  fs_section_t *sections[SECTIONSLOTS];
   
   // variables:
   
-  svariable_t *variables[VARIABLESLOTS];
+  fs_variable_t *variables[VARIABLESLOTS];
   
   // ptr to the parent script
   // the parent script is the script above this level
@@ -140,7 +140,7 @@ struct script_s
 struct operator_s
 {
   char *string;
-  svalue_t (*handler)(int, int, int); // left, mid, right
+  fs_value_t (*handler)(int, int, int); // left, mid, right
   int direction;
 };
 
@@ -156,7 +156,7 @@ void parse_include(char *lumpname);
 void run_statement( void );
 void script_error(char *s, ...);
 
-svalue_t evaluate_expression(int start, int stop);
+fs_value_t evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
 int find_operator_backwards(int start, int stop, char *value);
 
@@ -178,7 +178,7 @@ enum    // brace types: where current_section is a { or }
   BRACKET_close
 };
 
-extern svalue_t nullvar;
+extern fs_value_t nullvar;
 extern int script_debug;
 
 extern script_t * fs_current_script;
@@ -191,8 +191,8 @@ extern int num_tokens;
 // [WDJ] Common fragglescript vars.
 extern char * fs_src_cp;     // current point reached in parsing
 extern char * fs_linestart_cp; // start of the current expression
-extern section_t * fs_current_section;
-extern section_t * fs_prev_section;
+extern fs_section_t * fs_current_section;
+extern fs_section_t * fs_prev_section;
 extern int fs_bracetype;
 
 // the global_script is the root

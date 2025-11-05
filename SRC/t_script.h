@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: t_script.h 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -57,7 +57,7 @@ struct runningscript_s
   int wait_data;  // data for wait: tagnum, counter, script number etc
 	
   // saved variables
-  svariable_t *variables[VARIABLESLOTS];
+  fs_variable_t *variables[VARIABLESLOTS];
   
   runningscript_t *prev, *next;  // for chain
   mobj_t *trigger;
@@ -69,7 +69,7 @@ void T_RunScript(int scriptnum, mobj_t * t_trigger );
 void T_RunThingScript(int scriptnum, mobj_t * t_trigger );
 void T_PreprocessScripts();
 void T_DelayedScripts();
-mobj_t * MobjForSvalue(svalue_t svalue);
+mobj_t * MobjForSvalue(fs_value_t svalue);
 
 // console commands
 void T_Dump();

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_prepro.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -34,10 +34,10 @@
 //      1: blank out comments (which could be misinterpreted)
 //      2: makes a list of all the sections held within {} braces
 //      3: 'dry' runs the script: goes thru each statement and
-//         sets the types of all the section_t's in the script
+//         sets the types of all the fs_section_t's in the script
 //      4: Saves locations of all goto() labels
 //
-// the system of section_t's is pretty horrible really, but it works
+// the system of fs_section_t's is pretty horrible really, but it works
 // and its probably the only way i can think of of saving scripts
 // half-way thru running
 //
@@ -83,21 +83,21 @@ void clear_script( void )
 // during preprocessing all of the {} sections
 // are found. these are stored in a hash table
 // according to their offset in the script. 
-// functions here deal with creating new section_t's
+// functions here deal with creating new fs_section_t's
 // and finding them from a given offset.
 
 #define section_hash(b)           \
        ( (int) ( (b) - fs_current_script->data) % SECTIONSLOTS)
 
-section_t *new_section(char *brace)
+fs_section_t *new_section(char *brace)
 {
   int n;
-  section_t *newsec;
+  fs_section_t *newsec;
   
   // create section
   // make level so its cleared at start of new level
   
-  newsec = Z_Malloc(sizeof(section_t), PU_LEVEL, 0);
+  newsec = Z_Malloc(sizeof(fs_section_t), PU_LEVEL, 0);
   newsec->start = brace;
   
   // hook it into the hashchain
@@ -109,11 +109,11 @@ section_t *new_section(char *brace)
   return newsec;
 }
 
-// find a section_t from the location of the starting { brace
-section_t* find_section_start(char *brace)
+// find a fs_section_t from the location of the starting { brace
+fs_section_t* find_section_start(char *brace)
 {
   int n = section_hash(brace);
-  section_t *current;
+  fs_section_t *current;
   
   current = fs_current_script->sections[n];
   
@@ -129,8 +129,8 @@ section_t* find_section_start(char *brace)
   return NULL;    // not found
 }
 
-// find a section_t from the location of the ending } brace
-section_t* find_section_end(char *brace)
+// find a fs_section_t from the location of the ending } brace
+fs_section_t* find_section_end(char *brace)
 {
   int n;
   
@@ -142,7 +142,7 @@ section_t* find_section_end(char *brace)
   
   for(n=0; n<SECTIONSLOTS; n++)      // check all sections in all chains
     {
-      section_t *current = fs_current_script->sections[n];
+      fs_section_t *current = fs_current_script->sections[n];
       
       while(current)
 	{
@@ -170,9 +170,9 @@ section_t* find_section_end(char *brace)
                      ( (c)<='9' && (c)>='0') || ( (c)=='_') )
 
         // create a new label. pass the location inside the script
-svariable_t* new_label(char *labelptr)
+fs_variable_t* new_label(char *labelptr)
 {
-  svariable_t *newlabel;   // labels are stored as variables
+  fs_variable_t *newlabel;   // labels are stored as variables
   char labelname[256];
   char *temp, *temp2;
   
@@ -256,7 +256,7 @@ char* process_find_char(char *data, char find)
       
       if(*data=='{')  // { -- } sections: add 'em
       {
-	  section_t *newsec = new_section(data);
+	  fs_section_t *newsec = new_section(data);
 	  
 	  newsec->type = FSST_empty;
 	  // find the ending } and save
@@ -283,7 +283,7 @@ char* process_find_char(char *data, char find)
 // in terms of tokens rather than as plain data.
 //
 // we 'dry' run the script: go thru each statement and
-// collect types for section_t
+// collect types for fs_section_t
 //
 // this is an important thing to do, it cannot be done
 // at runtime for 2 reasons:
@@ -301,7 +301,7 @@ void dry_run_script( void )
 {
   // save some stuff
   char *old_src_cp = fs_src_cp;
-  section_t *old_current_section = fs_current_section;
+  fs_section_t *old_current_section = fs_current_section;
   
   char *end = fs_current_script->data + fs_current_script->len;
   char *token_alloc;

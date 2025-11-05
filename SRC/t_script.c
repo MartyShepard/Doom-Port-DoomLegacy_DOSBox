@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: t_script.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -658,7 +658,7 @@ void clear_runningscripts( void )
 }
 
 
-mobj_t * MobjForSvalue(svalue_t svalue)
+mobj_t * MobjForSvalue(fs_value_t svalue)
 {
   int intval;
   

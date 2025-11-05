@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: t_parse.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -82,7 +82,7 @@
 
 void parse_script( void );
 void parse_data(char *data, char *end);
-svalue_t evaluate_expression(int start, int stop);
+fs_value_t evaluate_expression(int start, int stop);
 
 script_t * fs_current_script;       // the current script
 mobj_t * fs_trigger_obj;         // object which triggered script
@@ -93,14 +93,14 @@ tokentype_t tokentype[T_MAXTOKENS];
 int num_tokens = 0;
 int script_debug = false;
 
-svalue_t nullvar = { FSVT_int, {0} };    // null var for empty return
+fs_value_t nullvar = { FSVT_int, {0} };    // null var for empty return
 
 /************ Divide into tokens **************/
 
 char * fs_linestart_cp;          // start of line
 char * fs_src_cp;              // current point reached in script
-section_t * fs_current_section;  // the section (if any) found in parsing the line
-section_t * fs_prev_section;     // the section from the previous statement
+fs_section_t * fs_current_section;  // the section (if any) found in parsing the line
+fs_section_t * fs_prev_section;     // the section from the previous statement
 int fs_bracetype;                // BRACKET_open or BRACKET_close
 
         // inline for speed
@@ -634,18 +634,18 @@ int find_operator_backwards(int start, int stop, char *value)
 // simple_evaluate is used once evalute_expression gets to the level
 // where it is evaluating just one token
 
-// converts TT_number tokens into svalue_ts and returns
+// converts TT_number tokens into fs_value_ts and returns
 // the same with TT_string tokens
 // TT_name tokens are considered to be variables and
 // attempts are made to find the value of that variable
-// command tokens are executed (does not return a svalue_t)
+// command tokens are executed (does not return a fs_value_t)
 
-extern svalue_t nullvar;
+extern fs_value_t nullvar;
 
-static svalue_t simple_evaluate(int n)
+static fs_value_t simple_evaluate(int n)
 {
-    svalue_t returnvar;
-    svariable_t *var;
+    fs_value_t returnvar;
+    fs_variable_t *var;
 
     switch (tokentype[n])
     {
@@ -734,7 +734,7 @@ static void pointless_brackets(int *start, int *stop)
 // evaluate each side. When it reaches the level of being asked
 // to evaluate just 1 token, it calls simple_evaluate
 
-svalue_t evaluate_expression(int start, int stop)
+fs_value_t evaluate_expression(int start, int stop)
 {
     int i, n;
 
@@ -839,9 +839,9 @@ void script_error(char *s, ...)
 }
 
 //
-// sf: string value of an svalue_t
+// sf: string value of an fs_value_t
 //
-char * stringvalue(svalue_t v)
+char * stringvalue(fs_value_t v)
 {
 #define STRVAL_BUFLEN  255
     static char buffer[STRVAL_BUFLEN+1];

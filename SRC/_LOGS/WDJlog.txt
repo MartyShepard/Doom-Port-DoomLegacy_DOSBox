@@ -115,7 +115,7 @@ crosses another call of Z_Malloc.
 memory allocated from be deallocated while in use.
 
 *** docs
-patchfile= docs.diff
+patchfile= w15_docs.patch
 - committed revison 565   by wesleyjohnson
 - Update docs for release, and special linedefs
 - Fixes docs for release 1.44
@@ -123,7 +123,7 @@ patchfile= docs.diff
 special linedefs.
 
 *** makefile
-patchfile= makefile.patch
+patchfile= w15_makefile.patch
 - committed revision 566   by wesleyjohnson
 Fix makefile to work with older make, that does not understand some new
 make syntax.
@@ -132,7 +132,7 @@ make new usage explicit.
 Add debug, optimization controls.
 
 *** gets
-patchfile= gets.patch
+patchfile= w15_gets.patch
 - committed revision 567    by wesleyjohnson
 Fix t_func.c to not use the function gets(), which is so bad the
 compiler will warn of any use of it (it overruns the buffer).
@@ -1507,4 +1507,12 @@ Fix some extern defs in fs code to use header file.
 Rename some enum as WT_.
 Change some sprint into snprint.
 Some other minor cosmetic changes.
+
+*** w69_fs_var_rename
+patchfile = w69_fs_var_rename.patch
+- committed revision 805   by wesley johnson
+Rename fragglescript var and value types.
+Rename array savelist and types.
+Rename Init of arrays.
+
 

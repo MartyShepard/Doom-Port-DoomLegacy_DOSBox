@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: p_saveg.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2250,10 +2250,10 @@ void P_UnArchiveSpecials(void)
 static unsigned int P_NumberFSArrays(void)
 {
   unsigned int count = 0;
-#ifdef SAVELIST_STRUCTHEAD
-  sfarray_t *cur = sfsavelist.next; // start at first array
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+  fs_array_t *cur = fs_arraylist.next; // start at first array
 #else
-  sfarray_t *cur = sfsavelist; // start at first array
+  fs_array_t *cur = fs_arraylist; // start at first array
 #endif
   while (cur)
   {
@@ -2265,13 +2265,13 @@ static unsigned int P_NumberFSArrays(void)
 }
 
 
-static void  WRITE_SFArrayPtr( sfarray_t * arrayptr )
+static void  WRITE_SFArrayPtr( fs_array_t * arrayptr )
 {
     // write the array id (saveindex) for the ptr
-#ifdef SAVELIST_STRUCTHEAD
-    sfarray_t *cur = sfsavelist.next;
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+    fs_array_t *cur = fs_arraylist.next;
 #else
-    sfarray_t *cur = sfsavelist;
+    fs_array_t *cur = fs_arraylist;
 #endif
     while(cur && (cur != arrayptr))  // verify if valid ptr
 	    cur = cur->next;
@@ -2281,19 +2281,19 @@ static void  WRITE_SFArrayPtr( sfarray_t * arrayptr )
     WRITE32(save_p, (cur ? cur->saveindex : 0) );
 }
    
-static sfarray_t * READ_SFArrayPtr( void )
+static fs_array_t * READ_SFArrayPtr( void )
 {
     int svindx;
-    sfarray_t *cur = NULL;
+    fs_array_t *cur = NULL;
     // All arrays were numbered in saveindex
     svindx = READU32(save_p);  // consistent with Write saveindex
 
     if(svindx)		// 0 is NULL ptr
     {
-#ifdef SAVELIST_STRUCTHEAD
-        cur = sfsavelist.next;  // start of all arrays
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+        cur = fs_arraylist.next;  // start of all arrays
 #else
-        cur = sfsavelist;  // start of all arrays
+        cur = fs_arraylist;  // start of all arrays
 #endif
 	while(cur)	// search for matching saveindex
 	{
@@ -2310,7 +2310,7 @@ static sfarray_t * READ_SFArrayPtr( void )
 // we need to save fs_levelscript (all global variables) and
 // fs_runningscripts (scripts currently suspended)
 
-void P_ArchiveSValue(svalue_t *s)
+void P_ArchiveSValue(fs_value_t *s)
 {
   switch (s->type)   // store depending on type
   {
@@ -2341,7 +2341,7 @@ void P_ArchiveSValue(svalue_t *s)
   }
 }
 
-void P_UnArchiveSValue(svalue_t *s)
+void P_UnArchiveSValue(fs_value_t *s)
 {
   switch (s->type)       // read depending on type
   {
@@ -2374,7 +2374,7 @@ void P_UnArchiveSValue(svalue_t *s)
 
 
 
-void P_ArchiveFSVariables(svariable_t **vars)
+void P_ArchiveFSVariables(fs_variable_t **vars)
 {
   int i;
 
@@ -2382,7 +2382,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
   int num_variables = 0;
   for (i = 0; i < VARIABLESLOTS; i++)
   {
-    svariable_t *sv = vars[i];
+    fs_variable_t *sv = vars[i];
 
     // once we get to a label there can be no more actual
     // variables in the list to store
@@ -2400,7 +2400,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
   for (i = 0; i < VARIABLESLOTS; i++)
   {
     // go thru this hashchain
-    svariable_t *sv = vars[i];
+    fs_variable_t *sv = vars[i];
 
     while (sv && sv->type != FSVT_label)
     {
@@ -2419,9 +2419,9 @@ void P_ArchiveFSVariables(svariable_t **vars)
       }
       else
       {
-	  // [smite] TODO svariable_t should simply inherit svalue_t
-	  // also svalue_t should have array as a possible subtype
-	  svalue_t s;
+	  // [smite] TODO fs_variable_t should simply inherit fs_value_t
+	  // also fs_value_t should have array as a possible subtype
+	  fs_value_t s;
 	  s.type  = sv->type;
 
 	  s.value.mobj = sv->value.mobj; // HACK largest type in union
@@ -2436,7 +2436,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
 
 
 
-void P_UnArchiveFSVariables(svariable_t **vars)
+void P_UnArchiveFSVariables(fs_variable_t **vars)
 {
   int i;
 
@@ -2446,7 +2446,7 @@ void P_UnArchiveFSVariables(svariable_t **vars)
 
   for (i = 0; i < num_variables; i++)
   {
-    svariable_t *sv = Z_Malloc(sizeof(svariable_t), PU_LEVEL, 0);
+    fs_variable_t *sv = Z_Malloc(sizeof(fs_variable_t), PU_LEVEL, 0);
     SG_Readbuf();
 
     // name
@@ -2461,8 +2461,8 @@ void P_UnArchiveFSVariables(svariable_t **vars)
     }
     else
     {
-	// [smite] TODO svariable_t should simply inherit svalue_t, but...
-	svalue_t s;
+	// [smite] TODO fs_variable_t should simply inherit fs_value_t, but...
+	fs_value_t s;
 	s.type = sv->type;
 
 	P_UnArchiveSValue(&s);
@@ -2495,11 +2495,11 @@ void P_UnArchiveLevelScript()
   // free all the variables in the current levelscript first
   for (i = 0; i < VARIABLESLOTS; i++)
   {
-    svariable_t *sv = fs_levelscript.variables[i];
+    fs_variable_t *sv = fs_levelscript.variables[i];
 
     while (sv && sv->type != FSVT_label)
     {
-      svariable_t *next = sv->next;
+      fs_variable_t *next = sv->next;
       Z_Free(sv);
       sv = next;
     }
@@ -2643,10 +2643,10 @@ void P_ArchiveFSArrays(void)
   // write number of FS arrays
   WRITEU32(save_p, num_fsarrays);
       
-#ifdef SAVELIST_STRUCTHEAD
-  sfarray_t *cur = sfsavelist.next; // start at first array
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+  fs_array_t *cur = fs_arraylist.next; // start at first array
 #else
-  sfarray_t *cur = sfsavelist; // start at first array
+  fs_array_t *cur = fs_arraylist; // start at first array
 #endif
   while(cur)
   {
@@ -2655,7 +2655,7 @@ void P_ArchiveFSArrays(void)
     // write the length of this array
     WRITEU32(save_p, cur->length);
 
-    // values[] is array of svalue_s, which is a union of possible values
+    // values[] is array of fs_value_s, which is a union of possible values
     // marked with the type, each array element can be of a different type
 
     // write the contents of this array
@@ -2672,30 +2672,30 @@ void P_ArchiveFSArrays(void)
 // must be called before unarchiving running/level scripts
 void P_UnArchiveFSArrays(void)
 {
-  T_InitSaveList(); // reinitialize the save list
+  T_Init_FSArrayList(); // reinitialize the save list
      // All PU_LEVEL memory already cleared by P_UnArchiveMisc()
 
   // read number of FS arrays
   SG_Readbuf();
   unsigned int num_fsarrays = READU32(save_p);
 
-#ifdef SAVELIST_STRUCTHEAD
-  sfarray_t *last = sfsavelist.next; // start at first array
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+  fs_array_t *last = fs_arraylist.next; // start at first array
 #else
-  sfarray_t *last = sfsavelist; // start at first array
+  fs_array_t *last = fs_arraylist; // start at first array
 #endif
 
   // read all the arrays
   unsigned int q;
   for(q=0; q<num_fsarrays; q++)
   {
-    sfarray_t *newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
-    memset(newArray, 0, sizeof(sfarray_t));
+    fs_array_t *newArray = Z_Malloc(sizeof(fs_array_t), PU_LEVEL, NULL);
+    memset(newArray, 0, sizeof(fs_array_t));
 
     // read length of this array
     newArray->length = READU32(save_p);
       
-    newArray->values = Z_Malloc(newArray->length * sizeof(svalue_t), PU_LEVEL, NULL);
+    newArray->values = Z_Malloc(newArray->length * sizeof(fs_value_t), PU_LEVEL, NULL);
     CONS_Printf("%i", newArray->length);
       
     // read all archived values
@@ -2707,7 +2707,7 @@ void P_UnArchiveFSArrays(void)
     }
 
     // link in the new array -- must reconstruct list in same
-    // order as read (T_AddArray will not work for this)
+    // order as read (T_Add_FSArray will not work for this)
     last->next = newArray;
     last = newArray;
   }
@@ -2760,10 +2760,10 @@ void P_UnArchiveScripts()
 // [WDJ] return true if there is fragglescript state to be saved
 boolean SG_fragglescript_detect( void )
 {
-#ifdef SAVELIST_STRUCTHEAD
-    if( sfsavelist.next ) goto found_state;	// start of arrays
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+    if( fs_arraylist.next ) goto found_state;	// start of arrays
 #else
-    if( sfsavelist ) goto found_state;	// start of arrays
+    if( fs_arraylist ) goto found_state;	// start of arrays
 #endif
     if( fs_levelscript.variables ) goto found_state;  // levelscript has vars
     if( fs_runningscripts.next ) goto found_state;  // there is a running script
@@ -3128,7 +3128,7 @@ boolean P_LoadGame(void)
     else
     {
         // This is all the setup does
-        T_InitSaveList();             // Setup FS array list
+        T_Init_FSArrayList();             // Setup FS array list
         // FIXME: kill any existing fragglescript
     }
 #else   

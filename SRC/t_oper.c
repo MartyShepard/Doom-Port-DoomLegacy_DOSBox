@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_oper.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -63,34 +63,34 @@
   left = evaluate_expression((a), (b)-1); \
   right = evaluate_expression((b)+1, (c)); }\
 
-svalue_t OPequals(int, int, int);           // =
+fs_value_t OPequals(int, int, int);           // =
 
-svalue_t OPplus(int, int, int);             // +
-svalue_t OPminus(int, int, int);            // -
-svalue_t OPmultiply(int, int, int);         // *
-svalue_t OPdivide(int, int, int);           // /
-svalue_t OPremainder(int, int, int);        // %
+fs_value_t OPplus(int, int, int);             // +
+fs_value_t OPminus(int, int, int);            // -
+fs_value_t OPmultiply(int, int, int);         // *
+fs_value_t OPdivide(int, int, int);           // /
+fs_value_t OPremainder(int, int, int);        // %
 
-svalue_t OPor(int, int, int);               // ||
-svalue_t OPand(int, int, int);              // &&
-svalue_t OPnot(int, int, int);              // !
+fs_value_t OPor(int, int, int);               // ||
+fs_value_t OPand(int, int, int);              // &&
+fs_value_t OPnot(int, int, int);              // !
 
-svalue_t OPor_bin(int, int, int);           // |
-svalue_t OPand_bin(int, int, int);          // &
-svalue_t OPnot_bin(int, int, int);          // ~
+fs_value_t OPor_bin(int, int, int);           // |
+fs_value_t OPand_bin(int, int, int);          // &
+fs_value_t OPnot_bin(int, int, int);          // ~
 
-svalue_t OPcmp(int, int, int);              // ==
-svalue_t OPnotcmp(int, int, int);           // !=
-svalue_t OPlessthan(int, int, int);         // <
-svalue_t OPgreaterthan(int, int, int);      // >
+fs_value_t OPcmp(int, int, int);              // ==
+fs_value_t OPnotcmp(int, int, int);           // !=
+fs_value_t OPlessthan(int, int, int);         // <
+fs_value_t OPgreaterthan(int, int, int);      // >
 
-svalue_t OPincrement(int, int, int);        // ++
-svalue_t OPdecrement(int, int, int);        // --
+fs_value_t OPincrement(int, int, int);        // ++
+fs_value_t OPdecrement(int, int, int);        // --
 
-svalue_t OPlessthanorequal(int, int, int);  // <=
-svalue_t OPgreaterthanorequal(int, int, int); // >=
+fs_value_t OPlessthanorequal(int, int, int);  // <=
+fs_value_t OPgreaterthanorequal(int, int, int); // >=
 
-svalue_t OPstructure(int, int, int);    // in t_vari.c
+fs_value_t OPstructure(int, int, int);    // in t_vari.c
 
 operator_t operators[]=
 {
@@ -122,10 +122,10 @@ int num_operators = sizeof(operators) / sizeof(operator_t);
 
 // = operator
 
-svalue_t OPequals(int start, int n, int stop)
+fs_value_t OPequals(int start, int n, int stop)
 {
-  svariable_t *var;
-  svalue_t evaluated;
+  fs_variable_t *var;
+  fs_value_t evaluated;
   
   var = find_variable(tokens[start]);
   
@@ -144,11 +144,11 @@ svalue_t OPequals(int start, int n, int stop)
 }
 
 
-svalue_t OPor(int start, int n, int stop)
+fs_value_t OPor(int start, int n, int stop)
 {
-  svalue_t returnvar;
+  fs_value_t returnvar;
   int exprtrue = false;
-  svalue_t eval;
+  fs_value_t eval;
   
   // if first is true, do not evaluate the second
   
@@ -170,11 +170,11 @@ svalue_t OPor(int start, int n, int stop)
 }
 
 
-svalue_t OPand(int start, int n, int stop)
+fs_value_t OPand(int start, int n, int stop)
 {
-  svalue_t returnvar;
+  fs_value_t returnvar;
   int exprtrue = true;
-  svalue_t eval;
+  fs_value_t eval;
 
   // if first is false, do not eval second
   
@@ -194,9 +194,9 @@ svalue_t OPand(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPcmp(int start, int n, int stop)
+fs_value_t OPcmp(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -231,9 +231,9 @@ svalue_t OPcmp(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPnotcmp(int start, int n, int stop)
+fs_value_t OPnotcmp(int start, int n, int stop)
 {
-  svalue_t returnvar;
+  fs_value_t returnvar;
   
   returnvar = OPcmp(start, n, stop);
   returnvar.value.i = !returnvar.value.i;
@@ -241,9 +241,9 @@ svalue_t OPnotcmp(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPlessthan(int start, int n, int stop)
+fs_value_t OPlessthan(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -257,9 +257,9 @@ svalue_t OPlessthan(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPgreaterthan(int start, int n, int stop)
+fs_value_t OPgreaterthan(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -273,9 +273,9 @@ svalue_t OPgreaterthan(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPnot(int start, int n, int stop)
+fs_value_t OPnot(int start, int n, int stop)
 {
-  svalue_t right, returnvar;
+  fs_value_t right, returnvar;
   
   right = evaluate_expression(n+1, stop);
   
@@ -286,9 +286,9 @@ svalue_t OPnot(int start, int n, int stop)
 
 /************** simple math ***************/
 
-svalue_t OPplus(int start, int n, int stop)
+fs_value_t OPplus(int start, int n, int stop)
 {
-    svalue_t left, right, returnvar;
+    fs_value_t left, right, returnvar;
   
     evaluate_leftnright(start, n, stop);
 
@@ -326,9 +326,9 @@ svalue_t OPplus(int start, int n, int stop)
     return returnvar;
 }
 
-svalue_t OPminus(int start, int n, int stop)
+fs_value_t OPminus(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   // do they mean minus as in '-1' rather than '2-1'?
   if(start == n)
@@ -354,9 +354,9 @@ svalue_t OPminus(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPmultiply(int start, int n, int stop)
+fs_value_t OPmultiply(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -374,9 +374,9 @@ svalue_t OPmultiply(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPdivide(int start, int n, int stop)
+fs_value_t OPdivide(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -408,9 +408,9 @@ svalue_t OPdivide(int start, int n, int stop)
   return returnvar;
 }
 
-svalue_t OPremainder(int start, int n, int stop)
+fs_value_t OPremainder(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   int ir;
   
   evaluate_leftnright(start, n, stop);
@@ -428,9 +428,9 @@ svalue_t OPremainder(int start, int n, int stop)
         /********** binary operators **************/
 
 // binary or |
-svalue_t OPor_bin(int start, int n, int stop)
+fs_value_t OPor_bin(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -442,9 +442,9 @@ svalue_t OPor_bin(int start, int n, int stop)
 
 // binary and &
 
-svalue_t OPand_bin(int start, int n, int stop)
+fs_value_t OPand_bin(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   
   evaluate_leftnright(start, n, stop);
   
@@ -456,12 +456,12 @@ svalue_t OPand_bin(int start, int n, int stop)
 
 
         // ++
-svalue_t OPincrement(int start, int n, int stop)
+fs_value_t OPincrement(int start, int n, int stop)
 {
   if(start == n)          // ++n
   {
-      svalue_t value;
-      svariable_t *var;
+      fs_value_t value;
+      fs_variable_t *var;
       
       var = find_variable(tokens[stop]);
       if(!var)
@@ -479,8 +479,8 @@ svalue_t OPincrement(int start, int n, int stop)
   }
   else if(stop == n)     // n++
   {
-      svalue_t origvalue, value;
-      svariable_t *var;
+      fs_value_t origvalue, value;
+      fs_variable_t *var;
       
       var = find_variable(tokens[start]);
       if(!var)
@@ -502,12 +502,12 @@ svalue_t OPincrement(int start, int n, int stop)
 }
 
         // --
-svalue_t OPdecrement(int start, int n, int stop)
+fs_value_t OPdecrement(int start, int n, int stop)
 {
   if(start == n)          // ++n
   {
-      svalue_t value;
-      svariable_t *var;
+      fs_value_t value;
+      fs_variable_t *var;
       
       var = find_variable(tokens[stop]);
       if(!var)
@@ -525,8 +525,8 @@ svalue_t OPdecrement(int start, int n, int stop)
   }
   else if(stop == n)   // n++
   {
-      svalue_t origvalue, value;
-      svariable_t *var;
+      fs_value_t origvalue, value;
+      fs_variable_t *var;
       
       var = find_variable(tokens[start]);
       if(!var)
@@ -549,9 +549,9 @@ svalue_t OPdecrement(int start, int n, int stop)
 
 
 // Thank you Quasar!
-svalue_t OPlessthanorequal(int start, int n, int stop)
+fs_value_t OPlessthanorequal(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   evaluate_leftnright(start, n, stop);
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) <= intvalue(right);
@@ -559,9 +559,9 @@ svalue_t OPlessthanorequal(int start, int n, int stop)
 }
 
 
-svalue_t OPgreaterthanorequal(int start, int n, int stop)
+fs_value_t OPgreaterthanorequal(int start, int n, int stop)
 {
-  svalue_t left, right, returnvar;
+  fs_value_t left, right, returnvar;
   evaluate_leftnright(start, n, stop);
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) >= intvalue(right);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 781 2011-02-22 04:32:29Z wesleyjohnson $
+// $Id: p_setup.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1702,7 +1702,7 @@ boolean P_SetupLevel (int           episode,
 
 
 #ifdef FRAGGLESCRIPT
-    T_InitSaveList();             // Setup FS array list
+    T_Init_FSArrayList();         // Setup FS array list
     T_PreprocessScripts();        // preprocess FraggleScript scripts
 #endif
 

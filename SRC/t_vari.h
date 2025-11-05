@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_vari.h 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -37,7 +37,7 @@
 #ifndef __VARIABLE_H__
 #define __VARIABLE_H__
 
-typedef struct svariable_s svariable_t;
+typedef struct fs_variable_s fs_variable_t;
 #define VARIABLESLOTS 16
 
 #include "t_parse.h"
@@ -51,30 +51,30 @@ typedef struct svariable_s svariable_t;
                    ((n)[1] ? (n)[2] +   \
                    ((n)[2] ? (n)[3]  : 0) : 0) ) % VARIABLESLOTS )
 
-     // svariable_t
-struct svariable_s
+// fs_variable_t
+struct fs_variable_s
 {
   char *name;
-  int type;       // vt_string or vt_int: same as in svalue_t
+  int type;       // vt_string or vt_int: same as in fs_value_t
   union
   {
     int32_t    i;
     fixed_t    fixed;
     char      *s;
     mobj_t    *mobj;
-    sfarray_t *a;           // arrays
+    fs_array_t *a;           // arrays
     
     char **pS;              // pointer to game string
     int *pI;                // pointer to game int
     fixed_t *pFixed;
     mobj_t **pMobj;         // pointer to game obj
     double *pf;
-    sfarray_t **pA;         // arrays
+    fs_array_t **pA;         // arrays
     
     void (*handler)();      // for functions
     char *labelptr;         // for labels
   } value;
-  svariable_t *next;       // for hashing
+  fs_variable_t *next;       // for hashing
 };
 
 // variable types
@@ -101,27 +101,27 @@ enum
 void T_ClearHubScript();
 
 void init_variables();
-svariable_t *new_variable(script_t *script, char *name, int vtype);
-svariable_t *find_variable(char *name);
-svariable_t *variableforname(script_t *script, char *name);
-svalue_t getvariablevalue(svariable_t *v);
-void setvariablevalue(svariable_t *v, svalue_t newvalue);
+fs_variable_t * new_variable(script_t *script, char *name, int vtype);
+fs_variable_t * find_variable(char *name);
+fs_variable_t * variableforname(script_t *script, char *name);
+fs_value_t getvariablevalue(fs_variable_t *v);
+void setvariablevalue(fs_variable_t *v, fs_value_t newvalue);
 void clear_variables(script_t *script);
 
-svariable_t *add_game_int(char *name, int *var);
-svariable_t *add_game_string(char *name, char **var);
-svariable_t *add_game_mobj(char *name, mobj_t **mo);
+fs_variable_t * add_game_int(char *name, int *var);
+fs_variable_t * add_game_string(char *name, char **var);
+fs_variable_t * add_game_mobj(char *name, mobj_t **mo);
 
 // functions
 
-svalue_t evaluate_function(int start, int stop);   // actually run a function
-svariable_t *new_function(char *name, void (*handler)() );
+fs_value_t evaluate_function(int start, int stop);   // actually run a function
+fs_variable_t * new_function(char *name, void (*handler)() );
 
 // arguments to handler functions
 
 #define MAXARGS 128
 extern int t_argc;
-extern svalue_t *t_argv;
-extern svalue_t t_return;
+extern fs_value_t * t_argv;
+extern fs_value_t t_return;
 
 #endif

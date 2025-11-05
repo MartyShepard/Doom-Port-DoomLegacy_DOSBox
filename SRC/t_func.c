@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: t_func.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -196,7 +196,7 @@
 #include "t_array.h"
 
 
-svalue_t evaluate_expression(int start, int stop);
+fs_value_t  evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
 
 
@@ -274,16 +274,16 @@ void SF_PRnd()
 
 // Find the next outermost
 // loop we are currently in and return the section_t for it.
-section_t * in_looping_section()
+fs_section_t * in_looping_section()
 {
     // deepest level loop we're in that has been found so far
-    section_t * loopfnd = NULL;
+    fs_section_t * loopfnd = NULL;
     int n;
 
     // check thru all the hashchains
     for (n = 0; n < SECTIONSLOTS; n++)
     {
-        section_t *current = fs_current_script->sections[n];
+        fs_section_t *current = fs_current_script->sections[n];
 
         // check all the sections in this hashchain
         while (current)
@@ -308,7 +308,7 @@ section_t * in_looping_section()
 // "continue;" in FraggleScript is a function
 void SF_Continue()
 {
-    section_t *section;
+    fs_section_t *section;
 
     if (!(section = in_looping_section())) // no loop found
     {
@@ -321,7 +321,7 @@ void SF_Continue()
 
 void SF_Break()
 {
-    section_t *section;
+    fs_section_t *section;
 
     if (!(section = in_looping_section()))
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_vari.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -91,7 +91,7 @@ void T_ClearHubScript( void )
   {
       while(hub_script.variables[i])
       {
-	  svariable_t *next = hub_script.variables[i]->next;
+	  fs_variable_t *next = hub_script.variables[i]->next;
 	  if(hub_script.variables[i]->type == FSVT_string)
 	    Z_Free(hub_script.variables[i]->value.s);
 	  Z_Free(hub_script.variables[i]);
@@ -103,9 +103,9 @@ void T_ClearHubScript( void )
 // find_variable checks through the current script, level script
 // and global script to try to find the variable of the name wanted
 
-svariable_t * find_variable(char *name)
+fs_variable_t * find_variable(char *name)
 {
-  svariable_t *var;
+  fs_variable_t *var;
   script_t *current;
   
   current = fs_current_script;
@@ -124,16 +124,16 @@ svariable_t * find_variable(char *name)
 // create a new variable in a particular script.
 // returns a pointer to the new variable.
 
-svariable_t * new_variable(script_t *script, char *name, int vtype)
+fs_variable_t * new_variable(script_t *script, char *name, int vtype)
 {
   int n;
-  svariable_t *newvar;
+  fs_variable_t *newvar;
   int tagtype =
     script==&global_script || script==&hub_script ? PU_STATIC : PU_LEVEL;
   
   // find an empty slot first
 
-  newvar = Z_Malloc(sizeof(svariable_t), tagtype, 0);
+  newvar = Z_Malloc(sizeof(fs_variable_t), tagtype, 0);
   newvar->name = (char*)Z_Strdup(name, tagtype, 0);
   newvar->type = vtype;
   
@@ -163,10 +163,10 @@ svariable_t * new_variable(script_t *script, char *name, int vtype)
 // search a particular script for a variable, which
 // is returned if it exists
 
-svariable_t * variableforname(script_t *script, char *name)
+fs_variable_t * variableforname(script_t *script, char *name)
 {
   int n;
-  svariable_t *current;
+  fs_variable_t *current;
   
   n = variable_hash(name);
   
@@ -186,7 +186,7 @@ svariable_t * variableforname(script_t *script, char *name)
 void clear_variables(script_t *script)
 {
   int i;
-  svariable_t *current, *next;
+  fs_variable_t *current, *next;
   
   for(i=0; i<VARIABLESLOTS; i++)
   {
@@ -214,11 +214,11 @@ void clear_variables(script_t *script)
   }
 }
 
-// returns an svalue_t holding the current
+// returns an fs_value_t holding the current
 // value of a particular variable.
-svalue_t getvariablevalue(svariable_t *v)
+fs_value_t getvariablevalue(fs_variable_t *v)
 {
-  svalue_t returnvar;
+  fs_value_t returnvar;
   
   if(!v) return nullvar;
   
@@ -257,9 +257,9 @@ svalue_t getvariablevalue(svariable_t *v)
   return returnvar;
 }
 
-// set a variable to a value from an svalue_t
+// set a variable to a value from an fs_value_t
 
-void setvariablevalue(svariable_t *v, svalue_t newvalue)
+void setvariablevalue(fs_variable_t *v, fs_value_t newvalue)
 {
   if(fs_killscript) return;  // protect the variables when killing script
   
@@ -334,9 +334,9 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
 
 
 
-svariable_t * add_game_int(char *name, int *var)
+fs_variable_t * add_game_int(char *name, int *var)
 {
-  svariable_t* newvar;
+  fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pInt);
   newvar->value.pI = var;
 
@@ -344,18 +344,18 @@ svariable_t * add_game_int(char *name, int *var)
 }
 
 
-svariable_t * add_game_fixed(char *name, fixed_t *fixed)
+fs_variable_t * add_game_fixed(char *name, fixed_t *fixed)
 {
-  svariable_t *newvar;
+  fs_variable_t *newvar;
   newvar = new_variable(&global_script, name, FSVT_pFixed);
   newvar->value.pFixed = fixed;
 
   return newvar;
 }
 
-svariable_t * add_game_string(char *name, char **var)
+fs_variable_t * add_game_string(char *name, char **var)
 {
-  svariable_t* newvar;
+  fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pString);
   newvar->value.pS = var;
 
@@ -364,9 +364,9 @@ svariable_t * add_game_string(char *name, char **var)
 
 
 
-svariable_t * add_game_mobj(char *name, mobj_t **mo)
+fs_variable_t * add_game_mobj(char *name, mobj_t **mo)
 {
-  svariable_t* newvar;
+  fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pMobj);
   newvar->value.pMobj = mo;
 
@@ -397,12 +397,12 @@ svariable_t * add_game_mobj(char *name, mobj_t **mo)
 // the basic handler functions are in func.c
 
 int t_argc;                     // number of arguments
-svalue_t *t_argv;               // arguments
-svalue_t t_return;              // returned value
+fs_value_t *t_argv;               // arguments
+fs_value_t t_return;              // returned value
 
-svalue_t evaluate_function(int start, int stop)
+fs_value_t evaluate_function(int start, int stop)
 {
-  svariable_t *func = NULL;
+  fs_variable_t *func = NULL;
   int startpoint, endpoint;
 
   // the arguments need to be built locally in case of
@@ -410,7 +410,7 @@ svalue_t evaluate_function(int start, int stop)
   // print("here is a random number: ", rnd() );
   
   int argc;
-  svalue_t argv[MAXARGS];
+  fs_value_t argv[MAXARGS];
 
   if(tokentype[start] != TT_function || tokentype[stop] != TT_operator
      || tokens[stop][0] != ')' )
@@ -472,16 +472,16 @@ svalue_t evaluate_function(int start, int stop)
 
 // this function is just based on the one above
 
-svalue_t OPstructure(int start, int n, int stop)
+fs_value_t OPstructure(int start, int n, int stop)
 {
-  svariable_t *func = NULL;
+  fs_variable_t *func = NULL;
   
   // the arguments need to be built locally in case of
   // function returns as function arguments eg
   // print("here is a random number: ", rnd() );
   
   int argc;
-  svalue_t argv[MAXARGS];
+  fs_value_t argv[MAXARGS];
 
   // all the functions are stored in the global script
   if( !(func = variableforname(&global_script, tokens[n+1]))  )
@@ -541,9 +541,9 @@ svalue_t OPstructure(int start, int n, int stop)
 
 // create a new function. returns the function number
 
-svariable_t * new_function(char *name, void (*handler)() )
+fs_variable_t * new_function(char *name, void (*handler)() )
 {
-  svariable_t *newvar;
+  fs_variable_t *newvar;
 
   // create the new variable for the function
   // add to the global script

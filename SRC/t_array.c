@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_array.c 805 2011-03-09 00:36:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -46,8 +46,8 @@
 // and they'll live until the end of the level. This is very lazy
 // garbage collection, but its the only real solution given the
 // state of the FS source (the word "haphazard" comes to mind...)
-#ifdef SAVELIST_STRUCTHEAD
-array_t sfsavelist =
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+array_t fs_arraylist =
 {
    NULL,
    0,
@@ -55,21 +55,21 @@ array_t sfsavelist =
    NULL,
 };
 #else
-sfarray_t * sfsavelist = NULL;
+fs_array_t * fs_arraylist = NULL;
 #endif
 
-// add an array into the save list
-void T_AddArray(sfarray_t *array)
+// add an array into the array save list
+void T_Add_FSArray(fs_array_t *array)
 {
-   sfarray_t *temp;
+   fs_array_t *temp;
 
    // always insert at head of list
-#ifdef SAVELIST_STRUCTHEAD
-   temp = sfsavelist.next;
-   sfsavelist.next = array;
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+   temp = fs_arraylist.next;
+   fs_arraylist.next = array;
 #else
-   temp = sfsavelist;
-   sfsavelist = array;
+   temp = fs_arraylist;
+   fs_arraylist = array;
 #endif
    array->next = temp;
 }
@@ -77,20 +77,20 @@ void T_AddArray(sfarray_t *array)
 static void * initsave_levelclear = NULL;  // indicates when PU_LEVEL cleared
   
 // call from P_SetupLevel and P_SaveGame
-// Clears added array values but not base of sfsavelist
-void T_InitSaveList(void)
+// Clears added array values but not base of fs_arraylist
+void T_Init_FSArrayList(void)
 {
    // Z_Malloc of arrays is PU_LEVEL, but does not pass a user ptr, so level
    // clear will have released all this memory without informing the owners.
    if( initsave_levelclear )	// level not cleared, as in load saved game
    {
-       sfarray_t * sfap, * sfap_nxt;
+       fs_array_t * sfap, * sfap_nxt;
        // enable to test if this is happening
-//       fprintf(stderr, "T_InitSaveList: clearing array list\n" );
-#ifdef SAVELIST_STRUCTHEAD
-       sfap = sfsavelist.next;
+//       fprintf(stderr, "T_Init_FSArrayList: clearing array list\n" );
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+       sfap = fs_arraylist.next;
 #else      
-       sfap = sfsavelist;
+       sfap = fs_arraylist;
 #endif
        for( ; sfap; sfap=sfap_nxt )
        {
@@ -104,24 +104,24 @@ void T_InitSaveList(void)
        // will trip when level is cleared
        Z_Malloc( 1, PU_LEVEL, &initsave_levelclear );
    }
-#ifdef SAVELIST_STRUCTHEAD
-   sfsavelist.next = NULL;
+#ifdef FS_ARRAYLIST_STRUCTHEAD
+   fs_arraylist.next = NULL;
 #else      
-   sfsavelist = NULL;
+   fs_arraylist = NULL;
 #endif
 }
 
 #if 0
-// Clears all array values including base of sfsavelist
-void T_InitSaveArrays(void)
+// Clears all array values including base of fs_arraylist
+void T_Init_FSArrays(void)
 {
    // Z_Malloc of arrays does not pass a user ptr, so level clear
    // will not have destroyed these arrays.
-   T_InitSaveList();	// clear sfsavelist.next
-   if( sfsavelist.values )  Z_Free( sfsavelist.values );
-   sfsavelist.values = NULL;
-   sfsavelist.saveindex = 0;
-   sfsavelist.length = 0;
+   T_Init_FSArrayList();	// clear fs_arraylist.next
+   if( fs_arraylist.values )  Z_Free( fs_arraylist.values );
+   fs_arraylist.values = NULL;
+   fs_arraylist.saveindex = 0;
+   fs_arraylist.length = 0;
 }
 #endif
 
@@ -130,7 +130,7 @@ void T_InitSaveArrays(void)
 //
 // SF_NewArray
 // 
-//  Create a new sfarray_t and initialize it with values
+//  Create a new fs_array_t and initialize it with values
 //
 //  Implements: array newArray(...)
 //
@@ -138,20 +138,20 @@ void T_InitSaveArrays(void)
 void SF_NewArray(void)
 {
    int i;
-   sfarray_t *newArray;
+   fs_array_t *newArray;
 
    if(!t_argc) // empty, do nothing
       return;
 
-   // allocate a sfarray_t
-   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
+   // allocate a fs_array_t
+   newArray = Z_Malloc(sizeof(fs_array_t), PU_LEVEL, NULL);
 
    // init all fields to zero
-   memset(newArray, 0, sizeof(sfarray_t));
+   memset(newArray, 0, sizeof(fs_array_t));
    
    // allocate t_argc number of values, set length
-   newArray->values = Z_Malloc(t_argc*sizeof(svalue_t), PU_LEVEL, NULL);
-   memset(newArray->values, 0, t_argc*sizeof(svalue_t));
+   newArray->values = Z_Malloc(t_argc*sizeof(fs_value_t), PU_LEVEL, NULL);
+   memset(newArray->values, 0, t_argc*sizeof(fs_value_t));
    
    newArray->length = t_argc;
 
@@ -162,10 +162,10 @@ void SF_NewArray(void)
 	 continue;
 
       // copy all the argument values into the local array
-      memcpy(&(newArray->values[i]), &t_argv[i], sizeof(svalue_t));
+      memcpy(&(newArray->values[i]), &t_argv[i], sizeof(fs_value_t));
    }
 
-   T_AddArray(newArray); // add the new array to the save list
+   T_Add_FSArray(newArray); // add the new array to the save list
    
    t_return.type = FSVT_array;
    // t_return is an internal value which may not be captured in
@@ -180,13 +180,13 @@ void SF_NewArray(void)
 //
 // SF_NewEmptyArray
 // 
-//  Create a new sfarray_t and initialize it with a standard value
+//  Create a new fs_array_t and initialize it with a standard value
 //
 void SF_NewEmptyArray(void)
 {
    int i;
-   sfarray_t *newArray;
-   svalue_t	newval;
+   fs_array_t *newArray;
+   fs_value_t	newval;
 
    if(t_argc < 2) // empty, do nothing
       return;
@@ -207,15 +207,15 @@ void SF_NewEmptyArray(void)
 
 
 
-   // allocate a sfarray_t
-   newArray = Z_Malloc(sizeof(sfarray_t), PU_LEVEL, NULL);
+   // allocate a fs_array_t
+   newArray = Z_Malloc(sizeof(fs_array_t), PU_LEVEL, NULL);
 
    // init all fields to zero
-   memset(newArray, 0, sizeof(sfarray_t));
+   memset(newArray, 0, sizeof(fs_array_t));
    
    // allocate t_argc number of values, set length
-   newArray->values = Z_Malloc(t_argv[0].value.i*sizeof(svalue_t), PU_LEVEL, NULL);
-   memset(newArray->values, 0, t_argv[0].value.i*sizeof(svalue_t));
+   newArray->values = Z_Malloc(t_argv[0].value.i*sizeof(fs_value_t), PU_LEVEL, NULL);
+   memset(newArray->values, 0, t_argv[0].value.i*sizeof(fs_value_t));
    
    
    newArray->length = t_argv[0].value.i;
@@ -242,11 +242,11 @@ void SF_NewEmptyArray(void)
    {
       
       // Copy the new element into the array
-	  memcpy(&(newArray->values[i]), &newval, sizeof(svalue_t));
+	  memcpy(&(newArray->values[i]), &newval, sizeof(fs_value_t));
 
    }
 
-   T_AddArray(newArray); // add the new array to the save list
+   T_Add_FSArray(newArray); // add the new array to the save list
    
    t_return.type = FSVT_array;
    // t_return is an internal value which may not be captured in
@@ -268,7 +268,7 @@ void SF_NewEmptyArray(void)
 void SF_ArrayCopyInto(void)
 {
    unsigned int i;
-   sfarray_t *source, *target;
+   fs_array_t *source, *target;
    
    if(t_argc != 2)
    {
@@ -300,7 +300,7 @@ void SF_ArrayCopyInto(void)
    for(i=0; i<source->length; i++)
    {
       memcpy(&(target->values[i]), &(source->values[i]), 
-	     sizeof(svalue_t));
+	     sizeof(fs_value_t));
    }
 }
 
@@ -339,9 +339,9 @@ void SF_ArrayElementAt(void)
       return;
    }
 
-   // copy full svalue_t to t_return
+   // copy full fs_value_t to t_return
    memcpy(&t_return, &(t_argv[0].value.a->values[index]), 
-          sizeof(svalue_t));
+          sizeof(fs_value_t));
 }
 
 //
@@ -384,9 +384,9 @@ void SF_ArraySetElementAt(void)
       return;
    }
 
-   // copy full svalue_t into array at given index
+   // copy full fs_value_t into array at given index
    memcpy(&(t_argv[0].value.a->values[index]), &t_argv[1],
-          sizeof(svalue_t));
+          sizeof(fs_value_t));
 }
 
 //
