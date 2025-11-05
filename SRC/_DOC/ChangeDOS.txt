@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00808 ]: w70 savegame spaces
 [00807 ]: w70 timelimit bug
 [00806*]: w69 fs doc
 [00805 ]: w69 fs var rename

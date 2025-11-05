@@ -1520,14 +1520,14 @@ patchfile = w69_docs.patch
 - committed revision 806   by wesley johnson
 Fix docs for latest patches.
 
-*** w70_timelimit
+*** w70_timelimit_bug
 patchfile = w70_timelimit.patch
 - committed revision 807   by wesley johnson
 Fix timelimit to use tics, fixing bug 989967.
 
 *** w70_savegame_spaces
 patchfile = w70_savegame_spaces.patch
-- committed revision 8??   by wesley johnson
+- committed revision 808   by wesley johnson
 Fix code so savegame description allows spaces again.
 
 *** w70_pld_Makefile

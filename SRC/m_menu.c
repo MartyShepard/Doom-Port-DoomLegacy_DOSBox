@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 800 2011-03-06 18:53:23Z wesleyjohnson $
+// $Id: m_menu.c 808 2011-03-09 00:41:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -915,7 +915,7 @@ CV_PossibleValue_t exmy_cons_t[] ={{11,"e1m1"} ,{12,"e1m2"} ,{13,"e1m3"}
                                   ,{47,"e5m7"} ,{48,"e5m8"} ,{49,"e5m9"}
                                   ,{0,NULL}};
 
-consvar_t cv_skill    = {"skill"    ,"4",CV_HIDEN,skill_cons_t};
+consvar_t cv_skill    = {"skill"    ,"1",CV_HIDEN,skill_cons_t};
 consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
@@ -3972,7 +3972,8 @@ boolean M_Responder (event_t* ev)
         ch = key;
         #endif
             if (is_printable(ch) &&
-		ch != ' ' &&
+//		ch != ' ' &&  // [WDJ] I can only assume that this was not intentional
+//		              // It prevented spaces from appearing in savegame description.
                 edit_index < SAVESTRINGSIZE-1 &&
                 V_StringWidth(edit_buffer) < (SAVESTRINGSIZE-2)*8)
             {
