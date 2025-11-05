@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 802 2011-03-06 18:56:56Z wesleyjohnson $
+// $Id: p_spec.c 807 2011-03-09 00:40:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2748,7 +2748,7 @@ void P_UpdateSpecials (void)
     levelflat_t*     foundflats;        // for flat animation
 
     //  LEVEL TIMER
-    if (cv_timelimit.value && (ULONG)cv_timelimit.value < leveltime)
+    if (timelimit_tics && (timelimit_tics < leveltime))
         G_ExitLevel();
 
     //  ANIMATE TEXTURES

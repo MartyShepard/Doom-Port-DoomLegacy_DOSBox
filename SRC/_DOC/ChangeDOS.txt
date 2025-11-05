@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00807 ]: w70 timelimit bug
+[00806*]: w69 fs doc
 [00805 ]: w69 fs var rename
 [00804 ]: w69 fs misc
 [00803 ]: w69 fs args

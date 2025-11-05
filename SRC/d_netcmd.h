@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 760 2010-10-13 13:34:24Z smite-meister $
+// $Id: d_netcmd.h 807 2011-03-09 00:40:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -92,7 +92,7 @@ extern consvar_t   cv_teamplay;
 extern consvar_t   cv_teamdamage;
 extern consvar_t   cv_fraglimit;
 extern consvar_t   cv_timelimit;
-extern ULONG timelimitintics;
+extern ULONG timelimit_tics;
 extern consvar_t   cv_allowturbo ;
 extern consvar_t   cv_allowexitlevel;
 

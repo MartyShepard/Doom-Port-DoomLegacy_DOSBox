@@ -15,12 +15,16 @@
 
 <h2>1.44 (2010-09-??)</h2>
 
-<h3>FEATURES 1.44 recent bug-fixes, at svn788</h3>
+<h3>FEATURES 1.44 recent bug-fixes, at svn805</h3>
 <ul>
 <li>Stop demos when menu opens.
 <li>Voodoo doll damage effects upon players are restored.
 <li>Voodoo doll mode control (Vanilla, Multispawn, Target, Auto).
 <li>Voodoo doll telefrag instadeath control (Die, Damage, Zap).
+<li>Remove hard limits for brain targets.
+<li>Start game menu asks user "Abort this game. Y/N" when user is
+already in a game, and upon "YES" will abort the game and continue.
+<li>Mouse will no longer change menu values without pushing a button.
 </ul>
 
 <h3>FEATURES 1.44 alpha2</h3>
@@ -113,7 +117,7 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 </ul>
 
 
-<h3>BUG FIXES 1.44 recent bug-fixes, at svn788</h3>
+<h3>BUG FIXES 1.44 recent bug-fixes, at svn807</h3>
 <ul>
 <li>More checks against buggy wads.
 <li>Fixed colormap name in colormap missing message.
@@ -121,6 +125,12 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 <li>Make savegame loading tolerate added control vars.
 <li>Fix savegame restore of voodoo dolls to not modify players, fixing savegame load crashes under
 Linux 2.6.
+<li>Fix vile revive monsters stuck together bug.
+<li>Fix vile fire location bug.
+<li>Fix mouse tracking in menu, reduce sensitivity.
+<li>Fragglescript code made more managable, and less prone to string
+overrun and other bugs.
+<li>Timelimit fixed. Will now count minutes instead of tics.
 </ul>
 
 <h3>BUG FIXES 1.44 alpha2</h3>
