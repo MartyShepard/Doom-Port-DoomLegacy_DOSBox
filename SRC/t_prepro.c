@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_prepro.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -109,8 +109,8 @@ section_t *new_section(char *brace)
   return newsec;
 }
 
-        // find a section_t from the location of the starting { brace
-section_t *find_section_start(char *brace)
+// find a section_t from the location of the starting { brace
+section_t* find_section_start(char *brace)
 {
   int n = section_hash(brace);
   section_t *current;
@@ -129,8 +129,8 @@ section_t *find_section_start(char *brace)
   return NULL;    // not found
 }
 
-        // find a section_t from the location of the ending } brace
-section_t *find_section_end(char *brace)
+// find a section_t from the location of the ending } brace
+section_t* find_section_end(char *brace)
 {
   int n;
   
@@ -203,38 +203,38 @@ svariable_t* new_label(char *labelptr)
 char* process_find_char(char *data, char find)
 {
   while(*data)
-    {
+  {
       if(*data==find) return data;
       if(*data=='\"')       // found a quote: ignore stuff in it
-	{
+      {
 	  data++;
 	  while(*data && *data != '\"')
-	    {
+	  {
 	      // escape sequence ?
 	      if(*data=='\\') data++;
 	      data++;
-	    }
+	  }
 	  // error: end of script in a constant
 	  if(!*data) return NULL;
-	}
+      }
 
       // comments: blank out
 
       if(*data=='/' && *(data+1)=='*')        // /* -- */ comment
-	{
+      {
 	  while(*data && (*data != '*' || *(data+1) != '/') )
-	    {
+	  {
 	      *data=' '; data++;
-	    }
+	  }
 	  if(*data)
 	    *data = *(data+1) = ' ';   // blank the last bit
 	  else
-	    {
+	  {
 	      fs_src_cp = data;
 	      // script terminated in comment
 	      script_error("script terminated inside comment\n");
-	    }
-	}
+	  }
+      }
       if(*data=='/' && *(data+1)=='/')        // // -- comment
       {
 	while(*data != '\n')
@@ -247,15 +247,15 @@ char* process_find_char(char *data, char find)
 
       if(*data==':'  // ':' -- a label
          && fs_current_script->scriptnum != -1)   // not levelscript
-	{
+      {
 	  char *labelptr = data-1;
 	  
 	  while(!isop(*labelptr)) labelptr--;
 	  new_label(labelptr+1);
-	}
+      }
       
       if(*data=='{')  // { -- } sections: add 'em
-	{
+      {
 	  section_t *newsec = new_section(data);
 	  
 	  newsec->type = FSST_empty;
@@ -269,9 +269,9 @@ char* process_find_char(char *data, char find)
 	    }
 	  // continue from the end of the section
 	  data = newsec->end;
-	}
+      }
       data++;
-    }
+  }
 
   return NULL;
 }
@@ -314,7 +314,7 @@ void dry_run_script( void )
   fs_src_cp = fs_current_script->data;
   
   while(fs_src_cp < end && *fs_src_cp)
-    {
+  {
       tokens[0] = token_alloc;
       get_tokens(fs_src_cp);
       
@@ -322,31 +322,31 @@ void dry_run_script( void )
       if(!num_tokens) continue;
       
       if(fs_current_section && tokentype[0] == TT_function)
-	{
+      {
 	  if(!strcmp(tokens[0], "if"))
-	    {
+	  {
               fs_current_section->type = FSST_if;
 	      continue;
-	    }
+	  }
           else if(!strcmp(tokens[0], "elseif"))
-            {
+          {
               fs_current_section->type = FSST_elseif;
               continue;
-            }
+          }
           else if(!strcmp(tokens[0], "else"))
-            {
+          {
               fs_current_section->type = FSST_else;
               continue;
-            }
+          }
 	  else if(!strcmp(tokens[0], "while") ||
 		  !strcmp(tokens[0], "for"))
-	    {
+	  {
 	      fs_current_section->type = FSST_loop;
 	      fs_current_section->data.data_loop.loopstart = fs_linestart_cp;
 	      continue;
-	    }
-	}
-    }
+	  }
+      }
+  }
   
   Z_Free(token_alloc);
   
@@ -401,10 +401,10 @@ void parse_include(char *lumpname)
   char *saved_src_cp;
   
   if(-1 == (lumpnum = W_GetNumForName(lumpname)) )
-    {
+  {
       script_error("include lump '%s' not found!\n", lumpname);
       return;
-    }
+  }
   
   lump = W_CacheLumpNum(lumpnum, PU_STATIC);
   

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_parse.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -116,7 +116,6 @@ int fs_bracetype;                // BRACKET_open or BRACKET_close
 static void add_char(char c);
 
 // next_token: end this token, go onto the next
-
 static void next_token( void )
 {
     if (tok[0] || tt == TT_string)
@@ -198,7 +197,6 @@ static void next_token( void )
 
 // return an escape sequence (prefixed by a '\')
 // do not use all C escape sequences
-
 static char escape_sequence(char c)
 {
     if (c == 'n')
@@ -224,7 +222,6 @@ static char escape_sequence(char c)
 }
 
 // add_char: add one character to the current token
-
 static void add_char(char c)
 {
     char *out = tok + strlen(tok);
@@ -431,6 +428,7 @@ void parse_script( void )
 
     fs_current_script->lastiftrue = false;
 }
+
 /*
 void run_string(char *data)
 {
@@ -456,6 +454,7 @@ void run_string(char *data)
     fs_current_script = &levelscript;
 }
 */
+
 void parse_data(char *data, char *end)
 {
     char *token_alloc;          // allocated memory for tokens
@@ -469,8 +468,7 @@ void parse_data(char *data, char *end)
 
     while (*fs_src_cp)      // go through the script executing each statement
     {
-        // past end of script?
-        if (fs_src_cp > end)
+        if (fs_src_cp > end)  // past end of script?
             break;
 
         // reset the tokens before getting the next line
@@ -581,7 +579,7 @@ void run_statement( void )
 
 /***************** Evaluating Expressions ************************/
 
-        // find a token, ignoring things in brackets
+// find a token, ignoring things in brackets
 int find_operator(int start, int stop, char *value)
 {
     int i;
@@ -605,7 +603,7 @@ int find_operator(int start, int stop, char *value)
     return -1;
 }
 
-        // go through tokens the same as find_operator, but backwards
+// go through tokens the same as find_operator, but backwards
 int find_operator_backwards(int start, int stop, char *value)
 {
     int i;
@@ -684,11 +682,11 @@ static svalue_t simple_evaluate(int n)
     }
 }
 
-// pointless_brackets checks to see if there are brackets surrounding
+// pointless_brackets : checks to see if there are brackets surrounding
 // an expression. eg. "(2+4)" is the same as just "2+4"
 //
 // because of the recursive nature of evaluate_expression, this function is
-// neccesary as evaluating expressions such as "2*(2+4)" will inevitably
+// necessary as evaluating expressions such as "2*(2+4)" will inevitably
 // lead to evaluating "(2+4)"
 
 static void pointless_brackets(int *start, int *stop)
@@ -724,7 +722,7 @@ static void pointless_brackets(int *start, int *stop)
     }
 }
 
-// evaluate_expresion is the basic function used to evaluate
+// evaluate_expresion : is the basic function used to evaluate
 // a FraggleScript expression.
 // start and stop denote the tokens which are to be evaluated.
 //
@@ -785,7 +783,7 @@ svalue_t evaluate_expression(int start, int stop)
         for (i = start; i <= stop; i++)
             sprintf(tempstr, "%s %s", tempstr, tokens[i]);
 
-        script_error("couldnt evaluate expression: %s\n", tempstr);
+        script_error("could not evaluate expression: %s\n", tempstr);
         return nullvar;
     }
 
@@ -808,8 +806,10 @@ void script_error(char *s, ...)
         int linenum = 1;
         char *temp;
         for (temp = fs_current_script->data; temp < fs_linestart_cp; temp++)
+        {
             if (*temp == '\n')
                 linenum++;      // count EOLs
+	}
         CONS_Printf(", %i", linenum);
     }
     CONS_Printf(": ");
@@ -833,7 +833,6 @@ void script_error(char *s, ...)
 //
 // sf: string value of an svalue_t
 //
-
 char *stringvalue(svalue_t v)
 {
     static char buffer[256];

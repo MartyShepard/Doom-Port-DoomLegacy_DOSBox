@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_spec.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -338,9 +338,7 @@ boolean spec_variable( void )
 
   // other variable types could be added: eg float
 
-  // are we creating a new variable?
-
-  if(newvar_type != -1)
+  if(newvar_type != -1)   // are we creating a new variable?
   {
       parse_var_line(start);
       return true;       // used tokens

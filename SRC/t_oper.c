@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_oper.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -203,16 +203,16 @@ svalue_t OPcmp(int start, int n, int stop)
   returnvar.type = FSVT_int;        // always an int returned
   
   if(left.type == FSVT_string && right.type == FSVT_string)
-    {
+  {
       returnvar.value.i = !strcmp(left.value.s, right.value.s);
       return returnvar;
-    }
+  }
 
   if(left.type == FSVT_fixed || right.type == FSVT_fixed)
-    {
+  {
       returnvar.value.i = fixedvalue(left) == fixedvalue(right);
       return returnvar;
-    }
+  }
 
   if(left.type == FSVT_mobj || right.type == FSVT_mobj)
   {
@@ -332,24 +332,24 @@ svalue_t OPminus(int start, int n, int stop)
   
   // do they mean minus as in '-1' rather than '2-1'?
   if(start == n)
-    {
+  {
       // kinda hack, hehe
       left.value.i = 0; left.type = FSVT_int;
       right = evaluate_expression(n+1, stop);
-    }
+  }
   else
     evaluate_leftnright(start, n, stop);
   
   if(left.type == FSVT_fixed || right.type == FSVT_fixed)
-    {
+  {
       returnvar.type = FSVT_fixed;
       returnvar.value.f = fixedvalue(left) - fixedvalue(right);
-    }
+  }
   else
-    {
+  {
       returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) - intvalue(right);
-    }
+  }
 
   return returnvar;
 }
@@ -361,15 +361,15 @@ svalue_t OPmultiply(int start, int n, int stop)
   evaluate_leftnright(start, n, stop);
   
   if(left.type == FSVT_fixed || right.type == FSVT_fixed)
-    {
+  {
       returnvar.type = FSVT_fixed;
       returnvar.value.f = FixedMul(fixedvalue(left), fixedvalue(right));
-    }
+  }
   else
-    {
+  {
       returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) * intvalue(right);
-    }
+  }
 
   return returnvar;
 }
@@ -387,10 +387,10 @@ svalue_t OPdivide(int start, int n, int stop)
       if((fr = fixedvalue(right)) == 0)
         script_error("divide by zero\n");
       else
-	{
+      {
           returnvar.type = FSVT_fixed;
           returnvar.value.f = FixedDiv(fixedvalue(left), fr);
-	}
+      }
     }
 /*  else
     {
@@ -418,17 +418,16 @@ svalue_t OPremainder(int start, int n, int stop)
   if(!(ir = intvalue(right)))
     script_error("divide by zero\n");
   else
-    {
+  {
       returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) % ir;
-    }
+  }
   return returnvar;
 }
 
         /********** binary operators **************/
 
 // binary or |
-
 svalue_t OPor_bin(int start, int n, int stop)
 {
   svalue_t left, right, returnvar;
@@ -460,16 +459,16 @@ svalue_t OPand_bin(int start, int n, int stop)
 svalue_t OPincrement(int start, int n, int stop)
 {
   if(start == n)          // ++n
-    {
+  {
       svalue_t value;
       svariable_t *var;
       
       var = find_variable(tokens[stop]);
       if(!var)
-	{
+      {
 	  script_error("unknown variable '%s'\n", tokens[stop]);
 	  return nullvar;
-	}
+      }
       value = getvariablevalue(var);
       
       value.value.i = intvalue(value) + 1;
@@ -477,18 +476,18 @@ svalue_t OPincrement(int start, int n, int stop)
       setvariablevalue(var, value);
       
       return value;
-    }
+  }
   else if(stop == n)     // n++
-    {
+  {
       svalue_t origvalue, value;
       svariable_t *var;
       
       var = find_variable(tokens[start]);
       if(!var)
-	{
+      {
 	  script_error("unknown variable '%s'\n", tokens[start]);
 	  return nullvar;
-	}
+      }
       origvalue = getvariablevalue(var);
       
       value.type = FSVT_int;
@@ -496,7 +495,7 @@ svalue_t OPincrement(int start, int n, int stop)
       setvariablevalue(var, value);
       
       return origvalue;
-    }
+  }
   
   script_error("incorrect arguments to ++ operator\n");
   return nullvar;
@@ -506,16 +505,16 @@ svalue_t OPincrement(int start, int n, int stop)
 svalue_t OPdecrement(int start, int n, int stop)
 {
   if(start == n)          // ++n
-    {
+  {
       svalue_t value;
       svariable_t *var;
       
       var = find_variable(tokens[stop]);
       if(!var)
-	{
+      {
 	  script_error("unknown variable '%s'\n", tokens[stop]);
 	  return nullvar;
-	}
+      }
       value = getvariablevalue(var);
       
       value.value.i = intvalue(value) - 1;
@@ -523,18 +522,18 @@ svalue_t OPdecrement(int start, int n, int stop)
       setvariablevalue(var, value);
       
       return value;
-    }
+  }
   else if(stop == n)   // n++
-    {
+  {
       svalue_t origvalue, value;
       svariable_t *var;
       
       var = find_variable(tokens[start]);
       if(!var)
-	{
+      {
           script_error("unknown variable '%s'\n", tokens[start]);
 	  return nullvar;
-	}
+      }
       origvalue = getvariablevalue(var);
       
       value.type = FSVT_int;
@@ -542,7 +541,7 @@ svalue_t OPdecrement(int start, int n, int stop)
       setvariablevalue(var, value);
       
       return origvalue;
-    }
+  }
   
   script_error("incorrect arguments to ++ operator\n");
   return nullvar;

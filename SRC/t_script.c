@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 802 2011-03-06 18:56:56Z wesleyjohnson $
+// $Id: t_script.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -219,6 +219,7 @@ void T_RunThingScript(int n, mobj_t * t_trigger )
   script = thingscript.children[scriptnum];
   if(!script) return;
  
+  fs_run_trigger = t_trigger;
   script->trigger = t_trigger;    // save trigger in script
   
   run_script(script);*/
@@ -311,17 +312,17 @@ static void free_runningscript(runningscript_t *runscr)
 static boolean wait_finished(runningscript_t *script)
 {
   switch(script->wait_type)
-    {
+  {
     case wt_none: return true;        // uh? hehe
     case wt_scriptwait:               // waiting for script to finish
       {
 	runningscript_t *current;
 	for(current = fs_runningscripts.next; current; current = current->next)
-	  {
+	{
 	    if(current == script) continue;  // ignore this script
 	    if(current->script->scriptnum == script->wait_data)
 	      return false;        // script still running
-	  }
+	}
 	return true;        // can continue now
       }
 
@@ -335,16 +336,16 @@ static boolean wait_finished(runningscript_t *script)
 	int secnum = -1;
 
 	while ((secnum = P_FindSectorFromTag(script->wait_data, secnum)) >= 0)
-	  {
+	{
 	    sector_t *sec = &sectors[secnum];
 	    if(sec->floordata || sec->ceilingdata || sec->lightingdata)
 	      return false;        // not finished
-	  }
+	}
 	return true;
       }
 
     default: return true;
-    }
+  }
 
   return false;
 }
@@ -362,9 +363,9 @@ void T_DelayedScripts( void )
   current = fs_runningscripts.next;
   
   while(current)
-    {
+  {
       if(wait_finished(current))
-	{
+      {
 	  // copy out the script variables from the
 	  // runningscript_t
 
@@ -382,11 +383,11 @@ void T_DelayedScripts( void )
 	  if(current->next) current->next->prev = current->prev;
 	  next = current->next;   // save before freeing
 	  free_runningscript(current);
-	}
+      }
       else
 	next = current->next;
       current = next;   // continue to next in chain
-    }
+  }
                 
 }
 

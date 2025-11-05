@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 802 2011-03-06 18:56:56Z wesleyjohnson $
+// $Id: t_func.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -161,6 +161,7 @@
 /* includes ************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "command.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -215,6 +216,25 @@ void SF_ArrayElementAt(void);    // impls: 'a elementat(array, int)
 void SF_ArraySetElementAt(void); // impls: void setelementat(array, int, 'a)
 void SF_ArrayLength(void);       // impls: int length(array)
 
+
+// return a Z_Malloc string of the args( i1.. ) concatenated
+char *  Z_cat_args( int i1 )
+{
+    int strsize = 0;
+    int i;
+   
+    for (i = i1; i < t_argc; i++)
+        strsize += strlen(stringvalue(t_argv[i]));
+
+    char * tempstr = Z_Malloc(strsize + 1, PU_IN_USE, 0);
+    tempstr[0] = '\0';
+
+    for (i = i1; i < t_argc; i++)
+//        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
+        strcat(tempstr, stringvalue(t_argv[i])); // append
+
+    return tempstr;
+}
 
 // functions. SF_ means Script Function not, well.. heh, me
 
@@ -396,8 +416,8 @@ void SF_Clock()
 
 void SF_ClockTic()
 {
-	t_return.type = FSVT_int;
-	t_return.value.i = gametic;
+    t_return.type = FSVT_int;
+    t_return.value.i = gametic;
 }
 
     /**************** doom stuff ****************/
@@ -409,53 +429,40 @@ void SF_ExitLevel()
 
 void SF_Warp()  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
 {
-	
-	int reset = 1;
+    int reset = 1;
 
-	if(t_argc < 2)
-	{
+    if(t_argc < 2)
+    {
         script_error("Too few arguments to function.\n");
         return;
     }
 
-	if (t_argv[0].value.i < 1 || t_argv[0].value.i > 5)
-	{
+    if (t_argv[0].value.i < 1 || t_argv[0].value.i > 5)
+    {
         script_error("Skill must be between 1 and 5.\n");
         return;
-	}
+    }
 
-	if(t_argc > 2)
-	{
-		reset = t_argv[2].value.i;
+    if(t_argc > 2)
+    {
+        reset = t_argv[2].value.i;
 
-		if(reset != 0 && reset != 1)
-		{
-			script_error("Reset must be either 0 or 1.\n");
-			return;
-		}
+        if(reset != 0 && reset != 1)
+        {
+	    script_error("Reset must be either 0 or 1.\n");
+	    return;
 	}
-	G_InitNew(t_argv[0].value.i - 1, t_argv[1].value.s, reset);
+    }
+    G_InitNew(t_argv[0].value.i - 1, t_argv[1].value.s, reset);
 }
    
-     // centremsg
+// centremsg
 void SF_Tip()
 {
-    int i;
-    char *tempstr;
-    int strsize = 0;
-
     if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 0; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(0);
     HU_SetTip(tempstr, 53);
     Z_Free(tempstr);
 }
@@ -463,9 +470,6 @@ void SF_Tip()
 // SoM: Timed tip!
 void SF_TimedTip()
 {
-    int i;
-    char *tempstr;
-    int strsize = 0;
     int tiptime;
 
     if (t_argc < 2)
@@ -479,15 +483,7 @@ void SF_TimedTip()
     if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 1; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(1);
     //CONS_Printf("%s\n", tempstr);
     HU_SetTip(tempstr, tiptime);
     Z_Free(tempstr);
@@ -496,9 +492,7 @@ void SF_TimedTip()
 // tip to a particular player
 void SF_PlayerTip()
 {
-    int i, plnum;
-    char *tempstr;
-    int strsize = 0;
+    int plnum;
 
     if (!t_argc)
     {
@@ -511,15 +505,7 @@ void SF_PlayerTip()
     if (consoleplayer != plnum)
         return;
 
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 1; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(1);
     //CONS_Printf("%s\n", tempstr);
     HU_SetTip(tempstr, 53);
     Z_Free(tempstr);
@@ -528,22 +514,10 @@ void SF_PlayerTip()
         // message player
 void SF_Message()
 {
-    int i;
-    char *tempstr;
-    int strsize = 0;
-
     if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 0; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(0);
     CONS_Printf("%s\n", tempstr);
     Z_Free(tempstr);
 }
@@ -552,8 +526,8 @@ void SF_Message()
 //DarkWolf95:July 28, 2003:Added unimplemented function
 void SF_GameSkill()
 {
-	t_return.type = FSVT_int;
-	t_return.value.i = gameskill + 1;  //make 1-5, rather than 0-4
+    t_return.type = FSVT_int;
+    t_return.value.i = gameskill + 1;  //make 1-5, rather than 0-4
 }
 
 // Returns what type of game is going on - Deathmatch, CoOp, or Single Player.
@@ -572,12 +546,10 @@ void SF_GameMode()
     return;
 }
 
-        // message to a particular player
+// message to a particular player
 void SF_PlayerMsg()
 {
-    int i, plnum;
-    char *tempstr;
-    int strsize = 0;
+    int plnum;
 
     if (!t_argc)
     {
@@ -590,15 +562,7 @@ void SF_PlayerMsg()
     if (displayplayer != plnum)
         return;
 
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 1; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(1);
     CONS_Printf("%s\n", tempstr);
     Z_Free(tempstr);
 }
@@ -3369,28 +3333,14 @@ void SF_PlayDemo()
 }
 
 // run console cmd
-
 void SF_RunCommand()
 {
-    int i;
-    char *tempstr;
-    int strsize = 0;
-
-    for (i = 0; i < t_argc; i++)
-        strsize += strlen(stringvalue(t_argv[i]));
-
-    tempstr = Z_Malloc(strsize + 1, PU_STATIC, 0);
-    tempstr[0] = '\0';
-
-    for (i = 0; i < t_argc; i++)
-        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
-
+    char * tempstr = Z_cat_args(0);
     COM_BufAddText(tempstr);
     Z_Free(tempstr);
 }
 
 // return the (string) value of a cvar
-
 void SF_CheckCVar()
 {
     if (t_argc != 1)
@@ -3424,7 +3374,10 @@ void SF_SetLineTexture()
   line_t *line;
 
   if(t_argc != 4)
-    { script_error("insufficient arguments to function\n"); return; }
+  {
+     script_error("insufficient arguments to function\n");
+     return;
+  }
 
   tagnum = intvalue(t_argv[0]);
 
@@ -3432,7 +3385,10 @@ void SF_SetLineTexture()
   linenum = P_FindLineFromTag(tagnum, -1);
 
   if(linenum < 0)
-    { script_error("line not found with tagnum %i\n", tagnum); return;}
+  {
+     script_error("line not found with tagnum %i\n", tagnum);
+     return;
+  }
 
   line = &lines[linenum];
 
@@ -3448,9 +3404,10 @@ void SF_SetLineTexture()
       // set all sectors with tag
       while ((i = P_FindLineFromTag(tagnum, i)) >= 0)
       {
-	  if(&lines[i].sidenum[1] < 0)
+	  if(&lines[i].sidenum[1] < 0) // [WDJ]  ?? addr < 0 ??
 	  {
-	      script_error("line 1-sided\n"); return;
+	      script_error("line 1-sided\n");
+	      return;
 	  }
 	  else
 	  {
@@ -4004,9 +3961,9 @@ void init_functions()
     new_function("input", SF_Input);    // Hurdler: TODO: document this function
     new_function("beep", SF_Beep);
     new_function("clock", SF_Clock);
-	new_function("clocktic", SF_ClockTic);
+    new_function("clocktic", SF_ClockTic);
     new_function("wait", SF_Wait);
-	new_function("waittic", SF_WaitTic);
+    new_function("waittic", SF_WaitTic);
     new_function("tagwait", SF_TagWait);
     new_function("scriptwait", SF_ScriptWait);
     new_function("startscript", SF_StartScript);
@@ -4015,11 +3972,11 @@ void init_functions()
     // doom stuff
     new_function("startskill", SF_StartSkill);
     new_function("exitlevel", SF_ExitLevel);
-	new_function("warp", SF_Warp);
+    new_function("warp", SF_Warp);
     new_function("tip", SF_Tip);
     new_function("timedtip", SF_TimedTip);
     new_function("message", SF_Message);
-	new_function("gameskill", SF_GameSkill);
+    new_function("gameskill", SF_GameSkill);
     new_function("gamemode", SF_GameMode);      // SoM Request SSNTails 06-13-2002
 
     // player stuff
@@ -4033,14 +3990,14 @@ void init_functions()
     new_function("isplayerobj", SF_MobjIsPlayer);       // Hurdler: due to backward and eternity compatibility
     new_function("skincolor", SF_SkinColor);
     new_function("playerkeys", SF_PlayerKeys);
-	new_function("playerkeysb", SF_PlayerKeysByte);
-	new_function("playerarmor", SF_PlayerArmor);
+    new_function("playerkeysb", SF_PlayerKeysByte);
+    new_function("playerarmor", SF_PlayerArmor);
     new_function("playerammo", SF_PlayerAmmo);
     new_function("maxplayerammo", SF_MaxPlayerAmmo);
     new_function("playerweapon", SF_PlayerWeapon);
-	new_function("playerselwep", SF_PlayerSelectedWeapon);
-	new_function("playerpitch", SF_PlayerPitch);
-	new_function("playerproperty", SF_PlayerProperty);
+    new_function("playerselwep", SF_PlayerSelectedWeapon);
+    new_function("playerpitch", SF_PlayerPitch);
+    new_function("playerproperty", SF_PlayerProperty);
 
     // mobj stuff
     new_function("spawn", SF_Spawn);
@@ -4055,16 +4012,16 @@ void init_functions()
     new_function("teleport", SF_Teleport);
     new_function("silentteleport", SF_SilentTeleport);
     new_function("damageobj", SF_DamageObj);
-	new_function("healobj", SF_HealObj);
+    new_function("healobj", SF_HealObj);
     new_function("player", SF_Player);
     new_function("objsector", SF_ObjSector);
     new_function("objflag", SF_ObjFlag);
-	new_function("objflag2", SF_ObjFlag2);
-	new_function("objeflag", SF_ObjEFlag);
+    new_function("objflag2", SF_ObjFlag2);
+    new_function("objeflag", SF_ObjEFlag);
     new_function("pushobj", SF_PushThing);
     new_function("pushthing", SF_PushThing);    // Hurdler: due to backward and eternity compatibility
     new_function("objangle", SF_ObjAngle);
-	new_function("checksight", SF_CheckSight);
+    new_function("checksight", SF_CheckSight);
     new_function("objhealth", SF_ObjHealth);
     new_function("objdead", SF_ObjDead);
     new_function("objreactiontime", SF_ReactionTime);
@@ -4077,18 +4034,18 @@ void init_functions()
     new_function("mapthings", SF_MapThings);
     new_function("objtype", SF_ObjType);
     new_function("mapthingnumexist", SF_MapThingNumExist);
-	new_function("objstate", SF_ObjState);
-	new_function("resurrect", SF_Resurrect);
-	new_function("lineattack", SF_LineAttack);
-	new_function("setobjposition", SF_SetObjPosition);
-	new_function("setobjproperty", SF_SetObjProperty);
-	new_function("getobjproperty", SF_GetObjProperty);
-	new_function("setnodenext", SF_SetNodeNext);
-	new_function("setnodewait", SF_SetNodePause);
-	new_function("setnodescript", SF_SetNodeScript);
+    new_function("objstate", SF_ObjState);
+    new_function("resurrect", SF_Resurrect);
+    new_function("lineattack", SF_LineAttack);
+    new_function("setobjposition", SF_SetObjPosition);
+    new_function("setobjproperty", SF_SetObjProperty);
+    new_function("getobjproperty", SF_GetObjProperty);
+    new_function("setnodenext", SF_SetNodeNext);
+    new_function("setnodewait", SF_SetNodePause);
+    new_function("setnodescript", SF_SetNodeScript);
 
     // sector stuff
-	new_function("sectoreffect", SF_SectorEffect);
+    new_function("sectoreffect", SF_SectorEffect);
     new_function("floorheight", SF_FloorHeight);
     new_function("floortext", SF_FloorTexture);
     new_function("floortexture", SF_FloorTexture);      // Hurdler: due to backward and eternity compatibility

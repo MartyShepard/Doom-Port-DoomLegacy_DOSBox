@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_vari.c 803 2011-03-06 18:58:20Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -182,7 +182,7 @@ svariable_t * variableforname(script_t *script, char *name)
   return NULL;
 }
 
-        // free all the variables in a given script
+// free all the variables in a given script
 void clear_variables(script_t *script)
 {
   int i;
@@ -216,7 +216,6 @@ void clear_variables(script_t *script)
 
 // returns an svalue_t holding the current
 // value of a particular variable.
-
 svalue_t getvariablevalue(svariable_t *v)
 {
   svalue_t returnvar;

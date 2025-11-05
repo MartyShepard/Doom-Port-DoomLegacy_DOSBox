@@ -1494,4 +1494,9 @@ patchfile = w69_parse.patch
 Fix fragglescript parsing to use safer, faster
 string handling code, to protect against overrun of strings.
 
+*** w69_fs_args
+patchfile = w69_fs_args.patch
+- committed revision 803   by wesley johnson
+Simplify fragglescript function args concatenation.
+More indenting and cleanup.
 
