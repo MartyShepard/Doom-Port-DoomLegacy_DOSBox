@@ -3825,9 +3825,7 @@ static boolean M_ChangeStringCvar(int key, char ch)
 boolean M_Responder (event_t* ev)
 {
     int             i;
-#if defined( __DJGPP__ )			
-    static  tic_t   joywait = 0;
-#endif
+    //static  tic_t   joywait = 0;
     static  boolean button_down = 0;
     menufunc_t routine;  // for some casting problem
 
@@ -3901,6 +3899,36 @@ boolean M_Responder (event_t* ev)
                 mousex = mousey = 0;
 	    }
 	}
+//=======================================================
+#if defined( __DJGPP__ )	
+        break;
+     case ev_joystick:
+        if( menuactive )	{		
+	    static  tic_t   joywait = 0;
+	    static  int  joyy = 0;
+	    static  int  joyx = 0;		
+	   
+	    if( joywait >= I_GetTime() )  break;  // delay between triggers
+            joyx += ev->data2;
+            joyy += ev->data3;
+            if (joyy < -1)     { key = KEY_UPARROW; }
+            else if (joyy > 1) { key = KEY_DOWNARROW; }
+	    else if (joyx < -1) {
+	          if( button_down ) key = KEY_RIGHTARROW;
+						}
+            else if (joyx > 1)
+						{
+             if( button_down ) key = KEY_LEFTARROW;
+						}
+	   
+	    if( key )
+	    {
+                joywait = I_GetTime() + TICRATE/7;
+                joyx = joyy = 0;
+	    }
+	}
+#endif
+//=======================================================
         break;
      default:
         break;
