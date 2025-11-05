@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_vari.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,7 +92,7 @@ void T_ClearHubScript( void )
       while(hub_script.variables[i])
       {
 	  svariable_t *next = hub_script.variables[i]->next;
-	  if(hub_script.variables[i]->type == svt_string)
+	  if(hub_script.variables[i]->type == FSVT_string)
 	    Z_Free(hub_script.variables[i]->value.s);
 	  Z_Free(hub_script.variables[i]);
 	  hub_script.variables[i] = next;
@@ -102,12 +103,12 @@ void T_ClearHubScript( void )
 // find_variable checks through the current script, level script
 // and global script to try to find the variable of the name wanted
 
-svariable_t *find_variable(char *name)
+svariable_t * find_variable(char *name)
 {
   svariable_t *var;
   script_t *current;
   
-  current = current_script;
+  current = fs_current_script;
   
   while(current)
   {
@@ -123,7 +124,7 @@ svariable_t *find_variable(char *name)
 // create a new variable in a particular script.
 // returns a pointer to the new variable.
 
-svariable_t *new_variable(script_t *script, char *name, int vtype)
+svariable_t * new_variable(script_t *script, char *name, int vtype)
 {
   int n;
   svariable_t *newvar;
@@ -136,13 +137,13 @@ svariable_t *new_variable(script_t *script, char *name, int vtype)
   newvar->name = (char*)Z_Strdup(name, tagtype, 0);
   newvar->type = vtype;
   
-  if(vtype == svt_string)
+  if(vtype == FSVT_string)
   {
       // 256 bytes for string
       newvar->value.s = Z_Malloc(256, tagtype, 0);
       newvar->value.s[0] = 0;
   }
-  else if(vtype == svt_array)
+  else if(vtype == FSVT_array)
   {
      newvar->value.a = NULL;
   }
@@ -162,7 +163,7 @@ svariable_t *new_variable(script_t *script, char *name, int vtype)
 // search a particular script for a variable, which
 // is returned if it exists
 
-svariable_t *variableforname(script_t *script, char *name)
+svariable_t * variableforname(script_t *script, char *name)
 {
   int n;
   svariable_t *current;
@@ -197,13 +198,13 @@ void clear_variables(script_t *script)
 	  // labels are added before variables, during
 	  // preprocessing, so will be at the end of the chain
 	  // we can be sure there are no more variables to free
-	  if(current->type == svt_label)
+	  if(current->type == FSVT_label)
 	    break;
 	  
 	  next = current->next; // save for after freeing
 	  
 	  // if a string, free string data
-	  if(current->type == svt_string)
+	  if(current->type == FSVT_string)
 	    Z_Free(current->value.s);
 	  
 	  current = next; // go to next in chain
@@ -222,29 +223,29 @@ svalue_t getvariablevalue(svariable_t *v)
   
   if(!v) return nullvar;
   
-  if(v->type == svt_pString)
+  if(v->type == FSVT_pString)
   {
-      returnvar.type = svt_string;
+      returnvar.type = FSVT_string;
       returnvar.value.s = *v->value.pS;
   }
-  else if(v->type == svt_pInt)
+  else if(v->type == FSVT_pInt)
   {
-      returnvar.type = svt_int;
+      returnvar.type = FSVT_int;
       returnvar.value.i = *v->value.pI;
   }
-  else if(v->type == svt_pFixed)
+  else if(v->type == FSVT_pFixed)
   {
-      returnvar.type = svt_fixed;
+      returnvar.type = FSVT_fixed;
       returnvar.value.f = *v->value.pFixed;
   }
-  else if(v->type == svt_pMobj)
+  else if(v->type == FSVT_pMobj)
   {
-      returnvar.type = svt_mobj;
+      returnvar.type = FSVT_mobj;
       returnvar.value.mobj = *v->value.pMobj;
   }
-  else if(v->type == svt_pArray)
+  else if(v->type == FSVT_pArray)
   {
-      returnvar.type = svt_array;
+      returnvar.type = FSVT_array;
       returnvar.value.a = *v->value.pA;
   }
   else
@@ -261,36 +262,36 @@ svalue_t getvariablevalue(svariable_t *v)
 
 void setvariablevalue(svariable_t *v, svalue_t newvalue)
 {
-  if(killscript) return;  // protect the variables when killing script
+  if(fs_killscript) return;  // protect the variables when killing script
   
   if(!v) return;
   
-  if(v->type == svt_const)
+  if(v->type == FSVT_const)
   {
       // const adapts to the value it is set to
       v->type = newvalue.type;
 
       // alloc memory for string
-      if(v->type == svt_string)   // static incase a global_script var
+      if(v->type == FSVT_string)   // static incase a global_script var
 	v->value.s = Z_Malloc(256, PU_STATIC, 0);
   }
   
-  if(v->type == svt_int)
+  if(v->type == FSVT_int)
       v->value.i = intvalue(newvalue);
 
-  if(v->type == svt_string)
+  if(v->type == FSVT_string)
     strcpy(v->value.s, stringvalue(newvalue));
 
-  if(v->type == svt_fixed)
+  if(v->type == FSVT_fixed)
     v->value.fixed = fixedvalue(newvalue);
 
-  if(v->type == svt_mobj)
+  if(v->type == FSVT_mobj)
       v->value.mobj = MobjForSvalue(newvalue);
 
 
-  if(v->type == svt_array)
+  if(v->type == FSVT_array)
   {
-     if(newvalue.type != svt_array)
+     if(newvalue.type != FSVT_array)
      {
 	script_error("cannot coerce value to array type\n");
 	return;
@@ -299,10 +300,10 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
   }
 
 
-  if(v->type == svt_pInt)
+  if(v->type == FSVT_pInt)
       *v->value.pI = intvalue(newvalue);
 
-  if(v->type == svt_pString)
+  if(v->type == FSVT_pString)
   {
       // free old value
       free(*v->value.pS);
@@ -311,15 +312,15 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
       *v->value.pS = strdup(stringvalue(newvalue));
   }
 
-  if(v->type == svt_pFixed)
+  if(v->type == FSVT_pFixed)
     *v->value.pFixed = fixedvalue(newvalue);
 
-  if(v->type == svt_pMobj)
+  if(v->type == FSVT_pMobj)
       *v->value.pMobj = MobjForSvalue(newvalue);
   
-  if(v->type == svt_pArray)
+  if(v->type == FSVT_pArray)
   {
-     if(newvalue.type != svt_array)
+     if(newvalue.type != FSVT_array)
      {
 	script_error("cannot coerce value to array type\n");
 	return;
@@ -327,36 +328,36 @@ void setvariablevalue(svariable_t *v, svalue_t newvalue)
      *v->value.pA = newvalue.value.a;
   }
 
-  if(v->type == svt_function)
+  if(v->type == FSVT_function)
     script_error("attempt to set function to a value\n");
 
 }
 
 
 
-svariable_t *add_game_int(char *name, int *var)
+svariable_t * add_game_int(char *name, int *var)
 {
   svariable_t* newvar;
-  newvar = new_variable(&global_script, name, svt_pInt);
+  newvar = new_variable(&global_script, name, FSVT_pInt);
   newvar->value.pI = var;
 
   return newvar;
 }
 
 
-svariable_t *add_game_fixed(char *name, fixed_t *fixed)
+svariable_t * add_game_fixed(char *name, fixed_t *fixed)
 {
   svariable_t *newvar;
-  newvar = new_variable(&global_script, name, svt_pFixed);
+  newvar = new_variable(&global_script, name, FSVT_pFixed);
   newvar->value.pFixed = fixed;
 
   return newvar;
 }
 
-svariable_t *add_game_string(char *name, char **var)
+svariable_t * add_game_string(char *name, char **var)
 {
   svariable_t* newvar;
-  newvar = new_variable(&global_script, name, svt_pString);
+  newvar = new_variable(&global_script, name, FSVT_pString);
   newvar->value.pS = var;
 
   return newvar;
@@ -364,10 +365,10 @@ svariable_t *add_game_string(char *name, char **var)
 
 
 
-svariable_t *add_game_mobj(char *name, mobj_t **mo)
+svariable_t * add_game_mobj(char *name, mobj_t **mo)
 {
   svariable_t* newvar;
-  newvar = new_variable(&global_script, name, svt_pMobj);
+  newvar = new_variable(&global_script, name, FSVT_pMobj);
   newvar->value.pMobj = mo;
 
   return newvar;
@@ -378,11 +379,11 @@ svariable_t *add_game_mobj(char *name, mobj_t **mo)
                      FUNCTIONS
  ********************************/
 // functions are really just variables
-// of type svt_function. there are two
+// of type FSVT_function. there are two
 // functions to control functions (heh)
 
 // new_function: just creates a new variable
-//      of type svt_function. give it the
+//      of type FSVT_function. give it the
 //      handler function to be called, and it
 //      will be stored as a pointer appropriately.
 
@@ -412,7 +413,7 @@ svalue_t evaluate_function(int start, int stop)
   int argc;
   svalue_t argv[MAXARGS];
 
-  if(tokentype[start] != function || tokentype[stop] != operator
+  if(tokentype[start] != TT_function || tokentype[stop] != TT_operator
      || tokens[stop][0] != ')' )
     script_error("misplaced closing bracket\n");
 
@@ -420,10 +421,10 @@ svalue_t evaluate_function(int start, int stop)
   else if( !(func = variableforname(&global_script, tokens[start]))  )
     script_error("no such function: '%s'\n",tokens[start]);
 
-  else if(func->type != svt_function)
+  else if(func->type != FSVT_function)
     script_error("'%s' not a function\n", tokens[start]);
 
-  if(killscript) return nullvar; // one of the above errors occurred
+  if(fs_killscript) return nullvar; // one of the above errors occurred
 
   // build the argument list
   // use a C command-line style system rather than
@@ -454,7 +455,7 @@ svalue_t evaluate_function(int start, int stop)
   t_argc = argc;
   t_argv = argv;
 
-  if(killscript) return nullvar;
+  if(fs_killscript) return nullvar;
   
   // now run the function
   func->value.handler();
@@ -487,10 +488,10 @@ svalue_t OPstructure(int start, int n, int stop)
   if( !(func = variableforname(&global_script, tokens[n+1]))  )
     script_error("no such function: '%s'\n",tokens[n+1]);
   
-  else if(func->type != svt_function)
+  else if(func->type != FSVT_function)
     script_error("'%s' not a function\n", tokens[n+1]);
 
-  if(killscript) return nullvar; // one of the above errors occurred
+  if(fs_killscript) return nullvar; // one of the above errors occurred
   
   // build the argument list
 
@@ -529,7 +530,7 @@ svalue_t OPstructure(int start, int n, int stop)
   t_argc = argc;
   t_argv = argv;
   
-  if(killscript) return nullvar;
+  if(fs_killscript) return nullvar;
   
   // now run the function
   func->value.handler();
@@ -541,14 +542,14 @@ svalue_t OPstructure(int start, int n, int stop)
 
 // create a new function. returns the function number
 
-svariable_t *new_function(char *name, void (*handler)() )
+svariable_t * new_function(char *name, void (*handler)() )
 {
   svariable_t *newvar;
 
   // create the new variable for the function
   // add to the global script
   
-  newvar = new_variable(&global_script, name, svt_function);
+  newvar = new_variable(&global_script, name, FSVT_function);
   
   // add neccesary info
   

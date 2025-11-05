@@ -116,7 +116,7 @@ static   unsigned long  nombre = TICRATE*10;
 //profile stuff ---------------------------------------------------------
 
 
-#define FPSPOINTS  70
+#define FPSPOINTS  35
 #define SCALE      4
 #define PUTDOT(xx,yy,cc) screens[0][((yy)*vid.width+(xx))*vid.bpp]=(cc)
 
@@ -347,7 +347,7 @@ int set_vesa1_mode( int width, int height )
     else
     if( ( width==800 )&&( height==600 ) && ( SCREENDEPTH==1 ) )
        r.x.bx   = 0x103;                            // 800x 600x1 (256 colors)
-    else			
+    else
     if( ( width==1024)&&( height==768 ) && ( SCREENDEPTH==1 ) )
        r.x.bx   = 0x105;                            //1024x 768x1 (256 colors)
     else

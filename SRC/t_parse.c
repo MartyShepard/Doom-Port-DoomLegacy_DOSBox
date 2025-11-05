@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_parse.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,22 +84,24 @@ void parse_script( void );
 void parse_data(char *data, char *end);
 svalue_t evaluate_expression(int start, int stop);
 
-mobj_t *trigger_obj;            // object which triggered script
+script_t * fs_current_script;       // the current script
+mobj_t * fs_trigger_obj;         // object which triggered script
+int fs_killscript;               // when set to true, stop the script quickly
 
 char *tokens[T_MAXTOKENS];
 tokentype_t tokentype[T_MAXTOKENS];
 int num_tokens = 0;
 int script_debug = false;
 
-script_t *current_script;       // the current script
-svalue_t nullvar = { svt_int, {0} };    // null var for empty return
-int killscript;                 // when set to true, stop the script quickly
-section_t *prev_section;        // the section from the previous statement
+svalue_t nullvar = { FSVT_int, {0} };    // null var for empty return
 
 /************ Divide into tokens **************/
 
-char *linestart;                // start of line
-char *rover;                    // current point reached in script
+char * fs_linestart_cp;          // start of line
+char * fs_src_cp;              // current point reached in script
+section_t * fs_current_section;  // the section (if any) found in parsing the line
+section_t * fs_prev_section;     // the section from the previous statement
+int fs_bracetype;                // BRACKET_open or BRACKET_close
 
         // inline for speed
 #define isnum(c) ( ((c)>='0' && (c)<='9') || (c)=='.' )
@@ -110,15 +113,13 @@ char *rover;                    // current point reached in script
 #define tt (tokentype[num_tokens-1])
 #define tok (tokens[num_tokens-1])
 
-section_t *current_section;     // the section (if any) found in parsing the line
-int bracetype;                  // bracket_open or bracket_close
 static void add_char(char c);
 
 // next_token: end this token, go onto the next
 
 static void next_token( void )
 {
-    if (tok[0] || tt == string)
+    if (tok[0] || tt == TT_string)
     {
         num_tokens++;
         tokens[num_tokens - 1] = tokens[num_tokens - 2] + strlen(tokens[num_tokens - 2]) + 1;
@@ -131,17 +132,17 @@ static void next_token( void )
     while (1)
     {
         // empty whitespace
-        if (*rover && (*rover == ' ' || *rover < 32))
+        if (*fs_src_cp && (*fs_src_cp == ' ' || *fs_src_cp < 32))
         {
-            while ((*rover == ' ' || *rover < 32) && *rover)
-                rover++;
+            while ((*fs_src_cp == ' ' || *fs_src_cp < 32) && *fs_src_cp)
+                fs_src_cp++;
         }
         // end-of-script?
-        if (!*rover)
+        if (!*fs_src_cp)
         {
             if (tokens[0][0])
             {
-                CONS_Printf("%s %i %i\n", tokens[0], rover - current_script->data, current_script->len);
+                CONS_Printf("%s %i %i\n", tokens[0], fs_src_cp - fs_current_script->data, fs_current_script->len);
                 // line contains text, but no semicolon: an error
                 script_error("missing ';'\n");
             }
@@ -153,45 +154,45 @@ static void next_token( void )
         break;  // otherwise
     }
 
-    if (num_tokens > 1 && *rover == '(' && tokentype[num_tokens - 2] == name)
-        tokentype[num_tokens - 2] = function;
+    if (num_tokens > 1 && *fs_src_cp == '(' && tokentype[num_tokens - 2] == TT_name)
+        tokentype[num_tokens - 2] = TT_function;
 
-    if (*rover == '{' || *rover == '}')
+    if (*fs_src_cp == '{' || *fs_src_cp == '}')
     {
-        if (*rover == '{')
+        if (*fs_src_cp == '{')
         {
-            bracetype = bracket_open;
-            current_section = find_section_start(rover);
+            fs_bracetype = BRACKET_open;
+            fs_current_section = find_section_start(fs_src_cp);
         }
         else    // closing brace
         {
-            bracetype = bracket_close;
-            current_section = find_section_end(rover);
+            fs_bracetype = BRACKET_close;
+            fs_current_section = find_section_end(fs_src_cp);
         }
-        if (!current_section)
+        if (!fs_current_section)
         {
             script_error("section not found!\n");
             return;
         }
     }
-    else if (*rover == ':')     // label
+    else if (*fs_src_cp == ':')     // label
     {
         // ignore the label : reset
         num_tokens = 1;
         tokens[0][0] = 0;
-        tt = name;
-        rover++;        // ignore
+        tt = TT_name;
+        fs_src_cp++;        // ignore
     }
-    else if (*rover == '\"')
+    else if (*fs_src_cp == '\"')
     {
-        tt = string;
-        if (tokentype[num_tokens - 2] == string)
+        tt = TT_string;
+        if (tokentype[num_tokens - 2] == TT_string)
             num_tokens--;       // join strings
-        rover++;
+        fs_src_cp++;
     }
     else
     {
-        tt = isop(*rover) ? operator      : isnum(*rover) ? number : name;
+        tt = isop(*fs_src_cp) ? TT_operator      : isnum(*fs_src_cp) ? TT_number : TT_name;
     }
 }
 
@@ -238,99 +239,99 @@ static void add_char(char c)
 // individual tokens are stored inside the tokens[] array
 // tokentype is also used to hold the type for each token:
 
-//   name: a piece of text which starts with an alphabet letter.
+//   TT_name: a piece of text which starts with an alphabet letter.
 //         probably a variable name. Some are converted into
 //         function types later on in find_brackets
-//   number: a number. like '12' or '1337'
-//   operator: an operator such as '&&' or '+'. All FraggleScript
+//   TT_number: a number. like '12' or '1337'
+//   TT_operator: an operator such as '&&' or '+'. All FraggleScript
 //             operators are either one character, or two character
 //             (if 2 character, 2 of the same char or ending in '=')
-//   string: a text string that was enclosed in quote "" marks in
+//   TT_string: a text string that was enclosed in quote "" marks in
 //           the original text
-//   unset: shouldn't ever end up being set really.
-//   function: a function name (found in second stage parsing)
+//   TT_unset: shouldn't ever end up being set really.
+//   TT_function: a function name (found in second stage parsing)
 
 void get_tokens(char *s)
 {
-    rover = s;
+    fs_src_cp = s;
     num_tokens = 1;
     tokens[0][0] = 0;
-    tt = name;
+    tt = TT_name;
 
-    current_section = NULL;     // default to no section found
+    fs_current_section = NULL;     // default to no section found
 
     next_token();
-    linestart = rover;  // save the start
+    fs_linestart_cp = fs_src_cp;  // save the start
 
-    if (*rover)
+    if (*fs_src_cp)
     {
         while (1)
         {
-            if (killscript)
+            if (fs_killscript)
                 return;
-            if (current_section)
+            if (fs_current_section)
             {
                 // a { or } section brace has been found
                 break;  // stop parsing now
             }
-            else if (tt != string)
+            else if (tt != TT_string)
             {
-                if (*rover == ';')
+                if (*fs_src_cp == ';')
                     break;      // check for end of command ';'
             }
 
             switch (tt)
             {
-                case unset:
-                case string:
-                    while (*rover != '\"')      // dedicated loop for speed
+                case TT_unset:
+                case TT_string:
+                    while (*fs_src_cp != '\"')      // dedicated loop for speed
                     {
-                        if (*rover == '\\')     // escape sequences
+                        if (*fs_src_cp == '\\')     // escape sequences
                         {
-                            rover++;
-                            add_char(escape_sequence(*rover));
+                            fs_src_cp++;
+                            add_char(escape_sequence(*fs_src_cp));
                         }
                         else
-                            add_char(*rover);
-                        rover++;
+                            add_char(*fs_src_cp);
+                        fs_src_cp++;
                     }
-                    rover++;
+                    fs_src_cp++;
                     next_token();       // end of this token
                     continue;
 
-                case operator:
+                case TT_operator:
                     // all 2-character operators either end in '=' or
                     // are 2 of the same character
                     // do not allow 2-characters for brackets '(' ')'
                     // which are still being considered as operators
 
-                    // operators are only 2-char max, do not need
+                    // TT_operators are only 2-char max, do not need
                     // a seperate loop
 
-                    if ((*tok && *rover != '=' && *rover != *tok) || *tok == '(' || *tok == ')')
+                    if ((*tok && *fs_src_cp != '=' && *fs_src_cp != *tok) || *tok == '(' || *tok == ')')
                     {
-                        // end of operator
+                        // end of TT_operator
                         next_token();
                         continue;
                     }
-                    add_char(*rover);
+                    add_char(*fs_src_cp);
                     break;
 
-                case number:
+                case TT_number:
 
                     // add while number chars are read
 
-                    while (isnum(*rover))       // dedicated loop
-                        add_char(*rover++);
+                    while (isnum(*fs_src_cp))       // dedicated loop
+                        add_char(*fs_src_cp++);
                     next_token();
                     continue;
 
-                case name:
+                case TT_name:
 
                     // add the chars
 
-                    while (!isop(*rover))       // dedicated loop
-                        add_char(*rover++);
+                    while (!isop(*fs_src_cp))       // dedicated loop
+                        add_char(*fs_src_cp++);
                     next_token();
                     continue;
 
@@ -338,7 +339,7 @@ void get_tokens(char *s)
                     break;      // shut up compiler
 
             }
-            rover++;
+            fs_src_cp++;
         }
     }
     // check for empty last token
@@ -348,7 +349,7 @@ void get_tokens(char *s)
         num_tokens = num_tokens - 1;
     }
 
-    rover++;
+    fs_src_cp++;
 }
 
 void print_tokens( void )             // DEBUG
@@ -359,29 +360,29 @@ void print_tokens( void )             // DEBUG
         CONS_Printf("\n'%s' \t\t --", tokens[i]);
         switch (tokentype[i])
         {
-            case string:
+            case TT_string:
                 CONS_Printf("string");
                 break;
-            case operator:
+            case TT_operator:
                 CONS_Printf("operator");
                 break;
-            case name:
+            case TT_name:
                 CONS_Printf("name");
                 break;
-            case number:
+            case TT_number:
                 CONS_Printf("number");
                 break;
-            case unset:
+            case TT_unset:
                 CONS_Printf("duh");
                 break;
-            case function:
+            case TT_function:
                 CONS_Printf("function name");
                 break;
         }
     }
     CONS_Printf("\n");
-    if (current_section)
-        CONS_Printf("current section: offset %i\n", (int) (current_section->start - current_script->data));
+    if (fs_current_section)
+        CONS_Printf("current section: offset %i\n", (int) (fs_current_section->start - fs_current_script->data));
 }
 
 // run_script
@@ -391,44 +392,44 @@ void print_tokens( void )             // DEBUG
 void run_script(script_t * script)
 {
     // set current script
-    current_script = script;
+    fs_current_script = script;
 
     // start at the beginning of the script
-    rover = current_script->data;
+    fs_src_cp = fs_current_script->data;
 
-    current_script->lastiftrue = false;
+    fs_current_script->lastiftrue = false;
 
     parse_script();     // run it
 }
 
 void continue_script(script_t * script, char *continue_point)
 {
-    current_script = script;
+    fs_current_script = script;
 
     // continue from place specified
-    rover = continue_point;
+    fs_src_cp = continue_point;
 
     parse_script();     // run
 }
 
 void parse_script( void )
 {
-    // check for valid rover
-    if (rover < current_script->data || rover > current_script->data + current_script->len)
+    // check for valid fs_src_cp
+    if (fs_src_cp < fs_current_script->data || fs_src_cp > fs_current_script->data + fs_current_script->len)
     {
         script_error("parse_script: trying to continue from point" "outside script!\n");
         return;
     }
 
-    trigger_obj = current_script->trigger;      // set trigger
+    fs_trigger_obj = fs_current_script->trigger;      // set trigger
 
-    parse_data(current_script->data, current_script->data + current_script->len);
+    parse_data(fs_current_script->data, fs_current_script->data + fs_current_script->len);
 
     // dont clear global vars!
-    if (current_script->scriptnum != -1)
-        clear_variables(current_script);        // free variables
+    if (fs_current_script->scriptnum != -1)
+        clear_variables(fs_current_script);        // free variables
 
-    current_script->lastiftrue = false;
+    fs_current_script->lastiftrue = false;
 }
 /*
 void run_string(char *data)
@@ -452,40 +453,40 @@ void run_string(char *data)
     script.lastiftrue = false;
 
     run_script(&script);
-    current_script = &levelscript;
+    fs_current_script = &levelscript;
 }
 */
 void parse_data(char *data, char *end)
 {
     char *token_alloc;          // allocated memory for tokens
 
-    killscript = false; // dont kill the script straight away
+    fs_killscript = false; // dont kill the script straight away
 
     // allocate space for the tokens
-    token_alloc = Z_Malloc(current_script->len + T_MAXTOKENS, PU_STATIC, 0);
+    token_alloc = Z_Malloc(fs_current_script->len + T_MAXTOKENS, PU_STATIC, 0);
 
-    prev_section = NULL;        // clear it
+    fs_prev_section = NULL;        // clear it
 
-    while (*rover)      // go through the script executing each statement
+    while (*fs_src_cp)      // go through the script executing each statement
     {
         // past end of script?
-        if (rover > end)
+        if (fs_src_cp > end)
             break;
 
         // reset the tokens before getting the next line
         tokens[0] = token_alloc;
 
-        prev_section = current_section; // store from prev. statement
+        fs_prev_section = fs_current_section; // store from prev. statement
 
         // get the line and tokens
-        get_tokens(rover);
+        get_tokens(fs_src_cp);
 
-        if (killscript)
+        if (fs_killscript)
             break;
 
         if (!num_tokens)
         {
-            if (current_section)        // no tokens but a brace
+            if (fs_current_section)        // no tokens but a brace
             {
                 // possible } at end of loop:
                 // refer to spec.c
@@ -512,32 +513,32 @@ void run_statement( void )
 
     // if() and while() will be mistaken for functions
     // during token processing
-    if (tokentype[0] == function)
+    if (tokentype[0] == TT_function)
     {
         if (!strcmp(tokens[0], "if"))
         {
-            current_script->lastiftrue = spec_if()? true : false;
+            fs_current_script->lastiftrue = spec_if()? true : false;
             return;
         }
         else if (!strcmp(tokens[0], "elseif"))
         {
-            if (!prev_section || (prev_section->type != st_if && prev_section->type != st_elseif))
+            if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
             {
                 script_error("elseif without if!\n");
                 return;
             }
-            current_script->lastiftrue = spec_elseif(current_script->lastiftrue) ? true : false;
+            fs_current_script->lastiftrue = spec_elseif(fs_current_script->lastiftrue) ? true : false;
             return;
         }
         else if (!strcmp(tokens[0], "else"))
         {
-            if (!prev_section || (prev_section->type != st_if && prev_section->type != st_elseif))
+            if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
             {
                 script_error("else() without if!\n");
                 return;
             }
-            spec_else(current_script->lastiftrue);
-            current_script->lastiftrue = true;
+            spec_else(fs_current_script->lastiftrue);
+            fs_current_script->lastiftrue = true;
             return;
         }
         else if (!strcmp(tokens[0], "while"))
@@ -551,20 +552,21 @@ void run_statement( void )
             return;
         }
     }
-    else if (tokentype[0] == name)
+    else if (tokentype[0] == TT_name)
     {
         // NB: goto is a function so is not here
 
         // Hurdler: else is a special case (no more need to add () after else)
         if (!strcmp(tokens[0], "else"))
         {
-            if (!prev_section || (prev_section->type != st_if && prev_section->type != st_elseif))
+            if (!fs_prev_section
+		|| (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
             {
                 script_error("else without if!\n");
                 return;
             }
-            spec_else(current_script->lastiftrue);
-            current_script->lastiftrue = true;
+            spec_else(fs_current_script->lastiftrue);
+            fs_current_script->lastiftrue = true;
             return;
         }
 
@@ -588,7 +590,7 @@ int find_operator(int start, int stop, char *value)
     for (i = start; i <= stop; i++)
     {
         // only interested in operators
-        if (tokentype[i] != operator)
+        if (tokentype[i] != TT_operator)
             continue;
 
         // use bracketlevel to check the number of brackets
@@ -613,7 +615,7 @@ int find_operator_backwards(int start, int stop, char *value)
     {
         // operators only
 
-        if (tokentype[i] != operator)
+        if (tokentype[i] != TT_operator)
             continue;
 
         // use bracketlevel to check the number of brackets
@@ -634,9 +636,9 @@ int find_operator_backwards(int start, int stop, char *value)
 // simple_evaluate is used once evalute_expression gets to the level
 // where it is evaluating just one token
 
-// converts number tokens into svalue_ts and returns
-// the same with string tokens
-// name tokens are considered to be variables and
+// converts TT_number tokens into svalue_ts and returns
+// the same with TT_string tokens
+// TT_name tokens are considered to be variables and
 // attempts are made to find the value of that variable
 // command tokens are executed (does not return a svalue_t)
 
@@ -649,25 +651,25 @@ static svalue_t simple_evaluate(int n)
 
     switch (tokentype[n])
     {
-        case string:
-            returnvar.type = svt_string;
+        case TT_string:
+            returnvar.type = FSVT_string;
             returnvar.value.s = tokens[n];
             return returnvar;
 
-        case number:
+        case TT_number:
             if (strchr(tokens[n], '.'))
             {
-                returnvar.type = svt_fixed;
+                returnvar.type = FSVT_fixed;
                 returnvar.value.f = atof(tokens[n]) * FRACUNIT;
             }
             else
             {
-                returnvar.type = svt_int;
+                returnvar.type = FSVT_int;
                 returnvar.value.i = atoi(tokens[n]);
             }
             return returnvar;
 
-        case name:
+        case TT_name:
             var = find_variable(tokens[n]);
             if (!var)
             {
@@ -708,7 +710,7 @@ static void pointless_brackets(int *start, int *stop)
 
         for (i = *start; i < *stop; i++)
         {
-            if (tokentype[i] != operator)
+            if (tokentype[i] != TT_operator)
                 continue;       // ops only
             bracket_level += (tokens[i][0] == '(');
             bracket_level -= (tokens[i][0] == ')');
@@ -717,7 +719,6 @@ static void pointless_brackets(int *start, int *stop)
         }
 
         // move both brackets in
-
         *start = *start + 1;
         *stop = *stop - 1;
     }
@@ -739,11 +740,11 @@ svalue_t evaluate_expression(int start, int stop)
 {
     int i, n;
 
-    if (killscript)
+    if (fs_killscript)
         return nullvar; // killing the script
 
     // possible pointless brackets
-    if (tokentype[start] == operator && tokentype[stop] == operator)
+    if (tokentype[start] == TT_operator && tokentype[stop] == TT_operator)
         pointless_brackets(&start, &stop);
 
     if (start == stop)  // only 1 thing to evaluate
@@ -759,7 +760,12 @@ svalue_t evaluate_expression(int start, int stop)
         // done backwards for left-to-right reading: eg so
         // 5-3-2 is (5-3)-2 not 5-(3-2)
 
-        if (-1 != (n = (operators[i].direction == forward ? find_operator_backwards : find_operator) (start, stop, operators[i].string)))
+        if (-1 !=
+	    (n = (
+		  (operators[i].direction == D_forward) ? find_operator_backwards : find_operator
+		  ) (start, stop, operators[i].string)
+	     )
+	    )
         {
             // CONS_Printf("operator %s, %i-%i-%i\n", operators[count].string, start, n, stop);
 
@@ -769,7 +775,7 @@ svalue_t evaluate_expression(int start, int stop)
         }
     }
 
-    if (tokentype[start] == function)
+    if (tokentype[start] == TT_function)
         return evaluate_function(start, stop);
 
     // error ?
@@ -787,21 +793,21 @@ svalue_t evaluate_expression(int start, int stop)
 
 void script_error(char *s, ...)
 {
-    if (killscript)
+    if (fs_killscript)
         return; //already killing script
 
-    if (current_script->scriptnum == -1)
+    if (fs_current_script->scriptnum == -1)
         CONS_Printf("global");
     else
-        CONS_Printf("%i", current_script->scriptnum);
+        CONS_Printf("%i", fs_current_script->scriptnum);
 
     // find the line number
 
-    if (rover >= current_script->data && rover <= current_script->data + current_script->len)
+    if (fs_src_cp >= fs_current_script->data && fs_src_cp <= fs_current_script->data + fs_current_script->len)
     {
         int linenum = 1;
         char *temp;
-        for (temp = current_script->data; temp < linestart; temp++)
+        for (temp = fs_current_script->data; temp < fs_linestart_cp; temp++)
             if (*temp == '\n')
                 linenum++;      // count EOLs
         CONS_Printf(", %i", linenum);
@@ -821,7 +827,7 @@ void script_error(char *s, ...)
     // make a noise
     S_StartSound(NULL, sfx_pldeth);
 
-    killscript = true;
+    fs_killscript = true;
 }
 
 //
@@ -834,23 +840,23 @@ char *stringvalue(svalue_t v)
 
     switch (v.type)
     {
-        case svt_string:
+        case FSVT_string:
             return v.value.s;
 
-        case svt_mobj:
+        case FSVT_mobj:
             return "map object";
 
-        case svt_fixed:
+        case FSVT_fixed:
         {
             double val = ((double) v.value.f / FRACUNIT);
             sprintf(buffer, "%g", val);
             return buffer;
         }
 
-            case svt_array:
+            case FSVT_array:
                  return "array";
 
-        case svt_int:
+        case FSVT_int:
         default:
             sprintf(buffer, "%d", v.value.i);
             return buffer;

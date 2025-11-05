@@ -45,7 +45,9 @@ typedef enum
     ev_keydown,
     ev_keyup,
     ev_mouse,
+#if defined( __DJGPP__ )	
     ev_joystick,
+#endif
     ev_mouse2
 } evtype_t;
 

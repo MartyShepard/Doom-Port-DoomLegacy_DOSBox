@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_oper.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -93,26 +94,26 @@ svalue_t OPstructure(int, int, int);    // in t_vari.c
 
 operator_t operators[]=
 {
-  {"=",   OPequals,               backward},
-  {"||",  OPor,                   forward},
-  {"&&",  OPand,                  forward},
-  {"|",   OPor_bin,               forward},
-  {"&",   OPand_bin,              forward},
-  {"==",  OPcmp,                  forward},
-  {"!=",  OPnotcmp,               forward},
-  {"<",   OPlessthan,             forward},
-  {">",   OPgreaterthan,          forward},
-  {"<=",  OPlessthanorequal,      forward},
-  {">=",  OPgreaterthanorequal,   forward},
-  {"+",   OPplus,                 forward},
-  {"-",   OPminus,                forward},
-  {"*",   OPmultiply,             forward},
-  {"/",   OPdivide,               forward},
-  {"%",   OPremainder,            forward},
-  {"!",   OPnot,                  forward},
-  {"++",  OPincrement,            forward},
-  {"--",  OPdecrement,            forward},
-  {".",   OPstructure,            forward},
+  {"=",   OPequals,               D_backward},
+  {"||",  OPor,                   D_forward},
+  {"&&",  OPand,                  D_forward},
+  {"|",   OPor_bin,               D_forward},
+  {"&",   OPand_bin,              D_forward},
+  {"==",  OPcmp,                  D_forward},
+  {"!=",  OPnotcmp,               D_forward},
+  {"<",   OPlessthan,             D_forward},
+  {">",   OPgreaterthan,          D_forward},
+  {"<=",  OPlessthanorequal,      D_forward},
+  {">=",  OPgreaterthanorequal,   D_forward},
+  {"+",   OPplus,                 D_forward},
+  {"-",   OPminus,                D_forward},
+  {"*",   OPmultiply,             D_forward},
+  {"/",   OPdivide,               D_forward},
+  {"%",   OPremainder,            D_forward},
+  {"!",   OPnot,                  D_forward},
+  {"++",  OPincrement,            D_forward},
+  {"--",  OPdecrement,            D_forward},
+  {".",   OPstructure,            D_forward},
 };
 
 int num_operators = sizeof(operators) / sizeof(operator_t);
@@ -161,7 +162,7 @@ svalue_t OPor(int start, int n, int stop)
       exprtrue = !!intvalue(eval);
     }
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = exprtrue;
   return returnvar;
   
@@ -187,7 +188,7 @@ svalue_t OPand(int start, int n, int stop)
       exprtrue = !!intvalue(eval);
     }
 
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = exprtrue;
 
   return returnvar;
@@ -199,27 +200,27 @@ svalue_t OPcmp(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  returnvar.type = svt_int;        // always an int returned
+  returnvar.type = FSVT_int;        // always an int returned
   
-  if(left.type == svt_string && right.type == svt_string)
+  if(left.type == FSVT_string && right.type == FSVT_string)
     {
       returnvar.value.i = !strcmp(left.value.s, right.value.s);
       return returnvar;
     }
 
-  if(left.type == svt_fixed || right.type == svt_fixed)
+  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
       returnvar.value.i = fixedvalue(left) == fixedvalue(right);
       return returnvar;
     }
 
-  if(left.type == svt_mobj || right.type == svt_mobj)
+  if(left.type == FSVT_mobj || right.type == FSVT_mobj)
   {
-    if(left.type == svt_mobj && right.type == svt_mobj)
+    if(left.type == FSVT_mobj && right.type == FSVT_mobj)
       returnvar.value.i = left.value.mobj == right.value.mobj;
-    else if(left.type == svt_mobj)
+    else if(left.type == FSVT_mobj)
       returnvar.value.i = (left.value.mobj == MobjForSvalue(right)) ? 1 : 0;
-    else if(right.type == svt_mobj)
+    else if(right.type == FSVT_mobj)
       returnvar.value.i = (MobjForSvalue(left) == right.value.mobj) ? 1 : 0;
 
     return returnvar;
@@ -246,9 +247,9 @@ svalue_t OPlessthan(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
 
-  if(left.type == svt_fixed || right.type == svt_fixed)
+  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     returnvar.value.i = fixedvalue(left) < fixedvalue(right);
   else
     returnvar.value.i = intvalue(left) < intvalue(right);
@@ -262,9 +263,9 @@ svalue_t OPgreaterthan(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
 
-  if(left.type == svt_fixed || right.type == svt_fixed)
+  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     returnvar.value.i = fixedvalue(left) > fixedvalue(right);
   else
     returnvar.value.i = intvalue(left) > intvalue(right);
@@ -278,7 +279,7 @@ svalue_t OPnot(int start, int n, int stop)
   
   right = evaluate_expression(n+1, stop);
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = !intvalue(right);
   return returnvar;
 }
@@ -291,15 +292,15 @@ svalue_t OPplus(int start, int n, int stop)
   
     evaluate_leftnright(start, n, stop);
 
-    if (left.type == svt_string)
+    if (left.type == FSVT_string)
     {
         char *tmp;
-        if (right.type == svt_string)
+        if (right.type == FSVT_string)
         {
             tmp = Z_Malloc(strlen(left.value.s) + strlen(right.value.s) + 1, PU_LEVEL, 0);
             sprintf(tmp, "%s%s", left.value.s, right.value.s);
         }
-        else if (right.type == svt_fixed)
+        else if (right.type == FSVT_fixed)
         {
             tmp = Z_Malloc(strlen(left.value.s) + 12, PU_LEVEL, 0);
             sprintf(tmp, "%s%4.4f", left.value.s, FIXED_TO_FLOAT(right.value.f));
@@ -309,17 +310,17 @@ svalue_t OPplus(int start, int n, int stop)
             tmp = Z_Malloc(strlen(left.value.s) + 12, PU_LEVEL, 0);
             sprintf(tmp, "%s%d", left.value.s, intvalue(right));
         }
-        returnvar.type = svt_string;
+        returnvar.type = FSVT_string;
         returnvar.value.s = tmp;
     }
-    else if(left.type == svt_fixed || right.type == svt_fixed)
+    else if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
-        returnvar.type = svt_fixed;
+        returnvar.type = FSVT_fixed;
         returnvar.value.f = fixedvalue(left) + fixedvalue(right);
     }
     else
     {
-        returnvar.type = svt_int;
+        returnvar.type = FSVT_int;
         returnvar.value.i = intvalue(left) + intvalue(right);
     }
     return returnvar;
@@ -333,20 +334,20 @@ svalue_t OPminus(int start, int n, int stop)
   if(start == n)
     {
       // kinda hack, hehe
-      left.value.i = 0; left.type = svt_int;
+      left.value.i = 0; left.type = FSVT_int;
       right = evaluate_expression(n+1, stop);
     }
   else
     evaluate_leftnright(start, n, stop);
   
-  if(left.type == svt_fixed || right.type == svt_fixed)
+  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
-      returnvar.type = svt_fixed;
+      returnvar.type = FSVT_fixed;
       returnvar.value.f = fixedvalue(left) - fixedvalue(right);
     }
   else
     {
-      returnvar.type = svt_int;
+      returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) - intvalue(right);
     }
 
@@ -359,14 +360,14 @@ svalue_t OPmultiply(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  if(left.type == svt_fixed || right.type == svt_fixed)
+  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
-      returnvar.type = svt_fixed;
+      returnvar.type = FSVT_fixed;
       returnvar.value.f = FixedMul(fixedvalue(left), fixedvalue(right));
     }
   else
     {
-      returnvar.type = svt_int;
+      returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) * intvalue(right);
     }
 
@@ -379,7 +380,7 @@ svalue_t OPdivide(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-//  if(left.type == svt_fixed || right.type == svt_fixed)
+//  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
       fixed_t fr;
 
@@ -387,7 +388,7 @@ svalue_t OPdivide(int start, int n, int stop)
         script_error("divide by zero\n");
       else
 	{
-          returnvar.type = svt_fixed;
+          returnvar.type = FSVT_fixed;
           returnvar.value.f = FixedDiv(fixedvalue(left), fr);
 	}
     }
@@ -399,7 +400,7 @@ svalue_t OPdivide(int start, int n, int stop)
         script_error("divide by zero\n");
       else
 	{
-          returnvar.type = svt_int;
+          returnvar.type = FSVT_int;
           returnvar.value.i = intvalue(left) / ir;
 	}
     }*/
@@ -418,7 +419,7 @@ svalue_t OPremainder(int start, int n, int stop)
     script_error("divide by zero\n");
   else
     {
-      returnvar.type = svt_int;
+      returnvar.type = FSVT_int;
       returnvar.value.i = intvalue(left) % ir;
     }
   return returnvar;
@@ -434,7 +435,7 @@ svalue_t OPor_bin(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) | intvalue(right);
   return returnvar;
 }
@@ -448,7 +449,7 @@ svalue_t OPand_bin(int start, int n, int stop)
   
   evaluate_leftnright(start, n, stop);
   
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) & intvalue(right);
   return returnvar;
 }
@@ -472,7 +473,7 @@ svalue_t OPincrement(int start, int n, int stop)
       value = getvariablevalue(var);
       
       value.value.i = intvalue(value) + 1;
-      value.type = svt_int;
+      value.type = FSVT_int;
       setvariablevalue(var, value);
       
       return value;
@@ -490,7 +491,7 @@ svalue_t OPincrement(int start, int n, int stop)
 	}
       origvalue = getvariablevalue(var);
       
-      value.type = svt_int;
+      value.type = FSVT_int;
       value.value.i = intvalue(origvalue) + 1;
       setvariablevalue(var, value);
       
@@ -518,7 +519,7 @@ svalue_t OPdecrement(int start, int n, int stop)
       value = getvariablevalue(var);
       
       value.value.i = intvalue(value) - 1;
-      value.type = svt_int;
+      value.type = FSVT_int;
       setvariablevalue(var, value);
       
       return value;
@@ -536,7 +537,7 @@ svalue_t OPdecrement(int start, int n, int stop)
 	}
       origvalue = getvariablevalue(var);
       
-      value.type = svt_int;
+      value.type = FSVT_int;
       value.value.i = intvalue(origvalue) - 1;
       setvariablevalue(var, value);
       
@@ -553,7 +554,7 @@ svalue_t OPlessthanorequal(int start, int n, int stop)
 {
   svalue_t left, right, returnvar;
   evaluate_leftnright(start, n, stop);
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) <= intvalue(right);
   return returnvar;
 }
@@ -563,7 +564,7 @@ svalue_t OPgreaterthanorequal(int start, int n, int stop)
 {
   svalue_t left, right, returnvar;
   evaluate_leftnright(start, n, stop);
-  returnvar.type = svt_int;
+  returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) >= intvalue(right);
   return returnvar;
 }

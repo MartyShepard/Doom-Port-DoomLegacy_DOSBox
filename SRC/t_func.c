@@ -1,10 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: t_func.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
-// Copyright (C) 2000-2010 by DooM Legacy Team.
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -251,77 +251,75 @@ void SF_Print()
 // return a random number from 0 to 255
 void SF_Rnd()
 {
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = rand() % 256;
 }
 
 // return a random number from 0 to 255
 void SF_PRnd()
 {
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = P_Random();
 }
 
-// looping section. using the rover, find the highest level
+// Find the next outermost
 // loop we are currently in and return the section_t for it.
-
-section_t *looping_section()
+section_t * in_looping_section()
 {
-    section_t *best = NULL;     // highest level loop we're in
-    // that has been found so far
+    // deepest level loop we're in that has been found so far
+    section_t * loopfnd = NULL;
     int n;
 
     // check thru all the hashchains
-
     for (n = 0; n < SECTIONSLOTS; n++)
     {
-        section_t *current = current_script->sections[n];
+        section_t *current = fs_current_script->sections[n];
 
         // check all the sections in this hashchain
         while (current)
         {
-            // a loop?
-
-            if (current->type == st_loop)
+            if (current->type == FSST_loop) // a loop?
+	    {
                 // check to see if it's a loop that we're inside
-                if (rover >= current->start && rover <= current->end)
+                if (fs_src_cp >= current->start && fs_src_cp <= current->end)
                 {
-                    // a higher nesting level than the best one so far?
-                    if (!best || (current->start > best->start))
-                        best = current; // save it
+                    // a deeper nesting level than already found ?
+                    if (!loopfnd || (current->start > loopfnd->start))
+                        loopfnd = current; // save it
                 }
+	    }
             current = current->next;
         }
     }
 
-    return best;        // return the best one found
+    return loopfnd;        // return the closest one found
 }
 
-        // "continue;" in FraggleScript is a function
+// "continue;" in FraggleScript is a function
 void SF_Continue()
 {
     section_t *section;
 
-    if (!(section = looping_section())) // no loop found
+    if (!(section = in_looping_section())) // no loop found
     {
         script_error("continue() not in loop\n");
         return;
     }
 
-    rover = section->end;       // jump to the closing brace
+    fs_src_cp = section->end;       // jump to the closing brace
 }
 
 void SF_Break()
 {
     section_t *section;
 
-    if (!(section = looping_section()))
+    if (!(section = in_looping_section()))
     {
         script_error("break() not in loop\n");
         return;
     }
 
-    rover = section->end + 1;   // jump out of the loop
+    fs_src_cp = section->end + 1;   // jump out of the loop
 }
 
 void SF_Goto()
@@ -334,20 +332,19 @@ void SF_Goto()
 
     // check argument is a labelptr
 
-    if (t_argv[0].type != svt_label)
+    if (t_argv[0].type != FSVT_label)
     {
         script_error("goto argument not a label\n");
         return;
     }
 
     // go there then if everythings fine
-
-    rover = t_argv[0].value.labelptr;
+    fs_src_cp = t_argv[0].value.labelptr;
 }
 
 void SF_Return()
 {
-    killscript = true;  // kill the script
+    fs_killscript = true;  // kill the script
 }
 
 void SF_Include()
@@ -362,7 +359,7 @@ void SF_Include()
 
     memset(tempstr, 0, 9);
 
-    if (t_argv[0].type == svt_string)
+    if (t_argv[0].type == FSVT_string)
         strncpy(tempstr, t_argv[0].value.s, 8);
     else
         sprintf(tempstr, "%s", stringvalue(t_argv[0]));
@@ -380,7 +377,7 @@ void SF_Input()
 	// [WDJ] NEVER use gets(), it can overrun the buffer, use fgets()
         fgets(inputstr, 128, stdin);
 
-        t_return.type = svt_string;
+        t_return.type = FSVT_string;
         t_return.value.s = inputstr;
 #endif
     CONS_Printf("input() function not available in doom\a\n");
@@ -393,13 +390,13 @@ void SF_Beep()
 
 void SF_Clock()
 {
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = (gametic * 100) / 35;
 }
 
 void SF_ClockTic()
 {
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
 	t_return.value.i = gametic;
 }
 
@@ -447,7 +444,7 @@ void SF_Tip()
     char *tempstr;
     int strsize = 0;
 
-    if (current_script->trigger->player != displayplayer_ptr)
+    if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
     for (i = 0; i < t_argc; i++)
@@ -479,7 +476,7 @@ void SF_TimedTip()
 
     tiptime = (intvalue(t_argv[0]) * 35) / 100;
 
-    if (current_script->trigger->player != displayplayer_ptr)
+    if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
     for (i = 0; i < t_argc; i++)
@@ -535,7 +532,7 @@ void SF_Message()
     char *tempstr;
     int strsize = 0;
 
-    if (current_script->trigger->player != displayplayer_ptr)
+    if (fs_current_script->trigger->player != displayplayer_ptr)
         return;
 
     for (i = 0; i < t_argc; i++)
@@ -555,7 +552,7 @@ void SF_Message()
 //DarkWolf95:July 28, 2003:Added unimplemented function
 void SF_GameSkill()
 {
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
 	t_return.value.i = gameskill + 1;  //make 1-5, rather than 0-4
 }
 
@@ -563,7 +560,7 @@ void SF_GameSkill()
 // Feature Requested by SoM! SSNTails 06-13-2002
 void SF_GameMode()
 {
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
 
     if (cv_deathmatch.value)    // Deathmatch!
         t_return.value.i = 2;
@@ -614,7 +611,7 @@ void SF_PlayerInGame()
         return;
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = playeringame[intvalue(t_argv[0])];
 }
 
@@ -625,7 +622,7 @@ void SF_PlayerName()
     if (!t_argc)
     {
         player_t *pl;
-        pl = current_script->trigger->player;
+        pl = fs_current_script->trigger->player;
         if (pl)
             plnum = pl - players;
         else
@@ -637,7 +634,7 @@ void SF_PlayerName()
     else
         plnum = intvalue(t_argv[0]);
 
-    t_return.type = svt_string;
+    t_return.type = FSVT_string;
     t_return.value.s = player_names[plnum];
 }
 
@@ -658,7 +655,7 @@ void SF_PlayerAddFrag()
 
         players[playernum1].addfrags++;
 
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.f = players[playernum1].addfrags;
     }
 
@@ -669,7 +666,7 @@ void SF_PlayerAddFrag()
 
         players[playernum1].frags[playernum2]++;
 
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.f = players[playernum1].frags[playernum2];
     }
 }
@@ -682,7 +679,7 @@ void SF_PlayerObj()
     if (!t_argc)
     {
         player_t *pl;
-        pl = current_script->trigger->player;
+        pl = fs_current_script->trigger->player;
         if (pl)
             plnum = pl - players;
         else
@@ -694,7 +691,7 @@ void SF_PlayerObj()
     else
         plnum = intvalue(t_argv[0]);
 
-    t_return.type = svt_mobj;
+    t_return.type = FSVT_mobj;
     t_return.value.mobj = players[plnum].mo;
 }
 
@@ -704,12 +701,12 @@ void SF_MobjIsPlayer()
 
     if (t_argc == 0)
     {
-        t_return.type = svt_int;
-        t_return.value.i = current_script->trigger->player ? 1 : 0;
+        t_return.type = FSVT_int;
+        t_return.value.i = fs_current_script->trigger->player ? 1 : 0;
         return;
     }
     mobj = MobjForSvalue(t_argv[0]);
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     if (!mobj)
         t_return.value.i = 0;
     else
@@ -730,7 +727,7 @@ void SF_SkinColor()
 
     if (t_argc >= 1)
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -764,7 +761,7 @@ void SF_SkinColor()
 		CV_SetValue (&cv_playercolor, colour);
     }
 	
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = players[playernum].skincolor;
 
     return;
@@ -784,7 +781,7 @@ void SF_PlayerKeys()
 
     if (t_argc == 2)
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -807,13 +804,13 @@ void SF_PlayerKeys()
             script_error("keynum out of range! %s\n", keynum);
             return;
         }
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = (players[playernum].cards & (1 << keynum)) ? 1 : 0;
         return;
     }
     else
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -837,7 +834,7 @@ void SF_PlayerKeys()
             return;
         }
         givetake = intvalue(t_argv[2]);
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         if (givetake)
             players[playernum].cards |= (1 << keynum);
         else
@@ -882,7 +879,7 @@ void SF_PlayerKeysByte()
 		players[playernum].cards = keybyte;
 	}
 	
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
 	t_return.value.i = players[playernum].cards;
 }
 
@@ -910,7 +907,7 @@ void SF_PlayerArmor()
 	else
 		players[playernum].armortype = 1;
 
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
     t_return.value.i = armor;
 }
 
@@ -928,7 +925,7 @@ void SF_PlayerAmmo()
 
     if (t_argc == 2)
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -951,13 +948,13 @@ void SF_PlayerAmmo()
             script_error("ammonum out of range! %s\n", ammonum);
             return;
         }
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].ammo[ammonum];
         return;
     }
     else
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -982,7 +979,7 @@ void SF_PlayerAmmo()
         }
         newammo = intvalue(t_argv[2]);
         newammo = newammo > players[playernum].maxammo[ammonum] ? players[playernum].maxammo[ammonum] : newammo;
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].ammo[ammonum] = newammo;
         return;
     }
@@ -1002,7 +999,7 @@ void SF_MaxPlayerAmmo()
 
     if (t_argc == 2)
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -1025,13 +1022,13 @@ void SF_MaxPlayerAmmo()
             script_error("maxammonum out of range! %i\n", ammonum);
             return;
         }
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].maxammo[ammonum];
         return;
     }
     else
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -1055,7 +1052,7 @@ void SF_MaxPlayerAmmo()
             return;
         }
         newmax = intvalue(t_argv[2]);
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].maxammo[ammonum] = newmax;
         return;
     }
@@ -1077,7 +1074,7 @@ void SF_PlayerWeapon()
 
     if (t_argc == 2)
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -1100,13 +1097,13 @@ void SF_PlayerWeapon()
             script_error("weaponnum out of range! %s\n", weaponnum);
             return;
         }
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].weaponowned[weaponnum];
         return;
     }
     else
     {
-        if (t_argv[0].type == svt_mobj)
+        if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -1135,7 +1132,7 @@ void SF_PlayerWeapon()
         if (newweapon != 0)
             newweapon = 1;
 
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = players[playernum].weaponowned[weaponnum] = newweapon;
         return;
     }
@@ -1152,7 +1149,7 @@ void SF_PlayerSelectedWeapon()
 		return;
 	}
 
-	if (t_argv[0].type == svt_mobj)
+	if (t_argv[0].type == FSVT_mobj)
         {
             if (!t_argv[0].value.mobj->player)
             {
@@ -1167,7 +1164,7 @@ void SF_PlayerSelectedWeapon()
 	
 	if (t_argc == 1)
     {   
-		t_return.type = svt_int;
+		t_return.type = FSVT_int;
         t_return.value.i = players[playernum].readyweapon;
     }
 
@@ -1188,7 +1185,7 @@ void SF_PlayerSelectedWeapon()
 
 		players[playernum].pendingweapon = weaponnum;
 
-		t_return.type = svt_int;
+		t_return.type = FSVT_int;
 		t_return.value.i = players[playernum].readyweapon;
 	}
 }
@@ -1219,7 +1216,7 @@ void SF_PlayerPitch()
 		localaiming = FixedToAngle(fixedvalue(t_argv[1]));
 	}
 
-	t_return.type = svt_fixed;
+	t_return.type = FSVT_fixed;
 	t_return.value.f = AngleToFixed(players[playernum].aiming);
 }
 
@@ -1272,9 +1269,9 @@ extern void SF_ScriptWait();
 
 void SF_Player()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
 
     if (mo)
     {
@@ -1319,7 +1316,7 @@ void SF_Spawn()
         return;
     }
 
-    t_return.type = svt_mobj;
+    t_return.type = FSVT_mobj;
     t_return.value.mobj = P_SpawnMobj(x, y, z, objtype);
     t_return.value.mobj->angle = angle;
 
@@ -1364,7 +1361,7 @@ void SF_SpawnExplosion()
         z = R_PointInSubsector(x, y)->sector->floorheight;
 
     spawn = P_SpawnMobj(x, y, z, type);
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = P_SetMobjState(spawn, spawn->info->deathstate);
     if (spawn->info->deathsound)
         S_StartSound(spawn, spawn->info->deathsound);
@@ -1414,34 +1411,34 @@ void SF_KillObj()
     if (t_argc)
         mo = MobjForSvalue(t_argv[0]);
     else
-        mo = current_script->trigger;   // default to trigger object
+        mo = fs_current_script->trigger;   // default to trigger object
 
     if (mo)     // nullptr check
-        P_KillMobj(mo, NULL, current_script->trigger);  // kill it
+        P_KillMobj(mo, NULL, fs_current_script->trigger);  // kill it
 }
 
         // mobj x, y, z
 void SF_ObjX()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->x : 0;  // null ptr check
 }
 
 void SF_ObjY()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->y : 0;  // null ptr check
 }
 
 void SF_ObjZ()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->z : 0;  // null ptr check
 }
 
@@ -1503,20 +1500,20 @@ void SF_Resurrect()
 
 void SF_TestLocation()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
     if (!mo)
         return;
 
     if (P_TestMobjLocation(mo))
     {
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.f = 1;
     }
 
     else
     {
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.f = 0;
     }
 }
@@ -1524,7 +1521,7 @@ void SF_TestLocation()
         // mobj angle
 void SF_ObjAngle()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
 	if(t_argc > 1)
 	{
@@ -1538,7 +1535,7 @@ void SF_ObjAngle()
 			mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
 		}
 	}
-	t_return.type = svt_fixed;
+	t_return.type = FSVT_fixed;
 	t_return.value.f = (int)AngleToFixed(mo->angle);       // null ptr check
 }
 
@@ -1555,9 +1552,9 @@ void SF_CheckSight()
 	}
 
 	obj1 = MobjForSvalue(t_argv[0]);
-	obj2 = t_argc == 2 ? MobjForSvalue(t_argv[1]) : current_script->trigger;
+	obj2 = t_argc == 2 ? MobjForSvalue(t_argv[1]) : fs_current_script->trigger;
 
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
 	t_return.value.i = P_CheckSight(obj1, obj2);
 }
 
@@ -1575,7 +1572,7 @@ void SF_Teleport()
     }
     else if (t_argc == 1)       // 1 argument: sector tag
     {
-        mo = current_script->trigger;   // default to trigger
+        mo = fs_current_script->trigger;   // default to trigger
         line.tag = intvalue(t_argv[0]);
     }
     else        // 2 or more
@@ -1600,7 +1597,7 @@ void SF_SilentTeleport()
     }
     else if (t_argc == 1)       // 1 argument: sector tag
     {
-        mo = current_script->trigger;   // default to trigger
+        mo = fs_current_script->trigger;   // default to trigger
         line.tag = intvalue(t_argv[0]);
     }
     else        // 2 or more
@@ -1625,7 +1622,7 @@ void SF_DamageObj()
     }
     else if (t_argc == 1)       // 1 argument: damage trigger by amount
     {
-        mo = current_script->trigger;   // default to trigger
+        mo = fs_current_script->trigger;   // default to trigger
         damageamount = intvalue(t_argv[0]);
     }
     else        // 2 or more
@@ -1635,7 +1632,7 @@ void SF_DamageObj()
     }
 
     if (mo)
-        P_DamageMobj(mo, NULL, current_script->trigger, damageamount);
+        P_DamageMobj(mo, NULL, fs_current_script->trigger, damageamount);
 }
 
 
@@ -1643,9 +1640,9 @@ void SF_DamageObj()
 void SF_ObjSector()
 {
     // use trigger object if not specified
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = mo ? mo->subsector->sector->tag : 0;     // nullptr check
 }
 
@@ -1653,17 +1650,17 @@ void SF_ObjSector()
 void SF_ObjHealth()
 {
     // use trigger object if not specified
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = mo ? mo->health : 0;
 }
 
 void SF_ObjDead()
 {
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     if (mo && (mo->health <= 0 || mo->flags & MF_CORPSE))
         t_return.value.i = 1;
     else
@@ -1683,7 +1680,7 @@ void SF_ObjFlag()
     else if (t_argc == 1)       // use trigger, 1st is flag
     {
         // use trigger:
-        mo = current_script->trigger;
+        mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
     else if (t_argc == 2)
@@ -1712,7 +1709,7 @@ void SF_ObjFlag()
 
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     // nullptr check:
     t_return.value.i = mo ? !!(mo->flags & (1 << flagnum)) : 0;
 }
@@ -1732,7 +1729,7 @@ void SF_ObjFlag2()
     else if (t_argc == 1)       // use trigger, 1st is flag
     {
         // use trigger:
-        mo = current_script->trigger;
+        mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
     else if (t_argc == 2)
@@ -1761,7 +1758,7 @@ void SF_ObjFlag2()
 
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     // nullptr check:
     t_return.value.i = mo ? !!(mo->flags2 & (1 << flagnum)) : 0;
 }
@@ -1781,7 +1778,7 @@ void SF_ObjEFlag()
     else if (t_argc == 1)       // use trigger, 1st is flag
     {
         // use trigger:
-        mo = current_script->trigger;
+        mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
     else if (t_argc == 2)
@@ -1808,7 +1805,7 @@ void SF_ObjEFlag()
 
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     // nullptr check:
     t_return.value.i = mo ? !!(mo->eflags & (1 << flagnum)) : 0;
 }
@@ -1858,7 +1855,7 @@ void SF_ReactionTime()
         mo->reactiontime = (intvalue(t_argv[1]) * 35) / 100;
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = mo->reactiontime;
 }
 
@@ -1880,7 +1877,7 @@ void SF_MobjTarget()
 
     if (t_argc >= 2)
     {
-        if (t_argv[1].type != svt_mobj && intvalue(t_argv[1]) == -1)
+        if (t_argv[1].type != FSVT_mobj && intvalue(t_argv[1]) == -1)
         {
             // Set target to NULL
 			mo->target = NULL;
@@ -1899,7 +1896,7 @@ void SF_MobjTarget()
         }
     }
 
-    t_return.type = svt_mobj;
+    t_return.type = FSVT_mobj;
     t_return.value.mobj = mo->target;
 }
 
@@ -1921,7 +1918,7 @@ void SF_MobjMomx()
         mo->momx = fixedvalue(t_argv[1]);
     }
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->momx : 0;
 }
 
@@ -1943,7 +1940,7 @@ void SF_MobjMomy()
         mo->momy = fixedvalue(t_argv[1]);
     }
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->momy : 0;
 }
 
@@ -1965,7 +1962,7 @@ void SF_MobjMomz()
         mo->momz = fixedvalue(t_argv[1]);
     }
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = mo ? mo->momz : 0;
 }
 
@@ -1991,7 +1988,7 @@ void SF_SpawnMissile()
     mobj = MobjForSvalue(t_argv[0]);
     target = MobjForSvalue(t_argv[1]);
 
-	t_return.type = svt_mobj;
+	t_return.type = FSVT_mobj;
     t_return.value.mobj = P_SpawnMissile(mobj, target, objtype);
 }
 
@@ -2039,28 +2036,28 @@ void SF_MapThingNumExist()
 
     if (intval < 0 || intval >= nummapthings || !mapthings[intval].mobj)
     {
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = 0;
     }
     else
     {
-        t_return.type = svt_int;
+        t_return.type = FSVT_int;
         t_return.value.i = 1;
     }
 }
 
 void SF_MapThings()
 {
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = nummapthings;
 }
 
 void SF_ObjType()
 {
     // use trigger object if not specified
-    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : current_script->trigger;
+    mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = mo->type;
 }
 
@@ -2078,7 +2075,7 @@ void SF_SetObjProperty()
   int attrib = intvalue(t_argv[0]); 
   int value  = intvalue(t_argv[1]);
   // FIXME fixed_t vals, syntax does not make sense (operate on MTs instead of mobjs...
-  mobj_t *mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : current_script->trigger;
+  mobj_t *mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : fs_current_script->trigger;
 
   switch (attrib)
     {
@@ -2169,7 +2166,7 @@ void SF_GetObjProperty()
 	}
 	if(t_argc == 1)
 	{
-		mo = current_script->trigger;
+		mo = fs_current_script->trigger;
 		attrib = intvalue(t_argv[0]);
 	}
 	if(t_argc == 2)
@@ -2250,7 +2247,7 @@ void SF_GetObjProperty()
 			return;
 
 	}
-	t_return.type = svt_int;
+	t_return.type = FSVT_int;
 	t_return.value.i = retval;
 }
 
@@ -2262,7 +2259,7 @@ void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
 
 	if(t_argc == 1)
 	{
-		mo = current_script->trigger;
+		mo = fs_current_script->trigger;
 		state = intvalue(t_argv[0]);
 	}
 
@@ -2312,7 +2309,7 @@ void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
 			return;
 	}
 
-		t_return.type = svt_int;
+		t_return.type = FSVT_int;
 		t_return.value.i = P_SetMobjState(mo, newstate);
 }
 
@@ -2328,7 +2325,7 @@ void SF_HealObj()
 	// Heal trigger to default health
 	if (t_argc == 0)
 	{
-		mo = current_script->trigger;
+		mo = fs_current_script->trigger;
 		mo->health = mo->info->spawnhealth;
 	}
 
@@ -2435,7 +2432,7 @@ void SF_SetNodeScript()
 	sn = intvalue(t_argv[1]);
 
 	// Check if the script is defined
-	if(!levelscript.children[sn])
+	if(!fs_levelscript.children[sn])
     {
 		script_error("SetNodeScript: script not defined\n");
 		return;
@@ -2467,7 +2464,7 @@ void SF_PointToAngle()
 
     angle = R_PointToAngle2(x1, y1, x2, y2);
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = AngleToFixed(angle);
 }
 
@@ -2488,7 +2485,7 @@ void SF_PointToDist()
     y2 = intvalue(t_argv[3]) << FRACBITS;
 
     dist = R_PointToDist2(x1, y1, x2, y2);
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = dist;
 }
 
@@ -2526,7 +2523,7 @@ void SF_SetCamera()
     script_camera.aiming = G_ClipAimingPitch(aiming);
 
     script_camera_on = true;
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = script_camera.aiming; // FIXME really?
 }
 
@@ -2701,7 +2698,7 @@ void SF_MoveCamera()
     }
     camera->z = z;
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = moved;
 }
 
@@ -2718,7 +2715,7 @@ void SF_StartSound()
         return;
     }
 
-    if (t_argv[1].type != svt_string)
+    if (t_argv[1].type != FSVT_string)
     {
         script_error("sound lump argument not a string!\n");
         return;
@@ -2742,7 +2739,7 @@ void SF_StartSectorSound()
         script_error("insufficient arguments to function\n");
         return;
     }
-    if (t_argv[1].type != svt_string)
+    if (t_argv[1].type != FSVT_string)
     {
         script_error("sound lump argument not a string!\n");
         return;
@@ -2775,7 +2772,7 @@ void SF_AmbiantSound()
         script_error("insufficient arguments to function\n");
         return;
     }
-    if (t_argv[0].type != svt_string)
+    if (t_argv[0].type != FSVT_string)
     {
         script_error("sound lump argument not a string!\n");
         return;
@@ -2870,7 +2867,7 @@ void SF_SectorEffect() //mainly copy/paste from p_spec
     }
 
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = intvalue(t_argv[1]);
 }
         // floor height of sector
@@ -2919,7 +2916,7 @@ void SF_FloorHeight()
 
     // return floorheight
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = returnval;
 }
 
@@ -3011,7 +3008,7 @@ void SF_CeilingHeight()
         returnval = sectors[secnum].ceilingheight >> FRACBITS;
 
     // return floorheight
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = returnval;
 }
 
@@ -3098,7 +3095,7 @@ void SF_LightLevel()
     }
 
     // return lightlevel
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = sector->lightlevel;
 }
 
@@ -3155,7 +3152,7 @@ void SF_FloorTexture()
         }
     }
 
-    t_return.type = svt_string;
+    t_return.type = FSVT_string;
     t_return.value.s = P_FlatNameForNum(sectors[secnum].floorpic);
 }
 
@@ -3206,7 +3203,7 @@ void SF_SectorColormap()
         }
     }
 
-    t_return.type = svt_string;
+    t_return.type = FSVT_string;
     t_return.value.s = R_ColormapNameForNum(sector->midmap);
 }
 
@@ -3246,7 +3243,7 @@ void SF_CeilingTexture()
         }
     }
 
-    t_return.type = svt_string;
+    t_return.type = FSVT_string;
     t_return.value.s = P_FlatNameForNum(sectors[secnum].ceilingpic);
 }
 
@@ -3259,7 +3256,7 @@ void SF_ChangeHubLevel()
       script_error("hub level to go to not specified!\n");
       return;
     }
-  if(t_argv[0].type != svt_string)
+  if(t_argv[0].type != FSVT_string)
     {
       script_error("level argument is not a string!\n");
       return;
@@ -3271,7 +3268,7 @@ void SF_ChangeHubLevel()
   else
     tagnum = -1;
 
-  P_SavePlayerPosition(current_script->trigger->player, tagnum);
+  P_SavePlayerPosition(fs_current_script->trigger->player, tagnum);
   P_ChangeHubLevel(t_argv[0].value.s);*/
 }
 
@@ -3365,7 +3362,7 @@ void SF_PlayDemo()
         script_error("playdemo: invalid number of arguments\n");
         return;
     }
-    if (t_argv[0].type != svt_string)
+    if (t_argv[0].type != FSVT_string)
     {
         script_error("playdemo: not a lump name");
         return;
@@ -3407,7 +3404,7 @@ void SF_CheckCVar()
     {
         consvar_t *cvar;
 
-        t_return.type = svt_string;
+        t_return.type = FSVT_string;
         if ((cvar = CV_FindVar(stringvalue(t_argv[0]))))
         {
             t_return.value.s = cvar->string;
@@ -3526,7 +3523,7 @@ void SF_LineFlag()
             line->flags |= (1 << flagnum);
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = line->flags & (1 << flagnum);
 }
 
@@ -3537,7 +3534,7 @@ void SF_ChangeMusic()
         script_error("need new music name\n");
         return;
     }
-    if (t_argv[0].type != svt_string)
+    if (t_argv[0].type != FSVT_string)
     {
         script_error("incorrect argument to function\n");
         return;
@@ -3560,7 +3557,7 @@ void SF_Max()
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = n1 > n2 ? n1 : n2;
 }
 
@@ -3577,7 +3574,7 @@ void SF_Min()
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = n1 < n2 ? n1 : n2;
 }
 
@@ -3593,7 +3590,7 @@ void SF_Abs()
 
     n1 = fixedvalue(t_argv[0]);
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = n1 < 0 ? n1 * -1 : n1;
 }
 
@@ -3613,7 +3610,7 @@ void SF_Sin()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(sin(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3627,7 +3624,7 @@ void SF_ASin()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(asin(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3641,7 +3638,7 @@ void SF_Cos()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(cos(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3655,7 +3652,7 @@ void SF_ACos()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(acos(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3669,7 +3666,7 @@ void SF_Tan()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(tan(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3683,7 +3680,7 @@ void SF_ATan()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(atan(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3697,7 +3694,7 @@ void SF_Exp()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(exp(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3711,7 +3708,7 @@ void SF_Log()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(log(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3725,7 +3722,7 @@ void SF_Sqrt()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(sqrt(FIXED_TO_FLOAT(n1)));
     }
 }
@@ -3739,7 +3736,7 @@ void SF_Floor()
     else
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
-        t_return.type = svt_fixed;
+        t_return.type = FSVT_fixed;
         t_return.value.f = n1 & 0xffFF0000;
     }
 }
@@ -3757,7 +3754,7 @@ void SF_Pow()
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
-    t_return.type = svt_fixed;
+    t_return.type = FSVT_fixed;
     t_return.value.f = double2fixed(pow(FIXED_TO_FLOAT(n1), FIXED_TO_FLOAT(n2)));
 }
 
@@ -3773,7 +3770,7 @@ void SF_MobjValue(void)
       script_error("incorrect arguments to function\n");
       return;
    }
-   t_return.type = svt_mobj;
+   t_return.type = FSVT_mobj;
    t_return.value.mobj = MobjForSvalue(t_argv[0]);
 }
 
@@ -3784,7 +3781,7 @@ void SF_StringValue(void)
       script_error("incorrect arguments to function\n");
       return;
    }
-   t_return.type = svt_string;
+   t_return.type = FSVT_string;
    t_return.value.s = Z_Strdup(stringvalue(t_argv[0]), PU_LEVEL, 0);
 }
 
@@ -3795,7 +3792,7 @@ void SF_IntValue(void)
       script_error("incorrect arguments to function\n");
       return;
    }
-   t_return.type = svt_int;
+   t_return.type = FSVT_int;
    t_return.value.i = intvalue(t_argv[0]);
 }
 
@@ -3806,7 +3803,7 @@ void SF_FixedValue(void)
       script_error("incorrect arguments to function\n");
       return;
    }
-   t_return.type = svt_fixed;
+   t_return.type = FSVT_fixed;
    t_return.value.f = fixedvalue(t_argv[0]);
 }
 
@@ -3829,7 +3826,7 @@ void SF_NewHUPic()
         return;
     }
 
-    t_return.type = svt_int;
+    t_return.type = FSVT_int;
     t_return.value.i = HU_GetFSPic(W_GetNumForName(stringvalue(t_argv[0])), intvalue(t_argv[1]), intvalue(t_argv[2]));
     return;
 }
@@ -3913,7 +3910,7 @@ void SF_SetCorona()
                 lspr[num].light_yoffset = fval;
                 break;
             case 3:
-                if (t_argv[2].type == svt_string)
+                if (t_argv[2].type == FSVT_string)
                     lspr[num].corona_color = String2Hex(t_argv[2].value.s);
                 else
                     memcpy(&lspr[num].corona_color, &ival, sizeof(int));
@@ -3922,7 +3919,7 @@ void SF_SetCorona()
                 lspr[num].corona_radius = fval;
                 break;
             case 5:
-                if (t_argv[2].type == svt_string)
+                if (t_argv[2].type == FSVT_string)
                     lspr[num].dynamic_color = String2Hex(t_argv[2].value.s);
                 else
                     memcpy(&lspr[num].dynamic_color, &ival, sizeof(int));
@@ -3942,12 +3939,12 @@ void SF_SetCorona()
         lspr[num].type = t_argv[1].value.i;
         lspr[num].light_xoffset = t_argv[2].value.f;
         lspr[num].light_yoffset = t_argv[3].value.f;
-        if (t_argv[4].type == svt_string)
+        if (t_argv[4].type == FSVT_string)
             lspr[num].corona_color = String2Hex(t_argv[4].value.s);
         else
             memcpy(&lspr[num].corona_color, &t_argv[4].value.i, sizeof(int));
         lspr[num].corona_radius = t_argv[5].value.f;
-        if (t_argv[6].type == svt_string)
+        if (t_argv[6].type == FSVT_string)
             lspr[num].dynamic_color = String2Hex(t_argv[6].value.s);
         else
             memcpy(&lspr[num].dynamic_color, &t_argv[6].value.i, sizeof(int));
@@ -3994,7 +3991,7 @@ void init_functions()
     add_game_int("displayplayer", &displayplayer);
     add_game_int("fov", &fov);
     add_game_int("zoom", &fov); //SoM: BAKWARDS COMPATABILITY!
-    add_game_mobj("trigger", &trigger_obj);
+    add_game_mobj("trigger", &fs_trigger_obj);
 
     // important C-emulating stuff
     new_function("break", SF_Break);

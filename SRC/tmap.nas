@@ -96,6 +96,7 @@ cextern dc_texturemid
 cextern dc_iscale
 cextern centery
 cextern dc_colormap
+;cextern dc_transmap
 cextern dc_translucentmap
 cextern colormaps
 
@@ -570,6 +571,7 @@ R_DrawTranslucentColumn_8:
         shr     eax,0x2
         test    byte [pixelcount],0x3
         mov     ch,al                   ;; quad count
+;       mov     eax,[dc_transmap]
         mov     eax,[dc_translucentmap]
         je      vt4quadloop
 ;;
@@ -743,6 +745,7 @@ R_DrawShadeColumn_8:
         mov     dh,al
         shr     eax,2
         mov     ch,al                   ;; quad count
+;       mov     eax,[colormaps]
         mov     eax,[reg_colormaps]
         test    dh,3
         je      sh4quadloop

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_sound.h 725 2010-08-17 18:53:25Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -106,8 +106,10 @@ void I_UpdateSoundParams ( int           handle,
 //
 //  MUSIC I/O
 //
+#if defined( __DJGPP__ )	
 void I_InitMusic(void);
 void I_ShutdownMusic(void);
+#endif
 // Volume.
 void I_SetMusicVolume(int volume);
 void I_SetSfxVolume(int volume);

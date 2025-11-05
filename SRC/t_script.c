@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 733 2010-09-02 00:28:16Z smite-meister $
+// $Id: t_script.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,7 +75,7 @@ void clear_runningscripts( void );
 
 // the level script is just the stuff put in the wad,
 // which the other scripts are derivatives of
-script_t levelscript;
+script_t  fs_levelscript;
 
 
 
@@ -83,9 +84,9 @@ script_t levelscript;
 
 // the individual scripts
 //script_t *scripts[MAXSCRIPTS];       // the scripts
-mobj_t *t_trigger;
+mobj_t * t_trigger;
 
-runningscript_t runningscripts;        // first in chain
+runningscript_t  fs_runningscripts;        // first in chain
 
 //     T_Init()
 //
@@ -111,17 +112,17 @@ void T_ClearScripts( void )
   clear_runningscripts();
 
   // clear the levelscript
-  levelscript.data = Z_Malloc(5, PU_LEVEL, 0);  // empty data
-  levelscript.data[0] = '\0';
+  fs_levelscript.data = Z_Malloc(5, PU_LEVEL, 0);  // empty data
+  fs_levelscript.data[0] = '\0';
   
-  levelscript.scriptnum = -1;
-  levelscript.parent = &hub_script;
+  fs_levelscript.scriptnum = -1;
+  fs_levelscript.parent = &hub_script;
 
   // clear levelscript variables
   
   for(i=0; i<VARIABLESLOTS; i++)
     {
-      levelscript.variables[i] = NULL;
+      fs_levelscript.variables[i] = NULL;
     }
 }
 
@@ -172,10 +173,10 @@ void T_PreprocessScripts( void )
   // get the other scripts
   
   // levelscript started by player 0 'superplayer'
-  levelscript.trigger = players[0].mo;
+  fs_levelscript.trigger = players[0].mo;
   
-  preprocess(&levelscript);
-  run_script(&levelscript);
+  preprocess(&fs_levelscript);
+  run_script(&fs_levelscript);
 
   // load and run the thing script
 
@@ -191,7 +192,7 @@ void T_RunScript(int n)
   if(n<0 || n>=MAXSCRIPTS) return;
 
   // use the level's child script script n
-  script = levelscript.children[n];
+  script = fs_levelscript.children[n];
   if(!script) return;
  
   script->trigger = t_trigger;    // save trigger in script
@@ -236,9 +237,9 @@ void COM_T_DumpScript_f (void)
     }
 
   if(!strcmp(COM_Argv(1), "global"))
-    script = &levelscript;
+    script = &fs_levelscript;
   else
-    script = levelscript.children[atoi(COM_Argv(1))];
+    script = fs_levelscript.children[atoi(COM_Argv(1))];
   
   if(!script)
     {
@@ -263,7 +264,7 @@ void COM_T_RunScript_f (void)
   
   sn = atoi(COM_Argv(1));
   
-  if(!levelscript.children[sn])
+  if(!fs_levelscript.children[sn])
     {
       CONS_Printf("script not defined\n");
       return;
@@ -314,7 +315,7 @@ static boolean wait_finished(runningscript_t *script)
     case wt_scriptwait:               // waiting for script to finish
       {
 	runningscript_t *current;
-	for(current = runningscripts.next; current; current = current->next)
+	for(current = fs_runningscripts.next; current; current = current->next)
 	  {
 	    if(current == script) continue;  // ignore this script
 	    if(current->script->scriptnum == script->wait_data)
@@ -357,7 +358,7 @@ void T_DelayedScripts( void )
 
   if(!info_scripts) return;       // no level scripts
   
-  current = runningscripts.next;
+  current = fs_runningscripts.next;
   
   while(current)
     {
@@ -397,16 +398,16 @@ static runningscript_t *T_SaveCurrentScript( void )
   int i;
 
   runscr = new_runningscript();
-  runscr->script = current_script;
-  runscr->savepoint = rover;
+  runscr->script = fs_current_script;
+  runscr->savepoint = fs_src_cp;
 
   // leave to other functions to set wait_type: default to wt_none
   runscr->wait_type = wt_none;
 
   // hook into chain at start
   
-  runscr->next = runningscripts.next;
-  runscr->prev = &runningscripts;
+  runscr->next = fs_runningscripts.next;
+  runscr->prev = &fs_runningscripts;
   runscr->prev->next = runscr;
   if(runscr->next)
     runscr->next->prev = runscr;
@@ -414,19 +415,19 @@ static runningscript_t *T_SaveCurrentScript( void )
   // save the script variables 
   for(i=0; i<VARIABLESLOTS; i++)
     {
-      runscr->variables[i] = current_script->variables[i];
+      runscr->variables[i] = fs_current_script->variables[i];
       
       // remove all the variables from the script variable list
       // to prevent them being removed when the script stops
 
-      while(current_script->variables[i] &&
-	    current_script->variables[i]->type != svt_label)
-	current_script->variables[i] =
-	  current_script->variables[i]->next;
+      while(fs_current_script->variables[i] &&
+	    fs_current_script->variables[i]->type != FSVT_label)
+	fs_current_script->variables[i] =
+	  fs_current_script->variables[i]->next;
     }
-  runscr->trigger = current_script->trigger;      // save trigger
+  runscr->trigger = fs_current_script->trigger;      // save trigger
   
-  killscript = true;      // stop the script
+  fs_killscript = true;      // stop the script
 
   return runscr;
 }
@@ -507,7 +508,7 @@ void SF_ScriptWait( void )
 
 
 
-extern mobj_t *trigger_obj;           // in t_func.c
+//extern mobj_t * fs_trigger_obj;           // in t_func.c
 
 void SF_StartScript( void )
 {
@@ -523,7 +524,7 @@ void SF_StartScript( void )
 
   snum = intvalue(t_argv[0]);
   
-  script = levelscript.children[snum];
+  script = fs_levelscript.children[snum];
   
   if(!script)
     {
@@ -537,8 +538,8 @@ void SF_StartScript( void )
 
   // hook into chain at start
   
-  runscr->next = runningscripts.next;
-  runscr->prev = &runningscripts;
+  runscr->next = fs_runningscripts.next;
+  runscr->prev = &fs_runningscripts;
   runscr->prev->next = runscr;
   if(runscr->next)
     runscr->next->prev = runscr;
@@ -552,12 +553,12 @@ void SF_StartScript( void )
       // remove all the variables from the script variable list
       // we only start with the basic labels
       while(runscr->variables[i] &&
-	    runscr->variables[i]->type != svt_label)
+	    runscr->variables[i]->type != FSVT_label)
 	runscr->variables[i] =
 	  runscr->variables[i]->next;
     }
   // copy trigger
-  runscr->trigger = current_script->trigger;
+  runscr->trigger = fs_current_script->trigger;
 }
 
 
@@ -576,19 +577,19 @@ void SF_ScriptRunning( void )
 
   snum = intvalue(t_argv[0]);
   
-  for(current=runningscripts.next; current; current=current->next)
+  for(current=fs_runningscripts.next; current; current=current->next)
     {
       if(current->script->scriptnum == snum)
 	{
 	  // script found so return
-	  t_return.type = svt_int;
+	  t_return.type = FSVT_int;
 	  t_return.value.i = 1;
 	  return;
 	}
     }
 
   // script not found
-  t_return.type = svt_int;
+  t_return.type = FSVT_int;
   t_return.value.i = 0;
 }
 
@@ -601,7 +602,7 @@ void COM_T_Running_f (void)
 {
   runningscript_t *current;
   
-  current = runningscripts.next;
+  current = fs_runningscripts.next;
   
   CONS_Printf("running scripts\n");
   
@@ -609,7 +610,7 @@ void COM_T_Running_f (void)
     CONS_Printf("no running scripts.\n");
   
   while(current)
-    {
+  {
       CONS_Printf("%i:", current->script->scriptnum);
       switch(current->wait_type)
 	{
@@ -630,7 +631,7 @@ void COM_T_Running_f (void)
 	  break;
 	}
       current = current->next;
-    }
+  }
 }
 
 
@@ -640,16 +641,16 @@ void clear_runningscripts( void )
 {
   runningscript_t *runscr, *next;
   
-  runscr = runningscripts.next;
+  runscr = fs_runningscripts.next;
   
   // free the whole chain
   while(runscr)
-    {
+  {
       next = runscr->next;
       free_runningscript(runscr);
       runscr = next;
-    }
-  runningscripts.next = NULL;
+  }
+  fs_runningscripts.next = NULL;
 }
 
 
@@ -657,7 +658,7 @@ mobj_t *MobjForSvalue(svalue_t svalue)
 {
   int intval ;
   
-  if(svalue.type == svt_mobj)
+  if(svalue.type == FSVT_mobj)
     return svalue.value.mobj;
   
   // this requires some creativity. We use the intvalue
@@ -666,7 +667,10 @@ mobj_t *MobjForSvalue(svalue_t svalue)
   intval = intvalue(svalue);        
   
   if(intval < 0 || intval >= nummapthings || !mapthings[intval].mobj)
-    { script_error("no levelthing %i\n", intval); return NULL;}
+  { 
+      script_error("no levelthing %i\n", intval);
+      return NULL;
+  }
 
   return mapthings[intval].mobj;
 }
@@ -693,62 +697,61 @@ void spec_script( void )
   int datasize;
   script_t *script;
 
-  if(!current_section)
-    {
+  if(!fs_current_section)
+  {
       script_error("need seperators for script\n");
       return;
-    }
+  }
   
   // presume that the first token is "script"
   
   if(num_tokens < 2)
-    {
+  {
       script_error("need script number\n");
       return;
-    }
+  }
 
   scriptnum = intvalue(evaluate_expression(1, num_tokens-1));
   
   if(scriptnum < 0)
-    {
+  {
       script_error("invalid script number\n");
       return;
-    }
+  }
 
   script = Z_Malloc(sizeof(script_t), PU_LEVEL, 0);
 
   // add to scripts list of parent
-  current_script->children[scriptnum] = script;
+  fs_current_script->children[scriptnum] = script;
   
   // copy script data
   // workout script size: -2 to ignore { and }
-  datasize = current_section->end - current_section->start - 2;
+  datasize = fs_current_section->end - fs_current_section->start - 2;
 
   // alloc extra 10 for safety
   script->data = Z_Malloc(datasize+10, PU_LEVEL, 0);
  
-  // copy from parent script (levelscript) 
+  // copy from parent script (fs_levelscript) 
   // ignore first char which is {
-  memcpy(script->data, current_section->start+1, datasize);
-
+  memcpy(script->data, fs_current_section->start+1, datasize);
   // tack on a 0 to end the string
   script->data[datasize] = '\0';
   
   script->scriptnum = scriptnum;
-  script->parent = current_script; // remember parent
+  script->parent = fs_current_script; // remember parent
   
   // preprocess the script now
   preprocess(script);
     
   // restore current_script: usefully stored in new script
-  current_script = script->parent;
+  fs_current_script = script->parent;
 
-  // rover may also be changed, but is changed below anyway
+  // fs_src_cp may also be changed, but is changed below anyway
   
   // we dont want to run the script, only add it
   // jump past the script in parsing
   
-  rover = current_section->end + 1;
+  fs_src_cp = fs_current_section->end + 1;
 }
 
 

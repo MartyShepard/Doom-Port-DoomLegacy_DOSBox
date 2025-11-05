@@ -121,8 +121,11 @@ const angle_t ANGLE_60  = 0x80000000 / 3;
 // ranging from MININT to 0 to MAXINT.
 // fixed_t              finetangent[FINEANGLES/2];
 
-
+#if !defined( __DJGPP__ )	
+const int finetangent[4096] =
+#else
 const int32_t finetangent[4096] =
+#endif
 {
     -170910304,-56965752,-34178904,-24413316,-18988036,-15535599,-13145455,-11392683,
     -10052327,-8994149,-8137527,-7429880,-6835455,-6329090,-5892567,-5512368,
@@ -638,8 +641,11 @@ const int32_t finetangent[4096] =
     11392683,13145455,15535599,18988036,24413316,34178904,56965752,170910304
 };
 
-
+#if !defined( __DJGPP__ )	
+const int finesine[10240] =
+#else
 const int32_t finesine[10240] =
+#endif
 {
     25,75,125,175,226,276,326,376,
     427,477,527,578,628,678,728,779,

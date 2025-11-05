@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_joy.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_joy.h 714 2010-07-27 22:48:37Z smite-meister $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,7 @@
 #define __I_JOY_H__
 
 #include "g_input.h"
+
 
 //! All possible actions joystick axes can be bound to.
 typedef enum

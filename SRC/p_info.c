@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_info.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -339,18 +340,19 @@ int   maxscriptsize = -1;
 
 void P_ParseScriptLine(char *line)
 {
-  if(levelscript.data[0] == 0)
+  // [WDJ] FIXME ???
+  if(fs_levelscript.data[0] == 0)
   {
-    Z_Free(levelscript.data);
-    levelscript.data = Z_Malloc(maxscriptsize, PU_LEVEL, 0);
-    levelscript.data[0] = '\0';
+    Z_Free(fs_levelscript.data);
+    fs_levelscript.data = Z_Malloc(maxscriptsize, PU_LEVEL, 0);
+    fs_levelscript.data[0] = '\0';
   }
 
-  if( (int)(strlen(levelscript.data)+strlen(line)) > maxscriptsize)
+  if( (int)(strlen(fs_levelscript.data)+strlen(line)) > maxscriptsize)
     I_Error("Script larger than script lump???\n");
 
   // add the new line to the current data using sprintf (ugh)
-  sprintf(levelscript.data, "%s%s\n", levelscript.data, line);
+  sprintf(fs_levelscript.data, "%s%s\n", fs_levelscript.data, line);
 }
 
 //-------------------------------------------------------------------------
@@ -482,31 +484,31 @@ void P_ParseInfoCmd(char *line)
     return;
 
   if(readtype != RT_SCRIPT)       // not for scripts
-    {
+  {
       //      P_LowerCase(line);
       while(*line == ' ') line++;
       if(!*line) return;
-      if((line[0] == '/' && line[1] == '/') ||     // comment
-         line[0] == '#' || line[0] == ';') return;
-    }
+      if((line[0] == '/' && line[1] == '/')     // comment
+         || line[0] == '#' || line[0] == ';')   return;
+  }
 
   if(*line == '[')                // a new section seperator
-    {
+  {
       line++;
       if(!strncasecmp(line, "level info", 10))
         readtype = RT_LEVELINFO;
       if(!strncasecmp(line, "scripts", 7))
-        {
+      {
           readtype = RT_SCRIPT;
           info_scripts = true;    // has scripts
-        }
+      }
       if(!strncasecmp(line, "intertext", 9))
         readtype = RT_INTERTEXT;
       return;
-    }
+  }
 
   switch(readtype)
-    {
+  {
     case RT_LEVELINFO:
       P_ParseLevelVar(line);
       break;
@@ -521,7 +523,7 @@ void P_ParseInfoCmd(char *line)
 
     case RT_OTHER:
       break;
-    }
+  }
 }
 
 //-------------------------------------------------------------------------
@@ -546,10 +548,10 @@ void P_LoadLevelInfo(int lumpnum)
 
   if(lumpsize > 0)
   {
-    rover = lump = W_CacheLumpNum(lumpnum, PU_STATIC);  // level info
-    while(rover < lump + lumpsize)
+    fs_src_cp = lump = W_CacheLumpNum(lumpnum, PU_STATIC);  // level info
+    while(fs_src_cp < (lump + lumpsize))
     {
-        if(*rover == '\n') // end of line
+        if(*fs_src_cp == '\n') // end of line
         {
           P_ParseInfoCmd(readline);  // parse line
           readline[0] = '\0';
@@ -557,14 +559,14 @@ void P_LoadLevelInfo(int lumpnum)
         else
         {
           // add to line if valid char
-          if(isprint(*rover) || *rover == '{' || *rover == '}')
+          if(isprint(*fs_src_cp) || *fs_src_cp == '{' || *fs_src_cp == '}')
           {
             // add char
             readline[strlen(readline)+1] = '\0';
-            readline[strlen(readline)] = *rover;
+            readline[strlen(readline)] = *fs_src_cp;
           }
 	}
-        rover++;
+        fs_src_cp++;
     }
 
     // parse last line

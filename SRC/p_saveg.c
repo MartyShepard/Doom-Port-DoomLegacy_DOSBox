@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_saveg.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2307,32 +2307,30 @@ static sfarray_t * READ_SFArrayPtr( void )
   
 // SoM: Added FraggleScript stuff.
 // Save all the neccesary FraggleScript data.
-// we need to save the levelscript(all global
-// variables) and the runningscripts (scripts
-// currently suspended)
-
+// we need to save fs_levelscript (all global variables) and
+// fs_runningscripts (scripts currently suspended)
 
 void P_ArchiveSValue(svalue_t *s)
 {
   switch (s->type)   // store depending on type
   {
-    case svt_string:
+    case FSVT_string:
       {
 	strcpy((char *)save_p, s->value.s);
 	save_p += strlen(s->value.s) + 1;
 	break;
       }
-    case svt_int:
+    case FSVT_int:
       {
 	WRITE32(save_p, s->value.i);
 	break;
       }
-    case svt_fixed:
+    case FSVT_fixed:
       {
 	WRITEFIXED(save_p, s->value.f);
 	break;
       }
-    case svt_mobj:
+    case FSVT_mobj:
       {
 	WRITE_MobjPointerID(save_p, s->value.mobj);
 	break;
@@ -2347,23 +2345,23 @@ void P_UnArchiveSValue(svalue_t *s)
 {
   switch (s->type)       // read depending on type
   {
-    case svt_string:
+    case FSVT_string:
       {
 	s->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
 	save_p += strlen(s->value.s) + 1;
 	break;
       }
-    case svt_int:
+    case FSVT_int:
       {
 	s->value.i = READ32(save_p);
 	break;
       }
-    case svt_fixed:
+    case FSVT_fixed:
       {
 	s->value.f = READFIXED(save_p);
 	break;
       }
-    case svt_mobj:
+    case FSVT_mobj:
       {
 	s->value.mobj = READ_MobjPointerID(save_p);
 	break;
@@ -2388,7 +2386,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
 
     // once we get to a label there can be no more actual
     // variables in the list to store
-    while (sv && sv->type != svt_label)
+    while (sv && sv->type != FSVT_label)
     {
       num_variables++;
       sv = sv->next;
@@ -2404,7 +2402,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
     // go thru this hashchain
     svariable_t *sv = vars[i];
 
-    while (sv && sv->type != svt_label)
+    while (sv && sv->type != FSVT_label)
     {
       //CheckSaveGame(strlen(sv->name)+10); // 10 for type and safety
       // write svariable: name
@@ -2414,7 +2412,7 @@ void P_ArchiveFSVariables(svariable_t **vars)
       WRITEBYTE(save_p, sv->type); // store type;
 
       // Those that are not handled by P_ArchiveSValue
-      if (sv->type == svt_array) // haleyjd: arrays
+      if (sv->type == FSVT_array) // haleyjd: arrays
       {
 	  WRITE_SFArrayPtr( sv->value.a );
 	  break;
@@ -2457,7 +2455,7 @@ void P_UnArchiveFSVariables(svariable_t **vars)
 
     sv->type = READBYTE(save_p);
 
-    if (sv->type == svt_array) // Exl; arrays
+    if (sv->type == FSVT_array) // Exl; arrays
     {
         sv->value.a = READ_SFArrayPtr();
     }
@@ -2487,7 +2485,7 @@ void P_UnArchiveFSVariables(svariable_t **vars)
 void P_ArchiveLevelScript()
 {
   // all we really need to do is save the variables
-  P_ArchiveFSVariables(levelscript.variables);
+  P_ArchiveFSVariables(fs_levelscript.variables);
 }
 
 void P_UnArchiveLevelScript()
@@ -2497,25 +2495,24 @@ void P_UnArchiveLevelScript()
   // free all the variables in the current levelscript first
   for (i = 0; i < VARIABLESLOTS; i++)
   {
-    svariable_t *sv = levelscript.variables[i];
+    svariable_t *sv = fs_levelscript.variables[i];
 
-    while (sv && sv->type != svt_label)
+    while (sv && sv->type != FSVT_label)
     {
       svariable_t *next = sv->next;
       Z_Free(sv);
       sv = next;
     }
-    levelscript.variables[i] = sv;  // null or label
+    fs_levelscript.variables[i] = sv;  // null or label
   }
 
 
-  P_UnArchiveFSVariables(levelscript.variables);
+  P_UnArchiveFSVariables(fs_levelscript.variables);
 }
 
 /**************** save the runningscripts ***************/
 
-extern runningscript_t runningscripts;  // t_script.c
-runningscript_t *new_runningscript();   // t_script.c
+runningscript_t * new_runningscript();   // t_script.c
 void clear_runningscripts();    // t_script.c
 
 // save a given runningscript
@@ -2546,12 +2543,10 @@ runningscript_t *P_UnArchiveRunningScript()
     SG_Readbuf();
     int scriptnum = READ16(save_p);      // get scriptnum
 
-    // levelscript?
-
-    if (scriptnum == -1)
-        rs->script = &levelscript;
+    if (scriptnum == -1)  // levelscript?
+        rs->script = &fs_levelscript;
     else
-        rs->script = levelscript.children[scriptnum];
+        rs->script = fs_levelscript.children[scriptnum];
 
     // read out offset from save, convert index into ptr = &data[index]
     rs->savepoint = rs->script->data + READ16(save_p);
@@ -2579,7 +2574,7 @@ void P_ArchiveRunningScripts()
     int num_runningscripts = 0;
 
     // count runningscripts
-    for (rs = runningscripts.next; rs; rs = rs->next)
+    for (rs = fs_runningscripts.next; rs; rs = rs->next)
         num_runningscripts++;
 
     //CheckSaveGame(sizeof(long));
@@ -2588,7 +2583,7 @@ void P_ArchiveRunningScripts()
     WRITEU32(save_p, num_runningscripts);
 
     // now archive them
-    rs = runningscripts.next;
+    rs = fs_runningscripts.next;
     while (rs)
     {
         P_ArchiveRunningScript(rs);
@@ -2617,8 +2612,8 @@ void P_UnArchiveRunningScripts()
         rs = P_UnArchiveRunningScript();
 
         // hook into chain
-        rs->next = runningscripts.next;
-        rs->prev = &runningscripts;
+        rs->next = fs_runningscripts.next;
+        rs->prev = &fs_runningscripts;
         rs->prev->next = rs;
         if (rs->next)
             rs->next->prev = rs;
@@ -2770,8 +2765,8 @@ boolean SG_fragglescript_detect( void )
 #else
     if( sfsavelist ) goto found_state;	// start of arrays
 #endif
-    if( levelscript.variables ) goto found_state;  // levelscript has vars
-    if( runningscripts.next ) goto found_state;  // there is a running script
+    if( fs_levelscript.variables ) goto found_state;  // levelscript has vars
+    if( fs_runningscripts.next ) goto found_state;  // there is a running script
     if( script_camera_on ) goto found_state;
     if( script_camera.mo || script_camera.viewheight
 	|| script_camera.aiming || script_camera.startangle )

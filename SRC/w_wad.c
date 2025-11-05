@@ -611,8 +611,8 @@ int W_GetNumForName (char* name)
         {
         //Hurdler: I'm tired of that question ;)
         I_Error ("Main IWAD file not found (do not use legacy.wad).\n"
-                 "You need either Doom.wad, Doom1.wad, Doom2.wad,\n"
-                 "Tnt.wad, Plutonia.wad, Heretic.wad or Heretic1.wad\n"
+                 "You need either doom.wad, doom1.wad, doom2.wad,\n"
+                 "tnt.wad, plutonia.wad, heretic.wad or heretic1.wad\n"
                  "from any shareware or commercial version of Doom or Heretic!\n");
         }
         else

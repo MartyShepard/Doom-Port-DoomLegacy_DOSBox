@@ -64,6 +64,7 @@
  #include <keys.h>
 #endif
 
+
 #include "../doomdef.h"
 #include "../d_event.h"
 #include "../m_misc.h"
@@ -953,10 +954,8 @@ END_OF_FUNCTION(I_KeyboardHandler);
 //  Return a key that has been pushed, or 0
 //  (replace getchar() at game startup)
 //
-
 int I_GetKey (void)
 {
-
     if( keyboard_started )
     {
     event_t   *ev;

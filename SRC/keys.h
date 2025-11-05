@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: keys.h 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: keys.h 714 2010-07-27 22:48:37Z smite-meister $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -128,8 +128,8 @@ enum key_input_e
   KEY_2MOUSEWHEELDOWN,
   KEY_DBL2MOUSE1      = KEY_2MOUSE1    + MOUSEBUTTONS,
 
-  KEY_JOYSTICKSTART   = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
-  KEY_JOY0BUT0,
+  //KEY_JOYSTICKSTART   = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
+  KEY_JOY0BUT0 = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
   KEY_JOY0BUT1,
   KEY_JOY0BUT2,
   KEY_JOY0BUT3,
@@ -197,7 +197,7 @@ enum key_input_e
   KEY_JOY3BUT14,
   KEY_JOY3BUT15,
 
-  KEY_JOYSTICKEND,
+  //KEY_JOYSTICKEND,
   /*
   KEY_DBLJOY1       = KEY_JOY1 + JOYBUTTONS,
   KEY_DBLJOY14      = KEY_DBLJOY1 + JOYBUTTONS - 1,

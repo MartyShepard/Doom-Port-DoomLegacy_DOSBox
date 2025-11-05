@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_prepro.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,15 +67,15 @@ void clear_script( void )
   int i;
   
   for(i=0; i<SECTIONSLOTS; i++)
-    current_script->sections[i] = NULL;
+    fs_current_script->sections[i] = NULL;
   
   for(i=0; i<VARIABLESLOTS; i++)
-    current_script->variables[i] = NULL;
+    fs_current_script->variables[i] = NULL;
 
   // clear child scripts
   
   for(i=0; i<MAXSCRIPTS; i++)
-    current_script->children[i] = NULL;
+    fs_current_script->children[i] = NULL;
 }
 
 /*********** {} sections *************/
@@ -86,7 +87,7 @@ void clear_script( void )
 // and finding them from a given offset.
 
 #define section_hash(b)           \
-       ( (int) ( (b) - current_script->data) % SECTIONSLOTS)
+       ( (int) ( (b) - fs_current_script->data) % SECTIONSLOTS)
 
 section_t *new_section(char *brace)
 {
@@ -102,8 +103,8 @@ section_t *new_section(char *brace)
   // hook it into the hashchain
   
   n = section_hash(brace);
-  newsec->next = current_script->sections[n];
-  current_script->sections[n] = newsec;
+  newsec->next = fs_current_script->sections[n];
+  fs_current_script->sections[n] = newsec;
   
   return newsec;
 }
@@ -114,7 +115,7 @@ section_t *find_section_start(char *brace)
   int n = section_hash(brace);
   section_t *current;
   
-  current = current_script->sections[n];
+  current = fs_current_script->sections[n];
   
   // use the hash table: check the appropriate hash chain
   
@@ -141,7 +142,7 @@ section_t *find_section_end(char *brace)
   
   for(n=0; n<SECTIONSLOTS; n++)      // check all sections in all chains
     {
-      section_t *current = current_script->sections[n];
+      section_t *current = fs_current_script->sections[n];
       
       while(current)
 	{
@@ -169,7 +170,7 @@ section_t *find_section_end(char *brace)
                      ( (c)<='9' && (c)>='0') || ( (c)=='_') )
 
         // create a new label. pass the location inside the script
-svariable_t *new_label(char *labelptr)
+svariable_t* new_label(char *labelptr)
 {
   svariable_t *newlabel;   // labels are stored as variables
   char labelname[256];
@@ -180,7 +181,7 @@ svariable_t *new_label(char *labelptr)
     *temp2 = *temp;
   *temp2 = '\0';  // end string
   
-  newlabel = new_variable(current_script, labelname, svt_label);
+  newlabel = new_variable(fs_current_script, labelname, FSVT_label);
   
   // put neccesary data in the label
   
@@ -199,7 +200,7 @@ svariable_t *new_label(char *labelptr)
 // down and hashed. Goto() labels are noted
 // down, and comments are blanked out
 
-char *process_find_char(char *data, char find)
+char* process_find_char(char *data, char find)
 {
   while(*data)
     {
@@ -229,21 +230,23 @@ char *process_find_char(char *data, char find)
 	    *data = *(data+1) = ' ';   // blank the last bit
 	  else
 	    {
-	      rover = data;
+	      fs_src_cp = data;
 	      // script terminated in comment
 	      script_error("script terminated inside comment\n");
 	    }
 	}
       if(*data=='/' && *(data+1)=='/')        // // -- comment
+      {
 	while(*data != '\n')
 	  {
 	    *data=' '; data++;       // blank out
 	  }
+      }
 
       // labels
 
       if(*data==':'  // ':' -- a label
-         && current_script->scriptnum != -1)   // not levelscript
+         && fs_current_script->scriptnum != -1)   // not levelscript
 	{
 	  char *labelptr = data-1;
 	  
@@ -255,12 +258,12 @@ char *process_find_char(char *data, char find)
 	{
 	  section_t *newsec = new_section(data);
 	  
-	  newsec->type = st_empty;
+	  newsec->type = FSST_empty;
 	  // find the ending } and save
 	  newsec->end = process_find_char(data+1, '}');
 	  if(!newsec->end)
 	    {                // brace not found
-	      rover = data;
+	      fs_src_cp = data;
 	      script_error("section error: no ending brace\n");
 	      return NULL;
 	    }
@@ -297,49 +300,49 @@ void get_tokens(char *);         // t_parse.c
 void dry_run_script( void )
 {
   // save some stuff
-  char *old_rover = rover;
-  section_t *old_current_section = current_section;
+  char *old_src_cp = fs_src_cp;
+  section_t *old_current_section = fs_current_section;
   
-  char *end = current_script->data + current_script->len;
+  char *end = fs_current_script->data + fs_current_script->len;
   char *token_alloc;
   
-  killscript = false;
+  fs_killscript = false;
   
   // allocate space for the tokens
-  token_alloc = Z_Malloc(current_script->len + T_MAXTOKENS, PU_STATIC, 0);
+  token_alloc = Z_Malloc(fs_current_script->len + T_MAXTOKENS, PU_STATIC, 0);
   
-  rover = current_script->data;
+  fs_src_cp = fs_current_script->data;
   
-  while(rover < end && *rover)
+  while(fs_src_cp < end && *fs_src_cp)
     {
       tokens[0] = token_alloc;
-      get_tokens(rover);
+      get_tokens(fs_src_cp);
       
-      if(killscript) break;
+      if(fs_killscript) break;
       if(!num_tokens) continue;
       
-      if(current_section && tokentype[0] == function)
+      if(fs_current_section && tokentype[0] == TT_function)
 	{
 	  if(!strcmp(tokens[0], "if"))
 	    {
-              current_section->type = st_if;
+              fs_current_section->type = FSST_if;
 	      continue;
 	    }
           else if(!strcmp(tokens[0], "elseif"))
             {
-              current_section->type = st_elseif;
+              fs_current_section->type = FSST_elseif;
               continue;
             }
           else if(!strcmp(tokens[0], "else"))
             {
-              current_section->type = st_else;
+              fs_current_section->type = FSST_else;
               continue;
             }
 	  else if(!strcmp(tokens[0], "while") ||
 		  !strcmp(tokens[0], "for"))
 	    {
-	      current_section->type = st_loop;
-	      current_section->data.data_loop.loopstart = linestart;
+	      fs_current_section->type = FSST_loop;
+	      fs_current_section->data.data_loop.loopstart = fs_linestart_cp;
 	      continue;
 	    }
 	}
@@ -348,8 +351,8 @@ void dry_run_script( void )
   Z_Free(token_alloc);
   
   // restore stuff
-  current_section = old_current_section;
-  rover = old_rover;
+  fs_current_section = old_current_section;
+  fs_src_cp = old_src_cp;
 }
 
 /***************** main preprocess function ******************/
@@ -362,7 +365,7 @@ void preprocess(script_t *script)
   if(debugfile)
     fprintf(debugfile,"  preprocess script %i\n", script->scriptnum);
 
-  current_script = script;
+  fs_current_script = script;
   script->len = strlen(script->data);
   
   clear_script();
@@ -395,7 +398,7 @@ void parse_include(char *lumpname)
   int lumpnum;
   char *temp;
   char *lump, *end;
-  char *saved_rover;
+  char *saved_src_cp;
   
   if(-1 == (lumpnum = W_GetNumForName(lumpname)) )
     {
@@ -412,8 +415,9 @@ void parse_include(char *lumpname)
   lump = Z_Malloc(W_LumpLength(lumpnum) + 10, PU_STATIC, NULL);
   memcpy(lump, temp, W_LumpLength(lumpnum));
   
-  saved_rover = rover;    // save rover during include
-  rover = lump; end = lump+W_LumpLength(lumpnum);
+  saved_src_cp = fs_src_cp;    // save fs_src_cp during include
+  fs_src_cp = lump;
+  end = lump+W_LumpLength(lumpnum);
   *end = 0;
   
   // preprocess the include
@@ -424,8 +428,8 @@ void parse_include(char *lumpname)
   // now parse the lump
   parse_data(lump, end);
   
-  // restore rover
-  rover = saved_rover;
+  // restore fs_src_cp
+  fs_src_cp = saved_src_cp;
   
   // free the lump
   Z_Free(lump);

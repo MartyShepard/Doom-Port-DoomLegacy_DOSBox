@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 606 2010-02-18 10:01:56Z smite-meister $
+// $Id: t_vari.h 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,19 +81,19 @@ struct svariable_s
 
 enum
 {
-  svt_string,
-  svt_int,
-  svt_fixed,
-  svt_mobj,         // a map object
-  svt_function,     // functions are stored as variables
-  svt_label,        // labels for goto calls are variables
-  svt_const,        // const
-  svt_array,        // array
-  svt_pInt,         // pointer to game int
-  svt_pFixed,
-  svt_pString,      // pointer to game string
-  svt_pMobj,        // pointer to game mobj
-  svt_pArray,       // haleyjd: 05/27: pointer to game array
+  FSVT_string,
+  FSVT_int,
+  FSVT_fixed,
+  FSVT_mobj,         // a map object
+  FSVT_function,     // functions are stored as variables
+  FSVT_label,        // labels for goto calls are variables
+  FSVT_const,        // const
+  FSVT_array,        // array
+  FSVT_pInt,         // pointer to game int
+  FSVT_pFixed,
+  FSVT_pString,      // pointer to game string
+  FSVT_pMobj,        // pointer to game mobj
+  FSVT_pArray,       // haleyjd: 05/27: pointer to game array
 };
 
 // variables

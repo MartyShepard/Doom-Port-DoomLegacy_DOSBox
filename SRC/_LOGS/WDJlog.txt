@@ -1480,3 +1480,12 @@ one mouse slide could accidently change a dozen values.
 Extraneous mouse tracking removed.
 Menu mouse sensitivity put in a define and lowered.
 
+*** w69_fs_rename
+patchfile = w69_rename.patch
+- committed revision 801   by wesley johnson
+Rename global fragglescript variables to fs_.
+Apply standard indenting.
+Rename enum defs to TT_ BRACKET_ FSVT_ and FSST_.
+Other minor cleaning.
+
+

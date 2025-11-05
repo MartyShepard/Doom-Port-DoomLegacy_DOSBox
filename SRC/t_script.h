@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_script.h 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -69,15 +69,16 @@ void T_RunScript(int n);
 void T_RunThingScript(int);
 void T_PreprocessScripts();
 void T_DelayedScripts();
-mobj_t *MobjForSvalue(svalue_t svalue);
+mobj_t * MobjForSvalue(svalue_t svalue);
 
-        // console commands
+// console commands
 void T_Dump();
 void T_ConsRun();
 
-extern script_t levelscript;
-//extern script_t *scripts[MAXSCRIPTS];       // the scripts
-extern mobj_t *t_trigger;
+extern script_t  fs_levelscript;  // the stored scripts for the level
+extern runningscript_t  fs_runningscripts;  // currently running
+extern mobj_t *  t_trigger;  // the trigger parameter on RunScript
+//extern mobj_t *  fs_run_trigger;  // the trigger parameter on RunScript
 
 void T_AddCommands();
 

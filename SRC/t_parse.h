@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_parse.h 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,16 +83,16 @@ struct sfarray_s
 
 
 #define intvalue(v)                                    \
-  ( (v).type == svt_string ? atoi((v).value.s) :       \
-    (v).type == svt_fixed ? (int)((v).value.f / FRACUNIT) : \
-    (v).type == svt_mobj ? -1 : \
-    (v).type == svt_array ? -1 : (v).value.i )
+  ( (v).type == FSVT_string ? atoi((v).value.s) :       \
+    (v).type == FSVT_fixed ? (int)((v).value.f / FRACUNIT) : \
+    (v).type == FSVT_mobj ? -1 : \
+    (v).type == FSVT_array ? -1 : (v).value.i )
 
 #define fixedvalue(v)                                         \
-  ( (v).type == svt_fixed ? (v).value.f :                     \
-    (v).type == svt_string ? (fixed_t)(atof((v).value.s) * FRACUNIT) : \
-    (v).type == svt_mobj ? -1*FRACUNIT : \
-    (v).type == svt_array ? -1*FRACUNIT : intvalue(v) * FRACUNIT )
+  ( (v).type == FSVT_fixed ? (v).value.f :                     \
+    (v).type == FSVT_string ? (fixed_t)(atof((v).value.s) * FRACUNIT) : \
+    (v).type == FSVT_mobj ? -1*FRACUNIT : \
+    (v).type == FSVT_array ? -1*FRACUNIT : intvalue(v) * FRACUNIT )
 
 
 
@@ -120,9 +121,8 @@ struct script_s
   
   // ptr to the parent script
   // the parent script is the script above this level
-  // eg. individual linetrigger scripts are children
-  // of the levelscript, which is a child of the
-  // global_script
+  // eg. individual linetrigger scripts are children of the levelscript,
+  // which is a child of the global_script
   script_t *parent;
 
   // child scripts.
@@ -146,8 +146,8 @@ struct operator_s
 
 enum
 {
-  forward,
-  backward
+  D_forward,
+  D_backward
 };
 
 void run_script(script_t *script);
@@ -164,36 +164,36 @@ int find_operator_backwards(int start, int stop, char *value);
 
 typedef enum
 {
-  name,   // a name, eg 'count1' or 'frag'
-  number,
-  operator,
-  string,
-  unset,
-  function          // function name
+  TT_name,   // a name, eg 'count1' or 'frag'
+  TT_number,
+  TT_operator,
+  TT_string,
+  TT_unset,
+  TT_function          // function name
 } tokentype_t;
 
 enum    // brace types: where current_section is a { or }
 {
-  bracket_open,
-  bracket_close
+  BRACKET_open,
+  BRACKET_close
 };
 
 extern svalue_t nullvar;
 extern int script_debug;
 
-extern script_t *current_script;
-extern mobj_t *trigger_obj;
-extern int killscript;
+extern script_t * fs_current_script;
+extern mobj_t * fs_trigger_obj;
+extern int fs_killscript;
 
 extern char *tokens[T_MAXTOKENS];
 extern tokentype_t tokentype[T_MAXTOKENS];
 extern int num_tokens;
-extern char *rover;     // current point reached in parsing
-extern char *linestart; // start of the current expression
-
-extern section_t *current_section;
-extern section_t *prev_section;
-extern int bracetype;
+// [WDJ] Common fragglescript vars.
+extern char * fs_src_cp;     // current point reached in parsing
+extern char * fs_linestart_cp; // start of the current expression
+extern section_t * fs_current_section;
+extern section_t * fs_prev_section;
+extern int fs_bracetype;
 
 // the global_script is the root
 // script and contains only built-in

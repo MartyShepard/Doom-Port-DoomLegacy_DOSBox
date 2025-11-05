@@ -160,7 +160,6 @@ typedef enum {
     GDESC_heretic_mode,
     GDESC_hexen_mode,
     GDESC_other, // other iwad entry, and table search limit
-    GDESC_num	// number of entries in game_desc_table
 } game_desc_e;
 
 

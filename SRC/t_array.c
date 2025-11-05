@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 686 2010-06-15 00:47:13Z wesleyjohnson $
+// $Id: t_array.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -157,7 +158,7 @@ void SF_NewArray(void)
    for(i=0; i<t_argc; i++)
    {
       // strings, arrays are ignored
-      if(t_argv[i].type == svt_string || t_argv[i].type == svt_array)
+      if(t_argv[i].type == FSVT_string || t_argv[i].type == FSVT_array)
 	 continue;
 
       // copy all the argument values into the local array
@@ -166,7 +167,7 @@ void SF_NewArray(void)
 
    T_AddArray(newArray); // add the new array to the save list
    
-   t_return.type = svt_array;
+   t_return.type = FSVT_array;
    // t_return is an internal value which may not be captured in
    // an svariable_t, so we don't count it as a reference --
    // in the cases of immediate value usage, the garbage collector
@@ -191,7 +192,7 @@ void SF_NewEmptyArray(void)
       return;
 
    // bad types
-   if(t_argv[0].type != svt_int || t_argv[1].type != svt_int)
+   if(t_argv[0].type != FSVT_int || t_argv[1].type != FSVT_int)
    {
 	   script_error("newemptyarray: expected integer\n");
 	   return;
@@ -223,15 +224,15 @@ void SF_NewEmptyArray(void)
    switch(t_argv[1].value.i)
    {
 		case 0:
-			newval.type = svt_int;
+			newval.type = FSVT_int;
 			newval.value.i = 0;
 			break;
 		case 1:
-			newval.type = svt_fixed;
+			newval.type = FSVT_fixed;
 			newval.value.f = 0;
 			break;
 		case 2:
-			newval.type = svt_mobj;
+			newval.type = FSVT_mobj;
 			newval.value.mobj = NULL;
 			break;
 	}
@@ -247,7 +248,7 @@ void SF_NewEmptyArray(void)
 
    T_AddArray(newArray); // add the new array to the save list
    
-   t_return.type = svt_array;
+   t_return.type = FSVT_array;
    // t_return is an internal value which may not be captured in
    // an svariable_t, so we don't count it as a reference --
    // in the cases of immediate value usage, the garbage collector
@@ -275,7 +276,7 @@ void SF_ArrayCopyInto(void)
       return;
    }
 
-   if(t_argv[0].type != svt_array || t_argv[1].type != svt_array)
+   if(t_argv[0].type != FSVT_array || t_argv[1].type != FSVT_array)
    {
       script_error("copyinto must be called on arrays\n");
       return;
@@ -323,7 +324,7 @@ void SF_ArrayElementAt(void)
       return;
    }
 
-   if(t_argv[0].type != svt_array || !t_argv[0].value.a)
+   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)
    {
       script_error("elementat must be called on a non-empty array\n");
       return;
@@ -360,7 +361,7 @@ void SF_ArraySetElementAt(void)
       return;
    }
 
-   if(t_argv[0].type != svt_array || !t_argv[0].value.a)
+   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)
    {
       script_error("setelementat must be called on a non-empty array\n");
       return;
@@ -376,10 +377,10 @@ void SF_ArraySetElementAt(void)
    }
 
    // type checking on second arg: restricted types
-   if(t_argv[1].type == svt_array || t_argv[1].type == svt_string)
+   if(t_argv[1].type == FSVT_array || t_argv[1].type == FSVT_string)
    {
       script_error("%s cannot be an array element\n",
-	 t_argv[1].type == svt_array ? "an array" : "a string");
+	 t_argv[1].type == FSVT_array ? "an array" : "a string");
       return;
    }
 
@@ -403,13 +404,13 @@ void SF_ArrayLength(void)
       return;
    }
 
-   if(t_argv[0].type != svt_array)
+   if(t_argv[0].type != FSVT_array)
    {
       script_error("length must be called on an array\n");
       return;
    }
 
-   t_return.type = svt_int;
+   t_return.type = FSVT_int;
 
    if(!t_argv[0].value.a)
       t_return.value.i = 0;

@@ -1,9 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 650 2010-05-19 17:49:12Z wesleyjohnson $
+// $Id: t_spec.c 801 2011-03-06 18:55:50Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
+// Copyright (C) 2001-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,47 +66,50 @@ void spec_brace( void )
 {
   if(script_debug) CONS_Printf("brace\n");
   
-  if(bracetype != bracket_close)  // only deal with closing } braces
+  if(fs_bracetype != BRACKET_close)  // only deal with closing } braces
     return;
   
   // if() requires nothing to be done
-  if(current_section->type == st_if || current_section->type == st_else) return;
+  if(fs_current_section->type == FSST_if
+     || fs_current_section->type == FSST_else)   return;
   
   // if a loop, jump back to the start of the loop
-  if(current_section->type == st_loop)
-    {
-      rover = current_section->data.data_loop.loopstart;
+  if(fs_current_section->type == FSST_loop)
+  {
+      fs_src_cp = fs_current_section->data.data_loop.loopstart;
       return;
-    }
+  }
 }
 
-        // 'if' statement
+// 'if' statement
 int spec_if( void )
 {
   int endtoken;
   svalue_t eval;
   
   if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-    {
+  {
       script_error("parse error in if statement\n");
       return 0;
-    }
+  }
   
   // 2 to skip past the 'if' and '('
   eval = evaluate_expression(2, endtoken-1);
   
-  if(current_section && bracetype == bracket_open
+  if(fs_current_section
+     && fs_bracetype == BRACKET_open
      && endtoken == num_tokens-1)
   {
     // {} braces
     if(!intvalue(eval))       // skip to end of section
-      rover = current_section->end+1;
+      fs_src_cp = fs_current_section->end+1;
   }
   else if(intvalue(eval))
   {
-    // nothing to do ?
-	  if(endtoken == num_tokens-1) return(intvalue(eval));
-	  evaluate_expression(endtoken+1, num_tokens-1);
+      // nothing to do ?
+      if(endtoken == num_tokens-1)
+          return(intvalue(eval));
+      evaluate_expression(endtoken+1, num_tokens-1);
   }
 
   return(intvalue(eval));
@@ -118,33 +122,37 @@ int spec_elseif(boolean lastif)
   svalue_t eval;
 
   if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-    {
+  {
       script_error("parse error in elseif statement\n");
       return 0;
-    }
+  }
 
   if(lastif)
   {
-    rover = current_section->end+1;
+    fs_src_cp = fs_current_section->end+1;
     return true;
   }
   // 2 to skip past the 'elseif' and '('
   eval = evaluate_expression(2, endtoken-1);
   
-  if(current_section && bracetype == bracket_open
+  if(fs_current_section
+     && fs_bracetype == BRACKET_open
      && endtoken == num_tokens-1)
-    {
+  {
       // {} braces
       if(!intvalue(eval))       // skip to end of section
-	rover = current_section->end+1;
-    }
+	fs_src_cp = fs_current_section->end+1;
+  }
   else    // elseif() without {} braces
-    if(intvalue(eval))
+  {
+      if(intvalue(eval))
       {
 	// nothing to do ?
-	if(endtoken == num_tokens-1) return(intvalue(eval));
+	if(endtoken == num_tokens-1)
+	    return(intvalue(eval));
 	evaluate_expression(endtoken+1, num_tokens-1);
       }
+  }
 
   return(intvalue(eval));
 }
@@ -153,33 +161,32 @@ int spec_elseif(boolean lastif)
 void spec_else(boolean lastif)
 {
   if(lastif)
-    rover = current_section->end+1;
+    fs_src_cp = fs_current_section->end+1;
 }
 
 
 // while() loop
-
 void spec_while( void )
 {
   int endtoken;
   svalue_t eval;
 
-  if(!current_section)
-    {
+  if(!fs_current_section)
+  {
       script_error("no {} section given for loop\n");
       return;
-    }
+  }
   
   if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-    {
+  {
       script_error("parse error in loop statement\n");
       return;
-    }
+  }
   
   eval = evaluate_expression(2, endtoken-1);
   
   // skip if no longer valid
-  if(!intvalue(eval)) rover = current_section->end+1;
+  if(!intvalue(eval)) fs_src_cp = fs_current_section->end+1;
 }
 
 void spec_for( void )                 // for() loop
@@ -188,11 +195,11 @@ void spec_for( void )                 // for() loop
   int start;
   int comma1, comma2;     // token numbers of the seperating commas
   
-  if(!current_section)
-    {
+  if(!fs_current_section)
+  {
       script_error("need {} delimiters for for()\n");
       return;
-    }
+  }
   
   // is a valid section
   
@@ -202,31 +209,31 @@ void spec_for( void )                 // for() loop
   
   if( (comma1 = find_operator(start,    num_tokens-1, ",")) == -1
       || (comma2 = find_operator(comma1+1, num_tokens-1, ",")) == -1)
-    {
+  {
       script_error("incorrect arguments to if()\n");
       return;
-    }
+  }
   
   // are we looping back from a previous loop?
-  if(current_section == prev_section)
-    {
+  if(fs_current_section == fs_prev_section)
+  {
       // do the loop 'action' (third argument)
       evaluate_expression(comma2+1, num_tokens-2);
       
       // check if we should run the loop again (second argument)
       eval = evaluate_expression(comma1+1, comma2-1);
       if(!intvalue(eval))
-	{
+      {
 	  // stop looping
-	  rover = current_section->end + 1;
-	}
-    }
+	  fs_src_cp = fs_current_section->end + 1;
+      }
+  }
   else
-    {
+  {
       // first time: starting the loop
       // just evaluate the starting expression (first arg)
       evaluate_expression(start, comma1-1);
-    }
+  }
 }
 
 /**************************** Variable Creation ****************************/
@@ -239,14 +246,14 @@ script_t *newvar_script;
 
 static void create_variable(int start, int stop)
 {
-  if(killscript) return;
+  if(fs_killscript) return;
   
-  if(tokentype[start] != name)
-    {
+  if(tokentype[start] != TT_name)
+  {
       script_error("invalid name for variable: '%s'\n",
 		   tokens[start+1]);
       return;
-    }
+  }
   
   // check if already exists, only checking
   // the current script
@@ -266,13 +273,13 @@ static void parse_var_line(int start)
   int starttoken = start, endtoken;
   
   while(1)
-    {
-      if(killscript) return;
+  {
+      if(fs_killscript) return;
       endtoken = find_operator(starttoken, num_tokens-1, ",");
       if(endtoken == -1) break;
       create_variable(starttoken, endtoken-1);
       starttoken = endtoken+1;  //start next after end of this one
-    }
+  }
   // dont forget the last one
   create_variable(starttoken, num_tokens-1);
 }
@@ -282,49 +289,49 @@ boolean spec_variable( void )
   int start = 0;
 
   newvar_type = -1;                 // init to -1
-  newvar_script = current_script;   // use current script
+  newvar_script = fs_current_script;   // use current script
 
   // check for 'hub' keyword to make a hub variable
   if(!strcmp(tokens[start], "hub"))
-    {
+  {
       newvar_script = &hub_script;
       start++;  // skip first token
-    }
+  }
 
   // now find variable type
   if(!strcmp(tokens[start], "const"))
-    {
-      newvar_type = svt_const;
+  {
+      newvar_type = FSVT_const;
       start++;
-    }
+  }
   else if(!strcmp(tokens[start], "string"))
-    {
-      newvar_type = svt_string;
+  {
+      newvar_type = FSVT_string;
       start++;
-    }
+  }
   else if(!strcmp(tokens[start], "int"))
-    {
-      newvar_type = svt_int;
+  {
+      newvar_type = FSVT_int;
       start++;
-    }
+  }
   else if(!strcmp(tokens[start], "mobj"))
-    {
-      newvar_type = svt_mobj;
+  {
+      newvar_type = FSVT_mobj;
       start++;
-    }
+  }
   else if(!strcmp(tokens[start], "script"))     // check for script creation
-    {
+  {
       spec_script();
       return true;       // used tokens
-    }
+  }
   else if(!strcmp(tokens[start], "float") || !strcmp(tokens[start], "fixed"))
-    {
-      newvar_type = svt_fixed;
-      start++;
-    }
-    else if(!strcmp(tokens[start], "array")) // arrays
   {
-     newvar_type = svt_array;
+      newvar_type = FSVT_fixed;
+      start++;
+  }
+  else if(!strcmp(tokens[start], "array")) // arrays
+  {
+     newvar_type = FSVT_array;
      start++;
   }
 
@@ -334,10 +341,10 @@ boolean spec_variable( void )
   // are we creating a new variable?
 
   if(newvar_type != -1)
-    {
+  {
       parse_var_line(start);
       return true;       // used tokens
-    }
+  }
 
   return false; // not used: try normal parsing
 }
