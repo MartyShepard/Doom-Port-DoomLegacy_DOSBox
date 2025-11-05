@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 783 2011-02-22 04:35:19Z wesleyjohnson $
+// $Id: p_switch.c 802 2011-03-06 18:56:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -665,8 +665,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
       //SoM: FraggleScript!
       case 276:
       case 277:
-        t_trigger = thing;
-        T_RunScript(line->tag);
+        T_RunScript(line->tag, thing);
         if(line->special == 277)
         {
           line->special = 0;         // clear tag

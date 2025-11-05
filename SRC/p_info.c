@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: p_info.c 802 2011-03-06 18:56:56Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -138,6 +138,7 @@ static void P_RemoveComments(char *line)
 }
 #endif
 
+#if 0
 static void P_RemoveEqualses(char *line)
 {
   char *temp;
@@ -153,6 +154,7 @@ static void P_RemoveEqualses(char *line)
       temp++;
     }
 }
+#endif
 
 //----------------------------------------------------------------------------
 //
@@ -214,31 +216,37 @@ levelvar_t levelvars[]=
 
 void P_ParseLevelVar(char *cmd)
 {
-  char varname[50];
   char *equals;
+  char *varname;
   levelvar_t* current;
 
   if(!*cmd) return;
 
-  P_RemoveEqualses(cmd);
-
   // right, first find the variable name
-
-  sscanf(cmd, "%s", varname);
+  // [WDJ] Replace code that could overrun strings.
+  // This code does not copy, cannot overrun strings.
+  // Ignore the equals sign, parse around it.
+  varname = cmd; // varname is first
+  // leading spaces already removed by caller
+  equals = varname;
+  while(*equals && *equals != ' ' && *equals != '=')  equals++;  // span the name
+  *equals++ = '\0'; // terminate varname
 
   // find what it equals
-  equals = cmd+strlen(varname);
-  while(*equals == ' ') equals++; // cut off the leading spaces
+  while(*equals && (*equals == ' ' || *equals == '='))  equals++;  // span the '='
+  // it is valid for equals to be null string
 
   current = levelvars;
 
   while(current->type != IVT_END)
-    {
+  {
       if(!strcasecmp(current->name, varname))
-        {
+      {
           switch(current->type)
-            {
+          {
             case IVT_STRING:
+	      // Just drop the previous string value, it may be const.
+	      // Recover such strings at end-level
               *(char**)current->variable         // +5 for safety
                 = Z_Malloc(strlen(equals)+5, PU_LEVEL, NULL);
               strcpy(*(char**)current->variable, equals);
@@ -246,18 +254,21 @@ void P_ParseLevelVar(char *cmd)
 
             case IVT_INT:
               *(int*)current->variable = atoi(equals);
-                     break;
+	      break;
+
             case IVT_CONSOLECMD:
               {
                 char t[256];
-                sprintf(t, "%s\n", equals);
+                snprintf(t, 255, "%s\n", equals);
+		t[255] = '\0';
                 COM_BufAddText(t);
               }
               break;
-            }
-        }
+	  }
+	  break; // exit loop, only one name will match
+      }
       current++;
-    }
+  }
 }
 
 
@@ -348,11 +359,21 @@ void P_ParseScriptLine(char *line)
     fs_levelscript.data[0] = '\0';
   }
 
-  if( (int)(strlen(fs_levelscript.data)+strlen(line)) > maxscriptsize)
-    I_Error("Script larger than script lump???\n");
+  if( debugfile )
+     fprintf( debugfile, "SL: %s\n", line );
 
-  // add the new line to the current data using sprintf (ugh)
-  sprintf(fs_levelscript.data, "%s%s\n", fs_levelscript.data, line);
+  int lslen = strlen(fs_levelscript.data);
+  int slen = strlen(line);
+
+  // [WDJ] account for \n and 0 term
+  if( (lslen+slen+2) > maxscriptsize)
+    I_Error("Script is larger than script lump.\n");
+
+  // add the new line to the current data
+  // (ugh) sprintf(fs_levelscript.data, "%s%s\n", fs_levelscript.data, line);
+  memcpy(&fs_levelscript.data[lslen], line, slen);
+  fs_levelscript.data[lslen + slen ] = '\n';
+  fs_levelscript.data[lslen + slen + 1] = '\0';
 }
 
 //-------------------------------------------------------------------------
@@ -465,7 +486,7 @@ void P_FindLevelName()
 // P_ParseInfoCmd
 //
 // We call the relevant function to deal with the line we are given,
-// based on readtype. If we get a section divider ([] bracketed) we
+// based on info_readtype. If we get a section divider ([] bracketed) we
 // change readtype.
 //
 
@@ -475,7 +496,7 @@ enum
   RT_SCRIPT,
   RT_OTHER,
   RT_INTERTEXT
-} readtype;
+} info_readtype;   // global parameter to I_ParseInfoCmd
 
 
 void P_ParseInfoCmd(char *line)
@@ -483,7 +504,7 @@ void P_ParseInfoCmd(char *line)
   if(!*line)
     return;
 
-  if(readtype != RT_SCRIPT)       // not for scripts
+  if(info_readtype != RT_SCRIPT)       // not for scripts
   {
       //      P_LowerCase(line);
       while(*line == ' ') line++;
@@ -496,18 +517,19 @@ void P_ParseInfoCmd(char *line)
   {
       line++;
       if(!strncasecmp(line, "level info", 10))
-        readtype = RT_LEVELINFO;
-      if(!strncasecmp(line, "scripts", 7))
+        info_readtype = RT_LEVELINFO;
+      else if(!strncasecmp(line, "scripts", 7))
       {
-          readtype = RT_SCRIPT;
-          info_scripts = true;    // has scripts
+        info_readtype = RT_SCRIPT;
+        info_scripts = true;    // has scripts
       }
-      if(!strncasecmp(line, "intertext", 9))
-        readtype = RT_INTERTEXT;
+      else if(!strncasecmp(line, "intertext", 9))
+        info_readtype = RT_INTERTEXT;
       return;
   }
 
-  switch(readtype)
+  // Parse the line. May alter line if necessary.
+  switch(info_readtype)
   {
     case RT_LEVELINFO:
       P_ParseLevelVar(line);
@@ -536,40 +558,46 @@ void P_ParseInfoCmd(char *line)
 void P_LoadLevelInfo(int lumpnum)
 {
   char      *lump;
+  char      *endlump_cp;
   char      *readline;
+  char      *rlp;
   int       lumpsize;
 
-  readtype = RT_OTHER;
-  P_ClearLevelVars();
+  // [WDJ] Fix to use char ptrs, and to use normal char append.
+  // Replace operations that could overrun strings.
+  info_readtype = RT_OTHER;  // global to I_ParseInfoCmd
+  P_ClearLevelVars();  // clear vars and init levelscript
 
   lumpsize = maxscriptsize = W_LumpLength(lumpnum);
-  readline = Z_Malloc(lumpsize + 1, PU_STATIC, 0);
-  readline[0] = '\0';
+  readline = Z_Malloc(lumpsize + 1, PU_IN_USE, 0);
+  rlp = &readline[0];
 
   if(lumpsize > 0)
   {
-    fs_src_cp = lump = W_CacheLumpNum(lumpnum, PU_STATIC);  // level info
-    while(fs_src_cp < (lump + lumpsize))
+    fs_src_cp = lump = W_CacheLumpNum(lumpnum, PU_IN_USE);  // level info
+    endlump_cp = lump + lumpsize; // end of lump
+    while(fs_src_cp < endlump_cp)
     {
-        if(*fs_src_cp == '\n') // end of line
+        register char ch = *fs_src_cp;
+        if(ch == '\n') // end of line
         {
+	  *rlp = '\0';
           P_ParseInfoCmd(readline);  // parse line
-          readline[0] = '\0';
+	  rlp = &readline[0];  // clear for next line
         }
         else
         {
           // add to line if valid char
-          if(isprint(*fs_src_cp) || *fs_src_cp == '{' || *fs_src_cp == '}')
+          if(isprint(ch) || ch == '{' || ch == '}')
           {
-            // add char
-            readline[strlen(readline)+1] = '\0';
-            readline[strlen(readline)] = *fs_src_cp;
+	    *rlp++ = ch; // add char
           }
 	}
         fs_src_cp++;
     }
 
     // parse last line
+    *rlp = '\0';
     P_ParseInfoCmd(readline);
     Z_Free(lump);
   }

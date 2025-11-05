@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_script.c 802 2011-03-06 18:56:56Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -84,9 +84,10 @@ script_t  fs_levelscript;
 
 // the individual scripts
 //script_t *scripts[MAXSCRIPTS];       // the scripts
-mobj_t * t_trigger;
 
 runningscript_t  fs_runningscripts;        // first in chain
+
+mobj_t *  fs_run_trigger; // the trigger parameter on RunScript
 
 //     T_Init()
 //
@@ -121,9 +122,9 @@ void T_ClearScripts( void )
   // clear levelscript variables
   
   for(i=0; i<VARIABLESLOTS; i++)
-    {
+  {
       fs_levelscript.variables[i] = NULL;
-    }
+  }
 }
 
 void T_LoadThingScript( void )
@@ -185,16 +186,17 @@ void T_PreprocessScripts( void )
 
 
 
-void T_RunScript(int n)
+void T_RunScript(int scriptnum, mobj_t * t_trigger )
 {
   script_t *script;
 
-  if(n<0 || n>=MAXSCRIPTS) return;
+  if(scriptnum<0 || scriptnum>=MAXSCRIPTS) return;
 
-  // use the level's child script script n
-  script = fs_levelscript.children[n];
+  // use the level's child script[ scriptnum ]
+  script = fs_levelscript.children[scriptnum];
   if(!script) return;
  
+  fs_run_trigger = t_trigger;
   script->trigger = t_trigger;    // save trigger in script
   
   run_script(script);
@@ -207,14 +209,14 @@ void T_RunScript(int n)
 // from the thingscript list rather than the
 // levelscript list
 
-void T_RunThingScript(int n)
+void T_RunThingScript(int n, mobj_t * t_trigger )
 {
 /*  script_t *script;
   
-  if(n<0 || n>=MAXSCRIPTS) return;
+  if(scriptnum<0 || scriptnum>=MAXSCRIPTS) return;
 
-  // use the level's child script script n
-  script = thingscript.children[n];
+  // use the things's script[ scriptnum ]
+  script = thingscript.children[scriptnum];
   if(!script) return;
  
   script->trigger = t_trigger;    // save trigger in script
@@ -231,10 +233,10 @@ void COM_T_DumpScript_f (void)
   script_t *script;
   
   if(COM_Argc() < 2)
-    {
+  {
       CONS_Printf("usage: T_DumpScript <scriptnum>\n");
       return;
-    }
+  }
 
   if(!strcmp(COM_Argv(1), "global"))
     script = &fs_levelscript;
@@ -242,10 +244,10 @@ void COM_T_DumpScript_f (void)
     script = fs_levelscript.children[atoi(COM_Argv(1))];
   
   if(!script)
-    {
+  {
       CONS_Printf("script '%s' not defined.\n", COM_Argv(1));
       return;
-    }
+  }
   
   CONS_Printf("%s\n", script->data);
 }
@@ -257,21 +259,20 @@ void COM_T_RunScript_f (void)
   int sn;
   
   if(COM_Argc() < 2)
-    {
+  {
       CONS_Printf("Usage: T_RunScript <script>\n");
       return;
-    }
+  }
   
   sn = atoi(COM_Argv(1));
   
   if(!fs_levelscript.children[sn])
-    {
+  {
       CONS_Printf("script not defined\n");
       return;
-    }
-  t_trigger = players[consoleplayer].mo;
+  }
   
-  T_RunScript(sn);
+  T_RunScript(sn, players[consoleplayer].mo );
 }
 
 
@@ -286,11 +287,11 @@ runningscript_t *new_runningscript( void )
 {
   // check the freelist
   if(freelist)
-    {
+  {
       runningscript_t *returnv=freelist;
       freelist = freelist->next;
       return returnv;
-    }
+  }
   
   // alloc static: can be used in other levels too
   return Z_Malloc(sizeof(runningscript_t), PU_STATIC, 0);
@@ -414,17 +415,19 @@ static runningscript_t *T_SaveCurrentScript( void )
   
   // save the script variables 
   for(i=0; i<VARIABLESLOTS; i++)
-    {
+  {
       runscr->variables[i] = fs_current_script->variables[i];
       
       // remove all the variables from the script variable list
       // to prevent them being removed when the script stops
 
-      while(fs_current_script->variables[i] &&
-	    fs_current_script->variables[i]->type != FSVT_label)
+      while(fs_current_script->variables[i]
+	    && fs_current_script->variables[i]->type != FSVT_label)
+      {
 	fs_current_script->variables[i] =
 	  fs_current_script->variables[i]->next;
-    }
+      }
+  }
   runscr->trigger = fs_current_script->trigger;      // save trigger
   
   fs_killscript = true;      // stop the script
@@ -441,10 +444,10 @@ void SF_Wait( void )
   runningscript_t *runscr;
 
   if(t_argc != 1)
-    {
+  {
       script_error("incorrect arguments to function\n");
       return;
-    }
+  }
 
   runscr = T_SaveCurrentScript();
 
@@ -457,10 +460,10 @@ void SF_WaitTic( void )  //if you want to wait on tics instead of "real" time
   runningscript_t *runscr;
 
   if(t_argc != 1)
-    {
+  {
       script_error("incorrect arguments to function\n");
       return;
-    }
+  }
 
   runscr = T_SaveCurrentScript();
 
@@ -474,10 +477,10 @@ void SF_TagWait( void )
   runningscript_t *runscr;
 
   if(t_argc != 1)
-    {
+  {
       script_error("incorrect arguments to function\n");
       return;
-    }
+  }
 
   runscr = T_SaveCurrentScript();
 
@@ -494,10 +497,10 @@ void SF_ScriptWait( void )
   runningscript_t *runscr;
 
   if(t_argc != 1)
-    {
+  {
       script_error("incorrect arguments to function\n");
       return;
-    }
+  }
 
   runscr = T_SaveCurrentScript();
 
@@ -517,19 +520,19 @@ void SF_StartScript( void )
   int i, snum;
   
   if(t_argc != 1)
-    {
+  {
       script_error("incorrect arguments to function\n");
       return;
-    }
+  }
 
   snum = intvalue(t_argv[0]);
   
   script = fs_levelscript.children[snum];
   
   if(!script)
-    {
+  {
       script_error("script %i not defined\n", snum);
-    }
+  }
   
   runscr = new_runningscript();
   runscr->script = script;
@@ -546,7 +549,7 @@ void SF_StartScript( void )
   
   // save the script variables 
   for(i=0; i<VARIABLESLOTS; i++)
-    {
+  {
       runscr->variables[i] = script->variables[i];
       
       // in case we are starting another current_script:
@@ -556,7 +559,7 @@ void SF_StartScript( void )
 	    runscr->variables[i]->type != FSVT_label)
 	runscr->variables[i] =
 	  runscr->variables[i]->next;
-    }
+  }
   // copy trigger
   runscr->trigger = fs_current_script->trigger;
 }
@@ -570,23 +573,23 @@ void SF_ScriptRunning( void )
   int snum;
 
   if(t_argc < 1)
-    {
+  {
       script_error("not enough arguments to function\n");
       return;
-    }
+  }
 
   snum = intvalue(t_argv[0]);
   
   for(current=fs_runningscripts.next; current; current=current->next)
-    {
+  {
       if(current->script->scriptnum == snum)
-	{
+      {
 	  // script found so return
 	  t_return.type = FSVT_int;
 	  t_return.value.i = 1;
 	  return;
-	}
-    }
+      }
+  }
 
   // script not found
   t_return.type = FSVT_int;
@@ -613,7 +616,7 @@ void COM_T_Running_f (void)
   {
       CONS_Printf("%i:", current->script->scriptnum);
       switch(current->wait_type)
-	{
+      {
 	case wt_none:
 	  CONS_Printf("waiting for nothing?\n");
 	  break;
@@ -629,7 +632,7 @@ void COM_T_Running_f (void)
 	default:
 	  CONS_Printf("unknown wait type \n");
 	  break;
-	}
+      }
       current = current->next;
   }
 }

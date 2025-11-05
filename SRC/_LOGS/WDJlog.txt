@@ -1488,4 +1488,10 @@ Apply standard indenting.
 Rename enum defs to TT_ BRACKET_ FSVT_ and FSST_.
 Other minor cleaning.
 
+*** w69_fs_parse
+patchfile = w69_parse.patch
+- committed revision 802   by wesley johnson
+Fix fragglescript parsing to use safer, faster
+string handling code, to protect against overrun of strings.
+
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_func.c 802 2011-03-06 18:56:56Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -2410,36 +2410,33 @@ void SF_SetNodePause()
 // Run a script when touching a node
 void SF_SetNodeScript()
 {
+    mobj_t*  mo;
+    int      sn;
 
-	mobj_t*		mo;
-	int			sn;
-
-
-	if (t_argc != 2)
-	{
-		script_error("setnodescript: wrong number of arguments\n");
-		return;
-	}
-
-	mo = MobjForSvalue(t_argv[0]);
-	if (mo->type != MT_NODE)
-	{
-		script_error("setnodescript: mobj is not a node\n");
-		return;
-	}
-
-	  
-	sn = intvalue(t_argv[1]);
-
-	// Check if the script is defined
-	if(!fs_levelscript.children[sn])
+    if (t_argc != 2)
     {
-		script_error("SetNodeScript: script not defined\n");
-		return;
+	script_error("setnodescript: wrong number of arguments\n");
+	return;
     }
 
-  	mo->nodescript = sn + 1;			// +1 because 0 = none
+    mo = MobjForSvalue(t_argv[0]);
+    if (mo->type != MT_NODE)
+    {
+	script_error("setnodescript: mobj is not a node\n");
+	return;
+    }
 
+	  
+    sn = intvalue(t_argv[1]);
+
+    // Check if the script is defined
+    if(!fs_levelscript.children[sn])
+    {
+	script_error("SetNodeScript: script not defined\n");
+	return;
+    }
+
+    mo->nodescript = sn + 1;  // +1 because 0 = none
 }
 
 
@@ -3484,8 +3481,8 @@ void SF_LineTrigger()
     junk.special = intvalue(t_argv[0]);
     junk.tag = t_argc < 2 ? 0 : intvalue(t_argv[1]);
 
-    P_UseSpecialLine(t_trigger, &junk, 0);      // Try using it
-    P_ActivateCrossedLine(&junk, 0, t_trigger); // Try crossing it
+    P_UseSpecialLine(fs_run_trigger, &junk, 0);      // Try using it
+    P_ActivateCrossedLine(&junk, 0, fs_run_trigger); // Try crossing it
 }
 
 void SF_LineFlag()
@@ -4132,7 +4129,7 @@ void init_functions()
     new_function("playdemo", SF_PlayDemo);
     new_function("runcommand", SF_RunCommand);
     new_function("checkcvar", SF_CheckCVar);
-	new_function("setlinetexture", SF_SetLineTexture);
+    new_function("setlinetexture", SF_SetLineTexture);
     new_function("linetrigger", SF_LineTrigger);
     new_function("lineflag", SF_LineFlag);
 
@@ -4168,9 +4165,9 @@ void init_functions()
     new_function("sethupicdisplay", SF_SetHUPicDisplay);
     new_function("setpicvisible", SF_SetHUPicDisplay);
 
-	// Arrays
-	new_function("newarray", SF_NewArray);
-	new_function("newemptyarray", SF_NewEmptyArray);
+    // Arrays
+    new_function("newarray", SF_NewArray);
+    new_function("newemptyarray", SF_NewEmptyArray);
     new_function("copyinto", SF_ArrayCopyInto);
     new_function("elementat", SF_ArrayElementAt);
     new_function("setelementat", SF_ArraySetElementAt);

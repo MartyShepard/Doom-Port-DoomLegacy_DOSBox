@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00802 ]: w69 fs parse
 [00801 ]: w69 fs rename
 [00800 ]: w68 menu mouse
 [00799 ]: w68 menu exitgame

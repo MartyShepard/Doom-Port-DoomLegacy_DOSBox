@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 783 2011-02-22 04:35:19Z wesleyjohnson $
+// $Id: p_spec.c 802 2011-03-06 18:56:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1860,8 +1860,7 @@ P_ActivateCrossedLine ( line_t*       line,
         if(side) break;
 
       case 272: //(2sided)
-        t_trigger = thing;
-        T_RunScript(line->tag);
+        T_RunScript(line->tag, thing);
         break;
 
       // once-only triggers
@@ -1869,8 +1868,7 @@ P_ActivateCrossedLine ( line_t*       line,
         if(side) break;
 
       case 274: //(2sided)
-        t_trigger = thing;
-        T_RunScript(line->tag);
+        T_RunScript(line->tag, thing);
         line->special = 0;        // clear trigger
         break;
 
@@ -2477,8 +2475,7 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       //SoM: FraggleScript
       case 278:
       case 279:
-        t_trigger = thing;
-        T_RunScript(line->tag);
+        T_RunScript(line->tag, thing);
         if(line->special == 279) line->special = 0;       // clear if G1
         break;
 
