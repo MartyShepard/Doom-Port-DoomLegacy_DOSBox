@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_parse.c 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -778,12 +778,20 @@ svalue_t evaluate_expression(int start, int stop)
 
     // error ?
     {
-        char tempstr[1024] = "";
+#define ERRSTR_LEN  1023       
+        char errstr[ERRSTR_LEN+1] = "";
+        int  len = 0;
 
         for (i = start; i <= stop; i++)
-            sprintf(tempstr, "%s %s", tempstr, tokens[i]);
+        {
+	    len += 1 + strlen( tokens[i] );
+	    if( len > ERRSTR_LEN ) break;
+	    strcat( errstr, " " );
+	    strcat( errstr, tokens[i] );
+	}
+        errstr[ERRSTR_LEN] = '\0';
 
-        script_error("could not evaluate expression: %s\n", tempstr);
+        script_error("could not evaluate expression: %s\n", errstr);
         return nullvar;
     }
 
@@ -833,9 +841,10 @@ void script_error(char *s, ...)
 //
 // sf: string value of an svalue_t
 //
-char *stringvalue(svalue_t v)
+char * stringvalue(svalue_t v)
 {
-    static char buffer[256];
+#define STRVAL_BUFLEN  255
+    static char buffer[STRVAL_BUFLEN+1];
 
     switch (v.type)
     {
@@ -848,8 +857,7 @@ char *stringvalue(svalue_t v)
         case FSVT_fixed:
         {
             double val = ((double) v.value.f / FRACUNIT);
-            sprintf(buffer, "%g", val);
-            return buffer;
+            snprintf(buffer, STRVAL_BUFLEN, "%g", val);
         }
 
             case FSVT_array:
@@ -857,8 +865,9 @@ char *stringvalue(svalue_t v)
 
         case FSVT_int:
         default:
-            sprintf(buffer, "%d", v.value.i);
-            return buffer;
+            snprintf(buffer, STRVAL_BUFLEN, "%d", v.value.i);
     }
+    buffer[STRVAL_BUFLEN] = '\0';
+    return buffer;
 }
 

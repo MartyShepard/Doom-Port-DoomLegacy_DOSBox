@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_script.c 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -180,7 +180,6 @@ void T_PreprocessScripts( void )
   run_script(&fs_levelscript);
 
   // load and run the thing script
-
   T_LoadThingScript();
 }
 
@@ -273,7 +272,7 @@ void COM_T_RunScript_f (void)
       return;
   }
   
-  T_RunScript(sn, players[consoleplayer].mo );
+  T_RunScript(sn, consoleplayer_ptr->mo );
 }
 
 
@@ -284,7 +283,7 @@ void COM_T_RunScript_f (void)
 
 runningscript_t *freelist=NULL;      // maintain a freelist for speed
 
-runningscript_t *new_runningscript( void )
+runningscript_t * new_runningscript( void )
 {
   // check the freelist
   if(freelist)
@@ -394,7 +393,7 @@ void T_DelayedScripts( void )
 
 
 
-static runningscript_t *T_SaveCurrentScript( void )
+static runningscript_t * T_SaveCurrentScript( void )
 {
   runningscript_t *runscr;
   int i;
@@ -456,7 +455,8 @@ void SF_Wait( void )
   runscr->wait_data = (intvalue(t_argv[0]) * 35) / 100;
 }
 
-void SF_WaitTic( void )  //if you want to wait on tics instead of "real" time
+//if you want to wait on tics instead of "real" time
+void SF_WaitTic( void )
 {
   runningscript_t *runscr;
 
@@ -658,9 +658,9 @@ void clear_runningscripts( void )
 }
 
 
-mobj_t *MobjForSvalue(svalue_t svalue)
+mobj_t * MobjForSvalue(svalue_t svalue)
 {
-  int intval ;
+  int intval;
   
   if(svalue.type == FSVT_mobj)
     return svalue.value.mobj;
@@ -754,7 +754,6 @@ void spec_script( void )
   
   // we dont want to run the script, only add it
   // jump past the script in parsing
-  
   fs_src_cp = fs_current_section->end + 1;
 }
 

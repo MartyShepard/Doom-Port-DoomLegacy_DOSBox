@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 801 2011-03-06 18:55:50Z wesleyjohnson $
+// $Id: t_parse.h 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -96,7 +96,7 @@ struct sfarray_s
 
 
 
-char *stringvalue(svalue_t v);
+char * stringvalue(svalue_t v);
 
 #include "t_vari.h"
 #include "t_prepro.h"

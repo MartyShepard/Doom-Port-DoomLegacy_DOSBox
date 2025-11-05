@@ -62,6 +62,10 @@ extern int  legacyhome_len;
 // for dedicated server
 extern boolean dedicated;
 
+// Background color fades for FS
+extern unsigned long fadecolor;
+extern int fadealpha;
+
 // the infinite loop of D_DoomLoop() called from win_main for windows version
 void D_DoomLoop (void);
 

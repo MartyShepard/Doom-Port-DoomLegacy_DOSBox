@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 803 2011-03-06 18:58:20Z wesleyjohnson $
+// $Id: t_func.c 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -178,6 +178,7 @@
 #include "r_data.h"
 #include "r_main.h"
 #include "r_segs.h"
+#include "r_defs.h"
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -195,17 +196,8 @@
 #include "t_array.h"
 
 
-//extern int firstcolormaplump, lastcolormaplump;      // r_data.c
-
 svalue_t evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
-
-
-// :(
-extern unsigned long fadecolor;
-extern int fadealpha;
-
-extern int extramovefactor;
 
 
 // array functions in t_array.c
@@ -244,13 +236,11 @@ char *  Z_cat_args( int i1 )
   FUNCTIONS
  *******************/
 
-// the actual handler functions for the
-// functions themselves
+// Actual handler functions for the script functions
 
 // arguments are evaluated and passed to the
 // handler functions using 't_argc' and 't_argv'
-// in a similar way to the way C does with command
-// line options.
+// in a similar way to the way C does with command line options.
 
 // values can be returned from the functions using
 // the variable 't_return'
@@ -382,7 +372,7 @@ void SF_Include()
     if (t_argv[0].type == FSVT_string)
         strncpy(tempstr, t_argv[0].value.s, 8);
     else
-        sprintf(tempstr, "%s", stringvalue(t_argv[0]));
+        snprintf(tempstr, 8, "%s", stringvalue(t_argv[0]));
 
     parse_include(tempstr);
 }

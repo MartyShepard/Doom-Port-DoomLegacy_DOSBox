@@ -1500,3 +1500,11 @@ patchfile = w69_fs_args.patch
 Simplify fragglescript function args concatenation.
 More indenting and cleanup.
 
+*** w69_fs_misc
+patchfile = w69_fs_misc.patch
+- committed revision 804   by wesley johnson
+Fix some extern defs in fs code to use header file.
+Rename some enum as WT_.
+Change some sprint into snprint.
+Some other minor cosmetic changes.
+

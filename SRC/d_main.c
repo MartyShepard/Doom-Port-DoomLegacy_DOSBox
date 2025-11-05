@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 790 2011-02-23 18:29:20Z wesleyjohnson $
+// $Id: d_main.c 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 803; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 804; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -640,8 +640,8 @@ void D_Display(void)
 #if !defined( __DJGPP__ )
     // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
     // Exl: draw a faded background
-	if (fadealpha != 0 && rendermode != render_soft)
-		HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
+    if (fadealpha != 0 && rendermode != render_soft)
+	HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
 #endif	
 	//FIXME: draw either console or menu, not the two
     CON_Drawer();
@@ -1132,22 +1132,22 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
    { "Hexen", NULL, "hexen",
 	{"hexen.wad",NULL,NULL}, NULL,
 	{"MAP40", NULL}, LN_MAP01+LN_TITLE, 0,
-	GD_idwad|GD_unsupported, GDESC_hexen, hexen },
+	GD_idwad/*|GD_unsupported*/, GDESC_hexen, hexen },
 // GDESC_hexen_demo: Hexen
    { "Hexen Demo", NULL, "hexen1",
 	{"hexen1.wad","hexen.wad",NULL}, NULL,
 	{NULL, NULL}, LN_MAP01+LN_TITLE, 0,
-	GD_idwad|GD_unsupported, GDESC_hexen_demo, hexen },
+	GD_idwad/*|GD_unsupported*/, GDESC_hexen_demo, hexen },
 // GDESC_strife: Strife
    { "Strife", NULL, "strife",
 	{"strife.wad",NULL,NULL}, NULL,
 	{"ENDSTRF", "MAP20"}, LN_MAP01, 0,
-	GD_idwad|GD_unsupported, GDESC_strife, strife },
+	GD_idwad/*|GD_unsupported*/, GDESC_strife, strife },
 // GDESC_strife_shareware: Strife shareware
    { "Strife shareware", NULL, "strife0",
 	{"strife0.wad","strife.wad",NULL}, NULL,
 	{"ENDSTRF", NULL}, 0, LN_MAP01,
-	GD_idwad|GD_unsupported, GDESC_strife_shareware, strife },
+	GD_idwad/*|GD_unsupported*/, GDESC_strife_shareware, strife },
 // GDESC_chex1: Chex Quest
    { "Chex Quest", NULL, "chex1",
 	{"chex1.wad","chex.wad",NULL}, NULL,
@@ -1172,7 +1172,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
    { "Hexen mode", NULL, "hexemode",
         {"hexen.wad",NULL,NULL}, NULL,
 	{ NULL, NULL}, LN_MAP01, 0,
-	GD_unsupported, GDESC_hexen_mode, hexen },
+	GD_idwad/*GD_unsupported*/, GDESC_hexen_mode, hexen },
 // GDESC_other: Other iwads, all DoomII features enabled,
 // strings are ptrs to buffers
    { other_gname, public_title, "",

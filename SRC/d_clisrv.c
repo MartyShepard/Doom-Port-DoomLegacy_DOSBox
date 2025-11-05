@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: d_clisrv.c 804 2011-03-09 00:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -254,11 +254,6 @@ static boolean  cl_packetmissed;
 boolean         drone;
 // here it is for the secondary local player (splitscreen)
 static byte     mynode;        // my address pointofview server
-
-
-// Fade color alpha to reset :>
-extern int fadealpha;
-
 
 static byte     localtextcmd[MAXTEXTCMD];
 static byte     localtextcmd2[MAXTEXTCMD]; // splitscreen player2
@@ -1057,10 +1052,9 @@ void CL_Reset (void)
     SV_StopServer();
     SV_ResetServer();
 
-	T_ClearHubScript();	//DarkWolf95: Originally implemented by Exl
-	fadealpha = 0;
-	HU_ClearFSPics();
-
+    T_ClearHubScript();	//DarkWolf95: Originally implemented by Exl
+    fadealpha = 0;
+    HU_ClearFSPics();
 
     // reset game engine
     //D_StartTitle ();
