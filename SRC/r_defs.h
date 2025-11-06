@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 771 2010-12-10 01:00:36Z wesleyjohnson $
+// $Id: r_defs.h 819 2011-03-15 23:33:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -912,14 +912,14 @@ typedef struct vissprite_s
 //
 typedef struct
 {
-    // If false use 0 for any position.
-    // Note: as eight entries are available,
-    //  we might as well insert the same name eight times.
+    // If rotate is false, use rot=0 for any position.
+    // Note: Then as all eight entries are always available,
+    //  we will fill them all with the same values.
     boolean     rotate;
 
     // Lump to use for view angles 0-7.
     int         lumppat[8];   // lump number 16:16 wad:lump
-    short       lumpid[8];    // id in the spriteoffset,spritewidth.. tables
+    short       spritelump_id[8]; // into spritelumps[]
 
     // Flip bit (1 = flip) to use for view angles 0-7.
     byte        flip[8];

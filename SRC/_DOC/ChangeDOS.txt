@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[00819 ]:w72 spritelump limits removed
+[00818 ]: w72 spritelump type
+[00817 ]: w71 linux_x
+[00816 ]: w70 TNT recognition
+[00815 ]: w71 kin progress log
 [00814 ]: w70 netcmd WRITESTRINGN
 [00813 ]: CD music cleanup
 [00812 ]: Bug 3159614 fixed, added backslash escape sequences to command parser

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 759 2010-10-12 02:54:49Z wesleyjohnson $
+// $Id: r_main.c 818 2011-03-15 23:32:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -969,7 +969,7 @@ void R_ExecuteSetViewSize (void)
 void R_Init (void)
 {
     if(dedicated)
-    return;
+        return;
 
     //added:24-01-98: screensize independent
     if(devparm)

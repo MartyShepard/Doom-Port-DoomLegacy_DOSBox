@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 809 2011-03-09 00:42:08Z wesleyjohnson $
+# $Id: Makefile 817 2011-03-13 01:52:15Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -118,7 +118,8 @@ ifeq ($(SMIF), SDL)
   else
     # default is Linux, for all unix SDL
     OPTS := -DLINUX
-    LIBS := -lGL -lGLU -lm -L/usr/X11R6/lib
+    LDFLAGS=-L/usr/X11R6/lib
+    LIBS := -lGL -lGLU -lm
     # -L/usr/X11R6/lib is needed by Linux 2.4 and others that still have
     # the GLU libraries in an X11 directory.
     # -lm is needed for pow, powf, and other MATH1 functions.
@@ -154,7 +155,7 @@ ifeq ($(SMIF), LINUX_X11)
   ifdef X
     OPTS := $(OPTS) $(POLL_POINTER) -I. -I/usr/X11R6/include
     LDFLAGS=-L/usr/X11R6/lib
-    LIBS=-lXext -lX11 -lm -ldl -lXxf86vm
+    LIBS=-lGL -lGLU -lXext -lX11 -lm -ldl -lXxf86vm
 
     #WITH_DGA=1
     ifdef WITH_DGA
@@ -167,7 +168,8 @@ ifeq ($(SMIF), LINUX_X11)
     SFLAGS=-g $(OPTS)
     OBJS=$(O)/i_video_xshm.o $(O)/dosstr.o $(O)/searchp.o $(O)/endtxt.o \
       $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
-      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o
+      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o \
+      $(O)/r_opengl.o $(O)/ogl_x11.o
 
   else
     OPTS := $(OPTS) -DVID_GGI -I.

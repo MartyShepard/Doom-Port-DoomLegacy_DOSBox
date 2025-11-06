@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 813 2011-03-10 14:24:13Z smite-meister $
+// $Id: d_main.c 816 2011-03-13 01:49:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 814; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 819; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -1111,7 +1111,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 // GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    { "Tnt Evilution", "DOOM 2: TNT - Evilution", "tnt",
 	{"tnt.wad",NULL,NULL}, NULL,
-	{"REDTNT", NULL}, LN_MAP01, LN_TITLE,
+	{"REDTNT2", NULL}, LN_MAP01, LN_TITLE,
 	GD_idwad, GDESC_tnt, doom2_commercial },
 // GDESC_blasphemer: FreeDoom project, DoomII replacement
    { "Blasphemer", NULL, "blasphem",

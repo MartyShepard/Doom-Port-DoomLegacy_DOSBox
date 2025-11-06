@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 719 2010-07-31 18:49:43Z wesleyjohnson $
+// $Id: r_state.h 819 2011-03-15 23:33:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,10 +82,17 @@
 extern fixed_t*         textureheight;
 
 // needed for pre rendering (fracs)
-extern fixed_t*         spritewidth;
-extern fixed_t*         spriteoffset;
-extern fixed_t*         spritetopoffset;
-extern fixed_t*         spriteheight;
+// [WDJ] Made into one record, sprite lump values, endian swapped.
+typedef struct {
+    fixed_t  width;
+    fixed_t  height;
+    fixed_t  offset;
+    fixed_t  topoffset;
+} spritelump_t;
+
+extern spritelump_t*    spritelumps;  // array ptr
+// to get one
+int  R_Get_spritelump( void );  // get by id number
 
 // colormap lightmaps from wad COLORMAP lump
 extern lighttable_t*    reg_colormaps;
@@ -111,13 +118,6 @@ extern int              firstwaterflat; //added:18-02-98:WATER!
 // for global animation
 extern int*             flattranslation;
 extern int*             texturetranslation;
-
-
-// Sprite....
-extern int              firstspritelump;
-extern int              lastspritelump;
-extern int              numspritelumps;
-
 
 
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 782 2011-02-22 04:34:09Z wesleyjohnson $
+// $Id: r_data.c 819 2011-03-15 23:33:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -168,8 +168,6 @@ texgen_control_e  texgen_control = TGC_auto;
 
 int             firstflat, lastflat, numflats;
 int             firstpatch, lastpatch, numpatches;
-int             firstspritelump, lastspritelump, numspritelumps;
-
 
 
 // textures
@@ -188,10 +186,9 @@ int       *flattranslation;             // for global animation
 int       *texturetranslation;
 
 // needed for pre rendering
-fixed_t*        spritewidth;
-fixed_t*        spriteoffset;
-fixed_t*        spritetopoffset;
-fixed_t*        spriteheight; //SoM
+spritelump_t *  spritelumps = NULL;  // array of sprite lump values, endian swapped
+int             num_spritelump = 0;  // already allocated
+int             num_free_spritelump = 0;  // free for allocation
 
 // colormap lightmaps from wad COLORMAP lump
 lighttable_t *  reg_colormaps;
@@ -1326,6 +1323,33 @@ int R_GetFlatNumForName(char *name)
   return lump;
 }
 
+// [WDJ] Manage the spritelump_t allocations
+// Still use this array so that rot=0 sprite can share one entry for all 8 rotations.
+
+void expand_spritelump( void )
+{
+    // [WDJ] Expand array and copy
+    num_free_spritelump = 256;
+    int request = num_spritelump + num_free_spritelump;
+    // new array of spritelumps
+    spritelump_t * sl_new = Z_Malloc (request*sizeof(spritelump_t), PU_STATIC, 0);
+    if( spritelumps ) // existing
+    {
+        // move existing data
+        memcpy( sl_new, spritelumps, sizeof(spritelump_t)*num_spritelump);
+        Z_Free( spritelumps ); // old
+    }
+    spritelumps = sl_new;
+}
+
+// Next free spritelump
+int  R_Get_spritelump( void )
+{
+    if( num_free_spritelump == 0 )
+       expand_spritelump();
+    num_free_spritelump--;
+    return  num_spritelump ++;
+}
 
 //
 // R_InitSpriteLumps
@@ -1341,13 +1365,8 @@ void R_InitSpriteLumps (void)
 {
     // the original Doom used to set numspritelumps from S_END-S_START+1
 
-    //Fab:FIXME: find a better solution for adding new sprites dynamically
-    numspritelumps = 0;
-
-    spritewidth = Z_Malloc (MAXSPRITELUMPS*sizeof(fixed_t), PU_STATIC, 0);
-    spriteoffset = Z_Malloc (MAXSPRITELUMPS*sizeof(fixed_t), PU_STATIC, 0);
-    spritetopoffset = Z_Malloc (MAXSPRITELUMPS*sizeof(fixed_t), PU_STATIC, 0);
-    spriteheight = Z_Malloc (MAXSPRITELUMPS*sizeof(fixed_t), PU_STATIC, 0);
+    // [WDJ] Initial allocation, will be expanded as needed
+    expand_spritelump();
 }
 
 
@@ -2309,7 +2328,7 @@ void R_PrecacheLevel (void)
             for (k=0 ; k<8 ; k++)
             {
                 //Fab: see R_InitSprites for more about lumppat,lumpid
-                lump = /*firstspritelump +*/ sf->lumppat[k];
+                lump = sf->lumppat[k];
                 if(devparm)
                    spritememory += W_LumpLength(lump);
                 W_CachePatchNum(lump , PU_CACHE);

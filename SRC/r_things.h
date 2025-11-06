@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 759 2010-10-12 02:54:49Z wesleyjohnson $
+// $Id: r_things.h 819 2011-03-15 23:33:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,10 +63,6 @@
 #define __R_THINGS__
 
 #include "sounds.h"
-
-// number of sprite lumps for spritewidth,offset,topoffset lookup tables
-// Fab: this is a hack : should allocate the lookup tables per sprite
-#define     MAXSPRITELUMPS     4096
 
 // MAXVISSPRITES was 128, then 256 (2-2-98)
 #define MAXVISSPRITES   16000

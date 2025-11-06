@@ -1549,5 +1549,34 @@ patchfile = w70_netcmd_WRITESTRINGN.patch
 - committed revision 814   by wesley johnson
 Linux 2.6 compile warning messages squashed, and smaller code.
 
+*** w71_kin_progress
+- committed revision 815   by wesley johnson
+Move kin log file "progress.txt" from linux_x/ to _logs/.
 
+*** w70_TNT
+patchfile = w70_TNT.patch
+- committed revision 816   by wesley johnson
+Fix TNT recognition.
 
+*** w71_linux_x
+patchfile = w71_linux_x.patch
+- committed revision 817   by wesley johnson
+General repairs to linux_x directory.
+Update system calls to same changes as made recently to SDL.
+Fix prototype changes.
+Deactivate unused code and obsolete code.
+Fix keyboard translation and event posting.
+Add X error handler code.
+Fix X joystick code.
+Verified to run Linux X11 in software mode.
+
+*** w72_spritelump_type
+patchfile = w72_spritelump_type.patch
+- committed revision 818   by wesley johnson
+Combine sprite lump tables into one record and array.
+
+*** w72_spritelump_limits
+patchfile = w72_spritelump_limits.patch
+- committed revision 819   by wesley johnson
+Fix spritelump array to be dynamic expanded, thus removing spritelump
+limits.  This fixes the last issue of bug 3157859.
