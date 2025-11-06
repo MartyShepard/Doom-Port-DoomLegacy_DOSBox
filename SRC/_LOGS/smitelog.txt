@@ -170,3 +170,18 @@ music wasn't played at all.
 *** Mouse consvars and menu items renamed.
 rev 760
 Confusingly named mouse sensitivity consvars and menu items renamed.
+
+
+*** FS fixes
+rev 798
+FS documentation updated, Spider Mastermind name in THINGS.H fixed.
+
+*** Menu bug fixed
+rev 811
+Bug 3078853: Non-character keys should not initiate an alphaKey search.
+Also now draws disabled small text menuitems in white (gamma).
+
+
+*** TODO add backslash escapes to command parser, update manual
+rev ???
+

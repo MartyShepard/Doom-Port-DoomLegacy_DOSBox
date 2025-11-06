@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00811 ]: menu bug 3078853 fixed
+[00810*]: w70 pld linux_x video
+[00809*]: w70 pld Makefile
 [00808 ]: w70 savegame spaces
 [00807 ]: w70 timelimit bug
 [00806*]: w69 fs doc

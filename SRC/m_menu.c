@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 808 2011-03-09 00:41:14Z wesleyjohnson $
+// $Id: m_menu.c 811 2011-03-09 23:47:24Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -915,7 +915,7 @@ CV_PossibleValue_t exmy_cons_t[] ={{11,"e1m1"} ,{12,"e1m2"} ,{13,"e1m3"}
                                   ,{47,"e5m7"} ,{48,"e5m8"} ,{49,"e5m9"}
                                   ,{0,NULL}};
 
-consvar_t cv_skill    = {"skill"    ,"1",CV_HIDEN,skill_cons_t};
+consvar_t cv_skill    = {"skill"    ,"4",CV_HIDEN,skill_cons_t};
 consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
@@ -1643,13 +1643,13 @@ void MenuGammaFunc_dependencies( byte gamma_en,
 {
    VideoOptionsMenu[2].status = 
      ( gamma_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_STRING | IT_SPACE;
+       : IT_WHITESTRING | IT_SPACE;
    VideoOptionsMenu[3].status = 
      ( black_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_STRING | IT_SPACE;
+       : IT_WHITESTRING | IT_SPACE;
    VideoOptionsMenu[4].status = 
      ( bright_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_STRING | IT_SPACE;
+       : IT_WHITESTRING | IT_SPACE;
 }
 #endif
 
@@ -3972,8 +3972,6 @@ boolean M_Responder (event_t* ev)
         ch = key;
         #endif
             if (is_printable(ch) &&
-//		ch != ' ' &&  // [WDJ] I can only assume that this was not intentional
-//		              // It prevented spaces from appearing in savegame description.
                 edit_index < SAVESTRINGSIZE-1 &&
                 V_StringWidth(edit_buffer) < (SAVESTRINGSIZE-2)*8)
             {
@@ -3992,7 +3990,7 @@ boolean M_Responder (event_t* ev)
     }
 
 
-    // F-Keys
+    // when the menu is not open
     if (!menuactive)
     {
         switch(key)
@@ -4313,6 +4311,9 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
 
       default:
+	// any other key: if a letter, try to find the corresponding menuitem
+	if (!isalpha(ch))
+	  goto ret_true;
         for (i = itemOn+1;i < currentMenu->numitems;i++)
             if (currentMenu->menuitems[i].alphaKey == ch)
             {

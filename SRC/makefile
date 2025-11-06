@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 754 2010-09-26 11:49:59Z smite-meister $
+# $Id: Makefile 809 2011-03-09 00:42:08Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -114,13 +114,14 @@ ifeq ($(SMIF), SDL)
     # Windows (MinGW)
     EXENAME := $(EXENAME).exe
     OPTS := -DWIN32
-    LIBS := -lopengl32 -lglu32 -lwsock32
+    LIBS := -lopengl32 -lglu32 -lwsock32 -lm
   else
     # default is Linux, for all unix SDL
     OPTS := -DLINUX
-    LIBS := -lGL -lGLU -L/usr/X11R6/lib
+    LIBS := -lGL -lGLU -lm -L/usr/X11R6/lib
     # -L/usr/X11R6/lib is needed by Linux 2.4 and others that still have
     # the GLU libraries in an X11 directory.
+    # -lm is needed for pow, powf, and other MATH1 functions.
   endif
 
   OPTS += -DHWRENDER -DSDL $(shell sdl-config --cflags) -I.
