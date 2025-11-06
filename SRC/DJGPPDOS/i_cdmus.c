@@ -408,7 +408,7 @@ void I_UpdateCD (void)
 
 
 //
-void I_PlayCD (int track, boolean looping)
+void I_PlayCD (unsigned int track, boolean looping)
 {
     if (!cdaudio_started || !cdEnabled)
         return;

@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 768 2010-11-18 21:14:27Z wesleyjohnson $
+// $Id: s_sound.c 813 2011-03-10 14:24:13Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -255,7 +255,7 @@ static channel_t *channels;
 static boolean mus_paused;
 
 // music currently being played
-static musicinfo_t *mus_playing = 0;
+static musicinfo_t *mus_playing = NULL;
 
 static int nextcleanup;
 
@@ -364,7 +364,7 @@ void S_Init(int sfxVolume, int musicVolume)
     SetChannelsNum();
 
     // no sounds are playing, and they are not mus_paused
-    mus_paused = 0;
+    mus_paused = false;
 
     // Note that sounds have not been cached (yet).
     for (i = 1; i < NUMSFX; i++)
@@ -454,7 +454,7 @@ void S_Start(void)
     int mnum;
 
     // start new music for the level
-    mus_paused = 0;
+    mus_paused = false;
 
     if (gamemode == doom2_commercial)
         mnum = mus_runnin + gamemap - 1;
@@ -1026,8 +1026,8 @@ void S_StopMusic()
         I_UnRegisterSong(mus_playing->handle);
 	Z_ChangeTag(mus_playing->data, PU_CACHE);
 
-        mus_playing->data = 0;
-        mus_playing = 0;
+        mus_playing->data = NULL;
+        mus_playing = NULL;
     }
 }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: d_main.c 813 2011-03-10 14:24:13Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -322,7 +322,7 @@
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 812; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 813; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha2 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -1985,15 +1985,15 @@ void D_DoomMain()
     wipegamestate = gamestate;
     //------------------------------------------------ COMMAND LINE PARAMS
 
-    // Initialize CD-Audio
-    if (!M_CheckParm("-nocd"))
+    // Initialize CD-Audio, no music on a dedicated server
+    if (!M_CheckParm("-nocd") && !M_CheckParm("-dedicated"))
         I_InitCD();
     if (M_CheckParm("-respawn"))
-        COM_BufAddText("respawnmonsters 1\n");
-	if (M_CheckParm("-coopmonsters"))
-		COM_BufAddText("monsterbehavior 1\n");
-	if (M_CheckParm("-infight"))
-		COM_BufAddText("monsterbehavior 2\n");
+      COM_BufAddText("respawnmonsters 1\n");
+    if (M_CheckParm("-coopmonsters"))
+      COM_BufAddText("monsterbehavior 1\n");
+    if (M_CheckParm("-infight"))
+      COM_BufAddText("monsterbehavior 2\n");
     if (M_CheckParm("-teamplay"))
         COM_BufAddText("teamplay 1\n");
     if (M_CheckParm("-teamskin"))

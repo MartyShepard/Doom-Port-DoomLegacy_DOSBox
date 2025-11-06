@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 725 2010-08-17 18:53:25Z smite-meister $
+// $Id: i_sound.h 813 2011-03-10 14:24:13Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -141,19 +141,19 @@ extern consvar_t user_songs[PLAYLIST_LENGTH];
 #endif
 
 
-// i_cdmus.h : cd music interface
-//
-extern byte    cdaudio_started;
+// cd music interface
 
 void   I_InitCD (void);
-void   I_StopCD (void);
-#ifdef LINUX
 void   I_PauseCD (void);
-#endif
 void   I_ResumeCD (void);
-void   I_ShutdownCD (void);
 void   I_UpdateCD (void);
-void   I_PlayCD (int track, boolean looping);
+void   I_PlayCD (unsigned int track, boolean looping);
+void   I_ShutdownCD (void);
+
+#if defined( __DJGPP__ )
+extern byte    cdaudio_started;
+void   I_StopCD (void);
 int    I_SetVolumeCD (int volume);  // return 0 on failure
+#endif
 
 #endif

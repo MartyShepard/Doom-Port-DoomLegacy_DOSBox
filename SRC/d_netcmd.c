@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 807 2011-03-09 00:40:01Z wesleyjohnson $
+// $Id: d_netcmd.c 813 2011-03-10 14:24:13Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -447,7 +447,9 @@ void D_RegisterClientCommands(void)
 
     //i_cdmus.c
     CV_RegisterVar(&cd_volume);
+#if defined( __DJGPP__ )
     CV_RegisterVar(&cdUpdate);
+#endif
 
     // screen.c ?
 #if !defined( __DJGPP__ )			
