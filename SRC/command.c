@@ -1285,6 +1285,7 @@ skipwhite:
         while (true)
         {
             c = *data++;
+#if !defined( __DJGPP__ )							
 	    if (!c)
             {
 	      // NUL in the middle of a quoted string. Missing closing quote?
@@ -1292,6 +1293,7 @@ skipwhite:
 	      com_token[len] = '\0';
 	      return data;
             }
+#endif						
 	    
             if (c == '"') // closing quote
 	    {
@@ -1327,6 +1329,16 @@ skipwhite:
 	    // normal char
             com_token[len++] = c;
         }
+#if defined( __DJGPP__ )					
+	    if (!c)
+            {
+	      // Move code because this fixed commandline eq "-timedemo demo2"
+	      // NUL in the middle of a quoted string. Missing closing quote?
+	      CONS_Printf("Error: Quoted string ended prematurely.\n");
+	      com_token[len] = '\0';
+	      return data;
+            }
+#endif						
     }
 
 // parse single characters
