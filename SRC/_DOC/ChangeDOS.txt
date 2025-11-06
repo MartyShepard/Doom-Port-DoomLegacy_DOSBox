@@ -1,6 +1,7 @@
 * Not need to Compile.
 
-[00819 ]:w72 spritelump limits removed
+[00820 ]: w72 dehacked string
+[00819 ]: w72 spritelump limits removed
 [00818 ]: w72 spritelump type
 [00817 ]: w71 linux_x
 [00816 ]: w70 TNT recognition

@@ -1580,3 +1580,11 @@ patchfile = w72_spritelump_limits.patch
 - committed revision 819   by wesley johnson
 Fix spritelump array to be dynamic expanded, thus removing spritelump
 limits.  This fixes the last issue of bug 3157859.
+
+*** w72_dehacked
+patchfile = w72_dehacked.patch
+- committed revision 820   by wesley johnson
+Fix dehacked special string copy to use Z_Strdup like the other fixes,
+so do not write const string.
+Some minor code changes.
+Add some comments and {}.

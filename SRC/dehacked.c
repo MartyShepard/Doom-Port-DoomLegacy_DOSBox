@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 684 2010-06-11 20:48:16Z wesleyjohnson $
+// $Id: dehacked.c 820 2011-03-16 23:23:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -103,8 +103,8 @@ boolean deh_loaded = false;
 
 #define MAXLINELEN  200
 
-// the code was first write for a file
-// converted to use memory with this functions
+// the code was first written for a file
+// and converted to use memory with these functions
 typedef struct {
     char *data;
     char *curpos;
@@ -113,13 +113,13 @@ typedef struct {
 
 #define myfeof( a )  (a->data+a->size<=a->curpos)
 
-char *myfgets(char *buf, int bufsize, MYFILE *f)
+// get string upto \n, or eof
+char* myfgets(char *buf, int bufsize, MYFILE *f)
 {
     int i=0;
     if( myfeof(f) )
         return NULL;
-    // we need on byte for null terminated string
-    bufsize--;
+    bufsize--;  // we need a extra byte for null terminated string
     while(i<bufsize && !myfeof(f) )
     {
         char c = *f->curpos++;
@@ -435,10 +435,11 @@ static void readtext(MYFILE* f, int len1, int len2,
     // special text : text changed in Legacy but with dehacked support
     for(i=SPECIALDEHACKED;i<NUMTEXT;i++)
     {
-       int temp = strlen(text[i]);
+       int ltxt = strlen(text[i]);
 
-       if(len1>temp && strstr(s,text[i]))
+       if(len1>ltxt && strstr(s,text[i]))
        {
+	   // found text to be replaced
            char *t;
 
            // remove space for center the text
@@ -454,14 +455,18 @@ static void readtext(MYFILE* f, int len1, int len2,
               if(!t) {
                  t=strstr(&(s[len1]),"%i");
                  if(!t) {
-                      t=s+len1+strlen(&(s[len1]));
+                      t=&s[len1]+strlen(&(s[len1]));
                  }
               }
            }
            t[0]='\0';
+#if 1
+           // May of been a const string, writing upon would have segfault
+           text[i] = Z_Strdup(&(s[len1]), PU_STATIC, NULL);
+#else
            len2=strlen(&s[len1]);
 
-           if(strlen(text[i])<(unsigned)len2)         // incresse size of the text
+           if(strlen(text[i])<(unsigned)len2)  // increase size of the text
            {
               text[i]=(char *)malloc(len2+1);
               if(text[i]==NULL)
@@ -470,6 +475,7 @@ static void readtext(MYFILE* f, int len1, int len2,
 
            strncpy(text[i],&(s[len1]),len2);
            text[i][len2]='\0';
+#endif
            return;
        }
     }
@@ -616,11 +622,12 @@ static void change_cheat_code(byte *cheatseq, byte *newcheat)
 {
   byte *i,*j;
 
-  // encript data
+  // encrypt data
   for(i=newcheat;i[0]!='\0';i++)
       i[0]=SCRAMBLE(i[0]);
 
   for(i=cheatseq,j=newcheat;j[0]!='\0' && j[0]!=0xff;i++,j++)
+  {
       if(i[0]==1 || i[0]==0xff) // no more place in the cheat
       {
          deh_error("Cheat too long\n");
@@ -628,11 +635,13 @@ static void change_cheat_code(byte *cheatseq, byte *newcheat)
       }
       else
          i[0]=j[0];
+  }
 
   // newcheatseq < oldcheat
   j=i;
   // search special cheat with 100
   for(;i[0]!=0xff;i++)
+  {
       if(i[0]==1)
       {
          *j++=1;
@@ -640,11 +649,13 @@ static void change_cheat_code(byte *cheatseq, byte *newcheat)
          *j++=0;
          break;
       }
+  }
   *j=0xff;
 
   return;
 }
 
+// Read cheat section
 static void readcheat(MYFILE *f)
 {
   char s[MAXLINELEN];
@@ -654,8 +665,9 @@ static void readcheat(MYFILE *f)
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
+      // for each line "<word> = <value>"
       if(s[0]=='\n') break;
-      strtok(s,"=");
+      strtok(s,"=");  // after '='
       value = (byte *)strtok(NULL," \n");         // skip the space
       strtok(NULL," \n");              // finish the string
       word=strtok(s," ");
@@ -702,7 +714,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
   char       s[1000];
   char       *word,*word2;
   int        i;
-  // do a copy of this for cross references probleme
+  // do a copy of this for cross references problem
   actionf_t  deh_actions[NUMSTATES];
   char       *deh_sprnames[NUMSPRITES];
   char       *deh_sfxnames[NUMSFX];
@@ -721,17 +733,19 @@ void DEH_LoadDehackedFile(MYFILE* f)
   while(!myfeof(f))
   {
     myfgets(s,sizeof(s),f);
-    if(s[0]=='\n' || s[0]=='#')
+    if(s[0]=='\n' || s[0]=='#')  // skip blank lines and comments
       continue;
-    word=strtok(s," ");
+    word=strtok(s," ");  // first keyword
     if(word!=NULL)
     {
-      if((word2=strtok(NULL," "))!=NULL)
+      word2=strtok(NULL," ");  // id number
+      if(word2!=NULL)
       {
         i=atoi(word2);
 
         if(!strcmp(word,"Thing"))
         {
+	  // "Thing <num>"
           i--; // begin at 0 not 1;
           if(i<NUMMOBJTYPES && i>=0)
             readthing(f,i);
@@ -740,6 +754,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
         }
         else if(!strcmp(word,"Frame"))
              {
+	       // "Frame <num>"
                if(i<NUMSTATES && i>=0)
                   readframe(f,i);
                else
@@ -747,6 +762,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Pointer"))
              {
+	       // "Pointer <num>"
                word=strtok(NULL," "); // get frame
                if((word=strtok(NULL,")"))!=NULL)
                {
@@ -764,6 +780,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Sound"))
              {
+	       // "Sound <num>"
                if(i<NUMSFX && i>=0)
                    readsound(f,i,deh_sfxnames);
                else
@@ -771,6 +788,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Sprite"))
              {
+	       // "Sprite <num>"
                if(i<NUMSPRITES && i>=0)
                {
                  if(myfgets(s,sizeof(s),f)!=NULL)
@@ -788,6 +806,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Text"))
              {
+	       // "Text <num>"
                int j;
 
                if((word=strtok(NULL," "))!=NULL)
@@ -801,6 +820,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Weapon"))
              {
+	       // "Weapon <num>"
                if(i<NUMWEAPONS && i>=0)
                    readweapon(f,i);
                else
@@ -808,23 +828,28 @@ void DEH_LoadDehackedFile(MYFILE* f)
              }
         else if(!strcmp(word,"Ammo"))
              {
+	       // "Ammo <num>"
                if(i<NUMAMMO && i>=0)
                    readammo(f,i);
                else
                    deh_error("Ammo %d don't exist\n",i);
              }
         else if(!strcmp(word,"Misc"))
+	       // "Misc <num>"
                readmisc(f);
         else if(!strcmp(word,"Cheat"))
+	       // "Cheat <num>"
                readcheat(f);
         else if(!strcmp(word,"Doom"))
              {
+	       // "Doom <num>"
                int ver = searchvalue(strtok(NULL,"\n"));
                if( ver!=19)
                   deh_error("Warning : patch from a different doom version (%d), only version 1.9 is supported\n",ver);
              }
         else if(!strcmp(word,"Patch"))
              {
+	       // "Patch <num>"
                word=strtok(NULL," ");
                if(word && !strcmp(word,"format"))
                {
@@ -868,7 +893,7 @@ void DEH_LoadDehackedLump(int lump)
     MYFILE f;
     
     f.size = W_LumpLength(lump);
-    f.data = Z_Malloc(f.size + 1, PU_STATIC, 0);
+    f.data = Z_Malloc(f.size + 1, PU_IN_USE, 0);  // temp
     W_ReadLump(lump, f.data);
     f.curpos = f.data;
     f.data[f.size] = 0;
