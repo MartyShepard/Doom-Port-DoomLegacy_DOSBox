@@ -11,7 +11,7 @@
 
 <body>
 <h1>Doom Legacy 1.44 Console Reference</h1>
-
+<h1 class="tagline">Last updated 2011-03-10</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -119,7 +119,8 @@ but in reverse order.
 <h3 id="cmd_var">Commands and variables</h3>
 
 <p>Basically, a <b>command</b> does not have a value, and is not saved to the
-configuration file. A <b>variable</b> always has an associated value, for
+configuration file. It may take zero or more parameters.
+A <b>variable</b> always has an associated value, for
 example the variable <span class="keyword">name</span> holds your name as a player.
 </p>
 
@@ -127,8 +128,7 @@ example the variable <span class="keyword">name</span> holds your name as a play
 the command syntax.
 </p>
 
-<div class="example">
-&gt; map<br/>
+<div class="code">> map
 Usage: map &lt;number|name&gt; [&lt;entrypoint&gt;]: warp players to a map.
 </div>
 
@@ -136,22 +136,43 @@ Usage: map &lt;number|name&gt; [&lt;entrypoint&gt;]: warp players to a map.
 value of the variable.
 </p>
 
-<div class="example">
-&gt; name<br/>
-"name" is "gi joe"
+<div class="code">> name
+"name" is "flynn"
 </div>
 
-<p>To set the value of a variable, give the new value as a
-parameter. When the value has blanks in it, use double quotes
-around it.
-For example, to change your name to 'dj fab', type
+<p>
+To set the value of a variable, give the new value after the variable name.
+For example, to change your name to "dj fab", type
 </p>
 
-<div class="example">
-&gt; name "dj fab"
+<div class="code">> name "dj fab"
+flynn renamed to dj fab
 </div>
 
-<p>Boolean variables (true/false, yes/no) use 0 to denote false.
+<p>
+  There are four types of variables/command parameters: <b>strings</b>,
+  <b>integers</b>, <b>floats</b> (actually 16.16 fixed point numbers) and <b>booleans</b>.
+</p>
+<p>
+String values containing spaces or certain other special characters
+must be <b>quoted</b> using double quotes, as we saw in the previous example. Inside a quoted string you can
+use the following C-style <b>backslash escape sequences</b>:
+</p>
+<table class="def">
+  <tr><th>Escape sequence</th><th>Resulting character</th></tr>
+  <tr><td>\\</td><td>literal backslash</td></tr>
+  <tr><td>\"</td><td>double quote (does not end the string!)</td></tr>
+  <tr><td>\t</td><td>tab</td></tr>
+  <tr><td>\n</td><td>newline</td></tr>
+</table>
+<p>Example:</p>
+<div class="code">> echo "this string contains \"escaped\" special chars such as \\,\n\ttab and newline"
+this string contains "escaped" special chars such as \,
+    tab and newline
+</div>
+
+<p>
+Boolean variables (true/false, yes/no) use 0 to denote false.
 Any nonzero value means true.
 </p>
 
@@ -800,16 +821,16 @@ players, but do not move on their own. When they get shot or
 damaged, a player gets damaged too.  Many wads use voodoo dolls for
 automated actions because they can trip linedefs.
 <ul>
-<li>Vanilla: No enhancements. Allows zombies and walking dead players.
-<li>Multispawn: The target of damage is determined by the wad spawn type.
-<li>Target: DoomLegacy will attempt to determine the player that
-triggered the voodoo doll, and will put the damage on them.  There are
-still many ways the wrong player can get hurt (which is wad related),
-some as simple as one player tripping the death-trap, right before
-another pushes the switch to turn it off
-(if timed right, the player at the switch dies instead).
-<li>Auto: If the wad has multiple player voodoo spawning, then it
-switches to Multispawn, otherwise it will be Target.
+  <li>Vanilla: No enhancements. Allows zombies and walking dead players.</li>
+  <li>Multispawn: The target of damage is determined by the wad spawn type.</li>
+  <li>Target: DoomLegacy will attempt to determine the player that
+    triggered the voodoo doll, and will put the damage on them.  There are
+    still many ways the wrong player can get hurt (which is wad related),
+    some as simple as one player tripping the death-trap, right before
+    another pushes the switch to turn it off
+    (if timed right, the player at the switch dies instead).</li>
+  <li>Auto: If the wad has multiple player voodoo spawning, then it
+    switches to Multispawn, otherwise it will be Target.</li>
 </ul>
 Default is Auto.
 </td></tr>
@@ -818,7 +839,7 @@ Default is Auto.
 <td>
 Used to mitigate the effects of voodoo doll teleport frag.
 For coop and deathmatch play, a setting other than Die is suggested.
-<br>
+<br/>
 The telefrag kills the player instantly, thus the name "instadeath".
 Used in unusual wad traps to kill the player, like when
 they touch something dangerous.
@@ -826,9 +847,9 @@ Vanilla voodoo doll behavior has the voodoo doll instadeath always killing
 the same player, and it does not matter who walked into the death-trap.
 In most wads the victim is always player1.
 <ul>
-<li>Die: Telefrag death of player.
-<li>Damage: Player takes 20 damage, stunned, and gets thrown back.
-<li>Zap: Player takes 5 damage, stunned longer, and gets thrown back.
+  <li>Die: Telefrag death of player.</li>
+  <li>Damage: Player takes 20 damage, stunned, and gets thrown back.</li>
+  <li>Zap: Player takes 5 damage, stunned longer, and gets thrown back.</li>
 </ul>
 Default is Die.
 </td></tr>
@@ -1233,7 +1254,7 @@ Requires GAMMA_FUNCS compile option.
 Fine gamma control for all gamma functions (slider index, not the actual GAMMA value).
 Default is 0, which is no-correction (GAMMA=1.0).<br/>
 Original gamma settings are at (0, -3, -6, -9, -12).<br/>
-See Gamma table in <a href="file:legacy.html#gamma" href> User Reference Manual </a>.<br/>
+See Gamma table in <a href="legacy.html#gamma">User Reference Manual</a>.<br/>
 Requires GAMMA_FUNCS compile option.
 </td></tr>
 

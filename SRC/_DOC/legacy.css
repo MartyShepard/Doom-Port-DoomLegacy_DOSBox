@@ -92,7 +92,7 @@ div.caption
 /* makes things readable on a wide screen */
 div.column
 {
-  width: 50em;
+  width: 60em;
 }
 
 div.example
@@ -171,7 +171,6 @@ dt
 dd
 {
   margin: 0 0 2em 2em;
-  width: 70%;
 }
 
 dl.quote dd

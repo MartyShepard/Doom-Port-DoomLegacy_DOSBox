@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00812 ]: Bug 3159614 fixed, added backslash escape sequences to command parser
 [00811 ]: menu bug 3078853 fixed
 [00810*]: w70 pld linux_x video
 [00809*]: w70 pld Makefile

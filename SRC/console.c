@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: console.c 812 2011-03-10 13:57:51Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -259,7 +259,7 @@ static void CONS_Clear_f (void)
 }
 
 
-char *bindtable[NUMINPUTS];
+static char *bindtable[NUMINPUTS];
 
 void CONS_Bind_f(void)
 {

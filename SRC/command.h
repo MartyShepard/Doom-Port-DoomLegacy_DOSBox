@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 787 2011-02-22 04:44:25Z wesleyjohnson $
+// $Id: command.h 812 2011-03-10 13:57:51Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -100,8 +100,8 @@ void VS_Alloc (vsbuf_t *buf, int initsize);
 void VS_Free  (vsbuf_t *buf);
 void VS_Clear (vsbuf_t *buf);
 void *VS_GetSpace (vsbuf_t *buf, int length);
-void VS_Write (vsbuf_t *buf, void *data, int length);
-void VS_Print (vsbuf_t *buf, char *data); // strcats onto the sizebuf
+boolean VS_Write (vsbuf_t *buf, void *data, int length);
+boolean VS_Print (vsbuf_t *buf, char *data); // strcats onto the sizebuf
 
 // ======================
 

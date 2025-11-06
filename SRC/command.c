@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 787 2011-02-22 04:44:25Z wesleyjohnson $
+// $Id: command.c 812 2011-03-10 13:57:51Z smite-meister $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -115,7 +115,7 @@ CV_PossibleValue_t CV_Unsigned[]=   {{0,"MIN"}, {999999999,"MAX"}, {0,NULL}};
 
 #define COM_BUF_SIZE    8192   // command buffer size
 
-int     com_wait;       // one command per frame (for cmd sequences)
+static int com_wait;       // one command per frame (for cmd sequences)
 
 
 // command aliases
@@ -127,7 +127,7 @@ typedef struct cmdalias_s
     char    *value;     // the command string to replace the alias
 } cmdalias_t;
 
-cmdalias_t  *com_alias; // aliases list
+static cmdalias_t *com_alias; // aliases list
 
 
 // =========================================================================
@@ -135,23 +135,15 @@ cmdalias_t  *com_alias; // aliases list
 // =========================================================================
 
 
-vsbuf_t   com_text;     // variable sized buffer
+static vsbuf_t com_text;     // variable sized buffer
 
 
-//  Add text in the command buffer (for later execution)
+//  Add text (a NUL-terminated string) in the command buffer (for later execution)
 //
 void COM_BufAddText (char *text)
 {
-    int     l;
-
-    l = strlen (text);
-
-    if (com_text.cursize + l >= com_text.maxsize)
-    {
-        CONS_Printf ("Command buffer full!\n");
-        return;
-    }
-    VS_Write (&com_text, text, l);
+  if (!VS_Print(&com_text, text))
+    CONS_Printf ("Command buffer full!\n");
 }
 
 
@@ -161,15 +153,15 @@ void COM_BufAddText (char *text)
 void COM_BufInsertText (char *text)
 {
     char    *temp;
-    int     templen;
 
     // copy off any commands still remaining in the exec buffer
-    templen = com_text.cursize;
+    int templen = com_text.cursize;
     if (templen)
     {
-        temp = ZZ_Alloc (templen);
-        memcpy (temp, com_text.data, templen);
-        VS_Clear (&com_text);
+      temp = ZZ_Alloc (templen + 1); // add a trailing NUL (TODO why do we even allow non-string data in a vsbuf_t?)
+      temp[templen] = '\0';
+      memcpy (temp, com_text.data, templen);
+      VS_Clear (&com_text);
     }
     else
         temp = NULL;    // shut up compiler
@@ -180,8 +172,10 @@ void COM_BufInsertText (char *text)
     // add the copied off data
     if (templen)
     {
-        VS_Write (&com_text, temp, templen);
-        Z_Free (temp);
+      if (!VS_Print(&com_text, temp))
+	CONS_Printf ("Command buffer full!!\n");
+
+      Z_Free (temp);
     }
 }
 
@@ -191,34 +185,48 @@ void COM_BufInsertText (char *text)
 //
 void COM_BufExecute (void)
 {
-    int     i;
-    char    *text;
-    char    line[1024];
-    int     quotes;
+  int     i;
 
-    if (com_wait)
+  if (com_wait)
     {
         com_wait--;
         return;
     }
 
-    while (com_text.cursize)
+  while (com_text.cursize)
     {
-        // find a '\n' or ; line break
-        text = (char *)com_text.data;
+      // find a '\n' or ; line break
+      char *text = (char *)com_text.data;
 
-        quotes = 0;
-        for (i=0 ; i< com_text.cursize ; i++)
+      boolean in_quote = false;
+      for (i=0; i < com_text.cursize; i++)
         {
-            if (text[i] == '"')
-                quotes++;
-            if ( !(quotes&1) &&  text[i] == ';')
-                break;  // don't break if inside a quoted string
-            if (text[i] == '\n' || text[i] == '\r')
-                break;
+	  if (text[i] == '\\' && in_quote) // escape sequence
+	    {
+	      switch (text[i+1])
+	      {
+		case '\\': // backslash
+		case '"':  // double quote
+		case 't':  // tab
+		case 'n':  // newline
+		  i += 1;  // skip it
+		  break;
+
+		default:
+		  // unknown sequence, parser will give an error later on.
+		  break;
+	      }
+	    }
+	  else if (text[i] == '"') // non-escaped quote 
+	    in_quote = !in_quote;
+	  else if (text[i] == ';' && !in_quote) // semicolon separates commands, unless inside a quoted string
+	    break;
+	  else if (text[i] == '\n' || text[i] == '\r') // always separate commands, not allowed in quoted strings
+	    break;
         }
 
 
+      char line[1024];
         memcpy (line, text, i);
         line[i] = 0;
 
@@ -712,6 +720,7 @@ void VS_Alloc (vsbuf_t *buf, int initsize)
     buf->data = Z_Malloc (initsize, PU_STATIC, NULL);
     buf->maxsize = initsize;
     buf->cursize = 0;
+    buf->allowoverflow = false;
 }
 
 
@@ -730,22 +739,20 @@ void VS_Clear (vsbuf_t *buf)
 
 void *VS_GetSpace (vsbuf_t *buf, int length)
 {
-    void    *data;
-
     if (buf->cursize + length > buf->maxsize)
     {
         if (!buf->allowoverflow)
-            I_Error ("overflow 111");
+	  return NULL;
 
         if (length > buf->maxsize)
-            I_Error ("overflow l%i 112", length);
+	  return NULL;
 
         buf->overflowed = true;
         CONS_Printf ("VS buffer overflow");
         VS_Clear (buf);
     }
 
-    data = buf->data + buf->cursize;
+    void *data = buf->data + buf->cursize;
     buf->cursize += length;
 
     return data;
@@ -754,24 +761,33 @@ void *VS_GetSpace (vsbuf_t *buf, int length)
 
 //  Copy data at end of variable sized buffer
 //
-void VS_Write (vsbuf_t *buf, void *data, int length)
+boolean VS_Write (vsbuf_t *buf, void *data, int length)
 {
-    memcpy (VS_GetSpace(buf,length),data,length);
+  void *to = VS_GetSpace(buf, length);
+  if (!to)
+    return false;
+
+  memcpy(to, data, length);
+  return true;
 }
 
 
 //  Print text in variable size buffer, like VS_Write + trailing 0
 //
-void VS_Print (vsbuf_t *buf, char *data)
+boolean VS_Print (vsbuf_t *buf, char *data)
 {
-    int     len;
+  int len = strlen(data) + 1;
+  int old_size = buf->cursize;  // VS_GetSpace modifies cursize
 
-    len = strlen(data)+1;
+  byte *to = (byte *)VS_GetSpace(buf, len);  // len-1 would be enough if there already is a trailing zero, but...
+  if (!to)
+    return false;
 
-    if (buf->data[buf->cursize-1])
-        memcpy ((byte *)VS_GetSpace(buf, len),data,len); // no trailing 0
-    else
-        memcpy ((byte *)VS_GetSpace(buf, len-1)-1,data,len); // write over trailing 0
+  if (old_size == 0 || buf->data[old_size-1]) // currently no trailing 0
+    memcpy(to, data, len); 
+  else
+    memcpy(to - 1, data, len); // write over the trailing 0
+  return true;
 }
 
 // =========================================================================
@@ -1237,11 +1253,9 @@ void CV_SaveVariables (FILE *f)
 //  returns the data pointer after the token
 static char *COM_Parse (char *data)
 {
-    int     c;
-    int     len;
-
-    len = 0;
-    com_token[0] = 0;
+    int c;
+    int len = 0;
+    com_token[0] = '\0';
 
     if (!data)
         return NULL;
@@ -1250,13 +1264,13 @@ static char *COM_Parse (char *data)
 skipwhite:
     while ( (c = *data) <= ' ')
     {
-        if (c == 0)
+        if (!c)
             return NULL;            // end of file;
         data++;
     }
 
 // skip // comments
-    if (c=='/' && data[1] == '/')
+    if (c == '/' && data[1] == '/')
     {
         while (*data && *data != '\n')
             data++;
@@ -1265,42 +1279,74 @@ skipwhite:
 
 
 // handle quoted strings specially
-    if (c == '\"')
+    if (c == '"')
     {
         data++;
-        while (1)
+        while (true)
         {
             c = *data++;
-            if (c=='\"' || !c)
+	    if (!c)
             {
-                com_token[len] = 0;
-                return data;
+	      // NUL in the middle of a quoted string. Missing closing quote?
+	      CONS_Printf("Error: Quoted string ended prematurely.\n");
+	      com_token[len] = '\0';
+	      return data;
             }
-            com_token[len] = c;
-            len++;
+	    
+            if (c == '"') // closing quote
+	    {
+	      com_token[len] = '\0';
+	      return data;
+	    }
+	    
+	    if (c == '\\') // c-like escape sequence
+	    {
+	      switch (*data)
+	      {
+	      case '\\':  // backslash
+		com_token[len++] = '\\'; break;
+
+	      case '"':  // double quote
+		com_token[len++] = '"'; break;
+
+	      case 't':  // tab
+		com_token[len++] = '\t'; break;
+
+	      case 'n':  // newline
+		com_token[len++] = '\n'; break;
+
+	      default:
+		CONS_Printf("Error: Unknown escape sequence '\\%c'\n", *data);
+		break;
+	      }
+
+	      data++;
+	      continue;
+	    }
+
+	    // normal char
+            com_token[len++] = c;
         }
     }
 
 // parse single characters
     if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':')
     {
-        com_token[len] = c;
-        len++;
-        com_token[len] = 0;
-        return data+1;
+      com_token[len++] = c;
+      com_token[len] = '\0';
+      return data+1;
     }
 
 // parse a regular word
     do
     {
-        com_token[len] = c;
-        data++;
-        len++;
-        c = *data;
-        if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':')
-            break;
-    } while (c>32);
+      com_token[len++] = c;
+      data++;
+      c = *data;
+      if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':')
+	break;
+    } while (c > ' ');
 
-    com_token[len] = 0;
+    com_token[len] = '\0';
     return data;
 }

@@ -16,7 +16,7 @@
 <li><a href="index.html">User's Guide</a></li>
 <li><strong>Map Editing</strong></li>
 <li><a href="tutorial.html">Tutorial</a></li>
-<li><a href="3dfloors.html">3D Floors Tutorial</a></li>
+<li><a href="fakefloors.html">3D Floors Tutorial</a></li>
 <li><strong>FraggleScript</strong></li>
 <li><a href="fsbasic.html">Getting started</a></li>
 <li><a href="fsfuncs.html">Reference manual</a></li>
@@ -226,7 +226,7 @@ There are tons of colors to choose from but here are some to get you started:
 </tr>
 
 
-<tr><td id="3dfloors" class="note" colspan="2">
+<tr><td id="fakefloors" class="note" colspan="2">
 3D floors
 </td></tr>
 <tr>
@@ -381,6 +381,7 @@ Instant raise ceiling
  chosen randomly will be used.. and players might get
  stuck together, but this will happen normally only
  at the beginning of games with maps with few dm starts.
+</p>
 <p>
 The Doom map format refers to different types of THINGs
 (a.k.a. mapthings, map objects, mobjs) by unsigned 16-bit codes,
@@ -458,8 +459,11 @@ Please check the <a href="http://doomlegacy.sourceforge.net/">Doom Legacy Web Si
 <p>
 The Doom software renderer uses many different kinds of color mapping tables to
 simulate lighting and color blending effects.
-A <b>colormap</b> is a 256-byte array used to remap the colors inside a palette:
-<div class="code">new_index = colormap[old_index]</div><br/>
+A <b>colormap</b> is a 256-byte array used to remap the colors inside
+a palette:
+</p>
+<div class="code">new_index = colormap[old_index]</div>
+<p>
 They are used to create colored area effects,
 such as sectors with colored lighting, or a colored fog for the whole level.
 </p>
@@ -497,7 +501,9 @@ One can also simulate colored lighting and fog using lightmaps.
 A <b>translucency map</b> is a 256-by-256 byte array used for
 selective software translucency, where a background color is seen
 through a translucent foreground:
-<div class="code">new_index = transmap[fg_index][bg_index]</div><br/>
+</p>
+<div class="code">new_index = transmap[fg_index][bg_index]</div>
+<p>
 You can visualize it as a set of 256 colormaps, one for each
 foreground color. Boom (and hence Legacy) uses the lump TRANSMAP as
 the default translucency map.
