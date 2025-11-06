@@ -1544,6 +1544,10 @@ In linux_x port, handle larger number of vidmodes without crash.
 In linux_x port, do not force Colormap upon X, when not in x_pseudo
 (TrueColor) we handle colormapping.
 
+*** w70_netcmd_WRITESTRINGN
+patchfile = w70_netcmd_WRITESTRINGN.patch
+- committed revision 814   by wesley johnson
+Linux 2.6 compile warning messages squashed, and smaller code.
 
 
 
