@@ -1588,3 +1588,12 @@ Fix dehacked special string copy to use Z_Strdup like the other fixes,
 so do not write const string.
 Some minor code changes.
 Add some comments and {}.
+
+*** w72_cheat_char
+patchfile = w72_cheat_char.patch
+- committed revision 821   by wesley johnson
+Fix CheckCheat to use the ASCII char in the event (data2), and not the
+16bit char in data1, to avoid special keys being mistakenly recognized.
+The cheat code saw the 0 key =0x48 and LSHIFT key =0x0148 to be the
+same by accident.
+This fixes bug 3194389.

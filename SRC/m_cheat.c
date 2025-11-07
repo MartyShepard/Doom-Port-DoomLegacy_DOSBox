@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 767 2010-11-11 02:19:51Z wesleyjohnson $
+// $Id: m_cheat.c 821 2011-03-16 23:24:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -235,11 +235,12 @@ boolean cht_Responder(event_t * ev)
 {
     int i;
     char *msg;
+    char ch = ev->data2; // ASCII is now data2
 
     if (ev->type == ev_keydown)
     {
         if (gamemode == heretic)
-            return HandleCheats(ev->data1);
+            return HandleCheats(ch);
 
         msg = NULL;
 
@@ -248,11 +249,11 @@ boolean cht_Responder(event_t * ev)
         // b. - enabled for more debug fun.
         // if (gameskill != sk_nightmare) {
 
-        if (cht_CheckCheat(&cheat_amap, ev->data1))
+        if (cht_CheckCheat(&cheat_amap, ch))
             am_cheating = (am_cheating + 1) % 3;
         else
             // 'dqd' cheat for toggleable god mode
-        if (cht_CheckCheat(&cheat_god, ev->data1))
+        if (cht_CheckCheat(&cheat_god, ch))
         {
             plyr->cheats ^= CF_GODMODE;
             if (plyr->cheats & CF_GODMODE)
@@ -269,7 +270,7 @@ boolean cht_Responder(event_t * ev)
                 msg = STSTR_DQDOFF;
         }
         // 'fa' cheat for killer full arsenal
-        else if (cht_CheckCheat(&cheat_ammonokey, ev->data1))
+        else if (cht_CheckCheat(&cheat_ammonokey, ch))
         {
             plyr->armorpoints = idfa_armor;
             plyr->armortype = idfa_armor_class;
@@ -284,7 +285,7 @@ boolean cht_Responder(event_t * ev)
             msg = STSTR_FAADDED;
         }
         // 'kfa' cheat for key full ammo
-        else if (cht_CheckCheat(&cheat_ammo, ev->data1))
+        else if (cht_CheckCheat(&cheat_ammo, ch))
         {
             plyr->armorpoints = idkfa_armor;
             plyr->armortype = idkfa_armor_class;
@@ -301,7 +302,7 @@ boolean cht_Responder(event_t * ev)
             msg = STSTR_KFAADDED;
         }
         // 'mus' cheat for changing music
-        else if (cht_CheckCheat(&cheat_mus, ev->data1))
+        else if (cht_CheckCheat(&cheat_mus, ch))
         {
             char buf[3];
             int musnum;
@@ -333,7 +334,7 @@ boolean cht_Responder(event_t * ev)
 
         // 'cd' for changing cd track quickly
         //NOTE: the cheat uses the REAL track numbers, not remapped ones
-        else if (cht_CheckCheat(&cheat_cd, ev->data1))
+        else if (cht_CheckCheat(&cheat_cd, ch))
         {
             char buf[3];
 
@@ -345,7 +346,7 @@ boolean cht_Responder(event_t * ev)
 
         // Simplified, accepting both "noclip" and "idspispopd".
         // no clipping mode cheat
-        else if (cht_CheckCheat(&cheat_noclip, ev->data1) || cht_CheckCheat(&cheat_commercial_noclip, ev->data1))
+        else if (cht_CheckCheat(&cheat_noclip, ch) || cht_CheckCheat(&cheat_commercial_noclip, ch))
         {
             plyr->cheats ^= CF_NOCLIP;
 
@@ -360,7 +361,7 @@ boolean cht_Responder(event_t * ev)
         // 'behold?' power-up cheats
         for (i = 0; i < 6; i++)
         {
-            if (cht_CheckCheat(&cheat_powerup[i], ev->data1))
+            if (cht_CheckCheat(&cheat_powerup[i], ch))
             {
                 if (!plyr->powers[i])
                     P_GivePower(plyr, i);
@@ -375,13 +376,13 @@ boolean cht_Responder(event_t * ev)
         }
 
         // 'behold' power-up menu
-        if (cht_CheckCheat(&cheat_powerup[6], ev->data1))
+        if (cht_CheckCheat(&cheat_powerup[6], ch))
         {
             //plyr->message = STSTR_BEHOLD;
             msg = STSTR_BEHOLD;
         }
         // 'choppers' invulnerability & chainsaw
-        else if (cht_CheckCheat(&cheat_choppers, ev->data1))
+        else if (cht_CheckCheat(&cheat_choppers, ch))
         {
             plyr->weaponowned[wp_chainsaw] = true;
             plyr->powers[pw_invulnerability] = true;
@@ -390,7 +391,7 @@ boolean cht_Responder(event_t * ev)
             msg = STSTR_CHOPPERS;
         }
         // 'mypos' for player position
-        else if (cht_CheckCheat(&cheat_mypos, ev->data1))
+        else if (cht_CheckCheat(&cheat_mypos, ch))
         {
             //plyr->message = buf;
             CONS_Printf(va("ang=%i;x,y=(%i,%i)\n", players[statusbarplayer].mo->angle / ANGLE_1, players[statusbarplayer].mo->x >> FRACBITS, players[statusbarplayer].mo->y >> FRACBITS));
@@ -398,7 +399,7 @@ boolean cht_Responder(event_t * ev)
         }
         else
             //added:28-02-98: new fly cheat using jump key
-        if (cht_CheckCheat(&cheat_fly_around, ev->data1))
+        if (cht_CheckCheat(&cheat_fly_around, ch))
         {
             plyr->cheats ^= CF_FLYAROUND;
             if (plyr->cheats & CF_FLYAROUND)
@@ -410,7 +411,7 @@ boolean cht_Responder(event_t * ev)
         }
 
         // 'clev' change-level cheat
-        if (cht_CheckCheat(&cheat_clev, ev->data1))
+        if (cht_CheckCheat(&cheat_clev, ch))
         {
             char buf[3];
             int epsd;

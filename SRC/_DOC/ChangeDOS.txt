@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00821 ]: w72 cheat char
 [00820 ]: w72 dehacked string
 [00819 ]: w72 spritelump limits removed
 [00818 ]: w72 spritelump type
