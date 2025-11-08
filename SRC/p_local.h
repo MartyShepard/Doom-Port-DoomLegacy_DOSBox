@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_local.h 830 2011-05-26 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -389,6 +389,11 @@ extern fixed_t  see_bottomslope;
 extern int boomsupport;
 extern int variable_friction;
 extern int allow_pushers;
+extern byte  monster_friction;  // MBF demo flag
+extern byte  mbf_support;  // [WDJ] MBF enable
+			   // similar to prboom mbf_features, but as a flag
+
+void  DemoAdapt_p_user( void );
 
 
 // heretic specific

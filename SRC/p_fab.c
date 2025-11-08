@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 788 2011-02-22 04:48:39Z wesleyjohnson $
+// $Id: p_fab.c 830 2011-05-26 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -282,4 +282,19 @@ void D_RegisterMiscCommands (void)
     CV_RegisterVar (&cv_instadeath);
     CV_RegisterVar (&cv_voodoo_mode);
 #endif
+}
+
+void  DemoAdapt_p_fab(void)  // local enables of p_fab
+{
+    if( ! demoplayback )
+    {
+        // restore player settings
+#ifdef DOORDELAY_CONTROL
+        DoorDelay_OnChange();
+#endif
+#ifdef VOODOO_DOLL
+        // cv_instadeath not covered here
+        VoodooMode_OnChange();
+#endif
+    }
 }

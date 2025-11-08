@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.h 546 2009-09-28 00:48:25Z smite-meister $
+// $Id: p_fab.h 830 2011-05-26 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -36,8 +36,10 @@
 #include "doomtype.h"
 #include "command.h"
 
-extern consvar_t cv_solidcorpse;        //p_enemy
+extern consvar_t cv_solidcorpse;        // p_enemy
 extern consvar_t cv_bloodtime;
+
+void  DemoAdapt_p_fab(void);  // local enables of p_fab
 
 // spawn smoke trails behind rockets and skull head attacks
 void A_SmokeTrailer (mobj_t* actor);

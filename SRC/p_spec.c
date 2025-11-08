@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: p_spec.c 830 2011-05-26 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -184,7 +184,9 @@
 int boomsupport = 1;
 int variable_friction = 1;
 int allow_pushers = 1;
-
+byte  monster_friction = 1;  // MBF demo flag
+byte  mbf_support = 1;  // [WDJ] MBF enable
+			// similar to prboom mbf_features, but as a flag
 
 
 //SoM: 3/7/2000

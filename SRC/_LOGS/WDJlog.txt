@@ -1615,3 +1615,21 @@ patchfile = w72_mancubus_walls.patch
 - committed revision 826   by wesley johnson
 Fix bug of mancubus fireballs going through walls.
 Fix bug of missiles exploding within walls instead of upon them.
+
+*** w74_misc
+patchfile = w74_misc.patch
+- committed revision 829   by wesley johnson
+Made extensive use of pmo = player->mo.
+Added comments.
+Straigtened code indentation, added some {}.
+
+*** w74_boom_demo
+patchfile = w74_boom_demo.patch
+- committed revision 830   by wesley johnson
+Created DemoAdapt functions to change engine settings for demos.
+Fix demo code to better handle boom, prboom, demos.
+Use more of the demo setup variables.
+Correct the turn code to use relative turns for boom demos.
+Commented more of the demo code.
+
+

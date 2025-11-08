@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 828 2011-03-24 21:35:28Z smite-meister $
+// $Id: g_game.c 830 2011-05-26 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -790,7 +790,8 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
       cmd->buttons |= BestWeapon(this_player);
     else
     for (i=gc_weapon1; i<gc_weapon1+NUMWEAPONS-1; i++)
-      if (G_KEY_PRESSED(i))
+    {
+        if (G_KEY_PRESSED(i))
         {
             cmd->buttons |= BT_CHANGE | BT_EXTRAWEAPON; // extra by default
             cmd->buttons |= (i-gc_weapon1)<<BT_WEAPONSHIFT;
@@ -799,6 +800,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
                 cmd->buttons &= ~BT_EXTRAWEAPON;
             break;
         }
+    }
 
 
     // pitch
@@ -822,10 +824,10 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     }
     else
     if (G_KEY_PRESSED(gc_centerview))
-      {
+    {
         pitch = 0;
         keyboard_look[which_player] = false;
-      }
+    }
 
     // mice
 
@@ -885,13 +887,13 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
       int value = (int)(j.scale * I_JoystickGetAxis(j.joynum, j.axisnum));
       switch (j.action)
-	{
+      {
 	case ja_pitch  : pitch = value << 16; break;
 	case ja_move   : forward += value; break;
 	case ja_turn   : cmd->angleturn += value; break;
 	case ja_strafe : side += value; break;
 	default: break;
-	}
+      }
     }
 #endif
 
@@ -1181,6 +1183,7 @@ void G_Ticker (void)
     if( gamestate == GS_LEVEL )
     {
         for (i=0 ; i<MAXPLAYERS ; i++)
+        {
             if (playeringame[i])
             {
                 if( players[i].playerstate == PST_REBORN )
@@ -1188,10 +1191,12 @@ void G_Ticker (void)
                 if( players[i].st_inventoryTics )
                     players[i].st_inventoryTics--;
             }
+	}
     }
 
     // do things to change the game state
     while (gameaction != ga_nothing)
+    {
         switch (gameaction)
         {
             case ga_completed :  G_DoCompleted (); break;
@@ -1199,6 +1204,7 @@ void G_Ticker (void)
             case ga_nothing   :  break;
             default : I_Error("gameaction = %d\n", gameaction);
         }
+    }
 
     buf = gametic%BACKUPTICS;
 
@@ -1862,6 +1868,7 @@ void G_DoWorldDone (void)
         G_DoLoadLevel (true);
     }
     else
+    {
         // not in demo because demo have the mapcommand on it
         if(server && !demoplayback) 
         {
@@ -1872,6 +1879,7 @@ void G_DoWorldDone (void)
                 // resetplayer in deathmatch for more equality
                 COM_BufAddText (va("map \"%s\"\n",G_BuildMapName(gameepisode,wminfo.next+1)));
         }
+    }
     
     gameaction = ga_nothing;
 }
@@ -2056,12 +2064,12 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 // Boris comment : single player start game
 void G_DeferedInitNew (skill_t skill, char* mapname, boolean StartSplitScreenGame)
 {
-    G_Downgrade(VERSION);
-    paused        = false;
-
+    paused = false;
     
     if( demoplayback )
-        COM_BufAddText ("stopdemo\n");
+        COM_BufAddText ("stopdemo\n");  // invokes G_CheckDemoStatus
+
+    G_Downgrade(VERSION); // [WDJ] should be after demo is stopped
 
     // this leave the actual game if needed
     SV_StartSinglePlayerServer();
@@ -2155,6 +2163,7 @@ void G_InitNew (skill_t skill, char* mapname, boolean resetplayer)
 //   'feature' that we add to the game. This will stay until it cannot
 //   be done a 'clean' way, then we'll have to forget about old demos..
 //
+// demoversion is usually set before this is called
 boolean G_Downgrade(int version)
 {
     int i;
@@ -2222,20 +2231,51 @@ boolean G_Downgrade(int version)
     //SoM: 3/17/2000: Demo compatability
     if(version < 129) 
     {
-        boomsupport = 0;
+        // Boom demo_compatibility mode  (boom demo version < 200)
+        boomsupport = 0;       // Boom (! demo_compatibility)
         allow_pushers = 0;
         variable_friction = 0;
     }
     else 
     {
         boomsupport = 1;
-        allow_pushers = 1;
-        variable_friction = 1;
+        if( version < 200 )  // flags loaded by (Boom, MBF, prboom) demos
+        {
+	    // settings not loaded from demo
+	    allow_pushers = 1;	// of Boom 2.02
+	    variable_friction = 1;  // of Boom 2.02
+	}
+    }
+
+    // [WDJ] enable of "Marine's Best Friend" feature emulation
+    mbf_support =
+       (version >= 133 && version < 200) // legacy demos that use mbf
+       || (version > 203);  // MBF demo
+
+    if( version < 200 )  // not loaded by Boom, MBF, prboom demo
+    {
+        monster_friction = (version >= 144);
     }
 
     // always true now, might be false in the future, if couldn't
     // go backward and disable all the features...
     demoversion = version;
+
+#if 0
+    // [WDJ]
+    // TODO:
+    // auto weapon change on pickup
+    if( demoplayback )
+    { 
+        // values that are set by the demo
+    }
+    else
+    {
+    }
+#endif   
+
+    DemoAdapt_p_user();  // local enables of p_user
+    DemoAdapt_p_fab();   // local enables of p_fab
     return true;
 }
 
@@ -2263,16 +2303,19 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
         G_CheckDemoStatus ();
         return;
     }
-    if(demoversion<112)
+    if((demoversion<112) || (demoversion >= 200))
     {
+        // Doom, Boom, MBF, prboom demo
         cmd->forwardmove = READCHAR(demo_p);
         cmd->sidemove = READCHAR(demo_p);
         cmd->angleturn = READBYTE(demo_p)<<8;
         cmd->buttons = READBYTE(demo_p);
+        // demo does not have
         cmd->aiming = 0;
     }
     else
     {
+        // DoomLegacy advanced demos
         char ziptic=*demo_p++;
 
         if(ziptic & ZT_FWD)
@@ -2305,6 +2348,7 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
         memcpy(cmd,&(oldcmd[playernum]),sizeof(ticcmd_t));
     }
 }
+
 
 void G_WriteDemoTiccmd (ticcmd_t* cmd,int playernum)
 {
@@ -2420,6 +2464,42 @@ void G_BeginRecording (void)
     memset(oldcmd,0,sizeof(oldcmd));
 }
 
+// [WDJ] To prevent demo from altering game settings
+// Save such settings here that do not have other protection.
+byte pdss_settings_valid = 0;  // init not saved
+byte pdss_solidcorpse;
+byte pdss_instadeath;
+
+// The following are set by DemoAdapt:
+//  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
+
+// The following are init by starting a game (demos cannot occur during game):
+// deathmatch, multiplayer, nomonsters, respawnmonsters, fastmonsters
+// timelimit
+
+// The following are set by G_Downgrade:
+// variable_friction, allow_pushers, monster_friction
+
+
+void playdemo_save_settings( void )
+{
+    if( pdss_settings_valid == 0 )
+    {
+        pdss_settings_valid = 1;
+        pdss_solidcorpse = cv_solidcorpse.value;
+        pdss_instadeath = cv_instadeath.value;
+    }
+}
+
+void playdemo_restore_settings( void )
+{
+    if( pdss_settings_valid )
+    {
+        cv_solidcorpse.value = pdss_solidcorpse;
+        cv_instadeath.value = pdss_instadeath;
+    }
+    pdss_settings_valid = 0;  // so user can change settings between demos
+}
 
 //
 // G_PlayDemo
@@ -2441,6 +2521,8 @@ void G_DoPlayDemo (char *defdemoname)
     skill_t skill;
     int     i, episode, map;
     boolean boomdemo = 0;
+
+    playdemo_save_settings();  // [WDJ] save user settings
 
 //
 // load demo file / resource
@@ -2489,8 +2571,6 @@ void G_DoPlayDemo (char *defdemoname)
     fprintf( stderr, "Demo version %i.\n", (int)demoversion );
 #endif
 
-    // This works, but it also kills screen wipes    FIXME why?
-//    if ( demoversion >= 200 )
     if (demoversion < 109 || demoversion >= 215)
     {
         CONS_Printf("\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, CURRENT_DEMOVERSION);
@@ -2505,7 +2585,7 @@ void G_DoPlayDemo (char *defdemoname)
         if( *demo_p == 0x1d )
         {
 	    unsigned char header[10];
-	    unsigned char compatibility;
+	    unsigned char compatibility;  // Boom 2.00 compatibility flags
 	    demo_p ++;
 	    for ( i=0; i<9; i++ )
 	    {
@@ -2517,21 +2597,31 @@ void G_DoPlayDemo (char *defdemoname)
 	    compatibility = *demo_p++;
 #ifdef DEBUG_DEMO
 	    fprintf( stderr, " header: %s.\n", header );
-	    fprintf( stderr, " compatibility %i.\n", compatibility );
+	    fprintf( stderr, " compatibility 0x%x.\n", compatibility );
 #endif
 	    boomdemo = 1;
 	}
         else
         {
-#ifdef DEBUG_DEMO
-	    fprintf( stderr, " broken demo header\n" );
-#endif
-	    goto kill_demo;
+	    goto broken_header;
 	}
     }
 
     if (demoversion < VERSION)
         CONS_Printf ("\2Demo is from an older game version\n");
+
+    if (demoversion < 143 || demoversion >= 200 )
+    {
+        // setting defaults
+        cv_solidcorpse.value = 0;
+#ifdef DOORDELAY_CONTROL
+        adj_ticks_per_sec = 35; // default
+#endif
+#ifdef VOODOO_DOLL       
+        voodoo_mode = 0;  // Vanilla
+        cv_instadeath.value = 0;  // Die
+#endif       
+    }
 
     // header[1]: byte: skill level 0..4
     skill       = *demo_p++;
@@ -2555,7 +2645,7 @@ void G_DoPlayDemo (char *defdemoname)
         // push it in the console will be too late set
         cv_deathmatch.value=*demo_p++;
     else
-        demo_p++;
+        demo_p++;  // legacy demo, ignore deathmatch
 
     if( ! boomdemo )
     {
@@ -2568,7 +2658,7 @@ void G_DoPlayDemo (char *defdemoname)
 	    // push it in the console will be too late set
 	    cv_respawnmonsters.value=*demo_p++;
         else
-            demo_p++;
+            demo_p++;  // legacy demo, ignore respawnmonsters
 
         // header[6]: byte: fast boolean
         if (demoversion < 128)
@@ -2578,7 +2668,7 @@ void G_DoPlayDemo (char *defdemoname)
 	    cv_fastmonsters.func();
 	}
         else
-	    demo_p++;
+	    demo_p++;  // legacy demo, ignore fastmonsters
 
         // header[7]: byte: no monsters present boolean
         nomonsters  = *demo_p++;
@@ -2612,6 +2702,7 @@ void G_DoPlayDemo (char *defdemoname)
     }
     else if( boomdemo )
     {
+        // Boom ReadOptions
        	// [WDJ] according to prboom
         // [0] monsters remember
         // [1] variable friction
@@ -2619,6 +2710,11 @@ void G_DoPlayDemo (char *defdemoname)
         // [3] allow pushers
         // [4] ??
         // [5] player bobbing
+	// [6] respawn
+	// [7] fast monsters
+	// [8] no monsters
+	variable_friction = demo_p[1];
+        allow_pushers = demo_p[3];
 #ifdef DEBUG_DEMO
         fprintf( stderr, " respawn %i.\n", (int)demo_p[6] );
         fprintf( stderr, " fast monsters %i.\n", (int)demo_p[7] );
@@ -2631,8 +2727,10 @@ void G_DoPlayDemo (char *defdemoname)
         fprintf( stderr, " no monsters %i.\n", (int)nomonsters );
 #endif
         // [9] demo insurance
-        // [10..13] random number gen
-        if( demoversion == 203 ) // MBF
+        // [10..13] random number seed
+	//   Boom has random number generator per usage, all initialized
+	//   from this seed.  DoomLegacy does not have this.
+        if( demoversion >= 203 ) // MBF and prboom
         {
 	    // [14] monster infighting
 	    // [15] dogs
@@ -2646,10 +2744,11 @@ void G_DoPlayDemo (char *defdemoname)
 	    // [25] monkeys
 	    // [26..57] comp vector x32
 	    // [58] force old BSP
+	    monster_friction = demo_p[22];
 	}
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
         // byte: player[1..32] present boolean
-	// Made room for 32 players even though only supported 4
+	// Boom saved room for 32 players even though only supported 4
         for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
 	    if( *demo_p )
@@ -2727,6 +2826,11 @@ void G_DoPlayDemo (char *defdemoname)
     demoplayback = true;
     return;
 
+broken_header:   
+#ifdef DEBUG_DEMO
+    fprintf( stderr, " broken demo header\n" );
+#endif
+   
 kill_demo:
     demoversion = VERSION;
     Z_Free (demobuffer);
@@ -2782,6 +2886,7 @@ void G_StopDemo(void)
     timingdemo = false;
     singletics = false;
 
+    playdemo_restore_settings();  // [WDJ] restore user settings
     G_Downgrade(VERSION);
 
     gamestate=wipegamestate=GS_NULL;
@@ -2790,6 +2895,8 @@ void G_StopDemo(void)
     SV_ResetServer();
 }
 
+// Called by G_DeferedInitNew, G_ReadDemoTiccmd, G_WriteDemoTiccmd
+// return value is not used by any caller
 boolean G_CheckDemoStatus (void)
 {
     if (timingdemo)
