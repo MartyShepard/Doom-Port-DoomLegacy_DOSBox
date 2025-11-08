@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 825 2011-03-20 00:25:58Z wesleyjohnson $
+// $Id: p_mobj.c 826 2011-03-20 00:27:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -557,6 +557,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
 
 void P_XYMovement(mobj_t * mo)
 {
+    int numsteps = 1;
     fixed_t ptryx, ptryy;
     player_t *player;
     fixed_t xmove, ymove;
@@ -621,25 +622,31 @@ void P_XYMovement(mobj_t * mo)
     xmove = mo->momx;
     ymove = mo->momy;
 
+    if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
+	|| ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
+    {
+        xmove >>= 1;
+        ymove >>= 1;
+        numsteps = 2;
+    }
+    if (mo->info->speed > (mo->radius*2)) // faster than radius*2
+    {
+	// Mancubus missiles and the like.
+        xmove >>= 1;
+        ymove >>= 1;
+        numsteps *= 2;
+    }
+
     oldx = mo->x;
     oldy = mo->y;
 
+    ptryx = mo->x;
+    ptryy = mo->y;
+
     do
     {
-        if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
-	    || ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
-        {
-            ptryx = mo->x + xmove / 2;
-            ptryy = mo->y + ymove / 2;
-            xmove >>= 1;
-            ymove >>= 1;
-        }
-        else
-        {
-            ptryx = mo->x + xmove;
-            ptryy = mo->y + ymove;
-            xmove = ymove = 0;
-        }
+        ptryx += xmove;
+        ptryy += ymove;
 
         if (!P_TryMove(mo, ptryx, ptryy, true)) //SoM: 4/10/2000
         {
@@ -677,7 +684,7 @@ void P_XYMovement(mobj_t * mo)
 	        player->cheats &= ~CF_JUMPOVER;
 	}
 
-    } while (xmove || ymove);
+    } while ( --numsteps );
 
     // slow down
     if (player)

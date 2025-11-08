@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 825 2011-03-20 00:25:58Z wesleyjohnson $
+// $Id: p_map.c 826 2011-03-20 00:27:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -686,10 +686,10 @@ boolean PIT_CheckLine (line_t* ld)
         || tm_bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
         || tm_bbox[BOXTOP] <= ld->bbox[BOXBOTTOM]
         || tm_bbox[BOXBOTTOM] >= ld->bbox[BOXTOP] )
-        return true;
+        return true;  // coarse check miss
 
     if (P_BoxOnLineSide (tm_bbox, ld) != -1)
-        return true;
+        return true;  // miss
 
     // A line has been hit
 
@@ -708,13 +708,13 @@ boolean PIT_CheckLine (line_t* ld)
     if (!ld->backsector)
     {
       // one sided line
-      if( demoversion>=132
-	 && tm_thing->flags & MF_MISSILE
+      if( tm_thing->flags & MF_MISSILE
 	 && ld->special
+   	 && demoversion>=132
 	 )
-        add_spechit(ld);
+          add_spechit(ld);
 
-      return false;           // one sided line
+      goto ret_blocked;  // blocked by one sided line
     }
 
     // missile and Camera can cross uncrossable line
@@ -722,11 +722,11 @@ boolean PIT_CheckLine (line_t* ld)
         !(tm_thing->type == MT_CHASECAM) )
     {
         if (ld->flags & ML_BLOCKING)
-            return false;       // explicitly blocking everything
+            goto ret_blocked;  // explicitly blocking everything
 
         if ( !(tm_thing->player) &&
              ld->flags & ML_BLOCKMONSTERS )
-            return false;       // block monsters only
+            goto ret_blocked;  // block monsters only
     }
 
     // set openrange, opentop, openbottom
@@ -747,9 +747,26 @@ boolean PIT_CheckLine (line_t* ld)
 
     // if contacted a special line, add it to the list
     if (ld->special)
-      add_spechit(ld);
+        add_spechit(ld);
 
-    return true;
+    // [WDJ] Was missing detection of missile hitting 2s wall.
+    // Missiles exploded only because of ZMovement detecting that they
+    // were in the floor.
+    // Missiles now explode on wall surface instead of within wall.
+    // Needed for fix of Mancubus fireball going through wall.
+    if ( tm_thing->flags & MF_MISSILE
+	 && demoversion>=144)
+    {
+        // Check if missile hit low or high on side of this wall
+	if ( tm_thing->z < openbottom
+	     || (tm_thing->z + tm_thing->height) > opentop )
+	    goto ret_blocked;  // hit upper or lower texture
+    }
+
+    return true;  // pass the lines
+
+ret_blocked:
+    return false;  // blocked by a line
 }
 
 

@@ -96,12 +96,19 @@
 // Larger values, FreeDoom ran out of space
 // FreeDoom MAP10 uses 23MB, with fragmentation requires 30MB,
 // but will run in 10MB when forced.
+/*
 #define MIN_MAIN_MEM_MB		 8
 #define NORM_MAIN_MEM_MB	24
 #define MAX_MAIN_MEM_MB		80
 #define GROW_MIN_MAIN_MEM_MB	 8
 #define GROW_MAIN_MEM_MB	 8
-
+*/
+// Test Values on DOSBox
+#define MIN_MAIN_MEM_MB		 8*4
+#define NORM_MAIN_MEM_MB	24*4
+#define MAX_MAIN_MEM_MB		80*4
+#define GROW_MIN_MAIN_MEM_MB	 8*4
+#define GROW_MAIN_MEM_MB	 8*4
 // Choose one (and only one) memory system.
 // [WDJ] Because of the widely varying systems that Legacy can run on, it is
 // desirable to maintain all these variations, to give each user one that fits
