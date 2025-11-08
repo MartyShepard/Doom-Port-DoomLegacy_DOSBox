@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: p_setup.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -412,7 +412,7 @@ void P_LoadSegs (int lump)
 
         li->angle = (LE_SWAP16(ml->angle))<<16;
         li->offset = (LE_SWAP16(ml->offset))<<16;
-        linedef = (unsigned) LE_SWAP16(ml->linedef);
+        linedef = LE_SWAP16(ml->linedef);
         // [WDJ] Detect buggy wad, bad linedef number
         if( linedef > numlines ) {
 	    I_SoftError( "P_LoadSegs, linedef #%i, > numlines %i\n", linedef, numlines );
@@ -425,10 +425,10 @@ void P_LoadSegs (int lump)
         {
 	    // [WDJ] buggy wad
 	    I_SoftError( "P_LoadSegs, bad side index\n");
-	    side = 0;  // assume was using wrong side
+	    side = 0;  // assume was using wrong side FIXME [smite] li->side?
         }
-        // side1 required to have sidenum != -1
-        if( ldef->sidenum[side] == -1 )
+        // side1 required to have sidenum != NULL_INDEX
+        if( ldef->sidenum[side] == NULL_INDEX )
         {
 	    // [WDJ] buggy wad
 	    I_SoftError( "P_LoadSegs, using missing sidedef\n");
@@ -808,8 +808,8 @@ void P_LoadLineDefs (int lump)
         ld->flags = (uint16_t) LE_SWAP16(mld->flags);
         ld->special = LE_SWAP16(mld->special);
         ld->tag = LE_SWAP16(mld->tag);
-        v1 = ld->v1 = &vertexes[ (uint16_t) LE_SWAP16(mld->v1) ];
-        v2 = ld->v2 = &vertexes[ (uint16_t) LE_SWAP16(mld->v2) ];
+        v1 = ld->v1 = &vertexes[ LE_SWAP16(mld->v1) ];
+        v2 = ld->v2 = &vertexes[ LE_SWAP16(mld->v2) ];
         ld->dx = v2->x - v1->x;
         ld->dy = v2->y - v1->y;
 
@@ -847,12 +847,12 @@ void P_LoadLineDefs (int lump)
             ld->bbox[BOXTOP] = v1->y;
         }
 
-        // -1 = no sidedef
+        // NULL_INDEX = no sidedef
         ld->sidenum[0] = LE_SWAP16(mld->sidenum[0]);
         ld->sidenum[1] = LE_SWAP16(mld->sidenum[1]);
 
         // [WDJ] detect common wad errors and make playable, similar to prboom
-	if( ld->sidenum[0] == -1 )
+	if( ld->sidenum[0] == NULL_INDEX )
         {
 	    // linedef is required to always have valid sidedef1
 	    I_SoftError( "Linedef %i is missing sidedef1\n", i );
@@ -863,7 +863,7 @@ void P_LoadLineDefs (int lump)
 	    I_SoftError( "Linedef %i has sidedef1 bad index\n", i );
 	    ld->sidenum[0] = 0;  // arbitrary valid sidedef
         }
-	if( ld->sidenum[1] == -1 )
+	if( ld->sidenum[1] == NULL_INDEX )
 	{
 	    if( ld->flags & ML_TWOSIDED )
 	    {
@@ -882,7 +882,7 @@ void P_LoadLineDefs (int lump)
 	
        
         // special linedef has special sidedef1
-        if (ld->sidenum[0] != -1 && ld->special)
+        if (ld->sidenum[0] != NULL_INDEX && ld->special)
           sides[ld->sidenum[0]].special = ld->special;
     }
 
@@ -896,12 +896,12 @@ void P_LoadLineDefs2()
   line_t* ld = lines;
   for(i = 0; i < numlines; i++, ld++)
   {
-  if (ld->sidenum[0] != -1)
+  if (ld->sidenum[0] != NULL_INDEX)
     ld->frontsector = sides[ld->sidenum[0]].sector;
   else
     ld->frontsector = 0;
 
-  if (ld->sidenum[1] != -1)
+  if (ld->sidenum[1] != NULL_INDEX)
     ld->backsector = sides[ld->sidenum[1]].sector;
   else
     ld->backsector = 0;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 774 2010-12-23 19:29:08Z wesleyjohnson $
+// $Id: p_doors.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -613,7 +613,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
     }
     //SoM: 3/6/2000
     // if the wrong side of door is pushed, give oof sound
-    if (line->sidenum[1] == -1) // killough
+    if (line->sidenum[1] == NULL_INDEX) // killough
     {
         S_StartScreamSound(player->mo, sfx_oof);        // killough 3/20/98
         return 0;

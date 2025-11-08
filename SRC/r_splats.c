@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: r_splats.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -177,7 +177,7 @@ void R_AddWallSplat (line_t*    wallline,
     // set the splat
     splat->patch = W_GetNumForName (patchname);
     sectorside^=1;
-    if( wallline->sidenum[sectorside]!=-1 )
+    if( wallline->sidenum[sectorside] != NULL_INDEX )
     {
         backsector = sides[wallline->sidenum[sectorside]].sector;
 

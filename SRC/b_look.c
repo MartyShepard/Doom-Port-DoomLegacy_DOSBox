@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: b_look.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -182,7 +182,7 @@ boolean B_LookForSpecialLine(player_t* p, fixed_t* x, fixed_t* y)
 
 				return true;
 			}
-			else if (edge->sidenum[1] >= 0)	//if its a double sided sector
+			else if (edge->sidenum[1] != NULL_INDEX) //if its a double sided sector
 			{
 				 if (edge->frontsector == insector)
 					 sector = edge->backsector;

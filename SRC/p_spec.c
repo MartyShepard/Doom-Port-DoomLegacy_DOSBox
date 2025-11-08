@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 807 2011-03-09 00:40:01Z wesleyjohnson $
+// $Id: p_spec.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -492,7 +492,7 @@ sector_t*  getSector ( int currentSector, int linelisti, int side )
 int  twoSided ( int sector, int linelisti )
 {
   return boomsupport?
-    ((sectors[sector].linelist[linelisti])->sidenum[1] != -1)
+    ((sectors[sector].linelist[linelisti])->sidenum[1] != NULL_INDEX)
     :
     ((sectors[sector].linelist[linelisti])->flags & ML_TWOSIDED);
 }
@@ -3025,7 +3025,7 @@ void P_SpawnSpecials (void)
         int model_secnum = -1; // model sector number for effline
        
         // Not all specials use nor require this, so no error messages
-        if( effline->sidenum[0] >= 0 )
+        if( effline->sidenum[0] != NULL_INDEX )
         {
 	    // get model sector and sector number from side 0
 	    model_secp = sides[ effline->sidenum[0] ].sector;  // frontsector

@@ -188,3 +188,9 @@ rev 812
 Bug 3159614: Command parser could not handle nested quotes, now they
 can be backslash-escaped.
 Manual updated.
+
+
+*** Signed fields in map structs changed to unsigned to accommodate larger maps
+rev 823
+Bug 3170768: blowup.wad overflowed signed map structures.
+Fixed by making them unsigned.

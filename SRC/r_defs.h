@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 819 2011-03-15 23:33:39Z wesleyjohnson $
+// $Id: r_defs.h 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -149,6 +149,9 @@
 #include "p_mobj.h"
 
 #include "screen.h"     //added:26-01-98:MAXVIDWIDTH, MAXVIDHEIGHT
+
+
+#define NULL_INDEX 0xFFFF  // or -1. Used in line_t::sidenum and maplinedef_t::sidenum.
 
 
 // Silhouette, needed for clipping Segs (mainly)
@@ -532,8 +535,8 @@ typedef struct line_s
     short       tag;
 
     // Visual appearance: SideDefs.
-    //  sidenum[1] will be -1 if one sided
-    short       sidenum[2];
+    uint16_t    sidenum[2]; //  sidenum[1] will be NULL_INDEX if one sided
+    // [smite] TODO actually they should be side_t pointers...
 
     // Neat. Another bounding box, for the extent
     //  of the LineDef.

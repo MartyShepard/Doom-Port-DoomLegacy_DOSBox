@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 736 2010-09-03 14:53:57Z smite-meister $
+// $Id: p_maputl.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -317,7 +317,7 @@ void P_LineOpening (line_t* linedef)
     // tm_thing, tm_* are global var to TryMove and P_CheckPosition,
     // whose sub-functions may call here.
 
-    if (linedef->sidenum[1] == -1)
+    if (linedef->sidenum[1] == NULL_INDEX)
     {
         // single sided line
         openrange = 0;

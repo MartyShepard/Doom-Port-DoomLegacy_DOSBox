@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: p_saveg.c 823 2011-03-17 18:53:01Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -943,7 +943,7 @@ void P_ArchiveWorld(void)
         if (li->special != LE_SWAP16(mld->special))
             diff |= LD_SPECIAL;
 
-        if (li->sidenum[0] != -1)
+        if (li->sidenum[0] != NULL_INDEX)
         {
 	    mapsidedef_t * msd0 = &msd[li->sidenum[0]];
             si = &sides[li->sidenum[0]];
@@ -960,7 +960,7 @@ void P_ArchiveWorld(void)
                 if (si->midtexture != R_TextureNumForName(msd0->midtexture))
                     diff |= LD_S1MIDTEX;
         }
-        if (li->sidenum[1] != -1)
+        if (li->sidenum[1] != NULL_INDEX)
         {
 	    mapsidedef_t * msd1 = &msd[li->sidenum[1]];
             si = &sides[li->sidenum[1]];
