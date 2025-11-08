@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 760 2010-10-13 13:34:24Z smite-meister $
+// $Id: g_input.h 828 2011-03-24 21:35:28Z smite-meister $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -135,6 +135,8 @@ extern consvar_t       cv_allowjump;
 extern consvar_t       cv_allowrocketjump;
 extern consvar_t       cv_allowautoaim;
 
+extern boolean gamekeydown[NUMINPUTS];
+
 #if defined( __DJGPP__ )
 extern int             joyxmove;
 extern int             joyymove;
@@ -146,9 +148,6 @@ extern consvar_t   cv_joystickfreelook;
 extern consvar_t   cv_joyport;
 extern consvar_t   cv_joyscale;
 #endif
-// current state of the keys : true if pushed
-extern  byte    gamekeydown[NUMINPUTS];
-
 // two key codes (or virtual key) per game control
 extern  int     gamecontrol[num_gamecontrols][2];
 extern  int     gamecontrol2[num_gamecontrols][2];    // secondary splitscreen player

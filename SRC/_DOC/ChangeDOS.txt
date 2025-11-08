@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00828 ]: Input bugfixes, cleanup.
+[00827 ]: CFG files amnesia bug fixed.
 [00826 ]: w73 mancubus shoot through walls
 [00825 ]: w73 missile prep
 [00824*]: w72 spritelump type patch bug fix

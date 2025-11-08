@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 827 2011-03-24 00:51:20Z smite-meister $
+// $Id: command.c 812 2011-03-10 13:57:51Z smite-meister $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -858,7 +858,7 @@ static consvar_t *CV_FindNetVar (unsigned short netid)
     return NULL;
 }
 
-static void Setvalue (consvar_t *var, char *valstr);
+void Setvalue (consvar_t *var, char *valstr);
 
 //  Register a variable, that can be used later at the console
 //
@@ -955,7 +955,7 @@ char *CV_CompleteVar (char *partial, int skips)
 
 // set value to the variable, no check only for internal use
 //
-static void Setvalue (consvar_t *var, char *valstr)
+void Setvalue (consvar_t *var, char *valstr)
 {
     if(var->PossibleValue)
     {
@@ -1118,31 +1118,30 @@ void CV_Set (consvar_t *var, char *value)
     if (stricmp(var->string, value)==0)
         return; // no changes
 
-    if (netgame)
+    if (var->flags & CV_NETVAR)
     {
-      if (var->flags & CV_NETVAR)
-      {
         // send the value of the variable
-	const int BUFSIZE = 128;
-        byte buf[BUFSIZE], *p; // macros want byte*
+        byte buf[128],*p; // macros want byte*
         if (!server)
         {
-            CONS_Printf("Only the server can change this variable.\n");
+            CONS_Printf("Only the server can change this variable\n");
             return;
         }
-        p = buf;
+        p=buf;
         WRITEU16(p, var->netid);
-        WRITESTRINGN(p, value, BUFSIZE-2-1); *p = '\0'; // [smite] WRITESTRINGN _should_ make sure the NUL gets there in all cases, but alas
-        SendNetXCmd(XD_NETVAR, buf, p-buf);
-      }
-      else if (var->flags & CV_NOTINNET)
-      {
-	CONS_Printf("This variable cannot be changed during a netgame.\n");
-	return;
-      }
+        WRITESTRING(p, value);
+        SendNetXCmd (XD_NETVAR, buf, p-buf);
     }
     else
-      Setvalue(var, value);
+    {
+        if ((var->flags & CV_NOTINNET) && netgame)
+        {
+            CONS_Printf("This Variable can't be changed while in netgame\n");
+            return;
+        }
+        else
+            Setvalue(var,value);
+    }
 }
 
 
