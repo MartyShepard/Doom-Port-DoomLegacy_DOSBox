@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: p_maputl.c 825 2011-03-20 00:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -333,93 +333,6 @@ void P_LineOpening (line_t* linedef)
         I_Error("lindef without back");
 #endif
 
-    if(tm_thing)
-    {
-      fixed_t        thingbot, thingtop;
-
-      thingbot = tm_thing->z;
-      thingtop = thingbot + tm_thing->height;
-
-      if (front->ceilingheight < back->ceilingheight)
-        opentop = front->ceilingheight;
-      else
-        opentop = back->ceilingheight;
-
-      if (front->floorheight > back->floorheight)
-      {
-        openbottom = front->floorheight;
-        lowfloor = back->floorheight;
-      }
-      else
-      {
-        openbottom = back->floorheight;
-        lowfloor = front->floorheight;
-      }
-
-      //SoM: 3/27/2000: Check for fake floors in the sector.
-      if(front->ffloors || back->ffloors)
-      {
-        ffloor_t*      rovflr;
-
-        fixed_t    lowestceiling = opentop;
-        fixed_t    highestfloor = openbottom;
-        fixed_t    lowestfloor = lowfloor;
-        fixed_t    delta1;
-        fixed_t    delta2;
-
-        if(!tm_thing)
-          goto no_thing;
-
-        thingtop = tm_thing->z + tm_thing->height;
-
-        // Check for frontsector's fake floors
-        if(front->ffloors)
-          for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
-          {
-            if(!(rovflr->flags & FF_SOLID)) continue;
-
-            delta1 = abs(tm_thing->z - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
-            delta2 = abs(thingtop - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
-            if(*rovflr->bottomheight < lowestceiling && delta1 >= delta2)
-              lowestceiling = *rovflr->bottomheight;
-
-            if(*rovflr->topheight > highestfloor && delta1 < delta2)
-              highestfloor = *rovflr->topheight;
-            else if(*rovflr->topheight > lowestfloor && delta1 < delta2)
-              lowestfloor = *rovflr->topheight;
-          }
-
-        // Check for backsectors fake floors
-        if(back->ffloors)
-          for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
-          {
-            if(!(rovflr->flags & FF_SOLID))
-              continue;
-
-            delta1 = abs(tm_thing->z - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
-            delta2 = abs(thingtop - ((*rovflr->bottomheight + *rovflr->topheight) / 2));
-            if(*rovflr->bottomheight < lowestceiling && delta1 >= delta2)
-              lowestceiling = *rovflr->bottomheight;
-
-            if(*rovflr->topheight > highestfloor && delta1 < delta2)
-              highestfloor = *rovflr->topheight;
-            else if(*rovflr->topheight > lowestfloor && delta1 < delta2)
-              lowestfloor = *rovflr->topheight;
-          }
-
-        if(highestfloor > openbottom)
-          openbottom = highestfloor;
-
-        if(lowestceiling < opentop)
-          opentop = lowestceiling;
-
-        if(lowestfloor > lowfloor)
-          lowfloor = lowestfloor;
-      }
-      openrange = opentop - openbottom;
-      return;
-    }
-
     if (front->ceilingheight < back->ceilingheight)
         opentop = front->ceilingheight;
     else
@@ -436,7 +349,85 @@ void P_LineOpening (line_t* linedef)
         lowfloor = front->floorheight;
     }
 
-    no_thing:
+    // Check 3d floors against tm_thing
+    if(tm_thing)
+    {
+      fixed_t        thingbot, thingtop;
+
+      thingbot = tm_thing->z;
+      thingtop = thingbot + tm_thing->height;
+
+      //SoM: 3/27/2000: Check for fake floors in the sector.
+      if(front->ffloors || back->ffloors)
+      {
+        ffloor_t*      rovflr;
+
+        fixed_t    lowestceiling = opentop;
+        fixed_t    highestfloor = openbottom;
+        fixed_t    lowestfloor = lowfloor;
+	fixed_t    midfloor;
+
+        // Check for frontsector's fake floors
+        if(front->ffloors)
+	{
+          for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
+          {
+            if(!(rovflr->flags & FF_SOLID)) continue;
+
+	    midfloor = (*rovflr->bottomheight + *rovflr->topheight) / 2;
+	    if( abs(thingbot - midfloor) >= abs(thingtop - midfloor) )
+	    {
+	        // head is closer
+	        if(*rovflr->bottomheight < lowestceiling)
+		    lowestceiling = *rovflr->bottomheight;
+	    }
+	    else
+	    {
+	        // feet are closer
+	        if(*rovflr->topheight > highestfloor)
+		    highestfloor = *rovflr->topheight;
+	        else if(*rovflr->topheight > lowestfloor)
+		    lowestfloor = *rovflr->topheight;
+	    }
+          }
+	}
+
+        // Check for backsectors fake floors
+        if(back->ffloors)
+	{
+          for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
+          {
+            if(!(rovflr->flags & FF_SOLID))
+              continue;
+
+	    midfloor = (*rovflr->bottomheight + *rovflr->topheight) / 2;
+	    if( abs(thingbot - midfloor) >= abs(thingtop - midfloor) )
+	    {
+	        // head is closer
+	        if(*rovflr->bottomheight < lowestceiling)
+		    lowestceiling = *rovflr->bottomheight;
+	    }
+	    else
+	    {
+	        // feet are closer
+	        if(*rovflr->topheight > highestfloor)
+		    highestfloor = *rovflr->topheight;
+	        else if(*rovflr->topheight > lowestfloor)
+		    lowestfloor = *rovflr->topheight;
+	    }
+          }
+	}
+
+        if(highestfloor > openbottom)
+          openbottom = highestfloor;
+
+        if(lowestceiling < opentop)
+          opentop = lowestceiling;
+
+        if(lowestfloor > lowfloor)
+          lowfloor = lowestfloor;
+      }
+    }
 
     openrange = opentop - openbottom;
 }
@@ -621,19 +612,19 @@ void P_SetThingPosition (mobj_t* thing)
 boolean P_BlockLinesIterator(int x, int y,
 			     boolean (*func)(line_t*))
 {
-  if (x<0 || y<0 ||
-      x >= bmapwidth || y >= bmapheight)
+    if (x<0 || y<0 ||
+        x >= bmapwidth || y >= bmapheight)
     {
-      return true;
+        return true;
     }
 
-  int offset = y*bmapwidth+x;
-  offset = blockmapindex[offset]; //	offset = blockmap[y*bmapwidth+x];
+    int offset = y * bmapwidth+x;
+    offset = blockmapindex[offset]; //	offset = blockmap[y*bmapwidth+x];
 
-  const uint32_t *list; // Big blockmap, SSNTails
-  for (list = &blockmaphead[offset] ; *list != (uint32_t)-1 ; list++)
+    const uint32_t *list; // Big blockmap, SSNTails
+    for (list = &blockmaphead[offset] ; *list != (uint32_t)-1 ; list++)
     {
-      line_t *ld = &lines[*list];
+        line_t *ld = &lines[*list];
 
         if (ld->validcount == validcount)
             continue;   // line has already been checked

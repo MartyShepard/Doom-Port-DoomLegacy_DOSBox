@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 794 2011-02-24 22:21:43Z wesleyjohnson $
+// $Id: p_mobj.c 825 2011-03-20 00:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -358,8 +358,10 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
         CONS_Printf("Warning: State Cycle Detected");
 
     if (!--recursion)
+    {
         for (; (state = seenstate[i]); i = state - 1)
             seenstate[i] = 0;   // killough 4/9/98: erase memory of states
+    }
 
     return ret;
 }
@@ -624,7 +626,8 @@ void P_XYMovement(mobj_t * mo)
 
     do
     {
-        if (xmove > MAXMOVE / 2 || ymove > MAXMOVE / 2)
+        if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
+	    || ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
         {
             ptryx = mo->x + xmove / 2;
             ptryy = mo->y + ymove / 2;
@@ -646,15 +649,15 @@ void P_XYMovement(mobj_t * mo)
             //                  to jump over a small wall
             //    (normally it can not 'walk' while in air)
             // BP:1.28 no more use CF_JUMPOVER, but i leave it for backward lmps compatibility
-            if (mo->player)
+            if (player)
             {
 	        // tmr_floorz returned by P_TryMove
                 if (tmr_floorz - mo->z > MAXSTEPMOVE)
                 {
                     if (mo->momz > 0)
-                        mo->player->cheats |= CF_JUMPOVER;
+                        player->cheats |= CF_JUMPOVER;
                     else
-                        mo->player->cheats &= ~CF_JUMPOVER;
+                        player->cheats &= ~CF_JUMPOVER;
                 }
             }
 
@@ -663,66 +666,15 @@ void P_XYMovement(mobj_t * mo)
                 P_SlideMove(mo);
             }
             else if (mo->flags & MF_MISSILE)
-            {
-	        // tmr_ceilingline returned by P_TryMove
-                // explode a missile
-                if (tmr_ceilingline
-		    && tmr_ceilingline->backsector
-		    && tmr_ceilingline->backsector->ceilingpic == skyflatnum
-		    && tmr_ceilingline->frontsector
-		    && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
-                    && mo->subsector->sector->ceilingheight == mo->ceilingz)
-	        {
-                    if (!boomsupport || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
-                    {
-                        // Hack to prevent missiles exploding
-                        // against the sky.
-                        // Does not handle sky floors.
-                        //SoM: 4/3/2000: Check frontsector as well..
-                        if (mo->type == MT_BLOODYSKULL)
-                        {
-                            mo->momx = mo->momy = 0;
-                            mo->momz = -FRACUNIT;
-                        }
-                        else
-                            P_RemoveMobj(mo);
-                        return;
-                    }
-		}
-
-                // draw damage on wall
-                //SPLAT TEST ----------------------------------------------------------
-#ifdef WALLSPLATS
-	        // tmr_blockingline returned by P_TryMove
-                if (tmr_blockingline && demoversion >= 129) //set by last P_TryMove() that failed
-                {
-                    divline_t divl;
-                    divline_t misl;
-                    fixed_t frac;
-
-                    P_MakeDivline(tmr_blockingline, &divl);
-                    misl.x = mo->x;
-                    misl.y = mo->y;
-                    misl.dx = mo->momx;
-                    misl.dy = mo->momy;
-                    frac = P_InterceptVector(&divl, &misl);
-                    R_AddWallSplat( tmr_blockingline,
-				   P_PointOnLineSide(mo->x, mo->y, tmr_blockingline),
-				   "A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
-                }
-#endif
-                // --------------------------------------------------------- SPLAT TEST
-
-                P_ExplodeMissile(mo);
-            }
+	        goto missile_impact;
             else
                 mo->momx = mo->momy = 0;
         }
         else  // P_TryMove
         {
             // hack for playability : walk in-air to jump over a small wall
-	    if (mo->player)
-	        mo->player->cheats &= ~CF_JUMPOVER;
+	    if (player)
+	        player->cheats &= ~CF_JUMPOVER;
 	}
 
     } while (xmove || ymove);
@@ -749,7 +701,8 @@ void P_XYMovement(mobj_t * mo)
         return; // no friction for missiles ever
 
     // slow down in water, not too much for playability issues
-    if (demoversion >= 128 && (mo->eflags & MF_UNDERWATER))
+    if ((mo->eflags & MF_UNDERWATER)
+	&& demoversion >= 128 )
     {
         mo->momx = FixedMul(mo->momx, FRICTION_NORM * 3 / 4);
         mo->momy = FixedMul(mo->momy, FRICTION_NORM * 3 / 4);
@@ -778,6 +731,61 @@ void P_XYMovement(mobj_t * mo)
         }
     }
     P_XYFriction(mo, oldx, oldy, demoversion < 132);
+    return;
+
+
+    // [WDJ] Exit taken out of loop to make it easier to read.
+missile_impact:
+    // explode a missile
+    // tmr_ceilingline returned by P_TryMove
+    if (tmr_ceilingline
+	&& tmr_ceilingline->backsector
+	&& tmr_ceilingline->backsector->ceilingpic == skyflatnum
+	&& tmr_ceilingline->frontsector
+	&& tmr_ceilingline->frontsector->ceilingpic == skyflatnum
+	&& mo->subsector->sector->ceilingheight == mo->ceilingz)
+    {
+        if (!boomsupport || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
+        {
+	    // Hack to prevent missiles exploding against the sky.
+	    // Does not handle sky floors.
+	    //SoM: 4/3/2000: Check frontsector as well..
+	    if (mo->type == MT_BLOODYSKULL)
+	    {
+	        mo->momx = mo->momy = 0;
+	        mo->momz = -FRACUNIT;
+	    }
+	    else
+	        P_RemoveMobj(mo); // missile quietly dissappears
+	    return;
+	}
+    }
+
+    // draw damage on wall
+    //SPLAT TEST ----------------------------------------------------------
+#ifdef WALLSPLATS
+    // tmr_blockingline returned by P_TryMove
+    if (tmr_blockingline && demoversion >= 129) //set by last P_TryMove() that failed
+    {
+        divline_t divl;
+        divline_t misl;
+        fixed_t frac;
+
+        P_MakeDivline(tmr_blockingline, &divl);
+        misl.x = mo->x;
+        misl.y = mo->y;
+        misl.dx = mo->momx;
+        misl.dy = mo->momy;
+        frac = P_InterceptVector(&divl, &misl);
+        R_AddWallSplat( tmr_blockingline,
+			P_PointOnLineSide(mo->x, mo->y, tmr_blockingline),
+			"A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
+    }
+#endif
+    // --------------------------------------------------------- SPLAT TEST
+    // 
+    P_ExplodeMissile(mo);
+    return;
 }
 
 //
@@ -793,31 +801,38 @@ void P_ZMovement(mobj_t * mo)
 #endif
 
 #ifdef FIXROVERBUGS
-// Intercept the stupid 'fall through 3dfloors' bug SSNTails 06-13-2002
+    // Intercept the stupid 'fall through 3dfloors' bug SSNTails 06-13-2002
     if (mo->subsector->sector->ffloors)
     {
-        ffloor_t *rover;
-        fixed_t delta1;
-        fixed_t delta2;
+        ffloor_t *rovflr;
+        fixed_t midfloor;
         int thingtop = mo->z + mo->height;
 
-        for (rover = mo->subsector->sector->ffloors; rover; rover = rover->next)
+        for (rovflr = mo->subsector->sector->ffloors; rovflr; rovflr = rovflr->next)
         {
-            if (!(rover->flags & FF_SOLID) || !(rover->flags & FF_EXISTS))
+            if (!(rovflr->flags & FF_SOLID) || !(rovflr->flags & FF_EXISTS))
                 continue;
 
-            delta1 = mo->z - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight) / 2));
-            delta2 = thingtop - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight) / 2));
-            if (*rover->topheight > mo->floorz && abs(delta1) < abs(delta2))
-                mo->floorz = *rover->topheight;
-            if (*rover->bottomheight < mo->ceilingz && abs(delta1) >= abs(delta2))
-                mo->ceilingz = *rover->bottomheight;
+	    midfloor =
+	       *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight) / 2);
+	    if (abs(mo->z - midfloor) < abs(thingtop - midfloor))
+	    { 
+	        // closer to feet
+                if (*rovflr->topheight > mo->floorz)
+                    mo->floorz = *rovflr->topheight;
+	    }
+	    else
+	    {
+	        // closer to head
+                if (*rovflr->bottomheight < mo->ceilingz)
+		    mo->ceilingz = *rovflr->bottomheight;
+	    }
         }
     }
 #endif
 
     // check for smooth step up
-    if (player && mo->z < mo->floorz
+    if (player && (mo->z < mo->floorz)
 #ifdef VOODOO_DOLL
 	&& !voodoo_mo  // voodoo does not pass this to player view
 #endif
@@ -991,7 +1006,9 @@ void P_ZMovement(mobj_t * mo)
         if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
             //SoM: 4/3/2000: Don't explode on the sky!
-            if (demoversion >= 129 && mo->subsector->sector->ceilingpic == skyflatnum && mo->subsector->sector->ceilingheight == mo->ceilingz)
+            if ( mo->subsector->sector->ceilingpic == skyflatnum
+		 && mo->subsector->sector->ceilingheight == mo->ceilingz
+		 && demoversion >= 129)
             {
                 if (mo->type == MT_BLOODYSKULL)
                 {
@@ -1103,7 +1120,8 @@ void P_MobjCheckWater(mobj_t * mobj)
     fixed_t z;
     int oldeflags;
 
-    if (demoversion < 128 || mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
+    if (demoversion < 128
+	|| mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
         return;
     //
     // see if we are in water, and set some flags for later
@@ -1171,7 +1189,10 @@ void P_MobjCheckWater(mobj_t * mobj)
         CONS_Printf("underwater %d\n",mobj->eflags & MF_UNDERWATER ? 1 : 0);
 */
     // blood doesnt make noise when it falls in water
-    if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER)) && ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER)) && mobj->type != MT_BLOOD && demoversion < 132)
+    if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
+	&& ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER))
+	&& mobj->type != MT_BLOOD
+	&& demoversion < 132)
         P_SpawnSplash(mobj, z); //SoM: 3/17/2000
 }
 
@@ -1259,7 +1280,7 @@ void P_MobjThinker(mobj_t * mobj)
         //                BUT CheckPosition only if wasn't do before.
     if ((mobj->eflags & MF_ONGROUND) == 0 || (mobj->z != mobj->floorz) || mobj->momz)
     {
-        // BP: since version 1.31 we use heretic z-cheching code
+        // BP: since version 1.31 we use heretic z-checking code
         //     kept old code for backward demo compatibility
         if (demoversion < 131)
         {
@@ -1728,7 +1749,7 @@ extern byte weapontobutton[NUMWEAPONS];
 // Most of the player structure stays unchanged
 //  between levels.
 //
-// BP: spawn it at a playerspawn mapthing, [WJD] as playernum
+// BP: spawn it at a playerspawn mapthing, [WDJ] as playernum
 void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 {
     player_t *p;
@@ -2490,15 +2511,15 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     {
         boolean canHit;
         fixed_t px, py, pz;
-        int time, t;
+        int mtime, t;
         subsector_t *sec;
 
         dist = P_AproxDistance(dest->x - source->x, dest->y - source->y);
-        time = dist / th->info->speed;
-        time = P_AproxDistance(dest->x + dest->momx * time - source->x, dest->y + dest->momy * time - source->y) / th->info->speed;
+        mtime = dist / th->info->speed;
+        mtime = P_AproxDistance(dest->x + dest->momx * mtime - source->x, dest->y + dest->momy * mtime - source->y) / th->info->speed;
 
         canHit = false;
-        t = time + 4;
+        t = mtime + 4;
         do
         {
             t -= 4;
@@ -2509,7 +2530,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
             pz = dest->z + dest->momz * t;
             canHit = P_CheckSight2(source, dest, px, py, pz);
         } while (!canHit && (t > 1));
-        pz = dest->z + dest->momz * time;
+        pz = dest->z + dest->momz * mtime;
 
         sec = R_PointInSubsector(px, py);
         if (!sec)

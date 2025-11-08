@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: p_map.c 825 2011-03-20 00:25:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -420,7 +420,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     int                 damage;
 
     //added:22-02-98:
-    fixed_t             topz;
+    fixed_t             thing_topz;
     fixed_t             tmtopz;
 
     //SoM: 3/15/2000: Moved to front.
@@ -428,44 +428,39 @@ static boolean PIT_CheckThing (mobj_t* thing)
     // don't clip against self
 
     if (thing == tm_thing)
-        return true;
+        goto ret_pass;
 
     if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE) ))
-        return true;
+        goto ret_pass;
 
 #ifdef CLIENTPREDICTION2
-    // mobj and spirit of a same player cannot colide
+    // mobj and spirit of a same player cannot collide
     if( thing->player && (thing->player->spirit == tm_thing || thing->player->mo == tm_thing) )
-        return true;
+        goto ret_pass;
 #endif
 
     blockdist = thing->radius + tm_thing->radius;
 
     if ( abs(thing->x - tm_x) >= blockdist ||
          abs(thing->y - tm_y) >= blockdist )
-    {
-        // didn't hit it
-        return true;
-    }
+        goto ret_pass;  // didn't hit it
 
+    tmtopz = tm_thing->z + tm_thing->height;
+    thing_topz = thing->z + thing->height;
+   
     // heretic stuffs
-    if(tm_thing->flags2&MF2_PASSMOBJ)
+    if(tm_thing->flags2 & MF2_PASSMOBJ)
     { // check if a mobj passed over/under another object
         if((tm_thing->type == MT_IMP || tm_thing->type == MT_WIZARD)
             && (thing->type == MT_IMP || thing->type == MT_WIZARD))
         { // don't let imps/wizards fly over other imps/wizards
-            return false;
+            goto ret_blocked;
         }
-        if(tm_thing->z >= thing->z+thing->height
-            && !(thing->flags&MF_SPECIAL))
+        if(!(thing->flags&MF_SPECIAL))
         {
-            return(true);
-        }
-        else if(tm_thing->z+tm_thing->height < thing->z
-            && !(thing->flags&MF_SPECIAL))
-        { // under thing
-            return(true);
-        }
+            if(tm_thing->z >= thing_topz)  goto ret_pass;  // tm_thing over thing
+            if(tmtopz < thing->z)  goto ret_pass;  // tm_thing under thing
+	}
     }
 
     // check for skulls slamming into things
@@ -478,10 +473,12 @@ static boolean PIT_CheckThing (mobj_t* thing)
         tm_thing->flags &= ~MF_SKULLFLY;
         tm_thing->momx = tm_thing->momy = tm_thing->momz = 0;
 
-        P_SetMobjState (tm_thing, gamemode == heretic ? tm_thing->info->seestate
-                                                     : tm_thing->info->spawnstate);
+        P_SetMobjState (tm_thing,
+			(gamemode == heretic) ? tm_thing->info->seestate
+			                      : tm_thing->info->spawnstate
+			);
 
-        return false;           // stop moving
+        goto ret_blocked;  // stop moving
     }
 
 
@@ -490,13 +487,11 @@ static boolean PIT_CheckThing (mobj_t* thing)
     {
        // Check for passing through a ghost (heretic)
         if ((thing->flags & MF_SHADOW) && (tm_thing->flags2 & MF2_THRUGHOST))
-            return true;
+            goto ret_pass;
 
         // see if it went over / under
-        if (tm_thing->z > thing->z + thing->height)
-            return true;                // overhead
-        if (tm_thing->z+tm_thing->height < thing->z)
-            return true;                // underneath
+        if (tm_thing->z > thing_topz)  goto ret_pass;  // overhead
+        if (tmtopz < thing->z)  goto ret_pass;  // underneath
 
         if (tm_thing->target
 	    && (
@@ -507,16 +502,14 @@ static boolean PIT_CheckThing (mobj_t* thing)
         {
             // Don't hit same species as originator.
             if (thing == tm_thing->target)
-                return true;
+	        goto ret_pass;
 
             if (thing->type != MT_PLAYER)
             {
                 // Explode, but do no damage.
                 // Let players missile other players.
                 if(!infight && !(cv_monbehavior.value == 2)) //DarkWolf95: Altered to use CVAR
-	        {
-		    return false;
-		}
+		    goto ret_blocked;
             }
         }
 
@@ -524,9 +517,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
 	if( cv_monbehavior.value == 1
 	   && tm_thing->target->type != MT_PLAYER
 	   && thing->type != MT_PLAYER)
-	{
-	    return false;
-	}
+	    goto ret_blocked;
 
         if (! (thing->flags & MF_SHOOTABLE) )
         {
@@ -554,7 +545,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
                 thing->momy += tm_thing->momy >> 2;
             }
             numspechit = 0;
-            return (true);
+	    goto ret_pass;
         }
 
         // damage / explode
@@ -563,11 +554,12 @@ static boolean PIT_CheckThing (mobj_t* thing)
 	    && (thing->flags & MF_NOBLOOD)==0
 	    && demoversion>=129
 	    )
+        {
 	     P_SpawnBloodSplats (tm_thing->x, tm_thing->y, tm_thing->z, damage, thing->momx, thing->momy);
-
-        // don't traverse any more
-        return false;
+	}
+	goto ret_blocked;   // don't traverse any more
     }
+
     if (thing->flags2 & MF2_PUSHABLE
 	&& !(tm_thing->flags2 & MF2_CANNOTPUSH))
     {                         // Push thing
@@ -587,8 +579,8 @@ static boolean PIT_CheckThing (mobj_t* thing)
         return !solid;
     }
     // check again for special pickup
-    if(demoversion>=132
-       && tm_thing->flags & MF_SPECIAL)
+    if(tm_thing->flags & MF_SPECIAL
+       && demoversion>=132)
     {
         solid = tm_thing->flags&MF_SOLID;
         if (thing->flags&MF_PICKUP)
@@ -613,37 +605,40 @@ static boolean PIT_CheckThing (mobj_t* thing)
 	&& !(tm_thing->flags & MF_NOCLIP))
     {
         // pass under
-        tmtopz = tm_thing->z + tm_thing->height;
-
         if ( tmtopz < thing->z)
         {
             if (thing->z < tmr_ceilingz)
                 tmr_ceilingz = thing->z;
-            return true;
+	    goto ret_pass;
         }
 
-        topz = thing->z + thing->height + FRACUNIT;
+        // trying to go over thing
+        thing_topz += FRACUNIT;
 
         // block only when jumping not high enough,
         // (dont climb max. 24units while already in air)
         // if not in air, let P_TryMove() decide if its not too high
         if (tm_thing->player
-	    && tm_thing->z < topz
+	    && tm_thing->z < thing_topz
 	    && tm_thing->z > tm_thing->floorz )  // block while in air
-            return false;
+	    goto ret_blocked;  // did not make it over thing
 
 
-        if (topz > tmr_floorz)
+        if (thing_topz > tmr_floorz)
         {
 	    // standing on top of another thing
-            tmr_floorz = topz;
+            tmr_floorz = thing_topz;
             tmr_floorthing = thing;       //thing we may stand on
         }
 
     }
 
+ret_pass:   
     // not solid not blocked
     return true;
+
+ret_blocked:
+    return false;  // hit something
 }
 
 #if 0
@@ -823,20 +818,27 @@ boolean P_CheckPosition ( mobj_t*       thing,
     if(cp_newsubsec->sector->ffloors)
     {
       ffloor_t*  rovflr; // rover floor
-      fixed_t    delta1;
-      fixed_t    delta2;
+      fixed_t    midfloor;
       int        thingtop = thing->z + thing->height;
 
       for(rovflr = cp_newsubsec->sector->ffloors; rovflr; rovflr = rovflr->next)
       {
         if(!(rovflr->flags & FF_SOLID) || !(rovflr->flags & FF_EXISTS)) continue;
 
-        delta1 = thing->z - (*rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight)/2));
-        delta2 = thingtop - (*rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight)/2));
-        if(*rovflr->topheight > tmr_floorz && abs(delta1) < abs(delta2))
-          tmr_floorz = tmr_dropoffz = *rovflr->topheight;
-        if(*rovflr->bottomheight < tmr_ceilingz && abs(delta1) >= abs(delta2))
-          tmr_ceilingz = *rovflr->bottomheight;
+	midfloor =
+	   *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight)/2);
+	if( abs(thing->z - midfloor) < abs(thingtop - midfloor) )
+	{
+	    // feet are closer
+	    if(*rovflr->topheight > tmr_floorz)
+	        tmr_floorz = tmr_dropoffz = *rovflr->topheight;
+	}
+	else
+	{
+	    // head is closer
+	    if(*rovflr->bottomheight < tmr_ceilingz )
+	        tmr_ceilingz = *rovflr->bottomheight;
+	}
       }
     }
 
@@ -856,8 +858,8 @@ boolean P_CheckPosition ( mobj_t*       thing,
     // into adjacent blocks by up to MAXRADIUS units.
 
     // BP: added MF_NOCLIPTHING :used by camera to don't be blocked by things
-    if(!(thing->flags & MF_NOCLIPTHING) && 
-		(thing->flags & MF_SOLID || thing->flags & MF_MISSILE))
+    if(!(thing->flags & MF_NOCLIPTHING)
+       && (thing->flags & MF_SOLID || thing->flags & MF_MISSILE))
 		/* DarkWolf95:don't check non-solids against other things, 
 		   keep them in the map though, so still check against lines */
     {
@@ -929,10 +931,7 @@ boolean P_TryMove ( mobj_t*       thing,
     tmr_floatok = false;
 
     if (!P_CheckPosition (thing, x, y))
-    {
-        CheckMissileImpact(thing);
-        return false;           // solid wall or thing
-    }
+        goto impact;  // solid wall or thing
 #ifdef CLIENTPREDICTION2
     if ( !(thing->flags & MF_NOCLIP) && !(thing->eflags & MF_NOZCHECKING))
 #else
@@ -941,20 +940,15 @@ boolean P_TryMove ( mobj_t*       thing,
     {
         fixed_t maxstep = MAXSTEPMOVE;
         if (tmr_ceilingz - tmr_floorz < thing->height)
-        {
-            CheckMissileImpact(thing);
-            return false;       // doesn't fit
-        }
+	    goto impact;  // doesn't fit
 
         tmr_floatok = true;
 
         if ( !(thing->flags & MF_TELEPORT)
              && tmr_ceilingz - thing->z < thing->height
              && !(thing->flags2&MF2_FLY))
-        {
-            CheckMissileImpact(thing);
-            return false;       // mobj must lower itself to fit
-        }
+	    goto impact;  // mobj must lower itself to fit
+
         if(thing->flags2&MF2_FLY)
         {
             if(thing->z+thing->height > tmr_ceilingz)
@@ -977,12 +971,10 @@ boolean P_TryMove ( mobj_t*       thing,
              // The Minotaur floor fire (MT_MNTRFX2) can step up any amount
              && thing->type != MT_MNTRFX2
              && (tmr_floorz - thing->z > maxstep ) )
-        {
-            CheckMissileImpact(thing);
-            return false;       // too big a step up
-        }
+	    goto impact;  // too big a step up
 
-        if((thing->flags&MF_MISSILE) && tmr_floorz > thing->z)
+        if((thing->flags & MF_MISSILE)
+	   && tmr_floorz > thing->z)
             CheckMissileImpact(thing);
 
         if ( !boomsupport || !allowdropoff)
@@ -1001,8 +993,9 @@ boolean P_TryMove ( mobj_t*       thing,
     //added:28-02-98: gameplay hack : walk over a small wall while jumping
     //                stop jumping it succeeded
     // BP: removed in 1.28 because we can move in air now
-    if ( demoplayback>=112 && demoplayback<128 && thing->player &&
-         (thing->player->cheats & CF_JUMPOVER) )
+    if ( demoplayback<128 && demoplayback>=112
+	 && thing->player
+	 && (thing->player->cheats & CF_JUMPOVER) )
     {
         if (tmr_floorz > thing->floorz + MAXSTEPMOVE)
             thing->momz >>= 2;
@@ -1061,6 +1054,10 @@ boolean P_TryMove ( mobj_t*       thing,
     }
 
     return true;
+
+impact:
+    CheckMissileImpact(thing);
+    return false;  // hit something solid
 }
 
 
@@ -2212,7 +2209,9 @@ boolean PIT_RadiusAttack (mobj_t* thing)
             momy = (thing->y - bombspot->y)/dist;
         }
         // must be in direct path
-        if( P_DamageMobj (thing, bombspot, bombsource, damage) && (thing->flags & MF_NOBLOOD)==0 && demoversion>=129 )
+        if( P_DamageMobj (thing, bombspot, bombsource, damage)
+	    && (thing->flags & MF_NOBLOOD)==0
+	    && demoversion>=129 )
             P_SpawnBloodSplats (thing->x,thing->y,thing->z, damage, momx, momy);
     }
 
@@ -2330,8 +2329,9 @@ boolean PIT_ChangeSector (mobj_t*       thing)
         // Crushing damage
         P_DamageMobj(thing,NULL,NULL,10);
 
-        if( demoversion<132 || (!(leveltime % (16*NEWTICRATERATIO)) && 
-                                !(thing->flags&MF_NOBLOOD)) )
+        if( demoversion<132
+	    || (!(leveltime % (16*NEWTICRATERATIO))
+		&& !(thing->flags&MF_NOBLOOD)) )
         {
             // spray blood in a random direction
             mo = P_SpawnMobj (thing->x,

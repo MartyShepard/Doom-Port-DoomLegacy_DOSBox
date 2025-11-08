@@ -1597,3 +1597,15 @@ Fix CheckCheat to use the ASCII char in the event (data2), and not the
 The cheat code saw the 0 key =0x48 and LSHIFT key =0x0148 to be the
 same by accident.
 This fixes bug 3194389.
+
+*** w72_spritelump_type_fix
+patchfile = w72_spritelump_type2.patch
+- committed revision 824   by wesley johnson
+Fix bug in spritelump_type patch where the signs of two hardware
+render lines got changed.  (Late night, copying too much)
+
+*** w73_missile_prep
+patchfile = w72_missile_prep.patch
+- committed revision 825   by wesley johnson
+Cleanup of code around missile movement.
+Prep for mancubus missile bug fix.

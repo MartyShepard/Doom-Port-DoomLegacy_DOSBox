@@ -1,5 +1,11 @@
 * Not need to Compile.
 
+[00825 ]: w73 missile prep
+[00824*]: w72 spritelump type patch bug fix
+					Hardware Main Fix
+					
+[00823 ]: Fixed a crash in blowup.wad, signed fields in map structs to unsigned.
+[00822*]: Moved tools into the common directory, svn:externals property in legacy_one deleted.
 [00821 ]: w72 cheat char
 [00820 ]: w72 dehacked string
 [00819 ]: w72 spritelump limits removed
