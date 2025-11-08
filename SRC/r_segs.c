@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 757 2010-10-12 02:49:48Z wesleyjohnson $
+// $Id: r_segs.c 829 2011-05-26 23:52:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1345,7 +1345,6 @@ unsigned long   nombre = 100000;
 #endif
 //profile stuff ---------------------------------------------------------
 
-extern sector_t * fakeflat_sec;  // [WDJ] DEBUG
 
 void R_RenderSegLoop (void)
 {

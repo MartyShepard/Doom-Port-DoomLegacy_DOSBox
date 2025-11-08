@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 682 2010-06-07 18:12:52Z wesleyjohnson $
+// $Id: p_floor.c 829 2011-05-26 23:52:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -667,8 +667,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             mfloor->direction = -1;
             mfloor->sector = sec;
             mfloor->speed = MAXINT/2; // Go too fast and you'll cause problems...
-            mfloor->floordestheight =
-            P_FindLowestFloorSurrounding(sec);
+            mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
             break;
           default:
             break;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 786 2011-02-22 04:43:14Z wesleyjohnson $
+// $Id: p_user.c 829 2011-05-26 23:52:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -159,7 +159,8 @@ void P_CalcHeight (player_t* player)
     int         angle;
     fixed_t     bob;
     fixed_t     viewheight;
-    mobj_t      *mo;
+    mobj_t      * pmo = player->mo;
+    mobj_t      * smo = pmo;  // spirit (same as pmo unless using CLIENTPREDICTION2)
 
     // Regular movement bobbing
     // (needs to be calculated for gun swing
@@ -169,29 +170,28 @@ void P_CalcHeight (player_t* player)
     //  like a ramp with low health.
 
 
-    mo = player->mo;
 #ifdef CLIENTPREDICTION2
     if( player->spirit )
-        mo = player->spirit;
+        smo = player->spirit;
 #endif
 
-    player->bob = ((FixedMul (mo->momx,mo->momx)
-                   +FixedMul (mo->momy,mo->momy))*NEWTICRATERATIO)>>2;
+    player->bob = ((FixedMul (smo->momx, smo->momx)
+                   +FixedMul (smo->momy, smo->momy))*NEWTICRATERATIO)>>2;
 
     if (player->bob>MAXBOB)
         player->bob = MAXBOB;
 
-    if( player->mo->flags2&MF2_FLY && !onground )
+    if( pmo->flags2&MF2_FLY && !onground )
         player->bob = FRACUNIT/2;
 
-    if ((player->cheats & CF_NOMOMENTUM) || mo->z > mo->floorz)
+    if ((player->cheats & CF_NOMOMENTUM) || smo->z > smo->floorz)
     {
         //added:15-02-98: it seems to be useless code!
-        //player->viewz = player->mo->z + (cv_viewheight.value<<FRACBITS);
+        //player->viewz = pmo->z + (cv_viewheight.value<<FRACBITS);
 
-        //if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-        //    player->viewz = player->mo->ceilingz-4*FRACUNIT;
-        player->viewz = mo->z + player->viewheight;
+        //if (player->viewz > pmo->ceilingz-4*FRACUNIT)
+        //    player->viewz = pmo->ceilingz-4*FRACUNIT;
+        player->viewz = smo->z + player->viewheight;
         return;
     }
 
@@ -228,21 +228,21 @@ void P_CalcHeight (player_t* player)
     }   
 
     if(player->chickenTics)
-        player->viewz = mo->z + player->viewheight-(20*FRACUNIT);
+        player->viewz = smo->z + player->viewheight-(20*FRACUNIT);
     else
-        player->viewz = mo->z + player->viewheight + bob;
+        player->viewz = smo->z + player->viewheight + bob;
 
-    if(player->mo->flags2&MF2_FEETARECLIPPED
+    if(pmo->flags2&MF2_FEETARECLIPPED
         && player->playerstate != PST_DEAD
-        && player->mo->z <= player->mo->floorz)
+        && pmo->z <= pmo->floorz)
     {
         player->viewz -= FOOTCLIPSIZE;
     }
 
-    if (player->viewz > mo->ceilingz-4*FRACUNIT)
-        player->viewz = mo->ceilingz-4*FRACUNIT;
-    if (player->viewz < mo->floorz+4*FRACUNIT)
-        player->viewz = mo->floorz+4*FRACUNIT;
+    if (player->viewz > smo->ceilingz-4*FRACUNIT)
+        player->viewz = smo->ceilingz-4*FRACUNIT;
+    if (player->viewz < smo->floorz+4*FRACUNIT)
+        player->viewz = smo->floorz+4*FRACUNIT;
 
 }
 
@@ -254,18 +254,19 @@ extern int ticruned,ticmiss;
 //
 void P_MovePlayer (player_t* player)
 {
-    ticcmd_t*           cmd;
+    mobj_t *   pmo = player->mo;
+    ticcmd_t*  cmd = &player->cmd;
     int                 movefactor = 2048; //For Boom friction
 
     cmd = &player->cmd;
 
 #ifndef ABSOLUTEANGLE
-    player->mo->angle += (cmd->angleturn<<16);
+    pmo->angle += (cmd->angleturn<<16);
 #else
     if(demoversion<125)
-        player->mo->angle += (cmd->angleturn<<16);
+        pmo->angle += (cmd->angleturn<<16);
     else
-        player->mo->angle = (cmd->angleturn<<16);
+        pmo->angle = (cmd->angleturn<<16);
 #endif
 
     ticruned++;
@@ -273,9 +274,9 @@ void P_MovePlayer (player_t* player)
         ticmiss++;
     // Do not let the player control movement
     //  if not onground.
-    onground = (player->mo->z <= player->mo->floorz) 
-               || (player->cheats & CF_FLYAROUND)
-               || (player->mo->flags2&(MF2_ONMOBJ|MF2_FLY));
+    onground = (pmo->z <= pmo->floorz) 
+               || (player->cheats & CF_FLYAROUND)   // cheat
+               || (pmo->flags2&(MF2_ONMOBJ|MF2_FLY));  // heretic
 
     if(demoversion<128)
     {
@@ -284,15 +285,15 @@ void P_MovePlayer (player_t* player)
         {
             // dirty hack to let the player avatar walk over a small wall
             // while in the air
-            if (jumpover && player->mo->momz > 0)
+            if (jumpover && pmo->momz > 0)
                 P_Thrust (player, player->mo->angle, 5*2048);
             else
                 if (!jumpover)
-                    P_Thrust (player, player->mo->angle, cmd->forwardmove*2048);
+                    P_Thrust (player, pmo->angle, cmd->forwardmove*2048);
         }
     
         if (cmd->sidemove && onground)
-            P_Thrust (player, player->mo->angle-ANG90, cmd->sidemove*2048);
+            P_Thrust (player, pmo->angle-ANG90, cmd->sidemove*2048);
 
         player->aiming = (signed char)cmd->aiming;
     }
@@ -305,7 +306,7 @@ void P_MovePlayer (player_t* player)
         if(boomsupport && variable_friction)
         {
           //SoM: This seems to be buggy! Can anyone figure out why??
-          movefactor = P_GetMoveFactor(player->mo);
+          movefactor = P_GetMoveFactor(pmo);
           //CONS_Printf("movefactor: %i\n", movefactor);
         }
 
@@ -313,7 +314,7 @@ void P_MovePlayer (player_t* player)
         {
             movepushforward = cmd->forwardmove * (movefactor + extramovefactor);
         
-            if (player->mo->eflags & MF_UNDERWATER)
+            if (pmo->eflags & MF_UNDERWATER)
             {
                 // half forward speed when waist under water
                 // a little better grip if feets touch the ground
@@ -329,13 +330,13 @@ void P_MovePlayer (player_t* player)
                     movepushforward >>= 3;
             }
 
-            P_Thrust (player, player->mo->angle, movepushforward);
+            P_Thrust (player, pmo->angle, movepushforward);
         }
 
         if (cmd->sidemove)
         {
             movepushside = cmd->sidemove * (movefactor + extramovefactor);
-            if (player->mo->eflags & MF_UNDERWATER)
+            if (pmo->eflags & MF_UNDERWATER)
             {
                 if (!onground)
                     movepushside >>= 1;
@@ -346,20 +347,20 @@ void P_MovePlayer (player_t* player)
                 if (!onground)
                     movepushside >>= 3;
 
-            P_Thrust (player, player->mo->angle-ANG90, movepushside);
+            P_Thrust (player, pmo->angle-ANG90, movepushside);
         }
 
         // mouselook swim when waist underwater
-        player->mo->eflags &= ~MF_SWIMMING;
-        if (player->mo->eflags & MF_UNDERWATER)
+        pmo->eflags &= ~MF_SWIMMING;
+        if (pmo->eflags & MF_UNDERWATER)
         {
             fixed_t a;
             // swim up/down full move when forward full speed
             a = FixedMul( movepushforward*50, finesine[ (player->aiming>>ANGLETOFINESHIFT) ] >>5 );
             
             if ( a != 0 ) {
-                player->mo->eflags |= MF_SWIMMING;
-                player->mo->momz += a;
+                pmo->eflags |= MF_SWIMMING;
+                pmo->momz += a;
             }
         }
     }
@@ -367,20 +368,20 @@ void P_MovePlayer (player_t* player)
     //added:22-02-98: jumping
     if (cmd->buttons & BT_JUMP)
     {
-        if( player->mo->flags2&MF2_FLY )
+        if( pmo->flags2&MF2_FLY )
             player->flyheight = 10;
         else 
-        if(player->mo->eflags & MF_UNDERWATER)
+        if(pmo->eflags & MF_UNDERWATER)
             //TODO: goub gloub when push up in water
-            player->mo->momz = JUMPGRAVITY/2;
+            pmo->momz = JUMPGRAVITY/2;
         else 
         // can't jump while in air, can't jump while jumping
         if( onground && !(player->jumpdown & 1))
         {
-            player->mo->momz = JUMPGRAVITY;
+            pmo->momz = JUMPGRAVITY;
             if( !(player->cheats & CF_FLYAROUND) )
             {
-                S_StartScreamSound (player->mo, sfx_jump);
+                S_StartScreamSound (pmo, sfx_jump);
                 // keep jumping ok if FLY mode.
                 player->jumpdown |= 1;
             }
@@ -394,12 +395,12 @@ void P_MovePlayer (player_t* player)
     {
         if( player->chickenTics )
         {
-            if( player->mo->state == &states[S_CHICPLAY])
-                P_SetMobjState(player->mo, S_CHICPLAY_RUN1);
+            if( pmo->state == &states[S_CHICPLAY])
+                P_SetMobjState(pmo, S_CHICPLAY_RUN1);
         }
         else
-            if(player->mo->state == &states[S_PLAY])
-                P_SetMobjState(player->mo, S_PLAY_RUN1);
+            if(pmo->state == &states[S_PLAY])
+                P_SetMobjState(pmo, S_PLAY_RUN1);
     }
     if( gamemode == heretic && (cmd->angleturn & BT_FLYDOWN) )
     {
@@ -414,25 +415,25 @@ void P_MovePlayer (player_t* player)
         if(fly != TOCENTER)
         {
             player->flyheight = fly*2;
-            if(!(player->mo->flags2&MF2_FLY))
+            if(!(pmo->flags2&MF2_FLY))
             {
-                player->mo->flags2 |= MF2_FLY;
-                player->mo->flags |= MF_NOGRAVITY;
+                pmo->flags2 |= MF2_FLY;
+                pmo->flags |= MF_NOGRAVITY;
             }
         }
         else
         {
-            player->mo->flags2 &= ~MF2_FLY;
-            player->mo->flags &= ~MF_NOGRAVITY;
+            pmo->flags2 &= ~MF2_FLY;
+            pmo->flags &= ~MF_NOGRAVITY;
         }
     }
     else if(fly > 0)
     {
         P_PlayerUseArtifact(player, arti_fly);
     }*/
-    if(player->mo->flags2&MF2_FLY)
+    if(pmo->flags2&MF2_FLY)
     {
-        player->mo->momz = player->flyheight*FRACUNIT;
+        pmo->momz = player->flyheight*FRACUNIT;
         if(player->flyheight)
             player->flyheight /= 2;
     }
@@ -449,7 +450,8 @@ void P_MovePlayer (player_t* player)
 
 void P_DeathThink (player_t* player)
 {
-    angle_t             angle;
+    mobj_t * pmo = player->mo;
+    angle_t  angle;
 
     P_MovePsprites (player);
 
@@ -461,35 +463,35 @@ void P_DeathThink (player_t* player)
         player->viewheight = 6*FRACUNIT;
 
     player->deltaviewheight = 0;
-    onground = player->mo->z <= player->mo->floorz;
+    onground = pmo->z <= pmo->floorz;
 
     P_CalcHeight (player);
 
     mobj_t *attacker = player->attacker;
 
     // watch my killer (if there is one)
-    if (attacker && attacker != player->mo)
+    if (attacker && attacker != pmo)
     {
-        angle = R_PointToAngle2 (player->mo->x,
-                                 player->mo->y,
+        angle = R_PointToAngle2 (pmo->x,
+                                 pmo->y,
                                  player->attacker->x,
                                  player->attacker->y);
 
-        angle_t delta = angle - player->mo->angle;
+        angle_t delta = angle - pmo->angle;
 
         if (delta < ANG5 || delta > (unsigned)-ANG5)
         {
             // Looking at killer,
             //  so fade damage flash down.
-            player->mo->angle = angle;
+            pmo->angle = angle;
 
             if (player->damagecount)
                 player->damagecount--;
         }
         else if (delta < ANG180)
-            player->mo->angle += ANG5;
+            pmo->angle += ANG5;
         else
-            player->mo->angle -= ANG5;
+            pmo->angle -= ANG5;
 
         //added:22-02-98:
         // change aiming to look up or down at the attacker (DOESNT WORK)
@@ -511,7 +513,7 @@ void P_DeathThink (player_t* player)
     if (player->cmd.buttons & BT_USE)
     {
         player->playerstate = PST_REBORN;
-        player->mo->special2 = 666;
+        pmo->special2 = 666;
     }
 }
 
@@ -523,7 +525,7 @@ void P_DeathThink (player_t* player)
 
 void P_ChickenPlayerThink(player_t *player)
 {
-        mobj_t *pmo;
+        mobj_t * pmo = player->mo;
 
         if(player->health > 0)
         { // Handle beak movement
@@ -533,7 +535,6 @@ void P_ChickenPlayerThink(player_t *player)
         {
                 return;
         }
-        pmo = player->mo;
         if(!(pmo->momx+pmo->momy) && P_Random() < 160)
         { // Twitch view angle
                 pmo->angle += P_SignedRandom()<<19;
@@ -560,7 +561,7 @@ boolean P_UndoPlayerChicken(player_t *player)
 {
         mobj_t *fog;
         mobj_t *mo;
-        mobj_t *pmo;
+        mobj_t * pmo = player->mo;
         fixed_t x;
         fixed_t y;
         fixed_t z;
@@ -570,7 +571,6 @@ boolean P_UndoPlayerChicken(player_t *player)
         int oldFlags;
         int oldFlags2;
 
-        pmo = player->mo;
         x = pmo->x;
         y = pmo->y;
         z = pmo->z;
@@ -714,32 +714,31 @@ void P_MoveChaseCamera (player_t *player)
     angle_t             angle;
     fixed_t             x,y,z ,viewpointx,viewpointy;
     fixed_t             dist;
-    mobj_t*             mo;
+    mobj_t*             pmo = player->mo;
     subsector_t*        newsubsec;
     float               f1,f2;
 
     if (!camera.mo)
         P_ResetCamera (player);
-    mo = player->mo;
 
-    angle = mo->angle;
+    angle = pmo->angle;
 
     // sets ideal cam pos
     dist  = cv_cam_dist.value;
-    x = mo->x - FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
-    y = mo->y - FixedMul(   finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
-    z = mo->z + (cv_viewheight.value<<FRACBITS) + cv_cam_height.value;
+    x = pmo->x - FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    y = pmo->y - FixedMul(   finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    z = pmo->z + (cv_viewheight.value<<FRACBITS) + cv_cam_height.value;
 
-/*    P_PathTraverse ( mo->x, mo->y, x, y, PT_ADDLINES, PTR_UseTraverse );*/
+/*    P_PathTraverse ( pmo->x, pmo->y, x, y, PT_ADDLINES, PTR_UseTraverse );*/
 
     // move camera down to move under lower ceilings
-    newsubsec = R_IsPointInSubsector ((mo->x + camera.mo->x)>>1,(mo->y + camera.mo->y)>>1);
+    newsubsec = R_IsPointInSubsector ((pmo->x + camera.mo->x)>>1,(pmo->y + camera.mo->y)>>1);
               
     if (!newsubsec)
     {
         // use player sector 
-        if (mo->subsector->sector->ceilingheight - camera.mo->height < z)
-            z = mo->subsector->sector->ceilingheight - camera.mo->height-11*FRACUNIT; // don't be blocked by a opened door
+        if (pmo->subsector->sector->ceilingheight - camera.mo->height < z)
+            z = pmo->subsector->sector->ceilingheight - camera.mo->height-11*FRACUNIT; // don't be blocked by a opened door
     }
     else
     // camera fit ?
@@ -755,8 +754,8 @@ void P_MoveChaseCamera (player_t *player)
     // point viewed by the camera
     // this point is just 64 unit forward the player
     dist = 64 << FRACBITS;
-    viewpointx = mo->x + FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
-    viewpointy = mo->y + FixedMul( finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    viewpointx = pmo->x + FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    viewpointy = pmo->y + FixedMul( finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
 
     camera.mo->angle = R_PointToAngle2(camera.mo->x,camera.mo->y,
                                        viewpointx  ,viewpointy);
@@ -770,8 +769,8 @@ void P_MoveChaseCamera (player_t *player)
     f1=FIXED_TO_FLOAT(viewpointx-camera.mo->x);
     f2=FIXED_TO_FLOAT(viewpointy-camera.mo->y);
     dist=sqrt(f1*f1+f2*f2)*FRACUNIT;
-    angle=R_PointToAngle2(0,camera.mo->z, dist
-                         ,mo->z+(mo->height>>1)+finesine[(player->aiming>>ANGLETOFINESHIFT) & FINEMASK] * 64);
+    angle=R_PointToAngle2(0, camera.mo->z, dist,
+                         pmo->z+(pmo->height>>1)+finesine[(player->aiming>>ANGLETOFINESHIFT) & FINEMASK] * 64);
 
     angle = G_ClipAimingPitch(angle);
     dist=camera.aiming-angle;
@@ -806,7 +805,7 @@ void CL_ResetSpiritPosition(mobj_t *mobj)
 
 void P_ProcessCmdSpirit (player_t* player,ticcmd_t *cmd)
 {
-    fixed_t   movepushforward=0,movepushside=0;
+    fixed_t   movepushforward=0, movepushside=0;
 #ifdef PARANOIA
     if(!player)
         I_Error("P_MoveSpirit : player null");
@@ -973,20 +972,21 @@ void P_PlayerThink (player_t* player)
 {
     ticcmd_t*           cmd;
     weapontype_t        newweapon;
+    mobj_t *  pmo = player->mo;
 
 #ifdef PARANOIA
-    if(!player->mo) I_Error("p_playerthink : players[%d].mo == NULL",player-players);
+    if(!pmo) I_Error("p_playerthink : players[%d].mo == NULL",player-players);
 #endif
 
     // fixme: do this in the cheat code
     if (player->cheats & CF_NOCLIP)
-        player->mo->flags |= MF_NOCLIP;
+        pmo->flags |= MF_NOCLIP;
     else
-        player->mo->flags &= ~MF_NOCLIP;
+        pmo->flags &= ~MF_NOCLIP;
 
     // chain saw run forward
     cmd = &player->cmd;
-    if (player->mo->flags & MF_JUSTATTACKED)
+    if (pmo->flags & MF_JUSTATTACKED)
     {
 // added : now angle turn is a absolute value not relative
 #ifndef ABSOLUTEANGLE
@@ -994,7 +994,7 @@ void P_PlayerThink (player_t* player)
 #endif
         cmd->forwardmove = 0xc800/512;
         cmd->sidemove = 0;
-        player->mo->flags &= ~MF_JUSTATTACKED;
+        pmo->flags &= ~MF_JUSTATTACKED;
     }
 
     if (player->playerstate == PST_REBORN)
@@ -1022,19 +1022,21 @@ void P_PlayerThink (player_t* player)
         return;
     }
     else
+    {
         if ( player== displayplayer_ptr )
             playerdeadview = false;
+    }
     if( player->chickenTics )
         P_ChickenPlayerThink(player);
 
     // check water content, set stuff in mobj
-    P_MobjCheckWater (player->mo);
+    P_MobjCheckWater (pmo);
 
     // Move around.
     // Reactiontime is used to prevent movement
     //  for a bit after a teleport.
-    if (player->mo->reactiontime)
-        player->mo->reactiontime--;
+    if (pmo->reactiontime)
+        pmo->reactiontime--;
     else
         P_MovePlayer (player);
 
@@ -1057,32 +1059,32 @@ void P_PlayerThink (player_t* player)
 #if 0
     if (demoversion>=125 && player->specialsector == )
     {
-        if ((player->mo->momx >  (2*FRACUNIT) ||
-             player->mo->momx < (-2*FRACUNIT) ||
-             player->mo->momy >  (2*FRACUNIT) ||
-             player->mo->momy < (-2*FRACUNIT) ||
-             player->mo->momz >  (2*FRACUNIT)) &&  // jump out of water
+        if ((pmo->momx >  (2*FRACUNIT) ||
+             pmo->momx < (-2*FRACUNIT) ||
+             pmo->momy >  (2*FRACUNIT) ||
+             pmo->momy < (-2*FRACUNIT) ||
+             pmo->momz >  (2*FRACUNIT)) &&  // jump out of water
              !(gametic % (32 * NEWTICRATERATIO)) )
         {
             //
-            // make sur we disturb the surface of water (we touch it)
+            // make sure we disturb the surface of water (we touch it)
             //
-	    int waterz = player->mo->subsector->sector->floorheight + (FRACUNIT/4);
+	    int waterz = pmo->subsector->sector->floorheight + (FRACUNIT/4);
 
             // half in the water
-            if(player->mo->eflags & MF_TOUCHWATER)
+            if(pmo->eflags & MF_TOUCHWATER)
             {
-                if (player->mo->z <= player->mo->floorz) // onground
+                if (pmo->z <= pmo->floorz) // onground
                 {
-                    fixed_t whater_height=waterz-player->mo->subsector->sector->floorheight;
+                    fixed_t whater_height = waterz - pmo->subsector->sector->floorheight;
 
-                    if( whater_height<(player->mo->height>>2 ))
-                        S_StartSound (player->mo, sfx_splash);
+                    if( whater_height < (pmo->height>>2))
+                        S_StartSound (pmo, sfx_splash);
                     else
-                        S_StartSound (player->mo, sfx_floush);
+                        S_StartSound (pmo, sfx_floush);
                 }
                 else
-                    S_StartSound (player->mo, sfx_floush);
+                    S_StartSound (pmo, sfx_floush);
             }                   
         }
     }
@@ -1184,7 +1186,7 @@ void P_PlayerThink (player_t* player)
     // (it doesnt use a preset value through FF_TRANSMASK)
     if (player->powers[pw_invisibility])
         if (! --player->powers[pw_invisibility] )
-            player->mo->flags &= ~MF_SHADOW;
+            pmo->flags &= ~MF_SHADOW;
 
     if (player->powers[pw_infrared])
         player->powers[pw_infrared]--;
@@ -1196,11 +1198,12 @@ void P_PlayerThink (player_t* player)
         if(!--player->powers[pw_flight])
         {
 /* HERETODO
-            if(player->mo->z != player->mo->floorz)
+            if(pmo->z != pmo->floorz)
                 player->centering = true;
 */            
-            player->mo->flags2 &= ~MF2_FLY;
-            player->mo->flags &= ~MF_NOGRAVITY;
+	    // timed out heretic fly power
+            pmo->flags2 &= ~MF2_FLY;
+            pmo->flags &= ~MF_NOGRAVITY;
            // BorderTopRefresh = true; //make sure the sprite's cleared out
         }
     }
@@ -1391,57 +1394,48 @@ void P_ArtiTele(player_t *player)
 boolean P_UseArtifact(player_t *player, artitype_t arti)
 {
     mobj_t *mo;
+    mobj_t * pmo = player->mo;
     angle_t angle;
     
     switch(arti)
     {
     case arti_invulnerability:
         if(!P_GivePower(player, pw_invulnerability))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_invisibility:
         if(!P_GivePower(player, pw_invisibility))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_health:
         if(!P_GiveBody(player, 25))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_superhealth:
         if(!P_GiveBody(player, 100))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_tomeofpower:
         if(player->chickenTics)
         { // Attempt to undo chicken
             if(P_UndoPlayerChicken(player) == false)
             { // Failed
-                P_DamageMobj(player->mo, NULL, NULL, 10000);
+                P_DamageMobj(pmo, NULL, NULL, 10000);
             }
             else
             { // Succeeded
                 player->chickenTics = 0;
 #ifdef XPEREMNTAL_HW3S
-                S_StartScreamSound(player->mo, sfx_wpnup);
+                S_StartScreamSound(pmo, sfx_wpnup);
 #else
-                S_StartSound(player->mo, sfx_wpnup);
+                S_StartSound(pmo, sfx_wpnup);
 #endif
             }
         }
         else
         {
             if(!P_GivePower(player, pw_weaponlevel2))
-            {
-                return(false);
-            }
+	        goto ret_fail;
             if(player->readyweapon == wp_staff)
             {
                 P_SetPsprite(player, ps_weapon, S_STAFFREADY2_1);
@@ -1454,36 +1448,34 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         break;
     case arti_torch:
         if(!P_GivePower(player, pw_infrared))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_firebomb:
-        angle = player->mo->angle>>ANGLETOFINESHIFT;
-        mo = P_SpawnMobj(player->mo->x+24*finecosine[angle],
-            player->mo->y+24*finesine[angle], player->mo->z - 15*FRACUNIT*
-            ((player->mo->flags2&MF2_FEETARECLIPPED) != 0), MT_FIREBOMB);
-        mo->target = player->mo;
+        angle = pmo->angle>>ANGLETOFINESHIFT;
+        mo = P_SpawnMobj(pmo->x+24*finecosine[angle],
+            pmo->y+24*finesine[angle], pmo->z - 15*FRACUNIT*
+            ((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_FIREBOMB);
+        mo->target = pmo;
         break;
     case arti_egg:
-        mo = player->mo;
-        P_SpawnPlayerMissile(mo, MT_EGGFX);
-        P_SPMAngle(mo, MT_EGGFX, mo->angle-(ANG45/6));
-        P_SPMAngle(mo, MT_EGGFX, mo->angle+(ANG45/6));
-        P_SPMAngle(mo, MT_EGGFX, mo->angle-(ANG45/3));
-        P_SPMAngle(mo, MT_EGGFX, mo->angle+(ANG45/3));
+        P_SpawnPlayerMissile(pmo, MT_EGGFX);
+        P_SPMAngle(pmo, MT_EGGFX, pmo->angle-(ANG45/6));
+        P_SPMAngle(pmo, MT_EGGFX, pmo->angle+(ANG45/6));
+        P_SPMAngle(pmo, MT_EGGFX, pmo->angle-(ANG45/3));
+        P_SPMAngle(pmo, MT_EGGFX, pmo->angle+(ANG45/3));
         break;
     case arti_fly:
         if(!P_GivePower(player, pw_flight))
-        {
-            return(false);
-        }
+	    goto ret_fail;
         break;
     case arti_teleport:
         P_ArtiTele(player);
         break;
     default:
-        return(false);
+        goto ret_fail;
     }
     return(true);
+
+ret_fail:   
+    return(false);
 }
