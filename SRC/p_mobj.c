@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 826 2011-03-20 00:27:18Z wesleyjohnson $
+// $Id: p_mobj.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -448,17 +448,22 @@ void P_ThrustMobj(mobj_t * mo, angle_t angle, fixed_t move)
 //
 #define STOPSPEED               (0x1000/NEWTICRATERATIO)
 // ORIG_FRICTION, FRICTION_NORM fixed_t 0xE800 = 0.90625
-#define FRICTION_NORM           0xe800
-#define FRICTION_LOW            0xf900
-#define FRICTION_FLY            0xeb00
+//#define FRICTION_NORM           0xe800
+//#define FRICTION_LOW            0xf900
+//#define FRICTION_FLY            0xeb00
 
 //added:22-02-98: adds friction on the xy plane
-void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
+// Called from P_XYMovement
+// Called from P_MobjThinker
+void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 {
     //valid only if player avatar
     player_t *player = mo->player;
 #ifdef VOODOO_DOLL
+    // voodoo dolls do not depend on player cmd, and do not affect player
     boolean voodoo_mo = (player && (player->mo != mo));
+    if( voodoo_mo )
+       player = NULL;  // simplify the tests
 #endif
     fixed_t friction = FRICTION_NORM;
 
@@ -468,23 +473,17 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
     // from examination of prboom and zdoom,.
     if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
 	&& mo->momy > -STOPSPEED && mo->momy < STOPSPEED
-	&& (!player
-#ifdef VOODOO_DOLL
-	    || voodoo_mo
-#endif
+	&& (!player  // and voodoo_dolls
 	    || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
     {
         // if in a walking frame, stop moving
-        if (player
-#ifdef VOODOO_DOLL
-	    && !voodoo_mo  // not if voodoo doll (do not affect player mobj)
-#endif
-	    )
+        if (player)  // not if voodoo doll (do not affect player mobj)
         {
 	  if( mo->type != MT_SPIRIT )
 	  {
             if (player->chickenTics)
             {
+	        // Heretic
                 if ((unsigned) ((player->mo->state - states) - S_CHICPLAY_RUN1) < 4)
                     P_SetMobjState(player->mo, S_CHICPLAY);
             }
@@ -505,56 +504,87 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy, boolean oldfriction)
     else
     {
         // not stopped
-	// [WDJ] prboom and zdoom have new bobbing and friction here, by Killough etal. 10/98.
-        if (gamemode == heretic)
+	// [WDJ] 3/2011 new bobbing and friction here, mostly Killough etal. 10/98.
+        if ((mo->eflags & MF_UNDERWATER)
+	    && demoversion >= 128 )
         {
-            if (mo->flags2 & MF2_FLY && !(mo->z <= mo->floorz) && !(mo->flags2 & MF2_ONMOBJ))
-            {
-	        friction = FRICTION_FLY;
-//                mo->momx = FixedMul(mo->momx, FRICTION_FLY);
-//                mo->momy = FixedMul(mo->momy, FRICTION_FLY);
-            }
-            else if (mo->subsector->sector->special == 15)      // Friction_Low
+	    // slow down in water, not too much for playability issues
+	    friction = FRICTION_NORM *3/4;
+//	    mo->momx = FixedMul(mo->momx, FRICTION_NORM *3/4);
+//	    mo->momy = FixedMul(mo->momy, FRICTION_NORM *3/4);
+//	    return;
+	}
+	else if (mo->z > mo->floorz)
+        { 
+	    // not standing on a floor
+	    // MF2_ONMOBJ has FRICTION_NORM
+	    if ( !(mo->flags2 & MF2_ONMOBJ))
+	    {
+	        // not on obj or monster
+	        if (mo->flags2 & MF2_FLY)
+	        {
+		    // heretic fly, and fly cheat
+		    friction = FRICTION_FLY;
+		}
+	        else
+	        {
+		    return; // jumping players and falling have no friction
+		}
+	    }
+	}
+        // standing on a floor
+        else if(friction_model == FR_heretic)
+        {
+#if 1
+	    friction = P_GetFriction( mo );  // heretic friction in sector
+#else	   
+            if (mo->subsector->sector->special == 15)      // Friction_Low
             {
 	        friction = FRICTION_LOW;
-//                mo->momx = FixedMul(mo->momx, FRICTION_LOW);
-//                mo->momy = FixedMul(mo->momy, FRICTION_LOW);
             }
             else
             {
 	        friction = FRICTION_NORM;
-//                mo->momx = FixedMul(mo->momx, FRICTION_NORM);
-//                mo->momy = FixedMul(mo->momy, FRICTION_NORM);
             }
+#endif       
         }
-        else if (oldfriction)
+        else if(friction_model >= FR_mbf)
         {
-	    friction = FRICTION_NORM;
-//            mo->momx = FixedMul(mo->momx, FRICTION_NORM);
-//            mo->momy = FixedMul(mo->momy, FRICTION_NORM);
-        }
-        else
+	    // latest sector based friction model in common use (MBF, prboom, zdoom)
+	    friction = P_GetFriction( mo );
+	}
+        else if(friction_model == FR_boom)
         {
             //SoM: 3/28/2000: Use boom friction.
             if ((oldx == mo->x) && (oldy == mo->y))     // Did you go anywhere?
             {
+	        // Use original friction to not bob so much when not moving
+		// but enough to escape being stuck in wall.
 	        friction = ORIG_FRICTION;
-//                mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
-//                mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
             }
             else
+#ifdef FRICTIONTHINKER
             {
-	       	friction = mo->friction;
-//                mo->momx = FixedMul(mo->momx, mo->friction);
-//                mo->momy = FixedMul(mo->momy, mo->friction);
+	       	friction = mo->friction;  // from friction thinker
             }
             mo->friction = ORIG_FRICTION;
+#else
+            {
+	        friction = P_GetFriction( mo );  // a reasonable substitute
+            }
+#endif
+        }
+        else
+        {
+	    friction = FRICTION_NORM; // FR_orig
         }
         mo->momx = FixedMul(mo->momx, friction);
         mo->momy = FixedMul(mo->momy, friction);
     }
 }
 
+
+// Called by P_MobjThinker
 void P_XYMovement(mobj_t * mo)
 {
     int numsteps = 1;
@@ -579,6 +609,8 @@ void P_XYMovement(mobj_t * mo)
         }
         return;
     }
+
+    // heretic/hexen wind
     if (mo->flags2 & MF2_WINDTHRUST)
     {
         int special = mo->subsector->sector->special;
@@ -608,6 +640,8 @@ void P_XYMovement(mobj_t * mo)
     }
 
     player = mo->player;        //valid only if player avatar
+    if( player && (player->mo != mo))
+        player = NULL;  // player cheats not for voodoo dolls 
 
     if (mo->momx > MAXMOVE)
         mo->momx = MAXMOVE;
@@ -622,6 +656,10 @@ void P_XYMovement(mobj_t * mo)
     xmove = mo->momx;
     ymove = mo->momy;
 
+    // [WDJ] 3/2011 Moved out of loop and converted to stepping.
+    // Fixes mancubus fireballs which were too fast for collision tests,
+    // makes steps equal in size, and makes loop test faster and predictable.
+    // Boom bug had only the positive tests.
     if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
 	|| ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
     {
@@ -637,7 +675,7 @@ void P_XYMovement(mobj_t * mo)
         numsteps *= 2;
     }
 
-    oldx = mo->x;
+    oldx = mo->x;  // for later comparison in Boom bobbing reduction
     oldy = mo->y;
 
     ptryx = mo->x;
@@ -648,7 +686,13 @@ void P_XYMovement(mobj_t * mo)
         ptryx += xmove;
         ptryy += ymove;
 
-        if (!P_TryMove(mo, ptryx, ptryy, true)) //SoM: 4/10/2000
+        if (P_TryMove(mo, ptryx, ptryy, true)) //SoM: 4/10/2000
+        {   // success
+            // hack for playability : walk in-air to jump over a small wall
+	    if (player)
+	        player->cheats &= ~CF_JUMPOVER;
+	}
+        else  // P_TryMove
         {
             // blocked move
 
@@ -668,23 +712,27 @@ void P_XYMovement(mobj_t * mo)
                 }
             }
 
+	    // Boom has only player slides, but heretic has SLIDE attribute
             if (mo->flags2 & MF2_SLIDE)
             {   // try to slide along it
+	        // Alters momx,momy, and calls P_TryMove
                 P_SlideMove(mo);
             }
             else if (mo->flags & MF_MISSILE)
+	    {
+	        // TODO: put missile bounce here
 	        goto missile_impact;
+	    }
             else
+	    {
                 mo->momx = mo->momy = 0;
+	        break;  // otherwise does not stop
+	    }
         }
-        else  // P_TryMove
-        {
-            // hack for playability : walk in-air to jump over a small wall
-	    if (player)
-	        player->cheats &= ~CF_JUMPOVER;
-	}
-
     } while ( --numsteps );
+
+    if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
+        goto missile_fly;
 
     // slow down
     if (player)
@@ -695,29 +743,27 @@ void P_XYMovement(mobj_t * mo)
             mo->momx = mo->momy = 0;
             return;
         }
-        else if ((player->cheats & CF_FLYAROUND) || (player->mo->flags2 & MF2_FLY))
+        else if (player->cheats & CF_FLYAROUND)  // fly cheat
         {
-            P_XYFriction(mo, oldx, oldy, true);
+	    // [WDJ] Heretic FLY was removed from here because it should be
+	    // subject to underwater and other tests, as in Legacy2.
+	    // Implement FLYAROUND using heretic fly, avoiding extra tests.
+	    int f2 = mo->flags2;
+	    mo->flags2 |= MF2_FLY;
+            P_XYFriction(mo, oldx, oldy);
+	    mo->flags2 = f2;
             return;
         }
 //        if(mo->z <= mo->subsector->sector->floorheight)
-//          P_XYFriction (mo, oldx, oldy, false);
+//          P_XYFriction (mo, oldx, oldy);
     }
 
-    if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
-        return; // no friction for missiles ever
-
-    // slow down in water, not too much for playability issues
-    if ((mo->eflags & MF_UNDERWATER)
-	&& demoversion >= 128 )
+    if ((mo->z > mo->floorz)
+	&& !(mo->flags2 & (MF2_FLY | MF2_ONMOBJ))
+	&& !(mo->eflags & MF_UNDERWATER))
     {
-        mo->momx = FixedMul(mo->momx, FRICTION_NORM * 3 / 4);
-        mo->momy = FixedMul(mo->momy, FRICTION_NORM * 3 / 4);
-        return;
-    }
-
-    if (mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) && !(mo->flags2 & MF2_ONMOBJ))
         return; // no friction when airborne
+    }
 
     if (mo->flags & MF_CORPSE)
     {
@@ -727,6 +773,7 @@ void P_XYMovement(mobj_t * mo)
         {
             if (demoversion < 132)
             {
+	        // original and Boom test
                 if (mo->z != mo->subsector->sector->floorheight)
                     return;
             }
@@ -737,9 +784,17 @@ void P_XYMovement(mobj_t * mo)
             }
         }
     }
-    P_XYFriction(mo, oldx, oldy, demoversion < 132);
+    P_XYFriction(mo, oldx, oldy); // thing friction
     return;
 
+    // [WDJ] Special exit handling for missiles
+missile_fly:
+//    if (mo->flags & MF_SKULLFLY)  return;
+    // no friction for missiles ever
+    
+    // Put missile bouncing here (hexen)
+    return;
+   
 
     // [WDJ] Exit taken out of loop to make it easier to read.
 missile_impact:
@@ -1034,7 +1089,7 @@ void P_ZMovement(mobj_t * mo)
 
     // z friction in water
     if ((demoversion >= 128)
-	&& ((mo->eflags & MF_TOUCHWATER) || (mo->eflags & MF_UNDERWATER))
+	&& ((mo->eflags & (MF_TOUCHWATER | MF_UNDERWATER)))
 	&& !(mo->flags & (MF_MISSILE | MF_SKULLFLY)) )
     {
         mo->momz = FixedMul(mo->momz, FRICTION_NORM * 3 / 4);
@@ -1124,8 +1179,10 @@ consvar_t cv_respawnmonsterstime = { "respawnmonsterstime", "12", CV_NETVAR, CV_
 void P_MobjCheckWater(mobj_t * mobj)
 {
     sector_t *sector;
-    fixed_t z;
     int oldeflags;
+    fixed_t mo_top = mobj->z + mobj->info->height;
+    fixed_t mo_half = mobj->z + (mobj->info->height>>1);
+    fixed_t z;
 
     if (demoversion < 128
 	|| mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
@@ -1148,12 +1205,12 @@ void P_MobjCheckWater(mobj_t * mobj)
         else
             z = sector->floorheight + (FRACUNIT / 4);   // water texture
 
-        if (mobj->z <= z && mobj->z + mobj->height > z)
+        if (mobj->z <= z && mo_top > z)
             mobj->eflags |= MF_TOUCHWATER;
         else
             mobj->eflags &= ~MF_TOUCHWATER;
 
-        if (mobj->z + (mobj->height >> 1) <= z)
+        if (mo_half <= z)
             mobj->eflags |= MF_UNDERWATER;
         else
             mobj->eflags &= ~MF_UNDERWATER;
@@ -1168,15 +1225,15 @@ void P_MobjCheckWater(mobj_t * mobj)
         {
             if (!(rover->flags & FF_SWIMMABLE) || rover->flags & FF_SOLID)
                 continue;
-            if (*rover->topheight <= mobj->z || *rover->bottomheight > (mobj->z + (mobj->info->height >> 1)))
+            if (*rover->topheight <= mobj->z || *rover->bottomheight > mo_half)
                 continue;
 
-            if (mobj->z + mobj->info->height > *rover->topheight)
+            if (mo_top > *rover->topheight)
                 mobj->eflags |= MF_TOUCHWATER;
             else
                 mobj->eflags &= ~MF_TOUCHWATER;
 
-            if (mobj->z + (mobj->info->height >> 1) < *rover->topheight)
+            if (mo_half < *rover->topheight)
                 mobj->eflags |= MF_UNDERWATER;
             else
                 mobj->eflags &= ~MF_UNDERWATER;
@@ -1197,7 +1254,7 @@ void P_MobjCheckWater(mobj_t * mobj)
 */
     // blood doesnt make noise when it falls in water
     if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
-	&& ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER))
+	&& ((mobj->eflags & (MF_TOUCHWATER | MF_UNDERWATER)) )
 	&& mobj->type != MT_BLOOD
 	&& demoversion < 132)
         P_SpawnSplash(mobj, z); //SoM: 3/17/2000
@@ -1264,8 +1321,7 @@ void P_MobjThinker(mobj_t * mobj)
             }
             mobj->eflags &= ~MF_NOZCHECKING;
         }
-        P_XYFriction(mobj, oldx, oldy, false);
-
+        P_XYFriction(mobj, oldx, oldy);  // thing friction
     }
     else
 #endif
@@ -1298,7 +1354,7 @@ void P_MobjThinker(mobj_t * mobj)
                 // FIXME : should check only with things, not lines
                 P_CheckPosition(mobj, mobj->x, mobj->y);
 
-	        // tmr_floorz, tmr_ceilingz, trm_floorthing returned by P_CheckPosition
+	        // tmr_floorz, tmr_ceilingz, tmr_floorthing returned by P_CheckPosition
                 mobj->floorz = tmr_floorz;
                 mobj->ceilingz = tmr_ceilingz;
                 if (tmr_floorthing)

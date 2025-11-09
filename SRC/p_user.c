@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 830 2011-05-26 23:59:45Z wesleyjohnson $
+// $Id: p_user.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -104,8 +104,8 @@
 //added:22-02-98: initial momz when player jumps (moves up)
 fixed_t JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
 
-boolean         onground;
-int				extramovefactor = 0;
+boolean  onground;
+int	 extramovefactor = 0;
 
 
 //
@@ -115,17 +115,16 @@ int				extramovefactor = 0;
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
     angle >>= ANGLETOFINESHIFT;
-    if(player->mo->subsector->sector->special == 15
-    && !(player->powers[pw_flight] && !(player->mo->z <= player->mo->floorz))) // Friction_Low
+#if 0
+    // friction and movefactor are now sector attributes
+    if(player->mo->subsector->sector->special == 15  // heretic ice
+       && !(player->powers[pw_flight] && (player->mo->z > player->mo->floorz)))
     {
-        player->mo->momx += FixedMul(move>>2, finecosine[angle]);
-        player->mo->momy += FixedMul(move>>2, finesine[angle]);
+        move>>=2;  // Friction_Low
     }
-    else
-    {
-        player->mo->momx += FixedMul(move, finecosine[angle]);
-        player->mo->momy += FixedMul(move, finesine[angle]);
-    }
+#endif   
+    player->mo->momx += FixedMul(move, finecosine[angle]);
+    player->mo->momy += FixedMul(move, finesine[angle]);
 }
 
 #ifdef CLIENTPREDICTION2
@@ -136,19 +135,19 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 void P_ThrustSpirit(player_t *player, angle_t angle, fixed_t move)
 {
     angle >>= ANGLETOFINESHIFT;
+#if 0   
+    // friction and movefactor are now sector attributes
     if(player->spirit->subsector->sector->special == 15
     && !(player->powers[pw_flight] && !(player->spirit->z <= player->spirit->floorz))) // Friction_Low
     {
-        player->spirit->momx += FixedMul(move>>2, finecosine[angle]);
-        player->spirit->momy += FixedMul(move>>2, finesine[angle]);
+        move>>=2;  // Friction_Low
     }
-    else
-    {
-        player->spirit->momx += FixedMul(move, finecosine[angle]);
-        player->spirit->momy += FixedMul(move, finesine[angle]);
-    }
+#endif   
+    player->spirit->momx += FixedMul(move, finecosine[angle]);
+    player->spirit->momy += FixedMul(move, finesine[angle]);
 }
 #endif
+
 
 //
 // P_CalcHeight
@@ -248,6 +247,8 @@ void P_CalcHeight (player_t* player)
 
 
 extern int ticruned,ticmiss;
+
+byte  EN_move_doom = 0;
 #ifdef ABSOLUTEANGLE
 byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
 #endif
@@ -255,6 +256,12 @@ byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
 // local version control
 void DemoAdapt_p_user( void )
 {
+    EN_move_doom =
+       (gamemode != heretic)
+       && ( (demoversion<128)  // legacy demo and orig doom
+	    || (demoversion>=200 && demoversion <=202) // boom demo
+	    );
+
 #ifdef ABSOLUTEANGLE
     // abs angle in legacy demos only
     EN_cmd_abs_angle = (demoversion >= 125) && (demoversion < 200);
@@ -269,7 +276,7 @@ void P_MovePlayer (player_t* player)
 {
     mobj_t *   pmo = player->mo;
     ticcmd_t*  cmd = &player->cmd;
-    int                 movefactor = 2048; //For Boom friction
+    int  movefactor = ORIG_FRICTION_FACTOR; // default
 
 #ifdef ABSOLUTEANGLE
     if(EN_cmd_abs_angle)
@@ -289,37 +296,51 @@ void P_MovePlayer (player_t* player)
                || (player->cheats & CF_FLYAROUND)   // cheat
                || (pmo->flags2&(MF2_ONMOBJ|MF2_FLY));  // heretic
 
-    if(demoversion<128)
+    if(variable_friction && onground)
     {
+        movefactor = P_GetMoveFactor(pmo); // gets got_movefactor, got_friction
+//        CONS_Printf("friction: %X, movefactor: %i\n", got_friction, movefactor);
+    }
+
+    if( EN_move_doom )
+    {
+        // Doom and Boom movement
         boolean  jumpover = player->cheats & CF_JUMPOVER;
         if (cmd->forwardmove && (onground || jumpover))
         {
             // dirty hack to let the player avatar walk over a small wall
             // while in the air
-            if (jumpover && pmo->momz > 0)
-                P_Thrust (player, player->mo->angle, 5*2048);
+            if (jumpover)
+	    {
+	        if(pmo->momz > 0)
+		    P_Thrust (player, pmo->angle, 5*movefactor);
+	    }
             else
-                if (!jumpover)
-                    P_Thrust (player, pmo->angle, cmd->forwardmove*2048);
+	    {
+	        P_Thrust (player, pmo->angle, cmd->forwardmove*movefactor);
+	    }
         }
     
         if (cmd->sidemove && onground)
-            P_Thrust (player, pmo->angle-ANG90, cmd->sidemove*2048);
+        {
+            P_Thrust (player, pmo->angle-ANG90, cmd->sidemove*movefactor);
+	}
 
         player->aiming = (signed char)cmd->aiming;
     }
     else
     {
-        fixed_t   movepushforward=0,movepushside=0;
+        // most current
+        fixed_t   movepushforward=0, movepushside=0;
         player->aiming = cmd->aiming<<16;
         if( player->chickenTics )
-            movefactor = 2500;
-        if(boomsupport && variable_friction)
         {
-          //SoM: This seems to be buggy! Can anyone figure out why??
-          movefactor = P_GetMoveFactor(pmo);
-          //CONS_Printf("movefactor: %i\n", movefactor);
-        }
+	    // [WDJ] Moved to after other movefactor, so it can have some effect.
+            // movefactor = 2500;  // heretic chicken
+	    // Modify movefactor to chicken size, (chicken on ice)
+	    movefactor = movefactor * 625 / 512;
+	      // * 2500 / 2048
+	}
 
         if (cmd->forwardmove)
         {
@@ -354,9 +375,11 @@ void P_MovePlayer (player_t* player)
                 else
                     movepushside = movepushside *3/4;
             }
-            else 
+            else
+	    {
                 if (!onground)
                     movepushside >>= 3;
+	    }
 
             P_Thrust (player, pmo->angle-ANG90, movepushside);
         }
@@ -413,7 +436,7 @@ void P_MovePlayer (player_t* player)
             if(pmo->state == &states[S_PLAY])
                 P_SetMobjState(pmo, S_PLAY_RUN1);
     }
-    if( gamemode == heretic && (cmd->angleturn & BT_FLYDOWN) )
+    if( (gamemode == heretic) && (cmd->angleturn & BT_FLYDOWN) )
     {
         player->flyheight = -10;
     }
@@ -1211,8 +1234,8 @@ void P_PlayerThink (player_t* player)
 /* HERETODO
             if(pmo->z != pmo->floorz)
                 player->centering = true;
-*/            
-	    // timed out heretic fly power
+*/
+            // timed out heretic fly power
             pmo->flags2 &= ~MF2_FLY;
             pmo->flags &= ~MF_NOGRAVITY;
            // BorderTopRefresh = true; //make sure the sprite's cleared out
@@ -1375,20 +1398,20 @@ void P_ArtiTele(player_t *player)
     fixed_t destX;
     fixed_t destY;
     angle_t destAngle;
+    mapthing_t * mtp;
     
     if(cv_deathmatch.value)
     {
         i = P_Random()%numdmstarts;
-        destX = deathmatchstarts[i]->x<<FRACBITS;
-        destY = deathmatchstarts[i]->y<<FRACBITS;
-        destAngle = ANG45*(deathmatchstarts[i]->angle/45);
+        mtp = deathmatchstarts[i];
     }
     else
     {
-        destX = playerstarts[0]->x<<FRACBITS;
-        destY = playerstarts[0]->y<<FRACBITS;
-        destAngle = ANG45*(playerstarts[0]->angle/45);
+        mtp = playerstarts[0];
     }
+    destX = mtp->x<<FRACBITS;
+    destY = mtp->y<<FRACBITS;
+    destAngle = ANG45*(mtp->angle/45);
     P_Teleport(player->mo, destX, destY, destAngle);
     S_StartSound(NULL, sfx_wpnup); // Full volume laugh
 }

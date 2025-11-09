@@ -1,8 +1,0 @@
-@ECHO OFF
-REM DOSBOX OPTIONALS CYCLES
-CD _GCC
-DEL /Q *.LOG
-CD ..
-config -SET CPU CYCLES = max 500% >NUL
-make
-config -SET CPU CYCLES = max >NUL

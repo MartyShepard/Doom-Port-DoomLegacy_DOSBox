@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: p_setup.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -656,6 +656,8 @@ void P_LoadSectors (int lump)
         ss->modelsec = -1; //SoM: 3/17/2000: This causes some real problems
        			   // [WDJ] Is now dependent upon model
         ss->model = SM_normal; //SoM: 3/20/2000, [WDJ] 11/14/2009
+        ss->friction = ORIG_FRICTION;  // normal friction
+        ss->movefactor = ORIG_FRICTION_FACTOR;
         ss->floorlightsec = -1;
         ss->ceilinglightsec = -1;
         ss->ffloors = NULL;

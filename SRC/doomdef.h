@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 796 2011-02-28 19:54:00Z wesleyjohnson $
+// $Id: doomdef.h 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -215,6 +215,12 @@ extern char VERSION_BANNER[];
 #define NEWLIGHT                // compute lighting with bsp (in construction)
 #define FRAGGLESCRIPT           // SoM: Activate FraggleScript
 #define FIXROVERBUGS // Fix some 3dfloor bugs. SSNTails 06-13-2002
+
+// For Boom demo compatibility, spawns friction thinkers
+#define FRICTIONTHINKER
+
+
+
 
 // [WDJ] Voodoo doll 4/30/2009
 // A voodoo doll is an accident of having multiple start points for a player.

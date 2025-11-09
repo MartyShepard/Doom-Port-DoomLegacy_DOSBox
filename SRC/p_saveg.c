@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: p_saveg.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1074,7 +1074,11 @@ void P_UnArchiveWorld(void)
         if (diff & SD_LIGHT)
             secp->lightlevel = READ16(get);
         if (diff & SD_SPECIAL)
-            secp->special = READ16(get);
+        {
+	    // OK to update, savegame linedef changes are not read yet,
+	    // but linedef changes do not affect sectors that are already setup.
+	    P_Update_Special_Sector( secp, READ16(get) );
+	}
 
         if (diff2 & SD_FXOFFS)
             secp->floor_xoffs = READFIXED(get);
@@ -1788,13 +1792,16 @@ void P_ArchiveThinkers(void)
 	    WRITE_THINKER( scroll, scroll_t, type );
             continue;
         }
+#ifdef FRICTIONTHINKER
         else if (th->function.acp1 == (actionf_p1) T_Friction)
         {
+	    // Friction thinkers are obsolete
             WRITEBYTE(save_p, tc_friction);
 	    friction_t *friction = (friction_t *)th;
 	    WRITE_THINKER( friction, friction_t, affectee );
             continue;
         }
+#endif       
         else if (th->function.acp1 == (actionf_p1) T_Pusher)
         {
 	    WRITEBYTE(save_p, tc_pusher);
@@ -2151,9 +2158,15 @@ void P_UnArchiveThinkers(void)
 
             case tc_friction:
 	      {
+#ifdef FRICTIONTHINKER
+		 // friction thinkers are obsolete
 		friction_t *friction = Z_Malloc(sizeof(friction_t), PU_LEVEL, NULL);
 		READ_THINKER( friction, friction_t, affectee );
                 friction->thinker.function.acp1 = (actionf_p1) T_Friction;
+#else
+		// skip, to handle old savegames
+		save_p += sizeof(thinker_t);
+#endif
 	      }
 	      break;
 

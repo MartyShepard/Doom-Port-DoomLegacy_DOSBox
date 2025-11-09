@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 830 2011-05-26 23:59:45Z wesleyjohnson $
+// $Id: p_local.h 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -327,8 +327,12 @@ boolean P_ChangeSector (sector_t* sector, boolean crunch);
 
 void    P_DelSeclist(msecnode_t *);
 void    P_CreateSecNodeList(mobj_t*,fixed_t,fixed_t);
-int     P_GetMoveFactor(mobj_t* mo);
 void    P_Initsecnode( void );
+
+fixed_t  got_friction;
+int      got_movefactor;  // return values of P_GetFriction and P_GetMoveFactor
+fixed_t P_GetFriction( const mobj_t * mo );
+int     P_GetMoveFactor(mobj_t* mo);
 
 // Line Attack return global vars  lar_*
 extern mobj_t*  lar_linetarget;  // who got hit (or NULL)
@@ -392,6 +396,10 @@ extern int allow_pushers;
 extern byte  monster_friction;  // MBF demo flag
 extern byte  mbf_support;  // [WDJ] MBF enable
 			   // similar to prboom mbf_features, but as a flag
+typedef enum {
+  FR_orig, FR_boom, FR_mbf, FR_prboom, FR_legacy, FR_heretic, FR_hexen
+} friction_model_e;
+extern friction_model_e  friction_model;
 
 void  DemoAdapt_p_user( void );
 

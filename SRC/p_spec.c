@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 830 2011-05-26 23:59:45Z wesleyjohnson $
+// $Id: p_spec.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -187,12 +187,14 @@ int allow_pushers = 1;
 byte  monster_friction = 1;  // MBF demo flag
 byte  mbf_support = 1;  // [WDJ] MBF enable
 			// similar to prboom mbf_features, but as a flag
+// [WDJ]
+friction_model_e  friction_model = FR_legacy;
 
 
 //SoM: 3/7/2000
 static void P_SpawnScrollers(void);
 
-static void P_SpawnFriction(void);
+static void P_SpawnFriction(sector_t *);
 static void P_SpawnPushers(void);
 static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affectee); //SoM: 3/9/2000
 void P_FindAnimatedFlat (int i);
@@ -1536,6 +1538,7 @@ P_ActivateCrossedLine ( line_t*       line,
       }
   
       if (linefunc) // if it was a valid generalized type
+      {
         switch((line->special & TriggerType) >> TriggerTypeShift)
         {
           case WalkOnce:
@@ -1549,17 +1552,22 @@ P_ActivateCrossedLine ( line_t*       line,
             return;
         }
       }
+    } // boomsupport
 
 
-      if(!thing->player)
-      {
+    if(!thing->player)
+    {
         ok = 0;
-        if( gamemode == heretic && (line->special == 4 || line->special==39 || line->special == 97) )
+        if( gamemode == heretic
+	    && (line->special == 4 || line->special==39 || line->special == 97) )
+	{
             ok = 1;
+	}
         else
 	{
           switch(line->special)
           {
+	     // Doom monster triggered special linedefs
 	   case 39:      // TELEPORT TRIGGER
 	   case 97:      // TELEPORT RETRIGGER
 	   case 125:     // TELEPORT MONSTERONLY TRIGGER
@@ -1594,11 +1602,12 @@ P_ActivateCrossedLine ( line_t*       line,
 
         if (!ok)
             return;
-    }
+    } // ! player
 
     if (!P_CheckTag(line) && boomsupport)
       return;
 
+    // Doom special linedefs
     // Note: could use some const's here.
     switch (line->special)
     {
@@ -1636,7 +1645,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 8:
         // Build Stairs
-        if(EV_BuildStairs(line,gamemode == heretic ? 8*FRACUNIT : build8) || !boomsupport)
+        if(EV_BuildStairs(line, (gamemode == heretic) ? 8*FRACUNIT : build8) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1803,7 +1812,9 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 100:
         if( gamemode == heretic )
+        {
           EV_DoDoor (line, normalDoor, VDOORSPEED * 3);
+	}
         else
         {
           // Build Stairs Turbo 16
@@ -2061,7 +2072,9 @@ P_ActivateCrossedLine ( line_t*       line,
 
       // SoM:3/4/2000: Extended Boom W* triggers.
       default:
-        if(boomsupport) {
+        if(boomsupport)
+        {
+	  // Boom special linedefs
           switch(line->special) {
             //SoM: 3/4/2000:Boom Walk once triggers.
             //SoM: 3/4/2000:Yes this is "copied" code! I just cleaned it up. Did you think I was going to retype all this?!
@@ -2926,11 +2939,22 @@ void P_AddFFloor(sector_t* sec, ffloor_t* ffloor)
 // Called by P_SetupLevel after all Load of sectors, linedef, and sidedef.
 // P_LoadSideDefs2 has already interpreted colormap and texture
 // for linedef specials.
+// Called before playing game or playing demo
 void P_SpawnSpecials (void)
 {
     sector_t*   sector;
     int         i;
     int         episode;
+    // update all special sectors
+    fixed_t  water_friction = FRICTION_NORM;
+    int  water_movefactor = ORIG_FRICTION_FACTOR;
+
+    // [WDJ] 3/2011 Legacy shallow water friction
+    if( friction_model == FR_legacy )
+    {
+        water_friction = FRICTION_NORM * 97/100;  // slog
+        water_movefactor = 8*((FRICTION_NORM-48 - 0xDB34)*(0xA))/0x80; // non stick
+    }
 
     episode = 1;
     if (W_CheckNumForName("texture2") >= 0)
@@ -2940,6 +2964,9 @@ void P_SpawnSpecials (void)
     sector = sectors;
     for (i=0 ; i<numsectors ; i++, sector++)
     {
+        sector->friction = FRICTION_NORM;  // defaults
+        sector->movefactor = ORIG_FRICTION_FACTOR;
+       
         if (!sector->special)
             continue;
 
@@ -2965,17 +2992,20 @@ void P_SpawnSpecials (void)
 
           case 4:
             if( raven )
-                break;
+                break; // see P_HerePlayerInSpecialSector, Scroll_EastLavaDamage
             // STROBE FAST/DEATH SLIME
             P_SpawnStrobeFlash(sector,FASTDARK,0);
             sector->special |= 3<<DAMAGE_SHIFT; //SoM: 3/8/2000: put damage bits in
             break;
 
+//	  case 5: // see P_HerePlayerInSpecialSector, Damage_LavaWimpy
+// 	  case 7: // see P_HerePlayerInSpecialSector, Damage_Sludge
           case 8:
             // GLOWING LIGHT
             P_SpawnGlowingLight(sector);
             break;
 
+// 	  case 9: // see P_HerePlayerInSpecialSector, Secret_Area
           case 9:
             // SECRET SECTOR
             if(sector->special<32)
@@ -2987,6 +3017,7 @@ void P_SpawnSpecials (void)
             P_SpawnDoorCloseIn30 (sector);
             break;
 
+// 	  case 11: // see P_HerePlayerInSpecialSector, Exit_SuperDamage
           case 12:
             // SYNC STROBE SLOW
             P_SpawnStrobeFlash (sector, SLOWDARK, 1);
@@ -3002,9 +3033,21 @@ void P_SpawnSpecials (void)
             P_SpawnDoorRaiseIn5Mins (sector, i);
             break;
 
+          case 15:
+	    if( gamemode == heretic )
+	    {
+	        sector->friction = FRICTION_LOW;  // ice sector
+	        sector->movefactor = (ORIG_FRICTION_FACTOR/4);
+	    }
+	    break;
+
+//	  case 16: // see P_HerePlayerInSpecialSector, Damage_LavaHefty
           case 17:
             P_SpawnFireFlicker(sector);
             break;
+
+//	  case 25..39: // see P_HerePlayerInSpecialSector, Scroll
+//	  case 40..51: // see P_HerePlayerInSpecialSector, Wind
         }
     }
 
@@ -3016,7 +3059,6 @@ void P_SpawnSpecials (void)
 
     P_InitTagLists();   //Create xref tables for tags
     P_SpawnScrollers(); //Add generalized scrollers
-    P_SpawnFriction();  //New friction model using linedefs
     P_SpawnPushers();   //New pusher model using linedefs
 
     //  Init line EFFECTs
@@ -3054,6 +3096,8 @@ void P_SpawnSpecials (void)
 	    {
               sectors[fsecn].modelsec = model_secnum;
               sectors[fsecn].model = SM_Boom_deep_water;
+              sectors[fsecn].friction = water_friction;
+              sectors[fsecn].movefactor = water_movefactor;
 	    }
             break;
 
@@ -3070,6 +3114,8 @@ void P_SpawnSpecials (void)
             {
               sectors[fsecn].modelsec = model_secnum;
               sectors[fsecn].model = SM_Legacy_water;
+              sectors[fsecn].friction = water_friction;
+              sectors[fsecn].movefactor = water_movefactor;
             }
             break;
 
@@ -3111,8 +3157,10 @@ void P_SpawnSpecials (void)
 	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
+	    }
             break;
 
           // TL water
@@ -3123,9 +3171,13 @@ void P_SpawnSpecials (void)
             // Within the water is the lightlevel and colormap of the model sector.
 	    // Under the 3Dfloor is the light and colormap of the model sector.
 	    if ( model_secnum < 0 )  goto missing_model;
+	    model_secp->friction = water_friction;
+	    model_secp->movefactor = water_movefactor;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                         FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+	    }
             break;
 
           // Fog
@@ -3166,6 +3218,8 @@ void P_SpawnSpecials (void)
             // Within the water is the lightlevel and colormap of the model sector.
 	    // Under the 3Dfloor is the light and colormap of the model sector.
 	    if ( model_secnum < 0 )  goto missing_model;
+	    model_secp->friction = water_friction;
+	    model_secp->movefactor = water_movefactor;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
@@ -3232,6 +3286,9 @@ void P_SpawnSpecials (void)
     missing_model:
        I_SoftError( "Model sector missing: linedef %d\n", i ); // line num i
     } // for
+
+    // [WDJ] Last so Boom friction linedef can override other sector frictions.
+    P_SpawnFriction(NULL);  //New friction model using linedefs
 }
 
 
@@ -3316,7 +3373,6 @@ void T_Scroll(scroll_t *s)
       height = sec->floorheight;
       // [WDJ] fix precedence  11/25/2009
       // MININT unless has special sector, and sector floor height > height
-//      waterheight = ((sec->modelsec != -1) &&
       waterheight = ((sec->model > SM_fluid) &&
         (sectors[sec->modelsec].floorheight > height)) ?
             sectors[sec->modelsec].floorheight : MININT ;
@@ -3502,7 +3558,9 @@ static void P_SpawnScrollers(void)
   P_SpawnFriction
 */
 
+#ifdef FRICTIONTHINKER
 // Adds friction thinker.
+// [WDJ] Obsolete. Only kept for Boom demo.
 static void Add_Friction(int friction, int movefactor, int affectee)
 {
     friction_t *f = Z_Malloc(sizeof *f, PU_LEVSPEC, 0);
@@ -3517,6 +3575,7 @@ static void Add_Friction(int friction, int movefactor, int affectee)
 
 
 //Function to apply friction to all the things in a sector.
+// [WDJ] Obsolete. Only kept for Boom demo.
 void T_Friction(friction_t *f)
 {
     sector_t *sec;
@@ -3582,22 +3641,61 @@ void T_Friction(friction_t *f)
         node = node->m_snext;
     }
 }
+#endif
+
+// [WDJ] 3/2011 Adopting the section friction code of killough,
+// such as zdoom and prboom use.
+// 1. Friction thinker only considered sectors with same tag as friction linedef.
+// Section friction code would work with changing tag too.
+// 2. Unlike the original concept, this implementation uses the sector friction
+// fields in all sectors, making for faster friction testing.  Sector friction
+// must be updated anywhere FRICTION_MASK could be changed.
+// 3. Implements the edge effect for ice, fully as described, where other
+// implementations should have problems due to not considering NORMAL sectors.
+
+// I feel obligated to include the original comment that explains it
+// (from prboom).
+// 
+// killough 8/28/98:
+//
+// Completely redid code, which did not need thinkers, and which put a heavy
+// drag on CPU. Friction is now a property of sectors, NOT objects inside
+// them. All objects, not just players, are affected by it, if they touch
+// the sector's floor. Code simpler and faster, only calling on friction
+// calculations when an object needs friction considered, instead of doing
+// friction calculations on every sector during every tic.
+//
+// Although this -might- ruin Boom demo sync involving friction, it's the only
+// way, short of code explosion, to fix the original design bug. Fixing the
+// design bug in Boom's original friction code, while maintaining demo sync
+// under every conceivable circumstance, would double or triple code size, and
+// would require maintenance of buggy legacy code which is only useful for old
+// demos. Doom demos, which are more important IMO, are not affected by this
+// change.
 
 
 //Spawn all friction.
-static void P_SpawnFriction(void)
+// One specific sector, or NULL for all linedef and sectors
+// Called before playing game or playing demo
+static void P_SpawnFriction( sector_t * sec )
 {
+#ifdef FRICTIONTHINKER
+    // friction thinkers were used in Boom demos and old legacy demos
+    boolean frictionthinker = (friction_model == FR_boom);
+#endif
+   
     int i;
     line_t * lnp = lines;
     register int fsecn;
-    int length;     // line length controls magnitude
-    int friction;   // friction value to be applied during movement
+    fixed_t friction;   // friction value to be applied during movement
     int movefactor; // applied to each player move to simulate inertia
 
     for (i = 0 ; i < numlines ; i++,lnp++)
     {
         if (lnp->special == 223)  // Boom Friction by length linedef
         {
+	    if( sec && (sec->tag != lnp->tag) ) // specific sector test
+	        continue;
 	    // From Boom ref:
 	    // The length of the linedef controls the friction in the tagged sector.
 	    // Length < 100 : stickiness, like mud
@@ -3605,43 +3703,115 @@ static void P_SpawnFriction(void)
 	    // Only works on a like tagged sector with the friction enable bit set,
 	    // which allows the effect to be turned on/off.
 	    // Demo sync is a known problem (see prboom).
-            length = P_AproxDistance(lnp->dx,lnp->dy)>>FRACBITS;
+
+	    // line length controls magnitude
+            int length = P_AproxDistance(lnp->dx,lnp->dy)>>FRACBITS;
             // [WDJ] ZDoom uses 0xD001, prboom uses 0xD000
 	    // At length=100, friction should equal ORIG_FRICTION = 0xE800
 //            friction = (0x1EB8*length)/0x80 + 0xD000;
             friction = (0x1EB8*length)/0x80 + 0xD001;
 
-            if(friction > FRACUNIT)
-              friction = FRACUNIT;
-            if(friction < 0)
-              friction = 0;
+	    // [WDJ] friction and movefactor limiting appeared in
+	    // mbf, prboom, and legacy demos.
+	    // I see no reason to exclude it for older demos, as it only prevents weird effects.
+	    if(friction > FRACUNIT)
+	        friction = FRACUNIT;
+	    if(friction < 0)
+		friction = 0;
 
             // The following check might seem odd. At the time of movement,
             // the move distance is multiplied by 'friction/0x10000', so a
             // higher friction value actually means 'less friction'.
 
             if (friction > ORIG_FRICTION)       // ice
+	    {
 	        if( raven ) // heretic or hexen
 	          // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
 	          movefactor = ((0x10092 - friction)*(0x40))/0x110 + 0x238;
 		else
-	          movefactor = ((0x10092 - friction)*(0x70))/0x158;
+	          movefactor = ((0x10092 - friction)*(0x70))/0x158; // boom ice
+	    }
             else
                 movefactor = ((friction - 0xDB34)*(0xA))/0x80;  // mud
 
-            // killough 8/28/98: prevent odd situations
-            if (movefactor < 32)
-              movefactor = 32;
+// [WDJ] To see friction calculations, uncomment this fprintf	   
+//fprintf(stderr, "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
 
+	    // killough 8/28/98: prevent odd situations
+	    if (movefactor < 32)
+	        movefactor = 32;
+
+	    if( sec )
+	    {
+	        // update one specific sector
+		sec->friction = friction;
+	        sec->movefactor = movefactor;
+#ifdef FRICTIONTHINKER
+	        // [WDJ] Friction thinkers are obsolete.
+		if( frictionthinker )
+	        {
+		    // Thinkers used only for some demos.
+                    Add_Friction(friction, movefactor, sec-sectors);
+		}
+#endif
+	        continue;
+	    }
+	   
+	    // set friction in all sectors with the same linedef tag
 	    fsecn = -1; // init search FindSector
             while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
-                Add_Friction(friction, movefactor, fsecn);
+	    {
+	        // Sector friction
+		sectors[fsecn].friction = friction;
+	        sectors[fsecn].movefactor = movefactor;
+#ifdef FRICTIONTHINKER
+	        // [WDJ] Friction thinkers are obsolete.
+		if( frictionthinker )
+	        {
+		    // Thinkers used only for some demos.
+                    Add_Friction(friction, movefactor, fsecn);
+		}
+#endif
+	    }
 	}
     }
 }
 
 
+// [WDJ] 3/2011 To support using friction field when change of FRICTION_MASK occurs.
+// Update sector fields after a change of special type.
+void P_Update_Special_Sector( sector_t * sec, short new_special )
+{
+    sec->special = new_special;
 
+    // Normal sector first, FRICTION_MASK might be off or might not find friction linedef.
+    // normal friction default
+    sec->friction = FRICTION_NORM;
+    sec->movefactor = ORIG_FRICTION_FACTOR;
+    if (gamemode == heretic
+	&& new_special == 15 )   // Friction_Low
+    {
+        sec->friction = FRICTION_LOW;
+        sec->movefactor = ORIG_FRICTION_FACTOR/4;
+    }
+    else if( sec->model >= SM_fluid )
+    {
+        if( friction_model == FR_legacy )
+        {  // water_friction
+	    sec->friction = FRICTION_NORM * 97/100;  // slog
+	    sec->movefactor = 8*((FRICTION_NORM-48 - 0xDB34)*(0xA))/0x80; // non stick
+	}
+    }
+    // FRICTION_MASK is Boom generalized sector type ( special > 32 )
+    // Can override other sector special friction
+    // Or, there might not be a friction linedef with the tag number.
+    if( new_special & FRICTION_MASK )
+    {
+        // With FRICTION_MASK, must recalculate the friction.
+        // Re-spawn for this sector
+        P_SpawnFriction( sec );
+    }
+}
 
 
 /*
@@ -3931,7 +4101,6 @@ void T_Pusher(pusher_t *p)
         // and prevented detecting FLOOR_WATER and LAVA.
 
         // Sector tests, independent of nodes
-//        if (sec->model == SM_Legacy_water) // Legacy water only
         if (sec->model > SM_fluid)	// Legacy and Boom water
         {
 	    sm_ht = (sectors[sec->modelsec].floorheight);

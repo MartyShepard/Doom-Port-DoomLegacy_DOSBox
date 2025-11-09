@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 833 2011-05-27 00:46:04Z wesleyjohnson $
+// $Id: g_game.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2263,6 +2263,19 @@ boolean G_Downgrade(int version)
     {
         monster_friction = (version >= 144);
     }
+
+    friction_model =
+       (gamemode == heretic)? FR_heretic
+     : (gamemode == hexen)? FR_hexen
+     : (version <= 132)? FR_orig  // older legacy demos, and doom demos
+     : (version <= 143)? FR_boom  // old legacy demos
+     : (version > 200) ?
+       (
+	  (version <= 202)? FR_boom  // boom 200, 201, 202
+	: (version == 203)? FR_mbf
+	: FR_prboom  // prboom
+       )
+     : FR_legacy;  // new model, default
 
     // always true now, might be false in the future, if couldn't
     // go backward and disable all the features...

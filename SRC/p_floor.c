@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 829 2011-05-26 23:52:19Z wesleyjohnson $
+// $Id: p_floor.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -299,15 +299,15 @@ void T_MoveFloor(floormove_t* mfloor)
             switch(mfloor->type)
             {
               case donutRaise:
-                mfloor->sector->special = mfloor->newspecial;
                 mfloor->sector->floorpic = mfloor->texture;
+	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 break;
               case genFloorChgT: //SoM: 3/6/2000: Add support for General types
               case genFloorChg0:
-                mfloor->sector->special = mfloor->newspecial;
                 //SoM: 3/6/2000: this records the old special of the sector
                 mfloor->sector->oldspecial = mfloor->oldspecial;
                 // Don't break.
+	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
               case genFloorChg:
                 mfloor->sector->floorpic = mfloor->texture;
                 break;
@@ -320,15 +320,15 @@ void T_MoveFloor(floormove_t* mfloor)
             switch(mfloor->type)
             {
               case lowerAndChange:
-                mfloor->sector->special = mfloor->newspecial;
                 // SoM: 3/6/2000: Store old special type
                 mfloor->sector->oldspecial = mfloor->oldspecial;
                 mfloor->sector->floorpic = mfloor->texture;
+	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 break;
               case genFloorChgT:
               case genFloorChg0:
-                mfloor->sector->special = mfloor->newspecial;
                 mfloor->sector->oldspecial = mfloor->oldspecial;
+	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 // Don't break
               case genFloorChg:
                 mfloor->sector->floorpic = mfloor->texture;
@@ -589,8 +589,8 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = mfloor->sector->floorheight + 24 * FRACUNIT;
             sec->floorpic = line->frontsector->floorpic;
-            sec->special = line->frontsector->special;
             sec->oldspecial = line->frontsector->oldspecial;
+	    P_Update_Special_Sector( sec, line->frontsector->special );
             break;
 
           case raiseToTexture:
@@ -707,16 +707,16 @@ int EV_DoChange ( line_t* line, change_e changetype )
     {
       case trigChangeOnly:
         sec->floorpic = line->frontsector->floorpic;
-        sec->special = line->frontsector->special;
         sec->oldspecial = line->frontsector->oldspecial;
+        P_Update_Special_Sector( sec, line->frontsector->special );
         break;
       case numChangeOnly:
         secm = P_FindModelFloorSector(sec->floorheight,secnum);
         if (secm) // if no model, no change
         {
           sec->floorpic = secm->floorpic;
-          sec->special = secm->special;
           sec->oldspecial = secm->oldspecial;
+	  P_Update_Special_Sector( sec, secm->special );
         }
         break;
       default:

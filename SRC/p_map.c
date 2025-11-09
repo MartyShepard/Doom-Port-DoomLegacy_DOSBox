@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 826 2011-03-20 00:27:18Z wesleyjohnson $
+// $Id: p_map.c 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -272,53 +272,157 @@ static boolean PIT_StompThing (mobj_t* thing)
     return true;
 }
 
-//SoM: Not unused. See p_user.c
+
+// [WDJ] 3/2011 Get sector oriented friction.
+// This routine is based on one from prboom, by killough 8/28/98.
+// For most sectors it returns ORIG_FRICTION.
+// Return lowest value (most sticky friction).
+// It also considers being on sector borders and sector heights.
+
+fixed_t  got_friction;
+int    got_movefactor;  // return values
+
+fixed_t  P_GetFriction( const mobj_t * mo )
+{
+    // [WDJ] Most ports test (sec->special & FRICTION_MASK) as a friction enable.
+    // This misses the normal sectors that could affect the edge of ice sheets.
+    // This implementation uses the sector friction fields for all sectors,
+    // and updates whenever sec->special is changed.  That is several fewer
+    // tests in this heavily used code.
+    got_movefactor = ORIG_FRICTION_FACTOR;
+    if( !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && variable_friction )
+    {
+        fixed_t mo_top = mo->z + mo->height;
+        const msecnode_t * msnp = mo->touching_sectorlist;
+        const sector_t * secp;
+        const ffloor_t * fff;
+        got_friction = MAXINT;  // init search
+        // traverse the list of sectors touching this thing
+        while( msnp )
+        {
+	    secp = msnp->m_sector;
+	    if(mo->z <= secp->floorheight)
+	    {
+	        // on sector floor
+	        if(secp->friction < got_friction)
+	        {
+		    got_friction = secp->friction;
+		    got_movefactor = secp->movefactor;
+		}
+	    }
+	    // also check if any 3d floor has friction
+	    for(fff = secp->ffloors; fff; fff = fff->next)
+	    {
+	        if(mo->z <= *fff->topheight && mo_top > *fff->bottomheight )
+	        {
+		    // on 3d floor (or embedded in it)
+		    sector_t * fffsec = &sectors[fff->model_secnum];
+		    if(fffsec->friction < got_friction)
+		    {
+		        got_friction = fffsec->friction;
+		        got_movefactor = fffsec->movefactor;
+		    }
+		}
+	    }
+	    msnp = msnp->m_tnext;
+	}
+        if( got_friction == MAXINT )
+        {
+	    got_friction = 0xFFF0;  // must not be touching floor, air friction
+	}
+    }
+    else
+    {
+        got_friction = FRICTION_NORM;
+    }
+    return got_friction;
+}
+
+
+
 //SoM: 3/15/2000
 // P_GetMoveFactor() returns the value by which the x,y
 // movements are multiplied to add to player movement.
 
-int P_GetMoveFactor(mobj_t* mo)
-{
-  int movefactor = ORIG_FRICTION_FACTOR;
+// mud factor based on momentum
+#define MORE_FRICTION_MOMENTUM 15000
 
+int  P_GetMoveFactor(mobj_t* mo)
+{
   // If the floor is icy or muddy, it's harder to get moving. This is where
   // the different friction factors are applied to 'trying to move'. In
   // p_mobj.c, the friction factors are applied as you coast and slow down.
 
-  int momentum,friction;
+#ifdef FRICTIONTHINKER
+  if ( friction_model >= FR_mbf )   // MBF and newer
+#else   
+  if ( friction_model >= FR_boom )  // MBF, and Boom friction (NOT using friction thinker)
+#endif
+  {
+      // modern friction model, introduced in MBF
+      P_GetFriction( mo );  // sets got_friction and got_movefactor
+      if( got_friction < ORIG_FRICTION   // muddy, sludge
+	  && (got_movefactor < (ORIG_FRICTION_FACTOR/4)))  // not water
+      {
+	  // phares 3/11/98: you start off slowly, then increase as
+	  // you get better footing
+          
+	  int momentum = (P_AproxDistance(mo->momx,mo->momy));
+	  if (momentum > MORE_FRICTION_MOMENTUM<<2)
+	      got_movefactor <<= 3;
 
-  if (boomsupport && variable_friction &&
+	  else if (momentum > MORE_FRICTION_MOMENTUM<<1)
+              got_movefactor <<= 2;
+          
+	  else if (momentum > MORE_FRICTION_MOMENTUM)
+              got_movefactor <<= 1;
+      }
+      
+  }
+#ifdef FRICTIONTHINKER
+  // older demo friction
+  else if (boomsupport && variable_friction &&
       !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)))
   {
-      friction = mo->friction;
-      if (friction == ORIG_FRICTION)            // normal floor
+      // Boom friction, using friction thinker
+      got_friction = mo->friction;
+      got_movefactor = ORIG_FRICTION_FACTOR;
+      if (got_friction == ORIG_FRICTION)            // normal floor
           ;
-      else if (friction > ORIG_FRICTION)        // ice
+      else if (got_friction > ORIG_FRICTION)        // ice
       {
-          movefactor = mo->movefactor;
+          got_movefactor = mo->movefactor;
           mo->movefactor = ORIG_FRICTION_FACTOR;  // reset
       }
       else                                      // sludge
       {
-          
-          // phares 3/11/98: you start off slowly, then increase as
-          // you get better footing
-          
-          momentum = (P_AproxDistance(mo->momx,mo->momy));
-          movefactor = mo->movefactor;
-          if (momentum > MORE_FRICTION_MOMENTUM<<2)
-              movefactor <<= 3;
-          
-          else if (momentum > MORE_FRICTION_MOMENTUM<<1)
-              movefactor <<= 2;
-          
-          else if (momentum > MORE_FRICTION_MOMENTUM)
-              movefactor <<= 1;
-          
+          got_movefactor = mo->movefactor;
           mo->movefactor = ORIG_FRICTION_FACTOR;  // reset
+	 
+	  if(got_movefactor < (ORIG_FRICTION_FACTOR/4)) // not water
+	  {
+	      // phares 3/11/98: you start off slowly, then increase as
+	      // you get better footing
+          
+	      int momentum = (P_AproxDistance(mo->momx,mo->momy));
+	      if (momentum > MORE_FRICTION_MOMENTUM<<2)
+	         got_movefactor <<= 3;
+          
+	      else if (momentum > MORE_FRICTION_MOMENTUM<<1)
+	         got_movefactor <<= 2;
+          
+	      else if (momentum > MORE_FRICTION_MOMENTUM)
+	         got_movefactor <<= 1;
+	  }
       }
   }
-  return(movefactor);
+#endif
+  else
+  {
+      got_friction = ORIG_FRICTION;
+      got_movefactor = ORIG_FRICTION_FACTOR;
+  }
+  return got_movefactor;
 }
 
 //

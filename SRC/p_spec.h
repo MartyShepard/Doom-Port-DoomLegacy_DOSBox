@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 621 2010-03-23 21:26:25Z wesleyjohnson $
+// $Id: p_spec.h 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1085,12 +1085,19 @@ typedef struct {
 } friction_t;
 
 //SoM: Friction defines.
-#define MORE_FRICTION_MOMENTUM 15000       // mud factor based on momentum
-#define ORIG_FRICTION          0xE800      // original value
-#define ORIG_FRICTION_FACTOR   2048        // original value
+// original values
+#define ORIG_FRICTION          0xE800
+#define ORIG_FRICTION_FACTOR   2048
+// Heretic
+#define FRICTION_NORM          0xe800
+#define FRICTION_LOW           0xf900
+#define FRICTION_FLY           0xeb00
 
 //SoM: 3/9/2000: Otherwise, the compiler whines!
 void T_Friction(friction_t *f);
+
+// Update sector fields after a change of special type.
+void P_Update_Special_Sector( sector_t * sec, short new_special );
 
 //SoM: 3/8/2000: Model for Pushers for push/pull effects
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: r_defs.h 834 2011-05-27 00:48:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -231,8 +231,7 @@ struct line_s;
 //  for sound origin purposes.
 // I suppose this does not handle sound from
 //  moving objects (doppler), because
-//  position is prolly just buffered, not
-//  updated.
+//  position is prolly just buffered, not updated.
 typedef struct
 {
     thinker_t           thinker;        // not used for anything
@@ -371,7 +370,7 @@ typedef struct sector_s
     short       floorpic;
     short       ceilingpic;
     short       lightlevel;
-    short       special;
+    short       special;	 // special type code (highly encoded with fields)
     short       oldspecial;      //SoM: 3/6/2000: Remember if a sector was secret (for automap)
     short       tag;
     int nexttag,firsttag;        //SoM: 3/6/2000: by killough: improves searches for tags.
@@ -417,6 +416,11 @@ typedef struct sector_s
     // Testing modelsec for water is invalid, it is also used for colormap.
     int modelsec;    // other sector number, or -1 if no other sector
     sector_model_e  model;  // Boom or Legacy special sector  [WDJ] 11/14/2009
+    
+    // [WDJ] 3/2011, (killough 8/28/98 Friction as sector property).
+    // friction=MAXINT when unused
+    fixed_t  friction;
+    int movefactor;
   
     int floorlightsec, ceilinglightsec;
     int teamstartsec;
@@ -528,11 +532,11 @@ typedef struct line_s
     fixed_t     dy;
 
     // Animation related.
-    short	flags;
+    uint16_t	flags;
         // [WDJ] flags should be unsigned, but binary gets larger??
    	// test shows that unsigned costs 4 more bytes per (flag & ML_bit)
-    short       special;
-    short       tag;
+    short       special;  // special linedef code
+    short       tag;	  // special affects sectors with same tag id
 
     // Visual appearance: SideDefs.
     uint16_t    sidenum[2]; //  sidenum[1] will be NULL_INDEX if one sided

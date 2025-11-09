@@ -1648,5 +1648,22 @@ Not yet enabled, alpha still writes demoversion 143.
 
 *** w74_boom_demo
 patchfile = w74_boom_demo.patch
-- committed revision 831   by wesley johnson
+- committed revision 833   by wesley johnson
 Remove duplicate code inserted by svn 831.
+
+*** w74_sector_friction
+patchfile = w74_sector_friction.patch
+- committed revision 834   by wesley johnson
+Changed to MBF style sector friction (from examination of Killough code in prboom),
+making DoomLegacy more consistent with DoomLegacy 2.0, prboom and
+other modern ports, with some fixes and differences.
+Water friction and Heretic friction are also converted to sector friction.
+Sectors get the friction and movefactor values at load time,
+and are updated whenever a flag or friction control changes.
+Finds stickiest friction on icy sector edge too.
+Independent friction for each 3dfloor slab.
+Old boom friction thinker code is compile-time conditional (FRICTIONTHINKER),
+and is only used for demos. Demos select appropriate friction code.
+Rearranged some Move and Thrust functions during the conversion.
+Did not preserve perfect demo compatibility with Boom and prboom.
+Moved a Heretic chicken friction calc, which may have fixed a latent bug.
