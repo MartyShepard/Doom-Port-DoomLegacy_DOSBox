@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 831 2011-05-27 00:10:56Z wesleyjohnson $
+// $Id: g_game.c 832 2011-05-27 00:12:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -176,6 +176,13 @@
 // [WDJ] To show the demo version on the console
 #define SHOW_DEMOVERSION   
 #define DEBUG_DEMO
+// Stick with one demo version because of other ports, and have separate
+// fields record DoomLegacy specific version and enables.
+// This only changes the demo header, not the content.
+// DEMO144 writes demoversion 143 and up, and can read any DoomLegacy demo.
+// Older DoomLegacy demos are demo versions 111..143.
+#define DEMO144
+
 #define CURRENT_DEMOVERSION 143
 
 #include "doomdef.h"
@@ -2441,7 +2448,18 @@ void G_BeginRecording (void)
 
     demo_p = demobuffer;
 
-    *demo_p++ = CURRENT_DEMOVERSION; // NOTE only needs to be updated when the demo format actually changes
+#ifdef DEMO144
+    *demo_p++ = 144;   // Mark all DoomLegacy demo as version 144.
+    *demo_p++ = 'D';   // "DL" for DoomLegacy
+    *demo_p++ = 'L';   
+    *demo_p++ = 1;     // non-zero format version (demo144_format)
+   		       // 0 would be an older version with new header.
+    *demo_p++ = VERSION;  // version of doomlegacy that recorded it.
+    *demo_p++ = CURRENT_DEMOVERSION;  // actual DoomLegacy demoversion
+    *demo_p++ = 0;     // demo subversion, when needed
+#else   
+    *demo_p++ = CURRENT_DEMOVERSION;
+#endif     
     *demo_p++ = gameskill;
     *demo_p++ = gameepisode;
     *demo_p++ = gamemap;
@@ -2460,6 +2478,24 @@ void G_BeginRecording (void)
         else
           *demo_p++ = 0;
     }
+#ifdef DEMO144
+    // more settings that affect playback
+    *demo_p++ = cv_solidcorpse.value;
+#ifdef DOORDELAY_CONTROL
+    *demo_p++ = adj_ticks_per_sec;  // doordelay, 0 is not default
+#else
+    *demo_p++ = 0; 	// no doordelay
+#endif
+#ifdef VOODOO_DOLL
+    *demo_p++ = 0x40 + voodoo_mode;  // 0 is not default
+    *demo_p++ = cv_instadeath.value;  // voodoo doll instadeath, 0 is default
+#else
+    *demo_p++ = 0; 	// no voodoo_mode
+    *demo_p++ = 0; 	// no instadeath
+#endif
+    
+    for( i=3; i<32; i++ )  *demo_p++ = 0;
+#endif
 
     memset(oldcmd,0,sizeof(oldcmd));
 }
@@ -2557,7 +2593,9 @@ void G_DoPlayDemo (char *defdemoname)
     skill_t skill;
     int     i, episode, map;
     boolean boomdemo = 0;
+    byte  demo144_format = 0;
 
+  
     playdemo_save_settings();  // [WDJ] save user settings
 
 //
@@ -2600,6 +2638,18 @@ void G_DoPlayDemo (char *defdemoname)
     // 203 = LxDoom or MBF  (supported badly, no sync)
     // 210..214 = prboom (supported badly, no sync)
     // Do not have version: Hexen, Heretic, Doom 1.2 and before
+#ifdef DEMO144
+    if( demoversion == 144 )  // Universal DoomLegacy demo format number
+    {
+        if( READBYTE(demo_p) != 'D' )  goto broken_header;
+        if( READBYTE(demo_p) != 'L' )  goto broken_header;
+        demo144_format = *demo_p++;  // non-zero
+        demo_p++;  // recording legacy version number
+        demoversion = READBYTE(demo_p);  // DoomLegacy demoversion number
+        demo_p++;  // subversion, not used yet
+        if( demoversion < 143 )  demo144_format = 0;
+    }
+#endif
 #ifdef SHOW_DEMOVERSION
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
 #endif
@@ -2844,6 +2894,33 @@ void G_DoPlayDemo (char *defdemoname)
     // FIXME: do a proper test here
     if( demoversion<131 )
         multiplayer = playeringame[1];
+
+#ifdef DEMO144
+    // [WDJ]
+    if( demo144_format )
+    {
+        byte * demo_p_next = demo_p + 32;
+        // more settings that affect playback
+        cv_solidcorpse.value = *demo_p++;
+#ifdef DOORDELAY_CONTROL
+        adj_ticks_per_sec = *demo_p++;  // 0 is not default
+        if( adj_ticks_per_sec < 20 )  adj_ticks_per_sec = 35;  // default
+#else
+        demo_p++; 	// no doordelay
+#endif
+#ifdef VOODOO_DOLL
+        if( *demo_p >= 0x40 )
+	   voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
+        else
+	   voodoo_mode = 3;  // default
+        cv_instadeath.value = *demo_p++;  // voodoo doll instadeath, 0 is default
+#else
+        demo_p += 2; 	// no voodoo
+#endif
+
+        demo_p = demo_p_next;  // skip rest of settings
+#endif
+    }
 
     memset(oldcmd,0,sizeof(oldcmd));
 
