@@ -1632,4 +1632,18 @@ Use more of the demo setup variables.
 Correct the turn code to use relative turns for boom demos.
 Commented more of the demo code.
 
+*** w74_boom_demo
+patchfile = w74_boom_demo.patch
+- committed revision 831   by wesley johnson
+Seemed to miss something on first try.
+
+*** w74_demo144
+patchfile = w74_demo144.patch
+- committed revision 832   by wesley johnson
+DoomLegacy demo format will have a header of version 144, and the
+characters "DL".  DoomLegacy demos shall only use the one demo version number.
+Three later fields shall record the DoomLegacy VERSION, demoversion,
+and sub-demoversion numbers.
+Not yet enabled, alpha still writes demoversion 143.
+
 
