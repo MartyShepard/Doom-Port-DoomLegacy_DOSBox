@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 832 2011-05-27 00:12:26Z wesleyjohnson $
+// $Id: g_game.c 833 2011-05-27 00:46:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2478,6 +2478,7 @@ void G_BeginRecording (void)
         else
           *demo_p++ = 0;
     }
+   
 #ifdef DEMO144
     // more settings that affect playback
     *demo_p++ = cv_solidcorpse.value;
@@ -2499,7 +2500,7 @@ void G_BeginRecording (void)
 
     memset(oldcmd,0,sizeof(oldcmd));
 }
-#if !defined( __DJGPP__ )	
+
 // [WDJ] To prevent demo from altering game settings
 // Save such settings here that do not have other protection.
 byte pdss_settings_valid = 0;  // init not saved
@@ -2536,7 +2537,7 @@ void playdemo_restore_settings( void )
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
 }
-#endif
+
 //
 // G_PlayDemo
 //
@@ -2548,42 +2549,6 @@ void G_DeferedPlayDemo (char* name)
     COM_BufAddText("\"\n");
 }
 
-// [WDJ] To prevent demo from altering game settings
-// Save such settings here that do not have other protection.
-byte pdss_settings_valid = 0;  // init not saved
-byte pdss_solidcorpse;
-byte pdss_instadeath;
-
-// The following are set by DemoAdapt:
-//  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
-
-// The following are init by starting a game (demos cannot occur during game):
-// deathmatch, multiplayer, nomonsters, respawnmonsters, fastmonsters
-// timelimit
-
-// The following are set by G_Downgrade:
-// variable_friction, allow_pushers, monster_friction
-
-
-void playdemo_save_settings( void )
-{
-    if( pdss_settings_valid == 0 )
-    {
-        pdss_settings_valid = 1;
-        pdss_solidcorpse = cv_solidcorpse.value;
-        pdss_instadeath = cv_instadeath.value;
-    }
-}
-
-void playdemo_restore_settings( void )
-{
-    if( pdss_settings_valid )
-    {
-        cv_solidcorpse.value = pdss_solidcorpse;
-        cv_instadeath.value = pdss_instadeath;
-    }
-    pdss_settings_valid = 0;  // so user can change settings between demos
-}
 
 //
 //  Start a demo from a .LMP file or from a wad resource (eg: DEMO1)

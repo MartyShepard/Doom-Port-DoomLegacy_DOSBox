@@ -1646,4 +1646,7 @@ Three later fields shall record the DoomLegacy VERSION, demoversion,
 and sub-demoversion numbers.
 Not yet enabled, alpha still writes demoversion 143.
 
-
+*** w74_boom_demo
+patchfile = w74_boom_demo.patch
+- committed revision 831   by wesley johnson
+Remove duplicate code inserted by svn 831.
