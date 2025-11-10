@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: p_telept.c 835 2011-05-27 00:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,33 +60,33 @@
 boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
 {
     mobj_t*     fog;
-    fixed_t     oldx;
-    fixed_t     oldy;
-    fixed_t     oldz;
-    fixed_t     aboveFloor,fogDelta;
+    fixed_t     oldx = thing->x;
+    fixed_t     oldy = thing->y;
+    fixed_t     oldz = thing->z;
+    fixed_t     aboveFloor;
+    fixed_t     fogDelta = 0;
     unsigned    an;
 
-    oldx = thing->x;
-    oldy = thing->y;
-    oldz = thing->z;
-    fogDelta = 0;
+    // no voodoo player effects
+    player_t * player = (thing->player && thing->player->mo == thing) ?
+          thing->player : NULL;
+
     if( gamemode == heretic && !(thing->flags&MF_MISSILE))
         fogDelta = TELEFOGHEIGHT;
-    aboveFloor = thing->z-thing->floorz;
+    aboveFloor = thing->z - thing->floorz;
     
     if (!P_TeleportMove (thing, x, y))
         return 0;
     
     thing->z = thing->floorz;  //fixme: not needed?
-    if (thing->player)
+    if (player)
     {
         // heretic code
-        player_t *player = thing->player;
         if(player->powers[pw_flight] && aboveFloor)
         {
             thing->z = thing->floorz+aboveFloor;
             if(thing->z+thing->height > thing->ceilingz)
-                thing->z = thing->ceilingz-thing->height;
+                thing->z = thing->ceilingz - thing->height;
             player->viewz = thing->z+player->viewheight;
         }
         else
@@ -96,7 +96,7 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     {
         thing->z = thing->floorz+aboveFloor;
         if(thing->z+thing->height > thing->ceilingz)
-            thing->z = thing->ceilingz-thing->height;
+            thing->z = thing->ceilingz - thing->height;
     }
     
     // spawn teleport fog at source and destination
@@ -110,9 +110,9 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     S_StartSound (fog, sfx_telept);
     
     // don't move for a bit
-    if (thing->player)
+    if (player)
     {
-        if( !thing->player->powers[pw_weaponlevel2] )
+        if( !player->powers[pw_weaponlevel2] )  // not heretic
             thing->reactiontime = 18;
         // added : absolute angle position
         if(thing== consoleplayer_ptr->mo)
@@ -126,9 +126,13 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
             CL_ResetSpiritPosition(thing);
         }
 #endif
+#ifdef BOB_MOM
+        // [WDJ] kill bob momentum or player will keep bobbing for a while
+        player->bob_momx = player->bob_momy = 0;
+#endif
         // move chasecam at new player location
         if ( camera.chase )
-            P_ResetCamera (thing->player);
+            P_ResetCamera (player);
     }
     
     thing->angle = angle;
@@ -229,11 +233,13 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
     return 0;
 
   for (i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+  {
     for (th = thinkercap.next; th != &thinkercap; th = th->next)
+    {
       if (th->function.acp1 == (actionf_p1) P_MobjThinker &&
           (m = (mobj_t *) th)->type == MT_TELEPORTMAN  &&
           m->subsector->sector-sectors == i)
-        {
+      {
           // Height of thing above ground, in case of mid-air teleports:
           fixed_t z = thing->z - thing->floorz;
 
@@ -272,7 +278,7 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
           // Adjust player's view, in case there has been a height change
           // Voodoo dolls are excluded by making sure player->mo == thing.
           if (player && player->mo == thing)
-            {
+          {
               // Save the current deltaviewheight, used in stepping
               fixed_t deltaviewheight = player->deltaviewheight;
 
@@ -287,11 +293,13 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
 
               // SoM: 3/15/2000: move chasecam at new player location
               if ( camera.chase )
-                 P_ResetCamera (thing->player);
+                 P_ResetCamera (player);
 
-            }
+	  }
           return 1;
-        }
+      }
+    }
+  }
   return 0;
 }
 
@@ -315,8 +323,9 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
     return 0;
 
   for (i = -1; (i = P_FindLineFromLineTag(line, i)) >= 0;)
+  {
     if ((l=lines+i) != line && l->backsector)
-      {
+    {
         // Get the thing's position along the source linedef
         fixed_t pos = abs(line->dx) > abs(line->dy) ?
           FixedDiv(thing->x - line->v1->x, line->dx) :
@@ -343,7 +352,7 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
 
         // Whether this is a player, and if so, a pointer to its player_t.
         // Voodoo dolls are excluded by making sure thing->player->mo==thing.
-        player_t *player = thing->player && thing->player->mo == thing ?
+        player_t * player = (thing->player && thing->player->mo == thing) ?
           thing->player : NULL;
 
         // Whether walking towards first side of exit linedef steps down
@@ -406,7 +415,7 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
 
         // Adjust a player's view, in case there has been a height change
         if (player)
-          {
+        {
             // Save the current deltaviewheight, used in stepping
             fixed_t deltaviewheight = player->deltaviewheight;
 
@@ -421,11 +430,12 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
 
             // SoM: 3/15/2000: move chasecam at new player location
             if ( camera.chase )
-               P_ResetCamera (thing->player);
-          }
+               P_ResetCamera (player);
+	}
 
         return 1;
-      }
+    }
+  }
   return 0;
 }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_mobj.c 835 2011-05-27 00:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -467,6 +467,49 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 #endif
     fixed_t friction = FRICTION_NORM;
 
+
+#ifdef BOB_MOM
+    // [WDJ] Player bob and state are dependent upon bob effect, not world motion.
+    // Standing on a conveyor should not keep the player sprite walking.
+    // Watch a two player game on a really greasy floor to see the difference.
+    if( player ) // not voodoo doll
+    {
+        if (player->bob_momx > -STOPSPEED && player->bob_momx < STOPSPEED
+	    && player->bob_momy > -STOPSPEED && player->bob_momy < STOPSPEED
+	    && player->cmd.forwardmove == 0
+	    && player->cmd.sidemove == 0 )
+        {
+	    // [WDJ] stop player bobbing
+	    player->bob_momx = player->bob_momy = 0;
+
+	    // [WDJ] stop player walking sprite
+	    // if in a walking frame, stop moving
+	    if( mo->type != MT_SPIRIT )
+	    {
+	        if (player->chickenTics)
+	        {  // Heretic
+		    if ((unsigned) ((player->mo->state - states) - S_CHICPLAY_RUN1) < 4)
+		        P_SetMobjState(player->mo, S_CHICPLAY);
+		}
+	        else
+	        {
+		    if ((unsigned) ((player->mo->state - states) - S_PLAY_RUN1) < 4)
+		        P_SetMobjState(player->mo, S_PLAY);
+		}
+	    }
+	}
+        else
+        {
+	    // [WDJ] The walking and bob have always taken too long to stop
+	    // slow down bob before player stops
+# define FRICTION_BOB   (FRICTION_NORM*15/16)
+	    player->bob_momx = FixedMul( player->bob_momx, FRICTION_BOB);
+	    player->bob_momy = FixedMul( player->bob_momy, FRICTION_BOB);
+	}
+    }
+#endif
+
+
     // Stop when below minimum.
     // Players without commands, no player, and voodoo doll
     // [WDJ] Restored deleted voodoo checks, originally made by Killough 10/98,
@@ -476,6 +519,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 	&& (!player  // and voodoo_dolls
 	    || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
     {
+#ifndef BOB_MOM
         // if in a walking frame, stop moving
         if (player)  // not if voodoo doll (do not affect player mobj)
         {
@@ -493,11 +537,8 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
                     P_SetMobjState(player->mo, S_PLAY);
             }
 	  }
-	  // [WDJ] prboom and zdoom kill player bobbing momentum here,
-	  // orig Killough 10/98.
-	  // But Legacy player does not have bobbing momx,momy.
-          // ( player->momx = player_momy = 0 )
         } // player
+#endif	   
         mo->momx = 0;
         mo->momy = 0;
     }
@@ -741,6 +782,9 @@ void P_XYMovement(mobj_t * mo)
         {
             // debug option for no sliding at all
             mo->momx = mo->momy = 0;
+#ifdef BOB_MOM
+	    player->bob_momx = player->bob_momy = 0;
+#endif	     
             return;
         }
         else if (player->cheats & CF_FLYAROUND)  // fly cheat

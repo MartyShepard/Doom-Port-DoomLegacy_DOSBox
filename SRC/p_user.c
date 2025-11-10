@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_user.c 835 2011-05-27 00:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -127,6 +127,26 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
     player->mo->momy += FixedMul(move, finesine[angle]);
 }
 
+#ifdef BOB_MOM
+// P_Thrust_Bob
+// [WDJ] Thrust and independent bob.
+// Contribute to bob effort, independent of thrust momentum.
+// Do not bob when riding along on conveyors, or sliding, even though moving.
+// Bob is adapted for effort in mud and ice by the caller. 
+
+static void P_Thrust_Bob( player_t * player, angle_t angle, fixed_t moveth, fixed_t movebob )
+{
+    angle >>= ANGLETOFINESHIFT;
+    // thrust
+    player->mo->momx += FixedMul(moveth, finecosine[angle]);
+    player->mo->momy += FixedMul(moveth, finesine[angle]);
+    // bob
+    player->bob_momx += FixedMul(movebob, finecosine[angle]);
+    player->bob_momy += FixedMul(movebob, finesine[angle]);
+}
+#endif
+
+
 #ifdef CLIENTPREDICTION2
 //
 // P_ThrustSpirit
@@ -153,6 +173,9 @@ void P_ThrustSpirit(player_t *player, angle_t angle, fixed_t move)
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
+// Called from P_PlayerThink after P_PlayerMove
+// Called from P_MoveSpirit from Local_Maketic
+// Called from P_DeathThink from P_PlayerThink, without P_PlayerMove
 void P_CalcHeight (player_t* player)
 {
     int         angle;
@@ -162,28 +185,35 @@ void P_CalcHeight (player_t* player)
     mobj_t      * smo = pmo;  // spirit (same as pmo unless using CLIENTPREDICTION2)
 
     // Regular movement bobbing
-    // (needs to be calculated for gun swing
-    // even if not on ground)
+    // (needs to be calculated for gun swing even if not on ground)
     // OPTIMIZE: tablify angle
-    // Note: a LUT allows for effects
-    //  like a ramp with low health.
-
+    // Note: a LUT allows for effects like a ramp with low health.
 
 #ifdef CLIENTPREDICTION2
     if( player->spirit )
         smo = player->spirit;
 #endif
 
+#ifdef BOB_MOM
+    player->bob = ((FixedMul (player->bob_momx,player->bob_momx)
+                   +FixedMul (player->bob_momy,player->bob_momy))*NEWTICRATERATIO)>>2;
+#else
     player->bob = ((FixedMul (smo->momx, smo->momx)
                    +FixedMul (smo->momy, smo->momy))*NEWTICRATERATIO)>>2;
+#endif   
+
+    // [WDJ] Boom 2.02, when on ice, limited bob to MAXBOB>>2.
+    // Moving onto ice would cause sudden bob position change.
+    // Went obsolete with MBF player bob.
 
     if (player->bob>MAXBOB)
         player->bob = MAXBOB;
 
+    // from heretic
     if( pmo->flags2&MF2_FLY && !onground )
         player->bob = FRACUNIT/2;
 
-    if ((player->cheats & CF_NOMOMENTUM) || smo->z > smo->floorz)
+    if (player->cheats & CF_NOMOMENTUM)  // as in heretic because of fly bob
     {
         //added:15-02-98: it seems to be useless code!
         //player->viewz = pmo->z + (cv_viewheight.value<<FRACBITS);
@@ -196,7 +226,6 @@ void P_CalcHeight (player_t* player)
 
     angle = (FINEANGLES/20*localgametic/NEWTICRATERATIO)&FINEMASK;
     bob = FixedMul ( player->bob/2, finesine[angle]);
-
 
     // move viewheight
     viewheight = cv_viewheight.value << FRACBITS; // default eye view height
@@ -226,7 +255,7 @@ void P_CalcHeight (player_t* player)
         }
     }   
 
-    if(player->chickenTics)
+    if(player->chickenTics)  // heretic chicken morph
         player->viewz = smo->z + player->viewheight-(20*FRACUNIT);
     else
         player->viewz = smo->z + player->viewheight + bob;
@@ -272,11 +301,13 @@ void DemoAdapt_p_user( void )
 //
 // P_MovePlayer
 //
+// Called from P_PlayerThink
 void P_MovePlayer (player_t* player)
 {
     mobj_t *   pmo = player->mo;
     ticcmd_t*  cmd = &player->cmd;
     int  movefactor = ORIG_FRICTION_FACTOR; // default
+    int  bobfactor = ORIG_FRICTION_FACTOR;
 
 #ifdef ABSOLUTEANGLE
     if(EN_cmd_abs_angle)
@@ -300,12 +331,29 @@ void P_MovePlayer (player_t* player)
     {
         movefactor = P_GetMoveFactor(pmo); // gets got_movefactor, got_friction
 //        CONS_Printf("friction: %X, movefactor: %i\n", got_friction, movefactor);
+
+        // [WDJ] bobfactor from killough, via prboom, adapted to legacy.
+        // killough 11/98:
+        // On sludge, make bobbing depend on efficiency.
+        // On ice, make it depend on effort.
+
+        // [WDJ] Test the friction and movefactor from GetMovefactor.
+        bobfactor = (got_friction < ORIG_FRICTION) ?
+	     got_movefactor  // mud
+           : ORIG_FRICTION_FACTOR;  // ice  (killough)
+//           : (ORIG_FRICTION_FACTOR + got_movefactor)/2;  // ice [WDJ]
+
     }
+   
+    if (!onground)
+        bobfactor >>= 2;  // air and underwater
+    else if (pmo->eflags & MF_UNDERWATER)
+        bobfactor >>= 1;
 
     if( EN_move_doom )
     {
         // Doom and Boom movement
-        boolean  jumpover = player->cheats & CF_JUMPOVER;
+        boolean  jumpover = player->cheats & CF_JUMPOVER;  // legacy cheat
         if (cmd->forwardmove && (onground || jumpover))
         {
             // dirty hack to let the player avatar walk over a small wall
@@ -317,13 +365,21 @@ void P_MovePlayer (player_t* player)
 	    }
             else
 	    {
+#ifdef BOB_MOM
+	        P_Thrust_Bob( player, pmo->angle, cmd->forwardmove*movefactor, cmd->forwardmove*bobfactor );
+#else	       
 	        P_Thrust (player, pmo->angle, cmd->forwardmove*movefactor);
+#endif	       
 	    }
         }
     
         if (cmd->sidemove && onground)
         {
+#ifdef BOB_MOM
+            P_Thrust_Bob( player, pmo->angle-ANG90, cmd->sidemove*movefactor, cmd->sidemove*bobfactor );
+#else
             P_Thrust (player, pmo->angle-ANG90, cmd->sidemove*movefactor);
+#endif
 	}
 
         player->aiming = (signed char)cmd->aiming;
@@ -362,7 +418,11 @@ void P_MovePlayer (player_t* player)
                     movepushforward >>= 3;
             }
 
+#ifdef BOB_MOM
+            P_Thrust_Bob( player, pmo->angle, movepushforward, cmd->forwardmove*bobfactor);
+#else
             P_Thrust (player, pmo->angle, movepushforward);
+#endif
         }
 
         if (cmd->sidemove)
@@ -381,7 +441,11 @@ void P_MovePlayer (player_t* player)
                     movepushside >>= 3;
 	    }
 
+#ifdef BOB_MOM
+            P_Thrust_Bob( player, pmo->angle-ANG90, movepushside, cmd->sidemove*bobfactor);
+#else
             P_Thrust (player, pmo->angle-ANG90, movepushside);
+#endif
         }
 
         // mouselook swim when waist underwater
@@ -531,13 +595,13 @@ void P_DeathThink (player_t* player)
         // change aiming to look up or down at the attacker (DOESNT WORK)
         // FIXME : the aiming returned seems to be too up or down... later
 	/*
-	fixed_t dist = P_AproxDistance(attacker->x - player->mo->x, attacker->y - player->mo->y);
-	fixed_t dz = attacker->z +(attacker->height>>1) -player->mo->z;
+	fixed_t dist = P_AproxDistance(attacker->x - pmo->x, attacker->y - pmo->y);
+	fixed_t dz = attacker->z +(attacker->height>>1) -pmo->z;
 	angle_t pitch = 0;
 	if (dist)
 	  pitch = ArcTan(FixedDiv(dz, dist));
 	*/
-	int32_t pitch = (attacker->z - player->mo->z)>>17;
+	int32_t pitch = (attacker->z - pmo->z)>>17;
 	player->aiming = G_ClipAimingPitch(pitch);
 
     }

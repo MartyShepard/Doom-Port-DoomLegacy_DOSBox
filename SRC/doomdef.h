@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: doomdef.h 835 2011-05-27 00:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -160,9 +160,9 @@
 #define __DOOMDEF__
 
 #if defined( __DJGPP__ )
-#define ASMCALL
-#define min(x,y) ( ((x)<(y)) ? (x) : (y) )
-#define max(x,y) ( ((x)>(y)) ? (x) : (y) )
+//#define ASMCALL
+//#define min(x,y) ( ((x)<(y)) ? (x) : (y) )
+//#define max(x,y) ( ((x)>(y)) ? (x) : (y) )
 #endif
 
 #include <stdarg.h>
@@ -219,8 +219,8 @@ extern char VERSION_BANNER[];
 // For Boom demo compatibility, spawns friction thinkers
 #define FRICTIONTHINKER
 
-
-
+// Select type of bob code
+#define BOB_MOM
 
 // [WDJ] Voodoo doll 4/30/2009
 // A voodoo doll is an accident of having multiple start points for a player.

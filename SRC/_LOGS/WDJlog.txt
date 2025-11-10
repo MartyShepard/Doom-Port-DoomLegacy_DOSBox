@@ -1667,3 +1667,12 @@ and is only used for demos. Demos select appropriate friction code.
 Rearranged some Move and Thrust functions during the conversion.
 Did not preserve perfect demo compatibility with Boom and prboom.
 Moved a Heretic chicken friction calc, which may have fixed a latent bug.
+
+*** w74_player_bob
+patchfile = w74_player_bob.patch
+- committed revision 835   by wesley johnson
+Converted to independent player bob momentum of Killough, as in DoomLegacy 2.0,
+MBF and prboom, with fixes and adaptations.
+Compile-time conditional on BOB_MOM.
+Fixes many problems of previous bobbing, such as bobbing while riding
+conveyor, and interaction with friction.
