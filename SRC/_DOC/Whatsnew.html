@@ -15,7 +15,11 @@
 
 <h2>1.44 (2010-09-??)</h2>
 
-<h3>FEATURES 1.44 recent bug-fixes, at svn805</h3>
+<h3>FEATURES 1.44, recent at svn843</h3>
+<ul>
+</ul>
+
+<h3>FEATURES 1.44 alpha3</h3>
 <ul>
 <li>Stop demos when menu opens.
 <li>Voodoo doll damage effects upon players are restored.
@@ -25,6 +29,38 @@
 <li>Start game menu asks user "Abort this game. Y/N" when user is
 already in a game, and upon "YES" will abort the game and continue.
 <li>Mouse will no longer change menu values without pushing a button.
+<li>DoomLegacy demo format will have a header of version 144, and the
+characters "DL".  DoomLegacy demos shall only use the one demo version number.
+Three later fields shall record the DoomLegacy VERSION, demoversion,
+and sub-demoversion numbers.
+Not yet enabled, alpha still writes demoversion 143.</li>
+<li>Changed to MBF style sector friction (from examination of Killough code in prboom),
+making DoomLegacy more consistent with DoomLegacy 2.0, prboom and
+other modern ports, with some fixes and differences.
+Water friction and Heretic friction are also converted to sector friction.
+Sectors get the friction and movefactor values at load time,
+and are updated whenever a flag or friction control changes.
+Finds stickiest friction on icy sector edge too.
+Independent friction for each 3dfloor slab.
+Old boom friction thinker code is compile-time conditional (FRICTIONTHINKER),
+and is only used for demos. Demos select appropriate friction code.
+Did not preserve perfect demo compatibility with Boom and prboom.</li>
+<li>Converted to independent player bob momentum of Killough, as in DoomLegacy 2.0,
+MBF and prboom, with fixes and adaptations.
+Compile-time conditional on BOB_MOM.
+Fixes many problems of previous bobbing, such as bobbing while riding
+conveyor, and interaction with friction.<li>
+<li>Monsters use same sector friction as players.
+Selection mechanism for monster friction (none, MBF, momentum).
+The MBF monster friction only gives the monster momentum on ice, 
+and this creates surge when moving off ice, and stall when moving onto ice.
+Momentum monster friction selection accumulates momentum on every move,
+and fixes the surge and stall problems.
+Additional code to prevent hangups on dropoff ledges, get monster
+unstuck from edges, and to allow monsters to fall off conveyor belts.
+</li>
+<li>Create Adv Options menu, for monster friction, gravity, voodoo mode,
+voodoo insta-death, and door delay.</li>
 </ul>
 
 <h3>FEATURES 1.44 alpha2</h3>
@@ -117,24 +153,60 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 </ul>
 
 
-<h3>BUG FIXES 1.44 recent bug-fixes, at svn809</h3>
+<h3>BUG FIXES 1.44, recent at svn843</h3>
+<ul>
+</ul>
+
+<h3>BUG FIXES 1.44 alpha3</h3>
 <ul>
 <li>More checks against buggy wads.
 <li>Fixed colormap name in colormap missing message.
 <li>Fixed recognition of Plutonia.
-<li>Make savegame loading tolerate added control vars.
+<li>Make savegame loading tolerate of added control vars.
 <li>Fix savegame restore of voodoo dolls to not modify players, fixing savegame load crashes under
 Linux 2.6.
+<li>Remove hard limits for braintargets, similar to prboom.
+Prevents overrun of braintargets array.</li>
 <li>Fix vile revive monsters stuck together bug.
 <li>Fix vile fire location bug.
-<li>Fix mouse tracking in menu, reduce sensitivity.
-<li>Fragglescript code made more managable, and less prone to string
-overrun and other bugs.
 <li>Timelimit fixed. Will now count minutes instead of tics.
-<li>Savegame descriptions can use spaces again.
+<li>Fix game menus, so that the check for "already playing" will give
+the user an immediate message asking "Abort this game Y/N".  Upon a
+YES it will quit the game and let the user continue.</li>
+<li>Fix mouse bugs in menus and reduce sensitivity.
+Fix so mouse cannot change values until button pushed, because previously
+one mouse slide could accidently change a dozen values.</li>
+<li>Fix fragglescript parsing to use safer, faster
+string handling code, to protect against overrun of strings.
+Simplify fragglescript function args concatenation.</li>
+<li>Fix code so savegame description allows spaces again.</li>
 <li>Fix Makefile to link MATH1 functions pow and powf, for pld-linux.
 <li>Patches submitted by pld-linux to fix linux_x video, handle more
 video modes, and TrueColor.
+<li>Linux 2.6 compile warning messages squashed, and smaller code.</li>
+<li>Fix TNT recognition.</li>
+<li>General repairs to linux_x directory.
+Update system calls to same changes as made recently to SDL.
+Fix prototype changes.
+Fix keyboard translation and event posting.
+Add X error handler code.
+Fix X joystick code.
+Verified to run Linux X11 in software mode.</li>
+<li>Fix spritelump array to be dynamic expanded, thus removing spritelump
+limits.</li>
+<li>Fix CheckCheat to avoid special keys being mistakenly recognized.
+The cheat code was seeing the 0 key =0x48 and LSHIFT key =0x0148 as the same.</li>
+<li>Fix more dehacked special string copies to use Z_Strdup, like the other fixes,
+so do not write const string.</li>
+<li>Fix mancubus fireballs going through walls.
+Fix bug of missiles exploding within walls instead of upon them.</li>
+<li>Fix demo code to better handle boom, prboom, demos.
+Correct the turn code to use relative turns for boom demos.</li>
+<li>Moved a Heretic chicken friction calc, which may have fixed a latent bug.</li>
+<li>3dfloor opening code rewritten, simplified logic, moved redundant
+tests making it faster, and fixed an error.</li>
+<li>As suggested by Fraggle, use (width-offset) instead of offset when displaying a
+sprite frame flipped.</li>
 </ul>
 
 <h3>BUG FIXES 1.44 alpha2</h3>

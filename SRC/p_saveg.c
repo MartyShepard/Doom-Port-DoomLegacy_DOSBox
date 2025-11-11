@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_saveg.c 845 2011-07-09 23:21:27Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -301,7 +301,7 @@ void SG_Writebuf( void )
         savebuffer = newbuf;
         savebuffer_size = newsize;
         // [WDJ] Uncomment the following line to see buffer increases
-        fprintf(stderr, "Savegame buffer realloc of %i bytes.\n", newsize);
+        fprintf(stderr, "Savegame buffer realloc of %zu bytes.\n", newsize);
         goto done;
     }
 			     

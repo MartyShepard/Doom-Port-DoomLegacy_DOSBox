@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00845 ]: Version 1.44 alpha3
+[00844*]: w75 alpha3 docs update
+[00843*]: Oops, typo.
 [00842 ]: w75 flip offset patch, again
 [00841 ]: Bugfixes, docs. Splitscreen works again.
 [00840*]: w75 flip offset

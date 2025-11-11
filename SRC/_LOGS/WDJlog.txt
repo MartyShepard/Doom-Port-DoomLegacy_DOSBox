@@ -1712,3 +1712,8 @@ patchfile = w75_flip_offset.patch
 - committed revision 842   had log, but not code patch
 As suggested by Fraggle, use (width-offset) instead of offset when displaying a
 sprite frame flipped.
+
+*** w75_docs
+patchfile = w75_docs.patch
+- committed revision 843   by wesley johnson
+Update docs for alpha3 release.

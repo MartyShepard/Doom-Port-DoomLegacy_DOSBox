@@ -217,3 +217,9 @@ Apparently harmless buffer overflow bug fixed in w_wad.c.
 Splitscreen now works again, rev 827 introduced a bug in which
  non-netvar cvars could not be changed in netgames.
 Docs fixed/beautified.
+
+
+*** 1.44 alpha3 release
+rev 845
+Updated version to 1.44 alpha3.
+
