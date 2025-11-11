@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 811 2011-03-09 23:47:24Z smite-meister $
+// $Id: m_menu.c 838 2011-05-27 00:54:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -455,6 +455,7 @@ void M_StopMessage(int choice);
 void M_ClearMenus (boolean callexitmenufunc);
 int  M_StringHeight(char* string);
 void M_GameOption(int choice);
+void M_AdvOption(int choice);
 void M_NetOption(int choice);
 //28/08/99: added by Hurdler
 void M_OpenGLOption(int choice);
@@ -462,7 +463,7 @@ void M_OpenGLOption(int choice);
 menu_t MainDef,SinglePlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
        EpiDef,NewDef,OptionsDef,VidModeDef,ControlDef,SoundDef,
        ReadDef2,ReadDef1,SaveDef,LoadDef,ControlDef2,GameOptionDef,
-       EffectsOptionsDef,
+       AdvOptionsDef,EffectsOptionsDef,
        NetOptionDef,VideoOptionsDef,MouseOptionsDef,ServerOptionsDef;
 
 
@@ -1702,16 +1703,9 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Monster Behavior"	 ,&cv_monbehavior        ,0},
     {IT_STRING | IT_CVAR,0,"Fast Monsters"       ,&cv_fastmonsters       ,0},
     {IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
-    {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
-#ifdef VOODOO_DOLL
-    {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
-    {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]
-#endif
-#ifdef DOORDELAY_CONTROL
-    {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
-#endif
+    {IT_CALL   | IT_WHITESTRING,0,"Adv Options..."      ,M_AdvOption     ,120},
     {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,130}
 };
 
@@ -1735,6 +1729,47 @@ void M_GameOption(int choice)
         return;
     }
     M_SetupNextMenu(&GameOptionDef);
+}
+
+//===========================================================================
+//                        Adv OPTIONS MENU
+//===========================================================================
+
+menuitem_t AdvOptionsMenu[]=
+{
+    {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
+    {IT_STRING | IT_CVAR,0,"Monster friction"    ,&cv_monsterfriction    ,0},
+#ifdef VOODOO_DOLL
+    {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
+    {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]
+#endif
+#ifdef DOORDELAY_CONTROL
+    {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
+#endif
+    {IT_CALL   | IT_WHITESTRING,0,"Games Options..."    ,M_GameOption    ,120},
+    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,130}
+};
+
+menu_t  AdvOptionDef =
+{
+    "M_OPTTTL",
+    "Adv Options",
+    sizeof(AdvOptionsMenu)/sizeof(menuitem_t),
+    &OptionsDef,
+    AdvOptionsMenu,
+    M_DrawGenericMenu,
+    60,40,
+    0
+};
+
+void M_AdvOption(int choice)
+{
+    if(!server)
+    {
+        M_SimpleMessage("You are not the server\nYou can't change the options\n");
+        return;
+    }
+    M_SetupNextMenu(&AdvOptionDef);
 }
 
 //===========================================================================
@@ -4314,6 +4349,7 @@ boolean M_Responder (event_t* ev)
 	// any other key: if a letter, try to find the corresponding menuitem
 	if (!isalpha(ch))
 	  goto ret_true;
+
         for (i = itemOn+1;i < currentMenu->numitems;i++)
             if (currentMenu->menuitems[i].alphaKey == ch)
             {

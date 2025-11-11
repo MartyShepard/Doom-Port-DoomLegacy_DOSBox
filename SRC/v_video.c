@@ -165,7 +165,11 @@ void MenuGammaFunc_dependencies( byte gamma_en,
 CV_PossibleValue_t gamma_func_t[] = {
    {0,"Gamma"},
    {1,"Gamma_black"},
+#if !defined( __DJGPP__ )
    {2,"Gamma_bright_black"},
+#else
+   {2,"Bright Black"},
+#endif
    {3,"Linear"},
    {0,NULL} };
 consvar_t cv_gammafunc = { "gammafunc", "0", CV_SAVE | CV_CALL, gamma_func_t, CV_gammafunc_OnChange };

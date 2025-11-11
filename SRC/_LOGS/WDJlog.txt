@@ -1699,3 +1699,9 @@ unstuck from edges, and to allow monsters to fall off conveyor belts.
 Pass detection of dropoff to calling routines.
 Renamed P_Move to P_MoveActor.
 Tuning required months of testing and adjusting algorithms.
+
+*** w74_adv_options_menu
+patchfile = w74_adv_options_menu.patch
+- committed revision 838   by wesley johnson
+Create Adv Options menu, for monster friction, gravity, voodoo mode,
+voodoo insta-death, and door delay.
