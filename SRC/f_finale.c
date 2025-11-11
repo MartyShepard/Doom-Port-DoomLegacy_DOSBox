@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: f_finale.c 854 2011-09-15 23:32:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -163,38 +163,58 @@ void F_StartFinale (void)
       // DOOM II and missions packs with E1, M34
       case doom2_commercial:
       {
+	  // Doom2, Plutonia, TNT
+	  // These text are always sequential in text[].
+	  int textnum = 0;
+
           S_ChangeMusic(mus_read_m, true);
 
           switch (gamemap)
           {
             case 6:
               finaleflat = text[SLIME16_NUM];
-              finaletext = C1TEXT;
+              textnum = 0; // text[C1TEXT_NUM];
               break;
             case 11:
               finaleflat = text[RROCK14_NUM];
-              finaletext = C2TEXT;
+              textnum = 1; // text[C2TEXT_NUM];
               break;
             case 20:
               finaleflat = text[RROCK07_NUM];
-              finaletext = C3TEXT;
+              textnum = 2; // text[C3TEXT_NUM];
               break;
             case 30:
               finaleflat = text[RROCK17_NUM];
-              finaletext = C4TEXT;
+              textnum = 3; // text[C4TEXT_NUM];
               break;
             case 15:
               finaleflat = text[RROCK13_NUM];
-              finaletext = C5TEXT;
+              textnum = 4; // text[C5TEXT_NUM];
               break;
             case 31:
               finaleflat = text[RROCK19_NUM];
-              finaletext = C6TEXT;
+              textnum = 5; // text[C6TEXT_NUM];
               break;
             default:
               // Ouch.
               break;
           }
+	  switch( gamedesc_id )
+	  {
+	   case GDESC_plutonia:
+	     // P1TEXT, P2TEXT, P3TEXT, P4TEXT, P5TEXT, P6TEXT
+	     textnum += P1TEXT_NUM;
+	     break;
+	   case GDESC_tnt:
+	     // T1TEXT, T2TEXT, T3TEXT, T4TEXT, T5TEXT, T6TEXT
+	     textnum += T1TEXT_NUM;
+	     break;
+	   default:
+	     // C1TEXT, C2TEXT, C3TEXT, C4TEXT, C5TEXT, C6TEXT
+	     textnum += C1TEXT_NUM;
+	     break;
+	  }
+	  finaletext = text[textnum];
           break;
       }
 

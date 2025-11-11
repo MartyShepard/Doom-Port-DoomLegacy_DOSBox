@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_englsh.h 767 2010-11-11 02:19:51Z wesleyjohnson $
+// $Id: d_englsh.h 854 2011-09-15 23:32:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -288,12 +288,21 @@ typedef enum {
  E2TEXT_NUM,
  E3TEXT_NUM,
  E4TEXT_NUM,
+ // sequential 1..6
  C1TEXT_NUM,
  C2TEXT_NUM,
  C3TEXT_NUM,
  C4TEXT_NUM,
  C5TEXT_NUM,
  C6TEXT_NUM,
+ // sequential 1..6
+ P1TEXT_NUM,
+ P2TEXT_NUM,
+ P3TEXT_NUM,
+ P4TEXT_NUM,
+ P5TEXT_NUM,
+ P6TEXT_NUM,
+ // sequential 1..6
  T1TEXT_NUM,
  T2TEXT_NUM,
  T3TEXT_NUM,

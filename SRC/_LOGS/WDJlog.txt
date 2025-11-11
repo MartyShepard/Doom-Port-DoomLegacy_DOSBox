@@ -1770,3 +1770,12 @@ patchfile = w76_TNT_MAP31_key.patch
 TNT MAP31 yellow key is missing because wad has it marked as
 multiplayer only.  This makes it impossible to finish the level.
 This fix removes the multiplayer flag from this key, for this game and map.
+
+*** w76_plutonia_text
+patchfile = w76_plutonia_text.patch
+- committed revision 854   by wesley johnson
+The plutonia text was missing, and TNT text was not displayed.
+Added P1TEXT .. P6TEXT.
+Tried to enter the plutonia text by hand, but had errors, and had to
+copy it from prdoom and plutonia2 (to get plutonia2 DEH to work).
+Fixed the finaltext logic to select Doom2, plutonia, or TNT text.
