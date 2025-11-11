@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 837 2011-05-27 00:52:45Z wesleyjohnson $
+// $Id: p_map.c 848 2011-08-15 23:19:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -141,6 +141,7 @@ fixed_t         tmr_floorz;	// floor and ceiling of new position
 fixed_t         tmr_ceilingz;
 fixed_t         tmr_dropoffz;   // the lowest point contacted (monster check)
 
+// [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
 mobj_t*         tmr_floorthing; // standing on another thing
 				// the thing corresponding to tmr_floorz
                                 // or NULL if tmr_floorz is from a sector
@@ -549,6 +550,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
          abs(thing->y - tm_y) >= blockdist )
         goto ret_pass;  // didn't hit it
 
+    // thing and tm_thing overlap in x,y
     tmtopz = tm_thing->z + tm_thing->height;
     thing_topz = thing->z + thing->height;
    
@@ -701,6 +703,11 @@ static boolean PIT_CheckThing (mobj_t* thing)
     if (demoversion<112 || demoversion>=132 || !(tm_thing->flags & MF_SOLID))
         return !(thing->flags & MF_SOLID);
 
+    // [WDJ] This z-checking code is for DoomLegacy versions 113..131.
+    // After version 132, the heretic z-checking code was added (PASSMOBJ),
+    // which is more specific.
+    // This code causes monsters to escape ledges on top of other monsters.
+ 
     //added:22-02-98: added z checking at last
     //SoM: 3/10/2000: Treat noclip things as non-solid!
     if ((thing->flags & MF_SOLID)
@@ -977,6 +984,7 @@ boolean P_CheckPosition ( mobj_t*       thing,
       }
     }
 
+    // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
     // tmr_floorthing is set when tmr_floorz comes from a thing's top
     tmr_floorthing = NULL;
 
@@ -1160,6 +1168,7 @@ boolean P_TryMove ( mobj_t*       thing,
     thing->x = x;
     thing->y = y;
 
+    // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
     //added:28-02-98:
     if (tmr_floorthing)
         thing->eflags &= ~MF_ONGROUND;  //not on real floor
@@ -1246,6 +1255,7 @@ boolean P_ThingHeightClip (mobj_t* thing)
 	&& !(thing->flags & MF_NOGRAVITY))
     {
         // walking monsters rise and fall with the floor
+        // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
         if (!tmr_floorthing)  // unless standing on something
 	    thing->z = thing->floorz;
         // crush ok

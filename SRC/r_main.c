@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 818 2011-03-15 23:32:00Z wesleyjohnson $
+// $Id: r_main.c 850 2011-08-20 23:14:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -259,7 +259,7 @@ void SplitScreen_OnChange(void)
     R_ExecuteSetViewSize();
 
     // change the menu
-    M_SwitchSplitscreen();
+    M_Player2_MenuEnable( cv_splitscreen.value );
 
     if( !demoplayback)
     {

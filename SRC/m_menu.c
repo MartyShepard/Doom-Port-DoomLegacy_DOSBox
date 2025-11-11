@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 846 2011-07-26 12:40:37Z smite-meister $
+// $Id: m_menu.c 850 2011-08-20 23:14:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -342,6 +342,44 @@ void setup_net_savegame( void )
 }
 
 // flags for items in the menu
+#if 1
+// status
+// menu handle (what we do when key is pressed
+//#define  IT_TYPE             14     // (2+4+8)
+#define  IT_TYPE	0x000E   // field
+// TYPE field values
+#define  IT_CALL              0     // call the function
+#define  IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
+#define  IT_KEYHANDLER        4     // call with the key in param
+#define  IT_SUBMENU           6     // go to sub menu
+#define  IT_CVAR              8     // handle as a cvar
+#define  IT_SPACE            10     // no handling
+#define  IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message
+
+#define  IT_DISPLAY	0x00F0   // field
+// DISPLAY field values
+#define  IT_NOTHING         0       // space
+#define  IT_PATCH           0x0010  // a patch or a string with big font
+#define  IT_STRING          0x0020  // little string (spaced with 10)
+#define  IT_WHITESTRING     0x0030  // little string in white
+#define  IT_DYBIGSPACE      0x0040  // same as nothing
+#define  IT_DYLITLSPACE     0x0050  // little space
+#define  IT_STRING2         0x0060  // a simple string
+#define  IT_GRAYPATCH       0x0070  // grayed patch or big font string
+#define  IT_BIGSLIDER       0x0080  // volume sound use this
+
+//consvar specific
+#define  IT_CVARTYPE	0x0700   // field
+// CVARTYPE values
+#define  IT_CV_NORMAL       0
+#define  IT_CV_SLIDER       0x0100
+#define  IT_CV_STRING       0x0200
+#define  IT_CV_NOPRINT      0x0300
+#define  IT_CV_NOMOD        0x0400
+
+#else
+// flags for items in the menu
+// status
 // menu handle (what we do when key is pressed
 #define  IT_TYPE             14     // (2+4+8)
 #define  IT_CALL              0     // call the function
@@ -371,6 +409,8 @@ void setup_net_savegame( void )
 #define  IT_CV_NOPRINT (256+512)
 #define  IT_CV_NOMOD       1024
 
+#endif
+
 // in short for some common use
 #define  IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
 #define  IT_LITLSPACE   (IT_SPACE  +IT_DYLITLSPACE)
@@ -399,7 +439,7 @@ typedef union
 typedef struct menuitem_s
 {
     // show IT_xxx
-    short     status;
+    uint16_t  status;
 
     char      *patch;
     char      *text;  // used when FONTBxx lump is found
@@ -460,7 +500,7 @@ void M_NetOption(int choice);
 //28/08/99: added by Hurdler
 void M_OpenGLOption(int choice);
 
-menu_t MainDef,SinglePlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
+menu_t MainDef,SingleMultiDef,TwoPlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
        EpiDef,NewDef,OptionsDef,VidModeDef,ControlDef,SoundDef,
        ReadDef2,ReadDef1,SaveDef,LoadDef,ControlDef2,GameOptionDef,
        AdvOptionsDef,EffectsOptionsDef,
@@ -503,9 +543,12 @@ void M_DrawMenuTitle(void)
     }
 }
 
+
+
 void M_DrawGenericMenu(void)
 {
     int x, y, i, cursory=0;
+    menuitem_t * mip;
 
     // DRAW MENU
     x = currentMenu->x;
@@ -518,46 +561,46 @@ void M_DrawGenericMenu(void)
     {
         if (i==itemOn)
             cursory=y;
-        switch (currentMenu->menuitems[i].status & IT_DISPLAY) {
+        mip = & currentMenu->menuitems[i];
+        switch (mip->status & IT_DISPLAY) {
            case IT_PATCH  :
-               if( FontBBaseLump && currentMenu->menuitems[i].text )
+               if( FontBBaseLump && mip->text )
                {
-                   V_DrawTextB(currentMenu->menuitems[i].text, x, y);
+                   V_DrawTextB(mip->text, x, y);
                    y += FONTBHEIGHT-LINEHEIGHT;
                }
                else 
-               if( currentMenu->menuitems[i].patch &&
-                   currentMenu->menuitems[i].patch[0] )
+               if( mip->patch && mip->patch[0] )
 	       {
                    V_DrawScaledPatch_Name (x,y,0,
-					   currentMenu->menuitems[i].patch );
+					   mip->patch );
 	       }
            case IT_NOTHING:
            case IT_DYBIGSPACE:
                y += LINEHEIGHT;
                break;
            case IT_BIGSLIDER :
-               M_DrawThermo( x, y, (consvar_t *)currentMenu->menuitems[i].itemaction);
+               M_DrawThermo( x, y, (consvar_t *)mip->itemaction);
                y += LINEHEIGHT;
                break;
            case IT_STRING :
            case IT_WHITESTRING :
-               if( currentMenu->menuitems[i].alphaKey )
-                   y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+               if( mip->alphaKey )
+                   y = currentMenu->y + mip->alphaKey;
                if (i==itemOn)
                    cursory=y;
 
-               if( (currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING ) 
-                   V_DrawString(x,y,0,currentMenu->menuitems[i].text);
+               if( (mip->status & IT_DISPLAY)==IT_STRING ) 
+                   V_DrawString(x,y,0,mip->text);
                else
-                   V_DrawString(x,y,V_WHITEMAP,currentMenu->menuitems[i].text);
+                   V_DrawString(x,y,V_WHITEMAP,mip->text);
 
                // Cvar specific handling
-               switch (currentMenu->menuitems[i].status & IT_TYPE)
+               switch (mip->status & IT_TYPE)
                    case IT_CVAR:
                    {
-                    consvar_t *cv=(consvar_t *)currentMenu->menuitems[i].itemaction;
-                    switch (currentMenu->menuitems[i].status & IT_CVARTYPE) {
+                    consvar_t *cv=(consvar_t *)mip->itemaction;
+                    switch (mip->status & IT_CVARTYPE) {
                        case IT_CV_SLIDER :
                            M_DrawSlider (BASEVIDWIDTH-x-SLIDER_WIDTH,
                                          y,
@@ -585,22 +628,22 @@ void M_DrawGenericMenu(void)
                y+=STRINGHEIGHT;
                break;
            case IT_STRING2:
-               V_DrawString (x,y,0,currentMenu->menuitems[i].text);
+               V_DrawString (x,y,0,mip->text);
            case IT_DYLITLSPACE:
                y+=SMALLLINEHEIGHT;
                break;
            case IT_GRAYPATCH:
-               if( FontBBaseLump && currentMenu->menuitems[i].text )
+               if( FontBBaseLump && mip->text )
                {
-                   V_DrawTextBGray(currentMenu->menuitems[i].text, x, y);
+                   V_DrawTextBGray(mip->text, x, y);
                    y += FONTBHEIGHT-LINEHEIGHT;
                }
                else 
-               if( currentMenu->menuitems[i].patch &&
-                   currentMenu->menuitems[i].patch[0] )
+               if( mip->patch &&
+                   mip->patch[0] )
 	       {
                    V_DrawMappedPatch_Name (x,y,0,
-                                      currentMenu->menuitems[i].patch, graymap );
+                                      mip->patch, graymap );
 	       }
                y += LINEHEIGHT;
                break;
@@ -692,25 +735,30 @@ boolean  M_already_playing( boolean check_netgame )
 //MAIN MENU
 //===========================================================================
 
+void M_LoadGame(int choice);
+void M_SaveGame(int choice);
 void M_QuitDOOM(int choice);
 
 enum
 {
-    singleplr = 0,
-    multiplr,
+    newgame = 0,
+    loadgame,
+    savegame,
     options,
-    readthis,
-    quitdoom,
-    main_end
+    readthis,	// referenced
+    quitdoom,	// referenced
+    main_end,
 } main_e;
 
+// Compatible with modifications to original graphics
 menuitem_t MainMenu[]=
 {
-    {IT_SUBMENU | IT_PATCH,"M_SINGLE","SINGLE PLAYER",&SinglePlayerDef ,'s'}, // in legacy.wad
-    {IT_SUBMENU | IT_PATCH,"M_MULTI" ,"MULTIPLAYER",&MultiPlayerDef  ,'m'},   // in legacy.wad
-    {IT_SUBMENU | IT_PATCH,"M_OPTION","OPTIONS",&OptionsDef      ,'o'},
-    {IT_SUBMENU | IT_PATCH,"M_RDTHIS","INFO",&ReadDef1        ,'r'},  // Another hickup with Special edition.
-    {IT_CALL    | IT_PATCH,"M_QUITG" ,"QUIT GAME",M_QuitDOOM       ,'q'}
+    {IT_SUBMENU | IT_PATCH,"M_NGAME" ,"NEW GAME" ,&SingleMultiDef,'n'},
+    {IT_CALL    | IT_PATCH,"M_LOADG" ,"LOAD GAME",M_LoadGame,'l'},
+    {IT_CALL    | IT_PATCH,"M_SAVEG" ,"SAVE GAME",M_SaveGame,'s'},
+    {IT_SUBMENU | IT_PATCH,"M_OPTION","OPTIONS"  ,&OptionsDef,'o'},
+    {IT_SUBMENU | IT_PATCH,"M_RDTHIS","INFO"     ,&ReadDef1  ,'r'},  // Another hickup with Special edition.
+    {IT_CALL    | IT_PATCH,"M_QUITG" ,"QUIT GAME",M_QuitDOOM,'q'}
 };
 
 void HereticMainMenuDrawer(void)
@@ -735,42 +783,44 @@ menu_t  MainDef =
 };
 
 //===========================================================================
-//SINGLE PLAYER MENU
+//SINGLE/MULTI PLAYER GAME MENU
 //===========================================================================
 
-void M_NewGame(int choice);
-void M_LoadGame(int choice);
-void M_SaveGame(int choice);
+void M_SingleNewGame(int choice);
+void M_TwoPlayerMenu(int choice);
 void M_EndGame(int choice);
 
+#if 0
 enum
 {
-    newgame = 0,
-    loadgame,
-    savegame,
-    endgame,
-    single_end
-} single_e;
+    sm_single = 0,
+    sm_2player,
+    sm_multi,
+    sm_end
+} singlemulti_e;
+#endif
 
-menuitem_t SinglePlayerMenu[] =
+// DoomLegacy graphics from legacy.wad: M_SINGLE, M_2PLAYR, M_MULTI
+menuitem_t SingleMulti_Menu[] =
 {
-    {IT_CALL | IT_PATCH,"M_NGAME" ,"NEW GAME" ,M_NewGame ,'n'},
-    {IT_CALL | IT_PATCH,"M_LOADG" ,"LOAD GAME",M_LoadGame,'l'},
-    {IT_CALL | IT_PATCH,"M_SAVEG" ,"SAVE GAME",M_SaveGame,'s'},
-    {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME" ,M_EndGame ,'e'}
+    {IT_CALL | IT_PATCH,"M_SINGLE","SINGLE PLAYER",M_SingleNewGame ,'s'},
+    {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_TwoPlayerMenu ,'n'},
+    {IT_SUBMENU | IT_PATCH,"M_MULTI" ,"MULTIPLAYER",&MultiPlayerDef  ,'m'},
+    {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME",M_EndGame ,'e'}
 };
 
-menu_t  SinglePlayerDef =
+menu_t  SingleMultiDef =
 {
-    "M_SINGLE", // in legacy.wad
-    "Single Player",
-    single_end,
+    "M_NGAME",
+    "Single Multi New Game",
+    sizeof(SingleMulti_Menu)/sizeof(menuitem_t),
     &MainDef,
-    SinglePlayerMenu,
+    SingleMulti_Menu,
     M_DrawGenericMenu,
     97,64,
     0
 };
+
 
 //===========================================================================
 // Connect Menu
@@ -785,18 +835,18 @@ consvar_t cv_serversearch = {"serversearch"    ,"0",CV_HIDEN,serversearch_cons_t
 
 #define FIRSTSERVERLINE 3
 
-void M_Connect( int choise )
+void M_Connect( int choice )
 {
     // do not call menuexitfunc 
     M_ClearMenus(false);
 
-    COM_BufAddText(va("connect node %d\n", serverlist[choise-FIRSTSERVERLINE].node));
+    COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE].node));
     setup_net_savegame();
 }
 
 static int localservercount;
 
-void M_Refresh( int choise )
+void M_Refresh( int choice )
 {
     CL_UpdateServerList( cv_serversearch.value );
 }
@@ -868,7 +918,8 @@ menu_t  Connectdef =
     M_CancelConnect
 };
 
-void M_ConnectMenu(int choise)
+// Select Connect Menu
+void M_ConnectMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
@@ -921,15 +972,22 @@ consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
 consvar_t cv_newdeathmatch  = {"newdeathmatch"  ,"3",CV_HIDEN,deathmatch_cons_t};
-static boolean StartSplitScreenGame;
+static boolean StartSplitScreenGame = false;
 
-void M_StartServer( int choise )
+void M_StartServer( int choice )
 {
     netgame = true;
     multiplayer = true;
     COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -monsters %d skill %d\n", 
                       StartSplitScreenGame, cv_newdeathmatch.value, 
                       cv_nextmap.string, cv_monsters.value, cv_skill.value));
+    // skin change
+    if (StartSplitScreenGame
+	&& ( ! displayplayer2_ptr
+	     || (cv_skin2.value != displayplayer2_ptr->skin) ) )
+    {
+        COM_BufAddText ( va("%s \"%s\"", cv_skin2.name, skins[cv_skin2.value].name));
+    }
     M_ClearMenus(true);
 }
 
@@ -963,7 +1021,7 @@ void M_StartServerMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
-    StartSplitScreenGame = (choice != 0);
+    // StartSplitScreenGame already set by TwoPlayer menu
     M_SetupNextMenu(&Serverdef);
     setup_net_savegame();
 }
@@ -973,28 +1031,29 @@ void M_StartServerMenu(int choice)
 //===========================================================================
 void M_SetupMultiPlayer (int choice);
 void M_SetupMultiPlayer2 (int choice);
-void M_Splitscreen(int choice);
+void M_TwoPlayerMenu(int choice);
 
 enum {
-    startserver=0,
-    connectmultiplayermenu,
-    startsplitscreengame,
+    startsplitscreengame = 0,
     setupplayer1,
-    setupplayer2,
+    setupplayer2,	// referenced in M_Player2_MenuEnable
     multiplayeroptions,
+    connectmultiplayermenu,
+    startserver,
     end_game,
     multiplayer_end
 } multiplayer_e;
 
+// DoomLegacy graphics from legacy.wad: M_STSERV, M_CONNEC, M_2PLAYR, M_SETUPA, M_SETUPB
 menuitem_t MultiPlayerMenu[] =
 {
-    {IT_CALL | IT_PATCH,"M_STSERV","CREATE SERVER",M_StartServerMenu ,'a'},    // in legacy.wad
-    {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER",M_ConnectMenu ,'c'},       // in legacy.wad
-    {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_Splitscreen ,'n'},      // in legacy.wad
-    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},  // in legacy.wad
-    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'}, // in legacy.wad
-    {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS",M_NetOption ,'o'},
-    {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME",M_EndGame ,'e'}
+    {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_TwoPlayerMenu ,'n'},
+    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1" ,M_SetupMultiPlayer ,'s'},
+    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2" ,M_SetupMultiPlayer2 ,'t'},
+    {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS"        ,M_NetOption ,'o'},
+    {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER" ,M_ConnectMenu ,'c'},
+    {IT_CALL | IT_PATCH,"M_STSERV","CREATE SERVER"  ,M_StartServerMenu ,'a'},
+    {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME"       ,M_EndGame ,'e'}
 };
 
 menu_t  MultiPlayerDef =
@@ -1002,7 +1061,7 @@ menu_t  MultiPlayerDef =
     "M_MULTI", // in legacy.wad
     "Multiplayer",
     multiplayer_end,
-    &MainDef,
+    &SingleMultiDef,
     MultiPlayerMenu,
     M_DrawGenericMenu,
     85,40,
@@ -1010,10 +1069,52 @@ menu_t  MultiPlayerDef =
 };
 
 
-void M_Splitscreen(int choice)
+//===========================================================================
+// Two Player menu
+//===========================================================================
+
+#if 0
+enum {
+    setupplayer1,
+    setupplayer2,
+    multiplayeroptions,
+    start,
+    multiplayer,
+    twoplayer_end
+} twoplayer_e;
+#endif
+
+// DoomLegacy graphics from legacy.wad: M_SETUPA, M_SETUPB, M_STSERV, M_MULTI
+menuitem_t TwoPlayerMenu[] =
 {
-    M_StartServerMenu(1);
+    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},
+    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'},
+    {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS"       ,M_NetOption ,'o'},
+    {IT_CALL | IT_PATCH,"M_STSERV","START GAME"    ,M_StartServerMenu , 0},
+    {IT_SUBMENU | IT_PATCH,"M_MULTI" ,"MULTIPLAYER",&MultiPlayerDef  ,'m'},
+};
+
+menu_t  TwoPlayerDef =
+{
+    "M_2PLAYR",  // from legacy.wad
+    "Two Player",
+    sizeof(TwoPlayerMenu)/sizeof(menuitem_t),
+    &SingleMultiDef,
+    TwoPlayerMenu,
+    M_DrawGenericMenu,
+    85,40,
+    0
+};
+
+
+void M_TwoPlayerMenu(int choice)
+{
+    TwoPlayerDef.prevMenu = currentMenu;
+    StartSplitScreenGame = true;
+    M_Player2_MenuEnable( 1 );
+    M_SetupNextMenu(&TwoPlayerDef);
 }
+
 
 //===========================================================================
 // Second mouse config for the splitscreen player
@@ -1035,7 +1136,7 @@ menuitem_t  SecondMouseCfgMenu[] =
 menu_t  SecondMouseCfgdef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Options",
     sizeof(SecondMouseCfgMenu)/sizeof(menuitem_t),
     &SetupMultiPlayerDef,
     SecondMouseCfgMenu,
@@ -1062,7 +1163,7 @@ menuitem_t  SecondOptionsMenu[] =
 menu_t  SecondOptionsdef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Options",
     sizeof(SecondOptionsMenu)/sizeof(menuitem_t),
     &SetupMultiPlayerDef,
     SecondOptionsMenu,
@@ -1136,7 +1237,6 @@ void M_SetupMultiPlayer (int choice)
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
     strcpy(setupm_name, cv_playername.string);
-
     SetupMultiPlayerDef.numitems = setupmultiplayer_skin +1;      //remove player2 setup controls and mouse2 
 
     // set for player 1
@@ -1145,6 +1245,7 @@ void M_SetupMultiPlayer (int choice)
     setupm_cvskin = &cv_skin;
     setupm_cvcolor = &cv_playercolor;
     setupm_cvname = &cv_playername;
+    SetupMultiPlayerDef.prevMenu = currentMenu;
     M_SetupNextMenu (&SetupMultiPlayerDef);
 }
 
@@ -1162,21 +1263,23 @@ void M_SetupMultiPlayer2 (int choice)
     setupm_cvskin = &cv_skin2;
     setupm_cvcolor = &cv_playercolor2;
     setupm_cvname = &cv_playername2;
+    SetupMultiPlayerDef.prevMenu = currentMenu;
     M_SetupNextMenu (&SetupMultiPlayerDef);
 }
 
 
 // called at cv_splitscreen changes
-void M_SwitchSplitscreen(void)
+void M_Player2_MenuEnable( boolean player2_enable )
 {
 // activate setup for player 2
-    if (cv_splitscreen.value)
+    if ( player2_enable )
         MultiPlayerMenu[setupplayer2].status = IT_CALL | IT_PATCH;
     else
+    {
         MultiPlayerMenu[setupplayer2].status = IT_DISABLED;
-
-    if( MultiPlayerDef.lastOn==setupplayer2)
-        MultiPlayerDef.lastOn=setupplayer1; 
+        if( MultiPlayerDef.lastOn==setupplayer2)
+	    MultiPlayerDef.lastOn=setupplayer1; 
+    }
 }
 
 
@@ -1234,7 +1337,6 @@ void M_DrawSetupMultiPlayerMenu(void)
         colormap = reg_colormaps;
     else
     {
-//        colormap = (byte *) translationtables - 256 + (setupm_cvcolor->value<<8);
         colormap = SKIN_TO_SKINMAP( setupm_cvcolor->value );
     }
     // draw player sprite
@@ -1328,8 +1430,10 @@ void M_HandleSetupMultiPlayer (int key)
         myskin = 0;
 
     // check skin change
-    if (myskin != setupm_player->skin)
+    // If not updated here then another chance after server start
+    if (setupm_player && myskin != setupm_player->skin)
         COM_BufAddText ( va("%s \"%s\"",setupm_cvskin->name ,skins[myskin].name));
+    setupm_cvskin->value = myskin;
 
     if (exitmenu)
     {
@@ -1467,8 +1571,12 @@ void M_DrawNewGame(void)
     M_DrawGenericMenu();
 }
 
-void M_NewGame(int choice)
+void M_SingleNewGame(int choice)
 {
+    // to get out of two player game, and can then backout to multiplayer
+    StartSplitScreenGame = false;
+    M_Player2_MenuEnable( 0 );
+
     if( M_already_playing(1) )  return;
 
     if ( gamemode == doom2_commercial
@@ -1477,8 +1585,6 @@ void M_NewGame(int choice)
         M_SetupNextMenu(&NewDef);
     else
         M_SetupNextMenu(&EpiDef);
-
-    StartSplitScreenGame=false;
 }
 
 void M_VerifyNightmare(int ch);
@@ -1520,11 +1626,11 @@ menuitem_t OptionsMenu[]=
 //    {IT_STRING | IT_CVAR,0,"Crosshair scale" ,&cv_crosshairscale  ,0},
     {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim         ,0},
     {IT_STRING | IT_CVAR,0,"Control per key" ,&cv_controlperkey   ,0},
-    {IT_STRING | IT_CVAR,0,"Random sound pitch",&cv_rndsoundpitch ,0},
 
-    {IT_SUBMENU | IT_WHITESTRING,0,"Server options...",&ServerOptionsDef  ,70},
+    {IT_SUBMENU | IT_WHITESTRING,0,"Effects Options...",&EffectsOptionsDef ,60},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options..."  ,M_GameOption       ,0},
-    {IT_SUBMENU | IT_WHITESTRING,0,"Effects Options...",&EffectsOptionsDef ,0},
+    {IT_CALL    | IT_WHITESTRING,0,"Network Options...",M_NetOption     ,0},
+    {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
@@ -1578,6 +1684,7 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
     {IT_STRING | IT_CVAR,0,    "Sprites limit"    , &cv_spritelim     , 0},
     {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
+    {IT_STRING | IT_CVAR,0,    "Random sound pitch",&cv_rndsoundpitch , 0},
 };
 
 menu_t  EffectsOptionsDef =
@@ -1814,6 +1921,7 @@ void M_NetOption(int choice)
         M_SimpleMessage("You are not the server\nYou can't change the options\n");
         return;
     }
+    NetOptionDef.prevMenu = currentMenu;
     M_SetupNextMenu(&NetOptionDef);
 }
 
@@ -1968,6 +2076,7 @@ enum
     sound_end
 } sound_e;
 
+// DoomLegacy graphics from legacy.wad: M_CDVOL
 menuitem_t SoundMenu[]=
 {
     {IT_CVARMAX   | IT_PATCH ,"M_SFXVOL","Sound Volume",&cv_soundvolume  ,'s'},
@@ -2091,6 +2200,7 @@ void M_SetupControlsMenu (int choice)
         setupcontrols = gamecontrol;        // was called from main Options (for console player, then)
     }
     currentMenu->lastOn = itemOn;
+    ControlDef.prevMenu = currentMenu;
     M_SetupNextMenu(&ControlDef);
 }
 
@@ -2103,6 +2213,7 @@ void M_DrawControl(void)
     char     tmp[50];
     int      i;
     int      keys[2];
+    menuitem_t * mip;
 
     // draw title, strings and submenu
     M_DrawGenericMenu();
@@ -2113,11 +2224,12 @@ void M_DrawControl(void)
 
     for(i=0;i<currentMenu->numitems;i++)
     {
-        if (currentMenu->menuitems[i].status!=IT_CONTROL)
+        mip = & currentMenu->menuitems[i];
+        if (mip->status != IT_CONTROL)
             continue;
 
-        keys[0] = setupcontrols[currentMenu->menuitems[i].alphaKey][0];
-        keys[1] = setupcontrols[currentMenu->menuitems[i].alphaKey][1];
+        keys[0] = setupcontrols[mip->alphaKey][0];
+        keys[1] = setupcontrols[mip->alphaKey][1];
 
         tmp[0]='\0';
         if (keys[0] == KEY_NULL && keys[1] == KEY_NULL)
@@ -4556,10 +4668,12 @@ void M_Init (void)
         int i;
 
         for( i=0;i<ControlDef2.numitems;i++)
+        {
             if( ControlMenu2[i].alphaKey == gc_invprev ||
                 ControlMenu2[i].alphaKey == gc_invnext ||
                 ControlMenu2[i].alphaKey == gc_invuse )
                 ControlMenu2[i].status = IT_LITLSPACE;
+	}
     }
 
     if( gamemode !=heretic )
@@ -4568,8 +4682,10 @@ void M_Init (void)
         int i;
 
         for( i=0;i<ControlDef2.numitems;i++)
+        {
             if( ControlMenu2[i].alphaKey == gc_flydown )
                 ControlMenu2[i].status = IT_LITLSPACE;
+	}
     }
 
     if( W_CheckNumForName("E2M1")<0 )

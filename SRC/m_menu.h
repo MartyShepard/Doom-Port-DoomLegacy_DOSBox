@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.h 630 2010-04-08 00:56:36Z wesleyjohnson $
+// $Id: m_menu.h 850 2011-08-20 23:14:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -75,7 +75,7 @@ void M_StartControlPanel (void);
 // Draws a box with a texture inside as background for messages
 void M_DrawTextBox (int x, int y, int width, int lines);
 // show or hide the setup for player 2 (called at splitscreen change)
-void M_SwitchSplitscreen(void);
+void M_Player2_MenuEnable( boolean player2_enable );
 
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)

@@ -1,5 +1,12 @@
 * Not need to Compile.
 
+Browse Commits
+
+[00850 ]: w76 multiplayer menu fixes
+[00849 ]: monster stuck friction test
+          Changed \Common\Wads\Friction.wad
+					
+[00848 ]: w76 z test comments
 [00847 ]: w76 monster stuck
 [00846 ]: New menu patches from legacy.wad marked with comments.
 [00845 ]: Version 1.44 alpha3

@@ -1725,3 +1725,22 @@ Fix monster momentum friction to help stuck monsters.
 Must have full speed impulse for stopped monsters because some wads,
 like TNT, have overlapped monster positions, and it depends upon that
 vanilla behavior to get them unstuck from each other.
+
+*** w76_z_test_notes
+patchfile = w75_z_test_notes.patch
+- committed revision 848   by wesley johnson
+Part of the code for z_testing of monsters is disabled and it is not a
+mistake.  The code existed previous to heretic code inclusion, and
+heretic has similar behavior.  This documents the variables and code
+that belong to the old code.
+
+*** w76_multimenu
+patchfile = w75_multimenu.patch
+- committed revision 850   by wesley johnson
+Reorganize the multiplayer menus.
+Main menu is now compatible with original (and does not have any legacy.wad
+graphics), to allow menu modifications like in Plutonia2.
+Created a SingleMulti menu to select between (Single player, Two
+player, Multi-player).
+The two player setup has been fixed to allow setup before starting
+server.
