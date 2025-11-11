@@ -2,6 +2,7 @@
 
 Browse Commits
 
+[00851 ]: w76 level names selection
 [00850 ]: w76 multiplayer menu fixes
 [00849 ]: monster stuck friction test
           Changed \Common\Wads\Friction.wad

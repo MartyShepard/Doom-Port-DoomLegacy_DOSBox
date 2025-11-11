@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 802 2011-03-06 18:56:56Z wesleyjohnson $
+// $Id: p_info.c 851 2011-08-29 18:23:44Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -439,15 +439,19 @@ void P_InitWeapons()
     }
 }
 
+#if 0
+// [WDJ] 8/26/2011 moved inline
 //SoM: Moved from hu_stuff.c
 #define HU_TITLE  (text[HUSTR_E1M1_NUM + (gameepisode-1)*9+gamemap-1])
 #define HU_TITLE2 (text[HUSTR_1_NUM + gamemap-1])
 #define HU_TITLEP (text[PHUSTR_1_NUM + gamemap-1])
 #define HU_TITLET (text[THUSTR_1_NUM + gamemap-1])
 #define HU_TITLEH (text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1])
+#endif
 
 static char *levelname;
 
+// Called by P_LoadLevelInfo
 void P_FindLevelName()
 {
   extern char *maplumpname;
@@ -457,18 +461,39 @@ void P_FindLevelName()
   // getting the right one is the tricky bit =)
   // info level name from level lump (p_info.c) ?
 
-  if(*info_levelname) levelname = info_levelname;
-        // not a new level or dehacked level names ?
+  if(*info_levelname)
+      levelname = info_levelname;
   else if(!newlevel || deh_loaded)
   {
+      // not a new level or dehacked level names
       if( gamemode == heretic )
-        levelname = HU_TITLEH;
-      else
-      if(isMAPxy(maplumpname))
-        levelname = (gamemission == pack_tnt) ? HU_TITLET :
-                    (gamemission == pack_plut) ? HU_TITLEP : HU_TITLE2;
+      {
+	// Heretic shareware, Heretic, Blasphemer
+        levelname = text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
+      }
+      else if(isMAPxy(maplumpname))
+      {
+	switch( gamedesc_id )
+	{
+	 case GDESC_plutonia:
+	   // Plutonia
+	   levelname = text[PHUSTR_1_NUM + gamemap-1];
+	   break;
+	 case GDESC_tnt:
+	   // TNT
+	   levelname = text[THUSTR_1_NUM + gamemap-1];
+	   break;
+	 default:
+	   // Doom2, FreeDoom, FreeDM
+	   levelname = text[HUSTR_1_NUM + gamemap-1];
+	   break;
+	}
+      }
       else if(isExMy(maplumpname))
-        levelname = HU_TITLE;
+      {
+	// Doom shareware, Doom, UltDoom, UltFreeDoom, ChexQuest
+        levelname = text[HUSTR_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
+      }
       else
         levelname = maplumpname;
   }
@@ -644,24 +669,40 @@ char *P_LevelName()
 }
 
 // todo : make this use mapinfo lump
+// Called by WI_drawEL "Entering <LevelName>"
+// Called by IN_DrawYAH "NOW ENTERING"
 char *P_LevelNameByNum( int episode, int map )
 {
+    register char * levnam = "New map";
     switch(gamemode) 
     {
        case  doom_shareware :
        case  doom_registered :
-       case  ultdoom_retail :
-                                return text[HUSTR_E1M1_NUM + (episode-1)*9+map-1];
-       case  doom2_commercial :
-           switch(gamemission) {
-               case pack_tnt  : return text[THUSTR_1_NUM + map-1];
-               case pack_plut : return text[PHUSTR_1_NUM + map-1];
-               default :        return text[HUSTR_1_NUM + map-1];
+       case  ultdoom_retail :  // and UltFreeDoom
+       case  chexquest1 :
+           levnam = text[HUSTR_E1M1_NUM + (episode-1)*9+map-1];
+           break;
+       case  doom2_commercial :  // and FreeDoom, FreeDM
+           switch( gamedesc_id )
+           {
+               case GDESC_tnt :
+	           levnam = text[THUSTR_1_NUM + map-1];
+	           break;
+               case GDESC_plutonia :
+	           levnam = text[PHUSTR_1_NUM + map-1];
+	           break;
+               default :
+	           levnam = text[HUSTR_1_NUM + map-1];
+	           break;
            }
            break;
-       case  heretic:           return text[HERETIC_E1M1_NUM + (episode-1)*9+map-1];
-       case  hexen: break;
-       default: break;
+       case  heretic:  // and shareware, blasphemer
+           levnam = text[HERETIC_E1M1_NUM + (episode-1)*9+map-1];
+           break;
+       case  hexen:
+           break;
+       default:
+           break;
     }
-    return "New map";
+    return levnam;
 }

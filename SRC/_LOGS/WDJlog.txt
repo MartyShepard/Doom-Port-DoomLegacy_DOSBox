@@ -1744,3 +1744,12 @@ Created a SingleMulti menu to select between (Single player, Two
 player, Multi-player).
 The two player setup has been fixed to allow setup before starting
 server.
+
+*** w76_levelname
+patchfile = w75_levelname.patch
+- committed revision 851   by wesley johnson
+Level names for TNT and Plutonia were not displayed because they
+depended upon gamemission, which was never setup.  Replaced logic
+with gamedesc_id, which gives same information.
+Removed gamemission.
+Cleaned up some related macros and levelname functions.

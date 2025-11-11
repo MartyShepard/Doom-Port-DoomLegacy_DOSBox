@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 837 2011-05-27 00:52:45Z wesleyjohnson $
+// $Id: g_game.c 851 2011-08-29 18:23:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -269,7 +269,10 @@ char            gamemapname[MAX_WADPATH];      // an external wad filename
 
 
 gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
+#if 0
+// [WDJ] Replaced by gamedesc_id, GDESC_
 gamemission_t   gamemission = doom;
+#endif
 boolean         raven = false;
 language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
