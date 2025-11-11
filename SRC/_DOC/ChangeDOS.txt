@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00847 ]: w76 monster stuck
+[00846 ]: New menu patches from legacy.wad marked with comments.
 [00845 ]: Version 1.44 alpha3
 [00844*]: w75 alpha3 docs update
 [00843*]: Oops, typo.

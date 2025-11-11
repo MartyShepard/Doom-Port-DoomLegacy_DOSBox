@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 837 2011-05-27 00:52:45Z wesleyjohnson $
+// $Id: p_enemy.c 847 2011-08-15 23:18:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -525,11 +525,15 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
         // Use it for all sectors to the same degree (except in demo compatibility).
         if( momf > 0.0 )  // not disabled
         {
+	    // It is necessary that there be full speed at dead stop to get
+	    // monsters unstuck from walls and each other.
+	    // Some wads like TNT have overlapping monster starting positions.
+	    if( actor->momx || actor->momy )  // if not at standstill
+                speed /= 2;  // half of speed goes to momentum
 	    // apply momentum
 	    momf *= mf_ratio;
 	    actor->momx += (int) ( dx * momf );
 	    actor->momy += (int) ( dy * momf );
-	    speed /= 2;  // half of speed goes to momentum
 	}
         else
         {
@@ -784,14 +788,18 @@ static void P_NewChaseDir (mobj_t*     actor)
 	    actor->momx = actor->momy = 0;
 	    goto no_move;  // don't move across the dropoff
 	}
+	// Observe monsters on ledge, how long they stay stuck,
+        // and on conveyor, how long they take to fall off.
+        // Tuned backpedal speed constant.
+	register int  backpedal = (actor->info->speed * 0x87BB);
+//        fprintf( stderr, "backpedal 0x%X ", backpedal );
         // Vector away from line
-	// Tune size by observing monsters on ledge and how long they stay stuck.
         fixed_t  dal = P_AproxDistance(dax,day);
-        if( dal > (2<<14) )
+        dal = FixedDiv( dal, backpedal );
+	if( dal > 1 )
         {
-	    dal >>= 14;
-	    dax /= dal;  // shorten vector
-	    day /= dal;
+	    dax = FixedDiv( dax, dal );  // shorten vector
+	    day = FixedDiv( day, dal );
 	}
 
 //        fprintf( stderr, "stuck delta (0x%X,0x%X)\n", dax, day );

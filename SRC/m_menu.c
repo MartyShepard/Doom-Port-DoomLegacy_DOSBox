@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 838 2011-05-27 00:54:13Z wesleyjohnson $
+// $Id: m_menu.c 846 2011-07-26 12:40:37Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -706,8 +706,8 @@ enum
 
 menuitem_t MainMenu[]=
 {
-    {IT_SUBMENU | IT_PATCH,"M_SINGLE","SINGLE PLAYER",&SinglePlayerDef ,'s'},
-    {IT_SUBMENU | IT_PATCH,"M_MULTI" ,"MULTIPLAYER",&MultiPlayerDef  ,'m'},
+    {IT_SUBMENU | IT_PATCH,"M_SINGLE","SINGLE PLAYER",&SinglePlayerDef ,'s'}, // in legacy.wad
+    {IT_SUBMENU | IT_PATCH,"M_MULTI" ,"MULTIPLAYER",&MultiPlayerDef  ,'m'},   // in legacy.wad
     {IT_SUBMENU | IT_PATCH,"M_OPTION","OPTIONS",&OptionsDef      ,'o'},
     {IT_SUBMENU | IT_PATCH,"M_RDTHIS","INFO",&ReadDef1        ,'r'},  // Another hickup with Special edition.
     {IT_CALL    | IT_PATCH,"M_QUITG" ,"QUIT GAME",M_QuitDOOM       ,'q'}
@@ -762,7 +762,7 @@ menuitem_t SinglePlayerMenu[] =
 
 menu_t  SinglePlayerDef =
 {
-    "M_SINGLE",
+    "M_SINGLE", // in legacy.wad
     "Single Player",
     single_end,
     &MainDef,
@@ -857,7 +857,7 @@ boolean M_CancelConnect(void)
 
 menu_t  Connectdef =
 {
-    "M_CONNEC",
+    "M_CONNEC", // in legacy.wad
     "Connect Server",
     sizeof(ConnectMenu)/sizeof(menuitem_t),
     &MultiPlayerDef,
@@ -949,7 +949,7 @@ menuitem_t  ServerMenu[] =
 
 menu_t  Serverdef =
 {
-    "M_STSERV",
+    "M_STSERV", // in legacy.wad
     "Start Server",
     sizeof(ServerMenu)/sizeof(menuitem_t),
     &MultiPlayerDef,
@@ -988,18 +988,18 @@ enum {
 
 menuitem_t MultiPlayerMenu[] =
 {
-    {IT_CALL | IT_PATCH,"M_STSERV","CREATE SERVER",M_StartServerMenu ,'a'},
-    {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER",M_ConnectMenu ,'c'},
-    {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_Splitscreen ,'n'},
-    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},
-    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'},
+    {IT_CALL | IT_PATCH,"M_STSERV","CREATE SERVER",M_StartServerMenu ,'a'},    // in legacy.wad
+    {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER",M_ConnectMenu ,'c'},       // in legacy.wad
+    {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_Splitscreen ,'n'},      // in legacy.wad
+    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},  // in legacy.wad
+    {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'}, // in legacy.wad
     {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS",M_NetOption ,'o'},
     {IT_CALL | IT_PATCH,"M_ENDGAM","END GAME",M_EndGame ,'e'}
 };
 
 menu_t  MultiPlayerDef =
 {
-    "M_MULTI",
+    "M_MULTI", // in legacy.wad
     "Multiplayer",
     multiplayer_end,
     &MainDef,
@@ -1105,7 +1105,7 @@ enum {
 
 menu_t  SetupMultiPlayerDef =
 {
-    "M_MULTI",
+    "M_MULTI", // in legacy.wad
     "Multiplayer",
     sizeof(SetupMultiPlayerMenu)/sizeof(menuitem_t),
     &MultiPlayerDef,
@@ -1555,16 +1555,16 @@ void M_DrawSlider (int x, int y, int range)
     if (range > 100)
         range = 100;
 
-    V_DrawScaledPatch_Name (x-8, y, 0, "M_SLIDEL" );
+    V_DrawScaledPatch_Name(x-8, y, 0, "M_SLIDEL"); // in legacy.wad
 
     for (i=0 ; i<SLIDER_RANGE ; i++)
-        V_DrawScaledPatch_Name (x+i*8, y, 0, "M_SLIDEM" );
+      V_DrawScaledPatch_Name(x+i*8, y, 0, "M_SLIDEM"); // in legacy.wad
 
-    V_DrawScaledPatch_Name (x+SLIDER_RANGE*8, y, 0, "M_SLIDER" );
+    V_DrawScaledPatch_Name(x+SLIDER_RANGE*8, y, 0, "M_SLIDER"); // in legacy.wad
 
     // draw the slider cursor
-    V_DrawMappedPatch_Name (x + ((SLIDER_RANGE-1)*8*range)/100, y, 0,
-                       "M_SLIDEC", whitemap );
+    V_DrawMappedPatch_Name(x + ((SLIDER_RANGE-1)*8*range)/100, y, 0,
+			   "M_SLIDEC", whitemap); // in legacy.wad
 }
 
 //===========================================================================
@@ -1974,7 +1974,7 @@ menuitem_t SoundMenu[]=
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cv_soundvolume      },
     {IT_CVARMAX   | IT_PATCH ,"M_MUSVOL","Music Volume",&cv_musicvolume  ,'m'},
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cv_musicvolume      },
-    {IT_CVARMAX   | IT_PATCH ,"M_CDVOL" ,"CD Volume"   ,&cd_volume       ,'c'},
+    {IT_CVARMAX   | IT_PATCH ,"M_CDVOL" ,"CD Volume"   ,&cd_volume       ,'c'}, // in legacy.wad
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cd_volume           },
 };
 
@@ -2023,7 +2023,7 @@ menuitem_t ControlMenu[]=
 
 menu_t  ControlDef =
 {
-    "M_CONTRO",
+    "M_CONTRO", // in legacy.wad
     "Setup Controls",
     sizeof(ControlMenu)/sizeof(menuitem_t),
     &OptionsDef,
@@ -2062,7 +2062,7 @@ menuitem_t ControlMenu2[]=
 
 menu_t  ControlDef2 =
 {
-    "M_CONTRO",
+    "M_CONTRO", // in legacy.wad
     "Setup Controls",
     sizeof(ControlMenu2)/sizeof(menuitem_t),
     &OptionsDef,
@@ -2237,7 +2237,7 @@ menuitem_t VideoModeMenu[]=
 
 menu_t  VidModeDef =
 {
-    "M_VIDEO",
+    "M_VIDEO", // in legacy.wad
     "Video Mode",
     1,                  // # of menu items
     //sizeof(VideoModeMenu)/sizeof(menuitem_t),
@@ -4188,6 +4188,7 @@ boolean M_Responder (event_t* ev)
         else
             routine=M_ChangeCvar;
     }
+
     // Keys usable within menu
     switch (key)
     {

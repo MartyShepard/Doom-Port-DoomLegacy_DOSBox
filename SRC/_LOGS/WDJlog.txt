@@ -1717,3 +1717,11 @@ sprite frame flipped.
 patchfile = w75_docs.patch
 - committed revision 843   by wesley johnson
 Update docs for alpha3 release.
+
+*** w76_monster_stuck
+patchfile = w75_monster_stuck.patch
+- committed revision 847   by wesley johnson
+Fix monster momentum friction to help stuck monsters.
+Must have full speed impulse for stopped monsters because some wads,
+like TNT, have overlapped monster positions, and it depends upon that
+vanilla behavior to get them unstuck from each other.
