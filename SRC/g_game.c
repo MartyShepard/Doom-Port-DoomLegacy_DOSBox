@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 851 2011-08-29 18:23:44Z wesleyjohnson $
+// $Id: g_game.c 852 2011-09-02 17:49:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2300,6 +2300,7 @@ boolean G_Downgrade(int version)
     DemoAdapt_p_user();  // local enables of p_user
     DemoAdapt_p_enemy(); // local enables of p_enemy
     DemoAdapt_p_fab();   // local enables of p_fab
+    DemoAdapt_p_floor(); // local enables of p_floor, TNT MAP30 fix
     return true;
 }
 

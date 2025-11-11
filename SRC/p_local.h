@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 837 2011-05-27 00:52:45Z wesleyjohnson $
+// $Id: p_local.h 852 2011-09-02 17:49:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -405,6 +405,7 @@ extern friction_model_e  friction_model;
 
 void  DemoAdapt_p_user( void );
 void  DemoAdapt_p_enemy( void );
+void  DemoAdapt_p_floor( void );
 
 
 // heretic specific

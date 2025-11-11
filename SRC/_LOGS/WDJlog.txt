@@ -1719,7 +1719,7 @@ patchfile = w75_docs.patch
 Update docs for alpha3 release.
 
 *** w76_monster_stuck
-patchfile = w75_monster_stuck.patch
+patchfile = w76_monster_stuck.patch
 - committed revision 847   by wesley johnson
 Fix monster momentum friction to help stuck monsters.
 Must have full speed impulse for stopped monsters because some wads,
@@ -1727,7 +1727,7 @@ like TNT, have overlapped monster positions, and it depends upon that
 vanilla behavior to get them unstuck from each other.
 
 *** w76_z_test_notes
-patchfile = w75_z_test_notes.patch
+patchfile = w76_z_test_notes.patch
 - committed revision 848   by wesley johnson
 Part of the code for z_testing of monsters is disabled and it is not a
 mistake.  The code existed previous to heretic code inclusion, and
@@ -1735,7 +1735,7 @@ heretic has similar behavior.  This documents the variables and code
 that belong to the old code.
 
 *** w76_multimenu
-patchfile = w75_multimenu.patch
+patchfile = w76_multimenu.patch
 - committed revision 850   by wesley johnson
 Reorganize the multiplayer menus.
 Main menu is now compatible with original (and does not have any legacy.wad
@@ -1746,10 +1746,20 @@ The two player setup has been fixed to allow setup before starting
 server.
 
 *** w76_levelname
-patchfile = w75_levelname.patch
+patchfile = w76_levelname.patch
 - committed revision 851   by wesley johnson
 Level names for TNT and Plutonia were not displayed because they
 depended upon gamemission, which was never setup.  Replaced logic
 with gamedesc_id, which gives same information.
 Removed gamemission.
 Cleaned up some related macros and levelname functions.
+
+*** w76_TNT_MAP30_stair
+patchfile = w76_TNT_MAP30_stair.patch
+- committed revision 852   by wesley johnson
+TNT MAP30 depends upon a stair builder bug that was fixed by Boom.
+Fix using DemoAdapt so that for TNT MAP30, it disables the Boom
+stairbuilder fix (giving the original buggy code).  Sometimes the bug
+increments a stair twice.  TNT MAP30 has 24 steps, but they removed some
+linedefs to have only 18 steps (some of which increment by 16) because
+of the bug.
