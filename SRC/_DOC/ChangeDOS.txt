@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00837 ]: sg=w74 monster friction
 [00836 ]: sg=w74 3dfloor opening
 [00835 ]: sg=w74 player bob
 					DOS: Structure & Alignment Bugfix. Fixed Heretic in this SVN

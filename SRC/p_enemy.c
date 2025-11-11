@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 802 2011-03-06 18:56:56Z wesleyjohnson $
+// $Id: p_enemy.c 837 2011-05-27 00:52:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2011 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -107,6 +107,19 @@ void FastMonster_OnChange(void);
 consvar_t cv_solidcorpse = {"solidcorpse","0",CV_NETVAR | CV_SAVE,CV_OnOff};
 consvar_t cv_fastmonsters = {"fastmonsters","0",CV_NETVAR | CV_CALL,CV_OnOff,FastMonster_OnChange};
 consvar_t cv_predictingmonsters = {"predictingmonsters","0",CV_NETVAR | CV_SAVE,CV_OnOff};	//added by AC for predmonsters
+
+// [WDJ] Monster friction
+void CV_monsterfriction_OnChange(void)
+{
+    DemoAdapt_p_enemy();
+}
+
+CV_PossibleValue_t monsterfriction_t[] = {
+   {0,"None"},
+   {1,"MBF"},
+   {2,"Momentum"},
+   {0,NULL} };
+consvar_t cv_monsterfriction = {"monsterfriction","2", CV_NETVAR | CV_SAVE | CV_CALL, monsterfriction_t, CV_monsterfriction_OnChange};
 
 
 typedef enum
@@ -216,8 +229,7 @@ static const struct
 
 static mobj_t*         soundtarget;
 
-static void P_RecursiveSound ( sector_t*     sec,
-  int           soundblocks )
+static void P_RecursiveSound ( sector_t*  sec, int soundblocks )
 {
     int         i;
     line_t*     check;
@@ -268,8 +280,7 @@ static void P_RecursiveSound ( sector_t*     sec,
 // If a monster yells at a player,
 // it will alert other monsters to the player.
 //
-void P_NoiseAlert ( mobj_t*       target,
-  mobj_t*       emmiter )
+void P_NoiseAlert ( mobj_t* target, mobj_t* emmiter )
 {
     soundtarget = target;
     validcount++;
@@ -282,7 +293,7 @@ void P_NoiseAlert ( mobj_t*       target,
 //
 // P_CheckMeleeRange
 //
-static boolean P_CheckMeleeRange (mobj_t*      actor)
+static boolean P_CheckMeleeRange (mobj_t* actor)
 {
     mobj_t*     pl;
     fixed_t     dist;
@@ -376,21 +387,45 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 }
 
 
+
+byte EN_mbf_enemyfactor = 0;
+
+// local version control
+void DemoAdapt_p_enemy( void )
+{
+    // heretic demos have FR_orig friction, with special ice sector handling
+    // in P_Thrust (so monsters slip only on ice conveyor)
+    if( demoplayback )
+    {
+        EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
+    }
+    else
+    {
+        // default: 2= momentum
+        monster_friction = (cv_monsterfriction.value > 0);  // 0=none
+        EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
+    }
+}
+
+
 //
-// P_Move
+// P_MoveActor
 // Move in the current direction,
 // returns false if the move is blocked.
 //
 static const fixed_t xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
 static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
-static boolean P_Move (mobj_t* actor)
+// Called multiple times in one step, by P_TryWalk, while trying to find valid path.
+// Called by P_TryWalk, A_Chase
+// Only called for actor things, not players, nor missiles.
+static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
 {
-    fixed_t     tryx, tryy;
-
-    line_t*     ld;
-
-    boolean     good;
+    fixed_t  tryx, tryy;
+    fixed_t  old_momx, old_momy;
+    line_t*  ld;
+    boolean  good;
+    int      speed = actor->info->speed;
 
     if (actor->movedir == DI_NODIR)
         return false;
@@ -400,12 +435,122 @@ static boolean P_Move (mobj_t* actor)
         I_Error ("Weird actor->movedir!");
 #endif
 
-    tryx = actor->x + actor->info->speed*xspeed[actor->movedir];
-    tryy = actor->y + actor->info->speed*yspeed[actor->movedir];
+    old_momx = actor->momx;
+    old_momy = actor->momy;
 
-    if (!P_TryMove (actor, tryx, tryy, false))
+    // [WDJ] Monsters too, killough 10/98
+    // Otherwise they move too easily on mud and ice
+    if(monster_friction
+       && (actor->z <= actor->floorz)  // must be on floor
+       && !(actor->flags2&MF2_FLY)  // not heretic flying monsters
+       )
     {
-        // open any specials
+        // MBF, prboom: all into speed (except ice)
+        // DoomLegacy: fixed proportion of momentum and speed
+        fixed_t  dx = speed * xspeed[actor->movedir];
+        fixed_t  dy = speed * yspeed[actor->movedir];   
+        // [WDJ] Math: Part of speed goes into momentum, R=0.5.
+        // fr = FRICTION_NORM/FRACUNIT = 0.90625
+        // movement due to momentum (for i=0..)
+        //         = Sum( momf * speed * (fr**i)) = momf * speed / (1-fr)
+        // Thus: momf = (1- (FRICTION_NORM/FRACUNIT)) * R
+        // For R=0.5, momf = 0.046875 = 3/64
+        float  momf = ( EN_mbf_enemyfactor )? 0.0 : 0.046875f;  // default
+	float  mdiffm = 1.0f;  // movefactor diff mult (to reduce effect)
+       
+	P_GetMoveFactor(actor);  // sets got_movefactor, got_friction
+        if( got_friction < FRICTION_NORM )
+        {   // mud
+	    if( EN_mbf_enemyfactor )
+	    {   // MBF, prboom: modify speed
+	        mdiffm = 0.5f;  // 1/2 by MBF
+	    }
+	    else
+	    {   // DoomLegacy:
+	        // movefactor is for cmd=25, but speed=8 for player size actor
+	        mdiffm = 0.64f;  // by experiment, larger is slower
+	    }
+	}
+        else if (got_friction > FRICTION_NORM )
+        {   // ice
+	    // Avoid adding momentum into walls
+	    tryx = actor->x + dx;
+	    tryy = actor->y + dy;
+	    // [WDJ] Do not use TryMove to check position, as it has
+	    // too many side effects and is not reversible.
+	    // Cannot just reset actor x,y.
+	    if (P_CheckPosition (actor, tryx, tryy))
+	    { // success, give it momentum too
+	        if( EN_mbf_enemyfactor )
+	        {   // MBF, prboom:
+		    speed = 0;  // put it all into momf
+		    momf = 0.25f;  // becomes MBF equation
+		}
+	        else
+	        {   // DoomLegacy:
+		    // monsters a little better in slime than humans
+		    mdiffm = 0.62f; // by experiment, larger is slower
+#if 0
+		    // [WDJ] proportional as movefactor decreases
+		    // This worked better than MBF, but still showed friction transistion accel and decel.
+		    fixed_t pro = FRACUNIT * (ORIG_FRICTION_FACTOR - got_movefactor) / (ORIG_FRICTION_FACTOR*69/100);
+		    if( pro > FRACUNIT )  pro = FRACUNIT; // limit to 1
+		    fixed_t anti_pro = (FRACUNIT - pro);
+		    momf = FixedMul( momf, pro ); // pro to momentum
+		    anti_pro = FixedMul(anti_pro, anti_pro); // (1-pro)**2 to speed
+		    got_movefactor = FixedMul( got_movefactor, anti_pro);
+#endif		       
+		}
+	    }
+	    else
+	    {
+	        momf = 0.0f;  // otherwise they get stuck at walls
+	    }
+	}
+        // [WDJ] Apply mdiffm to difference between movefactor and normal.
+        // movefactor has ORIG_FRICTION_FACTOR
+	// movediff = (got_movefactor - ORIG_FRICTION_FACTOR) * mdiffm
+        // ratio = (ORIG_FRICTION_FACTOR + movediff) / ORIG_FRICTION_FACTOR
+        float mf_ratio = (
+	  (((float)(got_movefactor - ORIG_FRICTION_FACTOR)) * mdiffm)
+	    + ((float)ORIG_FRICTION_FACTOR)
+	  ) / ((float)ORIG_FRICTION_FACTOR);
+
+        // modify speed by movefactor
+	speed = (int) ( speed * mf_ratio ); // MBF, prboom: no momentum
+
+        // [WDJ] Trying to use momentum for some sectors and not for others
+        // results in stall when entering an icy momentum sector,
+        // and speed surge when leaving an icy momentum sector.
+        // Use it for all sectors to the same degree (except in demo compatibility).
+        if( momf > 0.0 )  // not disabled
+        {
+	    // apply momentum
+	    momf *= mf_ratio;
+	    actor->momx += (int) ( dx * momf );
+	    actor->momy += (int) ( dy * momf );
+	    speed /= 2;  // half of speed goes to momentum
+	}
+        else
+        {
+	    // if momf disabled, then minimum speed
+	    // Minimum speed with momf causes them to walk off ledges.
+	    if( speed == 0 )  speed = 1;
+	}
+    }
+    
+    tryx = actor->x + speed * xspeed[actor->movedir];
+    tryy = actor->y + speed * yspeed[actor->movedir];
+
+    if (!P_TryMove (actor, tryx, tryy, false))  // do not allow dropoff
+    {
+        // blocked move
+	// Monsters will be here multiple times in each step while
+	// trying to find sucessful path.
+        actor->momx = old_momx;  // cancel any momentum changes for next try
+        actor->momy = old_momy;
+
+	// open any specials
 	// tmr_floatok, tmr_floorz returned by P_TryMove
         if (actor->flags & MF_FLOAT && tmr_floatok)
         {
@@ -437,8 +582,17 @@ static boolean P_Move (mobj_t* actor)
         }
         return good;
     }
-    else
+    else  // TryMove
     {
+        // successful move
+        if( (cv_monsterfriction.value >= 2) && tmr_dropoffline )
+        {
+	    // [WDJ] last move sensed dropoff
+	    // Reduce momentum near dropoffs, friction 0x4000 to 0xE000
+#define  FRICTION_DROPOFF   0x6000
+	    actor->momx = FixedMul(actor->momx, FRICTION_DROPOFF);
+	    actor->momy = FixedMul(actor->momx, FRICTION_DROPOFF);
+	}
         actor->flags &= ~MF_INFLOAT;
     }
 
@@ -453,6 +607,8 @@ static boolean P_Move (mobj_t* actor)
 }
 
 
+line_t * trywalk_dropoffline;
+
 //
 // TryWalk
 // Attempts to move actor on
@@ -463,11 +619,15 @@ static boolean P_Move (mobj_t* actor)
 // returns TRUE and sets...
 // If a door is in the way,
 // an OpenDoor call is made to start it opening.
+// Called multiple times in one step, while trying to find valid path.
 //
 static boolean P_TryWalk (mobj_t* actor)
 {
-    if (!P_Move (actor))
+    if (!P_MoveActor (actor))
     {
+        // record if failing due to dropoff
+        if( tmr_dropoffline )
+	    trywalk_dropoffline = tmr_dropoffline;
         return false;
     }
     actor->movecount = P_Random()&15;
@@ -484,15 +644,14 @@ static void P_NewChaseDir (mobj_t*     actor)
     dirtype_t   d[3];
 
     int         tdir;
-    dirtype_t   olddir;
+    dirtype_t   olddir = actor->movedir;
 
-    dirtype_t   turnaround;
+    dirtype_t   turnaround = opposite[olddir];
 
     if (!actor->target)
         I_Error ("P_NewChaseDir: called with no target");
 
-    olddir = actor->movedir;
-    turnaround=opposite[olddir];
+    trywalk_dropoffline = NULL;  // clear dropoff record
 
     deltax = actor->target->x - actor->x;
     deltay = actor->target->y - actor->y;
@@ -517,7 +676,7 @@ static void P_NewChaseDir (mobj_t*     actor)
     {
         actor->movedir = diags[((deltay<0)<<1)+(deltax>0)];
         if (actor->movedir != turnaround && P_TryWalk(actor))
-            return;
+	    goto accept_move;
     }
 
     // try other directions
@@ -540,7 +699,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         if (P_TryWalk(actor))
         {
             // either moved forward or attacked
-            return;
+	    goto accept_move;
         }
     }
 
@@ -549,7 +708,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         actor->movedir =d[2];
 
         if (P_TryWalk(actor))
-            return;
+	    goto accept_move;
     }
 
     // there is no direct path to the player,
@@ -559,7 +718,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         actor->movedir =olddir;
 
         if (P_TryWalk(actor))
-            return;
+	    goto accept_move;
     }
 
     // randomly determine direction of search
@@ -574,7 +733,7 @@ static void P_NewChaseDir (mobj_t*     actor)
                 actor->movedir =tdir;
 
                 if ( P_TryWalk(actor) )
-                    return;
+		    goto accept_move;
             }
         }
     }
@@ -589,7 +748,7 @@ static void P_NewChaseDir (mobj_t*     actor)
                 actor->movedir =tdir;
 
                 if ( P_TryWalk(actor) )
-                    return;
+		    goto accept_move;
             }
         }
     }
@@ -598,10 +757,57 @@ static void P_NewChaseDir (mobj_t*     actor)
     {
         actor->movedir =turnaround;
         if ( P_TryWalk(actor) )
-            return;
+	    goto accept_move;
+    }
+
+    // [WDJ] to not glide off ledges, unless conveyor
+    if( (cv_monsterfriction.value >= 2) && trywalk_dropoffline )
+    {
+        // [WDJ] Momentum got actor stuck on edge,
+	// but just reversing momentum is too much for conveyor.
+	// Move perpendicular to dropoff line to get unstuck.
+        fixed_t  dax, day;
+        if( actor->subsector->sector == trywalk_dropoffline->frontsector )
+        {
+	    // vector to frontsector
+	    dax = trywalk_dropoffline->dy;
+	    day = -trywalk_dropoffline->dx;
+	}
+        else if( actor->subsector->sector == trywalk_dropoffline->backsector )
+        {
+	    // vector to backsector
+	    dax = -trywalk_dropoffline->dy;
+	    day = trywalk_dropoffline->dx;
+	}
+        else
+        {
+	    actor->momx = actor->momy = 0;
+	    goto no_move;  // don't move across the dropoff
+	}
+        // Vector away from line
+	// Tune size by observing monsters on ledge and how long they stay stuck.
+        fixed_t  dal = P_AproxDistance(dax,day);
+        if( dal > (2<<14) )
+        {
+	    dal >>= 14;
+	    dax /= dal;  // shorten vector
+	    day /= dal;
+	}
+
+//        fprintf( stderr, "stuck delta (0x%X,0x%X)\n", dax, day );
+        if (P_TryMove (actor, actor->x + dax, actor->y + day, true))  // allow cross dropoff
+	    goto accept_move;
+
+    no_move:
+        // must fall off conveyor end, but not off high ledges
+        actor->momx = FixedMul(actor->momx, 0xA000);
+        actor->momy = FixedMul(actor->momx, 0xA000);
     }
 
     actor->movedir = DI_NODIR;  // can not move
+   
+accept_move:
+    return;
 }
 
 
@@ -972,7 +1178,7 @@ void A_Chase (mobj_t*   actor)
 
     // chase towards player
     if (--actor->movecount<0
-        || !P_Move (actor))
+        || !P_MoveActor (actor))
     {
         P_NewChaseDir (actor);
     }

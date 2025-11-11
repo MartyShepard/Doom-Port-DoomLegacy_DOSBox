@@ -806,6 +806,19 @@ Choose the time of respawn for the monsters, in seconds.
 </p>
 </td></tr>
 
+<tr><td>monsterfriction</td><td>string</td>
+<td>
+Select the mode of monster friction.
+<ul>
+  <li>None: Monsters ignore friction, as in vanilla Doom and Heretic.</li>
+  <li>MBF: Monster friction from MBF, where ice gave momentum to monsters.
+  Has momentum effects on transition between ice and other sectors.</li>
+  <li>Momentum: Monsters have momentum all the time. Friction is tuned
+  to match the player friction.</li>
+</ul>
+Default is Momentum.
+</td></tr>
+
 <tr><td>playdemospeed</td><td>int</td>
 <td>
 Number of frames to skip for each frame rendered when playing back

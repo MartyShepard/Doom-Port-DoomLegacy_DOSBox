@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_local.h 837 2011-05-27 00:52:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -157,6 +157,7 @@ extern consvar_t cv_viewheight; // p_mobj.c
 
 //26-07-98: p_mobj.c
 extern  consvar_t cv_gravity;
+extern  consvar_t cv_monsterfriction;    // p_enemy
 
 #ifdef DOORDELAY_CONTROL
 // [WDJ] 1/15/2009 support control of door and event delay. see p_doors.c
@@ -307,6 +308,7 @@ extern fixed_t  tmr_sectorceilingz;      //added:28-02-98: p_spawnmobj
 extern mobj_t*  tmr_floorthing;   // standing on another thing
 extern line_t*  tmr_ceilingline;  // line that lowers ceiling, for missile sky test
 extern line_t*  tmr_blockingline; // stopping line that is solid
+extern line_t*  tmr_dropoffline;  // line that is dropoff edge
 
 extern  msecnode_t*     sector_list;
 
@@ -402,6 +404,7 @@ typedef enum {
 extern friction_model_e  friction_model;
 
 void  DemoAdapt_p_user( void );
+void  DemoAdapt_p_enemy( void );
 
 
 // heretic specific

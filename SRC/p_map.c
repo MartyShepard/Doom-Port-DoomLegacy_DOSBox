@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 835 2011-05-27 00:49:51Z wesleyjohnson $
+// $Id: p_map.c 837 2011-05-27 00:52:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -156,6 +156,7 @@ line_t*         tmr_ceilingline;
 // set by PIT_CheckLine() for any line that stopped the PIT_CheckLine()
 // that is, for any line which is 'solid'
 line_t*         tmr_blockingline;
+line_t*         tmr_dropoffline;
 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
@@ -198,9 +199,7 @@ static boolean PIT_StompThing (mobj_t* thing)
 
     //SoM: 3/15/2000: Move self check to start of routine.
 
-    // don't clip against self
-
-    if (thing == tm_thing)
+    if (thing == tm_thing)     // don't clip against self
         return true;
 
     if (!(thing->flags & MF_SHOOTABLE) )
@@ -517,6 +516,7 @@ static void add_spechit( line_t* ld )
 //
 // PIT_CheckThing
 //
+// Check moving tm_thing against iterator thing
 static boolean PIT_CheckThing (mobj_t* thing)
 {
     fixed_t             blockdist;
@@ -725,7 +725,15 @@ static boolean PIT_CheckThing (mobj_t* thing)
         if (tm_thing->player
 	    && tm_thing->z < thing_topz
 	    && tm_thing->z > tm_thing->floorz )  // block while in air
+        {
+	    // collide
+#if 0
+	    // no bounce, so same momentum as other thing
+	    tm_thing->momx = thing->momx;
+            tm_thing->momy = thing->momy;
+#endif
 	    goto ret_blocked;  // did not make it over thing
+	}
 
 
         if (thing_topz > tmr_floorz)
@@ -847,7 +855,10 @@ boolean PIT_CheckLine (line_t* ld)
         tmr_sectorfloorz = tmr_floorz = openbottom;
 
     if (lowfloor < tmr_dropoffz)
+    {
         tmr_dropoffz = lowfloor;
+        tmr_dropoffline = ld;
+    }
 
     // if contacted a special line, add it to the list
     if (ld->special)
@@ -870,6 +881,9 @@ boolean PIT_CheckLine (line_t* ld)
     return true;  // pass the lines
 
 ret_blocked:
+    // collided with blocking line
+    // no bounce
+//    tm_thing->momx = tm_thing->momy = 0;  // fouls wall slide 
     return false;  // blocked by a line
 }
 
@@ -913,7 +927,7 @@ boolean P_CheckPosition ( mobj_t*       thing,
     int bx, by;
     subsector_t * cp_newsubsec;
 
-    tm_thing = thing;
+    tm_thing = thing;  // moving thing to be checked
     tm_flags = thing->flags;
 
     tm_x = x;
@@ -925,7 +939,7 @@ boolean P_CheckPosition ( mobj_t*       thing,
     tm_bbox[BOXLEFT] = x - tm_thing->radius;
 
     cp_newsubsec = R_PointInSubsector (x,y);
-    tmr_ceilingline = tmr_blockingline = NULL;
+    tmr_ceilingline = tmr_blockingline = tmr_dropoffline = NULL;
 
     // The base floor / ceiling is from the subsector
     // that contains the point.
@@ -1006,7 +1020,7 @@ boolean P_CheckPosition ( mobj_t*       thing,
     {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
-                return false;
+                return false;  // hit a line that stopped it
     }
 
     return true;
@@ -1053,6 +1067,7 @@ boolean P_TryMove ( mobj_t*       thing,
 
     if (!P_CheckPosition (thing, x, y))
         goto impact;  // solid wall or thing
+
 #ifdef CLIENTPREDICTION2
     if ( !(thing->flags & MF_NOCLIP) && !(thing->eflags & MF_NOZCHECKING))
 #else
@@ -1066,21 +1081,21 @@ boolean P_TryMove ( mobj_t*       thing,
         tmr_floatok = true;
 
         if ( !(thing->flags & MF_TELEPORT)
-             && tmr_ceilingz - thing->z < thing->height
-             && !(thing->flags2&MF2_FLY))
+             && (thing->z+thing->height > tmr_ceilingz) // hit ceiling
+             && !(thing->flags2&MF2_FLY))  // not heretic fly
 	    goto impact;  // mobj must lower itself to fit
 
-        if(thing->flags2&MF2_FLY)
+        if(thing->flags2&MF2_FLY)  // heretic fly
         {
-            if(thing->z+thing->height > tmr_ceilingz)
+            if(thing->z+thing->height > tmr_ceilingz) // hit ceiling
             {
                 thing->momz = -8*FRACUNIT;
-                return false;
+	        goto block_move;
             }
-            else if(thing->z < tmr_floorz && tmr_floorz-tmr_dropoffz > 24*FRACUNIT)
+            else if(thing->z < tmr_floorz && (tmr_floorz-tmr_dropoffz > 24*FRACUNIT))
             {
                 thing->momz = 8*FRACUNIT;
-                return false;
+	        goto block_move;
             }
         }
 
@@ -1098,12 +1113,28 @@ boolean P_TryMove ( mobj_t*       thing,
 	   && tmr_floorz > thing->z)
             CheckMissileImpact(thing);
 
-        if ( !boomsupport || !allowdropoff)
+        if( tmr_dropoffline )
         {
-          if ( !(thing->flags&(MF_DROPOFF|MF_FLOAT))
-               && !tmr_floorthing
-               && tmr_floorz - tmr_dropoffz > MAXSTEPMOVE )
-              return false;       // don't stand over a dropoff
+	    if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE  // excessive height
+		&& !(thing->flags&(MF_DROPOFF|MF_FLOAT)) // not player, missile, shot, puff, etc.
+		&& !tmr_floorthing )
+	    {
+	        // [WDJ] Meant to prevent walking off a dropoff, it also prevents
+	        // getting away from one once the thing is over it.
+	        // Monsters will repeat call until find successful direction.
+	        if( !boomsupport || !allowdropoff )
+	        {
+		    goto block_move;  // inform caller, returning tmr_dropoffline
+		}
+	        // [WDJ] Trying to moderate momentum here causes too many side-effects
+	        // like barrels getting stuck at conveyor edge.
+	        // Barrels only have momentum.
+		// Successful move, returning tmr_dropoffline.
+	    }
+	    else
+	    {
+	        tmr_dropoffline = NULL;  // cancel notification
+	    }
 	}
     }
 
@@ -1177,8 +1208,10 @@ boolean P_TryMove ( mobj_t*       thing,
     return true;
 
 impact:
+    // hit something solid
     CheckMissileImpact(thing);
-    return false;  // hit something solid
+block_move:       
+    return false;
 }
 
 
@@ -1452,7 +1485,7 @@ void P_SlideMove (mobj_t* mo)
     // move up to the wall
     if (tsm_bestslidefrac == FRACUNIT+1)
     {
-        // the move most have hit the middle, so stairstep
+        // the move must have hit the middle, so stairstep
       stairstep:
         if (!P_TryMove (mo, mo->x, mo->y + mo->momy, true)) //SoM: 4/10/2000
             P_TryMove (mo, mo->x + mo->momx, mo->y, true);  //Allow things to

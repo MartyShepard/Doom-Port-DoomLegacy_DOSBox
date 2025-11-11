@@ -1684,3 +1684,18 @@ Rewrite of 3dfloor opening code, simplified logic, moved redundant
 tests making it faster, and fixed an error.
 Old code could select floor and dropoff floor as 3dfloor slabs on same
 side of line.
+
+*** w74_monster_friction
+patchfile = w74_monster_friction.patch
+- committed revision 837   by wesley johnson
+Monsters use same sector friction as players.
+Selection mechanism for monster friction (none, MBF, momentum).
+The MBF monster friction only gives the monster momentum on ice, 
+and this creates surge when moving off ice, and stall when moving onto ice.
+Momentum monster friction selection accumulates momentum on every move,
+and fixes the surge and stall problems.
+Additional code to prevent hangups on dropoff ledges, get monster
+unstuck from edges, and to allow monsters to fall off conveyor belts.
+Pass detection of dropoff to calling routines.
+Renamed P_Move to P_MoveActor.
+Tuning required months of testing and adjusting algorithms.
