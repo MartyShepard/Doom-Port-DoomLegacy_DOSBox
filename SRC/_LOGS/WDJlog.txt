@@ -1676,3 +1676,11 @@ MBF and prboom, with fixes and adaptations.
 Compile-time conditional on BOB_MOM.
 Fixes many problems of previous bobbing, such as bobbing while riding
 conveyor, and interaction with friction.
+
+*** w74_3dfloor_opening
+patchfile = w74_3dfloor_opening.patch
+- committed revision 836   by wesley johnson
+Rewrite of 3dfloor opening code, simplified logic, moved redundant
+tests making it faster, and fixed an error.
+Old code could select floor and dropoff floor as 3dfloor slabs on same
+side of line.

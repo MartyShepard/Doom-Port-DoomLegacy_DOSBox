@@ -338,6 +338,90 @@ void P_LineOpening (line_t* linedef)
     else
         opentop = back->ceilingheight;
 
+#if 1
+    // [WDJ] Must find the lowest 3d floor, closest to feet,
+    // independently in front and back sectors, so that lowfloor is always
+    // from the other sector than openbottom floor.  Otherwise two 3d floor
+    // in the same sector could become openbottom floor, and lowfloor.
+    fixed_t    frontfloor = front->floorheight;
+    fixed_t    backfloor = back->floorheight;
+
+    //SoM: 3/27/2000: Check for fake floors in the sector.
+    // Check 3d floors against tm_thing
+    if(tm_thing
+       && (front->ffloors || back->ffloors) )
+    {
+        // [WDJ] Old logic, in a complicated way, determined if head was
+        // closer to slab top, or feet were closer slab bottom.
+        // This is same as midslab being above or below midthing.
+	// Test against midthing*2, and save all the divides and abs().
+        fixed_t  midthing2 = tm_thing->z + tm_thing->z + tm_thing->height ; // midthing*2
+        ffloor_t*  rovflr;
+
+        // Check for frontsector's fake floors
+        if(front->ffloors)
+	{
+          for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
+          {
+            if(!(rovflr->flags & FF_SOLID)) continue;
+
+	    // mid of slab >= mid of thing
+	    // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
+	    if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
+	    {
+	        // head is closer
+	        if(*rovflr->bottomheight < opentop)
+		    opentop = *rovflr->bottomheight;
+	    }
+	    else
+	    {
+	        // feet are closer
+	        if(*rovflr->topheight > frontfloor)
+		    frontfloor = *rovflr->topheight;
+	    }
+          }
+	}
+
+        // Check for backsectors fake floors
+        if(back->ffloors)
+	{
+          for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
+          {
+            if(!(rovflr->flags & FF_SOLID))
+              continue;
+
+	    // mid of slab >= mid of thing
+	    // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
+	    if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
+	    {
+	        // head is closer
+	        if(*rovflr->bottomheight < opentop)
+		    opentop = *rovflr->bottomheight;
+	    }
+	    else
+	    {
+	        // feet are closer
+	        if(*rovflr->topheight > backfloor)
+		    backfloor = *rovflr->topheight;
+	    }
+          }
+	}
+    }
+
+    // now frontfloor and backfloor account for 3d floors too
+    if (frontfloor > backfloor)
+    {
+        openbottom = frontfloor;
+        lowfloor = backfloor;
+    }
+    else
+    {
+        openbottom = backfloor;
+        lowfloor = frontfloor;
+    }
+#else
+    // old routine, patched up with 3d floors, has redudant tests, and
+    // allowed lowestfloor and highestfloor to be from same side of line
     if (front->floorheight > back->floorheight)
     {
         openbottom = front->floorheight;
@@ -428,9 +512,12 @@ void P_LineOpening (line_t* linedef)
           lowfloor = lowestfloor;
       }
     }
+#endif
 
     openrange = opentop - openbottom;
 }
+
+
 
 
 //

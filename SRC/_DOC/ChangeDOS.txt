@@ -1,6 +1,9 @@
 * Not need to Compile.
 
+[00836 ]: sg=w74 3dfloor opening
 [00835 ]: sg=w74 player bob
+					DOS: Structure & Alignment Bugfix. Fixed Heretic in this SVN
+					
 [00834 ]: sg=w74 sector friction
 [00833 ]: sg=w74 boom demo remove dupl code
 [00832 ]: sg=w74 demo144
