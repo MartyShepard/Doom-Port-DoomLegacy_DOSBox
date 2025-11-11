@@ -1779,3 +1779,15 @@ Added P1TEXT .. P6TEXT.
 Tried to enter the plutonia text by hand, but had errors, and had to
 copy it from prdoom and plutonia2 (to get plutonia2 DEH to work).
 Fixed the finaltext logic to select Doom2, plutonia, or TNT text.
+
+*** w76_text_reorg
+patchfile = w76_text_reorg.patch
+- committed revision 855   by wesley johnson
+Text enum names moved from d_englsh.h to dstrings.h, as they are
+universal to french, english, and all languages.
+Removed text[] that are not changable from DEH.  This forced
+several strings with SAVEGAMENAME combined at compile-time with other
+strings, to be made to combine at run-time.
+SAVEGAMENAME usage also changed to handle savegame name from text[],
+because it will changable from BEX.
+This is in preparation for BEX text modification code.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 845 2011-07-09 23:21:27Z smite-meister $
+// $Id: d_main.c 855 2011-09-15 23:35:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -317,7 +317,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "854"
+#define SVN_REV "855"
 #endif
 
 // Version number: major.minor.revision
@@ -1744,11 +1744,13 @@ void D_DoomMain()
         legacyhome_len = strlen(legacyhome);
 #ifdef SAVEGAMEDIR
         // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
-        sprintf(savegamename, "%s%%s" SLASH "%s", legacyhome, text[NORM_SAVEI_NUM]);
+//        sprintf(savegamename, "%s%%s" SLASH "%s", legacyhome, text[NORM_SAVEI_NUM]);
+        sprintf(savegamename, "%s%%s" SLASH "%s%s", legacyhome, SAVEGAMENAME, "%d.dsg");
         // so can extract legacyhome from savegamename later
 #else    
         // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
-        sprintf(savegamename, "%s%s", legacyhome, text[NORM_SAVEI_NUM]);
+//        sprintf(savegamename, "%s%s", legacyhome, text[NORM_SAVEI_NUM]);
+        sprintf(savegamename, "%s%s%s", legacyhome, SAVEGAMENAME, "%d.dsg");
 #endif
 #endif
     }
@@ -1760,7 +1762,8 @@ void D_DoomMain()
         // [WDJ] These names only work on DOS
         I_mkdir("c:\\doomdata", 0700); // octal permissions
         strcpy(configfile, "c:/doomdata/" CONFIGFILENAME);
-        strcpy(savegamename, text[CDROM_SAVEI_NUM]);  // DOS name
+//        strcpy(savegamename, text[CDROM_SAVEI_NUM]);  // DOS name
+        sprintf(savegamename, "c:\\doomdata\\%s%s", SAVEGAMENAME, "%d.dsg");  // DOS name
 #else
         // userhome already has situation covered
 #endif
@@ -1987,7 +1990,7 @@ void D_DoomMain()
 
     // Initialize CD-Audio, no music on a dedicated server
     if (!M_CheckParm("-nocd") && !M_CheckParm("-dedicated"))
-        I_InitCD();
+      I_InitCD();
     if (M_CheckParm("-respawn"))
       COM_BufAddText("respawnmonsters 1\n");
     if (M_CheckParm("-coopmonsters"))

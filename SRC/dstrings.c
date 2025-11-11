@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 854 2011-09-15 23:32:45Z wesleyjohnson $
+// $Id: dstrings.c 855 2011-09-15 23:35:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,9 +66,13 @@
 #include "dstrings.h"
 
 char *text[NUMTEXT] = {
+  // D_DEVSTR
     "Development mode ON.\n",
+  // D_CDROM
     "CD-ROM Version: default.cfg from c:\\doomdata\n",
+  // PRESSKEY
     "press a key.",
+  // PRESSYN
     "press y or n.",
     "only the server can do a load net game!\n\npress a key.",
     "you can't quickload during a netgame!\n\npress a key.",
@@ -79,25 +83,27 @@ char *text[NUMTEXT] = {
     "you can't start a new game\n" "while in a network game.\n\n",
     "are you sure? this skill level\nisn't even remotely fair.\n\npress y or n.",
     "this is the shareware version of doom.\n\nyou need to order the entire trilogy.\n\npress a key.",
+  // MSGOFF, MSGON
     "Messages OFF",
     "Messages ON",
     "you can't end a netgame!\n\npress a key.",
     "are you sure you want to end the game?\n\npress y or n.",
 
-#if !defined( __DJGPP__ )
+  // DOSY
     "%s\n\n(press y to quit Doom Legacy)",
-#else
-    "%s\n\n(press y to quit to DOS.)",
-#endif
 
+  // DETAILHI, DETAILLO
     "High detail",
     "Low detail",
+  // GAMMALVL0 .. L4
     "Gamma correction OFF",
     "Gamma correction level 1",
     "Gamma correction level 2",
     "Gamma correction level 3",
     "Gamma correction level 4",
+  // EMPTYSTRING
     "empty slot",
+  // GOT ..
     "Picked up the armor.",
     "Picked up the MegaArmor!",
     "Picked up a health bonus.",
@@ -107,6 +113,7 @@ char *text[NUMTEXT] = {
     "Picked up a medikit.",
     "Supercharge!",
 
+ // GOT CARD
     "Picked up a blue keycard.",
     "Picked up a yellow keycard.",
     "Picked up a red keycard.",
@@ -114,6 +121,7 @@ char *text[NUMTEXT] = {
     "Picked up a yellow skull key.",
     "Picked up a red skull key.",
 
+ // GOT
     "Invulnerability!",
     "Berserk!",
     "Partial Invisibility",
@@ -122,14 +130,19 @@ char *text[NUMTEXT] = {
     "Light Amplification Visor",
     "MegaSphere!",
 
+ // GOTCLIP, GOTCLIPBOX
     "Picked up a clip.",
     "Picked up a box of bullets.",
+ // GOTROCKET, GOTROCKBOX
     "Picked up a rocket.",
     "Picked up a box of rockets.",
+ // GOTCELL, GOTCELLBOX
     "Picked up an energy cell.",
     "Picked up an energy cell pack.",
+ // GOTSHELLS, GOTSHELLBOX
     "Picked up 4 shotgun shells.",
     "Picked up a box of shotgun shells.",
+ // GOTBACKPACK
     "Picked up a backpack full of ammo!",
 
     "You got the BFG9000!  Oh, yes.",
@@ -140,16 +153,21 @@ char *text[NUMTEXT] = {
     "You got the shotgun!",
     "You got the super shotgun!",
 
+  // PD_BLUEO, PD_REDO, PD_YELLOWO
     "You need a blue key to activate this object",
     "You need a red key to activate this object",
     "You need a yellow key to activate this object",
+  // PD_BLUEK, PD_REDK, PD_YELLOWK
     "You need a blue key to open this door",
     "You need a red key to open this door",
     "You need a yellow key to open this door",
 
+  // GGSAVED
     "game saved.",
+  // HUSTR_MSGU
     "[Message unsent]",
 
+  // Doom HUSTR_E1M1 ..
     "E1M1: Hangar",
     "E1M2: Nuclear Plant",
     "E1M3: Toxin Refinery",
@@ -189,6 +207,8 @@ char *text[NUMTEXT] = {
     "E4M7: And Hell Followed",
     "E4M8: Unto The Cruel",
     "E4M9: Fear",
+     
+  // Doom2 HUSTR_1 ..
     "level 1: entryway",
     "level 2: underhalls",
     "level 3: the gantlet",
@@ -225,6 +245,7 @@ char *text[NUMTEXT] = {
     "level 31: wolfenstein",
     "level 32: grosse",
 
+  // Plutonia  PHUSTR_1 ..
     "level 1: congo",
     "level 2: well of souls",
     "level 3: aztec",
@@ -261,6 +282,7 @@ char *text[NUMTEXT] = {
     "level 31: cyberden",
     "level 32: go 2 it",
 
+  // TNT THUSTR_1 ..
     "level 1: system control",
     "level 2: human bbq",
     "level 3: power control",
@@ -296,6 +318,8 @@ char *text[NUMTEXT] = {
 
     "level 31: pharaoh",
     "level 32: caribbean",
+  
+  // HUSTR_CHATMACRO1 ..
     "I'm ready to kick butt!",
     "I'm OK.",
     "I'm not looking too good!",
@@ -307,36 +331,48 @@ char *text[NUMTEXT] = {
     "Yes",
     "No",
 
+  // HUSTR_TALKTOSELF1 ..
     "You mumble to yourself",
     "Who's there?",
     "You scare yourself",
     "You start to rave",
     "You've lost it...",
 
+  // HUSTR_MESSAGESENT
     "[Message Sent]",
+  // AMSTR_FOLLOWON, AMSTR_FOLLOWOFF
     "Follow Mode ON",
     "Follow Mode OFF",
 
+  // AMSTR_GRIDON, AMSTR_GRIDOFF
     "Grid ON",
     "Grid OFF",
+  // AMSTR_MARKEDSPOT, AMSTR_MARKSCLEARED
     "Marked Spot",
     "All Marks Cleared",
 
+  // STSTR_MUS, STSTR_NOMUS
     "Music Change",
     "IMPOSSIBLE SELECTION",
+  // STSTR_DQDON, STSTR_DQDOFF
     "Degreelessness Mode On",
     "Degreelessness Mode Off",
 
+  // STSTR_KFAADDED, STSTR_FAADDED
     "Very Happy Ammo Added",
     "Ammo (no keys) Added",
 
+  // STSTR_NCON, STSTR_NCOFF
     "No Clipping Mode ON",
     "No Clipping Mode OFF",
 
+  // STSTR_BEHOLD, STSTR_BEHOLDX
     "inVuln, Str, Inviso, Rad, Allmap, or Lite-amp",
     "Power-up Toggled",
 
+  // STSTR_CHOPPERS
     "... doesn't suck - GM",
+  // STSTR_CLEV
     "Changing Level...",
 
   // Doom, UltDoom
@@ -454,6 +490,7 @@ char *text[NUMTEXT] = {
         "next time around. Ahead lies a quiet town,\n" "with peaceful flowing water, quaint\n" "buildings, and presumably no Hellspawn.\n" "\n" "As you step off the transport, you hear\n"
         "the stomp of a cyberdemon's iron shoe.",
 
+  // CC_  Cast Call
     "ZOMBIEMAN",
     "SHOTGUN GUY",
     "HEAVY WEAPON DUDE",
@@ -500,22 +537,25 @@ char *text[NUMTEXT] = {
     "just leave. when you come\nback, i'll be waiting with a bat.",
     "you're lucky i don't smack\nyou for thinking about leaving.",
 
-    "FLOOR4_8",
-    "SFLR6_1",
-    "MFLR8_4",
-    "MFLR8_3",
-    "SLIME16",
-    "RROCK14",
-    "RROCK07",
-    "RROCK17",
-    "RROCK13",
-    "RROCK19",
+  // Background texture names, FLOOR4_8 ...
+    "FLOOR4_8", // BGFLATE1
+    "SFLR6_1", // BGFLATE2
+    "MFLR8_4", // BGFLATE3
+    "MFLR8_3", // BGFLATE4
+    "SLIME16", // BGFLAT06
+    "RROCK14", // BGFLAT11
+    "RROCK07", // BGFLAT20
+    "RROCK17", // BGFLAT30
+    "RROCK13", // BGFLAT15
+    "RROCK19", // BGFLAT31
 
+  // Pic names
     "CREDIT",
     "HELP2",
     "VICTORY2",
     "ENDPIC",
 
+  // MODIFIED
     "===========================================================================\n"
     "ATTENTION:  This version of DOOM has been modified.  If you would like to\n"
     "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n"
@@ -523,58 +563,47 @@ char *text[NUMTEXT] = {
     "                      press enter to continue\n"
     "===========================================================================\n",
 
+  // SHAREWARE
     "===========================================================================\n"
     "                     This program is Free Software!\n"
     "===========================================================================\n",
 
+  // COMERCIAL
     "===========================================================================\n"
     "                     This program is Free Software!\n"
     "             See the terms of the GNU General Public License\n"
     "===========================================================================\n",
 
-    "Austin Virtual Gaming: Levels will end after 20 minutes\n",
-    "M_LoadDefaults: Load system defaults.\n",
-    "Z_Init: Init zone memory allocation daemon. \n",
-    "W_Init: Init WADfiles.\n",
-    "M_Init: Init miscellaneous info.\n",
-    "R_Init: Init DOOM refresh daemon - ",
-    "\nP_Init: Init Playloop state.\n",
-    "I_Init: Setting up machine state.\n",
-    "D_CheckNetGame: Checking network game status.\n",
-    "S_Init: Setting up sound.\n",
-    "HU_Init: Setting up heads up display.\n",
-    "ST_Init: Init status bar.\n",
-    "External statistics registered.\n",
-
-    "doom2.wad",	// UNUSED
-    "doomu.wad",	// UNUSED
-    "doom.wad",		// UNUSED
-    "doom1.wad",	// UNUSED
-
-    "c:\\doomdata",     //UNUSED
-    "c:/doomdata/default.cfg",  //UNUSED
-    "c:\\doomdata\\" SAVEGAMENAME "%c.dsg",     //UNUSED
-    SAVEGAMENAME "%c.dsg",      //UNUSED
-    #if !defined( __DJGPP__ )		
-    "c:\\doomdata\\" SAVEGAMENAME "%d.dsg",
-    SAVEGAMENAME "%d.dsg",
-    #else
-    "c:\\doomdata\\" SAVEGAMENAME "%d",
-    SAVEGAMENAME "%d",
-    #endif		
+    "Austin Virtual Gaming: Levels will end after 20 minutes\n", // AUSTIN
+    "M_LoadDefaults: Load system defaults.\n", // M_LOAD
+    "Z_Init: Init zone memory allocation daemon. \n", // Z_INIT
+    "W_Init: Init WADfiles.\n", // W_INIT
+    "M_Init: Init miscellaneous info.\n", // M_INIT
+    "R_Init: Init DOOM refresh daemon - ", // R_INIT
+    "\nP_Init: Init Playloop state.\n", // P_INIT
+    "I_Init: Setting up machine state.\n", // I_INIT
+    "D_CheckNetGame: Checking network game status.\n", // D_CHECKNET
+    "S_Init: Setting up sound.\n", // S_SETSOUND
+    "HU_Init: Setting up heads up display.\n", // HU_INIT
+    "ST_Init: Init status bar.\n", // ST_INIT
+    "External statistics registered.\n", // STATREG
 
     //SoM: 3/9/2000: Boom generic key messages:
+  // PD_BLUEC, PD_REDC, PD_YELLOWC
     "You need a blue card to open this door",
     "You need a red card to open this door",
     "You need a yellow card to open this door",
+  // PD_BLUES, PD_REDS, PD_YELLOWS
     "You need a blue skull to open this door",
     "You need a red skull to open this door",
     "You need a yellow skull to open this door",
+  // PD_ANY, PD_ALL3, PD_ALL6
     "Any key will open this door",
     "You need all three keys to open this door",
     "You need all six keys to open this door",
 
-    // heretic strings
+  // heretic strings
+  // TXT_ARTI..
     "QUARTZ FLASK",
     "WINGS OF WRATH",
     "RING OF INVINCIBILITY",
@@ -586,6 +615,7 @@ char *text[NUMTEXT] = {
     "TIME BOMB OF THE ANCIENTS",
     "CHAOS DEVICE",
 
+  // TXT_AMMO..
     "WAND CRYSTAL",
     "CRYSTAL GEODE",
     "MACE SPHERES",
@@ -599,6 +629,7 @@ char *text[NUMTEXT] = {
     "FLAME ORB",
     "INFERNO ORB",
 
+  // TXT_WPN..
     "FIREMACE",
     "ETHEREAL CROSSBOW",
     "DRAGON CLAW",
@@ -606,8 +637,10 @@ char *text[NUMTEXT] = {
     "PHOENIX ROD",
     "GAUNTLETS OF THE NECROMANCER",
 
+  // TXT_ITEMBAGOFHOLDING
     "BAG OF HOLDING",
 
+  // TXT_CHEAT..
     "GOD MODE ON",
     "GOD MODE OFF",
     "NO CLIPPING ON",
@@ -718,6 +751,7 @@ char *text[NUMTEXT] = {
         "the will to fight is gone? can you\n" "force yourself to continue in the\n" "face of such despair? do you have\n" "the courage? you find, in the end,\n" "that it is not within you to\n"
         "surrender without a fight. eyes\n" "wide, you go to meet your fate.",
 
+  // DEATHMSG
     "%s suicides\n",
     "%s was telefragged by %s\n",
     "%s was beaten to a pulp by %s\n",
@@ -765,5 +799,21 @@ char *text[NUMTEXT] = {
     "DOOM Shareware Startup",
 
 };
+
+#if 0
+// [WDJ] These were removed from text, and are not changable
+    "doom2.wad",	// UNUSED
+    "doomu.wad",	// UNUSED
+    "doom.wad",		// UNUSED
+    "doom1.wad",	// UNUSED
+
+    "c:\\doomdata",     //UNUSED
+    "c:/doomdata/default.cfg",  //UNUSED
+    "c:\\doomdata\\" SAVEGAMENAME "%c.dsg",     //UNUSED
+    SAVEGAMENAME "%c.dsg",      //UNUSED
+
+    "c:\\doomdata\\" SAVEGAMENAME "%d.dsg",
+    SAVEGAMENAME "%d.dsg",
+#endif
 
 char savegamename[256];
