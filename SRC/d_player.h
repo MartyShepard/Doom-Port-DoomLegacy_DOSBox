@@ -128,8 +128,8 @@ typedef struct player_s
     // Bob/squat speed.
     fixed_t             deltaviewheight;
     // bob effect
-    fixed_t             bob;
-#ifdef BOB_MOM
+    fixed_t             bob;			
+#if defined( BOB_MOM ) && !defined( __DJGPP__ )
     // bob momentum, adjusted for friction
     fixed_t		bob_momx, bob_momy;
 #endif
@@ -236,7 +236,11 @@ typedef struct player_s
 
     // True if the player cannot use game controls (moving, shooting, aiming)
     boolean locked;
-
+#if defined( BOB_MOM ) && defined( __DJGPP__ )
+    // Because a Struct Padding & Alignment Bug in GCC 2.81. I put the ifdef at the End.
+		// GCC 2.8x Bugzilla #2215 – "Conditional members in structs cause wrong padding on i386"
+    fixed_t		bob_momx, bob_momy;
+#endif
 } player_t;
 
 
