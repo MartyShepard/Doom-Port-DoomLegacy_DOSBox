@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00842 ]: w75 flip offset patch, again
 [00841 ]: Bugfixes, docs. Splitscreen works again.
 [00840*]: w75 flip offset
 [00839*]: sg=w74 friction.wad

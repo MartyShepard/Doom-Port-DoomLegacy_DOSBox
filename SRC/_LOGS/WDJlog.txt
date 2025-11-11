@@ -1708,6 +1708,7 @@ voodoo insta-death, and door delay.
 
 *** w75_flip_offset
 patchfile = w75_flip_offset.patch
-- committed revision 839   by wesley johnson
+- committed revision 840   by wesley johnson
+- committed revision 842   had log, but not code patch
 As suggested by Fraggle, use (width-offset) instead of offset when displaying a
 sprite frame flipped.
