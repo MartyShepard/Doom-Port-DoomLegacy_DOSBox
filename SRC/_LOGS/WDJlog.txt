@@ -1763,3 +1763,10 @@ stairbuilder fix (giving the original buggy code).  Sometimes the bug
 increments a stair twice.  TNT MAP30 has 24 steps, but they removed some
 linedefs to have only 18 steps (some of which increment by 16) because
 of the bug.
+
+*** w76_TNT_MAP31_key
+patchfile = w76_TNT_MAP31_key.patch
+- committed revision 853   by wesley johnson
+TNT MAP31 yellow key is missing because wad has it marked as
+multiplayer only.  This makes it impossible to finish the level.
+This fix removes the multiplayer flag from this key, for this game and map.

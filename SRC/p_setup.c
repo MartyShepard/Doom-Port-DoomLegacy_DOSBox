@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_setup.c 853 2011-09-13 22:57:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -776,6 +776,14 @@ void P_LoadThings (int lump)
         mt->type    = LE_SWAP16(dmt->type);
         mt->options = LE_SWAP16(dmt->flags);
         mt->mobj = NULL; //SoM:
+
+        if( gamedesc_id == GDESC_tnt && gamemap == 31)
+        {
+	    // Fix TNT MAP31 bug: yellow keycard is multiplayer only
+	    // Released a fixed copy of TNT later, but CDROM have this bug.
+	    if( mt->type == 6 )  // Yellow keycard
+	       mt->options &= ~MTF_MPSPAWN;  // Remove multiplayer only flag
+	}
 
         P_SpawnMapThing (mt);
     }
