@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: w_wad.c 841 2011-07-07 22:13:54Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -258,7 +258,7 @@ int W_LoadWadFile (char *filename)
         lumpinfo = Z_Malloc (sizeof(lumpinfo_t),PU_STATIC,NULL);
         lumpinfo->position = 0;
         lumpinfo->size = bufstat.st_size;
-        strcpy(lumpinfo->name,"DEHACKED");
+        strncpy(lumpinfo->name, "DEHACKED", 8);
     }
     else 
     {   // assume wad file

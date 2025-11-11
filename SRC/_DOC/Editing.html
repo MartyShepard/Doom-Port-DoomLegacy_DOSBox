@@ -16,7 +16,7 @@
 <li><a href="index.html">User's Guide</a></li>
 <li><strong>Map Editing</strong></li>
 <li><a href="tutorial.html">Tutorial</a></li>
-<li><a href="fakefloors.html">3D Floors Tutorial</a></li>
+<li><a href="3dfloors.html">3D Floors Tutorial</a></li>
 <li><strong>FraggleScript</strong></li>
 <li><a href="fsbasic.html">Getting started</a></li>
 <li><a href="fsfuncs.html">Reference manual</a></li>
@@ -167,9 +167,9 @@ Colormaps and water
 </td>
 </tr>
 <tr>
-<td>282</td>
+<td><a name="linedef_282">282</a></td>
 <td>
-<b>Generate colormaps</b>
+<b>Generate colormap</b>
 <p>This type sets the colormap of all tagged sectors like described below, without changing the floor/ceiling or light values. This is nice for putting colored lighting in many different sectors of different floor/ceiling heights:</p>
 <table>
 <tr>
@@ -232,7 +232,7 @@ There are tons of colors to choose from but here are some to get you started:
 <tr>
 <td>281</td>
 <td>
-<p>Solid 3D floor with shadow</p>
+<b>Solid 3D floor with shadow</b>
 <p>
 Creates a solid 3D floor in all tagged sectors.<br />
 It creates a floor, as a solid slab with thickness, that can be walked on and under.</p>
@@ -241,7 +241,7 @@ It creates a floor, as a solid slab with thickness, that can be walked on and un
 <tr>
 <td>289</td>
 <td>
-<p>Solid 3D floor without shadow</p>
+<b>Solid 3D floor without shadow</b>
 <p>
 Creates a solid 3D floor in all tagged sectors, same as type 281, but
 without changing the lighting under the floor slab. The floor does not
@@ -254,7 +254,7 @@ and under, inside all tagged sectors.
 <tr>
 <td>300</td>
 <td>
-<p>Solid translucent 3D floor</p>
+<b>Solid translucent 3D floor</b>
 <p>Creates a solid translucent 3D floor in all tagged sectors, same as
   type 281, but translucent, and without changing the lighting under
   the floor slab.<br />
@@ -266,7 +266,7 @@ upper texture: #nnn</p>
 <tr>
 <td>301</td>
 <td>
-<p>Translucent 3D water</p>
+<b>Translucent 3D water</b>
 <p>Creates translucent 3D water in all tagged sectors.<br />
 Set the control sector ceiling to the water top level, and the floor to the floor level (or below).<br />
 Sidedef1 upper texture: #nnn</p>
@@ -276,7 +276,7 @@ Sidedef1 upper texture: #nnn</p>
 <tr>
 <td>304</td>
 <td>
-<p>Opaque water</p>
+<b>Opaque water</b>
 <p>Creates a 3D fluid, that is not translucent on the surface. Within the fluid it is transparent.<br />
 Does not have translucent effect, does not have alpha, so upper texture is normal. The control sector is sidedef1 of the linedef.</p>
 </td>
@@ -284,7 +284,7 @@ Does not have translucent effect, does not have alpha, so upper texture is norma
 <tr>
 <td>302</td>
 <td>
-<p>3D fog</p>
+<b>3D fog</b>
 <p>Creates 3D fog (using control sector's colormap) in all tagged
   sectors.<br />
 The middle texture is normal, but is not used. Has the same light
@@ -297,7 +297,7 @@ The middle texture is normal, but is not used. Has the same light
 <tr>
 <td>303</td>
 <td>
-<p>Ceiling light</p>
+<b>Ceiling light</b>
 <p>Creates a 3D light below the control sector's ceiling height, in all tagged sectors.<br />
 Does the 3D light and colormap of a 3D floor, without the floor.</p>
 </td>
@@ -305,7 +305,7 @@ Does the 3D light and colormap of a 3D floor, without the floor.</p>
 <tr>
 <td>305</td>
 <td>
-<p>Double light effect</p>
+<b>Double light effect</b>
 <p>Creates a 3D light similar to 303, except that the light is only
   affects the area between the control sector ceiling height, and the
   control sector floor height. Does the 3D light and colormap of a 3D
@@ -316,7 +316,7 @@ Does the 3D light and colormap of a 3D floor, without the floor.</p>
 <tr>
 <td>306</td>
 <td>
-<p>Invisible floor</p>
+<b>Invisible floor</b>
 <p>Creates a 3D invisible floor, or slab in each tagged sector. The
   floor can be walked on, and will stop weapons, but does not affect
   light nor colormaps.</p>
@@ -353,18 +353,18 @@ Instant raise ceiling
 </tr>
 <tr>
 <td>
-<p>512 = Passthru</p>
+<p>512 = 0x200</p>
 </td>
 <td>
-<p>This flag when set allows a push or switch linedef trigger to pass the push action thru it to ones within range behind it. - Boom</p>
+  <p><b>Passthru</b>: This flag when set allows a push or switch linedef trigger to pass the push action thru it to ones within range behind it. - Boom</p>
 </td>
 </tr>
 <tr>
 <td>
-<p>1024 = Alltrigger</p>
+<p>1024 = 0x400</p>
 </td>
 <td>
-<p>This flag, when set, will allow all things to activate a W* line, with the exception of flying blood. :) This includes all generalized types that are W*.</p>
+  <p><b>Alltrigger</b>: This flag, when set, will allow all things to activate a W* line, with the exception of flying blood. :) This includes all generalized types that are W*.</p>
 </td>
 </tr>
 </table>
@@ -441,8 +441,9 @@ You can either create paletted images using the
 <a href="res/doom.pal">Doom palette</a>, or use
 24/32 bit truecolor images and quantize them to the Doom palette when
 they are done.
-Heretic has its own color palette, available <a href="res/heretic.pal">here</a>.
-More modern lump editors such
+<a href="res/heretic.pal">Heretic palette</a> is different from
+Doom's, but used exactly in the same way.
+Modern lump editors such
 as <a href="http://www.doomworld.com/xwe/">XWE</a> will convert your
 image to the proper color palette automatically, but
 the results will generally be better if you use the correct palette to
@@ -451,7 +452,7 @@ begin with.
 <p>
 Legacy 1.44 does not support hi-res or hicolor textures or sprites.
 However, Legacy 2.0 does!
-Please check the <a href="http://doomlegacy.sourceforge.net/">Doom Legacy Web Site</a> for more info on Legacy 2.0.
+Please check the <a href="http://doomlegacy.sourceforge.net/">Doom Legacy website</a> for more info on Legacy 2.0.
 </p>
 
 <h3>Colormaps</h3>
@@ -478,10 +479,10 @@ option.
 </p>
 <p>
 For both hardware and software modes, the easiest way to simulate
-colormaps is just by using Legacy's Colormap Linetype 282 and setting
+colormaps is just by using Legacy's 
+<a href="#linedef_282">Generate colormap</a> linetype and setting
 a hexadecimal RGB color value in its texture field.
 When this is done, an actual colormap lump is not needed.
-See <a href="#linedefs">Linedef types</a> for more info.
 </p>
 
 
@@ -707,6 +708,8 @@ For now, certain Legacy resources need to be in a format called pic_t.
 You can also use LUMPY or 
 <a href="http://www.sbsoftware.com/">Deepsea</a> to convert other
 image formats to pic_t.
+This is a <span class="warning">DEPRECATED</span> feature, and is
+replaced in Legacy 2.0 by PNG.
 </p>
 
 
@@ -1037,7 +1040,7 @@ See also FS things.h on the <a href="http://legacywiki.net/index.php/FS_Things.h
 </td></tr>
 <tr><td><a href="../resources/ENDOOM.lmp">ENDOOM</a></td>
 <td>
-End text
+End text, in a <a href="http://doom.wikia.com/wiki/ENDOOM">strange semi-binary format</a>.
 </td></tr>
 
 <tr><td class="note" colspan="2">

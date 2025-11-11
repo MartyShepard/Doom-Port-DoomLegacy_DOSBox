@@ -209,3 +209,11 @@ Restored localaiming pitch angle clipping.
 Fixed mousewheel functionality by adding the gamekeytapped array
  (mouse wheel events are virtual keys which are depressed and immediately released).
 Cleaned up some game messages, Makefile.
+
+
+*** Bugfixes, docs updated.
+rev 841
+Apparently harmless buffer overflow bug fixed in w_wad.c.
+Splitscreen now works again, rev 827 introduced a bug in which
+ non-netvar cvars could not be changed in netgames.
+Docs fixed/beautified.

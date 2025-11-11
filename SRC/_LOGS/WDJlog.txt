@@ -1705,3 +1705,9 @@ patchfile = w74_adv_options_menu.patch
 - committed revision 838   by wesley johnson
 Create Adv Options menu, for monster friction, gravity, voodoo mode,
 voodoo insta-death, and door delay.
+
+*** w75_flip_offset
+patchfile = w75_flip_offset.patch
+- committed revision 839   by wesley johnson
+As suggested by Fraggle, use (width-offset) instead of offset when displaying a
+sprite frame flipped.

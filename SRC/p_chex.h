@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 540 2009-09-23 23:43:40Z smite-meister $
+// $Id: p_chex.h 841 2011-07-07 22:13:54Z smite-meister $
 //
 // Copyright (C) 2003-2010 by DooM Legacy Team.
 //

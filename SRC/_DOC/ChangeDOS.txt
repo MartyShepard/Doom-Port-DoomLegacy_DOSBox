@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00841 ]: Bugfixes, docs. Splitscreen works again.
+[00840*]: w75 flip offset
+[00839*]: sg=w74 friction.wad
 [00838 ]: sg=w74 adv options menu
 [00837 ]: sg=w74 monster friction
 [00836 ]: sg=w74 3dfloor opening
