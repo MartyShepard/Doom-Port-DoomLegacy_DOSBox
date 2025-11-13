@@ -1921,7 +1921,26 @@ void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
     {
         // shorten name to 8 char
         int ln = strlen( namebuf );
-        memmove( &namebuf[ln-4], &namebuf[ln-3], 4 );
+        #ifdef PC_LFN_DOS // PC_LFN_DOS not used in Source
+        memmove( &namebuf[ln-4], &namebuf[ln-3], 4 );				
+        #else
+	/*
+	Original "DOOMSAV99.DSG":
+        Pos: 0 1 2 3 4 5 6 7 |8| 9 10 11 12 13 14 ......
+        -------------------------------------------------
+        Pos: 1 2 3 4 5 6 7 8 |.|10 11 12 13
+             D O O M S A V 9 |9| . D  S  G  \0 = zu lang. 
+        */
+        memmove( &namebuf[ln-7], &namebuf[ln-6], 6 );
+        namebuf[ln-1] = '\0'; // Ende Null Terminiert
+        /*				
+        Kopiert von Pos 7 ("99.DSG") nach Pos 6
+        Pos: 0 1 2 3 4 5 6 7 |8| 9 10 11 12 13 14 ......
+        -------------------------------------------------				
+        Pos: 1 2 3 4 5 6 7 8 |.|10 11 12 13			
+          -> D O O M S A 9 9 |.| D  S  G \0 = Passt
+        */
+        #endif
     }
 #endif
 }
