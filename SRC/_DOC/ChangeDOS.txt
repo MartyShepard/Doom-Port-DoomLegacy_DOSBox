@@ -1,6 +1,9 @@
 * Not need to Compile.
 
+[00857 ]: w77 DEH strcasecmp
 [00856 ]: w77 DEH Init, save original text
+          Fixed Wad and deh how 1k3v1a
+					
 [00855 ]: w76 text reorg, SAVEGAMENAME
 					DOS: High slot number at >=10 fixed. DOOMSAV9DSG to DOOMSA99.DSG
 					

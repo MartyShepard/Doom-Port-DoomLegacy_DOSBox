@@ -1801,3 +1801,9 @@ without mutual interference.  Because FreeDoom will contain such a DEH
 lump, it would have prevented any other PWAD from using DEH to replace
 the same string.  The save is performed in DEH_Init.
 
+*** w77_DEH_strcasecmp
+patchfile = w77_DEH_strcasecmp.patch
+- committed revision 857   by wesley johnson
+DoomLegacy and other ports changed to using strcasecmp, so that lumps
+would not fail due to name case.  This changes most DEH string
+comparisions to use strcasecmp.

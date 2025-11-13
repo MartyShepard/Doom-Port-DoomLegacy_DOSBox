@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 856 2011-09-17 17:42:23Z wesleyjohnson $
+// $Id: dehacked.c 857 2011-09-17 17:43:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -240,38 +240,38 @@ static void readthing(MYFILE *f,int num)
       value=searchvalue(s);
       // set the value in apropriet field
       word=strtok(s," ");
-           if(!strcmp(word,"ID"))           mobjinfo[num].doomednum   =value;
-      else if(!strcmp(word,"Initial"))      mobjinfo[num].spawnstate  =value;
-      else if(!strcmp(word,"Hit"))          mobjinfo[num].spawnhealth =value;
-      else if(!strcmp(word,"First"))        mobjinfo[num].seestate    =value;
-      else if(!strcmp(word,"Alert"))        mobjinfo[num].seesound    =value;
-      else if(!strcmp(word,"Reaction"))     mobjinfo[num].reactiontime=value;
-      else if(!strcmp(word,"Attack"))       mobjinfo[num].attacksound =value;
-      else if(!strcmp(word,"Injury"))       mobjinfo[num].painstate   =value;
-      else if(!strcmp(word,"Pain"))
+           if(!strcasecmp(word,"ID"))           mobjinfo[num].doomednum   =value;
+      else if(!strcasecmp(word,"Initial"))      mobjinfo[num].spawnstate  =value;
+      else if(!strcasecmp(word,"Hit"))          mobjinfo[num].spawnhealth =value;
+      else if(!strcasecmp(word,"First"))        mobjinfo[num].seestate    =value;
+      else if(!strcasecmp(word,"Alert"))        mobjinfo[num].seesound    =value;
+      else if(!strcasecmp(word,"Reaction"))     mobjinfo[num].reactiontime=value;
+      else if(!strcasecmp(word,"Attack"))       mobjinfo[num].attacksound =value;
+      else if(!strcasecmp(word,"Injury"))       mobjinfo[num].painstate   =value;
+      else if(!strcasecmp(word,"Pain"))
            {
              word=strtok(NULL," ");
-             if(!strcmp(word,"chance"))     mobjinfo[num].painchance  =value;
-             else if(!strcmp(word,"sound")) mobjinfo[num].painsound   =value;
+             if(!strcasecmp(word,"chance"))     mobjinfo[num].painchance  =value;
+             else if(!strcasecmp(word,"sound")) mobjinfo[num].painsound   =value;
            }
-      else if(!strcmp(word,"Close"))        mobjinfo[num].meleestate  =value;
-      else if(!strcmp(word,"Far"))          mobjinfo[num].missilestate=value;
-      else if(!strcmp(word,"Death"))
+      else if(!strcasecmp(word,"Close"))        mobjinfo[num].meleestate  =value;
+      else if(!strcasecmp(word,"Far"))          mobjinfo[num].missilestate=value;
+      else if(!strcasecmp(word,"Death"))
            {
              word=strtok(NULL," ");
-             if(!strcmp(word,"frame"))      mobjinfo[num].deathstate  =value;
-             else if(!strcmp(word,"sound")) mobjinfo[num].deathsound  =value;
+             if(!strcasecmp(word,"frame"))      mobjinfo[num].deathstate  =value;
+             else if(!strcasecmp(word,"sound")) mobjinfo[num].deathsound  =value;
            }
-      else if(!strcmp(word,"Exploding"))    mobjinfo[num].xdeathstate =value;
-      else if(!strcmp(word,"Speed"))        mobjinfo[num].speed       =value;
-      else if(!strcmp(word,"Width"))        mobjinfo[num].radius      =value;
-      else if(!strcmp(word,"Height"))       mobjinfo[num].height      =value;
-      else if(!strcmp(word,"Mass"))         mobjinfo[num].mass        =value;
-      else if(!strcmp(word,"Missile"))      mobjinfo[num].damage      =value;
-      else if(!strcmp(word,"Action"))       mobjinfo[num].activesound =value;
-      else if(!strcmp(word,"Bits"))         mobjinfo[num].flags       =value;
-      else if(!strcmp(word,"Bits2"))        mobjinfo[num].flags2      =value;
-      else if(!strcmp(word,"Respawn"))      mobjinfo[num].raisestate  =value;
+      else if(!strcasecmp(word,"Exploding"))    mobjinfo[num].xdeathstate =value;
+      else if(!strcasecmp(word,"Speed"))        mobjinfo[num].speed       =value;
+      else if(!strcasecmp(word,"Width"))        mobjinfo[num].radius      =value;
+      else if(!strcasecmp(word,"Height"))       mobjinfo[num].height      =value;
+      else if(!strcasecmp(word,"Mass"))         mobjinfo[num].mass        =value;
+      else if(!strcasecmp(word,"Missile"))      mobjinfo[num].damage      =value;
+      else if(!strcasecmp(word,"Action"))       mobjinfo[num].activesound =value;
+      else if(!strcasecmp(word,"Bits"))         mobjinfo[num].flags       =value;
+      else if(!strcasecmp(word,"Bits2"))        mobjinfo[num].flags2      =value;
+      else if(!strcasecmp(word,"Respawn"))      mobjinfo[num].raisestate  =value;
       else deh_error("Thing %d : unknown word '%s'\n",num,word);
     }
   } while(s[0]!='\n' && !myfeof(f)); //finish when the line is empty
@@ -296,13 +296,13 @@ static void readframe(MYFILE* f,int num)
       word1=strtok(s," ");
       word2=strtok(NULL," ");
 
-      if(!strcmp(word1,"Sprite"))
+      if(!strcasecmp(word1,"Sprite"))
       {
-             if(!strcmp(word2,"number"))     states[num].sprite   =value;
-        else if(!strcmp(word2,"subnumber"))  states[num].frame    =value;
+             if(!strcasecmp(word2,"number"))     states[num].sprite   =value;
+        else if(!strcasecmp(word2,"subnumber"))  states[num].frame    =value;
       }
-      else if(!strcmp(word1,"Duration"))     states[num].tics     =value;
-      else if(!strcmp(word1,"Next"))         states[num].nextstate=value;
+      else if(!strcasecmp(word1,"Duration"))     states[num].tics     =value;
+      else if(!strcasecmp(word1,"Next"))         states[num].nextstate=value;
       else deh_error("Frame %d : unknown word '%s'\n",num,word1);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -321,7 +321,7 @@ static void readsound(MYFILE* f, int deh_sound_id)
       if(s[0]=='\n') break;
       value=searchvalue(s);
       word=strtok(s," ");
-      if(!strcmp(word,"Offset"))
+      if(!strcasecmp(word,"Offset"))
       {
 	  value-=150360;
           if(value<=64) value/=8;
@@ -332,8 +332,8 @@ static void readsound(MYFILE* f, int deh_sound_id)
 	  else
 	      deh_error("Sound %d : offset out of bound\n", deh_sound_id);
       }
-      else if(!strcmp(word,"Zero/One")) ssp->singularity=value;
-      else if(!strcmp(word,"Value"))    ssp->priority   =value;
+      else if(!strcasecmp(word,"Zero/One")) ssp->singularity=value;
+      else if(!strcasecmp(word,"Value"))    ssp->priority   =value;
       else deh_error("Sound %d : unknown word '%s'\n", deh_sound_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -512,12 +512,12 @@ static void readweapon(MYFILE *f,int num)
       value=searchvalue(s);
       word=strtok(s," ");
 
-           if(!strcmp(word,"Ammo"))       doomweaponinfo[num].ammo      =value;
-      else if(!strcmp(word,"Deselect"))   doomweaponinfo[num].upstate   =value;
-      else if(!strcmp(word,"Select"))     doomweaponinfo[num].downstate =value;
-      else if(!strcmp(word,"Bobbing"))    doomweaponinfo[num].readystate=value;
-      else if(!strcmp(word,"Shooting"))   doomweaponinfo[num].atkstate  = doomweaponinfo[num].holdatkstate = value;
-      else if(!strcmp(word,"Firing"))     doomweaponinfo[num].flashstate=value;
+           if(!strcasecmp(word,"Ammo"))       doomweaponinfo[num].ammo      =value;
+      else if(!strcasecmp(word,"Deselect"))   doomweaponinfo[num].upstate   =value;
+      else if(!strcasecmp(word,"Select"))     doomweaponinfo[num].downstate =value;
+      else if(!strcasecmp(word,"Bobbing"))    doomweaponinfo[num].readystate=value;
+      else if(!strcasecmp(word,"Shooting"))   doomweaponinfo[num].atkstate  = doomweaponinfo[num].holdatkstate = value;
+      else if(!strcasecmp(word,"Firing"))     doomweaponinfo[num].flashstate=value;
       else deh_error("Weapon %d : unknown word '%s'\n",num,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -542,9 +542,9 @@ static void readammo(MYFILE *f,int num)
       value=searchvalue(s);
       word=strtok(s," ");
 
-           if(!strcmp(word,"Max"))  maxammo[num] =value;
-      else if(!strcmp(word,"Per")) { clipammo[num]=value;GetWeaponAmmo[num] = 2*value; }
-      else if(!strcmp(word,"Perweapon")) GetWeaponAmmo[num] = 2*value; 
+           if(!strcasecmp(word,"Max"))  maxammo[num] =value;
+      else if(!strcasecmp(word,"Per")) { clipammo[num]=value;GetWeaponAmmo[num] = 2*value; }
+      else if(!strcasecmp(word,"Perweapon")) GetWeaponAmmo[num] = 2*value; 
       else deh_error("Ammo %d : unknown word '%s'\n",num,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -579,36 +579,36 @@ static void readmisc(MYFILE *f)
       word=strtok(s," ");
       word2=strtok(NULL," ");
 
-      if(!strcmp(word,"Initial"))
+      if(!strcasecmp(word,"Initial"))
       {
-         if(!strcmp(word2,"Health"))          initial_health=value;
-         else if(!strcmp(word2,"Bullets"))    initial_bullets=value;
+         if(!strcasecmp(word2,"Health"))          initial_health=value;
+         else if(!strcasecmp(word2,"Bullets"))    initial_bullets=value;
       }
-      else if(!strcmp(word,"Max"))
+      else if(!strcasecmp(word,"Max"))
       {
-         if(!strcmp(word2,"Health"))          MAXHEALTH=value;
-         else if(!strcmp(word2,"Armor"))      max_armor=value;
-         else if(!strcmp(word2,"Soulsphere")) maxsoul=value;
+         if(!strcasecmp(word2,"Health"))          MAXHEALTH=value;
+         else if(!strcasecmp(word2,"Armor"))      max_armor=value;
+         else if(!strcasecmp(word2,"Soulsphere")) maxsoul=value;
       }
-      else if(!strcmp(word,"Green"))         green_armor_class=value;
-      else if(!strcmp(word,"Blue"))          blue_armor_class=value;
-      else if(!strcmp(word,"Soulsphere"))    soul_health=value;
-      else if(!strcmp(word,"Megasphere"))    mega_health=value;
-      else if(!strcmp(word,"God"))           god_health=value;
-      else if(!strcmp(word,"IDFA"))
+      else if(!strcasecmp(word,"Green"))         green_armor_class=value;
+      else if(!strcasecmp(word,"Blue"))          blue_armor_class=value;
+      else if(!strcasecmp(word,"Soulsphere"))    soul_health=value;
+      else if(!strcasecmp(word,"Megasphere"))    mega_health=value;
+      else if(!strcasecmp(word,"God"))           god_health=value;
+      else if(!strcasecmp(word,"IDFA"))
       {
          word2=strtok(NULL," ");
          if(!strcmp(word2,"="))               idfa_armor=value;
-         else if(!strcmp(word2,"Class"))      idfa_armor_class=value;
+         else if(!strcasecmp(word2,"Class"))  idfa_armor_class=value;
       }
-      else if(!strcmp(word,"IDKFA"))
+      else if(!strcasecmp(word,"IDKFA"))
       {
          word2=strtok(NULL," ");
          if(!strcmp(word2,"="))               idkfa_armor=value;
-         else if(!strcmp(word2,"Class"))      idkfa_armor_class=value;
+         else if(!strcasecmp(word2,"Class"))  idkfa_armor_class=value;
       }
-      else if(!strcmp(word,"BFG"))            doomweaponinfo[wp_bfg].ammopershoot = value;
-      else if(!strcmp(word,"Monsters"))       infight = true; //DarkWolf95:November 21, 2003: Monsters Infight!
+      else if(!strcasecmp(word,"BFG"))            doomweaponinfo[wp_bfg].ammopershoot = value;
+      else if(!strcasecmp(word,"Monsters"))       infight = true; //DarkWolf95:November 21, 2003: Monsters Infight!
       else deh_error("Misc : unknown word '%s'\n",word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -680,17 +680,17 @@ static void readcheat(MYFILE *f)
       strtok(NULL," \n");              // finish the string
       word=strtok(s," ");
 
-      if(!strcmp(word     ,"Change"))        change_cheat_code(cheat_mus_seq,value);
-      else if(!strcmp(word,"Chainsaw"))      change_cheat_code(cheat_choppers_seq,value);
-      else if(!strcmp(word,"God"))           change_cheat_code(cheat_god_seq,value);
-      else if(!strcmp(word,"Ammo"))
+      if(!strcasecmp(word     ,"Change"))        change_cheat_code(cheat_mus_seq,value);
+      else if(!strcasecmp(word,"Chainsaw"))      change_cheat_code(cheat_choppers_seq,value);
+      else if(!strcasecmp(word,"God"))           change_cheat_code(cheat_god_seq,value);
+      else if(!strcasecmp(word,"Ammo"))
            {
              word2=strtok(NULL," ");
 
              if(word2 && !strcmp(word2,"&")) change_cheat_code(cheat_ammo_seq,value);
              else                            change_cheat_code(cheat_ammonokey_seq,value);
            }
-      else if(!strcmp(word,"No"))
+      else if(!strcasecmp(word,"No"))
            {
              word2=strtok(NULL," ");
              if(word2)
@@ -700,16 +700,16 @@ static void readcheat(MYFILE *f)
              else                            change_cheat_code(cheat_commercial_noclip_seq,value);
 
            }
-      else if(!strcmp(word,"Invincibility")) change_cheat_code(cheat_powerup_seq[0],value);
-      else if(!strcmp(word,"Berserk"))       change_cheat_code(cheat_powerup_seq[1],value);
-      else if(!strcmp(word,"Invisibility"))  change_cheat_code(cheat_powerup_seq[2],value);
-      else if(!strcmp(word,"Radiation"))     change_cheat_code(cheat_powerup_seq[3],value);
-      else if(!strcmp(word,"Auto-map"))      change_cheat_code(cheat_powerup_seq[4],value);
-      else if(!strcmp(word,"Lite-Amp"))      change_cheat_code(cheat_powerup_seq[5],value);
-      else if(!strcmp(word,"BEHOLD"))        change_cheat_code(cheat_powerup_seq[6],value);
-      else if(!strcmp(word,"Level"))         change_cheat_code(cheat_clev_seq,value);
-      else if(!strcmp(word,"Player"))        change_cheat_code(cheat_mypos_seq,value);
-      else if(!strcmp(word,"Map"))           change_cheat_code(cheat_amap_seq,value);
+      else if(!strcasecmp(word,"Invincibility")) change_cheat_code(cheat_powerup_seq[0],value);
+      else if(!strcasecmp(word,"Berserk"))       change_cheat_code(cheat_powerup_seq[1],value);
+      else if(!strcasecmp(word,"Invisibility"))  change_cheat_code(cheat_powerup_seq[2],value);
+      else if(!strcasecmp(word,"Radiation"))     change_cheat_code(cheat_powerup_seq[3],value);
+      else if(!strcasecmp(word,"Auto-map"))      change_cheat_code(cheat_powerup_seq[4],value);
+      else if(!strcasecmp(word,"Lite-Amp"))      change_cheat_code(cheat_powerup_seq[5],value);
+      else if(!strcasecmp(word,"BEHOLD"))        change_cheat_code(cheat_powerup_seq[6],value);
+      else if(!strcasecmp(word,"Level"))         change_cheat_code(cheat_clev_seq,value);
+      else if(!strcasecmp(word,"Player"))        change_cheat_code(cheat_mypos_seq,value);
+      else if(!strcasecmp(word,"Map"))           change_cheat_code(cheat_amap_seq,value);
       else deh_error("Cheat : unknown word '%s'\n",word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -740,7 +740,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
       {
         i=atoi(word2);
 
-        if(!strcmp(word,"Thing"))
+        if(!strcasecmp(word,"Thing"))
         {
 	  // "Thing <num>"
           i--; // begin at 0 not 1;
@@ -749,7 +749,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
           else
             deh_error("Thing %d don't exist\n",i);
         }
-        else if(!strcmp(word,"Frame"))
+        else if(!strcasecmp(word,"Frame"))
              {
 	       // "Frame <num>"
                if(i<NUMSTATES && i>=0)
@@ -757,7 +757,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                   deh_error("Frame %d don't exist\n",i);
              }
-        else if(!strcmp(word,"Pointer"))
+        else if(!strcasecmp(word,"Pointer"))
              {
 	       // "Pointer <num>"
                word=strtok(NULL," "); // get frame
@@ -775,7 +775,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                    deh_error("pointer (Frame %d) : missing ')'\n",i);
              }
-        else if(!strcmp(word,"Sound"))
+        else if(!strcasecmp(word,"Sound"))
              {
 	       // "Sound <num>"
                if(i<NUMSFX && i>=0)
@@ -783,7 +783,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                    deh_error("Sound %d don't exist\n");
              }
-        else if(!strcmp(word,"Sprite"))
+        else if(!strcasecmp(word,"Sprite"))
              {
 	       // "Sprite <num>"
                if(i<NUMSPRITES && i>=0)
@@ -801,7 +801,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                   deh_error("Sprite %d don't exist\n",i);
              }
-        else if(!strcmp(word,"Text"))
+        else if(!strcasecmp(word,"Text"))
              {
 	       // "Text <num>"
                int j;
@@ -815,7 +815,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                    deh_error("Text : missing second number\n");
 
              }
-        else if(!strcmp(word,"Weapon"))
+        else if(!strcasecmp(word,"Weapon"))
              {
 	       // "Weapon <num>"
                if(i<NUMWEAPONS && i>=0)
@@ -823,7 +823,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                    deh_error("Weapon %d don't exist\n",i);
              }
-        else if(!strcmp(word,"Ammo"))
+        else if(!strcasecmp(word,"Ammo"))
              {
 	       // "Ammo <num>"
                if(i<NUMAMMO && i>=0)
@@ -831,37 +831,37 @@ void DEH_LoadDehackedFile(MYFILE* f)
                else
                    deh_error("Ammo %d don't exist\n",i);
              }
-        else if(!strcmp(word,"Misc"))
+        else if(!strcasecmp(word,"Misc"))
 	       // "Misc <num>"
                readmisc(f);
-        else if(!strcmp(word,"Cheat"))
+        else if(!strcasecmp(word,"Cheat"))
 	       // "Cheat <num>"
                readcheat(f);
-        else if(!strcmp(word,"Doom"))
+        else if(!strcasecmp(word,"Doom"))
              {
 	       // "Doom <num>"
                int ver = searchvalue(strtok(NULL,"\n"));
                if( ver!=19)
                   deh_error("Warning : patch from a different doom version (%d), only version 1.9 is supported\n",ver);
              }
-        else if(!strcmp(word,"Patch"))
+        else if(!strcasecmp(word,"Patch"))
              {
 	       // "Patch <num>"
                word=strtok(NULL," ");
-               if(word && !strcmp(word,"format"))
+               if(word && !strcasecmp(word,"format"))
                {
                   if(searchvalue(strtok(NULL,"\n"))!=6)
                      deh_error("Warning : Patch format not supported");
                }
              }
         //SoM: Support for Boom Extras (BEX)
-/*        else if(!strcmp(word, "[STRINGS]"))
+/*        else if(!strcasecmp(word, "[STRINGS]"))
              {
              }
-        else if(!strcmp(word, "[PARS]"))
+        else if(!strcasecmp(word, "[PARS]"))
              {
              }
-        else if(!strcmp(word, "[CODEPTR]"))
+        else if(!strcasecmp(word, "[CODEPTR]"))
              {
              }*/
         else deh_error("Unknown word : %s\n",word);
