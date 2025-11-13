@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: dehacked.h 856 2011-09-17 17:42:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -39,6 +39,7 @@
 //-----------------------------------------------------------------------------
 
 
+void DEH_Init(void);
 void DEH_LoadDehackedFile(char *filename);
 void DEH_LoadDehackedLump(int lump);
 

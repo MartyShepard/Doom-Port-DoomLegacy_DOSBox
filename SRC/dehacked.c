@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 820 2011-03-16 23:23:45Z wesleyjohnson $
+// $Id: dehacked.c 856 2011-09-17 17:42:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -99,6 +99,14 @@
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 
 boolean deh_loaded = false;
+
+// Save compare values, to handle multiple DEH files and lumps
+actionf_t  deh_actions[NUMSTATES];
+char       *deh_sprnames[NUMSPRITES];
+char       *deh_sfxnames[NUMSFX];
+char	   *deh_musicname[NUMMUSIC];
+char       *deh_text[NUMTEXT];
+
 
 
 #define MAXLINELEN  200
@@ -300,8 +308,9 @@ static void readframe(MYFILE* f,int num)
   } while(s[0]!='\n' && !myfeof(f));
 }
 
-static void readsound(MYFILE* f,int num,char *deh_sfxnames[])
+static void readsound(MYFILE* f, int deh_sound_id)
 {
+  sfxinfo_t *  ssp = & S_sfx[ deh_sound_id ];
   char s[MAXLINELEN];
   char *word;
   int value;
@@ -319,19 +328,18 @@ static void readsound(MYFILE* f,int num,char *deh_sfxnames[])
           else if(value<=260) value=(value+4)/8;
           else value=(value+8)/8;
           if(value>=-1 && value<sfx_freeslot0-1)
-	      S_sfx[num].name=deh_sfxnames[value+1];
+	      ssp->name=deh_sfxnames[value+1];
 	  else
-	      deh_error("Sound %d : offset out of bound\n",num);
+	      deh_error("Sound %d : offset out of bound\n", deh_sound_id);
       }
-      else if(!strcmp(word,"Zero/One")) S_sfx[num].singularity=value;
-      else if(!strcmp(word,"Value"))    S_sfx[num].priority   =value;
-      else deh_error("Sound %d : unknown word '%s'\n",num,word);
+      else if(!strcmp(word,"Zero/One")) ssp->singularity=value;
+      else if(!strcmp(word,"Value"))    ssp->priority   =value;
+      else deh_error("Sound %d : unknown word '%s'\n", deh_sound_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
 
-static void readtext(MYFILE* f, int len1, int len2,
-		     char *deh_sfxnames[], char *deh_sprnames[])
+static void readtext(MYFILE* f, int len1, int len2 )
 {
   char s[2001];
   char * str2;
@@ -395,7 +403,7 @@ static void readtext(MYFILE* f, int len1, int len2,
       // music table
       for(i=1;i<NUMMUSIC;i++)
       {
-        if( S_music[i].name && (!strcmp(S_music[i].name, str1)) )
+        if( deh_musicname[i] && (!strcmp(deh_musicname[i], str1)) )
         {
 	  // May be const string, which will segfault on write
 	  S_music[i].name = Z_Strdup(str2, PU_STATIC, NULL);
@@ -409,7 +417,7 @@ static void readtext(MYFILE* f, int len1, int len2,
     // text table
     for(i=0;i<SPECIALDEHACKED;i++)
     {
-      if(!strncmp(text[i],s,len1) && strlen(text[i])==(unsigned)len1)
+      if(!strncmp(deh_text[i],s,len1) && strlen(deh_text[i])==(unsigned)len1)
       {
         // SoM: This is causing the problems! Apparently, VC++ doesn't
         // think we should be able to write to the text...
@@ -435,9 +443,9 @@ static void readtext(MYFILE* f, int len1, int len2,
     // special text : text changed in Legacy but with dehacked support
     for(i=SPECIALDEHACKED;i<NUMTEXT;i++)
     {
-       int ltxt = strlen(text[i]);
+       int ltxt = strlen(deh_text[i]);
 
-       if(len1>ltxt && strstr(s,text[i]))
+       if(len1>ltxt && strstr(s,deh_text[i]))
        {
 	   // found text to be replaced
            char *t;
@@ -714,20 +722,9 @@ void DEH_LoadDehackedFile(MYFILE* f)
   char       s[1000];
   char       *word,*word2;
   int        i;
-  // do a copy of this for cross references problem
-  actionf_t  deh_actions[NUMSTATES];
-  char       *deh_sprnames[NUMSPRITES];
-  char       *deh_sfxnames[NUMSFX];
 
   deh_num_error=0;
-  // save value for cross reference
-  for(i=0;i<NUMSTATES;i++)
-      deh_actions[i]=states[i].action;
-  for(i=0;i<NUMSPRITES;i++)
-      deh_sprnames[i]=sprnames[i];
-  for(i=0;i<NUMSFX;i++)
-      deh_sfxnames[i]=S_sfx[i].name;
-
+   
   // it don't test the version of doom
   // and version of dehacked file
   while(!myfeof(f))
@@ -782,7 +779,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
              {
 	       // "Sound <num>"
                if(i<NUMSFX && i>=0)
-                   readsound(f,i,deh_sfxnames);
+                   readsound(f,i);
                else
                    deh_error("Sound %d don't exist\n");
              }
@@ -812,7 +809,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                if((word=strtok(NULL," "))!=NULL)
                {
                  j=atoi(word);
-                 readtext(f,i,j,deh_sfxnames,deh_sprnames);
+                 readtext(f,i,j);
                }
                else
                    deh_error("Text : missing second number\n");
@@ -900,4 +897,23 @@ void DEH_LoadDehackedLump(int lump)
 
     DEH_LoadDehackedFile(&f);
     Z_Free(f.data);
+}
+
+
+// [WDJ] Before any changes, save all comparison info, so that multiple
+// DEH files and lumps can be handled without interfering with each other.
+void DEH_Init(void)
+{
+  int i;
+  // save value for cross reference
+  for(i=0;i<NUMSTATES;i++)
+      deh_actions[i]=states[i].action;
+  for(i=0;i<NUMSPRITES;i++)
+      deh_sprnames[i]=sprnames[i];
+  for(i=0;i<NUMSFX;i++)
+      deh_sfxnames[i]=S_sfx[i].name;
+  for(i=1;i<NUMMUSIC;i++)
+      deh_musicname[i]=S_music[i].name;
+  for(i=0;i<NUMTEXT;i++)
+      deh_text[i]=text[i];
 }

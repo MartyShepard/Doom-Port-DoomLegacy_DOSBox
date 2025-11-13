@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 855 2011-09-15 23:35:10Z wesleyjohnson $
+// $Id: d_main.c 856 2011-09-17 17:42:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -317,7 +317,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "855"
+#define SVN_REV "856"
 #endif
 
 // Version number: major.minor.revision
@@ -1871,6 +1871,10 @@ void D_DoomMain()
         Chex1PatchEngine();
 
     CONS_Printf(text[W_INIT_NUM]);
+   
+    // save Doom, Heretic, Chex strings for DEH
+    DEH_Init();  // Init DEH before files and lumps loaded
+
     // load wad, including the main wad file
     if (!W_InitMultipleFiles(startupwadfiles))
         CONS_Error("A WAD file was not found\n");

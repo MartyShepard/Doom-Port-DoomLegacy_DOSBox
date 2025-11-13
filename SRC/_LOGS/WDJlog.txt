@@ -1791,3 +1791,13 @@ strings, to be made to combine at run-time.
 SAVEGAMENAME usage also changed to handle savegame name from text[],
 because it will changable from BEX.
 This is in preparation for BEX text modification code.
+
+*** w77_DEH_Init
+patchfile = w77_DEH_Init.patch
+- committed revision 856   by wesley johnson
+Save all DEH replaced strings into deh_ vars for comparison.
+This allows multiple replacements of the same string, or other name,
+without mutual interference.  Because FreeDoom will contain such a DEH
+lump, it would have prevented any other PWAD from using DEH to replace
+the same string.  The save is performed in DEH_Init.
+

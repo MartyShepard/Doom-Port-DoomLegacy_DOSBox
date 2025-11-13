@@ -1,6 +1,9 @@
 * Not need to Compile.
 
+[00856 ]: w77 DEH Init, save original text
 [00855 ]: w76 text reorg, SAVEGAMENAME
+					DOS: High slot number at >=10 fixed. DOOMSAV9DSG to DOOMSA99.DSG
+					
 [00854 ]: w76 plutonia text
 [00853 ]: w76 TNT MAP31 yellow key
 [00852 ]: w76 TNT MAP30 stairs fix
