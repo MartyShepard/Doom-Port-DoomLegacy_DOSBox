@@ -1820,3 +1820,9 @@ It allocates the new string using malloc, instead of Z_Alloc.
 Define DEH_RECOVER_STRINGS, enables the testing of strings
 for being const or malloc, and recovery of malloc memory.
 
+*** w77_BEX_flags
+patchfile = w77_BEX_flags.patch
+- committed revision 859   by wesley johnson
+Add BEX flag by name.  There is a conflict between MF_TRANSLUCENT
+which is defined in doomdeh.txt, and MF_FLOORHUGGER which is not.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 858 2011-09-17 17:44:53Z wesleyjohnson $
+// $Id: dehacked.c 859 2011-09-17 17:47:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -378,6 +378,132 @@ int activesound;   Action sound = 32        sfx_None,       // activesound
 int flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,
 int raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
+// [WDJ] BEX flags 9/10/2011
+typedef enum { BF1, BF2, BF2x, BFmf=0x80 } bex_flags_ctrl_e;
+
+typedef struct {
+    char * name;
+    byte   ctrl; // bex_flags_ctrl_e
+    uint32_t flagval;
+} flag_name_t;
+
+// [WDJ] From boomdeh.txt, and DoomLegacy2.0
+flag_name_t  BEX_flag_name_table[] = 
+{
+  {"SPECIAL",    BF1, MF_SPECIAL }, // Call TouchSpecialThing when touched.
+  {"SOLID",      BF1, MF_SOLID }, // Blocks
+  {"SHOOTABLE",  BF1, MF_SHOOTABLE }, // Can be hit
+  {"NOSECTOR",   BF1, MF_NOSECTOR },  // Don't link to sector (invisible but touchable)
+  {"NOBLOCKMAP", BF1, MF_NOBLOCKMAP }, // Don't link to blockmap (inert but visible)
+  {"AMBUSH",     BF1, MF_AMBUSH }, // Not to be activated by sound, deaf monster.
+  {"JUSTHIT",    BF1, MF_JUSTHIT }, // Will try to attack right back.
+  {"JUSTATTACKED", BF1, MF_JUSTATTACKED }, // Will take at least one step before attacking.
+  {"SPAWNCEILING", BF1, MF_SPAWNCEILING }, // Spawned hanging from the ceiling
+  {"NOGRAVITY",  BF1, MF_NOGRAVITY }, // Does not feel gravity
+  {"DROPOFF",    BF1, MF_DROPOFF }, // Can jump/drop from high places
+  {"PICKUP",     BF1, MF_PICKUP }, // Can/will pick up items. (players)
+  {"NOCLIP",     BF1, MF_NOCLIP | MF_NOCLIPTHING }, // Does not clip against lines or Actors.
+  // two slide bits, set them both
+  {"SLIDE",      BF1|BFmf, MF_SLIDE }, // Player: keep info about sliding along walls.
+  {"SLIDE",      BF2, MF2_SLIDE }, // Slides against walls
+
+  {"FLOAT",      BF1, MF_FLOAT }, // Active floater, can move freely in air (cacodemons etc.)
+  {"TELEPORT",   BF1, MF_TELEPORT }, // Don't cross lines or look at heights on teleport.
+  {"MISSILE",    BF1, MF_MISSILE }, // Missile. Don't hit same species, explode on block.
+  {"DROPPED",    BF1, MF_DROPPED }, // Dropped by a monster
+  {"SHADOW",     BF1, MF_SHADOW }, // Partial invisibility (spectre). Makes targeting harder.
+  {"NOBLOOD",    BF1, MF_NOBLOOD }, // Does not bleed when shot (furniture)
+  {"CORPSE",     BF1, MF_CORPSE }, // Acts like a corpse, falls down stairs etc.
+  {"INFLOAT",    BF1, MF_INFLOAT }, // Don't auto float to target's height.
+  {"COUNTKILL",  BF1, MF_COUNTKILL }, // On kill, count towards intermission kill total.
+  {"COUNTITEM",  BF1, MF_COUNTITEM }, // On pickup, count towards intermission item total.
+  {"SKULLFLY",   BF1, MF_SKULLFLY }, // Flying skulls, neither a cacodemon nor a missile.
+  {"NOTDMATCH",  BF1, MF_NOTDMATCH }, // Not spawned in DM (keycards etc.)
+  // 4 bits of player color translation (gray/red/brown)
+  {"TRANSLATION1", BF1, (1<<MF_TRANSSHIFT) },  // Boom
+  {"TRANSLATION2", BF1, (2<<MF_TRANSSHIFT) },  // Boom
+  {"TRANSLATION3", BF1, (4<<MF_TRANSSHIFT) },
+  {"TRANSLATION4", BF1, (8<<MF_TRANSSHIFT) },
+  {"TRANSLATION",  BF1, (1<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
+  {"UNUSED1     ", BF1, (2<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
+  // Boom/BEX
+  {"TRANSLUCENT", BF1, 0 },  // Boom translucent placeholder
+//  {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
+  // MBF/Prboom Extensions
+//  {"TOUCHY",  BFC_x, MF_TOUCHY }, // (MBF) Reacts upon contact
+  {"BOUNCES",  BF2, MF2_FLOORBOUNCE }, // (MBF) Bounces off walls, etc.
+      //  heretic bounce is approximation
+//  {"FRIEND",  BFC_x, MF_FRIEND }, // (MBF) Friend to player (dog, etc.)
+
+  {"MF2CLEAR",       BF2x, 0 }, // clear MF2 bits, no bits set
+  // DoomLegacy 1.4x Extensions
+//  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER }, // [WDJ] moved to MF2
+  {"FLOORHUGGER",    BF1, MF_FLOORHUGGER },
+  // Heretic
+  {"LOWGRAVITY",     BF2x, MF2_LOGRAV }, // Experiences only 1/8 gravity
+  {"WINDTHRUST",     BF2x, MF2_WINDTHRUST }, // Is affected by wind
+//  {"FLOORBOUNCE",    BF2, MF2_FLOORBOUNCE }, // Bounces off the floor
+      // see MBF/Prboom "BOUNCES"
+  {"HERETICBOUNCE",  BF2x, MF2_FLOORBOUNCE }, // Bounces off the floor
+  {"THRUGHOST",      BF2x, MF2_THRUGHOST }, // Will pass through ghosts (missile)
+  {"FLOORCLIP",      BF2x, MF2_FOOTCLIP }, // Feet may be be clipped
+  {"SPAWNFLOAT",     BF2x, MF2_SPAWNFLOAT }, // Spawned at random height
+  {"NOTELEPORT",     BF2x, MF2_NOTELEPORT }, // Does not teleport
+  {"RIPPER",         BF2x, MF2_RIP }, // Rips through solid targets (missile)
+  {"PUSHABLE",       BF2x, MF2_PUSHABLE }, // Can be pushed by other moving actors
+//  {"SLIDE",          BF2x, MF2_SLIDE }, // Slides against walls
+     // see other "SLIDE", and MF_SLIDE
+  {"PASSMOBJ",       BF2x, MF2_PASSMOBJ }, // Enable z block checking.
+      // If on, this flag will allow the mobj to pass over/under other mobjs.
+  {"CANNOTPUSH",     BF2x, MF2_CANNOTPUSH }, // Cannot push other pushable actors
+  {"BOSS",           BF2x, MF2_BOSS }, // Is a major boss, not as easy to kill
+  {"FIREDAMAGE",     BF2x, MF2_FIREDAMAGE }, // does fire damage
+  {"NODAMAGETHRUST", BF2x, MF2_NODMGTHRUST }, // Does not thrust target when damaging
+  {"TELESTOMP",      BF2x, MF2_TELESTOMP }, // Can telefrag another Actor
+  {"FLOATBOB",       BF2x, MF2_FLOATBOB }, // use float bobbing z movement
+  {"DONTDRAW",       BF2x, MF2_DONTDRAW }, // Invisible (does not generate a vissprite)
+  // DoomLegacy 1.4x Internal flags, non-standard
+  // Exist but have little use being set by a WAD
+  {"ONMOBJ",         BF2x, MF2_ONMOBJ }, // mobj is resting on top of another
+//  {"FEETARECLIPPED", BF2x, MF2_FEETARECLIPPED }, // a mobj's feet are now being cut
+//  {"FLY",            BF2x, MF2_FLY }, // Fly mode
+
+  // DoomLegacy 2.0 Extensions
+  // Heretic/Hexen/ZDoom additions
+//  {"HEXENBOUNCE",    BF2x, MF2_FULLBOUNCE }, // Bounces off walls and floor
+//  {"SLIDESONWALLS",  BF2x, MF2_SLIDE }, // Slides against walls
+//  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER },
+//  {"CEILINGHUGGER",  BF2x, MF2_CEILINGHUGGER },
+//  {"DONTBLAST",      BF2x, MF2_NONBLASTABLE },
+//  {"QUICKTORETALIATE", BF2x, MF2_QUICKTORETALIATE },
+//  {"NOTARGET",       BF2x, MF2_NOTARGET }, // Will not be targeted by other monsters of same team (like Arch-Vile)
+//  {"FLOATBOB",       BF2x, MF2_FLOATBOB }, // Bobs up and down in the air (item)
+//  {"CANPASS",        BF2x, 0, }, // TODO inverted!  Can move over/under other Actors
+//  {"NONSHOOTABLE",   BF2x, MF2_NONSHOOTABLE }, // Transparent to MF_MISSILEs
+//  {"INVULNERABLE",   BF2x, MF2_INVULNERABLE }, // Does not take damage
+//  {"DORMANT",        BF2x, MF2_DORMANT }, // Cannot be damaged, is not noticed by seekers
+//  {"CANTLEAVEFLOORPIC", BF2x, MF2_CANTLEAVEFLOORPIC }, // Stays within a certain floor texture
+//  {"SEEKERMISSILE",  BF2x, MF2_SEEKERMISSILE }, // Is a seeker (for reflection)
+//  {"REFLECTIVE",     BF2x, MF2_REFLECTIVE }, // Reflects missiles
+//  {"ACTIVATEIMPACT", BF2x, MF2_IMPACT }, // Can activate SPAC_IMPACT
+//  {"CANPUSHWALLS",   BF2x, MF2_PUSHWALL }, // Can activate SPAC_PUSH
+//  {"DONTSPLASH", BFC_x, MF_NOSPLASH }, // Does not cause splashes in liquid.
+//  {"ISMONSTER", BFC_x, MF_MONSTER },
+//  {"ACTIVATEMCROSS", BFC_x, MF2_MCROSS }, // Can activate SPAC_MCROSS
+//  {"ACTIVATEPCROSS", BFC_x, MF2_PCROSS }, // Can activate SPAC_PCROSS
+  {NULL, 0, 0} // terminator
+};
+
+//#define CHECK_FLAGS2_DEFAULT
+#ifdef CHECK_FLAGS2_DEFAULT
+// Old PWAD do not know of MF2 bits.
+// Default for PWAD that do not set MF2 flags
+const uint32_t flags2_default_value = 0; // other ports like prboom
+  // | MF2_PASSMOBJ // heretic monsters
+  // | MF2_FOOTCLIP // heretic only
+  // | MF2_WINDTHRUST; // requires heretic wind sectors
+#endif
+
 
 static int searchvalue(char *s)
 {
@@ -391,8 +517,10 @@ static int searchvalue(char *s)
   }
 }
 
-static void readthing(MYFILE *f,int num)
+static void readthing(MYFILE *f, int deh_thing_id )
 {
+  // DEH thing 1.. , but mobjinfo array is 0..
+  mobjinfo_t *  mip = & mobjinfo[ deh_thing_id - 1 ];
   char s[MAXLINELEN];
   char *word;
   int value;
@@ -402,55 +530,117 @@ static void readthing(MYFILE *f,int num)
     {
       if(s[0]=='\n') break;
       value=searchvalue(s);
-      // set the value in apropriet field
       word=strtok(s," ");
-           if(!strcasecmp(word,"ID"))           mobjinfo[num].doomednum   =value;
-      else if(!strcasecmp(word,"Initial"))      mobjinfo[num].spawnstate  =value;
-      else if(!strcasecmp(word,"Hit"))          mobjinfo[num].spawnhealth =value;
-      else if(!strcasecmp(word,"First"))        mobjinfo[num].seestate    =value;
-      else if(!strcasecmp(word,"Alert"))        mobjinfo[num].seesound    =value;
-      else if(!strcasecmp(word,"Reaction"))     mobjinfo[num].reactiontime=value;
-      else if(!strcasecmp(word,"Attack"))       mobjinfo[num].attacksound =value;
-      else if(!strcasecmp(word,"Injury"))       mobjinfo[num].painstate   =value;
+
+      if(!strcasecmp(word,"Bits"))
+      {
+#ifdef CHECK_FLAGS2_DEFAULT
+          boolean flags2_default = 1; // default for flags2
+#endif
+	  flag_name_t * fnp; // BEX flag names ptr
+	  // total replacement of all flag bits
+	  mip->flags = 0;
+	  mip->flags2 = 0;
+	  for(;;)
+	  {
+	      word = strtok(NULL, " +|\t=\n");
+	      if( word == NULL ) break;
+	      if( word[0] == '\n' ) break;
+	      if( isdigit( word[0] ) )
+	      {
+		  value = atoi(word);  // numeric entry
+		  mip->flags |= value; // we are still using same flags bit order
+		  continue;
+	      }
+	      // handle BEX flag names
+#ifdef CHECK_FLAGS2_DEFAULT
+	      flags2_default = 1;
+#endif
+	      for( fnp = &BEX_flag_name_table[0]; fnp; fnp++ )
+	      {
+		  if(!strcasecmp( word, fnp->name ))  // find name
+		  {
+		      switch( fnp->ctrl & ~BFmf)
+		      {
+		       case BF1:
+		         mip->flags |= value;
+			 break;
+		       case BF2x: // DoomLegacy extension BEX name
+#ifdef CHECK_FLAGS2_DEFAULT
+			 flags2_default = 0;
+#endif
+		       case BF2: // standard name that happens to be MF2
+		         mip->flags2 |= value;
+			 break;
+		      }
+		      // unless multiple flag set for a keyword
+		      if( ! fnp->ctrl & BFmf )
+		         continue; // next word
+		  }
+	      }
+	      deh_error("Bits name unknown: %s\n", word);
+	  }
+#ifdef CHECK_FLAGS2_DEFAULT
+	  // Unless explicitly used BF2x bit, then put in default bits
+	  // Avoid by using MF2CLEAR
+	  if( flags2_default )
+	  {
+	      mip->flags2 |= flags2_default_value;
+	  }
+#endif	 
+	  continue; // next line
+      }
+
+      // set the value in apropriet field
+      else if(!strcasecmp(word,"ID"))           mip->doomednum   =value;
+      else if(!strcasecmp(word,"Initial"))      mip->spawnstate  =value;
+      else if(!strcasecmp(word,"Hit"))          mip->spawnhealth =value;
+      else if(!strcasecmp(word,"First"))        mip->seestate    =value;
+      else if(!strcasecmp(word,"Alert"))        mip->seesound    =value;
+      else if(!strcasecmp(word,"Reaction"))     mip->reactiontime=value;
+      else if(!strcasecmp(word,"Attack"))       mip->attacksound =value;
+      else if(!strcasecmp(word,"Injury"))       mip->painstate   =value;
       else if(!strcasecmp(word,"Pain"))
            {
              word=strtok(NULL," ");
-             if(!strcasecmp(word,"chance"))     mobjinfo[num].painchance  =value;
-             else if(!strcasecmp(word,"sound")) mobjinfo[num].painsound   =value;
+             if(!strcasecmp(word,"chance"))     mip->painchance  =value;
+             else if(!strcasecmp(word,"sound")) mip->painsound   =value;
            }
-      else if(!strcasecmp(word,"Close"))        mobjinfo[num].meleestate  =value;
-      else if(!strcasecmp(word,"Far"))          mobjinfo[num].missilestate=value;
+      else if(!strcasecmp(word,"Close"))        mip->meleestate  =value;
+      else if(!strcasecmp(word,"Far"))          mip->missilestate=value;
       else if(!strcasecmp(word,"Death"))
            {
              word=strtok(NULL," ");
-             if(!strcasecmp(word,"frame"))      mobjinfo[num].deathstate  =value;
-             else if(!strcasecmp(word,"sound")) mobjinfo[num].deathsound  =value;
+             if(!strcasecmp(word,"frame"))      mip->deathstate  =value;
+             else if(!strcasecmp(word,"sound")) mip->deathsound  =value;
            }
-      else if(!strcasecmp(word,"Exploding"))    mobjinfo[num].xdeathstate =value;
-      else if(!strcasecmp(word,"Speed"))        mobjinfo[num].speed       =value;
-      else if(!strcasecmp(word,"Width"))        mobjinfo[num].radius      =value;
-      else if(!strcasecmp(word,"Height"))       mobjinfo[num].height      =value;
-      else if(!strcasecmp(word,"Mass"))         mobjinfo[num].mass        =value;
-      else if(!strcasecmp(word,"Missile"))      mobjinfo[num].damage      =value;
-      else if(!strcasecmp(word,"Action"))       mobjinfo[num].activesound =value;
-      else if(!strcasecmp(word,"Bits"))         mobjinfo[num].flags       =value;
-      else if(!strcasecmp(word,"Bits2"))        mobjinfo[num].flags2      =value;
-      else if(!strcasecmp(word,"Respawn"))      mobjinfo[num].raisestate  =value;
-      else deh_error("Thing %d : unknown word '%s'\n",num,word);
+      else if(!strcasecmp(word,"Exploding"))    mip->xdeathstate =value;
+      else if(!strcasecmp(word,"Speed"))        mip->speed       =value;
+      else if(!strcasecmp(word,"Width"))        mip->radius      =value;
+      else if(!strcasecmp(word,"Height"))       mip->height      =value;
+      else if(!strcasecmp(word,"Mass"))         mip->mass        =value;
+      else if(!strcasecmp(word,"Missile"))      mip->damage      =value;
+      else if(!strcasecmp(word,"Action"))       mip->activesound =value;
+      else if(!strcasecmp(word,"Bits2"))        mip->flags2      =value;
+      else if(!strcasecmp(word,"Respawn"))      mip->raisestate  =value;
+      else deh_error("Thing %d : unknown word '%s'\n", deh_thing_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f)); //finish when the line is empty
 }
+
 /*
 Sprite number = 10
 Sprite subnumber = 32968
 Duration = 200
 Next frame = 200
 */
-static void readframe(MYFILE* f,int num)
+static void readframe(MYFILE* f, int deh_frame_id)
 {
+  state_t *  fsp = & states[ deh_frame_id ];
   char s[MAXLINELEN];
   char *word1,*word2;
   int value;
+
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
@@ -462,12 +652,12 @@ static void readframe(MYFILE* f,int num)
 
       if(!strcasecmp(word1,"Sprite"))
       {
-             if(!strcasecmp(word2,"number"))     states[num].sprite   =value;
-        else if(!strcasecmp(word2,"subnumber"))  states[num].frame    =value;
+             if(!strcasecmp(word2,"number"))     fsp->sprite   =value;
+        else if(!strcasecmp(word2,"subnumber"))  fsp->frame    =value;
       }
-      else if(!strcasecmp(word1,"Duration"))     states[num].tics     =value;
-      else if(!strcasecmp(word1,"Next"))         states[num].nextstate=value;
-      else deh_error("Frame %d : unknown word '%s'\n",num,word1);
+      else if(!strcasecmp(word1,"Duration"))     fsp->tics     =value;
+      else if(!strcasecmp(word1,"Next"))         fsp->nextstate=value;
+      else deh_error("Frame %d : unknown word '%s'\n", deh_frame_id,word1);
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
@@ -615,6 +805,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
     deh_error("Text not changed :%s\n",s);
   }
 }
+
 /*
 Ammo type = 2
 Deselect frame = 11
@@ -623,11 +814,13 @@ Bobbing frame = 13
 Shooting frame = 17
 Firing frame = 10
 */
-static void readweapon(MYFILE *f,int num)
+static void readweapon(MYFILE *f, int deh_weapon_id)
 {
+  weaponinfo_t * wip = & doomweaponinfo[ deh_weapon_id ];
   char s[MAXLINELEN];
   char *word;
   int value;
+
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
@@ -635,16 +828,17 @@ static void readweapon(MYFILE *f,int num)
       value=searchvalue(s);
       word=strtok(s," ");
 
-           if(!strcasecmp(word,"Ammo"))       doomweaponinfo[num].ammo      =value;
-      else if(!strcasecmp(word,"Deselect"))   doomweaponinfo[num].upstate   =value;
-      else if(!strcasecmp(word,"Select"))     doomweaponinfo[num].downstate =value;
-      else if(!strcasecmp(word,"Bobbing"))    doomweaponinfo[num].readystate=value;
-      else if(!strcasecmp(word,"Shooting"))   doomweaponinfo[num].atkstate  = doomweaponinfo[num].holdatkstate = value;
-      else if(!strcasecmp(word,"Firing"))     doomweaponinfo[num].flashstate=value;
-      else deh_error("Weapon %d : unknown word '%s'\n",num,word);
+           if(!strcasecmp(word,"Ammo"))       wip->ammo      =value;
+      else if(!strcasecmp(word,"Deselect"))   wip->upstate   =value;
+      else if(!strcasecmp(word,"Select"))     wip->downstate =value;
+      else if(!strcasecmp(word,"Bobbing"))    wip->readystate=value;
+      else if(!strcasecmp(word,"Shooting"))   wip->atkstate  = wip->holdatkstate = value;
+      else if(!strcasecmp(word,"Firing"))     wip->flashstate=value;
+      else deh_error("Weapon %d : unknown word '%s'\n", deh_weapon_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
+
 /*
 Max ammo = 400
 Per ammo = 40
@@ -866,8 +1060,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
         if(!strcasecmp(word,"Thing"))
         {
 	  // "Thing <num>"
-          i--; // begin at 0 not 1;
-          if(i<NUMMOBJTYPES && i>=0)
+          if(i<=NUMMOBJTYPES && i>0)
             readthing(f,i);
           else
             deh_error("Thing %d don't exist\n",i);
