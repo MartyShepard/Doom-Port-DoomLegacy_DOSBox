@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.h 855 2011-09-15 23:35:10Z wesleyjohnson $
+// $Id: dstrings.h 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -49,7 +49,11 @@
 #endif
 
 // Misc. other strings.
+#ifdef BEX_SAVEGAMENAME
+#define SAVEGAMENAME    text[SAVEGAMENAME_NUM];
+#else
 #define SAVEGAMENAME    "doomsav"
+#endif
 
 extern char savegamename[256];
 
@@ -367,18 +371,18 @@ typedef enum {
  QUIT2MSG3_NUM,
  QUIT2MSG4_NUM,
  QUIT2MSG5_NUM,
- QUIT2MSG6_NUM,
+QUIT2MSG6_NUM,
 
- FLOOR4_8_NUM,
- SFLR6_1_NUM,
- MFLR8_4_NUM,
- MFLR8_3_NUM,
- SLIME16_NUM,
- RROCK14_NUM,
- RROCK07_NUM,
- RROCK17_NUM,
- RROCK13_NUM,
- RROCK19_NUM,
+ BGFLATE1_NUM,
+ BGFLATE2_NUM,
+ BGFLATE3_NUM,
+ BGFLATE4_NUM,
+ BGFLAT06_NUM,
+ BGFLAT11_NUM,
+ BGFLAT20_NUM,
+ BGFLAT30_NUM,
+ BGFLAT15_NUM,
+ BGFLAT31_NUM,
 
  CREDIT_NUM,
  HELP2_NUM,
@@ -573,6 +577,10 @@ typedef enum {
  DOOMUTITLE_NUM,
  DOOMTITLE_NUM,
  DOOM1TITLE_NUM,
+
+#ifdef BEX_SAVEGAMENAME     
+ SAVEGAMENAME_NUM, // [WDJ] Added 9/5/2011
+#endif
 
  NUMTEXT
 } text_enum;

@@ -1836,3 +1836,15 @@ Fixes translucent code to be affected by BEX changes to MF_TRANSLUCENT.
 Change translucent to a table.
 Added PACKED_ATTR define so that table can be packed.
 
+*** w77_action
+patchfile = w77_action.patch
+- committed revision 861   by wesley johnson
+Separated action function declares from info.c into new file action.h, so
+they can be used in dehacked.c too.
+
+*** w77_BEX_file
+patchfile = w77_BEX_file.patch
+- committed revision 862   by wesley johnson
+Main body of BEX text, pointer, processing.
+Recognizes [STRINGS], [POINTER], [PARS], and BEX include.
+

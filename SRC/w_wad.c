@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 841 2011-07-07 22:13:54Z smite-meister $
+// $Id: w_wad.c 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -246,8 +246,10 @@ int W_LoadWadFile (char *filename)
         }
     }
 
-    // detect dehacked file with the "deh" extension
-    if( stricmp(&filename[strlen(filename)-3],"deh")==0 )
+    // detect dehacked file with the "deh" extension, or bex files
+    char * extension = &filename[strlen(filename)-3];
+    if( strcasecmp( extension,"deh")==0
+       || strcasecmp( extension,"bex")==0 )
     {
         // this code emulate a wadfile with one lump name "DEHACKED" 
         // at position 0 and size of the whole file

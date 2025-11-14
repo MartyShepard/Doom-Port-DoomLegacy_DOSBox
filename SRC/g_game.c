@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 852 2011-09-02 17:49:47Z wesleyjohnson $
+// $Id: g_game.c 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1645,8 +1645,9 @@ void G_AddPlayer( int playernum )
         p->weaponinfo = doomweaponinfo;
 }
 
+// [WDJ] Par times can now be modified.
 // DOOM Par Times
-static const int pars[4][10] =
+int pars[4][10] =
 {
     {0},
     {0,30,75,120,90,165,180,180,30,165},
@@ -1655,7 +1656,7 @@ static const int pars[4][10] =
 };
 
 // DOOM II Par Times
-static const int cpars[32] =
+int cpars[32] =
 {
     30,90,120,120,90,150,120,120,270,90,        //  1-10
     210,150,150,150,210,150,420,150,210,150,    // 11-20

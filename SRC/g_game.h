@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 786 2011-02-22 04:43:14Z wesleyjohnson $
+// $Id: g_game.h 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -178,5 +178,9 @@ boolean G_Downgrade(int version);
 void G_AddPlayer( int playernum );
 
 void CheckSaveGame(size_t size);
+
+// [WDJ] 8/2011 Par times can now be modified.
+extern int pars[4][10];
+extern int cpars[32];
 
 #endif

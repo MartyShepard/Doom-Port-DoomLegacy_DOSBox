@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.h 860 2011-09-17 17:50:44Z wesleyjohnson $
+// $Id: dehacked.h 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -42,10 +42,12 @@
 #define DEHACKED_H
 
 void DEH_Init(void);
-void DEH_LoadDehackedFile(char *filename);
+// permission: 0=game, 1=adv, 2=language
+void DEH_LoadDehackedFile(char *filename, byte bex_permission);
 void DEH_LoadDehackedLump(int lump);
 
 extern boolean  deh_loaded;
 extern byte  flags_valid_deh;  // flags altered flags (from DEH), boolean
+extern byte  pars_valid_bex;  // have valid PAR values (from BEX), boolean
 
 #endif

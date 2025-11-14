@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 854 2011-09-15 23:32:45Z wesleyjohnson $
+// $Id: f_finale.c 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -115,7 +115,7 @@ void F_StartFinale (void)
       if(info_backdrop)
         finaleflat = info_backdrop;
       else
-        finaleflat = text[FLOOR4_8_NUM];
+        finaleflat = text[BGFLATE1_NUM]; // Doom E1, FLOOR4_8
 
       finalestage = 0;
       finalecount = 0;
@@ -138,20 +138,20 @@ void F_StartFinale (void)
         switch (gameepisode)
         {
           case 1:
-            finaleflat = text[FLOOR4_8_NUM];
-            finaletext = E1TEXT;
+            finaleflat = text[BGFLATE1_NUM]; // Doom E1, FLOOR4_8
+            finaletext = text[E1TEXT_NUM];
             break;
           case 2:
-            finaleflat = text[SFLR6_1_NUM];
-            finaletext = E2TEXT;
+            finaleflat = text[BGFLATE2_NUM]; // Doom E2, SFLR6_1
+            finaletext = text[E2TEXT_NUM];
             break;
           case 3:
-            finaleflat = text[MFLR8_4_NUM];
-            finaletext = E3TEXT;
+            finaleflat = text[BGFLATE3_NUM]; // Doom E3, MFLR8_4
+            finaletext = text[E3TEXT_NUM];
             break;
           case 4:
-            finaleflat = text[MFLR8_3_NUM];
-            finaletext = E4TEXT;
+            finaleflat = text[BGFLATE4_NUM]; // Doom E3, MFLR8_3
+            finaletext = text[E4TEXT_NUM];
             break;
           default:
             // Ouch.
@@ -172,27 +172,27 @@ void F_StartFinale (void)
           switch (gamemap)
           {
             case 6:
-              finaleflat = text[SLIME16_NUM];
+              finaleflat = text[BGFLAT06_NUM]; // Doom2 MAP06, SLIME16
               textnum = 0; // text[C1TEXT_NUM];
               break;
             case 11:
-              finaleflat = text[RROCK14_NUM];
+              finaleflat = text[BGFLAT11_NUM]; // Doom2 MAP11, RROCK14
               textnum = 1; // text[C2TEXT_NUM];
               break;
             case 20:
-              finaleflat = text[RROCK07_NUM];
+              finaleflat = text[BGFLAT20_NUM]; // Doom2 MAP20, RROCK07
               textnum = 2; // text[C3TEXT_NUM];
               break;
             case 30:
-              finaleflat = text[RROCK17_NUM];
+              finaleflat = text[BGFLAT30_NUM]; // Doom2 MAP30, RROCK17
               textnum = 3; // text[C4TEXT_NUM];
               break;
             case 15:
-              finaleflat = text[RROCK13_NUM];
+              finaleflat = text[BGFLAT15_NUM]; // Doom2 MAP15, RROCK13
               textnum = 4; // text[C5TEXT_NUM];
               break;
             case 31:
-              finaleflat = text[RROCK19_NUM];
+              finaleflat = text[BGFLAT31_NUM]; // Doom2 MAP31, RROCK19
               textnum = 5; // text[C6TEXT_NUM];
               break;
             default:

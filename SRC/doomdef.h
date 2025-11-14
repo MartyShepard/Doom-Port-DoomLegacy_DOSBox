@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 858 2011-09-17 17:44:53Z wesleyjohnson $
+// $Id: doomdef.h 862 2011-09-17 17:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -256,6 +256,11 @@ void I_SoftError (char *error, ...);
 #if defined PCDOS && ! defined DEH_RECOVER_STRINGS
 #define DEH_RECOVER_STRINGS
 #endif
+
+// [WDJ] 9/5/2011
+// Enable to allow BEX to change SAVEGAMENAME
+// This is a security risk, trojan wads could use it to corrupt arbitrary files.
+//#define BEX_SAVEGAMENAME
 
 // =========================================================================
 
