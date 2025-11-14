@@ -1862,3 +1862,14 @@ patchfile = w77_devgame.patch
 Check -devgame parameter for valid <name>, before using it, preventing
 segfault.
 
+*** w77_french
+patchfile = w77_french.patch
+- committed revision 865   by wesley johnson
+Convert d_french.h to a run-time replacement of text[] strings, after
+DEH has made a copy.  Now FRENCH can be used with DEH string replacement.
+There are functions to replace non-game strings, and game strings
+separately, and functions for heretic and chexquest strings.
+There are calls at the appropriate places in d_main.c.
+The d_french.h file has many new strings that need translation.
+
+

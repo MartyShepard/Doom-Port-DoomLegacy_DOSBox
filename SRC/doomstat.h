@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 851 2011-08-29 18:23:44Z wesleyjohnson $
+// $Id: doomstat.h 865 2011-09-17 18:02:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -123,15 +123,6 @@ extern gamemission_t   gamemission;
 #endif
 
 
-// Identify language to use, software localization.
-typedef enum
-{
-    english,
-    french,
-    german,
-    lang_unknown
-
-} language_t;
 
 // [WDJ] Structure some of the scattered game differences.
 
@@ -203,6 +194,17 @@ extern  boolean	       modifiedgame;
 // Language.
 // =========
 //
+
+// Identify language to use, software localization.
+typedef enum
+{
+    english,
+    french,
+    german,
+    lang_unknown
+
+} language_t;
+
 extern  language_t   language;
 
 

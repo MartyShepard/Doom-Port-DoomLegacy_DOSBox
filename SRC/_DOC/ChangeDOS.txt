@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00865 ]: w77 french inline, allows DEH/BEX
 [00864 ]: w77 devgame <name> check
 [00863 ]: w77 par time BEX fixes, 24HR limit
 [00862 ]: w77 BEX file - string/pointer/pars/include

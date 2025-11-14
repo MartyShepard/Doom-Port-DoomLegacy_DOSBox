@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: dehacked.c 865 2011-09-17 18:02:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -330,7 +330,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    // check value against tests
 	}
         // reject special character attacks
-#ifdef FRENCH
+#ifdef FRENCH_INLINE
         // place checks for allowed foreign lang chars here
 	// reported dangerous escape chars
 	if( ch == 133 ) goto bad_char;

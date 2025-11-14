@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: doomdef.h 865 2011-09-17 18:02:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -261,6 +261,13 @@ void I_SoftError (char *error, ...);
 // Enable to allow BEX to change SAVEGAMENAME
 // This is a security risk, trojan wads could use it to corrupt arbitrary files.
 //#define BEX_SAVEGAMENAME
+
+// [WDJ] 9/2/2011  French language controls
+// Put french strings inline (from d_french.h)
+// #define FRENCH_INLINE
+#ifdef FRENCH
+#define FRENCH_INLINE
+#endif
 
 // =========================================================================
 
