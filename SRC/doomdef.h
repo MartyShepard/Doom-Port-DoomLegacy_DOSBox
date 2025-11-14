@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 835 2011-05-27 00:49:51Z wesleyjohnson $
+// $Id: doomdef.h 858 2011-09-17 17:44:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -159,12 +159,6 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
-#if defined( __DJGPP__ )
-//#define ASMCALL
-//#define min(x,y) ( ((x)<(y)) ? (x) : (y) )
-//#define max(x,y) ( ((x)>(y)) ? (x) : (y) )
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -253,6 +247,15 @@ void I_SoftError (char *error, ...);
 // [WDJ] 3/25/2010  Savegame slots 0..99
 #define SAVEGAME99
 #define SAVEGAMEDIR
+
+// [WDJ] 8/26/2011  recover DEH string memory
+// Otherwise will just abandon replaced DEH/BEX strings.
+// Enable if you are short on memory, or just like clean execution.
+// Disable if it gives you trouble.
+#define DEH_RECOVER_STRINGS
+#if defined PCDOS && ! defined DEH_RECOVER_STRINGS
+#define DEH_RECOVER_STRINGS
+#endif
 
 // =========================================================================
 

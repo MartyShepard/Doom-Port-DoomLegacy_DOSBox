@@ -1807,3 +1807,16 @@ patchfile = w77_DEH_strcasecmp.patch
 DoomLegacy and other ports changed to using strcasecmp, so that lumps
 would not fail due to name case.  This changes most DEH string
 comparisions to use strcasecmp.
+
+*** w77_DEH_replace_string
+patchfile = w77_DEH_replace_string.patch
+- committed revision 858   by wesley johnson
+A common replace_string function is created.
+It performs checks against hostile strings, ensuring that replacement
+strings contain only the % that the original string contained.
+It blocks certain characters that are considered dangerous, and have
+been used to attack programs.
+It allocates the new string using malloc, instead of Z_Alloc.
+Define DEH_RECOVER_STRINGS, enables the testing of strings
+for being const or malloc, and recovery of malloc memory.
+

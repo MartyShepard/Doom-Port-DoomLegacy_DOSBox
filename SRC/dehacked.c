@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 857 2011-09-17 17:43:48Z wesleyjohnson $
+// $Id: dehacked.c 858 2011-09-17 17:44:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -185,6 +185,170 @@ static void deh_error(char *first, ...)
     deh_num_error++;
 }
 
+
+// [WDJ] Do not write into const strings, segfaults will occur on Linux.
+// Without fixing all sources of strings to be consistent, the best that
+// can be done is to abandon the original string (may be some lost memory)
+// Dehacked is only run once at startup and the lost memory is not enough
+// to dedicate code to recover.
+
+typedef enum { DRS_nocheck, DRS_name, DRS_string, DRS_format } DRS_type_e;
+
+// [WDJ] 8/26/2011  DEH/BEX replace string
+// newstring is a temp buffer ptr, it gets modified for backslash literals
+// oldstring is ptr to text ptr  ( &text[i] )
+void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype )
+{
+#ifdef DEH_RECOVER_STRINGS
+    // Record bounds for replacement strings.
+    // If an oldstring is found within these bounds, it can be free().
+    // This is depends on const and malloc heap being two separate areas.
+    static char * deh_string_ptr_min = NULL;
+    static char * deh_string_ptr_max = NULL;
+#endif
+    // Most text strings are format strings, and % are significant.
+    // New string must not have have any %s %d etc. not present in old string.
+    // Mew freedoom.bex has 1%, that is not present in original string
+    // Strings have %s, %s %s (old strings also had %c and %d).
+    // Music and sound strings may have '-' and '\0'.
+    unsigned char * newp = &newstring[0];
+    unsigned char * oldp = &(*oldstring)[0];
+    if( drstype == DRS_string )
+    {
+        for(;;)
+        {
+            // new string must have same or fewer %, so it must reach end first
+            newp = strchr( newp, '%' );
+            if( newp == NULL ) break;
+            // must block %n, write to memory
+	    // must block % not in same order as original
+            if( oldp )
+	    {
+	        oldp = strchr( oldp, '%' );
+	        if( oldp )
+	        {
+		    // looks like a format string
+		    drstype = DRS_format;
+		    if( oldp[1] != newp[1] )  goto bad_replacement;
+		    oldp +=2;
+		    newp +=2;
+		}
+	    }
+	    else
+	    {
+	        // Found % in newstring that was not in oldstring
+	        if( drstype == DRS_format )  goto bad_replacement;
+	        // erase the %, too hard to determine if safe
+		*(newp++) = 0x7F; // rubout the %
+	    }
+	}
+    }
+   
+    // rewrite backslash literals into newstring, because it only gets shorter
+    unsigned char * chp = &newstring[0];
+    for( newp = &newstring[0]; *newp ; newp++ )
+    {
+        // Backslash in DEH and BEX strings are not interpreted by printf
+        // Must convert \n to LF.
+        register unsigned char ch = *newp;
+        if( ch == 0x5C ) // backslash
+	{
+	    char * endvp = NULL;
+	    unsigned long v;
+	    ch = *(++newp);
+	    switch( ch )
+	    {
+	     case 'N': // some file are all caps
+	     case 'n': // newline
+	       ch = '\n';  // LF char
+	       goto incl_char;
+	     case '\0': // safety
+	       goto term_string;
+	     case '0': // NUL, should be unnecessary
+	       goto term_string;
+	     case 'x':  // hex
+	       // These do not get interpreted unless we do it here.
+	       // Need this for foreign language ??
+	       v = strtoul(&newp[1], &endvp, 16);  // get hex
+	       goto check_backslash_value;
+	     default:
+	       if( ch >= '1' && ch <= '9' )  // octal
+	       {
+		   // These do not get interpreted unless we do it here.
+		   // Need this for foreign language ??
+		   v = strtoul(newp, &endvp, 8);  // get octal
+		   goto check_backslash_value;
+	       }
+	    }
+	    continue; // ignore unrecognized backslash
+
+         check_backslash_value:
+	    if( v > 255 ) goto bad_char;  // long check
+	    ch = v;
+	    newp = endvp - 1; // continue after number
+	    // check value against tests
+	}
+        // reject special character attacks
+#ifdef FRENCH
+        // place checks for allowed foreign lang chars here
+	// reported dangerous escape chars
+	if( ch == 133 ) goto bad_char;
+        if( ch >= 254 )  goto bad_char;
+//	    if( ch == 27 ) continue;  // ESCAPE
+#else
+        if( ch > 127 )  goto bad_char;
+#endif       
+        if( ch < 32 )
+	{
+	    if( ch == '\t' )  ch = ' ';  // change to space
+	    if( ch == '\r' )  continue;  // remove
+	    if( ch == '\n' )  goto incl_char;
+	    if( ch == '\0' )  goto term_string;   // end of string
+	    goto bad_char;
+	}
+     incl_char:
+        // After a backslash, chp < newp
+        *chp++ = ch; // rewrite
+    }
+ term_string:
+    *chp = '\0'; // term rewrite
+
+    if( drstype == DRS_name )
+    {
+        if( strlen(newstring) > 10 )  goto bad_replacement;
+    }
+
+    char * nb = strdup( newstring );  // by malloc
+    if( nb == NULL )
+        I_Error( "Dehacked/BEX string memory allocate failure" );
+#ifdef DEH_RECOVER_STRINGS
+    // check if was in replacement string bounds
+    if( *oldstring && deh_string_ptr_min
+	&& *oldstring >= deh_string_ptr_min
+	&& *oldstring <= deh_string_ptr_max )
+        free( *oldstring );
+    // track replacement string bounds
+    if( deh_string_ptr_min == NULL || nb < deh_string_ptr_min )
+        deh_string_ptr_min = nb;
+    if( nb > deh_string_ptr_max )
+        deh_string_ptr_max = nb;
+#else
+    // Abandon old strings, might be const
+    // Linux GCC programs will segfault if try to free a const string (correct behavior).
+    // The lost memory is small and this occurs only once in the program.
+#endif
+    *oldstring = nb;  // replace the string in the tables
+    return;
+
+  bad_char:
+    if( chp )
+        *chp = '\0'; // hide the bad character
+  bad_replacement:
+    CONS_Printf( "Replacement string illegal : %s\n", newstring );
+    return;
+}
+
+
 /* ======================================================================== */
 // Load a dehacked file format 6 I (BP) don't know other format
 /* ======================================================================== */
@@ -349,12 +513,6 @@ static void readtext(MYFILE* f, int len1, int len2 )
   // here I implement only vital things
   // yes, Text can change some tables like music, sound and sprite name
   
-  // [WDJ] Do not write into const strings, segfaults will occur on Linux.
-  // Without fixing all sources of strings to be consistent, the best that
-  // can be done is to abandon the original string (may be some lost memory)
-  // and replace it with new via Z_Strdup().  Dehacked is only run once at
-  // startup and the lost memory is not enough to dedicate code to recover.
-
   if(len1+len2 > 2000)
   {
       deh_error("Text too big\n");
@@ -373,9 +531,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
         if(!strncmp(deh_sprnames[i],s,len1))
         {
 	  // May be const string, which will segfault on write
-	  sprnames[i] = Z_Strdup(str2, PU_STATIC, NULL);
-//          strncpy( sprnames[i], str2, len2);
-//          sprnames[i][len2]='\0';
+	  deh_replace_string( &sprnames[i], str2, DRS_name );
           return;
         }
       }
@@ -393,9 +549,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
         {
 	  // sfx name may be Z_Malloc(7) or a const string
 	  // May be const string, which will segfault on write
-	  S_sfx[i].name = Z_Strdup(str2, PU_STATIC, NULL);
-//          strncpy( S_sfx[i].name, str2, len2);
-//          S_sfx[i].name[len2]='\0';
+	  deh_replace_string( &S_sfx[i].name, str2, DRS_name );
           return;
         }
       }
@@ -406,9 +560,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
         if( deh_musicname[i] && (!strcmp(deh_musicname[i], str1)) )
         {
 	  // May be const string, which will segfault on write
-	  S_music[i].name = Z_Strdup(str2, PU_STATIC, NULL);
-//          strncpy( S_music[i].name, str2, len2);
-//          S_music[i].name[len2]='\0';
+	  deh_replace_string( &S_music[i].name, str2, DRS_name );
           return;
         }
       }
@@ -419,23 +571,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
     {
       if(!strncmp(deh_text[i],s,len1) && strlen(deh_text[i])==(unsigned)len1)
       {
-        // SoM: This is causing the problems! Apparently, VC++ doesn't
-        // think we should be able to write to the text...
-        // Hurdler: can we free the memory before allocating a new one
-        //          -> free(text[i]); ?
-	// [WDJ] Cannot free const memory, will crash most C-libs.
-	// Cannot write to const memory on Linux and non-DOS systems.
-#if 1
 	// May be const string, which will segfault on write
-        text[i] = Z_Strdup(str2, PU_STATIC, NULL);
-#else	 
-	text[i]=(char *)malloc(len2+1);
-	if(text[i]==NULL)
-               I_Error("DEH readtext: Alloc failed\n");
-
-        strncpy(text[i], str2, len2);
-        text[i][len2]='\0';
-#endif	 
+	deh_replace_string( &text[i], str2, DRS_string );
         return;
       }
     }
@@ -468,22 +605,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
               }
            }
            t[0]='\0';
-#if 1
-           // May of been a const string, writing upon would have segfault
-           text[i] = Z_Strdup(&(s[len1]), PU_STATIC, NULL);
-#else
-           len2=strlen(&s[len1]);
-
-           if(strlen(text[i])<(unsigned)len2)  // increase size of the text
-           {
-              text[i]=(char *)malloc(len2+1);
-              if(text[i]==NULL)
-                  I_Error("ReadText : No More free Mem");
-           }
-
-           strncpy(text[i],&(s[len1]),len2);
-           text[i][len2]='\0';
-#endif
+	   // May be const string, which will segfault on write
+	   deh_replace_string( &text[i], &(s[len1]), DRS_string );
            return;
        }
     }

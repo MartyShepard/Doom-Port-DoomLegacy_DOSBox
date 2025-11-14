@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00858 ]: w77 DEH replace_string function
 [00857 ]: w77 DEH strcasecmp
 [00856 ]: w77 DEH Init, save original text
           Fixed Wad and deh how 1k3v1a
