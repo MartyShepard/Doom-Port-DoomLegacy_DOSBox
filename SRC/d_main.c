@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 856 2011-09-17 17:42:23Z wesleyjohnson $
+// $Id: d_main.c 864 2011-09-17 18:00:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -317,12 +317,12 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "863"
+#define SVN_REV "864"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 0; // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 const char VERSIONSTRING[] = "alpha3 (rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -1360,6 +1360,8 @@ void IdentifyVersion()
     if ( devparm || M_CheckParm("-game") )
     {
         char *temp = M_GetNextParm();
+        if( temp == NULL )
+	    I_Error( "Switch  -game <name> or -devgame <name>\n" );
 	for( gmi=0; gmi<GDESC_other; gmi++ )
         {
 	    // compare to recognized game mode names

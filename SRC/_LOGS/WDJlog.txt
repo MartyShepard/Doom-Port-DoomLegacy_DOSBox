@@ -1856,3 +1856,9 @@ only when such PAR times are valid.
 Change SUCKS for non-id-games to have a limit of 24 hours, so
 the player can see their time.
 
+*** w77_devgame
+patchfile = w77_devgame.patch
+- committed revision 864   by wesley johnson
+Check -devgame parameter for valid <name>, before using it, preventing
+segfault.
+
