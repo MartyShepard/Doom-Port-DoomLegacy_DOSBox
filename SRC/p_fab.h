@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.h 830 2011-05-26 23:59:45Z wesleyjohnson $
+// $Id: p_fab.h 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -43,6 +43,8 @@ void  DemoAdapt_p_fab(void);  // local enables of p_fab
 
 // spawn smoke trails behind rockets and skull head attacks
 void A_SmokeTrailer (mobj_t* actor);
+
+void Translucency_OnChange(void);  // update translucent info
 
 // hack the states table to set Doom Legacy's default translucency on sprites
 void P_SetTranslucencies (void);

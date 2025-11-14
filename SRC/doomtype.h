@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: doomtype.h 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2009 by DooM Legacy Team.
@@ -86,6 +86,12 @@ typedef enum {false, true} boolean;
 typedef uint8_t    byte;
 typedef uint32_t  tic_t;
 
+
+#ifdef __GNUC__
+#define PACKED_ATTR  __attribute__((packed))
+#else
+#define PACKED_ATTR
+#endif
 
 #ifdef WIN32
 # define ASMCALL __cdecl

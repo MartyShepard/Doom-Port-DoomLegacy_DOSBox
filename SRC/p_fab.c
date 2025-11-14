@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 837 2011-05-27 00:52:45Z wesleyjohnson $
+// $Id: p_fab.c 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -46,6 +46,8 @@
 #include "r_state.h"
 #include "p_fab.h"
 #include "m_random.h"
+#include "dehacked.h"
+  // flags_valid_deh
 
 #ifdef DOORDELAY_CONTROL
 // [WDJ] 1/15/2009 support control of door and event delay
@@ -120,124 +122,178 @@ void A_SmokeTrailer (mobj_t* actor)
 }
 
 
-static boolean reset_translucent=false;
-//  Set the translucency map for each frame state of mobj
-//
-void R_SetTrans (statenum_t state1, statenum_t state2, translucent_e transel)
-{
-    state_t*   state = &states[state1];
-    do
-    {
-        state->frame &= ~FF_TRANSMASK;
-       if(!reset_translucent)
-           state->frame |= (transel<<FF_TRANSSHIFT);
-        state++;
-    } while (state1++<state2);
-}
+// [WDJ] Table of translucent objects
+enum { TRF_MT = 0xFFF, TRF_ext = 0x1000, TRF_noflag = 0x8000 };
 
+typedef struct {
+    uint16_t     flag_mt;  // MT type to check MF_TRANSLUCENT, + TRF_
+    uint16_t     first_state, last_state;  // statenum_t
+    byte         translu_sel;   // translucent_e
+} PACKED_ATTR  translucent_state_item_t;
+// [WDJ] Table costs 500 more bytes than the inline calls when not packed !!
+
+static translucent_state_item_t  translucent_state_table[] =
+{
+    //revenant fireball, MT_TRACER, extension effect
+    {MT_TRACER|TRF_ext, S_TRACER,    S_TRACER2,   TRANSLU_fire},
+    {MT_TRACER|TRF_ext, S_TRACEEXP1, S_TRACEEXP3, TRANSLU_med},
+
+    //rev. fireball. smoke trail, MT_SMOKE
+    {MT_SMOKE, S_SMOKE1, S_SMOKE5, TRANSLU_med},
+                                           
+    //imp fireball, MT_TROOPSHOT
+    {MT_TROOPSHOT, S_TBALL1,  S_TBALL2,  TRANSLU_fire},
+    {MT_TROOPSHOT, S_TBALLX1, S_TBALLX3, TRANSLU_med}, 
+                                           
+    //archvile attack, MT_FIRE
+    {MT_FIRE, S_FIRE1, S_FIRE30, TRANSLU_fire},
+                                           
+    //bfg ball, MT_BFG
+    {MT_BFG, S_BFGSHOT,  S_BFGSHOT2, TRANSLU_fire},
+    {MT_BFG, S_BFGLAND,  S_BFGLAND3, TRANSLU_med},
+    {MT_BFG, S_BFGLAND4, S_BFGLAND6, TRANSLU_more},
+    {MT_BFG, S_BFGEXP,   0         , TRANSLU_med},
+    {MT_BFG, S_BFGEXP2,  S_BFGEXP4 , TRANSLU_more},
+                                           
+    //plasma bullet, MT_PLASMA
+    {MT_PLASMA, S_PLASBALL, S_PLASBALL2, TRANSLU_fire},
+    {MT_PLASMA, S_PLASEXP,  S_PLASEXP2,  TRANSLU_med},
+    {MT_PLASMA, S_PLASEXP3, S_PLASEXP5,  TRANSLU_more},
+                                           
+    //bullet puff, MT_PUFF
+    {MT_PUFF, S_PUFF1, S_PUFF4, TRANSLU_more},
+                                           
+    //teleport fog, MT_TFOG
+    {MT_TFOG, S_TFOG,  S_TFOG5,  TRANSLU_med},
+    {MT_TFOG, S_TFOG6, S_TFOG10, TRANSLU_more},
+                                           
+    //respawn item fog, MT_IFOG
+    {MT_IFOG, S_IFOG, S_IFOG5, TRANSLU_med},
+                                           
+    //soulsphere, MT_MISC12
+    {MT_MISC12, S_SOUL, S_SOUL6, TRANSLU_med},
+    //invulnerability, MT_INV
+    {MT_INV, S_PINV, S_PINV4, TRANSLU_med},
+    //blur artifact, MT_INS
+    {MT_INS, S_PINS, S_PINS4, TRANSLU_med},
+    //megasphere, MT_MEGA
+    {MT_MEGA, S_MEGA, S_MEGA4, TRANSLU_med},
+                            
+    // MT_MISC42, no flags extension effect
+    {TRF_noflag, S_GREENTORCH, S_REDTORCH4, TRANSLU_fx1}, // blue torch
+    // MT_MISC45, no flags extension effect
+    {TRF_noflag, S_GTORCHSHRT, S_RTORCHSHRT4, TRANSLU_fx1}, // short blue torch
+
+    // flaming barrel !!, MT_MISC77, no flags extension effect
+    {TRF_noflag, S_BBAR1, S_BBAR3, TRANSLU_fx1},
+
+    //lost soul, MT_SKULL, extension effect
+    {MT_SKULL|TRF_ext, S_SKULL_STND, S_SKULL_DIE6, TRANSLU_fx1},
+    //baron shot, MT_BRUISERSHOT
+    {MT_BRUISERSHOT, S_BRBALL1,  S_BRBALL2,  TRANSLU_fire},
+    {MT_BRUISERSHOT, S_BRBALLX1, S_BRBALLX3, TRANSLU_med},
+    //demon spawnfire, MT_SPAWNFIRE
+    {MT_SPAWNFIRE, S_SPAWNFIRE1, S_SPAWNFIRE3, TRANSLU_fire},
+    {MT_SPAWNFIRE, S_SPAWNFIRE4, S_SPAWNFIRE8, TRANSLU_med},
+    //caco fireball, MT_HEADSHOT
+    {MT_HEADSHOT, S_RBALL1,  S_RBALL2,  TRANSLU_fire},
+    {MT_HEADSHOT, S_RBALLX1, S_RBALLX3, TRANSLU_med},
+
+    //arachno shot, MT_ARACHPLAZ
+    {MT_ARACHPLAZ, S_ARACH_PLAZ, S_ARACH_PLAZ2, TRANSLU_fire},
+    {MT_ARACHPLAZ, S_ARACH_PLEX, S_ARACH_PLEX2, TRANSLU_med},
+    {MT_ARACHPLAZ, S_ARACH_PLEX3,S_ARACH_PLEX4, TRANSLU_more},
+    {MT_ARACHPLAZ, S_ARACH_PLEX5,            0, TRANSLU_hi},
+
+    //blood puffs!, MT_BLOOD
+    //{TRF_noflag, S_BLOOD1   ,            0, TRANSLU_med},
+    //{TRF_noflag, S_BLOOD2   , S_BLOOD3    , TRANSLU_more},
+
+    //eye in symbol, MT_MISC38, no flags extension effect
+    {TRF_noflag, S_EVILEYE, S_EVILEYE4, TRANSLU_med},
+                                          
+    //mancubus fireball, MT_FATSHOT
+    {MT_FATSHOT, S_FATSHOT1,  S_FATSHOT2,  TRANSLU_fire},
+    {MT_FATSHOT, S_FATSHOTX1, S_FATSHOTX3, TRANSLU_med},
+
+    // rockets explosion, MT_ROCKET, no flags extension effect
+    {TRF_noflag, S_EXPLODE1, S_EXPLODE2, TRANSLU_fire},
+    {TRF_noflag, S_EXPLODE3,          0, TRANSLU_med},
+
+    //Fab: lava/slime damage smoke test, MT_SMOK, no flags extension effect
+    {TRF_noflag, S_SMOK1,   S_SMOK5,   TRANSLU_med},
+    {TRF_noflag, S_SPLASH1, S_SPLASH3, TRANSLU_more},
+
+    {TRF_noflag, S_NULL, S_NULL, TRANSLU_more}  // term
+};
+
+typedef enum {
+   TE_off, TE_boom, TE_ext, TE_all
+} translucent_enable_e;
+
+static translucent_enable_e  translucent_enable = TE_all;
 
 //  hack the translucency in the states for a set of standard doom sprites
 //
 void P_SetTranslucencies (void)
 {
+    translucent_state_item_t * tip;
+    state_t * laststate;
+    state_t * state;
+    boolean  tr_enable;
 
-    //revenant fireball
-    R_SetTrans (S_TRACER    , S_TRACER2    , TRANSLU_fire);
-    R_SetTrans (S_TRACEEXP1 , S_TRACEEXP3  , TRANSLU_med);
-                                           
-    //rev. fireball. smoke trail           
-    R_SetTrans (S_SMOKE1    , S_SMOKE5     , TRANSLU_med);
-                                           
-    //imp fireball                         
-    R_SetTrans (S_TBALL1    , S_TBALL2     , TRANSLU_fire);
-    R_SetTrans (S_TBALLX1   , S_TBALLX3    , TRANSLU_med);
-                                           
-    //archvile attack                      
-    R_SetTrans (S_FIRE1     , S_FIRE30     , TRANSLU_fire);
-                                           
-    //bfg ball                             
-    R_SetTrans (S_BFGSHOT   , S_BFGSHOT2   , TRANSLU_fire);
-    R_SetTrans (S_BFGLAND   , S_BFGLAND3   , TRANSLU_med);
-    R_SetTrans (S_BFGLAND4  , S_BFGLAND6   , TRANSLU_more);
-    R_SetTrans (S_BFGEXP    , 0            , TRANSLU_med);
-    R_SetTrans (S_BFGEXP2   , S_BFGEXP4    , TRANSLU_more);
-                                           
-    //plasma bullet                        
-    R_SetTrans (S_PLASBALL  , S_PLASBALL2  , TRANSLU_fire);
-    R_SetTrans (S_PLASEXP   , S_PLASEXP2   , TRANSLU_med);
-    R_SetTrans (S_PLASEXP3  , S_PLASEXP5   , TRANSLU_more);
-                                           
-    //bullet puff                          
-    R_SetTrans (S_PUFF1     , S_PUFF4      , TRANSLU_more);
-                                           
-    //teleport fog                         
-    R_SetTrans (S_TFOG      , S_TFOG5      , TRANSLU_med);
-    R_SetTrans (S_TFOG6     , S_TFOG10     , TRANSLU_more);
-                                           
-    //respawn item fog                     
-    R_SetTrans (S_IFOG      , S_IFOG5      , TRANSLU_med);
-                                           
-    //soulsphere                           
-    R_SetTrans (S_SOUL      , S_SOUL6      , TRANSLU_med);
-    //invulnerability                      
-    R_SetTrans (S_PINV      , S_PINV4      , TRANSLU_med);
-    //blur artifact                        
-    R_SetTrans (S_PINS      , S_PINS4      , TRANSLU_med);
-    //megasphere                           
-    R_SetTrans (S_MEGA      , S_MEGA4      , TRANSLU_med);
-                            
-    R_SetTrans (S_GREENTORCH, S_REDTORCH4  , TRANSLU_fx1); // blue torch
-    R_SetTrans (S_GTORCHSHRT, S_RTORCHSHRT4, TRANSLU_fx1); // short blue torch
-
-    // flaming barrel !!
-    R_SetTrans (S_BBAR1     , S_BBAR3      , TRANSLU_fx1);
-
-    //lost soul
-    R_SetTrans (S_SKULL_STND, S_SKULL_DIE6 , TRANSLU_fx1);
-    //baron shot
-    R_SetTrans (S_BRBALL1   , S_BRBALL2    , TRANSLU_fire);
-    R_SetTrans (S_BRBALLX1  , S_BRBALLX3   , TRANSLU_med);
-    //demon spawnfire
-    R_SetTrans (S_SPAWNFIRE1, S_SPAWNFIRE3 , TRANSLU_fire);
-    R_SetTrans (S_SPAWNFIRE4, S_SPAWNFIRE8 , TRANSLU_med);
-    //caco fireball
-    R_SetTrans (S_RBALL1    , S_RBALL2     , TRANSLU_fire);
-    R_SetTrans (S_RBALLX1   , S_RBALLX3    , TRANSLU_med);
-
-    //arachno shot
-    R_SetTrans (S_ARACH_PLAZ, S_ARACH_PLAZ2, TRANSLU_fire);
-    R_SetTrans (S_ARACH_PLEX, S_ARACH_PLEX2, TRANSLU_med);
-    R_SetTrans (S_ARACH_PLEX3,S_ARACH_PLEX4, TRANSLU_more);
-    R_SetTrans (S_ARACH_PLEX5,            0, TRANSLU_hi);
-
-    //blood puffs!
-    //R_SetTrans (S_BLOOD1   ,            0, TRANSLU_med);
-    //R_SetTrans (S_BLOOD2   , S_BLOOD3    , TRANSLU_more);
-
-    //eye in symbol
-    R_SetTrans (S_EVILEYE    , S_EVILEYE4  , TRANSLU_med);
-                                          
-    //mancubus fireball
-    R_SetTrans (S_FATSHOT1   , S_FATSHOT2  , TRANSLU_fire);
-    R_SetTrans (S_FATSHOTX1  , S_FATSHOTX3 , TRANSLU_med);
-
-    // rockets explosion
-    R_SetTrans (S_EXPLODE1   , S_EXPLODE2  , TRANSLU_fire);
-    R_SetTrans (S_EXPLODE3   ,            0, TRANSLU_med);
-
-    //Fab: lava/slime damage smoke test
-    R_SetTrans (S_SMOK1      , S_SMOK5     , TRANSLU_med);
-    R_SetTrans (S_SPLASH1    , S_SPLASH3   , TRANSLU_more);
+    for(tip=&translucent_state_table[0]; tip->first_state != S_NULL; tip++)
+    {
+        tr_enable = false;  // default
+        switch( translucent_enable )
+        {
+	 case TE_off:  // reset translucent
+	    break;
+	 case TE_all:  // independent of info MF_TRANSPARENT
+	    tr_enable = true;
+	    break;
+	 case TE_boom: // ignore DoomLegacy extensions
+	    if(tip->flag_mt & TRF_ext)  break;
+	    // continue to TE_ext to test flag
+	 case TE_ext:  // all flag, including DoomLegacy extensions
+	    if(tip->flag_mt == TRF_noflag)  // does not check MF_TRANSLUCENT
+	    {
+	        tr_enable = true;
+	    }
+	    else
+	    {
+	        // check info flag MF_TRANSLUCENT, maybe modified by BEX
+	        register int mobjindex = tip->flag_mt & TRF_MT;
+	        if( mobjindex < NUMMOBJTYPES
+		    &&  mobjinfo[mobjindex].flags & MF_TRANSLUCENT )
+		    tr_enable = true;
+	    }
+	    break;
+	}
+        // change the info state tables for the object
+        laststate = &states[tip->last_state];
+        for( state = &states[tip->first_state]; state <= laststate; state++ )
+        {
+	    state->frame &= ~FF_TRANSMASK;  // clear previous translucent
+	    if( tr_enable )
+	        state->frame |= (tip->translu_sel<<FF_TRANSSHIFT);
+	}
+    }
 }
 
 void Translucency_OnChange(void)
 {
-    if( cv_translucency.value==0 )
-        reset_translucent = true;
+    // [WDJ] Translucent control
+    // Does not use TE_boom yet, which has fewer transparent items.
+    // TE_all (as before) unless DEH has set flags.
+    translucent_enable =
+     (cv_translucency.value==0)? TE_off  // reset translucent
+        : (flags_valid_deh ? TE_ext : TE_all);
     if (!cv_fuzzymode.value)
         P_SetTranslucencies();
-    reset_translucent = false;
 }
+
+
 
 
 // =======================================================================

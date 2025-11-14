@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 835 2011-05-27 00:49:51Z wesleyjohnson $
+// $Id: p_mobj.c 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1459,9 +1459,9 @@ void P_MobjThinker(mobj_t * mobj)
     else
         mobj->eflags &= ~MF_JUSTHITFLOOR;
 
-    // SoM: Floorhuggers stay on the floor allways...
+    // SoM: Floorhuggers stay on the floor always...
     // BP: tested here but never set ?!
-    if (mobj->info->flags & MF_FLOORHUGGER)
+    if (mobj->info->flags2 & MF2_FLOORHUGGER)
     {
         mobj->z = mobj->floorz;
     }

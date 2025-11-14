@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 859 2011-09-17 17:47:28Z wesleyjohnson $
+// $Id: dehacked.c 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -96,9 +96,13 @@
 #include "z_zone.h"
 #include "w_wad.h"
 
+#include "p_fab.h"
+  // translucent change
+
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 
 boolean deh_loaded = false;
+byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
 
 // Save compare values, to handle multiple DEH files and lumps
 actionf_t  deh_actions[NUMSTATES];
@@ -427,8 +431,7 @@ flag_name_t  BEX_flag_name_table[] =
   {"TRANSLATION",  BF1, (1<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
   {"UNUSED1     ", BF1, (2<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
   // Boom/BEX
-  {"TRANSLUCENT", BF1, 0 },  // Boom translucent placeholder
-//  {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
+  {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
   // MBF/Prboom Extensions
 //  {"TOUCHY",  BFC_x, MF_TOUCHY }, // (MBF) Reacts upon contact
   {"BOUNCES",  BF2, MF2_FLOORBOUNCE }, // (MBF) Bounces off walls, etc.
@@ -437,8 +440,7 @@ flag_name_t  BEX_flag_name_table[] =
 
   {"MF2CLEAR",       BF2x, 0 }, // clear MF2 bits, no bits set
   // DoomLegacy 1.4x Extensions
-//  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER }, // [WDJ] moved to MF2
-  {"FLOORHUGGER",    BF1, MF_FLOORHUGGER },
+  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER }, // [WDJ] moved to MF2
   // Heretic
   {"LOWGRAVITY",     BF2x, MF2_LOGRAV }, // Experiences only 1/8 gravity
   {"WINDTHRUST",     BF2x, MF2_WINDTHRUST }, // Is affected by wind
@@ -549,7 +551,26 @@ static void readthing(MYFILE *f, int deh_thing_id )
 	      if( isdigit( word[0] ) )
 	      {
 		  value = atoi(word);  // numeric entry
+		  if( value & MF_TRANSLUCENT )
+		  {
+		      // Boom bit defined in boomdeh.txt
+		      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
+		      fprintf(stderr, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
+		      if( value & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
+		      {
+			  // assume TRANSLUCENT, check for known exceptions
+			  fprintf(stderr, "MF_TRANSLUCENT\n");
+		      }
+		      else
+		      {
+			  // assume FLOORHUGGER, check for known exceptions
+			  value &= ~MF_TRANSLUCENT;
+			  mip->flags2 |= MF2_FLOORHUGGER;
+			  fprintf(stderr, "MF_FLOORHUGGER\n");
+		      }
+		  }
 		  mip->flags |= value; // we are still using same flags bit order
+		  flags_valid_deh = true;
 		  continue;
 	      }
 	      // handle BEX flag names
@@ -573,6 +594,7 @@ static void readthing(MYFILE *f, int deh_thing_id )
 		         mip->flags2 |= value;
 			 break;
 		      }
+		      flags_valid_deh = true;
 		      // unless multiple flag set for a keyword
 		      if( ! fnp->ctrl & BFmf )
 		         continue; // next word
@@ -1197,6 +1219,8 @@ void DEH_LoadDehackedFile(MYFILE* f)
   }
 
   deh_loaded = true;
+  if( flags_valid_deh )
+      Translucency_OnChange();  // ensure translucent updates
 }
 
 // read dehacked lump in a wad (there is special trick for for deh 

@@ -1,6 +1,9 @@
 * Not need to Compile.
 
+[00860 ]: w77 fix transparent
 [00859 ]: w77 BEX flags dehacked
+					DOS: Breaks Deh Support
+
 [00858 ]: w77 DEH replace_string function
 [00857 ]: w77 DEH strcasecmp
 [00856 ]: w77 DEH Init, save original text

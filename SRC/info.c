@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: info.c 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2642,7 +2642,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -2696,7 +2696,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         10,             // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
+	   // was not translucent in Boom
         S_NULL          // raisestate
     },
 
@@ -2723,7 +2724,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -2777,7 +2778,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         8,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -2966,7 +2967,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         8,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3020,7 +3021,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         50,             // mass
         3,              // damage
         sfx_dmact,              // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY,            // flags
+        MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_TRANSLUCENT, // flags
+	   // was not translucent in Boom
         S_NULL          // raisestate
     },
 
@@ -3317,7 +3319,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3371,7 +3373,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         3,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3398,7 +3400,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         5,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT, // flags
         S_NULL          // raisestate
     },
 
@@ -3452,7 +3454,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         5,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3479,7 +3481,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         100,            // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3506,7 +3508,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         5,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,               // flags
+        MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3533,7 +3535,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3588,7 +3590,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -3615,7 +3617,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP|MF_NOGRAVITY,             // flags
+        MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -4020,7 +4022,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SPECIAL|MF_COUNTITEM|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -4047,7 +4049,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SPECIAL|MF_COUNTITEM|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -4101,7 +4103,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SPECIAL|MF_COUNTITEM|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 
@@ -4209,7 +4211,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SPECIAL|MF_COUNTITEM|MF_TRANSLUCENT,  // flags
         S_NULL          // raisestate
     },
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 786 2011-02-22 04:43:14Z wesleyjohnson $
+// $Id: p_mobj.h 860 2011-09-17 17:50:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -233,7 +233,7 @@ typedef enum
     // for chase camera, don't be blocked by things (partial clipping)
     MF_NOCLIPTHING      = 0x40000000,
 
-    MF_FLOORHUGGER      = 0x80000000
+    MF_TRANSLUCENT      = 0x80000000,  // from boomdeh.txt, previously was FLOORHUGGER
 
 } mobjflag_e;
 
@@ -267,6 +267,7 @@ typedef enum {
     MF2_TELESTOMP      =     0x00040000,      // mobj can stomp another
     MF2_FLOATBOB       =     0x00080000,      // use float bobbing z movement
     MF2_DONTDRAW       =     0X00100000,      // don't generate a vissprite
+    MF2_FLOORHUGGER    =     0x00200000,      // stays on the floor
         
 } mobjflag2_t;
 
