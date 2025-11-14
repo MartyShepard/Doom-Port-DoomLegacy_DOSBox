@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: wi_stuff.c 863 2011-09-17 17:58:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -89,6 +89,8 @@
 #include "z_zone.h"
 #include "console.h"
 #include "p_info.h"
+#include "dehacked.h"
+  // pars_valid_bex
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -831,7 +833,9 @@ static void WI_drawTime ( int           x,
         return;
 
     // [WDJ] 1/12/2009 fix crashes in heretic, no sucks
-    if( (t <= 61*59) || (sucks == NULL) )
+    // Old PAR behavior for id wads, otherwise allow them 24 hrs.
+    if( (t <= ((gamedesc.gameflags & GD_idwad)? (61*59) : (24*60*60)) )
+	|| (sucks == NULL) )
     {
         div = 1;
 
@@ -1774,6 +1778,13 @@ static void WI_updateStats(void)
 
 static void WI_drawStats(void)
 {
+    // [WDJ] Display PAR for certain id games, unless modified,
+    // but not PWAD unless BEX has set PARS.
+    boolean draw_pars = pars_valid_bex
+     || ( (gamedesc.gameflags & GD_idwad)
+	  && gamemode!=heretic
+	  && (wbs->epsd < 3)
+	  && !modifiedgame );
     // line height
     int lh = (3 * (num[0]->height))/2;
 
@@ -1791,7 +1802,7 @@ static void WI_drawStats(void)
         V_DrawTextB("Items", SP_STATSX, SP_STATSY+lh);
         V_DrawTextB("Secrets", SP_STATSX, SP_STATSY+2*lh);
         V_DrawTextB("Time", SP_TIMEX, SP_TIMEY);
-        if (wbs->epsd < 3 && gamemode!=heretic)
+        if (draw_pars)
             V_DrawTextB("Par", BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY);
     }
     else
@@ -1800,7 +1811,7 @@ static void WI_drawStats(void)
         V_DrawScaledPatch(SP_STATSX, SP_STATSY+lh, FB, items);
         V_DrawScaledPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
         V_DrawScaledPatch(SP_TIMEX, SP_TIMEY, FB, timePatch);
-        if (wbs->epsd < 3 && gamemode!=heretic)
+        if (draw_pars)
             V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
     }
     WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
@@ -1808,7 +1819,7 @@ static void WI_drawStats(void)
     WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
     WI_drawTime(BASEVIDWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
 
-    if (wbs->epsd < 3 && gamemode!=heretic)
+    if (draw_pars)
         WI_drawTime(BASEVIDWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
 
 }

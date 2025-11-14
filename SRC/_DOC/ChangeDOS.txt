@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00863 ]: w77 par time BEX fixes, 24HR limit
+[00862 ]: w77 BEX file - string/pointer/pars/include
+[00861 ]: w77 separate action.h
 [00860 ]: w77 fix transparent
 [00859 ]: w77 BEX flags dehacked
 					DOS: Breaks Deh Support

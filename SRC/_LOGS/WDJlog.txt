@@ -1848,3 +1848,11 @@ patchfile = w77_BEX_file.patch
 Main body of BEX text, pointer, processing.
 Recognizes [STRINGS], [POINTER], [PARS], and BEX include.
 
+*** w77_par_time
+patchfile = w77_par_time.patch
+- committed revision 863   by wesley johnson
+Fix par logic to test for BEX modifications, and to display PAR time
+only when such PAR times are valid.
+Change SUCKS for non-id-games to have a limit of 24 hours, so
+the player can see their time.
+
