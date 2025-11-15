@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 859 2011-09-17 17:47:28Z wesleyjohnson $
+// $Id: dehacked.c 866 2011-09-17 18:05:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -85,6 +85,7 @@
 
 #include "sounds.h"
 #include "info.h"
+#include "action.h"
 
 #include "m_cheat.h"
 #include "d_think.h"
@@ -96,9 +97,16 @@
 #include "z_zone.h"
 #include "w_wad.h"
 
+#include "p_fab.h"
+  // translucent change
+
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 
 boolean deh_loaded = false;
+byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
+byte  pars_valid_bex = false;  // have valid PAR values (from BEX), boolean
+
+static boolean  bex_include_notext = 0;  // bex include with skip deh text
 
 // Save compare values, to handle multiple DEH files and lumps
 actionf_t  deh_actions[NUMSTATES];
@@ -142,6 +150,17 @@ char* myfgets(char *buf, int bufsize, MYFILE *f)
     return buf;
 }
 
+// get line, skipping comments
+char* myfgets_nocom(char *buf, int bufsize, MYFILE *f)
+{
+    char* ret;
+    do {
+        ret = myfgets( buf, bufsize, f );
+    } while( ret && ret[0] == '#' );   // skip comment
+    return ret;
+}
+
+
 // Read multiple lines into buf
 // Only used for text.
 size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
@@ -183,6 +202,28 @@ static void deh_error(char *first, ...)
     }
 
     deh_num_error++;
+}
+
+
+// Reject src string if greater than maxlen, or has non-alphanumeric
+// For filename protection must reject
+//  ( . .. ../ / \  & * [] {} space leading-dash  <32  >127 133 254 255 )
+boolean  filename_reject( char * src, int maxlen )
+{
+     int j;
+     for( j=0; ; j++ )
+     {
+	 if( j >= maxlen ) goto reject;
+	 register char ch = src[j];
+	 // legal values, all else is illegal
+	 if(! (( ch >= 'A' && ch <= 'Z' )
+	    || ( ch >= 'a' && ch <= 'z' )
+	    || ( ch >= '0' && ch <= '9' ) ))
+	    goto reject;
+     }
+     return false; // no reject
+  reject:
+     return true; // rejected
 }
 
 
@@ -243,7 +284,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    }
 	}
     }
-   
+
     // rewrite backslash literals into newstring, because it only gets shorter
     unsigned char * chp = &newstring[0];
     for( newp = &newstring[0]; *newp ; newp++ )
@@ -289,7 +330,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    // check value against tests
 	}
         // reject special character attacks
-#ifdef FRENCH
+#if defined( FRENCH_INLINE ) || defined( BEX_LANGUAGE )
         // place checks for allowed foreign lang chars here
 	// reported dangerous escape chars
 	if( ch == 133 ) goto bad_char;
@@ -427,8 +468,7 @@ flag_name_t  BEX_flag_name_table[] =
   {"TRANSLATION",  BF1, (1<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
   {"UNUSED1     ", BF1, (2<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
   // Boom/BEX
-  {"TRANSLUCENT", BF1, 0 },  // Boom translucent placeholder
-//  {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
+  {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
   // MBF/Prboom Extensions
 //  {"TOUCHY",  BFC_x, MF_TOUCHY }, // (MBF) Reacts upon contact
   {"BOUNCES",  BF2, MF2_FLOORBOUNCE }, // (MBF) Bounces off walls, etc.
@@ -437,8 +477,7 @@ flag_name_t  BEX_flag_name_table[] =
 
   {"MF2CLEAR",       BF2x, 0 }, // clear MF2 bits, no bits set
   // DoomLegacy 1.4x Extensions
-//  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER }, // [WDJ] moved to MF2
-  {"FLOORHUGGER",    BF1, MF_FLOORHUGGER },
+  {"FLOORHUGGER",    BF2x, MF2_FLOORHUGGER }, // [WDJ] moved to MF2
   // Heretic
   {"LOWGRAVITY",     BF2x, MF2_LOGRAV }, // Experiences only 1/8 gravity
   {"WINDTHRUST",     BF2x, MF2_WINDTHRUST }, // Is affected by wind
@@ -549,7 +588,26 @@ static void readthing(MYFILE *f, int deh_thing_id )
 	      if( isdigit( word[0] ) )
 	      {
 		  value = atoi(word);  // numeric entry
+		  if( value & MF_TRANSLUCENT )
+		  {
+		      // Boom bit defined in boomdeh.txt
+		      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
+		      fprintf(stderr, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
+		      if( value & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
+		      {
+			  // assume TRANSLUCENT, check for known exceptions
+			  fprintf(stderr, "MF_TRANSLUCENT\n");
+		      }
+		      else
+		      {
+			  // assume FLOORHUGGER, check for known exceptions
+			  value &= ~MF_TRANSLUCENT;
+			  mip->flags2 |= MF2_FLOORHUGGER;
+			  fprintf(stderr, "MF_FLOORHUGGER\n");
+		      }
+		  }
 		  mip->flags |= value; // we are still using same flags bit order
+		  flags_valid_deh = true;
 		  continue;
 	      }
 	      // handle BEX flag names
@@ -573,6 +631,7 @@ static void readthing(MYFILE *f, int deh_thing_id )
 		         mip->flags2 |= value;
 			 break;
 		      }
+		      flags_valid_deh = true;
 		      // unless multiple flag set for a keyword
 		      if( ! fnp->ctrl & BFmf )
 		         continue; // next word
@@ -711,6 +770,9 @@ static void readtext(MYFILE* f, int len1, int len2 )
 
   if( myfread(s, len1+len2, f) )
   {
+    if( bex_include_notext )
+       return;  // BEX INCLUDE NOTEXT is active, blocks Text replacements
+
     str2 = &s[len1];
     s[len1+len2]='\0';
     if((len1 == 4) && (len2 == 4))  // sprite names are always 4 chars
@@ -805,6 +867,662 @@ static void readtext(MYFILE* f, int len1, int len2 )
     deh_error("Text not changed :%s\n",s);
   }
 }
+// [WDJ] 8/27/2011 BEX text strings
+typedef struct {
+    char *    kstr;
+    uint16_t  text_num;
+} bex_text_t;
+
+// must count entries in bex_string_table
+uint16_t  bex_string_start_table[3] = { 46+15, 46, 0 };  // start=
+
+// BEX entries from boom202s/boomdeh.txt
+bex_text_t  bex_string_table[] =
+{
+// start=3 language changes
+// BEX that language may change, but PWAD should not change
+   { "D_DEVSTR", D_DEVSTR_NUM },  // dev mode
+   { "D_CDROM", D_CDROM_NUM },  // cdrom version
+   { "LOADNET", LOADNET_NUM }, // only server can load netgame
+   { "QLOADNET", QLOADNET_NUM }, // cant quickload
+   { "QSAVESPOT", QSAVESPOT_NUM },  // no quicksave slot
+   { "SAVEDEAD", SAVEDEAD_NUM },  // cannot save when not playing
+   { "QSPROMPT", QSPROMPT_NUM }, // quicksave, has %s
+   { "QLPROMPT", QLPROMPT_NUM }, // quickload, has %s
+   { "NEWGAME", NEWGAME_NUM }, // cant start newgame
+   { "SWSTRING", SWSTRING_NUM }, // shareware version
+   { "MSGOFF", MSGOFF_NUM },
+   { "MSGON", MSGON_NUM },
+   { "NETEND", NETEND_NUM }, // cant end netgame
+   { "ENDGAME", ENDGAME_NUM }, // want to end game ?
+   { "DOSY", DOSY_NUM },  // quit to DOS, has %s
+   { "EMPTYSTRING", EMPTYSTRING_NUM }, // savegame empty slot
+   { "GGSAVED", GGSAVED_NUM }, // game saved
+   { "HUSTR_MSGU", HUSTR_MSGU_NUM }, // message not sent
+   { "HUSTR_MESSAGESENT", HUSTR_MESSAGESENT_NUM }, // message sent
+   { "AMSTR_FOLLOWON", AMSTR_FOLLOWON_NUM },  // Automap follow
+   { "AMSTR_FOLLOWOFF", AMSTR_FOLLOWOFF_NUM },
+   { "AMSTR_GRIDON", AMSTR_GRIDON_NUM },  // Automap grid
+   { "AMSTR_GRIDOFF", AMSTR_GRIDOFF_NUM },
+   { "AMSTR_MARKEDSPOT", AMSTR_MARKEDSPOT_NUM },  // Automap marks
+   { "AMSTR_MARKSCLEARED", AMSTR_MARKSCLEARED_NUM },
+   { "STSTR_MUS", STSTR_MUS_NUM },  // Music
+   { "STSTR_NOMUS", STSTR_NOMUS_NUM },
+   { "STSTR_NCON", STSTR_NCON_NUM },  // No Clip
+   { "STSTR_NCOFF", STSTR_NCOFF_NUM },
+   { "STSTR_CLEV", STSTR_CLEV_NUM },  // change level
+// BEX not used in DoomLegacy, but have strings
+   { "DETAILHI", DETAILHI_NUM },
+   { "DETAILLO", DETAILLO_NUM },
+   { "GAMMALVL0", GAMMALVL0_NUM },
+   { "GAMMALVL1", GAMMALVL1_NUM },
+   { "GAMMALVL2", GAMMALVL2_NUM },
+   { "GAMMALVL3", GAMMALVL3_NUM },
+   { "GAMMALVL4", GAMMALVL4_NUM },
+// BEX not used in DoomLegacy, but have strings, was only used in define of other strings
+   { "PRESSKEY", PRESSKEY_NUM },
+   { "PRESSYN", PRESSYN_NUM },
+// BEX not present in DoomLegacy
+   { "RESTARTLEVEL", 9999 },
+   { "HUSTR_PLRGREEN", 9999 },
+   { "HUSTR_PLRINDIGO", 9999 },
+   { "HUSTR_PLRBROWN", 9999 },
+   { "HUSTR_PLRRED", 9999 },
+   { "STSTR_COMPON", 9999 }, // Doom compatibility mode
+   { "STSTR_COMPOFF",9999 },
+   
+// start=2 personal changes
+   { "HUSTR_CHATMACRO0", HUSTR_CHATMACRO0_NUM },
+   { "HUSTR_CHATMACRO1", HUSTR_CHATMACRO1_NUM },
+   { "HUSTR_CHATMACRO2", HUSTR_CHATMACRO2_NUM },
+   { "HUSTR_CHATMACRO3", HUSTR_CHATMACRO3_NUM },
+   { "HUSTR_CHATMACRO4", HUSTR_CHATMACRO4_NUM },
+   { "HUSTR_CHATMACRO5", HUSTR_CHATMACRO5_NUM },
+   { "HUSTR_CHATMACRO6", HUSTR_CHATMACRO6_NUM },
+   { "HUSTR_CHATMACRO7", HUSTR_CHATMACRO7_NUM },
+   { "HUSTR_CHATMACRO8", HUSTR_CHATMACRO8_NUM },
+   { "HUSTR_CHATMACRO9", HUSTR_CHATMACRO9_NUM },
+   { "HUSTR_TALKTOSELF1", HUSTR_TALKTOSELF1_NUM },
+   { "HUSTR_TALKTOSELF2", HUSTR_TALKTOSELF2_NUM },
+   { "HUSTR_TALKTOSELF3", HUSTR_TALKTOSELF3_NUM },
+   { "HUSTR_TALKTOSELF4", HUSTR_TALKTOSELF4_NUM },
+   { "HUSTR_TALKTOSELF5", HUSTR_TALKTOSELF5_NUM },
+
+// start=0 normal game changes
+   { "QUITMSG",  QUITMSG_NUM },
+   { "NIGHTMARE",  NIGHTMARE_NUM },
+   { "GOTARMOR",  GOTARMOR_NUM },
+   { "GOTMEGA",  GOTMEGA_NUM },
+   { "GOTHTHBONUS",  GOTHTHBONUS_NUM },
+   { "GOTARMBONUS",  GOTARMBONUS_NUM },
+   { "GOTSTIM", GOTSTIM_NUM },
+   { "GOTMEDINEED", GOTMEDINEED_NUM },
+   { "GOTMEDIKIT", GOTMEDIKIT_NUM },
+   { "GOTSUPER", GOTSUPER_NUM },
+   { "GOTBLUECARD", GOTBLUECARD_NUM },
+   { "GOTYELWCARD", GOTYELWCARD_NUM },
+   { "GOTREDCARD", GOTREDCARD_NUM },
+   { "GOTBLUESKUL", GOTBLUESKUL_NUM },
+   { "GOTYELWSKUL", GOTYELWSKUL_NUM },
+   { "GOTREDSKULL", GOTREDSKULL_NUM },
+   { "GOTINVUL", GOTINVUL_NUM },
+   { "GOTBERSERK", GOTBERSERK_NUM },
+   { "GOTINVIS", GOTINVIS_NUM },
+   { "GOTSUIT", GOTSUIT_NUM },
+   { "GOTMAP", GOTMAP_NUM },
+   { "GOTVISOR", GOTVISOR_NUM },
+   { "GOTMSPHERE", GOTMSPHERE_NUM },
+   { "GOTCLIP", GOTCLIP_NUM },
+   { "GOTCLIPBOX", GOTCLIPBOX_NUM },
+   { "GOTROCKET", GOTROCKET_NUM },
+   { "GOTROCKBOX", GOTROCKBOX_NUM },
+   { "GOTCELL", GOTCELL_NUM },
+   { "GOTCELLBOX", GOTCELLBOX_NUM },
+   { "GOTSHELLS", GOTSHELLS_NUM },
+   { "GOTSHELLBOX", GOTSHELLBOX_NUM },
+   { "GOTBACKPACK", GOTBACKPACK_NUM },
+   { "GOTBFG9000", GOTBFG9000_NUM },
+   { "GOTCHAINGUN", GOTCHAINGUN_NUM },
+   { "GOTCHAINSAW", GOTCHAINSAW_NUM },
+   { "GOTLAUNCHER", GOTLAUNCHER_NUM },
+   { "GOTPLASMA", GOTPLASMA_NUM },
+   { "GOTSHOTGUN", GOTSHOTGUN_NUM },
+   { "GOTSHOTGUN2", GOTSHOTGUN2_NUM },
+   { "PD_BLUEO", PD_BLUEO_NUM },
+   { "PD_REDO", PD_REDO_NUM },
+   { "PD_YELLOWO", PD_YELLOWO_NUM },
+   { "PD_BLUEK", PD_BLUEK_NUM },
+   { "PD_REDK", PD_REDK_NUM },
+   { "PD_YELLOWK", PD_YELLOWK_NUM },
+   { "PD_BLUEC", PD_BLUEC_NUM },
+   { "PD_REDC", PD_REDC_NUM },
+   { "PD_YELLOWC", PD_YELLOWC_NUM },
+   { "PD_BLUES", PD_BLUES_NUM },
+   { "PD_REDS", PD_REDS_NUM },
+   { "PD_YELLOWS", PD_YELLOWS_NUM },
+   { "PD_ANY", PD_ANY_NUM },
+   { "PD_ALL3", PD_ALL3_NUM },
+   { "PD_ALL6", PD_ALL6_NUM },
+   { "HUSTR_MSGU", HUSTR_MSGU_NUM },
+   { "HUSTR_E1M1", HUSTR_E1M1_NUM },
+   { "HUSTR_E1M2", HUSTR_E1M2_NUM },
+   { "HUSTR_E1M3", HUSTR_E1M3_NUM },
+   { "HUSTR_E1M4", HUSTR_E1M4_NUM },
+   { "HUSTR_E1M5", HUSTR_E1M5_NUM },
+   { "HUSTR_E1M6", HUSTR_E1M6_NUM },
+   { "HUSTR_E1M7", HUSTR_E1M7_NUM },
+   { "HUSTR_E1M8", HUSTR_E1M8_NUM },
+   { "HUSTR_E1M9", HUSTR_E1M9_NUM },
+   { "HUSTR_E2M1", HUSTR_E2M1_NUM },
+   { "HUSTR_E2M2", HUSTR_E2M2_NUM },
+   { "HUSTR_E2M3", HUSTR_E2M3_NUM },
+   { "HUSTR_E2M4", HUSTR_E2M4_NUM },
+   { "HUSTR_E2M5", HUSTR_E2M5_NUM },
+   { "HUSTR_E2M6", HUSTR_E2M6_NUM },
+   { "HUSTR_E2M7", HUSTR_E2M7_NUM },
+   { "HUSTR_E2M8", HUSTR_E2M8_NUM },
+   { "HUSTR_E2M9", HUSTR_E2M9_NUM },
+   { "HUSTR_E3M1", HUSTR_E3M1_NUM },
+   { "HUSTR_E3M2", HUSTR_E3M2_NUM },
+   { "HUSTR_E3M3", HUSTR_E3M3_NUM },
+   { "HUSTR_E3M4", HUSTR_E3M4_NUM },
+   { "HUSTR_E3M5", HUSTR_E3M5_NUM },
+   { "HUSTR_E3M6", HUSTR_E3M6_NUM },
+   { "HUSTR_E3M7", HUSTR_E3M7_NUM },
+   { "HUSTR_E3M8", HUSTR_E3M8_NUM },
+   { "HUSTR_E3M9", HUSTR_E3M9_NUM },
+   { "HUSTR_E4M1", HUSTR_E4M1_NUM },
+   { "HUSTR_E4M2", HUSTR_E4M2_NUM },
+   { "HUSTR_E4M3", HUSTR_E4M3_NUM },
+   { "HUSTR_E4M4", HUSTR_E4M4_NUM },
+   { "HUSTR_E4M5", HUSTR_E4M5_NUM },
+   { "HUSTR_E4M6", HUSTR_E4M6_NUM },
+   { "HUSTR_E4M7", HUSTR_E4M7_NUM },
+   { "HUSTR_E4M8", HUSTR_E4M8_NUM },
+   { "HUSTR_E4M9", HUSTR_E4M9_NUM },
+   { "HUSTR_1", HUSTR_1_NUM },
+   { "HUSTR_2", HUSTR_2_NUM },
+   { "HUSTR_3", HUSTR_3_NUM },
+   { "HUSTR_4", HUSTR_4_NUM },
+   { "HUSTR_5", HUSTR_5_NUM },
+   { "HUSTR_6", HUSTR_6_NUM },
+   { "HUSTR_7", HUSTR_7_NUM },
+   { "HUSTR_8", HUSTR_8_NUM },
+   { "HUSTR_9", HUSTR_9_NUM },
+   { "HUSTR_10", HUSTR_10_NUM },
+   { "HUSTR_11", HUSTR_11_NUM },
+   { "HUSTR_12", HUSTR_12_NUM },
+   { "HUSTR_13", HUSTR_13_NUM },
+   { "HUSTR_14", HUSTR_14_NUM },
+   { "HUSTR_15", HUSTR_15_NUM },
+   { "HUSTR_16", HUSTR_16_NUM },
+   { "HUSTR_17", HUSTR_17_NUM },
+   { "HUSTR_18", HUSTR_18_NUM },
+   { "HUSTR_19", HUSTR_19_NUM },
+   { "HUSTR_20", HUSTR_20_NUM },
+   { "HUSTR_21", HUSTR_21_NUM },
+   { "HUSTR_22", HUSTR_22_NUM },
+   { "HUSTR_23", HUSTR_23_NUM },
+   { "HUSTR_24", HUSTR_24_NUM },
+   { "HUSTR_25", HUSTR_25_NUM },
+   { "HUSTR_26", HUSTR_26_NUM },
+   { "HUSTR_27", HUSTR_27_NUM },
+   { "HUSTR_28", HUSTR_28_NUM },
+   { "HUSTR_29", HUSTR_29_NUM },
+   { "HUSTR_30", HUSTR_30_NUM },
+   { "HUSTR_31", HUSTR_31_NUM },
+   { "HUSTR_32", HUSTR_32_NUM },
+   { "PHUSTR_1", PHUSTR_1_NUM },
+   { "PHUSTR_2", PHUSTR_2_NUM },
+   { "PHUSTR_3", PHUSTR_3_NUM },
+   { "PHUSTR_4", PHUSTR_4_NUM },
+   { "PHUSTR_5", PHUSTR_5_NUM },
+   { "PHUSTR_6", PHUSTR_6_NUM },
+   { "PHUSTR_7", PHUSTR_7_NUM },
+   { "PHUSTR_8", PHUSTR_8_NUM },
+   { "PHUSTR_9", PHUSTR_9_NUM },
+   { "PHUSTR_10", PHUSTR_10_NUM },
+   { "PHUSTR_11", PHUSTR_11_NUM },
+   { "PHUSTR_12", PHUSTR_12_NUM },
+   { "PHUSTR_13", PHUSTR_13_NUM },
+   { "PHUSTR_14", PHUSTR_14_NUM },
+   { "PHUSTR_15", PHUSTR_15_NUM },
+   { "PHUSTR_16", PHUSTR_16_NUM },
+   { "PHUSTR_17", PHUSTR_17_NUM },
+   { "PHUSTR_18", PHUSTR_18_NUM },
+   { "PHUSTR_19", PHUSTR_19_NUM },
+   { "PHUSTR_20", PHUSTR_20_NUM },
+   { "PHUSTR_21", PHUSTR_21_NUM },
+   { "PHUSTR_22", PHUSTR_22_NUM },
+   { "PHUSTR_23", PHUSTR_23_NUM },
+   { "PHUSTR_24", PHUSTR_24_NUM },
+   { "PHUSTR_25", PHUSTR_25_NUM },
+   { "PHUSTR_26", PHUSTR_26_NUM },
+   { "PHUSTR_27", PHUSTR_27_NUM },
+   { "PHUSTR_28", PHUSTR_28_NUM },
+   { "PHUSTR_29", PHUSTR_29_NUM },
+   { "PHUSTR_30", PHUSTR_30_NUM },
+   { "PHUSTR_31", PHUSTR_31_NUM },
+   { "PHUSTR_32", PHUSTR_32_NUM },
+   { "THUSTR_1", THUSTR_1_NUM },
+   { "THUSTR_2", THUSTR_2_NUM },
+   { "THUSTR_3", THUSTR_3_NUM },
+   { "THUSTR_4", THUSTR_4_NUM },
+   { "THUSTR_5", THUSTR_5_NUM },
+   { "THUSTR_6", THUSTR_6_NUM },
+   { "THUSTR_7", THUSTR_7_NUM },
+   { "THUSTR_8", THUSTR_8_NUM },
+   { "THUSTR_9", THUSTR_9_NUM },
+   { "THUSTR_10", THUSTR_10_NUM },
+   { "THUSTR_11", THUSTR_11_NUM },
+   { "THUSTR_12", THUSTR_12_NUM },
+   { "THUSTR_13", THUSTR_13_NUM },
+   { "THUSTR_14", THUSTR_14_NUM },
+   { "THUSTR_15", THUSTR_15_NUM },
+   { "THUSTR_16", THUSTR_16_NUM },
+   { "THUSTR_17", THUSTR_17_NUM },
+   { "THUSTR_18", THUSTR_18_NUM },
+   { "THUSTR_19", THUSTR_19_NUM },
+   { "THUSTR_20", THUSTR_20_NUM },
+   { "THUSTR_21", THUSTR_21_NUM },
+   { "THUSTR_22", THUSTR_22_NUM },
+   { "THUSTR_23", THUSTR_23_NUM },
+   { "THUSTR_24", THUSTR_24_NUM },
+   { "THUSTR_25", THUSTR_25_NUM },
+   { "THUSTR_26", THUSTR_26_NUM },
+   { "THUSTR_27", THUSTR_27_NUM },
+   { "THUSTR_28", THUSTR_28_NUM },
+   { "THUSTR_29", THUSTR_29_NUM },
+   { "THUSTR_30", THUSTR_30_NUM },
+   { "THUSTR_31", THUSTR_31_NUM },
+   { "THUSTR_32", THUSTR_32_NUM },
+
+   { "E1TEXT", E1TEXT_NUM },
+   { "E2TEXT", E2TEXT_NUM },
+   { "E3TEXT", E3TEXT_NUM },
+   { "E4TEXT", E4TEXT_NUM },
+   { "C1TEXT", C1TEXT_NUM },
+   { "C2TEXT", C2TEXT_NUM },
+   { "C3TEXT", C3TEXT_NUM },
+   { "C4TEXT", C4TEXT_NUM },
+   { "C5TEXT", C5TEXT_NUM },
+   { "C6TEXT", C6TEXT_NUM },
+   { "P1TEXT", P1TEXT_NUM },
+   { "P2TEXT", P2TEXT_NUM },
+   { "P3TEXT", P3TEXT_NUM },
+   { "P4TEXT", P4TEXT_NUM },
+   { "P5TEXT", P5TEXT_NUM },
+   { "P6TEXT", P6TEXT_NUM },
+   { "T1TEXT", T1TEXT_NUM },
+   { "T2TEXT", T2TEXT_NUM },
+   { "T3TEXT", T3TEXT_NUM },
+   { "T4TEXT", T4TEXT_NUM },
+   { "T5TEXT", T5TEXT_NUM },
+   { "T6TEXT", T6TEXT_NUM },
+   { "STSTR_DQDON", STSTR_DQDON_NUM },  // Invincible
+   { "STSTR_DQDOFF", STSTR_DQDOFF_NUM },
+   { "STSTR_FAADDED", STSTR_FAADDED_NUM },  // Full Ammo
+   { "STSTR_KFAADDED", STSTR_KFAADDED_NUM },  // Full Ammo Keys
+   { "STSTR_BEHOLD", STSTR_BEHOLD_NUM },  // Power-up
+   { "STSTR_BEHOLDX", STSTR_BEHOLDX_NUM }, // Power-up toggle
+   { "STSTR_CHOPPERS", STSTR_CHOPPERS_NUM },  // Chainsaw
+
+   { "CC_ZOMBIE", CC_ZOMBIE_NUM },
+   { "CC_SHOTGUN", CC_SHOTGUN_NUM },
+   { "CC_HEAVY", CC_HEAVY_NUM },
+   { "CC_IMP", CC_IMP_NUM },
+   { "CC_DEMON", CC_DEMON_NUM },
+   { "CC_LOST", CC_LOST_NUM },
+   { "CC_CACO", CC_CACO_NUM },
+   { "CC_HELL", CC_HELL_NUM },
+   { "CC_BARON", CC_BARON_NUM },
+   { "CC_ARACH", CC_ARACH_NUM },
+   { "CC_PAIN", CC_PAIN_NUM },
+   { "CC_REVEN", CC_REVEN_NUM },
+   { "CC_MANCU", CC_MANCU_NUM },
+   { "CC_ARCH", CC_ARCH_NUM },
+   { "CC_SPIDER", CC_SPIDER_NUM },
+   { "CC_CYBER", CC_CYBER_NUM },
+   { "CC_HERO", CC_HERO_NUM },
+
+   { "BGFLATE1", BGFLATE1_NUM },
+   { "BGFLATE2", BGFLATE2_NUM },
+   { "BGFLATE3", BGFLATE3_NUM },
+   { "BGFLATE4", BGFLATE4_NUM },
+   { "BGFLAT06", BGFLAT06_NUM },
+   { "BGFLAT11", BGFLAT11_NUM },
+   { "BGFLAT20", BGFLAT20_NUM },
+   { "BGFLAT30", BGFLAT30_NUM },
+   { "BGFLAT15", BGFLAT15_NUM },
+   { "BGFLAT31", BGFLAT31_NUM },
+#ifdef BEX_SAVEGAMENAME     
+   { "SAVEGAMENAME", SAVEGAMENAME_NUM },  // [WDJ] Added 9/5/2011
+#else
+   { "SAVEGAMENAME", 9998 },  // [WDJ] Do not allow, because of security risk
+#endif
+
+// BEX not present in DoomLegacy
+   { "BGCASTCALL", 9998 },
+   { "STARTUP1", 9998 },
+   { "STARTUP2", 9998 },
+   { "STARTUP3", 9998 },
+   { "STARTUP4", 9998 },
+   { "STARTUP5", 9998 },
+
+   { NULL, 0 }  // table term
+};
+
+
+#define BEX_MAX_STRING_LEN   2000
+#define BEX_KEYW_LEN  20
+
+// BEX [STRINGS] section
+// permission: 0=game, 1=adv, 2=language
+static void bex_strings( MYFILE* f, byte bex_permission )
+{
+  char stxt[BEX_MAX_STRING_LEN+1];
+  char keyw[BEX_KEYW_LEN];
+  char sb[MAXLINELEN];
+  char * stp;
+  char * word;
+  char * cp;
+  int perm_min = bex_string_start_table[bex_permission];
+  int i;
+
+  // string format, no quotes:
+  // [STRINGS]
+  // #comment, ** Maybe ** comment within replacement string
+  // <keyw> = <text>
+  // <keyw> = <text> backslash
+  //   <text> backslash
+  //   <text>
+
+  for(;;) {
+    if( ! myfgets_nocom(sb, sizeof(sb), f) )  // get line, skipping comments
+       break; // no more lines
+    if( sb[0] == '\n' ) continue;  // blank line
+    if( sb[0] == 0 ) break;
+    cp = strchr(sb,'=');  // find after =
+    word=strtok(sb," ");
+    if( ! word ) break;
+    strncpy( keyw, word, BEX_KEYW_LEN-1 );  // because continuation lines use sb
+    keyw[BEX_KEYW_LEN-1] = '\0';
+    // Limited by buffer size.
+    if( cp == NULL ) goto no_text_change;
+    cp++; // skip '='
+    stxt[BEX_MAX_STRING_LEN] = '\0'; // protection
+    stp = &stxt[0];
+    // Get the new text
+    do {
+      while( *cp == ' ' || *cp == '\t' )  cp++; // skip leading space
+      if( *cp == '\n' ) break;  // blank line
+      if( *cp == 0 ) break;
+      if( *cp == '\"' )  cp++;  // skip leading double quote
+      while( *cp )
+      {   // copy text upto CR
+	  if( *cp == '\n' ) break;
+	  *stp++ = *cp++;
+	  if( stp >= &stxt[BEX_MAX_STRING_LEN] ) break;
+      }
+      // remove trailing space
+      while( stp > stxt && stp[-1] == ' ')
+	  stp --;
+      // test for continuation line
+      if( ! (stp > stxt && stp[-1] == '\\') )
+	  break;  // no backslash continuation
+      stp--;  // remove backslash
+      if( stp > stxt && stp[-1] == '\"' )
+	  stp --;  // remove trailing doublequote
+      // get continuation line to sb, skipping comments.
+      // [WDJ] questionable, but boom202 code skips comments between continuation lines.
+      if( ! myfgets_nocom(sb, sizeof(sb), f) )
+	  break; // no more lines
+      cp = &sb[0];
+    } while ( *cp );
+    if( stp > stxt && stp[-1] == '\"' )
+        stp --;  // remove trailing doublequote
+    *stp++ = '\0';  // term BEX replacement string in stxt
+     
+    // search text table for keyw
+    for(i=0;  ;i++)
+    {
+        if( bex_string_table[i].kstr == NULL )  goto no_text_change;
+        if(!strcmp(bex_string_table[i].kstr, keyw))  // BEX keyword search
+        {
+	    int text_index = bex_string_table[i].text_num;
+#ifdef BEX_SAVEGAMENAME
+	    // protect file names against attack
+	    if( i == SAVEGAMENAME_NUM )
+	    {
+	        if( filename_reject( stxt, 10 )  goto no_text_change;
+	    }
+#endif
+	    if( i >= perm_min && text_index < NUMTEXT)
+	    {
+                // May be const string, which will segfault on write
+	        deh_replace_string( &text[text_index], stxt, DRS_string );
+	    }
+	    else
+	    {
+	        // change blocked, but not an error
+	    }
+	    goto next_keyw;
+	}
+    }
+  no_text_change:
+    deh_error("Text not changed :%s\n", keyw);
+     
+  next_keyw:
+    continue;
+  }
+}
+
+// BEX [PARS] section
+static void bex_pars( MYFILE* f )
+{
+  char s[MAXLINELEN];
+  int  episode, level, partime;
+  int  nn;
+   
+  // format:
+  // [PARS]
+  // par <episode> <level> <seconds>
+  // par <map_level> <seconds>
+
+  for(;;) {
+    if( ! myfgets_nocom(s, sizeof(s), f) )
+       break; // no more lines
+    if( s[0] == '\n' ) continue;  // blank line
+    if( s[0] == 0 ) break;
+    if( strcasecmp( s, "par" ) != 0 )  break;  // not a par line
+    nn = sscanf( &s[3], " %i %i %i", &episode, &level, &partime );
+    if( nn == 3 )
+    { // Doom1 Episode, level, time format
+      if( (episode < 1) || (episode > 3) || (level < 1) || (level > 9) )
+        deh_error( "Bad par E%dM%d\n", episode, level );
+      else
+      {
+	pars[episode][level] = partime;
+	pars_valid_bex = true;
+      }
+    }
+    else if( nn == 2 )
+    { // Doom2 map, time format
+      partime = level;
+      level = episode;
+      if( (level < 1) || (level > 32))
+        deh_error( "Bad PAR MAP%d\n", level );
+      else
+      {
+	cpars[level-1] = partime;
+	pars_valid_bex = true;
+      }
+    }
+    else
+      deh_error( "Invalid par format\n" );
+  }
+}
+
+
+// [WDJ] BEX codeptr strings and function
+typedef struct {
+    const char *    kstr;
+    actionf_t       action;  // union of action ptrs
+} PACKED_ATTR  bex_codeptr_t;
+
+// BEX entries from boom202s/boomdeh.txt
+bex_codeptr_t  bex_action_table[] = {
+   {"NULL", {NULL}},  // to clear a ptr
+   {"Light0", {A_Light0}},
+   {"WeaponReady", {A_WeaponReady}},
+   {"Lower", {A_Lower}},
+   {"Raise", {A_Raise}},
+   {"Punch", {A_Punch}},
+   {"ReFire", {A_ReFire}},
+   {"FirePistol", {A_FirePistol}},
+   {"Light1", {A_Light1}},
+   {"FireShotgun", {A_FireShotgun}},
+   {"Light2", {A_Light2}},
+   {"FireShotgun2", {A_FireShotgun2}},
+   {"CheckReload", {A_CheckReload}},
+   {"OpenShotgun2", {A_OpenShotgun2}},
+   {"LoadShotgun2", {A_LoadShotgun2}},
+   {"CloseShotgun2", {A_CloseShotgun2}},
+   {"FireCGun", {A_FireCGun}},
+   {"GunFlash", {A_GunFlash}},
+   {"FireMissile", {A_FireMissile}},
+   {"Saw", {A_Saw}},
+   {"FirePlasma", {A_FirePlasma}},
+   {"BFGsound", {A_BFGsound}},
+   {"FireBFG", {A_FireBFG}},
+   {"BFGSpray", {A_BFGSpray}},
+   {"Explode", {A_Explode}},
+   {"Pain", {A_Pain}},
+   {"PlayerScream", {A_PlayerScream}},
+   {"Fall", {A_Fall}},
+   {"XScream", {A_XScream}},
+   {"Look", {A_Look}},
+   {"Chase", {A_Chase}},
+   {"FaceTarget", {A_FaceTarget}},
+   {"PosAttack", {A_PosAttack}},
+   {"Scream", {A_Scream}},
+   {"SPosAttack", {A_SPosAttack}},
+   {"VileChase", {A_VileChase}},
+   {"VileStart", {A_VileStart}},
+   {"VileTarget", {A_VileTarget}},
+   {"VileAttack", {A_VileAttack}},
+   {"StartFire", {A_StartFire}},
+   {"Fire", {A_Fire}},
+   {"FireCrackle", {A_FireCrackle}},
+   {"Tracer", {A_Tracer}},
+   {"SkelWhoosh", {A_SkelWhoosh}},
+   {"SkelFist", {A_SkelFist}},
+   {"SkelMissile", {A_SkelMissile}},
+   {"FatRaise", {A_FatRaise}},
+   {"FatAttack1", {A_FatAttack1}},
+   {"FatAttack2", {A_FatAttack2}},
+   {"FatAttack3", {A_FatAttack3}},
+   {"BossDeath", {A_BossDeath}},
+   {"CPosAttack", {A_CPosAttack}},
+   {"CPosRefire", {A_CPosRefire}},
+   {"TroopAttack", {A_TroopAttack}},
+   {"SargAttack", {A_SargAttack}},
+   {"HeadAttack", {A_HeadAttack}},
+   {"BruisAttack", {A_BruisAttack}},
+   {"SkullAttack", {A_SkullAttack}},
+   {"Metal", {A_Metal}},
+   {"SpidRefire", {A_SpidRefire}},
+   {"BabyMetal", {A_BabyMetal}},
+   {"BspiAttack", {A_BspiAttack}},
+   {"Hoof", {A_Hoof}},
+   {"CyberAttack", {A_CyberAttack}},
+   {"PainAttack", {A_PainAttack}},
+   {"PainDie", {A_PainDie}},
+   {"KeenDie", {A_KeenDie}},
+   {"BrainPain", {A_BrainPain}},
+   {"BrainScream", {A_BrainScream}},
+   {"BrainDie", {A_BrainDie}},
+   {"BrainAwake", {A_BrainAwake}},
+   {"BrainSpit", {A_BrainSpit}},
+   {"SpawnSound", {A_SpawnSound}},
+   {"SpawnFly", {A_SpawnFly}},
+   {"BrainExplode", {A_BrainExplode}},
+
+   { NULL, {NULL} }  // table term
+};
+
+
+
+// BEX [CODEPTR] section
+static void bex_codeptr( MYFILE* f )
+{
+  char funcname[BEX_KEYW_LEN];
+  char s[MAXLINELEN];
+  int  framenum, nn, i;
+   
+  // format:
+  // [CODEPTR]
+  // FRAME <framenum> = <funcname>
+
+  for(;;) {
+    if( ! myfgets_nocom(s, sizeof(s), f) )
+       break; // no more lines
+    if( s[0] == '\n' ) continue;  // blank line
+    if( s[0] == 0 ) break;
+    if( strcasecmp( s, "FRAME" ) != 0 )  break;  // not a FRAME line
+    nn = sscanf( &s[5], "%d = %s", &framenum, funcname );
+    if( nn != 2 )
+    {
+	deh_error( "Bad FRAME syntax\n" );
+        continue;
+    }
+    if( framenum < 0 || framenum > NUMSTATES )
+    {
+	deh_error( "Bad BEX FRAME number %d\n", framenum );
+	continue;
+    }
+    // search action table
+    for(i=0;  ;i++)
+    {
+        if( bex_action_table[i].kstr == NULL )  goto no_action_change;
+        if(!strcasecmp(bex_action_table[i].kstr, funcname))  // BEX action search
+        {
+	    // change the sprite behavior at the framenum
+	    states[framenum].action.acv = bex_action_table[i].action.acv;
+	    goto next_keyw;
+	}
+    }
+  no_action_change:
+    deh_error("Action not changed : FRAME %d\n", framenum);
+     
+  next_keyw:
+    continue;
+  }
+}
+
+// include another DEH or BEX file
+void bex_include( char * inclfilename )
+{
+  static boolean include_nested = 0;
+  
+  // MYFILE is local to DEH_LoadDehackedLump
+  
+  if( include_nested )
+  {
+    deh_error( "BEX INCLUDE, only one level allowed\n" );
+    return;
+  }
+  // save state
+  
+  include_nested = 1;
+//  DEH_LoadDehackedFile( inclfile );  // do the include file
+  W_LoadWadFile (inclfilename);
+  include_nested = 0;
+   
+  // restore state
+}
+
+
 
 /*
 Ammo type = 2
@@ -852,6 +1570,7 @@ static void readammo(MYFILE *f,int num)
   char s[MAXLINELEN];
   char *word;
   int value;
+
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
@@ -866,6 +1585,7 @@ static void readammo(MYFILE *f,int num)
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
+
 // i don't like that but do you see a other way ?
 extern int idfa_armor;
 extern int idfa_armor_class;
@@ -1033,7 +1753,8 @@ static void readcheat(MYFILE *f)
 }
 
 
-void DEH_LoadDehackedFile(MYFILE* f)
+// permission: 0=game, 1=adv, 2=language
+void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
 {
   
   char       s[1000];
@@ -1041,7 +1762,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
   int        i;
 
   deh_num_error=0;
-   
+
   // it don't test the version of doom
   // and version of dehacked file
   while(!myfeof(f))
@@ -1052,6 +1773,34 @@ void DEH_LoadDehackedFile(MYFILE* f)
     word=strtok(s," ");  // first keyword
     if(word!=NULL)
     {
+      if(!strncmp(word, "[STRINGS]", 9))
+      {
+	bex_strings(f, bex_permission);
+	continue;
+      }
+      else if(!strncmp(word, "[PARS]", 6))
+      {
+        bex_pars(f);
+	continue;
+      }
+      else if(!strncmp(word, "[CODEPTR]", 9))
+      {
+        bex_codeptr(f);
+	continue;
+      }
+      else if(!strncmp(word, "INCLUDE", 7))
+      {
+	word=strtok(NULL," ");
+	if(!strcasecmp( word, "NOTEXT" ))
+	{
+	  bex_include_notext = 1;
+	  word=strtok(NULL," "); // filename
+	}
+	bex_include( word ); // include file
+	bex_include_notext = 0;
+	continue;
+      }
+       
       word2=strtok(NULL," ");  // id number
       if(word2!=NULL)
       {
@@ -1097,7 +1846,7 @@ void DEH_LoadDehackedFile(MYFILE* f)
                if(i<NUMSFX && i>=0)
                    readsound(f,i);
                else
-                   deh_error("Sound %d don't exist\n");
+                   deh_error("Sound %d don't exist\n", i);
              }
         else if(!strcasecmp(word,"Sprite"))
              {
@@ -1170,16 +1919,6 @@ void DEH_LoadDehackedFile(MYFILE* f)
                      deh_error("Warning : Patch format not supported");
                }
              }
-        //SoM: Support for Boom Extras (BEX)
-/*        else if(!strcasecmp(word, "[STRINGS]"))
-             {
-             }
-        else if(!strcasecmp(word, "[PARS]"))
-             {
-             }
-        else if(!strcasecmp(word, "[CODEPTR]"))
-             {
-             }*/
         else deh_error("Unknown word : %s\n",word);
       }
       else
@@ -1197,6 +1936,8 @@ void DEH_LoadDehackedFile(MYFILE* f)
   }
 
   deh_loaded = true;
+  if( flags_valid_deh )
+      Translucency_OnChange();  // ensure translucent updates
 }
 
 // read dehacked lump in a wad (there is special trick for for deh 
@@ -1211,7 +1952,7 @@ void DEH_LoadDehackedLump(int lump)
     f.curpos = f.data;
     f.data[f.size] = 0;
 
-    DEH_LoadDehackedFile(&f);
+    DEH_LoadDehackedFile(&f, 0);
     Z_Free(f.data);
 }
 
@@ -1233,3 +1974,51 @@ void DEH_Init(void)
   for(i=0;i<NUMTEXT;i++)
       deh_text[i]=text[i];
 }
+
+#ifdef BEX_LANGUAGE
+#include <fcntl.h>
+#include <unistd.h>
+
+// Load a language BEX file, by name (french, german, etc.)
+void BEX_load_language( char * langname, byte bex_permission )
+{
+    int  handle;
+    int  bytesread;
+    struct stat  bufstat;
+    char filename[MAX_WADPATH];
+    MYFILE f;
+
+    f.data = NULL;
+    if( langname == NULL )
+       langname = "lang";  // default name
+    strncpy(filename, langname, MAX_WADPATH);
+    filename[ MAX_WADPATH - 6 ] = '\0';
+    strcat( filename, ".bex" );
+    handle = open (filename,O_RDONLY|O_BINARY,0666);
+    if( handle == -1)
+    {
+        CONS_Printf( "Lang file not found: %s\n", filename );
+        goto errexit;
+    }
+    fstat(handle,&bufstat);
+    f.size = bufstat.st_size;
+    f.data = malloc( f.size );
+    if( f.data == NULL )
+    {
+        CONS_Printf("Lang file too large for memory\n" );
+        goto errexit;
+    }
+    bytesread = read (handle, f.data, f.size);
+    if( bytesread < f.size )
+    {
+        CONS_Printf( "Lang file read failed\n" );
+        goto errexit;
+    }
+    f.curpos = f.data;
+    f.data[f.size] = 0;
+    DEH_LoadDehackedFile(&f, bex_permission);
+
+   errexit:
+    free( f.data );
+}
+#endif
