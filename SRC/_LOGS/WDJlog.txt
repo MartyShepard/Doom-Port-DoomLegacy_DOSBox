@@ -1888,3 +1888,10 @@ The french.bex file has many new strings that need translation.
 *** w77_action_french_files
 - committed revision 867   by wesley johnson
 Add action.h and lang_bex/french.bex to the svn system.
+
+*** w78_help_docs
+patchfile = w78_help_docs.patch
+- committed revision 868   by wesley johnson
+Update legacy.html with correct installation instructions, fix errors.
+Improve -help command line switch.
+Add a -v switch for verbose, and use it to print out more information.

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00868 ]: w78 help docs
 [00867 ]: w77 add action.h french.bex files
 [00866 ]: w77 BEX language system
 [00865 ]: w77 french inline, allows DEH/BEX

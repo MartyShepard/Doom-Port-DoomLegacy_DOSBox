@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 866 2011-09-17 18:05:19Z wesleyjohnson $
+// $Id: doomdef.h 868 2011-10-31 23:53:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -328,6 +328,8 @@ char *Z_StrDup (const char *in);
 
 // g_game.h
 extern  boolean devparm;                // development mode (-devparm)
+
+extern  byte    verbose;   // 1, 2
 
 // =======================
 // Misc stuff for later...

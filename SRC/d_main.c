@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 866 2011-09-17 18:05:19Z wesleyjohnson $
+// $Id: d_main.c 868 2011-10-31 23:53:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -321,7 +321,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "867"
+#define SVN_REV "868"
 #endif
 
 // Version number: major.minor.revision
@@ -342,6 +342,7 @@ int pagetic;
 char * pagename = "TITLEPIC";
 
 //  PROTOS
+void Help(void);
 void HereticPatchEngine(void);
 //void Chex1PatchEngine(void);
 
@@ -362,6 +363,7 @@ boolean singletics = false;     // timedemo
 boolean nomusic;
 boolean nosound;
 
+byte    verbose = 0;
 
 // Background color fades for FS
 unsigned long fadecolor;
@@ -1346,6 +1348,11 @@ void IdentifyVersion()
     sprintf(legacywad, "%s/legacy.wad", doomwaddir);
 #endif
 
+    if( verbose )
+    {
+        fprintf(stderr, "Doomwaddir: %s\n" "Legacy.wad: %s\n", doomwaddir, legacywad );
+    }
+
     /*
        French stuff.
        doom2fwad = malloc(strlen(doomwaddir)+1+10+1);
@@ -1671,11 +1678,19 @@ void D_DoomMain()
       exit(0);
     }
 
-    // TODO: Better commandline help
+    if (M_CheckParm("-v"))
+    {
+      verbose = 1;
+    }
+    if (M_CheckParm("-v2"))
+    {
+      verbose = 2;
+    }
+   
     if (M_CheckParm("--help") || M_CheckParm("-h"))
     {
       printf("%s\n", legacy);
-      printf("Usage: doomlegacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n");
+      Help();
       exit(0);
     }
 
@@ -1778,6 +1793,9 @@ void D_DoomMain()
         // userhome already has situation covered
 #endif
     }
+
+    if( verbose )
+        fprintf(stderr, "Config: %s\n", configfile );
 
     // add any files specified on the command line with -file wadfile
     // to the wad list
@@ -2225,3 +2243,118 @@ done:
    
 }
 #endif
+
+void Help( void )
+{
+  char * np = M_GetNextParm();
+   
+  if( np == NULL )
+  {
+    printf
+       ("Usage: doomlegacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n"
+	"-version  Print Legacy version\n"
+	"-h    Help\n"
+	"-h g  Help game and wads\n"
+	"-h m  Help multiplayer\n"
+	"-h c  Help config\n"
+	"-h s  Help server\n"
+	"-h d  Help demo\n"
+	"-h D  Help Devmode\n"
+	);
+     return;
+  }
+  switch( np[0] )
+  {
+   case 'g': // game
+     printf
+       (
+	"-game name      doomu, doom2, tnt, plutonia, freedoom, heretic, chex1, etc.\n"
+	"-iwad file      The game wad\n"
+	"-file file      Load DEH and PWAD files (one or more)\n"
+	"-deh  file      Load DEH files (one or more)\n"
+	"-loadgame num   Load savegame num\n"  
+	"-episode 2      Goto episode 2, level 1\n"
+	"-skill 3        Skill 1 to 5\n"
+	"-warp 13        Goto map13 or episode 1, level 3\n"
+	"-nomonsters     No monsters\n"
+	"-respawn        Monsters respawn after killed\n"
+	"-coopmonsters   Monsters cooperate\n"
+	"-infight        Monsters fight each other\n"
+	"-fast           Monsters are fast\n"
+	"-predicting     Monsters aim better\n"
+	"-turbo num      Player speed %%, 10 to 255\n"   
+	);
+     break;
+   case 'm': // multiplayer
+     printf
+       (
+	"-teamplay       Play with teams by color\n"
+	"-teamskin       Play with teams using skins\n"
+	"-splitscreen    Two players on this screen\n"
+	"-deathmatch     Deathmatch, weapons respawn\n"
+	"-altdeath       Deathmatch, items respawn\n"
+	"-timer num      Timelimit in minutes\n"
+	"-avg            Austin 20 min rounds\n"
+	);
+     break;
+   case 'c': // config
+     printf
+       (
+	"-v   -v2        Verbose\n"
+	"-home name      Config and savegame directory\n"
+	"-config file    Config file\n"
+	"-opengl         OpenGL Hardware render\n"
+	"-nosound        No sound effects\n"
+	"-nocd           No CD music\n"
+	"-nomusic        No music\n"
+	"-precachesound  Preload sound effects\n"
+	"-mb num         Pre-allocate num MiB of memory\n"
+	"-width num      Video mode width\n"
+	"-height num     Video mode height\n"
+	"-nocheckwadversion   Ignore legacy.wad version\n"
+#ifdef BEX_LANGUAGE
+	"-lang name      Load BEX language file name.bex\n"
+#endif
+	);
+     break;
+   case 's': // server
+     printf
+       (
+	"-server         Start as game server\n"
+	"-dedicated      Dedicated server, no player\n"
+	"-connect name   Connect to server name\n"
+	"-bandwidth bps  Net bandwidth in bytes/sec\n"
+	"-packetsize num Net packetsize\n"
+	"-nodownload     No download from server\n"
+	"-nofiles        Download all from server\n"
+	"-clientport x   Use port x for client\n"
+	"-udpport x      Use udp port x for client\n"
+	"-ipx            Use IPX\n"
+	"-extratic       Send extra tics ??\n"
+	"-debugfile file Log to debug file\n"
+	"-left           Left slaved view\n"
+	"-right          Right slaved view\n"
+	);
+     break;
+   case 'd': // demo
+     printf
+       (
+	"-record file    Record demo to file\n"
+	"-maxdemo num    Limit record demo size, in KiB\n"
+	"-playdemo file  Play demo from file\n"
+	);
+     break;
+   case 'D': // devmode
+     printf
+       (
+	"-devparm        Develop mode\n"
+	"-devgame gamename  Develop mode, and specify game\n"
+	"-wart 3 1       Load file devmaps/E3M1.wad, then warp to it\n"
+	"-wart 13        Load file devmaps/cdata/map13.wad, then warp to it\n"
+	"-timedemo file  Timedemo from file\n"
+	"-nodraw         Timedemo without draw\n"
+	"-noblit         Timedemo without blit\n"
+	);
+     break;
+  }
+}

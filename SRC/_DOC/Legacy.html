@@ -91,6 +91,8 @@
   <li>
     Deathmatch wads:
     andydm1.wad, shbullet.wad
+  </li>
+  <li>
     Chexquest sequel:
     Chexquest-newmaps.wad
   </li>
@@ -115,18 +117,105 @@
 <h2 id="install">INSTALL</h2>
 
 <p>
-  Installing Doom Legacy is extremely simple, just follow these steps:
+  Installing Doom Legacy is simple, just follow these steps:
+  
 </p>
+<h3>Linux</h3>
+  Choose a legacy game directory that all players can use, like /usr/local/games/legacy.
+  Install the tar file contents to the legacy game directory, which needs to include the
+  doomlegacy binary, legacy.wad, autoexec.cfg.  The tar file will also install the legacy docs there.
+  You can also put there any wad files you want to play.
+<p>
+  The iwad files can be in a separate directory (such as /usr/local/games/legacy/wads).
+  You can set DOOMWADDIR with that wad directory path, in a login script, or a game starting script.
+<p>
+  Otherwise, for known game wads (Doom, Doom2, TNT, etc) in other directories, make soft links in the legacy game directory
+  to the actual wad files, so that when a -game switch is used, DoomLegacy can find the iwad.
+<br>
+<pre>
+  > ln -s wads/idgames/doom1.wad  doom1.wad
+  > ln -s wads/idgames/doom2.wad  doom2.wad
+  > ln -s wads/idgames/doomu.wad  doomu.wad
+  > ln -s wads/idgames/plutonia.wad  plutonia.wad
+  > ln -s wads/idgames/tnt.wad  tnt.wad
+  > ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
+</pre>
+<p>
+  If just the pwad files are in a separate directory (such as pwad/), then there no extra steps.
+<pre>
+  > doomlegacy -file pwad/ANDYDM.WAD
+  > doomlegacy -file pwad/Twilight/TWILIGHT.DEH pwad/Twilight/TWILIGHT.WAD
+</pre>
+  DoomLegacy will use the HOME environment variable, which is usually set by your Linux login, to find your home directory.  It makes a .legacy directory there, where it will keep config.cfg and all your saved games.
+<pre>
+  DoomLegacy execution examples:
+  > doomlegacy -game tnt
+  > doomlegacy -game plutonia -file pwad/pl2/PL2.WAD
+  > doomlegacy -iwad freedoom.wad -file new_map13.wad
+</pre>
+<p>
+  Script files can also be used to start DoomLegacy.
+<pre>
+  create dm8 script file
+    #!/bin/sh
+    cd /usr/local/games/legacy/
+    USER="Shotgun-wizard"
+    DOOMWADDIR=wads
+    doomlegacy -iwad doom2.wad -file DM8.WAD
+ > chmod u+x dm8
+ > dm8
+</pre>
+
+<p>
+<h3>Windows</h3>
+<p>
+  It is important to change to the directory where doomlegacy resides.  Support files,
+  like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by DoomLegacy
+  and it looks in the current directory by default.  By default, it will also save the
+  config.cfg in the current directory.
+<p>
+  It is difficult to start a program under windows and set command line switches.
+  Most of the settings that the launcher supported can now be set from menus and the console.
+  However the -game, -file, and -config must be set from command line switches.
+<p>
+  One way is to create shortcuts to doomlegacy.  Specify in the shortcut the command line
+  and change starting directory to where the doomlegacy program resides.
+<p>
+  Another way is to create a batch file for each combination of switches, and run the
+  batch file to start doomlegacy.
+  Batch file examples (where legacydir, homedir, configdir, and waddir stand for directories that you specify).
+<br>
+<pre>
+  DOOM2.BAT
+    cd c:\legacydir\
+    doomlegacy -game doom2
+</pre>
+
+<pre>
+  DM8.BAT
+    cd c:\legacydir\
+    doomlegacy -iwad waddir\doom2.wad -home c:\doomdata\ -config c:\doomdata\config8.cfg
+</pre>
+
+<h3>Windows with launcher</h3>
+<p>
+  The launcher is no longer actively supported, but older launchers will still work.
+  Most of the settings that the launcher supports can now be set from the console.
+<p>
+  The launcher has some problems with setting home and config directories.
+  You will likely have to include <br>
+  "-config mydir\config.cfg", and/or "-home homedir" in options.
 <ul>
-  <li>Unpack the archive</li>
+  <li>Unpack the archive to a suitable program directory, like C:\legacy</li>
   <li>Start the Launcher</li>
   <li>Fill in required information about WAD locations and hardware options</li>
   <li>Launch the game!</li>
 </ul>
 
+<h3>Environment variables</h3>
 <p>
-  If you want, you can set the following environment variables to
-  have additional control over Legacy behaviour. None of them are
+  You can set the following environment variables to
+  have additional control over Legacy behavior. None of them are
   required.
 </p>
 <ul>
@@ -155,11 +244,15 @@
   Your personal control settings are saved in your config.cfg file.
   They can be changed by menus in Legacy, and are saved when quitting
   the game.
+<p>
+  When config.cfg does not exist, Legacy will write one using a default config.
 </p>
 <p>
   OpenGL uses a separate file, 'glconfig.cfg', so that the OpenGL
   settings do not disturb an existing config file. This does
   mean that switching to OpenGL requires setting up the controls again.
+<p>
+  Develop mode (-devgame or -devparm), will use devdataconfig.cfg as its config file.
 </p>
 
   
@@ -183,43 +276,53 @@
   
 
 <h3>Setting up the sound</h3>
+The binary downloads of DoomLegacy use SDL sound.  The other options require downloading source code and compiling
+with your own selection of compile options.
 <ul>
 <li>SDL
 <p>
   In the SDL version of Legacy the SDL library handles sound. If it
   is installed correctly then Legacy will have sound effects.
-
+<p>
+  The latest SDL version is 1.2.14, and it fixes some earlier Win32 issues.
+<p>
   Music requires SDL_mixer version 1.2.7 or later. Earlier SDL_mixer
   versions do not have a working RWOPS interface. Legacy can play music
   using files instead, but this requires recompiling Legacy, allowing it
   to detect the SDL_mixer version.
+<p>
+  SDL_mixer is a separate download and installation, and the latest is version 1.2.11.
+
 </p>
 </li>
 
 <li>WINDOWS
 <p>
   In the Windows native version the sound is autodetected using DirectX so make sure your card works
-  well with DirectX and it legacy will us it.
-
+  well with DirectX and it legacy will use it.
+<p>
   Additionally the Legacy could utilize the hardware 3D sound
   for making more realistic sound environment.
-
+<p>
   Specify -ds3d command line parameter to use generic 3D sound driver
   (DirectSound 3D). This driver are suitable for most 3D sound chips.
+<p>
+  Some of this support requires that FMOD be installed.
+  Some parts of -digmusic support may be currently broken.
 </p>
 </li>
 
 <li>DOS
 <p>
   The sound and music card is auto-detected at the game startup.
-
+<p>
   If you don't get any sound in Legacy, check that the BLASTER
   variable is set. Type 'set' at the dos prompt (or dosbox under
   Windows) : do you see a line like 'BLASTER=A220 I5 D1 ...' ?
   If not, run the installation of your soundcard for Dos mode,
   it will usually modify your autoexec.bat so that the BLASTER
   variable will be set. See the FAQ.TXT for more.
-
+<p>
   If the BLASTER variable is set, but you still don't hear any
   sounds, or the sounds are not right, then edit the SOUND.CFG
   file, and manually set your type of soundcard, see there for
@@ -437,13 +540,26 @@ gamma index : GAMMA value
 <h3>OpenGL renderer</h3>
 <p>
   Legacy includes two different graphics engines, the old Doom
-  software renderer and an OpenGL-based hardware renderer.
+  software renderer (with many improvements) and an OpenGL-based hardware renderer.
 </p>
 <p>
-  The OpenGL renderer is faster and shinier than the software one, but
-  does not do everything that the software renderer does.
-  It does have coronas, and other light effects that the software
+  The OpenGL renderer is shinier and has fancier effects than the software one, but
+  it does not do everything that the software renderer does.
+  It does have coronas, explosion light, and other light effects that the software
   renderer does not do.
+<p>
+  Some wads rely upon violating wad rules to get trick effects.  These rely upon tricking the software renderer into not drawing something.
+  Using those wads with the OpenGL renderer you will see holes in the floor and ceiling, and warning messges
+  about polygons.
+<p>
+  OpenGL relies upon having video card hardware acceleration.
+  This requires that your video card drivers support OpenGL operations.
+  Without OpenGL hardware acceleration, SDL will emulate the OpenGL operations using software run on your CPU, which is very very slow.
+  How well a video card works with OpenGL is dependent upon the drivers.  It is SDL that interfaces with the video card drivers.
+<p>
+  Video cards have different levels of hardware acceleration, and rendering speed.
+  Activate only as many fancy rendering options as your video card can draw fast.
+  Turning off Trilinear and Bilinear filtering can gain speed.
 </p>
 
 
