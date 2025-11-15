@@ -1872,4 +1872,19 @@ separately, and functions for heretic and chexquest strings.
 There are calls at the appropriate places in d_main.c.
 The d_french.h file has many new strings that need translation.
 
+*** w77_BEX_language
+patchfile = w77_BEX_language.patch
+- committed revision 866   by wesley johnson
+Added BEX_LANGUAGE option that loads a BEX file to replace all strings
+in text[].  This more limited in the strings it can reach, but the bex
+file can be changed for any language without compiling the source.
+It accepts a parameter  -lang <name>, where <name> can be any language
+name (i.e. french, german, etc.).  It will form a filename, french.bex,
+and attempt to process it.  If <name> is blank, or if
+BEX_LANGUAGE==AUTO, is selected, it will use the default, "lang.bex".
+Changed BEX to also accept strings with double quotes.
+The french.bex file has many new strings that need translation.
 
+*** w77_action_french_files
+- committed revision 867   by wesley johnson
+Add action.h and lang_bex/french.bex to the svn system.

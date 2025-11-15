@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 865 2011-09-17 18:02:35Z wesleyjohnson $
+// $Id: doomdef.h 866 2011-09-17 18:05:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -268,6 +268,13 @@ void I_SoftError (char *error, ...);
 #ifdef FRENCH
 #define FRENCH_INLINE
 #endif
+
+// [WDJ] 9/2/2011  BEX language controls
+// Load language BEX file
+//#define BEX_LANGUAGE
+// Automatic loading of lang.bex file.
+//#define BEX_LANG_AUTO_LOAD
+
 
 // =========================================================================
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 865 2011-09-17 18:02:35Z wesleyjohnson $
+// $Id: dehacked.c 866 2011-09-17 18:05:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -284,7 +284,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    }
 	}
     }
-   
+
     // rewrite backslash literals into newstring, because it only gets shorter
     unsigned char * chp = &newstring[0];
     for( newp = &newstring[0]; *newp ; newp++ )
@@ -330,7 +330,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    // check value against tests
 	}
         // reject special character attacks
-#ifdef FRENCH_INLINE
+#if defined( FRENCH_INLINE ) || defined( BEX_LANGUAGE )
         // place checks for allowed foreign lang chars here
 	// reported dangerous escape chars
 	if( ch == 133 ) goto bad_char;
@@ -1257,6 +1257,7 @@ static void bex_strings( MYFILE* f, byte bex_permission )
       while( *cp == ' ' || *cp == '\t' )  cp++; // skip leading space
       if( *cp == '\n' ) break;  // blank line
       if( *cp == 0 ) break;
+      if( *cp == '\"' )  cp++;  // skip leading double quote
       while( *cp )
       {   // copy text upto CR
 	  if( *cp == '\n' ) break;
@@ -1268,13 +1269,18 @@ static void bex_strings( MYFILE* f, byte bex_permission )
 	  stp --;
       // test for continuation line
       if( ! (stp > stxt && stp[-1] == '\\') )
-	  break;
+	  break;  // no backslash continuation
+      stp--;  // remove backslash
+      if( stp > stxt && stp[-1] == '\"' )
+	  stp --;  // remove trailing doublequote
       // get continuation line to sb, skipping comments.
       // [WDJ] questionable, but boom202 code skips comments between continuation lines.
       if( ! myfgets_nocom(sb, sizeof(sb), f) )
 	  break; // no more lines
       cp = &sb[0];
     } while ( *cp );
+    if( stp > stxt && stp[-1] == '\"' )
+        stp --;  // remove trailing doublequote
     *stp++ = '\0';  // term BEX replacement string in stxt
      
     // search text table for keyw
@@ -1564,6 +1570,7 @@ static void readammo(MYFILE *f,int num)
   char s[MAXLINELEN];
   char *word;
   int value;
+
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
@@ -1578,6 +1585,7 @@ static void readammo(MYFILE *f,int num)
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
+
 // i don't like that but do you see a other way ?
 extern int idfa_armor;
 extern int idfa_armor_class;
@@ -1966,3 +1974,51 @@ void DEH_Init(void)
   for(i=0;i<NUMTEXT;i++)
       deh_text[i]=text[i];
 }
+
+#ifdef BEX_LANGUAGE
+#include <fcntl.h>
+#include <unistd.h>
+
+// Load a language BEX file, by name (french, german, etc.)
+void BEX_load_language( char * langname, byte bex_permission )
+{
+    int  handle;
+    int  bytesread;
+    struct stat  bufstat;
+    char filename[MAX_WADPATH];
+    MYFILE f;
+
+    f.data = NULL;
+    if( langname == NULL )
+       langname = "lang";  // default name
+    strncpy(filename, langname, MAX_WADPATH);
+    filename[ MAX_WADPATH - 6 ] = '\0';
+    strcat( filename, ".bex" );
+    handle = open (filename,O_RDONLY|O_BINARY,0666);
+    if( handle == -1)
+    {
+        CONS_Printf( "Lang file not found: %s\n", filename );
+        goto errexit;
+    }
+    fstat(handle,&bufstat);
+    f.size = bufstat.st_size;
+    f.data = malloc( f.size );
+    if( f.data == NULL )
+    {
+        CONS_Printf("Lang file too large for memory\n" );
+        goto errexit;
+    }
+    bytesread = read (handle, f.data, f.size);
+    if( bytesread < f.size )
+    {
+        CONS_Printf( "Lang file read failed\n" );
+        goto errexit;
+    }
+    f.curpos = f.data;
+    f.data[f.size] = 0;
+    DEH_LoadDehackedFile(&f, bex_permission);
+
+   errexit:
+    free( f.data );
+}
+#endif

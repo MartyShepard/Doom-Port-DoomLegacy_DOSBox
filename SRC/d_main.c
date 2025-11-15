@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 865 2011-09-17 18:02:35Z wesleyjohnson $
+// $Id: d_main.c 866 2011-09-17 18:05:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -311,17 +311,17 @@
 
 #include "b_game.h"     //added by AC for acbot
 
-#if defined( __DJGPP__ )	
-#define I_Sleep(int) usleep(int);
-#endif
-
 #ifdef FRENCH_INLINE
 #include "d_french.h"
 #endif
 
+#if defined( __DJGPP__ )	
+#define I_Sleep(int) usleep(int);
+#endif
+
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "865"
+#define SVN_REV "866"
 #endif
 
 // Version number: major.minor.revision
@@ -1649,6 +1649,7 @@ void D_DoomMain()
 #ifdef FRENCH_INLINE
     french_early_text();
 #endif
+
     // print version banner just once here, use it anywhere
     sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
     demoversion = VERSION;
@@ -1891,6 +1892,21 @@ void D_DoomMain()
     if (gamemode == chexquest1)
         french_chexquest();
 #endif
+   
+#ifdef BEX_LANGUAGE
+    if ( M_CheckParm("-lang") )
+    {
+        // will check for NULL parameter
+        BEX_load_language( M_GetNextParm(), 2 );  // language name
+    }
+#ifdef BEX_LANG_AUTO_LOAD
+    else
+    {
+        BEX_load_language( NULL, 2 );  // default language name
+    }
+#endif
+#endif
+   
     // load wad, including the main wad file
     if (!W_InitMultipleFiles(startupwadfiles))
         CONS_Error("A WAD file was not found\n");
