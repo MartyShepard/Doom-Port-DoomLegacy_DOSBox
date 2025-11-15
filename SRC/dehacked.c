@@ -616,6 +616,10 @@ static void readthing(MYFILE *f, int deh_thing_id )
 #endif
 	      for( fnp = &BEX_flag_name_table[0]; fnp; fnp++ )
 	      {
+					#if defined( __DJGPP__ )
+					// Crash in DOS.
+					if (fnp->name == NULL) break;
+					#endif
 		  if(!strcasecmp( word, fnp->name ))  // find name
 		  {
 		      switch( fnp->ctrl & ~BFmf)
