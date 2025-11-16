@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: w_wad.h 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -128,7 +128,7 @@ typedef struct
 #define WADFILENUM(lump)       (lump>>16)   // wad file number in upper word
 #define LUMPNUM(lump)          (lump&0xffff)    // lump number for this pwad
 
-#define MAX_WADPATH   128
+// MAX_WADPATH moved to doomdef.h, for other users
 #define MAX_WADFILES  32       // maximum of wad files used at the same time
                                // (there is a max of simultaneous open files
                                // anyway, and this should be plenty)

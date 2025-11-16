@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.h 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: dstrings.h 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,8 +54,6 @@
 #else
 #define SAVEGAMENAME    "doomsav"
 #endif
-
-extern char savegamename[256];
 
 //
 // File locations,
@@ -371,7 +369,7 @@ typedef enum {
  QUIT2MSG3_NUM,
  QUIT2MSG4_NUM,
  QUIT2MSG5_NUM,
-QUIT2MSG6_NUM,
+ QUIT2MSG6_NUM,
 
  BGFLATE1_NUM,
  BGFLATE2_NUM,

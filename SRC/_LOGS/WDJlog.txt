@@ -1895,3 +1895,12 @@ patchfile = w78_help_docs.patch
 Update legacy.html with correct installation instructions, fix errors.
 Improve -help command line switch.
 Add a -v switch for verbose, and use it to print out more information.
+
+*** w78_max_wadpath
+patchfile = w78_max_wadpath.patch
+- committed revision 869   by wesley johnson
+Use MAX_WADPATH for almost all file path string manipulation.
+Add cat_filename function to encapsulate proper file name concatenation.
+Protect filename strings against extra long strings in command line, wad,
+and config files.
+Harden many string operations against buffer overflow.

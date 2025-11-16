@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 868 2011-10-31 23:53:07Z wesleyjohnson $
+// $Id: doomdef.h 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -295,6 +295,14 @@ extern byte     demoversion;
 #define MAXSKINCOLORS           11
 
 #define SAVESTRINGSIZE          24
+
+// Used for many file path buffer sizes
+#ifdef PC_DOS
+#define MAX_WADPATH   128
+#else
+// was too short for network systems
+#define MAX_WADPATH   256
+#endif
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().

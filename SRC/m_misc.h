@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: m_misc.h 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -114,7 +114,13 @@ int M_DrawText ( int           x,
                  boolean       direct,
                  char*         string );
 
+// dest must be filename buffer of MAX_WADPATH
+// If directory dn does not end in '/', then a separator will be included.
+void cat_filename( char * dest, const char * dn, const char * fn );
+
+#if 0
 // s1=s2+s3+s1 (1024 lenghtmax)
 void strcatbf(char *s1,char *s2,char *s3);
+#endif
 
 #endif

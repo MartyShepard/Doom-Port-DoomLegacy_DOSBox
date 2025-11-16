@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: d_netfil.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -203,11 +203,20 @@ void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
     byte *p = fileneededstr;
     for(i=0;i<fileneedednum;i++)
     {
-        fileneeded[i].status = FS_NOTFOUND;
-        fileneeded[i].totalsize = READU32(p);
-        fileneeded[i].phandle = NULL;
-        READSTRING(p,fileneeded[i].filename);
-        READMEM(p,fileneeded[i].md5sum,16);
+        fileneeded_t * fnp = &fileneeded[i];
+        fnp->status = FS_NOTFOUND;
+        fnp->totalsize = READU32(p);
+        fnp->phandle = NULL;
+        //READSTRING(p,fnp->filename); // overflow unsafe
+	// [WDJ] String overflow safe
+        {
+	    int fn_len = strlen( (char*)p ) + 1;
+            int read_len = min( fn_len, MAX_WADPATH-1 );  // length safe
+	    memcpy(fnp->filename, p, read_len);
+	    fnp->filename[MAX_WADPATH-1] = '\0';
+            p += fn_len;  // whole
+	}
+        READMEM(p,fnp->md5sum,16);
     }
 }
 
@@ -236,16 +245,18 @@ boolean SendRequestFile(void)
 //        int j;
 
         for(i=0;i<fileneedednum;i++)
-            if( fileneeded[i].status!=FS_FOUND )
+        {
+	    fileneeded_t * fnp = &fileneeded[i];
+            if( fnp->status!=FS_FOUND )
             {
                 strcat(s,"  \"");
-                strcat(s,fileneeded[i].filename);
+                strcat(s,fnp->filename);
                 strcat(s,"\"");
-                if(fileneeded[i].status==FS_NOTFOUND)
+                if(fnp->status==FS_NOTFOUND)
                 {
                     strcat(s," not found");
                 } 
-                else if(fileneeded[i].status==FS_MD5SUMBAD)
+                else if(fnp->status==FS_MD5SUMBAD)
                 {
                     int j;
                     int strl;
@@ -255,14 +266,15 @@ boolean SendRequestFile(void)
 
                     for(j=0; j<16; j++)
                     {
-                        sprintf(&s[strl+2*j],"%02x", fileneeded[i].md5sum[j]);
+                        sprintf(&s[strl+2*j],"%02x", fnp->md5sum[j]);
                     }
                     s[strl+32]='\0';
                 }
-                else if(fileneeded[i].status==FS_OPEN)
+                else if(fnp->status==FS_OPEN)
                     strcat(s," found, ok");
                 strcat(s,"\n");
             }
+	}
         I_Error("To play with this server you should have this files:\n%s\n"
                 "remove -nodownload if you want to download the files!\n",s);
     }
@@ -270,24 +282,31 @@ boolean SendRequestFile(void)
     netbuffer->packettype = PT_REQUESTFILE;
     byte *p = netbuffer->u.textcmd;
     for(i=0;i<fileneedednum;i++)
-        if( fileneeded[i].status==FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+    {
+        fileneeded_t * fnp = &fileneeded[i];
+        if( fnp->status==FS_NOTFOUND || fnp->status == FS_MD5SUMBAD)
         {
-            if( fileneeded[i].status==FS_NOTFOUND )
-                totalfreespaceneeded += fileneeded[i].totalsize;
-            nameonly(fileneeded[i].filename);
+	    char filetmp[ MAX_WADPATH ];
+            if( fnp->status==FS_NOTFOUND )
+                totalfreespaceneeded += fnp->totalsize;
+	    strcpy( filetmp, fnp->filename );
+            nameonly(filetmp);
             WRITECHAR(p,i);  // fileid
-            WRITESTRING(p,fileneeded[i].filename);
+            WRITESTRING(p,filetmp);
             // put it in download dir 
-            strcatbf(fileneeded[i].filename,downloaddir,"/");
-            fileneeded[i].status = FS_REQUESTED;
+	    cat_filename( fnp->filename, downloaddir, filetmp );
+            fnp->status = FS_REQUESTED;
         }
+    }
     WRITECHAR(p,-1);
     uint64_t availablefreespace = I_GetDiskFreeSpace();
     // CONS_Printf("free byte %d\n",availablefreespace);
     if(totalfreespaceneeded>availablefreespace)
+    {
         I_Error("To play on this server you should download %dKb\n"
                 "but you have only %dKb freespace on this drive\n",
                 totalfreespaceneeded,availablefreespace);
+    }
 
     // prepare to download
     I_mkdir(downloaddir,0755);
@@ -322,7 +341,7 @@ int CL_CheckFiles(void)
     // do not check file date, also don't download it (copyright problem) 
     strcpy(wadfilename,wadfiles[0]->filename);
     nameonly(wadfilename);
-    if( stricmp(wadfilename,fileneeded[0].filename)!=0 )
+    if( strcasecmp(wadfilename,fileneeded[0].filename)!=0 )
     {
         M_SimpleMessage(va("You cannot connect to this server\n"
                           "since it uses %s\n"
@@ -334,27 +353,30 @@ int CL_CheckFiles(void)
 
     for (i=1;i<fileneedednum;i++)
     {
-        if(devparm) CONS_Printf("searching for '%s' ",fileneeded[i].filename);
+        fileneeded_t * fnp = &fileneeded[i];
+        if(devparm)
+	    CONS_Printf("searching for '%s' ", fnp->filename);
         
         // check in already loaded files
         for(j=1;wadfiles[j];j++)
         {
             strcpy(wadfilename,wadfiles[j]->filename);
             nameonly(wadfilename);
-            if( stricmp(wadfilename,fileneeded[i].filename)==0 &&
-                 !memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+            if( strcasecmp(wadfilename, fnp->filename)==0 &&
+                 !memcmp(wadfiles[j]->md5sum, fnp->md5sum, 16))
             {
                 if(devparm) CONS_Printf("already loaded\n");
-                fileneeded[i].status=FS_OPEN;
+                fnp->status=FS_OPEN;
                 break;
             }
         }
-        if( fileneeded[i].status!=FS_NOTFOUND )
+        if( fnp->status!=FS_NOTFOUND )
            continue;
 
-        fileneeded[i].status = findfile(fileneeded[i].filename,fileneeded[i].md5sum,true);
-        if(devparm) CONS_Printf("found %d\n",fileneeded[i].status);
-        if( fileneeded[i].status != FS_FOUND )
+        fnp->status = findfile(fnp->filename, fnp->md5sum, true);
+        if(devparm)
+	    CONS_Printf("found %d\n", fnp->status);
+        if( fnp->status != FS_FOUND )
             ret=0;
     }
     return ret;
@@ -367,24 +389,25 @@ void CL_LoadServerFiles(void)
     
     for (i=1;i<fileneedednum;i++)
     {
-        if( fileneeded[i].status == FS_OPEN )
+        fileneeded_t * fnp = &fileneeded[i];
+        if( fnp->status == FS_OPEN )
             // already loaded
             continue;
         else
-        if( fileneeded[i].status == FS_FOUND )
+        if( fnp->status == FS_FOUND )
         {
-            P_AddWadFile(fileneeded[i].filename,NULL);
-            fileneeded[i].status = FS_OPEN;
+            P_AddWadFile(fnp->filename,NULL);
+            fnp->status = FS_OPEN;
         }
         else
-        if( fileneeded[i].status == FS_MD5SUMBAD) 
+        if( fnp->status == FS_MD5SUMBAD) 
         {
-            P_AddWadFile(fileneeded[i].filename,NULL);
-            fileneeded[i].status = FS_OPEN;
-            CONS_Printf("\2File %s found but with differant md5sum\n",fileneeded[i].filename);
+            P_AddWadFile(fnp->filename,NULL);
+            fnp->status = FS_OPEN;
+            CONS_Printf("\2File %s found but with differant md5sum\n", fnp->filename);
         }
         else
-            I_Error("Try to load file %s with status of %d\n",fileneeded[i].filename,fileneeded[i].status);
+            I_Error("Try to load file %s with status of %d\n", fnp->filename, fnp->status);
     }
 }
 
@@ -405,9 +428,10 @@ void SendFile(int node,char *filename, char fileid)
        I_Error("SendFile : No more ram\n");
     p=*q;
     p->filename=(char *)malloc(MAX_WADPATH);
-    strcpy(p->filename,filename);
+    strncpy(p->filename, filename, MAX_WADPATH-1);
+    p->filename[MAX_WADPATH-1] = '\0';
     
-    // a minimum of security, can't get only file in legacy direcory
+    // a minimum of security, can only get file in legacy direcory
     nameonly(p->filename);
 
     // check first in wads loaded the majority of case
@@ -415,11 +439,12 @@ void SendFile(int node,char *filename, char fileid)
     {
         strcpy(wadfilename,wadfiles[i]->filename);
         nameonly(wadfilename);
-        if(stricmp(wadfilename,p->filename)==0)
+        if(strcasecmp(wadfilename,p->filename)==0)
         {
             found = true;
             // copy filename with full path
-            strcpy(p->filename,wadfiles[i]->filename);
+            strncpy(p->filename, wadfiles[i]->filename, MAX_WADPATH-1);
+	    p->filename[MAX_WADPATH-1] = '\0';
         }
     }
     
@@ -670,12 +695,15 @@ void CloseNetFile(void)
 
     // receiving a file ?
     for( i=0;i<MAX_WADFILES;i++ )
-        if( fileneeded[i].status==FS_DOWNLOADING && fileneeded[i].phandle)
+    {
+        fileneeded_t * fnp = &fileneeded[i];
+        if( fnp->status==FS_DOWNLOADING && fnp->phandle)
         {
-            fclose(fileneeded[i].phandle);
+            fclose(fnp->phandle);
             // file is not complete, delete it
-            remove(fileneeded[i].filename);
+            remove(fnp->filename);
         }
+    }
 
     // remove FILEFRAGMENT from acknledge list
     Net_AbortPacketType(PT_FILEFRAGMENT);
@@ -683,16 +711,20 @@ void CloseNetFile(void)
 
 // functions cut and pasted from doomatic :)
 
+// Remove all except filename at tail
 void nameonly(char *s)
 {
   int j;
 
   for(j=strlen(s);j>=0;j--)
+  {
       if( (s[j]=='\\') || (s[j]==':') || (s[j]=='/') )
       {
-          memcpy(s, &(s[j+1]), strlen(&(s[j+1]))+1 );
+	  // [WDJ] DO NOT USE memcpy, these may overlap, use memmove
+          memmove(s, &(s[j+1]), strlen(&(s[j+1]))+1 );
           return;
       }
+  }
 }
 
 

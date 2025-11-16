@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: g_game.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1907,6 +1907,7 @@ void compose_message( char * str1, char * str2 )
 
 
 extern char  savegamedir[SAVESTRINGSIZE];
+char  savegamename[MAX_WADPATH];
 
 // Must be able to handle 99 savegame slots, even when
 // not SAVEGAME99, so net game saves are universally accepted.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 769 2010-11-18 21:21:50Z wesleyjohnson $
+// $Id: m_misc.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -198,13 +198,16 @@ void FIL_ExtFile_Close ( ExtFIL_t * ft )
 
 //
 // checks if needed, and add default extension to filename
-//
+// in path[MAX_WADPATH]
 void FIL_DefaultExtension (char *path, char *extension)
 {
     char    *src;
+    // [WDJ] assume MAX_WADPATH buffer
+    int  plen = strlen(path);
+    if( plen > (MAX_WADPATH - 4) )   return;  // too long to add extension
 
   // search for '.' from end to begin, add .EXT only when not found
-    src = path + strlen(path) - 1;
+    src = path + plen - 1;
 
     while (*src != '/' && src != path)
     {
@@ -291,18 +294,19 @@ boolean         gameconfig_loaded = false;      // true once config.cfg loaded
 
 void Command_SaveConfig_f (void)
 {
-    char tmpstr[MAX_WADPATH];
+    char cfgname[MAX_WADPATH];
 
     if (COM_Argc()!=2)
     {
         CONS_Printf("saveconfig <filename[.cfg]> : save config to a file\n");
         return;
     }
-    strcpy(tmpstr,COM_Argv(1));
-    FIL_DefaultExtension (tmpstr,".cfg");
+    strncpy(cfgname, COM_Argv(1), MAX_WADPATH-1);
+    cfgname[MAX_WADPATH-1] = '\0';
+    FIL_DefaultExtension (cfgname,".cfg");
 
-    M_SaveConfig(tmpstr);
-    CONS_Printf("config saved as %s\n",configfile);
+    M_SaveConfig(cfgname);
+    CONS_Printf("config saved as %s\n", configfile);  // actual name
 }
 
 void Command_LoadConfig_f (void)
@@ -313,7 +317,8 @@ void Command_LoadConfig_f (void)
         return;
     }
 
-    strcpy(configfile,COM_Argv(1));
+    strncpy(configfile, COM_Argv(1), MAX_WADPATH-1);
+    configfile[MAX_WADPATH-1] = '\0';
     FIL_DefaultExtension (configfile,".cfg");
 /*  for create, don't check
 
@@ -324,7 +329,6 @@ void Command_LoadConfig_f (void)
     }
 */
     COM_BufInsertText (va("exec \"%s\"\n",configfile));
-
 }
 
 void Command_ChangeConfig_f (void)
@@ -352,7 +356,8 @@ void M_FirstLoadConfig(void)
     p = M_CheckParm ("-config");
     if (p && p<myargc-1)
     {
-        strcpy (configfile, myargv[p+1]);
+        strncpy (configfile, myargv[p+1], MAX_WADPATH-1);
+        configfile[MAX_WADPATH-1] = '\0';
         CONS_Printf ("config file: %s\n",configfile);
     }
 
@@ -386,7 +391,7 @@ void M_SaveConfig (char *filename)
         f = fopen (filename, "w");
         // change it only if valide
         if(f)
-            strcpy(configfile,filename);
+            strcpy(configfile,filename);  // filename is already MAX_WADPATH
         else
         {
             CONS_Printf ("Couldn't save game config file %s\n",filename);
@@ -592,7 +597,24 @@ char *Z_StrDup (const char *in)
     return out;
 }
 
+// dest must be filename buffer of MAX_WADPATH
+// If directory dn does not end in '/', then a separator will be included.
+void cat_filename( char * dest, const char * dn, const char * fn )
+{
+    char * format = "%s%s";
+    int dnlen = strlen( dn );
+    if( dnlen )
+    {
+        // if directory does not have '/' then include one in format
+        char ch = dn[ dnlen-1 ]; // last char
+        if( ! ( ch == '/' || ch == '\\' ))   format = "%s/%s";
+    }
+    snprintf(dest, MAX_WADPATH-1, format, dn, fn);
+    dest[MAX_WADPATH-1] = '\0';
+}
 
+#if 0
+// [WDJ] No longer used
 // s1=s2+s3+s1
 void strcatbf(char *s1,char *s2,char *s3)
 {
@@ -603,3 +625,5 @@ void strcatbf(char *s1,char *s2,char *s3)
     strcat(s1,s3);
     strcat(s1,tmp);
 }
+#endif
+

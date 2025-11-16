@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: g_game.h 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,7 +77,7 @@ extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
 extern char*      team_names[];
 
 extern  boolean nomonsters;             // checkparm of -nomonsters
-extern  char      gamemapname[128];
+extern  char      gamemapname[MAX_WADPATH];
 
 extern  player_t  players[MAXPLAYERS];
 extern  boolean   playeringame[MAXPLAYERS];
@@ -148,6 +148,7 @@ void G_LoadGame (int slot);
 void G_DoLoadGame (int slot);
 #endif
 
+extern char savegamename[MAX_WADPATH];
 void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot );
 
 // Called by M_Responder.

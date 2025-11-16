@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 855 2011-09-15 23:35:10Z wesleyjohnson $
+// $Id: dstrings.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -815,5 +815,3 @@ char *text[NUMTEXT] = {
     "c:\\doomdata\\" SAVEGAMENAME "%d.dsg",
     SAVEGAMENAME "%d.dsg",
 #endif
-
-char savegamename[256];

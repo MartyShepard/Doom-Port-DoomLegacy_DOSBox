@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 850 2011-08-20 23:14:59Z wesleyjohnson $
+// $Id: m_menu.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -725,6 +725,7 @@ boolean  M_already_playing( boolean check_netgame )
         // cannot start a new game while in a network game
         M_SimpleMessage(NEWGAME);
         snprintf(msgtmp, MSGTMP_LEN, "%s\n%s", NEWGAME, ABORTGAME );
+        msgtmp[MSGTMP_LEN-1] = '\0';
         M_StartMessage(msgtmp, M_Choose_to_quit_Response, MM_YESNO);
         return 1;
     }
@@ -2330,6 +2331,7 @@ void M_ChangeControl(int choice)
     controltochange = currentMenu->menuitems[choice].alphaKey;
     snprintf (msgtmp, MSGTMP_LEN,
 	      "Hit the new key for\n%s\nESC for Cancel", currentMenu->menuitems[choice].text);
+    msgtmp[MSGTMP_LEN-1] = '\0';
 
     M_StartMessage (msgtmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 }
@@ -3007,6 +3009,7 @@ void M_ReadSaveStrings( int scroll_direction )
 	        // info from a valid legacy save game
 		snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
 			  "%s %s", sginfo.map, sginfo.levtime);
+	        sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
 	        slot_str = sginfo.name;
 	        slot_status = 1;
 	    }
@@ -3422,6 +3425,7 @@ void M_QuickSave(void)
     if (quickSaveSlot < 0)   goto pick_slot; // No slot yet.
     // Show save name, ask for quick save ack.
     snprintf(msgtmp, MSGTMP_LEN, QSPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
+    msgtmp[MSGTMP_LEN-1] = '\0';
     M_StartMessage(msgtmp, M_QuickSaveResponse, MM_YESNO);
     return;
 
@@ -3467,6 +3471,7 @@ void M_QuickLoad(void)
     }
     // Show load name, ask for quick load ack.
     snprintf(msgtmp, MSGTMP_LEN, QLPROMPT, savegamedisp[QUICKSAVE_INDEX].desc);
+    msgtmp[MSGTMP_LEN-1] = '\0';
     M_StartMessage(msgtmp, M_QuickLoadResponse, MM_YESNO);
 }
 
@@ -3572,6 +3577,7 @@ void M_QuitDOOM(int choice)
   //  or one at random, between 1 and maximum number.
   snprintf(msgtmp, MSGTMP_LEN,
 	   text[DOSY_NUM], text[ QUITMSG_NUM+(gametic%NUM_QUITMESSAGES)]);
+  msgtmp[MSGTMP_LEN-1] = '\0';
   M_StartMessage( msgtmp, M_QuitResponse, MM_YESNO);
 }
 

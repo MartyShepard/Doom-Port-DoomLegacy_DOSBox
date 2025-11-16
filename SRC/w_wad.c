@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: w_wad.c 869 2011-10-31 23:55:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -225,7 +225,8 @@ int W_LoadWadFile (char *filename)
         return -1;
     }
 
-    strncpy(filenamebuf, filename, MAX_WADPATH);
+    strncpy(filenamebuf, filename, MAX_WADPATH-1);
+    filenamebuf[MAX_WADPATH-1] = '\0';
     filename = filenamebuf;
     // open wad file
     if ( (handle = open (filename,O_RDONLY|O_BINARY,0666)) == -1)
