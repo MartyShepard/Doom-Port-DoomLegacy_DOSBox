@@ -2654,7 +2654,7 @@ void M_DrawDir(void)
     // The actual dir name remains blank.
     if( scroll_index == 0 )
     {
-        V_DrawString( DirDef.x, DirDef.y+LINEHEIGHT, 0, "..");
+       // V_DrawString( DirDef.x, DirDef.y+LINEHEIGHT, 0, "..");
     }
 }
 

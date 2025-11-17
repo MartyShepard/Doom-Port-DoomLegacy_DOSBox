@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: g_game.c 870 2011-10-31 23:57:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1913,8 +1913,34 @@ char  savegamename[MAX_WADPATH];
 // not SAVEGAME99, so net game saves are universally accepted.
 void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
 {
+		
 #ifdef SAVEGAMEDIR
-    sprintf(namebuf, savegamename, savegamedir, slot);
+
+    #if defined( __DJGPP__ )
+    /*
+     DOS: Hole das das aktuelle Verzeichnis wo sich Doom3.exe befindet
+     Sollte das "savegamedir" leer sein, lege das aktuelle in
+     verzeichnis in die "savegamedir" variable.
+    */
+    char dosroot[MAX_WADPATH];
+    getcwd(dosroot, MAX_WADPATH-1);    
+ 
+    if (strlen(savegamedir) == 0)
+        strcpy(savegamedir, dosroot); 		
+		
+    strcat(dosroot, "/");
+    if (strlen(savegamename) > 0 && (savegamename[1] == ':' && savegamename[2] == '/'))
+    {			
+       int save_len = strlen(savegamename)-strlen(dosroot);
+       if (strncmp (savegamename,dosroot,strlen(dosroot)) == 0)
+       {
+           /* Entferne "dosroot" aus dem savegamename ("X:/xxx/") wegen möglicher duplikate */
+           memmove (savegamename-strlen(dosroot),savegamename,strlen(savegamename));
+	   savegamename[save_len]='\0';					
+       }
+    }
+    #endif
+    sprintf(namebuf, savegamename, savegamedir, slot);			
 #else
     sprintf(namebuf, savegamename, slot);
 #endif
@@ -1935,6 +1961,7 @@ void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
         */
         memmove( &namebuf[ln-7], &namebuf[ln-6], 6 );
         namebuf[ln-1] = '\0'; // Ende Null Terminiert
+								
         /*				
         Kopiert von Pos 7 ("99.DSG") nach Pos 6
         Pos: 0 1 2 3 4 5 6 7 |8| 9 10 11 12 13 14 ......
@@ -2583,9 +2610,8 @@ void playdemo_restore_settings( void )
 
 void G_DeferedPlayDemo (char* name)
 {
-    COM_BufAddText("playdemo \"");
-    COM_BufAddText(name);
-    COM_BufAddText("\"\n");
+    // [WDJ] All as one string, or else it executes partial string
+    COM_BufAddText(va("playdemo \"%s\"\n", name));
 }
 
 

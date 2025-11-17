@@ -1904,3 +1904,12 @@ Add cat_filename function to encapsulate proper file name concatenation.
 Protect filename strings against extra long strings in command line, wad,
 and config files.
 Harden many string operations against buffer overflow.
+
+*** w78_net_playdemo
+patchfile = w78_net_playdemo.patch
+- committed revision 870   by wesley johnson
+Update some net functions to use ptrs instead of repeating array
+indexing.
+Harden a net buffer string operation against buffer overflow.
+Fix DeferredPlayDemo function, to put command in Execute as one
+string, so it does not execute partial strings and fail.

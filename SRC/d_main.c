@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "869"
+#define SVN_REV "870"
 #endif
 
 // Version number: major.minor.revision
@@ -1777,6 +1777,17 @@ void D_DoomMain()
 #ifdef SAVEGAMEDIR
         // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
 //        sprintf(savegamename, "%s%%s" SLASH "%s", legacyhome, text[NORM_SAVEI_NUM]);
+#if defined( __DJGPP__ )
+        /* DOS: Packe das Aktulle vezeichnis in dem sich Doom3.exe befindet in die
+                Legacyhome variable und zeige das im Menü
+         */
+        if (strlen(legacyhome) == 0 )
+        {
+            char dosroot[MAX_WADPATH];
+            getcwd(dosroot, MAX_WADPATH-1);
+            sprintf(legacyhome, "%s/", dosroot);
+        }
+#endif					
         snprintf(savegamename, MAX_WADPATH-1, "%s%%s" SLASH "%s%s", legacyhome, SAVEGAMENAME, "%d.dsg");
         // so can extract legacyhome from savegamename later
 #else    

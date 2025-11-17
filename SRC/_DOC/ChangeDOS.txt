@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00870 ]: w78 net playdemo string
+          DOS: Save/Load menu show Directorys
+					
 [00869 ]: w78 max_wadpath
 [00868 ]: w78 help docs
 [00867 ]: w77 add action.h french.bex files
