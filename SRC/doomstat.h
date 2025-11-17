@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 865 2011-09-17 18:02:35Z wesleyjohnson $
+// $Id: doomstat.h 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -236,7 +236,7 @@ extern  consvar_t       cv_deathmatch;
 // ========================================
 
 extern boolean         nomusic; //defined in d_main.c
-extern boolean         nosound;
+extern boolean         nosound; // clash with WATCOM i86.h nosound() function
 
 // =========================
 // Status flags for refresh.
@@ -325,7 +325,6 @@ extern  int             maxammo[NUMAMMO];
 //
 
 // File handling stuff.
-extern  char            basedefault[1024];
 #define DEBUGFILE
 #ifdef DEBUGFILE
 #define DEBFILE(msg) { if(debugfile) fputs(msg,debugfile); }

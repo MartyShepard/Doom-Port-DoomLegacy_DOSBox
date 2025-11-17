@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 745 2010-09-16 16:28:07Z smite-meister $
+// $Id: screen.c 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -66,7 +66,7 @@
 //-----------------------------------------------------------------------------
 
 // [WDJ] If you need to use a debugger then kill the video first
-//#define DEBUG_WITH_VIDEO_OFF
+//#define DEBUG_WINDOWED
 
 
 #include "doomdef.h"
@@ -111,7 +111,7 @@ void (*transtransfunc) (void);
 // global video state
 // ------------------
 viddef_t  vid;
-int       setmodeneeded;     //video mode change needed if > 0
+int       setmodeneeded;     // video mode change needed, if > 0, set by menu
                              // (the mode number to set + 1)
 
 
@@ -153,6 +153,8 @@ int  VID_SetMode(int modenum);
 //  Short and Tall sky drawer, for the current color mode
 void (*skydrawerfunc[2]) (void);
 
+// Called from D_DoomLoop, to init
+// Called from D_Display, when setmodeneeded
 void SCR_SetMode (void)
 {
     if(dedicated)
@@ -161,9 +163,20 @@ void SCR_SetMode (void)
     if (!setmodeneeded)
         return;                 //should never happen
 
-#ifndef DEBUG_WITH_VIDEO_OFF
+#ifdef DEBUG_WINDOWED
+    {
+      // Disable fullscreen so can switch to debugger at breakpoints.
+      int VID_GetModeForSize( int, int );  //vid_vesa.c
+      int cvfs = cv_fullscreen.value; // preserve config.cfg
+      cv_fullscreen.value = 0;
+      int modenum = VID_GetModeForSize(800,600);  // debug window
+      VID_SetMode(modenum);
+      cv_fullscreen.value = cvfs;
+    }
+#else
+    // video system interface, sets vid.recalc
     VID_SetMode(--setmodeneeded);
-#endif   
+#endif
 
     V_SetPalette (0);
         //CONS_Printf ("SCR_SetMode : vid.bpp is %d\n", vid.bpp);
@@ -182,8 +195,8 @@ void SCR_SetMode (void)
         shadecolfunc = R_DrawShadeColumn_8;  //R_DrawColumn_8;
         spanfunc = basespanfunc = R_DrawSpan_8;
 
-                // SSNTails 11-11-2002
-                transtransfunc = R_DrawTranslatedTranslucentColumn_8;
+        // SSNTails 11-11-2002
+        transtransfunc = R_DrawTranslatedTranslucentColumn_8;
 
         // FIXME: quick fix
         skydrawerfunc[0] = R_DrawColumn_8;      //old skies
@@ -199,8 +212,8 @@ void SCR_SetMode (void)
 	shadecolfunc = NULL;      //detect error if used somewhere..
         spanfunc = basespanfunc = R_DrawSpan_16;
 
-                // No 16bit operation for this function SSNTails 11-11-2002
-                transtransfunc = R_DrawTranslucentColumn_16;
+        // No 16bit operation for this function SSNTails 11-11-2002
+        transtransfunc = R_DrawTranslucentColumn_16;
 
         // FIXME: quick fix to think more..
         skydrawerfunc[0] = R_DrawColumn_16;
@@ -269,7 +282,7 @@ void SCR_Startup (void)
 //added:24-01-98:
 //
 // Called at new frame, if the video mode has changed
-//
+// Called from D_Display, when vid.recalc (set by VID_SetMode in i_video.c)
 void SCR_Recalc (void)
 {
     if(dedicated)
@@ -393,7 +406,7 @@ void SCR_SetDefaultMode (void)
 #if !defined( __DJGPP__ )
 void SCR_ChangeFullscreen (void)
 {
-  extern boolean allow_fullscreen;
+  extern boolean allow_fullscreen;  // controlled by i_video
   // used to prevent switching to fullscreen during startup
   if (!allow_fullscreen)
     return;

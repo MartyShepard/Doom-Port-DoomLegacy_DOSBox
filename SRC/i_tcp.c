@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: i_tcp.c 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -233,8 +233,11 @@ typedef struct sockaddr_ipx {
 #include "mserv.h" //Hurdler: support master server
 
 #ifdef __WIN32__
-    // some undifined under win32
+    // some undefined under win32
     #define IPPORT_USERRESERVED 5000
+#ifdef errno
+    #undef errno
+#endif
     #define errno             h_errno // some very strange things happen when not use h_error ?!?
     #define EWOULDBLOCK   WSAEWOULDBLOCK
     #define EMSGSIZE      WSAEMSGSIZE
@@ -471,7 +474,11 @@ SOCKET UDP_Socket (void)
 {
     SOCKET s;
     struct sockaddr_in  address;
+#if defined(WIN32) && defined(__MINGW32__)
+    u_long trueval = true;
+#else
     int    trueval = true;
+#endif
     int i;
     socklen_t j;
 
@@ -541,7 +548,11 @@ SOCKET IPX_Socket (void)
 {
     SOCKET s;
     SOCKADDR_IPX  address;
+#if defined(WIN32) && defined(__MINGW32__)
+    u_long trueval = true;
+#else
     int    trueval = true;
+#endif
     int    i;
     socklen_t j;
 

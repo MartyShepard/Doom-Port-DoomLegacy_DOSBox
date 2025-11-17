@@ -1913,3 +1913,13 @@ indexing.
 Harden a net buffer string operation against buffer overflow.
 Fix DeferredPlayDemo function, to put command in Execute as one
 string, so it does not execute partial strings and fail.
+
+*** w78_win32_compile
+patchfile = w78_win32_compile.patch
+- committed revision 871   by wesley johnson
+Additions to Makefile to support compilation on Win98 using MinGW.
+Create /dep file to hold *.dep files outside of source code.
+Change to WIN32 GlobalMemory lib call that is present on Win98.
+Fix dehacked.c problems with compiler not likely unsigned char in lib calls.
+Allow underline in dehacked/BEX names.
+Some other gcc 4 compiler complaints fixed.

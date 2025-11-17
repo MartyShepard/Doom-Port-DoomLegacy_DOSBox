@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: v_video.c 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -419,6 +419,8 @@ static void LoadPalette(char *lumpname)
 // V_SetPalette : Set the current palette to use for palettized graphics
 //              : (that is, most if not all of Doom's original graphics)
 // -------------+
+// Called by D_Display, SCR_Startup, SCR_SetMode, SB_PaletteFlash
+// Called by ST_doPaletteStuff, ST_Stop, CV_usegamma_OnChange, CV_Gammaxxx_ONChange
 void V_SetPalette(int palettenum)
 {
     if (!pLocalPalette)

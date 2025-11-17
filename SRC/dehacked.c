@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 866 2011-09-17 18:05:19Z wesleyjohnson $
+// $Id: dehacked.c 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -109,11 +109,11 @@ byte  pars_valid_bex = false;  // have valid PAR values (from BEX), boolean
 static boolean  bex_include_notext = 0;  // bex include with skip deh text
 
 // Save compare values, to handle multiple DEH files and lumps
-actionf_t  deh_actions[NUMSTATES];
-char       *deh_sprnames[NUMSPRITES];
-char       *deh_sfxnames[NUMSFX];
-char	   *deh_musicname[NUMMUSIC];
-char       *deh_text[NUMTEXT];
+static actionf_t  deh_actions[NUMSTATES];
+static char       *deh_sprnames[NUMSPRITES];
+static char       *deh_sfxnames[NUMSFX];
+static char       *deh_musicname[NUMMUSIC];
+static char       *deh_text[NUMTEXT];
 
 
 
@@ -252,8 +252,9 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
     // Mew freedoom.bex has 1%, that is not present in original string
     // Strings have %s, %s %s (old strings also had %c and %d).
     // Music and sound strings may have '-' and '\0'.
-    unsigned char * newp = &newstring[0];
-    unsigned char * oldp = &(*oldstring)[0];
+    // [WDJ] Newer compiler could not tolerate these as unsigned char.
+    char * newp = &newstring[0];
+    char * oldp = &(*oldstring)[0];
     if( drstype == DRS_string )
     {
         for(;;)
@@ -286,12 +287,12 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
     }
 
     // rewrite backslash literals into newstring, because it only gets shorter
-    unsigned char * chp = &newstring[0];
+    char * chp = &newstring[0];
     for( newp = &newstring[0]; *newp ; newp++ )
     {
         // Backslash in DEH and BEX strings are not interpreted by printf
         // Must convert \n to LF.
-        register unsigned char ch = *newp;
+        register char ch = *newp;
         if( ch == 0x5C ) // backslash
 	{
 	    char * endvp = NULL;
@@ -310,14 +311,14 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	     case 'x':  // hex
 	       // These do not get interpreted unless we do it here.
 	       // Need this for foreign language ??
-	       v = strtoul(&newp[1], &endvp, 16);  // get hex
+	       v = strtoul( &newp[1], &endvp, 16);  // get hex
 	       goto check_backslash_value;
 	     default:
 	       if( ch >= '1' && ch <= '9' )  // octal
 	       {
 		   // These do not get interpreted unless we do it here.
 		   // Need this for foreign language ??
-		   v = strtoul(newp, &endvp, 8);  // get octal
+		   v = strtoul( newp, &endvp, 8);  // get octal
 		   goto check_backslash_value;
 	       }
 	    }
@@ -333,11 +334,11 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 #if defined( FRENCH_INLINE ) || defined( BEX_LANGUAGE )
         // place checks for allowed foreign lang chars here
 	// reported dangerous escape chars
-	if( ch == 133 ) goto bad_char;
-        if( ch >= 254 )  goto bad_char;
+	if( (unsigned char)ch == 133 )  goto bad_char;
+        if( (unsigned char)ch >= 254 )  goto bad_char;
 //	    if( ch == 27 ) continue;  // ESCAPE
 #else
-        if( ch > 127 )  goto bad_char;
+        if( (unsigned char)ch > 127 )  goto bad_char;
 #endif       
         if( ch < 32 )
 	{
@@ -616,10 +617,10 @@ static void readthing(MYFILE *f, int deh_thing_id )
 #endif
 	      for( fnp = &BEX_flag_name_table[0]; fnp; fnp++ )
 	      {
-					#if defined( __DJGPP__ )
-					// Fixed Crash in DOS.
-					if (fnp->name == NULL) break;
-					#endif
+#if defined( __DJGPP__ )
+              // Fixed Crash in DOS.
+              if (fnp->name == NULL) break;
+#endif
 		  if(!strcasecmp( word, fnp->name ))  // find name
 		  {
 		      switch( fnp->ctrl & ~BFmf)
@@ -637,7 +638,7 @@ static void readthing(MYFILE *f, int deh_thing_id )
 		      }
 		      flags_valid_deh = true;
 		      // unless multiple flag set for a keyword
-		      if( ! fnp->ctrl & BFmf )
+		      if( ! (fnp->ctrl & BFmf) )
 		         continue; // next word
 		  }
 	      }

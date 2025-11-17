@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: I_video.c 871 2011-11-01 00:00:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -225,7 +225,12 @@ void I_SetPalette (RGBA_t* palette)
     int i;
 
     outportb(0x3c8,0);
+#if ( defined(DEBUG_WINDOWED) && defined(WIN32) )
+    // Palette disable during debug, otherwise black text on black background
+    for (i=17;i<256;i++,palette++)
+#else
     for (i=0;i<256;i++,palette++)
+#endif
     {
         outportb(0x3c9,palette->s.red>>2);
         outportb(0x3c9,palette->s.green>>2);
