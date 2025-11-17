@@ -1923,3 +1923,11 @@ Change to WIN32 GlobalMemory lib call that is present on Win98.
 Fix dehacked.c problems with compiler not likely unsigned char in lib calls.
 Allow underline in dehacked/BEX names.
 Some other gcc 4 compiler complaints fixed.
+
+*** w78_execute_config
+patchfile = w78_execute_config
+- committed revision 872   by wesley johnson
+Execute of config file on window systems fails because the COM buffer
+system mangles windows path backslashes.  Extensive fixes to COM
+buffer handling to prevent this, by distinguishing script commands and
+those commands that have filename parameters.

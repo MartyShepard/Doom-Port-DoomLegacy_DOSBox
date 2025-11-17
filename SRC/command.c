@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 841 2011-07-07 22:13:54Z smite-meister $
+// $Id: command.c 872 2011-11-01 00:04:22Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -93,7 +93,7 @@
 // protos.
 //========
 static boolean COM_Exists (char *com_name);
-static void    COM_ExecuteString (char *text);
+static void    COM_ExecuteString (char *text, boolean script);
 
 static void    COM_Alias_f (void);
 static void    COM_Echo_f (void);
@@ -106,8 +106,9 @@ static boolean    CV_Command (void);
 static char      *CV_StringValue (char *var_name);
 static consvar_t  *consvar_vars;       // list of registered console variables
 
-static char    com_token[1024];
-static char    *COM_Parse (char *data);
+#define COM_TOKEN_MAX   1024
+static char    com_token[COM_TOKEN_MAX];
+static char    *COM_Parse (char *data, boolean script);
 
 CV_PossibleValue_t CV_OnOff[] =    {{0,"Off"}, {1,"On"},    {0,NULL}};
 CV_PossibleValue_t CV_YesNo[] =     {{0,"No"} , {1,"Yes"},   {0,NULL}};
@@ -173,7 +174,7 @@ void COM_BufInsertText (char *text)
     if (templen)
     {
       if (!VS_Print(&com_text, temp))
-	CONS_Printf ("Command buffer full!!\n");
+        CONS_Printf ("Command buffer full!!\n");
 
       Z_Free (temp);
     }
@@ -183,80 +184,108 @@ void COM_BufInsertText (char *text)
 //  Flush (execute) console commands in buffer
 //   does only one if com_wait
 //
-void COM_BufExecute (void)
+void COM_BufExecute ( void )
 {
   int     i;
+  boolean script = 1;
+  char line[1024];
 
   if (com_wait)
-    {
+  {
         com_wait--;
         return;
-    }
+  }
 
   while (com_text.cursize)
-    {
+  {
       // find a '\n' or ; line break
       char *text = (char *)com_text.data;
-
       boolean in_quote = false;
+
+      // This is called without a clue as to what commands are present.
+      // scripts have quoted strings
+      // exec have quoted filenames with backslash: exec "c:\doomdir\"
+      if( ( strncmp(text,"exec",4) == 0 )
+          ||( strncmp(text,"map",3) == 0 )
+          ||( strncmp(text,"playdemo",8) == 0 )
+          ||( strncmp(text,"addfile",7) == 0 )
+          ||( strncmp(text,"loadconfig",10) == 0 )
+          ||( strncmp(text,"saveconfig",10) == 0 )
+	  )
+	 script = 0;  // has filename
+
       for (i=0; i < com_text.cursize; i++)
-        {
-	  if (text[i] == '\\' && in_quote) // escape sequence
-	    {
-	      switch (text[i+1])
+      {
+	register char ch = text[i];
+        if (ch == '"') // non-escaped quote 
+	  in_quote = !in_quote;
+	else if( in_quote )
+	{
+          if (script && (ch == '\\')) // escape sequence
+	  {
+#if 1
+	      // [WDJ] Only doublequote and backslash really matter
+	      i += 1;  // skip it, because other parser does too
+	      continue;
+#else
+              switch (text[i+1])
 	      {
-		case '\\': // backslash
-		case '"':  // double quote
-		case 't':  // tab
-		case 'n':  // newline
-		  i += 1;  // skip it
-		  break;
+                case '\\': // backslash
+                case '"':  // double quote
+                case 't':  // tab
+                case 'n':  // newline
+                  i += 1;  // skip it
+                  break;
 
-		default:
-		  // unknown sequence, parser will give an error later on.
-		  break;
-	      }
-	    }
-	  else if (text[i] == '"') // non-escaped quote 
-	    in_quote = !in_quote;
-	  else if (text[i] == ';' && !in_quote) // semicolon separates commands, unless inside a quoted string
+                default:
+                  // unknown sequence, parser will give an error later on.
+                  break;
+              }
+	      continue;
+#endif	     
+	  }
+	}
+	else
+	{ // not in quoted string
+          if (ch == ';') // semicolon separates commands
+            break;
+	  if (ch == '\n' || ch == '\r') // always separate commands
 	    break;
-	  else if (text[i] == '\n' || text[i] == '\r') // always separate commands, not allowed in quoted strings
-	    break;
-        }
+	}
+      }
 
 
-      char line[1024];
-        memcpy (line, text, i);
-        line[i] = 0;
+      if( i > 1023 )  i = 1023;  // overrun of line
+      memcpy (line, text, i);
+      line[i] = 0;
 
-        // flush the command text from the command buffer, _BEFORE_
-        // executing, to avoid that 'recursive' aliases overflow the
-        // command text buffer, in that case, new commands are inserted
-        // at the beginning, in place of the actual, so it doesn't
-        // overflow
-        if (i == com_text.cursize)
-        {
+      // flush the command text from the command buffer, _BEFORE_
+      // executing, to avoid that 'recursive' aliases overflow the
+      // command text buffer, in that case, new commands are inserted
+      // at the beginning, in place of the actual, so it doesn't
+      // overflow
+      if (i == com_text.cursize)
+      {
             // the last command was just flushed
             com_text.cursize = 0;
-	}
-        else
-        {
+      }
+      else
+      {
             i++;
             com_text.cursize -= i;
             memcpy (text, text+i, com_text.cursize);
-        }
+      }
 
-        // execute the command line
-        COM_ExecuteString (line);
+      // execute the command line
+      COM_ExecuteString (line, script);
 
-        // delay following commands if a wait was encountered
-        if (com_wait)
-        {
+      // delay following commands if a wait was encountered
+      if (com_wait)
+      {
             com_wait--;
             break;
-        }
-    }
+      }
+  }
 }
 
 
@@ -285,6 +314,10 @@ void Got_NetVar(char **p,int playernum);
 //
 void COM_Init (void)
 {
+    int i;
+    for( i=0; i<MAX_ARGS; i++ )  com_argv[i] = com_null_string;
+    com_argc = 0;
+
     // allocate command buffer
     VS_Alloc (&com_text, COM_BUF_SIZE);
 
@@ -317,12 +350,15 @@ char *COM_Argv (int arg)
 }
 
 
+#if 0
+// [WDJ] Unused
 // Returns string pointer of all command args
 //
 char *COM_Args (void)
 {
     return com_args;
 }
+#endif
 
 
 int COM_CheckParm (char *check)
@@ -342,13 +378,16 @@ int COM_CheckParm (char *check)
 //
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
-static void COM_TokenizeString (char *text)
+static void COM_TokenizeString (char *text, boolean script)
 {
-    int     i;
+    int  i;
 
 // clear the args from the last string
     for (i=0 ; i<com_argc ; i++)
+    {
         Z_Free (com_argv[i]);
+        com_argv[i] = com_null_string;  // never leave behind ptrs to old mem
+    }
 
     com_argc = 0;
     com_args = NULL;
@@ -372,7 +411,7 @@ static void COM_TokenizeString (char *text)
         if (com_argc == 1)
             com_args = text;
 
-        text = COM_Parse (text);
+        text = COM_Parse (text, script);
         if (!text)
             return;
 
@@ -449,9 +488,11 @@ char *COM_CompleteCommand (char *partial, int skips)
 
 // check functions
     for (cmd=com_commands ; cmd ; cmd=cmd->next)
+    {
         if (!strncmp (partial,cmd->name, len))
             if (!skips--)
                 return cmd->name;
+    }
 
     return NULL;
 }
@@ -461,15 +502,15 @@ char *COM_CompleteCommand (char *partial, int skips)
 // Parses a single line of text into arguments and tries to execute it.
 // The text can come from the command buffer, a remote client, or stdin.
 //
-static void COM_ExecuteString (char *text)
+static void COM_ExecuteString (char *text, boolean script)
 {
     xcommand_t  *cmd;
     cmdalias_t *a;
 
-    COM_TokenizeString (text);
+    COM_TokenizeString (text, script);
 
 // execute the command line
-    if (!COM_Argc())
+    if (com_argc==0)
         return;     // no tokens
 
 // check functions
@@ -504,7 +545,7 @@ static void COM_ExecuteString (char *text)
     // (don't flood the console in software mode with bad gr_xxx command)
     if (!CV_Command () && con_destlines)
     {
-        CONS_Printf ("Unknown command '%s'\n", COM_Argv(0));
+        CONS_Printf ("Unknown command '%s'\n", com_argv[0]);
     }
 }
 
@@ -540,7 +581,8 @@ static void COM_Alias_f (void)
     c = COM_Argc();
     for (i=2 ; i< c ; i++)
     {
-        strcat (cmd, COM_Argv(i));
+        register int n = 1020 - strlen( cmd );  // free space, with " " and "\n"
+        strncat (cmd, COM_Argv(i), n);
         if (i != c)
             strcat (cmd, " ");
     }
@@ -595,7 +637,6 @@ static void COM_Exec_f (void)
 // free buffer
 
     Z_Free(buf);
-
 }
 
 
@@ -634,11 +675,11 @@ static void COM_Help_f (void)
             CONS_Printf("\n");
             if( cvar->PossibleValue )
             {
-                if(stricmp(cvar->PossibleValue[0].strvalue,"MIN")==0)
+                if(strcasecmp(cvar->PossibleValue[0].strvalue,"MIN")==0)
                 {
                     for(i=1; cvar->PossibleValue[i].strvalue!=NULL; i++)
 		    {
-                        if(!stricmp(cvar->PossibleValue[i].strvalue,"MAX"))
+                        if(!strcasecmp(cvar->PossibleValue[i].strvalue,"MAX"))
                             break;
 		    }
                     CONS_Printf("  range from %d to %d\n",cvar->PossibleValue[0].value,cvar->PossibleValue[i].value);
@@ -961,13 +1002,13 @@ static void Setvalue (consvar_t *var, char *valstr)
     {
         int v=atoi(valstr);
 
-        if(!stricmp(var->PossibleValue[0].strvalue,"MIN"))
+        if(!strcasecmp(var->PossibleValue[0].strvalue,"MIN"))
         {   // bounded cvar
             int i;
             // search for maximum
             for(i=1;var->PossibleValue[i].strvalue!=NULL;i++)
 	    {
-                if(!stricmp(var->PossibleValue[i].strvalue,"MAX"))
+                if(!strcasecmp(var->PossibleValue[i].strvalue,"MAX"))
                     break;
 	    }
 
@@ -994,7 +1035,7 @@ static void Setvalue (consvar_t *var, char *valstr)
             // check first strings
             for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
 	    {
-                if(!stricmp(var->PossibleValue[i].strvalue,valstr))
+                if(!strcasecmp(var->PossibleValue[i].strvalue,valstr))
                     goto found;
 	    }
             if(!v)
@@ -1098,8 +1139,7 @@ void CV_LoadNetVars( char **p )
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
         if (cvar->flags & CV_NETVAR)
-     
-	 Got_NetVar(p, 0);
+	    Got_NetVar(p, 0);
     }
 }
 
@@ -1115,7 +1155,7 @@ void CV_Set (consvar_t *var, char *value)
     if(!var->string)
         I_Error("cv_Set : %s no string set ?!\n",var->name);
 #endif
-    if (stricmp(var->string, value)==0)
+    if (strcasecmp(var->string, value)==0)
         return; // no changes
 
     if (netgame)
@@ -1255,7 +1295,8 @@ void CV_SaveVariables (FILE *f)
 
 //  Parse a token out of a string, handles script files too
 //  returns the data pointer after the token
-static char *COM_Parse (char *data)
+//  Do not mangle filenames, set script only where strings might have '\' escapes.
+static char *COM_Parse (char *data, boolean script)
 {
     int c;
     int len = 0;
@@ -1274,7 +1315,8 @@ skipwhite:
     }
 
 // skip // comments
-    if (c == '/' && data[1] == '/')
+    // Also may be Linux filename: //home/user/.legacy
+    if ( script && (c == '/' && data[1] == '/'))
     {
         while (*data && *data != '\n')
             data++;
@@ -1286,27 +1328,23 @@ skipwhite:
     if (c == '"')
     {
         data++;
-        while (true)
+        while ( len < COM_TOKEN_MAX-1 )
         {
             c = *data++;
 #if !defined( __DJGPP__ )							
 	    if (!c)
             {
-	      // NUL in the middle of a quoted string. Missing closing quote?
-	      CONS_Printf("Error: Quoted string ended prematurely.\n");
-	      com_token[len] = '\0';
-	      return data;
+              // NUL in the middle of a quoted string. Missing closing quote?
+              CONS_Printf("Error: Quoted string ended prematurely.\n");
+	      goto term_done;
             }
 #endif						
 	    
             if (c == '"') // closing quote
-	    {
-	      com_token[len] = '\0';
-	      return data;
-	    }
+	      goto term_done;
 	    
-	    if (c == '\\') // c-like escape sequence
-	    {
+            if ( script && (c == '\\')) // c-like escape sequence
+            {
 	      switch (*data)
 	      {
 	      case '\\':  // backslash
@@ -1339,30 +1377,34 @@ skipwhite:
 	      // Move code because this fixed commandline eq "-timedemo demo2"
 	      // NUL in the middle of a quoted string. Missing closing quote?
 	      CONS_Printf("Error: Quoted string ended prematurely.\n");
-	      com_token[len] = '\0';
-	      return data;
+	      goto term_done;//com_token[len] = '\0';
+//	      return data;
             }
 #endif						
     }
 
 // parse single characters
-    if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':')
+    // Also ':' can appear in WIN path names
+    if (script && (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':'))
     {
+      if( len >= COM_TOKEN_MAX-2 )  goto term_done;
       com_token[len++] = c;
-      com_token[len] = '\0';
-      return data+1;
+      data++;
+      goto term_done;
     }
 
 // parse a regular word
     do
     {
+      if( len >= COM_TOKEN_MAX-2 )  goto term_done;
       com_token[len++] = c;
       data++;
       c = *data;
-      if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':')
-	break;
+      if (script && (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':'))
+        break;
     } while (c > ' ');
 
+term_done:   
     com_token[len] = '\0';
     return data;
 }
