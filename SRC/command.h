@@ -62,9 +62,20 @@ typedef void (*com_func_t) (void);
 
 void    COM_AddCommand (char *name, com_func_t func);
 
+typedef struct {
+  byte   num;     // number of actual args
+  char * arg[4];  // first 4
+} COM_args_t;
+
+// get some args
+void  COM_Args( COM_args_t * comargs );
+
+// Any args
 int     COM_Argc (void);
 char    *COM_Argv (int arg);   // if argv>argc, returns empty string
+#if 0
 char    *COM_Args (void);
+#endif
 int     COM_CheckParm (char *check); // like M_CheckParm :)
 
 // match existing command or NULL

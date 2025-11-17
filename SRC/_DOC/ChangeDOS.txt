@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00873 ]: w78 com args function
 [00872 ]: w78 execute config backslash fix
 [00871 ]: w78 win32 compiler adapt
 [00870 ]: w78 net playdemo string

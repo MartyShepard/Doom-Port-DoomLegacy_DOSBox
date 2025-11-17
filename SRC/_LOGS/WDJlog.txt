@@ -1931,3 +1931,11 @@ Execute of config file on window systems fails because the COM buffer
 system mangles windows path backslashes.  Extensive fixes to COM
 buffer handling to prevent this, by distinguishing script commands and
 those commands that have filename parameters.
+
+*** w78_com_args
+patchfile = w78_com_args.patch
+- committed revision 873   by wesley johnson
+Update COM buffer execution interface.
+The COM_args function is unused.
+Added COM_Args function that returns count and first 4 com parameters.
+This makes for fewer calls, converts calls into literal array access.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 872 2011-11-01 00:04:22Z wesleyjohnson $
+// $Id: command.c 873 2011-11-01 00:05:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -349,6 +349,17 @@ char *COM_Argv (int arg)
     return com_argv[arg];
 }
 
+// get some args
+// More efficient, but preserves read only interface
+void  COM_Args( COM_args_t * comargs )
+{
+    int i;
+    comargs->num = com_argc;
+    for( i=0; i<4; i++ )
+    {
+        comargs->arg[i] = com_argv[i];
+    }
+}
 
 #if 0
 // [WDJ] Unused
@@ -562,9 +573,12 @@ static void COM_Alias_f (void)
 {
     cmdalias_t  *a;
     char        cmd[1024];
-    int         i, c;
-
-    if (COM_Argc()<3)
+    int         i;
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
+   
+    if ( carg.num < 3 )
     {
         CONS_Printf("alias <name> <command>\n");
         return;
@@ -574,16 +588,15 @@ static void COM_Alias_f (void)
     a->next = com_alias;
     com_alias = a;
 
-    a->name = Z_StrDup (COM_Argv(1));
+    a->name = Z_StrDup (carg.arg[1]);
 
 // copy the rest of the command line
     cmd[0] = 0;     // start out with a null string
-    c = COM_Argc();
-    for (i=2 ; i< c ; i++)
+    for (i=2 ; i<carg.num ; i++)
     {
         register int n = 1020 - strlen( cmd );  // free space, with " " and "\n"
         strncat (cmd, COM_Argv(i), n);
-        if (i != c)
+        if (i != carg.num)
             strcat (cmd, " ");
     }
     strcat (cmd, "\n");
@@ -597,8 +610,11 @@ static void COM_Alias_f (void)
 static void COM_Echo_f (void)
 {
     int     i;
+    COM_args_t  carg;
+  
+    COM_Args( &carg );
 
-    for (i=1 ; i<COM_Argc() ; i++)
+    for (i=1 ; i<carg.num ; i++)
         CONS_Printf ("%s ",COM_Argv(i));
     CONS_Printf ("\n");
 }
@@ -610,8 +626,11 @@ static void COM_Exec_f (void)
 {
     int     length;
     byte*   buf=NULL;
+    COM_args_t  carg;
+   
+    COM_Args( &carg );
 
-    if (COM_Argc () != 2)
+    if (carg.num != 2)
     {
         CONS_Printf ("exec <filename> : run a script file\n");
         return;
@@ -619,16 +638,16 @@ static void COM_Exec_f (void)
 
 // load file
 
-    length = FIL_ReadFile (COM_Argv(1), &buf);
+    length = FIL_ReadFile (carg.arg[1], &buf);
     //CONS_Printf ("debug file length : %d\n",length);
 
     if (!buf)
     {
-        CONS_Printf ("couldn't execute file %s\n",COM_Argv(1));
+        CONS_Printf ("couldn't execute file %s\n", carg.arg[1]);
         return;
     }
 
-    CONS_Printf ("executing %s\n",COM_Argv(1));
+    CONS_Printf ("executing %s\n", carg.arg[1]);
 
 // insert text file into the command buffer
 
@@ -645,8 +664,11 @@ static void COM_Exec_f (void)
 //
 static void COM_Wait_f (void)
 {
-    if (COM_Argc()>1)
-        com_wait = atoi(COM_Argv(1));
+    COM_args_t  carg;
+  
+    COM_Args( &carg );
+    if (carg.num>1)
+        com_wait = atoi( carg.arg[1] );
     else
         com_wait = 1;   // 1 frame
 }
@@ -656,10 +678,13 @@ static void COM_Help_f (void)
     xcommand_t  *cmd;
     consvar_t  *cvar;
     int i=0;
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
 
-    if(COM_Argc()>1)
+    if( carg.num>1 )
     {
-        cvar = CV_FindVar (COM_Argv(1));
+        cvar = CV_FindVar (carg.arg[1]);
         if( cvar )
         {
             CONS_Printf("Variable %s:\n",cvar->name);
@@ -726,24 +751,27 @@ static void COM_Help_f (void)
 static void COM_Toggle_f(void)
 {
     consvar_t  *cvar;
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
 
-    if(COM_Argc()!=2 && COM_Argc()!=3)
+    if(carg.num!=2 && carg.num!=3)
     {
         CONS_Printf("Toggle <cvar_name> [-1]\n"
                     "Toggle the value of a cvar\n");
         return;
     }
-    cvar = CV_FindVar (COM_Argv(1));
+    cvar = CV_FindVar (carg.arg[1]);
     if(!cvar)
     {
-        CONS_Printf("%s is not a cvar\n",COM_Argv(1));
+        CONS_Printf("%s is not a cvar\n", carg.arg[1]);
         return;
     }
 
     // netcvar don't change imediately
     cvar->flags |= CV_SHOWMODIFONETIME;
-    if( COM_Argc()==3 )
-        CV_AddValue(cvar,atol(COM_Argv(2)));
+    if( carg.num==3 )
+        CV_AddValue(cvar, atol( carg.arg[2] ));
     else
         CV_AddValue(cvar,+1);
 }
@@ -1170,7 +1198,8 @@ void CV_Set (consvar_t *var, char *value)
         }
 
 	// send the value of the variable
-	const int BUFSIZE = 128;
+//        const int BUFSIZE = 128;  // not tolerated by all compilers
+#define BUFSIZE 128
 	byte buf[BUFSIZE], *p; // macros want byte*
 	p = buf;
         WRITEU16(p, var->netid);
@@ -1257,20 +1286,23 @@ void CV_AddValue (consvar_t *var, int increment)
 static boolean CV_Command (void)
 {
     consvar_t      *v;
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
 
     // check variables
-    v = CV_FindVar (COM_Argv(0));
+    v = CV_FindVar ( carg.arg[0] );
     if (!v)
         return false;
 
     // perform a variable print or set
-    if (COM_Argc() == 1)
+    if ( carg.num == 1 )
     {
         CONS_Printf ("\"%s\" is \"%s\" default is \"%s\"\n", v->name, v->string, v->defaultvalue);
         return true;
     }
 
-    CV_Set (v, COM_Argv(1));
+    CV_Set (v, carg.arg[1] );
     return true;
 }
 
@@ -1377,7 +1409,7 @@ skipwhite:
 	      // Move code because this fixed commandline eq "-timedemo demo2"
 	      // NUL in the middle of a quoted string. Missing closing quote?
 	      CONS_Printf("Error: Quoted string ended prematurely.\n");
-	      goto term_done;//com_token[len] = '\0';
+	      goto term_done;
 //	      return data;
             }
 #endif						

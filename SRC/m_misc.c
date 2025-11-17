@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: m_misc.c 873 2011-11-01 00:05:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -295,13 +295,16 @@ boolean         gameconfig_loaded = false;      // true once config.cfg loaded
 void Command_SaveConfig_f (void)
 {
     char cfgname[MAX_WADPATH];
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
 
-    if (COM_Argc()!=2)
+    if (carg.num!=2)
     {
         CONS_Printf("saveconfig <filename[.cfg]> : save config to a file\n");
         return;
     }
-    strncpy(cfgname, COM_Argv(1), MAX_WADPATH-1);
+    strncpy(cfgname, carg.arg[1], MAX_WADPATH-1);
     cfgname[MAX_WADPATH-1] = '\0';
     FIL_DefaultExtension (cfgname,".cfg");
 
@@ -311,13 +314,17 @@ void Command_SaveConfig_f (void)
 
 void Command_LoadConfig_f (void)
 {
-    if (COM_Argc()!=2)
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
+
+    if (carg.num!=2)
     {
         CONS_Printf("loadconfig <filename[.cfg]> : load config from a file\n");
         return;
     }
 
-    strncpy(configfile, COM_Argv(1), MAX_WADPATH-1);
+    strncpy(configfile, carg.arg[1], MAX_WADPATH-1);
     configfile[MAX_WADPATH-1] = '\0';
     FIL_DefaultExtension (configfile,".cfg");
 /*  for create, don't check
@@ -333,14 +340,18 @@ void Command_LoadConfig_f (void)
 
 void Command_ChangeConfig_f (void)
 {
-    if (COM_Argc()!=2)
+    COM_args_t  carg;
+    
+    COM_Args( &carg );
+
+    if (carg.num!=2)
     {
-        CONS_Printf("changeconfig <filaname[.cfg]> : save current config and load another\n");
+        CONS_Printf("changeconfig <filename[.cfg]> : save current config and load another\n");
         return;
     }
 
-    COM_BufAddText (va("saveconfig \"%s\"\n",configfile));
-    COM_BufAddText (va("loadconfig \"%s\"\n",COM_Argv(1)));
+    COM_BufAddText (va("saveconfig \"%s\"\n", configfile));
+    COM_BufAddText (va("loadconfig \"%s\"\n", carg.arg[1])); // -> configfile
 }
 
 //
@@ -350,7 +361,7 @@ void M_FirstLoadConfig(void)
 {
     int p;
 
-    //  configfile is initialised by d_main when sherching for the wad ?!
+    //  configfile is initialised by d_main when searching for the wad ?!
 
     // check for a custom config file
     p = M_CheckParm ("-config");
@@ -366,7 +377,7 @@ void M_FirstLoadConfig(void)
 
     // load config, make sure those commands doesnt require the screen..
     CONS_Printf("\n");
-    COM_BufInsertText (va("exec \"%s\"\n",configfile));
+    COM_BufInsertText (va("exec \"%s\"\n", configfile));
     COM_BufExecute ();       // make sure initial settings are done
 
     // make sure I_Quit() will write back the correct config
