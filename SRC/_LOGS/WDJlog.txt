@@ -1939,3 +1939,15 @@ Update COM buffer execution interface.
 The COM_args function is unused.
 Added COM_Args function that returns count and first 4 com parameters.
 This makes for fewer calls, converts calls into literal array access.
+
+*** w78_command_files
+patchfile = w78_command_files.patch
+- committed revision 874   by wesley johnson
+Make doomwaddir, legacyhome, config file strings hardened against
+windows no having environment variables.
+Will now search two possible doomwaddir names before trying current
+directory.
+No longer allows current directory to be "" string, as that results in
+save and config files being put into root directory.  Will copy the
+current directory string instead and use only absolute paths.
+Doomwaddir code and config file code moved and organized together.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: d_main.c 874 2011-11-01 00:09:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "873"
+#define SVN_REV "874"
 #endif
 
 // Version number: major.minor.revision
@@ -390,6 +390,7 @@ boolean advancedemo;
 // to make savegamename and directories, in m_menu.c
 char *legacyhome;
 int   legacyhome_len;
+char *doomwaddir;
 
 
 #ifdef __MACH__
@@ -1315,7 +1316,6 @@ boolean  Check_wad_filenames( int gmi, char * doomwaddir, char * pathiwad )
 
 void IdentifyVersion()
 {
-    char pathtemp[_MAX_PATH];
     char pathiwad[_MAX_PATH + 16];
     // fprintf(stderr, "MAX_PATH: %i\n", _MAX_PATH);
 
@@ -1325,25 +1325,6 @@ void IdentifyVersion()
     int gmi;
 
     // find legacy.wad, IWADs
-    char *doomwaddir = getenv("DOOMWADDIR");
-    if (!doomwaddir)
-    {
-        // get the current directory (possible problem on NT with "." as current dir)
-        if (getcwd(pathtemp, _MAX_PATH) != NULL)
-            doomwaddir = pathtemp;
-        else
-            doomwaddir = ".";
-    }
-#if 0
-//[WDJ] disabled in 143beta_macosx
-//[segabor]
-#ifdef __MACOS__
-    // cwd is always "/" when app is dbl-clicked
-    if (!stricmp(doomwaddir, "/"))
-        doomwaddir = I_GetWadDir();
-#endif
-#endif
-
     // and... Doom LEGACY !!! :)
     char *legacywad;
 #ifdef __MACH__
@@ -1351,7 +1332,7 @@ void IdentifyVersion()
     legacywad = mac_legacy_wad;
 #else
     legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
-    sprintf(legacywad, "%s/legacy.wad", doomwaddir);
+    cat_filename(legacywad, doomwaddir, "legacy.wad");
 #endif
 
     if( verbose )
@@ -1364,9 +1345,6 @@ void IdentifyVersion()
        doom2fwad = malloc(strlen(doomwaddir)+1+10+1);
        sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
      */
-
-    // will be overwrite in case of -cdrom or linux home
-    cat_filename( configfile, doomwaddir, CONFIGFILENAME );
 
     // [WDJ] were too many chained ELSE. Figured it out once and used direct goto.
 
@@ -1394,8 +1372,8 @@ void IdentifyVersion()
         if( devparm )
         {
 	    // devparm = true;
-	    strcpy(configfile, DEVDATA CONFIGFILENAME);
 #if 0
+	    strcpy(configfile, DEVDATA CONFIGFILENAME); // moved
 	    // [WDJ] Old, irrelevant, and it was interfering with new
 	    // GDESC changes.
 	    // Better to just use -file so I am disabling it.
@@ -1436,9 +1414,10 @@ void IdentifyVersion()
         // BP: big hack for fullpath wad, we should use wadpath instead in d_addfile
         char *s = M_GetNextParm();
         if (s[0] == '/' || s[0] == '\\' || s[1] == ':')
-            sprintf(pathiwad, "%s", s);
+            snprintf(pathiwad, _MAX_PATH-1, "%s", s);
         else
-            sprintf(pathiwad, "%s/%s", doomwaddir, s);
+            snprintf(pathiwad, _MAX_PATH-1, "%s/%s", doomwaddir, s);
+        pathiwad[_MAX_PATH-1] = '\0';
 
         if (access(pathiwad, R_OK))  goto iwad_failure;
 
@@ -1455,7 +1434,7 @@ void IdentifyVersion()
 	        for( w=0; w<3; w++ )
 	        {
 		    if( gmtp->iwad_filename[w] == NULL ) break;
-	            if( stricmp(gmtp->iwad_filename[w], filename) == 0 )
+                    if( strcasecmp(gmtp->iwad_filename[w], filename) == 0 )
 	            {
 		        if( Check_keylumps( gmtp, pathiwad ) )
 			    goto got_gmi_iwad;
@@ -1485,7 +1464,7 @@ void IdentifyVersion()
     if(gamedesc_index < GDESC_other)  // selected by switch, and no -iwad
     {
         // make iwad name by switch
-        if( Check_wad_filenames( gamedesc_index, doomwaddir, pathiwad ) )
+        if( Check_wad_filenames( gamedesc_index, pathiwad ) )
 	    goto got_iwad;
         I_SoftError("%s/%s not found\n",
 		    doomwaddir, game_desc_table[gamedesc_index].iwad_filename[0]);
@@ -1495,7 +1474,7 @@ void IdentifyVersion()
     // [WDJ] search the table for the first iwad filename found
     for( gmi=0; gmi<GDESC_other; gmi++ )
     {
-        if( Check_wad_filenames( gmi, doomwaddir, pathiwad ) )
+        if( Check_wad_filenames( gmi, pathiwad ) )
 	    goto got_gmi_iwad;
     }
 
@@ -1654,6 +1633,8 @@ void D_DoomMain()
 {
     int p;
     char file[FILENAME_SIZE];
+    char defdir[_MAX_PATH];  // default dir
+    byte defdir_stat = 0;
 
     int startepisode;
     int startmap;
@@ -1702,6 +1683,63 @@ void D_DoomMain()
 
     CONS_Printf("%s\n", legacy);
 
+    // Find or make a default dir that is not root dir
+    // get the current directory (possible problem on NT with "." as current dir)
+    if (getcwd(defdir, _MAX_PATH) != NULL)
+    {
+        if( strlen(defdir) > 4 )
+        {
+            defdir_stat=1;
+            if( verbose )
+                fprintf(stderr,"Current directory: %s\n", defdir);
+        }
+    }
+
+    doomwaddir = getenv("DOOMWADDIR");  // ptr to environment string
+
+    // CDROM overrides doomwaddir (when valid)
+    if (M_CheckParm("-cdrom"))
+    {
+        CONS_Printf(D_CDROM);
+        // [WDJ] Execute DoomLegacy off CDROM ??
+        // DoomLegacy already has separate doomwaddir and legacyhome.
+        // Legacy is not compatible with other port config and savegames,
+        // so do not put such in old doom "c:\\doomdata".
+        // Substitute CDROM for doomwaddir, but not legacyhome.
+        if( defdir_stat )
+            doomwaddir = ""; // wads from cur dir
+        defdir_stat = 0; // do not let legacyhome use current dir
+    }
+
+    if (!doomwaddir)
+    {
+        // Default searches
+        if( access(DEFWADS1, R_OK) == 0 )
+        {
+            doomwaddir = DEFWADS1;
+        }
+        else if( access(DEFWADS2, R_OK) == 0 )
+        {
+            doomwaddir = DEFWADS2;
+        }
+        else if( defdir_stat )
+            doomwaddir = strdup(defdir);  // have working default dir, "" leads to root files
+        else
+            doomwaddir = DEFWADS1; // won't work, but will print out where data should go
+    }
+#if 0
+//[WDJ] disabled in 143beta_macosx
+//[segabor]
+#ifdef __MACOS__
+    // cwd is always "/" when app is dbl-clicked
+    if (!strcasecmp(doomwaddir, "/"))
+    {
+        // doomwaddir maybe malloc string, maybe not
+        doomwaddir = I_GetWadDir();
+    }
+#endif
+#endif
+
     // identify the main IWAD file to use
     IdentifyVersion();
     modifiedgame = false;
@@ -1727,11 +1765,17 @@ void D_DoomMain()
 
         if (!userhome)
         {
-#if !defined( __DJGPP__ )
-            I_SoftError("Please set $HOME to your home directory, or use -home switch\n");
-	    // use current directory and defaults, no HOME
-	    // no good alternative
-#endif
+            if(verbose)
+                fprintf(stderr, "Please set $HOME to your home directory, or use -home switch\n");
+            // Try to use current directory and defaults
+
+            // use absolute default directory, not root
+            if( defdir_stat )
+            {
+                // have working default dir
+                // legacyhome cannot be "", because save games can end up in root directory
+                userhome = strdup(defdir);  // malloc
+            }
 	}
 
 #ifdef __MACH__
@@ -1739,17 +1783,32 @@ void D_DoomMain()
 //	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
 	cat_filename( configfile, max_user_home, "DooMLegacy.cfg" );
 	sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
-        legacyhome = mac_user_home;
+        // legacyhome = mac_user_home;
+	// Needs slash
+        legacyhome = (char*) malloc( strlen(userhome) + 3 );
+        // example: "/home/user/"
+        sprintf(legacyhome, "%s/", userhome);
 #else
         // Make the home directory
         if (userhome)
         {
-	    char * cfgstr;
-	   
+            // make subdirectory in userhome
 	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
-            // example: "/user/user/.legacy/"
+            // example: "/home/user/.legacy/"
             sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);
-            // use user specific config file
+        }
+        else
+        {
+            // default absolute path, do not set to ""
+            legacyhome = DEFHOME;
+        }
+        I_mkdir( legacyhome, 0700);
+        legacyhome_len = strlen(legacyhome);
+       
+        // [WDJ] configfile must be set whereever legacyhome is on DOS or WIN32
+        {
+            char * cfgstr;
+            // user specific config file
             // little hack to allow a different config file for opengl
             // may be a problem if opengl cannot really be started
             if (M_CheckParm("-opengl"))
@@ -1757,37 +1816,22 @@ void D_DoomMain()
 	        // example: /home/user/.legacy/glconfig.cfg
 		cfgstr = "gl" CONFIGFILENAME;
             }
+            else if( devparm )
+            {
+                // example: /home/user/.legacy/devdataconfig.cfg
+                cfgstr = DEVDATA CONFIGFILENAME;
+            }
             else
             {
 	        // example: /home/user/.legacy/config.cfg
                 cfgstr = CONFIGFILENAME;
             }
 	    cat_filename( configfile, legacyhome, cfgstr );
+        }
 
-            // can't use sprintf since there is %d in savegamename
-	    // default savegame file name, example: "/home/user/.legacy/doomsav%i.dsg"
-//            strcatbf(savegamename, legacyhome, "/");
-            I_mkdir(legacyhome, 0700);
-        }
-        else
-        {
-	    legacyhome = "";
-        }
-        legacyhome_len = strlen(legacyhome);
 #ifdef SAVEGAMEDIR
         // default savegame file name, example: "/home/user/.legacy/%s/doomsav%i.dsg"
 //        sprintf(savegamename, "%s%%s" SLASH "%s", legacyhome, text[NORM_SAVEI_NUM]);
-#if defined( __DJGPP__ )
-        /* DOS: Packe das Aktulle vezeichnis in dem sich Doom3.exe befindet in die
-                Legacyhome variable und zeige das im Menü
-         */
-        if (strlen(legacyhome) == 0 )
-        {
-            char dosroot[MAX_WADPATH];
-            getcwd(dosroot, MAX_WADPATH-1);
-            sprintf(legacyhome, "%s/", dosroot);
-        }
-#endif					
         snprintf(savegamename, MAX_WADPATH-1, "%s%%s" SLASH "%s%s", legacyhome, SAVEGAMENAME, "%d.dsg");
         // so can extract legacyhome from savegamename later
 #else    
@@ -1799,24 +1843,11 @@ void D_DoomMain()
 #endif
     }
 
-    if (M_CheckParm("-cdrom"))
-    {
-        // [WDJ] We cannot execute DoomLegacy off CDROM ??
-        CONS_Printf(D_CDROM);
-#ifdef PC_DOS
-        // [WDJ] These names only work on DOS
-	// No -opengl on DOS
-        I_mkdir("c:\\doomdata", 0700); // octal permissions
-        strcpy(configfile, "c:/doomdata/" CONFIGFILENAME);
-//        strcpy(savegamename, text[CDROM_SAVEI_NUM]);  // DOS name
-        sprintf(savegamename, "c:\\doomdata\\%s%s", SAVEGAMENAME, "%d.dsg");  // DOS name
-#else
-        // userhome already has situation covered
-#endif
-    }
-
     if( verbose )
+    {
         fprintf(stderr, "Config: %s\n", configfile );
+        fprintf(stderr, "Savegames: %s\n", savegamename );
+    }
 
     // add any files specified on the command line with -file wadfile
     // to the wad list
