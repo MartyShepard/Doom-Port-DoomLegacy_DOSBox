@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: m_menu.c 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2654,7 +2654,9 @@ void M_DrawDir(void)
     // The actual dir name remains blank.
     if( scroll_index == 0 )
     {
-       // V_DrawString( DirDef.x, DirDef.y+LINEHEIGHT, 0, "..");
+#if !defined( __DJGPP__ )
+        V_DrawString( DirDef.x, DirDef.y+LINEHEIGHT, 0, "..");
+#endif
     }
 }
 
@@ -3558,7 +3560,7 @@ void M_QuitResponse(int ch)
             S_StartSound(NULL,quitsounds[(gametic>>2)&7]);
 
         //added:12-02-98: do that instead of I_WaitVbl which does not work
-        if(!nosound)
+        if(!nosoundfx)
         {
             time = I_GetTime() + TICRATE*2;
             while (time > I_GetTime()) ;

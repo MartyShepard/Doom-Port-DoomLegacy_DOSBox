@@ -1951,3 +1951,11 @@ No longer allows current directory to be "" string, as that results in
 save and config files being put into root directory.  Will copy the
 current directory string instead and use only absolute paths.
 Doomwaddir code and config file code moved and organized together.
+
+*** w78_nosound
+patchfile = w78_nosound.patch
+- committed revision 875   by wesley johnson
+The nosound variable name conflicts with a Watcom support function.
+The support function really ought to be named better, but cannot fix
+that.  Rename nosound, to nosoundfx, as sure fix.
+Watcom compilation still has other problems.

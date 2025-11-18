@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 813 2011-03-10 14:24:13Z smite-meister $
+// $Id: s_sound.c 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -373,7 +373,7 @@ void S_Init(int sfxVolume, int musicVolume)
     //
     //  precache sounds if requested by cmdline, or precachesound var true
     //
-    if (!nosound && (M_CheckParm("-precachesound") || precachesound.value))
+    if (!nosoundfx && (M_CheckParm("-precachesound") || precachesound.value))
     {
         // Initialize external data (all sounds) at start, keep static.
         CONS_Printf("Loading sounds... ");
@@ -505,7 +505,7 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 
     mobj_t *origin = (mobj_t *) origin_p;
 
-    if (nosound || (origin && origin->type == MT_SPIRIT))
+    if (nosoundfx || (origin && origin->type == MT_SPIRIT))
         return;
 
 #ifdef HW3SOUND

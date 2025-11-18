@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: I_sound.c 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -162,7 +162,7 @@ void I_FreeSfx (sfxinfo_t* sfx)
 
 void I_SetSfxVolume(int volume)
 {
-    if(nosound)
+    if(nosoundfx)
         return;
 
     set_volume (cv_soundvolume.value*255/31,-1);
@@ -200,7 +200,7 @@ int I_StartSound ( int           id,
 {
   int voice;
 
-  if(nosound)
+  if(nosoundfx)
       return 0;
 
   // UNUSED
@@ -221,7 +221,7 @@ void I_StopSound (int handle)
   //  an setting the channel to zero.
   int voice=handle & (VIRTUAL_VOICES-1);
 
-  if(nosound)
+  if(nosoundfx)
       return;
 
   if(voice_check(voice)==S_sfx[handle>>VOICESSHIFT].data)
@@ -230,7 +230,7 @@ void I_StopSound (int handle)
 
 int I_SoundIsPlaying(int handle)
 {
-  if(nosound)
+  if(nosoundfx)
       return FALSE;
 
   if(voice_check(handle & (VIRTUAL_VOICES-1))==S_sfx[handle>>VOICESSHIFT].data)
@@ -292,7 +292,7 @@ void I_UpdateSoundParams( int   handle,
   int voice=handle & (VIRTUAL_VOICES-1);
   int numsfx=handle>>VOICESSHIFT;
 
-  if(nosound)
+  if(nosoundfx)
       return;
 
   if(voice_check(voice)==S_sfx[numsfx].data)
@@ -324,7 +324,7 @@ void I_StartupSound()
     int    sfxcard,midicard;
     char   err[255];
 
-    if (nosound)
+    if (nosoundfx)
         sfxcard=DIGI_NONE;
     else
         sfxcard=DIGI_AUTODETECT;
@@ -344,7 +344,7 @@ void I_StartupSound()
     {
         sprintf (err,"Sound init error : %s\n",allegro_error);
         CONS_Error (err);
-        nosound=true;
+        nosoundfx=true;
     }
     else
         CONS_Printf(" configured audio device\n" );

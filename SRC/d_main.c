@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 874 2011-11-01 00:09:36Z wesleyjohnson $
+// $Id: d_main.c 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "874"
+#define SVN_REV "875"
 #endif
 
 // Version number: major.minor.revision
@@ -367,7 +367,7 @@ boolean infight = false;	//DarkWolf95:November 21, 2003: Monsters Infight!
 boolean singletics = false;     // timedemo
 
 boolean nomusic;
-boolean nosound;
+boolean nosoundfx; // had clash with WATCOM i86.h nosound() function
 
 byte    verbose = 0;
 
@@ -2154,7 +2154,7 @@ void D_DoomMain()
     // setting up sound
     //
     CONS_Printf(text[S_SETSOUND_NUM]);
-    nosound = M_CheckParm("-nosound");
+    nosoundfx = M_CheckParm("-nosound");
     nomusic = M_CheckParm("-nomusic");  // WARNING: DOS version initmusic in I_StartupSound
     I_StartupSound();
 #if defined( __DJGPP__ )		

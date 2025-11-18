@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: doomstat.h 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -235,8 +235,8 @@ extern  consvar_t       cv_deathmatch;
 // Internal parameters for sound rendering.
 // ========================================
 
-extern boolean         nomusic; //defined in d_main.c
-extern boolean         nosound; // clash with WATCOM i86.h nosound() function
+extern boolean         nomusic; // defined in d_main.c
+extern boolean         nosoundfx; // had clash with WATCOM i86.h nosound() function
 
 // =========================
 // Status flags for refresh.

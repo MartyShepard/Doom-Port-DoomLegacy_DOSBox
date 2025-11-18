@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: hw3sound.c 875 2011-11-01 00:13:44Z wesleyjohnson $
 //
 // Copyright (C) 2001 by DooM Legacy Team.
 //
@@ -338,7 +338,7 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channe
     int             s_num;
     source_t        *source;
   
-    if(nosound || (origin && origin->type == MT_SPIRIT))
+    if(nosoundfx || (origin && origin->type == MT_SPIRIT))
         return -1;
 
     sfx = &S_sfx[sfx_id];
