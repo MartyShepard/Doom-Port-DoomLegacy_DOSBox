@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 828 2011-03-24 21:35:28Z smite-meister $
+// $Id: z_zone.c 876 2011-11-01 00:14:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -203,7 +203,7 @@ memzone_t	memhead;	// statically allocated mainzone
 #endif
 
 #define ZONEID  0x1d4a11
-
+#define INVALIDID 0x22eebb00
 
 void Command_MemInfo_f( void );
 
@@ -262,7 +262,11 @@ static void Z_CombineFreeBlock(memblock_t *block)
       other->next = block->next;
       other->next->prev = other;
 
+#ifdef PARANOIA
+      block->id = INVALIDID+1;  // merged block id
+#else
       block->id = 0;		// does not exist as a block
+#endif
       block->tag = PU_INVALID;
       if (block == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = other;
@@ -278,7 +282,11 @@ static void Z_CombineFreeBlock(memblock_t *block)
       block->next = other->next;
       block->next->prev = block;
 
+#ifdef PARANOIA
+      other->id = INVALIDID+2;  // merged block id
+#else
       other->id = 0;		// does not exist as a block
+#endif
       other->tag = PU_INVALID;
       if (other == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = block;
@@ -472,7 +480,7 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
 #endif
 
     if (block->id != ZONEID)
-        I_Error ("Z_Free: memory block has corrupted ZONEID");
+        I_Error ("Z_Free: memory block has corrupt ZONEID: %x", block->id);
     if (block->tag == PU_FREE)  return;	// already freed
 #ifdef PARANOIA
     // get direct a segv when using a pointer that isn't right
@@ -626,7 +634,8 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     start = rover->prev;  // for test when have searched entire zone
 
     // Check on user code corrupting the memory block
-    if (rover->id && rover->id != ZONEID) //Hurdler: this shouldn't happen
+//    if (rover->id && rover->id != ZONEID) //Hurdler: this shouldn't happen
+    if (rover->id != ZONEID) //Hurdler: this shouldn't happen
     {
         // [WDJ] 11/18/2009 Still get this error on some wads.  There must be
         // some unchecked use of memory that writes past end of allocation.
@@ -634,10 +643,15 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         printf("WARNING: Legacy may crash soon. This is a known bug, sorry.\n");
         printf("Memory corruption has been detected\n");
         printf("Known to happen when node-builder is not run after editing level.\n");
+        fprintf(stderr, "  corrupt ZONEID= %x\n", rover->id );
     }
 
     for(;;)	// Search zone memory
     {
+#ifdef PARANOIA
+        if (rover->id != ZONEID)
+	    fprintf(stderr, "  corrupt ZONEID= %x\n", rover->id );
+#endif
         if (rover == start)
         {
             // scanned all the way around the list
@@ -738,7 +752,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 	   // [WDJ] Attempt at better allocation, does not have any effect
 	   if( tries == 0 ) {
 	      // Try harder to not fragment memory
-	      extra = basesize - reqsize;
+              extra = ((byte *)base + basesize) - (basedata + reqsize);
 	      if( (extra > 32) && (extra < memalloc_size) ) continue;
 	   }
 #endif
@@ -781,7 +795,13 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         // free the next block, combining it with base
 	Z_Purge( base->next );
     }
-    if( base->size < basesize ) {
+    if( base->size < basesize || base->id != ZONEID ) {
+        // Internal error with purging
+        fprintf(stderr, "Z_MALLOC: request= %i, alloc size= %i, aligned= %i\n", reqsize, memalloc_size, alignbits );
+        fprintf(stderr, "  got size= %i, accum size= %i\n", base->size, basesize );
+        if( base->next == rover )  fprintf(stderr, "  Hit rover\n");
+        if( base->next->tag == PU_ZONE )  fprintf(stderr, "  Hit PU_ZONE\n");
+        if( base->id != ZONEID )  fprintf(stderr, "  corrupt ZONEID= %x\n", base->id );
         I_Error("Z_MALLOC: internal error, combined blocks less than request size");
     }
 
@@ -1070,7 +1090,7 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
     block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
 
     if (block->id != ZONEID)
-        I_Error ("Z_ChangeTag: freed a pointer without ZONEID");
+        I_Error ("Z_ChangeTag: free block has corrupt ZONEID: %x", block->id);
 
     if (tag >= PU_PURGELEVEL && !block->user)
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");

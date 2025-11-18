@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 853 2011-09-13 22:57:35Z wesleyjohnson $
+// $Id: p_setup.c 876 2011-11-01 00:14:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -1157,6 +1157,11 @@ void P_LoadBlockMap (int lump)
   uint32_t prev_bme = 0;  // for detecting overflow wrap
   int i;
    
+  // [WDJ] when zennode has not been run, this code will corrupt Zone memory.
+  // It assumes a minimum size blockmap.
+  if( count < 5 )
+      I_Error( "Missing blockmap, node builder has not been run.\n" );
+
   // [WDJ] Do endian as read from blockmap lump temp
   blockmaphead = Z_Malloc(sizeof(*blockmaphead) * count, PU_LEVEL, NULL);
 
@@ -1178,6 +1183,9 @@ void P_LoadBlockMap (int lump)
   blockmapindex = & blockmaphead[4];
   firstlist = 4 + (bmapwidth*bmapheight);
   lastlist = count - 1;
+
+  if( firstlist >= lastlist || bmapwidth < 1 || bmapheight < 1 )
+      I_Error( "Blockmap corrupt, must run node builder on wad.\n" );
 
   // read blockmap index array
   for (i=4 ; i<firstlist ; i++)  // for all entries in wad offset index

@@ -1959,3 +1959,13 @@ The nosound variable name conflicts with a Watcom support function.
 The support function really ought to be named better, but cannot fix
 that.  Rename nosound, to nosoundfx, as sure fix.
 Watcom compilation still has other problems.
+
+*** w78_blockmap_mem_corrupt
+patchfile = w78_blockmap_mem_corrupt.patch
+- committed revision 877   by wesley johnson
+With a missing or bad blockmap in the wad, the code will corrupt
+Zone memory block headers.
+Add checks for the missing blockmap, and overruns of the blockmap
+allocation.
+Add more complete ZONEID checking (some as PARANOID) and better reports to the
+Zone memory functions.
