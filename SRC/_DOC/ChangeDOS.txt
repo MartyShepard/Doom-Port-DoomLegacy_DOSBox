@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00880*]: w78 WDJlog
+[00879*]: w78 Make_Win32
+[00878*]: w78 legacy whatsnew docs
+[00877 ]: w78 video misc
 [00876 ]: w78 blockmap mem corrupt
 [00875 ]: w78 nosound conflict
 [00874 ]: w78 command files

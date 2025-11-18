@@ -1,0 +1,126 @@
+:Name: Make DoomLegacy under Windows.
+:Date: Oct 11, 2011
+:Author: Wesley Johnson
+
+Tested using Win98.  Many procedures will be similar for the other versions of Windows.
+
+** Win98 using MinGW
+You will be editing the DoomLegacy Makefile as to where these were installed.
+
+Install MinGW gcc compiler
+  Target  c:\mingw\
+
+Install SDL.
+  Target  c:\SDL\
+
+Install SDL-Mixer (separate download)
+  Target c:\SDL\SDL-mixer
+  Move SDL-mixer\include\* to SDL\include\SDL
+  Move SDL-mixer\lib\*  to SDL\lib
+
+Install DLL files in Windows\System32
+  Copy or move
+    SDL\lib\SDL.dll   to  \Windows\System32
+   SDL\lib\ SDL_mixer.dll   to \Windows\System32
+
+Edit doomlegacy\Makefile.
+    Some defines need to be set in the Makefile, or passed on the make command line each time.
+       WIN32=1
+       CC_MINGW=1
+       SMIF=SDL
+       HAVE_MIXER=1
+    MinGW is gcc
+       CC=gcc
+    Edit OPT and LIB lines in SDL section, as to where SDL include and lib reside if they are not as expected.
+
+Invoke the make
+
+If edited the Makefile with switches
+   > mingw32-make
+
+If using command line switches
+   > mingw32-make  WIN32=1  CC_MINGW=1   SMIF=SDL   HAVE_MIXER=1
+
+A batch file with the the above make command, put it one directory up
+  > ..\make1
+
+If error on SDL.h, or  SDL_stdinc, then check the Makefile lines about where the SDL include reside.
+If error on alloca, you have a UNIX SDL, you need the one for Win32 (which has a different SDL_config).
+If error about missing SDL_mixer then you forgot to put SDL_mixer.h in with the other SDL include files.
+
+Make a runtime directory, and put into it
+  The doomlegacy binary from bin.
+  legacy.wad
+  Any wads that you want to play.
+
+DoomLegacy will now search some directories as possible doomwad and
+home directories. These are set in doomdefs.h.  If they do not exist,
+then it will use the current directory, but only if it is longer than a root
+reference: "c:\".
+
+These defines in doomdef.h need "\\" for each backslash because of
+C-string backslash processing.
+#define DEFWADS1  "\\doomwads"
+#define DEFWADS2  "\\games\\doomwads"
+#define DEFHOME   "\\legacyhome"
+
+Put your wad files in directory "\doomwads", or "\games\doomwads", or
+in the current directory.  DoomLegacy will use the first that exists
+as the doomwaddir.
+
+Suggest use home directory "c:\legacyhome".
+
+Your home directory will get the savegames and saved config files.
+Set the environment variable "HOME" in a batch file, or use the -home switch
+when starting DoomLegacy, example: "doomlegacy -home c:\games\doomsavegames".
+Otherwise, if the default DEFHOME directory exists, "\legacyhome",
+it will be used as HOME.
+
+Recommend using directories under root, as windows directory names with
+spaces could cause problems (depending on how they are specified).
+
+Use the verbose switch -v, and DoomLegacy will print to stderr the directory
+names that it used.  On Win98 this becomes a file named stderr.
+
+Examples assume c:\doom\run is the doomlegacy runtime directory, but you
+should put your actual directory name.  Replace any directory names
+with your actual directory names.  Doomlegacy can handle very long
+command lines, and you must put all switches on one line.
+
+Example: Batch file for FreeDoom
+Create file dl_freedoom.bat
+  cd c:\doom\run
+  doomlegacy -v -game freedoom
+
+Example: Batch file for hth2.wad, using FreeDoom as default game:
+Demonstrates using -home switch.
+Create file dl_hth2.bat
+  cd c:\doom\run
+  doomlegacy -v -file hth2.wad -home c:\games\hth2_setup
+
+Example: Batch file for some pwads, where doom2.wad is in "c:\doomwads":
+Current directory is ignored by using DEFWADS1 and absolute path names.
+Create file dl_some.bat
+  c:\doom\run\doomlegacy -game doom2 -file c:\games\pwads\some.wad
+
+Example: Batch file for pwad, deh, and bex modifications.
+Directory c:\games\wads contains all the wad, deh, and bex files,
+with c8 in subdirectory pw.
+The order of files is important.  If, for example: c8.wad is a new level,
+and mod3 adds new sounds, the mod3 sounds will override those
+of the same name in c8.wad and doom2.wad.
+Create file dl_ex2.bat
+  cd c:\doom\run
+  SET DOOMWADDIR=c:\games\wads
+  SET HOME=c:\games\home
+  doomlegacy -game doom2 -file pw\c8.wad mod1.wad mod2.deh mod3.bex
+
+Example: Shortcut for DoomLegacy with plutonia wad:
+Create shortcut dl_plut
+  command: c:\doom\run\doomlegacy -v -game plutonia
+  current directory: c:\doom\run
+
+Example: Shortcut for DoomLegacy with plutonia2 wad:
+Create shortcut dl_plut2
+  command: c:\doom\run\doomlegacy -game plutonia -file c:\games\pl2\PL2.WAD
+  current directory: c:\doom\run

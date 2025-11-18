@@ -13,10 +13,32 @@
 
 <div class="column">
 
-<h2>1.44 (2010-09-??)</h2>
+<h2>1.44 (2011-11-??)</h2>
 
-<h3>FEATURES 1.44, recent at svn843</h3>
+<h3>FEATURES 1.44, recent at svn877</h3>
 <ul>
+<li>BEX files supported, with BEX flags, [STRINGS], [POINTER], [PARS],
+and include file.
+<li>DEH and BEX names are now compared case insensitive.
+<li>Support for multiple DEH and BEX files changing same items.
+<li>Support for separate language BEX files as BEX_LANGUAGE compile option.
+An example french.bex is supplied, which can be modified for other
+languages.  A command line switch will accept any language name and
+load that BEX file, or a default "lang.bex" file.
+Many error lines are not yet changable from english.
+<li>PAR time not displayed when not valid.  Limited SUCKS display, so
+can see 24 hour of elapsed time for most wads.
+<li>Added verbose switchs as -v and -v2.  Most of the print lines they control
+output to stderr.  Verbose prints out the file strings for doomwaddir,
+home, config, and save files.
+<li>The doomwaddir determination now looks for, DOOMWADDIR environment variable,
+a default wad directory and an alternate wad directory. When none exist it looks for the wads in the current directory.
+<br>(Linux: /usr/local/share/games/doomwads or /usr/local/games/doomwads)
+<br>(Windows: \doomwads or \games\doomwads).
+<li>The home directory determination now looks for, HOME environment
+variable, or a default home directory. When none exist it uses the current directory for home.
+<br>(Linux: /usr/local/home/legacyhome)
+<br>(Windows: \legacyhome).
 </ul>
 
 <h3>FEATURES 1.44 alpha3</h3>
@@ -153,8 +175,46 @@ blood splats and Doom episode names.  Chexquest splats are less violent.</li>
 </ul>
 
 
-<h3>BUG FIXES 1.44, recent at svn843</h3>
+<h3>BUG FIXES 1.44, recent at svn877</h3>
 <ul>
+<li>Monster stuck in wads like TNT fixed.  In TNT, some monsters start
+positions are overlapped, and full speed impulse was needed to get them unstuck.
+<li>Menus reorganized for multiplayer setup and compatibility with mods.
+<li>Level names for TNT and Plutonia were not displayed due to old variable.
+<li>TNT Map30 stair bug fixed. The stairs now rise same as in the original.
+<li>TNT Map31 yellow key wad error detected and dynamically fixed. Now
+the player can finish the game, even on the original buggy TNT.
+<li>Added Plutonia text that was missing.
+<li>Fixed interference from French language mods upon DEH loads.
+<li>DEH string replacement hardened against buffer overrun and attacks.
+<li>Moved MF_FLOORHUGGER to MF2_FLOORHUGGER, and added code to distinguish between
+flag bits in old DEH files, that could be either MF_TRANSLUCENT or MF_FLOORHUGGER.
+<li>Check if -devgame name if valid before use, to prevent segfaults.
+<li>MAX_WADPATH size increased to 256.  Use size limited copy and
+printf to most buffers to harden against long filenames and path
+strings in environment variables, command line switches, and files.
+<li>Harden a net buffer string operation against buffer overflow.
+<li>Fix net demo play function to write command as one string, so it
+would not execute partially written strings and fail.  Command line
+specified -playdemo now works.
+<li>Fixed compilation under windows, tested on Win98 using MinGW.
+<li>Moved created dep files to directory outside of source.
+<li>Under old Win32 version, a GlobalMemory call now uses an older version available on Win98.
+<li>Fixed unsigned char usage that caused GCC 4 compiler complaints on lib
+calls.
+<li>Fixed exec of config file on Win32 systems. It failed because
+the Execute string processing of backslash characters mangled windows
+directory strings that use backslash.  Commands that have file names
+are prevented from processing backslash character codes.
+<li>Prevent directory detection logic from returning "" as directory, that
+caused some savegames and config to be saved at the root directory.
+<li>Fix nosound name conflict with Watcom nosound() function.
+<li>A bad blockmap in the wad would cause zone memory corruption due to
+allocating and writing the blockmap based on inconsistent blockmap fields.
+Not running a node builder on a wad level would trigger this fault.
+Missing and bad blockmaps are now detected before allocating zone memory,
+and limits fixed to prevent exceeding the allocation.
+<li>Added better ZONEID corruption detection and messages.
 </ul>
 
 <h3>BUG FIXES 1.44 alpha3</h3>

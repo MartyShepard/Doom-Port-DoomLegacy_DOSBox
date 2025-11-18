@@ -128,6 +128,8 @@
 <p>
   The iwad files can be in a separate directory (such as /usr/local/games/legacy/wads).
   You can set DOOMWADDIR with that wad directory path, in a login script, or a game starting script.
+  If DOOMWADDIR is not set, then DoomLegacy will look for the directories:
+  "/usr/local/share/games/doomwads" and "/usr/local/games/doomwads".
 <p>
   Otherwise, for known game wads (Doom, Doom2, TNT, etc) in other directories, make soft links in the legacy game directory
   to the actual wad files, so that when a -game switch is used, DoomLegacy can find the iwad.
@@ -141,12 +143,22 @@
   > ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
 </pre>
 <p>
-  If just the pwad files are in a separate directory (such as pwad/), then there no extra steps.
+  If just the pwad files are in a separate directory (such as pwad/),
+  then there are no extra steps.
 <pre>
   > doomlegacy -file pwad/ANDYDM.WAD
   > doomlegacy -file pwad/Twilight/TWILIGHT.DEH pwad/Twilight/TWILIGHT.WAD
 </pre>
   DoomLegacy will use the HOME environment variable, which is usually set by your Linux login, to find your home directory.  It makes a .legacy directory there, where it will keep config.cfg and all your saved games.
+  If HOME is not set, DoomLegacy will look for directory
+  "/usr/local/games/legacyhome", and if that is not present then will
+  use the current directory.  In the HOME directory, it will make a hidden directory, ".legacy",
+  within which it will save config and savegames.
+<pre>
+  Overriding by using the -home and -config switches, examples:
+  > doomlegacy -home ~/doomstuff -game plutonia
+  > doomlegacy -home ~/doom -config ~/doom/plutconfig.cfg -game plutonia
+</pre>
 <pre>
   DoomLegacy execution examples:
   > doomlegacy -game tnt
@@ -171,8 +183,26 @@
 <p>
   It is important to change to the directory where doomlegacy resides.  Support files,
   like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by DoomLegacy
-  and it looks in the current directory by default.  By default, it will also save the
-  config.cfg in the current directory.
+  and it looks in the current directory as last resort.
+<p>
+  Put your wad files in directory "\doomwads", or "\games\doomwads", or
+  in the current directory.  DoomLegacy will use the first that exists
+  as the doomwaddir.  Set DOOMWADDIR in a batch file to specify a different wad directory.
+<p>
+  A "legacy" directory will be created in your home directory for savegames and saved config files.
+  Set the environment variable "HOME" in a batch file, or use the -home switch
+  when starting DoomLegacy.
+  Otherwise, it will check if the default home directory exists, "\legacyhome".
+  If none are present, then it will use the current directory for home, but only if it is not root, "c:\".
+<pre>
+  Overriding by using the -home and -config switches, examples:
+  > doomlegacy -home c:\games\doomsave -game plutonia
+  > doomlegacy -home c:\games\doomsave -config c:\games\plutconfig.cfg -game plutonia
+</pre>
+<p>
+  Use the verbose switch -v, and DoomLegacy will print to stderr the directory
+  names that it used.  On Win98 this becomes a file named stderr.
+  The use of directory names with spaces may fail.
 <p>
   It is difficult to start a program under windows and set command line switches.
   Most of the settings that the launcher supported can now be set from menus and the console.
@@ -180,6 +210,12 @@
 <p>
   One way is to create shortcuts to doomlegacy.  Specify in the shortcut the command line
   and change starting directory to where the doomlegacy program resides.
+<pre>
+  Example shortcut for DoomLegacy with plutonia2 wad:
+  Shortcut: dl_plut2
+    command: doomlegacy -game plutonia -file c:\games\pl2\PL2.WAD
+    current directory: c:\games\legacydir
+</pre>
 <p>
   Another way is to create a batch file for each combination of switches, and run the
   batch file to start doomlegacy.
@@ -194,8 +230,18 @@
 <pre>
   DM8.BAT
     cd c:\legacydir\
-    doomlegacy -iwad waddir\doom2.wad -home c:\doomdata\ -config c:\doomdata\config8.cfg
+    doomlegacy -iwad waddir\doom2.wad -home c:\homedir\ -config c:\homedir\config8.cfg
 </pre>
+
+<pre>
+  DM2MOD.BAT
+    SET HOME=c:\games\home
+    SET DOOMWADDIR=c:\games\wads
+    cd c:\games\legacydir
+    doomlegacy -game doom2 -file levl9.wad mod2.deh mod8.bex
+</pre>
+
+
 
 <h3>Windows with launcher</h3>
 <p>
@@ -221,19 +267,22 @@
 <ul>
   <li>
     The environment variable <b>DOOMWADDIR</b> defines the path where
-    the wad files are located. This way you can easily share you wad
-    files between different programs. By default, Legacy looks for wad
-    files in the current directory.
+    the wad files are located. This way you can easily share your wad
+    files between different programs.  If it is not defined a default wad
+    directory will be checked for existing, and then an alternate directory.
+    If none exist, then by default, Legacy looks for wad files in the current directory.
   </li>
   <li>
     The variable <b>USER</b>, containing your username, is used as the
     default value for your player name in multiplayer games.
   </li>
   <li>
-    You home directory, defined by the variable <b>HOME</b>, will be
-    the place where Legacy stores your config and savegame files.
-    If this variable is not defined, they will be stored in the current
-    directory.
+    Your home directory is defined by the variable <b>HOME</b>.
+    In the home directory DoomLegacy will create a legacy directory to store
+    your config and savegame files.
+    If this variable is not defined, a default legacy home directory will be
+    checked for existing.  If none exist, then by default the current
+    directory will be used for home.
   </li>
 </ul>
 
