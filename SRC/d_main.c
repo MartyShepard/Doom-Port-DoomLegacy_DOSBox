@@ -1292,7 +1292,7 @@ fail:
 // Checks the possible wad filenames in GDESC_ entry.
 // Return true when found and keylumps verified
 // Leaves name in pathiwad.
-boolean  Check_wad_filenames( int gmi, char * doomwaddir, char * pathiwad )
+boolean  Check_wad_filenames( int gmi, char * pathiwad )
 {
     game_desc_t * gmtp = &game_desc_table[gmi];
     int w;
@@ -1765,10 +1765,10 @@ void D_DoomMain()
 
         if (!userhome)
         {
+#if !defined( __DJGPP__ )					
             if(verbose)
                 fprintf(stderr, "Please set $HOME to your home directory, or use -home switch\n");
             // Try to use current directory and defaults
-
             // use absolute default directory, not root
             if( defdir_stat )
             {
@@ -1776,7 +1776,8 @@ void D_DoomMain()
                 // legacyhome cannot be "", because save games can end up in root directory
                 userhome = strdup(defdir);  // malloc
             }
-	}
+#endif						
+	}	
 
 #ifdef __MACH__
 	//[segabor] ... ([WDJ] MAC port has vars handy)
@@ -1795,12 +1796,17 @@ void D_DoomMain()
             // make subdirectory in userhome
 	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
             // example: "/home/user/.legacy/"
-            sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);
+            sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);						
         }
         else
         {
             // default absolute path, do not set to ""
             legacyhome = DEFHOME;
+						#if defined( __DJGPP__ )						
+            char dosroot[MAX_WADPATH];
+            getcwd(dosroot, MAX_WADPATH-1);
+            sprintf(legacyhome, "%s/", dosroot);						
+						#endif
         }
         I_mkdir( legacyhome, 0700);
         legacyhome_len = strlen(legacyhome);
