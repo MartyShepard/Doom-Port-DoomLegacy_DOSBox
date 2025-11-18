@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 850 2011-08-20 23:14:59Z wesleyjohnson $
+// $Id: r_main.c 877 2011-11-01 00:16:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -788,6 +788,8 @@ void R_InitLightTables (void)
 //
 boolean         setsizeneeded;
 
+// Called by R_Init, SCR_Recalc
+// Called by cv_viewsize, cv_detaillevel, cv_scalestatusbar, cv_grtranslucenthud
 void R_SetViewSize (void)
 {
     setsizeneeded = true;
@@ -801,6 +803,10 @@ void R_SetViewSize (void)
 
 // now uses screen variables cv_viewsize, cv_detaillevel
 //
+// Called by D_Display when setsizeneeded
+// Called by G_DoLoadGame when setsizeneeded
+// Called by SplitScreen_OnChange
+// Called by cv_fov (disabled)
 void R_ExecuteSetViewSize (void)
 {
     fixed_t     cosadj;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 875 2011-11-01 00:13:44Z wesleyjohnson $
+// $Id: m_menu.c 877 2011-11-01 00:16:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2549,12 +2549,10 @@ void M_HandleVideoMode (int key)
 	M_Setup_prevMenu();
         return;
 
-    default:
         #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
         input_char = key;
         #endif
-      switch (tolower(input_char))
-	{
+      case 'T':
       case 't':
         S_StartSound(NULL,sfx_swtchx);
         vidm_testingmode = TICRATE*5;
@@ -2563,6 +2561,7 @@ void M_HandleVideoMode (int key)
             setmodeneeded = modedescs[vidm_current].modenum+1;
         return;
 
+      case 'D':
       case 'd':
         // current active mode becomes the default mode.
         S_StartSound(NULL,sfx_swtchx);
@@ -2571,8 +2570,6 @@ void M_HandleVideoMode (int key)
 
       default:
         break;
-	}
-      break;
     }
 
 }

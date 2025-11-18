@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 875 2011-11-01 00:13:44Z wesleyjohnson $
+// $Id: d_main.c 877 2011-11-01 00:16:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "876"
+#define SVN_REV "877"
 #endif
 
 // Version number: major.minor.revision
@@ -499,7 +499,7 @@ void D_Display(void)
     // change the view size if needed
     if (setsizeneeded)
     {
-        R_ExecuteSetViewSize();
+        R_ExecuteSetViewSize();  // set rdraw, view scale, limits, projection
         oldgamestate = -1;      // force background redraw
         borderdrawcount = 3;
         redrawsbar = true;
@@ -1802,11 +1802,11 @@ void D_DoomMain()
         {
             // default absolute path, do not set to ""
             legacyhome = DEFHOME;
-						#if defined( __DJGPP__ )						
+            #if defined( __DJGPP__ )						
             char dosroot[MAX_WADPATH];
             getcwd(dosroot, MAX_WADPATH-1);
             sprintf(legacyhome, "%s/", dosroot);						
-						#endif
+            #endif
         }
         I_mkdir( legacyhome, 0700);
         legacyhome_len = strlen(legacyhome);
