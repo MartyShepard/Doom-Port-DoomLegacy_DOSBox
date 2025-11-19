@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 847 2011-08-15 23:18:26Z wesleyjohnson $
+// $Id: p_enemy.c 885 2011-12-18 03:56:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -389,21 +389,25 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 
 
 byte EN_mbf_enemyfactor = 0;
+byte EN_monster_momentum = 0;
 
 // local version control
 void DemoAdapt_p_enemy( void )
 {
     // heretic demos have FR_orig friction, with special ice sector handling
     // in P_Thrust (so monsters slip only on ice conveyor)
-    if( demoplayback )
+    if( demoplayback && (friction_model != FR_legacy))
     {
+        // monster_friction set by Boom demo and in G_Downgrade
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
+        EN_monster_momentum = 0;  // 2=momentum
     }
     else
     {
         // default: 2= momentum
         monster_friction = (cv_monsterfriction.value > 0);  // 0=none
         EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
+        EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
     }
 }
 
@@ -589,7 +593,7 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
     else  // TryMove
     {
         // successful move
-        if( (cv_monsterfriction.value >= 2) && tmr_dropoffline )
+        if( EN_monster_momentum && tmr_dropoffline )
         {
 	    // [WDJ] last move sensed dropoff
 	    // Reduce momentum near dropoffs, friction 0x4000 to 0xE000
@@ -765,7 +769,7 @@ static void P_NewChaseDir (mobj_t*     actor)
     }
 
     // [WDJ] to not glide off ledges, unless conveyor
-    if( (cv_monsterfriction.value >= 2) && trywalk_dropoffline )
+    if( EN_monster_momentum && trywalk_dropoffline )
     {
         // [WDJ] Momentum got actor stuck on edge,
 	// but just reversing momentum is too much for conveyor.

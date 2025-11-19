@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 884 2011-12-18 03:55:38Z wesleyjohnson $
+// $Id: g_game.c 885 2011-12-18 03:56:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2262,10 +2262,8 @@ boolean G_Downgrade(int version)
         states[S_SKULL_ATK4].action.acv = A_SmokeTrailer;
     }
 
-    //hmmm.. first time I see an use to the switch without break...
-    switch (version)
+    if(version <= 109)
     {
-      case 109:
         // disable rocket trails
         states[S_ROCKET].action.acv = NULL; //NULL like in Doom2 v1.9
 
@@ -2276,17 +2274,15 @@ boolean G_Downgrade(int version)
             players[i].skincolor = i % MAXSKINCOLORS;
             players[i].originalweaponswitch=true;
         }//eof Boris
-      case 110:
-      case 111:
+    }
+   
+    if(version <= 111 || version >= 200)
+    {
         //added:16-02-98: make sure autoaim is used for older
         //                demos not using mouse aiming
         for(i=0;i<MAXPLAYERS;i++)
             players[i].autoaim_toggle = true;
-
-      default:
-        break;
     }
-
 
     //SoM: 3/17/2000: Demo compatability
     if(version < 129) 
@@ -2562,8 +2558,9 @@ void G_BeginRecording (void)
     *demo_p++ = 0; 	// no voodoo_mode
     *demo_p++ = 0; 	// no instadeath
 #endif
+    *demo_p++ = cv_monsterfriction.value;
     
-    for( i=3; i<32; i++ )  *demo_p++ = 0;
+    for( i=5; i<32; i++ )  *demo_p++ = 0;
 #endif
 
     memset(oldcmd,0,sizeof(oldcmd));
@@ -2574,6 +2571,7 @@ void G_BeginRecording (void)
 byte pdss_settings_valid = 0;  // init not saved
 byte pdss_solidcorpse;
 byte pdss_instadeath;
+byte pdss_monsterfriction;
 
 // The following are set by DemoAdapt:
 //  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
@@ -2593,6 +2591,7 @@ void playdemo_save_settings( void )
         pdss_settings_valid = 1;
         pdss_solidcorpse = cv_solidcorpse.value;
         pdss_instadeath = cv_instadeath.value;
+        pdss_monsterfriction = cv_monsterfriction.value;
     }
 }
 
@@ -2602,6 +2601,7 @@ void playdemo_restore_settings( void )
     {
         cv_solidcorpse.value = pdss_solidcorpse;
         cv_instadeath.value = pdss_instadeath;
+        cv_monsterfriction.value = pdss_monsterfriction;
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
 }
@@ -2631,7 +2631,6 @@ void G_DoPlayDemo (char *defdemoname)
     boolean boomdemo = 0;
     byte  demo144_format = 0;
 
-  
     playdemo_save_settings();  // [WDJ] save user settings
 
 //
@@ -2718,7 +2717,7 @@ void G_DoPlayDemo (char *defdemoname)
 	    // MBF and prboom header have compatibility level
 	    compatibility = *demo_p++;
 #ifdef DEBUG_DEMO
-	    fprintf( stderr, " header: %s.\n", header );
+	    fprintf( stderr, " Boom demo header: %s.\n", header );
 	    fprintf( stderr, " compatibility 0x%x.\n", compatibility );
 #endif
 	    boomdemo = 1;
@@ -2742,7 +2741,7 @@ void G_DoPlayDemo (char *defdemoname)
 #ifdef VOODOO_DOLL       
         voodoo_mode = 0;  // Vanilla
         cv_instadeath.value = 0;  // Die
-#endif       
+#endif
     }
 
     // header[1]: byte: skill level 0..4
@@ -2953,6 +2952,7 @@ void G_DoPlayDemo (char *defdemoname)
 #else
         demo_p += 2; 	// no voodoo
 #endif
+        cv_monsterfriction.value = *demo_p++;
 
         demo_p = demo_p_next;  // skip rest of settings
 #endif

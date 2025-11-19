@@ -2024,3 +2024,10 @@ would be useless.
 Created a new contol var, demo_ctrl, that stops demos once a savegame
 has been loaded, and does the advance demo job too.  It replaces advancedemo.
 
+*** w79_demo_friction
+patchfile = w79_demo_friction.patch
+- committed revision 885   by wesley johnson
+Attempt to fix demos to record and honor monster friction settings.
+Older demos need to use MBF monster friction or Doom no friction.
+
+
