@@ -2015,3 +2015,12 @@ Chex also changed some strings with two %s, to have one %s, and Newmaps
 wants to change it back to two %s.  The %s counting method would not
 allow this, so a new explicit table had to be created.
 
+*** w79_demo_ctrl
+patchfile = w79_demo_ctrl.patch
+- committed revision 884   by wesley johnson
+Fix the demos so they stop interfering with savegame loading.
+The screen would wipe, and then wipe a second time and the controls
+would be useless.
+Created a new contol var, demo_ctrl, that stops demos once a savegame
+has been loaded, and does the advance demo job too.  It replaces advancedemo.
+

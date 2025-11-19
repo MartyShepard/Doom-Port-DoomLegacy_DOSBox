@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 873 2011-11-01 00:05:40Z wesleyjohnson $
+// $Id: d_netcmd.c 884 2011-12-18 03:55:38Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -620,7 +620,6 @@ void D_SendPlayerConfig(void)
 //  play a demo, add .lmp for external demos
 //  eg: playdemo demo1 plays the internal game demo
 //
-// byte*   demofile;       //demo file buffer
 
 void Command_Playdemo_f(void)
 {
@@ -638,17 +637,23 @@ void Command_Playdemo_f(void)
     // disconnect from server here ?
     if (demoplayback)
         G_StopDemo();
+    // Ignore seq playdemo command issued during menu, if since disabled
+    if( demo_ctrl == (DEMO_seq_playdemo | DEMO_seq_disabled))
+    {
+        demo_ctrl = DEMO_seq_disabled;
+        return;
+    }
+    demo_ctrl &= ~ DEMO_seq_playdemo;
     if (netgame)
     {
         CONS_Printf("\nYou can't play a demo while in net game\n");
         return;
     }
 
-    // open the demo file
+    // copy demo lump name, or demo file name (.lmp will be added later)
     strncpy(name, carg.arg[1], MAX_WADPATH-1);
     name[MAX_WADPATH-1] = '\0';
     // dont add .lmp so internal game demos can be played
-    //FIL_DefaultExtension (name, ".lmp");
 
     CONS_Printf("Playing back demo '%s'.\n", name);
 
@@ -677,11 +682,10 @@ void Command_Timedemo_f(void)
         return;
     }
 
-    // open the demo file
+    // copy demo lump name, or demo file name (.lmp will be added later)
     strncpy(name, carg.arg[1], MAX_WADPATH-1);
     name[MAX_WADPATH-1] = '\0';
     // dont add .lmp so internal game demos can be played
-    //FIL_DefaultExtension (name, ".lmp");
 
     CONS_Printf("Timing demo '%s'.\n", name);
 
@@ -807,7 +811,7 @@ void Command_Restart_f(void)
     if (gamestate == GS_LEVEL)
         G_DoLoadLevel(true);
     else
-        CONS_Printf("You should be in a level to restat it !\n");
+        CONS_Printf("You should be in a level to restart it !\n");
 }
 
 void Command_Pause(void)
@@ -876,6 +880,7 @@ void Command_Frags_f(void)
     }
 
     for (i = 0; i < MAXPLAYERS; i++)
+    {
         if (playeringame[i])
         {
             CONS_Printf("%-16s", player_names[i]);
@@ -884,6 +889,7 @@ void Command_Frags_f(void)
                     CONS_Printf(" %3d", players[i].frags[j]);
             CONS_Printf("\n");
         }
+    }
 }
 
 void Command_TeamFrags_f(void)
@@ -903,6 +909,7 @@ void Command_TeamFrags_f(void)
     HU_CreateTeamFragTbl(unused, frags, fragtbl);
 
     for (i = 0; i < 11; i++)
+    {
         if (teamingame(i))
         {
             CONS_Printf("%-8s", team_names[i]);
@@ -911,6 +918,7 @@ void Command_TeamFrags_f(void)
                     CONS_Printf(" %3d", fragtbl[i][j]);
             CONS_Printf("\n");
         }
+    }
 }
 
 //  Returns program version.
@@ -1011,8 +1019,7 @@ void Command_Load_f(void)
         return;
     }
 
-    if (demoplayback)
-        G_StopDemo();
+    D_DisableDemo();
 
     // spawn a server if needed
     SV_SpawnServer();

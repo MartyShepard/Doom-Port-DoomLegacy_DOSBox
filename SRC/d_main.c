@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 881 2011-12-18 03:50:09Z wesleyjohnson $
+// $Id: d_main.c 884 2011-12-18 03:55:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "883"
+#define SVN_REV "884"
 #endif
 
 // Version number: major.minor.revision
@@ -371,7 +371,7 @@ boolean nosoundfx; // had clash with WATCOM i86.h nosound() function
 
 byte    verbose = 0;
 
-boolean advancedemo;
+byte    demo_ctrl;
 
 // name buffer sizes including directory and everything
 #define FILENAME_SIZE  256
@@ -828,7 +828,7 @@ void D_DoomLoop(void)
 }
 
 // =========================================================================
-//   D_AdvanceDemo
+//  Demo
 // =========================================================================
 
 //
@@ -899,21 +899,27 @@ void D_PageDrawer(char *lumpname)
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
 //
+// Called by D_StartTitle, with init of demosequence
+// Called by D_PageTicker, when gamestate == GS_DEMOSCREEN
+// Called by G_CheckDemoStatus when timing or playing a demo
 void D_AdvanceDemo(void)
 {
     // [WDJ] do not start a demo when a menu is open
-    advancedemo = ! menuactive;
-//  advancedemo = true;
+    if( !(demo_ctrl & DEMO_seq_disabled) && ! menuactive )
+        demo_ctrl = DEMO_seq_advance;    // flag to trigger D_DoAdvanceDemo
 }
 
 //
 // This cycles through the demo sequences.
 // FIXME - version dependent demo numbers?
 //
+// Called by TryRunTics when demo_ctrl == DEMO_seq_advance
 void D_DoAdvanceDemo(void)
 {
+    char * demo_name;
+
+    demo_ctrl = 0;  // cancel DEMO_seq_advance
     players[consoleplayer].playerstate = PST_LIVE;      // not reborn
-    advancedemo = false;
     gameaction = ga_nothing;
 
     if (gamemode == ultdoom_retail)
@@ -945,18 +951,16 @@ void D_DoAdvanceDemo(void)
             gamestate = GS_DEMOSCREEN;
             break;
         case 1:
-            G_DeferedPlayDemo("demo1");
-            pagetic = 9999999;
-            break;
+            demo_name = "demo1";
+            goto playdemo;
         case 2:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
             pagename = "CREDIT";
             break;
         case 3:
-            G_DeferedPlayDemo("demo2");
-            pagetic = 9999999;
-            break;
+            demo_name = "demo2";
+            goto playdemo;
         case 4:
             gamestate = GS_DEMOSCREEN;
             if (gamemode == doom2_commercial)
@@ -984,35 +988,60 @@ void D_DoAdvanceDemo(void)
             }
             break;
         case 5:
-            G_DeferedPlayDemo("demo3");
-            pagetic = 9999999;
-            break;
+            demo_name = "demo3";
+            goto playdemo;
             // THE DEFINITIVE DOOM Special Edition demo
         case 6:
-            G_DeferedPlayDemo("demo4");
-            pagetic = 9999999;
-            break;
+            demo_name = "demo4";
+            goto playdemo;
     }
-}
+    return;
 
-// =========================================================================
-//   D_DoomMain
-// =========================================================================
+ playdemo:
+    G_DeferedPlayDemo( demo_name );
+    demo_ctrl = DEMO_seq_playdemo;  // demo started here (not console)
+    pagetic = 9999999;
+    return;
+}
 
 //
 // D_StartTitle
 //
+// Called by D_DoomMain(), when not server and not starting game
+// Called by Command_ExitGame_f
+// Called by CL_ConnectToServer when cannot join server, or aborting
+// Called by Got_KickCmd, when player kicked from game
+// Called by GetPackets, upon server shutdown, timeout, or refused (NACK)
+// Called by G_InitNew, when aborting game because cannot downgrade
+// Called by M_Responder and M_Setup_prevMenu, when exiting menu and not playing game
 void D_StartTitle(void)
 {
     gameaction = ga_nothing;
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
     displayplayer_ptr = consoleplayer_ptr = &players[0]; // [WDJ]
-    demosequence = -1;
     paused = false;
+    demo_ctrl = 0;  // enable screens and seq demos
+    demosequence = -1;
     D_AdvanceDemo();
     CON_ToggleOff();
 }
+
+
+// Disable demos
+// Called when load game or init new game
+void D_DisableDemo(void)
+{
+    if( demoplayback )
+        G_StopDemo();
+    // stop DEMO_seq_advance, but preserve DEMO_seq_playdemo so can abort it
+    demo_ctrl = (demo_ctrl & DEMO_seq_playdemo) | DEMO_seq_disabled;
+}
+
+
+// =========================================================================
+//   D_DoomMain
+// =========================================================================
 
 //
 // D_AddFile

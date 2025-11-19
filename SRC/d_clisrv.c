@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 804 2011-03-09 00:29:52Z wesleyjohnson $
+// $Id: d_clisrv.c 884 2011-12-18 03:55:38Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1486,8 +1486,7 @@ boolean Playing( void )
 
 boolean SV_SpawnServer( void )
 {
-    if( demoplayback )
-        G_StopDemo(); // reset engine parameter
+    D_DisableDemo();
 
     if( serverrunning == false )
     {
@@ -2236,7 +2235,6 @@ void SV_Maketic(void)
     maketic++;
 }
 
-extern  boolean advancedemo;
 static  int     load;
 
 void TryRunTics (tic_t realtics)
@@ -2287,7 +2285,7 @@ void TryRunTics (tic_t realtics)
 
     if (neededtic > gametic)
     {
-        if (advancedemo)
+        if (demo_ctrl == DEMO_seq_advance)  // and not disabled
             D_DoAdvanceDemo ();
         else
         // run the count * tics

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: t_func.c 884 2011-12-18 03:55:38Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -3320,6 +3320,8 @@ void SF_PlayDemo()
     }
 
     G_DoPlayDemo(t_argv[0].value.s);
+    // if name is lump, then play lump,
+    // otherwise it adds ".lmp" and reads demo file
 }
 
 // run console cmd
