@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00883 ]: w79 DEH hashed text lookup
 [00882 ]: w79 DEH flags
 					DOS: This Fixed DEH/WAD Loading Support svn 00859
 					

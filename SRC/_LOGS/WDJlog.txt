@@ -2003,3 +2003,15 @@ This fixes the DEH and BEX flags logic so that DEH changes only the
 flags it intends to and clears flag2 bits (like MF2_SLIDE) only when it
 shows that it is changing flag2 bits.
 
+*** w79_deh_text
+patchfile = w79_deh_text.patch
+- committed revision 883   by wesley johnson
+Some text strings got changed (DOS -> your os) and now DEH cannot
+recognize them.  This adds a hashed lookup that can recognize strings
+that we no longer have, and point DEH at the right string.
+It also is used by chex newmaps.c to recognize ult doom strings after
+the chex modifications have changed all the strings.
+Chex also changed some strings with two %s, to have one %s, and Newmaps
+wants to change it back to two %s.  The %s counting method would not
+allow this, so a new explicit table had to be created.
+

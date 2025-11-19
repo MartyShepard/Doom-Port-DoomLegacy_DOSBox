@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 882 2011-12-18 03:52:01Z wesleyjohnson $
+// $Id: dehacked.c 883 2011-12-18 03:53:49Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -145,8 +145,13 @@ char* myfgets(char *buf, int bufsize, MYFILE *f)
             break;
     }
     buf[i] = '\0';
+#ifdef DEBUG_DEH
+    memset( &buf[i], 0, bufsize-i-1 );
+#endif
     //CONS_Printf("fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
 
+    if( devparm && verbose )
+        fprintf(stderr,"DEH: %s",buf);  // buf has \n
     return buf;
 }
 
@@ -168,6 +173,9 @@ size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
     size_t byteread = f->size - (f->curpos-f->data);  // bytes left
     if( reqsize < byteread )
         byteread = reqsize;
+#ifdef DEBUG_DEH
+    memset( &buf[0], 0, reqsize-1 );
+#endif
     if( byteread>0 )
     {
         ULONG i;
@@ -180,6 +188,7 @@ size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
                 buf[i++]=c;
         }
     }
+    buf[byteread] = '\0';
     return byteread;
 }
 
@@ -236,6 +245,57 @@ boolean  filename_reject( char * src, int maxlen )
 
 typedef enum { DRS_nocheck, DRS_name, DRS_string, DRS_format } DRS_type_e;
 
+typedef struct {
+    uint16_t   text_id;
+    byte  num_s;
+} PACKED_ATTR  format_ref_t;
+
+format_ref_t  format_ref_table[] =
+{
+   {QSPROMPT_NUM, 1},
+   {QLPROMPT_NUM, 1},
+   {DOSY_NUM, 1},
+   {DEATHMSG_SUICIDE, 1},
+   {DEATHMSG_TELEFRAG, 2},
+   {DEATHMSG_FIST, 2},
+   {DEATHMSG_GUN, 2},
+   {DEATHMSG_SHOTGUN, 2},
+   {DEATHMSG_MACHGUN, 2},
+   {DEATHMSG_ROCKET, 2},
+   {DEATHMSG_GIBROCKET, 2},
+   {DEATHMSG_PLASMA, 2},
+   {DEATHMSG_BFGBALL, 2},
+   {DEATHMSG_CHAINSAW, 2},
+   {DEATHMSG_SUPSHOTGUN, 2},
+   {DEATHMSG_PLAYUNKNOW, 2},
+   {DEATHMSG_HELLSLIME, 1},
+   {DEATHMSG_NUKE, 1},
+   {DEATHMSG_SUPHELLSLIME, 1},
+   {DEATHMSG_SPECUNKNOW, 1},
+   {DEATHMSG_BARRELFRAG, 2},
+   {DEATHMSG_BARREL, 1},
+   {DEATHMSG_POSSESSED, 1},
+   {DEATHMSG_SHOTGUY, 1},
+   {DEATHMSG_VILE, 1},
+   {DEATHMSG_FATSO, 1},
+   {DEATHMSG_CHAINGUY, 1},
+   {DEATHMSG_TROOP, 1},
+   {DEATHMSG_SERGEANT, 1},
+   {DEATHMSG_SHADOWS, 1},
+   {DEATHMSG_HEAD, 1},
+   {DEATHMSG_BRUISER, 1},
+   {DEATHMSG_UNDEAD, 1},
+   {DEATHMSG_KNIGHT, 1},
+   {DEATHMSG_SKULL, 1},
+   {DEATHMSG_SPIDER, 1},
+   {DEATHMSG_BABY, 1},
+   {DEATHMSG_CYBORG, 1},
+   {DEATHMSG_PAIN, 1},
+   {DEATHMSG_WOLFSS, 1},
+   {DEATHMSG_DEAD, 1},
+   {0xFFFF, 0}
+};
+
 // [WDJ] 8/26/2011  DEH/BEX replace string
 // newstring is a temp buffer ptr, it gets modified for backslash literals
 // oldstring is ptr to text ptr  ( &text[i] )
@@ -250,14 +310,70 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 #endif
     // Most text strings are format strings, and % are significant.
     // New string must not have have any %s %d etc. not present in old string.
-    // Mew freedoom.bex has 1%, that is not present in original string
+    // New freedoom.bex has "1%", that is not present in original string
     // Strings have %s, %s %s (old strings also had %c and %d).
     // Music and sound strings may have '-' and '\0'.
     // [WDJ] Newer compiler could not tolerate these as unsigned char.
+#if 1
+    char * newp = &newstring[0];
+    if( drstype == DRS_string )
+    {
+        // Test new string against table
+	// Fixes when Chex replacement strings have fewer %s in them,
+	// so Chex newmaps.wad can replace that string again.
+	int text_id = oldstring - (&text[0]);
+        byte num_s = 0;
+	int i;
+        // look up in table
+        for(i=0; ; i++)
+        {
+	    if( format_ref_table[i].text_id > NUMTEXT )  break;
+	    if( format_ref_table[i].text_id == text_id )
+	    {
+	        num_s = format_ref_table[i].num_s;
+	        drstype = DRS_format;
+	        break;
+	    }
+	}
+	    
+        for(i=0; ;)
+        {
+            // new string must have same or fewer %
+            newp = strchr( newp, '%' );
+            if( newp == NULL ) break;
+	    if( drstype == DRS_format )
+	    {
+	        // must block %n, write to memory
+	        // Only %s are left in the text strings
+	        switch( newp[1] )
+	        {
+		 case '%': // literal %
+		   break;
+		 case 's':
+		   i++;
+		   if( i > num_s )   goto bad_replacement;
+		   break;
+		 default:
+		   goto bad_replacement;
+		}
+	    }
+	    else
+	    {
+	        // only  %% allowed
+	        if( newp[1] != '%' )
+		    newp[0] = ' '; // rubout the %
+	    }
+	    newp +=2;
+	}
+    }
+#else
     char * newp = &newstring[0];
     char * oldp = &(*oldstring)[0];
     if( drstype == DRS_string )
     {
+        // Test new string against old string.
+	// Several Chex replacement strings have fewer %s in them, which then
+	// blocks Chex newmaps.wad from replacing that string again.
         for(;;)
         {
             // new string must have same or fewer %, so it must reach end first
@@ -286,6 +402,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    }
 	}
     }
+#endif
 
     // rewrite backslash literals into newstring, because it only gets shorter
     char * chp = &newstring[0];
@@ -768,6 +885,108 @@ static void readsound(MYFILE* f, int deh_sound_id)
   } while(s[0]!='\n' && !myfeof(f));
 }
 
+// [WDJ] Some strings have been altered, preventing match to text in DEH file.
+// This is hash of the original Doom strings.
+typedef struct {
+    uint32_t  hash;      // computed hash
+    uint16_t  indirect;  // id of actual text
+} PACKED_ATTR  hash_text_t;
+
+// [WDJ] This is constructed from wads where DEH fails.
+// To get hash print use -devparm -v.
+// > doomlegacy -devparm -v -game doom2 -file xxx.wad 2> xxx.log
+static hash_text_t   hash_text_table[] =
+{
+    {0x26323511, QUITMSG3_NUM},  // dos -> your os
+    {0x33033301, QUITMSG4_NUM},  // dos -> your os
+    {0x8e3b425e, QUIT2MSG1_NUM}, // dos -> shell
+    {0x0042d2cd, DEATHMSG_TELEFRAG}, // telefraged -> telefragged
+    {0x106f76c2, DEATHMSG_ROCKET}, // catched -> caught
+  // because Chex1PatchEngine changes text before newmaps DEH makes its changes
+    {0xea264ed7, E1TEXT_NUM},
+    {0xcee03ff5, QUITMSG_NUM},
+    {0x55b48886, QUITMSG1_NUM},
+    {0xe980b2e0, QUITMSG2_NUM},
+    {0x26323511, QUITMSG3_NUM},
+    {0x33033301, QUITMSG4_NUM},
+    {0x84311a52, QUITMSG5_NUM},
+    {0xb6d256a1, QUITMSG6_NUM},
+    {0x303ea545, QUITMSG7_NUM},
+    {0x8e3b425e, QUIT2MSG1_NUM},
+    {0x507e7be5, QUIT2MSG2_NUM},
+    {0xc5e635e9, QUIT2MSG3_NUM},
+    {0x70136b3e, QUIT2MSG4_NUM},
+    {0xe5efb6a8, QUIT2MSG5_NUM},
+    {0x04fc8b21, QUIT2MSG6_NUM},
+    {0x68d8f2ce, NIGHTMARE_NUM},
+    {0x001bcf94, GOTARMOR_NUM},
+    {0x01bcfc54, GOTMEGA_NUM},
+    {0x01bc5ffd, GOTHTHBONUS_NUM},
+    {0x01bc817d, GOTARMBONUS_NUM},
+    {0x00010e33, GOTSUPER_NUM},
+    {0x01bc64a4, GOTBLUECARD_NUM},
+    {0x06f2bfa4, GOTYELWCARD_NUM},
+    {0x00de4424, GOTREDCARD_NUM},
+    {0x003795f5, GOTSTIM_NUM},
+    {0x8e914c80, GOTMEDINEED_NUM},
+    {0x001bc72a, GOTMEDIKIT_NUM},
+    {0x00000b0b, GOTBERSERK_NUM},
+    {0x00e1e245, GOTINVIS_NUM},
+    {0x06b5b172, GOTSUIT_NUM},
+    {0x0d3bf614, GOTVISOR_NUM},
+    {0x000378aa, GOTCLIP_NUM},
+    {0x0378e27f, GOTCLIPBOX_NUM},
+    {0x000de4c2, GOTROCKET_NUM},
+    {0x0378e527, GOTROCKBOX_NUM},
+    {0x01bc81b0, GOTCELL_NUM},
+    {0x1bc81c85, GOTCELLBOX_NUM},
+    {0x06f0ec53, GOTSHELLS_NUM},
+    {0xde396c53, GOTSHELLBOX_NUM},
+    {0xde1fc095, GOTBACKPACK_NUM},
+    {0x048972a1, GOTBFG9000_NUM},
+    {0x004899e4, GOTCHAINGUN_NUM},
+    {0x0260d3b2, GOTCHAINSAW_NUM},
+    {0x1228dc04, GOTLAUNCHER_NUM},
+    {0x009143bc, GOTPLASMA_NUM},
+    {0x00245214, GOTSHOTGUN_NUM},
+    {0x015aa620, STSTR_DQDON_NUM},
+    {0x02b54c46, STSTR_DQDOFF_NUM},
+    {0x000b945e, STSTR_FAADDED_NUM},
+    {0x00824ede, STSTR_KFAADDED_NUM},
+    {0x000188ff, STSTR_CHOPPERS_NUM},
+    {0x00007ba0, HUSTR_E1M1_NUM},
+    {0x001f7c84, HUSTR_E1M2_NUM},
+    {0x003fc441, HUSTR_E1M3_NUM},
+    {0x007d8282, HUSTR_E1M4_NUM},
+    {0x0003f9ac, HUSTR_E1M5_NUM},
+//{0x0000199f, ??}, // "GREEN KEY"
+    {0x00004375, DEATHMSG_SUICIDE},
+    {0x0042d2cd, DEATHMSG_TELEFRAG},
+    {0x020d3f9d, DEATHMSG_FIST},
+    {0x0004296d, DEATHMSG_GUN},
+    {0x0010c1fd, DEATHMSG_SHOTGUN},
+    {0x0211416d, DEATHMSG_MACHGUN},
+    {0x106f76c2, DEATHMSG_ROCKET},
+    {0x020f86c2, DEATHMSG_GIBROCKET},
+    {0x00075264, DEATHMSG_PLASMA},
+    {0x07904664, DEATHMSG_BFGBALL},
+    {0xe3a3462f, DEATHMSG_CHAINSAW},
+    {0x000426ad, DEATHMSG_PLAYUNKNOW},
+    {0x001cd8c3, DEATHMSG_HELLSLIME},
+    {0x01f47e6f, DEATHMSG_NUKE},
+    {0x75e39428, DEATHMSG_SUPHELLSLIME},
+    {0x01ce59b8, DEATHMSG_SPECUNKNOW},
+    {0x020e19cd, DEATHMSG_BARRELFRAG},
+    {0x39b61448, DEATHMSG_BARREL},
+    {0x021835d2, DEATHMSG_POSSESSED},
+    {0x0861051f, DEATHMSG_SHOTGUY},
+    {0x0021255e, DEATHMSG_TROOP},
+    {0x109d6e18, DEATHMSG_SERGEANT},
+    {0x10b701a8, DEATHMSG_BRUISER},
+    {0x00000372, DEATHMSG_DEAD},
+    {0, 0xFFFF}  // last has invalid indirect
+};
+
 static void readtext(MYFILE* f, int len1, int len2 )
 {
   char s[2001];
@@ -789,6 +1008,10 @@ static void readtext(MYFILE* f, int len1, int len2 )
     if( bex_include_notext )
        return;  // BEX INCLUDE NOTEXT is active, blocks Text replacements
 
+    if( strncmp(s,"GREATER RUNES", 13) == 0 )
+    {
+        fprintf(stderr,"Text:%s\n", s);
+    }
     str2 = &s[len1];
     s[len1+len2]='\0';
     if((len1 == 4) && (len2 == 4))  // sprite names are always 4 chars
@@ -878,11 +1101,38 @@ static void readtext(MYFILE* f, int len1, int len2 )
            return;
        }
     }
+    
+    // [WDJ] Lookup by hash
+    {
+       uint32_t hash = 0;
+       for(i=0; i<len1; i++)
+       {
+	   if( s[i] >= '0' )
+	   {
+	       if( hash&0x80000000 )
+		  hash ++;
+	       hash <<= 1;
+	       hash += toupper( s[i] ) - '0';
+	   }
+       }
+       for(i=0;;i++)
+       {
+	   if( hash_text_table[i].indirect >= NUMTEXT ) break;  // not found
+	   if( hash_text_table[i].hash == hash )
+	   {
+	       deh_replace_string( &text[hash_text_table[i].indirect], &(s[len1]), DRS_string );
+	       return;
+	   }
+       }
+       if( devparm && verbose )
+           fprintf(stderr,"Text hash= 0x%08x :", hash);
+    }
 
     s[len1]='\0';
     deh_error("Text not changed :%s\n",s);
   }
 }
+
 // [WDJ] 8/27/2011 BEX text strings
 typedef struct {
     char *    kstr;
@@ -1789,6 +2039,8 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
     word=strtok(s," ");  // first keyword
     if(word!=NULL)
     {
+      if( word[0] == '\n' )  // ignore blank line
+	continue;
       if(!strncmp(word, "[STRINGS]", 9))
       {
 	bex_strings(f, bex_permission);
@@ -1816,6 +2068,10 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
 	bex_include_notext = 0;
 	continue;
       }
+      else if(!strncmp(word, "Engine", 6)
+	      || !strncmp(word, "Data", 4)
+	      || !strncmp(word, "IWAD", 4) )
+	 continue; // WhackEd2 data, ignore it
        
       word2=strtok(NULL," ");  // id number
       if(word2!=NULL)
