@@ -2070,3 +2070,9 @@ of fixed_t variables.
 These can be maintained according to the size of fixed_t.
 Change all used of MAXINT with fixed_t vars to use FIXED_MAX and FIXED_MIN.
 
+*** w79_spec_enum
+patchfile = w79_spec_enum.patch
+- committed revision 891   by wesley johnson
+Most enum names in spec.h look like variable names.
+Give them prefixes.
+

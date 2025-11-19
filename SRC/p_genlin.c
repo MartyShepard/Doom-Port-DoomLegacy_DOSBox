@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_genlin.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,7 +66,7 @@ int EV_DoGenFloor ( line_t* line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -83,7 +83,7 @@ int EV_DoGenFloor ( line_t* line )
 
 manual_floor:                
     // Do not start another function if floor already moving
-    if (P_SectorActive(floor_special,sec))
+    if (P_SectorActive( S_floor_special, sec))
     {
       if (!manual)
         continue;
@@ -103,21 +103,21 @@ manual_floor:
     mfloor->texture = sec->floorpic;
     mfloor->newspecial = sec->special;
     mfloor->oldspecial = sec->oldspecial;
-    mfloor->type = genFloor;
+    mfloor->type = FT_genFloor;
 
     // set the speed of motion
     switch (Sped)
     {
-      case SpeedSlow:
+      case SPEED_Slow:
         mfloor->speed = FLOORSPEED;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         mfloor->speed = FLOORSPEED*2;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         mfloor->speed = FLOORSPEED*4;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         mfloor->speed = FLOORSPEED*8;
         break;
       default:
@@ -127,24 +127,24 @@ manual_floor:
     // set the destination height
     switch(Targ)
     {
-      case FtoHnF:
+      case FTAR_FtoHnF:
         mfloor->floordestheight = P_FindHighestFloorSurrounding(sec);
         break;
-      case FtoLnF:
+      case FTAR_FtoLnF:
         mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
         break;
-      case FtoNnF:
+      case FTAR_FtoNnF:
         mfloor->floordestheight = Dirn?
           P_FindNextHighestFloor(sec,sec->floorheight) :
           P_FindNextLowestFloor(sec,sec->floorheight);
         break;
-      case FtoLnC:
+      case FTAR_FtoLnC:
         mfloor->floordestheight = P_FindLowestCeilingSurrounding(sec);
         break;
-      case FtoC:
+      case FTAR_FtoC:
         mfloor->floordestheight = sec->ceilingheight;
         break;
-      case FbyST:
+      case FTAR_FbyST:
         mfloor->floordestheight = (mfloor->sector->floorheight>>FRACBITS) +
           mfloor->direction * (P_FindShortestTextureAround(secnum)>>FRACBITS);
         if (mfloor->floordestheight>32000)
@@ -153,11 +153,11 @@ manual_floor:
           mfloor->floordestheight=-32000;
         mfloor->floordestheight<<=FRACBITS;
         break;
-      case Fby24:
+      case FTAR_Fby24:
         mfloor->floordestheight = mfloor->sector->floorheight +
           mfloor->direction * 24*FRACUNIT;
         break;
-      case Fby32:
+      case FTAR_Fby32:
         mfloor->floordestheight = mfloor->sector->floorheight +
           mfloor->direction * 32*FRACUNIT;
         break;
@@ -172,7 +172,7 @@ manual_floor:
       {
         sector_t *sec;
 
-        sec = (Targ==FtoLnC || Targ==FtoC)?
+        sec = (Targ==FTAR_FtoLnC || Targ==FTAR_FtoC)?
           P_FindModelCeilingSector(mfloor->floordestheight,secnum) :
           P_FindModelFloorSector(mfloor->floordestheight,secnum);
         if (sec)
@@ -180,18 +180,18 @@ manual_floor:
           mfloor->texture = sec->floorpic;
           switch(ChgT)
           {
-            case FChgZero:  // zero type
+            case FCH_FChgZero:  // zero type
               mfloor->newspecial = 0;
               mfloor->oldspecial = 0;
-              mfloor->type = genFloorChg0;
+              mfloor->type = FT_genFloorChg0;
               break;
-            case FChgTyp:   // copy type
+            case FCH_FChgTyp:   // copy type
               mfloor->newspecial = sec->special;
               mfloor->oldspecial = sec->oldspecial;
-              mfloor->type = genFloorChgT;
+              mfloor->type = FT_genFloorChgT;
               break;
-            case FChgTxt:   // leave type be
-              mfloor->type = genFloorChg;
+            case FCH_FChgTxt:   // leave type be
+              mfloor->type = FT_genFloorChg;
               break;
             default:
               break;
@@ -203,18 +203,18 @@ manual_floor:
         mfloor->texture = line->frontsector->floorpic;
         switch (ChgT)
         {
-          case FChgZero:    // zero type
+          case FCH_FChgZero:    // zero type
             mfloor->newspecial = 0;
             mfloor->oldspecial = 0;
-            mfloor->type = genFloorChg0;
+            mfloor->type = FT_genFloorChg0;
             break;
-          case FChgTyp:     // copy type
+          case FCH_FChgTyp:     // copy type
             mfloor->newspecial = line->frontsector->special;
             mfloor->oldspecial = line->frontsector->oldspecial;
-            mfloor->type = genFloorChgT;
+            mfloor->type = FT_genFloorChgT;
             break;
-          case FChgTxt:     // leave type be
-            mfloor->type = genFloorChg;
+          case FCH_FChgTxt:     // leave type be
+            mfloor->type = FT_genFloorChg;
           default:
             break;
         }
@@ -256,7 +256,7 @@ int EV_DoGenCeiling ( line_t*  line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -273,7 +273,7 @@ int EV_DoGenCeiling ( line_t*  line )
 
 manual_ceiling:                
     // Do not start another function if ceiling already moving
-    if (P_SectorActive(ceiling_special,sec))
+    if (P_SectorActive( S_ceiling_special, sec))
     {
       if (!manual)
         continue;
@@ -294,21 +294,21 @@ manual_ceiling:
     ceiling->newspecial = sec->special;
     ceiling->oldspecial = sec->oldspecial;
     ceiling->tag = sec->tag;
-    ceiling->type = genCeiling;
+    ceiling->type = CT_genCeiling;
 
     // set speed of motion
     switch (Sped)
     {
-      case SpeedSlow:
+      case SPEED_Slow:
         ceiling->speed = CEILSPEED;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         ceiling->speed = CEILSPEED*2;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         ceiling->speed = CEILSPEED*4;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         ceiling->speed = CEILSPEED*8;
         break;
       default:
@@ -319,24 +319,24 @@ manual_ceiling:
     targheight = sec->ceilingheight;
     switch(Targ)
     {
-      case CtoHnC:
+      case CTAR_CtoHnC:
         targheight = P_FindHighestCeilingSurrounding(sec);
         break;
-      case CtoLnC:
+      case CTAR_CtoLnC:
         targheight = P_FindLowestCeilingSurrounding(sec);
         break;
-      case CtoNnC:
+      case CTAR_CtoNnC:
         targheight = Dirn?
           P_FindNextHighestCeiling(sec,sec->ceilingheight) :
           P_FindNextLowestCeiling(sec,sec->ceilingheight);
         break;
-      case CtoHnF:
+      case CTAR_CtoHnF:
         targheight = P_FindHighestFloorSurrounding(sec);
         break;
-      case CtoF:
+      case CTAR_CtoF:
         targheight = sec->floorheight;
         break;
-      case CbyST:
+      case CTAR_CbyST:
         targheight = (ceiling->sector->ceilingheight>>FRACBITS) +
           ceiling->direction * (P_FindShortestUpperAround(secnum)>>FRACBITS);
         if (targheight>32000)
@@ -345,11 +345,11 @@ manual_ceiling:
           targheight=-32000;
         targheight<<=FRACBITS;
         break;
-      case Cby24:
+      case CTAR_Cby24:
         targheight = ceiling->sector->ceilingheight +
           ceiling->direction * 24*FRACUNIT;
         break;
-      case Cby32:
+      case CTAR_Cby32:
         targheight = ceiling->sector->ceilingheight +
           ceiling->direction * 32*FRACUNIT;
         break;
@@ -370,7 +370,7 @@ manual_ceiling:
       {
         sector_t *sec;
 
-        sec = (Targ==CtoHnF || Targ==CtoF)?         
+        sec = (Targ==CTAR_CtoHnF || Targ==CTAR_CtoF)?
           P_FindModelFloorSector(targheight,secnum) :
           P_FindModelCeilingSector(targheight,secnum);
         if (sec)
@@ -378,18 +378,18 @@ manual_ceiling:
           ceiling->texture = sec->ceilingpic;
           switch (ChgT)
           {
-            case CChgZero:  // type is zeroed
+            case CCH_CChgZero:  // type is zeroed
               ceiling->newspecial = 0;
               ceiling->oldspecial = 0;
-              ceiling->type = genCeilingChg0;
+              ceiling->type = CT_genCeilingChg0;
               break;
-            case CChgTyp:   // type is copied
+            case CCH_CChgTyp:   // type is copied
               ceiling->newspecial = sec->special;
               ceiling->oldspecial = sec->oldspecial;
-              ceiling->type = genCeilingChgT;
+              ceiling->type = CT_genCeilingChgT;
               break;
-            case CChgTxt:   // type is left alone
-              ceiling->type = genCeilingChg;
+            case CCH_CChgTxt:   // type is left alone
+              ceiling->type = CT_genCeilingChg;
               break;
             default:
               break;
@@ -401,18 +401,18 @@ manual_ceiling:
         ceiling->texture = line->frontsector->ceilingpic;
         switch (ChgT)
         {
-          case CChgZero:    // type is zeroed
+          case CCH_CChgZero:    // type is zeroed
             ceiling->newspecial = 0;
             ceiling->oldspecial = 0;
-            ceiling->type = genCeilingChg0;
+            ceiling->type = CT_genCeilingChg0;
             break;
-          case CChgTyp:     // type is copied
+          case CCH_CChgTyp:     // type is copied
             ceiling->newspecial = line->frontsector->special;
             ceiling->oldspecial = line->frontsector->oldspecial;
-            ceiling->type = genCeilingChgT;
+            ceiling->type = CT_genCeilingChgT;
             break;
-          case CChgTxt:     // type is left alone
-            ceiling->type = genCeilingChg;
+          case CCH_CChgTxt:     // type is left alone
+            ceiling->type = CT_genCeilingChg;
             break;
           default:
             break;
@@ -451,12 +451,12 @@ int EV_DoGenLift ( line_t* line )
 
   // Activate all <type> plats that are in_stasis
 
-  if (Targ==LnF2HnF)
+  if (Targ==LTAR_LnF2HnF)
     P_ActivateInStasis(line->tag);
         
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -473,7 +473,7 @@ int EV_DoGenLift ( line_t* line )
 
 manual_lift:
     // Do not start another function if floor already moving
-    if (P_SectorActive(floor_special,sec))
+    if (P_SectorActive( S_floor_special, sec))
     {
       if (!manual)
         continue;
@@ -492,28 +492,28 @@ manual_lift:
     plat->crush = false;
     plat->tag = line->tag;
 
-    plat->type = genLift;
+    plat->type = PLATT_genLift;
     plat->high = sec->floorheight;
-    plat->status = down;
+    plat->status = PLATS_down;
 
     // setup the target destination height
     switch(Targ)
     {
-      case F2LnF:
+      case LTAR_F2LnF:
         plat->low = P_FindLowestFloorSurrounding(sec);
         if (plat->low > sec->floorheight)
           plat->low = sec->floorheight;
         break;
-      case F2NnF:
+      case LTAR_F2NnF:
         plat->low = P_FindNextLowestFloor(sec,sec->floorheight);
         break;
-      case F2LnC:
+      case LTAR_F2LnC:
         plat->low = P_FindLowestCeilingSurrounding(sec);
         if (plat->low > sec->floorheight)
           plat->low = sec->floorheight;
         break;
-      case LnF2HnF:
-        plat->type = genPerpetual;
+      case LTAR_LnF2HnF:
+        plat->type = PLATT_genPerpetual;
         plat->low = P_FindLowestFloorSurrounding(sec);
         if (plat->low > sec->floorheight)
           plat->low = sec->floorheight;
@@ -529,16 +529,16 @@ manual_lift:
     // setup the speed of motion
     switch(Sped)
     {
-      case SpeedSlow:
+      case SPEED_Slow:
         plat->speed = PLATSPEED * 2;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         plat->speed = PLATSPEED * 4;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         plat->speed = PLATSPEED * 8;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         plat->speed = PLATSPEED * 16;
         break;
       default:
@@ -610,7 +610,7 @@ int EV_DoGenStairs ( line_t* line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -629,7 +629,7 @@ manual_stair:
     //Do not start another function if floor already moving
     //Add special lockout condition to wait for entire
     //staircase to build before retriggering
-    if (P_SectorActive(floor_special,sec) || sec->stairlock)
+    if (P_SectorActive( S_floor_special, sec) || sec->stairlock)
     {
       if (!manual)
         continue;
@@ -650,16 +650,16 @@ manual_stair:
     switch(Sped)
       {
       default:
-      case SpeedSlow:
+      case SPEED_Slow:
         mfloor->speed = FLOORSPEED/4;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         mfloor->speed = FLOORSPEED/2;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         mfloor->speed = FLOORSPEED*2;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         mfloor->speed = FLOORSPEED*4;
         break;
       }
@@ -687,7 +687,7 @@ manual_stair:
     mfloor->floordestheight = height;
     texture = sec->floorpic;
     mfloor->crush = false;
-    mfloor->type = genBuildStair;
+    mfloor->type = FT_genBuildStair;
 
     sec->stairlock = -2;
     sec->nextsec = -1;
@@ -723,7 +723,7 @@ manual_stair:
         if (!boomsupport)
           height += mfloor->direction * stairsize;
 
-        if (P_SectorActive(floor_special,tsec) || tsec->stairlock)
+        if (P_SectorActive( S_floor_special, tsec) || tsec->stairlock)
           continue;
         
         if (boomsupport)
@@ -749,7 +749,7 @@ manual_stair:
         mfloor->speed = speed;
         mfloor->floordestheight = height;
         mfloor->crush = false;
-        mfloor->type = genBuildStair;
+        mfloor->type = FT_genBuildStair;
 
         ok = 1;
         break;
@@ -792,7 +792,7 @@ int EV_DoGenCrusher ( line_t* line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -809,7 +809,7 @@ int EV_DoGenCrusher ( line_t* line )
 
 manual_crusher:                
     // Do not start another function if ceiling already moving
-    if (P_SectorActive(ceiling_special,sec))
+    if (P_SectorActive( S_ceiling_special, sec))
     {
       if (!manual)
         continue;
@@ -829,23 +829,23 @@ manual_crusher:
     ceiling->texture = sec->ceilingpic;
     ceiling->newspecial = sec->special;
     ceiling->tag = sec->tag;
-    ceiling->type = Slnt? genSilentCrusher : genCrusher;
+    ceiling->type = Slnt? CT_genSilentCrusher : CT_genCrusher;
     ceiling->topheight = sec->ceilingheight;
     ceiling->bottomheight = sec->floorheight + (8*FRACUNIT);
 
     // setup ceiling motion speed
     switch (Sped)
     {
-      case SpeedSlow:
+      case SPEED_Slow:
         ceiling->speed = CEILSPEED;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         ceiling->speed = CEILSPEED*2;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         ceiling->speed = CEILSPEED*4;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         ceiling->speed = CEILSPEED*8;
         break;
       default:
@@ -884,7 +884,7 @@ int EV_DoGenLockedDoor ( line_t* line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -900,7 +900,7 @@ int EV_DoGenLockedDoor ( line_t* line )
     sec = &sectors[secnum];
 manual_locked:
     // Do not start another function if ceiling already moving
-    if (P_SectorActive(ceiling_special,sec))
+    if (P_SectorActive( S_ceiling_special, sec))
     {
       if (!manual)
         continue;
@@ -926,20 +926,20 @@ manual_locked:
     switch(Sped)
     {
       default:
-      case SpeedSlow:
-        door->type = Kind? genOpen : genRaise;
+      case SPEED_Slow:
+        door->type = Kind? VD_genOpen : VD_genRaise;
         door->speed = VDOORSPEED;
         break;
-      case SpeedNormal:
-        door->type = Kind? genOpen : genRaise;
+      case SPEED_Normal:
+        door->type = Kind? VD_genOpen : VD_genRaise;
         door->speed = VDOORSPEED*2;
         break;
-      case SpeedFast:
-        door->type = Kind? genBlazeOpen : genBlazeRaise;
+      case SPEED_Fast:
+        door->type = Kind? VD_genBlazeOpen : VD_genBlazeRaise;
         door->speed = VDOORSPEED*4;
         break;
-      case SpeedTurbo:
-        door->type = Kind? genBlazeOpen : genBlazeRaise;
+      case SPEED_Turbo:
+        door->type = Kind? VD_genBlazeOpen : VD_genBlazeRaise;
         door->speed = VDOORSPEED*8;
 
         break;
@@ -983,7 +983,7 @@ int EV_DoGenDoor ( line_t* line )
 
   // check if a manual trigger, if so do just the sector on the backside
   manual = false;
-  if (Trig==PushOnce || Trig==PushMany)
+  if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))
       return rtn;
@@ -999,7 +999,7 @@ int EV_DoGenDoor ( line_t* line )
     sec = &sectors[secnum];
 manual_door:
     // Do not start another function if ceiling already moving
-    if (P_SectorActive(ceiling_special,sec))
+    if (P_SectorActive( S_ceiling_special, sec))
     {
       if (!manual)
         continue;
@@ -1037,16 +1037,16 @@ manual_door:
     switch(Sped)
     {
       default:
-      case SpeedSlow:
+      case SPEED_Slow:
         door->speed = VDOORSPEED;
         break;
-      case SpeedNormal:
+      case SPEED_Normal:
         door->speed = VDOORSPEED*2;
         break;
-      case SpeedFast:
+      case SPEED_Fast:
         door->speed = VDOORSPEED*4;
         break;
-      case SpeedTurbo:
+      case SPEED_Turbo:
         door->speed = VDOORSPEED*8;
         break;
     }
@@ -1056,34 +1056,34 @@ manual_door:
     // assign target heights accordingly
     switch(Kind)
     {
-      case OdCDoor:
+      case DT_OdCDoor:
         door->direction = 1;
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         if (door->topheight != sec->ceilingheight)
           S_StartSound((mobj_t *)&door->sector->soundorg,sfx_bdopn);
-        door->type = Sped>=SpeedFast? genBlazeRaise : genRaise;
+        door->type = (Sped>=SPEED_Fast)? VD_genBlazeRaise : VD_genRaise;
         break;
-      case ODoor:
+      case DT_ODoor:
         door->direction = 1;
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         if (door->topheight != sec->ceilingheight)
           S_StartSound((mobj_t *)&door->sector->soundorg,sfx_bdopn);
-        door->type = Sped>=SpeedFast? genBlazeOpen : genOpen;
+        door->type = (Sped>=SPEED_Fast)? VD_genBlazeOpen : VD_genOpen;
         break;
-      case CdODoor:
+      case DT_CdODoor:
         door->topheight = sec->ceilingheight;
         door->direction = -1;
         S_StartSound((mobj_t *)&door->sector->soundorg,sfx_dorcls);
-        door->type = Sped>=SpeedFast? genBlazeCdO : genCdO;
+        door->type = (Sped>=SPEED_Fast)? VD_genBlazeCdO : VD_genCdO;
         break;
-      case CDoor:
+      case DT_CDoor:
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         door->direction = -1;
         S_StartSound((mobj_t *)&door->sector->soundorg,sfx_dorcls);
-        door->type = Sped>=SpeedFast? genBlazeClose : genClose;
+        door->type = (Sped>=SPEED_Fast)? VD_genBlazeClose : VD_genClose;
         break;
       default:
         break;

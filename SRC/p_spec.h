@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_spec.h 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -232,6 +232,7 @@ typedef struct
  // Savegame saves fields (destlevel ... )
   int destlevel;
   int speed;
+
 } lightlevel_t;
 
 #define GLOWSPEED               8
@@ -275,11 +276,12 @@ typedef struct
 #pragma pack()
 
 
+// internal
 typedef enum
 {
-    top,
-    middle,
-    bottom
+    B_top_texture,
+    B_middle_texture,
+    B_bottom_texture
 } bwhere_e;
 
 
@@ -290,8 +292,8 @@ typedef struct
     int         btexture;
     int         btimer;
     mobj_t*     soundorg;
-} button_t;
 
+} button_t;
 
 
 
@@ -313,50 +315,50 @@ void P_InitSwitchList(void);
 
 // SoM: 3/4/2000: Misc Boom stuff for thinkers that can share sectors, and some other stuff
 
+// internal
 typedef enum
 {
-  floor_special,
-  ceiling_special,
-  lighting_special,
-} special_e;
+  S_floor_special,
+  S_ceiling_special,
+  S_lighting_special,
+} sector_special_e;
 
 
 //SoM: 3/6/2000
-boolean P_SectorActive ( special_e t, sector_t* sec );
+boolean P_SectorActive ( sector_special_e spt, sector_t* sec );
 
-
+// internal
 typedef enum
 {
-  trigChangeOnly,
-  numChangeOnly,
+  CH_MODEL_trig_only,
+  CH_MODEL_num_only,
 } change_e;
 
 
 //
 // P_PLATS
-//
+// internal, savegame
 typedef enum
 {
-    up,
-    down,
-    waiting,
-    in_stasis
-
-} plat_e;
-
+  PLATS_up,
+  PLATS_down,
+  PLATS_waiting,
+  PLATS_in_stasis
+} platstat_e;
 
 
+// internal, savegame
 typedef enum
 {
-    perpetualRaise,
-    downWaitUpStay,
-    raiseAndChange,
-    raiseToNearestAndChange,
-    blazeDWUS,
-    //SoM:3/4/2000: Added boom stuffs
-    genLift,      //General stuff
-    genPerpetual, 
-    toggleUpDn,   //Instant toggle of stuff.
+  PLATT_perpetualRaise,
+  PLATT_downWaitUpStay,
+  PLATT_raiseAndChange,
+  PLATT_raiseToNearestAndChange,
+  PLATT_blazeDWUS,
+  //SoM:3/4/2000: Added boom stuffs
+  PLATT_genLift,      //General stuff
+  PLATT_genPerpetual, 
+  PLATT_toggleUpDn,   //Instant toggle of stuff.
 } plattype_e;
 
 
@@ -377,7 +379,8 @@ typedef struct
     int         tag;
     int         wait;
     int         count;	
-    plat_e      status, oldstatus;  // up, down, in_statis etc.
+    platstat_e  status, oldstatus;  // up, down, in_statis etc.
+
 } plat_t;
 
 //SoM: 3/6/2000: Boom's improved code without limits.
@@ -407,27 +410,27 @@ void    P_ActivateInStasis(int tag);
 
 //
 // P_DOORS
-//
+// internal, savegame
 typedef enum
 {
-    normalDoor,
-    close30ThenOpen,
-    doorclose,
-    dooropen,
-    raiseIn5Mins,
-    blazeRaise,
-    blazeOpen,
-    blazeClose,
+  VD_normalDoor,
+  VD_close30ThenOpen,
+  VD_doorclose,
+  VD_dooropen,
+  VD_raiseIn5Mins,
+  VD_blazeRaise,
+  VD_blazeOpen,
+  VD_blazeClose,
 
-    //SoM: 3/4/2000: General door types...
-    genRaise,
-    genBlazeRaise,
-    genOpen,
-    genBlazeOpen,
-    genClose,
-    genBlazeClose,
-    genCdO,
-    genBlazeCdO,
+  //SoM: 3/4/2000: General door types...
+  VD_genRaise,
+  VD_genBlazeRaise,
+  VD_genOpen,
+  VD_genBlazeOpen,
+  VD_genClose,
+  VD_genBlazeClose,
+  VD_genCdO,
+  VD_genBlazeCdO,
 } vldoor_e;
 
 
@@ -471,8 +474,8 @@ void  EV_CloseDoor(int sectag, int speed);
 int   EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing,
 			fixed_t speed );
 
-void    T_VerticalDoor (vldoor_t* door);
-void    P_SpawnDoorCloseIn30 (sector_t* sec);
+void  T_VerticalDoor (vldoor_t* door);
+void  P_SpawnDoorCloseIn30 (sector_t* sec);
 
 void  P_SpawnDoorRaiseIn5Mins ( sector_t* sec, int secnum );
 
@@ -484,21 +487,19 @@ void  P_SpawnDoorRaiseIn5Mins ( sector_t* sec, int secnum );
 //
 typedef enum
 {
-    sd_opening,
-    sd_waiting,
-    sd_closing
-
-} sd_e;
+  SDS_opening,
+  SDS_waiting,
+  SDS_closing
+} sdstat_e;
 
 
 
 typedef enum
 {
-    sdt_openOnly,
-    sdt_closeOnly,
-    sdt_openAndClose
-
-} sdt_e;
+  SDT_openOnly,
+  SDT_closeOnly,
+  SDT_openAndClose
+} sdtype_e;
 
 
 
@@ -509,13 +510,13 @@ typedef struct
     line_t*     line;  // saved
  // State to be saved in save game (p_saveg.c)
  // Savegame saves fields (type ... )
-    sdt_e       type;
+    sdtype_e    type;
     int         frame;
     int         whichDoorIndex;
     int         timer;
     sector_t*   frontsector;
     sector_t*   backsector;
-    sd_e         status;
+    sdstat_e    status;
 
 } slidedoor_t;
 
@@ -564,33 +565,31 @@ void  EV_SlidingDoor ( line_t* line, mobj_t* thing );
 
 //
 // P_CEILNG
-//
+// internal, savegame
 typedef enum
 {
-    lowerToFloor,
-    raiseToHighest,
-    //SoM:3/4/2000: Extra boom stuffs that tricked me...
-    lowerToLowest,
-    lowerToMaxFloor,
+  CT_lowerToFloor,
+  CT_raiseToHighest,
+  //SoM:3/4/2000: Extra boom stuffs that tricked me...
+  CT_lowerToLowest,
+  CT_lowerToMaxFloor,
 
-    lowerAndCrush,
-    crushAndRaise,
-    fastCrushAndRaise,
-    silentCrushAndRaise,
-    instantRaise, // Insantly raises SSNTails 06-13-2002
+  CT_lowerAndCrush,
+  CT_crushAndRaise,
+  CT_fastCrushAndRaise,
+  CT_silentCrushAndRaise,
+  CT_instantRaise, // Insantly raises SSNTails 06-13-2002
 
-    //SoM:3/4/2000
-    //jff 02/04/98 add types for generalized ceiling mover
-    genCeiling,
-    genCeilingChg,
-    genCeilingChg0,
-    genCeilingChgT,
+  //SoM:3/4/2000
+  //jff 02/04/98 add types for generalized ceiling mover
+  CT_genCeiling,
+  CT_genCeilingChg,
+  CT_genCeilingChg0,
+  CT_genCeilingChgT,
 
-    //jff 02/05/98 add types for generalized ceiling mover
-    genCrusher,
-    genSilentCrusher,
-
-
+  //jff 02/05/98 add types for generalized ceiling mover
+  CT_genCrusher,
+  CT_genSilentCrusher,
 } ceiling_e;
 
 
@@ -648,80 +647,81 @@ int     P_ActivateInStasisCeiling(line_t* line);
 
 //
 // P_FLOOR
-//
+// internal, savegame
 typedef enum
 {
     // lower floor to highest surrounding floor
-    lowerFloor,
+  FT_lowerFloor,
 
     // lower floor to lowest surrounding floor
-    lowerFloorToLowest,
+  FT_lowerFloorToLowest,
 
     // lower floor to highest surrounding floor VERY FAST
-    turboLower,
+  FT_turboLower,
 
     // raise floor to lowest surrounding CEILING
-    raiseFloor,
+  FT_raiseFloor,
 
     // raise floor to next highest surrounding floor
-    raiseFloorToNearest,
+  FT_raiseFloorToNearest,
 
     // lower floor to lowest surrounding floor
-    lowerFloorToNearest,
+  FT_lowerFloorToNearest,
 
     // lower floor 24
-    lowerFloor24,
+  FT_lowerFloor24,
 
     // lower floor 32
-    lowerFloor32Turbo,
+  FT_lowerFloor32Turbo,
 
     // raise floor to shortest height texture around it
-    raiseToTexture,
+  FT_raiseToTexture,
 
     // lower floor to lowest surrounding floor
     //  and change floorpic
-    lowerAndChange,
+  FT_lowerAndChange,
 
-    raiseFloor24,
+  FT_raiseFloor24,
 
     //raise floor 32
-    raiseFloor32Turbo,
+  FT_raiseFloor32Turbo,
 
-    raiseFloor24AndChange,
-    raiseFloorCrush,
+  FT_raiseFloor24AndChange,
+  FT_raiseFloorCrush,
 
      // raise to next highest floor, turbo-speed
-    raiseFloorTurbo,
-    donutRaise,
-    raiseFloor512,
-    instantLower, // Instantly lowers SSNTails 06-13-2002
+  FT_raiseFloorTurbo,
+  FT_donutRaise,
+  FT_raiseFloor512,
+  FT_instantLower, // Instantly lowers SSNTails 06-13-2002
 
     //SoM: 3/4/2000 Boom copy YEAH YEAH
-    genFloor,
-    genFloorChg,
-    genFloorChg0,
-    genFloorChgT,
+  FT_genFloor,
+  FT_genFloorChg,
+  FT_genFloorChg0,
+  FT_genFloorChgT,
 
     //new types for stair builders
-    buildStair,
-    genBuildStair,
+  FT_buildStair,
+  FT_genBuildStair,
 
 } floor_e;
 
 //SoM:3/4/2000: Anothe boom code copy.
+// internal, savegame
 typedef enum
 {
-  elevateUp,
-  elevateDown,
-  elevateCurrent,
+  ET_elevateUp,
+  ET_elevateDown,
+  ET_elevateCurrent,
 } elevator_e;
 
 
+// internal, savegame
 typedef enum
 {
-    build8,     // slowly build by 8
-    turbo16     // quickly build by 16
-
+  ST_build8,     // slowly build by 8
+  ST_turbo16     // quickly build by 16
 } stair_e;
 
 
@@ -762,10 +762,9 @@ typedef struct //SoM: 3/6/2000: Elevator struct.
 
 typedef enum
 {
-    ok,
-    crushed,
-    pastdest
-
+  MP_ok,
+  MP_crushed,
+  MP_pastdest
 } result_e;
 
 result_e  T_MovePlane ( sector_t*     sector,
@@ -934,118 +933,131 @@ int  EV_DoGenDoor ( line_t* line );
 int  EV_DoGenLockedDoor ( line_t* line );
 
 // define names for the TriggerType field of the general linedefs
+// Boom defined
 typedef enum
 {
-  WalkOnce,
-  WalkMany,
-  SwitchOnce,
-  SwitchMany,
-  GunOnce,
-  GunMany,
-  PushOnce,
-  PushMany,
+  TRIG_WalkOnce,
+  TRIG_WalkMany,
+  TRIG_SwitchOnce,
+  TRIG_SwitchMany,
+  TRIG_GunOnce,
+  TRIG_GunMany,
+  TRIG_PushOnce,
+  TRIG_PushMany,
 } triggertype_e;
 
 // define names for the Speed field of the general linedefs
+// Boom defined
 typedef enum
 {
-  SpeedSlow,
-  SpeedNormal,
-  SpeedFast,
-  SpeedTurbo,
+  SPEED_Slow,
+  SPEED_Normal,
+  SPEED_Fast,
+  SPEED_Turbo,
 } motionspeed_e;
 
 // define names for the Target field of the general floor
+// Boom defined
 typedef enum
 {
-  FtoHnF,
-  FtoLnF,
-  FtoNnF,
-  FtoLnC,
-  FtoC,
-  FbyST,
-  Fby24,
-  Fby32,
+  FTAR_FtoHnF,
+  FTAR_FtoLnF,
+  FTAR_FtoNnF,
+  FTAR_FtoLnC,
+  FTAR_FtoC,
+  FTAR_FbyST,
+  FTAR_Fby24,
+  FTAR_Fby32,
 } floortarget_e;
 
 // define names for the Changer Type field of the general floor
+// Boom defined
 typedef enum
 {
-  FNoChg,
-  FChgZero,
-  FChgTxt,
-  FChgTyp,
+  FCH_FNoChg,
+  FCH_FChgZero,
+  FCH_FChgTxt,
+  FCH_FChgTyp,
 } floorchange_e;
 
 // define names for the Change Model field of the general floor
+// define names for the Change Model field of the general ceiling
+// Boom defined
 typedef enum
 {
-  FTriggerModel,
-  FNumericModel,
-} floormodel_t;
+  MODEL_Trigger,
+  MODEL_Numeric,
+} floorceil_model_t;
 
 // define names for the Target field of the general ceiling
+// Boom defined
 typedef enum
 {
-  CtoHnC,
-  CtoLnC,
-  CtoNnC,
-  CtoHnF,
-  CtoF,
-  CbyST,
-  Cby24,
-  Cby32,
+  CTAR_CtoHnC,
+  CTAR_CtoLnC,
+  CTAR_CtoNnC,
+  CTAR_CtoHnF,
+  CTAR_CtoF,
+  CTAR_CbyST,
+  CTAR_Cby24,
+  CTAR_Cby32,
 } ceilingtarget_e;
 
 // define names for the Changer Type field of the general ceiling
+// Boom defined
 typedef enum
 {
-  CNoChg,
-  CChgZero,
-  CChgTxt,
-  CChgTyp,
+  CCH_CNoChg,
+  CCH_CChgZero,
+  CCH_CChgTxt,
+  CCH_CChgTyp,
 } ceilingchange_e;
 
-// define names for the Change Model field of the general ceiling
-typedef enum
-{
-  CTriggerModel,
-  CNumericModel,
-} ceilingmodel_t;
-
 // define names for the Target field of the general lift
+// Boom defined
 typedef enum
 {
-  F2LnF,
-  F2NnF,
-  F2LnC,
-  LnF2HnF,
+  LTAR_F2LnF,
+  LTAR_F2NnF,
+  LTAR_F2LnC,
+  LTAR_LnF2HnF,
 } lifttarget_e;
 
 // define names for the door Kind field of the general ceiling
+// Boom defined
 typedef enum
 {
-  OdCDoor,
-  ODoor,
-  CdODoor,
-  CDoor,
+  DT_OdCDoor,
+  DT_ODoor,
+  DT_CdODoor,
+  DT_CDoor,
 } doorkind_e;
 
 // define names for the locked door Kind field of the general ceiling
+// Boom defined
 typedef enum
 {
-  AnyKey_,
-  RCard,
-  BCard,
-  YCard,
-  RSkull,
-  BSkull,
-  YSkull,
-  AllKeys,
+  DKY_anykey,
+  DKY_R_card,
+  DKY_B_card,
+  DKY_Y_card,
+  DKY_R_skull,
+  DKY_B_skull,
+  DKY_Y_skull,
+  DKY_allkeys,
 } keykind_e;
 
 /* SoM: End generalized linedef code */
 
+// Boom defined
+typedef enum
+{
+  SCROLL_side,
+  SCROLL_floor,
+  SCROLL_ceiling,
+  SCROLL_carry,
+  SCROLL_carry_ceiling,
+} scrolltype_e;
 
 //SoM: 3/8/2000: Add generalized scroller code
 typedef struct {
@@ -1053,14 +1065,7 @@ typedef struct {
   thinker_t thinker;  // must be first for ptr conversion
  // State to be saved in save game (p_saveg.c)
  // Savegame saves fields (type ... )
-  enum
-  {
-    sc_side,
-    sc_floor,
-    sc_ceiling,
-    sc_carry,
-    sc_carry_ceiling,
-  } type;
+  scrolltype_e  type;
   int affectee;        // Number of affected sidedef, sector, tag, or whatever
   int control;         // Control sector (-1 if none) used to control scrolling
   int accel;           // Whether it's accelerative
@@ -1101,6 +1106,19 @@ void P_Update_Special_Sector( sector_t * sec, short new_special );
 
 //SoM: 3/8/2000: Model for Pushers for push/pull effects
 
+// Boom defined
+typedef enum
+{
+  PP_push,
+  PP_pull,	// [WDJ] not used, uses p_push for push and pull
+  PP_wind,
+  PP_current,
+  PP_upcurrent, // SSNTails 06-10-2002
+  PP_downcurrent, // SSNTails 06-10-2002
+  PP_upwind, // SSNTails 06-10-2003 WOAH! EXACTLY ONE YEAR LATER! FREAKY!
+  PP_downwind, // SSNTails 06-10-2003
+} pushpull_type_e;
+
 typedef struct {
   // Thinker structure for Pusher
   thinker_t thinker;  // must be first for ptr conversion
@@ -1108,17 +1126,7 @@ typedef struct {
    			// not saved, derived from affectee
  // State to be saved in save game (p_saveg.c)
  // Savegame saves fields (type ... )
-  enum
-  {
-    p_push,
-    p_pull,	// [WDJ] not used, uses p_push for push and pull
-    p_wind,
-    p_current,
-    p_upcurrent, // SSNTails 06-10-2002
-    p_downcurrent, // SSNTails 06-10-2002
-    p_upwind, // SSNTails 06-10-2003 WOAH! EXACTLY ONE YEAR LATER! FREAKY!
-    p_downwind, // SSNTails 06-10-2003
-  } type;
+  pushpull_type_e  type;
   int affectee;        // Number of affected sector
   int x_mag, y_mag;    // X Strength
   int magnitude;       // Vector strength for point pusher

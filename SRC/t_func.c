@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 887 2011-12-18 04:03:46Z wesleyjohnson $
+// $Id: t_func.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -2852,13 +2852,13 @@ void SF_FloorHeight()
     if (t_argc > 1)     // > 1: set floorheight
     {
         int i = -1;
-        boolean crush = t_argc == 3 ? intvalue(t_argv[2]) : false;
+        boolean crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
 
         // set all sectors with tag
         while ((i = P_FindSectorFromTag(tagnum, i)) >= 0)
         {
             //sectors[i].floorheight = intvalue(t_argv[1]) << FRACBITS;
-            if (T_MovePlane(&sectors[i], abs(fixedvalue(t_argv[1]) - sectors[i].floorheight), fixedvalue(t_argv[1]), crush, 0, fixedvalue(t_argv[1]) > sectors[i].floorheight ? 1 : -1) == crushed)
+            if (T_MovePlane(&sectors[i], abs(fixedvalue(t_argv[1]) - sectors[i].floorheight), fixedvalue(t_argv[1]), crush, 0, fixedvalue(t_argv[1]) > sectors[i].floorheight ? 1 : -1) == MP_crushed)
                 returnval = 0;
         }
     }
@@ -2895,7 +2895,7 @@ void SF_MoveFloor()
         sec = &sectors[secnum];
 
         // Don't start a second thinker on the same floor
-        if (P_SectorActive(floor_special, sec))
+        if (P_SectorActive( S_floor_special, sec))
             continue;
 
         mfloor = Z_Malloc(sizeof(floormove_t), PU_LEVSPEC, 0);
@@ -2951,7 +2951,7 @@ void SF_CeilingHeight()
             if (T_MovePlane(&sectors[fsecn],
 			    abs(fixedvalue(t_argv[1]) - sectors[fsecn].ceilingheight),
 			    fixedvalue(t_argv[1]), crush, 1,
-			    fixedvalue(t_argv[1]) > sectors[fsecn].ceilingheight ? 1 : -1) == crushed)
+			    fixedvalue(t_argv[1]) > sectors[fsecn].ceilingheight ? 1 : -1) == MP_crushed)
                 returnval = 0;
         }
     }
@@ -2987,14 +2987,14 @@ void SF_MoveCeiling()
         sec = &sectors[secnum];
 
         // Don't start a second thinker on the same floor
-        if (P_SectorActive(ceiling_special, sec))
+        if (P_SectorActive( S_ceiling_special, sec))
             continue;
 
         ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC, 0);
         P_AddThinker(&ceiling->thinker);
         sec->ceilingdata = ceiling;
         ceiling->thinker.function.acp1 = (actionf_p1) T_MoveCeiling;
-        ceiling->type = genCeiling;     // not done by line
+        ceiling->type = CT_genCeiling;     // not done by line
         ceiling->crush = false;
 
         ceiling->direction = destheight < sec->ceilingheight ? -1 : 1;

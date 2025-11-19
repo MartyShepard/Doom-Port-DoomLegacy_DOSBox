@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_plats.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -61,7 +61,7 @@ void T_PlatRaise(plat_t* plat)
 
     switch(plat->status)
     {
-      case up:
+      case  PLATS_up:
         res = T_MovePlane( plat->sector, plat->speed,
                            plat->high, plat->crush, 0, 1);
 
@@ -69,8 +69,8 @@ void T_PlatRaise(plat_t* plat)
             S_StartSound ((mobj_t *) & plat->sector->soundorg,
                           sfx_stnmov);
 
-        if (plat->type == raiseAndChange
-            || plat->type == raiseToNearestAndChange)
+        if (plat->type == PLATT_raiseAndChange
+            || plat->type == PLATT_raiseToNearestAndChange)
         {
             if (!(leveltime % (8*NEWTICRATERATIO)))
                 S_StartSound((mobj_t *)&plat->sector->soundorg,
@@ -78,38 +78,38 @@ void T_PlatRaise(plat_t* plat)
         }
 
 
-        if (res == crushed && (!plat->crush))
+        if (res == MP_crushed && (!plat->crush))
         {
             plat->count = plat->wait;
-            plat->status = down;
+            plat->status = PLATS_down;
             S_StartSound((mobj_t *)&plat->sector->soundorg,
                          sfx_pstart);
         }
         else
         {
-            if (res == pastdest)
+            if (res == MP_pastdest)
             {
                 //SoM: 3/7/2000: Moved this little baby over.
                 // if not an instant toggle type, wait, make plat stop sound
-                if (plat->type!=toggleUpDn)
+                if (plat->type!=PLATT_toggleUpDn)
                 {
                   plat->count = plat->wait;
-                  plat->status = waiting;
+                  plat->status = PLATS_waiting;
                   S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
                 }
                 else // else go into stasis awaiting next toggle activation
                 {
                   plat->oldstatus = plat->status;//jff 3/14/98 after action wait  
-                  plat->status = in_stasis;      //for reactivation of toggle
+                  plat->status = PLATS_in_stasis;  //for reactivation of toggle
                 }
 
                 switch(plat->type)
                 {
-                  case blazeDWUS:
-                  case downWaitUpStay:
-                  case raiseAndChange:
-                  case raiseToNearestAndChange:
-                  case genLift:
+                  case PLATT_blazeDWUS:
+                  case PLATT_downWaitUpStay:
+                  case PLATT_raiseAndChange:
+                  case PLATT_raiseToNearestAndChange:
+                  case PLATT_genLift:
                     P_RemoveActivePlat(plat); //SoM: 3/7/2000: Much cleaner boom code.
                   default:
                     break;
@@ -118,22 +118,22 @@ void T_PlatRaise(plat_t* plat)
         }
         break;
 
-      case      down:
+      case  PLATS_down:
         res = T_MovePlane( plat->sector, plat->speed, plat->low, false, 0, -1 );
 
-        if (res == pastdest)
+        if (res == MP_pastdest)
         {
             //SoM: 3/7/2000: if not an instant toggle, start waiting, make plat stop sound
-            if (plat->type!=toggleUpDn) 
+            if (plat->type!=PLATT_toggleUpDn) 
             {                           
               plat->count = plat->wait;
-              plat->status = waiting;
+              plat->status = PLATS_waiting;
               S_StartSound((mobj_t *)&plat->sector->soundorg,sfx_pstop);
             }
             else //SoM: 3/7/2000: instant toggles go into stasis awaiting next activation
             {
-              plat->oldstatus = plat->status;  
-              plat->status = in_stasis;      
+              plat->oldstatus = plat->status;
+              plat->status = PLATS_in_stasis;
             }
 
             //jff 1/26/98 remove the plat if it bounced so it can be tried again
@@ -143,8 +143,8 @@ void T_PlatRaise(plat_t* plat)
             {
               switch(plat->type)
               {
-                case raiseAndChange:
-                case raiseToNearestAndChange:
+                case PLATT_raiseAndChange:
+                case PLATT_raiseToNearestAndChange:
                   P_RemoveActivePlat(plat);
                 default:
                   break;
@@ -158,16 +158,16 @@ void T_PlatRaise(plat_t* plat)
 
         break;
 
-      case      waiting:
+      case  PLATS_waiting:
         if (!--plat->count)
         {
             if (plat->sector->floorheight == plat->low)
-                plat->status = up;
+                plat->status = PLATS_up;
             else
-                plat->status = down;
+                plat->status = PLATS_down;
             S_StartSound((mobj_t *)&plat->sector->soundorg,sfx_pstart);
         }
-      case      in_stasis:
+      case  PLATS_in_stasis:
         break;
     }
 }
@@ -184,14 +184,14 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
     int         rtn = 0;
     sector_t*   sec;
 
-    //  Activate all <type> plats that are in_stasis
+    //  Activate all <type> plats that are PLATS_in_stasis
     switch(type)
     {
-      case perpetualRaise:
+      case PLATT_perpetualRaise:
         P_ActivateInStasis(line->tag);
         break;
 
-      case toggleUpDn:
+      case PLATT_toggleUpDn:
         P_ActivateInStasis(line->tag);
         rtn=1;
         break;
@@ -205,7 +205,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
     {
         sec = &sectors[secnum];
 
-        if (P_SectorActive(floor_special,sec)) //SoM: 3/7/2000: 
+        if (P_SectorActive( S_floor_special, sec)) //SoM: 3/7/2000: 
             continue;
 
         // Find lowest & highest floors around sector
@@ -227,12 +227,12 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
         // [WDJ] 1/15/2009 Add DOORDELAY_CONTROL of adj_ticks_per_sec.
         switch(type)
         {
-          case raiseToNearestAndChange:
+          case PLATT_raiseToNearestAndChange:
             plat->speed = PLATSPEED/2;
             sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
             plat->high = P_FindNextHighestFloor(sec,sec->floorheight);
             plat->wait = 0;
-            plat->status = up;
+            plat->status = PLATS_up;
             // NO MORE DAMAGE, IF APPLICABLE
             sec->special = 0;
             sec->oldspecial = 0; //SoM: 3/7/2000: Clear old field.
@@ -240,17 +240,17 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             S_StartSound((mobj_t *)&sec->soundorg,sfx_stnmov);
             break;
 
-          case raiseAndChange:
+          case PLATT_raiseAndChange:
             plat->speed = PLATSPEED/2;
             sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
             plat->high = sec->floorheight + amount*FRACUNIT;
             plat->wait = 0;
-            plat->status = up;
+            plat->status = PLATS_up;
 
             S_StartSound((mobj_t *)&sec->soundorg,sfx_stnmov);
             break;
 
-          case downWaitUpStay:
+          case PLATT_downWaitUpStay:
             plat->speed = PLATSPEED * 4;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
@@ -259,11 +259,11 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 
             plat->high = sec->floorheight;
             plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
-            plat->status = down;
+            plat->status = PLATS_down;
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
             break;
 
-          case blazeDWUS:
+          case PLATT_blazeDWUS:
             plat->speed = PLATSPEED * 8;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
@@ -272,11 +272,11 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 
             plat->high = sec->floorheight;
             plat->wait = PLATWAIT * adj_ticks_per_sec;
-            plat->status = down;
+            plat->status = PLATS_down;
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
             break;
 
-          case perpetualRaise:
+          case PLATT_perpetualRaise:
             plat->speed = PLATSPEED;
             plat->low = P_FindLowestFloorSurrounding(sec);
 
@@ -294,7 +294,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
             break;
 
-          case toggleUpDn: //SoM: 3/7/2000: Instant toggle.
+          case PLATT_toggleUpDn: //SoM: 3/7/2000: Instant toggle.
             plat->speed = PLATSPEED;
             plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->crush = true;
@@ -302,7 +302,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             // set up toggling between ceiling, floor inclusive
             plat->low = sec->ceilingheight;
             plat->high = sec->floorheight;
-            plat->status =  down;
+            plat->status = PLATS_down;
             break;
 
           default:
@@ -321,16 +321,17 @@ void P_ActivateInStasis(int tag)
   for (pl=activeplats; pl; pl=pl->next)
   {
     plat_t *plat = pl->plat;
-    if (plat->tag == tag && plat->status == in_stasis) 
+    if (plat->tag == tag && plat->status == PLATS_in_stasis) 
     {
-      if (plat->type==toggleUpDn)
-        plat->status = plat->oldstatus==up? down : up;
+      if (plat->type==PLATT_toggleUpDn)
+        plat->status = (plat->oldstatus==PLATS_up)? PLATS_down : PLATS_up;
       else
         plat->status = plat->oldstatus;
       plat->thinker.function.acp1 = (actionf_p1) T_PlatRaise;
     }
   }
 }
+
 //SoM: 3/7/2000: use Boom code insted.
 int EV_StopPlat(line_t* line)
 {
@@ -338,10 +339,10 @@ int EV_StopPlat(line_t* line)
   for (pl=activeplats; pl; pl=pl->next)
   {
     plat_t *plat = pl->plat;
-    if (plat->status != in_stasis && plat->tag == line->tag)
+    if ((plat->status != PLATS_in_stasis) && (plat->tag == line->tag))
     {
       plat->oldstatus = plat->status;
-      plat->status = in_stasis;
+      plat->status = PLATS_in_stasis;
       plat->thinker.function.acv = (actionf_v)NULL;
     }
   }

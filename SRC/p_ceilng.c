@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_ceilng.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_ceilng.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -92,8 +92,8 @@ void T_MoveCeiling (ceiling_t* ceiling)
         {
             switch(ceiling->type)
             {
-              case silentCrushAndRaise:
-              case genSilentCrusher:
+              case CT_silentCrushAndRaise:
+              case CT_genSilentCrusher:
                 break;
               default:
                 S_StartSound((mobj_t *)&ceiling->sector->soundorg,
@@ -103,33 +103,33 @@ void T_MoveCeiling (ceiling_t* ceiling)
             }
         }
 
-        if (res == pastdest)
+        if (res == MP_pastdest)
         {
             switch(ceiling->type)
             {
 
-              case raiseToHighest:
-              case genCeiling: //SoM: 3/6/2000
+              case CT_raiseToHighest:
+              case CT_genCeiling: //SoM: 3/6/2000
                 P_RemoveActiveCeiling(ceiling);
                 break;
 
               // SoM: 3/6/2000: movers with texture change, change the texture then get removed
-              case genCeilingChgT:
-              case genCeilingChg0:
+              case CT_genCeilingChgT:
+              case CT_genCeilingChg0:
                 ceiling->sector->special = ceiling->newspecial;
                 ceiling->sector->oldspecial = ceiling->oldspecial;
-              case genCeilingChg:
+              case CT_genCeilingChg:
                 ceiling->sector->ceilingpic = ceiling->texture;
                 P_RemoveActiveCeiling(ceiling);
                 break;
 
-              case silentCrushAndRaise:
+              case CT_silentCrushAndRaise:
                 S_StartSound((mobj_t *)&ceiling->sector->soundorg,
                              sfx_pstop);
-              case fastCrushAndRaise:
-              case genCrusher: // SoM: 3/6/2000
-              case genSilentCrusher:
-              case crushAndRaise:
+              case CT_fastCrushAndRaise:
+              case CT_genCrusher: // SoM: 3/6/2000
+              case CT_genSilentCrusher:
+              case CT_crushAndRaise:
                 ceiling->direction = -1;
                 break;
 
@@ -150,8 +150,8 @@ void T_MoveCeiling (ceiling_t* ceiling)
         {
             switch(ceiling->type)
             {
-              case silentCrushAndRaise:
-              case genSilentCrusher:
+              case CT_silentCrushAndRaise:
+              case CT_genSilentCrusher:
                 break;
               default:
                 S_StartSound((mobj_t *)&ceiling->sector->soundorg,
@@ -159,12 +159,12 @@ void T_MoveCeiling (ceiling_t* ceiling)
             }
         }
 
-        if (res == pastdest)
+        if (res == MP_pastdest)
         {
             switch(ceiling->type) //SoM: 3/6/2000: Use boom code
             {
-              case genSilentCrusher:
-              case genCrusher:
+              case CT_genSilentCrusher:
+              case CT_genCrusher:
                 if (ceiling->oldspeed<CEILSPEED*3)
                   ceiling->speed = ceiling->oldspeed;
                 ceiling->direction = 1;
@@ -172,32 +172,32 @@ void T_MoveCeiling (ceiling_t* ceiling)
     
               // make platform stop at bottom of all crusher strokes
               // except generalized ones, reset speed, start back up
-              case silentCrushAndRaise:
+              case CT_silentCrushAndRaise:
                 S_StartSound((mobj_t *)&ceiling->sector->soundorg,sfx_pstop);
-              case crushAndRaise: 
+              case CT_crushAndRaise: 
                 ceiling->speed = CEILSPEED;
-              case fastCrushAndRaise:
+              case CT_fastCrushAndRaise:
                 ceiling->direction = 1;
                 break;
               
               // in the case of ceiling mover/changer, change the texture
               // then remove the active ceiling
-              case genCeilingChgT:
-              case genCeilingChg0:
+              case CT_genCeilingChgT:
+              case CT_genCeilingChg0:
                 ceiling->sector->special = ceiling->newspecial;
                 //jff add to fix bug in special transfers from changes
                 ceiling->sector->oldspecial = ceiling->oldspecial;
-              case genCeilingChg:
+              case CT_genCeilingChg:
                 ceiling->sector->ceilingpic = ceiling->texture;
                 P_RemoveActiveCeiling(ceiling);
                 break;
     
               // all other case, just remove the active ceiling
-              case lowerAndCrush:
-              case lowerToFloor:
-              case lowerToLowest:
-              case lowerToMaxFloor:
-              case genCeiling:
+              case CT_lowerAndCrush:
+              case CT_lowerToFloor:
+              case CT_lowerToLowest:
+              case CT_lowerToMaxFloor:
+              case CT_genCeiling:
                 P_RemoveActiveCeiling(ceiling);
                 break;
     
@@ -205,23 +205,23 @@ void T_MoveCeiling (ceiling_t* ceiling)
                 break;
             }
         }
-        else // ( res != pastdest )
+        else // ( res != MP_pastdest )
         {
-            if (res == crushed)
+            if (res == MP_crushed)
             {
                 switch(ceiling->type)
                 {
                   //SoM: 2/6/2000
                   // slow down slow crushers on obstacle
-                  case genCrusher:  
-                  case genSilentCrusher:
+                  case CT_genCrusher:  
+                  case CT_genSilentCrusher:
                     if (ceiling->oldspeed < CEILSPEED*3)
                       ceiling->speed = CEILSPEED / 8;
                     break;
 
-                  case silentCrushAndRaise:
-                  case crushAndRaise:
-                  case lowerAndCrush:
+                  case CT_silentCrushAndRaise:
+                  case CT_crushAndRaise:
+                  case CT_lowerAndCrush:
                     ceiling->speed = CEILSPEED / 8;
                     break;
 
@@ -253,9 +253,9 @@ int  EV_DoCeiling ( line_t* line, ceiling_e type )
     // This restarts a crusher after it has been stopped
     switch(type)
     {
-      case fastCrushAndRaise:
-      case silentCrushAndRaise:
-      case crushAndRaise:
+      case CT_fastCrushAndRaise:
+      case CT_silentCrushAndRaise:
+      case CT_crushAndRaise:
         rtn = P_ActivateInStasisCeiling(line); //SoM: Return true if the crusher is activated
       default:
         break;
@@ -266,7 +266,7 @@ int  EV_DoCeiling ( line_t* line, ceiling_e type )
         sec = &sectors[secnum];
 
 
-        if (P_SectorActive(ceiling_special,sec))  //SoM: 3/6/2000
+        if (P_SectorActive( S_ceiling_special, sec))  //SoM: 3/6/2000
             continue;
 
         // new door thinker
@@ -280,7 +280,7 @@ int  EV_DoCeiling ( line_t* line, ceiling_e type )
 
         switch(type)
         {
-          case fastCrushAndRaise:
+          case CT_fastCrushAndRaise:
             ceiling->crush = true;
             ceiling->topheight = sec->ceilingheight;
             ceiling->bottomheight = sec->floorheight + (8*FRACUNIT);
@@ -288,40 +288,40 @@ int  EV_DoCeiling ( line_t* line, ceiling_e type )
             ceiling->speed = CEILSPEED * 2;
             break;
 
-          case silentCrushAndRaise:
-          case crushAndRaise:
+          case CT_silentCrushAndRaise:
+          case CT_crushAndRaise:
             ceiling->crush = true;
             ceiling->topheight = sec->ceilingheight;
-          case lowerAndCrush:
-          case lowerToFloor:
+          case CT_lowerAndCrush:
+          case CT_lowerToFloor:
             ceiling->bottomheight = sec->floorheight;
-            if (type != lowerToFloor)
+            if (type != CT_lowerToFloor)
                 ceiling->bottomheight += 8*FRACUNIT;
             ceiling->direction = -1;
             ceiling->speed = CEILSPEED;
             break;
 
-          case raiseToHighest:
+          case CT_raiseToHighest:
             ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
             ceiling->direction = 1;
             ceiling->speed = CEILSPEED;
             break;
 
           //SoM: 3/6/2000: Added Boom types
-          case lowerToLowest:
+          case CT_lowerToLowest:
             ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
             ceiling->direction = -1;
             ceiling->speed = CEILSPEED;
             break;
 
-          case lowerToMaxFloor:
+          case CT_lowerToMaxFloor:
             ceiling->bottomheight = P_FindHighestFloorSurrounding(sec);
             ceiling->direction = -1;
             ceiling->speed = CEILSPEED;
             break;
 
           // Instant-raise SSNTails 06-13-2002
-          case instantRaise:
+          case CT_instantRaise:
             ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
             ceiling->direction = 1;
             ceiling->speed = FIXED_MAX/2; // Go too fast and you'll cause problems...

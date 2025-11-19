@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 885 2011-12-18 03:56:44Z wesleyjohnson $
+// $Id: p_enemy.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -2341,7 +2341,7 @@ void A_BossDeath (mobj_t* mo)
 	        // Doom2 MAP07: When last Mancubus is dead, execute lowerFloortoLowest.
 		//   execute lowerFloortoLowest(sectors tagged 666).
                 junk.tag = 666;
-                EV_DoFloor(&junk,lowerFloorToLowest);
+                EV_DoFloor( &junk, FT_lowerFloorToLowest);
             }
             return;
         }
@@ -2352,7 +2352,7 @@ void A_BossDeath (mobj_t* mo)
 	        // Doom2 MAP07: When last Arachnotron is dead,
 	        //   execute raisetoTexture(sectors tagged 667).
                 junk.tag = 667;
-                EV_DoFloor(&junk,raiseToTexture);
+                EV_DoFloor( &junk, FT_raiseToTexture);
             }
             return;
         }
@@ -2361,7 +2361,7 @@ void A_BossDeath (mobj_t* mo)
 	    // Doom2 MAP32: When last Keen is dead,
 	    //   execute doorOpen(doors tagged 666).
             junk.tag = 666;
-            EV_DoDoor(&junk,dooropen,VDOORSPEED);
+            EV_DoDoor( &junk, VD_dooropen, VDOORSPEED);
             return;
         }
     }
@@ -2373,7 +2373,7 @@ void A_BossDeath (mobj_t* mo)
 	    // Doom E1M8: When all Baron are dead, execute lowerFloortoLowest
 	    //   on all sectors tagged 666.
             junk.tag = 666;
-            EV_DoFloor (&junk, lowerFloorToLowest);
+            EV_DoFloor( &junk, FT_lowerFloorToLowest);
             return;
             break;
 
@@ -2384,7 +2384,7 @@ void A_BossDeath (mobj_t* mo)
 	        // Doom E4M6: When last Cyberdemon is dead, execute blazeOpen.
 	        //   on all doors tagged 666.
                 junk.tag = 666;
-                EV_DoDoor (&junk, blazeOpen,4*VDOORSPEED);
+                EV_DoDoor( &junk, VD_blazeOpen, 4*VDOORSPEED);
                 return;
                 break;
 
@@ -2392,7 +2392,7 @@ void A_BossDeath (mobj_t* mo)
 	        // Doom E4M8: When last Spidermastermind is dead, execute lowerFloortoLowest.
 	        //   on all sectors tagged 666.
                 junk.tag = 666;
-                EV_DoFloor (&junk, lowerFloorToLowest);
+                EV_DoFloor( &junk, FT_lowerFloorToLowest);
                 return;
                 break;
             }

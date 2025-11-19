@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 652 2010-05-19 17:55:06Z wesleyjohnson $
+// $Id: p_lights.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -232,7 +232,7 @@ int EV_StartLightStrobing(line_t*      line)
     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
     {
         sec = &sectors[secnum];
-        if (P_SectorActive(lighting_special,sec)) //SoM: 3/7/2000: New way to check thinker
+        if (P_SectorActive( S_lighting_special, sec)) //SoM: 3/7/2000: New way to check thinker
           continue;
 
         P_SpawnStrobeFlash (sec,SLOWDARK, 0);

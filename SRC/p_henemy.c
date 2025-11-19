@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 681 2010-06-07 18:10:58Z wesleyjohnson $
+// $Id: p_henemy.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1681,7 +1681,7 @@ void A_HBossDeath(mobj_t *actor)
         }
         // lowerFloor all sectors tagged 666
         dummyLine.tag = 666;
-        EV_DoFloor(&dummyLine, lowerFloor);
+        EV_DoFloor( &dummyLine, FT_lowerFloor);
 }
 
 //----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_spec.c 891 2011-12-26 18:28:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1111,7 +1111,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
   // determine for each case of lock type if player's keys are adequate
   switch((line->special & LockedKey)>>LockedKeyShift)
   {
-    case AnyKey_:
+    case DKY_anykey:
       if
       (
         !(player->cards & it_redcard) &&
@@ -1127,7 +1127,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case RCard:
+    case DKY_R_card:
       if
       (
         !(player->cards & it_redcard) &&
@@ -1139,7 +1139,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case BCard:
+    case DKY_B_card:
       if
       (
         !(player->cards & it_bluecard) &&
@@ -1151,7 +1151,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case YCard:
+    case DKY_Y_card:
       if
       (
         !(player->cards & it_yellowcard) &&
@@ -1163,7 +1163,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case RSkull:
+    case DKY_R_skull:
       if
       (
         !(player->cards & it_redskull) &&
@@ -1175,7 +1175,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case BSkull:
+    case DKY_B_skull:
       if
       (
         !(player->cards & it_blueskull) &&
@@ -1187,7 +1187,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case YSkull:
+    case DKY_Y_skull:
       if
       (
         !(player->cards & it_yellowskull) &&
@@ -1199,7 +1199,7 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         return false;
       }
       break;
-    case AllKeys:
+    case DKY_allkeys:
       if
       (
         !skulliscard &&
@@ -1252,19 +1252,19 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
 // are the same.
 //
 //
-boolean P_SectorActive(special_e t, sector_t *sec)
+boolean P_SectorActive( sector_special_e spt, sector_t *sec)
 {
   if (!boomsupport)
     return sec->floordata || sec->ceilingdata || sec->lightingdata;
   else
   {
-    switch (t)
+    switch (spt)
     {
-      case floor_special:
+      case S_floor_special:
         return sec->floordata != NULL;
-      case ceiling_special:
+      case S_ceiling_special:
         return sec->ceilingdata != NULL;
-      case lighting_special:
+      case S_lighting_special:
         return sec->lightingdata != NULL;
     }
   }
@@ -1494,7 +1494,8 @@ P_ActivateCrossedLine ( line_t*       line,
       {
         if (!thing->player)
           return;                     // monsters disallowed from unlocking doors
-        if (((line->special&TriggerType)==WalkOnce) || ((line->special&TriggerType)==WalkMany))
+        if (((line->special&TriggerType)==TRIG_WalkOnce)
+	    || ((line->special&TriggerType)==TRIG_WalkMany))
         {
           if (!P_CanUnlockGenDoor(line,thing->player))
             return;
@@ -1541,11 +1542,11 @@ P_ActivateCrossedLine ( line_t*       line,
       {
         switch((line->special & TriggerType) >> TriggerTypeShift)
         {
-          case WalkOnce:
+          case TRIG_WalkOnce:
             if (linefunc(line))
               line->special = 0;    // clear special if a walk once type
             return;
-          case WalkMany:
+          case TRIG_WalkMany:
             linefunc(line);
             return;
           default:                  // if not a walk type, do nothing here
@@ -1615,43 +1616,43 @@ P_ActivateCrossedLine ( line_t*       line,
         // All from here to RETRIGGERS.
       case 2:
         // Open Door
-        if(EV_DoDoor(line,dooropen,VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_dooropen, VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 3:
         // Close Door
-        if(EV_DoDoor(line,doorclose,VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_doorclose, VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 4:
         // Raise Door
-        if(EV_DoDoor(line,normalDoor,VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_normalDoor, VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 5:
         // Raise Floor
-        if(EV_DoFloor(line,raiseFloor) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloor) || !boomsupport)
           line->special = 0;
         break;
 
       case 6:
         // Fast Ceiling Crush & Raise
-        if(EV_DoCeiling(line,fastCrushAndRaise) || !boomsupport)
+        if(EV_DoCeiling( line, CT_fastCrushAndRaise) || !boomsupport)
           line->special = 0;
         break;
 
       case 8:
         // Build Stairs
-        if(EV_BuildStairs(line, (gamemode == heretic) ? 8*FRACUNIT : build8) || !boomsupport)
+        if(EV_BuildStairs(line, (gamemode == heretic) ? 8*FRACUNIT : ST_build8) || !boomsupport)
           line->special = 0;
         break;
 
       case 10:
         // PlatDownWaitUp
-        if(EV_DoPlat(line,downWaitUpStay,0) || !boomsupport)
+        if(EV_DoPlat( line, PLATT_downWaitUpStay, 0) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1669,7 +1670,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 16:
         // Close Door 30
-        if(EV_DoDoor(line,close30ThenOpen,VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_close30ThenOpen, VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1681,26 +1682,26 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 19:
         // Lower Floor
-        if(EV_DoFloor(line,lowerFloor) || !boomsupport)
+        if(EV_DoFloor( line, FT_lowerFloor) || !boomsupport)
           line->special = 0;
         break;
 
       case 22:
         // Raise floor to nearest height and change texture
-        if(EV_DoPlat(line,raiseToNearestAndChange,0) || !boomsupport)
+        if(EV_DoPlat( line, PLATT_raiseToNearestAndChange, 0) || !boomsupport)
           line->special = 0;
         break;
 
       case 25:
         // Ceiling Crush and Raise
-        if(EV_DoCeiling(line,crushAndRaise) || !boomsupport)
+        if(EV_DoCeiling( line, CT_crushAndRaise) || !boomsupport)
           line->special = 0;
         break;
 
       case 30:
         // Raise floor to shortest texture height
         //  on either side of lines.
-        if(EV_DoFloor(line,raiseToTexture) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseToTexture) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1712,19 +1713,19 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 36:
         // Lower Floor (TURBO)
-        if(EV_DoFloor(line,turboLower) || !boomsupport)
+        if(EV_DoFloor( line, FT_turboLower) || !boomsupport)
           line->special = 0;
         break;
 
       case 37:
         // LowerAndChange
-        if(EV_DoFloor(line,lowerAndChange) || !boomsupport)
+        if(EV_DoFloor( line, FT_lowerAndChange) || !boomsupport)
           line->special = 0;
         break;
 
       case 38:
         // Lower Floor To Lowest
-        if(EV_DoFloor( line, lowerFloorToLowest ) || !boomsupport)
+        if(EV_DoFloor( line, FT_lowerFloorToLowest ) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1736,14 +1737,14 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 40:
         // RaiseCeilingLowerFloor
-        if(EV_DoCeiling( line, raiseToHighest ) || EV_DoFloor( line, lowerFloorToLowest ) ||
+        if(EV_DoCeiling( line, CT_raiseToHighest ) || EV_DoFloor( line, FT_lowerFloorToLowest ) ||
            !boomsupport)
           line->special = 0;
         break;
 
       case 44:
         // Ceiling Crush
-        if(EV_DoCeiling( line, lowerAndCrush ) || !boomsupport)
+        if(EV_DoCeiling( line, CT_lowerAndCrush ) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1758,7 +1759,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 53:
         // Perpetual Platform Raise
-        if(EV_DoPlat(line,perpetualRaise,0) || !boomsupport)
+        if(EV_DoPlat( line, PLATT_perpetualRaise, 0) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1770,7 +1771,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 56:
         // Raise Floor Crush
-        if(EV_DoFloor(line,raiseFloorCrush) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloorCrush) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1782,13 +1783,13 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 58:
         // Raise Floor 24
-        if(EV_DoFloor(line,raiseFloor24) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloor24) || !boomsupport)
           line->special = 0;
         break;
 
       case 59:
         // Raise Floor 24 And Change
-        if(EV_DoFloor(line,raiseFloor24AndChange) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloor24AndChange) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1800,44 +1801,44 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 108:
         // Blazing Door Raise (faster than TURBO!)
-        if(EV_DoDoor (line,blazeRaise,4*VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_blazeRaise, 4*VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 109:
         // Blazing Door Open (faster than TURBO!)
-        if(EV_DoDoor (line,blazeOpen,4*VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_blazeOpen, 4*VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 100:
         if( gamemode == heretic )
         {
-          EV_DoDoor (line, normalDoor, VDOORSPEED * 3);
+          EV_DoDoor( line, VD_normalDoor, VDOORSPEED * 3);
 	}
         else
         {
           // Build Stairs Turbo 16
-          if(EV_BuildStairs(line,turbo16) || !boomsupport)
+          if(EV_BuildStairs( line, ST_turbo16) || !boomsupport)
             line->special = 0;
         }
         break;
 
       case 110:
         // Blazing Door Close (faster than TURBO!)
-        if(EV_DoDoor (line,blazeClose,4*VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_blazeClose, 4*VDOORSPEED) || !boomsupport)
           line->special = 0;
         break;
 
       case 119:
         // Raise floor to nearest surr. floor
-        if(EV_DoFloor(line,raiseFloorToNearest) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloorToNearest) || !boomsupport)
           line->special = 0;
         break;
 
       case 121:
         // Blazing PlatDownWaitUpStay
-        if(EV_DoPlat(line,blazeDWUS,0) || !boomsupport)
+        if(EV_DoPlat( line, PLATT_blazeDWUS, 0) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1858,13 +1859,13 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 130:
         // Raise Floor Turbo
-        if(EV_DoFloor(line,raiseFloorTurbo) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloorTurbo) || !boomsupport)
           line->special = 0;
         break;
 
       case 141:
         // Silent Ceiling Crush & Raise
-        if(EV_DoCeiling(line,silentCrushAndRaise) || !boomsupport)
+        if(EV_DoCeiling( line, CT_silentCrushAndRaise) || !boomsupport)
           line->special = 0;
         break;
 
@@ -1889,12 +1890,12 @@ P_ActivateCrossedLine ( line_t*       line,
       // RETRIGGERS.  All from here till end.
       case 72:
         // Ceiling Crush
-        EV_DoCeiling( line, lowerAndCrush );
+        EV_DoCeiling( line, CT_lowerAndCrush );
         break;
 
       case 73:
         // Ceiling Crush and Raise
-        EV_DoCeiling(line,crushAndRaise);
+        EV_DoCeiling( line, CT_crushAndRaise);
         break;
 
       case 74:
@@ -1904,17 +1905,17 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 75:
         // Close Door
-        EV_DoDoor(line,doorclose,VDOORSPEED);
+        EV_DoDoor( line, VD_doorclose, VDOORSPEED);
         break;
 
       case 76:
         // Close Door 30
-        EV_DoDoor(line,close30ThenOpen,VDOORSPEED);
+        EV_DoDoor( line, VD_close30ThenOpen, VDOORSPEED);
         break;
 
       case 77:
         // Fast Ceiling Crush & Raise
-        EV_DoCeiling(line,fastCrushAndRaise);
+        EV_DoCeiling( line, CT_fastCrushAndRaise);
         break;
 
       case 79:
@@ -1934,32 +1935,32 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 82:
         // Lower Floor To Lowest
-        EV_DoFloor( line, lowerFloorToLowest );
+        EV_DoFloor( line, FT_lowerFloorToLowest );
         break;
 
       case 83:
         // Lower Floor
-        EV_DoFloor(line,lowerFloor);
+        EV_DoFloor( line, FT_lowerFloor);
         break;
 
       case 84:
         // LowerAndChange
-        EV_DoFloor(line,lowerAndChange);
+        EV_DoFloor( line, FT_lowerAndChange);
         break;
 
       case 86:
         // Open Door
-        EV_DoDoor(line,dooropen,VDOORSPEED);
+        EV_DoDoor( line, VD_dooropen, VDOORSPEED);
         break;
 
       case 87:
         // Perpetual Platform Raise
-        EV_DoPlat(line,perpetualRaise,0);
+        EV_DoPlat( line, PLATT_perpetualRaise, 0);
         break;
 
       case 88:
         // PlatDownWaitUp
-        EV_DoPlat(line,downWaitUpStay,0);
+        EV_DoPlat( line, PLATT_downWaitUpStay, 0);
         break;
 
       case 89:
@@ -1969,39 +1970,39 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 90:
         // Raise Door
-        EV_DoDoor(line,normalDoor,VDOORSPEED);
+        EV_DoDoor( line, VD_normalDoor, VDOORSPEED);
         break;
 
       case 91:
         // Raise Floor
-        EV_DoFloor(line,raiseFloor);
+        EV_DoFloor( line, FT_raiseFloor);
         break;
 
       case 92:
         // Raise Floor 24
-        EV_DoFloor(line,raiseFloor24);
+        EV_DoFloor( line, FT_raiseFloor24);
         break;
 
       case 93:
         // Raise Floor 24 And Change
-        EV_DoFloor(line,raiseFloor24AndChange);
+        EV_DoFloor( line, FT_raiseFloor24AndChange);
         break;
 
       case 94:
         // Raise Floor Crush
-        EV_DoFloor(line,raiseFloorCrush);
+        EV_DoFloor( line, FT_raiseFloorCrush);
         break;
 
       case 95:
         // Raise floor to nearest height
         // and change texture.
-        EV_DoPlat(line,raiseToNearestAndChange,0);
+        EV_DoPlat( line, PLATT_raiseToNearestAndChange, 0);
         break;
 
       case 96:
         // Raise floor to shortest texture height
         // on either side of lines.
-        EV_DoFloor(line,raiseToTexture);
+        EV_DoFloor( line, FT_raiseToTexture);
         break;
 
       case 97:
@@ -2011,7 +2012,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 98:
         // Lower Floor (TURBO)
-        EV_DoFloor(line,turboLower);
+        EV_DoFloor( line, FT_turboLower);
         break;
 
       case 105:
@@ -2025,7 +2026,7 @@ P_ActivateCrossedLine ( line_t*       line,
         }
         else
             // Blazing Door Raise (faster than TURBO!)
-            EV_DoDoor (line,blazeRaise,4*VDOORSPEED);
+            EV_DoDoor( line, VD_blazeRaise, 4*VDOORSPEED);
         break;
 
       case 106:
@@ -2037,7 +2038,7 @@ P_ActivateCrossedLine ( line_t*       line,
         else
         {
             // Blazing Door Open (faster than TURBO!)
-            EV_DoDoor (line,blazeOpen,4*VDOORSPEED);
+            EV_DoDoor( line, VD_blazeOpen, 4*VDOORSPEED);
 	}
         break;
 
@@ -2045,13 +2046,13 @@ P_ActivateCrossedLine ( line_t*       line,
         if( gamemode != heretic ) // used for a switch !
         {
             // Blazing Door Close (faster than TURBO!)
-            EV_DoDoor (line,blazeClose,4*VDOORSPEED);
+            EV_DoDoor( line, VD_blazeClose, 4*VDOORSPEED);
 	}
         break;
 
       case 120:
         // Blazing PlatDownWaitUpStay.
-        EV_DoPlat(line,blazeDWUS,0);
+        EV_DoPlat( line, PLATT_blazeDWUS, 0);
         break;
 
       case 126:
@@ -2062,12 +2063,12 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 128:
         // Raise To Nearest Floor
-        EV_DoFloor(line,raiseFloorToNearest);
+        EV_DoFloor( line, FT_raiseFloorToNearest);
         break;
 
       case 129:
         // Raise Floor Turbo
-        EV_DoFloor(line,raiseFloorTurbo);
+        EV_DoFloor( line, FT_raiseFloorTurbo);
         break;
 
       // SoM:3/4/2000: Extended Boom W* triggers.
@@ -2080,25 +2081,25 @@ P_ActivateCrossedLine ( line_t*       line,
             //SoM: 3/4/2000:Yes this is "copied" code! I just cleaned it up. Did you think I was going to retype all this?!
             case 142:
               // Raise Floor 512
-              if (EV_DoFloor(line,raiseFloor512))
+              if (EV_DoFloor( line, FT_raiseFloor512))
                 line->special = 0;
               break;
   
             case 143:
               // Raise Floor 24 and change
-              if (EV_DoPlat(line,raiseAndChange,24))
+              if (EV_DoPlat( line, PLATT_raiseAndChange, 24))
                 line->special = 0;
               break;
 
             case 144:
               // Raise Floor 32 and change
-              if (EV_DoPlat(line,raiseAndChange,32))
+              if (EV_DoPlat( line, PLATT_raiseAndChange, 32))
                 line->special = 0;
               break;
 
             case 145:
               // Lower Ceiling to Floor
-              if (EV_DoCeiling( line, lowerToFloor ))
+              if (EV_DoCeiling( line, CT_lowerToFloor ))
                 line->special = 0;
               break;
 
@@ -2110,13 +2111,13 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 199:
               // Lower ceiling to lowest surrounding ceiling
-              if (EV_DoCeiling(line,lowerToLowest))
+              if (EV_DoCeiling( line, CT_lowerToLowest))
                 line->special = 0;
               break;
 
             case 200:
               // Lower ceiling to highest surrounding floor
-              if (EV_DoCeiling(line,lowerToMaxFloor))
+              if (EV_DoCeiling( line, CT_lowerToMaxFloor))
                 line->special = 0;
               break;
 
@@ -2128,37 +2129,37 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 153: 
               // Texture/Type Change Only (Trig)
-              if (EV_DoChange(line,trigChangeOnly))
+              if (EV_DoChange( line, CH_MODEL_trig_only))
                 line->special = 0;
               break;
   
             case 239: 
               // Texture/Type Change Only (Numeric)
-              if (EV_DoChange(line,numChangeOnly))
+              if (EV_DoChange( line, CH_MODEL_num_only))
                 line->special = 0;
               break;
  
             case 219:
               // Lower floor to next lower neighbor
-              if (EV_DoFloor(line,lowerFloorToNearest))
+              if (EV_DoFloor( line, FT_lowerFloorToNearest))
                 line->special = 0;
               break;
 
             case 227:
               // Raise elevator next floor
-              if (EV_DoElevator(line,elevateUp))
+              if (EV_DoElevator( line, ET_elevateUp))
                 line->special = 0;
               break;
 
             case 231:
               // Lower elevator next floor
-              if (EV_DoElevator(line,elevateDown))
+              if (EV_DoElevator( line, ET_elevateDown))
                 line->special = 0;
               break;
 
             case 235:
               // Elevator to current floor
-              if (EV_DoElevator(line,elevateCurrent))
+              if (EV_DoElevator( line, ET_elevateCurrent))
                 line->special = 0;
               break;
 
@@ -2196,43 +2197,43 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 147:
               // Raise Floor 512
-              EV_DoFloor(line,raiseFloor512);
+              EV_DoFloor( line, FT_raiseFloor512);
               break;
 
             case 148:
               // Raise Floor 24 and Change
-              EV_DoPlat(line,raiseAndChange,24);
+              EV_DoPlat( line, PLATT_raiseAndChange, 24);
               break;
 
             case 149:
               // Raise Floor 32 and Change
-              EV_DoPlat(line,raiseAndChange,32);
+              EV_DoPlat( line, PLATT_raiseAndChange, 32);
               break;
 
             case 150:
               // Start slow silent crusher
-              EV_DoCeiling(line,silentCrushAndRaise);
+              EV_DoCeiling( line, CT_silentCrushAndRaise);
               break;
 
             case 151:
               // RaiseCeilingLowerFloor
-              EV_DoCeiling( line, raiseToHighest );
-              EV_DoFloor( line, lowerFloorToLowest );
+              EV_DoCeiling( line, CT_raiseToHighest );
+              EV_DoFloor( line, FT_lowerFloorToLowest );
               break;
 
             case 152:
               // Lower Ceiling to Floor
-              EV_DoCeiling( line, lowerToFloor );
+              EV_DoCeiling( line, CT_lowerToFloor );
               break;
 
             case 256:
               // Build stairs, step 8
-              EV_BuildStairs(line,build8);
+              EV_BuildStairs( line, ST_build8);
               break;
 
             case 257:
               // Build stairs, step 16
-              EV_BuildStairs(line,turbo16);
+              EV_BuildStairs( line, ST_turbo16);
               break;
 
             case 155:
@@ -2252,12 +2253,12 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 201:
               // Lower ceiling to lowest surrounding ceiling
-              EV_DoCeiling(line,lowerToLowest);
+              EV_DoCeiling( line, CT_lowerToLowest);
               break;
 
             case 202:
               // Lower ceiling to highest surrounding floor
-              EV_DoCeiling(line,lowerToMaxFloor);
+              EV_DoCeiling( line, CT_lowerToMaxFloor);
               break;
 
             case 208:
@@ -2267,37 +2268,37 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 212:
               // Toggle floor between C and F instantly
-              EV_DoPlat(line,toggleUpDn,0);
+              EV_DoPlat( line, PLATT_toggleUpDn, 0);
               break;
 
             case 154:
               // Texture/Type Change Only (Trigger)
-              EV_DoChange(line,trigChangeOnly);
+              EV_DoChange( line, CH_MODEL_trig_only);
               break;
 
             case 240: 
               // Texture/Type Change Only (Numeric)
-              EV_DoChange(line,numChangeOnly);
+              EV_DoChange( line, CH_MODEL_num_only);
               break;
 
             case 220:
               // Lower floor to next lower neighbor
-              EV_DoFloor(line,lowerFloorToNearest);
+              EV_DoFloor( line, FT_lowerFloorToNearest);
               break;
 
             case 228:
               // Raise elevator next floor
-              EV_DoElevator(line,elevateUp);
+              EV_DoElevator( line, ET_elevateUp);
               break;
 
             case 232:
               // Lower elevator next floor
-              EV_DoElevator(line,elevateDown);
+              EV_DoElevator( line, ET_elevateDown);
               break;
 
             case 236:
               // Elevator to current floor
-              EV_DoElevator(line,elevateCurrent);
+              EV_DoElevator( line, ET_elevateCurrent);
               break;
 
             case 244: 
@@ -2394,7 +2395,8 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       {
         if (!thing->player)
           return;   // monsters disallowed from unlocking doors
-        if (((line->special&TriggerType)==GunOnce) || ((line->special&TriggerType)==GunMany))
+        if (((line->special&TriggerType)==TRIG_GunOnce)
+	    || ((line->special&TriggerType)==TRIG_GunMany))
         { //jff 4/1/98 check for being a gun type before reporting door type
           if (!P_CanUnlockGenDoor(line,thing->player))
             return;
@@ -2435,11 +2437,11 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       if (linefunc)
         switch((line->special & TriggerType) >> TriggerTypeShift)
         {
-          case GunOnce:
+          case TRIG_GunOnce:
             if (linefunc(line))
               P_ChangeSwitchTexture(line,0);
             return;
-          case GunMany:
+          case TRIG_GunMany:
             if (linefunc(line))
               P_ChangeSwitchTexture(line,1);
             return;
@@ -2471,19 +2473,19 @@ void P_ShootSpecialLine ( mobj_t*       thing,
     {
       case 24:
         // RAISE FLOOR
-        if(EV_DoFloor(line,raiseFloor) || !boomsupport)
+        if(EV_DoFloor( line, FT_raiseFloor) || !boomsupport)
           P_ChangeSwitchTexture(line,0);
         break;
 
       case 46:
         // OPEN DOOR
-        if(EV_DoDoor(line,dooropen,VDOORSPEED) || !boomsupport)
+        if(EV_DoDoor( line, VD_dooropen, VDOORSPEED) || !boomsupport)
           P_ChangeSwitchTexture(line,1);
         break;
 
       case 47:
         // RAISE FLOOR NEAR AND CHANGE
-        if(EV_DoPlat(line,raiseToNearestAndChange,0) || !boomsupport)
+        if(EV_DoPlat( line, PLATT_raiseToNearestAndChange, 0) || !boomsupport)
           P_ChangeSwitchTexture(line,0);
         break;
 
@@ -2803,17 +2805,17 @@ void P_UpdateSpecials (void)
             {
                 switch(buttonlist[i].where)
                 {
-                  case top:
+                  case B_top_texture:
                     sides[buttonlist[i].line->sidenum[0]].toptexture =
                         buttonlist[i].btexture;
                     break;
 
-                  case middle:
+                  case B_middle_texture:
                     sides[buttonlist[i].line->sidenum[0]].midtexture =
                         buttonlist[i].btexture;
                     break;
 
-                  case bottom:
+                  case B_bottom_texture:
                     sides[buttonlist[i].line->sidenum[0]].bottomtexture =
                         buttonlist[i].btexture;
                     break;
@@ -3263,12 +3265,12 @@ void P_SpawnSpecials (void)
 		  
           // Instant lower for floor SSNTails 06-13-2002
           case 290:
-            EV_DoFloor(effline, instantLower);
+            EV_DoFloor( effline, FT_instantLower);
             break;
 
           // Instant raise for ceilings SSNTails 06-13-2002
           case 291:
-            EV_DoCeiling(effline, instantRaise);
+            EV_DoCeiling( effline, CT_instantRaise);
             break;
 
           default:
@@ -3349,25 +3351,25 @@ void T_Scroll(scroll_t *s)
       msecnode_t *node;
       mobj_t *thing;
 
-    case sc_side:                   //Scroll wall texture
+    case SCROLL_side:                   //Scroll wall texture
 	side = sides + affectee;
         side->textureoffset += dx;
         side->rowoffset += dy;
         break;
 
-    case sc_floor:                  //Scroll floor texture
+    case SCROLL_floor:                  //Scroll floor texture
         sec = sectors + affectee;
         sec->floor_xoffs += dx;
         sec->floor_yoffs += dy;
         break;
 
-    case sc_ceiling:               //Scroll ceiling texture
+    case SCROLL_ceiling:               //Scroll ceiling texture
         sec = sectors + affectee;
         sec->ceiling_xoffs += dx;
         sec->ceiling_yoffs += dy;
         break;
 
-    case sc_carry:
+    case SCROLL_carry:
 
       sec = sectors + affectee;
       height = sec->floorheight;
@@ -3391,7 +3393,7 @@ void T_Scroll(scroll_t *s)
       }
       break;
 
-    case sc_carry_ceiling:       // to be added later
+    case SCROLL_carry_ceiling:       // to be added later
       break;
   } // switch
 }
@@ -3450,7 +3452,7 @@ static void Add_WallScroller(fixed_t dx, fixed_t dy, const line_t *l,
                           >> ANGLETOFINESHIFT]);
   x = -FixedDiv(FixedMul(dy, l->dy) + FixedMul(dx, l->dx), d);
   y = -FixedDiv(FixedMul(dx, l->dy) - FixedMul(dy, l->dx), d);
-  Add_Scroller(sc_side, x, y, control, *l->sidenum, accel);
+  Add_Scroller(SCROLL_side, x, y, control, *l->sidenum, accel);
 }
 
 // Amount (dx,dy) vector linedef is shifted right to get scroll amount
@@ -3499,13 +3501,13 @@ static void P_SpawnScrollers(void)
       {
         case 250:   // scroll effect ceiling
           while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
-            Add_Scroller(sc_ceiling, -dx, dy, control, fsecn, accel);
+            Add_Scroller(SCROLL_ceiling, -dx, dy, control, fsecn, accel);
           break;
 
         case 251:   // scroll effect floor
         case 253:   // scroll and carry objects on floor
           while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
-            Add_Scroller(sc_floor, -dx, dy, control, fsecn, accel);
+            Add_Scroller(SCROLL_floor, -dx, dy, control, fsecn, accel);
           if (special != 253)
             break;
 
@@ -3513,7 +3515,7 @@ static void P_SpawnScrollers(void)
           dx = FixedMul(dx,CARRYFACTOR);
           dy = FixedMul(dy,CARRYFACTOR);
           while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
-            Add_Scroller(sc_carry, dx, dy, control, fsecn, accel);
+            Add_Scroller(SCROLL_carry, dx, dy, control, fsecn, accel);
           break;
 
           // scroll wall according to linedef
@@ -3530,20 +3532,20 @@ static void P_SpawnScrollers(void)
         case 255:  // Boom scroll wall by sidedef offsets
 	 {
 	  register int linenum = lines[i].sidenum[0];
-          Add_Scroller(sc_side, -sides[linenum].textureoffset,
+          Add_Scroller(SCROLL_side, -sides[linenum].textureoffset,
                        sides[linenum].rowoffset, -1, linenum, accel);
 	 }
           break;
 
         case 48:                  // scroll first side
-          Add_Scroller(sc_side,  FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
+          Add_Scroller(SCROLL_side,  FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
           break;
 
         case 99: // heretic right scrolling
           if(gamemode != heretic)
               break; // doom use it as bluekeydoor
         case 85:                  // jff 1/30/98 2-way scroll
-          Add_Scroller(sc_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
+          Add_Scroller(SCROLL_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
           break;
       }
   }
@@ -3839,7 +3841,7 @@ static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affec
 
     // Magnitude is used for something else for vertical currents
     // SSNTails 06-14-2002
-    if(type == p_downcurrent || type == p_upcurrent || type == p_upwind || type == p_downwind)
+    if(type == PP_downcurrent || type == PP_upcurrent || type == PP_upwind || type == PP_downwind)
         p->magnitude = P_AproxDistance(p->x_mag,p->y_mag)<<(FRACBITS-PUSH_FACTOR);
     else
         p->magnitude = P_AproxDistance(p->x_mag,p->y_mag);
@@ -3964,7 +3966,7 @@ void T_Pusher(pusher_t *p)
     //
     // In Phase II, you can apply these effects to Things other than players.
 
-    if (p->type == p_push)
+    if (p->type == PP_push)
     {
 
         // Seek out all pushable things within the force radius of this
@@ -3989,7 +3991,7 @@ void T_Pusher(pusher_t *p)
         return;
     }
 
-    // constant pushers p_wind and p_current
+    // constant pushers PP_wind and PP_current
 
     if(demoversion <= 140)
     {
@@ -4007,7 +4009,7 @@ void T_Pusher(pusher_t *p)
 	    thing = node->m_thing;
 	    if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 	        continue;
-	    if (p->type == p_wind)
+	    if (p->type == PP_wind)
 	    {
 //	        if (sec->modelsec == -1) // NOT special water sector
 	        if (! water_sector) // NOT special water sector
@@ -4039,7 +4041,7 @@ void T_Pusher(pusher_t *p)
 		    }
 		}
 	    }
-	    else // p_current
+	    else // PP_current
 	    {
 	        // Added Z currents SSNTails 06-10-2002
 //	        if (sec->modelsec == -1) // NOT special water sector
@@ -4049,9 +4051,9 @@ void T_Pusher(pusher_t *p)
 		        xspeed = yspeed = 0; // no force
 	            else // on ground
 	            {
-		        if(p->type == p_upcurrent)
+		        if(p->type == PP_upcurrent)
 			    thing->momz += p->magnitude;
-		        else if(p->type == p_downcurrent)
+		        else if(p->type == PP_downcurrent)
 			    thing->momz -= p->magnitude;
 		        else
 		        {
@@ -4066,9 +4068,9 @@ void T_Pusher(pusher_t *p)
 		        xspeed = yspeed = 0; // no force
 	            else // underwater
 	            {
-		        if(p->type == p_upcurrent)
+		        if(p->type == PP_upcurrent)
 			    thing->momz += p->magnitude;
-		        else if(p->type == p_downcurrent)
+		        else if(p->type == PP_downcurrent)
 			    thing->momz -= p->magnitude;
 		        else
 		        {
@@ -4079,7 +4081,7 @@ void T_Pusher(pusher_t *p)
 		}
 	    }
 
-	    if(p->type != p_downcurrent && p->type != p_upcurrent)
+	    if(p->type != PP_downcurrent && p->type != PP_upcurrent)
 	    {
 	        thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
 	        thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
@@ -4163,7 +4165,7 @@ void T_Pusher(pusher_t *p)
 	    if (thing->z == sec->floorheight)
 	        touching = true;
 			
-	    if (p->type == p_wind)
+	    if (p->type == PP_wind)
 	    {
 	        if (!touching && !inwater) // above ground
 	        {
@@ -4180,7 +4182,7 @@ void T_Pusher(pusher_t *p)
 	        else
 		    xspeed = yspeed = 0;
 	    }
-	    else if (p->type == p_upwind)
+	    else if (p->type == PP_upwind)
 	    {
 	        if (!touching && !inwater) // above ground
 	        {
@@ -4195,7 +4197,7 @@ void T_Pusher(pusher_t *p)
 	        else 
 		    xspeed = yspeed = 0;
             }
-	    else if (p->type == p_downwind)
+	    else if (p->type == PP_downwind)
             {
                 if (!touching && !inwater) // above ground
 	        {
@@ -4210,16 +4212,16 @@ void T_Pusher(pusher_t *p)
                 else  
 		    xspeed = yspeed = 0;
             }
-	    else // p_current
+	    else // PP_current
 	    {
 	        // Added Z currents SSNTails 06-10-2002
 	        if(!touching && !inwater) // Not in water at all
 		    xspeed = yspeed = 0; // no force
 	        else // underwater / touching water
 	        {
-		    if(p->type == p_upcurrent)
+		    if(p->type == PP_upcurrent)
 		        thing->momz += p->magnitude;
-		    else if(p->type == p_downcurrent)
+		    else if(p->type == PP_downcurrent)
 		        thing->momz -= p->magnitude;
 		    else
 		    {
@@ -4229,8 +4231,8 @@ void T_Pusher(pusher_t *p)
 		}
 	    }
 
-	    if(p->type != p_downcurrent && p->type != p_upcurrent
-	        && p->type != p_upwind && p->type != p_downwind)
+	    if(p->type != PP_downcurrent && p->type != PP_upcurrent
+	        && p->type != PP_upwind && p->type != PP_downwind)
 	    {
 	        thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
 	        thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
@@ -4279,35 +4281,35 @@ static void P_SpawnPushers(void)
         {
           case 224: // wind
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_wind, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_wind, l->dx, l->dy, NULL, fsecn);
             break;
           case 225: // current
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_current, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_current, l->dx, l->dy, NULL, fsecn);
             break;
           case 226: // push/pull
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
 	    {
                 thing = P_GetPushThing(fsecn);
                 if (thing) // No MT_P* means no effect
-                    Add_Pusher( p_push, l->dx, l->dy, thing, fsecn);
+                    Add_Pusher( PP_push, l->dx, l->dy, thing, fsecn);
 	    }
             break;
           case 292: // current up SSNTails 06-10-2002
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_upcurrent, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_upcurrent, l->dx, l->dy, NULL, fsecn);
             break;
 	  case 293: // current down SSNTails 06-10-2002
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_downcurrent, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_downcurrent, l->dx, l->dy, NULL, fsecn);
             break;
 	  case 294: // wind up SSNTails 06-14-2003
 	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_upwind, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_upwind, l->dx, l->dy, NULL, fsecn);
 	    break;
 	  case 295: // wind down SSNTails 06-14-2003
 	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-                Add_Pusher( p_downwind, l->dx, l->dy, NULL, fsecn);
+                Add_Pusher( PP_downwind, l->dx, l->dy, NULL, fsecn);
 	    break;
 	} // switch
     } // for
