@@ -2042,3 +2042,11 @@ patchfile = w79_jumpgravity.patch
 JUMPGRAVITY is variable by fragglescript, no longer a macro.
 Change it to jumpgravity.
 
+*** w79_team_name
+patchfile = w79_team_name.patch
+- committed revision 888   by wesley johnson
+Fix segfault when command "teamplay 1".
+Team_name[] was array of ptrs to const strings, and the const strings
+cannot be written.  Created basic team structure, with name.
+Only basic functions for team name for now, but can become a dynamic list.
+

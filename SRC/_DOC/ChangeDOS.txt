@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00888 ]: w79 team name struct
+[00887 ]: w79 jumpgravity
 [00886 ]: w79 savegame limited to 99
 [00885 ]: w79 demo monster friction
 [00884 ]: w79 demo ctrl

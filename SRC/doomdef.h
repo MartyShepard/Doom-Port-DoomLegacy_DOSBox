@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 874 2011-11-01 00:09:36Z wesleyjohnson $
+// $Id: doomdef.h 888 2011-12-18 04:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -273,7 +273,6 @@ void I_SoftError (char *error, ...);
 // Automatic loading of lang.bex file.
 //#define BEX_LANG_AUTO_LOAD
 
-
 // =========================================================================
 
 // Name of local directory for config files and savegames
@@ -303,6 +302,7 @@ void I_SoftError (char *error, ...);
 #define PLAYERSMASK             (MAXPLAYERS-1)
 #define MAXPLAYERNAME           21
 #define MAXSKINCOLORS           11
+#define MAXTEAMS		32
 
 #define SAVESTRINGSIZE          24
 

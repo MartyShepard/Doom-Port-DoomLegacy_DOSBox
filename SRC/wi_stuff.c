@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 863 2011-09-17 17:58:55Z wesleyjohnson $
+// $Id: wi_stuff.c 888 2011-12-18 04:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1231,7 +1231,7 @@ static void WI_drawTeamsStats(void)
 
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
-            fragtab[scorelines].name  = team_names[i];
+            fragtab[scorelines].name  = get_team_name(i);
             scorelines++;
         }
     }
@@ -1256,7 +1256,7 @@ static void WI_drawTeamsStats(void)
 
             fragtab[scorelines].num = i;
             fragtab[scorelines].color = i;
-            fragtab[scorelines].name  = team_names[i];
+            fragtab[scorelines].name  = get_team_name(i);
             scorelines++;
         }
     }
@@ -1274,7 +1274,7 @@ static void WI_drawTeamsStats(void)
                      fragtab[scorelines].count+=dm_frags[j][i];
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
-            fragtab[scorelines].name  = team_names[i];
+            fragtab[scorelines].name  = get_team_name(i);
 
             scorelines++;
         }

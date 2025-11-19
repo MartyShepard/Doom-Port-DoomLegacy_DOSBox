@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 887 2011-12-18 04:03:46Z wesleyjohnson $
+// $Id: g_game.c 888 2011-12-18 04:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -392,41 +392,49 @@ char    player_names[MAXPLAYERS][MAXPLAYERNAME] =
     "Player 32\0a123456789\0"
 };
 
-char *team_names[MAXPLAYERS] =
+
+// TEAM STATE
+
+team_info_t*  team_info[MAXTEAMS];  // allocated
+short  num_teams = 0;
+
+team_info_t*  get_team( int team_num )
 {
-    "Team 1\0a890123456789b\0",
-    "Team 2\0a890123456789b\0",
-    "Team 3\0a890123456789b\0",
-    "Team 4\0a890123456789b\0",
-    "Team 5\0a890123456789b\0",
-    "Team 6\0a890123456789b\0",
-    "Team 7\0a890123456789b\0",
-    "Team 8\0a890123456789b\0",
-    "Team 9\0a890123456789b\0",
-    "Team 10\0a90123456789b\0",
-    "Team 11\0a90123456789b\0",
-    "Team 12\0a90123456789b\0",      // the other name hare not used because no colors
-    "Team 13\0a90123456789b\0",      // but who know ?
-    "Team 14\0a90123456789b\0",
-    "Team 15\0a90123456789b\0",
-    "Team 16\0a90123456789b\0",
-    "Team 17\0a90123456789b\0",
-    "Team 18\0a90123456789b\0",
-    "Team 19\0a90123456789b\0",
-    "Team 20\0a90123456789b\0",
-    "Team 21\0a90123456789b\0",
-    "Team 22\0a90123456789b\0",
-    "Team 23\0a90123456789b\0",
-    "Team 24\0a90123456789b\0",
-    "Team 25\0a90123456789b\0",
-    "Team 26\0a90123456789b\0",
-    "Team 27\0a90123456789b\0",
-    "Team 28\0a90123456789b\0",
-    "Team 29\0a90123456789b\0",
-    "Team 30\0a90123456789b\0",
-    "Team 31\0a90123456789b\0",
-    "Team 32\0a90123456789b\0"
-};
+    if( team_num >= MAXTEAMS )
+        return NULL;
+
+    while( team_num >= num_teams )
+    {
+        team_info[num_teams] = Z_Malloc( sizeof(team_info_t), PU_STATIC, NULL);
+        num_teams++;
+    }
+    return team_info[team_num];
+}
+
+// set the team name, if the team exists
+void  set_team_name( int team_num, char * str )
+{
+    // because of the complexity, for now, will create team at init
+    get_team( team_num );
+
+    if( team_num <= num_teams )
+    {
+        char * name = team_info[team_num]->name;
+        if( name )
+	    Z_Free( name );
+        name = Z_Malloc( strlen(str)+6, PU_STATIC, NULL );
+	sprintf(name,"%s team", str);
+        team_info[team_num]->name = name;
+    }
+}
+
+char * get_team_name( int team_num )
+{
+    if( team_num <= num_teams )
+        return team_info[team_num]->name;
+    return "Unknown team";
+}
+
 
 mobj_t*   bodyque[BODYQUESIZE];
 int       bodyqueslot;
@@ -585,7 +593,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
     case ev_keydown:
       keyup_armed = false;  // [WDJ] blanket disable of keyup events
       if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] )
-            {
+      {
                 if( ply->st_inventoryTics )
                 {
                     ply->inv_ptr--;
@@ -600,9 +608,9 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                 }
                 ply->st_inventoryTics = 5*TICRATE;
                 return true;
-            }
+      }
       else if( ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
-            {
+      {
                 if( ply->st_inventoryTics )
                 {
                     ply->inv_ptr++;
@@ -621,30 +629,31 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                 }
                 ply->st_inventoryTics = 5*TICRATE;
                 return true;
-            }
+      }
       else if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] ){
  		keyup_armed = true;  // [WDJ] enable keyup event
                 return true;
-	    }
+      }
 
       break;
 
     case ev_keyup:
       if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
-            {
-	      if( keyup_armed ) { // [WDJ] Only if the keydown was not intercepted by some other responder
+      {
+	  if( keyup_armed )  // [WDJ] Only if the keydown was not intercepted by some other responder
+	  {
                 if( ply->st_inventoryTics )
                     ply->st_inventoryTics = 0;
                 else if( ply->inventory[ply->inv_ptr].count>0 )
-                    {
+		{
                         if( ply == consoleplayer_ptr )
                             SendNetXCmd(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
                         else
                             SendNetXCmd2(XD_USEARTEFACT, &ply->inventory[ply->inv_ptr].type, 1);
-                    }
+		}
 	        return true;	// [WDJ] same as other event intercepts
-	      }
-            }
+	  }
+      }
       else if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
                ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
 	return true;

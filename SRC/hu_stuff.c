@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 748 2010-09-19 18:39:03Z wesleyjohnson $
+// $Id: hu_stuff.c 888 2011-12-18 04:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -230,29 +230,20 @@ void HU_Start(void)
 void TeamPlay_OnChange(void)
 {
     int i;
-    char s[50];
-
     // Change the name of the teams
 
     if(cv_teamplay.value==1)
     {
         // color
         for(i=0; i<MAXSKINCOLORS; i++)
-        {
-            sprintf(s,"%s team",Color_Names[i]);
-            strcpy(team_names[i],s);
-        }
+	    set_team_name( i, Color_Names[i]);
     }
     else
     if(cv_teamplay.value==2)
     {
         // skins
-
         for(i=0; i<numskins; i++)
-        {
-            sprintf(s,"%s team",skins[i].name);
-            strcpy(team_names[i],s);
-        }
+	    set_team_name( i, skins[i].name);
     }
 }
 
@@ -921,11 +912,11 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
                 if(fragtbl)
                     for(k=0; k<MAXPLAYERS; k++)
                         fragtbl[team][k] = 0;
-
+	        
                 fragtab[scorelines].count = ST_PlayerFrags(i);
                 fragtab[scorelines].num   = team;
                 fragtab[scorelines].color = players[i].skincolor;
-                fragtab[scorelines].name  = team_names[team];
+                fragtab[scorelines].name  = get_team_name(team);
 
                 if(fragtbl)
                 {

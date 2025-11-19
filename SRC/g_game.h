@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: g_game.h 888 2011-12-18 04:05:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,7 +74,19 @@
 //added:11-02-98: yeah now you can change it!
 // changed to 2d array 19990220 by Kin
 extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
-extern char*      team_names[];
+
+// [WDJ] cannot write to const team_names
+// Created basic team record
+typedef struct {
+    char * name;  // always allocated string
+} PACKED_ATTR  team_info_t;
+extern team_info_t*  team_info[MAXTEAMS];
+extern short         num_teams;
+
+team_info_t*  get_team( int team_num );
+void  set_team_name( int team_num, char * str );
+char * get_team_name( int team_num );
+
 
 extern  boolean nomonsters;             // checkparm of -nomonsters
 extern  char      gamemapname[MAX_WADPATH];
@@ -149,6 +161,7 @@ void G_DoLoadGame (int slot);
 #endif
 
 extern char savegamename[MAX_WADPATH];
+
 void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot );
 
 // Called by M_Responder.
