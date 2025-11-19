@@ -2085,3 +2085,17 @@ Removed the additional paranoid test.
 Tuned other sector floor and ceiling height searches to execute faster,
 as they were using n! passes of the thing list.
 
+*** w79_floor_up
+patchfile = w79_floor_up.patch
+- committed revision 893   by wesley johnson
+Fix bug 0585154.
+In Doom2 Map05, two doors to secret rooms will not work.
+If another door (1st of 4 doors on left) is opened first, then tag 9
+will move the floors of these two rooms like doors.
+Checks against hitting something had been made conditional on 3D floors,
+for some reason.  Restoring these tests stopped the floors movement
+like the original, and the flawed Map05 is then still playable.
+Must be careful to not have problem with Doom2 Map06, with the spider
+demon in the crusher.  Some possible tests would freeze the crusher if
+something was stuck in the ceiling or floor.
+This is enabled by COMPAT_FLOOR_STOP, for now.

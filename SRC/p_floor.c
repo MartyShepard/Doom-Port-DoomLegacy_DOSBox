@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 892 2011-12-26 18:29:28Z wesleyjohnson $
+// $Id: p_floor.c 893 2011-12-26 18:30:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -91,6 +91,14 @@ void DemoAdapt_p_floor( void )
 }
 
 
+// [WDJ] Other doom code does not have 3D floors and does not have floor
+// floor stopping dependent upon numattached.  To keep compatible
+// behavior, the floor movement must always stop and recheck.
+// I have found no reason for the && numattached test.  It may have been
+// thought that only 3D floors could obstruct in those directions, but it is
+// also possible because of dest in wrong direction (insta-move).  Doom2 Map5.
+#define COMPAT_FLOOR_STOP  1
+
 //
 // Move a plane (floor or ceiling) and check for crushing
 //
@@ -108,6 +116,7 @@ result_e T_MovePlane ( sector_t*     sector,
   fixed_t       destheight; //jff 02/04/98 used to keep floors/ceilings
                             // from moving thru each other
   fixed_t       newheight;
+
 
   switch(floorOrCeiling)
   {
@@ -130,7 +139,11 @@ result_e T_MovePlane ( sector_t*     sector,
           { // reached dest, or start was below dest
             sector->floorheight = dest;  // final position
             flag = P_CheckSector(sector,crush);
-            if (flag == true && sector->numattached)                   
+#ifdef COMPAT_FLOOR_STOP
+            if (flag == true)  // hit something
+#else
+            if (flag == true && sector->numattached)
+#endif
             {
               sector->floorheight =lastpos;
               P_CheckSector(sector,crush);
@@ -261,10 +274,31 @@ result_e T_MovePlane ( sector_t*     sector,
           if (newheight > dest)
           { // reached dest, or start was above dest
             sector->ceilingheight = dest;  // final position
+#if 0
+	    // alternative plan
+	    // wad specific intercepts
+	    if ( lastpos > dest ) // insta-move, started wrong side of dest
+	    {
+	        if( gamedesc_id == GDESC_doom2 )  return MP_pastdest; // ignore
+	    }
+#endif
             flag = P_CheckSector(sector,crush);
+#ifdef COMPAT_FLOOR_STOP
+            // [WDJ] Doom2 Map05 will close secret rooms tagged with 9, unless
+	    // the ceiling is stopped.  Cannot be conditional on 3D floor.
+            if (flag == true)
+#else
             // [WDJ] BUG: Doom2 Map05, this closes secret rooms tagged with 9,
 	    // because the ceiling is not stopped.
             if (flag == true && sector->numattached)
+# if 0
+	    // alternative plan
+            if (flag == true
+		&&( sector->numattached
+		    || lastpos > dest ) // insta-move, started wrong side of dest
+		)
+# endif
+#endif
             {
               // Boom stops.
               sector->ceilingheight = lastpos;
