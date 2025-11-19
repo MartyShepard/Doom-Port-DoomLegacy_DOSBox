@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_floor.c 892 2011-12-26 18:29:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -107,27 +107,28 @@ result_e T_MovePlane ( sector_t*     sector,
   fixed_t       lastpos;    // when hit something, must return to lastpos
   fixed_t       destheight; //jff 02/04/98 used to keep floors/ceilings
                             // from moving thru each other
+  fixed_t       newheight;
 
   switch(floorOrCeiling)
   {
     case 0:
       // Moving a floor
-      switch(direction)
+      lastpos = sector->floorheight;
+      if(direction < 0)
       {
-        case -1:
 	  // Move floor down
+	  newheight = sector->floorheight - speed;
           //SoM: 3/20/2000: Make splash when platform floor hits water
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
-            if(((sector->floorheight - speed) < sectors[sector->modelsec].floorheight )
+            if((newheight < sectors[sector->modelsec].floorheight )
                && (sector->floorheight > sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
           // Moving a floor down
-          if (sector->floorheight - speed < dest)
-          {
-            lastpos = sector->floorheight;
-            sector->floorheight = dest;
+          if (newheight < dest)
+          { // reached dest, or start was below dest
+            sector->floorheight = dest;  // final position
             flag = P_CheckSector(sector,crush);
             if (flag == true && sector->numattached)                   
             {
@@ -137,26 +138,30 @@ result_e T_MovePlane ( sector_t*     sector,
             return MP_pastdest;
           }
           else
-          {
-            lastpos = sector->floorheight;
-            sector->floorheight -= speed;
+          { // floor moving down
+            sector->floorheight = newheight;  // intermediate position
             flag = P_CheckSector(sector,crush);
-            if(flag == true && sector->numattached)
+            if(flag == true && sector->numattached) // 3D floor only
             {
+	      // Diff here between Boom and original Doom.
+	      // This code not in Boom, added back by prboom.
+	      // It stops floors from moving when objects stuck in ceiling.
+	      // May be necessary because of 3D floors.
               sector->floorheight = lastpos;
               P_CheckSector(sector, crush);
               return MP_crushed;
             }
           }
-          break;
-                                                
-        case 1:
+      }
+      else
+      {
           // Move floor up
+	  newheight = sector->floorheight + speed;
           // keep floor from moving thru ceilings
           //SoM: 3/20/2000: Make splash when platform floor hits water
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
-            if(((sector->floorheight + speed) > sectors[sector->modelsec].floorheight)
+            if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->floorheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
@@ -164,10 +169,9 @@ result_e T_MovePlane ( sector_t*     sector,
 //                          dest : sector->ceilingheight;
           destheight = (boomsupport && (dest > sector->ceilingheight))?
 		sector->ceilingheight : dest;
-          if (sector->floorheight + speed > destheight)
-          {
-            lastpos = sector->floorheight;
-            sector->floorheight = destheight;
+          if (newheight > destheight)
+          { // reached dest, or start was above dest
+            sector->floorheight = destheight;  // final position
             flag = P_CheckSector(sector,crush);
             if (flag == true)
             {
@@ -177,10 +181,9 @@ result_e T_MovePlane ( sector_t*     sector,
             return MP_pastdest;
           }
           else
-          {
+          { // floor moving up
             // crushing is possible
-            lastpos = sector->floorheight;
-            sector->floorheight += speed;
+            sector->floorheight = newheight;  // intermediate position
             flag = P_CheckSector(sector,crush);
             if (flag == true)
             {
@@ -194,20 +197,20 @@ result_e T_MovePlane ( sector_t*     sector,
               return MP_crushed;
             }
           }
-          break;
       }
       break;
                                                                         
     case 1:
       // moving a ceiling
-      switch(direction)
+      lastpos = sector->ceilingheight;
+      if(direction < 0)
       {
-        case -1:
 	  // Move ceiling down
+	  newheight = sector->ceilingheight - speed;
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
 	    // make sound when ceiling hits water
-            if(((sector->ceilingheight - speed) < sectors[sector->modelsec].floorheight)
+            if((newheight < sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight > sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
@@ -217,12 +220,10 @@ result_e T_MovePlane ( sector_t*     sector,
 //                          dest : sector->floorheight;
           destheight = (boomsupport && (dest<sector->floorheight))?
 		sector->floorheight : dest;
-          if (sector->ceilingheight - speed < destheight)
-          {
-            lastpos = sector->ceilingheight;
-            sector->ceilingheight = destheight;
+          if (newheight < destheight)
+          { // reached dest, or start was below dest
+            sector->ceilingheight = destheight;  // final position
             flag = P_CheckSector(sector,crush);
-
             if (flag == true)
             {
               sector->ceilingheight = lastpos;
@@ -231,12 +232,10 @@ result_e T_MovePlane ( sector_t*     sector,
             return MP_pastdest;
           }
           else
-          {
+          { // ceiling moving down
             // crushing is possible
-            lastpos = sector->ceilingheight;
-            sector->ceilingheight -= speed;
+            sector->ceilingheight = newheight;  // intermediate position
             flag = P_CheckSector(sector,crush);
-
             if (flag == true)
             {
               if (crush == true)
@@ -246,43 +245,50 @@ result_e T_MovePlane ( sector_t*     sector,
               return MP_crushed;
             }
           }
-          break;
-                                                
-        case 1:
+      }
+      else
+      {
 	  // Move ceiling up
+	  newheight = sector->ceilingheight + speed;
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
 	    // make sound when ceiling hits water
-            if(((sector->ceilingheight + speed) > sectors[sector->modelsec].floorheight)
+            if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
           // moving a ceiling up
-          if (sector->ceilingheight + speed > dest)
-          {
-            lastpos = sector->ceilingheight;
-            sector->ceilingheight = dest;
+          if (newheight > dest)
+          { // reached dest, or start was above dest
+            sector->ceilingheight = dest;  // final position
             flag = P_CheckSector(sector,crush);
+            // [WDJ] BUG: Doom2 Map05, this closes secret rooms tagged with 9,
+	    // because the ceiling is not stopped.
             if (flag == true && sector->numattached)
             {
+              // Boom stops.
               sector->ceilingheight = lastpos;
               P_CheckSector(sector,crush);
             }
             return MP_pastdest;
           }
           else
-          {
-            lastpos = sector->ceilingheight;
-            sector->ceilingheight += speed;
+          { // ceiling moving up
+            sector->ceilingheight = newheight;  // intermediate position
             flag = P_CheckSector(sector,crush);
-            if (flag == true && sector->numattached)
+            if (flag == true && sector->numattached) // 3D floor only
             {
+	      // This code not in Boom.
+	      // It stops ceiling from moving when objects stuck in floor.
+	      // Doom2 Map06, spider demon will not be crushed because
+	      // is stuck in ceiling on first try.
+	      // May be necessary because of 3D floors.
+	      // Crush on 3D floor may cause moving floor to get stuck.
               sector->ceilingheight = lastpos;
               P_CheckSector(sector,crush);
               return MP_crushed;
             }
           }
-          break;
       }
       break;
     }

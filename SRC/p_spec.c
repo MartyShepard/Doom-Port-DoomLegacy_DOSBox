@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_spec.c 892 2011-12-26 18:29:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -570,6 +570,23 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
     int                 i;
     line_t*             check;
     sector_t*           other;
+#if 1
+    fixed_t             highfloor = -FIXED_MAX;
+
+    for (i=0 ;i < sec->linecount ; i++)
+    {
+        // for each line in sector linelist
+        check = sec->linelist[i];
+        other = getNextSector(check,sec);
+
+        if (!other)
+            continue;
+
+        // find any higher other floor
+        if (other->floorheight > highfloor)
+            highfloor = other->floorheight;
+    }
+#else
     fixed_t             highfloor = -500*FRACUNIT;
     int                 foundsector = 0; // no trust that init highfloor is low enough
 
@@ -590,6 +607,7 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
         if(!foundsector)
           foundsector = 1;
     }
+#endif
     return highfloor;
 }
 
@@ -762,6 +780,25 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
     line_t*             check;
     sector_t*           other;
     fixed_t             height = FIXED_MAX;
+
+#if 1
+    // [WDJ] removed extra foundsector test that defeated this limit.
+    if (boomsupport) height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
+                                              
+    for (i=0 ;i < sec->linecount ; i++)
+    {
+        // for all lines in sector linelist
+        check = sec->linelist[i];
+        other = getNextSector(check,sec);
+
+        if (!other)
+            continue;
+
+        // find any lower ceiling
+        if (other->ceilingheight < height )
+            height = other->ceilingheight;
+    }
+#else
     int                 foundsector = 0; // no trust that init height is low enough
 
     if (boomsupport) height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
@@ -782,6 +819,7 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
         if(!foundsector)
           foundsector = 1;
     }
+#endif   
     return height;
 }
 
@@ -794,7 +832,24 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
     int         i;
     line_t*     check;
     sector_t*   other;
-    fixed_t     height = 0;
+#if 1
+    fixed_t     height = -FIXED_MAX;
+
+    for (i=0 ;i < sec->linecount ; i++)
+    {
+        // for all lines in sector linelist
+        check = sec->linelist[i];
+        other = getNextSector(check,sec);
+
+        if (!other)
+            continue;
+
+        // find any line with higher ceiling
+        if (other->ceilingheight > height)
+            height = other->ceilingheight;
+    }
+#else
+    fixed_t     height = 0;  // wrong, height can be negative too
     int         foundsector = 0;  // no trust that init height is low enough
 
     for (i=0 ;i < sec->linecount ; i++)
@@ -813,6 +868,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
         if(!foundsector)
           foundsector = 1;
     }
+#endif
     return height;
 }
 

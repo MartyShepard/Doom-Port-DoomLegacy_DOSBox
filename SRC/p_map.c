@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_map.c 892 2011-12-26 18:29:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -456,8 +456,8 @@ P_TeleportMove( mobj_t*       thing,
 
     // The base floor/ceiling is from the subsector
     // that contains the point.
-    // Any contacted lines the step closer together
-    // will adjust them.
+    // Any lines contacted during the step
+    // may adjust them closer together.
     tmr_floorz = tmr_dropoffz = tele_newsubsec->sector->floorheight;
     tmr_ceilingz = tele_newsubsec->sector->ceilingheight;
 
@@ -950,8 +950,8 @@ boolean P_CheckPosition ( mobj_t*       thing,
 
     // The base floor / ceiling is from the subsector
     // that contains the point.
-    // Any contacted lines the step closer together
-    // will adjust them.
+    // Any lines contacted during the step
+    // may adjust them closer together.
     tmr_floorz = tmr_sectorfloorz = tmr_dropoffz = cp_newsubsec->sector->floorheight;
     tmr_ceilingz = tmr_sectorceilingz = cp_newsubsec->sector->ceilingheight;
 
@@ -2460,22 +2460,19 @@ void P_RadiusAttack ( mobj_t*       spot,
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-boolean         crushchange;	// enable crushing damage
-boolean         nofit;
-sector_t        *sectorchecked;
+boolean     crush_enable;	// enable crushing damage
+boolean     crush_nofit;
+sector_t *  crush_sectorchecked;  // not used
 
 //
 // PIT_ChangeSector
 //
-boolean PIT_ChangeSector (mobj_t*       thing)
+boolean PIT_ChangeSector (mobj_t*  thing)
 {
     mobj_t*     mo;
 
     if (P_ThingHeightClip (thing))
-    {
-        // keep checking
-        return true;
-    }
+        goto done;  // keep checking
 
     // crunch bodies to giblets
     if (thing->flags & MF_CORPSE)
@@ -2492,8 +2489,7 @@ boolean PIT_ChangeSector (mobj_t*       thing)
         thing->radius = 0;
         thing->skin = 0;
 
-        // keep checking
-        return true;
+        goto done; // keep checking
     }
 
     // crunch dropped items
@@ -2501,19 +2497,15 @@ boolean PIT_ChangeSector (mobj_t*       thing)
     {
         P_RemoveMobj (thing);
 
-        // keep checking
-        return true;
+        goto done; // keep checking
     }
 
     if (! (thing->flags & MF_SHOOTABLE) )
-    {
-        // assume it is bloody gibs or something
-        return true;
-    }
+        goto done; // keep checking, assume it is bloody gibs or something
 
-    nofit = true;
+    crush_nofit = true;
 
-    if (crushchange && !(leveltime % (4*NEWTICRATERATIO)) )
+    if (crush_enable && !(leveltime % (4*NEWTICRATERATIO)) )
     {
         // Crushing damage
         P_DamageMobj(thing,NULL,NULL,10);
@@ -2532,8 +2524,10 @@ boolean PIT_ChangeSector (mobj_t*       thing)
         }
     }
 
+done: 
     // keep checking (crush other things)
     return true;
+    // return boolean because of use in BlockThingsIterator
 }
 
 
@@ -2548,9 +2542,9 @@ boolean P_ChangeSector ( sector_t*     sector,
     int         x;
     int         y;
 
-    nofit = false;
-    crushchange = crunch;	// enable/disable crushing damage
-    sectorchecked = sector;
+    crush_nofit = false;
+    crush_enable = crunch;	// enable/disable crushing damage
+    crush_sectorchecked = sector;
 
     // re-check heights for all things near the moving sector
     for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
@@ -2560,7 +2554,7 @@ boolean P_ChangeSector ( sector_t*     sector,
     }
 
 
-    return nofit;
+    return crush_nofit;
 }
 
 
@@ -2569,13 +2563,13 @@ boolean P_ChangeSector ( sector_t*     sector,
 // crunch enables crushing damage
 boolean P_CheckSector(sector_t* sector, boolean crunch)
 {
-  msecnode_t      *ns;
+  msecnode_t   *ns, *nxt_ns;
 
   if (!boomsupport) // use the old routine for old demos though
     return P_ChangeSector(sector,crunch);
 
-  nofit = false;
-  crushchange = crunch;
+  crush_nofit = false;
+  crush_enable = crunch;
 
 
   // killough 4/4/98: scan list front-to-back until empty or exhausted,
@@ -2585,6 +2579,12 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
   // Things can arbitrarily be inserted and removed and it won't mess up.
   //
   // killough 4/7/98: simplified to avoid using complicated counter
+
+  // [WDJ] Previous code made n! passes, so changed to reduce passes over list.
+  // PIT_ChangeSectors will only delete the thing or add others to
+  // front of list.
+  // Save the next link, so do not need to start over immediately.
+  // Usually makes 3 passes, no matter how many things.
 
   if(sector->numattached)
   {
@@ -2602,14 +2602,14 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
 
       // Update things until all are visited.
       do {
-        for (ns=sec->touching_thinglist; ns; ns=ns->m_snext)
+        for (ns=sec->touching_thinglist; ns; ns=nxt_ns)
 	{
+	  nxt_ns = ns->m_snext; // ns may get removed
           if (!ns->visited)               // unprocessed thing found
           {
             ns->visited  = true;         // mark thing as processed
             if (!(ns->m_thing->flags & MF_NOBLOCKMAP))
               PIT_ChangeSector(ns->m_thing);
-            break;
           }
 	}
       } while (ns);
@@ -2624,19 +2624,19 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
   
   // Update things until all are visited.
   do {
-      for (ns=sector->touching_thinglist; ns; ns=ns->m_snext)  // go through list
+      for (ns=sector->touching_thinglist; ns; ns=nxt_ns)  // go through list
       {
+	  nxt_ns = ns->m_snext; // ns may be removed
           if (!ns->visited)               // unprocessed thing found
           {
               ns->visited  = true;          // mark thing as processed
               if (!(ns->m_thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
                   PIT_ChangeSector(ns->m_thing);    // process it
-              break;                 // exit and start over
           }
       }
   } while (ns);  // repeat from scratch until all things left are marked valid
   
-  return nofit;
+  return crush_nofit;
 }
 
 
@@ -3045,8 +3045,8 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
     tmr_ceilingline = NULL;
     
     //
-    // the base floor / ceiling is from the subsector that contains the
-    // point.  Any contacted lines the step closer together will adjust them
+    // The base floor / ceiling is from the subsector that contains the point.
+    // Any lines contacted during the step may adjust them closer together.
     //
     tmr_floorz = tmr_dropoffz = cm_newsubsec->sector->floorheight;
     tmr_ceilingz = cm_newsubsec->sector->ceilingheight;

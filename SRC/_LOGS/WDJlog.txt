@@ -2076,3 +2076,12 @@ patchfile = w79_spec_enum.patch
 Most enum names in spec.h look like variable names.
 Give them prefixes.
 
+*** w79_lowest_ceiling
+patchfile = w79_lowest_ceiling.patch
+- committed revision 892   by wesley johnson
+Search for lowest ceiling was flawed by an additional paranoid test that
+would also defeat a Boom search limit meant to prevent overflow.
+Removed the additional paranoid test.
+Tuned other sector floor and ceiling height searches to execute faster,
+as they were using n! passes of the thing list.
+
