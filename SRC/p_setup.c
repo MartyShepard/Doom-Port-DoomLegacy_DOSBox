@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 876 2011-11-01 00:14:36Z wesleyjohnson $
+// $Id: p_setup.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -1548,7 +1548,7 @@ boolean P_SetupLevel (int           episode,
 #if 0 // UNUSED
     if (debugfile)
     {
-        Z_FreeTags (PU_LEVEL, MAXINT);
+        Z_FreeTags (PU_LEVEL, 255);  // all purge tags
         Z_FileDumpHeap (debugfile);
     }
 #endif

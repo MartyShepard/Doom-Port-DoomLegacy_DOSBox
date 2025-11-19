@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: p_spec.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -761,7 +761,7 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
     int                 i;
     line_t*             check;
     sector_t*           other;
-    fixed_t             height = MAXINT;
+    fixed_t             height = FIXED_MAX;
     int                 foundsector = 0; // no trust that init height is low enough
 
     if (boomsupport) height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
@@ -828,7 +828,7 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
 //
 fixed_t P_FindShortestTextureAround(int secnum)
 {
-  int minsize = MAXINT;
+  fixed_t minsize = FIXED_MAX;
   side_t*     side;
   int i;
   sector_t *sec = &sectors[secnum];
@@ -871,7 +871,7 @@ fixed_t P_FindShortestTextureAround(int secnum)
 //
 fixed_t P_FindShortestUpperAround(int secnum)
 {
-  int minsize = MAXINT;
+  fixed_t minsize = FIXED_MAX;
   side_t*     side;
   int i;
   sector_t *sec = &sectors[secnum];
@@ -3372,10 +3372,10 @@ void T_Scroll(scroll_t *s)
       sec = sectors + affectee;
       height = sec->floorheight;
       // [WDJ] fix precedence  11/25/2009
-      // MININT unless has special sector, and sector floor height > height
+      // FIXED_MIN unless has special sector, and sector floor height > height
       waterheight = ((sec->model > SM_fluid) &&
         (sectors[sec->modelsec].floorheight > height)) ?
-            sectors[sec->modelsec].floorheight : MININT ;
+            sectors[sec->modelsec].floorheight : FIXED_MIN ;
 
       for (node = sec->touching_thinglist; node; node = node->m_snext)
       {

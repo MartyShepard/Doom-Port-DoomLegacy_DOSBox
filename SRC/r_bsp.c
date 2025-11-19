@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 881 2011-12-18 03:50:09Z wesleyjohnson $
+// $Id: r_bsp.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1110,10 +1110,10 @@ void R_Prep3DFloors(sector_t*  sector)
 
   // Work down from highest light to lowest light.
   // Determine each light in lightlist.
-  maxheight = MAXINT;  // down from max, previous light
+  maxheight = FIXED_MAX;  // down from max, previous light
   for(i = 1; i < count; i++)
   {
-    bestheight = MAXINT * -1;
+    bestheight = -FIXED_MAX;
     best = NULL;
     for(rover = sector->ffloors; rover; rover = rover->next)
     {

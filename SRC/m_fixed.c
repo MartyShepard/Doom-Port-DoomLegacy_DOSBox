@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: m_fixed.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -71,7 +71,7 @@ fixed_t FixedDiv ( fixed_t   a, fixed_t    b )
     //I_Error("<a: %ld, b: %ld>",(long)a,(long)b);
 
     if ( (abs(a)>>14) >= abs(b))
-        return (a^b)<0 ? MININT : MAXINT;
+        return (a^b)<0 ? FIXED_MIN : FIXED_MAX;
 
     return FixedDiv2 (a,b);
 }

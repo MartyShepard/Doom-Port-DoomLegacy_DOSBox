@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 747 2010-09-19 18:34:57Z wesleyjohnson $
+// $Id: am_map.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -342,9 +342,9 @@ void AM_get_mslope ( mline_t* ml, mslope_t* ms )
 
     dy = ml->a.y - ml->b.y;
     dx = ml->b.x - ml->a.x;
-    if (!dy) ms->xyslp = (dx<0?-MAXINT:MAXINT);
+    if (!dy) ms->xyslp = (dx<0?-FIXED_MAX:FIXED_MAX);
     else ms->xyslp = FixedDiv(dx, dy);
-    if (!dx) ms->yxslp = (dy<0?-MAXINT:MAXINT);
+    if (!dx) ms->yxslp = (dy<0?-FIXED_MAX:FIXED_MAX);
     else ms->yxslp = FixedDiv(dy, dx);
 
 }
@@ -369,14 +369,14 @@ void AM_calc_mapbox( void )
     m_x = m_curpos.x - m_w/2;
     m_y = m_curpos.y - m_h/2;
     // [WDJ] Because large map can overflow the subtraction
-    if ( m_x > m_curpos.x )  m_x = -MAXINT;
-    if ( m_y > m_curpos.y )  m_y = -MAXINT;
+    if ( m_x > m_curpos.x )  m_x = -FIXED_MAX;
+    if ( m_y > m_curpos.y )  m_y = -FIXED_MAX;
 
     m_x2 = m_x + m_w;
     m_y2 = m_y + m_h;
     // [WDJ] Because large map can overflow the addition
-    if ( m_x2 < m_curpos.x )  m_x2 = MAXINT;
-    if ( m_y2 < m_curpos.y )  m_y2 = MAXINT;
+    if ( m_x2 < m_curpos.x )  m_x2 = FIXED_MAX;
+    if ( m_y2 < m_curpos.y )  m_y2 = FIXED_MAX;
 }
 
 
@@ -447,8 +447,8 @@ void AM_findMinMaxBoundaries(void)
 {
     int i;
 
-    min_x = min_y =  MAXINT;
-    max_x = max_y = -MAXINT;
+    min_x = min_y =  FIXED_MAX;
+    max_x = max_y = -FIXED_MAX;
 
     for (i=0;i<numvertexes;i++)
     {
@@ -477,7 +477,7 @@ void AM_findMinMaxBoundaries(void)
     fixed_t b = FixedDiv(f_h<<(FRACBITS-1), halfmax_h);
     min_scale_mtof = a < b ? a : b;
     // overflow during FixedMul limits max scale_ftom, and thus min scale_mtof
-    fixed_t max_ftom = (fixed_t)MAXINT / f_w; // limit of overflow
+    fixed_t max_ftom = (fixed_t)FIXED_MAX / f_w; // limit of overflow
     fixed_t min_mtof = FixedDiv(FRACUNIT, max_ftom);
     if( min_scale_mtof < min_mtof )
        min_scale_mtof = min_mtof;
@@ -493,7 +493,7 @@ void AM_changeWindowLoc(void)
     if (m_paninc.x || m_paninc.y)
     {
         followplayer = 0;
-        f_oldloc.x = MAXINT;
+        f_oldloc.x = FIXED_MAX;
     }
 
     m_curpos.x += m_paninc.x;
@@ -513,7 +513,7 @@ static void AM_initVariables(void)
     automapactive = true;
     fb = screens[0];
 
-    f_oldloc.x = MAXINT;
+    f_oldloc.x = FIXED_MAX;
     amclock = 0;
     lightlev = 0;
 
@@ -762,7 +762,7 @@ boolean AM_Responder ( event_t*      ev )
             break;
           case AM_FOLLOWKEY:
             followplayer = !followplayer;
-            f_oldloc.x = MAXINT;
+            f_oldloc.x = FIXED_MAX;
             plr->message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
             break;
           case AM_GRIDKEY:

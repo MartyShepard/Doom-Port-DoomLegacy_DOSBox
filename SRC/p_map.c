@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 848 2011-08-15 23:19:50Z wesleyjohnson $
+// $Id: p_map.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -296,7 +296,7 @@ fixed_t  P_GetFriction( const mobj_t * mo )
         const msecnode_t * msnp = mo->touching_sectorlist;
         const sector_t * secp;
         const ffloor_t * fff;
-        got_friction = MAXINT;  // init search
+        got_friction = FIXED_MAX;  // init search
         // traverse the list of sectors touching this thing
         while( msnp )
         {
@@ -326,7 +326,7 @@ fixed_t  P_GetFriction( const mobj_t * mo )
 	    }
 	    msnp = msnp->m_tnext;
 	}
-        if( got_friction == MAXINT )
+        if( got_friction == FIXED_MAX )
         {
 	    got_friction = 0xFFF0;  // must not be touching floor, air friction
 	}

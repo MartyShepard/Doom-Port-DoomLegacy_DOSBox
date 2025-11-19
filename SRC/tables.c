@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: tables.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -118,7 +118,8 @@ const angle_t ANGLE_60  = 0x80000000 / 3;
 
 // The finetangentgent[angle+FINEANGLES/4] table
 // holds the fixed_t tangent values for view angles,
-// ranging from MININT to 0 to MAXINT.
+// ranging from -FIXED_MAX to 0 to FIXED_MAX (ranging from MININT to 0 to MAXINT.)
+// ([WDJ] actually more like -FIXED_MAX/12.56 to FIXED_MAX/12.56).
 // fixed_t              finetangent[FINEANGLES/2];
 
 #if !defined( __DJGPP__ )	

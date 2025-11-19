@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 722 2010-07-31 19:13:59Z wesleyjohnson $
+// $Id: r_plane.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -334,7 +334,7 @@ void R_ClearPlanes (player_t *player)
     {
         floorclip[i] = rdraw_viewheight;
         ceilingclip[i] = con_clipviewtop;       //Fab:26-04-98: was -1
-        frontscale[i] = MAXINT;
+        frontscale[i] = FIXED_MAX;
         for(p = 0; p < MAXFFLOORS; p++)
         {
           ffloor[p].front_clip[i] = rdraw_viewheight;

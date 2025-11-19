@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_bbox.c 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: m_bbox.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -37,8 +37,8 @@
 
 void M_ClearBox (fixed_t *box)
 {
-    box[BOXTOP] = box[BOXRIGHT] = MININT;
-    box[BOXBOTTOM] = box[BOXLEFT] = MAXINT;
+    box[BOXTOP] = box[BOXRIGHT] = FIXED_MIN;
+    box[BOXBOTTOM] = box[BOXLEFT] = FIXED_MAX;
 }
 
 void M_AddToBox ( fixed_t*      box,

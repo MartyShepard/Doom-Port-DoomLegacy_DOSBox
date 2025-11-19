@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: r_splats.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -544,8 +544,8 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
         spanfunc ();
 
         // reset for next calls to edge rasterizer
-            rastertab[y].minx = MAXINT;
-            rastertab[y].maxx = MININT;
+            rastertab[y].minx = FIXED_MAX;
+            rastertab[y].maxx = FIXED_MIN;
         }
 
 #else
@@ -587,8 +587,8 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
         }
 
         // r‚initialise les minimus maximus pour le prochain appel
-        rastertab[y].minx = MAXINT;
-        rastertab[y].maxx = MININT;
+        rastertab[y].minx = FIXED_MAX;
+        rastertab[y].maxx = FIXED_MIN;
     }
 #endif
 }
@@ -672,8 +672,8 @@ static void prepare_rastertab (void)
     int iLine;
     for (iLine=0; iLine<vid.height; iLine++)
     {
-         rastertab[iLine].minx = MAXINT;
-         rastertab[iLine].maxx = MININT;
+         rastertab[iLine].minx = FIXED_MAX;
+         rastertab[iLine].maxx = FIXED_MIN;
     }
 }
 

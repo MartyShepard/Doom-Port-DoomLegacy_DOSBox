@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 825 2011-03-20 00:25:58Z wesleyjohnson $
+// $Id: p_maputl.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -938,7 +938,7 @@ boolean P_TraverseIntercepts ( traverser_t   func,
 
     while (count--)
     {
-        dist = MAXINT;
+        dist = FIXED_MAX;
         for (scan = intercepts ; scan<intercept_p ; scan++)
         {
             if (scan->frac < dist)
@@ -968,7 +968,7 @@ boolean P_TraverseIntercepts ( traverser_t   func,
         if ( !func (in) )
             return false;       // don't bother going farther
 
-        in->frac = MAXINT;
+        in->frac = FIXED_MAX;
     }
 
     return true;                // everything was traversed

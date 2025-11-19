@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 829 2011-05-26 23:52:19Z wesleyjohnson $
+// $Id: r_segs.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -551,7 +551,7 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
     dc_yl = (dm_top_patch+FRACUNIT-1)>>FRACBITS;
     dc_yh = (bottom_post_sc-1)>>FRACBITS;
 
-    if(dm_windowtop != MAXINT && dm_windowbottom != MAXINT)
+    if(dm_windowtop != FIXED_MAX && dm_windowbottom != FIXED_MAX)
     {
       dc_yl = ((dm_windowtop + FRACUNIT) >> FRACBITS);
       dc_yh = (dm_windowbottom - 1) >> FRACBITS;
@@ -608,8 +608,8 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[curline->sidedef->midtexture];
 
-    dm_windowbottom = dm_windowtop = dm_bottom_patch = MAXINT;	// default no clip
-    windowclip_top = windowclip_bottom = MAXINT;
+    dm_windowbottom = dm_windowtop = dm_bottom_patch = FIXED_MAX; // default no clip
+    windowclip_top = windowclip_bottom = FIXED_MAX;
 
     // Select the default, or special effect column drawing functions,
     // which are called by the colfunc_2s functions.
@@ -791,7 +791,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           if(dc_numlights)
           {
 	    // Where there are 3dfloors ...
-            dm_bottom_patch = MAXINT;
+            dm_bottom_patch = FIXED_MAX;
 	    // top/bottom of texture, relative to viewer, screen coord.
             dm_top_patch = dm_windowtop = (centeryfrac - FixedMul(dc_texturemid, dm_yscale));
             realbot = dm_windowbottom = FixedMul(textureheight[texnum], dm_yscale) + dm_top_patch;
@@ -891,7 +891,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 	      }
 	  } // fixedcolormap
 
-	  if( windowclip_top != MAXINT )
+	  if( windowclip_top != FIXED_MAX )
 	  {
 	    // fog sheet clipping to ceiling and floor
 	    dm_windowtop = centeryfrac - FixedMul(windowclip_top, dm_yscale);
@@ -1883,8 +1883,8 @@ void R_StoreWallRange( int   start, int   stop)
         ds_p->silhouette = SIL_TOP|SIL_BOTTOM; // BOTH
         ds_p->spr_topclip = screenheightarray;
         ds_p->spr_bottomclip = negonearray;
-        ds_p->sil_bottom_height = MAXINT;
-        ds_p->sil_top_height = MININT;
+        ds_p->sil_bottom_height = FIXED_MAX;
+        ds_p->sil_top_height = FIXED_MIN;
     }
     else
     {
@@ -1902,7 +1902,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
 	    // backsector floor not visible, clip sprites
             ds_p->silhouette = SIL_BOTTOM;
-            ds_p->sil_bottom_height = MAXINT;
+            ds_p->sil_bottom_height = FIXED_MAX;
             // ds_p->spr_bottomclip = negonearray;
         }
         
@@ -1916,7 +1916,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
 	    // backsector ceiling not visible, clip sprites
             ds_p->silhouette |= SIL_TOP;
-            ds_p->sil_top_height = MININT;
+            ds_p->sil_top_height = FIXED_MIN;
             // ds_p->spr_topclip = screenheightarray;
         }
         
@@ -1924,7 +1924,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
 	    // backsector below frontsector
             ds_p->spr_bottomclip = negonearray;
-            ds_p->sil_bottom_height = MAXINT;
+            ds_p->sil_bottom_height = FIXED_MAX;
             ds_p->silhouette |= SIL_BOTTOM;
         }
         
@@ -1932,7 +1932,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
 	    // backsector above frontsector
             ds_p->spr_topclip = screenheightarray;
-            ds_p->sil_top_height = MININT;
+            ds_p->sil_top_height = FIXED_MIN;
             ds_p->silhouette |= SIL_TOP;
         }
 
@@ -1944,13 +1944,13 @@ void R_StoreWallRange( int   start, int   stop)
           if (doorclosed || backsector->ceilingheight<=frontsector->floorheight)
           {
               ds_p->spr_bottomclip = negonearray;
-              ds_p->sil_bottom_height = MAXINT;
+              ds_p->sil_bottom_height = FIXED_MAX;
               ds_p->silhouette |= SIL_BOTTOM;
           }
           if (doorclosed || backsector->floorheight>=frontsector->ceilingheight)
           {                   // killough 1/17/98, 2/8/98
               ds_p->spr_topclip = screenheightarray;
-              ds_p->sil_top_height = MININT;
+              ds_p->sil_top_height = FIXED_MIN;
               ds_p->silhouette |= SIL_TOP;
           }
         }
@@ -2550,13 +2550,13 @@ void R_StoreWallRange( int   start, int   stop)
     {
         ds_p->silhouette |= SIL_TOP;
         // midtexture, 0=no-texture, otherwise valid
-        ds_p->sil_top_height = sidedef->midtexture ? MININT: MAXINT;
+        ds_p->sil_top_height = sidedef->midtexture ? FIXED_MIN: FIXED_MAX;
     }
     if (maskedtexture && !(ds_p->silhouette&SIL_BOTTOM))
     {
         ds_p->silhouette |= SIL_BOTTOM;
         // midtexture, 0=no-texture, otherwise valid
-        ds_p->sil_bottom_height = sidedef->midtexture ? MAXINT: MININT;
+        ds_p->sil_bottom_height = sidedef->midtexture ? FIXED_MAX: FIXED_MIN;
     }
     ds_p++;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 842 2011-07-08 21:50:19Z wesleyjohnson $
+// $Id: r_things.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -716,7 +716,7 @@ void R_ClearSprites (void)
     vissprite_last = &vissprites[vspr_max];
     vissprite_p = vissprites;  // first free vissprite
     vsprsortedhead.next = vsprsortedhead.prev = &vsprsortedhead;  // init sorted
-    vsprsortedhead.scale = MAXINT;  // very near, so it is rejected in farthest search
+    vsprsortedhead.scale = FIXED_MAX;  // very near, so it is rejected in farthest search
     vissprite_far = & vsprsortedhead;
     vspr_halfcnt = 0; // force vissprite_far init
     vspr_count = 0;  // stat for allocation
@@ -825,7 +825,7 @@ short*          dm_ceilingclip;
 fixed_t         dm_yscale;  // world to fixed_t screen coord
 // draw masked column top and bottom, in fixed_t screen coord.
 fixed_t         dm_top_patch, dm_bottom_patch;
-// window clipping in fixed_t screen coord., set to MAXINT to disable
+// window clipping in fixed_t screen coord., set to FIXED_MAX to disable
 // to draw, require dm_windowtop < dm_windowbottom
 fixed_t         dm_windowtop, dm_windowbottom;
 
@@ -841,7 +841,7 @@ void R_DrawMaskedColumn (column_t* column)
         // calculate unclipped screen coordinates
         //  for post
         top_post_sc = dm_top_patch + dm_yscale*column->topdelta;
-        bottom_post_sc = (dm_bottom_patch == MAXINT) ?
+        bottom_post_sc = (dm_bottom_patch == FIXED_MAX) ?
 	    top_post_sc + dm_yscale*column->length
 	    : dm_bottom_patch + dm_yscale*column->length;
 
@@ -849,7 +849,7 @@ void R_DrawMaskedColumn (column_t* column)
         dc_yl = (top_post_sc+FRACUNIT-1)>>FRACBITS;
         dc_yh = (bottom_post_sc-1)>>FRACBITS;
 
-        if(dm_windowtop != MAXINT && dm_windowbottom != MAXINT)
+        if(dm_windowtop != FIXED_MAX && dm_windowbottom != FIXED_MAX)
         {
 	  // screen coord. where +y is down screen
           if(dm_windowtop > top_post_sc)
@@ -967,7 +967,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     texcol_frac = vis->startfrac;
     dm_yscale = vis->scale;
     dm_top_patch = centeryfrac - FixedMul(dc_texturemid,dm_yscale);
-    dm_windowtop = dm_windowbottom = dm_bottom_patch = MAXINT; // disable
+    dm_windowtop = dm_windowbottom = dm_bottom_patch = FIXED_MAX; // disable
 
     for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, texcol_frac += vis->xiscale)
     {

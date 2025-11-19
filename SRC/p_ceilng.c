@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_ceilng.c 618 2010-03-23 21:14:17Z wesleyjohnson $
+// $Id: p_ceilng.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -324,7 +324,7 @@ int  EV_DoCeiling ( line_t* line, ceiling_e type )
           case instantRaise:
             ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
             ceiling->direction = 1;
-            ceiling->speed = MAXINT/2; // Go too fast and you'll cause problems...
+            ceiling->speed = FIXED_MAX/2; // Go too fast and you'll cause problems...
             break;
 
           default:

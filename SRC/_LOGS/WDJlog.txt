@@ -2050,3 +2050,23 @@ Team_name[] was array of ptrs to const strings, and the const strings
 cannot be written.  Created basic team structure, with name.
 Only basic functions for team name for now, but can become a dynamic list.
 
+*** w79_deathmatch_spawn
+patchfile = w79_deathmatch_spawn.patch
+- committed revision 889   by wesley johnson
+Fix bug 1095897.
+Players spawn in deathmatch on other players, and get locked.
+Tests for this were in code, but failed because player corpse does not have
+MF_SOLID set, thus things check was skipped.
+Must temporarily set MF_SOLID to do CheckPosition test.
+Changed player corpse to honor cv_solidcorpse setting.
+Set MF_SOLID on solid player corpse.
+
+*** w79_FIXED_MAX
+patchfile = w79_fixed_max.patch
+- committed revision 890   by wesley johnson
+Use of MAXINT on 32 bit fixed_t variables is not safe on 64 bit machines.
+Define a FIXED_MAX and FIXED_MIN that are used as the max and min
+of fixed_t variables.
+These can be maintained according to the size of fixed_t.
+Change all used of MAXINT with fixed_t vars to use FIXED_MAX and FIXED_MIN.
+

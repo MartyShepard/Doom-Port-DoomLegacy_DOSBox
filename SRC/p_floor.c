@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 852 2011-09-02 17:49:47Z wesleyjohnson $
+// $Id: p_floor.c 890 2011-12-26 18:25:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -610,7 +610,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
 
           case raiseToTexture:
           {
-              int       minsize = MAXINT;
+              fixed_t   minsize = FIXED_MAX;
               side_t*   side;
 
               if (boomsupport) minsize = 32000<<FRACBITS; //SoM: 3/6/2000: ???
@@ -681,7 +681,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
           case instantLower:
             mfloor->direction = -1;
             mfloor->sector = sec;
-            mfloor->speed = MAXINT/2; // Go too fast and you'll cause problems...
+            mfloor->speed = FIXED_MAX/2; // Go too fast and you'll cause problems...
             mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
             break;
           default:
