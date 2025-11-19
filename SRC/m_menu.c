@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 877 2011-11-01 00:16:14Z wesleyjohnson $
+// $Id: m_menu.c 886 2011-12-18 03:57:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -309,7 +309,7 @@ static void    (*edit_done_callback)(void) = NULL;  // call upon edit done
 typedef struct
 {
 #ifdef SAVEGAME99
-    byte  savegameid;	// 0..99
+    byte  savegameid;	// 0..99, else invalid
 #endif
     char  desc[SAVESTRINGSIZE];
     char  levtime[SAVEGAME_MTLEN];
@@ -3113,7 +3113,7 @@ void M_Savegame_scroll (int amount)
 // delete_callback
 void M_Savegame_delete (int ch)
 {
-    if( ch=='y' && (savegamedisp[slotindex].savegameid < 99) )
+    if( ch=='y' && (savegamedisp[slotindex].savegameid <= 99) )
     {
         char savename[256];
         G_Savegame_Name( savename, savegamedisp[slotindex].savegameid );
@@ -3331,6 +3331,8 @@ void M_SaveSelect(int choice)
 #else   
     slotindex = choice;  // line being edited  0..5
 #endif
+    if( savegamedisp[slotindex].savegameid > 99 )
+        return;
     // clear out EMPTY STRING and other err msgs
     if ( LoadGameMenu[slotindex].status != 1 )  // invalid name
         savegamedisp[slotindex].desc[0] = 0;

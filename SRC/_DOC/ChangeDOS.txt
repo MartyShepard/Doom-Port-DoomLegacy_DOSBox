@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00886 ]: w79 savegame limited to 99
 [00885 ]: w79 demo monster friction
 [00884 ]: w79 demo ctrl
 [00883 ]: w79 DEH hashed text lookup

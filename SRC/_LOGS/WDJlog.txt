@@ -2030,4 +2030,9 @@ patchfile = w79_demo_friction.patch
 Attempt to fix demos to record and honor monster friction settings.
 Older demos need to use MBF monster friction or Doom no friction.
 
+*** w79_save_limit_99
+patchfile = w79_save_limit_99.patch
+- committed revision 886   by wesley johnson
+Prevent savegames over 99.  Would crash on load.
+Was missing explicit check.
 
