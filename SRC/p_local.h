@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 881 2011-12-18 03:50:09Z wesleyjohnson $
+// $Id: p_local.h 887 2011-12-18 04:03:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -222,7 +222,7 @@ extern consvar_t cv_cam_dist;
 extern consvar_t cv_cam_height;
 extern consvar_t cv_cam_speed;
 
-extern fixed_t JUMPGRAVITY;
+extern fixed_t jumpgravity;  // variable by fragglescipt
 
 
 void   P_ResetCamera (player_t* player);

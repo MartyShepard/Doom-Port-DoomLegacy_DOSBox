@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 885 2011-12-18 03:56:44Z wesleyjohnson $
+// $Id: g_game.c 887 2011-12-18 04:03:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1017,7 +1017,7 @@ void G_DoLoadLevel (boolean resetplayer)
     // (should be in resetplayer 'if'?)
     fadealpha = 0;
     extramovefactor = 0;
-    JUMPGRAVITY = (6*FRACUNIT/NEWTICRATERATIO);
+    jumpgravity = (6*FRACUNIT/NEWTICRATERATIO);  // re-init
     consoleplayer_ptr->locked = false;
 
     if (wipegamestate == GS_LEVEL)

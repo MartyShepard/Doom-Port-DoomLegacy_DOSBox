@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 884 2011-12-18 03:55:38Z wesleyjohnson $
+// $Id: t_func.c 887 2011-12-18 04:03:46Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -1195,7 +1195,7 @@ void SF_PlayerProperty()
 			return;
 
 		case 1:
-			JUMPGRAVITY = intvalue(t_argv[1]) * FRACUNIT / NEWTICRATERATIO;
+			jumpgravity = intvalue(t_argv[1]) * FRACUNIT / NEWTICRATERATIO;
 			return;
 
 		case 2:

@@ -2036,3 +2036,9 @@ patchfile = w79_save_limit_99.patch
 Prevent savegames over 99.  Would crash on load.
 Was missing explicit check.
 
+*** w79_jumpgravity
+patchfile = w79_jumpgravity.patch
+- committed revision 887   by wesley johnson
+JUMPGRAVITY is variable by fragglescript, no longer a macro.
+Change it to jumpgravity.
+
