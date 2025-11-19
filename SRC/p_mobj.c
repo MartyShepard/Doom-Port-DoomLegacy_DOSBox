@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 860 2011-09-17 17:50:44Z wesleyjohnson $
+// $Id: p_mobj.c 889 2011-12-21 21:56:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1888,7 +1888,6 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 
     z = ONFLOORZ;
 
-#if 1
 #ifdef VOODOO_DOLL
     // [WDJ] If there is already an mobj for this player, then it is the
     // zombie of a player.  It can be made corpse or removed.
@@ -1901,7 +1900,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 	    if( cv_solidcorpse.value )
 	    { 
 	        // convert to corpse
-	        p->mo->flags |= MF_CORPSE;
+	        p->mo->flags |= MF_CORPSE|MF_SOLID;
 	        p->mo->player = NULL;  // no voodoo, zombie
 	    }
 	    else
@@ -1911,7 +1910,6 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 	}
     }
 #endif   
-#endif
     mobj = P_SpawnMobj(x, y, z, MT_PLAYER);
     //SoM:
     mthing->mobj = mobj;

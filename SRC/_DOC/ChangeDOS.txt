@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00889 ]: w79 deathmatch spawn stuck
 [00888 ]: w79 team name struct
 [00887 ]: w79 jumpgravity
 [00886 ]: w79 savegame limited to 99

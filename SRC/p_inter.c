@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 795 2011-02-24 22:22:52Z wesleyjohnson $
+// $Id: p_inter.c 889 2011-12-21 21:56:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1771,7 +1771,8 @@ void P_KillMobj ( mobj_t*       target,
         if (!source)
             target->player->frags[target->player-players]++;
 
-        target->flags &= ~MF_SOLID;                     // does not block
+        if (!cv_solidcorpse.value)
+            target->flags &= ~MF_SOLID;                     // does not block
         target->flags2 &= ~MF2_FLY;
         target->player->powers[pw_flight] = 0;
         target->player->powers[pw_weaponlevel2] = 0;
