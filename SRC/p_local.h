@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 852 2011-09-02 17:49:47Z wesleyjohnson $
+// $Id: p_local.h 881 2011-12-18 03:50:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -175,7 +175,7 @@ extern consvar_t  cv_voodoo_mode;
 typedef enum {
    VM_vanilla, VM_multispawn, VM_target, VM_auto
 } voodoo_mode_e;
-voodoo_mode_e  voodoo_mode;
+extern voodoo_mode_e  voodoo_mode;
 extern player_t *  spechit_player; // last player to trigger switch or linedef
 #endif
 
@@ -331,8 +331,8 @@ void    P_DelSeclist(msecnode_t *);
 void    P_CreateSecNodeList(mobj_t*,fixed_t,fixed_t);
 void    P_Initsecnode( void );
 
-fixed_t  got_friction;
-int      got_movefactor;  // return values of P_GetFriction and P_GetMoveFactor
+extern fixed_t  got_friction;
+extern int      got_movefactor;  // return values of P_GetFriction and P_GetMoveFactor
 fixed_t P_GetFriction( const mobj_t * mo );
 int     P_GetMoveFactor(mobj_t* mo);
 

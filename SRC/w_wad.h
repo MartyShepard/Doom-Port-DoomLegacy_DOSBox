@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: w_wad.h 881 2011-12-18 03:50:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -81,7 +81,7 @@ typedef void GlidePatch_t;
 
 
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
-boolean lump_read;
+extern boolean lump_read;
 
 // ==============================================================
 //               WAD FILE STRUCTURE DEFINITIONS

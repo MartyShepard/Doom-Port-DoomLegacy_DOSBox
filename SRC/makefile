@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 871 2011-11-01 00:00:18Z wesleyjohnson $
+# $Id: Makefile 881 2011-12-18 03:50:09Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2011 by Doom Legacy Team.
@@ -373,7 +373,10 @@ endif
 
 CFLAGS += -ffast-math -fno-strict-aliasing $(OPTS)
 
-
+ifdef MAC
+else
+  LDFLAGS += -Xlinker --warn-common
+endif
 
 SNDSERV_EXTRAFLAGS:=
 ifdef HAVE_ESD
@@ -555,7 +558,6 @@ $(BIN)/$(EXENAME): $(O) $(OBJS) $(O)/i_main.o versionstring
 	@echo Linking...
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
 	-o $(BIN)/$(EXENAME) $(LIBS)
-
 
 
 

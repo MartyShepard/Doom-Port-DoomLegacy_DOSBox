@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 860 2011-09-17 17:50:44Z wesleyjohnson $
+// $Id: p_fab.c 882 2011-12-18 03:52:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -249,7 +249,7 @@ void P_SetTranslucencies (void)
         {
 	 case TE_off:  // reset translucent
 	    break;
-	 case TE_all:  // independent of info MF_TRANSPARENT
+	 case TE_all:  // independent of info MF_TRANSLUCENT
 	    tr_enable = true;
 	    break;
 	 case TE_boom: // ignore DoomLegacy extensions

@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00882 ]: w79 DEH flags
+					DOS: This Fixed DEH/WAD Loading Support svn 00859
+					
+[00881 ]: w79 linker duplicate symbols
 [00880*]: w78 WDJlog
 [00879*]: w78 Make_Win32
 [00878*]: w78 legacy whatsnew docs

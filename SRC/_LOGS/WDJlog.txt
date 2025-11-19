@@ -1984,3 +1984,22 @@ Update legacy.html and whatsnew.html docs to svn877.
 *** w78_Make_win32
 - committed revision 879   by wesley johnson
 Doc file on how to make DoomLegacy on Win32 system.
+
+*** w79_duplicate_symbols
+patchfile = w79_duplicate_symbols.patch
+- committed revision 881   by wesley johnson
+Working on Mac has revealed that our linker is not showing us duplicate
+symbols and is combining them.
+Added linker flag to give warning when duplicate symbol.
+Fixed some vars that should be static.
+Fixed some header variable declares that were not extern.
+
+*** w79_deh_flags
+patchfile = w79_deh_flags.patch
+- committed revision 882   by wesley johnson
+The previous BEX code really messed up the DEH flags code, such that in phobiata
+the player could not slide along the walls.
+This fixes the DEH and BEX flags logic so that DEH changes only the
+flags it intends to and clears flag2 bits (like MF2_SLIDE) only when it
+shows that it is changing flag2 bits.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: dehacked.c 882 2011-12-18 03:52:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -218,7 +218,8 @@ boolean  filename_reject( char * src, int maxlen )
 	 // legal values, all else is illegal
 	 if(! (( ch >= 'A' && ch <= 'Z' )
 	    || ( ch >= 'a' && ch <= 'z' )
-	    || ( ch >= '0' && ch <= '9' ) ))
+	    || ( ch >= '0' && ch <= '9' )
+	    || ( ch == '_' ) ))
 	    goto reject;
      }
      return false; // no reject
@@ -421,12 +422,12 @@ int flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_
 int raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
 // [WDJ] BEX flags 9/10/2011
-typedef enum { BF1, BF2, BF2x, BFmf=0x80 } bex_flags_ctrl_e;
+typedef enum { BFexit, BF1, BF2, BF2x } bex_flags_ctrl_e;
 
 typedef struct {
-    char * name;
-    byte   ctrl; // bex_flags_ctrl_e
-    uint32_t flagval;
+    char *    name;
+    bex_flags_ctrl_e  ctrl;
+    uint32_t  flagval;
 } flag_name_t;
 
 // [WDJ] From boomdeh.txt, and DoomLegacy2.0
@@ -446,7 +447,7 @@ flag_name_t  BEX_flag_name_table[] =
   {"PICKUP",     BF1, MF_PICKUP }, // Can/will pick up items. (players)
   {"NOCLIP",     BF1, MF_NOCLIP | MF_NOCLIPTHING }, // Does not clip against lines or Actors.
   // two slide bits, set them both
-  {"SLIDE",      BF1|BFmf, MF_SLIDE }, // Player: keep info about sliding along walls.
+  {"SLIDE",      BF1, MF_SLIDE }, // Player: keep info about sliding along walls.
   {"SLIDE",      BF2, MF2_SLIDE }, // Slides against walls
 
   {"FLOAT",      BF1, MF_FLOAT }, // Active floater, can move freely in air (cacodemons etc.)
@@ -531,7 +532,7 @@ flag_name_t  BEX_flag_name_table[] =
 //  {"ISMONSTER", BFC_x, MF_MONSTER },
 //  {"ACTIVATEMCROSS", BFC_x, MF2_MCROSS }, // Can activate SPAC_MCROSS
 //  {"ACTIVATEPCROSS", BFC_x, MF2_PCROSS }, // Can activate SPAC_PCROSS
-  {NULL, 0, 0} // terminator
+  {NULL, BFexit, 0} // terminator
 };
 
 //#define CHECK_FLAGS2_DEFAULT
@@ -563,10 +564,10 @@ static void readthing(MYFILE *f, int deh_thing_id )
   mobjinfo_t *  mip = & mobjinfo[ deh_thing_id - 1 ];
   char s[MAXLINELEN];
   char *word;
-  int value;
+  int value, flags1, flags2;
 
   do{
-    if(myfgets(s,sizeof(s),f)!=NULL)
+    if(myfgets(s,sizeof(s),f)!=NULL)  // get line
     {
       if(s[0]=='\n') break;
       value=searchvalue(s);
@@ -574,27 +575,26 @@ static void readthing(MYFILE *f, int deh_thing_id )
 
       if(!strcasecmp(word,"Bits"))
       {
-#ifdef CHECK_FLAGS2_DEFAULT
-          boolean flags2_default = 1; // default for flags2
-#endif
+	  boolean flags2x_hit = 0; // doomlegacy extensions hit
 	  flag_name_t * fnp; // BEX flag names ptr
-	  // total replacement of all flag bits
-	  mip->flags = 0;
-	  mip->flags2 = 0;
+
+	  flags1 = flags2 = 0;
 	  for(;;)
 	  {
 	      word = strtok(NULL, " +|\t=\n");
-	      if( word == NULL ) break;
-	      if( word[0] == '\n' ) break;
+	      if( word == NULL )  goto set_flags;
+	      if( word[0] == '\n' )   goto set_flags;
+	      // detect bits by integer value
 	      if( isdigit( word[0] ) )
 	      {
-		  value = atoi(word);  // numeric entry
-		  if( value & MF_TRANSLUCENT )
+		  // old style integer value, flags only (not flags2)
+		  flags1 = atoi(word);  // numeric entry
+		  if( flags1 & MF_TRANSLUCENT )
 		  {
 		      // Boom bit defined in boomdeh.txt
 		      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
 		      fprintf(stderr, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
-		      if( value & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
+		      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
 		      {
 			  // assume TRANSLUCENT, check for known exceptions
 			  fprintf(stderr, "MF_TRANSLUCENT\n");
@@ -602,56 +602,67 @@ static void readthing(MYFILE *f, int deh_thing_id )
 		      else
 		      {
 			  // assume FLOORHUGGER, check for known exceptions
-			  value &= ~MF_TRANSLUCENT;
+			  flags1 &= ~MF_TRANSLUCENT;
 			  mip->flags2 |= MF2_FLOORHUGGER;
 			  fprintf(stderr, "MF_FLOORHUGGER\n");
 		      }
 		  }
-		  mip->flags |= value; // we are still using same flags bit order
+		  mip->flags = flags1; // we are still using same flags bit order
 		  flags_valid_deh = true;
-		  continue;
+		  goto next_line;
 	      }
 	      // handle BEX flag names
-#ifdef CHECK_FLAGS2_DEFAULT
-	      flags2_default = 1;
-#endif
-	      for( fnp = &BEX_flag_name_table[0]; fnp; fnp++ )
+	      for( fnp = &BEX_flag_name_table[0]; ; fnp++ )
 	      {
-#if defined( __DJGPP__ )
-              // Fixed Crash in DOS.
-              if (fnp->name == NULL) break;
-#endif
+		  if(fnp->name == NULL)  goto name_unknown;
 		  if(!strcasecmp( word, fnp->name ))  // find name
 		  {
-		      switch( fnp->ctrl & ~BFmf)
+		      switch( fnp->ctrl )
 		      {
 		       case BF1:
-		         mip->flags |= value;
+		         flags1 |= fnp->flagval;
 			 break;
 		       case BF2x: // DoomLegacy extension BEX name
-#ifdef CHECK_FLAGS2_DEFAULT
-			 flags2_default = 0;
-#endif
+			 flags2x_hit = 1;
 		       case BF2: // standard name that happens to be MF2
-		         mip->flags2 |= value;
+		         flags2 |= fnp->flagval;
 			 break;
+		       default:
+			 goto name_unknown;
 		      }
-		      flags_valid_deh = true;
-		      // unless multiple flag set for a keyword
-		      if( ! (fnp->ctrl & BFmf) )
-		         continue; // next word
+		      // if next entry is same keyword then process it too
+		      if( (fnp[1].name != fnp[0].name) )
+		         goto next_word; // done with this word
+		      // next entry is same word, process it too
 		  }
 	      }
+	    name_unknown:
 	      deh_error("Bits name unknown: %s\n", word);
+	      // continue with next keyword
+	    next_word:
+	      continue;
+	  }
+	
+        set_flags:
+	  mip->flags = flags1;
+	  // clear std flags in flags2
+	  mip->flags2 &= ~(MF2_SLIDE|MF2_FLOORBOUNCE);
+	  if( flags2x_hit )
+	  { 
+	      // clear extension flags2 only if some extension names appeared
+	      mip->flags2 = 0;
 	  }
 #ifdef CHECK_FLAGS2_DEFAULT
-	  // Unless explicitly used BF2x bit, then put in default bits
-	  // Avoid by using MF2CLEAR
-	  if( flags2_default )
+	  else
 	  {
-	      mip->flags2 |= flags2_default_value;
+	      // Unless explicitly used BF2x bit, then put in default bits
+	      // Avoid by using MF2CLEAR
+	      mip->flags2 = flags2_default_value;
 	  }
 #endif	 
+	  mip->flags2 |= flags2;
+	  flags_valid_deh = true;
+	next_line:
 	  continue; // next line
       }
 
