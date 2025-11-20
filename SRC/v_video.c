@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 910 2012-03-05 15:07:21Z wesleyjohnson $
+// $Id: v_video.c 911 2012-03-05 15:08:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1680,16 +1680,12 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 #ifdef ENABLE_DRAW32
      case DRAW32:
         // assume ARGB format
-        alpha = 0xFF000000;
-#endif
-#if defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
-     case DRAW24:
-        // _RGB
         mask = 0x007F7F7F;  // alpha unchanged
-//        green_tint = 0x00003F00; // 00111111
+        alpha = 0xFF000000;
         green_tint = 0x00003800;   // 00111000
+        goto fade_loop;
 #endif
-#ifdef ENABLE_DRAWEXT
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW32 )
      fade_loop:
         for (y = y1; y < y2; y++)
         {
@@ -1703,6 +1699,22 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
         }
         break;
 #endif       
+#ifdef ENABLE_DRAW24
+     case DRAW24:
+        // RGB
+        for (y = y1; y < y2; y++)
+        {
+            pixel24_t * p24 = (pixel24_t*)( screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp) );
+            for (x = w4; x > 0; x--)
+            { 
+	        p24->b >>= 1; // blue
+	        p24->g = ((uint16_t)(p24->g) + 0x38) >> 1; // green
+	        p24->r >>= 1; // red
+	        p24 ++;
+            }
+        }
+        break;
+#endif
      default:
         break;
     }

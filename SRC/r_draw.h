@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_draw.h 912 2012-03-05 15:09:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -217,6 +217,40 @@ void    R_DrawTranslucentSpan_16(void);
 void    R_DrawFogSpan_16(void);
 void    R_DrawFogColumn_16(void);
 
+
+// ------------------
+// 24bpp DRAWING CODE
+// ------------------
+
+void    R_DrawColumn_24 (void);
+void    R_DrawSkyColumn_24 (void);
+void    R_DrawFuzzColumn_24 (void);
+void    R_DrawTranslucentColumn_24 (void);
+void    R_DrawTranslatedColumn_24 (void);  // skin
+void    R_DrawSpan_24 (void);
+
+void    R_DrawTranslatedTranslucentColumn_24 (void);  // skin translucent
+void    R_DrawShadeColumn_24(void);
+void    R_DrawTranslucentSpan_24(void);
+void    R_DrawFogSpan_24(void);
+void    R_DrawFogColumn_24(void);
+
+// ------------------
+// 32bpp DRAWING CODE
+// ------------------
+
+void    R_DrawColumn_32 (void);
+void    R_DrawSkyColumn_32 (void);
+void    R_DrawFuzzColumn_32 (void);
+void    R_DrawTranslucentColumn_32 (void);
+void    R_DrawTranslatedColumn_32 (void);  // skin
+void    R_DrawSpan_32 (void);
+
+void    R_DrawTranslatedTranslucentColumn_32 (void);  // skin translucent
+void    R_DrawShadeColumn_32(void);
+void    R_DrawTranslucentSpan_32(void);
+void    R_DrawFogSpan_32(void);
+void    R_DrawFogColumn_32(void);
 
 // =========================================================================
 #endif  // __R_DRAW__

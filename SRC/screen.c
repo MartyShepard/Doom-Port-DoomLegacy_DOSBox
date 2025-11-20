@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: screen.c 912 2012-03-05 15:09:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -240,6 +240,7 @@ void SCR_SetMode (void)
         mask_11100 = 0xC718;  // 11000 111000 11000 mask out the lowest bits of R,G,B
 
      highcolor_common:
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
         CONS_Printf ("using highcolor mode\n");
 
         colfunc = basecolfunc = R_DrawColumn_16;
@@ -258,12 +259,53 @@ void SCR_SetMode (void)
         skydrawerfunc[0] = R_DrawColumn_16;
         skydrawerfunc[1] = R_DrawSkyColumn_16;
         break;
+#else
+        goto bpp_err;
+#endif
      case 24:
         vid.drawmode = DRAW24;
-        goto bpp_err;
+#ifdef ENABLE_DRAW24
+        colfunc = basecolfunc = R_DrawColumn_24;
+        skincolfunc = R_DrawTranslatedColumn_24;
+        transcolfunc = R_DrawTranslucentColumn_24;
+	shadecolfunc = R_DrawShadeColumn_24;
+        fogcolfunc = R_DrawFogColumn_24;
+
+        spanfunc = basespanfunc = R_DrawSpan_24;
+        fogspanfunc = R_DrawFogSpan_24;
+        transspanfunc = R_DrawTranslucentSpan_24;
+
+        skintranscolfunc = R_DrawTranslatedTranslucentColumn_24;
+
+        // FIXME: quick fix to think more..
+        skydrawerfunc[0] = R_DrawColumn_24;
+        skydrawerfunc[1] = R_DrawSkyColumn_24;
+        break;
+#else
+         goto bpp_err;
+#endif
      case 32:
         vid.drawmode = DRAW32;
+#ifdef ENABLE_DRAW32
+        colfunc = basecolfunc = R_DrawColumn_32;
+        skincolfunc = R_DrawTranslatedColumn_32;
+        transcolfunc = R_DrawTranslucentColumn_32;
+	shadecolfunc = R_DrawShadeColumn_32;
+        fogcolfunc = R_DrawFogColumn_32;
+
+        spanfunc = basespanfunc = R_DrawSpan_32;
+        fogspanfunc = R_DrawFogSpan_32;
+        transspanfunc = R_DrawTranslucentSpan_32;
+
+        skintranscolfunc = R_DrawTranslatedTranslucentColumn_32;
+
+        // FIXME: quick fix to think more..
+        skydrawerfunc[0] = R_DrawColumn_32;
+        skydrawerfunc[1] = R_DrawSkyColumn_32;
+        break;
+#else
         goto bpp_err;
+#endif
      default:
         goto bpp_err;
     }
@@ -297,6 +339,16 @@ void CV_Fuzzymode_OnChange()
    case DRAW16:
      fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
      break;
+#ifdef ENABLE_DRAW24		 
+   case DRAW24:
+     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_24 : R_DrawTranslucentColumn_24;
+     break;
+#endif
+#ifdef ENABLE_DRAW32
+   case DRAW32:
+     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_32 : R_DrawTranslucentColumn_32;
+     break;
+#endif		 
   }
 }
 

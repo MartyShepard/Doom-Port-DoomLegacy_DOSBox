@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00911 ]: w80 draw24 create functions
 [00910 ]: w80 draw endian fix
 [00909*]: w80 SDL video error
 [00908 ]: w80 r_draw misc
