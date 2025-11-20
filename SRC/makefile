@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 881 2011-12-18 03:50:09Z wesleyjohnson $
+# $Id: Makefile 908 2012-03-05 15:05:10Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2011 by Doom Legacy Team.
@@ -653,6 +653,8 @@ else
 endif
 
 $(O)/*.o : doomdef.h
+
+$(O)/r_draw.o : r_draw.c r_draw8.c r_draw16.c r_draw24.c r_draw32.c
 
 include ../dep/main1.dep
 include ../dep/main2.dep

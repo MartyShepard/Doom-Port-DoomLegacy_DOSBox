@@ -2256,3 +2256,17 @@ Has many alternative code sections for further experimentation.
 patchfile = w80_fade16.patch
 - committed revision 906   by wesley johnson
 Fix screen fade effects for 15/16 bpp drawing.
+
+*** w80_testbpp_8
+patchfile = w80_testbpp_8.patch
+- committed revision 907   by wesley johnson
+Explicit reject of -bpp 8 -testbpp.
+
+*** w80_r_draw
+patchfile = w80_r_draw.patch
+- committed revision 908   by wesley johnson
+Makefile must compile r_draw.c anytime any r_draw8.c, r_draw16.c,
+r_draw24.c or r_draw32.c is modified.
+Add empty r_draw24.c and r_draw32.c.
+Fuzztable offsets needed to be multiple of pixel size.
+

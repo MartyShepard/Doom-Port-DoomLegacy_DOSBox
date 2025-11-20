@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_draw.c 908 2012-03-05 15:05:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -225,6 +225,7 @@ void R_RecalcFuzzOffsets (void)
 //    int offset = 1; // Doom original
 //    int offset = vid.width // as in ver 1.42 (which seems wrong)
     int offset = (((vid.width * 2) / BASEVIDWIDTH) + 1)/2;  // proportional rounded
+    offset *= vid.bytepp;
     for (i=0;i<FUZZTABLE;i++)
     {
         fuzzoffset[i] = (fuzzoffset[i] < 0) ? -offset : offset;
@@ -823,5 +824,23 @@ void R_DrawColumnShadowed(void)
 
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
 #include "r_draw16.c"
+#endif
+
+
+// ==========================================================================
+//                   INCLUDE 24bpp DRAWING CODE HERE
+// ==========================================================================
+
+#ifdef ENABLE_DRAW24
+#include "r_draw24.c"
+#endif
+
+
+// ==========================================================================
+//                   INCLUDE 32bpp DRAWING CODE HERE
+// ==========================================================================
+
+#ifdef ENABLE_DRAW32
+#include "r_draw32.c"
 #endif
 
