@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: screen.h 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -125,10 +125,10 @@ typedef struct viddef_s
  // [WDJ] signed width, height for easy math, (draw errors if unsigned)
     int         width;          // PIXELS per scanline
     int         height;
+    int         bytepp;          // BYTES per pixel: 1=256color, 2, 4
     int         modenum;         // vidmode num indexes videomodes list
     byte        drawmode;        // drawing mode, optimized for tables and switch stmts
     byte        bitpp;		 // BITS per pixel: 8, 15, 16, 24, 32
-    byte        bytepp;          // BYTES per pixel: 1=256color, 2, 4
     byte        numpages;        // always 1, PAGE FLIPPING TODO!!!
 //    byte        windowed;        // windowed or fullscreen mode ?
     byte        fullscreen;      // windowed or fullscreen mode ?

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 877 2011-11-01 00:16:14Z wesleyjohnson $
+// $Id: r_main.c 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -835,9 +835,9 @@ void R_ExecuteSetViewSize (void)
 
     // status bar overlay at viewsize 11
     st_overlay = (cv_viewsize.value==11);
-	//DarkWolf95: Support for Chex Quest
-	if (gamemode == chexquest1)
-		st_overlay = 0;  //don't allow overlay status bar in Chex Quest
+    //DarkWolf95: Support for Chex Quest
+    if (gamemode == chexquest1)
+       st_overlay = 0;  //don't allow overlay status bar in Chex Quest
 
     // clamp detail level (actually ignore it, keep it for later who knows)
     if (setdetail)
@@ -1245,14 +1245,16 @@ void R_RotateBuffere (void)
     byte    bh,bw;
 //    int     modulo;
     byte*   src,*srca,*srcr;
-    byte*   dest,*destr;
+    byte*   dest,*destr;  // within screen buffer
     int     i,dl;
 
 
 #define modulo 200  //= rdraw_viewheight;
 
+    // [WDJ] yhlookup screen buffer is width x height, not padded
+    // This is not directly compatible with any screen buffer
     srcr  = yhlookup[0];
-    destr = ylookup[0] + columnofs[0];
+    destr = ylookup[0] + columnofs[0];  // screen[0] buffer
 
     bh = rdraw_viewwidth / CACHELINES;
     while (bh--)
@@ -1272,7 +1274,7 @@ void R_RotateBuffere (void)
                  *dest++ = *(src-3*modulo);
                  src -= 4*modulo;
              }
-             dest = (dest - CACHELINES) + vid.width;
+             dest = (dest - CACHELINES) + vid.ybytes;
         }
         srcr  -= (CACHELINES*rdraw_viewheight);
         destr += CACHELINES;

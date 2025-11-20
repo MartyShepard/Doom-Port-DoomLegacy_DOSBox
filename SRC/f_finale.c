@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: f_finale.c 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -652,35 +652,35 @@ void F_CastDrawer (void)
 // F_DrawPatchCol
 //
 // [WDJ] patch is already endian fixed
-static void F_DrawPatchCol (int x, patch_t* patch, int col )
+// Called by F_BunnyScroll
+static void F_DrawPatchCol (int sx, patch_t* patch, int col )
 {
     column_t*   column;
     byte*       source;
+    byte*       desttop;  // within screen buffer
     byte*       dest;
-    byte*       desttop;
     int         count;
 
+    // [WDJ] Draw for all bpp, bytepp, and padded lines.
     column = (column_t *)((byte *)patch + patch->columnofs[col]);
-    desttop = screens[0]+x*vid.dupx;
+    desttop = screens[0] + (sx * vid.dupx * vid.bytepp);
 
     // step through the posts in a column
     while (column->topdelta != 0xff )
     {
         source = (byte *)column + 3;
-        dest = desttop + column->topdelta*vid.width;
+        dest = desttop + (column->topdelta * vid.ybytes);
         count = column->length;
 
         while (count--)
         {
             int dupycount=vid.dupy;
-
             while(dupycount--)
             {
                 int dupxcount=vid.dupx;
-                while(dupxcount--)
-                     *dest++ = *source;
-
-                dest += (vid.width-vid.dupx);
+                while(dupxcount--)  // 3, 2, 1, 0
+                     V_DrawPixel( dest, dupxcount, *source );
+                dest += vid.ybytes;
             }
             source++;
         }
@@ -695,7 +695,7 @@ static void F_DrawPatchCol (int x, patch_t* patch, int col )
 void F_BunnyScroll (void)
 {
     int         scrolled;
-    int         x;
+    int         sx;  // scroll offset
     patch_t*    p1;
     patch_t*    p2;
     char        name[10];
@@ -725,12 +725,12 @@ void F_BunnyScroll (void)
     //faB:do equivalent for hw mode ?
     if (rendermode==render_soft)
     {
-        for ( x=0 ; x<320 ; x++)
+        for ( sx=0 ; sx<320 ; sx++)
         {
-            if (x+scrolled < 320)
-                F_DrawPatchCol (x, p1, x+scrolled);
+            if (sx+scrolled < 320)
+                F_DrawPatchCol (sx, p1, sx+scrolled);
             else
-                F_DrawPatchCol (x, p2, x+scrolled - 320);
+                F_DrawPatchCol (sx, p2, sx+scrolled - 320);
         }
     }
     else

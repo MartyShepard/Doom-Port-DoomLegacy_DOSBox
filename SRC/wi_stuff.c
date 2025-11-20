@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: wi_stuff.c 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -488,7 +488,7 @@ static void WI_slamBackground(void)
     else
     if (rendermode==render_soft) 
     {
-        memcpy(screens[0], screens[1], vid.width * vid.height);
+        memcpy(screens[0], screens[1], vid.screen_size);  // background to display
 #ifdef DIRTY_RECT
         V_MarkRect (0, 0, vid.width, vid.height);
 #endif

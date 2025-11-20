@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: r_draw.c 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -83,6 +83,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "console.h" //Som: Until I get buffering finished
+#include "r_draw.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -214,15 +215,18 @@ static  int fuzzoffset[FUZZTABLE] =
 static  int fuzzpos = 0;     // move through the fuzz table
 
 
-//  fuzzoffsets are dependend of vid width, for optimising purpose
+//  fuzzoffsets are dependent upon vid width, for optimising purpose
 //  this is called by SCR_Recalc() whenever the screen size changes
 //
 void R_RecalcFuzzOffsets (void)
 {
     int i;
+//    int offset = 1; // Doom original
+//    int offset = vid.width // as in ver 1.42 (which seems wrong)
+    int offset = (((vid.width * 2) / BASEVIDWIDTH) + 1)/2;  // proportional rounded
     for (i=0;i<FUZZTABLE;i++)
     {
-        fuzzoffset[i] = (fuzzoffset[i] < 0) ? -vid.width : vid.width;
+        fuzzoffset[i] = (fuzzoffset[i] < 0) ? -offset : offset;
     }
 }
 
@@ -453,11 +457,12 @@ void R_InitTranslationTables (void)
 void R_InitViewBuffer ( int   width,
                         int   height )
 {
-    int         i;
-    int         bytesperpixel = vid.bytepp;
+    // ViewBuffer may be smaller than video or screen buffers
+    int  bytesperpixel = vid.bytepp;  // smaller code
+    int  i;
 
     if (bytesperpixel<1 || bytesperpixel>4)
-        I_Error ("R_InitViewBuffer : wrong bytesperpixel value %d\n",
+        I_Error ("R_InitViewBuffer : Invalid bytesperpixel value %d\n",
                  bytesperpixel);
 
     // Handle resize,
@@ -476,17 +481,20 @@ void R_InitViewBuffer ( int   width,
     else
         viewwindowy = (vid.height-stbarheight-height) >> 1;
 
-    // Precalculate all row offsets.
+    // [WDJ] Table fixed for all bpp, bytepp, and padding
+    // Precalculate all row offsets for screen[0] buffer.
     for (i=0 ; i<height ; i++)
     {
-        ylookup[i] = ylookup1[i] = vid.buffer + (i+viewwindowy)*vid.width*bytesperpixel;
-                     ylookup2[i] = vid.buffer + (i+(vid.height>>1))*vid.width*bytesperpixel; // for splitscreen
+        ylookup[i] = ylookup1[i] = vid.display + (i+viewwindowy)*vid.ybytes;
+                     ylookup2[i] = vid.display + (i+(vid.height>>1))*vid.ybytes; // for splitscreen
     }
         
 
 #ifdef HORIZONTALDRAW
     //Fab 17-06-98
     // create similar lookup tables for horizontal column draw optimisation
+    // [WDJ] assumes screen buffer is width x height, not padded
+    // This is not directly compatible with any screen buffer
 
     // (the first column is the bottom line)
     for (i=0; i<width; i++)
@@ -536,11 +544,10 @@ void R_InitViewBorder (void)
 //
 void R_FillBackScreen (void)
 {
-    byte*       src;
-    byte*       dest;
-    int         x;
-    int         y;
     patch_t*    patch;
+    byte*       src;
+    byte*       dest;  // within video buffer
+    int         x, y;
     int         step,boff; 
     
     //faB: quickfix, don't cache lumps in both modes
@@ -554,20 +561,24 @@ void R_FillBackScreen (void)
 
     // draw pattern around the status bar
     src  = scr_borderflat;
-    dest = screens[1];
+    dest = screens[1];  // background buffer
 
+    // [WDJ] Draw for all bpp, bytepp, and padding
     for (y=0 ; y<vid.height ; y++)
     {
+        // repeatly draw a 64 pixel wide flat
+        dest = screens[1] + (y * vid.ybytes);  // within screen buffer
         for (x=0 ; x<vid.width/64 ; x++)
         {
-            memcpy (dest, src+((y&63)<<6), 64);
-            dest += 64;
+//            memcpy (dest, src+((y&63)<<6), 64);
+	    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
+            dest += (64 * vid.bytepp);
         }
 
         if (vid.width&63)
         {
-            memcpy (dest, src+((y&63)<<6), vid.width&63);
-            dest += (vid.width&63);
+//            memcpy (dest, src+((y&63)<<6), vid.width&63);
+	    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
         }
     }
 
@@ -643,9 +654,10 @@ void R_VideoErase (unsigned ofs, int count)
 //
 void R_DrawViewBorder (void)
 {
-    int         top;
-    int         side;
-    int         ofs;
+    int  top;
+    int  topbytes;
+    int  side;
+    int  ofs;
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
@@ -666,7 +678,7 @@ void R_DrawViewBorder (void)
     /*
     if( (vid.width>ST_WIDTH) && (vid.height!=rdraw_viewheight) )
     {
-        ofs  = (vid.height-stbarheight)*vid.width;
+        ofs  = (vid.height-stbarheight)*vid.ybytes;
         side = (vid.width-ST_WIDTH)>>1;
         R_VideoErase(ofs,side);
 
@@ -682,24 +694,48 @@ void R_DrawViewBorder (void)
     if (rdraw_scaledviewwidth == vid.width)
         return;
    
+    // rdraw_viewheight is the height of the window within the border
     // draw view border
     top  = (vid.height-stbarheight-rdraw_viewheight) >>1;
+    topbytes = top * vid.ybytes;
     side = (vid.width-rdraw_scaledviewwidth) >>1;
 
+    // copy background to display screen
+#if 1
+    // [WDJ] cannot wrap around because some video cards pad the video buffer
+    // copy top
+    R_VideoErase (0, topbytes);
+
+    // copy bottom
+    R_VideoErase ((rdraw_viewheight+top)*vid.ybytes, topbytes);
+
+    //added:05-02-98:simpler using our new VID_Blit routine
+    // copy left side
+    VID_BlitLinearScreen(screens[1]+topbytes, screens[0]+topbytes,
+                         side, rdraw_viewheight, vid.ybytes, vid.ybytes);
+
+    // copy right side
+    ofs = topbytes + ((vid.width-side)*vid.bytepp);
+    VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
+                         side, rdraw_viewheight, vid.ybytes, vid.ybytes);
+
+#else
+    // old, 8bpp, assumes nice buffer and wraps copy to next line, does not work with padded buffer
     // copy top and one line of left side
-    R_VideoErase (0, top*vid.width+side);
+    R_VideoErase (0, topbytes+(side*vid.bytepp));
 
     // copy one line of right side and bottom
-    ofs = (rdraw_viewheight+top)*vid.width-side;
-    R_VideoErase (ofs, top*vid.width+side);
+    ofs = (rdraw_viewheight+top)*vid.ybytes - (side*vid.bytepp);
+    R_VideoErase (ofs, topbytes+(side*vid.bytepp));
 
     // copy sides using wraparound
-    ofs = top*vid.width + vid.width-side;
+    ofs = topbytes + ((vid.width-side)*vid.bytepp);
     side <<= 1;
 
     //added:05-02-98:simpler using our new VID_Blit routine
     VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
-                         side, rdraw_viewheight-1, vid.width, vid.width);
+                         side, rdraw_viewheight-1, vid.ybytes, vid.ybytes);
+#endif
 
 #ifdef DIRTY_RECT
     // useless, old dirty rectangle stuff

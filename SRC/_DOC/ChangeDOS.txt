@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00899 ]: w80 vid finale fixes init fixies
 [00898 ]: w80 vid map fixes console fixes
 [00897 ]: w80 video function fixes
 					DOS: Let Temporary Code in Screens.h NUMSCREENS

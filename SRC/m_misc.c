@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 873 2011-11-01 00:05:40Z wesleyjohnson $
+// $Id: m_misc.c 899 2012-02-29 19:23:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -543,9 +543,24 @@ void M_ScreenShot (void)
     else
 #endif
     {
+// FIXME: 8 bit palette only       
         // munge planar buffer to linear
         linear = screens[2];
         I_ReadScreen (linear);
+       
+        if( vid.ybytes != vid.width )
+        {
+	    // eliminate padding in the buffer
+	    byte *dest, *src;
+	    dest = src = &linear[0];
+	    for( i=1; i<vid.height; i++ )
+	    {
+	        src += vid.ybytes;
+	        dest += vid.widthbytes;
+	        // overlapping copy
+	        memmove(dest, src, vid.width);
+	    }
+        }
 
         // find a file name to save it to
         strcpy(lbmname,"DOOM0000.pcx");
