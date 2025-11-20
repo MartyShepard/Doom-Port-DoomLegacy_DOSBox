@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00906 ]: w80 fade 16bpp
 [00905 ]: w80 vid draw16 minimal
 [00904*]: w80 testbpp option
 [00903*]: w80 vid sdl port

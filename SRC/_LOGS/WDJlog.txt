@@ -2251,3 +2251,8 @@ Fix r_draw16.c so that 15 and 16 bpp draw functions work.
 Create new draw functions for those that were missing.
 Create transparent and fog effects using shift and add of 15 and 16 bpp pixels.
 Has many alternative code sections for further experimentation.
+
+*** w80_fade16
+patchfile = w80_fade16.patch
+- committed revision 906   by wesley johnson
+Fix screen fade effects for 15/16 bpp drawing.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 900 2012-02-29 19:25:00Z wesleyjohnson $
+// $Id: f_wipe.c 906 2012-02-29 19:32:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,7 +55,9 @@ static byte*    wipe_scr;
 
 
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
-static int fade1, fade2;
+#define ENABLE_DRAWEXT
+static int fadecnt;
+static uint16_t  mask1 = 0, mask2 = 0;
 #endif
 
 static
@@ -66,8 +68,21 @@ void wipe_initColorXForm ( void )
     VID_BlitLinearScreen( wipe_scr_start, wipe_scr,
 			  vid.widthbytes, vid.height,
 			  vid.ybytes, vid.ybytes );
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
-    fade2 = 0;
+#ifdef ENABLE_DRAWEXT
+    switch( vid.drawmode )
+    {
+     case DRAW15:
+        mask1 = 0x7C1F;
+        break;
+     case DRAW16:
+        mask1 = 0xF81F;
+        break;
+     default:
+        mask1 = 0x00FF;
+        break;
+    }
+    mask2 = ~mask1;
+    fadecnt = 4;
 #endif
 }
 
@@ -125,6 +140,10 @@ int wipe_doColorXForm ( int ticks )
     static int  slowdown=0;
     boolean     changed = false;
     int y;
+#ifdef ENABLE_DRAWEXT
+    int fade1 = 0, fade2 = 0;
+    uint16_t  mask1_shftd = 0, mask2_shftd = 0;
+#endif
     
     byte* wend;
     byte* w;
@@ -132,38 +151,42 @@ int wipe_doColorXForm ( int ticks )
    
     while(ticks--)
     {
-      // slowdown
-      if(slowdown++) { slowdown=0;  return false; }
-
       // [WDJ] Fade for all bpp, bytepp, and padding
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#ifdef ENABLE_DRAWEXT
       if( vid.drawmode != DRAW8PAL )
       {
-	  if( fade2 >= 64 ) break;  // DONE, changed = false
-	  fade2+=6;
-	  fade1 = 64-fade2;
-	  if( fade1 < 0 )
-	  {
-	      fade1 = 0;
-	      fade2 = 64;
-	  }
-	  changed = true;
+	if( fadecnt++ > 16 ) break;  // DONE, changed = false
+	// proportional fade, multiply odd and even fields separately
+	// Smallest field is 5 bits, so limit shift to 4, otherwise multiply will bleed into next field.
+	fade2 = fadecnt;
+	fade1 = 16-fade2;
+	changed = true;
+	mask1_shftd = mask1 << 4;
+	mask2_shftd = mask2 << 4;
       }
+      else
 #endif
+      {
+	// slowdown the 4 step palette fade
+	if(slowdown++) { slowdown=0;  return false; }
+      }
+
       for( y=0; y<vid.screen_size; y+=vid.ybytes )
       {
 	e = wipe_scr_end + y;
 	w = wipe_scr + y;
 	wend = w + vid.widthbytes;  // end of line
 
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#ifdef ENABLE_DRAWEXT
 	if( vid.drawmode != DRAW8PAL )
         {
 	  while( w < wend )
 	  {
 	    register unsigned int w16 = *(uint16_t*)w;
 	    register unsigned int e16 = *(uint16_t*)e;
-	    *(uint16_t*)w = ((w16*fade1) + (e16*fade2)) >> (6+1);
+ 	    register unsigned int b0 = ((w16&mask1)*fade1) + ((e16&mask1)*fade2);
+	    register unsigned int b1 = ((w16&mask2)*fade1) + ((e16&mask2)*fade2);
+	    *(uint16_t*)w = ( (b0&mask1_shftd) | (b1&mask2_shftd) ) >> 4;
 	    w+=2;
 	    e+=2;
 	  }
@@ -233,7 +256,7 @@ static
 int wipe_doMelt ( int ticks )
 {
     boolean  done = true;
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#ifdef ENABLE_DRAWEXT
     int  cpycnt = vid.bytepp + vid.bytepp;  // 2 pixels
 #endif
     int  meltwidth = vid.width/2;  // melt is 2 pixels at a time
@@ -263,7 +286,7 @@ int wipe_doMelt ( int ticks )
                 e = &wipe_scr_end[idx];
                 s = &wipe_scr_start[i+i];
                 melty[i] += dy;
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#ifdef ENABLE_DRAWEXT
 	        if( vid.drawmode != DRAW8PAL )
 	        {
 		    // copy end screen over newly exposed dy area
