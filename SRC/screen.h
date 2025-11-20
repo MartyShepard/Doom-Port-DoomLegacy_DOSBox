@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: screen.h 910 2012-03-05 15:07:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -178,18 +178,32 @@ typedef struct vmode_s {
 // [WDJ] definitions for 15bpp, 16bpp, 24bpp, 32bpp
 
 typedef struct {
+#ifdef __BIG_ENDIAN__
    byte r, g, b;
+#else
+   byte b, g, r;
+#endif
 } pixel24_t;
 
 typedef struct {
+#ifdef __BIG_ENDIAN__
    byte alpha, r, g, b;
+#else
+   byte b, g, r, alpha;
+#endif
 } pixel32_t;
 
 typedef union {
-   uint32_t      uint32;
+   uint32_t      ui32;
+   pixel24_t     pix24;  // for speed, does not line up with pix32
    struct {
+#ifdef __BIG_ENDIAN__
       byte unused;
-      pixel24_t  pix24;
+      pixel24_t  rgb24;
+#else
+      pixel24_t  rgb24;  // aligns with pix32, rgb
+      byte unused;
+#endif
    } s24;
    pixel32_t     pix32;
 } pixelunion32_t;

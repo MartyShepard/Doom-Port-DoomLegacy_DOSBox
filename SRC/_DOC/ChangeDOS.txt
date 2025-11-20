@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00910 ]: w80 draw endian fix
+[00909*]: w80 SDL video error
 [00908 ]: w80 r_draw misc
 [00907*]: w80 testbpp 8 reject
 [00906 ]: w80 fade 16bpp

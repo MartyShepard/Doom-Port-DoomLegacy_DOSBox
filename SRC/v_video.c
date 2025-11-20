@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: v_video.c 910 2012-03-05 15:07:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -603,12 +603,10 @@ void V_DrawPixel(byte * line, int x, byte color)
 #ifdef ENABLE_DRAW24
      case DRAW24:
         {
-            pixelunion32_t c32;
-            c32.uint32 = color8.to32[ color ];
-            line += x * 3;  // 3 byte per pixel
-            line[0] = c32.pix32.b;  // LOW ENDIAN order of R-G-B
-            line[1] = c32.pix32.g;
-            line[2] = c32.pix32.r;
+	    pixelunion32_t c32;
+	    c32.ui32 = color8.to32[ color ];
+	    register pixel24_t * s24 = (pixel24_t*) line;
+	    s24[x] = c32.pix24;
         }
         break;
 #endif       
@@ -644,6 +642,7 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
      case DRAW15:
      case DRAW16:
+        line += x * 2;
         while(count--)
         {
             *(uint16_t*)line = color8.to16[ *(src++) ];
@@ -657,15 +656,15 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
         while(count--)
         {
             pixelunion32_t c32;
-            c32.uint32 = color8.to32[ *(src++) ];
-            *line++ = c32.pix32.b;  // LOW ENDIAN order of R-G-B
-            *line++ = c32.pix32.g;
-            *line++ = c32.pix32.r;
+            c32.ui32 = color8.to32[ *(src++) ];
+	    *(pixel24_t*)line = c32.pix24;
+	    line += 3;
         }
         break;
 #endif
 #ifdef ENABLE_DRAW32
      case DRAW32:
+        line += x * 4;
         while(count--)
         {
             *(uint32_t*)line = color8.to32[ *(src++) ];
@@ -796,7 +795,7 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
     if (scrn & V_NOSCALESTART)
         desttop += (y * vid.ybytes) + (x * vid.bytepp);
     else
-        desttop += (y * vid.ybytes * vid.dupy) + (x * vid.bytepp * vid.dupx) + scaledofs;
+        desttop += (y * vid.dupy * vid.ybytes) + (((x * vid.dupx) + scaledofs) * vid.bytepp);
 
 #ifdef DIRTY_RECT
     if (!(scrn & 0xff))
@@ -914,8 +913,8 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
     {
         // [WDJ] should not have NOSCALESTART depending upon NOSCALEPATCH
 	// did not agree with V_DrawMappedPatch
-        // desttop += (y * vid.ybytes * dupy) + (x * vid.bytepp * dupx) + scaledofs; // ??
-        desttop += (y * vid.ybytes * vid.dupy) + (x * vid.bytepp * vid.dupx) + scaledofs;
+        // desttop += (y * dupy * vid.ybytes) + + (((x * dupx) + scaledofs) * vid.bytepp);; // ??
+        desttop += (y * vid.dupy * vid.ybytes) + (((x * vid.dupx) + scaledofs) * vid.bytepp);
     }
     destend = desttop + (patch->width * dupx * vid.bytepp);  // test against desttop
 
@@ -1120,7 +1119,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
     if (scrn & V_NOSCALESTART)
         desttop += (y * vid.ybytes) + (x * vid.bytepp);
     else
-        desttop += (y * vid.ybytes * dupy) + (x * vid.bytepp * dupx) + scaledofs;
+        desttop += (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
 
     wf = patch->width << FRACBITS;
 
@@ -1168,10 +1167,11 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 	        {
 		    register unsigned int color = source[ofs >> FRACBITS];
 		    pixelunion32_t c32;
-		    c32.uint32 = (color8.to32[ color ]>>1) & 0x007F7F7F; // 01111111
-		    dest[2] = c32.pix32.r + (dest[2]>>1);  // LOW ENDIAN order of R-G-B
-		    dest[1] = c32.pix32.g + (dest[1]>>1);
-		    dest[0] = c32.pix32.b + (dest[0]>>1);
+		    c32.ui32 = (color8.to32[ color ]>>1) & 0x7F7F7F; // 01111111 on pix24
+		    register pixel24_t * s24 = (pixel24_t*) dest;
+		    s24->r = c32.pix24.r + (s24->r>>1);
+		    s24->g = c32.pix24.g + (s24->g>>1);
+		    s24->b = c32.pix24.b + (s24->b>>1);
 		    dest += vid.ybytes;
 		    ofs += rowfrac;
 		}
@@ -1444,7 +1444,7 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
     dupx = vid.dupx;
     dupy = vid.dupy;
 
-    dest = screens[0] + (y * vid.ybytes * dupy) + (x * vid.bytepp * dupx) + scaledofs;
+    dest = screens[0] + (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
 
     w *= dupx;
     h *= dupy;
@@ -1517,7 +1517,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
     dupx = vid.dupx;
     dupy = vid.dupy;
 
-    dest = screens[0] + (y * vid.ybytes * dupy) + (x * vid.bytepp * dupx) + scaledofs;
+    dest = screens[0] + (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
 
     w *= dupx;
     h *= dupy;

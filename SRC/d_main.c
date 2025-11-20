@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "908"
+#define SVN_REV "910"
 #endif
 
 // Version number: major.minor.revision

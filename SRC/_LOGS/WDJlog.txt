@@ -2270,3 +2270,14 @@ r_draw24.c or r_draw32.c is modified.
 Add empty r_draw24.c and r_draw32.c.
 Fuzztable offsets needed to be multiple of pixel size.
 
+*** w80_SDL_video_error
+patchfile = w80_SDL_video_error.patch
+- committed revision 909   by wesley johnson
+Fixes SDL port driver so that StartupGraphics does not return unless
+has valid video mode and display.  Print appropriate error message to
+stderr.
+
+*** w80_draw_endian
+patchfile = w80_draw24_endian.patch
+- committed revision 910   by wesley johnson
+Fix DrawPixel for big endian machines.
