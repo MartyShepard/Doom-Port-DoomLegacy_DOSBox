@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: screen.c 894 2012-02-29 19:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -65,7 +65,7 @@
 //
 //-----------------------------------------------------------------------------
 
-// [WDJ] If you need to use a debugger then kill the video first
+// [WDJ] If you need to use a debugger then disable fullscreeen
 //#define DEBUG_WINDOWED
 
 
@@ -179,12 +179,12 @@ void SCR_SetMode (void)
 #endif
 
     V_SetPalette (0);
-        //CONS_Printf ("SCR_SetMode : vid.bpp is %d\n", vid.bpp);
+        //CONS_Printf ("SCR_SetMode : vid.bytepp is %d\n", vid.bytepp);
 
     //
     //  setup the right draw routines for either 8bpp or 16bpp
     //
-    if (vid.bpp==1)
+    if (vid.bytepp==1)
     {
         colfunc = basecolfunc = R_DrawColumn_8;
 #ifdef HORIZONTALDRAW
@@ -202,7 +202,7 @@ void SCR_SetMode (void)
         skydrawerfunc[0] = R_DrawColumn_8;      //old skies
         skydrawerfunc[1] = R_DrawSkyColumn_8;   //tall sky
     }
-    else if (vid.bpp>1)
+    else if (vid.bytepp>1)
     {
         CONS_Printf ("using highcolor mode\n");
 
@@ -220,7 +220,7 @@ void SCR_SetMode (void)
         skydrawerfunc[1] = R_DrawSkyColumn_16;
     }
     else
-        I_Error ("unknown bytes per pixel mode %d\n", vid.bpp);
+        I_Error ("unknown bytes per pixel mode %d\n", vid.bytepp);
 
     // set fuzzcolfunc
     CV_Fuzzymode_OnChange();
@@ -234,9 +234,9 @@ void SCR_SetMode (void)
 // change drawer function when fuzzymode is changed
 void CV_Fuzzymode_OnChange()
 {
-  if (vid.bpp == 1)
+  if (vid.bytepp == 1)
     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
-  else if (vid.bpp > 1)
+  else if (vid.bytepp > 1)
     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
 }
 
@@ -289,7 +289,7 @@ void SCR_Recalc (void)
         return;
 
     // bytes per pixel quick access
-    scr_bpp = vid.bpp;
+    scr_bpp = vid.bytepp;
 
     //added:18-02-98: scale 1,2,3 times in x and y the patches for the
     //                menus and overlays... calculated once and for all
@@ -398,8 +398,8 @@ void SCR_SetDefaultMode (void)
     // remember the default screen size
     CV_SetValue (&cv_scr_width,  vid.width);
     CV_SetValue (&cv_scr_height, vid.height);
-    CV_SetValue (&cv_scr_depth,  vid.bpp*8);
-    //    CV_SetValue (&cv_fullscreen, !vid.u.windowed); metzgermeister: unnecessary?
+    CV_SetValue (&cv_scr_depth,  vid.bytepp*8);
+    //    CV_SetValue (&cv_fullscreen, vid.fullscreen); // metzgermeister: unnecessary?
 }
 
 // Change fullscreen on/off according to cv_fullscreen

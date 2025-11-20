@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: r_draw.c 894 2012-02-29 19:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -454,7 +454,7 @@ void R_InitViewBuffer ( int   width,
                         int   height )
 {
     int         i;
-    int         bytesperpixel = vid.bpp;
+    int         bytesperpixel = vid.bytepp;
 
     if (bytesperpixel<1 || bytesperpixel>4)
         I_Error ("R_InitViewBuffer : wrong bytesperpixel value %d\n",

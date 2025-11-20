@@ -2099,3 +2099,19 @@ Must be careful to not have problem with Doom2 Map06, with the spider
 demon in the crusher.  Some possible tests would freeze the crusher if
 something was stuck in the ceiling or floor.
 This is enabled by COMPAT_FLOOR_STOP, for now.
+
+*** w80_vid_defs
+patchfile = w80_vid_defs.patch
+- committed revision 894   by wesley johnson
+Revise vid structure to handle problems with MAC and direct video.
+The driver sets up the display and screen size according to its
+characteristics.
+The buffer width can be different than the screen width, to handle the
+Mac which pads it buffer lines to a power of 2.
+The driver can control the video buffer width independently of the
+screen buffer width, neither of which need to match the screen width.
+Contains fields that are multiplied by the buffer width.
+Fixes many common draw routines to increment by buffer width instead of
+screen width so they are correct for any driver buffer choice.
+Fixes uses of bpp as byte to be bytepp, as bpp is bits-per-pixel.
+Introduces the controls for DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32.

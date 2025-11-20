@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: am_map.c 894 2012-02-29 19:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -916,7 +916,7 @@ void AM_clearFB(int color)
 
     if( !maplump )
     {
-        memset(fb, color, f_w*f_h*vid.bpp);
+        memset(fb, color, f_w*f_h*vid.bytepp);  // FIXME for padded scanline
     }
     else
     {

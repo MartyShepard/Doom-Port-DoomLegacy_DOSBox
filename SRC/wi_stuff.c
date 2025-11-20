@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 888 2011-12-18 04:05:08Z wesleyjohnson $
+// $Id: wi_stuff.c 894 2012-02-29 19:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1919,10 +1919,10 @@ static void WI_loadData(void)
     
     if (rendermode == render_soft)
     {
-        memset(screens[0],0,vid.width*vid.height*vid.bpp);
+        memset(screens[0], 0, vid.screen_size);
 
         // clear backbuffer from status bar stuff and borders
-        memset(screens[1],0,vid.width*vid.height*vid.bpp);
+        memset(screens[1], 0, vid.screen_size);
   
         // background stored in backbuffer        
         V_DrawScaledPatch(0, 0, 1, W_CachePatchName(bgname, PU_CACHE));

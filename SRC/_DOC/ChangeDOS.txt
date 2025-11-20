@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00894 ]: w80 vid defs
+          DOS: Breaks Compile
+					
 [00893 ]: w79 floor up, Doom2 Map05
 [00892 ]: w79 lowest ceiling, height searches
 [00891 ]: w79 spec enum with prefixes

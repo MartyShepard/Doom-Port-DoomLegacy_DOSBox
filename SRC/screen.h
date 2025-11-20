@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 745 2010-09-16 16:28:07Z smite-meister $
+// $Id: screen.h 894 2012-02-29 19:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -94,31 +94,62 @@ extern int stbarheight;     // when scaled
 #define BASEVIDWIDTH    320   //NEVER CHANGE THIS! this is the original
 #define BASEVIDHEIGHT   200  // resolution of the graphics.
 
+
+// WDJ 2012-2-6, provide structure to complete the draw capability
+typedef enum {
+  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32   
+} drawmode_t;
+
+
+// WDJ 2012-2-6, Provide structure and isolation of driver problems.
+// Mac has padded video buffers, some drivers can provide direct access and
+// some cannot, some have 15, 24, or 32 bpp drawing.
+// [WDJ] do not need union, minimal wastage, do not make access difficult
 // global video state
 typedef struct viddef_s
 {
-    int         modenum;         // vidmode num indexes videomodes list
+    // If hardware allows direct access then display could be video memory,
+    // but usually is in buffer allocation.  Decided by driver.
+    // Horz. scanlines could be padded (Mac).
+    // Screens have same size as display, and same padding.
+    byte      * display;         // buffer that gets displayed, screen[0]
+    byte      * screen1;         // allocated memory screen[1]
 
-    byte        *buffer;         // invisible screens buffer
-    unsigned    rowbytes;        // bytes per scanline of the VIDEO mode
-    int         width;           // PIXELS per scanline
+ // Display and screen drawing with correct padding
+ // Sometimes is not same as direct_size
+ // Use these, they are corrected for padded scanlines and multibyte pixels
+    unsigned int widthbytes;     // width * bytepp, to save multiplies
+    unsigned int ybytes;         // addr line = & display[ y * ybytes ]
+    unsigned int screen_size;    // screens and display
+ // basic video mode attributes
+ // [WDJ] signed width, height for easy math, (draw errors if unsigned)
+    int         width;          // PIXELS per scanline
     int         height;
-    union { // hurdler: don't need numpages for OpenGL, so we can
-            // 15/10/99 use it for fullscreen / windowed mode
-    int         numpages;        // always 1, PAGE FLIPPING TODO!!!
-    int         windowed;        // windowed or fullscren mode ?
-    } u; //BP: name it please soo it work with gcc
-    int         recalc;          // if true, recalc vid-based stuff
-    byte        *direct;         // linear frame buffer, or vga base mem.
+    int         modenum;         // vidmode num indexes videomodes list
+    byte        drawmode;        // drawing mode, optimized for tables and switch stmts
+    byte        bitpp;		 // BITS per pixel: 8, 15, 16, 24, 32
+    byte        bytepp;          // BYTES per pixel: 1=256color, 2, 4
+    byte        numpages;        // always 1, PAGE FLIPPING TODO!!!
+//    byte        windowed;        // windowed or fullscreen mode ?
+    byte        fullscreen;      // windowed or fullscreen mode ?
+    byte        recalc;          // if true, recalc vid-based stuff
+ // special uses
     int         dupx,dupy;       // scale 1,2,3 value for menus & overlays
     float       fdupx,fdupy;     // same as dupx,dupy but exact value when aspect ratio isn't 320/200
     int         centerofs;       // centering for the scaled menu gfx
-    int         bpp;             // BYTES per pixel: 1=256color, 2=highcolor
 
     //int         baseratio;       // SoM: Used to get the correct value for lighting walls //Hurdler: not used anymore
+ // PRIVATE TO DRIVER
+    byte        *buffer;         // allocated invisible buffers
+    byte        *direct;         // linear frame buffer, or vga base mem.
+    unsigned int direct_rowbytes; // bytes per scanline of the VIDEO mode
+    unsigned int direct_size;    // correct size for copy (up to 6400x4800x64)
+ // END PRIVATE
 } viddef_t;
-#define VIDWIDTH    vid.width
-#define VIDHEIGHT   vid.height
+
+// [WDJ] Do not hide what these are, it makes it more difficult to track effects.
+//#define VIDWIDTH    vid.width
+//#define VIDHEIGHT   vid.height
 
 
 // internal additional info for vesa modes only
