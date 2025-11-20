@@ -2178,3 +2178,14 @@ Fix screenshot to use correct buffer widths, but it is still limited to
 Fix fuzz init, and ylookup init, for all draw modes.
 Fix R_FillBackScreen, R_DrawViewBorder, for all draw modes, using V_DrawPixels.
 Fix wi_stuff, for all draw modes.
+
+*** w80_wipe
+patchfile = w80_wipe.patch
+- committed revision 900   by wesley johnson
+Change wipe functions to not pass parameters they do not use, and also
+fix them for all draw modes.
+Remove ColMajorXForm transform, as it was not really faster, and
+was limited to 8bpp, now using a simple pixel copy.
+Created a proportional fade for the extended draw modes, which is not
+as smooth as the 8bpp translucent tables, but gives similar function.
+Reorganized strange wipe control table for simpler access.

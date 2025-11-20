@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: f_wipe.c 900 2012-02-29 19:25:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,39 +54,26 @@ static byte*    wipe_scr_end;
 static byte*    wipe_scr;
 
 
-void wipe_ColMajorXform ( short*        array,
-                                int           width,
-                                int           height )
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+static int fade1, fade2;
+#endif
+
+static
+void wipe_initColorXForm ( void )
 {
-    int         x;
-    int         y;
-    short*      dest;
-
-    dest = (short*) Z_Malloc(width*height*2, PU_STATIC, 0);
-
-    for(y=0;y<height;y++)
-        for(x=0;x<width;x++)
-            dest[x*height+y] = array[y*width+x];
-
-    memcpy(array, dest, width*height*2);
-
-    Z_Free(dest);
-
-}
-
-
-int wipe_initColorXForm ( int   width,
-                          int   height,
-                          int   ticks )
-{
-    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
-    return 0;
+//    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
+    // copy wipe_scr_start to wipe_scr
+    VID_BlitLinearScreen( wipe_scr_start, wipe_scr,
+			  vid.widthbytes, vid.height,
+			  vid.ybytes, vid.ybytes );
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+    fade2 = 0;
+#endif
 }
 
 /* BP:the original one, work only in hicolor
-int wipe_doColorXForm ( int   width,
-                        int   height,
-                        int   ticks )
+static
+int wipe_doColorXForm ( int width,  int height,  int ticks )
 
 {
     boolean     changed;
@@ -130,32 +117,66 @@ int wipe_doColorXForm ( int   width,
 }
 */
 
-
-int wipe_doColorXForm ( int   width,
-                        int   height,
-                        int   ticks )
+// repeated until returns done
+static
+int wipe_doColorXForm ( int ticks )
 
 {
-    boolean     changed;
-    byte*       w;
-    byte*       e;
-    byte        newval;
     static int  slowdown=0;
-    changed = false;
-
+    boolean     changed = false;
+    int y;
+    
+    byte* wend;
+    byte* w;
+    byte* e;
+   
     while(ticks--)
     {
-        // slowdown
-        if(slowdown++) { slowdown=0;return false; }
-        
-        w = wipe_scr;
-        e = wipe_scr_end;
-        
-        
-        while (w!=wipe_scr+width*height)
+      // slowdown
+      if(slowdown++) { slowdown=0;  return false; }
+
+      // [WDJ] Fade for all bpp, bytepp, and padding
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+      if( vid.drawmode != DRAW8PAL )
+      {
+	  if( fade2 >= 64 ) break;  // DONE, changed = false
+	  fade2+=6;
+	  fade1 = 64-fade2;
+	  if( fade1 < 0 )
+	  {
+	      fade1 = 0;
+	      fade2 = 64;
+	  }
+	  changed = true;
+      }
+#endif
+      for( y=0; y<vid.screen_size; y+=vid.ybytes )
+      {
+	e = wipe_scr_end + y;
+	w = wipe_scr + y;
+	wend = w + vid.widthbytes;  // end of line
+
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+	if( vid.drawmode != DRAW8PAL )
         {
+	  while( w < wend )
+	  {
+	    register unsigned int w16 = *(uint16_t*)w;
+	    register unsigned int e16 = *(uint16_t*)e;
+	    *(uint16_t*)w = ((w16*fade1) + (e16*fade2)) >> (6+1);
+	    w+=2;
+	    e+=2;
+	  }
+	}
+        else
+#endif
+	{
+	  // Traditional for 8bpp
+	  while( w < wend )
+	  {
             if (*w != *e)
             {
+	        register byte newval;
                 if((newval=translucenttables[TRANSLU_TABLE_more+(*e<<8)+*w])==*w)
                     if((newval=translucenttables[TRANSLU_TABLE_med+(*e<<8)+*w])==*w)
                         if((newval=translucenttables[TRANSLU_TABLE_more+(*w<<8)+*e])==*w)
@@ -163,127 +184,142 @@ int wipe_doColorXForm ( int   width,
                 *w=newval;
                 changed = true;
             }
-            w++;
-            e++;
-        }
+	    w++;
+	    e++;
+	  }
+	}
+      }
     }
     return !changed;
 }
 
-int wipe_exitColorXForm ( int   width,
-                          int   height,
-                          int   ticks )
+static
+void wipe_exitColorXForm ( void )
 {
-    return 0;
 }
 
 
-static int*     y;
+static int*  melty;  // y indexes for melt
 
 
-int wipe_initMelt ( int   width,
-                    int   height,
-                    int   ticks )
+static
+void wipe_initMelt ( void )
 {
-    int i, r;
+    int i, my;
+    int meltwidth = vid.width/2;  // melt is 2 pixels at a time
 
     // copy start screen to main screen
-    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
-
-    // makes this wipe faster (in theory)
-    // to have stuff in column-major format
-    wipe_ColMajorXform((short*)wipe_scr_start, width*vid.bytepp/2, height);
-    wipe_ColMajorXform((short*)wipe_scr_end, width*vid.bytepp/2, height);
+//    memcpy(wipe_scr, wipe_scr_start, width*height*scr_bytepp);
+    VID_BlitLinearScreen( wipe_scr_start, wipe_scr,
+			  vid.widthbytes, vid.height,
+			  vid.ybytes, vid.ybytes );
 
     // setup initial column positions
     // (y<0 => not ready to scroll yet)
-    y = (int *) Z_Malloc(width*sizeof(int), PU_STATIC, 0);
-    y[0] = -(M_Random()%16);
-    for (i=1;i<width;i++)
+    melty = (int *) Z_Malloc(meltwidth*sizeof(int), PU_STATIC, 0);
+    my = melty[0] = -(M_Random()%16);  // set neg numbers as delay for a column
+    for (i=1;i<meltwidth;i++)
     {
-        r = (M_Random()%3) - 1; 
-        y[i] = y[i-1] + r;
-        if (y[i] > 0) y[i] = 0;
-        else if (y[i] == -16) y[i] = -15;
+        my += (M_Random()%3) - 1; 
+        if (my > 0) my = 0;  // start immediately
+        else if (my <= -16) my = -15;  // max delay
+        // dup to keep normal speed in high res screens
+        melty[i] = my * vid.dupy;
     }
-    // dup for normal speed in high res
-    for (i=0;i<width;i++)
-        y[i]*=vid.dupy;
-
-    return 0;
 }
 
 
-int wipe_doMelt ( int   width,
-                  int   height,
-                  int   ticks )
+static
+int wipe_doMelt ( int ticks )
 {
-    int         i;
-    int         j;
-    int         dy;
-    int         idx;
+    boolean  done = true;
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+    int  cpycnt = vid.bytepp + vid.bytepp;  // 2 pixels
+#endif
+    int  meltwidth = vid.width/2;  // melt is 2 pixels at a time
+    int  height = vid.height;
+    int  i, j;
+    int  dy;
+    int  idx;
 
-    short*      s;
-    short*      d;
-    boolean     done = true;
+    byte *s, *e, *d;
 
-    width = (width * vid.bytepp) / 2;
-
+    // [WDJ] Melt for all bpp, bytepp, and padding
     while (ticks--)
     {
-        for (i=0;i<width;i++)
+        for (i=0;i<meltwidth;i++)
         {
-            if (y[i]<0)
+            if (melty[i]<0)  // delay
             {
-                y[i]++; done = false;
+                melty[i]++; done = false;
             }
-            else if (y[i] < height)
+            else if (melty[i] < height)  // moving
             {
-                dy = (y[i] < 16) ? y[i]+1 : 8;
+                dy = (melty[i] < 16) ? melty[i]+1 : 8;
                 dy *= vid.dupy;
-                if (y[i]+dy >= height) dy = height - y[i];
-                s = &((short *)wipe_scr_end)[i*height+y[i]];
-                d = &((short *)wipe_scr)[y[i]*width+i];
-                idx = 0;
-                for (j=dy;j;j--)
-                {
-                    d[idx] = *(s++);
-                    idx += width;
-                }
-                y[i] += dy;
-                s = &((short *)wipe_scr_start)[i*height];
-                d = &((short *)wipe_scr)[y[i]*width+i];
-                idx = 0;
-                for (j=height-y[i];j;j--)
-                {
-                    d[idx] = *(s++);
-                    idx += width;
-                }
+                if (melty[i]+dy >= height) dy = height - melty[i];  // bottom
+		idx = (melty[i]*vid.ybytes)+((i+i)*vid.bytepp);
+                d = &wipe_scr[idx];
+                e = &wipe_scr_end[idx];
+                s = &wipe_scr_start[i+i];
+                melty[i] += dy;
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+	        if( vid.drawmode != DRAW8PAL )
+	        {
+		    // copy end screen over newly exposed dy area
+		    for (j=dy;j;j--)
+		    {
+		        memcpy(d, e, cpycnt);  // 2 pixels
+		        e += vid.ybytes;
+		        d += vid.ybytes;
+		    }
+		    // redraw start screen columns shifted down by melty[i]
+		    for (j=height-melty[i];j;j--)
+		    {
+		        memcpy(d, s, cpycnt);  // 2 pixels
+		        s += vid.ybytes;
+		        d += vid.ybytes;
+		    }
+		}
+	        else
+#endif
+	        {
+		    // Simpler, faster for older slow machines
+		    // copy end screen over newly exposed dy area
+		    for (j=dy;j;j--)
+		    {
+		        *(uint16_t*)d = *(uint16_t*)e;  // 2 pixels
+		        e += vid.ybytes;
+		        d += vid.ybytes;
+		    }
+		    // redraw start screen columns shifted down by melty[i]
+		    for (j=height-melty[i];j;j--)
+		    {
+		        *(uint16_t*)d = *(uint16_t*)s;  // 2 pixels
+		        s += vid.ybytes;
+		        d += vid.ybytes;
+		    }
+		}
                 done = false;
             }
         }
     }
 
     return done;
-
 }
 
 
-int wipe_exitMelt ( int   width,
-                    int   height,
-                    int   ticks )
+static
+void wipe_exitMelt ( void )
 {
-    Z_Free(y);
-    return 0;
+    Z_Free(melty);
 }
 
 
 //  save the 'before' screen of the wipe (the one that melts down)
 //
-int wipe_StartScreen ( int   x,
-                       int   y,
-                       int   width,
-                       int   height )
+// [WDJ] always full copy
+int wipe_StartScreen ( void )
 {
     wipe_scr_start = screens[2];
     I_ReadScreen(wipe_scr_start);  // copy vid.display in screen format
@@ -293,39 +329,41 @@ int wipe_StartScreen ( int   x,
 
 //  save the 'after' screen of the wipe (the one that show behind the melt)
 //
-int wipe_EndScreen ( int   x,
-                     int   y,
-                     int   width,
-                     int   height )
+// [WDJ] always full copy
+int wipe_EndScreen ( void )
 {
     wipe_scr_end = screens[3];
     I_ReadScreen(wipe_scr_end);  // copy vid.display in screen format
     // restore start scr.
-// old: V_DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
 //    V_CopyRect(x, y, 2, width, height, x, y, 0);  // screen[2] -> screen[0]
-//  full copy, ignore parameters
     VID_BlitLinearScreen(wipe_scr_start, screens[0], vid.width, vid.height, vid.ybytes, vid.ybytes);
     return 0;
 }
 
 
-int wipe_ScreenWipe ( int   wipeno,
-                      int   x,
-                      int   y,
-                      int   width,
-                      int   height,
-                      int   ticks )
+// Wipe function tables, different parameters
+static void (*wipes_init[])(void) =
+{
+    wipe_initColorXForm, // wipeno == wipe_ColorXForm
+    wipe_initMelt,       // wipeno == wipe_Melt
+};
+static int (*wipes_do[])(int) =
+{
+    wipe_doColorXForm,  // wipeno == wipe_ColorXForm
+    wipe_doMelt,        // wipeno == wipe_Melt
+};
+static void (*wipes_exit[])(void) =
+{
+    wipe_exitColorXForm, // wipeno == wipe_ColorXForm
+    wipe_exitMelt        // wipeno == wipe_Melt
+};
+
+// Screen wipe is always full width and height.
+// There is no use passing parameters for width, height, x, y,
+// as the functions do not have such flexibility, and it would not be used.
+int wipe_ScreenWipe( int wipeno, int ticks )
 {
     int rc;
-    static int (*wipes[])(int, int, int) =
-    {
-        wipe_initColorXForm, 
-        wipe_doColorXForm, 
-        wipe_exitColorXForm,
-        wipe_initMelt, 
-        wipe_doMelt, 
-        wipe_exitMelt
-    };
 
 #ifdef DIRTY_RECT
     //Fab: obsolete (we don't use dirty-rectangles type of refresh)
@@ -338,21 +376,21 @@ int wipe_ScreenWipe ( int   wipeno,
         go = 1;
         // wipe_scr = (byte *) Z_Malloc(width*height*vid.bytepp, PU_STATIC, 0); // DEBUG
         wipe_scr = screens[0];
-        (*wipes[wipeno*3])(width, height, ticks);
+        (*wipes_init[wipeno])();
     }
 
     // do a piece of wipe-in
 #ifdef DIRTY_RECT
     //V_MarkRect(0, 0, width, height);
 #endif
-    rc = (*wipes[wipeno*3+1])(width, height, ticks);
-    //  V_DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
+    rc = (*wipes_do[wipeno])(ticks);
+    //  V_CopyBlock(x, y, width, height, wipe_scr, screens[0]); // DEBUG
 
     // final stuff
     if (rc)
     {
         go = 0;
-        (*wipes[wipeno*3+2])(width, height, ticks);
+        (*wipes_exit[wipeno])();
     }
 
     return !go;

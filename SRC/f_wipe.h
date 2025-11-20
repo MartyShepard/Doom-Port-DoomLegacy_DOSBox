@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: f_wipe.h 900 2012-02-29 19:25:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -38,7 +38,7 @@
 //                        SCREEN WIPE PACKAGE
 //--------------------------------------------------------------------------
 
-enum
+typedef enum
 {
     // simple gradual pixel change for 8-bit only
     wipe_ColorXForm,
@@ -47,29 +47,13 @@ enum
     wipe_Melt,
 
     wipe_NUMWIPES
-};
+} wipe_type_t;
 
 
-int wipe_StartScreen
-( int           x,
-  int           y,
-  int           width,
-  int           height );
+int wipe_StartScreen( void );  // copy start screen for wipe
+int wipe_EndScreen( void );  // copy end screen for wipe
 
-
-int wipe_EndScreen
-( int           x,
-  int           y,
-  int           width,
-  int           height );
-
-
-int wipe_ScreenWipe
-( int           wipeno,
-  int           x,
-  int           y,
-  int           width,
-  int           height,
-  int           ticks );
+// Screen wipe is always full width and height
+int wipe_ScreenWipe( int wipeno, int ticks );
 
 #endif
