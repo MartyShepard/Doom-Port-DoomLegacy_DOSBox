@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 884 2011-12-18 03:55:38Z wesleyjohnson $
+// $Id: d_main.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "895"
+#define SVN_REV "896"
 #endif
 
 // Version number: major.minor.revision
@@ -484,7 +484,7 @@ void D_Display(void)
     redrawsbar = false;
 
     //added:21-01-98: check for change of screen size (video mode)
-    if (setmodeneeded)
+    if (setmodeneeded >= 0)
         SCR_SetMode();  // change video mode
 
     if (vid.recalc)
@@ -860,7 +860,7 @@ void D_PageDrawer(char *lumpname)
     {
         if ((vid.width > BASEVIDWIDTH) || (vid.height > BASEVIDHEIGHT))
         {
-            src = scr_borderpatch;
+            src = scr_borderflat;
             dest = screens[0];
 
             for (y = 0; y < vid.height; y++)
@@ -1820,7 +1820,7 @@ void D_DoomMain()
             // make subdirectory in userhome
 	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
             // example: "/home/user/.legacy/"
-            sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);						
+            sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);
         }
         else
         {
@@ -2246,7 +2246,7 @@ void D_DoomMain()
                 demo_name[MAX_WADPATH-1] = '\0';
 	    }
         }
-        FIL_DefaultExtension(demo_name, ".lmp");        
+        FIL_DefaultExtension(demo_name, ".lmp");
 
         if ((p = M_CheckParm("-playdemo")))
         {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 819 2011-03-15 23:33:39Z wesleyjohnson $
+// $Id: r_data.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -903,7 +903,7 @@ byte* R_GetFlat (int  flatlumpnum)
 
     flatlumpnum -= firstflat;
 
-    if (scr_bpp==1)
+    if (vid.drawmode==DRAW8PAL)
     {
                 flatcache[flatlumpnum] = data;
                 return data;

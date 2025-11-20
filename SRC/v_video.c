@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: v_video.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -507,10 +507,9 @@ int scaledofs;
 int dirtybox[4];
 void V_MarkRect(int x, int y, int width, int height)
 {
-    M_AddToBox((int *)dirtybox, x, y);
-    M_AddToBox((int *)dirtybox, x + width - 1, y + height - 1);
+    M_AddToBox(dirtybox, x, y);
+    M_AddToBox(dirtybox, x + width - 1, y + height - 1);
 }
-
 
 //
 // V_CopyRect
@@ -1350,7 +1349,7 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
     }
 #endif
 
-    if (scr_bpp == 1)
+    if (vid.drawmode == DRAW8PAL)
     {
         x1 >>= 2;
         x2 >>= 2;
@@ -1813,7 +1812,7 @@ void V_DrawPerspView(byte * viewbuffer, int aiming)
     for (y = 0; y < vid.height; y++)
     {
         x1 = ((vid.width << 16) - scale) >> 17;
-        dest = ((byte *) vid.direct) + (vid.direct_rowbytes * y) + x1;
+        dest = ((byte *) vid.direct) + (vid.direct_rowbytes * y) + x1;  // FIXME, direct access not allowed
 
         xfrac = (20 << FRACBITS) + ((!x1) & 0xFFFF);
         xfracstep = FixedDiv((vid.width << FRACBITS) - (xfrac << 1), scale);

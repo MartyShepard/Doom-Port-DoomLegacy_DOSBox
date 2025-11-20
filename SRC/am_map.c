@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: am_map.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1477,7 +1477,7 @@ void AM_drawCrosshair(int color)
         return;
     }
     
-    if( scr_bpp==1 )
+    if( vid.drawmode==DRAW8PAL )
         fb[(f_w*(f_h+1))/2] = color; // single point for now
     else
         *( (short *)fb + (f_w*(f_h+1))/2) = color;

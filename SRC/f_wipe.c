@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: f_wipe.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,7 +54,7 @@ static byte*    wipe_scr_end;
 static byte*    wipe_scr;
 
 
-void wipe_shittyColMajorXform ( short*        array,
+void wipe_ColMajorXform ( short*        array,
                                 int           width,
                                 int           height )
 {
@@ -79,7 +79,7 @@ int wipe_initColorXForm ( int   width,
                           int   height,
                           int   ticks )
 {
-    memcpy(wipe_scr, wipe_scr_start, width*height*scr_bpp);
+    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
     return 0;
 }
 
@@ -188,12 +188,12 @@ int wipe_initMelt ( int   width,
     int i, r;
 
     // copy start screen to main screen
-    memcpy(wipe_scr, wipe_scr_start, width*height*scr_bpp);
+    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
 
     // makes this wipe faster (in theory)
     // to have stuff in column-major format
-    wipe_shittyColMajorXform((short*)wipe_scr_start, width*scr_bpp/2, height);
-    wipe_shittyColMajorXform((short*)wipe_scr_end, width*scr_bpp/2, height);
+    wipe_ColMajorXform((short*)wipe_scr_start, width*vid.bytepp/2, height);
+    wipe_ColMajorXform((short*)wipe_scr_end, width*vid.bytepp/2, height);
 
     // setup initial column positions
     // (y<0 => not ready to scroll yet)
@@ -227,7 +227,7 @@ int wipe_doMelt ( int   width,
     short*      d;
     boolean     done = true;
 
-    width = (width * scr_bpp) / 2;
+    width = (width * vid.bytepp) / 2;
 
     while (ticks--)
     {
@@ -330,7 +330,7 @@ int wipe_ScreenWipe ( int   wipeno,
     if (!go)
     {
         go = 1;
-        // wipe_scr = (byte *) Z_Malloc(width*height*scr_bpp, PU_STATIC, 0); // DEBUG
+        // wipe_scr = (byte *) Z_Malloc(width*height*vid.bytepp, PU_STATIC, 0); // DEBUG
         wipe_scr = screens[0];
         (*wipes[wipeno*3])(width, height, ticks);
     }

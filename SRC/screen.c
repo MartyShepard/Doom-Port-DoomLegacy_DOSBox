@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: screen.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -111,8 +111,7 @@ void (*transtransfunc) (void);
 // global video state
 // ------------------
 viddef_t  vid;
-int       setmodeneeded;     // video mode change needed, if > 0, set by menu
-                             // (the mode number to set + 1)
+int       setmodeneeded= -1;   // video mode change needed, set by menu ( -1 = NOP )
 
 
 // use original Doom fuzzy effect instead of translucency?
@@ -120,7 +119,7 @@ void CV_Fuzzymode_OnChange();
 consvar_t   cv_fuzzymode = {"fuzzymode", "Off", CV_SAVE | CV_CALL, CV_OnOff, CV_Fuzzymode_OnChange};
 
 
-CV_PossibleValue_t scr_depth_cons_t[]={{8,"8 bits"}, {16,"16 bits"}, {24,"24 bits"}, {32,"32 bits"}, {0,NULL}};
+CV_PossibleValue_t scr_depth_cons_t[]={{8,"8 bits"}, {15,"15 bits"}, {16,"16 bits"}, {24,"24 bits"}, {32,"32 bits"}, {0,NULL}};
 
 //added:03-02-98: default screen mode, as loaded/saved in config
 consvar_t   cv_scr_width  = {"scr_width",  "320", CV_SAVE, CV_Unsigned};
@@ -134,9 +133,11 @@ consvar_t   cv_fullscreen = {"fullscreen",  "Yes",CV_SAVE | CV_CALL, CV_YesNo, S
 //                           SCREEN VARIABLES
 // =========================================================================
 
-int       scr_bpp;         // current video mode bytes per pixel
-byte*     scr_borderpatch; // flat used to fill the reduced view borders
-                           // set at ST_Init ()
+byte*  scr_borderflat; // flat used to fill the reduced view borders
+                       // set at ST_Init ()
+
+uint16_t mask_01111 = 0, mask_11110 = 0;  // hicolor masks  15 bit / 16 bit
+
 
 // =========================================================================
 
@@ -146,7 +147,7 @@ void ASMCALL ASM_PatchRowBytes(int rowbytes);
 
 //  Set the video mode right now,
 //  the video mode change is delayed until the start of the next refresh
-//  by setting the setmodeneeded to a value >0
+//  by setting setmodeneeded to a value >= 0
 //
 int  VID_SetMode(int modenum);
 
@@ -160,7 +161,7 @@ void SCR_SetMode (void)
     if(dedicated)
         return;
 
-    if (!setmodeneeded)
+    if (setmodeneeded < 0)
         return;                 //should never happen
 
 #ifdef DEBUG_WINDOWED
@@ -172,20 +173,25 @@ void SCR_SetMode (void)
       int modenum = VID_GetModeForSize(800,600);  // debug window
       VID_SetMode(modenum);
       cv_fullscreen.value = cvfs;
+      vid.modenum = setmodeneeded; // fix the display
     }
 #else
     // video system interface, sets vid.recalc
-    VID_SetMode(--setmodeneeded);
+    VID_SetMode(setmodeneeded);
 #endif
 
-    V_SetPalette (0);
-        //CONS_Printf ("SCR_SetMode : vid.bytepp is %d\n", vid.bytepp);
+    // No longer can use display, must fail
+    if( rendermode == render_soft && vid.display == NULL )
+        I_Error( "VID_SetMode failed to provide any display\n" );
 
     //
     //  setup the right draw routines for either 8bpp or 16bpp
     //
-    if (vid.bytepp==1)
+    //CONS_Printf ("SCR_SetMode : vid.bitpp is %d\n", vid.bitpp);
+    switch( vid.bitpp )
     {
+     case 8:
+        vid.drawmode = DRAW8PAL;
         colfunc = basecolfunc = R_DrawColumn_8;
 #ifdef HORIZONTALDRAW
         hcolfunc = R_DrawHColumn_8;
@@ -201,9 +207,18 @@ void SCR_SetMode (void)
         // FIXME: quick fix
         skydrawerfunc[0] = R_DrawColumn_8;      //old skies
         skydrawerfunc[1] = R_DrawSkyColumn_8;   //tall sky
-    }
-    else if (vid.bytepp>1)
-    {
+        break;
+     case 15:
+        vid.drawmode = DRAW15;
+        mask_11110 = 0x7BDE;  // 0 11110 11110 11110 mask out the lowest bit of R,G,B
+        mask_01111 = 0x3DEF;  // 0 01111 01111 01111 mask out the upper bit of R,G,B
+        goto highcolor_common;
+     case 16:
+        vid.drawmode = DRAW16;
+        mask_11110 = 0xF7DE;  // 11110 111110 11110 mask out the lowest bit of R,G,B
+        mask_01111 = 0x7BEF;  // 01111 011111 01111 mask out the upper bit of R,G,B
+
+     highcolor_common:
         CONS_Printf ("using highcolor mode\n");
 
         colfunc = basecolfunc = R_DrawColumn_16;
@@ -218,26 +233,47 @@ void SCR_SetMode (void)
         // FIXME: quick fix to think more..
         skydrawerfunc[0] = R_DrawColumn_16;
         skydrawerfunc[1] = R_DrawSkyColumn_16;
+        break;
+     case 24:
+        vid.drawmode = DRAW24;
+        goto bpp_err;
+     case 32:
+        vid.drawmode = DRAW32;
+        goto bpp_err;
+     default:
+        goto bpp_err;
     }
-    else
-        I_Error ("unknown bytes per pixel mode %d\n", vid.bytepp);
+    vid.widthbytes = vid.width * vid.bytepp;  // to save multiplies
+
+    V_SetPalette (0);
 
     // set fuzzcolfunc
     CV_Fuzzymode_OnChange();
 
     // set the apprpriate drawer for the sky (tall or short)
 
-    setmodeneeded = 0;
+    setmodeneeded = -1;
+    return;
+
+ bpp_err:
+    I_Error ("unknown bits per pixel mode %d\n", vid.bitpp);
 }
 
 
 // change drawer function when fuzzymode is changed
 void CV_Fuzzymode_OnChange()
 {
-  if (vid.bytepp == 1)
-    fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
-  else if (vid.bytepp > 1)
-    fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
+  switch(vid.drawmode)
+  {
+   case DRAW8PAL:
+     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
+     break;
+   default:
+   case DRAW15:
+   case DRAW16:
+     fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_16 : R_DrawTranslucentColumn_16;
+     break;
+  }
 }
 
 
@@ -287,9 +323,6 @@ void SCR_Recalc (void)
 {
     if(dedicated)
         return;
-
-    // bytes per pixel quick access
-    scr_bpp = vid.bytepp;
 
     //added:18-02-98: scale 1,2,3 times in x and y the patches for the
     //                menus and overlays... calculated once and for all
@@ -378,15 +411,15 @@ void SCR_CheckDefaultMode (void)
     if (scr_forcex && scr_forcey)
     {
         CONS_Printf("Using resolution: %d x %d\n",scr_forcex,scr_forcey);
-        // returns -1 if not found, thus will be 0 (no mode change) if not found
-        setmodeneeded = VID_GetModeForSize(scr_forcex,scr_forcey) + 1;
+        // returns -1 if not found, (no mode change)
+        setmodeneeded = VID_GetModeForSize(scr_forcex,scr_forcey);
         //if (scr_forcex!=BASEVIDWIDTH || scr_forcey!=BASEVIDHEIGHT)
     }
     else
     {
         CONS_Printf("Default resolution: %d x %d (%d bits)\n",cv_scr_width.value,cv_scr_height.value,cv_scr_depth.value);
         // see note above
-        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value) + 1;
+        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
     }
 }
 
@@ -398,7 +431,7 @@ void SCR_SetDefaultMode (void)
     // remember the default screen size
     CV_SetValue (&cv_scr_width,  vid.width);
     CV_SetValue (&cv_scr_height, vid.height);
-    CV_SetValue (&cv_scr_depth,  vid.bytepp*8);
+    CV_SetValue (&cv_scr_depth,  vid.bitpp);
     //    CV_SetValue (&cv_fullscreen, vid.fullscreen); // metzgermeister: unnecessary?
 }
 
@@ -412,8 +445,7 @@ void SCR_ChangeFullscreen (void)
     return;
 
     if(graphics_started) {
-        int modenum = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
-        setmodeneeded = ++modenum;
-    }
+    setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
+  }
 }
 #endif

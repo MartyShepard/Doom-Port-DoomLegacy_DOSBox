@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: r_draw.c 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -553,7 +553,7 @@ void R_FillBackScreen (void)
         return;
 
     // draw pattern around the status bar
-    src  = scr_borderpatch;
+    src  = scr_borderflat;
     dest = screens[1];
 
     for (y=0 ; y<vid.height ; y++)

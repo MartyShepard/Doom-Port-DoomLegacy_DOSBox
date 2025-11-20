@@ -2121,3 +2121,16 @@ patchfile = w80_vid_port_fixes.patch
 - committed revision 895   by wesley johnson
 Minimal fix of djgppdos, linux_X, macos, os2, sdl, win32, port drivers for
 the new vid structure.  This is a temporary fix, as they need to be rewritten.
+
+*** w80_vid_control_fixes
+patchfile = w80_vid_control_fixes.patch
+- committed revision 896   by wesley johnson
+Fixes for new vid structure, to use drawmode, and buffer line sizes in
+many draw routines.
+Introduces code that uses drawmode to select bpp drawing, instead of
+testing bpp.
+Changes borderpatch to borderflat, as it is not a patch that is drawn.
+Changes setmodeneeded to use -1 as inactive, instead messing with
+changing 0.. to 1.. everywhere.
+Saves true bpp to config, instead of some hacked value.
+Fixes am_map, d_main, f_wipe, m_menu, r_data, r_draw, screen,

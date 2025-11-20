@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: r_draw.h 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -144,6 +144,7 @@ extern byte*            ds_translucentmap; // ptr to one translucent map
 #define BRDR_BR     7
 
 extern int viewborderlump[8];
+extern int st_borderflat_num;  // st_stuff.c
 
 // ------------------------------------------------
 // r_draw.c COMMON ROUTINES FOR BOTH 8bpp and 16bpp

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: screen.h 896 2012-02-29 19:18:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -174,6 +174,8 @@ typedef struct vmode_s {
     int          misc;              //misc for display driver (r_glide.dll etc)
 } vmode_t;
 
+extern uint16_t mask_01111, mask_11110;  // hicolor masks  15 bit / 16 bit
+
 // ---------------------------------------------
 // color mode dependent drawer function pointers
 // ---------------------------------------------
@@ -196,11 +198,9 @@ extern void     (*transtransfunc) (void); // SSNTails 11-11-2002
 // screen variables
 // ----------------
 extern viddef_t vid;
-extern int      setmodeneeded;     // mode number to set if needed, or 0
+extern int    setmodeneeded;   // mode number to set (+1), 0=NOP
 
-
-extern int      scr_bpp;
-extern byte*    scr_borderpatch;   // patch used to fill the view borders
+extern byte*  scr_borderflat;  // flat used to fill the view borders
 
 extern consvar_t cv_scr_width;
 extern consvar_t cv_scr_height;
