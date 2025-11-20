@@ -2215,3 +2215,39 @@ patchfile = w80_draw16_minimal.patch
 - committed revision 902   by wesley johnson
 Fixed draw16 routines to give minimal functionality.
 Fixed translucent draw using proportional addition of pixels.
+
+*** w80_sdl_port
+patchfile = w80_sdl_port.patch
+- committed revision 903   by wesley johnson
+Extensive rewrite of mode code in sdl port driver.
+It now handles all bpp mode requests.
+I_StartFrame no longer locks the video buffer, because that needs to be
+kept to a minimal time, during I_FinishUpdate.  This is dictated by
+SDL specs.
+VID_PrepareModeList merged into I_StartupGraphics.
+Use of SDL_GetVideoInfo made useful (instead of bypassed).
+Created VID_SetMode_vid to do actual mode setting, to reduce
+duplicated effort.
+Extensive video reporting using verbose switches "-v" and "-v2".
+
+*** w80_testbpp
+patchfile = w80_testbpp.patch
+- committed revision 904   by wesley johnson
+Adds a command line switch "-testbpp", that forces the bpp requested to
+succeed.  The hardware actually uses the native bpp and converts the
+drawn bpp in I_FinishUpdate.  This is meant for test and development of
+the extended bpp draw modes, when matching hardware is not available.
+This code is conditional on the TESTBPP macro, and only exists in
+sdl/i_video.c at this time.
+
+*** w80_draw16_ext
+patchfile = w80_draw16_ext.patch
+- committed revision 905   by wesley johnson
+Moved common draw routine from r_draw8.c to r_draw.c.
+Fixed r_draw8.c to use ybytes instead of width.
+Added translucent_index variable and field because translucentmap ptr
+only worked for palette based drawing.
+Fix r_draw16.c so that 15 and 16 bpp draw functions work.
+Create new draw functions for those that were missing.
+Create transparent and fog effects using shift and add of 15 and 16 bpp pixels.
+Has many alternative code sections for further experimentation.

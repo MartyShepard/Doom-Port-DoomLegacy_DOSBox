@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: r_draw.h 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,6 +87,8 @@ extern byte*            dc_source;      // first pixel in a column
 // translucency stuff here
 extern byte*            translucenttables;   // translucency tables, should be (*transtables)[5][256][256]
 extern byte*            dc_translucentmap;   // ptr to selected table
+extern byte             dc_translucent_index;
+
 
 // Variable flat sizes SSNTails 06-10-2003
 extern int flatsize;
@@ -169,6 +171,8 @@ void    R_FillBackScreen (void);
 // If the view size is not full screen, draws a border around it.
 void    R_DrawViewBorder (void);
 
+// [WDJ] Generic
+void    R_DrawColumnShadowed (void);
 
 // -----------------
 // 8bpp DRAWING CODE
@@ -184,17 +188,17 @@ void    ASMCALL R_DrawSkyColumn_8 (void);
 void    ASMCALL R_DrawShadeColumn_8 (void);             //smokie test..
 void    ASMCALL R_DrawFuzzColumn_8 (void);
 void    ASMCALL R_DrawTranslucentColumn_8 (void);
-void    ASMCALL R_DrawTranslatedColumn_8 (void);
+void    ASMCALL R_DrawTranslatedColumn_8 (void);  // skin
 void    ASMCALL R_DrawSpan_8 (void);
 
 // SSNTails 11-11-2002
-void    R_DrawTranslatedTranslucentColumn_8 (void);
+void    R_DrawTranslatedTranslucentColumn_8 (void);  // skin translucent
 
 void    R_DrawTranslucentSpan_8 (void);
 void    R_DrawFogSpan_8 (void);
 void    R_DrawFogColumn_8 (void); //SoM: Test
-void    R_DrawColumnShadowed_8 (void);
-void    R_DrawPortalColumn_8 (void);
+//void    R_DrawColumnShadowed_8 (void);
+//void    R_DrawPortalColumn_8 (void);
 
 // ------------------
 // 16bpp DRAWING CODE
@@ -204,8 +208,14 @@ void    ASMCALL R_DrawColumn_16 (void);
 void    ASMCALL R_DrawSkyColumn_16 (void);
 void    ASMCALL R_DrawFuzzColumn_16 (void);
 void    ASMCALL R_DrawTranslucentColumn_16 (void);
-void    ASMCALL R_DrawTranslatedColumn_16 (void);
+void    ASMCALL R_DrawTranslatedColumn_16 (void);  // skin
 void    ASMCALL R_DrawSpan_16 (void);
+
+void    R_DrawTranslatedTranslucentColumn_16 (void);  // skin translucent
+void    R_DrawShadeColumn_16(void);
+void    R_DrawTranslucentSpan_16(void);
+void    R_DrawFogSpan_16(void);
+void    R_DrawFogColumn_16(void);
 
 
 // =========================================================================

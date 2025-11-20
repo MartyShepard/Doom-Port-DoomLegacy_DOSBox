@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 834 2011-05-27 00:48:32Z wesleyjohnson $
+// $Id: r_defs.h 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -879,6 +879,7 @@ typedef struct vissprite_s
 
     //Fab:29-04-98: for MF_SHADOW sprites, which translucency table to use
     byte*               translucentmap;
+    byte		translucent_index;
 
     int                 mobjflags;
 

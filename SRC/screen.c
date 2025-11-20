@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: screen.c 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -99,13 +99,17 @@ void (*hcolfunc) (void);         // horizontal column drawer optimisation
 
 void (*basecolfunc) (void);
 void (*fuzzcolfunc) (void);      // standard fuzzy effect column drawer
+void (*skincolfunc) (void);      // skin translation
 void (*transcolfunc) (void);     // translucent column drawer
 void (*shadecolfunc) (void);     // smokie test..
+void (*fogcolfunc) (void);       // fog effects
 void (*spanfunc) (void);         // span drawer, use a 64x64 tile
 void (*basespanfunc) (void);     // default span func for color mode
+void (*fogspanfunc) (void);      // Legacy Fog sheet
+void (*transspanfunc) (void);    // translucent span drawer
 
 // Tails 11-11-2002
-void (*transtransfunc) (void);
+void (*skintranscolfunc) (void); // skin translation translucent
 
 // ------------------
 // global video state
@@ -136,7 +140,14 @@ consvar_t   cv_fullscreen = {"fullscreen",  "Yes",CV_SAVE | CV_CALL, CV_YesNo, S
 byte*  scr_borderflat; // flat used to fill the reduced view borders
                        // set at ST_Init ()
 
-uint16_t mask_01111 = 0, mask_11110 = 0;  // hicolor masks  15 bit / 16 bit
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#define ENABLE_DRAWEXT
+
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
+// hicolor masks  15 bit / 16 bit
+uint16_t mask_01111 = 0, mask_01110 = 0, mask_11110 = 0, mask_11100 = 0, mask_11000 = 0;
+#endif
+#endif
 
 
 // =========================================================================
@@ -196,13 +207,17 @@ void SCR_SetMode (void)
 #ifdef HORIZONTALDRAW
         hcolfunc = R_DrawHColumn_8;
 #endif
-
-        transcolfunc = R_DrawTranslatedColumn_8;
+        skincolfunc = R_DrawTranslatedColumn_8;  // skin translation
+        transcolfunc = R_DrawTranslucentColumn_8;
         shadecolfunc = R_DrawShadeColumn_8;  //R_DrawColumn_8;
+        fogcolfunc = R_DrawFogColumn_8;
+
         spanfunc = basespanfunc = R_DrawSpan_8;
+        fogspanfunc = R_DrawFogSpan_8;
+        transspanfunc = R_DrawTranslucentSpan_8;
 
         // SSNTails 11-11-2002
-        transtransfunc = R_DrawTranslatedTranslucentColumn_8;
+        skintranscolfunc = R_DrawTranslatedTranslucentColumn_8;
 
         // FIXME: quick fix
         skydrawerfunc[0] = R_DrawColumn_8;      //old skies
@@ -210,25 +225,34 @@ void SCR_SetMode (void)
         break;
      case 15:
         vid.drawmode = DRAW15;
-        mask_11110 = 0x7BDE;  // 0 11110 11110 11110 mask out the lowest bit of R,G,B
         mask_01111 = 0x3DEF;  // 0 01111 01111 01111 mask out the upper bit of R,G,B
+        mask_01110 = 0x39CE;  // 0 01110 01110 01110 mask out the upper and lowest bit of R,G,B
+        mask_11110 = 0x7BDE;  // 0 11110 11110 11110 mask out the lowest bit of R,G,B
+        mask_11100 = 0x739C;  // 0 11100 11100 11100 mask out the lowest bits of R,G,B
+        mask_11000 = 0x6318;  // 0 11000 11000 11000 mask out the lowest bits of R,G,B
         goto highcolor_common;
      case 16:
         vid.drawmode = DRAW16;
-        mask_11110 = 0xF7DE;  // 11110 111110 11110 mask out the lowest bit of R,G,B
         mask_01111 = 0x7BEF;  // 01111 011111 01111 mask out the upper bit of R,G,B
+        mask_01110 = 0x73CE;  // 01110 011110 01110 mask out the upper bit of R,G,B
+        mask_11110 = 0xF7DE;  // 11110 111110 11110 mask out the lowest bit of R,G,B
+        mask_11110 = 0xE79C;  // 11100 111100 11100 mask out the lowest bits of R,G,B
+        mask_11100 = 0xC718;  // 11000 111000 11000 mask out the lowest bits of R,G,B
 
      highcolor_common:
         CONS_Printf ("using highcolor mode\n");
 
         colfunc = basecolfunc = R_DrawColumn_16;
+        skincolfunc = R_DrawTranslatedColumn_16;
+        transcolfunc = R_DrawTranslucentColumn_16;
+	shadecolfunc = R_DrawShadeColumn_16;
+        fogcolfunc = R_DrawFogColumn_16;
 
-        transcolfunc = R_DrawTranslatedColumn_16;
-	shadecolfunc = NULL;      //detect error if used somewhere..
         spanfunc = basespanfunc = R_DrawSpan_16;
+        fogspanfunc = R_DrawFogSpan_16;
+        transspanfunc = R_DrawTranslucentSpan_16;
 
-        // No 16bit operation for this function SSNTails 11-11-2002
-        transtransfunc = R_DrawTranslucentColumn_16;
+        skintranscolfunc = R_DrawTranslatedTranslucentColumn_16;
 
         // FIXME: quick fix to think more..
         skydrawerfunc[0] = R_DrawColumn_16;
@@ -360,7 +384,7 @@ void SCR_Recalc (void)
     // set the screen[x] ptrs on the new vidbuffers
     V_Init();
 
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+#ifdef ENABLE_DRAWEXT
     //fab highcolor
     if ( vid.bytepp > 1 )  // highcolor, truecolor
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 899 2012-02-29 19:23:47Z wesleyjohnson $
+// $Id: r_draw.c 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -148,6 +148,7 @@ byte*                   translucenttables;    // translucency tables
 
 // R_DrawTransColumn uses this
 byte*                   dc_translucentmap;    // one of the translucency tables
+byte                    dc_translucent_index;
 
 
 // ----------------------
@@ -743,6 +744,71 @@ void R_DrawViewBorder (void)
 #endif
 }
 
+// SoM: This is for 3D floors that cast shadows on walls.
+// This function just cuts the column up into sections and calls
+// R_DrawColumn
+void R_DrawColumnShadowed(void)
+{
+    int count;
+    int realyh, realyl;
+    int i;
+    int height, bheight = 0;
+    int solid = 0;
+
+    realyh = dc_yh;
+    realyl = dc_yl;
+
+    count = dc_yh - dc_yl;
+
+    // Zero length, column does not exceed a pixel.
+    if (count < 0)
+        return;
+
+#ifdef RANGECHECK
+    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
+    {
+        I_SoftError("R_DrawShadowedColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        return;
+    }
+#endif
+
+    // SoM: This runs through the lightlist from top to bottom and cuts up
+    // the column accordingly.
+    for (i = 0; i < dc_numlights; i++)
+    {
+        // If the height of the light is above the column, get the colormap
+        // anyway because the lighting of the top should be effected.
+        solid = dc_lightlist[i].flags & FF_CUTSOLIDS;
+
+        height = dc_lightlist[i].height >> 12;
+        if (solid)
+            bheight = dc_lightlist[i].botheight >> 12;
+        if (height <= dc_yl)
+        {
+            dc_colormap = dc_lightlist[i].rcolormap;
+            if (solid && dc_yl < bheight)
+                dc_yl = bheight;
+            continue;
+        }
+        // Found a break in the column!
+        dc_yh = height;
+
+        if (dc_yh > realyh)
+            dc_yh = realyh;
+        basecolfunc();  // R_DrawColumn_x
+        if (solid)
+            dc_yl = bheight;
+        else
+            dc_yl = dc_yh + 1;
+
+        dc_colormap = dc_lightlist[i].rcolormap;
+    }
+    dc_yh = realyh;
+    if (dc_yl <= realyh)
+        basecolfunc();  // R_DrawColumn_x
+}
+
 
 // ==========================================================================
 //                   INCLUDE 8bpp DRAWING CODE HERE
@@ -755,4 +821,7 @@ void R_DrawViewBorder (void)
 //                   INCLUDE 16bpp DRAWING CODE HERE
 // ==========================================================================
 
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
 #include "r_draw16.c"
+#endif
+

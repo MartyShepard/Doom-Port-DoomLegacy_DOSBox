@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: r_segs.c 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -374,8 +374,10 @@ static void R_DrawWallSplats ()
                     colfunc = basecolfunc;
                 else
                 {
+		    dc_translucent_index = TRANSLU_med;
                     dc_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
-                    colfunc = fuzzcolfunc;
+//                    colfunc = fuzzcolfunc;
+                    colfunc = transcolfunc;
                 }
     
                 break;
@@ -619,21 +621,25 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     ldef = curline->linedef;
     if (ldef->special>=284 && ldef->special<=288)  // Legacy translucents
     {
+        dc_translucent_index = ldef->special-284+1;
         dc_translucentmap = & translucenttables[ ((ldef->special-284)<<FF_TRANSSHIFT) ];
-        colfunc = fuzzcolfunc;
+        //colfunc = fuzzcolfunc;
+        colfunc = transcolfunc;
     }
     else
     if (ldef->special==260)	// Boom make translucent
     {
-        dc_translucentmap = & translucenttables[0]; // get first transtable 50/50
-        colfunc = fuzzcolfunc;
+        dc_translucent_index = 1; // 50/50
+	dc_translucentmap = & translucenttables[0]; // get first transtable 50/50
+//        colfunc = fuzzcolfunc;
+        colfunc = transcolfunc;
     }
     else
     if (ldef->special==283)	// Legacy Fog sheet
     {
         // Display fog sheet (128 high) as transparent middle texture.
 	// Only where there is a middle texture (in place of it).
-        colfunc = R_DrawFogColumn_8;
+        colfunc = fogcolfunc; // R_DrawFogColumn_8 16 ..
         // [WDJ] clip at ceiling and floor, unlike other transparent texture
         // world coord, relative to viewer
         windowclip_top = frontsector->ceilingheight - viewz;
@@ -697,7 +703,8 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 
         if(rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
           lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
-        else if(colfunc == fuzzcolfunc)
+//        else if(colfunc == fuzzcolfunc)
+        else if(colfunc == transcolfunc)
           lightnum = LIGHTLEVELS-1;
         else
           lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT)+extralight;
@@ -715,19 +722,20 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     else
     {
       // frontsector->numlights == 0
-      if(colfunc == fuzzcolfunc)
+//      if(colfunc == fuzzcolfunc)
+      if(colfunc == transcolfunc)
       {
         if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
           lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
         else
           lightnum = LIGHTLEVELS-1;
       }
-      else if(colfunc == R_DrawFogColumn_8)
+      else if(colfunc == fogcolfunc) // Legacy Fog sheet
         lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
       else
         lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)+extralight;
 
-      if (colfunc == R_DrawFogColumn_8
+      if((colfunc == fogcolfunc) // Legacy Fog sheet
 	  || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 	 ;
       else if (curline->v1->y == curline->v2->y)
@@ -958,16 +966,26 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     {
       // Hacked up support for alpha value in software mode SSNTails 09-24-2002
       if(ffloor->alpha < 64)
-          dc_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
+      {
+	  dc_translucent_index = TRANSLU_hi;
+	  dc_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
+      }
       else if(ffloor->alpha < 128 && ffloor->alpha > 63)
+      {
+	  dc_translucent_index = TRANSLU_more;
           dc_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
+      }
       else
+      {
+	  dc_translucent_index = TRANSLU_med;
 	  dc_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
+      }
 
-      colfunc = fuzzcolfunc;
+//      colfunc = fuzzcolfunc;
+      colfunc = transcolfunc;
     }
     else if(ffloor->flags & FF_FOG)
-      colfunc = R_DrawFogColumn_8;
+      colfunc = fogcolfunc;  // R_DrawFogColumn_8 16 ..
 
     //SoM: Moved these up here so they are available for my lightlist calculations
     rw_scalestep = ds->scalestep;
@@ -1038,7 +1056,8 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
       else if(ffloor->flags & FF_FOG)
         lightnum = (ffloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT);
-      else if(colfunc == fuzzcolfunc)
+//      else if(colfunc == fuzzcolfunc)
+      else if(colfunc == transcolfunc)
         lightnum = LIGHTLEVELS-1;
       else
       {
@@ -1529,7 +1548,7 @@ void R_RenderSegLoop (void)
 	      }
 	    }
 
-            colfunc = R_DrawColumnShadowed_8;
+            colfunc = R_DrawColumnShadowed;  // generic 8 16
           }
         } // if dclights
 

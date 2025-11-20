@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: screen.h 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -194,7 +194,8 @@ typedef union {
    pixel32_t     pix32;
 } pixelunion32_t;
 
-extern uint16_t mask_01111, mask_11110;  // hicolor masks  15 bit / 16 bit
+// hicolor masks  15 bit / 16 bit
+extern uint16_t mask_01111, mask_01110, mask_11110, mask_11100, mask_11000;
 
 // ---------------------------------------------
 // color mode dependent drawer function pointers
@@ -206,12 +207,16 @@ extern void     (*colfunc) (void);
 extern void     (*hcolfunc) (void);    //Fab 17-06-98
 #endif
 extern void     (*basecolfunc) (void);
-extern void     (*fuzzcolfunc) (void);
-extern void     (*transcolfunc) (void);
+extern void     (*fuzzcolfunc) (void);  // fuzzy
+extern void     (*skincolfunc) (void);  // skin translated
+extern void     (*transcolfunc) (void);  // translucent
+extern void     (*skintranscolfunc) (void); // SSNTails 11-11-2002
 extern void     (*shadecolfunc) (void);
+extern void     (*fogcolfunc) (void);
 extern void     (*spanfunc) (void);
 extern void     (*basespanfunc) (void);
-extern void     (*transtransfunc) (void); // SSNTails 11-11-2002
+extern void     (*fogspanfunc) (void);
+extern void     (*transspanfunc) (void);
 
 
 // ----------------
@@ -226,8 +231,6 @@ extern consvar_t cv_scr_width;
 extern consvar_t cv_scr_height;
 extern consvar_t cv_scr_depth;
 extern consvar_t cv_fullscreen;
-// wait for page flipping to end or not
-//extern consvar_t cv_vidwait;
 
 extern consvar_t cv_fuzzymode;
 

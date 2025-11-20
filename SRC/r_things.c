@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: r_things.c 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -882,7 +882,7 @@ void R_DrawMaskedColumn (column_t* column)
             //Hurdler: quick fix... something more proper should be done!!!
 	    // [WDJ] Fixed by using rdraw_viewheight instead of vid.height
 	    // in limit test above.
-            if (!ylookup[dc_yl] && colfunc==R_DrawColumn_8)
+            if (!ylookup[dc_yl] && colfunc==basecolfunc) // R_DrawColumn_8
             {
 	        I_SoftError("WARNING: avoiding a crash in %s %d\n", __FILE__, __LINE__);
             }
@@ -925,13 +925,15 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     // Support for translated and translucent sprites. SSNTails 11-11-2002
     if(vis->mobjflags & MF_TRANSLATION && vis->translucentmap)
     {
-	colfunc = transtransfunc;
+	colfunc = skintranscolfunc;
+        dc_translucent_index = vis->translucent_index;
+//        dc_translucentmap = & translucenttables[TRANSLU_TABLE_INDEX(dc_translucent_index)];
 	dc_translucentmap = vis->translucentmap;
 //	dc_skintran = translationtables - 256 +
 //	 ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
 	dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
-    if (vis->translucentmap==VIS_SMOKESHADE)
+    else if (vis->translucentmap==VIS_SMOKESHADE)
     {
         // shadecolfunc uses 'reg_colormaps'
         colfunc = shadecolfunc;
@@ -939,12 +941,13 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     else if (vis->translucentmap)
     {
         colfunc = fuzzcolfunc;
+        dc_translucent_index = vis->translucent_index;
         dc_translucentmap = vis->translucentmap;    //Fab:29-04-98: translucency table
     }
     else if (vis->mobjflags & MF_TRANSLATION)
     {
         // translate green skin to another color
-        colfunc = transcolfunc;
+        colfunc = skincolfunc;
 //        dc_skintran = translationtables - 256 +
 //            ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
         dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
@@ -1371,6 +1374,7 @@ static void R_ProjectSprite (mobj_t* thing)
 // determine the colormap (lightlevel & special effects)
 //
     vis->translucentmap = NULL;
+    vis->translucent_index = 0;
     
     // specific translucency
     if (thing->frame & FF_SMOKESHADE)
@@ -1381,11 +1385,15 @@ static void R_ProjectSprite (mobj_t* thing)
     else
     {
         if (thing->frame & FF_TRANSMASK)
+        {
+  	    vis->translucent_index = (thing->frame&FF_TRANSMASK)>>FF_TRANSSHIFT;
             vis->translucentmap = & translucenttables[ FF_TRANSLU_TABLE_INDEX(thing->frame) ];
+	}
         else if (thing->flags & MF_SHADOW)
         {
             // actually only the player should use this (temporary invisibility)
             // because now the translucency is set through FF_TRANSMASK
+  	    vis->translucent_index = TRANSLU_hi;
             vis->translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
 	}
 
@@ -1593,6 +1601,7 @@ void R_DrawPSprite (pspdef_t* psp)
     //Fab: see above for more about spritelump_id,lumppat
     vis->patch = sprframe->lumppat[0];
     vis->translucentmap = NULL;
+    vis->translucent_index = 0;
     if (viewplayer->mo->flags & MF_SHADOW)      // invisibility effect
     {
         vis->colormap = NULL;   // use translucency
@@ -1601,9 +1610,15 @@ void R_DrawPSprite (pspdef_t* psp)
         // now it switch between invis/less invis the last seconds
         if (viewplayer->powers[pw_invisibility] > 4*TICRATE
                  || viewplayer->powers[pw_invisibility] & 8)
+        {
+            vis->translucent_index = TRANSLU_hi;
             vis->translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
+	}
         else
+        {
+            vis->translucent_index = TRANSLU_med;
             vis->translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
+	}
     }
     else if (fixedcolormap)
     {

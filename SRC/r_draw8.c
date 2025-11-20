@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 668 2010-06-03 13:02:59Z wesleyjohnson $
+// $Id: r_draw8.c 905 2012-02-29 19:31:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -155,7 +155,7 @@ void R_DrawColumn_8(void)
         //  using a lighting/special effects LUT.
         *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 127]];
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
 
     }
@@ -223,7 +223,7 @@ void R_DrawColumn_8(void)
                 // heightmask is the Tutti-Frutti fix -- killough
 
                 *dest = colormap[source[frac >> FRACBITS]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
             }
@@ -234,10 +234,10 @@ void R_DrawColumn_8(void)
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
             }
             if (count & 1)
@@ -291,7 +291,7 @@ void R_DrawSkyColumn_8(void)
         //  using a lighting/special effects LUT.
         *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 255]];
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
 
     }
@@ -356,7 +356,7 @@ void R_DrawSkyColumn_8(void)
                 // heightmask is the Tutti-Frutti fix -- killough
 
                 *dest = colormap[source[frac >> FRACBITS]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
             }
@@ -367,10 +367,10 @@ void R_DrawSkyColumn_8(void)
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
             }
             if (count & 1)
@@ -435,7 +435,7 @@ void R_DrawFuzzColumn_8(void)
         if (++fuzzpos == FUZZTABLE)
             fuzzpos = 0;
 
-        dest += vid.width;
+        dest += vid.ybytes;
 
         frac += fracstep;
     }
@@ -492,7 +492,7 @@ void R_DrawShadeColumn_8(void)
 //        *dest = *(reg_colormaps + (dc_source[frac >> FRACBITS] << 8) + (*dest));
         *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
     }
     while (count--);
@@ -542,7 +542,7 @@ void R_DrawTranslucentColumn_8(void)
     do
     {
         *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
     }
     while (count--);
@@ -606,7 +606,7 @@ void R_DrawTranslucentColumn_8(void)
                 // heightmask is the Tutti-Frutti fix -- killough
 
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
             }
@@ -617,10 +617,10 @@ void R_DrawTranslucentColumn_8(void)
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
             }
             if (count & 1)
@@ -686,7 +686,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
 
-                dest += vid.width;
+                dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
             }
@@ -697,10 +697,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
-                dest += vid.width;
+                dest += vid.ybytes;
                 frac += fracstep;
             }
             if (count & 1)
@@ -752,7 +752,7 @@ void R_DrawTranslatedColumn_8(void)
         //  is mapped to gray, red, black/indigo.
         *dest = dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]];
 
-        dest += vid.width;
+        dest += vid.ybytes;
 
         frac += fracstep;
     }
@@ -1035,13 +1035,15 @@ void R_DrawFogColumn_8(void)
 
     do
     {
-        //Simple. Apply the colormap to what's allready on the screen.
+        //Simple. Apply the colormap to what's already on the screen.
         *dest = dc_colormap[*dest];
-        dest += vid.width;
+        dest += vid.ybytes;
     }
     while (count--);
 }
 
+#if 0
+// [WDJ] Replaced by generic R_DrawColumnShadowed
 // SoM: This is for 3D floors that cast shadows on walls.
 // This function just cuts the column up into sections and calls
 // R_DrawColumn_8
@@ -1106,3 +1108,4 @@ void R_DrawColumnShadowed_8(void)
     if (dc_yl <= realyh)
         R_DrawColumn_8();
 }
+#endif

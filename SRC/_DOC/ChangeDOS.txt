@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00905 ]: w80 vid draw16 minimal
+[00904*]: w80 testbpp option
+[00903*]: w80 vid sdl port
 [00902 ]: w80 vid draw16 minimal
 [00901 ]: w80 vid request bpp
 [00900 ]: w80 vid wipe fix
