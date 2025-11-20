@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 894 2012-02-29 19:15:06Z wesleyjohnson $
+// $Id: wi_stuff.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -489,7 +489,9 @@ static void WI_slamBackground(void)
     if (rendermode==render_soft) 
     {
         memcpy(screens[0], screens[1], vid.width * vid.height);
+#ifdef DIRTY_RECT
         V_MarkRect (0, 0, vid.width, vid.height);
+#endif
     }
     else 
         V_DrawScaledPatch(0, 0, 1+V_NOSCALESTART, W_CachePatchName(bgname, PU_CACHE));

@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00897 ]: w80 video function fixes
+					DOS: Let Temporary Code in Screens.h NUMSCREENS
+					
 [00896 ]: w80 vid control fixes
 [00895 ]: w80 vid port fixes
 					DOS: Successful Compiled

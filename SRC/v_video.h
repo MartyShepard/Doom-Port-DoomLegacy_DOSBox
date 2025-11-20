@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: v_video.h 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,12 +77,17 @@
 //               The rest of the time it should be zero.
 extern  int     scaledofs;
 
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
+// Screen 0 is the screen updated by I_Update screen, (= vid.display).
+// Screen 1 is an extra buffer, background, status bar.
+// Screen 2,3 are used for wipes.
 
-extern  byte*   screens[5];
+#define NUMSCREENS    4
+// someone stuck in an extra screen ptr
+extern  byte*   screens[NUMSCREENS+1];
 
+#ifdef DIRTY_RECT
 extern  int     dirtybox[4];
+#endif
 
 extern  consvar_t cv_ticrate;
 extern  consvar_t cv_usegamma;
@@ -106,21 +111,13 @@ extern RGBA_t  *pLocalPalette;
 // Retrieve the ARGB value from a palette color index
 #define V_GetColor(color)  (pLocalPalette[color&0xFF])
 
-
-void
-V_CopyRect
-( int           srcx,
-  int           srcy,
-  int           srcscrn,
-  int           width,
-  int           height,
-  int           destx,
-  int           desty,
-  int           destscrn );
+// position and width is in src pixels
+void V_CopyRect ( int srcx, int srcy, int srcscrn,
+		  int width, int height,
+		  int destx, int desty, int destscrn );
 
 //added:03-02-98:like V_DrawPatch, + using a colormap.
-void V_DrawMappedPatch ( int           x,
-                         int           y,
+void V_DrawMappedPatch ( int x, int y,
                          int           scrn,
                          patch_t*      patch,
                          byte*         colormap );
@@ -142,67 +139,65 @@ void V_DrawMappedPatch_Name ( int x, int y, int scrn,
 #define V_TRANSLUCENTPATCH   0x400000   // draw patch translucent
 
 // default params : scale patch and scale start
-void V_DrawScaledPatch ( int           x,
-                         int           y,
-                         int           scrn,    // + flags
-                         patch_t*      patch );
+void V_DrawScaledPatch ( int x, int y,
+                         int        scrn,    // + flags
+                         patch_t*   patch );
 
 // with temp patch load to cache
 void V_DrawScaledPatch_Name(int x, int y, int scrn, char * name );
 void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num );
 
 //added:05-02-98:kiktest : this draws a patch using translucency
-void V_DrawTransPatch ( int           x,
-                        int           y,
-                        int           scrn,
-                        patch_t*      patch );
+void V_DrawTransPatch ( int x, int y,
+                        int       scrn,
+                        patch_t*  patch );
 
 //added:16-02-98: like V_DrawScaledPatch, plus translucency
-void V_DrawTranslucentPatch ( int           x,
-                              int           y,
-                              int           scrn,
-                              patch_t*      patch );
+void V_DrawTranslucentPatch ( int x, int y,
+                              int       scrn,
+                              patch_t*  patch );
 
 
-void V_DrawPatch ( int           x,
-                   int           y,
-                   int           scrn,
-                   patch_t*      patch);
+void V_DrawPatch ( int x, int y,
+                   int       scrn,
+                   patch_t*  patch);
 
+#if 0
+// [WDJ] Replaced by VID_BlitLinearScreen and V_CopyRect because
+// were being used to copy screens
 
 // Draw a linear block of pixels into the view buffer.
-void V_DrawBlock ( int           x,
-                   int           y,
-                   int           scrn,
-                   int           width,
-                   int           height,
-                   byte*         src );
+// src: is not a screen
+void V_DrawBlock ( int x, int y,
+                   int    scrn,
+                   int width, int height,
+                   byte*  src );
 
 // Reads a linear block of pixels into the view buffer.
-void V_GetBlock ( int           x,
-                  int           y,
-                  int           scrn,
-                  int           width,
-                  int           height,
-                  byte*         dest );
+// dest: is not a screen
+void V_GetBlock ( int x, int y,
+                  int    scrn,
+                  int width, int height,
+                  byte*  dest );
+#endif
 
 // draw a pic_t, SCALED
-void V_DrawScalePic_Num ( int           x1,
-                      int           y1,
-                      int           scrn,
-                      int           lumpnum /*pic_t*        pic */);
+void V_DrawScalePic_Num ( int x1, int y1,
+                      int scrn,
+                      int lumpnum );
 
 // Heretic raw pic
-void V_DrawRawScreen_Num(int x, int y, int lumpnum, int width, int height);
+void V_DrawRawScreen_Num(int x, int y,
+			 int lumpnum,
+			 int width, int height);
 
-void V_MarkRect ( int           x,
-                  int           y,
-                  int           width,
-                  int           height );
-
+#ifdef DIRTY_RECT
+void V_MarkRect ( int x, int y,
+                  int width, int height );
+#endif
 
 //added:05-02-98: fill a box with a single color
-void V_DrawFill (int x, int y, int w, int h, int c);
+void V_DrawFill(int x, int y, int w, int h, byte color);
 //added:06-02-98: fill a box with a flat as a pattern
 void V_DrawFlatFill (int x, int y, int w, int h, int flatnum);
 
@@ -237,7 +232,19 @@ void V_DrawTiltView (byte *viewbuffer);
 //added:05-04-98: test persp. correction !!
 void V_DrawPerspView (byte *viewbuffer, int aiming);
 
+// width is in bytes (defined by ASM routine)
 void VID_BlitLinearScreen (byte *srcptr, byte *destptr, int width,
                            int height, int srcrowbytes, int destrowbytes);
+
+// [WDJ] 2012-02-06 Draw functions for all bpp, bytepp, and padded lines.
+
+// [WDJ] Common calc of the display buffer address for an x and y
+byte * V_GetDrawAddr( int x, int y );
+
+// [WDJ] Draw a palette color to a single pixel
+void V_DrawPixel(byte * line, int x, byte color);
+
+// [WDJ] Draw a palette src to a screen line
+void V_DrawPixels(byte * line, int x, int count, byte* src);
 
 #endif

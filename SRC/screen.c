@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: screen.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -368,6 +368,14 @@ void SCR_Recalc (void)
     // set the screen[x] ptrs on the new vidbuffers
     V_Init();
 
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+    //fab highcolor
+    if ( vid.bytepp > 1 )  // highcolor, truecolor
+    {
+        R_Init_color8_translate( 1 );
+    }
+#endif
+    
     // scr_viewsize doesn't change, neither detailLevel, but the pixels
     // per screenblock is different now, since we've changed resolution.
     R_SetViewSize ();   //just set setsizeneeded true now ..

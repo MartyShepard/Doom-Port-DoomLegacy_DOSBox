@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 667 2010-06-03 12:59:23Z wesleyjohnson $
+// $Id: r_draw16.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -41,8 +41,7 @@
 // ==========================================================================
 
 // r_data.c
-extern short    color8to16[256];        //remap color index to highcolor
-extern short*   hicolormaps;            //remap high colors to high colors..
+  // include: color8.to16, hicolormaps
 
 //hicolor composant (we're in 5:5:5)
 #define HIMASK_11110   0x7bde     //kick out the upper bit of each ??
@@ -54,7 +53,7 @@ extern short*   hicolormaps;            //remap high colors to high colors..
 void R_DrawColumn_16 (void)
 {
     int                 count;
-    short*              dest;
+    uint16_t *          dest;
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -74,7 +73,7 @@ void R_DrawColumn_16 (void)
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows?
-    dest = (short *) (ylookup[dc_yl] + columnofs[dc_x]);
+    dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
 
     // Determine scaling,
     //  which is the only mapping to be done.
@@ -89,10 +88,10 @@ void R_DrawColumn_16 (void)
     {
         // Re-map color indices from wall texture column
         //  using a lighting/special effects LUT.
-        //*dest = *( (short *)dc_colormap + dc_source[(frac>>FRACBITS)&127] );
-        *dest = hicolormaps[ ((short*)dc_source)[(frac>>FRACBITS)&127]>>1 ];
+        //*dest = *( (uint16_t *)dc_colormap + dc_source[(frac>>FRACBITS)&127] );
+        *dest = hicolormaps[ ((uint16_t *)dc_source)[(frac>>FRACBITS)&127]>>1 ];
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
 
     } while (--count);
@@ -105,7 +104,7 @@ void R_DrawColumn_16 (void)
 void R_DrawSkyColumn_16 (void)
 {
     int                 count;
-    short*              dest;
+    uint16_t *          dest;
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -122,7 +121,7 @@ void R_DrawSkyColumn_16 (void)
         I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
 #endif
 
-    dest = (short *) (ylookup[dc_yl] + columnofs[dc_x]);
+    dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
 
     fracstep = dc_iscale;
     frac = dc_texturemid + (dc_yl-centery)*fracstep;
@@ -131,9 +130,9 @@ void R_DrawSkyColumn_16 (void)
     {
         // DUMMY, just to see it's active
         *dest = (15<<10);
-        //hicolormaps[ ((short*)dc_source)[(frac>>FRACBITS)&255]>>1 ];
+        //hicolormaps[ ((uint16_t *)dc_source)[(frac>>FRACBITS)&255]>>1 ];
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
 
     } while (--count);
@@ -146,7 +145,7 @@ void R_DrawSkyColumn_16 (void)
 void R_DrawFuzzColumn_16 (void)
 {
     int                 count;
-    short*              dest;
+    uint16_t *          dest;
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -176,7 +175,7 @@ void R_DrawFuzzColumn_16 (void)
 
 
     // Does not work with blocky mode.
-    dest = (short*) (ylookup[dc_yl] + columnofs[dc_x]);
+    dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
 
     // Looks familiar.
     fracstep = dc_iscale;
@@ -188,14 +187,14 @@ void R_DrawFuzzColumn_16 (void)
         //  left or right of the current one.
         // Add index from colormap to index.
 	// Remap existing dest, modify position, dim through LIGHTTABLE[6].
-//        *dest = color8to16[reg_colormaps[6*256+dest[fuzzoffset[fuzzpos]]]];
-        *dest = color8to16[ reg_colormaps[ LIGHTTABLE(6) + dest[fuzzoffset[fuzzpos]]] ];
+//        *dest = color8.to16[reg_colormaps[6*256+dest[fuzzoffset[fuzzpos]]]];
+        *dest = color8.to16[ reg_colormaps[ LIGHTTABLE(6) + dest[fuzzoffset[fuzzpos]]] ];
 
         // Clamp table lookup index.
         if (++fuzzpos == FUZZTABLE)
             fuzzpos = 0;
 
-        dest += vid.width;
+        dest += vid.ybytes;
 
         frac += fracstep;
     } while (count--);
@@ -209,7 +208,7 @@ void R_DrawFuzzColumn_16 (void)
 void R_DrawTranslucentColumn_16 (void)
 {
     int                 count;
-    short*              dest;
+    uint16_t *          dest;
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -236,7 +235,7 @@ void R_DrawTranslucentColumn_16 (void)
 
     // FIXME. As above.
     //src  = ylookup[dc_yl] + columnofs[dc_x+2];
-    dest = (short*) (ylookup[dc_yl] + columnofs[dc_x]);
+    dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
 
 
     // Looks familiar.
@@ -255,10 +254,10 @@ void R_DrawTranslucentColumn_16 (void)
 	// But if such carries are occuring then the color math is overflowing
 	// and wrapping back to black.
 	// An OR of selected bits, dependent upon a translucent mask, would be more stable.
-        *dest =( ((color8to16[dc_source[frac>>FRACBITS]]>>1) & HIMASK_01110) +
+        *dest =( ((color8.to16[dc_source[frac>>FRACBITS]]>>1) & HIMASK_01110) +
                  (*dest & HIMASK_11110) ) /*>> 1*/ & 0x7fff;
 
-        dest += vid.width;
+        dest += vid.ybytes;
         frac += fracstep;
     } while (count--);
 }
@@ -271,7 +270,7 @@ void R_DrawTranslucentColumn_16 (void)
 void R_DrawTranslatedColumn_16 (void)
 {
     int                 count;
-    short*              dest;
+    uint16_t *          dest;
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -291,7 +290,7 @@ void R_DrawTranslatedColumn_16 (void)
 #endif
 
 
-    dest = (short *) (ylookup[dc_yl] + columnofs[dc_x]);
+    dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
 
     // Looks familiar.
     fracstep = dc_iscale;
@@ -300,8 +299,8 @@ void R_DrawTranslatedColumn_16 (void)
     // Here we do an additional index re-mapping.
     do
     {
-        *dest = color8to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
-        dest += vid.width;
+        *dest = color8.to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
+        dest += vid.ybytes;
 
         frac += fracstep;
     } while (count--);
@@ -321,7 +320,7 @@ void R_DrawSpan_16 (void)
 {
     fixed_t             xfrac;
     fixed_t             yfrac;
-    short*              dest;
+    uint16_t *          dest;
     int                 count;
     int                 spot;
 
@@ -339,7 +338,7 @@ void R_DrawSpan_16 (void)
     xfrac = ds_xfrac;
     yfrac = ds_yfrac;
 
-    dest = (short *)(ylookup[ds_y] + columnofs[ds_x1]);
+    dest = (uint16_t *)(ylookup[ds_y] + columnofs[ds_x1]);
 
     // We do not check for zero spans here?
     count = ds_x2 - ds_x1;
@@ -351,7 +350,7 @@ void R_DrawSpan_16 (void)
 
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        *dest++ = hicolormaps[ ((short*)ds_source)[spot]>>1 ];
+        *dest++ = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
 
         // Next step in u,v.
         xfrac += ds_xstep;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: f_wipe.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -286,7 +286,7 @@ int wipe_StartScreen ( int   x,
                        int   height )
 {
     wipe_scr_start = screens[2];
-    I_ReadScreen(wipe_scr_start);
+    I_ReadScreen(wipe_scr_start);  // copy vid.display in screen format
     return 0;
 }
 
@@ -299,8 +299,12 @@ int wipe_EndScreen ( int   x,
                      int   height )
 {
     wipe_scr_end = screens[3];
-    I_ReadScreen(wipe_scr_end);
-    V_DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
+    I_ReadScreen(wipe_scr_end);  // copy vid.display in screen format
+    // restore start scr.
+// old: V_DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
+//    V_CopyRect(x, y, 2, width, height, x, y, 0);  // screen[2] -> screen[0]
+//  full copy, ignore parameters
+    VID_BlitLinearScreen(wipe_scr_start, screens[0], vid.width, vid.height, vid.ybytes, vid.ybytes);
     return 0;
 }
 
@@ -323,8 +327,10 @@ int wipe_ScreenWipe ( int   wipeno,
         wipe_exitMelt
     };
 
+#ifdef DIRTY_RECT
     //Fab: obsolete (we don't use dirty-rectangles type of refresh)
     //void V_MarkRect(int, int, int, int);
+#endif
 
     // initial stuff
     if (!go)
@@ -336,7 +342,9 @@ int wipe_ScreenWipe ( int   wipeno,
     }
 
     // do a piece of wipe-in
+#ifdef DIRTY_RECT
     //V_MarkRect(0, 0, width, height);
+#endif
     rc = (*wipes[wipeno*3+1])(width, height, ticks);
     //  V_DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
 

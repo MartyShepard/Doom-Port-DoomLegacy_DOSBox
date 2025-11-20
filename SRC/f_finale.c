@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 862 2011-09-17 17:56:28Z wesleyjohnson $
+// $Id: f_finale.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -365,7 +365,9 @@ void F_TextWrite (void)
     // erase the entire screen to a tiled background
     V_DrawFlatFill(0, 0, vid.width, vid.height, W_GetNumForName(finaleflat));
 
+#ifdef DIRTY_RECT
     V_MarkRect (0, 0, vid.width, vid.height);
+#endif
 
     // draw some of the text onto the screen
     if( raven )
@@ -711,7 +713,9 @@ void F_BunnyScroll (void)
         p2 = Chex_safe_pictures( "PFUB1", p2 );
     }
 
+#ifdef DIRTY_RECT
     V_MarkRect (0, 0, vid.width, vid.height);
+#endif
 
     scrolled = 320 - (finalecount-230)/2;
     if (scrolled > 320)

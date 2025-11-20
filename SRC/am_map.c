@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: am_map.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1507,5 +1507,7 @@ void AM_Drawer (void)
         V_DrawString( 20, y - V_StringHeight(P_LevelName()), 0, P_LevelName());
     }
 
+#ifdef DIRTY_RECT
     V_MarkRect(f_x, f_y, f_w, f_h);
+#endif
 }

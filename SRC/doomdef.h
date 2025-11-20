@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 888 2011-12-18 04:05:08Z wesleyjohnson $
+// $Id: doomdef.h 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -272,6 +272,16 @@ void I_SoftError (char *error, ...);
 //#define BEX_LANGUAGE
 // Automatic loading of lang.bex file.
 //#define BEX_LANG_AUTO_LOAD
+
+
+// [WDJ] 2/6/2012 Drawing enables
+// To save code size, can turn off some drawing bpp that you cannot use.
+#define ENABLE_DRAW15
+#define ENABLE_DRAW16
+#ifndef PC_DOS
+# define ENABLE_DRAW24
+# define ENABLE_DRAW32
+#endif
 
 // =========================================================================
 

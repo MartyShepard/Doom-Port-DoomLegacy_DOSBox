@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: r_data.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -201,8 +201,9 @@ int             texturememory;	// all textures
 
 
 //faB: highcolor stuff
-short    color8to16[256];       //remap color index to highcolor rgb value
-short*   hicolormaps;           // test a 32k colormap remaps high -> high
+// [WDJ] 2012-02-06 shared for DRAW15, DRAW16, DRAW24, DRAW32
+union color8_u   color8;  // remap color index to rgb value
+uint16_t*  hicolormaps = NULL;  // test a 32k colormap remaps high -> high
 
 #if 0
 // [WDJ] This description applied to previous code. It is kept for historical
@@ -2045,34 +2046,72 @@ char *R_ColormapNameForNum(int num)
 }
 
 
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
 //
-//  build a table for quick conversion from 8bpp to 15bpp
+//  build a table for quick conversion from 8bpp to 15bpp, 16bpp, 24bpp, 32bpp
 //
-int makecol15(int r, int g, int b)
+// covert 8 bit colors
+void R_Init_color8_translate ( boolean himap )
 {
-   return (((r >> 3) << 10) | ((g >> 3) << 5) | ((b >> 3)));
-}
-
-void R_Init8to16 (void)
-{
-    byte*       palette;
-    int         i;
-
-    palette = W_CacheLumpName ("PLAYPAL",PU_CACHE);  // temp, used next loop
-
-    for (i=0;i<256;i++)
+    static byte color8_done = 0;  // check if table already for this bpp
+    int  i;
+ 
+    if( color8_done != vid.bitpp )
     {
-                // doom PLAYPAL are 8 bit values
-        color8to16[i] = makecol15 (palette[0],palette[1],palette[2]);
-        palette += 3;
+        // temp, used next loop
+        byte * palette = W_CacheLumpName ("PLAYPAL",PU_CACHE);
+ 
+        for (i=0;i<256;i++)
+        {
+	    // doom PLAYPAL are 8 bit values
+	    register byte r = palette[0];
+	    register byte g = palette[1];
+	    register byte b = palette[2];
+	    switch( vid.drawmode )
+	    {
+#ifdef ENABLE_DRAW15	       
+	     case DRAW15: // 15 bpp (5,5,5)
+	       color8.to16[i] = (((r >> 3) << 10) | ((g >> 3) << 5) | ((b >> 3)));
+	       break;
+#endif
+#ifdef ENABLE_DRAW16
+	     case DRAW16: // 16 bpp (5,6,5)
+	       color8.to16[i] = (((r >> 3) << 11) | ((g >> 2) << 5) | ((b >> 3)));
+	       break;
+#endif
+#if defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
+	     case DRAW24:
+	     case DRAW32:
+	       {
+		   pixelunion32_t c32;
+		   c32.pix32.r = r;
+		   c32.pix32.g = g;
+		   c32.pix32.b = b;
+		   c32.pix32.alpha = 0xFF;
+		   color8.to32[i] = c32.uint32;
+	       }
+	       break;
+#endif
+	     default:
+	       break;  // should not be calling
+	    } 
+	    palette += 3;
+	}
+        // end PLAYPAL lump use
+	color8_done = vid.bitpp;
     }
-    // end PLAYPAL lump use
 
-    // test a big colormap
-    hicolormaps = Z_Malloc (32768 /**34*/, PU_STATIC, 0);
-    for (i=0;i<16384;i++)
-         hicolormaps[i] = i<<1;
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
+    if( himap && (hicolormaps == NULL))
+    {
+        // test a big colormap
+        hicolormaps = Z_Malloc (32768 /**34*/, PU_STATIC, 0);
+        for (i=0;i<16384;i++)
+	    hicolormaps[i] = i<<1;
+     }
+#endif
 }
+#endif
 
 
 //
@@ -2083,13 +2122,6 @@ void R_Init8to16 (void)
 //
 void R_InitData (void)
 {
-    //fab highcolor
-    if (highcolor)
-    {
-        CONS_Printf ("\nInitHighColor...");
-        R_Init8to16 ();
-    }
-
     CONS_Printf ("\nInitTextures...");
     R_LoadTextures ();
     CONS_Printf ("\nInitFlats...");

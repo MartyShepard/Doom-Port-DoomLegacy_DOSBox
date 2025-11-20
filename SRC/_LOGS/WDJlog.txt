@@ -2134,3 +2134,29 @@ Changes setmodeneeded to use -1 as inactive, instead messing with
 changing 0.. to 1.. everywhere.
 Saves true bpp to config, instead of some hacked value.
 Fixes am_map, d_main, f_wipe, m_menu, r_data, r_draw, screen,
+
+*** w80_video_fixes
+patchfile = w80_video_fixes.patch
+- committed revision 897   by wesley johnson
+Code has not used dirty rectange limited drawing since DOS.
+Disable Mark_Rect function and calls using DIRTY_RECT macro.
+Introduce ENABLE_DRAW15, ENABLE_DRAW16, ENABLE_DRAW24, ENABLE_DRAW32
+macro controls in doomdef.h for conditional draw code.  User can disable
+compiling drawing code for modes they cannot use.
+Introduce pixel structures for 24bpp, and 32bpp.
+Introduce color translation table, color8, that works for all draw
+modes, replacing color8to16.  Init it when screen bpp is determined.
+Fix draw16 to use uint16_t instead of short.
+Introduce basic draw functions, V_GetDrawAddr, V_DrawPixel, V_DrawPixels,
+that work in all bpp draw modes, for use in splash screens, wipes, and
+the like.
+Fixed V_CopyRect, VID_BlitLinearScreen, V_DrawMappedPatch,
+V_DrawScaledPatch, HWR_DrawSmallPatch, V_DrawTranslucentPatch,
+V_DrawPatch, V_BlitScalePic, V_DrawFill, V_DrawFlatFill,
+V_DrawFadeScreen, V_FadeConsBack, to draw correctly using buffer width
+and drawmodes.
+Update V_DrawTiltView and V_DrawPerspView in similar fashion,
+but they have other serious problems.
+Diabled V_DrawBlock and V_GetBlock because they were not safe for use
+on screens with extended draw modes,
+and substituted other existing draw routines for the uses.

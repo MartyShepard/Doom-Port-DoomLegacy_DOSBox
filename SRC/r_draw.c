@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: r_draw.c 897 2012-02-29 19:21:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -701,8 +701,10 @@ void R_DrawViewBorder (void)
     VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
                          side, rdraw_viewheight-1, vid.width, vid.width);
 
+#ifdef DIRTY_RECT
     // useless, old dirty rectangle stuff
     //V_MarkRect (0,0,vid.width, vid.height-stbarheight);
+#endif
 }
 
 
