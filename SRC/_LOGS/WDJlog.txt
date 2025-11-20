@@ -2209,3 +2209,9 @@ Switch "-bpp 15", sets req_bpp and REQ_specific, which requests a
 specific bpp mode (can be 8, 15, 16, 24, or 32).
 Fixes DrawPixel routines to use direct ptr access to pixels, which
 should give the fastest code.
+
+*** w80_draw16_minimal
+patchfile = w80_draw16_minimal.patch
+- committed revision 902   by wesley johnson
+Fixed draw16 routines to give minimal functionality.
+Fixed translucent draw using proportional addition of pixels.

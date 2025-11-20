@@ -43,17 +43,19 @@
 // r_data.c
   // include: color8.to16, hicolormaps
 
-//hicolor composant (we're in 5:5:5)
-#define HIMASK_11110   0x7bde     //kick out the upper bit of each ??
+//hicolor composite (we're in 5:5:5)
+#define HIMASK_11110   0x7bde     //mask out the lowest bit of R,G,B
 #define HIMASK_01111   0x3def     //mask out the upper bit of R,G,B
 #define HIMASK_01110   0x39ce	  //mask out the upper and lowest bit of R,G,B
+// [WDJ] (c>>1 & HIMASK_01111) or ((c & HIMASK_11110)>>1) both
+// round off the LSB, and prevent it from becoming the MSB of the adjacent color.
 
 //  standard upto 128high posts column drawer
 //
 void R_DrawColumn_16 (void)
 {
     int                 count;
-    uint16_t *          dest;
+    uint16_t*           dest;  // within screen buffer
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -70,7 +72,7 @@ void R_DrawColumn_16 (void)
         I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
 #endif
 
-    // Framebuffer destination address.
+    // Screen buffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows?
     dest = (uint16_t *) (ylookup[dc_yl] + columnofs[dc_x]);
@@ -89,7 +91,7 @@ void R_DrawColumn_16 (void)
         // Re-map color indices from wall texture column
         //  using a lighting/special effects LUT.
         //*dest = *( (uint16_t *)dc_colormap + dc_source[(frac>>FRACBITS)&127] );
-        *dest = hicolormaps[ ((uint16_t *)dc_source)[(frac>>FRACBITS)&127]>>1 ];
+        *dest = hicolormaps[ ((uint16_t*)dc_source)[(frac>>FRACBITS)&127]>>1 ];
 
         dest += vid.ybytes;
         frac += fracstep;
@@ -208,7 +210,7 @@ void R_DrawFuzzColumn_16 (void)
 void R_DrawTranslucentColumn_16 (void)
 {
     int                 count;
-    uint16_t *          dest;
+    uint16_t*           dest;  // within screen buffer
     fixed_t             frac;
     fixed_t             fracstep;
 
@@ -249,14 +251,51 @@ void R_DrawTranslucentColumn_16 (void)
 	// color is in 5,5,5 format
 	// (c>>1 & HIMASK_01110) ==> multiply R,G,B by 0.5 and mask lsb
 	// perhaps meant: (c>>1 & HIMASK_01111) ==> multiply R,G,B by 0.5
-	// Maybe the least bit is sacrificed so that carries from the add
-        // does not bleed blue into green, and green into red, too much.
-	// But if such carries are occuring then the color math is overflowing
-	// and wrapping back to black.
+	// It takes an extra bit to add two values and divide by 2, so
+	// need to prevent overflow into the adjacent field.
+	// This divides by 2 first, and masks off the least bit.
 	// An OR of selected bits, dependent upon a translucent mask, would be more stable.
         *dest =( ((color8.to16[dc_source[frac>>FRACBITS]]>>1) & HIMASK_01110) +
                  (*dest & HIMASK_11110) ) /*>> 1*/ & 0x7fff;
 
+#if 0       
+        // [WDJ] The above is not a true translucent, and there are 5 different
+	// translucent effects in the 8 bit code.
+	// 50/50 translucent
+        *dest =((color8.to16[dc_source[frac>>FRACBITS]] & HIMASK_11110)>>1)
+	       + ((*dest & HIMASK_11110)>>1);
+	// 75/25 translucent
+	register (uint16_t) nc = color8.to16[dc_source[frac>>FRACBITS]] & HIMASK_11110)>>1;
+        *dest =(nc + ((nc & HIMASK_11110)>>1))  // 75%
+	       + ((*dest & HIMASK_11110)>>2); // 25%
+	// 25/75 translucent
+	register (uint16_t) dc = (*dest & HIMASK_11110)>>1;
+        *dest =((color8.to16[dc_source[frac>>FRACBITS]] & HIMASK_11110)>>2) // 25%
+	       + (dc + ((dc & HIMASK_11110)>>1)); // 75%
+        // by 256 entry translucent table (16x16) of uint16_t
+	register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
+	register unsigned int dc = *dest;
+        nc <<=3; // must be 32 bit register or will lose high bits
+        dc >>=1;
+        *dest = dc16_translucent[(nc&0xF0)|(dc&0x0F)];
+        nc >>=5;
+        dc >>=5;
+        *dest |= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
+        nc >>=5;
+        dc >>=5;
+        *dest |= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
+        // by 1024 entry translucent table (32x32) of uint16_t
+	register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
+	register unsigned int dc = *dest;
+        nc <<=4; // must be 32 bit register or will lose high bits
+        *dest = dc16_translucent[(nc&0x02E0)|(dc&0x001F)];
+        nc >>=5;
+        dc >>=5;
+        *dest |= dc16_translucent[(nc&0x02E0)|(dc&0x001F)];
+        nc >>=5;
+        dc >>=5;
+        *dest |= dc16_translucent[(nc&0x02E0)|(dc&0x001F)];
+#endif
         dest += vid.ybytes;
         frac += fracstep;
     } while (count--);
@@ -270,7 +309,7 @@ void R_DrawTranslucentColumn_16 (void)
 void R_DrawTranslatedColumn_16 (void)
 {
     int                 count;
-    uint16_t *          dest;
+    uint16_t*           dest;  // within screen buffer
     fixed_t             frac;
     fixed_t             fracstep;
 
