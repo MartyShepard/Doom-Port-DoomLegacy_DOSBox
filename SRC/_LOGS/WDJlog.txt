@@ -2296,3 +2296,10 @@ patchfile = w80_draw32_create.patch
 Create functions for DRAW32 mode.
 Fill in functions in r_draw32.c and other support.
 Not fully optimized.
+
+*** w80_green_console
+patchfile = w80_green_console.patch
+- committed revision 913   by wesley johnson
+Fix green console to be more readable and not distort colors in 15..32 bpp.
+Add GREEN_TINT_255 control, set to 0x16.
+Dim background to 25% for higher contrast (gray green).

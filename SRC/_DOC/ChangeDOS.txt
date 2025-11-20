@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00913 ]: w80 green console
+[00912 ]: w80 draw32 create functions
 [00911 ]: w80 draw24 create functions
 [00910 ]: w80 draw endian fix
 [00909*]: w80 SDL video error

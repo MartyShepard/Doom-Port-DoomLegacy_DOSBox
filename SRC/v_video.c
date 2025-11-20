@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 911 2012-03-05 15:08:31Z wesleyjohnson $
+// $Id: v_video.c 913 2012-03-05 15:10:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1628,6 +1628,7 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 #ifdef ENABLE_DRAWEXT
     int w4 = x2 - x1;
     uint32_t mask, green_tint, alpha=0;
+# define GREEN_TINT_255  0x16
 #endif
     int x, y;
     byte p1, p2, p3, p4;
@@ -1663,26 +1664,27 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
         break;
 #ifdef ENABLE_DRAW15
      case DRAW15:
-        mask = 0x3DEF3DEF;  // 0 01111 01111 01111
-//        green_tint = 0x00E000E0;  // 0 00000 00111 00000
-        green_tint = 0x00C000C0;  // 0 00000 00110 00000
+//        mask = 0x3DEF3DEF;  // 0 01111 01111 01111
+        mask = 0x1CE71CE7;  // 0 00111 00111 00111
+        green_tint = (GREEN_TINT_255 >> 3) * 0x00200020;  // 0 00000 00001 00000
         w4 >>= 1;
         goto fade_loop;
 #endif
 #ifdef ENABLE_DRAW16
      case DRAW16:
-        mask = 0x7BEF7BEF;  // 01111 011111 01111
-//        green_tint = 0x01E001E0;  // 00000 001111 00000
-        green_tint = 0x01C001C0;  // 00000 001110 00000
+//        mask = 0x7BEF7BEF;  // 01111 011111 01111
+        mask = 0x39E739E7;  // 00111 001111 00111
+        green_tint = (GREEN_TINT_255 >> 2) * 0x00200020;  // 0 00000 00001 00000
         w4 >>= 1;
         goto fade_loop;
 #endif
 #ifdef ENABLE_DRAW32
      case DRAW32:
         // assume ARGB format
-        mask = 0x007F7F7F;  // alpha unchanged
+//        mask = 0x007F7F7F;  // alpha unchanged
+        mask = 0x003F3F3F;  // alpha unchanged
         alpha = 0xFF000000;
-        green_tint = 0x00003800;   // 00111000
+        green_tint = GREEN_TINT_255 << 8;
         goto fade_loop;
 #endif
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW32 )
@@ -1692,8 +1694,8 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
             buf = (uint32_t *) (screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp));
             for (x = 0; x < w4; x++)
             {
-                *buf = ((((*buf >> 1) & mask) + green_tint) & mask)
-		        + (*buf & alpha);
+                *buf = ((((*buf >> 2) & mask) + green_tint) )
+		        | (*buf & alpha);
 	        buf++;  // compiler complains when combined above
             }
         }
@@ -1707,9 +1709,9 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
             pixel24_t * p24 = (pixel24_t*)( screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp) );
             for (x = w4; x > 0; x--)
             { 
-	        p24->b >>= 1; // blue
-	        p24->g = ((uint16_t)(p24->g) + 0x38) >> 1; // green
-	        p24->r >>= 1; // red
+	        p24->b >>= 2; // blue
+	        p24->g = ((uint16_t)(p24->g) >> 2) + GREEN_TINT_255; // green
+	        p24->r >>= 2; // red
 	        p24 ++;
             }
         }
