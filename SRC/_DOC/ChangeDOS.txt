@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00895 ]: w80 vid port fixes
+					DOS: Successful Compiled
+
 [00894 ]: w80 vid defs
           DOS: Breaks Compile
 					

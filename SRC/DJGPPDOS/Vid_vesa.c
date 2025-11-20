@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: Vid_vesa.c 895 2012-02-29 19:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -349,12 +349,17 @@ int VID_SetMode (int modenum)  //, unsigned char *palette)
     vid.width  = pcurrentmode->width;
     vid.height = pcurrentmode->height;
     //vid.aspect = pcurrentmode->aspect;
-    vid.rowbytes = pcurrentmode->rowbytes;
-    vid.bpp      = pcurrentmode->bytesperpixel;
+    vid.direct_rowbytes = pcurrentmode->rowbytes;
+    vid.bytepp = pcurrentmode->bytesperpixel;
+    vid.bitpp = (vid.bytepp==1)? 8:15;
+    vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
 
     //debug
     //if (vid.rowbytes != vid.width)
     //    I_Error("vidrowbytes (%d) <> vidwidth(%d)\n",vid.rowbytes,vid.width);
+
+    vid.widthbytes = vid.width * vid.bytepp;
+    vid.direct_size = vid.direct_rowbytes * vid.height;
 
     stat = (*pcurrentmode->setmode) (&vid, pcurrentmode);
 
@@ -362,7 +367,7 @@ int VID_SetMode (int modenum)  //, unsigned char *palette)
     {
         if (stat == 0)
         {
-            // harware could not setup mode
+            // hardware could not setup mode
             //if (!VID_SetMode (vid.modenum))
             //    I_Error ("VID_SetMode: couldn't set video mode (hard failure)");
             I_Error("Couldn't set video mode %d\n", modenum);
@@ -376,8 +381,9 @@ int VID_SetMode (int modenum)  //, unsigned char *palette)
             pcurrentmode = poldmode;
             vid.width = pcurrentmode->width;
             vid.height = pcurrentmode->height;
-            vid.rowbytes = pcurrentmode->rowbytes;
-            vid.bpp      = pcurrentmode->bytesperpixel;
+            vid.direct_rowbytes = pcurrentmode->rowbytes;
+            vid.bytepp = pcurrentmode->bytesperpixel;
+	    // FIXME: ought to fail without any buffer memory
             return 0;
         }
     }
@@ -704,7 +710,17 @@ boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
 {
     int  vidbuffersize;
 
-    vidbuffersize = (lvid->width * lvid->height * lvid->bpp * NUMSCREENS);  //status bar
+    // Must agree with FinishUpdate, which uses VID_BlitLinearScreen
+#if 1 
+    // screen size same as video buffer, simple copy
+    lvid->ybytes = lvid->direct_rowbytes;
+    lvid->screen_size = lvid->direct_size;
+#else
+    // minimal screen buffer, must copy by line (VID_BlitLinearScreen)
+    lvid->ybytes = lvid->widthbytes;
+    lvid->screen_size = lvid->ybytes * lvid->height;
+#endif
+    vidbuffersize = (lvid->screen_size * NUMSCREENS);
 
     // free allocated buffer for previous video mode
     if (lvid->buffer!=NULL)
@@ -713,8 +729,14 @@ boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
     }
 
     // allocate the new screen buffer
-    if( (lvid->buffer = (byte *) malloc(vidbuffersize))==NULL )
+    lvid->buffer = (byte *) malloc(vidbuffersize);
+    lvid->display = lvid->buffer;  // display = buffer, screen[0]
+    if( lvid->buffer == NULL )
+    {
+        lvid->screen1 = NULL;
         return false;
+    }
+    lvid->screen1 = lvid->buffer + lvid->screen_size;
 
     // initially clear the video buffer
     memset (lvid->buffer, 0, vidbuffersize);
@@ -749,8 +771,8 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
     // here it is the standard VGA 64k window, not an LFB
     // (you could have 320x200x256c with LFB in the vesa modes)
     lvid->direct = (byte *) real2ptr (0xa0000);
-    lvid->u.numpages = 1;
-    lvid->bpp = pcurrentmode->bytesperpixel;
+    lvid->numpages = 1;
+    lvid->bytepp = pcurrentmode->bytesperpixel;
 
     return 1;
 }
@@ -783,7 +805,7 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 #endif
 
     //added:20-01-98:no page flipping now... TO DO!!!
-    lvid->u.numpages = 1;
+    lvid->numpages = 1;
 
     // clean up any old vid buffer lying around, alloc new if needed
     if (!VID_FreeAndAllocVidbuffer (lvid))
@@ -808,7 +830,7 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 
     // points to LFB, or the start of VGA mem.
     lvid->direct = pextra->plinearmem;
-    lvid->bpp    = pcurrentmode->bytesperpixel;
+    lvid->bytepp = pcurrentmode->bytesperpixel;
 
     return 1;
 }

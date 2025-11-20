@@ -507,9 +507,10 @@ int scaledofs;
 int dirtybox[4];
 void V_MarkRect(int x, int y, int width, int height)
 {
-    M_AddToBox(dirtybox, x, y);
-    M_AddToBox(dirtybox, x + width - 1, y + height - 1);
+    M_AddToBox((int *)dirtybox, x, y);
+    M_AddToBox((int *)dirtybox, x + width - 1, y + height - 1);
 }
+
 
 //
 // V_CopyRect
@@ -1812,7 +1813,7 @@ void V_DrawPerspView(byte * viewbuffer, int aiming)
     for (y = 0; y < vid.height; y++)
     {
         x1 = ((vid.width << 16) - scale) >> 17;
-        dest = ((byte *) vid.direct) + (vid.rowbytes * y) + x1;
+        dest = ((byte *) vid.direct) + (vid.direct_rowbytes * y) + x1;
 
         xfrac = (20 << FRACBITS) + ((!x1) & 0xFFFF);
         xfracstep = FixedDiv((vid.width << FRACBITS) - (xfrac << 1), scale);

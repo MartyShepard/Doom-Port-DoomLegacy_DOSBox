@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: I_video.c 895 2012-02-29 19:17:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -118,7 +118,7 @@ static   unsigned long  nombre = TICRATE*10;
 
 #define FPSPOINTS  35
 #define SCALE      4
-#define PUTDOT(xx,yy,cc) screens[0][((yy)*vid.width+(xx))*vid.bpp]=(cc)
+#define PUTDOT(xx,yy,cc) screens[0][((yy)*vid.width+(xx))*vid.bytepp]=(cc)
 
 int fpsgraph[FPSPOINTS];
 
@@ -152,7 +152,7 @@ void I_FinishUpdate (void)
         // draw lines
         for(j=0;j<=20*SCALE*vid.dupy;j+=2*SCALE*vid.dupy)
         {
-           l=(vid.height-1-j)*vid.width*vid.bpp;
+           l=(vid.height-1-j)*vid.width*vid.bytepp;
            for (i=0;i<FPSPOINTS*SCALE*vid.dupx;i+=4)
                screens[0][l+i]=0xff;
         }
@@ -164,9 +164,9 @@ void I_FinishUpdate (void)
 
 #else   // the old ticrate shower
         for (i=0 ; i<tics*2 ; i+=2)
-            screens[0][ (vid.height-1)*vid.width*vid.bpp + i] = 0xff;
+            screens[0][ (vid.height-1)*vid.width*vid.bytepp + i] = 0xff;
         for ( ; i<20*2 ; i+=2)
-            screens[0][ (vid.height-1)*vid.width*vid.bpp + i] = 0x0;
+            screens[0][ (vid.height-1)*vid.width*vid.bytepp + i] = 0x0;
 #endif
     }
 
@@ -196,8 +196,8 @@ void I_FinishUpdate (void)
         //                   src and dest rowbytes
         //                   (memcpy is as fast as this one...)
         VID_BlitLinearScreen ( vid.buffer, vid.direct,
-                               vid.width*vid.bpp, vid.height,
-                               vid.width*vid.bpp, vid.rowbytes );
+                               vid.widthbytes, vid.height,  // copy area
+                               vid.ybytes, vid.direct_rowbytes );  // scanline inc
     }
 #ifdef TIMING
     RDMSR(0x10,&mycount);
@@ -216,7 +216,7 @@ void I_FinishUpdate (void)
 //
 void I_ReadScreen (byte* scr)
 {
-    memcpy (scr, vid.buffer, vid.width*vid.height*vid.bpp);
+    memcpy (scr, vid.display, vid.screen_size);
 }
 
 
@@ -255,7 +255,7 @@ void I_BlitScreenVesa1(void)
   long     virtualsize;
 
    // virtual screen buffer size
-   virtualsize = vid.rowbytes * vid.height * SCREENDEPTH;
+   virtualsize = vid.direct_rowbytes * vid.height * SCREENDEPTH;
 
    p_src  = screens[0];
 
