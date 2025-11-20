@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 873 2011-11-01 00:05:40Z wesleyjohnson $
+// $Id: console.c 898 2012-02-29 19:22:15Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1160,16 +1160,18 @@ static void CON_DrawHudlines (void)
 //
 static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 {
-    int         x, y;
-    int         v;
-    byte        *src, *dest;
-    int         frac, fracstep;
-    int		pic_h = pic->height;
-    int		pic_w = pic->width;
+    int   pic_h = pic->height;
+    int   pic_w = pic->width;
+    int   x, y;
+    int   v;
+    fixed_t  frac, fracstep;
+    byte  *src;
+    byte  *dest;  // within screen buffer
    
-    dest = vid.buffer+startx;
+    // [WDJ] Draw picture for all bpp, bytepp, and padded lines.
+    dest = V_GetDrawAddr( startx, 0 );  // screen0 buffer
 
-    for (y=0 ; y<con_curlines ; y++, dest += vid.width)
+    for (y=0 ; y<con_curlines ; y++, dest += vid.ybytes)
     {
         // scale the picture to the resolution
         v = pic_h - ((con_curlines - y)*(BASEVIDHEIGHT-1)/vid.height) - 1;
@@ -1177,7 +1179,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
         src = pic->data + v*pic_w;
 
         // in case of the console backpic, simplify
-        if (pic_w == destwidth)
+        if (pic_w == destwidth && vid.bytepp == 1)
             memcpy (dest, src, destwidth);
         else
         {
@@ -1186,13 +1188,13 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
             fracstep = (pic_w<<16)/destwidth;
             for (x=0 ; x<destwidth ; x+=4)
             {
-                dest[x] = src[frac>>16];
+                V_DrawPixel( dest, x, src[frac>>16] );
                 frac += fracstep;
-                dest[x+1] = src[frac>>16];
+                V_DrawPixel( dest, x+1, src[frac>>16] );
                 frac += fracstep;
-                dest[x+2] = src[frac>>16];
+                V_DrawPixel( dest, x+2, src[frac>>16] );
                 frac += fracstep;
-                dest[x+3] = src[frac>>16];
+                V_DrawPixel( dest, x+3, src[frac>>16] );
                 frac += fracstep;
             }
         }

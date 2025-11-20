@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: am_map.c 898 2012-02-29 19:22:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -916,17 +916,19 @@ void AM_clearFB(int color)
 
     if( !maplump )
     {
-        memset(fb, color, f_w*f_h*vid.bytepp);  // FIXME for padded scanline
+        // [WDJ] This clear must be by lines, or whole screen width
+        // ignores f_w, does whole screen width clear
+        memset(fb, color, (f_h * vid.ybytes) );  // clear, leave sb
     }
     else
     {
-        int i,y;
-        int dmapx; 
-        int dmapy; 
-        static int mapxstart;
-        static int mapystart;
-        byte *dest = screens[0],*src;
-        #define MAPLUMPHEIGHT (200-SBARHEIGHT)
+        static int mapxstart, mapystart;
+
+        int i, y;
+        int dmapx, dmapy;
+        byte *dest = screens[0];  // into screen buffer
+        byte *src;
+#       define MAPLUMPHEIGHT (200-SBARHEIGHT)
         
         if(followplayer)
         {
@@ -964,15 +966,16 @@ void AM_clearFB(int color)
         }
         
         //blit the automap background to the screen.
+        // [WDJ] Draw map for all bpp, bytepp, and padded lines.
         for (y=0 ; y<f_h ; y++)
         {
-            src = maplump + mapxstart + (y+mapystart)*320;
+            src = &maplump[mapxstart + (y+mapystart)*320];
             for (i=0 ; i<320*vid.dupx ; i++)
             {
                 while( src>maplump+320*MAPLUMPHEIGHT ) src-=320*MAPLUMPHEIGHT;
-                *dest++ = *src++;
+                V_DrawPixel(dest, i, *src++);
             }
-            dest += vid.width-vid.dupx*320;
+            dest += vid.ybytes;
         }
     }
 }
@@ -1108,6 +1111,8 @@ boolean AM_clipMline ( mline_t* ml, fline_t* fl )
 #undef DOOUTCODE
 
 
+// [WDJ] Plot lines for all bpp, bytepp, and padded lines.
+
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
@@ -1135,8 +1140,6 @@ void AM_drawFline_soft ( fline_t*       fl,
     }
 #endif
 
-#define PUTDOT(xx,yy,cc) fb[(yy)*f_w+(xx)]=(cc)
-
     dx = fl->b.x - fl->a.x;
     ax = 2 * (dx<0 ? -dx : dx);
     sx = dx<0 ? -1 : 1;
@@ -1153,7 +1156,7 @@ void AM_drawFline_soft ( fline_t*       fl,
         d = ay - ax/2;
         while (1)
         {
-            PUTDOT(x,y,color);
+	    V_DrawPixel( &fb[y*vid.ybytes], x, color);
             if (x == fl->b.x) return;
             if (d>=0)
             {
@@ -1169,7 +1172,7 @@ void AM_drawFline_soft ( fline_t*       fl,
         d = ax - ay/2;
         while (1)
         {
-            PUTDOT(x, y, color);
+	    V_DrawPixel( &fb[y*vid.ybytes], x, color);
             if (y == fl->b.y) return;
             if (d >= 0)
             {
@@ -1477,10 +1480,8 @@ void AM_drawCrosshair(int color)
         return;
     }
     
-    if( vid.drawmode==DRAW8PAL )
-        fb[(f_w*(f_h+1))/2] = color; // single point for now
-    else
-        *( (short *)fb + (f_w*(f_h+1))/2) = color;
+    // align dot with multi-byte pixel, be careful with /2
+    V_DrawPixel( &fb[(f_h/2)*vid.ybytes], (f_w/2), color); // single point for now
 }
 
 void AM_Drawer (void)

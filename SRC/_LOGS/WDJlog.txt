@@ -2160,3 +2160,11 @@ but they have other serious problems.
 Diabled V_DrawBlock and V_GetBlock because they were not safe for use
 on screens with extended draw modes,
 and substituted other existing draw routines for the uses.
+
+*** w80_map_con
+patchfile = w80_map_con.patch
+- committed revision 898   by wesley johnson
+Fix draw of auto map for all draw modes, using V_DrawPixel.
+Fix draw of CON_DrawBackPic for all draw modes, using V_GetDrawAddr
+and V_DrawPixel.
+Fix draw of D_PageDrawer for all draw modes, using V_DrawPixels.

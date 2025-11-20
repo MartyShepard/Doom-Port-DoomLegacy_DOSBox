@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: d_main.c 898 2012-02-29 19:22:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "897"
+#define SVN_REV "898"
 #endif
 
 // Version number: major.minor.revision
@@ -848,10 +848,11 @@ void D_PageTicker(void)
 //
 void D_PageDrawer(char *lumpname)
 {
+    int x, y;
     byte *src;
-    byte *dest;
-    int x;
-    int y;
+    byte *dest;  // within screen buffer
+
+    // [WDJ] Draw patch for all bpp, bytepp, and padded lines.
 
     // software mode which uses generally lower resolutions doesn't look
     // good when the pic is scaled, so it fills space around with a pattern,
@@ -865,15 +866,18 @@ void D_PageDrawer(char *lumpname)
 
             for (y = 0; y < vid.height; y++)
             {
+	        // repeatly draw a 64 pixel wide flat
+	        dest = screens[0] + (y * vid.ybytes);  // within screen buffer
                 for (x = 0; x < vid.width / 64; x++)
                 {
-                    memcpy(dest, src + ((y & 63) << 6), 64);
-                    dest += 64;
+//                    memcpy(dest, src + ((y & 63) << 6), 64);
+		    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
+                    dest += (64 * vid.bytepp);
                 }
                 if (vid.width & 63)
                 {
-                    memcpy(dest, src + ((y & 63) << 6), vid.width & 63);
-                    dest += (vid.width & 63);
+//                    memcpy(dest, src + ((y & 63) << 6), vid.width & 63);
+		    V_DrawPixels( dest, 0, (vid.width & 63), &src[(y & 63) << 6]);
                 }
             }
         }
