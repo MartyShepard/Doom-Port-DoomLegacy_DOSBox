@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 895 2012-02-29 19:17:11Z wesleyjohnson $
+// $Id: I_video.c 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,18 +64,18 @@
 #include "../m_argv.h"
 #include "vid_vesa.h"
 #include "../i_video.h"
+  // cv_fullscreen etc..
 
 
 //dosstuff -newly added
 unsigned long dascreen;
 static int gfx_use_vesa1;
 
-boolean    highcolor;
+boolean    highcolor; // local
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
-rendermode_t    rendermode=render_soft;
-
+//rendermode_t    rendermode=render_soft;
 //
 // I_StartFrame
 //
@@ -386,7 +386,7 @@ void I_StartupGraphics(void)
     CONS_Printf("Vid_Init...");
 
     // 0 for 256 color, else use highcolor modes
-    highcolor = M_CheckParm ("-highcolor");
+    highcolor = (req_drawmode == REQ_highcolor);
 
     VID_Init();
 

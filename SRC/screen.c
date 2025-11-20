@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: screen.c 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -302,14 +302,6 @@ void SCR_Startup (void)
 #endif
 
     V_Init();
-    CV_RegisterVar (&cv_ticrate);
-    // Needs be done for config loading
-    CV_RegisterVar(&cv_usegamma);
-#ifdef GAMMA_FUNCS
-    CV_RegisterVar(&cv_black);
-    CV_RegisterVar(&cv_bright);
-    CV_RegisterVar(&cv_gammafunc);
-#endif   
 
     V_SetPalette (0);
 }
@@ -447,12 +439,11 @@ void SCR_SetDefaultMode (void)
 #if !defined( __DJGPP__ )
 void SCR_ChangeFullscreen (void)
 {
-  extern boolean allow_fullscreen;  // controlled by i_video
   // used to prevent switching to fullscreen during startup
   if (!allow_fullscreen)
     return;
 
-    if(graphics_started) {
+  if(graphics_started) {
     setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
   }
 }

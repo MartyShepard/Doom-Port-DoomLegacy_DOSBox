@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: i_video.h 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -48,6 +48,8 @@
 
 
 #include "doomtype.h"
+#include "command.h"
+  // consvar
 
 #ifdef __GNUG__
 #pragma interface
@@ -63,8 +65,30 @@ typedef enum {
 
 extern rendermode_t    rendermode;
 
-// use highcolor modes if true
-extern boolean highcolor;
+extern boolean  allow_fullscreen;  // controlled by i_video
+
+// added for OpenGL gamma correction
+extern consvar_t cv_grgammared;
+extern consvar_t cv_grgammagreen;
+extern consvar_t cv_grgammablue;
+
+// wait for page flipping to end or not
+extern consvar_t cv_vidwait;
+
+extern consvar_t cv_fullscreen; // for fullscreen support
+
+// WDJ 2012-2-8, command line request to port driver
+typedef enum {
+  REQ_default, REQ_native, REQ_specific, REQ_highcolor, REQ_truecolor
+} reqdrawmode_t;
+
+extern byte req_bitpp;
+extern byte req_drawmode;  // reqdrawmode_t
+
+// Return true if engine can draw the using bitpp
+boolean V_CanDraw( byte bitpp );
+
+// ---------------------------------------------
 
 void I_StartupGraphics (void);          //setup video mode
 void I_ShutdownGraphics(void);          //restore old video mode

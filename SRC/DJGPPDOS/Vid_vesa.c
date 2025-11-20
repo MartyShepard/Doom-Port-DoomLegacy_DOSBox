@@ -57,6 +57,7 @@
 #include "../command.h"            //added:21-03-98: vid_xxx commands
 #include "../i_video.h"
 
+boolean    highcolor; // local
 
 // PROTOS
 vmode_t *VID_GetModePtr (int modenum);
@@ -69,7 +70,7 @@ void VID_Command_ModeInfo_f (void);
 void VID_Command_ModeList_f (void);
 void VID_Command_Mode_f (void);
 
-consvar_t   cv_vidwait = {"vid_wait","1",CV_SAVE,CV_OnOff};
+//consvar_t   cv_vidwait = {"vid_wait","1",CV_SAVE,CV_OnOff};
 
 #define VBEVERSION      2       // we need vesa2 or higher
 

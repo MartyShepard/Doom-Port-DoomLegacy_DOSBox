@@ -2189,3 +2189,23 @@ was limited to 8bpp, now using a simple pixel copy.
 Created a proportional fade for the extended draw modes, which is not
 as smooth as the 8bpp translucent tables, but gives similar function.
 Reorganized strange wipe control table for simpler access.
+
+*** w80_request_bpp
+patchfile = w80_request_bpp.patch
+- committed revision 901   by wesley johnson
+Introduce new command line switches and common control structure, so that
+each port driver does not do this in a unique way.  The port drivers now
+react to the common control variables.  Most old control variables
+declared in the port drivers, such as rendermode, vidwait, fullscreen,
+have been moved to video.c.
+A new V_Init_VideoControl, now registers common controls.
+A new V_CanDraw, returns true when a bpp can be drawn.
+Set req_drawmode according to command line requested drawmode.
+Switch "-highcolor", now sets REQ_highcolor (request a 15 or 16 bpp mode).
+Switch "-truecolor", sets REQ_truecolor (request a 24 or 32 bpp mode).
+Switch "-native", sets REQ_native, which requests use of the native
+drawing mode.
+Switch "-bpp 15", sets req_bpp and REQ_specific, which requests a
+specific bpp mode (can be 8, 15, 16, 24, or 32).
+Fixes DrawPixel routines to use direct ptr access to pixels, which
+should give the fastest code.

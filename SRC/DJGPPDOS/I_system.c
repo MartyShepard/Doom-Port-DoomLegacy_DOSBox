@@ -111,7 +111,7 @@
 
 
 // Do not execute cleanup code more than once. See Shutdown_xxx() routines.
-byte graphics_started=false;
+//byte graphics_started=false;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: v_video.h 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,6 +66,8 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "command.h"
+  // consvar
 
 
 //
@@ -97,6 +99,8 @@ extern  consvar_t cv_black;	// input to gammafunc
 extern  consvar_t cv_bright;	// input to gammafunc
 #endif
 
+// Early setup of video controls, register cv_ vars
+void V_Init_VideoControl( void );
 
 // Allocates buffer screens, call before R_Init.
 void V_Init (void);

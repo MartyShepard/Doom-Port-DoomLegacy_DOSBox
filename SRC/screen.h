@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 899 2012-02-29 19:23:47Z wesleyjohnson $
+// $Id: screen.h 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -97,7 +97,7 @@ extern int stbarheight;     // when scaled
 
 // WDJ 2012-2-6, provide structure to complete the draw capability
 typedef enum {
-  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32   
+  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32
 } drawmode_t;
 
 
@@ -227,7 +227,7 @@ extern consvar_t cv_scr_height;
 extern consvar_t cv_scr_depth;
 extern consvar_t cv_fullscreen;
 // wait for page flipping to end or not
-extern consvar_t cv_vidwait;
+//extern consvar_t cv_vidwait;
 
 extern consvar_t cv_fuzzymode;
 

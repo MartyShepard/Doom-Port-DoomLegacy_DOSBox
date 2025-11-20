@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 900 2012-02-29 19:25:00Z wesleyjohnson $
+// $Id: d_main.c 901 2012-02-29 19:26:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "900"
+#define SVN_REV "901"
 #endif
 
 // Version number: major.minor.revision
@@ -2089,7 +2089,30 @@ void D_DoomMain()
     dedicated = M_CheckParm("-dedicated") != 0;
 #if !defined( __DJGPP__ )
     I_SysInit();
-#endif
+#endif   
+    if( M_CheckParm("-highcolor") )
+    {
+        req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+    }
+    if( M_CheckParm("-truecolor") )
+    {
+        req_drawmode = REQ_truecolor;  // 24 or 32 bpp
+    }
+    if( M_CheckParm("-native") )
+    {
+        req_drawmode = REQ_native;  // bpp of the default screen
+    }
+    p = M_CheckParm("-bpp");  // specific bit per pixel color
+    if( p )
+    {
+        // binding, should fail if cannot find a mode
+        req_bitpp = atoi(myargv[p + 1]);
+        if( V_CanDraw( req_bitpp ) )
+	    req_drawmode = REQ_specific;
+        else
+	    I_Error( "-bpp invalid\n");
+    }
+    V_Init_VideoControl();
 
     CONS_Printf("I_StartupGraphics...\n");
     I_StartupGraphics();
