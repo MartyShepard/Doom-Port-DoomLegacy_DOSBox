@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: d_netfil.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -150,12 +150,12 @@
 
 // sender structure
 typedef struct filetx_s {
-    int      ram;
-    char     *filename;   // name of the file or ptr of the data in ram
+    TAH_e    release_tah; // release, access method
+    char     *filename;   // name of the file, or ptr to the data
     ULONG    size;
     char     fileid;
     int      node;        // destination
-    struct filetx_s *next; // a queu
+    struct filetx_s *next; // a queue
 } filetx_t;
 
 // current transfers (one for eatch node)
@@ -241,8 +241,6 @@ boolean SendRequestFile(void)
     if( M_CheckParm("-nodownload") )
     {
         char s[1024]="";
-//        char *smd5;
-//        int j;
 
         for(i=0;i<fileneedednum;i++)
         {
@@ -275,7 +273,7 @@ boolean SendRequestFile(void)
                 strcat(s,"\n");
             }
 	}
-        I_Error("To play with this server you should have this files:\n%s\n"
+        I_Error("To play with this server you should have these files:\n%s\n"
                 "remove -nodownload if you want to download the files!\n",s);
     }
 
@@ -431,7 +429,7 @@ void SendFile(int node,char *filename, char fileid)
     strncpy(p->filename, filename, MAX_WADPATH-1);
     p->filename[MAX_WADPATH-1] = '\0';
     
-    // a minimum of security, can only get file in legacy direcory
+    // a minimum of security, can only get file in legacy directory
     nameonly(p->filename);
 
     // check first in wads loaded the majority of case
@@ -450,12 +448,12 @@ void SendFile(int node,char *filename, char fileid)
     
     if( !found )
     {
-        DEBFILE(va("%s not found in wadfiles\n",filename));
+        DEBFILE(va("%s not found in wadfiles\n", filename));
         if(findfile(p->filename,NULL,true)==0)
         {
             // not found
             // don't inform client (probably hacker)
-            DEBFILE(va("Client %d request %s : not found\n",node,filename));
+            DEBFILE(va("Client %d request %s : not found\n", node, filename));
             free(p->filename);
             free(p);
             *q=NULL;
@@ -465,8 +463,8 @@ void SendFile(int node,char *filename, char fileid)
             return;
     }
 
-    DEBFILE(va("Sending file %s to %d (id=%d)\n",filename,node,fileid));
-    p->ram=SF_FILE;
+    DEBFILE(va("Sending file %s to %d (id=%d)\n", filename,node, fileid));
+    p->release_tah=TAH_FILE;
     // size initialized at file open 
     //p->size=size;
     p->fileid=fileid;
@@ -475,7 +473,7 @@ void SendFile(int node,char *filename, char fileid)
     filetosend++;
 }
 
-void SendRam(int node,byte *data, ULONG size,freemethode_t freemethode, char fileid)
+void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid)
 {
     filetx_t **q,*p;
 
@@ -483,9 +481,9 @@ void SendRam(int node,byte *data, ULONG size,freemethode_t freemethode, char fil
     while(*q) q=&((*q)->next);
     *q=(filetx_t *)malloc(sizeof(filetx_t));
     if(!*q) 
-       I_Error("SendRam : No more ram\n");
+       I_Error("SendData : No more data\n");
     p=*q;
-    p->ram=freemethode;
+    p->release_tah=tah;
     p->filename = (char *)data;
     p->size=size;
     p->fileid=fileid;
@@ -499,18 +497,18 @@ void SendRam(int node,byte *data, ULONG size,freemethode_t freemethode, char fil
 void EndSend(int node)
 {
     filetx_t *p=transfer[node].txlist;
-    switch (p->ram) {
-    case SF_FILE:
+    switch (p->release_tah) {
+    case TAH_FILE:
         if( transfer[node].currentfile )
             fclose(transfer[node].currentfile);
         free(p->filename);
         break;
-    case SF_Z_RAM:
+    case TAH_Z_FREE:
         Z_Free(p->filename);
         break;
-    case SF_RAM:
+    case TAH_MALLOC_FREE:
         free(p->filename);
-    case SF_NOFREERAM:
+    case TAH_NOTHING:
         break;
     }
     transfer[node].txlist = p->next;
@@ -527,7 +525,8 @@ void FiletxTicker(void)
     filetx_pak *p;
     ULONG      size;
     filetx_t   *f;
-    int        ram,i;
+    TAH_e      access_tah;
+    int        i, tcnt;
     int        packetsent = PACKETPERTIC;
 
     if( filetosend==0 )
@@ -536,78 +535,82 @@ void FiletxTicker(void)
     // (((sendbytes-nowsentbyte)*TICRATE)/(I_GetTime()-starttime)<(ULONG)net_bandwidth)
     while( packetsent-- && filetosend!=0)
     {
-    for(i=currentnode,ram=0;ram<MAXNETNODES;i=(i+1)%MAXNETNODES,ram++)
-        if(transfer[i].txlist)
-            goto found;
-    // no transfer to do
-    I_Error("filetosend=%d but no filetosend found\n",filetosend);
+        for(i=currentnode, tcnt=0; tcnt<MAXNETNODES; i=(i+1)%MAXNETNODES,tcnt++)
+        {
+	    if(transfer[i].txlist)
+	         goto found;
+	}
+        // no transfer to do
+        I_Error("filetosend=%d but no filetosend found\n", filetosend);
+
 found:
-    currentnode=(i+1)%MAXNETNODES;
-    f=transfer[i].txlist;
-    ram=f->ram;
+        currentnode=(i+1)%MAXNETNODES;
+        f=transfer[i].txlist;
+        access_tah=f->release_tah;
 
-    if(!transfer[i].currentfile) // file not already open
-    {
-        if(!ram) {
-            long filesize;
+        if(!transfer[i].currentfile) // file not already open
+        {
+	    if(access_tah == TAH_FILE) {
+	        // open the file to transfer
+	        long filesize;
 
-            transfer[i].currentfile = fopen(f->filename,"rb");
+	        transfer[i].currentfile = fopen(f->filename,"rb");
 
-            if(!transfer[i].currentfile)
-                I_Error("File %s does not exist", f->filename);
+	        if(!transfer[i].currentfile)
+		    I_Error("File %s does not exist", f->filename);
 
-            fseek(transfer[i].currentfile, 0, SEEK_END);
-            filesize = ftell(transfer[i].currentfile);
+	        fseek(transfer[i].currentfile, 0, SEEK_END);
+	        filesize = ftell(transfer[i].currentfile);
 
-            // nobody wants to transfer a file bigger than 4GB!
-            // and computers will never need more than 640kb of RAM ;-)
-            if(-1 == filesize)
-            {
-                perror("Error");
-                I_Error("Error getting filesize of %s\n", f->filename);
-            }
+	        // nobody wants to transfer a file bigger than 4GB!
+	        // and computers will never need more than 640kb of RAM ;-)
+	        if(-1 == filesize)
+	        {
+		    perror("Error");
+		    I_Error("Error getting filesize of %s\n", f->filename);
+		}
 
-            f->size = filesize;
-            fseek(transfer[i].currentfile, 0, SEEK_SET);            
-        }
+	        f->size = filesize;
+	        fseek(transfer[i].currentfile, 0, SEEK_SET);            
+	    }
+	    else
+	        transfer[i].currentfile = (FILE *)1;  // faked open flag
+	    transfer[i].position=0;
+	}
+
+        p=&netbuffer->u.filetxpak;
+        size=software_MAXPACKETLENGTH-(FILETXHEADER+BASEPACKETSIZE);
+        if( f->size-transfer[i].position<size )
+	    size=f->size-transfer[i].position;
+        if(access_tah == TAH_FILE)
+        {
+	    if( fread(p->data,size,1,transfer[i].currentfile) != 1 )
+	        I_Error("FiletxTicker : can't get %d byte on %s at %d",size,f->filename,transfer[i].position);
+	}
         else
-            transfer[i].currentfile = (FILE *)1;
-        transfer[i].position=0;
-    }
-
-    p=&netbuffer->u.filetxpak;
-    size=software_MAXPACKETLENGTH-(FILETXHEADER+BASEPACKETSIZE);
-    if( f->size-transfer[i].position<size )
-        size=f->size-transfer[i].position;
-    if(ram)
-        memcpy(p->data,&f->filename[transfer[i].position],size);
-    else
-    {
-        if( fread(p->data,size,1,transfer[i].currentfile) != 1 )
-            I_Error("FiletxTicker : can't get %d byte on %s at %d",size,f->filename,transfer[i].position);
-    }
-    p->position = transfer[i].position;
-    // put flag so receiver know the totalsize
-    if( transfer[i].position+size==f->size )
-        p->position |= 0x80000000;
-    p->position = LE_SWAP32_FAST(p->position);
-    p->size     = LE_SWAP16_FAST(size);
-    p->fileid   = f->fileid;
-    netbuffer->packettype=PT_FILEFRAGMENT;
-    if (!HSendPacket(i,true,0,FILETXHEADER+size ) ) // reliable SEND
-    { // not sent for some odd reason
-      // retry at next call
-         if( !ram )
-             fseek(transfer[i].currentfile,transfer[i].position,SEEK_SET);
-         // exit the while (can't sent this one why should i sent the next ?
-         break;
-    }
-    else // success
-    {
-        transfer[i].position+=size;
-        if(transfer[i].position==f->size) //  finish ?
-            EndSend(i);
-    }
+	    memcpy(p->data,&f->filename[transfer[i].position],size);
+        p->position = transfer[i].position;
+        // put flag so receiver know the totalsize
+        if( transfer[i].position+size==f->size )
+	    p->position |= 0x80000000;
+        p->position = LE_SWAP32_FAST(p->position);
+        p->size     = LE_SWAP16_FAST(size);
+        p->fileid   = f->fileid;
+        netbuffer->packettype=PT_FILEFRAGMENT;
+        if (!HSendPacket(i,true,0,FILETXHEADER+size ) ) // reliable SEND
+        { // not sent for some odd reason
+	    // retry at next call
+	    if(access_tah == TAH_FILE)
+                fseek(transfer[i].currentfile,transfer[i].position,SEEK_SET);
+	    // exit the while (can't send this one why should i send the next ?
+	    break;
+	}
+        else
+        { // success
+	    transfer[i].position+=size;
+	    if(transfer[i].position==f->size) //  finish ?
+	        EndSend(i);
+	}
     }
 }
 
@@ -749,11 +752,11 @@ boolean fileexist(char *filename,time_t time)
        return false;
 }
 
-filestatus_t checkfilemd5(char *filename, unsigned char *wantedmd5sum)
+filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum)
 {
     FILE *fhandle;
     unsigned char md5sum[16];
-    filestatus_t return_val = FS_NOTFOUND;
+    filestatus_e return_val = FS_NOTFOUND;
 
     if((fhandle = fopen(filename,"rb")))
     {
@@ -775,7 +778,7 @@ filestatus_t checkfilemd5(char *filename, unsigned char *wantedmd5sum)
     return return_val;
 }
 
-filestatus_t findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath)
+filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath)
 {
     //FIXME: implement wadpath-search
     //just for the start... recursive 10 levels from current dir should bring back old behaviour

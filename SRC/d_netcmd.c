@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 888 2011-12-18 04:05:08Z wesleyjohnson $
+// $Id: d_netcmd.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -184,7 +184,7 @@ void Got_UseArtefact(char **cp, int playernum);
 
 void TeamPlay_OnChange(void);
 void FragLimit_OnChange(void);
-void Deahtmatch_OnChange(void);
+void Deathmatch_OnChange(void);
 void TimeLimit_OnChange(void);
 
 void Command_Playdemo_f(void);
@@ -260,7 +260,7 @@ consvar_t cv_teamdamage = { "teamdamage", "0", CV_NETVAR, CV_OnOff };
 
 consvar_t cv_fraglimit = { "fraglimit", "0", CV_NETVAR | CV_CALL | CV_NOINIT, fraglimit_cons_t, FragLimit_OnChange };
 consvar_t cv_timelimit = { "timelimit", "0", CV_NETVAR | CV_CALL | CV_NOINIT, CV_Unsigned, TimeLimit_OnChange };
-consvar_t cv_deathmatch = { "deathmatch", "0", CV_NETVAR | CV_CALL, deathmatch_cons_t, Deahtmatch_OnChange };
+consvar_t cv_deathmatch = { "deathmatch", "0", CV_NETVAR | CV_CALL, deathmatch_cons_t, Deathmatch_OnChange };
 consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL };
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
@@ -963,7 +963,7 @@ void TimeLimit_OnChange(void)
 }
 
 void P_RespawnWeapons(void);
-void Deahtmatch_OnChange(void)
+void Deathmatch_OnChange(void)
 {
     if (server)
     {

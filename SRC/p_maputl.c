@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_maputl.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -338,7 +338,6 @@ void P_LineOpening (line_t* linedef)
     else
         opentop = back->ceilingheight;
 
-#if 1
     // [WDJ] Must find the lowest 3d floor, closest to feet,
     // independently in front and back sectors, so that lowfloor is always
     // from the other sector than openbottom floor.  Otherwise two 3d floor
@@ -358,7 +357,7 @@ void P_LineOpening (line_t* linedef)
         fixed_t  midthing2 = tm_thing->z + tm_thing->z + tm_thing->height ; // midthing*2
         ffloor_t*  rovflr;
 
-        // Check for frontsector's fake floors
+        // Check for frontsector 3dfloors
         if(front->ffloors)
 	{
           for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
@@ -382,7 +381,7 @@ void P_LineOpening (line_t* linedef)
           }
 	}
 
-        // Check for backsectors fake floors
+        // Check for backsector 3dfloors
         if(back->ffloors)
 	{
           for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
@@ -419,100 +418,6 @@ void P_LineOpening (line_t* linedef)
         openbottom = backfloor;
         lowfloor = frontfloor;
     }
-#else
-    // old routine, patched up with 3d floors, has redudant tests, and
-    // allowed lowestfloor and highestfloor to be from same side of line
-    if (front->floorheight > back->floorheight)
-    {
-        openbottom = front->floorheight;
-        lowfloor = back->floorheight;
-    }
-    else
-    {
-        openbottom = back->floorheight;
-        lowfloor = front->floorheight;
-    }
-
-    // Check 3d floors against tm_thing
-    if(tm_thing)
-    {
-      fixed_t        thingbot, thingtop;
-
-      thingbot = tm_thing->z;
-      thingtop = thingbot + tm_thing->height;
-
-      //SoM: 3/27/2000: Check for fake floors in the sector.
-      if(front->ffloors || back->ffloors)
-      {
-        ffloor_t*      rovflr;
-
-        fixed_t    lowestceiling = opentop;
-        fixed_t    highestfloor = openbottom;
-        fixed_t    lowestfloor = lowfloor;
-	fixed_t    midfloor;
-
-        // Check for frontsector's fake floors
-        if(front->ffloors)
-	{
-          for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
-          {
-            if(!(rovflr->flags & FF_SOLID)) continue;
-
-	    midfloor = (*rovflr->bottomheight + *rovflr->topheight) / 2;
-	    if( abs(thingbot - midfloor) >= abs(thingtop - midfloor) )
-	    {
-	        // head is closer
-	        if(*rovflr->bottomheight < lowestceiling)
-		    lowestceiling = *rovflr->bottomheight;
-	    }
-	    else
-	    {
-	        // feet are closer
-	        if(*rovflr->topheight > highestfloor)
-		    highestfloor = *rovflr->topheight;
-	        else if(*rovflr->topheight > lowestfloor)
-		    lowestfloor = *rovflr->topheight;
-	    }
-          }
-	}
-
-        // Check for backsectors fake floors
-        if(back->ffloors)
-	{
-          for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
-          {
-            if(!(rovflr->flags & FF_SOLID))
-              continue;
-
-	    midfloor = (*rovflr->bottomheight + *rovflr->topheight) / 2;
-	    if( abs(thingbot - midfloor) >= abs(thingtop - midfloor) )
-	    {
-	        // head is closer
-	        if(*rovflr->bottomheight < lowestceiling)
-		    lowestceiling = *rovflr->bottomheight;
-	    }
-	    else
-	    {
-	        // feet are closer
-	        if(*rovflr->topheight > highestfloor)
-		    highestfloor = *rovflr->topheight;
-	        else if(*rovflr->topheight > lowestfloor)
-		    lowestfloor = *rovflr->topheight;
-	    }
-          }
-	}
-
-        if(highestfloor > openbottom)
-          openbottom = highestfloor;
-
-        if(lowestceiling < opentop)
-          opentop = lowestceiling;
-
-        if(lowestfloor > lowfloor)
-          lowfloor = lowestfloor;
-      }
-    }
-#endif
 
     openrange = opentop - openbottom;
 }

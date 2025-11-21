@@ -19,14 +19,14 @@
 //        FS_MD5SUMBAD;
 //        FS_FOUND
 
-filestatus_t filesearch(char *filename, char *startpath, unsigned char *wantedmd5sum, boolean completepath, int maxsearchdepth)
+filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
     DIR **dirhandle;
     struct dirent *dent;
     struct stat fstat;
     int found=0;
     char *searchname = strdup( filename);
-    filestatus_t retval = FS_NOTFOUND;
+    filestatus_e retval = FS_NOTFOUND;
     int depthleft=maxsearchdepth;
     char searchpath[1024];
     int *searchpathindex;

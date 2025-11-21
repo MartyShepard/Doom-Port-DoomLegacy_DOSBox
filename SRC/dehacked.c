@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 883 2011-12-18 03:53:49Z wesleyjohnson $
+// $Id: dehacked.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -314,7 +314,6 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
     // Strings have %s, %s %s (old strings also had %c and %d).
     // Music and sound strings may have '-' and '\0'.
     // [WDJ] Newer compiler could not tolerate these as unsigned char.
-#if 1
     char * newp = &newstring[0];
     if( drstype == DRS_string )
     {
@@ -366,43 +365,6 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 	    newp +=2;
 	}
     }
-#else
-    char * newp = &newstring[0];
-    char * oldp = &(*oldstring)[0];
-    if( drstype == DRS_string )
-    {
-        // Test new string against old string.
-	// Several Chex replacement strings have fewer %s in them, which then
-	// blocks Chex newmaps.wad from replacing that string again.
-        for(;;)
-        {
-            // new string must have same or fewer %, so it must reach end first
-            newp = strchr( newp, '%' );
-            if( newp == NULL ) break;
-            // must block %n, write to memory
-	    // must block % not in same order as original
-            if( oldp )
-	    {
-	        oldp = strchr( oldp, '%' );
-	        if( oldp )
-	        {
-		    // looks like a format string
-		    drstype = DRS_format;
-		    if( oldp[1] != newp[1] )  goto bad_replacement;
-		    oldp +=2;
-		    newp +=2;
-		}
-	    }
-	    else
-	    {
-	        // Found % in newstring that was not in oldstring
-	        if( drstype == DRS_format )  goto bad_replacement;
-	        // erase the %, too hard to determine if safe
-		*(newp++) = 0x7F; // rubout the %
-	    }
-	}
-    }
-#endif
 
     // rewrite backslash literals into newstring, because it only gets shorter
     char * chp = &newstring[0];

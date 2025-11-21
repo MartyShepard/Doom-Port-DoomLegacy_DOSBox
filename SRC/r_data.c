@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 917 2012-03-10 20:52:15Z wesleyjohnson $
+// $Id: r_data.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -470,7 +470,6 @@ byte* R_GenerateTexture (int texnum)
 
         // Interface for texture picture format
         // use the single patch's, single column lookup
-//        colofs = (unsigned int*)(txcblock + 8);
         colofs = (uint32_t*)&(((patch_t*)txcblock)->columnofs);
         // colofs from patch are relative to start of table
         for (i=0; i<texture->width; i++)

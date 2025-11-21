@@ -2325,3 +2325,37 @@ patchfile = w80_video_init.patch
 Change V_Init to V_Init_Draw, and make it responsible for setup of
 draw variables for DrawPixel and other v_video draw routines.
 Have it make needed palette (palette was missing during intro screens).
+
+*** w80_linux_xshm
+patchfile = w80_linux_xshm.patch
+- committed revision 918   by wesley johnson
+Update linux xshm to latest interface and improve code.
+Can handle drawing in -native bpp mode, -highcolor, -truecolor modes, and
+using -bpp.
+It will setup direct draw to the image buffer using native bpp (-native).
+This does not change the hardware bpp, nor the previous method of leaving the
+hardware bpp at the system setting, and converting our 8bpp draw buffers to it.
+Changing hardware bpp is possible, I just cannot find the docs at this time.
+
+*** w80_linux_ggi
+patchfile = w80_linux_ggi.patch
+- committed revision 919   by wesley johnson
+Update linux ggi to latest interface and improve code.
+Can handle drawing in -highcolor, -truecolor modes, and using -bpp.
+Will change hardware bpp.
+Does not detect native bpp.
+This has not been test compiled as I do not have ggi libraries.
+
+*** w81_cleaning
+patchfile = w81_cleaning.patch
+- committed revision 920   by wesley johnson
+Fix comments, add {}, remove dead code and obsolete commented out lines.
+Align code.
+Cleanup some messy code arrangements to cleaner equivalent.
+Rename enum items cl_ to CLM_.
+Rename SendRam to SendData.
+Rename enum freemethode_t with SF_ to enum TAH_e with TAH_,
+because of confusion with other enums, and gave the enum more descriptive names.
+Make KICK defines into an enum kick_msg_e.
+Rename enum filestatus_t to filestatus_e.
+Rename fwriteshort to fwrite16, fwritelong to fwrite32.

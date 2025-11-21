@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 898 2012-02-29 19:22:15Z wesleyjohnson $
+// $Id: am_map.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -524,11 +524,15 @@ static void AM_initVariables(void)
     m_w = FTOM(f_w);
     m_h = FTOM(f_h);
 
-    // find player to center on initially
+    // find player to center-on initially
     if (!playeringame[pnum = consoleplayer])
+    {
         for (pnum=0;pnum<MAXPLAYERS;pnum++)
+        {
             if (playeringame[pnum])
                 break;
+	}
+    }
 
     plr = &players[pnum];
     m_curpos.x = plr->mo->x;
@@ -1419,13 +1423,9 @@ void AM_drawPlayers(void)
             color = 246; // *close* to black
         else
         {
-            if(p->skincolor==0)
-                color = GREENS;
-            else
-	    {
-//                color = *(translationtables + ((p->skincolor-1)<<8) +GREENS+8);
-                color = SKIN_TO_SKINMAP(p->skincolor)[GREENS+8];
-	    }
+            color = (p->skincolor) ?
+	       SKIN_TO_SKINMAP(p->skincolor)[GREENS+8]
+	     : GREENS ;  // default
         }
 
         AM_drawLineCharacter (

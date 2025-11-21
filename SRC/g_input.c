@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 873 2011-11-01 00:05:40Z wesleyjohnson $
+// $Id: g_input.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -90,10 +90,10 @@ consvar_t  cv_controlperkey = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons
 consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 
 
-int             mousex;
-int             mousey;
-int             mouse2x;
-int             mouse2y;
+int  mousex;
+int  mousey;
+int  mouse2x;
+int  mouse2y;
 
 boolean   gamekeydown[NUMINPUTS]; // Current state of the keys: true if the key is currently down.
 boolean gamekeytapped[NUMINPUTS]; // True if the key has been pressed since the last G_BuildTiccmd. Useful for impulse-style controls.
@@ -105,8 +105,8 @@ int             joyymove;
 #endif
 
 // two key codes (or virtual key) per game control
-int     gamecontrol[num_gamecontrols][2];
-int     gamecontrol2[num_gamecontrols][2];        // secondary splitscreen player
+int  gamecontrol[num_gamecontrols][2];
+int  gamecontrol2[num_gamecontrols][2];        // secondary splitscreen player
 
 
 typedef struct {
@@ -162,7 +162,7 @@ void  G_MapEventsToControls (event_t *ev)
   int i;
 
     switch (ev->type)
-      {
+    {
       case ev_keydown:
         if (ev->data1 < NUMINPUTS)
 	  {
@@ -458,8 +458,10 @@ static char keynamestr[8];
 
     // find a description for special keys
     for (j=0;j<NUMKEYNAMES;j++)
+    {
         if (keynames[j].keynum==keynum)
             return keynames[j].name;
+    }
 
     // create a name for Unknown key
     sprintf(keynamestr,"key%d",keynum);
@@ -477,8 +479,10 @@ int G_KeyStringtoNum(char *keystr)
         return keystr[0];
 
     for (j=0;j<NUMKEYNAMES;j++)
+    {
         if (stricmp(keynames[j].name,keystr)==0)
             return keynames[j].keynum;
+    }
 
     if(strlen(keystr)>3)
         return atoi(&keystr[3]);
@@ -540,38 +544,38 @@ void G_SaveKeySetting(FILE *f)
     int i;
 
     for(i=1;i<num_gamecontrols;i++)
-       {
-           fprintf(f,"setcontrol \"%s\" \"%s\""
-                    ,gamecontrolname[i]
-                    ,G_KeynumToString(gamecontrol[i][0]));
+    {
+        fprintf(f,"setcontrol \"%s\" \"%s\"",
+		gamecontrolname[i],
+		G_KeynumToString(gamecontrol[i][0]));
 
-           if(gamecontrol[i][1])
-               fprintf(f," \"%s\"\n"
-                        ,G_KeynumToString(gamecontrol[i][1]));
-           else
-               fprintf(f,"\n");
-       }
+        if(gamecontrol[i][1])
+	    fprintf(f," \"%s\"\n",
+                        G_KeynumToString(gamecontrol[i][1]));
+        else
+            fprintf(f,"\n");
+    }
 
     for(i=1;i<num_gamecontrols;i++)
-       {
-           fprintf(f,"setcontrol2 \"%s\" \"%s\""
-                    ,gamecontrolname[i]
-                    ,G_KeynumToString(gamecontrol2[i][0]));
+    {
+        fprintf(f, "setcontrol2 \"%s\" \"%s\"",
+		gamecontrolname[i],
+		G_KeynumToString(gamecontrol2[i][0]));
 
-           if(gamecontrol2[i][1])
-               fprintf(f," \"%s\"\n"
-                        ,G_KeynumToString(gamecontrol2[i][1]));
-           else
-               fprintf(f,"\n");
-       }
+        if(gamecontrol2[i][1])
+	    fprintf(f, " \"%s\"\n",
+		    G_KeynumToString(gamecontrol2[i][1]));
+        else
+	    fprintf(f,"\n");
+    }
 
 #if !defined( __DJGPP__ )
     // Writes the joystick axis binding commands to the config file.
-  for (i=0; i<num_joybindings; i++)
+    for (i=0; i<num_joybindings; i++)
     {
-      joybinding_t j = joybindings[i];
-      fprintf(f, "bindjoyaxis %d %d %d %d %f\n",
-	      j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
+        joybinding_t j = joybindings[i];
+        fprintf(f, "bindjoyaxis %d %d %d %d %f\n",
+		j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
     }
 #endif
 }
@@ -748,10 +752,10 @@ void Command_BindJoyaxis_f()
     }
     // new binding
     if (num_joybindings < MAX_JOYBINDINGS)
-      {
+    {
 	joybindings[num_joybindings++] = j;
 	CONS_Printf("Joystick binding added.\n");
-      }
+    }
     else
       CONS_Printf("Maximum number of joystick bindings reached.\n");
   }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_doors.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -241,14 +241,10 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                     default:
                         door->direction = 1;
-#if 1
 		        // [WDJ] Bug from DoomWiki, blaze door hits something and raises with normal sound.
 			// Test for type of door and play appropriate sound.
 		        S_StartSound((mobj_t *)&door->sector->soundorg,
-                             door->speed >= 4 ? sfx_bdopn : sfx_doropn);
-#else		   
-                        S_StartSound((mobj_t *)&door->sector->soundorg, sfx_doropn);
-#endif		   
+                             (door->speed >= 4) ? sfx_bdopn : sfx_doropn);
                         break;
                 }
             }

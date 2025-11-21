@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 896 2012-02-29 19:18:53Z wesleyjohnson $
+// $Id: m_menu.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -342,7 +342,6 @@ void setup_net_savegame( void )
 }
 
 // flags for items in the menu
-#if 1
 // status
 // menu handle (what we do when key is pressed
 //#define  IT_TYPE             14     // (2+4+8)
@@ -376,40 +375,6 @@ void setup_net_savegame( void )
 #define  IT_CV_STRING       0x0200
 #define  IT_CV_NOPRINT      0x0300
 #define  IT_CV_NOMOD        0x0400
-
-#else
-// flags for items in the menu
-// status
-// menu handle (what we do when key is pressed
-#define  IT_TYPE             14     // (2+4+8)
-#define  IT_CALL              0     // call the function
-#define  IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define  IT_KEYHANDLER        4     // call with the key in param
-#define  IT_SUBMENU           6     // go to sub menu
-#define  IT_CVAR              8     // handle as a cvar
-#define  IT_SPACE            10     // no handling
-#define  IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message
-
-#define  IT_DISPLAY  (48+64+128)    // 16+32+64
-#define  IT_NOTHING           0     // space
-#define  IT_PATCH            16     // a patch or a string with big font
-#define  IT_STRING           32     // little string (spaced with 10)
-#define  IT_WHITESTRING      48     // little string in white
-#define  IT_DYBIGSPACE       64     // same as nothing
-#define  IT_DYLITLSPACE  (16+64)    // little space
-#define  IT_STRING2      (32+64)    // a simple string
-#define  IT_GRAYPATCH    (16+32+64) // grayed patch or big font string
-#define  IT_BIGSLIDER     (128)     // volume sound use this
-
-//consvar specific
-#define  IT_CVARTYPE   (256+512+1024)
-#define  IT_CV_NORMAL         0
-#define  IT_CV_SLIDER       256
-#define  IT_CV_STRING       512
-#define  IT_CV_NOPRINT (256+512)
-#define  IT_CV_NOMOD       1024
-
-#endif
 
 // in short for some common use
 #define  IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
@@ -1334,12 +1299,10 @@ void M_DrawSetupMultiPlayerMenu(void)
     sprframe  = &sprdef->spriteframes[ multi_state->frame & FF_FRAMEMASK];
     lump  = sprframe->lumppat[0];
 
-    if (setupm_cvcolor->value==0)
-        colormap = reg_colormaps;
-    else
-    {
-        colormap = SKIN_TO_SKINMAP( setupm_cvcolor->value );
-    }
+    colormap = (setupm_cvcolor->value) ?
+         SKIN_TO_SKINMAP( setupm_cvcolor->value )
+       : reg_colormaps;  // default green skin
+
     // draw player sprite
     // temp usage of sprite lump, until end of function
     patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix

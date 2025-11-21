@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_defs.h 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -252,9 +252,9 @@ typedef enum
   FF_RENDERALL         = 0xC,    //Render everything?
   FF_SWIMMABLE         = 0x10,   //Can we swim?
   FF_NOSHADE           = 0x20,   //Does it mess with the lighting?
-  FF_CUTSOLIDS         = 0x40,   //Does it cut out hidden solid pixles?
-  FF_CUTEXTRA          = 0x80,   //Does it cut out hidden translucent pixles?
-  FF_CUTLEVEL          = 0xC0,   //Does it cut out all hidden pixles?
+  FF_CUTSOLIDS         = 0x40,   //Does it cut out hidden solid pixels?
+  FF_CUTEXTRA          = 0x80,   //Does it cut out hidden translucent pixels?
+  FF_CUTLEVEL          = 0xC0,   //Does it cut out all hidden pixels?
   FF_CUTSPRITES        = 0x100,  //Final Step in 3D water
   FF_BOTHPLANES        = 0x200,  //Render both planes all the time?
   FF_EXTRA             = 0x400,  //Does it get cut by FF_CUTEXTRAS?

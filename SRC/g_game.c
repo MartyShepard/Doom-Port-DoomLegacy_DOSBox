@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 889 2011-12-21 21:56:19Z wesleyjohnson $
+// $Id: g_game.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -531,11 +531,13 @@ byte NextWeapon(player_t *player,int step)
     byte   w;
     int    i;
     for (i=0;i<NUMWEAPONS;i++)
+    {
         if( player->readyweapon == nextweaponorder[i] )
         {
             i = (i+NUMWEAPONS+step)%NUMWEAPONS;
             break;
         }
+    }
     for (;nextweaponorder[i]!=player->readyweapon; i=(i+NUMWEAPONS+step)%NUMWEAPONS)
     {
         w = nextweaponorder[i];
@@ -589,7 +591,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
     return false;
 
   switch (ev->type)
-    {
+  {
     case ev_keydown:
       keyup_armed = false;  // [WDJ] blanket disable of keyup events
       if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] )
@@ -661,7 +663,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
 
     default:
       break; // shut up compiler
-    }
+  }
 
   return false;
 }
@@ -1325,11 +1327,15 @@ void G_PlayerFinishLevel (int player)
 
     p = &players[player];
     for(i=0; i<p->inventorySlotNum; i++)
+    {
         if( p->inventory[i].count>1) 
             p->inventory[i].count = 1;
+    }
     if(!cv_deathmatch.value)
+    {
         for(i = 0; i < MAXARTECONT; i++)
             P_PlayerUseArtifact(p, arti_fly);
+    }
     memset (p->powers, 0, sizeof (p->powers));
     if( gamemode == heretic )
         p->weaponinfo = wpnlev1info;    // cancel power weapons
@@ -1722,18 +1728,20 @@ void G_DoCompleted (void)
     gameaction = ga_nothing;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
+    {
         if (playeringame[i])
             G_PlayerFinishLevel (i);        // take away cards and stuff
+    }
 
     if (automapactive)
         AM_Stop ();
 
-    if ( gamemode != doom2_commercial)
+    if (gamemode != doom2_commercial)
     {
         switch(gamemap)
         {
           case 8:
-            //BP add comment : no intermistion screen
+            //BP add comment : no intermission screen
             if(cv_deathmatch.value)
                 wminfo.next = 0;
             else
@@ -1776,25 +1784,29 @@ void G_DoCompleted (void)
     wminfo.next = gamemap;
     
     // overwrite next level in some cases
-    if ( gamemode == doom2_commercial)
+    if (gamemode == doom2_commercial)
     {
         if (secretexit)
+        {
             switch(gamemap)
             {
               case 15 : wminfo.next = 30; break;
               case 31 : wminfo.next = 31; break;
               default : wminfo.next = 15;break;
             }
+	}
         else
+        {
             switch(gamemap)
             {
               case 31:
               case 32: wminfo.next = 15; break;
               default: wminfo.next = gamemap;
             }
+	}
     }
     else
-    if( gamemode == heretic )
+    if (gamemode == heretic)
     {
         static const int afterSecret[5] = { 7, 5, 5, 5, 4 };
         if (secretexit)
@@ -1820,7 +1832,7 @@ void G_DoCompleted (void)
         }
         else
             if (gamemap == 8)
-                wminfo.next = 0; // wrape around in deathmatch
+                wminfo.next = 0; // wrap around in deathmatch
     }
 
     wminfo.maxkills = totalkills;
@@ -1891,7 +1903,7 @@ void G_NextLevel (void)
         }
         else
             if(gamemap==30)
-                wminfo.next = 0; // wrape around in deathmatch
+                wminfo.next = 0; // wrap around in deathmatch
     }
 }
 

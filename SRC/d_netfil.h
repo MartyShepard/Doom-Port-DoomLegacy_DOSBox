@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: d_netfil.h 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -53,12 +53,13 @@
 
 #include "w_wad.h"
 
+// Type of storage, after transmission handling
 typedef enum {
-    SF_FILE    = 0,
-    SF_Z_RAM      ,
-    SF_RAM        ,
-    SF_NOFREERAM
-} freemethode_t;
+    TAH_FILE    = 0,  // close file
+    TAH_Z_FREE     ,  // free with Z_Free
+    TAH_MALLOC_FREE,  // free with free
+    TAH_NOTHING       // do nothing
+} TAH_e;
 
 typedef enum {
     FS_NOTFOUND,
@@ -67,7 +68,7 @@ typedef enum {
     FS_DOWNLOADING,
     FS_OPEN,        // is opened and used in w_wad
     FS_MD5SUMBAD
-} filestatus_t;
+} filestatus_e;
 
 typedef struct {
     char    filename[MAX_WADPATH];
@@ -76,7 +77,7 @@ typedef struct {
     FILE    *phandle;  
     ULONG   currentsize;
     ULONG   totalsize;
-    filestatus_t status;        // the value returned by recsearch
+    filestatus_e status;        // the value returned by recsearch
 } fileneeded_t;
 
 extern int fileneedednum;
@@ -95,7 +96,7 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave);
 int CL_CheckFiles(void);
 void CL_LoadServerFiles(void);
 void SendFile(int node,char *filename, char fileid);
-void SendRam(int node,byte *data, ULONG size,freemethode_t freemethode, char fileid);
+void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid);
 
 void FiletxTicker(void);
 void Got_Filetxpak(void);
@@ -110,8 +111,8 @@ void CloseNetFile(void);
 boolean fileexist(char *filename,time_t time);
 
 // search a file in the wadpath, return FS_FOUND when found
-filestatus_t findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath);
-filestatus_t checkfilemd5(char *filename, unsigned char *wantedmd5sum);
+filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath);
+filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum);
 
 void nameonly(char *s);
 
