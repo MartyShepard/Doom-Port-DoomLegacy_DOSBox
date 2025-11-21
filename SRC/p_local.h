@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 887 2011-12-18 04:03:46Z wesleyjohnson $
+// $Id: p_local.h 922 2012-06-07 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -312,10 +312,11 @@ extern line_t*  tmr_dropoffline;  // line that is dropoff edge
 
 extern  msecnode_t*     sector_list;
 
-// P_CheckPosition, P_TryMove
+// P_CheckPosition, P_TryMove, P_CheckCrossLine
 // use tm_ global vars, and return tmr_ global vars
 boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y, boolean allowdropoff);
+boolean P_CheckCrossLine (mobj_t* thing, fixed_t x, fixed_t y);
 
 boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
 void    P_SlideMove (mobj_t* mo);

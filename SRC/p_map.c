@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 892 2011-12-26 18:29:28Z wesleyjohnson $
+// $Id: p_map.c 922 2012-06-07 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -173,16 +173,12 @@ player_t *      spechit_player = NULL;
 //SoM: 3/15/2000
 msecnode_t*  sector_list = NULL;
 
-#if 0
 // [WDJ] only used in PIT_CrossLine (line_t* ld)
-// which was found to be unused, 12/5/2009
+//SoM: 3/15/2000, [WDJ] modified for general usage
+// In Lost Soul checks, from_ is Pain Elemental position, targ_ is Lost Soul spawn
+static int from_x, from_y;
+static int targ_x, targ_y;
 
-//SoM: 3/15/2000
-static int pe_x; // Pain Elemental position for Lost Soul checks
-static int pe_y; // Pain Elemental position for Lost Soul checks
-static int ls_x; // Lost Soul position for Lost Soul checks
-static int ls_y; // Lost Soul position for Lost Soul checks
-#endif
 
 extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 extern consvar_t   cv_monbehavior;
@@ -760,7 +756,6 @@ ret_blocked:
     return false;  // hit something
 }
 
-#if 0
 // [WDJ] found to be unused, 12/5/2009
 
 // SoM: 3/15/2000
@@ -783,15 +778,19 @@ static boolean PIT_CrossLine (line_t* ld)
 {
   if (!(ld->flags & ML_TWOSIDED) ||
       (ld->flags & (ML_BLOCKING|ML_BLOCKMONSTERS)))
+  {
     if (!(tm_bbox[BOXLEFT]   > ld->bbox[BOXRIGHT]  ||
           tm_bbox[BOXRIGHT]  < ld->bbox[BOXLEFT]   ||
           tm_bbox[BOXTOP]    < ld->bbox[BOXBOTTOM] ||
           tm_bbox[BOXBOTTOM] > ld->bbox[BOXTOP]))
-      if (P_PointOnLineSide(pe_x,pe_y,ld) != P_PointOnLineSide(ls_x,ls_y,ld))
-        return(false);  // line blocks trajectory
+      if (P_PointOnLineSide(from_x,from_y,ld) != P_PointOnLineSide(targ_x,targ_y,ld))
+	  goto ret_blocked;
+  }
   return(true); // line doesn't block trajectory
+
+ret_blocked:
+  return(false);  // line blocks trajectory
 }
-#endif
 
 
 
@@ -892,6 +891,68 @@ ret_blocked:
     // no bounce
 //    tm_thing->momx = tm_thing->momy = 0;  // fouls wall slide 
     return false;  // blocked by a line
+}
+
+// [WDJ]
+// Check cross lines as movement across 1 sided or monster blocking lines.
+// This is used to prevent spawning across such lines, and thus keep skulls
+// from being spawned in void spaces.
+// It is simplified check as done for movement.
+// In Lost Soul checks, thing is pain elemental, and x,y is skull spawn position.
+// This is mostly from prboom (phares) and Edge (-ACB-).
+// Return true when crosses a blocking line.
+
+boolean P_CheckCrossLine ( mobj_t* thing, fixed_t x, fixed_t y )
+{
+    int xl, xh;
+    int yl, yh;
+    int bx, by;
+   
+    from_x = thing->x;
+    from_y = thing->y;
+    targ_x = x;
+    targ_y = y;
+
+    // Fewer tests, more assignments, should be simpler, compiler will optimize
+    if( y < from_y )
+    {
+        tm_bbox[BOXTOP] = from_y;
+        tm_bbox[BOXBOTTOM] = y;
+    }
+    else
+    {
+        tm_bbox[BOXTOP] = y;
+        tm_bbox[BOXBOTTOM] = from_y;
+    }
+    if( x < from_x )
+    {
+        tm_bbox[BOXRIGHT] = from_x;
+        tm_bbox[BOXLEFT] = x;
+    }
+    else
+    {
+        tm_bbox[BOXRIGHT] = x;
+        tm_bbox[BOXLEFT] = from_x;
+    }
+
+    // check lines
+    xl = (tm_bbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
+    xh = (tm_bbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
+    yl = (tm_bbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+    yh = (tm_bbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+
+    validcount++;  // marking signature to prevent duplicate work
+    for (bx=xl ; bx<=xh ; bx++)
+    {
+        for (by=yl ; by<=yh ; by++)
+            if (!P_BlockLinesIterator (bx,by,PIT_CrossLine))
+	        goto ret_blocked;
+    }
+
+    return false;
+
+ret_blocked:
+    return true;  // hit a line that stopped it
 }
 
 
@@ -1028,10 +1089,13 @@ boolean P_CheckPosition ( mobj_t*       thing,
     {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
-                return false;  // hit a line that stopped it
+	        goto ret_blocked;
     }
 
     return true;
+
+ret_blocked:
+    return false;  // hit a line that stopped it
 }
 
 

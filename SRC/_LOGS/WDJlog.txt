@@ -2367,3 +2367,25 @@ Missing break stmt in switch stmt.
 Doom2 Map8 is dropping into secret level code,
 even though it is not a secret level.
 
+*** w81_pain_skullspawn
+patchfile = w81_pain_skullspawn.patch
+- committed revision 922   by wesley johnson
+Fix bugs and irritations in pain elemental, skull spawning.
+Skull limit code made conditional on demoversion, using EN_skull_limit.
+Pain elemental skull spawning made conditional using EN_old_pain_spawn.
+Checks added for skulls and pain elementals attacking dead monsters,
+may not be needed, but will test.
+Formally init target and tracer ptrs in mobj.
+
+Fixed skull spawning using a version of Boom code that checks on line
+crossings.  Partial checking code already present was rewritten into
+P_CheckCrossLine.
+Skulls no longer spawn into void walls.
+
+Pain elementals fixed so if there is not room to spawn skull, it silently
+removes the skull instead of sending it down to floor to explode.
+Conditional code is present for:
+(REMOVE) remove skull (like Edge) (currently selected),
+(KILL) explode in place (like prboom) (disabled),
+(DAMAGE) which causes it to explode on floor (previous Legacy) (disabled).
+

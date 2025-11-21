@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 889 2011-12-21 21:56:19Z wesleyjohnson $
+// $Id: p_mobj.c 922 2012-06-07 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1551,6 +1551,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     // BP: SoM right ? if not ajust in p_saveg line 625 and 979
     mobj->movefactor = ORIG_FRICTION_FACTOR;
+
+    mobj->target = NULL;
+    mobj->tracer = NULL;
 
     // set subsector and/or block links
     P_SetThingPosition(mobj);

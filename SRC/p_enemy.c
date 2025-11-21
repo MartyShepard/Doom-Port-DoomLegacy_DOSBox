@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_enemy.c 922 2012-06-07 23:59:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -97,6 +97,8 @@
 #include "s_sound.h"
 #include "m_random.h"
 #include "t_script.h"
+#include "p_inter.h"
+  // P_KillMobj
 
 
 #include "hardware/hw3sound.h"
@@ -214,7 +216,7 @@ static const struct
 
 //
 // ENEMY THINKING
-// Enemies are allways spawned
+// Enemies are always spawned
 // with targetplayer = -1, threshold = 0
 // Most monsters are spawned unaware of all players,
 // but some can be made preaware
@@ -390,6 +392,9 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 
 byte EN_mbf_enemyfactor = 0;
 byte EN_monster_momentum = 0;
+byte EN_skull_limit = 0;  // turn off pain skull gen limits
+byte EN_old_pain_spawn = 0;
+
 
 // local version control
 void DemoAdapt_p_enemy( void )
@@ -409,6 +414,8 @@ void DemoAdapt_p_enemy( void )
         EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
         EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
     }
+    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
+    EN_old_pain_spawn = ( demoversion < 143 );
 }
 
 
@@ -1908,6 +1915,12 @@ void A_SkullAttack (mobj_t* actor)
 
     if (!actor->target)
         return;
+   
+    if (actor->target->health <= 0)
+    {
+       actor->target = NULL;
+       return;
+    }
 
     dest = actor->target;
     actor->flags |= MF_SKULLFLY;
@@ -1915,10 +1928,10 @@ void A_SkullAttack (mobj_t* actor)
     A_FaceTarget (actor);
 
     if (cv_predictingmonsters.value || (actor->eflags & MF_PREDICT))	//added by AC for predmonsters
-	{
+    {
 
 		boolean canHit;
-	  fixed_t		px, py, pz;
+ 		fixed_t	px, py, pz;
 		int	t, time;
 		subsector_t *sec;
 
@@ -1966,9 +1979,9 @@ void A_SkullAttack (mobj_t* actor)
 		actor->momy = FixedMul (SKULLSPEED, finesine[an]);
 
 		actor->momz = (pz+(dest->height>>1) - actor->z) / t;
-	}
-	else
-	{
+    }
+    else
+    {
 		an = actor->angle >> ANGLETOFINESHIFT;
 		actor->momx = FixedMul (SKULLSPEED, finecosine[an]);
 		actor->momy = FixedMul (SKULLSPEED, finesine[an]);
@@ -1978,7 +1991,7 @@ void A_SkullAttack (mobj_t* actor)
 		if (dist < 1)
 			dist = 1;
 		actor->momz = (dest->z+(dest->height>>1) - actor->z) / dist;
-	}
+    }
 }
 
 
@@ -1998,7 +2011,9 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
     int         prestep;
 
 
-/*  --------------- SKULL LIMIT CODE -----------------
+#if 1
+    if( EN_skull_limit ) {
+    //  --------------- SKULL LIMIT CODE -----------------
 //  Original Doom code that limits the number of skulls to 20
     int         count;
     thinker_t*  currentthinker;
@@ -2015,12 +2030,12 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
         currentthinker = currentthinker->next;
     }
 
-    // if there are allready 20 skulls on the level,
+    // if there are already 20 skulls on the level,
     // don't spit another one
-    if (count > 20)
-        return;
-    ---------------------------------------------------
-*/
+    if (count > EN_skull_limit)
+	goto no_skull;
+    }
+#endif   
 
     // okay, there's place for another one
     an = angle >> ANGLETOFINESHIFT;
@@ -2033,18 +2048,59 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
     y = actor->y + FixedMul (prestep, finesine[an]);
     z = actor->z + 8*FRACUNIT;
 
-    newmobj = P_SpawnMobj (x , y, z, MT_SKULL);
+    if( EN_old_pain_spawn )
+    {
+       newmobj = P_SpawnMobj (x, y, z, MT_SKULL);
+    }
+    else
+    {
+       // Check before spawning if spawn spot is valid, not in a wall,
+       // not crossing any lines that monsters could not cross.
+       if( P_CheckCrossLine( actor, x, y ) )
+	   goto no_skull;
+       
+       newmobj = P_SpawnMobj (x, y, z, MT_SKULL);
+       
+       // [WDJ] Could not think of better way to check this.
+       // So modified from prboom (by phares).
+       {
+	   register sector_t * nmsec = newmobj->subsector->sector;
+	   // check for above ceiling or below floor
+	   // skull z may be modified by SpawnMobj, so check newmobj itself
+	   if( ( (newmobj->z + newmobj->height) > nmsec->ceilingheight )
+	       || ( newmobj->z < nmsec->floorheight ) )
+	       goto remove_skull;
+       }
+    }
 
     // Check for movements.
     if (!P_TryMove (newmobj, newmobj->x, newmobj->y, false))
-    {
-        // kill it immediately
-        P_DamageMobj (newmobj,actor,actor,10000);
-        return;
-    }
+       goto remove_skull;
 
-    newmobj->target = actor->target;
+    if( actor->target && (actor->target->health > 0) )
+        newmobj->target = actor->target;
+    
     A_SkullAttack (newmobj);
+    return;
+
+remove_skull:   
+    // kill it immediately
+#define RMSKULL  2
+#if RMSKULL == 0
+    // The skull dives to the floor and dies
+    P_DamageMobj (newmobj,actor,actor,10000);
+#endif
+#if RMSKULL == 1      
+    // The skull dies less showy, like prboom
+    newmobj->health = 0;
+    P_KillMobj (newmobj,NULL,actor);  // no death messages
+#endif
+#if RMSKULL == 2
+    // The skull does not appear, like Edge
+    P_RemoveMobj (newmobj);
+#endif
+no_skull:
+    return;
 }
 
 
@@ -2056,6 +2112,12 @@ void A_PainAttack (mobj_t* actor)
 {
     if (!actor->target)
         return;
+   
+    if (actor->target->health <= 0 )
+    {
+       actor->target = NULL;
+       return;
+    }
 
     A_FaceTarget (actor);
     A_PainShootSkull (actor, actor->angle);
