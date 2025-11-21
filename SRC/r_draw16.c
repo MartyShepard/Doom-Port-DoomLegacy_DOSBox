@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: r_draw16.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -380,6 +380,19 @@ void R_DrawTranslucentColumn_16 (void)
 	    *(uint16_t*)dest=
 	     ((nc & mask_11110)>>1)  // 50%
 	     + ((dc & mask_11110)>>1);  // 50%
+	    dest += vid.ybytes;
+	    frac += fracstep;
+	} while (count--);
+        break;
+     case TRANSLU_75: // 75 25
+        do
+        {
+	    // 75/25 translucent
+	    register uint16_t dc = *(uint16_t*)dest;
+	    register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
+	    *(uint16_t*)dest=
+	     (nc + ((nc & mask_11110)>>1)) // 75%
+	     + ((dc & mask_11100)>>2); // 25%
 	    dest += vid.ybytes;
 	    frac += fracstep;
 	} while (count--);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: r_bsp.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -399,7 +399,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   if(sec->model == SM_colormap && sec->midmap != -1 )
     colormapnum = sec->midmap;  // explicit colormap
 
-//  if (sec->modelsec != -1 && sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
   if (sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
   {
       // SM_Boom_deep_water passes modelsec >= 0
@@ -470,7 +469,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
         if (viewer_overceiling
 	    && (sec->ceilingheight > modsecp->ceilingheight))
 #else	 
-//        if (viewer_modelsec != -1 && viewz >= sectors[viewer_modelsec].ceilingheight &&
         if (viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight)
 	    && (sec->ceilingheight > modsecp->ceilingheight))
 #endif	   
@@ -507,7 +505,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       }
       sec = tempsec;
   }
-//  else if (sec->modelsec != -1 && sec->model == SM_Legacy_water) //SoM: 3/20/2000
   else if (sec->model == SM_Legacy_water) //SoM: 3/20/2000
   {
     // SM_Legacy_water passes modelsec >= 0
@@ -516,7 +513,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     int          viewer_modelsec = viewmobj->subsector->sector->modelsec;
     // [WDJ] modelsec used for more than water, do proper test
     boolean      viewer_has_model  = viewmobj->subsector->sector->model > SM_fluid;
-//    int          viewer_underwater = modelsec!=-1 && viewz<=sectors[modelsec].floorheight;
     boolean      viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
 #endif
 
@@ -543,7 +539,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 #ifdef BSPVIEWER
     else if(!viewer_underwater && viewer_overceiling)
 #else     
-//    else if(!viewer_underwater && modelsec != -1 && viewz >= sectors[modelsec].ceilingheight)
     else if(!viewer_underwater && viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight))
 #endif
     {
@@ -950,7 +945,6 @@ void R_Subsector (int num)
     sub->sector->extra_colormap = frontsector->extra_colormap;
 
     if ((frontsector->floorheight < viewz)
-//      || (frontsector->modelsec != -1 &&
 	|| (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
@@ -968,7 +962,6 @@ void R_Subsector (int num)
 
     if ((frontsector->ceilingheight > viewz)
         || (frontsector->ceilingpic == skyflatnum)
-//	|| (frontsector->modelsec != -1 &&
         || (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].floorpic == skyflatnum))
     {

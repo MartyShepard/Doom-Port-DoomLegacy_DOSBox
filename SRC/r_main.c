@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: r_main.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -191,6 +191,10 @@ byte	   fog_init = 0;   // set 1 at fog linedef to clear previous fog blur
 // pain=>REDCOLORMAP, invulnerability=>INVERSECOLORMAP, goggles=>colormap[1]
 // Set from current viewer
 lighttable_t*           fixedcolormap;
+#ifdef BOOM_GLOBAL_COLORMAP
+// Boom colormap, and global viewer coloring
+lighttable_t*           view_colormap;  // full lightlevel colormaps
+#endif
 
 fixed_t                 viewx;
 fixed_t                 viewy;
@@ -253,6 +257,37 @@ CV_PossibleValue_t grtranslucenthud_cons_t[] = { {1, "MIN"}, {255, "MAX"}, {0, N
 consvar_t cv_grtranslucenthud = {"gr_translucenthud","255",CV_SAVE|CV_CALL,grtranslucenthud_cons_t,R_SetViewSize}; //Hurdler: support translucent HUD
 
 consvar_t cv_screenshotdir = { "screenshotdir", "", CV_SAVE, NULL };
+
+CV_PossibleValue_t boom_colormap_cons_t[]={
+   {0,"Boom colormap"},  // Boom colormap rules
+   {1,"Boom pref"},
+   {2,"Demo detect"},    // Detect Boom demo
+   {3,"Sector detect"},  // Detect Legacy colormap sectors
+   {4,"Sector colormap"},  // Sector colormap rules
+   {0,NULL} };
+void BoomColormap_detect(void);
+consvar_t cv_boom_colormap   = {"boomcolormap", "0", CV_SAVE|CV_CALL, boom_colormap_cons_t, BoomColormap_detect};
+
+byte EN_boom_colormap = 1;  // compatibility, user preference, do not switch for demos
+void BoomColormap_detect(void)
+{
+    switch( cv_boom_colormap.value )
+    {
+     case 0:
+     case 1:
+       EN_boom_colormap = 1;
+       break;
+     case 2:
+     case 3:
+       {
+	   EN_boom_colormap = 1;
+	   
+       }
+       break;
+     default:
+       EN_boom_colormap = 0;  break;
+    }
+}
 
 // added 16-6-98:splitscreen
 
@@ -1101,7 +1136,7 @@ void R_SetupFrame (player_t* player)
     int  i;
     int  fixedcolormap_num;
     int  dy=0; //added:10-02-98:
-
+    
     extralight = player->extralight;
 
     if (cv_chasecam.value && !camera.chase)
@@ -1193,11 +1228,47 @@ void R_SetupFrame (player_t* player)
 
     sscount = 0;
 
+    fixedcolormap = NULL;  // default
+#ifdef BOOM_GLOBAL_COLORMAP
+    view_colormap = reg_colormaps;  // default
+    if( EN_boom_colormap )
+    {
+        // [WDJ] 4/11/2012 restore compatible Boom colormap handling
+        sector_t * secp = viewmobj->subsector->sector;
+        if( secp->model == SM_Boom_deep_water )
+        {
+	    sector_t * modsecp = & sectors[ secp->modelsec ];
+	    int bcm_num = (viewz < modsecp->floorheight) ?
+	       modsecp->bottommap
+	     : (viewz > modsecp->ceilingheight)?
+	       modsecp->topmap
+	     : modsecp->midmap;
+	    if(bcm_num < 0 || bcm_num > num_extra_colormaps)
+	       bcm_num = 0;
+	    view_colormap = extra_colormaps[bcm_num].colormap;
+#if 0
+	    fixedcolormap = view_colormap;
+	    // set scalelights to use_colormap
+	    for (i=0 ; i<MAXLIGHTSCALE ; i++)
+//	       scalelightfixed[i] = & view_colormap[ LIGHTTABLE( i ) ];
+	       scalelightfixed[i] = & view_colormap[ i ];
+//	       scalelightfixed[i] = & view_colormap[ 0 ];
+	    walllights = scalelightfixed;
+#endif
+	}
+    }
+#endif   
+
+
     if (fixedcolormap_num)
     {
         // the fixedcolormap overrides sector colormaps
         fixedcolormap =
+#ifdef BOOM_GLOBAL_COLORMAP
+            & view_colormap[ LIGHTTABLE( fixedcolormap_num ) ];
+#else
             & reg_colormaps[ LIGHTTABLE( fixedcolormap_num ) ];
+#endif
 
         walllights = scalelightfixed;
 
@@ -1205,8 +1276,6 @@ void R_SetupFrame (player_t* player)
         for (i=0 ; i<MAXLIGHTSCALE ; i++)
             scalelightfixed[i] = fixedcolormap;
     }
-    else
-        fixedcolormap = NULL;
 
     //added:06-02-98:recalc necessary stuff for mouseaiming
     //               slopes are already calculated for the full

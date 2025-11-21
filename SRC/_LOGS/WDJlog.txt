@@ -2405,4 +2405,20 @@ Mid texture determines the color of the fog, and the intensity of the
 shifting pattern.
 Fog is not finished.
 
+*** w81_Boom_translucent
+patchfile = w81_Boom_translucent.patch
+- committed revision 925   by wesley johnson
+Fixed Boom translucent linedef 260.
+Tagged lines now get the translucent effect too.
+Recognizes and uses named translucent lumps introduced by linedef 260.
+Analyzes Boom translucent lumps to get alpha for DRAW15, DRAW16,
+DRAW24, DRAW32, and opengl draw modes, which now work.
+Will draw using closest existing translucent implementation, or use
+analyzed alpha.
+Added TRANSLU_75 in RGB draw routines, to implement a 75/25% translucent draw.
+OpenGL does draw the translucent textures in BOOMEDIT.WAD,
+but does not draw other transparent textures behind the closest one.
+OpenGL also fails to draw transparent over the switches in hg.wad,
+due to unknown causes.
+
 

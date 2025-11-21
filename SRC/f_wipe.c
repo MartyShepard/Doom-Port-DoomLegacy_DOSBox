@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 914 2012-03-05 15:11:26Z wesleyjohnson $
+// $Id: f_wipe.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -38,8 +38,10 @@
 #include "i_system.h"
 #include "i_video.h"
 #include "v_video.h"
-#include "r_draw.h" // transtable
-#include "p_pspr.h" // tr_transxxx
+#include "r_data.h"
+   // TRANSLU_TABLE
+#include "r_draw.h"
+   // translucenttables
 #include "z_zone.h"
 
 //--------------------------------------------------------------------------

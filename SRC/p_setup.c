@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_setup.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -906,15 +906,40 @@ void P_LoadLineDefs2()
   line_t* ld = lines;
   for(i = 0; i < numlines; i++, ld++)
   {
-  if (ld->sidenum[0] != NULL_INDEX)
-    ld->frontsector = sides[ld->sidenum[0]].sector;
-  else
-    ld->frontsector = 0;
+      if (ld->sidenum[0] != NULL_INDEX)
+        ld->frontsector = sides[ld->sidenum[0]].sector;
+      else
+        ld->frontsector = 0;
 
-  if (ld->sidenum[1] != NULL_INDEX)
-    ld->backsector = sides[ld->sidenum[1]].sector;
-  else
-    ld->backsector = 0;
+      if (ld->sidenum[1] != NULL_INDEX)
+        ld->backsector = sides[ld->sidenum[1]].sector;
+      else
+        ld->backsector = 0;
+      
+      // special linedef setup after sidedefs are loaded
+      switch( ld->special ) 
+      {
+       case 260:  // Boom transparency
+	 // sidedef1 of master linedef has the transparency map
+	 // Similar effect to Boom, no alternatives
+	 {
+	     int eff = ld->translu_eff;  // TRANSLU_med, or TRANSLU_ext + lumpid
+	     short tag = ld->tag;
+	     if( tag )
+	     {
+		 // Same tagged linedef get it too (both sidedefs).
+		 int li;
+		 for( li=numlines-1; li>=0; li-- )
+		 {
+		     if( lines[li].tag == tag )
+		        lines[li].translu_eff = eff;
+		     // Cannot use special because Boom allows tagged lines
+		     // to have the transparent effect simultaneously with
+		     // other linedef effects.
+		 }
+	     }
+	 }
+      }
   }
 }
 
@@ -974,13 +999,13 @@ void P_LoadSideDefs2(int lump)
 {
   mapsidedef_t * msdlump = W_CacheLumpNum(lump, PU_IN_USE);  // sidedefs lump
   // [WDJ] Do endian as read from temp sidedefs lump
-  int  i;
-  int  num;
+  int  sdnum;
+  int  num, eff;
 
-  for (i=0; i<numsides; i++)
+  for (sdnum=0; sdnum<numsides; sdnum++)
   {
-      register mapsidedef_t *msd = & msdlump[i]; // map sidedef
-      register side_t *sd = & sides[i];
+      register mapsidedef_t *msd = & msdlump[sdnum]; // map sidedef
+      register side_t *sd = & sides[sdnum];
       register sector_t *sec;
 
       sd->textureoffset = LE_SWAP16(msd->textureoffset)<<FRACBITS;
@@ -996,7 +1021,7 @@ void P_LoadSideDefs2(int lump)
       // [WDJ] Check for buggy wad, like prboom
       if( secnum >= numsectors )
       {
-	  I_SoftError( "SideDef %i has bad sector number %i\n", i, secnum );
+	  I_SoftError( "SideDef %i has bad sector number %i\n", sdnum, secnum );
 	  secnum = 0; // arbitrary use of sector 0
       }
       sd->sector = sec = &sectors[secnum];
@@ -1076,27 +1101,53 @@ void P_LoadSideDefs2(int lump)
         case 260:	// Boom transparency
 	  // When tag=0: this sidedef middle texture is made translucent using TRANMAP.
 	  // When tag!=0: all same tagged linedef have their middle texture
-	  // made translucent.
+	  // made translucent using sidedef1.
 	  // If this sidedef middle texture is a TRANMAP, size=64K, then it
 	  // is used for the transluceny.
-	  // never set to -1
-	  num = R_CheckTextureNumForName(msd->midtexture);
-          if(num == -1)
-            sd->midtexture = 1;
-          else
-            sd->midtexture = num;
+	  // This always affects both sidedefs.
+	  // never set to -1, 0=no_texture
+	  // Do not mangle special because Boom allows tagged lines
+	  // to have the transparent effect simultaneously with
+	  // other linedef effects.
+	  eff = TRANSLU_med;  // default TRANMAP
+	  sd->midtexture = 0;  // default, no texture
+	  if( strncasecmp("TRANMAP", msd->midtexture, 8) != 0 )
+	  {
+	      // From Boom, any lump can be transparency map if it is right size
+	      int spec_num = W_CheckNumForName( msd->midtexture );
+	      if( spec_num > 0 && W_LumpLength(spec_num) == 65536 )
+	      {
+		  int translu_map_num = R_setup_translu_store( spec_num );
+		  eff = TRANSLU_ext + translu_map_num;
+		  // LoadLineDefs2 will propagate it to other linedefs
+	      }
+	      else
+	      {
+		  // Not lump name or not right size
+		  // midtexture is texture
+		  num = R_CheckTextureNumForName(msd->midtexture);
+		  sd->midtexture = (num == -1) ? 0 : num;
+	      }
+	  }
+	  {
+	      // Find parent linedef and update, otherwise would have to use
+	      // some field to pass translu_eff back up to it.
+	      int li;
+	      for( li=numlines-1; li>=0; li-- )
+	      {
+		  if( lines[li].sidenum[0] == sdnum )  // found parent linedef
+		  {
+		      lines[li].translu_eff = eff;
+		      break;
+		  }
+	      }
+	  }
 
           num = R_CheckTextureNumForName(msd->toptexture);
-          if(num == -1)
-            sd->toptexture = 1;
-          else
-            sd->toptexture = num;
+	  sd->toptexture = (num == -1) ? 0 : num;
 
           num = R_CheckTextureNumForName(msd->bottomtexture);
-          if(num == -1)
-            sd->bottomtexture = 1;
-          else
-            sd->bottomtexture = num;
+	  sd->bottomtexture = (num == -1) ? 0 : num;
           break;
 /*        case 260: // killough 4/11/98: apply translucency to 2s normal texture
           sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?

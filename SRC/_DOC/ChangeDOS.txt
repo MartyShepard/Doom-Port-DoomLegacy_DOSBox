@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00925 ]: w81 Boom translucent 260
 [00924 ]: w81 fogsheet improvements
 [00923 ]: w81 savegame buffer overflow
 [00922 ]: w81 pain elemental skull spawn

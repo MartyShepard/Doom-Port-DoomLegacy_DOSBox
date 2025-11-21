@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: r_defs.h 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -205,6 +205,7 @@ typedef struct
 
   lighttable_t*   colormap; // colormap tables [32][256]
 } extracolormap_t;
+
 
 //
 // INTERNAL MAP TYPES
@@ -500,7 +501,7 @@ typedef struct
     sector_t*   sector;
 
     //SoM: 3/6/2000: This is the special of the linedef this side belongs to.
-    int special;
+    int         special;
 
 } side_t;
 
@@ -564,8 +565,8 @@ typedef struct line_s
     void*       splats;
     
     //SoM: 3/6/2000
-//    int tranlump;          // translucency filter, -1 == none 
-                           // (Will have to fix to use with Legacy's Translucency?)
+    int translu_eff;       // translucency effect table, 0 == none 
+   			   // TRANSLU_med or (TRANSLU_ext + lumpnum)
     int firsttag,nexttag;  // improves searches for tags.
 
 //    int ecolormap;         // SoM: Used for 282 linedefs

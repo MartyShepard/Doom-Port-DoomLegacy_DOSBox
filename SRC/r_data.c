@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: r_data.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1441,12 +1441,14 @@ void R_ClearColormaps()
 // [WDJ] Enable to print out results of colormap generate.
 //#define VIEW_COLORMAP_GEN
 
-// In order: whiteindex, greyindex, redindex, greenindex, blueindex
-static byte  doom_analyze_index[5] = {
-    4, 97, 176, 112, 200
+// In order: whiteindex, lightgreyindex, medgreyindex, darkgreyindex, grayblackindex
+// redindex, greenindex, blueindex
+#define NUM_ANALYZE_COLORS  8
+static byte  doom_analyze_index[NUM_ANALYZE_COLORS] = {
+    4, 87, 96, 106, 7, 188, 123, 206
 };
-static byte  heretic_analyze_index[5] = {
-    35, 17, 160, 217, 196
+static byte  heretic_analyze_index[NUM_ANALYZE_COLORS] = {
+    35, 26, 18, 10, 253, 148, 213, 192
 };
 
 // [WDJ] Analyze an extra colormap to derive some GL parameters
@@ -1485,56 +1487,6 @@ void  R_Colormap_Analyze( int mapnum )
     if( gamemode == heretic )
        tstcolor = & heretic_analyze_index[0];  // heretic colors to test
 
-#if 0
-    // For new port, analyze the colormap to find white, grey, red, blue, green.
-    // This only affects this color analyzer, and is not fatal.
-    int whiteness = 0;
-    int greyness = 0;
-    int redness = 0;
-    int greenness = 0;
-    int blueness = 0;
-    for(i=0; i<256; i++)
-    {
-        int cr = pLocalPalette[i].s.red;
-        int cg = pLocalPalette[i].s.green;
-        int cb = pLocalPalette[i].s.blue;
-        int n = cr+cg+cb;
-        if( n>whiteness )
-        {
-            whiteness = n;
-	    tstcolor[0] = i;
-	}
-        n = ((cr > 128)? 255 - cr : cr) + ((cg > 128)? 255 - cg : cg) + ((cb > 128)? 255 - cb : cb);
-        if( n>greyness )  // med grey
-        {
-	    greyness = n;
-            tstcolor[1] = i;
-	}
-        n = cr-cg-cb;
-        if( n>redness )
-        {
-	    redness = n;
-	    tstcolor[2] = i; // red
-	}
-        n= cg-cr-cb;
-        if( n>greenness )
-        {
-	    greenness = n;
-	    tstcolor[3] = i; // green
-	}
-        n= cb-cr-cg;
-        if( n>blueness )
-        {
-	    blueness = n;
-	    tstcolor[4] = i;  // blue
-	}
-    }
-#ifdef VIEW_COLORMAP_GEN
-    fprintf(stderr,"White index=%i, grey index=%i, red index=%i, green index=%i, blue index=%i\n",
-	   tstcolor[0], tstcolor[1], tstcolor[2], tstcolor[3], tstcolor[4]);
-#endif   
-#endif   
-
     // [WDJ] Analyze the colormap to get some imitative parameters.
     for(i=0; i<NUM_RGBA_LEVELS; i++)
     {
@@ -1552,11 +1504,11 @@ void  R_Colormap_Analyze( int mapnum )
         int try_cnt = 0;
         int dd4, dn4, k1, k2;
         // for all combinations of tstcolor
-        for( k1=0; k1<4; k1++ )
+        for( k1=0; k1<NUM_ANALYZE_COLORS-1; k1++ )
         {
 	    byte i1 = tstcolor[k1];
 	    byte cm1 = cm[ LIGHTTABLE(mapindex) + i1 ];
-	    for( k2=k1+1; k2<5; k2++ )
+	    for( k2=k1+1; k2<NUM_ANALYZE_COLORS; k2++ )
 	    {
 	        byte i2 = tstcolor[k2];
 	        byte cm2 = cm[ LIGHTTABLE(mapindex) + i2 ];
@@ -1609,8 +1561,8 @@ void  R_Colormap_Analyze( int mapnum )
         int m4_red, m4_blue, m4_green;
 #if 0
         // Generate color tint from changes grey.
-        byte greyindex = tstcolor[1];
-        byte cm_grey = cm[ LIGHTTABLE(mapindex) + greyindex ];  // white
+        byte greyindex = tstcolor[2];
+        byte cm_grey = cm[ LIGHTTABLE(mapindex) + greyindex ];  // grey
         // cr = (cm[w].r - (1-h) * p[w].r) / h ;
         m4_red = ( pLocalPalette[cm_grey].s.red - (h4r* pLocalPalette[greyindex].s.red)) / h4;
         if( m4_red > 255 ) m4_red = 255;
@@ -2005,8 +1957,8 @@ byte NearestColor(byte r, byte g, byte b)
 
       bestdistortion = distortion;
       bestcolor = i;
-      }
     }
+  }
 
   return bestcolor;
 }
@@ -2125,6 +2077,248 @@ void R_Init_color8_translate ( boolean himap )
 }
 #endif
 
+typedef struct
+{
+    byte  alpha;  // 0..255
+    byte  opaque, clear;  // 0..100
+} translucent_subst_info_t;
+
+// From analyze of std translucent maps (with adjustments)
+static  translucent_subst_info_t   translucent_subst[] =
+{
+    {131, 2, 0}, // TRANSLU_med
+    {62, 0, 4}, // TRANSLU_more
+    {60, 1, 22}, // TRANSLU_hi
+    {140, 11, 0}, // TRANSLU_fire
+    {200, 71, 3},  // TRANSLU_fx1
+    {182, 0, 0}  // TRANSLU_75
+};
+
+
+//#define VIEW_TRANSLUMAP_GEN
+//#define VIEW_TRANSLUMAP_GEN_DETAIL
+
+// [WDJ] Analyze a Boom Translucent Map to derive some GL parameters
+void  R_TranslucentMap_Analyze( translucent_map_t * transp, byte * tmap )
+{
+    // Analyze the Boom translucent map for rgb drawing.
+    byte * tstcolor = & doom_analyze_index[0];  // colors to test
+    int ti;
+
+    if( gamemode == heretic )
+       tstcolor = & heretic_analyze_index[0];  // heretic colors to test
+
+    float h4 = 0.0; // alpha = 0
+    int alpha;
+    int tot_cnt = 0;
+    int opaque_cnt = 0;
+    int clear_cnt = 0;
+    int dd4, dn4, k1, k2;
+    // tm3 = i1 * (1-alpha) + i2 * alpha
+    // alpha = (i1-tm3) / (i1-i2)
+    for( k1=0; k1<NUM_ANALYZE_COLORS; k1++ )
+    {
+        byte i1 = tstcolor[k1];  // background
+        for( k2=0; k2<NUM_ANALYZE_COLORS; k2++ )
+        {
+	    if( k1 == k2 ) continue;
+	    byte i2 = tstcolor[k2];  // translucent
+	    byte tm3 = tmap[ (i2<<8) + i1 ];
+	    // for each color
+	    int krgb;
+#ifdef  VIEW_TRANSLUMAP_GEN_DETAIL
+fprintf( stderr, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
+  pLocalPalette[i1].s.red,pLocalPalette[i1].s.green,pLocalPalette[i1].s.blue,
+  pLocalPalette[i2].s.red,pLocalPalette[i2].s.green,pLocalPalette[i2].s.blue,
+  pLocalPalette[tm3].s.red,pLocalPalette[tm3].s.green,pLocalPalette[tm3].s.blue
+);
+#endif	       
+	    for( krgb=0; krgb<3; krgb++ )  // red, green, blue
+	    { 
+	        // alpha = (i1-tm3) / (i1-i2)
+	        switch( krgb )
+	        {
+		 case 0: // red
+		   dd4 = (int)pLocalPalette[i1].s.red -  (int)pLocalPalette[i2].s.red;
+		   dn4 = (int)pLocalPalette[i1].s.red - (int)pLocalPalette[tm3].s.red;
+		   break;
+		 case 1: // green
+		   dd4 = (int)pLocalPalette[i1].s.green -  (int)pLocalPalette[i2].s.green;
+		   dn4 = (int)pLocalPalette[i1].s.green - (int)pLocalPalette[tm3].s.green;
+		   break;
+		 default: // blue
+		   dd4 = (int)pLocalPalette[i1].s.blue -  (int)pLocalPalette[i2].s.blue;
+		   dn4 = (int)pLocalPalette[i1].s.blue - (int)pLocalPalette[tm3].s.blue;
+		   break;
+		}
+	        // eliminate cases where equation is least accurate
+	        if( dn4 && (dd4 > 10.0 || dd4 < -10.0))
+	        {
+		    float h3 = (float)dn4 / (float)dd4;
+#ifdef VIEW_TRANSLUMAP_GEN_DETAIL
+		    fprintf( stderr, " %i", (int)(h3*255) );
+#endif
+		    // eliminate wierd alpha (due to color quantization in making the transmap)
+		    if( h3 > 0.0 && h3 < 1.1 )
+		    {
+		        h4 += h3;  // total for avg
+		        tot_cnt ++;
+		        if( h3 > 0.9 )   opaque_cnt++;
+		        if( h3 < 0.1 )   clear_cnt++;
+		    }
+		}
+#ifdef VIEW_TRANSLUMAP_GEN_DETAIL
+	        else
+	        {
+		    fprintf( stderr, " -" );
+		}
+#endif	       
+	    }
+#ifdef VIEW_TRANSLUMAP_GEN_DETAIL
+	    fprintf(stderr,"\n");
+#endif	       
+	}
+    }
+    alpha = (int) (255.0 * h4 / tot_cnt);
+    if( alpha > 255 )  alpha = 255;
+    if( alpha < 0 )    alpha = 0;
+    transp->alpha = alpha;
+    transp->opaque = (opaque_cnt*100)/tot_cnt;
+    transp->clear = (clear_cnt*100/tot_cnt);
+    transp->substitute_std_translucent = TRANSLU_med;  // default
+    transp->substitute_error = 255;
+    {
+        // find closest standard transparency
+        float bestdist = 1E20;
+        for(ti=1; ti<TRANSLU_75; ti++)
+        {
+	    translucent_subst_info_t * tinfop = & translucent_subst[ti-1];
+	    float dista = tinfop->alpha - alpha;  // 0..255
+	    float distop = tinfop->opaque - transp->opaque;  // 0..100
+	    float distcl = tinfop->clear - transp->clear;  // 0..100
+	    float dist = (dista*dista) + (distop*distop) + (distcl*distcl);
+	    if( dist < bestdist )
+	    {
+	        bestdist = dist;
+	        dist *= (255.0/(40.0*40.0 + 20.0*20.0  + 10.0*10.0));
+	        if( dist > 255 )  dist = 255;
+	        transp->substitute_error = dist;
+	        transp->substitute_std_translucent = ti;
+	    }
+	}
+    }
+#ifdef VIEW_TRANSLUMAP_GEN
+    // Enable to see results of analysis.
+    fprintf( stderr,
+	     "Analyze Trans: alpha=%i  opaque=%i%%  clear=%i%%  subst=%i  subst_err=%i\n",
+	      alpha, transp->opaque, transp->clear,
+	      transp->substitute_std_translucent, transp->substitute_error);
+#endif      
+}
+
+#define TRANSLU_STORE_INC  8
+translucent_map_t *  translu_store = NULL;
+int translu_store_num = 0;
+int translu_store_len = 0;
+
+int  R_setup_translu_store( int lump_num )
+{
+   int ti;
+   translucent_map_t * tranlu_map;
+   // check if already in store
+   for(ti=0; ti< translu_store_num; ti++ )
+   {
+       if( translu_store[ti].translu_lump_num == lump_num )
+	  goto done;
+   }
+   // check for expand store
+   if( translu_store_num >= translu_store_len )
+   {
+       translu_store_len += TRANSLU_STORE_INC;
+       translu_store = realloc( translu_store, translu_store_len );
+       if( translu_store == NULL )
+	  I_Error( "Translucent Store: cannot alloc\n" );
+   }
+   // create new store and fill it in
+   ti = translu_store_num++;
+   tranlu_map = & translu_store[ti];
+   tranlu_map->translu_lump_num = lump_num;
+   R_TranslucentMap_Analyze( tranlu_map, W_CacheLumpNum( lump_num, PU_CACHE ) );
+   if( verbose>1 )
+      fprintf(stderr,"TRANSLU STORE lump=%i, subst=%i\n", lump_num, tranlu_map->substitute_std_translucent );
+done:
+   return ti;
+}
+
+#if 0
+// [WDJ] Only enable to setup colormap analyze tables
+#define ANALYZE_GAMEMAP
+void Analyze_gamemap( void )
+{
+#define NUMTESTCOLOR  8   
+    // For new port, analyze the colormap to find white, grey, red, blue, green.
+    // This only affects this color analyzer, and is not fatal.
+    static const char * name[NUMTESTCOLOR]=
+     {"white", "light grey", "med grey", "dark grey", "grayblack", "red", "green", "blue" };
+    typedef struct { byte red, green, blue; } test_rgb_t;
+    static const test_rgb_t ideal[NUMTESTCOLOR]=
+     {{255,255,255}, {192,192,192}, {128,128,128}, {64,64,64}, {10,10,10}, {100,0,0}, {0,100,0}, {0,0,100} };
+    float bestdist[NUMTESTCOLOR];
+    byte bestcolor[NUMTESTCOLOR];
+    int i, k;
+
+    fprintf(stderr, "Game colormap analyze:\n" );
+    for(k=0; k<8; k++ )   bestdist[k] = 1E20;
+    
+    for(i=0; i<256; i++)
+    {
+        int cr = pLocalPalette[i].s.red;
+        int cg = pLocalPalette[i].s.green;
+        int cb = pLocalPalette[i].s.blue;
+        for(k=0; k<NUMTESTCOLOR; k++ )
+        {
+	    float dr = cr - ideal[k].red;
+	    float dg = cg - ideal[k].green;
+	    float db = cb - ideal[k].blue;
+	    float d = dr*dr + dg*dg + db*db;
+	    if( d < bestdist[k] )
+	    {
+	        bestdist[k] = d;
+ 	        bestcolor[k] = i;
+	    }
+	}
+    }
+    for(k=0; k<NUMTESTCOLOR; k++ )
+    {
+        fprintf(stderr, "Analyze Index %s = %i\n", name[k], bestcolor[k] );
+    }
+}
+#endif
+
+#if 0
+// [WDJ] Only enable to setup translucent analyze tables
+#define ANALYZE_TRANSLUCENT_MAPS
+void Analyze_translucent_maps( void )
+{
+    // translucent maps
+    translucent_map_t trans;
+    int k;
+    fprintf(stderr, "Game translucent maps analyze:\n" );
+    if( translucenttables == NULL )   return;
+    for(k=1; k<=TRANSLU_fx1; k++ )  // Doom2 maps
+    { 
+        byte * tmap = & translucenttables[ TRANSLU_TABLE_INDEX(k) ];
+        if( tmap )
+        {
+	    fprintf(stderr, "  Analyze translucent map %i:\n", k );
+	    R_TranslucentMap_Analyze( &trans, tmap);
+	}
+    }
+}
+#endif
+
+
+
 
 //
 // R_InitData
@@ -2145,6 +2339,9 @@ void R_InitData (void)
 
     CONS_Printf ("\nInitColormaps...\n");
     R_InitColormaps ();
+#ifdef ANALYZE_GAMEMAP
+    Analyze_gamemap();
+#endif
 }
 
 
@@ -2388,4 +2585,8 @@ void R_PrecacheLevel (void)
                     "texturememory: %ld k\n"
                     "spritememory:  %ld k\n", flatmemory>>10, texturememory>>10, spritememory>>10 );
     }
+#ifdef ANALYZE_TRANSLUCENT_MAPS
+    // maps are loaded by now
+    Analyze_translucent_maps();
+#endif
 }

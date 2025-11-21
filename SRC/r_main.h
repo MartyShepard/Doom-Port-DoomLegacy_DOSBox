@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: r_main.h 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -192,6 +192,7 @@ extern consvar_t cv_viewsize;
 extern consvar_t cv_detaillevel;
 extern consvar_t cv_scalestatusbar;
 extern consvar_t cv_grtranslucenthud;
+extern consvar_t cv_boom_colormap;
 
 // Called by startup code.
 void R_Init (void);

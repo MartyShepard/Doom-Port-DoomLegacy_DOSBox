@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: r_things.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -866,6 +866,7 @@ void R_DrawMaskedColumn (column_t* column)
         // [WDJ] limit to split screen area above status bar,
         // instead of whole screen,
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
+//        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
         {
 	    //[WDJ] phobiata.wad has many views that need clipping
 	    if ( dc_yl < 0 )   dc_yl = 0;

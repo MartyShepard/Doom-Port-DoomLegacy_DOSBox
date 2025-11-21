@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: r_data.h 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -246,4 +246,59 @@ extern union color8_u  color8;
 extern uint16_t*  hicolormaps;
 void R_Init_color8_translate ( boolean himap );
 
+
+// translucency tables
+
+// TODO: add another asm routine which use the fg and bg indexes in the
+//       inverse order so the 20-80 becomes 80-20 translucency, no need
+//       for other tables (thus 1090,2080,5050,8020,9010, and fire special)
+
+typedef enum
+{
+    // 0 is not translucent
+    TRANSLU_med=1,   //sprite 50 backg 50  most shots
+    TRANSLU_more=2,  //       20       80  puffs
+    TRANSLU_hi=3,    //       10       90  blur effect
+    TRANSLU_fire=4,  // 50 50 but brighter for fireballs, shots..
+    TRANSLU_fx1=5,   // 50 50 brighter some colors, else opaque for torches
+    TRANSLU_75=6,    //       75       25
+    TRANSLU_ext=7    // Boom external transparency table
+} translucent_e;
+
+// Translucent table is 256x256,
+// To overlay a translucent source on an existing dest:
+//   *dest = table[source][*dest];
+//   *dest = table[ (source<<8) + (*dest) ];
+
+// 0 code does not have a table, so must subtract 1, (or one table size).
+// Table size is 0x10000, = 1<<FF_TRANSSHIFT.
+#define TRANSLU_TABLE_INDEX( trans )   (((trans)-1)<<FF_TRANSSHIFT)
+
+typedef enum
+{
+    TRANSLU_TABLE_med =  TRANSLU_TABLE_INDEX(TRANSLU_med),
+    TRANSLU_TABLE_more = TRANSLU_TABLE_INDEX(TRANSLU_more),
+    TRANSLU_TABLE_hi =   TRANSLU_TABLE_INDEX(TRANSLU_hi),
+    TRANSLU_TABLE_fire = TRANSLU_TABLE_INDEX(TRANSLU_fire),
+    TRANSLU_TABLE_fx1 =  TRANSLU_TABLE_INDEX(TRANSLU_fx1)
+} translucent_table_index_e;
+
+
+typedef struct
+{
+  uint32_t  translu_lump_num;  // translucent table lump
+//  byte *   translu_map;  // translucent tables [256][256]
+  // Analysis
+  byte  alpha;  // alpha 0..255
+  byte  opaque, clear;  // 0..100
+  // render aids
+  byte  substitute_std_translucent;  // from translucent_e
+  byte  substitute_error;  // 0..255, 0 is perfect
+  int   PF_op;  // hardware translucent operation
+} translucent_map_t;
+
+extern translucent_map_t *  translu_store;  // array
+
+int  R_setup_translu_store( int lump_num );
+  
 #endif

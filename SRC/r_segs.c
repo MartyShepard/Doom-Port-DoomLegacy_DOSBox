@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: r_segs.c 925 2012-06-08 00:07:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -567,6 +567,7 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
     }
 
     // [WDJ] Draws only within borders
+//    if (dc_yl >= vid.height || dc_yh < 0)
     if (dc_yl >= rdraw_viewheight || dc_yh < 0)
       return;
 
@@ -626,10 +627,23 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         colfunc = transcolfunc;
     }
     else
-    if (ldef->special==260)	// Boom make translucent
+    if (ldef->special==260 || ldef->translu_eff )  // Boom make translucent
     {
+        // Boom 260, make translucent, direct and by tags
         dc_translucent_index = 1; // 50/50
-	dc_translucentmap = & translucenttables[0]; // get first transtable 50/50
+        dc_translucentmap = & translucenttables[0]; // get first transtable 50/50
+        if( ldef->translu_eff >= TRANSLU_ext )
+        {
+	    // Boom transparency map
+	    translucent_map_t * tm = & translu_store[ ldef->translu_eff - TRANSLU_ext ];
+	    if( vid.drawmode == DRAW8PAL )
+	    {
+	        // dc_translucentmap only works on DRAW8PAL
+	        dc_translucentmap = W_CacheLumpNum( tm->translu_lump_num, PU_CACHE );
+	    }
+	    // for other draws
+	    dc_translucent_index = tm->substitute_std_translucent;
+	}
 //        colfunc = fuzzcolfunc;
         colfunc = transcolfunc;
     }
@@ -646,6 +660,9 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         // world coord, relative to viewer
         windowclip_top = frontsector->ceilingheight - viewz;
 	windowclip_bottom = frontsector->floorheight - viewz;
+// [WDJ] original failed, not screen coord, no perspective, it blocked display entirely 
+//        dm_windowtop = frontsector->ceilingheight;
+//        dm_windowbottom = frontsector->floorheight;
     }
     else
         colfunc = basecolfunc;
