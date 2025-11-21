@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: sb_bar.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -386,7 +386,6 @@ static void ShadeLine(int x, int y, int height, int shade)
     byte *dest;
     byte *shades;
     
-//    shades = reg_colormaps+9*256+shade*2*256;
     shades = & reg_colormaps[ LIGHTTABLE( 9 + shade*2 ) ];
     dest = screens[0]+y*vid.width+x;
     while(height--)

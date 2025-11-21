@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_things.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -866,7 +866,6 @@ void R_DrawMaskedColumn (column_t* column)
         // [WDJ] limit to split screen area above status bar,
         // instead of whole screen,
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
-//        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
         {
 	    //[WDJ] phobiata.wad has many views that need clipping
 	    if ( dc_yl < 0 )   dc_yl = 0;
@@ -1757,7 +1756,6 @@ static void R_CreateDrawNodes( void )
       }
       if(ds->numffloorplanes)
       {
-#if 1
 	// create drawnodes for the floorplanes with the closest last
 	// [WDJ] Sort as they are put into the list.  This avoids repeating
 	// searching through the same entries, PlaneBounds() and tests.
@@ -1792,53 +1790,6 @@ static void R_CreateDrawNodes( void )
 	    entry->plane = plane;
 	    entry->seg = ds;
 	}
-#else       
-	int      farthest;
-	fixed_t  farthest_delta;
-	// create drawnodes for the floorplanes with the closest last
-        for(i = 0; i < ds->numffloorplanes; i++)
-        {
-          farthest = -1;
-          farthest_delta = 0;
-          for(p = 0; p < ds->numffloorplanes; p++)
-          {
-            if(!ds->ffloorplanes[p])
-              continue;
-            plane = ds->ffloorplanes[p];
-	    // [WDJ] ?? why is this called repeatedly, are the bounds changing
-            R_PlaneBounds(plane);  // set highest_top, lowest_bottom
-	         // in screen coord, where 0 is top (hi)
-            if(plane->lowest_bottom < con_clipviewtop
-//	       || plane->highest_top > vid.height  // [WDJ] FIXME rdraw_ ??
-	       || plane->highest_top > rdraw_viewheight  // [WDJ] rdraw window, not vid.height
-	       || plane->highest_top > plane->lowest_bottom)
-            {
-              ds->ffloorplanes[p] = NULL;  // not visible, remove from search
-              continue;  // next plane
-            }
-
-	    // test for farthest plane
-            delta = abs(plane->height - viewz);
-            if(delta > farthest_delta)
-            {
-	      // farthest is largest delta (farthest from viewer eyes)
-              farthest = p;
-              farthest_delta = delta;
-            }
-          }
-          if(farthest != -1)
-          {
-	    // create drawnode for farthest
-	    entry = R_CreateDrawNode(&nodehead);
-	    entry->plane = ds->ffloorplanes[farthest];
-	    entry->seg = ds;
-	    ds->ffloorplanes[farthest] = NULL;  // remove from search
-          }
-          else
-            break;  // no more visible floor planes, quit looking
-                    // Some planes were removed as not visible.
-        }
-#endif
       }
     }
 

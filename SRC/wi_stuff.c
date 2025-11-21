@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 899 2012-02-29 19:23:47Z wesleyjohnson $
+// $Id: wi_stuff.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1046,13 +1046,9 @@ void WI_drawRancking(char *title,int x,int y,fragsort_t *fragtable
 
         // draw color background
         skin_color = fragtable[i].color;
-        if (!skin_color)
-            color = reg_colormaps[ colornum ];
-        else
-        {
-//            color = *( (byte *)translationtables - 256 + (color<<8) + colornum );
-            color = SKIN_TO_SKINMAP(skin_color)[ colornum ];
-	}
+        color = (skin_color) ?
+	   SKIN_TO_SKINMAP(skin_color)[ colornum ]
+	 : reg_colormaps[ colornum ];  // default green skin
         V_DrawFill (x-1,y-1,large ? 40 : 26,9,color);
 
         // draw frags count
@@ -1632,13 +1628,9 @@ static void WI_drawNetgameStats(void)
             continue;
 
         x = NG_STATSX;
-        if (players[i].skincolor==0)
-            colormap = & reg_colormaps[0]; // no translation table for green guy
-        else
-        {
-//            colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
-            colormap = SKIN_TO_SKINMAP( players[i].skincolor ); // skins 1..
-	}
+        colormap = (players[i].skincolor) ?
+             SKIN_TO_SKINMAP( players[i].skincolor ) // skins 1..
+	   : & reg_colormaps[0]; // no translation table for green guy
 
         V_DrawMappedPatch(x-(stpb->width), y, FB, stpb, colormap);
 

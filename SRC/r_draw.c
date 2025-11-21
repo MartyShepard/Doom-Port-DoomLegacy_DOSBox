@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 916 2012-03-10 20:50:49Z wesleyjohnson $
+// $Id: r_draw.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -363,81 +363,6 @@ void R_InitTranslationTables (void)
 	    trantab[i] = newcolor;
 	}
     }
-
-#if 0
-    static byte*  translationtables;  // old tables
-    // [WDJ] The old code, in case someone wants to compare it to the new.
-    translationtables = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, 0, 8);
-    // translate just the 16 green colors
-    for (i=0 ; i<256 ; i++)
-    {
-        if ((i >= 0x70 && i <= 0x7f && gamemode != heretic) || 
-            (i >=  225 && i <=  240 && gamemode == heretic))
-        {
-            if( gamemode == heretic )
-            {
-                translationtables[i+ 0*256] =   0+(i-225); // dark gray
-                translationtables[i+ 1*256] =  67+(i-225); // brown
-                translationtables[i+ 2*256] = 145+(i-225); // red
-                translationtables[i+ 3*256] =   9+(i-225); // light gray
-                translationtables[i+ 4*256] =  74+(i-225); // light brown
-                translationtables[i+ 5*256] = 150+(i-225); // light red
-                translationtables[i+ 6*256] = 192+(i-225); // light blue
-                translationtables[i+ 7*256] = 185+(i-225); // dark blue
-                translationtables[i+ 8*256] = 114+(i-225); // yellow
-                translationtables[i+ 9*256] =  95+(i-225); // beige
-            }
-            else
-            {
-                // map green ramp to gray, brown, red
-                translationtables [i      ] = 0x60 + (i&0xf);
-                translationtables [i+  256] = 0x40 + (i&0xf);
-                translationtables [i+2*256] = 0x20 + (i&0xf);
-                
-                // added 9-2-98
-                translationtables [i+3*256] = 0x58 + (i&0xf); // light gray
-                translationtables [i+4*256] = 0x38 + (i&0xf); // light brown
-                translationtables [i+5*256] = 0xb0 + (i&0xf); // light red
-                translationtables [i+6*256] = 0xc0 + (i&0xf); // light blue
-                
-                if ((i&0xf) <9)
-                    translationtables [i+7*256] = 0xc7 + (i&0xf);   // dark blue
-                else
-                    translationtables [i+7*256] = 0xf0-9 + (i&0xf);
-                
-                if ((i&0xf) <8)
-                    translationtables [i+8*256] = 0xe0 + (i&0xf);   // yellow
-                else
-                    translationtables [i+8*256] = 0xa0-8 + (i&0xf);
-                
-                translationtables [i+9*256] = 0x80 + (i&0xf);     // beige
-            }
-
-        }
-        else
-        {
-	    int j;
-            // Keep all other colors as is.
-            for (j=0;j<(MAXSKINCOLORS-1)*256;j+=256)
-                translationtables [i+j] = i;
-        }
-    }
-#if 0
-    // [WDJ] DEBUG, TEST FOR EQUALITY WITH OLD TRANSLATION TABLES
-//    int sk;
-    for (sk=0; sk<(MAXSKINCOLORS-1); sk++)
-    {
-        for (i=0 ; i<256 ; i++)
-        {
-	   if( translationtables[ i + (sk<<8) ]
-	       != skintranstables[ i + (sk<<8) ] )
-	     fprintf( stderr, "skin %i color %i: translationtables= %i  : skintranstables= %i\n",
-		      sk, i, translationtables[ i + (sk<<8) ], skintranstables[ i + (sk<<8) ] );
-	}
-    }
-#endif
-#endif
-   
 }
 
 

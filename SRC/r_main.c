@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 899 2012-02-29 19:23:47Z wesleyjohnson $
+// $Id: r_main.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1211,16 +1211,9 @@ void R_SetupFrame (player_t* player)
         // (lmps, nework and use F12...)
         aimingangle = G_ClipAimingPitch(aimingangle);	// limit aimingangle
 
-#if 1
         // [WDJ] cleaned up
         dy = cv_splitscreen.value ? rdraw_viewheight*2 : rdraw_viewheight ;
         dy = ( dy * AIMINGTODY(aimingangle) )/ BASEVIDHEIGHT ;
-#else
-        if(!cv_splitscreen.value)
-            dy = AIMINGTODY(aimingangle)* rdraw_viewheight/BASEVIDHEIGHT ;
-        else
-            dy = AIMINGTODY(aimingangle)* rdraw_viewheight*2/BASEVIDHEIGHT ;
-#endif
 
         yslope = &yslopetab[(3*rdraw_viewheight/2) - dy];
     }
