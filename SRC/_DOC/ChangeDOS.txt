@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00916 ]: w80 background border draw32
+[00915*]: colortst.wad update for fog
 [00914 ]: w80 fade 32bpp fixes
 [00913 ]: w80 green console
 [00912 ]: w80 draw32 create functions

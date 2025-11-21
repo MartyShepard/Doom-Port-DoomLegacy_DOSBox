@@ -2308,3 +2308,14 @@ Dim background to 25% for higher contrast (gray green).
 patchfile = w80_fade_32.patch
 - committed revision 914   by wesley johnson
 Fix fade effects for 24/32 bpp drawing
+
+*** common/colortst.wad
+- committed revision 915  by wesley johnson
+colortst.wad update for fog effects
+
+*** w80_background_border_32
+patchfile = w80_backborder32.patch
+- committed revision 916   by wesley johnson
+Fix background border not filling screen in DRAW32 and other video
+modes.  Needed to multiply side size by bytepp.
+

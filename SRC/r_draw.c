@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 908 2012-03-05 15:05:10Z wesleyjohnson $
+// $Id: r_draw.c 916 2012-03-10 20:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -570,7 +570,7 @@ void R_FillBackScreen (void)
     {
         // repeatly draw a 64 pixel wide flat
         dest = screens[1] + (y * vid.ybytes);  // within screen buffer
-        for (x=0 ; x<vid.width/64 ; x++)
+        for (x=0 ; x<(vid.width/64) ; x++)
         {
 //            memcpy (dest, src+((y&63)<<6), 64);
 	    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
@@ -703,7 +703,6 @@ void R_DrawViewBorder (void)
     side = (vid.width-rdraw_scaledviewwidth) >>1;
 
     // copy background to display screen
-#if 1
     // [WDJ] cannot wrap around because some video cards pad the video buffer
     // copy top
     R_VideoErase (0, topbytes);
@@ -714,30 +713,12 @@ void R_DrawViewBorder (void)
     //added:05-02-98:simpler using our new VID_Blit routine
     // copy left side
     VID_BlitLinearScreen(screens[1]+topbytes, screens[0]+topbytes,
-                         side, rdraw_viewheight, vid.ybytes, vid.ybytes);
+                         side * vid.bytepp, rdraw_viewheight, vid.ybytes, vid.ybytes);
 
     // copy right side
     ofs = topbytes + ((vid.width-side)*vid.bytepp);
     VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
-                         side, rdraw_viewheight, vid.ybytes, vid.ybytes);
-
-#else
-    // old, 8bpp, assumes nice buffer and wraps copy to next line, does not work with padded buffer
-    // copy top and one line of left side
-    R_VideoErase (0, topbytes+(side*vid.bytepp));
-
-    // copy one line of right side and bottom
-    ofs = (rdraw_viewheight+top)*vid.ybytes - (side*vid.bytepp);
-    R_VideoErase (ofs, topbytes+(side*vid.bytepp));
-
-    // copy sides using wraparound
-    ofs = topbytes + ((vid.width-side)*vid.bytepp);
-    side <<= 1;
-
-    //added:05-02-98:simpler using our new VID_Blit routine
-    VID_BlitLinearScreen(screens[1]+ofs, screens[0]+ofs,
-                         side, rdraw_viewheight-1, vid.ybytes, vid.ybytes);
-#endif
+                         side * vid.bytepp, rdraw_viewheight, vid.ybytes, vid.ybytes);
 
 #ifdef DIRTY_RECT
     // useless, old dirty rectangle stuff
