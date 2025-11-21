@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00917 ]: w80 video init draw
 [00916 ]: w80 background border draw32
 [00915*]: colortst.wad update for fog
 [00914 ]: w80 fade 32bpp fixes

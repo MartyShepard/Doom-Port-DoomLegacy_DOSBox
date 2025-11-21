@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 913 2012-03-05 15:10:16Z wesleyjohnson $
+// $Id: v_video.c 917 2012-03-10 20:52:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -555,7 +555,7 @@ void V_MarkRect(int x, int y, int width, int height)
 
 // [WDJ] 2012-02-06 Draw functions for all bpp, bytepp, and padded lines.
 
-// Return true if engine can draw the using bitpp
+// Return true if engine can draw using bitpp
 boolean V_CanDraw( byte bitpp )
 {
     if( bitpp==8
@@ -1981,10 +1981,13 @@ int V_TextBHeight(char *text)
 // here we set the screens[x] pointers accordingly
 // WARNING :
 // - called at runtime (don't init cvar here)
-void V_Init(void)
+// Must be called after every video Init and SetMode
+void V_Init_Draw(void)
 {
     int i;
 
+    // Must init everything needed by DrawPixel, as that gets used for
+    // many intro screens, before SCR_SetMode or SCR_Recalc are called.
     LoadPalette("PLAYPAL");
     FontBBaseLump = W_CheckNumForName("FONTB_S") + 1;
 #ifdef HWRENDER // not win32 only 19990829 by Kin
@@ -2023,6 +2026,45 @@ void V_Init(void)
         CONS_Printf(" screens[%d] = %x\n", i, screens[i]);
 #endif
 
+    // port video driver should check CanDraw before setting vid.bitpp
+    switch( vid.bitpp )
+    {
+     case 8:
+        vid.drawmode = DRAW8PAL;
+        break;
+#ifdef ENABLE_DRAW15
+     case 15:
+        vid.drawmode = DRAW15;
+        break;
+#endif
+#ifdef ENABLE_DRAW16
+     case 16:
+        vid.drawmode = DRAW16;
+        break;
+#endif
+#ifdef ENABLE_DRAW24
+     case 24:
+        vid.drawmode = DRAW24;
+        break;
+#endif
+#ifdef ENABLE_DRAW32
+     case 32:
+        vid.drawmode = DRAW32;
+        break;
+#endif
+     default:
+        I_Error ("V_Init_Draw invalid bits per pixel: %d\n", vid.bitpp);
+    }
+    vid.widthbytes = vid.width * vid.bytepp;  // to save multiplies
+
+#ifdef ENABLE_DRAWEXT
+    //fab highcolor
+    if ( vid.bytepp > 1 )  // highcolor, truecolor
+    {
+        R_Init_color8_translate( 1 );
+    }
+#endif
+    return;
 }
 
 //

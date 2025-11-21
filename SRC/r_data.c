@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 910 2012-03-05 15:07:21Z wesleyjohnson $
+// $Id: r_data.c 917 2012-03-10 20:52:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2112,6 +2112,7 @@ void R_Init_color8_translate ( boolean himap )
 	color8_done = vid.bitpp;
     }
 
+#ifdef HIGHCOLORMAPS
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
     if( himap && (hicolormaps == NULL))
     {
@@ -2120,6 +2121,7 @@ void R_Init_color8_translate ( boolean himap )
         for (i=0;i<16384;i++)
 	    hicolormaps[i] = i<<1;
      }
+#endif
 #endif
 }
 #endif

@@ -2319,3 +2319,9 @@ patchfile = w80_backborder32.patch
 Fix background border not filling screen in DRAW32 and other video
 modes.  Needed to multiply side size by bytepp.
 
+*** w80_video_init
+patchfile = w80_video_init.patch
+- committed revision 917   by wesley johnson
+Change V_Init to V_Init_Draw, and make it responsible for setup of
+draw variables for DrawPixel and other v_video draw routines.
+Have it make needed palette (palette was missing during intro screens).

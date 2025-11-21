@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: v_video.h 917 2012-03-10 20:52:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,7 +103,7 @@ extern  consvar_t cv_bright;	// input to gammafunc
 void V_Init_VideoControl( void );
 
 // Allocates buffer screens, call before R_Init.
-void V_Init (void);
+void V_Init_Draw (void);
 
 // Set the current RGB palette lookup to use for palettized graphics
 void V_SetPalette( int palettenum );
