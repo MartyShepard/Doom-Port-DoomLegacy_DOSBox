@@ -2303,3 +2303,8 @@ patchfile = w80_green_console.patch
 Fix green console to be more readable and not distort colors in 15..32 bpp.
 Add GREEN_TINT_255 control, set to 0x16.
 Dim background to 25% for higher contrast (gray green).
+
+*** w80_fade_32
+patchfile = w80_fade_32.patch
+- committed revision 914   by wesley johnson
+Fix fade effects for 24/32 bpp drawing

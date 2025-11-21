@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 906 2012-02-29 19:32:39Z wesleyjohnson $
+// $Id: f_wipe.c 914 2012-03-05 15:11:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -142,7 +142,7 @@ int wipe_doColorXForm ( int ticks )
     int y;
 #ifdef ENABLE_DRAWEXT
     int fade1 = 0, fade2 = 0;
-    uint16_t  mask1_shftd = 0, mask2_shftd = 0;
+    unsigned int  mask1_shftd = 0, mask2_shftd = 0;
 #endif
     
     byte* wend;
