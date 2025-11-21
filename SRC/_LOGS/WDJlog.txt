@@ -2359,3 +2359,11 @@ because of confusion with other enums, and gave the enum more descriptive names.
 Make KICK defines into an enum kick_msg_e.
 Rename enum filestatus_t to filestatus_e.
 Rename fwriteshort to fwrite16, fwritelong to fwrite32.
+
+*** w81_Doom2Map8
+patchfile = w81_Doom2Map8.patch
+- committed revision 921   by wesley johnson
+Missing break stmt in switch stmt.
+Doom2 Map8 is dropping into secret level code,
+even though it is not a secret level.
+

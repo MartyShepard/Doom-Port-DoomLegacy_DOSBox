@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: g_game.c 921 2012-06-07 23:57:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1752,6 +1752,7 @@ void G_DoCompleted (void)
                 F_StartFinale();
                 return;
             }
+	    break; // [WDJ] 4/11/2012  map 8 is not secret level, and prboom and boom do not fall thru here.
           case 9:
             for (i=0 ; i<MAXPLAYERS ; i++)
                 players[i].didsecret = true;
