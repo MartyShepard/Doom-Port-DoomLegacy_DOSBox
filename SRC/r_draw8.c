@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_draw8.c 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -834,7 +834,6 @@ void R_DrawSpan_8(void)
      // [WDJ] note:  prboom has while(count)
     do
     {
-        // count = count;		// [WDJ] ????
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
         *dest = ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)]];
@@ -969,6 +968,8 @@ void R_DrawTranslucentSpan_8(void)
      */
 }
 
+#define FOGCOLOR
+
 void R_DrawFogSpan_8(void)
 {
     byte *colormap;
@@ -1009,6 +1010,48 @@ void R_DrawFogColumn_8(void)
 {
     int count;
     byte *dest;
+#ifdef FOGCOLOR
+   // fogcolor blur needs to be kept as 8 bit or else the blur is inadequate
+static byte  fogcolor_c;
+static byte  fog_blur_table[4] = { 0xFF, TRANSLU_med, TRANSLU_more, 0 };
+    byte fogcolor, fc, fc2;
+    // fog_index 0.. column height
+    fc = dc_source[fog_index];
+//    fc = 110;
+    byte fogb1 = fog_blur_table[fog_bltic>>3];  // 0..3
+    if( fogb1 )
+    {
+        fc2 = dc_colormap[ dc_source[((fog_index==0)?fog_col_length:fog_index)-1] ];
+        if( fogb1 == 0xFF )
+        {   // fc2 80%, fc 20%
+	    register byte fc3 = fc2; // swap fc and fc2
+	    fc2 = fc;
+	    fc = fc3;
+	    fogb1 = TRANSLU_more;
+	}
+        // fc2 20%, fc 80%
+        fc = translucenttables[ TRANSLU_TABLE_INDEX(fogb1) + (fc2 << 8) + fc ];
+    }
+    if( fog_init )
+    {
+        // init blur
+	fogcolor_c = fc;
+        fog_init = 0;
+    }
+    else
+    {
+        // blur
+        fogcolor_c = translucenttables[ TRANSLU_TABLE_more + (fc << 8) + fogcolor_c ];
+    }
+#if 1
+    fogcolor = dc_colormap[ fogcolor_c ];
+#else
+    fogcolor = translucenttables[ TRANSLU_TABLE_hi + (110 << 8) + fogcolor_c ];
+    fogcolor = dc_colormap[ fogcolor ];
+#endif
+//    dc_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ]; // weak
+    dc_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
+#endif
 
     count = dc_yh - dc_yl;
 
@@ -1033,6 +1076,19 @@ void R_DrawFogColumn_8(void)
     // Determine scaling,
     //  which is the only mapping to be done.
 
+#ifdef FOGCOLOR
+    do
+    {
+	// faint color + dark
+#if 1
+        *dest = dc_colormap[ dc_translucentmap[ (fogcolor << 8) + (*dest) ]];
+#else
+ *dest = dc_colormap[ fogcolor ];
+#endif
+        dest += vid.ybytes;
+    }
+    while (count--);
+#else
     do
     {
         //Simple. Apply the colormap to what's already on the screen.
@@ -1040,6 +1096,7 @@ void R_DrawFogColumn_8(void)
         dest += vid.ybytes;
     }
     while (count--);
+#endif
 }
 
 #if 0

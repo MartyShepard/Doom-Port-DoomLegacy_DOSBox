@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_draw16.c 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -665,6 +665,8 @@ void R_DrawTranslucentSpan_16(void)
     while (--count);
 }
 
+#define FOGCOLOR
+
 void R_DrawFogSpan_16(void)
 {
     byte * dest;
@@ -711,13 +713,49 @@ void R_DrawFogSpan_16(void)
 }
 
 //SoM: Fog wall.
+// Used for Legacy linetype 302, walls of 3D fog in tagged
+// Used for Legacy linetype 283, fog sheet
 void R_DrawFogColumn_16(void)
 {
     int count;
     byte * dest;
-    fixed_t             frac;
-    fixed_t             fracstep;
-
+#ifdef FOGCOLOR
+   // fogcolor blur needs to be kept as 8 bit or else the blur is inadequate
+static uint16_t fogcolor_r8 = 0x1000;
+static uint16_t fogcolor_g8 = 0x0080;
+static uint16_t fogcolor_b8 = 0x0002<<3;
+    uint32_t fc, fc2;  // uint16_t + 3
+    // fog_index 0.. column height
+    fc = color8.to16[ dc_colormap[ dc_source[fog_index] ]];
+//    fc = color8.to16[ dc_colormap[ 110 ]];
+    int fogb1 = fog_bltic>>2;  // 8 
+    int fogb2 = 8 - fogb1;  // fade proportionality
+    fc2 = color8.to16[ dc_colormap[ dc_source[((fog_index==0)?fog_col_length:fog_index)-1] ]];
+    register uint32_t fr1 = (((fc & mask_r) * fogb1) + ((fc2 & mask_r) * fogb2)) >> 3;
+    register uint32_t fg1 = (((fc & mask_g) * fogb1) + ((fc2 & mask_g) * fogb2)) >> 3;
+    register uint32_t fb1 = (((fc & mask_b) * fogb1) + ((fc2 & mask_b) * fogb2));  // kept << 3
+    if( fog_init )
+    {
+        // init blur
+        fogcolor_r8 = fr1;
+        fogcolor_g8 = fg1;
+        fogcolor_b8 = fb1;
+        fog_init = 0;
+    }
+    else
+    {
+        // blur
+        fogcolor_r8 = ((((uint32_t)fogcolor_r8)*31) + fr1) >> 5;
+        fogcolor_g8 = ((((uint32_t)fogcolor_g8)*31) + fg1) >> 5;
+	fogcolor_b8 = ((((uint32_t)fogcolor_b8)*31) + fb1) >> 5;
+    }
+    // limit each color blur to 8 bits so grays stay pure
+    fogcolor_r8 &= (mask_r | (mask_r>>3));
+    fogcolor_g8 &= (mask_g | (mask_g>>3));
+    // the working fog color for this column
+    uint32_t fogcolor_rb = (fogcolor_r8 & mask_r) | ((fogcolor_b8>>3) & mask_b);
+    uint32_t fogcolor_g = fogcolor_g8 & mask_g;
+#endif
 
     count = dc_yh - dc_yl;
 
@@ -738,6 +776,23 @@ void R_DrawFogColumn_16(void)
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows?
     dest = ylookup[dc_yl] + columnofs[dc_x];
+
+#ifdef FOGCOLOR
+    do
+    {
+	// faint color + dark
+        register uint16_t d16 = *(uint16_t*)dest;
+	register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
+	register uint32_t dc1 = d16 & mask_g;
+	dc0 = ((dc0 + dc0 + fogcolor_rb) >> 2) & mask_rb;
+	dc1 = ((dc1 + dc1 + fogcolor_g) >> 2) & mask_g;
+	*(uint16_t*)dest = dc0 | dc1;
+        dest += vid.ybytes;
+    }
+    while (count--);
+#else
+    fixed_t             frac;
+    fixed_t             fracstep;
 
     // Determine scaling,
     //  which is the only mapping to be done.
@@ -858,6 +913,7 @@ void R_DrawFogColumn_16(void)
         dest += vid.ybytes;
     }
     while (count--);
+#endif
 #endif
 }
 

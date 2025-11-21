@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 910 2012-03-05 15:07:21Z wesleyjohnson $
+// $Id: screen.h 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -210,6 +210,7 @@ typedef union {
 
 // hicolor masks  15 bit / 16 bit
 extern uint16_t mask_01111, mask_01110, mask_11110, mask_11100, mask_11000;
+extern uint16_t mask_r, mask_g, mask_b, mask_rb;
 
 // ---------------------------------------------
 // color mode dependent drawer function pointers

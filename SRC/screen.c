@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 917 2012-03-10 20:52:15Z wesleyjohnson $
+// $Id: screen.c 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -146,6 +146,7 @@ byte*  scr_borderflat; // flat used to fill the reduced view borders
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
 // hicolor masks  15 bit / 16 bit
 uint16_t mask_01111 = 0, mask_01110 = 0, mask_11110 = 0, mask_11100 = 0, mask_11000 = 0;
+uint16_t mask_r = 0, mask_g = 0, mask_b = 0, mask_rb = 0;
 #endif
 #endif
 
@@ -233,16 +234,38 @@ void SCR_SetMode (void)
         mask_11110 = 0x7BDE;  // 0 11110 11110 11110 mask out the lowest bit of R,G,B
         mask_11100 = 0x739C;  // 0 11100 11100 11100 mask out the lowest bits of R,G,B
         mask_11000 = 0x6318;  // 0 11000 11000 11000 mask out the lowest bits of R,G,B
+        mask_r = 0x7C00;  // 0 11111 00000 00000 mask of R
+	mask_g = 0x03E0;  // 0 00000 11111 00000 mask of G
+        mask_b = 0x001F;  // 0 00000 00000 11111 mask of B
+        mask_rb = 0x7C1F;  // 0 11111 00000 11111 mask of R and B
         goto highcolor_common;
 #endif
 #ifdef ENABLE_DRAW16
      case 16:
         vid.drawmode = DRAW16;
+#if 0
+        // by definition, but extra bit in green gives whites a green cast
         mask_01111 = 0x7BEF;  // 01111 011111 01111 mask out the upper bit of R,G,B
         mask_01110 = 0x73CE;  // 01110 011110 01110 mask out the upper bit of R,G,B
         mask_11110 = 0xF7DE;  // 11110 111110 11110 mask out the lowest bit of R,G,B
         mask_11110 = 0xE79C;  // 11100 111100 11100 mask out the lowest bits of R,G,B
         mask_11100 = 0xC718;  // 11000 111000 11000 mask out the lowest bits of R,G,B
+        mask_r = 0xF800;  // 11111 000000 00000 mask of R
+	mask_g = 0x07E0;  // 00000 111111 00000 mask of G (green cast due to 1 more bit)
+        mask_b = 0x001F;  // 00000 000000 11111 mask of B
+        mask_rb = 0xF81F;  // 11111 000000 11111 mask of R and B
+#else
+        // equal number of bits, 5 bits to each color
+        mask_01111 = 0x7BCF;  // 01111 011110 01111 mask out the upper bit of R,G,B
+        mask_01110 = 0x738E;  // 01110 011100 01110 mask out the upper bit of R,G,B
+        mask_11110 = 0xF79E;  // 11110 111100 11110 mask out the lowest bit of R,G,B
+        mask_11110 = 0xE71C;  // 11100 111000 11100 mask out the lowest bits of R,G,B
+        mask_11100 = 0xC618;  // 11000 110000 11000 mask out the lowest bits of R,G,B
+        mask_r = 0xF800;  // 11111 000000 00000 mask of R
+	mask_g = 0x07C0;  // 00000 111110 00000 mask of G (5 bit each)
+        mask_b = 0x001F;  // 00000 000000 11111 mask of B
+        mask_rb = 0xF81F;  // 11111 000000 11111 mask of R and B
+#endif
         goto highcolor_common;
 #endif
 

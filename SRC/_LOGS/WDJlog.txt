@@ -2396,4 +2396,13 @@ Fix for bug_3442118, where Hell Ground wad (hg.wad) map04 will overrun
 the savegame buffer.
 Increased the reserved free space from 2K to 4K, and the header buffer size.
 
+*** w81_fogsheet
+patchfile = w81_fogsheet.patch
+- committed revision 924   by wesley johnson
+Fogsheet improvements.
+Drawing routines for fog sheet with shifting effects, using mid texture.
+Mid texture determines the color of the fog, and the intensity of the
+shifting pattern.
+Fog is not finished.
+
 

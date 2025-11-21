@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: r_main.c 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -175,6 +175,13 @@ int                     framecount;
 int                     sscount;
 int                     linecount;
 int                     loopcount;
+
+// fog render gobals
+uint16_t   fog_col_length;  // post_t column or picture height
+uint16_t   fog_tic;    // 0..0xFFF, tic per fog change
+byte	   fog_bltic;  // 0..31, blend/blur between tics
+byte       fog_index;  // 0.. column or texture height, for slow fog effect
+byte	   fog_init = 0;   // set 1 at fog linedef to clear previous fog blur
 
 // current viewer
 // Set by R_SetupFrame
@@ -1224,6 +1231,9 @@ void R_SetupFrame (player_t* player)
     R_SetupBSPRender();	// setup viewer relation to BSP render
     	// Call before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
 #endif
+
+    fog_bltic = (rendergametic>>1) & 0x001F;  // 0..31, one cycle per fog_tic
+    fog_tic = (rendergametic>>6) & 0x0FFF;  // tic per 1.78 seconds
 
     framecount++;
     validcount++;

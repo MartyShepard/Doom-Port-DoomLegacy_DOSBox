@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_main.h 924 2012-06-08 00:04:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,6 +82,13 @@ extern int              linecount;
 extern int              loopcount;
 
 extern int      framecount;
+
+// fog render
+extern uint16_t	fog_col_length;
+extern uint16_t fog_tic;    // 0..0xFFF
+extern byte	fog_bltic;  // 0..32, blur/blend between tics
+extern byte     fog_index;  // 0.. column or texture height
+extern byte	fog_init;
 
 //
 // Lighting LUT.
