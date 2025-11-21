@@ -2389,3 +2389,11 @@ Conditional code is present for:
 (KILL) explode in place (like prboom) (disabled),
 (DAMAGE) which causes it to explode on floor (previous Legacy) (disabled).
 
+*** w81_savegame_buffer
+patchfile = w81_savegame_buffer.patch
+- committed revision 923   by wesley johnson
+Fix for bug_3442118, where Hell Ground wad (hg.wad) map04 will overrun
+the savegame buffer.
+Increased the reserved free space from 2K to 4K, and the header buffer size.
+
+

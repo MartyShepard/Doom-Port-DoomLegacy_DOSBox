@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 845 2011-07-09 23:21:27Z smite-meister $
+// $Id: p_saveg.c 923 2012-06-08 00:00:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -148,8 +148,8 @@ boolean  save_game_abort = 0;
 // [WDJ] Variable savebuffer size
 #define SAVEBUF_SIZE    (128*1024)
 #define SAVEBUF_SIZEINC (128*1024)
-#define SAVEBUF_HEADERSIZE   (64 + 80 + 128 + 32 + 32)
-#define SAVEBUF_FREE_TRIGGER  2048
+#define SAVEBUF_HEADERSIZE   (64 + (80*5) + 1024 + 256)
+#define SAVEBUF_FREE_TRIGGER  4096
 // [WDJ] Uncomment the following to see how close to overrunning the buffer.
 //#define SAVEBUF_REPORT_MIN_FREE 1
 #ifdef SAVEBUF_REPORT_MIN_FREE
