@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[00920 ]: w81 clean dead code, renames
+[00919*]: w80 linux ggi video
+[00918*]: w80 linux xshm video
 [00917 ]: w80 video init draw
 [00916 ]: w80 background border draw32
 [00915*]: colortst.wad update for fog

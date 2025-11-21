@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 633 2010-04-27 20:36:48Z wesleyjohnson $
+// $Id: qmus2mid.c 920 2012-06-07 23:53:20Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -85,9 +85,8 @@ static byte    MIDItrack;
 
 #define fwritemem(p,s,n,f)  memcpy(*f,p,n*s);*f+=(s*n)
 
-#if defined( __DJGPP__ )
-#define fwriteshort(x,f)    BE_write_16(f,x)
-#define fwritelong(x,f)     BE_write_32(f,x)
+#define fwrite16(x,f)    BE_write_16(f,x)
+#define fwrite32(x,f)    BE_write_32(f,x)
 // [WDJ] Proper big-endian midi read/write
 static void BE_write_16(byte **p, int16_t val)
 {
@@ -100,11 +99,6 @@ static void BE_write_32(byte **p, int32_t val)
   *(int32_t *)*p = BE_SWAP32_FAST(val);
   *p += sizeof(int32_t);
 }
-#else
-// Used little-endian writes on big-endian data, does endian swap twice.
-#define fwriteshort(x,f)    WRITE16(*f,((x>>8) & 0xff) | (x<<8))
-#define fwritelong(x,f)     WRITEU32(*f,((x>>24) & 0xff) | ((x>>8) & 0xff00) | ((x<<8) & 0xff0000) | (x<<24))
-#endif
 
 #define last(e)         ((unsigned char)(e & 0x80))
 #define event_type(e)   ((unsigned char)((e & 0x7F)>>4))
@@ -158,9 +152,9 @@ static void TWriteVarLen (byte tracknum, ULONG value)
 
 static int WriteMIDheader( USHORT ntrks, USHORT division, byte **file )
 {
-    fwritemem( MIDIMAGIC , 10, 1,file );
-    fwriteshort( ntrks, file);
-    fwriteshort( division, file );
+    fwritemem( MIDIMAGIC , 10, 1, file );
+    fwrite16( ntrks, file);
+    fwrite16( division, file );
     return 0;
 }
 
@@ -177,7 +171,7 @@ static void WriteTrack (int tracknum, byte **file)
     if (!tracknum )
         size += 33;
 
-    fwritelong( size, file );
+    fwrite32( size, file );
     if (!tracknum)
     {
         memset(*file,'\0',33);
@@ -197,7 +191,7 @@ static void WriteFirstTrack (byte **file)
 
     size = 43;
     fwritemem( "MTrk", 4, 1, file );
-    fwritelong( size, file );
+    fwrite32( size, file );
     fwritemem( TRACKMAGIC3 , 4, 1, file );
     memset(*file,'\0',22);
     *file+=22;
