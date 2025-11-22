@@ -2459,3 +2459,26 @@ Signed mapthing_t angle would create table lookup using negative index.
 Fix uses new func, wad_to_angle(), to isolate the signed wad field, from
 unsigned angle_t usage.
 It does not emulate the Doom buggy behavior.
+
+*** w82_colortst_wad
+wads/colortst.wad
+- committed revision 931   by wesley johnson
+Fog sheets
+
+*** w82_bex_frame
+patchfile = w82_bex_frame.patch
+- committed revision 932   by wesley johnson
+Fix strcmp error in BEX parsing of FRAME and PARS.
+Fixes hg.wad, eye shooting missiles.
+
+*** w82_hw_translucent_order
+patchfile = w82_hw_translucent_order.patch
+- committed revision 933   by wesley johnson
+Fix hardware render to draw translucent in distance order.
+This fixes BOOMEDIT.WAD.
+
+*** w82_hw_Boom_colormap
+patchfile = w82_hw_Boom_colormap
+- committed revision 934   by wesley johnson
+Boom deepwater colormap fixed in hardware renderer.
+Extend view_colormap to affect hardware render too.

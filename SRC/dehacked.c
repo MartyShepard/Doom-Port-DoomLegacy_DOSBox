@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: dehacked.c 932 2012-06-18 17:12:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1562,7 +1562,7 @@ static void bex_pars( MYFILE* f )
        break; // no more lines
     if( s[0] == '\n' ) continue;  // blank line
     if( s[0] == 0 ) break;
-    if( strcasecmp( s, "par" ) != 0 )  break;  // not a par line
+    if( strncasecmp( s, "par", 3 ) != 0 )  break;  // not a par line
     nn = sscanf( &s[3], " %i %i %i", &episode, &level, &partime );
     if( nn == 3 )
     { // Doom1 Episode, level, time format
@@ -1697,7 +1697,7 @@ static void bex_codeptr( MYFILE* f )
        break; // no more lines
     if( s[0] == '\n' ) continue;  // blank line
     if( s[0] == 0 ) break;
-    if( strcasecmp( s, "FRAME" ) != 0 )  break;  // not a FRAME line
+    if( strncasecmp( s, "FRAME", 5 ) != 0 )  break;  // not a FRAME line
     nn = sscanf( &s[5], "%d = %s", &framenum, funcname );
     if( nn != 2 )
     {

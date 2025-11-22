@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: r_main.c 934 2012-06-20 18:01:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -194,6 +194,7 @@ lighttable_t*           fixedcolormap;
 #ifdef BOOM_GLOBAL_COLORMAP
 // Boom colormap, and global viewer coloring
 lighttable_t*           view_colormap;  // full lightlevel range colormaps
+extracolormap_t *       view_extracolormap;
 #endif
 
 fixed_t                 viewx;
@@ -1236,6 +1237,7 @@ void R_SetupFrame (player_t* player)
     // normal colormap and extra colormap, but not fixedcolormap.
     // But is requires the light level calculations of an extra colormap.
     view_colormap = NULL;  // default
+    view_extracolormap = NULL;
     if( EN_boom_colormap )
     {
         // [WDJ] 4/11/2012 restore compatible Boom colormap handling
@@ -1252,7 +1254,10 @@ void R_SetupFrame (player_t* player)
 	     : modsecp->midmap;
 	    // only enable view_colormap when overriding globally
 	    if(bcm_num >= 0 || bcm_num < num_extra_colormaps)
+	    {
+	       view_extracolormap = & extra_colormaps[bcm_num];
 	       view_colormap = extra_colormaps[bcm_num].colormap;
+	    }
 	}
     }
 #endif   

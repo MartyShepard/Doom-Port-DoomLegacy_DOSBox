@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[00934 ]: w82 hw Boom global colormap
+[00933*]: w82 hw translucent draw order
+[00932 ]: w82 bex frame
+[00931 ]: w82 colortst.wad
 [00930 ]: w81 wad_to_angle
 [00929 ]: w81 door thinker check
 [00928 ]: w81 Boom MBF square-law pusher
