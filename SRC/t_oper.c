@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_oper.c 946 2012-07-03 19:12:58Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -58,10 +58,6 @@
 #include "t_parse.h"
 #include "t_vari.h"
 #include "t_script.h"
-
-#define evaluate_leftnright(a, b, c) {\
-  left = evaluate_expression((a), (b)-1); \
-  right = evaluate_expression((b)+1, (c)); }\
 
 fs_value_t OPequals(int, int, int);           // =
 
@@ -128,44 +124,34 @@ fs_value_t OPequals(int start, int n, int stop)
   fs_value_t evaluated;
   
   var = find_variable(tokens[start]);
-  
-  if(var)
-    {
-      evaluated = evaluate_expression(n+1, stop);
-      setvariablevalue(var, evaluated);
-    }
-  else
-    {
-      script_error("unknown variable '%s'\n", tokens[start]);
-      return nullvar;
-    }
-  
+  if( ! var)  goto err_novar;
+
+  evaluated = evaluate_expression(n+1, stop);
+  setvariablevalue(var, evaluated);
   return evaluated;
+
+err_novar:
+  script_error("unknown variable '%s'\n", tokens[start]);
+  return nullvar;
 }
 
 
 fs_value_t OPor(int start, int n, int stop)
 {
   fs_value_t returnvar;
-  int exprtrue = false;
   fs_value_t eval;
   
   // if first is true, do not evaluate the second
   
-  eval = evaluate_expression(start, n-1);
-  
-  if(intvalue(eval))
-    exprtrue = true;
-  else
-    {
-      eval = evaluate_expression(n+1, stop);
-      exprtrue = !!intvalue(eval);
-    }
-  
   returnvar.type = FSVT_int;
-  returnvar.value.i = exprtrue;
-  return returnvar;
-  
+  eval = evaluate_expression(start, n-1);
+  if(intvalue(eval))
+      returnvar.value.i = true;
+  else
+  {
+      eval = evaluate_expression(n+1, stop);
+      returnvar.value.i = !!intvalue(eval);
+  }
   return returnvar;
 }
 
@@ -173,24 +159,20 @@ fs_value_t OPor(int start, int n, int stop)
 fs_value_t OPand(int start, int n, int stop)
 {
   fs_value_t returnvar;
-  int exprtrue = true;
   fs_value_t eval;
 
   // if first is false, do not eval second
   
+  returnvar.type = FSVT_int;
   eval = evaluate_expression(start, n-1);
   
   if(!intvalue(eval) )
-    exprtrue = false;
+      returnvar.value.i = false;
   else
-    {
+  {
       eval = evaluate_expression(n+1, stop);
-      exprtrue = !!intvalue(eval);
-    }
-
-  returnvar.type = FSVT_int;
-  returnvar.value.i = exprtrue;
-
+      returnvar.value.i = !!intvalue(eval);
+  }
   return returnvar;
 }
 
@@ -198,7 +180,8 @@ fs_value_t OPcmp(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   returnvar.type = FSVT_int;        // always an int returned
   
@@ -227,7 +210,6 @@ fs_value_t OPcmp(int start, int n, int stop)
   }
 
   returnvar.value.i = intvalue(left) == intvalue(right);
-
   return returnvar;
 }
 
@@ -245,7 +227,8 @@ fs_value_t OPlessthan(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   returnvar.type = FSVT_int;
 
@@ -261,7 +244,8 @@ fs_value_t OPgreaterthan(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   returnvar.type = FSVT_int;
 
@@ -290,7 +274,8 @@ fs_value_t OPplus(int start, int n, int stop)
 {
     fs_value_t left, right, returnvar;
   
-    evaluate_leftnright(start, n, stop);
+    left = evaluate_expression(start, n-1);
+    right = evaluate_expression(n+1, stop);
 
     if (left.type == FSVT_string)
     {
@@ -338,7 +323,10 @@ fs_value_t OPminus(int start, int n, int stop)
       right = evaluate_expression(n+1, stop);
   }
   else
-    evaluate_leftnright(start, n, stop);
+  {
+      left = evaluate_expression(start, n-1);
+      right = evaluate_expression(n+1, stop);
+  }
   
   if(left.type == FSVT_fixed || right.type == FSVT_fixed)
   {
@@ -358,7 +346,8 @@ fs_value_t OPmultiply(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   if(left.type == FSVT_fixed || right.type == FSVT_fixed)
   {
@@ -378,7 +367,8 @@ fs_value_t OPdivide(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
 //  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
@@ -413,7 +403,8 @@ fs_value_t OPremainder(int start, int n, int stop)
   fs_value_t left, right, returnvar;
   int ir;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   if(!(ir = intvalue(right)))
     script_error("divide by zero\n");
@@ -432,7 +423,8 @@ fs_value_t OPor_bin(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) | intvalue(right);
@@ -446,7 +438,8 @@ fs_value_t OPand_bin(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
   
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) & intvalue(right);
@@ -455,42 +448,30 @@ fs_value_t OPand_bin(int start, int n, int stop)
 
 
 
-        // ++
+// ++
 fs_value_t OPincrement(int start, int n, int stop)
 {
+  fs_value_t origvalue, value;
+  fs_variable_t *var;
+      
+  value.type = FSVT_int;
   if(start == n)          // ++n
   {
-      fs_value_t value;
-      fs_variable_t *var;
-      
       var = find_variable(tokens[stop]);
-      if(!var)
-      {
-	  script_error("unknown variable '%s'\n", tokens[stop]);
-	  return nullvar;
-      }
-      value = getvariablevalue(var);
+      if(!var)  goto err_novar_stop;
+      origvalue = getvariablevalue(var);
       
-      value.value.i = intvalue(value) + 1;
-      value.type = FSVT_int;
+      value.value.i = intvalue(origvalue) + 1;
       setvariablevalue(var, value);
       
       return value;
   }
   else if(stop == n)     // n++
   {
-      fs_value_t origvalue, value;
-      fs_variable_t *var;
-      
       var = find_variable(tokens[start]);
-      if(!var)
-      {
-	  script_error("unknown variable '%s'\n", tokens[start]);
-	  return nullvar;
-      }
+      if(!var)  goto err_novar;
       origvalue = getvariablevalue(var);
       
-      value.type = FSVT_int;
       value.value.i = intvalue(origvalue) + 1;
       setvariablevalue(var, value);
       
@@ -499,41 +480,37 @@ fs_value_t OPincrement(int start, int n, int stop)
   
   script_error("incorrect arguments to ++ operator\n");
   return nullvar;
+
+err_novar_stop:
+  start = stop;  // just for error message
+err_novar:
+  script_error("unknown variable '%s'\n", tokens[start]);
+  return nullvar;
 }
 
-        // --
+// --
 fs_value_t OPdecrement(int start, int n, int stop)
 {
-  if(start == n)          // ++n
+  fs_value_t origvalue, value;
+  fs_variable_t *var;
+      
+  value.type = FSVT_int;
+  if(start == n)          // --n
   {
-      fs_value_t value;
-      fs_variable_t *var;
-      
       var = find_variable(tokens[stop]);
-      if(!var)
-      {
-	  script_error("unknown variable '%s'\n", tokens[stop]);
-	  return nullvar;
-      }
-      value = getvariablevalue(var);
+      if(!var)  goto err_novar_stop;
+      origvalue = getvariablevalue(var);
       
-      value.value.i = intvalue(value) - 1;
+      value.value.i = intvalue(origvalue) - 1;
       value.type = FSVT_int;
       setvariablevalue(var, value);
       
       return value;
   }
-  else if(stop == n)   // n++
+  else if(stop == n)   // n--
   {
-      fs_value_t origvalue, value;
-      fs_variable_t *var;
-      
       var = find_variable(tokens[start]);
-      if(!var)
-      {
-          script_error("unknown variable '%s'\n", tokens[start]);
-	  return nullvar;
-      }
+      if(!var)  goto err_novar;
       origvalue = getvariablevalue(var);
       
       value.type = FSVT_int;
@@ -545,6 +522,12 @@ fs_value_t OPdecrement(int start, int n, int stop)
   
   script_error("incorrect arguments to ++ operator\n");
   return nullvar;
+
+err_novar_stop:
+  start = stop;  // just for error message
+err_novar:
+  script_error("unknown variable '%s'\n", tokens[start]);
+  return nullvar;
 }
 
 
@@ -552,7 +535,9 @@ fs_value_t OPdecrement(int start, int n, int stop)
 fs_value_t OPlessthanorequal(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
-  evaluate_leftnright(start, n, stop);
+
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) <= intvalue(right);
   return returnvar;
@@ -562,7 +547,8 @@ fs_value_t OPlessthanorequal(int start, int n, int stop)
 fs_value_t OPgreaterthanorequal(int start, int n, int stop)
 {
   fs_value_t left, right, returnvar;
-  evaluate_leftnright(start, n, stop);
+  left = evaluate_expression(start, n-1);
+  right = evaluate_expression(n+1, stop);
   returnvar.type = FSVT_int;
   returnvar.value.i = intvalue(left) >= intvalue(right);
   return returnvar;

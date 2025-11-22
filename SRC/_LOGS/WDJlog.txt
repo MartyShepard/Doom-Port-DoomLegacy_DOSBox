@@ -2557,7 +2557,7 @@ Change MAXSKINCOLORS to NUMSKINCOLORS, which is how it is used.
 Moved in doomdef as it is dependent upon code, not a setting.
 Caused confusion in understanding code.
 
-*** w83_fs_func
+*** w83_fs_func_safety_checks
 patchfile = w83_fs_func.patch
 - committed revision 945   by wesley johnson
 General cleanup on all fragglescript functions.
@@ -2570,6 +2570,18 @@ assumed that no scripts depend upon these details, but the switch is
 included for debugging.  Phobia and hth2 were tested and seem unaffected.
 Changed fixedvalue to access int arg directly, which saved 6K in code.
 Added comments.
+
+*** w83_fs_op
+patchfile = w83_fs_op.patch
+- committed revision 946   by wesley johnson
+General cleanup on all fragglescript operations.
+Move error code to after return, for speed.
+Added comments.
+
+*** w83_fs_func_old
+patchfile = w83_fs_func_old.patch
+- committed revision 947   by wesley johnson
+Remove OLDBEHAVIOR code in fragglescript functions.
 
 
 
