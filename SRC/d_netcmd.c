@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: d_netcmd.c 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -297,7 +297,7 @@ void D_RegisterClientCommands(void)
 {
     int i;
 
-    for (i = 0; i < MAXSKINCOLORS; i++)
+    for (i = 0; i < NUMSKINCOLORS; i++)
         Color_cons_t[i].strvalue = Color_Names[i];
 
     //
@@ -537,7 +537,7 @@ void Got_NameAndcolor(char **cp, int playernum)
     char * lcp = *cp; // local cp
 
     // color
-    p->skincolor = READBYTE(lcp) % MAXSKINCOLORS;
+    p->skincolor = READBYTE(lcp) % NUMSKINCOLORS;
 
     // a copy of color
     if (p->mo)

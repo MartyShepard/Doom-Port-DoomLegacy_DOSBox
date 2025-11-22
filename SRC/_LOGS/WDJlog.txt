@@ -2550,5 +2550,12 @@ patchfile = w83_draw32_remove_printf.patch
 - committed revision 943   by wesley johnson
 Remove a debugging printf that is in svn, but not in my working files.
 
+*** w83_num_skincolor
+patchfile = w83_num_skincolor.patch
+- committed revision 944   by wesley johnson
+Change MAXSKINCOLORS to NUMSKINCOLORS, which is how it is used.
+Moved in doomdef as it is dependent upon code, not a setting.
+Caused confusion in understanding code.
+
 
 

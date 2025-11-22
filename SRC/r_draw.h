@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 912 2012-03-05 15:09:24Z wesleyjohnson $
+// $Id: r_draw.h 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,7 +97,8 @@ extern int flatsubtract;
 
 // translation stuff here
 
-// [WDJ] player skin translation, skintrans[MAXSKINCOLORS][256]
+// [WDJ] player skin translation, skintranstables[NUMSKINCOLORS-1][256]
+// Does not translate color 0
 // Boom calls these TRANSLATION, but that confuses with translucent.
 extern byte*            skintranstables;  // player skin translation tables
 extern byte*            dc_skintran;  // ptr to selected skin table

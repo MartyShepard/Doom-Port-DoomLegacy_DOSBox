@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 930 2012-06-14 14:43:43Z wesleyjohnson $
+// $Id: g_game.c 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1130,7 +1130,7 @@ boolean G_Responder (event_t* ev)
         if (devparm && ev->type == ev_keydown && ev->data1 == ';')
         {
             // added Boris : test different player colors
-            consoleplayer_ptr->skincolor = (consoleplayer_ptr->skincolor+1) %MAXSKINCOLORS;
+            consoleplayer_ptr->skincolor = (consoleplayer_ptr->skincolor+1) % NUMSKINCOLORS;
             consoleplayer_ptr->mo->flags |= (consoleplayer_ptr->skincolor)<<MF_TRANSSHIFT;
             G_DeathMatchSpawnPlayer (0);
             return true;
@@ -2312,7 +2312,7 @@ boolean G_Downgrade(int version)
         //         also disable the new preferred weapons order.
         for(i=0;i<4;i++)
         {
-            players[i].skincolor = i % MAXSKINCOLORS;
+            players[i].skincolor = i % NUMSKINCOLORS;
             players[i].originalweaponswitch=true;
         }//eof Boris
     }

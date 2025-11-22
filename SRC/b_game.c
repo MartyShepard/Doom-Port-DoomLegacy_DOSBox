@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: b_game.c 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -102,7 +102,7 @@ char* botnames[MAXPLAYERS] = {
 	"billy"
 };
 
-int botcolors[MAXSKINCOLORS] = 
+int botcolors[NUMSKINCOLORS] = 
 {
    0, // = Green
    1, // = Indigo
@@ -114,7 +114,7 @@ int botcolors[MAXSKINCOLORS] =
    7, // = Blue
    8, // = Dark Blue
    9, // = Yellow
-   10 //= Bleached Bone
+   10 // = Bleached Bone
 };
 
 void B_InitBots()
@@ -138,7 +138,7 @@ void B_InitBots()
 			}
 		} while (duplicateBot);
 
-		botinfo[i].colour = P_Random() % MAXSKINCOLORS;
+		botinfo[i].colour = P_Random() % NUMSKINCOLORS;
 	}
 	botNodeArray = NULL;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: doomdef.h 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -316,8 +316,10 @@ void I_SoftError (char *error, ...);
 #define MAXSKINS                MAXPLAYERS
 #define PLAYERSMASK             (MAXPLAYERS-1)
 #define MAXPLAYERNAME           21
-#define MAXSKINCOLORS           11
 #define MAXTEAMS		32
+
+// Determined by skin color tables
+#define NUMSKINCOLORS           11
 
 #define SAVESTRINGSIZE          24
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 941 2012-07-03 17:39:05Z wesleyjohnson $
+// $Id: t_func.c 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -704,7 +704,7 @@ void SF_SkinColor()
     {
 		colour = intvalue(t_argv[1]);
 		
-		if(colour > MAXSKINCOLORS)
+		if(colour > NUMSKINCOLORS)
 		{
 			script_error("skin colour %i is out of range\n", colour);
 		}

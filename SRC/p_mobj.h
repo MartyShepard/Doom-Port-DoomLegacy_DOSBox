@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 860 2011-09-17 17:50:44Z wesleyjohnson $
+// $Id: p_mobj.h 944 2012-07-03 19:07:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -266,7 +266,7 @@ typedef enum {
                                               // damaging        
     MF2_TELESTOMP      =     0x00040000,      // mobj can stomp another
     MF2_FLOATBOB       =     0x00080000,      // use float bobbing z movement
-    MF2_DONTDRAW       =     0X00100000,      // don't generate a vissprite
+    MF2_DONTDRAW       =     0x00100000,      // don't generate a vissprite
     MF2_FLOORHUGGER    =     0x00200000,      // stays on the floor
         
 } mobjflag2_t;
@@ -300,11 +300,8 @@ typedef enum
 } mobjeflag_t;
 
 
-#if MAXSKINCOLOR > 16
-
-MAXSKINCOLOR have changed
-Change MF_TRANSLATION to take effect of the change
-
+#if NUMSKINCOLOR > 16
+#error MF_TRANSLATION can only handle NUMSKINCOLORS <= 16
 #endif
 
 // Map Object definition.
