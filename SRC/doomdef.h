@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: doomdef.h 936 2012-06-20 18:29:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -189,6 +189,7 @@
 #ifdef LOGMESSAGES
 extern FILE *logstream;
 #endif
+#define LOGLINELEN  80
 #endif
 
 // [WDJ] Machine speed limitations.
@@ -346,6 +347,7 @@ void I_Error (const char *error, ...);
 
 // console.h
 void    CONS_Printf (const char *fmt, ...);
+void    CONS_Printf_va (const char *fmt, va_list ap );
 
 #include "m_swap.h"
 

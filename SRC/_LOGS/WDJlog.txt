@@ -2482,3 +2482,22 @@ patchfile = w82_hw_Boom_colormap
 - committed revision 934   by wesley johnson
 Boom deepwater colormap fixed in hardware renderer.
 Extend view_colormap to affect hardware render too.
+
+*** w82_get_gl_info
+patchfile = w82_get_gl_info.patch
+- committed revision 935   by wesley johnson
+Bug 3419447.
+Fix buffer overrun of DBG_Printf strings by video card extensions.
+Create common function, Query_GL_info(), to get GL info strings,
+check renderer, and set gl_extensions string and oglflags.
+Create DBG_Print_lines() function to print extension strings on multiple
+lines, and prevent buffer overrun.
+Change SDL, Win32, X11 opengl port drivers, to use these functions.
+In DBG_Printf(), when verbose, print to stderr too;
+
+*** w82_CONS_Printf_va
+patchfile = w82_cons_printf_va.patch
+- committed revision 936   by wesley johnson
+Fix buffer overruns caused by vsnprintf to buffer without string termination.
+Create function CONS_printf_va() to handle va_list printing to console.
+This replaces multiple copies of print buffers and vsnprintf.

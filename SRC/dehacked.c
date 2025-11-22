@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 932 2012-06-18 17:12:19Z wesleyjohnson $
+// $Id: dehacked.c 936 2012-06-20 18:29:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -192,22 +192,17 @@ size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
     return byteread;
 }
 
-static int deh_num_error=0;
+static int deh_num_error = 0;
 
-static void deh_error(char *first, ...)
+static void deh_error(const char * fmt, ...)
 {
-    va_list     argptr;
+    va_list   ap;
 
     if (devparm)
     {
-#define BUF_SIZE 1024
-       char buf[BUF_SIZE];
-
-       va_start(argptr, first);
-       vsnprintf(buf, BUF_SIZE, first, argptr);
-       va_end(argptr);
-
-       CONS_Printf("%s\n",buf);
+       va_start(ap, fmt);
+       CONS_Printf_va( fmt, ap );
+       va_end(ap);
     }
 
     deh_num_error++;

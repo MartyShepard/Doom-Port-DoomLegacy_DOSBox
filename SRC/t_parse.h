@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_parse.h 936 2012-06-20 18:29:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -154,7 +154,7 @@ void run_script(script_t *script);
 void continue_script(script_t *script, char *continue_point);
 void parse_include(char *lumpname);
 void run_statement( void );
-void script_error(char *s, ...);
+void script_error(const char *fmt, ...);
 
 fs_value_t evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);

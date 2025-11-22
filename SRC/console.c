@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 898 2012-02-29 19:22:15Z wesleyjohnson $
+// $Id: console.c 936 2012-06-20 18:29:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1000,15 +1000,16 @@ void CON_Print (char *msg)
 
 //  Console print! Wahooo! Lots o fun!
 //
+#define CONS_BUF_SIZE 1024
+
 void CONS_Printf (const char *fmt, ...)
 {
-#define BUF_SIZE 1024
     va_list ap;
-    char    txt[BUF_SIZE];
+    char    txt[CONS_BUF_SIZE];
 
     va_start(ap, fmt);
-    //int nchars = 
-    vsnprintf(txt, BUF_SIZE, fmt, ap);
+    vsnprintf(txt, CONS_BUF_SIZE, fmt, ap);
+    txt[CONS_BUF_SIZE-1] = '\0'; // term, when length limited
     va_end(ap);
 
 #ifdef LOGMESSAGES
@@ -1045,6 +1046,18 @@ void CONS_Printf (const char *fmt, ...)
         I_FinishUpdate ();              // page flip or blit buffer
 #endif
     }
+}
+
+// [WDJ] print from va_list
+// Caller must have va_start, va_end
+void CONS_Printf_va (const char *fmt, va_list ap )
+{
+    char  txt[CONS_BUF_SIZE];
+
+    // print the error
+    vsnprintf(txt, CONS_BUF_SIZE, fmt, ap);
+    txt[CONS_BUF_SIZE-1] = '\0'; // term, when length limited
+    CONS_Printf(txt);
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_parse.c 936 2012-06-20 18:29:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -797,8 +797,10 @@ fs_value_t evaluate_expression(int start, int stop)
 
 }
 
-void script_error(char *s, ...)
+void script_error(const char *fmt, ...)
 {
+    va_list  ap;
+
     if (fs_killscript)
         return; //already killing script
 
@@ -822,15 +824,9 @@ void script_error(char *s, ...)
     }
     CONS_Printf(": ");
 
-#define BUF_SIZE 1024
-    va_list     ap;
-    char        txt[BUF_SIZE];
-
-    // print the error
-    va_start(ap, s);
-    vsnprintf(txt, BUF_SIZE, s, ap);
+    va_start(ap, fmt);
+    CONS_Printf_va(fmt, ap);
     va_end(ap);
-    CONS_Printf(txt);
 
     // make a noise
     S_StartSound(NULL, sfx_pldeth);
