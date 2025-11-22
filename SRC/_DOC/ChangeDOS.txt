@@ -1,5 +1,13 @@
 * Not need to Compile.
 
+[00941 ]: w83 fs linetrigger
+[00940*]: w83 get_gl_info char
+[00939*]: w83 filestatus_e stragglers
+          Fix filestatus_t stragglers to be filestatus_e.
+					DOS: Official filestatus_e fix
+					
+[00938*]: w82 hw StoreWall float
+[00937*]: w82 hw obj colormap
 [00936 ]: w82 CONS_Printf_va
 [00935 ]: w82 get gl info
 [00934 ]: w82 hw Boom global colormap
@@ -17,6 +25,8 @@
 [00922 ]: w81 pain elemental skull spawn
 [00921 ]: w81 Doom2 Map8 not secret
 [00920 ]: w81 clean dead code, renames
+          DOS: Fixed filestatus_e
+					
 [00919*]: w80 linux ggi video
 [00918*]: w80 linux xshm video
 [00917 ]: w80 video init draw

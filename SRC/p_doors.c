@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 929 2012-06-14 14:41:28Z wesleyjohnson $
+// $Id: p_doors.c 941 2012-07-03 17:39:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -322,48 +322,46 @@ void T_VerticalDoor(vldoor_t * door)
 int
 EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
 {
-    player_t *p;
+    player_t * player = thing->player;
 
-    p = thing->player;
-
-    if (!p)
-        return 0;
+    if (!player)  goto ret0;
 
     switch (line->special)
     {
         case 99:       // Blue Lock
         case 133:
-            if (!(p->cards & it_bluecard) && !(p->cards & it_blueskull))
+            if (!(player->cards & it_bluecard) && !(player->cards & it_blueskull))
             {
-                p->message = PD_BLUEO;
-                S_StartScreamSound(p->mo, sfx_oof);     //SoM: 3/6/200: killough's idea
-                return 0;
+                player->message = PD_BLUEO;
+	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
 
         case 134:      // Red Lock
         case 135:
-            if (!(p->cards & it_redcard) && !(p->cards & it_redskull))
+            if (!(player->cards & it_redcard) && !(player->cards & it_redskull))
             {
-                p->message = PD_REDO;
-                S_StartScreamSound(p->mo, sfx_oof);     //SoM: 3/6/200: killough's idea
-                return 0;
+                player->message = PD_REDO;
+	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
 
         case 136:      // Yellow Lock
         case 137:
-        if (!(p->cards & it_yellowcard) &&
-            !(p->cards & it_yellowskull))
+            if (!(player->cards & it_yellowcard) && !(player->cards & it_yellowskull))
             {
-                p->message = PD_YELLOWO;
-                S_StartScreamSound(p->mo, sfx_oof);     //SoM: 3/6/200: killough's idea
-                return 0;
+                player->message = PD_YELLOWO;
+	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
     }
 
     return EV_DoDoor(line, type, speed);
+
+oof_blocked:
+    S_StartScreamSound(player->mo, sfx_oof);
+ret0:
+    return 0;
 }
 
 int EV_DoDoor(line_t * line, vldoor_e type, fixed_t speed)
@@ -454,24 +452,12 @@ void EV_OpenDoor(int sectag, int speed, int wait_time)
     if(speed < 1) speed = 1;
 
     // find out door type first
-
-    if (wait_time)      // door closes afterward
-    {
-        if (speed >= 4) // blazing ?
-            door_type = VD_blazeRaise;
-        else
-            door_type = VD_normalDoor;
-    }
-    else
-    {
-        if (speed >= 4) // blazing ?
-            door_type = VD_blazeOpen;
-        else
-            door_type = VD_dooropen;
-    }
+    door_type =
+     (wait_time) ?
+     ( (speed >= 4) ? VD_blazeRaise : VD_normalDoor ) // door closes afterward
+       : ( (speed >= 4) ? VD_blazeOpen : VD_dooropen );
 
     // open door in all the sectors with the specified tag
-
     secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromTag(sectag, secnum)) >= 0)
     {
@@ -513,14 +499,9 @@ void EV_CloseDoor(int sectag, int speed)
     if(speed < 1) speed = 1;
 
     // find out door type first
+    door_type = (speed >= 4) ? VD_blazeClose : VD_doorclose;
 
-    if (speed >= 4)     // blazing ?
-        door_type = VD_blazeClose;
-    else
-        door_type = VD_doorclose;
-
-    // open door in all the sectors with the specified tag
-
+    // close door in all the sectors with the specified tag
     secnum = -1;  // init search FindSector
     while ((secnum = P_FindSectorFromTag(sectag, secnum)) >= 0)
     {
@@ -542,7 +523,7 @@ void EV_CloseDoor(int sectag, int speed)
         door->topheight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
         door->direction = -1;
 
-      S_StartSound((mobj_t *)&door->sector->soundorg,
+        S_StartSound((mobj_t *)&door->sector->soundorg,
                    speed >= 4 ? sfx_bdcls : sfx_dorcls);
     }
 }
@@ -555,7 +536,7 @@ void EV_CloseDoor(int sectag, int speed)
 int
 EV_VerticalDoor ( line_t* line, mobj_t* thing )
 {
-    player_t *player;
+    player_t * player = thing->player;
     int secnum;
     sector_t *sec;
     vldoor_t *door;
@@ -564,56 +545,42 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
 //    side = 0;   // only front sides can be used
 
     //  Check for locks
-    player = thing->player;
-
     switch (line->special)
     {
         case 26:       // Blue Lock
         case 32:
-            if (!player)
-                return 0;
+            if (!player)  goto ret0;
             if (!(player->cards & it_bluecard) && !(player->cards & it_blueskull))
             {
                 player->message = PD_BLUEK;
-                S_StartScreamSound(player->mo, sfx_oof);        //SoM: 3/6/2000: Killough's idea
-                return 0;
+                goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
 
         case 27:       // Yellow Lock
         case 34:
-            if (!player)
-                return 0;
-
-        if (!(player->cards & it_yellowcard) &&
-            !(player->cards & it_yellowskull))
+            if (!player)  goto ret0;
+            if (!(player->cards & it_yellowcard) && !(player->cards & it_yellowskull))
             {
                 player->message = PD_YELLOWK;
-                S_StartScreamSound(player->mo, sfx_oof);        //SoM: 3/6/2000: Killough's idea
-                return 0;
+                goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
 
         case 28:       // Red Lock
         case 33:
-            if (!player)
-                return 0;
-
+            if (!player)  goto ret0;
             if (!(player->cards & it_redcard) && !(player->cards & it_redskull))
             {
                 player->message = PD_REDK;
-                S_StartScreamSound(player->mo, sfx_oof);        //SoM: 3/6/2000: Killough's idea
-                return 0;
+                goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
     }
     //SoM: 3/6/2000
     // if the wrong side of door is pushed, give oof sound
     if (line->sidenum[1] == NULL_INDEX) // killough
-    {
-        S_StartScreamSound(player->mo, sfx_oof);        // killough 3/20/98
-        return 0;
-    }
+        goto oof_blocked;        // killough 3/20/98
 
     // if the sector has an active thinker, use it
     sec = sides[line->sidenum[1]].sector;
@@ -640,11 +607,11 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
                 else
                 {
                     if (!thing->player)
-                        return 0;       // JDC: bad guys never close doors
+                        goto ret0;       // JDC: bad guys never close doors
 
                     door->direction = -1;       // start going down immediately
                 }
-                return 1;
+	        goto ret1;
 	  }
         }
     }
@@ -709,7 +676,13 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
     // find the top and bottom of the movement range
     door->topheight = P_FindLowestCeilingSurrounding(sec);
     door->topheight -= 4 * FRACUNIT;
+ret1:
     return 1;
+   
+oof_blocked:
+    S_StartScreamSound(player->mo, sfx_oof);
+ret0:
+    return 0;
 }
 
 //
@@ -739,9 +712,7 @@ void P_SpawnDoorCloseIn30(sector_t * sec)
 // Spawn a door that opens after 5 minutes
 //
 void
-P_SpawnDoorRaiseIn5Mins
-( sector_t*     sec,
-  int           secnum )
+P_SpawnDoorRaiseIn5Mins ( sector_t* sec, int secnum )
 {
     vldoor_t *door;
 

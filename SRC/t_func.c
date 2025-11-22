@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: t_func.c 941 2012-07-03 17:39:05Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -1516,7 +1516,7 @@ void SF_CheckSight()
 // teleport: object, sector_tag
 void SF_Teleport()
 {
-    line_t line;                // dummy line for teleport function
+    line_t sf_tmpline;                // dummy line for teleport function
     mobj_t *mo;
 
     if (t_argc == 0)    // no arguments
@@ -1527,21 +1527,22 @@ void SF_Teleport()
     else if (t_argc == 1)       // 1 argument: sector tag
     {
         mo = fs_current_script->trigger;   // default to trigger
-        line.tag = intvalue(t_argv[0]);
+        sf_tmpline.tag = intvalue(t_argv[0]);
     }
     else        // 2 or more
     {   // teleport a given object
         mo = MobjForSvalue(t_argv[0]);
-        line.tag = intvalue(t_argv[1]);
+        sf_tmpline.tag = intvalue(t_argv[1]);
     }
+    sf_tmpline.dx = sf_tmpline.dy = 1;  // [WDJ] used by EV_Teleport
 
     if (mo)
-        EV_Teleport(&line, 0, mo);
+        EV_Teleport(&sf_tmpline, 0, mo);
 }
 
 void SF_SilentTeleport()
 {
-    line_t line;                // dummy line for teleport function
+    line_t sf_tmpline;                // dummy line for teleport function
     mobj_t *mo;
 
     if (t_argc == 0)    // no arguments
@@ -1552,16 +1553,17 @@ void SF_SilentTeleport()
     else if (t_argc == 1)       // 1 argument: sector tag
     {
         mo = fs_current_script->trigger;   // default to trigger
-        line.tag = intvalue(t_argv[0]);
+        sf_tmpline.tag = intvalue(t_argv[0]);
     }
     else        // 2 or more
     {   // teleport a given object
         mo = MobjForSvalue(t_argv[0]);
-        line.tag = intvalue(t_argv[1]);
+        sf_tmpline.tag = intvalue(t_argv[1]);
     }
+    sf_tmpline.dx = sf_tmpline.dy = 1;  // [WDJ] used by EV_SilentTeleport
 
     if (mo)
-        EV_SilentTeleport(&line, 0, mo);
+        EV_SilentTeleport(&sf_tmpline, 0, mo);
 }
 
 void SF_DamageObj()
@@ -3419,7 +3421,7 @@ void SF_SetLineTexture()
 
 void SF_LineTrigger()
 {
-    line_t junk;
+    line_t sf_tmpline;
 
     if (!t_argc)
     {
@@ -3427,11 +3429,17 @@ void SF_LineTrigger()
         return;
     }
 
-    junk.special = intvalue(t_argv[0]);
-    junk.tag = t_argc < 2 ? 0 : intvalue(t_argv[1]);
+    sf_tmpline.special = intvalue(t_argv[0]);
+    sf_tmpline.tag = t_argc < 2 ? 0 : intvalue(t_argv[1]);
+    // [WDJ] used by P_UseSpecialLine and functions in p_genlin
+    sf_tmpline.flags = 0;
+    sf_tmpline.sidenum[0] = NULL_INDEX;
+    sf_tmpline.sidenum[1] = NULL_INDEX;
+    sf_tmpline.backsector = NULL;
+    sf_tmpline.frontsector = NULL;
 
-    P_UseSpecialLine(fs_run_trigger, &junk, 0);      // Try using it
-    P_ActivateCrossedLine(&junk, 0, fs_run_trigger); // Try crossing it
+    P_UseSpecialLine(fs_run_trigger, &sf_tmpline, 0);      // Try using it
+    P_ActivateCrossedLine(&sf_tmpline, 0, fs_run_trigger); // Try crossing it
 }
 
 void SF_LineFlag()
@@ -3453,7 +3461,7 @@ void SF_LineFlag()
         return;
     }
 
-    line = lines + linenum;
+    line = & lines[linenum];
 
     flagnum = intvalue(t_argv[1]);
     if (flagnum < 0 || flagnum > 32)

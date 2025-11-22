@@ -2501,3 +2501,40 @@ patchfile = w82_cons_printf_va.patch
 Fix buffer overruns caused by vsnprintf to buffer without string termination.
 Create function CONS_printf_va() to handle va_list printing to console.
 This replaces multiple copies of print buffers and vsnprintf.
+
+*** w82_hw_obj_colormap
+patchfile = w82_hw_obj_colormap.patch
+- committed revision 937   by wesley johnson
+Fix hardware render so that colormaps affect objects too.
+Fixed HWR_RenderPlane to have colormap parameter, so can pass in floor
+and ceiling colormaps, same as in software renderer.
+
+*** w82_hw_StoreWall_float
+patchfile = w82_hw_StoreWall_float.patch
+- committed revision 938   by wesley johnson
+Change HWR_StoreWallRange to have float operands.  Part of the code
+treated them as 0.0 to 1.0, and part was integer like the software
+renderer.
+General spelling fixes, replace some stub decl with proper include.
+
+*** w83_filestatus_e
+patchfile = w83_filestatus_e.patch
+- committed revision 939   by wesley johnson
+Fix filestatus_t stragglers to be filestatus_e.
+
+*** w83_get_gl_info_char
+patchfile = w83_gl_info_char.patch
+- committed revision 940   by wesley johnson
+Fix get_gl_info for (char*) type warnings on newer compilers.
+
+*** w83_fs_linetrigger
+patchfile = w83_fs_linetrigger.patch
+- committed revision 941   by wesley johnson
+Condense some of the door, switch, and other line trigger code.
+Fix some floor and switch code to detect incomplete fragglescript
+created linedefs (no sidedefs, no frontsector),
+and skip secondary actions that would have segfault.
+Fix fragglescript to init more fields in temp linedef to some safe
+value.
+Fixes win32 crash on fragglescript teleport, per Bug 3185357.
+

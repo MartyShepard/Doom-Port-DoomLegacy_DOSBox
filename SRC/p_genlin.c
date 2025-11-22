@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_genlin.c 941 2012-07-03 17:39:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -34,7 +34,7 @@
 
 /*
   SoM: 3/9/2000: Copied this entire file from Boom sources to Legacy sources.
-  This file contains all routiens for Generalized linedef types.
+  This file contains all routines for Generalized linedef types.
 */
 
 //
@@ -68,8 +68,7 @@ int EV_DoGenFloor ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;  // sector index
     manual = true;  // force exit from loop
     goto manual_floor;  // jump into loop
@@ -85,10 +84,8 @@ manual_floor:
     // Do not start another function if floor already moving
     if (P_SectorActive( S_floor_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
 
     // new floor thinker
@@ -198,8 +195,9 @@ manual_floor:
           }
         }
       }
-      else     // else if a trigger model change
+      else if( line->frontsector )  // except fragglescript with no frontsector
       {
+	// trigger frontsector model change
         mfloor->texture = line->frontsector->floorpic;
         switch (ChgT)
         {
@@ -220,8 +218,9 @@ manual_floor:
         }
       }
     }
-    if (manual) return rtn;
+    if (manual)  goto done;
   }
+done:
   return rtn;
 }
 
@@ -258,8 +257,7 @@ int EV_DoGenCeiling ( line_t*  line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;  // force exit from loop
     goto manual_ceiling;  // jump into loop
@@ -275,10 +273,8 @@ manual_ceiling:
     // Do not start another function if ceiling already moving
     if (P_SectorActive( S_ceiling_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
 
     // new ceiling thinker
@@ -396,8 +392,9 @@ manual_ceiling:
           }
         }
       }
-      else        // else if a trigger model change
+      else if( line->frontsector )  // except fragglescript with no frontsector
       {
+	// trigger frontsector model change
         ceiling->texture = line->frontsector->ceilingpic;
         switch (ChgT)
         {
@@ -420,8 +417,9 @@ manual_ceiling:
       }
     }
     P_AddActiveCeiling(ceiling);  // add this ceiling to the active list
-    if (manual) return rtn;
+    if (manual)  goto done;
   }
+done:   
   return rtn;
 }
 
@@ -458,8 +456,7 @@ int EV_DoGenLift ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;     // force exit from loop
     goto manual_lift;  // jump into loop
@@ -475,10 +472,8 @@ manual_lift:
     // Do not start another function if floor already moving
     if (P_SectorActive( S_floor_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
       
     // Setup the plat thinker
@@ -566,9 +561,9 @@ manual_lift:
     S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
     P_AddActivePlat(plat); // add this plat to the list of active plats
 
-    if (manual)
-      return rtn;
+    if (manual)  goto done;
   }
+done:
   return rtn;
 }
 
@@ -612,8 +607,7 @@ int EV_DoGenStairs ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;
     goto manual_stair;
@@ -631,10 +625,8 @@ manual_stair:
     //staircase to build before retriggering
     if (P_SectorActive( S_floor_special, sec) || sec->stairlock)
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
       
     // new floor thinker
@@ -648,7 +640,7 @@ manual_stair:
 
     // setup speed of stair building
     switch(Sped)
-      {
+    {
       default:
       case SPEED_Slow:
         mfloor->speed = FLOORSPEED/4;
@@ -662,7 +654,7 @@ manual_stair:
       case SPEED_Turbo:
         mfloor->speed = FLOORSPEED*4;
         break;
-      }
+    }
 
     // setup stepsize for stairs
     switch(Step)
@@ -755,13 +747,13 @@ manual_stair:
         break;
       }
     } while(ok);
-      if (manual)
-        return rtn;
-      secnum = old_secnum;
+    if (manual)  goto done;
+    secnum = old_secnum;
   }
   // retriggerable generalized stairs build up or down alternately
   if (rtn)
     line->special ^= StairDirection; // alternate dir on succ activations
+done:   
   return rtn;
 }
 
@@ -794,8 +786,7 @@ int EV_DoGenCrusher ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;
     goto manual_crusher;
@@ -811,10 +802,8 @@ manual_crusher:
     // Do not start another function if ceiling already moving
     if (P_SectorActive( S_ceiling_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
 
     // new ceiling thinker
@@ -854,8 +843,9 @@ manual_crusher:
     ceiling->oldspeed=ceiling->speed;
 
     P_AddActiveCeiling(ceiling);  // add to list of active ceilings
-    if (manual) return rtn;
+    if (manual)  goto done;
   }
+done:
   return rtn;
 }
 
@@ -886,8 +876,7 @@ int EV_DoGenLockedDoor ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;
     goto manual_locked;
@@ -902,10 +891,8 @@ manual_locked:
     // Do not start another function if ceiling already moving
     if (P_SectorActive( S_ceiling_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
   
     // new door thinker
@@ -951,9 +938,9 @@ manual_locked:
     S_StartSound((mobj_t *)&door->sector->soundorg,   // killough 4/15/98
                  door->speed >= VDOORSPEED*4 ? sfx_bdopn : sfx_doropn);
 
-    if (manual)
-      return rtn;
+    if (manual)  goto done;
   }
+done:
   return rtn;
 }
 
@@ -985,8 +972,7 @@ int EV_DoGenDoor ( line_t* line )
   manual = false;
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
-    if (!(sec = line->backsector))
-      return rtn;
+    if (!(sec = line->backsector))  goto done;
     secnum = sec-sectors;
     manual = true;
     goto manual_door;
@@ -1001,10 +987,8 @@ manual_door:
     // Do not start another function if ceiling already moving
     if (P_SectorActive( S_ceiling_special, sec))
     {
-      if (!manual)
-        continue;
-      else
-        return rtn;
+      if (manual)  goto done;
+      continue;
     }
   
     // new door thinker
@@ -1088,9 +1072,9 @@ manual_door:
       default:
         break;
     }
-    if (manual)
-      return rtn;
+    if (manual)  goto done;
   }
+done:
   return rtn;
 }
 
