@@ -2421,4 +2421,18 @@ but does not draw other transparent textures behind the closest one.
 OpenGL also fails to draw transparent over the switches in hg.wad,
 due to unknown causes.
 
+*** 
+- committed revision 926   by wesley johnson
+Add files r_draw24.c, r_draw32.c, which were missing.
 
+*** w81_Boom_colormap
+patchfile = w81_Boom_colormap.patch
+- committed revision 927   by wesley johnson
+Boom deepwater colormap fixed.
+Effect menu has selections for Boom Deepwater colormap effect:
+Sector colormap (Boom colormap behaves same as Legacy colormaps),
+Boom visible colormap (where colormap is visible like in legacy),
+Boom colormap (where the colormap is not visible like in Boom),
+and Boom detect (which adjusts according to detected Boom and Legacy linedefs).
+The Boom colormap selections make the Boom deep water sectors appear
+normal until walked into, then the deepwater colormap will have global effect.

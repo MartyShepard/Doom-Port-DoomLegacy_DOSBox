@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_segs.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -402,12 +402,22 @@ static void R_DrawWallSplats ()
 		   dlit = MAXLIGHTSCALE-1;
 	        dc_colormap = walllights[dlit];
 
+#ifdef BOOM_GLOBAL_COLORMAP
+	        if(frontsector->extra_colormap || view_colormap)
+	        {
+		    // reverse indexing, and change to extra_colormap
+		    int lightindex = dc_colormap - reg_colormaps;
+		    lighttable_t* cm = view_colormap? view_colormap : frontsector->extra_colormap->colormap;
+		    dc_colormap = & cm[ lightindex ];
+		}
+#else
 	        if(frontsector->extra_colormap)
 	        {
 		    // reverse indexing, and change to extra_colormap
 		    int lightindex = dc_colormap - reg_colormaps;
-		    dc_colormap =  & frontsector->extra_colormap->colormap[ lightindex ];
+		    dc_colormap = & frontsector->extra_colormap->colormap[ lightindex ];
 		}
+#endif	       
             }
 
             dm_top_patch = centeryfrac - FixedMul(dc_texturemid, dm_yscale);
@@ -567,7 +577,6 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
     }
 
     // [WDJ] Draws only within borders
-//    if (dc_yl >= vid.height || dc_yh < 0)
     if (dc_yl >= rdraw_viewheight || dc_yh < 0)
       return;
 
@@ -660,9 +669,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         // world coord, relative to viewer
         windowclip_top = frontsector->ceilingheight - viewz;
 	windowclip_bottom = frontsector->floorheight - viewz;
-// [WDJ] original failed, not screen coord, no perspective, it blocked display entirely 
-//        dm_windowtop = frontsector->ceilingheight;
-//        dm_windowbottom = frontsector->floorheight;
     }
     else
         colfunc = basecolfunc;
@@ -850,12 +856,22 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 		     xwalllights = scalelight[rlight->lightnum];
 
 		 rlight->rcolormap = xwalllights[dlit];
+#ifdef BOOM_GLOBAL_COLORMAP
+		 if(rlight->extra_colormap || view_colormap)
+		 {
+		     // reverse indexing, and change to extra_colormap
+		     int lightindex = rlight->rcolormap - reg_colormaps;
+		     lighttable_t* cm = view_colormap? view_colormap : rlight->extra_colormap->colormap;
+		     rlight->rcolormap = & cm[ lightindex ];
+		 }
+#else
 		 if(rlight->extra_colormap)
 		 {
 		     // reverse indexing, and change to extra_colormap
 		     int lightindex = rlight->rcolormap - reg_colormaps;
 		     rlight->rcolormap = & rlight->extra_colormap->colormap[ lightindex ];
 		 }
+#endif
 	      }
 
               rlight->height += rlight->heightstep;
@@ -903,16 +919,26 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 	      unsigned dlit = dm_yscale>>LIGHTSCALESHIFT;
 
 	      if (dlit >=  MAXLIGHTSCALE )
-	      dlit = MAXLIGHTSCALE-1;
+	         dlit = MAXLIGHTSCALE-1;
 
 	      dc_colormap = walllights[dlit];
 
+#ifdef BOOM_GLOBAL_COLORMAP
+              if(frontsector->extra_colormap || view_colormap)
+              {
+                 // reverse indexing, and change to extra_colormap
+                 int lightindex = dc_colormap - reg_colormaps;
+		 lighttable_t* cm = view_colormap? view_colormap : frontsector->extra_colormap->colormap;
+		 dc_colormap = & cm[ lightindex ];
+	      }
+#else
               if(frontsector->extra_colormap)
               {
                  // reverse indexing, and change to extra_colormap
                  int lightindex = dc_colormap - reg_colormaps;
                  dc_colormap = & frontsector->extra_colormap->colormap[ lightindex ];
 	      }
+#endif
 	  } // fixedcolormap
 
 	  if( windowclip_top != FIXED_MAX )
@@ -1212,9 +1238,18 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 
 		rlight->rcolormap = xwalllights[dlit];
 
+#ifdef BOOM_GLOBAL_COLORMAP
+		if( view_colormap )
+		{
+		  // reverse indexing, and change to extra_colormap
+		  int lightindex = rlight->rcolormap - reg_colormaps;
+		  rlight->rcolormap = & view_colormap[ lightindex ];
+		}
+		else
+#endif		   
 #if 1
 		// [WDJ] To not have FF_FOG totally block ffloor colormap.
-		 // Not sure which is correct, but is more consistent with other code.
+		// Not sure which is correct, but is more consistent with other code.
                 if( (ffloor->flags & FF_FOG)
 		    &&(ffloor->master->frontsector->extra_colormap) )
 		{
@@ -1327,17 +1362,29 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
                 
             dc_colormap = walllights[dlit];
 
-            if(frontsector->extra_colormap)
+#ifdef BOOM_GLOBAL_COLORMAP
+	    if( view_colormap )
 	    {
 	        // reverse indexing, and change to extra_colormap
-	        int lightindex = dc_colormap - reg_colormaps;
-                dc_colormap = & frontsector->extra_colormap->colormap[ lightindex ];
+                int lightindex = dc_colormap - reg_colormaps;
+                dc_colormap = & view_colormap[ lightindex ];
 	    }
+	    else
+#endif
+	    // FOG precedence
+	    // one or other, simultaneous usage will crash
             if(ffloor->flags & FF_FOG && ffloor->master->frontsector->extra_colormap)
 	    {
 	        // reverse indexing, and change to extra_colormap
 	        int lightindex = dc_colormap - reg_colormaps;
                 dc_colormap = & ffloor->master->frontsector->extra_colormap->colormap[ lightindex ];
+	    }
+	    else // one or other, simultaneous usage will crash
+            if(frontsector->extra_colormap)
+	    {
+	        // reverse indexing, and change to extra_colormap
+	        int lightindex = dc_colormap - reg_colormaps;
+                dc_colormap = & frontsector->extra_colormap->colormap[ lightindex ];
 	    }
         }
 
@@ -1503,6 +1550,26 @@ void R_RenderSegLoop (void)
             dc_x = rw_x;
             dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 
+#ifdef BOOM_GLOBAL_COLORMAP
+	    if( ! fixedcolormap )
+	    {
+	        // distance effect on light, rw_scale is smaller at distance.
+	        unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
+
+	        if (dlit >=  MAXLIGHTSCALE )
+		    dlit = MAXLIGHTSCALE-1;
+
+	        dc_colormap = walllights[dlit];
+
+	        if(frontsector->extra_colormap || view_colormap)
+	        {
+		    // reverse indexing, and change to extra_colormap
+		    int lightindex = dc_colormap - reg_colormaps;
+		    lighttable_t* cm = view_colormap? view_colormap : frontsector->extra_colormap->colormap;
+		    dc_colormap = & cm[ lightindex ];
+		}
+	    }
+#else
 	    // distance effect on light, rw_scale is smaller at distance.
             unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
             
@@ -1517,6 +1584,7 @@ void R_RenderSegLoop (void)
 		int lightindex = dc_colormap - reg_colormaps;
                 dc_colormap = & frontsector->extra_colormap->colormap[ lightindex ];
 	    }
+#endif	   
         }
 
         if(dc_numlights)
@@ -1556,12 +1624,22 @@ void R_RenderSegLoop (void)
                 dlit = MAXLIGHTSCALE-1;
 
               rlight->rcolormap = xwalllights[dlit];
+#ifdef BOOM_GLOBAL_COLORMAP
+	      if(rlight->extra_colormap || view_colormap)
+	      {
+		 // reverse indexing, and change to extra_colormap
+		 int lightindex = rlight->rcolormap - reg_colormaps;
+		 lighttable_t* cm = view_colormap? view_colormap : rlight->extra_colormap->colormap;
+		 rlight->rcolormap = & cm[ lightindex ];
+	      }
+#else
 	      if(rlight->extra_colormap )
 	      {
 		 // reverse indexing, and change to extra_colormap
 		 int lightindex = rlight->rcolormap - reg_colormaps;
 		 rlight->rcolormap = & rlight->extra_colormap->colormap[ lightindex ];
 	      }
+#endif	       
 	    }
 
             colfunc = R_DrawColumnShadowed;  // generic 8 16

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_main.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -193,7 +193,7 @@ byte	   fog_init = 0;   // set 1 at fog linedef to clear previous fog blur
 lighttable_t*           fixedcolormap;
 #ifdef BOOM_GLOBAL_COLORMAP
 // Boom colormap, and global viewer coloring
-lighttable_t*           view_colormap;  // full lightlevel colormaps
+lighttable_t*           view_colormap;  // full lightlevel range colormaps
 #endif
 
 fixed_t                 viewx;
@@ -258,36 +258,37 @@ consvar_t cv_grtranslucenthud = {"gr_translucenthud","255",CV_SAVE|CV_CALL,grtra
 
 consvar_t cv_screenshotdir = { "screenshotdir", "", CV_SAVE, NULL };
 
+#ifdef BOOM_GLOBAL_COLORMAP
 CV_PossibleValue_t boom_colormap_cons_t[]={
-   {0,"Boom colormap"},  // Boom colormap rules
-   {1,"Boom pref"},
-   {2,"Demo detect"},    // Detect Boom demo
-   {3,"Sector detect"},  // Detect Legacy colormap sectors
-   {4,"Sector colormap"},  // Sector colormap rules
+   {0,"Sector colormap"},  // Sector colormap rules
+   {1,"Boom visible colormap"},  // Boom colormap, visible
+   {2,"Boom colormap"},  // Boom colormap rules
+   {3,"Boom detect"},    // Detect Boom features
    {0,NULL} };
 void BoomColormap_detect(void);
 consvar_t cv_boom_colormap   = {"boomcolormap", "0", CV_SAVE|CV_CALL, boom_colormap_cons_t, BoomColormap_detect};
 
-byte EN_boom_colormap = 1;  // compatibility, user preference, do not switch for demos
+byte EN_boom_colormap = 1;  // compatibility, user preference
 void BoomColormap_detect(void)
 {
     switch( cv_boom_colormap.value )
     {
-     case 0:
-     case 1:
-       EN_boom_colormap = 1;
-       break;
-     case 2:
-     case 3:
-       {
-	   EN_boom_colormap = 1;
-	   
-       }
-       break;
      default:
-       EN_boom_colormap = 0;  break;
+     case 0:  // sector colormap
+       EN_boom_colormap = 0;  // Legacy sector colormap
+       break;
+     case 1:  // Boom colormap
+       EN_boom_colormap = 1;  // visible colormap
+       break;
+     case 2:  // Boom visible colormap
+       EN_boom_colormap = 2;  // full boom compatibility
+       break;
+     case 3:  // Boom detect
+       EN_boom_colormap = boom_detect ? ( legacy_detect ? 1 : 2 ) : 0;
+       break;
     }
 }
+#endif
 
 // added 16-6-98:splitscreen
 
@@ -1136,7 +1137,7 @@ void R_SetupFrame (player_t* player)
     int  i;
     int  fixedcolormap_num;
     int  dy=0; //added:10-02-98:
-    
+
     extralight = player->extralight;
 
     if (cv_chasecam.value && !camera.chase)
@@ -1230,31 +1231,28 @@ void R_SetupFrame (player_t* player)
 
     fixedcolormap = NULL;  // default
 #ifdef BOOM_GLOBAL_COLORMAP
-    view_colormap = reg_colormaps;  // default
+    // [WDJ] Because of interactions with extra colormaps, precedence must
+    // be determined at the usage.  The Boom 282 colormap overrides all
+    // normal colormap and extra colormap, but not fixedcolormap.
+    // But is requires the light level calculations of an extra colormap.
+    view_colormap = NULL;  // default
     if( EN_boom_colormap )
     {
         // [WDJ] 4/11/2012 restore compatible Boom colormap handling
         sector_t * secp = viewmobj->subsector->sector;
+
         if( secp->model == SM_Boom_deep_water )
         {
 	    sector_t * modsecp = & sectors[ secp->modelsec ];
+	    // -1 or a valid colormap num
 	    int bcm_num = (viewz < modsecp->floorheight) ?
 	       modsecp->bottommap
 	     : (viewz > modsecp->ceilingheight)?
 	       modsecp->topmap
 	     : modsecp->midmap;
-	    if(bcm_num < 0 || bcm_num > num_extra_colormaps)
-	       bcm_num = 0;
-	    view_colormap = extra_colormaps[bcm_num].colormap;
-#if 0
-	    fixedcolormap = view_colormap;
-	    // set scalelights to use_colormap
-	    for (i=0 ; i<MAXLIGHTSCALE ; i++)
-//	       scalelightfixed[i] = & view_colormap[ LIGHTTABLE( i ) ];
-	       scalelightfixed[i] = & view_colormap[ i ];
-//	       scalelightfixed[i] = & view_colormap[ 0 ];
-	    walllights = scalelightfixed;
-#endif
+	    // only enable view_colormap when overriding globally
+	    if(bcm_num >= 0 || bcm_num < num_extra_colormaps)
+	       view_colormap = extra_colormaps[bcm_num].colormap;
 	}
     }
 #endif   
@@ -1264,11 +1262,7 @@ void R_SetupFrame (player_t* player)
     {
         // the fixedcolormap overrides sector colormaps
         fixedcolormap =
-#ifdef BOOM_GLOBAL_COLORMAP
-            & view_colormap[ LIGHTTABLE( fixedcolormap_num ) ];
-#else
             & reg_colormaps[ LIGHTTABLE( fixedcolormap_num ) ];
-#endif
 
         walllights = scalelightfixed;
 
@@ -1493,5 +1487,9 @@ void R_RegisterEngineStuff (void)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
         HWR_AddCommands ();
+#endif
+
+#ifdef BOOM_GLOBAL_COLORMAP
+    CV_RegisterVar (&cv_boom_colormap);
 #endif
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_bsp.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -504,6 +504,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// else normal view
       }
       sec = tempsec;
+#ifdef BOOM_GLOBAL_COLORMAP
+      if( EN_boom_colormap > 1 )
+         colormapnum = -1; // Boom colormaps not visible until walk into sector
+#endif
   }
   else if (sec->model == SM_Legacy_water) //SoM: 3/20/2000
   {

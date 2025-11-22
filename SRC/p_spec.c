@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: p_spec.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -189,6 +189,9 @@ byte  mbf_support = 1;  // [WDJ] MBF enable
 			// similar to prboom mbf_features, but as a flag
 // [WDJ]
 friction_model_e  friction_model = FR_legacy;
+
+byte  boom_detect = 0;
+byte  legacy_detect = 0;
 
 
 //SoM: 3/7/2000
@@ -2938,6 +2941,8 @@ void P_SpawnSpecials (void)
     // update all special sectors
     fixed_t  water_friction = FRICTION_NORM;
     int  water_movefactor = ORIG_FRICTION_FACTOR;
+   
+    boom_detect = legacy_detect = 0;
 
     // [WDJ] 3/2011 Legacy shallow water friction
     if( friction_model == FR_legacy )
@@ -3089,6 +3094,7 @@ void P_SpawnSpecials (void)
               sectors[fsecn].friction = water_friction;
               sectors[fsecn].movefactor = water_movefactor;
 	    }
+	    boom_detect = 1;
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
@@ -3107,6 +3113,7 @@ void P_SpawnSpecials (void)
               sectors[fsecn].friction = water_friction;
               sectors[fsecn].movefactor = water_movefactor;
             }
+	    legacy_detect = 1;
             break;
 
           //SoM: 4/4/2000: HACK! Copy colormaps. Just plain colormaps.
@@ -3117,6 +3124,7 @@ void P_SpawnSpecials (void)
               sectors[fsecn].midmap = effline->frontsector->midmap;
               sectors[fsecn].model = SM_colormap;
             }
+	    legacy_detect = 1;
             break;
 
           case 281:	// Legacy solid 3D floor with shadow, in tagged
@@ -3127,6 +3135,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
+	    legacy_detect = 1;
             break;
 
           case 289:	// Legacy solid 3D floor without shadow, in tagged
@@ -3137,6 +3146,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                         FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
+	    legacy_detect = 1;
             break;
 
           // TL block
@@ -3151,6 +3161,7 @@ void P_SpawnSpecials (void)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
 	    }
+	    legacy_detect = 1;
             break;
 
           // TL water
@@ -3168,6 +3179,7 @@ void P_SpawnSpecials (void)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                         FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
 	    }
+	    legacy_detect = 1;
             break;
 
           // Fog
@@ -3189,6 +3201,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+	    legacy_detect = 1;
             break;
 
           // Light effect
@@ -3199,6 +3212,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_CUTSPRITES);
+	    legacy_detect = 1;
             break;
 
           // Opaque water
@@ -3213,6 +3227,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+	    legacy_detect = 1;
             break;
 
           // Double light effect
@@ -3223,6 +3238,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
+	    legacy_detect = 1;
             break;
 
           // Invisible barrier
@@ -3233,6 +3249,7 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
 			FF_EXISTS|FF_SOLID);
+	    legacy_detect = 1;
             break;
 
           // Boom independent floor lighting (e.g. lava)
@@ -3241,6 +3258,7 @@ void P_SpawnSpecials (void)
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               sectors[fsecn].floorlightsec = model_secnum;
+	    boom_detect = 1;
             break;
 
           // Boom independent ceiling lighting
@@ -3249,6 +3267,7 @@ void P_SpawnSpecials (void)
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               sectors[fsecn].ceilinglightsec = model_secnum;
+	    boom_detect = 1;
             break;
 		  
           // Instant lower for floor SSNTails 06-13-2002
@@ -3279,6 +3298,9 @@ void P_SpawnSpecials (void)
 
     // [WDJ] Last so Boom friction linedef can override other sector frictions.
     P_SpawnFriction(NULL);  //New friction model using linedefs
+#ifdef BOOM_GLOBAL_COLORMAP
+    BoomColormap_detect();
+#endif
 }
 
 

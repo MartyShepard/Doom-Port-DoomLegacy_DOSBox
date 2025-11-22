@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 922 2012-06-07 23:59:45Z wesleyjohnson $
+// $Id: p_local.h 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -403,6 +403,9 @@ typedef enum {
   FR_orig, FR_boom, FR_mbf, FR_prboom, FR_legacy, FR_heretic, FR_hexen
 } friction_model_e;
 extern friction_model_e  friction_model;
+
+extern byte  boom_detect;
+extern byte  legacy_detect;
 
 void  DemoAdapt_p_user( void );
 void  DemoAdapt_p_enemy( void );

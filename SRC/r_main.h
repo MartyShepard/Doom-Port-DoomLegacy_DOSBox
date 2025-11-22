@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_main.h 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -112,6 +112,13 @@ extern lighttable_t*    zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 extern int              extralight;
 extern lighttable_t*    fixedcolormap;
+#ifdef BOOM_GLOBAL_COLORMAP
+// Boom colormap, and global viewer coloring
+extern lighttable_t*    view_colormap;  // full lightlevel range colormaps
+
+extern byte EN_boom_colormap;  // compatibility, user preference
+void BoomColormap_detect( void );
+#endif
 
 // Number of diminishing brightness levels.
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.

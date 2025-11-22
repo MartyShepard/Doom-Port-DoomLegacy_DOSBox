@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_things.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -866,7 +866,6 @@ void R_DrawMaskedColumn (column_t* column)
         // [WDJ] limit to split screen area above status bar,
         // instead of whole screen,
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
-//        if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
         {
 	    //[WDJ] phobiata.wad has many views that need clipping
 	    if ( dc_yl < 0 )   dc_yl = 0;
@@ -953,12 +952,22 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
         dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
 
+#ifdef BOOM_GLOBAL_COLORMAP
+    if((vis->extra_colormap || view_colormap) && !fixedcolormap)
+    {
+       // reverse indexing, and change to extra_colormap, default 0
+       int lightindex = dc_colormap? (dc_colormap - reg_colormaps) : 0;
+       lighttable_t* cm = (view_colormap? view_colormap : vis->extra_colormap->colormap);
+       dc_colormap = & cm[ lightindex ];
+    }
+#else
     if(vis->extra_colormap && !fixedcolormap)
     {
        // reverse indexing, and change to extra_colormap, default 0
        int lightindex = dc_colormap? (dc_colormap - reg_colormaps) : 0;
        dc_colormap = & vis->extra_colormap->colormap[ lightindex ];
     }
+#endif   
     if(!dc_colormap)
       dc_colormap = & reg_colormaps[0];
 
@@ -1269,7 +1278,6 @@ static void R_ProjectSprite (mobj_t* thing)
     thingmodelsec = thingsector->modelsec;
     thing_has_model = thingsector->model > SM_fluid; // water
 
-//    if (thingmodelsec != -1)   // only clip things which are in special sectors
     if (thing_has_model)   // only clip things which are in special sectors
     {
       sector_t * thingmodsecp = & sectors[thingmodelsec];
@@ -1454,7 +1462,6 @@ void R_AddSprites (sector_t* sec, int lightlevel)
 
     if(!sec->numlights)  // otherwise see ProjectSprite
     {
-//      if(sec->modelsec == -1)   lightlevel = sec->lightlevel;
       if(sec->model < SM_fluid)   lightlevel = sec->lightlevel;
 
       lightnum = (lightlevel >> LIGHTSEGSHIFT)+extralight;
@@ -2118,7 +2125,6 @@ void R_DrawSprite (vissprite_t* spr)
 #ifdef BSPVIEWER
             if (mh <= 0 || (viewer_has_model && !viewer_underwater))
 #else
-//            if (mh <= 0 || (phs != -1 && viewz > sectors[viewer_modelsec].floorheight))
             if (mh <= 0 || (viewer_has_model && (viewz > sectors[viewer_modelsec].floorheight)))
 #endif
             {                          // clip bottom
@@ -2142,7 +2148,6 @@ void R_DrawSprite (vissprite_t* spr)
 #ifdef BSPVIEWER
             if (viewer_overceiling)
 #else
-//            if (phs != -1 && viewz >= sectors[viewer_modelsec].ceilingheight)
             if (viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight))
 #endif
             {                         // clip bottom

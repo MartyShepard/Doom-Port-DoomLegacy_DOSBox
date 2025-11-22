@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 897 2012-02-29 19:21:08Z wesleyjohnson $
+// $Id: doomdef.h 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -282,6 +282,10 @@ void I_SoftError (char *error, ...);
 # define ENABLE_DRAW24
 # define ENABLE_DRAW32
 #endif
+
+// [WDJ] 6/5/2012 Boom global colormap
+// Optional for now
+#define BOOM_GLOBAL_COLORMAP
 
 // =========================================================================
 

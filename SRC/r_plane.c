@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 905 2012-02-29 19:31:37Z wesleyjohnson $
+// $Id: r_plane.c 927 2012-06-09 18:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -284,12 +284,22 @@ void R_MapPlane ( int y, int x1, int x2 )
             index = MAXLIGHTZ-1;
 
         ds_colormap = planezlight[index];
+#ifdef BOOM_GLOBAL_COLORMAP
+        if(vsp_currentplane->extra_colormap || view_colormap)
+        {
+	    // reverse indexing, and change to extra_colormap
+	    int lightindex = ds_colormap - reg_colormaps;
+	    lighttable_t* cm = view_colormap? view_colormap : vsp_currentplane->extra_colormap->colormap;
+	    ds_colormap = & cm[ lightindex ];
+	}
+#else
         if(vsp_currentplane->extra_colormap)
         {
 	    // reverse indexing, and change to extra_colormap
 	    int lightindex = ds_colormap - reg_colormaps;
 	    ds_colormap = & vsp_currentplane->extra_colormap->colormap[ lightindex ];
 	}
+#endif
     }
 
     ds_y = y;

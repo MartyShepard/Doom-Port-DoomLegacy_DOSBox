@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00927 ]: w81 Boom global colormap
+[00926*]: Add r_draw24.c r_draw32.c
 [00925 ]: w81 Boom translucent 260
 [00924 ]: w81 fogsheet improvements
 [00923 ]: w81 savegame buffer overflow
