@@ -76,8 +76,6 @@ void R_DrawColumn_32 (void)
         // Odd size texture, use texheight
         fixed_t texheight = dc_texheight << FRACBITS;
         // From Boom, to fix the odd frac
-    if( frac < 0 || frac >= texheight )
-       fprintf(stderr, "DC frac=0x%x   fracstep=0x%x   texheight=0x%x  dc_textheight=%i\n", frac, fracstep, texheight, dc_texheight );
         if (frac < 0)
 	    while ((frac += texheight) < 0);
         else

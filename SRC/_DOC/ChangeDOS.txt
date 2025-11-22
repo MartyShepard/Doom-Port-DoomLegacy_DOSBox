@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00943 ]: w83 draw32 remove debug printf
+[00942*]: w80 win32 vid fixes, late commit
 [00941 ]: w83 fs linetrigger
 [00940*]: w83 get_gl_info char
 [00939*]: w83 filestatus_e stragglers

@@ -298,11 +298,12 @@ WFLAGS=-Wall # -W -Wno-unused -Wno-sign-compare
 	DJGPPDOS_NATIVE=1
 #determine the interface directory (where you put all i_*.c)
 
-  ENABLE_DRAW15=1
-  ENABLE_DRAW16=1
-  ENABLE_DRAW24=1
-  ENABLE_DRAW32=1	
-	
+ENABLE_DRAW15=1
+ENABLE_DRAW16=1
+ENABLE_DRAW24=1
+ENABLE_DRAW32=1
+HIGHCOLORMAPS=1	
+
 ifdef DJGPPDOS_NATIVE
 	INTERFACE=DJGPPDOS_NATIVE
 	NASMFORMAT=coff
@@ -854,7 +855,7 @@ $(O)/r_draw.o: r_draw.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
  d_items.h p_pspr.h info.h d_think.h p_mobj.h doomdata.h d_ticcmd.h \
  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
  r_things.h sounds.h r_draw.h st_stuff.h d_event.h i_video.h \
- v_video.h w_wad.h z_zone.h r_draw8.c r_draw16.c
+ v_video.h w_wad.h z_zone.h r_draw8.c r_draw16.c r_draw24.c r_draw32.c
 	redir -o /_GCC/r_draw.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/r_main.o: r_main.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \

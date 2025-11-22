@@ -2538,3 +2538,17 @@ Fix fragglescript to init more fields in temp linedef to some safe
 value.
 Fixes win32 crash on fragglescript teleport, per Bug 3185357.
 
+*** w80_win32_vid_fixes
+patchfile = w80_win32_vid_fixes.patch
+- committed revision 942   by wesley johnson
+This is not in order, was in the w80 patch series, but did not get committed.
+Minimal fix of win32 port drivers for the new vid structure.
+This is a temporary fix, as they need to be rewritten.
+
+*** w83_draw32_remove_printf
+patchfile = w83_draw32_remove_printf.patch
+- committed revision 943   by wesley johnson
+Remove a debugging printf that is in svn, but not in my working files.
+
+
+

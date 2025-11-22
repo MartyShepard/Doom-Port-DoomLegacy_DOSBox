@@ -877,12 +877,12 @@ void VID_Command_ModeInfo_f (void)
     CONS_Printf ("width : %d\n"
                  "height: %d\n"
                  "bytes per scanline: %d\n"
-                 "bytes per pixel: %d\n"
+                 "bytes per pixel: %s\n"
                  "numpages: %d\n",
                  pv->width,
                  pv->height,
                  pv->rowbytes,
-                 pv->bytesperpixel,
+                 pv->bytesperpixel==2?"16":"8",
                  pv->numpages );
 }
 

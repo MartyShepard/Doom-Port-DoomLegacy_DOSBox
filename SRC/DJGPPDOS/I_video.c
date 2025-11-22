@@ -386,7 +386,14 @@ void I_StartupGraphics(void)
     CONS_Printf("Vid_Init...");
 
     // 0 for 256 color, else use highcolor modes
-    highcolor = (req_drawmode == REQ_highcolor);
+		if( req_drawmode == REQ_highcolor)
+        highcolor = (req_drawmode == REQ_highcolor);
+		else if( req_drawmode == REQ_truecolor)
+		    highcolor = (req_drawmode == REQ_truecolor);
+		else if( req_drawmode == REQ_native)
+		    highcolor = (req_drawmode == REQ_native);	
+		else if( req_drawmode == REQ_specific)
+		    highcolor = (req_drawmode == REQ_specific);			
 
     VID_Init();
 
