@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_spec.h 928 2012-06-09 18:34:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1131,7 +1131,7 @@ typedef struct {
   int x_mag, y_mag;    // X Strength
   int magnitude;       // Vector strength for point pusher
   int radius;          // Effective radius for point pusher
-  int x_src, y_src;    // X,Y of point source if point pusher
+  fixed_t  x_src, y_src;    // X,Y of point source if point pusher
 } pusher_t;
 
 //SoM: 3/9/2000: Prototype functions for pushers

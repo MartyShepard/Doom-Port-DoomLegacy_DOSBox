@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00928 ]: w81 Boom MBF square-law pusher
 [00927 ]: w81 Boom global colormap
 [00926*]: Add r_draw24.c r_draw32.c
 [00925 ]: w81 Boom translucent 260

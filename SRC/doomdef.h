@@ -278,10 +278,10 @@ void I_SoftError (char *error, ...);
 // To save code size, can turn off some drawing bpp that you cannot use.
 #define ENABLE_DRAW15
 #define ENABLE_DRAW16
-#ifndef PC_DOS
+//#ifndef PC_DOS
 # define ENABLE_DRAW24
 # define ENABLE_DRAW32
-#endif
+//#endif
 
 // [WDJ] 6/5/2012 Boom global colormap
 // Optional for now

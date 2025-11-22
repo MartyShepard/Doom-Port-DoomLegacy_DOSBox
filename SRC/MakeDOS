@@ -298,6 +298,11 @@ WFLAGS=-Wall # -W -Wno-unused -Wno-sign-compare
 	DJGPPDOS_NATIVE=1
 #determine the interface directory (where you put all i_*.c)
 
+  ENABLE_DRAW15=1
+  ENABLE_DRAW16=1
+  ENABLE_DRAW24=1
+  ENABLE_DRAW32=1	
+	
 ifdef DJGPPDOS_NATIVE
 	INTERFACE=DJGPPDOS_NATIVE
 	NASMFORMAT=coff

@@ -2436,3 +2436,9 @@ Boom colormap (where the colormap is not visible like in Boom),
 and Boom detect (which adjusts according to detected Boom and Legacy linedefs).
 The Boom colormap selections make the Boom deep water sectors appear
 normal until walked into, then the deepwater colormap will have global effect.
+
+*** w81_Boom_pusher
+patchfile = w81_Boom_pusher.patch
+- committed revision 928   by wesley johnson
+Gave the Point pusher a square law effect (enabled by mbf_support),
+as in prboom (an MBF feature actually, Boom is not square law).

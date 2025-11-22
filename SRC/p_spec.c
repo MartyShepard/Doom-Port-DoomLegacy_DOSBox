@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: p_spec.c 928 2012-06-09 18:34:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -199,7 +199,7 @@ static void P_SpawnScrollers(void);
 
 static void P_SpawnFriction(sector_t *);
 static void P_SpawnPushers(void);
-static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affectee); //SoM: 3/9/2000
+static void Add_Pusher(int type, fixed_t x_mag, fixed_t y_mag, mobj_t* source, int affectee); //SoM: 3/9/2000
 void P_FindAnimatedFlat (int i);
 
 
@@ -3839,7 +3839,7 @@ void P_Update_Special_Sector( sector_t * sec, short new_special )
 #define PUSH_FACTOR 7
 
 // Adds a pusher
-static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affectee)
+static void Add_Pusher(int type, fixed_t x_mag, fixed_t y_mag, mobj_t* source, int affectee)
 {
     pusher_t *p = Z_Malloc(sizeof *p, PU_LEVSPEC, 0);
 
@@ -3869,6 +3869,7 @@ static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t* source, int affec
 
 // PIT_PushThing determines the angle and magnitude of the effect.
 // The object's x and y momentum values are changed.
+// Only used for PP_push
 
 pusher_t* tmpusher; // pusher structure for blockmap searches
 
@@ -3878,15 +3879,26 @@ boolean PIT_PushThing(mobj_t* thing)
         !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
     {
         angle_t pushangle;
-        int dist;
+        fixed_t dist;
         int speed;
-        int sx,sy;
+        fixed_t sx,sy;
 
         sx = tmpusher->x_src;
         sy = tmpusher->y_src;
         dist = P_AproxDistance(thing->x - sx,thing->y - sy);
         speed = (tmpusher->magnitude -
                  ((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
+       
+        // Square law distance effect by Killough 10/98, from prboom (not in Boom)
+	// [WDJ] Modified to float
+	if( speed > 0 && mbf_support )
+        {
+	    float fdx = thing->x - sx;
+	    float fdy = thing->y - sy;
+	    float mag = tmpusher->magnitude;
+	    speed = (int)( mag * ((float)(1<<23) * (float)(1<<FRACBITS) * (float)(1<<FRACBITS) * 2 )
+	            / ( fdx*fdx + fdy*fdy + 1));
+        }
 
         // If speed <= 0, you're outside the effective radius. You also have
         // to be able to see the push/pull source point.
@@ -4005,7 +4017,6 @@ void T_Pusher(pusher_t *p)
 
     if(demoversion <= 140)
     {
-//        if (sec->modelsec != -1) // special water sector?
         if (sec->model > SM_fluid) // special water sector
         {
 	   sm_ht = sectors[sec->modelsec].floorheight;
@@ -4021,7 +4032,6 @@ void T_Pusher(pusher_t *p)
 	        continue;
 	    if (p->type == PP_wind)
 	    {
-//	        if (sec->modelsec == -1) // NOT special water sector
 	        if (! water_sector) // NOT special water sector
 	        {
 		    if (thing->z > thing->floorz) // above ground
@@ -4054,7 +4064,6 @@ void T_Pusher(pusher_t *p)
 	    else // PP_current
 	    {
 	        // Added Z currents SSNTails 06-10-2002
-//	        if (sec->modelsec == -1) // NOT special water sector
 	        if (! water_sector) // NOT special water sector
 	        {
 		    if (thing->z > sec->floorheight) // above ground
