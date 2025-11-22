@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00947 ]: w83 fs func OLDBEHAVIOR
+[00946 ]: w83 fs op
 [00945 ]: w83 fs func safety checks
 [00944 ]: w83 num skincolor (NUMSKINCOLORS)
 [00943 ]: w83 draw32 remove debug printf

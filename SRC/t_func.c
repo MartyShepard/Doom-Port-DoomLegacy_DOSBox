@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 945 2012-07-03 19:11:17Z wesleyjohnson $
+// $Id: t_func.c 947 2012-07-03 19:14:13Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -195,10 +195,6 @@
 #include "t_func.h"
 #include "t_array.h"
 
-// [WDJ] 6/2012 This revision keeps the old behavior in the new function style.
-// This disables any change that might have affected compatibility, for regression testing.
-// The OLDBEHAVIOR will be removed in the next revision.
-#define OLDBEHAVIOR
 
 fs_value_t  evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
@@ -429,11 +425,7 @@ void SF_Include(void)
 {
     char tempstr[9];
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 1)  goto err_numarg;
-#else
     if (t_argc != 1)  goto err_numarg;
-#endif
 
     memset(tempstr, 0, 9);
 
@@ -441,11 +433,7 @@ void SF_Include(void)
         strncpy(tempstr, t_argv[0].value.s, 8);
     else
         snprintf(tempstr, 8, "%s", stringvalue(t_argv[0]));
-#ifdef OLDBEHAVIOR
-    // string terminated by memset longer than strncpy
-#else
     tempstr[8] = '\0';
-#endif
 
     parse_include(tempstr);
 done:
@@ -579,11 +567,7 @@ void SF_PlayerTip(void)
 {
     int plnum;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 2)  goto err_numarg;  // [WDJ] requires 2 args
-#endif
 
     plnum = intvalue(t_argv[0]);
     if ( plnum == consoleplayer )
@@ -647,11 +631,7 @@ void SF_PlayerMsg(void)
 {
     int plnum;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 2)  goto err_numarg;
-#endif
 
     plnum = intvalue(t_argv[0]);
     if ( plnum == displayplayer )
@@ -673,23 +653,14 @@ void SF_PlayerInGame(void)
 {
     int plnum;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc != 1)  goto err_numarg;
-#endif
 
     t_return.type = FSVT_int;
     t_return.value.i = 0; // default
 
     plnum = intvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no check on valid plnum
-    t_return.value.i = playeringame[plnum];
-#else
     if( plnum < MAXPLAYERS )  // [WDJ] safe limit
         t_return.value.i = playeringame[plnum];
-#endif
 done:
     return;
    
@@ -703,12 +674,8 @@ void SF_PlayerName(void)
 {
     int plnum;
 
-#ifdef OLDBEHAVIOR
-    // no default value
-#else
     t_return.type = FSVT_string;
     t_return.value.s = "";
-#endif
 
     if (!t_argc)
     {
@@ -722,14 +689,8 @@ void SF_PlayerName(void)
         plnum = intvalue(t_argv[0]);
     }
 
-#ifdef OLDBEHAVIOR
-    // no check on valid plnum
-    t_return.type = FSVT_string;
-    t_return.value.s = player_names[plnum];
-#else
     if( plnum < MAXPLAYERS )  // [WDJ] safe limit
         t_return.value.s = player_names[plnum];
-#endif
 done:
     return;
 
@@ -749,12 +710,8 @@ void SF_PlayerAddFrag(void)
     t_return.value.f = 0;  // default
 
     playernum1 = intvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no check on valid playernum
-#else
     if ( playernum1 < MAXPLAYERS        // [WDJ] Safe limit
 	 && playeringame[playernum1] )  // [WDJ] Only if player in game
-#endif
     {
         if (t_argc == 1)
         {
@@ -767,12 +724,8 @@ void SF_PlayerAddFrag(void)
 	    // player1 fragged by player2
 	    int playernum2 = intvalue(t_argv[1]);
 
-#ifdef OLDBEHAVIOR
-	    // no check on valid playernum2
-#else
 	    if ( playernum2 < MAXPLAYERS        // [WDJ] Safe limit
 		 && playeringame[playernum2] )  // [WDJ] Only if player in game
-#endif
 	    {
 	        players[playernum1].frags[playernum2]++;
 	        t_return.value.f = players[playernum1].frags[playernum2];
@@ -809,14 +762,9 @@ void SF_PlayerObj(void)
         plnum = intvalue(t_argv[0]);
     }
 
-#ifdef OLDBEHAVIOR
-    // no check on valid plnum
-    t_return.value.mobj = players[plnum].mo;
-#else
     if ( plnum < MAXPLAYERS        // [WDJ] Safe limit
 	 && playeringame[plnum] )  // [WDJ] Only if player in game
         t_return.value.mobj = players[plnum].mo;
-#endif
 done:
     return;
 
@@ -848,11 +796,7 @@ void SF_SkinColor(void)
 {
     int playernum;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 1)  goto err_numarg;
-#endif
 
     t_return.type = FSVT_int;
     t_return.value.i = 0;  // default
@@ -865,19 +809,11 @@ void SF_SkinColor(void)
         // set skincolor
         int colour = intvalue(t_argv[1]);
 
-#ifdef OLDBEHAVIOR
-        if(colour > NUMSKINCOLORS)  // MAXSKINCOLORS was actually num of colors
-        {
-	    script_error("SkinColor: skin colour %i\n", colour);
-	    goto done;
-	}
-#else
         if(colour > NUMSKINCOLORS-1)  // [WDJ] was NUMSKINCOLORS
         {
 	    script_error("SkinColor: skin colour %i > %i\n", colour, NUMSKINCOLORS-1);
 	    goto done;
 	}
-#endif
 
         players[playernum].skincolor = colour;
         players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
@@ -896,11 +832,7 @@ err_numarg:
 
 // Tests and modifies the usual keys 0..5
 // PlayerKeys( player, keynum, {value} )
-#ifdef OLDBEHAVIOR
-// keynum: test 0..5, set 0..6  (confused, probably bug)
-#else
 // [WDJ] keynum: 0..7, the usual 0..5, and additional keys 6,7
-#endif
 // value: 0,1
 void SF_PlayerKeys(void)
 {
@@ -917,13 +849,7 @@ void SF_PlayerKeys(void)
     if( playernum >= MAXPLAYERS )  goto done;
 
     keynum = intvalue(t_argv[1]);
-#ifdef OLDBEHAVIOR
-    // test 0..5, set 0..6
-    if (keynum > ((t_argc == 2)? 5: 6))  goto bad_keyvalue;
-#else
     if (keynum > 7)  goto bad_keyvalue;  // [WDJ] was 5
-#endif
-
     keymask = (1 << keynum);
 
     if (t_argc == 2)
@@ -961,33 +887,19 @@ bad_keyvalue:
  */
 
 // Test or Set
-#ifdef OLDBEHAVIOR
-// PlayerKeysByte(playernum, [newbyte])
-#else
 // PlayerKeysByte(player, {newbyte})
-#endif
 void SF_PlayerKeysByte(void)
 {
     int playernum = 0;
 	
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 1)  goto err_numarg;
-#endif
 
     t_return.type = FSVT_int;
     t_return.value.i = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    playernum = intvalue(t_argv[0]);
-    if ( playernum >= MAXPLAYERS
-	 || ! playeringame[playernum] )  goto missingplayer;
-#else
     // [WDJ] full player arg like other functions
     playernum = arg_playernum( &t_argv[0], "PlayerKeysByte" );
     if( playernum >= MAXPLAYERS )  goto done;
-#endif
 
     if(t_argc == 2)
     {
@@ -1006,12 +918,6 @@ done:
 err_numarg:
     missing_arg_str("PlayerKeysByte", "1 or 2");
     goto done;
-
-#ifdef OLDBEHAVIOR
-missingplayer:
-    player_not_in_game( "PlayerKeysByte", playernum );
-    goto done;
-#endif
 }
 
 // iori 05/17/2005: playerarmor
@@ -1023,23 +929,14 @@ void SF_PlayerArmor(void)
     int playernum;
     player_t * player;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 1)  goto err_numarg;
-#endif
 
     t_return.type = FSVT_int;
     t_return.value.i = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    // int only, no checks on valid player
-    playernum = t_argv[0].value.i;
-#else
     // [WDJ] full player arg like other functions
     playernum = arg_playernum( &t_argv[0], "PlayerArmor" );
     if( playernum >= MAXPLAYERS )  goto done;
-#endif
     player = & players[playernum];
 
     if ( t_argc == 2 )
@@ -1223,11 +1120,7 @@ bad_weapon:
 // Returns a player's view pitch in a range useful for the FS trig functions
 // iori: added ability to modify player's pitch
 // Test or Set
-#ifdef OLDBEHAVIOR
-// PlayerPitch( playernum, {pitch} )
-#else
 // PlayerPitch( player, {pitch} )
-#endif
 void SF_PlayerPitch(void)
 {
     int playernum;
@@ -1237,15 +1130,9 @@ void SF_PlayerPitch(void)
     t_return.type = FSVT_fixed;
     t_return.value.f = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    playernum = intvalue(t_argv[0]);
-    if ( playernum >= MAXPLAYERS
-	 || ! playeringame[playernum] )  goto missingplayer;
-#else
     // [WDJ] full player arg like other functions
     playernum = arg_playernum( &t_argv[0], "PlayerPitch" );
     if( playernum >= MAXPLAYERS )  goto done;
-#endif
 
     if(t_argc == 2)
     {
@@ -1259,12 +1146,6 @@ done:
 err_numarg:
     missing_arg_str("PlayerPitch", "1 or 2");
     goto done;
-
-#ifdef OLDBEHAVIOR
-missingplayer:
-    player_not_in_game( "PlayerPitch", playernum );
-    goto done;
-#endif
 }
 
 
@@ -1325,11 +1206,7 @@ void SF_Player(void)
 
     t_return.type = FSVT_int;
 
-#ifdef OLDBEHAVIOR
-    if (mo)
-#else
     if (mo && mo->player)  // [WDJ] check player
-#endif
     {
         t_return.value.i = (int) (mo->player - players);
     }
@@ -1462,11 +1339,7 @@ void SF_RemoveObj(void)
 {
     mobj_t *mo;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc != 1)  goto err_numarg;
-#endif
 
     mo = MobjForSvalue(t_argv[0]);
     if (mo)     // nullptr check
@@ -1526,18 +1399,10 @@ void SF_SetObjPosition(void)
 {
     mobj_t* mobj;
 
-#ifdef OLDBEHAVIOR
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc < 2)  goto err_numarg;  // [WDJ] requires 2 arg
-#endif
 
     mobj = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no check on valid mobj
-#else
     if( mobj )  // [WDJ]
-#endif
     { 
         P_UnsetThingPosition(mobj);
 
@@ -1567,11 +1432,7 @@ void SF_Resurrect(void)
     if(t_argc != 1)  goto err_numarg;
 
     mo = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no check on valid mobj
-#else
     if( mo )  // [WDJ]
-#endif
     {
         if(!mo->info->raisestate)  //Don't resurrect things that can't be resurrected
 	    goto done;
@@ -1605,12 +1466,7 @@ void SF_TestLocation(void)
     t_return.type = FSVT_int;
     t_return.value.f = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    // no check on valid mobj
-    if (P_TestMobjLocation(mo))
-#else
     if (mo && P_TestMobjLocation(mo))
-#endif
     {
         t_return.value.f = 1;
     }
@@ -1625,11 +1481,7 @@ void SF_ObjAngle(void)
     t_return.type = FSVT_fixed;
     t_return.value.f = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    // no check on valid mobj
-#else
     if( mo )  // [WDJ]
-#endif
     {
         if(t_argc > 1)
         {
@@ -1826,11 +1678,7 @@ void SF_ObjFlag(void)
         flagnum = intvalue(t_argv[1]);
     }
     
-#ifdef OLDBEHAVIOR
-    if (mo)  // mo check on set, but not on test, and no flagnum check
-#else
     if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
-#endif
     {
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
@@ -1881,11 +1729,7 @@ void SF_ObjFlag2(void)
         flagnum = intvalue(t_argv[1]);
     }
     
-#ifdef OLDBEHAVIOR
-    if (mo)  // mo check on set, but not on test, and no flagnum check
-#else
     if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
-#endif
     {
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
@@ -1933,11 +1777,7 @@ void SF_ObjEFlag(void)
         flagnum = intvalue(t_argv[1]);
     }
     
-#ifdef OLDBEHAVIOR
-    if (mo)  // mo check on set, but not on test, and no flagnum check
-#else
     if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
-#endif
     {
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
@@ -1969,11 +1809,7 @@ void SF_PushThing(void)
     angle_t angle;
     fixed_t force;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 3)  goto err_numarg;
-#else
     if (t_argc != 3)  goto err_numarg;
-#endif
 
     mo = MobjForSvalue(t_argv[0]);
     if (!mo)  goto done;
@@ -2181,18 +2017,10 @@ void SF_LineAttack(void)
     int  damage, angle, slope;
     int	 short fixedtodeg = 182.033;
 	
-#ifdef OLDBEHAVIOR
-    // no arg check
-#else
     if (t_argc < 3)  goto err_numarg; // [WDJ]
-#endif
 
     mo = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !mo )  goto done;  // [WDJ]
-#endif
 
     damage = intvalue(t_argv[2]);
     angle = (intvalue(t_argv[1]) * (ANG45 / 45));
@@ -2206,16 +2034,12 @@ void SF_LineAttack(void)
         slope = P_AimLineAttack(mo, angle, MISSILERANGE);  // auto aim
 
     P_LineAttack(mo, angle, MISSILERANGE, slope, damage);
-#ifdef OLDBEHAVIOR
-    return;
-#else
 done:
     return;
 
 err_numarg:
     missing_arg_str("LineAttack", "3 or 4");
     goto done;
-#endif
 }
 
 
@@ -2260,12 +2084,7 @@ void SF_ObjType(void)
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
     t_return.type = FSVT_int;
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-    t_return.value.i = mo->type;
-#else
     t_return.value.i = (mo)? mo->type : 0;  // [WDJ] check mo exist
-#endif
 }
 
 
@@ -2284,11 +2103,7 @@ void SF_SetObjProperty(void)
   // FIXME fixed_t vals, syntax does not make sense (operate on MTs instead of mobjs...
     
     mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : fs_current_script->trigger;
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( ! mo)  goto done;  // [WDJ]
-#endif
 
     switch (attrib)
     {
@@ -2395,11 +2210,7 @@ void SF_GetObjProperty(void)
     t_return.type = FSVT_int;
     t_return.value.i = 0;  // default
 
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !mo )  goto done;  // [WDJ]
-#endif
 
     switch (attrib)
     {
@@ -2506,11 +2317,7 @@ void SF_ObjState(void)
         state = intvalue(t_argv[1]);
     }
     else goto err_numarg;
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( ! mo )  goto done; // [WDJ]
-#endif
 
     switch (state)
     {
@@ -2583,13 +2390,8 @@ void SF_HealObj(void)
         goto err_numarg;
     }
 
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-    mo->health = heal;
-#else
     if( mo ) // [WDJ]
         mo->health = heal;
-#endif
 done:
     return;
 
@@ -2611,18 +2413,10 @@ void SF_SetNodeNext(void)
     if (t_argc != 2)  goto err_numarg;
 
     mo = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !mo )  goto done;  // [WDJ]
-#endif
 
     nextmo = MobjForSvalue(t_argv[1]);
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !nextmo )  goto done;  // [WDJ]
-#endif
 	
     // Check if both mobjs are NODE
     if (mo->type != MT_NODE || nextmo->type != MT_NODE)  goto err_notnode;
@@ -2649,11 +2443,7 @@ void SF_SetNodePause(void)
     if (t_argc != 2)  goto err_numarg;
 
     mo = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !mo )  goto done;  // [WDJ]
-#endif
     if (mo->type != MT_NODE)  goto err_notnode;
     mo->nodewait = t_argv[1].value.i;
 done:
@@ -2679,11 +2469,7 @@ void SF_SetNodeScript(void)
     if (t_argc != 2)  goto err_numarg;
 
     mo = MobjForSvalue(t_argv[0]);
-#ifdef OLDBEHAVIOR
-    // no valid mobj check
-#else
     if( !mo )  goto done;  // [WDJ]
-#endif
     if (mo->type != MT_NODE)  goto err_notnode;
 	  
     sn = intvalue(t_argv[1]);
@@ -2717,11 +2503,7 @@ void SF_PointToAngle(void)
     angle_t angle;
     int x1, y1, x2, y2;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 4)   goto err_numarg;
-#else
     if (t_argc != 4)   goto err_numarg;
-#endif
 
     x1 = intvalue(t_argv[0]) << FRACBITS;
     y1 = intvalue(t_argv[1]) << FRACBITS;
@@ -2746,11 +2528,7 @@ void SF_PointToDist(void)
     int dist;
     int x1, x2, y1, y2;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 4)   goto err_numarg;
-#else
     if (t_argc != 4)   goto err_numarg;
-#endif
 
     x1 = intvalue(t_argv[0]) << FRACBITS;
     y1 = intvalue(t_argv[1]) << FRACBITS;
@@ -2781,15 +2559,10 @@ void SF_SetCamera(void)
 
     if (t_argc < 1)  goto err_numarg;
 
-#ifdef OLDBEHAVIOR
-    t_return.type = FSVT_fixed;
-    t_return.value.f = 0; // default
-#else
 #if 0
     // [WDJ] Docs: returns void
     t_return.type = FSVT_fixed;
     t_return.value.f = 0; // default
-#endif
 #endif
 
     mo = MobjForSvalue(t_argv[0]);
@@ -2812,13 +2585,9 @@ void SF_SetCamera(void)
 
     script_camera_on = true;
    
-#ifdef OLDBEHAVIOR
-    t_return.value.f = script_camera.aiming; // FIXME really?
-#else
 #if 0
     // [WDJ] Docs: returns void
     t_return.value.f = script_camera.aiming; // FIXME really?
-#endif
 #endif
 done:
     return;
@@ -2831,28 +2600,18 @@ err_numarg:
 void SF_ClearCamera(void)
 {
     script_camera_on = false;
-#ifdef OLDBEHAVIOR
-    if ( ! script_camera.mo )  goto err_camera;
-#else   
     if ( ! script_camera.mo )  goto done;
-#endif
 
     script_camera.mo->angle = script_camera.startangle;
     script_camera.mo = NULL;
 done:
     return;
 
-#ifdef OLDBEHAVIOR
-err_camera:
-    script_error("Clearcamera: called without setcamera.\n");
-    goto done;
-#else
 #if 0
    // [WDJ] Docs: no error  (and it is unnecessary)
 err_camera:
     script_error("Clearcamera: called without setcamera.\n");
     goto done;
-#endif
 #endif
 }
 
@@ -3017,13 +2776,9 @@ err_numarg:
     goto done;
 
 err_move:
-#ifdef OLDBEHAVIOR
-    script_error("MoveCamera: Illegal camera move\n");
-#else   
     // [WDJ] Docs: no error
     // [WDJ] Questionable, not even good for debugging path
 //    script_error("MoveCamera: Illegal camera move\n");
-#endif
     goto done;
 }
 
@@ -3035,11 +2790,7 @@ void SF_StartSound(void)
 {
     mobj_t *mo;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 2)  goto err_numarg;
-#else
     if (t_argc != 2)  goto err_numarg;
-#endif
     if (t_argv[1].type != FSVT_string)  goto err_notsound;
 
     mo = MobjForSvalue(t_argv[0]);
@@ -3064,11 +2815,7 @@ void SF_StartSectorSound(void)
 {
     int tagnum, secnum;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 2)  goto err_numarg;
-#else
     if (t_argc != 2)  goto err_numarg;
-#endif
     if (t_argv[1].type != FSVT_string)  goto err_notsound;
 
     tagnum = intvalue(t_argv[0]);  // sector tag
@@ -3131,12 +2878,7 @@ void SF_SectorEffect(void)
     int tagnum, select, secnum;
     sector_t * sector;
 	
-#ifdef OLDBEHAVIOR
-    // was once a test too ??, but now effect is not optional
-    if (!t_argc)  goto err_numarg;
-#else
     if (t_argc != 2)  goto err_numarg;  // [WDJ]
-#endif
 
     tagnum = intvalue(t_argv[0]);
     select = intvalue(t_argv[1]);
@@ -3199,15 +2941,10 @@ void SF_SectorEffect(void)
 	}
     }
 
-#ifdef OLDBEHAVIOR
-    t_return.type = FSVT_int;
-    t_return.value.i = select;
-#else
 #if 0
     // [WDJ] Why would this need to return an input arg
     t_return.type = FSVT_int;
     t_return.value.i = select;
-#endif
 #endif
 done:
     return;
@@ -3681,11 +3418,7 @@ void SF_StartSkill(void)
 {
     int skill;
 
-#ifdef OLDBEHAVIOR
-    if (t_argc < 1)  goto err_numarg;
-#else
     if (t_argc != 1)  goto err_numarg;
-#endif
 
     // -1: 1-5 is how we normally see skills
     // 0-4 is how doom sees them
@@ -3831,11 +3564,7 @@ err_numarg:
 void SF_SetLineTexture(void)
 {
     int tagnum, linenum;
-#ifdef OLDBEHAVIOR
-    int side;
-#else
     unsigned int side;
-#endif
     int sectionflags;
     line_t *line;
 
@@ -3848,12 +3577,8 @@ void SF_SetLineTexture(void)
     if(linenum < 0)  goto err_noline;
     line = &lines[linenum];  // for return value
 
-#ifdef OLDBEHAVIOR
-      side = intvalue(t_argv[2]); // FIXME [smite] 0,1 only
-#else
     side = (unsigned) intvalue(t_argv[2]);
     if( side > 1 )  side = 1;  // easier than an error
-#endif
     sectionflags = intvalue(t_argv[3]);
 
     {
@@ -3868,15 +3593,10 @@ void SF_SetLineTexture(void)
 	  line_t * linep = &lines[linenum];
 	  if (linep->sidenum[side] == NULL_INDEX)
 	  {
-#ifdef OLDBEHAVIOR
-	      script_error("nonexistant side\n");
-	      return;
-#else
 #if 0
 	      // [WDJ] Unnecessary error, error is not in script
 	      script_error("nonexistant side\n");
 	      goto done;
-#endif
 #endif
 	  }
 	  else
