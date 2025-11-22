@@ -2442,3 +2442,12 @@ patchfile = w81_Boom_pusher.patch
 - committed revision 928   by wesley johnson
 Gave the Point pusher a square law effect (enabled by mbf_support),
 as in prboom (an MBF feature actually, Boom is not square law).
+
+*** w81_door_thinker_check
+patchfile = w81_door_thinker_check.patch
+- committed revision 929   by wesley johnson
+Derived from prboom fixes doc (cph 2001/04/05).
+Doom bug: cannot raise a door when ceiling action is in same sector.
+Add check to door logic that ceiling action being modified is a door action.
+This also prevents corruption of the ceiling action.
+
