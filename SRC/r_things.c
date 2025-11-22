@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: r_things.c 945 2012-07-03 19:11:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2396,7 +2396,7 @@ int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
 
     union {
                 char    s[4];
-                int             x;
+                int     x;
     } name4;
 
     strncpy (name4.s, "S_SK", 4);

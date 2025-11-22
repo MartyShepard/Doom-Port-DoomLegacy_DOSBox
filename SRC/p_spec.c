@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 928 2012-06-09 18:34:11Z wesleyjohnson $
+// $Id: p_spec.c 945 2012-07-03 19:11:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -974,6 +974,7 @@ sector_t *P_FindModelCeilingSector(fixed_t ceildestheight,int secnum)
 // RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
 //
 //SoM: 3/7/2000: Killough wrote this to improve the process.
+// Return -1 when not found
 int  P_FindSectorFromLineTag ( line_t* line, int start )
 {
   start = (start >= 0) ?
@@ -989,6 +990,7 @@ int  P_FindSectorFromLineTag ( line_t* line, int start )
 //
 // P_FindSectorFromTag
 // Used by FraggleScript
+// Return -1 when not found
 int  P_FindSectorFromTag( int tag, int start )
 {
   start = (start >= 0) ?
@@ -1000,6 +1002,7 @@ int  P_FindSectorFromTag( int tag, int start )
 }
 
 //DarkWolf95:July 23, 2003: Needed for SF_SetLineTexture
+// Return -1 when not found
 int P_FindLineFromTag(int tag, int start)
 {
   start = (start >= 0) ?
@@ -1012,7 +1015,7 @@ int P_FindLineFromTag(int tag, int start)
 
 //SoM: 3/7/2000: More boom specific stuff...
 // killough 4/16/98: Same thing, only for linedefs
-
+//Return -1 when not found
 int P_FindLineFromLineTag(const line_t *line, int start)
 {
   start = (start >= 0) ?

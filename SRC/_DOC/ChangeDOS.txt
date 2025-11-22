@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00945 ]: w83 fs func safety checks
 [00944 ]: w83 num skincolor (NUMSKINCOLORS)
 [00943 ]: w83 draw32 remove debug printf
 [00942*]: w80 win32 vid fixes, late commit

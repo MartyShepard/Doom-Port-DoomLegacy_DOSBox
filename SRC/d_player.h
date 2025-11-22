@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 835 2011-05-27 00:49:51Z wesleyjohnson $
+// $Id: d_player.h 945 2012-07-03 19:11:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -128,7 +128,7 @@ typedef struct player_s
     // Bob/squat speed.
     fixed_t             deltaviewheight;
     // bob effect
-    fixed_t             bob;			
+    fixed_t             bob;
 #if defined( BOB_MOM ) && !defined( __DJGPP__ )
     // bob momentum, adjusted for friction
     fixed_t		bob_momx, bob_momy;
@@ -147,7 +147,7 @@ typedef struct player_s
 
     // Power ups. invinc and invis are tic counters.
     int                 powers[NUMPOWERS];
-    byte                cards; // bit field see declration of card_t
+    byte                cards; // bit field see declaration of card_t
     boolean             backpack;
 
     // Frags, kills of other players.
@@ -238,7 +238,7 @@ typedef struct player_s
     boolean locked;
 #if defined( BOB_MOM ) && defined( __DJGPP__ )
     // Because a Struct Padding & Alignment Bug in GCC 2.81. I put the ifdef at the End.
-		// GCC 2.8x Bugzilla #2215 – "Conditional members in structs cause wrong padding on i386"
+    // GCC 2.8x Bugzilla #2215 – "Conditional members in structs cause wrong padding on i386"
     fixed_t		bob_momx, bob_momy;
 #endif
 } player_t;

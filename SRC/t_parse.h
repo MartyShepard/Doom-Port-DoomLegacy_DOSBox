@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: t_parse.h 945 2012-07-03 19:11:17Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -88,11 +88,20 @@ struct fs_array_s
     (v).type == FSVT_mobj ? -1 : \
     (v).type == FSVT_array ? -1 : (v).value.i )
 
+#if 1
+// [WDJ] handle FSVT_int directly, not by including duplicate code
+#define fixedvalue(v)                                         \
+  ( (v).type == FSVT_fixed ? (v).value.f :                     \
+    (v).type == FSVT_string ? (fixed_t)(atof((v).value.s) * FRACUNIT) : \
+    (v).type == FSVT_mobj ? -1*FRACUNIT : \
+    (v).type == FSVT_array ? -1*FRACUNIT : (v).value.i * FRACUNIT )
+#else
 #define fixedvalue(v)                                         \
   ( (v).type == FSVT_fixed ? (v).value.f :                     \
     (v).type == FSVT_string ? (fixed_t)(atof((v).value.s) * FRACUNIT) : \
     (v).type == FSVT_mobj ? -1*FRACUNIT : \
     (v).type == FSVT_array ? -1*FRACUNIT : intvalue(v) * FRACUNIT )
+#endif
 
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: t_func.c 945 2012-07-03 19:11:17Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -195,6 +195,10 @@
 #include "t_func.h"
 #include "t_array.h"
 
+// [WDJ] 6/2012 This revision keeps the old behavior in the new function style.
+// This disables any change that might have affected compatibility, for regression testing.
+// The OLDBEHAVIOR will be removed in the next revision.
+#define OLDBEHAVIOR
 
 fs_value_t  evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
@@ -228,6 +232,65 @@ char *  Z_cat_args( int i1 )
     return tempstr;
 }
 
+// Some error handling
+static
+void  wrong_num_arg( const char * funcname, int num_args )
+{
+    script_error("%s: wrong num arg (%i)\n", funcname, num_args);
+}
+
+static
+void  missing_arg( const char * funcname, int min_num_args )
+{
+    script_error("%s: missing arg (%i)\n", funcname, min_num_args);
+}
+
+static
+void  missing_arg_str( const char * funcname, const char * argstr )
+{
+    script_error("%s: missing arg (%s)\n", funcname, argstr);
+}
+
+static
+void  player_not_in_game( const char * funcname, int playernum )
+{
+    // [WDJ] No reason for script to fail because a player is not in game
+#if 0
+    script_error("%s: player %i not in game\n", funcname, playernum);
+#endif
+}
+
+static
+int  arg_playernum( fs_value_t * arg, const char * funcname )
+{
+    int playernum;
+    if ( arg->type == FSVT_mobj)
+    {
+        if (! arg->value.mobj->player)  goto mobj_err;
+        playernum = arg->value.mobj->player - players;
+    }
+    else
+        playernum = intvalue(*arg);
+
+    if ( playernum >= MAXPLAYERS
+	 || ! playeringame[playernum] )  goto player_err;
+    return playernum;
+
+mobj_err:
+    script_error("%s: mobj arg not a player!\n", funcname);
+    goto errexit;
+
+player_err:
+    player_not_in_game( funcname, playernum );
+    goto errexit;
+
+errexit:
+    return  MAXINT;  //  > MAXPLAYERS, indicates error
+}
+
+
+
+
 // functions. SF_ means Script Function not, well.. heh, me
 
         /////////// actually running a function /////////////
@@ -245,7 +308,7 @@ char *  Z_cat_args( int i1 )
 // values can be returned from the functions using
 // the variable 't_return'
 
-void SF_Print()
+void SF_Print(void)
 {
     int i;
 
@@ -259,14 +322,14 @@ void SF_Print()
 }
 
 // return a random number from 0 to 255
-void SF_Rnd()
+void SF_Rnd(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = rand() % 256;
 }
 
 // return a random number from 0 to 255
-void SF_PRnd()
+void SF_PRnd(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = P_Random();
@@ -274,7 +337,7 @@ void SF_PRnd()
 
 // Find the next outermost
 // loop we are currently in and return the section_t for it.
-fs_section_t * in_looping_section()
+fs_section_t * in_looping_section(void)
 {
     // deepest level loop we're in that has been found so far
     fs_section_t * loopfnd = NULL;
@@ -306,66 +369,71 @@ fs_section_t * in_looping_section()
 }
 
 // "continue;" in FraggleScript is a function
-void SF_Continue()
+void SF_Continue(void)
 {
     fs_section_t *section;
 
-    if (!(section = in_looping_section())) // no loop found
-    {
-        script_error("continue() not in loop\n");
-        return;
-    }
+    if (!(section = in_looping_section()))  goto err_notloop; // no loop found
 
     fs_src_cp = section->end;       // jump to the closing brace
+    return;
+   
+err_notloop:
+    script_error("Continue: not in loop\n");
+    return;
 }
 
-void SF_Break()
+void SF_Break(void)
 {
     fs_section_t *section;
 
-    if (!(section = in_looping_section()))
-    {
-        script_error("break() not in loop\n");
-        return;
-    }
+    if (!(section = in_looping_section()))  goto err_notloop;
 
     fs_src_cp = section->end + 1;   // jump out of the loop
+    return;
+
+err_notloop:
+    script_error("Break: not in loop\n");
+    return;
 }
 
-void SF_Goto()
+// Goto( label )
+void SF_Goto(void)
 {
-    if (t_argc < 1)
-    {
-        script_error("incorrect arguments to goto\n");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
 
     // check argument is a labelptr
-
-    if (t_argv[0].type != FSVT_label)
-    {
-        script_error("goto argument not a label\n");
-        return;
-    }
+    if (t_argv[0].type != FSVT_label)  goto err_not_label;
 
     // go there then if everythings fine
     fs_src_cp = t_argv[0].value.labelptr;
+done:   
+    return;
+
+err_numarg:
+    wrong_num_arg("Goto", 1);
+    goto done;
+
+err_not_label:
+    script_error("Goto: argument not a label\n");
+    goto done;
 }
 
-void SF_Return()
+void SF_Return(void)
 {
     fs_killscript = true;  // kill the script
 }
 
-void SF_Include()
+// Include( name )
+void SF_Include(void)
 {
     char tempstr[9];
 
-    if (t_argc < 1)
-    {
-        script_error("incorrect arguments to include()");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 1)  goto err_numarg;
+#else
+    if (t_argc != 1)  goto err_numarg;
+#endif
 
     memset(tempstr, 0, 9);
 
@@ -373,11 +441,22 @@ void SF_Include()
         strncpy(tempstr, t_argv[0].value.s, 8);
     else
         snprintf(tempstr, 8, "%s", stringvalue(t_argv[0]));
+#ifdef OLDBEHAVIOR
+    // string terminated by memset longer than strncpy
+#else
+    tempstr[8] = '\0';
+#endif
 
     parse_include(tempstr);
+done:
+    return;
+   
+err_numarg:
+    wrong_num_arg("Include", 1);
+    goto done;
 }
 
-void SF_Input()
+void SF_Input(void)
 {
 #if 1
    // [WDJ] was disabled in 143beta_macosx
@@ -393,18 +472,18 @@ void SF_Input()
     CONS_Printf("input() function not available in doom\a\n");
 }
 
-void SF_Beep()
+void SF_Beep(void)
 {
     CONS_Printf("\3");
 }
 
-void SF_Clock()
+void SF_Clock(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = (gametic * 100) / 35;
 }
 
-void SF_ClockTic()
+void SF_ClockTic(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = gametic;
@@ -412,109 +491,132 @@ void SF_ClockTic()
 
     /**************** doom stuff ****************/
 
-void SF_ExitLevel()
+void SF_ExitLevel(void)
 {
     G_ExitLevel();
 }
 
-void SF_Warp()  //08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
+// 08/25/04 iori: warp(<skill>, <"map">, [reset 0|1]);
+// Warp( skill, mapname, {reset} ) 
+// skill= 1..5, reset= 0,1
+void SF_Warp(void)
 {
     int reset = 1;
+    int skill;
 
-    if(t_argc < 2)
-    {
-        script_error("Too few arguments to function.\n");
-        return;
-    }
+    if(t_argc < 2)  goto err_numarg;
 
-    if (t_argv[0].value.i < 1 || t_argv[0].value.i > 5)
-    {
-        script_error("Skill must be between 1 and 5.\n");
-        return;
-    }
+    skill = t_argv[0].value.i;
+    if (skill < 1 || skill > 5)  goto err_skill;
 
     if(t_argc > 2)
     {
         reset = t_argv[2].value.i;
-
-        if(reset != 0 && reset != 1)
-        {
-	    script_error("Reset must be either 0 or 1.\n");
-	    return;
-	}
+        if(reset != 0 && reset != 1)  goto err_reset;
     }
-    G_InitNew(t_argv[0].value.i - 1, t_argv[1].value.s, reset);
+    // skill 0..4
+    G_InitNew(skill - 1, t_argv[1].value.s, reset);
+done:
+    return;
+   
+err_numarg:
+    missing_arg("Warp", 2);  // 2, 3
+    goto done;
+
+err_skill:
+    script_error("Warp: Skill must be between 1 and 5.\n");
+    goto done;
+   
+err_reset:
+    script_error("Warp: Reset must be either 0 or 1.\n");
+    goto done;
 }
    
-// centremsg
-void SF_Tip()
+// centered msg, default display time
+// To all players
+// Tip( tipstring ... )   upto 128 strings
+void SF_Tip(void)
 {
-    if (fs_current_script->trigger->player != displayplayer_ptr)
-        return;
-
-    char * tempstr = Z_cat_args(0);
-    HU_SetTip(tempstr, 53);
-    Z_Free(tempstr);
+    if (fs_current_script->trigger->player == displayplayer_ptr)
+    {
+        char * tempstr = Z_cat_args(0);  // concat arg0, arg1, ...
+        HU_SetTip(tempstr, 53);
+        Z_Free(tempstr);
+    }
+    return;
 }
 
 // SoM: Timed tip!
-void SF_TimedTip()
+// To all players
+// TimedTip( tiptime, tipstring, ... )   upto 127 strings
+void SF_TimedTip(void)
 {
     int tiptime;
 
-    if (t_argc < 2)
-    {
-        script_error("Missing parameters.\n");
-        return;
-    }
+    if (t_argc < 2)  goto err_numarg;
 
     tiptime = (intvalue(t_argv[0]) * 35) / 100;
 
-    if (fs_current_script->trigger->player != displayplayer_ptr)
-        return;
-
-    char * tempstr = Z_cat_args(1);
-    //CONS_Printf("%s\n", tempstr);
-    HU_SetTip(tempstr, tiptime);
-    Z_Free(tempstr);
+    if (fs_current_script->trigger->player == displayplayer_ptr)
+    {
+        char * tempstr = Z_cat_args(1);  // concat arg1, arg2, ...
+        //CONS_Printf("%s\n", tempstr);
+        HU_SetTip(tempstr, tiptime);
+        Z_Free(tempstr);
+    }
+done:
+    return;
+   
+err_numarg:
+    missing_arg("TimedTip", 2);  // 2 or more, upto 128
+    goto done;
 }
 
 // tip to a particular player
-void SF_PlayerTip()
+// PlayerTip( playernum, tipstring, ... )  upto 127 strings
+// No restriction on playernum, contrary to docs.
+void SF_PlayerTip(void)
 {
     int plnum;
 
-    if (!t_argc)
-    {
-        script_error("player not specified\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 2)  goto err_numarg;  // [WDJ] requires 2 args
+#endif
 
     plnum = intvalue(t_argv[0]);
-
-    if (consoleplayer != plnum)
-        return;
-
-    char * tempstr = Z_cat_args(1);
-    //CONS_Printf("%s\n", tempstr);
-    HU_SetTip(tempstr, 53);
-    Z_Free(tempstr);
+    if ( plnum == consoleplayer )
+    {
+        char * tempstr = Z_cat_args(1);  // concat arg1, arg2, ...
+        //CONS_Printf("%s\n", tempstr);
+        HU_SetTip(tempstr, 53);
+        Z_Free(tempstr);
+    }
+done:
+    return;
+   
+err_numarg:
+    missing_arg("PlayerTip", 2);  // 2 or more, upto 128
+    goto done;
 }
 
-        // message player
-void SF_Message()
+// message to all players
+// Message( msgstring, ... )   upto 128 strings
+void SF_Message(void)
 {
-    if (fs_current_script->trigger->player != displayplayer_ptr)
-        return;
-
-    char * tempstr = Z_cat_args(0);
-    CONS_Printf("%s\n", tempstr);
-    Z_Free(tempstr);
+    if (fs_current_script->trigger->player == displayplayer_ptr)
+    {
+        char * tempstr = Z_cat_args(0);  // concat arg0, arg1, ...
+        CONS_Printf("%s\n", tempstr);
+        Z_Free(tempstr);
+    }
 }
 
 
 //DarkWolf95:July 28, 2003:Added unimplemented function
-void SF_GameSkill()
+// Return skill 1..5
+void SF_GameSkill(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = gameskill + 1;  //make 1-5, rather than 0-4
@@ -522,7 +624,9 @@ void SF_GameSkill()
 
 // Returns what type of game is going on - Deathmatch, CoOp, or Single Player.
 // Feature Requested by SoM! SSNTails 06-13-2002
-void SF_GameMode()
+// GameMode()
+// Return 0=Single, 1=Coop, 2=Deathmatch
+void SF_GameMode(void)
 {
     t_return.type = FSVT_int;
 
@@ -537,265 +641,316 @@ void SF_GameMode()
 }
 
 // message to a particular player
-void SF_PlayerMsg()
+// PlayerMsg( playernum, msgstring, ... )  upto 127 strings
+// No restriction on playernum, contrary to docs.
+void SF_PlayerMsg(void)
 {
     int plnum;
 
-    if (!t_argc)
-    {
-        script_error("player not specified\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 2)  goto err_numarg;
+#endif
 
     plnum = intvalue(t_argv[0]);
-
-    if (displayplayer != plnum)
-        return;
-
-    char * tempstr = Z_cat_args(1);
-    CONS_Printf("%s\n", tempstr);
-    Z_Free(tempstr);
-}
-
-void SF_PlayerInGame()
-{
-    if (!t_argc)
+    if ( plnum == displayplayer )
     {
-        script_error("player not specified\n");
-        return;
+        char * tempstr = Z_cat_args(1);  // concat arg1, arg2, ...
+        CONS_Printf("%s\n", tempstr);
+        Z_Free(tempstr);
     }
-
-    t_return.type = FSVT_int;
-    t_return.value.i = playeringame[intvalue(t_argv[0])];
+done:
+    return;
+   
+err_numarg:
+    missing_arg("PlayerMsg", 2);  // 2 or more, upto 128
+    goto done;
 }
 
-void SF_PlayerName()
+// PlayerInGame( playernum )
+void SF_PlayerInGame(void)
 {
     int plnum;
 
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc != 1)  goto err_numarg;
+#endif
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0; // default
+
+    plnum = intvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no check on valid plnum
+    t_return.value.i = playeringame[plnum];
+#else
+    if( plnum < MAXPLAYERS )  // [WDJ] safe limit
+        t_return.value.i = playeringame[plnum];
+#endif
+done:
+    return;
+   
+err_numarg:
+    wrong_num_arg("PlayerInGame", 1);
+    goto done;
+}
+
+// PlayerName( {playernum} )
+void SF_PlayerName(void)
+{
+    int plnum;
+
+#ifdef OLDBEHAVIOR
+    // no default value
+#else
+    t_return.type = FSVT_string;
+    t_return.value.s = "";
+#endif
+
     if (!t_argc)
     {
-        player_t *pl;
-        pl = fs_current_script->trigger->player;
-        if (pl)
-            plnum = pl - players;
-        else
-        {
-            script_error("script not started by player\n");
-            return;
-        }
+        // player that triggered script
+        player_t *pl = fs_current_script->trigger->player;
+        if (pl == NULL)  goto err_notplayer;
+        plnum = pl - players;
     }
     else
+    { 
         plnum = intvalue(t_argv[0]);
+    }
 
+#ifdef OLDBEHAVIOR
+    // no check on valid plnum
     t_return.type = FSVT_string;
     t_return.value.s = player_names[plnum];
+#else
+    if( plnum < MAXPLAYERS )  // [WDJ] safe limit
+        t_return.value.s = player_names[plnum];
+#endif
+done:
+    return;
+
+err_notplayer:   
+    script_error("PlayerName: script not started by player\n");
+    goto done;
 }
 
-void SF_PlayerAddFrag()
+// PlayerAddFrag( playernum1, {playernum2} )
+void SF_PlayerAddFrag(void)
 {
     int playernum1;
-    int playernum2;
 
-    if (t_argc < 1)
+    if (t_argc < 1)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.f = 0;  // default
+
+    playernum1 = intvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no check on valid playernum
+#else
+    if ( playernum1 < MAXPLAYERS        // [WDJ] Safe limit
+	 && playeringame[playernum1] )  // [WDJ] Only if player in game
+#endif
     {
-        script_error("not enough arguements");
-        return;
+        if (t_argc == 1)
+        {
+	    // player1 fragged
+	    players[playernum1].addfrags++;
+	    t_return.value.f = players[playernum1].addfrags;
+	}
+        else
+        {
+	    // player1 fragged by player2
+	    int playernum2 = intvalue(t_argv[1]);
+
+#ifdef OLDBEHAVIOR
+	    // no check on valid playernum2
+#else
+	    if ( playernum2 < MAXPLAYERS        // [WDJ] Safe limit
+		 && playeringame[playernum2] )  // [WDJ] Only if player in game
+#endif
+	    {
+	        players[playernum1].frags[playernum2]++;
+	        t_return.value.f = players[playernum1].frags[playernum2];
+	    }
+	}
     }
-
-    if (t_argc == 1)
-    {
-        playernum1 = intvalue(t_argv[0]);
-
-        players[playernum1].addfrags++;
-
-        t_return.type = FSVT_int;
-        t_return.value.f = players[playernum1].addfrags;
-    }
-
-    else
-    {
-        playernum1 = intvalue(t_argv[0]);
-        playernum2 = intvalue(t_argv[1]);
-
-        players[playernum1].frags[playernum2]++;
-
-        t_return.type = FSVT_int;
-        t_return.value.f = players[playernum1].frags[playernum2];
-    }
+done:
+    return;
+   
+err_numarg:
+    missing_arg_str("PlayerAddFrag", "1 or 2");
+    goto done;
 }
 
-        // object being controlled by player
-void SF_PlayerObj()
+// player mobj
+// PlayerObj( {playernum} )
+void SF_PlayerObj(void)
 {
     int plnum;
 
+    t_return.type = FSVT_mobj;
+    t_return.value.mobj = NULL;  // default
+
     if (!t_argc)
     {
+        // player that triggered script
         player_t *pl;
         pl = fs_current_script->trigger->player;
-        if (pl)
-            plnum = pl - players;
-        else
-        {
-            script_error("script not started by player\n");
-            return;
-        }
+        if (pl == NULL)  goto err_notplayer;
+        plnum = pl - players;
     }
     else
+    {
         plnum = intvalue(t_argv[0]);
+    }
 
-    t_return.type = FSVT_mobj;
+#ifdef OLDBEHAVIOR
+    // no check on valid plnum
     t_return.value.mobj = players[plnum].mo;
+#else
+    if ( plnum < MAXPLAYERS        // [WDJ] Safe limit
+	 && playeringame[plnum] )  // [WDJ] Only if player in game
+        t_return.value.mobj = players[plnum].mo;
+#endif
+done:
+    return;
+
+err_notplayer:   
+    script_error("PlayerObj: script not started by player\n");
+    goto done;
 }
 
-void SF_MobjIsPlayer()
+// MobjIsPlayer( {mobj} )
+void SF_MobjIsPlayer(void)
 {
-    mobj_t *mobj;
-
+    t_return.type = FSVT_int;
     if (t_argc == 0)
     {
-        t_return.type = FSVT_int;
+        // if player triggered script
         t_return.value.i = fs_current_script->trigger->player ? 1 : 0;
-        return;
     }
-    mobj = MobjForSvalue(t_argv[0]);
-    t_return.type = FSVT_int;
-    if (!mobj)
-        t_return.value.i = 0;
     else
-        t_return.value.i = mobj->player ? 1 : 0;
+    {
+        mobj_t * mobj = MobjForSvalue(t_argv[0]);
+	t_return.value.i = (mobj)? (mobj->player ? 1 : 0) : 0;
+    }
     return;
 }
 
-void SF_SkinColor()
+// Test or Set
+// SkinColor( player, {colornum} )
+void SF_SkinColor(void)
 {
-    int playernum = 0;	// might be used uninit
-    int colour;
+    int playernum;
 
-    if (!t_argc)
-    {
-        script_error("too few parameters for skincolor\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 1)  goto err_numarg;
+#endif
 
-    if (t_argc >= 1)
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-    }
-
+    playernum = arg_playernum( &t_argv[0], "SkinColor" );
+    if( playernum >= MAXPLAYERS )  goto done;
+				   
     if(t_argc == 2)
     {
-		colour = intvalue(t_argv[1]);
-		
-		if(colour > NUMSKINCOLORS)
-		{
-			script_error("skin colour %i is out of range\n", colour);
-		}
+        // set skincolor
+        int colour = intvalue(t_argv[1]);
 
-		players[playernum].skincolor = colour;
-		players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
+#ifdef OLDBEHAVIOR
+        if(colour > NUMSKINCOLORS)  // MAXSKINCOLORS was actually num of colors
+        {
+	    script_error("SkinColor: skin colour %i\n", colour);
+	    goto done;
+	}
+#else
+        if(colour > NUMSKINCOLORS-1)  // [WDJ] was NUMSKINCOLORS
+        {
+	    script_error("SkinColor: skin colour %i > %i\n", colour, NUMSKINCOLORS-1);
+	    goto done;
+	}
+#endif
 
-		CV_SetValue (&cv_playercolor, colour);
+        players[playernum].skincolor = colour;
+        players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
+
+        CV_SetValue (&cv_playercolor, colour);
     }
 	
-    t_return.type = FSVT_int;
     t_return.value.i = players[playernum].skincolor;
-
+done:   
     return;
+   
+err_numarg:
+    missing_arg_str("SkinColor", "1 or 2");
+    goto done;
 }
 
-void SF_PlayerKeys()
+// Tests and modifies the usual keys 0..5
+// PlayerKeys( player, keynum, {value} )
+#ifdef OLDBEHAVIOR
+// keynum: test 0..5, set 0..6  (confused, probably bug)
+#else
+// [WDJ] keynum: 0..7, the usual 0..5, and additional keys 6,7
+#endif
+// value: 0,1
+void SF_PlayerKeys(void)
 {
     int playernum;
     int keynum;
-    int givetake;
+    byte keymask;
 
-    if (t_argc < 2)
-    {
-        script_error("missing parameters for playerkeys\n");
-        return;
-    }
+    if (t_argc < 2)   goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    playernum = arg_playernum( &t_argv[0], "PlayerKeys" );
+    if( playernum >= MAXPLAYERS )  goto done;
+
+    keynum = intvalue(t_argv[1]);
+#ifdef OLDBEHAVIOR
+    // test 0..5, set 0..6
+    if (keynum > ((t_argc == 2)? 5: 6))  goto bad_keyvalue;
+#else
+    if (keynum > 7)  goto bad_keyvalue;  // [WDJ] was 5
+#endif
+
+    keymask = (1 << keynum);
 
     if (t_argc == 2)
     {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        keynum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (keynum > 5)
-        {
-            script_error("keynum out of range! %s\n", keynum);
-            return;
-        }
-        t_return.type = FSVT_int;
-        t_return.value.i = (players[playernum].cards & (1 << keynum)) ? 1 : 0;
-        return;
+        // test, player has key
+        t_return.value.i = (players[playernum].cards & keymask) ? 1 : 0;
     }
     else
     {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        keynum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (keynum > 6)
-        {
-            script_error("keynum out of range! %s\n", keynum);
-            return;
-        }
-        givetake = intvalue(t_argv[2]);
-        t_return.type = FSVT_int;
+        // give or take key
+        int givetake = intvalue(t_argv[2]);
         if (givetake)
-            players[playernum].cards |= (1 << keynum);
+            players[playernum].cards |= keymask;  // give key
         else
-            players[playernum].cards &= ~(1 << keynum);
-        t_return.value.i = 0;
-        return;
+            players[playernum].cards &= ~keymask;  // take key
     }
+
+done:   
+    return;
+   
+err_numarg:
+    missing_arg_str("PlayerKeys", "2 or 3");
+    goto done;
+
+bad_keyvalue:
+    script_error("PlayerKeys: keynum must be 0..5! %i\n", keynum);
+    goto done;
 }
 
 /*	DarkWolf95:September 17, 2004:playerkeysb
@@ -803,431 +958,378 @@ void SF_PlayerKeys()
 	Returns players[i].cards as a whole, since FS supports binary operators.
 	Also allows you to set upper two bits of cards (64 & 128).  Thus the user
 	can have two new boolean values to work with.  CTF, Runes, Tag...
-	
-	playerkeys(playernum, [newbyte]) */
+ */
 
-void SF_PlayerKeysByte()
+// Test or Set
+#ifdef OLDBEHAVIOR
+// PlayerKeysByte(playernum, [newbyte])
+#else
+// PlayerKeysByte(player, {newbyte})
+#endif
+void SF_PlayerKeysByte(void)
 {
-	int playernum;
-	int keybyte;
+    int playernum = 0;
 	
-	if (!t_argc)
-	{
-		script_error("not enough arguments for playerkeysb\n");
-		return;
-	}
-	
-	playernum = intvalue(t_argv[0]);
-    if (!playeringame[playernum])
-	{
-            script_error("player %i not in game\n", playernum);
-            return;
-	}
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 1)  goto err_numarg;
+#endif
 
-	if(t_argc == 2)
-	{
-		keybyte = intvalue(t_argv[1]);
-		if(keybyte > 255)	//don't overflow
-			keybyte = 0;
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
-		players[playernum].cards = keybyte;
-	}
-	
-	t_return.type = FSVT_int;
-	t_return.value.i = players[playernum].cards;
+#ifdef OLDBEHAVIOR
+    playernum = intvalue(t_argv[0]);
+    if ( playernum >= MAXPLAYERS
+	 || ! playeringame[playernum] )  goto missingplayer;
+#else
+    // [WDJ] full player arg like other functions
+    playernum = arg_playernum( &t_argv[0], "PlayerKeysByte" );
+    if( playernum >= MAXPLAYERS )  goto done;
+#endif
+
+    if(t_argc == 2)
+    {
+        // set keys
+        unsigned int keybyte = intvalue(t_argv[1]);  
+        if(keybyte > 255)	// don't overflow
+	    keybyte = 0;
+
+        players[playernum].cards = keybyte;  // set
+    }
+    t_return.value.i = players[playernum].cards;
+
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("PlayerKeysByte", "1 or 2");
+    goto done;
+
+#ifdef OLDBEHAVIOR
+missingplayer:
+    player_not_in_game( "PlayerKeysByte", playernum );
+    goto done;
+#endif
 }
 
 // iori 05/17/2005: playerarmor
-void SF_PlayerArmor()
+// [WDJ] Test or Set
+// PlayerArmor( player, {armor_value} )
+void SF_PlayerArmor(void)
 {
-	int armor;
-	int playernum;
+    int armor;
+    int playernum;
+    player_t * player;
 
-	if (!t_argc)
-	{
-		script_error("insufficient parameters for playerarmor\n");
-		return;
-	}
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 1)  goto err_numarg;
+#endif
 
-	playernum = t_argv[0].value.i;
-	armor = t_argv[1].value.i;
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
-	players[playernum].armorpoints = armor;
+#ifdef OLDBEHAVIOR
+    // int only, no checks on valid player
+    playernum = t_argv[0].value.i;
+#else
+    // [WDJ] full player arg like other functions
+    playernum = arg_playernum( &t_argv[0], "PlayerArmor" );
+    if( playernum >= MAXPLAYERS )  goto done;
+#endif
+    player = & players[playernum];
 
-	if (players[playernum].armorpoints > 100)
-	{
-		players[playernum].armortype = 2;
-	}
-	else
-		players[playernum].armortype = 1;
+    if ( t_argc == 2 )
+    {
+        // Set armor
+        armor = t_argv[1].value.i;
+        player->armorpoints = armor;
+        player->armortype = (armor>100)? 2 : 1;
+    }
 
-	t_return.type = FSVT_int;
-    t_return.value.i = armor;
+    t_return.value.i = player->armorpoints;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("PlayerArmor", "1 or 2");
+    goto done;
 }
 
-void SF_PlayerAmmo()
+// Test or Set
+// PlayerAmmo( player, ammonum, {ammo_value} )
+void SF_PlayerAmmo(void)
+{
+    int ammonum;
+    int playernum;
+    player_t * player;
+
+    if (t_argc < 2)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    playernum = arg_playernum( &t_argv[0], "PlayerAmmo" );
+    if( playernum >= MAXPLAYERS )  goto done;
+    player = & players[playernum];
+
+    ammonum = intvalue(t_argv[1]);
+    if (ammonum >= NUMAMMO || ammonum < 0)  goto bad_ammo;
+
+    if (t_argc == 3)
+    {
+        // set player ammo
+        int maxammo = player->maxammo[ammonum];
+        int newammo = intvalue(t_argv[2]);
+        newammo = (newammo > maxammo) ? maxammo : newammo;
+        player->ammo[ammonum] = newammo;
+    }
+    t_return.value.i = player->ammo[ammonum];  // test ammo
+done:   
+    return;
+
+err_numarg:
+    missing_arg_str("PlayerAmmo", "2 or 3");
+    goto done;
+   
+bad_ammo:
+    script_error("PlayerAmmo: invalid ammonum %i\n", ammonum);
+    goto done;
+}
+
+// Test or Set
+// MaxPlayerAmmo( player, ammonum, {ammo_value} )
+void SF_MaxPlayerAmmo(void)
 {
     int playernum;
     int ammonum;
-    int newammo;
+    player_t * player;
 
-    if (t_argc < 2)
+    if (t_argc < 2)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    playernum = arg_playernum( &t_argv[0], "MaxPlayerAmmo" );
+    if( playernum >= MAXPLAYERS )  goto done;
+    player = & players[playernum];
+
+    ammonum = intvalue(t_argv[1]);
+    if (ammonum >= NUMAMMO || ammonum < 0)  goto bad_ammo;
+
+    if (t_argc == 3)
     {
-        script_error("missing parameters for playerammo\n");
-        return;
+        // set player max ammo
+        int newmax = intvalue(t_argv[2]);
+        player->maxammo[ammonum] = newmax;
     }
+    t_return.value.i = player->maxammo[ammonum]; // test player max ammo
+done:
+    return;
 
-    if (t_argc == 2)
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
+err_numarg:
+    missing_arg_str("MaxPlayerAmmo", "2 or 3");
+    goto done;
 
-        ammonum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (ammonum >= NUMAMMO)
-        {
-            script_error("ammonum out of range! %s\n", ammonum);
-            return;
-        }
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].ammo[ammonum];
-        return;
-    }
-    else
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        ammonum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (ammonum > NUMAMMO)
-        {
-            script_error("ammonum out of range! %s\n", ammonum);
-            return;
-        }
-        newammo = intvalue(t_argv[2]);
-        newammo = newammo > players[playernum].maxammo[ammonum] ? players[playernum].maxammo[ammonum] : newammo;
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].ammo[ammonum] = newammo;
-        return;
-    }
+bad_ammo:
+    script_error("MaxPlayerAmmo: invalid ammonum %i\n", ammonum);
+    goto done;
 }
 
-void SF_MaxPlayerAmmo()
+// Test or Set
+// PlayerWeapon(player, weaponnum, [give])
+void SF_PlayerWeapon(void)
 {
-    int playernum;
-    int ammonum;
-    int newmax;
-
-    if (t_argc < 2)
-    {
-        script_error("missing parameters for maxplayerammo\n");
-        return;
-    }
-
-    if (t_argc == 2)
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        ammonum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (ammonum >= NUMAMMO || ammonum < 0)
-        {
-            script_error("maxammonum out of range! %i\n", ammonum);
-            return;
-        }
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].maxammo[ammonum];
-        return;
-    }
-    else
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        ammonum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (ammonum > NUMAMMO)
-        {
-            script_error("ammonum out of range! %s\n", ammonum);
-            return;
-        }
-        newmax = intvalue(t_argv[2]);
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].maxammo[ammonum] = newmax;
-        return;
-    }
-}
-
-//playerweapon(playernum, weaponnum, [give])
-
-void SF_PlayerWeapon()
-{
-    int playernum;
     int weaponnum;
-    int newweapon;
+    int playernum;
+    player_t * player;
 
-    if (t_argc < 2)
+    if (t_argc < 2)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    playernum = arg_playernum( &t_argv[0], "PlayerWeapon" );
+    if( playernum >= MAXPLAYERS )  goto done;
+    player = & players[playernum];
+
+    weaponnum = intvalue(t_argv[1]);
+    if (weaponnum >= NUMWEAPONS || weaponnum < 0)  goto bad_weapon;
+
+    if (t_argc == 3)
     {
-        script_error("missing parameters for playerweapon\n");
-        return;
-    }
+        // give or take weapon
+        int newweapon = intvalue(t_argv[2]);
 
-    if (t_argc == 2)
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        weaponnum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (weaponnum >= NUMWEAPONS)
-        {
-            script_error("weaponnum out of range! %s\n", weaponnum);
-            return;
-        }
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].weaponowned[weaponnum];
-        return;
-    }
-    else
-    {
-        if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-        else
-            playernum = intvalue(t_argv[0]);
-
-        weaponnum = intvalue(t_argv[1]);
-        if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (weaponnum > NUMWEAPONS)
-        {
-            script_error("weaponnum out of range! %s\n", weaponnum);
-            return;
-        }
-
-        newweapon = intvalue(t_argv[2]);
-
-        if (newweapon != 0)
+        if (newweapon != 0)  // boolean
             newweapon = 1;
 
-        t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].weaponowned[weaponnum] = newweapon;
-        return;
+        player->weaponowned[weaponnum] = newweapon;
     }
+    t_return.value.i = player->weaponowned[weaponnum]; // test weapon
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("PlayerWeapon", "2 or 3");
+    goto done;
+
+bad_weapon:
+    script_error("PlayerWeapon: invalid weaponnum %i\n", weaponnum);
+    goto done;
 }
 
-void SF_PlayerSelectedWeapon()
+// Test or Set
+// PlayerSelectedWeapon( player, {selected_weapon} )
+void SF_PlayerSelectedWeapon(void)
 {
-	int playernum;
     int weaponnum;
+    int playernum;
+    player_t * player;
 
-	if (!t_argc)
-	{
-		script_error("no enough arguments for playerselwep\n");
-		return;
-	}
+    if (!t_argc)  goto err_numarg;
 
-	if (t_argv[0].type == FSVT_mobj)
-        {
-            if (!t_argv[0].value.mobj->player)
-            {
-                script_error("mobj not a player!\n");
-                return;
-            }
-            playernum = t_argv[0].value.mobj->player - players;
-        }
-	else
-		playernum = intvalue(t_argv[0]);
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
-	
-	if (t_argc == 1)
-    {   
-		t_return.type = FSVT_int;
-        t_return.value.i = players[playernum].readyweapon;
+    playernum = arg_playernum( &t_argv[0], "PlayerSelectedWeapon" );
+    if( playernum >= MAXPLAYERS )  goto done;
+    player = & players[playernum];
+
+    if(t_argc == 2)
+    {
+        weaponnum = intvalue(t_argv[1]);
+        if (weaponnum >= NUMWEAPONS || weaponnum < 0)  goto bad_weapon;
+        player->pendingweapon = weaponnum;
     }
+    t_return.value.i = player->readyweapon;  // test weapon
+done:
+    return;
 
-	else if(t_argc == 2)
-	{
-		weaponnum = intvalue(t_argv[1]);
-		
-		if (!playeringame[playernum])
-        {
-            script_error("player %i not in game\n", playernum);
-            return;
-        }
-        if (weaponnum >= NUMWEAPONS)
-        {
-            script_error("weapon not available: %s\n", weaponnum);
-            return;
-        }
+err_numarg:
+    missing_arg_str("PlayerSelectedWeapon", "1 or 2");
+    goto done;
 
-		players[playernum].pendingweapon = weaponnum;
-
-		t_return.type = FSVT_int;
-		t_return.value.i = players[playernum].readyweapon;
-	}
+bad_weapon:
+    script_error("PlayerSelectedWeapon: invalid weaponnum %i\n", weaponnum);
+    goto done;
 }
 
 
 // Exl: Toxicfluff's pitchview function.
 // Returns a player's view pitch in a range useful for the FS trig functions
 // iori: added ability to modify player's pitch
-void SF_PlayerPitch()
+// Test or Set
+#ifdef OLDBEHAVIOR
+// PlayerPitch( playernum, {pitch} )
+#else
+// PlayerPitch( player, {pitch} )
+#endif
+void SF_PlayerPitch(void)
 {
-	int playernum;
+    int playernum;
 	
-	if (!t_argc)
-	{
-		script_error("not enough arguments for playerpitch\n");
-		return;
-		}
+    if (!t_argc)  goto err_numarg;
 	
-	playernum = intvalue(t_argv[0]);
-    if (!playeringame[playernum])
-	{
-            script_error("player %i not in game\n", playernum);
-            return;
-	}
+    t_return.type = FSVT_fixed;
+    t_return.value.f = 0;  // default
 
-	if(t_argc == 2)
-	{
-		localaiming = FixedToAngle(fixedvalue(t_argv[1]));
-	}
+#ifdef OLDBEHAVIOR
+    playernum = intvalue(t_argv[0]);
+    if ( playernum >= MAXPLAYERS
+	 || ! playeringame[playernum] )  goto missingplayer;
+#else
+    // [WDJ] full player arg like other functions
+    playernum = arg_playernum( &t_argv[0], "PlayerPitch" );
+    if( playernum >= MAXPLAYERS )  goto done;
+#endif
 
-	t_return.type = FSVT_fixed;
-	t_return.value.f = AngleToFixed(players[playernum].aiming);
+    if(t_argc == 2)
+    {
+        localaiming = FixedToAngle(fixedvalue(t_argv[1]));
+    }
+
+    t_return.value.f = AngleToFixed(players[playernum].aiming);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("PlayerPitch", "1 or 2");
+    goto done;
+
+#ifdef OLDBEHAVIOR
+missingplayer:
+    player_not_in_game( "PlayerPitch", playernum );
+    goto done;
+#endif
 }
 
 
 // Set player properties
 // This could (or rather, should) be expanded to support all players
-//
-void SF_PlayerProperty()
+// Set
+// PlayerProperty( select, value )
+void SF_PlayerProperty(void)
 {
+    int arg_value;
 
-	if (t_argc != 2)
-	{
-		script_error("PlayerProperty: insufficient arguments\n");
-		return;
-	}
+    if (t_argc != 2)  goto err_numarg;
 
-	switch(intvalue(t_argv[0]))
-	{
-		// Speed
-		case 0:
-			extramovefactor = intvalue(t_argv[1]);
-			return;
+    arg_value = intvalue(t_argv[1]);
 
-		case 1:
-			jumpgravity = intvalue(t_argv[1]) * FRACUNIT / NEWTICRATERATIO;
-			return;
+    switch(intvalue(t_argv[0]))
+    {
+       // Speed
+     case 0:
+        extramovefactor = arg_value;
+        break;
 
-		case 2:
-			if (intvalue(t_argv[1]))
-				consoleplayer_ptr->locked = true;
-			else
-				consoleplayer_ptr->locked = false;
-			return;
+     case 1:
+        jumpgravity = arg_value * FRACUNIT / NEWTICRATERATIO;
+        break;
 
-		default:
-			script_error("PlayerProperty: invalid property specified\n");
-	}
+     case 2:
+        consoleplayer_ptr->locked = (arg_value)?  true :  false;
+        break;
 
+     default:
+        script_error("PlayerProperty, invalid property specified\n");
+        break;
+    }
+done:
+   return;
+
+err_numarg:
+    wrong_num_arg("PlayerProperty", 2);
+    goto done;
 }
 
 
-extern void SF_StartScript();   // in t_script.c
-extern void SF_ScriptRunning();
-extern void SF_Wait();
-extern void SF_WaitTic();
-extern void SF_TagWait();
-extern void SF_ScriptWait();
+extern void SF_StartScript(void);   // in t_script.c
+extern void SF_ScriptRunning(void);
+extern void SF_Wait(void);
+extern void SF_WaitTic(void);
+extern void SF_TagWait(void);
+extern void SF_ScriptWait(void);
 
 /*********** Mobj code ***************/
 
-void SF_Player()
+// Return playernum, or -1
+// Player( {mobj} )
+void SF_Player(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
     t_return.type = FSVT_int;
 
+#ifdef OLDBEHAVIOR
     if (mo)
+#else
+    if (mo && mo->player)  // [WDJ] check player
+#endif
     {
         t_return.value.i = (int) (mo->player - players);
     }
@@ -1237,17 +1339,17 @@ void SF_Player()
     }
 }
 
-        // spawn an object: type, x, y, [angle]
-void SF_Spawn()
+// spawn an object: type, x, y, [angle]
+// Spawn( type, x, y, {angle}, {z} )
+void SF_Spawn(void)
 {
     int x, y, z, objtype;
     angle_t angle = 0;
 
-    if (t_argc < 3)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc < 3)  goto err_numarg;
+
+    t_return.type = FSVT_mobj;
+    t_return.value.mobj = NULL;  // default
 
     objtype = intvalue(t_argv[0]);
     x = intvalue(t_argv[1]) << FRACBITS;
@@ -1263,14 +1365,9 @@ void SF_Spawn()
     if (t_argc >= 4)
         angle = intvalue(t_argv[3]) * (ANG45 / 45);
 
-    // invalid object to spawn
-    if (objtype < 0 || objtype >= NUMMOBJTYPES)
-    {
-        script_error("unknown object type: %i\n", objtype);
-        return;
-    }
+    // check invalid object to spawn
+    if (objtype < 0 || objtype >= NUMMOBJTYPES)  goto err_objtype;
 
-    t_return.type = FSVT_mobj;
     t_return.value.mobj = P_SpawnMobj(x, y, z, objtype);
     t_return.value.mobj->angle = angle;
 
@@ -1286,26 +1383,30 @@ void SF_Spawn()
         mthing->mobj = t_return.value.mobj;
         t_return.value.mobj->spawnpoint = mthing;
     }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("Spawn", "3, 4 or 5");
+    goto done;
+
+err_objtype:
+    script_error("Spawn: unknown object type: %i\n", objtype);
+    goto done;
 }
 
-void SF_SpawnExplosion()
+// [WDJ] Docs say: SpawnExplosion ( damage, spot, {source} )
+// but implemented as SpawnExplosion ( type, x, y, {z} )
+void SF_SpawnExplosion(void)
 {
     int type;
     fixed_t x, y, z;
     mobj_t *spawn;
 
-    if (t_argc < 3)
-    {
-        script_error("SpawnExplosion: Missing arguments\n");
-        return;
-    }
+    if (t_argc < 3)  goto err_numarg;
 
     type = intvalue(t_argv[0]);
-    if (type < 0 || type >= NUMMOBJTYPES)
-    {
-        script_error("SpawnExplosion: Invalud type number\n");
-        return;
-    }
+    if (type < 0 || type >= NUMMOBJTYPES)  goto err_spawntype;
 
     x = fixedvalue(t_argv[1]);
     y = fixedvalue(t_argv[2]);
@@ -1319,46 +1420,67 @@ void SF_SpawnExplosion()
     t_return.value.i = P_SetMobjState(spawn, spawn->info->deathstate);
     if (spawn->info->deathsound)
         S_StartSound(spawn, spawn->info->deathsound);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SpawnExplosion", "3 or 4");
+    goto done;
+
+err_spawntype:
+    script_error("SpawnExplosion: Invalid type number %i\n", type);
+    goto done;
 }
 
-void SF_RadiusAttack()
+// RadiusAttack( location_mobj, source_mobj, damage )
+void SF_RadiusAttack(void)
 {
     mobj_t *spot;
     mobj_t *source;
     int damage;
 
-    if (t_argc != 3)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc != 3)  goto err_numarg;
 
-    spot = MobjForSvalue(t_argv[0]);
-    source = MobjForSvalue(t_argv[1]);
+    spot = MobjForSvalue(t_argv[0]);    // where
+    source = MobjForSvalue(t_argv[1]);  // who gets blame
     damage = intvalue(t_argv[2]);
 
     if (spot && source)
     {
         P_RadiusAttack(spot, source, damage);
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("RadiusAttack", 3);
+    goto done;
 }
 
-void SF_RemoveObj()
+// RemoveObj( mobj )
+void SF_RemoveObj(void)
 {
     mobj_t *mo;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc != 1)  goto err_numarg;
+#endif
 
     mo = MobjForSvalue(t_argv[0]);
     if (mo)     // nullptr check
         P_RemoveMobj(mo);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("RemoveObj", 1);
+    goto done;
 }
 
-void SF_KillObj()
+// KillObj( {mobj} )
+void SF_KillObj(void)
 {
     mobj_t *mo;
 
@@ -1371,8 +1493,9 @@ void SF_KillObj()
         P_KillMobj(mo, NULL, fs_current_script->trigger);  // kill it
 }
 
-        // mobj x, y, z
-void SF_ObjX()
+// mobj x, y, z
+// ObjX( {mobj} )
+void SF_ObjX(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
@@ -1380,7 +1503,8 @@ void SF_ObjX()
     t_return.value.f = mo ? mo->x : 0;  // null ptr check
 }
 
-void SF_ObjY()
+// ObjY( {mobj} )
+void SF_ObjY(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
@@ -1388,7 +1512,8 @@ void SF_ObjY()
     t_return.value.f = mo ? mo->y : 0;  // null ptr check
 }
 
-void SF_ObjZ()
+// ObjZ( {mobj} )
+void SF_ObjZ(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
@@ -1396,141 +1521,172 @@ void SF_ObjZ()
     t_return.value.f = mo ? mo->z : 0;  // null ptr check
 }
 
-void SF_SetObjPosition()
+// SetObjPosition( mobj, x, {y}, {z} )
+void SF_SetObjPosition(void)
 {
-	mobj_t* mobj;
+    mobj_t* mobj;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
+#ifdef OLDBEHAVIOR
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc < 2)  goto err_numarg;  // [WDJ] requires 2 arg
+#endif
+
+    mobj = MobjForSvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no check on valid mobj
+#else
+    if( mobj )  // [WDJ]
+#endif
+    { 
+        P_UnsetThingPosition(mobj);
+
+        mobj->x = intvalue(t_argv[1]) << FRACBITS;
+
+        if(t_argc >= 3)
+	    mobj->y = intvalue(t_argv[2]) << FRACBITS;
+        if(t_argc == 4)
+	    mobj->z = intvalue(t_argv[3]) << FRACBITS;
+
+        P_SetThingPosition(mobj);
     }
+done:
+    return;
 
-	mobj = MobjForSvalue(t_argv[0]);
-
-	P_UnsetThingPosition(mobj);
-
-	mobj->x = intvalue(t_argv[1]) << FRACBITS;
-
-	if(t_argc >= 3)
-		mobj->y = intvalue(t_argv[2]) << FRACBITS;
-	if(t_argc == 4)
-		mobj->z = intvalue(t_argv[3]) << FRACBITS;
-
-	P_SetThingPosition(mobj);
+err_numarg:
+    missing_arg_str("SetObjPosition", "2, 3 or 4");
+    goto done;
 }
 	
 
-void SF_Resurrect()
+// Resurrect( mobj )
+void SF_Resurrect(void)
 {
+    mobj_t *mo;
 
-	mobj_t *mo;
+    if(t_argc != 1)  goto err_numarg;
 
-	if(t_argc != 1)
-	{
-		script_error("invalid number of arguments for resurrect\n");
-		return;
-	}
-
-	mo = MobjForSvalue(t_argv[0]);
-
-	if(!mo->info->raisestate)  //Don't resurrect things that can't be resurrected
-		return;
+    mo = MobjForSvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no check on valid mobj
+#else
+    if( mo )  // [WDJ]
+#endif
+    {
+        if(!mo->info->raisestate)  //Don't resurrect things that can't be resurrected
+	    goto done;
 
 	P_SetMobjState (mo, mo->info->raisestate);
 	if( demoversion<129 )
-		mo->height <<= 2;
+	    mo->height <<= 2;
 	else
 	{
-		mo->height = mo->info->height;
-		mo->radius = mo->info->radius;
+	    mo->height = mo->info->height;
+	    mo->radius = mo->info->radius;
 	}
 	
 	mo->flags = mo->info->flags;
 	mo->health = mo->info->spawnhealth;
 	mo->target = NULL;
+    }
+done:
+    return;
 
+err_numarg:
+    wrong_num_arg("Resurrect", 1);
+    goto done;
 }
 
-void SF_TestLocation()
+// TestLocation( {mobj} )
+void SF_TestLocation(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-    if (!mo)
-        return;
+    t_return.type = FSVT_int;
+    t_return.value.f = 0;  // default
 
+#ifdef OLDBEHAVIOR
+    // no check on valid mobj
     if (P_TestMobjLocation(mo))
+#else
+    if (mo && P_TestMobjLocation(mo))
+#endif
     {
-        t_return.type = FSVT_int;
         t_return.value.f = 1;
     }
-
-    else
-    {
-        t_return.type = FSVT_int;
-        t_return.value.f = 0;
-    }
 }
 
-        // mobj angle
-void SF_ObjAngle()
+// mobj angle
+// ObjAngle( {mobj}, {angle} )
+void SF_ObjAngle(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
-	if(t_argc > 1)
-	{
-		//iori: now able to change the player's angle, not just mobj's
-		if(mo == consoleplayer_ptr->mo)
-		{
-			localangle = FixedToAngle(fixedvalue(t_argv[1]));
-		}
-		else
-		{
-			mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
-		}
+    t_return.type = FSVT_fixed;
+    t_return.value.f = 0;  // default
+
+#ifdef OLDBEHAVIOR
+    // no check on valid mobj
+#else
+    if( mo )  // [WDJ]
+#endif
+    {
+        if(t_argc > 1)
+        {
+	    // set angle
+	    //iori: now able to change the player's angle, not just mobj's
+	    if(mo == consoleplayer_ptr->mo)
+	    {
+	        localangle = FixedToAngle(fixedvalue(t_argv[1]));
+	    }
+	    else
+	    {
+	        mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
+	    }
 	}
-	t_return.type = FSVT_fixed;
-	t_return.value.f = (int)AngleToFixed(mo->angle);       // null ptr check
+        t_return.value.f = (int)AngleToFixed(mo->angle);
+    }
+}
+
+// CheckSight( obj1, {obj2} )
+void SF_CheckSight(void)
+{
+    mobj_t *obj1;
+    mobj_t *obj2;
+
+    if(!t_argc)  goto err_numarg;
+
+    obj1 = MobjForSvalue(t_argv[0]);
+    obj2 = (t_argc == 2) ? MobjForSvalue(t_argv[1]) : fs_current_script->trigger;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = P_CheckSight(obj1, obj2);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("CheckSight", "1 or 2");
+    goto done;
 }
 
 
-void SF_CheckSight()
+// Teleport( {mobj}, sector_tag )
+void SF_Teleport(void)
 {
-	mobj_t *obj1;
-	mobj_t *obj2;
-
-	if(!t_argc)
-	{
-		script_error("CheckSight: insufficient arguments to function\n");
-		return;
-	}
-
-	obj1 = MobjForSvalue(t_argv[0]);
-	obj2 = t_argc == 2 ? MobjForSvalue(t_argv[1]) : fs_current_script->trigger;
-
-	t_return.type = FSVT_int;
-	t_return.value.i = P_CheckSight(obj1, obj2);
-}
-
-
-// teleport: object, sector_tag
-void SF_Teleport()
-{
-    line_t sf_tmpline;                // dummy line for teleport function
+    line_t sf_tmpline;  // temp teleport linedef
     mobj_t *mo;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)  goto err_numarg;
+
+    if (t_argc == 1)       // 1 argument: sector tag
     {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-    else if (t_argc == 1)       // 1 argument: sector tag
-    {
+        // teleport trigger mobj
         mo = fs_current_script->trigger;   // default to trigger
         sf_tmpline.tag = intvalue(t_argv[0]);
     }
-    else        // 2 or more
-    {   // teleport a given object
+    else
+    {
+        // teleport the arg mobj
         mo = MobjForSvalue(t_argv[0]);
         sf_tmpline.tag = intvalue(t_argv[1]);
     }
@@ -1538,25 +1694,31 @@ void SF_Teleport()
 
     if (mo)
         EV_Teleport(&sf_tmpline, 0, mo);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("Teleport", "1 or 2");
+    goto done;
 }
 
-void SF_SilentTeleport()
+// SilentTeleport( {mobj}, sector_tag )
+void SF_SilentTeleport(void)
 {
     line_t sf_tmpline;                // dummy line for teleport function
     mobj_t *mo;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)   goto err_numarg;
+
+    if (t_argc == 1)       // 1 argument: sector tag
     {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-    else if (t_argc == 1)       // 1 argument: sector tag
-    {
+        // teleport trigger mobj
         mo = fs_current_script->trigger;   // default to trigger
         sf_tmpline.tag = intvalue(t_argv[0]);
     }
-    else        // 2 or more
-    {   // teleport a given object
+    else
+    {
+        // teleport the arg mobj
         mo = MobjForSvalue(t_argv[0]);
         sf_tmpline.tag = intvalue(t_argv[1]);
     }
@@ -1564,36 +1726,49 @@ void SF_SilentTeleport()
 
     if (mo)
         EV_SilentTeleport(&sf_tmpline, 0, mo);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SilentTeleport", "1 or 2");
+    goto done;
 }
 
-void SF_DamageObj()
+// DamageObj( {mobj}, damage );
+void SF_DamageObj(void)
 {
     mobj_t *mo;
     int damageamount;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)  goto err_numarg;
+
+    if (t_argc == 1)       // 1 argument: damage trigger by amount
     {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-    else if (t_argc == 1)       // 1 argument: damage trigger by amount
-    {
+        // damage the trigger mobj
         mo = fs_current_script->trigger;   // default to trigger
         damageamount = intvalue(t_argv[0]);
     }
-    else        // 2 or more
-    {   // teleport a given object
+    else
+    {
+        // damage the arg mobj
         mo = MobjForSvalue(t_argv[0]);
         damageamount = intvalue(t_argv[1]);
     }
 
     if (mo)
         P_DamageMobj(mo, NULL, fs_current_script->trigger, damageamount);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("DamageObj", "1 or 2");
+    goto done;
 }
 
 
-        // the tag number of the sector the thing is in
-void SF_ObjSector()
+// the tag number of the sector the thing is in
+// ObjSector( {mobj} )
+void SF_ObjSector(void)
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
@@ -1602,8 +1777,9 @@ void SF_ObjSector()
     t_return.value.i = mo ? mo->subsector->sector->tag : 0;     // nullptr check
 }
 
-        // the health number of an object
-void SF_ObjHealth()
+// the health number of an object
+// ObjHealth( {mobj} )
+void SF_ObjHealth(void)
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
@@ -1612,7 +1788,8 @@ void SF_ObjHealth()
     t_return.value.i = mo ? mo->health : 0;
 }
 
-void SF_ObjDead()
+// ObjDead( {mobj} )
+void SF_ObjDead(void)
 {
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
@@ -1623,417 +1800,497 @@ void SF_ObjDead()
         t_return.value.i = 0;
 }
 
-void SF_ObjFlag()
+// Test or Set
+// ObjFlag( {mobj}, flagnum, {flagvalue} )
+// flagvalue= 0,1
+void SF_ObjFlag(void)
 {
     mobj_t *mo;
     int flagnum;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    if (t_argc == 1)       // use trigger, arg0 is flagnum
     {
-        script_error("ObjFlag: no arguments for function\n");
-        return;
-    }
-    else if (t_argc == 1)       // use trigger, 1st is flag
-    {
-        // use trigger:
+        // test flags on trigger:
         mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
-    else if (t_argc == 2)
+    else
     {
-        // specified object
+        // test flags on arg mobj
         mo = MobjForSvalue(t_argv[0]);
         flagnum = intvalue(t_argv[1]);
     }
-    else        // >= 3 : SET flags
+    
+#ifdef OLDBEHAVIOR
+    if (mo)  // mo check on set, but not on test, and no flagnum check
+#else
+    if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
+#endif
     {
-        mo = MobjForSvalue(t_argv[0]);
-        flagnum = intvalue(t_argv[1]);
-
-        if (mo) // nullptr check
+        uint32_t flagmsk = (1 << flagnum);
+        if (t_argc == 3)
         {
-            long newflag;
-            // remove old bit
-            mo->flags = mo->flags & ~(1 << flagnum);
-
-            // make the new flag
-            newflag = (!!intvalue(t_argv[2])) << flagnum;
-            mo->flags |= newflag;       // add new flag to mobj flags
+	    // set flags on arg mobj
+	    if( intvalue(t_argv[2]) )   // 0 or 1
+	        mo->flags |= flagmsk;  // set the flag
+	    else
+	        mo->flags &= ~flagmsk;  // clear the flag
+	    //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
-        //P_UpdateThinker(&mo->thinker);     // update thinker
-
+        t_return.value.i = !!(mo->flags & flagmsk);  // test flag, to boolean
     }
+done:
+    return;
 
-    t_return.type = FSVT_int;
-    // nullptr check:
-    t_return.value.i = mo ? !!(mo->flags & (1 << flagnum)) : 0;
+err_numarg:
+    missing_arg_str("ObjFlag", "1, 2 or 3");
+    goto done;
 }
 
 
 // Just copy n paste :>
-void SF_ObjFlag2()
+// Test or Set
+// ObjFlag2( {mobj}, flagnum, {flagvalue} )
+// flagvalue= 0,1
+void SF_ObjFlag2(void)
 {
     mobj_t *mo;
     int flagnum;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    if (t_argc == 1)       // use trigger, arg0 is flagnum
     {
-        script_error("ObjFlag2: no arguments for function\n");
-        return;
-    }
-    else if (t_argc == 1)       // use trigger, 1st is flag
-    {
-        // use trigger:
+        // test flags on trigger:
         mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
-    else if (t_argc == 2)
+    else
     {
-        // specified object
+        // test flags on arg mobj
         mo = MobjForSvalue(t_argv[0]);
         flagnum = intvalue(t_argv[1]);
     }
-    else        // >= 3 : SET flags
+    
+#ifdef OLDBEHAVIOR
+    if (mo)  // mo check on set, but not on test, and no flagnum check
+#else
+    if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
+#endif
     {
-        mo = MobjForSvalue(t_argv[0]);
-        flagnum = intvalue(t_argv[1]);
-
-        if (mo) // nullptr check
+        uint32_t flagmsk = (1 << flagnum);
+        if (t_argc == 3)
         {
-            long newflag;
-            // remove old bit
-            mo->flags2 = mo->flags2 & ~(1 << flagnum);
-
-            // make the new flag
-            newflag = (!!intvalue(t_argv[2])) << flagnum;
-            mo->flags2 |= newflag;       // add new flag to mobj flags
+	    // set flags on arg mobj
+	    if( intvalue(t_argv[2]) )   // 0 or 1
+	        mo->flags2 |= flagmsk;  // set the flag
+	    else
+	        mo->flags2 &= ~flagmsk;  // clear the flag
+	    //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
-        //P_UpdateThinker(&mo->thinker);     // update thinker
-
+        t_return.value.i = !!(mo->flags2 & flagmsk);  // test flag, to boolean
     }
+done:
+    return;
 
-    t_return.type = FSVT_int;
-    // nullptr check:
-    t_return.value.i = mo ? !!(mo->flags2 & (1 << flagnum)) : 0;
+err_numarg:
+    missing_arg_str("ObjFlag2", "1, 2 or 3");
+    goto done;
 }
 
 
 // Extra flags, too
-void SF_ObjEFlag()
+void SF_ObjEFlag(void)
 {
     mobj_t *mo;
     int flagnum;
 
-    if (t_argc == 0)    // no arguments
+    if (t_argc == 0)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+    if (t_argc == 1)       // use trigger, arg0 is flagnum
     {
-        script_error("ObjEFlag: no arguments for function\n");
-        return;
-    }
-    else if (t_argc == 1)       // use trigger, 1st is flag
-    {
-        // use trigger:
+        // test flags on trigger:
         mo = fs_current_script->trigger;
         flagnum = intvalue(t_argv[0]);
     }
-    else if (t_argc == 2)
+    else
     {
-        // specified object
+        // test flags on arg mobj
         mo = MobjForSvalue(t_argv[0]);
         flagnum = intvalue(t_argv[1]);
     }
-    else        // >= 3 : SET flags
+    
+#ifdef OLDBEHAVIOR
+    if (mo)  // mo check on set, but not on test, and no flagnum check
+#else
+    if (mo && flagnum >= 0 && flagnum < 32)  // [WDJ]
+#endif
     {
-        mo = MobjForSvalue(t_argv[0]);
-        flagnum = intvalue(t_argv[1]);
-
-        if (mo) // nullptr check
+        uint32_t flagmsk = (1 << flagnum);
+        if (t_argc == 3)
         {
-            long newflag;
-            // remove old bit
-            mo->eflags = mo->eflags & ~(1 << flagnum);
-
-            // make the new flag
-            newflag = (!!intvalue(t_argv[2])) << flagnum;
-            mo->eflags |= newflag;       // add new flag to mobj flags
+	    // set flags on arg mobj
+	    if( intvalue(t_argv[2]) )   // 0 or 1
+	        mo->eflags |= flagmsk;  // set the flag
+	    else
+	        mo->eflags &= ~flagmsk;  // clear the flag
+	    //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
+        t_return.value.i = !!(mo->eflags & flagmsk);  // test flag, to boolean
     }
+done:
+    return;
 
-    t_return.type = FSVT_int;
-    // nullptr check:
-    t_return.value.i = mo ? !!(mo->eflags & (1 << flagnum)) : 0;
+err_numarg:
+    missing_arg_str("ObjEFlag", "1, 2 or 3");
+    goto done;
 }
 
 
 // apply momentum to a thing
-void SF_PushThing()
+// PushThing( mobj, angle, force )
+void SF_PushThing(void)
 {
     mobj_t *mo;
     angle_t angle;
     fixed_t force;
 
-    if (t_argc < 3)     // missing arguments
-    {
-        script_error("insufficient arguments for function\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 3)  goto err_numarg;
+#else
+    if (t_argc != 3)  goto err_numarg;
+#endif
 
     mo = MobjForSvalue(t_argv[0]);
-
-    if (!mo)
-        return;
+    if (!mo)  goto done;
 
     angle = FixedToAngle(fixedvalue(t_argv[1]));
     force = fixedvalue(t_argv[2]);
 
     mo->momx += FixedMul(finecosine[angle >> ANGLETOFINESHIFT], force);
     mo->momy += FixedMul(finesine[angle >> ANGLETOFINESHIFT], force);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("PushThing", 3);
+    goto done;
 }
 
-void SF_ReactionTime()
+// Test or Set
+// ReactionTime( mobj, {reactiontime} )
+void SF_ReactionTime(void)
 {
     mobj_t *mo;
 
-    if (t_argc < 1)
-    {
-        script_error("no arguments for function\n");
-        return;
-    }
+    if (t_argc < 1)  goto err_numarg;
+
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
     mo = MobjForSvalue(t_argv[0]);
-    if (!mo)
-        return;
+    if (!mo)  goto done;
 
     if (t_argc > 1)
-    {
+    {   // set
         mo->reactiontime = (intvalue(t_argv[1]) * 35) / 100;
     }
 
-    t_return.type = FSVT_int;
-    t_return.value.i = mo->reactiontime;
+    t_return.value.i = mo->reactiontime;  // test
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("ReactionTime", "1 or 2");
+    goto done;
 }
 
 // Sets a mobj's Target! >:)
-void SF_MobjTarget()
+// Test or Set
+// MobjTarget( mobj, {target_mobj} )
+void SF_MobjTarget(void)
 {
     mobj_t *mo;
     mobj_t *target;
 
-    if (t_argc < 1)
-    {
-        script_error("Missing parameters!\n");
-        return;
-    }
+    if (t_argc < 1)  goto err_numarg;
+
+    t_return.type = FSVT_mobj;
+    t_return.value.mobj = NULL;  // default
 
     mo = MobjForSvalue(t_argv[0]);
-    if (!mo)
-        return;
+    if (!mo)  goto done;
 
     if (t_argc >= 2)
-    {
+    {   // set
         if (t_argv[1].type != FSVT_mobj && intvalue(t_argv[1]) == -1)
         {
             // Set target to NULL
-			mo->target = NULL;
+	    mo->target = NULL;
             P_SetMobjState(mo, mo->info->spawnstate);
         }
         else
         {
-			target = MobjForSvalue(t_argv[1]);
+	    target = MobjForSvalue(t_argv[1]);
 
-			// Also remember node here
-			if (target->type == MT_NODE)
-				mo->targetnode = target;
+	    // Also remember node here
+	    if (target->type == MT_NODE)
+	        mo->targetnode = target;
 
             mo->target = target;
             P_SetMobjState(mo, mo->info->seestate);
         }
     }
 
-    t_return.type = FSVT_mobj;
-    t_return.value.mobj = mo->target;
+    t_return.value.mobj = mo->target;  // test
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MobjTarget", "1 or 2");
+    goto done;
 }
 
-void SF_MobjMomx()
+// MobjMomx( mobj )
+void SF_MobjMomx(void)
 {
     mobj_t *mo;
 
-    if (t_argc < 1)
-    {
-        script_error("missing parameters\n");
-        return;
-    }
-
-    mo = MobjForSvalue(t_argv[0]);
-    if (t_argc > 1)
-    {
-        if (!mo)
-            return;
-        mo->momx = fixedvalue(t_argv[1]);
-    }
+    if (t_argc < 1)  goto err_numarg;
 
     t_return.type = FSVT_fixed;
-    t_return.value.f = mo ? mo->momx : 0;
+    t_return.value.f = 0;  // default
+
+    mo = MobjForSvalue(t_argv[0]);
+    if( mo )
+    {
+        if (t_argc > 1)
+	    mo->momx = fixedvalue(t_argv[1]);  // set
+        t_return.value.f = mo->momx;  // test
+    }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MobjMomx", "1 or 2");
+    goto done;
 }
 
-void SF_MobjMomy()
+// MobjMomy( mobj )
+void SF_MobjMomy(void)
 {
     mobj_t *mo;
 
-    if (t_argc < 1)
-    {
-        script_error("missing parameters\n");
-        return;
-    }
-
-    mo = MobjForSvalue(t_argv[0]);
-    if (t_argc > 1)
-    {
-        if (!mo)
-            return;
-        mo->momy = fixedvalue(t_argv[1]);
-    }
+    if (t_argc < 1)  goto err_numarg;
 
     t_return.type = FSVT_fixed;
-    t_return.value.f = mo ? mo->momy : 0;
+    t_return.value.f = 0;  // default
+
+    mo = MobjForSvalue(t_argv[0]);
+    if( mo )
+    {
+        if (t_argc > 1)
+	    mo->momy = fixedvalue(t_argv[1]);  // set
+        t_return.value.f = mo->momy;  // test
+    }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MobjMomy", "1 or 2");
+    goto done;
 }
 
-void SF_MobjMomz()
+// MobjMomz( mobj )
+void SF_MobjMomz(void)
 {
     mobj_t *mo;
 
-    if (t_argc < 1)
-    {
-        script_error("missing parameters\n");
-        return;
-    }
-
-    mo = MobjForSvalue(t_argv[0]);
-    if (t_argc > 1)
-    {
-        if (!mo)
-            return;
-        mo->momz = fixedvalue(t_argv[1]);
-    }
+    if (t_argc < 1)  goto err_numarg;
 
     t_return.type = FSVT_fixed;
-    t_return.value.f = mo ? mo->momz : 0;
+    t_return.value.f = 0;  // default
+
+    mo = MobjForSvalue(t_argv[0]);
+    if( mo )
+    {
+        if (t_argc > 1)
+	    mo->momz = fixedvalue(t_argv[1]);  // set
+        t_return.value.f = mo->momz;  // test
+    }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MobjMomz", "1 or 2");
+    goto done;
 }
 
-void SF_SpawnMissile()
+// SpawnMissile( mobj, target_mobj, missiletype )
+void SF_SpawnMissile(void)
 {
     mobj_t *mobj;
     mobj_t *target;
     int objtype;
 
-    if (t_argc != 3)
-    {
-        script_error("invalid number of arguments");
-        return;
-    }
+    if (t_argc != 3)  goto err_numarg;
+
+    t_return.type = FSVT_mobj;
+    t_return.value.mobj = NULL;  // default
 
     objtype = intvalue(t_argv[2]);
+    if (objtype < 0 || objtype >= NUMMOBJTYPES)  goto err_objtype;
 
-    if (objtype < 0 || objtype >= NUMMOBJTYPES)
-    {
-        script_error("unknown object type: %i\n", objtype);
-        return;
-    }
     mobj = MobjForSvalue(t_argv[0]);
     target = MobjForSvalue(t_argv[1]);
 
-	t_return.type = FSVT_mobj;
     t_return.value.mobj = P_SpawnMissile(mobj, target, objtype);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("SpawnMissile", 3);
+    goto done;
+
+err_objtype:
+    script_error("SpawnMissile: unknown object type: %i\n", objtype);
+    goto done;
 }
 
 
 // Exl: Modified by Tox to take a pitch parameter
-void SF_LineAttack()
+// LineAttack( mobj, angle, damage, {pitch})
+void SF_LineAttack(void)
 {
-	mobj_t	*mo;
-	angle_t aiming;
-	int		damage, angle, slope;
-	int		short fixedtodeg = 182.033;
+    mobj_t	*mo;
+    angle_t aiming;
+    int  damage, angle, slope;
+    int	 short fixedtodeg = 182.033;
 	
-	
-	mo = MobjForSvalue(t_argv[0]);
-	damage = intvalue(t_argv[2]);
+#ifdef OLDBEHAVIOR
+    // no arg check
+#else
+    if (t_argc < 3)  goto err_numarg; // [WDJ]
+#endif
 
-	angle = (intvalue(t_argv[1]) * (ANG45 / 45));
-	
-	if(t_argc == 4)
-	{
-		aiming = fixedvalue(t_argv[3]) * fixedtodeg;
-		slope = AIMINGTOSLOPE(aiming);
-	}
-	else
-		slope = P_AimLineAttack(mo, angle, MISSILERANGE);
+    mo = MobjForSvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !mo )  goto done;  // [WDJ]
+#endif
 
-	P_LineAttack(mo, angle, MISSILERANGE, slope, damage);
+    damage = intvalue(t_argv[2]);
+    angle = (intvalue(t_argv[1]) * (ANG45 / 45));
+	
+    if(t_argc == 4)
+    {
+        aiming = fixedvalue(t_argv[3]) * fixedtodeg;
+        slope = AIMINGTOSLOPE(aiming);
+    }
+    else
+        slope = P_AimLineAttack(mo, angle, MISSILERANGE);  // auto aim
+
+    P_LineAttack(mo, angle, MISSILERANGE, slope, damage);
+#ifdef OLDBEHAVIOR
+    return;
+#else
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("LineAttack", "3 or 4");
+    goto done;
+#endif
 }
 
 
 //checks to see if a Map Thing Number exists; used to avoid script errors
-
-void SF_MapThingNumExist()
+// MapThingNumExist( thingnum )
+void SF_MapThingNumExist(void)
 {
-
     int intval;
 
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
+
+    t_return.type = FSVT_int;
 
     intval = intvalue(t_argv[0]);
-
     if (intval < 0 || intval >= nummapthings || !mapthings[intval].mobj)
     {
-        t_return.type = FSVT_int;
         t_return.value.i = 0;
     }
     else
     {
-        t_return.type = FSVT_int;
         t_return.value.i = 1;
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("MapThingNumExist", 1);
+    goto done;
 }
 
-void SF_MapThings()
+// MapThings()
+void SF_MapThings(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = nummapthings;
 }
 
-void SF_ObjType()
+// ObjType( {mobj} )
+void SF_ObjType(void)
 {
     // use trigger object if not specified
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
     t_return.type = FSVT_int;
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
     t_return.value.i = mo->type;
+#else
+    t_return.value.i = (mo)? mo->type : 0;  // [WDJ] check mo exist
+#endif
 }
 
 
 // Exl: sets an object's properties (tox)
-// setobjproperty(attribute, value, [mobj])
-void SF_SetObjProperty()
+// SetObjProperty( attribute, property_value, {mobj} )
+void SF_SetObjProperty(void)
 {
-  if (t_argc < 2)
-  {
-    script_error("insufficient parameters for objproperty");
-    return;
-  }
+    mobj_t * mo;
+    int attrib;
+    int32_t  value;  // int and fixed_t
+  
+    if (t_argc < 2)  goto err_numarg;
 
-  int attrib = intvalue(t_argv[0]); 
-  int value  = intvalue(t_argv[1]);
+    attrib = intvalue(t_argv[0]); 
+    value  = intvalue(t_argv[1]);
   // FIXME fixed_t vals, syntax does not make sense (operate on MTs instead of mobjs...
-  mobj_t *mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : fs_current_script->trigger;
+    
+    mo = (t_argc >= 3) ? MobjForSvalue(t_argv[2]) : fs_current_script->trigger;
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( ! mo)  goto done;  // [WDJ]
+#endif
 
-  switch (attrib)
+    switch (attrib)
     {
     case 0:
       mo->info->radius = (value*FRACUNIT);
@@ -2104,311 +2361,367 @@ void SF_SetObjProperty()
       mo->info->deathsound = value;
       break;
     default:
-      script_error("invalid attribute for objproperty");
-      return;
+      script_error("SetObjProperty: invalid attribute %i\n", attrib);
+      break;
     }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SetObjProperty", "2 or 3");
+    goto done;
 }
 
 
 // Exl: Returns an object's properties (tox)
-void SF_GetObjProperty()
+// GetObjProperty( {mobj}, attrib )
+void SF_GetObjProperty(void)
 {
-	int	attrib = 0, retval = 0;	// might be used uninit
-	mobj_t	*mo = NULL;
+    int attrib = 0, retval = 0;	// might be used uninit
+    mobj_t *mo = NULL;
 
-	if(t_argc < 1)
-	{
-		script_error("insufficient parameters for getobjproperty");
-	}
-	if(t_argc == 1)
-	{
-		mo = fs_current_script->trigger;
-		attrib = intvalue(t_argv[0]);
-	}
-	if(t_argc == 2)
-	{
-		mo = MobjForSvalue(t_argv[0]);
-		attrib = intvalue(t_argv[1]);
-	}
-	switch (attrib)
-	{
-		case 0:
-			retval = mo->info->radius / FRACUNIT;
-			break;
-		case 1:
-			retval = mo->info->height / FRACUNIT;
-			break;
-		case 2:
-		  retval = mo->info->mass;		  
-			break;
-		case 3:
-		        retval = mo->info->spawnhealth;
-			break;
-		case 4:
-			retval = mo->info->damage;
-			break;
-		case 5:
-		        retval = mo->info->speed;
-			break;
-		case 6:
-			retval = mo->info->reactiontime;
-			break;
-		case 7:
-			retval = mo->info->painchance;
-			break;
-		case 8:
-			retval = mo->info->spawnstate;
-			break;
-		case 9:
-			retval = mo->info->seestate;
-			break;
-		case 10:
-			retval = mo->info->meleestate;
-			break;
-		case 11:
-			retval = mo->info->missilestate;
-			break;
-		case 12:
-			retval = mo->info->painstate;
-			break;
-		case 13:
-			retval = mo->info->deathstate;
-			break;
-		case 14:
-			retval = mo->info->xdeathstate;
-			break;
-		case 15:
-			retval = mo->info->crashstate;
-			break;
-		case 16:
-			retval = mo->info->raisestate;
-			break;
-		case 17:
-			retval = mo->info->seesound;
-			break;
-		case 18:
-			retval = mo->info->activesound;
-			break;
-		case 19:
-			retval = mo->info->attacksound;
-			break;
-		case 20:
-			retval = mo->info->painsound;
-			break;
-		case 21:
-			retval = mo->info->deathsound;
-			break;
-		default:
-			script_error("invalid attribute for getobjproperty");
-			return;
+    if(t_argc == 1)
+    {
+        mo = fs_current_script->trigger;
+        attrib = intvalue(t_argv[0]);
+    }
+    else if(t_argc == 2)
+    {
+        mo = MobjForSvalue(t_argv[0]);
+        attrib = intvalue(t_argv[1]);
+    }
+    else goto err_numarg;
 
-	}
-	t_return.type = FSVT_int;
-	t_return.value.i = retval;
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
+
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !mo )  goto done;  // [WDJ]
+#endif
+
+    switch (attrib)
+    {
+     case 0:
+        retval = mo->info->radius / FRACUNIT;
+        break;
+     case 1:
+        retval = mo->info->height / FRACUNIT;
+        break;
+     case 2:
+        retval = mo->info->mass;		  
+        break;
+     case 3:
+        retval = mo->info->spawnhealth;
+        break;
+     case 4:
+        retval = mo->info->damage;
+        break;
+     case 5:
+        retval = mo->info->speed;
+        break;
+     case 6:
+        retval = mo->info->reactiontime;
+        break;
+     case 7:
+        retval = mo->info->painchance;
+        break;
+     case 8:
+        retval = mo->info->spawnstate;
+        break;
+     case 9:
+        retval = mo->info->seestate;
+        break;
+     case 10:
+        retval = mo->info->meleestate;
+        break;
+     case 11:
+        retval = mo->info->missilestate;
+        break;
+     case 12:
+        retval = mo->info->painstate;
+        break;
+     case 13:
+        retval = mo->info->deathstate;
+        break;
+     case 14:
+        retval = mo->info->xdeathstate;
+        break;
+     case 15:
+        retval = mo->info->crashstate;
+        break;
+     case 16:
+        retval = mo->info->raisestate;
+        break;
+     case 17:
+        retval = mo->info->seesound;
+        break;
+     case 18:
+        retval = mo->info->activesound;
+        break;
+     case 19:
+        retval = mo->info->attacksound;
+        break;
+     case 20:
+        retval = mo->info->painsound;
+        break;
+     case 21:
+        retval = mo->info->deathsound;
+        break;
+     default:
+        script_error("GetObjProperty: invalid attribute %i\n", attrib);
+        return;
+    }
+    t_return.value.i = retval;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("GetObjProperty", "1 or 2");
+    goto done;
 }
 
 
-void SF_ObjState()  //DarkWolf95:November 15, 2003: Adaptaion of Exl's code
-{					//DarkWolf95:December 7, 2003: Change to set only
-	int		state, newstate;
-	mobj_t	*mo;
+//DarkWolf95:November 15, 2003: Adaptation of Exl's code
+//DarkWolf95:December 7, 2003: Change to set only
+// Set
+// ObjState( {mobj}, state )
+void SF_ObjState(void)
+{
+    int		state, newstate;
+    mobj_t	*mo;
 
-	if(t_argc == 1)
-	{
-		mo = fs_current_script->trigger;
-		state = intvalue(t_argv[0]);
-	}
+    t_return.type = FSVT_int;
+    t_return.value.i = 0;  // default
 
-	else if(t_argc == 2)
-	{
-		mo = MobjForSvalue(t_argv[0]);
-		state = intvalue(t_argv[1]);
-	}
+    if(t_argc == 1)
+    {
+        mo = fs_current_script->trigger;
+        state = intvalue(t_argv[0]);
+    }
+    else if(t_argc == 2)
+    {
+        mo = MobjForSvalue(t_argv[0]);
+        state = intvalue(t_argv[1]);
+    }
+    else goto err_numarg;
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( ! mo )  goto done; // [WDJ]
+#endif
 
-	else
-	{
-		script_error("objstate: invalid number of arguments\n");
-		return;
-	}
+    switch (state)
+    {
+     case 8:
+        newstate = mo->info->spawnstate;
+        break;
+     case 9:
+        newstate = mo->info->seestate;
+        break;
+     case 10:
+        newstate = mo->info->meleestate;
+        break;
+     case 11:
+        newstate = mo->info->missilestate;
+        break;
+     case 12:
+        newstate = mo->info->painstate;
+        break;
+     case 13:
+        newstate = mo->info->deathstate;
+        break;
+     case 14:
+        newstate = mo->info->xdeathstate;
+        break;
+     case 15:
+        newstate = mo->info->crashstate;
+        break;
+     case 16:
+        newstate = mo->info->raisestate;
+        break;
+     default:
+        script_error("ObjState: invalid state\n");
+        return;
+    }
 
-	switch (state)
-	{
-		case 8:
-			newstate = mo->info->spawnstate;
-			break;
-		case 9:
-			newstate = mo->info->seestate;
-			break;
-		case 10:
-			newstate = mo->info->meleestate;
-			break;
-		case 11:
-			newstate = mo->info->missilestate;
-			break;
-		case 12:
-			newstate = mo->info->painstate;
-			break;
-		case 13:
-			newstate = mo->info->deathstate;
-			break;
-		case 14:
-			newstate = mo->info->xdeathstate;
-			break;
-		case 15:
-			newstate = mo->info->crashstate;
-			break;
-		case 16:
-			newstate = mo->info->raisestate;
-			break;
-		default:
-			script_error("objstate: invalid state");
-			return;
-	}
+    t_return.value.i = P_SetMobjState(mo, newstate);
+done:
+    return;
 
-		t_return.type = FSVT_int;
-		t_return.value.i = P_SetMobjState(mo, newstate);
+err_numarg:
+    missing_arg_str("ObjState", "1 or 2");
+    goto done;
 }
 
 
-
-void SF_HealObj()
+// HealObj( {mobj}, {health} )
+void SF_HealObj(void)
 {
+    mobj_t *mo;
+    int heal = 0;
 
-	mobj_t	*mo;
-	int heal = 0;
+    switch(t_argc)
+    {
+     case 0:
+        // Heal trigger to default health
+        mo = fs_current_script->trigger;
+	heal = mo->info->spawnhealth;
+        break;
+     case 1:
+        // Heal arg mobj to default health
+        mo = MobjForSvalue(t_argv[0]);
+        heal = mo->info->spawnhealth;
+        break;
+     case 2:
+        // Heal arg mobj to given health
+        mo = MobjForSvalue(t_argv[0]);
+        heal = intvalue(t_argv[1]);
+        break;
+     default:
+        goto err_numarg;
+    }
 
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+    mo->health = heal;
+#else
+    if( mo ) // [WDJ]
+        mo->health = heal;
+#endif
+done:
+    return;
 
-	// Heal trigger to default health
-	if (t_argc == 0)
-	{
-		mo = fs_current_script->trigger;
-		mo->health = mo->info->spawnhealth;
-	}
-
-	// Heal specified mobj to default health
-	else if (t_argc == 1)
-	{
-		mo = MobjForSvalue(t_argv[0]);
-		mo->health = mo->info->spawnhealth;
-	}
-
-	// Heal specied mobj to given health
-	else if (t_argc == 2)
-	{
-		mo = MobjForSvalue(t_argv[0]);
-		heal = intvalue(t_argv[1]);
-		mo->health = heal;
-	}
-
-	else
-	{
-		script_error("HealObj: Invalid number of arguments specified");
-		return;
-	}
-
+err_numarg:
+    missing_arg_str("HealObj", "0, 1 or 2");
+    goto done;
 }
 
 
 // Set next node mobj
-void SF_SetNodeNext()
+// SetNodeNext( mobj, next_mobj )
+void SF_SetNodeNext(void)
 {
 
-	mobj_t*		mo;		// Affected
-	mobj_t*		nextmo;
+    mobj_t* mo;		// Affected
+    mobj_t* nextmo;
 
 
-	if (t_argc != 2)
-	{
-		script_error("setnodenext: wrong number of arguments\n");
-		return;
-	}
+    if (t_argc != 2)  goto err_numarg;
 
-	mo = MobjForSvalue(t_argv[0]);
-	nextmo = MobjForSvalue(t_argv[1]);
+    mo = MobjForSvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !mo )  goto done;  // [WDJ]
+#endif
+
+    nextmo = MobjForSvalue(t_argv[1]);
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !nextmo )  goto done;  // [WDJ]
+#endif
 	
-	// Check if both mobjs are NODE
-	if (mo->type != MT_NODE || nextmo->type != MT_NODE)
-	{
-		script_error("setnodenext: mobj is not a node\n");
-		return;
-	}
+    // Check if both mobjs are NODE
+    if (mo->type != MT_NODE || nextmo->type != MT_NODE)  goto err_notnode;
+    mo->nextnode = nextmo;
+done:
+    return;
 
-	mo->nextnode = nextmo;
+err_numarg:
+    wrong_num_arg("SetNodeNext", 2);
+    goto done;
 
+err_notnode:
+    script_error("SetNodeNext: mobj is not a node\n");
+    goto done;
 }
 
 
 // Set the time to wait at a node
-void SF_SetNodePause()
+// SetNodePause( mobj, waittime )
+void SF_SetNodePause(void)
 {
+    mobj_t* mo;
 
-	mobj_t*		mo;
+    if (t_argc != 2)  goto err_numarg;
 
+    mo = MobjForSvalue(t_argv[0]);
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !mo )  goto done;  // [WDJ]
+#endif
+    if (mo->type != MT_NODE)  goto err_notnode;
+    mo->nodewait = t_argv[1].value.i;
+done:
+    return;
 
-	if (t_argc != 2)
-	{
-		script_error("setnodepause: wrong number of arguments\n");
-		return;
-	}
+err_numarg:
+    wrong_num_arg("SetNodePause", 2);
+    goto done;
 
-	mo = MobjForSvalue(t_argv[0]);
-	if (mo->type != MT_NODE)
-	{
-		script_error("setnodenext: mobj is not a node\n");
-		return;
-	}
-
-	mo->nodewait = t_argv[1].value.i;
-
+err_notnode:
+    script_error("SetNodePause: mobj is not a node\n");
+    goto done;
 }
 
 
 // Run a script when touching a node
-void SF_SetNodeScript()
+// SetNodeScript( mobj, scriptnum )
+void SF_SetNodeScript(void)
 {
     mobj_t*  mo;
     int      sn;
 
-    if (t_argc != 2)
-    {
-	script_error("setnodescript: wrong number of arguments\n");
-	return;
-    }
+    if (t_argc != 2)  goto err_numarg;
 
     mo = MobjForSvalue(t_argv[0]);
-    if (mo->type != MT_NODE)
-    {
-	script_error("setnodescript: mobj is not a node\n");
-	return;
-    }
-
+#ifdef OLDBEHAVIOR
+    // no valid mobj check
+#else
+    if( !mo )  goto done;  // [WDJ]
+#endif
+    if (mo->type != MT_NODE)  goto err_notnode;
 	  
     sn = intvalue(t_argv[1]);
 
     // Check if the script is defined
-    if(!fs_levelscript.children[sn])
-    {
-	script_error("SetNodeScript: script not defined\n");
-	return;
-    }
-
+    if(!fs_levelscript.children[sn])  goto err_notscript;
     mo->nodescript = sn + 1;  // +1 because 0 = none
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("SetNodeScript", 2);
+    goto done;
+
+err_notnode:
+    script_error("SetNodeScript: mobj is not a node\n");
+    goto done;
+
+err_notscript:
+    script_error("SetNodeScript: script not defined\n");
+    goto done;
 }
 
 
 
 /****************** Trig *********************/
 
-void SF_PointToAngle()
+// PointToAngle( x1, y1, x2, y2 )
+void SF_PointToAngle(void)
 {
     angle_t angle;
     int x1, y1, x2, y2;
 
-    if (t_argc < 4)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 4)   goto err_numarg;
+#else
+    if (t_argc != 4)   goto err_numarg;
+#endif
 
     x1 = intvalue(t_argv[0]) << FRACBITS;
     y1 = intvalue(t_argv[1]) << FRACBITS;
@@ -2419,18 +2732,25 @@ void SF_PointToAngle()
 
     t_return.type = FSVT_fixed;
     t_return.value.f = AngleToFixed(angle);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("PointToAngle", 4);
+    goto done;
 }
 
-void SF_PointToDist()
+// PointToDist( x1, y1, x2, y2 )
+void SF_PointToDist(void)
 {
     int dist;
     int x1, x2, y1, y2;
 
-    if (t_argc < 4)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 4)   goto err_numarg;
+#else
+    if (t_argc != 4)   goto err_numarg;
+#endif
 
     x1 = intvalue(t_argv[0]) << FRACBITS;
     y1 = intvalue(t_argv[1]) << FRACBITS;
@@ -2440,6 +2760,12 @@ void SF_PointToDist()
     dist = R_PointToDist2(x1, y1, x2, y2);
     t_return.type = FSVT_fixed;
     t_return.value.f = dist;
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("PointToDist", 4);
+    goto done;
 }
 
 /************* Camera functions ***************/
@@ -2447,18 +2773,27 @@ void SF_PointToDist()
 camera_t script_camera = { false, 0, 0, 0, 0, NULL };
 boolean script_camera_on;
 
-// setcamera(obj, [angle], [viewheight], [aiming])
-void SF_SetCamera()
+// SetCamera(obj, [angle], [viewheight], [pitch])
+// pitch= -50..50
+void SF_SetCamera(void)
 {
-    if (t_argc < 1)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    mobj_t * mo;
 
-    mobj_t *mo = MobjForSvalue(t_argv[0]);
-    if (!mo)
-        return; // nullptr check
+    if (t_argc < 1)  goto err_numarg;
+
+#ifdef OLDBEHAVIOR
+    t_return.type = FSVT_fixed;
+    t_return.value.f = 0; // default
+#else
+#if 0
+    // [WDJ] Docs: returns void
+    t_return.type = FSVT_fixed;
+    t_return.value.f = 0; // default
+#endif
+#endif
+
+    mo = MobjForSvalue(t_argv[0]);
+    if (!mo)  goto done;
 
     if (script_camera.mo != mo)
     {
@@ -2469,32 +2804,60 @@ void SF_SetCamera()
     }
 
     script_camera.mo = mo;
-    script_camera.mo->angle = t_argc < 2 ? mo->angle : FixedToAngle(fixedvalue(t_argv[1]));
-    script_camera.mo->z = t_argc < 3 ? (mo->subsector->sector->floorheight + (41 << FRACBITS)) : fixedvalue(t_argv[2]);
+    script_camera.mo->angle = (t_argc < 2) ? mo->angle : FixedToAngle(fixedvalue(t_argv[1]));
+    script_camera.mo->z = (t_argc < 3) ? (mo->subsector->sector->floorheight + (41 << FRACBITS)) : fixedvalue(t_argv[2]);
 
-    angle_t aiming = t_argc < 4 ? 0 : FixedToAngle(fixedvalue(t_argv[3]));
+    angle_t aiming = (t_argc < 4) ? 0 : FixedToAngle(fixedvalue(t_argv[3]));
     script_camera.aiming = G_ClipAimingPitch(aiming);
 
     script_camera_on = true;
-    t_return.type = FSVT_fixed;
+   
+#ifdef OLDBEHAVIOR
     t_return.value.f = script_camera.aiming; // FIXME really?
+#else
+#if 0
+    // [WDJ] Docs: returns void
+    t_return.value.f = script_camera.aiming; // FIXME really?
+#endif
+#endif
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SetCamera", "1, 2, 3 or 4");
 }
 
-void SF_ClearCamera()
+// ClearCamera( )
+void SF_ClearCamera(void)
 {
     script_camera_on = false;
-    if (!script_camera.mo)
-    {
-        script_error("Clearcamera: called without setcamera.\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if ( ! script_camera.mo )  goto err_camera;
+#else   
+    if ( ! script_camera.mo )  goto done;
+#endif
 
     script_camera.mo->angle = script_camera.startangle;
     script_camera.mo = NULL;
+done:
+    return;
+
+#ifdef OLDBEHAVIOR
+err_camera:
+    script_error("Clearcamera: called without setcamera.\n");
+    goto done;
+#else
+#if 0
+   // [WDJ] Docs: no error  (and it is unnecessary)
+err_camera:
+    script_error("Clearcamera: called without setcamera.\n");
+    goto done;
+#endif
+#endif
 }
 
-// movecamera(cameraobj, targetobj, targetheight, movespeed, targetangle, anglespeed)
-void SF_MoveCamera()
+// MoveCamera(cameraobj, targetobj, targetheight, movespeed, targetangle, anglespeed)
+void SF_MoveCamera(void)
 {
     fixed_t x, y, z;
     fixed_t xdist, ydist, zdist, xydist, movespeed;
@@ -2509,11 +2872,7 @@ void SF_MoveCamera()
     int moved = 0; // camera moved
     int quad1, quad2;
 
-    if (t_argc < 6)
-    {
-        script_error("movecamera: insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc != 6)  goto err_numarg;
 
     camera = MobjForSvalue(t_argv[0]);
     target = MobjForSvalue(t_argv[1]);
@@ -2645,126 +3004,151 @@ void SF_MoveCamera()
     }
 
     if ((x != camera->x || y != camera->y) && !P_TryMove(camera, x, y, true))
-    {
-        script_error("Illegal camera move\n");
-        return;
-    }
+       goto err_move;
     camera->z = z;
 
+done:
     t_return.type = FSVT_int;
     t_return.value.i = moved;
+    return;
+
+err_numarg:
+    wrong_num_arg("MoveCamera", 6);
+    goto done;
+
+err_move:
+#ifdef OLDBEHAVIOR
+    script_error("MoveCamera: Illegal camera move\n");
+#else   
+    // [WDJ] Docs: no error
+    // [WDJ] Questionable, not even good for debugging path
+//    script_error("MoveCamera: Illegal camera move\n");
+#endif
+    goto done;
 }
 
 /*********** sounds ******************/
 
-        // start sound from thing
-void SF_StartSound()
+// start sound from thing
+// StartSound( mobj, sound_lump_name )
+void SF_StartSound(void)
 {
     mobj_t *mo;
 
-    if (t_argc < 2)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-
-    if (t_argv[1].type != FSVT_string)
-    {
-        script_error("sound lump argument not a string!\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 2)  goto err_numarg;
+#else
+    if (t_argc != 2)  goto err_numarg;
+#endif
+    if (t_argv[1].type != FSVT_string)  goto err_notsound;
 
     mo = MobjForSvalue(t_argv[0]);
-    if (!mo)
-        return;
+    if (!mo)  goto done;
 
     S_StartSoundName(mo, t_argv[1].value.s);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("StartSound", 2);
+    goto done;
+
+err_notsound:
+    script_error("StartSound: sound lump argument not a string!\n");
+    goto done;
 }
 
-        // start sound from sector
-void SF_StartSectorSound()
+// start sound from sector
+// StartSectorSound( tagnum, sound_lump_name )
+void SF_StartSectorSound(void)
 {
-    sector_t *sector;
     int tagnum, secnum;
 
-    if (t_argc < 2)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-    if (t_argv[1].type != FSVT_string)
-    {
-        script_error("sound lump argument not a string!\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 2)  goto err_numarg;
+#else
+    if (t_argc != 2)  goto err_numarg;
+#endif
+    if (t_argv[1].type != FSVT_string)  goto err_notsound;
 
-    tagnum = intvalue(t_argv[0]);
-    // argv is sector tag
+    tagnum = intvalue(t_argv[0]);  // sector tag
 
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
+    if (secnum < 0)  goto err_nosector;
 
     secnum = -1; // init for search FindSector
     while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
     {
         // all sectors with the tagnum
-        sector = &sectors[secnum];
+        sector_t * sector = &sectors[secnum];
         S_StartSoundName((mobj_t *) & sector->soundorg, t_argv[1].value.s);
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("StartSectorSound", 2);
+    goto done;
+
+err_notsound:
+    script_error("StartSectorSound: sound lump argument not a string!\n");
+    goto done;
+
+err_nosector:
+    script_error("StartSectorSound: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_AmbiantSound()
+// AmbiantSound( sound_lump_name )
+void SF_AmbiantSound(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
-    if (t_argv[0].type != FSVT_string)
-    {
-        script_error("sound lump argument not a string!\n");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
+    if (t_argv[0].type != FSVT_string)  goto err_notsound;
 
     S_StartSoundName(NULL, t_argv[0].value.s);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("AmbiantSound", 1);
+    goto done;
+
+err_notsound:
+    script_error("AmbiantSound: sound lump argument not a string!\n");
+    goto done;
 }
 
 /************* Sector functions ***************/
 
-		//sectoreffect(tagnum, [effect])
-
-void SF_SectorEffect() //mainly copy/paste from p_spec
+// Not in Docs
+// [WDJ] Does not match code: SectorEffect(tagnum, [effect]) 
+// [WDJ] Does not test, no need for return value
+// Set, no return value
+// SectorEffect(tagnum, effect)
+void SF_SectorEffect(void)
 {
-    int secnum = P_FindSectorFromTag(intvalue(t_argv[0]), -1);
-    int tagnum = intvalue(t_argv[0]);
-    int value = intvalue(t_argv[1]);
-    int i;
-    //sector_t *sec = &sectors[secnum];
-    sector_t *sector;
+    int tagnum, select, secnum;
+    sector_t * sector;
 	
-    if (!t_argc)
+#ifdef OLDBEHAVIOR
+    // was once a test too ??, but now effect is not optional
+    if (!t_argc)  goto err_numarg;
+#else
+    if (t_argc != 2)  goto err_numarg;  // [WDJ]
+#endif
+
+    tagnum = intvalue(t_argv[0]);
+    select = intvalue(t_argv[1]);
+
+    secnum = -1; // init for search FindSector
+    // silent when no sectors found
+    while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
     {
-        script_error("sectoreffect: arguments missing\n");
-        return;
-    }
-    //  Init special SECTORs.
+        // all sectors with the tagnum
+        sector = &sectors[secnum];
 
-    sector = sectors; // & sectors[0]
-    for (i=0 ; i<numsectors ; i++, sector++)
-    {
-        // for all sectors
-        if (sector->tag != tagnum)
-           continue;
-
-        if (sector->special&SECRET_MASK) //SoM: 3/8/2000: count secret flags
-          totalsecret++;
-
-        switch (value)
+        switch (select)
         {
 	  case 1:
 	    // FLICKERING LIGHTS
@@ -2786,11 +3170,7 @@ void SF_SectorEffect() //mainly copy/paste from p_spec
 	    P_SpawnGlowingLight(sector);
 	    break;
 
-	  //case 9:
-	    // SECRET SECTOR
-	    //if(sector->special<32)
-	    //  totalsecret++;
-	    //	break;
+	  //case 9: SECRET SECTOR
 
 	  case 10:
 	    // DOOR CLOSE IN 30 SECONDS
@@ -2819,82 +3199,105 @@ void SF_SectorEffect() //mainly copy/paste from p_spec
 	}
     }
 
+#ifdef OLDBEHAVIOR
+    t_return.type = FSVT_int;
+    t_return.value.i = select;
+#else
+#if 0
+    // [WDJ] Why would this need to return an input arg
+    t_return.type = FSVT_int;
+    t_return.value.i = select;
+#endif
+#endif
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("SectorEffect", 1);
+    goto done;
+}
+
+// floor height of sector
+// Test or Set
+// FloorHeight( tagnum, {floorheight}, {crush} )
+// Return Test floorheight
+// Return when Set floorheight: 1=default, 0=crushing
+void SF_FloorHeight(void)
+{
+    int tagnum, secnum;
+    int returnval = 1;  // When Set floorheight: 1=default, 0=crushing
+
+    if (!t_argc)  goto err_numarg;
 
     t_return.type = FSVT_int;
-    t_return.value.i = intvalue(t_argv[1]);
-}
-        // floor height of sector
-
-void SF_FloorHeight()
-{
-    sector_t *sector;
-    int tagnum;
-    int secnum;
-    int returnval = 1;
-
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
+    if (secnum < 0)  goto err_nosector;
 
     if (t_argc > 1)     // > 1: set floorheight
     {
-        int i = -1;
-        boolean crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
+        // set floorheight
+        fixed_t arg_flrheight = fixedvalue(t_argv[1]);  // set floorheight
+	boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
 
         // set all sectors with tag
-        while ((i = P_FindSectorFromTag(tagnum, i)) >= 0)
+	secnum = -1;
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-            //sectors[i].floorheight = intvalue(t_argv[1]) << FRACBITS;
-            if (T_MovePlane(&sectors[i], abs(fixedvalue(t_argv[1]) - sectors[i].floorheight), fixedvalue(t_argv[1]), crush, 0, fixedvalue(t_argv[1]) > sectors[i].floorheight ? 1 : -1) == MP_crushed)
-                returnval = 0;
+	    sector_t * sec = &sectors[secnum];
+	    result_e res =
+	     T_MovePlane(sec,
+			 abs(arg_flrheight - sec->floorheight), // speed
+			 arg_flrheight, arg_crush, 0,  // dest, crush, move floor
+			 (arg_flrheight > sec->floorheight) ? 1 : -1); // direction
+	    if ( res == MP_crushed)
+                returnval = 0;  // signal crushing
         }
     }
     else
+    {
+        // get floorheight
         returnval = sectors[secnum].floorheight >> FRACBITS;
+    }
 
-    // return floorheight
-
-    t_return.type = FSVT_int;
+    // return floorheight, or crushing
     t_return.value.i = returnval;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("FloorHeight", "1, 2 or 3");
+    goto done;
+
+err_nosector:
+    script_error("FloorHeight: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_MoveFloor()
+// MoveFloor( tagnum, destheight, {speed} )
+void SF_MoveFloor(void)
 {
-    int secnum = -1;  // init search FindSector
-    sector_t *sec;
-    floormove_t * mfloor;
-    int tagnum, platspeed = 1, destheight;
+    int secnum;
+    int tagnum, platspeed;
+    fixed_t destheight;
 
-    if (t_argc < 2)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc < 2)  goto err_numarg;
 
     tagnum = intvalue(t_argv[0]);
     destheight = intvalue(t_argv[1]) << FRACBITS;
-    platspeed = FLOORSPEED * (t_argc > 2 ? intvalue(t_argv[2]) : 1);
+    platspeed = FLOORSPEED;
+    if(t_argc > 2)
+        platspeed *= intvalue(t_argv[2]);  // speed multiplier
 
     // move all sectors with tag
-
+    secnum = -1;  // init search
     while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
     {
-        sec = &sectors[secnum];
+        sector_t * sec = &sectors[secnum];
+        floormove_t * mfloor;
 
         // Don't start a second thinker on the same floor
         if (P_SectorActive( S_floor_special, sec))
@@ -2907,300 +3310,346 @@ void SF_MoveFloor()
         mfloor->type = -1;       // not done by line
         mfloor->crush = false;
 
-        mfloor->direction = destheight < sec->floorheight ? -1 : 1;
+        mfloor->direction = (destheight < sec->floorheight) ? -1 : 1;
         mfloor->sector = sec;
         mfloor->speed = platspeed;
         mfloor->floordestheight = destheight;
     }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MoveFloor", "2 or 3");
+    goto done;
 }
 
-        // ceiling height of sector
-void SF_CeilingHeight()
+// ceiling height of sector
+// CeilingHeight( tagnum, {floorheight}, {crush} )
+// Return Test ceilingheight
+// Return when Set ceilingheight: 1=default, 0=crushing
+void SF_CeilingHeight(void)
 {
-    sector_t *sector;
-    int secnum;
-    int tagnum;
-    int returnval = 1;
+    int tagnum, secnum;
+    int returnval = 1;  // When Set floorheight: 1=default, 0=crushing
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
+
+    t_return.type = FSVT_int;
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
+    if (secnum < 0)  goto err_nosector;
 
     if (t_argc > 1)     // > 1: set ceilheight
     {
-        int fsecn = -1; // init search FindSector
-        boolean crush = (t_argc == 3)? intvalue(t_argv[2]) : false;
+        // set ceilingheight
+        fixed_t arg_cheight = fixedvalue(t_argv[1]);  // set ceilingheight
+	boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
 
         // set all sectors with tag
-        while ((fsecn = P_FindSectorFromTag(tagnum, fsecn)) >= 0)
+	secnum = -1;
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-            //sectors[i].ceilingheight = intvalue(t_argv[1]) << FRACBITS;
-            if (T_MovePlane(&sectors[fsecn],
-			    abs(fixedvalue(t_argv[1]) - sectors[fsecn].ceilingheight),
-			    fixedvalue(t_argv[1]), crush, 1,
-			    fixedvalue(t_argv[1]) > sectors[fsecn].ceilingheight ? 1 : -1) == MP_crushed)
-                returnval = 0;
+	    sector_t * sec = &sectors[secnum];
+	    result_e res =
+	     T_MovePlane(sec,
+			 abs(arg_cheight - sec->ceilingheight), // speed
+			 arg_cheight, arg_crush, 1,  // dest, crush, move ceiling
+			 (arg_cheight > sec->ceilingheight) ? 1 : -1); // direction
+	    if ( res == MP_crushed)
+                returnval = 0;  // signal crushing
         }
     }
     else
+    {
+        // get ceilingheight
         returnval = sectors[secnum].ceilingheight >> FRACBITS;
+    }
 
-    // return floorheight
-    t_return.type = FSVT_int;
+    // return floorheight, or crushing
     t_return.value.i = returnval;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("CeilingHeight", "1, 2 or 3");
+    goto done;
+
+err_nosector:
+    script_error("CeilingHeight: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_MoveCeiling()
+// MoveCeiling( tagnum, destheight, {speed} )
+void SF_MoveCeiling(void)
 {
-    int secnum = -1; // init search FindSector
-    sector_t *sec;
-    ceiling_t *ceiling;
-    int tagnum, platspeed = 1, destheight;
+    int secnum;
+    int tagnum, platspeed;
+    fixed_t destheight;
 
-    if (t_argc < 2)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc < 2)  goto err_numarg;
 
     tagnum = intvalue(t_argv[0]);
     destheight = intvalue(t_argv[1]) << FRACBITS;
-    platspeed = FLOORSPEED * (t_argc > 2 ? intvalue(t_argv[2]) : 1);
+    platspeed = FLOORSPEED;
+    if(t_argc > 2)
+        platspeed *= intvalue(t_argv[2]);  // speed multiplier
 
     // move all sectors with tag
-
+    secnum = -1;  // init search
     while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
     {
-        sec = &sectors[secnum];
+        sector_t * sec = &sectors[secnum];
+        ceiling_t * mceiling;
 
         // Don't start a second thinker on the same floor
         if (P_SectorActive( S_ceiling_special, sec))
             continue;
 
-        ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC, 0);
-        P_AddThinker(&ceiling->thinker);
-        sec->ceilingdata = ceiling;
-        ceiling->thinker.function.acp1 = (actionf_p1) T_MoveCeiling;
-        ceiling->type = CT_genCeiling;     // not done by line
-        ceiling->crush = false;
+        mceiling = Z_Malloc(sizeof(ceiling_t), PU_LEVSPEC, 0);
+        P_AddThinker(&mceiling->thinker);
+        sec->ceilingdata = mceiling;
+        mceiling->thinker.function.acp1 = (actionf_p1) T_MoveCeiling;
+        mceiling->type = CT_genCeiling;     // not done by line
+        mceiling->crush = false;
 
-        ceiling->direction = destheight < sec->ceilingheight ? -1 : 1;
-        ceiling->sector = sec;
-        ceiling->speed = platspeed;
+        mceiling->direction = destheight < sec->ceilingheight ? -1 : 1;
+        mceiling->sector = sec;
+        mceiling->speed = platspeed;
         // just set top and bottomheight the same
-        ceiling->topheight = ceiling->bottomheight = destheight;
+        mceiling->topheight = mceiling->bottomheight = destheight;
 
-        ceiling->tag = sec->tag;
-        P_AddActiveCeiling(ceiling);
+        mceiling->tag = sec->tag;
+        P_AddActiveCeiling(mceiling);
     }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("MoveCeiling", "2 or 3");
+    goto done;
 }
 
-void SF_LightLevel()
+// Test or Set
+// Lightlevel( tagnum, {lightlevel} )
+void SF_LightLevel(void)
 {
     sector_t *sector;
     int secnum;
     int tagnum;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
+
+    t_return.type = FSVT_int;
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
+    if (secnum < 0)  goto err_nosector;
+    sector = &sectors[secnum];  // first sector for return value
 
-    if (secnum < 0)
+    if (t_argc > 1)     // > 1: set
     {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
-
-    if (t_argc > 1)     // > 1: set ceilheight
-    {
-        int fsecn = -1; // init search FindSector
-
         // set all sectors with tag
-        while ((fsecn = P_FindSectorFromTag(tagnum, fsecn)) >= 0)
+        int arg_light = intvalue(t_argv[1]);
+	secnum = -1;  // init search
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
 	    // all sectors with tagnum
-            sectors[fsecn].lightlevel = intvalue(t_argv[1]);
+            sectors[secnum].lightlevel = arg_light;
         }
     }
 
     // return lightlevel
-    t_return.type = FSVT_int;
     t_return.value.i = sector->lightlevel;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("LightLevel", "1 or 2");
+    goto done;
+
+err_nosector:
+    script_error("LightLevel: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_FadeLight()
+// Set
+// Lightlevel( tagnum, lightlevel, {speed} )
+void SF_FadeLight(void)
 {
     int sectag, destlevel, speed = 1;
 
-    if (t_argc < 2)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (t_argc < 2)  goto err_numarg;
 
     sectag = intvalue(t_argv[0]);
     destlevel = intvalue(t_argv[1]);
-    speed = t_argc > 2 ? intvalue(t_argv[2]) : 1;
+    speed = (t_argc > 2) ? intvalue(t_argv[2]) : 1;
 
     P_FadeLight(sectag, destlevel, speed);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("FadeLight", "2 or 3");
+    goto done;
 }
 
-void SF_FloorTexture()
+// Test or Set
+// FloorTexture( tagnum, {flatname} )
+void SF_FloorTexture(void)
 {
     int tagnum, secnum;
     sector_t *sector;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
+
+    t_return.type = FSVT_string;
+    t_return.value.s = "";  // default
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
+    if (secnum < 0)  goto err_nosector;
+    sector = &sectors[secnum];  // first sector for return value
 
     if (t_argc > 1)
     {
-        int i = -1;
-        int picnum = R_FlatNumForName(t_argv[1].value.s);
+        // set texture
+        int picnum = R_GetFlatNumForName(t_argv[1].value.s);
+            // when flat not found, defaults to first flat
 
         // set all sectors with tag
-        while ((i = P_FindSectorFromTag(tagnum, i)) >= 0)
+	secnum = -1;  // init search
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-            sectors[i].floorpic = picnum;
+            sectors[secnum].floorpic = picnum;
         }
     }
 
-    t_return.type = FSVT_string;
-    t_return.value.s = P_FlatNameForNum(sectors[secnum].floorpic);
+    t_return.value.s = P_FlatNameForNum(sector->floorpic);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("FloorTexture", "1 or 2");
+    goto done;
+
+err_nosector:
+    script_error("FloorTexture: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_SectorColormap()
+// Test or Set
+// SectorColormap( tagnum, {mapnum} )
+// mapnum= -1 removes the colormap
+void SF_SectorColormap(void)
 {
     int tagnum, secnum;
     sector_t *sector;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
+
+    t_return.type = FSVT_string;
+    t_return.value.s = "";  // default
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
+    if (secnum < 0)  goto err_nosector;
+    sector = &sectors[secnum];  // first sector for return value
 
     if (t_argc > 1)
     {
-        int i = -1;
         int mapnum = R_ColormapNumForName(t_argv[1].value.s);
 
         // set all sectors with tag
-        while ((i = P_FindSectorFromTag(tagnum, i)) >= 0)
+	secnum = -1; // init search
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
+	    sector_t * sec = &sectors[secnum];
             if (mapnum == -1)
             {
-                sectors[i].midmap = 0;
-                sectors[i].model = SM_normal;
-                sectors[i].modelsec = 0;
+	        // remove colormap
+                sec->midmap = 0;
+                sec->model = SM_normal;
+                sec->modelsec = 0;
             }
             else
             {
-                sectors[i].midmap = mapnum;
-                sectors[i].model = SM_colormap;
-                sectors[i].modelsec = 0;
+	        // set colormap
+                sec->midmap = mapnum;
+                sec->model = SM_colormap;
+                sec->modelsec = 0;
             }
         }
     }
 
-    t_return.type = FSVT_string;
     t_return.value.s = R_ColormapNameForNum(sector->midmap);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SectorColormap", "1 or 2");
+    goto done;
+
+err_nosector:
+    script_error("SectorColormap: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_CeilingTexture()
+// Test or Set
+// CeilingTexture( tagnum, {flatname} )
+void SF_CeilingTexture(void)
 {
     int tagnum, secnum;
     sector_t *sector;
 
-    if (!t_argc)
-    {
-        script_error("insufficient arguments to function\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
+
+    t_return.type = FSVT_string;
+    t_return.value.s = "";  // default
 
     tagnum = intvalue(t_argv[0]);
 
-    // argv is sector tag
+    // check on existing tagged sector
     secnum = P_FindSectorFromTag(tagnum, -1);
-
-    if (secnum < 0)
-    {
-        script_error("sector not found with tagnum %i\n", tagnum);
-        return;
-    }
-
-    sector = &sectors[secnum];
+    if (secnum < 0)  goto err_nosector;
+    sector = &sectors[secnum];  // first sector for return value
 
     if (t_argc > 1)
     {
-        int i = -1;
-        int picnum = R_FlatNumForName(t_argv[1].value.s);
+        // set texture
+        int picnum = R_GetFlatNumForName(t_argv[1].value.s);
+            // when flat not found, defaults to first flat
 
         // set all sectors with tag
-        while ((i = P_FindSectorFromTag(tagnum, i)) >= 0)
+	secnum = -1; // init search
+        while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-            sectors[i].ceilingpic = picnum;
+            sectors[secnum].ceilingpic = picnum;
         }
     }
 
-    t_return.type = FSVT_string;
-    t_return.value.s = P_FlatNameForNum(sectors[secnum].ceilingpic);
+    t_return.value.s = P_FlatNameForNum(sector->ceilingpic);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("CeilingTexture", "1 or 2");
+    goto done;
+
+err_nosector:
+    script_error("CeilingTexture: sector not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-void SF_ChangeHubLevel()
+void SF_ChangeHubLevel(void)
 {
 /*  int tagnum;
 
@@ -3226,22 +3675,31 @@ void SF_ChangeHubLevel()
 }
 
 // for start map: start new game on a particular skill
-void SF_StartSkill()
+// StartSkill( skill )
+// skill = 1..5
+void SF_StartSkill(void)
 {
     int skill;
 
-    if (t_argc < 1)
-    {
-        script_error("need skill level to start on\n");
-        return;
-    }
+#ifdef OLDBEHAVIOR
+    if (t_argc < 1)  goto err_numarg;
+#else
+    if (t_argc != 1)  goto err_numarg;
+#endif
 
     // -1: 1-5 is how we normally see skills
     // 0-4 is how doom sees them
 
     skill = intvalue(t_argv[0]) - 1;
 
+    // skill 0..4
     G_DeferedInitNew(skill, G_BuildMapName(1, 1), false);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("StartSkill", 1);
+    goto done;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3249,188 +3707,214 @@ void SF_StartSkill()
 // Doors
 //
 
-// opendoor(sectag, [speed], [delay])
-
-void SF_OpenDoor()
+// OpenDoor(tagnum, [speed], [delay])
+void SF_OpenDoor(void)
 {
-    int speed, wait_time;
-    int sectag;
+    int speed;
+    int wait_time;
+    int tagnum;
 
-    if (t_argc < 1)
-    {
-        script_error("need sector tag for door to open\n");
-        return;
-    }
+    if (t_argc < 1)  goto err_numarg;
 
     // got sector tag
-    sectag = intvalue(t_argv[0]);
+    tagnum = intvalue(t_argv[0]);
 
     // door wait time
-
     if (t_argc > 1)     // door wait time
         wait_time = (intvalue(t_argv[1]) * 35) / 100;
     else
         wait_time = 0;  // 0= stay open
 
     // door speed
-
     if (t_argc > 2)
         speed = intvalue(t_argv[2]);
     else
         speed = 1;      // 1= normal speed
 
-    EV_OpenDoor(sectag, speed, wait_time);
+    EV_OpenDoor(tagnum, speed, wait_time);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("OpenDoor", "1, 2, or 3");
+    goto done;
 }
 
-void SF_CloseDoor()
+// CloseDoor(tagnum, [speed])
+void SF_CloseDoor(void)
 {
     int speed;
-    int sectag;
+    int tagnum;
 
-    if (t_argc < 1)
-    {
-        script_error("need sector tag for door to open\n");
-        return;
-    }
+    if (t_argc < 1)  goto err_numarg;
 
     // got sector tag
-    sectag = intvalue(t_argv[0]);
+    tagnum = intvalue(t_argv[0]);
 
     // door speed
-
     if (t_argc > 1)
         speed = intvalue(t_argv[1]);
     else
         speed = 1;      // 1= normal speed
 
-    EV_CloseDoor(sectag, speed);
+    EV_CloseDoor(tagnum, speed);
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("CloseDoor", "1 or 2");
+    goto done;
 }
 
-// play demo, internal lump, should support external too
-
-void SF_PlayDemo()
+// play demo, internal lump or external file
+// PlayDemo( lumpname )
+void SF_PlayDemo(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("playdemo: invalid number of arguments\n");
-        return;
-    }
-    if (t_argv[0].type != FSVT_string)
-    {
-        script_error("playdemo: not a lump name");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
+    if (t_argv[0].type != FSVT_string)  goto err_notlump;
 
     G_DoPlayDemo(t_argv[0].value.s);
     // if name is lump, then play lump,
     // otherwise it adds ".lmp" and reads demo file
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("PlayDemo", 1);
+    goto done;
+
+err_notlump:
+    script_error("PlayDemo: not a lump name\n");
+    goto done;
 }
 
 // run console cmd
-void SF_RunCommand()
+// RunCommand( cmdstring, ... )   upto 128 strings
+void SF_RunCommand(void)
 {
-    char * tempstr = Z_cat_args(0);
+    char * tempstr = Z_cat_args(0);  // concat arg0, arg1, ...
     COM_BufAddText(tempstr);
     Z_Free(tempstr);
 }
 
 // return the (string) value of a cvar
-void SF_CheckCVar()
+void SF_CheckCVar(void)
 {
-    if (t_argc != 1)
+    consvar_t *cvar;
+
+    if (t_argc != 1)  goto err_numarg;
+
+    t_return.type = FSVT_string;
+
+    if ((cvar = CV_FindVar(stringvalue(t_argv[0]))))
     {
-        script_error("invalid number of arguments\n");
+        t_return.value.s = cvar->string;
     }
     else
     {
-        consvar_t *cvar;
-
-        t_return.type = FSVT_string;
-        if ((cvar = CV_FindVar(stringvalue(t_argv[0]))))
-        {
-            t_return.value.s = cvar->string;
-        }
-        else
-        {
-            t_return.value.s = "";
-        }
+        t_return.value.s = "";
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("CheckCVar", 1);
+    goto done;
 }
 
 
 //DarkWolf95:July 23, 2003:Return/Set LineTexture Yay!
-//linetexture(tag, texture, side, sections)
-// sections: 1 = top 2 = mid 4 = bot
-
-void SF_SetLineTexture()
+// Set
+// SetLineTexture( tagnum, texturename, sidenum, sectionflags )
+// sidenum: 0, 1
+// sectionflags: 1 = top 2 = mid 4 = bot
+void SF_SetLineTexture(void)
 {
-  int tagnum, linenum, side, sections;
-  line_t *line;
+    int tagnum, linenum;
+#ifdef OLDBEHAVIOR
+    int side;
+#else
+    unsigned int side;
+#endif
+    int sectionflags;
+    line_t *line;
 
-  if(t_argc != 4)
-  {
-     script_error("insufficient arguments to function\n");
-     return;
-  }
+    if(t_argc != 4)  goto err_numarg;
 
-  tagnum = intvalue(t_argv[0]);
+    tagnum = intvalue(t_argv[0]);
 
-  // argv is sector tag
-  linenum = P_FindLineFromTag(tagnum, -1);
+    // check on existing line
+    linenum = P_FindLineFromTag(tagnum, -1);
+    if(linenum < 0)  goto err_noline;
+    line = &lines[linenum];  // for return value
 
-  if(linenum < 0)
-  {
-     script_error("line not found with tagnum %i\n", tagnum);
-     return;
-  }
+#ifdef OLDBEHAVIOR
+      side = intvalue(t_argv[2]); // FIXME [smite] 0,1 only
+#else
+    side = (unsigned) intvalue(t_argv[2]);
+    if( side > 1 )  side = 1;  // easier than an error
+#endif
+    sectionflags = intvalue(t_argv[3]);
 
-  line = &lines[linenum];
-
-  if(t_argc > 1)
-  {
-      int i = -1;
+    {
+      // set textures
       short picnum = R_TextureNumForName(t_argv[1].value.s);
         // returns 0=no-texture, or default texture, otherwise valid
 
-      side = intvalue(t_argv[2]); // FIXME [smite] 0,1 only
-      sections = intvalue(t_argv[3]);
-
       // set all sectors with tag
-      while ((i = P_FindLineFromTag(tagnum, i)) >= 0)
+      linenum = -1; // init search
+      while (( linenum = P_FindLineFromTag(tagnum, linenum)) >= 0)
       {
-	  if (lines[i].sidenum[side] == NULL_INDEX)
+	  line_t * linep = &lines[linenum];
+	  if (linep->sidenum[side] == NULL_INDEX)
 	  {
+#ifdef OLDBEHAVIOR
 	      script_error("nonexistant side\n");
 	      return;
+#else
+#if 0
+	      // [WDJ] Unnecessary error, error is not in script
+	      script_error("nonexistant side\n");
+	      goto done;
+#endif
+#endif
 	  }
 	  else
 	  {
+	      side_t * sidep = & sides[linep->sidenum[side]];
 	      // textures, 0=no-texture, otherwise valid
-	      if(sections & 1)
-	         sides[lines[i].sidenum[side]].toptexture = picnum;
-	      if(sections & 2)
-	         sides[lines[i].sidenum[side]].midtexture = picnum;
-	      if(sections & 4)
-	         sides[lines[i].sidenum[side]].bottomtexture = picnum;
+	      if(sectionflags & 1)
+	         sidep->toptexture = picnum;
+	      if(sectionflags & 2)
+	         sidep->midtexture = picnum;
+	      if(sectionflags & 4)
+	         sidep->bottomtexture = picnum;
 	  }
       }
-  }
+    }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("SetLineTexture", 1);
+    goto done;
+
+err_noline:   
+    script_error("line not found with tagnum %i\n", tagnum);
+    goto done;
 }
 
-// any linedef type
-
-void SF_LineTrigger()
+// Imitate a linedef trigger of any linedef type
+// LineTrigger( special, {tagnum} )
+// With tagnum, or with tag of 0
+void SF_LineTrigger(void)
 {
     line_t sf_tmpline;
 
-    if (!t_argc)
-    {
-        script_error("need line trigger type\n");
-        return;
-    }
+    if (!t_argc)  goto err_numarg;
 
     sf_tmpline.special = intvalue(t_argv[0]);
-    sf_tmpline.tag = t_argc < 2 ? 0 : intvalue(t_argv[1]);
+    sf_tmpline.tag = (t_argc>1)? intvalue(t_argv[1]) : 0;
     // [WDJ] used by P_UseSpecialLine and functions in p_genlin
     sf_tmpline.flags = 0;
     sf_tmpline.sidenum[0] = NULL_INDEX;
@@ -3440,112 +3924,139 @@ void SF_LineTrigger()
 
     P_UseSpecialLine(fs_run_trigger, &sf_tmpline, 0);      // Try using it
     P_ActivateCrossedLine(&sf_tmpline, 0, fs_run_trigger); // Try crossing it
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("LineTrigger", "1 or 2");
+    goto done;
 }
 
-void SF_LineFlag()
+// Test or Set
+// LineFlag( linenum, {flagnum}, {flagvalue} )
+// flagnum: flag bit position, 0..31
+// flagvalue: 0, 1
+void SF_LineFlag(void)
 {
     line_t *line;
     int linenum;
     int flagnum;
+    uint32_t flagmsk;
 
-    if (t_argc < 2)
-    {
-        script_error("LineFlag: missing parameters\n");
-        return;
-    }
-
-    linenum = intvalue(t_argv[0]);
-    if (linenum < 0 || linenum > numlines)
-    {
-        script_error("LineFlag: Invalid line number.\n");
-        return;
-    }
-
-    line = & lines[linenum];
-
-    flagnum = intvalue(t_argv[1]);
-    if (flagnum < 0 || flagnum > 32)
-    {
-        script_error("LineFlag: Invalid flag number.\n");
-        return;
-    }
-
-    if (t_argc > 2)
-    {
-        line->flags &= ~(1 << flagnum);
-        if (intvalue(t_argv[2]))
-            line->flags |= (1 << flagnum);
-    }
+    if (t_argc < 2)  goto err_numarg;
 
     t_return.type = FSVT_int;
-    t_return.value.i = line->flags & (1 << flagnum);
+
+    linenum = intvalue(t_argv[0]);
+    if (linenum < 0 || linenum > numlines)  goto err_noline;
+    line = & lines[linenum];  // for test, set, clear
+
+    flagnum = intvalue(t_argv[1]);
+    if (flagnum < 0 || flagnum > 32)  goto err_flagnum;
+    flagmsk = (1 << flagnum);
+
+    if (t_argc > 2)
+    {   // Clear or Set flags
+        line->flags &= ~flagmsk;
+        if (intvalue(t_argv[2]))
+            line->flags |= flagmsk;
+    }
+
+    t_return.value.i = line->flags & flagmsk;
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("LineFlag", "1 or 2");
+    goto done;
+
+err_noline:
+    script_error("LineFlag: invalid line number %i\n", linenum);
+    goto done;
+
+err_flagnum:
+    script_error("LineFlag: invalid flag number %i\n", flagnum);
+    goto done;
 }
 
-void SF_ChangeMusic()
+// ChangeMusic( namestring )
+void SF_ChangeMusic(void)
 {
-    if (!t_argc)
-    {
-        script_error("need new music name\n");
-        return;
-    }
-    if (t_argv[0].type != FSVT_string)
-    {
-        script_error("incorrect argument to function\n");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
+    if (t_argv[0].type != FSVT_string)  goto err_notstring;
 
     S_ChangeMusicName(t_argv[0].value.s, 1);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("ChangeMusic", 1);
+    goto done;
+
+err_notstring:
+    script_error("ChangeMusic: require music name string\n");
+    goto done;
 }
 
 // SoM: Max and Min math functions.
-void SF_Max()
+// Max( v1, v2 )
+void SF_Max(void)
 {
     fixed_t n1, n2;
 
-    if (t_argc != 2)
-    {
-        script_error("invalid number of arguments\n");
-        return;
-    }
+    if (t_argc != 2)  goto err_numarg;
 
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
     t_return.type = FSVT_fixed;
     t_return.value.f = n1 > n2 ? n1 : n2;
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Max", 2);
+    goto done;
 }
 
-void SF_Min()
+// Min( v1, v2 )
+void SF_Min(void)
 {
     fixed_t n1, n2;
 
-    if (t_argc != 2)
-    {
-        script_error("invalid number of arguments\n");
-        return;
-    }
+    if (t_argc != 2)  goto err_numarg;
 
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
     t_return.type = FSVT_fixed;
     t_return.value.f = n1 < n2 ? n1 : n2;
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Min", 2);
+    goto done;
 }
 
-void SF_Abs()
+// Abs( v1 )
+void SF_Abs(void)
 {
     fixed_t n1;
 
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-        return;
-    }
+    if (t_argc != 1)  goto err_numarg;
 
     n1 = fixedvalue(t_argv[0]);
 
     t_return.type = FSVT_fixed;
-    t_return.value.f = n1 < 0 ? n1 * -1 : n1;
+//    t_return.value.f = n1 < 0 ? n1 * -1 : n1;
+    t_return.value.f = abs(n1);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Abs", 1);
+    goto done;
 }
 
 //Hurdler: some new math functions
@@ -3555,161 +4066,208 @@ fixed_t double2fixed(double t)
     return ((int) fl << 16) | (int) ((t - fl) * 65536.0);
 }
 
-void SF_Sin()
+// Sin( angle )
+// angle: radians
+void SF_Sin(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+   
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(sin(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Sin", 1);
+    goto done;
 }
 
-void SF_ASin()
+// ASin( v1 )
+// Return angle: radians
+void SF_ASin(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(asin(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("ASin", 1);
+    goto done;
 }
 
-void SF_Cos()
+// Cos( angle )
+// angle: radians
+void SF_Cos(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(cos(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Cos", 1);
+    goto done;
 }
 
-void SF_ACos()
+// ACos( v1 )
+// Return angle: radians
+void SF_ACos(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(acos(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("ACos", 1);
+    goto done;
 }
 
-void SF_Tan()
+// Tan( angle )
+// angle: radians
+void SF_Tan(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(tan(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Tan", 1);
+    goto done;
 }
 
-void SF_ATan()
+// ATan( v1 )
+// Return angle: radians
+void SF_ATan(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(atan(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("ATan", 1);
+    goto done;
 }
 
-void SF_Exp()
+void SF_Exp(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(exp(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Exp", 1);
+    goto done;
 }
 
-void SF_Log()
+// Log( v1 )
+void SF_Log(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(log(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Log", 1);
+    goto done;
 }
 
-void SF_Sqrt()
+void SF_Sqrt(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = double2fixed(sqrt(FIXED_TO_FLOAT(n1)));
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Sqrt", 1);
+    goto done;
 }
 
-void SF_Floor()
+// Floor( v1 )
+void SF_Floor(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("invalid number of arguments\n");
-    }
-    else
+    if (t_argc != 1)  goto err_numarg;
+
     {
         fixed_t n1 = fixedvalue(t_argv[0]);
         t_return.type = FSVT_fixed;
         t_return.value.f = n1 & 0xffFF0000;
     }
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Floor", 1);
+    goto done;
 }
 
-void SF_Pow()
+// Pow( v1, v2 )
+void SF_Pow(void)
 {
     fixed_t n1, n2;
 
-    if (t_argc != 2)
-    {
-        script_error("invalid number of arguments\n");
-        return;
-    }
+    if (t_argc != 2)  goto err_numarg;
 
     n1 = fixedvalue(t_argv[0]);
     n2 = fixedvalue(t_argv[1]);
 
     t_return.type = FSVT_fixed;
     t_return.value.f = double2fixed(pow(FIXED_TO_FLOAT(n1), FIXED_TO_FLOAT(n2)));
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("Pow", 2);
+    goto done;
 }
 
 
@@ -3717,48 +4275,60 @@ void SF_Pow()
 
 // Type forcing functions -- useful with arrays et al
 
+// MobjValue( mobj )
 void SF_MobjValue(void)
 {
-   if(t_argc != 1)
-   {
-      script_error("incorrect arguments to function\n");
-      return;
-   }
-   t_return.type = FSVT_mobj;
-   t_return.value.mobj = MobjForSvalue(t_argv[0]);
+    if(t_argc != 1)  goto err_numarg;
+    t_return.type = FSVT_mobj;
+    t_return.value.mobj = MobjForSvalue(t_argv[0]);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("MobjValue", 1);
+    goto done;
 }
 
+// StringValue( v )
 void SF_StringValue(void)
 {  
-   if(t_argc != 1)
-   {
-      script_error("incorrect arguments to function\n");
-      return;
-   }
+   if(t_argc != 1)  goto err_numarg;
    t_return.type = FSVT_string;
    t_return.value.s = Z_Strdup(stringvalue(t_argv[0]), PU_LEVEL, 0);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("StringValue", 1);
+    goto done;
 }
 
+// IntValue( v1 )
 void SF_IntValue(void)
 {
-   if(t_argc != 1)
-   {
-      script_error("incorrect arguments to function\n");
-      return;
-   }
+   if(t_argc != 1)  goto err_numarg;
    t_return.type = FSVT_int;
    t_return.value.i = intvalue(t_argv[0]);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("IntValue", 1);
+    goto done;
 }
 
+// FixedValue( v1 )
 void SF_FixedValue(void)
 {
-   if(t_argc != 1)
-   {
-      script_error("incorrect arguments to function\n");
-      return;
-   }
+   if(t_argc != 1)  goto err_numarg;
    t_return.type = FSVT_fixed;
    t_return.value.f = fixedvalue(t_argv[0]);
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("FixedValue", 1);
+    goto done;
 }
 
 
@@ -3772,55 +4342,86 @@ int HU_DeleteFSPic(int handle);
 int HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos);
 int HU_FSDisplay(int handle, boolean newval);
 
-void SF_NewHUPic()
+// NewHUPic( lumpname, x, y )
+// Return pic_handle
+void SF_NewHUPic(void)
 {
-    if (t_argc != 3)
-    {
-        script_error("newhupic: invalid number of arguments\n");
-        return;
-    }
-
+    if (t_argc != 3)  goto err_numarg;
     t_return.type = FSVT_int;
     t_return.value.i = HU_GetFSPic(W_GetNumForName(stringvalue(t_argv[0])), intvalue(t_argv[1]), intvalue(t_argv[2]));
+done:
     return;
+
+err_numarg:
+    wrong_num_arg("NewHUPic", 3);
+    goto done;
 }
 
-void SF_DeleteHUPic()
+// DeleteHUPic( pic_handle )
+void SF_DeleteHUPic(void)
 {
-    if (t_argc != 1)
-    {
-        script_error("deletehupic: Invalid number if arguments\n");
-        return;
-    }
+    int handle;
 
-    if (HU_DeleteFSPic(intvalue(t_argv[0])) == -1)
-        script_error("deletehupic: Invalid sfpic handle: %i\n", intvalue(t_argv[0]));
+    if (t_argc != 1)  goto err_numarg;
+
+    handle = intvalue(t_argv[0]);
+    if (HU_DeleteFSPic(handle) == -1)  goto err_delete;
+done:
     return;
+
+err_numarg:
+    wrong_num_arg("DeleteHUPic", 1);
+    goto done;
+ 
+err_delete:
+    script_error("DeleteHUPic: invalid sfpic handle %i\n", handle);
+    goto done;
 }
 
-void SF_ModifyHUPic()
+// ModifyHUPic( handle, lumpname, x, y )
+void SF_ModifyHUPic(void)
 {
-    if (t_argc != 4)
-    {
-        script_error("modifyhupic: invalid number of arguments\n");
-        return;
-    }
+    int handle;
 
-    if (HU_ModifyFSPic(intvalue(t_argv[0]), W_GetNumForName(stringvalue(t_argv[1])), intvalue(t_argv[2]), intvalue(t_argv[3])) == -1)
-        script_error("modifyhypic: invalid sfpic handle %i\n", intvalue(t_argv[0]));
+    if (t_argc != 4)  goto err_numarg;
+
+    handle = intvalue(t_argv[0]);
+    if (HU_ModifyFSPic(handle, W_GetNumForName(stringvalue(t_argv[1])),
+		       intvalue(t_argv[2]), intvalue(t_argv[3])) == -1)
+        goto err_handle;
+done:
     return;
+
+err_numarg:
+    wrong_num_arg("ModifyHUPic", 4);
+    goto done;
+ 
+err_handle:
+    script_error("ModifyHUPic: invalid sfpic handle %i\n", handle);
+    goto done;
 }
 
-void SF_SetHUPicDisplay()
+// SetHUPicDisplay( handle, drawenable )
+// drawenable: 0,1
+void SF_SetHUPicDisplay(void)
 {
-    if (t_argc != 2)
-    {
-        script_error("sethupicdisplay: invalud number of arguments\n");
-        return;
-    }
+    int handle;
 
-    if (HU_FSDisplay(intvalue(t_argv[0]), intvalue(t_argv[1]) > 0 ? 1 : 0) == -1)
-        script_error("sethupicdisplay: invalid pic handle %i\n", intvalue(t_argv[0]));
+    if (t_argc != 2)  goto err_numarg;
+
+    handle = intvalue(t_argv[0]);
+    if (HU_FSDisplay(handle, intvalue(t_argv[1]) > 0 ? 1 : 0) == -1)
+        goto err_handle;
+done:
+    return;
+
+err_numarg:
+    wrong_num_arg("SetHUPicDisplay", 4);
+    goto done;
+ 
+err_handle:
+    script_error("SetHUPicDisplay: invalid sfpic handle %i\n", handle);
+    goto done;
 }
 
 // Hurdler: I'm enjoying FS capability :)
@@ -3835,15 +4436,28 @@ int String2Hex(char *s)
 #undef HEX2INT
 }
 
-void SF_SetCorona()
+// SetCorona( id, attribute, value )
+// id: corona id number
+// attribute: corona attribute selection
+// 
+// SetCorona( id, type, xoffset, yoffset, color, radius, dynamic_color, dynamic_radius )
+// id: corona id number
+// type: bits (
+//  CORONA_SPR=0x01,    // emit corona
+//  DYNLIGHT_SPR=0x02,  // dynamic light
+//  LIGHT_SPR=0x03, // CORONA_SPR|DYNLIGHT_SPR
+//  ROCKET_SPR=0x13 // CORONA_SPR|DYNLIGHT_SPR with random radius
+//  )
+// color: rgba color
+// radius: corona size
+// dynamic_color: rgba wall lighting color
+// dynamic_radius: wall lighting size
+void SF_SetCorona(void)
 {
     if (rendermode == render_soft)
         return; // do nothing in software mode
-    if (t_argc != 3 && t_argc != 7)
-    {
-        script_error("Incorrect parameters.\n");
-        return;
-    }
+    if (t_argc != 3 && t_argc != 7)   goto err_numarg;
+
     //this function accept 2 kinds of parameters
     if (t_argc == 3)
     {
@@ -3883,7 +4497,7 @@ void SF_SetCorona()
                 lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
                 break;
             default:
-                CONS_Printf("Error in setcorona\n");
+                CONS_Printf("SetCorona: what %i\n", what);
                 break;
         }
     }
@@ -3905,27 +4519,39 @@ void SF_SetCorona()
         lspr[num].dynamic_radius = t_argv[7].value.f;
         lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
     }
+done:
+    return;
+
+err_numarg:
+    missing_arg_str("SetCorona", "3 or 7");
+    goto done;
 }
 
 
-void SF_SetFade()
+// SetFade( red, green, blue, alpha )
+void SF_SetFade(void)
 {
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int alpha = 0;
 
-	int r = 0;
-	int g = 0;
-	int b = 0;
-	int alpha = 0;
+    if (t_argc != 4)   goto err_numarg;
 
+    r = (unsigned long)t_argv[0].value.i;
+    g = (unsigned long)t_argv[1].value.i;
+    b = (unsigned long)t_argv[2].value.i;
+    alpha = t_argv[3].value.i;
 
-	r = (unsigned long)t_argv[0].value.i;
-	g = (unsigned long)t_argv[1].value.i;
-	b = (unsigned long)t_argv[2].value.i;
-	alpha = t_argv[3].value.i;
+    // Calculate the color value
+    fadecolor = (256 * b) + (65536 * g) + (16777216 * r);
+    fadealpha = alpha;
+done:
+    return;
 
-	// Calculate the color value
-	fadecolor = (256 * b) + (65536 * g) + (16777216 * r);
-	fadealpha = alpha;
-
+err_numarg:
+    wrong_num_arg("SetFade", 4);
+    goto done;
 }
 
 #endif
@@ -3938,7 +4564,7 @@ void SF_SetFade()
 //extern int fov; // r_main.c
 int fov;
 
-void init_functions()
+void init_functions(void)
 {
     // add all the functions
     add_game_int("consoleplayer", &consoleplayer);
