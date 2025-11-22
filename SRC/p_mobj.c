@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 922 2012-06-07 23:59:45Z wesleyjohnson $
+// $Id: p_mobj.c 930 2012-06-14 14:43:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1190,8 +1190,8 @@ void P_NightmareRespawn(mobj_t * mobj)
     // spawn it
     if (mobj->info->flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
-	else if(mthing->options & MTF_FS_SPAWNED)
-		z = mobj->z;
+    else if(mthing->options & MTF_FS_SPAWNED)
+        z = mobj->z;
     else
         z = ONFLOORZ;
 
@@ -1201,7 +1201,7 @@ void P_NightmareRespawn(mobj_t * mobj)
     if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
         mo->angle = mobj->angle;
     else
-        mo->angle = ANG45 * (mthing->angle / 45);
+        mo->angle = wad_to_angle(mthing->angle);
 
     if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
         mo->flags |= mobj->flags & (MTF_AMBUSH ? MF_AMBUSH : 0);
@@ -1762,7 +1762,7 @@ void P_RespawnSpecials(void)
 
     mo = P_SpawnMobj(x, y, z, i);
     mo->spawnpoint = mthing;
-    mo->angle = ANG45 * (mthing->angle / 45);
+    mo->angle = wad_to_angle(mthing->angle);
 
     if (gamemode == heretic)
         S_StartSound(mo, sfx_itmbk);
@@ -1845,7 +1845,7 @@ void P_RespawnWeapons(void)
 
         mo = P_SpawnMobj(x, y, z, i);
         mo->spawnpoint = mthing;
-        mo->angle = ANG45 * (mthing->angle / 45);
+        mo->angle = wad_to_angle(mthing->angle);
         // here don't increment freeslot
     }
     iquehead = freeslot;
@@ -1927,7 +1927,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     //  the dead body mobj retain the skin through the 'spritedef' override).
     mobj->skin = &skins[p->skin];
 
-    mobj->angle = ANG45 * (mthing->angle / 45);
+    mobj->angle = wad_to_angle(mthing->angle);
     if (playernum == consoleplayer)
         localangle = mobj->angle;
     else if (playernum == displayplayer2)  // player 2

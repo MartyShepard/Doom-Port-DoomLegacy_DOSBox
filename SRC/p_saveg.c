@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 923 2012-06-08 00:00:52Z wesleyjohnson $
+// $Id: p_saveg.c 930 2012-06-14 14:43:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1536,7 +1536,7 @@ void P_ArchiveThinkers(void)
                 // spawnpoint is not modified but we must save it since it is a indentifier
                 diff = MD_SPAWNPOINT;
 
-                if ((mobj->x != mobj->spawnpoint->x << FRACBITS) || (mobj->y != mobj->spawnpoint->y << FRACBITS) || (mobj->angle != (unsigned) (ANG45 * (mobj->spawnpoint->angle / 45))))
+                if ((mobj->x != mobj->spawnpoint->x << FRACBITS) || (mobj->y != mobj->spawnpoint->y << FRACBITS) || (mobj->angle != wad_to_angle(mobj->spawnpoint->angle)))
                     diff |= MD_POS;
                 if (mobj->info->doomednum != mobj->spawnpoint->type)
                     diff |= MD_TYPE;

@@ -2451,3 +2451,11 @@ Doom bug: cannot raise a door when ceiling action is in same sector.
 Add check to door logic that ceiling action being modified is a door action.
 This also prevents corruption of the ceiling action.
 
+*** w81_wad_to_angle
+patchfile = w81_wad_to_angle.patch
+- committed revision 930   by wesley johnson
+Note prboom fix doc (cph 2001/04/05), of Vanilla Doom bug found by Ville Vuorinen.
+Signed mapthing_t angle would create table lookup using negative index.
+Fix uses new func, wad_to_angle(), to isolate the signed wad field, from
+unsigned angle_t usage.
+It does not emulate the Doom buggy behavior.

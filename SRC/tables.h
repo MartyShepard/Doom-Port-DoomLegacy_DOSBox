@@ -26,7 +26,7 @@
 // Binary Angle in fixed point
 typedef uint32_t angle_t;
 
-extern const angle_t ANG45;  // 0x20000000;  
+extern const angle_t ANG45;  // 0x20000000;
 extern const angle_t ANG90;  // 0x40000000;
 extern const angle_t ANG180; // 0x80000000;
 extern const angle_t ANG270; // 0xc0000000;
@@ -34,6 +34,14 @@ extern const angle_t ANG270; // 0xc0000000;
 extern const angle_t ANGLE_MAX; // 0xffffffff;
 extern const angle_t ANGLE_1;   // 0x20000000 / 45;
 extern const angle_t ANGLE_60;  // 0x80000000 / 3;
+
+// convert signed wad angle to unsigned angle_t
+static inline angle_t wad_to_angle( fixed_t wad_angle )
+{
+  // wad angle in signed degrees (mapthing_t), should be (0,90,180,270)
+  // other possibilities will cause angle_t to wrap
+  return ANG45 * (wad_angle / 45);
+}
 
 /// Absolute value of angle difference, always in [0, ANG180].
 static inline angle_t Abs(angle_t a)

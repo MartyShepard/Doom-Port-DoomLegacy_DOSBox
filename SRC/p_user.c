@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 887 2011-12-18 04:03:46Z wesleyjohnson $
+// $Id: p_user.c 930 2012-06-14 14:43:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1475,7 +1475,7 @@ void P_ArtiTele(player_t *player)
     }
     destX = mtp->x<<FRACBITS;
     destY = mtp->y<<FRACBITS;
-    destAngle = ANG45*(mtp->angle/45);
+    destAngle = wad_to_angle(mtp->angle);
     P_Teleport(player->mo, destX, destY, destAngle);
     S_StartSound(NULL, sfx_wpnup); // Full volume laugh
 }
