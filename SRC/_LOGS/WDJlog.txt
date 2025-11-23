@@ -2731,3 +2731,13 @@ patchfile = w85_6_fixedcolormap.patch
 - committed revision 965   by wesley johnson
 Fix bug introduced by BOOM_COLORMAP, which segfaults when restoring
 game saved during use of fixed_colormap.
+
+*** w85_heretic_SWITCHES
+patchfile = w85_7_heretic_switches.patch
+- committed revision 966   by wesley johnson
+Allow Heretic and Blasphemer PWAD to fully use the SWITCHES lump without
+restricting it to only episode 4.
+Other ports do not have any restriction on Heretic use of the SWITCHES entries.
+Requested by a Heretic wad project.
+Check for missing switch textures and default to use texture 1.
+
