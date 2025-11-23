@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00968 ]: w86 viewer colormap
+[00967 ]: w86 viewer colormap
 [00966 ]: w85 heretic SWITCHES lump
 [00965 ]: w85 fixedcolormap
 [00964 ]: w85 secnode freed detect

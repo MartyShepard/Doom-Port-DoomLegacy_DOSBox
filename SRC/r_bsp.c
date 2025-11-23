@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: r_bsp.c 968 2012-11-10 21:56:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -112,30 +112,6 @@ line_t*         linedef;
 sector_t*       frontsector;
 sector_t*       backsector;
 
-
-#ifdef BSPVIEWER
-// viewer setup for BSP render
-extern mobj_t*  viewmobj;
-int      viewer_modelsec;
-boolean  viewer_has_model;
-boolean  viewer_underwater;  // only set when viewer_has_model
-boolean  viewer_overceiling; // only set when viewer_has_model
-
-// [WDJ] Setup globals in common to all calls of R_FakeFlat
-// Call before R_RenderBSPNode or R_DrawMasked
-void R_SetupBSPRender( void )
-{
-    // Setup already done by R_SetupFrame: viewmobj, viewz
-    // Can be camera.mo, viewplayer->mo, or fragglescript script_camera.mo
-//    viewmobj = camera.chase ? camera.mo : viewplayer->mo;  // orig FakeFlat line
-    viewer_modelsec = viewmobj->subsector->sector->modelsec;
-    // [WDJ] modelsec used for more than water, do proper test
-    // Use of modelsec is protected by model field, do not test for -1.
-    viewer_has_model  = viewmobj->subsector->sector->model > SM_fluid;
-    viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
-    viewer_overceiling = viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight);
-}
-#endif
 
 //faB:  very ugly realloc() of drawsegs at run-time, I upped it to 512
 //      instead of 256.. and someone managed to send me a level with
@@ -386,10 +362,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 {
   int        colormapnum = -1; //SoM: 4/4/2000
   int	     floorlightsubst, ceilinglightsubst; // light from another sector
-#ifndef BSPVIEWER
-  // [WDJ] partial duplicate of viewmobj setup by R_SetupFrame
-  mobj_t*    viewmobj = camera.chase ? camera.mo : viewplayer->mo;
-#endif
 
   // first light substitution, may be -1 which defaults to sec->lightlevel
   floorlightsubst = sec->floorlightsec;
@@ -403,12 +375,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   {
       // SM_Boom_deep_water passes modelsec >= 0
       const sector_t *modsecp = &sectors[sec->modelsec];
-#ifndef BSPVIEWER     
-      int viewer_modelsec = viewmobj->subsector->sector->modelsec;
-      // [WDJ] modelsec used for more than water, do proper test
-      boolean  viewer_has_model  = viewmobj->subsector->sector->model > SM_fluid;
-      boolean  viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
-#endif
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
@@ -465,13 +431,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       }
       else
       {
-#ifdef BSPVIEWER
         if (viewer_overceiling
 	    && (sec->ceilingheight > modsecp->ceilingheight))
-#else	 
-        if (viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight)
-	    && (sec->ceilingheight > modsecp->ceilingheight))
-#endif	   
         {   // Above-ceiling hack
 	    // view over the model sector ceiling
             tempsec->ceilingheight = modsecp->ceilingheight;
@@ -513,12 +474,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   {
     // SM_Legacy_water passes modelsec >= 0
     sector_t*    modsecp = &sectors[sec->modelsec];
-#ifndef BSPVIEWER
-    int          viewer_modelsec = viewmobj->subsector->sector->modelsec;
-    // [WDJ] modelsec used for more than water, do proper test
-    boolean      viewer_has_model  = viewmobj->subsector->sector->model > SM_fluid;
-    boolean      viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
-#endif
 
     *tempsec = *sec;
 
@@ -540,11 +495,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
         tempsec->ceiling_yoffs = modsecp->floor_yoffs;
       }
     }
-#ifdef BSPVIEWER
     else if(!viewer_underwater && viewer_overceiling)
-#else     
-    else if(!viewer_underwater && viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight))
-#endif
     {
       // view over model sector ceiling
       colormapnum = modsecp->topmap; // Legacy colormap, over ceiling

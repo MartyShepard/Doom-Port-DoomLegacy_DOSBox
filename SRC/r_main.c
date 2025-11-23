@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 934 2012-06-20 18:01:01Z wesleyjohnson $
+// $Id: r_main.c 968 2012-11-10 21:56:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -191,15 +191,22 @@ byte	   fog_init = 0;   // set 1 at fog linedef to clear previous fog blur
 // pain=>REDCOLORMAP, invulnerability=>INVERSECOLORMAP, goggles=>colormap[1]
 // Set from current viewer
 lighttable_t*           fixedcolormap;
-#ifdef BOOM_GLOBAL_COLORMAP
+
+mobj_t *   viewmobj;
+
+sector_t * viewer_sector;
+int      viewer_modelsec;
+boolean  viewer_has_model;
+boolean  viewer_underwater;  // only set when viewer_has_model
+boolean  viewer_overceiling; // only set when viewer_has_model
+
 // Boom colormap, and global viewer coloring
 lighttable_t*           view_colormap;  // full lightlevel range colormaps
 extracolormap_t *       view_extracolormap;
-#endif
 
 fixed_t                 viewx;
 fixed_t                 viewy;
-fixed_t                 viewz;
+fixed_t                 viewz;  // world coord
 
 angle_t                 viewangle;
 angle_t                 aimingangle;
@@ -208,6 +215,8 @@ fixed_t                 viewcos;
 fixed_t                 viewsin;
 
 player_t*               viewplayer;
+
+// END current viewer
 
 // 0 = high, 1 = low
 int                     detailshift;
@@ -261,9 +270,9 @@ consvar_t cv_screenshotdir = { "screenshotdir", "", CV_SAVE, NULL };
 
 #ifdef BOOM_GLOBAL_COLORMAP
 CV_PossibleValue_t boom_colormap_cons_t[]={
-   {0,"Sector colormap"},  // Sector colormap rules
-   {1,"Boom visible colormap"},  // Boom colormap, visible
-   {2,"Boom colormap"},  // Boom colormap rules
+   {0,"Sector visible"},  // Sector colormap rules
+   {1,"Boom visible"},  // Boom colormap, visible
+   {2,"Boom normal" },  // Boom colormap rules
    {3,"Boom detect"},    // Detect Boom features
    {0,NULL} };
 void BoomColormap_detect(void);
@@ -721,6 +730,7 @@ void R_InitTables (void)
 //
 // R_InitTextureMapping
 //
+// Called by R_ExecuteSetViewSize
 void R_InitTextureMapping (void)
 {
     int                 i;
@@ -1126,8 +1136,6 @@ subsector_t* R_IsPointInSubsector ( fixed_t       x,
 // R_SetupFrame
 //
 
-mobj_t*   viewmobj;
-
 void P_ResetCamera (player_t *player);
 
 // WARNING : a should be unsigned but to add with 2048, it isn't !
@@ -1228,24 +1236,40 @@ void R_SetupFrame (player_t* player)
     viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
     viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
 
+    // Before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
+    // Can be camera.mo, viewplayer->mo, or fragglescript script_camera.mo
+//    viewmobj = camera.chase ? camera.mo : viewplayer->mo;  // orig FakeFlat line
+    viewer_sector = viewmobj->subsector->sector;
+    viewer_modelsec = viewer_sector->modelsec;
+    // [WDJ] modelsec used for more than water, do proper test
+    // Use of modelsec is protected by model field, do not test for -1.
+    viewer_has_model  = viewer_sector->model > SM_fluid;
+    viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
+    viewer_overceiling = viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight);
+
     sscount = 0;
 
     fixedcolormap = NULL;  // default
+    view_colormap = NULL;  // default
+    view_extracolormap = NULL;
+
+    // [WDJ] fog flag on colormap colors everything (but not very good fog)
+    if( viewer_sector->extra_colormap && viewer_sector->extra_colormap->fog )
+    {
+        view_extracolormap = viewer_sector->extra_colormap;
+    }
+
 #ifdef BOOM_GLOBAL_COLORMAP
     // [WDJ] Because of interactions with extra colormaps, precedence must
     // be determined at the usage.  The Boom 282 colormap overrides all
     // normal colormap and extra colormap, but not fixedcolormap.
-    // But is requires the light level calculations of an extra colormap.
-    view_colormap = NULL;  // default
-    view_extracolormap = NULL;
+    // But it requires the light level calculations of an extra colormap.
     if( EN_boom_colormap )
     {
         // [WDJ] 4/11/2012 restore compatible Boom colormap handling
-        sector_t * secp = viewmobj->subsector->sector;
-
-        if( secp->model == SM_Boom_deep_water )
+        if( viewer_sector->model == SM_Boom_deep_water )
         {
-	    sector_t * modsecp = & sectors[ secp->modelsec ];
+	    sector_t * modsecp = & sectors[ viewer_modelsec ];
 	    // -1 or a valid colormap num
 	    int bcm_num = (viewz < modsecp->floorheight) ?
 	       modsecp->bottommap
@@ -1256,11 +1280,12 @@ void R_SetupFrame (player_t* player)
 	    if(bcm_num >= 0 || bcm_num < num_extra_colormaps)
 	    {
 	       view_extracolormap = & extra_colormaps[bcm_num];
-	       view_colormap = extra_colormaps[bcm_num].colormap;
 	    }
 	}
     }
-#endif   
+#endif
+    if( view_extracolormap )
+        view_colormap = view_extracolormap->colormap;
 
 
     if (fixedcolormap_num)
@@ -1294,11 +1319,6 @@ void R_SetupFrame (player_t* player)
     }
     centery = (rdraw_viewheight/2) + dy;
     centeryfrac = centery<<FRACBITS;
-
-#ifdef BSPVIEWER
-    R_SetupBSPRender();	// setup viewer relation to BSP render
-    	// Call before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
-#endif
 
     fog_bltic = (rendergametic>>1) & 0x001F;  // 0..31, one cycle per fog_tic
     fog_tic = (rendergametic>>6) & 0x0FFF;  // tic per 1.78 seconds

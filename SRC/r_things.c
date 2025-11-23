@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 945 2012-07-03 19:11:17Z wesleyjohnson $
+// $Id: r_things.c 968 2012-11-10 21:56:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -952,7 +952,6 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
         dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
 
-#ifdef BOOM_GLOBAL_COLORMAP
     if((vis->extra_colormap || view_colormap) && !fixedcolormap)
     {
        // reverse indexing, and change to extra_colormap, default 0
@@ -960,14 +959,6 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
        lighttable_t* cm = (view_colormap? view_colormap : vis->extra_colormap->colormap);
        dc_colormap = & cm[ lightindex ];
     }
-#else
-    if(vis->extra_colormap && !fixedcolormap)
-    {
-       // reverse indexing, and change to extra_colormap, default 0
-       int lightindex = dc_colormap? (dc_colormap - reg_colormaps) : 0;
-       dc_colormap = & vis->extra_colormap->colormap[ lightindex ];
-    }
-#endif   
     if(!dc_colormap)
       dc_colormap = & reg_colormaps[0];
 
@@ -1281,15 +1272,10 @@ static void R_ProjectSprite (mobj_t* thing)
     if (thing_has_model)   // only clip things which are in special sectors
     {
       sector_t * thingmodsecp = & sectors[thingmodelsec];
-#ifndef BSPVIEWER       
-      int viewer_modelsec = viewplayer->mo->subsector->sector->modelsec;
-      // [WDJ] modelsec is used for more than water, do proper test
-      boolean viewer_has_model = viewplayer->mo->subsector->sector->model > SM_fluid;
-#endif
+
       // [WDJ] 4/20/2010  Added some structure and ()
       if (viewer_has_model)
       {
-#ifdef BSPVIEWER
 	  // [WDJ] FakeFlat uses viewz<=floor, and thing used viewz<floor,
 	  // They both should be the same or else things do not
 	  // appear when just underwater.
@@ -1306,18 +1292,6 @@ static void R_ProjectSprite (mobj_t* thing)
 	      : (thing->z >= thingmodsecp->ceilingheight)
 	      )
 	      return;
-#else	      
-	  if( (viewz < sectors[viewer_modelsec].floorheight) ?
-	      (thing->z >= thingmodsecp->floorheight)
-	      : (gz_top < thingmodsecp->floorheight)
-	      )
-	      return;
-	  if( (viewz > sectors[viewer_modelsec].ceilingheight) ?
-	      ((gz_top < thingmodsecp->ceilingheight) && (viewz >= thingmodsecp->ceilingheight))
-	      : (thing->z >= thingmodsecp->ceilingheight)
-	      )
-	      return;
-#endif	      
       }
     }
 
@@ -2110,23 +2084,13 @@ void R_DrawSprite (vissprite_t* spr)
         fixed_t h,mh;
         // model sector for special sector clipping
         sector_t * spr_heightsecp = & sectors[spr->heightsec];
-#ifndef BSPVIEWER       
-        // viewer model sector
-        int viewer_modelsec = viewplayer->mo->subsector->sector->modelsec;
-        // [WDJ] modelsec is used for more than water, do proper test
-        boolean viewer_has_model = viewplayer->mo->subsector->sector->model > SM_fluid;
-#endif
 
         // beware, this test does two assigns to mh, and an assign to h
         if ((mh = spr_heightsecp->floorheight) > spr->gz_bot
 	    && (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0
 	    && (h >>= FRACBITS) < rdraw_viewheight)
         {
-#ifdef BSPVIEWER
             if (mh <= 0 || (viewer_has_model && !viewer_underwater))
-#else
-            if (mh <= 0 || (viewer_has_model && (viewz > sectors[viewer_modelsec].floorheight)))
-#endif
             {                          // clip bottom
               for (x=spr->x1 ; x<=spr->x2 ; x++)
                 if (clipbot[x] == -2 || h < clipbot[x])
@@ -2145,11 +2109,7 @@ void R_DrawSprite (vissprite_t* spr)
 	    && (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0
 	    && (h >>= FRACBITS) < rdraw_viewheight)
         {
-#ifdef BSPVIEWER
             if (viewer_overceiling)
-#else
-            if (viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight))
-#endif
             {                         // clip bottom
               for (x=spr->x1 ; x<=spr->x2 ; x++)
                 if (clipbot[x] == -2 || h < clipbot[x])
