@@ -2861,3 +2861,9 @@ Chase camera is now fixed to be usable with splitscreen players, with
 the first player getting the chase camera.
 This could be expanded to allow two chase cameras now, but the chase camera
 gets hung up going through doorways, so I do not recommend it.
+
+*** w87_viewer_display
+patchfile = w87_5_viewer_display.patch
+- committed revision 981   by wesley johnson
+Simplified code of player weapon display by using viewer variables.
+Disabled debug printf statement concerning netvars.
