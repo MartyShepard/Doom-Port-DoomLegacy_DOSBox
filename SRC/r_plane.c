@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: r_plane.c 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -134,8 +134,9 @@ visplane_t*             vsp_ceilingplane;
 visplane_t*             vsp_currentplane;
 
 // this use 251 Kb memory (in Legacy 1.43)
-ff_planemgr_t           ffloor[MAXFFLOORS];
-int                     numffloors;
+// [WDJ] Renamed so they do not confuse with ffloor
+ff_planemgr_t           ffplane[MAXFFLOORS];
+int                     numffplane;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
@@ -268,10 +269,15 @@ void R_MapPlane ( int y, int x1, int x2 )
     }
     length = FixedMul (distance,distscale[x1]);
     angle = (vsp_currentplane->viewangle + x_to_viewangle[x1])>>ANGLETOFINESHIFT;
+#if 0
+    ds_xfrac = viewx + FixedMul(finecosine[angle], length) + xoffs;
+    ds_yfrac = yoffs - viewy - FixedMul(finesine[angle], length);
+#else
     // SoM: Wouldn't it be faster just to add viewx and viewy to the plane's
     // x/yoffs anyway?? (Besides, it serves my purpose well for portals!)
-    ds_xfrac = /*viewx +*/ FixedMul(finecosine[angle], length) + xoffs;
-    ds_yfrac = /*-viewy*/yoffs - FixedMul(finesine[angle], length);
+    ds_xfrac = FixedMul(finecosine[angle], length) + xoffs;
+    ds_yfrac = yoffs - FixedMul(finesine[angle], length);
+#endif
 
 
     if (fixedcolormap)
@@ -338,12 +344,12 @@ void R_ClearPlanes (player_t *player)
         frontscale[i] = FIXED_MAX;
         for(p = 0; p < MAXFFLOORS; p++)
         {
-          ffloor[p].front_clip[i] = rdraw_viewheight;
-          ffloor[p].con_clip[i] = con_clipviewtop;
+          ffplane[p].front_clip[i] = rdraw_viewheight;
+          ffplane[p].con_clip[i] = con_clipviewtop;
         }
     }
 
-    numffloors = 0;
+    numffplane = 0;
 
     //vispl_last = vispl_head;
 

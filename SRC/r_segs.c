@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: r_segs.c 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1032,7 +1032,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         rlight->heightstep = -FixedMul (rw_scalestep, (lheight - viewz));
         rlight->height = (centeryfrac) - FixedMul((lheight - viewz), dm_yscale) - rlight->heightstep;
         rlight->flags = ff_light->flags;
-        if(ff_light->flags & FF_CUTLEVEL)
+        if(ff_light->flags & (FF_CUTSOLIDS|FF_CUTEXTRA))
         {
           lheight = *ff_light->caster->bottomheight;// > *ffloor->topheight ? *ffloor->topheight + FRACUNIT : *ff_light->caster->bottomheight;
           rlight->botheightstep = -FixedMul (rw_scalestep, (lheight - viewz));
@@ -1170,7 +1170,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
             {
               rlight = &dc_lightlist[i];
               rlight->height += rlight->heightstep;
-              if(rlight->flags & FF_CUTLEVEL)
+              if(rlight->flags & (FF_CUTSOLIDS|FF_CUTEXTRA))
                 rlight->botheight += rlight->botheightstep;
             }
             dm_yscale += rw_scalestep;
@@ -1304,7 +1304,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
               {
                 rlight = &dc_lightlist[i];
                 rlight->height += rlight->heightstep;
-                if(rlight->flags & FF_CUTLEVEL)
+                if(rlight->flags & (FF_CUTSOLIDS|FF_CUTEXTRA))
                   rlight->botheight += rlight->botheightstep;
               }
               continue;
@@ -1467,15 +1467,15 @@ void R_RenderSegLoop (void)
         }
 
 
-        if (numffloors)
+        if (numffplane)
         {
           firstseg->frontscale[rw_x] = frontscale[rw_x];
-          for(i = 0; i < numffloors; i++)
+          for(i = 0; i < numffplane; i++)
           {
-            if(ffloor[i].height < viewz)
+            if(ffplane[i].height < viewz)
             {
-              int top_w = (ffloor[i].front_frac >> HEIGHTBITS) + 1;
-              int bottom_w = ffloor[i].front_clip[rw_x];
+              int top_w = (ffplane[i].front_frac >> HEIGHTBITS) + 1;
+              int bottom_w = ffplane[i].front_clip[rw_x];
 
               if(top_w < ceilingclip[rw_x] + 1)
                 top_w = ceilingclip[rw_x] + 1;
@@ -1485,14 +1485,14 @@ void R_RenderSegLoop (void)
 
               if (top_w <= bottom_w)
               {
-                ffloor[i].plane->top[rw_x] = top_w;
-                ffloor[i].plane->bottom[rw_x] = bottom_w;
+                ffplane[i].plane->top[rw_x] = top_w;
+                ffplane[i].plane->bottom[rw_x] = bottom_w;
               }
             }
-            else if (ffloor[i].height > viewz)
+            else if (ffplane[i].height > viewz)
             {
-              int top_w = ffloor[i].con_clip[rw_x] + 1;
-              int bottom_w = (ffloor[i].front_frac >> HEIGHTBITS);
+              int top_w = ffplane[i].con_clip[rw_x] + 1;
+              int bottom_w = (ffplane[i].front_frac >> HEIGHTBITS);
 
               if (top_w < ceilingclip[rw_x] + 1)
                 top_w = ceilingclip[rw_x] + 1;
@@ -1502,12 +1502,12 @@ void R_RenderSegLoop (void)
 
               if (top_w <= bottom_w)
               {
-                ffloor[i].plane->top[rw_x] = top_w;
-                ffloor[i].plane->bottom[rw_x] = bottom_w;
+                ffplane[i].plane->top[rw_x] = top_w;
+                ffplane[i].plane->bottom[rw_x] = bottom_w;
               }
             }
           }
-        } // if numffloors
+        } // if numffplane
 
         //SoM: Calculate offsets for Thick fake floors.
         // calculate texture offset
@@ -1778,15 +1778,15 @@ void R_RenderSegLoop (void)
 
         for(i = 0; i < MAXFFLOORS; i++)
         {
-          if (ffloor[i].valid_mark)
+          if (ffplane[i].valid_mark)
           {
-            int y_w = ffloor[i].back_frac >> HEIGHTBITS;
+            int y_w = ffplane[i].back_frac >> HEIGHTBITS;
 
-            ffloor[i].front_clip[rw_x] = ffloor[i].con_clip[rw_x] = y_w;
-            ffloor[i].back_frac += ffloor[i].back_step;
+            ffplane[i].front_clip[rw_x] = ffplane[i].con_clip[rw_x] = y_w;
+            ffplane[i].back_frac += ffplane[i].back_step;
           }
 
-          ffloor[i].front_frac += ffloor[i].front_step;
+          ffplane[i].front_frac += ffplane[i].front_step;
         }
 
         rw_scale += rw_scalestep;
@@ -1905,14 +1905,14 @@ void R_StoreWallRange( int   start, int   stop)
 
     for(i = 0; i < MAXFFLOORS; i++)
     {
-      ffloor[i].valid_mark = false;
+      ffplane[i].valid_mark = false;
       ds_p->thicksides[i] = NULL;
     }
 
-    if(numffloors)
+    if(numffplane)
     {
-      for(i = 0; i < numffloors; i++)
-        ffloor[i].front_pos = ffloor[i].height - viewz;
+      for(i = 0; i < numffplane; i++)
+        ffplane[i].front_pos = ffplane[i].height - viewz;
     }
 
     if (!backsector)
@@ -2140,18 +2140,20 @@ void R_StoreWallRange( int   start, int   stop)
 	    // For all backsector, check all frontsector
             for(bff = backsector->ffloors; bff; bff = bff->next)
             {
-              if(!(bff->flags & FF_RENDERSIDES) || !(bff->flags & FF_EXISTS))
+              if(!(bff->flags & FF_OUTER_SIDES) || !(bff->flags & FF_EXISTS))
                 continue;
-              if(bff->flags & FF_INVERTSIDES)
-                continue;
+	      // outside sides of bff
               if(*bff->topheight < lowcut || *bff->bottomheight > highcut)
                 continue;
 
+	      // look for matching ffloor where we do not render the join side
               for(fff = frontsector->ffloors; fff; fff = fff->next)
               {
-                if(!(fff->flags & FF_EXISTS) || !(fff->flags & FF_RENDERSIDES)
+                if(!(fff->flags & (FF_OUTER_SIDES|FF_INNER_SIDES))
+		   || !(fff->flags & FF_EXISTS)
                    || *fff->topheight < lowcut || *fff->bottomheight > highcut)
                   continue;
+		// check against sides of fff
 
                 if(bff->flags & FF_EXTRA)
                 {
@@ -2171,7 +2173,7 @@ void R_StoreWallRange( int   start, int   stop)
 		   || *bff->bottomheight < *fff->bottomheight)
                   continue;
 
-                break;
+                break;  // fff overlaps bff, do not render bff side
               } // for fff
               if(fff)  // found fff that completely overlaps bff
                 continue;
@@ -2185,18 +2187,20 @@ void R_StoreWallRange( int   start, int   stop)
 	    // For all frontsector, check all backsector
             for(fff = frontsector->ffloors; fff; fff = fff->next)
             {
-              if(!(fff->flags & FF_RENDERSIDES) || !(fff->flags & FF_EXISTS))
-                continue;
-              if(!(fff->flags & FF_ALLSIDES))
-                continue;
+              if(!(fff->flags & FF_INNER_SIDES) || !(fff->flags & FF_EXISTS))
+                 continue;
+	      // inside sides of fff
               if(*fff->topheight < lowcut || *fff->bottomheight > highcut)
                 continue;
 
+	      // look for matching ffloor where we do not render the join side
               for(bff = backsector->ffloors; bff; bff = bff->next)
               {
-                if(!(bff->flags & FF_EXISTS) || !(bff->flags & FF_RENDERSIDES)
+                if(!(bff->flags & (FF_OUTER_SIDES|FF_INNER_SIDES))
+		   || !(bff->flags & FF_EXISTS)
                    || *bff->topheight < lowcut || *bff->bottomheight > highcut)
                   continue;
+		// check against sides of bff
 
                 if(fff->flags & FF_EXTRA)
                 {
@@ -2234,8 +2238,9 @@ void R_StoreWallRange( int   start, int   stop)
 	    // For all backsector
             for(bff = backsector->ffloors; bff; bff = bff->next)
             {
-              if(!(bff->flags & FF_RENDERSIDES) || !(bff->flags & FF_EXISTS) || bff->flags & FF_INVERTSIDES)
+              if(!(bff->flags & FF_OUTER_SIDES) || !(bff->flags & FF_EXISTS))
                 continue;
+	      // outer sides of bff
               if(*bff->topheight <= frontsector->floorheight
 		 || *bff->bottomheight >= frontsector->ceilingheight)
                 continue;
@@ -2252,8 +2257,9 @@ void R_StoreWallRange( int   start, int   stop)
 	    // For all frontsector
             for(fff = frontsector->ffloors; fff; fff = fff->next)
             {
-              if(!(fff->flags & FF_RENDERSIDES) || !(fff->flags & FF_EXISTS) || !(fff->flags & FF_ALLSIDES))
+              if(!(fff->flags & FF_INNER_SIDES) || !(fff->flags & FF_EXISTS))
                 continue;
+	      // inner sides of fff
               if(*fff->topheight <= frontsector->floorheight
 		 || *fff->bottomheight >= frontsector->ceilingheight)
                 continue;
@@ -2338,7 +2344,6 @@ void R_StoreWallRange( int   start, int   stop)
     
     //added:18-02-98: WATER! cacher ici dans certaines conditions?
     //                la surface eau est visible de dessous et dessus...
-//    if (frontsector->modelsec == -1)
     if (frontsector->model > SM_fluid)
     {
         if (frontsector->floorheight >= viewz)
@@ -2415,13 +2420,13 @@ void R_StoreWallRange( int   start, int   stop)
       dc_numlights = cnt;
     }
 
-    if(numffloors)
+    if(numffplane)
     {
-      for(i = 0; i < numffloors; i++)
+      for(i = 0; i < numffplane; i++)
       {
-        ffloor[i].front_pos >>= 4;
-        ffloor[i].front_step = FixedMul(-rw_scalestep, ffloor[i].front_pos);
-        ffloor[i].front_frac = (centeryfrac>>4) - FixedMul(ffloor[i].front_pos, rw_scale);
+        ffplane[i].front_pos >>= 4;
+        ffplane[i].front_step = FixedMul(-rw_scalestep, ffplane[i].front_pos);
+        ffplane[i].front_frac = (centeryfrac>>4) - FixedMul(ffplane[i].front_pos, rw_scale);
       }
     }
 
@@ -2449,31 +2454,32 @@ void R_StoreWallRange( int   start, int   stop)
             ffloor_t * bff; // backsector fake floor
 	    for(bff = backsector->ffloors; bff; bff = bff->next)
 	    {
-                if(!(bff->flags & FF_EXISTS) || !(bff->flags & FF_RENDERPLANES))
+                if(!(bff->flags & (FF_OUTER_PLANES|FF_INNER_PLANES))
+		   || !(bff->flags & FF_EXISTS))
                   continue;
 
                 if(   *bff->bottomheight <= backsector->ceilingheight
 		   && *bff->bottomheight >= backsector->floorheight
-		   && ((viewz < *bff->bottomheight && !(bff->flags & FF_INVERTPLANES))
-		       || (viewz > *bff->bottomheight && (bff->flags & FF_BOTHPLANES))))
+		   && ((viewz < *bff->bottomheight && (bff->flags & FF_OUTER_PLANES))
+		       || (viewz > *bff->bottomheight && (bff->flags & FF_INNER_PLANES))))
                 {
-                  ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = (*bff->bottomheight - viewz) >> 4;
-                  ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
-                  ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
+                  ffplane[i].valid_mark = true;
+                  ffplane[i].back_pos = (*bff->bottomheight - viewz) >> 4;
+                  ffplane[i].back_step = FixedMul(-rw_scalestep, ffplane[i].back_pos);
+                  ffplane[i].back_frac = (centeryfrac >> 4) - FixedMul(ffplane[i].back_pos, rw_scale);
                   i++;
 		  if(i >= MAXFFLOORS)
 		      break;
                 }
                 if(   *bff->topheight >= backsector->floorheight
 		   && *bff->topheight <= backsector->ceilingheight
-		   && ((viewz > *bff->topheight && !(bff->flags & FF_INVERTPLANES))
-		       || (viewz < *bff->topheight && (bff->flags & FF_BOTHPLANES))))
+		   && ((viewz > *bff->topheight && (bff->flags & FF_OUTER_PLANES))
+		       || (viewz < *bff->topheight && (bff->flags & FF_INNER_PLANES))))
                 {
-                  ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = (*bff->topheight - viewz) >> 4;
-                  ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
-                  ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
+                  ffplane[i].valid_mark = true;
+                  ffplane[i].back_pos = (*bff->topheight - viewz) >> 4;
+                  ffplane[i].back_step = FixedMul(-rw_scalestep, ffplane[i].back_pos);
+                  ffplane[i].back_frac = (centeryfrac >> 4) - FixedMul(ffplane[i].back_pos, rw_scale);
                   i++;
 		  if(i >= MAXFFLOORS)
 		      break;
@@ -2485,31 +2491,32 @@ void R_StoreWallRange( int   start, int   stop)
 	    ffloor_t * fff; // frontsector fake floor
 	    for(fff = frontsector->ffloors; fff; fff = fff->next)
 	    {
-                if(!(fff->flags & FF_EXISTS) || !(fff->flags & FF_RENDERPLANES))
+                if(!(fff->flags & (FF_OUTER_PLANES|FF_INNER_PLANES))
+		   || !(fff->flags & FF_EXISTS))
                   continue;
 
                 if(   *fff->bottomheight <= frontsector->ceilingheight
 		   && *fff->bottomheight >= frontsector->floorheight
-		   && ((viewz < *fff->bottomheight && !(fff->flags & FF_INVERTPLANES))
-		       || (viewz > *fff->bottomheight && (fff->flags & FF_BOTHPLANES))))
+		   && ((viewz < *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
+		       || (viewz > *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
                 {
-                  ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = (*fff->bottomheight - viewz) >> 4;
-                  ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
-                  ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
+                  ffplane[i].valid_mark = true;
+                  ffplane[i].back_pos = (*fff->bottomheight - viewz) >> 4;
+                  ffplane[i].back_step = FixedMul(-rw_scalestep, ffplane[i].back_pos);
+                  ffplane[i].back_frac = (centeryfrac >> 4) - FixedMul(ffplane[i].back_pos, rw_scale);
                   i++;
 		  if(i >= MAXFFLOORS)
 		      break;
                 }
                 if(   *fff->topheight >= frontsector->floorheight
 		   && *fff->topheight <= frontsector->ceilingheight
-		   && ((viewz > *fff->topheight && !(fff->flags & FF_INVERTPLANES))
-		       || (viewz < *fff->topheight && (fff->flags & FF_BOTHPLANES))))
+		   && ((viewz > *fff->topheight && (fff->flags & FF_OUTER_PLANES))
+		       || (viewz < *fff->topheight && (fff->flags & FF_INNER_PLANES))))
                 {
-                  ffloor[i].valid_mark = true;
-                  ffloor[i].back_pos = (*fff->topheight - viewz) >> 4;
-                  ffloor[i].back_step = FixedMul(-rw_scalestep, ffloor[i].back_pos);
-                  ffloor[i].back_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].back_pos, rw_scale);
+                  ffplane[i].valid_mark = true;
+                  ffplane[i].back_pos = (*fff->topheight - viewz) >> 4;
+                  ffplane[i].back_step = FixedMul(-rw_scalestep, ffplane[i].back_pos);
+                  ffplane[i].back_frac = (centeryfrac >> 4) - FixedMul(ffplane[i].back_pos, rw_scale);
                   i++;
 		  if(i >= MAXFFLOORS)
 		      break;
@@ -2539,20 +2546,20 @@ void R_StoreWallRange( int   start, int   stop)
     }
 
     ds_p->numffloorplanes = 0;
-    if(numffloors)
+    if(numffplane)
     {
       if(firstseg == NULL)
       {
-        for(i = 0; i < numffloors; i++)
-          ds_p->ffloorplanes[i] = ffloor[i].plane = R_CheckPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
+        for(i = 0; i < numffplane; i++)
+          ds_p->ffloorplanes[i] = ffplane[i].plane = R_CheckPlane(ffplane[i].plane, rw_x, rw_stopx - 1);
 
-        ds_p->numffloorplanes = numffloors;
+        ds_p->numffloorplanes = numffplane;
         firstseg = ds_p;
       }
       else
       {
-        for(i = 0; i < numffloors; i++)
-          R_ExpandPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
+        for(i = 0; i < numffplane; i++)
+          R_ExpandPlane(ffplane[i].plane, rw_x, rw_stopx - 1);
       }
     }
 

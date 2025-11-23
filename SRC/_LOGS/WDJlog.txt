@@ -2743,7 +2743,7 @@ Check for missing switch textures and default to use texture 1.
 
 *** w86_viewer_colormap
 patchfile = w86_1_viewer_colormap.patch
-- committed revision 967   by wesley johnson
+- committed revision 968   by wesley johnson
 Make some BOOM_GLOBAL_COLORMAP code non-optional, for use with fog and
 other colormaps.
 Shortened some of the Boom Colormap Option text strings so they fit
@@ -2754,7 +2754,7 @@ very good fog but at least it works now as documented.
 
 *** w86_FF_cleanup
 patchfile = w86_2_FF_cleanup.patch
-- committed revision 968   by wesley johnson
+- committed revision 969   by wesley johnson
 Reorganize the FF_flags to be understandable, and easier to test, and
 to not hide important relationships.
 FF_RENDERSIDES -> FF_OUTER_SIDES

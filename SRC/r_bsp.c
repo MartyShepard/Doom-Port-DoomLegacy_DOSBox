@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: r_bsp.c 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -119,10 +119,10 @@ sector_t*       backsector;
 //Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
 //         default is 128 segs, so it means nearly 1Mb allocated
 //drawseg_t     drawsegs[MAXDRAWSEGS];
-drawseg_t*      drawsegs=NULL;
-unsigned        maxdrawsegs;
-drawseg_t*      ds_p = NULL;
-drawseg_t*      firstnewseg = NULL;
+drawseg_t*      drawsegs=NULL;  // allocated drawsegs
+unsigned        maxdrawsegs;    // number allocated
+drawseg_t*      ds_p = NULL;    // last drawseg used (tail)
+drawseg_t*      firstnewseg = NULL;  // unused
 
 
 //SoM:3/25/2000: indicates doors closed wrt automap bugfix:
@@ -132,6 +132,7 @@ int      doorclosed;
 //
 // R_ClearDrawSegs
 //
+// Called by R_RenderPlayerView
 void R_ClearDrawSegs (void)
 {
     ds_p = drawsegs;
@@ -328,7 +329,7 @@ void R_ClearClipSegs (void)
 
 int R_DoorClosed(void)
 {
-  return
+  return (
 
     // if door is closed because back is shut:
     backsector->ceilingheight <= backsector->floorheight
@@ -342,7 +343,8 @@ int R_DoorClosed(void)
 
     // properly render skies (consider door "open" if both ceilings are sky):
     && (backsector->ceilingpic != skyflatnum
-	|| frontsector->ceilingpic != skyflatnum);
+	|| frontsector->ceilingpic != skyflatnum)
+    );
 }
 
 //
@@ -933,64 +935,69 @@ void R_Subsector (int num)
         vsp_ceilingplane = NULL;
 
 
-    numffloors = 0;
-    ffloor[numffloors].plane = NULL;
+    // BSP reuses the ffplane array for each sector, to pass info to Render
+    numffplane = 0;
+    ffplane[numffplane].plane = NULL;
+
     if(frontsector->ffloors)
     {
-      ffloor_t*  rover;
+      ffloor_t*  fff;
 
-      for(rover = frontsector->ffloors; rover && numffloors < MAXFFLOORS; rover = rover->next) {
-
-      if(!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
-        continue;
-
-      ffloor[numffloors].plane = NULL;
-      if(*rover->bottomheight <= frontsector->ceilingheight
-	 && *rover->bottomheight >= frontsector->floorheight
-         && ((viewz < *rover->bottomheight && !(rover->flags & FF_INVERTPLANES))
-	     || (viewz > *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
-	 // [WDJ] What about (viewz == *rover->bottomheight) ???
-//DEBUG	 && ((viewz <= *rover->bottomheight && !(rover->flags & FF_INVERTPLANES))
-//DEBUG	     || (viewz >= *rover->bottomheight && (rover->flags & FF_BOTHPLANES))))
+      for(fff = frontsector->ffloors; fff; fff = fff->next)
       {
-        light = R_GetPlaneLight_viewz(frontsector, *rover->bottomheight);
-        ffloor[numffloors].plane = R_FindPlane(*rover->bottomheight,
-                                  *rover->bottompic,
-                                  *frontsector->lightlist[light].lightlevel,
-                                  *rover->bottomxoffs,
-                                  *rover->bottomyoffs,
-                                  frontsector->lightlist[light].extra_colormap,
-                                  rover);
 
-        ffloor[numffloors].height = *rover->bottomheight;
-        ffloor[numffloors].ffloor = rover;
-        numffloors++;
-      }
-      if(numffloors >= MAXFFLOORS)
-        break;
-      if(*rover->topheight >= frontsector->floorheight
-	 && *rover->topheight <= frontsector->ceilingheight
-         && ((viewz > *rover->topheight && !(rover->flags & FF_INVERTPLANES))
-	     || (viewz < *rover->topheight && (rover->flags & FF_BOTHPLANES))))
-	 // [WDJ] What about (viewz == *rover->topheight) ???
-//DEBUG	 && ((viewz >= *rover->topheight && !(rover->flags & FF_INVERTPLANES))
-//DEBUG         (viewz <= *rover->topheight && (rover->flags & FF_BOTHPLANES))))
-          {
-              light = R_GetPlaneLight_viewz(frontsector, *rover->topheight);
-              ffloor[numffloors].plane = R_FindPlane(*rover->topheight,
-                                                     *rover->toppic,
+        if(!(fff->flags & (FF_OUTER_PLANES|FF_INNER_PLANES))
+	   || !(fff->flags & FF_EXISTS))
+          continue;
+
+        ffplane[numffplane].plane = NULL;
+        if(*fff->bottomheight <= frontsector->ceilingheight
+	 && *fff->bottomheight >= frontsector->floorheight
+         && ((viewz < *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
+	     || (viewz > *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
+	 // [WDJ] What about (viewz == *fff->bottomheight) ???
+//DEBUG	 && ((viewz <= *fff->bottomheight && !(fff->flags & FF_INVERTPLANES))
+//DEBUG	     || (viewz >= *fff->bottomheight && (fff->flags & FF_BOTHPLANES))))
+	{
+          light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
+          ffplane[numffplane].plane = R_FindPlane(*fff->bottomheight,
+                                  *fff->bottompic,
+                                  *frontsector->lightlist[light].lightlevel,
+                                  *fff->bottomxoffs,
+                                  *fff->bottomyoffs,
+                                  frontsector->lightlist[light].extra_colormap,
+                                  fff);
+
+	  ffplane[numffplane].height = *fff->bottomheight;
+          ffplane[numffplane].ffloor = fff;
+          numffplane++;
+	  if(numffplane >= MAXFFLOORS)
+            break;
+	}
+        if(*fff->topheight >= frontsector->floorheight
+	 && *fff->topheight <= frontsector->ceilingheight
+         && ((viewz > *fff->topheight && (fff->flags & FF_OUTER_PLANES))
+	     || (viewz < *fff->topheight && (fff->flags & FF_INNER_PLANES))))
+	 // [WDJ] What about (viewz == *fff->topheight) ???
+//DEBUG	 && ((viewz >= *fff->topheight && (fff->flags & FF_OUTER_PLANES))
+//DEBUG         (viewz <= *fff->topheight && (fff->flags & FF_INNER_PLANES))))
+        {
+              light = R_GetPlaneLight_viewz(frontsector, *fff->topheight);
+              ffplane[numffplane].plane = R_FindPlane(*fff->topheight,
+                                                     *fff->toppic,
                                                      *frontsector->lightlist[light].lightlevel,
-                                                     *rover->topxoffs,
-                                                     *rover->topyoffs,
+                                                     *fff->topxoffs,
+                                                     *fff->topyoffs,
                                                      frontsector->lightlist[light].extra_colormap,
-                                                     rover);
-              ffloor[numffloors].height = *rover->topheight;
-              ffloor[numffloors].ffloor = rover;
-              numffloors++;
-          }
+                                                     fff);
+              ffplane[numffplane].height = *fff->topheight;
+              ffplane[numffplane].ffloor = fff;
+              numffplane++;
+	      if(numffplane >= MAXFFLOORS)
+	        break;
+	}
       }
     }
-
 
 #ifdef FLOORSPLATS
     if (sub->splats && cv_splats.value )
@@ -1015,6 +1022,7 @@ void R_Subsector (int num)
 //
 // This function creates the lightlists that the given sector uses to light
 // floors/ceilings/walls according to the 3D floors.
+// Called by R_Subsector whenever a floor has moved
 void R_Prep3DFloors(sector_t*  sector)
 {
   ffloor_t*      rover;
@@ -1027,10 +1035,12 @@ void R_Prep3DFloors(sector_t*  sector)
   count = 1;
   for(rover = sector->ffloors; rover; rover = rover->next)
   {
-    if((rover->flags & FF_EXISTS) && (!(rover->flags & FF_NOSHADE) || (rover->flags & FF_CUTLEVEL) || (rover->flags & FF_CUTSPRITES)))
+    if((rover->flags & FF_EXISTS)
+       && (!(rover->flags & FF_NOSHADE)
+	   || (rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
     {
       count++;
-      if(rover->flags & FF_DOUBLESHADOW)
+      if(rover->flags & FF_SLAB_SHADOW)  // uses two entries
         count++;
     }
   }
@@ -1065,7 +1075,9 @@ void R_Prep3DFloors(sector_t*  sector)
     best = NULL;
     for(rover = sector->ffloors; rover; rover = rover->next)
     {
-      if(!(rover->flags & FF_EXISTS) || (rover->flags & FF_NOSHADE && !(rover->flags & FF_CUTLEVEL) && !(rover->flags & FF_CUTSPRITES)))
+      if(!(rover->flags & FF_EXISTS)
+	 || ((rover->flags & FF_NOSHADE)
+	     && !(rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
         continue;
 
       // find highest topheight, lower than maxheight
@@ -1075,8 +1087,8 @@ void R_Prep3DFloors(sector_t*  sector)
         bestheight = *rover->topheight;
         continue;
       }
-      // FF_DOUBLESHADOW considers bottomheight too
-      if(rover->flags & FF_DOUBLESHADOW
+      // FF_SLAB_SHADOW considers bottomheight too, light limited to slab
+      if(rover->flags & FF_SLAB_SHADOW
 	 && *rover->bottomheight > bestheight && *rover->bottomheight < maxheight)
       {
         best = rover;
@@ -1093,10 +1105,9 @@ void R_Prep3DFloors(sector_t*  sector)
     sector->lightlist[i].height = maxheight = bestheight;
     sector->lightlist[i].caster = best;
     sector->lightlist[i].flags = best->flags;
-    // [WDJ] FIXME ??:
-    // This is messing with the model sector, which could be used for many sectors,
-    // settings are independent of this lightlist,
+    // Setup the model sector extra_colormap
     // this could be done elsewhere, once.
+    // (P_LoadSideDefs2, P_SpawnSpecials, SF_SectorColormap)
     modelsec = &sectors[best->model_secnum];
     mapnum = modelsec->midmap;
     if(mapnum >= 0 && mapnum < num_extra_colormaps)
@@ -1118,19 +1129,22 @@ void R_Prep3DFloors(sector_t*  sector)
       sector->lightlist[i].extra_colormap = modelsec->extra_colormap;
     }
 
-    if(best->flags & FF_DOUBLESHADOW)
+    if(best->flags & FF_SLAB_SHADOW)
     {
-      // FF_DOUBLESHADOW, consider bottomheight too.
+      // FF_SLAB_SHADOW, consider bottomheight too.
+      // Below this slab, the light is from above this slab.
       if(bestheight == *best->bottomheight)
       {
-	// [WDJ] FIXME: segfault here in Chexquest-newmaps E2M2, best->lastlight wild value
-	// Stopped segfault by init to 0, but what is this trying to do ??
+	// [WDJ] segfault here in Chexquest-newmaps E2M2, best->lastlight wild value
+	// Stopped segfault by init to 0.
 	// Happens when bottom is found without finding top.
+	// Get from lastlight indirect.
         sector->lightlist[i].lightlevel = sector->lightlist[best->lastlight].lightlevel;
         sector->lightlist[i].extra_colormap = sector->lightlist[best->lastlight].extra_colormap;
       }
       else
       {
+	// Slab light does not show below slab, indirect to light above slab
         best->lastlight = i - 1;
       }
     }

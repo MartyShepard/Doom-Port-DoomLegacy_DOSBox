@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 722 2010-07-31 19:13:59Z wesleyjohnson $
+// $Id: r_plane.h 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -175,6 +175,6 @@ typedef struct ff_planemgr_s
   struct ffloor_s  *ffloor;
 } ff_planemgr_t;
 
-extern ff_planemgr_t  ffloor[MAXFFLOORS];
-extern int           numffloors;
+extern ff_planemgr_t  ffplane[MAXFFLOORS];
+extern int           numffplane;
 #endif

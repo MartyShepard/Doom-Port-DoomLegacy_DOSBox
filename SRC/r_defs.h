@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 960 2012-08-13 23:14:03Z wesleyjohnson $
+// $Id: r_defs.h 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -247,24 +247,27 @@ typedef struct
 typedef enum
 {
   FF_EXISTS            = 0x1,    //MAKE SURE IT'S VALID
-  FF_SOLID             = 0x2,    //Does it clip things?
-  FF_RENDERSIDES       = 0x4,    //Render the sides?
-  FF_RENDERPLANES      = 0x8,    //Render the floor/ceiling?
-  FF_RENDERALL         = 0xC,    //Render everything?
-  FF_SWIMMABLE         = 0x10,   //Can we swim?
-  FF_NOSHADE           = 0x20,   //Does it mess with the lighting?
-  FF_CUTSOLIDS         = 0x40,   //Does it cut out hidden solid pixels?
-  FF_CUTEXTRA          = 0x80,   //Does it cut out hidden translucent pixels?
-  FF_CUTLEVEL          = 0xC0,   //Does it cut out all hidden pixels?
-  FF_CUTSPRITES        = 0x100,  //Final Step in 3D water
-  FF_BOTHPLANES        = 0x200,  //Render both planes all the time?
-  FF_EXTRA             = 0x400,  //Does it get cut by FF_CUTEXTRAS?
-  FF_TRANSLUCENT       = 0x800,  //See through!
-  FF_FOG               = 0x1000, //Fog "brush"?
-  FF_INVERTPLANES      = 0x2000, //Reverse the plane visibility rules?
-  FF_ALLSIDES          = 0x4000, //Render inside and outside sides?
-  FF_INVERTSIDES       = 0x8000, //Only render inside sides?
-  FF_DOUBLESHADOW      = 0x10000,//Make two lightlist entries to reset light?
+  FF_SOLID             = 0x2,    //It clips things
+  FF_OUTER_SIDES       = 0x4,    //Render the outside view of sides
+  FF_OUTER_PLANES      = 0x8,    //Render the outside view of floor/ceiling
+  FF_SLAB_SHADOW       = 0x10,   //Make two lightlist entries to contain light
+  FF_NOSHADE           = 0x20,   //No light effect
+  // Cut instead of Occlude
+  FF_CUTSOLIDS         = 0x40,   //Must cut hidden solid pixels
+  FF_CUTEXTRA          = 0x80,   //Must cut hidden translucent pixels
+  FF_CUTSPRITES        = 0x100,  //Must cut sprites, Final Step in 3D water
+  FF_EXTRA             = 0x200,  //Translucent, water, and fog,
+				 //It gets cut by FF_CUTEXTRAS
+//  FF_unused          = 0x400,  //
+  FF_TRANSLUCENT       = 0x800,  //Translucent (see through)
+  FF_FOG               = 0x1000, //Fog area
+  FF_INNER_PLANES      = 0x2000, //Render the inside view of planes (FOG/WATER)
+  FF_INNER_SIDES       = 0x4000, //Render the inside view of sides (FOG/WATER)
+//  FF_unused          = 0x8000, //
+//  FF_unused          = 0x10000,//
+  FF_SWIMMABLE         = 0x20000,//Player can swim
+//  FF_unused          = 0x40000,//
+//  FF_unused          = 0x80000,//
 } ffloortype_e;
 
 

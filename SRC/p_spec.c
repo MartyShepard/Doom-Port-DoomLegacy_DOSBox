@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: p_spec.c 969 2012-11-10 22:00:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3133,8 +3133,11 @@ void P_SpawnSpecials (void)
 	    // Under the 3Dfloor is the light and colormap of the model sector.
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
+		FF_EXISTS|FF_SOLID|FF_OUTER_SIDES|FF_OUTER_PLANES
+		|FF_CUTSOLIDS|FF_CUTEXTRA );
+	    }
 	    legacy_detect = 1;
             break;
 
@@ -3144,8 +3147,11 @@ void P_SpawnSpecials (void)
 	    // Light below the slab is the same as above.
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-                        FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
+                FF_EXISTS|FF_SOLID|FF_OUTER_SIDES|FF_OUTER_PLANES
+		|FF_NOSHADE|FF_CUTSOLIDS|FF_CUTEXTRA );
+	    }
 	    legacy_detect = 1;
             break;
 
@@ -3159,7 +3165,8 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
+		FF_EXISTS|FF_SOLID|FF_TRANSLUCENT|FF_OUTER_SIDES|FF_OUTER_PLANES
+		|FF_NOSHADE|FF_EXTRA|FF_CUTEXTRA );
 	    }
 	    legacy_detect = 1;
             break;
@@ -3177,7 +3184,9 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-                        FF_EXISTS|FF_RENDERALL|FF_TRANSLUCENT|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+	        FF_EXISTS|FF_TRANSLUCENT|FF_SWIMMABLE
+	        |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES
+		|FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
 	    }
 	    legacy_detect = 1;
             break;
@@ -3199,8 +3208,12 @@ void P_SpawnSpecials (void)
               model_secp->ext_colormap->fog = 1;
 #endif	   
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_RENDERALL|FF_FOG|FF_BOTHPLANES|FF_INVERTPLANES|FF_ALLSIDES|FF_INVERTSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
+		 FF_EXISTS|FF_FOG
+		 |FF_INNER_SIDES|FF_INNER_PLANES
+		 |FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
+	    }
 	    legacy_detect = 1;
             break;
 
@@ -3210,8 +3223,10 @@ void P_SpawnSpecials (void)
             // Below the ceiling is the lightlevel and colormap of the model sector.
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_CUTSPRITES);
+			FF_EXISTS|FF_CUTSPRITES );
+	    }
 	    legacy_detect = 1;
             break;
 
@@ -3225,19 +3240,24 @@ void P_SpawnSpecials (void)
 	    model_secp->friction = water_friction;
 	    model_secp->movefactor = water_movefactor;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_RENDERALL|FF_SWIMMABLE|FF_BOTHPLANES|FF_ALLSIDES|FF_CUTEXTRA|FF_EXTRA|FF_DOUBLESHADOW|FF_CUTSPRITES);
-	    legacy_detect = 1;
+	        FF_EXISTS|FF_SWIMMABLE
+	        |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES
+		|FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
+	    }
             break;
 
           // Double light effect
-          case 305:	// Legacy double light, within slab
+          case 305:	// Legacy inner light, within slab
 	    // Light uses model sector ceiling and floor heights.
             // Within the light bounds is the lightlevel and colormap of the model sector.
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_CUTSPRITES|FF_DOUBLESHADOW);
+		FF_EXISTS|FF_SLAB_SHADOW|FF_CUTSPRITES );
+	    }
 	    legacy_detect = 1;
             break;
 
@@ -3247,8 +3267,10 @@ void P_SpawnSpecials (void)
 	    // No light effects, it is invisible.
 	    if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_SOLID);
+		FF_EXISTS|FF_SOLID );
+	    }
 	    legacy_detect = 1;
             break;
 
