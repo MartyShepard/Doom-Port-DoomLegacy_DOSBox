@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 961 2012-08-13 23:17:24Z wesleyjohnson $
+// $Id: d_main.c 963 2012-08-15 15:05:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "961"
+#define SVN_REV "963"
 #endif
 
 // Version number: major.minor.revision
@@ -496,6 +496,8 @@ void D_Display(void)
         SCR_SetMode();  // change video mode
         //added:26-01-98: NOTE! setsizeneeded is set by SCR_Recalc()
         SCR_Recalc();
+          // setsizeneeded -> redrawsbar
+          // con_recalc, st_recalc, am_recalc
     }
 
     // change the view size if needed

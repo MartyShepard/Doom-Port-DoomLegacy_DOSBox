@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 955 2012-07-20 23:12:36Z wesleyjohnson $
+// $Id: st_stuff.c 963 2012-08-15 15:05:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1284,7 +1284,7 @@ void ST_CalcPos(void)
 
         fgbuffer = FG | V_NOSCALEPATCH | V_NOSCALESTART | V_TRANSLUCENTPATCH;
         ST_Y = vid.height - stbarheight;
-        st_x = (vid.width-ST_WIDTH)>>1;
+        st_x = (vid.width-ST_WIDTH)>>1;  // center
     }
 }
 
@@ -1632,7 +1632,10 @@ void ST_overlayDrawer ()
 {
     char*  cmds;
     char   c;
-    int    i;
+    int    i, key_y;
+    // [WDJ] 8/2012 fix opengl overlay position to use fdupy
+    float  sf_dupy = (rendermode == render_soft)? vid.dupy : vid.fdupy ;
+    int    lowerbar_y = SCY(198) - (int)( 16 * sf_dupy );
 
     cmds = cv_stbaroverlay.string;
 
@@ -1643,12 +1646,11 @@ void ST_overlayDrawer ()
        switch (c)
        {
          case 'h': // draw health
-           ST_drawOverlayNum(SCX(50),
-                             SCY(198)-(16*vid.dupy),
+           ST_drawOverlayNum(SCX(50), lowerbar_y,
                              plyr->health,
                              tallnum,NULL);
 
-           V_DrawScalePic_Num (SCX(52),SCY(198)-16*vid.dupy,0,sbohealth);
+           V_DrawScalePic_Num (SCX(52), lowerbar_y, 0, sbohealth);
            break;
 
          case 'f': // draw frags
@@ -1656,8 +1658,7 @@ void ST_overlayDrawer ()
 
            if (cv_deathmatch.value)
            {
-               ST_drawOverlayNum(SCX(300),
-                                 SCY(2),
+               ST_drawOverlayNum(SCX(300), SCY(2),
                                  st_fragscount,
                                  tallnum,NULL);
 
@@ -1669,32 +1670,35 @@ void ST_overlayDrawer ()
            i = sboammo[plyr->readyweapon];
            if (i)
            {
-               ST_drawOverlayNum(SCX(234),
-                                 SCY(198)-(16*vid.dupy),
+               ST_drawOverlayNum(SCX(234), lowerbar_y,
                                  plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
                                  tallnum,NULL);
 
-               V_DrawScalePic_Num (SCX(236),SCY(198)-(16*vid.dupy),0,i);
+               V_DrawScalePic_Num (SCX(236), lowerbar_y, 0, i);
            }
            break;
 
          case 'k': // draw keys
            c=1;
+	   key_y = lowerbar_y - (8 * sf_dupy);
            for (i=0;i<3;i++)
+	   {
                 if( plyr->cards & (1<<(i+3)) ) // first skull then card
-                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx), SCY(198)-((16+8)*vid.dupy), FG | V_NOSCALESTART, keys[i+3]);
+                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
+				      key_y, FG | V_NOSCALESTART, keys[i+3]);
                 else
                 if( plyr->cards & (1<<i) )
-                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx), SCY(198)-((16+8)*vid.dupy), FG | V_NOSCALESTART, keys[i]);
+                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
+				      key_y, FG | V_NOSCALESTART, keys[i]);
+	   }
            break;
 
          case 'm': // draw armor
-           ST_drawOverlayNum(SCX(300),
-                             SCY(198)-(16*vid.dupy),
+           ST_drawOverlayNum(SCX(300), lowerbar_y,
                              plyr->armorpoints,
                              tallnum,NULL);
 
-           V_DrawScalePic_Num (SCX(302),SCY(198)-(16*vid.dupy),0,sboarmor);
+           V_DrawScalePic_Num (SCX(302), lowerbar_y, 0, sboarmor);
            break;
 
          // added by Hurdler for single player only

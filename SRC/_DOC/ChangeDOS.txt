@@ -1,8 +1,10 @@
 * Not need to Compile.
 
+[00963 ]: w85 statusbar overlay
+[00962*]: w85 sdl opengl videomode
 [00961 ]: w85 mouse handling
 [00960 ]: w85 colormap gen
-[00959 ]: w84 whatsnew doc
+[00959*]: w84 whatsnew doc
 [00958 ]: w84 IPX option
 [00957 ]: w84 bob spawn
 [00956 ]: w84 compressed patch in texture
@@ -15,7 +17,7 @@
 [00951 ]: w83 fs script parse
 [00950 ]: w83 fs array spec
 [00949 ]: w83 cdmus optional
-[00948 ]: w83 Makefile
+[00948*]: w83 Makefile
 [00947 ]: w83 fs func OLDBEHAVIOR
 [00946 ]: w83 fs op
 [00945 ]: w83 fs func safety checks
