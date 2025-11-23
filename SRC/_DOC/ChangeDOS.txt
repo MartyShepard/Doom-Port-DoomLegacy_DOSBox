@@ -1,6 +1,8 @@
 * Not need to Compile.
 
-[00948 ]: w83 cdmus optional
+[00950 ]: w83 fs array spec
+[00949 ]: w83 cdmus optional
+[00948 ]: w83 Makefile
 [00947 ]: w83 fs func OLDBEHAVIOR
 [00946 ]: w83 fs op
 [00945 ]: w83 fs func safety checks

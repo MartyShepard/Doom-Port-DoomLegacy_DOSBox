@@ -2596,7 +2596,7 @@ leaving only the video.
 
 *** w83_cdmus_optional
 patchfile = w83_cdmus.patch
-- committed revision 93?   by wesley johnson
+- committed revision 949   by wesley johnson
 Make CD-music a makefile compile option.
 Setting CDMUS (default is CDMUS=1) in the makefile enables compiling CD
 music code.  Without CDMUS, all CD code is removed, including cd-volume
@@ -2605,3 +2605,11 @@ some interfaces require.
 To override default, use NOCDMUS on the make command line, or edit
 makefile.
 > make NOCDMUS=1
+
+*** w83_fs_array_camera_spec
+patchfile = w83_fs_array_spec.patch
+- committed revision 950   by wesley johnson
+General cleanup on fragglescript array functions,
+camera functions, and spec functions (if, elseif, while, for).
+Move error code to after return, for speed.
+Added comments.

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 947 2012-07-03 19:14:13Z wesleyjohnson $
+// $Id: t_func.c 950 2012-07-06 21:15:13Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -229,19 +229,16 @@ char *  Z_cat_args( int i1 )
 }
 
 // Some error handling
-static
 void  wrong_num_arg( const char * funcname, int num_args )
 {
     script_error("%s: wrong num arg (%i)\n", funcname, num_args);
 }
 
-static
 void  missing_arg( const char * funcname, int min_num_args )
 {
     script_error("%s: missing arg (%i)\n", funcname, min_num_args);
 }
 
-static
 void  missing_arg_str( const char * funcname, const char * argstr )
 {
     script_error("%s: missing arg (%s)\n", funcname, argstr);
@@ -2634,7 +2631,9 @@ void SF_MoveCamera(void)
     if (t_argc != 6)  goto err_numarg;
 
     camera = MobjForSvalue(t_argv[0]);
+    if( ! camera )  goto err_nomobj;
     target = MobjForSvalue(t_argv[1]);
+    if( ! target )  goto err_nomobj;
     targetheight = fixedvalue(t_argv[2]);
     movespeed = fixedvalue(t_argv[3]);
     targetangle = FixedToAngle(fixedvalue(t_argv[4]));
@@ -2741,6 +2740,7 @@ void SF_MoveCamera(void)
     }
     else
     {
+        // instantaneous
         x = camera->x;
         y = camera->y;
         z = camera->z;
@@ -2762,8 +2762,20 @@ void SF_MoveCamera(void)
         }
     }
 
-    if ((x != camera->x || y != camera->y) && !P_TryMove(camera, x, y, true))
-       goto err_move;
+    if (x != camera->x || y != camera->y)
+    {
+       if ( !P_TryMove(camera, x, y, true) )
+       {
+#if 1
+	  // [WDJ] force it past the obstruction, no errors,
+	  // keep game playable, do not police script during gameplay
+	  camera->x = x;
+	  camera->y = y;
+#else
+	  goto err_move;
+#endif
+       }
+    }
     camera->z = z;
 
 done:
@@ -2775,11 +2787,18 @@ err_numarg:
     wrong_num_arg("MoveCamera", 6);
     goto done;
 
+err_nomobj:
+    script_error("MoveCamera: Invalid mobj\n");
+    goto done;
+    
+#if 0
 err_move:
     // [WDJ] Docs: no error
     // [WDJ] Questionable, not even good for debugging path
 //    script_error("MoveCamera: Illegal camera move\n");
+    moved = 0;  // to exit loop
     goto done;
+#endif
 }
 
 /*********** sounds ******************/

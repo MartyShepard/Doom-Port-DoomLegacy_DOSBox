@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_array.c 950 2012-07-06 21:15:13Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -135,13 +135,16 @@ void T_Init_FSArrays(void)
 //  Implements: array newArray(...)
 //
 // array functions in t_array.c
+
+// NewArray( ... )
+// copy parameters to array
+// array or string parameters are ignored
 void SF_NewArray(void)
 {
    int i;
    fs_array_t *newArray;
 
-   if(!t_argc) // empty, do nothing
-      return;
+   if(!t_argc)  goto done; // empty, do nothing
 
    // allocate a fs_array_t
    newArray = Z_Malloc(sizeof(fs_array_t), PU_LEVEL, NULL);
@@ -173,6 +176,8 @@ void SF_NewArray(void)
    // in the cases of immediate value usage, the garbage collector
    // won't have a chance to free it until it has been used
    t_return.value.a = newArray;
+done:
+   return;
 }
 
 
@@ -182,30 +187,20 @@ void SF_NewArray(void)
 // 
 //  Create a new fs_array_t and initialize it with a standard value
 //
+// NewEmptyArray( int numberelements , int elementtype )
+// elementtype: 0= int 0, 1= fixed 0, 2= mobj NULL
 void SF_NewEmptyArray(void)
 {
    int i;
    fs_array_t *newArray;
    fs_value_t	newval;
 
-   if(t_argc < 2) // empty, do nothing
-      return;
+   if(t_argc < 2)  goto done; // empty, do nothing
 
    // bad types
-   if(t_argv[0].type != FSVT_int || t_argv[1].type != FSVT_int)
-   {
-	   script_error("newemptyarray: expected integer\n");
-	   return;
-   }
-
-   // Type out of bounds
-   if(t_argv[1].value.i < 0 || t_argv[1].value.i > 2)
-   {
-	   script_error("newemptyarray: invalid type\n");
-	   return;
-   }
-
-
+   if(t_argv[0].type != FSVT_int || t_argv[1].type != FSVT_int)  goto err_argtype;
+   // elementtype out of bounds
+   if(t_argv[1].value.i < 0 || t_argv[1].value.i > 2)  goto err_elementtype;
 
    // allocate a fs_array_t
    newArray = Z_Malloc(sizeof(fs_array_t), PU_LEVEL, NULL);
@@ -216,8 +211,7 @@ void SF_NewEmptyArray(void)
    // allocate t_argc number of values, set length
    newArray->values = Z_Malloc(t_argv[0].value.i*sizeof(fs_value_t), PU_LEVEL, NULL);
    memset(newArray->values, 0, t_argv[0].value.i*sizeof(fs_value_t));
-   
-   
+
    newArray->length = t_argv[0].value.i;
 
    // initialize each value
@@ -235,15 +229,12 @@ void SF_NewEmptyArray(void)
 			newval.type = FSVT_mobj;
 			newval.value.mobj = NULL;
 			break;
-	}
-
+   }
 
    for(i=0; i<t_argv[0].value.i; i++)
    {
-      
       // Copy the new element into the array
 	  memcpy(&(newArray->values[i]), &newval, sizeof(fs_value_t));
-
    }
 
    T_Add_FSArray(newArray); // add the new array to the save list
@@ -254,6 +245,16 @@ void SF_NewEmptyArray(void)
    // in the cases of immediate value usage, the garbage collector
    // won't have a chance to free it until it has been used
    t_return.value.a = newArray;
+done:
+   return;
+
+err_argtype:
+   script_error("NewEmptyArray: expected integer\n");
+   goto done;
+
+err_elementtype:
+   script_error("NewEmptyArray: elementtype can be 0,1,2\n");
+   goto done;
 }
 
 
@@ -263,45 +264,51 @@ void SF_NewEmptyArray(void)
 // Copies the values from one array into the values of another.
 // Arrays must be non-empty and must be of equal length.
 //
-// Implements: void copyInto(array source, array target)
-//
+// void ArrayCopyInto(array source, array target)
 void SF_ArrayCopyInto(void)
 {
    unsigned int i;
    fs_array_t *source, *target;
    
-   if(t_argc != 2)
-   {
-      script_error("insufficient arguments to function\n");
-      return;
-   }
+   if(t_argc != 2)  goto err_numarg;
 
-   if(t_argv[0].type != FSVT_array || t_argv[1].type != FSVT_array)
-   {
-      script_error("copyinto must be called on arrays\n");
-      return;
-   }
+   if(t_argv[0].type != FSVT_array || t_argv[1].type != FSVT_array)  goto err_argtype;
 
    source = t_argv[0].value.a;
    target = t_argv[1].value.a;
 
-   if(!source || !target)
-   {
-      script_error("copyinto cannot function on empty arrays\n");
-      return;
-   }
-
-   if(source->length != target->length)
-   {
-      script_error("copyinto must be passed arrays of equal length\n");
-      return;
-   }
+   if(!source || !target)  goto err_array_empty;
+#if 0
+   // [WDJ] Improvement: Allow as long as target is large enough for source
+   if(source->length > target->length)  goto err_array_length;
+#else
+   // Previous, exact same length only
+   if(source->length != target->length)  goto err_array_length;
+#endif
 
    for(i=0; i<source->length; i++)
    {
       memcpy(&(target->values[i]), &(source->values[i]), 
 	     sizeof(fs_value_t));
    }
+done:
+   return;
+   
+err_numarg:
+   wrong_num_arg("ArrayCopyInto", 2);
+   goto done;
+
+err_argtype:
+   script_error("ArrayCopyInto: requires array parameters\n");
+   goto done;
+
+err_array_empty:
+   script_error("ArrayCopyInto: requires non-empty arrays\n");
+   goto done;
+
+err_array_length:
+   script_error("ArrayCopyInto: requires arrays of equal length\n");
+   goto done;
 }
 
 //
@@ -309,39 +316,39 @@ void SF_ArrayCopyInto(void)
 //
 // Retrieves a value at a specific index
 //
-// Implements: 'a elementAt(array x, int i)
-//
-// This function is somewhat unique at it has a polymorphic
+// This function is somewhat unique as it has a polymorphic
 // return type :)
 //
+// polytype ArrayElementAt(array x, int index)
+// Returns int or fixed or mobj type
 void SF_ArrayElementAt(void)
 {
    unsigned int index;
    
-   if(t_argc != 2)
-   {
-      script_error("incorrect arguments to function");
-      return;
-   }
-
-   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)
-   {
-      script_error("elementat must be called on a non-empty array\n");
-      return;
-   }
+   if(t_argc != 2)  goto err_numarg;
+   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)  goto err_argtype;
 
    // get index from second arg
    index = intvalue(t_argv[1]);
-
-   if(index < 0 || index >= t_argv[0].value.a->length)
-   {
-      script_error("array index out of bounds\n");
-      return;
-   }
+   if(index < 0 || index >= t_argv[0].value.a->length)  goto err_index;
 
    // copy full fs_value_t to t_return
    memcpy(&t_return, &(t_argv[0].value.a->values[index]), 
           sizeof(fs_value_t));
+done:
+   return;
+
+err_numarg:
+   wrong_num_arg("ArrayElementAt", 2);
+   goto done;
+
+err_argtype:
+   script_error("ArrayElementAt: requires non-empty array\n");
+   goto done;
+
+err_index:
+   script_error("ArrayElementAt: array index exceeds array\n");
+   goto done;
 }
 
 //
@@ -349,44 +356,45 @@ void SF_ArrayElementAt(void)
 //
 // Sets a specific value in an array
 //
-// Implements: void setElementAt(array x, 'a val, int i)
-//
+// void ArrayElementAt(array x, polytype value, int index)
+// value can be int or fixed or mobj type
+// Arrays can be of mixed type.
 void SF_ArraySetElementAt(void)
 {
    unsigned int index;
    
-   if(t_argc != 3)
-   {
-      script_error("incorrect arguments to function");
-      return;
-   }
+   if(t_argc != 3)  goto err_numarg;
 
-   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)
-   {
-      script_error("setelementat must be called on a non-empty array\n");
-      return;
-   }
+   if(t_argv[0].type != FSVT_array || !t_argv[0].value.a)  goto err_argtype;
 
    // get index from third arg this time...
    index = intvalue(t_argv[2]);
+   if(index < 0 || index >= t_argv[0].value.a->length)  goto err_index;
 
-   if(index < 0 || index >= t_argv[0].value.a->length)
-   {
-      script_error("array index out of bounds\n");
-      return;
-   }
-
-   // type checking on second arg: restricted types
-   if(t_argv[1].type == FSVT_array || t_argv[1].type == FSVT_string)
-   {
-      script_error("%s cannot be an array element\n",
-	 t_argv[1].type == FSVT_array ? "an array" : "a string");
-      return;
-   }
+   // type checking on value arg: restricted types
+   if(t_argv[1].type == FSVT_array || t_argv[1].type == FSVT_string)  goto err_valuetype;
 
    // copy full fs_value_t into array at given index
    memcpy(&(t_argv[0].value.a->values[index]), &t_argv[1],
           sizeof(fs_value_t));
+done:
+   return;
+
+err_numarg:
+   wrong_num_arg("ArraySetElementAt", 3);
+   goto done;
+
+err_argtype:
+   script_error("ArraySetElementAt: requires non-empty array\n");
+   goto done;
+
+err_index:
+   script_error("ArraySetElementAt: array index exceeds array\n");
+   goto done;
+
+err_valuetype:
+   script_error("ArraySetElementAt: cannot store array, string values\n" );
+   goto done;
 }
 
 //
@@ -394,26 +402,25 @@ void SF_ArraySetElementAt(void)
 //
 // Retrieves the length of an array
 //
-// Implements: int length(array x)
-//
+// int ArrayLength( array x )
 void SF_ArrayLength(void)
 {
-   if(!t_argc)
-   {
-      script_error("insufficient arguments to function\n");
-      return;
-   }
-
-   if(t_argv[0].type != FSVT_array)
-   {
-      script_error("length must be called on an array\n");
-      return;
-   }
+   if(!t_argc)  goto err_numarg;
+   if(t_argv[0].type != FSVT_array)  goto err_argtype;
 
    t_return.type = FSVT_int;
-
    if(!t_argv[0].value.a)
       t_return.value.i = 0;
    else
       t_return.value.i = t_argv[0].value.a->length;
+done:
+   return;
+
+err_numarg:
+   wrong_num_arg("ArrayLength", 1);
+   goto done;
+
+err_argtype:
+   script_error("ArrayLength: requires array parameter\n");
+   goto done;
 }

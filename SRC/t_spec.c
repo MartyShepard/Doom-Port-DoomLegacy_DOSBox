@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_spec.c 950 2012-07-06 21:15:13Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -67,18 +67,20 @@ void spec_brace( void )
   if(script_debug) CONS_Printf("brace\n");
   
   if(fs_bracetype != BRACKET_close)  // only deal with closing } braces
-    return;
+    goto done;
   
   // if() requires nothing to be done
   if(fs_current_section->type == FSST_if
-     || fs_current_section->type == FSST_else)   return;
+     || fs_current_section->type == FSST_else)   goto done;
   
   // if a loop, jump back to the start of the loop
   if(fs_current_section->type == FSST_loop)
   {
       fs_src_cp = fs_current_section->data.data_loop.loopstart;
-      return;
+      goto done;
   }
+done:
+  return;
 }
 
 // 'if' statement
@@ -86,33 +88,34 @@ int spec_if( void )
 {
   int endtoken;
   fs_value_t eval;
+  int testval;
   
-  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-  {
-      script_error("parse error in if statement\n");
-      return 0;
-  }
+  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)  goto err_endparen;
   
   // 2 to skip past the 'if' and '('
   eval = evaluate_expression(2, endtoken-1);
+  testval = intvalue(eval);
   
   if(fs_current_section
      && fs_bracetype == BRACKET_open
      && endtoken == num_tokens-1)
   {
     // {} braces
-    if(!intvalue(eval))       // skip to end of section
+    if( !testval )       // test false, skip to end of section
       fs_src_cp = fs_current_section->end+1;
   }
-  else if(intvalue(eval))
+  else if( testval )
   {
-      // nothing to do ?
-      if(endtoken == num_tokens-1)
-          return(intvalue(eval));
+      // test true
+      if(endtoken == num_tokens-1)  goto done; // nothing to do ?
       evaluate_expression(endtoken+1, num_tokens-1);
   }
+done:
+  return( testval );  // to skip else and elseif
 
-  return(intvalue(eval));
+err_endparen:
+  script_error("If: missing end paren\n");
+  return 0;
 }
 
 
@@ -120,13 +123,11 @@ int spec_elseif(boolean lastif)
 {
   int endtoken;
   fs_value_t eval;
+  int testval;
 
-  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-  {
-      script_error("parse error in elseif statement\n");
-      return 0;
-  }
+  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)  goto err_endparen;
 
+  // when IF was true, do not execute ELSEIF
   if(lastif)
   {
     fs_src_cp = fs_current_section->end+1;
@@ -134,32 +135,36 @@ int spec_elseif(boolean lastif)
   }
   // 2 to skip past the 'elseif' and '('
   eval = evaluate_expression(2, endtoken-1);
+  testval = intvalue(eval);
   
   if(fs_current_section
      && fs_bracetype == BRACKET_open
      && endtoken == num_tokens-1)
   {
       // {} braces
-      if(!intvalue(eval))       // skip to end of section
+      if( !testval )       // test false, skip to end of section
 	fs_src_cp = fs_current_section->end+1;
   }
   else    // elseif() without {} braces
   {
-      if(intvalue(eval))
+      if( testval )
       {
-	// nothing to do ?
-	if(endtoken == num_tokens-1)
-	    return(intvalue(eval));
+	if(endtoken == num_tokens-1)  goto done;  // nothing to do
 	evaluate_expression(endtoken+1, num_tokens-1);
       }
   }
+done:
+  return( testval );  // to skip else and elseif
 
-  return(intvalue(eval));
+err_endparen:
+  script_error("ElseIf: missing end paren\n");
+  return 0;
 }
 
 
 void spec_else(boolean lastif)
 {
+  // when IF was true, do not execute ELSE
   if(lastif)
     fs_src_cp = fs_current_section->end+1;
 }
@@ -170,49 +175,47 @@ void spec_while( void )
 {
   int endtoken;
   fs_value_t eval;
+  int testval;
 
-  if(!fs_current_section)
-  {
-      script_error("no {} section given for loop\n");
-      return;
-  }
-  
-  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)
-  {
-      script_error("parse error in loop statement\n");
-      return;
-  }
+  if(!fs_current_section)  goto err_section;
+  if( (endtoken = find_operator(0, num_tokens-1, ")")) == -1)  goto err_endparen;
   
   eval = evaluate_expression(2, endtoken-1);
+  testval = intvalue(eval);
   
-  // skip if no longer valid
-  if(!intvalue(eval)) fs_src_cp = fs_current_section->end+1;
+  // break out of loop when test fails
+  if( !testval )
+      fs_src_cp = fs_current_section->end+1;
+done:
+  return;
+
+err_section:
+  script_error("Loop: missing {} section\n");
+  goto done;
+
+err_endparen:
+  script_error("Loop: missing end paren\n");
+  goto done;
 }
 
-void spec_for( void )                 // for() loop
+// for() loop
+void spec_for( void )
 {
   fs_value_t eval;
   int start;
-  int comma1, comma2;     // token numbers of the seperating commas
+  int comma1, comma2;     // token numbers of the separating commas
+  int testval;
   
-  if(!fs_current_section)
-  {
-      script_error("need {} delimiters for for()\n");
-      return;
-  }
+  if(!fs_current_section)  goto err_section;
   
   // is a valid section
   
   start = 2;     // skip "for" and "(": start on third token(2)
   
-  // find the seperating commas first
+  // find the separating commas first
   
   if( (comma1 = find_operator(start,    num_tokens-1, ",")) == -1
-      || (comma2 = find_operator(comma1+1, num_tokens-1, ",")) == -1)
-  {
-      script_error("incorrect arguments to if()\n");
-      return;
-  }
+      || (comma2 = find_operator(comma1+1, num_tokens-1, ",")) == -1)  goto err_syntax;
   
   // are we looping back from a previous loop?
   if(fs_current_section == fs_prev_section)
@@ -222,9 +225,10 @@ void spec_for( void )                 // for() loop
       
       // check if we should run the loop again (second argument)
       eval = evaluate_expression(comma1+1, comma2-1);
-      if(!intvalue(eval))
+      testval = intvalue(eval);
+      if( !testval )
       {
-	  // stop looping
+	  // test fail, stop looping
 	  fs_src_cp = fs_current_section->end + 1;
       }
   }
@@ -234,6 +238,16 @@ void spec_for( void )                 // for() loop
       // just evaluate the starting expression (first arg)
       evaluate_expression(start, comma1-1);
   }
+done:
+  return;
+   
+err_section:
+  script_error("For: missing {} section\n");
+  goto done;
+
+err_syntax:
+  script_error("For: syntax\n");
+  goto done;
 }
 
 /**************************** Variable Creation ****************************/
@@ -246,27 +260,28 @@ script_t *newvar_script;
 
 static void create_variable(int start, int stop)
 {
-  if(fs_killscript) return;
+  if(fs_killscript)  goto done;
   
-  if(tokentype[start] != TT_name)
-  {
-      script_error("invalid name for variable: '%s'\n",
-		   tokens[start+1]);
-      return;
-  }
+  if(tokentype[start] != TT_name)   goto err_varname;
   
   // check if already exists, only checking
   // the current script
-  if( variableforname(newvar_script, tokens[start]) )
-    return;  // already one
+  if( variableforname(newvar_script, tokens[start]) )  goto done;  // already one
   
   new_variable(newvar_script, tokens[start], newvar_type);
   
-  if(stop != start) evaluate_expression(start, stop);
+  if(stop != start)
+      evaluate_expression(start, stop);
+done:
+  return;
+   
+err_varname:
+  script_error("Var: invalid name for variable: '%s'\n", tokens[start+1]);
+  goto done;
 }
 
 // divide a statement (without type prefix) into individual
-// variables to be create them using create_variable
+// variables to create them using create_variable
 
 static void parse_var_line(int start)
 {
@@ -274,7 +289,7 @@ static void parse_var_line(int start)
   
   while(1)
   {
-      if(fs_killscript) return;
+      if(fs_killscript)   goto done;
       endtoken = find_operator(starttoken, num_tokens-1, ",");
       if(endtoken == -1) break;
       create_variable(starttoken, endtoken-1);
@@ -282,6 +297,8 @@ static void parse_var_line(int start)
   }
   // dont forget the last one
   create_variable(starttoken, num_tokens-1);
+done:
+  return;
 }
 
 boolean spec_variable( void )
