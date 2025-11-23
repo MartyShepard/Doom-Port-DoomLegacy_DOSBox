@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: f_wipe.c 953 2012-07-09 01:33:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -265,7 +265,6 @@ int wipe_doMelt ( int ticks )
     int  height = vid.height;
     int  i, j;
     int  dy;
-    int  idx;
 
     byte *s, *e, *d;
 
@@ -283,10 +282,11 @@ int wipe_doMelt ( int ticks )
                 dy = (melty[i] < 16) ? melty[i]+1 : 8;
                 dy *= vid.dupy;
                 if (melty[i]+dy >= height) dy = height - melty[i];  // bottom
-		idx = (melty[i]*vid.ybytes)+((i+i)*vid.bytepp);
+	        int idx = ((i+i)*vid.bytepp);  // x offset only
+                s = &wipe_scr_start[idx];
+	        idx += (melty[i]*vid.ybytes);  // with melty offset
                 d = &wipe_scr[idx];
                 e = &wipe_scr_end[idx];
-                s = &wipe_scr_start[i+i];
                 melty[i] += dy;
 #ifdef ENABLE_DRAWEXT
 	        if( vid.drawmode != DRAW8PAL )

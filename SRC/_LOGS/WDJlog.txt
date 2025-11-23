@@ -2628,3 +2628,7 @@ Update the fragglescript function docs to the actual code
 implementation.
 Fix some comments in the code.
 
+*** w83_wipe24
+patchfile = w83_wipe24.patch
+- committed revision 953   by wesley johnson
+Fix wipe for 24bpp draw.  One index was not using bytepp.
