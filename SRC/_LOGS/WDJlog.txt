@@ -2817,3 +2817,24 @@ patchfile = w86_7_drawflags.patch
 - committed revision 974   by wesley johnson
 Add drawflags and appropriate TF_ flags to hw_cache parameters so that do not
 have global draw cache modifiers.
+
+*** w86_hw_fx1
+patchfile = w86_8_hw_fx1.patch
+- committed revision 975   by wesley johnson
+Fix hardware draw of fx1 translucent.
+Fixes display of linedef 288 in opengl.
+
+*** w86_hw_view_colormap
+patchfile = w86_9_hw_view_colormap.patch
+- committed revision 976   by wesley johnson
+Fix the hardware draw of Boom and view_colormap.
+Now see global colormap change with Boom deep water and colormap fog
+in opengl mode.
+
+*** w87_mobj_subsector
+patchfile = w87_1_mobj_subsector.patch
+- committed revision 977   by wesley johnson
+Fix segfault in dsv4.  When wrong buttons are pressed player is hurt.
+If they are pressed after getting the yellow key, then segfault.
+There is a mobj without a subsector, and script code must check first.
+

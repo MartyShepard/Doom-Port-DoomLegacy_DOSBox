@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 972 2012-11-10 22:18:39Z wesleyjohnson $
+// $Id: t_func.c 977 2012-12-04 03:22:38Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -1623,7 +1623,9 @@ void SF_ObjSector(void)
     mobj_t *mo = t_argc ? MobjForSvalue(t_argv[0]) : fs_current_script->trigger;
 
     t_return.type = FSVT_int;
-    t_return.value.i = mo ? mo->subsector->sector->tag : 0;     // nullptr check
+    // [WDJ] dsv4 map28 has buttons that hurt player, causes segfault here
+    // when pressed after getting yellow key, mo with no subsector.
+    t_return.value.i = (mo && mo->subsector) ? mo->subsector->sector->tag : 0;     // nullptr check
 }
 
 // the health number of an object
@@ -2575,7 +2577,9 @@ void SF_SetCamera(void)
 
     script_camera.mo = mo;
     script_camera.mo->angle = (t_argc < 2) ? mo->angle : FixedToAngle(fixedvalue(t_argv[1]));
-    script_camera.mo->z = (t_argc < 3) ? (mo->subsector->sector->floorheight + (41 << FRACBITS)) : fixedvalue(t_argv[2]);
+    script_camera.mo->z = (t_argc < 3) ?
+     (((mo->subsector)? mo->subsector->sector->floorheight : 0) + (41 << FRACBITS))
+     : fixedvalue(t_argv[2]);
 
     angle_t aiming = (t_argc < 4) ? 0 : FixedToAngle(fixedvalue(t_argv[3]));
     script_camera.aiming = G_ClipAimingPitch(aiming);
