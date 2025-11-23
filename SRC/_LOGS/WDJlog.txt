@@ -2640,3 +2640,12 @@ Make color8_translate palette used by draw15, draw16, draw24, draw32,
 respond to gamma settings, and palette changes, such as palette flash,
 object pickup, damage red.
 
+*** w84_ouchface
+patchfile = w84_ouchface.patch
+- committed revision 955   by wesley johnson
+Previous ouchface fix was not complete.
+Needed to set face priority to 8, to keep the ouchface visible for
+more than one tic.
+Self-damage code also needed ouchface fix.
+Ouchface has mouth open wide, "ahhhh".
+

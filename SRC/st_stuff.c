@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: st_stuff.c 955 2012-07-20 23:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -603,6 +603,7 @@ static void ST_updateFaceWidget(void)
             {
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
+                priority = 8; // [WDJ] Necessary to keep ouchface visible
             }
             else
             {
@@ -652,7 +653,9 @@ static void ST_updateFaceWidget(void)
         // getting hurt because of your own damn stupidity
         if (plyr->damagecount)
         {
-            if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
+//            if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+            if (st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
                 priority = 7;
                 st_facecount = ST_TURNCOUNT;

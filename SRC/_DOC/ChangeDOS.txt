@@ -1,8 +1,10 @@
 * Not need to Compile.
 
-[00953 ]: w84 palette draw 15,16,24,32
+[00955 ]: w84 ouchface
+[00954 ]: w84 palette draw 15,16,24,32
           DOS: Gamma control fixed on highcolor
 					
+[00953 ]: w83 wipe draw24
 [00952 ]: w83 fs func docs update
 [00951 ]: w83 fs script parse
 [00950 ]: w83 fs array spec
