@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 970 2012-11-10 22:10:34Z wesleyjohnson $
+// $Id: w_wad.c 974 2012-11-10 22:24:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -876,22 +876,42 @@ void* W_CachePatchNum ( int lump, int tag )
 
     grPatch = &(wadfiles[lump>>16]->hwrcache[lump & 0xffff]);
 
-    if( grPatch->mipmap.grInfo.data ) 
-    {   
-        if( tag == PU_CACHE )
-            tag = PU_HWRCACHE;
-        Z_ChangeTag (grPatch->mipmap.grInfo.data, tag); 
-    }
-    else
+    if( ! grPatch->mipmap.grInfo.data ) 
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
-        // well this code will be executed latter in GetPatch, anyway 
-        // do it now ...
         patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
-        HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap);
+        // default no TF_Opaquetrans
+        HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, 0);
         Z_Free (tmp_patch);
-        //Hurdler: why not do a Z_ChangeTag (grPatch->mipmap.grInfo.data, tag) here?
-        //BP: mmm, yes we can...
+        // HWR_MakePatch makes grInfo.data as PU_HWRCACHE
+    }
+
+    // return MipPatch_t, which can be casted to (patch_t) with valid patch header info
+    return (void*)grPatch;
+}
+
+// [WDJ] Called from hardware render for special mapped sprites
+void* W_CacheMappedPatchNum ( int lump, uint32_t drawflags )
+{
+    MipPatch_t*   grPatch;
+
+#ifdef PARANOIA
+    // check the return value of a previous W_CheckNumForName()
+    if ( ( lump==-1 ) ||
+         ((lump&0xFFFF) >= wadfiles[lump>>16]->numlumps) )
+        I_Error ("W_CachePatchNum: %i >= numlumps", lump&0xffff);
+#endif
+
+    grPatch = &(wadfiles[lump>>16]->hwrcache[lump & 0xffff]);
+
+    if( ! grPatch->mipmap.grInfo.data )
+    {   // first time init grPatch fields
+        // we need patch w,h,offset,...
+        patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
+        // pass TF_Opaquetrans
+        HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, drawflags);
+        Z_Free (tmp_patch);
+        // HWR_MakePatch makes grInfo.data as PU_HWRCACHE
     }
 
     // return MipPatch_t, which can be casted to (patch_t) with valid patch header info

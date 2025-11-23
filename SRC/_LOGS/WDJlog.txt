@@ -2806,3 +2806,14 @@ Cleanup unused functions and redirected functions.
 R_GetFlatNumForName -> R_FlatNumForName  (like R_TextureNumForName)
 P_FlatNumForName -> P_AddLevel_FlatNumForName (unused)
 
+*** w86_hw_cache
+patchfile = w86_6_hw_cache.patch
+- committed revision 973   by wesley johnson
+Cleanup of code in hw_cache, concerning bytepp, endian issues,
+and much better draw code for the various bytepp switches.
+
+*** w86_drawflags
+patchfile = w86_7_drawflags.patch
+- committed revision 974   by wesley johnson
+Add drawflags and appropriate TF_ flags to hw_cache parameters so that do not
+have global draw cache modifiers.

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00974 ]: w86_7 drawflags
+[00973 ]: w86_6 hw_cache
 [00972 ]: w86_5 misc renames and cleanup
 [00971 ]: w86 HWR types
 [00970 ]: w86 Glide types

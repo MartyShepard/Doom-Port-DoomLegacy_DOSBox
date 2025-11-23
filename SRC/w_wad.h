@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 970 2012-11-10 22:10:34Z wesleyjohnson $
+// $Id: w_wad.h 974 2012-11-10 22:24:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -188,6 +188,10 @@ void*   W_CachePatchName (char* name, int tag);
 
 void*   W_CachePatchNum (int lump, int tag);                        // return a patch_t
 void*   W_CachePatchNum_Endian ( int lump, int tag );
+#ifdef HWRENDER
+// [WDJ] Called from hardware render for special mapped sprites
+void*   W_CacheMappedPatchNum ( int lump, uint32_t drawflags );
+#endif
 
 void*   W_CacheRawAsPic( int lump, int width, int height, int tag); // return a pic_t
 

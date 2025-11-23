@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 970 2012-11-10 22:10:34Z wesleyjohnson $
+// $Id: v_video.c 974 2012-11-10 22:24:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1423,7 +1423,7 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
         MipPatch_t *grpatch = &(wadfiles[lumpnum >> 16]->hwrcache[lumpnum & 0xffff]);
         grpatch->width = width;
         grpatch->height = height;
-        grpatch->mipmap.tfflags |= TF_RAWASPIC;
+        grpatch->mipmap.tfflags |= TF_Her_Raw_Pic;  // Heretic Raw Pic
         HWR_DrawPic(x1, y1, lumpnum);
         return;
     }
