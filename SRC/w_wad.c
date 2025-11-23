@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: w_wad.c 970 2012-11-10 22:10:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -213,7 +213,7 @@ int W_LoadWadFile (char *filename)
     struct stat      bufstat;
     char             filenamebuf[MAX_WADPATH];
 #ifdef HWRENDER    
-    GlidePatch_t*    grPatch;
+    MipPatch_t*      grPatch;
 #endif
 
     //
@@ -335,10 +335,10 @@ int W_LoadWadFile (char *filename)
     wadfile->lumpcache = lumpcache;
 
 #ifdef HWRENDER
-    //faB: now allocates GlidePatch info structures STATIC from the start,
+    //faB: now allocates MipPatch info structures STATIC from the start,
     //     because these were causing a lot of fragmentation of the heap,
     //     considering they are never freed.
-    length = numlumps * sizeof(GlidePatch_t);
+    length = numlumps * sizeof(MipPatch_t);
     grPatch = Z_Malloc (length, PU_HWRPATCHINFO, 0);    //never freed
     // set mipmap.downloaded to false
     memset (grPatch, 0, length);
@@ -858,7 +858,7 @@ inline void* W_CachePatchNum_Endian ( int lump, int tag )
 // Called from many draw functions
 void* W_CachePatchNum ( int lump, int tag )
 {
-    GlidePatch_t*   grPatch;
+    MipPatch_t*   grPatch;
 
     if( rendermode == render_soft ) {
         return W_CachePatchNum_Endian ( lump, tag );
@@ -894,17 +894,17 @@ void* W_CachePatchNum ( int lump, int tag )
         //BP: mmm, yes we can...
     }
 
-    // return GlidePatch_t, which can be casted to (patch_t) with valid patch header info
+    // return MipPatch_t, which can be casted to (patch_t) with valid patch header info
     return (void*)grPatch;
 }
 
-#else // HWRENDER Glide version
+#else // HWRENDER version
 // Software renderer
 void* W_CachePatchNum ( int lump, int tag )
 {
     return W_CachePatchNum_Endian( lump, tag );
 }
-#endif // HWRENDER Glide version
+#endif // HWRENDER version
 
 
 //

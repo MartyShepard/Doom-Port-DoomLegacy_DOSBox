@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 764 2010-10-29 20:59:42Z wesleyjohnson $
+// $Id: z_zone.h 970 2012-11-10 22:10:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,8 +79,8 @@ typedef enum
   PU_SOUND,    // static while playing
   PU_MUSIC,    // static while playing
   PU_DAVE,     // anything else Dave wants static
-  PU_HWRPATCHINFO,      // Hardware GlidePatch_t struct for OpenGl/Glide texture cache
-  PU_HWRPATCHCOLMIPMAP, // Hardware GlideMipmap_t struct colormap variation of patch
+  PU_HWRPATCHINFO,      // Hardware MipPatch_t struct for OpenGl/Glide texture cache
+  PU_HWRPATCHCOLMIPMAP, // Hardware Mipmap_t struct colormap variation of patch
   PU_LOCK_SB,  // static and protected against change, must use PU_UNLOCK_CACHE
 // Tags that convert to PU_CACHE at level exit.
 // Will not override more restrictive existing tag.

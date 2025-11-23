@@ -2772,3 +2772,11 @@ too many ffloor references in the code that have other meanings.
 ffloors -> ffplane
 numffloors -> numffplane
 
+*** w86_Glide_types
+patchfile = w86_3_Glide_types.patch
+- committed revision 970   by wesley johnson
+Cleanup hardware typenames and structs.  Change to use uint32_t and uint16_t.
+GlideMipmap_t -> Mipmap_t
+GlideTexture_t -> MipTexture_t
+GlidePatch_t -> MipPatch_t
+

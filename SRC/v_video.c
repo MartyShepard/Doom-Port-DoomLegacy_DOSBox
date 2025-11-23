@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 954 2012-07-20 23:11:13Z wesleyjohnson $
+// $Id: v_video.c 970 2012-11-10 22:10:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -783,7 +783,7 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawMappedPatch((GlidePatch_t *) patch, x, y, scrn, colormap);
+        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, scrn, colormap);
         return;
     }
 #endif
@@ -895,7 +895,7 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((GlidePatch_t *) patch, x, y, scrn);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, scrn);
         return;
     }
 #endif
@@ -994,7 +994,7 @@ void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num )
 #if 0
 //[WDJ] 2012-02-06 DrawSmallPatch found to be unused
 
-void HWR_DrawSmallPatch(GlidePatch_t * gpatch, int x, int y, int option, byte * colormap);
+void HWR_DrawSmallPatch(MipPatch_t * gpatch, int x, int y, int option, byte * colormap);
 // Draws a patch 2x as small. SSNTails 06-10-2003
 // [WDJ] all patches are cached endian fixed 1/5/2010
 void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
@@ -1015,7 +1015,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawSmallPatch((GlidePatch_t *) patch, x, y, scrn, colormap);
+        HWR_DrawSmallPatch((MipPatch_t *) patch, x, y, scrn, colormap);
         return;
     }
 #endif
@@ -1104,7 +1104,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((GlidePatch_t *) patch, x, y, scrn);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, scrn);
         return;
     }
 #endif
@@ -1237,7 +1237,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((GlidePatch_t *) patch, x, y, V_NOSCALESTART | V_NOSCALEPATCH);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_NOSCALESTART | V_NOSCALEPATCH);
         return;
     }
 #endif
@@ -1420,10 +1420,10 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
     if (rendermode != render_soft)
     {
         // save size somewhere and mark lump as a raw pic !
-        GlidePatch_t *grpatch = &(wadfiles[lumpnum >> 16]->hwrcache[lumpnum & 0xffff]);
+        MipPatch_t *grpatch = &(wadfiles[lumpnum >> 16]->hwrcache[lumpnum & 0xffff]);
         grpatch->width = width;
         grpatch->height = height;
-        grpatch->mipmap.flags |= TF_RAWASPIC;
+        grpatch->mipmap.tfflags |= TF_RAWASPIC;
         HWR_DrawPic(x1, y1, lumpnum);
         return;
     }
