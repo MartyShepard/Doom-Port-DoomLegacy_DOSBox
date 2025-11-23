@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 977 2012-12-04 03:22:38Z wesleyjohnson $
+// $Id: t_func.c 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -2547,7 +2547,7 @@ err_numarg:
 
 /************* Camera functions ***************/
 
-camera_t script_camera = { false, 0, 0, 0, 0, NULL };
+camera_t script_camera = { NULL, NULL, 0, 0, 0, 0 };
 boolean script_camera_on;
 
 // SetCamera(obj, [angle], [viewheight], [pitch])

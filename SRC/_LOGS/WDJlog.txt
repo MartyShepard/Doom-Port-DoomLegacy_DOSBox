@@ -2853,3 +2853,11 @@ Light calculations are done in range 0..255.  The LIGHTSEGSHIFT is
 only performed at the table lookup.  The extralight is now 0..255.
 Calculate the wall orientation light outside of loops.
 Simplified much of the light table code.
+
+*** w87_camera
+patchfile = w87_4_camera.patch
+- committed revision 980   by wesley johnson
+Chase camera is now fixed to be usable with splitscreen players, with
+the first player getting the chase camera.
+This could be expanded to allow two chase cameras now, but the chase camera
+gets hung up going through doorways, so I do not recommend it.

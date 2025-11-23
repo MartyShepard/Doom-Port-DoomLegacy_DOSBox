@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 957 2012-08-04 23:38:19Z wesleyjohnson $
+// $Id: p_mobj.c 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1995,7 +1995,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     // notify network
     SV_SpawnPlayer(playernum, mobj->x, mobj->y, mobj->angle);
 
-    if (camera.chase && displayplayer == playernum)
+    if (camera.chase == p)
         P_ResetCamera(p);
 
 #ifdef VOODOO_DOLL

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: r_things.c 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1107,8 +1107,7 @@ static void R_ProjectSprite (mobj_t* thing)
     fixed_t             xscale;
     fixed_t             yscale; //added:02-02-98:aaargll..if I were a math-guy!!!
 
-    int                 x1;
-    int                 x2;
+    int                 x1, x2;
 
     sector_t*		thingsector;	 // [WDJ] 11/14/2009
    
@@ -1464,17 +1463,19 @@ const int PSpriteSY[NUMWEAPONS] =
 //
 // R_DrawPSprite, Draw one player sprite.
 //
+// Draw parts of the viewplayer weapon
 void R_DrawPSprite (pspdef_t* psp)
 {
     fixed_t             tx;
-    int                 x1;
-    int                 x2;
+    int                 x1, x2;
     spritedef_t*        sprdef;
     spriteframe_t*      sprframe;
     spritelump_t*       sprlump;
     boolean             flip;
     vissprite_t*        vis;
     vissprite_t         avis;
+
+    // [WDJ] 11/14/2012 use viewer variables, which will be for viewplayer
 
     // decide which patch to use
 #ifdef RANGECHECK
@@ -1526,7 +1527,23 @@ void R_DrawPSprite (pspdef_t* psp)
 
     //added:02-02-98:spriteoffset should be abs coords for psprites, based on
     //               320x200
+#if 0
+    // [WDJ] I don't think that weapon sprites need flip, but prboom
+    // and prboom-plus are still supporting it, so maybe there are some.
+    // There being one viewpoint per offset, probably do not need this.
+    if( flip )
+    {
+fprintf(stderr,"Player weapon flip detected!\n" );
+        tx -= sprlump->width - sprlump->offset;  // Fraggle's flip offset
+    }
+    else
+    {
+        // apply offset from sprite lump normally
+        tx -= sprlump->offset;
+    }
+#else
     tx -= sprlump->offset;
+#endif
     x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
     // off the right side
@@ -1610,12 +1627,12 @@ void R_DrawPSprite (pspdef_t* psp)
         vis->colormap = spritelights[MAXLIGHTSCALE-1];
     }
 
-    if(viewplayer->mo->subsector->sector->numlights)
+    if(viewer_sector->numlights)
     {
       int vlight;  // 0..255
-      int light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + (41 << FRACBITS));
-      vis->extra_colormap = viewplayer->mo->subsector->sector->lightlist[light].extra_colormap;
-      vlight = *viewplayer->mo->subsector->sector->lightlist[light].lightlevel + extralight;
+      int light = R_GetPlaneLight(viewer_sector, viewmobj->z + (41 << FRACBITS));
+      vis->extra_colormap = viewer_sector->lightlist[light].extra_colormap;
+      vlight = *viewer_sector->lightlist[light].lightlevel + extralight;
 
       spritelights =
 	  (vlight < 0) ? scalelight[0]
@@ -1625,7 +1642,7 @@ void R_DrawPSprite (pspdef_t* psp)
       vis->colormap = spritelights[MAXLIGHTSCALE-1];
     }
     else
-      vis->extra_colormap = viewplayer->mo->subsector->sector->extra_colormap;
+      vis->extra_colormap = viewer_sector->extra_colormap;
 
     R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
@@ -1635,6 +1652,7 @@ void R_DrawPSprite (pspdef_t* psp)
 //
 // R_DrawPlayerSprites
 //
+// Draw the viewplayer weapon
 void R_DrawPlayerSprites (void)
 {
     int         i = 0;
@@ -1646,15 +1664,17 @@ void R_DrawPlayerSprites (void)
 
     if (rendermode != render_soft)
         return;
+   
+    // [WDJ] 11/14/2012 use viewer variables for viewplayer
 
     // get light level
-    if(viewplayer->mo->subsector->sector->numlights)
+    if(viewer_sector->numlights)
     {
-      light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + viewplayer->mo->info->height);
-      vlight = *viewplayer->mo->subsector->sector->lightlist[light].lightlevel + extralight;
+      light = R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
+      vlight = *viewer_sector->lightlist[light].lightlevel + extralight;
     }
     else
-      vlight = viewplayer->mo->subsector->sector->lightlevel + extralight;
+      vlight = viewer_sector->lightlevel + extralight;
 
     spritelights =
         (vlight < 0) ? scalelight[0]

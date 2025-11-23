@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: r_main.c 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1147,17 +1147,21 @@ void R_SetupFrame (player_t* player)
     int  fixedcolormap_num;
     int  dy=0; //added:10-02-98:
 
+    viewplayer = player;
     extralight = player->extralight;
 
-    if (cv_chasecam.value && !camera.chase)
+    // Chase camera setting must be maintained even with script camera running
+    if (cv_chasecam.value)
     {
-        P_ResetCamera(player);
-        camera.chase = true;
+        // with splitplayer, only the first player will get the chase camera
+        if( !camera.chase )
+	     P_ResetCamera(player);  // set chase = player
     }
-    else if (!cv_chasecam.value)
-        camera.chase = false;
+    else
+        camera.chase = NULL;
 
 #ifdef FRAGGLESCRIPT
+    // Script camera overrides chase camera
     if (script_camera_on)
     {
         // fragglescript camera as viewer
@@ -1173,15 +1177,13 @@ void R_SetupFrame (player_t* player)
     }
     else
 #endif
-    if (camera.chase)
+    if (camera.chase == player)  // this player has chase camera
     {
         // chase camera as viewer
         // use outside cam view
+        if (!camera.mo)  // because LoadLevel removes camera
+	    P_ResetCamera(player);  // reset the camera
         viewmobj = camera.mo;
-#ifdef PARANOIA
-        if (!viewmobj)
-            I_Error("no mobj for the camera");
-#endif
         viewz = viewmobj->z + (viewmobj->height>>1);
         fixedcolormap_num = camera.fixedcolormap;
         aimingangle=camera.aiming;
@@ -1229,7 +1231,6 @@ void R_SetupFrame (player_t* player)
      if (!viewmobj)
          I_Error("R_Setupframe : viewmobj null (player %d)",player-players);
 #endif
-    viewplayer = player;
     viewx = viewmobj->x;
     viewy = viewmobj->y;
 
@@ -1238,7 +1239,6 @@ void R_SetupFrame (player_t* player)
 
     // Before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
     // Can be camera.mo, viewplayer->mo, or fragglescript script_camera.mo
-//    viewmobj = camera.chase ? camera.mo : viewplayer->mo;  // orig FakeFlat line
     viewer_sector = viewmobj->subsector->sector;
     viewer_modelsec = viewer_sector->modelsec;
     // [WDJ] modelsec used for more than water, do proper test
@@ -1454,9 +1454,10 @@ void R_RenderPlayerView (player_t* player)
     // SoM: And now 3D floors/sides!
     R_DrawMasked ();
 
-    // draw the psprites on top of everything
-    //  but does not draw on side views
-    if (!viewangleoffset && !camera.chase && cv_psprites.value && !script_camera_on)
+    // If enabled, draw the weapon psprites on top of everything
+    // but not on side views, nor on camera views.
+    if (cv_psprites.value && !viewangleoffset && !script_camera_on
+	&& camera.chase != player )
         R_DrawPlayerSprites ();
 
     // Check for new console commands.

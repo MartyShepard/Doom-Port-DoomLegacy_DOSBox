@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 930 2012-06-14 14:43:43Z wesleyjohnson $
+// $Id: p_user.c 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -723,6 +723,9 @@ boolean P_UndoPlayerChicken(player_t *player)
 //                and looks at the player avatar
 //
 
+// [WDJ] There is only one camera, so when there are two players, it can
+// only be used as chase camera for one, and that is player1
+// It now records who it is chasing.
 camera_t camera;
 
 //#define VIEWCAM_DIST    (128<<FRACBITS)
@@ -734,11 +737,9 @@ consvar_t cv_cam_speed  = {"cam_speed" ,  "0.25",CV_FLOAT,NULL};
 
 void P_ResetCamera (player_t *player)
 {
-    fixed_t             x;
-    fixed_t             y;
-    fixed_t             z;
+    fixed_t x,y,z;
 
-    camera.chase = true;
+    camera.chase = player;
     x = player->mo->x;
     y = player->mo->y;
     z = player->mo->z + (cv_viewheight.value<<FRACBITS);
@@ -746,7 +747,7 @@ void P_ResetCamera (player_t *player)
     // hey we should make sure that the sounds are heard from the camera
     // instead of the marine's head : TO DO
 
-    // set bits for the camera
+    // set bits for the camera object
     if (!camera.mo)
         camera.mo = P_SpawnMobj (x,y,z, MT_CHASECAM);
     else
@@ -760,9 +761,15 @@ void P_ResetCamera (player_t *player)
     camera.aiming = 0;
 }
 
+// Unused
+#if 0
+fixed_t cameraz;
+
 boolean PTR_FindCameraPoint (intercept_t* in)
 {
-/*    int         side;
+//  Disabled all except return false
+#if 0
+    int         side;
     fixed_t             slope;
     fixed_t             dist;
     line_t*             li;
@@ -799,13 +806,14 @@ boolean PTR_FindCameraPoint (intercept_t* in)
     return true;
 
     // hit line
-  hitline:*/
+  hitline:
+#endif
     // stop the search
     return false;
 }
+#endif
 
 
-fixed_t cameraz;
 
 void P_MoveChaseCamera (player_t *player)
 {
@@ -1107,7 +1115,7 @@ void P_PlayerThink (player_t* player)
     if (player->playerstate == PST_DEAD)
     {
         //Fab:25-04-98: show the dm rankings while dead, only in deathmatch
-		//DarkWolf95:July 03, 2003:fixed bug where rankings only show on player1's death
+	//DarkWolf95:July 03, 2003:fixed bug where rankings only show on player1's death
         if (player== displayplayer_ptr
 	    || player== displayplayer2_ptr ) // NULL when unused
             playerdeadview = true;
@@ -1115,8 +1123,8 @@ void P_PlayerThink (player_t* player)
         P_DeathThink (player);
 
         //added:26-02-98:camera may still move when guy is dead
-        if (camera.chase)
-            P_MoveChaseCamera ( displayplayer_ptr );
+        if (camera.chase == player)
+            P_MoveChaseCamera ( player );
         return;
     }
     else
@@ -1138,15 +1146,17 @@ void P_PlayerThink (player_t* player)
     else
         P_MovePlayer (player);
 
+    //added:26-02-98: calculate the camera movement
     //added:22-02-98: bob view only if looking by the marine's eyes
-#ifndef CLIENTPREDICTION2
-    if (!camera.chase)
-        P_CalcHeight (player);
+    if (camera.chase == player)
+        P_MoveChaseCamera ( player );  // camera view adjust
+    else
+#ifdef CLIENTPREDICTION2
+        ;
+#else
+        P_CalcHeight (player);  // viewheight adjust, bob view
 #endif
 
-    //added:26-02-98: calculate the camera movement
-    if (camera.chase && player== displayplayer_ptr)
-        P_MoveChaseCamera ( displayplayer_ptr );
 
     // check special sectors : damage & secrets
     P_PlayerInSpecialSector (player);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: p_local.h 980 2012-12-04 03:29:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -205,15 +205,14 @@ void P_DropWeapon (player_t* player);
 //
 typedef struct camera_s
 {
-    boolean     chase;
+    player_t *  chase;  // player the camera chases, NULL when off
+    mobj_t*     mo;     // the camera object
     angle_t     aiming;
     int         fixedcolormap;
 
     //SoM: Things used by FS cameras.
     fixed_t     viewheight;
     angle_t     startangle;
-
-    mobj_t*     mo;
 } camera_t;
 
 extern camera_t camera;
