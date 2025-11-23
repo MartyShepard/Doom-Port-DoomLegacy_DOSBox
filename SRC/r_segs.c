@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 969 2012-11-10 22:00:49Z wesleyjohnson $
+// $Id: r_segs.c 979 2012-12-04 03:26:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -135,6 +135,8 @@
 #include "p_local.h" //Camera...
 #include "console.h" //Con_clipviewtop
 
+// Light added for wall orientation (in 0..255 scale)
+#define ORIENT_LIGHT   16
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -586,7 +588,8 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
 void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 {
     column_t*       col;
-    int             lightnum;
+    int             vlight;  // visible light 0..255
+    int             orient_light = 0;  // wall orientation effect
     int             texnum;
     int             i;
     fixed_t	    windowclip_top, windowclip_bottom;
@@ -602,10 +605,13 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     // Calculate light table.
     // Use different light tables
     //   for horizontal / vertical / diagonal. Diagonal?
-    // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
     curline = ds->curline;
     frontsector = curline->frontsector;
     backsector = curline->backsector;
+    if (curline->v1->y == curline->v2->y)
+        orient_light = -ORIENT_LIGHT;
+    else if (curline->v1->x == curline->v2->x)
+        orient_light = ORIENT_LIGHT;
 
     // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[curline->sidedef->midtexture];
@@ -696,8 +702,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     dc_numlights = 0;
     if(frontsector->numlights)
     {
-      int lightnum;  // value going into lightlist
-
       dc_numlights = frontsector->numlights;
       if(dc_numlights >= dc_maxlights)   expand_lightlist();
 
@@ -715,53 +719,46 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         rlight->flags = ff_light->flags;
 
         if(rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
-          lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
-//        else if(colfunc == fuzzcolfunc)
+          vlight = rlight->lightlevel;
         else if(colfunc == transcolfunc)
-          lightnum = LIGHTLEVELS-1;
+          vlight = 255;
         else
-          lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT)+extralight;
+          vlight = rlight->lightlevel + extralight;
 
-        if (rlight->extra_colormap && rlight->extra_colormap->fog)
-	   ;
-        else if (curline->v1->y == curline->v2->y)
-          lightnum--;
-        else if (curline->v1->x == curline->v2->x)
-          lightnum++;
+        if (! (rlight->extra_colormap && rlight->extra_colormap->fog) )
+	  vlight += orient_light;
 
-        rlight->lightnum = lightnum;
+        rlight->vlight =
+	    (vlight < 0) ? 0
+	  : (vlight >= 255) ? 255
+	  : vlight;
       }  // for
     }
     else
     {
       // frontsector->numlights == 0
-//      if(colfunc == fuzzcolfunc)
       if(colfunc == transcolfunc)
       {
         if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
-          lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
+          vlight = frontsector->lightlevel;
         else
-          lightnum = LIGHTLEVELS-1;
+          vlight = 255;
       }
       else if(colfunc == fogcolfunc) // Legacy Fog sheet
-        lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
+        vlight = frontsector->lightlevel;
       else
-        lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)+extralight;
+        vlight = frontsector->lightlevel + extralight;
 
       if((colfunc == fogcolfunc) // Legacy Fog sheet
 	  || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 	 ;
-      else if (curline->v1->y == curline->v2->y)
-          lightnum--;
-      else if (curline->v1->x == curline->v2->x)
-          lightnum++;
-
-      if (lightnum < 0)
-          walllights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          walllights = scalelight[LIGHTLEVELS-1];
       else
-          walllights = scalelight[lightnum];
+	  vlight += orient_light;
+
+      walllights =
+	  (vlight < 0) ? scalelight[0]
+	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	: scalelight[vlight>>LIGHTSEGSHIFT];
     }
 
     maskedtexturecol = ds->maskedtexturecol;
@@ -832,21 +829,13 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 		 rlight->rcolormap = fixedcolormap;
 	      else
 	      {
-		 lighttable_t** xwalllights;  // local selection of light table
 		 // distance effect on light, yscale is smaller at distance.
 		 unsigned dlit = dm_yscale>>LIGHTSCALESHIFT;
-
 		 if (dlit >=  MAXLIGHTSCALE )
                      dlit = MAXLIGHTSCALE-1;
 
-		 if (rlight->lightnum < 0)
-		     xwalllights = scalelight[0];
-		 else if (rlight->lightnum >= LIGHTLEVELS)
-		     xwalllights = scalelight[LIGHTLEVELS-1];
-		 else
-		     xwalllights = scalelight[rlight->lightnum];
-
-		 rlight->rcolormap = xwalllights[dlit];
+		 // local selection of light table
+		 rlight->rcolormap = scalelight[rlight->vlight>>LIGHTSEGSHIFT][dlit];
 		 if(rlight->extra_colormap || view_colormap)
 		 {
 		     // reverse indexing, and change to extra_colormap
@@ -899,7 +888,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           {
 	      // distance effect on light, yscale is smaller at distance.
 	      unsigned dlit = dm_yscale>>LIGHTSCALESHIFT;
-
 	      if (dlit >=  MAXLIGHTSCALE )
 	         dlit = MAXLIGHTSCALE-1;
 
@@ -947,7 +935,8 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 {
     column_t*       col;
-    int             lightnum;
+    int             vlight;  // visible light 0..255
+    int             orient_light = 0;  // wall orientation effect
     int             texnum;
     sector_t        tempsec;
     int             templight;
@@ -964,11 +953,14 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     // Calculate light table.
     // Use different light tables
     //   for horizontal / vertical / diagonal. Diagonal?
-    // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
 
     curline = ds->curline;
     backsector = ffloor->target;
     frontsector = curline->frontsector == ffloor->target ? curline->backsector : curline->frontsector;
+    if (curline->v1->y == curline->v2->y)
+        orient_light = -ORIENT_LIGHT;
+    else if (curline->v1->x == curline->v2->x)
+        orient_light = ORIENT_LIGHT;
 
     // midtexture, 0=no-texture, otherwise valid
     texnum = sides[ffloor->master->sidenum[0]].midtexture;
@@ -1047,18 +1039,21 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
           continue; // next ff_light
 
         if(ffloor->flags & FF_FOG)
-          rlight->lightnum = (ffloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT);
+          vlight = ffloor->master->frontsector->lightlevel;
         else if(rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
-          rlight->lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
+          vlight = rlight->lightlevel;
         else
-          rlight->lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT)+extralight;
+          vlight = rlight->lightlevel + extralight;
 
         if(ffloor->flags & FF_FOG || rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
 	   ;
-        else if (curline->v1->y == curline->v2->y)
-          rlight->lightnum--;
-        else if (curline->v1->x == curline->v2->x)
-          rlight->lightnum++;
+        else
+          vlight += orient_light;
+
+        rlight->vlight =
+	     (vlight < 0) ? 0
+	   : (vlight >= 255) ? 255
+	   : vlight;
 
         cnt++;
       }
@@ -1068,33 +1063,28 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     {
       //SoM: Get correct light level!
       if((frontsector->extra_colormap && frontsector->extra_colormap->fog))
-        lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
+        vlight = frontsector->lightlevel;
       else if(ffloor->flags & FF_FOG)
-        lightnum = (ffloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT);
-//      else if(colfunc == fuzzcolfunc)
+        vlight = ffloor->master->frontsector->lightlevel;
       else if(colfunc == transcolfunc)
-        lightnum = LIGHTLEVELS-1;
+        vlight = 255;
       else
       {
 	sector_t * lightsec = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false);
-	lightnum = (lightsec->lightlevel >> LIGHTSEGSHIFT)+extralight;
-//        lightnum = (R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
-//                    ->lightlevel >> LIGHTSEGSHIFT)+extralight;
+	vlight = lightsec->lightlevel + extralight;
+//        vlight = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
+//                    ->lightlevel + extralight;
       }
 
       if (ffloor->flags & FF_FOG || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 	 ;
-      else if (curline->v1->y == curline->v2->y)
-          lightnum--;
-      else if (curline->v1->x == curline->v2->x)
-          lightnum++;
-
-      if (lightnum < 0)
-          walllights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          walllights = scalelight[LIGHTLEVELS-1];
       else
-          walllights = scalelight[lightnum];
+          vlight += orient_light;
+
+      walllights =
+	   (vlight < 0) ? scalelight[0]
+	 : (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	 : scalelight[vlight>>LIGHTSEGSHIFT];
     }
 
     maskedtexturecol = ds->thicksidecol;
@@ -1194,23 +1184,13 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
                 rlight->rcolormap = fixedcolormap;
 	      else
 	      {
-		lighttable_t** xwalllights;  // local selection of lighttable
 	        // distance effect on light, yscale is smaller at distance.
                 unsigned  dlit = dm_yscale>>LIGHTSCALESHIFT;
-
                 if (dlit >=  MAXLIGHTSCALE )
                   dlit = MAXLIGHTSCALE-1;
 
-		lightnum = rlight->lightnum;
-		if (lightnum < 0)
-                  xwalllights = scalelight[0];
-                else if (lightnum >= LIGHTLEVELS)
-                  xwalllights = scalelight[LIGHTLEVELS-1];
-                else
-                  xwalllights = scalelight[lightnum];
-
-		rlight->rcolormap = xwalllights[dlit];
-
+		// local selection of lighttable
+		rlight->rcolormap = scalelight[rlight->vlight>>LIGHTSEGSHIFT][dlit];
 		if( view_colormap )
 		{
 		  // reverse indexing, and change to extra_colormap
@@ -1327,7 +1307,6 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         {
 	    // distance effect on light, yscale is smaller at distance.
 	    unsigned  dlit = dm_yscale>>LIGHTSCALESHIFT;
-
             if (dlit >=  MAXLIGHTSCALE )
                 dlit = MAXLIGHTSCALE-1;
                 
@@ -1399,14 +1378,15 @@ unsigned long   nombre = 100000;
 
 void R_RenderSegLoop (void)
 {
-    angle_t             angle;
-    int                 yl, yh;
+    int        orient_light = 0;  // wall orientation effect
 
-    fixed_t             texturecolumn;
-    int                 mid, top, bottom;
-    int                 i;
+    angle_t    angle;
+    int        yl, yh;
+
+    fixed_t    texturecolumn = 0;
+    int        mid, top, bottom;
+    int        i;
     
-    texturecolumn = 0;                                // shut up compiler warning
 
 #if 0   
     // [WDJ] R_StoreWallRange violates rdraw_viewwidth.
@@ -1420,6 +1400,12 @@ void R_RenderSegLoop (void)
 #endif   
     if (fixedcolormap)
         dc_colormap = fixedcolormap;
+
+    // line orientation light, out of the loop
+    if (curline->v1->y == curline->v2->y)
+        orient_light = -ORIENT_LIGHT;
+    else if (curline->v1->x == curline->v2->x)
+        orient_light = ORIENT_LIGHT;
      
     for ( ; rw_x < rw_stopx ; rw_x++)
     {
@@ -1525,7 +1511,6 @@ void R_RenderSegLoop (void)
 	    {
 	        // distance effect on light, rw_scale is smaller at distance.
 	        unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
-
 	        if (dlit >=  MAXLIGHTSCALE )
 		    dlit = MAXLIGHTSCALE-1;
 
@@ -1543,47 +1528,45 @@ void R_RenderSegLoop (void)
 
         if(dc_numlights)
         {
+          int vlight;
+          r_lightlist_t * rlight;
+
           for(i = 0; i < dc_numlights; i++)
           {
-	    r_lightlist_t * rlight = & dc_lightlist[i];
+	    rlight = & dc_lightlist[i];
+
 	    if(fixedcolormap)
               rlight->rcolormap = fixedcolormap;
 	    else
 	    {
-	      int lightnum;
-              if((frontsector->lightlist[i].caster && frontsector->lightlist[i].caster->flags & FF_FOG && frontsector->lightlist[i].height != *frontsector->lightlist[i].caster->bottomheight) || (dc_lightlist[i].extra_colormap && dc_lightlist[i].extra_colormap->fog))
-                lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
+              if((frontsector->lightlist[i].caster
+		  && frontsector->lightlist[i].caster->flags & FF_FOG
+		  && frontsector->lightlist[i].height != *frontsector->lightlist[i].caster->bottomheight)
+		 || (dc_lightlist[i].extra_colormap && dc_lightlist[i].extra_colormap->fog))
+                vlight = rlight->lightlevel;
               else
-                lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT)+extralight;
+                vlight = rlight->lightlevel + extralight;
    
-              if (rlight->extra_colormap)
-		 ;
-              else if (curline->v1->y == curline->v2->y)
-                lightnum--;
-	      else if (curline->v1->x == curline->v2->x)
-                lightnum++;
+              if ( ! (rlight->extra_colormap) )
+                vlight += orient_light;
 
-	      lighttable_t** xwalllights;  // local selection of light table
-	      if (lightnum < 0)
-                xwalllights = scalelight[0];
-	      else if (lightnum >= LIGHTLEVELS)
-                xwalllights = scalelight[LIGHTLEVELS-1];
-	      else
-                xwalllights = scalelight[lightnum];
+	      lighttable_t** xwalllights =  // local selection of light table
+		  (vlight < 0) ? scalelight[0]
+		: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+		: scalelight[vlight>>LIGHTSEGSHIFT];
 
 	      // distance effect on light, rw_scale is smaller at distance.
 	      unsigned  dlit = rw_scale>>LIGHTSCALESHIFT;
-            
 	      if (dlit >=  MAXLIGHTSCALE )
                 dlit = MAXLIGHTSCALE-1;
 
               rlight->rcolormap = xwalllights[dlit];
 	      if(rlight->extra_colormap || view_colormap)
 	      {
-		 // reverse indexing, and change to extra_colormap
-		 int lightindex = rlight->rcolormap - reg_colormaps;
-		 lighttable_t* cm = view_colormap? view_colormap : rlight->extra_colormap->colormap;
-		 rlight->rcolormap = & cm[ lightindex ];
+		// reverse indexing, and change to extra_colormap
+		int lightindex = rlight->rcolormap - reg_colormaps;
+		lighttable_t* cm = view_colormap? view_colormap : rlight->extra_colormap->colormap;
+		rlight->rcolormap = & cm[ lightindex ];
 	      }
 	    }
 
@@ -1817,7 +1800,8 @@ void R_StoreWallRange( int   start, int   stop)
     fixed_t             sineval;
     angle_t             distangle, offsetangle;
     fixed_t             vtop;
-    int                 lightnum;
+    int                 vlight;  // visible light 0..255
+    int                 orient_light = 0;  // wall orientation effect
     int                 i, cnt;
     ff_lightlist_t      *ff_light;
     r_lightlist_t       *rlight;
@@ -1831,6 +1815,11 @@ void R_StoreWallRange( int   start, int   stop)
         I_Error ("Bad R_RenderWallRange: %i to %i", start , stop);
 #endif
     
+    if (curline->v1->y == curline->v2->y)
+        orient_light = -ORIENT_LIGHT;
+    else if (curline->v1->x == curline->v2->x)
+        orient_light = ORIENT_LIGHT;
+
     sidedef = curline->sidedef;
     linedef = curline->linedef;
     
@@ -2319,22 +2308,14 @@ void R_StoreWallRange( int   start, int   stop)
         // calculate light table
         //  use different light tables
         //  for horizontal / vertical / diagonal
-        // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
         if (!fixedcolormap)
         {
-            lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)+extralight;
-            
-            if (curline->v1->y == curline->v2->y)
-                lightnum--;
-            else if (curline->v1->x == curline->v2->x)
-                lightnum++;
-            
-            if (lightnum < 0)
-                walllights = scalelight[0];
-            else if (lightnum >= LIGHTLEVELS)
-                walllights = scalelight[LIGHTLEVELS-1];
-            else
-                walllights = scalelight[lightnum];
+            vlight = frontsector->lightlevel + extralight + orient_light;
+
+	    walllights =
+	        (vlight < 0) ? scalelight[0]
+	      : (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	      : scalelight[vlight>>LIGHTSEGSHIFT];
         }
     }
     

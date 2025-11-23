@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: p_hpspr.c 979 2012-12-04 03:26:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1443,7 +1443,7 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         {
                 if(P_Random() > 64)
                 {
-                        player->extralight = !player->extralight;
+		   player->extralight = (player->extralight)? 0:LIGHT_UNIT;
                 }
                 S_StartSound(player->mo, sfx_gntful);
                 return;
@@ -1455,11 +1455,11 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         }
         else if(randVal < 160)
         {
-                player->extralight = 1;
+                player->extralight = 1*LIGHT_UNIT;
         }
         else
         {
-                player->extralight = 2;
+                player->extralight = 2*LIGHT_UNIT;
         }
         if(player->powers[pw_weaponlevel2])
         {

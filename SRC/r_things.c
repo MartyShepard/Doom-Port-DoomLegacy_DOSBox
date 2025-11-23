@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 972 2012-11-10 22:18:39Z wesleyjohnson $
+// $Id: r_things.c 979 2012-12-04 03:26:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -997,7 +997,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 // runs through a sector's lightlist and
 static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 {
-  int           i, lightnum, index;
+  int           i;
   int		sz_cut;		// where lightheight cuts on screen
   fixed_t	lightheight;
   sector_t*     sector;
@@ -1009,6 +1009,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
   {
     lightheight = sector->lightlist[i].height;
      
+    // must be a caster
     if(lightheight >= sprite->gz_top || !(sector->lightlist[i].caster->flags & FF_CUTSPRITES))
       continue;
     if(lightheight <= sprite->gz_bot)
@@ -1048,17 +1049,14 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
     newsprite->cut |= SC_TOP;
     if(!(sector->lightlist[i].caster->flags & FF_NOSHADE))
     {
-      if(sector->lightlist[i].caster->flags & FF_FOG)
-        lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
-      else
-        lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT) + extralight;
+      int  vlight = *sector->lightlist[i].lightlevel;  // visible light 0..255
+      if(! (sector->lightlist[i].caster->flags & FF_FOG))
+          vlight += extralight;
 
-      if (lightnum < 0)
-          spritelights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-      else
-          spritelights = scalelight[lightnum];
+      spritelights =
+	  (vlight < 0) ? scalelight[0]
+	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	: scalelight[vlight>>LIGHTSEGSHIFT];
 
       newsprite->extra_colormap = sector->lightlist[i].extra_colormap;
 
@@ -1079,11 +1077,10 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
           ;
         else
         {
-          index = sprite->xscale>>(LIGHTSCALESHIFT-detailshift);
-
-          if (index >= MAXLIGHTSCALE)
-            index = MAXLIGHTSCALE-1;
-          newsprite->colormap = spritelights[index];
+          int dlit = sprite->xscale>>(LIGHTSCALESHIFT-detailshift);
+          if (dlit >= MAXLIGHTSCALE)
+            dlit = MAXLIGHTSCALE-1;
+          newsprite->colormap = spritelights[dlit];
         }
       }
     }
@@ -1247,22 +1244,20 @@ static void R_ProjectSprite (mobj_t* thing)
     //SoM: 3/17/2000: Disregard sprites that are out of view..
     gz_top = thing->z + sprlump->topoffset;
 
-
     thingsector = thing->subsector->sector;	 // [WDJ] 11/14/2009
     if(thingsector->numlights)
     {
-      int lightnum;
+      int vlight;
       light = R_GetPlaneLight(thingsector, gz_top);
-      lightnum = (*thingsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT);
-      if(!(thingsector->lightlist[light].caster && thingsector->lightlist[light].caster->flags & FF_FOG))
-        lightnum += extralight;
+      vlight = *thingsector->lightlist[light].lightlevel;
+      if(!( thingsector->lightlist[light].caster
+	    && (thingsector->lightlist[light].caster->flags & FF_FOG) ))
+        vlight += extralight;
 
-      if (lightnum < 0)
-          spritelights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-      else
-          spritelights = scalelight[lightnum];
+      spritelights =
+	  (vlight < 0) ? scalelight[0]
+	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	: scalelight[vlight>>LIGHTSEGSHIFT];
     }
 
     thingmodelsec = thingsector->modelsec;
@@ -1417,8 +1412,7 @@ static void R_ProjectSprite (mobj_t* thing)
 //
 void R_AddSprites (sector_t* sec, int lightlevel)
 {
-    mobj_t*             thing;
-    int                 lightnum;
+    mobj_t*   thing;
 
     if (rendermode != render_soft)
         return;
@@ -1437,20 +1431,20 @@ void R_AddSprites (sector_t* sec, int lightlevel)
     {
       if(sec->model < SM_fluid)   lightlevel = sec->lightlevel;
 
-      lightnum = (lightlevel >> LIGHTSEGSHIFT)+extralight;
+      int vlight = lightlevel + extralight;
 
-      if (lightnum < 0)
-          spritelights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-      else
-          spritelights = scalelight[lightnum];
+      spritelights =
+	  (vlight < 0) ? scalelight[0]
+	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	: scalelight[vlight>>LIGHTSEGSHIFT];
     }
 
     // Handle all things in sector.
     for (thing = sec->thinglist ; thing ; thing = thing->snext)
+    {
         if((thing->flags2 & MF2_DONTDRAW)==0)
             R_ProjectSprite (thing);
+    }
 }
 
 
@@ -1618,17 +1612,15 @@ void R_DrawPSprite (pspdef_t* psp)
 
     if(viewplayer->mo->subsector->sector->numlights)
     {
-      int lightnum;
+      int vlight;  // 0..255
       int light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + (41 << FRACBITS));
       vis->extra_colormap = viewplayer->mo->subsector->sector->lightlist[light].extra_colormap;
-      lightnum = (*viewplayer->mo->subsector->sector->lightlist[light].lightlevel  >> LIGHTSEGSHIFT)+extralight;
+      vlight = *viewplayer->mo->subsector->sector->lightlist[light].lightlevel + extralight;
 
-      if (lightnum < 0)
-          spritelights = scalelight[0];
-      else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-      else
-          spritelights = scalelight[lightnum];
+      spritelights =
+	  (vlight < 0) ? scalelight[0]
+	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	: scalelight[vlight>>LIGHTSEGSHIFT];
 
       vis->colormap = spritelights[MAXLIGHTSCALE-1];
     }
@@ -1646,8 +1638,8 @@ void R_DrawPSprite (pspdef_t* psp)
 void R_DrawPlayerSprites (void)
 {
     int         i = 0;
-    int         lightnum;
     int         light = 0;
+    int         vlight;  // visible light 0..255
     pspdef_t*   psp;
 
     int kikhak;
@@ -1659,17 +1651,15 @@ void R_DrawPlayerSprites (void)
     if(viewplayer->mo->subsector->sector->numlights)
     {
       light = R_GetPlaneLight(viewplayer->mo->subsector->sector, viewplayer->mo->z + viewplayer->mo->info->height);
-      lightnum = (*viewplayer->mo->subsector->sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT) + extralight;
+      vlight = *viewplayer->mo->subsector->sector->lightlist[light].lightlevel + extralight;
     }
     else
-      lightnum = (viewplayer->mo->subsector->sector->lightlevel >> LIGHTSEGSHIFT) + extralight;
+      vlight = viewplayer->mo->subsector->sector->lightlevel + extralight;
 
-    if (lightnum < 0)
-        spritelights = scalelight[0];
-    else if (lightnum >= LIGHTLEVELS)
-        spritelights = scalelight[LIGHTLEVELS-1];
-    else
-        spritelights = scalelight[lightnum];
+    spritelights =
+        (vlight < 0) ? scalelight[0]
+      : (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+      : scalelight[vlight>>LIGHTSEGSHIFT];
 
     // clip to screen bounds
     dm_floorclip = screenheightarray;

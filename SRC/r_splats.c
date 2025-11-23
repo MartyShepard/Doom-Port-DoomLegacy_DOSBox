@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: r_splats.c 979 2012-12-04 03:26:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -412,7 +412,6 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
     fixed_t     distance;
     fixed_t     length;
     unsigned    index;
-    int         light;
 
     fixed_t     offsetx,offsety;
 
@@ -493,17 +492,16 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
     // prepare values for all the splat
     ds_source = (byte *)W_CacheLumpNum(pSplat->pic,PU_CACHE);
     planeheight = abs(pSplat->z - viewz);
-    light = (pSplat->subsector->sector->lightlevel >> LIGHTSEGSHIFT)+extralight;
-    if (light >= LIGHTLEVELS)
-        light = LIGHTLEVELS-1;
-    if (light < 0)
-        light = 0;
-    planezlight = zlight[light];
+    int vlight = pSplat->subsector->sector->lightlevel + extralight;
+    planezlight =
+        (vlight < 0) ? zlight[0]
+      : (vlight >= 255) ? zlight[LIGHTLEVELS-1]
+      : zlight[vlight>>LIGHTSEGSHIFT];
 
     for (y=miny; y<=maxy; y++)
     {
-            x1 = rastertab[y].minx >> FRACBITS;
-            x2 = rastertab[y].maxx >> FRACBITS;
+        x1 = rastertab[y].minx >> FRACBITS;
+        x2 = rastertab[y].maxx >> FRACBITS;
 
         if (x1<0) x1 = 0;
         if (x2>=vid.width) x2 = vid.width-1;

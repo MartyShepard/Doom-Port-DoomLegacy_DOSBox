@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 766 2010-11-11 02:17:11Z wesleyjohnson $
+// $Id: p_pspr.c 979 2012-12-04 03:26:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -878,12 +878,12 @@ void A_Light0 (player_t *player, pspdef_t *psp)
 
 void A_Light1 (player_t *player, pspdef_t *psp)
 {
-    player->extralight = 1;
+    player->extralight = 1*LIGHT_UNIT;
 }
 
 void A_Light2 (player_t *player, pspdef_t *psp)
 {
-    player->extralight = 2;
+    player->extralight = 2*LIGHT_UNIT;
 }
 
 

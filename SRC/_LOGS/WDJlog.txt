@@ -2845,3 +2845,11 @@ The legacywad filename used cat_filename with a zmalloc buffer,
 but cat_filename requires a buffer of MAX_WADPATH because it
 terminates it with 0.  This caused segfault at program shutdown.
 Fixed to use strdup after the cat_filename call.
+
+*** w87_light255
+patchfile = w87_3_light255.patch
+- committed revision 979   by wesley johnson
+Light calculations are done in range 0..255.  The LIGHTSEGSHIFT is
+only performed at the table lookup.  The extralight is now 0..255.
+Calculate the wall orientation light outside of loops.
+Simplified much of the light table code.
