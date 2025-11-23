@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 917 2012-03-10 20:52:15Z wesleyjohnson $
+// $Id: v_video.c 954 2012-07-20 23:11:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -452,7 +452,12 @@ void V_SetPalette(int palettenum)
         HWR_SetPalette(&pLocalPalette[palettenum * 256]);
     else
 #endif
-        I_SetPalette(&pLocalPalette[palettenum * 256]);
+    {
+        if ( vid.bytepp > 1 )  // highcolor, truecolor
+            R_Init_color8_translate(&pLocalPalette[palettenum * 256]);  // palette change
+        else
+            I_SetPalette(&pLocalPalette[palettenum * 256]);
+    }
 }
 
 void V_SetPaletteLump(char *pal)
@@ -463,7 +468,12 @@ void V_SetPaletteLump(char *pal)
         HWR_SetPalette(pLocalPalette);
     else
 #endif
-        I_SetPalette(pLocalPalette);
+    {
+        if ( vid.bytepp > 1 )  // highcolor, truecolor
+            R_Init_color8_translate(pLocalPalette);  // palette change
+        else
+            I_SetPalette(pLocalPalette);
+    }
 }
 
 void CV_usegamma_OnChange(void)
@@ -2061,7 +2071,7 @@ void V_Init_Draw(void)
     //fab highcolor
     if ( vid.bytepp > 1 )  // highcolor, truecolor
     {
-        R_Init_color8_translate( 1 );
+        R_Init_color8_translate( pLocalPalette );  // no palette change
     }
 #endif
     return;

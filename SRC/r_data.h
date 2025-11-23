@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_data.h 954 2012-07-20 23:11:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -244,7 +244,7 @@ union color8_u {
 };
 extern union color8_u  color8;
 extern uint16_t*  hicolormaps;
-void R_Init_color8_translate ( boolean himap );
+void R_Init_color8_translate ( RGBA_t * palette );
 
 
 // translucency tables

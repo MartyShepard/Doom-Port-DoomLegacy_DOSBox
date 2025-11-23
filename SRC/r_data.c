@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_data.c 954 2012-07-20 23:11:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2002,22 +2002,18 @@ char *R_ColormapNameForNum(int num)
 //  build a table for quick conversion from 8bpp to 15bpp, 16bpp, 24bpp, 32bpp
 //
 // covert 8 bit colors
-void R_Init_color8_translate ( boolean himap )
+void R_Init_color8_translate ( RGBA_t * palette )
 {
-    static byte color8_done = 0;  // check if table already for this bpp
     int  i;
- 
-    if( color8_done != vid.bitpp )
+
+    // [WDJ] unconditional now, palette flashes etc.
     {
-        // temp, used next loop
-        byte * palette = W_CacheLumpName ("PLAYPAL",PU_CACHE);
- 
         for (i=0;i<256;i++)
         {
-	    // doom PLAYPAL are 8 bit values
-	    register byte r = palette[0];
-	    register byte g = palette[1];
-	    register byte b = palette[2];
+	    // use palette after gamma modified
+	    register byte r = palette[i].s.red;
+	    register byte g = palette[i].s.green;
+	    register byte b = palette[i].s.blue;
 	    switch( vid.drawmode )
 	    {
 #ifdef ENABLE_DRAW15	       
@@ -2057,20 +2053,17 @@ void R_Init_color8_translate ( boolean himap )
 	     default:
 	       break;  // should not be calling
 	    } 
-	    palette += 3;
 	}
-        // end PLAYPAL lump use
-	color8_done = vid.bitpp;
     }
 
 #ifdef HIGHCOLORMAPS
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
-    if( himap && (hicolormaps == NULL))
+    if( hicolormaps == NULL )
     {
         // test a big colormap
         hicolormaps = Z_Malloc (32768 /**34*/, PU_STATIC, 0);
         for (i=0;i<16384;i++)
-	    hicolormaps[i] = i<<1;
+	    hicolormaps[i] = color8.to16[ dc_colormap[ i ] ];
      }
 #endif
 #endif

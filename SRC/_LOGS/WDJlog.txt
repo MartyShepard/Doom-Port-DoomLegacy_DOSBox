@@ -2632,3 +2632,11 @@ Fix some comments in the code.
 patchfile = w83_wipe24.patch
 - committed revision 953   by wesley johnson
 Fix wipe for 24bpp draw.  One index was not using bytepp.
+
+*** w84_palette24
+patchfile = w84_palette24.patch
+- committed revision 954   by wesley johnson
+Make color8_translate palette used by draw15, draw16, draw24, draw32,
+respond to gamma settings, and palette changes, such as palette flash,
+object pickup, damage red.
+
