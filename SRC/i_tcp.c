@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: i_tcp.c 958 2012-08-04 23:40:07Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -144,7 +144,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -154,17 +153,21 @@
 # include <sys/time.h>
 #endif // __OS2__
 
+#include "doomdef.h"
 #include "doomtype.h"
 
 #ifdef __WIN32__
 # include <winsock2.h>
 # include <ws2tcpip.h>
+# ifdef USE_IPX
 # include <wsipx.h>
+# endif // USE_IPX
 #else
-#if !defined(SCOUW2) && !defined(SCOUW7) && !defined(__OS2__)
-#include <arpa/inet.h>
-#endif
+# if !defined(SCOUW2) && !defined(SCOUW7) && !defined(__OS2__)
+#  include <arpa/inet.h>
+# endif
 
+// non-windows includes
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -176,10 +179,30 @@
 
 #define STD_STRING_LEN 256 // Just some standard length for a char string
 
+// [WDJ] FIXME: Add some test of IPX headers being present.
+// When someone puts an IPX package on their system, this will prevent
+// using it.
+
+#ifdef SOLARIS
+// Previous code: Solaris did not have IPX.
+# ifdef USE_IPX
+#   undef USE_IPX
+# endif
+#endif
+
+// Reported to be __OpenBSD__ , but it should be all caps and I am paranoid.
+#if defined( __OpenBSD__ ) || defined( __OPENBSD__ )
+// OpenBSD does not have IPX.
+# ifdef USE_IPX
+#   undef USE_IPX
+# endif
+#endif
+
 #ifdef __DJGPP__
 #include <lsck/lsck.h>
+#ifdef USE_IPX
 //#define strerror  lsck_strerror
-// ipx not iet supported in libsocket (cut and pasted from wsipx.h (winsock)
+// ipx not yet supported in libsocket (cut and pasted from wsipx.h (winsock)
 typedef struct sockaddr_ipx {
     short sa_family;
     char  sa_netnum[4];
@@ -187,11 +210,13 @@ typedef struct sockaddr_ipx {
     unsigned short sa_socket;
 } SOCKADDR_IPX, *PSOCKADDR_IPX;
 #define NSPROTO_IPX      1000
+#endif // USE_IPX
 #endif // djgpp
 
 
 #ifdef __OS2__
-// ipx not iet supported in libsocket (cut and pasted from wsipx.h (winsock)
+#ifdef USE_IPX
+// ipx not yet supported in libsocket (cut and pasted from wsipx.h (winsock)
 #define AF_IPX          23              /* Novell Internet Protocol */
 typedef struct sockaddr_ipx {
     short sa_family;
@@ -200,28 +225,29 @@ typedef struct sockaddr_ipx {
     unsigned short sa_socket;
 } SOCKADDR_IPX, *PSOCKADDR_IPX;
 #define NSPROTO_IPX      1000
+#endif // USE_IPX
 #endif // os2
 
 
 #ifdef LINUX
-    #include <sys/time.h>
-    # ifdef __GLIBC__
-        #include <netipx/ipx.h>
-    #else
-      #ifndef SOLARIS
-        #ifdef FREEBSD
-        #include <netipx/ipx.h>
-        #else
-        #include <linux/ipx.h>
-        #endif
-      #endif // SOLARIS
-    #endif // glibc
+# include <sys/time.h>
+# ifdef USE_IPX
+#  ifdef __GLIBC__
+#   include <netipx/ipx.h>
+#  else
+#   ifdef FREEBSD
+#    include <netipx/ipx.h>
+#   else
+#    include <linux/ipx.h>
+#   endif
+#  endif // glibc
     typedef struct sockaddr_ipx SOCKADDR_IPX, *PSOCKADDR_IPX;
-    #define NSPROTO_IPX      PF_IPX
+# define NSPROTO_IPX      PF_IPX
+# endif // USE_IPX
 #endif // linux
+
 #endif // win32
 
-#include "doomdef.h"
 #include "i_system.h"
 #include "i_net.h"
 #include "d_net.h"
@@ -234,35 +260,35 @@ typedef struct sockaddr_ipx {
 
 #ifdef __WIN32__
     // some undefined under win32
-    #define IPPORT_USERRESERVED 5000
+#  define IPPORT_USERRESERVED 5000
 #ifdef errno
-    #undef errno
+#  undef errno
 #endif
-    #define errno             h_errno // some very strange things happen when not use h_error ?!?
-    #define EWOULDBLOCK   WSAEWOULDBLOCK
-    #define EMSGSIZE      WSAEMSGSIZE
-    #define ECONNREFUSED  WSAECONNREFUSED
+#  define errno             h_errno // some very strange things happen when not use h_error ?!?
+#  define EWOULDBLOCK   WSAEWOULDBLOCK
+#  define EMSGSIZE      WSAEMSGSIZE
+#  define ECONNREFUSED  WSAECONNREFUSED
 #else // linux or djgpp
-    #define  SOCKET int
-    #define  INVALID_SOCKET -1
-#ifdef FREEBSD
+#  define  SOCKET int
+#  define  INVALID_SOCKET -1
+# ifdef FREEBSD
 // From edwin: somewhere on the track between 4.5 and -current this one has disappered.
-    #ifndef IPPORT_USERRESERVED
-    #define IPPORT_USERRESERVED 5000
-    #endif
-#endif
+#  ifndef IPPORT_USERRESERVED
+#    define IPPORT_USERRESERVED 5000
+#  endif
+# endif
 #endif
 
 // win32 or djgpp
 #if defined( WIN32) || defined( __DJGPP__ ) 
     // winsock stuff (in winsock a socket is not a file)
-    #define ioctl ioctlsocket
-    #define close closesocket
+#  define ioctl ioctlsocket
+#  define close closesocket
 #endif
 
 typedef union {
         struct sockaddr_in  ip;
-#ifndef SOLARIS
+#ifdef USE_IPX
         struct sockaddr_ipx ipx;
 #endif
 }  mysockaddr_t;
@@ -271,9 +297,12 @@ static mysockaddr_t clientaddress[MAXNETNODES+1];
         
 static SOCKET   mysocket = -1;
 static boolean  nodeconnected[MAXNETNODES+1];
+#ifdef USE_IPX
 static boolean  ipx;
+#endif
 int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
 
+// To print error messages
 char *SOCK_AddrToStr(mysockaddr_t *sk)
 {
     static char s[50];
@@ -286,7 +315,7 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
                                    ((byte *)(&(sk->ip.sin_addr.s_addr)))[3],
                                    ntohs(sk->ip.sin_port));
     }
-#ifndef SOLARIS
+#ifdef USE_IPX
     else
 #ifdef LINUX
     if( sk->ipx.sipx_family==AF_IPX )
@@ -306,6 +335,7 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
 #endif
     }
 #else
+    // not Linux
     if( sk->ipx.sa_family==AF_IPX )
     {
         sprintf(s,"%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x:%d",
@@ -322,13 +352,13 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
                   sk->ipx.sa_socket);
     }
 #endif // linux
-#endif // SOLARIS
+#endif // USE_IPX
     else
-        sprintf(s,"Unknow type");
+        sprintf(s,"Unknown type");
     return s;
 }
 
-#ifndef SOLARIS
+#ifdef USE_IPX
 boolean IPX_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
 {
 #ifdef LINUX
@@ -344,7 +374,7 @@ boolean IPX_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
             (memcmp(&(a->ipx.sa_nodenum),&(b->ipx.sa_nodenum),6)==0));
 #endif // linux
 }
-#endif // SOLARIS
+#endif // USE_IPX
 
 boolean UDP_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
 {
@@ -543,7 +573,7 @@ SOCKET UDP_Socket (void)
     return s;
 }
 
-#ifndef SOLARIS
+#ifdef USE_IPX
 SOCKET IPX_Socket (void)
 {
     SOCKET s;
@@ -619,7 +649,7 @@ SOCKET IPX_Socket (void)
     SOCK_cmpaddr=IPX_cmpaddr;
     return s;
 }
-#endif // SOLARIS
+#endif // USE_IPX
 
 //Hurdler: temporary addition and changes for master server
 
@@ -690,7 +720,14 @@ int SOCK_NetMakeNode (char *hostname)
     free(localhostname);
 
     // server address only in ip
-    if(!ipx) // tcp/ip
+#ifdef USE_IPX
+    if(ipx)
+    {
+        // ipx only
+        return BROADCASTADDR;
+    }
+#endif
+    // tcp/ip
     {
         struct  hostent *hostentry;      // host information entry
         char            *t;
@@ -725,11 +762,8 @@ int SOCK_NetMakeNode (char *hostname)
         CONS_Printf("Resolved %s\n",inet_ntoa(*(struct in_addr *)&clientaddress[newnode].ip.sin_addr.s_addr));
         free(localhostname);
 
-        return newnode;
     }
-
-    // ipx only
-    return BROADCASTADDR;
+    return newnode;
 }
 
 boolean SOCK_OpenSocket( void )
@@ -756,14 +790,14 @@ boolean SOCK_OpenSocket( void )
 #endif
 
     // build the socket
-#ifndef SOLARIS
+#ifdef USE_IPX
     if(ipx) {
         mysocket = IPX_Socket ();
         net_bandwidth = 800000;
         hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
     }
     else
-#endif // SOLARIS
+#endif // USE_IPX
     {
         mysocket = UDP_Socket ();
        // if (server && cv_internetserver.value)
@@ -782,7 +816,9 @@ boolean I_InitTcpNetwork( void )
     char     serverhostname[255];
     boolean  ret=0;
 
+#ifdef USE_IPX
     ipx=M_CheckParm("-ipx");
+#endif
     
     // initilize the driver
     I_InitTcpDriver(); 
@@ -830,7 +866,11 @@ boolean I_InitTcpNetwork( void )
             serverhostname[0]=0; // assuming server in the LAN, use broadcast to detect it
 
         // server address only in ip
-        if(serverhostname[0] && !ipx)
+        if(serverhostname[0]
+#ifdef USE_IPX	   
+	   && !ipx
+#endif
+	   )
         {
             COM_BufAddText("connect \"");
             COM_BufAddText(serverhostname);

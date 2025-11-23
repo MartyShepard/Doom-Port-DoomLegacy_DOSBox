@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: doomdef.h 958 2012-08-04 23:40:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -287,6 +287,10 @@ void I_SoftError (char *error, ...);
 // [WDJ] 6/5/2012 Boom global colormap
 // Optional for now
 #define BOOM_GLOBAL_COLORMAP
+
+// If IPX network code is to be included
+// This may be overridden for some ports.
+#define USE_IPX
 
 // =========================================================================
 

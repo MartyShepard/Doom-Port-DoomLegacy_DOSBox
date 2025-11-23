@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: d_main.c 958 2012-08-04 23:40:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "957"
+#define SVN_REV "958"
 #endif
 
 // Version number: major.minor.revision
@@ -2456,7 +2456,9 @@ void Help( void )
 	"-nofiles        Download all from server\n"
 	"-clientport x   Use port x for client\n"
 	"-udpport x      Use udp port x for client\n"
+#ifdef USE_IPX
 	"-ipx            Use IPX\n"
+#endif
 	"-extratic       Send extra tics ??\n"
 	"-debugfile file Log to debug file\n"
 	"-left           Left slaved view\n"

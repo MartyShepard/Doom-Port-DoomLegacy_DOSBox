@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00958 ]: w84 IPX option
 [00957 ]: w84 bob spawn
 [00956 ]: w84 compressed patch in texture
 [00955 ]: w84 ouchface

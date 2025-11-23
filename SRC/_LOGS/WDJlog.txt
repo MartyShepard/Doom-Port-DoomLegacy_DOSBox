@@ -2664,3 +2664,13 @@ patchfile = w84_bob_spawn.patch
 - committed revision 957   by wesley johnson
 An attempt to clear the player bob at spawn.
 Remove some old commented out code.
+
+*** w84_IPX_option
+patchfile = w84_IPX_option.patch
+- committed revision 958   by wesley johnson
+Make IPX network code optional by a define in doomdef.
+Makes all IPX code conditional on USE_IPX.
+Enabled by default for those that have IPX headers.
+This fixes bug in OpenBSD that does not have IPX, but where a specific
+test is not in place.
+
