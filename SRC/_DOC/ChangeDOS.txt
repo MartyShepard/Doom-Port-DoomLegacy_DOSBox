@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00964 ]: w85 secnode freed detect
 [00963 ]: w85 statusbar overlay
 [00962*]: w85 sdl opengl videomode
 [00961 ]: w85 mouse handling

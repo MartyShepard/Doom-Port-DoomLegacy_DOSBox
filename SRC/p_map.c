@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 922 2012-06-07 23:59:45Z wesleyjohnson $
+// $Id: p_map.c 964 2012-09-20 19:06:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2627,7 +2627,7 @@ boolean P_ChangeSector ( sector_t*     sector,
 // crunch enables crushing damage
 boolean P_CheckSector(sector_t* sector, boolean crunch)
 {
-  msecnode_t   *ns, *nxt_ns;
+  msecnode_t   *ns;
 
   if (!boomsupport) // use the old routine for old demos though
     return P_ChangeSector(sector,crunch);
@@ -2645,9 +2645,9 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
   // killough 4/7/98: simplified to avoid using complicated counter
 
   // [WDJ] Previous code made n! passes, so changed to reduce passes over list.
-  // PIT_ChangeSectors will only delete the thing or add others to
-  // front of list.
-  // Save the next link, so do not need to start over immediately.
+  // PIT_ChangeSector calls P_ThingHeightClip, which calls PIT_CheckPosition
+  // which checks for pick-up items, which can remove any thing in sector.
+  // If node has been freed, then start over from touching_thinglist.
   // Usually makes 3 passes, no matter how many things.
 
   if(sector->numattached)
@@ -2666,14 +2666,16 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
 
       // Update things until all are visited.
       do {
-        for (ns=sec->touching_thinglist; ns; ns=nxt_ns)
+        for (ns=sec->touching_thinglist; ns; ns=ns->m_snext)
 	{
-	  nxt_ns = ns->m_snext; // ns may get removed
           if (!ns->visited)               // unprocessed thing found
           {
             ns->visited  = true;         // mark thing as processed
             if (!(ns->m_thing->flags & MF_NOBLOCKMAP))
-              PIT_ChangeSector(ns->m_thing);
+	    {
+              PIT_ChangeSector(ns->m_thing); // ns may get removed to freelist
+	      if( ns->m_sector != sec )  break;  // was freed
+	    }
           }
 	}
       } while (ns);
@@ -2688,14 +2690,17 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
   
   // Update things until all are visited.
   do {
-      for (ns=sector->touching_thinglist; ns; ns=nxt_ns)  // go through list
+      for (ns=sector->touching_thinglist; ns; ns=ns->m_snext)  // go through list
       {
-	  nxt_ns = ns->m_snext; // ns may be removed
           if (!ns->visited)               // unprocessed thing found
           {
               ns->visited  = true;          // mark thing as processed
               if (!(ns->m_thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
+	      {
                   PIT_ChangeSector(ns->m_thing);    // process it
+		  // may have removed ns to freelist
+		  if( ns->m_sector != sector )  break;  // was freed
+	      }
           }
       }
   } while (ns);  // repeat from scratch until all things left are marked valid
@@ -2739,6 +2744,7 @@ msecnode_t* P_GetSecnode()
 
 void P_PutSecnode(msecnode_t* node)
 {
+    node->m_sector = NULL;  // to make being freed testable
     node->m_snext = headsecnode;
     headsecnode = node;
 }

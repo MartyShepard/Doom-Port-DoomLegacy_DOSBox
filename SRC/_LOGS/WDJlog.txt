@@ -2712,7 +2712,16 @@ switches video modes.
 
 *** w85_statusbar_overlay
 patchfile = w85_statusbar_overlay.patch
-- committed revision 962   by wesley johnson
+- committed revision 963   by wesley johnson
 The statusbar and overlay were not positioned correctly in OpenGL.
 The statusbar is now consistent for all video modes.
 This fixes the overlay to use fdupy instead of dupy.
+
+*** w85_secnode_freed
+patchfile = w85_secnode_freed.patch
+- committed revision 964   by wesley johnson
+A previous patch in w79, sped up P_CheckSector, but made it vulnerable
+to a second thing being removed by the player on a moving lift,
+resulting segfault.  Removed the vulnerable nxt_ns ptr.
+Instead, when test determines that secnode was freed then resort to
+previous behavior of restarting from beginning of touching_thinglist.
