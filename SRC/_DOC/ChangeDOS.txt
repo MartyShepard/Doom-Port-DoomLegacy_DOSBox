@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00961 ]: w85 mouse handling
 [00960 ]: w85 colormap gen
 [00959 ]: w84 whatsnew doc
 [00958 ]: w84 IPX option

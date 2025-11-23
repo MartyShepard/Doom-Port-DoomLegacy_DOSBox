@@ -2674,3 +2674,31 @@ Enabled by default for those that have IPX headers.
 This fixes bug in OpenBSD that does not have IPX, but where a specific
 test is not in place.
 
+*** w84_whatsnew
+patchfile = w84_whatsnew.patch
+- committed revision 959   by wesley johnson
+Update whatsnew doc to current patch level.
+
+*** w85_colormap_gen
+patchfile = w85_colormap_gen.patch
+- committed revision 960   by wesley johnson
+Tune the legacy linedef colormap generate.
+The wad alpha of 'a' to 'z' is now converted to 0..255 internally,
+to avoid losing alpha intensity to conversion roundoff.
+Fixed the drab color of hardware-render at high alpha caused by wrong
+alpha conversion calc.
+
+*** w85_mouse
+patchfile = w85_mouse.patch
+- committed revision 961   by wesley johnson
+Rewrite of mouse handling, providing relative mouse motion like many other
+ports use for SDL, and fixing the WarpMouse code in the absolute mouse motion
+that we have been using.
+Grabinput has been restored and made to work.
+Provides option selection for grabinput.
+Provides SDL port with selection for mouse relative or absolute.
+Fixes OpenBSD mouse problem of bug/patch 3547682.
+OpenBSD reports mouse motion x and y as separate events.  In DoomLegacy
+later mouse motion events in a frame overwrote previous motion.  Mouse events
+are now added (like Legacy2 and other ports examined).
+

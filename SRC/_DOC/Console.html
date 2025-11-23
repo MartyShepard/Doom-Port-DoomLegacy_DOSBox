@@ -586,8 +586,6 @@ Sets the mouse sensitivity in the x and y directions.
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
 
-
-
 <tr><td>controlperkey &lt;1|2&gt;</td><td>int</td>
 <td>
 When set to 2 (several) you can bind more than one control to a key.
@@ -599,6 +597,27 @@ assignations.
 <td>
 Choose the port number of the secondary mouse for the
 splitscreenplayer between COM1 to COM4.
+</td></tr>
+
+<tr><td>mousemotion</td><td>enum</td>
+<td>
+Values Absolute | Relative.
+SDL port only.<br>
+Absolute: Uses the original mouse interface with local difference
+calculations.
+It should work for any SDL port.<br>
+Relative: Uses the newer relative motion interface, which
+may not work on some SDL library ports.  It is reported to work with
+Linux and Windows.
+Does not affect mouse2.
+</td></tr>
+
+<tr><td>grabinput</td><td>bool</td>
+<td>
+Sets the SDL grabinput attribute.  This keeps the mouse in the window.
+It also disables most of any window manager's keyboard and mouse functions,
+so DoomLegacy gets all combination events.
+Pause releases grabinput to let the mouse be used outside of DoomLegacy.
 </td></tr>
 </table>
 

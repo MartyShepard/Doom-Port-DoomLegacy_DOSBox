@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 828 2011-03-24 21:35:28Z smite-meister $
+// $Id: g_input.h 961 2012-08-13 23:17:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -99,6 +99,8 @@ typedef enum
 extern consvar_t  cv_autorun;
 extern consvar_t  cv_autorun2;
 
+extern consvar_t   cv_grabinput;
+
 // mouse
 extern consvar_t   cv_usemouse;
 extern consvar_t   cv_alwaysfreelook;
@@ -106,6 +108,9 @@ extern consvar_t   cv_mouse_move;
 extern consvar_t   cv_mouse_invert;
 extern consvar_t   cv_mouse_sens_x;
 extern consvar_t   cv_mouse_sens_y;
+#ifdef SDL
+extern consvar_t   cv_mouse_motion;
+#endif
 
 // splitscreen with second mouse
 extern consvar_t   cv_usemouse2;

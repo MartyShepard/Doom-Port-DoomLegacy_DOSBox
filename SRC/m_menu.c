@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: m_menu.c 961 2012-08-13 23:17:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1739,6 +1739,10 @@ menuitem_t MouseOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Always MouseLook", &cv_alwaysfreelook  ,0},
     {IT_STRING | IT_CVAR,0,"Mouse Move",    &cv_mouse_move      ,0},
     {IT_STRING | IT_CVAR,0,"Invert Mouse",  &cv_mouse_invert    ,0},
+#ifdef SDL
+    {IT_STRING | IT_CVAR,0,"Mouse motion",  &cv_mouse_motion    ,0},
+#endif
+    {IT_STRING | IT_CVAR,0,"Grab input", &cv_grabinput ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mouse x Speed", &cv_mouse_sens_x    ,0},
     {IT_STRING | IT_CVAR

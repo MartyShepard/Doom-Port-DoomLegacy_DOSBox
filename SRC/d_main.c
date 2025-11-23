@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 958 2012-08-04 23:40:07Z wesleyjohnson $
+// $Id: d_main.c 961 2012-08-13 23:17:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "960"
+#define SVN_REV "961"
 #endif
 
 // Version number: major.minor.revision
@@ -424,6 +424,13 @@ void D_PostEvent_end(void)
 {
 };
 #endif
+
+// Clear the input events before re-enabling play
+void D_ClearEvents( void )
+{
+   eventhead = eventtail = 0;
+   mousex = mousey = 0;  // clear accumulated motion
+}
 
 //
 // D_ProcessEvents
@@ -763,6 +770,9 @@ void D_DoomLoop(void)
     // make sure to do a d_display to init mode _before_ load a level
     SCR_SetMode();      // change video mode
     SCR_Recalc();
+
+    D_ClearEvents();  // clear input events to prevent startup jerks,
+   		      // motion during screen wipe still gets through
 
     while (1)
     {

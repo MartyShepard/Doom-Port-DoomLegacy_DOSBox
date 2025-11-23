@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: g_input.c 961 2012-08-13 23:17:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -60,7 +60,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_input.h"
@@ -70,6 +69,7 @@
 #include "d_net.h"
 #include "console.h"
 #include "i_joy.h"
+#include "i_system.h"
 
 int num_joybindings = 0;
 joybinding_t joybindings[MAX_JOYBINDINGS];
@@ -89,11 +89,15 @@ consvar_t  cv_controlperkey = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons
 //SoM: 3/28/2000: Working rocket jumping.
 consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 
+#ifdef SDL
+CV_PossibleValue_t mouse_motion_cons_t[]={{0,"Absolute"},{1,"Relative"},{0,NULL}};
+consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_cons_t, I_StartupMouse };
+#endif
+consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, I_StartupMouse };
 
-int  mousex;
-int  mousey;
-int  mouse2x;
-int  mouse2y;
+
+int  mousex, mousey;
+int  mouse2x, mouse2y;
 
 boolean   gamekeydown[NUMINPUTS]; // Current state of the keys: true if the key is currently down.
 boolean gamekeytapped[NUMINPUTS]; // True if the key has been pressed since the last G_BuildTiccmd. Useful for impulse-style controls.
@@ -177,13 +181,18 @@ void  G_MapEventsToControls (event_t *ev)
         break;
 
       case ev_mouse:           // buttons are virtual keys
-        mousex = ev->data2*((cv_mouse_sens_x.value*cv_mouse_sens_x.value)/110.0f + 0.1);
-        mousey = ev->data3*((cv_mouse_sens_y.value*cv_mouse_sens_y.value)/110.0f + 0.1);
+        // [WDJ] To handle multiple mouse motion events per frame instead
+        // of letting the last event be the sole mouse motion,
+        // add the mouse events.
+        // Necessary for OpenBSD which reports x and y in separate events.
+        mousex += ev->data2*((cv_mouse_sens_x.value*cv_mouse_sens_x.value)/110.0f + 0.1);
+        mousey += ev->data3*((cv_mouse_sens_y.value*cv_mouse_sens_y.value)/110.0f + 0.1);
         break;
 
       case ev_mouse2:           // buttons are virtual keys
-        mouse2x = ev->data2*((cv_mouse2_sens_x.value*cv_mouse2_sens_x.value)/110.0f + 0.1);
-        mouse2y = ev->data3*((cv_mouse2_sens_y.value*cv_mouse2_sens_y.value)/110.0f + 0.1);
+        // add multiple mouse motions
+        mouse2x += ev->data2*((cv_mouse2_sens_x.value*cv_mouse2_sens_x.value)/110.0f + 0.1);
+        mouse2y += ev->data3*((cv_mouse2_sens_y.value*cv_mouse2_sens_y.value)/110.0f + 0.1);
         break;
 
       #if defined( __DJGPP__ )
