@@ -2620,3 +2620,11 @@ patchfile = w83_fs_script_parse.patch
 General cleanup on fragglescript script and parse functions.
 Move error code to after return, for speed.
 Added comments.
+
+*** w83_fs_func_doc
+patchfile = w83_fs_func_doc.patch
+- committed revision 952   by wesley johnson
+Update the fragglescript function docs to the actual code
+implementation.
+Fix some comments in the code.
+

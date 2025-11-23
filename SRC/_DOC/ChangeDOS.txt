@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00952 ]: w83 fs func docs update
 [00951 ]: w83 fs script parse
 [00950 ]: w83 fs array spec
 [00949 ]: w83 cdmus optional

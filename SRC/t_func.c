@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 950 2012-07-06 21:15:13Z wesleyjohnson $
+// $Id: t_func.c 952 2012-07-09 01:31:46Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -3080,13 +3080,13 @@ err_numarg:
 }
 
 // ceiling height of sector
-// CeilingHeight( tagnum, {floorheight}, {crush} )
+// CeilingHeight( tagnum, {ceilheight}, {crush} )
 // Return Test ceilingheight
 // Return when Set ceilingheight: 1=default, 0=crushing
 void SF_CeilingHeight(void)
 {
     int tagnum, secnum;
-    int returnval = 1;  // When Set floorheight: 1=default, 0=crushing
+    int returnval = 1;  // When Set ceilingheight: 1=default, 0=crushing
 
     if (!t_argc)  goto err_numarg;
 
@@ -3459,7 +3459,7 @@ err_numarg:
 // Doors
 //
 
-// OpenDoor(tagnum, [speed], [delay])
+// OpenDoor(tagnum, [delay], [speed])
 void SF_OpenDoor(void)
 {
     int speed;
@@ -4081,6 +4081,7 @@ int HU_DeleteFSPic(int handle);
 int HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos);
 int HU_FSDisplay(int handle, boolean newval);
 
+// alias createpic
 // NewHUPic( lumpname, x, y )
 // Return pic_handle
 void SF_NewHUPic(void)
@@ -4096,6 +4097,7 @@ err_numarg:
     goto done;
 }
 
+// alias deletehupic
 // DeleteHUPic( pic_handle )
 void SF_DeleteHUPic(void)
 {
@@ -4117,6 +4119,7 @@ err_delete:
     goto done;
 }
 
+// alias modifyhupic, modifypic
 // ModifyHUPic( handle, lumpname, x, y )
 void SF_ModifyHUPic(void)
 {
@@ -4140,6 +4143,7 @@ err_handle:
     goto done;
 }
 
+// alias setpicvisible
 // SetHUPicDisplay( handle, drawenable )
 // drawenable: 0,1
 void SF_SetHUPicDisplay(void)
