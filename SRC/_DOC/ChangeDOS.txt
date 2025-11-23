@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00957 ]: w84 bob spawn
 [00956 ]: w84 compressed patch in texture
 [00955 ]: w84 ouchface
 [00954 ]: w84 palette draw 15,16,24,32

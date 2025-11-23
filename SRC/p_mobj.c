@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 930 2012-06-14 14:43:43Z wesleyjohnson $
+// $Id: p_mobj.c 957 2012-08-04 23:38:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1955,6 +1955,10 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 
     p->flamecount = 0;
     p->flyheight = 0;
+#ifdef BOB_MOM
+    p->bob_momx = 0;
+    p->bob_momy = 0;
+#endif
 
     // setup gun psprite
     P_SetupPsprites(p);

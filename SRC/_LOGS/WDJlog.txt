@@ -2658,3 +2658,9 @@ not allocate enough space for the combined patch, which causes it to
 abort into using the picture format instead.
 This fixes the elevator railings (SW1COMM) in Requiem.wad MAP08,
 which use compressed patches.
+
+*** w84_bob_spawn
+patchfile = w84_bob_spawn.patch
+- committed revision 957   by wesley johnson
+An attempt to clear the player bob at spawn.
+Remove some old commented out code.
