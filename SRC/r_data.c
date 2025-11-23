@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 956 2012-08-04 23:36:47Z wesleyjohnson $
+// $Id: r_data.c 960 2012-08-13 23:14:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1610,7 +1610,7 @@ void  R_Colormap_Analyze( int mapnum )
     extracolormap_t * colormapp = & extra_colormaps[ mapnum ];
     colormapp->fadestart = 0;
     colormapp->fadeend = 33;
-    colormapp->maskamt = 0x0;
+    colormapp->maskalpha = 0x0;
     colormapp->fog = 0;
 
 #ifdef HWRENDER
@@ -1624,7 +1624,7 @@ void  R_Colormap_Analyze( int mapnum )
     // is no real way to tell how GL should handle a colormap lump anyway..
     colormapp->maskcolor = 0x00ffffff; // white
     colormapp->fadecolor = 0x0; // black
-    colormapp->rgba[0] = 0x17ffffff;
+    colormapp->rgba[0] = 0xe1ffffff;
   }
 #ifdef HWRENDER
   else
@@ -1752,7 +1752,7 @@ void  R_Colormap_Analyze( int mapnum )
 	       (int)(255.0*h4), m4_red, m4_green, m4_blue, m4_fog );
 #endif      
         // Not great, get some tints wrong, and sometimes too light.
-        work_rgba.s.alpha = (int)(h4 * 26.0);
+        work_rgba.s.alpha = (int)(h4 * 255.0);
         work_rgba.s.red = m4_red;
         work_rgba.s.green = m4_green;
         work_rgba.s.blue = m4_blue;
@@ -1849,8 +1849,8 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
   double cfade_r, cfade_g, cfade_b; // fade-to color from bottom-texture
   double r, g, b;
   double cbrightness;
-  double maskamt = 0, othermask = 0;
-  int    alphamask = 0;
+  double maskalpha = 0;
+  int    c_alpha = 0;
   int    i, p;
   unsigned int  cr, cg, cb;  // color RGB as INT
   unsigned int  maskcolor, fadecolor;
@@ -1863,40 +1863,36 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
   if(colorstr[0] == '#')  // colormap generate string is recognized
   {
     // color value from top texture string
-    cr = color_r = ((HEX_TO_INT(colorstr[1])<<4) + HEX_TO_INT(colorstr[2]));
-    cg = color_g = ((HEX_TO_INT(colorstr[3])<<4) + HEX_TO_INT(colorstr[4]));
-    cb = color_b = ((HEX_TO_INT(colorstr[5])<<4) + HEX_TO_INT(colorstr[6]));
-    // Create a rough approximation of the color (a 16 bit color)
-    //  16bit, color 5:6:5
-    maskcolor = ((cb) >> 3) + (((cg) >> 2) << 5) + (((cr) >> 3) << 11);
-    //  16bit, color 5:5:5
-//    maskcolor = ((cb) >> 3) + (((cg) >> 3) << 5) + (((cr) >> 3) << 10);
+    cr = ((HEX_TO_INT(colorstr[1])<<4) + HEX_TO_INT(colorstr[2]));
+    cg = ((HEX_TO_INT(colorstr[3])<<4) + HEX_TO_INT(colorstr[4]));
+    cb = ((HEX_TO_INT(colorstr[5])<<4) + HEX_TO_INT(colorstr[6]));
     if(colorstr[7] >= 'a' && colorstr[7] <= 'z')
-      alphamask = (colorstr[7] - 'a');
+      c_alpha = (colorstr[7] - 'a');
     else if(colorstr[7] >= 'A' && colorstr[7] <= 'Z')
-      alphamask = (colorstr[7] - 'A');
+      c_alpha = (colorstr[7] - 'A');
     else
-      alphamask = 24;
-
-
-    maskamt = (double)alphamask / (double)24;
-
-    othermask = 1 - maskamt;
-    maskamt /= 0xff;
+      c_alpha = 25;
   }
   else
   {
     // [WDJ] default for missing upper is not in docs, and was inconsistent
-    // Cannot be 0xff after multiply by maskamt=0.
-    color_r = 0xff;
-    color_g = 0xff;
-    color_b = 0xff;
-    maskamt = 0;
-    //  16bit, color 5:6:5
-    maskcolor = ((0xff) >> 3) + (((0xff) >> 2) << 5) + (((0xff) >> 3) << 11);
-    //  16bit, color 5:5:5
-//    maskcolor = ((0xff) >> 3) + (((0xff) >> 3) << 5) + (((0xff) >> 3) << 10);
+    // Cannot be 0xff after multiply by maskalpha=0.
+    cr = 0xff;
+    cg = 0xff;
+    cb = 0xff;
+    c_alpha = 0;
   }
+  // Create a rough approximation of the color (a 16 bit color)
+  //  16bit, color 5:6:5
+  maskcolor = ((cb) >> 3) + (((cg) >> 2) << 5) + (((cr) >> 3) << 11);
+  //  16bit, color 5:5:5
+// maskcolor = ((cb) >> 3) + (((cg) >> 3) << 5) + (((cr) >> 3) << 10);
+  color_r = (double)cr;
+  color_g = (double)cg;
+  color_b = (double)cb;
+
+  maskalpha = (double)c_alpha / (double)25;  // 0.0 .. 1.0
+  c_alpha = (c_alpha * 255) / 25;  // convert from 0..25 to 0..255
 
 
   if(ctrlstr[0] == '#')
@@ -1915,29 +1911,32 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 
   if(fadestr[0] == '#')
   {
-    cfade_r = cr = ((HEX_TO_INT(fadestr[1]) * 16) + HEX_TO_INT(fadestr[2]));
-    cfade_g = cg = ((HEX_TO_INT(fadestr[3]) * 16) + HEX_TO_INT(fadestr[4]));
-    cfade_b = cb = ((HEX_TO_INT(fadestr[5]) * 16) + HEX_TO_INT(fadestr[6]));
-    //  16bit, color 5:6:5
-    fadecolor = (((cb) >> 3) + (((cg) >> 2) << 5) + (((cr) >> 3) << 11));
-    //  16bit, color 5:5:5
-//    fadecolor = (((cb) >> 3) + (((cg) >> 3) << 5) + (((cr) >> 3) << 10));
+    cr = ((HEX_TO_INT(fadestr[1]) * 16) + HEX_TO_INT(fadestr[2]));
+    cg = ((HEX_TO_INT(fadestr[3]) * 16) + HEX_TO_INT(fadestr[4]));
+    cb = ((HEX_TO_INT(fadestr[5]) * 16) + HEX_TO_INT(fadestr[6]));
   }
   else
   {
-    cfade_r = 0;
-    cfade_g = 0;
-    cfade_b = 0;
-    fadecolor = 0;
+    cr = 0;
+    cg = 0;
+    cb = 0;
   }
+  //  16bit, color 5:6:5
+  fadecolor = (((cb) >> 3) + (((cg) >> 2) << 5) + (((cr) >> 3) << 11));
+  //  16bit, color 5:5:5
+//  fadecolor = (((cb) >> 3) + (((cg) >> 3) << 5) + (((cr) >> 3) << 10));
+  cfade_r = (double)cr;
+  cfade_g = (double)cg;
+  cfade_b = (double)cb;
 
+  // find any identical existing colormap
   for(i = 0; i < num_extra_colormaps; i++)
   {
     if(fnd_colormap_lump[i] != -1)
       continue;
     if(maskcolor == extra_colormaps[i].maskcolor &&
        fadecolor == extra_colormaps[i].fadecolor &&
-       maskamt == extra_colormaps[i].maskamt &&
+       maskalpha == extra_colormaps[i].maskalpha &&
        fadestart == extra_colormaps[i].fadestart &&
        fadeend == extra_colormaps[i].fadeend &&
        fog == extra_colormaps[i].fog)
@@ -1947,7 +1946,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 #ifdef VIEW_COLORMAP_GEN
   fprintf(stderr, "\nGenerate Colormap: num=%i\n", num_extra_colormaps );
   fprintf(stderr, " alpha=%2x, color=(%2x,%2x,%2x), fade=(%2x,%2x,%2x), fog=%i\n",
-	  alphamask, (int)color_r, (int)color_g, (int)color_b,
+	  c_alpha, (int)color_r, (int)color_g, (int)color_b,
 	  	     (int)cfade_r, (int)cfade_g, (int)cfade_b, fog );
 #endif
 
@@ -1962,7 +1961,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
   extra_colormap_p->colormap = NULL;
   extra_colormap_p->maskcolor = maskcolor;
   extra_colormap_p->fadecolor = fadecolor;
-  extra_colormap_p->maskamt = maskamt;
+  extra_colormap_p->maskalpha = maskalpha;  // 0.0 .. 1.0
   extra_colormap_p->fadestart = fadestart;
   extra_colormap_p->fadeend = fadeend;
   extra_colormap_p->fog = fog;
@@ -1973,12 +1972,15 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
   if(rendermode == render_soft)
 #endif
   {
+    double othermask = 1.0 - maskalpha;
+    double by_alpha = maskalpha / 255.0;
+     
     extra_colormap_p->colormap = colormap_p = Z_MallocAlign((256 * 34) + 10, PU_LEVEL, 0, 16); // Aligning on 16 bits, NOT 8, keeps it from crashing! SSNTails 12-13-2002
      
     // premultiply, this messes up rgba calc so it must be done here
-    color_r *= maskamt;
-    color_g *= maskamt;
-    color_b *= maskamt;
+    color_r *= by_alpha;  // to 0.0 .. 1.0 range
+    color_g *= by_alpha;
+    color_b *= by_alpha;
     for(i = 0; i < 256; i++)
     {
       r = pLocalPalette[i].s.red;
@@ -2033,7 +2035,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 #ifdef HWRENDER
   else
   {
-      // hardware needs color_r, color_g, color_b, before they get *maskamt.
+      // hardware needs color_r, color_g, color_b, before they get *maskalpha.
       for( i=0; i<NUM_RGBA_LEVELS; i++ )
       {
 	  // rgba[0]=darkest, rgba[NUM_RGBA_LEVELS-1] is the brightest
@@ -2060,7 +2062,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 	  cr = (int)( colorper*color_r + fadeper*cfade_r );
 	  cg = (int)( colorper*color_g + fadeper*cfade_g );
 	  cb = (int)( colorper*color_b + fadeper*cfade_b );
-	  extra_colormap_p->rgba[i] = (alphamask<<24)|(cb<<16)|(cg<<8)|(cr);
+	  extra_colormap_p->rgba[i] = (c_alpha<<24)|(cb<<16)|(cg<<8)|(cr);
 #ifdef VIEW_COLORMAP_GEN
 	  fprintf(stderr,"RGBA[%i]: %x\n", i, extra_colormap_p->rgba[i]);
 #endif

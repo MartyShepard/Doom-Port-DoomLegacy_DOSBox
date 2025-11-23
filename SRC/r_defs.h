@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_defs.h 960 2012-08-13 23:14:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -180,19 +180,19 @@ typedef byte    lighttable_t;  // light map table
 // right shift to convert 0..255 to 0..(NUM_RGBA_LEVELS-1)
 //#define NUM_RGBA_LEVELS  4
 //#define LIGHT_TO_RGBA_SHIFT  6
-#define NUM_RGBA_LEVELS  8
-#define LIGHT_TO_RGBA_SHIFT  5
-//#define NUM_RGBA_LEVELS  16
-//#define LIGHT_TO_RGBA_SHIFT  4
+//#define NUM_RGBA_LEVELS  8
+//#define LIGHT_TO_RGBA_SHIFT  5
+#define NUM_RGBA_LEVELS  16
+#define LIGHT_TO_RGBA_SHIFT  4
 //#define NUM_RGBA_LEVELS  32
 //#define LIGHT_TO_RGBA_SHIFT  3
 
 // SoM: ExtraColormap type. Use for extra_colormaps from now on.
 typedef struct
 {
-  uint32_t        maskcolor;
-  uint32_t        fadecolor;
-  double          maskamt;
+  uint32_t        maskcolor;  // 16 bit bright color
+  uint32_t        fadecolor;  // 16 bit dark color
+  double          maskalpha;  // 0.0 .. 1.0
   uint16_t        fadestart, fadeend;
   int             fog;
 
@@ -200,7 +200,7 @@ typedef struct
   // [WDJ] Separate rgba for light levels [0]=darkest, [NUM-1]=brightest
   // This is cast into a union of byte components.
   uint32_t        rgba[NUM_RGBA_LEVELS]; // similar to maskcolor in sw mode
-     // alpha=0..26, 0=black/white tint, 26=saturated color
+     // alpha=0..255, 0=black/white tint, 255=saturated color
      // r,g,b are the saturated color, 0..255
 
   lighttable_t*   colormap; // colormap tables [32][256]
