@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 954 2012-07-20 23:11:13Z wesleyjohnson $
+// $Id: r_data.c 956 2012-08-04 23:36:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -134,6 +134,12 @@
 #include "p_setup.h" //levelflats
 #include "v_video.h" //pLocalPalette
 
+// Enable Generate_Texture to realloc a texture when estimate was too small
+#define GENTEXT_REALLOC
+// Enable Generate_Texture to reuse columns
+#define GENTEXT_REUSECOL
+//#define DEBUG_REUSECOL  (verbose > 1)
+//#define DEBUG_REUSECOL  verbose
 
 // [WDJ] debug flat
 //#define DEBUG_FLAT
@@ -308,6 +314,9 @@ typedef struct {
     int   originx, originy;	// add to patch to get texture
     post_t *  postptr;		// post within that patch
     patch_t * patch;     	// patch source
+#ifdef GENTEXT_REUSECOL
+    uint32_t  usedpatchdata;    // to detect reuse, compaction
+#endif
 } compat_t;
    
 
@@ -332,6 +341,11 @@ byte* R_GenerateTexture (int texnum)
     // Column pixel data starts after the table.
     colofs_size = texture->width * sizeof( uint32_t );  // width * 4
 
+#if 0
+    // To debug problems with specific textures
+    if( strncmp(texture->name, "SW1COMM", 7 ) == 0 )
+       fprintf(stderr,"GenerateTexture - match\n");
+#endif
     // allocate texture column offset lookup
 
     // single-patch textures can have holes and may be used on
@@ -489,10 +503,9 @@ byte* R_GenerateTexture (int texnum)
    
  // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
     // array to hold all patches
-    #define MAXPATCHNUM 256
+# define MAXPATCHNUM 256
     compat_t   compat[MAXPATCHNUM];
     post_t   * srcpost, * destpost;
-    patch_t  * txcpatch; // header of txcblock
     byte     * txcdata;  // posting area
     byte     * destpixels;  // post pixel area
     byte     * texture_end; // end of allocated texture area
@@ -516,6 +529,9 @@ byte* R_GenerateTexture (int texnum)
         compat_t * cp = &compat[p];
         cp->postptr = NULL;	// disable until reach starting column
         cp->nxt_y = MAXINT;	// disable
+#ifdef GENTEXT_REUSECOL
+	cp->usedpatchdata = 0;
+#endif
         cp->originx = texpatch->originx;
         cp->originy = texpatch->originy;
         realpatch = W_CachePatchNum(texpatch->patchnum, PU_IN_USE);  // patch temp
@@ -555,23 +571,28 @@ byte* R_GenerateTexture (int texnum)
     // TGC_combine_patch: Combine multiple patches into one patch.
 
     // Size the new texture.  It may be too big, but must not be too small.
-    // Will always fit into compostsize because it does so as separate patches.
-    // Overlap of posts will only reduce the size.
+    // Will usually fit into compostsize because it does so as separate patches.
+    // Overlap of normal posts will only reduce the size.
     // Worst case is (width * (height/2) * (1 pixel + 4 byte overhead))
     //   worstsize = colofs_size + 8 + (width * height * 5/2)
     // Usually the size will be much smaller, but it is not predictable.
     // all posts + new columnofs table + patch header
+    // Compacted patches, like SW1COMM in Requiem MAP08, usually get expanded,
+    // and they expand in the texture when they combine with other patches.
 
-#if 1
+#ifndef GENTEXT_REALLOC
     // Combined patches + table + header + 2 byte per empty column
     txcblocksize = compostsize + (2 * texture->width);
      // this stops failure in caesar.wad
+     // No longer needed with expanding texture size
 #else
     // Combined patches + table + header + 1 byte per empty column
     txcblocksize = compostsize + texture->width;
 #endif
     txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
                       (void**)&texturecache[texnum]);
+    {
+    patch_t  * txcpatch; // header of txcblock
     txcpatch = (patch_t*) txcblock;
     txcpatch->width = texture->width;
     txcpatch->height = texture->height;
@@ -579,6 +600,7 @@ byte* R_GenerateTexture (int texnum)
     txcpatch->topoffset = 0;
     // column offset lookup table
     colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+    }
     txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
     // starts as empty post, with 0xFF a possibility
     destpixels = txcdata;
@@ -589,6 +611,10 @@ byte* R_GenerateTexture (int texnum)
     {
         int nxtpat;	// patch number with next post
         int seglen, offset;
+#ifdef GENTEXT_REUSECOL
+        int livepatchcount = 0;
+        int reuse_column = -1;
+#endif
        
         // offset to pixels instead of post header
         // Many callers will use colofs-3 to get back to header, but
@@ -612,6 +638,84 @@ byte* R_GenerateTexture (int texnum)
 	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
 	        if ( cp->postptr->topdelta == 0xFF )
 		    goto patch_off;
+#ifdef GENTEXT_REUSECOL
+	       	// Empty columns may be shared too, but they are very small,
+	        // and it really adds to logic complexity, so only look at non-empty.
+	        if ( pat_colofs[patch_x] > cp->usedpatchdata )
+		    cp->usedpatchdata = pat_colofs[patch_x];  // track normal usage pattern
+	        else
+	        {
+		    // compaction detected, look for reused column
+		    int rpx = (cp->originx < 0) ? -cp->originx : 0;  // x in patch
+#ifdef DEBUG_REUSECOL
+		    if( DEBUG_REUSECOL )
+		       fprintf(stderr,"GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
+#endif
+		    for( ; rpx<patch_x; rpx++ )  // find reused column
+		    {
+		        if( pat_colofs[rpx] == pat_colofs[patch_x] )  // reused in patch
+		        {
+			    int rtx = rpx + cp->originx; // x in texture
+#if 1
+			    // Test for reused column is from single patch
+			    int p2;
+			    int livepatchcount2 = 0;
+#ifdef DEBUG_REUSECOL
+			    if( DEBUG_REUSECOL )
+			       fprintf(stderr,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+#endif
+			    // [WDJ] If reused column is reused alone in both cases,
+			    // then assume they will be identical in final texture too.
+			    for (p2=0; p2<patchcount; p2++ )
+			    {
+			        compat_t * cp2 = &compat[p2];
+			        int p2_x = rtx - cp2->originx; // within patch
+			        if( p2_x >= 0 && p2_x < cp2->width )
+			        {
+				   livepatchcount2 ++;
+				}
+			    }
+			    if ( livepatchcount2 == 1 )
+			    {
+			        reuse_column = rpx + cp->originx; // column in generated texture
+			        break;
+			    }
+#else
+			    // Compare with texture column, reuse when identical
+			    post_t * rpp = (post_t*)( txcblock + colofs[rtx] - 3 );  // texture column
+			    post_t * ppp = cp->postptr;
+#ifdef DEBUG_REUSECOL
+			    if( DEBUG_REUSECOL )
+			       fprintf(stderr,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+#endif
+			    // [WDJ] Comparision is made difficult by the pad bytes,
+			    // which we set to 0, and Requiem.wad does not.
+			    while (rpp->topdelta != 0xff)  // find column end
+			    {
+			        int len = rpp->length;
+			        if( rpp->topdelta != ppp->topdelta )  goto reject_1;
+			        if( rpp->length != ppp->length )  goto reject_1;
+			        // skip leading pad, and trailing pad
+			        if( memcmp( ((byte*)rpp)+3, ((byte*)ppp)+3, len ) )  goto reject_1;
+			        // next post
+				len += 4;  // sizeof post_t + lead pad + trail pad
+			        rpp = (post_t *) (((byte *)rpp) + len);
+			        ppp = (post_t *) (((byte *)ppp) + len);
+			    }
+			    if ( ppp->topdelta == 0xff )
+			    {
+			        // columns match
+			        reuse_column = rtx;
+			        break;
+			    }
+			   reject_1:
+			    continue;
+#endif
+			}
+		    }
+		}
+	        livepatchcount++;
+#endif	       
 	        cp->nxt_y = cp->originy + cp->postptr->topdelta;
 	        cp->bot_y = cp->nxt_y + cp->postptr->length;
 	    }else{
@@ -622,6 +726,23 @@ byte* R_GenerateTexture (int texnum)
 	        cp->bot_y = MAXINT;
 	    }
 	}  // for all patches
+
+#ifdef GENTEXT_REUSECOL
+        if( livepatchcount == 1 )
+        {
+	    if( reuse_column >= 0 )
+	    {
+	         // reuse the column
+	         colofs[x] = colofs[reuse_column];
+#ifdef DEBUG_REUSECOL
+       		 // DEBUG: enable to see column reuse
+	         if( DEBUG_REUSECOL )
+	           fprintf(stderr,"GenerateTexture: reuse %i\n", reuse_column);
+#endif
+	         continue;  // next x
+	    }
+	}
+#endif
        
         for(;;) // all posts in column
         {
@@ -729,6 +850,36 @@ byte* R_GenerateTexture (int texnum)
         destpixels++;		// skip pad 0
         *destpixels++ = 0xFF;	// mark end of column
         // may be empty column so do not reference destpost
+	continue; // next x
+#ifdef GENTEXT_REALLOC
+ exceed_alloc_error:
+       {
+        // Re-alloc the texture
+        byte* old_txcblock = txcblock;
+        int old_txcblocksize = txcblocksize;
+	// inc alloc by a proportional amount, plus one column
+        txcblocksize += (texture->width - x + 1) * txcblocksize / texture->width;
+#if 1
+	// enable to print re-alloc events
+	if( verbose )
+	    fprintf(stderr, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
+		    texture->name, old_txcblocksize, txcblocksize );
+#endif
+        txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
+                      (void**)&texturecache[texnum]);
+        memcpy( txcblock, old_txcblock, old_txcblocksize );
+	texture_end = txcblock + txcblocksize - 2; // do not exceed
+	txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
+        destpixels = (byte*)txcblock + colofs[x] - 3;  // this column
+	{
+	    patch_t * txcpatch = (patch_t*) txcblock; // header of txcblock
+	    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+	}
+	x--;  // redo this column
+        Z_Free(old_txcblock);  // also nulls texturecache ptr
+        texturecache[texnum] = txcblock; // replace ptr undone by Z_Free
+       }
+#endif
     } // for x
     if( destpixels >= texture_end )  goto exceed_alloc_error;
     // unlock all the patches, no longer needed, but may be in another texture
@@ -747,10 +898,12 @@ byte* R_GenerateTexture (int texnum)
 	    texture->name, txcblocksize, destpixels - texgen );
 #endif
     goto done;
-   
+
+#ifndef GENTEXT_REALLOC
  exceed_alloc_error:   
     I_SoftError("R_GenerateTexture: %8s exceeds allocated block, make picture\n", texture->name );
     goto error_redo_as_picture;
+#endif
    
  exceed_topdelta:
     I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254, make picture\n",

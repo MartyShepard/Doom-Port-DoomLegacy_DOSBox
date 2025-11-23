@@ -2649,3 +2649,12 @@ more than one tic.
 Self-damage code also needed ouchface fix.
 Ouchface has mouth open wide, "ahhhh".
 
+*** w84_compressed_patch
+patchfile = w84_compressed_patch.patch
+- committed revision 956   by wesley johnson
+Fixes the patch combiner to handle compressed patches (which share some
+of the patch columns).  It under-estimated the new size so it did
+not allocate enough space for the combined patch, which causes it to
+abort into using the picture format instead.
+This fixes the elevator railings (SW1COMM) in Requiem.wad MAP08,
+which use compressed patches.
