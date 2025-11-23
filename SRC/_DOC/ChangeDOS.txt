@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00971 ]: w86 HWR types
 [00970 ]: w86 Glide types
 [00969 ]: w86 FF cleanup
 [00968 ]: w86 viewer colormap

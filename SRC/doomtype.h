@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 871 2011-11-01 00:00:18Z wesleyjohnson $
+// $Id: doomtype.h 971 2012-11-10 22:14:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2009 by DooM Legacy Team.
+// Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -182,7 +182,7 @@ int strlwr(char *n);
 #define MININT    ((int)0x80000000)
 #endif
 
-union FColorRGBA {
+typedef union {
     uint32_t  rgba;
     struct {
         byte  red;
@@ -190,8 +190,7 @@ union FColorRGBA {
         byte  blue;
         byte  alpha;
     } s;
-};
-typedef union FColorRGBA RGBA_t;
+} RGBA_t;
 
 #ifdef __BIG_ENDIAN__
 #define UINT2RGBA(a) a

@@ -2780,3 +2780,21 @@ GlideMipmap_t -> Mipmap_t
 GlideTexture_t -> MipTexture_t
 GlidePatch_t -> MipPatch_t
 
+*** w86_HWR_types
+patchfile = w86_4_HWR_types.patch
+- committed revision 971   by wesley johnson
+Use type names xxx_t, and "typedef struct" in hardware struct defines.
+FColorARGB -> ARGB_t
+FRGBAFloat -> RGBA_float_t;
+F2DCoord -> v2d_t;
+FTransform -> FTransform_t
+v3d_t, wallVert3D, FOutVector -> vxtx3d_t  (combined type, no more copy)
+EPolyFlags -> PolyFlags_e
+ETextureFlags -> TextureFlags_e
+ESurfFlags -> SurfFlags_e
+FSurfaceInfo -> FSurfaceInfo_t
+hwdspecialstate_t -> hwd_specialstate_e
+hwdfiltermode -> hwd_filtermode_e
+TGAHeader, *PTGAHeader -> TGAHeader_t
+
+
