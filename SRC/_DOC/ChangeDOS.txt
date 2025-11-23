@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00978 ]: w87 legacywad filename
 [00977 ]: w87 mobj subsector null
 [00976*]: w86_9 hw view_colormap
 [00975*]: w86_8 hw fx1 translucent

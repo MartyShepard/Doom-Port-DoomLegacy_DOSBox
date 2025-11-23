@@ -2838,3 +2838,10 @@ Fix segfault in dsv4.  When wrong buttons are pressed player is hurt.
 If they are pressed after getting the yellow key, then segfault.
 There is a mobj without a subsector, and script code must check first.
 
+*** w87_legacywad
+patchfile = w87_2_legacywad.patch
+- committed revision 978   by wesley johnson
+The legacywad filename used cat_filename with a zmalloc buffer,
+but cat_filename requires a buffer of MAX_WADPATH because it
+terminates it with 0.  This caused segfault at program shutdown.
+Fixed to use strdup after the cat_filename call.

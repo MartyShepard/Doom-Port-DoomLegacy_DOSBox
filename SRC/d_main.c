@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 963 2012-08-15 15:05:51Z wesleyjohnson $
+// $Id: d_main.c 978 2012-12-04 03:24:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -243,11 +243,11 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __WIN32__
+#ifdef __WIN32__
+#include <direct.h>
+#else
 #include <unistd.h>     // for access
 #define _MAX_PATH   MAX_WADPATH
-#else
-#include <direct.h>
 #endif
 
 // using MAX_WADPATH as buffer limit, so _MAX_PATH must be as long
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "977"
+#define SVN_REV "978"
 #endif
 
 // Version number: major.minor.revision
@@ -383,9 +383,9 @@ byte    demo_ctrl;
 #endif
 
 // to make savegamename and directories, in m_menu.c
-char *legacyhome;
+char *legacyhome = NULL;
 int   legacyhome_len;
-static char *doomwaddir;
+static char *doomwaddir = NULL;
 
 
 #ifdef __MACH__
@@ -1373,8 +1373,8 @@ void IdentifyVersion()
     //[segabor]: on Mac OS X legacy.wad is within .app folder
     legacywad = mac_legacy_wad;
 #else
-    legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
-    cat_filename(legacywad, doomwaddir, "legacy.wad");
+    cat_filename(pathiwad, doomwaddir, "legacy.wad");  // must be MAX_WADPATH//legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
+    legacywad = strdup( pathiwad );  // malloc//cat_filename(legacywad, doomwaddir, "legacy.wad");
 #endif
 
     if( verbose )
@@ -1558,6 +1558,9 @@ void IdentifyVersion()
     }
     if( gamedesc.support_wad )
        D_AddFile( gamedesc.support_wad );
+#ifndef __MACH__
+    free(legacywad);  // from strdup, free local copy of name
+#endif
     return;
    
 iwad_failure:
