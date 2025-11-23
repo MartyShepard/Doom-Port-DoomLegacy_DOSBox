@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: t_parse.c 951 2012-07-06 21:17:03Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -127,72 +127,60 @@ static void next_token( void )
 
     // get to the next token, ignoring spaces, newlines,
     // useless chars, comments etc
-
-    while (1)
-    {
-        // empty whitespace
-        if (*fs_src_cp && (*fs_src_cp == ' ' || *fs_src_cp < 32))
-        {
-            while ((*fs_src_cp == ' ' || *fs_src_cp < 32) && *fs_src_cp)
-                fs_src_cp++;
-        }
-        // end-of-script?
-        if (!*fs_src_cp)
-        {
-            if (tokens[0][0])
-            {
-                CONS_Printf("%s %i %i\n", tokens[0], fs_src_cp - fs_current_script->data, fs_current_script->len);
-                // line contains text, but no semicolon: an error
-                script_error("missing ';'\n");
-            }
-            // empty line, end of command-list
-            return;
-        }
-        // 11/8 comments moved to new preprocessor
-
-        break;  // otherwise
-    }
+    while (*fs_src_cp && (*fs_src_cp == ' ' || *fs_src_cp < 32))
+        fs_src_cp++;
+    if (!*fs_src_cp)  goto end_of_char;  // end-of-script
+    // 11/8 comments moved to new preprocessor
 
     if (num_tokens > 1 && *fs_src_cp == '(' && tokentype[num_tokens - 2] == TT_name)
         tokentype[num_tokens - 2] = TT_function;
 
-    if (*fs_src_cp == '{' || *fs_src_cp == '}')
+    switch ( *fs_src_cp )
     {
-        if (*fs_src_cp == '{')
-        {
-            fs_bracetype = BRACKET_open;
-            fs_current_section = find_section_start(fs_src_cp);
-        }
-        else    // closing brace
-        {
-            fs_bracetype = BRACKET_close;
-            fs_current_section = find_section_end(fs_src_cp);
-        }
-        if (!fs_current_section)
-        {
-            script_error("section not found!\n");
-            return;
-        }
-    }
-    else if (*fs_src_cp == ':')     // label
-    {
+     case '{':
+        fs_bracetype = BRACKET_open;
+        fs_current_section = find_section_start(fs_src_cp);
+        if (!fs_current_section)  goto err_nosection;
+        break;
+     case '}':    // closing brace
+        fs_bracetype = BRACKET_close;
+        fs_current_section = find_section_end(fs_src_cp);
+        if (!fs_current_section)  goto err_nosection;
+        break;
+     case ':':     // label
         // ignore the label : reset
         num_tokens = 1;
         tokens[0][0] = 0;
         tt = TT_name;
         fs_src_cp++;        // ignore
-    }
-    else if (*fs_src_cp == '\"')
-    {
+        break;
+     case '\"':
         tt = TT_string;
         if (tokentype[num_tokens - 2] == TT_string)
             num_tokens--;       // join strings
         fs_src_cp++;
+        break;
+     default:
+        tt = isop(*fs_src_cp) ? TT_operator
+	   : isnum(*fs_src_cp) ? TT_number : TT_name;
+        break;
     }
-    else
+done:   
+    return;
+
+end_of_char:
+    if (tokens[0][0])
     {
-        tt = isop(*fs_src_cp) ? TT_operator      : isnum(*fs_src_cp) ? TT_number : TT_name;
+        CONS_Printf("%s %i %i\n", tokens[0], fs_src_cp - fs_current_script->data, fs_current_script->len);
+        // line contains text, but no semicolon: an error
+        script_error("missing ';'\n");
     }
+    // empty line, end of command-list
+    goto done;
+
+err_nosection:
+    script_error("section not found!\n");
+    goto done;
 }
 
 // return an escape sequence (prefixed by a '\')
@@ -264,8 +252,7 @@ void get_tokens(char *s)
     {
         while (1)
         {
-            if (fs_killscript)
-                return;
+            if (fs_killscript)  goto done;
             if (fs_current_section)
             {
                 // a { or } section brace has been found
@@ -347,6 +334,8 @@ void get_tokens(char *s)
     }
 
     fs_src_cp++;
+done:
+    return;
 }
 
 void print_tokens( void )             // DEBUG
@@ -412,11 +401,7 @@ void continue_script(script_t * script, char *continue_point)
 void parse_script( void )
 {
     // check for valid fs_src_cp
-    if (fs_src_cp < fs_current_script->data || fs_src_cp > fs_current_script->data + fs_current_script->len)
-    {
-        script_error("parse_script: trying to continue from point" "outside script!\n");
-        return;
-    }
+    if (fs_src_cp < fs_current_script->data || fs_src_cp > fs_current_script->data + fs_current_script->len)  goto err_parseptr;
 
     fs_trigger_obj = fs_current_script->trigger;      // set trigger
 
@@ -427,6 +412,12 @@ void parse_script( void )
         clear_variables(fs_current_script);        // free variables
 
     fs_current_script->lastiftrue = false;
+done:
+    return;
+
+err_parseptr:
+    script_error("parse_script: trying to continue from point outside script!\n");
+    goto done;
 }
 
 /*
@@ -521,20 +512,14 @@ void run_statement( void )
         else if (!strcmp(tokens[0], "elseif"))
         {
             if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-            {
-                script_error("elseif without if!\n");
-                return;
-            }
+	        goto err_elseif_without_if;
             fs_current_script->lastiftrue = spec_elseif(fs_current_script->lastiftrue) ? true : false;
             return;
         }
         else if (!strcmp(tokens[0], "else"))
         {
             if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-            {
-                script_error("else() without if!\n");
-                return;
-            }
+	        goto err_else_without_if;
             spec_else(fs_current_script->lastiftrue);
             fs_current_script->lastiftrue = true;
             return;
@@ -559,10 +544,7 @@ void run_statement( void )
         {
             if (!fs_prev_section
 		|| (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-            {
-                script_error("else without if!\n");
-                return;
-            }
+	        goto err_else_without_if;
             spec_else(fs_current_script->lastiftrue);
             fs_current_script->lastiftrue = true;
             return;
@@ -575,6 +557,16 @@ void run_statement( void )
 
     // just a plain expression
     evaluate_expression(0, num_tokens - 1);
+done:
+    return;
+
+err_elseif_without_if:
+    script_error("elseif without if!\n");
+    goto done;
+
+err_else_without_if:
+    script_error("else without if!\n");
+    goto done;
 }
 
 /***************** Evaluating Expressions ************************/
@@ -652,7 +644,7 @@ static fs_value_t simple_evaluate(int n)
         case TT_string:
             returnvar.type = FSVT_string;
             returnvar.value.s = tokens[n];
-            return returnvar;
+            break;
 
         case TT_number:
             if (strchr(tokens[n], '.'))
@@ -665,27 +657,30 @@ static fs_value_t simple_evaluate(int n)
                 returnvar.type = FSVT_int;
                 returnvar.value.i = atoi(tokens[n]);
             }
-            return returnvar;
+            break;
 
         case TT_name:
             var = find_variable(tokens[n]);
-            if (!var)
-            {
-                script_error("unknown variable '%s'\n", tokens[n]);
-                return nullvar;
-            }
-            else
-                return getvariablevalue(var);
+            if (!var)  goto err_unknownvar;
+            return getvariablevalue(var);
 
         default:
-            return nullvar;
+            goto done_null;
     }
+    return returnvar;
+
+done_null:
+    return nullvar;
+
+err_unknownvar:
+    script_error("unknown variable '%s'\n", tokens[n]);
+    goto done_null;
 }
 
 // pointless_brackets : checks to see if there are brackets surrounding
 // an expression. eg. "(2+4)" is the same as just "2+4"
 //
-// because of the recursive nature of evaluate_expression, this function is
+// Because of the recursive nature of evaluate_expression, this function is
 // necessary as evaluating expressions such as "2*(2+4)" will inevitably
 // lead to evaluating "(2+4)"
 
@@ -726,7 +721,7 @@ static void pointless_brackets(int *start, int *stop)
 // a FraggleScript expression.
 // start and stop denote the tokens which are to be evaluated.
 //
-// works by recursion: it finds operators in the expression
+// Works by recursion: it finds operators in the expression
 // (checking for each in turn), then splits the expression into
 // 2 parts, left and right of the operator found.
 // The handler function for that particular operator is then
@@ -738,8 +733,7 @@ fs_value_t evaluate_expression(int start, int stop)
 {
     int i, n;
 
-    if (fs_killscript)
-        return nullvar; // killing the script
+    if (fs_killscript)  goto done_null; // killing the script
 
     // possible pointless brackets
     if (tokentype[start] == TT_operator && tokentype[stop] == TT_operator)
@@ -768,7 +762,6 @@ fs_value_t evaluate_expression(int start, int stop)
             // CONS_Printf("operator %s, %i-%i-%i\n", operators[count].string, start, n, stop);
 
             // call the operator function and evaluate this chunk of tokens
-
             return operators[i].handler(start, n, stop);
         }
     }
@@ -792,9 +785,9 @@ fs_value_t evaluate_expression(int start, int stop)
         errstr[ERRSTR_LEN] = '\0';
 
         script_error("could not evaluate expression: %s\n", errstr);
-        return nullvar;
     }
-
+done_null:   
+    return nullvar;
 }
 
 void script_error(const char *fmt, ...)

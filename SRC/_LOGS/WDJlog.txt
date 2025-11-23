@@ -2613,3 +2613,10 @@ General cleanup on fragglescript array functions,
 camera functions, and spec functions (if, elseif, while, for).
 Move error code to after return, for speed.
 Added comments.
+
+*** w83_fs_script_parse
+patchfile = w83_fs_script_parse.patch
+- committed revision 951   by wesley johnson
+General cleanup on fragglescript script and parse functions.
+Move error code to after return, for speed.
+Added comments.

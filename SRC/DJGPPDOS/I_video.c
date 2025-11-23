@@ -75,7 +75,6 @@ boolean    highcolor; // local
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
-//rendermode_t    rendermode=render_soft;
 //
 // I_StartFrame
 //

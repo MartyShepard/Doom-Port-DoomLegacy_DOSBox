@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_vari.c 951 2012-07-06 21:17:03Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -261,75 +261,81 @@ fs_value_t getvariablevalue(fs_variable_t *v)
 
 void setvariablevalue(fs_variable_t *v, fs_value_t newvalue)
 {
-  if(fs_killscript) return;  // protect the variables when killing script
+  if(fs_killscript)  goto done;  // protect the variables when killing script
   
-  if(!v) return;
-  
-  if(v->type == FSVT_const)
+  if(!v)  goto done;
+
+  switch( v->type )  // store as type
   {
+   case FSVT_const:
       // const adapts to the value it is set to
       v->type = newvalue.type;
 
       // alloc memory for string
       if(v->type == FSVT_string)   // static incase a global_script var
 	v->value.s = Z_Malloc(256, PU_STATIC, 0);
-  }
+      break;
   
-  if(v->type == FSVT_int)
+   case FSVT_int:
       v->value.i = intvalue(newvalue);
+      break;
 
-  if(v->type == FSVT_string)
-    strcpy(v->value.s, stringvalue(newvalue));
+   case FSVT_string:
+      strcpy(v->value.s, stringvalue(newvalue));
+      break;
 
-  if(v->type == FSVT_fixed)
-    v->value.fixed = fixedvalue(newvalue);
+   case FSVT_fixed:
+      v->value.fixed = fixedvalue(newvalue);
+      break;
 
-  if(v->type == FSVT_mobj)
+   case FSVT_mobj:
       v->value.mobj = MobjForSvalue(newvalue);
+      break;
 
+   case FSVT_array:
+      if(newvalue.type != FSVT_array)  goto err_array;
+      v->value.a = newvalue.value.a;
+      break;
 
-  if(v->type == FSVT_array)
-  {
-     if(newvalue.type != FSVT_array)
-     {
-	script_error("cannot coerce value to array type\n");
-	return;
-     }
-     v->value.a = newvalue.value.a;
-  }
-
-
-  if(v->type == FSVT_pInt)
+   case FSVT_pInt:
       *v->value.pI = intvalue(newvalue);
+      break;
 
-  if(v->type == FSVT_pString)
-  {
+   case FSVT_pString:
       // free old value
       free(*v->value.pS);
       
       // dup new string
       *v->value.pS = strdup(stringvalue(newvalue));
-  }
+      break;
 
-  if(v->type == FSVT_pFixed)
-    *v->value.pFixed = fixedvalue(newvalue);
+   case FSVT_pFixed:
+      *v->value.pFixed = fixedvalue(newvalue);
+      break;
 
-  if(v->type == FSVT_pMobj)
+   case FSVT_pMobj:
       *v->value.pMobj = MobjForSvalue(newvalue);
+      break;
   
-  if(v->type == FSVT_pArray)
-  {
-     if(newvalue.type != FSVT_array)
-     {
-	script_error("cannot coerce value to array type\n");
-	return;
-     }
-     *v->value.pA = newvalue.value.a;
+   case FSVT_pArray:
+      if(newvalue.type != FSVT_array)  goto err_array;
+      *v->value.pA = newvalue.value.a;
+      break;
+     
+   case FSVT_function:
+      goto err_function;
   }
 
-  if(v->type == FSVT_function)
-    script_error("attempt to set function to a value\n");
+done:
+  return;
 
+err_array:
+  script_error("cannot coerce value to array type\n");
+  goto done;
+
+err_function:
+  script_error("attempt to set function to a value\n");
+  goto done;
 }
 
 
@@ -423,7 +429,7 @@ fs_value_t evaluate_function(int start, int stop)
   else if(func->type != FSVT_function)
     script_error("'%s' not a function\n", tokens[start]);
 
-  if(fs_killscript) return nullvar; // one of the above errors occurred
+  if(fs_killscript)  goto done_null; // one of the above errors occurred
 
   // build the argument list
   // use a C command-line style system rather than
@@ -454,13 +460,16 @@ fs_value_t evaluate_function(int start, int stop)
   t_argc = argc;
   t_argv = argv;
 
-  if(fs_killscript) return nullvar;
+  if(fs_killscript)  goto done_null;
   
   // now run the function
   func->value.handler();
   
   // return the returned value
   return t_return;
+
+done_null:
+  return nullvar;
 }
 
 // structure dot (.) operator
@@ -490,7 +499,7 @@ fs_value_t OPstructure(int start, int n, int stop)
   else if(func->type != FSVT_function)
     script_error("'%s' not a function\n", tokens[n+1]);
 
-  if(fs_killscript) return nullvar; // one of the above errors occurred
+  if(fs_killscript)  goto done_null; // one of the above errors occurred
   
   // build the argument list
 
@@ -529,13 +538,16 @@ fs_value_t OPstructure(int start, int n, int stop)
   t_argc = argc;
   t_argv = argv;
   
-  if(fs_killscript) return nullvar;
+  if(fs_killscript)  goto done_null;
   
   // now run the function
   func->value.handler();
   
   // return the returned value
   return t_return;
+
+done_null:
+  return nullvar;
 }
 
 

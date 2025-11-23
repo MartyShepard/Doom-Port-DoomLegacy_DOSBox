@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_script.c 951 2012-07-06 21:17:03Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -283,6 +283,7 @@ void COM_T_RunScript_f (void)
 
 runningscript_t *freelist=NULL;      // maintain a freelist for speed
 
+// Does not return NULL
 runningscript_t * new_runningscript( void )
 {
   // check the freelist
@@ -307,30 +308,30 @@ static void free_runningscript(runningscript_t *runscr)
 }
 
 
-
+// Return true when finished, false while waiting
 static boolean wait_finished(runningscript_t *script)
 {
   switch(script->wait_type)
   {
-    case wt_none: return true;        // uh? hehe
-    case wt_scriptwait:               // waiting for script to finish
+    case WT_none: break;	      // always finished
+    case WT_scriptwait:               // waiting for script to finish
       {
 	runningscript_t *current;
 	for(current = fs_runningscripts.next; current; current = current->next)
 	{
 	    if(current == script) continue;  // ignore this script
 	    if(current->script->scriptnum == script->wait_data)
-	      return false;        // script still running
+	      goto ret_wait;  // script still running
 	}
-	return true;        // can continue now
       }
+      break;  // finished
 
-    case wt_delay:                          // just count down
+    case WT_delay:                          // just count down
       {
 	return --script->wait_data <= 0;
       }
     
-    case wt_tagwait:
+    case WT_tagwait:
       {
 	int secnum = -1;
 
@@ -338,15 +339,17 @@ static boolean wait_finished(runningscript_t *script)
 	{
 	    sector_t *sec = &sectors[secnum];
 	    if(sec->floordata || sec->ceilingdata || sec->lightingdata)
-	      return false;        // not finished
+	      goto ret_wait;  // not finished
 	}
-	return true;
       }
+      break;  // finished
 
-    default: return true;
+    default: break;
   }
+  return true;  // default finished
 
-  return false;
+ret_wait:
+  return false;  // waiting
 }
 
 
@@ -391,8 +394,6 @@ void T_DelayedScripts( void )
 }
 
 
-
-
 static runningscript_t * T_SaveCurrentScript( void )
 {
   runningscript_t *runscr;
@@ -402,11 +403,10 @@ static runningscript_t * T_SaveCurrentScript( void )
   runscr->script = fs_current_script;
   runscr->savepoint = fs_src_cp;
 
-  // leave to other functions to set wait_type: default to wt_none
-  runscr->wait_type = wt_none;
+  // leave to other functions to set wait_type: default to WT_none
+  runscr->wait_type = WT_none;
 
   // hook into chain at start
-  
   runscr->next = fs_runningscripts.next;
   runscr->prev = &fs_runningscripts;
   runscr->prev->next = runscr;
@@ -443,16 +443,18 @@ void SF_Wait( void )
 {
   runningscript_t *runscr;
 
-  if(t_argc != 1)
-  {
-      script_error("incorrect arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   runscr = T_SaveCurrentScript();
 
-  runscr->wait_type = wt_delay;
+  runscr->wait_type = WT_delay;
   runscr->wait_data = (intvalue(t_argv[0]) * 35) / 100;
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "Wait", 1);
+  goto done;
 }
 
 //if you want to wait on tics instead of "real" time
@@ -460,16 +462,18 @@ void SF_WaitTic( void )
 {
   runningscript_t *runscr;
 
-  if(t_argc != 1)
-  {
-      script_error("incorrect arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   runscr = T_SaveCurrentScript();
 
-  runscr->wait_type = wt_delay;
+  runscr->wait_type = WT_delay;
   runscr->wait_data = intvalue(t_argv[0]);
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "WaitTic", 1);
+  goto done;
 }
 
 // wait for sector with particular tag to stop moving
@@ -477,16 +481,18 @@ void SF_TagWait( void )
 {
   runningscript_t *runscr;
 
-  if(t_argc != 1)
-  {
-      script_error("incorrect arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   runscr = T_SaveCurrentScript();
 
-  runscr->wait_type = wt_tagwait;
+  runscr->wait_type = WT_tagwait;
   runscr->wait_data = intvalue(t_argv[0]);
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "TagWait", 1);
+  goto done;
 }
 
 
@@ -497,16 +503,18 @@ void SF_ScriptWait( void )
 {
   runningscript_t *runscr;
 
-  if(t_argc != 1)
-  {
-      script_error("incorrect arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   runscr = T_SaveCurrentScript();
 
-  runscr->wait_type = wt_scriptwait;
+  runscr->wait_type = WT_scriptwait;
   runscr->wait_data = intvalue(t_argv[0]);
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "ScriptWait", 1);
+  goto done;
 }
 
 
@@ -520,25 +528,16 @@ void SF_StartScript( void )
   script_t *script;
   int i, snum;
   
-  if(t_argc != 1)
-  {
-      script_error("incorrect arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   snum = intvalue(t_argv[0]);
-  
   script = fs_levelscript.children[snum];
-  
-  if(!script)
-  {
-      script_error("script %i not defined\n", snum);
-  }
+  if(!script)  goto err_noscript;
   
   runscr = new_runningscript();
   runscr->script = script;
   runscr->savepoint = script->data; // start at beginning
-  runscr->wait_type = wt_none;      // start straight away
+  runscr->wait_type = WT_none;      // start straight away
 
   // hook into chain at start
   
@@ -563,38 +562,49 @@ void SF_StartScript( void )
   }
   // copy trigger
   runscr->trigger = fs_current_script->trigger;
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "StartScript", 1);
+  goto done;
+
+err_noscript:
+  script_error("StartScript: script %i not defined\n", snum);
+  goto done;
 }
 
 
 
-
+// int ScriptRunning( int scriptnumber )
+// Return 1 when script (scriptnumber) is running
 void SF_ScriptRunning( void )
 {
   runningscript_t *current;
   int snum;
 
-  if(t_argc < 1)
-  {
-      script_error("not enough arguments to function\n");
-      return;
-  }
+  if(t_argc != 1)  goto err_numarg;
 
   snum = intvalue(t_argv[0]);
-  
+
+  t_return.type = FSVT_int;
+  t_return.value.i = 0;  // default, script not found
+
   for(current=fs_runningscripts.next; current; current=current->next)
   {
       if(current->script->scriptnum == snum)
       {
-	  // script found so return
-	  t_return.type = FSVT_int;
-	  t_return.value.i = 1;
-	  return;
+	  t_return.value.i = 1;  // found, and running
+	  goto done;
       }
   }
 
-  // script not found
-  t_return.type = FSVT_int;
-  t_return.value.i = 0;
+done:
+  return;
+
+err_numarg:
+  wrong_num_arg( "ScriptRunning", 1);
+  goto done;
 }
 
 
@@ -618,16 +628,16 @@ void COM_T_Running_f (void)
       CONS_Printf("%i:", current->script->scriptnum);
       switch(current->wait_type)
       {
-	case wt_none:
+	case WT_none:
 	  CONS_Printf("waiting for nothing?\n");
 	  break;
-	case wt_delay:
+	case WT_delay:
 	  CONS_Printf("delay %i tics\n", current->wait_data);
 	  break;
-	case wt_tagwait:
+	case WT_tagwait:
 	  CONS_Printf("waiting for tag %i\n", current->wait_data);
 	  break;
-	case wt_scriptwait:
+	case WT_scriptwait:
 	  CONS_Printf("waiting for script %i\n", current->wait_data);
 	  break;
 	default:
@@ -669,14 +679,14 @@ mobj_t * MobjForSvalue(fs_value_t svalue)
   // as the thing number of a thing in the level.
   
   intval = intvalue(svalue);        
-  
   if(intval < 0 || intval >= nummapthings || !mapthings[intval].mobj)
-  { 
-      script_error("no levelthing %i\n", intval);
-      return NULL;
-  }
+      goto err_mapthing;
 
   return mapthings[intval].mobj;
+
+err_mapthing:
+  script_error("no levelthing %i\n", intval);
+  return NULL;
 }
 
 
@@ -701,27 +711,13 @@ void spec_script( void )
   int datasize;
   script_t *script;
 
-  if(!fs_current_section)
-  {
-      script_error("need seperators for script\n");
-      return;
-  }
+  if(!fs_current_section)  goto err_nosection;
   
   // presume that the first token is "script"
-  
-  if(num_tokens < 2)
-  {
-      script_error("need script number\n");
-      return;
-  }
+  if(num_tokens < 2)  goto err_numtokens;
 
   scriptnum = intvalue(evaluate_expression(1, num_tokens-1));
-  
-  if(scriptnum < 0)
-  {
-      script_error("invalid script number\n");
-      return;
-  }
+  if(scriptnum < 0)  goto err_scriptnum;
 
   script = Z_Malloc(sizeof(script_t), PU_LEVEL, 0);
 
@@ -755,6 +751,20 @@ void spec_script( void )
   // we dont want to run the script, only add it
   // jump past the script in parsing
   fs_src_cp = fs_current_section->end + 1;
+done:
+  return;
+
+err_nosection:
+  script_error("need separators for script\n");
+  goto done;
+
+err_numtokens:
+  script_error("need script number\n");
+  goto done;
+
+err_scriptnum:
+  script_error("invalid script number\n");
+  goto done;
 }
 
 

@@ -49,10 +49,10 @@ struct runningscript_s
 
   enum
   {
-    wt_none,        // not waiting
-    wt_delay,       // wait for a set amount of time
-    wt_tagwait,     // wait for sector to stop moving
-    wt_scriptwait,  // wait for script to finish
+    WT_none,        // not waiting
+    WT_delay,       // wait for a set amount of time
+    WT_tagwait,     // wait for sector to stop moving
+    WT_scriptwait,  // wait for script to finish
   } wait_type;
   int wait_data;  // data for wait: tagnum, counter, script number etc
 	
