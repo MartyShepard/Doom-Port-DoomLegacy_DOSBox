@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00972 ]: w86_5 misc renames and cleanup
 [00971 ]: w86 HWR types
 [00970 ]: w86 Glide types
 [00969 ]: w86 FF cleanup

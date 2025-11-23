@@ -2797,4 +2797,12 @@ hwdspecialstate_t -> hwd_specialstate_e
 hwdfiltermode -> hwd_filtermode_e
 TGAHeader, *PTGAHeader -> TGAHeader_t
 
+*** w86_5_misc
+patchfile = w86_5_misc.patch
+- committed revision 972   by wesley johnson
+Cleanup some code to not have so many return stmts, code should exit
+through only a few return stmts.
+Cleanup unused functions and redirected functions.
+R_GetFlatNumForName -> R_FlatNumForName  (like R_TextureNumForName)
+P_FlatNumForName -> P_AddLevel_FlatNumForName (unused)
 

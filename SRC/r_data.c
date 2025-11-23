@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 960 2012-08-13 23:14:03Z wesleyjohnson $
+// $Id: r_data.c 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -996,13 +996,7 @@ done:
 //
 // R_GetColumn
 //
-
-
-//
-// new test version, short!
-//
-byte* R_GetColumn ( int           texnum,
-                    int           col )
+byte* R_GetColumn ( int texnum, int col )
 {
     byte*       data;
 
@@ -1448,7 +1442,8 @@ void R_InitFlats ()
 
 
 
-int R_GetFlatNumForName(char *name)
+// [WDJ] was R_GetFlatNumForName, but it does not cache like GetFlat
+int R_FlatNumForName(char *name)
 {
   // [WDJ] No use in saving F_START if are not going to use them.
   // FreeDoom, where a flat and sprite both had same name,
@@ -1469,7 +1464,7 @@ int R_GetFlatNumForName(char *name)
   
   if(lump == -1) {
      // [WDJ] When not found, dont quit, use first flat by default.
-     I_SoftError("R_GetFlatNumForName: Could not find flat %.8s\n", name);
+     I_SoftError("R_FlatNumForName: Could not find flat %.8s\n", name);
      lump = flats[0].firstlump;	// default to first flat
   }
 
@@ -2493,9 +2488,6 @@ void R_InitData (void)
 }
 
 
-//SoM: REmoved R_FlatNumForName
-
-
 //
 // R_CheckTextureNumForName
 // Check whether texture is available.
@@ -2505,9 +2497,9 @@ void R_InitData (void)
 // 
 // Parameter name is 8 char without term.
 // Return -1 for not found, 0 for no texture
-int     R_CheckTextureNumForName (char *name)
+int  R_CheckTextureNumForName (char *name)
 {
-    int         i;
+    int  i;
 
     // "NoTexture" marker.
     if (name[0] == '-')
@@ -2575,14 +2567,12 @@ int P_PrecacheLevelFlats();
 
 void R_PrecacheLevel (void)
 {
-//  char*               flatpresent; //SoM: 4/18/2000: No longer used
-    char*               texturepresent;
-    char*               spritepresent;
+//  char*  flatpresent; //SoM: 4/18/2000: No longer used
+    char*  texturepresent;
+    char*  spritepresent;
 
-    int                 i;
-    int                 j;
-    int                 k;
-    int                 lump;
+    int i,j,k;
+    int lump;
 
     thinker_t*          th;
     spriteframe_t*      sf;

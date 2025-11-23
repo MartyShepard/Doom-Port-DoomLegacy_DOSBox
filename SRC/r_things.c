@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 968 2012-11-10 21:56:13Z wesleyjohnson $
+// $Id: r_things.c 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1018,7 +1018,6 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
     sz_cut = (centeryfrac - FixedMul(lightheight - viewz, sprite->scale)) >> FRACBITS;
     if(sz_cut < 0)
             continue;
-//    if(sz_cut > vid.height)
     if(sz_cut > rdraw_viewheight)	// [WDJ] 11/14/2009
             return;
         

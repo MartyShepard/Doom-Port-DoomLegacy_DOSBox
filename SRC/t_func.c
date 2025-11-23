@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 952 2012-07-09 01:31:46Z wesleyjohnson $
+// $Id: t_func.c 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -3276,7 +3276,7 @@ void SF_FloorTexture(void)
     if (t_argc > 1)
     {
         // set texture
-        int picnum = R_GetFlatNumForName(t_argv[1].value.s);
+        int picnum = R_FlatNumForName(t_argv[1].value.s);
             // when flat not found, defaults to first flat
 
         // set all sectors with tag
@@ -3381,7 +3381,7 @@ void SF_CeilingTexture(void)
     if (t_argc > 1)
     {
         // set texture
-        int picnum = R_GetFlatNumForName(t_argv[1].value.s);
+        int picnum = R_FlatNumForName(t_argv[1].value.s);
             // when flat not found, defaults to first flat
 
         // set all sectors with tag

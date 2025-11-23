@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: g_game.c 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1087,6 +1087,7 @@ void G_DoLoadLevel (boolean resetplayer)
 // G_Responder
 //  Get info needed to make ticcmd_ts for the players.
 //
+// return true if event is acted upon
 boolean G_Responder (event_t* ev)
 {
     // allow spy mode changes even during the demo
@@ -1108,8 +1109,7 @@ boolean G_Responder (event_t* ev)
 
         //added:11-04-98: tell who's the view
         CONS_Printf("Viewpoint : %s\n", player_names[displayplayer]);
-
-        return true;
+        goto handled;
     }
 
     // any other key pops up menu if in demos
@@ -1119,9 +1119,9 @@ boolean G_Responder (event_t* ev)
         if (ev->type == ev_keydown)
         {
             M_StartControlPanel ();
-            return true;
+	    goto handled;
         }
-        return false;
+        goto rejected;
     }
 
     if (gamestate == GS_LEVEL)
@@ -1133,29 +1133,31 @@ boolean G_Responder (event_t* ev)
             consoleplayer_ptr->skincolor = (consoleplayer_ptr->skincolor+1) % NUMSKINCOLORS;
             consoleplayer_ptr->mo->flags |= (consoleplayer_ptr->skincolor)<<MF_TRANSSHIFT;
             G_DeathMatchSpawnPlayer (0);
-            return true;
+	    goto handled;
         }
 #endif
         if(!multiplayer)
+        {
            if( cht_Responder (ev))
-               return true;
+	      goto handled;
+	}
         if (HU_Responder (ev))
-            return true;        // chat ate the event
+	    goto handled; // chat ate the event
         if (ST_Responder (ev))
-            return true;        // status window ate it
+	    goto handled; // status window ate it
         if (AM_Responder (ev))
-            return true;        // automap ate it
+	    goto handled; // automap ate it
         if (G_InventoryResponder (consoleplayer_ptr, gamecontrol, ev))
-            return true;
+	    goto handled;
         if (displayplayer2_ptr && G_InventoryResponder (displayplayer2_ptr, gamecontrol2, ev))
-            return true;
+	    goto handled;
         //added:07-02-98: map the event (key/mouse/joy) to a gamecontrol
     }
 
     if (gamestate == GS_FINALE)
     {
         if (F_Responder (ev))
-            return true;        // finale ate the event
+	    goto handled;  // finale ate the event
     }
 
 
@@ -1168,25 +1170,25 @@ boolean G_Responder (event_t* ev)
         if (ev->data1 == KEY_PAUSE)
         {
             COM_BufAddText("pause\n");
-            return true;
+	    goto handled;
         }
-        return true;
+        goto handled;
 
       case ev_keyup:
-        return false;   // always let key up events filter down
+        goto rejected;   // always let key up events filter down
 
       case ev_mouse:
-        return true;    // eat events
+        goto handled;  // eat events
 
-      #if defined( __DJGPP__ )
-      case ev_joystick:
-        return true;    // eat events
-      #endif
       default:
         break;
     }
 
+rejected:
     return false;
+
+handled:
+    return true;
 }
 
 

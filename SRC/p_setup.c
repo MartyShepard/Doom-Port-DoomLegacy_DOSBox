@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: p_setup.c 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2011 by DooM Legacy Team.
+// Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -516,10 +516,14 @@ int P_PrecacheLevelFlats()
 
 
 
-int P_FlatNumForName(char *flatname)
+#if 0
+// [WDJ] Unused (renamed from P_FlatNumForName)
+// not compatible with allocation of levelflats if called outside P_LoadSectors
+int P_AddLevel_FlatNumForName(char *flatname)
 {
   return P_AddLevelFlat(flatname, levelflats);
 }
+#endif
 
 
 
@@ -562,7 +566,7 @@ int P_AddLevelFlat (char* flatname, levelflat_t* levelflat)
         *((int*)&levelflat->name[4]) = v2;
 
         // store the flat lump number
-        levelflat->lumpnum = R_GetFlatNumForName (flatname);
+        levelflat->lumpnum = R_FlatNumForName (flatname);
 
         if (devparm)
             CONS_Printf ("flat %#03d: %s\n", numlevelflats, name8.s);

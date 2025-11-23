@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 954 2012-07-20 23:11:13Z wesleyjohnson $
+// $Id: r_data.h 972 2012-11-10 22:18:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -65,7 +65,6 @@
 // into the rectangular texture space using origin
 // and possibly other attributes.
 //
-#if 1
 // Used to read texture patch info from wad, sizes must be correct.
 typedef struct
 {
@@ -76,17 +75,6 @@ typedef struct
     int16_t	stepdir;	// 1
     uint16_t    colormap;	// 0
 } mappatch_t;
-#else
-// Used for reading texture patches from wad.
-typedef struct
-{
-    short       originx;
-    short       originy;
-    short       patchnum;
-    short       stepdir;
-    short       colormap;
-} mappatch_t;
-#endif
 
 
 
@@ -95,7 +83,6 @@ typedef struct
 // A DOOM wall texture is a list of patches
 // which are to be combined in a predefined order.
 //
-#if 1
 // Used to read texture lump from wad, sizes must be correct.
 // UDS is unclear on the exact size of some of these fields.
 typedef struct
@@ -109,23 +96,9 @@ typedef struct
     uint16_t            patchcount;	// [20]
     mappatch_t		patches[1];	// [22] array
 } maptexture_t;
-#else
-typedef struct
-{
-    char                name[8];
-    boolean             masked;
-    short               width;
-    short               height;
-    char                columndirectory[4]; //void **columndirectory; // OBSOLETE 
-    short               patchcount;
-    mappatch_t  patches[1];
-} maptexture_t;
-#endif
 
 // A single patch from a texture definition,
-//  basically a rectangular area within
-//  the texture rectangle.
-#if 1
+//  basically a rectangular area within the texture rectangle.
 // Used only in internal texture struct. Wad read uses mappatch_t, which has more fields.
 // There is clipping code for originx<0 and originy<0, which occur in doom wads.
 // The original doom has a clipping bug when originy < 0.
@@ -133,19 +106,8 @@ typedef struct
 {
     int32_t     originx;
     int32_t     originy;
-    int		patchnum;
+    int		patchnum;  // because it uses -1 for no lump
 } texpatch_t;
-#else
-typedef struct
-{
-    // Block origin (allways UL),
-    // which has already accounted
-    // for the internal origin of the patch.
-    int         originx;
-    int         originy;
-    int         patchnum;
-} texpatch_t;
-#endif
 
 // [WDJ] 2/8/2010
 typedef enum {
@@ -158,23 +120,21 @@ typedef enum {
    TM_invalid	// disabled for some internal reason
 } texture_model_e;
 
-// A maptexturedef_t describes a rectangular texture,
-//  which is composed of one or more mappatch_t structures
-//  that arrange graphic patches.
-//  Internal structure, maptexture_t is used for reading wad.
+// A texture_t describes a rectangular texture, which is composed of
+// one or more graphic patches in texpatch_t structures.
+// Used internally only.
 typedef struct
 {
     // Keep name for switch changing, etc.
     char        name[8];
-    short       width;
-    short       height;
+    uint16_t    width;
+    uint16_t    height;
     texture_model_e  texture_model;	// [WDJ] drawing and storage models
 
     // All the patches[patchcount]
     //  are drawn back to front into the cached texture.
-    short       patchcount;
+    uint16_t    patchcount;
     texpatch_t  patches[1];
-
 } texture_t;
 
 
@@ -210,9 +170,7 @@ void R_PrecacheLevel (void);
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
 // lookup by name. For animation?
-int R_GetFlatNumForName (char *name);
-int P_FlagNumForName (char *flatname);
-#define R_FlatNumForName(x)    R_GetFlatNumForName(x)
+int R_FlatNumForName (char *name);
 
 
 // Called by P_Ticker for switches and animations,
