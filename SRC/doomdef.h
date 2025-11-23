@@ -280,8 +280,8 @@ void I_SoftError (char *error, ...);
 #define ENABLE_DRAW15
 #define ENABLE_DRAW16
 //#ifndef PC_DOS
-# define ENABLE_DRAW24
-# define ENABLE_DRAW32
+#define ENABLE_DRAW24
+#define ENABLE_DRAW32
 //#endif
 
 // [WDJ] 6/5/2012 Boom global colormap

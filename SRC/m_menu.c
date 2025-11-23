@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: m_menu.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -338,7 +338,7 @@ void clear_remaining_savegamedisp( int mslot )
 
 void setup_net_savegame( void )
 {
-    strcpy( savegamedir, "NET" );	// default for network play
+    strcpy( savegamedir, "net" );	// default for network play
 }
 
 // flags for items in the menu
@@ -971,7 +971,7 @@ menuitem_t  ServerMenu[] =
                | IT_CALL,0,"Start"           ,M_StartServer        ,120}
 };
 
-menu_t  Serverdef =
+menu_t  ServerDef =
 {
     "M_STSERV", // in legacy.wad
     "Start Server",
@@ -988,7 +988,7 @@ void M_StartServerMenu(int choice)
     if( M_already_playing(0) )  return;
 
     // StartSplitScreenGame already set by TwoPlayer menu
-    M_SetupNextMenu(&Serverdef);
+    M_SetupNextMenu(&ServerDef);
     setup_net_savegame();
 }
 
@@ -1516,7 +1516,7 @@ menuitem_t NewGameMenu[]=
 menu_t  NewDef =
 {
     "M_NEWG",
-    "NEW GAME",
+    "New Game",
     newg_end,           // # of menu items
     &EpiDef,            // previous menu
     NewGameMenu,        // menuitem_t ->
@@ -1604,7 +1604,7 @@ menuitem_t OptionsMenu[]=
 menu_t  OptionsDef =
 {
     "M_OPTTTL",
-    "OPTIONS",
+    "Options",
     sizeof(OptionsMenu)/sizeof(menuitem_t),
     &MainDef,
     OptionsMenu,
@@ -2050,8 +2050,10 @@ menuitem_t SoundMenu[]=
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cv_soundvolume      },
     {IT_CVARMAX   | IT_PATCH ,"M_MUSVOL","Music Volume",&cv_musicvolume  ,'m'},
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cv_musicvolume      },
+#ifdef CDMUS
     {IT_CVARMAX   | IT_PATCH ,"M_CDVOL" ,"CD Volume"   ,&cd_volume       ,'c'}, // in legacy.wad
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cd_volume           },
+#endif
 };
 
 menu_t  SoundDef =

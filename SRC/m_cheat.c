@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 821 2011-03-16 23:24:47Z wesleyjohnson $
+// $Id: m_cheat.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -332,6 +332,7 @@ boolean cht_Responder(event_t * ev)
             }
         }
 
+#ifdef CDMUS
         // 'cd' for changing cd track quickly
         //NOTE: the cheat uses the REAL track numbers, not remapped ones
         else if (cht_CheckCheat(&cheat_cd, ch))
@@ -343,6 +344,7 @@ boolean cht_Responder(event_t * ev)
             plyr->message = "Changing cd track...\n";
             I_PlayCD((buf[0] - '0') * 10 + (buf[1] - '0'), true);
         }
+#endif
 
         // Simplified, accepting both "noclip" and "idspispopd".
         // no clipping mode cheat

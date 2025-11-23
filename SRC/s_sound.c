@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 875 2011-11-01 00:13:44Z wesleyjohnson $
+// $Id: s_sound.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -740,11 +740,13 @@ void S_PauseSound(void)
         mus_paused = true;
     }
 
+#ifdef CDMUS
     // pause cd music
 #if !defined( __DJGPP__ )	
     I_PauseCD();
 #else
     I_StopCD();
+#endif
 #endif
 }
 
@@ -756,8 +758,10 @@ void S_ResumeSound(void)
         mus_paused = false;
     }
 
+#ifdef CDMUS
     // resume cd music
     I_ResumeCD();
+#endif
 }
 
 //

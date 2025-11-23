@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 743 2010-09-16 01:14:47Z smite-meister $
+// $Id: s_sound.h 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -86,9 +86,11 @@ extern consvar_t musserver_arg;
 #endif
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
+#ifdef CDMUS
 //part of i_cdmus.c
 extern consvar_t cd_volume;
 extern consvar_t cdUpdate;
+#endif
 
 #ifdef __MACOS__
 typedef enum

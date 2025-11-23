@@ -298,16 +298,15 @@ WFLAGS=-Wall # -W -Wno-unused -Wno-sign-compare
 	DJGPPDOS_NATIVE=1
 #determine the interface directory (where you put all i_*.c)
 
-ENABLE_DRAW15=1
-ENABLE_DRAW16=1
-ENABLE_DRAW24=1
-ENABLE_DRAW32=1
-HIGHCOLORMAPS=1	
-
 ifdef DJGPPDOS_NATIVE
 	INTERFACE=DJGPPDOS_NATIVE
 	NASMFORMAT=coff
 endif
+
+# CD-Music enable/disable, if you don't have the special libraries, etc.
+#ifndef NOCDMUS
+CDMUS=1
+#endif
 
 ifdef DJGPPDOS_NATIVE
 	# subdirectory for objects
@@ -320,14 +319,19 @@ ifdef DJGPPDOS_NATIVE
 
 	# options
     OPTS=-DPC_DOS -g
-
 	# r547, DOS need Math Lib
 	DEBUGLIBS=-lm -lalleg -lbcd -lsocket
-    LIBS=-lm -lalleg -lbcd -lsocket
-
+  LIBS=-lm -lalleg
+	 
+  ifdef CDMUS
+     LIBS+=-lbcd
+		 OPTS+=-DCDMUS
+  endif
+	
+	LIBS+=-lsocket
+	
 	SFLAGS=
-
-    CFLAGS=-g
+  CFLAGS=-g
 
 	OBJS=$(O)/i_video.o $(O)/vid_vesa.o
 
@@ -340,6 +344,7 @@ ifdef USEASM
    OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
    OPTS:= $(OPTS) -DUSEASM
 endif
+
 # -O3	Aggressivste Optimierung: Schleifen, Inlining, Vektoroperationen
 # -march=i586	Nutzt Pentium-spezifische Instruktionen
 # -mtune=pentiumpro	Feintuning für bessere Branch Prediction

@@ -549,7 +549,7 @@ void R_DrawTranslatedColumn_16 (void)
     do
     {
 #ifdef HIGHCOLORMAPS
-        *dest = hicolormaps[ ((uint16_t*)dc_skintran[ dc_source[frac>>FRACBITS]]] ];
+        *dest = hicolormaps[ ((uint16_t*)dc_skintran[ dc_source[frac>>FRACBITS]]];
 #else
         *(uint16_t*)dest = color8.to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
 #endif
@@ -573,7 +573,7 @@ void R_DrawSpan_16 (void)
 {
     fixed_t             xfrac;
     fixed_t             yfrac;
-    byte *              dest;
+    byte*               dest;
     int                 count;
 
 #ifdef RANGECHECK

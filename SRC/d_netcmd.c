@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: d_netcmd.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -445,12 +445,13 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_numChannels);
     CV_RegisterVar(&cv_rndsoundpitch);
 
+#ifdef CDMUS
     //i_cdmus.c
     CV_RegisterVar(&cd_volume);
 #if defined( __DJGPP__ )
     CV_RegisterVar(&cdUpdate);
 #endif
-
+#endif
     // screen.c ?
 #if !defined( __DJGPP__ )			
     CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place

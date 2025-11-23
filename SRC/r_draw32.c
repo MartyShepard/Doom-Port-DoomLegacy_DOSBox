@@ -565,7 +565,7 @@ void R_DrawTranslatedColumn_32 (void)
     do
     {
 #ifdef HIGHCOLORMAPS
-        c32.ui32 = hicolormaps[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
+        c32.ui32 = hicolormaps[ dc_skintran[ dc_source[frac>>FRACBITS]]];
 #else
         c32.ui32 = color8.to32[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
 #endif

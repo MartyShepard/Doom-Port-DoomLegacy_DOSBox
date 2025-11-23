@@ -2583,5 +2583,25 @@ patchfile = w83_fs_func_old.patch
 - committed revision 947   by wesley johnson
 Remove OLDBEHAVIOR code in fragglescript functions.
 
+*** w83_makefile
+patchfile = w83_makefile.patch
+- committed revision 948   by wesley johnson
+Move OBJ of an interface to that interface makefile section.
+Made WIN32 interface compilable (which uses different names than the
+others).
+Removed strange i_cdmus_o var.
+Created MAINOBJ var.
+Moved linux_x common OBJ (in xshm and ggi) to a common OBJ assign,
+leaving only the video.
 
-
+*** w83_cdmus_optional
+patchfile = w83_cdmus.patch
+- committed revision 93?   by wesley johnson
+Make CD-music a makefile compile option.
+Setting CDMUS (default is CDMUS=1) in the makefile enables compiling CD
+music code.  Without CDMUS, all CD code is removed, including cd-volume
+controls.  This allows compiling without some special libraries, that
+some interfaces require.
+To override default, use NOCDMUS on the make command line, or edit
+makefile.
+> make NOCDMUS=1

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 917 2012-03-10 20:52:15Z wesleyjohnson $
+// $Id: d_main.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -327,7 +327,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "947"
+#define SVN_REV "948"
 #endif
 
 // Version number: major.minor.revision
@@ -818,8 +818,10 @@ void D_DoomLoop(void)
         I_SubmitSound();
 #endif
 
+#ifdef CDMUS
         // check for media change, loop music..
         I_UpdateCD();
+#endif
 
 #ifdef HW3SOUND
         HW3S_EndFrameUpdate();
@@ -2153,9 +2155,11 @@ void D_DoomMain()
     wipegamestate = gamestate;
     //------------------------------------------------ COMMAND LINE PARAMS
 
+#ifdef CDMUS
     // Initialize CD-Audio, no music on a dedicated server
     if (!M_CheckParm("-nocd") && !M_CheckParm("-dedicated"))
       I_InitCD();
+#endif
     if (M_CheckParm("-respawn"))
       COM_BufAddText("respawnmonsters 1\n");
     if (M_CheckParm("-coopmonsters"))
@@ -2422,7 +2426,9 @@ void Help( void )
 	"-config file    Config file\n"
 	"-opengl         OpenGL Hardware render\n"
 	"-nosound        No sound effects\n"
+#ifdef CDMUS
 	"-nocd           No CD music\n"
+#endif
 	"-nomusic        No music\n"
 	"-precachesound  Preload sound effects\n"
 	"-mb num         Pre-allocate num MiB of memory\n"

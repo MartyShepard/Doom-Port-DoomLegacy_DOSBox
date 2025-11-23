@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 941 2012-07-03 17:39:05Z wesleyjohnson $
+// $Id: p_setup.c 949 2012-07-03 19:19:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -1752,11 +1752,13 @@ boolean P_SetupLevel (int           episode,
     // build subsector connect matrix
     //  UNUSED P_ConnectSubsectors ();
 
+#ifdef CDMUS
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
     if (gamemode==doom2_commercial)
         I_PlayCD (map, true);                // Doom2, 32 maps
     else
         I_PlayCD ((episode-1)*9+map, true);  // Doom1, 9maps per episode
+#endif
 
     // preload graphics
 #ifdef HWRENDER // not win32 only 19990829 by Kin

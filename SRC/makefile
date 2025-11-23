@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 908 2012-03-05 15:05:10Z wesleyjohnson $
+# $Id: Makefile 949 2012-07-03 19:19:51Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2011 by Doom Legacy Team.
@@ -42,6 +42,11 @@
 
 # SDL Mixer, to get music
 HAVE_MIXER=1
+
+# CD-Music enable/disable, if you don't have the special libraries, etc.
+#ifndef NOCDMUS
+CDMUS=1
+#endif
 
 # Developers with svn can enable this to have svn revision number in executable.
 # Causes compile error message otherwise.
@@ -91,7 +96,6 @@ endif
 RM=rm
 # random stuff
 NASMFORMAT=elf -DLINUX
-i_cdmus_o=$(O)/i_cdmus.o
 
 ifdef WIN32
   RM=del
@@ -105,6 +109,7 @@ endif
 #=================================
 ifeq ($(SMIF), SDL)
 # SDL is the default system media interface. This is what all modern systems should use.
+  # Requires SDL libs, and optionally SDL_mixer libs
 
 # name of the executable
   EXENAME := doomlegacy
@@ -112,7 +117,10 @@ ifeq ($(SMIF), SDL)
 # interface directory (where you put all i_*.c)
   INTERFACE=sdl
 
-  OBJS := $(O)/i_video.o $(O)/dosstr.o $(O)/endtxt.o \
+  MAINOBJ := $(O)/i_main.o
+  CDMUSOBJ := $(O)/i_cdmus.o
+  OBJS := $(O)/i_system.o $(O)/i_video.o $(O)/i_sound.o $(O)/i_net.o \
+    $(O)/filesrch.o $(O)/dosstr.o $(O)/endtxt.o \
     $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
     $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o \
     $(O)/r_opengl.o $(O)/ogl_sdl.o $(O)/hwsym_sdl.o
@@ -172,6 +180,7 @@ ifeq ($(SMIF), SDL)
 #=================================
 else
 ifeq ($(SMIF), LINUX_X11)
+  # Requires X, and xshm or ggi libs
   INTERFACE=linux_x
 
   MUSSERV=linux_x/musserv
@@ -183,7 +192,19 @@ ifeq ($(SMIF), LINUX_X11)
   # Uncomment if you want to use the POLL_POINTER hack
   #POLL_POINTER=-DPOLL_POINTER
 
-  OPTS=-DLINUX -DOLD_SOUND_DRIVER -DMUSSERV -DSNDSERV -DHWRENDER
+  OPTS=-DLINUX -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
+  ifdef CDMUS
+    OPTS += -DMUSSERV
+  endif
+  # objs common to xshm and ggi, video is added later
+  MAINOBJ := $(O)/i_main.o
+  CDMUSOBJ := $(O)/i_cdmus.o
+  OBJS=$(O)/i_system.o $(O)/i_sound.o $(O)/i_net.o \
+    $(O)/searchp.o $(O)/filesrch.o $(O)/dosstr.o $(O)/endtxt.o \
+    $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
+    $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o \
+    $(O)/r_opengl.o $(O)/ogl_x11.o
+
   X=1
 
   ifdef X
@@ -200,11 +221,7 @@ ifeq ($(SMIF), LINUX_X11)
 # name of the exefile
     EXENAME=llxdoom
     SFLAGS=-g $(OPTS)
-    OBJS=$(O)/i_video_xshm.o $(O)/dosstr.o $(O)/searchp.o $(O)/endtxt.o \
-      $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
-      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o \
-      $(O)/r_opengl.o $(O)/ogl_x11.o
-
+    OBJS += $(O)/i_video_xshm.o
   else
     OPTS := $(OPTS) -DVID_GGI -I.
     LDFLAGS=
@@ -212,15 +229,14 @@ ifeq ($(SMIF), LINUX_X11)
 # name of the exefile
     EXENAME=llggidoom
     SFLAGS=-g $(OPTS)
-    OBJS=$(O)/i_video_ggi.o $(O)/dosstr.o $(O)/searchp.o $(O)/endtxt.o \
-      $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
-      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o
+    OBJS += $(O)/i_video_ggi.o
   endif
 
 
 #=================================
 else
 ifeq ($(SMIF), FREEBSD_X11)
+  # Requires X11/Xlib, and xshm or ggi libs
   INTERFACE=linux_x
 
   MUSSERV=linux_x/musserv
@@ -234,10 +250,16 @@ ifeq ($(SMIF), FREEBSD_X11)
   # Uncomment if you want to use the POLL_POINTER hack
   #POLL_POINTER=-DPOLL_POINTER
 
-  # this should be an #ifdef in the source file
-  i_cdmus_o=$(O)/i_cdmus_fbsd.o
-
   OPTS=-DLINUX -DFREEBSD -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
+  # objs common to xshm and ggi, video is added later
+  # Note: free-bsd version of cdmus
+  MAINOBJ := $(O)/i_main.o
+  CDMUSOBJ := $(O)/i_cdmus_fbsd.o
+  OBJS=$(O)/i_system.o $(O)/i_sound.o $(O)/i_net.o \
+    $(O)/searchp.o $(O)/filesrch.o $(O)/dosstr.o $(O)/endtxt.o \
+    $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
+    $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o
+
   ifndef FBSD_GGI
     X=1
   endif
@@ -249,10 +271,7 @@ ifeq ($(SMIF), FREEBSD_X11)
     # name of the exefile
     EXENAME=llxdoom
     SFLAGS=-g $(OPTS)
-    OBJS=$(O)/i_video_xshm.o $(O)/dosstr.o $(O)/searchp.o $(O)/endtxt.o \
-      $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
-      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o
-
+    OBJS += $(O)/i_video_xshm.o
   else #ifdef X
     OPTS := $(OPTS) -DVID_GGI -I. -I/usr/local/include
     LDFLAGS=
@@ -260,15 +279,15 @@ ifeq ($(SMIF), FREEBSD_X11)
     # name of the exefile
     EXENAME=llggidoom
     SFLAGS=-g $(OPTS)
-    OBJS=$(O)/i_video_ggi.o $(O)/dosstr.o $(O)/searchp.o $(O)/endtxt.o \
-      $(O)/hw_bsp.o $(O)/hw_draw.o $(O)/hw_light.o $(O)/hw_main.o \
-      $(O)/hw_md2.o $(O)/hw_cache.o $(O)/hw_trick.o
+    OBJS += $(O)/i_video_ggi.o
   endif #ifdef X
 
 
 #=================================
 else
 ifeq ($(SMIF), OS2_NATIVE)
+  #Requires OS2 libs, os2.h, os2me.h, fourcc.h, DIVE libs, and mmpm2 libs
+  #Does not have cdmusic support
   INTERFACE=os2
   NASMFORMAT=coff
 
@@ -284,8 +303,11 @@ ifeq ($(SMIF), OS2_NATIVE)
 
   SFLAGS=-g $(OPTS)
 
-  OBJS=$(O)/i_video.o $(O)/i_dart.o $(O)/i_dive.o $(O)/I_pm.o \
-    $(O)/printf.o $(O)/I_pm.res
+  MAINOBJ := $(O)/main.o
+  CDMUSOBJ := $(O)/i_cdmus.o
+  OBJS=$(O)/i_system.o $(O)/i_video.o $(O)/i_sound.o $(O)/i_net.o \
+    $(O)/i_dart.o $(O)/i_dive.o $(O)/I_pm.o \
+    $(O)/printf.o $(O)/I_pm.res $(O)/filesrch.o
 
 # name of the exefile
   EXENAME=legacy.exe
@@ -294,21 +316,24 @@ ifeq ($(SMIF), OS2_NATIVE)
 #=================================
 else
 ifeq ($(SMIF), WIN32_NATIVE)
-  INTERFACE=djgppdos
+  # Requires windows.h, windowsx.h, ddraw.h and ddraw libs, fmod libs
+  INTERFACE=win32
   NASMFORMAT=coff
 
 #use the x86 asm code
   #USEASM=1
 
 # options
-  OPTS=-DPC_DOS -g
+  OPTS= -DWIN32 -g
 
-  DEBUGLIBS=-lalleg -lbcd -lsocket
-  LIBS=-lalleg -lbcd -lsocket
+  DEBUGLIBS=-lfmod -lwinmm -lsocket
+  LIBS=-lfmod -lwinmm -lsocket
 
   SFLAGS=
 
-  OBJS=$(O)/i_video.o $(O)/vid_vesa.o
+  MAINOBJ := $(O)/win_main.o
+  OBJS=$(O)/win_sys.o $(O)/win_vid.o $(O)/win_snd.o \
+    $(O)/win_net.o $(O)/win_cd.o $(O)/filesrch.o
 
 # name of the exefile
   EXENAME=legacy.exe
@@ -316,6 +341,7 @@ ifeq ($(SMIF), WIN32_NATIVE)
 #=================================
 else
 ifeq ($(SMIF), DJGPPDOS_NATIVE)
+  # Requires allegro libs, bcd libs (cd-music)
   RM=del
   INTERFACE=djgppdos
   NASMFORMAT=coff
@@ -327,11 +353,18 @@ ifeq ($(SMIF), DJGPPDOS_NATIVE)
   OPTS=-DPC_DOS -g
 
   DEBUGLIBS=-lalleg -lbcd -lsocket
-  LIBS=-lalleg -lbcd -lsocket
+  LIBS=-lalleg -lsocket
+  ifdef CDMUS
+     LIBS+=-lbcd
+  endif
 
   SFLAGS=
 
-  OBJS=$(O)/i_video.o $(O)/vid_vesa.o
+  MAINOBJ := $(O)/i_main.o
+  CDMUSOBJ := $(O)/i_cdmus.o
+  OBJS=$(O)/i_system.o $(O)/i_video.o $(O)/vid_vesa.o \
+    $(O)/i_sound.o $(O)/i_net.o \
+    $(O)/filesrch.o
 
 # name of the exefile
   EXENAME=legacy.exe
@@ -352,6 +385,11 @@ ifdef USEASM
    OPTS:= $(OPTS) -DUSEASM
 endif
 
+# CD-Music
+ifdef CDMUS
+   OBJS += $(CDMUSOBJ)
+   OPTS += -DCDMUS
+endif
 
 # compiler and linker flags
 CFLAGS = $(WFLAGS)
@@ -386,14 +424,14 @@ endif
 
 
 # not too sophisticated dependency
+# objs that are in main directories, INTERFACE specific obj files are in
+# listed in the interface #if above
 OBJS :=  $(OBJS) \
-		$(O)/dstrings.o  \
-		$(i_cdmus_o)	 \
-		$(O)/i_net.o	 \
-		$(O)/i_tcp.o	 \
-		$(O)/i_system.o  \
-		$(O)/i_sound.o	 \
-		$(O)/tables.o	 \
+	$(O)/i_tcp.o	\
+	$(O)/sounds.o  $(O)/qmus2mid.o  $(O)/s_sound.o  $(O)/s_amb.o	 \
+	$(O)/v_video.o  $(O)/screen.o	\
+	$(O)/z_zone.o	\
+	$(O)/dstrings.o  $(O)/tables.o  $(O)/info.o	\
 		$(O)/f_finale.o  \
 		$(O)/f_wipe.o	 \
 		$(O)/d_main.o	 \
@@ -440,19 +478,12 @@ OBJS :=  $(OBJS) \
 		$(O)/r_things.o  \
 		$(O)/w_wad.o	 \
 		$(O)/wi_stuff.o  \
-		$(O)/v_video.o	 \
 		$(O)/st_lib.o	 \
 		$(O)/st_stuff.o  \
 		$(O)/hu_stuff.o  \
-		$(O)/s_sound.o	 \
-		$(O)/z_zone.o	 \
-		$(O)/info.o	 \
-		$(O)/sounds.o	 \
 		$(O)/p_fab.o	 \
 		$(O)/dehacked.o  \
-		$(O)/qmus2mid.o  \
 		$(O)/g_input.o	 \
-		$(O)/screen.o	 \
 		$(O)/console.o	 \
 		$(O)/command.o	 \
 		$(O)/d_netcmd.o  \
@@ -470,12 +501,10 @@ OBJS :=  $(OBJS) \
 		$(O)/d_netfil.o  \
 		$(O)/mserv.o	 \
 		$(O)/p_hsight.o  \
-		$(O)/s_amb.o	 \
 		$(O)/sb_bar.o	 \
 		$(O)/p_heretic.o \
 		$(O)/md5.o	 \
 		$(O)/p_chex.o	 \
-		$(O)/filesrch.o	\
 		$(O)/b_game.o	\
 		$(O)/b_look.o	\
 		$(O)/b_node.o	\
@@ -553,10 +582,10 @@ asm: $(BIN)/$(EXENAME)
 
 
 # executable
-$(BIN)/$(EXENAME): $(O) $(OBJS) $(O)/i_main.o versionstring
+$(BIN)/$(EXENAME): $(O) $(OBJS) $(MAINOBJ) versionstring
 #	 @mkdir $(BIN)
 	@echo Linking...
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(MAINOBJ) \
 	-o $(BIN)/$(EXENAME) $(LIBS)
 
 
