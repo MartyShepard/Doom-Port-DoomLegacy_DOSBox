@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 927 2012-06-09 18:32:42Z wesleyjohnson $
+// $Id: r_segs.c 965 2012-11-10 21:46:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1449,6 +1449,8 @@ void R_RenderSegLoop (void)
         rw_stopx = rdraw_viewwidth;
     }
 #endif   
+    if (fixedcolormap)
+        dc_colormap = fixedcolormap;
      
     for ( ; rw_x < rw_stopx ; rw_x++)
     {

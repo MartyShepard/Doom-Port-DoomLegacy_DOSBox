@@ -2680,7 +2680,7 @@ patchfile = w84_whatsnew.patch
 Update whatsnew doc to current patch level.
 
 *** w85_colormap_gen
-patchfile = w85_colormap_gen.patch
+patchfile = w85_1_colormap_gen.patch
 - committed revision 960   by wesley johnson
 Tune the legacy linedef colormap generate.
 The wad alpha of 'a' to 'z' is now converted to 0..255 internally,
@@ -2689,7 +2689,7 @@ Fixed the drab color of hardware-render at high alpha caused by wrong
 alpha conversion calc.
 
 *** w85_mouse
-patchfile = w85_mouse.patch
+patchfile = w85_2_mouse.patch
 - committed revision 961   by wesley johnson
 Rewrite of mouse handling, providing relative mouse motion like many other
 ports use for SDL, and fixing the WarpMouse code in the absolute mouse motion
@@ -2703,7 +2703,7 @@ later mouse motion events in a frame overwrote previous motion.  Mouse events
 are now added (like Legacy2 and other ports examined).
 
 *** w85_opengl_mode
-patchfile = w85_opengl_mode.patch
+patchfile = w85_3_opengl_mode.patch
 - committed revision 962   by wesley johnson
 SDL OpenGL is not switching video modes at all.
 In my previous sdl rework, I forgot opengl video mode switch.
@@ -2711,17 +2711,23 @@ This fixes opengl video mode switch similarily to the others, and it now
 switches video modes.
 
 *** w85_statusbar_overlay
-patchfile = w85_statusbar_overlay.patch
+patchfile = w85_4_statusbar_overlay.patch
 - committed revision 963   by wesley johnson
 The statusbar and overlay were not positioned correctly in OpenGL.
 The statusbar is now consistent for all video modes.
 This fixes the overlay to use fdupy instead of dupy.
 
 *** w85_secnode_freed
-patchfile = w85_secnode_freed.patch
+patchfile = w85_5_secnode_freed.patch
 - committed revision 964   by wesley johnson
 A previous patch in w79, sped up P_CheckSector, but made it vulnerable
 to a second thing being removed by the player on a moving lift,
 resulting segfault.  Removed the vulnerable nxt_ns ptr.
 Instead, when test determines that secnode was freed then resort to
 previous behavior of restarting from beginning of touching_thinglist.
+
+*** w85_fixedcolormap
+patchfile = w85_6_fixedcolormap.patch
+- committed revision 965   by wesley johnson
+Fix bug introduced by BOOM_COLORMAP, which segfaults when restoring
+game saved during use of fixed_colormap.
