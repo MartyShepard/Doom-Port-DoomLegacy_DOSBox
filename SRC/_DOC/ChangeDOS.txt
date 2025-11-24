@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01001 ]: w89 savegame buffer size
 [01000 ]: w89 texture offset patch
 [00999*]: w88 blockfill alpha4
 [00998 ]: w88 alpha4 VERSIONSTRING

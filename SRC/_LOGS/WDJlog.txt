@@ -3007,3 +3007,12 @@ texture.  This detects these and uses the multiple patch combine
 generation instead.  Large patches also are directed to multiple patch
 combine to avoid multiple large copies of the same patch.
 
+*** w89_savegame_buffer_size
+patchfile = w89_2_save_size.patch
+- committed revision 1001   by wesley johnson
+Second fix for bug_3442118, where Hell Ground wad (hg.wad) map04
+could still overrun the savegame buffer.
+Increase savegame min free buffer to 64K.
+Requires 12643 to write thinkers of hgh2.wad.  If was close to write
+trigger that would overrun the 4K free space.
+

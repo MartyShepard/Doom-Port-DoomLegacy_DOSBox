@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 981 2012-12-04 04:01:47Z wesleyjohnson $
+// $Id: p_saveg.c 1001 2013-03-22 19:53:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -149,12 +149,15 @@ boolean  save_game_abort = 0;
 #define SAVEBUF_SIZE    (128*1024)
 #define SAVEBUF_SIZEINC (128*1024)
 #define SAVEBUF_HEADERSIZE   (64 + (80*5) + 1024 + 256)
-#define SAVEBUF_FREE_TRIGGER  4096
+#define SAVEBUF_FREE_TRIGGER  (64*1024)
 // [WDJ] Uncomment the following to see how close to overrunning the buffer.
 //#define SAVEBUF_REPORT_MIN_FREE 1
 #ifdef SAVEBUF_REPORT_MIN_FREE
-// [WDJ] Smallest min_free seen so far is 1973 from Europe.wad.
+// [WDJ] Largest max_write, HGH2.wad, 12643 for Thinkers.
 int savebuf_min_free;
+int savebuf_max_write;
+byte  current_sync, max_write_sync;
+byte * savebuf_prev_write;
 #endif
 
 
@@ -194,6 +197,8 @@ byte *  P_Alloc_savebuffer( boolean large_size )
     extfile.bufcnt = 0;
 #ifdef SAVEBUF_REPORT_MIN_FREE
     savebuf_min_free = savebuffer_size;
+    savebuf_max_write = 0;
+    savebuf_prev_write = savebuffer;
 #endif
     return savebuffer;
 }
@@ -214,6 +219,11 @@ size_t  P_Savegame_length( void )
 #ifdef SAVEBUF_REPORT_MIN_FREE
     if( (savebuffer_size - length) < savebuf_min_free )
         savebuf_min_free = savebuffer_size - length;
+    if( (save_p - savebuf_prev_write) > savebuf_max_write )
+    {
+        savebuf_max_write = (save_p - savebuf_prev_write);
+        max_write_sync = current_sync;
+    }
 #endif
     return length;
 }
@@ -244,6 +254,11 @@ int  P_Savegame_Readfile( const char * filename )
 int  P_Savegame_Closefile( boolean writeflag )
 {
     int errflag = 0;
+#ifdef SAVEBUF_REPORT_MIN_FREE
+    fprintf( stderr, "Report savebuffer min free: %i, buffer used: %i\n", savebuf_min_free, (savebuffer_size-savebuf_min_free));
+    if( writeflag )
+        fprintf( stderr, "                 max write: %i, sync=%i\n", savebuf_max_write, max_write_sync);
+#endif
     if( savebuffer )
     {
         size_t length = P_Savegame_length();
@@ -256,9 +271,6 @@ int  P_Savegame_Closefile( boolean writeflag )
         FIL_ExtFile_Close( &extfile );
         free(savebuffer);
         savebuffer = NULL;
-#ifdef SAVEBUF_REPORT_MIN_FREE
-        fprintf( stderr, "Report savebuffer min free: %i, buffer used: %i\n", savebuf_min_free, (savebuffer_size-savebuf_min_free));
-#endif
     }
     savefile = NULL;
     if( save_game_abort )
@@ -282,6 +294,9 @@ void  P_Savegame_Error_Closefile( void )
 void SG_Writebuf( void )
 {
     size_t length = P_Savegame_length();
+#ifdef SAVEBUF_REPORT_MIN_FREE
+    savebuf_prev_write = save_p;
+#endif
     // do nothing until within trigger of overflow
     if( (length + SAVEBUF_FREE_TRIGGER) < savebuffer_size )
         goto done;
@@ -387,6 +402,9 @@ typedef enum {
 
 void SG_SaveSync( save_game_section_e sgs )
 {
+#ifdef SAVEBUF_REPORT_MIN_FREE
+    current_sync = sgs;
+#endif
     WRITEBYTE( save_p, SYNC_sync );	// validity check
     WRITEBYTE( save_p, sgs );	// section id
     SG_Writebuf();
