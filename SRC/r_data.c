@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1000 2013-03-22 19:50:29Z wesleyjohnson $
+// $Id: r_data.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -119,8 +119,6 @@
 //      generation of lookups, caching, retrieval by name.
 //
 //-----------------------------------------------------------------------------
-
-#include <malloc.h>
 
 #include "doomdef.h"
 #include "g_game.h"

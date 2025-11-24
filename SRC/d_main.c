@@ -346,7 +346,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1009"
+#define SVN_REV "1014"
 #endif
 
 // Version number: major.minor.revision
@@ -2475,7 +2475,7 @@ void Help( void )
 	"-width num      Video mode width\n"
 	"-height num     Video mode height\n"
 	"-highcolor      Request 15bpp or 16bpp\n"
-	"-truecolor      Request 24bpp ro 32bpp\n"
+	"-truecolor      Request 24bpp or 32bpp\n"
 	"-native         Video mode in native bpp\n"
 	"-bpp num        Video mode in (8,15,16,24,32) bpp\n"
 	"-nocheckwadversion   Ignore legacy.wad version\n"

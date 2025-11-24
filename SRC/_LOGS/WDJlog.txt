@@ -3091,3 +3091,58 @@ Fix bug in Boom deepwater colormap support.
 Would use bogus colormap at [-1] instead of using no colormap.
 Bug would only show in opengl because opengl uses the rgba field instead
 of the colormap table field, which was NULL.
+
+*** w89_term_transform
+patchfile = w89_11_term_transform.patch
+- committed revision 1010   by wesley johnson
+Make hardware render TERM_TRANSFORM the permanent choice, removing
+the conditional compilation.  Removed the dead code that this creates.
+Rename some functions.
+Fix some spelling.
+
+*** w89_corona
+patchfile = w89_12_corona.patch
+- committed revision 1011   by wesley johnson
+Cleaned the hardware render corona code.
+Revised the original corona draw, because it works better with sorted draw.
+Created compilation options, and a menu choice.
+Corona choices are
+  OFF
+  SPRITE (drawn with the sprite)
+  DYN (drawn from dynamic lights)
+  AUTO (decided by draw modes)
+The SPRITE draw works the best with transparent walls, as it draws the
+corona at the time the sprite is drawn.  This works well with sorted draw.
+The DYN corona draw (dynamic lights) does not draw corona behind
+translucent walls.
+The dynamic lights must remain active because it provides the wall
+lighting from things.
+
+*** w89_draw_sorted
+patchfile = w89_13_draw_sorted.patch
+- committed revision 1012   by wesley johnson
+Hardware drawn sprites would be occluded by transparent walls behind them.
+A fixed draw order did not work.
+Created hardware draw function that draws sprites and walls together
+in depth order.
+Draw Menu choices
+  EARLY  (draw before sprites, oldest code)
+  LATE   (draw after sprites, previous code)
+  SORTED (draw sorted with sprites)
+The EARLY draw works for transparent, but not translucent.
+The LATE draw has distant transparent walls drawn over nearby sprites.
+The SORTED draw has sprites drawn correctly for transparent and
+translucent walls.
+Later this menu item may be removed, with only draw sorted remaining.
+
+*** w90_Makefile
+patchfile = w90_1_makefile.patch
+- committed revision 1013   by wesley johnson
+Fix debug libs with CDMUS conditional.
+Remove old dependencies.
+
+*** w90_malloc
+patchfile = w90_2_malloc.patch
+- committed revision 1014   by wesley johnson
+Remove old references to malloc.h, except for WATCOM.
+Fixes bug 0000602, compiling under FreeBSD.

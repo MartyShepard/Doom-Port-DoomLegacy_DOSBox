@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[01014 ]: w90 malloc.h removal
+[01013*]: w90 makefile CDMUS
+[01012*]: w89 hardware draw sorted
+[01011*]: w89 corona
+[01010*]: w89 term transform
 [01009 ]: w89 boom colormap
 [01008 ]: w89 free sfx sound
 [01007 ]: w89 softerror warn

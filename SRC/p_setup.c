@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1008 2013-04-26 01:50:52Z wesleyjohnson $
+// $Id: p_setup.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -177,8 +177,6 @@
 //             set up initial state and misc. LUTs.
 //
 //-----------------------------------------------------------------------------
-
-#include <malloc.h>
 
 #include "doomdef.h"
 #include "d_main.h"

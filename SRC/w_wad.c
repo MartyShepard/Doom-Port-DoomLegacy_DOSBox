@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 974 2012-11-10 22:24:25Z wesleyjohnson $
+// $Id: w_wad.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -128,19 +128,21 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <malloc.h>
 #include <fcntl.h>
+  // open
 #include <unistd.h>
+  // close, read, lseek
 
 #include "doomdef.h"
 #include "doomtype.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "i_video.h"        //rendermode
+#include "i_video.h"
+  // rendermode
 #include "d_netfil.h"
 #include "dehacked.h"
+  // DEH_LoadDehackedLump
 #include "r_defs.h"
 #include "i_system.h"
 
