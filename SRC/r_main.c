@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: r_main.c 988 2012-12-04 04:25:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -247,7 +247,9 @@ int                     num_extra_colormaps;
 extracolormap_t         extra_colormaps[MAXCOLORMAPS];
 
 // bumped light from gun blasts
-int                     extralight;
+unsigned int    extralight;	 // extralight seen by most draws
+unsigned int    extralight_fog;  // partial extralight used by FF_FOG
+unsigned int    extralight_cm;   // partial extralight used by colormap->fog
 
 consvar_t cv_chasecam       = {"chasecam","0",0,CV_OnOff};
 consvar_t cv_allowmlook     = {"allowmlook","1",CV_NETVAR,CV_YesNo};
@@ -1163,6 +1165,8 @@ void R_SetupFrame (player_t* player)
 
     viewplayer = player;
     extralight = player->extralight;
+    extralight_fog = extralight >> 1;  // 1/2 for FF_FOG
+    extralight_cm = extralight - (extralight>>2);  // 3/4 for colormap->fog
 
     // Chase camera setting must be maintained even with script camera running
     if (cv_chasecam.value)
@@ -1242,7 +1246,7 @@ void R_SetupFrame (player_t* player)
     }
 
 #ifdef PARANOIA
-     if (!viewmobj)
+    if (!viewmobj)
          I_Error("R_Setupframe : viewmobj null (player %d)",player-players);
 #endif
     viewx = viewmobj->x;

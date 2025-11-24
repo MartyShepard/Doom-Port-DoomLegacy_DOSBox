@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: r_segs.c 988 2012-12-04 04:25:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -719,15 +719,14 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         rlight->extra_colormap = ff_light->extra_colormap;
         rlight->flags = ff_light->flags;
 
-        if(rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
-          vlight = rlight->lightlevel;
+        if(rlight->flags & FF_FOG)
+          vlight = rlight->lightlevel + extralight_fog;
+	else if(rlight->extra_colormap && rlight->extra_colormap->fog)
+          vlight = rlight->lightlevel + extralight_cm;
         else if(colfunc == transcolfunc)
-          vlight = 255;
+          vlight = 255 + orient_light;
         else
-          vlight = rlight->lightlevel + extralight;
-
-        if (! (rlight->extra_colormap && rlight->extra_colormap->fog) )
-	  vlight += orient_light;
+          vlight = rlight->lightlevel + extralight + orient_light;
 
         rlight->vlight =
 	    (vlight < 0) ? 0
@@ -738,23 +737,14 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     else
     {
       // frontsector->numlights == 0
-      if(colfunc == transcolfunc)
-      {
-        if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
-          vlight = frontsector->lightlevel;
-        else
-          vlight = 255;
-      }
-      else if(colfunc == fogcolfunc) // Legacy Fog sheet
-        vlight = frontsector->lightlevel;
+      if(colfunc == fogcolfunc) // Legacy Fog sheet
+        vlight = frontsector->lightlevel + extralight_fog;
+      else if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
+	vlight = frontsector->lightlevel + extralight_cm;
+      else if(colfunc == transcolfunc)  // Translucent 
+        vlight = 255 + orient_light;
       else
-        vlight = frontsector->lightlevel + extralight;
-
-      if((colfunc == fogcolfunc) // Legacy Fog sheet
-	  || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
-	 ;
-      else
-	  vlight += orient_light;
+        vlight = frontsector->lightlevel + extralight + orient_light;
 
       walllights =
 	  (vlight < 0) ? scalelight[0]
@@ -1028,16 +1018,13 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
           continue; // next ff_light
 
         if(ffloor->flags & FF_FOG)
-          vlight = ffloor->master->frontsector->lightlevel;
-        else if(rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
-          vlight = rlight->lightlevel;
+          vlight = ffloor->master->frontsector->lightlevel + extralight_fog;
+        else if(rlight->flags & FF_FOG)
+          vlight = rlight->lightlevel + extralight_fog;
+	else if(rlight->extra_colormap && rlight->extra_colormap->fog)
+          vlight = rlight->lightlevel + extralight_cm;
         else
-          vlight = rlight->lightlevel + extralight;
-
-        if(ffloor->flags & FF_FOG || rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
-	   ;
-        else
-          vlight += orient_light;
+          vlight = rlight->lightlevel + extralight + orient_light;
 
         rlight->vlight =
 	     (vlight < 0) ? 0
@@ -1051,24 +1038,19 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     else
     {
       //SoM: Get correct light level!
-      if((frontsector->extra_colormap && frontsector->extra_colormap->fog))
-        vlight = frontsector->lightlevel;
-      else if(ffloor->flags & FF_FOG)
-        vlight = ffloor->master->frontsector->lightlevel;
+      if(ffloor->flags & FF_FOG)
+        vlight = ffloor->master->frontsector->lightlevel + extralight_fog;
+      else if(frontsector->extra_colormap && frontsector->extra_colormap->fog)
+        vlight = frontsector->lightlevel + extralight_cm;
       else if(colfunc == transcolfunc)
-        vlight = 255;
+        vlight = 255 + orient_light;
       else
       {
 	sector_t * lightsec = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false);
-	vlight = lightsec->lightlevel + extralight;
+	vlight = lightsec->lightlevel + extralight + orient_light;
 //        vlight = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
 //                    ->lightlevel + extralight;
       }
-
-      if (ffloor->flags & FF_FOG || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
-	 ;
-      else
-          vlight += orient_light;
 
       walllights =
 	   (vlight < 0) ? scalelight[0]
@@ -1187,7 +1169,8 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 		  rlight->rcolormap = & view_colormap[ lightindex ];
 		}
 		else
-#if 1
+		// fake floor without colormap overrides sector colormap ??
+#if 0
 		// [WDJ] To not have FF_FOG totally block ffloor colormap.
 		// Not sure which is correct, but is more consistent with other code.
                 if( (ffloor->flags & FF_FOG)
@@ -1207,6 +1190,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 #else
 		if(ffloor->flags & FF_FOG)
                 {
+		  // fog model sector has precedence, even if it does not have an extra_colormap
 		  if(ffloor->master->frontsector->extra_colormap)
 		  {
 		    // reverse indexing, and change to extra_colormap
@@ -1528,17 +1512,15 @@ void R_RenderSegLoop (void)
               rlight->rcolormap = fixedcolormap;
 	    else
 	    {
-              if((frontsector->lightlist[i].caster
+              if( frontsector->lightlist[i].caster
 		  && frontsector->lightlist[i].caster->flags & FF_FOG
-		  && frontsector->lightlist[i].height != *frontsector->lightlist[i].caster->bottomheight)
-		 || (dc_lightlist[i].extra_colormap && dc_lightlist[i].extra_colormap->fog))
-                vlight = rlight->lightlevel;
+		  && (frontsector->lightlist[i].height != *frontsector->lightlist[i].caster->bottomheight))
+                vlight = rlight->lightlevel + extralight_fog;
+	      else if(dc_lightlist[i].extra_colormap && dc_lightlist[i].extra_colormap->fog)
+                vlight = rlight->lightlevel + extralight_cm;
               else
-                vlight = rlight->lightlevel + extralight;
+                vlight = rlight->lightlevel + extralight + orient_light;
    
-              if ( ! (rlight->extra_colormap) )
-                vlight += orient_light;
-
 	      lighttable_t** xwalllights =  // local selection of light table
 		  (vlight < 0) ? scalelight[0]
 		: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
@@ -2098,7 +2080,8 @@ void R_StoreWallRange( int   start, int   stop)
         rw_bottomtexturemid += sidedef->rowoffset;
 
         // allocate space for masked texture tables
-        if (frontsector && backsector && frontsector->tag != backsector->tag && (backsector->ffloors || frontsector->ffloors))
+        if (frontsector && backsector && frontsector->tag != backsector->tag
+	    && (backsector->ffloors || frontsector->ffloors))
         {
           fixed_t   lowcut, highcut;
 

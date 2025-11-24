@@ -2921,3 +2921,12 @@ Syntax  #xxxF, xxx is the alpha (0..255) and F is the effect.
 'G': FW_fogsheet, outside, overall fog sheet, sector join fog sheet
 'H': FW_fogfluid, outside, inside fluid, fogsheet
 This only handles the linedefs, the code that draws these is in later patches.
+
+*** w88_extralight
+patchfile = w88_3_extralight.patch
+- committed revision 988   by wesley johnson
+Simplify the addition of extralight and orient light, removing many tests,
+by precalculating the extralight for different situations.
+Create extralight_cm (3/4 of extralight) for colormap fog,
+and extralight_fog (1/2 of extralight) for FF_FOG.
+Light precedence is now  FF_FOG, colormap fog, translucent, normal.

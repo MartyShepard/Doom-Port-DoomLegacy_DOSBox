@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: r_main.h 988 2012-12-04 04:25:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -115,7 +115,9 @@ extern lighttable_t*    scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern lighttable_t*    scalelightfixed[MAXLIGHTSCALE];
 extern lighttable_t*    zlight[LIGHTLEVELS][MAXLIGHTZ];
 
-extern int              extralight;
+extern unsigned int     extralight;	 // extralight seen by most draws
+extern unsigned int     extralight_fog;  // partial extralight used by FF_FOG
+extern unsigned int     extralight_cm;   // partial extralight used by colormap->fog
 extern lighttable_t*    fixedcolormap;
 
 // [WDJ] viewer setup as used by R_RenderBSPNode, R_FakeFlat, R_ProjectSprite

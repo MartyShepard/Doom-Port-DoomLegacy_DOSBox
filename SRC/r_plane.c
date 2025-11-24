@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_plane.c 988 2012-12-04 04:25:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -759,10 +759,11 @@ void R_DrawPlanes (void)
 
 void R_DrawSinglePlane(visplane_t* pl)
 {
-  int    x;
-  int    stop;
-  int    angle;
-  int    vlight = 0;  // visible light 0..255
+  int  x;
+  int  stop;
+  int  angle;
+  int  addlight = (pl->extra_colormap && pl->extra_colormap->fog) ? extralight_cm : extralight;
+  int  vlight = pl->lightlevel;  // visible light 0..255
 
   if (pl->minx > pl->maxx)
     return;
@@ -770,37 +771,32 @@ void R_DrawSinglePlane(visplane_t* pl)
   spanfunc = basespanfunc;
   if(pl->ffloor)
   {
-    if(pl->ffloor->flags & FF_TRANSLUCENT)
+    ffloor_t * ffp = pl->ffloor;
+    if(ffp->flags & (FF_TRANSLUCENT|FF_FOG))
     {
-      spanfunc = transspanfunc; // R_DrawTranslucentSpan_8 16 ..
-
       // Hacked up support for alpha value in software mode SSNTails 09-24-2002
       // [WDJ] 11-2012
-      dr_alpha = pl->ffloor->alpha;
+      dr_alpha = ffp->alpha;
+//      dr_alpha = fweff[ffp->fw_effect].alpha;
       ds_translucentmap = & translucenttables[ translucent_alpha_table[dr_alpha >> 4] ];
 
-      if(pl->extra_colormap && pl->extra_colormap->fog)
-        vlight = pl->lightlevel;
+      if((ffp->flags & FF_FOG) && !(ffp->flags & FF_FLUID))
+      {
+	  spanfunc = fogspanfunc; // R_DrawFogSpan_8 16 ..
+	  addlight = extralight_fog;
+      }
       else
-        vlight = 255;
+      {
+	  spanfunc = transspanfunc; // R_DrawTranslucentSpan_8 16 ..
+	  if( ! (pl->extra_colormap && pl->extra_colormap->fog))
+	  {
+	     addlight = 0;
+	     vlight = 255;
+	  }
+      }
     }
-    else if(pl->ffloor->flags & FF_FOG)
-    {
-      spanfunc = fogspanfunc; // R_DrawFogSpan_8 16 ..
-      vlight = pl->lightlevel;
-    }
-    else if(pl->extra_colormap && pl->extra_colormap->fog)
-      vlight = pl->lightlevel;
-    else
-      vlight = pl->lightlevel + extralight;
   }
-  else
-  {
-    if(pl->extra_colormap && pl->extra_colormap->fog)
-      vlight = pl->lightlevel;
-    else
-      vlight = pl->lightlevel + extralight;
-  }
+  vlight += addlight;
 
   if(viewangle != pl->viewangle)
   {

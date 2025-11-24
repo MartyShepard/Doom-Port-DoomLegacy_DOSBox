@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_things.c 988 2012-12-04 04:25:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1002,16 +1002,18 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
   int		sz_cut;		// where lightheight cuts on screen
   fixed_t	lightheight;
   sector_t*     sector;
+  ff_lightlist_t* ff_light;
   vissprite_t*  newsprite;
 
   sector = sprite->sector;
 
   for(i = 1; i < sector->numlights; i++)	// from top to bottom
   {
-    lightheight = sector->lightlist[i].height;
+    ff_light = &frontsector->lightlist[i];
+    lightheight = ff_light->height;
      
     // must be a caster
-    if(lightheight >= sprite->gz_top || !(sector->lightlist[i].caster->flags & FF_CUTSPRITES))
+    if(lightheight >= sprite->gz_top || !(ff_light->caster->flags & FF_CUTSPRITES))
       continue;
     if(lightheight <= sprite->gz_bot)
       return;
@@ -1048,18 +1050,17 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
     }
 
     newsprite->cut |= SC_TOP;
-    if(!(sector->lightlist[i].caster->flags & FF_NOSHADE))
+    if(!(ff_light->caster->flags & FF_NOSHADE))
     {
-      int  vlight = *sector->lightlist[i].lightlevel;  // visible light 0..255
-      if(! (sector->lightlist[i].caster->flags & FF_FOG))
-          vlight += extralight;
+      int vlight = *ff_light->lightlevel  // visible light 0..255
+          + ((ff_light->caster->flags & FF_FOG)? extralight_fog : extralight);
 
       spritelights =
 	  (vlight < 0) ? scalelight[0]
 	: (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
 	: scalelight[vlight>>LIGHTSEGSHIFT];
 
-      newsprite->extra_colormap = sector->lightlist[i].extra_colormap;
+      newsprite->extra_colormap = ff_light->extra_colormap;
 
       if (thing->frame & FF_SMOKESHADE)
         ;
