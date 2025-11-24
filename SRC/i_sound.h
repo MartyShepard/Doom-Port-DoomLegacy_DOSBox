@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 813 2011-03-10 14:24:13Z smite-meister $
+// $Id: i_sound.h 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -60,7 +60,7 @@
 #include "command.h"
 
 
-void* I_GetSfx (sfxinfo_t*  sfx);
+void  I_GetSfx (sfxinfo_t*  sfx);  // read lump to sfx data, length
 void  I_FreeSfx (sfxinfo_t* sfx);
 
 

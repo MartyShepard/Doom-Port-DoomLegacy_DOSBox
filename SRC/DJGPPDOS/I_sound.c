@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 875 2011-11-01 00:13:44Z wesleyjohnson $
+// $Id: I_sound.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -121,21 +121,20 @@ SAMPLE *raw2SAMPLE(unsigned char *dsdata, int len)
 //  This function loads the sound data from the WAD lump,
 //  for single sound.
 //
-void* I_GetSfx (sfxinfo_t*  sfx)
+void I_GetSfx (sfxinfo_t*  sfx)
 {
-    byte*               dssfx;
-    int                 size;
+    byte * dssfx;
 
-    if (sfx->lumpnum<0)
-        sfx->lumpnum = S_GetSfxLumpNum (sfx);
+    S_GetSfxLump( sfx );  // lump to sfx
+    if( ! sfx->data ) return;
+    // fix the data and length for this mixer
 
-    size = W_LumpLength (sfx->lumpnum);
-
-    dssfx = (byte*) W_CacheLumpNum (sfx->lumpnum, PU_STATIC);
-    //_go32_dpmi_lock_data(dssfx,size);
+    dssfx = (byte*) sfx->data;
+    //_go32_dpmi_lock_data(dssfx, sfx->length);
 
     // convert raw data and header from Doom sfx to a SAMPLE for Allegro
-    return (void *)raw2SAMPLE (dssfx, size);
+    sfx->data = (void*) raw2SAMPLE (dssfx, sfx->length);
+    // data holds SAMPLE struct, and dssfx
 }
 
 
@@ -213,12 +212,9 @@ int I_StartSound ( int           id,
   return (id<<VOICESSHIFT)+voice;
 }
 
+// You need the handle returned by StartSound.
 void I_StopSound (int handle)
 {
-  // You need the handle returned by StartSound.
-  // Would be looping all channels,
-  //  tracking down the handle,
-  //  an setting the channel to zero.
   int voice=handle & (VIRTUAL_VOICES-1);
 
   if(nosoundfx)
@@ -228,6 +224,7 @@ void I_StopSound (int handle)
     deallocate_voice(voice);
 }
 
+// You need the handle returned by StartSound.
 int I_SoundIsPlaying(int handle)
 {
   if(nosoundfx)
@@ -280,15 +277,12 @@ static inline int absolute_freq(int freq, SAMPLE *spl)
       return (spl->freq * freq) / 1000;
 }
 
+// You need the handle returned by StartSound.
 void I_UpdateSoundParams( int   handle,
                           int   vol,
                           int   sep,
                           int   pitch)
 {
-  // I fail too see that this is used.
-  // Would be using the handle to identify
-  //  on which channel the sound might be active,
-  //  and resetting the channel parameters.
   int voice=handle & (VIRTUAL_VOICES-1);
   int numsfx=handle>>VOICESSHIFT;
 

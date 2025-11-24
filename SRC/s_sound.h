@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: s_sound.h 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -65,6 +65,7 @@
 #define __S_SOUND__
 
 #include "sounds.h"
+#include "command.h"
 
 // killough 4/25/98: mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND (0x8000)
@@ -121,32 +122,21 @@ void S_Init (int sfxVolume, int musicVolume);
 //  determines music if any, changes music.
 //
 void S_StopSounds();
-void S_Start(void);
+void S_StartSounds(void);
 
-//
-// basicaly a wgetnumforname with adding "ds" at the begin of string
-// return a lumpnum
-//
-int S_GetSfxLumpNum (sfxinfo_t* sfx);
+// [WDJ] Common routine for handling sfx names
+void S_GetSfxLump( sfxinfo_t * sfx );
+// [WDJ] Common routine to Free data for a sfx
+void S_FreeSfx( sfxinfo_t * sfx );
 
 //
 // Start sound for thing at <origin>
 //  using <sound_id> from sounds.h
 //
-void
-S_StartSound
-( void*         origin,
-  int           sound_id );
-
-
+void S_StartSound( void* origin, int sound_id );
 
 // Will start a sound at a given volume.
-void
-S_StartSoundAtVolume
-( void*         origin,
-  int           sound_id,
-  int           volume );
-
+void S_StartSoundAtVolume ( void* origin, int sound_id, int volume );
 
 // Stop sound for thing at <origin>
 void S_StopSound(void* origin);

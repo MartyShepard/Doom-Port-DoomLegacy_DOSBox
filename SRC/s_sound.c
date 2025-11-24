@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: s_sound.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2011 by DooM Legacy Team.
+// Copyright (C) 1998-2013 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -179,6 +179,10 @@ consvar_t sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
 #endif
 
+    // pause cd music
+#if defined( __DJGPP__ )	
+    #define I_PauseCD(void) I_StopCD(void);
+#endif
 
 // stereo reverse 1=true, 0=false
 consvar_t stereoreverse = { "stereoreverse", "0", CV_SAVE, CV_OnOff };
@@ -194,7 +198,7 @@ consvar_t cv_musicvolume = { "musicvolume", "15", CV_SAVE, soundvolume_cons_t };
 consvar_t cv_rndsoundpitch = { "rndsoundpitch", "Off", CV_SAVE, CV_OnOff };
 
 // number of channels available
-void SetChannelsNum(void);
+static void SetChannelsNum(void);
 consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_Unsigned, SetChannelsNum };
 
 #ifdef SURROUND
@@ -257,13 +261,14 @@ static boolean mus_paused;
 // music currently being played
 static musicinfo_t *mus_playing = NULL;
 
+// [WDJ] unused
+#ifdef CLEANUP
 static int nextcleanup;
+#endif
 
 //
 // Internals.
 //
-int S_getChannel(void *origin, sfxinfo_t * sfxinfo);
-
 int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, int *pitch);
 
 static void S_StopChannel(int cnum);
@@ -311,7 +316,7 @@ void S_RegisterSoundStuff(void)
 #endif
 }
 
-void SetChannelsNum(void)
+static void SetChannelsNum(void)
 {
     int i;
 
@@ -344,6 +349,94 @@ void S_InitRuntimeMusic()
         S_music[i].name = NULL;
 }
 
+
+// [WDJ] Common routine to handling sfx names and get the sound lump.
+// Much easier to maintain here.
+// Replace S_GetSfxLumpNum
+// Called by I_GetSfx
+void S_GetSfxLump( sfxinfo_t * sfx )
+{
+    char name[20] = "\0\0\0\0\0\0\0\0";  // do not leave this to chance [WDJ]
+    int sfxlump;
+
+    if (gamemode == heretic){	// [WDJ] heretic names are different
+       sprintf(name, "%s", sfx->name);
+    }else{
+       sprintf(name, "ds%s", sfx->name);
+    }
+
+    // Now, there is a severe problem with the sound handling,
+    // in it is not (yet/anymore) gamemode aware. That means, sounds from
+    // DOOM II will be requested even with DOOM shareware.
+    // The sound list is wired into sounds.c, which sets the external variable.
+    // I do not do runtime patches to that variable. Instead, we will use a
+    // default sound for replacement.
+
+    if (W_CheckNumForName(name) == -1)
+    {
+        if( verbose > 1 )
+	    fprintf(stderr,"Sound missing: %s, Using default sound\n",name);  // [WDJ] debug
+	// Heretic shareware: get many missing sound names at sound init,
+	// but not after game starts.  These come from list of sounds
+	// in sounds.c, but not all those are in the game.
+        if (gamemode == heretic)
+            sfxlump = W_GetNumForName("keyup");
+        else
+            sfxlump = W_GetNumForName("dspistol");
+    }
+    else
+    {
+        sfxlump = W_GetNumForName(name);
+    }
+    // if lump not found, W_GetNumForName would have done I_Error
+    sfx->lumpnum = sfxlump;
+
+    // Get the sound data from the WAD, allocate lump
+    //  in zone memory.
+    sfx->length = W_LumpLength(sfxlump);
+    sfx->data = (void *) W_CacheLumpNum(sfxlump, PU_SOUND);
+   
+    // caller must fix size and data ptr for the mixer
+}
+
+
+// [WDJ] Common routine to Get data for a sfx
+static void S_GetSfx( sfxinfo_t * sfx )
+{
+    if ( sfx->name )
+    {
+//        CONS_Printf ("cached sound %s\n", sfx->name);
+        if (sfx->link)
+        {
+	    // NOTE: linked sounds use the link data at StartSound time
+	    // Example is the chaingun sound linked to pistol.
+	    if( ! sfx->link->data )
+	        I_GetSfx( sfx->link );
+	    // Linked to previously loaded
+	    sfx->data = sfx->link->data;
+	    sfx->length = sfx->link->length;
+	}
+        else
+        {
+	    // Load data from WAD file.
+	    I_GetSfx( sfx );
+	}
+    }
+}
+
+// [WDJ] Common routine to Free data for a sfx
+void S_FreeSfx( sfxinfo_t * sfx )
+{
+    I_FreeSfx( sfx );  // some must free their own buffers
+
+    if( sfx->data )    // if not already free
+    {
+        Z_Free( sfx->data );
+        sfx->data = NULL;
+    }
+}
+
+
 //
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -368,7 +461,20 @@ void S_Init(int sfxVolume, int musicVolume)
 
     // Note that sounds have not been cached (yet).
     for (i = 1; i < NUMSFX; i++)
-        S_sfx[i].lumpnum = S_sfx[i].usefulness = -1;    // for I_GetSfx()
+    {
+        sfxinfo_t * sfx = & S_sfx[i];
+        sfx->lumpnum = sfx->usefulness = -1;    // for I_GetSfx()
+        sfx->data = NULL;
+        sfx->length = 0;
+#if 1
+        // [WDJ] Single Saw sound fix.
+        // SFX_saw marks some additional sounds that may need SFX_single.
+	// The need for these may be obsolete.
+        // Need to know the situation that required single saw sound.
+	if( sfx->flags & SFX_saw )
+	   sfx->flags |= SFX_single;
+#endif
+    }
 
     //
     //  precache sounds if requested by cmdline, or precachesound var true
@@ -376,14 +482,14 @@ void S_Init(int sfxVolume, int musicVolume)
     if (!nosoundfx && (M_CheckParm("-precachesound") || precachesound.value))
     {
         // Initialize external data (all sounds) at start, keep static.
-        CONS_Printf("Loading sounds... ");
+//        CONS_Printf("Loading sounds... ");
+        CONS_Printf("Caching sound data (%d sfx)... ", NUMSFX);
 
         for (i = 1; i < NUMSFX; i++)
         {
             // NOTE: linked sounds use the link's data at StartSound time
             if (S_sfx[i].name && !S_sfx[i].link)
-                S_sfx[i].data = I_GetSfx(&S_sfx[i]);
-
+	        S_GetSfx( & S_sfx[i] );
         }
 
         CONS_Printf(" pre-cached all sound data\n");
@@ -392,36 +498,6 @@ void S_Init(int sfxVolume, int musicVolume)
     S_InitRuntimeMusic();
 }
 
-//  Retrieve the lump number of sfx
-//
-int S_GetSfxLumpNum(sfxinfo_t * sfx)
-{
-    char namebuf[9];
-    int sfxlump;
-
-    if (gamemode == heretic)
-        strncpy(namebuf, sfx->name, 9);
-    else
-        sprintf(namebuf, "ds%s", sfx->name);
-
-    sfxlump = W_CheckNumForName(namebuf);
-    if (sfxlump > 0)
-        return sfxlump;
-
-    if (gamemode != heretic)
-        strncpy(namebuf, sfx->name, 9);
-    else
-        sprintf(namebuf, "ds%s", sfx->name);
-
-    sfxlump = W_CheckNumForName(namebuf);
-    if (sfxlump > 0)
-        return sfxlump;
-
-    if (gamemode == heretic)
-        return W_GetNumForName("keyup");
-    else
-        return W_GetNumForName("dspistol");
-}
 
 //
 // Per level startup code.
@@ -445,11 +521,12 @@ void S_StopSounds()
     // kill all playing sounds at start of level
     //  (trust me - a good idea)
     for (cnum = 0; cnum < cv_numChannels.value; cnum++)
-        if (channels[cnum].sfxinfo)
-            S_StopChannel(cnum);
+    {
+        S_StopChannel(cnum);  // has all tests needed
+    }
 }
 
-void S_Start(void)
+void S_StartSounds(void)
 {
     int mnum;
 
@@ -462,7 +539,7 @@ void S_Start(void)
         mnum = mus_he1m1 + (gameepisode - 1) * 9 + gamemap - 1;
     else
     {
-        int spmus[] = {
+        const int spmus[] = {
             // Song - Who? - Where?
 
             mus_e3m4,   // American     e4m1
@@ -491,12 +568,80 @@ void S_Start(void)
     else
         S_ChangeMusic(mnum, true);
 
+#ifdef CLEANUP
     nextcleanup = 15;
+#endif
 }
+
+
+//
+// S_getChannel :
+//   Kill origin sounds, dependent upon sfx flags.
+//   Reuse the channel, or find another channel.
+//   Return channel number, if none available, return -1.
+//
+static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
+{
+    // [WDJ] Like PrBoom, separate channel for player tagged sfx
+    uint32_t kill_flags = (sfxinfo->flags & (SFX_player|SFX_saw)) | SFX_org_kill;
+    int16_t priority = -1;  // higher is lower priority
+    int pick_cnum = -1;
+    int cnum;  // channel number to use
+    channel_t * c;
+
+    // Find an open channel
+    // Stop previous origin sound, so do not break from loop
+    // Done in one loop for efficiency
+    for (cnum = cv_numChannels.value-1; cnum >= 0 ; cnum--)
+    {
+        c = & channels[cnum];
+        if (! c->sfxinfo)   // empty
+        {
+            pick_cnum = cnum;
+	    priority = 0x3FFF;  // lowest priority
+	    continue;
+	}
+        // stop previous origin sound
+        if (origin && c->origin == origin)
+        {
+	    // reuse channel with same origin, flags, when SFX_org_kill
+	    if((c->sfxinfo->flags & (SFX_player|SFX_saw|SFX_org_kill)) == kill_flags )
+	        goto reuse_cnum;
+	}
+        // find lowest priority ( 256 is lowest )
+        if (c->sfxinfo->priority > priority)
+        {
+	    pick_cnum = cnum;
+	    priority = c->sfxinfo->priority;
+	}
+    }
+
+    cnum = pick_cnum;
+    if( pick_cnum >= 0 )
+    {
+        if( priority > 1024 )  // found empty
+	    goto use_cnum;
+        if( sfxinfo->priority <= priority )  // can replace this sound
+	    goto reuse_cnum;
+    }
+    // No lower priority.  Sorry, Charlie.
+    return -1;
+
+ reuse_cnum:
+    S_StopChannel(cnum);
+ use_cnum:   
+    c = &channels[cnum];
+
+    // channel is decided to be cnum.
+    c->sfxinfo = sfxinfo;
+    c->origin = origin;
+
+    return cnum;
+}
+
 
 void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 {
-
     int sep = 0;  // compiler
     int pitch;
     int priority;
@@ -506,13 +651,13 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     mobj_t *origin = (mobj_t *) origin_p;
 
     if (nosoundfx || (origin && origin->type == MT_SPIRIT))
-        return;
+        goto done;
 
 #ifdef HW3SOUND
     if (hws_mode != HWS_DEFAULT_MODE)
     {
         HW3S_StartSound(origin, sfx_id);
-        return;
+        goto done;
     };
 #endif
 
@@ -526,12 +671,15 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 #ifdef PARANOIA
     // check for bogus sound #
     if (sfx_id < 1 || sfx_id > NUMSFX)
-        I_Error("Bad sfx #: %d\n", sfx_id);
+    {
+        I_SoftError("Bad sfx #: %d\n", sfx_id);
+        goto done;
+    }
 #endif
 
     sfx = &S_sfx[sfx_id];
 
-    if (sfx->skinsound != -1 && origin && origin->skin)
+    if ((sfx->skinsound >= 0) && origin && origin->skin)
     {
         // it redirect player sound to the sound in the skin table
         sfx_id = ((skin_t *) origin->skin)->soundsid[sfx->skinsound];
@@ -546,11 +694,15 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
         volume += sfx->volume;
 
         if (volume < 1)
-            return;
+            goto done;
 
         // added 2-2-98 SfxVolume is now the hardware volume, don't mix up
         //    if (volume > SfxVolume)
         //      volume = SfxVolume;
+
+        // update reference from link, it may have been purged
+        sfx->data = sfx->link->data;
+        sfx->length = sfx->link->length;
     }
     else
     {
@@ -576,23 +728,25 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
             if (!rc2)
             {
                 if (!rc)
-                    return;
+                    goto done;
             }
             else if (!rc || (rc && volume2 > volume))
             {
                 volume = volume2;
                 sep = sep2;
                 pitch = pitch2;
-                if (origin->x == displayplayer2_ptr->mo->x && origin->y == displayplayer2_ptr->mo->y)
+                if (origin->x == displayplayer2_ptr->mo->x
+		    && origin->y == displayplayer2_ptr->mo->y)
                 {
                     sep = NORM_SEP;
                 }
             }
         }
         else if (!rc)
-            return;
+	    goto done;
 
-        if (origin->x == displayplayer_ptr->mo->x && origin->y == displayplayer_ptr->mo->y)
+        if (origin->x == displayplayer_ptr->mo->x
+	    && origin->y == displayplayer_ptr->mo->y)
         {
             sep = NORM_SEP;
         }
@@ -612,15 +766,18 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     //Sound pitching for both Doom and Heretic
     if (cv_rndsoundpitch.value)
     {
-        if (gamemode != heretic)
+        if (gamemode == heretic)
+        {
+            pitch = 128 + (M_Random() & 7);
+	    pitch -= (M_Random() & 7);
+	}
+        else
         {
             if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit)
                 pitch += 8 - (M_Random() & 15);
             else if (sfx_id != sfx_itemup && sfx_id != sfx_tink)
                 pitch += 16 - (M_Random() & 31);
         }
-        else
-            pitch = 128 + (M_Random() & 7) - (M_Random() & 7);
     }
 
     if (pitch < 0)
@@ -628,41 +785,27 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     if (pitch > 255)
         pitch = 255;
 
-    // kill old sound
-    S_StopSound(origin);
-
-    // try to find a channel
+    // Kill origin sound, reuse channel, or find a channel
+    // Dependent upon sfx flags
     cnum = S_getChannel(origin, sfx);
-
     if (cnum < 0)
-        return;
-
-    //
-    // This is supposed to handle the loading/caching.
-    // For some odd reason, the caching is done nearly
-    //  each time the sound is needed?
-    //
+        goto done;
 
     // cache data if necessary
     // NOTE : set sfx->data NULL sfx->lump -1 to force a reload
-    if (sfx->link)
-        sfx->data = sfx->link->data;
-
     if (!sfx->data)
-    {
-        //CONS_Printf ("cached sound %s\n", sfx->name);
-        if (!sfx->link)
-            sfx->data = I_GetSfx(sfx);
-        else
-        {
-            sfx->data = I_GetSfx(sfx->link);
-            sfx->link->data = sfx->data;
-        }
-    }
-
+        S_GetSfx( sfx );
+   
+#ifdef CLEANUP
     // increase the usefulness
     if (sfx->usefulness++ < 0)
         sfx->usefulness = -1;
+#endif
+
+    // [WDJ] From PrBoom, wad dakills has zero length sounds
+    // (DSBSPWLK, DSBSPACT, DSSWTCHN, DSSWTCHX)
+    if (sfx->length <= 0)
+       goto done;
 
 #ifdef SURROUND
     // judgecutor:
@@ -677,13 +820,11 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 
     //CONS_Printf("stereo %d reverse %d\n", sep, stereoreverse.value);
 
-    // Assigns the handle to one of the channels in the
-    //  mix/output buffer.
-    channels[cnum].handle = I_StartSound(sfx_id,
-                                         /*
-                                            sfx->data,
-                                          */
-                                         volume, sep, pitch, priority);
+    // Returns a handle to a mixer/output channel.
+    channels[cnum].handle =
+      I_StartSound(sfx_id, volume, sep, pitch, priority);
+done:
+    return;
 }
 
 void S_StartSound(void *origin, int sfx_id)
@@ -702,8 +843,8 @@ void S_StopSound(void *origin)
 {
     int cnum;
 
-    // SoM: Sounds without origion can have multiple sources, they shouldn't
-    // be stoped by new sounds.
+    // SoM: Sounds without origin can have multiple sources, they shouldn't
+    // be stopped by new sounds.
     if (!origin)
         return;
 
@@ -713,20 +854,17 @@ void S_StopSound(void *origin)
         HW3S_StopSound(origin);
         return;
     }
-    else
+#endif
+    for (cnum = 0; cnum < cv_numChannels.value; cnum++)
     {
-#endif
-        for (cnum = 0; cnum < cv_numChannels.value; cnum++)
+        if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
         {
-            if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
-            {
-                S_StopChannel(cnum);
-                break;
-            }
-        }
-#ifdef HW3SOUND
+	    if( (channels[cnum].sfxinfo->flags & SFX_org_kill) )
+	    {
+	        S_StopChannel(cnum);
+	    }
+	}
     }
-#endif
 }
 
 //
@@ -742,11 +880,7 @@ void S_PauseSound(void)
 
 #ifdef CDMUS
     // pause cd music
-#if !defined( __DJGPP__ )	
     I_PauseCD();
-#else
-    I_StopCD();
-#endif
 #endif
 }
 
@@ -799,7 +933,7 @@ void S_UpdateSounds(void)
     }
 #endif
 
-    /*
+#ifdef CLEANUP
        Clean up unused data.
        if (gametic > nextcleanup)
        {
@@ -819,7 +953,7 @@ void S_UpdateSounds(void)
        }
        nextcleanup = gametic + 15;
        }
-     */
+#endif
 
     for (cnum = 0; cnum < cv_numChannels.value; cnum++)
     {
@@ -1037,8 +1171,6 @@ void S_StopMusic()
 
 static void S_StopChannel(int cnum)
 {
-
-    int i;
     channel_t *c = &channels[cnum];
 
     if (c->sfxinfo)
@@ -1049,8 +1181,11 @@ static void S_StopChannel(int cnum)
             I_StopSound(c->handle);
         }
 
+#if 0
+// [WDJ] Does nothing       
         // check to see
         //  if other channels are playing the sound
+        int i;
         for (i = 0; i < cv_numChannels.value; i++)
         {
             if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
@@ -1058,9 +1193,12 @@ static void S_StopChannel(int cnum)
                 break;
             }
         }
+#endif
 
+#ifdef CLEANUP
         // degrade usefulness of sound data
         c->sfxinfo->usefulness--;
+#endif
 
         c->sfxinfo = 0;
     }
@@ -1139,61 +1277,10 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
     return (*vol > 0);
 }
 
-//
-// S_getChannel :
-//   If none available, return -1.  Otherwise channel #.
-//
-int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
-{
-    // channel number to use
-    int cnum;
-
-    channel_t *c;
-
-    // Find an open channel
-    for (cnum = 0; cnum < cv_numChannels.value; cnum++)
-    {
-        if (!channels[cnum].sfxinfo)
-            break;
-        else if (origin && channels[cnum].origin == origin)
-        {
-            S_StopChannel(cnum);
-            break;
-        }
-    }
-
-    // None available
-    if (cnum == cv_numChannels.value)
-    {
-        // Look for lower priority
-        for (cnum = 0; cnum < cv_numChannels.value; cnum++)
-            if (channels[cnum].sfxinfo->priority >= sfxinfo->priority)
-                break;
-
-        if (cnum == cv_numChannels.value)
-        {
-            // FUCK!  No lower priority.  Sorry, Charlie.
-            return -1;
-        }
-        else
-        {
-            // Otherwise, kick out lower priority.
-            S_StopChannel(cnum);
-        }
-    }
-
-    c = &channels[cnum];
-
-    // channel is decided to be cnum.
-    c->sfxinfo = sfxinfo;
-    c->origin = origin;
-
-    return cnum;
-}
 
 // SoM: Searches through the channels and checks for origin or id.
 // returns 0 of not found, returns 1 if found.
-// if id == -1, the don't check it...
+// if id<0, then don't check it...
 int S_SoundPlaying(void *origin, int id)
 {
     int cnum;
@@ -1209,7 +1296,7 @@ int S_SoundPlaying(void *origin, int id)
     {
         if (origin && channels[cnum].origin == origin)
             return 1;
-        if (id != -1 && channels[cnum].sfxinfo - S_sfx == id)
+        if (id >= 0 && (channels[cnum].sfxinfo - S_sfx == id))
             return 1;
     }
     return 0;
@@ -1256,7 +1343,7 @@ void S_StartSoundName(void *mo, char *soundname)
             return;
         }
 
-        soundnum = S_AddSoundFx(soundname, false);
+        soundnum = S_AddSoundFx(soundname, 0);
         newsounds[i] = soundnum;
     }
 

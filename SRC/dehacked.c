@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: dehacked.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -835,7 +835,8 @@ static void readsound(MYFILE* f, int deh_sound_id)
 	  else
 	      deh_error("Sound %d : offset out of bound\n", deh_sound_id);
       }
-      else if(!strcasecmp(word,"Zero/One")) ssp->singularity=value;
+      else if(!strcasecmp(word,"Zero/One"))
+	  ssp->flags = ( value? SFX_single : 0 );
       else if(!strcasecmp(word,"Value"))    ssp->priority   =value;
       else deh_error("Sound %d : unknown word '%s'\n", deh_sound_id,word);
     }

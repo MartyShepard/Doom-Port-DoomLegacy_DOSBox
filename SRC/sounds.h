@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: sounds.h 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -46,6 +46,7 @@
 #ifndef __SOUNDS__
 #define __SOUNDS__
 
+#include <stdint.h>
 
 // 10 customisable sounds for Skins
 typedef enum {
@@ -60,13 +61,29 @@ typedef enum {
     SKSJUMP,
     SKSOUCH,
     NUMSKINSOUNDS
-} skinsound_t;
+} skinsound_e;
 
 
 // free sfx for S_AddSoundFx()
                          //MAXSKINS
 #define NUMSFXFREESLOTS    (32*NUMSKINSOUNDS)
 #define NUMMUSICFREESLOTS  64
+
+// [WDJ] Convert singularity, multiplicity, and Saw tests to flags.
+// Modified similar to Hexen, and Edge.
+// uint32_t
+typedef enum {
+   SFX_num = 0x03,   // Number allowed mask (Hexen)
+   SFX_single = 0x01,  // Sfx has only one source (play only one at a time)
+   SFX_two    = 0x02,  // Allows two playing sound copies  (TODO)
+ // flags on num, single
+   SFX_id_fin = 0x04,  // finish existing sound of same sfxid (Edge)
+ // kill sound
+   SFX_player = 0x10,  // Player sound, (PrBoom pickup)
+   SFX_saw    = 0x20,  // Saw sound
+   SFX_org_kill = 0x1000,  // can kill existing sound when same origin
+   SFX_boss   = 0x2000,  // Special treatment for bosses (Edge)
+} sfxflag_e;
 
 //
 // SoundFX struct.
@@ -75,39 +92,41 @@ typedef struct sfxinfo_struct   sfxinfo_t;
 
 struct sfxinfo_struct
 {
+// fields loaded by sounds init
     // up to 6-character name
     char*       name;
 
-    // Sfx singularity (only one at a time)
-    int         singularity;
-
     // Sfx priority
-    int         priority;
+    uint16_t    priority;
 
     // referenced sound if a link
     sfxinfo_t*  link;
 
     // pitch if a link
-    int         pitch;
+    int16_t     pitch;
 
     // volume if a link
-    int        volume;
-
-    // sound data
-    void*       data;
+    int16_t     volume;
 
     // sound that can be remapped for a skin, indexes skins[].skinsounds
     // 0 up to (NUMSKINSOUNDS-1), -1 = not skin specifc
-    int         skinsound;
+    int16_t     skinsound;
+
+    uint32_t    flags;
+
+// end of fields loaded by sounds init
 
     // this is checked every second to see if sound
     // can be thrown out (if 0, then decrement, if -1,
     // then throw out, if > 0, then it is in use)
-    int         usefulness;
+    int16_t     usefulness;
 
     // lump number of sfx
-    int         lumpnum;
+    int16_t     lumpnum;
 
+    void*       data;      // sound data
+
+    int32_t     length;  // length of sound data
 };
 
 
@@ -279,7 +298,7 @@ typedef enum
     // 64 free slots here
     mus_lastfreeslot = mus_firstfreeslot + NUMMUSICFREESLOTS - 1,
     NUMMUSIC
-} musicenum_t;
+} musicenum_e;
 
 
 //
@@ -560,11 +579,11 @@ typedef enum
     // end of freeslots ---------------------------------------------
 
     NUMSFX
-} sfxenum_t;
+} sfxenum_e;
 
 
 void   S_InitRuntimeSounds (void);
-int    S_AddSoundFx (char *name,int singularity);
+int    S_AddSoundFx (char *name, uint32_t flags);
 void   S_RemoveSoundFx (int id);
 
 

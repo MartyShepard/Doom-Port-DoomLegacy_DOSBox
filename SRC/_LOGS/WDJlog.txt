@@ -3043,3 +3043,26 @@ After Heretic E2M8 ending pic, the palette was not restored.
 The finale heretic code now a separate func, another state for heretic
 finale has been provided (to avoid showing the cast),
 and the palette is restored after the underwater pic has been shown.
+
+*** w89_kill_sfx
+patchfile = w89_6_kill_sfx.patch
+- committed revision 1005   by wesley johnson
+Fix bug 3078850, chainsaw sound plays full length.
+Many fixes in sound effects playing.
+Fixed StopSound to work, needed for chainsaw.
+Added flags to sounds to control tests and sound killing,
+(SFX_single, SFX_id_fin, SFX_saw, SFX_player, SFX_org_kill, and others).
+Multiple sfx per origin are allowed as default.
+Changed the tests for specific sounds in the port drivers to flag tests.
+Updated port sound effect drivers, start sfx, stop sfx, kill flagged
+sounds, update sfx param, sound is playing, and get sfx lump.
+There is now a common GetSfx, which each port calls to get a sfx lump.
+Ports (SDL, linux, os2, macos) now use priority and sound age when
+too many channel requests.
+Excessive volume detected now uses SoftError, and limits volume instead.
+Removed duplicated sfx lump precache from port drivers, so now other
+precache options work as intended.
+Increased SDL to 16 channels.
+The menu pistol sound will get killed early because setup stops sounds
+before releasing all the sound memory.  Previously, StopSound
+did not work, so memory was released while the pistol was still playing.

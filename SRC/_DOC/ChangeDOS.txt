@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01005 ]: w89 kill sfx, chainsaw
 [01004 ]: w89 heretic finale
 [01003*]: w89 hardware draw over deepwater sector
 [01002 ]: w89 boom translucent load lump

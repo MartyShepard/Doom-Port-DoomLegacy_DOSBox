@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: p_setup.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1584,6 +1584,7 @@ boolean P_SetupLevel (int           episode,
     players[consoleplayer].viewz = 1;
 
     // Make sure all sounds are stopped before Z_FreeTags.
+    // This will kill the last menu pistol sound too.
     S_StopSounds();
 
     // [WDJ] 7/2010 Free allocated memory in sectors before PU_LEVEL purge
@@ -1674,7 +1675,7 @@ boolean P_SetupLevel (int           episode,
 #endif
 
     //SoM: We've loaded the music lump, start the music.
-    S_Start();
+    S_StartSounds();
 
     //faB: now part of level loading since in future each level may have
     //     its own anim texture sequences, switches etc.

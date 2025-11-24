@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 989 2012-12-04 04:27:46Z wesleyjohnson $
+// $Id: r_things.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2492,7 +2492,7 @@ void R_AddSkins (int wadnum)
                         !stricmp(S_sfx[i].name, token+2) )
                     {
                         skins[numskins].soundsid[S_sfx[i].skinsound]=
-                            S_AddSoundFx(value+2,S_sfx[i].singularity);
+                            S_AddSoundFx(value+2, S_sfx[i].flags);
                         found=true;
                     }
                 }

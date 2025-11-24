@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: p_pspr.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -613,16 +613,15 @@ void A_Punch ( player_t* player, pspdef_t* psp )
 //
 void A_Saw ( player_t* player, pspdef_t* psp )
 {
-    angle_t     angle;
-    int         damage;
-    int         slope;
+    int      damage = 2*(P_Random()%10+1);  // first random is damage
+    int      slope;
+    // Random() must be in separate statements otherwise
+    // evaluation order will be ambiguous (lose demo sync).
+    int      ra2 = P_Random();  // second random adds to angle
+    angle_t  angle = player->mo->angle;
+    angle += (ra2 - P_Random())<<18;  // third random is subtraction
 
-    damage = 2*(P_Random ()%10+1);
-    angle = player->mo->angle;
-    angle += (P_Random()<<18); // WARNING: don't put this in one line 
-    angle -= (P_Random()<<18); // else this expretion is ambiguous (evaluation order not diffined)
-
-    // use meleerange + 1 se the puff doesn't skip the flash
+    // use meleerange + 1 so the puff doesn't skip the flash
     slope = P_AimLineAttack (player->mo, angle, MELEERANGE+1);
     P_LineAttack (player->mo, angle, MELEERANGE+1, slope, damage);
 

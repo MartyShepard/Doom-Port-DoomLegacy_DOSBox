@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 972 2012-11-10 22:18:39Z wesleyjohnson $
+// $Id: g_game.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2615,6 +2615,7 @@ byte pdss_settings_valid = 0;  // init not saved
 byte pdss_solidcorpse;
 byte pdss_instadeath;
 byte pdss_monsterfriction;
+byte pdss_rndsoundpitch;
 
 // The following are set by DemoAdapt:
 //  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
@@ -2635,7 +2636,9 @@ void playdemo_save_settings( void )
         pdss_solidcorpse = cv_solidcorpse.value;
         pdss_instadeath = cv_instadeath.value;
         pdss_monsterfriction = cv_monsterfriction.value;
+        pdss_rndsoundpitch = cv_rndsoundpitch.value; // calls M_Random
     }
+    cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
 }
 
 void playdemo_restore_settings( void )
@@ -2645,6 +2648,7 @@ void playdemo_restore_settings( void )
         cv_solidcorpse.value = pdss_solidcorpse;
         cv_instadeath.value = pdss_instadeath;
         cv_monsterfriction.value = pdss_monsterfriction;
+        cv_rndsoundpitch.value = pdss_rndsoundpitch; // calls M_Random
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
 }
