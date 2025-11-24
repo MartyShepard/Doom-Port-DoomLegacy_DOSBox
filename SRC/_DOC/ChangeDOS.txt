@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00985 ]: w87 plane merge
 [00984 ]: w87 translucent alpha 0..255
 [00983*]: w87 hw extralight missing changes
 [00982 ]: w87 fs misc missing changes

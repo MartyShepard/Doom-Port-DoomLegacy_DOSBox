@@ -2886,3 +2886,9 @@ DRAW8PAL can now draw translucents by reversing translucent table usage.
 RGB draw modes can now draw spans using arbitrary alpha.
 Simplified flat draw using some new global variables.
 Water can now be drawn with a translucent alpha > 128.
+
+*** w87_plane_merge
+patchfile = w87_7_plane_merge.patch
+- committed revision 985   by wesley johnson
+Hardware render sort changed to merge when adding plane.
+Indented code in p_mobj.c.
