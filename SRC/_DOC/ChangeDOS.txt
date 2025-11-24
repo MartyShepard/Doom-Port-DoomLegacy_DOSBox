@@ -1,5 +1,14 @@
 * Not need to Compile.
 
+[01000 ]: w89 texture offset patch
+[00999*]: w88 blockfill alpha4
+[00998 ]: w88 alpha4 VERSIONSTRING
+[00997*]: w88 alpha4 doc
+[00996*]: common/fogtst.wad
+[00995 ]: w88 docs alpha4
+[00994*]: w88 hw waterside
+[00993*]: w88 hw fog join
+[00992*]: w88 hw fog draw
 [00991 ]: w88 fog join
 [00990 ]: w88 fogface
 [00989 ]: w88 fogdraw

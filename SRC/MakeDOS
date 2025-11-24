@@ -303,6 +303,10 @@ ifdef DJGPPDOS_NATIVE
 	NASMFORMAT=coff
 endif
 
+ifdef BEXLANGUAGE
+BEX_LANGUAGE=1
+endif
+
 # CD-Music enable/disable, if you don't have the special libraries, etc.
 #ifndef NOCDMUS
 CDMUS=1
@@ -310,23 +314,26 @@ CDMUS=1
 
 ifdef DJGPPDOS_NATIVE
 	# subdirectory for objects
+	 O=objs
+	 BIN=bin
 
-	O=objs
-	BIN=bin
-
-	#use the x86 asm code
+	# use the x86 asm code
     USEASM=1
-
+	
 	# options
     OPTS=-DPC_DOS -g
-	# r547, DOS need Math Lib
-	DEBUGLIBS=-lm -lalleg -lbcd -lsocket
-  LIBS=-lm -lalleg
+
+	  #DEBUGLIBS=-lm -lalleg -lbcd -lsocket
+    LIBS=-lm -lalleg
 	 
   ifdef CDMUS
      LIBS+=-lbcd
 		 OPTS+=-DCDMUS
   endif
+	
+	ifdef BEX_LANGUAGE
+	   OPTS+=-DBEX_LANGUAGE
+	endif
 	
 	LIBS+=-lsocket
 	
@@ -335,52 +342,68 @@ ifdef DJGPPDOS_NATIVE
 
 	OBJS=$(O)/i_video.o $(O)/vid_vesa.o
 
-	# name of the exefile
-	EXENAME=DOOM3.exe
+  ifndef PCDOSi386
+	  ifndef PCDOSi486
+			ifndef PCDOSi586	
+				PCDOSi386=1
+			endif
+		endif
+	endif
+		
+	# Options for 386DX/SX
+	ifdef PCDOSi386	  
+		OPTS+=-DPCDOSi386 -march=i386 -mtune=i386
+		# name of the exefile
+		EXENAME=DOOMI386.exe
+	endif	
+		
+	# Options for 486DX/SX
+	ifdef PCDOSi486
+		OPTS+=-DPCDOSi486 -march=i486 -mtune=i486
+		# name of the exefile
+		EXENAME=DOOMI486.exe
+	endif
 
+	# Options for Pentium
+	ifdef PCDOSi586
+		OPTS+=-DPCDOSi586 -march=i586 -mtune=pentiumpro
+		# name of the exefile
+		EXENAME=DOOMI586.exe
+	endif
+
+	ifdef USEASM
+		OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
+		OPTS:= $(OPTS) -DUSEASM
+	endif
+
+  OPTS+=-O3 \
+	      -falign-functions=4 \
+				-falign-jumps=4 \
+				-falign-loops=4 \
+				-fomit-frame-pointer \
+	      -ffast-math \
+				-fno-trapping-math \
+				-fstrength-reduce \
+				-finline-functions \
+				-fcaller-saves \
+				-funroll-loops \
+				-frerun-cse-after-loop \
+				-fno-exceptions \
+				-Wall -Wno-unused -s
+
+  TOOL_DIRCOMP2=TOOLS\DIRCOMP2.EXE
+  TOOL_CONVERT=TOOLS\CONVERT.EXE
+  TOOL_FIXDEP=TOOLS\FIXDEP.EXE
+	
 endif
-
-ifdef USEASM
-   OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
-   OPTS:= $(OPTS) -DUSEASM
-endif
-
-# -O3	Aggressivste Optimierung: Schleifen, Inlining, Vektoroperationen
-# -march=i586	Nutzt Pentium-spezifische Instruktionen
-# -mtune=pentiumpro	Feintuning für bessere Branch Prediction
-# -funroll-loops	Schleifen entfaltet für schnellere Ausführung
-# -fomit-frame-pointer	Spart Register, reduziert Overhead
-# -ffast-math	ignoriert IEEE-Genauigkeit, schneller bei Allegro-Trigonometrie
-# -frename-registers	optimiert Register-Allokation (reduziert WAR/WAW-Hazards)
-# -falign-*	richtet Funktionen & Sprünge auf 16/32 Byte aus → schnelleres Fetching
-# -fexpensive-optimizations	wendet komplexere Optimierungen an
-# -fno-exceptions	spart Exception-Handling-Code (wenn du kein C++ nutzt)
-# -s	entfernt Symbole aus der EXE (kleinere, etwas schnellere Loads)
-
-# Wenn du Grafik- oder Pixelroutinen direkt nutzt, kannst du auch versuchen:
-# -fno-builtin -fno-common
-# um sicherzustellen, dass keine Standardfunktionen (z. B. memcpy, memset) durch langsamere Varianten ersetzt werden — Allegro hat oft eigene ASM-optimierte Versionen.
-	M5=-march=pentium
-	M4=-march=i486 -mtune=i486 -mfpmath=387
-	M6=-O3 -march=i586 -mtune=pentiumpro -funroll-loops -fomit-frame-pointer -ffast-math -frename-registers -falign-loops=16 -falign-jumps=16 -falign-functions=32 -fexpensive-optimizations -fno-exceptions -s
-	M7=-O3 -march=i386 -mtune=i386 -funroll-loops -fomit-frame-pointer -frename-registers -falign-loops=16 -falign-jumps=16 -falign-functions=32 -fexpensive-optimizations -fno-exceptions -s
-
 
 # compiler and linker flags
 ifdef PROFILEMODE
-# build with gprof profiling information
+  # build with gprof profiling information
   CFLAGS  = $(WFLAGS) -g -pg $(OPTS)
   LDFLAGS = $(WFLAGS) -g -pg
- else
-
-  CFLAGS = $(OPTS) $(M4)
-	# -fno-exceptions -foptimize-register-move -mhard-float
-		# -nostdlib -m32 -march=i386 -ffreestanding
-		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \
-		# -fexpensive-optimizations -fforce-mem -fstrength-reduce -fthread-jumps  \
-		# -fregmove -fschedule-insns -fschedule-insns2 -fmove-all-movables \
-		# -fcaller-saves -finline-functions -mieee-fp -mfp-ret-in-387 -m80387 -mhard-float -finline
-
+else
+  CFLAGS = $(OPTS)
 endif
 
 	i_cdmus_o=$(O)/i_cdmus.o
@@ -485,11 +508,19 @@ OBJS :=  $(OBJS) \
 		$(O)/b_game.o	 \
 		$(O)/b_look.o	 \
 		$(O)/b_node.o	 \
-		$(O)/b_search.o
+		$(O)/b_search.o		
 
-
-
-all:	 $(BIN)/$(EXENAME)
+  OBJSTOOLS :=  $(OBJSTOOLS) \
+		$(O)/dircomp2.o  \
+		$(O)/convert.o \
+		$(O)/fixdep.o
+		
+all: $(BIN)/$(EXENAME) \
+     $(BIN)/$(TOOL_DIRCOMP2) \
+		 $(BIN)/$(TOOL_CONVERT)	\
+		 $(BIN)/$(TOOL_FIXDEP)
+		 
+	cp $(BIN)/$(EXENAME) $(BIN)/DOOM3.EXE
 
 
 clean:
@@ -498,37 +529,44 @@ clean:
 #make a big doom3.s that is the disasm of the exe (dos only ?)
 asm:
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -g $(O)/i_main.o \
-	-o $(O)/tmp.exe $(DEBUGLIBS)
+	-o $(O)/tmp.exe $(LIBS)
 	objdump  -d $(O)/tmp.exe --no-show-raw-insn > doom3.s
 	del $(O)\tmp.exe
 
 # executable
-
-$(BIN)/$(EXENAME):	$(O) $(OBJS) $(O)/i_main.o
-#	 @mkdir $(BIN)
+$(BIN)/$(EXENAME): $(O) $(OBJS) $(O)/i_main.o
+# @mkdir $(BIN)
 	@echo Linking...	
 #	$(CC) $(CFLAGS) $(LDFLAGS) bcd/bcd.o $(OBJS) $(O)/i_main.o \
-#	-o $(BIN)/$(EXENAME) $(LIBS)	
+	-o $(BIN)/$(EXENAME) $(LIBS)	
 	redir -o /_GCC/_gcc.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
 	-o $(BIN)/$(EXENAME) $(LIBS)
+
+# Tools:
+$(BIN)/$(TOOL_DIRCOMP2):	$(O) $(O)/dircomp2.o
+	redir -o /_GCC/_DIRCMP2.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(O)/dircomp2.o \
+	-o $(BIN)/$(TOOL_DIRCOMP2) $(LIBS)
+
+$(BIN)/$(TOOL_CONVERT):	$(O) $(O)/convert.o		
+	redir -o /_GCC/_CONVERT.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(O)/convert.o \
+	-o $(BIN)/$(TOOL_CONVERT) $(LIBS)	
+
+$(BIN)/$(TOOL_FIXDEP):	$(O) $(O)/fixdep.o	
+	redir -o /_GCC/_FIXDEP.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(O)/fixdep.o \
+	-o $(BIN)/$(TOOL_FIXDEP) $(LIBS)	
 
 $(O):
 	@mkdir $(O)
 
-#wad:
-#ifdef WAD
-#	@echo "Building a new legacy.wad using an old version $(WAD)..."
-#	if test ! -d ../wad; then mkdir ../wad; fi
-#	cd ../wad ; \
-#	../bin/wadtool -x $(WAD) ; \
-#	cp ../trunk/resources/* . ; \
-#	../bin/wadtool -c legacy.wad legacy.wad.inventory ; \
-#	mv legacy.wad ../bin/ ; \
-#	rm *.txt *.h *.lmp
-#	@echo "Finished building legacy.wad."
-#else
-#	@echo "Usage: make wad WAD=/path/to/old/legacy.wad"
-#endif
+$(O)/dircomp2.o: tools/dircomp2.c
+		redir -o /_GCC/dircomp2.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@	
+$(O)/h2d.o: tools/h2d.c
+		redir -o /_GCC/h2d.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+$(O)/convert.o: tools/convert.c
+		redir -o /_GCC/convert.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+$(O)/fixdep.o: tools/fixdep.c
+		redir -o /_GCC/fixdep.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+		
 #dependecy made by gcc itself ! (see makedep.mak for more)
 $(O)/dstrings.o: dstrings.c dstrings.h d_englsh.h
 		redir -o /_GCC/dstrings.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@

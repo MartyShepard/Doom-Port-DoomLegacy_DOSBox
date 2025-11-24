@@ -1236,7 +1236,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 		{
 		   if( ffloor->flags & FF_JOIN_SIDES )
 		   {
-		      float fm = base_fog_alpha * 0.32;  // JOIN
+		      float fm = base_fog_alpha * 0.4;  // JOIN
 		      if( view_fogfloor && (dc_iscale < 0x4000))
 		      {
 			  // fade JOIN fogsheet as player approaches it

@@ -13,9 +13,9 @@
 
 <div class="column">
 
-<h2>1.44 (2012-7-??)</h2>
+<h2>1.44 (2012-12-07)</h2>
 
-<h3>FEATURES 1.44, recent at svn961</h3>
+<h3>FEATURES 1.44 alpha4</h3>
 <ul>
 <li>BEX files supported, with BEX flags, [STRINGS], [POINTER], [PARS],
 and include file.</li>
@@ -26,17 +26,12 @@ An example french.bex is supplied, which can be modified for other
 languages.  A command line switch will accept any language name and
 load that BEX file, or a default "lang.bex" file.
 Many error lines are not yet changable from english.</li>
-<li>Support for separate language BEX files as BEX_LANGUAGE compile option.
-An example french.bex is supplied, which can be modified for other
-languages.  A command line switch will accept any language name and
-load that BEX file, or a default "lang.bex" file.
-Many error lines are not yet changable from english.</li>
 <li>DEH support now has a hashed lookup of the original strings,
 so it recognizes strings that were changed by DoomLegacy (DOS -> your os),
 or changed by a previous DEH file.
 This is also used by to recognize ult doom strings after
 the chex modifications have changed all the strings.
-Strings changed from two %s to one %s, can now be handled,
+Strings changed from two "%s" to one "%s", can now be handled,
 and DEH can change them again. </li>
 <li>PAR time not displayed when not valid.  Limited SUCKS display, so
 can see 24 hour of elapsed time for most wads.</li>
@@ -92,145 +87,19 @@ doomdef.h.
 from the window and stops the most window manager intercept of key
 combinations.</li>
 <li>SDL Mouse motion option to select between absolute and relative mouse
-motion.
-</li>
+motion.</li>
+<li>Augmented translucent draw to handle alpha of 0..255 for all draw modes.
+Water can now be drawn with a nearly opaque translucent alpha.</li>
+<li>Change linedef decoding for new water and fog effects, affecting
+301 (translucent water), 302 (fog), 304 (opaque water).
+Each of these can now select alpha and a fog mode selection (which
+ranges from clear to fog with distance effects).  Water does not need to
+be crystal clear anymore.</li>
+<li>Add water and fog default controls that give new fog effects to
+older wads without the new fog selections.</li>
 </ul>
 
-<h3>FEATURES 1.44 alpha3</h3>
-<ul>
-<li>Stop demos when menu opens.</li>
-<li>Voodoo doll damage effects upon players are restored.</li>
-<li>Voodoo doll mode control (Vanilla, Multispawn, Target, Auto).</li>
-<li>Voodoo doll telefrag instadeath control (Die, Damage, Zap).</li>
-<li>Remove hard limits for brain targets.</li>
-<li>Start game menu asks user "Abort this game. Y/N" when user is
-already in a game, and upon "YES" will abort the game and continue.</li>
-<li>Mouse will no longer change menu values without pushing a button.</li>
-<li>DoomLegacy demo format will have a header of version 144, and the
-characters "DL".  DoomLegacy demos shall only use the one demo version number.
-Three later fields shall record the DoomLegacy VERSION, demoversion,
-and sub-demoversion numbers.
-Not yet enabled, alpha still writes demoversion 143.</li>
-<li>Changed to MBF style sector friction (from examination of Killough code in prboom),
-making DoomLegacy more consistent with DoomLegacy 2.0, prboom and
-other modern ports, with some fixes and differences.
-Water friction and Heretic friction are also converted to sector friction.
-Sectors get the friction and movefactor values at load time,
-and are updated whenever a flag or friction control changes.
-Finds stickiest friction on icy sector edge too.
-Independent friction for each 3dfloor slab.
-Old boom friction thinker code is compile-time conditional (FRICTIONTHINKER),
-and is only used for demos. Demos select appropriate friction code.
-Did not preserve perfect demo compatibility with Boom and prboom.</li>
-<li>Converted to independent player bob momentum of Killough, as in DoomLegacy 2.0,
-MBF and prboom, with fixes and adaptations.
-Compile-time conditional on BOB_MOM.
-Fixes many problems of previous bobbing, such as bobbing while riding
-conveyor, and interaction with friction.</li>
-<li>Monsters use same sector friction as players.
-Selection mechanism for monster friction (none, MBF, momentum).
-The MBF monster friction only gives the monster momentum on ice, 
-and this creates surge when moving off ice, and stall when moving onto ice.
-Momentum monster friction selection accumulates momentum on every move,
-and fixes the surge and stall problems.
-Additional code to prevent hangups on dropoff ledges, get monster
-unstuck from edges, and to allow monsters to fall off conveyor belts.
-</li>
-<li>Create Adv Options menu, for monster friction, gravity, voodoo mode,
-voodoo insta-death, and door delay.</li>
-</ul>
-
-<h3>FEATURES 1.44 alpha2</h3>
-<ul>
-<li>Boom demo headers are now recognized and the demos play better.
-They will not stay in sync, but will no longer crash the engine.</li>
-<li>Revised game description tables now have three wad names for each
-game type, to recognize more naming variations.</li>
-<li>Sprites Limit: Adjust the number of sprites displayed by software
-renderer from 128 to 16384, depending upon where your machine bogs down.</li>
-<li>Removed sprite display limits in software renderer.
-The number of displayed sprites is dynamically adjusted according to the
-sprite count, and the user setting in the Effects menu.
-The menu control gives a soft limit from 128, upto 16384 sprites.
-The sprite display is hard limited to twice the user setting.
-When there are too many sprites, the nearest sprites have preference,
-the farther sprites have semi-random visibility (they flicker),
-so the player can sporatically see the sprites in the distance.
-</li>
-<li>Savegame size is now unlimited, and uses much smaller savegame buffer.</li>
-<li>Replaced the odd command line switches for game development with
-one switch that specifies the gamename.</li>
-</ul>
-
-<h3>FEATURES 1.44 alpha1</h3>
-<ul>
-<li>New Effects menu, makes room for the additional user controls.</li>
-<li>Gamma generation: Gamma table is generated from the selected gamma
-    function <br/>
-    (Gamma, Gamma_black, Gamma_bright_black, Linear).<br/>
-    The Gamma function has 25 gamma setpoints.<br/>
-    The Gamma_black function has gamma and black level controls.<br/>
-    The Gamma_bright_black function has gamma, black level, and bright
-    level controls.<br/>
-    The Linear function has two setpoint controls, each of which has 25
-    positions.</li>
-<li>Door delay: Option control that slows doors by x1.5, x2, etc.
-   so that player has more time to get through them.</li>
-<li>SoftError: Many hard errors (fatal) have been changed to soft errors,
-   where the user will get one message, and the game will be allowed
-   to continue.</li>
-<li>Voodoo dolls added.  The voodoo doll was an accident of the original
-   Doom, that many wads made use of to trigger linedef actions.
-   Extra player1 starts now create voodoo dolls, with the last being the
-   actual player1 start position.</li>
-<li>Demo fixes.  Demos that Legacy cannot play back are now recognized
-   and rejected, so they do not crash the engine.</li>
-<li>Z_Malloc allocation compile options, user selectable in z_zone.c.<br/>
-PLAIN_MALLOC: Large memory, no reclaimation.<br/>
-TAGGED_MALLOC: Will free allocations according to tags kept in the allocations.<br/>
-ZONE_ZALLOC: Improved version of original zone allocation.  Allocates
-from large pre-allocation of memory, with tags, and frees allocations
-according to tags. <br/>
-GROW_ZONE: Option on ZONE_ZALLOC that grows the memory usage when free
-blocks cannot be found.  This is the default now. <br/>
-AGGRESSIVE_PURGE: Option on ZONE_ZALLOC that aggressively purges
-downgraded allocations instead of leaving them as cache.
-Mostly for testing memory usage code, but also usable for small memory.<br/></li>
-<li>Texture generation now handles multi-patch transparent
-textures. The code selects between three rendering methods, one of
-which creates a single patch transparent 2-sided texture from the source
-multi-patch texture.<br/>
-This now software renders the gates in Phobia.wad correctly.</li>
-<li>Game determination characteristics and parameters are now in one table.
-This allows special game wads to be added easily without errors.  The table
-specifies a Legacy support wad for the specific game that will now be
-automatically loaded (none exist yet).</li>
-<li>Savegame format now has a header that specifies the name, map
-number, time, the wad, and the command line switches.  The savegame
-display shows the name, map, and time.  Upon loading the savegame must
-match the current wad.</li>
-<li>Savegame format now records the endian and word size.  Loading now
-detects these and other critical parameters to intercept incompatible
-savegames.</li>
-<li>Savegame now allows up to 99 savegames in one directory.
-This is a compile option.</li>
-<li>Savegame now supports savegame directories.  You can have a
-separate savegame directory for each wad.  This is a compile
-option.</li>
-<li>Hardware renderer now can display Boom colormaps.</li>
-<li>Hardware renderer now has lighting level variation with colormaps.</li>
-<li>Chexquest support is enhanced.  The Doom pictures that are in the
-Chexquest wad are now blocked when in Chexquest game mode, along with
-blood splats and Doom episode names.  Chexquest splats are less violent.</li>
-
-<li>Full international keyboard support (SDL).</li>
-<li>New joystick/gamepad code, should support all modern controllers (SDL).</li>
-<li>New FS functions.</li>
-<li>Audio output samplerate raised to 22 kHz.</li>
-</ul>
-
-
-<h3>BUG FIXES 1.44, recent at svn961</h3>
+<h3>BUG FIXES 1.44, alpha4</h3>
 <ul>
 <li>Stuck monsters, in wads like TNT, was fixed.  In TNT, some monsters start
 positions are overlapped, and full speed impulse was needed to get them unstuck.</li>
@@ -426,6 +295,95 @@ which use compressed patches.
 </li>
 <li>Fix mouse event handling to add mouse motion, and rewrite of mouse
 handling.  This fixes OpenBSD mouse problems.</li>
+<li>Fix opengl mode to switch video modes as other modes do.</li>
+<li>Status bar overlay in opengl mode was not positioned correctly.
+Fixed it so position is consistent for all video modes.</li>
+<li>A previous patch sped up P_CheckSector, but made it vulnerable
+to a second thing being removed by the player on a moving lift,
+resulting in a segfault.  Instead, use the previous behavior of restarting
+from beginning of touching_thinglist.</li>
+<li>Fix bug introduced by BOOM_COLORMAP, which segfaults when restoring
+game saved during use of fixed_colormap.</li>
+<li>Allow Heretic and Blasphemer PWAD to fully use the SWITCHES lump without
+restricting it to only episode 4.
+Other ports do not have any restriction on Heretic use of the SWITCHES entries.
+Requested by a Heretic wad project.
+Checks for missing switch textures and defaults to use texture 1.</li>
+<li>Shortened some of the Boom Colormap Option text strings so they fit
+low-res screens.  This affects saved configs.</li>
+<li>Add test for colormap fog using viewer_extracolormap.  This is not
+very good fog but at least it works now as documented.</li>
+<li>Cleanup of hardware renderer code to make it easier to
+maintain. Cleanup of code in hw_cache, concerning bytepp, endian issues,
+and much better draw code for the various bytepp switches.</li>
+<li>Fix hardware draw of fx1 translucent.
+Fixes display of linedef 288 in opengl.</li>
+<li>Fix the hardware draw of Boom and view_colormap.
+Now see global colormap change with Boom deep water and colormap fog
+in opengl mode.</li>
+<li>Fix segfault in dsv4.  When wrong buttons are pressed player is hurt.
+If they are pressed after getting the yellow key, then segfault.
+There is a mobj without a subsector, and script code must check first.</li>
+<li>Fixed the legacywad filename to use compatible allocation and usage so that
+a terminator of the string is not written into other data space.
+This caused segfault at program shutdown.</li>
+<li>Light calculations are now done internally in range 0..255.</li>
+<li>Chase camera is now fixed to be usable with splitscreen players, with
+the first player getting the chase camera.
+This could be expanded to allow two chase cameras now, but the chase camera
+gets hung up going through doorways, so I do not recommend it.</li>
+<li>Gun effect light is now 3/4 for colormap fog,
+and 1/2 for FF_FOG, instead of the previous none.
+Light precedence is now  FF_FOG, colormap fog, translucent, normal.</li>
+<li>Rewrite all fog draw functions to new specifications and fog alpha.
+Create fog face sheets and fog join sheets.</li>
+<li>Fix split wall draws so that hardware renderer draws water sides with
+3dfloor backsectors, and they are drawn translucent.</li>
+</ul>
+
+
+<h3>FEATURES 1.44 alpha3</h3>
+<ul>
+<li>Stop demos when menu opens.</li>
+<li>Voodoo doll damage effects upon players are restored.</li>
+<li>Voodoo doll mode control (Vanilla, Multispawn, Target, Auto).</li>
+<li>Voodoo doll telefrag instadeath control (Die, Damage, Zap).</li>
+<li>Remove hard limits for brain targets.</li>
+<li>Start game menu asks user "Abort this game. Y/N" when user is
+already in a game, and upon "YES" will abort the game and continue.</li>
+<li>Mouse will no longer change menu values without pushing a button.</li>
+<li>DoomLegacy demo format will have a header of version 144, and the
+characters "DL".  DoomLegacy demos shall only use the one demo version number.
+Three later fields shall record the DoomLegacy VERSION, demoversion,
+and sub-demoversion numbers.
+Not yet enabled, alpha still writes demoversion 143.</li>
+<li>Changed to MBF style sector friction (from examination of Killough code in prboom),
+making DoomLegacy more consistent with DoomLegacy 2.0, prboom and
+other modern ports, with some fixes and differences.
+Water friction and Heretic friction are also converted to sector friction.
+Sectors get the friction and movefactor values at load time,
+and are updated whenever a flag or friction control changes.
+Finds stickiest friction on icy sector edge too.
+Independent friction for each 3dfloor slab.
+Old boom friction thinker code is compile-time conditional (FRICTIONTHINKER),
+and is only used for demos. Demos select appropriate friction code.
+Did not preserve perfect demo compatibility with Boom and prboom.</li>
+<li>Converted to independent player bob momentum of Killough, as in DoomLegacy 2.0,
+MBF and prboom, with fixes and adaptations.
+Compile-time conditional on BOB_MOM.
+Fixes many problems of previous bobbing, such as bobbing while riding
+conveyor, and interaction with friction.</li>
+<li>Monsters use same sector friction as players.
+Selection mechanism for monster friction (none, MBF, momentum).
+The MBF monster friction only gives the monster momentum on ice, 
+and this creates surge when moving off ice, and stall when moving onto ice.
+Momentum monster friction selection accumulates momentum on every move,
+and fixes the surge and stall problems.
+Additional code to prevent hangups on dropoff ledges, get monster
+unstuck from edges, and to allow monsters to fall off conveyor belts.
+</li>
+<li>Create Adv Options menu, for monster friction, gravity, voodoo mode,
+voodoo insta-death, and door delay.</li>
 </ul>
 
 <h3>BUG FIXES 1.44 alpha3</h3>
@@ -480,6 +438,29 @@ tests making it faster, and fixed an error.</li>
 sprite frame flipped.</li>
 </ul>
 
+
+<h3>FEATURES 1.44 alpha2</h3>
+<ul>
+<li>Boom demo headers are now recognized and the demos play better.
+They will not stay in sync, but will no longer crash the engine.</li>
+<li>Revised game description tables now have three wad names for each
+game type, to recognize more naming variations.</li>
+<li>Sprites Limit: Adjust the number of sprites displayed by software
+renderer from 128 to 16384, depending upon where your machine bogs down.</li>
+<li>Removed sprite display limits in software renderer.
+The number of displayed sprites is dynamically adjusted according to the
+sprite count, and the user setting in the Effects menu.
+The menu control gives a soft limit from 128, upto 16384 sprites.
+The sprite display is hard limited to twice the user setting.
+When there are too many sprites, the nearest sprites have preference,
+the farther sprites have semi-random visibility (they flicker),
+so the player can sporatically see the sprites in the distance.
+</li>
+<li>Savegame size is now unlimited, and uses much smaller savegame buffer.</li>
+<li>Replaced the odd command line switches for game development with
+one switch that specifies the gamename.</li>
+</ul>
+
 <h3>BUG FIXES 1.44 alpha2</h3>
 <ul>
 <li> Z_Malloc memory locking, to protect the status bar textures from
@@ -505,7 +486,73 @@ test for heretic shareware.</li>
 opened a door by level logic instead of a line trigger. These failed
 after restoring a savegame.
 Fixed savegame to save and restore NULL ptrs for line and mapthings.</li>
+</ul>
 
+<h3>FEATURES 1.44 alpha1</h3>
+<ul>
+<li>New Effects menu, makes room for the additional user controls.</li>
+<li>Gamma generation: Gamma table is generated from the selected gamma
+    function <br/>
+    (Gamma, Gamma_black, Gamma_bright_black, Linear).<br/>
+    The Gamma function has 25 gamma setpoints.<br/>
+    The Gamma_black function has gamma and black level controls.<br/>
+    The Gamma_bright_black function has gamma, black level, and bright
+    level controls.<br/>
+    The Linear function has two setpoint controls, each of which has 25
+    positions.</li>
+<li>Door delay: Option control that slows doors by x1.5, x2, etc.
+   so that player has more time to get through them.</li>
+<li>SoftError: Many hard errors (fatal) have been changed to soft errors,
+   where the user will get one message, and the game will be allowed
+   to continue.</li>
+<li>Voodoo dolls added.  The voodoo doll was an accident of the original
+   Doom, that many wads made use of to trigger linedef actions.
+   Extra player1 starts now create voodoo dolls, with the last being the
+   actual player1 start position.</li>
+<li>Demo fixes.  Demos that Legacy cannot play back are now recognized
+   and rejected, so they do not crash the engine.</li>
+<li>Z_Malloc allocation compile options, user selectable in z_zone.c.<br/>
+PLAIN_MALLOC: Large memory, no reclaimation.<br/>
+TAGGED_MALLOC: Will free allocations according to tags kept in the allocations.<br/>
+ZONE_ZALLOC: Improved version of original zone allocation.  Allocates
+from large pre-allocation of memory, with tags, and frees allocations
+according to tags. <br/>
+GROW_ZONE: Option on ZONE_ZALLOC that grows the memory usage when free
+blocks cannot be found.  This is the default now. <br/>
+AGGRESSIVE_PURGE: Option on ZONE_ZALLOC that aggressively purges
+downgraded allocations instead of leaving them as cache.
+Mostly for testing memory usage code, but also usable for small memory.<br/></li>
+<li>Texture generation now handles multi-patch transparent
+textures. The code selects between three rendering methods, one of
+which creates a single patch transparent 2-sided texture from the source
+multi-patch texture.<br/>
+This now software renders the gates in Phobia.wad correctly.</li>
+<li>Game determination characteristics and parameters are now in one table.
+This allows special game wads to be added easily without errors.  The table
+specifies a Legacy support wad for the specific game that will now be
+automatically loaded (none exist yet).</li>
+<li>Savegame format now has a header that specifies the name, map
+number, time, the wad, and the command line switches.  The savegame
+display shows the name, map, and time.  Upon loading the savegame must
+match the current wad.</li>
+<li>Savegame format now records the endian and word size.  Loading now
+detects these and other critical parameters to intercept incompatible
+savegames.</li>
+<li>Savegame now allows up to 99 savegames in one directory.
+This is a compile option.</li>
+<li>Savegame now supports savegame directories.  You can have a
+separate savegame directory for each wad.  This is a compile
+option.</li>
+<li>Hardware renderer now can display Boom colormaps.</li>
+<li>Hardware renderer now has lighting level variation with colormaps.</li>
+<li>Chexquest support is enhanced.  The Doom pictures that are in the
+Chexquest wad are now blocked when in Chexquest game mode, along with
+blood splats and Doom episode names.  Chexquest splats are less violent.</li>
+
+<li>Full international keyboard support (SDL).</li>
+<li>New joystick/gamepad code, should support all modern controllers (SDL).</li>
+<li>New FS functions.</li>
+<li>Audio output samplerate raised to 22 kHz.</li>
 </ul>
 
 <h3>BUG FIXES 1.44 alpha1</h3>

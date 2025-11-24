@@ -258,9 +258,10 @@ and under, inside all tagged sectors.
 <p>Creates a solid translucent 3D floor in all tagged sectors, same as
   type 281, but translucent, and without changing the lighting under
   the floor slab.<br />
-It creates a floor, as a solid slab with thickness, that can be walked on and under. Sidedef1
-upper texture: #nnn</p>
-<p>nnn = 3 digit number that encodes for the translucent effect alpha. If it is empty then alpha is 127.</p>
+It creates a floor, as a solid slab with thickness, that can be walked on and under.
+<p>Sidedef1 upper texture: #nnn</p>
+<p>nnn = 3 digit number (0..255) that encodes for the translucent effect alpha.
+If it is empty then alpha is 128.</p>
 </td>
 </tr>
 <tr>
@@ -269,16 +270,30 @@ upper texture: #nnn</p>
 <b>Translucent 3D water</b>
 <p>Creates translucent 3D water in all tagged sectors.<br />
 Set the control sector ceiling to the water top level, and the floor to the floor level (or below).<br />
-Sidedef1 upper texture: #nnn</p>
-<p>nnn = 3 digit number that encodes for the translucent effect alpha. If it is empty then alpha is 127.</p>
+<p>Since 1.44 Alpha 4 it allows selectable fog effects with alpha.
+Before that only alpha was selectable and it was drawn clear.</p>
+Sidedef1 upper texture: #nnnF</p>
+<p>nnn = 3 digit number (0..255) that encodes for the translucent effect alpha. If it is empty then alpha is 127.</p>
+<p>F = fog effect selection, as in linedef 302.  The default is clear ('A').</p>
 </td>
 </tr>
 <tr>
 <td>304</td>
 <td>
 <b>Opaque water</b>
-<p>Creates a 3D fluid, that is not translucent on the surface. Within the fluid it is transparent.<br />
-Does not have translucent effect, does not have alpha, so upper texture is normal. The control sector is sidedef1 of the linedef.</p>
+<p>Creates a 3D fluid, that is not translucent on the surface.
+<p>The control sector is sidedef1 of the linedef.</p>
+<p>Since 1.44 Alpha 4 it allows selectable fog effects with alpha, and
+rendering of low visibility transluceny.
+Before that it did not have translucent effect, did not have alpha,
+and it was drawn clear, with the upper texture as normal.
+The default is the old transparent effect.</p>
+<p>Sidedef1 upper texture: #nnnF</p>
+<p>nnn = 3 digit number (0..255) that encodes for the translucent
+effect alpha inside the opaque water.
+If it is empty then alpha is 190.  It does not affect the surfaces.
+An low visibility alpha of 127..255 is recommended for opaque water.</p>
+<p>F = fog effect selection, as in linedef 302.  The default is clear ('A').</p>
 </td>
 </tr>
 <tr>
@@ -286,12 +301,88 @@ Does not have translucent effect, does not have alpha, so upper texture is norma
 <td>
 <b>3D fog</b>
 <p>Creates 3D fog (using control sector's colormap) in all tagged
-  sectors.<br />
-The middle texture is normal, but is not used. Has the same light
+  sectors.</p>
+<p>The middle texture is used for the fog effect.  It is sampled for
+color, texture, and transparent pattern, generating a fog texture by blending
+and blurring.
+The fog effect generated is slightly different for each drawing mode,
+with the RGBA 32 bit drawing being the reference and the others approximating
+that as close as possible.
+Because the fog modes will be improved in the future, it is not
+recommended to rely too heavily on the exact rendering in the current
+version.
+<p>Sidedef1 upper texture: #nnnF</p>
+<p>nnn = 3 digit number (0..255) that encodes for the translucent effect alpha.
+If it is empty then alpha is 110.</p>
+<p>F = fog effect selection.  The default is fogdust ('F').</p>
+<table>
+<tr>
+<th>Letter</th>
+<th>Effect</th>
+</tr>
+<tr>
+<td>A</td>
+<td>
+"Clear": No fog. The old water default.
+This is useful where the swimmable effect is used to simulate low
+gravity, and no fog is wanted.
+</td>
+</tr>
+<tr>
+<td>B</td>
+<td>
+"Cast": Paint all surfaces with textures.  Not implemented yet.
+</td>
+</tr>
+<tr>
+<td>C</td>
+<td>
+"Colormap": Uses only the colormap fog (which only colors all sectors).
+This is useful where the swimmable effect is used to simulate low
+gravity, and only the colormap fog is wanted.
+</td>
+</tr>
+<tr>
+<td>D</td>
+<td>
+"Inside": Only render inside side and plane views.
+  The old fog effect. Has the same light
   effect as 303, but also tints anything seen through any of the
   edges, top, or bottom, like a translucent. Because the fog effect is
   not present within the fog itself, it helps to add some fog sheet
-  linedefs (283).</p>
+  linedefs (283).
+</td>
+</tr>
+<tr>
+<td>E</td>
+<td>
+"Fog Lite": Renders with outside side and plane views, with low alpha.
+This will be a light fog effect, without distance effects.
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td>
+"Fog Dust": The normal fog effect, with normal alpha, without distance
+effects.  The user can add fog sheets in the wad to augment it.
+This is the fog default.
+</td>
+</tr>
+<tr>
+<td>G</td>
+<td>
+"Fog Sheet": A fog with distance effects.  The current implementation
+use fog sheets that are automatically added where fog sectors are joined.
+</td>
+</tr>
+<tr>
+<td>H</td>
+<td>
+"Fog Fluid": A fog optimized for use within fluids.
+Does not have distance effects.
+</td>
+</tr>
+</table>
 </td>
 </tr>
 <tr>

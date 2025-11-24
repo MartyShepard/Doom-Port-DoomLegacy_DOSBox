@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 978 2012-12-04 03:24:40Z wesleyjohnson $
+// $Id: d_main.c 998 2012-12-16 03:52:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -323,17 +323,36 @@
 
 #if defined( __DJGPP__ )	
 #define I_Sleep(int) usleep(int);
+  // From MakeDOS File
+	#ifdef PCDOSi386
+	#define DOSNAME "386DX/SX"
+	#endif
+	#ifdef PCDOSi486
+	#define DOSNAME "486DX/SX"
+	#endif
+	#ifdef PCDOSi586
+	#define DOSNAME "Pentium"
+	#endif
+
+  #if !defined( PCDOSi386 ) && !defined( PCDOSi486 ) && !defined( PCDOSi586 )
+    #define DOSNAME ""
+	#endif
+	
+	static const char DOSSTRING[] = "[" DOSNAME "]";
+
+#else
+	static const char DOSSTRING[] = "";	
 #endif
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "991"
+#define SVN_REV "1000"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 144; // major*100 + minor
 const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-static const char VERSIONSTRING[] = "alpha3 (rev " SVN_REV ")";
+static const char VERSIONSTRING[] = "Alpha4 (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
@@ -1373,8 +1392,8 @@ void IdentifyVersion()
     //[segabor]: on Mac OS X legacy.wad is within .app folder
     legacywad = mac_legacy_wad;
 #else
-    cat_filename(pathiwad, doomwaddir, "legacy.wad");  // must be MAX_WADPATH//legacywad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
-    legacywad = strdup( pathiwad );  // malloc//cat_filename(legacywad, doomwaddir, "legacy.wad");
+    cat_filename(pathiwad, doomwaddir, "legacy.wad");  // must be MAX_WADPATH
+    legacywad = strdup( pathiwad );  // malloc
 #endif
 
     if( verbose )
@@ -1690,7 +1709,7 @@ void D_DoomMain()
 #endif
 
     // print version banner just once here, use it anywhere
-    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
+    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING);
     demoversion = VERSION;
 
     const char *legacy = D_MakeTitleString(VERSION_BANNER);
@@ -1814,6 +1833,7 @@ void D_DoomMain()
             if(verbose)
                 fprintf(stderr, "Please set $HOME to your home directory, or use -home switch\n");
             // Try to use current directory and defaults
+
             // use absolute default directory, not root
             if( defdir_stat )
             {
@@ -2387,7 +2407,11 @@ void Help( void )
   if( np == NULL )
   {
     printf
-       ("Usage: doomlegacy [-opengl] [-iwad xxx.wad] [-file pwad.wad ...]\n"
+       ("Usage: doomlegacy"
+#ifdef HWRENDER			 
+			 " [-opengl]"
+#endif
+			 " [-iwad xxx.wad] [-file pwad.wad ...]\n"
 	"-version  Print Legacy version\n"
 	"-h    Help\n"
 	"-h g  Help game and wads\n"
@@ -2439,7 +2463,9 @@ void Help( void )
 	"-v   -v2        Verbose\n"
 	"-home name      Config and savegame directory\n"
 	"-config file    Config file\n"
+#ifdef HWRENDER		
 	"-opengl         OpenGL Hardware render\n"
+#endif
 	"-nosound        No sound effects\n"
 #ifdef CDMUS
 	"-nocd           No CD music\n"

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: r_data.c 1000 2013-03-22 19:50:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -322,17 +322,33 @@ typedef struct {
 
 byte* R_GenerateTexture (int texnum)
 {
-    byte*               texgen;  // generated texture
-    byte*               txcblock;
+    byte*               texgen;  // generated texture (return)
     texture_t*          texture; // texture info from wad
     texpatch_t*         texpatch;  // patch info to make texture
-    patch_t*            realpatch;
+    patch_t*            realpatch; // patch lump
     uint32_t*           colofs;  // to match size in wad
-    int                 x, x1, x2;
-    int                 i;
-    int                 patchsize;
-    int			txcblocksize;
-    int			colofs_size;
+
+    byte     * txcblock; // allocated texture memory
+    byte     * texture_end; // end of allocated texture area
+    patch_t  * txcpatch; // header of txcblock
+    byte     * txcdata;  // posting area
+    byte     * destpixels;  // current post pixel in txcdata
+    int	txcblocksize;
+
+    // array to hold all patches for combine
+# define MAXPATCHNUM 256
+    compat_t   compat[MAXPATCHNUM];
+    post_t   * srcpost, * destpost;
+
+    unsigned int patchcount;
+    unsigned int compostsize;
+    int patchsize;
+    int	colofs_size;
+    int x, x1, x2, i, p;
+    int postlength;  // length of current post
+    int segnxt_y, segbot_y; // may be negative
+    int bottom;		// next y in column
+
 
     texture = textures[texnum];
     texture->texture_model = TM_invalid; // default in case this fails
@@ -340,17 +356,18 @@ byte* R_GenerateTexture (int texnum)
     // Column offset table size as determined by wad specs.
     // Column pixel data starts after the table.
     colofs_size = texture->width * sizeof( uint32_t );  // width * 4
+    // to allocate texture column offset lookup
 
 #if 0
     // To debug problems with specific textures
-    if( strncmp(texture->name, "SW1COMM", 7 ) == 0 )
+    if( strncmp(texture->name, "TEKWALL5", 8 ) == 0 )
        fprintf(stderr,"GenerateTexture - match\n");
 #endif
-    // allocate texture column offset lookup
 
     // single-patch textures can have holes and may be used on
     // 2sided lines so they need to be kept in 'packed' format
-    if (texture->patchcount==1)
+    patchcount = texture->patchcount;
+    if (patchcount==1)
     {
         // Texture patch format:
 	//   patch header (8 bytes), ignored
@@ -394,10 +411,10 @@ byte* R_GenerateTexture (int texnum)
 	    txcpatch->height = texture->height;
 	    txcpatch->leftoffset = 0;
 	    txcpatch->topoffset = 0;
-	    post_t * destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
+	    destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
 	    destpost->topdelta = 0;
 	    destpost->length = texture->height;
-	    byte* destpixels = (byte*)destpost + 3;
+	    destpixels = (byte*)destpost + 3;
 	    destpixels[-1] = 0;	// pad 0
 	    for( i=0; i>texture->height; i++ )
 	    {
@@ -409,7 +426,37 @@ byte* R_GenerateTexture (int texnum)
 	    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
 	    for(i=0 ; i< texture->width ; i++ )
 	         colofs[i] = head_size;
+	    goto single_patch_finish;
         }
+#endif
+#if 1
+	if( texpatch->originx != 0 || texpatch->originy != 0 )
+	{
+	    // [WDJ] Cannot copy patch to texture.
+	    // Fixes tekwall2, tekwall3, tekwall5 in FreeDoom,
+	    // which use right half of large combined patches.
+//	    fprintf(stderr,"GenerateTexture %s: offset forced multipatch\n", texture->name );
+	    goto multipatch_combine;
+	}
+#endif
+#if 1
+	if( realpatch->width > texture->width )
+	{
+	    // [WDJ] Texture is a portion of a large patch.
+	    // To prevent duplicate large copies.
+	    // Unfortunately this also catches the large RSKY that legacy
+	    // has in legacy.wad.
+	    if( strncmp(texture->name, "SKY", 3 ) == 0 )
+	    {
+	        // let sky match patch
+	        texture->height = realpatch->height;
+	    }
+	    else
+	    {
+//	        fprintf(stderr,"GenerateTexture %s: width forced multipatch\n", texture->name );
+	        goto multipatch_combine;
+	    }
+	}
         else
 #endif
 #if 1
@@ -422,9 +469,7 @@ byte* R_GenerateTexture (int texnum)
 	    // This occurs in phobiata and maybe heretic.
 	    // [WDJ] Too late to change texture size to match patch,
 	    // the caller can already be violating the patch width.
-	    // Cannot goto multi-patch because numpatches > 1 is used as the
-	    // selector between texture formats, and single-sided textures
-	    // need to be kept packed to preserve holes.
+	    // Single-sided textures need to be kept packed to preserve holes.
 	    // The texture may be rebuilt several times due to cache.
             int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
 	    int ofsdiff = colofs_size - patch_colofs_size;
@@ -457,8 +502,8 @@ byte* R_GenerateTexture (int texnum)
 	        for( ; i< texture->width ; i++ )
 		        colofs[i] = empty_post;
 	    }
+	    goto single_patch_finish;
 	}
-	else
 #endif   
 	{
             // Normal: Most often use patch as it is.
@@ -482,6 +527,7 @@ byte* R_GenerateTexture (int texnum)
 #endif
 	}
 
+  single_patch_finish:
         // Interface for texture picture format
         // use the single patch's, single column lookup
         colofs = (uint32_t*)&(((patch_t*)txcblock)->columnofs);
@@ -500,22 +546,9 @@ byte* R_GenerateTexture (int texnum)
         goto done;
     }
     // End of Single-patch texture
-   
- // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
-    // array to hold all patches
-# define MAXPATCHNUM 256
-    compat_t   compat[MAXPATCHNUM];
-    post_t   * srcpost, * destpost;
-    byte     * txcdata;  // posting area
-    byte     * destpixels;  // post pixel area
-    byte     * texture_end; // end of allocated texture area
-    unsigned int patchcount = texture->patchcount;
-    unsigned int compostsize = 0;
-    int p;
-    int postlength;  // length of current post
-    int segnxt_y, segbot_y; // may be negative
-    int bottom;		// next y in column
 
+ multipatch_combine:
+ // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
     if( patchcount >= MAXPATCHNUM ) {
        I_SoftError("R_GenerateTexture: Combine patch count %i exceeds %i, ignoring rest\n",
 		   patchcount, MAXPATCHNUM);
@@ -524,6 +557,7 @@ byte* R_GenerateTexture (int texnum)
    
     // First examination of the source patches
     texpatch = texture->patches;
+    compostsize = 0;
     for (p=0; p<patchcount; p++, texpatch++)
     {
         compat_t * cp = &compat[p];
@@ -591,8 +625,6 @@ byte* R_GenerateTexture (int texnum)
 #endif
     txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
                       (void**)&texturecache[texnum]);
-    {
-    patch_t  * txcpatch; // header of txcblock
     txcpatch = (patch_t*) txcblock;
     txcpatch->width = texture->width;
     txcpatch->height = texture->height;
@@ -600,7 +632,7 @@ byte* R_GenerateTexture (int texnum)
     txcpatch->topoffset = 0;
     // column offset lookup table
     colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
-    }
+
     txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
     // starts as empty post, with 0xFF a possibility
     destpixels = txcdata;
