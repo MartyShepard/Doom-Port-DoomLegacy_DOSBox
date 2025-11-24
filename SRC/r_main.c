@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 990 2012-12-04 04:34:39Z wesleyjohnson $
+// $Id: r_main.c 1009 2013-04-26 01:53:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1302,7 +1302,7 @@ void R_SetupFrame (player_t* player)
 	       modsecp->topmap
 	     : modsecp->midmap;
 	    // only enable view_colormap when overriding globally
-	    if(bcm_num >= 0 || bcm_num < num_extra_colormaps)
+	    if(bcm_num >= 0 && bcm_num < num_extra_colormaps)
 	    {
 	       view_extracolormap = & extra_colormaps[bcm_num];
 	    }

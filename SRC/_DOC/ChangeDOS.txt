@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01009 ]: w89 boom colormap
 [01008 ]: w89 free sfx sound
 [01007 ]: w89 softerror warn
 [01006*]: w89 empty channel search

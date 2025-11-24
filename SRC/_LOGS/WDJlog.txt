@@ -3066,3 +3066,28 @@ Increased SDL to 16 channels.
 The menu pistol sound will get killed early because setup stops sounds
 before releasing all the sound memory.  Previously, StopSound
 did not work, so memory was released while the pistol was still playing.
+
+*** w89_empty_chan
+patchfile = w89_7_empty_chan.patch
+- committed revision 1006   by wesley johnson
+Fix SDL find empty channel search.  Search was init wrong.
+
+*** w89_softerr
+patchfile = w89_8_softerror.patch
+- committed revision 1007   by wesley johnson
+SoftError is mandatory, and no longer a compile option.
+SoftError message changed to print "Warn:" instead.
+
+*** w89_free_sound
+patchfile = w89_9_free_sound.patch
+- committed revision 1008   by wesley johnson
+Fix problems in free memory of sound effect that caused Z_Free errors.
+Notable when executing fragglescript ambiant sound (phobia.wad).
+
+*** w89_boom_colormap
+patchfile = w89_10_boom_colormap.patch
+- committed revision 1009   by wesley johnson
+Fix bug in Boom deepwater colormap support.
+Would use bogus colormap at [-1] instead of using no colormap.
+Bug would only show in opengl because opengl uses the rgba field instead
+of the colormap table field, which was NULL.
