@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 991 2012-12-04 04:37:55Z wesleyjohnson $
+// $Id: r_segs.c 1002 2013-03-22 19:54:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -643,11 +643,17 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         {
 	    // Boom transparency map
 	    translucent_map_t * tm = & translu_store[ ldef->translu_eff - TRANSLU_ext ];
+#if 0
 	    if( vid.drawmode == DRAW8PAL )
 	    {
 	        // dc_translucentmap only works on DRAW8PAL
 	        dc_translucentmap = W_CacheLumpNum( tm->translu_lump_num, PU_CACHE );
 	    }
+#else
+	    // dc_translucentmap required for DRAW8PAL,
+	    // but is used indirectly in other draw modes, for some TRANSLU.
+	    dc_translucentmap = W_CacheLumpNum( tm->translu_lump_num, PU_CACHE );
+#endif
 	    // for other draws
 	    dc_translucent_index = tm->substitute_std_translucent;
 	}

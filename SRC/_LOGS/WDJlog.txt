@@ -3016,3 +3016,8 @@ Increase savegame min free buffer to 64K.
 Requires 12643 to write thinkers of hgh2.wad.  If was close to write
 trigger that would overrun the 4K free space.
 
+*** w89_boom_translucent_load
+patchfile = w89_3_boom_tranlsu.patch
+- committed revision 1002   by wesley johnson
+RGB draw modes sometimes also use translucent table.
+Load the lump for all draw modes.
