@@ -2944,3 +2944,11 @@ patchfile = w88_5_fogface.patch
 - committed revision 990   by wesley johnson
 Create the fog face sheets needed for some fog modes.
 Draw the fog face sheets when in such foggy sectors.
+
+*** w88_fogjoin
+patchfile = w88_6_fogjoin.patch
+- committed revision 991   by wesley johnson
+Create fog sheets at fog joins for the fogsheet fog model.
+This lessens the visibility with distance similar to true fog ray
+tracing, but using what is available in this map model.  It tolerates
+well mixing fog and non-foggy sectors, which other methods would not.

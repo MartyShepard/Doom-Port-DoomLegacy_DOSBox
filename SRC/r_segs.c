@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 990 2012-12-04 04:34:39Z wesleyjohnson $
+// $Id: r_segs.c 991 2012-12-04 04:37:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1233,13 +1233,24 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
                 // The light is from an extra 3D floor... Check the flags so
                 // there are no undesired cuts.
                 if((rlight->flags & (FF_TRANSLUCENT|FF_FOG)) == (ffloor->flags & (FF_TRANSLUCENT|FF_FOG)))
-                  solid = 1;
+		{
+		   if( ffloor->flags & FF_JOIN_SIDES )
+		   {
+		      float fm = base_fog_alpha * 0.32;  // JOIN
+		      if( view_fogfloor && (dc_iscale < 0x4000))
+		      {
+			  // fade JOIN fogsheet as player approaches it
+			  fm = (fm * dc_iscale) * (1.0/0x4000);
+		      }
+		      dr_alpha = (int)fm;
+		   }
+		   else
+		      solid = 1;
+		}
               }
               else
                 solid = 1;
             }
-            else
-              solid = 0;
 
             rlight->height += rlight->heightstep;
             height = rlight->height;
@@ -2297,7 +2308,8 @@ void R_StoreWallRange( int   start, int   stop)
                   if(!(fff->flags & FF_CUTEXTRA))
                     continue;
 
-                  if(fff->flags & FF_EXTRA && (fff->flags & (FF_TRANSLUCENT|FF_FOG)) != (bff->flags & (FF_TRANSLUCENT|FF_FOG)))
+		  if(fff->flags & FF_EXTRA
+		     && (fff->flags & (FF_TRANSLUCENT|FF_FOG)) != (bff->flags & (FF_TRANSLUCENT|FF_FOG)))
                     continue;
                 }
                 else
@@ -2310,6 +2322,17 @@ void R_StoreWallRange( int   start, int   stop)
 		   || *bff->bottomheight < *fff->bottomheight)
                   continue;
 
+		// check for forced fogsheet
+		if(bff->flags & FF_JOIN_SIDES)
+		{
+		    // and only one forced fogsheet
+		    // note: fweff[0] unused, so safe to check it
+		    if(( ! (fff->flags & FF_INNER_SIDES) )
+		       || (fff->flags & FF_JOIN_SIDES) )
+		    {
+		        continue;  // bff fogsheet
+		    }
+		}
                 break;  // fff overlaps bff, do not render bff side
               } // for fff
               if(fff)  // found fff that completely overlaps bff
@@ -2325,10 +2348,14 @@ void R_StoreWallRange( int   start, int   stop)
             for(fff = frontsector->ffloors; fff; fff = fff->next)
             {
               if(!(fff->flags & FF_INNER_SIDES) || !(fff->flags & FF_EXISTS))
-                 continue;
+                continue;
 	      // inside sides of fff
               if(*fff->topheight < lowcut || *fff->bottomheight > highcut)
                 continue;
+
+	      // check for forced fogsheet
+	      if(fff->flags & FF_JOIN_SIDES)
+		 goto render_side_fff;
 
 	      // look for matching ffloor where we do not render the join side
               for(bff = backsector->ffloors; bff; bff = bff->next)
@@ -2358,15 +2385,16 @@ void R_StoreWallRange( int   start, int   stop)
 		   || *fff->bottomheight < *bff->bottomheight)
                   continue;
 
-                break;
+                break;  // bff overlaps fff, do not render fff side
               } // for bff
               if(bff)  // found bff that completely overlaps fff
                 continue;
 
+	    render_side_fff:
+	      if( i >= MAXFFLOORS ) // also protects against exit from bff loop
+		 break;
               ds_p->thicksides[i] = fff;
               i++;
-	      if( i >= MAXFFLOORS )
-		 break;
             } // for fff
           }
           else if(backsector->ffloors)

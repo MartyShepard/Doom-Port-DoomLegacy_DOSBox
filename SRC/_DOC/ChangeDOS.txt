@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00991 ]: w88 fog join
 [00990 ]: w88 fogface
 [00989 ]: w88 fogdraw
 [00988 ]: w88 extralight add
