@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 961 2012-08-13 23:17:24Z wesleyjohnson $
+// $Id: m_menu.c 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1652,6 +1652,8 @@ menuitem_t EffectsOptionsMenu[]=
 #ifdef BOOM_GLOBAL_COLORMAP
     {IT_STRING | IT_CVAR,0,    "Boom Colormap"    , &cv_boom_colormap , 0},
 #endif
+    {IT_STRING | IT_CVAR,0,    "Water Effect"    , &cv_water_effect   , 0},
+    {IT_STRING | IT_CVAR,0,    "Fog Effect"      , &cv_fog_effect     , 0},
 };
 
 menu_t  EffectsOptionsDef =

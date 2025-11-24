@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 986 2012-12-04 04:15:40Z wesleyjohnson $
+// $Id: r_data.c 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2486,6 +2486,175 @@ const unsigned int  translucent_alpha_table[16] =
    TRANSLU_TABLE_hi,   // 240..255 (94..100%)
 };
 
+
+
+// Fake floor fog and water effect structure
+#define FWE_STORE_INC  16
+fogwater_t *  fweff = NULL;  // array
+// 0 of the array is not used
+static int fweff_num = 0;
+static int fweff_len = 0;  // num allocated
+
+int  R_get_fweff( void )
+{
+   // check for expand store
+   if( fweff_num >= fweff_len )
+   {
+       fweff_len += FWE_STORE_INC;
+       fweff = (fogwater_t*) realloc( fweff, fweff_len * sizeof(fogwater_t) );
+       if( fweff == NULL )
+	  I_Error( "Fog Store: cannot alloc\n" );
+   }
+   memset( &fweff[fweff_num], 0, sizeof( fogwater_t ) );
+   return fweff_num++;
+}
+
+
+// update config settings
+void R_FW_config_update( void )
+{
+   int i;
+   // If not init yet, then init will call this again
+   if( ! fweff )
+       return;
+
+   // defaults affected by controls
+   fweff[1].effect = (fogwater_effect_e) cv_water_effect.value;
+   fweff[2].effect = (fogwater_effect_e) cv_fog_effect.value;
+   fweff[3].effect = fweff[1].effect;
+   // update all fweff settings that were defaulted
+   for( i=5; i<fweff_num; i++ )
+   {
+       byte fwf = fweff[i].flags;
+       fogwater_t * def = & fweff[ fwf & FWF_index ];
+       if( fwf & FWF_default_effect )
+       {
+	   fweff[i].effect = def->effect;
+       }
+       if( fwf & FWF_default_alpha )
+       {
+	   fweff[i].alpha = def->alpha;
+	   fweff[i].fsh_alpha = def->fsh_alpha;
+       }
+   }
+   // Must also change the affected FakeFloor flags
+   P_Config_FW_Specials ();
+}
+
+// start of level
+void R_Clear_FW_effect( void )
+{
+    if( ! fweff )  // no memory yet
+    { 
+        // init
+        R_get_fweff();  // [0] unused
+        R_get_fweff();  // [1] water
+        R_get_fweff();  // [2] fog
+        R_get_fweff();  // [3] opaque water
+        R_get_fweff();  // [4] solid floor
+        fweff[0].effect = FW_clear; // unused
+        fweff[0].alpha = 0;
+        fweff[0].fsh_alpha = 0;
+        fweff[0].flags = 0;
+        fweff[1].effect = FW_clear;
+        fweff[1].alpha = 128;  // default water alpha
+        fweff[1].fsh_alpha = 128;
+        fweff[1].flags = FWF_water | FWF_default_alpha | FWF_default_effect;
+        fweff[2].effect = FW_fogdust;
+        fweff[2].alpha = 110;  // default fog alpha
+        fweff[2].fsh_alpha = 110 * 0.90;
+        fweff[2].flags = FWF_fog | FWF_default_alpha | FWF_default_effect;
+        fweff[3].effect = FW_clear;
+        fweff[3].alpha = 190;  // default opaque water
+        fweff[3].fsh_alpha = 190;
+        fweff[3].flags = FWF_opaque_water | FWF_default_alpha | FWF_default_effect;
+        fweff[4].effect = FW_clear;  // does not matter
+        fweff[4].alpha = 128;  // default solid translucent floor
+        fweff[4].fsh_alpha = 128;
+        fweff[4].flags = FWF_solid_floor;  // not settable defaults
+	R_FW_config_update();  // config settings
+    }
+    fweff_num = 5;  // only save the defaults
+}
+
+
+// Create Fog Effect from texture name string
+// Syntax: #aaaN
+// where aaa is alpha, in decimal, 0..255
+// where N is fog_effect, from this table
+fogwater_effect_e  fwe_code_table[FW_num] =
+{
+   FW_clear,     // 'A' no fog  (old WATER default)
+   FW_cast,      // 'B' paint all surfaces with textures
+   FW_colormap,  // 'C' use colormap fog (which only colors all sectors)
+   FW_inside,    // 'D' render inside side, plane views (old FOG)
+   FW_foglite,   // 'E' outside side, plane views, low alpha overall fog sheet
+   FW_fogdust,   // 'F' outside, when in fog apply overall fog sheet (FOG default)
+   FW_fogsheet,  // 'G' outside, overall fog sheet, sector join fog sheet
+   FW_fogfluid,  // 'H' outside, inside fluid, fogsheet
+};
+
+
+// return index into fweff
+int R_Create_FW_effect( int special_linedef, char * tstr )
+{
+    int def_index =  // of fweff[]
+       ( special_linedef == 304 )? FWF_opaque_water  // opaque water
+     : ( special_linedef == 302 )? FWF_fog           // fog
+     : ( special_linedef == 301 )? FWF_water         // water
+     : ( special_linedef == 300 )? FWF_solid_floor   // solid floor
+     : 0;
+    int fwe_index;
+    byte wflags = 0;
+    fogwater_t * fwp;
+
+    if( tstr[0] != '#' )
+    {
+        return def_index;  // can use a default
+    }
+    // make a unique entry for this situation
+    fwe_index = R_get_fweff();
+    fwp = &fweff[fwe_index];
+    fwp->effect = fweff[def_index].effect;  // get default settings
+    fwp->alpha = fweff[def_index].alpha;
+    wflags = fweff[def_index].flags;
+
+    if( tstr[0] == '#')  // decode upper texture string
+    {
+        // alpha
+        fwp->alpha = CHAR_TO_INT(tstr[1])*100 + CHAR_TO_INT(tstr[2])*10 + CHAR_TO_INT(tstr[3]);
+        wflags &= ~ FWF_default_alpha;
+        // fog type
+        char chf = tstr[4];
+        if( chf >= 'A' && chf <= ('A'+FW_num) )
+        {
+	    fwp->effect = fwe_code_table[ chf - 'A' ];
+	    wflags &= ~ FWF_default_effect;
+	}
+    }
+    if( special_linedef == 300 )  // FWF_solid_floor
+    {
+        fwp->effect = FW_clear;  // no internal fog effect
+    }
+    switch( fwp->effect )
+    {
+     case FW_foglite:
+        fwp->fsh_alpha = fwp->alpha * 0.60;
+        break;
+     case FW_fogdust:
+        fwp->fsh_alpha = fwp->alpha * 0.90;
+        break;
+     case FW_fogsheet: 
+        fwp->fsh_alpha = fwp->alpha * 0.80;
+        break;
+     case FW_fogfluid:
+     default:
+        fwp->fsh_alpha = fwp->alpha;
+        break;
+    }
+    fwp->flags = wflags;
+    return fwe_index;
+}
 
 
 //

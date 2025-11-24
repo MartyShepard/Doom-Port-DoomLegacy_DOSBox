@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_segs.c 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -956,8 +956,9 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     //   for horizontal / vertical / diagonal. Diagonal?
 
     curline = ds->curline;
-    backsector = ffloor->target;
-    frontsector = curline->frontsector == ffloor->target ? curline->backsector : curline->frontsector;
+    backsector = ffloor->taggedtarget;
+    frontsector = (curline->frontsector == ffloor->taggedtarget) ?
+                   curline->backsector : curline->frontsector;
     if (curline->v1->y == curline->v2->y)
         orient_light = -ORIENT_LIGHT;
     else if (curline->v1->x == curline->v2->x)

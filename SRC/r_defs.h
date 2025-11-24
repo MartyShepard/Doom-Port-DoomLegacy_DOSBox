@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: r_defs.h 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -258,13 +258,13 @@ typedef enum
   FF_CUTSPRITES        = 0x100,  //Must cut sprites, Final Step in 3D water
   FF_EXTRA             = 0x200,  //Translucent, water, and fog,
 				 //It gets cut by FF_CUTEXTRAS
-//  FF_unused          = 0x400,  //
+  FF_FLUID             = 0x400,  //Fluid surface
   FF_TRANSLUCENT       = 0x800,  //Translucent (see through)
   FF_FOG               = 0x1000, //Fog area
   FF_INNER_PLANES      = 0x2000, //Render the inside view of planes (FOG/WATER)
   FF_INNER_SIDES       = 0x4000, //Render the inside view of sides (FOG/WATER)
-//  FF_unused          = 0x8000, //
-//  FF_unused          = 0x10000,//
+  FF_JOIN_SIDES        = 0x8000, //Render the join side between similar sectors
+  FF_FOGFACE           = 0x10000,//Render a fogsheet in face
   FF_SWIMMABLE         = 0x20000,//Player can swim
 //  FF_unused          = 0x40000,//
 //  FF_unused          = 0x80000,//
@@ -288,19 +288,20 @@ typedef struct ffloor_s
   fixed_t          *bottomyoffs;
 
   int              model_secnum; // model sector num used in linedef
-  ffloortype_e     flags;  // flags from special linedef
+  ffloortype_e     flags;  // draw and property flags set by special linedef
 
   struct line_s  * master; // the special linedef generating this floor
 
-  struct sector_s* target; // tagged sector that is affected
+  struct sector_s* taggedtarget; // tagged sector that is affected
 
   // double linked list of ffloor_t in sector
   struct ffloor_s* next;
   struct ffloor_s* prev;
 
-  int              lastlight;		// light index, FF_DOUBLESHADOW
-  int              alpha;		// FF_TRANSLUCENT
-//  fixed_t          ff_delta;		// unused
+  uint16_t         fw_effect;		// index to fweff, 0 is unused
+   					// FF_FOG, FF_TRANSLUCENT, alpha
+  uint8_t          alpha;
+  uint8_t          lastlight;		// light index, FF_SLAB_SHADOW
 } ffloor_t;
 
 
@@ -454,7 +455,7 @@ typedef struct sector_s
     int                 numlights;
     boolean             moved;  // floor was moved
 
-    int                 validsort; //if == validsort allready been sorted
+    int                 validsort; //if == validsort already been sorted
     boolean             added;
 
     // SoM: 4/3/2000: per-sector colormaps!

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 972 2012-11-10 22:18:39Z wesleyjohnson $
+// $Id: p_setup.c 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -670,6 +670,7 @@ void P_LoadSectors (int lump)
         ss->numlights = 0;
         ss->attached = NULL;
         ss->numattached = 0;
+        ss->extra_colormap = NULL;
         ss->moved = true;  // force init of light lists
         ss->floor_xoffs = ss->ceiling_xoffs = ss->floor_yoffs = ss->ceiling_yoffs = 0;
         ss->bottommap = ss->midmap = ss->topmap = -1;
@@ -1073,6 +1074,7 @@ void P_LoadSideDefs2(int lump)
 	  // Set the colormap of all tagged sectors.
 
 	  // SoM: R_CreateColormap will only create a colormap in software mode...
+	  // [WDJ] Expanded to hardware mode too.
 	  {
 	    if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
             {
@@ -1168,17 +1170,14 @@ void P_LoadSideDefs2(int lump)
        //Hurdler: added for alpha value with translucent 3D-floors/water
         case 300:	// Legacy solid translucent 3D floor in tagged
         case 301:	// Legacy translucent 3D water in tagged
+        case 302:	// Legacy 3D fog in tagged
+        case 304:	// Legacy opaque fluid (because of inside)
 	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
 	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
 	    // Uses model sector colormap and lightlevel
-            if(msd->toptexture[0] == '#')
-            {
-	        // interpret texture name string as decimal number
-                char *col = msd->toptexture;
-                sd->toptexture = sd->bottomtexture = ((col[1]-'0')*100+(col[2]-'0')*10+col[3]-'0')+1;
-            }
-            else
-                sd->toptexture = sd->bottomtexture = 0;
+	    // Interpret texture name string as decimal alpha and fogwater effect
+            sd->toptexture = R_Create_FW_effect( sd->special, msd->toptexture );
+	    sd->bottomtexture = 0;
             sd->midtexture = R_TextureNumForName(msd->midtexture); // side texture
             break;
 
@@ -1667,6 +1666,7 @@ boolean P_SetupLevel (int           episode,
 //    R_LoadTextures ();
 //    R_FlushTextureCache();
 
+    R_Clear_FW_effect();  // clear and init of fog store
     R_ClearColormaps();  // colormap ZMalloc cleared by Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1)
 
 #ifdef FRAGGLESCRIPT
@@ -1731,7 +1731,7 @@ boolean P_SetupLevel (int           episode,
     P_SpawnSpecials ();
     P_InitBrainTarget();
 
-    //BP: spawnplayers now (beffor all structure are not inititialized)
+    //BP: spawnplayers now (before all structure are not inititialized)
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if (playeringame[i])
@@ -1741,12 +1741,11 @@ boolean P_SetupLevel (int           episode,
                 players[i].mo = NULL;
                 G_DoReborn(i);
             }
-            else
-                if( demoversion>=128 )
-                {
-                    players[i].mo = NULL;
-                    G_CoopSpawnPlayer (i);
-                }
+            else if( demoversion>=128 )
+	    {
+	        players[i].mo = NULL;
+	        G_CoopSpawnPlayer (i);
+	    }
         }
     }
 

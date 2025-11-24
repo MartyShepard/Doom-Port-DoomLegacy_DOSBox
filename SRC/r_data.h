@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_data.h 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -265,4 +265,50 @@ extern translucent_map_t *  translu_store;  // array
 
 int  R_setup_translu_store( int lump_num );
   
+
+// Fog data structure
+typedef enum
+{
+   FW_colormap,  // use colormap fog (which only colors all sectors)
+// water     
+   FW_clear,     // no fog  (old WATER default)
+   FW_cast,      // paint all surfaces with textures
+   FW_fogfluid,  // outside, inside fluid, fogsheet
+// fog
+   FW_inside,    // render inside side, plane views (old FOG)
+   FW_foglite,   // outside side, plane views, low alpha overall fog sheet
+   FW_fogdust,   // outside, when in fog apply overall fog sheet (FOG default)
+   FW_fogsheet,  // outside, inside, overall fog sheet, sector join fog sheet
+   FW_num
+} fogwater_effect_e;
+
+enum fogwater_flags_e {
+// default index
+   FWF_water = 1,
+   FWF_fog = 2,
+   FWF_opaque_water = 3,
+   FWF_solid_floor = 4,
+   FWF_index = 0x03,
+// flags
+   FWF_default_alpha  = 0x40,
+   FWF_default_effect = 0x80,
+};
+
+// fake floor fog and water effects
+typedef struct
+{
+   fogwater_effect_e  effect;
+   byte  alpha;  // alpha 0..255
+   byte  fsh_alpha; // fog sheet reduced alpha
+   byte  flags;  // FWF_ from fogwater_flags_e
+} fogwater_t;
+
+extern fogwater_t *  fweff;  // array
+// 0 of the array is not used
+
+// return index into fog_store
+int R_Create_FW_effect( int special_linedef, char * tstr );
+void R_Clear_FW_effect( void );
+void R_FW_config_update( void );  // upon config change
+
 #endif

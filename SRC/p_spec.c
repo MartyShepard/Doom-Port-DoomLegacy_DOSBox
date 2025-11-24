@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 986 2012-12-04 04:15:40Z wesleyjohnson $
+// $Id: p_spec.c 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2885,7 +2885,7 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, uint3
   //Add the floor
   ffloor = Z_Malloc(sizeof(ffloor_t), PU_LEVEL, NULL);
   ffloor->model_secnum = modsec - sectors; // model sector from linedef
-  ffloor->target = taggedsec;
+  ffloor->taggedtarget = taggedsec;
   // model sector floor -> ffloor bottom
   ffloor->bottomheight     = &modsec->floorheight;
   ffloor->bottompic        = &modsec->floorpic;
@@ -2903,16 +2903,15 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, uint3
   ffloor->flags = flags;
   ffloor->master = master;
   // [WDJ] do not leave uninit
-//  ffloor->ff_delta = 0;   // unused
   ffloor->lastlight = 0;  // caused segfault
+  ffloor->fw_effect = 0;
   ffloor->alpha = 0;
 
-  if(flags & FF_TRANSLUCENT)
+  if(flags & (FF_TRANSLUCENT|FF_FOG))
   {
-    if(sides[master->sidenum[0]].toptexture > 0)
-      ffloor->alpha = sides[master->sidenum[0]].toptexture;
-    else
-      ffloor->alpha = 0x80; // 127
+      // get fog and translucent alpha
+      ffloor->fw_effect = sides[master->sidenum[0]].toptexture;
+      ffloor->alpha = fweff[ffloor->fw_effect].alpha;
   }
   P_LinkFFloor(taggedsec, ffloor);	// append to sector ffloor list
 }
@@ -2922,6 +2921,52 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, uint3
 //
 // SPECIAL SPAWNING
 //
+
+// Special linedefs flags used by SpawnSpecials and Config_FW_Specials
+// index by (fogwater_flags_e & FWF_index) as in fweff[].flags
+static const uint32_t   fw_linedef_flags_table[4] =
+{
+   0,  // unused
+//[1] 301: Legacy translucent 3D water in tagged
+  FF_EXISTS|FF_TRANSLUCENT|FF_SWIMMABLE
+     |FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES,
+//[2] 302: Legacy 3D fog in tagged
+  FF_EXISTS|FF_FOG
+     |FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES,
+//[3] 304: Legacy opaque fluid
+  FF_EXISTS|FF_SWIMMABLE
+     |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES
+     |FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES,
+//[4] 300: Legacy translucent floor, does not allow set default effect
+};
+
+// index by fogwater_effect_e;
+static const uint32_t  fogwater_flags_table[FW_num] = {
+// FW_colormap: // use colormap fog (which only colors all sectors)
+  0,
+// FW_clear:    // no fog  (WATER default)
+  FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES,
+// FW_cast:     // paint all surfaces with textures
+  FF_FLUID
+     |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES,
+// FW_fogfluid: // outside, inside fluid, fogsheet
+  FF_FLUID|FF_FOG|FF_FOGFACE
+     |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES,
+// FW_inside: render inside side, plane views (old FOG)
+  FF_INNER_SIDES|FF_INNER_PLANES,
+// FW_foglite:  // outside side, plane views, low alpha overall fog sheet
+  FF_FOG|FF_FOGFACE
+     |FF_OUTER_SIDES|FF_OUTER_PLANES,
+   //|FF_INNER_PLANES,
+// FW_fogdust:  // outside, when in fog apply overall fog sheet (FOG default)
+  FF_FOG|FF_FOGFACE
+     |FF_OUTER_SIDES|FF_OUTER_PLANES,
+   //|FF_INNER_PLANES,
+// FW_fogsheet: // outside, overall fog sheet, sector join fog sheet
+  FF_FOG|FF_FOGFACE
+     |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_PLANES|FF_JOIN_SIDES,
+   //|FF_INNER_SIDES,
+};
 
 //
 // P_SpawnSpecials
@@ -2938,6 +2983,7 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, uint3
 void P_SpawnSpecials (void)
 {
     sector_t*   sector;
+    uint32_t    flags;
     int         i;
     int         episode;
     // update all special sectors
@@ -3175,20 +3221,34 @@ void P_SpawnSpecials (void)
 
           // TL water
           case 301:	// Legacy translucent 3D water in tagged
-	    // 3D water uses model sector ceiling and floor, heights and flats.
 	    // The middle texture is the water sides, displayed translucent.
 	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
-            // Within the water is the lightlevel and colormap of the model sector.
-	    // Under the 3Dfloor is the light and colormap of the model sector.
+	    flags = fw_linedef_flags_table[FWF_water];
+	    goto water_fakefloor;
+
+          // Opaque water
+          case 304:	// Legacy opaque fluid
+	    // The middle texture is the slab sides, forced opaque.
+	    // Upper texture encodes fog alpha: #nnn  => 0..255
+	    flags = fw_linedef_flags_table[FWF_opaque_water];
+
+	  water_fakefloor:
+	    // 3D water uses model sector ceiling and floor, heights and flats.
+	    // Within the water or fog is the lightlevel and colormap of the model sector.
+	    // Over and Under is the light and colormap of the sector.
 	    if ( model_secnum < 0 )  goto missing_model;
 	    model_secp->friction = water_friction;
 	    model_secp->movefactor = water_movefactor;
-            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
-              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-	        FF_EXISTS|FF_TRANSLUCENT|FF_SWIMMABLE
-	        |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES
-		|FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
+	        side_t * sd = & sides[ effline->sidenum[0] ];
+	        fogwater_t * fwp = & fweff[ sd->toptexture ];
+	        // fog and water flags vary
+		flags = fogwater_flags_table[fwp->effect] | flags;
+	        while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	        {
+		    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
+		}
+	        sd->toptexture = 1;
 	    }
 	    legacy_detect = 1;
             break;
@@ -3197,24 +3257,17 @@ void P_SpawnSpecials (void)
           case 302:	// Legacy 3D fog in tagged
 	    // Fog uses model sector ceiling and floor heights.
             // Within the fog is the lightlevel and colormap of the model sector.
+	    // Over and Under is the light and colormap of the sector.
 	    if ( model_secnum < 0 )  goto missing_model;
-#if 0
-            // SoM: Because it's fog, check for an extra colormap and set
-            // the fog flag...
-	    // [WDJ] FIXME: this messes with a common colormap, because
-	    // one sector used it for fog ??
-	    // It should be copied and the copy modified.
-	    // Also ext_colormap is a current selection and may not even be
-	    // set to a valid value at this time.
-            if(model_secp->ext_colormap)
-              model_secp->ext_colormap->fog = 1;
-#endif	   
-            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
-              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		 FF_EXISTS|FF_FOG
-		 |FF_INNER_SIDES|FF_INNER_PLANES
-		 |FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
+	        side_t * sd = & sides[ effline->sidenum[0] ];
+	        fogwater_t * fwp = & fweff[ sd->toptexture ];
+	        // all get FF_FOG, but FW_inside does not get FF_FOGFACE
+		flags = fogwater_flags_table[fwp->effect] | fw_linedef_flags_table[FWF_fog];
+	        while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+	        {
+		    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
+	        }
 	    }
 	    legacy_detect = 1;
             break;
@@ -3227,30 +3280,12 @@ void P_SpawnSpecials (void)
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
 	    {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-			FF_EXISTS|FF_CUTSPRITES );
+		FF_EXISTS|FF_CUTSPRITES );
 	    }
 	    legacy_detect = 1;
             break;
 
-          // Opaque water
-          case 304:	// Legacy opaque fluid
-	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
-	    // The middle texture is the slab sides.
-            // Within the water is the lightlevel and colormap of the model sector.
-	    // Under the 3Dfloor is the light and colormap of the model sector.
-	    if ( model_secnum < 0 )  goto missing_model;
-	    model_secp->friction = water_friction;
-	    model_secp->movefactor = water_movefactor;
-            while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
-              P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-	        FF_EXISTS|FF_SWIMMABLE
-	        |FF_OUTER_SIDES|FF_OUTER_PLANES|FF_INNER_SIDES|FF_INNER_PLANES
-		|FF_SLAB_SHADOW|FF_EXTRA|FF_CUTEXTRA|FF_CUTSPRITES );
-	    }
-            break;
-
-          // Double light effect
+          // Inner light effect
           case 305:	// Legacy inner light, within slab
 	    // Light uses model sector ceiling and floor heights.
             // Within the light bounds is the lightlevel and colormap of the model sector.
@@ -3327,6 +3362,39 @@ void P_SpawnSpecials (void)
 #endif
 }
 
+
+
+// Called to update fogwater special flags after changing config
+void P_Config_FW_Specials (void)
+{
+    sector_t*   sector = sectors;
+    ffloor_t*   ffloor;
+    fogwater_t* fwp;
+    int         i;
+
+    // all fake floor in all sectors
+    for (i=0 ; i<numsectors ; i++, sector++)
+    {
+        for(ffloor = sector->ffloors; ffloor; )
+        {
+	    if( ffloor->fw_effect )  // that use fogwater effect
+	    {
+	        fwp = & fweff[ffloor->fw_effect];
+	        if((fwp->flags & FWF_default_effect) && (fwp->flags & FWF_index)) // set defaults
+	        {
+		    // fog and water flags vary
+		    ffloor->flags =
+		     fw_linedef_flags_table[fwp->flags & FWF_index]
+		     | fogwater_flags_table[fwp->effect];
+		}
+
+	        // get fog and translucent alpha
+	        ffloor->alpha = fweff[ffloor->fw_effect].alpha;
+	    }
+	    ffloor = ffloor->next;
+	}
+    } // for sector
+}
 
 
 

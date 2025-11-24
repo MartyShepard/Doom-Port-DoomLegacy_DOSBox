@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 928 2012-06-09 18:34:11Z wesleyjohnson $
+// $Id: p_spec.h 987 2012-12-04 04:23:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2010 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -97,6 +97,9 @@ void    P_SetupLevelFlatAnims (void);
 
 // at map load
 void    P_SpawnSpecials (void);
+
+// Called to update fogwater special flags after changing config
+void    P_Config_FW_Specials (void);
 
 // every tic
 void    P_UpdateSpecials (void);

@@ -2899,3 +2899,25 @@ patchfile = w88_1_LinkFFloor.patch
 Changed P_AddFFloor to P_LinkFFloor, for clarity.
 Changed flags parameter type to uint32_t.
 Cleaned up some comments and indenting.
+
+*** w88_fogwater_decode
+patchfile = w88_2_fogwater_decode.patch
+- committed revision 987   by wesley johnson
+Create data structures for translucent effects.
+Create effect options for "water effect", and "fog effect".
+Change linedef decoding for new water and fog effects, affecting
+301 (translucent water), 302 (fog), 304 (opaque water).
+Each of these can use the following alpha and fog selection.
+For opaque water, it only affects the fog inside.
+The #xxx in upper texture that set the alpha now also selects the fog
+effect, and the alpha can be 0..255.
+Syntax  #xxxF, xxx is the alpha (0..255) and F is the effect.
+'A': FW_clear, no fog  (old WATER default)
+'B': FW_cast,  paint all surfaces with textures
+'C': FW_colormap, use colormap fog (which only colors all sectors)
+'D': FW_inside, render inside side, plane views (old FOG)
+'E': FW_foglite, outside side, plane views, low alpha overall fog sheet
+'F': FW_fogdust, outside, when in fog apply overall fog sheet (FOG default)
+'G': FW_fogsheet, outside, overall fog sheet, sector join fog sheet
+'H': FW_fogfluid, outside, inside fluid, fogsheet
+This only handles the linedefs, the code that draws these is in later patches.
