@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: s_sound.c 1008 2013-04-26 01:50:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -427,12 +427,19 @@ static void S_GetSfx( sfxinfo_t * sfx )
 // [WDJ] Common routine to Free data for a sfx
 void S_FreeSfx( sfxinfo_t * sfx )
 {
-    I_FreeSfx( sfx );  // some must free their own buffers
-
-    if( sfx->data )    // if not already free
+    if( sfx->link )  // do not free linked data
     {
-        Z_Free( sfx->data );
         sfx->data = NULL;
+    }
+    else if( sfx->data )
+    {
+        I_FreeSfx( sfx );  // some must free their own buffers
+
+        if( sfx->data )    // if not already free
+        {
+	    Z_Free( sfx->data );
+	    sfx->data = NULL;
+	}
     }
 }
 

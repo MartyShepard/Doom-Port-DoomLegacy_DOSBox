@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: p_setup.c 1008 2013-04-26 01:50:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1834,7 +1834,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
                     if (devparm)
                         CONS_Printf ("Sound %.8s replaced\n", name);
 
-                    I_FreeSfx (&S_sfx[j]);
+                    S_FreeSfx (&S_sfx[j]);
 
                     replaces++;
                 }

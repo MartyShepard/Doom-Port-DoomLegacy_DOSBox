@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: I_sound.c 1008 2013-04-26 01:50:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -102,8 +102,6 @@ SAMPLE *raw2SAMPLE(unsigned char *dsdata, int len)
     SAMPLE *spl;
 
     spl=Z_Malloc(sizeof(SAMPLE),PU_STATIC,NULL);
-    if(spl==NULL)
-        I_Error("Raw2Sample : no more free mem");
     spl->bits = 8;
     spl->stereo = 0;
     spl->freq = *((unsigned short*)dsdata+1);   //mostly 11025, but some at 22050.
@@ -148,7 +146,7 @@ void I_FreeSfx (sfxinfo_t* sfx)
     // free sample data
     if( sfx->data )
     {
-        dssfx = (byte*) ((SAMPLE *)sfx->data)->data - 8;
+        dssfx = (byte*) ((SAMPLE *)sfx->data)->data - 8;  // undo skip header
         Z_Free (dssfx);
         // Allegro SAMPLE structure
         Z_Free (sfx->data);
