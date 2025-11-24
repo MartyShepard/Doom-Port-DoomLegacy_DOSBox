@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 972 2012-11-10 22:18:39Z wesleyjohnson $
+// $Id: r_data.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2460,6 +2460,31 @@ void Analyze_translucent_maps( void )
 }
 #endif
 
+
+// Table of alpha = 0..255 to translucent tables to be used for r_draw8
+// For use by DRAW8PAL, Not for draw modes that can use dr_alpha.
+// index by alpha >> 4
+const unsigned int  translucent_alpha_table[16] =
+{
+   // hi=10..15%, more=20..25%, med=50%
+   TRANSLU_TABLE_hi,   // 0..15    ( 0.. 6%)
+   TRANSLU_TABLE_hi,   // 16..31   ( 6..12%)
+   TRANSLU_TABLE_hi,   // 32..47   (12..18%)
+   TRANSLU_TABLE_more, // 48..63   (18..25%)
+   TRANSLU_TABLE_more, // 64..79   (25..31%)
+   TRANSLU_TABLE_more, // 80..95   (31..37%)
+   TRANSLU_TABLE_med,  // 96..111  (37..43%)
+   TRANSLU_TABLE_med,  // 112..127 (44..50%)
+   TRANSLU_TABLE_med,  // 128..143 (50..56%)
+ // reversed table usage, per TRANSLU_REV_ALPHA
+   TRANSLU_TABLE_med,  // 144..159 (56..62%)
+   TRANSLU_TABLE_more, // 160..177 (63..69%)
+   TRANSLU_TABLE_more, // 176..191 (69..75%)
+   TRANSLU_TABLE_more, // 192..207 (75..81%)
+   TRANSLU_TABLE_hi,   // 208..223 (81..87%)
+   TRANSLU_TABLE_hi,   // 224..239 (88..93%)
+   TRANSLU_TABLE_hi,   // 240..255 (94..100%)
+};
 
 
 

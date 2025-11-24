@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 925 2012-06-08 00:07:49Z wesleyjohnson $
+// $Id: r_draw16.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -324,13 +324,31 @@ void R_DrawTranslucentColumn_16 (void)
         // *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
     switch( dc_translucent_index )
     {
+     case 0:
+       {
+	   unsigned int alpha_d = dr_alpha >> 3; // 5 bit alpha
+	   unsigned int alpha_r = 31 - alpha_d;
+	   do
+	   {
+	       // alpha translucent
+	       register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+	       register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
+	       register uint32_t dc1 = *(uint16_t*)dest & mask_g;
+	       dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
+	       dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
+	       *(uint16_t*)dest = dc0 | dc1;
+	       dest += vid.ybytes;
+	       frac += fracstep;
+	   } while (count--);
+	}
+        break;
      case TRANSLU_more: // 20 80  puffs
         do
         {
 	    // 25/75 translucent
 	    register uint16_t dc = (*(uint16_t*)dest & mask_11110)>>1;
-	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-//	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+//	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
+	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
 	    *(uint16_t*)dest=
 	     ((nc & mask_11100)>>2) // 25%
 	     + (dc + ((dc & mask_11110)>>1)); // 75%
@@ -359,8 +377,8 @@ void R_DrawTranslucentColumn_16 (void)
         {
 	    // 50/50 translucent
 	    register uint16_t dc = *(uint16_t*)dest;
-	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-//	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+//	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
+	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
 	    *(uint16_t*)dest=
 	     ((nc & mask_11110)>>1)  // 50%
 	     + ((dc & mask_11110)>>1);  // 50%
@@ -369,7 +387,6 @@ void R_DrawTranslucentColumn_16 (void)
 	} while (count--);
         break;
      case TRANSLU_fire: // 50 50 but brighter for fireballs, shots..
-     case TRANSLU_fx1:  // 50 50 brighter some colors, else opaque for torches
         do
         {
 	    // 50/50 translucent
@@ -380,6 +397,46 @@ void R_DrawTranslucentColumn_16 (void)
 	    *(uint16_t*)dest=
 	     ((nc & mask_11110)>>1)  // 50%
 	     + ((dc & mask_11110)>>1);  // 50%
+	    dest += vid.ybytes;
+	    frac += fracstep;
+	} while (count--);
+        break;
+     case TRANSLU_fx1:  // Linedef 288
+        // 50 50 brighter some colors, else opaque for torches
+#define FX1_OPTION 1
+        do
+        {
+	    // 50/50 translucent with modifications
+	    register int sb = dc_source[frac>>FRACBITS];
+#ifdef HIGHCOLORMAPS
+	    register uin16_t nc = hicolormaps[ sb  ];
+#else
+	    register uint16_t nc = color8.to16[dc_colormap[sb]];
+//	    register uint16_t nc = color8.to16[sb];
+#endif
+#if FX1_OPTION==1
+	    // check translucent map for opaque, sprite vrs white bkg
+	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+	    register int  tdiff = sb - twht;  // any change
+#else
+	    // check translucent map for opaque, blk bkg vrs white bkg
+	    register byte tblk = dc_translucentmap[ (sb << 8) ];
+	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+	    register int  tdiff = tblk - twht;
+#endif
+
+	    if( tdiff > 2 || tdiff < -2 )
+	    {
+	        // 50/50
+	        register uint16_t dc = *(uint16_t*)dest;
+	        *(uint16_t*)dest=
+		 ((nc & mask_11110)>>1)  // 50%
+		 + ((dc & mask_11110)>>1);  // 50%
+	    }
+	    else
+	    {
+	        *(uint16_t*)dest= nc; // opaque
+	    }
 	    dest += vid.ybytes;
 	    frac += fracstep;
 	} while (count--);
@@ -409,8 +466,8 @@ void R_DrawTranslucentColumn_16 (void)
 #if 0
 	// 75/25 translucent
 	register uint16_t dc = *(uint16_t*)dest;
-	register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
-//	register uint16_t nc = (color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]] & mask_11110)>>1;
+//	register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
+	register uint16_t nc = (color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]] & mask_11110)>>1;
         *(uint16_t*)dest=
             (nc + ((nc & mask_11110)>>1))  // 75%
             + ((dc & mask_11100)>>2); // 25%
@@ -449,7 +506,7 @@ void R_DrawTranslucentColumn_16 (void)
 
 // transparent with skin translations
 // Although the vissprite has capability for any transparency,
-// this is only called with TRANSLU_hi
+// Called with TRANSLU_hi or TRANSLU_more, or arbitrary by thing TRANSMASK
 void R_DrawTranslatedTranslucentColumn_16(void)
 {
 #if 1
@@ -549,7 +606,7 @@ void R_DrawTranslatedColumn_16 (void)
     do
     {
 #ifdef HIGHCOLORMAPS
-        *dest = hicolormaps[ ((uint16_t*)dc_skintran[ dc_source[frac>>FRACBITS]]];
+        *dest = hicolormaps[ ((uint16_t*)dc_skintran[ dc_source[frac>>FRACBITS]]] ];
 #else
         *(uint16_t*)dest = color8.to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
 #endif
@@ -573,7 +630,7 @@ void R_DrawSpan_16 (void)
 {
     fixed_t             xfrac;
     fixed_t             yfrac;
-    byte*               dest;
+    byte *              dest;
     int                 count;
 
 #ifdef RANGECHECK
@@ -597,18 +654,15 @@ void R_DrawSpan_16 (void)
 
     do
     {
-#ifdef HICOLORMAPS
         // Current texture index in u,v.
-        register int spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-
+        xfrac &= flat_imask;
+        register int spot = ((yfrac>>flatfracbits)&flat_ymask) + (xfrac>>FRACBITS);
+#ifdef HICOLORMAPS
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
         *(uint16_t*)dest = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
-
 #else
-        xfrac &= 0x3fFFff;
-//        *(uint16_t*)dest = color8.to16[ ds_colormap[ds_source[((yfrac >> (16 - 6)) & (0x3f << 6)) | (xfrac >> 16)]] ];
-        *(uint16_t*)dest = color8.to16[ ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & flatmask) | (xfrac >> 16)]] ];
+        *(uint16_t*)dest = color8.to16[ ds_colormap[ds_source[spot]] ];
 #endif
         dest += 2;
         // Next step in u,v.
@@ -621,12 +675,14 @@ void R_DrawSpan_16 (void)
 
 void R_DrawTranslucentSpan_16(void)
 {
-    fixed_t xfrac;
-    fixed_t yfrac;
-    fixed_t xstep;
-    fixed_t ystep;
-    byte *dest;
-    int count;
+    fixed_t xfrac, yfrac;
+    fixed_t xstep, ystep;
+    unsigned int alpha_d = dr_alpha;
+    unsigned int alpha_r, count;
+    byte * dest;
+
+    alpha_d >>= 3; // 5 bit alpha
+    alpha_r = 31 - alpha_d;
 
 #ifdef RANGECHECK
     if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
@@ -636,7 +692,7 @@ void R_DrawTranslucentSpan_16(void)
     }
 #endif
 
-    xfrac = ds_xfrac & ((flatsize << FRACBITS) - 1);
+    xfrac = ds_xfrac & flat_imask;
     yfrac = ds_yfrac;
 
     dest = ylookup[ds_y] + columnofs[ds_x1];
@@ -652,28 +708,27 @@ void R_DrawTranslucentSpan_16(void)
         // Current texture index in u,v.
         // Lookup pixel from flat texture tile,
 #ifdef HICOLORMAPS
-        // Current texture index in u,v.
-        register int spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
+        register int spot = ((yfrac>>flatfracbits) & flat_ymask) + ((xfrac>>FRACBITS) & flat_xmask);
 
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
         register uint16_t nc = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
 
 #else
-        xfrac &= 0x3fFFff;
-	// 50/50 translucent
-	register uint16_t nc = color8.to16[ ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)]] ];
+	register uint16_t nc = color8.to16[ ds_colormap[ds_source[((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> FRACBITS)]] ];
 #endif
-	register uint16_t dc = *(uint16_t*)dest;
-        *(uint16_t*)dest=
-	    ((nc & mask_11110)>>1)  // 50%
-	    + ((dc & mask_11110)>>1);  // 50%
+        // alpha translucent
+	register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
+	register uint32_t dc1 = *(uint16_t*)dest & mask_g;
+	dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
+	dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
+	*(uint16_t*)dest = dc0 | dc1;
         dest+=2;
 
         // Next step in u,v.
         xfrac += xstep;
         yfrac += ystep;
-        xfrac &= ((flatsize << FRACBITS) - 1);
+        xfrac &= flat_imask;
     }
     while (--count);
 }

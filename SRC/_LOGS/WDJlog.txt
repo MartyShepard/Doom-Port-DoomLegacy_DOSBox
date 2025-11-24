@@ -2870,5 +2870,19 @@ Disabled debug printf statement concerning netvars.
 
 *** w87_fs_misc
 patchfile = w87_5b_fs_misc.patch
-- committed revision 981   by wesley johnson
+- committed revision 982   by wesley johnson
 A portion of w83_fs patches that seems to have got left out.
+
+*** w87_extralight_misc
+patchfile = w87_5c_extralight__misc.patch
+- committed revision 983   by wesley johnson
+A portion of w87_light255 patch that seems to have got left out.
+
+*** w87_translucent
+patchfile = w87_6_translucent.patch
+- committed revision 984   by wesley johnson
+Augmented translucent draw to handle alpha of 0..255 for all draw modes.
+DRAW8PAL can now draw translucents by reversing translucent table usage.
+RGB draw modes can now draw spans using arbitrary alpha.
+Simplified flat draw using some new global variables.
+Water can now be drawn with a translucent alpha > 128.

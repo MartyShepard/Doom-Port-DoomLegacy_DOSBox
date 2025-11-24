@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 980 2012-12-04 03:29:06Z wesleyjohnson $
+// $Id: r_things.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -925,6 +925,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     if(vis->mobjflags & MF_TRANSLATION && vis->translucentmap)
     {
 	colfunc = skintranscolfunc;
+        dr_alpha = 0;  // ensure use of translucent normally for all drawers
         dc_translucent_index = vis->translucent_index;
 //        dc_translucentmap = & translucenttables[TRANSLU_TABLE_INDEX(dc_translucent_index)];
 	dc_translucentmap = vis->translucentmap;

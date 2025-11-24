@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: screen.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -259,8 +259,8 @@ void SCR_SetMode (void)
         mask_01111 = 0x7BCF;  // 01111 011110 01111 mask out the upper bit of R,G,B
         mask_01110 = 0x738E;  // 01110 011100 01110 mask out the upper bit of R,G,B
         mask_11110 = 0xF79E;  // 11110 111100 11110 mask out the lowest bit of R,G,B
-        mask_11110 = 0xE71C;  // 11100 111000 11100 mask out the lowest bits of R,G,B
-        mask_11100 = 0xC618;  // 11000 110000 11000 mask out the lowest bits of R,G,B
+        mask_11100 = 0xE71C;  // 11100 111000 11100 mask out the lowest bits of R,G,B
+        mask_11000 = 0xC618;  // 11000 110000 11000 mask out the lowest bits of R,G,B
         mask_r = 0xF800;  // 11111 000000 00000 mask of R
 	mask_g = 0x07C0;  // 00000 111110 00000 mask of G (5 bit each)
         mask_b = 0x001F;  // 00000 000000 11111 mask of B

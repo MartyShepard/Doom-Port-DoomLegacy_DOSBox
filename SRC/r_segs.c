@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: r_segs.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -276,7 +276,7 @@ static void R_DrawSplatColumn (column_t* column)
 }
 
 
-static void R_DrawWallSplats ()
+static void R_DrawWallSplats (void)
 {
     wallsplat_t*    splat;
     seg_t*      seg;
@@ -376,9 +376,9 @@ static void R_DrawWallSplats ()
                     colfunc = basecolfunc;
                 else
                 {
+		    dr_alpha = 128;  // use normal dc_translucent_index
 		    dc_translucent_index = TRANSLU_med;
                     dc_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
-//                    colfunc = fuzzcolfunc;
                     colfunc = transcolfunc;
                 }
     
@@ -629,15 +629,16 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     {
         dc_translucent_index = ldef->special-284+1;
         dc_translucentmap = & translucenttables[ ((ldef->special-284)<<FF_TRANSSHIFT) ];
-        //colfunc = fuzzcolfunc;
+        dr_alpha = 128; // use normal dc_translucent, all tables are < TRANSLU_REV_ALPHA
         colfunc = transcolfunc;
     }
     else
     if (ldef->special==260 || ldef->translu_eff )  // Boom make translucent
     {
         // Boom 260, make translucent, direct and by tags
-        dc_translucent_index = 1; // 50/50
-        dc_translucentmap = & translucenttables[0]; // get first transtable 50/50
+        dc_translucent_index = TRANSLU_med; // 50/50
+        dc_translucentmap = & translucenttables[TRANSLU_TABLE_INDEX(TRANSLU_med)]; // get transtable 50/50
+        dr_alpha = 128;
         if( ldef->translu_eff >= TRANSLU_ext )
         {
 	    // Boom transparency map
@@ -650,7 +651,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 	    // for other draws
 	    dc_translucent_index = tm->substitute_std_translucent;
 	}
-//        colfunc = fuzzcolfunc;
         colfunc = transcolfunc;
     }
     else
@@ -662,6 +662,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
         fog_index = fog_tic % fog_col_length;  // pixel selection
         fog_init = 1;
+        dr_alpha = 64; // default
         // [WDJ] clip at ceiling and floor, unlike other transparent texture
         // world coord, relative to viewer
         windowclip_top = frontsector->ceilingheight - viewz;
@@ -972,23 +973,10 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     if(ffloor->flags & FF_TRANSLUCENT)
     {
       // Hacked up support for alpha value in software mode SSNTails 09-24-2002
-      if(ffloor->alpha < 64)
-      {
-	  dc_translucent_index = TRANSLU_hi;
-	  dc_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
-      }
-      else if(ffloor->alpha < 128 && ffloor->alpha > 63)
-      {
-	  dc_translucent_index = TRANSLU_more;
-          dc_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
-      }
-      else
-      {
-	  dc_translucent_index = TRANSLU_med;
-	  dc_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
-      }
-
-//      colfunc = fuzzcolfunc;
+      // [WDJ] 11-2012
+      dr_alpha = ffloor->alpha; // translucent alpha 0..255
+      dc_translucent_index = 0; // force use of dr_alpha by RGB drawers
+      dc_translucentmap = & translucenttables[ translucent_alpha_table[dr_alpha >> 4] ];
       colfunc = transcolfunc;
     }
     else if(ffloor->flags & FF_FOG)

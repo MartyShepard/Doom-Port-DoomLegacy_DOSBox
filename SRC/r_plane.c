@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: r_plane.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -775,12 +775,9 @@ void R_DrawSinglePlane(visplane_t* pl)
       spanfunc = transspanfunc; // R_DrawTranslucentSpan_8 16 ..
 
       // Hacked up support for alpha value in software mode SSNTails 09-24-2002
-      if(pl->ffloor->alpha < 64)
-          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ];
-      else if(pl->ffloor->alpha < 128 && pl->ffloor->alpha > 63)
-          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
-      else
-          ds_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
+      // [WDJ] 11-2012
+      dr_alpha = pl->ffloor->alpha;
+      ds_translucentmap = & translucenttables[ translucent_alpha_table[dr_alpha >> 4] ];
 
       if(pl->extra_colormap && pl->extra_colormap->fog)
         vlight = pl->lightlevel;
@@ -827,40 +824,42 @@ void R_DrawSinglePlane(visplane_t* pl)
   {
     case 2048*2048: // 2048x2048 lump
       flatsize = 2048;
-      flatmask = 2047<<11;
-      flatsubtract = 11;
+      flat_ymask = 2047<<11;
+      flatbitsz = 11;
       break;
     case 1024*1024: // 1024x1024 lump
       flatsize = 1024;
-      flatmask = 1023<<10;
-      flatsubtract = 10;
+      flat_ymask = 1023<<10;
+      flatbitsz = 10;
       break;
     case 512*512:// 512x512 lump
       flatsize = 512;
-      flatmask = 511<<9;
-      flatsubtract = 9;
+      flat_ymask = 511<<9;
+      flatbitsz = 9;
       break;
     case 256*256: // 256x256 lump
       flatsize = 256;
-      flatmask = 255<<8;
-      flatsubtract = 8;
+      flat_ymask = 255<<8;
+      flatbitsz = 8;
       break;
     case 128*128: // 128x128 lump
       flatsize = 128;
-      flatmask = 127<<7;
-      flatsubtract = 7;
+      flat_ymask = 127<<7;
+      flatbitsz = 7;
       break;
     case 32*32: // 32x32 lump
       flatsize = 32;
-      flatmask = 31<<5;
-      flatsubtract = 5;
+      flat_ymask = 31<<5;
+      flatbitsz = 5;
       break;
     default: // 64x64 lump
       flatsize = 64;
-      flatmask = 0x3f<<6;
-      flatsubtract = 6;
+      flat_ymask = 0x3f<<6;
+      flatbitsz = 6;
       break;
   }
+  flatfracbits = FRACBITS - flatbitsz;  // fixed to int shift in draw
+  flat_imask = (flatsize<<FRACBITS) - 1;  // index mask
 
 
   xoffs = pl->xoffs;

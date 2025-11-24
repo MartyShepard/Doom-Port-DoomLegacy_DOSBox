@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: r_draw8.c 984 2012-12-04 04:11:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -298,6 +298,7 @@ void R_DrawSkyColumn_8(void)
     while (count--);
 }
 #else
+// Boom source
 void R_DrawSkyColumn_8(void)
 {
     int count;
@@ -504,6 +505,7 @@ void R_DrawShadeColumn_8(void)
 // a lot in 640x480 with big sprites (bfg on all screen, or transparent
 // walls on fullscreen)
 //
+// [WDJ] asm does not have latest changes
 #ifndef USEASM
 #ifndef USEBOOMFUNC
 void R_DrawTranslucentColumn_8(void)
@@ -538,22 +540,37 @@ void R_DrawTranslucentColumn_8(void)
     fracstep = dc_iscale;
     frac = dc_texturemid + (dc_yl - centery) * fracstep;
 
-    // Here we do an additional index re-mapping.
-    do
+    if( dr_alpha < TRANSLU_REV_ALPHA )
     {
+      // Here we do an additional index re-mapping.
+      do
+      {
         *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
         dest += vid.ybytes;
         frac += fracstep;
+      }
+      while (count--);
     }
-    while (count--);
+    else
+    {
+      do
+      {
+	// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+        *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS]) + ((*dest) << 8) ]];
+        dest += vid.ybytes;
+        frac += fracstep;
+      }
+      while (count--);
+    }
 }
 #else
+// [WDJ] Boom source, modified several times
 void R_DrawTranslucentColumn_8(void)
 {
     register int count;
-    register byte *dest;
     register fixed_t frac;
     register fixed_t fracstep;
+    register byte *dest;
 
     count = dc_yh - dc_yl + 1;
 
@@ -586,7 +603,6 @@ void R_DrawTranslucentColumn_8(void)
 
     {
         register const byte *source = dc_source;
-        //register const lighttable_t *colormap = dc_colormap;
         register int heightmask = dc_texheight - 1;
         if (dc_texheight & heightmask)
         {
@@ -599,8 +615,10 @@ void R_DrawTranslucentColumn_8(void)
                 while (frac >= heightmask)
                     frac -= heightmask;
 
-            do
-            {
+	    if( dr_alpha < TRANSLU_REV_ALPHA )
+	    {
+              do
+	      {
                 // Re-map color indices from wall texture column
                 //  using a lighting/special effects LUT.
                 // heightmask is the Tutti-Frutti fix -- killough
@@ -609,11 +627,26 @@ void R_DrawTranslucentColumn_8(void)
                 dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
-            }
-            while (--count);
+              }
+              while (--count);
+	    }
+	    else
+	    {
+              do
+	      {
+		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                if ((frac += fracstep) >= heightmask)
+                    frac -= heightmask;
+              }
+              while (--count);
+	    }
         }
         else
         {
+	  if( dr_alpha < TRANSLU_REV_ALPHA )
+	  {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
@@ -625,6 +658,22 @@ void R_DrawTranslucentColumn_8(void)
             }
             if (count & 1)
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
+	  }
+	  else
+	  {
+            while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
+            {
+	        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                frac += fracstep;
+                *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                frac += fracstep;
+            }
+            if (count & 1)
+                *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
+	  }
         }
     }
 }
@@ -637,12 +686,13 @@ void R_DrawTranslucentColumn_8(void)
 // SSNTails 11-11-2002
 // Uber-kudos to Cyan Helkaraxe for
 // helping me get the brain juices flowing!
+// Called with TRANSLU_hi or TRANSLU_more, or arbitrary by thing TRANSMASK
 void R_DrawTranslatedTranslucentColumn_8(void)
 {
     register int count;
-    register byte *dest;
     register fixed_t frac;
     register fixed_t fracstep;
+    register byte *dest;
 
     count = dc_yh - dc_yl + 1;
 
@@ -663,7 +713,6 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 
     {
 	//register const byte *source = dc_source;
-        //register const lighttable_t *colormap = dc_colormap;
         register int heightmask = dc_texheight - 1;
         if (dc_texheight & heightmask)
         {
@@ -678,22 +727,38 @@ void R_DrawTranslatedTranslucentColumn_8(void)
                     frac -= heightmask;
 	    }
 
-            do
-            {
+
+	    if( dr_alpha < TRANSLU_REV_ALPHA )
+	    {
+	      do
+              {
                 // Re-map color indices from wall texture column
                 //  using a lighting/special effects LUT.
                 // heightmask is the Tutti-Frutti fix -- killough
-
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
-
                 dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
-            }
-            while (--count);
+              }
+              while (--count);
+	    }
+	    else
+	    {
+	      do
+              {
+		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                if ((frac += fracstep) >= heightmask)
+                    frac -= heightmask;
+              }
+              while (--count);
+	    }
         }
         else
         {
+	  if( dr_alpha < TRANSLU_REV_ALPHA )
+	  {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
@@ -707,6 +772,24 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
             }
+	  }
+	  else
+	  {
+            while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
+            {
+		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                frac += fracstep;
+                *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
+                dest += vid.ybytes;
+                frac += fracstep;
+            }
+            if (count & 1)
+            {
+                *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
+            }
+	  }
         }
     }
 }
@@ -768,7 +851,7 @@ void R_DrawTranslatedColumn_8(void)
 //  Draws the actual span.
 //
 //#ifndef USEASM //Hurdler: in tmap.nas the old func is now called R_DrawSpan_8a
-#ifndef USEBOOMFUNC
+// [WDJ] Boom func modified several times
 void R_DrawSpan_8(void)
 {
     // [WDJ] was ULONG=32bit, use uint_fast32_t which can exceed 32bit in size.
@@ -785,45 +868,7 @@ void R_DrawSpan_8(void)
     }
 #endif
 
-    xfrac = ds_xfrac & 0x3fFFff;
-    yfrac = ds_yfrac;
-
-    dest = ylookup[ds_y] + columnofs[ds_x1];
-
-    // We do not check for zero spans here?
-    count = ds_x2 - ds_x1;
-
-    do
-    {
-        // Lookup pixel from flat texture tile,
-        //  re-index using light/colormap.
-        *dest++ = ds_colormap[ds_source[((yfrac >> (16 - 6)) & (0x3f << 6)) | (xfrac >> 16)]];
-
-        // Next step in u,v.
-        xfrac += ds_xstep;
-        yfrac += ds_ystep;
-        xfrac &= 0x3fFFff;
-    }
-    while (count--);
-}
-#else
-void R_DrawSpan_8(void)
-{
-    // [WDJ] was ULONG=32bit, use uint_fast32_t which can exceed 32bit in size.
-    register uint_fast32_t  xfrac;
-    register uint_fast32_t  yfrac;
-    register byte *dest;
-    register int count;
-
-#ifdef RANGECHECK
-    if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
-    {
-        I_SoftError("R_DrawSpan: %i to %i at %i\n", ds_x1, ds_x2, ds_y);
-        return;
-    }
-#endif
-
-    xfrac = ds_xfrac & ((flatsize << FRACBITS) - 1);
+    xfrac = ds_xfrac & flat_imask;
     yfrac = ds_yfrac;
 
     dest = ylookup[ds_y] + columnofs[ds_x1];
@@ -836,25 +881,22 @@ void R_DrawSpan_8(void)
     {
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        *dest = ds_colormap[ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)]];
+        *dest = ds_colormap[ds_source[((yfrac >> flatfracbits) & (flat_ymask)) | (xfrac >> FRACBITS)]];
         dest++;
 
         // Next step in u,v.
         xfrac += ds_xstep;
         yfrac += ds_ystep;
-        xfrac &= (flatsize << FRACBITS) - 1;
+        xfrac &= flat_imask;
     }
     while (count--);
 }
-#endif // USEBOOMFUNC
 //#endif USESASM
 
 void R_DrawTranslucentSpan_8(void)
 {
-    fixed_t xfrac;
-    fixed_t yfrac;
-    fixed_t xstep;
-    fixed_t ystep;
+    fixed_t xfrac, yfrac;
+    fixed_t xstep, ystep;
     byte *dest;
     int count;
 
@@ -867,7 +909,7 @@ void R_DrawTranslucentSpan_8(void)
 //              dscount++;
 #endif
 
-    xfrac = ds_xfrac & ((flatsize << FRACBITS) - 1);
+    xfrac = ds_xfrac & flat_imask;
     yfrac = ds_yfrac;
 
     dest = ylookup[ds_y] + columnofs[ds_x1];
@@ -878,26 +920,43 @@ void R_DrawTranslucentSpan_8(void)
     xstep = ds_xstep;
     ystep = ds_ystep;
 
-    do
+    if( dr_alpha < TRANSLU_REV_ALPHA )
     {
+      do
+      {
         // Current texture index in u,v.
 
         // Awesome! 256x256 flats!
-//              spot = ((yfrac>>(16-8))&(0xff00)) + (xfrac>>(16));
+//              spot = ((yfrac>>(FRACBITS-8))&(0xff00)) + (xfrac>>(FRACBITS));
 
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
         //      *dest++ = ds_colormap[ds_source[spot]];
 //              *dest++ = ds_colormap[*(ds_translucentmap + (ds_source[spot] << 8) + (*dest))];
-        *dest = ds_colormap[ ds_translucentmap[ (ds_source[((yfrac >> (16 - flatsubtract)) & (flatmask)) | (xfrac >> 16)] << 8) + (*dest) ]];
+        *dest = ds_colormap[ ds_translucentmap[ (ds_source[((yfrac >> flatfracbits) & (flat_ymask)) | (xfrac >> FRACBITS)] << 8) + (*dest) ]];
         dest++;	// [WDJ] warning: undetermined order when combined with above
 
         // Next step in u,v.
         xfrac += xstep;
         yfrac += ystep;
-        xfrac &= ((flatsize << FRACBITS) - 1);
+        xfrac &= flat_imask;
+      }
+      while (--count);
     }
-    while (--count);
+    else   
+    {
+      do
+      {
+	// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+        *dest = ds_colormap[ ds_translucentmap[ (ds_source[((yfrac >> flatfracbits) & (flat_ymask)) | (xfrac >> FRACBITS)]) + ((*dest)<<8) ]];
+        dest++;	// [WDJ] warning: undetermined order when combined with above
+        // Next step in u,v.
+        xfrac += xstep;
+        yfrac += ystep;
+        xfrac &= flat_imask;
+      }
+      while (--count);
+    }
     /*
        register unsigned position;
        unsigned step;

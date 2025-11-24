@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[00984 ]: w87 translucent alpha 0..255
+[00983*]: w87 hw extralight missing changes
 [00982 ]: w87 fs misc missing changes
 [00981 ]: w87 viewer display
 [00980 ]: w87 camera split-screen
