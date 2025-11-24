@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 899 2012-02-29 19:23:47Z wesleyjohnson $
+// $Id: f_finale.c 1004 2013-03-23 20:24:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -83,7 +83,7 @@
   // Chex_safe_pictures
 
 // Stage of animation:
-//  0 = text, 1 = art screen, 2 = character cast
+//  0 = text, 1 = art screen, 2 = character cast,  3 = title
 int             finalestage;
 
 int             finalecount;
@@ -94,6 +94,7 @@ int             finalecount;
 char*   finaletext;
 char*   finaleflat;
 static boolean keypressed=false;
+static byte    finale_palette = 0;  // [WDJ] 0 is PLAYPAL
 
 void    F_StartCast (void);
 void    F_CastTicker (void);
@@ -272,20 +273,39 @@ void F_StartFinale (void)
 
 boolean F_Responder (event_t *event)
 {
-    if (finalestage == 2)
-        return F_CastResponder (event);
-    if( finalestage == 0 )
+    if (event->type != ev_keydown)
+        goto prop_event;
+
+    switch (finalestage)
     {
-        if (event->type != ev_keydown)
-            return false;
-
-        if( keypressed )
-            return false;
-
-        keypressed = true;
-        return true;
+      case 0:  // text
+        if( ! keypressed )
+            goto catch_event;
+        break;
+      case 1:  // art
+        // test for any palette that is not PLAYPAL (Heretic underwater)
+        if( finale_palette )
+        {
+	   V_SetPaletteLump("PLAYPAL");  // clear finale_palette
+	   finale_palette = 0;
+	   V_DrawFill(0, 0, 320, 200, 0);  // clear pic to black
+	}
+        if( gamemode == heretic )
+        {
+	   // no support to draw heretic cast
+	   finalestage = 3;  // goto title
+	   goto catch_event;
+	}
+        break;
+      case 2:  // cast
+        return F_CastResponder (event);
     }
-    return false;
+prop_event:
+    return false;  // to other handlers
+
+catch_event:
+    keypressed = true;
+    return true;  // handled event
 }
 
 
@@ -593,9 +613,6 @@ void F_CastTicker (void)
 
 boolean F_CastResponder (event_t* ev)
 {
-    if (ev->type != ev_keydown)
-        return false;
-
     if (castdeath)
         return true;                    // already in dying frames
 
@@ -764,13 +781,7 @@ void F_BunnyScroll (void)
 }
 
 
-/*
-==================
-=
-= F_DemonScroll
-=
-==================
-*/
+// **  Heretic Finale Drawing
 
 // Heretic
 void F_DemonScroll(void)
@@ -790,35 +801,50 @@ void F_DemonScroll(void)
 }
 
 
-/*
-==================
-=
-= F_DrawUnderwater
-=
-==================
-*/
-
-// Heretic
-void F_DrawUnderwater(void)
+void F_DrawHeretic( void )
 {
-    static boolean underwawa = false;
-
-    switch(finalestage)
+    switch (gameepisode)
     {
-        case 1:
-            if(!underwawa)
-            {
-                underwawa = true;
-                V_SetPaletteLump("E2PAL");
-            }
-            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("E2END"),320,200);
-            break;
-        case 2:
-            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("TITLE"),320,200);
-            underwawa = false;
-            //D_StartTitle(); // go to intro/demo mode.
+      case 1:
+        if( finalestage > 1 )  goto credit_page;
+        if(W_CheckNumForName("e2m1")==-1)
+	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
+        else
+	    goto credit_page;
+        break;
+      case 2:
+        // was F_DrawUnderwater()
+        switch(finalestage)
+        {
+          case 1:
+	    if( finale_palette != 12 )  // [WDJ] heretic E2PAL
+	    {
+	        finale_palette = 12;
+	        V_SetPaletteLump("E2PAL");
+	    }
+	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("E2END"),320,200);
+	    break;
+	  case 3:
+	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("TITLE"),320,200);
+	    //D_StartTitle(); // go to intro/demo mode.
+	}
+        break;
+      case 3:
+        F_DemonScroll();
+        break;
+      case 4: // Just show credits screen for extended episodes
+      case 5:
+        goto credit_page;
     }
+    return;
+
+credit_page:
+    // BP: search only in the first pwad since legacy define a patch with same name
+    V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
+    return;
 }
+
+// ** End of Heretic Finale Drawing
 
 
 // Called from F_Drawer, to draw full screen
@@ -848,28 +874,7 @@ void F_Drawer (void)
     {
         if( gamemode == heretic )
         {
-            switch (gameepisode)
-            {
-                case 1:
-                    if(W_CheckNumForName("e2m1")==-1)
-                        V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
-                    else
-                        // BP: search only in the first pwad since legacy defines a patch with same name
-                        V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
-                    break;
-                case 2:
-                    F_DrawUnderwater();
-                    break;
-                case 3:
-                    F_DemonScroll();
-                    break;
-                case 4: // Just show credits screen for extended episodes
-                case 5:
-                    // BP: search only in the first pwad since legacy define a pathc with same name
-                    V_DrawRawScreen_Num(0, 0, W_CheckNumForNamePwad("CREDIT",0,0),320,200);
-                    break;
-            }
-
+	    F_DrawHeretic();
         }
         else
         {

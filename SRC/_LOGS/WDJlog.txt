@@ -3021,3 +3021,25 @@ patchfile = w89_3_boom_tranlsu.patch
 - committed revision 1002   by wesley johnson
 RGB draw modes sometimes also use translucent table.
 Load the lump for all draw modes.
+
+*** w89_hardware_draw_over_deepwater
+patchfile = w89_4_hw_draw_deepwater.patch
+- committed revision 1003   by wesley johnson
+In ic2005.wad there are three situations where textures are drawn pegged
+to mobile deepwater sectors.
+1) A translucent over a deepwater door.
+2) A transparent texture (electric arc) under a deepwater ceiling.
+Pushing a switch turns it on and off.
+3) A thin texture used for grid flooring, with deepwater ceiling to move it.
+Two sided middle textures must be pegged to the original ceiling,
+not to the deepwater sector.
+Fixes bug 3169993.
+
+*** w89_heretic_finale
+patchfile = w89_5_heretic_finale.patch
+- committed revision 1004   by wesley johnson
+Fix bug 0799500.
+After Heretic E2M8 ending pic, the palette was not restored.
+The finale heretic code now a separate func, another state for heretic
+finale has been provided (to avoid showing the cast),
+and the palette is restored after the underwater pic has been shown.
