@@ -2892,3 +2892,10 @@ patchfile = w87_7_plane_merge.patch
 - committed revision 985   by wesley johnson
 Hardware render sort changed to merge when adding plane.
 Indented code in p_mobj.c.
+
+*** w88_LinkFFloor
+patchfile = w88_1_LinkFFloor.patch
+- committed revision 986   by wesley johnson
+Changed P_AddFFloor to P_LinkFFloor, for clarity.
+Changed flags parameter type to uint32_t.
+Cleaned up some comments and indenting.

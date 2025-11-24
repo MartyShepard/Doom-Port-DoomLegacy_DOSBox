@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 969 2012-11-10 22:00:49Z wesleyjohnson $
+// $Id: r_bsp.c 986 2012-12-04 04:15:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -118,6 +118,7 @@ sector_t*       backsector;
 //      896 drawsegs! So too bad here's a limit removal …-la-Boom
 //Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
 //         default is 128 segs, so it means nearly 1Mb allocated
+// Drawsegs set by R_StoreWallRange, used by R_CreateDrawNodes
 //drawseg_t     drawsegs[MAXDRAWSEGS];
 drawseg_t*      drawsegs=NULL;  // allocated drawsegs
 unsigned        maxdrawsegs;    // number allocated
@@ -402,7 +403,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
           tempsec->floorpic    = modsecp->floorpic;
           tempsec->floor_xoffs = modsecp->floor_xoffs;
           tempsec->floor_yoffs = modsecp->floor_yoffs;
-
 
           if (viewer_underwater)
           {
@@ -956,8 +956,8 @@ void R_Subsector (int num)
          && ((viewz < *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
 	     || (viewz > *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
 	 // [WDJ] What about (viewz == *fff->bottomheight) ???
-//DEBUG	 && ((viewz <= *fff->bottomheight && !(fff->flags & FF_INVERTPLANES))
-//DEBUG	     || (viewz >= *fff->bottomheight && (fff->flags & FF_BOTHPLANES))))
+//DEBUG	 && ((viewz <= *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
+//DEBUG	     || (viewz >= *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
 	{
           light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
           ffplane[numffplane].plane = R_FindPlane(*fff->bottomheight,
@@ -1105,6 +1105,7 @@ void R_Prep3DFloors(sector_t*  sector)
     sector->lightlist[i].height = maxheight = bestheight;
     sector->lightlist[i].caster = best;
     sector->lightlist[i].flags = best->flags;
+
     // Setup the model sector extra_colormap
     // this could be done elsewhere, once.
     // (P_LoadSideDefs2, P_SpawnSpecials, SF_SectorColormap)

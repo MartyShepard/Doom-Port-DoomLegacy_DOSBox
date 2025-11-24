@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 969 2012-11-10 22:00:49Z wesleyjohnson $
+// $Id: p_spec.c 986 2012-12-04 04:15:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2822,14 +2822,39 @@ void P_UpdateSpecials (void)
 //SoM: 3/8/2000: EV_DoDonut moved to p_floor.c
 
 //SoM: 3/23/2000: Adds a sectors floor and ceiling to a sector's ffloor list
-void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int flags);
-void P_AddFFloor(sector_t* sec, ffloor_t* ffloor);
+
+
+// Link ffloor into sector list of ffloor
+static
+void P_LinkFFloor(sector_t* sec, ffloor_t* ffloor)
+{
+  ffloor_t* rover;
+
+  if(!sec->ffloors)
+  {
+    // head of list
+    sec->ffloors = ffloor;
+    ffloor->next = NULL;
+    ffloor->prev = NULL;
+    return;
+  }
+
+  // find end of list
+  for(rover = sec->ffloors; rover->next; rover = rover->next)
+     ;
+
+  // append to end of list
+  rover->next = ffloor;
+  ffloor->prev = rover;
+  ffloor->next = NULL;
+}
 
 
 // Implement Legacy 3D floor
 // taggedsec is the affected sector, found by tag
 // modsec is the model sector
-void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int flags)
+static
+void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, uint32_t flags)
 {
   ffloor_t*      ffloor;
   int            taggedindex = taggedsec - sectors; // tagged sector index
@@ -2889,33 +2914,10 @@ void P_AddFakeFloor(sector_t* taggedsec, sector_t* modsec, line_t* master, int f
     else
       ffloor->alpha = 0x80; // 127
   }
-  P_AddFFloor(taggedsec, ffloor);	// append to sector ffloor list
+  P_LinkFFloor(taggedsec, ffloor);	// append to sector ffloor list
 }
 
 
-// Link ffloor into sector list of ffloor
-void P_AddFFloor(sector_t* sec, ffloor_t* ffloor)
-{
-  ffloor_t* rover;
-
-  if(!sec->ffloors)
-  {
-    // head of list
-    sec->ffloors = ffloor;
-    ffloor->next = NULL;
-    ffloor->prev = NULL;
-    return;
-  }
-
-  // find end of list
-  for(rover = sec->ffloors; rover->next; rover = rover->next)
-     ;
-
-  // append to end of list
-  rover->next = ffloor;
-  ffloor->prev = rover;
-  ffloor->next = NULL;
-}
 
 //
 // SPECIAL SPAWNING
