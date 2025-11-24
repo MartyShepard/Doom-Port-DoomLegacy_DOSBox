@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_draw16.c 989 2012-12-04 04:27:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -733,75 +733,66 @@ void R_DrawTranslucentSpan_16(void)
     while (--count);
 }
 
-#define FOGCOLOR
 
 void R_DrawFogSpan_16(void)
 {
+    uint32_t fc = color8.to16[ ds_colormap[ ds_source[fog_index] ]];
+    uint32_t fogcolor_rb, fogcolor_g;
+    unsigned int alpha_d = dr_alpha >> 3;  // 5 bit alpha
+    unsigned int alpha_r = (31 - alpha_d) * 0.84; // cloudy fog
+    unsigned int count;
     byte * dest;
-    uint16_t fogcolor = color8.to16[ ds_colormap[110] ]; // grays 80..111
-    uint16_t fogcolor4 = (fogcolor & mask_11100)>>2;
-    uint16_t fogcolor2 = (fogcolor & mask_11000)>>3;
-    uint16_t fogcolor3 = ((fogcolor2 + fogcolor4) & mask_11110)>>1;
-//    uint16_t fogcolor1 = (fogcolor4 & mask_11100)>>2;
 
-    unsigned count;
+    // the working fog color for this span
+    fogcolor_rb = ((fc & mask_r) | (fc & mask_b)) * alpha_d;
+    fogcolor_g = (fc & mask_g) * alpha_d;
 
-//    colormap = ds_colormap;
     dest = ylookup[ds_y] + columnofs[ds_x1];
     count = ds_x2 - ds_x1 + 1;
 
-#if 0   
-    // partial unrolled loop, for speed
-    while (count >= 4)
-    {
-        dest[0] = colormap[dest[0]];
-
-        dest[1] = colormap[dest[1]];
-
-        dest[2] = colormap[dest[2]];
-
-        dest[3] = colormap[dest[3]];
-
-        dest += 4;
-        count -= 4;
-    }
-    // leftover, count = 0..3
-#endif   
-
     while (count--)
     {
-	// 25/75 translucent
-        register uint16_t dc = *(uint16_t*)dest;
-        register uint16_t dc2 = (dc & mask_11110)>>1;
-        *(uint16_t*)dest=
-	    fogcolor3
-            + (dc2 + ((dc2 & mask_11110)>>1)); // 75%
+        // alpha translucent fog
+        register uint16_t d16 = *(uint16_t*)dest;
+	register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
+	register uint32_t dc1 = d16 & mask_g;
+	dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
+	dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
+	*(uint16_t*)dest = dc0 | dc1;
         dest+=2;
     }
 }
+
 
 //SoM: Fog wall.
 // Used for Legacy linetype 302, walls of 3D fog in tagged
 // Used for Legacy linetype 283, fog sheet
 void R_DrawFogColumn_16(void)
 {
-    int count;
-    byte * dest;
-#ifdef FOGCOLOR
    // fogcolor blur needs to be kept as 8 bit or else the blur is inadequate
 static uint16_t fogcolor_r8 = 0x1000;
 static uint16_t fogcolor_g8 = 0x0080;
 static uint16_t fogcolor_b8 = 0x0002<<3;
-    uint32_t fc, fc2;  // uint16_t + 3
+    uint32_t fc, fc2, fc3;  // uint16_t + 3
+    uint32_t fogcolor_rb, fogcolor_g;
+    unsigned int alpha_d = dr_alpha >> 3; // 5 bit alpha
+    unsigned int alpha_r = (31 - alpha_d) * 0.84; // cloudy fog
+    int count, fi;
+    byte * dest;
+
     // fog_index 0.. column height
+    // always average three pixels of source texture
     fc = color8.to16[ dc_colormap[ dc_source[fog_index] ]];
-//    fc = color8.to16[ dc_colormap[ 110 ]];
-    int fogb1 = fog_bltic>>2;  // 8 
-    int fogb2 = 8 - fogb1;  // fade proportionality
-    fc2 = color8.to16[ dc_colormap[ dc_source[((fog_index==0)?fog_col_length:fog_index)-1] ]];
-    register uint32_t fr1 = (((fc & mask_r) * fogb1) + ((fc2 & mask_r) * fogb2)) >> 3;
-    register uint32_t fg1 = (((fc & mask_g) * fogb1) + ((fc2 & mask_g) * fogb2)) >> 3;
-    register uint32_t fb1 = (((fc & mask_b) * fogb1) + ((fc2 & mask_b) * fogb2));  // kept << 3
+    fi = fog_index + 3;
+    if( fi >= fog_col_length )  fi -= fog_col_length;
+    fc2 = color8.to16[ dc_colormap[ dc_source[fi] ]];
+    fi += 3;
+    if( fi >= fog_col_length )  fi -= fog_col_length;
+    fc3 = color8.to16[ dc_colormap[ dc_source[fi] ]];
+    // fogcolor has some fraction bits
+    register uint32_t fr1 = ((fc & mask_r) + (fc2 & mask_r) + (fc3 & mask_r)) / 3;
+    register uint32_t fg1 = ((fc & mask_g) + (fc2 & mask_g) + (fc3 & mask_g)) / 3;
+    register uint32_t fb1 = (((fc & mask_b) + (fc2 & mask_b) + (fc3 & mask_b)) << 3 ) / 3;  // fraction << 3
     if( fog_init )
     {
         // init blur
@@ -813,18 +804,10 @@ static uint16_t fogcolor_b8 = 0x0002<<3;
     else
     {
         // blur
-        fogcolor_r8 = ((((uint32_t)fogcolor_r8)*31) + fr1) >> 5;
-        fogcolor_g8 = ((((uint32_t)fogcolor_g8)*31) + fg1) >> 5;
-	fogcolor_b8 = ((((uint32_t)fogcolor_b8)*31) + fb1) >> 5;
+        fogcolor_r8 = ((((unsigned int)fogcolor_r8)*31) + fr1) >> 5;
+        fogcolor_g8 = ((((unsigned int)fogcolor_g8)*31) + fg1) >> 5;
+	fogcolor_b8 = ((((unsigned int)fogcolor_b8)*31) + fb1) >> 5;
     }
-    // limit each color blur to 8 bits so grays stay pure
-    fogcolor_r8 &= (mask_r | (mask_r>>3));
-    fogcolor_g8 &= (mask_g | (mask_g>>3));
-    // the working fog color for this column
-    uint32_t fogcolor_rb = (fogcolor_r8 & mask_r) | ((fogcolor_b8>>3) & mask_b);
-    uint32_t fogcolor_g = fogcolor_g8 & mask_g;
-#endif
-
     count = dc_yh - dc_yl;
 
     // Zero length, column does not exceed a pixel.
@@ -840,148 +823,26 @@ static uint16_t fogcolor_b8 = 0x0002<<3;
     }
 #endif
 
+    // the working fog color for this column
+    // fogcolor_x8 carries fractional colors, so need mask
+    fogcolor_rb = ((fogcolor_r8 & mask_r) | ((fogcolor_b8>>3) & mask_b)) * alpha_d;
+    fogcolor_g = (fogcolor_g8 & mask_g) * alpha_d;
+
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows?
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
-#ifdef FOGCOLOR
     do
     {
-	// faint color + dark
         register uint16_t d16 = *(uint16_t*)dest;
 	register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
 	register uint32_t dc1 = d16 & mask_g;
-	dc0 = ((dc0 + dc0 + fogcolor_rb) >> 2) & mask_rb;
-	dc1 = ((dc1 + dc1 + fogcolor_g) >> 2) & mask_g;
+	dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
+	dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
 	*(uint16_t*)dest = dc0 | dc1;
         dest += vid.ybytes;
     }
     while (count--);
-#else
-    fixed_t             frac;
-    fixed_t             fracstep;
-
-    // Determine scaling,
-    //  which is the only mapping to be done.
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl-centery)*fracstep;
-
-#if 1
-    uint16_t fogcolor = color8.to16[ dc_colormap[110] ]; // grays 80..111
-//    uint16_t fogcolor4 = (fogcolor & mask_11100)>>2;
-    uint16_t fogcolor2 = (fogcolor & mask_11000)>>3;
-//    uint16_t fogcolor3 = ((fogcolor2 + fogcolor4) & mask_11110)>>1;
-//    uint16_t fogcolor1 = (fogcolor4 & mask_11100)>>2;
-    do
-    {
-        register uint16_t dc = *(uint16_t*)dest;
-	// faint texture + dark
-	register byte bc = dc_source[frac>>FRACBITS];
-	register uint16_t nc = color8.to16[bc];
-        register uint16_t dc2 = (dc & mask_11110)>>1;
-//        register uint16_t fg = ( bc < 0x7F )? fogcolor1 : fogcolor2;
-	    *(uint16_t*)dest = fogcolor2 + ((nc & mask_11000)>>3) 
-		 + (dc2 + ((dc2 & mask_11110)>>1)); // 75%
-        frac += fracstep;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#if 0
-    uint16_t fogcolor = color8.to16[ dc_colormap[110] ]; // grays 80..111
-    uint16_t fogcolor4 = (fogcolor & mask_11100)>>2;
-    uint16_t fogcolor2 = (fogcolor & mask_11000)>>3;
-    uint16_t fogcolor3 = ((fogcolor2 + fogcolor4) & mask_11110)>>1;
-    uint16_t fogcolor1 = (fogcolor4 & mask_11100)>>2;
-    do
-    {
-        register uint16_t dc = *(uint16_t*)dest;
-	// texture is alpha, no color, lumpy
-	register byte nc = dc_source[frac>>FRACBITS];
-        if ( nc < 0x7F )
-        {
-	    register uint16_t dc2 = (dc & mask_11110)>>1;
-	    register uint16_t fg = ( nc < 0x3F )? fogcolor4 : fogcolor3;
-	    *(uint16_t*)dest = fg
-		 + (dc2 + ((dc2 & mask_11110)>>1)); // 75%
-	}
-        else
-        {
-	    register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
-	    register uint16_t fg = ( nc < 0xBF )? fogcolor2 : fogcolor1;
-	        *(uint16_t*)dest= fg
-		  + dc85; // 85%
-	}
-        frac += fracstep;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#if 0       
-    do
-    {
-	// 25/75 translucent
-	// Colors the fog
-        register uint16_t dc = *(uint16_t*)dest;
-        register uint16_t dc2 = (dc & mask_11110)>>1;
-	register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-        *(uint16_t*)dest=
-	    ((nc & mask_11100)>>2) // 25%
-            + (dc2 + ((dc2 & mask_11110)>>1)); // 75%
-        frac += fracstep;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#if 0
-    do
-    {
-	// subtractive
-        register uint16_t dc = *(uint16_t*)dest;
-        register uint16_t dc2 = (dc & mask_11110)>>1;
-	register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-        *(uint16_t*)dest=
-            (dc2 + ((dc2 & mask_11110)>>1)); // 75%
-	    - ((nc & mask_11100)>>2) // 25%
-        frac += fracstep;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#if 0
-    uint16_t fogcolor = color8.to16[ dc_colormap[110] ]; // grays 80..111
-    uint16_t fogcolor4 = (fogcolor & mask_11100)>>2;
-    uint16_t fogcolor2 = (fogcolor & mask_11000)>>3;
-    uint16_t fogcolor3 = ((fogcolor2 + fogcolor4) & mask_11110)>>1;
-    do
-    {
-	// ignore texture
-	// Closest to 8bit PAL version
-        register uint16_t dc = *(uint16_t*)dest;
-        register uint16_t dc2 = (dc & mask_11110)>>1;
-        *(uint16_t*)dest=
-	    fogcolor3
-            + (dc2 + ((dc2 & mask_11110)>>1)); // 75%
-        frac += fracstep;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#if 0
-    uint16_t fogcolor = color8.to16[ dc_colormap[110] ]; // grays 80..111
-    uint16_t fogcolor2 = (fogcolor & mask_11000)>>3;
-    do
-    {
-	// ignore texture, too light
-        register uint16_t dc = *(uint16_t*)dest;
-        register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
-          *(uint16_t*)dest= fogcolor2
-	   + dc85; // 85%
-        dest += vid.ybytes;
-    }
-    while (count--);
-#endif
-#endif
 }
 

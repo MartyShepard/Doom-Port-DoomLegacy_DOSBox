@@ -2930,3 +2930,11 @@ by precalculating the extralight for different situations.
 Create extralight_cm (3/4 of extralight) for colormap fog,
 and extralight_fog (1/2 of extralight) for FF_FOG.
 Light precedence is now  FF_FOG, colormap fog, translucent, normal.
+
+*** w88_fogdraw
+patchfile = w88_4_fogdraw.patch
+- committed revision 989   by wesley johnson
+Rewrite all fog draw functions to new specifications.
+Average 3 source texture pixels to generate fog color, except DRAW8PAL
+which can only average 2 pixels.
+Use of fog alpha.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 988 2012-12-04 04:25:48Z wesleyjohnson $
+// $Id: r_things.c 989 2012-12-04 04:27:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -874,6 +874,7 @@ void R_DrawMaskedColumn (column_t* column)
             dc_source = (byte *)column + 3;
             dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
             // dc_source = (byte *)column + 3 - column->topdelta;
+	    fog_col_length = column->length;
 
             // Drawn by either R_DrawColumn
             //  or (SHADOW) R_DrawFuzzColumn.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 988 2012-12-04 04:25:48Z wesleyjohnson $
+// $Id: r_segs.c 989 2012-12-04 04:27:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -662,7 +662,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
         fog_index = fog_tic % fog_col_length;  // pixel selection
         fog_init = 1;
-        dr_alpha = 64; // default
+        dr_alpha = 64;  // default
         // [WDJ] clip at ceiling and floor, unlike other transparent texture
         // world coord, relative to viewer
         windowclip_top = frontsector->ceilingheight - viewz;
@@ -931,6 +931,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     int             texnum;
     sector_t        tempsec;
     int             templight;
+    int             base_fog_alpha;
     int             i, cnt;
     fixed_t         bottombounds = rdraw_viewheight << FRACBITS;
     fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
@@ -966,12 +967,21 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
       // Hacked up support for alpha value in software mode SSNTails 09-24-2002
       // [WDJ] 11-2012
       dr_alpha = ffloor->alpha; // translucent alpha 0..255
+//      dr_alpha = fweff[ffloor->fw_effect].alpha;
       dc_translucent_index = 0; // force use of dr_alpha by RGB drawers
       dc_translucentmap = & translucenttables[ translucent_alpha_table[dr_alpha >> 4] ];
       colfunc = transcolfunc;
     }
     else if(ffloor->flags & FF_FOG)
+    {
       colfunc = fogcolfunc;  // R_DrawFogColumn_8 16 ..
+      // from fogsheet
+      fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
+      fog_index = fog_tic % fog_col_length;  // pixel selection
+      fog_init = 1;
+      dr_alpha = fweff[ffloor->fw_effect].fsh_alpha; // dr_alpha 0..255
+    }
+    base_fog_alpha = dr_alpha;
 
     //SoM: Moved these up here so they are available for my lightlist calculations
     rw_scalestep = ds->scalestep;
@@ -1173,6 +1183,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 #if 0
 		// [WDJ] To not have FF_FOG totally block ffloor colormap.
 		// Not sure which is correct, but is more consistent with other code.
+		// This way it will follow other colormap changes.
                 if( (ffloor->flags & FF_FOG)
 		    &&(ffloor->master->frontsector->extra_colormap) )
 		{

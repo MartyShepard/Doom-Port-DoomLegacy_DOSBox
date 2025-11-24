@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: r_draw8.c 989 2012-12-04 04:27:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -727,7 +727,6 @@ void R_DrawTranslatedTranslucentColumn_8(void)
                     frac -= heightmask;
 	    }
 
-
 	    if( dr_alpha < TRANSLU_REV_ALPHA )
 	    {
 	      do
@@ -1027,70 +1026,119 @@ void R_DrawTranslucentSpan_8(void)
      */
 }
 
-#define FOGCOLOR
+// blend of four translucents to imitate alpha translucent
+static byte  fog_tran_table[16][4] = {
+ { TRANSLU_hi, TRANSLU_hi, TRANSLU_hi, TRANSLU_hi },  // 10%
+ { TRANSLU_hi, TRANSLU_hi, TRANSLU_hi, TRANSLU_hi },  // 10%
+ { TRANSLU_more, TRANSLU_hi, TRANSLU_hi, TRANSLU_hi },  // 12.5%
+ { TRANSLU_more, TRANSLU_hi, TRANSLU_more, TRANSLU_hi },  // 15%
+ { TRANSLU_more, TRANSLU_more, TRANSLU_more, TRANSLU_hi },  // 17.5%
+ { TRANSLU_more, TRANSLU_more, TRANSLU_more, TRANSLU_more },  // 20%
+//   { TRANSLU_med, TRANSLU_hi, TRANSLU_hi, TRANSLU_hi },  // 20%
+ { TRANSLU_med, TRANSLU_hi, TRANSLU_more, TRANSLU_hi },  // 22.5%
+ { TRANSLU_med, TRANSLU_hi, TRANSLU_more, TRANSLU_hi },  // 22.5%
+ { TRANSLU_med, TRANSLU_hi, TRANSLU_med, TRANSLU_hi },  // 30%
+ { TRANSLU_med, TRANSLU_more, TRANSLU_med, TRANSLU_hi },  // 32.5%
+ { TRANSLU_med, TRANSLU_more, TRANSLU_med, TRANSLU_more },  // 35%
+ { TRANSLU_med, TRANSLU_more, TRANSLU_med, TRANSLU_more },  // 35%
+ { TRANSLU_med, TRANSLU_med, TRANSLU_med, TRANSLU_hi },  // 40%
+ { TRANSLU_med, TRANSLU_med, TRANSLU_med, TRANSLU_more },  // 42.5%
+ { TRANSLU_med, TRANSLU_med, TRANSLU_med, TRANSLU_more },  // 42.5%
+ { TRANSLU_med, TRANSLU_med, TRANSLU_med, TRANSLU_med },  // 50%
+};
+
+static byte fogstir = 0;
 
 void R_DrawFogSpan_8(void)
 {
-    byte *colormap;
-    byte *transmap;
+    uint16_t fogcolor = ds_colormap[ ds_source[fog_index] ];  // to allow shift by 8
+    byte alpha16;
+    int count, count4;
+    byte * ftranslucent[4];
     byte *dest;
 
-    unsigned count;
-
-    colormap = ds_colormap;
-    transmap = ds_translucentmap;
-    dest = ylookup[ds_y] + columnofs[ds_x1];
-    count = ds_x2 - ds_x1 + 1;
-
-    // partial unrolled loop, for speed
-    while (count >= 4)
+    alpha16 = dr_alpha >> 3;  // dr_alpha 0..255 => 0..31
+    if( alpha16 > 15 )
     {
-        dest[0] = colormap[dest[0]];
-
-        dest[1] = colormap[dest[1]];
-
-        dest[2] = colormap[dest[2]];
-
-        dest[3] = colormap[dest[3]];
-
-        dest += 4;
-        count -= 4;
+        if( alpha16 > 31 )  alpha16 = 31;
+        alpha16 = 31 - alpha16; // high alpha reverse trans
+    }
+    fogstir ++;
+    for( count = 0; count < 4; count++ )
+    {
+        byte fogtran = fog_tran_table[ alpha16 ][ (count+fogstir) & 0x03 ];
+        dc_translucentmap = & translucenttables[ TRANSLU_TABLE_INDEX(fogtran) ];
+        ftranslucent[count] =   // normal table, or rev table
+	 & dc_translucentmap[ (dr_alpha<128) ? (fogcolor<<8) : fogcolor ];
     }
 
-    // leftover, count = 0..3
-    while (count--) {
-        *dest = colormap[*dest];
-        dest++;	// [WDJ] warning: undetermined order when combined with above
+    count = ds_x2 - ds_x1 + 1;
+    dest = ylookup[ds_y] + columnofs[ds_x1];
+
+    count4 = count>>2;
+    count -= count4<<2;
+    if( dr_alpha < 128 )
+    {
+        // low alpha, use four translucent tables
+        while (count4--)
+        {
+	    *dest = ds_colormap[ ftranslucent[3][ (*dest) ]];
+	    dest ++;
+	    *dest = ds_colormap[ ftranslucent[2][ (*dest) ]];
+	    dest ++;
+	    *dest = ds_colormap[ ftranslucent[1][ (*dest) ]];
+	    dest ++;
+	    *dest = ds_colormap[ ftranslucent[0][ (*dest) ]];
+	    dest ++;
+	}
+        while( count-- )
+        {
+	    *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) ]];
+	    dest ++;
+	}
+    }
+    else
+    {
+        // high alpha, reversed use of four translucent tables
+        while (count4--)
+        {
+	    *dest = ds_colormap[ ftranslucent[3][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = ds_colormap[ ftranslucent[2][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = ds_colormap[ ftranslucent[1][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = ds_colormap[ ftranslucent[0][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	}
+        while( count-- )
+        {
+	    *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	}
     }
 }
+
 
 //SoM: Fog wall.
 void R_DrawFogColumn_8(void)
 {
-    int count;
-    byte *dest;
-#ifdef FOGCOLOR
    // fogcolor blur needs to be kept as 8 bit or else the blur is inadequate
 static byte  fogcolor_c;
-static byte  fog_blur_table[4] = { 0xFF, TRANSLU_med, TRANSLU_more, 0 };
-    byte fogcolor, fc, fc2;
+    int count, count4, fi;
+    byte * ftranslucent[4];
+    byte fc, fc2;
+    byte alpha16;
+    uint16_t fogcolor;  // to allow shift by 8
+
+    fogstir ++;
     // fog_index 0.. column height
-    fc = dc_source[fog_index];
-//    fc = 110;
-    byte fogb1 = fog_blur_table[fog_bltic>>3];  // 0..3
-    if( fogb1 )
-    {
-        fc2 = dc_colormap[ dc_source[((fog_index==0)?fog_col_length:fog_index)-1] ];
-        if( fogb1 == 0xFF )
-        {   // fc2 80%, fc 20%
-	    register byte fc3 = fc2; // swap fc and fc2
-	    fc2 = fc;
-	    fc = fc3;
-	    fogb1 = TRANSLU_more;
-	}
-        // fc2 20%, fc 80%
-        fc = translucenttables[ TRANSLU_TABLE_INDEX(fogb1) + (fc2 << 8) + fc ];
-    }
+    // always average two pixels of source texture
+    fi = fog_index + 3;
+    fc = dc_colormap[ dc_source[fog_index] ];
+    if( fi >= fog_col_length )  fi -= fog_col_length;
+    fc2 = dc_colormap[ dc_source[fi] ];
+    fc = translucenttables[ TRANSLU_TABLE_med + (fc2 << 8) + fc ];
     if( fog_init )
     {
         // init blur
@@ -1102,17 +1150,25 @@ static byte  fog_blur_table[4] = { 0xFF, TRANSLU_med, TRANSLU_more, 0 };
         // blur
         fogcolor_c = translucenttables[ TRANSLU_TABLE_more + (fc << 8) + fogcolor_c ];
     }
-#if 1
     fogcolor = dc_colormap[ fogcolor_c ];
-#else
-    fogcolor = translucenttables[ TRANSLU_TABLE_hi + (110 << 8) + fogcolor_c ];
-    fogcolor = dc_colormap[ fogcolor ];
-#endif
-//    dc_translucentmap = & translucenttables[ TRANSLU_TABLE_hi ]; // weak
-    dc_translucentmap = & translucenttables[ TRANSLU_TABLE_more ];
-#endif
 
-    count = dc_yh - dc_yl;
+    alpha16 = dr_alpha >> 3;  // dr_alpha 0..255 => 0..31
+    if( alpha16 > 15 )
+    {
+        if( alpha16 > 31 )  alpha16 = 31;
+        alpha16 = 31 - alpha16; // high alpha reverse trans
+    }
+    for( count = 0; count < 4; count++ )
+    {
+        byte fogtran = fog_tran_table[ alpha16 ][ (count+fogstir) & 0x03 ];
+        dc_translucentmap = & translucenttables[ TRANSLU_TABLE_INDEX(fogtran) ];
+        if( dr_alpha < 128 )
+	   ftranslucent[count] = & dc_translucentmap[ fogcolor << 8 ];
+        else
+	   ftranslucent[count] = & dc_translucentmap[ fogcolor ];  // rev table
+    }
+
+    count = dc_yh - dc_yl + 1;
 
     // Zero length, column does not exceed a pixel.
     if (count < 0)
@@ -1130,32 +1186,50 @@ static byte  fog_blur_table[4] = { 0xFF, TRANSLU_med, TRANSLU_more, 0 };
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows?
-    dest = ylookup[dc_yl] + columnofs[dc_x];
+    byte * dest = ylookup[dc_yl] + columnofs[dc_x];
 
-    // Determine scaling,
-    //  which is the only mapping to be done.
-
-#ifdef FOGCOLOR
-    do
+    count4 = count>>2;
+    count -= count4<<2;
+    if( dr_alpha < 128 )
     {
-	// faint color + dark
-#if 1
-        *dest = dc_colormap[ dc_translucentmap[ (fogcolor << 8) + (*dest) ]];
-#else
- *dest = dc_colormap[ fogcolor ];
-#endif
-        dest += vid.ybytes;
+        // low alpha, use four translucent tables
+        while (count4--)
+        {
+	    *dest = dc_colormap[ ftranslucent[3][ (*dest) ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[2][ (*dest) ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[1][ (*dest) ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[0][ (*dest) ]];
+	    dest += vid.ybytes;
+	}
+        while( count-- )
+        {
+	    *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) ]];
+	    dest += vid.ybytes;
+	}
     }
-    while (count--);
-#else
-    do
+    else
     {
-        //Simple. Apply the colormap to what's already on the screen.
-        *dest = dc_colormap[*dest];
-        dest += vid.ybytes;
+        // high alpha, reversed use of four translucent tables
+        while (count4--)
+        {
+	    *dest = dc_colormap[ ftranslucent[3][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[2][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[1][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	    *dest = dc_colormap[ ftranslucent[0][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	}
+        while( count-- )
+        {
+	    *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
+	    dest += vid.ybytes;
+	}
     }
-    while (count--);
-#endif
 }
 
 #if 0

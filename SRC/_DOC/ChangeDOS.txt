@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00989 ]: w88 fogdraw
 [00988 ]: w88 extralight add
 [00987 ]: w88 fogwater decode
 [00986 ]: w88 LinkFFloor

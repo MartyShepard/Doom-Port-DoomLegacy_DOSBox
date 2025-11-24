@@ -373,7 +373,7 @@ ifdef PROFILEMODE
   LDFLAGS = $(WFLAGS) -g -pg
  else
 
-  CFLAGS = $(OPTS) $(M7)
+  CFLAGS = $(OPTS) $(M4)
 	# -fno-exceptions -foptimize-register-move -mhard-float
 		# -nostdlib -m32 -march=i386 -ffreestanding
 		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \

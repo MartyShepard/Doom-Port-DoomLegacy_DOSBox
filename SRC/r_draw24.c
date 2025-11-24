@@ -703,46 +703,30 @@ void R_DrawTranslucentSpan_24(void)
 }
 
 
-#define FOGCOLOR
 // Used for Legacy linetype 302, ceiling and floor of 3D fog in tagged
 void R_DrawFogSpan_24(void)
 {
-    pixel24_t *  p24;
-    unsigned int count;
-#ifdef FOGCOLOR
     pixelunion32_t fogcolor;
+    unsigned int alpha_d = dr_alpha;
+    unsigned int alpha_r = (255 - alpha_d) * 0.84;  // cloudy fog
+    unsigned int count;
+    pixel24_t *  p24;
+   
     fogcolor.ui32 = color8.to32[ ds_colormap[ ds_source[0] ]];
-//    fogcolor.ui32 = color8.to32[ ds_colormap[ 104 ]]; // gray
-    fogcolor.pix24.r >>= 1;
-    fogcolor.pix24.g >>= 1;
-    fogcolor.pix24.b >>= 1;
-#endif
-
     p24 = (pixel24_t*)( ylookup[ds_y] + columnofs[ds_x1] );
     count = ds_x2 - ds_x1 + 1;
 
-    while (count--)
     {
-        // 25/0/12 translucent
-#ifdef FOGCOLOR
-        register uint16_t dc0, dc1, dc2; // for overlapped execution
-        dc0 = p24->b;
-	p24->b = (dc0 + dc0 + fogcolor.pix24.b) >> 2;
-	dc1 = p24->g;
-	p24->g = (dc1 + dc1 + fogcolor.pix24.g) >> 2;
-	dc2 = p24->r;
-	p24->r = (dc2 + dc2 + fogcolor.pix24.r) >> 2;
-#else
-# define FOGGRAY_SPAN   0x08
-        register uint16_t dc0, dc1, dc2; // for overlapped execution
-        dc0 = p24->b;
-	p24->b = (dc0 + dc0 + FOGGRAY_SPAN) >> 3;
-	dc1 = p24->g;
-	p24->g = (dc1 + dc1 + FOGGRAY_SPAN) >> 3;
-	dc2 = p24->r;
-	p24->r = (dc2 + dc2 + FOGGRAY_SPAN) >> 3;
-#endif
-        p24 ++;  // *3
+	register int fb = fogcolor.pix32.b * alpha_d;
+	register int fg = fogcolor.pix32.g * alpha_d;
+	register int fr = fogcolor.pix32.r * alpha_d;
+        while (count--)
+        {
+	    p24->b = ((p24->b * alpha_r) + fb) >> 8;
+	    p24->g = ((p24->g * alpha_r) + fg) >> 8;
+	    p24->r = ((p24->r * alpha_r) + fr) >> 8;
+	    p24 ++;  // *3
+	}
     }
 }
 
@@ -751,18 +735,25 @@ void R_DrawFogSpan_24(void)
 // Used for Legacy linetype 283, fog sheet
 void R_DrawFogColumn_24(void)
 {
-    int count;
-    byte * dest;
-#ifdef FOGCOLOR
 static pixelunion32_t fogcolor = {.ui32=0x00101010};
-    pixelunion32_t fc, fc2;
+    pixelunion32_t fc, fc2, fc3;
+    unsigned int alpha_d = dr_alpha;
+    unsigned int alpha_r = (255 - alpha_d) * 0.84;  // cloudy fog
+    int count, fi;
+    byte * dest;
+   
     // fog_index 0.. column height
-    int fogb2 = 32 - fog_bltic; // fade proportionality
+    // always average three pixels of source texture
     fc.ui32 = color8.to32[ dc_colormap[ dc_source[fog_index] ]];
-    fc2.ui32 = color8.to32[ dc_colormap[ dc_source[((fog_index==0)?fog_col_length:fog_index)-1] ]];
-    fc.pix32.r = ((fc.pix32.r * fog_bltic) + (fc2.pix32.r * fogb2)) >> 5;
-    fc.pix32.g = ((fc.pix32.g * fog_bltic) + (fc2.pix32.g * fogb2)) >> 5;
-    fc.pix32.b = ((fc.pix32.b * fog_bltic) + (fc2.pix32.b * fogb2)) >> 5;
+    fi = fog_index + 3;
+    if( fi >= fog_col_length )  fi -= fog_col_length;
+    fc2.ui32 = color8.to32[ dc_colormap[ dc_source[fi] ]];
+    fi += 3;
+    if( fi >= fog_col_length )  fi -= fog_col_length;
+    fc3.ui32 = color8.to32[ dc_colormap[ dc_source[fi] ]];
+    fc.pix32.r = ((unsigned int)fc.pix32.r + fc2.pix32.r + fc3.pix32.r) /3;
+    fc.pix32.g = ((unsigned int)fc.pix32.g + fc2.pix32.g + fc3.pix32.g) /3;
+    fc.pix32.b = ((unsigned int)fc.pix32.b + fc2.pix32.b + fc3.pix32.b) /3;
     if( fog_init )
     {
         // init blur
@@ -772,11 +763,10 @@ static pixelunion32_t fogcolor = {.ui32=0x00101010};
     else
     {
         // blur
-        fogcolor.pix32.r = ((((uint16_t)fogcolor.pix32.r)*31) + fc.pix32.r) >> 5;
-        fogcolor.pix32.g = ((((uint16_t)fogcolor.pix32.g)*31) + fc.pix32.g) >> 5;
-        fogcolor.pix32.b = ((((uint16_t)fogcolor.pix32.b)*31) + fc.pix32.b) >> 5;
+        fogcolor.pix32.r = ((((unsigned int)fogcolor.pix32.r)*31) + fc.pix32.r) >> 5;
+        fogcolor.pix32.g = ((((unsigned int)fogcolor.pix32.g)*31) + fc.pix32.g) >> 5;
+        fogcolor.pix32.b = ((((unsigned int)fogcolor.pix32.b)*31) + fc.pix32.b) >> 5;
     }
-#endif
 
     count = dc_yh - dc_yl;
 
@@ -798,89 +788,18 @@ static pixelunion32_t fogcolor = {.ui32=0x00101010};
     // Use columnofs LUT for subwindows?
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
-#ifdef FOGCOLOR
-    do
     {
-	// faint color + dark
-	register uint16_t dc0, dc1, dc2; // for overlapped execution
-        register pixel24_t * p24 = (pixel24_t*)dest;
-	dc0 = p24->b;
-//	p24->b = (dc0 + dc0 + dc0 + fogcolor.pix24.b) >> 2;
-	p24->b = (dc0 + dc0 + fogcolor.pix24.b) >> 2;
-	dc1 = p24->g;
-//	p24->g = (dc1 + dc1 + dc1 + fogcolor.pix24.g) >> 2;
-	p24->g = (dc1 + dc1 + fogcolor.pix24.g) >> 2;
-	dc2 = p24->r;
-//	p24->r = (dc2 + dc2 + dc2 + fogcolor.pix24.r) >> 2;
-	p24->r = (dc2 + dc2 + fogcolor.pix24.r) >> 2;
-        dest += vid.ybytes;
+	register unsigned int fb = fogcolor.pix32.b * alpha_d;
+	register unsigned int fg = fogcolor.pix32.g * alpha_d;
+	register unsigned int fr = fogcolor.pix32.r * alpha_d;
+        do
+        {
+	    register pixel24_t * p24 = (pixel24_t*)dest;
+	    p24->b = ((p24->b * alpha_r) + fb) >> 8;
+	    p24->g = ((p24->g * alpha_r) + fg) >> 8;
+	    p24->r = ((p24->r * alpha_r) + fr) >> 8;
+	    dest += vid.ybytes;
+	}
+        while (count--);
     }
-    while (count--);
-#else
-
-#if 0
-#   define FOGGRAY_P    0x10
-    do
-    {
-	// ignore texture
-	// Closest to 8bit PAL version
-	register uint16_t dc0, dc1, dc2; // for overlapped execution
-        register pixel24_t * p24 = (pixel24_t*)dest;
-        dc0 = p24->b;
-	p24->b = ((dc0<<2) + FOGGRAY_P) >> 3;
-	dc1 = p24->g;
-	p24->g = ((dc1<<2) + FOGGRAY_P) >> 3;
-	dc2 = p24->r;
-	p24->r = ((dc2<<2) + FOGGRAY_P) >> 3;
-        dest += vid.ybytes;
-    }
-    while (count--);
-#else
-   
-    // Show texture in fog
-
-    // Determine scaling,
-    //  which is the only mapping to be done.
-    pixelunion32_t c32;
-    fixed_t texheight = dc_texheight << FRACBITS;  // any texture size
-    fixed_t frac;
-    fixed_t fracstep;
-
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl-centery)*fracstep;
-    if (texheight > 0)  // hangs when texheight==0
-    {
-        // From Boom, to fix the odd frac
-        if (frac < 0)
-	    while ((frac += texheight) < 0);
-        else
-	    while (frac >= texheight)  frac -= texheight;
-    }
-
-#   define FOGGRAY   0x04
-    do
-    {
-	// faint texture + dark
-	register byte bc = dc_source[frac>>FRACBITS];
-#ifdef HICOLORMAPS
-        c32.ui32 = hicolormaps[ bc ];
-#else
-        c32.ui32 = color8.to32[ bc ];
-#endif
-	register uint16_t dc0, dc1, dc2; // for overlapped execution
-        register pixel24_t * p24 = (pixel24_t*)dest;
-	dc0 = p24->b;
-	p24->b = (dc0 + dc0 + c32.pix24.b + FOGGRAY) >> 3;
-	dc1 = p24->g;
-	p24->g = (dc1 + dc1 + c32.pix24.g + FOGGRAY) >> 3;
-	dc2 = p24->r;
-	p24->r = (dc2 + dc2 + c32.pix24.r + FOGGRAY) >> 3;
-        dest += vid.ybytes;
-        frac += fracstep;
-        if( frac >= texheight )
-	    frac -= texheight;
-    }
-    while (count--);
-#endif
-#endif
 }

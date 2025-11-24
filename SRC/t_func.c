@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 980 2012-12-04 03:29:06Z wesleyjohnson $
+// $Id: t_func.c 989 2012-12-04 04:27:46Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -4275,6 +4275,7 @@ err_numarg:
 }
 
 
+// Background color fades
 // SetFade( red, green, blue, alpha )
 void SF_SetFade(void)
 {
@@ -4290,7 +4291,7 @@ void SF_SetFade(void)
     b = (unsigned long)t_argv[2].value.i;
     alpha = t_argv[3].value.i;
 
-    // Calculate the color value
+    // Calculate the background color value
     fadecolor = (256 * b) + (65536 * g) + (16777216 * r);
     fadealpha = alpha;
 done:
