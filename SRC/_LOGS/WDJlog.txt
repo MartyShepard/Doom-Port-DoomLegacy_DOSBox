@@ -2938,3 +2938,9 @@ Rewrite all fog draw functions to new specifications.
 Average 3 source texture pixels to generate fog color, except DRAW8PAL
 which can only average 2 pixels.
 Use of fog alpha.
+
+*** w88_fogface
+patchfile = w88_5_fogface.patch
+- committed revision 990   by wesley johnson
+Create the fog face sheets needed for some fog modes.
+Draw the fog face sheets when in such foggy sectors.

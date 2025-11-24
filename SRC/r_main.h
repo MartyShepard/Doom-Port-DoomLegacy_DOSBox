@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 988 2012-12-04 04:25:48Z wesleyjohnson $
+// $Id: r_main.h 990 2012-12-04 04:34:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -88,7 +88,10 @@ extern int      framecount;
 extern uint16_t	fog_col_length;
 extern uint16_t fog_tic;    // 0..0xFFF
 extern byte	fog_bltic;  // 0..32, blur/blend between tics
+extern uint16_t fog_wave1;  // 0..0x3FF, random small scale changes
+extern uint16_t fog_wave2;  // 0..0x3FF, random slower
 extern byte     fog_index;  // 0.. column or texture height
+extern byte     fog_index2; // fog_index-1 mod texture height
 extern byte	fog_init;
 
 //
@@ -126,6 +129,9 @@ extern int      viewer_modelsec;
 extern boolean  viewer_has_model;
 extern boolean  viewer_underwater;  // only set when viewer_has_model
 extern boolean  viewer_overceiling; // only set when viewer_has_model
+
+extern ffloor_t *  view_fogfloor;  // viewer is in a FF_FOG floor
+extern sector_t *  view_fogmodel;  // viewer is in a FF_FOG floor
 
 // Boom colormap, and global viewer coloring
 extern lighttable_t*    view_colormap;  // full lightlevel range colormaps

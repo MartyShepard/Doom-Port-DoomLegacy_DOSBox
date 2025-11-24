@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 988 2012-12-04 04:25:48Z wesleyjohnson $
+// $Id: r_main.c 990 2012-12-04 04:34:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -180,6 +180,9 @@ int                     loopcount;
 uint16_t   fog_col_length;  // post_t column or picture height
 uint16_t   fog_tic;    // 0..0xFFF, tic per fog change
 byte	   fog_bltic;  // 0..31, blend/blur between tics
+tic_t      fog_nexttic;
+uint16_t   fog_wave1 = 0x200;   // 0..0x3FF, random small scale changes
+uint16_t   fog_wave2 = 0x200;   // 0..0x3FF, random slower
 byte       fog_index;  // 0.. column or texture height, for slow fog effect
 byte	   fog_init = 0;   // set 1 at fog linedef to clear previous fog blur
 
@@ -203,6 +206,8 @@ boolean  viewer_overceiling; // only set when viewer_has_model
 // Boom colormap, and global viewer coloring
 lighttable_t*           view_colormap;  // full lightlevel range colormaps
 extracolormap_t *       view_extracolormap;
+ffloor_t *  view_fogfloor;  // viewer is in a FF_FOG floor
+sector_t *  view_fogmodel;  // viewer is in a FF_FOG floor
 
 fixed_t                 viewx;
 fixed_t                 viewy;
@@ -1270,6 +1275,8 @@ void R_SetupFrame (player_t* player)
     fixedcolormap = NULL;  // default
     view_colormap = NULL;  // default
     view_extracolormap = NULL;
+    view_fogmodel = NULL;
+    view_fogfloor = NULL;
 
     // [WDJ] fog flag on colormap colors everything (but not very good fog)
     if( viewer_sector->extra_colormap && viewer_sector->extra_colormap->fog )
@@ -1302,9 +1309,44 @@ void R_SetupFrame (player_t* player)
 	}
     }
 #endif
+    // Find a FF_FOG or fog extracolormap that viewer is within.
+    // FF_FOG is a ffloor, not a model sector
+    if( viewer_sector->ffloors )
+    {
+        ffloor_t * ffp;
+        for( ffp=viewer_sector->ffloors; ffp; ffp=ffp->next )
+        {
+	    if( ( ffp->flags & FF_FOG )
+		&& ( ffp->model_secnum >= 0 )
+	        && ( viewz < *(ffp->topheight) ) && ( viewz > *(ffp->bottomheight) )
+		)
+            {
+	        view_fogfloor = ffp;
+	        view_fogmodel = & sectors[ ffp->model_secnum ];
+	        // Fog already colors surrounding view by looking through
+	        // fog sheets, planes, and face sheet.
+		// This is an extra effect enabled by colormap fog flag.
+	        if( view_fogmodel->extra_colormap && view_fogmodel->extra_colormap->fog )
+	        {
+		    // fog colors all walls, floors, and things
+		    view_extracolormap = view_fogmodel->extra_colormap;
+		}
+	        else
+	        {
+		    // viewer fake floor without colormap overrides viewer sector colormap
+		    view_extracolormap = NULL;
+		}
+	        break;
+	    }
+	}
+    }
+    if( view_fogfloor )
+    {
+        // partial extralight taken by fog
+        extralight = (extralight * (256 - view_fogfloor->alpha)) >> 8;
+    }
     if( view_extracolormap )
         view_colormap = view_extracolormap->colormap;
-
 
     if (fixedcolormap_num)
     {
@@ -1338,8 +1380,19 @@ void R_SetupFrame (player_t* player)
     centery = (rdraw_viewheight/2) + dy;
     centeryfrac = centery<<FRACBITS;
 
+    // rendergametic increases by 1 to 5 each pass
     fog_bltic = (rendergametic>>1) & 0x001F;  // 0..31, one cycle per fog_tic
     fog_tic = (rendergametic>>6) & 0x0FFF;  // tic per 1.78 seconds
+    if( (fog_nexttic - rendergametic) > 0x00FF )
+    {  // semi-random wave, no overflow, no underflow, slightly erratic
+       fog_nexttic = rendergametic + 5;
+       fog_wave1 += ((int)validcount&0x007F) - 0x003F;
+       if(fog_wave1 > 0x4000) fog_wave1 = 0x2C;  // underflow
+       else if(fog_wave1 > 0x3FE) fog_wave1 = 0x3D2;
+       fog_wave2 += (((int)(fog_wave1+rendergametic)&0x03FF) - 0x01FF) >> 4;
+       if(fog_wave2 > 0x4000) fog_wave2 = 0x2C;  // underflow
+       else if(fog_wave2 > 0x3FE) fog_wave2 = 0x3D2;
+    }
 
     framecount++;
     validcount++;
@@ -1471,6 +1524,15 @@ void R_RenderPlayerView (player_t* player)
     // draw mid texture and sprite
     // SoM: And now 3D floors/sides!
     R_DrawMasked ();
+
+    if( view_fogfloor
+	&& ( view_fogfloor->flags & FF_FOGFACE  ) )
+    {
+        int fog_extralight = (player->extralight * view_fogfloor->alpha) >> 7;
+        R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 0 );  // random scale
+        if( extralight )
+	   R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 32*FRACUNIT );
+    }
 
     // If enabled, draw the weapon psprites on top of everything
     // but not on side views, nor on camera views.

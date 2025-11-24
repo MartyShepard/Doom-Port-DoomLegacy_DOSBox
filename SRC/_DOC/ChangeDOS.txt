@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[00990 ]: w88 fogface
 [00989 ]: w88 fogdraw
 [00988 ]: w88 extralight add
 [00987 ]: w88 fogwater decode

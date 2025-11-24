@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 989 2012-12-04 04:27:46Z wesleyjohnson $
+// $Id: r_segs.c 990 2012-12-04 04:34:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1332,6 +1332,171 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
       }
     }
     colfunc = basecolfunc;
+}
+
+
+// [WDJ] Render a fog sheet, generated from midtexture, with alpha
+void R_RenderFog( ffloor_t* fff, sector_t * intosec, int foglight,
+		  fixed_t scale )
+{
+    line_t * fogline = fff->master;
+    side_t * fogside = & sides[ fogline->sidenum[0] ];
+    sector_t * modelsec = fogside->sector;
+    lighttable_t** xwalllights = scalelight[0];  // local selection of light table
+
+    int      texnum, texheight;
+    fixed_t  windowclip_top, windowclip_bottom;
+    fixed_t  topheight, heightstep, bot_patch;
+    fixed_t  sec_ceilingheight_viewrel;
+    fixed_t  x1 = 0, x2 = rdraw_viewwidth - 1;
+
+    column_t*   col;
+    void (*colfunc_2s) (column_t*);
+
+    // midtexture, 0=no-texture, otherwise valid
+    texnum = texturetranslation[fogside->midtexture];
+    if( texnum == 0 )  goto nofog;
+
+    dm_windowbottom = dm_windowtop = dm_bottom_patch = FIXED_MAX; // default no clip
+    // [WDJ] clip at ceiling and floor
+    // world coord, relative to viewer
+    windowclip_top = intosec->ceilingheight - viewz;
+    windowclip_bottom = intosec->floorheight - viewz;
+
+    if( scale > 10 ) {
+        dm_yscale = scale;
+        rw_scalestep = 0;
+    }
+    else
+    {
+        // random fog scale
+        dm_yscale = ((int)fog_wave2 << (FRACBITS-6)) + (14<<FRACBITS);  // 30 .. 14
+        rw_scalestep = ((int)fog_wave1 << (FRACBITS-7)) - (4<<FRACBITS);  // ( 4 .. -4 )
+	dm_yscale -= rw_scalestep/2;
+        rw_scalestep /= rdraw_viewwidth;
+    }
+
+    // Select the default, or special effect column drawing functions,
+    // which are called by the colfunc_2s functions.
+    if (fff->flags & FF_FOG)	// Legacy Fog sheet or Fog/water with FF_FOG
+    {
+        // Display fog sheet (128 high) as transparent middle texture.
+	// Only where there is a middle texture (in place of it).
+        colfunc = fogcolfunc; // R_DrawFogColumn_8 16 ..
+	  // need dc_source, dc_colormap, dc_yh, dc_yl, dc_x
+        fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
+        // add in player movement to fog
+        int playermov = (viewmobj->x + viewmobj->y + (viewmobj->angle>>6)) >> (FRACBITS+6);
+        fog_index = (fog_tic + playermov) % fog_col_length;  // pixel selection
+        fog_init = 1;
+        dr_alpha = fweff[fff->fw_effect].fsh_alpha;  // dr_alpha 0..255
+    }
+    else
+        goto nofog;
+
+    // Select the 2s draw functions, they are called later.
+    //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
+    //     are not stored per-column with post info anymore in Doom Legacy
+    // [WDJ] multi-patch transparent texture restored
+    // DrawMasked needs: dm_floorclip, dm_ceilingclip, dm_yscale,
+    //  dm_top_patch, dm_bottom_patch, dm_windowtop, dm_windowbottom
+
+  retry_texture_model:
+    switch (textures[texnum]->texture_model)
+    {
+     case TM_patch:
+        colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
+        break;
+     case TM_combine_patch:
+        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
+        break;
+     case TM_picture:    
+        colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
+        column2s_length = textures[texnum]->height;
+        break;
+     case TM_masked:
+     case TM_none:
+        R_GenerateTexture( texnum );	// first time
+        goto retry_texture_model;
+     default:
+        goto nofog;  // no draw routine
+    }
+    texheight = textureheight[texnum];
+
+    // fake floor light heights in screen coord. , at x=0
+    sec_ceilingheight_viewrel = modelsec->ceilingheight - viewz;  // for fog sector
+    topheight = (centeryfrac) - FixedMul(sec_ceilingheight_viewrel, dm_yscale);
+    heightstep = -FixedMul (rw_scalestep, sec_ceilingheight_viewrel);
+
+    // Setup lighting based on the presence/lack-of 3D floors.
+    dc_numlights = 1;
+
+    dm_floorclip = screenheightarray;  // noclip
+    dm_ceilingclip = negonearray;  // noclip
+
+    // top of texture, relative to viewer, with rowoffset, world coord.
+    dc_texturemid = modelsec->ceilingheight + fogside->rowoffset - viewz;
+    dc_texheight = texheight >> FRACBITS;
+
+    if (fixedcolormap)
+    {
+        dc_colormap = fixedcolormap;
+    }
+    else
+    {
+        int vlight = modelsec->lightlevel + foglight;
+        xwalllights =
+	    (vlight < 0) ? scalelight[0]
+	  : (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
+	  : scalelight[vlight>>LIGHTSEGSHIFT];
+    }
+
+    // draw the columns, for one fog FakeFloor
+    for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
+    {
+        // top/bottom of texture, relative to viewer, screen coord.
+        dm_top_patch = (centeryfrac - FixedMul(dc_texturemid, dm_yscale));
+        bot_patch = FixedMul(texheight, dm_yscale) + dm_top_patch;
+        // fog sheet clipping to ceiling and floor
+        dm_windowtop = centeryfrac - FixedMul(windowclip_top, dm_yscale);
+        dm_windowbottom = centeryfrac - FixedMul(windowclip_bottom, dm_yscale);
+        
+        topheight += heightstep;
+//        if(topheight > dm_windowtop)
+        {
+//	    if( dm_windowbottom > topheight )
+//	        dm_windowbottom = topheight;
+	    if(dm_windowbottom >= bot_patch)
+	        dm_windowbottom = bot_patch;
+
+	    if( ! fixedcolormap )
+	    {
+	        // distance effect on light, yscale is smaller at distance.
+	        unsigned dlit = dm_yscale>>LIGHTSCALESHIFT;
+	        if (dlit >=  MAXLIGHTSCALE )
+		    dlit = MAXLIGHTSCALE-1;
+
+	        dc_colormap = xwalllights[dlit];
+	        if(modelsec->extra_colormap || view_colormap)
+	        {
+		    // reverse indexing, and change to extra_colormap
+		    int lightindex = dc_colormap - reg_colormaps;
+		    lighttable_t* cm = view_colormap? view_colormap : modelsec->extra_colormap->colormap;
+		    dc_colormap = & cm[ lightindex ];
+		}
+	    }
+
+	    dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
+	    // draw texture, as clipped
+	    col = (column_t *)((byte *)R_GetColumn(texnum,0) - 3);
+	    colfunc_2s (col);
+	}
+        dm_yscale += rw_scalestep;
+    } // for( dx_x = x1..x2 )
+    colfunc = basecolfunc;
+
+nofog:
+    return;
 }
 
 
