@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 958 2012-08-04 23:40:07Z wesleyjohnson $
+// $Id: doomdef.h 1007 2013-04-21 00:29:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -219,16 +219,6 @@ extern FILE *logstream;
 // sequenced actions, and thus are required to play some wads, like FreeDoom.
 #define VOODOO_DOLL
 
-// [WDJ] Heretic has missing sprites, SOFTERROR is needed to continue play
-// instead of fatal error message.
-#define SOFTERROR
-
-#ifdef SOFTERROR
-void I_SoftError (char *error, ...);
-#else
-#define I_SoftError   I_Error
-#endif
-
 // [WDJ] Gives a menu item that allows adjusting the time a door waits open.
 // A few of the timed doors in doom2 are near impossible to get thru in time,
 // and I have to use cheats to get past that part of the game.
@@ -350,6 +340,7 @@ void I_SoftError (char *error, ...);
 
 // i_system.h
 void I_Error (const char *error, ...);
+void I_SoftError (char *error, ...);
 
 // console.h
 void    CONS_Printf (const char *fmt, ...);

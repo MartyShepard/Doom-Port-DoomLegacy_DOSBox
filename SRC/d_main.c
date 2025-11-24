@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 998 2012-12-16 03:52:24Z wesleyjohnson $
+// $Id: d_main.c 1007 2013-04-21 00:29:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -346,7 +346,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1005"
+#define SVN_REV "1007"
 #endif
 
 // Version number: major.minor.revision
@@ -2357,7 +2357,6 @@ void D_DoomMain()
 }
 
 
-#ifdef SOFTERROR
 // Print error and continue game [WDJ] 1/19/2009
 #define SoftError_listsize   8
 static char *  SE_msg[SoftError_listsize];
@@ -2388,7 +2387,7 @@ void I_SoftError (char *error, ...)
     if( SE_next_msg_slot >= SoftError_listsize )  SE_next_msg_slot = 0;  // wrap
     if( SE_msgcnt < SoftError_listsize ) SE_msgcnt++;  // limit
     // print msg
-    fprintf (stderr, "Error: ");
+    fprintf (stderr, "Warn: ");
     vfprintf (stderr,error,argptr);
 //    fprintf (stderr, "\n");
 done:   
@@ -2398,7 +2397,7 @@ done:
 
    
 }
-#endif
+
 
 void Help( void )
 {

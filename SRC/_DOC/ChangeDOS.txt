@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01007 ]: w89 softerror warn
+[01006*]: w89 empty channel search
 [01005 ]: w89 kill sfx, chainsaw
 [01004 ]: w89 heretic finale
 [01003*]: w89 hardware draw over deepwater sector
