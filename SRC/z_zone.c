@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 876 2011-11-01 00:14:36Z wesleyjohnson $
+// $Id: z_zone.c 1016 2013-05-18 18:18:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -101,6 +101,7 @@
 #define MAX_MAIN_MEM_MB		80
 #define GROW_MIN_MAIN_MEM_MB	 8
 #define GROW_MAIN_MEM_MB	 8
+
 // Choose one (and only one) memory system.
 // [WDJ] Because of the widely varying systems that Legacy can run on, it is
 // desirable to maintain all these variations, to give each user one that fits
@@ -395,7 +396,7 @@ void Z_Init (void)
 #endif
 #else
 // ZONE_ZALLOC
-    int         mb_wanted = 10;
+    int mb_wanted = 10;
 
     if( M_CheckParm ("-mb") )
     {
@@ -406,23 +407,37 @@ void Z_Init (void)
     }
     else
     {
-        uint64_t  freemem, total;
-        freemem = I_GetFreeMem(&total)>>20;
-        total >>= 20;	// MiB
-        CONS_Printf("System memory %d MiB, free %d MiB\n", total, freemem);
-        // We assume that system uses a lot of memory for disk cache.
+        int total_mb, freemem_mb;
+        uint64_t  total;
+        freemem_mb = I_GetFreeMem(&total)>>20;
+        total_mb = total >> 20;	// MiB
+// CONS_Printf( "Total mem: %ld .. ", total );
+        // freemem_mb==0, means that it is unavailable.
+        if( freemem_mb )
+        {
+	    // [WDJ] total_mb, freemem_mb must be int, otherwise on 32 bit Linux
+	    // print will report "free 0", and probably other errors occur too.
+	    CONS_Printf("System memory %d MiB, free %d MiB\n", total_mb, freemem_mb);
+	}
+        else
+        {
+	    if( (total & 0x0F) != 0x01 )  // not guessing
+	        CONS_Printf("System memory %d MiB\n", total_mb);
+	    freemem_mb = total_mb >> 3;  // guess at free
+	}
+        // [WDJ] We assume that the system uses memory for disk cache.
         // Can ask for more than freemem and get it from disk cache.
-	// MEM consts are now defined above, [WDJ]
+	// MEM consts are now defined above.
 #ifdef GROW_ZONE
         // initial zone memory, will grow when needed
-        mb_wanted = min(min( GROW_MIN_MAIN_MEM_MB, freemem ), MAX_MAIN_MEM_MB);
+        mb_wanted = min(min( GROW_MIN_MAIN_MEM_MB, freemem_mb ), MAX_MAIN_MEM_MB);
         if( mb_wanted < 2 )   mb_wanted = 2;
 #else
         // zone memory, all at once, only get one try
         mb_wanted = min( NORM_MAIN_MEM_MB, (total/2) );  // reasonable limit
-        if( freemem < NORM_MAIN_MEM_MB )
-            freemem = (freemem + total)/2;	// ask for compromise
-        mb_wanted = min(max(freemem, mb_wanted), MAX_MAIN_MEM_MB);
+        if( freemem_mb < NORM_MAIN_MEM_MB )
+            freemem_mb = (freemem_mb + total)/2;	// ask for compromise
+        mb_wanted = min(max(freemem_mb, mb_wanted), MAX_MAIN_MEM_MB);
         if( mb_wanted < MIN_MAIN_MEM_MB )
 	    mb_wanted = MIN_MAIN_MEM_MB;
 #endif       
