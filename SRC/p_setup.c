@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1021 2013-07-30 15:30:24Z wesleyjohnson $
+// $Id: p_setup.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -496,7 +496,7 @@ unsigned int            numlevelflats;  // actual in use
 levelflat_t*            levelflats;
 
 //SoM: Other files want this info.
-int P_PrecacheLevelFlats()
+int P_PrecacheLevelFlats( void )
 {
   int flatmemory = 0;
   int i;

@@ -3198,3 +3198,9 @@ patchfile = w91_3_flats_limit.patch
 Remove limits on flats.  AddFlats now automatically increases the
 levelflats array when necessary.  Remove one use of alloca().
 
+*** W91_alloca
+patchfile = w91_4_alloca.patch
+- committed revision 1022   by wesley johnson
+Remove uses of alloca, replacing them with calloc, and explicitly
+freeing the allocations.
+

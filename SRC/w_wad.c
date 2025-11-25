@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
+// $Id: w_wad.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -270,6 +270,7 @@ int W_LoadWadFile (char *filename)
         wadinfo_t        header;
         lumpinfo_t*      lump_p;
         filelump_t*      fileinfo;
+        filelump_t*      flp;
 
         // read the header
         read (handle, &header, sizeof(header));
@@ -288,20 +289,23 @@ int W_LoadWadFile (char *filename)
 
         // read wad file directory
         length = header.numlumps * sizeof(filelump_t);
-        fileinfo = alloca (length);
+        fileinfo = calloc (length, sizeof(*fileinfo));  // temp alloc, zeroed
+
         lseek (handle, header.infotableofs, SEEK_SET);
         read (handle, fileinfo, length);
         numlumps = header.numlumps;
         
         // fill in lumpinfo array for this wad
+	flp = fileinfo;
         lump_p = lumpinfo = Z_Malloc (numlumps*sizeof(lumpinfo_t),PU_STATIC,NULL);
-        for (i=0 ; i<numlumps ; i++, lump_p++, fileinfo++)
+        for (i=0 ; i<numlumps ; i++, lump_p++, flp++)
         {
             //lump_p->handle   = handle;
-            lump_p->position = LE_SWAP32(fileinfo->filepos);
-            lump_p->size     = LE_SWAP32(fileinfo->size);
-            strncpy (lump_p->name, fileinfo->name, 8);
+            lump_p->position = LE_SWAP32(flp->filepos);
+            lump_p->size     = LE_SWAP32(flp->size);
+            strncpy (lump_p->name, flp->name, 8);
         }
+        free(fileinfo);
     }
     //
     //  link wad file to search files
@@ -378,6 +382,7 @@ void W_Reload (void)
     int                 handle;
     int                 length;
     filelump_t*         fileinfo;
+    filelump_t*         flp;
     lumpcache_t*        lumpcache;
 
     if (!reloadname)
@@ -390,7 +395,7 @@ void W_Reload (void)
     lumpcount = LE_SWAP32(header.numlumps);
     header.infotableofs = LE_SWAP32(header.infotableofs);
     length = lumpcount*sizeof(filelump_t);
-    fileinfo = alloca (length);
+    fileinfo = calloc (length, sizeof(*fileinfo));  // temp alloc, zeroed
     lseek (handle, header.infotableofs, SEEK_SET);
     read (handle, fileinfo, length);
 
@@ -399,18 +404,20 @@ void W_Reload (void)
 
     lumpcache = wadfiles[reloadlump>>16]->lumpcache;
 
+    flp = fileinfo;
     for (i=reloadlump ;
          i<reloadlump+lumpcount ;
-         i++, lump_p++, fileinfo++)
+         i++, lump_p++, flp++)
     {
         if (lumpcache[i])
             Z_Free (lumpcache[i]);
 
-        lump_p->position = LE_SWAP32(fileinfo->filepos);
-        lump_p->size = LE_SWAP32(fileinfo->size);
+        lump_p->position = LE_SWAP32(flp->filepos);
+        lump_p->size = LE_SWAP32(flp->size);
     }
 
     close (handle);
+    free(fileinfo);
 }
 
 

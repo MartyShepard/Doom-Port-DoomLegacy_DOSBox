@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
+// $Id: r_data.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1147,7 +1147,7 @@ void R_LoadTextures (void)
     char                name[9];
     char*               name_p;
 
-    int*                patchlookup;
+    int*                patch_to_num;  // patch name to num lookup
 
     int                 nummappatches;
     int                 offset;
@@ -1177,12 +1177,13 @@ void R_LoadTextures (void)
     // [WDJ] Do endian as use pnames temp
     nummappatches = LE_SWAP32 ( *((uint32_t *)pnames) );  // pnames lump [0..3]
     name_p = pnames+4;  // in lump, after number (uint32_t) is list of patch names
-    patchlookup = alloca (nummappatches*sizeof(*patchlookup));
 
+    // create name index to patch index lookup table, will free before return
+    patch_to_num = calloc (nummappatches, sizeof(*patch_to_num));
     for (i=0 ; i<nummappatches ; i++)
     {
         strncpy (name,name_p+i*8, 8);
-        patchlookup[i] = W_CheckNumForName (name);
+        patch_to_num[i] = W_CheckNumForName (name);
     }
     Z_Free (pnames);
 
@@ -1287,7 +1288,7 @@ void R_LoadTextures (void)
 	    // get texture patch info from texture lump
             texpatch->originx = LE_SWAP16(mpatch->originx);
             texpatch->originy = LE_SWAP16(mpatch->originy);
-            texpatch->patchnum = patchlookup[LE_SWAP16(mpatch->patchnum)];
+            texpatch->patchnum = patch_to_num[LE_SWAP16(mpatch->patchnum)];
             if (texpatch->patchnum == -1)
             {
                 I_Error ("R_LoadTextures: Missing patch in texture %s\n",
@@ -1307,6 +1308,7 @@ void R_LoadTextures (void)
     Z_Free (maptex1);
     if (maptex2)
         Z_Free (maptex2);
+    free(patch_to_num);
 
 #ifdef BUGFIX_TEXTURE0
     // Move texture[0] to texture[numtextures-1]
@@ -2784,14 +2786,8 @@ int R_TextureNumForName (char* name)
 // Preloads all relevant graphics for the level.
 //
 
-// BP: rules : no extern in c !!!
-//     slution put a new function in p_setup.c or put this in global (not recommended)
-// SoM: Ok.. Here it goes. This function is in p_setup.c and caches the flats.
-int P_PrecacheLevelFlats();
-
 void R_PrecacheLevel (void)
 {
-//  char*  flatpresent; //SoM: 4/18/2000: No longer used
     char*  texturepresent;
     char*  spritepresent;
 
@@ -2812,35 +2808,6 @@ void R_PrecacheLevel (void)
         return;
 
     // Precache flats.
-    /*flatpresent = alloca(numflats);
-    memset (flatpresent,0,numflats);
-
-    // Check for used flats
-    for (i=0 ; i<numsectors ; i++)
-    {
-#ifdef PARANOIA
-        if( sectors[i].floorpic<0 || sectors[i].floorpic>numflats )
-            I_Error("sectors[%d].floorpic=%d out of range [0..%d]\n",i,sectors[i].floorpic,numflats);
-        if( sectors[i].ceilingpic<0 || sectors[i].ceilingpic>numflats )
-            I_Error("sectors[%d].ceilingpic=%d out of range [0..%d]\n",i,sectors[i].ceilingpic,numflats);
-#endif
-        flatpresent[sectors[i].floorpic] = 1;
-        flatpresent[sectors[i].ceilingpic] = 1;
-    }
-
-    flatmemory = 0;
-
-    for (i=0 ; i<numflats ; i++)
-    {
-        if (flatpresent[i])
-        {
-            lump = firstflat + i;
-            if(devparm)
-               flatmemory += W_LumpLength(lump);
-            R_GetFlat (lump);
-//            W_CacheLumpNum(lump, PU_CACHE);
-        }
-    }*/
     flatmemory = P_PrecacheLevelFlats();
 
     //
@@ -2848,8 +2815,7 @@ void R_PrecacheLevel (void)
     //
     // no need to precache all software textures in 3D mode
     // (note they are still used with the reference software view)
-    texturepresent = alloca(numtextures);
-    memset (texturepresent,0, numtextures);
+    texturepresent = calloc(numtextures,sizeof(char));  // temp alloc, zeroed
 
     for (i=0 ; i<numsides ; i++)
     {
@@ -2898,12 +2864,12 @@ void R_PrecacheLevel (void)
         //       obsolete since we now cache entire composite textures
     }
     //CONS_Printf ("total mem for %d textures: %d k\n",numgenerated,texturememory>>10);
+    free(texturepresent);
 
     //
     // Precache sprites.
     //
-    spritepresent = alloca(numsprites);
-    memset (spritepresent,0, numsprites);
+    spritepresent = calloc(numsprites,sizeof(char));  // temp alloc, zeroed
 
     for (th = thinkercap.next ; th != &thinkercap ; th=th->next)
     {
@@ -2930,6 +2896,7 @@ void R_PrecacheLevel (void)
             }
         }
     }
+    free(spritepresent);
 
     //FIXME: this is no more correct with glide render mode
     if (devparm)
