@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 984 2012-12-04 04:11:53Z wesleyjohnson $
+// $Id: screen.c 1015 2013-05-18 18:16:44Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -398,7 +398,7 @@ void SCR_Startup (void)
     vid.centerofs = 0;
 
 #ifdef USEASM
-    ASM_PatchRowBytes(vid.width);
+    ASM_PatchRowBytes(vid.ybytes);//ASM_PatchRowBytes(vid.width);
 #endif
 
     V_Init_Draw();

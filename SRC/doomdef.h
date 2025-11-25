@@ -330,7 +330,7 @@ extern FILE *logstream;
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
 #define OLDTICRATE       35
-#define NEWTICRATERATIO   2  // try 4 for 140 fps :)
+#define NEWTICRATERATIO   1  // try 4 for 140 fps :)
 #define TICRATE         (OLDTICRATE*NEWTICRATERATIO)
 
 

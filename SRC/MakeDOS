@@ -374,6 +374,7 @@ ifdef DJGPPDOS_NATIVE
 	ifdef USEASM
 		OBJS:= $(OBJS) $(O)/tmap.o $(O)/vid_copy.o
 		OPTS:= $(OPTS) -DUSEASM
+		NASMOS=-DPC_DOS
 	endif
 
   OPTS+=-O3 \
@@ -1010,7 +1011,7 @@ $(O)/sounds.o: sounds.c doomtype.h sounds.h r_defs.h m_fixed.h d_think.h \
 	redir -o /_GCC/sounds.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/tmap.o: tmap.nas
-	nasm -o $@ -f $(NASMFORMAT) $<
+	nasm -o $@ -f $(NASMFORMAT) $(NASMOS) $<
 
 $(O)/p_fab.o: p_fab.c doomdef.h doomtype.h g_state.h m_swap.h g_game.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
@@ -1177,6 +1178,10 @@ $(O)/%.o: $(INTERFACE)/%.c
 $(O)/%.o: hardware/%.c
 	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
+# To dump draw functions to assembly
+objdump_draw: $(O)/r_draw.o
+	objdump -d $(O)/r_draw.o -l --source --no-show-raw-insn > $(BIN)/r_draw.s
+	
 #############################################################
 #
 #############################################################

@@ -214,5 +214,6 @@ enum key_input_e
 #define KEY_RIGHTARROW  (0x80+107)
 #define KEY_DOWNARROW   (0x80+110)
 #define KEY_SHIFT       (0x80+54)
+#define KEY_INS       (0x80+149)
 #endif
 #endif

@@ -250,6 +250,7 @@ void R_MapPlane ( int y, int x1, int x2 )
         || x2>=rdraw_viewwidth
         || (unsigned)y>rdraw_viewheight)    // [WDJ] ??  y>=rdraw_viewheight
     {
+			  return;
         I_Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
     }
 #endif

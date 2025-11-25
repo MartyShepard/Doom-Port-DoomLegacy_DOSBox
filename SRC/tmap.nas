@@ -83,6 +83,10 @@
 %define CODE_SEG .text                         
 %endif
 
+;;%ifdef PC_DOS
+;;%define je jz
+;;%define jne jnz
+;;%endif
 
 ;; externs
 ;; columns
@@ -96,9 +100,9 @@ cextern dc_texturemid
 cextern dc_iscale
 cextern centery
 cextern dc_colormap
-;cextern dc_transmap
 cextern dc_translucentmap
-cextern colormaps
+cextern reg_colormaps
+cextern dr_alpha
 
 ;; spans
 cextern ds_x1
@@ -110,7 +114,6 @@ cextern ds_xstep
 cextern ds_ystep
 cextern ds_source
 cextern ds_colormap
-cextern reg_colormaps
 ;cextern ds_textureheight
 
 ; polygon edge rasterizer
@@ -189,6 +192,14 @@ ASM_PatchRowBytes:
         mov     [pi+2],eax
         mov     [pj+2],eax
         mov     [pk+2],eax
+;;%ifndef PC_DOS
+        mov     [pf_ra+2],eax
+        mov     [pg_ra+2],eax
+        mov     [ph_ra+2],eax
+        mov     [pi_ra+2],eax
+        mov     [pj_ra+2],eax
+        mov     [pk_ra+2],eax
+;;%endif
         mov     [pl+2],eax
         mov     [pm+2],eax
         mov     [pn+2],eax
@@ -200,6 +211,12 @@ ASM_PatchRowBytes:
         mov     [q2+2],eax
         mov     [q3+2],eax
         mov     [q4+2],eax
+;;%ifndef PC_DOS
+        mov     [q1_ra+2],eax
+        mov     [q2_ra+2],eax
+        mov     [q3_ra+2],eax
+        mov     [q4_ra+2],eax
+;;%endif
         mov     [q5+2],eax
         mov     [q6+2],eax
         mov     [q7+2],eax
@@ -533,7 +550,7 @@ R_DrawTranslucentColumn_8:
         mov     ebx,[dc_x]
         add     edi,[columnofs+ebx*4]   ;; edi = dest
 ;;
-;; pixelcount = yh - yl + 1
+;; pixelcount = dc_yh - dc_yl + 1
 ;;
         mov     eax,[dc_yh]
         inc     eax
@@ -564,6 +581,11 @@ R_DrawTranslucentColumn_8:
         pop     cx
         mov     edx,[dc_colormap]
         mov     esi,[dc_source]
+;;%ifndef PC_DOS	
+;; if( dr_alpha < TRANSLU_REV_ALPHA )
+        cmp     byte [dr_alpha], 0x8f
+        ja      near  tr_rev_alpha
+;;%endif
 ;;
 ;; lets rock :) !
 ;;
@@ -571,7 +593,6 @@ R_DrawTranslucentColumn_8:
         shr     eax,0x2
         test    byte [pixelcount],0x3
         mov     ch,al                   ;; quad count
-;       mov     eax,[dc_transmap]
         mov     eax,[dc_translucentmap]
         je      vt4quadloop
 ;;
@@ -580,6 +601,11 @@ R_DrawTranslucentColumn_8:
         test    byte [pixelcount],0x1
         je      trf2
 
+;;  edx : dc_colormap
+;;  esi : dc_source
+;;  eax : dc_translucentmap
+;;  ebx : frac.int
+;;  *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
         mov     ah,[esi+ebx]            ;; fetch texel : colormap number
         add     ecx,ebp
         adc     bl,cl
@@ -682,6 +708,138 @@ q4:     add     edi,0x23456789
 
         dec     ch
         jne     vtquadloop
+;;%ifndef PC_DOS				
+	jmp     vtdone
+
+tr_rev_alpha:
+;;
+;; lets rock :) !
+;;
+        mov     eax,[pixelcount]
+        shr     eax,0x2
+        test    byte [pixelcount],0x3
+        mov     ch,al                   ;; quad count
+        mov     eax,[dc_translucentmap]
+%ifdef PC_DOS				
+        je      near vt4quadloop
+%else
+        je      vt4quadloop
+%endif
+
+;;
+;;  do un-even pixel
+;;
+        test    byte [pixelcount],0x1
+        je      trf2_ra
+
+;;  edx : dc_colormap
+;;  esi : dc_source
+;;  eax : dc_translucentmap
+;;  ebx : frac.int
+;;  *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        add     ecx,ebp
+        adc     bl,cl
+        mov     ah,[edi]                ;; fetch dest  : index into colormap
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     dl,[edx]
+        mov     [edi],dl
+pf_ra:  add     edi,0x12345678
+;;
+;;  do two non-quad-aligned pixels
+;;
+trf2_ra: test    byte [pixelcount],0x2
+        je      trf3_ra
+
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        add     ecx,ebp
+        adc     bl,cl
+        mov     ah,[edi]                ;; fetch dest  : index into colormap
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     dl,[edx]
+        mov     [edi],dl
+pg_ra:  add     edi,0x12345678
+
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        add     ecx,ebp
+        adc     bl,cl
+        mov     ah,[edi]                ;; fetch dest  : index into colormap
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     dl,[edx]
+        mov     [edi],dl
+ph_ra:  add     edi,0x12345678
+;;
+;;  test if there was at least 4 pixels
+;;
+trf3_ra: test    ch,0xff                 ;; test quad count
+        je near vtdone
+
+;;
+;; ebp : ystep frac. upper 24 bits
+;; edx : y     frac. upper 24 bits
+;; ebx : y     i.    lower 7 bits,  masked for index
+;; ecx : ch = counter, cl = y step i.
+;; eax : colormap aligned 256
+;; esi : source texture column
+;; edi : dest screen
+;;
+vt4quadloop_ra:
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        mov     [tystep],ebp
+pi_ra:  add     edi,0x12345678
+        mov     ah,[edi]                ;; fetch dest  : index into colormap
+pj_ra:  sub     edi,0x12345678
+        mov     ebp,edi
+pk_ra:  sub     edi,0x12345678
+        jmp short inloop_ra
+align 4
+vtquadloop_ra:
+        add     ecx,[tystep]
+        adc     bl,cl
+q1_ra:  add     ebp,0x23456789
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        mov     dl,[edx]
+        mov     [edi],dl
+        mov     ah,[ebp]                ;; fetch dest   : index into colormap
+inloop_ra:
+        add     ecx,[tystep]
+        adc     bl,cl
+q2_ra:  add     edi,0x23456789
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        mov     dl,[edx]
+        mov     [ebp+0x0],dl
+        mov     ah,[edi]                ;; fetch dest   : index into colormap
+
+        add     ecx,[tystep]
+        adc     bl,cl
+q3_ra:  add     ebp,0x23456789
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        mov     dl,[edx]
+        mov     [edi],dl
+        mov     ah,[ebp]                ;; fetch dest   : index into colormap
+
+        add     ecx,[tystep]
+        adc     bl,cl
+q4_ra:  add     edi,0x23456789
+        and     bl,0x7f
+        mov     dl,[eax]
+        mov     al,[esi+ebx]            ;; fetch texel : colormap number
+        mov     dl,[edx]
+        mov     [ebp],dl
+        mov     ah,[edi]                ;; fetch dest   : index into colormap
+
+        dec     ch
+        jne     vtquadloop_ra
+;;%endif
 vtdone:
         pop     ebx
         pop     edi
@@ -745,7 +903,6 @@ R_DrawShadeColumn_8:
         mov     dh,al
         shr     eax,2
         mov     ch,al                   ;; quad count
-;       mov     eax,[colormaps]
         mov     eax,[reg_colormaps]
         test    dh,3
         je      sh4quadloop

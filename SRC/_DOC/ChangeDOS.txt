@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01015 ]: w90 ASM fixes, tmap
+      DOS: Fixed short Jump out of Range (Exceed 127bytes)
+
 [01014 ]: w90 malloc.h removal
 [01013*]: w90 makefile CDMUS
 [01012*]: w89 hardware draw sorted

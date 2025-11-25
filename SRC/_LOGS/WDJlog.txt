@@ -3146,3 +3146,18 @@ patchfile = w90_2_malloc.patch
 - committed revision 1014   by wesley johnson
 Remove old references to malloc.h, except for WATCOM.
 Fixes bug 0000602, compiling under FreeBSD.
+
+*** w90_tmap_asm
+patchfile = w90_3_tmap_asm.patch
+- committed revision 1015   by wesley johnson
+Change asm source for name changes.
+  dc_transmap -> dc_translucentmap
+  colormaps -> reg_colormaps
+Applied patch from Alexey Dokuchaev.
+Fixes bug 0000604.
+Added dr_alpha test and capability for alpha>128 to asm code.
+Fixed asm to increment by vid.ybytes.
+Makefile modified for asm support.
+Due to complexity, asm will likely lag in getting fixes made to drawers.
+It uses strange tricks for speed up, which are difficult to maintain.
+.

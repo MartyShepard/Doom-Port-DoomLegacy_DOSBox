@@ -164,7 +164,7 @@ typedef enum {
 
 //faB: was upped to 512, but still people come with levels that break the
 //     limits, so had to do an ugly re-alloc to get rid of the overflow.
-//#define MAXDRAWSEGS             256        // see r_segs.c for more
+#define MAXDRAWSEGS             8192        // see r_segs.c for more
 
 // SoM: Moved this here...
 // This could be wider for >8 bit display.
