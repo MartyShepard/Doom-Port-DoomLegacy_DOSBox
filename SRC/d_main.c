@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1017 2013-05-18 18:26:40Z wesleyjohnson $
+// $Id: d_main.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -346,7 +346,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1022"
+#define SVN_REV "1023"
 #endif
 
 // Version number: major.minor.revision
@@ -668,7 +668,9 @@ void D_Display(void)
         else
             y = viewwindowy + 4;
         patch = W_CachePatchName("M_PAUSE", PU_CACHE);  // endian fix
-        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width) / 2, y, 0, patch);
+        // 0
+        V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART );
+        V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width) / 2, y, patch);
     }
 
     //added:24-01-98:vid size change is now finished if it was on...
@@ -886,6 +888,7 @@ void D_PageDrawer(char *lumpname)
     byte *dest;  // within screen buffer
 
     // [WDJ] Draw patch for all bpp, bytepp, and padded lines.
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
 
     // software mode which uses generally lower resolutions doesn't look
     // good when the pic is scaled, so it fills space around with a pattern,
@@ -903,13 +906,11 @@ void D_PageDrawer(char *lumpname)
 	        dest = screens[0] + (y * vid.ybytes);  // within screen buffer
                 for (x = 0; x < vid.width / 64; x++)
                 {
-//                    memcpy(dest, src + ((y & 63) << 6), 64);
 		    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
                     dest += (64 * vid.bytepp);
                 }
                 if (vid.width & 63)
                 {
-//                    memcpy(dest, src + ((y & 63) << 6), vid.width & 63);
 		    V_DrawPixels( dest, 0, (vid.width & 63), &src[(y & 63) << 6]);
                 }
             }
@@ -919,18 +920,14 @@ void D_PageDrawer(char *lumpname)
     {
         V_DrawRawScreen_Num(0, 0, W_GetNumForName(lumpname), 320, 200);
         if (demosequence == 0 && pagetic <= 140)
-            V_DrawScaledPatch_Name(4, 160, 0, "ADVISOR" );
+            V_DrawScaledPatch_Name(4, 160, "ADVISOR" );
     }
     else
     {
-        V_DrawScaledPatch_Name(0, 0, 0, lumpname );
+        V_DrawScaledPatch_Name(0, 0, lumpname );
     }
-
-    //added:08-01-98:if you wanna centre the pages it's here.
-    //          I think it's not so beautiful to have the pic centered,
-    //          so I leave it in the upper-left corner for now...
-    //V_DrawPatch (0,0, 0, W_CachePatchName(pagename, PU_CACHE));
 }
+
 
 //
 // D_AdvanceDemo

@@ -524,7 +524,7 @@ void expand_drawsegs( void )
     drawseg_t * new_drawsegs = portable_realloc(drawsegs, newmax*sizeof(*drawsegs));
     if( new_drawsegs == 0 )
     {
-        I_Error( "Failed realloc for drawsegs NewMax=%d,drawsegs=%d\n",newmax, sizeof(*drawsegs));
+        I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
     }
     drawsegs = new_drawsegs;
     maxdrawsegs = newmax;

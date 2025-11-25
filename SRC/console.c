@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: console.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1095,6 +1095,9 @@ static void CON_DrawInput (void)
     char    *p;
     int     x,y;
 
+    // Draw console text, screen0
+    // V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+
     // input line scrolls left if it gets too long
     //
     p = inputlines[inputline];
@@ -1104,13 +1107,13 @@ static void CON_DrawInput (void)
     y = con_curlines - 12;
 
     for(x=0; x<con_width; x++)
-        V_DrawCharacter( (x+1)<<3, y, p[x] |V_NOSCALEPATCH|V_NOSCALESTART);
+        V_DrawCharacter( (x+1)<<3, y, p[x] );  // red
 
     // draw the blinking cursor
     //
     x = (input_cx>=con_width) ? con_width - 1 : input_cx;
     if (con_tick<4)
-        V_DrawCharacter( (x+1)<<3, y, 0x80 | '_' |V_NOSCALEPATCH|V_NOSCALESTART);
+        V_DrawCharacter( (x+1)<<3, y, 0x80 | '_' );  // white
 }
 
 
@@ -1120,6 +1123,7 @@ static void CON_DrawInput (void)
     extern float gr_viewheight; //needed for drawing second player's messages
                                 //halfway down
 #endif
+
 static void CON_DrawHudlines (void)
 {
     char       *p;
@@ -1127,6 +1131,8 @@ static void CON_DrawHudlines (void)
 
     if (con_hudlines<=0)
         return;
+
+    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
 
     if (chat_on)
         y = 8;   // leave place for chat input in the first row of text
@@ -1147,10 +1153,10 @@ static void CON_DrawHudlines (void)
         {
 #ifdef HWRENDER //Added by Mysterial
             if (con_lineowner[i%con_hudlines] == 2)
-                V_DrawCharacter ( x<<3, y2+gr_viewheight, (p[x]&0xff) |V_NOSCALEPATCH|V_NOSCALESTART);
+                V_DrawCharacter ( x<<3, y2+gr_viewheight, (p[x]&0xff) );  // red
             else
 #endif
-                V_DrawCharacter ( x<<3, y, (p[x]&0xff) |V_NOSCALEPATCH|V_NOSCALESTART);
+                V_DrawCharacter ( x<<3, y, (p[x]&0xff) );  // red
         }
 
         if (con_lineowner[i%con_hudlines] == 2)
@@ -1227,6 +1233,8 @@ static void CON_DrawConsole (void)
     if (con_curlines <= 0)
         return;
 
+    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+
     //FIXME: refresh borders only when console bg is translucent
     con_clearlines = con_curlines;    // clear console draw from view borders
     con_hudupdate = true;             // always refresh while console is on
@@ -1236,7 +1244,7 @@ static void CON_DrawConsole (void)
     {
 #ifdef HWRENDER // not win32 only 19990829 by Kin
         if (rendermode!=render_soft)
-            V_DrawScalePic_Num (0, con_curlines-200*vid.fdupy, 0,
+            V_DrawScalePic_Num (0, con_curlines-200*vid.fdupy,
 				W_GetNumForName ("CONSBACK") );
         else
 #endif
@@ -1278,7 +1286,7 @@ static void CON_DrawConsole (void)
         p = &con_buffer[(i%con_totallines)*con_width];
 
         for (x=0;x<con_width;x++)
-            V_DrawCharacter( (x+1)<<3, y, p[x] |V_NOSCALEPATCH|V_NOSCALESTART);
+            V_DrawCharacter( (x+1)<<3, y, p[x] );  // red
     }
 
 

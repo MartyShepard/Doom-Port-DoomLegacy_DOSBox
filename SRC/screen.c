@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1015 2013-05-18 18:16:44Z wesleyjohnson $
+// $Id: screen.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -394,11 +394,10 @@ void SCR_Startup (void)
 
     //vid.baseratio = FRACUNIT; //Hurdler: not used anymore
 
-    scaledofs = 0;
     vid.centerofs = 0;
 
 #ifdef USEASM
-    ASM_PatchRowBytes(vid.ybytes);//ASM_PatchRowBytes(vid.width);
+    ASM_PatchRowBytes(vid.ybytes);
 #endif
 
     V_Init_Draw();
@@ -432,7 +431,6 @@ void SCR_Recalc (void)
     }
 
     //added:18-02-98: calculate centering offset for the scaled menu
-    scaledofs = 0;  //see v_video.c
     vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.width) +
                     (vid.width%BASEVIDWIDTH)/2;
 

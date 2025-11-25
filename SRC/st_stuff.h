@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: st_stuff.h 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,7 +52,7 @@
                      //hardware mode : original coords, scaled to current resolution, correct aspect
 //#define ST_Y         (rendermode==render_soft ? vid.height - stbarheight : BASEVIDHEIGHT - ST_HEIGHT)
 extern int ST_Y;
-extern int fgbuffer;
+extern int fg_stbar;  // FG with status bar draw flags
 extern int st_x;
 extern boolean st_statusbar_on;
 extern int st_scalex;

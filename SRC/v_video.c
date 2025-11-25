@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 974 2012-11-10 22:24:25Z wesleyjohnson $
+// $Id: v_video.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -538,17 +538,6 @@ void V_Init_VideoControl( void )
 }
 
 
-
-//added:18-02-98: this is an offset added to the destination address,
-//                for all SCALED graphics. When the menu is displayed,
-//                it is TEMPORARILY set to vid.centerofs, the rest of
-//                the time it should be zero.
-//                The menu is scaled, a round multiple of the original
-//                pixels to keep the graphics clean, then it is centered
-//                a little, but except the menu, scaled graphics don't
-//                have to be centered. Set by m_menu.c, and SCR_Recalc()
-int scaledofs;
-
 #ifdef DIRTY_RECT
 // [WDJ] Only kept in case want to put game on handheld device, limited CPU.
 // V_MarkRect : this used to refresh only the parts of the screen
@@ -631,13 +620,16 @@ void V_DrawPixel(byte * line, int x, byte color)
     }
 }
 #else
+#if 0
 // [WDJ] Draw a palette color to a single pixel
 void V_DrawPixel(byte * line, int x, byte color)
 {
    line[x] = color;
 }
+#else
 // Degenerate case when only have DRAW8PAL, and want to save calls locally
 # define  V_DrawPixel( line, x, color)     (line)[(x)]=(color)
+#endif
 #endif
 
 // [WDJ] Draw a palette src to a screen line
@@ -690,6 +682,7 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
 // V_CopyRect
 //
 // position and width is in src pixels
+// srcsrcn, destscn include V_SCALESTART flag
 void V_CopyRect(int srcx, int srcy, int srcscrn, int width, int height, int destx, int desty, int destscrn)
 {
     byte *src;
@@ -761,71 +754,119 @@ void VID_BlitLinearScreen(byte * srcptr, byte * destptr, int width, int height, 
 }
 #endif
 
+// [WDJ] parameterized draw, used by V_DrawScaled, V_DrawMapped
+drawinfo_t  V_drawinfo;
+  
+// [WDJ] setup V_drawinfo for window, scaling and flag options
+// usage:
+//  desttop = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
+//  destend = desttop + (patch->width * V_drawinfo.xbytes);  // test against desttop
+void V_SetupDraw( uint32_t screenflags )
+{
+    // save current draw
+    V_drawinfo.prev_screenflags = V_drawinfo.screenflags;
+
+    V_drawinfo.screenflags = screenflags;
+    V_drawinfo.effectflags = V_drawinfo.screen_effectflags = screenflags & V_EFFECTMASK;
+
+    if (screenflags & V_NOSCALEPATCH)
+    {
+        V_drawinfo.dupx = V_drawinfo.dupy = 1;  // unscaled
+    }
+    else
+    {
+        V_drawinfo.dupx = vid.dupx;   // scaled
+        V_drawinfo.dupy = vid.dupy;
+    }
+    V_drawinfo.ybytes = V_drawinfo.dupy * vid.ybytes;  // bytes per source line
+    V_drawinfo.xbytes = V_drawinfo.dupx * vid.bytepp;  // bytes per source pixel
+
+    if (screenflags & V_NOSCALESTART)
+    {
+        V_drawinfo.y0bytes = vid.ybytes;  // unscaled
+	V_drawinfo.x0bytes = vid.bytepp;
+    }
+    else
+    {
+        V_drawinfo.y0bytes = vid.dupy * vid.ybytes;  // scaled
+	V_drawinfo.x0bytes = vid.dupx * vid.bytepp;
+    }
+
+    V_drawinfo.x_unitfrac = FixedDiv(FRACUNIT, V_drawinfo.dupx << FRACBITS);
+    V_drawinfo.y_unitfrac = FixedDiv(FRACUNIT, V_drawinfo.dupy << FRACBITS);
+
+    // The screen buffer, at an offset
+    V_drawinfo.start_offset = 0;
+    if (screenflags & V_CENTERSCREEN)
+    {
+        // center the menus, finale, and other screens in the fullscreen
+        V_drawinfo.start_offset += (vid.widthbytes - (BASEVIDWIDTH * V_drawinfo.xbytes)) / 2;
+    }
+    if (screenflags & V_CENTER0)
+    {
+        // center the graphic in the menu, (0,0) at center
+        V_drawinfo.start_offset += ( vid.centerofs * vid.bytepp );
+        // as previously was performed by scaleofs.
+        // Enabled when the menu is displayed, and crosshairs.
+	// The menu is scaled, a round multiple of the original pixels to
+        // keep the graphics clean, then it is centered a little.
+        // Except the menu, scaled graphics don't have to be centered.
+    }
+    V_drawinfo.screen = screenflags & V_SCREENMASK;  // screen number (usually 0)
+    V_drawinfo.drawp = screens[V_drawinfo.screen] + V_drawinfo.start_offset;
+}
+
+
 //
 //  V_DrawMappedPatch : like V_DrawScaledPatch, but with a colormap.
+//  per V_drawinfo
 //
 //
 //added:05-02-98:
 // [WDJ] all patches are cached endian fixed 1/5/2010
-// Called by draw char/string, menu (scrn=0), wi_stuff (scrn=0)
-// Called by ST_refreshBackground (scrn=1+flags) to draw face on status bar
-void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
+// Called by draw char/string, menu, wi_stuff (screen0, scaled)
+// Called by ST_refreshBackground to draw face on status bar (with flags)
+void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
 {
     column_t *column;
     byte *source;  // within column
     byte *desttop, *dest;  // within video buffer
 
-    int dupx, dupy, dup_ybytes;
     int count;
-    fixed_t col, colfrac, rowfrac, wf, ofs;
+    fixed_t col, wf, ofs;
 
     // draw an hardware converted patch
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, scrn, colormap);
+        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, V_drawinfo.screenflags|V_drawinfo.effectflags, colormap);
         return;
     }
 #endif
-
-    if ((scrn & V_NOSCALEPATCH))
-        dupx = dupy = 1;
-    else
-    {
-        dupx = vid.dupx;
-        dupy = vid.dupy;
-    }
-    dup_ybytes = dupy * vid.ybytes;
 
     y -= patch->topoffset;
     x -= patch->leftoffset;
 
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
-    desttop = screens[scrn & 0xff];
-    if (scrn & V_NOSCALESTART)
-        desttop += (y * vid.ybytes) + (x * vid.bytepp);
-    else
-        desttop += (y * vid.dupy * vid.ybytes) + (((x * vid.dupx) + scaledofs) * vid.bytepp);
+    desttop = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
+//    destend = desttop + (patch->width * V_drawinfo.xbytes);  // test against desttop
 
 #ifdef DIRTY_RECT
-    if (!(scrn & 0xff))
-        V_MarkRect(x, y, patch->width * dupx, patch->height * dupy);
+    if (V_drawinfo.screen == 0)
+        V_MarkRect(x, y, patch->width * V_drawinfo.dupx, patch->height * V_drawinfo.dupy);
 #endif
-
-    colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
-    rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
 
     wf = patch->width << FRACBITS;
 
-    for (col=0; col < wf; col += colfrac)
+    for (col=0; col < wf; col += V_drawinfo.x_unitfrac)
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
-            dest = desttop + (column->topdelta * dup_ybytes);
-            count = column->length * dupy;
+            dest = desttop + (column->topdelta * V_drawinfo.ybytes);
+            count = column->length * V_drawinfo.dupy;
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
@@ -835,7 +876,7 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 	        {
 		    V_DrawPixel( dest, 0, colormap[ source[ofs >> FRACBITS]] );
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	    }
 	    else
@@ -846,7 +887,7 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 	        { 
 		    *dest = colormap[ source[ofs >> FRACBITS]];
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
             }
             column = (column_t *) ((byte *) column + column->length + 4);
@@ -856,13 +897,12 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t * patch, byte * colormap)
 
 }
 
+//  per V_drawinfo
 // with temp patch load to cache
-void V_DrawMappedPatch_Name ( int x, int y, int scrn,
-			      char*         name,
-			      byte*         colormap )
+void V_DrawMappedPatch_Name ( int x, int y, char* name, byte* colormap )
 {
    // The patch is used only in this function
-   V_DrawMappedPatch ( x, y, scrn,
+   V_DrawMappedPatch ( x, y,
                        W_CachePatchName( name, PU_CACHE ),  // endian fix
 		       colormap );
 }
@@ -872,63 +912,43 @@ void V_DrawMappedPatch_Name ( int x, int y, int scrn,
 // V_DrawScaledPatch
 //   like V_DrawPatch, but scaled 2,3,4 times the original size and position
 //   this is used for menu and title screens, with high resolutions
+//  per V_drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
 //
 //added:05-02-98:
 // default params : scale patch and scale start
 // [WDJ] all patches are cached endian fixed 1/5/2010
 // Called by menu, status bar, and wi_stuff
-void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
-                       patch_t * patch)
+void V_DrawScaledPatch(int x, int y, patch_t * patch)
 {
     int count;
-    int col = 0;
+    fixed_t col = 0;
     column_t *column;
     byte *source;  // within column
-    byte *desttop, *dest;  // within video buffer
+    byte *dest, *desttop, *destend;  // within video buffer
 
-    int dupx, dupy, dup_ybytes;
-    int ofs;
-    int colfrac, rowfrac;
-    byte *destend;
+    fixed_t ofs;
+    fixed_t colfrac;
 
     // draw an hardware converted patch
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, scrn);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_drawinfo.screenflags|V_drawinfo.effectflags );
         return;
     }
 #endif
 
-    if ((scrn & V_NOSCALEPATCH))
-        dupx = dupy = 1;
-    else
-    {
-        dupx = vid.dupx;
-        dupy = vid.dupy;
-    }
-    dup_ybytes = dupy * vid.ybytes;
-
     y -= patch->topoffset;
     x -= patch->leftoffset;
 
-    colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
-    rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
+    colfrac = V_drawinfo.x_unitfrac;
 
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
-    desttop = screens[scrn & 0xFF];
-    if (scrn & V_NOSCALESTART)
-        desttop += (y * vid.ybytes) + (x * vid.bytepp);
-    else
-    {
-        // [WDJ] should not have NOSCALESTART depending upon NOSCALEPATCH
-	// did not agree with V_DrawMappedPatch
-        // desttop += (y * dupy * vid.ybytes) + + (((x * dupx) + scaledofs) * vid.bytepp);; // ??
-        desttop += (y * vid.dupy * vid.ybytes) + (((x * vid.dupx) + scaledofs) * vid.bytepp);
-    }
-    destend = desttop + (patch->width * dupx * vid.bytepp);  // test against desttop
+    desttop = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
+    destend = desttop + (patch->width * V_drawinfo.xbytes);  // test against desttop
 
-    if (scrn & V_FLIPPEDPATCH)
+    // only used in f_finale:F_CastDrawer
+    if (V_drawinfo.effectflags & V_FLIPPEDPATCH)
     {
         colfrac = -colfrac;
         col = (patch->width << FRACBITS) + colfrac;
@@ -944,8 +964,8 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
-            dest = desttop + (column->topdelta * dup_ybytes);
-            count = column->length * dupy;
+            dest = desttop + (column->topdelta * V_drawinfo.ybytes);
+            count = column->length * V_drawinfo.dupy;
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
@@ -955,7 +975,7 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
 	        {
 		    V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	    }
 	    else
@@ -965,7 +985,7 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
 	        {
 		    *dest = source[ofs >> FRACBITS];
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	    }
 
@@ -975,19 +995,21 @@ void V_DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
     }
 }
 
+//  per V_drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
 // with temp patch load to cache
-void V_DrawScaledPatch_Name(int x, int y, int scrn, char * name )
+void V_DrawScaledPatch_Name(int x, int y, char * name )
 {
    // The patch is used only in this function
-   V_DrawScaledPatch ( x, y, scrn,
+   V_DrawScaledPatch ( x, y,
                        W_CachePatchName( name, PU_CACHE ) );  // endian fix
 }
 
+//  per V_drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
 // with temp patch load to cache
-void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num )
+void V_DrawScaledPatch_Num(int x, int y, int patch_num )
 {
    // The patch is used only in this function
-   V_DrawScaledPatch ( x, y, scrn,
+   V_DrawScaledPatch ( x, y,
                        W_CachePatchNum( patch_num, PU_CACHE ) );  // endian fix
 }
 
@@ -1043,13 +1065,11 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
 //    if( (scrn & V_NOSCALEPATCH) )
     if (vid.dupx > 1 && vid.dupy > 1)
     {
-//        dupx = dupy = 1;
         destend += (patch->width * dupx * vid.bytepp);
         count_dupy = dupy << 1;  // count_dupy = dupy * 2, will be dupy after >> 1
     }
     else
     {
-//        dupx = dupy = 1;
 //        skippixels = true;
         // double the inc, halve the count
         destend += (patch->width / 2 * dupx * vid.bytepp);
@@ -1084,64 +1104,51 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
 
 //added:16-02-98: now used for crosshair
 //
-//  This draws a patch over a background with translucency...SCALED
-//  SCALE THE STARTING COORDS!!
+//  This draws a patch over a background with translucency
+//  per V_drawinfo
 //
 // [WDJ] all patches are cached endian fixed 1/5/2010
-// scrn can be OR'ed with flag V_NOSCALESTART
-void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
-                            patch_t * patch)
+void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
 {
     int count;
     column_t *column;
     byte *source;  // within column
     byte *desttop, *dest;  // within video buffer
-    int dupx, dupy, dup_ybytes;
-    int ofs;
-    fixed_t colfrac, rowfrac, col, wf;
+    fixed_t ofs;
+    fixed_t col, wf;
 
     // draw an hardware converted patch
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, scrn);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_drawinfo.screenflags|V_drawinfo.effectflags );
         return;
     }
 #endif
 
-    dupx = vid.dupx;
-    dupy = vid.dupy;
-
-    y -= patch->topoffset * dupy;
-    x -= patch->leftoffset * dupx;
+    y -= patch->topoffset * V_drawinfo.dupy;
+    x -= patch->leftoffset * V_drawinfo.dupx;
 
 #ifdef DIRTY_RECT
     if (!(scrn & 0xff))
-        V_MarkRect(x, y, patch->width * dupx, patch->height * dupy);
+        V_MarkRect(x, y, patch->width * V_drawinfo.dupx, patch->height * V_drawinfo.dupy);
 #endif
 
-    colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
-    rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
-
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
-    dup_ybytes = vid.ybytes * dupy;
-    desttop = screens[scrn & 0xff];
-    if (scrn & V_NOSCALESTART)
-        desttop += (y * vid.ybytes) + (x * vid.bytepp);
-    else
-        desttop += (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
+    desttop = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
+//    destend = desttop + (patch->width * V_drawinfo.xbytes);  // test against desttop
 
     wf = patch->width << FRACBITS;
 
-    for ( col=0; col < wf; col += colfrac)
+    for ( col=0; col < wf; col += V_drawinfo.x_unitfrac)
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
-            dest = desttop + (column->topdelta * dup_ybytes);
-            count = column->length * dupy;
+            dest = desttop + (column->topdelta * V_drawinfo.ybytes);
+            count = column->length * V_drawinfo.dupy;
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
@@ -1154,7 +1161,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 		    register unsigned int color = source[ofs >> FRACBITS];
 		    *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	        break;
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
@@ -1167,7 +1174,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 		    *s16 =( ((color8.to16[color]>>1) & mask_01111) +
 			    (((*s16)>>1) & mask_01111) );
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	        break;
 #endif
@@ -1183,7 +1190,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 		    s24->g = c32.pix24.g + (s24->g>>1);
 		    s24->b = c32.pix24.b + (s24->b>>1);
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	        break;
 #endif
@@ -1196,7 +1203,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 		    *s32 = ((color8.to32[ color ]>>1) & 0x007F7F7F)
 		         + (((*s32)>>1) & 0x007F7F7F) + (*s32 & 0xFF000000);
 		    dest += vid.ybytes;
-		    ofs += rowfrac;
+		    ofs += V_drawinfo.y_unitfrac;
 		}
 	        break;
 #endif
@@ -1208,7 +1215,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 	        register unsigned int color = source[ofs >> FRACBITS];
 	        *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
 	        dest += vid.ybytes;
-	        ofs += rowfrac;
+	        ofs += V_drawinfo.y_unitfrac;
 	    }
 #endif
 
@@ -1223,7 +1230,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn,     // hacked flag on it
 // Masks a column based masked pic to the screen. NO SCALING!!!
 //
 // [WDJ] all patches are cached endian fixed 1/5/2010
-// Called by R_FillBackScreen, map, menu
+// Called by R_FillBackScreen, map
 void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 {
 
@@ -1354,27 +1361,11 @@ void V_GetBlock(int x, int y, int scrn, int width, int height, byte * dest)
 }
 #endif
 
-static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic);
-//  Draw a linear pic, scaled, TOTALLY CRAP CODE!!! OPTIMISE AND ASM!!
-//  CURRENTLY USED FOR StatusBarOverlay, scale pic but not starting coords
-//
-void V_DrawScalePic_Num(int x1, int y1, int scrn,   // hack flag
-                    int lumpnum)
-{
-#ifdef HWRENDER
-    if (rendermode != render_soft)
-    {
-        HWR_DrawPic(x1, y1, lumpnum);
-        return;
-    }
-#endif
 
-    // [WDJ] Get pic and fix endian, then display
-    V_BlitScalePic(x1, y1, scrn, W_CachePicNum(lumpnum, PU_CACHE));
-}
 
+//  per V_drawinfo, scaled, abs start coord.
 // [WDJ] all pic are cached endian fixed 1/5/2010
-static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
+static void V_BlitScalePic(int x1, int y1, pic_t * pic)
 {
     int dupx, dupy;
     int x, y;
@@ -1382,15 +1373,14 @@ static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
     int pic_width = pic->width;
     int pic_height = pic->height;
    
-    scrn &= 0xffff;
-
     if (pic->mode != 0)
     {
         CONS_Printf("pic mode %d not supported in Software\n", pic->mode);
         return;
     }
 
-    dest = screens[scrn] + (max(0, y1) * vid.ybytes) + (max(0, x1) * vid.bytepp);
+    // scaled, with x centering
+    dest = V_drawinfo.drawp + (max(0, y1) * vid.ybytes) + (max(0, x1) * vid.bytepp);
     // y clipping to the screen
     if (y1 + (pic_height * vid.dupy) >= vid.width)
         pic_height = (vid.width - y1) / vid.dupy - 1;
@@ -1413,7 +1403,26 @@ static void V_BlitScalePic(int x1, int y1, int scrn, pic_t * pic)
     }
 }
 
+//  Draw a linear pic, scaled
+//  CURRENTLY USED FOR StatusBarOverlay, scale pic but not starting coords
+//  per V_drawinfo, scaled, abs start coord.
+//
+void V_DrawScalePic_Num(int x1, int y1, int lumpnum)
+{
+#ifdef HWRENDER
+    if (rendermode != render_soft)
+    {
+        HWR_DrawPic(x1, y1, lumpnum);
+        return;
+    }
+#endif
+
+    // [WDJ] Get pic and fix endian, then display
+    V_BlitScalePic(x1, y1, W_CachePicNum(lumpnum, PU_CACHE));
+}
+
 // Heretic raw pic
+//  per V_drawinfo, scaled, abs start coord.
 void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 {
 #ifdef HWRENDER
@@ -1429,19 +1438,20 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
     }
 #endif
 
-    V_BlitScalePic(x1, y1, 0,
+    V_BlitScalePic(x1, y1,
 		   W_CacheRawAsPic(lumpnum, width, height, PU_CACHE));
 }
 
+
 //
-//  Fills a box of pixels with a single color, NOTE: scaled to screen size
+//  Fills a box of pixels with a single color
 //
+// per V_drawinfo centering, always screen 0, V_SCALEPATCH, V_SCALESTART
 //added:05-02-98:
 void V_DrawFill(int x, int y, int w, int h, byte color)
 {
     byte *dest;  // within screen buffer
     int u, v;
-    int dupx, dupy;
 
 #ifdef HWRENDER
     if (rendermode != render_soft)
@@ -1451,13 +1461,11 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
     }
 #endif
 
-    dupx = vid.dupx;
-    dupy = vid.dupy;
+    dest = screens[0] + (y * vid.dupy * vid.ybytes) + (x * vid.dupx * vid.bytepp);
+    dest += V_drawinfo.start_offset;
 
-    dest = screens[0] + (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
-
-    w *= dupx;
-    h *= dupy;
+    w *= vid.dupx;
+    h *= vid.dupy;
 
     for (v = 0; v < h; v++, dest += vid.ybytes)
         for (u = 0; u < w; u++)
@@ -1469,11 +1477,12 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
 //  scaled to screen size.
 //
 //added:06-02-98:
+// per V_drawinfo, scaled, centering
+// Called by WI_slamBackground, F_TextWrite (entire screen), M_DrawTextBox
 void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
 {
     byte *dest;  // within screen buffer
     int u, v;
-    int dupx, dupy;
     fixed_t dx, dy, xfrac, yfrac;
     byte *src;
     byte *flat;
@@ -1524,16 +1533,27 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
 
     flat = W_CacheLumpNum(flatnum, PU_CACHE);
 
-    dupx = vid.dupx;
-    dupy = vid.dupy;
+#if 1
+    // Draw per V_drawinfo
+    dest = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
+    dx = V_drawinfo.x_unitfrac;
+    dy = V_drawinfo.y_unitfrac;
+    w *= V_drawinfo.dupx;
+    h *= V_drawinfo.dupy;
+#else
+    // Draw to screen0, scaled
+    int dupx = vid.dupx;
+    int dupy = vid.dupy;
 
-    dest = screens[0] + (y * dupy * vid.ybytes) + (((x * dupx) + scaledofs) * vid.bytepp);
-
-    w *= dupx;
-    h *= dupy;
+    dest = screens[0] + (y * dupy * vid.ybytes) + (x * dupx * vid.bytepp);
+    dest += V_drawinfo.start_offset;
 
     dx = FixedDiv(FRACUNIT, dupx << FRACBITS);
     dy = FixedDiv(FRACUNIT, dupy << FRACBITS);
+
+    w *= dupx;
+    h *= dupy;
+#endif
 
     yfrac = 0;
     for (v = 0; v < h; v++, dest += vid.ybytes)
@@ -1735,18 +1755,14 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 // Writes a single character (draw WHITE if bit 7 set)
 //
 //added:20-03-98:
-void V_DrawCharacter(int x, int y, int c)
+void V_DrawCharacter(int x, int y, byte c)
 {
     int w;
-    int flags;
-    boolean white;
-
-    white = c & 0x80;
-    flags = c & 0xffff0000;
+    boolean white = c & 0x80;
     c &= 0x7f;
 
     c = toupper(c) - HU_FONTSTART;
-    if (c < 0 || c >= HU_FONTSIZE)
+    if (c >= HU_FONTSIZE)
         return;
 
     w = (hu_font[c]->width);
@@ -1755,9 +1771,9 @@ void V_DrawCharacter(int x, int y, int c)
 
     if (white)
         // draw with colormap, WITHOUT scale
-        V_DrawMappedPatch(x, y, 0 | flags, hu_font[c], whitemap);
+        V_DrawMappedPatch(x, y, hu_font[c], whitemap);
     else
-        V_DrawScaledPatch(x, y, 0 | flags, hu_font[c]);
+        V_DrawScaledPatch(x, y, hu_font[c]);
 }
 
 //
@@ -1809,15 +1825,16 @@ void V_DrawString(int x, int y, int option, char *string)
         if (cx + w > scrwidth)
             break;
         if (option & V_WHITEMAP)
-            V_DrawMappedPatch(cx, cy, option, hu_font[c], whitemap);
+            V_DrawMappedPatch(cx, cy, hu_font[c], whitemap);
         else
-            V_DrawScaledPatch(cx, cy, option, hu_font[c]);
+            V_DrawScaledPatch(cx, cy, hu_font[c]);
         cx += w;
     }
 }
 
 // Handy utility function.
 // SSNTails 06-10-2003
+// unused
 void V_DrawCenteredString(int x, int y, int option, char *string)
 {
     int w;
@@ -1865,9 +1882,9 @@ void V_DrawCenteredString(int x, int y, int option, char *string)
             break;
 
         if (option & V_WHITEMAP)
-            V_DrawMappedPatch(cx, cy, option, hu_font[c], whitemap);
+            V_DrawMappedPatch(cx, cy, hu_font[c], whitemap);
         else
-            V_DrawScaledPatch(cx, cy, option, hu_font[c]);
+            V_DrawScaledPatch(cx, cy, hu_font[c]);
         cx += w;
     }
 }
@@ -1911,6 +1928,7 @@ int V_StringHeight(char *string)
 //---------------------------------------------------------------------------
 int FontBBaseLump;
 
+// per V_drawinfo
 void V_DrawTextB(char *text, int x, int y)
 {
     char c;
@@ -1925,12 +1943,13 @@ void V_DrawTextB(char *text, int x, int y)
         else
         {
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
-            V_DrawScaledPatch(x, y, 0, p);
+            V_DrawScaledPatch(x, y, p);
             x += p->width - 1;
         }
     }
 }
 
+// per V_drawinfo
 void V_DrawTextBGray(char *text, int x, int y)
 {
     char c;
@@ -1945,7 +1964,7 @@ void V_DrawTextBGray(char *text, int x, int y)
         else
         {
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
-            V_DrawMappedPatch(x, y, 0, p, graymap);
+            V_DrawMappedPatch(x, y, p, graymap);
             x += p->width - 1;
         }
     }

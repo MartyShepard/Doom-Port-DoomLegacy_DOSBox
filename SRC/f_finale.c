@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1004 2013-03-23 20:24:01Z wesleyjohnson $
+// $Id: f_finale.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -379,8 +379,9 @@ void F_TextWrite (void)
     int         count;
     char*       ch;
     int         c;
-    int         cx;
-    int         cy;
+    int         cx, cy;
+
+    // Draw to screen0, scaled
 
     // erase the entire screen to a tiled background
     V_DrawFlatFill(0, 0, vid.width, vid.height, W_GetNumForName(finaleflat));
@@ -428,7 +429,7 @@ void F_TextWrite (void)
         w =  (hu_font[c]->width);
         if (cx+w > vid.width)
             break;
-        V_DrawScaledPatch(cx, cy, 0, hu_font[c]);
+        V_DrawScaledPatch(cx, cy, hu_font[c]);
         cx+=w;
     }
 
@@ -644,7 +645,6 @@ void F_CastDrawer (void)
     spritedef_t*        sprdef;
     spriteframe_t*      sprframe;
     int                 lump;
-    boolean             flip;
     patch_t*            patch;
 
     // erase the entire screen to a background
@@ -657,11 +657,13 @@ void F_CastDrawer (void)
     sprdef = &sprites[caststate->sprite];
     sprframe = &sprdef->spriteframes[ caststate->frame & FF_FRAMEMASK];
     lump = sprframe->lumppat[0];      //Fab: see R_InitSprites for more
-    flip = (boolean)sprframe->flip[0];
-
     patch = W_CachePatchNum (lump, PU_CACHE);  // endian fix
 
-    V_DrawScaledPatch (BASEVIDWIDTH>>1,170,flip ? V_FLIPPEDPATCH : 0, patch);
+    // set draw effect flag for this draw only
+    if (sprframe->flip[0])
+      V_drawinfo.effectflags = V_drawinfo.screen_effectflags | V_FLIPPEDPATCH;
+    V_DrawScaledPatch (BASEVIDWIDTH>>1, 170, patch);
+    V_drawinfo.effectflags = V_drawinfo.screen_effectflags;  // restore
 }
 
 
@@ -719,6 +721,8 @@ void F_BunnyScroll (void)
     int         stage;
     static int  laststage;
 
+    // Draw to screen0, scaled
+   
     // patches are endian fixed
     p1 = W_CachePatchName ("PFUB2", PU_LEVEL);
     p2 = W_CachePatchName ("PFUB1", PU_LEVEL);
@@ -753,16 +757,16 @@ void F_BunnyScroll (void)
     else
     {
         if( scrolled>0 )
-            V_DrawScaledPatch(320-scrolled,0, 0, p2 );
+            V_DrawScaledPatch(320-scrolled, 0, p2 );
         if( scrolled<320 )
-            V_DrawScaledPatch(-scrolled,0, 0, p1 );
+            V_DrawScaledPatch(-scrolled, 0, p1 );
     }
 
     if (finalecount < 1130)
         return;
     if (finalecount < 1180)
     {
-        V_DrawScaledPatch_Name ((320-13*8)/2, (200-8*8)/2,0, "END0" );
+        V_DrawScaledPatch_Name ((320-13*8)/2, (200-8*8)/2, "END0" );
         laststage = 0;
         return;
     }
@@ -777,7 +781,7 @@ void F_BunnyScroll (void)
     }
 
     sprintf (name,"END%i",stage);
-    V_DrawScaledPatch ((320-13*8)/2, (200-8*8)/2,0, W_CachePatchName (name,PU_CACHE));
+    V_DrawScaledPatch ((320-13*8)/2, (200-8*8)/2, W_CachePatchName (name,PU_CACHE));
 }
 
 
@@ -854,7 +858,8 @@ void F_Draw_interpic_Name( char * name )
    // Intercept some doom pictures that chex.wad left in (a young kids game).
    if( gamemode == chexquest1 )
      pic = Chex_safe_pictures( name, pic );
-   V_DrawScaledPatch(0,0,0, pic );
+   // Draw to screen0, scaled
+   V_DrawScaledPatch(0,0, pic );
 }
 
 //
@@ -862,6 +867,9 @@ void F_Draw_interpic_Name( char * name )
 //
 void F_Drawer (void)
 {
+    // Draw to screen0, scaled
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+
     if (finalestage == 2)
     {
         F_CastDrawer ();

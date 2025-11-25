@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 589 2010-01-08 04:13:23Z wesleyjohnson $
+// $Id: st_lib.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -106,6 +106,8 @@ void STlib_drawNum ( st_number_t*  n,
     int    x = n->x;
 
     int    neg;
+   
+    // Draw to fg_stbar, screen0 status bar
 
     n->oldnum = *n->num;
 
@@ -126,12 +128,12 @@ void STlib_drawNum ( st_number_t*  n,
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect1: %d %d %d %d %d %d %d %d val: %d\n",
-              x, n->y, BG, w*numdigits, h, x, n->y, fgbuffer,num);
+              x, n->y, BG, w*numdigits, h, x, n->y, fg_stbar, num);
 #endif
     // dont clear background in overlay
     if (!st_overlay &&
          rendermode==render_soft)   //faB:current hardware mode always refresh the statusbar
-        V_CopyRect(x, n->y, BG, w*numdigits, h, x, n->y, fgbuffer);
+        V_CopyRect(x, n->y, BG, w*numdigits, h, x, n->y, fg_stbar);
 
     // if non-number, do not draw it
     if (num == 1994)
@@ -141,19 +143,19 @@ void STlib_drawNum ( st_number_t*  n,
 
     // in the special case of 0, you draw 0
     if (!num)
-        V_DrawScaledPatch(x - w, n->y, fgbuffer, n->p[ 0 ]);
+        V_DrawScaledPatch(x - w, n->y, n->p[ 0 ]);
 
     // draw the new number
     while (num && numdigits--)
     {
         x -= w;
-        V_DrawScaledPatch(x, n->y, fgbuffer, n->p[ num % 10 ]);
+        V_DrawScaledPatch(x, n->y, n->p[ num % 10 ]);
         num /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-        V_DrawScaledPatch(x - 8, n->y, fgbuffer, sttminus);
+        V_DrawScaledPatch(x - 8, n->y, sttminus);
 }
 
 
@@ -185,7 +187,7 @@ void STlib_updatePercent ( st_percent_t*         per,
                            int                   refresh )
 {
     if (refresh && *per->n.on)
-        V_DrawScaledPatch(per->n.x, per->n.y, fgbuffer, per->p);
+        V_DrawScaledPatch(per->n.x, per->n.y, per->p);
 
     STlib_updateNum(&per->n, refresh);
 }
@@ -230,13 +232,13 @@ void STlib_updateMultIcon ( st_multicon_t*        mi,
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
-                            x, y, BG, w, h, x, y, fgbuffer);
+                            x, y, BG, w, h, x, y, fg_stbar);
 #endif
             //faB:current hardware mode always refresh the statusbar
             if (!st_overlay && rendermode==render_soft)   
-                V_CopyRect(x, y, BG, w, h, x, y, fgbuffer);
+                V_CopyRect(x, y, BG, w, h, x, y, fg_stbar);
         }
-        V_DrawScaledPatch(mi->x, mi->y, fgbuffer, mi->p[*mi->inum]);
+        V_DrawScaledPatch(mi->x, mi->y, mi->p[*mi->inum]);
         mi->oldinum = *mi->inum;
     }
 }
@@ -277,16 +279,16 @@ void STlib_updateBinIcon ( st_binicon_t*         bi,
         h = bi->p->height;
 
         if (*bi->val)
-            V_DrawScaledPatch(bi->x, bi->y, fgbuffer, bi->p);
+            V_DrawScaledPatch(bi->x, bi->y, bi->p);
         else
         {
 #ifdef DEBUG
        CONS_Printf("V_CopyRect3: %d %d %d %d %d %d %d %d\n",
-                            x, y, BG, w, h, x, y, fgbuffer);
+                            x, y, BG, w, h, x, y, fg_stbar);
 #endif
             if (!st_overlay &&
                 rendermode==render_soft ) //faB:current hardware mode always refresh the statusbar
-                V_CopyRect(x, y, BG, w, h, x, y, fgbuffer);
+                V_CopyRect(x, y, BG, w, h, x, y, fg_stbar);
         }
 
         bi->oldval = *bi->val;

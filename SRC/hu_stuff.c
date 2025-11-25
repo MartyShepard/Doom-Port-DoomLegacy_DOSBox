@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1019 2013-07-30 15:25:49Z wesleyjohnson $
+// $Id: hu_stuff.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -511,6 +511,10 @@ boolean HU_Responder (event_t *ev)
 static void HU_DrawChat (void)
 {
     int  i,c,y;
+    int  cwidth = vid.width >> 3;   // 8 pixel per char
+   
+    // Draw to screen0, unscaled
+    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
 
     c=0;
     i=0;
@@ -518,23 +522,23 @@ static void HU_DrawChat (void)
     while (w_chat[i])
     {
         //Hurdler: isn't it better like that?
-        V_DrawCharacter( HU_INPUTX + (c<<3), y, w_chat[i++] | 0x80 |V_NOSCALEPATCH|V_NOSCALESTART);
+        V_DrawCharacter( HU_INPUTX + (c<<3), y, w_chat[i++] | 0x80 );  // white
 
         c++;
-        if (c>=(vid.width>>3))
+        if (c>=cwidth)
         {
             c = 0;
             y+=8;
         }
-
     }
 
     if (hu_tick<4)
-        V_DrawCharacter( HU_INPUTX + (c<<3), y, '_' | 0x80 |V_NOSCALEPATCH|V_NOSCALESTART);
+        V_DrawCharacter( HU_INPUTX + (c<<3), y, '_' | 0x80 );  // white
 }
 
 
 extern consvar_t cv_chasecam;
+
 //  Heads up displays drawer, call each frame
 //
 void HU_Drawer(void)
@@ -634,6 +638,8 @@ static void HU_DrawTip()
   tiptime--;
 
 
+  // Draw screen0, scaled
+  V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH );
   for(i = 0; i < numtiplines; i++)
   {
     V_DrawString((BASEVIDWIDTH - largestline) / 2,
@@ -771,7 +777,9 @@ void HU_DrawFSPics()
 
   // [WDJ] Fragglescript overlays must be centered.
   // Needed for Chexquest-newmaps scope with crosshairs.
-  scaledofs = vid.centerofs;
+  // Draw screen0, scaled, 0 at center
+  V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTER0 );
+
   for(i = 0; i < maxpicsize; i++)
   {
     if(piclist[i].lumpnum == -1 || piclist[i].draw == false)
@@ -785,9 +793,10 @@ void HU_DrawFSPics()
     if((piclist[i].xpos + piclist[i].data->width) < 0 || (piclist[i].ypos + piclist[i].data->height) < 0)
       continue;
 
-    V_DrawScaledPatch(piclist[i].xpos, piclist[i].ypos, 0, piclist[i].data);
+    V_DrawScaledPatch(piclist[i].xpos, piclist[i].ypos, piclist[i].data);
   }
-  scaledofs = 0;
+  // restore
+  //V_SetupDraw( V_drawinfo.prev_screenflags );
 }
 
 void HU_ClearFSPics()
@@ -955,11 +964,14 @@ void HU_drawDeathmatchRankings (void)
     char*	 title;
     boolean	 large;
 
+    // Draw screen0, scaled, centered
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERSCREEN );
+
     // draw the ranking title panel
     if(!cv_splitscreen.value)
     {
 	patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);  // endian fix
-	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2, 5, 0, p);
+	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2, 5, p);
     }
 
     // count frags for each present player
@@ -1024,12 +1036,20 @@ void HU_drawDeathmatchRankings (void)
 
 void HU_drawCrosshair (void)
 {
-    int     i;
-    int     y;
+    int y;
 
-    i = cv_crosshair.value & 3;
-    if (!i)
+    int chv = cv_crosshair.value & 3;
+    if (!chv)
         return;
+
+#if 0
+    if (cv_crosshairscale.value)
+        V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART );
+    else
+        V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALESTART );
+#else
+    V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALESTART );
+#endif
 
 #ifdef HWRENDER
     if ( rendermode != render_soft ) 
@@ -1038,10 +1058,7 @@ void HU_drawCrosshair (void)
 #endif
         y = viewwindowy+(rdraw_viewheight>>1);
 
-/*	if (cv_crosshairscale.value)
-		V_DrawTranslucentPatch (vid.width>>1, y, 0, crosshair[i-1]);
-	else*/
-		V_DrawTranslucentPatch (vid.width>>1, y, V_NOSCALESTART, crosshair[i-1]);
+    V_DrawTranslucentPatch (vid.width>>1, y, crosshair[chv-1]);
 
     if( cv_splitscreen.value )
     {
@@ -1052,11 +1069,9 @@ void HU_drawCrosshair (void)
 #endif
             y += rdraw_viewheight;
 
-/*		if (cv_crosshairscale.value)
-			V_DrawTranslucentPatch (vid.width>>1, y, 0, crosshair[i-1]);
-		else*/
-			V_DrawTranslucentPatch (vid.width>>1, y, V_NOSCALESTART, crosshair[i-1]);
+        V_DrawTranslucentPatch (vid.width>>1, y, crosshair[chv-1]);
     }
+    // V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
 }
 
 

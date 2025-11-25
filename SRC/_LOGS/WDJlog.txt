@@ -3204,3 +3204,13 @@ patchfile = w91_4_alloca.patch
 Remove uses of alloca, replacing them with calloc, and explicitly
 freeing the allocations.
 
+*** W91_drawsetup
+patchfile = w91_5_drawsetup.patch
+- committed revision 1023   by wesley johnson
+Convert video draw to use a setup function instead of passing a screen
+parameter with each call.  Added additional functionality, and made
+it more uniform across the various draw functions.  A single V_DrawSetup
+now controls the attributes for a series of draw calls.
+Added V_DRAWCENTER, to center the splash screen, finale, and menu
+screens in the monitor window.
+

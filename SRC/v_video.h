@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 917 2012-03-10 20:52:15Z wesleyjohnson $
+// $Id: v_video.h 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,11 +74,6 @@
 // VIDEO
 //
 
-//added:18-02-98:centering offset for the scaled graphics,
-//               this is normally temporarily changed by m_menu.c only.
-//               The rest of the time it should be zero.
-extern  int     scaledofs;
-
 // Screen 0 is the screen updated by I_Update screen, (= vid.display).
 // Screen 1 is an extra buffer, background, status bar.
 // Screen 2,3 are used for wipes.
@@ -120,45 +115,79 @@ void V_CopyRect ( int srcx, int srcy, int srcscrn,
 		  int width, int height,
 		  int destx, int desty, int destscrn );
 
+
+// V_Drawinfo flags (not uniformly supported by all functions (see src))
+typedef enum {
+  V_SCREENMASK =         0x0000FF,
+  V_CENTERSCREEN =       0x000100,   // center the whole screen
+  V_CENTER0 =            0x000200,   // 0,0 is center of screen, menu
+  V_NOSCALESTART =       0x010000,   // dont scale x,y, start coords
+                                     // console, statusbar, crosshair
+  V_NOSCALEPATCH =       0x020000,   // don't scale patch
+                                     // console, chat, statusbar
+  V_SCALESTART =         0x040000,   // scale x,y, start coords
+  V_SCALEPATCH =         0x080000,   // scale patch
+// effects
+  V_EFFECTMASK =        0xFF00000,
+  V_WHITEMAP =           0x100000,   // draw white (for v_drawstring)
+  V_FLIPPEDPATCH =       0x200000,   // flipped in y
+                                     // finale
+  V_TRANSLUCENTPATCH =   0x400000,   // draw patch translucent
+                                     // statusbar
+} drawflags_e;
+
+typedef struct {
+// drawing
+    byte * drawp;  // screen buffer, with centering offsets
+    unsigned int  start_offset; // offset, centering
+    unsigned int  ybytes;   // dupy * ybytes, bytes per source line
+    unsigned int  xbytes;   // dupx * bytepp, bytes per source pixel
+    unsigned int  y0bytes;   // bytes per source line per SCALESTART
+    unsigned int  x0bytes;   // bytes per source pixel per SCALESTART
+    byte dupx, dupy; // dup pixels for some screen sizes
+    fixed_t  y_unitfrac, x_unitfrac;
+    byte  screen;
+// externally setable
+    uint32_t  effectflags;  // special effects
+        // V_WHITEMAP, V_FLIPPEDPATCH, V_TRANSLUCENTPATCH
+// save/restore
+    uint32_t  screen_effectflags;  // special effects from screenflags
+        // can restore by effectsflags = screen_effectsflags
+    uint32_t  screenflags;   // screen and drawflags_e set by screenflags
+    uint32_t  prev_screenflags;  // for restore
+        // can restore by V_SetupDrawinfo( prev_screenflags );
+} drawinfo_t;
+
+// current draw info
+extern drawinfo_t  V_drawinfo;
+
+
+// setup for draw screen, scaled, and centering
+// Can use saved V_drawinfo.screenflags or use V_drawinfo.prev_screenflags
+void V_SetupDraw( uint32_t screenflags );  // screen + drawflags_e
+
+
 //added:03-02-98:like V_DrawPatch, + using a colormap.
 void V_DrawMappedPatch ( int x, int y,
-                         int           scrn,
                          patch_t*      patch,
                          byte*         colormap );
 
 // with temp patch load to cache
-void V_DrawMappedPatch_Name ( int x, int y, int scrn,
+void V_DrawMappedPatch_Name ( int x, int y,
 			      char*         name,
 			      byte*         colormap );
 
 //added:05-02-98:V_DrawPatch scaled 2,3,4 times size and position.
-
-// flags hacked in scrn (not supported by all functions (see src))
-#define V_NOSCALESTART       0x010000   // dont scale x,y, start coords
-#define V_SCALESTART         0x020000   // scale x,y, start coords
-#define V_SCALEPATCH         0x040000   // scale patch
-#define V_NOSCALEPATCH       0x080000   // don't scale patch
-#define V_WHITEMAP           0x100000   // draw white (for v_drawstring)
-#define V_FLIPPEDPATCH       0x200000   // flipped in y
-#define V_TRANSLUCENTPATCH   0x400000   // draw patch translucent
-
 // default params : scale patch and scale start
 void V_DrawScaledPatch ( int x, int y,
-                         int        scrn,    // + flags
                          patch_t*   patch );
 
 // with temp patch load to cache
-void V_DrawScaledPatch_Name(int x, int y, int scrn, char * name );
-void V_DrawScaledPatch_Num(int x, int y, int scrn, int patch_num );
-
-//added:05-02-98:kiktest : this draws a patch using translucency
-void V_DrawTransPatch ( int x, int y,
-                        int       scrn,
-                        patch_t*  patch );
+void V_DrawScaledPatch_Name(int x, int y, char * name );
+void V_DrawScaledPatch_Num(int x, int y, int patch_num );
 
 //added:16-02-98: like V_DrawScaledPatch, plus translucency
 void V_DrawTranslucentPatch ( int x, int y,
-                              int       scrn,
                               patch_t*  patch );
 
 
@@ -186,9 +215,7 @@ void V_GetBlock ( int x, int y,
 #endif
 
 // draw a pic_t, SCALED
-void V_DrawScalePic_Num ( int x1, int y1,
-                      int scrn,
-                      int lumpnum );
+void V_DrawScalePic_Num ( int x1, int y1, int lumpnum );
 
 // Heretic raw pic
 void V_DrawRawScreen_Num(int x, int y,
@@ -212,7 +239,7 @@ void V_DrawFadeScreen (void);
 void V_DrawFadeConsBack (int x1, int y1, int x2, int y2);
 
 //added:20-03-98: draw a single character
-void V_DrawCharacter (int x, int y, int c);
+void V_DrawCharacter (int x, int y, byte c);
 
 //added:05-02-98: draw a string using the hu_font
 void V_DrawString (int x, int y, int option, char* string);

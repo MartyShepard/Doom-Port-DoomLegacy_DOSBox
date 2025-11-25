@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1019 2013-07-30 15:25:49Z wesleyjohnson $
+// $Id: wi_stuff.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -351,7 +351,6 @@ static anim_inter_t * anim_inter_info[NUMEPISODES] =
 //
 // Locally used stuff.
 //
-#define FB 0
 
 // States for the intermission
 
@@ -483,6 +482,7 @@ static patch_t**        lnames;
 
 static void WI_slamBackground(void)
 {
+    // draw background on screen0
     if( gamemode == heretic && state == StatCount)
         V_DrawFlatFill( 0, 0, vid.width/vid.dupx, vid.height/vid.dupy, W_CheckNumForName("FLOOR16"));
     else
@@ -494,7 +494,11 @@ static void WI_slamBackground(void)
 #endif
     }
     else 
-        V_DrawScaledPatch(0, 0, 1+V_NOSCALESTART, W_CachePatchName(bgname, PU_CACHE));
+    {
+	// [WDJ] was draw to screen1, but hw draw does not differentiate
+        // hardware draw, ( to screen0 same as above )
+        V_DrawScaledPatch(0, 0, W_CachePatchName(bgname, PU_CACHE));
+    }
 }
 
 // The ticker is used to detect keys
@@ -521,11 +525,11 @@ static void WI_drawLF(void)
     {
 	//[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
         V_DrawScaledPatch ((BASEVIDWIDTH - (lnames[wbs->last]->width))/2,
-                            y, FB, lnames[wbs->last]);
+                            y, lnames[wbs->last]);
         y += (5 * (lnames[wbs->last]->height))/4;
         // draw "Finished!"
         V_DrawScaledPatch ((BASEVIDWIDTH - (finished->width))/2,
-                            y, FB, finished);
+                            y, finished);
     }
 }
 
@@ -548,12 +552,12 @@ static void WI_drawEL(void)
     {
 	//[segabor]: 'SHORT' BUG !    [WDJ] Patch read does endian conversion
         V_DrawScaledPatch((BASEVIDWIDTH - (entering->width))/2,
-                          y, FB, entering);
+                          y, entering);
         // draw level
         y += (5 * (lnames[wbs->next]->height))/4;
 
         V_DrawScaledPatch((BASEVIDWIDTH - (lnames[wbs->next]->width))/2,
-                           y, FB, lnames[wbs->next]);
+                           y, lnames[wbs->next]);
     }
 
 }
@@ -594,7 +598,7 @@ static void WI_drawOnLnode ( int           n,
     } while (!fits && i!=2);
 
     if (fits && i<2)
-        V_DrawScaledPatch(lnodes->x, lnodes->y, FB, c[i]);
+        V_DrawScaledPatch(lnodes->x, lnodes->y, c[i]);
     else
         // DEBUG
         CONS_Printf("Could not place patch on level %d\n", n+1);
@@ -610,7 +614,7 @@ static void IN_DrawYAH(void)
 {
     int i;
     int x;
-    int prevmap;    
+    int prevmap;
 
     x = (BASEVIDWIDTH-V_StringWidth("NOW ENTERING:"))/2;
     V_DrawString(x, 10, 0, "NOW ENTERING:");
@@ -622,18 +626,16 @@ static void IN_DrawYAH(void)
 
     for(i=0; i<=prevmap; i++)
     {
-        V_DrawScaledPatch(YAHspot[gameepisode-1][i].x, YAHspot[gameepisode-1][i].y, 0,
-            splat);
+        V_DrawScaledPatch(YAHspot[gameepisode-1][i].x, YAHspot[gameepisode-1][i].y, splat);
     }
     if(players[consoleplayer].didsecret)
     {
-        V_DrawScaledPatch(YAHspot[gameepisode-1][8].x, YAHspot[gameepisode-1][8].y, 0,
-            splat);
+        V_DrawScaledPatch(YAHspot[gameepisode-1][8].x, YAHspot[gameepisode-1][8].y, splat);
     }
     if(!(bcnt&16) || state == ShowNextLoc)
     { // draw the destination 'X'
         V_DrawScaledPatch(YAHspot[gameepisode-1][wbs->next].x,
-                          YAHspot[gameepisode-1][wbs->next].y, 0, yah[0]);
+                          YAHspot[gameepisode-1][wbs->next].y, yah[0]);
     }
 }
 
@@ -739,7 +741,7 @@ static void WI_drawAnimatedBack(void)
         ai = &anim_inter_info[wbs->epsd][i];
 
         if (ai->ctr >= 0)
-            V_DrawScaledPatch(ai->loc.x, ai->loc.y, FB, ai->p[ai->ctr]);
+            V_DrawScaledPatch(ai->loc.x, ai->loc.y, ai->p[ai->ctr]);
     }
 
 }
@@ -794,13 +796,13 @@ static int WI_drawNum ( int           x,
     while (digits--)
     {
         x -= fontwidth;
-        V_DrawScaledPatch(x, y, FB, num[ n % 10 ]);
+        V_DrawScaledPatch(x, y, num[ n % 10 ]);
         n /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-        V_DrawScaledPatch(x-=8, y, FB, wiminus);
+        V_DrawScaledPatch(x-=8, y, wiminus);
 
     return x;
 
@@ -813,7 +815,7 @@ static void WI_drawPercent( int           x,
     if (p < 0)
         return;
 
-    V_DrawScaledPatch(x, y, FB, percent);
+    V_DrawScaledPatch(x, y, percent);
     WI_drawNum(x, y, p, -1);
 }
 
@@ -849,14 +851,14 @@ static void WI_drawTime ( int           x,
 
             // draw
             if (div==60 || t / div)
-                V_DrawScaledPatch(x, y, FB, colon);
+                V_DrawScaledPatch(x, y, colon);
 
         } while (t / div);
     }
     else
     {
         // "sucks"
-        V_DrawScaledPatch(x - (sucks->width), y, FB, sucks);
+        V_DrawScaledPatch(x - (sucks->width), y, sucks);
     }
 }
 
@@ -1049,14 +1051,15 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
         color = (skin_color) ?
 	   SKIN_TO_SKINMAP(skin_color)[ colornum ]
 	 : reg_colormaps[ colornum ];  // default green skin
-        V_DrawFill (x-1,y-1,large ? 40 : 26,9,color);
+        V_DrawFill (x-1,y-1, (large ? 40 : 26),9, color);
 
         // draw frags count
         sprintf(num,"%3i", frags );
         V_DrawString (x+(large ? 32 : 24)-V_StringWidth(num), y, 0, num);
 
         // draw name
-        V_DrawString (x+(large ? 64 : 29), y, plnum == white ? V_WHITEMAP : 0, fragtable[i].name);
+        V_DrawString (x+(large ? 64 : 29), y,
+		      ((plnum == white) ? V_WHITEMAP : 0), fragtable[i].name);
 
         y += 12;
         if (y>=BASEVIDHEIGHT)
@@ -1270,8 +1273,10 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
+	    {
                 if (teamingame(j))
                      fragtab[scorelines].count+=dm_frags[j][i];
+	    }
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
             fragtab[scorelines].name  = get_team_name(i);
@@ -1284,6 +1289,7 @@ static void WI_drawTeamsStats(void)
 
 
 /* old code
+#define FB  0
 static void WI_ddrawDeathmatchStats(void)
 {
 
@@ -1308,11 +1314,10 @@ static void WI_ddrawDeathmatchStats(void)
     // draw stat titles (top line)
     V_DrawScaledPatch(DM_TOTALSX - total->width/2,
                 DM_MATRIXY-WI_SPACINGY+10,
-                FB,
                 total);
 
-    V_DrawScaledPatch(DM_KILLERSX, DM_KILLERSY, FB, killers);
-    V_DrawScaledPatch(DM_VICTIMSX, DM_VICTIMSY, FB, victims);
+    V_DrawScaledPatch(DM_KILLERSX, DM_KILLERSY, killers);
+    V_DrawScaledPatch(DM_VICTIMSX, DM_VICTIMSY, victims);
 
     // draw P?
     x = DM_MATRIXX + DM_SPACINGX;
@@ -1332,13 +1337,11 @@ static void WI_ddrawDeathmatchStats(void)
 
             V_DrawMappedPatch(x-stpb->width/2,
                         DM_MATRIXY - WI_SPACINGY,
-                        FB,
                         stpb,      //p[i], now uses a common STPB0 translated
                         colormap); //      to the right colors
 
             V_DrawMappedPatch(DM_MATRIXX-stpb->width/2,
                         y,
-                        FB,
                         stpb,      //p[i]
                         colormap);
 
@@ -1346,12 +1349,10 @@ static void WI_ddrawDeathmatchStats(void)
             {
                 V_DrawScaledPatch(x-stpb->width/2,
                             DM_MATRIXY - WI_SPACINGY,
-                            FB,
                             bstar);
 
                 V_DrawScaledPatch(DM_MATRIXX-stpb->width/2,
                             y,
-                            FB,
                             star);
             }
         }
@@ -1607,16 +1608,16 @@ static void WI_drawNetgameStats(void)
     else
     {
         V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-(kills->width),
-            NG_STATSY, FB, kills);
+            NG_STATSY, kills);
         
         V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-(items->width),
-            NG_STATSY, FB, items);
+            NG_STATSY, items);
         
         V_DrawScaledPatch(NG_STATSX+3*NG_SPACINGX-(secret->width),
-            NG_STATSY, FB, secret);
+            NG_STATSY, secret);
         if (dofrags)
             V_DrawScaledPatch(NG_STATSX+4*NG_SPACINGX-(frags->width),
-                              NG_STATSY, FB, frags);
+                              NG_STATSY, frags);
         // draw stats
         y = NG_STATSY + (kills->height);
     }
@@ -1633,10 +1634,10 @@ static void WI_drawNetgameStats(void)
              SKIN_TO_SKINMAP( players[i].skincolor ) // skins 1..
 	   : & reg_colormaps[0]; // no translation table for green guy
 
-        V_DrawMappedPatch(x-(stpb->width), y, FB, stpb, colormap);
+        V_DrawMappedPatch(x-(stpb->width), y, stpb, colormap);
 
         if (i == me)
-            V_DrawScaledPatch(x-(stpb->width), y, FB, star);
+            V_DrawScaledPatch(x-(stpb->width), y, star);
 
         x += NG_SPACINGX;
         WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
@@ -1802,12 +1803,12 @@ static void WI_drawStats(void)
     }
     else
     {
-        V_DrawScaledPatch(SP_STATSX, SP_STATSY, FB, kills);
-        V_DrawScaledPatch(SP_STATSX, SP_STATSY+lh, FB, items);
-        V_DrawScaledPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
-        V_DrawScaledPatch(SP_TIMEX, SP_TIMEY, FB, timePatch);
+        V_DrawScaledPatch(SP_STATSX, SP_STATSY, kills);
+        V_DrawScaledPatch(SP_STATSX, SP_STATSY+lh, items);
+        V_DrawScaledPatch(SP_STATSX, SP_STATSY+2*lh, sp_secret);
+        V_DrawScaledPatch(SP_TIMEX, SP_TIMEY, timePatch);
         if (draw_pars)
-            V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
+            V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, par);
     }
     WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
     WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
@@ -1919,8 +1920,10 @@ static void WI_loadData(void)
         // clear backbuffer from status bar stuff and borders
         memset(screens[1], 0, vid.screen_size);
   
-        // background stored in backbuffer        
-        V_DrawScaledPatch(0, 0, 1, W_CachePatchName(bgname, PU_CACHE));
+        // Draw background on screen1
+        V_SetupDraw( 1 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN ); // screen 1
+        V_DrawScaledPatch(0, 0, W_CachePatchName(bgname, PU_CACHE));
+        V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
     }
 
     // UNUSED unsigned char *pic = screens[1];
@@ -2136,6 +2139,9 @@ static void WI_unloadData(void)
 
 void WI_Drawer (void)
 {
+    // all WI is draw screen0
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+
     switch (state)
     {
       case StatCount:

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 963 2012-08-15 15:05:51Z wesleyjohnson $
+// $Id: st_stuff.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -449,7 +449,7 @@ static int      st_randomnumber;
 int stbarheight = ST_HEIGHT;
 int ST_Y = BASEVIDHEIGHT - ST_HEIGHT;
 int st_x = 0;
-int fgbuffer = FG | V_TRANSLUCENTPATCH;
+int fg_stbar = FG | V_TRANSLUCENTPATCH;
 int st_scalex,st_scaley;
 
 // ------------------------------------------
@@ -472,18 +472,19 @@ static void ST_refreshBackground(void)
 
     if (st_statusbar_on)
     {
-        int flags = (fgbuffer & 0xffff0000) | BG;
+        // Draw background, with status bar flag settings
+        V_SetupDraw( BG | (fg_stbar & ~V_SCREENMASK) );
 
         // software mode copies patch to BG buffer,
         // hardware modes directly draw the statusbar to the screen
-        V_DrawScaledPatch(st_x, ST_Y, flags, sbar);
+        V_DrawScaledPatch(st_x, ST_Y, sbar);
 
         // draw the faceback for the statusbarplayer
         colormap = (plyr->skincolor) ?
 	     SKIN_TO_SKINMAP( plyr->skincolor )
 	   : & reg_colormaps[0]; // default green skin
 
-        V_DrawMappedPatch (st_x+ST_FX, ST_Y, flags, faceback, colormap);
+        V_DrawMappedPatch (st_x+ST_FX, ST_Y, faceback, colormap);
 
         // copy the statusbar buffer to the screen
         if ( rendermode==render_soft )
@@ -930,6 +931,9 @@ static void ST_drawWidgets(boolean refresh)
 {
     int         i;
 
+    // Draw fg_stbar, screen0 status bar
+    V_SetupDraw( fg_stbar );  // for all STlib
+
     // used by w_arms[] widgets
     st_armson = st_statusbar_on && !cv_deathmatch.value;
 
@@ -1260,7 +1264,8 @@ void ST_CalcPos(void)
 {
     if( cv_scalestatusbar.value || cv_viewsize.value>=11 )
     {
-        fgbuffer = FG | V_SCALESTART | V_TRANSLUCENTPATCH; // scale patch by default
+        // large scaled status bar
+        fg_stbar = FG | V_SCALEPATCH | V_SCALESTART | V_TRANSLUCENTPATCH;
         st_scalex = vid.dupx;
         st_scaley = vid.dupy;
 
@@ -1280,9 +1285,10 @@ void ST_CalcPos(void)
     }
     else
     {
+        // smaller unscaled status bar in center
         st_scalex = st_scaley = 1;
 
-        fgbuffer = FG | V_NOSCALEPATCH | V_NOSCALESTART | V_TRANSLUCENTPATCH;
+        fg_stbar = FG | V_NOSCALEPATCH | V_NOSCALESTART | V_TRANSLUCENTPATCH;
         ST_Y = vid.height - stbarheight;
         st_x = (vid.width-ST_WIDTH)>>1;  // center
     }
@@ -1578,10 +1584,12 @@ void ST_drawOverlayNum (int       x,            // right border!
     int       w = (numpat[0]->width);
     boolean   neg;
 
+    V_SetupDraw( FG | V_NOSCALESTART | V_SCALEPATCH | V_TRANSLUCENTPATCH );
+
     // in the special case of 0, you draw 0
     if (!num)
     {
-        V_DrawScaledPatch(x - (w*vid.dupx), y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, numpat[ 0 ]);
+        V_DrawScaledPatch(x - (w*vid.dupx), y, numpat[ 0 ]);
         return;
     }
 
@@ -1594,13 +1602,13 @@ void ST_drawOverlayNum (int       x,            // right border!
     while (num)
     {
         x -= (w * vid.dupx);
-        V_DrawScaledPatch(x, y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, numpat[ num % 10 ]);
+        V_DrawScaledPatch(x, y, numpat[ num % 10 ]);
         num /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-        V_DrawScaledPatch(x - (8*vid.dupx), y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, sttminus);
+        V_DrawScaledPatch(x - (8*vid.dupx), y, sttminus);
 }
 
 
@@ -1637,6 +1645,9 @@ void ST_overlayDrawer ()
     float  sf_dupy = (rendermode == render_soft)? vid.dupy : vid.fdupy ;
     int    lowerbar_y = SCY(198) - (int)( 16 * sf_dupy );
 
+    // Draw screen0, scaled, abs position
+    V_SetupDraw( FG | V_NOSCALESTART | V_SCALEPATCH );
+
     cmds = cv_stbaroverlay.string;
 
     while ((c=*cmds++))
@@ -1650,7 +1661,7 @@ void ST_overlayDrawer ()
                              plyr->health,
                              tallnum,NULL);
 
-           V_DrawScalePic_Num (SCX(52), lowerbar_y, 0, sbohealth);
+           V_DrawScalePic_Num (SCX(52), lowerbar_y, sbohealth);
            break;
 
          case 'f': // draw frags
@@ -1662,7 +1673,7 @@ void ST_overlayDrawer ()
                                  st_fragscount,
                                  tallnum,NULL);
 
-               V_DrawScalePic_Num (SCX(302),SCY(2),0,sbofrags);
+               V_DrawScalePic_Num (SCX(302), SCY(2), sbofrags);
            }
            break;
 
@@ -1674,7 +1685,7 @@ void ST_overlayDrawer ()
                                  plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
                                  tallnum,NULL);
 
-               V_DrawScalePic_Num (SCX(236), lowerbar_y, 0, i);
+               V_DrawScalePic_Num (SCX(236), lowerbar_y, i);
            }
            break;
 
@@ -1685,11 +1696,11 @@ void ST_overlayDrawer ()
 	   {
                 if( plyr->cards & (1<<(i+3)) ) // first skull then card
                     V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-				      key_y, FG | V_NOSCALESTART, keys[i+3]);
+				      key_y, keys[i+3]);
                 else
                 if( plyr->cards & (1<<i) )
                     V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-				      key_y, FG | V_NOSCALESTART, keys[i]);
+				      key_y, keys[i]);
 	   }
            break;
 
@@ -1698,7 +1709,7 @@ void ST_overlayDrawer ()
                              plyr->armorpoints,
                              tallnum,NULL);
 
-           V_DrawScalePic_Num (SCX(302), lowerbar_y, 0, sboarmor);
+           V_DrawScalePic_Num (SCX(302), lowerbar_y, sboarmor);
            break;
 
          // added by Hurdler for single player only

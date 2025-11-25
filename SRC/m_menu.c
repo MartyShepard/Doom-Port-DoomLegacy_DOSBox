@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: m_menu.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -192,7 +192,7 @@
 //      Sliders and icons. Kinda widget stuff.
 //
 // NOTE:
-//      All V_DrawPatchDirect () has been replaced by V_DrawScaledPatch ()
+//      Drawing is through V_SetupDraw() and V_DrawScaledPatch()
 //      so that the menu is scaled to the screen size. The scaling is always
 //      an integer multiple of the original size, so that the graphics look
 //      good.
@@ -504,7 +504,7 @@ void M_DrawMenuTitle(void)
 
         if(xtitle<0) xtitle=0;
         if(ytitle<0) ytitle=0;
-        V_DrawScaledPatch (xtitle,ytitle,0,tp);
+        V_DrawScaledPatch (xtitle, ytitle, tp);
     }
 }
 
@@ -516,6 +516,7 @@ void M_DrawGenericMenu(void)
     menuitem_t * mip;
 
     // DRAW MENU
+    // Draw to screen0, scaled
     x = currentMenu->x;
     y = currentMenu->y;
 
@@ -537,8 +538,7 @@ void M_DrawGenericMenu(void)
                else 
                if( mip->patch && mip->patch[0] )
 	       {
-                   V_DrawScaledPatch_Name (x,y,0,
-					   mip->patch );
+                   V_DrawScaledPatch_Name (x,y, mip->patch );
 	       }
            case IT_NOTHING:
            case IT_DYBIGSPACE:
@@ -579,7 +579,7 @@ void M_DrawGenericMenu(void)
                            if( skullAnimCounter<4 && i==itemOn )
                                V_DrawCharacter( x+8+V_StringWidth(cv->string),
                                                 y+12,
-                                                '_' | 0x80);
+                                                '_' | 0x80);  // white
                            y+=16;
                            break;
                        default:
@@ -607,8 +607,7 @@ void M_DrawGenericMenu(void)
                if( mip->patch &&
                    mip->patch[0] )
 	       {
-                   V_DrawMappedPatch_Name (x,y,0,
-                                      mip->patch, graymap );
+                   V_DrawMappedPatch_Name (x,y, mip->patch, graymap );
 	       }
                y += LINEHEIGHT;
                break;
@@ -620,17 +619,14 @@ void M_DrawGenericMenu(void)
     if (((currentMenu->menuitems[itemOn].status & IT_DISPLAY)==IT_PATCH)
       ||((currentMenu->menuitems[itemOn].status & IT_DISPLAY)==IT_NOTHING) )
     {
-        V_DrawScaledPatch_Name(currentMenu->x + SKULLXOFF,
-                          cursory-5,
-                          0,
+        V_DrawScaledPatch_Name(currentMenu->x + SKULLXOFF, cursory-5,
                           skullName[whichSkull] );
     }
     else
     if (skullAnimCounter<4 * NEWTICRATERATIO)  //blink cursor
     {
-        V_DrawCharacter(currentMenu->x - 10,
-                        cursory,
-                        '*' | 0x80);
+        V_DrawCharacter(currentMenu->x - 10, cursory,
+                        '*' | 0x80);  // white
     }
 
 }
@@ -731,8 +727,8 @@ void HereticMainMenuDrawer(void)
 {
     int frame = (I_GetTime()/3)%18;
 
-    V_DrawScaledPatch_Num(40, 10, 0, SkullBaseLump+(17-frame) );
-    V_DrawScaledPatch_Num(232, 10, 0, SkullBaseLump+frame );
+    V_DrawScaledPatch_Num(40, 10, SkullBaseLump+(17-frame) );
+    V_DrawScaledPatch_Num(232, 10, SkullBaseLump+frame );
     M_DrawGenericMenu();
 }
 
@@ -1262,6 +1258,7 @@ void M_DrawSetupMultiPlayerMenu(void)
     int             st;
     byte*           colormap;
 
+    // Draw to screen0, scaled
     mx = SetupMultiPlayerDef.x;
     my = SetupMultiPlayerDef.y;
 
@@ -1278,7 +1275,7 @@ void M_DrawSetupMultiPlayerMenu(void)
     // draw text cursor for name
     if (itemOn==0 &&
         skullAnimCounter<4)   //blink cursor
-        V_DrawCharacter(mx+98+V_StringWidth(setupm_name),my,'_' | 0x80);
+        V_DrawCharacter(mx+98+V_StringWidth(setupm_name), my, '_' | 0x80);  // white
 
     // draw box around guy
     M_DrawTextBox(mx+90,my+8, PLBOXW, PLBOXH);
@@ -1306,7 +1303,7 @@ void M_DrawSetupMultiPlayerMenu(void)
     // draw player sprite
     // temp usage of sprite lump, until end of function
     patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix
-    V_DrawMappedPatch (mx+98+(PLBOXW*8/2),my+16+(PLBOXH*8)-8,0,patch,colormap);
+    V_DrawMappedPatch (mx+98+(PLBOXW*8/2),my+16+(PLBOXH*8)-8, patch, colormap);
 }
 
 
@@ -1527,11 +1524,12 @@ menu_t  NewDef =
 
 void M_DrawNewGame(void)
 {
+    // Draw to screen0, scaled
     //faB: testing with glide
     patch_t* p = W_CachePatchName("M_SKILL",PU_CACHE);  // endian fix
-    V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,38,0,p);
+    V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2,38, p);
 
-    //    V_DrawScaledPatch_Name (54,38,0, "M_SKILL" );
+    //    V_DrawScaledPatch_Name (54,38, "M_SKILL" );
     M_DrawGenericMenu();
 }
 
@@ -1620,20 +1618,21 @@ void M_DrawSlider (int x, int y, int range)
 {
     int i;
 
+    // Draw to screen0, scaled
     if (range < 0)
         range = 0;
     if (range > 100)
         range = 100;
 
-    V_DrawScaledPatch_Name(x-8, y, 0, "M_SLIDEL"); // in legacy.wad
+    V_DrawScaledPatch_Name(x-8, y, "M_SLIDEL"); // in legacy.wad
 
     for (i=0 ; i<SLIDER_RANGE ; i++)
-      V_DrawScaledPatch_Name(x+i*8, y, 0, "M_SLIDEM"); // in legacy.wad
+      V_DrawScaledPatch_Name(x+i*8, y, "M_SLIDEM"); // in legacy.wad
 
-    V_DrawScaledPatch_Name(x+SLIDER_RANGE*8, y, 0, "M_SLIDER"); // in legacy.wad
+    V_DrawScaledPatch_Name(x+SLIDER_RANGE*8, y, "M_SLIDER"); // in legacy.wad
 
     // draw the slider cursor
-    V_DrawMappedPatch_Name(x + ((SLIDER_RANGE-1)*8*range)/100, y, 0,
+    V_DrawMappedPatch_Name(x + ((SLIDER_RANGE-1)*8*range)/100, y,
 			   "M_SLIDEC", whitemap); // in legacy.wad
 }
 
@@ -1958,15 +1957,16 @@ menu_t  ReadDef1 =
 //
 void M_DrawReadThis1(void)
 {
+    // Draw to screen0, scaled
     switch ( gamemode )
     {
       case doom2_commercial:
-        V_DrawScaledPatch_Name (0,0,0,"HELP");
+        V_DrawScaledPatch_Name (0,0, "HELP");
         break;
       case doom_shareware:
       case doom_registered:
       case ultdoom_retail:
-        V_DrawScaledPatch_Name (0,0,0,"HELP1");
+        V_DrawScaledPatch_Name (0,0, "HELP1");
         break;
       case heretic:
         V_DrawRawScreen_Num(0,0,W_GetNumForName("HELP1"), 320, 200);
@@ -2010,16 +2010,17 @@ menu_t  ReadDef2 =
 //
 void M_DrawReadThis2(void)
 {
+    // Draw to screen0, scaled
     switch ( gamemode )
     {
       case ultdoom_retail:
       case doom2_commercial:
         // This hack keeps us from having to change menus.
-        V_DrawScaledPatch_Name (0,0,0,"CREDIT");
+        V_DrawScaledPatch_Name (0,0, "CREDIT");
         break;
       case doom_shareware:
       case doom_registered:
-        V_DrawScaledPatch_Name (0,0,0,"HELP2");
+        V_DrawScaledPatch_Name (0,0, "HELP2");
         break;
       case heretic :
         V_DrawRawScreen_Num(0,0,W_GetNumForName("HELP2"), 320, 200);
@@ -2459,7 +2460,7 @@ void M_DrawVideoMode(void)
     {
         i = 16 - 10 + ((vidm_current / vidm_column_size)*8*13);
         j = VidModeDef.y + ((vidm_current % vidm_column_size)*8);
-        V_DrawCharacter( i, j, '*' | 0x80);
+        V_DrawCharacter( i, j, '*' | 0x80);  // white
     }
 }
 
@@ -3180,37 +3181,38 @@ void M_DrawSaveLoadBorder(int x, int y, boolean longer )
 {
     int i;
 
+    // Draw to screen0, scaled
     if( gamemode == heretic )
     {
 #ifdef SAVEGAME_MTLEFT
-        V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
+        V_DrawScaledPatch_Name(x-8, y-4, "M_FSLOT");
 #if SAVELINELEN > 24
         if( longer )
         { 
-            V_DrawScaledPatch_Name(x-8 + SAVE_DESC_XPOS, y-4, 0, "M_FSLOT");
+            V_DrawScaledPatch_Name(x-8 + SAVE_DESC_XPOS, y-4, "M_FSLOT");
         }
 #endif
 #else
 #if SAVELINELEN > 24
         if( longer )
         {
-            V_DrawScaledPatch_Name(x-8 + ((SAVELINELEN-24)*8), y-4, 0, "M_FSLOT");
+            V_DrawScaledPatch_Name(x-8 + ((SAVELINELEN-24)*8), y-4, "M_FSLOT");
 	}
 #endif
-        V_DrawScaledPatch_Name(x-8, y-4, 0, "M_FSLOT");
+        V_DrawScaledPatch_Name(x-8, y-4, "M_FSLOT");
 #endif
     }
     else
     {
-        V_DrawScaledPatch_Name (x-8,y+7,0, "M_LSLEFT");
+        V_DrawScaledPatch_Name (x-8,y+7, "M_LSLEFT");
         
         for (i = (longer?SAVELINELEN:SAVESTRINGSIZE); i>0; i--)
         {
-            V_DrawScaledPatch_Name (x,y+7,0, "M_LSCNTR");
+            V_DrawScaledPatch_Name (x,y+7, "M_LSCNTR");
             x += 8;
         }
         
-        V_DrawScaledPatch_Name (x,y+7,0, "M_LSRGHT");
+        V_DrawScaledPatch_Name (x,y+7, "M_LSRGHT");
     }
 }
 
@@ -3570,6 +3572,7 @@ void M_DrawThermo ( int   x,
     int xx,i;
     int leftlump,rightlump,centerlump[2],cursorlump;
 
+    // Draw to screen0, scaled
     xx = x;
     if( raven )
     {
@@ -3590,36 +3593,35 @@ void M_DrawThermo ( int   x,
     }
     { // temp use of left thermo patch
       patch_t *pt = W_CachePatchNum(leftlump,PU_CACHE);  // endian fix
-      V_DrawScaledPatch (xx,y,0,pt);
+      V_DrawScaledPatch (xx,y,pt);
       xx += pt->width - pt->leftoffset;  // add width to offset
     }
     for (i=0;i<16;i++)
     {
         // alternate center patches (raven)
-        V_DrawScaledPatch_Num (xx,y,0, centerlump[i & 1] );
+        V_DrawScaledPatch_Num (xx,y, centerlump[i & 1] );
         xx += 8;
     }
-    V_DrawScaledPatch_Num (xx,y,0, rightlump );
+    V_DrawScaledPatch_Num (xx,y, rightlump );
 
     xx = (cv->value - cv->PossibleValue[0].value) * (15*8) /
          (cv->PossibleValue[1].value - cv->PossibleValue[0].value);
 
-    V_DrawScaledPatch_Num ((x+8) + xx, raven ? y+7 : y,
-                       0, cursorlump );
+    V_DrawScaledPatch_Num ((x+8) + xx, (raven ? y+7 : y), cursorlump );
 }
 
 
 void M_DrawEmptyCell( menu_t*       menu,
                       int           item )
 {
-    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1, 0,
+    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1,
                        "M_CELL1" );
 }
 
 void M_DrawSelCell ( menu_t*       menu,
                      int           item )
 {
-    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1, 0,
+    V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1,
                        "M_CELL2" );
 }
 
@@ -3634,8 +3636,11 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     patch_t  *p;
     int      cx, cy;
     int      n;
-    int      step,boff; 
+    int      step,boff;
 
+    // Draw to screen0, scaled
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+	      
     if( gamemode == heretic )
     {
         // humf.. border will stand if we do not adjust size ...
@@ -3655,48 +3660,50 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     // draw left side
     cx = x;
     cy = y;
-    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_TL] );
+    V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_TL] );
     cy += boff;
    
     // temp use patch in loop
     p = W_CachePatchNum (viewborderlump[BRDR_L],PU_CACHE);  // endian fix
     for (n = 0; n < lines; n++)
     {
-        V_DrawScaledPatch (cx, cy, 0, p);
+        V_DrawScaledPatch (cx, cy, p);
         cy += step;
     }
    
-    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_BL] );
+    V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_BL] );
 
     // draw middle
-    V_DrawFlatFill (x+boff, y+boff ,width*step, lines*step, st_borderflat_num);
+    V_DrawFlatFill (x+boff, y+boff, width*step, lines*step, st_borderflat_num);
 
     // draw top and bottom
     cx += boff;
     cy = y;
     while (width > 0)
     {
-        V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_T] );
+        V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_T] );
 
-        V_DrawScaledPatch_Num (cx, y+boff+lines*step, 0, viewborderlump[BRDR_B] );
+        V_DrawScaledPatch_Num (cx, y+boff+lines*step, viewborderlump[BRDR_B] );
         width --;
         cx += step;
     }
 
     // draw right side
     cy = y;
-    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_TR] );
+    V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_TR] );
     cy += boff;
    
     // temp use patch in loop
     p = W_CachePatchNum (viewborderlump[BRDR_R],PU_CACHE);  // endian fix
     for (n = 0; n < lines; n++)
     {
-        V_DrawScaledPatch (cx, cy, 0, p);
+        V_DrawScaledPatch (cx, cy, p);
         cy += step;
     }
    
-    V_DrawScaledPatch_Num (cx, cy, 0, viewborderlump[BRDR_BR] );
+    V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_BR] );
+    
+    V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
 }
 
 //==========================================================================
@@ -3807,6 +3814,7 @@ void M_DrawMessageMenu(void)
     int    start,lines;
     char   *msg=currentMenu->menuitems[0].text;
 
+    // Draw to screen0, scaled
     y=currentMenu->y;
     start = 0;
     lines = currentMenu->lastOn>>8;
@@ -3898,6 +3906,7 @@ void M_ChangeCvar(int choice)
         CV_SetValue(cv,cv->value+choice*2-1);
     }
     else
+    {
         if(cv->flags & CV_FLOAT)
         {
             char s[20];
@@ -3906,6 +3915,7 @@ void M_ChangeCvar(int choice)
         }
         else
             CV_AddValue(cv,choice*2-1);
+    }
 }
 
 static boolean M_ChangeStringCvar(int key, char ch)
@@ -4496,19 +4506,17 @@ void M_Drawer (void)
     if (!menuactive)
         return;
 
-    //added:18-02-98:
     // center the scaled graphics for the menu,
-    //  set it 0 again before return!!!
-    scaledofs = vid.centerofs;
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTER0 );
 
     // now that's more readable with a faded background (yeah like Quake...)
     V_DrawFadeScreen ();
 
+    // menu drawing
     if (currentMenu->drawroutine)
         currentMenu->drawroutine();      // call current menu Draw routine
 
-    //added:18-02-98: it should always be 0 for non-menu scaled graphics.
-    scaledofs = 0;
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERSCREEN );  // restore
 
 }
 
@@ -4930,7 +4938,7 @@ void M_OGL_DrawFogMenu(void)
                  V_WHITEMAP,
                  cv_grfogcolor.string);
     if (itemOn==FOG_COLOR_ITEM && skullAnimCounter<4) //blink cursor on FOG_COLOR_ITEM if selected
-        V_DrawCharacter( BASEVIDWIDTH-mx, my+currentMenu->menuitems[FOG_COLOR_ITEM].alphaKey, '_' | 0x80);
+        V_DrawCharacter( BASEVIDWIDTH-mx, my+currentMenu->menuitems[FOG_COLOR_ITEM].alphaKey, '_' | 0x80);  // white
 }
 
 
