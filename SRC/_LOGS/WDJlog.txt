@@ -3168,6 +3168,14 @@ Fix "Free 0" console printout.
 Fix FreeMem interface to indicate when guessing, and suppress printout
 of guessed mem numbers.
 FreeBSD, remove use of kvm which requires kmem priv, and use sysctl instead.
+Applied FreeBSD patch from Alexey Dokuchaev.
 Fixes bug 0000610.
 
-.
+*** w90_legacyhome
+patchfile = w90_5_legacyhome.patch
+- committed revision 1017   by wesley johnson
+Change preferred directory name for savegames to ".doomlegacy"
+( "doomlegacy" for win/dos ).
+Will also check for ".legacy" (legacy).
+When not found, will create ".doomlegacy".
+Fixes bug 0000609.

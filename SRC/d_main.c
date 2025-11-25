@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1007 2013-04-21 00:29:05Z wesleyjohnson $
+// $Id: d_main.c 1017 2013-05-18 18:26:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -346,7 +346,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1016"
+#define SVN_REV "1017"
 #endif
 
 // Version number: major.minor.revision
@@ -1858,10 +1858,32 @@ void D_DoomMain()
         // Make the home directory
         if (userhome)
         {
+#if 1
+	    // [WDJ] find directory, .doomlegacy, or .legacy
+	    char dirpath[ MAX_WADPATH ];
+
+	    // form directory filename, with slash (for savegamename)
+	    cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
+	    // if it exists then use it
+	    if( ! access(dirpath, R_OK) == 0 )
+	    {
+	        // not there, try 2nd choice
+	        cat_filename( dirpath, userhome, DEFAULTDIR2 SLASH );
+	        if( ! access(dirpath, R_OK) == 0 )
+	        {
+		    // not there either, then make primary default dir
+		    cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
+		}
+	    }
             // make subdirectory in userhome
-	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR) + 5 );
+            // example: "/home/user/.doomlegacy/"
+	    legacyhome = strdup( dirpath );  // malloc
+#else
+            // make subdirectory in userhome
+	    legacyhome = (char*) malloc( strlen(userhome) + strlen(DEFAULTDIR1) + 5 );
             // example: "/home/user/.legacy/"
             sprintf(legacyhome, "%s" SLASH DEFAULTDIR SLASH, userhome);
+#endif
         }
         else
         {
@@ -1873,7 +1895,10 @@ void D_DoomMain()
             sprintf(legacyhome, "%s/", dosroot);						
             #endif
         }
-        I_mkdir( legacyhome, 0700);
+        if( ! access(legacyhome, R_OK) == 0 )
+        {
+	    I_mkdir( legacyhome, 0700);
+	}
         legacyhome_len = strlen(legacyhome);
        
         // [WDJ] configfile must be set whereever legacyhome is on DOS or WIN32
