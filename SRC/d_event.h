@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_event.h 700 2010-07-11 00:23:37Z smite-meister $
+// $Id: d_event.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2010 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,8 +56,8 @@ typedef struct
 {
     evtype_t    type;
     int         data1;          // keys / mouse/joystick buttons
-    int         data2;          // mouse/joystick x move
-    int         data3;          // mouse/joystick y move
+    int         data2;          // mouse x move, ASCII char
+    int         data3;          // mouse y move
 } event_t;
 
 

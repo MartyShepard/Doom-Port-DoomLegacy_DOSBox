@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 949 2012-07-03 19:19:51Z wesleyjohnson $
+// $Id: m_cheat.c 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -235,7 +235,7 @@ boolean cht_Responder(event_t * ev)
 {
     int i;
     char *msg;
-    char ch = ev->data2; // ASCII is now data2
+    char ch = ev->data2; // ASCII character
 
     if (ev->type == ev_keydown)
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_joy.h 714 2010-07-27 22:48:37Z smite-meister $
+// $Id: i_joy.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -65,6 +65,7 @@ extern int num_joybindings;
 extern joybinding_t joybindings[MAX_JOYBINDINGS];
 
 void I_InitJoystick();
+// Axes is plual of Axis
 int I_JoystickNumAxes(int joynum);
 int I_JoystickGetAxis(int joynum, int axisnum);
 

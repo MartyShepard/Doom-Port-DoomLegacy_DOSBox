@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: keys.h 714 2010-07-27 22:48:37Z smite-meister $
+// $Id: keys.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -128,7 +128,6 @@ enum key_input_e
   KEY_2MOUSEWHEELDOWN,
   KEY_DBL2MOUSE1      = KEY_2MOUSE1    + MOUSEBUTTONS,
 
-  //KEY_JOYSTICKSTART   = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
   KEY_JOY0BUT0 = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
   KEY_JOY0BUT1,
   KEY_JOY0BUT2,
@@ -196,12 +195,16 @@ enum key_input_e
   KEY_JOY3BUT13,
   KEY_JOY3BUT14,
   KEY_JOY3BUT15,
+  KEY_JOYLAST = KEY_JOY3BUT15,
 
-  //KEY_JOYSTICKEND,
-  /*
-  KEY_DBLJOY1       = KEY_JOY1 + JOYBUTTONS,
-  KEY_DBLJOY14      = KEY_DBLJOY1 + JOYBUTTONS - 1,
-  */
+#ifdef DBL_JOY_BUTTONS     
+  // duplicate all joy, all buttons, KEY_JOY0BUT0 .. KEY_JOY3BUT15
+  KEY_DBLJOY0BUT0,
+  KEY_DBLJOY1BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
+  KEY_DBLJOY2BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
+  KEY_DBLJOY3BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
+  KEY_DBLJOYLAST = KEY_DBLJOY0BUT0 + JOYBUTTONS - 1,
+#endif
 
   // number of total 'button' inputs, includes keyboard keys, plus virtual
   // keys (mousebuttons and joybuttons become keys)

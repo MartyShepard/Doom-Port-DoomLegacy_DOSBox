@@ -3288,3 +3288,25 @@ Updates Makefile for selecting MAC, and some MAC options.
 
 Add file "sdl/SDLmain.m"
 
+*** W92_WinVid
+patchfile = w92_3_winvid.patch
+- committed revision 1030   by wesley johnson
+Commit of more changes to video draw in Win32 code to make it
+compatible with vid structure.  Untested.
+
+*** W92_OS2_X11
+patchfile = w92_4_Os2_X11.patch
+- committed revision 1031   by wesley johnson
+Commit of more changes to video draw in OS2 code and Linux X11 code
+to make use of new generic video draw functions.  Untested.
+
+*** W92_keys
+patchfile = w92_5_keys.patch
+- committed revision 1032   by wesley johnson
+Implement changes to keycodes in DOS, OS2, LINUX_X, and WIN32 ports.
+Some KEY names were changed.
+This only makes it possible to compile and some ports may only have
+one usable joystick.  Mostly Untested.
+
+
+

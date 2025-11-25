@@ -1,7 +1,11 @@
 * Not need to Compile.
 
+[01032 ]: w92 keys
+[01031*]: w92 OS2 X11 video
+[01030*]: w92 WinVid
+[01029*]: w92 SDLmain
 [01028 ]: w92 Mac
-[01027 ]: w92 Makefile
+[01027*]: w92 Makefile
 [01026 ]: w91 fragglescript respawn
 [01025 ]: w91 flats limit 2 fix
 [01024 ]: w91 bind command for FS

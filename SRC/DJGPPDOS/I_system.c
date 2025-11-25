@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: I_system.c 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,7 +66,7 @@
 
 
 #include "../doomdef.h"
-#include "../d_event.h"
+//#include "../d_event.h"
 #include "../m_misc.h"
 #include "../i_video.h"
 #include "../i_sound.h"
@@ -111,7 +111,6 @@
 
 
 // Do not execute cleanup code more than once. See Shutdown_xxx() routines.
-//byte graphics_started=false;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;
@@ -427,7 +426,7 @@ volatile int     handlermouse2buttons;
 volatile int     handlermouse2x,handlermouse2y;
 // internal use
 volatile int     bytenum;
-byte    combytes[8];
+volatile byte    combytes[8];
 
 //
 // support a secondary mouse without mouse driver !
@@ -768,7 +767,8 @@ void I_GetEvent (void)
             lastjoybuttons=joybuttons;
 
             for(i=0;i<JOYBUTTONS;i++,j<<=1)
-                if(k & j)          // test the eatch bit and post the corresponding event
+	    {
+                if(k & j) // test each bit and post the corresponding event
                 {
                     if(joybuttons & j)
                        event.type=ev_keydown;
@@ -777,6 +777,7 @@ void I_GetEvent (void)
                     event.data1=KEY_JOY0BUT0+i;
                     D_PostEvent(&event);
                 }
+	    }
         }
 
         event.type=ev_joystick;
@@ -848,13 +849,13 @@ void I_StartupTimer(void)
 //
 uint16_t ASCIINames[128] =
 {
-//  0       1       2       3       4       5       6       7
-//  8       9       A       B       C       D       E       F
+//  0      1      2      3      4      5      6      7
+//  8      9      A      B      C      D      E      F
     0,    27,   '1',   '2',   '3',   '4',   '5',   '6',
   '7',   '8',   '9',   '0',   '-',   '=', KEY_BACKSPACE, KEY_TAB,
-    'q',    'w',    'e',    'r',    't',    'y',    'u',    'i',
+  'q',   'w',   'e',   'r',   't',   'y',   'u',   'i',
   'o',   'p',   '[',   ']', KEY_ENTER, KEY_LCTRL,  'a',  's',
-    'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';',
+  'd',   'f',   'g',   'h',   'j',   'k',   'l',   ';',
  '\'',   '`', KEY_LSHIFT,  '\\',  'z',  'x',  'c',  'v',
   'b',   'n',   'm',   ',',   '.',   '/', KEY_RSHIFT,  '*',
   KEY_LALT, KEY_SPACE, KEY_CAPSLOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5,
@@ -862,11 +863,12 @@ uint16_t ASCIINames[128] =
   KEY_KEYPAD8, KEY_KEYPAD9, KEY_MINUSPAD, KEY_KEYPAD4, KEY_KEYPAD5, KEY_KEYPAD6, KEY_PLUSPAD, KEY_KEYPAD1,
   KEY_KEYPAD2, KEY_KEYPAD3, KEY_KEYPAD0, KEY_KPADPERIOD, 0, 0, 0,  KEY_F11,
   KEY_F12, 0,     0,     0,     0,     0,     0,     0,
-    0,      0,      0,      0,      0,      0,      0,      0,
-    0,      0,      0,      0,      0,      0,      0,      0,
-    0,      0,      0,      0,      0,      0,      0,      0,
+    0,     0,     0,     0,     0,     0,     0,     0,
+    0,     0,     0,     0,     0,     0,     0,     0,
+    0,     0,     0,     0,     0,     0,     0,     0,
     0,     0,     0,     0,     0,     0,     0,     0,
 };
+
 
 volatile int pausepressed=0;
 volatile char nextkeyextended;
@@ -881,6 +883,7 @@ static void I_KeyboardHandler()
     if(pausepressed>0)
         pausepressed--;
     else
+    {
         if(ch==0xE1) // pause key
         {
           event.type=ev_keydown;
@@ -908,10 +911,9 @@ static void I_KeyboardHandler()
 
             if(ch==70)  // crtl-break
             {
-
-                asm("movb $0x79, %%al\n\t"
-                    "call ___djgpp_hw_exception"
-                    : : : "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+                asm ("movb $0x79, %%al\n"
+                     "call ___djgpp_hw_exception"
+                     : : :"%eax","%ebx","%ecx","%edx","%esi","%edi","memory");
             }
 
             // remap lonely keypad slash
@@ -947,6 +949,7 @@ static void I_KeyboardHandler()
           }
         }
 
+    }
     outportb(0x20,0x20);
 }
 END_OF_FUNCTION(I_KeyboardHandler);
@@ -963,7 +966,7 @@ int I_GetKey (void)
     if (eventtail != eventhead)
     {
         ev = &events[eventtail];
-        eventtail = ( eventtail+1 ) & ( MAXEVENTS-1 );
+        eventtail = (++eventtail)&(MAXEVENTS-1);
         if (ev->type == ev_keydown)
             return ev->data1;
         else

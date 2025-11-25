@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: hu_stuff.c 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -434,22 +434,22 @@ boolean HU_Responder (event_t *ev)
   int key = ev->data1;
 
   if (!chat_on)
-    {
+  {
       // enter chat mode
       if (key == gamecontrol[gc_talkkey][0] || key == gamecontrol[gc_talkkey][1])
-        {
+      {
 	  chat_on = true;
 	  HU_Chat_clear();
 	  return true;
-        }
-    }
+      }
+  }
   else
-    {
-      int c = ev->data2; // character
+  {
+      int c = ev->data2; // ASCII character
 
       // send a macro
       if (altdown)
-        {
+      {
 	  c = c - '0';
 	  if (c > 9 || c < 0)
 	    return false;
@@ -462,41 +462,41 @@ boolean HU_Responder (event_t *ev)
 	  // if there is no unfinished message, leave chat mode and notify that it was sent
 	  if (HU_Chat_empty())
 	    chat_on = false;
-        }
+      }
       else
-        {
+      {
 	  // chat input
 	  if (key == KEY_ESCAPE)
-	    {
+	  {
 	      // close chat
 	      chat_on = false; 
-	    }
+	  }
 	  else if (key == KEY_ENTER)
-	    {
+	  {
 	      // send the message
 	      if (tail > 1)
 		HU_Chat_send(w_chat);
 
 	      HU_Chat_clear();
 	      chat_on = false;
-	    }
+	  }
 	  else if (key == KEY_BACKSPACE)
-	    {
+	  {
 	      // erase a char
 	      HU_Chat_pop_back();
-	    }
+	  }
 	  else if (c >= ' ' && c <= '~')
-	    {
+	  {
 	      // add a char
 	      if (!HU_Chat_push_back(c))
 		plr->message = HUSTR_MSGU;  // out of space
-	    }
+	  }
 	  else
 	    return false; // let the event go
-	}
+      }
 
       return true; // ate the key
-    }
+  }
 
   return false; // let the event go
 }

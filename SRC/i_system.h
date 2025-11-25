@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: i_system.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -122,7 +122,9 @@ void I_AddExitFunc (void (*func)(void));
 void I_RemoveExitFunc (void (*func)(void));
 
 // Setup signal handler, plus stuff for trapping errors and cleanly exit.
+// Not called by game, port optional, see I_SysInit
 int  I_StartupSystem (void);
+// Not called by game, port optional, see I_Quit
 void I_ShutdownSystem (void);
 
 uint64_t I_GetDiskFreeSpace(void);
