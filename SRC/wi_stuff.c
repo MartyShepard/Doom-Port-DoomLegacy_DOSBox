@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: wi_stuff.c 1019 2013-07-30 15:25:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1006,8 +1006,8 @@ static void WI_updateDeathmatchStats(void)
 
 //  Quick-patch for the Cave party 19-04-1998 !!
 //
-void WI_drawRancking(char *title,int x,int y,fragsort_t *fragtable
-                   , int scorelines, boolean large, int white)
+void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
+                    int scorelines, boolean large, int white)
 {
     int   i,j;
     int   skin_color, color;
@@ -1098,7 +1098,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("Frags",5,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Frags",5,RANKINGY,fragtab,scorelines,false,whiteplayer);
 
     // count buchholz
     scorelines = 0;
@@ -1117,7 +1117,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("Buchholz",85,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Buchholz",85,RANKINGY,fragtab,scorelines,false,whiteplayer);
 
     // count individuel
     scorelines = 0;
@@ -1142,7 +1142,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("indiv.",165,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("indiv.",165,RANKINGY,fragtab,scorelines,false,whiteplayer);
 
     // count deads
     scorelines = 0;
@@ -1161,7 +1161,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("deads",245,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("deads",245,RANKINGY,fragtab,scorelines,false,whiteplayer);
 
     timeleft=va("start in %d",cnt_pause/TICRATE);
     //i=V_StringWidth(num);
@@ -1214,7 +1214,7 @@ static void WI_drawTeamsStats(void)
     // count frags for each present player
     scorelines = HU_CreateTeamFragTbl(fragtab,dm_totals,dm_frags);
 
-    WI_drawRancking("Frags",5,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Frags",5,80,fragtab,scorelines,false,whiteplayer);
 
     // count buchholz
     scorelines = 0;
@@ -1233,7 +1233,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("Buchholz",85,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Buchholz",85,80,fragtab,scorelines,false,whiteplayer);
 
     // count individuel
     scorelines = 0;
@@ -1243,6 +1243,7 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
+	    {
                 if (teamingame(j) && i!=j)
                 {
                      if(dm_frags[i][j]>dm_frags[j][i])
@@ -1251,6 +1252,7 @@ static void WI_drawTeamsStats(void)
                          if(dm_frags[i][j]==dm_frags[j][i])
                               fragtab[scorelines].count+=1;
                 }
+	    }
 
             fragtab[scorelines].num = i;
             fragtab[scorelines].color = i;
@@ -1258,7 +1260,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("indiv.",165,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("indiv.",165,80,fragtab,scorelines,false,whiteplayer);
 
     // count deads
     scorelines = 0;
@@ -1277,7 +1279,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRancking("deads",245,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("deads",245,80,fragtab,scorelines,false,whiteplayer);
 }
 
 
@@ -1579,8 +1581,7 @@ static void WI_updateNetgameStats(void)
 static void WI_drawNetgameStats(void)
 {
     int         i;
-    int         x;
-    int         y;
+    int         x, y;
     int         pwidth = percent->width;
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
@@ -1955,13 +1956,13 @@ static void WI_loadData(void)
         }
 
         // you are here
-        yah[0] = W_CachePatchName(gamemode == heretic ? "IN_YAH" : "WIURH0", PU_LOCK_SB);
+        yah[0] = W_CachePatchName(((gamemode == heretic) ? "IN_YAH" : "WIURH0"), PU_LOCK_SB);
 
         // you are here (alt.)
         yah[1] = W_CachePatchName("WIURH1", PU_LOCK_SB);
 
         // splat
-        splat = W_CachePatchName(gamemode == heretic ? "IN_X" : "WISPLAT", PU_LOCK_SB);
+        splat = W_CachePatchName(((gamemode == heretic) ? "IN_X" : "WISPLAT"), PU_LOCK_SB);
 
         if (wbs->epsd < 3)
         {
@@ -1988,7 +1989,7 @@ static void WI_loadData(void)
     }
 
     // More hacks on minus sign.
-    wiminus = W_CachePatchName(gamemode == heretic ? "FONTB13" : "WIMINUS", PU_LOCK_SB);
+    wiminus = W_CachePatchName(((gamemode == heretic) ? "FONTB13" : "WIMINUS"), PU_LOCK_SB);
 
     for (i=0;i<10;i++)
     {
@@ -2001,7 +2002,7 @@ static void WI_loadData(void)
     }
 
     // percent sign
-    percent = W_CachePatchName(gamemode == heretic ? "FONTB05" : "WIPCNT", PU_LOCK_SB);
+    percent = W_CachePatchName(((gamemode == heretic) ? "FONTB05" : "WIPCNT"), PU_LOCK_SB);
 
     if( gamemode != heretic )
     {
@@ -2047,7 +2048,7 @@ static void WI_loadData(void)
     }
     
     // ":"
-    colon = W_CachePatchName(gamemode == heretic ? "FONTB26" : "WICOLON", PU_LOCK_SB);
+    colon = W_CachePatchName(((gamemode == heretic) ? "FONTB26" : "WICOLON"), PU_LOCK_SB);
 
     // your face
     star = W_CachePatchName("STFST01", PU_LOCK_SB);  // never unlocked

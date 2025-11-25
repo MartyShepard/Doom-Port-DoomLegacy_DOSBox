@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: wi_stuff.h 1019 2013-07-30 15:25:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -61,9 +61,9 @@ void WI_Start(wbstartstruct_t*   wbstartstruct);
 
 boolean teamingame(int teamnum);
 
-// draw ranckings
-void WI_drawRancking(char *title,int x,int y,fragsort_t *fragtable
-                    , int scorelines, boolean large, int white);
+// draw rankings
+void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
+                    int scorelines, boolean large, int white);
 
 
 #endif

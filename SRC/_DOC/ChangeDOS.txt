@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01019 ]: w91.1 rancking
+[01018 ]: Testing svn+ssh protocol. Typos in the commandline help text fixed.
 [01017 ]: w90 legacyhome doomlegacy
 [01016 ]: w90 system freemem
 [01015 ]: w90 ASM fixes, tmap

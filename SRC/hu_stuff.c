@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: hu_stuff.c 1019 2013-07-30 15:25:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -96,7 +96,7 @@
 #include "dstrings.h"
 #include "st_stuff.h"   //added:05-02-98: ST_HEIGHT
 #include "r_local.h"
-#include "wi_stuff.h"  // for drawranckings
+#include "wi_stuff.h"  // for drawrankings
 #include "p_info.h"
 
 #include "keys.h"
@@ -1000,16 +1000,16 @@ void HU_drawDeathmatchRankings (void)
 	}
 
     if(cv_teamplay.value==0)
-        WI_drawRancking(title,80, y,fragtab,scorelines, large,whiteplayer);
+        WI_drawRanking(title,80, y,fragtab,scorelines, large,whiteplayer);
     else
     {
         // draw the frag to the right
-//        WI_drawRancking("Individual",170,70,fragtab,scorelines,true,whiteplayer);
+//        WI_drawRanking("Individual",170,70,fragtab,scorelines,true,whiteplayer);
 
         scorelines = HU_CreateTeamFragTbl(fragtab,NULL,NULL);
 
         // and the team frag to the left
-        WI_drawRancking("Teams",80, y,fragtab,scorelines,large,players[whiteplayer].skincolor);
+        WI_drawRanking("Teams",80, y,fragtab,scorelines,large,players[whiteplayer].skincolor);
     }
 }
 
@@ -1021,6 +1021,7 @@ void HU_drawDeathmatchRankings (void)
     extern float gr_basewindowcentery;
     extern float gr_viewheight;
 #endif
+
 void HU_drawCrosshair (void)
 {
     int     i;

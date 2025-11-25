@@ -346,7 +346,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1017"
+#define SVN_REV "1019"
 #endif
 
 // Version number: major.minor.revision
@@ -2436,14 +2436,14 @@ void Help( void )
 			 " [-opengl]"
 #endif
 			 " [-iwad xxx.wad] [-file pwad.wad ...]\n"
-	"-version  Print Legacy version\n"
-	"-h    Help\n"
-	"-h g  Help game and wads\n"
-	"-h m  Help multiplayer\n"
-	"-h c  Help config\n"
-	"-h s  Help server\n"
-	"-h d  Help demo\n"
-	"-h D  Help Devmode\n"
+	"--version   Print Doom Legacy version\n"
+	"-h     Help\n"
+	"-h g   Help game and wads\n"
+	"-h m   Help multiplayer\n"
+	"-h c   Help config\n"
+	"-h s   Help server\n"
+	"-h d   Help demo\n"
+	"-h D   Help Devmode\n"
 	);
      return;
   }
@@ -2488,7 +2488,7 @@ void Help( void )
 	"-home name      Config and savegame directory\n"
 	"-config file    Config file\n"
 #ifdef HWRENDER		
-	"-opengl         OpenGL Hardware render\n"
+	"-opengl         OpenGL hardware renderer\n"
 #endif
 	"-nosound        No sound effects\n"
 #ifdef CDMUS
