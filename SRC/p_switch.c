@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 966 2012-11-10 21:47:51Z wesleyjohnson $
+// $Id: p_switch.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -161,6 +161,7 @@ void P_InitSwitchList(void)
   if(W_CheckNumForName("SWITCHES") != -1)
   {
     alphSwitchList = (switchlist_t *)W_CacheLumpName("SWITCHES", PU_IN_USE);
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
     // [WDJ] Endian conversion, only when BIG_ENDIAN, when from wad,
     // and not when cache hit.

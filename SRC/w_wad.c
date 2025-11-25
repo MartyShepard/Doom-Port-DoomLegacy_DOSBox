@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
+// $Id: w_wad.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -837,6 +837,7 @@ void* W_CacheLumpName ( char* name, int tag )
 // [WDJ] Only read patches using this function, hardware render too.
 inline void* W_CachePatchNum_Endian ( int lump, int tag )
 {
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
     patch_t * patch = W_CacheLumpNum(lump,tag);
     // [WDJ] If newly read patch then fix endian.
@@ -1001,6 +1002,7 @@ void* W_CacheRawAsPic( int lump, int width, int height, int tag)
 // Cache and endian convert a pic_t
 void* W_CachePicNum( int lumpnum, int tag )
 {
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
     pic_t * pt = W_CacheLumpNum ( lumpnum, tag );
     // [WDJ] If newly read pic then fix endian.

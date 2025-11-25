@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: console.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -212,7 +212,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth);
 //======================================================================
 //                   CONSOLE VARS AND COMMANDS
 //======================================================================
-#ifdef __MACOS__
+#if defined( MACOS_DI ) && ! defined( __GNUC__ )
 #define  CON_BUFFERSIZE   4096  //my compiler cant handle local vars >32k
 #else
 #define  CON_BUFFERSIZE   16384

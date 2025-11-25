@@ -3248,3 +3248,43 @@ respawn at (0,0) as used in prboom and eternity.
 Fixed where in several respawn, the mapthing mobj was not being updated
 for new mobj.
 
+*** W92_Makefile
+patchfile = w92_1_Makefile.patch
+- committed revision 1027   by wesley johnson
+Fix bug 0000605, bug 0000608.
+Fix Makefile directory create problems.
+There is now a make_options file that can hold all the local make
+settings, which lessens the need to edit the Makefile.
+When this file does not exist, the directories will be made.
+Remove directory prerequisites, as they could never work (date changes
+with every use).
+Fix dependency make problems.  Dependencies are no longer loaded for
+many housekeeping make commands, so make does not try to re-build them.
+Remove -separate flag from sed.
+Fix for compilation on W98 using MinGW.
+Other makefile improvements.
+
+Other musserv and sndserv makefiles have been combined with the linux makefile,
+because of the duplication of maintenance.
+Remove file: linux_x/musserv/Makefile.freebsd
+Remove file: linux_x/musserv/Makefile.scoos5
+Remove file: linux_x/musserv/Makefile.scouw2
+Remove file: linux_x/musserv/Makefile.scouw7
+Remove file: linux_x/musserv/Makefile.linux
+Remove file: linux_x/sndserv/Makefile.scoos5
+Remove file: linux_x/sndserv/Makefile.scouw2
+Remove file: linux_x/sndserv/Makefile.scouw7
+Add file: linux_x/musserv/Makefile
+
+*** W92_Mac
+patchfile = w92_2_Mac.patch
+- committed revision 1028   by wesley johnson
+Commit of extensive changes for Mac, and Mac using SDL.
+Change MACOS to MACOS_DI (Mac Direct Interface) which is NOT SDL.
+Mac using SDL defines MAC_SDL.
+This is not a working solution for Mac, just the best current code.
+Includes some useful optional debugging code.
+Updates Makefile for selecting MAC, and some MAC options.
+
+Add file "sdl/SDLmain.m"
+

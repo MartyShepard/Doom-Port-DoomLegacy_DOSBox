@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.h 741 2010-09-05 12:00:35Z smite-meister $
+// $Id: m_swap.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -92,6 +92,7 @@ static inline int32_t SWAP_INT32_FAST( uint32_t x)
 //    Wads, lumps, MUS format, TGA format, network
 // Use BE_SWAP* to convert to and from external big-endian value.
 //    Midi
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
 
 // [WDJ] swap functions, reduces executable bloat.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: p_saveg.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3133,6 +3133,7 @@ const char * sg_head_format =
 #define sg_head_END "::END\n"
 const short idname_length = 18;  // !!<name> length
 
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
 const byte sg_big_endian = 1;
 #else

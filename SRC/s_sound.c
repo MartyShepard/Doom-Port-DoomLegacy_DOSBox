@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1008 2013-04-26 01:50:52Z wesleyjohnson $
+// $Id: s_sound.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -175,7 +175,8 @@ consvar_t sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 
 #define SURROUND
 
-#ifdef __MACOS__
+#ifdef MACOS_DI
+// specific to macos directory
 consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
 #endif
 
@@ -297,7 +298,8 @@ void S_RegisterSoundStuff(void)
 #if 0
 //[WDJ]  disabled in 143beta_macosx
 //[segabor]
-#ifdef __MACOS__        //mp3 playlist stuff
+#ifdef MACOS_DI        //mp3 playlist stuff
+// specific to macos directory
     {
         int i;
         for (i = 0; i < PLAYLIST_LENGTH; i++)
@@ -1133,11 +1135,7 @@ void S_ChangeMusic(int music_num, int looping)
     }
     // load & register it
     music->data = (void *) W_CacheLumpNum(music->lumpnum, PU_MUSIC);
-#ifdef __MACOS__
-    music->handle = I_RegisterSong(music_num);
-#else
     music->handle = I_RegisterSong(music->data, W_LumpLength(music->lumpnum));
-#endif
 
 #ifdef MUSSERV
 

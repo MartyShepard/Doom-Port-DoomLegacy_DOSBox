@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01028 ]: w92 Mac
 [01027 ]: w92 Makefile
 [01026 ]: w91 fragglescript respawn
 [01025 ]: w91 flats limit 2 fix

@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 971 2012-11-10 22:14:46Z wesleyjohnson $
+// $Id: doomtype.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2012 by DooM Legacy Team.
+// Copyright (C) 1998-2013 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,7 +62,7 @@
 # define WIN32
 #endif
 #ifndef __WIN32__
-#define __WIN32__
+# define __WIN32__
 #endif
 #endif
 
@@ -79,7 +79,7 @@ typedef  int64_t INT64;
 #endif
 
 // boolean type
-#ifdef __APPLE_CC__
+#if defined( __APPLE_CC__ ) && ! defined( __GNUC__ )
 # define boolean int
 # define false 0
 # define true  1
@@ -96,6 +96,25 @@ typedef uint8_t    byte;
 typedef uint32_t  tic_t;
 
 
+#ifdef __APPLE_CC__
+  // Apple GNAT, GNU C 4.5, __APPLE_CC__ == 1
+  // Apple C 4.2, __APPLE_CC__ == 5666
+  //   They define __MACH__, __GNUC__, and conditionally __BIG_ENDIAN__
+  //   Do not use __LITTLE_ENDIAN__, it is not defined on WIN, LINUX
+# ifdef SDL
+   // Mac on SDL, is like Linux
+   // Can also test for __APPLE_CC__ or __MACH__
+#  define MAC_SDL
+# else
+   // Hardware direct interface using macos directory (NOT SDL)
+#  define MACOS_DI
+#  define DEBUG_LOG
+#  ifndef HWRENDER
+#   define HWRENDER
+#  endif
+# endif
+#endif
+
 #ifdef __GNUC__
 #define PACKED_ATTR  __attribute__((packed))
 #else
@@ -106,13 +125,6 @@ typedef uint32_t  tic_t;
 # define ASMCALL __cdecl
 #else
 # define ASMCALL
-#endif
-
-
-#ifdef __APPLE_CC__
-#define __MACOS__
-#define DEBUG_LOG
-#define HWRENDER
 #endif
 
 #if defined( __MSC__) || defined( __OS2__)
@@ -129,6 +141,14 @@ typedef uint32_t  tic_t;
         #define strncasecmp             strnicmp
         #define strcasecmp              strcmpi
     #endif
+		
+    #ifdef __DJGPP__
+        #include <dos.h>
+        #include <sys\types.h>
+        #include <direct.h>
+        #include <malloc.h>
+				#define strcmpi                 strcasecmp
+    #endif		
 #endif
 
 // [smite] we should use standard funcs
@@ -139,10 +159,9 @@ typedef uint32_t  tic_t;
 #if !defined(WIN32) && !defined(__WINDOWS__)
 #define min(x,y) ( ((x)<(y)) ? (x) : (y) )
 #define max(x,y) ( ((x)>(y)) ? (x) : (y) )
-#if !defined( __DJGPP__ )	
+
 int strupr(char *n);
 int strlwr(char *n);
-#endif
 #endif
 
 #ifndef O_BINARY
@@ -150,16 +169,16 @@ int strlwr(char *n);
 #endif
 
 
-
 // Predefined with some OS.
-#ifndef __WIN32__
-#ifndef __MACOS__
-#ifndef FREEBSD
-#include <values.h>
-#else
+#ifdef __WIN32__
 #include <limits.h>
-#endif
-#endif
+#elif defined( MACOS_DI ) || defined( __MACH__ ) || defined( FREEBSD )
+#include <limits.h>
+#else
+// Linux GNU, which also includes limits.h
+// obsolete header file
+#include <values.h>
+//#include <limits.h>
 #endif
 
 #ifndef MAXCHAR
@@ -171,7 +190,6 @@ int strlwr(char *n);
 #ifndef MAXINT
 #define MAXINT    ((int)0x7fffffff)
 #endif
-
 #ifndef MINCHAR
 #define MINCHAR   ((char)0x80)
 #endif
@@ -193,6 +211,7 @@ typedef union {
 } RGBA_t;
 
 #ifdef __BIG_ENDIAN__
+    // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #define UINT2RGBA(a) a
 #else
 #define UINT2RGBA(a) ((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((ULONG)a&0xff000000)>>24)

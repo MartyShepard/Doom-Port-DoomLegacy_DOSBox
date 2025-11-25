@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: i_video.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -96,7 +96,8 @@ void I_ShutdownGraphics(void);          //restore old video mode
 // Takes full 8 bit values.
 void I_SetPalette (RGBA_t* palette);
 
-#ifdef __MACOS__
+#ifdef MACOS_DI
+// in macos directory
 void macConfigureInput(void);
 
 void VID_Pause(int pause);

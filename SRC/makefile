@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id$
+# $Id: Makefile 1028 2013-08-14 00:15:29Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2013 by Doom Legacy Team.
@@ -69,6 +69,10 @@
 # DOS=1
 # CC_MINGW=1
 # CC_WATCOM=1
+# MAC=1
+# Mac compile using Linux SDL includes (MacPorts, Fink)
+# MAC_FRAMEWORK uses the native Mac SDL setup.
+# MAC_FRAMEWORK=1
 
 # SMIF - System Media Interface (default=SDL)
 #SMIF=SDL
@@ -96,6 +100,10 @@
 # MUS_OS=SCOUW7
 #ESD demon
 # HAVE_ESD=1
+
+# When SDL 1.3 is used, some stuff will break.  I don't know what yet.
+# Reported that SDLMain is no longer required for Mac using SDL 1.3.
+# SDL_1_3=1
 
 # Developers with svn can enable this to have svn revision number in executable.
 # Causes compile error message otherwise.
@@ -213,7 +221,8 @@ LDFLAGS:=
 #=================================
 ifeq ($(SMIF), SDL)
 # SDL is the default system media interface. This is what all modern systems should use.
-  # Requires SDL libs, and optionally SDL_mixer libs
+# Requires SDL libs, and optionally SDL_mixer libs
+# This uses files in sdl directory, and not those linux_x nor macos directories.
 
 # interface directory (where you put all i_*.c)
   INTERFACE=sdl
@@ -250,6 +259,7 @@ ifeq ($(SMIF), SDL)
   else
     # Extracted from sdl-config script
     ifdef CC_MINGW
+      OPTS+=-D_GNU_SOURCE=1 -Dmain=SDL_main
 #      OPTINC+=-"I\SDL\include\SDL"
       OPTINC+=-"I/SDL/include/SDL"
 #      OPTINC+=-I/mingw/include/SDL
@@ -257,16 +267,26 @@ ifeq ($(SMIF), SDL)
 #      LIBS+=-L/mingw/lib
 #      LIBS+=-L/windows/system32
       LIBS+=-lsdl -lmingw32 -mwindows
+      LIBS+=-lSDLmain -lSDL
     endif
     ifdef CC_WATCOM
+      OPTS+=-D_GNU_SOURCE=1 -Dmain=SDL_main
       OPTINC+=-I/SDL/include/SDL
 #     OPTINC+=-I/watcom/h/SDL
       LIBS+=-L/SDL/lib
 #     LIBS+=-L/windows/system32
       LIBS+=-lsdl -lwatcom -mwindows
+      LIBS+=-lSDLmain -lSDL
     endif
-    OPTS+=-D_GNU_SOURCE=1 -Dmain=SDL_main
-    LIBS+=-lSDLmain -lSDL
+    ifdef MAC
+    # Some Mac SDL downloads do not have sdl-config.
+    # Because I do not know of a way for MAKE to test this, comment
+    # out the SDL_CONFIG=1 above if you do not have sdl-config.
+    # Put correct mac sdl-config info here (somebody).
+      OPTS+=-D_GNU_SOURCE=1 -D_REENTRANT
+      OPTINC+=-I/usr/include/SDL
+      LIBS+=-L/usr/lib -Wl,-rpath,/usr/lib -lSDL -lpthread
+    endif
   endif
 
   OPTS+=-DHWRENDER -DSDL
@@ -277,6 +297,22 @@ ifeq ($(SMIF), SDL)
     LIBS+=-lSDL_mixer 
   endif
 
+  ifdef MAC
+    # Objective-C main program is required for SDL 1.2.x
+    # DoomLegacy has its own SDLmain source, but others may work,
+    # though they would change the default directory according to .app.
+    SMIFOBJS+=SDLmain.o
+    LIBS+=-lobjc
+    # optional places for include and libraries, unique to Mac
+    # enable MAC_FRAMEWORK if you really want to debug frameworks (I don't)
+    ifdef MAC_FRAMEWORK
+      CFLAGS += -DMAC_FRAMEWORK
+      FRAMEWORK = -framework Cocoa -framework OpenGL -framework SDL
+      # Do not remember which example had -F./osx/Frameworks      
+      #      LDFLAGS += -F./osx/Frameworks $(FRAMEWORK) -framework Foundation
+      LDFLAGS +=  $(FRAMEWORK) -framework Foundation
+    endif
+  endif
 
 
 #=================================
@@ -815,6 +851,12 @@ endif
 ifeq ($(SMIF), SDL)
 $(O)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+ifdef MAC
+# Mac must have Objective-C main for SDL
+$(O)/SDLmain.o : sdl/SDLmain.m
+	$(CC) -x objective-c $(CFLAGS) $(FRAMEWORK) -c $< -o $@
+endif
 
 else 
 # LINUX_X11, FREEBSD_X11 at least

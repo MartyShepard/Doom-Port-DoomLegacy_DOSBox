@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: i_sound.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -117,11 +117,7 @@ void I_SetSfxVolume(int volume);
 void I_PauseSong(int handle);
 void I_ResumeSong(int handle);
 // Registers a song handle to song data.
-#ifdef __MACOS__
-int I_RegisterSong(int song);
-#else
 int I_RegisterSong(void* data,int len);
-#endif
 // Called by anything that wishes to start music.
 //  plays a song, and when the song is done,
 //  starts playing it again in an endless loop.
@@ -133,7 +129,8 @@ void I_StopSong(int handle);
 // See above (register), then think backwards
 void I_UnRegisterSong(int handle);
 
-#ifdef __MACOS__
+#ifdef MACOS_DI
+// in macos directory
 void MusicEvents (void);        //needed to give quicktime some processor
 
 #define PLAYLIST_LENGTH 10

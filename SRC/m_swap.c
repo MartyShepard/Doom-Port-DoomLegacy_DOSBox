@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_swap.c 604 2010-02-13 07:21:09Z smite-meister $
+// $Id: m_swap.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -34,6 +34,7 @@
 //-----------------------------------------------------------------------------
 
 // Not needed with little endian, unless the BE_SWAP* get used.
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
 
 #include "m_swap.h"

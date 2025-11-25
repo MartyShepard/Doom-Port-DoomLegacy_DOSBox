@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: m_menu.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1751,9 +1751,10 @@ menuitem_t MouseOptionsMenu[]=
 #if 0
 //[WDJ] disabled in 143beta_macosx
 //[segabor]
-#ifdef __MACOS__
+# ifdef MACOS_DI
+// specific to macos directory
         ,{IT_CALL   | IT_WHITESTRING,0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
-#endif
+# endif
 #endif
 };
 

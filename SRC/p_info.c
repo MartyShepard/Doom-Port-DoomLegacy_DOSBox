@@ -213,7 +213,6 @@ levelvar_t levelvars[]=
   {IVT_CONSOLECMD,"consolecmd",    NULL},
   {IVT_END,       0,              0}
 };
-
 void P_ParseLevelVar(char *cmd)
 {
   char *equals;

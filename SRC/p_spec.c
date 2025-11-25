@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: p_spec.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -322,6 +322,7 @@ void P_InitPicAnims (void)
   {
     animdefs = (animdef_t *)W_CacheLumpName("ANIMATED", PU_IN_USE);
     // [WDJ] From wad, Do endian conversion on speed
+// __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
     // [WDJ] Endian conversion, only when BIG_ENDIAN, when from wad,
     // and not when cache hit.

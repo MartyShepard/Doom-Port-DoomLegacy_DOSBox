@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: s_sound.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -93,7 +93,8 @@ extern consvar_t cd_volume;
 extern consvar_t cdUpdate;
 #endif
 
-#ifdef __MACOS__
+#ifdef MACOS_DI        //mp3 playlist stuff
+// specific to macos directory
 typedef enum
 {
     music_normal,
