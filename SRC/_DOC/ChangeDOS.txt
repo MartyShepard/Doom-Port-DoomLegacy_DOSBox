@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01020 ]: w91.2 translucent draw8
 [01019 ]: w91.1 rancking
 [01018 ]: Testing svn+ssh protocol. Typos in the commandline help text fixed.
 [01017 ]: w90 legacyhome doomlegacy

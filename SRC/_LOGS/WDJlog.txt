@@ -3179,3 +3179,16 @@ Change preferred directory name for savegames to ".doomlegacy"
 Will also check for ".legacy" (legacy).
 When not found, will create ".doomlegacy".
 Fixes bug 0000609.
+
+*** W91_rancking
+patchfile = w91_1_rancking.patch
+- committed revision 1019   by wesley johnson
+Fix rancking spelling to ranking.
+
+*** W91_trans_draw8
+patchfile = w91_2_transdraw8.patch
+- committed revision 1020   by wesley johnson
+Fix bug in translucent draw of sprite for 8bit screens.
+Set dr_alpha to 0 for all translucent sprite draws.
+This affects phobia.wad fires, where would get random dr_alpha.
+
