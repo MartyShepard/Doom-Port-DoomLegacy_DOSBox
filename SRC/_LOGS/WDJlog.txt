@@ -3192,3 +3192,9 @@ Fix bug in translucent draw of sprite for 8bit screens.
 Set dr_alpha to 0 for all translucent sprite draws.
 This affects phobia.wad fires, where would get random dr_alpha.
 
+*** W91_flats_limit
+patchfile = w91_3_flats_limit.patch
+- committed revision 1021   by wesley johnson
+Remove limits on flats.  AddFlats now automatically increases the
+levelflats array when necessary.  Remove one use of alloca().
+

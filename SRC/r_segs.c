@@ -505,6 +505,15 @@ void  expand_openings( size_t  need )
     lastopening = & openings[ lastindex ];
 }
 
+void* portable_realloc(void* mem, size_t siz)
+{
+    if (!mem) {
+        return malloc(siz);
+    } else if (!siz) {
+        return mem;
+    }
+    return realloc(mem, siz);
+}
 
 void expand_drawsegs( void )
 {
@@ -512,10 +521,10 @@ void expand_drawsegs( void )
     // Realloc larger drawseg memory, and adjust old drawseg ptrs
     drawseg_t * old_drawsegs = drawsegs;
     unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
-    drawseg_t * new_drawsegs = realloc(drawsegs, newmax*sizeof(*drawsegs));
+    drawseg_t * new_drawsegs = portable_realloc(drawsegs, newmax*sizeof(*drawsegs));
     if( new_drawsegs == 0 )
     {
-        I_Error( "Failed realloc for drawsegs\n" );
+        I_Error( "Failed realloc for drawsegs NewMax=%d,drawsegs=%d\n",newmax, sizeof(*drawsegs));
     }
     drawsegs = new_drawsegs;
     maxdrawsegs = newmax;

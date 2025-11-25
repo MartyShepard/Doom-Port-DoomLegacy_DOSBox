@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_setup.h 1021 2013-07-30 15:30:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -71,9 +71,9 @@ typedef struct
     int         speed;
 } levelflat_t;
 
-extern int             numlevelflats;
+extern unsigned int    numlevelflats;
 extern levelflat_t*    levelflats;
-int P_AddLevelFlat (char* flatname, levelflat_t* levelflat);
+int P_AddLevelFlat (char* flatname);
 char *P_FlatNameForNum(int num);
 
 extern int             nummapthings;

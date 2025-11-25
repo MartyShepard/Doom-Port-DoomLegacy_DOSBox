@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1014 2013-05-18 18:12:29Z wesleyjohnson $
+// $Id: p_setup.c 1021 2013-07-30 15:30:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -488,9 +488,11 @@ void P_LoadSubsectors (int lump)
 //
 // levelflats
 //
-#define MAXLEVELFLATS   256
+// usually fewer than 25 flats per level
+#define LEVELFLAT_INC   32
 
-int                     numlevelflats;
+unsigned int            levelflat_max = 0;  // num alloc levelflats
+unsigned int            numlevelflats;  // actual in use
 levelflat_t*            levelflats;
 
 //SoM: Other files want this info.
@@ -512,29 +514,17 @@ int P_PrecacheLevelFlats()
 }
 
 
-
-
-#if 0
-// [WDJ] Unused (renamed from P_FlatNumForName)
-// not compatible with allocation of levelflats if called outside P_LoadSectors
-int P_AddLevel_FlatNumForName(char *flatname)
-{
-  return P_AddLevelFlat(flatname, levelflats);
-}
-#endif
-
-
-
 // help function for P_LoadSectors, find a flat in the active wad files,
 // allocate an id for it, and set the levelflat (to speedup search)
 //
-int P_AddLevelFlat (char* flatname, levelflat_t* levelflat)
+int P_AddLevelFlat ( char* flatname )
 {
     union {
         char    s[9];
         int     x[2];
     } name8;
 
+    levelflat_t* lfp;
     int         i;
     int         v1,v2;
 
@@ -544,39 +534,55 @@ int P_AddLevelFlat (char* flatname, levelflat_t* levelflat)
     v1 = name8.x[0];
     v2 = name8.x[1];
 
-    //
-    //  first scan through the already found flats
-    //
-    for (i=0; i<numlevelflats; i++,levelflat++)
+    if( levelflats )
     {
-        if ( *(int *)levelflat->name == v1
-             && *(int *)&levelflat->name[4] == v2)
+        // scan through the already found flats
+	lfp = & levelflats[0];
+        for (i=0; i<numlevelflats; i++)
         {
-            break;
-        }
+	    if ( *(int *)lfp->name == v1
+		 && *(int *)&lfp->name[4] == v2)
+	    {
+	        goto found_level_flat;  // return i
+	    }
+	    lfp ++;
+	}
     }
 
-    // that flat was already found in the level, return the id
-    if (i==numlevelflats)
+    // create new flat entry in levelflats
+    if (devparm)
+        CONS_Printf ("flat %#03d: %s\n", numlevelflats, name8.s);
+
+    if (numlevelflats>=levelflat_max)
     {
-        // store the name
-        *((int*)levelflat->name) = v1;
-        *((int*)&levelflat->name[4]) = v2;
-
-        // store the flat lump number
-        levelflat->lumpnum = R_FlatNumForName (flatname);
-
-        if (devparm)
-            CONS_Printf ("flat %#03d: %s\n", numlevelflats, name8.s);
-
-        numlevelflats++;
-
-        if (numlevelflats>=MAXLEVELFLATS)
-            I_Error("P_LoadSectors: too many flats in level\n");
+        // grow number of levelflats
+	// use Z_Malloc directly because it is usually a small number
+        levelflat_max += LEVELFLAT_INC;  // alloc more levelflats
+        levelflat_t* new_levelflats =
+            Z_Malloc (levelflat_max*sizeof(levelflat_t), PU_LEVEL, NULL);
+        // must zero because unanimated are left to defaults
+        memset( &new_levelflats[numlevelflats], 0, (levelflat_max - numlevelflats)*sizeof(levelflat_t) );			
+        if( levelflats )
+        {
+	    memcpy (new_levelflats, levelflats, numlevelflats*sizeof(levelflat_t));
+	    Z_Free ( levelflats );
+	}
+        levelflats = new_levelflats;
     }
 
-    // level flat id
-    return i;
+    i = numlevelflats;
+    lfp = & levelflats[numlevelflats];  // array moved
+    numlevelflats++;
+
+    // store the name
+    *((int*)lfp->name) = v1;
+    *((int*)&lfp->name[4]) = v2;
+
+    // store the flat lump number
+    lfp->lumpnum = R_FlatNumForName (flatname);
+
+ found_level_flat:
+    return i;    // level flat id
 }
 
 
@@ -597,22 +603,16 @@ void P_LoadSectors (int lump)
     mapsector_t*        ms;
     sector_t*           ss;
 
-    levelflat_t*        foundflats;
-
     numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
     sectors = Z_Malloc (numsectors*sizeof(sector_t), PU_LEVEL, NULL);
     memset (sectors, 0, numsectors*sizeof(sector_t));
     data = W_CacheLumpNum (lump,PU_STATIC);	// mapsector lump temp
     // [WDJ] Fix endian as transfer from temp to internal.
 
-    //Fab:FIXME: allocate for whatever number of flats
-    //           512 different flats per level should be plenty
-    foundflats = alloca(sizeof(levelflat_t) * MAXLEVELFLATS);
-    if (!foundflats)
-        I_Error ("P_LoadSectors: no mem\n");
-    memset (foundflats, 0, sizeof(levelflat_t) * MAXLEVELFLATS);
-
+    // [WDJ] init growing flats array
     numlevelflats = 0;
+    levelflat_max = 0;
+    levelflats = NULL;
 
     ms = (mapsector_t *)data;	// ms will be ++
     ss = sectors;
@@ -638,8 +638,8 @@ void P_LoadSectors (int lump)
         else
             ss->floortype = FLOOR_SOLID;
 
-        ss->floorpic = P_AddLevelFlat (ms->floorpic,foundflats);
-        ss->ceilingpic = P_AddLevelFlat (ms->ceilingpic,foundflats);
+        ss->floorpic = P_AddLevelFlat (ms->floorpic);
+        ss->ceilingpic = P_AddLevelFlat (ms->ceilingpic);
 
         ss->lightlevel = LE_SWAP16(ms->lightlevel);
         ss->special = LE_SWAP16(ms->special);
@@ -690,11 +690,7 @@ void P_LoadSectors (int lump)
     //CONS_Printf ("%d flats found\n", numlevelflats);
 
     // set the sky flat num
-    skyflatnum = P_AddLevelFlat ("F_SKY1",foundflats);
-
-    // copy table for global usage
-    levelflats = Z_Malloc (numlevelflats*sizeof(levelflat_t), PU_LEVEL, NULL);
-    memcpy (levelflats, foundflats, numlevelflats*sizeof(levelflat_t));
+    skyflatnum = P_AddLevelFlat ("F_SKY1");
 
     // search for animated flats and set up
     P_SetupLevelFlatAnims ();
