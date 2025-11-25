@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
+// $Id: p_setup.c 1025 2013-08-04 03:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -561,7 +561,8 @@ int P_AddLevelFlat ( char* flatname )
         levelflat_t* new_levelflats =
             Z_Malloc (levelflat_max*sizeof(levelflat_t), PU_LEVEL, NULL);
         // must zero because unanimated are left to defaults
-        memset( &new_levelflats[numlevelflats], 0, (levelflat_max - numlevelflats)*sizeof(levelflat_t) );			
+        memset( &new_levelflats[numlevelflats], 0,
+		(levelflat_max - numlevelflats)*sizeof(levelflat_t) );
         if( levelflats )
         {
 	    memcpy (new_levelflats, levelflats, numlevelflats*sizeof(levelflat_t));

@@ -3221,3 +3221,10 @@ Previously I had changed the command t_runscript to fs_runscript, but
 now find that chex newmaps binds the t_runscript command to the z key.
 Restore previous t_runscript and t_running commands for this purpose.
 Chex newmaps scope works again.
+
+*** W91_flats_limit_2
+patchfile = w91_7_flatslimit2.patch
+- committed revision 1025   by wesley johnson
+Fix bug in W91_flats_limit.  Must zero new levelflats allocation,
+because unanimated are left to default values.  Was failing after
+about 5 to 7 loads of plutonia savegames.

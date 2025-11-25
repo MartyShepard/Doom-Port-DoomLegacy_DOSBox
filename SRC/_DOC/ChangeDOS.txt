@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01025 ]: w91 flats limit 2 fix
 [01024 ]: w91 bind command for FS
 [01023 ]: w91.3 S_Drawsetup center screen
 [01022 ]: w91.3 remove alloca uses
