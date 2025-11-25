@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1025 2013-08-04 03:40:35Z wesleyjohnson $
+// $Id: p_setup.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -786,7 +786,7 @@ void P_LoadThings (int lump)
 	       mt->options &= ~MTF_MPSPAWN;  // Remove multiplayer only flag
 	}
 
-        P_SpawnMapThing (mt);
+        P_SpawnMapthing (mt);
     }
 
     Z_Free(data);
@@ -1614,6 +1614,7 @@ boolean P_SetupLevel (int           episode,
     // clear the splats from previous level
     R_ClearLevelSplats ();
 #endif
+    P_Clear_Extra_Mapthing();  // remove FS mapthings 
 
     script_camera_on = false;
     HU_ClearTips();

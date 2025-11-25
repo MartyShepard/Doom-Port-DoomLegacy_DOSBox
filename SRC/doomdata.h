@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdata.h 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: doomdata.h 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -241,7 +241,7 @@ typedef struct
     int16_t             angle;  // normally (0,90,180,270), reported neg sometimes
     int16_t             type;
     int16_t             options;
-    struct mobj_s*      mobj;
+    struct mobj_s*      mobj;  // Extra MapThing, voodoo, and FS tests
 } mapthing_t;
 
 

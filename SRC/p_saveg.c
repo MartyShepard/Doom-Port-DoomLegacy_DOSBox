@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1021 2013-07-30 15:30:24Z wesleyjohnson $
+// $Id: p_saveg.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -392,6 +392,7 @@ typedef enum {
   SYNC_specials,	// 8
   // optionals that game may use
   SYNC_fragglescript = 70,
+  SYNC_extra_mapthing,
   // optional controls that may vary per game
   SYNC_gamma = 200,
   SYNC_slowdoor,
@@ -1167,14 +1168,14 @@ void P_UnArchiveWorld(void)
 }
 
 //
-// Thinkers
+// Thinkers and Mapthings
 //
 
 
 // [smite] A simple std::vector -style pointer-to-id mapping.
 typedef struct
 {
-  mobj_t   *pointer;
+  void   *pointer;
 } pointermap_cell_t;
 
 typedef struct
@@ -1184,24 +1185,25 @@ typedef struct
   unsigned int alloc_len; // number of allocated cells
 } pointermap_t;
 
-static pointermap_t pointermap = {NULL,0,0};
+static pointermap_t  mobj_ptrmap = {NULL,0,0};
+static pointermap_t  mapthg_ptrmap = {NULL,0,0};
 
 // Safe to call without knowing if was allocated or not.
-static void ClearPointermap()
+static void ClearPointermap( pointermap_t * ptrmap )
 {
   // Clean release of memory, setup for next call of Alloc_Pointermap 
-  pointermap.used = 0;
-  pointermap.alloc_len = 0;
-  if( pointermap.map )  free(pointermap.map);
-  pointermap.map = NULL;
+  ptrmap->used = 0;
+  ptrmap->alloc_len = 0;
+  if( ptrmap->map )  free(ptrmap->map);
+  ptrmap->map = NULL;
 }
 
 // Allocate or reallocate
 // Current pointermap.used is unchanged.
-static boolean  Alloc_Pointermap( int num )
+static boolean  Alloc_Pointermap( pointermap_t * ptrmap, int num )
 {
     // on failure allocpm==NULL, but pointmap.map will remain valid
-    pointermap_cell_t * allocpm = realloc(pointermap.map, num * sizeof(pointermap_cell_t));
+    pointermap_cell_t * allocpm = realloc(ptrmap->map, num * sizeof(pointermap_cell_t));
     if( allocpm == NULL )
     {
       I_SoftError("LoadGame: Pointermap alloc failed.\n");
@@ -1209,29 +1211,29 @@ static boolean  Alloc_Pointermap( int num )
       return 0;
     }
     // update to new allocation
-    pointermap.map = allocpm;
-    pointermap.alloc_len = num;
+    ptrmap->map = allocpm;
+    ptrmap->alloc_len = num;
     // num is one past the last new cell of new allocation
-    // pointermap.used is index of first uninitialized cell (one past end of old allocation)
-    memset(&pointermap.map[pointermap.used], 0, (num-pointermap.used) * sizeof(pointermap_cell_t));
+    // ptrmap->used is index of first uninitialized cell (one past end of old allocation)
+    memset(&ptrmap->map[ptrmap->used], 0, (num-ptrmap->used) * sizeof(pointermap_cell_t));
     // All mapping has ID==0 map to NULL ptr.
     // This is less expensive than special tests.
-    pointermap.map[0].pointer = NULL;	// Map id==0 to NULL
+    ptrmap->map[0].pointer = NULL;	// Map id==0 to NULL
     return 1;
 }
 
-static void InitPointermap_Save(unsigned int size)
+static void InitPointermap_Save( pointermap_t * ptrmap, unsigned int size )
 {
-  pointermap.used = 1;  // all will be free, except [0] == NULL ptr
-  Alloc_Pointermap( size );
+  ptrmap->used = 1;  // all will be free, except [0] == NULL ptr
+  Alloc_Pointermap( ptrmap, size );
 }
 
-static void InitPointermap_Load(unsigned int size)
+static void InitPointermap_Load( pointermap_t * ptrmap, unsigned int size )
 {
-  InitPointermap_Save(size);
+  InitPointermap_Save( ptrmap, size );
   // mark everything as initialized (this condition holds all the time during loading)
   // Does not affect anything, yet.
-  pointermap.used = pointermap.alloc_len;
+  ptrmap->used = ptrmap->alloc_len;
 }
 
 
@@ -1247,22 +1249,22 @@ static uint32_t GetID(mobj_t *p)
     return 0; // NULL ptr has id == 0
 
   // see if pointer is already there
-  for (id=0; id < pointermap.used; id++)
-    if (pointermap.map[id].pointer == p)  // use existing mapping
+  for (id=0; id < mobj_ptrmap.used; id++)
+    if (mobj_ptrmap.map[id].pointer == p)  // use existing mapping
       return id;
 
   // okay, not there, we must add it
 
   // is there still space or should we enlarge the mapping table?
-  if (pointermap.used == pointermap.alloc_len)
+  if (mobj_ptrmap.used == mobj_ptrmap.alloc_len)
   {
-    if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )
+    if( ! Alloc_Pointermap( &mobj_ptrmap, mobj_ptrmap.alloc_len * 2 ) )
        return 0; // alloc fail
   }
 
   // add the new pointer mapping
-  id = pointermap.used++;
-  pointermap.map[id].pointer = p;
+  id = mobj_ptrmap.used++;
+  mobj_ptrmap.map[id].pointer = p;
   return id;
 }
 
@@ -1278,10 +1280,10 @@ static void MapMobjID(uint32_t id, mobj_t *p)
   if (id == 0 || id > 500000)  goto bad_id_err;  // bad id, probably corrupt or wrong file.
 #else
   if (!p)
-    {
-      I_Error("P_LoadGame: Tried to assign NULL pointer to an ID.\n"); // NULL ptr always has id == 0
-      return;
-    }
+  {
+    I_Error("P_LoadGame: Tried to assign NULL pointer to an ID.\n"); // NULL ptr always has id == 0
+    return;
+  }
 
   if (!id)
   {
@@ -1296,15 +1298,15 @@ static void MapMobjID(uint32_t id, mobj_t *p)
 #endif
 
   // is id in the initialized/allocated region?
-  while (id >= pointermap.alloc_len)
+  while (id >= mobj_ptrmap.alloc_len)
   {
     // no, enlarge the container
-    if( ! Alloc_Pointermap( pointermap.alloc_len * 2 ) )  goto failed;
-    pointermap.used = pointermap.alloc_len; // all initialized
+    if( ! Alloc_Pointermap( &mobj_ptrmap, mobj_ptrmap.alloc_len * 2 ) )  goto failed;
+    mobj_ptrmap.used = mobj_ptrmap.alloc_len; // all initialized
   }
 
-  if (pointermap.map[id].pointer)  goto duplicate_err;  // already exists
-  pointermap.map[id].pointer = p;  // save the mapping
+  if (mobj_ptrmap.map[id].pointer)  goto duplicate_err;  // already exists
+  mobj_ptrmap.map[id].pointer = p;  // save the mapping
   return;
 
 bad_id_err:
@@ -1327,9 +1329,9 @@ static mobj_t * GetMobjPointer(uint32_t id)
 {
   // Less expensive to have map[0]==NULL than have special tests.
   // Is id in the initialized/allocated region? has it been assigned?
-//  if (id >= pointermap.alloc_len || !pointermap.map[id].pointer)
-  if ( id >= pointermap.alloc_len )   goto bad_ptr;
-  mobj_t * mp = pointermap.map[id].pointer;	// [0] is NULL
+//  if (id >= mobj_ptrmap.alloc_len || !mobj_ptrmap.map[id].pointer)
+  if ( id >= mobj_ptrmap.alloc_len )   goto bad_ptr;
+  mobj_t * mp = mobj_ptrmap.map[id].pointer;	// [0] is NULL
   if( (mp == NULL) && (id > 0) )   goto bad_ptr;
   return mp;
    
@@ -1340,11 +1342,11 @@ bad_ptr:
   // This has been observed in a fresh saved game. 
   // Not fatal, return NULL ptr and continue;
   I_SoftError("LoadGame: Ptr to non-existant Mobj, make NULL.\n");
-#else   
+#else
   // Assume a bad mobj ptr is a corrupt savegame.
   I_SoftError("LoadGame: Unknown Mobj ID number.\n");
   save_game_abort = 1;
-#endif  
+#endif
   return NULL;
 }
 
@@ -1359,13 +1361,185 @@ bad_ptr:
 #define READ_SECTOR_PTR( secp )   (secp) = &sectors[READ32(save_p)]
 #define WRITE_LINE_PTR( linp )   WRITE32(save_p, (linp)?((linp) - lines):0xFFFFFFFF)
 #define READ_LINE_PTR( linp )   { uint32_t d = READ32(save_p); (linp) = (d==0xFFFFFFFF)? NULL:&lines[d]; }
-#define WRITE_MAPTHING_PTR( mtp )   WRITE32(save_p, (mtp)?((mtp) - mapthings):0xFFFFFFFF)
-#define READ_MAPTHING_PTR( mtp )   { uint32_t d = READ32(save_p); (mtp) = (d==0xFFFFFFFF)? NULL:&mapthings[d]; }
+
+// [WDJ] 2013/7/29 Handle FS extra mapthing in savegame
+#define EXTRA_MAPTHING_ID0   0x10000000
+#define MAPTHING_NULLVALUE   0xFFFFFFFF
+
+// convert an unknown mapthing reference to a saveable id
+static uint32_t  Get_Mapthing_ID( mapthing_t * mtp )
+{
+  uint32_t id = MAPTHING_NULLVALUE;
+  if ( mtp )
+  {
+    if ((mtp >= mapthings) && (mtp <= &mapthings[nummapthings-1]))
+    {
+      id = mtp - mapthings;  // index mapthings array
+    }
+    else
+    {
+      id = P_Extra_Mapthing_Index( mtp );  // find in Extra
+      if( id )
+        id += EXTRA_MAPTHING_ID0;
+      else
+        id = MAPTHING_NULLVALUE;  // failed to find it
+    }
+  }
+  return id;
+}
+
+   
+// Upon read of Mapthing and the ID from the save game file.
+// Sets the Mobj ID to pointer mapping.
+static void Map_Mapthing_ID(uint32_t mtid, mapthing_t *mtp)
+{
+  // Cannot have mapthing ptr p == NULL, that would be Z_Malloc failure.
+  // Cannot have ID==0 in the mapthing archive.
+  // map[0] is preset to NULL
+  if (mtid == 0 || mtid > 500000)  goto bad_id_err;  // bad id, probably corrupt or wrong file.
+
+  // is id in the initialized/allocated region?
+  while (mtid >= mapthg_ptrmap.alloc_len)
+  {
+    unsigned int req_size = (mtid + (mtid>>2) + 64) & ~(64-1);  // mult 64
+    // no, enlarge the container
+    if( ! Alloc_Pointermap( &mapthg_ptrmap, req_size ) )  goto failed;
+  }
+  if( mtid >= mapthg_ptrmap.used )
+      mapthg_ptrmap.used = mtid;
+
+  if (mapthg_ptrmap.map[mtid].pointer)  goto duplicate_err;  // already exists
+  mapthg_ptrmap.map[mtid].pointer = mtp;  // save the mapping
+  return;
+
+bad_id_err:
+  I_SoftError("LoadGame: Mapthing read has bad object ID.\n");
+  goto failed;
+
+duplicate_err:
+  I_SoftError("LoadGame: Same ID number found for several Mapthing.\n");
+  goto failed;
+
+failed:
+  save_game_abort = 1;
+  return;
+}
+
+
+// convert the saved id to a usable mapthing ptr
+// must already have loaded level and loaded extra mapthings from savegame
+static mapthing_t * Get_Mapthing_Ptr( unsigned int mtid )
+{
+  mapthing_t * mtp = NULL;
+  if ( mtid != MAPTHING_NULLVALUE )
+  {
+    if (mtid < nummapthings)
+    {
+      mtp = &mapthings[mtid];  // in mapthings array
+    }
+    else if ( mtid >= EXTRA_MAPTHING_ID0 )
+    {
+      // lookup in pointermap
+      mtid -= EXTRA_MAPTHING_ID0;  // 1..
+      if ( mtid > mapthg_ptrmap.used )   goto bad_ptr;
+      mtp = mapthg_ptrmap.map[mtid].pointer;  // [0] is NULL
+      if ( mtp == NULL )   goto bad_ptr;
+    }
+    else
+      I_SoftError("LoadGame: Unknown Mapthing ID number.\n");
+  }
+  return mtp;
+   
+bad_ptr:
+    // on error, let user load a different save game
+#if 1
+  // Assume some mapthing ptrs saved might not be valid, such as killed target.
+  // Known for some spawn.
+  // Not fatal, return NULL ptr and continue;
+  I_SoftError("LoadGame: Ptr to non-existant Mapthing, make NULL.\n");
+#else
+  // Assume a bad mobj ptr is a corrupt savegame.
+  I_SoftError("LoadGame: Unknown Mapthing ID number.\n");
+  save_game_abort = 1;
+#endif
+  return NULL;
+}
+
+
+#define WRITE_MAPTHING_PTR( mtp )   WRITE32(save_p, Get_Mapthing_ID(mtp))
+#define READ_MAPTHING_PTR( mtp )    (mtp) = Get_Mapthing_Ptr( READ32(save_p) )
 // another read of mapthing in P_UnArchiveSpecials
 
 
+// Extra mapthings
+
+static void P_Archive_Mapthing(void)
+{
+    mapthing_t * mthing = NULL;
+    uint32_t   mtid;
+
+    for(;;)
+    {
+        mthing = P_Traverse_Extra_Mapthing(mthing);
+        if ( !mthing )  break;
+        mtid = P_Extra_Mapthing_Index(mthing);
+        if (mtid)
+        {
+	    // no diffs, no wad mapthing to compare to
+	    WRITE32(save_p, mtid );
+	    WRITE16(save_p, mthing->x );
+	    WRITE16(save_p, mthing->y );
+	    WRITE16(save_p, mthing->z );
+	    WRITE16(save_p, mthing->angle );
+	    WRITE16(save_p, mthing->type );  // objtype
+	    WRITE16(save_p, mthing->options );
+	    SG_Writebuf();
+	}
+    }
+    // mark the end of the save section using reserved id
+    WRITE32(save_p, 0);
+    return;
+}
+
+static void P_UnArchive_Mapthing( void )
+{
+    char * reason;
+    uint32_t   mtid;  // mapthing id
+    mapthing_t * mthing;  // extra mapthing
+
+    // read in saved mapthings
+    for(;;)
+    {
+        SG_Readbuf();
+        mtid = READ32(save_p);
+        if (mtid == 0)  // reserved id to end section
+            break;
+        mthing = P_Get_Extra_Mapthing( 0 );  // allocate
+        if (!mthing)
+        {
+	    reason = "Cannot get extra mapthing";
+	    goto err_report;
+	}
+        Map_Mapthing_ID( mtid, mthing );
+        mthing->x = READ16(save_p);
+        mthing->y = READ16(save_p);
+        mthing->z = READ16(save_p);
+        mthing->angle = READ16(save_p);
+        mthing->type = READ16(save_p);  // objtype
+        mthing->options = READ16(save_p);
+    }
+    return;
+
+err_report:
+    I_SoftError("LoadGame: %s\n", reason );
+    save_game_abort = 1;
+    return;
+}
 
 
+//
+// Thinkers
+//
 
 typedef enum
 {
@@ -1532,6 +1706,7 @@ void P_ArchiveThinkers(void)
 	    // Mobj thinker
             mobj = (mobj_t *) th;
 
+#if 0
 	    // [WDJ] DEBUG
 	    boolean voodoo_doll = 0;
 	    if( mobj->player )
@@ -1539,6 +1714,7 @@ void P_ArchiveThinkers(void)
 	        if( mobj->player->mo != mobj )
 		   voodoo_doll = 1;
 	    }
+#endif
 /*
             // not a monster nor a pickable item so don't save it
             if( (((mobj->flags & (MF_COUNTKILL | MF_PICKUP | MF_SHOOTABLE )) == 0)
@@ -1547,14 +1723,17 @@ void P_ArchiveThinkers(void)
                 || (mobj->type == MT_BLOOD) )
                 continue;
 */
+	    // Either save MD_SPAWNPOINT, or save MD_TYPE, or both
             if (mobj->spawnpoint
 		&& (!(mobj->spawnpoint->options & MTF_FS_SPAWNED))
 		&& (mobj->info->doomednum != -1))
             {
-                // spawnpoint is not modified but we must save it since it is a indentifier
+                // spawnpoint is not modified but we must save it since it is a identifier
                 diff = MD_SPAWNPOINT;
 
-                if ((mobj->x != mobj->spawnpoint->x << FRACBITS) || (mobj->y != mobj->spawnpoint->y << FRACBITS) || (mobj->angle != wad_to_angle(mobj->spawnpoint->angle)))
+                if ((mobj->x != mobj->spawnpoint->x << FRACBITS)
+		    || (mobj->y != mobj->spawnpoint->y << FRACBITS)
+		    || (mobj->angle != wad_to_angle(mobj->spawnpoint->angle)))
                     diff |= MD_POS;
                 if (mobj->info->doomednum != mobj->spawnpoint->type)
                     diff |= MD_TYPE;
@@ -1563,6 +1742,9 @@ void P_ArchiveThinkers(void)
             {
                 // not a map spawned thing so make it from scratch
                 diff = MD_POS | MD_TYPE;
+	        // if might respawn then need to save spawnpoint too
+	        if( mobj->spawnpoint )
+		    diff |= MD_SPAWNPOINT;  // save extra mapthing ref
             }
 
             // not the default but the most probable
@@ -1903,17 +2085,21 @@ void P_UnArchiveThinkers(void)
                 mobj->z = READFIXED(save_p);    // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
                 mobj->floorz = READFIXED(save_p);
 
+	        // [WDJ] Keep all combinations of MD_SPAWNPOINT and MD_TYPE,
+		// so can read older savegames made with different invariants.
                 if (diff & MD_SPAWNPOINT)
                 {
 		    READ_MAPTHING_PTR( mobj->spawnpoint );
-                    mobj->spawnpoint->mobj = mobj;
+		    if( mobj->spawnpoint )
+		        mobj->spawnpoint->mobj = mobj;
                 }
                 if (diff & MD_TYPE)
                 {
                     mobj->type = READU32(save_p);
                 }
-                else //if (diff & MD_SPAWNPOINT) //Hurdler: I think we must add that test ?
+                else
                 {
+		    // [WDJ] even if have MD_SPAWNPOINT, the lookup might return NULL
 		    if( mobj->spawnpoint == NULL )
 		    {
 		        reason = "No Type and No Spawnpoint";
@@ -2057,10 +2243,11 @@ void P_UnArchiveThinkers(void)
                 P_SetThingPosition(mobj);
 
                 /*
+		   // This causes 3dfloor problems! SSNTails 03-17-2002
                    mobj->floorz = mobj->subsector->sector->floorheight;
                    if( (diff & MD_Z) == 0 )
                    mobj->z = mobj->floorz;
-                 */// This causes 3dfloor problems! SSNTails 03-17-2002
+                 */
 #ifdef VOODOO_DOLL
                 if (mobj->player && (mobj->player->mo == mobj)) // real player
 #else
@@ -3088,7 +3275,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 // Write game data to savegame buffer.
 void P_SaveGame( void )
 {   
-    InitPointermap_Save(1024);
+    InitPointermap_Save(&mobj_ptrmap, 1024);
 
     SG_SaveSync( SYNC_net );
     CV_SaveNetVars((char **) &save_p);
@@ -3098,6 +3285,11 @@ void P_SaveGame( void )
     P_ArchivePlayers();
     SG_SaveSync( SYNC_world );
     P_ArchiveWorld();
+    if ( P_Traverse_Extra_Mapthing(NULL) )  // optional
+    {
+        SG_SaveSync( SYNC_extra_mapthing );
+        P_Archive_Mapthing();
+    }
     SG_SaveSync( SYNC_thinkers );
     P_ArchiveThinkers();
     SG_SaveSync( SYNC_specials );
@@ -3116,16 +3308,16 @@ void P_SaveGame( void )
 #if 0
     // debug
     uint32_t k;
-    for (k=0; k < pointermap.used; k++)
+    for (k=0; k < mobj_ptrmap.used; k++)
       {
-	I_OutputMsg("%d  %p\n", k, pointermap.map[k].pointer);
-	if (pointermap.map[k].pointer == NULL)
-	  I_Error("P_SaveGame: Hole in pointermap!\n");
-	//CONS_Printf("%d  %p\n", k, pointermap.map[k].pointer);
+	I_OutputMsg("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
+	if (mobj_ptrmap.map[k].pointer == NULL)
+	  I_Error("P_SaveGame: Hole in mobj_ptrmap!\n");
+	//CONS_Printf("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
       }
 #endif
 
-    ClearPointermap();
+    ClearPointermap( &mobj_ptrmap );
 }
 
 
@@ -3134,7 +3326,8 @@ void P_SaveGame( void )
 // Read game data in savegame buffer.
 boolean P_LoadGame(void)
 {
-    InitPointermap_Load(1024);
+    InitPointermap_Load(&mobj_ptrmap, 1024);
+    InitPointermap_Load(&mapthg_ptrmap, 64);
 
     if( ! SG_ReadSync( SYNC_net, 0 ) )  goto sync_err;
 //    CV_LoadNetVars((char **) &save_p);
@@ -3146,6 +3339,10 @@ boolean P_LoadGame(void)
     P_UnArchivePlayers();
     if( ! SG_ReadSync( SYNC_world, 0 ) )  goto sync_err;
     P_UnArchiveWorld();
+    if( SG_ReadSync( SYNC_extra_mapthing, 1 ) )  // optional
+    {
+        P_UnArchive_Mapthing();
+    }
     if( ! SG_ReadSync( SYNC_thinkers, 0 ) )  goto sync_err;
     P_UnArchiveThinkers();
     if( ! SG_ReadSync( SYNC_specials, 0 ) )  goto sync_err;
@@ -3171,13 +3368,15 @@ boolean P_LoadGame(void)
 
     if( ! SG_ReadSync( SYNC_end, 1 ) )  goto sync_err;
    
-    ClearPointermap();
+    ClearPointermap( &mobj_ptrmap );
+    ClearPointermap( &mapthg_ptrmap );
     return true;
    
  sync_err:
     I_SoftError( "Legacy save game sync error\n" );
 
  failed:
-    ClearPointermap();	// safe clear
+    ClearPointermap( &mobj_ptrmap );	// safe clear
+    ClearPointermap( &mapthg_ptrmap );
     return false;
 }

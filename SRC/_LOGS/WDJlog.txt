@@ -3228,3 +3228,23 @@ patchfile = w91_7_flatslimit2.patch
 Fix bug in W91_flats_limit.  Must zero new levelflats allocation,
 because unanimated are left to default values.  Was failing after
 about 5 to 7 loads of plutonia savegames.
+
+*** W91_fragglescript_respawn
+patchfile = w91_8_fraggle_respawn.patch
+- committed revision 1026   by wesley johnson
+Fix bug_3588902.
+Create and Free Extra_Mapthing, used for FraggleScript created mobj
+that can respawn or can Nightmare respawn.
+Savegame now saves Extra_Mapthing as an optional section (see Sync).
+This is needed for respawn queue.
+Will still load old save games.
+Changed savegame ptr tools to also handle savegame mapthing ptrs.
+Fixed WRITE_MAPTHING_PTR and READ_MAPTHING_PTR to handle extra mapthing.
+Previously they were presented with mapthing ptrs that were not part
+of the mapthings array, and created bad indexes in the savegame.
+Nightmare respawn modified to fix several bugs.
+It had a mixture of previous fixes.  Added better fix for nightmare
+respawn at (0,0) as used in prboom and eternity.
+Fixed where in several respawn, the mapthing mobj was not being updated
+for new mobj.
+

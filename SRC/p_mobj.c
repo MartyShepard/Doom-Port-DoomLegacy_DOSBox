@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 985 2012-12-04 04:13:31Z wesleyjohnson $
+// $Id: p_mobj.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -160,6 +160,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <string.h>
+  // memset
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -180,6 +183,13 @@
 #include "b_game.h"     //added by AC for acbot
 #include "p_fab.h"
 
+
+#if 1
+// [WDJ] Not controlled yet
+#define  EN_catch_respawn_0   1
+#else
+byte EN_catch_respawn_0 = 1;  // enable catch Nightmare respawn at (0,0)
+#endif
 
 
 #ifdef VOODOO_DOLL
@@ -1146,37 +1156,50 @@ void P_ZMovement(mobj_t * mo)
 //
 void P_NightmareRespawn(mobj_t * mobj)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t x,y,z;
     subsector_t *ss;
-    mobj_t *mo;
-    mapthing_t *mthing;
+    mobj_t *mo;  // new mobj for respawn
+    mapthing_t * mthing = mobj->spawnpoint;
+    byte  at_mobj_position = 0;
 
-    mthing = mobj->spawnpoint;
-
-    if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
+    z = mobj->subsector->sector->floorheight;  // for teleport from
+    // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
+    // [WDJ] Since 2002/9/7, FS spawn have a extra mapthing as spawnpoint
+    if (!mthing)
     {
         // Also fixes Nightmare respawn at (0,0) bug, as in Eternity Engine.
         x = mobj->x;
         y = mobj->y;
+        at_mobj_position = 1;
     }
     else
     {
         x = mthing->x << FRACBITS;
         y = mthing->y << FRACBITS;
+#if 1
+        // [WDJ] The above fix will not work when respawn have mthing
+        // Nightmare respawn at (0,0) bug fix, as in PrBoom, Eternity
+        if( EN_catch_respawn_0 && x==0 && y==0 )
+        {
+	    x = mobj->x;
+	    y = mobj->y;
+        }
+#endif
+        if(mthing->options & MTF_FS_SPAWNED)
+        {
+	    at_mobj_position = 2;
+	    z = mobj->z;  // FS spawn
+	}
     }
 
+    mobj->flags |= MF_SOLID;  // [WDJ] must be solid to check position (Boom bug)
     // somthing is occupying it's position?
     if (!P_CheckPosition(mobj, x, y))
         return; // no respwan
 
     // spawn a teleport fog at old spot
     // because of removal of the body?
-    if(mthing->options & MTF_FS_SPAWNED)
-        mo = P_SpawnMobj(mobj->x, mobj->y, mobj->z + (gamemode == heretic ? TELEFOGHEIGHT : 0), MT_TFOG);
-    else
-        mo = P_SpawnMobj(mobj->x, mobj->y, mobj->subsector->sector->floorheight + (gamemode == heretic ? TELEFOGHEIGHT : 0), MT_TFOG);
+    mo = P_SpawnMobj(mobj->x, mobj->y, z + (gamemode == heretic ? TELEFOGHEIGHT : 0), MT_TFOG);
     // initiate teleport sound
     S_StartSound(mo, sfx_telept);
 
@@ -1190,29 +1213,40 @@ void P_NightmareRespawn(mobj_t * mobj)
     // spawn it
     if (mobj->info->flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
-    else if(mthing->options & MTF_FS_SPAWNED)
-        z = mobj->z;
+    else if( at_mobj_position == 2 )
+        z = mobj->z;  // FS spawn
     else
         z = ONFLOORZ;
 
     // inherit attributes from deceased one
     mo = P_SpawnMobj(x, y, z, mobj->type);
-    mo->spawnpoint = mobj->spawnpoint;
-    if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
+    mo->spawnpoint = mthing;
+    // [WDJ] clean up mthing handling
+    if (mthing)
+    {
+        if (mthing->options & (MTF_FS_SPAWNED|MTF_EXTRA))
+	    mobj->spawnpoint = NULL;  // prevent free of extra mapthing
+        mthing->mobj = mo;  // [WDJ] replace ref to old monster (missing in PrBoom)
+    }
+
+    if ( at_mobj_position )
         mo->angle = mobj->angle;
     else
         mo->angle = wad_to_angle(mthing->angle);
 
-    if (!mthing)        // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
-        mo->flags |= mobj->flags & (MTF_AMBUSH ? MF_AMBUSH : 0);
+    // [WDJ] since 2002/9/7, even FS spawned mobj have loose mapthing
+    if ( at_mobj_position )
+//        mo->flags |= mobj->flags & (MTF_AMBUSH ? MF_AMBUSH : 0);
+        mo->flags |= mobj->flags & MF_AMBUSH;
     else if (mthing->options & MTF_AMBUSH)
         mo->flags |= MF_AMBUSH;
 
     mo->reactiontime = 18;
 
     // remove the old monster,
-    P_RemoveMobj(mobj);
+    P_RemoveMobj(mobj);  // does Z_Free
 }
+
 
 consvar_t cv_respawnmonsters = { "respawnmonsters", "0", CV_NETVAR, CV_OnOff };
 consvar_t cv_respawnmonsterstime = { "respawnmonsterstime", "12", CV_NETVAR, CV_Unsigned };
@@ -1239,8 +1273,6 @@ void P_MobjCheckWater(mobj_t * mobj)
     oldeflags = mobj->eflags;
 
     //SoM: 3/28/2000: Only use 280 water type of water. Some boom levels get messed up.
-//    if ((sector->modelsec > -1 && sector->model == SM_Legacy_water)
-//	|| (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
     if ((sector->model == SM_Legacy_water)
 	|| (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
     {
@@ -1376,7 +1408,7 @@ void P_MobjThinker(mobj_t * mobj)
 
         // FIXME: decent NOP/NULL/Nil function pointer please.
         if ((mobj->thinker.function.acv == (actionf_v) (-1)))
-            return;     // mobj was removed
+	    goto done;     // mobj was removed
     }
     if (mobj->flags2 & MF2_FLOATBOB)
     {   // Floating item bobbing motion
@@ -1454,7 +1486,7 @@ void P_MobjThinker(mobj_t * mobj)
 
         // FIXME: decent NOP/NULL/Nil function pointer please.
         if (mobj->thinker.function.acv == (actionf_v) (-1))
-            return;     // mobj was removed
+	    goto done;     // mobj was removed
     }
     else
         mobj->eflags &= ~MF_JUSTHITFLOOR;
@@ -1475,31 +1507,33 @@ void P_MobjThinker(mobj_t * mobj)
         // you can cycle through multiple states in a tic
         if (!mobj->tics)
             if (!P_SetMobjState(mobj, mobj->state->nextstate))
-                return; // freed itself
+	       goto done; // freed itself
     }
     else
     {
         // check for nightmare respawn
         if (!cv_respawnmonsters.value)
-            return;
+            goto done;
 
         if (!(mobj->flags & MF_COUNTKILL))
-            return;
+            goto done;
 
         mobj->movecount++;
 
         if (mobj->movecount < cv_respawnmonsterstime.value * TICRATE)
-            return;
+            goto done;
 
         if (leveltime % (32 * NEWTICRATERATIO))
-            return;
+            goto done;
 
         if (P_Random() > 4)
-            return;
+            goto done;
 
         P_NightmareRespawn(mobj);
     }
 
+done:
+    return;
 }
 
 void P_MobjNullThinker(mobj_t * mobj)
@@ -1509,6 +1543,7 @@ void P_MobjNullThinker(mobj_t * mobj)
 //
 // P_SpawnMobj
 //
+// Does not set mapthing
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 {
     mobj_t *mobj;
@@ -1622,6 +1657,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->z = z;
     }
 
+    // [WDJ] Where does mobj get spawnpoint set ???
     if (mobj->spawnpoint)
     {
         if ((mobj->spawnpoint->options >> 7) != 0 && !mobj->spawnpoint->z)
@@ -1665,15 +1701,27 @@ int iquetail;
 
 void P_RemoveMobj(mobj_t * mobj)
 {
-    if ((mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED) && (mobj->type != MT_INV) && (mobj->type != MT_INS))
+    // Do not respawn: missiles, fire, cube monsters
+    // Respawn: weapons, ammo, health, armor, powerups
+    if ( mobj->spawnpoint  // [WDJ] no more respawn without mapthing
+	&& (mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED)
+	&& (mobj->type != MT_INV) && (mobj->type != MT_INS) )
     {
-        itemrespawnque[iquehead] = mobj->spawnpoint;
+        // Respawn
+        itemrespawnque[iquehead] = mobj->spawnpoint;  // mapthing or Extra_MapThing
         itemrespawntime[iquehead] = leveltime;
         iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
 
         // lose one off the end?
         if (iquehead == iquetail)
             iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
+    }
+    else if ( mobj->spawnpoint
+	      && mobj->spawnpoint->options & (MTF_FS_SPAWNED|MTF_EXTRA))
+    {
+        // extra mapthing
+	P_Free_Extra_Mapthing( mobj->spawnpoint );
+        mobj->spawnpoint = NULL;
     }
 
     // unlink from sector and block lists
@@ -1690,7 +1738,7 @@ void P_RemoveMobj(mobj_t * mobj)
     S_StopSound(mobj);
 
     // free block
-    P_RemoveThinker((thinker_t *) mobj);
+    P_RemoveThinker((thinker_t *) mobj);   // does Z_Free() mobj
 }
 
 consvar_t cv_itemrespawntime = { "respawnitemtime", "30", CV_NETVAR, CV_Unsigned };
@@ -1701,10 +1749,7 @@ consvar_t cv_itemrespawn = { "respawnitem", "0", CV_NETVAR, CV_OnOff };
 //
 void P_RespawnSpecials(void)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-
+    fixed_t x, y, z;
     mobj_t *mo;
     mapthing_t *mthing;
 
@@ -1725,9 +1770,10 @@ void P_RespawnSpecials(void)
 
     mthing = itemrespawnque[iquetail];
 
-    if (!mthing)        // Hurdler: grrrr, very ugly hack that need to be fixed!!!
+    if (!mthing)
     {
-        CONS_Printf("Warning: couldn't respawn a thing. This is a known bug with FS and saved games.\n");
+        // [WDJ] No NULL in itemrespawnque, should no longer happen
+        CONS_Printf("Warning: NULL respawn ptr.\n");
         // pull it from the que
         iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
         return;
@@ -1739,11 +1785,18 @@ void P_RespawnSpecials(void)
     // spawn a teleport fog at the new spot
     if (gamemode != heretic)
     {
-        subsector_t *ss = R_PointInSubsector(x, y);
-		if(mthing->options & MTF_FS_SPAWNED)
-			mo = P_SpawnMobj(x, y, mthing->z << FRACBITS, MT_IFOG);
-		else
-			mo = P_SpawnMobj(x, y, ss->sector->floorheight, MT_IFOG);
+        if (mthing->options & MTF_FS_SPAWNED)
+        {
+	    z = mthing->z << FRACBITS;
+	}
+        else
+        {
+	    // [WDJ] at floor height, even when mobj spawns on the ceiling.
+	    // Actual height is too difficult and too late (like other ports).
+	    subsector_t * ss = R_PointInSubsector(x, y);
+	    z = ss->sector->floorheight;
+	}
+        mo = P_SpawnMobj(x, y, z, MT_IFOG);  // teleport fog
         S_StartSound(mo, sfx_itmbk);
     }
 
@@ -1755,13 +1808,14 @@ void P_RespawnSpecials(void)
     // spawn it
     if (mobjinfo[i].flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
-	else if(mthing->options & MTF_FS_SPAWNED)
-		z = mthing->z << FRACBITS;	//DarkWolf95:This still wasn't fixed?! Keep Z for FS stuff.
+    else if(mthing->options & MTF_FS_SPAWNED)
+	z = mthing->z << FRACBITS;	//DarkWolf95:This still wasn't fixed?! Keep Z for FS stuff.
     else
         z = ONFLOORZ;
 
     mo = P_SpawnMobj(x, y, z, i);
     mo->spawnpoint = mthing;
+    mthing->mobj = mo;  // [WDJ] replace ref to old mobj (missing in PrBoom)
     mo->angle = wad_to_angle(mthing->angle);
 
     if (gamemode == heretic)
@@ -1845,6 +1899,7 @@ void P_RespawnWeapons(void)
 
         mo = P_SpawnMobj(x, y, z, i);
         mo->spawnpoint = mthing;
+        mthing->mobj = mo;  // [WDJ] replace ref to old mobj (missing in PrBoom)
         mo->angle = wad_to_angle(mthing->angle);
         // here don't increment freeslot
     }
@@ -2022,20 +2077,18 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 }
 
 //
-// P_SpawnMapThing
+// P_SpawnMapthing
 // The fields of the mapthing should
 // already be in host byte order.
 //
 
 
-void P_SpawnMapThing (mapthing_t* mthing)
+void P_SpawnMapthing (mapthing_t* mthing)
 {
     int i;
     int bit;
     mobj_t *mobj;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
+    fixed_t x, y, z;
 
     if (!mthing->type)
         return; //SoM: 4/7/2000: Ignore type-0 things as NOPs
@@ -2132,7 +2185,7 @@ void P_SpawnMapThing (mapthing_t* mthing)
 
     if (i == NUMMOBJTYPES)
     {
-        CONS_Printf("\2P_SpawnMapThing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
+        CONS_Printf("\2P_SpawnMapthing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
         return;
     }
 
@@ -2799,3 +2852,124 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     else
         return slope ? th : NULL;
 }
+
+
+// [WDJ] Extra mapthing for FS
+#define EXTRA_MAPTHING_INC  64
+typedef struct extra_mapthing_s {
+    struct extra_mapthing_s *  link;  // to next allocation
+    mapthing_t   mt_array[ EXTRA_MAPTHING_INC ];
+} extra_mapthing_t;
+
+static extra_mapthing_t * extra_mapthing_chunk = NULL;  // Z_Malloc
+static mapthing_t * free_mapthing = NULL;
+
+void P_Free_Extra_Mapthing( mapthing_t * mthing )
+{
+    mthing->options = 0;
+    mthing->mobj = (mobj_t*) free_mapthing;  // link into free
+    free_mapthing = mthing;
+}
+
+// Create an extra mapthing for FS spawn
+mapthing_t * P_Get_Extra_Mapthing( uint16_t flags )
+{
+    int i;
+    mapthing_t * mthing;
+
+    if ( ! free_mapthing )
+    {
+        // allocate some mapthings as a chunk
+        extra_mapthing_t * mapthing_chunk =
+	    Z_Malloc( sizeof(extra_mapthing_t), PU_LEVEL, NULL);
+        memset( mapthing_chunk, 0, sizeof(extra_mapthing_t) );  // zeroed
+        mapthing_chunk->link = extra_mapthing_chunk;  // link
+        extra_mapthing_chunk = mapthing_chunk;
+        for( i=EXTRA_MAPTHING_INC-1; i>=0; i-- )
+        {
+	    P_Free_Extra_Mapthing( &mapthing_chunk->mt_array[i] );
+        }
+    }
+    // get free mapthing
+    mthing = free_mapthing;
+    free_mapthing = (mapthing_t*) free_mapthing->mobj;  // unlink, reuse mobj field
+
+    mthing->options = flags | MTF_EXTRA;  // in use
+    return mthing;
+}
+
+void P_Clear_Extra_Mapthing( void )
+{
+    // All marked PU_LEVEL will be freed together, probably before this call.
+    extra_mapthing_chunk = NULL;
+    free_mapthing = NULL;
+}
+
+// Returns an index number for a mapthing, first index is 1
+// Returns 0 if not found
+unsigned int P_Extra_Mapthing_Index( mapthing_t * mtp )
+{
+    unsigned int index = 1;
+    extra_mapthing_t * chunk = extra_mapthing_chunk;
+
+    if (mtp==NULL)  goto not_found;
+    if (chunk == NULL)  goto not_found;
+    // find chunk that contains mthing
+    while( ((mtp < &chunk->mt_array[0])
+	    || (mtp > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
+    {
+       chunk = chunk->link;
+       if (chunk == NULL)  goto not_found;
+       index += EXTRA_MAPTHING_INC;
+    }
+    return index + (mtp - &chunk->mt_array[0]);
+
+ not_found:
+    return 0;  // not found
+}
+
+
+// Traverse all Extra Mapthing that are in use
+mapthing_t * P_Traverse_Extra_Mapthing( mapthing_t * prev )
+{
+    extra_mapthing_t * chunk = extra_mapthing_chunk;
+    mapthing_t * mtp = prev;
+    uint16_t  option_flags = 0;
+
+    if (chunk == NULL)  goto done;
+    if (prev == NULL)
+    {
+        mtp = &chunk->mt_array[0];  // first entry
+        option_flags = mtp->options;
+    }
+    else
+    {
+        // find chunk that contains mthing
+        while( ((prev < &chunk->mt_array[0])
+		|| (prev > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
+        {
+	    chunk = chunk->link;
+	    if (chunk == NULL)  goto done;
+	}
+    }
+    while( option_flags == 0 )   // skip unused
+    {
+        // advance to next mthing
+        if( mtp < &chunk->mt_array[EXTRA_MAPTHING_INC-1] )
+        {
+	    mtp ++;
+	}
+        else
+        {
+            // next chunk
+	    chunk = chunk->link;  // advance chunk
+	    if (chunk == NULL)  goto done;
+	    mtp = &chunk->mt_array[0];  // first entry
+	}
+        option_flags = mtp->options;
+    }
+    return mtp;
+ done:
+    return NULL;
+}
+

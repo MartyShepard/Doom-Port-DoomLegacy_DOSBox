@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: p_mobj.h 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -58,14 +58,6 @@
 #ifndef __P_MOBJ__
 #define __P_MOBJ__
 
-
-// Basics.
-#include "tables.h"
-#include "m_fixed.h"
-
-// We need the thinker_t stuff.
-#include "d_think.h"
-
 // We need the WAD data structure for Map things,
 // from the THINGS lump.
 #include "doomdata.h"
@@ -74,6 +66,13 @@
 //  tied to animation frames.
 // Needs precompiled tables/data structures.
 #include "info.h"
+
+// Basics.
+#include "tables.h"
+#include "m_fixed.h"
+
+// We need the thinker_t stuff.
+#include "d_think.h"
 
 
 
@@ -426,10 +425,23 @@ typedef struct mobj_s
 // check mobj against water content, before movement code
 void P_MobjCheckWater (mobj_t* mobj);
 
-void P_SpawnMapThing (mapthing_t*    mthing);
+void P_SpawnMapthing (mapthing_t*  mthing);
 // [WJD] spawn as playernum
 void P_SpawnPlayer(mapthing_t * mthing, int playernum );
 
 int P_HitFloor(mobj_t *thing);
+
+
+// Extra Mapthing
+mapthing_t * P_Get_Extra_Mapthing( uint16_t flags );
+void P_Free_Extra_Mapthing( mapthing_t * mthing );
+void P_Clear_Extra_Mapthing( void );
+
+// Returns an index number for a mapthing, first index is 1
+// Returns 0 if not found
+unsigned int P_Extra_Mapthing_Index( mapthing_t * mtp );
+
+// Traverse all Extra Mapthing that are in use
+mapthing_t * P_Traverse_Extra_Mapthing( mapthing_t * prev );
 
 #endif

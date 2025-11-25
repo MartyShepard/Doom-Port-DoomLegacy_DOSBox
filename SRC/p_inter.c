@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 889 2011-12-21 21:56:19Z wesleyjohnson $
+// $Id: p_inter.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1894,9 +1894,9 @@ void P_KillMobj ( mobj_t*       target,
     }
     else
     {
-		//DarkWolf95: Support for Chex Quest
-		if(gamemode == chexquest1)  //don't drop monster ammo in chex quest
-			return;
+        //DarkWolf95: Support for Chex Quest
+        if(gamemode == chexquest1)  //don't drop monster ammo in chex quest
+	   return;
 
         switch (target->type)
         {

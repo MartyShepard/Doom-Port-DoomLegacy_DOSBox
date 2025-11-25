@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 989 2012-12-04 04:27:46Z wesleyjohnson $
+// $Id: t_func.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -1217,6 +1217,7 @@ void SF_Player(void)
 // Spawn( type, x, y, {angle}, {z} )
 void SF_Spawn(void)
 {
+    mapthing_t * mthing;
     int x, y, z, objtype;
     angle_t angle = 0;
 
@@ -1245,17 +1246,24 @@ void SF_Spawn(void)
     t_return.value.mobj = P_SpawnMobj(x, y, z, objtype);
     t_return.value.mobj->angle = angle;
 
-    {   //Hurdler: fix the crashing bug of respawning monster
-        mapthing_t *mthing;
-        mthing = Z_Malloc(sizeof(mapthing_t), PU_LEVEL, NULL);
-        mthing->x = x >> FRACBITS;
-        mthing->y = y >> FRACBITS;
-        mthing->z = z >> FRACBITS;
-        mthing->angle = angle >> FRACBITS;
-        mthing->type = mobjinfo[objtype].doomednum;     //objtype;
-        mthing->options = MTF_FS_SPAWNED;
-        mthing->mobj = t_return.value.mobj;
+    // [WDJ] Only MF_SPECIAL things can respawn, and MF_COUNTKILL can nightmare
+    // respawn, so only they need a spawnpoint.
+    if (t_return.value.mobj->flags & (MF_SPECIAL|MF_COUNTKILL))
+    {
+        // create a unique mapthing for this spawn
+        mthing = P_Get_Extra_Mapthing( MTF_FS_SPAWNED );  // [WDJ]
         t_return.value.mobj->spawnpoint = mthing;
+        if (mthing)
+        {
+	    //Hurdler: fix the crashing bug of respawning monster
+	    // 2002/9/7
+	    mthing->x = x >> FRACBITS;
+	    mthing->y = y >> FRACBITS;
+	    mthing->z = z >> FRACBITS;
+	    mthing->angle = angle >> FRACBITS;
+	    mthing->type = mobjinfo[objtype].doomednum;  // objtype;
+	    mthing->mobj = t_return.value.mobj;
+	}
     }
 done:
     return;
@@ -2043,8 +2051,8 @@ err_numarg:
 
 
 //checks to see if a Map Thing Number exists; used to avoid script errors
-// MapThingNumExist( thingnum )
-void SF_MapThingNumExist(void)
+// MapthingNumExist( thingnum )
+void SF_MapthingNumExist(void)
 {
     int intval;
 
@@ -2065,12 +2073,12 @@ done:
     return;
 
 err_numarg:
-    wrong_num_arg("MapThingNumExist", 1);
+    wrong_num_arg("MapthingNumExist", 1);
     goto done;
 }
 
-// MapThings()
-void SF_MapThings(void)
+// Mapthings()
+void SF_Mapthings(void)
 {
     t_return.type = FSVT_int;
     t_return.value.i = nummapthings;
@@ -4405,9 +4413,9 @@ void init_functions(void)
     new_function("objmomy", SF_MobjMomy);
     new_function("objmomz", SF_MobjMomz);
     new_function("spawnmissile", SF_SpawnMissile);
-    new_function("mapthings", SF_MapThings);
+    new_function("mapthings", SF_Mapthings);
     new_function("objtype", SF_ObjType);
-    new_function("mapthingnumexist", SF_MapThingNumExist);
+    new_function("mapthingnumexist", SF_MapthingNumExist);
     new_function("objstate", SF_ObjState);
     new_function("resurrect", SF_Resurrect);
     new_function("lineattack", SF_LineAttack);

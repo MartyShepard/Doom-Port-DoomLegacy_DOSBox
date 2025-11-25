@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_tick.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -134,7 +134,7 @@ void P_RunThinkers (void)
             currentthinker->prev->next = currentthinker->next;
             removeit = currentthinker;
             currentthinker = currentthinker->next;
-            Z_Free (removeit);
+            Z_Free (removeit);  // mobj, etc.
         }
         else
         {

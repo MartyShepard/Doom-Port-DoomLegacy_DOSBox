@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 922 2012-06-07 23:59:45Z wesleyjohnson $
+// $Id: p_enemy.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -2747,6 +2747,7 @@ void A_SpawnFly (mobj_t* mo)
     newmobj     = P_SpawnMobj (targ->x, targ->y, targ->z, type);
     if (P_LookForPlayers (newmobj, true) )
         P_SetMobjState (newmobj, newmobj->info->seestate);
+    // cube monsters have no mapthing (spawnpoint=NULL), do not respawn
 
     // telefrag anything in this spot
     P_TeleportMove (newmobj, newmobj->x, newmobj->y);

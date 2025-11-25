@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_items.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: d_items.h 1026 2013-08-04 03:43:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,21 +63,29 @@
 // Difficulty/skill settings/filters.
 // ==================================
 
+// MTF_ are flags in mthing->options  (16 bit field)
+typedef enum
+{
+// As defined by Doom and Boom specs.
 // Skill flags.
-#define MTF_EASY                1
-#define MTF_NORMAL              2
-#define MTF_HARD                4
+  MTF_EASY        = 0x0001,
+  MTF_NORMAL      = 0x0002,
+  MTF_HARD        = 0x0004,
 
 // Deaf monsters/do not react to sound.
-#define MTF_AMBUSH              8
+  MTF_AMBUSH      = 0x0008,
 
 // 24/5/04: Exl: werent defined before
-#define MTF_MPSPAWN            16		// Spawn in multiplayer
-#define MTF_NODM               32		// Do not spawn in deathmatch mode
-#define MTF_NOCOOP             64		// Do not spawn in coop mode
+  MTF_MPSPAWN     = 0x0010,  // Spawn in multiplayer
+  MTF_NODM        = 0x0020,  // Do not spawn in deathmatch mode
+  MTF_NOCOOP      = 0x0040,  // Do not spawn in coop mode
 
+// DoomLegacy additions
 //Hurdler: special option to tell the things has been spawned by an FS
-#define MTF_FS_SPAWNED    0x1000
+  MTF_FS_SPAWNED  = 0x1000,  // fragglescript spawned
+  MTF_EXTRA       = 0x8000   // extra mapthing
+} mapthing_options_e;
+
 
 // heretic stuff
 #define AMMO_GWND_WIMPY 10
