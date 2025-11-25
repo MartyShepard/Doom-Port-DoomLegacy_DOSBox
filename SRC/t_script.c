@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 951 2012-07-06 21:17:03Z wesleyjohnson $
+// $Id: t_script.c 1024 2013-08-04 03:39:08Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -778,6 +778,10 @@ void T_AddCommands( void )
   COM_AddCommand("fs_dumpscript",  COM_T_DumpScript_f);
   COM_AddCommand("fs_runscript",   COM_T_RunScript_f);
   COM_AddCommand("fs_running",     COM_T_Running_f);
+  // for old wads with bind keys (like Chex newmaps)
+  COM_AddCommand("t_runscript",   COM_T_RunScript_f);
+  COM_AddCommand("t_running",     COM_T_Running_f);
+//  COM_AddCommand("t_dumpscript",  COM_T_DumpScript_f);
 #endif
 }
 

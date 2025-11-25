@@ -3214,3 +3214,10 @@ now controls the attributes for a series of draw calls.
 Added V_DRAWCENTER, to center the splash screen, finale, and menu
 screens in the monitor window.
 
+*** W91_bindfraggle
+patchfile = w91_6_bindfraggle.patch
+- committed revision 1024   by wesley johnson
+Previously I had changed the command t_runscript to fs_runscript, but
+now find that chex newmaps binds the t_runscript command to the z key.
+Restore previous t_runscript and t_running commands for this purpose.
+Chex newmaps scope works again.
