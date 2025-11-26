@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_user.c 1049 2013-09-22 21:03:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -150,6 +150,8 @@ void P_ThrustSpirit(player_t *player, angle_t angle, fixed_t move)
 #endif
 
 
+static fixed_t  prev_viewheight = -1;  // detect changes in cv_viewheight
+
 //
 // P_CalcHeight
 // Calculate the walking / running height adjustment
@@ -161,7 +163,7 @@ void P_CalcHeight (player_t* player)
 {
     int         angle;
     fixed_t     bob;
-    fixed_t     viewheight;
+    fixed_t     viewheight, on_floor_viewheight;
     mobj_t      * pmo = player->mo;
     mobj_t      * smo = pmo;  // spirit (same as pmo unless using CLIENTPREDICTION2)
 
@@ -211,23 +213,51 @@ void P_CalcHeight (player_t* player)
     // move viewheight
     viewheight = cv_viewheight.value << FRACBITS; // default eye view height
 
+    // The original was designed for a constant viewheight.
+    // Some users want to vary it during play using fragglescript.
     if (player->playerstate == PST_LIVE)
     {
+        on_floor_viewheight = viewheight;
+
+        if (viewheight != prev_viewheight)
+        {
+	    // cv_viewheight has changed
+	    if ( prev_viewheight < 0 )
+	    {
+	        player->viewheight = viewheight;  // init quickly
+	    }
+	    else
+	    {
+	        // provide a gradual viewheight change
+	        fixed_t dv = (viewheight - prev_viewheight) >> 3;
+	        // when dv == 0, let through unaltered viewheight,
+		// otherwise altered viewheight keeps retriggering this code
+		if (dv)
+		   viewheight = prev_viewheight + dv;  // slow rise and fall
+	        on_floor_viewheight = prev_viewheight;  // lessen falling effect
+	        player->deltaviewheight = (viewheight - player->viewheight) >> 3;
+	    }
+	    prev_viewheight = viewheight;
+	}
+
         player->viewheight += player->deltaviewheight;
 
-        if (player->viewheight > viewheight)
+        if (player->viewheight > on_floor_viewheight)
         {
+	    // player feet not on floor, so fall to viewheight
             player->viewheight = viewheight;
             player->deltaviewheight = 0;
         }
 
         if (player->viewheight < viewheight/2)
         {
+	    // rise from floor
             player->viewheight = viewheight/2;
             if (player->deltaviewheight <= 0)
                 player->deltaviewheight = 1;
         }
 
+        // changers of viewheight will have also set deltaviewheight
         if (player->deltaviewheight)
         {
             player->deltaviewheight += FRACUNIT/4;

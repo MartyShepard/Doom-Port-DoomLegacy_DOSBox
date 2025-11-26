@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01049 ]: w93 viewheight
+[01048 ]: w93 docs
 [01047 ]: w93 execute script
 [01046 ]: w93 screendeg
 [01045 ]: w93 screendeg

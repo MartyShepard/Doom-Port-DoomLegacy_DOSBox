@@ -1561,7 +1561,7 @@ menuitem_t OptionsMenu[]=
     {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
-    {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
+    {IT_SUBMENU | IT_WHITESTRING,0,"Mouse/Joy Options..." ,&MouseOptionsDef   ,0},
     {IT_CALL    | IT_WHITESTRING,0,"Setup Controls...",M_SetupControlsMenu,0}
 };
 
@@ -1733,7 +1733,7 @@ menuitem_t MouseOptionsMenu[]=
 menu_t  MouseOptionsDef =
 {
     "M_OPTTTL",
-    "Mouse & Joystick Options",
+    "Mouse Options",
     sizeof(MouseOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     MouseOptionsMenu,

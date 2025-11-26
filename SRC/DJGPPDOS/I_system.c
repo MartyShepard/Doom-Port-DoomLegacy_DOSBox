@@ -204,7 +204,7 @@ void M_InitJoystick (int jvalue)
 	  /*
 		TODO: die Joystick über das Menü Konfiguieren
 		*/
-		CONS_Printf("\2Joystick (%d) activated\n\n",jvalue);
+		CONS_Printf("Joystick (%d) activated\n",jvalue);
 }
 void I_InitJoystick (void)
 {

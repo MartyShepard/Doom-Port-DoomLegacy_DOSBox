@@ -320,12 +320,13 @@
 </p>
 <p>
   The mouse and joystick sensitivities can be set
-  using the console variables!!!
+  using the console variables, and there is some menu support.
 </p>
   
 
 <h3>Setting up the sound</h3>
-The binary downloads of DoomLegacy use SDL sound.  The other options require downloading source code and compiling
+The binary downloads of DoomLegacy use SDL sound.
+The other options require downloading source code and compiling
 with your own selection of compile options.
 <ul>
 <li>SDL
@@ -340,24 +341,26 @@ with your own selection of compile options.
   using files instead, but this requires recompiling Legacy, allowing it
   to detect the SDL_mixer version.
 <p>
-  SDL_mixer is a separate download and installation, and the latest is version 1.2.11.
-
+  SDL_mixer is a separate download and installation, and the latest is
+  version 1.2.11.
 </p>
 </li>
 
 <li>WINDOWS
 <p>
   In the Windows native version the sound is autodetected using DirectX so make sure your card works
-  well with DirectX and it legacy will use it.
+  well with DirectX and then legacy will use it.
 <p>
-  Additionally the Legacy could utilize the hardware 3D sound
+  Additionallym Legacy could utilize hardware 3D sound
   for making more realistic sound environment.
 <p>
   Specify -ds3d command line parameter to use generic 3D sound driver
   (DirectSound 3D). This driver are suitable for most 3D sound chips.
 <p>
-  Some of this support requires that FMOD be installed.
-  Some parts of -digmusic support may be currently broken.
+  FMOD is an alternative sound library.  To use FMOD, must compile with
+  the FMOD library and FMOD configuration selected.
+  FMOD support was incompletely developed, so compilation has not been
+  sucessfull. FMOD compilation is disabled by default.
 </p>
 </li>
 
@@ -532,7 +535,7 @@ gamma index : GAMMA value
   don't use it and do their best to aim up and down...
   NEW since Legacy v1.2: with allowautoaim you can
   disable autoaiming, that is, impose manual aim to all players
-  in a network game, use with caution!!
+  in a network game.  Use with caution as you may offend!!
 </p>
 
 <h3>Weapon changes</h3>
@@ -597,14 +600,17 @@ gamma index : GAMMA value
   It does have coronas, explosion light, and other light effects that the software
   renderer does not do.
 <p>
-  Some wads rely upon violating wad rules to get trick effects.  These rely upon tricking the software renderer into not drawing something.
-  Using those wads with the OpenGL renderer you will see holes in the floor and ceiling, and warning messges
-  about polygons.
+  Some wads rely upon violating wad rules to get trick effects.
+  These rely upon tricking the software renderer into not drawing something.
+  Using those wads with the OpenGL renderer you will see holes in the floor
+  and ceiling, and warning messges about polygons.
 <p>
   OpenGL relies upon having video card hardware acceleration.
   This requires that your video card drivers support OpenGL operations.
-  Without OpenGL hardware acceleration, SDL will emulate the OpenGL operations using software run on your CPU, which is very very slow.
-  How well a video card works with OpenGL is dependent upon the drivers.  It is SDL that interfaces with the video card drivers.
+  Without OpenGL hardware acceleration, SDL will emulate the OpenGL operations
+  using software run on your CPU, which is very very slow.
+  How well a video card works with OpenGL is dependent upon the drivers.
+  It is SDL that interfaces with the video card drivers.
 <p>
   Video cards have different levels of hardware acceleration, and rendering speed.
   Activate only as many fancy rendering options as your video card can draw fast.
@@ -661,9 +667,6 @@ See <a href="console.html">here</a> for more about the console.
     Examples are 'allowjump', 'respawnitemtime', 'deathmatch', ...
   </li>
 </ul>
-<p>
-  NOTE that there is no 'dedicated' server for now.
-</p>
 
 
 <h3>Setting up a network game</h3>
@@ -824,7 +827,7 @@ FIXME video mode lists, window caption, cv_fullscreen..
 <tr><th>option</th><th>description</th></tr>
 
 <tr><td class="note" colspan="2">
-General options
+Config options
 </td></tr>
 
 <tr>
@@ -833,47 +836,6 @@ General options
 They will be executed right after the configfile, but before autoexec.cfg.</td>
 </tr>
 
-<tr>
-<td>-iwad &lt;filename&gt;</td>
-<td>Set the main IWAD file to use. This determines the game mode.</td>
-</tr>
-
-<tr>
-<td id="file">-file &lt;filename1&gt; [&lt;filename2&gt;...]</td>
-<td>Load one or more additional PWAD or DeHackEd files, possibly
-  replacing some of the IWAD data.
-</td>
-</tr>
-
-<tr>
-  <td>-game &lt;game-name&gt;</td>
-<td>
-  Forces a particular game mode to be used. This replaces renaming
-  the wad file. If an IWAD is not explicitly given, the appropriate
-  IWAD will be automatically loaded.
-
-  The valid game-name at this time are:
-<table class="def">
-<tr><th>game-name</th><th>mode</th></tr>
-<tr><td>doom, doommode</td><td>Doom1</td></tr>
-<tr><td>freedu, doomu, ultimode</td><td>Ultimate Doom</td></tr>
-<tr><td>freedoom, freedm, doom2, plutonia, tnt</td><td>Doom2</td></tr>
-<tr><td>blasphem, heretic, heremode</td><td>Heretic</td></tr>
-<tr><td>heretic1</td><td>Heretic shareware</td></tr>
-<tr><td>chex1</td><td>Chexquest</td></tr>
-
-<tr><td class="note" colspan="2">
-The following are valid game-names, but the mode is not supported yet.
-</td></tr>
-<tr><td>hexen, hexemode</td><td>Hexen</td></tr>
-<tr><td>hexen1</td><td>Hexen demo</td></tr>
-<tr><td>strife</td><td>Strife</td></tr>
-<tr><td>strife0</td><td>Strife demo</td></tr>
-</table>
-  Savegames are now marked with the game name, and will not load
-  with a different game name.
-</td>
-</tr>
 
 <tr>
 <td>-home &lt;dirname&gt;</td>
@@ -915,25 +877,83 @@ savegames are kept.</td>
 </tr>
 
 <tr>
-<td>-opengl</td>
-<td>Start the game in OpenGL mode. Default: use the software renderer.</td>
-</tr>
-
-<tr>
-<td>-devparm</td>
-<td>Development/debugging mode. Prints out some extra information
-  mainly useful for developers, does not grab the mouse.</td>
-</tr>
-
-<tr>
-  <td>-devgame &lt;game-name&gt;</td>
-<td>Development mode using devparm for the specified game, in the same format as -game.
-User can include development files from working directories using -file.</td>
-</tr>
-
-<tr>
 <td>-noversioncheck</td>
 <td>Do not check that legacy.wad version matches the executable version.</td>
+</tr>
+
+<tr>
+<td>-cdrom</td>
+<td>Execute from CDROM.  Overrides DOOMWADDIR, and the legacy home
+directory settings.</td>
+</tr>
+
+<tr>
+<td>-lang &lt;name&gt;</td>
+<td>Load the BEX language file name.  If the name is not specified, then
+the file "lang" will be tried.  The language file uses BEX to change
+some game text.  An example french.bex is available.
+</td>
+</tr>
+
+<tr><td class="note" colspan="2">
+Game options
+</td></tr>
+
+<tr>
+  <td>-game &lt;game-name&gt;</td>
+<td>
+  Forces a particular game mode to be used. This replaces renaming
+  the wad file. If an IWAD is not explicitly given, the appropriate
+  IWAD will be automatically loaded.
+
+  The valid game-name at this time are:
+<table class="def">
+<tr><th>game-name</th><th>mode</th></tr>
+<tr><td>doom, doommode</td><td>Doom1</td></tr>
+<tr><td>freedu, doomu, ultimode</td><td>Ultimate Doom</td></tr>
+<tr><td>freedoom, freedm, doom2, plutonia, tnt</td><td>Doom2</td></tr>
+<tr><td>blasphem, heretic, heremode</td><td>Heretic</td></tr>
+<tr><td>heretic1</td><td>Heretic shareware</td></tr>
+<tr><td>chex1</td><td>Chexquest</td></tr>
+
+<tr><td class="note" colspan="2">
+The following are valid game-names, but the mode is not supported yet.
+</td></tr>
+<tr><td>hexen, hexemode</td><td>Hexen</td></tr>
+<tr><td>hexen1</td><td>Hexen demo</td></tr>
+<tr><td>strife</td><td>Strife</td></tr>
+<tr><td>strife0</td><td>Strife demo</td></tr>
+</table>
+  Savegames are now marked with the game name, and will not load
+  with a different game name.
+</td>
+</tr>
+
+
+<tr>
+<td>-iwad &lt;filename&gt;</td>
+<td>Set the main IWAD file to use. This also determines the game mode when
+-game is not used.</td>
+</tr>
+
+<tr>
+<td id="file">-file &lt;filename1&gt; [&lt;filename2&gt;...]</td>
+<td>Load one or more additional PWAD or DeHackEd files, possibly
+  replacing some of the IWAD data.
+</td>
+</tr>
+
+<tr>
+<td id="file">-deh &lt;filename1&gt; [&lt;filename2&gt;...]</td>
+<td>Load one or more DEH (DeHackEd) files or BEX files, which can change
+  monster abilities and game text.  Also accepts -dehacked.
+</td>
+</tr>
+
+<tr>
+<td>-loadgame &lt;num&gt;</td>
+<td>Load savegame by number.  This can only access the main savegame directory.
+Other command line options must set up the correct game and files.</td>
 </tr>
 
 <tr>
@@ -946,8 +966,71 @@ User can include development files from working directories using -file.</td>
 <td>Select the episode, start game immediately.</td>
 </tr>
 
+<tr>
+<td>-warp &lt;number&gt; [&lt;number&gt;]</td>
+<td>Select the map, start game immediately.  In DoomII, -warp 13 will
+goto map13.
+In Ultimate Doom, -warp 1 3 will goto Episode 1, level 3.</td>
+</tr>
+
+<tr>
+<td>-nomonsters</td>
+<td>No monsters in the game started from the command line.
+Does not affect games started from the menus.</td>
+</tr>
+
+<tr>
+<td>-respawn</td>
+<td>Respawn monsters when they are killed, in the game started from the command line.
+Does not affect games started from the menus.</td>
+</tr>
+
+<tr>
+<td>-coopmonsters</td>
+<td>Monsters cooperate in the game started from the command line.
+Does not affect games started from the menus.  Monsters do not damage
+each other.  Conflict with monster infight.</td>
+</tr>
+
+<tr>
+<td>-infight</td>
+<td>Monsters fight each other in the game started from the command line.
+Does not affect games started from the menus.  Monsters do not damage
+each other.  Conflict with coopmonsters.</td>
+</tr>
+
+<tr>
+<td>-fast</td>
+<td>Monsters move faster and shoot quicker in the game started by
+Warp or Episode.
+Does not affect games started from the menus.
+</td>
+</tr>
+
+<tr>
+<td>-predicting</td>
+<td>Monsters aim at moving players better in the game started by
+Warp or Episode.
+Does not affect games started from the menus.
+</td>
+</tr>
+
+<tr>
+<td>-turbo &lt;10-255&gt;</td>
+<td>Altered player speed in percent (slower or faster).  Add or
+decrease difficulty, or compensate for system controls.</td>
+</tr>
+
+<tr>
+<td>-noresetplayers</td>
+<td>Do not reset players, same as the transition to the next map.
+This keeps the existing player stats.
+</td>
+</tr>
+
+
 <tr><td class="note" colspan="2">
-Video, sound and music
+Video options
 </td></tr>
 
 <tr>
@@ -963,23 +1046,232 @@ Video, sound and music
 </tr>
 
 <tr>
+<td>-highcolor</td>
+<td>Request a 15 bpp or 16 bpp video mode.  If that fails, it will try 8
+bpp modes.</td>
+</tr>
+
+<tr>
+<td>-truecolor</td>
+<td>Request a 24 bpp or 32 bpp video mode.  If that fails, it will try 8
+bpp modes.</td>
+</tr>
+
+<tr>
+<td>-native</td>
+<td>Request use of a native bpp video mode, based on what video
+mode is being used when the program starts.  If that fails, it will try
+8 bpp modes.  On most modern systems, native is 32 bpp.</td>
+</tr>
+
+<tr>
+<td>-bpp &lt;number&gt;</td>
+<td>Select video mode bpp (8,15,16,24,32) explicitly.  If that fails,
+the program will exit.</td>
+</tr>
+
+<tr>
+<td>-win</td>
+<td>Only allow windows video modes, ignoring DirectDraw video modes.
+For WIN32 port.</td>
+</tr>
+
+<tr>
+<td>-opengl</td>
+<td>Hardware accelerated rendering using the OpenGL library.
+Will use hardware acceleration for OpenGL if available.
+If the video card does not have OpenGL hardware acceleration then it will
+use the OpenGL emulation in software, which is very slow.
+OpenGL is the most actively supported hardware acceleration.
+For SDL, Linux-X11-XSHM, MACOS, and WIN32 ports.
+MiniGL is a subset library of the OpenGL standard for WIN32 and will use the
+minigl.dll instead.
+Requires compiling with the OpenGL library and configuration.
+Default: use the software renderer.
+</td>
+</tr>
+
+<tr>
+<td>-minigl</td>
+<td>Hardware accelerated rendering using the MiniGL library.
+MiniGL is a library of the OpenGL standard for WIN32 and will use the
+minigl.dll instead.
+For WIN32 port.
+Requires compiling with the MiniGL library and configuration.
+</td>
+</tr>
+
+<tr>
+<td>-3dfx<br>-glide</td>
+<td>Hardware accelerated rendering using the Glide library for the Voodoo card.
+For Linux-X11-XSHM, Linux-X11-GGI, and WIN32 ports.
+Requires compiling with the Glide library and configuration.
+</td>
+</tr>
+
+<tr>
+<td>-winvoodoo</td>
+<td>OpenGL parameter for voodoo card on Linux-X11-XSHM.
+If MESA_GLX_FX is not set as an environment variable,
+it selects window video modes with "MESA_GLX_FX=window",
+(default is fullscreen).
+It also prevents grabbing the mouse.
+For Linux-X11-XSHM port.
+Requires compiling with the XSHM library, MESA library, and configuration.
+</td>
+</tr>
+
+<tr>
+<td>-d3d</td>
+<td>Hardware accelerated rendering using Direct3d library for Windows.
+Requires compiling with the Direct3d library and configuration.
+For WIN32 port.</td>
+</tr>
+
+<tr>
+<td>-left</td>
+<td>Start a drone client that displays the left view of three screens.</td>
+</tr>
+
+<tr>
+<td>-right</td>
+<td>Start a drone client that displays the right view of three screens.</td>
+</tr>
+
+<tr>
+<td>-screendeg &lt;angle&gt;</td>
+<td>Start a drone client that displays with an angle offset.  Useful for
+setting up left and right screens.  The angle is in degees, but cannot
+be negative (command line limitation).
+For left angles input the value of (360-num) instead,
+such as 270 for -90 degrees, 315 for -45 degrees, 340 for -20 degrees.
+Limited to range 270 to 0 to 90 degrees.
+</td>
+</tr>
+
+<tr>
+<td>-polypoolsize &lt;num&gt;</td>
+<td>Specify the size of the polygon pool for hardware rendering, in KiB.
+The default is 1000 KiB.
+Requires compilation without ZPLANALLOC compile option.
+The ZPLANALLOC option allocates such poly without using a pool, and is
+the default in the compilation.
+</td>
+</tr>
+
+<tr>
+<td>-display &lt;name&gt;</td>
+<td>Specify the X11 display to use for the game, by name.
+The default is the current display device.
+For Linux-X11-XSHM port.
+</td>
+</tr>
+
+<td>-noendtext</td>
+<td>Suppress the game EndText screen, which could disrupt some terminal
+emulations because of the special character attributes used.  Much of this
+problem has been eliminated by interpreting those attributes for each port.
+For SDL, MACOS, and Linux-X11 ports.
+</td>
+</tr>
+
+<tr><td class="note" colspan="2">
+Sound and music options
+</td></tr>
+
+<tr>
 <td>-nosound</td>
-<td>Disable all sound effects (including music)</td>
+<td>Disable all sound effects (including music). The sound effects
+volume config var also affects sound.</td>
 </tr>
 
 <tr>
 <td>-nomusic</td>
-<td>Disable music</td>
+<td>Disable music.  The music volume config var also affects music.</td>
 </tr>
 
 <tr>
 <td>-nocd</td>
-<td>Disable CD music</td>
+<td>Disable CD music.</td>
 </tr>
 
 <tr>
 <td>-precachesound</td>
-<td></td>
+<td>Preload sound effects.  Also enabled by the precachesound config var.</td>
+</tr>
+
+<tr>
+<td>-freq</td>
+<td>To set the frequency used by the DirectSound sound buffer.
+The default is 22050 Hz.
+For WIN32 port.
+</td>
+</tr>
+
+<tr>
+<td>-coopsound</td>
+<td>To set DirectSound to be cooperative with other windows applications.
+For WIN32 port.
+</td>
+</tr>
+
+<tr>
+<td>-ds3d</td>
+<td>Use the DirectSound 3D generic sound driver.
+This driver is suitable for most 3D sound chips.
+For WIN32 port.
+Requires compiling with the HW3SOUND compile option.
+</td>
+</tr>
+
+<tr>
+<td>-sounddriver &lt;driver&gt;</td>
+<td>Specify an external hardware sound driver (dll).
+For WIN32 port.
+Requires compiling with the HW3SOUND compile option.
+</td>
+</tr>
+
+<tr>
+<td>-winmidi &lt;num&gt;</td>
+<td>Specify an external midi hardware port device ID.  How to discover
+the device IDs is unknown.  The default is -1.
+For WIN32 port.
+</td>
+</tr>
+
+
+<tr><td class="note" colspan="2">
+Input Controller options
+</td></tr>
+
+<tr>
+<td>-nomouse</td>
+<td>Do not use the mouse and skip mouse detection.
+For Linux-X11-XSHM, and WIN32 port.
+</td>
+</tr>
+
+<tr>
+<td>-nojoy</td>
+<td>Do not use the joysticks and skip joystick detection.
+For DOS, and WIN32 port.
+</td>
+</tr>
+
+<tr>
+<td>-nodinput</td>
+<td>Get mouse movement from window events instead of
+DirectInput polling interface.
+For WIN32 port.
+</td>
+</tr>
+
+<tr>
+<td>-gettickcount</td>
+<td>Do not use the high precision timer, to avoid a win2k timer bug.
+For WIN32 port.
+</td>
 </tr>
 
 
@@ -989,7 +1281,15 @@ Networking
 
 <tr>
 <td>-server</td>
-<td>Spawn a server.</td>
+<td>Spawn a server.  Allows a player on the server.
+</td>
+</tr>
+
+<tr>
+<td>-dedicated</td>
+<td>Spawn a dedicated server, without player.  A dedicated server only
+has console commands for setting up the network and games, not those for
+the player settings.</td>
 </tr>
 
 <tr>
@@ -999,13 +1299,38 @@ given, search for servers in LAN.</td>
 </tr>
 
 <tr>
-<td>-port</td>
-<td>Set the UDP port to use.</td>
+<td>-ipx</td>
+<td>Use IPX network protocol instead of IP.  Must be compiled with
+USE_IPX compile option enabled.</td>
 </tr>
 
 <tr>
-<td>-ipx</td>
-<td>Use IPX network protocol instead of IP.</td>
+<td>-udpport</td>
+<td>Specify the port to use on IPX or IP network.  The default should be 5029.</td>
+</tr>
+
+<tr>
+<td>-clientport</td>
+<td>Specify the port that the client uses on IPX or IP network.
+The default is to use the udpport.  This allows running the server and
+client using different ports.</td>
+</tr>
+
+<tr>
+<td>-net</td>
+<td>Specify network play in DOS port version.
+For DOS port.
+</td>
+</tr>
+
+<tr>
+<td>-doomatic</td>
+<td>Specify doomatic network play in DOS port version.
+Introduced in version 1.29, it appears to have more advanced network
+communications than the vanilla network play.
+For DOS port.
+Requires doomatic network software.
+</td>
 </tr>
 
 <tr>
@@ -1014,16 +1339,204 @@ given, search for servers in LAN.</td>
 </tr>
 
 <tr>
+<td>-nofiles</td>
+<td>Do not check for having any files, download all from servers.</td>
+</tr>
+
+<tr>
+<td>-extratic &lt;num&gt;</td>
+<td>Send extra copies of player movement over the network, to prevent
+retransmission.  Normally 1.</td>
+</tr>
+
+<tr>
+<td>-bandwidth &lt;num&gt;</td>
+<td>Set the usable bandwidth of the network, in bytes per second
+(1000 to 100000). The default is 3000.
+</td>
+</tr>
+
+<tr>
+<td>-packetsize &lt;num&gt;</td>
+<td>Set the usable packetsize for transmissions over the network, in bytes
+(75 to the hardware limit). The default is the hardware max packetlength.
+</td>
+</tr>
+
+<tr>
+<td>-debugfile &lt;num&gt;</td>
+<td>Writes network debugging information to a file named debug1.txt,
+where the 1 is the specified num.
+If the num is not specified, the default is the player number.
+Will try higher num until it succeeds in opening a file.
+Must be compiled with the DEBUGFILE compile option enabled.
+</td>
+</tr>
+
+<tr><td class="note" colspan="2">
+Multiplayer options
+</td></tr>
+<tr>
+
+<tr>
+<td>-deathmatch<br>-altdeath</td>
+<td>
+Play deathmatch where multiple players fight each other to score kills.
+Normal deathmatch has weapons and a few special items respawn,
+but altdeath has all items and weapons respawn.
+Without -deathmatch or -altdeath, the game will start cooperative where
+the players cooperate to fight the monsters.
+This can also be selected and customized from the menus.
+</td>
+</tr>
+
+<tr>
 <td>-teamplay<br/>
   -teamskin
 </td>
 <td>
-  Similar to the good old -deathmatch, this activates team
-  play by either color (teamplay) or skin (teamskin).
+A variation of -deathmatch that activates team play where teams are
+identified by color (-teamplay) or skin (-teamskin).
+The color is applied to the player armor using color translation.
+A skin is an alternative player sprite, like an orc or mercenary.
+The skins must be provided in one or more PWAD.
 </td>
 </tr>
-</table>
 
+<tr>
+<td>-timer &lt;num&gt;</td>
+<td>Timelimit in minutes.</td>
+</tr>
+
+<tr>
+<td>-avg</td>
+<td>Austin 20 min. rounds.  (Austin Virtual Gaming)</td>
+</tr>
+
+<tr>
+<td>-splitscreen</td>
+<td>Two players on this screen.  One player is the top half and the
+other is the lower half of the screen.  The controls are selected for
+each player from the keyboard, one or two mice, and multiple joysticks.
+This may be used alone or with network play.
+</td>
+</tr>
+
+
+<tr><td class="note" colspan="2">
+Demo options
+</td></tr>
+<tr>
+
+<tr>
+<td>-playdemo &lt;file&gt;</td>
+<td>Play the demo from the specified file.</td>
+</tr>
+
+<tr>
+<td>-record &lt;file&gt;</td>
+<td>Record a demo to the specified file.</td>
+</tr>
+
+<tr>
+<td>-maxdemo &lt;size&gt;</td>
+<td>Set the -record demo buffer to the specified size (in KiB).
+The default is 20.
+Use with -record.</td>
+</tr>
+
+
+<tr><td class="note" colspan="2">
+Development options
+</td></tr>
+<tr>
+
+<tr>
+<td>-devparm</td>
+<td>Development/debugging mode. Prints out some extra information
+  mainly useful for developers, does not grab the mouse.</td>
+</tr>
+
+<tr>
+  <td>-devgame &lt;game-name&gt;</td>
+<td>Development mode using devparm for the specified game, in the same format as -game.
+User can include development files from working directories using -file.</td>
+</tr>
+
+<tr>
+<td>-wart &lt;number&gt; [&lt;number&gt;]</td>
+<td>Development modification of warp.  Load the selected map from the
+devmaps directory, and warp to it.
+In DoomII mode, -wart 13 will load devmaps/cdata/map13.
+In Ultimate Doom mode -wart 3 1 will load devmaps/E3M1.</td>
+</tr>
+
+<tr>
+<td>-timedemo &lt;file&gt;</td>
+<td>Play the demo from the specified file while timing it.
+</td>
+</tr>
+
+<tr>
+<td>-nodraw<br></td>
+<td>Timedemo option, to get execution time without drawing.
+Caution: no visible display so you must exit the game from memory (ESC, Q, RETURN, Y).
+</td>
+</tr>
+
+<tr>
+<td>-noblit</td>
+<td>TimeDemo option, to get execution time without blit.  Currently,
+none of the draw ports honor this test.
+</td>
+</tr>
+
+<tr>
+<td>+connect<br/>+map</td>
+<td>Options on -server.
+The actual usages of these have been lost.
+The "+connect" option will enable some server code, but is not same as -connect.
+The "+map" option will issue a map command to change to the start map.
+Example: -server+connect+map
+</td>
+</tr>
+
+
+<tr><td class="note" colspan="2">
+Information
+</td></tr>
+<tr>
+
+<td>--help</td>
+<td>Help menu giving help sections.</td>
+</tr>
+
+<tr>
+<td>-h &lt;section&gt;</td>
+<td>Display one of the Help sections:<br>
+<table class="def">
+<tr><th>section</th><th>content</th></tr>
+<tr><td>g</td><td>Help on game and wads</td></tr>
+<tr><td>m</td><td>Help on multiplayer</td></tr>
+<tr><td>c</td><td>Help on config</td></tr>
+<tr><td>s</td><td>Help on server</td></tr>
+<tr><td>d</td><td>Help on demo</td></tr>
+<tr><td>D</td><td>Help on Devmode</td></tr>
+</table>
+</td>
+</tr>
+
+<td>-v</td>
+<td>Verbose.  Print more information about warnings, wad errors, and the
+progression of startup and shutdown.</td>
+</tr>
+
+<td>-v2</td>
+<td>Very Verbose.  Print detailed information about the video system,
+modes available and how the mode selection is handled.</td>
+</tr>
+
+</table>
 
 
 <h2 id="notes">NOTES</h2>
@@ -1031,10 +1544,17 @@ given, search for servers in LAN.</td>
   
 <h3>DeHackEd patches</h3>
 <p>  
-  Doom Legacy supports dehacked patches... of course its
-  now done a more subtle way: you just specify the dehacked
-  patch file at the command prompt, instead of actually patching the
-  executable.
+  Doom Legacy supports dehacked patches directly, without having to
+  patch the executable.  The original DeHackEd was an editor that would
+  patch the Doom executable to change strings and monster behaviors.
+  Doom Legacy will alter its own strings and monster behaviors to get
+  similar, or better results.
+</p>
+<p>
+  As of version 1.44, Legacy allows multiple changes to the same string.
+  Later changes to a string will work, even when Legacy changes,
+  language changes, Chex mode changes, or other deh files,
+  have already changed the string.
 </p>
 <p>
   You can specify multiple .deh files using the -file option, and they
@@ -1056,6 +1576,15 @@ given, search for servers in LAN.</td>
   Sprite renaming works too, well, pretty much anything works :)
 </p>
 
+<h3>BEX patches</h3>
+<p>  
+  Doom Legacy supports BEX, which is similar to dehacked but references
+  changable attributes by a BEX name.
+  BEX has more functionality and is more consise than DeHackEd.
+  A BEX file can be provided using -file or -deh, and BEX can be in
+  the DEHACKED lump.
+  BEX is processed when BEX section names are encountered
+  ("[STRINGS]", "[PARS]", "[CODEPTR]"), and will also handle INCLUDE.
 </div>
 </body>
 </html>

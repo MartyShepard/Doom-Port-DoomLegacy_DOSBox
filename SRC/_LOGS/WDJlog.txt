@@ -3443,3 +3443,17 @@ This allows the messy
 to be specified as
   alias ps0 "playersprites 0; bind mouse_3 ps1"
 which is much easier to read.
+
+*** W93_docs
+patchfile = w93_9_docs.patch
+- committed revision 1048   by wesley johnson
+Updated the docs legacy.html and whatsnew.html.
+
+*** W93_viewheight
+patchfile = w93_10_viewheight.patch
+- committed revision 1049   by wesley johnson
+Fix code that updates player viewheight to provide a slow rise and fall
+for changes to the cv_viewheight.  Existing vanilla code could not cope
+with changes in cv_viewheight because it required an external setup
+to provide the delta.
+Fixes bug_1296539.
