@@ -2114,18 +2114,10 @@ void D_DoomMain()
     cht_Init();	// init cheats for this iwad
 
     //---------------------------------------------------- READY SCREEN
-#if defined( __DJGPP__ )		
-//    CONS_Printf("I_StartupTimer...\n");
-    I_StartupTimer();
-    // now initialised automatically by use_joystick var code
-    CONS_Printf (text[I_INIT_NUM]);
-    I_InitJoystick ();		
-#endif
+
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
-//#if !defined( __DJGPP__ )
     I_SysInit();
-//#endif   
     if( M_CheckParm("-highcolor") )
     {
         req_drawmode = REQ_highcolor;  // 15 or 16 bpp

@@ -81,7 +81,7 @@
 #endif
 
 #include "../i_joy.h"
-
+#include "../dstrings.h"
 
 //### let's try with Allegro ###
 #define  alleg_mouse_unused
@@ -1176,13 +1176,15 @@ void I_SysInit(void)
 {
     CONS_Printf("DOS system ...\n");
 
-    //CONS_Printf("I_StartupTimer...\n");
-    //I_StartupTimer();
-		
-    I_StartupSystem();
+    CONS_Printf("I_StartupTimer...\n");
+    I_StartupTimer();
 
+    CONS_Printf (text[I_INIT_NUM]);
     // Initialize the joystick subsystem.
-    // I_InitJoystick();
+    I_InitJoystick();
+		
+		/* Is already in i_main.c */
+    //I_StartupSystem();
 
     // d_main will next call I_StartupGraphics
 }
