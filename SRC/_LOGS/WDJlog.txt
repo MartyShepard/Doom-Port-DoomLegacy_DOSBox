@@ -3388,3 +3388,11 @@ Previous updates to fragglescript in W83 fixed the param checking.
 Changed movecamera to more gracefully ignore the extra parameter, while
 printing a warning message.
 
+*** W93_interface
+patchfile = w93_3_interface.patch
+- committed revision 1042   by wesley johnson
+Extensive divergence of the port code has occured, with some interfaces
+being retired and others created.  Most of the ports had not been
+updated.  This updates those critical interfaces and calls.
+Makefile updated too, with passage of WIN_NATIVE define.
+Filesearch code updated in most ports.

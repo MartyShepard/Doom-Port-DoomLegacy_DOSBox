@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_netfil.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -752,6 +752,7 @@ filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum)
     return return_val;
 }
 
+// filename must be a buffer of MAX_WADPATH
 filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath)
 {
     //FIXME: implement wadpath-search

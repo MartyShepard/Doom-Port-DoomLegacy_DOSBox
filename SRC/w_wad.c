@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: w_wad.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -189,6 +189,7 @@ int W_LoadWadFile (char *filename)
     int              i;
     int              length;
     struct stat      bufstat;
+    // findfile requires a buffer of (at least) MAX_WADPATH
     char             filenamebuf[MAX_WADPATH];
 #ifdef HWRENDER    
     MipPatch_t*      grPatch;
@@ -209,8 +210,9 @@ int W_LoadWadFile (char *filename)
     // open wad file
     if ( (handle = open (filename,O_RDONLY|O_BINARY,0666)) == -1)
     {
+        // not in cur dir, must search
         nameonly(filename); // leave full path here
-        if( findfile(filename, NULL, true) )
+        if( findfile(filename, NULL, true) )  // returns dir+filename
         {
             if ( (handle = open (filename,O_RDONLY|O_BINARY,0666)) == -1)
             {

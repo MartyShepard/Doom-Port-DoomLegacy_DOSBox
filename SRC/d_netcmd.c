@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_netcmd.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -261,6 +261,7 @@ CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
 , {0, NULL}
 };
 //#error "cv_usejoystick don't have possible value for this OS !"
+#include "i_joy.h"
 consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
 #endif
 
@@ -687,6 +688,7 @@ void Command_Stopdemo_f(void)
 //
 void Command_Map_f(void)
 {
+    // findfile requires a buffer of (at least) MAX_WADPATH
     char buf[MAX_WADPATH + 3];
 #define MAPNAME (&buf[2])
     int i;

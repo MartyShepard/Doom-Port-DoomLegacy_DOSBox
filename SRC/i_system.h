@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1037 2013-08-14 00:42:55Z wesleyjohnson $
+// $Id: i_system.h 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -110,6 +110,9 @@ void I_Tactile (int on, int off, int total);
 //                the return code 0 of I_Quit();
 void I_OutputMsg (char *error, ...);
 
+#ifdef WIN_NATIVE
+void I_MsgBox (char * msg );
+#endif
 
 /* list of functions to call at program cleanup */
 void I_AddExitFunc (void (*func)(void));
@@ -117,7 +120,7 @@ void I_RemoveExitFunc (void (*func)(void));
 
 // Setup signal handler, plus stuff for trapping errors and cleanly exit.
 // Not called by game, port optional, see I_SysInit
-int  I_StartupSystem (void);
+void I_StartupSystem (void);
 // Not called by game, port optional, see I_Quit
 void I_ShutdownSystem (void);
 
@@ -132,7 +135,7 @@ void doUngrabMouse(void);
 
 #if defined( __DJGPP__ )
 // Called by DoomMain.
-void I_InitJoystick (void);
+//void I_InitJoystick (void);
 extern byte sound_started;
 byte* I_AllocLow (int length);
 #endif

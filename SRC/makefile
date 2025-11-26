@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 1028 2013-08-14 00:15:29Z wesleyjohnson $
+# $Id: Makefile 1042 2013-08-26 20:30:08Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2013 by Doom Legacy Team.
@@ -65,6 +65,7 @@
 # Most can just uncomment an appropriate selection for your system.
 # WIN32=1
 # WIN98=1
+# WINNT=1
 # OS2=1
 # DOS=1
 # CC_MINGW=1
@@ -88,6 +89,7 @@
 #HAVE_MIXER=1
 
 # CD-Music enable/disable, if you don't have the special libraries, etc.
+#NOCDMUS=1
 #ifndef NOCDMUS
   CDMUS=1
 #endif
@@ -100,6 +102,14 @@
 # MUS_OS=SCOUW7
 #ESD demon
 # HAVE_ESD=1
+
+# WIN_NATIVE enables
+# For FMOD sound.  Can compile without it.
+# HAVE_FMOD=1
+# FMODINC="" alternative directory to find fmod.h and other includes
+# FMODLIB="" alternative directory to find fmod libs
+# DDINC="" alternative directory to find ddraw.h and other includes
+# DDLIB="" alternative directory to find ddraw and other libs
 
 # When SDL 1.3 is used, some stuff will break.  I don't know what yet.
 # Reported that SDLMain is no longer required for Mac using SDL 1.3.
@@ -197,6 +207,11 @@ ifdef WIN98
   DOSFILE=1
 endif
 
+ifdef WINNT
+  WIN32=1
+  DOSFILE=1
+endif
+
 ifdef OS2
   DOSFILE=1
 endif
@@ -213,6 +228,8 @@ else
   SMIF=SDL
 endif
 
+# all OPTINC need to have -I. because of how includes are written
+# however the order of -I may be important, so it is left to each.
 OPTS:=
 OPTINC:=
 LIBS:=
@@ -238,8 +255,10 @@ ifeq ($(SMIF), SDL)
     # Windows (MinGW)
     EXENAME:=doomlegacy.exe
     OPTS:=-DWIN32
-    # if have windows >= WinNT, and want large memory reports
-#    OPTS+=-DWIN_LARGE_MEM
+    ifdef WINNT
+      # if have windows >= WinNT, and want large memory reports
+      OPTS+=-DWIN_LARGE_MEM
+    endif
     LIBS:=-lopengl32 -lglu32 -lwsock32 -lm
   else
     # default is Linux, for all unix SDL
@@ -260,7 +279,6 @@ ifeq ($(SMIF), SDL)
     # Extracted from sdl-config script
     ifdef CC_MINGW
       OPTS+=-D_GNU_SOURCE=1 -Dmain=SDL_main
-#      OPTINC+=-"I\SDL\include\SDL"
       OPTINC+=-"I/SDL/include/SDL"
 #      OPTINC+=-I/mingw/include/SDL
       LIBS+=-L/SDL/lib
@@ -432,12 +450,12 @@ ifeq ($(SMIF), OS2_NATIVE)
   NASM:=nasm
 #USEASM=1
   PROFILEMODE=1
-# options
-  OPTS:=-D__OS2__
-  OPTINC:=-Zmt -I.. -I. -Ios2
+# options (separate OS2 library and OS2_NATIVE video)
+  OPTS:=-D__OS2__ -DOS2_NATIVE
+  OPTINC+=-Zmt -I.. -I. -Ios2
 
-#  DEBUGLIBS:=-lmmpm2 -lsocket -g
-  LIBS:=$(INTERFACE)/I_pm.def -lmmpm2 -lsocket -g
+#  DEBUGLIBS:=
+  LIBS:=-g $(INTERFACE)/I_pm.def -lmmpm2 -lsocket
 
   SFLAGS:=-g $(OPTS)
 
@@ -453,25 +471,68 @@ ifeq ($(SMIF), OS2_NATIVE)
 #=================================
 else
 ifeq ($(SMIF), WIN32_NATIVE)
-  # Requires windows.h, windowsx.h, ddraw.h and ddraw libs, fmod libs
+  # Requires windows.h, windowsx.h, ddraw.h and ddraw libs, and
+  # optionally fmod libs
   DOSFILE=1
   INTERFACE=win32
   NASMFORMAT:=coff
 
+  # DDINC="" alternative directory to find ddraw.h and other includes
+  # DDLIB="" alternative directory to find ddraw and other libs
+  ifndef DDINC
+    DDINC=-I\MINGW\MX80\include
+  endif
+  ifndef DDLIB
+    DDLIB=-L\MINGW\MX80\lib
+  endif
+  # FMODINC="" alternative directory to find fmod.h and other includes
+  # FMODLIB="" alternative directory to find fmod libs
+  ifdef HAVE_FMOD
+    ifndef FMODINC
+      FMODINC=-I\MINGW\fmod\include
+    endif
+    ifndef FMODLIB
+      FMODLIB=-L\MINGW\fmod\lib
+    endif
+  endif
+
 #use the x86 asm code
   #USEASM=1
 
-# options
-  OPTS:=-DWIN32
-  OPTINC:=-g
+# options (separate WIN32 library, and WIN_NATIVE video)
+  OPTS:=-DWIN32 -DWIN_NATIVE
+  OPTINC+=-g -I.
+  ifdef DDINC
+    OPTINC+=$(DDINC)
+  endif
 
-#  DEBUGLIBS:=-lfmod -lwinmm -lsocket
-  LIBS:=-lfmod -lwinmm -lsocket
+#  DEBUGLIBS:=
+  ifdef CC_MINGW
+    LIBS:=-lwinmm -lwsock32 -lgdi32 -lddraw -ldsound -ldinput -ldxguid
+  else
+    LIBS:=-lwinmm -lsocket -lddraw -ldsound -ldinput
+  endif
+  ifdef DDLIB
+    LIBS+=$(DDLIB) -ddraw
+  endif
+
+  ifdef WINNT
+    # if have windows >= WinNT, and want large memory reports
+    OPTS+=-DWIN_LARGE_MEM
+  endif
+
+  ifdef HAVE_FMOD
+    OPTS+=-DFMOD_SOUND
+    ifdef FMODLIB
+      LIBS+=$(FMODLIB) -lfmod
+    endif
+  endif
 
   SFLAGS:=
 
   MAINOBJ:=win_main.o
-  SMIFOBJS:=win_sys.o win_vid.o win_snd.o win_net.o win_cd.o filesrch.o
+  SMIFOBJS:=win_sys.o win_vid.o win_snd.o win_net.o win_cd.o \
+  filesrch.o fabdxlib.o mid2strm.o dx_error.o
 
 # name of the exefile
   EXENAME:=legacy.exe
@@ -490,13 +551,12 @@ ifeq ($(SMIF), DJGPPDOS_NATIVE)
 
 # options
   OPTS:=-DPC_DOS
-  OPTINC:=-g
+  OPTINC+=-g -I.
 
-#  DEBUGLIBS:=-lalleg -lsocket
+#  DEBUGLIBS:=
   LIBS:=-lalleg -lsocket
   ifdef CDMUS
      LIBS+=-lbcd
-#     DEBUGLIBS+=-lbcd
   endif
 
   SFLAGS:=
@@ -583,8 +643,7 @@ r_draw.o r_plane.o r_segs.o r_sky.o r_things.o r_splats.o r_bsp.o r_data.o r_mai
 p_ceilng.o p_doors.o p_enemy.o p_floor.o p_genlin.o p_info.o p_inter.o p_lights.o \
 p_map.o p_maputl.o p_plats.o p_pspr.o p_setup.o p_sight.o p_spec.o \
 p_switch.o p_mobj.o p_telept.o p_tick.o p_user.o p_fab.o \
-p_hsight.o \
-p_heretic.o \
+p_heretic.o p_hsight.o \
 p_chex.o \
 sb_bar.o hu_stuff.o \
 st_lib.o st_stuff.o \
@@ -596,12 +655,11 @@ f_finale.o f_wipe.o \
 wi_stuff.o \
 am_map.o \
 md5.o \
-d_netcmd.o d_clisrv.o d_net.o d_netfil.o i_tcp.o \
 m_menu.o m_misc.o m_argv.o m_bbox.o m_fixed.o m_swap.o m_cheat.o m_random.o \
 console.o command.o \
 p_saveg.o \
-dehacked.o \
-w_wad.o \
+w_wad.o dehacked.o \
+d_netcmd.o d_clisrv.o d_net.o d_netfil.o i_tcp.o \
 d_items.o d_main.o
 
 # combine all objs ( main, INTERFACE specific, asm, CDMUS )
@@ -655,6 +713,9 @@ ifdef WIN98
 endif
 ifdef WIN32
 	@echo WIN32=1  >> "../make_options"
+endif
+ifdef WINNT
+	@echo WINNT=1  >> "../make_options"
 endif
 ifdef DOS
 	@echo DOS=1  >> "../make_options"
@@ -802,18 +863,18 @@ $(BIN)/$(EXENAME): $(OBJS) $(MAINOBJ) versionstring
 	@echo Linking...
 ifdef DOSFILE
 # MinGW on WIN98: linking cannot handle $(OPTS), use $(LCFLAGS) instead of $(CFLAGS)
-	$(CC) $(LCFLAGS) $(LDFLAGS) \
-	$(OBJS) $(MAINOBJ) \
-	$(LIBS) -o $(BIN)/$(EXENAME)
-else
-# Linux/BSD
-ifdef CC_EXE_FIRST
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$(EXENAME) \
+	$(CC) $(LCFLAGS) $(LDFLAGS) -o $(BIN)/$(EXENAME) \
 	$(MAINOBJ) $(OBJS) \
 	$(LIBS)
 else
+# Linux/BSD
+ifdef CC_EXE_LAST
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(MAINOBJ) \
 	$(LIBS) -o $(BIN)/$(EXENAME)
+else
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$(EXENAME) \
+	$(MAINOBJ) $(OBJS) \
+	$(LIBS)
 endif
 endif
 
@@ -923,7 +984,10 @@ endif
 depend:  ../dep/main1.dep ../dep/main3.dep ../dep/main4.dep ../dep/main5.dep \
 ../dep/main_d.dep ../dep/main_m.dep ../dep/main_p.dep \
 ../dep/main_r.dep ../dep/main_t.dep \
-../dep/hard1.dep ../dep/hard2.dep ../dep/$(INTERFACE).dep
+../dep/hard1.dep ../dep/hard2.dep
+ifdef INTERFACE
+depend: ../dep/$(INTERFACE).dep
+endif
 
 ../dep/main1.dep : a*.c b*.c c*.c
 ../dep/main3.dep : q*.c s*.c
@@ -974,7 +1038,9 @@ include ../dep/main_r.dep
 include ../dep/main_t.dep
 include ../dep/hard1.dep
 include ../dep/hard2.dep
-include ../dep/$(INTERFACE).dep
+ifdef INTERFACE
+ include ../dep/$(INTERFACE).dep
+endif
 endif
 endif
 

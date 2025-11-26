@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1037 2013-08-14 00:42:55Z wesleyjohnson $
+// $Id: I_system.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -141,7 +141,7 @@ ticcmd_t*       I_BaseTiccmd(void)
 boolean   win95;
 boolean   lockmem;
 
-void I_DetectWin95 (void)
+static void I_DetectWin95 (void)
 {
     __dpmi_regs     r;
 
@@ -188,9 +188,9 @@ JoyType_t   Joystick;
 
 void I_WaitJoyButton (void)
 {
-     CON_Drawer ();
+     CON_Drawer();
      I_FinishUpdate ();        // page flip or blit buffer
-
+		 
      do {
          poll_joystick();
      } while (!(joy_b1 || joy_b2));
@@ -199,9 +199,17 @@ void I_WaitJoyButton (void)
          poll_joystick();
 }
 
-
+void M_InitJoystick (int jvalue)
+{
+	  /*
+		TODO: die Joystick über das Menü Konfiguieren
+		*/
+		CONS_Printf("\2Joystick (%d) activated\n\n",jvalue);
+}
 void I_InitJoystick (void)
 {
+	boolean isConsole=0;
+		
     //init the joystick
     joystick_detected=0;
     if (cv_usejoystick.value && !M_CheckParm("-nojoy"))
@@ -224,28 +232,35 @@ void I_InitJoystick (void)
                case 11: joy_type = JOY_TYPE_SNESPAD_LPT3;break;
                case 12: joy_type = JOY_TYPE_WINGWARRIOR; break;
             }
-            // only gamepadstyle joysticks
-            Joystick.bGamepadStyle=true;
 
-            CONS_Printf("\2CENTER the joystick and press a button:"); I_WaitJoyButton ();
-            initialise_joystick();
-            CONS_Printf("\nPush the joystick to the UPPER LEFT corner and press a button\n"); I_WaitJoyButton ();
-            calibrate_joystick_tl();
-            CONS_Printf("Push the joystick to the LOWER RIGHT corner and press a button\n"); I_WaitJoyButton ();
-            calibrate_joystick_br();
-            if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
-            {
-                CONS_Printf("Put Hat at Center and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_CENTRE);
-                CONS_Printf("Put Hat at Up and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_UP);
-                CONS_Printf("Put Hat at Down and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_DOWN);
-                CONS_Printf("Put Hat at Left and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_LEFT);
-                CONS_Printf("Put Hat at Right and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_RIGHT);
-            }
+					 // only gamepadstyle joysticks
+					 Joystick.bGamepadStyle=true;
+							
+						if (con_destlines==0)						
+               M_InitJoystick(cv_usejoystick.value);														 						
+            else
+						{
+
+							CONS_Printf("\2CENTER the joystick and press a button:"); I_WaitJoyButton ();
+							initialise_joystick();
+							CONS_Printf("\nPush the joystick to the UPPER LEFT corner and press a button\n"); I_WaitJoyButton ();
+							calibrate_joystick_tl();
+							CONS_Printf("Push the joystick to the LOWER RIGHT corner and press a button\n"); I_WaitJoyButton ();
+							calibrate_joystick_br();
+							if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
+							{
+									CONS_Printf("Put Hat at Center and press a button\n"); I_WaitJoyButton ();
+									calibrate_joystick_hat(JOY_HAT_CENTRE);
+									CONS_Printf("Put Hat at Up and press a button\n"); I_WaitJoyButton ();
+									calibrate_joystick_hat(JOY_HAT_UP);
+									CONS_Printf("Put Hat at Down and press a button\n"); I_WaitJoyButton ();
+									calibrate_joystick_hat(JOY_HAT_DOWN);
+									CONS_Printf("Put Hat at Left and press a button\n"); I_WaitJoyButton ();
+									calibrate_joystick_hat(JOY_HAT_LEFT);
+									CONS_Printf("Put Hat at Right and press a button\n"); I_WaitJoyButton ();
+									calibrate_joystick_hat(JOY_HAT_RIGHT);
+							}
+						}
             joystick_detected=1;
         }
         else
@@ -272,7 +287,7 @@ void I_OutputMsg (char *error, ...)
     // dont flush the message!
 }
 
-int errorcount=0; // fuck recursive errors
+int errorcount=0; // control recursive errors
 int shutdowning=false;
 
 //added 31-12-97 : display error messy after shutdowngfx/ Marty: Type Fixed
@@ -361,7 +376,7 @@ void I_Quit (void)
     gotoxy(1,24);
 
     if(shutdowning || errorcount)
-        I_Error("Error detected (%d)",errorcount);
+        I_Error("Errors detected (count=%d)", errorcount);
 
     fflush(stderr);
 
@@ -374,18 +389,8 @@ void I_Sleep(unsigned int ms)
 {
     usleep( ms * 1000 );  // unistd
 }
-/*
-void I_WaitVBL(int count)
-{
-   while(count-->0);
-   {
-     do {
-     } while (inportb(0x3DA) & 8);
-     do {
-     } while (!(inportb(0x3DA) & 8));
-   }
-}
-*/
+
+
 //  Fab: this is probably to activate the 'loading' disc icon
 //       it should set a flag, that I_FinishUpdate uses to know
 //       whether it draws a small 'loading' disc icon on the screen or not
@@ -946,8 +951,8 @@ static void I_KeyboardHandler()
             D_PostEvent(&event);
           }
         }
-
     }
+
     outportb(0x20,0x20);
 }
 END_OF_FUNCTION(I_KeyboardHandler);
@@ -1141,7 +1146,7 @@ static char msg[] = "Oh no! Back to reality!\r\n";
 //  This stuff should get rid of the exception and page faults when
 //  Doom bugs out with an error. Now it should exit cleanly.
 //
-int  I_StartupSystem(void)
+void  I_StartupSystem(void)
 {
     I_DetectWin95 ();
     i_love_bill = win95;
@@ -1164,7 +1169,22 @@ int  I_StartupSystem(void)
    signal(SIGKILL, break_handler);
    signal(SIGQUIT, break_handler);
 
-   return 0;
+}
+
+// Init system called by d_main
+void I_SysInit(void)
+{
+    CONS_Printf("DOS system ...\n");
+
+    //CONS_Printf("I_StartupTimer...\n");
+    //I_StartupTimer();
+		
+    I_StartupSystem();
+
+    // Initialize the joystick subsystem.
+    // I_InitJoystick();
+
+    // d_main will next call I_StartupGraphics
 }
 
 

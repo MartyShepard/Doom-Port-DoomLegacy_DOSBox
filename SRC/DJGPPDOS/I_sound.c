@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: I_sound.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -538,6 +538,7 @@ int I_RegisterSong(void* data,int len)
     return 1;
 }
 
+#ifdef FMOD_SOUND
 //Hurdler: TODO
 void I_StartFMODSong()
 {
@@ -552,3 +553,5 @@ void I_SetFMODVolume(int volume)
 {
     CONS_Printf("I_SetFMODVolume: Not yet supported under DOS.\n");
 }
+#endif
+

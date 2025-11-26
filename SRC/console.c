@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: console.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -117,11 +117,7 @@ static void CONS_French_f (void)
 }
 #endif
 
-#ifdef WIN_NATIVE_PLACEHOLDER
-void     I_LoadingScreen ( LPCSTR msg );
-#else
-#include <unistd.h>
-#endif
+//#include <unistd.h>
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -1020,7 +1016,7 @@ void CONS_Printf (const char *fmt, ...)
     // if not in display loop, force screen update
     if (con_startup)
     {
-#if defined(WIN_NATIVE_PLACEHOLDER) || defined( __OS2__) 
+#if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
         CON_DrawBackpic (con_backpic, 0, vid.width);    // put console background
@@ -1052,11 +1048,10 @@ void CONS_Printf_va (const char *fmt, va_list ap )
 //
 void CONS_Error (char *msg)
 {
-#ifdef WIN_NATIVE_PLACEHOLDER
-    extern  HWND    hWndMain;
+#ifdef WIN_NATIVE
     if(!graphics_started)
     {
-        MessageBox (hWndMain, msg, "Doom Legacy Warning", MB_OK);
+        I_MsgBox (msg);
         return;
     }
 #endif

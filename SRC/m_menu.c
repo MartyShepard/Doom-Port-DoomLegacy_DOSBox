@@ -1661,6 +1661,9 @@ menuitem_t VideoOptionsMenu[]=
      | IT_CV_SLIDER     ,0,    "Screen Size"      , &cv_viewsize      , 0},
     {IT_STRING | IT_CVAR,0,    "Scale Status Bar" , &cv_scalestatusbar, 0},
     {IT_STRING | IT_CVAR,0,    "Wait Retrace"     , &cv_vidwait       , 0},
+#ifdef __DJGPP__		
+    {IT_STRING | IT_CVAR,0,    "FPS Graph"        , &cv_ticrate       , 0},
+#endif
 #ifdef HWRENDER
     //17/10/99: added by Hurdler
     {IT_CALL|IT_WHITESTRING,0, "3D Card Options...", M_OpenGLOption    ,100},
@@ -1713,7 +1716,10 @@ menuitem_t MouseOptionsMenu[]=
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mouse x Speed", &cv_mouse_sens_x    ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mouse y Speed", &cv_mouse_sens_y    ,0}
+     | IT_CV_SLIDER     ,0,"Mouse y Speed", &cv_mouse_sens_y    ,0},
+#ifdef __DJGPP__			 
+    {IT_STRING | IT_CVAR,0,"Use Joystick", &cv_usejoystick    ,0}	 
+#endif
 #if 0
 //[WDJ] disabled in 143beta_macosx
 //[segabor]
@@ -1727,7 +1733,7 @@ menuitem_t MouseOptionsMenu[]=
 menu_t  MouseOptionsDef =
 {
     "M_OPTTTL",
-    "Mouse Options",
+    "Mouse & Joystick Options",
     sizeof(MouseOptionsMenu)/sizeof(menuitem_t),
     &OptionsDef,
     MouseOptionsMenu,

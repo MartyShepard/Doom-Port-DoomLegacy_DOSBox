@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: v_video.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -706,7 +706,7 @@ void V_CopyRect(int srcx, int srcy, int srcscrn, int width, int height, int dest
 }
 
 
-#if !defined(USEASM) || defined(WIN_NATIVE_PLACEHOLDER)
+#if !defined(USEASM) || defined(WIN_NATIVE)
 // --------------------------------------------------------------------------
 // Copy a rectangular area from one bitmap to another (8bpp)
 // srcPitch, destPitch : width of source and destination bitmaps

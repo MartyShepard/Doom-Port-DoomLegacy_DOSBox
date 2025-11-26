@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_setup.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -159,6 +159,8 @@
 #include "p_spec.h"
 
 #include "i_sound.h" //for I_PlayCD()..
+#include "i_video.h"
+  // I_FinishUpdate
 #include "r_sky.h"
 
 #include "r_data.h"

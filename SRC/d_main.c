@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_main.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1041"
+#define SVN_REV "1042"
 #endif
 
 // Version number: major.minor.revision
@@ -630,8 +630,8 @@ void D_Display(void)
 
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
-#if !defined( __DJGPP__ )
-    // Marty: DOS doesnt use HWRender. Fix Compile on: d_main.c:613: undefined reference to `_HWR_FadeScreenMenuBack'
+
+#ifdef HWRENDER
     // Exl: draw a faded background
     if (fadealpha != 0 && rendermode != render_soft)
 	HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
@@ -2115,7 +2115,7 @@ void D_DoomMain()
 
     //---------------------------------------------------- READY SCREEN
 #if defined( __DJGPP__ )		
-    CONS_Printf("I_StartupTimer...\n");
+//    CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
     // now initialised automatically by use_joystick var code
     CONS_Printf (text[I_INIT_NUM]);
@@ -2123,9 +2123,9 @@ void D_DoomMain()
 #endif
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
-#if !defined( __DJGPP__ )
+//#if !defined( __DJGPP__ )
     I_SysInit();
-#endif   
+//#endif   
     if( M_CheckParm("-highcolor") )
     {
         req_drawmode = REQ_highcolor;  // 15 or 16 bpp

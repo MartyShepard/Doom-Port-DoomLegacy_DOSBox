@@ -7,17 +7,20 @@
 
 #include "..\filesrch.h"
 #include "..\d_netfil.h"
+#include "../m_misc.h"
 
 //
 // filesearch:
 //
 // ATTENTION : make sure there is enouth space in filename to put a full path (255 or 512)
+//    filename must be buffer of MAX_WADPATH
 // if needmd5check==0 there is no md5 check
 // if changestring then filename will be change with the full path and name
 // maxsearchdepth==0 only search given directory, no subdirs
 // return FS_NOTFOUND
 //        FS_MD5SUMBAD;
 //        FS_FOUND
+#define MAX_SRCHPATH (MAX_WADPATH * 2)
 
 filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
@@ -27,14 +30,16 @@ filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd
     int found=0;
     char *searchname = strdup( filename);
     filestatus_e retval = FS_NOTFOUND;
+    int remspace;
     int depthleft=maxsearchdepth;
-    char searchpath[1024];
-    int *searchpathindex;
+    int *searchpathindex;  // each directory in the searchpath
+    char searchpath[MAX_SRCHPATH];
 
     dirhandle = (DIR**) malloc( maxsearchdepth * sizeof( DIR*));
     searchpathindex = (int*) malloc( maxsearchdepth * sizeof( int));
     
-    strcpy( searchpath,startpath);
+    strncpy( searchpath, startpath, MAX_SRCHPATH-1);
+    searchpath[MAX_SRCHPATH-1] = '\0';
     searchpathindex[--depthleft] = strlen( searchpath) + 1;
 
     dirhandle[depthleft] = opendir( searchpath);
@@ -52,13 +57,15 @@ filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd
     while( (!found) && (depthleft < maxsearchdepth))
     {
         searchpath[searchpathindex[depthleft]]=0;
-        dent = readdir( dirhandle[depthleft]);
+        dent = readdir( dirhandle[depthleft]);  // next dir entry
         if( dent)
         {
-            strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
+	    // append dir name
+	    remspace = (MAX_SRCHPATH - 1) - searchpathindex[depthleft];
+            strncpy(&searchpath[searchpathindex[depthleft]], dent->d_name, remspace);
         }
 
-        if( !dent)
+        if( !dent)  // done with dir
         {
             closedir( dirhandle[depthleft++]);
         } 
@@ -67,7 +74,7 @@ filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd
               (dent->d_name[1]=='.' &&
                dent->d_name[2]=='\0')))
         {
-            // we don't want to scan uptree
+            // ignore the "." and ".." entries, we don't want to scan uptree
         }
         else if( stat(searchpath,&fstat) < 0) // do we want to follow symlinks? if not: change it to lstat
         {
@@ -75,7 +82,8 @@ filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd
         } 
         else if( S_ISDIR(fstat.st_mode) && depthleft)
         {
-            strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
+	    remspace = (MAX_SRCHPATH - 1) - searchpathindex[depthleft];
+            strncpy(&searchpath[searchpathindex[depthleft]], dent->d_name, remspace);
             searchpathindex[--depthleft] = strlen(searchpath) + 1;
 
             if( !(dirhandle[depthleft] = opendir(searchpath)))
@@ -95,12 +103,19 @@ filestatus_e filesearch(char *filename, char *startpath, unsigned char *wantedmd
                 case FS_FOUND:
                     if(completepath)
                     {
-                        strcpy(filename,searchpath);
+                        strncpy(filename, searchpath, MAX_WADPATH-1);
+		        filename[MAX_WADPATH-1] = '\0';
                     }
+#if 0
+// [WDJ] This is used for "find if file exists",
+// which is not choice to return the dir name instead.
+// If this is ever needed, it requires a separate enable flag.	       
                     else
                     {
-                        strcpy(filename,dent->d_name);
+                        strncpy(filename, dent->d_name, MAX_WADPATH-1);
+		        filename[MAX_WADPATH-1] = '\0';
                     }
+#endif	       
                     retval=FS_FOUND;
                     found=1;
                     break;
