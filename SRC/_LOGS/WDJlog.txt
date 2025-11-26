@@ -3320,5 +3320,56 @@ patchfile = w92_7_hw_bsp_inits.patch
 - committed revision 1034   by wesley johnson
 Init some polyvertex variables in hw_bsp.
 
+*** W92_includes
+patchfile = w92_8_includes.patch
+- committed revision 1035   by wesley johnson
+
+Addfile  doomincl.h
+Removefile  macos/p_spec.h
+
+Reorganize doomdef.h and doomtype.h into:
+doomdef.h  = defines only, usable in H files
+doomtype.h = typedefs, system detection, usable in H files
+doomincl.h = doomdef.h + doomtype.h + common functions and variables
+    First include in most C files so that precompiled headers get the
+    most benefit.
+    Defines WINVER, so doomincl.h must precede some lib includes that would 
+    define WINVER first (Redefine error).
+    Moved logstream and debugging files to doomincl.h.
+Fixed the includes in almost every H and C files.  Added many includes
+to cover usage in the H or C file.  Removed some includes due to changes.
+Changed include defines to xx_H, to be in our namespace
+(and not in the __xx__ namespace, which makes it look like a system name).
+General cleanup of things that would not normally be mixed with a code
+change.
+Cleanup of log headings, removing lines with no maintenance content.
+Removed duplicate headers in some files.
+Fix some macro naming and collisions.
+Added headers to some files that were missing them.
+Fixed indentation in some files.
+Removed ZZ_Alloc macro, because it had little use and hid usage of Z_Malloc.
+This touches almost every file.
+Turned off some debugging defines, and changed names to avoid collision.
+No code changes were made.
+
+*** W92_winjoy
+patchfile = w92_9_winjoy.patch
+- committed revision 1036   by wesley johnson
+Fix win32 joystick to use newer joystick interfaces.
+Will allow two joysticks.
+Untested.
+
+*** W92_WaitVBL
+patchfile = w92_10_waitvbl.patch
+- committed revision 1037   by wesley johnson
+I_WaitVBL is no longer used by sdl, nor the code, it never worked,
+and most ports had dummy functions.
+Now there is I_Sleep, that is used (in one place, optionally, as an
+experiment).
+Removed I_WaitVBL from all the ports, and added an I_Sleep function,
+using usleep() from unistd.
+
+
+
 
 

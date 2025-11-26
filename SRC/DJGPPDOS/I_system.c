@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: I_system.c 1037 2013-08-14 00:42:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -104,6 +104,7 @@
 
 
 // Do not execute cleanup code more than once. See Shutdown_xxx() routines.
+//byte graphics_started=false;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;
@@ -368,7 +369,12 @@ void I_Quit (void)
 }
 
 
-//added:12-02-98: does want to work!!!! rhaaahahha
+// sleeps for the given amount of milliseconds
+void I_Sleep(unsigned int ms)
+{
+    usleep( ms * 1000 );  // unistd
+}
+/*
 void I_WaitVBL(int count)
 {
    while(count-->0);
@@ -378,9 +384,8 @@ void I_WaitVBL(int count)
      do {
      } while (!(inportb(0x3DA) & 8));
    }
-
 }
-
+*/
 //  Fab: this is probably to activate the 'loading' disc icon
 //       it should set a flag, that I_FinishUpdate uses to know
 //       whether it draws a small 'loading' disc icon on the screen or not
@@ -1183,7 +1188,7 @@ void I_ShutdownSystem()
 
 uint64_t I_GetDiskFreeSpace(void)
 {
-	  uint64_t *freespace;
+    uint64_t *freespace;
     struct diskfree_t df;
     if(_dos_getdiskfree(0,&df))
         *freespace = (unsigned long)df.avail_clusters *
@@ -1191,8 +1196,8 @@ uint64_t I_GetDiskFreeSpace(void)
                      (unsigned long)df.sectors_per_cluster;
     else
         *freespace = MAXINT;
-			
-	  return *freespace;
+
+    return *freespace;
 }
 
 char *I_GetUserName(void)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_system.h 1037 2013-08-14 00:42:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -95,7 +95,7 @@ void I_OsPolling (void);
 // for normal input.
 ticcmd_t* I_BaseTiccmd (void);
 
-/// sleeps for the given amount of milliseconds
+// sleeps for the given amount of milliseconds
 void I_Sleep(unsigned int ms);
 
 // Called by M_Responder when quit is selected, return code 0.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_video.h 1037 2013-08-14 00:42:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -97,9 +97,6 @@ char  *VID_GetModeName(int modenum);
 
 void I_UpdateNoBlit (void);
 void I_FinishUpdate (void);
-
-// Wait for vertical retrace or pause a bit.
-void I_WaitVBL(int count);
 
 void I_ReadScreen (byte* scr);
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_menu.c 1037 2013-08-14 00:42:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3493,7 +3493,7 @@ int     quitsounds2[8] =
 
 void M_QuitResponse(int ch)
 {
-    tic_t   time;
+    tic_t   dlyd_time;
     if (ch != 'y')
         return;
     if (!netgame)
@@ -3507,10 +3507,9 @@ void M_QuitResponse(int ch)
         //added:12-02-98: do that instead of I_WaitVbl which does not work
         if(!nosoundfx)
         {
-            time = I_GetTime() + TICRATE*2;
-            while (time > I_GetTime()) ;
+            dlyd_time = I_GetTime() + TICRATE*2;
+            while (dlyd_time > I_GetTime()) ;
         }
-        //I_WaitVBL(105);
     }
     I_Quit ();
 }
