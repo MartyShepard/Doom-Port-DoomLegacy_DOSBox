@@ -3464,3 +3464,13 @@ patchfile = w94_1_nosecret.patch
 When there are no secrets, no possible kills, or no items on a level,
 then draw a dash (minus) instead of 0%.
 
+*** W94_mousemenu
+patchfile = w94_2_mousemenu.patch
+- committed revision 1051   by wesley johnson
+Fix FR 3427586.
+The mouse may move the menu ptr while using the keyboard.
+The fix disables menu movement from the mouse for a short interval
+(about 4 seconds) after each key press.  After the interval the mouse
+can be used to move in the menus again.  Does not affect mouse clicks.
+
+
