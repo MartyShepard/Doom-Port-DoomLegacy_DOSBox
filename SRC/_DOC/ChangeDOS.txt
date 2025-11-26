@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01041 ]: w93 movecamera
+[01040*]: w93 hw same vertex
+[01039*]: w92 10b
+[01038*]: w92 rm Makefile.scouw7
 [01037 ]: w92 WaitVBL
 [01036*]: w92 win joystick
 [01035 ]: w92 include fixes, doomcincl.h

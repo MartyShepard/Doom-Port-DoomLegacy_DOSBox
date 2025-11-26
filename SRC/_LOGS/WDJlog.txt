@@ -3369,7 +3369,22 @@ experiment).
 Removed I_WaitVBL from all the ports, and added an I_Sleep function,
 using usleep() from unistd.
 
+- committed revision 1038   by wesley johnson
+w92 10b
+Remove extra I_Sleep in sdl.
 
+*** W93_hw_same_vertex
+patchfile = w93_1_hw_same_vertex.patch
+- committed revision 1040   by wesley johnson
+When using -opengl, FreeDoom Map09 had HOM in one particular passage.
+Changed save vertex test to inequality cured the HOM.
 
-
+*** W93_movecamera
+patchfile = w93_2_movecamera.patch
+- committed revision 1041   by wesley johnson
+Fragglescript movecamera has only 6 param, but phobiata.wad has a call
+with 7 param, and the game would freeze at that point.
+Previous updates to fragglescript in W83 fixed the param checking.
+Changed movecamera to more gracefully ignore the extra parameter, while
+printing a warning message.
 
