@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01050 ]: w94 no secret dash
 [01049 ]: w93 viewheight
 [01048 ]: w93 docs
 [01047 ]: w93 execute script

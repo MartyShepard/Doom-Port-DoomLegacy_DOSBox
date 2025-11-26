@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: wi_stuff.c 1050 2013-10-01 21:01:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -792,15 +792,18 @@ static int WI_drawNum ( int           x,
 
 }
 
-static void WI_drawPercent( int           x,
-                            int           y,
-                            int           p )
+// draw a percentage at x,y, blank when -1, a dash when -100
+static void WI_drawPercent( int  x, int  y, int  pernum )
 {
-    if (p < 0)
+    if (pernum < 0)
+    {
+        if (pernum == -100 )  // no secrets, items, etc..
+	   V_DrawScaledPatch(x, y, wiminus);
         return;
+    }
 
     V_DrawScaledPatch(x, y, percent);
-    WI_drawNum(x, y, p, -1);
+    WI_drawNum(x, y, pernum, -1);
 }
 
 
@@ -1414,7 +1417,7 @@ static void WI_updateNetgameStats(void)
     int         i;
     int         fsum;
 
-    boolean     stillticking;
+    boolean     stillticking = false;
 
     WI_updateAnimatedBack();
 
@@ -1427,9 +1430,12 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-            cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
-            cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
-            cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+            cnt_kills[i] = ( wbs->maxkills > 0 ) ?
+	       (plrs[i].skills * 100) / wbs->maxkills : -100;
+            cnt_items[i] = ( wbs->maxitems > 0 ) ?
+	       (plrs[i].sitems * 100) / wbs->maxitems : -100;
+	    cnt_secret[i] = ( wbs->maxsecret > 0 ) ?
+	       (plrs[i].ssecret * 100) / wbs->maxsecret : -100;
 
             if (dofrags)
                 cnt_frags[i] = ST_PlayerFrags(i);
@@ -1440,18 +1446,19 @@ static void WI_updateNetgameStats(void)
 
     if (ng_state == 2)
     {
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
-
-        stillticking = false;
-
         for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if (!playeringame[i])
                 continue;
 
-            cnt_kills[i] += 2;
+	    if( wbs->maxkills < 0 )
+	    {
+	       // no kills
+	       cnt_kills[i] = -100;
+	       continue;
+	    }
 
+            cnt_kills[i] += 2;
             if (cnt_kills[i] >= (plrs[i].skills * 100) / wbs->maxkills)
                 cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
             else
@@ -1459,22 +1466,21 @@ static void WI_updateNetgameStats(void)
         }
 
         if (!stillticking)
-        {
-            S_StartSound(0, sfx_barexp);
-            ng_state++;
-        }
+	    goto next_state;
     }
     else if (ng_state == 4)
     {
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
-
-        stillticking = false;
-
         for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if (!playeringame[i])
                 continue;
+
+	    if( wbs->maxitems < 0 )
+	    {
+	       // no items
+	       cnt_items[i] = -100;
+	       continue;
+	    }
 
             cnt_items[i] += 2;
             if (cnt_items[i] >= (plrs[i].sitems * 100) / wbs->maxitems)
@@ -1483,25 +1489,23 @@ static void WI_updateNetgameStats(void)
                 stillticking = true;
         }
         if (!stillticking)
-        {
-            S_StartSound(0, sfx_barexp);
-            ng_state++;
-        }
+	    goto next_state;
     }
     else if (ng_state == 6)
     {
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
-
-        stillticking = false;
-
-        for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if (!playeringame[i])
                 continue;
 
-            cnt_secret[i] += 2;
+	    if( wbs->maxsecret < 0 )
+	    {
+	       // no secrets
+	       cnt_secret[i] = -100;
+	       continue;
+	    }
 
+            cnt_secret[i] += 2;
             if (cnt_secret[i] >= (plrs[i].ssecret * 100) / wbs->maxsecret)
                 cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
             else
@@ -1510,17 +1514,13 @@ static void WI_updateNetgameStats(void)
 
         if (!stillticking)
         {
-            S_StartSound(0, sfx_barexp);
-            ng_state += 1 + 2*!dofrags;
+	    // skip ng_state 8 if no frags
+	    if ( !dofrags )  ng_state += 2;
+	    goto next_state;
         }
     }
     else if (ng_state == 8)
     {
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
-
-        stillticking = false;
-
         for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if (!playeringame[i])
@@ -1538,6 +1538,7 @@ static void WI_updateNetgameStats(void)
         {
             S_StartSound(0, sfx_pldeth);
             ng_state++;
+	    goto done;
         }
     }
     else if (ng_state == 10)
@@ -1550,6 +1551,7 @@ static void WI_updateNetgameStats(void)
             else
                 WI_initShowNextLoc();
         }
+        goto done;
     }
     else if (ng_state & 1)
     {
@@ -1558,7 +1560,19 @@ static void WI_updateNetgameStats(void)
             ng_state++;
             cnt_pause = TICRATE;
         }
+        goto done;
     }
+
+    // tick sound, a single place to change it
+    if (!(bcnt&3))
+        S_StartSound(0, sfx_pistol);
+    return;
+   
+next_state:
+    S_StartSound(0, sfx_barexp);
+    ng_state++;
+done:
+    return;
 }
 
 
@@ -1660,7 +1674,8 @@ static void WI_updateStats(void)
         acceleratestage = 0;
         cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
         cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
-        cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+        cnt_secret[0] = ( wbs->maxsecret > 0 ) ?
+           (plrs[me].ssecret * 100) / wbs->maxsecret : -100;
         cnt_time = plrs[me].stime / TICRATE;
         cnt_par = wbs->partime / TICRATE;
         S_StartSound(0, sfx_barexp);
@@ -1669,52 +1684,55 @@ static void WI_updateStats(void)
 
     if (sp_state == 2)
     {
-        cnt_kills[0] += 2;
+        if ( wbs->maxkills <= 0 )
+        {
+	    cnt_kills[0] = -100;
+	    goto next_state;  // no kills
+	}
 
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
+        cnt_kills[0] += 2;
 
         if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs->maxkills)
         {
             cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
+	    goto next_state;
         }
     }
     else if (sp_state == 4)
     {
-        cnt_items[0] += 2;
+        if ( wbs->maxitems <= 0 )
+        {
+	    cnt_items[0] = -100;
+	    goto next_state;  // no items
+	}
 
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
+        cnt_items[0] += 2;
 
         if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs->maxitems)
         {
             cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
+	    goto next_state;
         }
     }
     else if (sp_state == 6)
     {
-        cnt_secret[0] += 2;
+        if ( wbs->maxsecret <= 0 )
+        {
+	    cnt_secret[0] = -100;
+	    goto next_state;  // no secrets
+	}
 
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
+        cnt_secret[0] += 2;
 
         if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs->maxsecret)
         {
-            cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
-        }
+	    cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+	    goto next_state;
+	}
     }
 
     else if (sp_state == 8)
     {
-        if (!(bcnt&3))
-            S_StartSound(0, sfx_pistol);
-
         cnt_time += 3;
 
         if (cnt_time >= plrs[me].stime / TICRATE)
@@ -1727,10 +1745,7 @@ static void WI_updateStats(void)
             cnt_par = wbs->partime / TICRATE;
 
             if (cnt_time >= plrs[me].stime / TICRATE)
-            {
-                S_StartSound(0, sfx_barexp);
-                sp_state++;
-            }
+	        goto next_state;
         }
     }
     else if (sp_state == 10)
@@ -1744,6 +1759,7 @@ static void WI_updateStats(void)
             else
                 WI_initShowNextLoc();
         }
+        goto done;
     }
     else if (sp_state & 1)
     {
@@ -1752,8 +1768,20 @@ static void WI_updateStats(void)
             sp_state++;
             cnt_pause = TICRATE;
         }
+        goto done;
     }
+   
+    // tick sound, a single place to change it
+    if (!(bcnt&3))
+        S_StartSound(0, sfx_pistol);
+    return;
 
+next_state:
+    // done incrementing the count
+    S_StartSound(0, sfx_barexp);
+    sp_state++;
+done:
+    return;
 }
 
 static void WI_drawStats(void)
@@ -1856,9 +1884,12 @@ void WI_Ticker(void)
     switch (state)
     {
       case StatCount:
-        if (cv_deathmatch.value) WI_updateDeathmatchStats();
-        else if (multiplayer) WI_updateNetgameStats();
-        else WI_updateStats();
+        if (cv_deathmatch.value)
+	    WI_updateDeathmatchStats();
+        else if (multiplayer)
+	    WI_updateNetgameStats();
+        else
+	    WI_updateStats();
         break;
 
       case ShowNextLoc:
@@ -2180,15 +2211,6 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
     firstrefresh = 1;
     me = wbs->pnum;
     plrs = wbs->plyr;
-
-    if (!wbs->maxkills)
-        wbs->maxkills = 1;
-
-    if (!wbs->maxitems)
-        wbs->maxitems = 1;
-
-    if (!wbs->maxsecret)
-        wbs->maxsecret = 1;
 
     if ( gamemode != ultdoom_retail )
       if (wbs->epsd > 2)

@@ -3457,3 +3457,10 @@ for changes to the cv_viewheight.  Existing vanilla code could not cope
 with changes in cv_viewheight because it required an external setup
 to provide the delta.
 Fixes bug_1296539.
+
+*** W94_nosecret
+patchfile = w94_1_nosecret.patch
+- committed revision 1050   by wesley johnson
+When there are no secrets, no possible kills, or no items on a level,
+then draw a dash (minus) instead of 0%.
+
