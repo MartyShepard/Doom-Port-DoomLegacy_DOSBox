@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01043 ]: w93 ticrate graph
 [01042 ]: w93 interface (major)
 [01041 ]: w93 movecamera
 [01040*]: w93 hw same vertex

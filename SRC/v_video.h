@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: v_video.h 1043 2013-08-26 20:31:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -268,5 +268,7 @@ void V_DrawPixel(byte * line, int x, byte color);
 
 // [WDJ] Draw a palette src to a screen line
 void V_DrawPixels(byte * line, int x, int count, byte* src);
+
+void V_Draw_ticrate_graph( void );
 
 #endif

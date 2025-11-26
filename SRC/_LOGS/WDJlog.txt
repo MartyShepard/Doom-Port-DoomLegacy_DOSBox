@@ -3396,3 +3396,11 @@ being retired and others created.  Most of the ports had not been
 updated.  This updates those critical interfaces and calls.
 Makefile updated too, with passage of WIN_NATIVE define.
 Filesearch code updated in most ports.
+
+*** W93_ticrate_graph
+patchfile = w93_4_ticrate_graph.patch
+- committed revision 1043   by wesley johnson
+Move ticrate graph generation to v_video, and remove it from port code.
+There is only one copy to maintain now and every port has the same
+response to vid_ticrate.
+Gave the display a more consistent time axis.

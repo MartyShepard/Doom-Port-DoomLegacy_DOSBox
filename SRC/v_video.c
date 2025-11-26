@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: v_video.c 1043 2013-08-26 20:31:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -116,7 +116,10 @@
 #include "r_draw.h"
 #include "console.h"
 
-#include "i_video.h"    //rendermode
+#include "i_video.h"
+  // rendermode
+#include "i_system.h"
+  // I_GetTime
 #include "z_zone.h"
 
 #ifdef HWRENDER
@@ -2070,6 +2073,104 @@ void V_Init_Draw(void)
 #endif
     return;
 }
+
+
+#define DRAW_FPSGRAPH
+#ifdef DRAW_FPSGRAPH
+#define FPS_POINTS  35
+#define FPS_SCALE    4
+#define FPS_MAXTICKS 20
+#define FPS_SHIFTTIC 10
+
+static byte fpsgraph[FPS_POINTS];
+#endif
+
+// [WDJ] Draw ticrate graph at bottom of screen
+// removed from port drivers so do not have to maintain 4 copies of it
+void V_Draw_ticrate_graph( void )
+{
+    static tic_t lasttic;
+    static tic_t shifttic = 0;
+    tic_t        tics, nt;
+    int i;
+    int k,j;
+
+    nt = I_GetTime();
+    tics = nt - lasttic;
+    lasttic = nt;
+    if (tics > FPS_MAXTICKS) tics = FPS_MAXTICKS;
+
+    // display a graph of ticrate 
+    if (cv_ticrate.value )
+    {
+#ifdef DRAW_FPSGRAPH
+        if( nt - shifttic > FPS_SHIFTTIC )
+        {
+	    // try to get somewhat constant horz. time scale
+	    shifttic += FPS_SHIFTTIC;
+            // shift it left
+            memmove( &fpsgraph[0], &fpsgraph[1], FPS_POINTS*sizeof(fpsgraph[0]));
+	}
+        fpsgraph[FPS_POINTS-1]=FPS_MAXTICKS-tics;
+
+        if( rendermode == render_soft )
+        {
+            // draw grid of dots
+            for(j=0; j<=FPS_MAXTICKS*FPS_SCALE*vid.dupy; j+=2*FPS_SCALE*vid.dupy)
+	    {
+	        byte * dest = V_GetDrawAddr( 0, (vid.height-1-j) );
+                for (i=0; i<FPS_POINTS*FPS_SCALE*vid.dupx; i+=2*FPS_SCALE*vid.dupx)
+		    V_DrawPixel( dest, i, 0xff );
+            }
+
+            // draw the graph
+            for (i=0; i<FPS_POINTS; i++)
+	    {
+	        byte * dest = V_GetDrawAddr( 0, vid.height-1-(fpsgraph[i]*FPS_SCALE*vid.dupy) );
+	        // draw line at the graph height
+                for(k=0; k<FPS_SCALE*vid.dupx; k++)
+		    V_DrawPixel( dest, (i*FPS_SCALE*vid.dupx)+k, 0xff );
+	    }
+#else
+	    // draws little dots on the bottom of the screen
+	    byte * dest = V_GetDrawAddr( 3, (vid.height-2) );
+      
+	    for (i=0; i<tics*2; i+=2)
+	        V_DrawPixel( dest, i * vid.dupy, 0x04 ); // white
+	    for ( ; i<20*2; i+=2)
+	        V_DrawPixel( dest, i * vid.dupy, 0x00 );
+#endif
+        }
+#ifdef HWRENDER
+        else
+        {
+            fline_t p;
+            for(j=0; j<=20*FPS_SCALE*vid.dupy; j+=2*FPS_SCALE*vid.dupy)
+            {
+                k=(vid.height-1-j);
+	        p.a.y = k;
+	        p.b.y = k;
+                for (i=0; i<FPS_POINTS*FPS_SCALE*vid.dupx; i+=2*FPS_SCALE*vid.dupx)
+                {
+                    p.a.x = i;
+                    p.b.x = i+1;
+                    HWR_drawAMline(&p, 0xff);
+                }
+            }
+
+            for (i=1; i<FPS_POINTS; i++)
+            {
+                p.a.x = FPS_SCALE * (i-1);
+                p.a.y = vid.height-1-fpsgraph[i-1]*FPS_SCALE*vid.dupy;
+                p.b.x = FPS_SCALE * i;
+                p.b.y = vid.height-1-fpsgraph[i]*FPS_SCALE*vid.dupy;
+                HWR_drawAMline(&p, 0xff);
+            }
+        }
+#endif
+    }
+}
+
 
 //
 //

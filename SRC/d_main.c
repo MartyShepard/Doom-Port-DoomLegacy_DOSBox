@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: d_main.c 1043 2013-08-26 20:31:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1042"
+#define SVN_REV "1043"
 #endif
 
 // Version number: major.minor.revision
@@ -635,7 +635,8 @@ void D_Display(void)
     // Exl: draw a faded background
     if (fadealpha != 0 && rendermode != render_soft)
 	HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
-#endif	
+#endif
+
 	//FIXME: draw either console or menu, not the two
     CON_Drawer();
 
@@ -678,6 +679,9 @@ void D_Display(void)
 #endif
         {
             //I_BeginProfile();
+	    // display a graph of ticrate 
+	    if (cv_ticrate.value )
+	        V_Draw_ticrate_graph();
             I_FinishUpdate();   // page flip or blit buffer
             //CONS_Printf ("last frame update took %d\n", I_EndProfile());
         }
@@ -738,11 +742,6 @@ void D_DoomLoop(void)
     CONS_Printf("I_StartupKeyboard...\n");
     I_StartupKeyboard();
 #endif
-#ifdef __WIN32__
-    CONS_Printf("I_StartupMouse...\n");
-    I_DoStartupMouse();
-#endif
-
     oldentertics = I_GetTime();
 
     // make sure to do a d_display to init mode _before_ load a level
@@ -2114,10 +2113,11 @@ void D_DoomMain()
     cht_Init();	// init cheats for this iwad
 
     //---------------------------------------------------- READY SCREEN
-
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
+
     I_SysInit();
+   
     if( M_CheckParm("-highcolor") )
     {
         req_drawmode = REQ_highcolor;  // 15 or 16 bpp
