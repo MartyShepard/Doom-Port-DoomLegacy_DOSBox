@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_info.c 1047 2013-09-22 20:57:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -242,6 +242,8 @@ void P_ParseLevelVar(char *cmd)
 
             case IVT_CONSOLECMD:
               {
+		// consolecmd = <string>
+		// pass the string as a console command
                 char t[256];
                 snprintf(t, 255, "%s\n", equals);
 		t[255] = '\0';

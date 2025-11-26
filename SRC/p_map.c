@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_map.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -590,7 +590,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         }
 
         // DarkWolf95: Don't damage other monsters
-	if( cv_monbehavior.value == 1
+	if( cv_monbehavior.value == 1  // coop
 	   && tm_thing->target->type != MT_PLAYER
 	   && thing->type != MT_PLAYER)
 	    goto ret_blocked;

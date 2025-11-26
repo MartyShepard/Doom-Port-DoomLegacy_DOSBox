@@ -3404,3 +3404,42 @@ Move ticrate graph generation to v_video, and remove it from port code.
 There is only one copy to maintain now and every port has the same
 response to vid_ticrate.
 Gave the display a more consistent time axis.
+
+*** W93_win_native
+patchfile = w93_5_win_native.patch
+- committed revision 1044   by wesley johnson
+Extensive changes to get WIN_NATIVE port working again.
+Now works in window and fullscreen, windows draw and Directx draw.
+Tested in 8bpp and native bpp.
+Has -win parameter to force windows drawing.
+
+*** W93_hw_translu
+patchfile = w93_6_hwtranslu.patch
+- committed revision 1045   by wesley johnson
+Fix hardware Boom 260 translucent draw of tagged linedefs.
+
+*** W93_screendeg
+patchfile = w93_7_screendeg.patch
+- committed revision 1046   by wesley johnson
+Add a -screendeg command line option, which is a generalization of
+-left and -right.
+A few comments and some #ifdef around some unused code.
+
+*** W93_execute_script
+patchfile = w93_8_execute_script.patch
+- committed revision 1047   by wesley johnson
+Fixes bug_589 (bug_3375763).
+The execution of a bind button would fail because the string was parsed
+without understanding the escaped quotes within quotes.
+Fixed script detection to understand exec lines.
+The syntax of button names with spaces in a quoted string is hard to
+read, and error prone.  Have given the user the ability to name them with
+underlines in place of the spaces.  Such names do not need to be quoted.
+If the key name search fails then any underlines in the name are replaced
+with spaces, and the key name search retried.  This also allows control
+names to have underlines (which they currently do not).
+This allows the messy
+  alias ps0 "playersprites 0; bind \"mouse 3\" ps1"
+to be specified as
+  alias ps0 "playersprites 0; bind mouse_3 ps1"
+which is much easier to read.

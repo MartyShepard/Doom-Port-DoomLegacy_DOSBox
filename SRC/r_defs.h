@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_defs.h 1045 2013-09-22 20:32:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -548,7 +548,7 @@ typedef struct line_s
     
     //SoM: 3/6/2000
     int translu_eff;       // translucency effect table, 0 == none 
-   			   // TRANSLU_med or (TRANSLU_ext + lumpnum)
+   			   // TRANSLU_med or (TRANSLU_ext + translu_store index)
     int firsttag,nexttag;  // improves searches for tags.
 
 //    int ecolormap;         // SoM: Used for 282 linedefs

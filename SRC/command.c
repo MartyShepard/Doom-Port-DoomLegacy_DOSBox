@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: command.c 1047 2013-09-22 20:57:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -191,16 +191,19 @@ void COM_BufExecute ( void )
       boolean in_quote = false;
 
       // This is called without a clue as to what commands are present.
-      // scripts have quoted strings
-      // exec have quoted filenames with backslash: exec "c:\doomdir\"
-      if( ( strncmp(text,"exec",4) == 0 )
+      // Scripts have quoted strings,
+      // exec have quoted filenames with backslash: exec "c:\doomdir\".
+      // The while loop continues into the exec which can have two levels
+      // of quoted strings:
+      //      alias zoom_in "fov 15; bind \"mouse 3\" zoom_out"
+      script =
+        ( ( strncmp(text,"exec",4) == 0 )
           ||( strncmp(text,"map",3) == 0 )
           ||( strncmp(text,"playdemo",8) == 0 )
           ||( strncmp(text,"addfile",7) == 0 )
           ||( strncmp(text,"loadconfig",10) == 0 )
           ||( strncmp(text,"saveconfig",10) == 0 )
-	  )
-	 script = 0;  // has filename
+	  ) ? 0 : 1;  // has filename : is script with quoted strings
 
       for (i=0; i < com_text.cursize; i++)
       {

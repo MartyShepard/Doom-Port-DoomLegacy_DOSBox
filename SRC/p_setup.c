@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: p_setup.c 1045 2013-09-22 20:32:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1086,6 +1086,7 @@ void P_LoadSideDefs2(int lump)
 	  // other linedef effects.
 	  eff = TRANSLU_med;  // default TRANMAP
 	  sd->midtexture = 0;  // default, no texture
+	  // texture name = "TRANMAP" means use TRANSLU_med
 	  if( strncasecmp("TRANMAP", msd->midtexture, 8) != 0 )
 	  {
 	      // From Boom, any lump can be transparency map if it is right size

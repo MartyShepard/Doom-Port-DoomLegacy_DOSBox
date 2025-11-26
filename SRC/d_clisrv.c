@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_clisrv.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -165,7 +165,7 @@
 // gametic is the tic about to (or currently being) run
 // maketic is the tic that hasn't had control made for it yet
 // server:
-//   nettics is the tic for eatch node
+//   nettics is the tic for each node
 //   firstticstosend is the lowest value of nettics
 // client:
 //   neededtic is the tic needed by the client for run the game
@@ -1137,18 +1137,34 @@ void D_ClientServerInit (void)
 
     drone = false;
 
+    // drone server generating the left view of three screen view
     if(M_CheckParm("-left"))
     {
         drone = true;
         viewangleoffset = ANG90;
     }
+    // drone server generating the right view of three screen view
     if(M_CheckParm("-right"))
     {
         drone = true;
         viewangleoffset = -ANG90;
     }
+    // [WDJ] specify secondary screen angle in degrees (general case of left/right)
+    if(M_CheckParm("-screendeg"))
+    {
+        drone = true;
+        if( M_IsNextParm() )
+        {
+	    // does not accept negative numbers, use 270, 315, etc
+	    viewangleoffset = atoi(M_GetNextParm()) * (ANG90 / 90);
+	    // it is cheating to have screen looking behind player
+	    if( viewangleoffset < -ANG90 )  viewangleoffset = -ANG90;
+	    if( viewangleoffset > ANG90 )  viewangleoffset = ANG90;
+	}
+    }
+//    fprintf(stderr, "viewangleoffset=%i\n", viewangleoffset );
 
-    // for dedicated server
+    // for dedicated server, without player
     dedicated=M_CheckParm("-dedicated")!=0;
     
     COM_AddCommand("playerinfo",Command_PlayerInfo);
@@ -2005,7 +2021,7 @@ static void CL_SendClientCmd (void)
 // send tic from firstticstosend to maketic-1
 static void SV_SendTics (void)
 {
-    tic_t realfirsttic,lasttictosend,i;
+    tic_t realfirsttic, lasttictosend, i;
     ULONG n;
     int  j,packsize;
     char *bufpos;
@@ -2025,7 +2041,7 @@ static void SV_SendTics (void)
             if(realfirsttic>=maketic)
             {
                 // well we have sent all tics we will so use extrabandwidth
-                // to resent packet that are supposed lost (this is necessary since lost 
+                // to resend packet that are supposed lost (this is necessary since lost 
                 // packet detection work when we have received packet with firsttic>neededtic 
                 // (getpacket servertics case)
                 DEBFILE(va("Nothing to send node %d mak=%u sup=%u net=%u \n", 
@@ -2039,7 +2055,7 @@ static void SV_SendTics (void)
             if( realfirsttic<firstticstosend )
                 realfirsttic=firstticstosend;
 
-            // compute the lenght of the packet and cut it if too large
+            // compute the length of the packet and cut it if too large
             packsize=BASESERVERTICSSIZE;
             for(i=realfirsttic;i<lasttictosend;i++)
             {
@@ -2052,10 +2068,10 @@ static void SV_SendTics (void)
                                packsize, i, realfirsttic, lasttictosend));
                     lasttictosend=i;
 
-                    // too bad : too much player have send extradata and there is too
-                    //           mutch data in one tic. 
+                    // too bad : too many players have sent extradata and there is too
+                    //           much data in one tic. 
                     //           Too avoid it put the data on the next tic. (see getpacket 
-                    //           textcmd case) but when numplayer chang the computation can be different
+                    //           textcmd case) but when numplayer change the computation can be different
                     if(lasttictosend==realfirsttic)
                     {
                         if( packsize>MAXPACKETLENGTH )
@@ -2108,8 +2124,8 @@ static void SV_SendTics (void)
 
             HSendPacket(n,false,0,packsize);
             // when tic are too large, only one tic is sent so don't go backward !
-            if( lasttictosend-doomcom->extratics > realfirsttic )
-                supposedtics[n] = lasttictosend-doomcom->extratics;
+            if( lasttictosend - doomcom->extratics > realfirsttic )
+                supposedtics[n] = lasttictosend - doomcom->extratics;
             else
                 supposedtics[n] = lasttictosend;
             if( supposedtics[n] < nettics[n] ) supposedtics[n] = nettics[n];

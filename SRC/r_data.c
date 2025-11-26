@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_data.c 1045 2013-09-22 20:32:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2373,6 +2373,7 @@ translucent_map_t *  translu_store = NULL;
 int translu_store_num = 0;
 int translu_store_len = 0;
 
+// Return translu_store index
 int  R_setup_translu_store( int lump_num )
 {
    int ti;

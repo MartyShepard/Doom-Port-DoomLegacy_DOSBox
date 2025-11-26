@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01047 ]: w93 execute script
+[01046 ]: w93 screendeg
+[01045 ]: w93 screendeg
+[01044*]: w93 win native
 [01043 ]: w93 ticrate graph
 [01042 ]: w93 interface (major)
 [01041 ]: w93 movecamera

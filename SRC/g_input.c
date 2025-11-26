@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: g_input.c 1047 2013-09-22 20:57:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -482,23 +482,48 @@ static char keynamestr[8];
 int G_KeyStringtoNum(char *keystr)
 {
     int j;
+    int len = strlen(keystr);
+    byte stat = 0;
 
-//    strupr(keystr);
 
     if(keystr[1]==0 && keystr[0]>' ' && keystr[0]<='z')
         return keystr[0];
 
-    for (j=0;j<NUMKEYNAMES;j++)
+  retry_search:
+    // caseless comparison, uppercase or lowercase input will work
+    for (j=0; j<NUMKEYNAMES; j++)
     {
         if (strcasecmp(keynames[j].name,keystr)==0)
             return keynames[j].keynum;
     }
+   
+    // failed, try to change _ to space
+    if( stat == 0 )
+    {
+        // [WDJ] Got tired trying to fix bugs about a quoted button name
+        // within a the quoted script string like alias.
+	// Let them specify the button name with underlines and we will
+	// equate it to the name with spaces, and it does not require those
+        // escaped quotes.
+	//   mouse_3  --> "mouse 3"
+        for (j=0; j<len; j++ )
+        {
+	    if ( keystr[j] == '_' )
+	    {
+	        keystr[j] = ' ';
+	        stat = 1;
+	    }
+        }
+        if ( stat )   goto retry_search;  // found some '_', try it again
+    }
+    // not found, try to interpret it as a number
 
     if(strlen(keystr)>3)
         return atoi(&keystr[3]);
 
     return 0;
 }
+
 
 void G_Controldefault(void)
 {

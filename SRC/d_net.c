@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_net.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1058,13 +1058,15 @@ extern boolean D_CheckNetGame (void)
         ret = true;
     if( !server && netgame )
         netgame = false;
-    server = true; // WTF? server always true???
-                   // BP: no ! The deault mode is server. Client is set elsewhere
-                   //     when the client execute connect command, i think
+    server = true; // The default mode is server.
+                   // Set to Client mode when connect to another server.
     doomcom->ticdup = 1;
     
     if (M_CheckParm ("-extratic"))
     {
+        // extratic causes redundant transmission of tics, to prevent
+	// retransmission of player movement
+	// Combination of the vanilla -extratic and -dup
         if( M_IsNextParm() )
             doomcom->extratics = atoi(M_GetNextParm());
         else
@@ -1074,6 +1076,8 @@ extern boolean D_CheckNetGame (void)
 
     if(M_CheckParm ("-bandwidth"))
     {
+        // set the expected network bandwith, in bytes per second
+	// default is 3K
         if(M_IsNextParm())
         {
             net_bandwidth = atoi(M_GetNextParm());
