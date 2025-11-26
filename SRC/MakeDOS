@@ -321,10 +321,9 @@ ifdef DJGPPDOS_NATIVE
     USEASM=1
 	
 	# options
-    OPTS=-DPC_DOS -g
+    OPTS=-DPC_DOS -g -I.
 
-	  #DEBUGLIBS=-lm -lalleg -lbcd -lsocket
-    LIBS=-lm -lalleg
+	LIBS=-lm -lalleg
 	 
   ifdef CDMUS
      LIBS+=-lbcd
