@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: st_stuff.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,14 +22,8 @@
 // added heretic support
 //
 // Revision 1.4  2000/10/01 10:18:19  bpereira
-// no message
-//
 // Revision 1.3  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -41,8 +35,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STSTUFF_H__
-#define __STSTUFF_H__
+#ifndef ST_STUFF_H
+#define ST_STUFF_H
 
 #include "doomtype.h"
 #include "d_event.h"

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 951 2012-07-06 21:17:03Z wesleyjohnson $
+// $Id: t_parse.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -31,16 +31,11 @@
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
 // Revision 1.6  2003/07/13 13:16:15  hurdler
-// go RC1
-//
 // Revision 1.5  2001/08/14 00:36:26  hurdler
-// Small update
-//
 // Revision 1.4  2001/05/03 21:22:25  hurdler
 // remove some warnings
 //
 // Revision 1.3  2000/11/04 16:23:44  bpereira
-// no message
 //
 // Revision 1.2  2000/11/03 11:48:40  hurdler
 // Fix compiling problem under win32 with 3D-Floors and FragglScript (to verify!)
@@ -62,12 +57,9 @@
 
 /* includes ************************/
 
-#include <stdio.h>
-#include <stdarg.h>
-#include "command.h"
-#include "doomtype.h"
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
+#include "command.h"
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"

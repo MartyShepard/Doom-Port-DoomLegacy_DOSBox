@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 989 2012-12-04 04:27:46Z wesleyjohnson $
+// $Id: r_draw8.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,10 +18,7 @@
 //
 // $Log: r_draw8.c,v $
 // Revision 1.25  2003/07/13 18:04:57  hurdler
-// go RC1
-//
 // Revision 1.24  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.23  2003/06/10 23:36:09  ssntails
 // Variable flat support (32x32 to 2048x2048)
@@ -30,16 +27,12 @@
 // Support for translated translucent columns in software mode.
 //
 // Revision 1.21  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.20  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.19  2001/04/02 18:54:32  bpereira
-// no message
-//
 // Revision 1.18  2001/04/01 17:35:07  bpereira
-// no message
 //
 // Revision 1.17  2001/03/21 18:24:39  stroggonmeth
 // Misc changes and fixes. Code cleanup
@@ -54,25 +47,15 @@
 // Optimised 3D floors and fixed crashing bug in high resolutions.
 //
 // Revision 1.13  2000/11/06 20:52:16  bpereira
-// no message
 //
 // Revision 1.12  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.11  2000/09/28 20:57:17  bpereira
-// no message
-//
 // Revision 1.10  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.9  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.8  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.7  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.6  2000/04/06 21:06:19  stroggonmeth
 // Optimized extra_colormap code...
@@ -88,8 +71,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //

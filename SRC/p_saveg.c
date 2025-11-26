@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: p_saveg.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -28,7 +28,6 @@
 // go final + translucent HUD + fix spawn in net game
 //
 // Revision 1.26  2003/07/21 11:33:57  hurdler
-// go RC1
 //
 // Revision 1.25  2003/05/04 07:22:55  sburke
 // Overlooked a LONG() swap when restoring the door->line of a door thinker.
@@ -46,46 +45,25 @@
 // Frag's Weapon Falling fixes
 //
 // Revision 1.20  2001/06/16 08:07:55  bpereira
-// no message
-//
 // Revision 1.19  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.18  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.17  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.16  2001/02/10 12:27:14  bpereira
-// no message
 //
 // Revision 1.15  2001/01/25 22:15:43  bpereira
 // added heretic support
 //
 // Revision 1.14  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.13  2000/11/04 16:23:43  bpereira
-// no message
 //
 // Revision 1.12  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.11  2000/09/28 20:57:16  bpereira
-// no message
-//
 // Revision 1.10  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.9  2000/07/01 09:23:49  bpereira
-// no message
-//
 // Revision 1.8  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.7  2000/04/15 22:12:57  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.6  2000/04/11 19:07:24  stroggonmeth
 // Finished my logs, fixed a crashing bug.
@@ -97,8 +75,6 @@
 // dead player bug fix + add allowmlook <yes|no>
 //
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -107,13 +83,15 @@
 //      Archiving: SaveGame I/O.
 //
 //-----------------------------------------------------------------------------
+
 #include <stdint.h>
 #include <stddef.h>
   // offsetof
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
+#include "r_data.h"
 #include "r_state.h"
 #include "z_zone.h"
 #include "w_wad.h"

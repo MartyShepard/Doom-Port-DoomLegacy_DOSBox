@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_bot.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_bot.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -23,38 +23,41 @@
 // Revision 1.2  2002/09/27 16:40:07  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
+#ifndef B_BOT_H
+#define B_BOT_H
+
+#include "doomtype.h"
+#include "m_fixed.h"
 #include "tables.h"
 #include "p_mobj.h"
 #include "b_search.h"
 
-#ifndef __BOT_H__
-#define __BOT_H__
-
 typedef struct
 {
-	boolean			straferight;
-	byte			lastNumWeapons;		//used to check if got a new weapon
+    boolean	straferight;
+    byte	lastNumWeapons;	//used to check if got a new weapon
 
-	int				blockedcount,
-					avoidtimer,		//used so if blocked by something, like a barrel will reverse, and try to get around it
-					strafetimer,
-					weaponchangetimer;
+    int		blockedcount,
+		avoidtimer,	//used so if blocked by something, like a barrel will reverse, and try to get around it
+		strafetimer,
+		weaponchangetimer;
 
-	fixed_t			lastMobjX,			//where last enemy was seen
-					lastMobjY;
+    fixed_t	lastMobjX,	//where last enemy was seen
+		lastMobjY;
 
-	mobj_t			*bestSeenItem,		//best item seen
-					*bestItem,			//best item on map, not neccessarily seen
-					*closestEnemy,
-					*closestMissile,
-					*closestUnseenEnemy,//goes towards this enemy if have nothing else todo
-					*closestUnseenTeammate,//goes towards this teammate if have nothing else todo
-					*lastMobj,			//last enemy
-					*teammate;
+    mobj_t	*bestSeenItem,	//best item seen
+		*bestItem,	//best item on map, not neccessarily seen
+		*closestEnemy,
+		*closestMissile,
+		*closestUnseenEnemy,//goes towards this enemy if have nothing else todo
+		*closestUnseenTeammate,//goes towards this teammate if have nothing else todo
+		*lastMobj,	//last enemy
+		*teammate;
 
-	LinkedList_t	*path;				//path to the best item on the map
-	SearchNode_t	*destNode;			//the closest node to where wants to go
+    LinkedList_t  *path;	//path to the best item on the map
+    SearchNode_t  *destNode;	//the closest node to where wants to go
 
 } bot_t;
 

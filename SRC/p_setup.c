@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: p_setup.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -31,7 +31,6 @@
 // READSHORT now does byte-swapping on big-endian machines.
 //
 // Revision 1.45  2002/10/30 23:50:03  bock
-// Fix CR+LF
 //
 // Revision 1.44  2002/09/27 16:40:09  tonyd
 // First commit of acbot
@@ -43,13 +42,8 @@
 // Copy 'side' from SEGS structure to seg_t's copy
 //
 // Revision 1.41  2002/01/12 12:41:05  hurdler
-// very small commit
-//
 // Revision 1.40  2002/01/12 02:21:36  stroggonmeth
-// Big commit
-//
 // Revision 1.39  2001/08/19 20:41:03  hurdler
-// small changes
 //
 // Revision 1.38  2001/08/13 16:27:44  hurdler
 // Added translucency to linedef 300 and colormap to 3d-floors
@@ -70,13 +64,8 @@
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.32  2001/07/28 16:18:37  bpereira
-// no message
-//
 // Revision 1.31  2001/06/16 08:07:55  bpereira
-// no message
-//
 // Revision 1.30  2001/05/27 13:42:48  bpereira
-// no message
 //
 // Revision 1.29  2001/05/14 19:02:58  metzgermeister
 //   * Fixed floor not moving up with player on E3M1
@@ -88,7 +77,6 @@
 // HW fix and misc. changes
 //
 // Revision 1.27  2001/03/30 17:12:51  bpereira
-// no message
 //
 // Revision 1.26  2001/03/19 21:18:48  metzgermeister
 //   * missing textures in HW mode are replaced by default texture
@@ -103,46 +91,31 @@
 // added heretic support
 //
 // Revision 1.23  2000/11/04 16:23:43  bpereira
-// no message
-//
 // Revision 1.22  2000/11/03 03:27:17  stroggonmeth
-// Again with the bug fixing...
-//
 // Revision 1.21  2000/11/02 19:49:36  bpereira
-// no message
 //
 // Revision 1.20  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.19  2000/10/02 18:25:45  bpereira
-// no message
-//
 // Revision 1.18  2000/08/31 14:30:56  bpereira
-// no message
 //
 // Revision 1.17  2000/08/11 21:37:17  hurdler
 // fix win32 compilation problem
 //
 // Revision 1.16  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.15  2000/05/23 15:22:34  stroggonmeth
 // Not much. A graphic bug fixed.
 //
 // Revision 1.14  2000/05/03 23:51:00  stroggonmeth
-// A few, quick, changes.
 //
 // Revision 1.13  2000/04/19 15:21:02  hurdler
 // add SDL midi support
 //
 // Revision 1.12  2000/04/18 12:55:39  hurdler
-// join with Boris' code
-//
 // Revision 1.11  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.10  2000/04/15 22:12:57  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.9  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -166,8 +139,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -178,7 +149,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "d_main.h"
 #include "byteptr.h"
 #include "g_game.h"
@@ -625,16 +596,16 @@ void P_LoadSectors (int lump)
         //
         //  flats
         //
-        if( strnicmp(ms->floorpic,"FWATER",6)==0 || 
-            strnicmp(ms->floorpic,"FLTWAWA1",8)==0 ||
-            strnicmp(ms->floorpic,"FLTFLWW1",8)==0 )
+        if( strncasecmp(ms->floorpic,"FWATER",6)==0 || 
+            strncasecmp(ms->floorpic,"FLTWAWA1",8)==0 ||
+            strncasecmp(ms->floorpic,"FLTFLWW1",8)==0 )
             ss->floortype = FLOOR_WATER;
         else
-        if( strnicmp(ms->floorpic,"FLTLAVA1",8)==0 ||
-            strnicmp(ms->floorpic,"FLATHUH1",8)==0 )
+        if( strncasecmp(ms->floorpic,"FLTLAVA1",8)==0 ||
+            strncasecmp(ms->floorpic,"FLATHUH1",8)==0 )
             ss->floortype = FLOOR_LAVA;
         else
-        if( strnicmp(ms->floorpic,"FLTSLUD1",8)==0 )
+        if( strncasecmp(ms->floorpic,"FLTSLUD1",8)==0 )
             ss->floortype = FLOOR_SLUDGE;
         else
             ss->floortype = FLOOR_SOLID;
@@ -1823,7 +1794,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
             {
                 if ( S_sfx[j].name &&
                     !S_sfx[j].link &&
-                    !strnicmp(S_sfx[j].name,name+2,6) )
+                    !strncasecmp(S_sfx[j].name,name+2,6) )
                 {
                     // the sound will be reloaded when needed,
                     // since sfx->data will be NULL

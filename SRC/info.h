@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: info.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,7 +22,6 @@
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
 // Revision 1.7  2001/08/07 00:53:33  hurdler
-// lil' change
 //
 // Revision 1.6  2001/01/25 22:15:42  bpereira
 // added heretic support
@@ -31,14 +30,11 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.4  2000/10/21 08:43:29  bpereira
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:46  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -50,11 +46,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __INFO__
-#define __INFO__
+#ifndef INFO_H
+#define INFO_H
 
 // Needed for action function pointer handling.
 #include "d_think.h"
+  // actionf_t
 
 typedef enum
 {

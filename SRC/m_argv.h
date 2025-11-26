@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: m_argv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,23 +19,21 @@
 //
 // $Log: m_argv.h,v $
 // Revision 1.3  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
 //
 // DESCRIPTION:
-//  
+//    Multiple parameters
 //    
 //-----------------------------------------------------------------------------
 
+#ifndef M_ARGV_H
+#define M_ARGV_H
 
-#ifndef __M_ARGV__
-#define __M_ARGV__
+#include "doomtype.h"
 
 //
 // MISC
@@ -52,14 +50,14 @@ int  M_CheckParm (char* check);
 void M_PushSpecialParameters( void );
 
 // return true if there is available parameters
-// use it befor M_GetNext 
+// use it before M_GetNext 
 boolean M_IsNextParm(void);
 
 // return the next parameter after a M_CheckParm
-// NULL if not found use M_IsNext to find if there is a parameter
+// NULL if not found, use M_IsNextParm to find if there is a parameter
 char *M_GetNextParm(void);
 
 // Find a Response File
 void M_FindResponseFile (void);
 
-#endif //__M_ARGV__
+#endif //M_ARGV_H

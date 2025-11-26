@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1022 2013-07-30 15:31:28Z wesleyjohnson $
+// $Id: r_data.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -25,28 +25,19 @@
 // Fix for the Z_CheckHeap and random crashes! (I hope!)
 //
 // Revision 1.29  2002/01/12 12:41:05  hurdler
-// very small commit
-//
 // Revision 1.28  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.27  2001/12/27 22:50:25  hurdler
 // fix a colormap bug, add scrolling floor/ceiling in hw mode
 //
 // Revision 1.26  2001/08/13 22:53:40  stroggonmeth
-// Small commit
-//
 // Revision 1.25  2001/03/21 18:24:39  stroggonmeth
-// Misc changes and fixes. Code cleanup
-//
 // Revision 1.24  2001/03/19 18:52:01  hurdler
-// lil fix
 //
 // Revision 1.23  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.22  2000/11/04 16:23:43  bpereira
-// no message
 //
 // Revision 1.21  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -55,31 +46,20 @@
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.19  2000/09/28 20:57:17  bpereira
-// no message
 //
 // Revision 1.18  2000/08/11 12:25:23  hurdler
 // latest changes for v1.30
 //
 // Revision 1.17  2000/07/01 09:23:49  bpereira
-// no message
-//
 // Revision 1.16  2000/05/03 23:51:01  stroggonmeth
-// A few, quick, changes.
-//
 // Revision 1.15  2000/04/23 16:19:52  bpereira
-// no message
-//
 // Revision 1.14  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
 //
 // Revision 1.13  2000/04/18 12:54:58  hurdler
 // software mode bug fixed
 //
 // Revision 1.12  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.11  2000/04/15 22:12:58  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.10  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -88,8 +68,6 @@
 // fix some boom stuffs
 //
 // Revision 1.8  2000/04/08 17:29:25  stroggonmeth
-// no message
-//
 // Revision 1.7  2000/04/08 11:27:29  hurdler
 // fix some boom stuffs
 //
@@ -108,8 +86,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -120,7 +96,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "i_video.h"
 #include "r_local.h"
@@ -131,6 +107,7 @@
 #include "z_zone.h"
 #include "p_setup.h" //levelflats
 #include "v_video.h" //pLocalPalette
+#include "m_swap.h"
 
 // Enable Generate_Texture to realloc a texture when estimate was too small
 #define GENTEXT_REALLOC

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 941 2012-07-03 17:39:05Z wesleyjohnson $
+// $Id: p_doors.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,13 +25,11 @@
 // fix player reset in secret level of doom2
 //
 // Revision 1.11  2001/05/27 13:42:47  bpereira
-// no message
 //
 // Revision 1.10  2001/04/04 20:24:21  judgecutor
 // Added support for the 3D Sound
 //
 // Revision 1.9  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.8  2001/01/25 22:15:43  bpereira
 // added heretic support
@@ -40,10 +38,7 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.6  2000/09/28 20:57:16  bpereira
-// no message
-//
 // Revision 1.5  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.4  2000/04/11 19:07:24  stroggonmeth
 // Finished my logs, fixed a crashing bug.
@@ -52,8 +47,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -63,11 +56,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
-#include "dstrings.h"
 #include "p_local.h"
 #include "r_state.h"
+#include "dstrings.h"
 #include "s_sound.h"
 #include "z_zone.h"
 

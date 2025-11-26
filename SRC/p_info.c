@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 851 2011-08-29 18:23:44Z wesleyjohnson $
+// $Id: p_info.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -25,10 +25,7 @@
 // Update Linux version
 //
 // Revision 1.14  2001/08/14 00:36:26  hurdler
-// Small update
-//
 // Revision 1.13  2001/08/13 22:53:39  stroggonmeth
-// Small commit
 //
 // Revision 1.12  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
@@ -40,25 +37,15 @@
 // fixed wrong next level name in intermission
 //
 // Revision 1.9  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.8  2001/05/07 20:27:16  stroggonmeth
-// no message
-//
 // Revision 1.7  2001/03/21 18:24:38  stroggonmeth
-// Misc changes and fixes. Code cleanup
 //
 // Revision 1.6  2001/01/25 22:15:43  bpereira
 // added heretic support
 //
 // Revision 1.5  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.4  2000/11/09 17:56:20  stroggonmeth
-// Hopefully fixed a few bugs and did a few optimizations.
-//
 // Revision 1.3  2000/11/06 20:52:16  bpereira
-// no message
 //
 // Revision 1.2  2000/11/03 11:48:39  hurdler
 // Fix compiling problem under win32 with 3D-Floors and FragglScript (to verify!)
@@ -79,11 +66,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
-
+#include "doomincl.h"
 #include "doomstat.h"
-#include "doomdef.h"
 #include "command.h"
 #include "dehacked.h"
 #include "dstrings.h"
@@ -213,6 +197,7 @@ levelvar_t levelvars[]=
   {IVT_CONSOLECMD,"consolecmd",    NULL},
   {IVT_END,       0,              0}
 };
+
 void P_ParseLevelVar(char *cmd)
 {
   char *equals;
@@ -294,7 +279,7 @@ int isMAPxy(char *name)
   return 1;
 }
 
-void P_ClearLevelVars()
+void P_ClearLevelVars(void)
 {
   info_levelname = info_skyname = info_levelpic = info_interpic = "";
   info_music = "";
@@ -358,8 +343,10 @@ void P_ParseScriptLine(char *line)
     fs_levelscript.data[0] = '\0';
   }
 
+#ifdef DEBUGFILE
   if( debugfile )
      fprintf( debugfile, "SL: %s\n", line );
+#endif
 
   int lslen = strlen(fs_levelscript.data);
   int slen = strlen(line);
@@ -414,7 +401,7 @@ void P_ParseInterText(char *line)
 
 boolean default_weaponowned[NUMWEAPONS];
 
-void P_InitWeapons()
+void P_InitWeapons(void)
 {
   char *s;
 
@@ -451,7 +438,7 @@ void P_InitWeapons()
 static char *levelname;
 
 // Called by P_LoadLevelInfo
-void P_FindLevelName()
+void P_FindLevelName(void)
 {
   extern char *maplumpname;
 
@@ -655,14 +642,14 @@ void COM_MapInfo_f(void)
 }
 
 
-void P_Info_AddCommands()
+void P_Info_AddCommands(void)
 {
   COM_AddCommand("mapinfo",  COM_MapInfo_f);
 }
 
 
 
-char *P_LevelName()
+char *P_LevelName(void)
 {
   return levelname;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 950 2012-07-06 21:15:13Z wesleyjohnson $
+// $Id: t_parse.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -40,20 +40,23 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef __PARSE_H__
-#define __PARSE_H__
+#ifndef T_PARSE_H
+#define T_PARSE_H
 
-#include "p_mobj.h"     // for mobj_t
-#include "m_fixed.h"
+#include "doomdef.h"
+#include "p_mobj.h"
+  // doomtype.h, m_fixed.h, mobj_t
 
 #define T_MAXTOKENS 128
 #define TOKENLENGTH 128
+#define VARIABLESLOTS 16
 
 
 typedef struct fs_array_s fs_array_t;
-typedef struct script_s script_t;
+typedef struct script_s   script_t;
 typedef struct fs_value_s fs_value_t;
 typedef struct operator_s operator_t;
+typedef struct fs_variable_s fs_variable_t;
 
 
 
@@ -121,11 +124,9 @@ struct script_s
   int len;
   
   // {} sections
-  
   fs_section_t *sections[SECTIONSLOTS];
   
   // variables:
-  
   fs_variable_t *variables[VARIABLESLOTS];
   
   // ptr to the parent script

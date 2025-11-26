@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: d_main.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: d_main.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.66  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //
@@ -34,10 +36,7 @@
 // Initial Chex Quest 1 Support
 //
 // Revision 1.61  2003/07/14 21:22:23  hurdler
-// go RC1
-//
 // Revision 1.60  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.59  2003/05/04 02:28:34  sburke
 // Fix for big-endian machines.
@@ -55,14 +54,11 @@
 // Apply Robert Hogberg patches
 //
 // Revision 1.54  2002/07/26 15:21:36  hurdler
-// near RC release
 //
 // Revision 1.53  2001/12/31 16:56:39  metzgermeister
 // see Dec 31 log
-// .
 //
 // Revision 1.52  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.51  2001/08/12 15:21:03  bpereira
 // see my log
@@ -72,16 +68,12 @@
 // - fixed crosshair not drawed bug
 //
 // Revision 1.49  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.48  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.47  2001/05/16 17:12:52  crashrl
 // Added md5-sum support, removed recursiv wad search
 //
 // Revision 1.46  2001/04/27 13:32:13  bpereira
-// no message
 //
 // Revision 1.45  2001/04/17 22:26:07  calumr
 // Initial Mac add
@@ -90,13 +82,8 @@
 // Added support for the 3D Sound
 //
 // Revision 1.43  2001/04/02 18:54:32  bpereira
-// no message
-//
 // Revision 1.42  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.41  2001/03/30 17:12:49  bpereira
-// no message
 //
 // Revision 1.40  2001/03/19 18:25:02  hurdler
 // Is there a GOOD reason to check for modified game with shareware version?
@@ -105,43 +92,24 @@
 // OS/2 code cleanup
 //
 // Revision 1.38  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.37  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.36  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.35  2000/11/06 20:52:15  bpereira
-// no message
-//
 // Revision 1.34  2000/11/03 03:27:17  stroggonmeth
-// Again with the bug fixing...
-//
 // Revision 1.33  2000/11/02 19:49:35  bpereira
-// no message
 //
 // Revision 1.32  2000/11/02 17:50:06  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.31  2000/10/21 08:43:28  bpereira
-// no message
-//
 // Revision 1.30  2000/10/08 13:29:59  bpereira
-// no message
-//
 // Revision 1.29  2000/10/02 18:25:44  bpereira
-// no message
-//
 // Revision 1.28  2000/10/01 10:18:16  bpereira
-// no message
-//
 // Revision 1.27  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.26  2000/08/31 14:30:55  bpereira
-// no message
 //
 // Revision 1.25  2000/08/29 15:53:47  hurdler
 // Remove master server connect timeout on LAN (not connected to Internet)
@@ -153,19 +121,13 @@
 // OS/2 port
 //
 // Revision 1.22  2000/05/07 08:27:56  metzgermeister
-// no message
-//
 // Revision 1.21  2000/04/30 10:30:10  bpereira
-// no message
 //
 // Revision 1.20  2000/04/25 19:49:46  metzgermeister
 // support for automatic wad search
 //
 // Revision 1.19  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.18  2000/04/23 16:19:52  bpereira
-// no message
 //
 // Revision 1.17  2000/04/22 20:27:35  metzgermeister
 // support for immediate fullscreen switching
@@ -177,10 +139,7 @@
 // add SDL midi support
 //
 // Revision 1.14  2000/04/18 12:55:39  hurdler
-// join with Boris' code
-//
 // Revision 1.13  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.12  2000/04/07 23:10:15  metzgermeister
 // fullscreen support under X in Linux
@@ -195,13 +154,9 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.8  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.7  2000/03/28 16:18:41  linuxcub
 // Added a command to the Linux sound-server which sets a master volume.
-// Someone needs to check that this isn't too much of a performance drop
-// on slow machines. (Works for me).
-//
 // Added code to the main parts of doomlegacy which uses this command to
 // implement volume control for sound effects.
 //
@@ -225,11 +180,7 @@
 // added support for HOME/.legacy under Linux
 //
 // Revision 1.5  2000/03/06 17:33:36  hurdler
-// compiler warning removed
-//
 // Revision 1.4  2000/03/05 17:10:56  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
 // fix CR+LF problem
 //
@@ -257,12 +208,11 @@
 #endif
 
 
-#include "doomdef.h"
+#include "doomincl.h"
+#include "doomstat.h"
 
 #include "command.h"
 #include "console.h"
-
-#include "doomstat.h"
 
 #include "am_map.h"
 #include "d_net.h"
@@ -285,6 +235,7 @@
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
+#include "m_swap.h"
 
 #include "p_setup.h"
 #include "p_fab.h"
@@ -347,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1032"
+#define SVN_REV "1033"
 #endif
 
 // Version number: major.minor.revision
@@ -1296,15 +1247,15 @@ byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
     {
         if( fread( &lumpx, sizeof(lumpx), 1, wadfile ) < 1 )   goto read_err;
 #ifdef DEBUG       
-        int cmp = strnicmp( lumpx.name, lumpname, 8 );
-	if( strnicmp( lumpx.name, "TITLE", 5 ) == 0 )
+        int cmp = strncasecmp( lumpx.name, lumpname, 8 );
+	if( strncasecmp( lumpx.name, "TITLE", 5 ) == 0 )
 	 printf( "%8s %c %8s \n", lumpx.name,
 		 ( (cmp<0)?'<': (cmp>0)? '>' :'='),
 		  lumpname);
 #endif       
         for( lc=0; lc<count; lc++ )
         {
-            if( strnicmp( lumpx.name, lumpnames[lc], 8 ) == 0 )
+            if( strncasecmp( lumpx.name, lumpnames[lc], 8 ) == 0 )
 	        result |= 1<<lc;  // found it, record it
 	}
     }

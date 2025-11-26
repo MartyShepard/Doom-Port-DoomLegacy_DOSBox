@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1009 2013-04-26 01:53:07Z wesleyjohnson $
+// $Id: r_main.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -31,25 +31,18 @@
 // go final + translucent HUD + fix spawn in net game
 //
 // Revision 1.25  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.24  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.23  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.22  2001/03/30 17:12:51  bpereira
-// no message
-//
 // Revision 1.21  2001/03/21 18:24:39  stroggonmeth
-// Misc changes and fixes. Code cleanup
 //
 // Revision 1.20  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.19  2001/02/10 12:27:14  bpereira
-// no message
 //
 // Revision 1.18  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -61,28 +54,13 @@
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.15  2000/09/28 20:57:17  bpereira
-// no message
-//
 // Revision 1.14  2000/09/21 16:45:06  bpereira
-// no message
-//
 // Revision 1.13  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.12  2000/07/01 09:23:49  bpereira
-// no message
-//
 // Revision 1.11  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.10  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.9  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.8  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.7  2000/04/06 21:06:19  stroggonmeth
 // Optimized extra_colormap code...
@@ -95,14 +73,11 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.4  2000/03/06 15:15:54  hurdler
-// compiler warning removed
 //
 // Revision 1.3  2000/02/27 16:30:28  hurdler
 // dead player bug fix + add allowmlook <yes|no>
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -114,7 +89,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "r_local.h"

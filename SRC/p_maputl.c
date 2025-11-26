@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: p_maputl.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -28,7 +28,6 @@
 // Ready for 1.32 beta 5 release
 //
 // Revision 1.13  2001/08/28 20:19:55  hurdler
-// bad news
 //
 // Revision 1.12  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
@@ -40,29 +39,19 @@
 // added heretic support
 //
 // Revision 1.9  2000/11/02 19:49:35  bpereira
-// no message
 //
 // Revision 1.8  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.7  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.6  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.5  2000/04/15 22:12:57  stroggonmeth
-// Minor bug fixes
-//
 // Revision 1.4  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:47  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -75,6 +64,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomincl.h"
 #include "p_local.h"
 #include "r_main.h"
 #include "p_maputl.h"

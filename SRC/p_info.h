@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: p_info.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: p_info.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -37,9 +37,13 @@
 //
 //
 //--------------------------------------------------------------------------
-#ifndef __P_INFO_H__
-#define __P_INFO_H__
 
+#ifndef P_INFO_H
+#define P_INFO_H
+
+#include "doomtype.h"
+#include "d_items.h"
+  // NUMWEAPONS
 #include "command.h"
 
 void P_LoadLevelInfo(int lumpnum);
@@ -88,8 +92,8 @@ int isMAPxy(char *name);
                      (isnumchar((s)[4])) &&      \
                      ((s)[5] == '\0'))*/
 
-void P_Info_AddCommands();
-char *P_LevelName();
+void P_Info_AddCommands(void);
+char *P_LevelName(void);
 char *P_LevelNameByNum( int episode, int map );
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.h 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: b_game.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -23,14 +23,15 @@
 // Revision 1.2  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
+#ifndef BOTGAME_H
+#define BOTGAME_H
+
+#include "b_bot.h"
 // bot_game.h
 #include "d_ticcmd.h"
-//#include "doomdef.h"
 #include "d_player.h"
-
-#ifndef __BOTGAME_H__
-#define __BOTGAME_H__
 
 typedef struct
 {

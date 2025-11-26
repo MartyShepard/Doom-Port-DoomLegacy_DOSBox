@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: am_map.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,8 +19,6 @@
 //
 // $Log: am_map.h,v $
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -30,11 +28,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __AMMAP_H__
-#define __AMMAP_H__
+#ifndef AMMAP_H
+#define AMMAP_H
 
 #include "d_event.h"
-
+  // event_t
 // current modifier key status
 boolean shiftdown;
 boolean altdown;

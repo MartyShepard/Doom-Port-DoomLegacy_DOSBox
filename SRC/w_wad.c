@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: w_wad.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -22,19 +22,10 @@
 // Linux compilation fixes and string cleanups
 //
 // Revision 1.33  2002/07/29 21:52:25  hurdler
-// Someone want to have a look at this bugs
-//
 // Revision 1.32  2002/07/26 15:21:36  hurdler
-// near RC release
-//
 // Revision 1.31  2002/01/14 18:54:45  hurdler
-// I'm tired to answer that question ;)
-//
 // Revision 1.30  2001/07/28 16:18:37  bpereira
-// no message
-//
 // Revision 1.29  2001/05/27 13:42:48  bpereira
-// no message
 //
 // Revision 1.28  2001/05/21 14:57:05  crashrl
 // Readded directory crawling file search function
@@ -49,13 +40,8 @@
 // Initial Mac add
 //
 // Revision 1.24  2001/03/03 06:17:34  bpereira
-// no message
-//
 // Revision 1.23  2001/02/28 17:50:55  bpereira
-// no message
-//
 // Revision 1.22  2001/02/24 13:35:21  bpereira
-// no message
 //
 // Revision 1.21  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -64,32 +50,24 @@
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.19  2000/09/28 20:57:19  bpereira
-// no message
-//
 // Revision 1.18  2000/08/31 14:30:56  bpereira
-// no message
 //
 // Revision 1.17  2000/08/11 21:37:17  hurdler
 // fix win32 compilation problem
 //
 // Revision 1.16  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.15  2000/07/01 09:23:49  bpereira
-// no message
 //
 // Revision 1.14  2000/05/09 20:57:58  hurdler
 // use my own code for colormap (next time, join with Boris own code)
 // (necessary due to a small bug in Boris' code (not found) which shows strange effects under linux)
 //
 // Revision 1.13  2000/04/30 10:30:10  bpereira
-// no message
 //
 // Revision 1.12  2000/04/27 17:43:19  hurdler
 // colormap code in hardware mode is now the default
 //
 // Revision 1.11  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.10  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -117,8 +95,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -133,8 +109,7 @@
 #include <unistd.h>
   // close, read, lseek
 
-#include "doomdef.h"
-#include "doomtype.h"
+#include "doomincl.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
@@ -147,6 +122,7 @@
 #include "i_system.h"
 
 #include "md5.h"
+#include "m_swap.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -1173,7 +1149,7 @@ int W_AddFile (char *filename)
     CONS_Printf (" adding %s\n",filename);
     startlump = numlumps;
 
-    if (stricmp (filename+strlen(filename)-3, "wad") )
+    if (strcasecmp (filename+strlen(filename)-3, "wad") )
     {
         // single lump file
         fileinfo = &singleinfo;

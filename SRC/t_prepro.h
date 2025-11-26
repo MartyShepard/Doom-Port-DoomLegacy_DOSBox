@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.h 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_prepro.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -40,8 +40,8 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef __PREPRO_H__
-#define __PREPRO_H__
+#ifndef T_PREPRO_H
+#define T_PREPRO_H
 
 #ifdef FREEBSD
 #if __FreeBSD__ < 5
@@ -49,7 +49,6 @@
 #endif
 #endif
 
-typedef struct fs_section_s fs_section_t;
 #if !defined(FREEBSD) && !defined(SOLARIS)
 typedef struct label_s label_t;
 #elif __FreeBSD__ > 4
@@ -59,14 +58,11 @@ typedef struct label_s label_t;
 #define SECTIONSLOTS 17
 #define LABELSLOTS 17
 
-#include "t_parse.h"
 
 void preprocess(script_t *script);
 
 /***** {} sections **********/
-
-fs_section_t * find_section_start(char *brace);
-fs_section_t * find_section_end(char *brace);
+typedef struct fs_section_s fs_section_t;
 
 struct fs_section_s
 {
@@ -85,14 +81,18 @@ struct fs_section_s
   fs_section_t *next;        // for hashing
 };
 
-enum    // section types
+fs_section_t * find_section_start(char *brace);
+fs_section_t * find_section_end(char *brace);
+
+
+typedef enum    // section types
 {
   FSST_empty,       // none: empty {} braces
   FSST_if,          // if() statement
   FSST_elseif,      // elseif() statement
   FSST_else,        // else() statement
   FSST_loop,        // loop
-};
+} fs_section_e;
 
 /****** goto labels ***********/
 

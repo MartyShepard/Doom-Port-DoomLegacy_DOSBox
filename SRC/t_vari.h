@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_vari.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -34,15 +34,11 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef __VARIABLE_H__
-#define __VARIABLE_H__
-
-typedef struct fs_variable_s fs_variable_t;
-#define VARIABLESLOTS 16
+#ifndef T_VARIABLE_H
+#define T_VARIABLE_H
 
 #include "t_parse.h"
-#include "p_mobj.h"
-#include "m_fixed.h"
+  // m_fixed.h, p_mobj.h
 
 // hash the variables for speed: this is the hashkey
 

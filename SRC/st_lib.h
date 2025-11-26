@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: st_lib.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,8 +22,6 @@
 // added heretic support
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -33,22 +31,19 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STLIB__
-#define __STLIB__
 
+#ifndef STLIB_H
+#define STLIB_H
 
 // We are referring to patches.
 #include "r_defs.h"
 #include "w_wad.h"
-
 
 //
 // Background and foreground screen numbers
 //
 #define BG 1
 #define FG 0
-
-
 
 //
 // Typedefs of widgets
@@ -64,7 +59,7 @@ typedef struct
     int         y;
 
     // max # of digits in number
-    int width;
+    int         width;
 
     // last number value
     int         oldnum;
@@ -167,70 +162,32 @@ void STlib_init(void);
 
 
 // Number widget routines
-void
-STlib_initNum
-( st_number_t*          n,
-  int                   x,
-  int                   y,
-  patch_t**             pl,
-  int*                  num,
-  boolean*              on,
-  int                   width );
+void STlib_initNum ( st_number_t* n, int x, int y,
+  patch_t** pl, int* num, boolean* on, int width );
 
-void
-STlib_updateNum
-( st_number_t*          n,
-  boolean               refresh );
+void STlib_updateNum ( st_number_t* n, boolean refresh );
 
 
 // Percent widget routines
-void
-STlib_initPercent
-( st_percent_t*         p,
-  int                   x,
-  int                   y,
-  patch_t**             pl,
-  int*                  num,
-  boolean*              on,
-  patch_t*              percent );
+void STlib_initPercent ( st_percent_t* p, int x, int y,
+  patch_t** pl, int* num, boolean* on, patch_t* percent );
 
 
-void
-STlib_updatePercent
-( st_percent_t*         per,
-  int                   refresh );
+void STlib_updatePercent ( st_percent_t* per, int refresh );
 
 
 // Multiple Icon widget routines
-void
-STlib_initMultIcon
-( st_multicon_t*        mi,
-  int                   x,
-  int                   y,
-  patch_t**             il,
-  int*                  inum,
-  boolean*              on );
+void STlib_initMultIcon ( st_multicon_t* mi, int x, int y,
+  patch_t** il, int* inum, boolean* on );
 
 
-void
-STlib_updateMultIcon
-( st_multicon_t*        mi,
-  boolean               refresh );
+void STlib_updateMultIcon ( st_multicon_t* mi, boolean refresh );
 
 // Binary Icon widget routines
 
-void
-STlib_initBinIcon
-( st_binicon_t*         b,
-  int                   x,
-  int                   y,
-  patch_t*              i,
-  boolean*              val,
-  boolean*              on );
+void STlib_initBinIcon ( st_binicon_t* b, int x, int y,
+  patch_t* i, boolean* val, boolean* on );
 
-void
-STlib_updateBinIcon
-( st_binicon_t*         bi,
-  boolean               refresh );
+void STlib_updateBinIcon ( st_binicon_t* bi, boolean refresh );
 
 #endif

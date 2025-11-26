@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 986 2012-12-04 04:15:40Z wesleyjohnson $
+// $Id: r_bsp.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -22,7 +22,6 @@
 // change version to 1.43
 //
 // Revision 1.23  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.22  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
@@ -34,7 +33,6 @@
 // HW fix and misc. changes
 //
 // Revision 1.19  2001/03/21 18:24:39  stroggonmeth
-// Misc changes and fixes. Code cleanup
 //
 // Revision 1.18  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
@@ -46,10 +44,7 @@
 // Optimised 3D floors and fixed crashing bug in high resolutions.
 //
 // Revision 1.15  2000/11/09 17:56:20  stroggonmeth
-// Hopefully fixed a few bugs and did a few optimizations.
-//
 // Revision 1.14  2000/11/02 19:49:36  bpereira
-// no message
 //
 // Revision 1.13  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -58,16 +53,9 @@
 // Not much. A graphic bug fixed.
 //
 // Revision 1.11  2000/05/03 23:51:01  stroggonmeth
-// A few, quick, changes.
-//
 // Revision 1.10  2000/04/20 21:47:24  stroggonmeth
-// no message
-//
 // Revision 1.9  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.8  2000/04/15 22:12:58  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.7  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -86,8 +74,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -97,14 +83,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "r_local.h"
 #include "r_state.h"
 
 #include "r_splats.h"
-#include "p_local.h"  //SoM: 4/10/2000: camera
-#include "z_zone.h"   //SoM: Check R_Prep3DFloors
+#include "p_local.h"
+  //SoM: 4/10/2000: camera
+#include "z_zone.h"
 
 seg_t*          curline;
 side_t*         sidedef;

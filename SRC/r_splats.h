@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: r_splats.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -21,14 +21,8 @@
 // Make sources buildable on FreeBSD 5-CURRENT.
 //
 // Revision 1.4  2000/11/02 19:49:37  bpereira
-// no message
-//
 // Revision 1.3  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -38,9 +32,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_SPLATS_H__
-#define __R_SPLATS_H__
+#ifndef R_SPLATS_H
+#define R_SPLATS_H
 
 #include "r_defs.h"
 
@@ -106,4 +99,4 @@ void R_AddVisibleFloorSplats (subsector_t* subsec);
 void R_DrawVisibleFloorSplats (void);
 
 
-#endif /*__R_SPLATS_H__*/
+#endif // R_SPLATS_H

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: hu_stuff.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,11 +18,15 @@
 //
 //
 // $Log: hu_stuff.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.18  2003/11/22 00:22:09  darkwolf95
-// get rid of FS hud pics on level exit and new game, also added exl's fix for clearing hub variables on new game
+// get rid of FS hud pics on level exit and new game, also added exl's fix
+// for clearing hub variables on new game
 //
 // Revision 1.17  2003/07/14 12:39:12  darkwolf95
-// Made rankings screen smaller for splitscreen.  Ditched the graphical title and limited max rankings to four.
+// Made rankings screen smaller for splitscreen.  Ditched the graphical title
+// and limited max rankings to four.
 //
 // Revision 1.16  2002/07/23 15:07:10  mysterial
 // Messages to second player appear on his half of the screen
@@ -31,20 +35,14 @@
 // small commit, mainly splitscreen fix
 //
 // Revision 1.14  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.13  2001/07/16 22:35:40  bpereira
 // - fixed crash of e3m8 in heretic
 // - fixed crosshair not drawed bug
 //
 // Revision 1.12  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.11  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.10  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.9  2001/02/19 17:40:34  hurdler
 // Fix a bug with "chat on" in hw mode
@@ -53,23 +51,14 @@
 // added heretic support
 //
 // Revision 1.7  2000/11/04 16:23:43  bpereira
-// no message
 //
 // Revision 1.6  2000/11/02 17:50:06  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.5  2000/09/28 20:57:15  bpereira
-// no message
-//
 // Revision 1.4  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.3  2000/08/03 17:57:42  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -81,7 +70,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "hu_stuff.h"
 
 #include "d_netcmd.h"

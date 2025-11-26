@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdata.h 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: doomdata.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -19,7 +19,6 @@
 //
 // $Log: doomdata.h,v $
 // Revision 1.6  2003/07/14 21:19:40  hurdler
-// go RC1
 //
 // Revision 1.5  2002/07/24 19:03:09  ssntails
 // Added support for things to retain spawned Z position.
@@ -31,8 +30,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -44,15 +41,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __DOOMDATA__
-#define __DOOMDATA__
+#ifndef DOOMDATA_H
+#define DOOMDATA_H
 
 // The most basic types we use, portability.
 #include "doomtype.h"
 
 // Some global defines, that configure the game.
 #include "doomdef.h"
-
 
 
 //
@@ -248,4 +244,4 @@ typedef struct
 extern char *Color_Names[NUMSKINCOLORS];
 
 
-#endif                  // __DOOMDATA__
+#endif  // DOOMDATA_H

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 946 2012-07-03 19:12:58Z wesleyjohnson $
+// $Id: t_oper.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -50,9 +50,9 @@
 
 /* includes ************************/
 
-#include "command.h"
+#include "doomincl.h"
 #include "doomstat.h"
-#include "doomtype.h"
+#include "command.h"
 #include "z_zone.h"
 
 #include "t_parse.h"

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 944 2012-07-03 19:07:40Z wesleyjohnson $
+// $Id: b_game.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -29,14 +29,16 @@
 // Revision 1.2  2002/09/27 16:40:07  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
 // Bot include
 #include "b_bot.h"
 #include "b_game.h"
 #include "b_look.h"
 #include "b_node.h"
+
 // Doom include
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 //#include "r_defs.h"
 #include "m_random.h"

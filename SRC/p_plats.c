@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_plats.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,14 +22,11 @@
 // added heretic support
 //
 // Revision 1.4  2000/10/21 08:43:30  bpereira
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:47  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -39,12 +36,11 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 #include "p_local.h"
-#include "s_sound.h"
 #include "r_state.h"
+#include "s_sound.h"
 #include "z_zone.h"
 #include "m_random.h"
 

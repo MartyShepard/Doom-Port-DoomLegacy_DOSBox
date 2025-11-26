@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1016 2013-05-18 18:18:41Z wesleyjohnson $
+// $Id: z_zone.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -31,7 +31,6 @@
 // added heretic support
 //
 // Revision 1.13  2000/11/06 20:52:16  bpereira
-// no message
 //
 // Revision 1.12  2000/11/03 13:15:13  hurdler
 // Some debug comments, please verify this and change what is needed!
@@ -40,32 +39,17 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.10  2000/10/14 18:33:34  hurdler
-// sorry, I forgot to put an #ifdef for hw memory report
-//
 // Revision 1.9  2000/10/14 18:32:16  hurdler
-// sorry, I forgot to put an #ifdef for hw memory report
 //
 // Revision 1.8  2000/10/04 16:33:54  hurdler
 // Implement hardware texture memory stats
 //
 // Revision 1.7  2000/10/02 18:25:45  bpereira
-// no message
-//
 // Revision 1.6  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.5  2000/07/01 09:23:49  bpereira
-// no message
-//
 // Revision 1.4  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.3  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -76,15 +60,16 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
+#include "doomstat.h"
 #include "z_zone.h"
 #include "i_system.h"
 #include "command.h"
 #include "m_argv.h"
 #include "i_video.h"
-#include "doomstat.h"
 #ifdef HWRENDER
-#include "hardware/hw_drv.h" // for hardware memory stats
+#include "hardware/hw_drv.h"
+   // for hardware memory stats
 #endif
 
 // [WDJ] 1/24/2009 Memory control defines.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 961 2012-08-13 23:17:24Z wesleyjohnson $
+// $Id: g_input.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -17,17 +17,17 @@
 //
 //
 // $Log: g_input.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.8  2002/08/24 22:42:03  hurdler
 // Apply Robert Hogberg patches
 //
 // Revision 1.7  2002/07/01 19:59:58  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.6  2001/04/17 22:26:07  calumr
 // Initial Mac add
 //
 // Revision 1.5  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.4  2001/01/25 22:15:42  bpereira
 // added heretic support
@@ -45,13 +45,20 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef G_INPUT_H
+#define G_INPUT_H
 
-#ifndef __G_INPUT__
-#define __G_INPUT__
+#include <stdio.h>
+  // FILE
 
+#include "doomdef.h"
+  // SDL, MOUSE
+#include "doomtype.h"
 #include "d_event.h"
+  // event_t
 #include "keys.h"
 #include "command.h"
+  // consvar_t
 
 #define MAXMOUSESENSITIVITY   40        // sensitivity steps
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 895 2012-02-29 19:17:11Z wesleyjohnson $
+// $Id: Vid_vesa.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,17 +18,12 @@
 //
 // $Log: Vid_vesa.c,v $
 // Revision 1.5  2001/03/03 06:17:34  bpereira
-// no message
 //
 // Revision 1.4  2001/01/25 22:15:45  bpereira
 // added heretic support
 //
 // Revision 1.3  2000/08/31 14:30:57  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -41,9 +36,11 @@
 
 #include <stdlib.h>
 
-#include "../i_system.h"        //I_Error()
+#include "../doomincl.h"
+  // MAXVIDWIDTH, MAXVIDHEIGHT
+  // I_Error(), CONS_Printf
+//#include "../i_system.h"
 #include "vid_vesa.h"
-#include "../doomdef.h"         //MAXVIDWIDTH, MAXVIDHEIGHT
 #include "../screen.h"
 
 #include <dpmi.h>

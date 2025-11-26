@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 594 2010-02-07 18:03:51Z wesleyjohnson $
+// $Id: r_sky.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,7 +22,6 @@
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.7  2001/04/02 18:54:32  bpereira
-// no message
 //
 // Revision 1.6  2001/03/21 18:24:39  stroggonmeth
 // Misc changes and fixes. Code cleanup
@@ -34,11 +33,7 @@
 // added heretic support
 //
 // Revision 1.3  2000/09/21 16:45:08  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -52,13 +47,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
-#include "r_sky.h"
+#include "doomincl.h"
 #include "r_local.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "p_maputl.h" // P_PointOnLineSide
+#include "p_maputl.h"
+  // P_PointOnLineSide
+#include "m_swap.h"
+#include "r_sky.h"
 
 // SoM: I know I should be moving portals out of r_sky.c and as soon
 // as I have time and a I will... But for now, they are mostly used

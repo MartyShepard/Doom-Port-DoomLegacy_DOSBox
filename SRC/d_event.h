@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_event.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: d_event.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,12 +18,10 @@
 //
 //
 // $Log: d_event.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.3  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -33,8 +31,8 @@
 //    
 //-----------------------------------------------------------------------------
 
-#ifndef __D_EVENT__
-#define __D_EVENT__
+#ifndef D_EVENT_H
+#define D_EVENT_H
 
 #include "doomtype.h"
 #include "g_state.h"

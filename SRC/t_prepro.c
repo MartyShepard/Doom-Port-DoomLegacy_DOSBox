@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_prepro.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -49,8 +49,10 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "command.h"
-#include "doomstat.h"
+
+#include "doomincl.h"
+  // debugfile
+//#include "command.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
@@ -362,21 +364,27 @@ void dry_run_script( void )
 
 void preprocess(script_t *script)
 {
+#ifdef DEBUGFILE
   if(debugfile)
     fprintf(debugfile,"  preprocess script %i\n", script->scriptnum);
+#endif
 
   fs_current_script = script;
   script->len = strlen(script->data);
   
   clear_script();
 
+#ifdef DEBUGFILE
   if(debugfile)
     fprintf(debugfile, "    run thru script\n");
+#endif
   
   process_find_char(script->data, 0);  // fill in everything
   
+#ifdef DEBUGFILE
   if(debugfile)
     fprintf(debugfile, "    dry run script\n");
+#endif
   
   dry_run_script();
 }

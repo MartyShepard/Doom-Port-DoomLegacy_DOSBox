@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 807 2011-03-09 00:40:01Z wesleyjohnson $
+// $Id: d_netcmd.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,7 +18,6 @@
 //
 // $Log: d_netcmd.h,v $
 // Revision 1.11  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
 //
 // Revision 1.10  2002/09/27 16:40:08  tonyd
 // First commit of acbot
@@ -33,10 +32,8 @@
 // added heretic support
 //
 // Revision 1.6  2000/11/02 19:49:35  bpereira
-// no message
 //
 // Revision 1.5  2000/08/31 14:30:55  bpereira
-// no message
 //
 // Revision 1.4  2000/04/07 23:11:17  metzgermeister
 // added mouse move
@@ -45,8 +42,6 @@
 // Add Bell Kin's changes
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -58,9 +53,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_NETCMD__
-#define __D_NETCMD__
+#ifndef D_NETCMD_H
+#define D_NETCMD_H
 
 #include "command.h"
 
@@ -69,7 +63,6 @@ extern consvar_t   cv_playername;
 extern consvar_t   cv_playercolor;
 extern consvar_t   cv_autoaim;
 extern consvar_t   cv_controlperkey;
-
 
 // normaly in p_mobj but the .h in not read !
 extern consvar_t   cv_itemrespawntime;

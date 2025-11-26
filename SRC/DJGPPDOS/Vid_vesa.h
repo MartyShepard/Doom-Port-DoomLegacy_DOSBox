@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: Vid_vesa.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,8 +18,6 @@
 //
 // $Log: Vid_vesa.h,v $
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -29,10 +27,11 @@
 //      
 //-----------------------------------------------------------------------------
 
+#ifndef VID_VESA_H
+#define VID_VESA_H
 
-#include "../doomdef.h"
+#include "../doomtype.h"
 #include "../screen.h"
-
 
 
 #define MODE_SUPPORTED_IN_HW    0x0001
@@ -42,7 +41,8 @@
 #define LINEAR_FRAME_BUFFER     0x0080
 #define LINEAR_MODE             0x4000
 
-#define MAX_VESA_MODES          300  // we'll just take the first 30 if there
+#define MAX_VESA_MODES          30
+  // we'll just take the first 30 if there are more
 
 
 // VESA information block structure
@@ -123,3 +123,5 @@ typedef struct vesamodeinfo_s
 void VID_Init (void);
 // setup a video mode, this is to be called from the menu
 int  VID_SetMode (int modenum);
+
+#endif

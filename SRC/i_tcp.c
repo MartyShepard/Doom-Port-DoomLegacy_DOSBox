@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 958 2012-08-04 23:40:07Z wesleyjohnson $
+// $Id: i_tcp.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -33,43 +33,27 @@
 // Fixed incorect place of #include "d_main.h"
 //
 // Revision 1.35  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.34  2001/05/16 22:33:34  bock
 // Initial FreeBSD support.
 //
 // Revision 1.33  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.32  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.31  2001/01/05 18:17:43  hurdler
 // fix master server bug
 //
 // Revision 1.30  2000/11/26 00:46:31  hurdler
-// small bug fixes
-//
 // Revision 1.29  2000/10/21 08:43:29  bpereira
-// no message
-//
 // Revision 1.28  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.27  2000/10/08 13:30:00  bpereira
-// no message
 //
 // Revision 1.26  2000/10/01 15:20:23  hurdler
 // Add private server
 //
 // Revision 1.25  2000/09/28 20:57:15  bpereira
-// no message
-//
 // Revision 1.24  2000/09/15 19:49:22  bpereira
-// no message
-//
 // Revision 1.23  2000/09/10 10:43:21  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.22  2000/09/08 22:28:30  hurdler
 // merge masterserver_ip/port in one cvar, add -private
@@ -78,7 +62,6 @@
 // fix some issues with latest network code changes
 //
 // Revision 1.20  2000/08/31 14:30:55  bpereira
-// no message
 //
 // Revision 1.19  2000/08/29 15:53:47  hurdler
 // Remove master server connect timeout on LAN (not connected to Internet)
@@ -105,10 +88,7 @@
 // OS/2 port
 //
 // Revision 1.11  2000/08/10 14:08:48  hurdler
-// no message
-//
 // Revision 1.10  2000/08/03 17:57:42  bpereira
-// no message
 //
 // Revision 1.9  2000/04/21 13:03:27  hurdler
 // apply Robert's patch for SOCK_Get error. Boris, can you verify this?
@@ -117,10 +97,7 @@
 // apply Robert's patch for SOCK_Get error. Boris, can you verify this?
 //
 // Revision 1.7  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.6  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.5  2000/03/08 14:44:52  hurdler
 // fix "select" problem under linux
@@ -129,11 +106,7 @@
 // fix linux compilation
 //
 // Revision 1.3  2000/03/06 15:46:43  hurdler
-// compiler warning removed
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -153,8 +126,7 @@
 # include <sys/time.h>
 #endif // __OS2__
 
-#include "doomdef.h"
-#include "doomtype.h"
+#include "doomincl.h"
 
 #ifdef __WIN32__
 # include <winsock2.h>
@@ -445,9 +417,11 @@ void SOCK_Get(void)
         return;
     }
 
+#ifdef DEBUGFILE
     // node table full
     if( debugfile )
         fprintf(debugfile,"New node detected : No more free slote\n");
+#endif
 
     doomcom->remotenode = -1;               // no packet
 }
@@ -488,12 +462,14 @@ void SOCK_FreeNodenum(int numnode)
     if(!numnode)
         return;
 
+#ifdef DEBUGFILE
     if( debugfile )
         fprintf(debugfile,"Free node %d (%s)\n",numnode,SOCK_AddrToStr(&clientaddress[numnode]));
+#endif
 
     nodeconnected[numnode]=false;
 
-    // put invalide address
+    // put invalid address
     memset(&clientaddress[numnode],0,sizeof(clientaddress[numnode]));
 }
 

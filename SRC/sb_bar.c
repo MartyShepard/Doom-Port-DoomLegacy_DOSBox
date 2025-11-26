@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: sb_bar.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -28,43 +28,36 @@
 // fixed wrong next level name in intermission
 //
 // Revision 1.5  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.4  2001/02/24 13:35:21  bpereira
-// no message
-//
 // Revision 1.3  2001/02/10 13:20:55  hurdler
 // update license
 //
-//
-//
 // DESCRIPTION:
+//   Status bar display
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "p_local.h"
-#include "s_sound.h"
-#include "v_video.h"
 #include "w_wad.h"
-#include "z_zone.h"
-#include "dstrings.h"
-
-#include "am_map.h"
-
-#include "g_game.h"
-#include "m_cheat.h"
 
 #include "screen.h"
+#include "i_video.h"
+#include "v_video.h"
+#include "s_sound.h"
+#include "z_zone.h"
+
 #include "r_local.h"
 #include "p_local.h"
 #include "p_inter.h"
 #include "m_random.h"
 
-#include "i_video.h"
-
 #include "keys.h"
+#include "dstrings.h"
 
+#include "am_map.h"
+#include "g_game.h"
+#include "m_cheat.h"
 #include "hu_stuff.h"
 #include "st_stuff.h"
 #include "st_lib.h"

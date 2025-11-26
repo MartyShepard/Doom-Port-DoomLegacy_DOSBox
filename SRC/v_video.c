@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: v_video.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: v_video.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.36  2004/07/27 08:19:37  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -28,7 +30,6 @@
 // go final + translucent HUD + fix spawn in net game
 //
 // Revision 1.33  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.32  2003/06/11 04:45:17  ssntails
 // High-res patch drawer added.
@@ -43,40 +44,25 @@
 // small commit, mainly splitscreen fix
 //
 // Revision 1.28  2001/07/28 16:18:37  bpereira
-// no message
-//
 // Revision 1.27  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.26  2001/04/28 14:33:41  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.25  2001/04/17 22:30:40  hurdler
-// fix some (strange!) problems
-//
 // Revision 1.24  2001/04/09 20:20:46  metzgermeister
 // fixed crash bug
 //
 // Revision 1.23  2001/04/01 17:35:07  bpereira
-// no message
-//
 // Revision 1.22  2001/03/30 17:12:51  bpereira
-// no message
 //
 // Revision 1.21  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.20  2001/02/28 17:50:55  bpereira
-// no message
-//
 // Revision 1.19  2001/02/24 13:35:21  bpereira
-// no message
 //
 // Revision 1.18  2001/02/19 17:40:34  hurdler
 // Fix a bug with "chat on" in hw mode
 //
 // Revision 1.17  2001/02/10 13:05:45  hurdler
-// no message
 //
 // Revision 1.16  2001/01/31 17:14:08  hurdler
 // Add cv_scalestatusbar in hardware mode
@@ -85,44 +71,33 @@
 // added heretic support
 //
 // Revision 1.14  2000/11/06 20:52:16  bpereira
-// no message
-//
 // Revision 1.13  2000/11/04 16:23:44  bpereira
-// no message
-//
 // Revision 1.12  2000/11/02 19:49:37  bpereira
-// no message
 //
 // Revision 1.11  2000/10/04 16:19:24  hurdler
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.10  2000/08/31 14:30:56  bpereira
-// no message
 //
 // Revision 1.9  2000/04/27 17:43:19  hurdler
 // colormap code in hardware mode is now the default
 //
 // Revision 1.8  2000/04/24 20:24:38  bpereira
-// no message
 //
 // Revision 1.7  2000/04/24 15:10:57  hurdler
 // Support colormap for text
 //
 // Revision 1.6  2000/04/22 21:12:15  hurdler
-// I like it better like that
 //
 // Revision 1.5  2000/04/06 20:47:08  hurdler
 // add Boris' changes for coronas in doom3.wad
 //
 // Revision 1.4  2000/03/29 20:10:50  hurdler
-// your fix didn't work under windows, find another solution
 //
 // Revision 1.3  2000/03/12 23:16:41  linuxcub
 // Fixed definition of VID_BlitLinearScreen (Well, it now compiles under RH61)
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -134,7 +109,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "r_local.h"
 #include "v_video.h"
 #include "hu_stuff.h"

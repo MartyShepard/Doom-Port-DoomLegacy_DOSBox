@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: p_inter.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -32,7 +32,6 @@
 // Apply Robert Hogberg patches
 //
 // Revision 1.26  2002/07/26 15:21:36  hurdler
-// near RC release
 //
 // Revision 1.25  2002/07/23 15:07:11  mysterial
 // Messages to second player appear on his half of the screen
@@ -41,19 +40,10 @@
 // Frag's Weapon Falling fixes
 //
 // Revision 1.23  2001/12/26 22:46:01  hurdler
-// revert to beta 3 until it's fixed (there is at least a problem with saved game)
-//
 // Revision 1.22  2001/12/26 22:42:52  hurdler
-// revert to beta 3 until it's fixed (there is at least a problem with saved game)
-//
 // Revision 1.18  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.17  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.16  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.15  2001/05/14 19:02:58  metzgermeister
 //   * Fixed floor not moving up with player on E3M1
@@ -65,10 +55,7 @@
 // fixed 10 shells instead of 4 - bug
 //
 // Revision 1.13  2001/03/30 17:12:50  bpereira
-// no message
-//
 // Revision 1.12  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.11  2001/01/25 22:15:43  bpereira
 // added heretic support
@@ -77,26 +64,15 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.9  2000/10/02 18:25:45  bpereira
-// no message
-//
 // Revision 1.8  2000/10/01 10:18:17  bpereira
-// no message
-//
 // Revision 1.7  2000/09/28 20:57:16  bpereira
-// no message
-//
 // Revision 1.6  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.5  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.4  2000/04/04 00:32:46  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -106,8 +82,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
-#include "i_system.h"   //I_Tactile currently has no effect
+#include "doomincl.h"
+#include "i_system.h"
+  //I_Tactile currently has no effect
 #include "am_map.h"
 #include "dstrings.h"
 #include "g_game.h"

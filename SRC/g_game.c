@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: g_game.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: g_game.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.50  2004/09/12 19:40:05  darkwolf95
 // additional chex quest 1 support
 //
@@ -25,13 +27,11 @@
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
 // Revision 1.48  2003/11/22 00:49:33  darkwolf95
-// ooops, quick fix
 //
 // Revision 1.47  2003/11/22 00:22:09  darkwolf95
 // get rid of FS hud pics on level exit and new game, also added exl's fix for clearing hub variables on new game
 //
 // Revision 1.46  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
 //
 // Revision 1.45  2002/09/27 16:40:08  tonyd
 // First commit of acbot
@@ -46,7 +46,6 @@
 // small commit, mainly splitscreen fix
 //
 // Revision 1.41  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.40  2001/08/20 18:34:18  bpereira
 // glide ligthing and map30 bug
@@ -62,25 +61,15 @@
 // - fixed crosshair not drawed bug
 //
 // Revision 1.36  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.35  2001/05/03 21:22:25  hurdler
-// remove some warnings
 //
 // Revision 1.34  2001/04/17 22:26:07  calumr
 // Initial Mac add
 //
 // Revision 1.33  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.32  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.31  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.30  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.29  2001/01/25 22:15:41  bpereira
 // added heretic support
@@ -89,55 +78,31 @@
 // Adding autorun2
 //
 // Revision 1.27  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.26  2000/11/06 20:52:15  bpereira
-// no message
-//
 // Revision 1.25  2000/11/04 16:23:42  bpereira
-// no message
-//
 // Revision 1.24  2000/11/02 19:49:35  bpereira
-// no message
 //
 // Revision 1.23  2000/11/02 17:50:06  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.22  2000/10/21 08:43:28  bpereira
-// no message
-//
 // Revision 1.21  2000/10/09 14:03:31  crashrl
-// *** empty log message ***
-//
 // Revision 1.20  2000/10/08 13:30:00  bpereira
-// no message
 //
 // Revision 1.19  2000/10/07 20:36:13  crashrl
 // Added deathmatch team-start-sectors via sector/line-tag and linedef-type 1000-1031
 //
 // Revision 1.18  2000/10/01 10:18:17  bpereira
-// no message
-//
 // Revision 1.17  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.16  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.15  2000/08/10 14:08:48  hurdler
-// no message
-//
 // Revision 1.14  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.13  2000/04/23 16:19:52  bpereira
-// no message
 //
 // Revision 1.12  2000/04/19 10:56:51  hurdler
 // commited for exe release and tag only
 //
 // Revision 1.11  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.10  2000/04/11 19:07:23  stroggonmeth
 // Finished my logs, fixed a crashing bug.
@@ -152,7 +117,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.6  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.5  2000/03/23 22:54:00  metzgermeister
 // added support for HOME/.legacy under Linux
@@ -161,8 +125,6 @@
 // dead player bug fix + add allowmlook <yes|no>
 //
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -185,7 +147,7 @@
 
 #define CURRENT_DEMOVERSION 143
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "command.h"
 #include "console.h"
 #include "dstrings.h"

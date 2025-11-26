@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_script.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -32,13 +32,13 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef __T_SCRIPT_H__
-#define __T_SCRIPT_H__
+#ifndef T_SCRIPT_H
+#define T_SCRIPT_H
 
 typedef struct runningscript_s runningscript_t;
 
-#include "p_mobj.h"
 #include "t_parse.h"
+#include "p_mobj.h"
 
 struct runningscript_s
 {

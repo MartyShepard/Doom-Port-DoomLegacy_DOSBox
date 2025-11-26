@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: i_system.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,27 +18,18 @@
 //
 //
 // $Log: i_system.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.8  2001/04/27 13:32:14  bpereira
-// no message
-//
 // Revision 1.7  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.6  2000/10/21 08:43:29  bpereira
-// no message
-//
 // Revision 1.5  2000/10/02 18:25:45  bpereira
-// no message
 //
 // Revision 1.4  2000/04/25 19:49:46  metzgermeister
 // support for automatic wad search
 //
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -48,11 +39,12 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef I_SYSTEM_H
+#define I_SYSTEM_H
 
-#ifndef __I_SYSTEM__
-#define __I_SYSTEM__
-
+#include "doomtype.h"
 #include "d_ticcmd.h"
+  // ticcmd_t
 #include "d_event.h"
 
 
@@ -69,6 +61,8 @@ uint64_t I_GetFreeMem(uint64_t *total);
 // returns current time in tics.
 tic_t I_GetTime (void);
 
+// replace getchar() once the keyboard has been appropriated
+int I_GetKey (void);
 
 void I_GetEvent (void);
 

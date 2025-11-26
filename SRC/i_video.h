@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: i_video.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -19,37 +19,26 @@
 //
 // $Log: i_video.h,v $
 // Revision 1.6  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.5  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.4  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.3  2000/11/02 19:49:35  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
 //
 // DESCRIPTION:
-//      System specific interface stuff.
+//      System specific video interface stuff.
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_VIDEO__
-#define __I_VIDEO__
+#ifndef I_VIDEO_H
+#define I_VIDEO_H
 
 
 #include "doomtype.h"
 #include "command.h"
-  // consvar
+  // consvar_t
 
 #ifdef __GNUG__
 #pragma interface
@@ -113,5 +102,9 @@ void I_FinishUpdate (void);
 void I_WaitVBL(int count);
 
 void I_ReadScreen (byte* scr);
+
+// debug in color
+// unused
+void IO_Color( unsigned char color, unsigned char r, unsigned char g, unsigned char b );
 
 #endif

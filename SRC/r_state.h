@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 819 2011-03-15 23:33:39Z wesleyjohnson $
+// $Id: r_state.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -31,7 +31,6 @@
 // Bug fixes and performance tuning.
 //
 // Revision 1.7  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.6  2000/04/08 11:27:29  hurdler
 // fix some boom stuffs
@@ -46,8 +45,6 @@
 // dead player bug fix + add allowmlook <yes|no>
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -58,13 +55,17 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_STATE__
-#define __R_STATE__
+#ifndef R_STATE_H
+#define R_STATE_H
 
-// Need data structure definitions.
 #include "d_player.h"
-#include "r_data.h"
-
+  // player_t
+//#include "r_data.h"
+  // m_fixed.h, r_defs.h
+#include "r_defs.h"
+  // m_fixed.h
+#include "command.h"
+  // consvar_t
 
 
 #ifdef __GNUG__

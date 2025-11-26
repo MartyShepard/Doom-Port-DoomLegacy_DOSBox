@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: p_mobj.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -28,7 +28,6 @@
 // Ready to work on beta 4 ;)
 //
 // Revision 1.7  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.6  2001/01/25 22:15:43  bpereira
 // added heretic support
@@ -37,14 +36,11 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.4  2000/04/30 10:30:10  bpereira
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:47  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -54,13 +50,17 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef P_MOBJ_H
+#define P_MOBJ_H
 
-#ifndef __P_MOBJ__
-#define __P_MOBJ__
+#include "doomdef.h"
+  // NUMSKINCOLORS
+#include "doomtype.h"
 
 // We need the WAD data structure for Map things,
 // from the THINGS lump.
 #include "doomdata.h"
+  // mapthing_t
 
 // States are tied to finite states are
 //  tied to animation frames.
@@ -299,7 +299,7 @@ typedef enum
 } mobjeflag_t;
 
 
-#if NUMSKINCOLOR > 16
+#if NUMSKINCOLORS > 16
 #error MF_TRANSLATION can only handle NUMSKINCOLORS <= 16
 #endif
 

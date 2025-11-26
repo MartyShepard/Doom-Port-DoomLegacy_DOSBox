@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.h 900 2012-02-29 19:25:00Z wesleyjohnson $
+// $Id: f_wipe.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,8 +19,6 @@
 //
 // $Log: f_wipe.h,v $
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -30,9 +28,8 @@
 //      
 //-----------------------------------------------------------------------------
 
-
-#ifndef __F_WIPE_H__
-#define __F_WIPE_H__
+#ifndef F_WIPE_H
+#define F_WIPE_H
 
 //--------------------------------------------------------------------------
 //                        SCREEN WIPE PACKAGE

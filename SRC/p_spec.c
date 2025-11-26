@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: p_spec.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -43,7 +43,6 @@
 // Alpha support for trans 3d floors in software
 //
 // Revision 1.37  2002/07/26 15:21:36  hurdler
-// near RC release
 //
 // Revision 1.36  2002/07/18 20:47:41  ssntails
 // Fix for vertical currents
@@ -58,13 +57,8 @@
 // Instant-lower and instant-raise capability for sectors added.
 //
 // Revision 1.32  2002/01/12 02:21:36  stroggonmeth
-// Big commit
-//
 // Revision 1.31  2001/08/19 20:41:04  hurdler
-// small changes
-//
 // Revision 1.30  2001/08/13 22:53:40  stroggonmeth
-// Small commit
 //
 // Revision 1.29  2001/08/11 15:18:02  hurdler
 // Add sector colormap in hw mode (first attempt)
@@ -73,10 +67,7 @@
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.27  2001/06/16 08:07:55  bpereira
-// no message
-//
 // Revision 1.26  2001/05/27 13:42:48  bpereira
-// no message
 //
 // Revision 1.25  2001/05/03 18:23:30  crashrl
 // corrected wrong comment concerning teamstartsec
@@ -91,7 +82,6 @@
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.21  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.20  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -100,16 +90,12 @@
 // Optimised 3D floors and fixed crashing bug in high resolutions.
 //
 // Revision 1.18  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.17  2000/11/04 16:23:43  bpereira
-// no message
 //
 // Revision 1.16  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.15  2000/10/21 08:43:30  bpereira
-// no message
 //
 // Revision 1.14  2000/10/07 20:36:13  crashrl
 // Added deathmatch team-start-sectors via sector/line-tag and linedef-type 1000-1031
@@ -118,13 +104,8 @@
 // Not much. A graphic bug fixed.
 //
 // Revision 1.12  2000/05/03 23:51:00  stroggonmeth
-// A few, quick, changes.
-//
 // Revision 1.11  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.10  2000/04/15 22:12:57  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.9  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -133,7 +114,6 @@
 // Finished my logs, fixed a crashing bug.
 //
 // Revision 1.7  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.6  2000/04/08 11:27:29  hurdler
 // fix some boom stuffs
@@ -148,8 +128,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -163,7 +141,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "p_setup.h"    //levelflats for flat animation

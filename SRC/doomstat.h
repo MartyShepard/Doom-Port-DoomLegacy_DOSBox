@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 875 2011-11-01 00:13:44Z wesleyjohnson $
+// $Id: doomstat.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -32,10 +32,7 @@
 // Initial Mac add
 //
 // Revision 1.10  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.9  2001/02/24 13:35:19  bpereira
-// no message
 //
 // Revision 1.8  2001/01/25 22:15:41  bpereira
 // added heretic support
@@ -44,20 +41,13 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.6  2000/10/21 08:43:28  bpereira
-// no message
-//
 // Revision 1.5  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.4  2000/08/10 19:58:04  bpereira
-// no message
 //
 // Revision 1.3  2000/08/10 14:53:10  ydario
 // OS/2 port
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -66,16 +56,16 @@
 //   All the global variables that store the internal state.
 //   Theoretically speaking, the internal state of the engine
 //    should be found by looking at the variables collected
-//    here, and every relevant module will have to include
-//    this header file.
+//    here, and every relevant module will have to include this header file.
 //   In practice, things are a bit messy.
 //
 //-----------------------------------------------------------------------------
 
+#ifndef D_STATE_H
+#define D_STATE_H
 
-#ifndef __D_STATE__
-#define __D_STATE__
-
+#include "doomdef.h"
+  // CLIENTPREDICTION, LOGMESSAGES, DEBUGFILE
 
 // We need globally shared data structures,
 //  for defining the global state variables.
@@ -84,7 +74,7 @@
 // We need the player data structure as well.
 #include "d_player.h"
 #include "d_clisrv.h"
-
+#include "g_state.h"
 
 // Game mode handling - identify IWAD version,
 //  handle IWAD dependend animations etc.
@@ -316,25 +306,10 @@ extern  wbstartstruct_t         wminfo;
 extern  int             maxammo[NUMAMMO];
 
 
-
-
-
 // =====================================
 // Internal parameters, used for engine.
 // =====================================
 //
-
-// File handling stuff.
-#define DEBUGFILE
-#ifdef DEBUGFILE
-#define DEBFILE(msg) { if(debugfile) fputs(msg,debugfile); }
-extern  FILE*           debugfile;
-#else
-#define DEBFILE(msg) {}
-extern  FILE*           debugfile;
-#endif
-
-
 
 // if true, load all graphics at level load
 extern  boolean         precache;

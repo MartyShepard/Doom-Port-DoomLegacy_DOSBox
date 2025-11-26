@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 924 2012-06-08 00:04:30Z wesleyjohnson $
+// $Id: screen.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,8 +17,9 @@
 //
 //
 // $Log: screen.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.14  2004/05/16 20:34:47  hurdler
-// remove unused stuff
 //
 // Revision 1.13  2004/05/16 19:11:44  hurdler
 // that should fix issues some people were having in 1280x1024 mode (and now support up to 1600x1200)
@@ -33,7 +34,6 @@
 // Support for translated translucent columns in software mode.
 //
 // Revision 1.9  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.8  2001/04/17 22:26:07  calumr
 // Initial Mac add
@@ -45,17 +45,12 @@
 // added heretic support
 //
 // Revision 1.5  2000/11/02 19:49:37  bpereira
-// no message
-//
 // Revision 1.4  2000/08/31 14:30:56  bpereira
-// no message
 //
 // Revision 1.3  2000/04/22 20:27:35  metzgermeister
 // support for immediate fullscreen switching
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -65,11 +60,14 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __SCREEN_H__
-#define __SCREEN_H__
+#ifndef SCREEN_H
+#define SCREEN_H
 
+#include "doomdef.h"
+  // HORIZONTALDRAW
+#include "doomtype.h"
 #include "command.h"
-
+  // consvar_t
 #if defined( __DJGPP__ )
 #define NUMSCREENS    4
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_spec.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -30,22 +30,25 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef __SPEC_H__
-#define __SPEC_H__
+#ifndef T_SPEC_H
+#define T_SPEC_H
+
+#include "doomtype.h"
 
 void spec_brace();
 
-int  spec_if();  //SoM: returns weather or not the if statement was true.
+int  spec_if(void);
+  //SoM: returns weather or not the if statement was true.
 int  spec_elseif(boolean lastif);
 void spec_else(boolean lastif);
-void spec_while();
-void spec_for();
-void spec_goto();
+void spec_while(void);
+void spec_for(void);
+void spec_goto(void);
 
 // variable types
 
-boolean spec_variable();
+boolean spec_variable(void);
 
-void spec_script();     // in t_script.c btw
+void spec_script(void);     // in t_script.c btw
 
 #endif

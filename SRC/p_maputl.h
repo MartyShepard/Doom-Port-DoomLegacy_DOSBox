@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.h 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: p_maputl.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,14 +18,8 @@
 //
 // $Log: p_maputl.h,v $
 // Revision 1.4  2000/11/02 19:49:36  bpereira
-// no message
-//
 // Revision 1.3  2000/04/08 17:29:25  stroggonmeth
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -36,8 +30,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __P_MAPUTL__
-#define __P_MAPUTL__
+#ifndef P_MAPUTL_H
+#define P_MAPUTL_H
 
 #include "doomtype.h"
 #include "r_defs.h"
@@ -115,4 +109,4 @@ extern divline_t        trace;
                               fixed_t    x,
                               fixed_t    y,
                               boolean   (*func)(line_t*));*/
-#endif // __P_MAPUTL__
+#endif // P_MAPUTL_H

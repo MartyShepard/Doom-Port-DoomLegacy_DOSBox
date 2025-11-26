@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: s_amb.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: s_amb.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,24 +22,21 @@
 // no message
 //
 // Revision 1.5  2001/05/27 13:42:48  bpereira
-// no message
-//
 // Revision 1.4  2001/04/04 20:24:21  judgecutor
 // Added support for the 3D Sound
 //
 // Revision 1.3  2001/02/24 13:35:21  bpereira
-// no message
-//
 // Revision 1.2  2001/02/10 13:20:55  hurdler
 // update license
 //
 //
 //
 // DESCRIPTION:
+//   Ambient sound
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "p_setup.h"    //levelflats for flat animation

@@ -1,4 +1,4 @@
-[WDJ]	wesleyjohnson
+\[WDJ]	wesleyjohnson
 
 START: 11/1/2009
 
@@ -1913,3 +1913,1408 @@ indexing.
 Harden a net buffer string operation against buffer overflow.
 Fix DeferredPlayDemo function, to put command in Execute as one
 string, so it does not execute partial strings and fail.
+
+*** w78_win32_compile
+patchfile = w78_win32_compile.patch
+- committed revision 871   by wesley johnson
+Additions to Makefile to support compilation on Win98 using MinGW.
+Create /dep file to hold *.dep files outside of source code.
+Change to WIN32 GlobalMemory lib call that is present on Win98.
+Fix dehacked.c problems with compiler not likely unsigned char in lib calls.
+Allow underline in dehacked/BEX names.
+Some other gcc 4 compiler complaints fixed.
+
+*** w78_execute_config
+patchfile = w78_execute_config
+- committed revision 872   by wesley johnson
+Execute of config file on window systems fails because the COM buffer
+system mangles windows path backslashes.  Extensive fixes to COM
+buffer handling to prevent this, by distinguishing script commands and
+those commands that have filename parameters.
+
+*** w78_com_args
+patchfile = w78_com_args.patch
+- committed revision 873   by wesley johnson
+Update COM buffer execution interface.
+The COM_args function is unused.
+Added COM_Args function that returns count and first 4 com parameters.
+This makes for fewer calls, converts calls into literal array access.
+
+*** w78_command_files
+patchfile = w78_command_files.patch
+- committed revision 874   by wesley johnson
+Make doomwaddir, legacyhome, config file strings hardened against
+windows no having environment variables.
+Will now search two possible doomwaddir names before trying current
+directory.
+No longer allows current directory to be "" string, as that results in
+save and config files being put into root directory.  Will copy the
+current directory string instead and use only absolute paths.
+Doomwaddir code and config file code moved and organized together.
+
+*** w78_nosound
+patchfile = w78_nosound.patch
+- committed revision 875   by wesley johnson
+The nosound variable name conflicts with a Watcom support function.
+The support function really ought to be named better, but cannot fix
+that.  Rename nosound, to nosoundfx, as sure fix.
+Watcom compilation still has other problems.
+
+*** w78_blockmap_mem_corrupt
+patchfile = w78_blockmap_mem_corrupt.patch
+- committed revision 876   by wesley johnson
+With a missing or bad blockmap in the wad, the code will corrupt
+Zone memory block headers.
+Add checks for the missing blockmap, and overruns of the blockmap
+allocation.
+Add more complete ZONEID checking (some as PARANOID) and better reports to the
+Zone memory functions.
+
+*** w78_video_misc
+patchfile = w78_video_misc.patch
+- committed revision 877   by wesley johnson
+Comment video setup functions, so they are more understandable.
+Straighten video menu switch, unnecessarily complicated.
+
+*** w78_whatsnew
+patchfile = w78_whatsnew.patch
+- committed revision 878   by wesley johnson
+Update legacy.html and whatsnew.html docs to svn877.
+
+*** w78_Make_win32
+- committed revision 879   by wesley johnson
+Doc file on how to make DoomLegacy on Win32 system.
+
+*** w79_duplicate_symbols
+patchfile = w79_duplicate_symbols.patch
+- committed revision 881   by wesley johnson
+Working on Mac has revealed that our linker is not showing us duplicate
+symbols and is combining them.
+Added linker flag to give warning when duplicate symbol.
+Fixed some vars that should be static.
+Fixed some header variable declares that were not extern.
+
+*** w79_deh_flags
+patchfile = w79_deh_flags.patch
+- committed revision 882   by wesley johnson
+The previous BEX code really messed up the DEH flags code, such that in phobiata
+the player could not slide along the walls.
+This fixes the DEH and BEX flags logic so that DEH changes only the
+flags it intends to and clears flag2 bits (like MF2_SLIDE) only when it
+shows that it is changing flag2 bits.
+
+*** w79_deh_text
+patchfile = w79_deh_text.patch
+- committed revision 883   by wesley johnson
+Some text strings got changed (DOS -> your os) and now DEH cannot
+recognize them.  This adds a hashed lookup that can recognize strings
+that we no longer have, and point DEH at the right string.
+It also is used by chex newmaps.c to recognize ult doom strings after
+the chex modifications have changed all the strings.
+Chex also changed some strings with two %s, to have one %s, and Newmaps
+wants to change it back to two %s.  The %s counting method would not
+allow this, so a new explicit table had to be created.
+
+*** w79_demo_ctrl
+patchfile = w79_demo_ctrl.patch
+- committed revision 884   by wesley johnson
+Fix the demos so they stop interfering with savegame loading.
+The screen would wipe, and then wipe a second time and the controls
+would be useless.
+Created a new contol var, demo_ctrl, that stops demos once a savegame
+has been loaded, and does the advance demo job too.  It replaces advancedemo.
+
+*** w79_demo_friction
+patchfile = w79_demo_friction.patch
+- committed revision 885   by wesley johnson
+Attempt to fix demos to record and honor monster friction settings.
+Older demos need to use MBF monster friction or Doom no friction.
+
+*** w79_save_limit_99
+patchfile = w79_save_limit_99.patch
+- committed revision 886   by wesley johnson
+Prevent savegames over 99.  Would crash on load.
+Was missing explicit check.
+
+*** w79_jumpgravity
+patchfile = w79_jumpgravity.patch
+- committed revision 887   by wesley johnson
+JUMPGRAVITY is variable by fragglescript, no longer a macro.
+Change it to jumpgravity.
+
+*** w79_team_name
+patchfile = w79_team_name.patch
+- committed revision 888   by wesley johnson
+Fix segfault when command "teamplay 1".
+Team_name[] was array of ptrs to const strings, and the const strings
+cannot be written.  Created basic team structure, with name.
+Only basic functions for team name for now, but can become a dynamic list.
+
+*** w79_deathmatch_spawn
+patchfile = w79_deathmatch_spawn.patch
+- committed revision 889   by wesley johnson
+Fix bug 1095897.
+Players spawn in deathmatch on other players, and get locked.
+Tests for this were in code, but failed because player corpse does not have
+MF_SOLID set, thus things check was skipped.
+Must temporarily set MF_SOLID to do CheckPosition test.
+Changed player corpse to honor cv_solidcorpse setting.
+Set MF_SOLID on solid player corpse.
+
+*** w79_FIXED_MAX
+patchfile = w79_fixed_max.patch
+- committed revision 890   by wesley johnson
+Use of MAXINT on 32 bit fixed_t variables is not safe on 64 bit machines.
+Define a FIXED_MAX and FIXED_MIN that are used as the max and min
+of fixed_t variables.
+These can be maintained according to the size of fixed_t.
+Change all used of MAXINT with fixed_t vars to use FIXED_MAX and FIXED_MIN.
+
+*** w79_spec_enum
+patchfile = w79_spec_enum.patch
+- committed revision 891   by wesley johnson
+Most enum names in spec.h look like variable names.
+Give them prefixes.
+
+*** w79_lowest_ceiling
+patchfile = w79_lowest_ceiling.patch
+- committed revision 892   by wesley johnson
+Search for lowest ceiling was flawed by an additional paranoid test that
+would also defeat a Boom search limit meant to prevent overflow.
+Removed the additional paranoid test.
+Tuned other sector floor and ceiling height searches to execute faster,
+as they were using n! passes of the thing list.
+
+*** w79_floor_up
+patchfile = w79_floor_up.patch
+- committed revision 893   by wesley johnson
+Fix bug 0585154.
+In Doom2 Map05, two doors to secret rooms will not work.
+If another door (1st of 4 doors on left) is opened first, then tag 9
+will move the floors of these two rooms like doors.
+Checks against hitting something had been made conditional on 3D floors,
+for some reason.  Restoring these tests stopped the floors movement
+like the original, and the flawed Map05 is then still playable.
+Must be careful to not have problem with Doom2 Map06, with the spider
+demon in the crusher.  Some possible tests would freeze the crusher if
+something was stuck in the ceiling or floor.
+This is enabled by COMPAT_FLOOR_STOP, for now.
+
+*** w80_vid_defs
+patchfile = w80_vid_defs.patch
+- committed revision 894   by wesley johnson
+Revise vid structure to handle problems with MAC and direct video.
+The driver sets up the display and screen size according to its
+characteristics.
+The buffer width can be different than the screen width, to handle the
+Mac which pads it buffer lines to a power of 2.
+The driver can control the video buffer width independently of the
+screen buffer width, neither of which need to match the screen width.
+Contains fields that are multiplied by the buffer width.
+Fixes many common draw routines to increment by buffer width instead of
+screen width so they are correct for any driver buffer choice.
+Fixes uses of bpp as byte to be bytepp, as bpp is bits-per-pixel.
+Introduces the controls for DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32.
+
+*** w80_vid_port_fixes
+patchfile = w80_vid_port_fixes.patch
+- committed revision 895   by wesley johnson
+Minimal fix of djgppdos, linux_X, macos, os2, sdl, win32, port drivers for
+the new vid structure.  This is a temporary fix, as they need to be rewritten.
+
+*** w80_vid_control_fixes
+patchfile = w80_vid_control_fixes.patch
+- committed revision 896   by wesley johnson
+Fixes for new vid structure, to use drawmode, and buffer line sizes in
+many draw routines.
+Introduces code that uses drawmode to select bpp drawing, instead of
+testing bpp.
+Changes borderpatch to borderflat, as it is not a patch that is drawn.
+Changes setmodeneeded to use -1 as inactive, instead messing with
+changing 0.. to 1.. everywhere.
+Saves true bpp to config, instead of some hacked value.
+Fixes am_map, d_main, f_wipe, m_menu, r_data, r_draw, screen,
+
+*** w80_video_fixes
+patchfile = w80_video_fixes.patch
+- committed revision 897   by wesley johnson
+Code has not used dirty rectange limited drawing since DOS.
+Disable Mark_Rect function and calls using DIRTY_RECT macro.
+Introduce ENABLE_DRAW15, ENABLE_DRAW16, ENABLE_DRAW24, ENABLE_DRAW32
+macro controls in doomdef.h for conditional draw code.  User can disable
+compiling drawing code for modes they cannot use.
+Introduce pixel structures for 24bpp, and 32bpp.
+Introduce color translation table, color8, that works for all draw
+modes, replacing color8to16.  Init it when screen bpp is determined.
+Fix draw16 to use uint16_t instead of short.
+Introduce basic draw functions, V_GetDrawAddr, V_DrawPixel, V_DrawPixels,
+that work in all bpp draw modes, for use in splash screens, wipes, and
+the like.
+Fixed V_CopyRect, VID_BlitLinearScreen, V_DrawMappedPatch,
+V_DrawScaledPatch, HWR_DrawSmallPatch, V_DrawTranslucentPatch,
+V_DrawPatch, V_BlitScalePic, V_DrawFill, V_DrawFlatFill,
+V_DrawFadeScreen, V_FadeConsBack, to draw correctly using buffer width
+and drawmodes.
+Update V_DrawTiltView and V_DrawPerspView in similar fashion,
+but they have other serious problems.
+Diabled V_DrawBlock and V_GetBlock because they were not safe for use
+on screens with extended draw modes,
+and substituted other existing draw routines for the uses.
+
+*** w80_map_con
+patchfile = w80_map_con.patch
+- committed revision 898   by wesley johnson
+Fix draw of auto map for all draw modes, using V_DrawPixel.
+Fix draw of CON_DrawBackPic for all draw modes, using V_GetDrawAddr
+and V_DrawPixel.
+Fix draw of D_PageDrawer for all draw modes, using V_DrawPixels.
+
+*** w80_finale_init
+patchfile = w80_finale_init.patch
+- committed revision 899   by wesley johnson
+Fix draw of finale screens, for all draw modes, using V_DrawPixel.
+Fix screenshot to use correct buffer widths, but it is still limited to
+8bpp mode because of the save format.
+Fix fuzz init, and ylookup init, for all draw modes.
+Fix R_FillBackScreen, R_DrawViewBorder, for all draw modes, using V_DrawPixels.
+Fix wi_stuff, for all draw modes.
+
+*** w80_wipe
+patchfile = w80_wipe.patch
+- committed revision 900   by wesley johnson
+Change wipe functions to not pass parameters they do not use, and also
+fix them for all draw modes.
+Remove ColMajorXForm transform, as it was not really faster, and
+was limited to 8bpp, now using a simple pixel copy.
+Created a proportional fade for the extended draw modes, which is not
+as smooth as the 8bpp translucent tables, but gives similar function.
+Reorganized strange wipe control table for simpler access.
+
+*** w80_request_bpp
+patchfile = w80_request_bpp.patch
+- committed revision 901   by wesley johnson
+Introduce new command line switches and common control structure, so that
+each port driver does not do this in a unique way.  The port drivers now
+react to the common control variables.  Most old control variables
+declared in the port drivers, such as rendermode, vidwait, fullscreen,
+have been moved to video.c.
+A new V_Init_VideoControl, now registers common controls.
+A new V_CanDraw, returns true when a bpp can be drawn.
+Set req_drawmode according to command line requested drawmode.
+Switch "-highcolor", now sets REQ_highcolor (request a 15 or 16 bpp mode).
+Switch "-truecolor", sets REQ_truecolor (request a 24 or 32 bpp mode).
+Switch "-native", sets REQ_native, which requests use of the native
+drawing mode.
+Switch "-bpp 15", sets req_bpp and REQ_specific, which requests a
+specific bpp mode (can be 8, 15, 16, 24, or 32).
+Fixes DrawPixel routines to use direct ptr access to pixels, which
+should give the fastest code.
+
+*** w80_draw16_minimal
+patchfile = w80_draw16_minimal.patch
+- committed revision 902   by wesley johnson
+Fixed draw16 routines to give minimal functionality.
+Fixed translucent draw using proportional addition of pixels.
+
+*** w80_sdl_port
+patchfile = w80_sdl_port.patch
+- committed revision 903   by wesley johnson
+Extensive rewrite of mode code in sdl port driver.
+It now handles all bpp mode requests.
+I_StartFrame no longer locks the video buffer, because that needs to be
+kept to a minimal time, during I_FinishUpdate.  This is dictated by
+SDL specs.
+VID_PrepareModeList merged into I_StartupGraphics.
+Use of SDL_GetVideoInfo made useful (instead of bypassed).
+Created VID_SetMode_vid to do actual mode setting, to reduce
+duplicated effort.
+Extensive video reporting using verbose switches "-v" and "-v2".
+
+*** w80_testbpp
+patchfile = w80_testbpp.patch
+- committed revision 904   by wesley johnson
+Adds a command line switch "-testbpp", that forces the bpp requested to
+succeed.  The hardware actually uses the native bpp and converts the
+drawn bpp in I_FinishUpdate.  This is meant for test and development of
+the extended bpp draw modes, when matching hardware is not available.
+This code is conditional on the TESTBPP macro, and only exists in
+sdl/i_video.c at this time.
+
+*** w80_draw16_ext
+patchfile = w80_draw16_ext.patch
+- committed revision 905   by wesley johnson
+Moved common draw routine from r_draw8.c to r_draw.c.
+Fixed r_draw8.c to use ybytes instead of width.
+Added translucent_index variable and field because translucentmap ptr
+only worked for palette based drawing.
+Fix r_draw16.c so that 15 and 16 bpp draw functions work.
+Create new draw functions for those that were missing.
+Create transparent and fog effects using shift and add of 15 and 16 bpp pixels.
+Has many alternative code sections for further experimentation.
+
+*** w80_fade16
+patchfile = w80_fade16.patch
+- committed revision 906   by wesley johnson
+Fix screen fade effects for 15/16 bpp drawing.
+
+*** w80_testbpp_8
+patchfile = w80_testbpp_8.patch
+- committed revision 907   by wesley johnson
+Explicit reject of -bpp 8 -testbpp.
+
+*** w80_r_draw
+patchfile = w80_r_draw.patch
+- committed revision 908   by wesley johnson
+Makefile must compile r_draw.c anytime any r_draw8.c, r_draw16.c,
+r_draw24.c or r_draw32.c is modified.
+Add empty r_draw24.c and r_draw32.c.
+Fuzztable offsets needed to be multiple of pixel size.
+
+*** w80_SDL_video_error
+patchfile = w80_SDL_video_error.patch
+- committed revision 909   by wesley johnson
+Fixes SDL port driver so that StartupGraphics does not return unless
+has valid video mode and display.  Print appropriate error message to
+stderr.
+
+*** w80_draw_endian
+patchfile = w80_draw24_endian.patch
+- committed revision 910   by wesley johnson
+Fix DrawPixel for big endian machines.
+
+*** w80_draw_24bpp_create
+patchfile = w80_draw24_create.patch
+- committed revision 911   by wesley johnson
+Create functions for DRAW24 mode.
+Fill in functions in r_draw24.c and other support.
+Improved fog.
+Not fully optimized.
+
+*** w80_draw_32bpp_create
+patchfile = w80_draw32_create.patch
+- committed revision 912   by wesley johnson
+Create functions for DRAW32 mode.
+Fill in functions in r_draw32.c and other support.
+Not fully optimized.
+
+*** w80_green_console
+patchfile = w80_green_console.patch
+- committed revision 913   by wesley johnson
+Fix green console to be more readable and not distort colors in 15..32 bpp.
+Add GREEN_TINT_255 control, set to 0x16.
+Dim background to 25% for higher contrast (gray green).
+
+*** w80_fade_32
+patchfile = w80_fade_32.patch
+- committed revision 914   by wesley johnson
+Fix fade effects for 24/32 bpp drawing
+
+*** common/colortst.wad
+- committed revision 915  by wesley johnson
+colortst.wad update for fog effects
+
+*** w80_background_border_32
+patchfile = w80_backborder32.patch
+- committed revision 916   by wesley johnson
+Fix background border not filling screen in DRAW32 and other video
+modes.  Needed to multiply side size by bytepp.
+
+*** w80_video_init
+patchfile = w80_video_init.patch
+- committed revision 917   by wesley johnson
+Change V_Init to V_Init_Draw, and make it responsible for setup of
+draw variables for DrawPixel and other v_video draw routines.
+Have it make needed palette (palette was missing during intro screens).
+
+*** w80_linux_xshm
+patchfile = w80_linux_xshm.patch
+- committed revision 918   by wesley johnson
+Update linux xshm to latest interface and improve code.
+Can handle drawing in -native bpp mode, -highcolor, -truecolor modes, and
+using -bpp.
+It will setup direct draw to the image buffer using native bpp (-native).
+This does not change the hardware bpp, nor the previous method of leaving the
+hardware bpp at the system setting, and converting our 8bpp draw buffers to it.
+Changing hardware bpp is possible, I just cannot find the docs at this time.
+
+*** w80_linux_ggi
+patchfile = w80_linux_ggi.patch
+- committed revision 919   by wesley johnson
+Update linux ggi to latest interface and improve code.
+Can handle drawing in -highcolor, -truecolor modes, and using -bpp.
+Will change hardware bpp.
+Does not detect native bpp.
+This has not been test compiled as I do not have ggi libraries.
+
+*** w81_cleaning
+patchfile = w81_cleaning.patch
+- committed revision 920   by wesley johnson
+Fix comments, add {}, remove dead code and obsolete commented out lines.
+Align code.
+Cleanup some messy code arrangements to cleaner equivalent.
+Rename enum items cl_ to CLM_.
+Rename SendRam to SendData.
+Rename enum freemethode_t with SF_ to enum TAH_e with TAH_,
+because of confusion with other enums, and gave the enum more descriptive names.
+Make KICK defines into an enum kick_msg_e.
+Rename enum filestatus_t to filestatus_e.
+Rename fwriteshort to fwrite16, fwritelong to fwrite32.
+
+*** w81_Doom2Map8
+patchfile = w81_Doom2Map8.patch
+- committed revision 921   by wesley johnson
+Missing break stmt in switch stmt.
+Doom2 Map8 is dropping into secret level code,
+even though it is not a secret level.
+
+*** w81_pain_skullspawn
+patchfile = w81_pain_skullspawn.patch
+- committed revision 922   by wesley johnson
+Fix bugs and irritations in pain elemental, skull spawning.
+Skull limit code made conditional on demoversion, using EN_skull_limit.
+Pain elemental skull spawning made conditional using EN_old_pain_spawn.
+Checks added for skulls and pain elementals attacking dead monsters,
+may not be needed, but will test.
+Formally init target and tracer ptrs in mobj.
+
+Fixed skull spawning using a version of Boom code that checks on line
+crossings.  Partial checking code already present was rewritten into
+P_CheckCrossLine.
+Skulls no longer spawn into void walls.
+
+Pain elementals fixed so if there is not room to spawn skull, it silently
+removes the skull instead of sending it down to floor to explode.
+Conditional code is present for:
+(REMOVE) remove skull (like Edge) (currently selected),
+(KILL) explode in place (like prboom) (disabled),
+(DAMAGE) which causes it to explode on floor (previous Legacy) (disabled).
+
+*** w81_savegame_buffer
+patchfile = w81_savegame_buffer.patch
+- committed revision 923   by wesley johnson
+Fix for bug_3442118, where Hell Ground wad (hg.wad) map04 will overrun
+the savegame buffer.
+Increased the reserved free space from 2K to 4K, and the header buffer size.
+
+*** w81_fogsheet
+patchfile = w81_fogsheet.patch
+- committed revision 924   by wesley johnson
+Fogsheet improvements.
+Drawing routines for fog sheet with shifting effects, using mid texture.
+Mid texture determines the color of the fog, and the intensity of the
+shifting pattern.
+Fog is not finished.
+
+*** w81_Boom_translucent
+patchfile = w81_Boom_translucent.patch
+- committed revision 925   by wesley johnson
+Fixed Boom translucent linedef 260.
+Tagged lines now get the translucent effect too.
+Recognizes and uses named translucent lumps introduced by linedef 260.
+Analyzes Boom translucent lumps to get alpha for DRAW15, DRAW16,
+DRAW24, DRAW32, and opengl draw modes, which now work.
+Will draw using closest existing translucent implementation, or use
+analyzed alpha.
+Added TRANSLU_75 in RGB draw routines, to implement a 75/25% translucent draw.
+OpenGL does draw the translucent textures in BOOMEDIT.WAD,
+but does not draw other transparent textures behind the closest one.
+OpenGL also fails to draw transparent over the switches in hg.wad,
+due to unknown causes.
+
+*** 
+- committed revision 926   by wesley johnson
+Add files r_draw24.c, r_draw32.c, which were missing.
+
+*** w81_Boom_colormap
+patchfile = w81_Boom_colormap.patch
+- committed revision 927   by wesley johnson
+Boom deepwater colormap fixed.
+Effect menu has selections for Boom Deepwater colormap effect:
+Sector colormap (Boom colormap behaves same as Legacy colormaps),
+Boom visible colormap (where colormap is visible like in legacy),
+Boom colormap (where the colormap is not visible like in Boom),
+and Boom detect (which adjusts according to detected Boom and Legacy linedefs).
+The Boom colormap selections make the Boom deep water sectors appear
+normal until walked into, then the deepwater colormap will have global effect.
+
+*** w81_Boom_pusher
+patchfile = w81_Boom_pusher.patch
+- committed revision 928   by wesley johnson
+Gave the Point pusher a square law effect (enabled by mbf_support),
+as in prboom (an MBF feature actually, Boom is not square law).
+
+*** w81_door_thinker_check
+patchfile = w81_door_thinker_check.patch
+- committed revision 929   by wesley johnson
+Derived from prboom fixes doc (cph 2001/04/05).
+Doom bug: cannot raise a door when ceiling action is in same sector.
+Add check to door logic that ceiling action being modified is a door action.
+This also prevents corruption of the ceiling action.
+
+*** w81_wad_to_angle
+patchfile = w81_wad_to_angle.patch
+- committed revision 930   by wesley johnson
+Note prboom fix doc (cph 2001/04/05), of Vanilla Doom bug found by Ville Vuorinen.
+Signed mapthing_t angle would create table lookup using negative index.
+Fix uses new func, wad_to_angle(), to isolate the signed wad field, from
+unsigned angle_t usage.
+It does not emulate the Doom buggy behavior.
+
+*** w82_colortst_wad
+wads/colortst.wad
+- committed revision 931   by wesley johnson
+Fog sheets
+
+*** w82_bex_frame
+patchfile = w82_bex_frame.patch
+- committed revision 932   by wesley johnson
+Fix strcmp error in BEX parsing of FRAME and PARS.
+Fixes hg.wad, eye shooting missiles.
+
+*** w82_hw_translucent_order
+patchfile = w82_hw_translucent_order.patch
+- committed revision 933   by wesley johnson
+Fix hardware render to draw translucent in distance order.
+This fixes BOOMEDIT.WAD.
+
+*** w82_hw_Boom_colormap
+patchfile = w82_hw_Boom_colormap
+- committed revision 934   by wesley johnson
+Boom deepwater colormap fixed in hardware renderer.
+Extend view_colormap to affect hardware render too.
+
+*** w82_get_gl_info
+patchfile = w82_get_gl_info.patch
+- committed revision 935   by wesley johnson
+Bug 3419447.
+Fix buffer overrun of DBG_Printf strings by video card extensions.
+Create common function, Query_GL_info(), to get GL info strings,
+check renderer, and set gl_extensions string and oglflags.
+Create DBG_Print_lines() function to print extension strings on multiple
+lines, and prevent buffer overrun.
+Change SDL, Win32, X11 opengl port drivers, to use these functions.
+In DBG_Printf(), when verbose, print to stderr too;
+
+*** w82_CONS_Printf_va
+patchfile = w82_cons_printf_va.patch
+- committed revision 936   by wesley johnson
+Fix buffer overruns caused by vsnprintf to buffer without string termination.
+Create function CONS_printf_va() to handle va_list printing to console.
+This replaces multiple copies of print buffers and vsnprintf.
+
+*** w82_hw_obj_colormap
+patchfile = w82_hw_obj_colormap.patch
+- committed revision 937   by wesley johnson
+Fix hardware render so that colormaps affect objects too.
+Fixed HWR_RenderPlane to have colormap parameter, so can pass in floor
+and ceiling colormaps, same as in software renderer.
+
+*** w82_hw_StoreWall_float
+patchfile = w82_hw_StoreWall_float.patch
+- committed revision 938   by wesley johnson
+Change HWR_StoreWallRange to have float operands.  Part of the code
+treated them as 0.0 to 1.0, and part was integer like the software
+renderer.
+General spelling fixes, replace some stub decl with proper include.
+
+*** w83_filestatus_e
+patchfile = w83_filestatus_e.patch
+- committed revision 939   by wesley johnson
+Fix filestatus_t stragglers to be filestatus_e.
+
+*** w83_get_gl_info_char
+patchfile = w83_gl_info_char.patch
+- committed revision 940   by wesley johnson
+Fix get_gl_info for (char*) type warnings on newer compilers.
+
+*** w83_fs_linetrigger
+patchfile = w83_fs_linetrigger.patch
+- committed revision 941   by wesley johnson
+Condense some of the door, switch, and other line trigger code.
+Fix some floor and switch code to detect incomplete fragglescript
+created linedefs (no sidedefs, no frontsector),
+and skip secondary actions that would have segfault.
+Fix fragglescript to init more fields in temp linedef to some safe
+value.
+Fixes win32 crash on fragglescript teleport, per Bug 3185357.
+
+*** w80_win32_vid_fixes
+patchfile = w80_win32_vid_fixes.patch
+- committed revision 942   by wesley johnson
+This is not in order, was in the w80 patch series, but did not get committed.
+Minimal fix of win32 port drivers for the new vid structure.
+This is a temporary fix, as they need to be rewritten.
+
+*** w83_draw32_remove_printf
+patchfile = w83_draw32_remove_printf.patch
+- committed revision 943   by wesley johnson
+Remove a debugging printf that is in svn, but not in my working files.
+
+*** w83_num_skincolor
+patchfile = w83_num_skincolor.patch
+- committed revision 944   by wesley johnson
+Change MAXSKINCOLORS to NUMSKINCOLORS, which is how it is used.
+Moved in doomdef as it is dependent upon code, not a setting.
+Caused confusion in understanding code.
+
+*** w83_fs_func_safety_checks
+patchfile = w83_fs_func.patch
+- committed revision 945   by wesley johnson
+General cleanup on all fragglescript functions.
+Move error code to after return, for speed.
+Added many checks for valid mobj and fields that could segfault in fragglescript.
+Fixed much of fragglescript code fragility.
+There is a compile-time var, OLDBEHAVIOR, that disables some fixes
+that would change some details of fragglescript behavior.  It is
+assumed that no scripts depend upon these details, but the switch is
+included for debugging.  Phobia and hth2 were tested and seem unaffected.
+Changed fixedvalue to access int arg directly, which saved 6K in code.
+Added comments.
+
+*** w83_fs_op
+patchfile = w83_fs_op.patch
+- committed revision 946   by wesley johnson
+General cleanup on all fragglescript operations.
+Move error code to after return, for speed.
+Added comments.
+
+*** w83_fs_func_old
+patchfile = w83_fs_func_old.patch
+- committed revision 947   by wesley johnson
+Remove OLDBEHAVIOR code in fragglescript functions.
+
+*** w83_makefile
+patchfile = w83_makefile.patch
+- committed revision 948   by wesley johnson
+Move OBJ of an interface to that interface makefile section.
+Made WIN32 interface compilable (which uses different names than the
+others).
+Removed strange i_cdmus_o var.
+Created MAINOBJ var.
+Moved linux_x common OBJ (in xshm and ggi) to a common OBJ assign,
+leaving only the video.
+
+*** w83_cdmus_optional
+patchfile = w83_cdmus.patch
+- committed revision 949   by wesley johnson
+Make CD-music a makefile compile option.
+Setting CDMUS (default is CDMUS=1) in the makefile enables compiling CD
+music code.  Without CDMUS, all CD code is removed, including cd-volume
+controls.  This allows compiling without some special libraries, that
+some interfaces require.
+To override default, use NOCDMUS on the make command line, or edit
+makefile.
+> make NOCDMUS=1
+
+*** w83_fs_array_camera_spec
+patchfile = w83_fs_array_spec.patch
+- committed revision 950   by wesley johnson
+General cleanup on fragglescript array functions,
+camera functions, and spec functions (if, elseif, while, for).
+Move error code to after return, for speed.
+Added comments.
+
+*** w83_fs_script_parse
+patchfile = w83_fs_script_parse.patch
+- committed revision 951   by wesley johnson
+General cleanup on fragglescript script and parse functions.
+Move error code to after return, for speed.
+Added comments.
+
+*** w83_fs_func_doc
+patchfile = w83_fs_func_doc.patch
+- committed revision 952   by wesley johnson
+Update the fragglescript function docs to the actual code
+implementation.
+Fix some comments in the code.
+
+*** w83_wipe24
+patchfile = w83_wipe24.patch
+- committed revision 953   by wesley johnson
+Fix wipe for 24bpp draw.  One index was not using bytepp.
+
+*** w84_palette24
+patchfile = w84_palette24.patch
+- committed revision 954   by wesley johnson
+Make color8_translate palette used by draw15, draw16, draw24, draw32,
+respond to gamma settings, and palette changes, such as palette flash,
+object pickup, damage red.
+
+*** w84_ouchface
+patchfile = w84_ouchface.patch
+- committed revision 955   by wesley johnson
+Previous ouchface fix was not complete.
+Needed to set face priority to 8, to keep the ouchface visible for
+more than one tic.
+Self-damage code also needed ouchface fix.
+Ouchface has mouth open wide, "ahhhh".
+
+*** w84_compressed_patch
+patchfile = w84_compressed_patch.patch
+- committed revision 956   by wesley johnson
+Fixes the patch combiner to handle compressed patches (which share some
+of the patch columns).  It under-estimated the new size so it did
+not allocate enough space for the combined patch, which causes it to
+abort into using the picture format instead.
+This fixes the elevator railings (SW1COMM) in Requiem.wad MAP08,
+which use compressed patches.
+
+*** w84_bob_spawn
+patchfile = w84_bob_spawn.patch
+- committed revision 957   by wesley johnson
+An attempt to clear the player bob at spawn.
+Remove some old commented out code.
+
+*** w84_IPX_option
+patchfile = w84_IPX_option.patch
+- committed revision 958   by wesley johnson
+Make IPX network code optional by a define in doomdef.
+Makes all IPX code conditional on USE_IPX.
+Enabled by default for those that have IPX headers.
+This fixes bug in OpenBSD that does not have IPX, but where a specific
+test is not in place.
+
+*** w84_whatsnew
+patchfile = w84_whatsnew.patch
+- committed revision 959   by wesley johnson
+Update whatsnew doc to current patch level.
+
+*** w85_colormap_gen
+patchfile = w85_1_colormap_gen.patch
+- committed revision 960   by wesley johnson
+Tune the legacy linedef colormap generate.
+The wad alpha of 'a' to 'z' is now converted to 0..255 internally,
+to avoid losing alpha intensity to conversion roundoff.
+Fixed the drab color of hardware-render at high alpha caused by wrong
+alpha conversion calc.
+
+*** w85_mouse
+patchfile = w85_2_mouse.patch
+- committed revision 961   by wesley johnson
+Rewrite of mouse handling, providing relative mouse motion like many other
+ports use for SDL, and fixing the WarpMouse code in the absolute mouse motion
+that we have been using.
+Grabinput has been restored and made to work.
+Provides option selection for grabinput.
+Provides SDL port with selection for mouse relative or absolute.
+Fixes OpenBSD mouse problem of bug/patch 3547682.
+OpenBSD reports mouse motion x and y as separate events.  In DoomLegacy
+later mouse motion events in a frame overwrote previous motion.  Mouse events
+are now added (like Legacy2 and other ports examined).
+
+*** w85_opengl_mode
+patchfile = w85_3_opengl_mode.patch
+- committed revision 962   by wesley johnson
+SDL OpenGL is not switching video modes at all.
+In my previous sdl rework, I forgot opengl video mode switch.
+This fixes opengl video mode switch similarily to the others, and it now
+switches video modes.
+
+*** w85_statusbar_overlay
+patchfile = w85_4_statusbar_overlay.patch
+- committed revision 963   by wesley johnson
+The statusbar and overlay were not positioned correctly in OpenGL.
+The statusbar is now consistent for all video modes.
+This fixes the overlay to use fdupy instead of dupy.
+
+*** w85_secnode_freed
+patchfile = w85_5_secnode_freed.patch
+- committed revision 964   by wesley johnson
+A previous patch in w79, sped up P_CheckSector, but made it vulnerable
+to a second thing being removed by the player on a moving lift,
+resulting segfault.  Removed the vulnerable nxt_ns ptr.
+Instead, when test determines that secnode was freed then resort to
+previous behavior of restarting from beginning of touching_thinglist.
+
+*** w85_fixedcolormap
+patchfile = w85_6_fixedcolormap.patch
+- committed revision 965   by wesley johnson
+Fix bug introduced by BOOM_COLORMAP, which segfaults when restoring
+game saved during use of fixed_colormap.
+
+*** w85_heretic_SWITCHES
+patchfile = w85_7_heretic_switches.patch
+- committed revision 966   by wesley johnson
+Allow Heretic and Blasphemer PWAD to fully use the SWITCHES lump without
+restricting it to only episode 4.
+Other ports do not have any restriction on Heretic use of the SWITCHES entries.
+Requested by a Heretic wad project.
+Check for missing switch textures and default to use texture 1.
+
+*** w86_viewer_colormap
+patchfile = w86_1_viewer_colormap.patch
+- committed revision 968   by wesley johnson
+Make some BOOM_GLOBAL_COLORMAP code non-optional, for use with fog and
+other colormaps.
+Shortened some of the Boom Colormap Option text strings so they fit
+low-res screens.  This affects saved configs.
+Move BSPVIEWER code to r_main and make it non-optional.
+Add test for colormap fog using viewer_extracolormap.  This is not
+very good fog but at least it works now as documented.
+
+*** w86_FF_cleanup
+patchfile = w86_2_FF_cleanup.patch
+- committed revision 969   by wesley johnson
+Reorganize the FF_flags to be understandable, and easier to test, and
+to not hide important relationships.
+FF_RENDERSIDES -> FF_OUTER_SIDES
+FF_INVERTSIDES && FF_RENDERSIDES -> FF_INNER_SIDES
+FF_ALLSIDES && FF_RENDERSIDES -> FF_OUTER_SIDES | FF_INNER_SIDES
+FF_RENDERPLANES -> FF_OUTER_PLANES
+FF_INVERTPLANES && FF_RENDERPLANES -> FF_INNER_PLANES
+FF_BOTHPLANES && FF_RENDERPLANES -> FF_INNER_PLANES | FF_OUTER_PLANES
+FF_RENDERALL -> FF_OUTER_SIDES | FF_OUTER_PLANES
+FF_CUTLEVEL -> FF_CUTSOLIDS | FF_CUTEXTRA
+FF_DOUBLESHADOW -> FF_SLAB_SHADOW
+Rework the BSP Fake floor code to be understandable.
+Change BSP ffloor to ffplane, because it tracks planes, and there are
+too many ffloor references in the code that have other meanings.
+ffloors -> ffplane
+numffloors -> numffplane
+
+*** w86_Glide_types
+patchfile = w86_3_Glide_types.patch
+- committed revision 970   by wesley johnson
+Cleanup hardware typenames and structs.  Change to use uint32_t and uint16_t.
+GlideMipmap_t -> Mipmap_t
+GlideTexture_t -> MipTexture_t
+GlidePatch_t -> MipPatch_t
+
+*** w86_HWR_types
+patchfile = w86_4_HWR_types.patch
+- committed revision 971   by wesley johnson
+Use type names xxx_t, and "typedef struct" in hardware struct defines.
+FColorARGB -> ARGB_t
+FRGBAFloat -> RGBA_float_t;
+F2DCoord -> v2d_t;
+FTransform -> FTransform_t
+v3d_t, wallVert3D, FOutVector -> vxtx3d_t  (combined type, no more copy)
+EPolyFlags -> PolyFlags_e
+ETextureFlags -> TextureFlags_e
+ESurfFlags -> SurfFlags_e
+FSurfaceInfo -> FSurfaceInfo_t
+hwdspecialstate_t -> hwd_specialstate_e
+hwdfiltermode -> hwd_filtermode_e
+TGAHeader, *PTGAHeader -> TGAHeader_t
+
+*** w86_5_misc
+patchfile = w86_5_misc.patch
+- committed revision 972   by wesley johnson
+Cleanup some code to not have so many return stmts, code should exit
+through only a few return stmts.
+Cleanup unused functions and redirected functions.
+R_GetFlatNumForName -> R_FlatNumForName  (like R_TextureNumForName)
+P_FlatNumForName -> P_AddLevel_FlatNumForName (unused)
+
+*** w86_hw_cache
+patchfile = w86_6_hw_cache.patch
+- committed revision 973   by wesley johnson
+Cleanup of code in hw_cache, concerning bytepp, endian issues,
+and much better draw code for the various bytepp switches.
+
+*** w86_drawflags
+patchfile = w86_7_drawflags.patch
+- committed revision 974   by wesley johnson
+Add drawflags and appropriate TF_ flags to hw_cache parameters so that do not
+have global draw cache modifiers.
+
+*** w86_hw_fx1
+patchfile = w86_8_hw_fx1.patch
+- committed revision 975   by wesley johnson
+Fix hardware draw of fx1 translucent.
+Fixes display of linedef 288 in opengl.
+
+*** w86_hw_view_colormap
+patchfile = w86_9_hw_view_colormap.patch
+- committed revision 976   by wesley johnson
+Fix the hardware draw of Boom and view_colormap.
+Now see global colormap change with Boom deep water and colormap fog
+in opengl mode.
+
+*** w87_mobj_subsector
+patchfile = w87_1_mobj_subsector.patch
+- committed revision 977   by wesley johnson
+Fix segfault in dsv4.  When wrong buttons are pressed player is hurt.
+If they are pressed after getting the yellow key, then segfault.
+There is a mobj without a subsector, and script code must check first.
+
+*** w87_legacywad
+patchfile = w87_2_legacywad.patch
+- committed revision 978   by wesley johnson
+The legacywad filename used cat_filename with a zmalloc buffer,
+but cat_filename requires a buffer of MAX_WADPATH because it
+terminates it with 0.  This caused segfault at program shutdown.
+Fixed to use strdup after the cat_filename call.
+
+*** w87_light255
+patchfile = w87_3_light255.patch
+- committed revision 979   by wesley johnson
+Light calculations are done in range 0..255.  The LIGHTSEGSHIFT is
+only performed at the table lookup.  The extralight is now 0..255.
+Calculate the wall orientation light outside of loops.
+Simplified much of the light table code.
+
+*** w87_camera
+patchfile = w87_4_camera.patch
+- committed revision 980   by wesley johnson
+Chase camera is now fixed to be usable with splitscreen players, with
+the first player getting the chase camera.
+This could be expanded to allow two chase cameras now, but the chase camera
+gets hung up going through doorways, so I do not recommend it.
+
+*** w87_viewer_display
+patchfile = w87_5_viewer_display.patch
+- committed revision 981   by wesley johnson
+Simplified code of player weapon display by using viewer variables.
+Disabled debug printf statement concerning netvars.
+
+*** w87_fs_misc
+patchfile = w87_5b_fs_misc.patch
+- committed revision 982   by wesley johnson
+A portion of w83_fs patches that seems to have got left out.
+
+*** w87_extralight_misc
+patchfile = w87_5c_extralight__misc.patch
+- committed revision 983   by wesley johnson
+A portion of w87_light255 patch that seems to have got left out.
+
+*** w87_translucent
+patchfile = w87_6_translucent.patch
+- committed revision 984   by wesley johnson
+Augmented translucent draw to handle alpha of 0..255 for all draw modes.
+DRAW8PAL can now draw translucents by reversing translucent table usage.
+RGB draw modes can now draw spans using arbitrary alpha.
+Simplified flat draw using some new global variables.
+Water can now be drawn with a translucent alpha > 128.
+
+*** w87_plane_merge
+patchfile = w87_7_plane_merge.patch
+- committed revision 985   by wesley johnson
+Hardware render sort changed to merge when adding plane.
+Indented code in p_mobj.c.
+
+*** w88_LinkFFloor
+patchfile = w88_1_LinkFFloor.patch
+- committed revision 986   by wesley johnson
+Changed P_AddFFloor to P_LinkFFloor, for clarity.
+Changed flags parameter type to uint32_t.
+Cleaned up some comments and indenting.
+
+*** w88_fogwater_decode
+patchfile = w88_2_fogwater_decode.patch
+- committed revision 987   by wesley johnson
+Create data structures for translucent effects.
+Create effect options for "water effect", and "fog effect".
+Change linedef decoding for new water and fog effects, affecting
+301 (translucent water), 302 (fog), 304 (opaque water).
+Each of these can use the following alpha and fog selection.
+For opaque water, it only affects the fog inside.
+The #xxx in upper texture that set the alpha now also selects the fog
+effect, and the alpha can be 0..255.
+Syntax  #xxxF, xxx is the alpha (0..255) and F is the effect.
+'A': FW_clear, no fog  (old WATER default)
+'B': FW_cast,  paint all surfaces with textures
+'C': FW_colormap, use colormap fog (which only colors all sectors)
+'D': FW_inside, render inside side, plane views (old FOG)
+'E': FW_foglite, outside side, plane views, low alpha overall fog sheet
+'F': FW_fogdust, outside, when in fog apply overall fog sheet (FOG default)
+'G': FW_fogsheet, outside, overall fog sheet, sector join fog sheet
+'H': FW_fogfluid, outside, inside fluid, fogsheet
+This only handles the linedefs, the code that draws these is in later patches.
+
+*** w88_extralight
+patchfile = w88_3_extralight.patch
+- committed revision 988   by wesley johnson
+Simplify the addition of extralight and orient light, removing many tests,
+by precalculating the extralight for different situations.
+Create extralight_cm (3/4 of extralight) for colormap fog,
+and extralight_fog (1/2 of extralight) for FF_FOG.
+Light precedence is now  FF_FOG, colormap fog, translucent, normal.
+
+*** w88_fogdraw
+patchfile = w88_4_fogdraw.patch
+- committed revision 989   by wesley johnson
+Rewrite all fog draw functions to new specifications.
+Average 3 source texture pixels to generate fog color, except DRAW8PAL
+which can only average 2 pixels.
+Use of fog alpha.
+
+*** w88_fogface
+patchfile = w88_5_fogface.patch
+- committed revision 990   by wesley johnson
+Create the fog face sheets needed for some fog modes.
+Draw the fog face sheets when in such foggy sectors.
+
+*** w88_fogjoin
+patchfile = w88_6_fogjoin.patch
+- committed revision 991   by wesley johnson
+Create fog sheets at fog joins for the fogsheet fog model.
+This lessens the visibility with distance similar to true fog ray
+tracing, but using what is available in this map model.  It tolerates
+well mixing fog and non-foggy sectors, which other methods would not.
+
+*** w88_hwfogdraw
+patchfile = w88_7_hwfogdraw.patch
+- committed revision 992   by wesley johnson
+Adds fog drawing and fog texture creation to hardware renderer.
+Draw the fog face sheets when in foggy sectors.
+
+*** w88_hwfogjoin
+patchfile = w88_8_hwfogjoin.patch
+- committed revision 993   by wesley johnson
+Create fog draws of join sheets for FF_JOIN in hardware render.
+
+*** w88_hw_waterside
+patchfile = w88_9_hw_waterside.patch
+- committed revision 994   by wesley johnson
+Fix split wall draws so that hardware renderer draws water sides with
+3dfloor backsectors, and they are drawn translucent.
+
+*** w88_docs
+patchfile = w88_10_docs.patch
+- committed revision 995   by wesley johnson
+Update editing and whatsnew for alpha 4 release.
+
+*** fogtst.wad
+file = common/wads/fogtst.zip
+- committed revision 996   by wesley johnson
+A wad to test fog effects.
+
+*** w88_alpha4
+patchfile = w88_11_alpha4.patch
+- committed revision 997   by wesley johnson
+Update whatsnew doc for alpha4 release.
+
+*** w88_alpha4_version
+patchfile = w88_12_alpha4ver.patch
+- committed revision 998   by wesley johnson
+Update alpha4 VERSIONSTRING.
+
+*** w88_blockfill
+patchfile = w88_13_blockfill.patch
+- committed revision 999   by wesley johnson
+A previous patch ( w86_hw_cache, svn973 ) caused a bug, triggered when an imp
+shoots a fireball.
+Used the block ptr as a loop var and returned the same to the caller.
+Fixed by giving the loop its own copy of the ptr.
+
+*** w89_offset_patch
+patchfile = w89_1_offset_patch.patch
+- committed revision 1000   by wesley johnson
+FreeDoom is using large patches, with an offset to select a portion.
+A single patch texture, with an offset, was generating the wrong
+texture.  This detects these and uses the multiple patch combine
+generation instead.  Large patches also are directed to multiple patch
+combine to avoid multiple large copies of the same patch.
+
+*** w89_savegame_buffer_size
+patchfile = w89_2_save_size.patch
+- committed revision 1001   by wesley johnson
+Second fix for bug_3442118, where Hell Ground wad (hg.wad) map04
+could still overrun the savegame buffer.
+Increase savegame min free buffer to 64K.
+Requires 12643 to write thinkers of hgh2.wad.  If was close to write
+trigger that would overrun the 4K free space.
+
+*** w89_boom_translucent_load
+patchfile = w89_3_boom_tranlsu.patch
+- committed revision 1002   by wesley johnson
+RGB draw modes sometimes also use translucent table.
+Load the lump for all draw modes.
+
+*** w89_hardware_draw_over_deepwater
+patchfile = w89_4_hw_draw_deepwater.patch
+- committed revision 1003   by wesley johnson
+In ic2005.wad there are three situations where textures are drawn pegged
+to mobile deepwater sectors.
+1) A translucent over a deepwater door.
+2) A transparent texture (electric arc) under a deepwater ceiling.
+Pushing a switch turns it on and off.
+3) A thin texture used for grid flooring, with deepwater ceiling to move it.
+Two sided middle textures must be pegged to the original ceiling,
+not to the deepwater sector.
+Fixes bug 3169993.
+
+*** w89_heretic_finale
+patchfile = w89_5_heretic_finale.patch
+- committed revision 1004   by wesley johnson
+Fix bug 0799500.
+After Heretic E2M8 ending pic, the palette was not restored.
+The finale heretic code now a separate func, another state for heretic
+finale has been provided (to avoid showing the cast),
+and the palette is restored after the underwater pic has been shown.
+
+*** w89_kill_sfx
+patchfile = w89_6_kill_sfx.patch
+- committed revision 1005   by wesley johnson
+Fix bug 3078850, chainsaw sound plays full length.
+Many fixes in sound effects playing.
+Fixed StopSound to work, needed for chainsaw.
+Added flags to sounds to control tests and sound killing,
+(SFX_single, SFX_id_fin, SFX_saw, SFX_player, SFX_org_kill, and others).
+Multiple sfx per origin are allowed as default.
+Changed the tests for specific sounds in the port drivers to flag tests.
+Updated port sound effect drivers, start sfx, stop sfx, kill flagged
+sounds, update sfx param, sound is playing, and get sfx lump.
+There is now a common GetSfx, which each port calls to get a sfx lump.
+Ports (SDL, linux, os2, macos) now use priority and sound age when
+too many channel requests.
+Excessive volume detected now uses SoftError, and limits volume instead.
+Removed duplicated sfx lump precache from port drivers, so now other
+precache options work as intended.
+Increased SDL to 16 channels.
+The menu pistol sound will get killed early because setup stops sounds
+before releasing all the sound memory.  Previously, StopSound
+did not work, so memory was released while the pistol was still playing.
+
+*** w89_empty_chan
+patchfile = w89_7_empty_chan.patch
+- committed revision 1006   by wesley johnson
+Fix SDL find empty channel search.  Search was init wrong.
+
+*** w89_softerr
+patchfile = w89_8_softerror.patch
+- committed revision 1007   by wesley johnson
+SoftError is mandatory, and no longer a compile option.
+SoftError message changed to print "Warn:" instead.
+
+*** w89_free_sound
+patchfile = w89_9_free_sound.patch
+- committed revision 1008   by wesley johnson
+Fix problems in free memory of sound effect that caused Z_Free errors.
+Notable when executing fragglescript ambiant sound (phobia.wad).
+
+*** w89_boom_colormap
+patchfile = w89_10_boom_colormap.patch
+- committed revision 1009   by wesley johnson
+Fix bug in Boom deepwater colormap support.
+Would use bogus colormap at [-1] instead of using no colormap.
+Bug would only show in opengl because opengl uses the rgba field instead
+of the colormap table field, which was NULL.
+
+*** w89_term_transform
+patchfile = w89_11_term_transform.patch
+- committed revision 1010   by wesley johnson
+Make hardware render TERM_TRANSFORM the permanent choice, removing
+the conditional compilation.  Removed the dead code that this creates.
+Rename some functions.
+Fix some spelling.
+
+*** w89_corona
+patchfile = w89_12_corona.patch
+- committed revision 1011   by wesley johnson
+Cleaned the hardware render corona code.
+Revised the original corona draw, because it works better with sorted draw.
+Created compilation options, and a menu choice.
+Corona choices are
+  OFF
+  SPRITE (drawn with the sprite)
+  DYN (drawn from dynamic lights)
+  AUTO (decided by draw modes)
+The SPRITE draw works the best with transparent walls, as it draws the
+corona at the time the sprite is drawn.  This works well with sorted draw.
+The DYN corona draw (dynamic lights) does not draw corona behind
+translucent walls.
+The dynamic lights must remain active because it provides the wall
+lighting from things.
+
+*** w89_draw_sorted
+patchfile = w89_13_draw_sorted.patch
+- committed revision 1012   by wesley johnson
+Hardware drawn sprites would be occluded by transparent walls behind them.
+A fixed draw order did not work.
+Created hardware draw function that draws sprites and walls together
+in depth order.
+Draw Menu choices
+  EARLY  (draw before sprites, oldest code)
+  LATE   (draw after sprites, previous code)
+  SORTED (draw sorted with sprites)
+The EARLY draw works for transparent, but not translucent.
+The LATE draw has distant transparent walls drawn over nearby sprites.
+The SORTED draw has sprites drawn correctly for transparent and
+translucent walls.
+Later this menu item may be removed, with only draw sorted remaining.
+
+*** w90_Makefile
+patchfile = w90_1_makefile.patch
+- committed revision 1013   by wesley johnson
+Fix debug libs with CDMUS conditional.
+Remove old dependencies.
+
+*** w90_malloc
+patchfile = w90_2_malloc.patch
+- committed revision 1014   by wesley johnson
+Remove old references to malloc.h, except for WATCOM.
+Fixes bug 0000602, compiling under FreeBSD.
+
+*** w90_tmap_asm
+patchfile = w90_3_tmap_asm.patch
+- committed revision 1015   by wesley johnson
+Change asm source for name changes.
+  dc_transmap -> dc_translucentmap
+  colormaps -> reg_colormaps
+Applied patch from Alexey Dokuchaev.
+Fixes bug 0000604.
+Added dr_alpha test and capability for alpha>128 to asm code.
+Fixed asm to increment by vid.ybytes.
+Makefile modified for asm support.
+Due to complexity, asm will likely lag in getting fixes made to drawers.
+It uses strange tricks for speed up, which are difficult to maintain.
+
+*** w90_freemem
+patchfile = w90_4_freemem.patch
+- committed revision 1016   by wesley johnson
+Fix "Free 0" console printout.
+Fix FreeMem interface to indicate when guessing, and suppress printout
+of guessed mem numbers.
+FreeBSD, remove use of kvm which requires kmem priv, and use sysctl instead.
+Applied FreeBSD patch from Alexey Dokuchaev.
+Fixes bug 0000610.
+
+*** w90_legacyhome
+patchfile = w90_5_legacyhome.patch
+- committed revision 1017   by wesley johnson
+Change preferred directory name for savegames to ".doomlegacy"
+( "doomlegacy" for win/dos ).
+Will also check for ".legacy" (legacy).
+When not found, will create ".doomlegacy".
+Fixes bug 0000609.
+
+*** W91_rancking
+patchfile = w91_1_rancking.patch
+- committed revision 1019   by wesley johnson
+Fix rancking spelling to ranking.
+
+*** W91_trans_draw8
+patchfile = w91_2_transdraw8.patch
+- committed revision 1020   by wesley johnson
+Fix bug in translucent draw of sprite for 8bit screens.
+Set dr_alpha to 0 for all translucent sprite draws.
+This affects phobia.wad fires, where would get random dr_alpha.
+
+*** W91_flats_limit
+patchfile = w91_3_flats_limit.patch
+- committed revision 1021   by wesley johnson
+Remove limits on flats.  AddFlats now automatically increases the
+levelflats array when necessary.  Remove one use of alloca().
+
+*** W91_alloca
+patchfile = w91_4_alloca.patch
+- committed revision 1022   by wesley johnson
+Remove uses of alloca, replacing them with calloc, and explicitly
+freeing the allocations.
+
+*** W91_drawsetup
+patchfile = w91_5_drawsetup.patch
+- committed revision 1023   by wesley johnson
+Convert video draw to use a setup function instead of passing a screen
+parameter with each call.  Added additional functionality, and made
+it more uniform across the various draw functions.  A single V_DrawSetup
+now controls the attributes for a series of draw calls.
+Added V_DRAWCENTER, to center the splash screen, finale, and menu
+screens in the monitor window.
+
+*** W91_bindfraggle
+patchfile = w91_6_bindfraggle.patch
+- committed revision 1024   by wesley johnson
+Previously I had changed the command t_runscript to fs_runscript, but
+now find that chex newmaps binds the t_runscript command to the z key.
+Restore previous t_runscript and t_running commands for this purpose.
+Chex newmaps scope works again.
+
+*** W91_flats_limit_2
+patchfile = w91_7_flatslimit2.patch
+- committed revision 1025   by wesley johnson
+Fix bug in W91_flats_limit.  Must zero new levelflats allocation,
+because unanimated are left to default values.  Was failing after
+about 5 to 7 loads of plutonia savegames.
+
+*** W91_fragglescript_respawn
+patchfile = w91_8_fraggle_respawn.patch
+- committed revision 1026   by wesley johnson
+Fix bug_3588902.
+Create and Free Extra_Mapthing, used for FraggleScript created mobj
+that can respawn or can Nightmare respawn.
+Savegame now saves Extra_Mapthing as an optional section (see Sync).
+This is needed for respawn queue.
+Will still load old save games.
+Changed savegame ptr tools to also handle savegame mapthing ptrs.
+Fixed WRITE_MAPTHING_PTR and READ_MAPTHING_PTR to handle extra mapthing.
+Previously they were presented with mapthing ptrs that were not part
+of the mapthings array, and created bad indexes in the savegame.
+Nightmare respawn modified to fix several bugs.
+It had a mixture of previous fixes.  Added better fix for nightmare
+respawn at (0,0) as used in prboom and eternity.
+Fixed where in several respawn, the mapthing mobj was not being updated
+for new mobj.
+
+*** W92_Makefile
+patchfile = w92_1_Makefile.patch
+- committed revision 1027   by wesley johnson
+Fix bug 0000605, bug 0000608.
+Fix Makefile directory create problems.
+There is now a make_options file that can hold all the local make
+settings, which lessens the need to edit the Makefile.
+When this file does not exist, the directories will be made.
+Remove directory prerequisites, as they could never work (date changes
+with every use).
+Fix dependency make problems.  Dependencies are no longer loaded for
+many housekeeping make commands, so make does not try to re-build them.
+Remove -separate flag from sed.
+Fix for compilation on W98 using MinGW.
+Other makefile improvements.
+
+Other musserv and sndserv makefiles have been combined with the linux makefile,
+because of the duplication of maintenance.
+Remove file: linux_x/musserv/Makefile.freebsd
+Remove file: linux_x/musserv/Makefile.scoos5
+Remove file: linux_x/musserv/Makefile.scouw2
+Remove file: linux_x/musserv/Makefile.scouw7
+Remove file: linux_x/musserv/Makefile.linux
+Remove file: linux_x/sndserv/Makefile.scoos5
+Remove file: linux_x/sndserv/Makefile.scouw2
+Remove file: linux_x/sndserv/Makefile.scouw7
+Add file: linux_x/musserv/Makefile
+
+*** W92_Mac
+patchfile = w92_2_Mac.patch
+- committed revision 1028   by wesley johnson
+Commit of extensive changes for Mac, and Mac using SDL.
+Change MACOS to MACOS_DI (Mac Direct Interface) which is NOT SDL.
+Mac using SDL defines MAC_SDL.
+This is not a working solution for Mac, just the best current code.
+Includes some useful optional debugging code.
+Updates Makefile for selecting MAC, and some MAC options.
+
+Add file "sdl/SDLmain.m"
+
+*** W92_WinVid
+patchfile = w92_3_winvid.patch
+- committed revision 1030   by wesley johnson
+Commit of more changes to video draw in Win32 code to make it
+compatible with vid structure.  Untested.
+
+*** W92_OS2_X11
+patchfile = w92_4_Os2_X11.patch
+- committed revision 1031   by wesley johnson
+Commit of more changes to video draw in OS2 code and Linux X11 code
+to make use of new generic video draw functions.  Untested.
+
+*** W92_keys
+patchfile = w92_5_keys.patch
+- committed revision 1032   by wesley johnson
+Implement changes to keycodes in DOS, OS2, LINUX_X, and WIN32 ports.
+Previous changes to Some KEY names were only in SDL.
+This only makes it possible to compile and some ports may only have
+one usable joystick.  Mostly Untested.
+
+*** W92_stricmp
+patchfile = w92_6_stricmp.patch
+- committed revision 1033   by wesley johnson
+Change uses of stricmp and strnicmp to strcasecmp and strncasecmp.
+Added comments in many places.
+Other cleanup.
+
+
+
+

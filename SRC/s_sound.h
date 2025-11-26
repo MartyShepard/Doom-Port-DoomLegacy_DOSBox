@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: s_sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,7 +25,6 @@
 // Initial Mac add
 //
 // Revision 1.7  2001/02/24 13:35:21  bpereira
-// no message
 //
 // Revision 1.6  2000/11/02 17:50:10  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -35,13 +34,8 @@
 //
 // Revision 1.4  2000/04/21 08:23:47  emanne
 // To have SDL working.
-// Makefile: made the hiding by "@" optional. See the CC variable at
-// the begining. Sorry, but I like to see what's going on while building
-//
 // qmus2mid.h: force include of qmus2mid_sdl.h when needed.
-// s_sound.c: ??!
 // s_sound.h: with it.
-// (sorry for s_sound.* : I had problems with cvs...)
 //
 // Revision 1.3  2000/03/12 23:21:10  linuxcub
 // Added consvars which hold the filenames and arguments which will be used
@@ -49,8 +43,6 @@
 // didn't break anything ... Erling Jacobsen, linuxcub@email.dk
 //
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -61,11 +53,15 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __S_SOUND__
-#define __S_SOUND__
+#ifndef S_SOUND_H
+#define S_SOUND_H
 
+#include "doomdef.h"
+  // SNDSERV, MUSSERV, CDMUS, MACOS_DI
 #include "sounds.h"
+  // sfxinfo_t
 #include "command.h"
+  // consvar_t
 
 // killough 4/25/98: mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND (0x8000)

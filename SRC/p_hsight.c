@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hsight.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: p_hsight.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,8 +25,6 @@
 // Initial Mac add
 //
 // Revision 1.3  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.2  2001/02/10 13:20:55  hurdler
 // update license
 //
@@ -36,7 +34,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "p_local.h"
 #include "r_main.h"
 #include "r_state.h"

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: f_finale.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,38 +22,22 @@
 // additional chex quest 1 support
 //
 // Revision 1.12  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.11  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.10  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.9  2001/04/01 17:35:06  bpereira
-// no message
 //
 // Revision 1.8  2001/03/21 18:24:38  stroggonmeth
 // Misc changes and fixes. Code cleanup
 //
 // Revision 1.7  2001/03/03 11:11:49  hurdler
-// I hate warnigs ;)
-//
 // Revision 1.6  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.5  2001/02/10 13:05:45  hurdler
-// no message
 //
 // Revision 1.4  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.3  2000/08/03 17:57:41  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -64,7 +48,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 #include "am_map.h"
 #include "dstrings.h"
@@ -672,6 +656,7 @@ void F_CastDrawer (void)
 //
 // [WDJ] patch is already endian fixed
 // Called by F_BunnyScroll
+// sx is x position in 320 width screen
 static void F_DrawPatchCol (int sx, patch_t* patch, int col )
 {
     column_t*   column;

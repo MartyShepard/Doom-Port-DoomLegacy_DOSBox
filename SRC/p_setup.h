@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1022 2013-07-30 15:31:28Z wesleyjohnson $
+// $Id: p_setup.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,7 +19,6 @@
 //
 // $Log: p_setup.h,v $
 // Revision 1.6  2002/07/26 15:21:36  hurdler
-// near RC release
 //
 // Revision 1.5  2002/07/24 19:03:06  ssntails
 // Added support for things to retain spawned Z position.
@@ -31,8 +30,6 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -42,12 +39,16 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef P_SETUP_H
+#define P_SETUP_H
 
-#ifndef __P_SETUP__
-#define __P_SETUP__
-
+#include "doomtype.h"
 #include "doomdata.h"
+  // mapthing_t
+#include "g_state.h"
+  // skill_t
 #include "r_defs.h"
+  // m_fixed.h, subsector_t
 
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS   64

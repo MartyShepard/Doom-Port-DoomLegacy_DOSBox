@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 961 2012-08-13 23:17:24Z wesleyjohnson $
+// $Id: d_netcmd.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,6 +17,8 @@
 //
 //
 // $Log: d_netcmd.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.36  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //
@@ -24,7 +26,6 @@
 // "kill" command added to the console
 //
 // Revision 1.34  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.33  2002/09/28 06:53:11  tonyd
 // fixed CR problem, fixed game options crash
@@ -39,8 +40,6 @@
 // Added Frag's weapon falling
 //
 // Revision 1.29  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.28  2001/08/12 15:21:04  bpereira
 // see my log
 //
@@ -54,7 +53,6 @@
 // Added md5-sum support, removed recursiv wad search
 //
 // Revision 1.24  2001/04/01 17:35:06  bpereira
-// no message
 //
 // Revision 1.23  2001/03/19 21:18:48  metzgermeister
 //   * missing textures in HW mode are replaced by default texture
@@ -63,10 +61,7 @@
 //   * added cvar gr_correcttricks
 //
 // Revision 1.22  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.21  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.20  2001/01/25 22:15:41  bpereira
 // added heretic support
@@ -75,20 +70,10 @@
 // Adding autorun2
 //
 // Revision 1.18  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.17  2000/11/02 19:49:35  bpereira
-// no message
-//
 // Revision 1.16  2000/10/08 13:30:00  bpereira
-// no message
-//
 // Revision 1.15  2000/09/10 10:39:06  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.14  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.13  2000/08/16 14:10:01  hurdler
 // add master server code
 //
@@ -99,10 +84,7 @@
 // cd vol jiggle
 //
 // Revision 1.10  2000/04/23 16:19:52  bpereira
-// no message
-//
 // Revision 1.9  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.8  2000/04/07 23:11:17  metzgermeister
 // added mouse move
@@ -111,17 +93,12 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.6  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.5  2000/03/06 15:58:47  hurdler
 // Add Bell Kin's changes
 //
 // Revision 1.4  2000/03/05 17:10:56  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -134,7 +111,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 
 #include "console.h"
 #include "command.h"

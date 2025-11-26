@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: am_map.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,39 +19,23 @@
 //
 // $Log: am_map.c,v $
 // Revision 1.12  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.11  2001/07/16 22:35:40  bpereira
 // - fixed crash of e3m8 in heretic
 // - fixed crosshair not drawed bug
 //
 // Revision 1.10  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.9  2001/05/16 21:21:14  bpereira
-// no message
-//
 // Revision 1.8  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.7  2001/02/28 17:50:54  bpereira
-// no message
-//
 // Revision 1.6  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.5  2001/02/10 13:14:53  hurdler
-// to be fixed
-//
 // Revision 1.4  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.3  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -62,7 +46,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 #include "g_game.h"
 #include "am_map.h"

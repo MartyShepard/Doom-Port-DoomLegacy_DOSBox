@@ -18,8 +18,8 @@
    along with this program; if not, write to the Free Software Foundation,
    Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
-#ifndef _MD5_H
-#define _MD5_H 1
+#ifndef MD5_H
+#define MD5_H 1
 
 #include <stdio.h>
 

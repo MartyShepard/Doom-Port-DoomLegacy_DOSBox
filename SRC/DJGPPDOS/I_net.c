@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_net.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: I_net.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,29 +19,16 @@
 //
 // $Log: I_net.c,v $
 // Revision 1.9  2000/10/16 20:02:30  bpereira
-// no message
-//
 // Revision 1.8  2000/09/28 20:57:20  bpereira
-// no message
-//
 // Revision 1.7  2000/09/15 19:49:23  bpereira
-// no message
-//
 // Revision 1.6  2000/09/01 19:34:37  bpereira
-// no message
 //
 // Revision 1.5  2000/09/01 18:59:55  hurdler
 // fix some issues with latest network code changes
 //
 // Revision 1.4  2000/08/31 14:30:57  bpereira
-// no message
-//
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -51,6 +38,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "../doomincl.h"
+  // stdio, stdlib, strings, defines
 
 #include <netinet/in.h>
 #include <errno.h>
@@ -62,14 +51,13 @@
 #include <dos.h>
 #include <sys/nearptr.h>
 
-#include "../doomdef.h"
+#include "../doomstat.h"
 
 #include "../i_system.h"
 #include "../d_event.h"
 #include "../d_net.h"
 #include "../m_argv.h"
 
-#include "../doomstat.h"
 #include "../z_zone.h"
 #include "../i_net.h"
 #include "../i_tcp.h"

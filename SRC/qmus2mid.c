@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: qmus2mid.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,14 +19,11 @@
 //
 // $Log: qmus2mid.c,v $
 // Revision 1.6  2001/03/09 21:53:56  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.5  2001/03/03 19:45:12  ydario
 // Do not compile under OS/2
 //
 // Revision 1.4  2000/10/08 13:30:01  bpereira
-// no message
-//
 // Revision 1.3  2000/09/10 10:46:15  metzgermeister
 // merged with SDL version
 //
@@ -48,7 +45,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "doomdef.h"
+
+#include "doomincl.h"
 #include "i_system.h"
 #include "byteptr.h"
 #include "m_swap.h"

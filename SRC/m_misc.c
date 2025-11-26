@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 936 2012-06-20 18:29:12Z wesleyjohnson $
+// $Id: m_misc.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,22 +25,14 @@
 // Fixed screenshots filename bug
 //
 // Revision 1.8  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.7  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.6  2001/01/25 22:15:42  bpereira
 // added heretic support
 //
 // Revision 1.5  2000/10/08 13:30:01  bpereira
-// no message
-//
 // Revision 1.4  2000/09/28 20:57:15  bpereira
-// no message
-//
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
@@ -58,7 +50,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "m_misc.h"
 #include "hu_stuff.h"
@@ -68,6 +60,7 @@
 #include "i_video.h"
 #include "d_main.h"
 #include "m_argv.h"
+#include "m_swap.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -622,7 +615,7 @@ char *Z_StrDup (const char *in)
 {
     char    *out;
 
-    out = ZZ_Alloc (strlen(in)+1);
+    out = Z_Malloc (strlen(in)+1, PU_STATIC, NULL);
     strcpy (out, in);
     return out;
 }

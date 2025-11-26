@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: wi_stuff.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -28,7 +28,6 @@
 // fixed wronf next level name in intermission
 //
 // Revision 1.13  2001/05/16 21:21:15  bpereira
-// no message
 //
 // Revision 1.12  2001/05/14 19:02:58  metzgermeister
 //   * Fixed floor not moving up with player on E3M1
@@ -37,16 +36,9 @@
 //   * fixed sound bug in SDL
 //
 // Revision 1.11  2001/03/03 06:17:34  bpereira
-// no message
-//
 // Revision 1.10  2001/02/24 13:35:21  bpereira
-// no message
-//
 // Revision 1.9  2001/02/10 12:27:14  bpereira
-// no message
-//
 // Revision 1.8  2001/01/27 11:02:36  bpereira
-// no message
 //
 // Revision 1.7  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -55,17 +47,9 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.5  2000/09/21 16:45:09  bpereira
-// no message
-//
 // Revision 1.4  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -76,7 +60,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "wi_stuff.h"
 #include "g_game.h"
 #include "hu_stuff.h"

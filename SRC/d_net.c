@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 609 2010-02-22 09:53:29Z smite-meister $
+// $Id: d_net.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,47 +25,22 @@
 // added fov for glide and fixed newcoronas code
 //
 // Revision 1.16  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.15  2001/02/10 12:27:13  bpereira
-// no message
-//
 // Revision 1.14  2000/10/21 08:43:28  bpereira
-// no message
-//
 // Revision 1.13  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.12  2000/10/08 13:29:59  bpereira
-// no message
-//
 // Revision 1.11  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.10  2000/09/15 19:49:21  bpereira
-// no message
-//
 // Revision 1.9  2000/09/10 10:38:18  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.8  2000/09/01 19:34:37  bpereira
-// no message
 //
 // Revision 1.7  2000/09/01 18:23:42  hurdler
 // fix some issues with latest network code changes
 //
 // Revision 1.6  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.5  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.4  2000/03/29 19:39:48  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -81,17 +56,18 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
+#include "d_net.h"
 #include "g_game.h"
 #include "i_net.h"
 #include "i_system.h"
 #include "m_argv.h"
-#include "d_net.h"
 #include "w_wad.h"
 #include "d_netfil.h"
 #include "d_clisrv.h"
-#include "z_zone.h"
 #include "i_tcp.h"
+#include "m_swap.h"
+#include "z_zone.h"
 
 //
 // NETWORKING
@@ -112,8 +88,10 @@
 doomcom_t*  doomcom;
 doomdata_t* netbuffer;        // points inside doomcom
 
+#ifdef DEBUGFILE
 FILE*       debugfile=NULL;        // put some net info in a file
                               // during the game
+#endif
 
 #define     MAXREBOUND 8
 static doomdata_t  reboundstore[MAXREBOUND];
@@ -134,7 +112,7 @@ boolean (*I_NetOpenSocket) (void);
 // network stats
 tic_t       statstarttic;
 int         getbytes=0;
-INT64       sendbytes=0;
+int64_t     sendbytes=0;
 int         retransmit=0   ,duppacket=0;
 int         sendackpacket=0,getackpacket=0;
 int         ticruned=0     ,ticmiss=0;
@@ -717,6 +695,7 @@ static void fprintfstring(byte *s,byte len)
     int mode=0;
 
     for (i=0 ; i<len ; i++)
+    {
        if(s[i]<32)
        {
            if(mode==0) {
@@ -733,6 +712,7 @@ static void fprintfstring(byte *s,byte len)
            }
            fprintf (debugfile,"%c", s[i]);
        }
+    }
     if(mode==1) fprintf (debugfile,"]");
     fprintf(debugfile,"\n");
 }

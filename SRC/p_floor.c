@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 893 2011-12-26 18:30:45Z wesleyjohnson $
+// $Id: p_floor.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -31,29 +31,19 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.9  2000/10/21 08:43:30  bpereira
-// no message
-//
 // Revision 1.8  2000/09/28 20:57:16  bpereira
-// no message
-//
 // Revision 1.7  2000/07/01 09:23:49  bpereira
-// no message
 //
 // Revision 1.6  2000/05/23 15:22:34  stroggonmeth
 // Not much. A graphic bug fixed.
 //
 // Revision 1.5  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.4  2000/04/08 17:29:24  stroggonmeth
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:46  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -64,7 +54,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 #include "p_local.h"
 #include "r_state.h"

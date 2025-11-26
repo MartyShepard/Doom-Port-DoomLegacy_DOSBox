@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.h 694 2010-07-09 03:07:45Z wesleyjohnson $
+// $Id: b_node.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -23,11 +23,16 @@
 // Revision 1.2  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
-#ifndef __BOTNODE_H__
-#define __BOTNODE_H__
+#ifndef B_NODE_H
+#define B_NODE_H
 
 //#define SHOWBOTPATH	//show the path the bot is taking in game?
+
+#include "doomtype.h"
+#include "m_fixed.h"
+#include "p_mobj.h"
 
 #define BOTNODEGRIDSIZE	/*8388608		//128<<16	*/2097152		//32<<16
 #define posX2x(a) (((a) + xOffset)*BOTNODEGRIDSIZE)

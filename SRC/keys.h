@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: keys.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: keys.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -15,11 +15,12 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
+// Include: DOS DJGPP Fixes
+//
 //-----------------------------------------------------------------------------
 
-
-#ifndef __KEYS_H__
-#define __KEYS_H__
+#ifndef KEYS_H
+#define KEYS_H
 
 /// These are the key event codes posted by the keyboard handler, and closely match the SDLKey symbols.
 /// 0-127 are ASCII codes. The codes KEY_NUMKB- are reserved for virtual keys.

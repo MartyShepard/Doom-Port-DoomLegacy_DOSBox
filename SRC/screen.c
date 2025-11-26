@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: screen.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,17 +17,15 @@
 //
 //
 // $Log: screen.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.14  2004/05/16 20:34:47  hurdler
-// remove unused stuff
 //
 // Revision 1.13  2002/11/12 00:06:05  ssntails
 // Support for translated translucent columns in software mode.
 //
 // Revision 1.12  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.11  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.10  2001/03/13 22:14:20  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
@@ -36,26 +34,15 @@
 // added heretic support
 //
 // Revision 1.8  2000/11/02 19:49:37  bpereira
-// no message
-//
 // Revision 1.7  2000/08/31 14:30:56  bpereira
-// no message
-//
 // Revision 1.6  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.5  2000/08/03 17:57:42  bpereira
-// no message
 //
 // Revision 1.4  2000/04/22 20:27:35  metzgermeister
 // support for immediate fullscreen switching
 //
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -69,7 +56,7 @@
 //#define DEBUG_WINDOWED
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "screen.h"
 #include "console.h"
 #include "am_map.h"

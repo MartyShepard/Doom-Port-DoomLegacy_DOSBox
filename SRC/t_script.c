@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 1024 2013-08-04 03:39:08Z wesleyjohnson $
+// $Id: t_script.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -42,6 +42,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include "doomincl.h"
 #include "doomstat.h"
 #include "command.h"
 //#include "c_net.h"

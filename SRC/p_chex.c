@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 680 2010-06-06 16:28:36Z wesleyjohnson $
+// $Id: p_chex.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2003-2010 by DooM Legacy Team.
 //
@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "r_main.h"

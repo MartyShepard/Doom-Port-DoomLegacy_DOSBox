@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 812 2011-03-10 13:57:51Z smite-meister $
+// $Id: command.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -24,34 +24,26 @@
 // added heretic support
 //
 // Revision 1.6  2000/11/11 13:59:45  bpereira
-// no message
-//
 // Revision 1.5  2000/10/08 13:29:59  bpereira
-// no message
-//
 // Revision 1.4  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.3  2000/04/16 18:38:06  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
 //
 // DESCRIPTION:
-//
+//   Command line processing for console.
+//   CV variable support, saving, loading of config.
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __COMMAND_H__
-#define __COMMAND_H__
+#ifndef COMMAND_H
+#define COMMAND_H
 
 #include <stdio.h>
+  // FILE
 #include "doomtype.h"
 
 //===================================
@@ -73,9 +65,6 @@ void  COM_Args( COM_args_t * comargs );
 // Any args
 int     COM_Argc (void);
 char    *COM_Argv (int arg);   // if argv>argc, returns empty string
-#if 0
-char    *COM_Args (void);
-#endif
 int     COM_CheckParm (char *check); // like M_CheckParm :)
 
 // match existing command or NULL
@@ -194,4 +183,4 @@ void Got_NetVar(char **p,int playernum);
 
 consvar_t *CV_FindVar (char *name);
 
-#endif // __COMMAND_H__
+#endif // COMMAND_H

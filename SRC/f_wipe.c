@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 953 2012-07-09 01:33:35Z wesleyjohnson $
+// $Id: f_wipe.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,8 +19,6 @@
 //
 // $Log: f_wipe.c,v $
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -31,18 +29,18 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 
-#include "m_random.h"
-#include "f_wipe.h"
-#include "i_system.h"
-#include "i_video.h"
-#include "v_video.h"
 #include "r_data.h"
    // TRANSLU_TABLE
 #include "r_draw.h"
    // translucenttables
 #include "z_zone.h"
+#include "m_random.h"
+#include "f_wipe.h"
+#include "i_system.h"
+#include "i_video.h"
+#include "v_video.h"
 
 //--------------------------------------------------------------------------
 //                        SCREEN WIPE PACKAGE

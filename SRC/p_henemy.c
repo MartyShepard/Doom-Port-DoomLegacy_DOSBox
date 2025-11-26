@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 891 2011-12-26 18:28:10Z wesleyjohnson $
+// $Id: p_henemy.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,19 +22,17 @@
 // see my log
 //
 // Revision 1.5  2001/05/27 13:42:47  bpereira
-// no message
 //
 // Revision 1.4  2001/04/17 22:26:07  calumr
 // Initial Mac add
 //
 // Revision 1.3  2001/02/24 13:35:20  bpereira
-// no message
 //
 //
 //
 // DESCRIPTION:
 //   this file is include by P_enemy.c
-//   it contain all heretic enemey specific
+//   it contain all heretic enemy specific
 //
 //-----------------------------------------------------------------------------
 

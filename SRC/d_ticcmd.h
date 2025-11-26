@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_ticcmd.h 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: d_ticcmd.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,29 +19,25 @@
 //
 // $Log: d_ticcmd.h,v $
 // Revision 1.4  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.3  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
 //
 // DESCRIPTION:
-//      System specific interface stuff.
+//     On Tick button and command interface stuff.
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_TICCMD__
-#define __D_TICCMD__
+#ifndef D_TICCMD_H
+#define D_TICCMD_H
 
-#include "m_fixed.h"
+#include "doomdef.h"
+  // CLIENTPREDICTION
 #include "doomtype.h"
+#include "m_fixed.h"
 
 #ifdef __GNUG__
 #pragma interface

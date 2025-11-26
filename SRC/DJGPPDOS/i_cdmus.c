@@ -29,10 +29,11 @@
 //      
 //-----------------------------------------------------------------------------
 
+#include "../doomincl.h"
 
-#include "bcd.h"                // CD-Audio library by Brennan Underwood
+// CD-Audio library by Brennan Underwood
+#include "bcd.h"
 
-#include "../doomdef.h"
 #include "../i_sound.h"
 #include "../command.h"
 #include "../i_system.h"

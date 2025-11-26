@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_oper.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: t_oper.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -30,10 +30,11 @@
 //--------------------------------------------------------------------------
 
 
-#ifndef __OPERATOR_H__
-#define __OPERATOR_H__
+#ifndef T_OPERATOR_H
+#define T_OPERATOR_H
 
 #include "t_parse.h"
+  // operator_t
 
 extern operator_t operators[];
 extern int num_operators;

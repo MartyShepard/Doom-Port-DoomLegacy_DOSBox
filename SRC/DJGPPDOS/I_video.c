@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 901 2012-02-29 19:26:57Z wesleyjohnson $
+// $Id: I_video.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,17 +19,9 @@
 //
 // $Log: I_video.c,v $
 // Revision 1.5  2001/04/27 13:32:14  bpereira
-// no message
-//
 // Revision 1.4  2000/11/02 19:49:38  bpereira
-// no message
-//
 // Revision 1.3  2000/08/31 14:30:57  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -40,6 +32,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "../doomincl.h"
+  // stdlib, strings, stdio, defines
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,7 +52,6 @@
 #include <dos.h>
 #include <sys/nearptr.h>
 
-#include "../doomdef.h"
 #include "../i_system.h"
 #include "../v_video.h"
 #include "../m_argv.h"

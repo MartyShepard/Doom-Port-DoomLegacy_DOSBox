@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: mserv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -24,7 +24,6 @@
 // Update master server code for easy connect from menu
 //
 // Revision 1.7  2000/10/08 13:30:01  bpereira
-// no message
 //
 // Revision 1.6  2000/10/01 15:20:23  hurdler
 // Add private server
@@ -45,14 +44,16 @@
 // add master server code
 //
 //
-//
 // DESCRIPTION:
 //      Header file for the master server routines
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _MSERV_H_
-#define _MSERV_H_
+#ifndef MSERV_H
+#define MSERV_H
+
+#include "command.h"
+  // consvar_t
 
 // I want that structure 8 bytes aligned (current size is 80)
 typedef struct

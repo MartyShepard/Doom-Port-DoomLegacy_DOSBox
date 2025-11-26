@@ -3304,9 +3304,21 @@ to make use of new generic video draw functions.  Untested.
 patchfile = w92_5_keys.patch
 - committed revision 1032   by wesley johnson
 Implement changes to keycodes in DOS, OS2, LINUX_X, and WIN32 ports.
-Some KEY names were changed.
+Previous changes to Some KEY names were only in SDL.
 This only makes it possible to compile and some ports may only have
 one usable joystick.  Mostly Untested.
+
+*** W92_stricmp
+patchfile = w92_6_stricmp.patch
+- committed revision 1033   by wesley johnson
+Change uses of stricmp and strnicmp to strcasecmp and strncasecmp.
+Added comments in many places.
+Other cleanup.
+
+*** W92_hw_bsp_inits
+patchfile = w92_7_hw_bsp_inits.patch
+- committed revision 1034   by wesley johnson
+Init some polyvertex variables in hw_bsp.
 
 
 

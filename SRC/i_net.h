@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_net.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,29 +19,16 @@
 //
 // $Log: i_net.h,v $
 // Revision 1.9  2001/02/10 12:27:13  bpereira
-// no message
-//
 // Revision 1.8  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.7  2000/09/10 10:40:06  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.6  2000/09/01 19:34:37  bpereira
-// no message
 //
 // Revision 1.5  2000/09/01 18:23:42  hurdler
 // fix some issues with latest network code changes
 //
 // Revision 1.4  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.3  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -51,9 +38,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_NET__
-#define __I_NET__
+#ifndef I_NET_H
+#define I_NET_H
 
 #ifdef __GNUG__
 #pragma interface

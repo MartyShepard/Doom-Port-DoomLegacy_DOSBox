@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 754 2010-09-26 11:49:59Z smite-meister $
+// $Id: mserv.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -36,13 +36,11 @@
 // Added OS/2 headers
 //
 // Revision 1.28  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.27  2001/02/16 01:17:55  hurdler
 // No need to convert msg->id
 //
 // Revision 1.26  2001/02/16 00:45:07  hurdler
-// Better solution
 //
 // Revision 1.25  2001/01/11 01:15:57  hurdler
 // Fix Little/Big Endian issue
@@ -51,28 +49,19 @@
 // fix master server bug
 //
 // Revision 1.23  2000/11/26 00:46:31  hurdler
-// small bug fixes
-//
 // Revision 1.22  2000/10/22 00:38:22  hurdler
-// Fix %s to %d in version string
 //
 // Revision 1.21  2000/10/22 00:20:53  hurdler
 // Updated for the latest master server code
 //
 // Revision 1.20  2000/10/21 23:21:56  hurdler
-// Minor updates
-//
 // Revision 1.19  2000/10/21 08:43:29  bpereira
-// no message
 //
 // Revision 1.18  2000/10/17 10:09:27  hurdler
 // Update master server code for easy connect from menu
 //
 // Revision 1.17  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.16  2000/10/08 13:30:01  bpereira
-// no message
 //
 // Revision 1.15  2000/10/07 18:36:50  hurdler
 // fix a bug with Win2k
@@ -84,7 +73,6 @@
 // Fix compiling problem under win32
 //
 // Revision 1.12  2000/09/10 10:45:14  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.11  2000/09/08 22:28:30  hurdler
 // merge masterserver_ip/port in one cvar, add -private
@@ -126,8 +114,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include "doomdata.h"
+#include "doomincl.h"
 
 #ifdef WIN32
 # include <winsock2.h>     // socket(),...
@@ -148,7 +135,7 @@
 //#include <sys/types.h>   // socket(),...
 #endif
 
-#include "doomdef.h"
+#include "doomdata.h"
 #include "command.h"
 #include "console.h"
 #include "mserv.h"

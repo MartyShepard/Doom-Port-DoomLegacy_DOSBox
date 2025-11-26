@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_search.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -23,28 +23,29 @@
 // Revision 1.2  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
+
+#ifndef BOTSEARCH_H
+#define BOTSEARCH_H
 
 #include "m_fixed.h"
 #include "b_node.h"
 
-#ifndef __BOTSEARCH_H__
-#define __BOTSEARCH_H__
-
 typedef struct
 {
-	fixed_t		currentSize;	// size of array
-	fixed_t		maxSize;	// number of items in array
+    fixed_t	currentSize;	// size of array
+    fixed_t	maxSize;	// number of items in array
 
-	SearchNode_t**	heapArray;
+    SearchNode_t**  heapArray;
 
 } PriorityQ_t;
 
 typedef struct
 {
-	fixed_t		currentSize;	// size of list
+    fixed_t	currentSize;	// size of list
 
-	SearchNode_t	*first,
-					*last;
+    SearchNode_t  *first,
+		  *last;
 } LinkedList_t;
 
 LinkedList_t* B_LLCreate();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 645 2010-05-11 21:47:18Z wesleyjohnson $
+// $Id: tables.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,8 +18,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __TABLES__
-#define __TABLES__
+#ifndef TABLES_H
+#define TABLES_H
 
 #include "m_fixed.h"
 

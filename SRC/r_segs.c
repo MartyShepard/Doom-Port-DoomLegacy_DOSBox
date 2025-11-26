@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1002 2013-03-22 19:54:48Z wesleyjohnson $
+// $Id: r_segs.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: r_segs.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.32  2003/05/04 04:15:09  sburke
 // Wrap patch->width, patch->height references in SHORT for big-endian machines.
 //
@@ -25,10 +27,8 @@
 // Alpha support for trans 3d floors in software
 //
 // Revision 1.30  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.29  2001/08/29 18:58:57  hurdler
-// little "fix" (need to be fixed properly)
 //
 // Revision 1.28  2001/08/06 23:57:09  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
@@ -37,7 +37,6 @@
 // Fixed crashing bugs in software with 3D floors.
 //
 // Revision 1.26  2001/05/27 13:42:48  bpereira
-// no message
 //
 // Revision 1.25  2001/04/30 17:19:24  stroggonmeth
 // HW fix and misc. changes
@@ -49,52 +48,30 @@
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.22  2001/02/24 13:35:21  bpereira
-// no message
-//
 // Revision 1.21  2000/11/26 01:02:27  hurdler
-// small bug fixes
-//
 // Revision 1.20  2000/11/25 18:41:21  stroggonmeth
-// Crash fix
 //
 // Revision 1.19  2000/11/21 21:13:18  stroggonmeth
 // Optimised 3D floors and fixed crashing bug in high resolutions.
 //
 // Revision 1.18  2000/11/14 16:23:16  hurdler
-// Please fix this bug
-//
 // Revision 1.17  2000/11/09 17:56:20  stroggonmeth
-// Hopefully fixed a few bugs and did a few optimizations.
-//
 // Revision 1.16  2000/11/03 03:27:17  stroggonmeth
-// Again with the bug fixing...
-//
 // Revision 1.15  2000/11/02 19:49:36  bpereira
-// no message
 //
 // Revision 1.14  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.13  2000/09/28 20:57:17  bpereira
-// no message
-//
 // Revision 1.12  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.11  2000/04/18 17:39:40  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.10  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.9  2000/04/15 22:12:58  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.8  2000/04/13 23:47:47  stroggonmeth
 // See logs
 //
 // Revision 1.7  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.6  2000/04/06 21:06:19  stroggonmeth
 // Optimized extra_colormap code...
@@ -110,8 +87,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -123,7 +98,7 @@
 
 #include <stddef.h>
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "r_local.h"
 #include "r_sky.h"
 
@@ -504,7 +479,7 @@ void  expand_openings( size_t  need )
     openings = newopenings;
     lastopening = & openings[ lastindex ];
 }
-
+#if defined( __DJGPP__ )
 void* portable_realloc(void* mem, size_t siz)
 {
     if (!mem) {
@@ -514,17 +489,25 @@ void* portable_realloc(void* mem, size_t siz)
     }
     return realloc(mem, siz);
 }
-
+#endif
 void expand_drawsegs( void )
 {
     // drawsegs is NULL on first execution
     // Realloc larger drawseg memory, and adjust old drawseg ptrs
     drawseg_t * old_drawsegs = drawsegs;
     unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
+#if !defined( __DJGPP__ )
+    drawseg_t * new_drawsegs = realloc(drawsegs, newmax*sizeof(*drawsegs));
+#else
     drawseg_t * new_drawsegs = portable_realloc(drawsegs, newmax*sizeof(*drawsegs));
+#endif
     if( new_drawsegs == 0 )
     {
+#if !defined( __DJGPP__ )
         I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
+#else
+        I_Error( "Failed realloc for drawsegs\n" );
+#endif
     }
     drawsegs = new_drawsegs;
     maxdrawsegs = newmax;

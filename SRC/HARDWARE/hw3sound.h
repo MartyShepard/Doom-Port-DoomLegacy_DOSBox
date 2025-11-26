@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: hw3sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2001 by DooM Legacy Team.
 //
@@ -24,11 +24,8 @@
 // Added HW3S_I_StartSound low-level fuction for arbitrary managing of 3D sources
 //
 // Revision 1.2  2001/05/27 13:42:48  bpereira
-// no message
-//
 // Revision 1.1  2001/04/04 19:41:16  judgecutor
 // Initial release of 3D Sound Support
-//
 //
 //
 // DESCRIPTION:
@@ -36,9 +33,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __HW3_SOUND_H__
-#define __HW3_SOUND_H__
+#ifndef HW3_SOUND_H
+#define HW3_SOUND_H
 
 #ifdef HW3SOUND
 #include "hw3dsdrv.h"
@@ -107,5 +103,5 @@ extern int  HW3S_SoundPlaying(void *origin, int id);
 #endif // HW3SOUND
 
 
-#endif // __HW3_SOUND_H__
+#endif // HW3_SOUND_H
 

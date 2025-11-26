@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 941 2012-07-03 17:39:05Z wesleyjohnson $
+// $Id: p_genlin.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -24,13 +24,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
-#include "g_game.h"
+#include "doomincl.h"
 #include "p_local.h"
 #include "r_data.h"
-#include "m_random.h"
+#include "g_game.h"
 #include "s_sound.h"
 #include "z_zone.h"
+#include "m_random.h"
 
 /*
   SoM: 3/9/2000: Copied this entire file from Boom sources to Legacy sources.

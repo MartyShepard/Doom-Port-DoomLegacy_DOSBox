@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.h 805 2011-03-09 00:36:20Z wesleyjohnson $
+// $Id: t_array.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 //
@@ -26,8 +26,8 @@
 //
 //--------------------------------------------------------------------------
 
-#ifndef __T_ARRAY_H__
-#define __T_ARRAY_H__
+#ifndef T_ARRAY_H
+#define T_ARRAY_H
 
 #include "t_parse.h"
 

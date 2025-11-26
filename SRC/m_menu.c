@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: m_menu.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: m_menu.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.55  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //
@@ -31,7 +33,6 @@
 // go final + translucent HUD + fix spawn in net game
 //
 // Revision 1.51  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
 //
 // Revision 1.50  2002/09/27 16:40:08  tonyd
 // First commit of acbot
@@ -61,22 +62,14 @@
 // fix palette in splitscreen + hardware mode
 //
 // Revision 1.41  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.40  2001/08/08 20:34:43  hurdler
 // Big TANDL update
 //
 // Revision 1.39  2001/06/10 21:16:01  bpereira
-// no message
-//
 // Revision 1.38  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.37  2001/05/16 22:00:10  hurdler
-// fix compiling problem
-//
 // Revision 1.36  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.35  2001/05/14 19:02:58  metzgermeister
 //   * Fixed floor not moving up with player on E3M1
@@ -85,19 +78,10 @@
 //   * fixed sound bug in SDL
 //
 // Revision 1.34  2001/04/29 14:25:26  hurdler
-// small fix
-//
 // Revision 1.33  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.32  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.31  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.30  2001/02/10 12:27:14  bpereira
-// no message
 //
 // Revision 1.29  2001/01/25 22:15:42  bpereira
 // added heretic support
@@ -106,31 +90,23 @@
 // Adding autorun2
 //
 // Revision 1.27  2000/10/21 08:43:29  bpereira
-// no message
 //
 // Revision 1.26  2000/10/17 10:09:27  hurdler
 // Update master server code for easy connect from menu
 //
 // Revision 1.25  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.24  2000/10/08 13:30:01  bpereira
-// no message
-//
 // Revision 1.23  2000/10/02 18:25:45  bpereira
-// no message
 //
 // Revision 1.22  2000/10/01 15:20:23  hurdler
 // Add private server
 //
 // Revision 1.21  2000/10/01 10:18:17  bpereira
-// no message
 //
 // Revision 1.20  2000/10/01 09:09:36  hurdler
 // Put the md2 code in #ifdef TANDL
 //
 // Revision 1.19  2000/09/15 19:49:22  bpereira
-// no message
 //
 // Revision 1.18  2000/09/08 22:28:30  hurdler
 // merge masterserver_ip/port in one cvar, add -private
@@ -139,7 +115,6 @@
 // Add master server to menus (temporaray)
 //
 // Revision 1.16  2000/08/31 14:30:55  bpereira
-// no message
 //
 // Revision 1.15  2000/04/24 15:10:56  hurdler
 // Support colormap for text
@@ -151,28 +126,22 @@
 // fix a small bug in skin color
 //
 // Revision 1.12  2000/04/22 21:12:15  hurdler
-// I like it better like that
 //
 // Revision 1.11  2000/04/22 20:27:35  metzgermeister
 // support for immediate fullscreen switching
 //
 // Revision 1.10  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.9  2000/04/13 16:26:41  hurdler
-// looks better like that
 //
 // Revision 1.8  2000/04/12 19:31:37  metzgermeister
 // added use_mouse to menu
 //
 // Revision 1.7  2000/04/08 17:29:24  stroggonmeth
-// no message
 //
 // Revision 1.6  2000/04/07 23:11:17  metzgermeister
 // added mouse move
 //
 // Revision 1.5  2000/04/04 10:44:00  hurdler
-// Remove a warning message in Dos/Windows
 //
 // Revision 1.4  2000/04/04 00:32:46  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
@@ -181,8 +150,6 @@
 // added support for HOME/.legacy under Linux
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -202,9 +169,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "doomincl.h"
 #include "am_map.h"
-
-#include "doomdef.h"
 #include "dstrings.h"
 #include "d_main.h"
 

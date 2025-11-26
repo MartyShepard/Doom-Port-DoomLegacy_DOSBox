@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: d_clisrv.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -30,16 +30,12 @@
 // Ensure that big-endian machines encode/decode network packets as little-endian.
 //
 // Revision 1.43  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
 //
 // Revision 1.42  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
 // Revision 1.41  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.40  2001/06/10 21:16:01  bpereira
-// no message
 //
 // Revision 1.39  2001/05/16 17:12:52  crashrl
 // Added md5-sum support, removed recursiv wad search
@@ -51,28 +47,16 @@
 //   * fixed sound bug in SDL
 //
 // Revision 1.37  2001/04/27 13:32:13  bpereira
-// no message
-//
 // Revision 1.36  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.35  2001/03/30 17:12:49  bpereira
-// no message
-//
 // Revision 1.34  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.33  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.32  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.31  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.30  2000/11/11 13:59:45  bpereira
-// no message
 //
 // Revision 1.29  2000/11/02 17:50:06  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -81,37 +65,19 @@
 // Updated for the latest master server code
 //
 // Revision 1.27  2000/10/21 23:21:56  hurdler
-// Minor updates
-//
 // Revision 1.26  2000/10/21 08:43:28  bpereira
-// no message
 //
 // Revision 1.25  2000/10/17 10:09:27  hurdler
 // Update master server code for easy connect from menu
 //
 // Revision 1.24  2000/10/16 20:02:28  bpereira
-// no message
-//
 // Revision 1.23  2000/10/08 13:29:59  bpereira
-// no message
-//
 // Revision 1.22  2000/10/01 10:18:16  bpereira
-// no message
-//
 // Revision 1.21  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.20  2000/09/15 19:49:21  bpereira
-// no message
-//
 // Revision 1.19  2000/09/10 10:37:28  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.18  2000/09/01 19:34:37  bpereira
-// no message
-//
 // Revision 1.17  2000/08/31 14:30:55  bpereira
-// no message
 //
 // Revision 1.16  2000/08/21 11:06:43  hurdler
 // Add ping and some fixes
@@ -123,28 +89,19 @@
 // add master server code
 //
 // Revision 1.13  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.12  2000/08/11 12:25:23  hurdler
 // latest changes for v1.30
 //
 // Revision 1.11  2000/08/03 17:57:41  bpereira
-// no message
-//
 // Revision 1.10  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.9  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.8  2000/04/16 18:38:06  bpereira
-// no message
 //
 // Revision 1.7  2000/04/04 00:32:45  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.6  2000/03/29 19:39:48  bpereira
-// no message
 //
 // Revision 1.5  2000/03/08 17:02:42  hurdler
 // fix the joiningame problem under Linux
@@ -156,8 +113,6 @@
 // dead player bug fix + add allowmlook <yes|no>
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -172,7 +127,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "command.h"
 #include "i_net.h"
 #include "i_system.h"
@@ -951,7 +906,7 @@ void Command_connect(void)
     }
     server = false;
 
-    if( stricmp(COM_Argv(1),"self")==0 )
+    if( strcasecmp(COM_Argv(1),"self")==0 )
     {
         servernode = 0;
         server = true;
@@ -961,7 +916,7 @@ void Command_connect(void)
     else
     {
         // used in menu to connect to a server in the list
-        if( netgame && stricmp(COM_Argv(1),"node")==0 )
+        if( netgame && strcasecmp(COM_Argv(1),"node")==0 )
             servernode = atoi(COM_Argv(2));
         else
         if( netgame )
@@ -976,7 +931,7 @@ void Command_connect(void)
             netgame = true;
             multiplayer = true;
         
-            if( stricmp(COM_Argv(1),"any")==0 )
+            if( strcasecmp(COM_Argv(1),"any")==0 )
                 servernode = BROADCASTADDR;
             else
             if( I_NetMakeNode )
@@ -1095,7 +1050,7 @@ int nametonum(char *name)
 
     for(i=0;i<MAXPLAYERS;i++)
     {
-        if(playeringame[i] && stricmp(player_names[i],name)==0)
+        if(playeringame[i] && strcasecmp(player_names[i],name)==0)
             return i;
     }
     
@@ -2242,7 +2197,9 @@ void SV_Maketic(void)
     maketic++;
 }
 
-static  int     load;
+#ifdef DEBUGFILE
+static  int     net_load;
+#endif
 
 void TryRunTics (tic_t realtics)
 {
@@ -2274,7 +2231,7 @@ void TryRunTics (tic_t realtics)
 
 #ifdef DEBUGFILE
     if(realtics==0)
-        if(load) load--;
+        if(net_load) net_load--;
 #endif
     GetPackets ();
 
@@ -2285,8 +2242,8 @@ void TryRunTics (tic_t realtics)
         fprintf (debugfile,
                  "------------ Tryruntic : REAL:%lu NEED:%lu GAME:%lu LOAD: %i\n",
                  (unsigned long)realtics, (unsigned long)neededtic,
-		 (unsigned long)gametic, load);
-        load=100000;
+		 (unsigned long)gametic, net_load);
+        net_load=100000;
     }
 #endif
 

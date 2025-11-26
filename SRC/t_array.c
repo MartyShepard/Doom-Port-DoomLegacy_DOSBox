@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 950 2012-07-06 21:15:13Z wesleyjohnson $
+// $Id: t_array.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -26,7 +26,6 @@
 // Add fs arrys files
 //
 //
-//
 //--------------------------------------------------------------------------
 //
 // DESCRIPTION:
@@ -36,6 +35,9 @@
 //   By James Haley, with special thanks to SoM
 //
 //--------------------------------------------------------------------------
+
+#include <string.h>
+  // memcpy, memset
 
 #include "z_zone.h"
 #include "t_array.h"

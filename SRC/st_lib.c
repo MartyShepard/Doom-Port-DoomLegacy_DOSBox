@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1023 2013-07-30 15:33:23Z wesleyjohnson $
+// $Id: st_lib.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -22,7 +22,6 @@
 // Add SHORT() conversion for big-endian machines.
 //
 // Revision 1.6  2001/02/24 13:35:21  bpereira
-// no message
 //
 // Revision 1.5  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -31,11 +30,7 @@
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.3  2000/09/28 20:57:18  bpereira
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:11  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -46,7 +41,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "st_lib.h"
 #include "st_stuff.h"
 #include "v_video.h"

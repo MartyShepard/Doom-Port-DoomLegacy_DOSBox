@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 987 2012-12-04 04:23:52Z wesleyjohnson $
+// $Id: r_defs.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -25,13 +25,8 @@
 // Added 'side' to seg_t
 //
 // Revision 1.33  2002/01/12 02:21:36  stroggonmeth
-// Big commit
-//
 // Revision 1.32  2001/08/19 20:41:04  hurdler
-// small changes
-//
 // Revision 1.31  2001/08/13 22:53:40  stroggonmeth
-// Small commit
 //
 // Revision 1.30  2001/08/12 17:57:15  hurdler
 // Beter support of sector coloured lighting in hw mode
@@ -61,10 +56,7 @@
 // HW fix and misc. changes
 //
 // Revision 1.22  2001/03/30 17:12:51  bpereira
-// no message
-//
 // Revision 1.21  2001/03/21 18:24:39  stroggonmeth
-// Misc changes and fixes. Code cleanup
 //
 // Revision 1.20  2001/03/19 21:18:48  metzgermeister
 //   * missing textures in HW mode are replaced by default texture
@@ -76,7 +68,6 @@
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.18  2001/02/28 17:50:55  bpereira
-// no message
 //
 // Revision 1.17  2001/01/25 22:15:44  bpereira
 // added heretic support
@@ -85,7 +76,6 @@
 // Optimised 3D floors and fixed crashing bug in high resolutions.
 //
 // Revision 1.15  2000/11/09 17:56:20  stroggonmeth
-// Hopefully fixed a few bugs and did a few optimizations.
 //
 // Revision 1.14  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -97,22 +87,14 @@
 // Change all those "3dfx names" to more appropriate names
 //
 // Revision 1.11  2000/07/01 09:23:49  bpereira
-// no message
-//
 // Revision 1.10  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.9  2000/04/18 12:55:39  hurdler
-// join with Boris' code
-//
 // Revision 1.7  2000/04/15 22:12:58  stroggonmeth
-// Minor bug fixes
 //
 // Revision 1.6  2000/04/12 16:01:59  hurdler
 // ready for T&L code and true static lighting
 //
 // Revision 1.5  2000/04/11 19:07:25  stroggonmeth
-// Finished my logs, fixed a crashing bug.
 //
 // Revision 1.4  2000/04/06 20:47:08  hurdler
 // add Boris' changes for coronas in doom3.wad
@@ -121,8 +103,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -133,13 +113,10 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_DEFS__
-#define __R_DEFS__
+#ifndef R_DEFS_H
+#define R_DEFS_H
 
-#include <stdint.h>
-
-// Some more or less basic data types
-// we depend on.
+#include "doomtype.h"
 #include "m_fixed.h"
 
 // We rely on the thinker data struct
@@ -148,7 +125,8 @@
 // SECTORS do store MObjs anyway.
 #include "p_mobj.h"
 
-#include "screen.h"     //added:26-01-98:MAXVIDWIDTH, MAXVIDHEIGHT
+#include "screen.h"
+  // MAXVIDWIDTH, MAXVIDHEIGHT
 
 
 #define NULL_INDEX 0xFFFF  // or -1. Used in line_t::sidenum and maplinedef_t::sidenum.

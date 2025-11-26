@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: d_netfil.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,7 +18,6 @@
 //
 // $Log: d_netfil.h,v $
 // Revision 1.9  2001/07/28 16:18:37  bpereira
-// no message
 //
 // Revision 1.8  2001/05/21 14:57:05  crashrl
 // Readded directory crawling file search function
@@ -30,28 +29,24 @@
 // added heretic support
 //
 // Revision 1.5  2000/10/08 13:30:00  bpereira
-// no message
-//
 // Revision 1.4  2000/04/16 18:38:07  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
 //
 // DESCRIPTION:
-//
+//    Network file transfer.
 //
 //-----------------------------------------------------------------------------
 
+#ifndef D_NETFIL_H
+#define D_NETFIL_H
 
-#ifndef __D_NETFIL__
-#define __D_NETFIL__
-
+#include "doomdef.h"
+  // MAX_WADPATH
 #include "w_wad.h"
+  // MAX_WADFILES
 
 // Type of storage, after transmission handling
 typedef enum {
@@ -116,4 +111,4 @@ filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum);
 
 void nameonly(char *s);
 
-#endif // __D_NETFIL__
+#endif // D_NETFIL_H

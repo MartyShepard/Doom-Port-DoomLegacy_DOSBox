@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 696 2010-07-09 03:12:42Z wesleyjohnson $
+// $Id: b_node.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -23,16 +23,18 @@
 // Revision 1.2  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
 
+#include "doomincl.h"
+#include "p_local.h"
+#include "r_state.h"
+#include "r_main.h"
 #include "b_bot.h"
 #include "b_node.h"
 #include "z_zone.h"
 #include "g_game.h"
-#include "r_state.h"
 #include "p_maputl.h"
-#include "r_main.h"
-#include "p_local.h"
 #include "p_setup.h"
 
 #define x2ClosestPosX(a) ((fixed_t)((float)(a)/(float)BOTNODEGRIDSIZE + 0.5) - xOffset)

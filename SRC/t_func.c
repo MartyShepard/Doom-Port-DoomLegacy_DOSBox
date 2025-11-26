@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: t_func.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -68,10 +68,7 @@
 // SetLineTexture function for Fraggle Script
 //
 // Revision 1.26  2003/07/21 11:33:57  hurdler
-// go RC1
-//
 // Revision 1.25  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.24  2003/05/30 22:44:07  hurdler
 // add checkcvar function to FS
@@ -92,16 +89,12 @@
 // Ready for 1.32 beta 5 release
 //
 // Revision 1.18  2002/06/15 13:39:26  ssntails
-// Little fix. =)
 //
 // Revision 1.17  2002/06/14 02:20:06  ssntails
 // New FS function (SoM Request)
 //
 // Revision 1.16  2002/05/19 19:44:44  hurdler
-// (woops ;))
-//
 // Revision 1.14  2002/01/05 16:39:19  hurdler
-// Little fix
 //
 // Revision 1.13  2002/01/05 00:58:10  hurdler
 // fix compiling problem when not using hwrender
@@ -119,7 +112,6 @@
 // Update Linux version
 //
 // Revision 1.8  2001/08/14 00:36:26  hurdler
-// Small update
 //
 // Revision 1.7  2001/08/06 23:57:10  stroggonmeth
 // Removed portal code, improved 3D floors in hardware mode.
@@ -137,8 +129,6 @@
 // Hopefully fixed a few bugs and did a few optimizations.
 //
 // Revision 1.2  2000/11/04 16:23:44  bpereira
-// no message
-//
 // Revision 1.1  2000/11/02 17:57:28  stroggonmeth
 // FraggleScript files...
 //
@@ -160,11 +150,9 @@
 
 /* includes ************************/
 
-#include <stdio.h>
-#include <string.h>
-#include "command.h"
+#include "doomincl.h"
 #include "doomstat.h"
-#include "doomtype.h"
+#include "command.h"
 #include "d_main.h"
 #include "g_game.h"
 #include "hu_stuff.h"

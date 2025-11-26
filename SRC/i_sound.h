@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: i_sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -18,8 +18,9 @@
 //
 //
 // $Log: i_sound.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.9  2003/07/13 13:16:15  hurdler
-// go RC1
 //
 // Revision 1.8  2002/12/13 22:34:27  ssntails
 // MP3/OGG support!
@@ -28,7 +29,6 @@
 // Initial Mac add
 //
 // Revision 1.6  2001/02/24 13:35:20  bpereira
-// no message
 //
 // Revision 1.5  2000/09/10 10:42:33  metzgermeister
 // fixed qmus2mid SDL
@@ -40,8 +40,6 @@
 // added I_PauseCD() for Linux
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -51,13 +49,16 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_SOUND__
-#define __I_SOUND__
+#ifndef I_SOUND_H
+#define I_SOUND_H
 
 #include "doomdef.h"
+  // MACOS_DI
+#include "doomtype.h"
+  // boolean
 #include "sounds.h"
 #include "command.h"
+  // consvar_t
 
 
 void  I_GetSfx (sfxinfo_t*  sfx);  // read lump to sfx data, length
@@ -80,11 +81,7 @@ void I_ShutdownSound(void);
 //
 
 // Starts a sound in a particular sound channel.
-int I_StartSound ( int           id,
-                   int           vol,
-                   int           sep,
-                   int           pitch,
-                   int           priority );
+int I_StartSound ( int id, int vol, int sep, int pitch, int priority );
 
 
 // Stops a sound channel.
@@ -97,10 +94,7 @@ int I_SoundIsPlaying(int handle);
 
 // Updates the volume, separation,
 //  and pitch of a sound channel.
-void I_UpdateSoundParams ( int           handle,
-                           int           vol,
-                           int           sep,
-                           int           pitch );
+void I_UpdateSoundParams ( int handle, int vol, int sep, int pitch );
 
 
 //
@@ -122,8 +116,7 @@ int I_RegisterSong(void* data,int len);
 //  plays a song, and when the song is done,
 //  starts playing it again in an endless loop.
 // Horrible thing to do, considering.
-void I_PlaySong ( int           handle,
-                  int           looping );
+void I_PlaySong ( int handle, int looping );
 // Stops a song over 3 seconds.
 void I_StopSong(int handle);
 // See above (register), then think backwards

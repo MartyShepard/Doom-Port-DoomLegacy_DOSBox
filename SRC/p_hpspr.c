@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 979 2012-12-04 03:26:58Z wesleyjohnson $
+// $Id: p_hpspr.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,10 +19,7 @@
 //
 // $Log: p_hpspr.c,v $
 // Revision 1.3  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.2  2001/02/24 13:35:20  bpereira
-// no message
 //
 //
 //
@@ -35,7 +32,7 @@
 
 // P_pspr.c
 /*
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "r_main.h"

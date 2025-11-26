@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 980 2012-12-04 03:29:06Z wesleyjohnson $
+// $Id: p_local.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,8 +25,6 @@
 // Big Blockmap Support (128kb+ ?)
 //
 // Revision 1.22  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
-//
 // Revision 1.21  2002/09/27 16:40:09  tonyd
 // First commit of acbot
 //
@@ -34,7 +32,6 @@
 // Removed portal code, improved 3D floors in hardware mode.
 //
 // Revision 1.19  2001/07/28 16:18:37  bpereira
-// no message
 //
 // Revision 1.18  2001/07/16 22:35:41  bpereira
 // - fixed crash of e3m8 in heretic
@@ -47,7 +44,6 @@
 // Misc changes and fixes. Code cleanup
 //
 // Revision 1.15  2001/02/10 12:27:14  bpereira
-// no message
 //
 // Revision 1.14  2001/01/25 22:15:43  bpereira
 // added heretic support
@@ -56,19 +52,13 @@
 // Fix a few warnings when compiling.
 //
 // Revision 1.12  2000/11/02 19:49:35  bpereira
-// no message
 //
 // Revision 1.11  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.10  2000/10/21 08:43:30  bpereira
-// no message
-//
 // Revision 1.9  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.8  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.7  2000/04/13 23:47:47  stroggonmeth
 // See logs
@@ -77,7 +67,6 @@
 // Finished my logs, fixed a crashing bug.
 //
 // Revision 1.5  2000/04/08 17:29:24  stroggonmeth
-// no message
 //
 // Revision 1.4  2000/04/06 20:40:22  hurdler
 // Mostly remove warnings under windows
@@ -86,8 +75,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -98,15 +85,21 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __P_LOCAL__
-#define __P_LOCAL__
+#ifndef P_LOCAL_H
+#define P_LOCAL_H
 
+#include "doomdef.h"
+  // VOODOO_DOLL, DOORDELAY_CONTROL
+#include "doomtype.h"
+  // tic_t
 #include "command.h"
+  // consvar_t
 #include "d_player.h"
 #include "d_think.h"
 #include "m_fixed.h"
 #include "m_bbox.h"
 #include "p_tick.h"
+#include "p_mobj.h"
 #include "r_defs.h"
 #include "p_maputl.h"
 
@@ -234,8 +227,8 @@ void   P_MoveSpirit (player_t* p,ticcmd_t *cmd, int realtics);
 //
 // P_MOBJ
 //
-#define ONFLOORZ        MININT
-#define ONCEILINGZ      MAXINT
+#define ONFLOORZ        FIXED_MIN
+#define ONCEILINGZ      FIXED_MAX
 
 // Time interval for item respawning.
 // WARING MUST be a power of 2
@@ -462,4 +455,4 @@ boolean P_ChickenMorphPlayer(player_t *player);
 void P_Massacre(void);
 void P_AddBossSpot(fixed_t x, fixed_t y, angle_t angle);
 
-#endif  // __P_LOCAL__
+#endif  // P_LOCAL_H

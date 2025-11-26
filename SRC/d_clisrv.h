@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 615 2010-02-25 00:22:45Z wesleyjohnson $
+// $Id: d_clisrv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -18,34 +18,21 @@
 //
 // $Log: d_clisrv.h,v $
 // Revision 1.25  2003/07/13 13:16:15  hurdler
-// go RC1
-//
 // Revision 1.24  2002/07/26 15:21:36  hurdler
-// near RC release
 //
 // Revision 1.23  2001/12/31 12:30:11  metzgermeister
 // fixed buffer overflow
 //
 // Revision 1.22  2001/11/17 22:12:53  hurdler
-// Ready to work on beta 4 ;)
-//
 // Revision 1.21  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.20  2001/05/16 17:12:52  crashrl
 // Added md5-sum support, removed recursiv wad search
 //
 // Revision 1.19  2001/03/30 17:12:49  bpereira
-// no message
-//
 // Revision 1.18  2001/02/19 18:00:49  hurdler
-// Increase the SUBVERSION number for new release
-//
 // Revision 1.17  2001/02/10 12:27:13  bpereira
-// no message
-//
 // Revision 1.16  2000/11/11 13:59:45  bpereira
-// no message
 //
 // Revision 1.15  2000/11/02 17:50:06  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
@@ -54,41 +41,20 @@
 // Updated for the latest master server code
 //
 // Revision 1.13  2000/10/21 08:43:28  bpereira
-// no message
-//
 // Revision 1.12  2000/10/16 20:02:29  bpereira
-// no message
-//
 // Revision 1.11  2000/10/08 13:29:59  bpereira
-// no message
-//
 // Revision 1.10  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.9  2000/09/10 10:37:28  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.8  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.7  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.6  2000/04/24 20:24:38  bpereira
-// no message
 //
 // Revision 1.5  2000/04/19 10:56:51  hurdler
 // commited for exe release and tag only
 //
 // Revision 1.4  2000/04/16 18:38:06  bpereira
-// no message
-//
 // Revision 1.3  2000/04/06 20:32:26  hurdler
-// no message
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -98,12 +64,12 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_CLISRV__
-#define __D_CLISRV__
+#ifndef D_CLISRV_H
+#define D_CLISRV_H
 
 #include <stddef.h>
 
+#include "doomtype.h"
 #include "d_ticcmd.h"
 #include "d_netcmd.h"
 #include "tables.h"

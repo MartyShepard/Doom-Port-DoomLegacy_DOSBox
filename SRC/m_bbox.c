@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_bbox.c 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: m_bbox.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -19,8 +19,6 @@
 //
 // $Log: m_bbox.c,v $
 // Revision 1.3  2000/04/23 16:19:52  bpereira
-// no message
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 869 2011-10-31 23:55:40Z wesleyjohnson $
+// $Id: dstrings.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: dstrings.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.13  2004/08/26 23:15:45  hurdler
 // add FS functions in console (+ minor linux fixes)
 //
@@ -25,16 +27,9 @@
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
 // Revision 1.11  2003/09/14 12:49:12  darkwolf95
-// Grammar mistake - 'catched up' changed to 'caught' in rocket death
-//
 // Revision 1.10  2003/07/14 21:29:36  hurdler
-// go RC1
-//
 // Revision 1.9  2001/08/20 20:40:39  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.8  2001/05/16 21:21:14  bpereira
-// no message
 //
 // Revision 1.7  2001/01/25 22:15:41  bpereira
 // added heretic support
@@ -46,14 +41,11 @@
 // fix a bug in dehacked
 //
 // Revision 1.4  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.3  2000/04/04 00:32:45  stroggonmeth
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //

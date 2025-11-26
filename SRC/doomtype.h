@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1028 2013-08-14 00:15:29Z wesleyjohnson $
+// $Id: doomtype.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: doomtype.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.8  2001/05/16 22:33:34  bock
 // Initial FreeBSD support.
 //
@@ -25,20 +27,13 @@
 // Initial Mac add
 //
 // Revision 1.6  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.5  2000/11/02 19:49:35  bpereira
-// no message
-//
 // Revision 1.4  2000/10/21 08:43:28  bpereira
-// no message
 //
 // Revision 1.3  2000/08/10 14:53:57  ydario
 // OS/2 port
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -47,12 +42,14 @@
 //      doom games standard types
 //      Simple basic typedefs, isolated here to make it easier
 //      separating modules.
+//      Dependent upon system and compile flags, but not dependent upon
+//      doomdef.h.
 //    
 //-----------------------------------------------------------------------------
 
-
-#ifndef __DOOMTYPE__
-#define __DOOMTYPE__
+#ifndef DOOMTYPE_H
+#define DOOMTYPE_H
+// General type defines, not dependent upon doomdef.h
 
 #include <stdint.h>
 
@@ -147,13 +144,16 @@ typedef uint32_t  tic_t;
         #include <sys\types.h>
         #include <direct.h>
         #include <malloc.h>
-				#define strcmpi                 strcasecmp
+        #define strcmpi                 strcasecmp
     #endif		
 #endif
 
+#if 0
+// [WDJ] changed all stricmp to strcasecmp
 // [smite] we should use standard funcs
 #define stricmp(x,y) strcasecmp(x,y)
 #define strnicmp(x,y,n) strncasecmp(x,y,n)
+#endif
 
 
 #if !defined(WIN32) && !defined(__WINDOWS__)
@@ -181,22 +181,40 @@ int strlwr(char *n);
 //#include <limits.h>
 #endif
 
+// [WDJ] This is very dangerous considering 32 bit and 64 bit systems,
+// should use stdint.h values instead.
+// These are obsolete defines from values.h.
 #ifndef MAXCHAR
+// unused
 #define MAXCHAR   ((char)0x7f)
 #endif
+
 #ifndef MAXSHORT
+// defined in values.h
+// used in r_segs.c
 #define MAXSHORT  ((short)0x7fff)
 #endif
+
 #ifndef MAXINT
+// defined in values.h
+// used in many places
 #define MAXINT    ((int)0x7fffffff)
 #endif
+
 #ifndef MINCHAR
+// unused
 #define MINCHAR   ((char)0x80)
 #endif
+
 #ifndef MINSHORT
+// defined in values.h
+// unused
 #define MINSHORT  ((short)0x8000)
 #endif
+
 #ifndef MININT
+// defined in values.h
+// used in many places
 #define MININT    ((int)0x80000000)
 #endif
 

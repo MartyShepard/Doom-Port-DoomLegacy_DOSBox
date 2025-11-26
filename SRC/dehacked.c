@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1005 2013-04-05 21:13:31Z wesleyjohnson $
+// $Id: dehacked.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -24,10 +24,7 @@
 // added "Monsters Infight" for Dehacked patches
 //
 // Revision 1.15  2002/01/12 12:41:05  hurdler
-// very small commit
-//
 // Revision 1.14  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.13  2001/07/16 22:35:40  bpereira
 // - fixed crash of e3m8 in heretic
@@ -40,13 +37,11 @@
 // HW fix and misc. changes
 //
 // Revision 1.10  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.9  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.8  2000/11/04 16:23:42  bpereira
-// no message
 //
 // Revision 1.7  2000/11/03 13:15:13  hurdler
 // Some debug comments, please verify this and change what is needed!
@@ -55,17 +50,12 @@
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.5  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.4  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.3  2000/04/05 15:47:46  stroggonmeth
 // Added hack for Dehacked lumps. Transparent sprites are now affected by colormaps.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -76,7 +66,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "doomincl.h"
 
 #include "command.h"
 #include "console.h"

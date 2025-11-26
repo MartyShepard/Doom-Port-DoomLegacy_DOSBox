@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_joy.h 1032 2013-08-14 00:20:47Z wesleyjohnson $
+// $Id: i_joy.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -17,9 +17,9 @@
 //
 //
 // $Log: i_joy.h,v $
-// Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
+// Include: DOS DJGPP Fixes
 //
+// Revision 1.2  2000/02/27 00:42:10  hurdler
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -29,12 +29,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_JOY_H__
-#define __I_JOY_H__
-
-#include "g_input.h"
-
+#ifndef I_JOY_H
+#define I_JOY_H
 
 //! All possible actions joystick axes can be bound to.
 typedef enum
@@ -69,7 +65,7 @@ void I_InitJoystick();
 int I_JoystickNumAxes(int joynum);
 int I_JoystickGetAxis(int joynum, int axisnum);
 
-#if defined( __DJGPP__ )	
+#if defined( __DJGPP__ )
 #define JOYAXISRANGE     1023   //faB: (1024-1) so we can do a right shift instead of division
                                 //     (doesnt matter anyway, just give enough precision)
                                 // a gamepad will return -1, 0, or 1 in the event data
@@ -96,4 +92,4 @@ typedef struct JoyType_s JoyType_t;
 extern JoyType_t   Joystick;    //faB: may become an array (2 for splitscreen), I said: MAY BE...
 #endif
 
-#endif // __I_JOY_H__
+#endif // I_JOY_H

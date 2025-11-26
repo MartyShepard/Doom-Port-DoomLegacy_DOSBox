@@ -16,6 +16,8 @@
 ;;
 ;;
 ;; $Log: tmap.nas,v $
+;; Include: DOS DJGPP Fixes
+;;
 ;; Revision 1.11  2003/06/10 23:36:09  ssntails
 ;; Variable flat support (32x32 to 2048x2048)
 ;;
@@ -83,10 +85,6 @@
 %define CODE_SEG .text                         
 %endif
 
-;;%ifdef PC_DOS
-;;%define je jz
-;;%define jne jnz
-;;%endif
 
 ;; externs
 ;; columns
@@ -192,14 +190,12 @@ ASM_PatchRowBytes:
         mov     [pi+2],eax
         mov     [pj+2],eax
         mov     [pk+2],eax
-;;%ifndef PC_DOS
         mov     [pf_ra+2],eax
         mov     [pg_ra+2],eax
         mov     [ph_ra+2],eax
         mov     [pi_ra+2],eax
         mov     [pj_ra+2],eax
         mov     [pk_ra+2],eax
-;;%endif
         mov     [pl+2],eax
         mov     [pm+2],eax
         mov     [pn+2],eax
@@ -211,12 +207,10 @@ ASM_PatchRowBytes:
         mov     [q2+2],eax
         mov     [q3+2],eax
         mov     [q4+2],eax
-;;%ifndef PC_DOS
         mov     [q1_ra+2],eax
         mov     [q2_ra+2],eax
         mov     [q3_ra+2],eax
         mov     [q4_ra+2],eax
-;;%endif
         mov     [q5+2],eax
         mov     [q6+2],eax
         mov     [q7+2],eax
@@ -581,11 +575,10 @@ R_DrawTranslucentColumn_8:
         pop     cx
         mov     edx,[dc_colormap]
         mov     esi,[dc_source]
-;;%ifndef PC_DOS	
+	
 ;; if( dr_alpha < TRANSLU_REV_ALPHA )
         cmp     byte [dr_alpha], 0x8f
         ja      near  tr_rev_alpha
-;;%endif
 ;;
 ;; lets rock :) !
 ;;
@@ -708,7 +701,6 @@ q4:     add     edi,0x23456789
 
         dec     ch
         jne     vtquadloop
-;;%ifndef PC_DOS				
 	jmp     vtdone
 
 tr_rev_alpha:
@@ -839,7 +831,7 @@ q4_ra:  add     edi,0x23456789
 
         dec     ch
         jne     vtquadloop_ra
-;;%endif
+
 vtdone:
         pop     ebx
         pop     edi

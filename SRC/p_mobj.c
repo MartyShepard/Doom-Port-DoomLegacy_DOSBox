@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1026 2013-08-04 03:43:01Z wesleyjohnson $
+// $Id: p_mobj.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -31,10 +31,7 @@
 // go final + translucent HUD + fix spawn in net game
 //
 // Revision 1.44  2003/07/21 16:47:13  hurdler
-// go RC1
-//
 // Revision 1.42  2003/06/11 04:01:01  ssntails
-// Whoops, forgot something.
 //
 // Revision 1.41  2003/06/11 03:38:09  ssntails
 // THING Z definable in levels by using upper 9 bits
@@ -43,7 +40,6 @@
 // Any angle support for THINGS (0-360)
 //
 // Revision 1.39  2003/03/22 22:35:59  hurdler
-// Fix CR+LF issue
 //
 // Revision 1.37  2002/09/27 16:40:09  tonyd
 // First commit of acbot
@@ -64,7 +60,6 @@
 // Fix for 3dfloor bug with objects on them.
 //
 // Revision 1.31  2002/01/12 02:21:36  stroggonmeth
-// Big commit
 //
 // Revision 1.30  2001/08/12 15:21:04  bpereira
 // see my log
@@ -77,64 +72,37 @@
 // - fixed crosshair not drawed bug
 //
 // Revision 1.27  2001/04/02 18:54:32  bpereira
-// no message
-//
 // Revision 1.26  2001/04/01 17:35:06  bpereira
-// no message
-//
 // Revision 1.25  2001/03/30 17:12:50  bpereira
-// no message
 //
 // Revision 1.24  2001/03/13 22:14:19  stroggonmeth
 // Long time no commit. 3D floors, FraggleScript, portals, ect.
 //
 // Revision 1.23  2001/03/03 06:17:33  bpereira
-// no message
-//
 // Revision 1.22  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.21  2001/02/10 12:27:14  bpereira
-// no message
 //
 // Revision 1.20  2001/01/25 22:15:43  bpereira
 // added heretic support
 //
 // Revision 1.19  2000/11/04 16:23:43  bpereira
-// no message
-//
 // Revision 1.18  2000/11/02 19:49:36  bpereira
-// no message
 //
 // Revision 1.17  2000/11/02 17:50:08  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.16  2000/10/21 08:43:30  bpereira
-// no message
-//
 // Revision 1.15  2000/10/16 20:02:30  bpereira
-// no message
-//
 // Revision 1.14  2000/10/01 10:18:18  bpereira
-// no message
-//
 // Revision 1.13  2000/09/28 20:57:16  bpereira
-// no message
-//
 // Revision 1.12  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.11  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.10  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.9  2000/04/11 19:07:24  stroggonmeth
 // Finished my logs, fixed a crashing bug.
 //
 // Revision 1.8  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.7  2000/04/06 20:40:22  hurdler
 // Mostly remove warnings under windows
@@ -146,11 +114,7 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.4  2000/03/29 19:39:48  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -160,10 +124,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string.h>
+#include "doomincl.h"
   // memset
-
-#include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "st_stuff.h"

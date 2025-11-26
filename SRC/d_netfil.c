@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 920 2012-06-07 23:53:20Z wesleyjohnson $
+// $Id: d_netfil.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -24,10 +24,7 @@
 // Use SHORT to convert network data between big- and little-endian format.
 //
 // Revision 1.24  2001/07/28 16:18:37  bpereira
-// no message
-//
 // Revision 1.23  2001/05/21 16:23:32  crashrl
-// *** empty log message ***
 //
 // Revision 1.22  2001/05/21 14:57:05  crashrl
 // Readded directory crawling file search function
@@ -45,53 +42,30 @@
 // Initial Mac add
 //
 // Revision 1.18  2001/03/30 17:12:49  bpereira
-// no message
-//
 // Revision 1.17  2001/02/24 13:35:19  bpereira
-// no message
-//
 // Revision 1.16  2001/02/13 20:37:27  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.15  2001/02/10 12:27:13  bpereira
-// no message
 //
 // Revision 1.14  2001/01/25 22:15:41  bpereira
 // added heretic support
 //
 // Revision 1.13  2000/10/08 13:30:00  bpereira
-// no message
-//
 // Revision 1.12  2000/10/02 18:25:44  bpereira
-// no message
-//
 // Revision 1.11  2000/09/28 20:57:14  bpereira
-// no message
-//
 // Revision 1.10  2000/09/10 10:39:06  metzgermeister
-// *** empty log message ***
-//
 // Revision 1.9  2000/08/31 14:30:55  bpereira
-// no message
-//
 // Revision 1.8  2000/08/11 19:10:13  metzgermeister
-// *** empty log message ***
 //
 // Revision 1.7  2000/08/10 14:52:38  ydario
 // OS/2 port
 //
 // Revision 1.6  2000/04/16 18:38:07  bpereira
-// no message
 //
 // Revision 1.5  2000/03/07 03:32:24  hurdler
 // fix linux compilation
 //
 // Revision 1.4  2000/03/05 17:10:56  bpereira
-// no message
-//
 // Revision 1.3  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
 //
@@ -130,7 +104,7 @@
 #include <utime.h>
 #endif
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "doomstat.h"
 #include "d_clisrv.h"
 #include "g_game.h"

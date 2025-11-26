@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 823 2011-03-17 18:53:01Z smite-meister $
+// $Id: b_look.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -29,6 +29,7 @@
 // Revision 1.2  2002/09/27 16:40:08  tonyd
 // First commit of acbot
 //
+//-----------------------------------------------------------------------------
 
 #include "b_bot.h"
 #include "b_game.h"

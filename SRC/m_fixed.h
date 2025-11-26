@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.h 890 2011-12-26 18:25:54Z wesleyjohnson $
+// $Id: m_fixed.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -25,40 +25,32 @@
 // added heretic support
 //
 // Revision 1.7  2000/09/28 20:57:15  bpereira
-// no message
 //
 // Revision 1.6  2000/04/24 23:52:23  hurdler
 // Apply cph patch
 //
 // Revision 1.5  2000/04/24 20:24:38  bpereira
-// no message
-//
 // Revision 1.4  2000/04/23 16:19:52  bpereira
-// no message
 //
 // Revision 1.3  2000/03/07 03:32:24  hurdler
 // fix linux compilation
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
 //
 // DESCRIPTION:
-//      Fixed point arithemtics, implementation.
+//      Fixed point arithmetics, implementation.
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_FIXED__
-#define __M_FIXED__
+#ifndef M_FIXED_H
+#define M_FIXED_H
 
+#include <stdint.h>
 #include <stdlib.h>
-
-#include "doomtype.h"
-
 
 //
 // Fixed point, 32bit as 16.16.
@@ -152,9 +144,9 @@ static inline fixed_t FixedDiv (fixed_t a, fixed_t b)
     //I_Error("<a: %ld, b: %ld>",(long)a,(long)b);
 
     if ( (abs(a)>>14) >= abs(b))
-        return (a^b)<0 ? MININT : MAXINT;
+        return (a^b)<0 ? FIXED_MIN : FIXED_MAX;
 
     return FixedDiv2 (a,b);
 }
 
-#endif //m_fixed.h
+#endif // M_FIXED_H

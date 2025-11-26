@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.h 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: qmus2mid.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -23,13 +23,7 @@
 //
 // Revision 1.3  2000/04/21 08:23:47  emanne
 // To have SDL working.
-// Makefile: made the hiding by "@" optional. See the CC variable at
-// the begining. Sorry, but I like to see what's going on while building
-//
 // qmus2mid.h: force include of qmus2mid_sdl.h when needed.
-// s_sound.c: ??!
-// s_sound.h: with it.
-// (sorry for s_sound.* : I had problems with cvs...)
 //
 // Revision 1.2  2000/02/26 00:28:42  hurdler
 // Mostly bug fix (see borislog.txt 23-2-2000, 24-2-2000)
@@ -40,9 +34,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#if !defined(QMUS2MID_H)
+#ifndef QMUS2MID_H
 #define QMUS2MID_H
+
+#include "doomtype.h"
 
 #define NOTMUSFILE      1       /* Not a MUS file */
 #define COMUSFILE       2       /* Can't open MUS file */

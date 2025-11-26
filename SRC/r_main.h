@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 990 2012-12-04 04:34:39Z wesleyjohnson $
+// $Id: r_main.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -34,8 +34,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -45,12 +43,18 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef R_MAIN_H
+#define R_MAIN_H
 
-#ifndef __R_MAIN__
-#define __R_MAIN__
-
+#include "doomdef.h"
+  // BOOM_GLOBAL_COLORMAP
+#include "doomtype.h"
 #include "d_player.h"
 #include "r_data.h"
+#include "m_fixed.h"
+#include "p_mobj.h"
+#include "command.h"
+  // consvar_t
 
 
 //
@@ -150,62 +154,31 @@ void BoomColormap_detect( void );
 // Blocky/low detail mode.
 //B remove this?
 //  0 = high, 1 = low
-extern  int             detailshift;
+extern  int  detailshift;
 
 
 //
 // Utility functions.
-int
-R_PointOnSide
-( fixed_t       x,
-  fixed_t       y,
-  node_t*       node );
+int R_PointOnSide ( fixed_t x, fixed_t y, node_t* node );
 
-int
-R_PointOnSegSide
-( fixed_t       x,
-  fixed_t       y,
-  seg_t*        line );
+int R_PointOnSegSide ( fixed_t x, fixed_t y, seg_t* line );
 
-angle_t
-R_PointToAngle
-( fixed_t       x,
-  fixed_t       y );
+angle_t R_PointToAngle ( fixed_t x, fixed_t y );
 
-angle_t
-R_PointToAngle2
-( fixed_t       x2,
-  fixed_t       y2,
-  fixed_t       x1,
-  fixed_t       y1);
+angle_t R_PointToAngle2 ( fixed_t x2, fixed_t y2, fixed_t x1, fixed_t y1);
 
-fixed_t
-R_PointToDist
-( fixed_t       x,
-  fixed_t       y );
+fixed_t R_PointToDist ( fixed_t x, fixed_t y );
 
 //SoM: 3/27/2000
-fixed_t
-R_PointToDist2
-( fixed_t       x2,
-  fixed_t       y2,
-  fixed_t       x1,
-  fixed_t       y1);
+fixed_t R_PointToDist2 ( fixed_t x2, fixed_t y2, fixed_t x1, fixed_t y1);
 
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
 
-subsector_t*
-R_PointInSubsector
-( fixed_t       x,
-  fixed_t       y );
+subsector_t* R_PointInSubsector ( fixed_t x, fixed_t y );
 
 subsector_t* R_IsPointInSubsector ( fixed_t x, fixed_t y );
 
-void
-R_AddPointToBox
-( int           x,
-  int           y,
-  fixed_t*      box );
+void R_AddPointToBox ( int x, int y, fixed_t* box );
 
 
 
@@ -237,6 +210,7 @@ void   R_SetViewSize (void);
 void   R_ExecuteSetViewSize (void);
 
 void R_SetupFrame (player_t* player);
+
 // Called by G_Drawer.
 void   R_RenderPlayerView (player_t *player);
 

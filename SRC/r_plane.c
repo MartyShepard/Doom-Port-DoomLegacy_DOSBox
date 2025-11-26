@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 988 2012-12-04 04:25:48Z wesleyjohnson $
+// $Id: r_plane.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -43,25 +43,17 @@
 // added heretic support
 //
 // Revision 1.12  2000/11/11 13:59:46  bpereira
-// no message
-//
 // Revision 1.11  2000/11/06 20:52:16  bpereira
-// no message
 //
 // Revision 1.10  2000/11/02 17:50:09  stroggonmeth
 // Big 3Dfloors & FraggleScript commit!!
 //
 // Revision 1.9  2000/04/30 10:30:10  bpereira
-// no message
-//
 // Revision 1.8  2000/04/18 17:39:39  stroggonmeth
-// Bug fixes and performance tuning.
-//
 // Revision 1.7  2000/04/13 23:47:47  stroggonmeth
 // See logs
 //
 // Revision 1.6  2000/04/08 17:29:25  stroggonmeth
-// no message
 //
 // Revision 1.5  2000/04/06 21:06:19  stroggonmeth
 // Optimized extra_colormap code...
@@ -74,8 +66,6 @@
 // Initial Boom compatability plus few misc changes all around.
 //
 // Revision 1.2  2000/02/27 00:42:10  hurdler
-// fix CR+LF problem
-//
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)
 //
@@ -87,7 +77,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "console.h"
 #include "g_game.h"
 #include "r_data.h"
@@ -250,7 +240,6 @@ void R_MapPlane ( int y, int x1, int x2 )
         || x2>=rdraw_viewwidth
         || (unsigned)y>rdraw_viewheight)    // [WDJ] ??  y>=rdraw_viewheight
     {
-			  return;
         I_Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
     }
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 610 2010-02-22 22:21:14Z smite-meister $
+// $Id: p_heretic.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -23,24 +23,19 @@
 // - fixed crosshair not drawed bug
 //
 // Revision 1.6  2001/05/27 13:42:47  bpereira
-// no message
-//
 // Revision 1.5  2001/03/30 17:12:50  bpereira
-// no message
-//
 // Revision 1.4  2001/02/24 13:35:20  bpereira
-// no message
-//
 // Revision 1.3  2001/02/10 13:20:55  hurdler
 // update license
 //
 //
 //
 // DESCRIPTION:
+//    Heretic sound and other specifics.
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+#include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "r_main.h"

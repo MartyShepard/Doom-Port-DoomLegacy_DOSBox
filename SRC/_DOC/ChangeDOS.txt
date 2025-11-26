@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01033 ]: w92 include fixes, doomcincl.h
+          Added the forgettn important doomcincl.h from svn1058
+					
 [01032 ]: w92 keys
 [01031*]: w92 OS2 X11 video
 [01030*]: w92 WinVid
