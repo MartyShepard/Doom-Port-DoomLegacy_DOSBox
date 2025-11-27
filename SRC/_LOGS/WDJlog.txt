@@ -3504,3 +3504,15 @@ Make 144 DL the demo format, with demoversion 144.
 Add some fields, and a sync byte.  Fix the playback so that it now
 plays our own demos correctly.
 
+*** W94_b_random
+patchfile = w94_6_b_random.patch
+- committed revision 1055   by wesley johnson
+Create separate random number generators for ambience, bots, and misc.
+so that P_Random is not affected by every odd change.
+A_Random for ambience, which was using M_Random.  This change should not
+affect any demo playback that was working.
+B_Random for bots and any other automation.  This was using P_Random
+which strongly affects demos.  There should be no existing demos with bots.
+New uses should use A_Random and B_Random.
+
+

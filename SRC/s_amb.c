@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: s_amb.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: s_amb.c 1055 2013-10-09 20:14:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -271,7 +271,7 @@ void P_AmbientSound(void)
                 switch(cmd)
                 {
                         case afxcmd_play:
-                                AmbSfxVolume = M_Random()>>2;
+                                AmbSfxVolume = A_Random()>>2;
                                 S_StartAmbientSound(*AmbSfxPtr++, AmbSfxVolume);
                                 break;
                         case afxcmd_playabsvol:
@@ -297,12 +297,12 @@ void P_AmbientSound(void)
                                 done = true;
                                 break;
                         case afxcmd_delayrand:
-                                AmbSfxTics = M_Random()&(*AmbSfxPtr++);
+                                AmbSfxTics = A_Random()&(*AmbSfxPtr++);
                                 done = true;
                                 break;
                         case afxcmd_end:
-                                AmbSfxTics = 6*TICRATE+M_Random();
-                                AmbSfxPtr = LevelAmbientSfx[M_Random()%AmbSfxCount];
+                                AmbSfxTics = 6*TICRATE+A_Random();
+                                AmbSfxPtr = LevelAmbientSfx[A_Random()%AmbSfxCount];
                                 done = true;
                                 break;
                         default:

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_random.h 1055 2013-10-09 20:14:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -56,7 +56,9 @@ byte P_Random (void);
 int P_SignedRandom ();
 #endif
 
-
+// separate so to not affect demo playback
+byte A_Random (void);  // ambience
+byte B_Random (void);  // bots etc..
 
 // Fix randoms for demos.
 void M_ClearRandom (void);

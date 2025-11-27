@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: b_game.c 1055 2013-10-09 20:14:01Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -127,7 +127,7 @@ void B_InitBots()
 	{
 		do
 		{
-			botNum = P_Random()%MAXPLAYERS;
+			botNum = B_Random()%MAXPLAYERS;
 			botinfo[i].name = botnames[botNum];
 			duplicateBot = false;
 			j = 0;
@@ -140,7 +140,7 @@ void B_InitBots()
 			}
 		} while (duplicateBot);
 
-		botinfo[i].colour = P_Random() % NUMSKINCOLORS;
+		botinfo[i].colour = B_Random() % NUMSKINCOLORS;
 	}
 	botNodeArray = NULL;
 }
@@ -177,12 +177,10 @@ void B_AddCommands()
 
 void B_AvoidMissile(player_t* p, mobj_t* missile)
 {
-	fixed_t		missileAngle = R_PointToAngle2 (p->mo->x,
-								p->mo->y,
-								missile->x,
-								missile->y),
+	fixed_t  missileAngle = R_PointToAngle2 (p->mo->x, p->mo->y,
+						 missile->x, missile->y);
 
-				delta = p->mo->angle - missileAngle;
+        fixed_t  delta = p->mo->angle - missileAngle;
 
 	if (delta >= 0)
 		p->cmd.sidemove = -botsidemove[1];
@@ -192,10 +190,10 @@ void B_AvoidMissile(player_t* p, mobj_t* missile)
 
 void B_ChangeWeapon (player_t* p)
 {
-	boolean		hasWeaponAndAmmo[NUMWEAPONS];
-	byte		i,
-				numWeapons = 0,
-				weaponChance;
+	boolean  hasWeaponAndAmmo[NUMWEAPONS];
+	byte  i;
+	byte  numWeapons = 0;
+        byte  weaponChance;
 
 	for (i=0; i<NUMWEAPONS; i++)
 	{
@@ -244,7 +242,7 @@ void B_ChangeWeapon (player_t* p)
 			p->cmd.buttons &= ~BT_ATTACK;	//stop rocket from jamming;
 			do
 			{
-				weaponChance = P_Random();
+				weaponChance = B_Random();
 				if ((weaponChance < 30) && hasWeaponAndAmmo[wp_shotgun] && (p->readyweapon != wp_shotgun))//has shotgun and shells
 					p->cmd.buttons |= (BT_CHANGE | (wp_shotgun<<BT_WEAPONSHIFT));
 				else if ((weaponChance < 80) && hasWeaponAndAmmo[wp_chaingun] && (p->readyweapon != wp_chaingun))//has chaingun and bullets
@@ -266,7 +264,7 @@ void B_ChangeWeapon (player_t* p)
 		else	//resort to fists, if have powered fists, better with fists then chainsaw
 			p->cmd.buttons |= (BT_CHANGE | wp_fist<<BT_WEAPONSHIFT);
 
-		p->bot->weaponchangetimer = (P_Random()<<7)+10000;	//how long until I next change my weapon
+		p->bot->weaponchangetimer = (B_Random()<<7)+10000;	//how long until I next change my weapon
 	}
 	else if (p->bot->weaponchangetimer)
 		p->bot->weaponchangetimer--;
@@ -290,13 +288,9 @@ fixed_t B_AngleDiff(mobj_t* mo, fixed_t x, fixed_t y)
 
 void B_TurnTowardsPoint(player_t* p, fixed_t x, fixed_t y)
 {
-	int			botspeed;
-	fixed_t		angle = R_PointToAngle2 (p->mo->x,
-								p->mo->y,
-								x,
-								y),
-
-				delta = angle - p->mo->angle;
+	int  botspeed;
+	fixed_t  angle = R_PointToAngle2 (p->mo->x, p->mo->y, x, y);
+        fixed_t  delta = angle - p->mo->angle;
 
 	if (abs(delta) < (ANG45>>2))
 		botspeed = 0;
@@ -315,20 +309,15 @@ void B_TurnTowardsPoint(player_t* p, fixed_t x, fixed_t y)
 
 void B_AimWeapon(player_t* p)
 {
-	mobj_t		*dest = p->bot->closestEnemy,
-				*source = p->mo;
+	mobj_t  *dest = p->bot->closestEnemy;
+	mobj_t	*source = p->mo;
 
-	int			angle,
-				botspeed = 0,
-				delta,
-				dist,
-				missileSpeed,
-				realAngle,
-				time;
+	int  botspeed = 0;
+	int  angle, delta, dist, missileSpeed, realAngle;
+        int  mtime, t;
 
 	fixed_t		px, py, pz;
 	subsector_t	*sec;
-	int			t;
 	boolean		canHit;
 
 	switch (p->readyweapon)	// changed so bot projectiles don't lead targets at lower skills
@@ -385,11 +374,13 @@ void B_AimWeapon(player_t* p)
 	{
 		if (missileSpeed)
 		{
-			time = dist/missileSpeed;
-			time = P_AproxDistance (dest->x + dest->momx*time - source->x,
-									dest->y + dest->momy*time - source->y)/missileSpeed;
+			mtime = dist/missileSpeed;
+			mtime = P_AproxDistance (
+			    dest->x + dest->momx*mtime - source->x,
+			    dest->y + dest->momy*mtime - source->y)
+			    / missileSpeed;
 
-			t = time + 4;
+			t = mtime + 4;
 			do
 			{
 				t-=4;
@@ -470,22 +461,20 @@ void B_AimWeapon(player_t* p)
 //
 void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 {
-	boolean		blocked,
-				notUsed = true;
+	boolean  blocked, notUsed = true;
 
-	int			botspeed = 1;
-	int			x, y;
-	fixed_t		cmomx, cmomy,	//what the extra momentum added from this tick will be
-				px, py,			//coord of where I will be next tick
-				forwardmove = 0,
-				sidemove = 0,
-				forwardAngle, sideAngle,
-				targetDistance;	//how far away is my enemy, wanted thing
+	int  botspeed = 1;
+	int  x, y;
+	fixed_t  cmomx, cmomy;	//what the extra momentum added from this tick will be
+	fixed_t  px, py;  //coord of where I will be next tick
+	fixed_t  forwardmove = 0, sidemove = 0;
+	fixed_t  forwardAngle, sideAngle;
+	fixed_t  targetDistance;  //how far away is my enemy, wanted thing
 
-	ticcmd_t*	cmd = &p->cmd;
+	ticcmd_t*  cmd = &p->cmd;
 
-	if (cmd->buttons & BT_USE)	//needed so bot doesn't hold down use before reaching switch object
-		notUsed = false;		//wouldn't be able to use switch
+	if (cmd->buttons & BT_USE)  //needed so bot doesn't hold down use before reaching switch object
+		notUsed = false;    //wouldn't be able to use switch
 
 	memset (cmd,0,sizeof(*cmd));
 
@@ -727,7 +716,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 			else
 			{
 				p->bot->straferight = !p->bot->straferight;
-				p->bot->strafetimer = P_Random()/3;
+				p->bot->strafetimer = B_Random()/3;
 			}
 		}
 		if (p->bot->weaponchangetimer)
