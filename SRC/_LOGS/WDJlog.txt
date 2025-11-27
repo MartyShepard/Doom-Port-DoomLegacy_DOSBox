@@ -3521,4 +3521,11 @@ patchfile = w94_7_infight.patch
 Fix conflict between infight and cv_monbehavior vars.
 Include them in demo playing.
 
+*** W94_Boom_demo
+patchfile = w94_8_boom_demo.patch
+- committed revision 1057   by wesley johnson
+Add some more fixes for playing boom demos.  This fixes some segfault,
+and incompatibilities but it still does not sync.
+Added Boom stuckdoor code, but only enabled for Boom demo.
+
 

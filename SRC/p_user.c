@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1049 2013-09-22 21:03:41Z wesleyjohnson $
+// $Id: p_user.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -644,6 +644,7 @@ void P_ChickenPlayerThink(player_t *player)
         {
                 return;
         }
+        // Heretic uses of P_Random
         if(!(pmo->momx+pmo->momy) && P_Random() < 160)
         { // Twitch view angle
                 pmo->angle += P_SignedRandom()<<19;
@@ -1487,6 +1488,7 @@ void P_ArtiTele(player_t *player)
     
     if(cv_deathmatch.value)
     {
+        // Heretic use of P_Random
         i = P_Random()%numdmstarts;
         mtp = deathmatchstarts[i];
     }

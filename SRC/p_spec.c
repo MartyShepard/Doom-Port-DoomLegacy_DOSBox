@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
+// $Id: p_spec.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -159,7 +159,7 @@
 #include "hardware/hw3sound.h"
 
 //SoM: Enable Boom features?
-int boomsupport = 1;
+int boomsupport = 1;  // boom (demo compatibility=0)
 int variable_friction = 1;
 int allow_pushers = 1;
 byte  monster_friction = 1;  // MBF demo flag
@@ -2508,12 +2508,13 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 {
     if(sector->special < 32)
     {
+      // Heretic specials are in P_HerePlayerInSpecialSector
       // Has hitten ground.
       switch (sector->special)
       {
         case 5:
           // HELLSLIME DAMAGE
-          if (!player->powers[pw_ironfeet])
+          if (!player->powers[pw_ironfeet])  // rad suit
 	  {
               if (instantdamage)
               {
@@ -2529,7 +2530,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 
         case 7:
           // NUKAGE DAMAGE
-          if (!player->powers[pw_ironfeet])
+          if (!player->powers[pw_ironfeet])  // rad suit
 	  {
               if (instantdamage)
                   P_DamageMobj (player->mo, NULL, NULL, 5);
@@ -2540,8 +2541,8 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
           // SUPER HELLSLIME DAMAGE
         case 4:
           // STROBE HURT
-          if (!player->powers[pw_ironfeet]
-              || (P_Random()<5) )
+          if (!player->powers[pw_ironfeet]  // rad suit is intermittant protection
+              || (P_Random()<5) )  // pr_slimehurt
           {
               if (instantdamage)
                   P_DamageMobj (player->mo, NULL, NULL, 20);
@@ -2579,6 +2580,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
    }
    else //SoM: Extended sector types for secrets and damage
    {
+     // Boom generalized sector
      switch ((sector->special&DAMAGE_MASK)>>DAMAGE_SHIFT)
      {
        case 0: // no damage
@@ -2592,8 +2594,8 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
              P_DamageMobj (player->mo, NULL, NULL, 10);
          break;
        case 3: // 10/20 damage per 31 ticks
-         if ((!player->powers[pw_ironfeet]
-              || P_Random()<5) && instantdamage)  // take damage even with suit
+         if ((!player->powers[pw_ironfeet] || P_Random()<5) // pr_slimehurt
+	     && instantdamage)  // take damage even with suit
          {
              P_DamageMobj (player->mo, NULL, NULL, 20);
          }

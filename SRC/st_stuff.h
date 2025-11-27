@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: st_stuff.h 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -127,7 +127,8 @@ int  ST_PlayerFrags (int playernum);
 extern boolean    st_overlay;   // sb overlay on or off when fullscreen
 
 // heretic status bar
-void SB_Ticker(void);
+void SB_Heretic_Ticker(void);
+
 void SB_Drawer( boolean refresh );
 boolean SB_Responder(event_t *event);
 void SB_Init(void);

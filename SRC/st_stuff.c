@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: st_stuff.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -800,7 +800,7 @@ void ST_Ticker (void)
 
     if( gamemode == heretic )
     {
-        SB_Ticker();
+        SB_Heretic_Ticker();
         return;
     }
 

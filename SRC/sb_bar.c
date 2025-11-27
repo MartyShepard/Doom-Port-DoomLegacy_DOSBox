@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: sb_bar.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -209,13 +209,14 @@ void SB_Init(void)
 //
 //---------------------------------------------------------------------------
 
-void SB_Ticker(void)
+void SB_Heretic_Ticker(void)
 {
         int delta;
         int curHealth;
 
         if(leveltime&1)
         {
+	        // Heretic use of P_Random
                 ChainWiggle = M_Random()&1;
         }
         curHealth = consoleplayer_ptr->mo->health;

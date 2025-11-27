@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_pspr.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -384,7 +384,7 @@ void A_WeaponReady ( player_t*     player,
     // Check for staff PL2 active sound
     if((player->readyweapon == wp_staff)
         && (psp->state == &states[S_STAFFREADY2_1])
-        && P_Random() < 128)
+        && P_Random() < 128)  // Heretic
     {
         S_StartAttackSound(player->mo, sfx_stfcrk);
     }
@@ -569,17 +569,15 @@ void A_GunFlash ( player_t* player, pspdef_t* psp )
 void A_Punch ( player_t* player, pspdef_t* psp )
 {
     angle_t     angle;
-    int         damage;
     int         slope;
-
-    damage = (P_Random ()%10+1)<<1;
+    int damage = (P_Random() % 10 + 1)<<1;  // pr_punch
 
     if (player->powers[pw_strength])
         damage *= 10;
 
-    angle = player->mo->angle;
-    angle += (P_Random()<<18); // WARNING: don't put this in one line 
-    angle -= (P_Random()<<18); // else this expression is ambiguous (evaluation order not diffined)
+    // WARNING: don't put two P_Random in one line, or else
+    // the evaluation order is ambiguous.
+    angle = player->mo->angle + (P_SignedRandom()<<18);  // pr_punchangle
 
     slope = P_AimLineAttack (player->mo, angle, MELEERANGE);
     P_LineAttack (player->mo, angle, MELEERANGE, slope, damage);
@@ -602,13 +600,12 @@ void A_Punch ( player_t* player, pspdef_t* psp )
 //
 void A_Saw ( player_t* player, pspdef_t* psp )
 {
-    int      damage = 2*(P_Random()%10+1);  // first random is damage
     int      slope;
     // Random() must be in separate statements otherwise
     // evaluation order will be ambiguous (lose demo sync).
-    int      ra2 = P_Random();  // second random adds to angle
-    angle_t  angle = player->mo->angle;
-    angle += (ra2 - P_Random())<<18;  // third random is subtraction
+    int      damage = 2*(P_Random()%10+1);  // pr_saw, first random is damage
+    // second random adds to angle, third random is subtraction
+    angle_t  angle = player->mo->angle + (P_SignedRandom()<<18);  // pr_saw
 
     // use meleerange + 1 so the puff doesn't skip the flash
     slope = P_AimLineAttack (player->mo, angle, MELEERANGE+1);
@@ -680,6 +677,7 @@ void A_FirePlasma ( player_t*     player,
     P_SetPsprite (player,
                   ps_flash,
                   player->weaponinfo[player->readyweapon].flashstate+(P_Random ()&1) );
+   		  // pr_plasma
 
     //added:16-02-98: added player arg3
     P_SpawnPlayerMissile (player->mo, MT_PLASMA);
@@ -689,7 +687,7 @@ void A_FirePlasma ( player_t*     player,
 
 //
 // P_BulletSlope
-// Sets a slope so a near miss is at aproximately
+// Sets a slope so a near miss is at approximately
 // the height of the intended target
 //
 fixed_t         bulletslope;
@@ -733,20 +731,20 @@ notagetfound:
 // P_GunShot
 //
 //added:16-02-98: used only for player (pistol,shotgun,chaingun)
-//                supershotgun use p_lineattack directely
+//                supershotgun use p_lineattack directly
 void P_GunShot ( mobj_t*       mo,
                  boolean       accurate )
 {
     angle_t     angle;
     int         damage;
 
-    damage = 5*(P_Random ()%3+1);
+    damage = 5*(P_Random ()%3+1); // pr_gunshot
     angle = mo->angle;
 
     if (!accurate)
     {
-        angle += (P_Random()<<18); // WARNING: don't put this in one line 
-        angle -= (P_Random()<<18); // else this expretion is ambiguous (evaluation order not diffined)
+        // WARNING: don't put two P_Random on one line, ambiguous
+        angle += (P_SignedRandom()<<18);  // pr_misfire
     }
 
     P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
@@ -804,7 +802,7 @@ void A_FireShotgun2 ( player_t*     player,
 {
     int         i;
     angle_t     angle;
-    int         damage;
+    int         damage, slope;
 
     S_StartAttackSound(player->mo, sfx_dshtgn);
     P_SetMobjState (player->mo, S_PLAY_ATK2);
@@ -819,9 +817,20 @@ void A_FireShotgun2 ( player_t*     player,
 
     for (i=0 ; i<20 ; i++)
     {
-        int slope = bulletslope + (P_SignedRandom()<<5);
-        damage = 5*(P_Random ()%3+1);
-        angle = player->mo->angle + (P_SignedRandom() << 19);
+        if( demoversion > 114 && demoversion < 144 )
+        {
+	    // Old legacy order, slope, damage, angle
+	    slope = bulletslope + (P_SignedRandom()<<5);
+	    damage = 5*(P_Random ()%3+1);
+	    angle = player->mo->angle + (P_SignedRandom() << 19);
+	}
+        else
+        {
+	    // [WDJ] Boom, P_Random order is damage, angle, slope
+	    damage = 5*(P_Random ()%3+1);  // pr_shotgun
+	    angle = player->mo->angle + (P_SignedRandom() << 19);
+	    slope = bulletslope + (P_SignedRandom()<<5);  // pr_shotgun
+	}
         P_LineAttack (player->mo,
                       angle,
                       MISSILERANGE,
@@ -908,7 +917,7 @@ void A_BFGSpray (mobj_t* mo)
 
         damage = 0;
         for (j=0;j<15;j++)
-            damage += (P_Random()&7) + 1;
+            damage += (P_Random()&7) + 1;  // pr_bfg
 
         //BP: use extramobj as inflictor so we have the good death message
         P_DamageMobj (lar_linetarget, extrabfg, mo->target, damage);

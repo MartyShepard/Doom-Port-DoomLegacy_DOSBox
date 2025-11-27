@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_enemy.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -292,6 +292,12 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
     pl = actor->target;
     dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
+#ifdef MF_FRIEND
+    // [WDJ] prboom, killough, friend monsters do not attack other friend
+    if (actor->flags & pl->flags & MF_FRIEND )
+        return false;
+#endif
+
     // [WDJ] FIXME pl->info may be NULL (seen in phobiata.wad)
     if (pl->info == NULL ) return false;
     if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
@@ -325,8 +331,28 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         // the target just hit the enemy,
         // so fight back!
         actor->flags &= ~MF_JUSTHIT;
+#ifdef MF_FRIEND
+        // Boom has two calls of P_Random, which affect demos
+	return  !(actor->flags & MF_FRIEND)
+	 ||( (actor->target->health > 0)
+	     &&( !(actor->target->flags & MF_FRIEND)
+		 || (actor->target->player ?
+//		     (monster_infight || (P_Random()>128))  // pr_defect
+		     (cv_monbehavior.value!=1 || (P_Random()>128))  // pr_defect
+		     : !(actor->target->flags & MF_JUSTHIT) && P_Random()>128)  // pr_defect
+	        )
+	    );
+#else
         return true;
+#endif
     }
+#ifdef MF_FRIEND
+    // from prboom
+    // killough 7/18/98: friendly monsters don't attack other friendly
+    // monsters or players (except when attacked, and then only once)
+    if (actor->flags & actor->target->flags & MF_FRIEND)
+       return false;
+#endif
 
     if (actor->reactiontime)
         return false;   // do not attack yet
@@ -338,7 +364,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     if (!actor->info->meleestate)
         dist -= 128*FRACUNIT;   // no melee attack, so fire more
 
-    dist >>= 16;
+    dist >>= FRACBITS;
 
     if (actor->type == MT_VILE)
     {
@@ -368,8 +394,13 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     if (actor->type == MT_CYBORG && dist > 160)
         dist = 160;
 
-    if (P_Random () < dist)
+    if (P_Random () < dist)   // pr_missrange
         return false;
+
+#ifdef MF_FRIEND
+    if (P_HitFriend(actor))
+        return false;
+#endif
 
     return true;
 }
@@ -380,6 +411,8 @@ byte EN_mbf_enemyfactor = 0;
 byte EN_monster_momentum = 0;
 byte EN_skull_limit = 0;  // turn off pain skull gen limits
 byte EN_old_pain_spawn = 0;
+byte EN_doorstuck = 0;
+byte EN_mbf_doorstuck = 0;
 
 
 // local version control
@@ -389,7 +422,8 @@ void DemoAdapt_p_enemy( void )
     // in P_Thrust (so monsters slip only on ice conveyor)
     if( demoplayback && (friction_model != FR_legacy))
     {
-        // monster_friction set by Boom demo and in G_Downgrade
+        // monster_friction set by Boom, MBF, prboom demo
+	// defaulted by others
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
         EN_monster_momentum = 0;  // 2=momentum
     }
@@ -402,6 +436,19 @@ void DemoAdapt_p_enemy( void )
     }
     EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
     EN_old_pain_spawn = ( demoversion < 143 );
+    EN_mbf_doorstuck = ( demoversion > 203 );  // mbf demo
+    EN_doorstuck = ( demoversion >= 200 );
+#if 1
+    if( verbose > 1 )
+    { 
+        fprintf(stderr, "friction_model=%i, monster_friction=%i\n",
+		friction_model, monster_friction );
+        fprintf(stderr, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
+		EN_mbf_enemyfactor,  EN_monster_momentum );
+        fprintf(stderr, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
+		EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
+    }
+#endif
 }
 
 
@@ -422,6 +469,7 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
     fixed_t  old_momx, old_momy;
     line_t*  ld;
     boolean  good;
+    int      hit_block = 0;
     int      speed = actor->info->speed;
 
     if (actor->movedir == DI_NODIR)
@@ -579,8 +627,22 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
             // that can be opened,
             // return false
             if (P_UseSpecialLine (actor, ld,0))
+	    {
+	        if( EN_mbf_doorstuck && (ld == tmr_blockingline))
+		   hit_block = 1;
                 good = true;
+	    }
         }
+        if ( good && EN_doorstuck )
+        {
+	    // [WDJ] Calls of P_Random here in Boom, affects Demo sync.
+	    // A line blocking the monster got activated, a little randomness
+	    // to get unstuck from door frame.
+	    if (EN_mbf_doorstuck)
+	        good = (P_Random() >= 230) ^ (hit_block);  // MBF, pr_opendoor
+	    else
+	        good = P_Random() & 3;  // Boom jff, 25% fail, pr_trywalk
+	}
         return good;
     }
     else  // TryMove
