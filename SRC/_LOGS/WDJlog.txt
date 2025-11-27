@@ -3497,4 +3497,10 @@ adjacent planes do not affect whole sprite.
 It does not cure problem with railings, which are higher than dead
 objects.
 
+*** W94_demo144
+patchfile = w94_5_demo144.patch
+- committed revision 1054   by wesley johnson
+Make 144 DL the demo format, with demoversion 144.
+Add some fields, and a sync byte.  Fix the playback so that it now
+plays our own demos correctly.
 
