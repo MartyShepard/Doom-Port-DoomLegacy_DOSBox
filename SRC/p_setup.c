@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1045 2013-09-22 20:32:24Z wesleyjohnson $
+// $Id: p_setup.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -161,6 +161,8 @@
 #include "i_sound.h" //for I_PlayCD()..
 #include "i_video.h"
   // I_FinishUpdate
+#include "i_system.h"
+  // I_Sleep
 #include "r_sky.h"
 
 #include "r_data.h"
@@ -1552,10 +1554,6 @@ boolean P_SetupLevel (int           episode,
 
     players[consoleplayer].viewz = 1;
 
-    // Make sure all sounds are stopped before Z_FreeTags.
-    // This will kill the last menu pistol sound too.
-    S_StopSounds();
-
     // [WDJ] 7/2010 Free allocated memory in sectors before PU_LEVEL purge
     for (i=0 ; i<numsectors ; i++)
     {
@@ -1569,6 +1567,11 @@ boolean P_SetupLevel (int           episode,
 	    }
 	}
     }
+
+    I_Sleep( 100 );  // give menu sound a chance to finish
+    // Make sure all sounds are stopped before Z_FreeTags.
+    // This will kill the last menu pistol sound too.
+    S_StopSounds();
 
 #if 0 // UNUSED
     if (debugfile)

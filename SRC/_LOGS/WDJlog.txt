@@ -3536,3 +3536,12 @@ Also cleaned up and commented the qmus2midi functions and qmus2midi.h.
 OS2 was using a file to file version of qmus2midi, which does not seem to
 be compiled.  Reconnected buffer to buffer version in OS2.
 OS2 needs to be debugged.
+
+*** W95_menu_sounds
+patchfile = w95_2_menusounds.patch
+- committed revision 1060   by wesley johnson
+Add menu sounds to legacy.wad, and up legacywad version to 1.44.1.
+Add menu sounds effects option and cvar.
+Adapts menu sounds to game type, such as doom2 and heretic.
+Updated legacy.wad from menu.wad.
+New Legacy menu sounds are quieter than pistol shot used by Doom2.

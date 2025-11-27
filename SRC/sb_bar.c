@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: sb_bar.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -205,7 +205,7 @@ void SB_Init(void)
 
 //---------------------------------------------------------------------------
 //
-// PROC SB_Ticker
+// PROC SB_Heretic_Ticker
 //
 //---------------------------------------------------------------------------
 

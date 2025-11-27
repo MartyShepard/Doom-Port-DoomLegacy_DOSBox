@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1052 2013-10-01 21:05:06Z wesleyjohnson $
+// $Id: sounds.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -474,7 +474,12 @@ sfxinfo_t S_sfx[NUMSFX] =
   { "amb8"   ,  1, NULL, -1, -1, -1 },
   { "amb9"   ,  1, NULL, -1, -1, -1 },
   { "amb10"  ,  1, NULL, -1, -1, -1 },
-  { "amb11"  ,  1, NULL, -1, -1, -1 }
+  { "amb11"  ,  1, NULL, -1, -1, -1 },
+  { "menuud" ,  2, NULL, -1, -1, -1, SFX_single},
+  { "menuva" ,  2, NULL, -1, -1, -1, SFX_single},
+  { "menuen" ,  2, NULL, -1, -1, -1, SFX_single},
+  { "menuop" ,  2, NULL, -1, -1, -1, SFX_single},
+  { "menuac" ,  2, NULL, -1, -1, -1, SFX_single}
   // skin sounds free slots to add sounds at run time (Boris HACK!!!)
   // initialized to NULL
 };

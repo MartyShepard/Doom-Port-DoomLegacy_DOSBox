@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1052 2013-10-01 21:05:06Z wesleyjohnson $
+// $Id: sounds.h 1060 2013-12-13 20:25:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -568,6 +568,12 @@ typedef enum
         sfx_amb9,
         sfx_amb10,
         sfx_amb11,
+
+    sfx_menuud,  // menu up down
+    sfx_menuva,  // menu value change
+    sfx_menuen,  // menu enter
+    sfx_menuop,  // menu open
+    sfx_menuac,  // menu action
 
     // free slots for S_AddSoundFx() at run-time --------------------
     sfx_freeslot0,

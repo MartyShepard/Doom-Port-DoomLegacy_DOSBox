@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01060 ]: w95 menusounds
 [01059 ]: w95 boom MIDI for old SDL
 [01058 ]: missing doomincl.h
 [01057 ]: w94 Boom demo
