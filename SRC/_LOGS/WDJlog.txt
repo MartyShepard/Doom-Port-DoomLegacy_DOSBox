@@ -3515,4 +3515,10 @@ B_Random for bots and any other automation.  This was using P_Random
 which strongly affects demos.  There should be no existing demos with bots.
 New uses should use A_Random and B_Random.
 
+*** W94_infight
+patchfile = w94_7_infight.patch
+- committed revision 1056   by wesley johnson
+Fix conflict between infight and cv_monbehavior vars.
+Include them in demo playing.
+
 

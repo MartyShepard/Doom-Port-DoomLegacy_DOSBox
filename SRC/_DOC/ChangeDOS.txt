@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01056 ]: w94 infight
 [01055 ]: w94 B_Random
 [01054 ]: w94 demo144
 [01053 ]: w94 spritedraw on 3d floor

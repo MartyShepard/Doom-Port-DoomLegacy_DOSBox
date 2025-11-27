@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1048 2013-09-22 21:00:29Z wesleyjohnson $
+// $Id: d_main.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1055"
+#define SVN_REV "1056"
 #endif
 
 // Version number: major.minor.revision
@@ -333,7 +333,6 @@ boolean devparm = false;        // started game with -devparm
     // devparm enables development mode, with CONS messages reporting
     // on memory usage and other significant events.
 boolean nomonsters;             // checkparm of -nomonsters
-boolean infight = false;	//DarkWolf95:November 21, 2003: Monsters Infight!
 
 boolean singletics = false;     // timedemo
 

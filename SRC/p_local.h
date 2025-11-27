@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_local.h 1056 2013-10-09 20:15:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -151,6 +151,7 @@ extern consvar_t cv_viewheight; // p_mobj.c
 //26-07-98: p_mobj.c
 extern  consvar_t cv_gravity;
 extern  consvar_t cv_monsterfriction;    // p_enemy
+extern  consvar_t cv_monbehavior;
 
 #ifdef DOORDELAY_CONTROL
 // [WDJ] 1/15/2009 support control of door and event delay. see p_doors.c
@@ -391,6 +392,8 @@ extern int allow_pushers;
 extern byte  monster_friction;  // MBF demo flag
 extern byte  mbf_support;  // [WDJ] MBF enable
 			   // similar to prboom mbf_features, but as a flag
+extern byte  monster_infight; //DarkWolf95:November 21, 2003: Monsters Infight!
+
 typedef enum {
   FR_orig, FR_boom, FR_mbf, FR_prboom, FR_legacy, FR_heretic, FR_hexen
 } friction_model_e;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
+// $Id: p_map.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -153,9 +153,6 @@ msecnode_t*  sector_list = NULL;
 static int from_x, from_y;
 static int targ_x, targ_y;
 
-
-extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
-extern consvar_t   cv_monbehavior;
 
 //
 // TELEPORT MOVE
@@ -583,8 +580,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
             if (thing->type != MT_PLAYER)
             {
                 // Explode, but do no damage.
-                // Let players missile other players.
-                if(!infight && !(cv_monbehavior.value == 2)) //DarkWolf95: Altered to use CVAR
+                // Boom - Let players missile other players. ??
+	        // [WDJ] these are monsters, not players.
+                if(cv_monbehavior.value != 2) //DarkWolf95: Altered to use CVAR
 		    goto ret_blocked;
             }
         }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: dehacked.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -72,6 +72,8 @@
 #include "console.h"
 
 #include "g_game.h"
+#include "p_local.h"
+  // monster_infight
 
 #include "sounds.h"
 #include "info.h"
@@ -89,8 +91,6 @@
 
 #include "p_fab.h"
   // translucent change
-
-extern boolean infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 
 boolean deh_loaded = false;
 byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
@@ -1826,7 +1826,7 @@ static void readmisc(MYFILE *f)
     if(myfgets(s,sizeof(s),f)!=NULL)
     {
       if(s[0]=='\n') break;
-      value=searchvalue(s);
+      value=searchvalue(s);  // none -> 0
       word=strtok(s," ");
       word2=strtok(NULL," ");
 
@@ -1858,8 +1858,25 @@ static void readmisc(MYFILE *f)
          if(!strcmp(word2,"="))               idkfa_armor=value;
          else if(!strcasecmp(word2,"Class"))  idkfa_armor_class=value;
       }
-      else if(!strcasecmp(word,"BFG"))            doomweaponinfo[wp_bfg].ammopershoot = value;
-      else if(!strcasecmp(word,"Monsters"))       infight = true; //DarkWolf95:November 21, 2003: Monsters Infight!
+      else if(!strcasecmp(word,"BFG"))        doomweaponinfo[wp_bfg].ammopershoot = value;
+      else if(!strcasecmp(word,"Monsters"))
+      {
+	  //DarkWolf95:November 21, 2003: Monsters Infight!
+	  //[WDJ] from prboom the string is "Monsters Infight"
+	  // value=202 -> off  value=221 -> on
+	  // cannot confirm any specific valid numbers
+	  monster_infight = value & 0x01;  // 202 and 221
+	  // previous behavior: default to on
+	  if( value == 0 )
+	      monster_infight = 1;
+	  if( value == 2 )   // extended behavior, coop monsters
+	  {
+	      cv_monbehavior.value = 1;  // do not notify NET
+	      monster_infight = 0;
+	  }
+	  else
+	      cv_monbehavior.value = ( monster_infight ) ? 2:0;  // do not notify NET
+      }
       else deh_error("Misc : unknown word '%s'\n",word);
     }
   } while(s[0]!='\n' && !myfeof(f));
