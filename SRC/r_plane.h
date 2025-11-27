@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_plane.h 1053 2013-10-01 21:06:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -122,7 +122,7 @@ extern planefunction_t  ceilingfunc_t;
 extern short            floorclip[MAXVIDWIDTH];
 extern short            ceilingclip[MAXVIDWIDTH];
 extern short            waterclip[MAXVIDWIDTH];   //added:18-02-98:WATER!
-extern fixed_t          frontscale[MAXVIDWIDTH];
+extern fixed_t          backscale[MAXVIDWIDTH];
 extern fixed_t          yslopetab[MAXVIDHEIGHT*4];
 
 extern fixed_t*         yslope;

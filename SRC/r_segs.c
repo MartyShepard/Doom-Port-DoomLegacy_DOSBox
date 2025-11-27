@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_segs.c 1053 2013-10-01 21:06:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1613,7 +1613,8 @@ void R_RenderSegLoop (void)
 
         if (numffplane)
         {
-          firstseg->frontscale[rw_x] = frontscale[rw_x];
+          firstseg->backscale[rw_x] = backscale[rw_x];
+//	  firstseg->frontscale[rw_x] = rw_scale;
           for(i = 0; i < numffplane; i++)
           {
             if(ffplane[i].height < viewz)
@@ -1730,7 +1731,7 @@ void R_RenderSegLoop (void)
           }
         } // if dclights
 
-        frontscale[rw_x] = rw_scale;
+        backscale[rw_x] = rw_scale;
 
         // [WDJ] if(dx_x >= viewwidth),  either return
         // or individual clip and execute bottom of loop
@@ -1988,13 +1989,13 @@ void R_StoreWallRange( int   start, int   stop)
     
     if (offsetangle > ANG90)
         offsetangle = ANG90;
-    
+
     distangle = ANG90 - offsetangle;
     hyp = R_PointToDist (curline->v1->x, curline->v1->y);
     sineval = finesine[distangle>>ANGLETOFINESHIFT];
     rw_distance = FixedMul (hyp, sineval);
-    
-    
+
+    // segment ends
     ds_p->x1 = rw_x = start;
     ds_p->x2 = stop;
     ds_p->curline = curline;
@@ -2036,6 +2037,7 @@ void R_StoreWallRange( int   start, int   stop)
         }
 #endif
         ds_p->scale2 = ds_p->scale1;
+        ds_p->scalestep = 0;
     }
     
     // calculate texture boundaries
@@ -2083,6 +2085,7 @@ void R_StoreWallRange( int   start, int   stop)
         }
         rw_midtexturemid += sidedef->rowoffset;
 
+        // drawseg does not clip sprites
         ds_p->silhouette = SIL_TOP|SIL_BOTTOM; // BOTH
         ds_p->spr_topclip = screenheightarray;
         ds_p->spr_bottomclip = negonearray;
@@ -2186,7 +2189,7 @@ void R_StoreWallRange( int   start, int   stop)
             || frontsector->extra_colormap != backsector->extra_colormap
             || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
         {
-            markfloor = true;
+            markfloor = true;  // backsector and frontsector floor are different
         }
         else
         {
@@ -2211,7 +2214,7 @@ void R_StoreWallRange( int   start, int   stop)
             || frontsector->extra_colormap != backsector->extra_colormap
             || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
         {
-            markceiling = true;
+            markceiling = true;  // backsector and frontsector ceilings are different
         }
         else
         {
@@ -2273,6 +2276,7 @@ void R_StoreWallRange( int   start, int   stop)
           //markceiling = markfloor = true;
           maskedtexture = true;
 
+	  // segment 3d floor sides
           ds_p->thicksidecol = maskedtexturecol = lastopening - rw_x;
           lastopening += rw_stopx - rw_x;
 
@@ -2336,7 +2340,7 @@ void R_StoreWallRange( int   start, int   stop)
               if(fff)  // found fff that completely overlaps bff
                 continue;
 
-              ds_p->thicksides[i] = bff;
+              ds_p->thicksides[i] = bff;  // backsector 3d floor outer side
               i++;
 	      if( i >= MAXFFLOORS )
 		 break;
@@ -2391,7 +2395,7 @@ void R_StoreWallRange( int   start, int   stop)
 	    render_side_fff:
 	      if( i >= MAXFFLOORS ) // also protects against exit from bff loop
 		 break;
-              ds_p->thicksides[i] = fff;
+              ds_p->thicksides[i] = fff;  // frontsector 3d floor inner side
               i++;
             } // for fff
           }
@@ -2408,7 +2412,7 @@ void R_StoreWallRange( int   start, int   stop)
 		 || *bff->bottomheight >= frontsector->ceilingheight)
                 continue;
 
-              ds_p->thicksides[i] = bff;
+              ds_p->thicksides[i] = bff; // backsector 3d floor outer side
               i++;
 	      if( i >= MAXFFLOORS )
 		 break;
@@ -2430,7 +2434,7 @@ void R_StoreWallRange( int   start, int   stop)
 		 || *fff->bottomheight >= backsector->ceilingheight)
                 continue;
 
-              ds_p->thicksides[i] = fff;
+              ds_p->thicksides[i] = fff;  // frontsector 3d floor inner side
               i++;
 	      if( i >= MAXFFLOORS )
 		 break;

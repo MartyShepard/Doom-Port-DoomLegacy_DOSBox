@@ -3487,4 +3487,14 @@ Fix AddSound to only remove a sound when sfx is full, and to use a
 usefulness test.  The newsounds array is removed because it could not
 be kept consistant with sfx existance.
 
+*** W94_spritedraw_3dflr
+patchfile = w94_4_spritedraw_3dflr.patch
+- committed revision 1053   by wesley johnson
+Fix problem with sprite ordering to 3d floors, where sprite on 3d
+floor would be drawn under the floor.  This changes plane test to use
+middle of sprite instead of toe and head, so that minor overlaps with
+adjacent planes do not affect whole sprite.
+It does not cure problem with railings, which are higher than dead
+objects.
+
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_things.c 1053 2013-10-01 21:06:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1689,13 +1689,14 @@ static void R_CreateDrawNodes( void )
 {
   drawnode_t*   entry;
   drawseg_t*    ds;
-  int           i, p, x1, x2;
-  fixed_t       delta;
   vissprite_t*  vsp;  // rover vissprite
   drawnode_t*   dnp;  // rover drawnode
   visplane_t*   plane;
+  int           i, p, x1, x2;
+  fixed_t       delta;
   int           sintersect;
   fixed_t       gzm;
+  fixed_t       pz_mid; // mid of sprite
   fixed_t       scale;
 
     // Add the 3D floors, thicksides, and masked textures...
@@ -1766,8 +1767,10 @@ static void R_CreateDrawNodes( void )
 
       sintersect = (vsp->x1 + vsp->x2) / 2;
       gzm = (vsp->gz_bot + vsp->gz_top) / 2;
+      pz_mid = (vsp->pz_bot + vsp->pz_top) / 2;
 
       // search drawnodes
+      // drawnodes are in bsp order, partially sorted
       for(dnp = nodehead.next; dnp != &nodehead; dnp = dnp->next)
       {
         if(dnp->plane)
@@ -1779,14 +1782,22 @@ static void R_CreateDrawNodes( void )
 	     || vsp->sz_bot < dnp->plane->highest_top)
             continue;  // next dnp
 
-          if((dnp->plane->height < viewz
-	         && vsp->pz_bot < dnp->plane->height)
-	     || (dnp->plane->height > viewz
-		 && vsp->pz_top > dnp->plane->height))
+	  // [WDJ] test mid of sprite instead of toe and head
+	  // to avoid whole sprite affected by a marginal overlap
+          if( dnp->plane->height < viewz )
+	  {
+	      // floor
+	      if( dnp->plane->height < pz_mid )  continue;  // sprite over floor
+	  }
+	  else
+	  {
+	      // ceiling
+	      if( dnp->plane->height > pz_mid )  continue;  // sprite under ceiling
+	  }
           {
             // SoM: NOTE: Because a visplane's shape and scale is not directly
-            // bound to any single linedef, a simple poll of it's frontscale is
-            // not adequate. We must check the entire frontscale array for any
+            // bound to any single linedef, a simple poll of it's scale is
+            // not adequate. We must check the entire scale array for any
             // part that is in front of the sprite.
 
             x1 = vsp->x1;
@@ -1796,18 +1807,14 @@ static void R_CreateDrawNodes( void )
 
             for(i = x1; i <= x2; i++)
             {
-              if(dnp->seg->frontscale[i] > vsp->scale)
-                break;  // found frontscale closer
+	      // keeps sprite from being seen through floors
+              if(dnp->seg->backscale[i] > vsp->scale)
+	      {
+		  // this plane needs to be drawn after sprite
+		  goto  dnp_closer_break;
+	      }
             }
-            if(i > x2)
-              continue;  // next dnp
-
-	    // found overlap with plane closer
-            entry = R_CreateDrawNode(NULL);
-            (entry->prev = dnp->prev)->next = entry;
-            (entry->next = dnp)->prev = entry;
-            entry->sprite = vsp;
-            break;  // next vsp
+	    continue;  // next dnp
           }
         }
         else if(dnp->thickseg)
@@ -1831,11 +1838,8 @@ static void R_CreateDrawNodes( void )
 	     || (*dnp->ffloor->bottomheight > viewz
 		 && vsp->gz_bot > *dnp->ffloor->bottomheight))
           {
-            entry = R_CreateDrawNode(NULL);
-            (entry->prev = dnp->prev)->next = entry;
-            (entry->next = dnp)->prev = entry;
-            entry->sprite = vsp;
-            break; // next vsp
+	    // thickseg is closer, must be drawn after sprite
+	    goto  dnp_closer_break;
           }
         }
         else if(dnp->seg)
@@ -1851,11 +1855,7 @@ static void R_CreateDrawNodes( void )
 
           if(vsp->scale < scale)
           {
-            entry = R_CreateDrawNode(NULL);
-            (entry->prev = dnp->prev)->next = entry;
-            (entry->next = dnp)->prev = entry;
-            entry->sprite = vsp;
-            break; // next vsp
+	    goto  dnp_closer_break;
           }
         }
         else if(dnp->sprite)
@@ -1868,21 +1868,27 @@ static void R_CreateDrawNodes( void )
 
           if(dnp->sprite->scale > vsp->scale)
           {
-            entry = R_CreateDrawNode(NULL);
-            (entry->prev = dnp->prev)->next = entry;
-            (entry->next = dnp)->prev = entry;
-            entry->sprite = vsp;
-            break; // next vsp
+	    goto  dnp_closer_break;
           }
         }
+	continue;  // next dnp
       }
+      // end of dnp
       if(dnp == &nodehead)
       {
 	// end of list, draw in front of everything else
         entry = R_CreateDrawNode(&nodehead);
         entry->sprite = vsp;
       }
-    }
+      continue; // next vsp
+
+    dnp_closer_break:
+      // enter sprite after dnp
+      entry = R_CreateDrawNode(NULL);
+      (entry->prev = dnp->prev)->next = entry;
+      (entry->next = dnp)->prev = entry;
+      entry->sprite = vsp;
+    }  // for vsp
 }
 
 

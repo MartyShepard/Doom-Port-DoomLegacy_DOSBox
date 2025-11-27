@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_plane.c 1053 2013-10-01 21:06:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -132,10 +132,6 @@ int                     numffplane;
 #define visplane_hash(picnum,lightlevel,height) \
   ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & (VISPL_HASHSIZE-1))
 
-// ?
-/*#define MAXOPENINGS     MAXVIDWIDTH*128
-short                   openings[MAXOPENINGS];
-short*                  lastopening;*/
 
 //SoM: 3/23/2000: Use boom opening limit removal
 size_t maxopenings = 0;
@@ -151,7 +147,7 @@ short *lastopening = NULL;
 //
 short                   floorclip[MAXVIDWIDTH];
 short                   ceilingclip[MAXVIDWIDTH];
-fixed_t                 frontscale[MAXVIDWIDTH];
+fixed_t                 backscale[MAXVIDWIDTH];
 
 
 //
@@ -331,7 +327,7 @@ void R_ClearPlanes (player_t *player)
     {
         floorclip[i] = rdraw_viewheight;
         ceilingclip[i] = con_clipviewtop;       //Fab:26-04-98: was -1
-        frontscale[i] = FIXED_MAX;
+        backscale[i] = FIXED_MAX;
         for(p = 0; p < MAXFFLOORS; p++)
         {
           ffplane[p].front_clip[i] = rdraw_viewheight;
