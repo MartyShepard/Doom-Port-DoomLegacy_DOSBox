@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: sounds.c 1052 2013-10-01 21:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -490,34 +490,64 @@ void S_InitRuntimeSounds (void)
 }
 
 // Add a new sound fx into a free sfx slot.
-//
 int S_AddSoundFx (char *name, uint32_t flags)
 {
-    int i;
+    uint16_t least_usefulness = 8000;
+    int leastid = 0;
+    int sfxid;
 
-    for(i=sfx_freeslot0;i<NUMSFX;i++)
+    // quick search for free slot
+    for(sfxid=sfx_freeslot0; sfxid<NUMSFX; sfxid++)
     {
-        if(!S_sfx[i].name)
+        // find empty sfx slot
+        if(!S_sfx[sfxid].name)
+	   goto addsfx;
+    }
+    // no free slots, try to remove least useful
+    // separate loop because the SoundPlaying test is a search
+    for(sfxid=sfx_freeslot0; sfxid<NUMSFX; sfxid++)
+    {
+        // degrade all equally
+        if ( S_sfx[sfxid].usefulness > -8000 )
+	   S_sfx[sfxid].usefulness --;
+        // find least useful
+        // all entries must be valid because empty slot search failed
+        if ( S_sfx[sfxid].skinsound < 0  // not a skin sound
+	     && S_sfx[sfxid].usefulness < least_usefulness)
         {
-            S_sfx[i].name=(char *)Z_Malloc(7,PU_STATIC,NULL);
-            strncpy(S_sfx[i].name,name,6);
-            S_sfx[i].name[6]='\0';
-	    S_sfx[i].flags= flags;
-            S_sfx[i].priority=60;
-            S_sfx[i].link=0;
-            S_sfx[i].pitch=-1;
-            S_sfx[i].volume=-1;
-            S_sfx[i].lumpnum=-1;
-            S_sfx[i].skinsound=-1;
-            S_sfx[i].usefulness=-1;
-
-            // if precache load it here ! todo !
-            S_sfx[i].data=0;
-            return i;
-        }
+	    if (!S_SoundPlaying(NULL, sfxid))
+	    {
+	        least_usefulness = S_sfx[sfxid].usefulness;
+	        leastid = sfxid;
+	    }
+	}
+    }
+    if ( leastid )
+    {
+        // clear the leastid slot
+        S_RemoveSoundFx( leastid );
+        sfxid = leastid;
+        goto addsfx;
     }
     CONS_Printf("\2No more free sound slots\n");
     return 0;
+
+ addsfx:
+    S_sfx[sfxid].name=(char *)Z_Malloc(7,PU_STATIC,NULL);
+    strncpy(S_sfx[sfxid].name,name,6);
+    S_sfx[sfxid].name[6]='\0';
+    S_sfx[sfxid].flags= flags;
+    S_sfx[sfxid].priority=60;
+    S_sfx[sfxid].link=0;
+    S_sfx[sfxid].pitch=-1;
+    S_sfx[sfxid].volume=-1;
+    S_sfx[sfxid].lumpnum=-1;
+    S_sfx[sfxid].skinsound=-1;
+    S_sfx[sfxid].usefulness=-1;
+
+    // if precache load it here ! todo !
+    S_sfx[sfxid].data=NULL;
+    return sfxid;
 }
 
 
@@ -527,10 +557,11 @@ void S_RemoveSoundFx (int id)
         id<=sfx_lastfreeslot &&
         S_sfx[id].name)
     {
-        Z_Free(S_sfx[id].name);
-        S_sfx[id].name=NULL;
-        S_sfx[id].lumpnum=-1;
+        fprintf(stderr, "RemoveSoundFx: %s\n", S_sfx[id].name );
         S_FreeSfx(&S_sfx[id]);
+        Z_Free(S_sfx[id].name);
+        S_sfx[id].lumpnum=-1;
+        S_sfx[id].name=NULL;  // free sfx slot to use again
     }
 }
 

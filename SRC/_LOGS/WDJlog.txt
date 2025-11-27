@@ -3473,4 +3473,18 @@ The fix disables menu movement from the mouse for a short interval
 (about 4 seconds) after each key press.  After the interval the mouse
 can be used to move in the menus again.  Does not affect mouse clicks.
 
+*** W94_soundeffect
+patchfile = w94_3_soundeffect.patch
+- committed revision 1052   by wesley johnson
+Fix sound bugs in hth2.wad.
+Read sound lump using plain name too, because hth2.wad does not have ds on
+their amb sfx names.  The result was to fail and default to pistol.
+Playing hth2.wad has the background ambiance sounds now.
+Fixed crash due to using a lump for more than one sfx.  When one was freed
+it would corrupt the data of the other.  Had to copy the sound data,
+which for some ports is now copied three times.
+Fix AddSound to only remove a sound when sfx is full, and to use a
+usefulness test.  The newsounds array is removed because it could not
+be kept consistant with sfx existance.
+
 

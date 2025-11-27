@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: s_sound.h 1052 2013-10-01 21:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -118,7 +118,7 @@ void S_Init (int sfxVolume, int musicVolume);
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-void S_StopSounds();
+void S_StopSounds(void);
 void S_StartSounds(void);
 
 // [WDJ] Common routine for handling sfx names

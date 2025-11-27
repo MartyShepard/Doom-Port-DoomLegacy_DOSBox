@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: sounds.h 1052 2013-10-01 21:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,7 +63,7 @@ typedef enum {
 
 // free sfx for S_AddSoundFx()
 // MAXSKINS
-#define NUMSFXFREESLOTS    (32*NUMSKINSOUNDS)
+#define NUMSFXFREESLOTS    ((32*NUMSKINSOUNDS)+10)
 #define NUMMUSICFREESLOTS  64
 
 // [WDJ] Convert singularity, multiplicity, and Saw tests to flags.
@@ -93,7 +93,7 @@ struct sfxinfo_struct
     // up to 6-character name
     char*       name;
 
-    // Sfx priority
+    // Sfx priority, 1 is highest, 64 is avg.
     uint16_t    priority;
 
     // referenced sound if a link
@@ -113,10 +113,12 @@ struct sfxinfo_struct
 
 // end of fields loaded by sounds init
 
+#ifdef CLEANUP   
     // this is checked every second to see if sound
     // can be thrown out (if 0, then decrement, if -1,
     // then throw out, if > 0, then it is in use)
-    int16_t     usefulness;
+#endif
+    int16_t     usefulness;  // lowest is removed
 
     // lump number of sfx
     int16_t     lumpnum;

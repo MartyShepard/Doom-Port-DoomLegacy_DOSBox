@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: s_sound.c 1052 2013-10-01 21:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -331,13 +331,14 @@ void S_InitRuntimeMusic()
 // Called by I_GetSfx
 void S_GetSfxLump( sfxinfo_t * sfx )
 {
-    char name[20] = "\0\0\0\0\0\0\0\0";  // do not leave this to chance [WDJ]
+    char lmpname[20] = "\0\0\0\0\0\0\0\0";  // do not leave this to chance [WDJ]
+    byte * sfx_lump_data;
     int sfxlump;
 
     if (gamemode == heretic){	// [WDJ] heretic names are different
-       sprintf(name, "%s", sfx->name);
+       sprintf(lmpname, "%s", sfx->name);
     }else{
-       sprintf(name, "ds%s", sfx->name);
+       sprintf(lmpname, "ds%s", sfx->name);
     }
 
     // Now, there is a severe problem with the sound handling,
@@ -347,10 +348,18 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     // I do not do runtime patches to that variable. Instead, we will use a
     // default sound for replacement.
 
-    if (W_CheckNumForName(name) == -1)
+    if (W_CheckNumForName(lmpname) == -1)
     {
+        // sound not found
+	// try plain name too (hth2.wad amb*)
+        if (W_CheckNumForName(sfx->name) >= 0)
+        {
+	    sfxlump = W_GetNumForName(sfx->name);
+	    goto lump_found;
+	}
+
         if( verbose > 1 )
-	    fprintf(stderr,"Sound missing: %s, Using default sound\n",name);  // [WDJ] debug
+	    fprintf(stderr,"Sound missing: %s, Using default sound\n", lmpname);
 	// Heretic shareware: get many missing sound names at sound init,
 	// but not after game starts.  These come from list of sounds
 	// in sounds.c, but not all those are in the game.
@@ -361,16 +370,28 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     }
     else
     {
-        sfxlump = W_GetNumForName(name);
+        sfxlump = W_GetNumForName(lmpname);
     }
+ lump_found:
     // if lump not found, W_GetNumForName would have done I_Error
     sfx->lumpnum = sfxlump;
 
     // Get the sound data from the WAD, allocate lump
     //  in zone memory.
     sfx->length = W_LumpLength(sfxlump);
-    sfx->data = (void *) W_CacheLumpNum(sfxlump, PU_SOUND);
+    // Copy is necessary because lump may be used by multiple sfx.
+    // Free of shared lump would corrupt other sfx using it.
+    sfx_lump_data = W_CacheLumpNum(sfxlump, PU_SOUND);
+    sfx->data = Z_Malloc( sfx->length, PU_SOUND, 0 );
+    memcpy( sfx->data, sfx_lump_data, sfx->length );
+    Z_ChangeTag( sfx_lump_data, PU_CACHE );
    
+    // sound data header format
+    // 0,1: 03
+    // 2,3: sample rate (11,2B)=11025, (56,22)=22050
+    // 4,5: number of samples
+    // 6,7: 00
+
     // caller must fix size and data ptr for the mixer
 }
 
@@ -488,7 +509,7 @@ void S_Init(int sfxVolume, int musicVolume)
 //
 
 //SoM: Stop all sounds, load level info, THEN start sounds.
-void S_StopSounds()
+void S_StopSounds(void)
 {
     int cnum;
 
@@ -571,7 +592,7 @@ static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
     int cnum;  // channel number to use
     channel_t * c;
 
-    // Find an open channel
+    // Find an open channel, or lowest priority
     // Stop previous origin sound, so do not break from loop
     // Done in one loop for efficiency
     for (cnum = cv_numChannels.value-1; cnum >= 0 ; cnum--)
@@ -580,7 +601,7 @@ static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
         if (! c->sfxinfo)   // empty
         {
             pick_cnum = cnum;
-	    priority = 0x3FFF;  // lowest priority
+	    priority = 0x3FFF;  // empty is already lowest priority
 	    continue;
 	}
         // stop previous origin sound
@@ -643,12 +664,11 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     };
 #endif
 
+#if 0
     // Debug.
-    /*
-       fprintf( stderr,
-       "S_StartSoundAtVolume: playing sound %d (%s)\n",
-       sfx_id, S_sfx[sfx_id].name );
-     */
+    fprintf( stderr, "S_StartSoundAtVolume: playing sound %d (%s)\n",
+		sfx_id, S_sfx[sfx_id].name );
+#endif
 
 #ifdef PARANOIA
     // check for bogus sound #
@@ -777,12 +797,13 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     // NOTE : set sfx->data NULL sfx->lump -1 to force a reload
     if (!sfx->data)
         S_GetSfx( sfx );
-   
-#ifdef CLEANUP
-    // increase the usefulness
-    if (sfx->usefulness++ < 0)
-        sfx->usefulness = -1;
-#endif
+
+    // [WDJ] usefulness of a recent sound
+    if( sfx->usefulness < 10 )
+       sfx->usefulness = 10;  // min
+    else if( sfx->usefulness > 800 )
+       sfx->usefulness = 800;  // max
+    sfx->usefulness += 3;   // increasing
 
     // [WDJ] From PrBoom, wad dakills has zero length sounds
     // (DSBSPWLK, DSBSPACT, DSSWTCHN, DSSWTCHX)
@@ -1283,47 +1304,23 @@ int S_SoundPlaying(void *origin, int id)
 //
 // S_StartSoundName
 // Starts a sound using the given name.
-#define MAXNEWSOUNDS 10
-int newsounds[MAXNEWSOUNDS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
 void S_StartSoundName(void *mo, char *soundname)
 {
-    int i;
-    int soundnum = 0;
+    int sfxid;
+   
     //Search existing sounds...
-    for (i = sfx_None + 1; i < NUMSFX; i++)
+    for (sfxid = sfx_None + 1; sfxid < NUMSFX; sfxid++)
     {
-        if (!S_sfx[i].name)
+        if (!S_sfx[sfxid].name)
             continue;
-        if (!strcasecmp(S_sfx[i].name, soundname))
-        {
-            soundnum = i;
-            break;
-        }
+        if (!strcasecmp(S_sfx[sfxid].name, soundname))
+	    goto play_sfx;  // found name
     }
+    // add soundname to S_sfx
+    // [WDJ] S_AddSoundFx now handles search for free slot and remove
+    // of least useful sfx when full.
+    sfxid = S_AddSoundFx(soundname, 0);
 
-    if (!soundnum)
-    {
-        for (i = 0; i < MAXNEWSOUNDS; i++)
-        {
-            if (newsounds[i] == 0)
-                break;
-            if (!S_SoundPlaying(NULL, newsounds[i]))
-            {
-                S_RemoveSoundFx(newsounds[i]);
-                break;
-            }
-        }
-
-        if (i == MAXNEWSOUNDS)
-        {
-            CONS_Printf("Cannot load another extra sound!\n");
-            return;
-        }
-
-        soundnum = S_AddSoundFx(soundname, 0);
-        newsounds[i] = soundnum;
-    }
-
-    S_StartSound(mo, soundnum);
+ play_sfx:
+    S_StartSound(mo, sfxid);
 }
