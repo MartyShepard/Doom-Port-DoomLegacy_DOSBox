@@ -3528,4 +3528,11 @@ Add some more fixes for playing boom demos.  This fixes some segfault,
 and incompatibilities but it still does not sync.
 Added Boom stuckdoor code, but only enabled for Boom demo.
 
-
+*** W95_Boom_MIDI
+patchfile = w95_1_boom_midi.patch
+- committed revision 1059   by wesley johnson
+Fix playing Boom MIDI lumps on older SDL library.
+Also cleaned up and commented the qmus2midi functions and qmus2midi.h.
+OS2 was using a file to file version of qmus2midi, which does not seem to
+be compiled.  Reconnected buffer to buffer version in OS2.
+OS2 needs to be debugged.
