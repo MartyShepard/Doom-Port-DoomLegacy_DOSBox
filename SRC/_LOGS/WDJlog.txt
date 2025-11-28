@@ -3601,3 +3601,17 @@ from any cv_fullscreen setting, that is only used later in the startup
 sequence.
 Replaced many fprintf(stderr) calls in the port video files, with calls
 to GenPrintf.
+
+*** W95_menu
+patchfile = w95_8_menu.patch
+- committed revision 1066   by wesley johnson
+Fix use of alphaKey field in menus for three conflicting things.
+Converted the IT_ defines to an enum.
+Added:
+  IT_OPTION  = 0x3000,    // field
+  IT_YOFFSET = 0x1000,    // alphaKey is offset
+  IT_KEYID   = 0x2000,    // alphaKey is id
+Changed the control menus to actually use the IT_CONTROL that is defined,
+so the tests against IT_CONTROL now make sense.
+Added using font1 for printing menu strings when use_font1 is set.
+

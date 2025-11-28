@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01066 ]: w95 menu alphaKey
 [01065 ]: w95 early graphics start
 [01064 ]: w95 font1 create
 [01063 ]: w95 mixer file for old SDL

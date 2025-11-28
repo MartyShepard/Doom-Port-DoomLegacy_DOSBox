@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
+// $Id: m_menu.c 1066 2013-12-14 00:22:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -308,46 +308,50 @@ void setup_net_savegame( void )
 }
 
 // flags for items in the menu
-// status
+typedef enum {
 // menu handle (what we do when key is pressed
-//#define  IT_TYPE             14     // (2+4+8)
-#define  IT_TYPE	0x000E   // field
+  IT_TYPE =  0x000E,   // field
 // TYPE field values
-#define  IT_CALL              0     // call the function
-#define  IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define  IT_KEYHANDLER        4     // call with the key in param
-#define  IT_SUBMENU           6     // go to sub menu
-#define  IT_CVAR              8     // handle as a cvar
-#define  IT_SPACE            10     // no handling
-#define  IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message
+  IT_SPACE =      0,   // no handling
+  IT_CALL =       2,   // call the function
+  IT_ARROWS =     4,   // call function with 0 for left arrow and 1 for right arrow in param
+  IT_KEYHANDLER = 6,   // call with the key in param
+  IT_SUBMENU =    8,   // go to sub menu
+  IT_CVAR =      10,   // handle as a cvar
+  IT_MSGHANDLER =12,   // same as key but with event and sometime can handle y/n key (special for message
 
-#define  IT_DISPLAY	0x00F0   // field
+  IT_DISPLAY =     0x00F0,  // field
 // DISPLAY field values
-#define  IT_NOTHING         0       // space
-#define  IT_PATCH           0x0010  // a patch or a string with big font
-#define  IT_STRING          0x0020  // little string (spaced with 10)
-#define  IT_WHITESTRING     0x0030  // little string in white
-#define  IT_DYBIGSPACE      0x0040  // same as nothing
-#define  IT_DYLITLSPACE     0x0050  // little space
-#define  IT_STRING2         0x0060  // a simple string
-#define  IT_GRAYPATCH       0x0070  // grayed patch or big font string
-#define  IT_BIGSLIDER       0x0080  // volume sound use this
+  IT_NOTHING =          0,  // space
+  IT_PATCH =       0x0010,  // a patch or a string with big font
+  IT_STRING =      0x0020,  // little string (spaced with 10)
+  IT_WHITESTRING = 0x0030,  // little string in white
+  IT_DYBIGSPACE =  0x0040,  // same as nothing
+  IT_DYLITLSPACE = 0x0050,  // little space
+  IT_STRING2 =     0x0060,  // a simple string
+  IT_GRAYPATCH =   0x0070,  // grayed patch or big font string
+  IT_BIGSLIDER =   0x0080,  // volume sound use this
 
 //consvar specific
-#define  IT_CVARTYPE	0x0700   // field
+  IT_CVARTYPE =	  0x0700,   // field
 // CVARTYPE values
-#define  IT_CV_NORMAL       0
-#define  IT_CV_SLIDER       0x0100
-#define  IT_CV_STRING       0x0200
-#define  IT_CV_NOPRINT      0x0300
-#define  IT_CV_NOMOD        0x0400
+  IT_CV_NORMAL =       0,
+  IT_CV_SLIDER =  0x0100,
+  IT_CV_STRING =  0x0200,
+  IT_CV_NOPRINT = 0x0300,
+  IT_CV_NOMOD =   0x0400,
+
+  IT_OPTION  = 0x3000,    // field
+  IT_YOFFSET = 0x1000,    // alphaKey is offset
+  IT_KEYID   = 0x2000,    // alphaKey is id
 
 // in short for some common use
-#define  IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
-#define  IT_LITLSPACE   (IT_SPACE  +IT_DYLITLSPACE)
-#define  IT_CONTROL     (IT_STRING2+IT_CALL)
-#define  IT_CVARMAX     (IT_CVAR   +IT_CV_NOMOD)
-#define  IT_DISABLED    (IT_SPACE  +IT_GRAYPATCH)
+  IT_BIGSPACE =   (IT_SPACE  | IT_DYBIGSPACE),
+  IT_LITLSPACE =  (IT_SPACE  | IT_DYLITLSPACE),
+  IT_CONTROL =    (IT_STRING2| IT_CALL | IT_KEYID),
+  IT_CVARMAX =    (IT_CVAR   | IT_CV_NOMOD),
+  IT_DISABLED =   (IT_SPACE  | IT_GRAYPATCH),
+} menu_control_e;
 
 extern consvar_t   cv_monbehavior;
 
@@ -379,7 +383,8 @@ typedef struct menuitem_s
     void      *itemaction;
 
     // hotkey in menu
-    // or y of the item 
+    // or y of the item when IT_YOFFSET (uses M_DrawGenericMenu)
+    // or in control menus, the control to change (uses M_DrawControl)
     byte      alphaKey;
 } menuitem_t;
 
@@ -560,7 +565,9 @@ void M_DrawMenuTitle(void)
 
 void M_DrawGenericMenu(void)
 {
-    int x, y, i, cursory=0;
+    int x, y, i, w;
+    int cursory=0;
+    fontinfo_t * fip = V_FontInfo();
     menuitem_t * mip;
 
     // DRAW MENU
@@ -573,9 +580,15 @@ void M_DrawGenericMenu(void)
 
     for (i=0; i<currentMenu->numitems; i++)
     {
+        mip = & currentMenu->menuitems[i];
+        // handle Y offsets independent of IT_STRING and IT_WHITESTRING
+        if( ((mip->status & IT_OPTION) == IT_YOFFSET) && mip->alphaKey )
+        {
+	    y = currentMenu->y + mip->alphaKey;
+	}
         if (i==itemOn)
             cursory=y;
-        mip = & currentMenu->menuitems[i];
+
         switch (mip->status & IT_DISPLAY) {
            case IT_PATCH  :
                if( FontBBaseLump && mip->text )
@@ -598,11 +611,6 @@ void M_DrawGenericMenu(void)
                break;
            case IT_STRING :
            case IT_WHITESTRING :
-               if( mip->alphaKey )
-                   y = currentMenu->y + mip->alphaKey;
-               if (i==itemOn)
-                   cursory=y;
-
                if( (mip->status & IT_DISPLAY)==IT_STRING ) 
                    V_DrawString(x,y,0,mip->text);
                else
@@ -613,7 +621,8 @@ void M_DrawGenericMenu(void)
                    case IT_CVAR:
                    {
                     consvar_t *cv=(consvar_t *)mip->itemaction;
-                    switch (mip->status & IT_CVARTYPE) {
+                    switch (mip->status & IT_CVARTYPE)
+		    {
                        case IT_CV_SLIDER :
                            M_DrawSlider (BASEVIDWIDTH-x-SLIDER_WIDTH,
                                          y,
@@ -622,15 +631,36 @@ void M_DrawGenericMenu(void)
                        case IT_CV_NOPRINT: // color use this 
                            break;
                        case IT_CV_STRING:
-                           M_DrawTextBox(x,y+4,MAXSTRINGLENGTH,1);
-                           V_DrawString (x+8,y+12,0,cv->string);
-                           if( skullAnimCounter<4 && i==itemOn )
-                               V_DrawCharacter( x+8+V_StringWidth(cv->string),
-                                                y+12,
-                                                '_' | 0x80);  // white
+		           w = V_StringWidth(cv->string);
+		           if( use_font1 )
+		           {
+			       char * sp = cv->string;
+			       M_DrawTextBox(x+8,y+12,MAXSTRINGLENGTH,1);
+			       while( *sp && w > BASEVIDWIDTH - 8 )
+			       {
+				   w -= fip->xinc;
+				   sp++;
+			       }
+			       V_DrawString (x+8,y+12,0, sp);
+//			       if( skullAnimCounter<4 && i==itemOn )
+			       if( i==itemOn )
+				  V_DrawCharacter( x+8+w, y+12,  '_' | 0x80);  // white
+			   }
+		           else
+		           {
+			       M_DrawTextBox(x,y+4,MAXSTRINGLENGTH,1);
+			       V_DrawString (x+8,y+12,0,cv->string);
+			       if( skullAnimCounter<4 && i==itemOn )
+				  V_DrawCharacter( x+8+w, y+12,  '_' | 0x80);  // white
+			   }
                            y+=16;
                            break;
                        default:
+		           if( ! cv->string )
+		           {
+			       I_SoftError("GenMenu: cv_var NULL string %s\n", cv->name );
+			       break;
+			   }
                            V_DrawString(BASEVIDWIDTH-x-V_StringWidth (cv->string),
                                         y, V_WHITEMAP, 
                                         cv->string);
@@ -982,6 +1012,7 @@ consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
 consvar_t cv_newdeathmatch  = {"newdeathmatch"  ,"3",CV_HIDEN,deathmatch_cons_t};
+
 static boolean StartSplitScreenGame = false;
 
 void M_StartServer( int choice )
@@ -1011,8 +1042,8 @@ menuitem_t  ServerMenu[] =
     {IT_STRING | IT_CVAR,0,"Internet Server" ,&cv_internetserver   ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_STRING     ,0,"Server Name"     ,&cv_servername       ,0},
-    {IT_WHITESTRING 
-               | IT_CALL,0,"Start"           ,M_StartServer        ,120}
+    {IT_WHITESTRING | IT_CALL | IT_YOFFSET,
+	                 0,"Start"           ,M_StartServer        ,120}
 };
 
 menu_t  ServerDef =
@@ -1193,15 +1224,18 @@ boolean M_QuitMultiPlayerMenu(void);
 menuitem_t SetupMultiPlayerMenu[] =
 {
     {IT_KEYHANDLER | IT_STRING          ,0,"Your name" ,M_HandleSetupMultiPlayer,0},
-    {IT_CVAR | IT_STRING | IT_CV_NOPRINT,0,"Your color",&cv_playercolor         ,16},
-    {IT_KEYHANDLER | IT_STRING          ,0,"Your skin" ,M_HandleSetupMultiPlayer,96},
+    {IT_CVAR | IT_STRING | IT_CV_NOPRINT | IT_YOFFSET, 0,"Your color",&cv_playercolor         ,16},
+    {IT_KEYHANDLER | IT_STRING | IT_YOFFSET, 0,"Your skin" ,M_HandleSetupMultiPlayer,96},
+#if 0
     /* this line calls the setup controls for secondary player, only if numitems is > 3 */
     //Hurdler: uncomment this line when other options are available
-    //{IT_SUBMENU | IT_WHITESTRING, 0,"Second Player config...", &SecondOptionsdef, 110},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Player config...", &SecondOptionsdef, 110},
+#else
     //... and remove this one
-    {IT_STRING | IT_CVAR,0,"Always Run"      ,&cv_autorun2         ,110},
-    {IT_CALL | IT_WHITESTRING, 0,"Setup Controls...", M_SetupControlsMenu, 120},
-    {IT_SUBMENU | IT_WHITESTRING, 0,"Second Mouse config...", &SecondMouseCfgdef, 130}
+    {IT_STRING | IT_CVAR | IT_YOFFSET,   0,"Always Run"      ,&cv_autorun2         ,110},
+#endif
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Setup Controls...", M_SetupControlsMenu, 120},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Mouse config...", &SecondMouseCfgdef, 130}
 };
 
 enum {
@@ -1627,7 +1661,6 @@ void M_VerifyNightmare(int ch)
 // M_Options
 //
 
-//added:10-02-98: note: alphaKey member is the y offset
 menuitem_t OptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Messages:"       ,&cv_showmessages    ,0},
@@ -1637,7 +1670,7 @@ menuitem_t OptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim         ,0},
     {IT_STRING | IT_CVAR,0,"Control per key" ,&cv_controlperkey   ,0},
 
-    {IT_SUBMENU | IT_WHITESTRING,0,"Effects Options...",&EffectsOptionsDef ,60},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Effects Options...",&EffectsOptionsDef ,60},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options..."  ,M_GameOption       ,0},
     {IT_CALL    | IT_WHITESTRING,0,"Network Options...",M_NetOption     ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
@@ -1720,7 +1753,6 @@ menu_t  EffectsOptionsDef =
 //                        Video OPTIONS MENU
 //===========================================================================
 
-//added:10-02-98: note: alphaKey member is the y offset
 menuitem_t VideoOptionsMenu[]=
 {
     {IT_STRING | IT_SUBMENU,0, "Video Modes..."   , &VidModeDef       , 0},
@@ -1749,7 +1781,7 @@ menuitem_t VideoOptionsMenu[]=
 #endif
 #ifdef HWRENDER
     //17/10/99: added by Hurdler
-    {IT_CALL|IT_WHITESTRING,0, "3D Card Options...", M_OpenGLOption    ,100},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0, "3D Card Options...", M_OpenGLOption    ,100},
 #endif
 };
 
@@ -1771,13 +1803,13 @@ void MenuGammaFunc_dependencies( byte gamma_en,
 {
    VideoOptionsMenu[2].status = 
      ( gamma_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_WHITESTRING | IT_SPACE;
+       : (IT_WHITESTRING | IT_SPACE);
    VideoOptionsMenu[3].status = 
      ( black_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_WHITESTRING | IT_SPACE;
+       : (IT_WHITESTRING | IT_SPACE);
    VideoOptionsMenu[4].status = 
      ( bright_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
-       : IT_WHITESTRING | IT_SPACE;
+       : (IT_WHITESTRING | IT_SPACE);
 }
 #endif
 
@@ -1785,7 +1817,6 @@ void MenuGammaFunc_dependencies( byte gamma_en,
 //                        Mouse OPTIONS MENU
 //===========================================================================
 
-//added:24-03-00: note: alphaKey member is the y offset
 menuitem_t MouseOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Use Mouse",        &cv_usemouse        ,0},
@@ -1808,7 +1839,7 @@ menuitem_t MouseOptionsMenu[]=
 //[segabor]
 # ifdef MACOS_DI
 // specific to macos directory
-        ,{IT_CALL   | IT_WHITESTRING,0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
+    ,{IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Configure Input Sprocket..."  ,macConfigureInput     ,60}
 # endif
 #endif
 };
@@ -1840,8 +1871,9 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
-    {IT_CALL   | IT_WHITESTRING,0,"Adv Options..."      ,M_AdvOption     ,120},
-    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,130}
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Adv Options..."      ,M_AdvOption     ,120},
+//    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Network Options..."  ,M_NetOption     ,130}
+    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,0}
 };
 
 menu_t  GameOptionDef =
@@ -1881,8 +1913,8 @@ menuitem_t AdvOptionsMenu[]=
 #ifdef DOORDELAY_CONTROL
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
 #endif
-    {IT_CALL   | IT_WHITESTRING,0,"Games Options..."    ,M_GameOption    ,120},
-    {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,130}
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Games Options..."    ,M_GameOption    ,120},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Network Options..."  ,M_NetOption     ,130}
 };
 
 menu_t  AdvOptionDef =
@@ -1927,7 +1959,7 @@ menuitem_t NetOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Deathmatch Type" ,&cv_deathmatch      ,0},
     {IT_STRING | IT_CVAR,0,"Frag's Weapon Falling", &cv_fragsweaponfalling, 0},
     {IT_STRING | IT_CVAR,0,"Maxplayers"      ,&cv_maxplayers      ,0},
-    {IT_CALL   | IT_WHITESTRING,0,"Games Options..." ,M_GameOption,0},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Games Options..." ,M_GameOption ,132},
 };
 
 menu_t  NetOptionDef =
@@ -2089,7 +2121,6 @@ void M_DrawReadThis2(void)
 //===========================================================================
 //                        SOUND VOLUME MENU
 //===========================================================================
-void M_DrawSound(void);
 
 void M_SfxVol(int choice);
 void M_MusicVol(int choice);
@@ -2142,25 +2173,26 @@ void M_ChangeControl(int choice);
 //
 // this is the same for all control pages
 //
+// IT_CONTROL: alphaKey is the control to be changed
 menuitem_t ControlMenu[]=
 {
-    {IT_CALL | IT_STRING2,0,"Fire"        ,M_ChangeControl,gc_fire       },
-    {IT_CALL | IT_STRING2,0,"Use/Open"    ,M_ChangeControl,gc_use        },
-    {IT_CALL | IT_STRING2,0,"Jump"        ,M_ChangeControl,gc_jump       },
-    {IT_CALL | IT_STRING2,0,"Forward"     ,M_ChangeControl,gc_forward    },
-    {IT_CALL | IT_STRING2,0,"Backpedal"   ,M_ChangeControl,gc_backward   },
-    {IT_CALL | IT_STRING2,0,"Turn Left"   ,M_ChangeControl,gc_turnleft   },
-    {IT_CALL | IT_STRING2,0,"Turn Right"  ,M_ChangeControl,gc_turnright  },
-    {IT_CALL | IT_STRING2,0,"Run"         ,M_ChangeControl,gc_speed      },
-    {IT_CALL | IT_STRING2,0,"Strafe On"   ,M_ChangeControl,gc_strafe     },
-    {IT_CALL | IT_STRING2,0,"Strafe Left" ,M_ChangeControl,gc_strafeleft },
-    {IT_CALL | IT_STRING2,0,"Strafe Right",M_ChangeControl,gc_straferight},
-    {IT_CALL | IT_STRING2,0,"Look Up"     ,M_ChangeControl,gc_lookup     },
-    {IT_CALL | IT_STRING2,0,"Look Down"   ,M_ChangeControl,gc_lookdown   },
-    {IT_CALL | IT_STRING2,0,"Center View" ,M_ChangeControl,gc_centerview },
-    {IT_CALL | IT_STRING2,0,"Mouselook"   ,M_ChangeControl,gc_mouseaiming},
+    {IT_CONTROL, 0,"Fire"        ,M_ChangeControl,gc_fire       },
+    {IT_CONTROL, 0,"Use/Open"    ,M_ChangeControl,gc_use        },
+    {IT_CONTROL, 0,"Jump"        ,M_ChangeControl,gc_jump       },
+    {IT_CONTROL, 0,"Forward"     ,M_ChangeControl,gc_forward    },
+    {IT_CONTROL, 0,"Backpedal"   ,M_ChangeControl,gc_backward   },
+    {IT_CONTROL, 0,"Turn Left"   ,M_ChangeControl,gc_turnleft   },
+    {IT_CONTROL, 0,"Turn Right"  ,M_ChangeControl,gc_turnright  },
+    {IT_CONTROL, 0,"Run"         ,M_ChangeControl,gc_speed      },
+    {IT_CONTROL, 0,"Strafe On"   ,M_ChangeControl,gc_strafe     },
+    {IT_CONTROL, 0,"Strafe Left" ,M_ChangeControl,gc_strafeleft },
+    {IT_CONTROL, 0,"Strafe Right",M_ChangeControl,gc_straferight},
+    {IT_CONTROL, 0,"Look Up"     ,M_ChangeControl,gc_lookup     },
+    {IT_CONTROL, 0,"Look Down"   ,M_ChangeControl,gc_lookdown   },
+    {IT_CONTROL, 0,"Center View" ,M_ChangeControl,gc_centerview },
+    {IT_CONTROL, 0,"Mouselook"   ,M_ChangeControl,gc_mouseaiming},
 
-    {IT_SUBMENU | IT_WHITESTRING,0,"next" ,&ControlDef2,128}
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next" ,&ControlDef2,128}
 };
 
 menu_t  ControlDef =
@@ -2178,28 +2210,29 @@ menu_t  ControlDef =
 //
 //  Controls page 1
 //
+// IT_CONTROL: alphaKey is the control to be changed
 menuitem_t ControlMenu2[]=
 {
-  {IT_CALL | IT_STRING2,0,"Fist/Chainsaw"  ,M_ChangeControl,gc_weapon1},
-  {IT_CALL | IT_STRING2,0,"Pistol"         ,M_ChangeControl,gc_weapon2},
-  {IT_CALL | IT_STRING2,0,"Shotgun/Double" ,M_ChangeControl,gc_weapon3},
-  {IT_CALL | IT_STRING2,0,"Chaingun"       ,M_ChangeControl,gc_weapon4},
-  {IT_CALL | IT_STRING2,0,"Rocket Launcher",M_ChangeControl,gc_weapon5},
-  {IT_CALL | IT_STRING2,0,"Plasma rifle"   ,M_ChangeControl,gc_weapon6},
-  {IT_CALL | IT_STRING2,0,"BFG"            ,M_ChangeControl,gc_weapon7},
-  {IT_CALL | IT_STRING2,0,"Chainsaw"       ,M_ChangeControl,gc_weapon8},
-  {IT_CALL | IT_STRING2,0,"Previous Weapon",M_ChangeControl,gc_prevweapon},
-  {IT_CALL | IT_STRING2,0,"Next Weapon"    ,M_ChangeControl,gc_nextweapon},
-  {IT_CALL | IT_STRING2,0,"Best Weapon"    ,M_ChangeControl,gc_bestweapon},
-  {IT_CALL | IT_STRING2,0,"Talk key"       ,M_ChangeControl,gc_talkkey},
-  {IT_CALL | IT_STRING2,0,"Rankings/Scores",M_ChangeControl,gc_scores },
-  {IT_CALL | IT_STRING2,0,"Console"        ,M_ChangeControl,gc_console},
-  {IT_CALL | IT_STRING2,0,"Inventory Left" ,M_ChangeControl,gc_invprev},  
-  {IT_CALL | IT_STRING2,0,"Inventory Right",M_ChangeControl,gc_invnext},
-  {IT_CALL | IT_STRING2,0,"Inventory Use"  ,M_ChangeControl,gc_invuse },
-  {IT_CALL | IT_STRING2,0,"Fly down"       ,M_ChangeControl,gc_flydown},
-                        
-  {IT_SUBMENU | IT_WHITESTRING,0,"next"    ,&ControlDef,140}
+  {IT_CONTROL, 0,"Fist/Chainsaw"  ,M_ChangeControl,gc_weapon1},
+  {IT_CONTROL, 0,"Pistol"         ,M_ChangeControl,gc_weapon2},
+  {IT_CONTROL, 0,"Shotgun/Double" ,M_ChangeControl,gc_weapon3},
+  {IT_CONTROL, 0,"Chaingun"       ,M_ChangeControl,gc_weapon4},
+  {IT_CONTROL, 0,"Rocket Launcher",M_ChangeControl,gc_weapon5},
+  {IT_CONTROL, 0,"Plasma rifle"   ,M_ChangeControl,gc_weapon6},
+  {IT_CONTROL, 0,"BFG"            ,M_ChangeControl,gc_weapon7},
+  {IT_CONTROL, 0,"Chainsaw"       ,M_ChangeControl,gc_weapon8},
+  {IT_CONTROL, 0,"Previous Weapon",M_ChangeControl,gc_prevweapon},
+  {IT_CONTROL, 0,"Next Weapon"    ,M_ChangeControl,gc_nextweapon},
+  {IT_CONTROL, 0,"Best Weapon"    ,M_ChangeControl,gc_bestweapon},
+  {IT_CONTROL, 0,"Talk key"       ,M_ChangeControl,gc_talkkey},
+  {IT_CONTROL, 0,"Rankings/Scores",M_ChangeControl,gc_scores },
+  {IT_CONTROL, 0,"Console"        ,M_ChangeControl,gc_console},
+  {IT_CONTROL, 0,"Inventory Left" ,M_ChangeControl,gc_invprev},  
+  {IT_CONTROL, 0,"Inventory Right",M_ChangeControl,gc_invnext},
+  {IT_CONTROL, 0,"Inventory Use"  ,M_ChangeControl,gc_invuse },
+  {IT_CONTROL, 0,"Fly down"       ,M_ChangeControl,gc_flydown},
+                       
+  {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next"    ,&ControlDef,148}
 };
 
 menu_t  ControlDef2 =
@@ -2261,6 +2294,7 @@ void M_DrawControl(void)
         if (mip->status != IT_CONTROL)
             continue;
 
+        // alphaKey is the control to be changed
         keys[0] = setupcontrols[mip->alphaKey][0];
         keys[1] = setupcontrols[mip->alphaKey][1];
 
@@ -3695,6 +3729,7 @@ void M_DrawSelCell ( menu_t*       menu,
 //added:06-02-98:
 void M_DrawTextBox (int x, int y, int width, int lines)
 {
+    fontinfo_t * fip = V_FontInfo();
     patch_t  *p;
     int      cx, cy;
     int      n;
@@ -3715,9 +3750,10 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     }
     else
     {
-        step = 8;
+        step = fip->yinc;
         boff = 8;
     }
+    if( ! viewborderlump[0] )   goto grey_bar;
 
     // draw left side
     cx = x;
@@ -3765,7 +3801,15 @@ void M_DrawTextBox (int x, int y, int width, int lines)
    
     V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_BR] );
     
+
+  done:   
     V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
+   
+    return;
+
+  grey_bar:
+    V_DrawFill(x,y, width*fip->xinc, lines*fip->yinc, ci_grey );
+    goto done;
 }
 
 //==========================================================================
@@ -3948,7 +3992,7 @@ void M_StopMessage(int choice)
 void M_CentreText (int y, char* string)
 {
     int x;
-    //added:02-02-98:centre on 320, because V_DrawString centers on vid.width...
+    //added:02-02-98:centre on 320, because default option is SCALED
     x = (BASEVIDWIDTH - V_StringWidth(string))>>1;
     V_DrawString(x,y,0,string);
 }
@@ -3980,39 +4024,43 @@ void M_ChangeCvar(int choice)
     }
 }
 
+#define MAX_CVAR_STRING  512
+
 static boolean M_ChangeStringCvar(int key, char ch)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
-    char buf[255];
+    char buf[ MAX_CVAR_STRING + 1 ];
     int  len;
 
-    switch (key) {
-        case KEY_BACKSPACE :
-                len=strlen(cv->string);
-                if( len>0 )
-                {
-                    memcpy(buf,cv->string,len);
-                    buf[len-1]=0;
-                    CV_Set(cv, buf);
-                }
-                return true;
-        default:
+    switch (key)
+    {
+      case KEY_BACKSPACE :
+        len=strlen(cv->string);
+        if( len > MAX_CVAR_STRING )  len = MAX_CVAR_STRING;
+        if( len>0 )
+        {
+	    memcpy(buf,cv->string,len);
+	    buf[len-1]=0;
+	    CV_Set(cv, buf);
+	}
+        return true;
+      default:
         #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
         ch = key;
         #endif
-             if (is_printable(ch))
-            {
-                len=strlen(cv->string);
-                if( len<MAXSTRINGLENGTH-1 )
-                {
-                    memcpy(buf,cv->string,len);
-                    buf[len++] = ch;
-                    buf[len] = 0;
-                    CV_Set(cv, buf);
-                }
-                return true;
-            }
-            break;
+        if (is_printable(ch))
+        {
+	    len=strlen(cv->string);
+	    if( len < MAX_CVAR_STRING-1 )
+	    {
+	        memcpy(buf,cv->string,len);
+	        buf[len++] = ch;
+	        buf[len] = 0;
+	        CV_Set(cv, buf);
+	    }
+	    return true;
+	}
+        break;
     }
     return false;
 }
@@ -4312,6 +4360,7 @@ boolean M_Responder (event_t* ev)
 
     if(currentMenu->menuitems[itemOn].status==IT_MSGHANDLER)
     {
+        // special message menu
         if(currentMenu->menuitems[itemOn].alphaKey == true)
         {
 	  // [smite] just for this purpose since unraveling the IT_MSGHANDLER hack would be too harrowing
@@ -4517,18 +4566,26 @@ boolean M_Responder (event_t* ev)
 	if (!isalpha(ch))
 	  goto ret_true;
 
+        // from itemOn to bottom
         for (i = itemOn+1;i < currentMenu->numitems;i++)
-            if (currentMenu->menuitems[i].alphaKey == ch)
+        {
+            if( (currentMenu->menuitems[i].alphaKey == ch)
+		 && ((currentMenu->menuitems[i].status & IT_OPTION) == 0) )
             {
                 itemOn = i;
 	        goto ret_action;
             }
+	}
+        // search from top to itemOn
         for (i = 0;i <= itemOn;i++)
-            if (currentMenu->menuitems[i].alphaKey == ch)
+        {
+            if( (currentMenu->menuitems[i].alphaKey == ch)
+		 && ((currentMenu->menuitems[i].status & IT_OPTION) == 0) )
             {
                 itemOn = i;
 	        goto ret_action;
             }
+	}
         break;
 
     }
@@ -4701,11 +4758,9 @@ void M_Ticker (void)
 //
 // M_Init
 //
+// Called once, very early
 void M_Init (void)
 {
-    if(dedicated)
-	return;
-    
     currentMenu = &MainDef;
     menuactive = 0;
     itemOn = currentMenu->lastOn;
@@ -4714,36 +4769,47 @@ void M_Init (void)
     skullAnimCounter = 10;
 
     quickSaveSlot = -1;
+   
+    CV_RegisterVar(&cv_skill);
+    CV_RegisterVar(&cv_monsters);
+    CV_RegisterVar(&cv_nextmap );
+    CV_RegisterVar(&cv_newdeathmatch);
+    CV_RegisterVar(&cv_serversearch);
+    CV_RegisterVar(&cv_menusound);
+}
+
+// Called once, game dependent
+void M_Configure (void)
+{
+    int i;
+    int cval;
+
+    if(dedicated)
+	return;
 
     // Here we could catch other version dependencies,
     //  like HELP1/2, and four episodes.
 
-    if( !inventory )
+    // Reversible
+    // remove the inventory key from the menu !
+    cval = ( inventory )? (IT_CONTROL) : IT_LITLSPACE;
+    for( i=0; i<ControlDef2.numitems; i++)
     {
-        // remove the inventory key from the menu !
-        int i;
-
-        for( i=0;i<ControlDef2.numitems;i++)
-        {
-            if( ControlMenu2[i].alphaKey == gc_invprev ||
-                ControlMenu2[i].alphaKey == gc_invnext ||
-                ControlMenu2[i].alphaKey == gc_invuse )
-                ControlMenu2[i].status = IT_LITLSPACE;
-	}
+        if( ControlMenu2[i].alphaKey == gc_invprev ||
+	    ControlMenu2[i].alphaKey == gc_invnext ||
+	    ControlMenu2[i].alphaKey == gc_invuse )
+	    ControlMenu2[i].status = cval;
     }
 
-    if( gamemode !=heretic )
+    // remove the fly down key from the menu !
+    cval = ( gamemode == heretic )? (IT_CONTROL) : IT_LITLSPACE;
+    for( i=0; i<ControlDef2.numitems; i++)
     {
-        // remove the fly down key from the menu !
-        int i;
-
-        for( i=0;i<ControlDef2.numitems;i++)
-        {
-            if( ControlMenu2[i].alphaKey == gc_flydown )
-                ControlMenu2[i].status = IT_LITLSPACE;
-	}
+        if( ControlMenu2[i].alphaKey == gc_flydown )
+	    ControlMenu2[i].status = cval;
     }
 
+    // irreversible
     if( W_CheckNumForName("E2M1")<0 )
     {
         exmy_cons_t[9].value = 0;
@@ -4846,12 +4912,6 @@ void M_Init (void)
       default:
         break;
     }
-    CV_RegisterVar(&cv_skill);
-    CV_RegisterVar(&cv_monsters);
-    CV_RegisterVar(&cv_nextmap );
-    CV_RegisterVar(&cv_newdeathmatch);
-    CV_RegisterVar(&cv_serversearch);
-    CV_RegisterVar(&cv_menusound);
 
     CV_menusound_OnChange();
 }
@@ -4873,24 +4933,24 @@ menu_t OGL_LightingDef, OGL_FogDef, OGL_ColorDef, OGL_DevDef;
 menuitem_t OpenGLOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0, "Mouse look"          , &cv_grmlook_extends_fov ,  0},
-    {IT_STRING | IT_CVAR,0, "Field of view"       , &cv_grfov             , 10},
-    {IT_STRING | IT_CVAR,0, "Quality"             , &cv_scr_depth         , 20},
-    {IT_STRING | IT_CVAR,0, "Texture Filter"      , &cv_grfiltermode      , 30},
-    {IT_STRING | IT_CVAR | IT_CV_SLIDER,0, "Translucent HUD", &cv_grtranslucenthud  , 40},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Field of view"       , &cv_grfov             , 10},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Quality"             , &cv_scr_depth         , 20},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Texture Filter"      , &cv_grfiltermode      , 30},
+    {IT_STRING | IT_CVAR | IT_CV_SLIDER | IT_YOFFSET, 0, "Translucent HUD", &cv_grtranslucenthud  , 40},
 
-    {IT_SUBMENU|IT_WHITESTRING,0, "Lighting..."       , &OGL_LightingDef   , 65},
-    {IT_SUBMENU|IT_WHITESTRING,0, "Fog..."            , &OGL_FogDef        , 75},
-    {IT_SUBMENU|IT_WHITESTRING,0, "Gamma..."          , &OGL_ColorDef      , 85},
-    {IT_SUBMENU|IT_WHITESTRING,0, "Development..."    , &OGL_DevDef        , 95},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0, "Lighting..."       , &OGL_LightingDef   , 65},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0, "Fog..."            , &OGL_FogDef        , 75},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0, "Gamma..."          , &OGL_ColorDef      , 85},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0, "Development..."    , &OGL_DevDef        , 95},
 };
 
 menuitem_t OGL_LightingMenu[]=
 {
     {IT_STRING | IT_CVAR,0, "Coronas"                 , &cv_grcoronas         ,  0},
-    {IT_STRING | IT_CVAR,0, "Coronas size"            , &cv_grcoronasize      , 10},
-    {IT_STRING | IT_CVAR,0, "Dynamic lighting"        , &cv_grdynamiclighting , 20},
-    {IT_STRING | IT_CVAR,0, "Static lighting"         , &cv_grstaticlighting  , 30},
-    {IT_STRING | IT_CVAR,0, "Monsters' balls lighting", &cv_grmblighting      , 40},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Coronas size"            , &cv_grcoronasize      , 10},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Dynamic lighting"        , &cv_grdynamiclighting , 20},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Static lighting"         , &cv_grstaticlighting  , 30},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Monsters' balls lighting", &cv_grmblighting      , 40},
 };
 
 menuitem_t OGL_FogMenu[]=

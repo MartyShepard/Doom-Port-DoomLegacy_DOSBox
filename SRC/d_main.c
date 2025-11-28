@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: d_main.c 1066 2013-12-14 00:22:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1065"
+#define SVN_REV "1066"
 #endif
 
 // Version number: major.minor.revision
@@ -2261,6 +2261,7 @@ void D_DoomMain()
 
     CONS_Printf(text[M_INIT_NUM]);
     M_Init();
+    M_Configure();
 
     CONS_Printf(text[R_INIT_NUM]);
     R_Init();

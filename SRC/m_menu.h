@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_menu.h 1066 2013-12-14 00:22:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,6 +64,8 @@ void M_Drawer (void);
 // Called by D_DoomMain,
 // loads the config file.
 void M_Init (void);
+// configures according to gamemode
+void M_Configure (void);
 
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
