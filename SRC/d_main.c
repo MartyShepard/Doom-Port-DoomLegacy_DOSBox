@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1064 2013-12-14 00:18:23Z wesleyjohnson $
+// $Id: d_main.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1064"
+#define SVN_REV "1065"
 #endif
 
 // Version number: major.minor.revision
@@ -1795,6 +1795,24 @@ void D_DoomMain()
 
     EMSG_flags = EMSG_text | EMSG_log;
 
+    CONS_Printf(text[Z_INIT_NUM]);
+    // Cannot Init nor register cv_ vars until after Z_Init and some
+    // other systems are init first.
+    Z_Init();
+
+    // Init once
+    COM_Init(); // command buffer
+     // Can now call CV_RegisterVar, and COM_AddCommand
+
+    // may have some command line dependent init, like joystick
+    I_SysInit();
+
+    //--- Display Error Messages
+    // setup loading screen with dedicated=0 and vid=800,600
+    V_Init_VideoControl();  // before I_StartupGraphics
+    I_StartupGraphics();    // window
+    SCR_Startup();
+
     // identify the main IWAD file to use
     IdentifyVersion();
     modifiedgame = false;
@@ -2019,9 +2037,6 @@ void D_DoomMain()
         autostart = true;
     }
 
-    CONS_Printf(text[Z_INIT_NUM]);
-    Z_Init();
-
     // adapt tables to legacy needs
     P_PatchInfoTables();
 
@@ -2128,8 +2143,6 @@ void D_DoomMain()
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
 
-    I_SysInit();
-   
     if( M_CheckParm("-highcolor") )
     {
         req_drawmode = REQ_highcolor;  // 15 or 16 bpp
@@ -2152,10 +2165,14 @@ void D_DoomMain()
         else
 	    I_Error( "-bpp invalid\n");
     }
-    V_Init_VideoControl();
 
     CONS_Printf("I_StartupGraphics...\n");
     I_StartupGraphics();
+
+#ifdef HWRENDER
+    if( rendermode != render_soft )
+       HWR_Startup();  // hardware render init
+#endif
 
     EMSG_flags = EMSG_log | EMSG_CONS;
 
@@ -2168,7 +2185,6 @@ void D_DoomMain()
     // switch off use_font1 when hu_font is loaded
     HU_Init();
 
-    COM_Init();
     CON_Init();
     EMSG_flags |= EMSG_CONS;  // all msgs to CON buffer
 

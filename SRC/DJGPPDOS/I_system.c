@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: I_system.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -104,7 +104,7 @@
 
 
 // Do not execute cleanup code more than once. See Shutdown_xxx() routines.
-//byte graphics_started=false;
+extern byte graphics_started;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;
@@ -200,15 +200,15 @@ void I_WaitJoyButton (void)
 }
 
 void M_InitJoystick (int jvalue)
+
 {
-	  /*
-		TODO: die Joystick über das Menü Konfiguieren
-		*/
-		CONS_Printf("Joystick (%d) activated\n",jvalue);
+  /*
+  TODO: die Joystick über das Menü Konfiguieren
+  */
+  CONS_Printf("Joystick (%d) activated\n",jvalue);
 }
 void I_InitJoystick (void)
 {
-	boolean isConsole=0;
 		
     //init the joystick
     joystick_detected=0;
@@ -232,35 +232,33 @@ void I_InitJoystick (void)
                case 11: joy_type = JOY_TYPE_SNESPAD_LPT3;break;
                case 12: joy_type = JOY_TYPE_WINGWARRIOR; break;
             }
-
-					 // only gamepadstyle joysticks
-					 Joystick.bGamepadStyle=true;
-							
-						if (con_destlines==0)						
+            // only gamepadstyle joysticks
+            Joystick.bGamepadStyle=true;
+	    if (con_destlines==0)						
                M_InitJoystick(cv_usejoystick.value);														 						
             else
-						{
+            {
 
-							CONS_Printf("\2CENTER the joystick and press a button:"); I_WaitJoyButton ();
-							initialise_joystick();
-							CONS_Printf("\nPush the joystick to the UPPER LEFT corner and press a button\n"); I_WaitJoyButton ();
-							calibrate_joystick_tl();
-							CONS_Printf("Push the joystick to the LOWER RIGHT corner and press a button\n"); I_WaitJoyButton ();
-							calibrate_joystick_br();
-							if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
-							{
-									CONS_Printf("Put Hat at Center and press a button\n"); I_WaitJoyButton ();
-									calibrate_joystick_hat(JOY_HAT_CENTRE);
-									CONS_Printf("Put Hat at Up and press a button\n"); I_WaitJoyButton ();
-									calibrate_joystick_hat(JOY_HAT_UP);
-									CONS_Printf("Put Hat at Down and press a button\n"); I_WaitJoyButton ();
-									calibrate_joystick_hat(JOY_HAT_DOWN);
-									CONS_Printf("Put Hat at Left and press a button\n"); I_WaitJoyButton ();
-									calibrate_joystick_hat(JOY_HAT_LEFT);
-									CONS_Printf("Put Hat at Right and press a button\n"); I_WaitJoyButton ();
-									calibrate_joystick_hat(JOY_HAT_RIGHT);
-							}
-						}
+            CONS_Printf("\2CENTER the joystick and press a button:"); I_WaitJoyButton ();
+            initialise_joystick();
+            CONS_Printf("\nPush the joystick to the UPPER LEFT corner and press a button\n"); I_WaitJoyButton ();
+            calibrate_joystick_tl();
+            CONS_Printf("Push the joystick to the LOWER RIGHT corner and press a button\n"); I_WaitJoyButton ();
+            calibrate_joystick_br();
+            if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
+            {
+                CONS_Printf("Put Hat at Center and press a button\n"); I_WaitJoyButton ();
+                calibrate_joystick_hat(JOY_HAT_CENTRE);
+                CONS_Printf("Put Hat at Up and press a button\n"); I_WaitJoyButton ();
+                calibrate_joystick_hat(JOY_HAT_UP);
+                CONS_Printf("Put Hat at Down and press a button\n"); I_WaitJoyButton ();
+                calibrate_joystick_hat(JOY_HAT_DOWN);
+                CONS_Printf("Put Hat at Left and press a button\n"); I_WaitJoyButton ();
+                calibrate_joystick_hat(JOY_HAT_LEFT);
+                CONS_Printf("Put Hat at Right and press a button\n"); I_WaitJoyButton ();
+                calibrate_joystick_hat(JOY_HAT_RIGHT);
+            }
+            }
             joystick_detected=1;
         }
         else
@@ -335,6 +333,7 @@ void I_Error (const char *error, ...)
 
     D_QuitNetGame ();
 
+    I_Sleep( 3000 );  // to see some messages
     /* shutdown everything that was started ! */
     I_ShutdownSystem();
 

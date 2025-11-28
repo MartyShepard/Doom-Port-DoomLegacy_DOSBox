@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 1043 2013-08-26 20:31:16Z wesleyjohnson $
+// $Id: I_video.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,8 +63,6 @@
 //dosstuff -newly added
 unsigned long dascreen;
 static int gfx_use_vesa1;
-
-boolean    highcolor; // local
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
@@ -337,39 +335,44 @@ int set_vesa1_mode( int width, int height )
 //  Initialize video mode, setup dynamic screen size variables,
 //  and allocate screens.
 //
+// May be called more than once, to change modes and switches
 void I_StartupGraphics(void)
 {
-    //added:26-01-98: VID_Init() must be done only once,
-    //                use VID_SetMode() to change vid mode while in the game.
-    if( graphics_started )
-        return;
+    if( ! graphics_started )
+    {
+        //added:26-01-98: VID_Init() must be done only once,
+        //                use VID_SetMode() to change vid mode while in the game.
 
-    // remember the exact screen mode we were...
-    I_SaveOldVideoMode();
+        // remember the exact screen mode we were...
+        I_SaveOldVideoMode();
 
-    CONS_Printf("Vid_Init...");
+        CONS_Printf("Vid_Init...");
+       
+        VID_Init();
+
+        //gfx_use_vesa1 = false;
+
+        //added:03-01-98: register exit code for graphics
+        I_AddExitFunc(I_ShutdownGraphics);
+        graphics_started = true;
+    }
 
     // 0 for 256 color, else use highcolor modes
-		if( req_drawmode == REQ_highcolor)
+    if( req_drawmode == REQ_highcolor)
         highcolor = (req_drawmode == REQ_highcolor);
-		else if( req_drawmode == REQ_truecolor)
-		    highcolor = (req_drawmode == REQ_truecolor);
-		else if( req_drawmode == REQ_native)
-		    highcolor = (req_drawmode == REQ_native);	
-		else if( req_drawmode == REQ_specific)
-		    highcolor = (req_drawmode == REQ_specific);			
+    else if( req_drawmode == REQ_truecolor)
+        highcolor = (req_drawmode == REQ_truecolor);
+    else if( req_drawmode == REQ_native)
+        highcolor = (req_drawmode == REQ_native);
+    else if( req_drawmode == REQ_specific)
+        highcolor = (req_drawmode == REQ_specific);
 
-    VID_Init();
-
-    //gfx_use_vesa1 = false;
-
-    //added:03-01-98: register exit code for graphics
-    I_AddExitFunc(I_ShutdownGraphics);
-    graphics_started = true;
-
+    VID_GetModes();
+    // set the default video mode
+    VID_SetDefaultMode();
 }
 
-// for fuck'n debuging
+// for debuging
 void IO_Color( byte color, byte r, byte g, byte b )
 {
   outportb( 0x03c8 , color );              // registre couleur

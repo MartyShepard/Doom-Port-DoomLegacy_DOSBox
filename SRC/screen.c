@@ -19,8 +19,6 @@
 // $Log: screen.c,v $
 // Include: DOS DJGPP Fixes
 //
-// Revision 1.14  2004/05/16 20:34:47  hurdler
-//
 // Revision 1.13  2002/11/12 00:06:05  ssntails
 // Support for translated translucent columns in software mode.
 //
@@ -166,9 +164,9 @@ void SCR_SetMode (void)
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
-      int VID_GetModeForSize( int, int );  //vid_vesa.c
       int cvfs = cv_fullscreen.value; // preserve config.cfg
       cv_fullscreen.value = 0;
+      mode_fullscreen = false;
       int modenum = VID_GetModeForSize(800,600);  // debug window
       VID_SetMode(modenum);
       cv_fullscreen.value = cvfs;
@@ -188,7 +186,7 @@ void SCR_SetMode (void)
     //
     //CONS_Printf ("SCR_SetMode : vid.bitpp is %d\n", vid.bitpp);
     // set the apprpriate drawer for the sky (tall or short)
-    // vid.bitpp is already protected by V_Init_Draw
+    // vid.bitpp is already protected by V_Setup_VideoDraw
     switch( vid.bitpp )
     {
      case 8:
@@ -336,7 +334,7 @@ void SCR_SetMode (void)
 
 
 // change drawer function when fuzzymode is changed
-void CV_Fuzzymode_OnChange()
+void CV_Fuzzymode_OnChange(void)
 {
   switch(vid.drawmode)
   {
@@ -367,6 +365,8 @@ void CV_Fuzzymode_OnChange()
 
 //  do some initial settings for the game loading screen
 //
+// Dependent upon vid settings
+// May be called more than once
 void SCR_Startup (void)
 {
     if(dedicated)
@@ -387,7 +387,7 @@ void SCR_Startup (void)
     ASM_PatchRowBytes(vid.ybytes);
 #endif
 
-    V_Init_Draw();
+    V_Setup_VideoDraw();
 
     V_SetPalette (0);
 }
@@ -445,7 +445,7 @@ void SCR_Recalc (void)
     // r_things : negonearray, screenheightarray allocated max. size.
 
     // set the screen[x] ptrs on the new vidbuffers
-    V_Init_Draw();
+    V_Setup_VideoDraw();
 
     // scr_viewsize doesn't change, neither detailLevel, but the pixels
     // per screenblock is different now, since we've changed resolution.
@@ -464,8 +464,6 @@ void SCR_Recalc (void)
 //
 // Set the video mode to set at the 1st display loop (setmodeneeded)
 //
-int VID_GetModeForSize( int w, int h);  //vid_vesa.c
-
 void SCR_CheckDefaultMode (void)
 {
     int p;
@@ -522,8 +520,10 @@ void SCR_ChangeFullscreen (void)
   if (!allow_fullscreen)
     return;
 
-  if(graphics_started) {
-    setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
-  }
+    if(graphics_started)
+    {
+        mode_fullscreen = ( cv_fullscreen.value )? true : false;
+        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
+    }
 }
 #endif

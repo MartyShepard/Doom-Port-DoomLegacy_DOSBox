@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: i_video.h 1065 2013-12-14 00:20:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -50,11 +50,13 @@ typedef enum {
     render_d3d    = 3,
     render_opengl = 4, //Hurdler: the same for render_minigl
     render_none   = 5  // for dedicated server
-} rendermode_t;
+} rendermode_e;
 
-extern rendermode_t    rendermode;
+extern rendermode_e    rendermode;
 
 extern boolean  allow_fullscreen;  // controlled by i_video
+extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
+boolean    highcolor; // local
 
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;
@@ -94,6 +96,8 @@ void VID_Pause(int pause);
 
 int   VID_NumModes(void);
 char  *VID_GetModeName(int modenum);
+
+int  VID_GetModeForSize( int, int );  //vid_vesa.c
 
 void I_UpdateNoBlit (void);
 void I_FinishUpdate (void);

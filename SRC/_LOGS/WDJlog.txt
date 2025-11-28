@@ -3586,3 +3586,18 @@ patchfile = w95_6_font1.patch
 Added font1, a fixed width bit mapped font with a default palette,
 that can be drawn before loading wads, and without font graphics or
 palette from any wads. It is only for software render.
+
+*** W95_early_graphics
+patchfile = w95_7_early_graphics.patch
+- committed revision 1065   by wesley johnson
+Move the startup of Graphics to as early as possible.
+This is to provide an error message screen and menu capability earlier
+than before.
+Also move Z_Init and COM_Init to be early to allow CV_RegisterVar,
+and COM_AddCommand calls.
+Fix I_StartupGraphics in all ports to allow calling more than once.
+Provide a mode_fullscreen global to the port drivers to isolate them
+from any cv_fullscreen setting, that is only used later in the startup
+sequence.
+Replaced many fprintf(stderr) calls in the port video files, with calls
+to GenPrintf.

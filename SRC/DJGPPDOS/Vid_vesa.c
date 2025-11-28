@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: Vid_vesa.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -53,8 +53,6 @@
 #include "../console.h"
 #include "../command.h"            //added:21-03-98: vid_xxx commands
 #include "../i_video.h"
-
-boolean    highcolor; // local
 
 // PROTOS
 vmode_t *VID_GetModePtr (int modenum);
@@ -236,15 +234,19 @@ int VID_GetModeForSize( int w, int h)
 /* ======================================================================== */
 //
 /* ======================================================================== */
-void    VID_Init (void)
+// only called once
+void VID_Init (void)
 {
     COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
     COM_AddCommand ("vid_modeinfo", VID_Command_ModeInfo_f);
     COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
     COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-    CV_RegisterVar (&cv_vidwait);
+}
 
-    //setup the videmodes list,
+// may be called more than once
+void VID_GetModes(void)
+{
+    // setup the videmodes list,
     // note that mode 0 must always be VGA mode 0x13
     pvidmodes = NULL;
     pcurrentmode = NULL;
@@ -255,12 +257,19 @@ void    VID_Init (void)
     // the game boots in 320x200 standard VGA, but
     // we need a highcolor mode to run the game in highcolor
     if (highcolor && numvidmodes==0)
-        I_Error ("No 15bit highcolor VESA2 video mode found, cannot run in highcolor.\n");
+    {
+        I_SoftError ("No highcolor VESA2 video mode found, cannot run in highcolor.\n");
+        highcolor = 0;
+        VID_VesaGetExtraModes ();
+    }
 
     // add the vga modes at the start of the modes list
     VGA_Init();
+}
 
 
+void VID_SetDefaultMode(void)
+{
 #ifdef DEBUG
     CONS_Printf("VID_SetMode(%d)\n",vid.modenum);
 #endif
