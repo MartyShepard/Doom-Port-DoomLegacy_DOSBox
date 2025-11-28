@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: doomdef.h 1062 2013-12-14 00:14:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -136,12 +136,19 @@ extern FILE *logstream;
 #ifdef LINUX
 #define DEFAULTDIR1 ".doomlegacy"
 #define DEFAULTDIR2 ".legacy"
-#else
+#endif
+#ifdef __APPLE__
+#define DEFAULTDIR1 ".doomlegacy"
+#define DEFAULTDIR2 ".legacy"
+#endif
 #ifdef PC_DOS
 #define DEFAULTDIR1 "dmlegacy"
-#else
+#define DEFAULTDIR2 "legacy"
+#endif
+#ifndef DEFAULTDIR1
 #define DEFAULTDIR1 "doomlegacy"
 #endif
+#ifndef DEFAULTDIR2
 #define DEFAULTDIR2 "legacy"
 #endif
 
@@ -161,7 +168,9 @@ extern FILE *logstream;
 
 // Legacy wad for Mac
 //#define  LEGACYWADDIR  ".app"
-#define  LEGACYWADDIR  "/usr/local/share/games/legacy"
+#define  LEGACYWADDIR  "/usr/local/share/games/doomlegacy"
+#else
+#define  LEGACYWADDIR  "/usr/local/share/games/doomlegacy"
 #endif
 
 // =========================================================================

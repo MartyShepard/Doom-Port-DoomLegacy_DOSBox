@@ -3559,3 +3559,12 @@ CONS_Printf and I_SoftError route messages according to the EMSG_flags state
 Created GenPrintf() to route verbose and devparm messages to selected
 destinations, replacing most uses of fprintf(stderr...).
 Verbose and debug messages can now also go to the log and console.
+
+*** W95_find_legacywad
+patchfile = w95_4_find_legacywad.patch
+- committed revision 1062   by wesley johnson
+Search LEGACYWADDIR, default dir, and doomwaddir for legacy.wad.
+Make MAC search of locations more like Linux.
+Make access checks easier to maintain.
+Simplify the DEFAULTDIR defines, easier to maintain, and all in one place.
+Simplify function to create title line.
