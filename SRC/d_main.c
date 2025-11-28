@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1062 2013-12-14 00:14:35Z wesleyjohnson $
+// $Id: d_main.c 1064 2013-12-14 00:18:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1062"
+#define SVN_REV "1064"
 #endif
 
 // Version number: major.minor.revision
@@ -1589,7 +1589,6 @@ void D_Titlebar(const char *title1, const char *title2)
     cputs(title2);
     normvideo();
     gotoxy(1, 3);
-
 }
 #endif
 
@@ -1698,6 +1697,8 @@ void D_DoomMain()
     demoversion = VERSION;
 
     D_Make_legacytitle();
+
+    use_font1 = 1;  // until PLAYPAL and fonts loaded
 
     //added:18-02-98:keep error messages until the final flush(stderr)
     if (setvbuf(stderr, NULL, _IOFBF, 1000))
@@ -2164,6 +2165,7 @@ void D_DoomMain()
 
     // we need the font of the console
     CONS_Printf(text[HU_INIT_NUM]);
+    // switch off use_font1 when hu_font is loaded
     HU_Init();
 
     COM_Init();

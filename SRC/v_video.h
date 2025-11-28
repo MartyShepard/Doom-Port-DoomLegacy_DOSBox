@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1043 2013-08-26 20:31:16Z wesleyjohnson $
+// $Id: v_video.h 1064 2013-12-14 00:18:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,6 +101,18 @@ extern RGBA_t  *pLocalPalette;
 // Retrieve the ARGB value from a palette color index
 #define V_GetColor(color)  (pLocalPalette[color&0xFF])
 
+// Use the built-in font (font1), for Launch (before fonts are loaded)
+extern byte  use_font1;
+extern byte  ci_black, ci_white, ci_green, ci_grey;
+
+// Font info for spacing lines and text on menus
+typedef struct {
+   int width, height;
+   int xinc, yinc;
+} fontinfo_t;
+
+fontinfo_t * V_FontInfo( void );
+
 // position and width is in src pixels
 void V_CopyRect ( int srcx, int srcy, int srcscrn,
 		  int width, int height,
@@ -136,6 +148,7 @@ typedef struct {
     unsigned int  y0bytes;   // bytes per source line per SCALESTART
     unsigned int  x0bytes;   // bytes per source pixel per SCALESTART
     byte dupx, dupy; // dup pixels for some screen sizes
+    byte dupx0;      // dup for x0, per SCALESTART
     fixed_t  y_unitfrac, x_unitfrac;
     byte  screen;
 // externally setable
@@ -151,7 +164,6 @@ typedef struct {
 
 // current draw info
 extern drawinfo_t  V_drawinfo;
-
 
 // setup for draw screen, scaled, and centering
 // Can use saved V_drawinfo.screenflags or use V_drawinfo.prev_screenflags

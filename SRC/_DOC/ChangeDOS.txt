@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01064 ]: w95 font1 create
+[01063 ]: w95 mixer file for old SDL
 [01062 ]: w95 find legacywad
 [01061 ]: w95 messages, EMSG, GenPrintf
 [01060 ]: w95 menusounds

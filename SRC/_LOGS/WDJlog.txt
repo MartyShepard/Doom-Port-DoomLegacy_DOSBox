@@ -3568,3 +3568,21 @@ Make MAC search of locations more like Linux.
 Make access checks easier to maintain.
 Simplify the DEFAULTDIR defines, easier to maintain, and all in one place.
 Simplify function to create title line.
+
+*** W95_mixer_file
+patchfile = w95_5_mixer_file.patch
+- committed revision 1063   by wesley johnson
+Using music files with the old mixer has a problem with not being able
+to read the file when executing doomlegacy when not in the executable
+directory.  This only affects SDL_mixer version < 1.2.7, where the
+current is 1.2.11.
+Direct reads of the file will succeed, but SDL_LoadMUS() will fail, with
+file or directory not found.
+Add messages to report the cause of the problem.
+
+*** W95_font1
+patchfile = w95_6_font1.patch
+- committed revision 1064   by wesley johnson
+Added font1, a fixed width bit mapped font with a default palette,
+that can be drawn before loading wads, and without font graphics or
+palette from any wads. It is only for software render.
