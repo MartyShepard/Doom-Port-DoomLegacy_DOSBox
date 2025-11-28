@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1043 2013-08-26 20:31:16Z wesleyjohnson $
+// $Id: v_video.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1232,9 +1232,9 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 #ifdef RANGECHECK
     if (x < 0 || x + patch->width > vid.width || y < 0 || y + patch->height > vid.height || (unsigned) scrn > 4)
     {
-        fprintf(stderr, "Patch at %d,%d exceeds LFB\n", x, y);
+        GenPrintf(EMSG_warn, "Patch at %d,%d exceeds LFB\n", x, y);
         // No I_Error abort - what is up with TNT.WAD?
-        fprintf(stderr, "V_DrawPatch: bad patch (ignored)\n");
+        GenPrintf(EMSG_warn, "V_DrawPatch: bad patch (ignored)\n");
         return;
     }
 #endif

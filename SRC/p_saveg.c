@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_saveg.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -128,6 +128,8 @@ boolean  save_game_abort = 0;
 #define SAVEBUF_SIZEINC (128*1024)
 #define SAVEBUF_HEADERSIZE   (64 + (80*5) + 1024 + 256)
 #define SAVEBUF_FREE_TRIGGER  (64*1024)
+
+//#define SAVEBUF_REPORT_BUFINC
 // [WDJ] Uncomment the following to see how close to overrunning the buffer.
 //#define SAVEBUF_REPORT_MIN_FREE 1
 #ifdef SAVEBUF_REPORT_MIN_FREE
@@ -184,10 +186,6 @@ byte *  P_Alloc_savebuffer( boolean large_size )
 // return -1 if overrun the buffer
 size_t  P_Savegame_length( void )
 {
-#ifdef PADSAVEP
-    // Remove alignment pad for length, file, and network I/O
-    SG_remove_pad();
-#endif
     size_t length = save_p - savebuffer;
     if (length > savebuffer_size)
     {
@@ -233,9 +231,9 @@ int  P_Savegame_Closefile( boolean writeflag )
 {
     int errflag = 0;
 #ifdef SAVEBUF_REPORT_MIN_FREE
-    fprintf( stderr, "Report savebuffer min free: %i, buffer used: %i\n", savebuf_min_free, (savebuffer_size-savebuf_min_free));
+    GenPrintf(EMSG_info, "Report savebuffer min free: %i, buffer used: %i\n", savebuf_min_free, (savebuffer_size-savebuf_min_free));
     if( writeflag )
-        fprintf( stderr, "                 max write: %i, sync=%i\n", savebuf_max_write, max_write_sync);
+        GenPrintf(EMSG_info, "                 max write: %i, sync=%i\n", savebuf_max_write, max_write_sync);
 #endif
     if( savebuffer )
     {
@@ -293,8 +291,15 @@ void SG_Writebuf( void )
 	}
         savebuffer = newbuf;
         savebuffer_size = newsize;
-        // [WDJ] Uncomment the following line to see buffer increases
-        fprintf(stderr, "Savegame buffer realloc of %zu bytes.\n", newsize);
+        // [WDJ] Enable the following to see buffer increases
+#ifdef SAVEBUF_REPORT_BUFFINC
+#ifdef __MINGW32__
+        // MinGW does not understand %z
+        GenPrintf(EMSG_info, "Savegame buffer realloc of %u bytes.\n", (int)newsize);
+#else
+        GenPrintf(EMSG_info, "Savegame buffer realloc of %zu bytes.\n", newsize);
+#endif
+#endif
         goto done;
     }
 			     
@@ -3048,7 +3053,7 @@ void P_LoadNetVars( void )
 	    if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
         Got_NetVar((char**)&save_p, 0);
     }
-//    fprintf(stderr, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
+//    GenPrintf(EMSG_info, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
 }
 
 // =======================================================================

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 1059 2013-12-13 20:24:00Z wesleyjohnson $
+// $Id: qmus2mid.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -458,7 +458,7 @@ int qmus2mid (byte *mus,  // input mus
 
 #if 0
     if (et != MUS_EV_SCOREEND)
-      fprintf(stderr,"QMUS end without score end\n");
+      GenPrintf(EMSG_warn,"QMUS end without score end\n");
 #endif
 
     WriteMIDheader( TrackCnt+1, division, &file_mid );

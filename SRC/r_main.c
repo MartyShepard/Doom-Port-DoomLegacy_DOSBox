@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_main.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1029,15 +1029,15 @@ void R_Init (void)
 
     //added:24-01-98: screensize independent
     if(devparm)
-        CONS_Printf ("\nR_InitData");
+        GenPrintf(EMSG_dev, "\nR_InitData");
     R_InitData ();
 
     if(devparm)
-        CONS_Printf ("\nR_InitPointToAngle");
+        GenPrintf(EMSG_dev, "\nR_InitPointToAngle");
     R_InitPointToAngle ();
 
     if(devparm)
-        CONS_Printf ("\nR_InitTables");
+        GenPrintf(EMSG_dev, "\nR_InitTables");
     R_InitTables ();
 
     R_InitViewBorder ();
@@ -1045,20 +1045,20 @@ void R_Init (void)
     R_SetViewSize ();   // setsizeneeded is set true
 
     if(devparm)
-        CONS_Printf ("\nR_InitPlanes");
+        GenPrintf(EMSG_dev, "\nR_InitPlanes");
     R_InitPlanes ();
 
     //added:02-02-98: this is now done by SCR_Recalc() at the first mode set
     if(devparm)
-        CONS_Printf ("\nR_InitLightTables");
+        GenPrintf(EMSG_dev, "\nR_InitLightTables");
     R_InitLightTables ();
 
     if(devparm)
-        CONS_Printf ("\nR_InitSkyMap");
+        GenPrintf(EMSG_dev, "\nR_InitSkyMap");
     R_InitSkyMap ();
 
     if(devparm)
-        CONS_Printf ("\nR_InitTranslationsTables");
+        GenPrintf(EMSG_dev, "\nR_InitTranslationsTables");
     R_InitTranslationTables ();
 
     R_InitDrawNodes();

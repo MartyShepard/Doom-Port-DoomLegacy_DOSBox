@@ -3545,3 +3545,17 @@ Add menu sounds effects option and cvar.
 Adapts menu sounds to game type, such as doom2 and heretic.
 Updated legacy.wad from menu.wad.
 New Legacy menu sounds are quieter than pistol shot used by Doom2.
+
+*** W95_messages
+patchfile = w95_3_messages.patch
+- committed revision 1061   by wesley johnson
+Reorganized the printing of messages to the console, stderr, log, and screen.
+Created EMSG_flags to select destinations for messages.
+There are EMSG selections for stderr text, error, console, log, verbose,
+debug, and devparm.
+These can be customized by port, and active destinations, without
+changing all the print statements.
+CONS_Printf and I_SoftError route messages according to the EMSG_flags state
+Created GenPrintf() to route verbose and devparm messages to selected
+destinations, replacing most uses of fprintf(stderr...).
+Verbose and debug messages can now also go to the log and console.

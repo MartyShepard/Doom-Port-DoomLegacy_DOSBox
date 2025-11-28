@@ -38,6 +38,7 @@ extern FILE *logstream;
 #endif
 #define LOGLINELEN  80
 #endif
+#define SHOW_DEBUG_MESSAGES
 
 // [WDJ] Machine speed limitations.
 // Leave undefined for netplay, or make sure all machines have same setting.
@@ -197,4 +198,3 @@ extern FILE *logstream;
 
 
 #endif  // DOOMDEF_H
-

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: console.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -124,8 +124,9 @@ static void CONS_French_f (void)
 #endif
 
 boolean  con_started=false;  // console has been initialised
-boolean  con_startup=false;  // true at game startup, screen need refreshing
-boolean  con_forcepic=true;  // at startup toggle console transulcency when
+boolean  con_video=false;  // text mode until video started
+boolean  con_self_refresh=false;  // true at game startup, screen need refreshing
+boolean  con_forcepic=true;  // at startup toggle console translucency when
                              // first off
 boolean  con_recalc;     // set true when screen size has changed
 
@@ -184,7 +185,10 @@ pic_t*   con_bordright;  // console borders in translucent mode
 
 
 // protos.
+static void CON_DrawConsole (void);
 static void CON_InputInit (void);
+static void CON_Print (char *msg);
+static void CONS_Clear_f (void);
 static void CON_RecalcSize (void);
 
 static void CONS_speed_Change (void);
@@ -216,7 +220,6 @@ CV_PossibleValue_t backpic_cons_t[]={{0,"translucent"},{1,"picture"},{0,NULL}};
 // whether to use console background picture, or translucent mode
 consvar_t   cons_backpic = {"con_backpic","0",CV_SAVE,backpic_cons_t};
 
-void CON_Print (char *msg);
 
 //  Check CONS_speed value (must be positive and >0)
 //
@@ -404,8 +407,9 @@ void CON_Init(void)
     consoletoggle = false;
 
     con_started = true;
-    con_startup = true; // need explicit screen refresh
+    con_self_refresh = true; // need explicit screen refresh
                         // until we are in Doomloop
+    con_video = true;   // if move CON init to before video startup
 }
 
 
@@ -899,7 +903,7 @@ static void CON_Linefeed (int second_player_message)
 //  Outputs text into the console text buffer
 //
 //TODO: fix this mess!!
-void CON_Print (char *msg)
+static void CON_Print (char *msg)
 {
     int      l;
     int      mask=0;
@@ -928,7 +932,6 @@ void CON_Print (char *msg)
         // skip non-printable characters and white spaces
         while (*msg && *msg<=' ')
         {
-
             // carriage return
             if (*msg=='\r')
             {
@@ -949,7 +952,6 @@ void CON_Print (char *msg)
             else if (*msg=='\t')
             {
                 //adds tab spaces for nice layout in console
-                
                 do
                 {
                     con_line[con_cx++] = ' ';
@@ -984,15 +986,15 @@ void CON_Print (char *msg)
 //
 #define CONS_BUF_SIZE 1024
 
-void CONS_Printf (const char *fmt, ...)
+// [WDJ] print from va_list
+// Caller must have va_start, va_end
+void CONS_Printf_va (const char *fmt, va_list ap)
 {
-    va_list ap;
-    char    txt[CONS_BUF_SIZE];
+    char  txt[CONS_BUF_SIZE];
 
-    va_start(ap, fmt);
+    // print the error
     vsnprintf(txt, CONS_BUF_SIZE, fmt, ap);
     txt[CONS_BUF_SIZE-1] = '\0'; // term, when length limited
-    va_end(ap);
 
 #ifdef LOGMESSAGES
     // echo console prints to log file
@@ -1001,21 +1003,43 @@ void CONS_Printf (const char *fmt, ...)
 #endif
     DEBFILE(txt);
 
-    if (!con_started/* || !graphics_started*/)
+    // Disable debug messages for release version
+#ifndef  SHOW_DEBUG_MESSAGES
+    if( EMSG_flags & EMSG_debtst )  goto done;  // disable debug messages
+#endif
+
+    if( EMSG_flags & (EMSG_text | EMSG_error) )
     {
-      I_OutputMsg ("%s",txt);
-      return;
+        // Errors to terminal, and before graphics
+        I_OutputMsg ("%s",txt);
     }
-    else
-        // write message in con text buffer
-        CON_Print (txt);
+
+#if 0
+#ifdef LINUX
+    // Keep debug messages off console, for some versions
+    if( EMSG_flags & EMSG_debtst )  goto done;
+#endif
+#endif
+
+    if( ! con_started )  goto done;
+    if( EMSG_flags & EMSG_error )
+    {
+        // errors to CON unless no con_video yet
+        if( ! con_video )  goto done;
+    }
+    else if( ! (EMSG_flags & EMSG_CONS) )  goto done;  // no CONS flag
+   
+    // print to EMSG_CONS
+    // write message in con text buffer
+    CON_Print (txt);
 
     // make sure new text is visible
     con_scrollup = 0;
 
     // if not in display loop, force screen update
-    if (con_startup)
+    if ( graphics_started && con_self_refresh )
     {
+        // have graphics, but do not have refresh loop running
 #if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
@@ -1028,26 +1052,34 @@ void CONS_Printf (const char *fmt, ...)
         I_FinishUpdate ();              // page flip or blit buffer
 #endif
     }
+    else if ( graphics_started && ! con_video && vid.display )
+    {
+        // messages before graphics
+        CON_DrawConsole ();
+        I_FinishUpdate ();
+    }
+ done:
+    return;
 }
 
-// [WDJ] print from va_list
-// Caller must have va_start, va_end
-void CONS_Printf_va (const char *fmt, va_list ap )
+// General printf interface for CONS_Printf
+void CONS_Printf (const char *fmt, ...)
 {
-    char  txt[CONS_BUF_SIZE];
+    va_list ap;
 
-    // print the error
-    vsnprintf(txt, CONS_BUF_SIZE, fmt, ap);
-    txt[CONS_BUF_SIZE-1] = '\0'; // term, when length limited
-    CONS_Printf(txt);
+    va_start(ap, fmt);
+    CONS_Printf_va( fmt, ap );
+    va_end(ap);
 }
-
 
 //  Print an error message, and wait for ENTER key to continue.
 //  To make sure the user has seen the message
 //
 void CONS_Error (char *msg)
 {
+    byte save_emsg_flags = EMSG_flags;
+    EMSG_flags |= EMSG_error;
+
 #ifdef WIN_NATIVE
     if(!graphics_started)
     {
@@ -1061,6 +1093,21 @@ void CONS_Error (char *msg)
     // dirty quick hack, but for the good cause
     // while (I_GetKey() != KEY_ENTER)
     //   ;
+    EMSG_flags = save_emsg_flags;
+}
+
+
+// For info, debug, dev, verbose messages
+// print to text, console, and logs
+void GenPrintf (byte emsgflags, const char *fmt, ...)
+{
+    va_list ap;
+    byte save_emsg_flags = EMSG_flags;  // emsgflags are temporary
+    EMSG_flags = (EMSG_flags & EMSG_text) | emsgflags;
+    va_start(ap, fmt);
+    CONS_Printf_va( fmt, ap );  // print to text, console, and logs
+    va_end(ap);
+    EMSG_flags = save_emsg_flags;
 }
 
 
@@ -1273,7 +1320,7 @@ static void CON_DrawConsole (void)
 
     // draw prompt if enough place (not while game startup)
     //
-    if ((con_curlines==con_destlines) && (con_curlines>=20) && !con_startup)
+    if ((con_curlines==con_destlines) && (con_curlines>=20) && !con_self_refresh)
         CON_DrawInput ();
 }
 

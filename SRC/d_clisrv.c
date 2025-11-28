@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
+// $Id: d_clisrv.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1162,7 +1162,7 @@ void D_ClientServerInit (void)
 	    if( viewangleoffset > ANG90 )  viewangleoffset = ANG90;
 	}
     }
-//    fprintf(stderr, "viewangleoffset=%i\n", viewangleoffset );
+//    GenPrintf(EMSG_debug, "viewangleoffset=%i\n", viewangleoffset );
 
     // for dedicated server, without player
     dedicated=M_CheckParm("-dedicated")!=0;
@@ -2198,7 +2198,7 @@ void SV_Maketic(void)
                DEBFILE(va("MISS tic%4u for node %d\n",maketic,j));
 #ifdef PARANOIA
                if( devparm )
-                   CONS_Printf("\2Client Misstic %d\n",maketic);
+                   GenPrintf(EMSG_dev, "\2Client Misstic %d\n",maketic);
 #endif
                // copy the old tic
                for(i=0;i<playerpernode[j];i++,player=nodetoplayer2[j])

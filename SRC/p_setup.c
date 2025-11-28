@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
+// $Id: p_setup.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -526,7 +526,7 @@ int P_AddLevelFlat ( char* flatname )
 
     // create new flat entry in levelflats
     if (devparm)
-        CONS_Printf ("flat %#03d: %s\n", numlevelflats, name8.s);
+        GenPrintf(EMSG_dev, "flat %#03d: %s\n", numlevelflats, name8.s);
 
     if (numlevelflats>=levelflat_max)
     {
@@ -1223,7 +1223,7 @@ void P_LoadBlockMap (int lump)
       {
 	  // first or repeated overflow
 	  overflow_corr += 0x00010000;
-	  fprintf( stderr,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
+	  GenPrintf(EMSG_warn,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
 		   i, overflow_corr );
       }
       prev_bme = bme;  // uncorrected
@@ -1331,7 +1331,7 @@ void P_GroupLines (void)
 	        if( seg->sidedef )
 	        {
 		    ss->sector = seg->sidedef->sector;
-		    fprintf( stderr, " found sector in seg #%d\n", j );
+		    GenPrintf(EMSG_error, " found sector in seg #%d\n", j );
 		    goto continue_subsectors;
 		}
 	        seg++;	// step through segs from firstline
@@ -1805,7 +1805,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
                     // the sound will be reloaded when needed,
                     // since sfx->data will be NULL
                     if (devparm)
-                        CONS_Printf ("Sound %.8s replaced\n", name);
+                        GenPrintf(EMSG_dev, "Sound %.8s replaced\n", name);
 
                     S_FreeSfx (&S_sfx[j]);
 
@@ -1833,7 +1833,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
         if (name[0]=='D' && name[1]=='_')
         {
             if (devparm)
-                CONS_Printf ("Music %.8s replaced\n", name);
+                GenPrintf(EMSG_dev, "Music %.8s replaced\n", name);
             replaces++;
         }
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1060 2013-12-13 20:25:47Z wesleyjohnson $
+// $Id: sounds.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -562,7 +562,8 @@ void S_RemoveSoundFx (int id)
         id<=sfx_lastfreeslot &&
         S_sfx[id].name)
     {
-        fprintf(stderr, "RemoveSoundFx: %s\n", S_sfx[id].name );
+        if( verbose > 1 )
+	    GenPrintf(EMSG_ver, "RemoveSoundFx: %s\n", S_sfx[id].name );
         S_FreeSfx(&S_sfx[id]);
         Z_Free(S_sfx[id].name);
         S_sfx[id].lumpnum=-1;

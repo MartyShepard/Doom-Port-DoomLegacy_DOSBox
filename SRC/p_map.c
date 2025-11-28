@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
+// $Id: p_map.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2831,7 +2831,7 @@ boolean PIT_GetSectors(line_t* ld)
 //[WDJ] DEBUG
   if( ld->slopetype > ST_NEGATIVE || ld->slopetype < ST_HORIZONTAL )
   {
-      fprintf( stderr, "PIT_GetSectors, bad line_t\n" );
+      GenPrintf(EMSG_warn, "PIT_GetSectors, bad line_t\n" );
       return false;
   }
 

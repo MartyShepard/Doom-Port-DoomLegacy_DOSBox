@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1052 2013-10-01 21:05:06Z wesleyjohnson $
+// $Id: s_sound.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -359,7 +359,7 @@ void S_GetSfxLump( sfxinfo_t * sfx )
 	}
 
         if( verbose > 1 )
-	    fprintf(stderr,"Sound missing: %s, Using default sound\n", lmpname);
+	    GenPrintf(EMSG_ver, "Sound missing: %s, Using default sound\n", lmpname);
 	// Heretic shareware: get many missing sound names at sound init,
 	// but not after game starts.  These come from list of sounds
 	// in sounds.c, but not all those are in the game.
@@ -666,7 +666,7 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 
 #if 0
     // Debug.
-    fprintf( stderr, "S_StartSoundAtVolume: playing sound %d (%s)\n",
+    GenPrintf(EMSG_debug, "S_StartSoundAtVolume: playing sound %d (%s)\n",
 		sfx_id, S_sfx[sfx_id].name );
 #endif
 

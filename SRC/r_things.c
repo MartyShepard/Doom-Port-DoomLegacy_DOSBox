@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1053 2013-10-01 21:06:41Z wesleyjohnson $
+// $Id: r_things.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -237,12 +237,18 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
     {
         // the lump should be used for all rotations
         if (sprtemp[frame].rotate == 0 && devparm)
-            CONS_Printf ("R_InitSprites: Sprite %s frame %c has "
-                        "multiple rot=0 lump\n", spritename, 'A'+frame);
+        {
+            GenPrintf(EMSG_dev,
+	       "R_InitSprites: Sprite %s frame %c has multiple rot=0 lump\n",
+	       spritename, 'A'+frame);
+	}
 
         if (sprtemp[frame].rotate == 1 && devparm)
-            CONS_Printf ("R_InitSprites: Sprite %s frame %c has rotations "
-                        "and a rot=0 lump\n", spritename, 'A'+frame);
+        {
+            GenPrintf(EMSG_dev,
+	       "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
+	       spritename, 'A'+frame);
+	}
 
         sprtemp[frame].rotate = 0;
         for (r=0 ; r<8 ; r++)
@@ -256,8 +262,11 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 
     // the lump is only used for one rotation
     if (sprtemp[frame].rotate == 0 && devparm)
-        CONS_Printf ("R_InitSprites: Sprite %s frame %c has rotations "
-                     "and a rot=0 lump\n", spritename, 'A'+frame);
+    {
+        GenPrintf(EMSG_dev,
+	   "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
+	   spritename, 'A'+frame);
+    }
 
     sprtemp[frame].rotate = 1;
 
@@ -265,9 +274,11 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
     rotation--;
 
     if (sprtemp[frame].spritelump_id[rotation] != -1 && devparm)
-        CONS_Printf ("R_InitSprites: Sprite %s : %c : %c "
-                     "has two lumps mapped to it\n",
-                     spritename, 'A'+frame, '1'+rotation);
+    {
+        GenPrintf(EMSG_dev,
+	   "R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it\n",
+           spritename, 'A'+frame, '1'+rotation);
+    }
 
     // lumppat & spritelump_id are the same for original Doom, but different
     // when using sprites in pwad : the lumppat points the new graphics
@@ -408,7 +419,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 #ifdef DEBUG_CHEXQUEST
 	    // [WDJ] 4/28/2009 Chexquest
 	    // [WDJ] not fatal, some wads have broken sprite but still play
-            fprintf( stderr, "R_InitSprites: No patches found "
+            GenPrintf(EMSG_debug, "R_InitSprites: No patches found "
                      "for %s frame %c \n", sprname, frame+'A');
 #else
             I_Error ("R_InitSprites: No patches found "
@@ -489,7 +500,7 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
     if (end==-1)
     {
         if (devparm)
-            CONS_Printf ("no sprites in pwad %d\n", wadnum);
+            GenPrintf(EMSG_dev, "no sprites in pwad %d\n", wadnum);
         return;
         //I_Error ("R_AddSpriteDefs: S_END, or SS_END missing for sprites "
         //         "in pwad %d\n",wadnum);
@@ -509,7 +520,7 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
             // if a new sprite was added (not just replaced)
             addsprites++;
             if (devparm)
-                CONS_Printf ("sprite %s set in pwad %d\n", namelist[i], wadnum);//Fab
+                GenPrintf(EMSG_dev, "sprite %s set in pwad %d\n", namelist[i], wadnum);//Fab
         }
     }
 
@@ -1503,7 +1514,7 @@ void R_DrawPSprite (pspdef_t* psp)
     // There being one viewpoint per offset, probably do not need this.
     if( flip )
     {
-fprintf(stderr,"Player weapon flip detected!\n" );
+        // GenPrintf(EMSG_debug,"Player weapon flip detected!\n" );
         tx -= sprlump->width - sprlump->offset;  // Fraggle's flip offset
     }
     else

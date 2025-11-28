@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1056 2013-10-09 20:15:46Z wesleyjohnson $
+// $Id: dehacked.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -141,7 +141,7 @@ char* myfgets(char *buf, int bufsize, MYFILE *f)
     //CONS_Printf("fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
 
     if( devparm && verbose )
-        fprintf(stderr,"DEH: %s",buf);  // buf has \n
+        GenPrintf(EMSG_text|EMSG_log,"DEH: %s",buf);  // buf has \n
     return buf;
 }
 
@@ -657,18 +657,18 @@ static void readthing(MYFILE *f, int deh_thing_id )
 		  {
 		      // Boom bit defined in boomdeh.txt
 		      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
-		      fprintf(stderr, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
+		      GenPrintf(EMSG_text|EMSG_log, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
 		      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
 		      {
 			  // assume TRANSLUCENT, check for known exceptions
-			  fprintf(stderr, "MF_TRANSLUCENT\n");
+			  GenPrintf(EMSG_text|EMSG_log, "MF_TRANSLUCENT\n");
 		      }
 		      else
 		      {
 			  // assume FLOORHUGGER, check for known exceptions
 			  flags1 &= ~MF_TRANSLUCENT;
 			  mip->flags2 |= MF2_FLOORHUGGER;
-			  fprintf(stderr, "MF_FLOORHUGGER\n");
+			  GenPrintf(EMSG_text|EMSG_log, "MF_FLOORHUGGER\n");
 		      }
 		  }
 		  mip->flags = flags1; // we are still using same flags bit order
@@ -958,7 +958,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
 
     if( strncmp(s,"GREATER RUNES", 13) == 0 )
     {
-        fprintf(stderr,"Text:%s\n", s);
+        GenPrintf(EMSG_text|EMSG_log, "Text:%s\n", s);
     }
     str2 = &s[len1];
     s[len1+len2]='\0';
@@ -1073,7 +1073,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
 	   }
        }
        if( devparm && verbose )
-           fprintf(stderr,"Text hash= 0x%08x :", hash);
+           GenPrintf(EMSG_text|EMSG_log, "Text hash= 0x%08x :", hash);
     }
 
     s[len1]='\0';

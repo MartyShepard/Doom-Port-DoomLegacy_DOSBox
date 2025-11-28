@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: p_enemy.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -441,11 +441,11 @@ void DemoAdapt_p_enemy( void )
 #if 1
     if( verbose > 1 )
     { 
-        fprintf(stderr, "friction_model=%i, monster_friction=%i\n",
+        GenPrintf(EMSG_ver, "friction_model=%i, monster_friction=%i\n",
 		friction_model, monster_friction );
-        fprintf(stderr, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
+        GenPrintf(EMSG_ver, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
 		EN_mbf_enemyfactor,  EN_monster_momentum );
-        fprintf(stderr, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
+        GenPrintf(EMSG_ver, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
 		EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
     }
 #endif
@@ -851,7 +851,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         // and on conveyor, how long they take to fall off.
         // Tuned backpedal speed constant.
 	register int  backpedal = (actor->info->speed * 0x87BB);
-//        fprintf( stderr, "backpedal 0x%X ", backpedal );
+//        GenPrintf(EMSG_debug, "backpedal 0x%X ", backpedal );
         // Vector away from line
         fixed_t  dal = P_AproxDistance(dax,day);
         dal = FixedDiv( dal, backpedal );
@@ -861,7 +861,7 @@ static void P_NewChaseDir (mobj_t*     actor)
 	    day = FixedDiv( day, dal );
 	}
 
-//        fprintf( stderr, "stuck delta (0x%X,0x%X)\n", dax, day );
+//        GenPrintf(EMSG_debug, "stuck delta (0x%X,0x%X)\n", dax, day );
         if (P_TryMove (actor, actor->x + dax, actor->y + day, true))  // allow cross dropoff
 	    goto accept_move;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_draw.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -594,7 +594,7 @@ void R_DrawViewBorder (void)
 
 
 #ifdef DEBUG
-    fprintf(stderr,"RDVB: vidwidth %d vidheight %d rdraw_scaledviewwidth %d rdraw_viewheight %d\n",
+    GenPrintf(EMSG_debug,"RDVB: vidwidth %d vidheight %d rdraw_scaledviewwidth %d rdraw_viewheight %d\n",
              vid.width,vid.height,rdraw_scaledviewwidth,rdraw_viewheight);
 #endif
 

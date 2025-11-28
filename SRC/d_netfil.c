@@ -327,7 +327,7 @@ int CL_CheckFiles(void)
     {
         fileneeded_t * fnp = &fileneeded[i];
         if(devparm)
-	    CONS_Printf("searching for '%s' ", fnp->filename);
+	    GenPrintf(EMSG_dev, "searching for '%s' ", fnp->filename);
         
         // check in already loaded files
         for(j=1;wadfiles[j];j++)
@@ -337,7 +337,8 @@ int CL_CheckFiles(void)
             if( strcasecmp(wadfilename, fnp->filename)==0 &&
                  !memcmp(wadfiles[j]->md5sum, fnp->md5sum, 16))
             {
-                if(devparm) CONS_Printf("already loaded\n");
+                if(devparm)
+		   GenPrintf(EMSG_dev, "already loaded\n");
                 fnp->status=FS_OPEN;
                 break;
             }
@@ -347,7 +348,7 @@ int CL_CheckFiles(void)
 
         fnp->status = findfile(fnp->filename, fnp->md5sum, true);
         if(devparm)
-	    CONS_Printf("found %d\n", fnp->status);
+	    GenPrintf(EMSG_dev, "found %d\n", fnp->status);
         if( fnp->status != FS_FOUND )
             ret=0;
     }

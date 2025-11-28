@@ -48,7 +48,7 @@ boolean CON_Responder (event_t *ev);
 // set true when screen size has changed, to adapt console
 extern boolean con_recalc;
 
-extern boolean con_startup;
+extern boolean con_self_refresh;
 
 // top clip value for view render: do not draw part of view hidden by console
 extern int     con_clipviewtop;

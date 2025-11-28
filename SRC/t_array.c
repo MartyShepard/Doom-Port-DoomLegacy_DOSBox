@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_array.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -88,7 +88,7 @@ void T_Init_FSArrayList(void)
    {
        fs_array_t * sfap, * sfap_nxt;
        // enable to test if this is happening
-//       fprintf(stderr, "T_Init_FSArrayList: clearing array list\n" );
+//       GenPrintf(EMSG_debug, "T_Init_FSArrayList: clearing array list\n" );
 #ifdef FS_ARRAYLIST_STRUCTHEAD
        sfap = fs_arraylist.next;
 #else      

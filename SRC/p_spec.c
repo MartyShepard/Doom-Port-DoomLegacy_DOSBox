@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: p_spec.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -408,7 +408,8 @@ void P_FindAnimatedFlat (int animnum)
 
             if (devparm)
 	    {
-                CONS_Printf("animflat: %#03d name:%.8s animseq:%d numpics:%d speed:%d\n",
+                GenPrintf(EMSG_dev,
+		   "animflat: %#03d name:%.8s animseq:%d numpics:%d speed:%d\n",
                             i, foundflats->name, foundflats->animseq,
                             foundflats->numpics,foundflats->speed);
 	    }
@@ -3821,8 +3822,8 @@ static void P_SpawnFriction( sector_t * sec )
             else
                 movefactor = ((friction - 0xDB34)*(0xA))/0x80;  // mud
 
-// [WDJ] To see friction calculations, uncomment this fprintf	   
-//fprintf(stderr, "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
+// [WDJ] To see friction calculations, uncomment this print
+// GenPrintf(EMSG_debug, "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
 
 	    // killough 8/28/98: prevent odd situations
 	    if (movefactor < 32)

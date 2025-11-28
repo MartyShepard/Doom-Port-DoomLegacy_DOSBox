@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: w_wad.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -304,7 +304,7 @@ int W_LoadWadFile (char *filename)
         int t=I_GetTime();
         md5_stream (fhandle, wadfile->md5sum);
         if( devparm )
-            CONS_Printf("md5 calc for %s took %f second\n",
+            GenPrintf(EMSG_dev, "md5 calc for %s took %f second\n",
                         wadfile->filename,(float)(I_GetTime()-t)/TICRATE);
     }
     fclose(fhandle);

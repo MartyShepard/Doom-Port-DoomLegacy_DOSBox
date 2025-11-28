@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_chex.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 2003-2010 by DooM Legacy Team.
 //
@@ -217,7 +217,7 @@ void* Chex_safe_pictures( char* name, void* lumpptr )
 	   // found a matching entry name
 	   uint64_t c_checksum = W_lump_checksum( lumpptr );
 	   // [WDJ] Uncomment the next line to get the checksums of pictures.
-//	   fprintf(stderr, "Chex_safe_pictures: %8.8s  checksum=%16lX\n", name, (long)c_checksum);
+//	   GenPrintf(EMSG_debug, "Chex_safe_pictures: %8.8s  checksum=%16lX\n", name, (long)c_checksum);
 	   if( chex_repl[i].checksum == c_checksum )
 	   {
 	       // it is the original, replace it

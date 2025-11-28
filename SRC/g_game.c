@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: g_game.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2244,7 +2244,7 @@ boolean G_Downgrade(int version)
 
     if (verbose > 1)
     {
-        fprintf(stderr,"Downgrade to version: %i\n", version);
+        GenPrintf(EMSG_all,"Downgrade to version: %i\n", version);
     }
 
     if (version<109)
@@ -2719,7 +2719,7 @@ void G_DoPlayDemo (char *defdemoname)
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
 #endif
 #ifdef DEBUG_DEMO
-    fprintf( stderr, "Demo version %i.\n", (int)demoversion );
+    GenPrintf(EMSG_debug, "Demo version %i.\n", (int)demoversion );
 #endif
 
     if (demoversion < 109 || demoversion >= 215)
@@ -2747,8 +2747,8 @@ void G_DoPlayDemo (char *defdemoname)
 	    // MBF and prboom header have compatibility level
 	    compatibility = *demo_p++;
 #ifdef DEBUG_DEMO
-	    fprintf( stderr, " Boom demo header: %s.\n", header );
-	    fprintf( stderr, " compatibility 0x%x.\n", compatibility );
+	    GenPrintf(EMSG_debug, " Boom demo header: %s.\n", header );
+	    GenPrintf(EMSG_debug, " compatibility 0x%x.\n", compatibility );
 #endif
 	    boomdemo = 1;
 	    boomsupport = ! compatibility;
@@ -2787,16 +2787,16 @@ void G_DoPlayDemo (char *defdemoname)
     // header[3]: byte: map level 1..32
     map         = *demo_p++;
 #ifdef DEBUG_DEMO
-    fprintf( stderr, " skill %i.\n", (int)skill );
-    fprintf( stderr, " episode %i.\n", (int)episode );
-    fprintf( stderr, " map %i.\n", (int)map );
+    GenPrintf(EMSG_debug, " skill %i.\n", (int)skill );
+    GenPrintf(EMSG_debug, " episode %i.\n", (int)episode );
+    GenPrintf(EMSG_debug, " map %i.\n", (int)map );
 #endif
     // header[4]: byte: play mode 0..2
     //   0 = single player
     //   1 = deathmatch or cooperative
     //   2 = alt deathmatch
 #ifdef DEBUG_DEMO
-    fprintf( stderr, " play mode/deathmatch %i.\n", (int)demo_p[0] );
+    GenPrintf(EMSG_debug, " play mode/deathmatch %i.\n", (int)demo_p[0] );
 #endif
     if (demoversion < 127 || demo144_format || boomdemo)
         // store it, using the console will set it too late
@@ -2807,8 +2807,8 @@ void G_DoPlayDemo (char *defdemoname)
     if( ! boomdemo )
     {
 #ifdef DEBUG_DEMO
-        fprintf( stderr, " respawn %i.\n", (int)demo_p[1] );
-        fprintf( stderr, " fast monsters %i.\n", (int)demo_p[2] );
+        GenPrintf(EMSG_debug, " respawn %i.\n", (int)demo_p[1] );
+        GenPrintf(EMSG_debug, " fast monsters %i.\n", (int)demo_p[2] );
 #endif
         // header[5]: byte: respawn boolean
         if (demoversion < 128 || demo144_format)
@@ -2830,7 +2830,7 @@ void G_DoPlayDemo (char *defdemoname)
         // header[7]: byte: no monsters present boolean
         nomonsters  = *demo_p++;
 #ifdef DEBUG_DEMO
-        fprintf( stderr, " no monsters %i.\n", (int)nomonsters );
+        GenPrintf(EMSG_debug, " no monsters %i.\n", (int)nomonsters );
 #endif
         cv_rndsoundpitch.value = 0;
     }
@@ -2842,7 +2842,7 @@ void G_DoPlayDemo (char *defdemoname)
     displayplayer_ptr = consoleplayer_ptr = &players[consoleplayer];  // [WDJ]
 
 #ifdef DEBUG_DEMO
-    fprintf( stderr, " viewing player %i.\n",  (int)displayplayer );
+    GenPrintf(EMSG_debug, " viewing player %i.\n",  (int)displayplayer );
 #endif
 
      //added:11-01-98:
@@ -2853,7 +2853,7 @@ void G_DoPlayDemo (char *defdemoname)
         for (i=0 ; i<4 ; i++) {
 #ifdef DEBUG_DEMO
 	    if( *demo_p )
-	         fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
+	         GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
             playeringame[i] = *demo_p++;
 	}
@@ -2874,15 +2874,15 @@ void G_DoPlayDemo (char *defdemoname)
 	variable_friction = demo_p[1];
         allow_pushers = demo_p[3];
 #ifdef DEBUG_DEMO
-        fprintf( stderr, " respawn %i.\n", (int)demo_p[6] );
-        fprintf( stderr, " fast monsters %i.\n", (int)demo_p[7] );
+        GenPrintf(EMSG_debug, " respawn %i.\n", (int)demo_p[6] );
+        GenPrintf(EMSG_debug, " fast monsters %i.\n", (int)demo_p[7] );
 #endif
         cv_respawnmonsters.value = demo_p[6];  // respawn monsters, boolean
         cv_fastmonsters.value = demo_p[7]; // fast monsters, boolean
         cv_fastmonsters.func();
         nomonsters = demo_p[8];  // nomonsters, boolean
 #ifdef DEBUG_DEMO
-        fprintf( stderr, " no monsters %i.\n", (int)nomonsters );
+        GenPrintf(EMSG_debug, " no monsters %i.\n", (int)nomonsters );
 #endif
         // [9] demo insurance
         // [10..13] random number seed
@@ -2913,7 +2913,7 @@ void G_DoPlayDemo (char *defdemoname)
         for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
 	    if( *demo_p )
-	         fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
+	         GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
             playeringame[i] = *demo_p++;
 	}
@@ -2921,7 +2921,7 @@ void G_DoPlayDemo (char *defdemoname)
     else
     {
 #ifdef DEBUG_DEMO
-       fprintf( stderr, " time limit %i.\n", (int)*demo_p );
+       GenPrintf(EMSG_debug, " time limit %i.\n", (int)*demo_p );
 #endif
         if(demoversion<128)
         {
@@ -2937,7 +2937,7 @@ void G_DoPlayDemo (char *defdemoname)
             for (i=0 ; i<8 ; i++) {
 #ifdef DEBUG_DEMO
 	        if( *demo_p )
-	            fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
+	            GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
 	    }
@@ -2948,7 +2948,7 @@ void G_DoPlayDemo (char *defdemoname)
             if( demoversion>=131 ) {
                 multiplayer = *demo_p++;
 #ifdef DEBUG_DEMO
- 		fprintf( stderr, " multi-player %i.\n", (int)multiplayer );
+ 		GenPrintf(EMSG_debug, " multi-player %i.\n", (int)multiplayer );
 #endif
 	    }
 
@@ -2956,7 +2956,7 @@ void G_DoPlayDemo (char *defdemoname)
             for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
 	        if( *demo_p )
-	            fprintf( stderr, " player %i present %i.\n", i+1, (int)*demo_p );
+	            GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
 	    }
@@ -3020,7 +3020,7 @@ void G_DoPlayDemo (char *defdemoname)
 
 broken_header:   
 #ifdef DEBUG_DEMO
-    fprintf( stderr, " broken demo header\n" );
+    GenPrintf(EMSG_debug, " broken demo header\n" );
 #endif
    
 kill_demo:

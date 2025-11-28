@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1045 2013-09-22 20:32:24Z wesleyjohnson $
+// $Id: r_data.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -336,7 +336,7 @@ byte* R_GenerateTexture (int texnum)
 #if 0
     // To debug problems with specific textures
     if( strncmp(texture->name, "TEKWALL5", 8 ) == 0 )
-       fprintf(stderr,"GenerateTexture - match\n");
+       GenPrintf(EMSG_debug,"GenerateTexture - match\n");
 #endif
 
     // single-patch textures can have holes and may be used on
@@ -373,7 +373,7 @@ byte* R_GenerateTexture (int texnum)
 	    // which require the patch run full height (no transparent).
 #if 1
 	    // Enable when want to know which textures are triggering this.
-	    fprintf(stderr,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
+	    GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
 #endif
 	    // make a dummy texture
 	    int head_size = colofs_size + 8;
@@ -410,7 +410,7 @@ byte* R_GenerateTexture (int texnum)
 	    // [WDJ] Cannot copy patch to texture.
 	    // Fixes tekwall2, tekwall3, tekwall5 in FreeDoom,
 	    // which use right half of large combined patches.
-//	    fprintf(stderr,"GenerateTexture %s: offset forced multipatch\n", texture->name );
+//	    GenPrintf(EMSG_debug,"GenerateTexture %s: offset forced multipatch\n", texture->name );
 	    goto multipatch_combine;
 	}
 #endif
@@ -428,7 +428,7 @@ byte* R_GenerateTexture (int texnum)
 	    }
 	    else
 	    {
-//	        fprintf(stderr,"GenerateTexture %s: width forced multipatch\n", texture->name );
+//	        GenPrintf(EMSG_debug,"GenerateTexture %s: width forced multipatch\n", texture->name );
 	        goto multipatch_combine;
 	    }
 	}
@@ -452,7 +452,7 @@ byte* R_GenerateTexture (int texnum)
 	    txcblocksize = patchsize + ofsdiff + 4;
 #if 0
 	    // Enable when want to know which textures are triggering this.
-	    fprintf(stderr,"R_GenerateTexture: single patch width does not match texture width %8s\n",
+	    GenPrintf(EMSG_info,"R_GenerateTexture: single patch width does not match texture width %8s\n",
 		   texture->name );
 #endif
             txcblock = Z_Malloc (txcblocksize,
@@ -656,7 +656,7 @@ byte* R_GenerateTexture (int texnum)
 		    int rpx = (cp->originx < 0) ? -cp->originx : 0;  // x in patch
 #ifdef DEBUG_REUSECOL
 		    if( DEBUG_REUSECOL )
-		       fprintf(stderr,"GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
+		       GenPrintf(EMSG_debug,"GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
 #endif
 		    for( ; rpx<patch_x; rpx++ )  // find reused column
 		    {
@@ -669,7 +669,7 @@ byte* R_GenerateTexture (int texnum)
 			    int livepatchcount2 = 0;
 #ifdef DEBUG_REUSECOL
 			    if( DEBUG_REUSECOL )
-			       fprintf(stderr,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+			       GenPrintf(EMSG_debug,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
 			    // [WDJ] If reused column is reused alone in both cases,
 			    // then assume they will be identical in final texture too.
@@ -693,7 +693,7 @@ byte* R_GenerateTexture (int texnum)
 			    post_t * ppp = cp->postptr;
 #ifdef DEBUG_REUSECOL
 			    if( DEBUG_REUSECOL )
-			       fprintf(stderr,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+			       GenPrintf(EMSG_debug,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
 			    // [WDJ] Comparision is made difficult by the pad bytes,
 			    // which we set to 0, and Requiem.wad does not.
@@ -744,7 +744,7 @@ byte* R_GenerateTexture (int texnum)
 #ifdef DEBUG_REUSECOL
        		 // DEBUG: enable to see column reuse
 	         if( DEBUG_REUSECOL )
-	           fprintf(stderr,"GenerateTexture: reuse %i\n", reuse_column);
+	           GenPrintf(EMSG_debug,"GenerateTexture: reuse %i\n", reuse_column);
 #endif
 	         continue;  // next x
 	    }
@@ -869,7 +869,7 @@ byte* R_GenerateTexture (int texnum)
 #if 1
 	// enable to print re-alloc events
 	if( verbose )
-	    fprintf(stderr, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
+	    GenPrintf(EMSG_ver, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
 		    texture->name, old_txcblocksize, txcblocksize );
 #endif
         txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
@@ -1255,7 +1255,7 @@ void R_LoadTextures (void)
         memmove(texture->name, mtexture->name, sizeof(texture->name));	
 #if 0
         // [WDJ] DEBUG TRACE, watch where the textures go
-        fprintf( stderr, "Texture[%i] = %8.8s\n", i, mtexture->name);
+        GenPrintf(EMSG_debug, "Texture[%i] = %8.8s\n", i, mtexture->name);
 #endif
         mpatch = &mtexture->patches[0]; // first patch ind in texture lump
         texpatch = &texture->patches[0];
@@ -1389,13 +1389,13 @@ void R_InitFlats ()
   for(;cfile < numwadfiles;cfile ++, clump = 0)
   {
 #ifdef DEBUG_FLAT
-    fprintf( stderr, "Flats in file %i\n", cfile );
+    GenPrintf(EMSG_debug, "Flats in file %i\n", cfile );
 #endif	 
     startnum = W_CheckNumForNamePwad("F_START", cfile, clump);
     if(startnum == -1)
     {
 #ifdef DEBUG_FLAT
-      fprintf( stderr, "F_START not found, file %i\n", cfile );
+      GenPrintf(EMSG_debug, "F_START not found, file %i\n", cfile );
 #endif	 
       clump = 0;
       startnum = W_CheckNumForNamePwad("FF_START", cfile, clump);
@@ -1403,7 +1403,7 @@ void R_InitFlats ()
       if(startnum == -1) //If STILL -1, search the whole file!
       {
 #ifdef DEBUG_FLAT
-	fprintf( stderr, "FF_START not found, file %i\n", cfile );
+	GenPrintf(EMSG_debug, "FF_START not found, file %i\n", cfile );
 #endif	 
         flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
         flats[numflatlists].wadfile = cfile;
@@ -1417,12 +1417,12 @@ void R_InitFlats ()
     endnum = W_CheckNumForNamePwad("F_END", cfile, clump);
     if(endnum == -1) {
 #ifdef DEBUG_FLAT
-      fprintf( stderr, "F_END not found, file %i\n", cfile );
+      GenPrintf(EMSG_debug, "F_END not found, file %i\n", cfile );
 #endif	 
       endnum = W_CheckNumForNamePwad("FF_END", cfile, clump);
 #ifdef DEBUG_FLAT
       if( endnum == -1 ) {
-	 fprintf( stderr, "FF_END not found, file %i\n", cfile );
+	 GenPrintf(EMSG_debug, "FF_END not found, file %i\n", cfile );
       }
 #endif	 
     }
@@ -1582,7 +1582,7 @@ void R_ClearColormaps()
   int   i;
 #if 0   
   if( num_extra_colormaps > 30 )
-     fprintf( stderr, "Number of colormaps: %i\n", num_extra_colormaps );
+     GenPrintf(EMSG_warn, "Number of colormaps: %i\n", num_extra_colormaps );
 #endif
 
   num_extra_colormaps = 0;
@@ -1751,7 +1751,7 @@ void  R_Colormap_Analyze( int mapnum )
 #endif
 #ifdef VIEW_COLORMAP_GEN
         // Enable to see results of analysis.
-        fprintf( stderr,
+        GenPrintf(EMSG_info,
 	       "Analyze4: alpha=%i  red=%i  green=%i  blue=%i  fog=%i\n",
 	       (int)(255.0*h4), m4_red, m4_green, m4_blue, m4_fog );
 #endif      
@@ -1765,7 +1765,7 @@ void  R_Colormap_Analyze( int mapnum )
 
 #ifdef VIEW_COLORMAP_GEN
         // Enable to view settings of RGBA for hardware renderer.
-        fprintf(stderr,"RGBA[%i]: %8x   (alpha=%i, R=%i, G=%i, B=%i)\n",
+        GenPrintf(EMSG_info,"RGBA[%i]: %8x   (alpha=%i, R=%i, G=%i, B=%i)\n",
 	      i, colormapp->rgba[i],
 	      (int)work_rgba.s.alpha,
 	      (int)work_rgba.s.red, (int)work_rgba.s.green, (int)work_rgba.s.blue );
@@ -1809,7 +1809,7 @@ int R_ColormapNumForName(char *name)
   W_ReadLump (lump, extra_colormaps[num_extra_colormaps].colormap);
 
 #ifdef VIEW_COLORMAP_GEN
-  fprintf(stderr, "\nBoom Colormap: num=%i name= %8.8s\n", num_extra_colormaps, name );
+  GenPrintf(EMSG_info, "\nBoom Colormap: num=%i name= %8.8s\n", num_extra_colormaps, name );
 #endif
   R_Colormap_Analyze( num_extra_colormaps );
   
@@ -1948,8 +1948,8 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
   }
 
 #ifdef VIEW_COLORMAP_GEN
-  fprintf(stderr, "\nGenerate Colormap: num=%i\n", num_extra_colormaps );
-  fprintf(stderr, " alpha=%2x, color=(%2x,%2x,%2x), fade=(%2x,%2x,%2x), fog=%i\n",
+  GenPrintf(EMSG_info, "\nGenerate Colormap: num=%i\n", num_extra_colormaps );
+  GenPrintf(EMSG_info, " alpha=%2x, color=(%2x,%2x,%2x), fade=(%2x,%2x,%2x), fog=%i\n",
 	  c_alpha, (int)color_r, (int)color_g, (int)color_b,
 	  	     (int)cfade_r, (int)cfade_g, (int)cfade_b, fog );
 #endif
@@ -2068,7 +2068,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 	  cb = (int)( colorper*color_b + fadeper*cfade_b );
 	  extra_colormap_p->rgba[i] = (c_alpha<<24)|(cb<<16)|(cg<<8)|(cr);
 #ifdef VIEW_COLORMAP_GEN
-	  fprintf(stderr,"RGBA[%i]: %x\n", i, extra_colormap_p->rgba[i]);
+	  GenPrintf(EMSG_info,"RGBA[%i]: %x\n", i, extra_colormap_p->rgba[i]);
 #endif
       }
 #if 0
@@ -2080,7 +2080,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 	  (HEX_TO_INT(colorstr[5]) << 20) + (HEX_TO_INT(colorstr[6]) << 16) + 
 	  (ALPHA_TO_INT(colorstr[7]) << 24);
    if( rgba_oldhw != extra_colormap_p->rgba[0] )
-      fprintf(stderr,"RGBA: old=%X, new=%x\n", rgba_oldhw, extra_colormap_p->rgba[i-1]);
+      GenPrintf(EMSG_info,"RGBA: old=%X, new=%x\n", rgba_oldhw, extra_colormap_p->rgba[i-1]);
 #endif
 #endif
   }
@@ -2279,7 +2279,7 @@ void  R_TranslucentMap_Analyze( translucent_map_t * transp, byte * tmap )
 	    // for each color
 	    int krgb;
 #ifdef  VIEW_TRANSLUMAP_GEN_DETAIL
-fprintf( stderr, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
+GenPrintf(EMSG_info, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
   pLocalPalette[i1].s.red,pLocalPalette[i1].s.green,pLocalPalette[i1].s.blue,
   pLocalPalette[i2].s.red,pLocalPalette[i2].s.green,pLocalPalette[i2].s.blue,
   pLocalPalette[tm3].s.red,pLocalPalette[tm3].s.green,pLocalPalette[tm3].s.blue
@@ -2308,7 +2308,7 @@ fprintf( stderr, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
 	        {
 		    float h3 = (float)dn4 / (float)dd4;
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
-		    fprintf( stderr, " %i", (int)(h3*255) );
+		    GenPrintf(EMSG_info, " %i", (int)(h3*255) );
 #endif
 		    // eliminate wierd alpha (due to color quantization in making the transmap)
 		    if( h3 > 0.0 && h3 < 1.1 )
@@ -2322,12 +2322,12 @@ fprintf( stderr, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
 	        else
 	        {
-		    fprintf( stderr, " -" );
+		    GenPrintf(EMSG_info, " -" );
 		}
 #endif	       
 	    }
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
-	    fprintf(stderr,"\n");
+	    GenPrintf(EMSG_info,"\n");
 #endif	       
 	}
     }
@@ -2361,7 +2361,7 @@ fprintf( stderr, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
     }
 #ifdef VIEW_TRANSLUMAP_GEN
     // Enable to see results of analysis.
-    fprintf( stderr,
+    GenPrintf(EMSG_info,
 	     "Analyze Trans: alpha=%i  opaque=%i%%  clear=%i%%  subst=%i  subst_err=%i\n",
 	      alpha, transp->opaque, transp->clear,
 	      transp->substitute_std_translucent, transp->substitute_error);
@@ -2398,7 +2398,7 @@ int  R_setup_translu_store( int lump_num )
    tranlu_map->translu_lump_num = lump_num;
    R_TranslucentMap_Analyze( tranlu_map, W_CacheLumpNum( lump_num, PU_CACHE ) );
    if( verbose>1 )
-      fprintf(stderr,"TRANSLU STORE lump=%i, subst=%i\n", lump_num, tranlu_map->substitute_std_translucent );
+      GenPrintf(EMSG_ver, "TRANSLU STORE lump=%i, subst=%i\n", lump_num, tranlu_map->substitute_std_translucent );
 done:
    return ti;
 }
@@ -2420,7 +2420,7 @@ void Analyze_gamemap( void )
     byte bestcolor[NUMTESTCOLOR];
     int i, k;
 
-    fprintf(stderr, "Game colormap analyze:\n" );
+    GenPrintf(EMSG_info, "Game colormap analyze:\n" );
     for(k=0; k<8; k++ )   bestdist[k] = 1E20;
     
     for(i=0; i<256; i++)
@@ -2443,7 +2443,7 @@ void Analyze_gamemap( void )
     }
     for(k=0; k<NUMTESTCOLOR; k++ )
     {
-        fprintf(stderr, "Analyze Index %s = %i\n", name[k], bestcolor[k] );
+        GenPrintf(EMSG_info, "Analyze Index %s = %i\n", name[k], bestcolor[k] );
     }
 }
 #endif
@@ -2456,14 +2456,14 @@ void Analyze_translucent_maps( void )
     // translucent maps
     translucent_map_t trans;
     int k;
-    fprintf(stderr, "Game translucent maps analyze:\n" );
+    GenPrintf(EMSG_info, "Game translucent maps analyze:\n" );
     if( translucenttables == NULL )   return;
     for(k=1; k<=TRANSLU_fx1; k++ )  // Doom2 maps
     { 
         byte * tmap = & translucenttables[ TRANSLU_TABLE_INDEX(k) ];
         if( tmap )
         {
-	    fprintf(stderr, "  Analyze translucent map %i:\n", k );
+	    GenPrintf(EMSG_info, "  Analyze translucent map %i:\n", k );
 	    R_TranslucentMap_Analyze( &trans, tmap);
 	}
     }
@@ -2714,7 +2714,7 @@ int  R_CheckTextureNumForName (char *name)
             return i;
 #ifdef RANGECHECK
     if( i == 0 )
-        fprintf( stderr, "Texture %8.8s  is texture[0], imitates no-texture.\n", name);
+        GenPrintf(EMSG_warn, "Texture %8.8s  is texture[0], imitates no-texture.\n", name);
 #endif   
    
     return -1;
@@ -2741,7 +2741,7 @@ int R_TextureNumForName (char* name)
 #  define trace_SIZE 512
    static char debugtrace_RTNFN[ trace_SIZE ];
    if( i<trace_SIZE && debugtrace_RTNFN[i] != 0x55 ) {
-      fprintf( stderr, "Texture %8.8s is texture[%i]\n", name, i);
+      GenPrintf(EMSG_debug, "Texture %8.8s is texture[%i]\n", name, i);
       debugtrace_RTNFN[i] = 0x55;
    }
 #  undef trace_SIZE   
@@ -2750,7 +2750,7 @@ int R_TextureNumForName (char* name)
     if (i==-1)
     {
         //I_Error ("R_TextureNumForName: %.8s not found", name);
-        CONS_Printf("WARNING: R_TextureNumForName: %.8s not found\n", name);
+        GenPrintf(EMSG_warn,"WARNING: R_TextureNumForName: %.8s not found\n", name);
         i=1;	// default to texture[1]
     }
     return i;
@@ -2825,7 +2825,7 @@ void R_PrecacheLevel (void)
     texturepresent[skytexture] = 1;
 
     //if (devparm)
-    //    CONS_Printf("Generating textures..\n");
+    //    GenPrintf(EMSG_dev, "Generating textures..\n");
 
     texturememory = 0;  // global
     for (i=FIRST_TEXTURE ; i<numtextures ; i++)
@@ -2879,7 +2879,8 @@ void R_PrecacheLevel (void)
     //FIXME: this is no more correct with glide render mode
     if (devparm)
     {
-        CONS_Printf("Precache level done:\n"
+        GenPrintf(EMSG_dev,
+		    "Precache level done:\n"
                     "flatmemory:    %ld k\n"
                     "texturememory: %ld k\n"
                     "spritememory:  %ld k\n", flatmemory>>10, texturememory>>10, spritememory>>10 );

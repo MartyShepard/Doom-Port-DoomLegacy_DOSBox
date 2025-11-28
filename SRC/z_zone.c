@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: z_zone.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -349,7 +349,7 @@ memblock_t*  Z_GrowZone( int reqsize, int std_grow )
         mainzone->size += grow_size;
         mb_used = mainzone->size >> 20;	// to MiB
 		   
-        fprintf(stderr, "Z_Malloc: Grow by %d KiB, total %d MiB\n",
+        GenPrintf(EMSG_info, "Z_Malloc: Grow by %d KiB, total %d MiB\n",
 		grow_size>>10, mb_used);
         return freezone;
     }else{
@@ -522,7 +522,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     int   memalloc_size;	// with the memalloc header
    
     if( tag == PU_FREE ){
-       fprintf(stderr,"Z_ALLOC called with PU_FREE tag, conflict with FREE BLOCK\n");
+       GenPrintf(EMSG_warn,"Z_ALLOC called with PU_FREE tag, conflict with FREE BLOCK\n");
        tag = PU_LEVEL;      // choose safe interpretation
        // tag = PU_DAVE;	// if must debug
     }
@@ -603,7 +603,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
    
 // ZONE_ZALLOC
     if( tag == PU_FREE ){
-       fprintf(stderr,"Z_ALLOC called with PU_FREE tag, conflict with FREE BLOCK\n");
+       GenPrintf(EMSG_warn,"Z_ALLOC called with PU_FREE tag, conflict with FREE BLOCK\n");
        tag = PU_LEVEL;      // choose safe interpretation
        // tag = PU_DAVE;	// if must debug
     }
@@ -632,17 +632,17 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         // [WDJ] 11/18/2009 Still get this error on some wads.  There must be
         // some unchecked use of memory that writes past end of allocation.
 	// FIXME: Find the source of this error !!
-        printf("WARNING: Legacy may crash soon. This is a known bug, sorry.\n");
-        printf("Memory corruption has been detected\n");
-        printf("Known to happen when node-builder is not run after editing level.\n");
-        fprintf(stderr, "  corrupt ZONEID= %x\n", rover->id );
+        GenPrintf(EMSG_error,"WARNING: Legacy may crash soon. This is a known bug, sorry.\n");
+        GenPrintf(EMSG_error,"Memory corruption has been detected\n");
+        GenPrintf(EMSG_error,"Known to happen when node-builder is not run after editing level.\n");
+        GenPrintf(EMSG_error,"  corrupt ZONEID= %x\n", rover->id );
     }
 
     for(;;)	// Search zone memory
     {
 #ifdef PARANOIA
         if (rover->id != ZONEID)
-	    fprintf(stderr, "  corrupt ZONEID= %x\n", rover->id );
+	    GenPrintf(EMSG_error, "  corrupt ZONEID= %x\n", rover->id );
 #endif
         if (rover == start)
         {
@@ -660,14 +660,14 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 		   // new allocation failed, try something desperate
 		   rover = Z_GrowZone( reqsize, 0);
 		   if( rover == NULL ) {
-		       fprintf(stderr,"Z_Malloc: Retry %i on allocation of %i bytes\n",
+		       GenPrintf(EMSG_info,"Z_Malloc: Retry %i on allocation of %i bytes\n",
 			       tries, memalloc_size );
 		       rover = start;
 		   }
 	       }
   	       base = NULL;
 #else
-	       fprintf(stderr,"Z_Malloc: Retry %i on allocation of %i bytes\n",
+	       GenPrintf(EMSG_info,"Z_Malloc: Retry %i on allocation of %i bytes\n",
 		       tries, memalloc_size );
 #endif	       
 	    }else{
@@ -789,11 +789,11 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     }
     if( base->size < basesize || base->id != ZONEID ) {
         // Internal error with purging
-        fprintf(stderr, "Z_MALLOC: request= %i, alloc size= %i, aligned= %i\n", reqsize, memalloc_size, alignbits );
-        fprintf(stderr, "  got size= %i, accum size= %i\n", base->size, basesize );
-        if( base->next == rover )  fprintf(stderr, "  Hit rover\n");
-        if( base->next->tag == PU_ZONE )  fprintf(stderr, "  Hit PU_ZONE\n");
-        if( base->id != ZONEID )  fprintf(stderr, "  corrupt ZONEID= %x\n", base->id );
+        GenPrintf(EMSG_error,"Z_MALLOC: request= %i, alloc size= %i, aligned= %i\n", reqsize, memalloc_size, alignbits );
+        GenPrintf(EMSG_error,"  got size= %i, accum size= %i\n", base->size, basesize );
+        if( base->next == rover )  GenPrintf(EMSG_error, "  Hit rover\n");
+        if( base->next->tag == PU_ZONE )  GenPrintf(EMSG_error, "  Hit PU_ZONE\n");
+        if( base->id != ZONEID )  GenPrintf(EMSG_error, "  corrupt ZONEID= %x\n", base->id );
         I_Error("Z_MALLOC: internal error, combined blocks less than request size");
     }
 
@@ -818,7 +818,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         }
         else
         {
-	    fprintf(stderr,"Z_ALLOC: internal error, misalign < MINFRAGMENT\n" );
+	    GenPrintf(EMSG_error,"Z_ALLOC: internal error, misalign < MINFRAGMENT\n" );
         }
         base = newbase;	// aligned
     }
@@ -1088,7 +1088,7 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");
 
     if (tag == PU_FREE ) {
-       fprintf(stderr,"Z_ChangeTag2 changing to 0 tag, conflict with FREE BLOCK\n" );
+       GenPrintf(EMSG_warn,"Z_ChangeTag2 changing to 0 tag, conflict with FREE BLOCK\n" );
        tag = PU_LEVEL;	// safe
 	// tag = PU_DAVE;	// if need to debug
     }

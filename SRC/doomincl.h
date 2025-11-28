@@ -50,13 +50,43 @@
 
 // commonly used routines - moved here for include convenience
 
+// [WDJ] Enables for messages to various outputs
+// Many choices so can be individually configured.
+typedef enum {
+   EMSG_text = 0x01,  // stderr
+   EMSG_CONS = 0x02,
+   EMSG_error = 0x04,
+   EMSG_log   = 0x08,
+   EMSG_debtst = 0x10, // subject to debug enable
+#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
+   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_dev = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_debug = EMSG_text|EMSG_CONS|EMSG_log|EMSG_debtst,
+#else
+   // Linux, Mac
+   EMSG_warn = EMSG_text|EMSG_log,
+   EMSG_info = EMSG_text|EMSG_log,
+   EMSG_ver = EMSG_text|EMSG_log,
+   EMSG_dev = EMSG_text|EMSG_log,
+   EMSG_debug = EMSG_text|EMSG_log|EMSG_debtst,
+#endif
+   EMSG_all = ~EMSG_error,
+} EMSG_e;
+
+extern  byte  EMSG_flags;  // EMSG_e
+
 // i_system.h
 void  I_Error (const char *error, ...);
-void  I_SoftError (char *error, ...);
+void  I_SoftError (const char *errmsg, ...);
 
 // console.h
 void  CONS_Printf (const char *fmt, ...);
 void  CONS_Printf_va (const char *fmt, va_list ap );
+// For info, debug, dev, verbose messages
+// print to text, console, and logs
+void  GenPrintf (byte emsgflags, const char *fmt, ...);
 
 // m_misc.h
 char  *va(char *format, ...);

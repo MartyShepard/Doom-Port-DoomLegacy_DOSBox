@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_mobj.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -176,7 +176,7 @@ byte EN_catch_respawn_0 = 1;  // enable catch Nightmare respawn at (0,0)
 void P_Set_Voodoo( int playernum, mobj_t * voodoo_mobj )
 {
 #ifdef VOODOO_DEBUG   
-    fprintf(stderr,"Set Voodoo mobj\n");
+    GenPrintf(EMSG_debug,"Set Voodoo mobj\n");
 #endif
     // Must have player set for P_XYMovement and P_ActivateCrossedLine
     // NULL player will not trip W1 linedef, P_ActivateCrossedLine uses test
@@ -1353,8 +1353,8 @@ void P_MobjThinker(mobj_t * mobj)
                     // reset spirit position
                     CL_ResetSpiritPosition(mobj);
 
-                    //if(devparm)
-                    CONS_Printf("\2MissPrediction\n");
+                    if(verbose > 1)
+		        GenPrintf(EMSG_ver, "\2MissPrediction\n");
                 }
             }
             mobj->eflags &= ~MF_NOZCHECKING;
@@ -1592,7 +1592,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
            mobj->eflags &= ~MF_ONGROUND;
 
            //if (mobj->type == MT_BARREL)
-           //   fprintf(stderr,"barrel at z %d floor %d ceiling %d\n",mobj->z,mobj->floorz,mobj->ceilingz);
+           //   GenPrintf(EMSG_debug,"barrel at z %d floor %d ceiling %d\n",mobj->z,mobj->floorz,mobj->ceilingz);
 
            }
            else
