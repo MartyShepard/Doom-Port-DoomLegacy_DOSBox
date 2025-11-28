@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: i_video.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -56,7 +56,9 @@ extern rendermode_e    rendermode;
 
 extern boolean  allow_fullscreen;  // controlled by i_video
 extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
+#if defined( __DJGPP__ )
 boolean    highcolor; // local
+#endif
 
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;
@@ -81,8 +83,12 @@ boolean V_CanDraw( byte bitpp );
 
 // ---------------------------------------------
 
-void I_StartupGraphics (void);          //setup video mode
-void I_ShutdownGraphics(void);          //restore old video mode
+// Initial windowed graphics
+void I_StartupGraphics (void);
+// Full game playing graphics, with hardware drawing, and options
+void I_RequestFullGraphics( byte select_fullscreen );
+// Restore original video mode.
+void I_ShutdownGraphics(void);
 
 // Takes full 8 bit values.
 void I_SetPalette (RGBA_t* palette);

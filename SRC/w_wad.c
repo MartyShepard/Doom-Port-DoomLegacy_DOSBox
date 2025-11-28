@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: w_wad.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -412,50 +412,32 @@ void W_Reload (void)
 // The name searcher looks backwards, so a later file
 //  does override all earlier ones.
 //
+// Return 0 when any file load does not succeed
 int W_InitMultipleFiles (char** filenames)
 {
-    int         rc=1;
+    int  rc = 1;
 
     // open all the files, load headers, and count lumps
     numwadfiles = 0;
 
     // will be realloced as lumps are added
     for ( ; *filenames ; filenames++)
-        rc &= (W_LoadWadFile (*filenames) != -1) ? 1 : 0;
+    {
+        if( W_LoadWadFile (*filenames) == -1 )
+        {
+	    rc = 0;
+	    GenPrintf( EMSG_warn, "File not found: %s\n", *filenames );
+	}
+    }
 
     if (!numwadfiles)
-        I_Error ("W_InitMultipleFiles: no files found");
+    {
+        I_SoftError ("W_InitMultipleFiles: no files found\n");
+        fatal_error = 1;
+    }
 
     return rc;
 }
-
-
-// !!!NOT CHECKED WITH NEW WAD SYSTEM
-//
-// W_InitFile
-// Just initialize from a single file.
-//
-/*
-void W_InitFile (char* filename)
-{
-    char*       names[2];
-
-    names[0] = filename;
-    names[1] = NULL;
-    W_InitMultipleFiles (names);
-}*/
-
-
-// !!!NOT CHECKED WITH NEW WAD SYSTEM
-//
-// W_NumLumps
-//
-/*
-int W_NumLumps (void)
-{
-    return numlumps;
-}*/
-
 
 
 //
@@ -597,15 +579,6 @@ int W_GetNumForName (char* name)
 
     if (i == -1)
     {
-        if (!strcmp(name, "PLAYPAL"))
-        {
-        //Hurdler: I'm tired of that question ;)
-        I_Error ("Main IWAD file not found (do not use legacy.wad).\n"
-                 "You need either doom.wad, doom1.wad, doom2.wad,\n"
-                 "tnt.wad, plutonia.wad, heretic.wad or heretic1.wad\n"
-                 "from any shareware or commercial version of Doom or Heretic!\n");
-        }
-        else
 #ifdef DEBUG_CHEXQUEST
         I_SoftError ("W_GetNumForName: %s not found!\n", name);	// [WDJ] 4/28/2009 Chexquest
 #else

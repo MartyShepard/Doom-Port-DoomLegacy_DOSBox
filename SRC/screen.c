@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: screen.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -114,9 +114,7 @@ CV_PossibleValue_t scr_depth_cons_t[]={{8,"8 bits"}, {15,"15 bits"}, {16,"16 bit
 consvar_t   cv_scr_width  = {"scr_width",  "320", CV_SAVE, CV_Unsigned};
 consvar_t   cv_scr_height = {"scr_height", "200", CV_SAVE, CV_Unsigned};
 consvar_t   cv_scr_depth =  {"scr_depth",  "8 bits",   CV_SAVE, scr_depth_cons_t};
-#if !defined( __DJGPP__ )	
 consvar_t   cv_fullscreen = {"fullscreen",  "Yes",CV_SAVE | CV_CALL, CV_YesNo, SCR_ChangeFullscreen};
-#endif
 
 // =========================================================================
 //                           SCREEN VARIABLES
@@ -164,12 +162,9 @@ void SCR_SetMode (void)
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
-      int cvfs = cv_fullscreen.value; // preserve config.cfg
-      cv_fullscreen.value = 0;
       mode_fullscreen = false;
       int modenum = VID_GetModeForSize(800,600);  // debug window
       VID_SetMode(modenum);
-      cv_fullscreen.value = cvfs;
       vid.modenum = setmodeneeded; // fix the display
     }
 #else
@@ -185,7 +180,7 @@ void SCR_SetMode (void)
     //  setup the right draw routines for either 8bpp or 16bpp
     //
     //CONS_Printf ("SCR_SetMode : vid.bitpp is %d\n", vid.bitpp);
-    // set the apprpriate drawer for the sky (tall or short)
+    // set the appropriate drawer for the sky (tall or short)
     // vid.bitpp is already protected by V_Setup_VideoDraw
     switch( vid.bitpp )
     {
@@ -423,7 +418,7 @@ void SCR_Recalc (void)
 
     // patch the asm code depending on vid buffer rowbytes
 #ifdef USEASM
-    ASM_PatchRowBytes(vid.width);
+    ASM_PatchRowBytes(vid.ybytes);
 #endif
 
     // toggle off automap because some screensize-dependent values will
@@ -513,17 +508,20 @@ void SCR_SetDefaultMode (void)
 }
 
 // Change fullscreen on/off according to cv_fullscreen
-#if !defined( __DJGPP__ )
 void SCR_ChangeFullscreen (void)
-{
-  // used to prevent switching to fullscreen during startup
-  if (!allow_fullscreen)
-    return;
+{    // used to prevent switching to fullscreen during startup
 
+    if (!allow_fullscreen)
+        return;
+			
     if(graphics_started)
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
+        #if defined( __DJGPP__ )
+				mode_fullscreen = true;
+				#endif
         setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
     }
+
 }
-#endif
+

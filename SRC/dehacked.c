@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: dehacked.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -2196,6 +2196,7 @@ void DEH_LoadDehackedLump(int lump)
 
 // [WDJ] Before any changes, save all comparison info, so that multiple
 // DEH files and lumps can be handled without interfering with each other.
+// Called once
 void DEH_Init(void)
 {
   int i;

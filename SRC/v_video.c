@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: v_video.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -540,6 +540,10 @@ void CV_gammafunc_OnChange(void)
 // Called once
 void V_Init_VideoControl( void )
 {
+    // default size for startup
+    vid.width = INITIAL_WINDOW_WIDTH;
+    vid.height = INITIAL_WINDOW_HEIGHT;
+
     CV_RegisterVar(&cv_vidwait);
     CV_RegisterVar(&cv_ticrate);
     // Needs be done for config loading
@@ -548,7 +552,7 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_black);
     CV_RegisterVar(&cv_bright);
     CV_RegisterVar(&cv_gammafunc);
-#endif   
+#endif
 }
 
 

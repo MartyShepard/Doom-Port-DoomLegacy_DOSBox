@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1062 2013-12-14 00:14:35Z wesleyjohnson $
+// $Id: doomdef.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -129,6 +129,16 @@ extern FILE *logstream;
 // If IPX network code is to be included
 // This may be overridden for some ports.
 #define USE_IPX
+
+// Set the initial window size (width).
+// Expected sizes are 320x200, 640x480, 800x600, 1024x768.
+#if !defined( __DJGPP__ )
+#define INITIAL_WINDOW_WIDTH   800
+#define INITIAL_WINDOW_HEIGHT  600
+#else
+#define INITIAL_WINDOW_WIDTH   320
+#define INITIAL_WINDOW_HEIGHT  200
+#endif
 
 // =========================================================================
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1066 2013-12-14 00:22:54Z wesleyjohnson $
+// $Id: d_main.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -291,14 +291,13 @@
 	#endif
 	
 	static const char DOSSTRING[] = "[" DOSNAME "]";
-
 #else
 	static const char DOSSTRING[] = "";	
 #endif
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1068"
+#define SVN_REV "1069"
 #endif
 
 // Version number: major.minor.revision
@@ -324,9 +323,6 @@ static void Clear_SoftError(void);
 void HereticPatchEngine(void);
 //void Chex1PatchEngine(void);
 
-void D_PageDrawer(char *lumpname);
-void D_AdvanceDemo(void);
-
 char * startupwadfiles[MAX_WADFILES];
 
 // command line switches
@@ -340,9 +336,13 @@ boolean singletics = false;     // timedemo
 boolean nomusic;
 boolean nosoundfx; // had clash with WATCOM i86.h nosound() function
 
+boolean dedicated = false;
+
 byte    verbose = 0;
 
 byte    demo_ctrl;
+byte    init_sequence = 0;
+byte    fatal_error = 0;
 
 // name buffer sizes including directory and everything
 #define FILENAME_SIZE  256
@@ -356,7 +356,7 @@ byte    demo_ctrl;
 // to make savegamename and directories, in m_menu.c
 char *legacyhome = NULL;
 int   legacyhome_len;
-static char *doomwaddir = NULL;
+char *doomwaddir = NULL;
 char *defdir = NULL;  // default dir
 
 
@@ -380,8 +380,6 @@ extern char mac_user_home[FILENAME_SIZE];   // for config and savegames
 event_t events[MAXEVENTS];
 int eventhead = 0;
 int eventtail = 0;
-
-boolean dedicated;
 
 //
 // D_PostEvent
@@ -1035,7 +1033,8 @@ void D_DisableDemo(void)
 //
 // D_AddFile
 //
-void D_AddFile(char *file)
+static
+void D_AddFile(char *filename)
 {
     int numwadfiles;
     char *newfile;
@@ -1044,8 +1043,8 @@ void D_AddFile(char *file)
     for (numwadfiles = 0; startupwadfiles[numwadfiles]; numwadfiles++)
         ;
 
-    newfile = malloc(strlen(file) + 1);
-    strcpy(newfile, file);
+    newfile = malloc(strlen(filename) + 1);
+    strcpy(newfile, filename);
 
     startupwadfiles[numwadfiles] = newfile;
 }
@@ -1208,6 +1207,9 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 };
 
 
+
+
+
 // Check all lump names in lumpnames list, count is limited to 8
 // Return byte has a bit set for each lumpname found.
 byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
@@ -1283,6 +1285,7 @@ err_ret0:
 }
 
 
+static
 boolean Check_keylumps ( game_desc_t * gmtp, const char * wadname )
 {
     byte lumpbits;
@@ -1305,6 +1308,7 @@ fail:
 // Checks the possible wad filenames in GDESC_ entry.
 // Return true when found and keylumps verified
 // Leaves name in pathiwad.
+static
 boolean  Check_wad_filenames( int gmi, char * pathiwad )
 {
     game_desc_t * gmtp = &game_desc_table[gmi];
@@ -1327,6 +1331,7 @@ boolean  Check_wad_filenames( int gmi, char * pathiwad )
 }
 
 
+// May be called again after command restart
 void IdentifyVersion()
 {
     char pathiwad[_MAX_PATH + 16];
@@ -1339,7 +1344,7 @@ void IdentifyVersion()
 
     // find legacy.wad, IWADs
     // and... Doom LEGACY !!! :)
-    char *legacywad;
+    char *legacywad = NULL;
 #if defined(__APPLE__) && defined(__MACH__) && defined( EXT_MAC_DIR_SPEC )
     //[segabor]: on Mac OS X legacy.wad is within .app folder
     // for uniformity, use the strdup at found_legacy_wad
@@ -1373,8 +1378,8 @@ void IdentifyVersion()
         cat_filename(pathiwad, doomwaddir, "legacy.wad");
         if( access( pathiwad, R_OK) == 0 )   goto found_legacy_wad;
     }
-    CONS_Error( "legacy.wad not found\n" );  // for the msg
-    I_Error( "legacy.wad not found\n" );  // fatal exit
+    I_SoftError( "legacy.wad not found\n" );  // fatal exit
+    goto fatal_err;
    
    
  found_legacy_wad:
@@ -1401,18 +1406,23 @@ void IdentifyVersion()
     {
         char *temp = M_GetNextParm();
         if( temp == NULL )
-	    I_Error( "Switch  -game <name> or -devgame <name>\n" );
+        {
+	    I_SoftError( "Switch  -game <name> or -devgame <name>\n" );
+            goto fatal_err;
+	}
 	for( gmi=0; gmi<GDESC_other; gmi++ )
         {
 	    // compare to recognized game mode names
 	    if (!strcmp(temp, game_desc_table[gmi].idstr))
 		goto game_switch_found;
 	}
-        I_Error( "Switch  -game %s  not recognized\n", temp );
+        I_SoftError( "Switch  -game %s  not recognized\n", temp );
+        goto fatal_err;
        
        game_switch_found:
         // switch forces the GDESC_ selection
         gamedesc_index = gmi;
+        gamedesc = game_desc_table[gamedesc_index]; // copy the game descriptor
         // handle the recognized special -devgame switch
         if( devparm )
         {
@@ -1509,11 +1519,12 @@ void IdentifyVersion()
     if(gamedesc_index < GDESC_other)  // selected by switch, and no -iwad
     {
         // make iwad name by switch
+        // use pathiwad to output wad path from Check_wad_filenames
         if( Check_wad_filenames( gamedesc_index, pathiwad ) )
 	    goto got_iwad;
         I_SoftError("%s/%s not found\n",
 		    doomwaddir, game_desc_table[gamedesc_index].iwad_filename[0]);
-        goto iwad_failure;
+        goto fatal_err;
     }
     // No -iwad switch, and no mode select switch:
     // [WDJ] search the table for the first iwad filename found
@@ -1523,7 +1534,7 @@ void IdentifyVersion()
 	    goto got_gmi_iwad;
     }
 
-    I_Error("Main WAD file not found\n"
+    I_SoftError("Main WAD file not found\n"
 	    "You need doom.wad, doom2.wad, heretic.wad or some other IWAD file\n"
 	    "from any shareware, commercial or free version of Doom or Heretic!\n"
 #if !defined(__WIN32__) && !(defined __DJGPP__)
@@ -1531,6 +1542,7 @@ void IdentifyVersion()
 	    "or use the -iwad command line switch.\n"
 #endif
             );
+    goto fatal_err;
 
  got_gmi_iwad:
     gamedesc_index = gmi;  // a search loop found it
@@ -1539,8 +1551,8 @@ void IdentifyVersion()
 
     if( other_names )  // keep names from -iwad
     {
-       gamedesc.gname = other_gname;
-       gamedesc.iwad_filename[0] = other_iwad_filename;
+        gamedesc.gname = other_gname;
+        gamedesc.iwad_filename[0] = other_iwad_filename;
     }
     gamedesc_id = gamedesc.gamedesc_id;
     gamemode = gamedesc.gamemode;
@@ -1548,7 +1560,10 @@ void IdentifyVersion()
     CONS_Printf("IWAD recognized: %s\n", gamedesc.gname);
 
     if (gamedesc.gameflags & GD_unsupported)
-      I_Error("Doom Legacy currently does not support this game.\n");
+    {
+        I_SoftError("Doom Legacy currently does not support this game.\n");
+        goto fatal_err;
+    }
 
     D_AddFile(pathiwad);
     D_AddFile(legacywad);  // So can replace some graphics with Legacy ones.
@@ -1566,7 +1581,9 @@ cleanup_ret:
     return;
    
 iwad_failure:
-    I_Error("%s not found\n", pathiwad);
+    I_SoftError("IWAD %s not found\n", pathiwad);
+fatal_err:
+    fatal_error = 1;
     goto cleanup_ret;
 }
 
@@ -1621,7 +1638,7 @@ static void D_Make_legacytitle(void)
 }
 
 
-
+// Check Legacy.wad
 void D_CheckWadVersion()
 {
     int wadversion = 0;
@@ -1649,7 +1666,12 @@ void D_CheckWadVersion()
     // check version, of legacy.wad using version lump
     lump = W_CheckNumForName("version");
     if (lump == -1)
+    {
         wadversion = 0; // or less
+        I_SoftError("No legacy.wad file.\n");
+        fatal_error = 1;
+        return;
+    }
     else
     {
         char s[128];
@@ -1665,18 +1687,20 @@ void D_CheckWadVersion()
     }
     if (wadversion < min_wadversion || wadversion > max_wadversion)
     {
-        I_Error("Your legacy.wad file is version %d.%d, you need version %d.%d\n"
+        I_SoftError("Your legacy.wad file is version %d.%d, you need version %d.%d\n"
 		"Use the legacy.wad that came in the same archive as this executable.\n"
 		"\n"
                 "Use -nocheckwadversion to remove this check,\n"
 		"but this can cause Legacy to crash.\n",
 		wadversion / 100, wadversion % 100, min_wadversion / 100, min_wadversion % 100);
+        fatal_error = 1;
     }
 }
 
 //
 // D_DoomMain
 //
+// Called from system main to processes setup, returns before game starts
 void D_DoomMain()
 {
     int p;
@@ -1698,6 +1722,8 @@ void D_DoomMain()
 
     D_Make_legacytitle();
 
+    CON_Init();  // vid, zone independent
+    EMSG_flags |= EMSG_CONS;  // all msgs to CON buffer
     use_font1 = 1;  // until PLAYPAL and fonts loaded
 
     //added:18-02-98:keep error messages until the final flush(stderr)
@@ -1802,39 +1828,83 @@ void D_DoomMain()
 
     // Init once
     COM_Init(); // command buffer
-     // Can now call CV_RegisterVar, and COM_AddCommand
+    // Can now call CV_RegisterVar, and COM_AddCommand
 
     // may have some command line dependent init, like joystick
     I_SysInit();
 
     //--- Display Error Messages
+    CONS_Printf("StartupGraphics...\n");
     // setup loading screen with dedicated=0 and vid=800,600
     V_Init_VideoControl();  // before I_StartupGraphics
+#if defined( __DJGPP__ )			
+        if( M_CheckParm("-highcolor") )
+        {
+	    req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+	}
+        if( M_CheckParm("-truecolor") )
+        {
+	    req_drawmode = REQ_truecolor;  // 24 or 32 bpp
+	}
+        if( M_CheckParm("-native") )
+        {
+	    req_drawmode = REQ_native;  // bpp of the default screen
+	}
+        p = M_CheckParm("-bpp");  // specific bit per pixel color
+        if( p )
+        {
+	    // binding, should fail if cannot find a mode
+	    req_bitpp = atoi(myargv[p + 1]);
+	    if( V_CanDraw( req_bitpp ) )
+	      req_drawmode = REQ_specific;
+	    else
+	      I_Error( "-bpp invalid\n");
+	}
+#endif		
     I_StartupGraphics();    // window
     SCR_Startup();
 
+    // save Doom, Heretic, Chex strings for DEH
+    DEH_Init();  // Init DEH before files and lumps loaded
+    cht_Init();	 // init iwad independent cheats info, needed by Responder
+
+    M_Init();    // init menu
+    CON_Register();
+
+    // Before this line are initializations that are run only one time.
+    //---------------------------------------------------- 
+    // After this line is code that deals with configuration,
+    // game and wad selection, and finding files and directories.
+    // It may retry some actions and may execute functions multiple times.
+
+
+    EMSG_flags = EMSG_text | EMSG_log | EMSG_CONS;
+
     // identify the main IWAD file to use
-    IdentifyVersion();
+    IdentifyVersion();  // game, iwad
     modifiedgame = false;
 
     // Title page
-    const char *title = gamedesc.startup_title;  // set by IdentifyVersion
-    if( title == NULL )   title = gamedesc.gname;
-    CONS_Printf("%s\n", title);
+    const char *gametitle = gamedesc.startup_title;  // set by IdentifyVersion
+    if( gametitle == NULL )   gametitle = gamedesc.gname;
+    if( gametitle )
+      CONS_Printf("%s\n", gametitle);
 
     devparm |= M_CheckParm("-devparm");  // -devparm or -devgame
     if (devparm)
       CONS_Printf(D_DEVSTR);
 
-    nomonsters = M_CheckParm("-nomonsters");
-
     // userhome section
     {
         char * userhome = NULL;
         if (M_CheckParm("-home") && M_IsNextParm())
+        {
             userhome = M_GetNextParm();
+	}
         else
+        {
             userhome = getenv("HOME");
+	}
 
         if (!userhome)
         {
@@ -2000,65 +2070,10 @@ void D_DoomMain()
             D_AddFile( M_GetNextParm() );
     }
 
-    // get skill / episode / map from parms
-    gameskill = sk_medium;
-    startepisode = 1;
-    startmap = 1;
-    autostart = false;
-
-    p = M_CheckParm("-skill");
-    if (p && p < myargc - 1)
-    {
-        gameskill = myargv[p + 1][0] - '1';
-        autostart = true;
-    }
-
-    p = M_CheckParm("-episode");
-    if (p && p < myargc - 1)
-    {
-        startepisode = myargv[p + 1][0] - '0';
-        startmap = 1;
-        autostart = true;
-    }
-
-    p = M_CheckParm("-warp");
-    if (p && p < myargc - 1)
-    {
-        if (gamemode == doom2_commercial)
-            startmap = atoi(myargv[p + 1]);
-        else
-        {
-            startepisode = myargv[p + 1][0] - '0';
-            if (p < myargc - 2 && myargv[p + 2][0] >= '0' && myargv[p + 2][0] <= '9')
-                startmap = myargv[p + 2][0] - '0';
-            else
-                startmap = 1;
-        }
-        autostart = true;
-    }
-
-    // adapt tables to legacy needs
-    P_PatchInfoTables();
-
-    if (gamemode == heretic)
-        HereticPatchEngine();
-
-    if(gamemode == chexquest1)
-        Chex1PatchEngine();
-
-    CONS_Printf(text[W_INIT_NUM]);
-   
-    // save Doom, Heretic, Chex strings for DEH
-    DEH_Init();  // Init DEH before files and lumps loaded
-
 #ifdef FRENCH_INLINE
     french_text();
-    if (gamemode == heretic)
-        french_heretic();
-    if (gamemode == chexquest1)
-        french_chexquest();
 #endif
-   
+
 #ifdef BEX_LANGUAGE
     if ( M_CheckParm("-lang") )
     {
@@ -2074,11 +2089,11 @@ void D_DoomMain()
 #endif
    
     // load wad, including the main wad file
-    if (!W_InitMultipleFiles(startupwadfiles))
-        CONS_Error("A WAD file was not found\n");
-
-    if (!M_CheckParm("-nocheckwadversion"))
+    W_InitMultipleFiles(startupwadfiles);
+    
+    if ( !M_CheckParm("-nocheckwadversion") )
         D_CheckWadVersion();
+
 
     //Hurdler: someone wants to keep those lines?
     //BP: i agree with you why should be registered to play someone wads ?
@@ -2137,56 +2152,115 @@ void D_DoomMain()
       }
     }
    
-    cht_Init();	// init cheats for this iwad
+    EMSG_flags = EMSG_text | EMSG_log | EMSG_CONS;
+
+
+    //--------------------------------------------------------- 
+    // After this line are committed to the game and video port selected.
+    // Use I_Error.
+
+    if ( W_CheckNumForName ( "PLAYPAL" ) < 0 )
+    {
+        //Hurdler: I'm tired of that question ;)
+        I_Error (
+        "The main IWAD file is not found, or does not have PLAYPAL lump.\n"
+        "The IWAD can be either doom.wad, doom1.wad, doom2.wad, tnt.wad\n"
+        "plutonia.wad, heretic.wad, or heretic1.wad from any shareware\n"
+	"or commercial version of Doom or Heretic, or some other IWAD!\n"
+	"Cannot use legacy.wad, nor a PWAD, for an IWAD.\n" );
+    }
 
     //---------------------------------------------------- READY SCREEN
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
-
-    if( M_CheckParm("-highcolor") )
+    if( dedicated )
     {
-        req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+        I_ShutdownGraphics();
+        EMSG_flags = EMSG_log;
     }
-    if( M_CheckParm("-truecolor") )
+    else
     {
-        req_drawmode = REQ_truecolor;  // 24 or 32 bpp
-    }
-    if( M_CheckParm("-native") )
-    {
-        req_drawmode = REQ_native;  // bpp of the default screen
-    }
-    p = M_CheckParm("-bpp");  // specific bit per pixel color
-    if( p )
-    {
-        // binding, should fail if cannot find a mode
-        req_bitpp = atoi(myargv[p + 1]);
-        if( V_CanDraw( req_bitpp ) )
-	    req_drawmode = REQ_specific;
-        else
-	    I_Error( "-bpp invalid\n");
-    }
-
-    CONS_Printf("I_StartupGraphics...\n");
-    I_StartupGraphics();
-
-#ifdef HWRENDER
-    if( rendermode != render_soft )
-       HWR_Startup();  // hardware render init
+#if !defined( __DJGPP__ )			
+        if( M_CheckParm("-highcolor") )
+        {
+	    req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+	}
+        if( M_CheckParm("-truecolor") )
+        {
+	    req_drawmode = REQ_truecolor;  // 24 or 32 bpp
+	}
+        if( M_CheckParm("-native") )
+        {
+	    req_drawmode = REQ_native;  // bpp of the default screen
+	}
+        p = M_CheckParm("-bpp");  // specific bit per pixel color
+        if( p )
+        {
+	    // binding, should fail if cannot find a mode
+	    req_bitpp = atoi(myargv[p + 1]);
+	    if( V_CanDraw( req_bitpp ) )
+	      req_drawmode = REQ_specific;
+	    else
+	      I_Error( "-bpp invalid\n");
+	}
+#endif
+        //--------------------------------------------------------- CONSOLE
+        // setup loading screen
+        CONS_Printf("RequestFullGraphics...\n");				
+#ifdef SDL
+        I_RequestFullGraphics( cv_fullscreen.value );
 #endif
 
-    EMSG_flags = EMSG_log | EMSG_CONS;
+        SCR_Recalc();
 
-    //--------------------------------------------------------- CONSOLE
-    // setup loading screen
-    SCR_Startup();
+#ifdef HWRENDER
+        if( rendermode != render_soft )
+	    HWR_Startup();  // hardware render init
+#endif
+        // we need the font of the console
+        CONS_Printf(text[HU_INIT_NUM]);
+        // switch off use_font1 when hu_font is loaded
+        HU_Init();  // dependent upon dedicated and raven
+        CON_VideoInit();  // dependent upon vid, hu_font
+        EMSG_flags = EMSG_log | EMSG_CONS;
+    }
 
-    // we need the font of the console
-    CONS_Printf(text[HU_INIT_NUM]);
-    // switch off use_font1 when hu_font is loaded
-    HU_Init();
+    // get skill / episode / map from parms
+    gameskill = sk_medium;
+    startepisode = 1;
+    startmap = 1;
+    autostart = false;
 
-    CON_Init();
-    EMSG_flags |= EMSG_CONS;  // all msgs to CON buffer
+    p = M_CheckParm("-skill");
+    if (p && p < myargc - 1)
+    {
+        gameskill = myargv[p + 1][0] - '1';
+        autostart = true;
+    }
+
+    p = M_CheckParm("-episode");
+    if (p && p < myargc - 1)
+    {
+        startepisode = myargv[p + 1][0] - '0';
+        startmap = 1;
+        autostart = true;
+    }
+
+    p = M_CheckParm("-warp");
+    if (p && p < myargc - 1)
+    {
+        if (gamemode == doom2_commercial)
+            startmap = atoi(myargv[p + 1]);
+        else
+        {
+            startepisode = myargv[p + 1][0] - '0';
+            if (p < myargc - 2 && myargv[p + 2][0] >= '0' && myargv[p + 2][0] <= '9')
+                startmap = myargv[p + 2][0] - '0';
+            else
+                startmap = 1;
+        }
+        autostart = true;
+    }
 
     D_RegisterClientCommands(); //Hurdler: be sure that this is called before D_CheckNetGame
 
@@ -2199,6 +2273,26 @@ void D_DoomMain()
     R_RegisterEngineStuff();
     S_RegisterSoundStuff();
     CV_RegisterVar(&cv_screenslink);
+
+    CONS_Printf(text[W_INIT_NUM]);
+    // adapt tables to legacy needs
+    P_PatchInfoTables();
+
+    if (gamemode == heretic)
+    {
+        HereticPatchEngine();
+#ifdef FRENCH_INLINE
+        french_heretic();
+#endif
+    }
+
+    if(gamemode == chexquest1)
+    {
+        Chex1PatchEngine();
+#ifdef FRENCH_INLINE
+        french_chexquest();
+#endif
+    }
 
     B_InitBots();       //added by AC for acbot
 
@@ -2215,7 +2309,7 @@ void D_DoomMain()
 
 #ifdef CDMUS
     // Initialize CD-Audio, no music on a dedicated server
-    if (!M_CheckParm("-nocd") && !M_CheckParm("-dedicated"))
+    if (!M_CheckParm("-nocd") && ! dedicated )
       I_InitCD();
 #endif
     if (M_CheckParm("-respawn"))
@@ -2260,7 +2354,6 @@ void D_DoomMain()
     M_PushSpecialParameters();
 
     CONS_Printf(text[M_INIT_NUM]);
-    M_Init();
     M_Configure();
 
     CONS_Printf(text[R_INIT_NUM]);

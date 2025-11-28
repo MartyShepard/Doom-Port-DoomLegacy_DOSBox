@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: console.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -185,11 +185,10 @@ pic_t*   con_bordright;  // console borders in translucent mode
 
 
 // protos.
-static void CON_DrawConsole (void);
 static void CON_InputInit (void);
 static void CON_Print (char *msg);
 static void CONS_Clear_f (void);
-static void CON_RecalcSize (void);
+static void CON_RecalcSize ( int width );
 
 static void CONS_speed_Change (void);
 static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth);
@@ -234,7 +233,6 @@ static void CONS_speed_Change (void)
 //
 static void CONS_Clear_f (void)
 {
-  //if (con_buffer)
     memset(con_buffer,0,CON_BUFFERSIZE);
 
     con_cx = 0;
@@ -298,6 +296,8 @@ void CONS_Bind_f(void)
 byte*   whitemap;
 byte*   greenmap;
 byte*   graymap;
+
+// May be called again after command_restart
 static void CON_SetupBackColormap (void)
 {
     int   i,j,k;
@@ -306,10 +306,16 @@ static void CON_SetupBackColormap (void)
 //
 //  setup the green translucent background colormap
 //
-    greenmap = (byte *) Z_Malloc(256,PU_STATIC,NULL);
-    whitemap = (byte *) Z_Malloc(256,PU_STATIC,NULL);
-    graymap  = (byte *) Z_Malloc(256,PU_STATIC,NULL);
+    if( ! whitemap )
+    {
+        //  setup the green translucent background colormap
+        greenmap = (byte *) Z_Malloc(256,PU_STATIC,NULL);
+        whitemap = (byte *) Z_Malloc(256,PU_STATIC,NULL);
+        graymap  = (byte *) Z_Malloc(256,PU_STATIC,NULL);
+    }
 
+    // wad containing PLAYPAL may not be found yet.
+    if( W_CheckNumForName( "PLAYPAL" ) < 0 )  return;
     pal = W_CacheLumpName ("PLAYPAL",PU_CACHE); // temp, only used next loop
 
     for(i=0,k=0; i<768; i+=3,k++)
@@ -355,32 +361,56 @@ static void CON_SetupBackColormap (void)
 
 //  Setup the console text buffer
 //
+// Init messaging, before zone memory, before video
+// CON buffer will save all messages for display, so must be started very early
 void CON_Init(void)
 {
     int i;
 
-    if(dedicated)
-	return;
-    
+    // clear all lines
+    con_width = 0;  // no current text
+    CON_RecalcSize ( INITIAL_WINDOW_WIDTH );  // before vid is set
+    CONS_Clear_f ();   // clear all lines
+    con_destlines = INITIAL_WINDOW_HEIGHT;
+    con_curlines = INITIAL_WINDOW_HEIGHT;
+
+    con_hudlines = CON_MAXHUDLINES;
+    CON_ClearHUD ();
+
+    // setup console input filtering
+    CON_InputInit ();
+
     for(i=0;i<NUMINPUTS;i++)
         bindtable[i]=NULL;
 
-    // clear all lines
-    memset(con_buffer,0,CON_BUFFERSIZE);
+    consoletoggle = false;
+    con_started = true;
+}
 
+// after zone memory init
+void CON_Register(void)
+{
+    // register our commands
+    CV_RegisterVar (&cons_msgtimeout);
+    CV_RegisterVar (&cons_speed);
+    CV_RegisterVar (&cons_height);
+    CV_RegisterVar (&cons_backpic);
+    COM_AddCommand ("cls", CONS_Clear_f);
+    COM_AddCommand ("bind", CONS_Bind_f);
+}
+
+void CON_VideoInit(void)
+{
+    if(dedicated)
+	return;
+    
     // make sure it is ready for the loading screen
-    con_width = 0;
-    CON_RecalcSize ();
+    CON_RecalcSize ( vid.width );
 
     CON_SetupBackColormap ();
 
     //note: CON_Ticker should always execute at least once before D_Display()
     con_clipviewtop = -1;     // -1 does not clip
-
-    con_hudlines = CON_MAXHUDLINES;
-
-    // setup console input filtering
-    CON_InputInit ();
 
     // load console background pic
     con_backpic = (pic_t*) W_CachePicName ("CONSBACK",PU_STATIC);
@@ -389,24 +419,10 @@ void CON_Init(void)
     con_bordleft  = (pic_t*) W_CachePicName ("CBLEFT",PU_STATIC);
     con_bordright = (pic_t*) W_CachePicName ("CBRIGHT",PU_STATIC);
 
-    // register our commands
-    //
-    CV_RegisterVar (&cons_msgtimeout);
-    CV_RegisterVar (&cons_speed);
-    CV_RegisterVar (&cons_height);
-    CV_RegisterVar (&cons_backpic);
-    COM_AddCommand ("cls", CONS_Clear_f);
-    COM_AddCommand ("bind", CONS_Bind_f);
-#if defined( __DJGPP__ )			
-    COM_AddCommand ("english", CONS_English_f);
-    COM_AddCommand ("french", CONS_French_f);		
-#endif			
     // set console full screen for game startup MAKE SURE VID_Init() done !!!
     con_destlines = vid.height;
     con_curlines = vid.height;
-    consoletoggle = false;
 
-    con_started = true;
     con_self_refresh = true; // need explicit screen refresh
                         // until we are in Doomloop
     con_video = true;   // if move CON init to before video startup
@@ -438,44 +454,34 @@ static void CON_InputInit (void)
 //  Called at screen size change to set the rows and line size of the
 //  console text buffer.
 //
-static void CON_RecalcSize (void)
+static void CON_RecalcSize ( int width )
 {
-    int   conw, oldcon_width, oldnumlines, i, oldcon_cy;
+    int   min_conwidth = (BASEVIDWIDTH>>3)-2;  // minimum console width
+    int   new_conwidth, oldcon_width, oldnumlines, oldcon_cy;
+    int   i, conw;
     char  tmp_buffer[CON_BUFFERSIZE];
     char  string[CON_BUFFERSIZE]; // BP: it is a line but who know
 
     con_recalc = false;
 
-    conw = (vid.width>>3)-2;
-
-    if( con_curlines==200 )  // first init
-    {
-        con_curlines=vid.height;
-        con_destlines=vid.height;
-    }
+    new_conwidth = (width>>3)-2;  // going to be the new con_width
+    if ( new_conwidth < min_conwidth )
+        new_conwidth = min_conwidth;
 
     // check for change of video width
-    if (conw == con_width)
+    if (new_conwidth == con_width)
         return;                 // didnt change
 
+    // save current
     oldcon_width = con_width;
     oldnumlines = con_totallines;
     oldcon_cy = con_cy;
     memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
 
-    if (conw<1)
-        con_width = (BASEVIDWIDTH>>3)-2;
-    else
-        con_width = conw;
-
+    // setup to new width
+    con_width = new_conwidth;
     con_totallines = CON_BUFFERSIZE / con_width;
-    memset (con_buffer,' ',CON_BUFFERSIZE);
-
-
-    con_cx = 0;
-    con_cy = con_totallines-1;
-    con_line = &con_buffer[con_cy*con_width];
-    con_scrollup = 0;
+    CONS_Clear_f ();
 
     // re-arrange console text buffer to keep text
     if(oldcon_width) // not the first time
@@ -599,7 +605,8 @@ void CON_Ticker (void)
     }
 
     // check if console ready for prompt
-    if (/*(con_curlines==con_destlines) &&*/ (con_destlines>=20))
+//    if ((con_curlines==con_destlines) && (con_destlines>=20))
+    if (con_destlines>=20)
         consoleready = true;
     else
         consoleready = false;
@@ -739,14 +746,14 @@ static int     comskips,varskips;
     }
 
     // move up (backward) in console textbuffer
-    if (key == KEY_PGUP)
+    if (key == KEY_PGUP || key == 231)
     {
         if (con_scrollup < (con_totallines-((con_curlines-16)>>3)) )
             con_scrollup++;
         return true;
     }
     else
-    if (key == KEY_PGDN)
+    if (key == KEY_PGDN || key == 239)
     {
         if (con_scrollup>0)
             con_scrollup--;
@@ -1250,16 +1257,21 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 }
 
 
-// draw the console background, text, and prompt if enough place
+// Draw the console background, text, and prompt if enough places.
+// May use font1 or wad fonts.
 //
-static void CON_DrawConsole (void)
+void CON_DrawConsole (void)
 {
-    char       *p;
-    int        i,x,y;
-    int        w = 0, x2 = 0;
+    char  *p;
+    int   i,x,y;
+    int   w = 0, x2 = 0;
+    fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
 
     if (con_curlines <= 0)
         return;
+
+    if ( rendermode != render_soft && use_font1 )
+        return;  // opengl graphics without hu_font loaded yet
 
     V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
 
@@ -1268,6 +1280,15 @@ static void CON_DrawConsole (void)
     con_hudupdate = true;             // always refresh while console is on
 
     // draw console background
+    if (!con_video)
+    {
+        if( screens[0] )
+        {
+	    // minimal video support
+	    memset( screens[0], 0, vid.screen_size );  // clear to black
+	}
+    }
+    else
     if (cons_backpic.value || con_forcepic)
     {
 #ifdef HWRENDER // not win32 only 19990829 by Kin
@@ -1284,7 +1305,7 @@ static void CON_DrawConsole (void)
         if (rendermode==render_soft)
 #endif
         {
-            w = 8*vid.dupx;
+            w = fip->xinc * vid.dupx;  // font1 or wad font
             x2 = vid.width - w;
             CON_DrawBackpic (con_bordleft,0,w);
             CON_DrawBackpic (con_bordright,x2,w);
@@ -1306,7 +1327,8 @@ static void CON_DrawConsole (void)
     if (!con_scrollup && !con_cx)
         i--;
 
-    for (y=con_curlines-20; y>=0; y-=8,i--)
+    // draw lines with font1 or wad font
+    for (y=con_curlines-20; y>=0; y-=fip->yinc,i--)
     {
         if (i<0)
             i=0;
@@ -1314,7 +1336,7 @@ static void CON_DrawConsole (void)
         p = &con_buffer[(i%con_totallines)*con_width];
 
         for (x=0;x<con_width;x++)
-            V_DrawCharacter( (x+1)<<3, y, p[x] );  // red
+            V_DrawCharacter( (x+1)*fip->xinc, y, p[x] );  // red
     }
 
 
@@ -1333,7 +1355,10 @@ void CON_Drawer (void)
         return;
 
     if (con_recalc)
-        CON_RecalcSize ();
+        CON_RecalcSize ( vid.width );
+   
+    if ( use_font1 )
+        return;  // hu_font not loaded yet
 
     //Fab: bighack: patch 'I' letter leftoffset so it centers
     hu_font['I'-HU_FONTSTART]->leftoffset = -2;

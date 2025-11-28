@@ -1676,7 +1676,11 @@ menuitem_t OptionsMenu[]=
     {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
+#ifdef __DJGPP__
     {IT_SUBMENU | IT_WHITESTRING,0,"Mouse/Joy Options..." ,&MouseOptionsDef   ,0},
+#else
+    {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
+#endif
     {IT_CALL    | IT_WHITESTRING,0,"Setup Controls...",M_SetupControlsMenu,0}
 };
 
@@ -4636,7 +4640,8 @@ void M_Drawer (void)
     V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTER0 );
 
     // now that's more readable with a faded background (yeah like Quake...)
-    V_DrawFadeScreen ();
+    if ( reg_colormaps )  // not before colormaps loaded
+        V_DrawFadeScreen ();
 
     // menu drawing
     if (currentMenu->drawroutine)

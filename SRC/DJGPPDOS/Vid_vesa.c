@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: Vid_vesa.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -54,6 +54,7 @@
 #include "../command.h"            //added:21-03-98: vid_xxx commands
 #include "../i_video.h"
 
+
 // PROTOS
 vmode_t *VID_GetModePtr (int modenum);
 int  VID_VesaGetModeInfo (int modenum);
@@ -65,7 +66,6 @@ void VID_Command_ModeInfo_f (void);
 void VID_Command_ModeList_f (void);
 void VID_Command_Mode_f (void);
 
-//consvar_t   cv_vidwait = {"vid_wait","1",CV_SAVE,CV_OnOff};
 
 #define VBEVERSION      2       // we need vesa2 or higher
 
@@ -82,9 +82,18 @@ static vmode_t      vesa_modes[MAX_VESA_MODES] = {{NULL, NULL}};
 static vesa_extra_t vesa_extra[MAX_VESA_MODES];
 
 //this is the only supported non-vesa mode : standard 320x200x256c.
-#define NUMVGAVIDMODES  1
+#define NUMVGAVIDMODES  2
 int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode);
 static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
+  { // 0 mode, HIDDEN
+    & vgavidmodes/*specialmodes*/[1],
+    "Initial",
+    INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT,
+    INITIAL_WINDOW_WIDTH, 1,     // rowbytes, bytes per pixel
+    0, 1,  // windowed, numpages
+    NULL,
+    VGA_InitMode
+  },
   {
     NULL,
     "320x200",
@@ -96,7 +105,7 @@ static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
   }
 };
 
-static char         names[MAX_VESA_MODES][10];
+static char         names[MAX_VESA_MODES][100];
 
 //----------------------------i_video.c------------------------------------
 // these ones should go to i_video.c, but I prefer keep them away from the
@@ -193,6 +202,7 @@ int VID_NumModes(void)
 //added:21-03-98: return info on video mode
 char *VID_ModeInfo (int modenum, char **ppheader)
 {
+    // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     static char *badmodestr = "Bad video mode number\n";
     vmode_t     *pv;
 
@@ -358,9 +368,33 @@ int VID_SetMode (int modenum)  //, unsigned char *palette)
     //vid.aspect = pcurrentmode->aspect;
     vid.direct_rowbytes = pcurrentmode->rowbytes;
     vid.bytepp = pcurrentmode->bytesperpixel;
-    vid.bitpp = (vid.bytepp==1)? 8:15;
+    /*
+		vid.bitpp = (vid.bytepp==1)? 8:15;
     vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
-
+		*/
+    // Using Updated Commandline
+    if( req_drawmode == REQ_highcolor)
+		{
+        vid.bitpp = 15; vid.drawmode = DRAW15;
+		}else if( req_drawmode == REQ_truecolor)
+		{
+        vid.bitpp = 32; vid.drawmode = DRAW32;
+		}else if( req_drawmode == REQ_specific)
+		{
+			  switch(req_bitpp)
+				{
+					case 15: vid.bitpp = 15; vid.drawmode = DRAW15;  break;						
+					case 16: vid.bitpp = 16; vid.drawmode = DRAW16;  break;						
+					case 24: vid.bitpp = 24; vid.drawmode = DRAW24;  break;
+					case 32: vid.bitpp = 32; vid.drawmode = DRAW32;  break;
+          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL;break;
+				}
+		}
+		else
+		{
+		  vid.bitpp = 8; vid.drawmode = DRAW8PAL;
+		}
+		
     //debug
     //if (vid.rowbytes != vid.width)
     //    I_Error("vidrowbytes (%d) <> vidwidth(%d)\n",vid.rowbytes,vid.width);

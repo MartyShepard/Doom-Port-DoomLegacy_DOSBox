@@ -65,7 +65,6 @@ unsigned long dascreen;
 static int gfx_use_vesa1;
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
-
 //
 // I_StartFrame
 //
@@ -338,6 +337,7 @@ int set_vesa1_mode( int width, int height )
 // May be called more than once, to change modes and switches
 void I_StartupGraphics(void)
 {
+			 
     if( ! graphics_started )
     {
         //added:26-01-98: VID_Init() must be done only once,
@@ -357,15 +357,29 @@ void I_StartupGraphics(void)
         graphics_started = true;
     }
 
-    // 0 for 256 color, else use highcolor modes
+    // 0 for 256 color, else use highcolor modes. Updated to use the commandline
+		
     if( req_drawmode == REQ_highcolor)
         highcolor = (req_drawmode == REQ_highcolor);
-    else if( req_drawmode == REQ_truecolor)
+			
+    if( req_drawmode == REQ_truecolor)
         highcolor = (req_drawmode == REQ_truecolor);
-    else if( req_drawmode == REQ_native)
-        highcolor = (req_drawmode == REQ_native);
-    else if( req_drawmode == REQ_specific)
-        highcolor = (req_drawmode == REQ_specific);
+			
+    if( req_drawmode == REQ_specific)
+		{
+			  switch(req_bitpp)
+				{
+					case 15:
+					case 16:
+					case 24:
+					case 32:					
+					highcolor = true;
+					break;
+          default:
+					highcolor = false;
+          break;					
+        }
+		}
 
     VID_GetModes();
     // set the default video mode

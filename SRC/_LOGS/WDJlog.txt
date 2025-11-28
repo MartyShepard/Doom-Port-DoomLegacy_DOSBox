@@ -1,4 +1,4 @@
-\[WDJ]	wesleyjohnson
+[WDJ]	wesleyjohnson
 
 START: 11/1/2009
 
@@ -3615,3 +3615,25 @@ Changed the control menus to actually use the IT_CONTROL that is defined,
 so the tests against IT_CONTROL now make sense.
 Added using font1 for printing menu strings when use_font1 is set.
 
+*** W95_linux_x11
+patchfile = w95_9_linux_x11.patch
+- committed revision 1067   by wesley johnson
+Fix OpenGL failure for X11 video port.
+Had to remove some changes made in w71_linux_x because that code is
+part of a dll library (r_opengl.so), and the effect was to create two copies
+of some variables.
+Also, the dll library would not load because it tried to access some
+variables in the main code (which it could not link to).
+General revision of much of r_opengl dll and i_video_xshm.
+Fixed compile of r_opengl dll due to variables, and made its log file
+work (it cannot access any main program functions or variables).
+
+*** W95_startscreen
+patchfile = w95_10_startscreen.patch
+- committed revision 1068   by wesley johnson
+Reorganize the video startup.
+I_StartGraphics makes a basic window that can display error messages.
+I_RequestFullGraphics makes the transition to fullscreen, hardware modes,
+opengl, and video depth selected by command line switches.
+Introduce INITIAL_WINDOW size (800x600), which can be selected in doomdef.h.
+This usually is large enough to actually read error messages.

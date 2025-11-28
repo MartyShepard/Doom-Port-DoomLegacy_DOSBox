@@ -435,9 +435,7 @@ void D_RegisterClientCommands(void)
 #endif
 #endif
     // screen.c ?
-#if !defined( __DJGPP__ )			
     CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place
-#endif
     CV_RegisterVar(&cv_scr_depth);
     CV_RegisterVar(&cv_scr_width);
     CV_RegisterVar(&cv_scr_height);

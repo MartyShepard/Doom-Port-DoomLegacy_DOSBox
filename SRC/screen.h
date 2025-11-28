@@ -264,7 +264,5 @@ void SCR_SetDefaultMode (void);
 
 void SCR_Startup (void);
 
-#if !defined( __DJGPP__ )	
 void SCR_ChangeFullscreen (void);
-#endif
 #endif //__SCREEN_H__

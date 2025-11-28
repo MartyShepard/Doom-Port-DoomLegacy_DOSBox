@@ -565,7 +565,8 @@ void I_StartupMouse2()
     LOCK_VARIABLE(handlermouse2y);
     LOCK_VARIABLE(handlermouse2buttons);
     LOCK_VARIABLE(mouse2port);
-    _go32_dpmi_lock_data(combytes,sizeof(combytes));
+    /*_go32_dpmi_lock_data(combytes,sizeof(combytes));*/
+		_go32_dpmi_lock_data((void *)&combytes[0],sizeof(combytes));
     LOCK_FUNCTION(I_MicrosoftMouseIntHandler);
     asm("sti");
 

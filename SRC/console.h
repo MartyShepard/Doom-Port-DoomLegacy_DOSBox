@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: console.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: console.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -42,6 +42,8 @@
 #endif
 
 void CON_Init (void);
+void CON_Register (void);
+void CON_VideoInit (void);
 
 boolean CON_Responder (event_t *ev);
 
@@ -70,7 +72,8 @@ extern byte*   graymap;
 void CON_ClearHUD (void);       // clear heads up messages
 
 void CON_Ticker (void);
-void CON_Drawer (void);
+void CON_Drawer (void);       // full feature
+void CON_DrawConsole (void);  // text to console
 void CONS_Error (char *msg);       // print out error msg, and wait a key
 
 // force console to move out
