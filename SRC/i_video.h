@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: i_video.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -54,12 +54,30 @@ typedef enum {
 
 extern rendermode_e    rendermode;
 
+// Structure for passing modenums with the necessary context
+typedef enum {
+    MODE_NOP,
+    MODE_window,
+    MODE_fullscreen,
+    MODE_voodoo,
+    MODE_either,  // window or fullscreen
+    MODE_other
+} modetype_e;
+
+extern const char * modetype_string[ MODE_other + 1 ];
+
+typedef struct {
+    byte  modetype;  // from modetype_e
+    byte  index;
+} modenum_t;
+
+
 extern boolean  allow_fullscreen;  // controlled by i_video
 extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
 #if defined( __DJGPP__ )
 boolean    highcolor; // local
+int        HighColor; // Definiert die Bit Palette
 #endif
-
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;
 extern consvar_t cv_grgammagreen;
@@ -100,10 +118,25 @@ void macConfigureInput(void);
 void VID_Pause(int pause);
 #endif
 
-int   VID_NumModes(void);
-char  *VID_GetModeName(int modenum);
+typedef struct {
+   uint16_t  first;
+   uint16_t  last;
+} range_t;
 
-int  VID_GetModeForSize( int, int );  //vid_vesa.c
+// modetype is of modetype_e
+range_t  VID_ModeRange( byte modetype );
+char  *  VID_GetModeName(modenum_t modenum);
+
+// rmodetype is of modetype_e
+// Returns MODE_NOP when none found
+modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype );
+
+//  By setting setmodeneeded to a value > 0,
+//  the video mode change is delayed until the start of the next refresh
+//
+//  Set the video mode right now.
+//  Returns FAIL_end, FAIL_create, of status_return_e, 1 on success;
+int  VID_SetMode( modenum_t modenum );
 
 void I_UpdateNoBlit (void);
 void I_FinishUpdate (void);

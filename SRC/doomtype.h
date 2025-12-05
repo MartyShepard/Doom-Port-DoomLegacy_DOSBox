@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: doomtype.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -90,7 +90,19 @@ typedef enum {false, true} boolean;
 
 
 typedef uint8_t    byte;
-typedef uint32_t  tic_t;
+typedef uint32_t   tic_t;
+
+// Return values
+// Positive are positive indicators
+// 0 is NULL result
+// Negative are failure indicators
+typedef enum {
+    FAIL = -1,   // general fail
+    FAIL_end = -2,  // end of valid input
+    FAIL_invalid_input = -3,  // invalid input to the function
+    FAIL_create = -100,
+    FAIL_memory = -101,
+} status_return_e;
 
 
 #ifdef __APPLE_CC__

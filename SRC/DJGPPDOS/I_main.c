@@ -47,6 +47,10 @@ int main ( int argc, char** argv )
     I_StartupSystem();
 
     D_DoomMain ();
+    // War in D_Main, routine D_DoomLoop()
+    CONS_Printf("I_StartupKeyboard...\n");
+    I_StartupKeyboard();
+		
     D_DoomLoop ();
 
      //added:03-01-98:

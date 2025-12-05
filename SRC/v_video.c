@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: v_video.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -18,8 +18,6 @@
 //
 //
 // $Log: v_video.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.36  2004/07/27 08:19:37  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -167,11 +165,7 @@ void MenuGammaFunc_dependencies( byte gamma_en,
 CV_PossibleValue_t gamma_func_t[] = {
    {0,"Gamma"},
    {1,"Gamma_black"},
-#if !defined( __DJGPP__ )
    {2,"Gamma_bright_black"},
-#else
-   {2,"Bright Black"},
-#endif
    {3,"Linear"},
    {0,NULL} };
 consvar_t cv_gammafunc = { "gammafunc", "0", CV_SAVE | CV_CALL, gamma_func_t, CV_gammafunc_OnChange };
@@ -543,7 +537,20 @@ void V_Init_VideoControl( void )
     // default size for startup
     vid.width = INITIAL_WINDOW_WIDTH;
     vid.height = INITIAL_WINDOW_HEIGHT;
+   
+    vid.display = NULL;
+    vid.screen1 = NULL;
+    vid.buffer = NULL;
+    vid.recalc = true;
 
+    vid.bytepp = 1; // not optimized yet...
+    vid.bitpp = 8;
+
+    vid.modenum = (modenum_t){ MODE_window, 0 };
+    mode_fullscreen = false;
+
+    rendermode = render_soft;
+   
     CV_RegisterVar(&cv_vidwait);
     CV_RegisterVar(&cv_ticrate);
     // Needs be done for config loading
@@ -2030,6 +2037,7 @@ void V_DrawCharacter(int x, int y, byte c)
          return;
     }
 
+    // hufont only has uppercase
     c = toupper(c) - HU_FONTSTART;
     if (c >= HU_FONTSIZE)
         return;
@@ -2106,6 +2114,7 @@ void V_DrawString(int x, int y, int option, char *string)
             continue;
         }
 
+        // hufont only has uppercase
         c = toupper(c) - HU_FONTSTART;
         if (c < 0 || c >= HU_FONTSIZE)
         {
@@ -2163,6 +2172,7 @@ void V_DrawCenteredString(int x, int y, int option, char *string)
             continue;
         }
 
+        // hufont only has uppercase
         c = toupper(c) - HU_FONTSTART;
         if (c < 0 || c >= HU_FONTSIZE)
         {
@@ -2201,6 +2211,7 @@ int V_StringWidth(char *string)
     // variable width font, total up chars in string
     for (i = 0; i < ln; i++)
     {
+        // hufont only has uppercase
         c = toupper(string[i]) - HU_FONTSTART;
         if (c < 0 || c >= HU_FONTSIZE)
             w += 4;
@@ -2243,6 +2254,7 @@ void V_DrawTextB(char *text, int x, int y)
         }
         else
         {
+	    // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawScaledPatch(x, y, p);
             x += p->width - 1;
@@ -2264,6 +2276,7 @@ void V_DrawTextBGray(char *text, int x, int y)
         }
         else
         {
+	    // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawMappedPatch(x, y, p, graymap);
             x += p->width - 1;
@@ -2294,6 +2307,7 @@ int V_TextBWidth(char *text)
         }
         else
         {
+	    // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             width += p->width - 1;
         }
@@ -2389,7 +2403,6 @@ void V_Setup_VideoDraw(void)
      default:
         I_Error ("V_Setup_VideoDraw invalid bits per pixel: %d\n", vid.bitpp);
     }
-    vid.widthbytes = vid.width * vid.bytepp;  // to save multiplies
 
 #ifdef ENABLE_DRAWEXT
     //fab highcolor

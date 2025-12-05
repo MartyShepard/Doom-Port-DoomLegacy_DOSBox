@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: d_main.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -464,7 +464,7 @@ void D_Display(void)
     redrawsbar = false;
 
     //added:21-01-98: check for change of screen size (video mode)
-    if (setmodeneeded >= 0)
+    if ( setmodeneeded.modetype )
     {
         SCR_SetMode();  // change video mode
         //added:26-01-98: NOTE! setsizeneeded is set by SCR_Recalc()
@@ -737,10 +737,6 @@ void D_DoomLoop(void)
     // end of loading screen: CONS_Printf() will no more call FinishUpdate()
     con_self_refresh = false;
 
-#if defined( __DJGPP__ )	
-    CONS_Printf("I_StartupKeyboard...\n");
-    I_StartupKeyboard();
-#endif
     oldentertics = I_GetTime();
 
     // make sure to do a d_display to init mode _before_ load a level
@@ -1530,6 +1526,7 @@ void IdentifyVersion()
     // [WDJ] search the table for the first iwad filename found
     for( gmi=0; gmi<GDESC_other; gmi++ )
     {
+        // use pathiwad to output wad path from Check_wad_filenames
         if( Check_wad_filenames( gmi, pathiwad ) )
 	    goto got_gmi_iwad;
     }
@@ -1837,7 +1834,9 @@ void D_DoomMain()
     CONS_Printf("StartupGraphics...\n");
     // setup loading screen with dedicated=0 and vid=800,600
     V_Init_VideoControl();  // before I_StartupGraphics
-#if defined( __DJGPP__ )			
+		
+#if defined( __DJGPP__ )
+        // Diese Arguemente (für den Screen) werden für die DOS Version zu spät aufgerufen
         if( M_CheckParm("-highcolor") )
         {
 	    req_drawmode = REQ_highcolor;  // 15 or 16 bpp
@@ -1861,8 +1860,9 @@ void D_DoomMain()
 	      I_Error( "-bpp invalid\n");
 	}
 #endif		
+
     I_StartupGraphics();    // window
-    SCR_Startup();
+    SCR_Startup();			
 
     // save Doom, Heretic, Chex strings for DEH
     DEH_Init();  // Init DEH before files and lumps loaded
@@ -1905,7 +1905,7 @@ void D_DoomMain()
         {
             userhome = getenv("HOME");
 	}
-
+								
         if (!userhome)
         {
 #if !defined( __DJGPP__ )					
@@ -1962,11 +1962,12 @@ void D_DoomMain()
         {
             // default absolute path, do not set to ""
             legacyhome = DEFHOME;
-            #if defined( __DJGPP__ )						
+
+#if defined( __DJGPP__ )
             char dosroot[MAX_WADPATH];
             getcwd(dosroot, MAX_WADPATH-1);
-            sprintf(legacyhome, "%s/", dosroot);						
-            #endif
+            sprintf(legacyhome, "%s/", dosroot);
+#endif
         }
         if( access(legacyhome, R_OK) < 0 )  // not found
         {
@@ -2180,7 +2181,9 @@ void D_DoomMain()
     }
     else
     {
-#if !defined( __DJGPP__ )			
+#if !defined( __DJGPP__ )
+        // Diese argumente habe vorgezogen weil das für die DOS version zu spät ist den Bit zu setzen.
+        // I_RequestFullGraphics macht kein sinn weil die DOS Version kein Fenstermodus nativ hat.
         if( M_CheckParm("-highcolor") )
         {
 	    req_drawmode = REQ_highcolor;  // 15 or 16 bpp
@@ -2203,15 +2206,14 @@ void D_DoomMain()
 	    else
 	      I_Error( "-bpp invalid\n");
 	}
-#endif
+
         //--------------------------------------------------------- CONSOLE
         // setup loading screen
-        CONS_Printf("RequestFullGraphics...\n");				
-#ifdef SDL
+        CONS_Printf("RequestFullGraphics...\n");
         I_RequestFullGraphics( cv_fullscreen.value );
 #endif
-
         SCR_Recalc();
+        V_SetPalette (0);  // on new screen
 
 #ifdef HWRENDER
         if( rendermode != render_soft )
@@ -2262,9 +2264,11 @@ void D_DoomMain()
         autostart = true;
     }
 
+    // [WDJ] This triggers the first draw to the screen,
+    // debug it here instead of waiting for CONS_Printf in BloodTime_OnChange
+    CONS_Printf( "Register...\n" );
     D_RegisterClientCommands(); //Hurdler: be sure that this is called before D_CheckNetGame
 
-    // [WDJ] This triggers the first draw to the screen
     D_RegisterMiscCommands();	//[WDJ] more than just DeathMatch
     ST_AddCommands();
     T_AddCommands();

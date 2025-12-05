@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: Vid_vesa.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -56,10 +56,10 @@
 
 
 // PROTOS
-vmode_t *VID_GetModePtr (int modenum);
+static vmode_t *VID_GetModePtr (modenum_t modenum);
 int  VID_VesaGetModeInfo (int modenum);
 void VID_VesaGetExtraModes (void);
-int  VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode);
+int  VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p);
 
 void VID_Command_NumModes_f (void);
 void VID_Command_ModeInfo_f (void);
@@ -83,14 +83,14 @@ static vesa_extra_t vesa_extra[MAX_VESA_MODES];
 
 //this is the only supported non-vesa mode : standard 320x200x256c.
 #define NUMVGAVIDMODES  2
-int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode);
+int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
 static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
   { // 0 mode, HIDDEN
-    & vgavidmodes/*specialmodes*/[1],
+    & specialmodes[1],
     "Initial",
     INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT,
     INITIAL_WINDOW_WIDTH, 1,     // rowbytes, bytes per pixel
-    0, 1,  // windowed, numpages
+    MODE_window, 1,  // windowed, numpages
     NULL,
     VGA_InitMode
   },
@@ -99,22 +99,23 @@ static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
     "320x200",
     320, 200,  //(200.0/320.0)*(320.0/240.0),
     320, 1,    // rowbytes, bytes per pixel
-    0, 1,
+    MODE_window, 1,
     NULL,
     VGA_InitMode
   }
 };
 
-static char         names[MAX_VESA_MODES][100];
+static char         names[MAX_VESA_MODES][10];
 
 //----------------------------i_video.c------------------------------------
 // these ones should go to i_video.c, but I prefer keep them away from the
 // doom sources until the vesa stuff is ok.
-   int     numvidmodes;   //total number of video modes, vga, vesa1, vesa2.
-   vmode_t *pvidmodes;    //start of videomodes list.
-   vmode_t *pcurrentmode; // the current active videomode.
+int     num_all_vidmodes = 0;   // total number of all vidmodes
+int     num_full_vidmodes = 0;  // total number of video modes, vga, vesa1, vesa2
+vmode_t * all_vidmodes = NULL;  // start of videomodes list (window and fullscreen)
+vmode_t * full_vidmodes = NULL; // start of fullscreen vidmodes
+vmode_t * currentmode_p = NULL; // the current active videomode.
 //----------------------------i_video.c------------------------------------
-
 
 
 // table des modes videos.
@@ -179,25 +180,45 @@ void *real2ptr(unsigned int real)
     return (void *) (real + conventional_memory);
 }
 
-// ------------------------------------------------------------------------
-
 
 /* ======================================================================== */
-// Add the standard VGA video modes (only one now) to the video modes list.
+// Add the standard VGA video modes to the video modes list.
 /* ======================================================================== */
-void VGA_Init(void)
+// mode 0 and 1 are used for windowed console startup.
+void VID_InitVGAModes(void)
 {
-    vgavidmodes[NUMVGAVIDMODES-1].pnext = pvidmodes;
-    pvidmodes = &vgavidmodes[0];
-    numvidmodes += NUMVGAVIDMODES;
+    // do not include Mode 0 (INITIAL) in count
+    all_vidmodes = &vgavidmodes[0];
+    num_all_vidmodes = NUMVGAMODES-1;
+}
+
+static void append_full_vidmodes( vmode_t newmodes, int nummodes )
+{
+    full_vidmodes = newmodes;
+    vgavidmodes[NUMVGAVIDMODES-1].next = newmodes;
+	    
+    num_full_vidmodes += nummodes;
+    num_all_vidmodes += nummodes;
 }
 
 
-//added:30-01-98: return number of video modes in pvidmodes list
-int VID_NumModes(void)
+// modetype is of modetype_e
+range_t  VID_ModeRange( byte modetype )
 {
-    return numvidmodes;
+    range_t  mrange = { 1, 1 };
+    // INITIAL_WINDOW mode 0 is not included
+    if(modetype == MODE_fullscreen)
+    {   // fullscreen  2..
+        mrange.first = NUMVGAMODES;
+        mrange.last = mrange.first + num_full_vidmodes;
+    }
+    else
+    {   // window   1..
+        mrange.last = num_all_vidmodes;
+    }
+    return mrange;
 }
+
 
 //added:21-03-98: return info on video mode
 char *VID_ModeInfo (int modenum, char **ppheader)
@@ -225,19 +246,38 @@ char *VID_ModeInfo (int modenum, char **ppheader)
 
 
 //added:03-02-98: return a video mode number from the dimensions
-int VID_GetModeForSize( int w, int h)
+modenum_t  VID_GetModeForSize( int w, int h, byte modetype )
 {
-    vmode_t *pv;
-    int modenum;
+    modenum_t  modenum = { MODE_NOP, 0 };
+    int mi = 1;
+    int tdist = MAXINT;
+    int bestdist;
+    vmode_t * best;
+    vmode_t * pv = all_vidmodes;
 
-    pv = pvidmodes;
-    for(modenum=0; pv!=NULL; pv=pv->pnext,modenum++ )
+    if( modetype == MODE_fullscreen )
     {
-        if( pv->width==w && pv->height==h )
-            return modenum;
+        if( num_full_vidmodes == 0 )  goto done;
+        mi += NUMSPECIALMODES;  // fullscreen modes start after
+        pv = full_vidmodes;
     }
+    for ( ; pv!=NULL; pv=pv->next )
+    {
+        tdist = abs(pv->width - rw) + abs(pv->height - rh);
+        // find closest dist
+        if( bestdist > tdist )
+        {
+	    bestdist = tdist;
+	    best = i;
+	    if( tdist == 0 )  break;   // found exact match
+	}
+	mi++;
+    }
+    modenum.index = mi;
+    modenum.modetype = rmodetype;
 
-    return 0;
+done:
+    return modenum;
 }
 
 
@@ -253,13 +293,13 @@ void VID_Init (void)
     COM_AddCommand ("vid_mode", VID_Command_Mode_f);
 }
 
-// may be called more than once
+// Get Fullscreen, VESA modes, append to VGA window modes
 void VID_GetModes(void)
 {
-    // setup the videmodes list,
+    // setup the video modes list,
     // note that mode 0 must always be VGA mode 0x13
-    pvidmodes = NULL;
-    pcurrentmode = NULL;
+    full_vidmodes = NULL;
+    currentmode_p = NULL;
     numvidmodes = 0;
     // setup the vesa_modes list
     VID_VesaGetExtraModes ();
@@ -272,19 +312,123 @@ void VID_GetModes(void)
         highcolor = 0;
         VID_VesaGetExtraModes ();
     }
-
-    // add the vga modes at the start of the modes list
-    VGA_Init();
 }
 
 
-void VID_SetDefaultMode(void)
+// ========================================================================
+// Returns a vmode_t from the video modes list, given a video mode number.
+// ========================================================================
+static
+vmode_t *VID_GetModePtr (modenum_t modenum)
 {
-#ifdef DEBUG
-    CONS_Printf("VID_SetMode(%d)\n",vid.modenum);
-#endif
-    VID_SetMode (0); //vid.modenum);
+    // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
+    vmode_t *pv = all_vidmodes;  // window
+    int mi = modenum.index;      // 0..
 
+    if ( modenum.modetype == MODE_fullscreen )
+    {
+        pv = full_vidmodes;
+        mi = modenum.index - NUMSPECIALMODES;  // 2..
+    }
+    if (!pv || mi < 0 )  goto fail;
+
+    while (mi--)
+    {
+        pv = pv->next;
+        if (!pv)  goto fail;
+    }
+    return pv;
+fail:
+    return NULL;
+}
+
+
+//added:30-01-98:return the name of a video mode
+char * VID_GetModeName( modenum_t modenum )
+{
+    // fullscreen and window modes  1..
+    vmode_t *pv = VID_GetModePtr(modenum);
+    return (pv)? pv->name : NULL;
+}
+
+
+// ========================================================================
+// Sets a video mode
+// ========================================================================
+// Returns FAIL_end, FAIL_create, of status_return_e, 1 on success;
+int VID_SetMode (modenum_t modenum)
+{
+    int     stat;
+    vmode_t *newmode_p, *oldmode_p;
+    viddef_t oldvid = vid;   // to back out
+    boolean  set_fullscreen = (modenum.modetype == MODE_fullscreen);
+    range_t  range = VID_ModeRange( modenum.modetype );
+
+
+    if ((modenum.index > range.last) || (modenum.index < range.first))
+    {
+        if (currentmode_p == NULL)
+        {
+	    modenum.index = 0;    // revert to the default base vid mode
+        }
+        else
+        {
+	    I_SoftError ("Unknown video mode\n");
+	    return  FAIL_end;
+        }
+    }
+
+    newmode_p = VID_GetModePtr (modenum);
+    if( newmode_p == NULL )
+       return  FAIL_end;
+
+    // dont switch to the same display mode
+    if (newmode_p == currentmode_p)   goto done;
+
+    // initialize the new mode
+    oldmode_p = currentmode_p;
+    currentmode_p = newmode_p;
+
+    // initialize vidbuffer size for setmode_func
+    vid.width  = currentmode_p->width;
+    vid.height = currentmode_p->height;
+    vid.bytepp = currentmode_p->bytesperpixel;
+    vid.bitpp = (vid.bytepp==1)? 8:15;
+
+    stat = (*pcurrentmode->setmode_func) (&vid, pcurrentmode);
+      // sets vid.direct, vid.buffer, vid.display, vid.ybytes, vid.screen_size, vid.screen1
+    if (stat < 0)
+    {
+        if (stat == FAIL_create)
+        {
+            // hardware could not setup mode
+            //if (!VID_SetMode (vid.modenum))
+            //    I_Error ("VID_SetMode: couldn't set video mode (hard failure)");
+            I_SoftError("Couldn't set video mode %d\n", modenum);
+        }
+        else
+        if (stat == FAIL_memory)
+        {
+            I_SoftError ("Not enough mem for VID_SetMode...\n");
+	}
+        // not enough memory; just put things back the way they were
+        currentmode_p = oldmode_p;
+        // cannot just copy oldvid because of buffer pointers that
+        // are no longer valid
+        vid.width  = oldvid.width;
+        vid.height = oldvid.height;
+        vid.bytepp = oldvid.bytepp;
+        vid.bitpp = oldvid.bitpp;
+        (*pcurrentmode->setmode_func) (&vid, pcurrentmode);
+        return FAIL_create;
+    }
+
+    vid.widthbytes = vid.width * vid.bytepp;
+    vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
+    vid.direct_rowbytes = currentmode_p->rowbytes;
+    vid.direct_size = vid.direct_rowbytes * vid.height;
+    vid.modenum = modenum;
+    vid.fullscreen = set_fullscreen;
 
 #ifdef DEBUG
     CONS_Printf("after VID_SetMode\n");
@@ -296,140 +440,9 @@ void VID_SetDefaultMode(void)
     CONS_Printf("vid.recalc   %d\n",vid.recalc);
     CONS_Printf("vid.direct   %x\n",vid.direct);
 #endif
-
-}
-
-
-// ========================================================================
-// Returns a vmode_t from the video modes list, given a video mode number.
-// ========================================================================
-vmode_t *VID_GetModePtr (int modenum)
-{
-    vmode_t *pv;
-
-    pv = pvidmodes;
-    if (!pv)
-        I_Error ("VID_error 1\n");
-
-    while (modenum--)
-    {
-        pv = pv->pnext;
-        if (!pv)
-            I_Error ("VID_error 2\n");
-    }
-
-    return pv;
-}
-
-
-//added:30-01-98:return the name of a video mode
-char *VID_GetModeName (int modenum)
-{
-    return (VID_GetModePtr(modenum))->name;
-}
-
-
-// ========================================================================
-// Sets a video mode
-// ========================================================================
-int VID_SetMode (int modenum)  //, unsigned char *palette)
-{
-    int     stat;
-    vmode_t *pnewmode, *poldmode;
-
-    if ((modenum >= numvidmodes) || (modenum < 0))
-    {
-        if (pcurrentmode == NULL)
-        {
-            modenum = 0;    // mode hasn't been set yet, so initialize to base
-                            //  mode since they gave us an invalid initial mode
-        }
-        else
-        {
-            //nomodecheck = true;
-            I_Error ("Unknown video mode: %d\n", modenum);
-            //nomodecheck = false;
-            return 0;
-        }
-    }
-
-    pnewmode = VID_GetModePtr (modenum);
-
-    if (pnewmode == pcurrentmode)
-        return 1;   // already in the desired mode
-
-    // initialize the new mode
-    poldmode = pcurrentmode;
-    pcurrentmode = pnewmode;
-
-    // initialize vidbuffer size for setmode
-    vid.width  = pcurrentmode->width;
-    vid.height = pcurrentmode->height;
-    //vid.aspect = pcurrentmode->aspect;
-    vid.direct_rowbytes = pcurrentmode->rowbytes;
-    vid.bytepp = pcurrentmode->bytesperpixel;
-    /*
-		vid.bitpp = (vid.bytepp==1)? 8:15;
-    vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
-		*/
-    // Using Updated Commandline
-    if( req_drawmode == REQ_highcolor)
-		{
-        vid.bitpp = 15; vid.drawmode = DRAW15;
-		}else if( req_drawmode == REQ_truecolor)
-		{
-        vid.bitpp = 32; vid.drawmode = DRAW32;
-		}else if( req_drawmode == REQ_specific)
-		{
-			  switch(req_bitpp)
-				{
-					case 15: vid.bitpp = 15; vid.drawmode = DRAW15;  break;						
-					case 16: vid.bitpp = 16; vid.drawmode = DRAW16;  break;						
-					case 24: vid.bitpp = 24; vid.drawmode = DRAW24;  break;
-					case 32: vid.bitpp = 32; vid.drawmode = DRAW32;  break;
-          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL;break;
-				}
-		}
-		else
-		{
-		  vid.bitpp = 8; vid.drawmode = DRAW8PAL;
-		}
-		
     //debug
     //if (vid.rowbytes != vid.width)
     //    I_Error("vidrowbytes (%d) <> vidwidth(%d)\n",vid.rowbytes,vid.width);
-
-    vid.widthbytes = vid.width * vid.bytepp;
-    vid.direct_size = vid.direct_rowbytes * vid.height;
-
-    stat = (*pcurrentmode->setmode) (&vid, pcurrentmode);
-
-    if (stat < 1)
-    {
-        if (stat == 0)
-        {
-            // hardware could not setup mode
-            //if (!VID_SetMode (vid.modenum))
-            //    I_Error ("VID_SetMode: couldn't set video mode (hard failure)");
-            I_Error("Couldn't set video mode %d\n", modenum);
-        }
-        else
-        if (stat == -1)
-        {
-            CONS_Printf ("Not enough mem for VID_SetMode...\n");
-
-            // not enough memory; just put things back the way they were
-            pcurrentmode = poldmode;
-            vid.width = pcurrentmode->width;
-            vid.height = pcurrentmode->height;
-            vid.direct_rowbytes = pcurrentmode->rowbytes;
-            vid.bytepp = pcurrentmode->bytesperpixel;
-	    // FIXME: ought to fail without any buffer memory
-            return 0;
-        }
-    }
-
-    vid.modenum = modenum;
 
     //printf ("%s\n", VID_ModeInfo (vid.modenum, NULL));
 
@@ -437,6 +450,7 @@ int VID_SetMode (int modenum)  //, unsigned char *palette)
     //                vid values.
     vid.recalc = 1;
 
+ done:
     return 1;
 }
 
@@ -650,7 +664,7 @@ no_vesa:
         //fill the modeinfo struct.
         if (VID_VesaGetModeInfo (vesamode))
         {
-            vesa_modes[nummodes].pnext = &vesa_modes[nummodes+1];
+            vesa_modes[nummodes].next = &vesa_modes[nummodes+1];
             if (vesamodeinfo.XResolution > 999)
             {
                 if (vesamodeinfo.YResolution > 999)
@@ -688,9 +702,8 @@ no_vesa:
 
             //added:20-01-98:aspect ratio to be implemented...
             vesa_modes[nummodes].rowbytes = vesamodeinfo.BytesPerScanLine;
-            vesa_modes[nummodes].windowed = 0;
-            vesa_modes[nummodes].pextradata = &vesa_extra[nummodes];
-            vesa_modes[nummodes].setmode = VID_VesaInitMode;
+            vesa_modes[nummodes].modetype = MODE_fullscreen;
+            vesa_modes[nummodes].extradata = &vesa_extra[nummodes];
 
             if (vesamodeinfo.ModeAttributes & LINEAR_FRAME_BUFFER)
             {
@@ -709,7 +722,7 @@ no_vesa:
                 }
 
                 // if physical mapping was ok... convert the selector:offset
-                vesa_extra[nummodes].plinearmem =
+                vesa_extra[nummodes].linearmem =
                            real2ptr (phys_mem_info.address);
 
                 // lock the region
@@ -720,7 +733,7 @@ no_vesa:
             // banked at 0xA0000
                 vesa_extra[nummodes].vesamode = vesamode;
                 //vesa_extra[nummodes].pages[0] = 0;
-                vesa_extra[nummodes].plinearmem =
+                vesa_extra[nummodes].linearmem =
                            real2ptr (vesamodeinfo.WinASegment<<4);
 
                 vesa_modes[nummodes].numpages = 1; //modeinfo.numpages;
@@ -732,12 +745,11 @@ no_vesa:
         }
     }
 
-// add the VESA modes at the start of the mode list (if there are any)
     if (nummodes)
     {
-        vesa_modes[nummodes-1].pnext = NULL; //pvidmodes;
-        pvidmodes = &vesa_modes[0];
-        numvidmodes += nummodes;
+        // append the vesa modes to the modelist
+        vesa_modes[nummodes-1].next = NULL; //full_vidmodes;
+        append_full_vidmodes( &vesa_modes[0], nummodes );
     }
 
 }
@@ -791,16 +803,15 @@ boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
 
 // ========================================================================
 // Set video mode routine for STANDARD VGA MODES (NO HIGHCOLOR)
-// Out: 1 ok,
-//      0 hardware could not set mode,
-//     -1 no mem
+// Out: 1 ok, negative FAIL codes
 // ========================================================================
-int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
+static
+int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 {
     __dpmi_regs   regs;
 
     if (!VID_FreeAndAllocVidbuffer (lvid))
-       return -1;                  //no mem
+       return FAIL_memory;  //no mem
 
     //added:26-01-98: should clear video mem here
 
@@ -813,7 +824,7 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
     // (you could have 320x200x256c with LFB in the vesa modes)
     lvid->direct = (byte *) real2ptr (0xa0000);
     lvid->numpages = 1;
-    lvid->bytepp = pcurrentmode->bytesperpixel;
+    lvid->bytepp = currentmode_p->bytesperpixel;
 
     return 1;
 }
@@ -821,28 +832,26 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 
 // ========================================================================
 // Set video mode routine for VESA video modes, see VID_SetMode()
-// Out: 1 ok,
-//      0 hardware could not set mode,
-//     -1 no mem
+// Out: 1 ok, FAIL errors (negative)
 // ========================================================================
-int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
+int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
 {
-    vesa_extra_t    *pextra;
+    vesa_extra_t    *extra;
     __dpmi_regs     regs;
 
-    pextra = pcurrentmode->pextradata;
+    extra = currentmode_p->extradata;
 
 #ifdef DEBUG
  CONS_Printf("VID_VesaInitMode...\n");
- CONS_Printf(" pcurrentmode->name %s\n",pcurrentmode->name);
- CONS_Printf("               width %d\n",pcurrentmode->width);
- CONS_Printf("               height %d\n",pcurrentmode->height);
- CONS_Printf("               rowbytes %d\n",pcurrentmode->rowbytes);
- CONS_Printf("               windowed %d\n",pcurrentmode->windowed);
- CONS_Printf("               numpages %d\n",pcurrentmode->numpages);
- CONS_Printf(" pcurrentmode->pextradata :\n");
- CONS_Printf("                ->vesamode %x\n",pextra->vesamode);
- CONS_Printf("                ->plinearmem %x\n\n",pextra->plinearmem);
+ CONS_Printf(" currentmode_p->name %s\n",currentmode_p->name);
+ CONS_Printf("               width %d\n",currentmode_p->width);
+ CONS_Printf("               height %d\n",currentmode_p->height);
+ CONS_Printf("               rowbytes %d\n",currentmode_p->rowbytes);
+ CONS_Printf("               windowed %d\n",currentmode_p->windowed);
+ CONS_Printf("               numpages %d\n",currentmode_p->numpages);
+ CONS_Printf(" currentmode_p->extradata :\n");
+ CONS_Printf("                ->vesamode %x\n",extra->vesamode);
+ CONS_Printf("                ->linearmem %x\n\n",extra->linearmem);
 #endif
 
     //added:20-01-98:no page flipping now... TO DO!!!
@@ -850,7 +859,7 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 
     // clean up any old vid buffer lying around, alloc new if needed
     if (!VID_FreeAndAllocVidbuffer (lvid))
-       return -1;                  //no mem
+       return FAIL_memory;                  //no mem
 
 
     //added:20-01-98: should clear video mem here
@@ -858,11 +867,11 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 
     // set the mode
     regs.x.ax = 0x4f02;
-    regs.x.bx = pextra->vesamode;
+    regs.x.bx = extra->vesamode;
     __dpmi_int (0x10, &regs);
 
     if (regs.x.ax != 0x4f)
-        return 0;               // could not set mode
+        return FAIL_create;               // could not set mode
 
 //added:20-01-98: should setup wait_vsync flag, currentpage here...
 //                plus check for display_enable bit
@@ -870,8 +879,8 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 //added:20-01-98: here we should set the page if page flipping...
 
     // points to LFB, or the start of VGA mem.
-    lvid->direct = pextra->plinearmem;
-    lvid->bytepp = pcurrentmode->bytesperpixel;
+    lvid->direct = extra->linearmem;
+    lvid->bytepp = currentmode_p->bytesperpixel;
 
     return 1;
 }
@@ -917,12 +926,12 @@ void VID_Command_ModeInfo_f (void)
     CONS_Printf ("width : %d\n"
                  "height: %d\n"
                  "bytes per scanline: %d\n"
-                 "bytes per pixel: %s\n"
+                 "bytes per pixel: %d\n"
                  "numpages: %d\n",
                  pv->width,
                  pv->height,
                  pv->rowbytes,
-                 pv->bytesperpixel==2?"16":"8",
+                 pv->bytesperpixel,
                  pv->numpages );
 }
 

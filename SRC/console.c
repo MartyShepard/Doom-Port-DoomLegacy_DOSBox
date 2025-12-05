@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: console.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -399,6 +399,7 @@ void CON_Register(void)
     COM_AddCommand ("bind", CONS_Bind_f);
 }
 
+// after FullGraphics
 void CON_VideoInit(void)
 {
     if(dedicated)
@@ -419,7 +420,7 @@ void CON_VideoInit(void)
     con_bordleft  = (pic_t*) W_CachePicName ("CBLEFT",PU_STATIC);
     con_bordright = (pic_t*) W_CachePicName ("CBRIGHT",PU_STATIC);
 
-    // set console full screen for game startup MAKE SURE VID_Init() done !!!
+    // set console full screen for game startup after FullGraphics
     con_destlines = vid.height;
     con_curlines = vid.height;
 
@@ -746,14 +747,14 @@ static int     comskips,varskips;
     }
 
     // move up (backward) in console textbuffer
-    if (key == KEY_PGUP || key == 231)
+    if (key == KEY_PGUP)
     {
         if (con_scrollup < (con_totallines-((con_curlines-16)>>3)) )
             con_scrollup++;
         return true;
     }
     else
-    if (key == KEY_PGDN || key == 239)
+    if (key == KEY_PGDN)
     {
         if (con_scrollup>0)
             con_scrollup--;

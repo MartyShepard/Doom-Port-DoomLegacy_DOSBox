@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: screen.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,8 +17,6 @@
 //
 //
 // $Log: screen.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.14  2004/05/16 20:34:47  hurdler
 //
 // Revision 1.13  2004/05/16 19:11:44  hurdler
@@ -68,9 +66,9 @@
 #include "doomtype.h"
 #include "command.h"
   // consvar_t
-#if defined( __DJGPP__ )
-#define NUMSCREENS    4
-#endif
+#include "i_video.h"
+  // modenum_t
+
 
 // Size of statusbar.
 #define ST_HEIGHT    32
@@ -86,8 +84,8 @@ extern int stbarheight;     // when scaled
 // we try to re-allocate a minimum of buffers for stability of the memory,
 // so all the small-enough tables based on screen size, are allocated once
 // and for all at the maximum size.
-#define MAXVIDWIDTH    3840
-#define MAXVIDHEIGHT   2160
+#define MAXVIDWIDTH    1600
+#define MAXVIDHEIGHT   1200
 
 #define BASEVIDWIDTH    320   //NEVER CHANGE THIS! this is the original
 #define BASEVIDHEIGHT   200  // resolution of the graphics.
@@ -124,7 +122,7 @@ typedef struct viddef_s
     int         width;          // PIXELS per scanline
     int         height;
     int         bytepp;          // BYTES per pixel: 1=256color, 2, 4
-    int         modenum;         // vidmode num indexes videomodes list
+    modenum_t   modenum;         // vidmode num, same as setmodeneeded
     byte        drawmode;        // drawing mode, optimized for tables and switch stmts
     byte        bitpp;		 // BITS per pixel: 8, 15, 16, 24, 32
     byte        numpages;        // always 1, PAGE FLIPPING TODO!!!
@@ -153,22 +151,21 @@ typedef struct viddef_s
 // internal additional info for vesa modes only
 typedef struct {
     int         vesamode;         // vesa mode number plus LINEAR_MODE bit
-    void        *plinearmem;      // linear address of start of frame buffer
+    void        *linearmem;      // linear address of start of frame buffer
 } vesa_extra_t;
 // a video modes from the video modes list,
-// note: video mode 0 is always standard VGA320x200.
 typedef struct vmode_s {
 
-    struct vmode_s  *pnext;
+    struct vmode_s  *next;
     char         *name;
     unsigned int width;
     unsigned int height;
     unsigned int rowbytes;          //bytes per scanline
-    unsigned int bytesperpixel;     // 1 for 256c, 2 for highcolor
-    int          windowed;          // if true this is a windowed mode
-    int          numpages;
-    vesa_extra_t *pextradata;       //vesa mode extra data
-    int          (*setmode)(viddef_t *lvid, struct vmode_s *pcurrentmode);
+    byte         bytesperpixel;     // 1 for 256c, 2 for highcolor
+    byte         modetype;          // from modetype_e
+    byte         numpages;
+    vesa_extra_t *extradata;       //vesa mode extra data
+    int          (*setmode_func)(viddef_t *lvid, struct vmode_s *pcurrentmode);
     int          misc;              //misc for display driver (r_glide.dll etc)
 } vmode_t;
 
@@ -236,7 +233,10 @@ extern void     (*transspanfunc) (void);
 // screen variables
 // ----------------
 extern viddef_t vid;
-extern int    setmodeneeded;   // mode number to set (+1), 0=NOP
+
+// mode numbers
+extern modenum_t  setmodeneeded;   // mode number to set
+// mode index 0 is NULL, when passed does default (INITIAL_WINDOW_WIDTH)
 
 extern byte*  scr_borderflat;  // flat used to fill the view borders
 
@@ -250,9 +250,6 @@ extern consvar_t cv_fuzzymode;
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*skydrawerfunc[2]) (void);
 
-// from vid_vesa.c : user config video mode decided at VID_Init ();
-extern int      vid_modenum;
-
 // Change video mode, only at the start of a refresh.
 void SCR_SetMode (void);
 // Recalc screen size dependent stuff
@@ -265,4 +262,5 @@ void SCR_SetDefaultMode (void);
 void SCR_Startup (void);
 
 void SCR_ChangeFullscreen (void);
-#endif //__SCREEN_H__
+
+#endif // SCREEN_H

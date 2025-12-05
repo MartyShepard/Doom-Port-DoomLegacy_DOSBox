@@ -213,11 +213,14 @@ enum key_input_e
 };
 
 #if defined (__DJGPP__)
+/* Not SDL Same */
 #define KEY_UPARROW     (0x80+102)
 #define KEY_LEFTARROW   (0x80+105)
 #define KEY_RIGHTARROW  (0x80+107)
 #define KEY_DOWNARROW   (0x80+110)
 #define KEY_SHIFT       (0x80+54)
-#define KEY_INS       (0x80+149)
+#define KEY_INS       (229)
+#define KEY_PGUP      (231)
+#define KEY_PGDN      (239)
 #endif
 #endif

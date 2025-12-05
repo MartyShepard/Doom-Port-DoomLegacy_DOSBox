@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1066 2013-12-14 00:22:54Z wesleyjohnson $
+// $Id: m_menu.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1676,11 +1676,7 @@ menuitem_t OptionsMenu[]=
     {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
-#ifdef __DJGPP__
-    {IT_SUBMENU | IT_WHITESTRING,0,"Mouse/Joy Options..." ,&MouseOptionsDef   ,0},
-#else
     {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
-#endif
     {IT_CALL    | IT_WHITESTRING,0,"Setup Controls...",M_SetupControlsMenu,0}
 };
 
@@ -2429,7 +2425,7 @@ menu_t  VidModeDef =
     "Video Mode",
     1,                  // # of menu items
     //sizeof(VideoModeMenu)/sizeof(menuitem_t),
-    &OptionsDef,        // previous menu
+    &VideoOptionsDef,   // previous menu
     VideoModeMenu,      // menuitem_t ->
     M_DrawVideoMode,    // drawing routine ->
     48,36,              // x,y
@@ -2438,18 +2434,18 @@ menu_t  VidModeDef =
 
 //added:30-01-98:
 #define MAXCOLUMNMODES   10     //max modes displayed in one column
-#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
+#define MAXMODEDESCS     (MAXCOLUMNMODES*4)
 
 // shhh... what am I doing... nooooo!
 static int vidm_testing_cnt=0;
-static int vidm_previousmode;
-static int vidm_current=0;
+static modenum_t  vidm_previousmode;  // modenum in format of setmodeneeded
+static int vidm_current=0;  // modedesc index
 static int vidm_nummodes;
 static int vidm_column_size;
 
 typedef struct
 {
-    int     modenum;    //video mode number in the vidmodes list
+    modenum_t  modenum; // video mode number in format of setmodeneeded
     char    *desc;      //XXXxYYY
     int     iscur;      //1 if it is the current active mode
 } modedesc_t;
@@ -2462,18 +2458,25 @@ static modedesc_t   modedescs[MAXMODEDESCS];
 //
 void M_DrawVideoMode(void)
 {
-    int     i,j,dup,row,col,nummodes;
+    modenum_t  mode_320x200 = VID_GetModeForSize( 320, 200, MODE_fullscreen );
+    byte  base_modetype = (mode_fullscreen) ? MODE_fullscreen : MODE_window;
+    range_t moderange;
+    modenum_t  dmode;  // draw modenum
+    modedesc_t * mdp;  // modedesc
+    int     i,j,dup,row,col;
     char    *desc;
     char    temp[80];
 
     // draw title
     M_DrawMenuTitle();
 
+    dmode.modetype = base_modetype;
     vidm_nummodes = 0;
-    nummodes = VID_NumModes();
-    for (i=0 ; i<nummodes && vidm_nummodes<MAXMODEDESCS ; i++)
+    moderange = VID_ModeRange( base_modetype );   // indexing
+    for (i=moderange.first ; i<=moderange.last ; i++)
     {
-        desc = VID_GetModeName (i);
+        dmode.index = i;
+        desc = VID_GetModeName (dmode);
         if (desc)
         {
             dup = 0;
@@ -2482,36 +2485,33 @@ void M_DrawVideoMode(void)
             // VESA mode, which is always a higher modenum
             for (j=0 ; j<vidm_nummodes ; j++)
             {
-                if (!strcmp (modedescs[j].desc, desc))
+	        mdp = & modedescs[j];
+                if (!strcmp (mdp->desc, desc))
                 {
-                    //mode(0): 320x200 is always standard VGA, not vesa
-                    if (modedescs[j].modenum != 0)
+                    // 320x200 fullscreen is always standard VGA, not vesa
+                    if (mdp->modenum.modetype != mode_320x200.modetype
+			|| mdp->modenum.index != mode_320x200.index)
                     {
-                        modedescs[j].modenum = i;
-                        dup = 1;
-
-                        if (i == vid.modenum)
-                            modedescs[j].iscur = 1;
+		        // replace previous entry (VGA)
+                        mdp->modenum = dmode;
+		        mdp->iscur = (dmode.modetype == vid.modenum.modetype
+				      && dmode.index == vid.modenum.index );
                     }
-                    else
-                    {
-                        dup = 1;
-                    }
-
+		    dup = 1;
                     break;
                 }
             }
 
             if (!dup)
             {
-                modedescs[vidm_nummodes].modenum = i;
-                modedescs[vidm_nummodes].desc = desc;
-                modedescs[vidm_nummodes].iscur = 0;
-
-                if (i == vid.modenum)
-                    modedescs[vidm_nummodes].iscur = 1;
+	        mdp = & modedescs[vidm_nummodes];
+                mdp->desc = desc;
+                mdp->modenum = dmode;
+	        mdp->iscur = (dmode.modetype == vid.modenum.modetype
+			      && dmode.index == vid.modenum.index );
 
                 vidm_nummodes++;
+	        if( vidm_nummodes >= MAXMODEDESCS )  break;
             }
         }
     }
@@ -2614,7 +2614,7 @@ void M_HandleVideoMode (int key)
 
       case KEY_ENTER:
         S_StartSound(NULL, menu_sfx_enter);
-        if (setmodeneeded<0) //in case the previous setmode was not finished
+        if ( setmodeneeded.modetype == MODE_NOP ) //in case the previous setmode was not finished
             setmodeneeded = modedescs[vidm_current].modenum;
         break;
 
@@ -2631,7 +2631,7 @@ void M_HandleVideoMode (int key)
         S_StartSound(NULL, menu_sfx_action);
         vidm_testing_cnt = TICRATE*5;
         vidm_previousmode = vid.modenum;
-        if (setmodeneeded<0) //in case the previous setmode was not finished
+        if ( setmodeneeded.modetype == MODE_NOP ) //in case the previous setmode was not finished
             setmodeneeded = modedescs[vidm_current].modenum;
         return;
 

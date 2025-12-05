@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: f_finale.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -402,6 +402,7 @@ void F_TextWrite (void)
             continue;
         }
 
+        // hufont only has uppercase
         c = toupper(c) - HU_FONTSTART;
         if (c < 0 || c> HU_FONTSIZE)
         {

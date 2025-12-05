@@ -3637,3 +3637,14 @@ I_RequestFullGraphics makes the transition to fullscreen, hardware modes,
 opengl, and video depth selected by command line switches.
 Introduce INITIAL_WINDOW size (800x600), which can be selected in doomdef.h.
 This usually is large enough to actually read error messages.
+
+*** W95_vidmode
+patchfile = w95_11_vidmode.patch
+- committed revision 1069   by wesley johnson
+Convert port video function interfaces to use modenum_t, which records the
+context of the mode number as well as the index.
+Mode indexes have a range, usually 1..n.
+Update all the ports to use this interface, although some are
+incomplete and would not compile due to other missing functions.
+This has changed the video code in many ports which have not been tested
+for a long time.

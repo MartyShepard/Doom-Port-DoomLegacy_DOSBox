@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.h 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: Vid_vesa.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -121,11 +121,10 @@ typedef struct vesamodeinfo_s
 
 // init once
 void VID_Init (void);
-// setup standard VGA + VESA modes list
-// may be called more than once
+// add the vga modes at the start of the modes list
+void VID_InitVGAModes(void);
+// add the VESA modes to the list
 void VID_GetModes(void);
-// set the default video mode
-void VID_SetDefaultMode(void);
 // setup a video mode, this is to be called from the menu
 int  VID_SetMode (int modenum);
 

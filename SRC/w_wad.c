@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: w_wad.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -343,6 +343,7 @@ int W_LoadWadFile (char *filename)
     W_LoadDehackedLumps( numwadfiles-1 );
     return numwadfiles-1;
 }
+
 
 
 // !!!NOT CHECKED WITH NEW WAD SYSTEM
@@ -1008,6 +1009,8 @@ uint64_t  W_lump_checksum( void* lumpptr )
 }
 
 
+#if 0
+// Makes DOS assumptions
 // --------------------------------------------------------------------------
 // W_Profile
 // --------------------------------------------------------------------------
@@ -1182,3 +1185,4 @@ int W_AddFile (char *filename)
     return 1;
 }
 */
+#endif

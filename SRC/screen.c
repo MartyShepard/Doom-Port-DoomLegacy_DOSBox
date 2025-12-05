@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: screen.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,7 +17,7 @@
 //
 //
 // $Log: screen.c,v $
-// Include: DOS DJGPP Fixes
+// Revision 1.14  2004/05/16 20:34:47  hurdler
 //
 // Revision 1.13  2002/11/12 00:06:05  ssntails
 // Support for translated translucent columns in software mode.
@@ -100,7 +100,18 @@ void (*skintranscolfunc) (void); // skin translation translucent
 // global video state
 // ------------------
 viddef_t  vid;
-int       setmodeneeded= -1;   // video mode change needed, set by menu ( -1 = NOP )
+// video mode change needed, set by menu ( 0 = NOP )
+modenum_t setmodeneeded = {MODE_NOP,0};
+
+const char * modetype_string[ MODE_other + 1 ] =
+{
+    "",
+    "window",
+    "fullscreen",
+    "Voodoo",
+    "either",
+    "other",
+};
 
 
 // use original Doom fuzzy effect instead of translucency?
@@ -140,12 +151,6 @@ uint16_t mask_r = 0, mask_g = 0, mask_b = 0, mask_rb = 0;
 void ASMCALL ASM_PatchRowBytes(int rowbytes);
 
 
-//  Set the video mode right now,
-//  the video mode change is delayed until the start of the next refresh
-//  by setting setmodeneeded to a value >= 0
-//
-int  VID_SetMode(int modenum);
-
 //  Short and Tall sky drawer, for the current color mode
 void (*skydrawerfunc[2]) (void);
 
@@ -156,15 +161,15 @@ void SCR_SetMode (void)
     if(dedicated)
         return;
 
-    if (setmodeneeded < 0)
+    if (setmodeneeded.modetype == MODE_NOP)
         return;                 //should never happen
 
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
       mode_fullscreen = false;
-      int modenum = VID_GetModeForSize(800,600);  // debug window
-      VID_SetMode(modenum);
+      modenum_t mode800 = VID_GetModeForSize(800,600, MODE_window);  // debug window
+      VID_SetMode(mode800);
       vid.modenum = setmodeneeded; // fix the display
     }
 #else
@@ -320,7 +325,7 @@ void SCR_SetMode (void)
     // set fuzzcolfunc
     CV_Fuzzymode_OnChange();
 
-    setmodeneeded = -1;
+    setmodeneeded.modetype = MODE_NOP;  // NULL
     return;
 
  bpp_err:
@@ -366,8 +371,6 @@ void SCR_Startup (void)
 {
     if(dedicated)
         return;
-
-    vid.modenum = 0;
 
     vid.fdupx = (float)vid.width/BASEVIDWIDTH;//1.0;
     vid.fdupy = (float)vid.height/BASEVIDHEIGHT; //1.0f;
@@ -464,6 +467,7 @@ void SCR_CheckDefaultMode (void)
     int p;
     int scr_forcex;     // resolution asked from the cmd-line
     int scr_forcey;
+    byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
 
     if(dedicated)
         return;
@@ -484,14 +488,14 @@ void SCR_CheckDefaultMode (void)
     {
         CONS_Printf("Using resolution: %d x %d\n",scr_forcex,scr_forcey);
         // returns -1 if not found, (no mode change)
-        setmodeneeded = VID_GetModeForSize(scr_forcex,scr_forcey);
+        setmodeneeded = VID_GetModeForSize(scr_forcex,scr_forcey, modetype);
         //if (scr_forcex!=BASEVIDWIDTH || scr_forcey!=BASEVIDHEIGHT)
     }
     else
     {
         CONS_Printf("Default resolution: %d x %d (%d bits)\n",cv_scr_width.value,cv_scr_height.value,cv_scr_depth.value);
         // see note above
-        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
+        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value, modetype);
     }
 }
 
@@ -509,19 +513,15 @@ void SCR_SetDefaultMode (void)
 
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen (void)
-{    // used to prevent switching to fullscreen during startup
-
+{
+    // used to prevent switching to fullscreen during startup
     if (!allow_fullscreen)
         return;
-			
+
     if(graphics_started)
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
-        #if defined( __DJGPP__ )
-				mode_fullscreen = true;
-				#endif
-        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value);
+        byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
+        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value, modetype);
     }
-
 }
-
