@@ -3672,5 +3672,11 @@ Walls should not be longer than 1000.
 
 *** W96_gcc4
 patchfile = w96_1_gcc4.patch
-- committed revision 10??   by wesley johnson
+- committed revision 1072   by wesley johnson
 Compile fixes for gcc4.x complaints.
+
+*** W95_savegamemenu
+patchfile = w96_2_savegamemenu.patch
+- committed revision 1073   by wesley johnson
+Changes to menu constants in w95_8 exposed a misuse of the menu status field.
+The misuse has been fixed with the actual constants the field should have.

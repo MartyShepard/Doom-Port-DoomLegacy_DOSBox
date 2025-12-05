@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
+// $Id: m_menu.c 1073 2013-12-20 21:46:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3065,7 +3065,7 @@ void M_ReadSaveStrings( int scroll_direction )
 	    if( skip_unloadable )  continue;
 	    slot_str = EMPTYSTRING;
 	    sprintf( &sgdp->levtime[0], "%2i", nameid );
-	    slot_status = 0;
+	    slot_status = IT_SPACE | IT_NOTHING;
         }
         else
         {
@@ -3081,14 +3081,14 @@ void M_ReadSaveStrings( int scroll_direction )
 			  "%s %s", sginfo.map, sginfo.levtime);
 	        sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
 	        slot_str = sginfo.name;
-	        slot_status = 1;
+	        slot_status = IT_CALL | IT_NOTHING | 1;
 	    }
 	    else
 	    {
 	        // bad header, not a valid legacy savegame, or an old one
 	        if( skip_unloadable )  continue;
 	        slot_str = sginfo.msg;	// error message
-	        slot_status = 0;
+	        slot_status = IT_SPACE | IT_NOTHING;
 	    }
 	}
         // fill in savegame strings for menu display
@@ -3109,7 +3109,7 @@ void M_ReadSaveStrings( int scroll_direction )
 	    int i;
 	    for( i = 0; i<5; i++ )
 	       LoadGameMenu[i].status = LoadGameMenu[i+1].status;
-	    LoadGameMenu[5].status = 0;
+	    LoadGameMenu[5].status = IT_SPACE | IT_NOTHING;
 
 	    memmove( &savegamedisp[0], &savegamedisp[1],
 			 sizeof( savegame_disp_t ) * (load_end-1));
@@ -3146,7 +3146,7 @@ void M_ReadSaveStrings(void)
         {
 	    // read error
             strcpy(&sgdp->desc[0], EMPTYSTRING);
-            LoadGameMenu[i].status = 0;
+            LoadGameMenu[i].status = IT_SPACE | IT_NOTHING;
             continue;
         }
         read( handle, savebuffer, savebuffer_size );
@@ -3160,12 +3160,12 @@ void M_ReadSaveStrings(void)
 	    snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
 		      "%s %s", sginfo.map, sginfo.levtime);
 	    sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
-	    LoadGameMenu[i].status = 1;
+	    LoadGameMenu[i].status = IT_CALL | IT_NOTHING | 1;
 	}
         else
         {
 	    strncpy( &sgdp->desc[0], sginfo.msg, SAVESTRINGSIZE );
-	    LoadGameMenu[i].status = 0;
+	    LoadGameMenu[i].status = IT_SPACE | IT_NOTHING;
         }
         sgdp->desc[SAVESTRINGSIZE-1] = '\0';
     }
@@ -3410,7 +3410,7 @@ void M_SaveSelect(int choice)
     if( savegamedisp[slotindex].savegameid > 99 )
         return;
     // clear out EMPTY STRING and other err msgs
-    if ( LoadGameMenu[slotindex].status != 1 )  // invalid name
+    if ( (LoadGameMenu[slotindex].status & 1) != 1 )  // invalid name
         savegamedisp[slotindex].desc[0] = 0;
     // [WDJ] edit_enable overwrites entire line
     // initiate edit of desc string, we are going to be intercepting all chars
