@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: d_clisrv.c 1074 2013-12-31 02:36:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -757,6 +757,7 @@ static void CL_ConnectToServer()
     oldtic=I_GetTime()-1;
     asksent=-TICRATE/2;
     SL_ClearServerList(servernode);
+    // loop until connected or user escapes
     do {
         switch(cl_mode) {
             case CLM_searching :
@@ -850,9 +851,10 @@ static void CL_ConnectToServer()
         }
         Net_AckTicker();
 
-        // call it only one by tic
+        // call it only once every tic
         if( oldtic!=I_GetTime() )
         {
+	    // user response handler
             int key;
 
             I_OsPolling();

@@ -3680,3 +3680,14 @@ patchfile = w96_2_savegamemenu.patch
 - committed revision 1073   by wesley johnson
 Changes to menu constants in w95_8 exposed a misuse of the menu status field.
 The misuse has been fixed with the actual constants the field should have.
+
+*** W95_con_printf
+patchfile = w96_3_con_printf.patch
+- committed revision 1074   by wesley johnson
+Fix CONS_printf to print on screen during after graphics started and
+before entering main loop.
+Add EMSG_now, to handle messages that need screen update immediately.
+Change some Linux messages to also go to CONS.
+Move some hardware messages to use Gen_Printf instead of doing their own
+screen update.
+

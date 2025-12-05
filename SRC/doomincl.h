@@ -55,9 +55,10 @@
 typedef enum {
    EMSG_text = 0x01,  // stderr
    EMSG_CONS = 0x02,
-   EMSG_error = 0x04,
-   EMSG_log   = 0x08,
+   EMSG_log  = 0x04,
    EMSG_debtst = 0x10, // subject to debug enable
+   EMSG_now  = 0x20, // immediate update
+   EMSG_error = 0x40,
 #if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
    EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log,
    EMSG_info = EMSG_text|EMSG_CONS|EMSG_log,
@@ -66,13 +67,13 @@ typedef enum {
    EMSG_debug = EMSG_text|EMSG_CONS|EMSG_log|EMSG_debtst,
 #else
    // Linux, Mac
-   EMSG_warn = EMSG_text|EMSG_log,
-   EMSG_info = EMSG_text|EMSG_log,
-   EMSG_ver = EMSG_text|EMSG_log,
+   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log,
+   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log,
    EMSG_dev = EMSG_text|EMSG_log,
    EMSG_debug = EMSG_text|EMSG_log|EMSG_debtst,
 #endif
-   EMSG_all = ~EMSG_error,
+   EMSG_all = EMSG_text|EMSG_CONS|EMSG_log,
 } EMSG_e;
 
 extern  byte  EMSG_flags;  // EMSG_e

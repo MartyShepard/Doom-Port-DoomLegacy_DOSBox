@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: p_setup.c 1074 2013-12-31 02:36:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -158,9 +158,8 @@
 #include "p_setup.h"
 #include "p_spec.h"
 
-#include "i_sound.h" //for I_PlayCD()..
-#include "i_video.h"
-  // I_FinishUpdate
+#include "i_sound.h"
+  // I_PlayCD()..
 #include "i_system.h"
   // I_Sleep
 #include "r_sky.h"
@@ -184,12 +183,14 @@
 
 
 #ifdef HWRENDER
-#include "i_video.h"            //rendermode
+#include "i_video.h"
+  // rendermode
 #include "hardware/hw_main.h"
 #include "hardware/hw_light.h"
 #endif
 
-#include "b_game.h"	//added by AC for acbot
+#include "b_game.h"
+  // added by AC for acbot
 
 
 
@@ -1531,8 +1532,8 @@ boolean P_SetupLevel (int           episode,
 {
     int         i;
 
-    CON_Drawer ();  // let the user know what we are going to do
-    I_FinishUpdate ();              // page flip or blit buffer
+    // with any pending console messages to screen
+    GenPrintf( EMSG_all | EMSG_now, "Setup Level, Map %i\n", map );
 
     //Initialize sector node list.
     P_Initsecnode();
