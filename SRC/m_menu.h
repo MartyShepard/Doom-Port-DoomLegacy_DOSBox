@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.h 1066 2013-12-14 00:22:54Z wesleyjohnson $
+// $Id: m_menu.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,5 +97,9 @@ void M_SimpleMessage ( const char*       string );
 
 // Called by linux_x/i_video_xshm.c
 void M_QuitResponse(int ch);
+
+#ifdef LAUNCHER
+void M_LaunchMenu( void );
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_argv.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,5 +59,16 @@ char *M_GetNextParm(void);
 
 // Find a Response File
 void M_FindResponseFile (void);
+
+#ifdef LAUNCHER
+void M_Remove_Param( int i );
+void M_Remove_matching_Param( char * p1, char * p2 );
+// add a param from Launcher, p2 is optional
+void M_Add_Param( char * p1, char * p2 );
+// add two param from Launcher, or remove them if p2==NULL or empty string
+void M_Change_2Param( char * p1, char * p2 );
+// Clear all param from Add_Param
+void M_Clear_Add_Param( void );
+#endif
 
 #endif //M_ARGV_H

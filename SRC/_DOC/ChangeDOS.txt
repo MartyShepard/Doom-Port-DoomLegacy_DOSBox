@@ -1,4 +1,8 @@
 * Not need to Compile.
+
+[01070 ]: w95 Launcher
+      DOS: Launcher Disabled
+			
 [01069 ]: w95 vidmode_t (#F)
       DOS: Fixed GFX Routines
       DOS: Correct GFX typos

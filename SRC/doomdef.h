@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: doomdef.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -117,10 +117,10 @@ extern FILE *logstream;
 // To save code size, can turn off some drawing bpp that you cannot use.
 #define ENABLE_DRAW15
 #define ENABLE_DRAW16
-//#ifndef PC_DOS
+#ifdef PC_DOS
 #define ENABLE_DRAW24
 #define ENABLE_DRAW32
-//#endif
+#endif
 
 // [WDJ] 6/5/2012 Boom global colormap
 // Optional for now
@@ -139,7 +139,14 @@ extern FILE *logstream;
 #define INITIAL_WINDOW_WIDTH   320
 #define INITIAL_WINDOW_HEIGHT  200
 #endif
-
+// [WDJ] Built-in Launcher
+#if !defined( __DJGPP__ )
+#define LAUNCHER
+#endif
+// especially for Window 7,8
+#if defined( WIN32 ) && !defined( LAUNCHER )
+#define LAUNCHER
+#endif
 // =========================================================================
 
 // Name of local directory for config files and savegames

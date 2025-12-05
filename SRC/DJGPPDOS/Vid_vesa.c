@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: Vid_vesa.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -224,7 +224,6 @@ range_t  VID_ModeRange( byte modetype )
 //added:21-03-98: return info on video mode
 char *VID_ModeInfo (modenum_t modenum, char **ppheader)
 {
-    // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     static char *badmodestr = "Bad video mode number\n";
     vmode_t     *pv;
 
@@ -1062,6 +1061,7 @@ void VID_Command_Mode_f (void)
 
 void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn)
 {
+	
     CONS_Printf ("Current Screen Resolution Mode(%d): %s\n", mn.index,VID_ModeInfo (mn, NULL));
     CONS_Printf ("- Width : %d\n"
                  "- Height: %d\n",

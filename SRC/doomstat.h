@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: doomstat.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -164,6 +164,11 @@ typedef struct
     game_desc_e gamedesc_id;   // independent of table index, safer
     gamemode_e	gamemode;
 } game_desc_t;
+
+#ifdef LAUNCHER
+// game desc for Launcher
+game_desc_t *  D_GameDesc( int i );
+#endif
 
 
 // ===================================================

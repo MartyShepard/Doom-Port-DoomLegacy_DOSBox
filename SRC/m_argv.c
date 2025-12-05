@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_argv.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -42,8 +42,11 @@
 #include "doomincl.h"
 #include "command.h"
 
+// set by port main; may be replaced
 int             myargc;
 char**          myargv;
+
+static int      myarg_alloc = 0;
 static int      found;
 
 //
@@ -88,7 +91,7 @@ char *M_GetNextParm(void)
     return NULL;
 }
 
-// push all parameters begining by '+'
+// push to COM all parameters begining by '+'
 void M_PushSpecialParameters( void )
 {
     int     i;
@@ -119,73 +122,130 @@ void M_PushSpecialParameters( void )
     }
 }
 
+
+
+
+// [WDJ] generic expand of arg list
+// Insert new args at atindex with existing CMDLINE ARGS before and after
+char ** prev_argv = NULL;
+int     prev_argc = 0;
+int     prev_alloc = 0;   // to determine if prev_argv was allocated
+
+// realloc the argv memory to a new size
+static void expand_argv_memory( int total_req )
+{
+    // alloc too small
+    // In this case, myargv is known to be from malloc
+    myargv = realloc(myargv, sizeof(char *)*total_req);
+    if( !myargv )
+      I_Error("argv: not enough memory");
+    if((total_req - myarg_alloc) > 0 )  // sometimes request is for less
+    {
+        // clear the added argv, but not the occupied argv
+        memset( &myargv[myarg_alloc], 0,
+		sizeof(char *) * (total_req - myarg_alloc));
+    }
+    myarg_alloc = total_req;
+}
+
+// expand the arg array to new request
+static void expand_args( int total_req, int atindex )
+{
+    int k;
+
+    // save current args for finish_expand
+    prev_argv = myargv;
+    prev_argc = myargc;
+    prev_alloc = myarg_alloc;
+
+    myargv = NULL;  // to protect prev_argv
+    // always realloc new, to be separate from prev_argv
+    expand_argv_memory( total_req );
+    // keep arg[0] at [0], copy args upto atindex
+    if( atindex <= 0 )  atindex = 1;
+    myargc = 0;
+    for (k = 0; k < atindex; k++)  // before insert
+       myargv[myargc++] = prev_argv[k];
+}
+
+
+// include the prev args
+static void finish_expand( int fromindex )
+{
+    int k;
+    int newcnt = (prev_argc - fromindex) + myargc;
+
+    if( prev_argv )
+    {
+        if( newcnt > myarg_alloc )
+	    expand_argv_memory( newcnt );
+        // copy command line args after insert
+        for (k = fromindex; k < prev_argc; k++)
+	    myargv[myargc++] = prev_argv[k];
+
+        if( prev_alloc )  // was from malloc
+        {
+	    free( prev_argv );
+	    prev_argv = NULL;
+	}
+    }
+}
+
+#define FILEARGS_INC     16
+
 //
 // Find a Response File
 //
 void M_FindResponseFile (void)
 {
-    int             i;
-#define MAXARGVS        256
+    int myi;
+    char * myp;
 
-    for (i = 1;i < myargc;i++)
-        if (myargv[i][0] == '@')
+    for (myi = 1; myi < myargc; myi++)
+    {
+        myp = myargv[myi];
+        // because args after myi are from file, this is recursive
+        if (myp[0] == '@')
         {
             FILE *          handle;
-            int             size;
+            size_t          size;
             int             k;
-            int             index;
-            int             indexinfile;
             boolean         inquote = false;
-            char    *infile;
-            char    *file;
-            char    *moreargs[20];
-            char    *firstargv;
+	    char * file_mem;  // alloc mem, will be in use but this ptr will be lost
+	    char * infile;
 
             // READ THE RESPONSE FILE INTO MEMORY
-            handle = fopen (&myargv[i][1],"rb");
+            handle = fopen (&myp[1],"rb");
             if (!handle)
             {
-                I_Error ("\nResponse file %s not found !",&myargv[i][1]);
+                I_Error ("\nResponse file %s not found !", &myp[1]);
                 exit(1);
             }
-            CONS_Printf("Found response file %s!\n",&myargv[i][1]);
+            CONS_Printf("Found response file %s!\n", &myp[1]);
             fseek (handle,0,SEEK_END);
             size = ftell(handle);
             fseek (handle,0,SEEK_SET);
-            file = malloc (size);
-            fread (file,size,1,handle);
+            file_mem = malloc (size);
+            fread (file_mem, size, 1, handle);
             fclose (handle);
 
-            // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
-            for (index = 0,k = i+1; k < myargc; k++)
-                moreargs[index++] = myargv[k];
+            // Keep ARGV[0] and args upto this arg
+	    expand_args( myargc + FILEARGS_INC, myi );
 
-            firstargv = myargv[0];
-            myargv = malloc(sizeof(char *)*MAXARGVS);
-            if( !myargv ) I_Error("no enought memory");
-            memset(myargv,0,sizeof(char *)*MAXARGVS);
-            myargv[0] = firstargv;
-
-            infile = file;
-            indexinfile = k = 0;
-            indexinfile++;  // SKIP PAST ARGV[0] (KEEP IT)
-            do
+            infile = file_mem;
+            for( k = 0; k < size ; )
             {
                 inquote = infile[k] == '"';
-                if ( inquote )       // strip encllosing double-quote
+                if ( inquote )       // strip enclosing double-quote
                     k++;
-                myargv[indexinfile++] = &infile[k];
+                myargv[myargc++] = &infile[k];
                 while (k < size && ( (inquote && infile[k]!='"') 
                                   || (!inquote && infile[k]> ' ') ) )
                     k++;
                 infile[k] = 0;
                 while(k < size && (infile[k]<= ' '))
                     k++;
-            } while(k < size);
-
-            for (k = 0;k < index;k++)
-                myargv[indexinfile++] = moreargs[k];
-            myargc = indexinfile;
+            }
 
             // DISPLAY ARGS
             CONS_Printf("%d command-line args:\n",myargc);
@@ -194,4 +254,133 @@ void M_FindResponseFile (void)
 
             break;
         }
+    }
 }
+
+
+#ifdef LAUNCHER
+// bounds for addparm memory maintenance, to avoid memory leaks
+char * addparm_low = NULL;
+char * addparm_high = NULL;
+int    addparm_count = 0;
+
+
+// alloc memory for addparam, keep bounds
+static void  M_Arg_string( const char * s1, int atindex )
+{
+    char * sp = strdup( s1 );  // malloc
+    if( addparm_low )
+    {
+        // bounds on memory alloc
+        if( addparm_low > sp )   addparm_low = sp;
+        if( addparm_high < sp )   addparm_high = sp;
+    }
+    else
+    {
+        // init
+        addparm_low = sp;
+        addparm_high = sp;
+    }
+    myargv[atindex] = sp;
+    addparm_count ++;
+}
+
+
+void M_Remove_Param( int i )
+{
+    int k;
+    char * rmp = myargv[i];
+    
+    if( i <=0 || i >= myargc )  return;
+   
+    if( addparm_low && rmp >= addparm_low && rmp <= addparm_high )
+    {
+        free( rmp );  // is within our addparm memory
+        addparm_count --;
+    }
+    // shuffle args down
+    for (k = i; k < myargc-1; k++)
+        myargv[k] = myargv[k+1];
+    myargc --;
+    myargv[myargc] = NULL;  // end of args
+}
+
+
+void M_Remove_matching_Param( char * p1, char * p2 )
+{
+    while( M_CheckParm ( p1 ) )  // if already exists, then erase it
+    {
+        // Remove the param and the associated operand
+        M_Remove_Param( found );  // shuffles next arg down to found
+        if( p2 )
+        {
+	    while( myargv[found] && myargv[found][0] != '-'
+		   && myargv[found][0] != '+' && myargv[found][0] != '@' )
+	        M_Remove_Param( found );
+	}
+    }
+}
+
+
+// add a param from Launcher, p2 is optional
+void M_Add_Param( char * p1, char * p2 )
+{
+    char * pa, * ps;
+
+    M_Remove_matching_Param( p1, p2 );  // if already exists, then erase it
+
+    // save previous argv for finish_expand
+    // and add some extra argv alloc
+    expand_args( myargc + 8, 1 );
+    // insert starting at index 1
+    pa = p1;  // first insert p1 string
+    for( myargc = 1; ;  )
+    {
+        if( myargc >= myarg_alloc )
+	   expand_argv_memory( myargc + 8 );
+        ps = strchr( pa, ' ' );  // more than one param in the string
+        if( ps )  // found a delimiter
+	{
+	    // temporary delimit of the param in the string
+	    *ps = '\0';
+	    M_Arg_string( pa, myargc );
+	    myargc ++;
+	    *ps = ' ';
+	    pa = ps;
+	    while( *pa == ' ' )  pa++;  // skip space (1 or more)
+	    if( *pa )   continue;
+	    // end of string
+	}
+        else
+        {
+	    // copy the rest of the string
+	    M_Arg_string( pa, myargc );
+	    myargc ++;
+	}
+        if( ! p2 )  break;
+        pa = p2;  // continue with insert of p2 string
+        p2 = NULL;  // to exit the loop next time
+    }
+    finish_expand( 1 );  // command line args after the insert
+}
+
+
+// add two param from Launcher, or remove them if p2==NULL or empty string
+void M_Change_2Param( char * p1, char * p2 )
+{
+    if( p2 && p2[0] )  // not an empty string
+        M_Add_Param( p1, p2 );
+    else
+        M_Remove_matching_Param( p1, "" );
+}
+
+
+// Clear all param from Add_Param
+void M_Clear_Add_Param( void )
+{
+    int i = addparm_count;
+    while( i-- )
+        M_Remove_Param( 1 );
+    addparm_count = 0;
+}
+#endif

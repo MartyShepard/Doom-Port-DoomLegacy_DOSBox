@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: console.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1032,8 +1032,11 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     if( ! con_started )  goto done;
     if( EMSG_flags & EMSG_error )
     {
+#ifndef LAUNCHER
+        // Blocks error to Launcher fatal error display
         // errors to CON unless no con_video yet
         if( ! con_video )  goto done;
+#endif
     }
     else if( ! (EMSG_flags & EMSG_CONS) )  goto done;  // no CONS flag
    

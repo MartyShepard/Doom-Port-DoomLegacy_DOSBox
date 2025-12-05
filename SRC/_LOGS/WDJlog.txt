@@ -3648,3 +3648,17 @@ Update all the ports to use this interface, although some are
 incomplete and would not compile due to other missing functions.
 This has changed the video code in many ports which have not been tested
 for a long time.
+
+*** W95_launcher
+patchfile = w95_12_launcher.patch
+- committed revision 1070   by wesley johnson
+Introduce a built-in launcher so DoomLegacy can be started from an icon,
+or start menu entry.
+If there is an error during wad detection, or if the command line is
+empty, the launcher will activate.
+It puts up a screen that allows setting most of the command line switches.
+The launcher will cycle until the settings do not result in a fatal error.
+Once the launcher has accepted the settings, any further errors will
+invoke I_Error.
+There are a few switches, like -mb, that have already been processed
+before the launcher executes.

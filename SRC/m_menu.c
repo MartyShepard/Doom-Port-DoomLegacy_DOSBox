@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: m_menu.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2434,7 +2434,7 @@ menu_t  VidModeDef =
 
 //added:30-01-98:
 #define MAXCOLUMNMODES   10     //max modes displayed in one column
-#define MAXMODEDESCS     (MAXCOLUMNMODES*4)
+#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
 
 // shhh... what am I doing... nooooo!
 static int vidm_testing_cnt=0;
@@ -5159,6 +5159,143 @@ void M_HandleFogColor(int key)
     if (exitmenu)
     {
 	M_Setup_prevMenu();
+    }
+}
+
+#endif
+
+
+#ifdef LAUNCHER
+//===========================================================================
+//                        LAUNCH MENU
+//===========================================================================
+
+#if 0
+enum
+{
+    config_ent,
+    doomdir_ent,
+    game_ent,
+    iwad_ent,
+    file_ent,
+    switches_ent,
+    launch_ent,
+    quit_ent,
+    launch_end
+} launch_e;
+#endif
+
+// cv_ menu items
+// out only
+consvar_t cv_switch = {"switches", "", CV_HIDEN, NULL};
+consvar_t cv_config = {"config", "", CV_HIDEN, NULL};
+
+static void CV_game_OnChange(void);
+CV_PossibleValue_t game_cons_t[] = {{-1,"MIN"},{64,"MAX"},{0,NULL}};
+consvar_t cv_game = {"game", "-1", CV_HIDEN|CV_CALL, NULL, CV_game_OnChange};
+
+static void CV_game_OnChange(void)
+{
+    // Strings come from GameDesc, not a CV_PossibleValue_t
+    // Cannot call CV_Set within CV_CALL routine
+    char * rs;
+    game_desc_t * gamedesc = D_GameDesc( cv_game.value );
+    if( gamedesc )
+    {
+        rs = gamedesc->gname;  // const string from table
+    }
+    else
+    {
+        rs = "Auto";
+        cv_game.value = (cv_game.value <1)? -1 : GDESC_other;
+    }
+    if( cv_game.string )
+       Z_Free( cv_game.string );  // remove the string from CV_Set
+    cv_game.string = Z_StrDup( rs );
+    return;
+}
+
+
+
+static void M_LaunchCont( void )
+{
+    init_sequence = 2;
+    M_ClearMenus(true);
+}
+
+menuitem_t LaunchMenu[]=
+{
+    {IT_WHITESTRING | IT_CVAR | IT_CV_STRING, NULL, "Home", &cv_home,  0},
+    {IT_WHITESTRING | IT_CVAR | IT_CV_STRING, NULL, "Doomwaddir", &cv_doomwaddir, 0},
+    {IT_WHITESTRING | IT_CVAR | IT_CV_STRING, NULL, "Config", &cv_config,  0},
+    {IT_WHITESTRING | IT_CVAR | IT_CV_STRING, NULL, "Switch", &cv_switch, 0},
+    {IT_WHITESTRING | IT_CVAR | IT_CV_STRING, NULL, "Iwad", &cv_iwad, 0},
+ // the CVAR strings will intercept the 'g', 'c', and 'q'
+    {IT_WHITESTRING | IT_CVAR, NULL, "Game", &cv_game,  'g'},
+    {IT_WHITESTRING | IT_CALL, NULL, "Continue", M_LaunchCont, 'c'},
+    {IT_WHITESTRING | IT_CALL, NULL, "QUIT GAME", M_QuitDOOM, 'q'}
+};
+
+menu_t  LaunchDef =
+{
+    NULL,
+    "Launch",
+    sizeof(LaunchMenu)/sizeof(menuitem_t),
+    NULL,
+    LaunchMenu,
+    M_DrawGenericMenu,
+    10,10,  // x, y  (cursor at x-10)
+    0
+};
+
+// call only after memory, video, command, and menu inits
+void M_LaunchMenu( void )
+{
+    M_StartControlPanel();
+    M_SetupNextMenu (&LaunchDef);
+
+    M_Clear_Add_Param();  // clear previous param from this routine
+    if( cv_game.string == NULL ) // first time inits
+    {
+//        CV_RegisterVar(&cv_iwad);
+        CV_RegisterVar(&cv_config);
+        CV_RegisterVar(&cv_switch);
+        CV_RegisterVar(&cv_game);
+    }
+    skullAnimCounter = 0;
+
+    do
+    {
+        memset( screens[0], 0, vid.screen_size );  // clear to black
+        I_OsPolling();
+        D_ProcessEvents ();  // menu responder
+        M_Drawer(); // menu drawer
+        I_UpdateNoBlit();
+        I_FinishUpdate();       // page flip or blit buffer
+    } while( menuactive );
+
+    // add home
+    if(cv_home.flags & CV_MODIFIED)
+        M_Change_2Param( "-home", cv_home.string );
+    // add doomwaddir
+    if( (cv_doomwaddir.flags & CV_MODIFIED) && cv_doomwaddir.string )
+        doomwaddir = cv_doomwaddir.string;
+    // add config
+    if(cv_config.flags & CV_MODIFIED)
+        M_Change_2Param( "-config", cv_config.string );
+    // add iwad
+    if(cv_iwad.flags & CV_MODIFIED)
+        M_Change_2Param( "-iwad", cv_iwad.string );
+    // add switches
+    if( (cv_switch.flags & CV_MODIFIED) && cv_switch.string[0] )
+        M_Add_Param( cv_switch.string, NULL );
+    // add game
+    if( (cv_game.flags & CV_MODIFIED)
+	&& cv_game.value >= 0 && cv_game.value < GDESC_other)
+    {
+        game_desc_t * gamedesc = D_GameDesc( cv_game.value );
+        if( gamedesc )
+	    M_Add_Param( "-game", gamedesc->idstr );
     }
 }
 
