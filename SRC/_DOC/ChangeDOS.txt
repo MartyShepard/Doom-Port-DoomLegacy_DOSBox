@@ -1,6 +1,14 @@
 * Not need to Compile.
-
+[01069 ]: w95 vidmode_t (#F)
+      DOS: Fixed GFX Routines
+      DOS: Correct GFX typos
+      DOS: Fix 15 > 32 Bit Modes
+      DOS: Fix Vesa Extended Modes
+      DOS: Fix VID_* Commands
+			
 [01069 ]: w95 vidmode_t
+      DOS: This commit destroyed totaly the DOS Version
+			
 [01068 ]: w95 Startscreen
 [01067 ]: w95 linux_x11
 [01066 ]: w95 menu alphaKey

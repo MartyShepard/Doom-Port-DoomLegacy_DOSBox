@@ -33,7 +33,7 @@
 #include "../doomtype.h"
 #include "../screen.h"
 
-
+#define NUMSCREENS    4 //Temporary
 #define MODE_SUPPORTED_IN_HW    0x0001
 #define COLOR_MODE              0x0008
 #define GRAPHICS_MODE           0x0010
@@ -41,7 +41,7 @@
 #define LINEAR_FRAME_BUFFER     0x0080
 #define LINEAR_MODE             0x4000
 
-#define MAX_VESA_MODES          30
+#define MAX_VESA_MODES          200
   // we'll just take the first 30 if there are more
 
 
@@ -126,6 +126,7 @@ void VID_InitVGAModes(void);
 // add the VESA modes to the list
 void VID_GetModes(void);
 // setup a video mode, this is to be called from the menu
-int  VID_SetMode (int modenum);
-
+int  VID_SetMode (modenum_t modenum);
+// Ruft die Information seperat ab
+void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn);
 #endif

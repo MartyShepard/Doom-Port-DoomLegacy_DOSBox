@@ -64,7 +64,6 @@
 unsigned long dascreen;
 static int gfx_use_vesa1;
 
-boolean    highcolor; // local
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
@@ -132,9 +131,15 @@ void I_FinishUpdate (void)
        do {
        } while (!(inportb(0x3DA) & 8));  // while not VRI
 #else
-       vsync(); // allegro wait for vsync
+       //vsync(); // allegro wait for vsync
+       /*
+        allegro vsync(); crash. Using from Alegro Internal.h
+       */
+       _vsync_in();
+			 				
 #endif
    }
+   else _vsync_out_h();
 
 
 //added:16-01-98:profile screen blit.
@@ -351,8 +356,48 @@ void I_StartupGraphics( void )
     //added:03-01-98: register exit code for graphics
     I_AddExitFunc(I_ShutdownGraphics);
 
+    /* Sartet mit dem gebennen Bit Modus */
+    HighColor = 8;
+    if( req_drawmode == REQ_highcolor)
+    {
+        highcolor = (req_drawmode == REQ_highcolor);
+        HighColor = 15;
+    }
+    if( req_drawmode == REQ_truecolor)
+    {
+        highcolor = (req_drawmode == REQ_truecolor);
+        HighColor = 32;
+    }	
+    if( req_drawmode == REQ_specific)
+    {
+       switch(req_bitpp)
+       {
+          case 15:
+           highcolor = true;
+           HighColor = 15;
+           break;
+          case 16:
+           highcolor = true;
+           HighColor = 16;
+           break;
+          case 24:
+           highcolor = true;
+           HighColor = 24;
+           break;
+          case 32:
+           highcolor = true;
+           HighColor = 32;
+           break;
+           break;
+          default:
+           highcolor = false;
+           break;
+        }
+    }
+
     // set the startup window
-    VID_InitVGAModes();
+    VID_GetModes();
+    VID_InitVGAModes();	
     if( VID_SetMode ( initial_mode ) < 0 )
     {
         initial_mode.index = 1;  // 320
@@ -381,7 +426,7 @@ void I_RequestFullGraphics( byte select_fullscreen )
 
     // set the startup screen
     initial_mode = VID_GetModeForSize( vid.width, vid.height,
-				       (select_fullscreen ? MODE_fullscreen: MODE_window))
+				       (select_fullscreen ? MODE_fullscreen: MODE_window));
     VID_SetMode ( initial_mode );
 }
 
