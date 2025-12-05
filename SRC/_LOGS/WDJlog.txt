@@ -3662,3 +3662,15 @@ Once the launcher has accepted the settings, any further errors will
 invoke I_Error.
 There are a few switches, like -mb, that have already been processed
 before the launcher executes.
+
+*** W95_gltranswall
+patchfile = w95_13_gltranswall.patch
+- committed revision 1071   by wesley johnson
+A negative distance test has been culling visible left walls (chain link).
+The test is increased to -2000.0 to eliminate this with known walls.
+Walls should not be longer than 1000.
+
+*** W96_gcc4
+patchfile = w96_1_gcc4.patch
+- committed revision 10??   by wesley johnson
+Compile fixes for gcc4.x complaints.

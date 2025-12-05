@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1070"
+#define SVN_REV "1072"
 #endif
 
 // Version number: major.minor.revision
@@ -358,6 +358,8 @@ char *legacyhome = NULL;
 int   legacyhome_len;
 char *doomwaddir = NULL;
 char *defdir = NULL;  // default dir
+
+char *defhome = DEFHOME; // required GCC 4
 
 #ifdef LAUNCHER
 consvar_t cv_home = {"home", "", CV_HIDEN, NULL};
@@ -1929,7 +1931,7 @@ restart_command:
     }
     dedicated = M_CheckParm("-dedicated") != 0;
 
-    if( legacyhome && legacyhome != DEFHOME )
+    if( legacyhome && legacyhome != defhome )
        free( legacyhome );  // from previous
 #endif
 
@@ -2030,7 +2032,7 @@ restart_command:
         else
         {
             // default absolute path, do not set to ""
-            legacyhome = DEFHOME;
+            legacyhome = defhome;
 
 #if defined( __DJGPP__ )
             char dosroot[MAX_WADPATH];

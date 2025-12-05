@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01072 ]: w96 gcc4
+[01071 ]: w95 gltranswall culling
 [01070 ]: w95 Launcher
       DOS: Launcher Disabled
 			
