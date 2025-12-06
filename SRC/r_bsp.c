@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_bsp.c 1075 2013-12-31 02:41:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -560,7 +560,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // and adds any visible pieces to the line list.
 //
 // Called by R_Subsector
-void R_AddLine (seg_t*  line)
+void R_AddLine (seg_t*  lineseg)
 {
     int                 x1;
     int                 x2;
@@ -570,11 +570,11 @@ void R_AddLine (seg_t*  line)
     angle_t             tspan;
     static sector_t     tempsec; //SoM: ceiling/water hack
 
-    curline = line;
+    curline = lineseg;
 
     // OPTIMIZE: quickly reject orthogonal back sides.
-    angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-    angle2 = R_PointToAngle (line->v2->x, line->v2->y);
+    angle1 = R_PointToAngle (lineseg->v1->x, lineseg->v1->y);
+    angle2 = R_PointToAngle (lineseg->v2->x, lineseg->v2->y);
 
     // Clip to view edges.
     // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
@@ -622,7 +622,7 @@ void R_AddLine (seg_t*  line)
     if (x1 == x2)  //SoM: 3/17/2000: Killough said to change the == to >= for... "robustness"?
         return;
 
-    backsector = line->backsector;
+    backsector = lineseg->backsector;
 
     // Single sided line?
     if (!backsector)
@@ -829,8 +829,8 @@ drawseg_t*   firstseg;
 // Called by R_RenderBSPNode
 void R_Subsector (int num)
 {
-    int                 count;
-    seg_t*              line;
+    int                 segcount;
+    seg_t*              lineseg;
     subsector_t*        sub;
     static sector_t     tempsec; //SoM: 3/17/2000: Deep water hack
     int                 floorlightlevel;
@@ -853,9 +853,8 @@ void R_Subsector (int num)
     sscount++;
     sub = &subsectors[num];
     frontsector = sub->sector;
-    count = sub->numlines;
-    line = &segs[sub->firstline];
-
+    segcount = sub->numlines;
+    lineseg = &segs[sub->firstline];
 
     //SoM: 3/17/2000: Deep water/fake ceiling effect.
     frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
@@ -995,10 +994,10 @@ void R_Subsector (int num)
 
     firstseg = NULL;
 
-    while (count--) // over all lines in the subsector
+    while (segcount--) // over all lines in the subsector
     {
-      R_AddLine (line);
-      line++;
+      R_AddLine (lineseg);
+      lineseg++;
     }
 }
 

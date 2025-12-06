@@ -3691,3 +3691,16 @@ Change some Linux messages to also go to CONS.
 Move some hardware messages to use Gen_Printf instead of doing their own
 screen update.
 
+*** W95_hw_poly
+patchfile = w96_4_hardware_poly.patch
+- committed revision 1075   by wesley johnson
+Fix opengl render error that causes some texture draws to be missed.
+Not all linesegs are getting into the sector polygons.  Added comments
+to polygon code and cleaned up some routines.
+Gave poly-vertex their own ptr in the segs, so are never confused with
+fixed point vertex.
+Added loop to check all segs for having poly-vertex, and add those
+that do not so they also render.
+
+Add file: hardware/hw_poly.h
+
