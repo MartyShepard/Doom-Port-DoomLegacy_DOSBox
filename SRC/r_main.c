@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: r_main.c 1102 2014-04-14 22:15:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -520,6 +520,15 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
 
     if ( (x == 0) && (y == 0) )
         return 0;
+   
+    // [WDJ] Fix from PrBoom (e6y).
+    // For large x or y, resort to the slower but accurate lib function.
+    if (  x > FIXED_MAX/4 || x < -FIXED_MAX/4
+	  || y > FIXED_MAX/4 || y < -FIXED_MAX/4 )
+    {
+        // PrBoom used a 1 point cache, but that is too small.
+        return (int) (atan2(y,x) * ANG180 / M_PI);
+    }
 
     if (x>= 0)
     {   // x >=0

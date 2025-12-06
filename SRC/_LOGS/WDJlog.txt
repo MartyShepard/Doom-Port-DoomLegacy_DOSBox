@@ -3895,5 +3895,12 @@ Every once and a while this causes a segfault, due to a corrupted slotindex.
 This patch fixes the QUICKSAVE_INDEX, so it actually uses the last entry in
 the array now.
 
+*** W97_large_dist
+patchfile = w97_11_large_dist.patch
+- committed revision 1102   by wesley johnson
+The previous patch, W97_distance_angle, did not completely fix
+occurances of bad angles.  This patch has large distances ( x or y > 1/4 MAX)
+use the atan2 function to calculate the angle, a fix from PrBoom.
+It is slower but accurate.
 
 
