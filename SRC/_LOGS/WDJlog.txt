@@ -3717,3 +3717,9 @@ patchfile = w96_6_stuckdoor.patch
 Enable Monster stuck in door fixes from MBF and Boom.
 Adv. Menu gets the stuckdoor control.
 Saved to demo header and config.
+
+*** W96_hw_misc
+patchfile = w96_7_hw_misc.patch
+- committed revision 1080   by wesley johnson
+Change tests against -1 to < 0 or >= 0, to be more robust.
+Fix Loading percentage box by setting Draw options properly.

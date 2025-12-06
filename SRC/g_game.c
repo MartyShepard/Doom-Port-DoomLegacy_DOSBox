@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: g_game.c 1080 2014-01-10 21:27:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2535,6 +2535,10 @@ void G_BeginRecording (void)
 
     demo_p = demobuffer;
 
+    // DoomLegacy version 1.44, 1.45, and after will all use demo header 144,
+    // The actual DoomLegacy version is recorded in its header fields.
+    // Do not change this header, except to add new fields in the empty space.
+
     // write DL format (demo144) header
     *demo_p++ = 144;   // Mark all DoomLegacy demo as version 144.
     *demo_p++ = 'D';   // "DL" for DoomLegacy
@@ -2583,6 +2587,7 @@ void G_BeginRecording (void)
     *demo_p++ = cv_monbehavior.value;
     *demo_p++ = cv_doorstuck.value;
     
+    // empty space
     for( i=9; i<32; i++ )  *demo_p++ = 0;
 
     *demo_p++ = 0x55;   // Sync mark, start of data

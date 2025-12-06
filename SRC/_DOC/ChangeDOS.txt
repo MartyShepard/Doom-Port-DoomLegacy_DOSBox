@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01080 ]: w96 hw misc
 [01079 ]: w96 monster stuck on door
 [01078 ]: Version numbers updated to 1.45.
 [01077 ]: CMake build system added.

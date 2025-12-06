@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1075 2013-12-31 02:41:08Z wesleyjohnson $
+// $Id: p_setup.c 1080 2014-01-10 21:27:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1533,7 +1533,8 @@ boolean P_SetupLevel (int           episode,
 {
     int         i;
 
-    GenPrintf( EMSG_all | EMSG_now, "Setup Level\n" );
+    GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_CONS|EMSG_now)),
+	       "Setup Level\n" );
 
     //Initialize sector node list.
     P_Initsecnode();

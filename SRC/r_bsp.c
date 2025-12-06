@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1075 2013-12-31 02:41:08Z wesleyjohnson $
+// $Id: r_bsp.c 1080 2014-01-10 21:27:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -358,7 +358,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
   ceilinglightsubst = sec->ceilinglightsec;
 
   //SoM: 4/4/2000: If the sector has a midmap, it's probably from 280 type
-  if(sec->model == SM_colormap && sec->midmap != -1 )
+  if(sec->model == SM_colormap && sec->midmap >= 0 )
     colormapnum = sec->midmap;  // explicit colormap
 
   if (sec->model == SM_Boom_deep_water)	// [WDJ] 11/14/2009
@@ -415,8 +415,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
           tempsec->lightlevel  = modsecp->lightlevel;
 
 	  // use model substitute, or model light
-	  floorlightsubst = (modsecp->floorlightsec != -1) ? modsecp->floorlightsec : sec->modelsec;
-	  ceilinglightsubst = (modsecp->ceilinglightsec != -1) ? modsecp->ceilinglightsec : sec->modelsec;
+	  floorlightsubst = (modsecp->floorlightsec >= 0) ?  modsecp->floorlightsec : sec->modelsec;
+	  ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
       }
       else
       {
@@ -448,8 +448,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
             tempsec->lightlevel  = modsecp->lightlevel;
 
 	    // use model substitute, or model light
-            floorlightsubst = (modsecp->floorlightsec != -1) ? modsecp->floorlightsec : sec->modelsec;
-	    ceilinglightsubst = (modsecp->ceilinglightsec != -1) ? modsecp->ceilinglightsec : sec->modelsec;
+	    floorlightsubst = (modsecp->floorlightsec >= 0) ? modsecp->floorlightsec : sec->modelsec;
+	    ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
         }
 	// else normal view
       }
@@ -470,7 +470,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     {
       // view below model sector floor
       colormapnum = modsecp->bottommap; // Legacy colormap, underwater
-      if(sec->floorlightsec != -1)
+      if(sec->floorlightsec >= 0)
       {
 	// use substitute light
         floorlightsubst = ceilinglightsubst = sec->floorlightsec;
@@ -488,7 +488,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
     {
       // view over model sector ceiling
       colormapnum = modsecp->topmap; // Legacy colormap, over ceiling
-      if(sec->ceilinglightsec != -1)
+      if(sec->ceilinglightsec >= 0)
       {
 	// use substitute light
         floorlightsubst = ceilinglightsubst = sec->ceilinglightsec;
@@ -540,12 +540,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
   // [WDJ] return light parameters in one place
   if (floorlightlevel) {
-    *floorlightlevel = (floorlightsubst != -1) ?
+    *floorlightlevel = (floorlightsubst >= 0) ?
        sectors[floorlightsubst].lightlevel : sec->lightlevel ;
   }
 
   if (ceilinglightlevel) {
-    *ceilinglightlevel = (ceilinglightsubst != -1) ?
+    *ceilinglightlevel = (ceilinglightsubst >= 0) ?
        sectors[ceilinglightsubst].lightlevel : sec->lightlevel ;
   }
    
