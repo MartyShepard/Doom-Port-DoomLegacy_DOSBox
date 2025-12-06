@@ -3,6 +3,7 @@ By [WDJ]  March 23, 2010
 Revised   May 9, 2010
 Revised   Oct 30, 2010
 Revised   Fed 22, 2011
+Revised   Jan 12, 2014
 
 The following command line switch will force the execution mode:
 Syntax:  -game <mode>
@@ -53,7 +54,7 @@ where a specific mode has incompatibilities.
 GDESC_freedoom: FreeDoom project, DoomII replacement
    gname, title = "FreeDoom"
    idstr = "freedoom"
-   file = "freedoom.wad", "doom2.wad"
+   file = "freedoom2.wad", "freedoom.wad", "doom2.wad"
    lumps = require "FREEDOOM"  "MAP01"
    gamemode = doom2_commercial
    
@@ -75,7 +76,7 @@ GDESC_doom2: DoomII
 GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    gname ="Ultimate FreeDoom"
    idstr = "freedu"
-   file = "freedu.wad", "doomu.wad", "doom.wad"
+   file = "freedoom1.wad", "freedu.wad", "doomu.wad"
    lumps = require "FREEDOOM" "E4M1" "E1M1" "E2M2"
    gamemode = ultdoom_retail
 
@@ -122,7 +123,7 @@ GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
 GDESC_blasphemer: FreeDoom project, DoomII replacement
    gname, title ="Blasphemer"
    idstr = "blasphem"
-   file = "blasphemer.wad", "blasphem.wad", "heretic.wad"
+   file = "BLASPHEM.WAD", "blasphem.wad", "heretic.wad"
    lumps = require "BLASPHEM" "E1M1" "TITLE"
    gamemode = heretic
 
@@ -180,7 +181,7 @@ GDESC_ultimate_mode: Ultimate Doom replacement
    idstr = "ultimode"
    file = "doomu.wad", "doom.wad"
    lumps = require "E1M1"
-   gamemode = doom_registered
+   gamemode = ultdoom_retail
 
 GDESC_doom_mode: DoomI replacement
    gname, title ="Doom mode"

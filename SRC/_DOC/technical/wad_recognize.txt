@@ -210,7 +210,8 @@ Game: FreeDoom
 mode: DoomII (commercial)
 flags: Boom202
 title: "FreeDoom"
-file: doom2.wad
+file: doom2.wad (versions upto 0.8 )
+      freedoom2.wad (after  1/12/2014)
 size: 19800000 to 20100000 varies
 lump:  "FREEDOOM"
 ZDoom check: MAP01 > FREEDOOM
@@ -231,7 +232,8 @@ Game: Ultimate FreeDoom
 mode: Ultimate Doom (retail)
 flags:
 title: "Ultimate FreeDoom"
-file: doomu.wad
+file: doom.wad (versions upto 0.8 )
+      freedoom1.wad (after  1/12/2014)
 maps: E1M1-  E2M1-
 lump:  "FREEDOOM"
 ZDoom check: E1M1 > no TITLE > FREEDOOM > E2M1
@@ -239,11 +241,12 @@ ZDoom check: E1M1 > no TITLE > FREEDOOM > E2M1
 
 ====
 Game: FreeDoom I
+note: transitional version due to errors ??, no longer valid
 mode: Doom (registered)
 flags:
 title: "Ultimate FreeDoom"
-maps: E1M1-
 file: doom.wad
+maps: E1M1-
 lump:  "FREEDOOM"
 ZDoom check: E1M1 > no TITLE > FREEDOOM > no E2M1
 
@@ -253,7 +256,8 @@ Game: Blasphemer
 mode: heretic
 flags:
 title: "Blasphemer"
-file: doom2.wad  fre
+file: heretic.wad  (version 0.1.2)
+      BLASPHEM.WAD (version 0.1.4 and later)
 maps: E1M1-E1M9, E2M1- ??
 lump:  "BLASPHEM"
 lump: TITLE

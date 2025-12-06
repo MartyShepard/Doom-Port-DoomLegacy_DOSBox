@@ -133,6 +133,7 @@
 <p>
   Otherwise, for known game wads (Doom, Doom2, TNT, etc) in other directories, make soft links in the legacy game directory
   to the actual wad files, so that when a -game switch is used, DoomLegacy can find the iwad.
+  The valid file names can be found in docs/technical/wad_selection.txt.
 <br>
 <pre>
   > ln -s wads/idgames/doom1.wad  doom1.wad
@@ -141,6 +142,7 @@
   > ln -s wads/idgames/plutonia.wad  plutonia.wad
   > ln -s wads/idgames/tnt.wad  tnt.wad
   > ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
+  > ln -s wads/freedoom-iwad-0.9/freedoom2.wad  freedoom2.wad
 </pre>
 <p>
   If just the pwad files are in a separate directory (such as pwad/),
@@ -905,27 +907,51 @@ Game options
   Forces a particular game mode to be used. This replaces renaming
   the wad file. If an IWAD is not explicitly given, the appropriate
   IWAD will be automatically loaded.
-
-  The valid game-name at this time are:
-<table class="def">
-<tr><th>game-name</th><th>mode</th></tr>
-<tr><td>doom, doommode</td><td>Doom1</td></tr>
-<tr><td>freedu, doomu, ultimode</td><td>Ultimate Doom</td></tr>
-<tr><td>freedoom, freedm, doom2, plutonia, tnt</td><td>Doom2</td></tr>
-<tr><td>blasphem, heretic, heremode</td><td>Heretic</td></tr>
-<tr><td>heretic1</td><td>Heretic shareware</td></tr>
-<tr><td>chex1</td><td>Chexquest</td></tr>
-
-<tr><td class="note" colspan="2">
-The following are valid game-names, but the mode is not supported yet.
-</td></tr>
-<tr><td>hexen, hexemode</td><td>Hexen</td></tr>
-<tr><td>hexen1</td><td>Hexen demo</td></tr>
-<tr><td>strife</td><td>Strife</td></tr>
-<tr><td>strife0</td><td>Strife demo</td></tr>
-</table>
+  <p>
   Savegames are now marked with the game name, and will not load
   with a different game name.
+  <p>
+  The particulars about a particular game-name are in
+  doc/technical/wad_selection.txt.
+  <p>
+  The valid game-name at this time, and the file names accepted are:
+<table class="def">
+<tr><th>game-name</th><th>mode</th><th>file name</th></tr>
+<tr><td>doom1</td><td>Doom shareware</td><td>doom1.wad, doom.wad</td></tr>
+<tr><td>doom</td><td>Doom1</td><td>doom.wad</td></tr>
+<tr><td>doomu</td><td>Ultimate Doom</td>
+   <td>doomu.wad, doom_se.wad, doom.wad</td></tr>
+<tr><td>doom2</td><td>Doom2</td><td>doom2.wad</td></tr>
+<tr><td>plutonia</td><td>Doom2</td><td>plutonia.wad</td></tr>
+<tr><td>tnt</td><td>Doom2</td><td>tnt.wad</td></tr>
+<tr><td>freedu</td><td>Ultimate Doom</td>
+   <td>freedoom1.wad, freedu.wad, doomu.wad</td></tr>
+<tr><td>freedoom</td><td>Doom2</td>
+   <td>freedoom2.wad, freedoom.wad, doom2.wad</td></tr>
+<tr><td>freedm</td><td>Doom2</td><td>freedm.wad, doom.wad</td></tr>
+<tr><td>heretic1</td><td>Heretic shareware</td>
+   <td>heretic1.wad, heretic.wad</td></tr>
+<tr><td>heretic</td><td>Heretic</td><td>heretic.wad</td></tr>
+<tr><td>blasphem</td><td>Heretic</td>
+   <td>BLASPHEM.WAD, blasphem.wad, heretic.wad</td></tr>
+<tr><td>chex1</td><td>Chexquest</td>
+   <td>chex1.wad, chex.wad</td></tr>
+<tr><td>doommode</td><td>Doom1</td>
+   <td>doom1.wad, doom.wad</td></tr>
+<tr><td>ultimode</td><td>Ultimate Doom</td>
+   <td>doomu.wad, doom.wad</td></tr>
+<tr><td>heremode</td><td>Heretic</td><td>heretic.wad</td></tr>
+<tr><td class="note" colspan="3">
+The following are valid game-names, but the mode is not supported yet.
+</td></tr>
+<tr><td>hexen1</td><td>Hexen shareware</td>
+   <td>hexen1.wad, hexen.wad</td></tr>
+<tr><td>hexen</td><td>Hexen</td><td>hexen.wad</td></tr>
+<tr><td>hexemode</td><td>Hexen</td><td>hexen.wad</td></tr>
+<tr><td>strife</td><td>Strife</td><td>strife.wad</td></tr>
+<tr><td>strife0</td><td>Strife shareware</td>
+   <td>strife0.wad, strife.wad</td></tr>
+</table>
 </td>
 </tr>
 

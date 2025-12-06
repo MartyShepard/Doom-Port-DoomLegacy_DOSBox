@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1078 2014-01-07 22:55:40Z smite-meister $
+// $Id: d_main.c 1081 2014-01-17 21:48:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1080"
+#define SVN_REV "1081"
 #endif
 
 // Version number: major.minor.revision
@@ -1110,7 +1110,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 // Free wads should get their own gamemode identity
 // GDESC_freedoom: FreeDoom project, DoomII replacement
    { "FreeDoom", NULL, "freedoom",
-        {"freedoom.wad","doom2.wad",NULL}, NULL,
+        {"freedoom2.wad", "freedoom.wad","doom2.wad"}, NULL,
 	{"FREEDOOM", NULL}, LN_MAP01, 0,
 	0, GDESC_freedoom, doom2_commercial },
 // GDESC_freedm: FreeDM project, DoomII deathmatch
@@ -1125,7 +1125,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 	GD_idwad, GDESC_doom2, doom2_commercial },
 // GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    { "Ultimate FreeDoom", NULL, "freedu",
-	{"freedu.wad","doomu.wad","doom.wad"}, NULL,
+	{"freedoom1.wad", "freedu.wad","doomu.wad"}, NULL,
 	{"FREEDOOM", "E4M1"}, LN_E1M1+LN_E2M2, 0,
 	0, GDESC_freedoom_ultimate, ultdoom_retail },
 // GDESC_ultimate: Doom1 1995, doomuwad
@@ -1156,7 +1156,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 	GD_idwad, GDESC_tnt, doom2_commercial },
 // GDESC_blasphemer: FreeDoom project, DoomII replacement
    { "Blasphemer", NULL, "blasphem",
-	{"blasphemer.wad","blasphem.wad","heretic.wad"}, NULL,
+	{"BLASPHEM.WAD","blasphem.wad","heretic.wad"}, NULL,
 	{"BLASPHEM", NULL}, LN_E1M1+LN_TITLE, 0,
 	0, GDESC_blasphemer, heretic },
 // GDESC_heretic: Heretic
@@ -1198,7 +1198,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
    { "Ultimate mode", NULL, "ultimode",
 	{"doomu.wad","doom.wad",NULL}, NULL,
 	{ NULL, NULL}, LN_E1M1, 0,
-	0, GDESC_ultimate, doom_registered },
+	0, GDESC_ultimate, ultdoom_retail },
 // GDESC_doom_mode: DoomI replacement
    { "Doom mode", NULL, "doommode",
         {"doom1.wad","doom.wad",NULL}, NULL,
@@ -1893,7 +1893,7 @@ void D_DoomMain()
 #endif		
 
     I_StartupGraphics();    // window
-    SCR_Startup();			
+    SCR_Startup();
 
     // save Doom, Heretic, Chex strings for DEH
     DEH_Init();  // Init DEH before files and lumps loaded
@@ -1909,6 +1909,7 @@ void D_DoomMain()
     CV_Set( &cv_doomwaddir, doomwaddir ? doomwaddir : "" );
     cv_doomwaddir.flags &= ~CV_MODIFIED;
 #endif
+
     // Before this line are initializations that are run only one time.
     //---------------------------------------------------- 
     // After this line is code that deals with configuration,
@@ -1968,7 +1969,7 @@ restart_command:
         {
             userhome = getenv("HOME");
 	}
-								
+
         if (!userhome)
         {
 #if !defined( __DJGPP__ )					
@@ -1993,6 +1994,7 @@ restart_command:
 	    cv_home.flags &= ~CV_MODIFIED;
 	}
 #endif
+
 #if defined(__APPLE__) && defined(__MACH__) && defined( EXT_MAC_DIR_SPEC )
 	//[segabor] ... ([WDJ] MAC port has vars handy)
 //	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
@@ -2033,7 +2035,6 @@ restart_command:
         {
             // default absolute path, do not set to ""
             legacyhome = defhome;
-
 #if defined( __DJGPP__ )
             char dosroot[MAX_WADPATH];
             getcwd(dosroot, MAX_WADPATH-1);
