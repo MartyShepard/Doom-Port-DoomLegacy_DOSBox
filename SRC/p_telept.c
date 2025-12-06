@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_telept.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -63,7 +63,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     fixed_t     oldz = thing->z;
     fixed_t     aboveFloor;
     fixed_t     fogDelta = 0;
-    unsigned    an;
 
     // no voodoo player effects
     player_t * player = (thing->player && thing->player->mo == thing) ?
@@ -100,9 +99,10 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     // spawn teleport fog at source and destination
     fog = P_SpawnMobj (oldx, oldy, oldz+fogDelta, MT_TFOG);
     S_StartSound (fog, sfx_telept);
-    an = angle >> ANGLETOFINESHIFT;
-    fog = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an]
-        , thing->z+fogDelta, MT_TFOG);
+
+    angle_t angf = ANGLE_TO_FINE(angle);  // fine angle, used later
+    fog = P_SpawnMobj (x+20*finecosine[angf], y+20*finesine[angf],
+          thing->z+fogDelta, MT_TFOG);
     
     // emit sound, where?
     S_StartSound (fog, sfx_telept);
@@ -144,8 +144,8 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
     }
     if(thing->flags&MF_MISSILE)
     {
-        thing->momx = FixedMul(thing->info->speed, finecosine[an]);
-        thing->momy = FixedMul(thing->info->speed, finesine[an]);
+        thing->momx = FixedMul(thing->info->speed, finecosine[angf]);
+        thing->momy = FixedMul(thing->info->speed, finesine[angf]);
     }
     else
         thing->momx = thing->momy = thing->momz = 0;
@@ -249,8 +249,8 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
             R_PointToAngle2(0, 0, line->dx, line->dy) - m->angle + ANG90;
 
           // Sine, cosine of angle adjustment
-          fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
-          fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
+          fixed_t sin_taa = sine_ANG(angle);
+          fixed_t cos_taa = cosine_ANG(angle);
 
           // Momentum of thing crossing teleporter linedef
           fixed_t momx = thing->momx;
@@ -270,8 +270,8 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
           thing->z = z + thing->floorz;
 
           // Rotate thing's momentum to come out of exit just like it entered
-          thing->momx = FixedMul(momx, c) - FixedMul(momy, s);
-          thing->momy = FixedMul(momy, c) + FixedMul(momx, s);
+          thing->momx = FixedMul(momx, cos_taa) - FixedMul(momy, sin_taa);
+          thing->momy = FixedMul(momy, cos_taa) + FixedMul(momx, sin_taa);
 
           // Adjust player's view, in case there has been a height change
           // Voodoo dolls are excluded by making sure player->mo == thing.
@@ -341,8 +341,8 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
         fixed_t y = l->v2->y - FixedMul(pos, l->dy);
 
         // Sine, cosine of angle adjustment
-        fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
-        fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
+        fixed_t sin_taa = sine_ANG(angle);
+        fixed_t cos_taa = cosine_ANG(angle);
 
         // Maximum distance thing can be moved away from interpolated
         // exit, to ensure that it is on the correct side of exit linedef
@@ -408,8 +408,8 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
         y = thing->momy;
 
         // Rotate thing's momentum to come out of exit just like it entered
-        thing->momx = FixedMul(x, c) - FixedMul(y, s);
-        thing->momy = FixedMul(y, c) + FixedMul(x, s);
+        thing->momx = FixedMul(x, cos_taa) - FixedMul(y, sin_taa);
+        thing->momy = FixedMul(y, cos_taa) + FixedMul(x, sin_taa);
 
         // Adjust a player's view, in case there has been a height change
         if (player)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: am_map.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1314,12 +1314,12 @@ void AM_rotate ( fixed_t* x, fixed_t* y, angle_t a )
     fixed_t tmpx;
 
     tmpx =
-        FixedMul(*x,finecosine[a>>ANGLETOFINESHIFT])
-        - FixedMul(*y,finesine[a>>ANGLETOFINESHIFT]);
+        FixedMul( *x, cosine_ANG(a) )
+        - FixedMul( *y, sine_ANG(a) );
 
     *y   =
-        FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
-        + FixedMul(*y,finecosine[a>>ANGLETOFINESHIFT]);
+        FixedMul( *x, sine_ANG(a) )
+        + FixedMul( *y, cosine_ANG(a) );
 
     *x = tmpx;
 }

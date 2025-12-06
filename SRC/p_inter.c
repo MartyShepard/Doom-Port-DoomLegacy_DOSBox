@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_inter.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1918,10 +1918,9 @@ void P_MinotaurSlam(mobj_t *source, mobj_t *target)
     fixed_t thrust;
     
     angle = R_PointToAngle2(source->x, source->y, target->x, target->y);
-    angle >>= ANGLETOFINESHIFT;
     thrust = 16*FRACUNIT+(P_Random()<<10);
-    target->momx += FixedMul(thrust, finecosine[angle]);
-    target->momy += FixedMul(thrust, finesine[angle]);
+    target->momx += FixedMul(thrust, cosine_ANG(angle));
+    target->momy += FixedMul(thrust, sine_ANG(angle));
     P_DamageMobj(target, NULL, NULL, HITDICE(6));
     if(target->player)
     {
@@ -2171,7 +2170,8 @@ boolean P_DamageMobj ( mobj_t*   target,
                        mobj_t*   source,
                        int       damage )
 {
-    unsigned    ang;
+    angle_t     ang;
+    int         angf;
     int         saved;
     player_t*   player;
     fixed_t     thrust;
@@ -2288,10 +2288,8 @@ boolean P_DamageMobj ( mobj_t*   target,
         // Impose thrust upon the target from the weapon
         fixed_t  amomx, amomy, amomz=0;//SoM: 3/28/2000
 
-        ang = R_PointToAngle2 ( inflictor->x,
-                                inflictor->y,
-                                target->x,
-                                target->y);
+        ang = R_PointToAngle2 ( inflictor->x, inflictor->y,
+                                target->x, target->y);
 
         if (gamemode == heretic )
             thrust = damage*(FRACUNIT>>3)*150/target->info->mass;
@@ -2308,7 +2306,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             thrust *= 4;
         }
 
-        ang >>= ANGLETOFINESHIFT;
+        angf = ANGLE_TO_FINE(ang);
 
         if(gamemode == heretic
 	    && source && (source == inflictor)
@@ -2317,8 +2315,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             && source->player->readyweapon == wp_staff)
         {
             // Staff power level 2
-            target->momx += FixedMul(10*FRACUNIT, finecosine[ang]);
-            target->momy += FixedMul(10*FRACUNIT, finesine[ang]);
+            target->momx += FixedMul(10*FRACUNIT, finecosine[angf]);
+            target->momy += FixedMul(10*FRACUNIT, finesine[angf]);
             if(!(target->flags&MF_NOGRAVITY))
             {
                 target->momz += 5*FRACUNIT;
@@ -2327,8 +2325,8 @@ boolean P_DamageMobj ( mobj_t*   target,
         else
         {
 	    // all other thrusting weapons
-            amomx = FixedMul (thrust, finecosine[ang]);
-            amomy = FixedMul (thrust, finesine[ang]);
+            amomx = FixedMul (thrust, finecosine[angf]);
+            amomy = FixedMul (thrust, finesine[angf]);
             target->momx += amomx;
             target->momy += amomy;
             
@@ -2356,9 +2354,7 @@ boolean P_DamageMobj ( mobj_t*   target,
                 viewx=0;
                 viewy=z;
                 ang = R_PointToAngle(dist,target->z);
-                
-                ang >>= ANGLETOFINESHIFT;
-                amomz = FixedMul (thrust, finesine[ang]);
+                amomz = FixedMul (thrust, sine_ANG(ang));
             }
             else //SoM: 2/28/2000: Added new function.
             if(demoversion >= 129 && cv_allowrocketjump.value)

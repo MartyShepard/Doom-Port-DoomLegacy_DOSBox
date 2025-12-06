@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_state.h 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -171,7 +171,12 @@ extern consvar_t        cv_allowmlook;
 // ?
 extern angle_t          clipangle;
 
-extern int              viewangle_to_x[FINEANGLES/2];
+// Table content is -FINE_ANG90 to +FINE_ANG90.
+// Lookup as viewangle_to_x[viewangle + FINE_ANG90].
+// Maps the visible view angles to screen X coordinates.
+extern int              viewangle_to_x[FINE_ANG180];
+// The lowest viewangle that maps back to x.
+// Maps (0 to screenwidth) to range (clipangle to -clipangle).
 extern angle_t          x_to_viewangle[MAXVIDWIDTH+1];
 //extern fixed_t                finetangent[FINEANGLES/2];
 

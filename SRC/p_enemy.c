@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: p_enemy.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -1532,7 +1532,7 @@ void A_SkelMissile (mobj_t* actor)
     }
 }
 
-int     TRACEANGLE = 0xc000000;
+angle_t  TRACEANGLE = 0x0c000000;
 
 void A_Tracer (mobj_t* actor)
 {
@@ -1548,8 +1548,7 @@ void A_Tracer (mobj_t* actor)
     // spawn a puff of smoke behind the rocket
     P_SpawnPuff (actor->x, actor->y, actor->z);
 
-    th = P_SpawnMobj (actor->x-actor->momx,
-                      actor->y-actor->momy,
+    th = P_SpawnMobj ((actor->x - actor->momx), (actor->y - actor->momy),
                       actor->z, MT_SMOKE);
 
     th->momz = FRACUNIT;
@@ -1564,30 +1563,28 @@ void A_Tracer (mobj_t* actor)
         return;
 
     // change angle
-    exact = R_PointToAngle2 (actor->x,
-                             actor->y,
-                             dest->x,
-                             dest->y);
+    exact = R_PointToAngle2 (actor->x, actor->y,
+                             dest->x, dest->y);
 
     if (exact != actor->angle)
     {
-        if (exact - actor->angle > 0x80000000)
+        if (exact - actor->angle > 0x80000000) // (actor->angle > exact)
         {
-            actor->angle -= TRACEANGLE;
-            if (exact - actor->angle < 0x80000000)
+            actor->angle -= TRACEANGLE;  // correct towards exact
+            if (exact - actor->angle < 0x80000000)  // (actor->angle < exact)
                 actor->angle = exact;
         }
         else
         {
-            actor->angle += TRACEANGLE;
-            if (exact - actor->angle > 0x80000000)
+            actor->angle += TRACEANGLE;  // correct towards exact
+            if (exact - actor->angle > 0x80000000)  // (actor->angle > exact)
                 actor->angle = exact;
         }
     }
 
-    exact = actor->angle>>ANGLETOFINESHIFT;
-    actor->momx = FixedMul (actor->info->speed, finecosine[exact]);
-    actor->momy = FixedMul (actor->info->speed, finesine[exact]);
+    int angf = ANGLE_TO_FINE(actor->angle);
+    actor->momx = FixedMul (actor->info->speed, finecosine[angf]);
+    actor->momy = FixedMul (actor->info->speed, finesine[angf]);
 
     // change slope
     dist = P_AproxDistance (dest->x - actor->x,
@@ -1798,7 +1795,6 @@ void A_FireCrackle (mobj_t* actor)
 void A_Fire (mobj_t* actor)
 {
     mobj_t*     dest;
-    unsigned    an;
 
     dest = actor->tracer;
     if (!dest)
@@ -1808,11 +1804,11 @@ void A_Fire (mobj_t* actor)
     if (!P_CheckSight (actor->target, dest) )
         return;
 
-    an = dest->angle >> ANGLETOFINESHIFT;
+    int angf = ANGLE_TO_FINE(dest->angle);
 
     P_UnsetThingPosition (actor);
-    actor->x = dest->x + FixedMul (24*FRACUNIT, finecosine[an]);
-    actor->y = dest->y + FixedMul (24*FRACUNIT, finesine[an]);
+    actor->x = dest->x + FixedMul (24*FRACUNIT, finecosine[angf]);
+    actor->y = dest->y + FixedMul (24*FRACUNIT, finesine[angf]);
     actor->z = dest->z;
     P_SetThingPosition (actor);
 }
@@ -1859,7 +1855,6 @@ void A_VileTarget (mobj_t*      actor)
 void A_VileAttack (mobj_t* actor)
 {
     mobj_t*     fire;
-    int         an;
 
     if (!actor->target)
         return;
@@ -1873,16 +1868,15 @@ void A_VileAttack (mobj_t* actor)
     P_DamageMobj (actor->target, actor, actor, 20);
     actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
 
-    an = actor->angle >> ANGLETOFINESHIFT;
+    int angf = ANGLE_TO_FINE(actor->angle);
 
     fire = actor->tracer;
-
     if (!fire)
         return;
 
     // move the fire between the vile and the player
-    fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[an]);
-    fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);
+    fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[angf]);
+    fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[angf]);
     P_RadiusAttack (fire, actor, 70 );
 }
 
@@ -1907,7 +1901,6 @@ void A_FatRaise (mobj_t *actor)
 void A_FatAttack1 (mobj_t* actor)
 {
     mobj_t*     mo;
-    int         an;
 
     A_FaceTarget (actor);
     // Change direction  to ...
@@ -1918,16 +1911,15 @@ void A_FatAttack1 (mobj_t* actor)
     if(mo)
     {
         mo->angle += FATSPREAD;
-        an = mo->angle >> ANGLETOFINESHIFT;
-        mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-        mo->momy = FixedMul (mo->info->speed, finesine[an]);
+        int angf = ANGLE_TO_FINE(mo->angle);
+        mo->momx = FixedMul (mo->info->speed, finecosine[angf]);
+        mo->momy = FixedMul (mo->info->speed, finesine[angf]);
     }
 }
 
 void A_FatAttack2 (mobj_t* actor)
 {
     mobj_t*     mo;
-    int         an;
 
     A_FaceTarget (actor);
     // Now here choose opposite deviation.
@@ -1938,16 +1930,16 @@ void A_FatAttack2 (mobj_t* actor)
     if(mo)
     {
         mo->angle -= FATSPREAD*2;
-        an = mo->angle >> ANGLETOFINESHIFT;
-        mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-        mo->momy = FixedMul (mo->info->speed, finesine[an]);
+        int angf = ANGLE_TO_FINE(mo->angle);
+        mo->momx = FixedMul (mo->info->speed, finecosine[angf]);
+        mo->momy = FixedMul (mo->info->speed, finesine[angf]);
     }
 }
 
-void A_FatAttack3 (mobj_t*      actor)
+void A_FatAttack3 (mobj_t* actor)
 {
     mobj_t*     mo;
-    int         an;
+    int         angf;
 
     A_FaceTarget (actor);
 
@@ -1955,18 +1947,18 @@ void A_FatAttack3 (mobj_t*      actor)
     if(mo)
     {
         mo->angle -= FATSPREAD/2;
-        an = mo->angle >> ANGLETOFINESHIFT;
-        mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-        mo->momy = FixedMul (mo->info->speed, finesine[an]);
+        angf = ANGLE_TO_FINE(mo->angle);
+        mo->momx = FixedMul (mo->info->speed, finecosine[angf]);
+        mo->momy = FixedMul (mo->info->speed, finesine[angf]);
     }
     
     mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
     if(mo)
     {
         mo->angle += FATSPREAD/2;
-        an = mo->angle >> ANGLETOFINESHIFT;
-        mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-        mo->momy = FixedMul (mo->info->speed, finesine[an]);
+        angf = ANGLE_TO_FINE(mo->angle);
+        mo->momx = FixedMul (mo->info->speed, finecosine[angf]);
+        mo->momy = FixedMul (mo->info->speed, finesine[angf]);
     }
 }
 
@@ -1980,7 +1972,7 @@ void A_FatAttack3 (mobj_t*      actor)
 void A_SkullAttack (mobj_t* actor)
 {
     mobj_t*             dest;
-    angle_t             an;
+    angle_t             ang;
     int                 dist;
 
     if (!actor->target)
@@ -2032,29 +2024,28 @@ void A_SkullAttack (mobj_t* actor)
 		else if (pz > sec->sector->ceilingheight)
 			pz = sec->sector->ceilingheight - dest->height;
 
-		an = R_PointToAngle2 (actor->x, actor->y, px, py);
+		ang = R_PointToAngle2 (actor->x, actor->y, px, py);
 
 		// fuzzy player
 		if (dest->flags & MF_SHADOW)
 		{
 			if( gamemode == heretic )
-				an += P_SignedRandom()<<21; 
+		            ang += P_SignedRandom()<<21; 
 			else
-				an += P_SignedRandom()<<20;
+		            ang += P_SignedRandom()<<20;
 		}
 
-		actor->angle = an;
-		an >>= ANGLETOFINESHIFT;
-		actor->momx = FixedMul (SKULLSPEED, finecosine[an]);
-		actor->momy = FixedMul (SKULLSPEED, finesine[an]);
+		actor->angle = ang;
+		actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
+		actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
 
 		actor->momz = (pz+(dest->height>>1) - actor->z) / t;
     }
     else
     {
-		an = actor->angle >> ANGLETOFINESHIFT;
-		actor->momx = FixedMul (SKULLSPEED, finecosine[an]);
-		actor->momy = FixedMul (SKULLSPEED, finesine[an]);
+		ang = actor->angle;
+		actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
+		actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
 		dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
 		dist = dist / SKULLSPEED;
 
@@ -2072,14 +2063,9 @@ void A_SkullAttack (mobj_t* actor)
 void
 A_PainShootSkull( mobj_t* actor, angle_t angle )
 {
-    fixed_t     x;
-    fixed_t     y;
-    fixed_t     z;
-
+    fixed_t     x, y, z;
     mobj_t*     newmobj;
-    angle_t     an;
     int         prestep;
-
 
 #if 1
     if( EN_skull_limit ) {
@@ -2108,14 +2094,12 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
 #endif   
 
     // okay, there's place for another one
-    an = angle >> ANGLETOFINESHIFT;
-
     prestep =
         4*FRACUNIT
         + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
 
-    x = actor->x + FixedMul (prestep, finecosine[an]);
-    y = actor->y + FixedMul (prestep, finesine[an]);
+    x = actor->x + FixedMul (prestep, cosine_ANG(angle));
+    y = actor->y + FixedMul (prestep, sine_ANG(angle));
     z = actor->z + 8*FRACUNIT;
 
     if( EN_old_pain_spawn )

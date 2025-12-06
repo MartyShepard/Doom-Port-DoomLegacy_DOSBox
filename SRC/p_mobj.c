@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: p_mobj.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -406,9 +406,8 @@ void P_FloorBounceMissile(mobj_t * mo)
 
 void P_ThrustMobj(mobj_t * mo, angle_t angle, fixed_t move)
 {
-    angle >>= ANGLETOFINESHIFT;
-    mo->momx += FixedMul(move, finecosine[angle]);
-    mo->momy += FixedMul(move, finesine[angle]);
+    mo->momx += FixedMul(move, cosine_ANG(angle));
+    mo->momy += FixedMul(move, sine_ANG(angle));
 }
 
 //
@@ -945,6 +944,7 @@ void P_ZMovement(mobj_t * mo)
     if (player && (mo->flags2 & MF2_FLY)
 	&& !(mo->z <= mo->floorz) && (leveltime & 2))
     {
+        // add the bobbing pattern
         mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
     }
 
@@ -2450,8 +2450,8 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     {
         // find random angle between 0-180deg centered on damage angle
         anglesplat = angle + (((P_Random() - 128) * FINEANGLES / 512 * anglemul) << ANGLETOFINESHIFT);
-        x2 = x + distance * finecosine[anglesplat >> ANGLETOFINESHIFT];
-        y2 = y + distance * finesine[anglesplat >> ANGLETOFINESHIFT];
+        x2 = x + distance * cosine_ANG(anglesplat);
+        y2 = y + distance * sine_ANG(anglesplat);
 
         P_PathTraverse(x, y, x2, y2, PT_ADDLINES, PTR_BloodTraverse);
     }
@@ -2591,7 +2591,7 @@ boolean P_CheckMissileSpawn(mobj_t * th)
 mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
 {
     mobj_t *th;
-    angle_t an;
+    angle_t ang;
     int dist;
     fixed_t z;
 
@@ -2664,21 +2664,21 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
         else if (pz > sec->sector->ceilingheight)
             pz = sec->sector->ceilingheight - dest->height;
 
-        an = R_PointToAngle2(source->x, source->y, px, py);
+        ang = R_PointToAngle2(source->x, source->y, px, py);
 
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
             if (gamemode == heretic)
-                an += P_SignedRandom() << 21;
+                ang += P_SignedRandom() << 21;
             else
-                an += P_SignedRandom() << 20;
+                ang += P_SignedRandom() << 20;
         }
 
-        th->angle = an;
-        an >>= ANGLETOFINESHIFT;
-        th->momx = FixedMul(th->info->speed, finecosine[an]);
-        th->momy = FixedMul(th->info->speed, finesine[an]);
+        th->angle = ang;
+        int angf = ANGLE_TO_FINE(ang); 
+        th->momx = FixedMul(th->info->speed, finecosine[angf]);
+        th->momy = FixedMul(th->info->speed, finesine[angf]);
 
         if (t < 1)
             t = 1;
@@ -2687,21 +2687,21 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     }
     else
     {
-        an = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
+        ang = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
 
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
             if (gamemode == heretic)
-                an += P_SignedRandom() << 21;
+                ang += P_SignedRandom() << 21;
             else
-                an += P_SignedRandom() << 20;
+                ang += P_SignedRandom() << 20;
         }
 
-        th->angle = an;
-        an >>= ANGLETOFINESHIFT;
-        th->momx = FixedMul(th->info->speed, finecosine[an]);
-        th->momy = FixedMul(th->info->speed, finesine[an]);
+        th->angle = ang;
+        int angf = ANGLE_TO_FINE(ang); 
+        th->momx = FixedMul(th->info->speed, finecosine[angf]);
+        th->momy = FixedMul(th->info->speed, finesine[angf]);
 
         dist = P_AproxDistance(dest->x - source->x, dest->y - source->y);
         dist = dist / th->info->speed;
@@ -2726,35 +2726,35 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
 mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 {
     mobj_t *th;
-    angle_t an;
+    angle_t ang;
 
     fixed_t x, y, z;
     fixed_t slope = 0;
 
     // angle at which you fire, is player angle
-    an = angle;
+    ang = angle;
 
     //added:16-02-98: autoaim is now a toggle
     if (source->player->autoaim_toggle && cv_allowautoaim.value)
     {
         // see which target is to be aimed at
-        slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+        slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
 
         // lar_linetarget returned by P_AimLineAttack
         if (!lar_linetarget)
         {
-            an += 1 << 26;
-            slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+            ang += 1 << 26;
+            slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
 
             if (!lar_linetarget)
             {
-                an -= 2 << 26;
-                slope = P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+                ang -= 2 << 26;
+                slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
             }
 
             if (!lar_linetarget)
             {
-                an = angle;
+                ang = angle;
                 slope = 0;
             }
         }
@@ -2785,16 +2785,19 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 
     th->target = source;
 
-    th->angle = an;
-    th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
-    th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
+    th->angle = ang;
+    int angf = ANGLE_TO_FINE( ang );
+    fixed_t speed = th->info->speed;
+    th->momx = FixedMul(speed, finecosine[angf]);
+    th->momy = FixedMul(speed, finesine[angf]);
+    th->momz = FixedMul(speed, slope);
 
     if (demoversion >= 128)
     {   // 1.28 fix, allow full aiming must be much precise
-        th->momx = FixedMul(th->momx, finecosine[source->player->aiming >> ANGLETOFINESHIFT]);
-        th->momy = FixedMul(th->momy, finecosine[source->player->aiming >> ANGLETOFINESHIFT]);
+        fixed_t aimcosine = cosine_ANG( source->player->aiming );
+        th->momx = FixedMul(th->momx, aimcosine);
+        th->momy = FixedMul(th->momy, aimcosine);
     }
-    th->momz = FixedMul(th->info->speed, slope);
 
     if (th->type == MT_BLASTERFX1)
     {   // Ultra-fast ripper spawning missile

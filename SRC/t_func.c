@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1041 2013-08-26 20:28:45Z wesleyjohnson $
+// $Id: t_func.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -1812,8 +1812,8 @@ void SF_PushThing(void)
     angle = FixedToAngle(fixedvalue(t_argv[1]));
     force = fixedvalue(t_argv[2]);
 
-    mo->momx += FixedMul(finecosine[angle >> ANGLETOFINESHIFT], force);
-    mo->momy += FixedMul(finesine[angle >> ANGLETOFINESHIFT], force);
+    mo->momx += FixedMul( cosine_ANG(angle), force);
+    mo->momy += FixedMul( sine_ANG(angle), force);
 done:
     return;
 
@@ -2700,8 +2700,8 @@ void SF_MoveCamera(void)
     if (movespeed)
     {
         xydist = R_PointToDist2(camera->x, camera->y, target->x, target->y);
-        xstep = FixedMul(finecosine[mobjangle >> ANGLETOFINESHIFT], movespeed);
-        ystep = FixedMul(finesine[mobjangle >> ANGLETOFINESHIFT], movespeed);
+        xstep = FixedMul( cosine_ANG(mobjangle), movespeed);
+        ystep = FixedMul( sine_ANG(mobjangle), movespeed);
         if (xydist)
             zstep = FixedDiv(zdist, FixedDiv(xydist, movespeed));
         else

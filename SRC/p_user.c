@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: p_user.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -95,7 +95,6 @@ int	 extramovefactor = 0;
 //
 void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 {
-    angle >>= ANGLETOFINESHIFT;
 #if 0
     // friction and movefactor are now sector attributes
     if(player->mo->subsector->sector->special == 15  // heretic ice
@@ -104,8 +103,8 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
         move>>=2;  // Friction_Low
     }
 #endif   
-    player->mo->momx += FixedMul(move, finecosine[angle]);
-    player->mo->momy += FixedMul(move, finesine[angle]);
+    player->mo->momx += FixedMul(move, cosine_ANG(angle));
+    player->mo->momy += FixedMul(move, sine_ANG(angle));
 }
 
 #ifdef BOB_MOM
@@ -117,13 +116,13 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
 
 static void P_Thrust_Bob( player_t * player, angle_t angle, fixed_t moveth, fixed_t movebob )
 {
-    angle >>= ANGLETOFINESHIFT;
+    int angf = ANGLE_TO_FINE( angle );
     // thrust
-    player->mo->momx += FixedMul(moveth, finecosine[angle]);
-    player->mo->momy += FixedMul(moveth, finesine[angle]);
+    player->mo->momx += FixedMul(moveth, finecosine[angf]);
+    player->mo->momy += FixedMul(moveth, finesine[angf]);
     // bob
-    player->bob_momx += FixedMul(movebob, finecosine[angle]);
-    player->bob_momy += FixedMul(movebob, finesine[angle]);
+    player->bob_momx += FixedMul(movebob, finecosine[angf]);
+    player->bob_momy += FixedMul(movebob, finesine[angf]);
 }
 #endif
 
@@ -135,7 +134,6 @@ static void P_Thrust_Bob( player_t * player, angle_t angle, fixed_t moveth, fixe
 //
 void P_ThrustSpirit(player_t *player, angle_t angle, fixed_t move)
 {
-    angle >>= ANGLETOFINESHIFT;
 #if 0   
     // friction and movefactor are now sector attributes
     if(player->spirit->subsector->sector->special == 15
@@ -144,8 +142,8 @@ void P_ThrustSpirit(player_t *player, angle_t angle, fixed_t move)
         move>>=2;  // Friction_Low
     }
 #endif   
-    player->spirit->momx += FixedMul(move, finecosine[angle]);
-    player->spirit->momy += FixedMul(move, finesine[angle]);
+    player->spirit->momx += FixedMul(move, cosine_ANG(angle));
+    player->spirit->momy += FixedMul(move, sine_ANG(angle));
 }
 #endif
 
@@ -465,7 +463,7 @@ void P_MovePlayer (player_t* player)
         {
             fixed_t a;
             // swim up/down full move when forward full speed
-            a = FixedMul( movepushforward*50, finesine[ (player->aiming>>ANGLETOFINESHIFT) ] >>5 );
+            a = FixedMul( movepushforward*50, sine_ANG(player->aiming) >>5 );
             
             if ( a != 0 ) {
                 pmo->eflags |= MF_SWIMMING;
@@ -672,9 +670,7 @@ boolean P_UndoPlayerChicken(player_t *player)
         mobj_t *fog;
         mobj_t *mo;
         mobj_t * pmo = player->mo;
-        fixed_t x;
-        fixed_t y;
-        fixed_t z;
+        fixed_t x, y, z;
         angle_t angle;
         int playerNum;
         weapontype_t weapon;
@@ -722,9 +718,10 @@ boolean P_UndoPlayerChicken(player_t *player)
         player->weaponinfo = wpnlev1info;
         player->health = mo->health = MAXHEALTH;
         player->mo = mo;
-        angle >>= ANGLETOFINESHIFT;
-        fog = P_SpawnMobj(x+20*finecosine[angle],
-                y+20*finesine[angle], z+TELEFOGHEIGHT, MT_TFOG);
+
+        int angf = ANGLE_TO_FINE( angle );
+        fog = P_SpawnMobj(x+20*finecosine[angf], y+20*finesine[angf],
+			  z+TELEFOGHEIGHT, MT_TFOG);
         S_StartSound(fog, sfx_telept);
         P_PostChickenWeapon(player, weapon);
         return(true);
@@ -829,29 +826,29 @@ boolean PTR_FindCameraPoint (intercept_t* in)
 
 void P_MoveChaseCamera (player_t *player)
 {
-    angle_t             angle;
-    fixed_t             x,y,z ,viewpointx,viewpointy;
-    fixed_t             dist;
-    mobj_t*             pmo = player->mo;
-    subsector_t*        newsubsec;
-    float               f1,f2;
+    angle_t       angle;
+    int           angf;   
+    fixed_t       x, y, z, viewpointx, viewpointy;
+    fixed_t       dist;
+    float         f1, f2;
+    subsector_t*  newsubsec;
+    mobj_t*       pmo = player->mo;
 
     if (!camera.mo)
         P_ResetCamera (player);
 
-    angle = pmo->angle;
+    angf = ANGLE_TO_FINE( pmo->angle );
 
     // sets ideal cam pos
     dist  = cv_cam_dist.value;
-    x = pmo->x - FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
-    y = pmo->y - FixedMul(   finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    x = pmo->x - FixedMul( finecosine[angf], dist);
+    y = pmo->y - FixedMul( finesine[angf], dist);
     z = pmo->z + (cv_viewheight.value<<FRACBITS) + cv_cam_height.value;
 
 /*    P_PathTraverse ( pmo->x, pmo->y, x, y, PT_ADDLINES, PTR_UseTraverse );*/
 
     // move camera down to move under lower ceilings
     newsubsec = R_IsPointInSubsector ((pmo->x + camera.mo->x)>>1,(pmo->y + camera.mo->y)>>1);
-              
     if (!newsubsec)
     {
         // use player sector 
@@ -861,38 +858,41 @@ void P_MoveChaseCamera (player_t *player)
     else
     // camera fit ?
     if (newsubsec->sector->ceilingheight - camera.mo->height < z)
+    {
         // no fit
-        z = newsubsec->sector->ceilingheight - camera.mo->height-11*FRACUNIT;
-        // is the camera fit is there own sector
-    newsubsec = R_PointInSubsector (camera.mo->x,camera.mo->y);
+        z = newsubsec->sector->ceilingheight - camera.mo->height - 11*FRACUNIT;
+    }
+
+    // does the camera fit in its own sector
+    newsubsec = R_PointInSubsector (camera.mo->x, camera.mo->y);
     if (newsubsec->sector->ceilingheight - camera.mo->height < z)
-        z = newsubsec->sector->ceilingheight - camera.mo->height-11*FRACUNIT;
+        z = newsubsec->sector->ceilingheight - camera.mo->height - 11*FRACUNIT;
 
 
     // point viewed by the camera
     // this point is just 64 unit forward the player
     dist = 64 << FRACBITS;
-    viewpointx = pmo->x + FixedMul( finecosine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
-    viewpointy = pmo->y + FixedMul( finesine[(angle>>ANGLETOFINESHIFT) & FINEMASK], dist);
+    viewpointx = pmo->x + FixedMul( finecosine[angf], dist);  // player angle
+    viewpointy = pmo->y + FixedMul( finesine[angf], dist);
 
-    camera.mo->angle = R_PointToAngle2(camera.mo->x,camera.mo->y,
-                                       viewpointx  ,viewpointy);
+    camera.mo->angle = R_PointToAngle2(camera.mo->x, camera.mo->y,
+                                       viewpointx, viewpointy);
 
-    // folow the player
-    camera.mo->momx = FixedMul(x - camera.mo->x,cv_cam_speed.value);
-    camera.mo->momy = FixedMul(y - camera.mo->y,cv_cam_speed.value);
-    camera.mo->momz = FixedMul(z - camera.mo->z,cv_cam_speed.value);
+    // follow the player
+    camera.mo->momx = FixedMul(x - camera.mo->x, cv_cam_speed.value);
+    camera.mo->momy = FixedMul(y - camera.mo->y, cv_cam_speed.value);
+    camera.mo->momz = FixedMul(z - camera.mo->z, cv_cam_speed.value);
 
-    // compute aming to look the viewed point
-    f1=FIXED_TO_FLOAT(viewpointx-camera.mo->x);
-    f2=FIXED_TO_FLOAT(viewpointy-camera.mo->y);
+    // compute aiming to look toward the viewed point
+    f1=FIXED_TO_FLOAT(viewpointx - camera.mo->x);
+    f2=FIXED_TO_FLOAT(viewpointy - camera.mo->y);
     dist=sqrt(f1*f1+f2*f2)*FRACUNIT;
     angle=R_PointToAngle2(0, camera.mo->z, dist,
-                         pmo->z+(pmo->height>>1)+finesine[(player->aiming>>ANGLETOFINESHIFT) & FINEMASK] * 64);
+                         pmo->z + (pmo->height>>1) + sine_ANG(player->aiming)*64);
 
     angle = G_ClipAimingPitch(angle);
-    dist=camera.aiming-angle;
-    camera.aiming-=(dist>>3);
+    dist = camera.aiming - angle;
+    camera.aiming -= (dist>>3);
 }
 
 

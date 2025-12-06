@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_hpspr.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -728,15 +728,15 @@ void A_FireMacePL1B(player_t *player, pspdef_t *psp)
         ball = P_SpawnMobj(pmo->x, pmo->y, pmo->z+28*FRACUNIT
                 - FOOTCLIPSIZE*((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
         ball->momz = 2*FRACUNIT+((player->aiming)<<(FRACBITS-5));
-        angle = pmo->angle;
-        ball->target = pmo;
-        ball->angle = angle;
         ball->z += (player->aiming)<<(FRACBITS-4);
-        angle >>= ANGLETOFINESHIFT;
-        ball->momx = (pmo->momx>>1)
-                +FixedMul(ball->info->speed, finecosine[angle]);
-        ball->momy = (pmo->momy>>1)
-                +FixedMul(ball->info->speed, finesine[angle]);
+        ball->target = pmo;
+        angle = pmo->angle;
+        ball->angle = angle;
+        // Common expression extraction is poor here, so explicit.
+        int angf = ANGLE_TO_FINE( angle );
+        fixed_t speed = ball->info->speed;
+        ball->momx = (pmo->momx>>1) + FixedMul(speed, finecosine[angf]);
+        ball->momy = (pmo->momy>>1) + FixedMul(speed, finesine[angf]);
         S_StartSound(ball, sfx_lobsht);
         P_CheckMissileSpawn(ball);
 }
@@ -779,8 +779,6 @@ void A_FireMacePL1(player_t *player, pspdef_t *psp)
 
 void A_MacePL1Check(mobj_t *ball)
 {
-        angle_t angle;
-
         if(ball->special1 == 0)
         {
                 return;
@@ -792,9 +790,9 @@ void A_MacePL1Check(mobj_t *ball)
         }
         ball->special1 = 0;
         ball->flags2 |= MF2_LOGRAV;
-        angle = ball->angle>>ANGLETOFINESHIFT;
-        ball->momx = FixedMul(7*FRACUNIT, finecosine[angle]);
-        ball->momy = FixedMul(7*FRACUNIT, finesine[angle]);
+        int angf = ANGLE_TO_FINE(ball->angle);
+        ball->momx = FixedMul(7*FRACUNIT, finecosine[angf]);
+        ball->momy = FixedMul(7*FRACUNIT, finesine[angf]);
         ball->momz -= ball->momz>>1;
 }
 
@@ -836,8 +834,10 @@ void A_MaceBallImpact(mobj_t *ball)
 
 void A_MaceBallImpact2(mobj_t *ball)
 {
-        mobj_t *tiny;
         angle_t angle;
+        int     angf;
+        fixed_t zm;
+        mobj_t *tiny;
 
         if((ball->z <= ball->floorz) && (P_HitFloor(ball) != FLOOR_SOLID))
         { // Landed in some sort of liquid
@@ -853,29 +853,26 @@ void A_MaceBallImpact2(mobj_t *ball)
         else
         { // Bounce
                 ball->momz = (ball->momz*192)>>8;
+	        zm = ball->momz - FRACUNIT;  // momz of FX3
                 P_SetMobjState(ball, ball->info->spawnstate);
 
                 tiny = P_SpawnMobj(ball->x, ball->y, ball->z, MT_MACEFX3);
-                angle = ball->angle+ANG90;
                 tiny->target = ball->target;
+                angle = ball->angle + ANG90;
                 tiny->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                tiny->momx = (ball->momx>>1)+FixedMul(ball->momz-FRACUNIT,
-                        finecosine[angle]);
-                tiny->momy = (ball->momy>>1)+FixedMul(ball->momz-FRACUNIT,
-                        finesine[angle]);
+                angf = ANGLE_TO_FINE(angle);
+                tiny->momx = (ball->momx>>1) + FixedMul(zm, finecosine[angf]);
+                tiny->momy = (ball->momy>>1) + FixedMul(zm, finesine[angf]);
                 tiny->momz = ball->momz;
                 P_CheckMissileSpawn(tiny);
 
                 tiny = P_SpawnMobj(ball->x, ball->y, ball->z, MT_MACEFX3);
-                angle = ball->angle-ANG90;
                 tiny->target = ball->target;
+                angle = ball->angle - ANG90;
                 tiny->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                tiny->momx = (ball->momx>>1)+FixedMul(ball->momz-FRACUNIT,
-                        finecosine[angle]);
-                tiny->momy = (ball->momy>>1)+FixedMul(ball->momz-FRACUNIT,
-                        finesine[angle]);
+                angf = ANGLE_TO_FINE(angle);
+                tiny->momx = (ball->momx>>1) + FixedMul(zm, finecosine[angf]);
+                tiny->momy = (ball->momy>>1) + FixedMul(zm, finesine[angf]);
                 tiny->momz = ball->momz;
                 P_CheckMissileSpawn(tiny);
         }
@@ -963,9 +960,9 @@ void A_DeathBallImpact(mobj_t *ball)
                 if(newAngle)
                 {
                         ball->angle = angle;
-                        angle >>= ANGLETOFINESHIFT;
-                        ball->momx = FixedMul(ball->info->speed, finecosine[angle]);
-                        ball->momy = FixedMul(ball->info->speed, finesine[angle]);
+                        int angf = ANGLE_TO_FINE(angle);
+                        ball->momx = FixedMul(ball->info->speed, finecosine[angf]);
+                        ball->momy = FixedMul(ball->info->speed, finesine[angf]);
                 }
                 P_SetMobjState(ball, ball->info->spawnstate);
                 S_StartSound(ball, sfx_pstop);
@@ -993,12 +990,12 @@ void A_SpawnRippers(mobj_t *actor)
         for(i = 0; i < 8; i++)
         {
                 ripper = P_SpawnMobj(actor->x, actor->y, actor->z, MT_RIPPER);
-                angle = i*ANG45;
                 ripper->target = actor->target;
+                angle = i*ANG45;
                 ripper->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                ripper->momx = FixedMul(ripper->info->speed, finecosine[angle]);
-                ripper->momy = FixedMul(ripper->info->speed, finesine[angle]);
+                int angf = ANGLE_TO_FINE(angle);
+                ripper->momx = FixedMul(ripper->info->speed, finecosine[angf]);
+                ripper->momy = FixedMul(ripper->info->speed, finesine[angf]);
                 P_CheckMissileSpawn(ripper);
         }
 }
@@ -1274,15 +1271,12 @@ void A_HideInCeiling(mobj_t *actor)
 
 void A_FirePhoenixPL1(player_t *player, pspdef_t *psp)
 {
-        angle_t angle;
-
         player->ammo[am_phoenixrod] -= USE_PHRD_AMMO_1;
         P_SpawnPlayerMissile(player->mo, MT_PHOENIXFX1);
         //P_SpawnPlayerMissile(player->mo, MT_MNTRFX2);
-        angle = player->mo->angle+ANG180;
-        angle >>= ANGLETOFINESHIFT;
-        player->mo->momx += FixedMul(4*FRACUNIT, finecosine[angle]);
-        player->mo->momy += FixedMul(4*FRACUNIT, finesine[angle]);
+        int angf = ANGLE_TO_FINE( player->mo->angle + ANG180 );
+        player->mo->momx += FixedMul(4*FRACUNIT, finecosine[angf]);
+        player->mo->momy += FixedMul(4*FRACUNIT, finesine[angf]);
 }
 
 //----------------------------------------------------------------------------
@@ -1293,21 +1287,21 @@ void A_FirePhoenixPL1(player_t *player, pspdef_t *psp)
 
 void A_PhoenixPuff(mobj_t *actor)
 {
+        int    angf;
         mobj_t *puff;
-        angle_t angle;
 
         P_SeekerMissile(actor, ANGLE_1*5, ANGLE_1*10);
+
         puff = P_SpawnMobj(actor->x, actor->y, actor->z, MT_PHOENIXPUFF);
-        angle = actor->angle+ANG90;
-        angle >>= ANGLETOFINESHIFT;
-        puff->momx = FixedMul(FRACUNIT*1.3, finecosine[angle]);
-        puff->momy = FixedMul(FRACUNIT*1.3, finesine[angle]);
+        angf = ANGLE_TO_FINE( actor->angle + ANG90 );
+        puff->momx = FixedMul(FRACUNIT*1.3, finecosine[angf]);
+        puff->momy = FixedMul(FRACUNIT*1.3, finesine[angf]);
         puff->momz = 0;
+
         puff = P_SpawnMobj(actor->x, actor->y, actor->z, MT_PHOENIXPUFF);
-        angle = actor->angle-ANG90;
-        angle >>= ANGLETOFINESHIFT;
-        puff->momx = FixedMul(FRACUNIT*1.3, finecosine[angle]);
-        puff->momy = FixedMul(FRACUNIT*1.3, finesine[angle]);
+        angf = ANGLE_TO_FINE( actor->angle - ANG90 );
+        puff->momx = FixedMul(FRACUNIT*1.3, finecosine[angf]);
+        puff->momy = FixedMul(FRACUNIT*1.3, finesine[angf]);
         puff->momz = 0;
 }
 
@@ -1354,13 +1348,13 @@ void A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
                 z -= FOOTCLIPSIZE;
         }
         slope = AIMINGTOSLOPE(player->aiming);
+
         mo = P_SpawnMobj(x, y, z, MT_PHOENIXFX2);
         mo->target = pmo;
         mo->angle = angle;
-        mo->momx = pmo->momx+FixedMul(mo->info->speed,
-                finecosine[angle>>ANGLETOFINESHIFT]);
-        mo->momy = pmo->momy+FixedMul(mo->info->speed,
-                finesine[angle>>ANGLETOFINESHIFT]);
+        int angf = ANGLE_TO_FINE(angle);
+        mo->momx = pmo->momx + FixedMul(mo->info->speed, finecosine[angf]);
+        mo->momy = pmo->momy + FixedMul(mo->info->speed, finesine[angf]);
         mo->momz = FixedMul(mo->info->speed, slope);
         if(!player->refire || !(leveltime%38))
         {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: s_sound.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -1248,11 +1248,8 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
     else
     {
 #endif
-
-        angle >>= ANGLETOFINESHIFT;
-
         // stereo separation
-        *sep = 128 - (FixedMul(S_STEREO_SWING, finesine[angle]) >> FRACBITS);
+        *sep = 128 - (FixedMul(S_STEREO_SWING, sine_ANG(angle)) >> FRACBITS);
 
 #ifdef SURROUND
     }

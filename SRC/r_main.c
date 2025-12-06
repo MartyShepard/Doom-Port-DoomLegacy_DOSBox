@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: r_main.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -121,8 +121,8 @@ long long mytotal = 0;
 //profile stuff ---------------------------------------------------------
 
 
-// Fineangles in the SCREENWIDTH wide window.
-#define FIELDOFVIEW             2048
+// Fineangles in the SCREENWIDTH wide window.  FINE_ANG90=2048.
+#define FINE_FIELDOFVIEW    2048
 
 
 
@@ -206,11 +206,11 @@ int                     detailshift;
 //
 angle_t                 clipangle;
 
-// The viewangle_to_x[viewangle + FINEANGLES/4] lookup
+// The viewangle_to_x[viewangle + FINE_ANG90] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X.
-int                     viewangle_to_x[FINEANGLES/2];
+int                     viewangle_to_x[FINE_ANG180];
 
 // The x_to_viewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -561,37 +561,28 @@ R_PointToAngle
 }
 
 
-fixed_t
-R_PointToDist2
-( fixed_t       x2,
-  fixed_t       y2,
-  fixed_t       x1,
-  fixed_t       y1)
+fixed_t R_PointToDist2 ( fixed_t x2, fixed_t y2, fixed_t x1, fixed_t y1)
 {
-    int         angle;
-    fixed_t     dx;
-    fixed_t     dy;
+    angle_t     angle;
     fixed_t     dist;
 
-    dx = abs(x1 - x2);
-    dy = abs(y1 - y2);
+    fixed_t dx = abs(x1 - x2);
+    fixed_t dy = abs(y1 - y2);
 
     if (dy>dx)
     {
-        fixed_t     temp;
-
-        temp = dx;
+        // swap dx and dy
+        register fixed_t dx2 = dx;
         dx = dy;
-        dy = temp;
+        dy = dx2;
     }
     if(dy==0)
        return dx;
 
-    angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
+    angle = tantoangle[ FixedDiv(dy,dx)>>DBITS ] + ANG90;
 
     // use as cosine
-    dist = FixedDiv (dx, finesine[angle] );
-
+    dist = FixedDiv (dx, sine_ANG(angle));
     return dist;
 }
 
@@ -644,12 +635,11 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
     fixed_t             scale;
     fixed_t             dist;
     fixed_t             z;
-    fixed_t             sinv;
-    fixed_t             cosv;
+    fixed_t             sinv, cosv;
 
-    sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT];
+    sinv = sine_ANG(visangle - rw_normalangle);
     dist = FixedDiv (rw_distance, sinv);
-    cosv = finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT];
+    cosv = cosine_ANG(viewangle - visangle);
     z = abs(FixedMul (dist, cosv));
     scale = FixedDiv(projection, z);
     return scale;
@@ -657,18 +647,18 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 #else
     fixed_t             scale;
     fixed_t             num;
-    int                 den;
+    fixed_t             den;
 
-    int anglea = ANG90 + (visangle-viewangle);
-    int angleb = ANG90 + (visangle-rw_normalangle);
+    angle_t anglea = ANG90 + (visangle - viewangle);
+    angle_t angleb = ANG90 + (visangle - rw_normalangle);
 
     // both sines are always positive
-    int sinea = finesine[anglea>>ANGLETOFINESHIFT];
-    int sineb = finesine[angleb>>ANGLETOFINESHIFT];
+    fixed_t sinea = sine_ANG(anglea);
+    fixed_t sineb = sine_ANG(angleb);
     //added:02-02-98:now uses projectiony instead of projection for
     //               correct aspect ratio!
-    num = FixedMul(projectiony,sineb)<<detailshift;
-    den = FixedMul(rw_distance,sinea);
+    num = FixedMul(projectiony, sineb)<<detailshift;
+    den = FixedMul(rw_distance, sinea);
 
     if (den > num>>16)
     {
@@ -701,9 +691,9 @@ void R_InitTables (void)
     int         t;
 
     // viewangle tangent table
-    for (i=0 ; i<FINEANGLES/2 ; i++)
+    for (i=0 ; i<FINE_ANG180 ; i++)
     {
-        a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
+        a = (i-FINE_ANG90+0.5)*PI*2/FINEANGLES;
         fv = FRACUNIT*tan (a);
         t = fv;
         finetangent[i] = t;
@@ -741,9 +731,10 @@ void R_InitTextureMapping (void)
     // Calc focallength
     //  so FIELDOFVIEW angles covers SCREENWIDTH.
     focallength = FixedDiv (centerxfrac,
-                            finetangent[FINEANGLES/4+/*cv_fov.value*/ FIELDOFVIEW/2] );
+                            finetangent[(FINE_FIELDOFVIEW/2) + FINE_ANG90] );
+//                          finetangent[ cv_fov.value + FINE_ANG90] );
 
-    for (i=0 ; i<FINEANGLES/2 ; i++)
+    for (i=0 ; i<FINE_ANG180 ; i++)
     {
         if (finetangent[i] > FRACUNIT*2)
             t = -1;
@@ -774,7 +765,7 @@ void R_InitTextureMapping (void)
     }
 
     // Take out the fencepost cases from viewangle_to_x.
-    for (i=0 ; i<FINEANGLES/2 ; i++)
+    for (i=0 ; i<FINE_ANG180 ; i++)
     {
         t = FixedMul (finetangent[i], focallength);
         t = centerx - t;

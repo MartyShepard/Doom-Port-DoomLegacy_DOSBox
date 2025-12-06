@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: tables.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -49,6 +49,7 @@
 
 #include "tables.h"
 
+// unsigned angles, wrap at 0
 const angle_t ANG45  = 0x20000000;
 const angle_t ANG90  = 0x40000000;
 const angle_t ANG180 = 0x80000000;
@@ -1933,6 +1934,9 @@ const int32_t finesine[10240] =
 const fixed_t* const finecosine = &finesine[FINEANGLES/4];
 
 
+// At low angles the increment is  0x000517cc.
+// At mid angles the increment is  0x00044820.
+// At high angles the increment is 0x00028cc0.
 const angle_t tantoangle[2049] =
 {
     0,333772,667544,1001315,1335086,1668857,2002626,2336395,

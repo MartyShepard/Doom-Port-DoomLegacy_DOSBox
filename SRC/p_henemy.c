@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_henemy.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -278,7 +278,6 @@ void A_ImpMeAttack(mobj_t *actor)
 void A_ImpMsAttack(mobj_t *actor)
 {
         mobj_t *dest;
-        angle_t an;
         int dist;
 
         if(!actor->target || P_Random() > 64)
@@ -290,9 +289,9 @@ void A_ImpMsAttack(mobj_t *actor)
         actor->flags |= MF_SKULLFLY;
         S_StartSound(actor, actor->info->attacksound);
         A_FaceTarget(actor);
-        an = actor->angle >> ANGLETOFINESHIFT;
-        actor->momx = FixedMul(12*FRACUNIT, finecosine[an]);
-        actor->momy = FixedMul(12*FRACUNIT, finesine[an]);
+        int angf = ANGLE_TO_FINE(actor->angle);
+        actor->momx = FixedMul(12*FRACUNIT, finecosine[angf]);
+        actor->momy = FixedMul(12*FRACUNIT, finesine[angf]);
         dist = P_AproxDistance(dest->x-actor->x, dest->y-actor->y);
         dist = dist/(12*FRACUNIT);
         if(dist < 1)
@@ -927,9 +926,8 @@ void A_MinotaurAtk1(mobj_t *actor)
 
 void A_MinotaurDecide(mobj_t *actor)
 {
-        angle_t angle;
-        mobj_t *target;
         int dist;
+        mobj_t *target;
 
         target = actor->target;
         if(!target)
@@ -948,9 +946,9 @@ void A_MinotaurDecide(mobj_t *actor)
                 P_SetMobjStateNF(actor, S_MNTR_ATK4_1);
                 actor->flags |= MF_SKULLFLY;
                 A_FaceTarget(actor);
-                angle = actor->angle>>ANGLETOFINESHIFT;
-                actor->momx = FixedMul(MNTR_CHARGE_SPEED, finecosine[angle]);
-                actor->momy = FixedMul(MNTR_CHARGE_SPEED, finesine[angle]);
+                int angf = ANGLE_TO_FINE(actor->angle);
+                actor->momx = FixedMul(MNTR_CHARGE_SPEED, finecosine[angf]);
+                actor->momy = FixedMul(MNTR_CHARGE_SPEED, finesine[angf]);
                 actor->special1 = TICRATE/2; // Charge duration
         }
         else if(target->z == target->floorz
@@ -1235,12 +1233,11 @@ void A_HeadIceImpact(mobj_t *ice)
         for(i = 0; i < 8; i++)
         {
                 shard = P_SpawnMobj(ice->x, ice->y, ice->z, MT_HEADFX2);
-                angle = i*ANG45;
                 shard->target = ice->target;
+                angle = i*ANG45;
                 shard->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                shard->momx = FixedMul(shard->info->speed, finecosine[angle]);
-                shard->momy = FixedMul(shard->info->speed, finesine[angle]);
+                shard->momx = FixedMul(shard->info->speed, cosine_ANG(angle));
+                shard->momy = FixedMul(shard->info->speed, sine_ANG(angle));
                 shard->momz = -.6*FRACUNIT;
                 P_CheckMissileSpawn(shard);
         }
@@ -1822,9 +1819,8 @@ void A_VolcanoBlast(mobj_t *volcano)
                 blast->target = volcano;
                 angle = P_Random()<<24;
                 blast->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                blast->momx = FixedMul(1*FRACUNIT, finecosine[angle]);
-                blast->momy = FixedMul(1*FRACUNIT, finesine[angle]);
+                blast->momx = FixedMul(1*FRACUNIT, cosine_ANG(angle));
+                blast->momy = FixedMul(1*FRACUNIT, sine_ANG(angle));
                 blast->momz = (2.5*FRACUNIT)+(P_Random()<<10);
                 S_StartSound(blast, sfx_volsht);
                 P_CheckMissileSpawn(blast);
@@ -1857,9 +1853,8 @@ void A_VolcBallImpact(mobj_t *ball)
                 tiny->target = ball;
                 angle = i*ANG90;
                 tiny->angle = angle;
-                angle >>= ANGLETOFINESHIFT;
-                tiny->momx = FixedMul(FRACUNIT*.7, finecosine[angle]);
-                tiny->momy = FixedMul(FRACUNIT*.7, finesine[angle]);
+                tiny->momx = FixedMul(FRACUNIT*.7, cosine_ANG(angle));
+                tiny->momy = FixedMul(FRACUNIT*.7, sine_ANG(angle));
                 tiny->momz = FRACUNIT+(P_Random()<<9);
                 P_CheckMissileSpawn(tiny);
         }

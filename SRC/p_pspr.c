@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1057 2013-10-09 20:17:47Z wesleyjohnson $
+// $Id: p_pspr.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -134,7 +134,7 @@ fixed_t         swingy;
 void P_CalcSwing (player_t*     player)
 {
     fixed_t     swing;
-    int         angle;
+    int         angf;
 
     // OPTIMIZE: tablify this.
     // A LUT would allow for different modes,
@@ -142,11 +142,12 @@ void P_CalcSwing (player_t*     player)
 
     swing = player->bob;
 
-    angle = (FINEANGLES/70*leveltime)&FINEMASK;
-    swingx = FixedMul ( swing, finesine[angle]);
+    // bobbing motion
+    angf = (FINEANGLES/70*leveltime)&FINEMASK;
+    swingx = FixedMul ( swing, finesine[angf]);
 
-    angle = (FINEANGLES/70*leveltime+FINEANGLES/2)&FINEMASK;
-    swingy = -FixedMul ( swingx, finesine[angle]);
+    angf = (FINEANGLES/70*leveltime+FINE_ANG180)&FINEMASK;
+    swingy = -FixedMul ( swingx, finesine[angf]);
 }
 */
 
@@ -416,12 +417,12 @@ void A_WeaponReady ( player_t*     player,
         player->attackdown = false;
 #ifndef CLIENTPREDICTION2    
     {
-    int         angle;
-    // bob the weapon based on movement speed
-    angle = (128*leveltime/NEWTICRATERATIO)&FINEMASK;
-    psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-    angle &= FINEANGLES/2-1;
-    psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+        int  angf;
+        // bob the weapon based on movement speed, in a half arc
+        angf = (128*leveltime/NEWTICRATERATIO)&FINEMASK;
+        psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angf]);
+        angf &= (FINE_ANG180-1);  // mask to limit it to ANG180
+        psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angf]);
     }
 #endif
 }
@@ -432,13 +433,13 @@ void A_TicWeapon(player_t*     player,
 {
     if( (void*)psp->state->action.acp2 == (void*)A_WeaponReady && psp->tics == psp->state->tics )
     {
-        int         angle;
+        int angf;
         
         // bob the weapon based on movement speed
-        angle = (128*localgametic/NEWTICRATERATIO)&FINEMASK;
-        psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-        angle &= FINEANGLES/2-1;
-        psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+        angf = (128*localgametic/NEWTICRATERATIO) & FINEMASK;
+        psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angf]);
+        angf &= (FINE_ANG180-1);  // mask to limit it to ANG180
+        psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angf]);
     }
 }
 

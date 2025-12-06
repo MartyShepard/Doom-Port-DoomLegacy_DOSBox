@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: p_map.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -498,7 +498,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
     //SoM: 3/15/2000: Moved to front.
 
     // don't clip against self
-
     if (thing == tm_thing)
         goto ret_pass;
 
@@ -1396,20 +1395,16 @@ void P_HitSlideLine (line_t* ld)
         lineangle += ANG180;
 
     moveangle = R_PointToAngle2 (0,0, tsm_xmove, tsm_ymove);
-    deltaangle = moveangle-lineangle;
-
+    deltaangle = moveangle - lineangle;
     if (deltaangle > ANG180)
         deltaangle += ANG180;
     //  I_Error ("SlideLine: ang>ANG180");
 
-    lineangle >>= ANGLETOFINESHIFT;
-    deltaangle >>= ANGLETOFINESHIFT;
-
     movelen = P_AproxDistance (tsm_xmove, tsm_ymove);
-    newlen = FixedMul (movelen, finecosine[deltaangle]);
+    newlen = FixedMul (movelen, cosine_ANG(deltaangle));
 
-    tsm_xmove = FixedMul (newlen, finecosine[lineangle]);
-    tsm_ymove = FixedMul (newlen, finesine[lineangle]);
+    tsm_xmove = FixedMul (newlen, cosine_ANG(lineangle));
+    tsm_ymove = FixedMul (newlen, sine_ANG(lineangle));
 }
 
 
@@ -1480,13 +1475,10 @@ boolean PTR_SlideTraverse (intercept_t* in)
 //
 void P_SlideMove (mobj_t* mo)
 {
-    fixed_t             leadx;
-    fixed_t             leady;
-    fixed_t             trailx;
-    fixed_t             traily;
-    fixed_t             newx;
-    fixed_t             newy;
-    int                 hitcount;
+    fixed_t  leadx, leady;
+    fixed_t  trailx, traily;
+    fixed_t  newx, newy;
+    int      hitcount;
 
     tsm_mo = mo;
     hitcount = 0;
@@ -2178,24 +2170,25 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
        I_Error("P_aimlineattack: mobj == NULL !!!");
 #endif
 
-    angle >>= ANGLETOFINESHIFT;
+    int angf = ANGLE_TO_FINE(angle);
     la_shootthing = atkr;
 
     if(atkr->player && demoversion>=128)
     {
-        fixed_t cosineaiming=finecosine[atkr->player->aiming>>ANGLETOFINESHIFT];
-        int aiming=((int)atkr->player->aiming)>>ANGLETOFINESHIFT;
-        x2 = atkr->x + FixedMul(FixedMul(distance,finecosine[angle]),cosineaiming);
-        y2 = atkr->y + FixedMul(FixedMul(distance,finesine[angle]),cosineaiming); 
+        fixed_t cosineaiming= cosine_ANG( atkr->player->aiming );
+        fixed_t aimtan = tangent_ANG( atkr->player->aiming );
+
+        x2 = atkr->x + FixedMul(FixedMul(distance,finecosine[angf]),cosineaiming);
+        y2 = atkr->y + FixedMul(FixedMul(distance,finesine[angf]),cosineaiming); 
 
         // Aimed result using CheckSight global vars
-        see_topslope    =  100*FRACUNIT/160+finetangent[(2048+aiming) & FINEMASK];
-        see_bottomslope = -100*FRACUNIT/160+finetangent[(2048+aiming) & FINEMASK];
+        see_topslope    =  100*FRACUNIT/160 + aimtan;
+        see_bottomslope = -100*FRACUNIT/160 + aimtan;
     }
     else
     {
-        x2 = atkr->x + (distance>>FRACBITS)*finecosine[angle];
-        y2 = atkr->y + (distance>>FRACBITS)*finesine[angle];
+        x2 = atkr->x + (distance>>FRACBITS) * finecosine[angf];
+        y2 = atkr->y + (distance>>FRACBITS) * finesine[angf];
 
         // Aimed result using CheckSight global vars
         //added:15-02-98: Fab comments...

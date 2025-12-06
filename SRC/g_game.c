@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1080 2014-01-10 21:27:26Z wesleyjohnson $
+// $Id: g_game.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1439,7 +1439,6 @@ boolean G_CheckSpot ( int           playernum,
 {
     fixed_t       x, y;
     subsector_t*  ss;
-    unsigned int  an;
     mobj_t*       mo;
     player_t *    player = & players[playernum];
     boolean       br;
@@ -1508,12 +1507,14 @@ boolean G_CheckSpot ( int           playernum,
     // spawn a teleport fog
     // [WDJ] Note prboom fix doc (cph 2001/04/05), of Vanilla Doom bug found by Ville Vuorinen.
     // Signed mapthing_t angle would create table lookup using negative index.
-    // Unsigned fine angle worked, but better to use angle_t conversion too.
-    // Current prboom emulates buggy code (which this does not), which has
+    // Current prboom emulates buggy code that accesses outside of finecosine,
     // finecosine[-4096] -> finetangent[2048].
-    an = wad_to_angle(mthing->angle) >> ANGLETOFINESHIFT;
+    // This code fixes the bug.
+    // Unsigned fine angle worked, but better to use angle_t conversion too,
+    // which is done by wad_to_angle returning unsigned angle_t.
+    int angf = ANGLE_TO_FINE( wad_to_angle(mthing->angle) );
 
-    mo = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an],
+    mo = P_SpawnMobj (x+20*finecosine[angf], y+20*finesine[angf],
                       ss->sector->floorheight, MT_TFOG);
 
     //added:16-01-98:consoleplayer -> displayplayer (hear snds from viewpt)

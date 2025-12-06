@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1055 2013-10-09 20:14:01Z wesleyjohnson $
+// $Id: b_game.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -468,7 +468,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 	fixed_t  cmomx, cmomy;	//what the extra momentum added from this tick will be
 	fixed_t  px, py;  //coord of where I will be next tick
 	fixed_t  forwardmove = 0, sidemove = 0;
-	fixed_t  forwardAngle, sideAngle;
+	int      forward_angf, side_angf;
 	fixed_t  targetDistance;  //how far away is my enemy, wanted thing
 
 	ticcmd_t*  cmd = &p->cmd;
@@ -668,10 +668,11 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 				}
 			}
 
-			forwardAngle = (p->mo->angle) >> ANGLETOFINESHIFT;
-			sideAngle = (p->mo->angle - ANG90) >> ANGLETOFINESHIFT;
-			cmomx = FixedMul(forwardmove*2048, finecosine[forwardAngle]) + FixedMul(sidemove*2048, finecosine[sideAngle]);
-			cmomy = FixedMul(forwardmove*2048, finesine[forwardAngle]) + FixedMul(sidemove*2048, finesine[sideAngle]);
+		        // proportional forward and side movement
+			forward_angf = ANGLE_TO_FINE(p->mo->angle);
+			side_angf = ANGLE_TO_FINE(p->mo->angle - ANG90);
+			cmomx = FixedMul(forwardmove*2048, finecosine[forward_angf]) + FixedMul(sidemove*2048, finecosine[side_angf]);
+			cmomy = FixedMul(forwardmove*2048, finesine[forward_angf]) + FixedMul(sidemove*2048, finesine[side_angf]);
 			px = p->mo->x + p->mo->momx + cmomx;
 			py = p->mo->y + p->mo->momy + cmomy;
 

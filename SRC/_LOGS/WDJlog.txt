@@ -3809,3 +3809,17 @@ where the code was not properly accounting for SAVEGAME compile options.
 Clarified some of the names, organization, and use different names for
 menu slots and savegame slots.
 
+*** W97_fineangle
+patchfile = w97_2_fineangle.patch
+- committed revision 1093   by wesley johnson
+The use of the sine, cosine, and tangent tables is complicated by
+requiring several constants and a shift.  This has been encapsulated
+in some macros that apply the FINESHIFT.
+There also are some inline functions, but using them proved to be
+inefficient, based on the increase in the file size.
+The usages of FINESHIFT have been converted to use the new macros where
+possible. Many usages use the fine angle table indexes more than once
+(sine and cosine) and it proved to be difficult to hide the workings.
+The most efficient code was favored which restricted the usage of the
+new macros in many places.
+
