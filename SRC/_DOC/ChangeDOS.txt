@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01094 ]: w97 distance angle
 [01093 ]: w97 fineangle
 [01092 ]: w97 savegame menu
 [01091*]: Docs updated, dead links and html syntax fixed.

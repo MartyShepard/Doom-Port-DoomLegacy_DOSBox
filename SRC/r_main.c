@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: r_main.c 1094 2014-03-25 23:05:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -204,7 +204,7 @@ int                     detailshift;
 //
 // precalculated math tables
 //
-angle_t                 clipangle;
+angle_t                 clipangle, clipangle_x_2;
 
 // The viewangle_to_x[viewangle + FINE_ANG90] lookup
 // maps the visible view angles to screen X coordinates,
@@ -346,218 +346,227 @@ void SplitScreen_OnChange(void)
 
 //
 // R_PointOnSide
-// Traverse BSP (sub) tree,
-//  check point against partition plane.
+// Called by Traverse BSP (sub) tree, check point against partition plane.
 // Returns side 0 (front) or 1 (back).
-//
 int R_PointOnSide ( fixed_t x, fixed_t y, node_t* node )
 {
-    fixed_t     dx;
-    fixed_t     dy;
-    fixed_t     left;
-    fixed_t     right;
+    fixed_t     dx, dy;
+    fixed_t     left, right;
 
-    if (!node->dx)
+    if (node->dx == 0)
     {
-        if (x <= node->x)
-            return node->dy > 0;
-
-        return node->dy < 0;
+        return ((x <= node->x)? (node->dy > 0) : (node->dy < 0))? 1 : 0;
     }
-    if (!node->dy)
+    if (node->dy == 0)
     {
-        if (y <= node->y)
-            return node->dx < 0;
-
-        return node->dx > 0;
+        return ((y <= node->y)? (node->dx < 0) : (node->dx > 0))? 1 : 0;
     }
 
     dx = (x - node->x);
     dy = (y - node->y);
 
-    // Try to quickly decide by looking at sign bits.
-    if ( (node->dy ^ node->dx ^ dx ^ dy)&0x80000000 )
+    // Decide quickly by looking at sign bits.
+    // [WDJ] instead of &0x80000000, use direct sign tests which optimize
+    // better and are not type size dependent.
+    if ( (node->dy ^ node->dx ^ dx ^ dy) < 0 )
     {
-        if ( (node->dy ^ dx) & 0x80000000 )
-        {
-            // (left is negative)
-            return 1;
-        }
-        return 0;
+        // (left is negative) returns back side
+        return ((node->dy ^ dx) < 0 )? 1 : 0;  // return side
     }
 
     left = FixedMul ( node->dy>>FRACBITS , dx );
     right = FixedMul ( dy , node->dx>>FRACBITS );
 
-    if (right < left)
-    {
-        // front side
-        return 0;
-    }
-    // back side
-    return 1;
+    // (right < left) is front side (0), otherwise back side (1).
+    return (right < left) ? 0 : 1;  // return side
 }
 
 
+// Returns side 0 (front) or 1 (back).
 int R_PointOnSegSide ( fixed_t x, fixed_t y, seg_t* line )
 {
-    fixed_t     lx;
-    fixed_t     ly;
-    fixed_t     ldx;
-    fixed_t     ldy;
-    fixed_t     dx;
-    fixed_t     dy;
-    fixed_t     left;
-    fixed_t     right;
+    fixed_t     dx, dy;
+    fixed_t     left, right;
 
-    lx = line->v1->x;
-    ly = line->v1->y;
+    fixed_t lx = line->v1->x;
+    fixed_t ly = line->v1->y;
 
-    ldx = line->v2->x - lx;
-    ldy = line->v2->y - ly;
+    fixed_t ldx = line->v2->x - lx;
+    fixed_t ldy = line->v2->y - ly;
 
-    if (!ldx)
+    if (ldx == 0)
     {
-        if (x <= lx)
-            return ldy > 0;
-
-        return ldy < 0;
+        return ((x <= lx)? (ldy > 0) : (ldy < 0))? 1 : 0;
     }
-    if (!ldy)
+    if (ldy == 0)
     {
-        if (y <= ly)
-            return ldx < 0;
-
-        return ldx > 0;
+        return ((y <= ly)? (ldx < 0) : (ldx > 0))? 1 : 0;
     }
 
     dx = (x - lx);
     dy = (y - ly);
 
-    // Try to quickly decide by looking at sign bits.
-    if ( (ldy ^ ldx ^ dx ^ dy)&0x80000000 )
+    // Decide quickly by looking at sign bits.
+    // [WDJ] instead of &0x80000000, use direct sign tests which optimize
+    // better and are not type size dependent.
+    if ( (ldy ^ ldx ^ dx ^ dy) < 0 )
     {
-        if  ( (ldy ^ dx) & 0x80000000 )
-        {
-            // (left is negative)
-            return 1;
-        }
-        return 0;
+        // (left is negative) returns back side
+        return ((ldy ^ dx) < 0 )? 1 : 0;  // return side
     }
 
     left = FixedMul ( ldy>>FRACBITS , dx );
     right = FixedMul ( dy , ldx>>FRACBITS );
-
-    if (right < left)
-    {
-        // front side
-        return 0;
-    }
-    // back side
-    return 1;
+    // (right < left) is front side (0), otherwise back side (1).
+    return (right < left) ? 0 : 1;  // return side
 }
 
+
+// [WDJ] Generate the tan slope, suitable for tantoangle[] index.
+// This is more accuate than the vanilla version,
+// but would cause sync loss on demos if used everywhere.
+int SlopeDiv_64 (fixed_t num, fixed_t den)
+{
+    int64_t ans;
+
+    if (den < 64)
+        return SLOPERANGE;  // max
+
+    ans = (((int64_t)num) << 11) / den;
+    return (ans <= SLOPERANGE) ? ans : SLOPERANGE;  // max
+}
 
 //
 // R_PointToAngle
 // To get a global angle from cartesian coordinates,
-//  the coordinates are flipped until they are in
-//  the first octant of the coordinate system, then
-//  the y (<=x) is scaled and divided by x to get a
-//  tangent (slope) value which is looked up in the
-//  tantoangle[] table.
+// the coordinates are flipped until they are in the first octant of
+// the coordinate system, then the y (<=x) is scaled and divided by x
+// to get a tangent (slope) value which is looked up in the
+// tantoangle[] table.
 
-//
+// Point (x2,y2) to point (x1,y1) angle.
 angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
                           fixed_t  x1, fixed_t  y1)
 {
-    x1 -= x2;
+    // [WDJ] This is inaccurate. Angles can be in error by 0x10000000,
+    // and not monotonic (ordering errors).
+    // Has 5 bits correct when compared to atan2().
+    angle_t ra = 0;
+    x1 -= x2;  // diff
     y1 -= y2;
 
-    if ( (!x1) && (!y1) )
+    if ( (x1 == 0) && (y1 == 0) )
         return 0;
 
     if (x1>= 0)
-    {
-        // x >=0
+    {   // x >=0
         if (y1>= 0)
-        {
-            // y>= 0
-
-            if (x1>y1)
-            {
-                // octant 0
-                return tantoangle[ SlopeDiv(y1,x1)];
-            }
-            else
-            {
-                // octant 1
-                return ANG90-1-tantoangle[ SlopeDiv(x1,y1)];
-            }
+        {   // y>= 0
+            ra = (x1>y1)? 
+                // octant 0, ra = 0..ANG45
+                tantoangle[ SlopeDiv(y1,x1)]
+	     :
+                // octant 1, ra = ANG45..ANG90
+                ANG90-1 - tantoangle[ SlopeDiv(x1,y1)] ;
         }
         else
-        {
-            // y<0
+        {   // y<0
             y1 = -y1;
-
-            if (x1>y1)
-            {
-                // octant 8
-                return -tantoangle[SlopeDiv(y1,x1)];
-            }
-            else
-            {
-                // octant 7
-                return ANG270+tantoangle[ SlopeDiv(x1,y1)];
-            }
+            ra = (x1>y1)?
+                // octant 8, ra = ANG315..0 due to angle wrap
+                -tantoangle[ SlopeDiv(y1,x1)]
+	     :
+                // octant 7, ra = AN270..ANG315
+                ANG270 + tantoangle[ SlopeDiv(x1,y1)] ;
         }
     }
     else
-    {
-        // x<0
+    {   // x<0
         x1 = -x1;
-
         if (y1>= 0)
-        {
-            // y>= 0
-            if (x1>y1)
-            {
-                // octant 3
-                return ANG180-1-tantoangle[ SlopeDiv(y1,x1)];
-            }
-            else
-            {
-                // octant 2
-                return ANG90+ tantoangle[ SlopeDiv(x1,y1)];
-            }
+        {   // y>= 0
+            ra = (x1>y1)?
+                // octant 3, ra = ANG135..ANG180
+                ANG180-1 - tantoangle[ SlopeDiv(y1,x1)]
+	     :
+                // octant 2, ra = ANG90..ANG135
+                ANG90 + tantoangle[ SlopeDiv(x1,y1)] ;
         }
         else
-        {
-            // y<0
+        {   // y<0
             y1 = -y1;
-
-            if (x1>y1)
-            {
-                // octant 4
-                return ANG180+tantoangle[ SlopeDiv(y1,x1)];
-            }
-            else
-            {
-                 // octant 5
-                return ANG270-1-tantoangle[ SlopeDiv(x1,y1)];
-            }
+            ra = (x1>y1)?
+                // octant 4, ra = AN180..ANG225
+                ANG180 + tantoangle[ SlopeDiv(y1,x1)]
+	     :
+                 // octant 5, ra = ANG225..ANG270
+                ANG270-1 - tantoangle[ SlopeDiv(x1,y1)] ;
         }
     }
-    return 0;
+    return ra;
 }
 
 
-angle_t
-R_PointToAngle
-( fixed_t       x,
-  fixed_t       y)
+// Point of view (viewx,viewy) to point (x1,y1) angle.
+angle_t R_PointToAngle ( fixed_t x, fixed_t y)
 {
-    return R_PointToAngle2 (viewx, viewy, x, y);
+    // Has 13 bits correct when compared to atan2(), which is much
+    // better than the 5 correct bits of the vanilla function.
+    // Uses the more accurate SlopeDiv_64.
+    angle_t vpa = 0;
+
+    x -= viewx;  // diff from viewpoint
+    y -= viewy;
+
+    if ( (x == 0) && (y == 0) )
+        return 0;
+
+    if (x>= 0)
+    {   // x >=0
+        if (y>= 0)
+        {   // y>= 0
+            vpa = (x>y)? 
+                // octant 0, vpa = 0..ANG45
+                tantoangle[ SlopeDiv_64(y,x)]
+	     :
+                // octant 1, vpa = ANG45..ANG90
+                ANG90-1 - tantoangle[ SlopeDiv_64(x,y)] ;
+        }
+        else
+        {   // y<0
+            y = -y;
+            vpa = (x>y)?
+                // octant 8, vpa = ANG315..0 due to angle wrap
+                -tantoangle[ SlopeDiv(y,x)]
+	     :
+                // octant 7, vpa = AN270..ANG315
+                ANG270 + tantoangle[ SlopeDiv_64(x,y)] ;
+        }
+    }
+    else
+    {   // x<0
+        x = -x;
+        if (y>= 0)
+        {   // y>= 0
+            vpa = (x>y)?
+                // octant 3, vpa = ANG135..ANG180
+                ANG180-1 - tantoangle[ SlopeDiv_64(y,x)]
+	     :
+                // octant 2, vpa = ANG90..ANG135
+                ANG90 + tantoangle[ SlopeDiv_64(x,y)] ;
+        }
+        else
+        {   // y<0
+            y = -y;
+            vpa = (x>y)?
+                // octant 4, vpa = AN180..ANG225
+                ANG180 + tantoangle[ SlopeDiv_64(y,x)]
+	     :
+                 // octant 5, vpa = ANG225..ANG270
+                ANG270-1 - tantoangle[ SlopeDiv_64(x,y)] ;
+        }
+    }
+    return vpa;
 }
 
 
@@ -589,8 +598,7 @@ fixed_t R_PointToDist2 ( fixed_t x2, fixed_t y2, fixed_t x1, fixed_t y1)
 
 //SoM: 3/27/2000: Little extra utility. Works in the same way as
 //R_PointToAngle2
-fixed_t
-R_PointToDist ( fixed_t x, fixed_t y )
+fixed_t R_PointToDist ( fixed_t x, fixed_t y )
 {
   return R_PointToDist2(viewx, viewy, x, y);
 }
@@ -777,6 +785,7 @@ void R_InitTextureMapping (void)
     }
 
     clipangle = x_to_viewangle[0];
+    clipangle_x_2 = clipangle + clipangle;
 }
 
 

@@ -3823,3 +3823,19 @@ possible. Many usages use the fine angle table indexes more than once
 The most efficient code was favored which restricted the usage of the
 new macros in many places.
 
+*** W97_distangle
+patchfile = w97_3_distangle.patch
+- committed revision 1094   by wesley johnson
+Fix some of the rendering errors with distant walls.  This was due to
+errors in the angles to the wall end points.  The vanilla PointToAngle function
+is so inaccurate that it hardly has any valid bits (5 out of 32 bits).
+At that distance the error causes the left and right angle values to
+have the wrong magnitude order (non-monotonic).  This causes some far walls to
+be drawn over nearer walls, but not correctly, many times with HOM.
+A more accurate function, SlopeDive_64, has been introduced, which
+brings the accuracy up to 13 bits out of 32 bits (when compared to atan2).
+This fixes most of the render errors on Europe.wad and longdays.wad.
+There are still some walls not rendered due to distance, but they do not
+occlude the nearer walls.
+
+

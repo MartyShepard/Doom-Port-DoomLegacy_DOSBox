@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_main.h 1094 2014-03-25 23:05:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -70,6 +70,7 @@ extern int              viewwindowy;
 
 extern mobj_t*		viewmobj;
 
+extern angle_t          clipangle, clipangle_x_2;
 
 extern int              centerx;
 extern int              centery;
