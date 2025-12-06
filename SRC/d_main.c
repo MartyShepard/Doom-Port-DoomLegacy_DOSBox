@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
+// $Id: d_main.c 1084 2014-02-03 17:31:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1083"
+#define SVN_REV "1084"
 #endif
 
 // Version number: major.minor.revision
@@ -2629,6 +2629,14 @@ void I_SoftError (const char *errmsg, ...)
     if( SE_next_msg_slot >= SoftError_listsize )  SE_next_msg_slot = 0;  // wrap
     if( SE_msgcnt < SoftError_listsize ) SE_msgcnt++;  // limit
     // Error, always prints EMSG_text
+#if 1
+    EMSG_flags = EMSG_flags | EMSG_error;  // ensure print to error
+    fprintf (stderr, "Warn: ");
+    va_start (argptr,errmsg);
+    CONS_Printf_va( errmsg, argptr );  // handles EMSG_CONS
+    va_end (argptr);
+#else
+    // [WDJ] Keep getting msg printed twice to stderr
     // print msg to stderr (text)
     va_start (argptr,errmsg);
     fprintf (stderr, "Warn: ");
@@ -2637,6 +2645,7 @@ void I_SoftError (const char *errmsg, ...)
     EMSG_flags = (EMSG_flags & ~EMSG_text) | EMSG_error;  // dont print text twice
     CONS_Printf_va( errmsg, argptr );  // handles EMSG_CONS
     va_end (argptr);
+#endif
 
 done:   
     fflush( stderr );

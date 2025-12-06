@@ -3748,3 +3748,9 @@ patchfile = w96_10_cleardisplay.patch
 Add V_ClearDisplay function to give decent display clear for OpenGL.
 Fixes ghosting during CONS print scrolling.
 
+*** W96_SoftError_text
+patchfile = w96_11_softerror_text.patch
+- committed revision 1084   by wesley johnson
+Have CONS_Print do all of SoftError printing, so only stderr and stdout
+only get one copy of the error message.
+
