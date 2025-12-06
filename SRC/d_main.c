@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: d_main.c 1103 2014-04-15 03:13:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,20 +297,13 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1102"
+#define SVN_REV "1103"
 #endif
 
 // Version number: major.minor.revision
-#if 1
-// alpha5
-const int  VERSION  = 144; // major*100 + minor
-const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-static const char VERSIONSTRING[] = "Alpha5 (Rev " SVN_REV ")";
-#else
 const int  VERSION  = 145; // major*100 + minor
 const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-static const char VERSIONSTRING[] = "Beta1 (rev " SVN_REV ")";
-#endif
+static const char VERSIONSTRING[] = "Beta1 (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed

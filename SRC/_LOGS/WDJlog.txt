@@ -3903,4 +3903,8 @@ occurances of bad angles.  This patch has large distances ( x or y > 1/4 MAX)
 use the atan2 function to calculate the angle, a fix from PrBoom.
 It is slower but accurate.
 
+*** W97_version145
+patchfile = w97_12_version145.patch
+- committed revision 1103   by wesley johnson
+Update docs and version numbers for 1.45.
 

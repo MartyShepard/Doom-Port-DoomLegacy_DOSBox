@@ -13,6 +13,35 @@
 
 <div class="column">
 
+<h2>1.45 SVN1103 (2014-4-15)</h2>
+
+<h3>FEATURES 1.45</h3>
+<ul>
+<li>1.45 is the Beta release version of the 1.44 alphas. The new features
+have already been mentioned in the 1.44 alpha FEATURES below. </li>
+</ul>
+
+<h3>BUG FIXES 1.45</h3>
+<ul>
+<li>Linux_X port will compile code that does not fail.  Removed
+references to verbose variable that the dll version of some code could
+not access at run time.</li>
+<li>Savegame menus will now remember the page and position of the last
+usage.  They no longer wrap to the top of menu.</li>
+<li>Large maps like Europe.wad would have rendering errors due to the
+poor resolution of one of the angle functions.  The resolution has
+been much improved, with fewer rendering errors.</li>
+<li>Use of a PrBoom fix, using the atan2 function for really long distances,
+has fixed more of the large map rendering errors.</li>
+<li>Changed the heretic chicken code to use a common Morph function
+that does not create orphan objects.  This also fixes the chicken
+attack from creating a bogus player sprite on top of its opponent.</li>
+<li>Using quicksave several times would freeze the menu system due to
+quicksave writting some status outside of an array.
+Fixed the quicksave status to be written in the correct location.</li>
+</ul>
+
+
 <h2>1.44 SVN1088 (2014-02-03)</h2>
 
 <h3>FEATURES 1.44 alpha5</h3>
