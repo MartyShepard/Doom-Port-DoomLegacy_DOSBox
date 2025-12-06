@@ -530,7 +530,7 @@ int VID_VesaGetModeInfo (int modenum)
         bytes_per_pixel = (vesamodeinfo.BitsPerPixel+1)/8;
 
        // we add either highcolor or lowcolor video modes, not all
-       if (vesamodeinfo.BitsPerPixel != HighColor)
+       if (vesamodeinfo.BitsPerPixel != BitsColor)
        return false;						
        /*
         if (highcolor && (vesamodeinfo.BitsPerPixel != 15))
@@ -809,7 +809,7 @@ no_vesa:
             
 
             sprintf (&VesaResolution, "%dx%dx%d", vesamodeinfo.XResolution, vesamodeinfo.YResolution, vesamodeinfo.BitsPerPixel);						
-            GenPrintf( EMSG_info,  " - Added Vesa Mode: %d - %s\n",nummodes, VesaResolution);
+            GenPrintf( EMSG_info,  " - Added Vesa Mode: %-2d - %s\n",nummodes, VesaResolution);
 											
             nummodes++;
         }
@@ -1070,18 +1070,18 @@ void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn)
 
     switch (pv->bytesperpixel)
     {
-       case 0: CONS_Printf ("- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,HighColor); break;
-       case 1: CONS_Printf ("- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,HighColor); break;
+       case 0: CONS_Printf ("- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
+       case 1: CONS_Printf ("- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
        case 2:
        {
-          if (HighColor==15)
-              CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,HighColor);
+          if (BitsColor==15)
+              CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor);
           else
-              CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,HighColor);
+              CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor);
           break;
        }
-       case 3: CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,HighColor); break;
-       case 4: CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,HighColor); break;
+       case 3: CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
+       case 4: CONS_Printf ("- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
     }
 
     CONS_Printf ("- Bytes per Scanline: %d\n"

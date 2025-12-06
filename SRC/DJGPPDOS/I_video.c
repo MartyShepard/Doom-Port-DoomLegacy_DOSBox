@@ -340,6 +340,8 @@ int set_vesa1_mode( int width, int height )
 // Initialize the graphics system, with a initial window.
 void I_StartupGraphics( void )
 {
+	  char BitName[20];
+		
     modenum_t initial_mode = {MODE_window, 0};
     // pre-init by V_Init_VideoControl
 
@@ -348,7 +350,7 @@ void I_StartupGraphics( void )
    
     //added:26-01-98: VID_Init() must be done only once,
     //                use VID_SetMode() to change vid mode while in the game.
-    GenPrintf( EMSG_info, "Vid_Init...");
+    GenPrintf( EMSG_info, "Vid_Init...\n");
     VID_Init();
 
     //gfx_use_vesa1 = false;
@@ -357,44 +359,51 @@ void I_StartupGraphics( void )
     I_AddExitFunc(I_ShutdownGraphics);
 
     /* Sartet mit dem gebennen Bit Modus */
-    HighColor = 8;
+    BitsColor = 8;
+
     if( req_drawmode == REQ_highcolor)
     {
         highcolor = (req_drawmode == REQ_highcolor);
-        HighColor = 15;
-    }
-    if( req_drawmode == REQ_truecolor)
+        BitsColor = 15;
+        sprintf (&BitName, "HighColor: %dbit", BitsColor);	
+    }else if( req_drawmode == REQ_truecolor)
     {
         highcolor = (req_drawmode == REQ_truecolor);
-        HighColor = 32;
-    }	
-    if( req_drawmode == REQ_specific)
+        BitsColor = 32;
+        sprintf (&BitName, "TrueColor: %dbit", BitsColor);		
+    }else if( req_drawmode == REQ_specific)
     {
        switch(req_bitpp)
        {
           case 15:
            highcolor = true;
-           HighColor = 15;
+           BitsColor = 15;
+           sprintf (&BitName, "HighColor: %dbit", BitsColor);
            break;
           case 16:
            highcolor = true;
-           HighColor = 16;
+           BitsColor = 16;
+           sprintf (&BitName, "HighColor: %dbit", BitsColor);
            break;
           case 24:
            highcolor = true;
-           HighColor = 24;
+           BitsColor = 24;
+           sprintf (&BitName, "TrueColor: %dbit", BitsColor);
            break;
           case 32:
            highcolor = true;
-           HighColor = 32;
-           break;
+           BitsColor = 32;
+           sprintf (&BitName, "TrueColor: %dbit", BitsColor);
            break;
           default:
            highcolor = false;
+           sprintf (&BitName, "%dbit", BitsColor);
            break;
         }
-    }
-
+    }else
+		    sprintf (&BitName, "%dbit", BitsColor);
+			
+    GenPrintf( EMSG_info, "Vid_Init %s Modes...\n",BitName);
     // set the startup window
     VID_GetModes();
     VID_InitVGAModes();	
@@ -405,6 +414,7 @@ void I_StartupGraphics( void )
     };
 
     graphics_started = true;
+		CONS_Printf( "Vid_Init...Successfully\n");
     return;
 
 abort_error:

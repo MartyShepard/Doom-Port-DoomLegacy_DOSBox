@@ -3775,3 +3775,16 @@ OpenGL drawing everything in Red and Yellow was only fixed by
 disabling Matrox polygon accell.
 May still be an open issue, so some DEBUG_WIN code is still present.
 
+*** W96_linux_event
+patchfile = w96_14_linux_event.patch
+- committed revision 1087   by wesley johnson
+Update Linux event loop to be same as in SDL, to eliminate compiler
+complaints.
+
+*** W96_alpha5
+patchfile = w96_15_alpha5.patch
+- committed revision 1088   by wesley johnson
+Revert VERSION and docs to 1.44 alpha5.
+Fix check on legacy wadversion to accept 1.44 and 1.45.
+The legacy.wad remains at 1.45.
+

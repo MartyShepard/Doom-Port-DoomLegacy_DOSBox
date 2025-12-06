@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1084 2014-02-03 17:31:08Z wesleyjohnson $
+// $Id: d_main.c 1088 2014-02-03 17:54:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,17 +297,27 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1086"
+#define SVN_REV "1088"
 #endif
 
 // Version number: major.minor.revision
+#if 1
+// alpha5
+const int  VERSION  = 144; // major*100 + minor
+const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+static const char VERSIONSTRING[] = "Alpha5 (Rev " SVN_REV ")";
+#else
 const int  VERSION  = 145; // major*100 + minor
 const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-static const char VERSIONSTRING[] = "Beta1 (Rev " SVN_REV ")";
+static const char VERSIONSTRING[] = "Beta1 (rev " SVN_REV ")";
+#endif
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
-static int min_wadversion = 145;
+const short cur_wadversion = 145;	// release wadversion
+// usually allow one version behind cur_wadversion, for easier testing
+// does not have to be full featured
+const short min_wadversion = 144;
 
 
 //
@@ -1669,8 +1679,8 @@ static void D_Make_legacytitle(void)
 void D_CheckWadVersion()
 {
     int wadversion = 0;
-    int max_wadversion = VERSION;	// usual case
-    int lump;
+    char hs[128];
+    int wv2, lump, hlen;
 /* BP: disabled since this should work fine now...
     // check main iwad using demo1 version 
     lump = W_CheckNumForNameFirst("demo1");
@@ -1694,33 +1704,28 @@ void D_CheckWadVersion()
     lump = W_CheckNumForName("version");
     if (lump == -1)
     {
-        wadversion = 0; // or less
         I_SoftError("No legacy.wad file.\n");
         fatal_error = 1;
         return;
     }
-    else
+    hlen = W_ReadLumpHeader(lump, &hs, 128);
+    if (hlen < 128)
     {
-        char s[128];
-        int l;
-        l = W_ReadLumpHeader(lump, &s, 128);
-        wadversion = 0;
-        if (l < 128)
-        {
-            s[l] = '\0';
-            if (sscanf(s, "Doom Legacy WAD V%d.%d", &l, &wadversion) == 2)
-                wadversion += l * 100;
-        }
+        hs[hlen] = '\0';
+        if (sscanf(hs, "Doom Legacy WAD V%d.%d", &wv2, &wadversion) == 2)
+	  wadversion += wv2 * 100;
     }
-    if (wadversion < min_wadversion || wadversion > max_wadversion)
+    if (wadversion != cur_wadversion)
     {
         I_SoftError("Your legacy.wad file is version %d.%d, you need version %d.%d\n"
 		"Use the legacy.wad that came in the same archive as this executable.\n"
 		"\n"
                 "Use -nocheckwadversion to remove this check,\n"
 		"but this can cause Legacy to crash.\n",
-		wadversion / 100, wadversion % 100, min_wadversion / 100, min_wadversion % 100);
-        fatal_error = 1;
+		(wadversion / 100), (wadversion % 100),
+		(int)(cur_wadversion / 100), (int)(cur_wadversion % 100) );
+        if( wadversion < min_wadversion )
+            fatal_error = 1;
     }
 }
 

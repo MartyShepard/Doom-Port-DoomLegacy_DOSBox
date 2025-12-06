@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01088 ]: Message=w96 Ver 1.44 alpha5
+[01087*]: w96 linux event loop
 [01086 ]: w96 win sdl
 [01085 ]: w96 12 opengl func VIDGL
 [01084 ]: w96 softerror text print

@@ -76,7 +76,7 @@ extern boolean  allow_fullscreen;  // controlled by i_video
 extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
 #if defined( __DJGPP__ )
 boolean    highcolor; // local
-int        HighColor; // Definiert die Bit Palette
+int        BitsColor; // Definiert die Bit Palette
 #endif
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;

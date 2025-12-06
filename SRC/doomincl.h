@@ -106,7 +106,14 @@ extern  byte    demoversion;
 
 // version numbering
 // [WDJ] For separate libs that cannot access VERSION var
-#define DOOMLEGACY_COMPONENT_VERSION   145
+#if 1
+// 1.44 alpha5
+# define DOOMLEGACY_COMPONENT_VERSION   14405
+#else
+// 1.45 beta1
+# define DOOMLEGACY_COMPONENT_VERSION   14500
+#endif
+
 extern const int  VERSION;
 extern const int  REVISION;
 extern char VERSION_BANNER[];
