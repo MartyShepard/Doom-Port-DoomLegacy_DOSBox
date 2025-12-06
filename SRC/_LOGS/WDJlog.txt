@@ -3860,5 +3860,13 @@ Damage.  This makes it safe for functions to keep a ptr to the player mobj.
 Fix the Chicken attack to set the PuffType.  This stops the chicken
 attack from creating a bogus player mobj on top of the attacked monster.
 
+*** W97_playermobj
+patchfile = w97_7_playermobj.patch
+- committed revision 1098   by wesley johnson
+Have many functions keep a variable to the player mobj (pmo).
+This improves readability and reduces size a bit.
+Cleanup some of the heretic code.  This is mostly indenting.
+This does not change functionality.
+
 
 
