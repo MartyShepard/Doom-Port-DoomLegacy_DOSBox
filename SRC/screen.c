@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: screen.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -439,7 +439,7 @@ void SCR_Recalc (void)
         //                 cachedxstep, cachedystep
         //              -> allocated at the maximum vidsize, static.
 
-    // r_main : xtoviewangle, allocated at the maximum size.
+    // r_main : x_to_viewangle, allocated at the maximum size.
     // r_things : negonearray, screenheightarray allocated max. size.
 
     // set the screen[x] ptrs on the new vidbuffers

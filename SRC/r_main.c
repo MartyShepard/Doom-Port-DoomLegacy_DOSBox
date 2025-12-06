@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1094 2014-03-25 23:05:59Z wesleyjohnson $
+// $Id: r_main.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -727,10 +727,10 @@ void R_InitTables (void)
 // Called by R_ExecuteSetViewSize
 void R_InitTextureMapping (void)
 {
-    int                 i;
-    int                 x;
-    int                 t;
-    fixed_t             focallength;
+    int  i;
+    int  x;
+    int  t;
+    fixed_t  focallength;
 
     // Use tangent table to generate viewangle_to_x:
     //  viewangle_to_x will give the next greatest x
@@ -982,8 +982,8 @@ void R_ExecuteSetViewSize (void)
 
     for (i=0 ; i<rdraw_viewwidth ; i++)
     {
-        cosadj = abs(finecosine[x_to_viewangle[i]>>ANGLETOFINESHIFT]);
-        distscale[i] = FixedDiv (FRACUNIT,cosadj);
+        cosadj = abs( cosine_ANG( x_to_viewangle[i] ));
+        distscale[i] = FixedDiv (FRACUNIT, cosadj);
     }
 
     // Calculate the light levels to use
@@ -1070,8 +1070,7 @@ void R_Init (void)
 //
 // R_PointInSubsector
 //
-subsector_t* R_PointInSubsector ( fixed_t       x,
-                                  fixed_t       y )
+subsector_t* R_PointInSubsector ( fixed_t x, fixed_t y )
 {
     node_t*     node;
     int         side;
@@ -1096,8 +1095,7 @@ subsector_t* R_PointInSubsector ( fixed_t       x,
 //
 // R_IsPointInSubsector, same of above but return 0 if not in subsector
 //
-subsector_t* R_IsPointInSubsector ( fixed_t       x,
-                                    fixed_t       y )
+subsector_t* R_IsPointInSubsector ( fixed_t x, fixed_t y )
 {
     node_t*     node;
     int         side;
@@ -1135,7 +1133,7 @@ subsector_t* R_IsPointInSubsector ( fixed_t       x,
 void P_ResetCamera (player_t *player);
 
 // WARNING : a should be unsigned but to add with 2048, it isn't !
-#define AIMINGTODY(a) ((finetangent[(2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK]*160)>>FRACBITS)
+#define AIMINGTODY(a) ((tangent_ANG(a)*160)>>FRACBITS)
 
 void R_SetupFrame (player_t* player)
 {
@@ -1232,8 +1230,8 @@ void R_SetupFrame (player_t* player)
     viewx = viewmobj->x;
     viewy = viewmobj->y;
 
-    viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
-    viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
+    viewsin = sine_ANG(viewangle);
+    viewcos = cosine_ANG(viewangle);
 
     // Before R_RenderBSPNode or R_DrawMasked or R_ProjectSprite
     // Can be camera.mo, viewplayer->mo, or fragglescript script_camera.mo
@@ -1377,6 +1375,7 @@ void R_SetupFrame (player_t* player)
 
 #define CACHEW 32      // bytes in cache line
 #define CACHELINES 32  // cache lines to use
+
 void R_RotateBuffere (void)
 {
     byte    bh,bw;

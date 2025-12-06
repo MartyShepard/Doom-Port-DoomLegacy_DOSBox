@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: m_misc.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -265,8 +265,10 @@ void FIL_ExtractFileBase ( char*  path,  char* dest )
 boolean FIL_CheckExtension (char *in)
 {
     while (*in++)
+    {
         if (*in=='.')
             return true;
+    }
 
     return false;
 }
@@ -434,7 +436,7 @@ void M_SaveConfig (char *filename)
 // ==========================================================================
 
 
-
+// PCX file format
 typedef struct
 {
     char                manufacturer;

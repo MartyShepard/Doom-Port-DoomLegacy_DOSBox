@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1085 2014-02-03 17:32:31Z wesleyjohnson $
+// $Id: sb_bar.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -614,37 +614,38 @@ void SB_Drawer( boolean refresh )
 // and player->bonuscount
 void SB_PaletteFlash(void)
 {
-        static int sb_palette = 0;
-        int palette;
+    static int sb_palette = 0;
 
-        CPlayer = consoleplayer_ptr;
+    int palette;
 
-        if(CPlayer->damagecount)
-        {
+    CPlayer = consoleplayer_ptr;
+
+    if(CPlayer->damagecount)
+    {
                 palette = (CPlayer->damagecount+7)>>3;
                 if(palette >= NUMREDPALS)
                 {
                         palette = NUMREDPALS-1;
                 }
                 palette += STARTREDPALS;
-        }
-        else if(CPlayer->bonuscount)
-        {
+    }
+    else if(CPlayer->bonuscount)
+    {
                 palette = (CPlayer->bonuscount+7)>>3;
                 if(palette >= NUMBONUSPALS)
                 {
                         palette = NUMBONUSPALS-1;
                 }
                 palette += STARTBONUSPALS;
-        }
-        else
-        {
+    }
+    else
+    {
                 palette = 0;
-        }
+    }
 
 
-        if(palette != sb_palette)
-        {
+    if(palette != sb_palette)
+    {
             sb_palette = palette;
 
 #ifdef HWRENDER
@@ -677,7 +678,7 @@ void SB_PaletteFlash(void)
                 if( !cv_splitscreen.value )
                     V_SetPalette (palette);
             }
-        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -689,34 +690,34 @@ void SB_PaletteFlash(void)
 // to fg_stbar, screen0 status bar
 static void DrawCommonBar(void)
 {
-        int chainY;
-        int healthPos;
+    int chainY;
+    int healthPos;
    
-        V_DrawScaledPatch(st_x, ST_Y-10, PatchLTFCTOP);
-        V_DrawScaledPatch(st_x+290, ST_Y-10, PatchRTFCTOP);
+    V_DrawScaledPatch(st_x, ST_Y-10, PatchLTFCTOP);
+    V_DrawScaledPatch(st_x+290, ST_Y-10, PatchRTFCTOP);
 
-        if(oldhealth != HealthMarker)
+    if(oldhealth != HealthMarker)
+    {
+        oldhealth = HealthMarker;
+        healthPos = HealthMarker;
+        if(healthPos < 0)
         {
-                oldhealth = HealthMarker;
-                healthPos = HealthMarker;
-                if(healthPos < 0)
-                {
-                        healthPos = 0;
-                }
-                if(healthPos > 100)
-                {
-                        healthPos = 100;
-                }
-                healthPos = (healthPos*256)/100;
-                chainY = (HealthMarker == CPlayer->mo->health) ? 0 : ChainWiggle;
-                V_DrawScaledPatch(st_x, ST_Y+32, PatchCHAINBACK);
-                V_DrawScaledPatch(st_x+2+(healthPos%17), ST_Y+33+chainY, PatchCHAIN);
-                V_DrawScaledPatch(st_x+17+healthPos, ST_Y+33+chainY, PatchLIFEGEM);
-                V_DrawScaledPatch(st_x, ST_Y+32, PatchLTFACE);
-                V_DrawScaledPatch(st_x+276, ST_Y+32, PatchRTFACE);
-                ShadeChain();
-                UpdateState |= I_STATBAR;
-        }
+	    healthPos = 0;
+	}
+        if(healthPos > 100)
+        {
+	    healthPos = 100;
+	}
+        healthPos = (healthPos*256)/100;
+        chainY = (HealthMarker == CPlayer->mo->health) ? 0 : ChainWiggle;
+        V_DrawScaledPatch(st_x, ST_Y+32, PatchCHAINBACK);
+        V_DrawScaledPatch(st_x+2+(healthPos%17), ST_Y+33+chainY, PatchCHAIN);
+        V_DrawScaledPatch(st_x+17+healthPos, ST_Y+33+chainY, PatchLIFEGEM);
+        V_DrawScaledPatch(st_x, ST_Y+32, PatchLTFACE);
+        V_DrawScaledPatch(st_x+276, ST_Y+32, PatchRTFACE);
+        ShadeChain();
+        UpdateState |= I_STATBAR;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -929,5 +930,5 @@ static void DrawFullScreenStuff(void)
 
 boolean SB_Responder(event_t *event)
 {
-    return(false);
+    return false;
 }

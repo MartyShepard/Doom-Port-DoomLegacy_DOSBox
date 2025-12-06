@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_map.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -184,7 +184,7 @@ static boolean PIT_StompThing (mobj_t* thing)
 
     // Not allowed to stomp things
     if ( gamemode==heretic && !(tm_thing->flags2 & MF2_TELESTOMP))
-        return (false);
+        return false;
 
 #ifdef VOODOO_DOLL
     int  damage = 10000;  // fatal
@@ -395,10 +395,7 @@ int  P_GetMoveFactor(mobj_t* mo)
 //
 // P_TeleportMove
 //
-boolean
-P_TeleportMove( mobj_t*       thing,
-                fixed_t       x,
-                fixed_t       y )
+boolean P_TeleportMove( mobj_t* thing, fixed_t x, fixed_t y )
 {
     int xl, xh;
     int yl, yh;
@@ -757,10 +754,10 @@ static boolean PIT_CrossLine (line_t* ld)
       if (P_PointOnLineSide(from_x,from_y,ld) != P_PointOnLineSide(targ_x,targ_y,ld))
 	  goto ret_blocked;
   }
-  return(true); // line doesn't block trajectory
+  return true; // line doesn't block trajectory
 
 ret_blocked:
-  return(false);  // line blocks trajectory
+  return false;  // line blocks trajectory
 }
 
 
@@ -957,9 +954,7 @@ ret_blocked:
 //     the nearest ceiling or thing's bottom over tm_thing
 //
 // Use tm_ global vars, and return tmr_ global vars.
-boolean P_CheckPosition ( mobj_t*       thing,
-                          fixed_t       x,
-                          fixed_t       y )
+boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
 {
     int xl, xh;
     int yl, yh;
@@ -1080,7 +1075,8 @@ static void CheckMissileImpact(mobj_t *mobj)
 {
     int i;
     
-    if( demoversion<132 || !numspechit || !(mobj->flags&MF_MISSILE) || !mobj->target)
+    if( demoversion<132 || !numspechit
+	|| !(mobj->flags&MF_MISSILE) || !mobj->target)
         return;
 
     if(!mobj->target->player)
@@ -2244,22 +2240,22 @@ void P_LineAttack ( mobj_t*       atkr,   // attacker
     fixed_t     x2;
     fixed_t     y2;
 
-    angle >>= ANGLETOFINESHIFT;
+    int angf = ANGLE_TO_FINE(angle);
     la_shootthing = atkr;
     la_damage = damage;
 
     // player autoaimed attack, 
     if(demoversion<128 || !atkr->player)
     {   
-        x2 = atkr->x + (distance>>FRACBITS)*finecosine[angle]; 
-        y2 = atkr->y + (distance>>FRACBITS)*finesine[angle];   
+        x2 = atkr->x + (distance>>FRACBITS)*finecosine[angf]; 
+        y2 = atkr->y + (distance>>FRACBITS)*finesine[angf];   
     }
     else
     {
-        fixed_t cosangle=finecosine[atkr->player->aiming>>ANGLETOFINESHIFT];
+        fixed_t cosineaiming=cosine_ANG(atkr->player->aiming);
 
-        x2 = atkr->x + FixedMul(FixedMul(distance,finecosine[angle]),cosangle);
-        y2 = atkr->y + FixedMul(FixedMul(distance,finesine[angle]),cosangle); 
+        x2 = atkr->x + FixedMul(FixedMul(distance,finecosine[angf]), cosineaiming);
+        y2 = atkr->y + FixedMul(FixedMul(distance,finesine[angf]), cosineaiming); 
     }
 
     la_shootz = lar_lastz = atkr->z + (atkr->height>>1) + 8*FRACUNIT;
@@ -2337,22 +2333,19 @@ boolean PTR_UseTraverse (intercept_t* in)
 // P_UseLines
 // Looks for special lines in front of the player to activate.
 //
-void P_UseLines (player_t*      player)
+void P_UseLines (player_t* player)
 {
-    int         angle;
-    fixed_t     x1;
-    fixed_t     y1;
-    fixed_t     x2;
-    fixed_t     y2;
+    int         angf;
+    fixed_t     x1, y1, x2, y2;
 
     usething = player->mo;
 
-    angle = player->mo->angle >> ANGLETOFINESHIFT;
+    angf = ANGLE_TO_FINE(player->mo->angle);
 
     x1 = player->mo->x;
     y1 = player->mo->y;
-    x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
-    y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
+    x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angf];
+    y2 = y1 + (USERANGE>>FRACBITS)*finesine[angf];
 
     P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
 }
@@ -2942,24 +2935,24 @@ static boolean PIT_CheckOnmobjZ(mobj_t *thing)
     
     if(!(thing->flags&(MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)))
     { // Can't hit thing
-        return(true);
+        return true;
     }
     blockdist = thing->radius+tm_thing->radius;
     if(abs(thing->x-tm_x) >= blockdist || abs(thing->y-tm_y) >= blockdist)
     { // Didn't hit thing
-        return(true);
+        return true;
     }
     if(thing == tm_thing)
     { // Don't clip against self
-        return(true);
+        return true;
     }
     if(tm_thing->z > thing->z+thing->height)
     {
-        return(true);
+        return true;
     }
     else if(tm_thing->z+tm_thing->height < thing->z)
     { // under thing
-        return(true);
+        return true;
     }
     if(thing->flags&MF_SOLID)
     {
@@ -2977,74 +2970,74 @@ static boolean PIT_CheckOnmobjZ(mobj_t *thing)
 
 static void P_FakeZMovement(mobj_t *mo)
 {
-        int dist;
-        int delta;
+    int dist;
+    int delta;
 //
 // adjust height
 //
-        mo->z += mo->momz;
-        if(mo->flags&MF_FLOAT && mo->target)
-        {       // float down towards target if too close
-                if(!(mo->flags&MF_SKULLFLY) && !(mo->flags&MF_INFLOAT))
-                {
-                        dist = P_AproxDistance(mo->x-mo->target->x, mo->y-mo->target->y);
-                        delta =( mo->target->z+(mo->height>>1))-mo->z;
-                        if (delta < 0 && dist < -(delta*3))
-                                mo->z -= FLOATSPEED;
-                        else if (delta > 0 && dist < (delta*3))
-                                mo->z += FLOATSPEED;
-                }
-        }
-        if(mo->player && mo->flags2&MF2_FLY && !(mo->z <= mo->floorz)
-                && leveltime&2)
+    mo->z += mo->momz;
+    if(mo->flags&MF_FLOAT && mo->target)
+    {       // float down towards target if too close
+        if(!(mo->flags&MF_SKULLFLY) && !(mo->flags&MF_INFLOAT))
         {
-                mo->z += finesine[(FINEANGLES/20*leveltime>>2)&FINEMASK];
-        }
+	    dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
+	    delta =( mo->target->z + (mo->height>>1)) - mo->z;
+	    if (delta < 0 && dist < -(delta*3))
+	       mo->z -= FLOATSPEED;
+	    else if (delta > 0 && dist < (delta*3))
+	       mo->z += FLOATSPEED;
+	}
+    }
+    if(mo->player && mo->flags2&MF2_FLY && !(mo->z <= mo->floorz)
+        && leveltime&2)
+    {
+        mo->z += finesine[(FINEANGLES/20*leveltime>>2)&FINEMASK];
+    }
 
 //
 // clip movement
 //
-        if(mo->z <= mo->floorz)
-        { // Hit the floor
-                mo->z = mo->floorz;
-                if(mo->momz < 0)
-                {
-                        mo->momz = 0;
-                }
-                if(mo->flags&MF_SKULLFLY)
-                { // The skull slammed into something
-                        mo->momz = -mo->momz;
-                }
-                if(mo->info->crashstate && (mo->flags&MF_CORPSE))
-                {
-                        return;
-                }
-        }
-        else if(mo->flags2&MF2_LOGRAV)
+    if(mo->z <= mo->floorz)
+    { // Hit the floor
+        mo->z = mo->floorz;
+        if(mo->momz < 0)
         {
-                if(mo->momz == 0)
-                        mo->momz = -(cv_gravity.value>>3)*2;
-                else
-                        mo->momz -= cv_gravity.value>>3;
-        }
-        else if (! (mo->flags & MF_NOGRAVITY) )
+	    mo->momz = 0;
+	}
+        if(mo->flags&MF_SKULLFLY)
+        { // The skull slammed into something
+	    mo->momz = -mo->momz;
+	}
+        if(mo->info->crashstate && (mo->flags&MF_CORPSE))
         {
-                if (mo->momz == 0)
-                        mo->momz = -cv_gravity.value*2;
-                else
-                        mo->momz -= cv_gravity.value;
-        }
+	    return;
+	}
+    }
+    else if(mo->flags2&MF2_LOGRAV)
+    {
+        if(mo->momz == 0)
+	   mo->momz = -(cv_gravity.value>>3)*2;
+        else
+	   mo->momz -= cv_gravity.value>>3;
+    }
+    else if (! (mo->flags & MF_NOGRAVITY) )
+    {
+        if (mo->momz == 0)
+	   mo->momz = -cv_gravity.value*2;
+        else
+	   mo->momz -= cv_gravity.value;
+    }
 
-        if (mo->z + mo->height > mo->ceilingz)
-        {       // hit the ceiling
-                if (mo->momz > 0)
-                        mo->momz = 0;
-                mo->z = mo->ceilingz - mo->height;
-                if (mo->flags & MF_SKULLFLY)
-                {       // the skull slammed into something
-                        mo->momz = -mo->momz;
-                }
-        }
+    if (mo->z + mo->height > mo->ceilingz)
+    {       // hit the ceiling
+        if (mo->momz > 0)
+	   mo->momz = 0;
+        mo->z = mo->ceilingz - mo->height;
+        if (mo->flags & MF_SKULLFLY)
+        {       // the skull slammed into something
+	    mo->momz = -mo->momz;
+	}
+    }
 }
 
 //=============================================================================
@@ -3140,10 +3133,10 @@ boolean P_TestMobjLocation(mobj_t *mobj)
                 if((mobj->z < mobj->floorz)
                         || (mobj->z+mobj->height > mobj->ceilingz))
                 { // Bad Z
-                        return(false);
+                        return false;
                 }
-                return(true);
+                return true;
         }
         mobj->flags = flags;
-        return(false);
+        return false;
 }

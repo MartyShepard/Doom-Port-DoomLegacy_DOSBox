@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1098 2014-03-25 23:12:56Z wesleyjohnson $
+// $Id: p_user.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -285,7 +285,6 @@ void P_CalcHeight (player_t* player)
 }
 
 
-extern int ticruned,ticmiss;
 
 byte  EN_move_doom = 0;
 #ifdef ABSOLUTEANGLE
@@ -890,15 +889,16 @@ void P_MoveChaseCamera (player_t *player)
 }
 
 
-byte weapontobutton[NUMWEAPONS]={wp_fist    <<BT_WEAPONSHIFT,
-                                 wp_pistol  <<BT_WEAPONSHIFT,
-                                 wp_shotgun <<BT_WEAPONSHIFT,
-                                 wp_chaingun<<BT_WEAPONSHIFT,
-                                 wp_missile <<BT_WEAPONSHIFT,
-                                 wp_plasma  <<BT_WEAPONSHIFT,
-                                 wp_bfg     <<BT_WEAPONSHIFT,
-                                (wp_fist    <<BT_WEAPONSHIFT) | BT_EXTRAWEAPON,// wp_chainsaw
-                                (wp_shotgun <<BT_WEAPONSHIFT) | BT_EXTRAWEAPON};//wp_supershotgun
+byte weapontobutton[NUMWEAPONS]=
+  {wp_fist    <<BT_WEAPONSHIFT,
+   wp_pistol  <<BT_WEAPONSHIFT,
+   wp_shotgun <<BT_WEAPONSHIFT,
+   wp_chaingun<<BT_WEAPONSHIFT,
+   wp_missile <<BT_WEAPONSHIFT,
+   wp_plasma  <<BT_WEAPONSHIFT,
+   wp_bfg     <<BT_WEAPONSHIFT,
+  (wp_fist    <<BT_WEAPONSHIFT) | BT_EXTRAWEAPON,// wp_chainsaw
+  (wp_shotgun <<BT_WEAPONSHIFT) | BT_EXTRAWEAPON};//wp_supershotgun
 
 #ifdef CLIENTPREDICTION2
 
@@ -1045,9 +1045,9 @@ void P_MoveSpirit (player_t* p,ticcmd_t *cmd, int realtics)
 {
     if( gamestate != GS_LEVEL )
         return;
+
     if(p->spirit)
     {
-        extern boolean supdate;
         int    i;
 
         p->spirit->flags|=MF_SOLID;
@@ -1061,7 +1061,7 @@ void P_MoveSpirit (player_t* p,ticcmd_t *cmd, int realtics)
         A_TicWeapon(p, &p->psprites[0]);  // bobing of weapon
         cmd->x=p->spirit->x;
         cmd->y=p->spirit->y;
-        supdate=true;
+        spirit_update=true;
     }
     else
     if(p->mo)
@@ -1442,7 +1442,7 @@ static void P_PlayerRemoveArtifact(player_t *player, int slot)
 // PROC P_PlayerUseArtifact
 //
 //----------------------------------------------------------------------------
-extern int ArtifactFlash;
+
 void P_PlayerUseArtifact(player_t *player, artitype_t arti)
 {
     int i;

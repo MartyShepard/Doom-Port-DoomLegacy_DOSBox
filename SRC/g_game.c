@@ -1405,6 +1405,7 @@ void G_PlayerReborn (int player)
     p->health = initial_health;
     if( gamemode == heretic )
     {
+        // wand start
         p->weaponinfo = wpnlev1info;
         p->readyweapon = p->pendingweapon = wp_goldwand;
         p->weaponowned[wp_staff] = true;
@@ -1413,6 +1414,7 @@ void G_PlayerReborn (int player)
     }
     else
     {
+        // pistol start
         p->weaponinfo = doomweaponinfo;
         p->readyweapon = p->pendingweapon = wp_pistol;
         p->weaponowned[wp_fist] = true;

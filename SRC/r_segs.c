@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: r_segs.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -255,7 +255,8 @@ static void R_DrawWallSplats (void)
 {
     wallsplat_t*    splat;
     seg_t*      seg;
-    angle_t     angle, angle1, angle2;
+    angle_t     angle1, angle2;
+    int         angf;
     int         x1, x2;
     column_t*   col;
     patch_t*    patch;
@@ -275,8 +276,6 @@ static void R_DrawWallSplats (void)
     {
         angle1 = R_PointToAngle (splat->v1.x, splat->v1.y);
         angle2 = R_PointToAngle (splat->v2.x, splat->v2.y);
-        angle1 = (angle1-viewangle+ANG90)>>ANGLETOFINESHIFT;
-        angle2 = (angle2-viewangle+ANG90)>>ANGLETOFINESHIFT;
 #if 0
         if (angle1>clipangle)
             angle1=clipangle;
@@ -286,14 +285,18 @@ static void R_DrawWallSplats (void)
             angle1=-clipangle;
         if ((int)angle2<-(int)clipangle)
             angle2=-clipangle;
+        int angf1 = ANGLE_TO_FINE(angle1 - viewangle + ANG90);
+        int angf2 = ANGLE_TO_FINE(angle2 - viewangle + ANG90);
 #else
+        int angf1 = ANGLE_TO_FINE(angle1 - viewangle + ANG90);
+        int angf2 = ANGLE_TO_FINE(angle2 - viewangle + ANG90);
         // BP: out of the viewangle_to_x lut, TODO clip it to the screen
-        if( angle1 > FINEANGLES/2 || angle2 > FINEANGLES/2)
+        if( angle1 > FINE_ANG180 || angle2 > FINE_ANG180)
             continue;
 #endif
         // viewangle_to_x table is limited to (0..rdraw_viewwidth)
-        x1 = viewangle_to_x[angle1];
-        x2 = viewangle_to_x[angle2];
+        x1 = viewangle_to_x[angf1];
+        x2 = viewangle_to_x[angf2];
 
         if (x1 >= x2)
             continue;                         // smaller than a pixel
@@ -392,8 +395,8 @@ static void R_DrawWallSplats (void)
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
 
             // find column of patch, from perspective
-            angle = (rw_centerangle + x_to_viewangle[dc_x])>>ANGLETOFINESHIFT;
-            texturecolumn = rw_offset2 - splat->offset - FixedMul(finetangent[angle],rw_distance);
+            angf = ANGLE_TO_FINE(rw_centerangle + x_to_viewangle[dc_x]);
+            texturecolumn = rw_offset2 - splat->offset - FixedMul(finetangent[angf],rw_distance);
 
             //texturecolumn &= 7;
             //DEBUG
@@ -401,7 +404,7 @@ static void R_DrawWallSplats (void)
             // FIXME !
 //            CONS_Printf ("%.2f width %d, %d[x], %.1f[off]-%.1f[soff]-tg(%d)=%.1f*%.1f[d] = %.1f\n", 
 //                         FIXED_TO_FLOAT(texturecolumn), patch->width,
-//                         dc_x,FIXED_TO_FLOAT(rw_offset2),FIXED_TO_FLOAT(splat->offset),angle,FIXED_TO_FLOAT(finetangent[angle]),FIXED_TO_FLOAT(rw_distance),FIXED_TO_FLOAT(FixedMul(finetangent[angle],rw_distance)));
+//                         dc_x,FIXED_TO_FLOAT(rw_offset2),FIXED_TO_FLOAT(splat->offset),angf,FIXED_TO_FLOAT(finetangent[angf]),FIXED_TO_FLOAT(rw_distance),FIXED_TO_FLOAT(FixedMul(finetangent[angf],rw_distance)));
             texturecolumn >>= FRACBITS;
             if (texturecolumn < 0 || texturecolumn >= patch->width) 
                 continue;
@@ -1538,7 +1541,7 @@ void R_RenderSegLoop (void)
 {
     int        orient_light = 0;  // wall orientation effect
 
-    angle_t    angle;
+    int        angf;
     int        yl, yh;
 
     fixed_t    texturecolumn = 0;
@@ -1656,8 +1659,8 @@ void R_RenderSegLoop (void)
 
         //SoM: Calculate offsets for Thick fake floors.
         // calculate texture offset
-        angle = (rw_centerangle + x_to_viewangle[rw_x])>>ANGLETOFINESHIFT;
-        texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+        angf = ANGLE_TO_FINE(rw_centerangle + x_to_viewangle[rw_x]);
+        texturecolumn = rw_offset - FixedMul(finetangent[angf], rw_distance);
         texturecolumn >>= FRACBITS;
 
         // texturecolumn and lighting are independent of wall tiers
@@ -1992,7 +1995,7 @@ void R_StoreWallRange( int   start, int   stop)
 
     distangle = ANG90 - offsetangle;
     hyp = R_PointToDist (curline->v1->x, curline->v1->y);
-    sineval = finesine[distangle>>ANGLETOFINESHIFT];
+    sineval = sine_ANG(distangle);
     rw_distance = FixedMul (hyp, sineval);
 
     // segment ends
@@ -2472,7 +2475,7 @@ void R_StoreWallRange( int   start, int   stop)
         if (offsetangle > ANG90)
             offsetangle = ANG90;
         
-        sineval = finesine[offsetangle >>ANGLETOFINESHIFT];
+        sineval = sine_ANG(offsetangle);
         rw_offset = FixedMul (hyp, sineval);
         
         if (rw_normalangle-rw_angle1 < ANG180)

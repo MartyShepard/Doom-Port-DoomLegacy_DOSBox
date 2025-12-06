@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
+// $Id: p_heretic.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,17 +52,17 @@
 
 void A_ContMobjSound(mobj_t *actor)
 {
-        switch(actor->type)
-        {
-                case MT_KNIGHTAXE:
-                        S_StartSound(actor, sfx_kgtatk);
-                        break;
-                case MT_MUMMYFX1:
-                        S_StartSound(actor, sfx_mumhed);
-                        break;
-                default:
-                        break;
-        }
+    switch(actor->type)
+    {
+     case MT_KNIGHTAXE:
+        S_StartSound(actor, sfx_kgtatk);
+        break;
+     case MT_MUMMYFX1:
+        S_StartSound(actor, sfx_mumhed);
+        break;
+     default:
+        break;
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -76,40 +76,38 @@ void A_ContMobjSound(mobj_t *actor)
 //----------------------------------------------------------------------------
 int P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta)
 {
-        angle_t diff;
-        angle_t angle1;
-        angle_t angle2;
+    angle_t angle1, angle2, diff;
 
-        angle1 = source->angle;
-        angle2 = R_PointToAngle2(source->x, source->y, target->x, target->y);
-        if(angle2 > angle1)
+    angle1 = source->angle;
+    angle2 = R_PointToAngle2(source->x, source->y, target->x, target->y);
+    if(angle2 > angle1)
+    {
+        diff = angle2 - angle1;
+        if(diff > ANG180)
         {
-                diff = angle2-angle1;
-                if(diff > ANG180)
-                {
-                        *delta = ANGLE_MAX-diff;
-                        return(0);
-                }
-                else
-                {
-                        *delta = diff;
-                        return(1);
-                }
-        }
+	    *delta = ANGLE_MAX - diff;
+	    return 0;
+	}
         else
         {
-                diff = angle1-angle2;
-                if(diff > ANG180)
-                {
-                        *delta = ANGLE_MAX-diff;
-                        return(1);
-                }
-                else
-                {
-                        *delta = diff;
-                        return(0);
-                }
-        }
+	    *delta = diff;
+	    return 1;
+	}
+    }
+    else
+    {
+        diff = angle1 - angle2;
+        if(diff > ANG180)
+        {
+	    *delta = ANGLE_MAX - diff;
+	    return 1;
+	}
+        else
+        {
+	    *delta = diff;
+	    return 0;
+	}
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -123,52 +121,52 @@ int P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta)
 
 boolean P_SeekerMissile(mobj_t *actor, angle_t thresh, angle_t turnMax)
 {
-        int dir;
-        int dist;
-        angle_t delta;
-        mobj_t *target;
+    int dir;
+    int dist;
+    angle_t delta;
+    mobj_t *target;
 
-        target = actor->tracer;
-        if(target == NULL)
+    target = actor->tracer;
+    if(target == NULL)
+    {
+        return false;
+    }
+    if(!(target->flags&MF_SHOOTABLE))
+    { // Target died
+        actor->tracer = 0;
+        return false;
+    }
+    dir = P_FaceMobj(actor, target, &delta);
+    if(delta > thresh)
+    {
+        delta >>= 1;
+        if(delta > turnMax)
         {
-                return(false);
-        }
-        if(!(target->flags&MF_SHOOTABLE))
-        { // Target died
-                actor->tracer = 0;
-                return(false);
-        }
-        dir = P_FaceMobj(actor, target, &delta);
-        if(delta > thresh)
-        {
-                delta >>= 1;
-                if(delta > turnMax)
-                {
-                        delta = turnMax;
-                }
-        }
-        if(dir)
-        { // Turn clockwise
-                actor->angle += delta;
-        }
-        else
-        { // Turn counter clockwise
-                actor->angle -= delta;
-        }
-        int angf = ANGLE_TO_FINE(actor->angle);
-        actor->momx = FixedMul(actor->info->speed, finecosine[angf]);
-        actor->momy = FixedMul(actor->info->speed, finesine[angf]);
-        if(actor->z+actor->height < target->z ||
-                target->z+target->height < actor->z)
-        { // Need to seek vertically
-                dist = P_AproxDistance(target->x-actor->x, target->y-actor->y);
-                dist = dist/actor->info->speed;
-                if(dist < 1)
-                   dist = 1;
-                actor->momz = (target->z+(target->height>>1)
-                             -(actor->z+(actor->height>>1)))/dist;
-        }
-        return(true);
+	    delta = turnMax;
+	}
+    }
+    if(dir)
+    { // Turn clockwise
+        actor->angle += delta;
+    }
+    else
+    { // Turn counter clockwise
+        actor->angle -= delta;
+    }
+    int angf = ANGLE_TO_FINE(actor->angle);
+    actor->momx = FixedMul(actor->info->speed, finecosine[angf]);
+    actor->momy = FixedMul(actor->info->speed, finesine[angf]);
+    if(actor->z+actor->height < target->z ||
+       target->z+target->height < actor->z)
+    { // Need to seek vertically
+       dist = P_AproxDistance(target->x-actor->x, target->y-actor->y);
+       dist = dist/actor->info->speed;
+       if(dist < 1)
+	  dist = 1;
+       actor->momz = (target->z+(target->height>>1)
+		      -(actor->z+(actor->height>>1)))/dist;
+    }
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -183,42 +181,42 @@ boolean P_SeekerMissile(mobj_t *actor, angle_t thresh, angle_t turnMax)
 mobj_t *P_SpawnMissileAngle(mobj_t *source, mobjtype_t type,
         angle_t angle, fixed_t momz)
 {
-        fixed_t z;
-        mobj_t *mo;
+    fixed_t z;
+    mobj_t *mo;
 
-        switch(type)
-        {
-                case MT_MNTRFX1: // Minotaur swing attack missile
-                        z = source->z+40*FRACUNIT;
-                        break;
-                case MT_MNTRFX2: // Minotaur floor fire missile
-                        z = ONFLOORZ;
-                        break;
-                case MT_SRCRFX1: // Sorcerer Demon fireball
-                        z = source->z+48*FRACUNIT;
-                        break;
-                default:
-                        z = source->z+32*FRACUNIT;
-                        break;
-        }
-        if(source->flags2&MF2_FEETARECLIPPED)
-        {
-                z -= FOOTCLIPSIZE;
-        }
-        mo = P_SpawnMobj(source->x, source->y, z, type);
-        if(mo->info->seesound)
-        {
-                S_StartSound(mo, mo->info->seesound);
-        }
-        mo->target = source; // Originator
-        mo->angle = angle;
-        // This one spot does not pull common expressions well, explicit is smaller.
-        int angf = ANGLE_TO_FINE( angle );
-        fixed_t speed = mo->info->speed;
-        mo->momx = FixedMul(speed, finecosine[angf]);
-        mo->momy = FixedMul(speed, finesine[angf]);
-        mo->momz = momz;
-        return(P_CheckMissileSpawn(mo) ? mo : NULL);
+    switch(type)
+    {
+     case MT_MNTRFX1: // Minotaur swing attack missile
+        z = source->z+40*FRACUNIT;
+        break;
+     case MT_MNTRFX2: // Minotaur floor fire missile
+        z = ONFLOORZ;
+        break;
+     case MT_SRCRFX1: // Sorcerer Demon fireball
+        z = source->z+48*FRACUNIT;
+        break;
+     default:
+        z = source->z+32*FRACUNIT;
+        break;
+    }
+    if(source->flags2&MF2_FEETARECLIPPED)
+    {
+        z -= FOOTCLIPSIZE;
+    }
+    mo = P_SpawnMobj(source->x, source->y, z, type);
+    if(mo->info->seesound)
+    {
+        S_StartSound(mo, mo->info->seesound);
+    }
+    mo->target = source; // Originator
+    mo->angle = angle;
+    // This one spot does not pull common expressions well, explicit is smaller.
+    int angf = ANGLE_TO_FINE( angle );
+    fixed_t speed = mo->info->speed;
+    mo->momx = FixedMul(speed, finecosine[angf]);
+    mo->momy = FixedMul(speed, finesine[angf]);
+    mo->momz = momz;
+    return (P_CheckMissileSpawn(mo) ? mo : NULL);
 }
 
 
@@ -535,9 +533,9 @@ mobj_t LavaInflictor;
 
 void P_InitLava(void)
 {
-        memset(&LavaInflictor, 0, sizeof(mobj_t));
-        LavaInflictor.type = MT_PHOENIXFX2;
-        LavaInflictor.flags2 = MF2_FIREDAMAGE|MF2_NODMGTHRUST;
+    memset(&LavaInflictor, 0, sizeof(mobj_t));
+    LavaInflictor.type = MT_PHOENIXFX2;
+    LavaInflictor.flags2 = MF2_FIREDAMAGE|MF2_NODMGTHRUST;
 }
 
 //----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_splats.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -53,8 +53,8 @@ static int          freefloorsplat;
 
 struct rastery_s {
     fixed_t minx, maxx;     // for each raster line starting at line 0
-    fixed_t tx1,ty1;
-    fixed_t tx2,ty2;        // start/end points in texture at this line
+    fixed_t tx1, ty1;
+    fixed_t tx2, ty2;       // start/end points in texture at this line
 };
 static struct rastery_s rastertab[MAXVIDHEIGHT];
 
@@ -400,7 +400,6 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
     // rendering
     lighttable_t**  planezlight;
     fixed_t         planeheight;
-    angle_t     angle;
     fixed_t     distance;
     fixed_t     length;
     unsigned    index;
@@ -512,9 +511,9 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
             ds_ystep = cachedystep[y];
         }
         length = FixedMul (distance,distscale[x1]);
-        angle = (viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
-        ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-        ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+        int angf = ANGLE_TO_FINE(viewangle + x_to_viewangle[x1]);
+        ds_xfrac = viewx + FixedMul(finecosine[angf], length);
+        ds_yfrac = -viewy - FixedMul(finesine[angf], length);
         ds_xfrac -= offsetx;
         ds_yfrac += offsety;
 
@@ -593,13 +592,9 @@ void R_DrawVisibleFloorSplats (void)
     floorsplat_t* pSplat;
     int           iCount = 0;
     
-    fixed_t       tr_x;
-    fixed_t       tr_y;
-    fixed_t       rot_x;
-    fixed_t       rot_y;
-    fixed_t       rot_z;
-    fixed_t       xscale;
-    fixed_t       yscale;
+    fixed_t       tr_x, tr_y;
+    fixed_t       rot_x, rot_y, rot_z;
+    fixed_t       xscale, yscale;
     vertex_t*     v3d;
     vertex_t      v2d[4];
     int           i;
@@ -660,6 +655,7 @@ skipit:
 static void prepare_rastertab (void)
 {
     int iLine;
+
     for (iLine=0; iLine<vid.height; iLine++)
     {
          rastertab[iLine].minx = FIXED_MAX;

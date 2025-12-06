@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_spec.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3534,8 +3534,7 @@ static void Add_WallScroller(fixed_t dx, fixed_t dy, const line_t *l,
   {
     d = x, x = y, y = d;
   }
-  d = FixedDiv(x, finesine[(tantoangle[FixedDiv(y,x) >> DBITS] + ANG90)
-                          >> ANGLETOFINESHIFT]);
+  d = FixedDiv(x, sine_ANG( tantoangle[FixedDiv(y,x) >> DBITS] + ANG90 ) );
   x = -FixedDiv(FixedMul(dy, l->dy) + FixedMul(dx, l->dx), d);
   y = -FixedDiv(FixedMul(dx, l->dy) - FixedMul(dy, l->dx), d);
   Add_Scroller(SCROLL_side, x, y, control, *l->sidenum, accel);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1053 2013-10-01 21:06:41Z wesleyjohnson $
+// $Id: r_plane.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -225,7 +225,7 @@ void R_InitPlanes (void)
 // at planeheight, using spanfunc
 void R_MapPlane ( int y, int x1, int x2 )
 {
-    angle_t     angle;
+    int         angf;
     fixed_t     distance;
     fixed_t     length;
     unsigned    index;
@@ -254,15 +254,15 @@ void R_MapPlane ( int y, int x1, int x2 )
         ds_ystep = cachedystep[y];
     }
     length = FixedMul (distance,distscale[x1]);
-    angle = (vsp_currentplane->viewangle + x_to_viewangle[x1])>>ANGLETOFINESHIFT;
+    angf = ANGLE_TO_FINE(vsp_currentplane->viewangle + x_to_viewangle[x1]);
 #if 0
-    ds_xfrac = viewx + FixedMul(finecosine[angle], length) + xoffs;
-    ds_yfrac = yoffs - viewy - FixedMul(finesine[angle], length);
+    ds_xfrac = viewx + FixedMul(finecosine[angf], length) + xoffs;
+    ds_yfrac = yoffs - viewy - FixedMul(finesine[angf], length);
 #else
     // SoM: Wouldn't it be faster just to add viewx and viewy to the plane's
     // x/yoffs anyway?? (Besides, it serves my purpose well for portals!)
-    ds_xfrac = FixedMul(finecosine[angle], length) + xoffs;
-    ds_yfrac = yoffs - FixedMul(finesine[angle], length);
+    ds_xfrac = FixedMul(finecosine[angf], length) + xoffs;
+    ds_yfrac = yoffs - FixedMul(finesine[angf], length);
 #endif
 
 
@@ -317,8 +317,8 @@ void R_MapPlane ( int y, int x1, int x2 )
 //        don't draw the part of the view hidden under the console
 void R_ClearPlanes (player_t *player)
 {
-    int         i, p;
-    angle_t     angle;
+    int  i, p;
+    int  angf;
 
 
     // opening / clipping determination
@@ -355,11 +355,11 @@ void R_ClearPlanes (player_t *player)
     memset (cachedheight, 0, sizeof(cachedheight));
 
     // left to right mapping
-    angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
+    angf = ANGLE_TO_FINE(viewangle - ANG90);
 
     // scale will be unit scale at SCREENWIDTH/2 distance
-    basexscale = FixedDiv (finecosine[angle],centerxfrac);
-    baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+    basexscale = FixedDiv (finecosine[angf], centerxfrac);
+    baseyscale = -FixedDiv (finesine[angf], centerxfrac);
 }
 
 
@@ -747,7 +747,7 @@ void R_DrawSinglePlane(visplane_t* pl)
 {
   int  x;
   int  stop;
-  int  angle;
+  int  angf;
   int  addlight = (pl->extra_colormap && pl->extra_colormap->fog) ? extralight_cm : extralight;
   int  vlight = pl->lightlevel;  // visible light 0..255
 
@@ -788,10 +788,10 @@ void R_DrawSinglePlane(visplane_t* pl)
   {
     memset (cachedheight, 0, sizeof(cachedheight));
 
-    angle = (pl->viewangle-ANG90)>>ANGLETOFINESHIFT;
+    angf = ANGLE_TO_FINE(pl->viewangle - ANG90);
 
-    basexscale = FixedDiv (finecosine[angle],centerxfrac);
-    baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+    basexscale = FixedDiv (finecosine[angf], centerxfrac);
+    baseyscale = -FixedDiv (finesine[angf], centerxfrac);
     viewangle = pl->viewangle;
   }
 
