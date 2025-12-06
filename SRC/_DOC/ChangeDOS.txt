@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01076 ]: w96 win32 native
 [01075 ]: w96 hw poly
 [01074 ]: w96 con printf
 [01073 ]: w96 savegame menu constants

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: v_video.c 1076 2013-12-31 02:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -505,9 +505,12 @@ void CV_usegamma_OnChange(void)
     // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
     R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
 #endif
-    // reload palette
-    LoadPalette("PLAYPAL");
-    V_SetPalette(0);
+    if( graphics_started )
+    {
+        // reload palette
+        LoadPalette("PLAYPAL");
+        V_SetPalette(0);
+    }
 }
 
 #ifdef GAMMA_FUNCS

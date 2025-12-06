@@ -3681,7 +3681,7 @@ patchfile = w96_2_savegamemenu.patch
 Changes to menu constants in w95_8 exposed a misuse of the menu status field.
 The misuse has been fixed with the actual constants the field should have.
 
-*** W95_con_printf
+*** W96_con_printf
 patchfile = w96_3_con_printf.patch
 - committed revision 1074   by wesley johnson
 Fix CONS_printf to print on screen during after graphics started and
@@ -3691,7 +3691,7 @@ Change some Linux messages to also go to CONS.
 Move some hardware messages to use Gen_Printf instead of doing their own
 screen update.
 
-*** W95_hw_poly
+*** W96_hw_poly
 patchfile = w96_4_hardware_poly.patch
 - committed revision 1075   by wesley johnson
 Fix opengl render error that causes some texture draws to be missed.
@@ -3704,3 +3704,9 @@ that do not so they also render.
 
 Add file: hardware/hw_poly.h
 
+*** W96_win32_native
+patchfile = w96_5_win32_native.patch
+- committed revision 1076   by wesley johnson
+Updates to win32 native port code so that it compiles.
+Fixes code so that it compiles, but execution on my machine is
+crashing, which may be due to MinGW and library issues.
