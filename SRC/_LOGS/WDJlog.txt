@@ -3915,3 +3915,9 @@ Legacy demo segfaults because a colormap is getting used as a patch in
 a texture.  They both have the same name, BLUMAP.
 This patch stops the segfault by detecting when a patch offset will
 overrun the patch size.
+
+*** W97_lumpnum
+patchfile = w97_14_lumpnum.patch
+- committed revision 1105   by wesley johnson
+Cleanup some lump numbering to use an existing macros.
+Some comments.

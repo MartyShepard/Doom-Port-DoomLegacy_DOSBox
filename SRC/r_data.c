@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1104 2014-05-02 22:02:18Z wesleyjohnson $
+// $Id: r_data.c 1105 2014-05-02 22:03:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1357,7 +1357,7 @@ int R_CheckNumForNameList(char *name, lumplist_t* list, int listsize)
   for(i = listsize - 1; i > -1; i--)
   {
     lump = W_CheckNumForNamePwad(name, list[i].wadfile, list[i].firstlump);
-    if((lump & 0xffff) > (list[i].firstlump + list[i].numlumps) || lump == -1)
+    if(LUMPNUM(lump) > (list[i].firstlump + list[i].numlumps) || lump == -1)
       continue;
     else
       return lump;
@@ -1392,12 +1392,12 @@ void R_InitExtraColormaps()
         if(endnum == -1)
             I_Error("R_InitColormaps: C_START without C_END\n");
 
-        if((startnum >> 16) != (endnum >> 16))
+        if(WADFILENUM(startnum) != WADFILENUM(endnum))
             I_Error("R_InitColormaps: C_START and C_END in different wad files!\n");
 
         colormaplumps = (lumplist_t *)realloc(colormaplumps, sizeof(lumplist_t) * (numcolormaplumps + 1));
-        colormaplumps[numcolormaplumps].wadfile = startnum >> 16;
-        colormaplumps[numcolormaplumps].firstlump = (startnum&0xFFFF) + 1;
+        colormaplumps[numcolormaplumps].wadfile = WADFILENUM(startnum);
+        colormaplumps[numcolormaplumps].firstlump = LUMPNUM(startnum) + 1;
         colormaplumps[numcolormaplumps].numlumps = endnum - (startnum + 1);
         numcolormaplumps++;
     }
@@ -1463,7 +1463,7 @@ void R_InitFlats ()
 #endif	 
     }
 
-    if(endnum == -1 || (startnum &0xFFFF) > (endnum & 0xFFFF))
+    if(endnum == -1 || (LUMPNUM(startnum) > LUMPNUM(endnum)))
     {
       flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
       flats[numflatlists].wadfile = cfile;
@@ -1474,8 +1474,8 @@ void R_InitFlats ()
     }
 
     flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
-    flats[numflatlists].wadfile = startnum >> 16;
-    flats[numflatlists].firstlump = (startnum&0xFFFF) + 1;
+    flats[numflatlists].wadfile = WADFILENUM(startnum);
+    flats[numflatlists].firstlump = LUMPNUM(startnum) + 1;
     flats[numflatlists].numlumps = endnum - (startnum + 1);
     numflatlists++;
     continue;
@@ -2187,7 +2187,7 @@ char *R_ColormapNameForNum(int num)
   if(fnd_colormap_lump[num] == -1)
     return "INLEVEL";
 
-//  return wadfiles[fnd_colormap_lump[num] >> 16]->lumpinfo[fnd_colormap_lump[num] & 0xffff].name;
+//  return wadfiles[WADFILENUM(fnd_colormap_lump[num])]->lumpinfo[LUMPNUM(fnd_colormap_lump[num])].name;
   return wadfiles[WADFILENUM(fnd_colormap_lump[num])]->lumpinfo[LUMPNUM(fnd_colormap_lump[num])].name;
 }
 
