@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: st_stuff.c 1085 2014-02-03 17:32:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -877,24 +877,25 @@ void ST_doPaletteStuff(void)
         //             than the palettes defined in the wad
 
         {
+	    // Imitate the special object screen tints for each special palette.
             //CONS_Printf("palette: %d\n", palette);
             switch (palette) {
-                case 0x00: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0x0); break;  // pas de changement
-                case 0x01: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff373797); break; // red
-                case 0x02: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff373797); break; // red
-                case 0x03: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff3030a7); break; // red
-                case 0x04: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff2727b7); break; // red
-                case 0x05: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff2020c7); break; // red
-                case 0x06: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff1717d7); break; // red
-                case 0x07: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff1010e7); break; // red
-                case 0x08: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff0707f7); break; // red
-                case 0x09: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xffff6060); break; // blue
-                case 0x0a: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff70a090); break; // light green
-                case 0x0b: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff67b097); break; // light green
-                case 0x0c: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff60c0a0); break; // light green
-                case 0x0d: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xff60ff60); break; // green
-                case 0x0e: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xffff6060); break; // blue
-                case 0x0f: HWD.pfnSetSpecialState(HWD_SET_PALETTECOLOR, 0xffff6060); break; // blue
+                case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // pas de changement
+                case 0x01: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
+                case 0x02: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
+                case 0x03: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff3030a7); break; // red
+                case 0x04: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2727b7); break; // red
+                case 0x05: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2020c7); break; // red
+                case 0x06: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1717d7); break; // red
+                case 0x07: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1010e7); break; // red
+                case 0x08: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff0707f7); break; // red
+                case 0x09: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
+                case 0x0a: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff70a090); break; // light green
+                case 0x0b: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff67b097); break; // light green
+                case 0x0c: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60c0a0); break; // light green
+                case 0x0d: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60ff60); break; // green
+                case 0x0e: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
+                case 0x0f: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
             }
         }
         else

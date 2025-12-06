@@ -3754,3 +3754,24 @@ patchfile = w96_11_softerror_text.patch
 Have CONS_Print do all of SoftError printing, so only stderr and stdout
 only get one copy of the error message.
 
+*** W96_OpenGL_func
+patchfile = w96_12_opengl_func.patch
+- committed revision 1085   by wesley johnson
+Renamed some r_opengl funcs to VIDGL_xxx, so to identify them.
+Renamed DL_SET_PALETTECOLOR to DL_SET_TINT_COLOR, to identify it as
+the tint applied to opengl to imitate the palette flash.
+Improved the efficiency of some r_opengl functions.
+Separated DEBUG_SDL from DEBUG_MAC.
+
+*** W96_win_sdl
+patchfile = w96_13_win_sdl.patch
+- committed revision 1086   by wesley johnson
+Fixes several problems with SDL on win32 machine.
+Fade of menu background is problem on Matrox.
+Fixes to little white texture, which Linux does not seem to need.
+Use glGenTextures, because the first texture id returned by it changes
+on the second call.
+OpenGL drawing everything in Red and Yellow was only fixed by
+disabling Matrox polygon accell.
+May still be an open issue, so some DEBUG_WIN code is still present.
+

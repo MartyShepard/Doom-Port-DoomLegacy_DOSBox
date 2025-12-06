@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
+// $Id: v_video.c 1086 2014-02-03 17:33:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1635,7 +1635,7 @@ void V_DrawFadeScreen(void)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
     {
-        HWR_FadeScreenMenuBack(0x01010160, (0xff/2), 0);  //faB: hack, 0 means full height :o
+        HWR_FadeScreenMenuBack(0x01010160, 0x80, 0);  //faB: hack, 0 means full height :o
         return;
     }
 #endif

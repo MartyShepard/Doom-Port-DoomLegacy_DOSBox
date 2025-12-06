@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 1042 2013-08-26 20:30:08Z wesleyjohnson $
+# $Id: Makefile 1086 2014-02-03 17:33:54Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2013 by Doom Legacy Team.
@@ -279,8 +279,9 @@ ifeq ($(SMIF), SDL)
     # Extracted from sdl-config script
     ifdef CC_MINGW
       OPTS+=-D_GNU_SOURCE=1 -Dmain=SDL_main
-      OPTINC+=-"I/SDL/include/SDL"
+      OPTINC+=-I/SDL/include/SDL
 #      OPTINC+=-I/mingw/include/SDL
+#      OPTINC+=-I/mingw/include
       LIBS+=-L/SDL/lib
 #      LIBS+=-L/mingw/lib
 #      LIBS+=-L/windows/system32
@@ -348,7 +349,7 @@ ifeq ($(SMIF), LINUX_X11)
   # Uncomment if you want to use the POLL_POINTER hack
   #POLL_POINTER:=-DPOLL_POINTER
 
-  OPTS:=-DLINUX -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
+  OPTS:=-DLINUX -DVID_X11 -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
   ifdef CDMUS
     OPTS+=-DMUSSERV
   endif
@@ -406,7 +407,7 @@ ifeq ($(SMIF), FREEBSD_X11)
   # Uncomment if you want to use the POLL_POINTER hack
   #POLL_POINTER:=-DPOLL_POINTER
 
-  OPTS:=-DLINUX -DFREEBSD -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
+  OPTS:=-DLINUX -DVID_X11 -DFREEBSD -DOLD_SOUND_DRIVER -DSNDSERV -DHWRENDER
   # objs common to xshm and ggi, video is added later
   # Note: free-bsd version of cdmus
   MAINOBJ:=i_main.o
@@ -480,10 +481,10 @@ ifeq ($(SMIF), WIN32_NATIVE)
   # DDINC="" alternative directory to find ddraw.h and other includes
   # DDLIB="" alternative directory to find ddraw and other libs
   ifndef DDINC
-    DDINC=-I\MINGW\MX80\include
+#    DDINC=-I\MINGW\MX80\include
   endif
   ifndef DDLIB
-    DDLIB=-L\MINGW\MX80\lib
+#    DDLIB=-L\MINGW\MX80\lib
   endif
   # FMODINC="" alternative directory to find fmod.h and other includes
   # FMODLIB="" alternative directory to find fmod libs
@@ -507,13 +508,14 @@ ifeq ($(SMIF), WIN32_NATIVE)
   endif
 
 #  DEBUGLIBS:=
-  ifdef CC_MINGW
-    LIBS:=-lwinmm -lwsock32 -lgdi32 -lddraw -ldsound -ldinput -ldxguid
-  else
-    LIBS:=-lwinmm -lsocket -lddraw -ldsound -ldinput
-  endif
+  LIBS:=
   ifdef DDLIB
-    LIBS+=$(DDLIB) -ddraw
+    LIBS+=$(DDLIB)
+  endif
+  ifdef CC_MINGW
+    LIBS+=-lwinmm -lwsock32 -lgdi32 -lddraw -ldsound -ldinput -ldxguid
+  else
+    LIBS+=-lwinmm -lsocket -lddraw -ldsound -ldinput
   endif
 
   ifdef WINNT

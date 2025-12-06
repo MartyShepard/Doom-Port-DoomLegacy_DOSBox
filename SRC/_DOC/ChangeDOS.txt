@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01086 ]: w96 win sdl
+[01085 ]: w96 12 opengl func VIDGL
 [01084 ]: w96 softerror text print
 [01083 ]: w96 cleardisplay
 [01082 ]: w96 docs rev 1.45
