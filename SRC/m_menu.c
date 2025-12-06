@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1092 2014-03-25 23:01:31Z wesleyjohnson $
+// $Id: m_menu.c 1101 2014-04-02 20:00:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -275,7 +275,7 @@ static int   slotindex;  // MSLOT, used for reading and editing slot desc, 0..5
 static int   quicksave_slotid; // -1,-2, 0..5 or 0..99 (savegameid)
 
 #if defined SAVEGAMEDIR || defined SAVEGAME99
-#define     QUICKSAVE_INDEX   (SAVEGAME_NUM_MSLOT+1)
+#define     QUICKSAVE_INDEX   SAVEGAME_NUM_MSLOT
 static int     scroll_index = 0;  // scroll position
 static void    (*scroll_callback)(int amount) = NULL; // call to scroll
 static void    (*delete_callback)(int ch) = NULL; // call to delete

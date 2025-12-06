@@ -3886,5 +3886,14 @@ Some variables were added to share common calculations and remove
 duplicate code.
 This does not change functionality.
 
+*** W97_quicksave
+patchfile = w97_10_quicksave.patch
+- committed revision 1101   by wesley johnson
+The quicksave has been saving its descriptor one beyond the end of the
+save descriptor array, overwriting several quicksave and save variables.
+Every once and a while this causes a segfault, due to a corrupted slotindex.
+This patch fixes the QUICKSAVE_INDEX, so it actually uses the last entry in
+the array now.
+
 
 

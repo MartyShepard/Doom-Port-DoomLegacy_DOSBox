@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01101 ]: w97 quicksave array write
 [01100 ]: w97 bot cleanup
 [01099 ]: w97 cleanup indent
 [01098 ]: w97 player mobj
