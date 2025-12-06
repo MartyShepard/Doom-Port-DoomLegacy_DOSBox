@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01092 ]: w97 savegame menu
+[01091*]: Docs updated, dead links and html syntax fixed.
+[01090*]: Docs updated.
+[01089*]: w96 13c verbose in dll
 [01088 ]: Message=w96 Ver 1.44 alpha5
 [01087*]: w96 linux event loop
 [01086 ]: w96 win sdl

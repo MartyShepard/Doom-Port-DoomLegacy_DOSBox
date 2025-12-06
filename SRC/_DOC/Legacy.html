@@ -46,24 +46,24 @@
   Doom Legacy can play Doom, Boom, and Heretic maps.
   In addition to the original games by id Software and Raven Software,
   there are hundreds of free, fan-made maps available on the Internet.
-  These maps are typically distributed as PWAD files, which are not
+  These maps are typically distributed as <b>PWAD</b> files, which are not
   fully self-contained.
-  For each game you will also need the corresponding IWAD data file,
+  For each game you will also need the corresponding <b>IWAD</b> data file,
   which contains all the graphics,
   sounds and music in the game. For example, if you want to play Doom II
-  maps, you'll need the file "doom2.wad".
+  maps, you'll need the file doom2.wad.
   Doom Legacy itself is free software, meaning that you can copy and
   distribute it without charge.
   The original Doom and Heretic IWAD files
   (doom.wad from Doom, doomu.wad from Ultimate Doom,
   doom2.wad from Doom2, tnt.wad or plutonia.wad from Final Doom,
-  heretic.wad from Heretic), which are still
+  heretic.wad from Heretic) are still
   copyrighted products and available commercially.
 </p>
 <p>
   There are also some free replacement IWADs which can be used instead.
   <a href="http://www.nongnu.org/freedoom/">FreeDoom</a> (doom2.wad or freedoom.wad) is a free substitute for Doom2.
-  <a href="http://www.jeshimoth.com/jutegyte/blasphemer/">Blasphemer</a>
+  <a href="https://code.google.com/p/blasphemer/">Blasphemer</a>
   (heretic.wad) is a free substitute for Heretic, but it does
   not have monsters yet (it needs volunteers to work on it!).
   The Legacy engine will recognize and play Chexquest (chex.wad),
@@ -71,7 +71,7 @@
 </p>
 <p>
   In addition to the now
-  fundamental <a href="http://doom.wikia.com/wiki/Boom">Boom</a>
+  fundamental and de-facto-standard <a href="http://doom.wikia.com/wiki/Boom">Boom</a>
   extensions, Legacy also has implemented among other things
   3D floors, swimmable water and other special effects using extended
   linedef codes, and supports the FraggleScript scripting language.
@@ -98,8 +98,8 @@
   </li>
 </ul>
 <p>
-  We hope that this new version brings you a lot of enjoyment.
-  Have much fun!!
+  We hope that this new release brings you a lot of enjoyment.
+  Have fun!!
 </p>
 <p>-The Doom Legacy Team</p>
 
@@ -121,147 +121,148 @@
   
 </p>
 <h3>Linux</h3>
-  Choose a legacy game directory that all players can use, like /usr/local/games/legacy.
-  Install the tar file contents to the legacy game directory, which needs to include the
-  doomlegacy binary, legacy.wad, autoexec.cfg.  The tar file will also install the legacy docs there.
-  You can also put there any wad files you want to play.
 <p>
-  The iwad files can be in a separate directory (such as /usr/local/games/legacy/wads).
-  You can set DOOMWADDIR with that wad directory path, in a login script, or a game starting script.
-  If DOOMWADDIR is not set, then DoomLegacy will look for the directories:
-  "/usr/local/share/games/doomwads" and "/usr/local/games/doomwads".
+  Choose an installation directory that all players can use, like <b>/usr/local/games/doomlegacy</b>.
+  Unpack the tar file contents here. The installation directory needs to include the
+  doomlegacy binary, legacy.wad, and autoexec.cfg.  The tar file will
+  also install the Doom Legacy docs there.
+</p>
 <p>
-  Otherwise, for known game wads (Doom, Doom2, TNT, etc) in other directories, make soft links in the legacy game directory
-  to the actual wad files, so that when a -game switch is used, DoomLegacy can find the iwad.
+  The IWAD files should go in a separate directory that can be shared
+  between all Doom source ports (such as <b>/usr/local/share/games/doomwads</b>).
+  You can set the <b>DOOMWADDIR</b> environment variable to point this directory in a login script or a game starting script.
+  If <b>DOOMWADDIR</b> is not set, Doom Legacy will try the
+  directories <b>/usr/local/share/games/doomwads</b>,
+  and <b>/usr/local/games/doomwads</b>,
+  and the installation directory.
+</p>
+<p>
+  You can also make soft links in the abovementioned IWAD directory to
+  point to the actual IWAD files.
   The valid file names can be found in docs/technical/wad_selection.txt.
-<br>
-<pre>
-  > ln -s wads/idgames/doom1.wad  doom1.wad
-  > ln -s wads/idgames/doom2.wad  doom2.wad
-  > ln -s wads/idgames/doomu.wad  doomu.wad
-  > ln -s wads/idgames/plutonia.wad  plutonia.wad
-  > ln -s wads/idgames/tnt.wad  tnt.wad
-  > ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
-  > ln -s wads/freedoom-iwad-0.9/freedoom2.wad  freedoom2.wad
-</pre>
+</p>
+<div class="code">$ ln -s wads/idgames/doom1.wad  doom1.wad
+$ ln -s wads/idgames/doom2.wad  doom2.wad
+$ ln -s wads/idgames/doomu.wad  doomu.wad
+$ ln -s wads/idgames/plutonia.wad  plutonia.wad
+$ ln -s wads/idgames/tnt.wad  tnt.wad
+$ ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
+$ ln -s wads/freedoom-iwad-0.9/freedoom2.wad  freedoom2.wad
+</div>
 <p>
-  If just the pwad files are in a separate directory (such as pwad/),
-  then there are no extra steps.
-<pre>
-  > doomlegacy -file pwad/ANDYDM.WAD
-  > doomlegacy -file pwad/Twilight/TWILIGHT.DEH pwad/Twilight/TWILIGHT.WAD
-</pre>
-  DoomLegacy will use the HOME environment variable, which is usually set by your Linux login, to find your home directory.  It makes a .legacy directory there, where it will keep config.cfg and all your saved games.
-  If HOME is not set, DoomLegacy will look for directory
-  "/usr/local/games/legacyhome", and if that is not present then will
-  use the current directory.  In the HOME directory, it will make a hidden directory, ".legacy",
-  within which it will save config and savegames.
-<pre>
-  Overriding by using the -home and -config switches, examples:
-  > doomlegacy -home ~/doomstuff -game plutonia
-  > doomlegacy -home ~/doom -config ~/doom/plutconfig.cfg -game plutonia
-</pre>
-<pre>
-  DoomLegacy execution examples:
-  > doomlegacy -game tnt
-  > doomlegacy -game plutonia -file pwad/pl2/PL2.WAD
-  > doomlegacy -iwad freedoom.wad -file new_map13.wad
-</pre>
+  Doom Legacy will use the <b>HOME</b> environment variable, which is
+  usually set by your Linux login, to find your home directory.
+  It will make a hidden directory named <b>.doomlegacy</b> there for
+  storing your configuration files and saved games.
+  If <b>HOME</b> is not set, Doom Legacy will look for
+  <b>/usr/local/games/legacyhome</b>, and if that is not present then will
+  use the current directory.
+  This behavior can be overridden by using the -home and -config switches:
+</p>
+<div class="code">$ doomlegacy -home ~/doomstuff -game plutonia
+$ doomlegacy -home ~/doom -config ~/doom/plutconfig.cfg -game plutonia
+</div>
 <p>
-  Script files can also be used to start DoomLegacy.
-<pre>
-  create dm8 script file
-    #!/bin/sh
-    cd /usr/local/games/legacy/
-    USER="Shotgun-wizard"
-    DOOMWADDIR=wads
-    doomlegacy -iwad doom2.wad -file DM8.WAD
- > chmod u+x dm8
- > dm8
-</pre>
+  PWAD and DeHackEd files can be included using the -file switch. Examples:
+</p>
+<div class="code">$ doomlegacy -game tnt
+$ doomlegacy -game plutonia -file pwad/pl2/PL2.WAD
+$ doomlegacy -iwad freedoom.wad -file new_map13.wad
+$ doomlegacy -file pwad/Twilight/TWILIGHT.DEH pwad/Twilight/TWILIGHT.WAD
+</div>
+<p>
+  Script files can also be used to start Doom Legacy:
+</p>
+<div class="code">#!/bin/sh
+cd /usr/local/games/legacy/
+USER="Shotgun-wizard"
+DOOMWADDIR=wads
+doomlegacy -iwad doom2.wad -file DM8.WAD
+</div>
 
-<p>
 <h3>Windows</h3>
 <p>
   It is important to change to the directory where doomlegacy resides.  Support files,
   like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by DoomLegacy
   and it looks in the current directory as last resort.
+</p>
 <p>
   Put your wad files in directory "\doomwads", or "\games\doomwads", or
   in the current directory.  DoomLegacy will use the first that exists
   as the doomwaddir.  Set DOOMWADDIR in a batch file to specify a different wad directory.
+</p>
 <p>
   A "legacy" directory will be created in your home directory for savegames and saved config files.
-  Set the environment variable "HOME" in a batch file, or use the -home switch
+  Set the environment variable "<b>HOME</b>" in a batch file, or use the -home switch
   when starting DoomLegacy.
   Otherwise, it will check if the default home directory exists, "\legacyhome".
   If none are present, then it will use the current directory for home, but only if it is not root, "c:\".
-<pre>
+
   Overriding by using the -home and -config switches, examples:
-  > doomlegacy -home c:\games\doomsave -game plutonia
-  > doomlegacy -home c:\games\doomsave -config c:\games\plutconfig.cfg -game plutonia
-</pre>
+</p>
+<div class="code">> doomlegacy -home c:\games\doomsave -game plutonia
+> doomlegacy -home c:\games\doomsave -config c:\games\plutconfig.cfg -game plutonia
+</div>
 <p>
   Use the verbose switch -v, and DoomLegacy will print to stderr the directory
   names that it used.  On Win98 this becomes a file named stderr.
   The use of directory names with spaces may fail.
+</p>
 <p>
   It is difficult to start a program under windows and set command line switches.
   Most of the settings that the launcher supported can now be set from menus and the console.
   However the -game, -file, and -config must be set from command line switches.
+</p>
 <p>
   Doomlegacy will invoke a Launcher window when it is started without
   switches.  It will also invoke the Launcher window when the game
   selection results or iwad selection are invalid.
   The Launcher window provides input of the game switches, iwad,
   config, home, and doomwad directories.
+</p>
 <p>
   Another way to start DoomLegacy is to create shortcuts.
   These can be executed using a mouse.
   Specify in the shortcut the command line, and change the starting directory
   to where the doomlegacy program resides.
-<pre>
-  Example shortcut for DoomLegacy with plutonia2 wad:
-  Shortcut: dl_plut2
-    command: doomlegacy -game plutonia -file c:\games\pl2\PL2.WAD
-    current directory: c:\games\legacydir
-</pre>
+</p>
+<div class="code">Example shortcut for DoomLegacy with plutonia2 wad:
+Shortcut: dl_plut2
+  command: doomlegacy -game plutonia -file c:\games\pl2\PL2.WAD
+  current directory: c:\games\legacydir
+</div>
 <p>
   Creating a batch file with the necessary commands is also an easy way
   to record a combination of switches.  Run the batch file to start doomlegacy
   with the particular game and PWAD.
   In the following batch file examples, legacydir, homedir, configdir, and waddir stand for directories that you specify.
-<br>
-<pre>
-  DOOM2.BAT
-    cd c:\legacydir\
-    doomlegacy -game doom2
-</pre>
+</p>
+<div class="code">DOOM2.BAT
+  cd c:\legacydir\
+  doomlegacy -game doom2
 
-<pre>
-  DM8.BAT
-    cd c:\legacydir\
-    doomlegacy -iwad waddir\doom2.wad -home c:\homedir\ -config c:\homedir\config8.cfg
-</pre>
+DM8.BAT
+  cd c:\legacydir\
+  doomlegacy -iwad waddir\doom2.wad -home c:\homedir\ -config c:\homedir\config8.cfg
 
-<pre>
-  DM2MOD.BAT
-    SET HOME=c:\games\home
-    SET DOOMWADDIR=c:\games\wads
-    cd c:\games\legacydir
-    doomlegacy -game doom2 -file levl9.wad mod2.deh mod8.bex
-</pre>
-
+DM2MOD.BAT
+  SET HOME=c:\games\home
+  SET DOOMWADDIR=c:\games\wads
+  cd c:\games\legacydir
+  doomlegacy -game doom2 -file levl9.wad mod2.deh mod8.bex
+</div>
 
 
 <h3>Windows with launcher</h3>
 <p>
   The launcher is no longer actively supported, but older launchers will still work.
   Most of the settings that the launcher supports can now be set from the console.
+</p>
 <p>
   The launcher has some problems with setting home and config directories.
-  You will likely have to include <br>
+  You will likely have to include
   "-config mydir\config.cfg", and/or "-home homedir" in options.
+</p>
 <ul>
   <li>Unpack the archive to a suitable program directory, like C:\legacy</li>
   <li>Start the Launcher</li>
@@ -304,6 +305,7 @@
   Your personal control settings are saved in your config.cfg file.
   They can be changed by menus in Legacy, and are saved when quitting
   the game.
+</p>
 <p>
   When config.cfg does not exist, Legacy will write one using a default config.
 </p>
@@ -311,6 +313,7 @@
   OpenGL uses a separate file, 'glconfig.cfg', so that the OpenGL
   settings do not disturb an existing config file. This does
   mean that switching to OpenGL requires setting up the controls again.
+</p>
 <p>
   Develop mode (-devgame or -devparm), will use devdataconfig.cfg as its config file.
 </p>
@@ -344,13 +347,16 @@ with your own selection of compile options.
 <p>
   In the SDL version of Legacy the SDL library handles sound. If it
   is installed correctly then Legacy will have sound effects.
+</p>
 <p>
   The latest SDL version is 1.2.14, and it fixes some earlier Win32 issues.
+</p>
 <p>
   Music requires SDL_mixer version 1.2.7 or later. Earlier SDL_mixer
   versions do not have a working RWOPS interface. Legacy can play music
   using files instead, but this requires recompiling Legacy, allowing
   the compile to detect the SDL_mixer version.
+</p>
 <p>
   SDL_mixer is a separate download and installation, and the latest is
   version 1.2.11.
@@ -361,12 +367,15 @@ with your own selection of compile options.
 <p>
   In the Windows native version the sound is autodetected using DirectX so make sure your card works
   well with DirectX and then legacy will use it.
+</p>
 <p>
   Additionally, Legacy could utilize hardware 3D sound
   for making more realistic sound environment.
+</p>
 <p>
   Specify -ds3d command line parameter to use generic 3D sound driver
   (DirectSound 3D). This driver are suitable for most 3D sound chips.
+</p>
 <p>
   FMOD is an alternative sound library.  To use FMOD, it must be compiled
   with the FMOD library and FMOD configuration selected.
@@ -378,6 +387,7 @@ with your own selection of compile options.
 <li>DOS
 <p>
   The sound and music card is auto-detected at the game startup.
+</p>
 <p>
   If you don't get any sound in Legacy, check that the BLASTER
   variable is set. Type 'set' at the dos prompt (or dosbox under
@@ -385,6 +395,7 @@ with your own selection of compile options.
   If not, run the installation of your soundcard for Dos mode,
   it will usually modify your autoexec.bat so that the BLASTER
   variable will be set. See the FAQ.TXT for more.
+</p>
 <p>
   If the BLASTER variable is set, but you still don't hear any
   sounds, or the sounds are not right, then edit the SOUND.CFG
@@ -419,7 +430,7 @@ with your own selection of compile options.
 </p>
 
 
-<h3 id=gamma>Gamma controls</h3>
+<h3 id="gamma">Gamma controls</h3>
 <p>
   The control of gamma is much finer than before. The gamma table is
   now generated from the control settings, instead of using
@@ -489,7 +500,7 @@ bright -1</div>
 <div class="code">
 Original Doom gamma settings are at (0, -3, -6, -9, -12).
 gamma index : GAMMA value
-<dir>
+
  12: 1.48
  11: 1.44
  10: 1.4
@@ -515,7 +526,6 @@ gamma index : GAMMA value
 -10: 0.58
 -11: 0.54
 -12: 0.50
-</dir>
 </div>
 
 <h2 id="gameplay">BASIC GAMEPLAY</h2>
@@ -610,11 +620,13 @@ gamma index : GAMMA value
   but it does not do everything that the software renderer does.
   It does have coronas, explosion light, and other light effects that the
   software renderer does not do.
+</p>
 <p>
   Some wads rely upon violating wad rules to get trick effects.
   These rely upon tricking the software renderer into not drawing something.
   Using those wads with the OpenGL renderer you will see holes in the floor
   and ceiling, and warning messges about polygons.
+</p>
 <p>
   OpenGL relies upon having video card hardware acceleration.
   This requires that your video card drivers support OpenGL operations.
@@ -622,6 +634,7 @@ gamma index : GAMMA value
   using software run on your CPU, which is very very slow.
   How well a video card works with OpenGL is dependent upon the drivers.
   It is SDL that interfaces with the video card drivers.
+</p>
 <p>
   Video cards have different levels of hardware acceleration, and rendering speed.
   Activate only as many fancy rendering options as your video card can draw fast.
@@ -661,8 +674,8 @@ See <a href="console.html">here</a> for more about the console.
   <li>
     The speed now depends on the server. If the server loses
     frames, all the other players will experience the slow down.
-    Thus, make sure that the server runs smooth for example by using a
-    lower resolution graphics mode.
+    Thus, make sure that the server has a good internet connection and
+    runs smooth for example by using a lower resolution graphics mode.
   </li>
   <li>
     The server can kick any player out of the game. The player will
@@ -673,7 +686,7 @@ See <a href="console.html">here</a> for more about the console.
     'up-to-date', not the others.
   </li>
   <li>
-    Critical game variables are sent to all the players when they
+    <a href="console.html#game_options">Critical game variables</a> are sent to all the players when they
     are changed on the server, and only the server can change them.
     Examples are 'allowjump', 'respawnitemtime', 'deathmatch', ...
   </li>
@@ -683,8 +696,9 @@ See <a href="console.html">here</a> for more about the console.
 <h3>Setting up a network game</h3>
 <p>
   A network game can be started either using the commandline
-  parameters -server and -connect, or from the multiplayer menu that
+  parameters <a href="#cmd_network">-server</a> and <a href="#cmd_network">-connect</a>, or from the multiplayer menu that
   allows you to connect to a server or create one yourself.
+  
 </p>
 <p>
   Legacy uses the UDP port 5029 only and can accept messages from any
@@ -695,100 +709,97 @@ See <a href="console.html">here</a> for more about the console.
   If you are familiar with IpAutoforward funtionality of Linux,
   you can make a usable IP appear.
 </p>
-
+<h4> The server</h4>
 <p>
-
-  * The server types:
-  <br>
-  <p>Start a server with one of the following server commands.
+  Start a server with one of the following server commands.
   One player can play on the server itself. Other switches can also be
   included to select the game and wad.
-<br><br>
-
-  &gt; doomlegacy -server &lt;num-of-computers&gt;<br>
-
-  <p>The server will wait until the specified number of computers have
+</p>
+<div class="code">$ doomlegacy -server &lt;num-of-computers&gt;
+</div>
+<p>
+  The server will wait until the specified number of computers have
   connected and then will start the game. This is like the old way to
   start a game. It is more fair because all players start at the same
   time and with the same weapons. Of course other computers can also
   join later.
-  <br>
-  <br>
-
-  &gt; doomlegacy -server <br>
-  <p>This starts the server and does not wait for any computers.
+</p>
+<div class="code">$ doomlegacy -server
+</div>
+<p>
+  This starts the server and does not wait for any computers.
   It starts the game immediately. Other players can join later.
-  <br>
-
-  
-  <br>
-  <br>
-  <p>* Clients are the other players who join in the server:<br>
-  <p>Each additional player connects to the server with one of the following
-   connect commands.
-<br><br>
-  &gt; doomlegacy -connect &lt;ip address of server&gt;<br>
-  <p>Connects to a specific server computer using their ip address.
-
-  <br><br>
-
-  &gt; doomlegacy -connect<br>
-  <p>This will auto-detect a server on a LAN. This only works when
+</p>
+<h4>Clients</h4>
+<p>
+  Clients are the other players who join in the server.
+  Each additional player connects to the server with one of the following
+  connect commands.
+</p>
+<div class="code">$ doomlegacy -connect &lt;ip address of server&gt;
+</div>
+<p>
+  Connects to a specific server computer using their ip address.
+</p>
+<div class="code">$ doomlegacy -connect
+</div>
+<p>
+  This will auto-detect a server on a LAN. This only works when
   computers are directly connected. If you play through internet,
   the server can NOT be auto-detected, and you must specify it's
   IP address.
-<br>
-<br>
+</p>
   
-  Example A, 3 players on a LAN:<br>
-<br>
-  player 1 (the server)<br>
-  &gt; doomlegacy -server 3<br>
-<br>
-  player 2 (client)<br>
-  &gt; doomlegacy -connect<br>
-<br>
-  player 3 (client)<br>
-  &gt; doomlegacy -connect<br>
-<br>
-  Example B, 2 players, through internet:<br>
-<br>
-  player 1 (the server)<br>
-  &gt; doomlegacy -server 2<br>
-<br>
-  player 2 (client)<br>
-  &gt; doomlegacy -connect xxx.xxx.xxx.xxx<br>
-<br>
-  Example C, a 3 player game, with _TWO_ computers, one is split-screen:<br>
-<br>
-  player 1 (the server)<br>
-  &gt; doomlegacy -server 3<br>
-<br>
-  player 2 and 3 (2 clients on the same computer)<br>
-  &gt; doomlegacy -splitscreen -connect<br>
-<br>
+<div class="code">Example A, 3 players on a LAN:
+  player 1 (the server)
+  $ doomlegacy -server 3
+
+  player 2 (client)
+  $ doomlegacy -connect
+
+  player 3 (client)
+  $ doomlegacy -connect
+
+Example B, 2 players, through internet:
+
+  player 1 (the server)
+  $ doomlegacy -server 2
+
+  player 2 (client)
+  $ doomlegacy -connect xxx.xxx.xxx.xxx
+
+Example C, a 3 player game, with _TWO_ computers, one is split-screen:
+
+  player 1 (the server)
+  $ doomlegacy -server 3
+
+  player 2 and 3 (2 clients on the same computer)
+  $ doomlegacy -splitscreen -connect
+</div>
   
-  <p>You don't need to put all parameters on the client side like :
-  -deathmatch, -warp xx, -respawn, -fast, etc because the server
-  automatically sends those to all clients upon connection.
+<p>
+  The server will send the clients all relevant game parameters, they
+  do not need to be specified on the commandline (and in fact would be
+  overridden).
+  Also the <b>-file</b> parameter is not needed on the clients
+  anymore. The clients will automatically download any necessary PWAD files
+  from the server if they cannot be found locally.
+</p>
 
-  <p>Also the -file parameter is not needed by the player anymore. The server
-  will send the file needed to the client. Let's say rather the client
-  can download it from the server. But of course the client will first
-  check for the file in the directory or subdirectory.
-
-  <p>Use '-notime' to disable file date check on clients. Normally
+<p>
+  Use '-notime' to disable file date check on clients. Normally
   the game will warn you if a client has a file loaded by the
   server, but with a different date. Clients should have the exact
   same version of the files added by the server.
+</p>
 
-  <p>You want to know some things : you need a good ping value, perfect
-  is less than 30, more than this will be very unplayable, because
+<p>
+  To make a network game enjoyable you will need a good ping value,
+  ideally less than 30, more than this may be unplayable because
   there is not, for the moment, code to reduce the latency between
   command entered at keyboard and command execution.
-
-  <p>In other words, Doom Legacy doesn't use 'interpolation' to make
-  you believe like the game is 'smooth' when it is not in reality.
+  In other words, Doom Legacy doesn't use interpolation to make
+  the game smooth when it is not in reality.
 </p>
   
 
@@ -824,32 +835,38 @@ See <a href="console.html">here</a> for more about the console.
   <li>DEATHS: this ranking shows the players who have died the most!</li>
 </ul>
 
-<h2 id="cmdline">LAUNCHER</h2>
+<h2 id="launcher">LAUNCHER</h2>
 
-<p>The Launcher window is invoked when there is an error with the game
-selection, the iwad specified cannot be loaded, there is a fatal error
-in the startup, or if the command line is empty.
-<p>If there is an error, the console window will display first with
-the errors.  Pressing escape will proceed to the Launcher window.
-<p>The Launcher window has input lines like a menu.  Use the up and
-down arrow to move between items.  Type in names for the directories,
-or use backspace to erase names.  The left and right arrows will cycle
-through the game selections.  When satisfied, the continue entry will
-restart DoomLegacy with your new command line input.
-The QUIT entry will exit DoomLegacy entirely.
-<p>HOME: Set your home directory location, where your config files and
-savegames are kept, the same as "-home".
-<p>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD
-files.
-<p>CONFIG: The config file to use, the same as "-config".
-<p>SWITCH: Any of the switches allowed on the command line,
-specified in the same format, such as "-opengl".
-<p>IWAD: The IWAD specified, the same as "-iwad".
-<p>GAME: The possible games, the same as "-game".
-<p>CONTINUE: Restart DoomLegacy with the new command line switches and
-selections.
-<p>QUIT: Quit DoomLegacy entirely.
-
+<p>
+  The Launcher window is invoked when there is an error with the game
+  selection, the iwad specified cannot be loaded, there is a fatal error
+  in the startup, or if the command line is empty.
+</p>
+<p>
+  If there is an error, the console window will display first with
+  the errors.  Pressing escape will proceed to the Launcher window.
+</p>
+<p>
+  The Launcher window has input lines like a menu.  Use the up and
+  down arrow to move between items.  Type in names for the directories,
+  or use backspace to erase names.  The left and right arrows will cycle
+  through the game selections.  When satisfied, the continue entry will
+  restart DoomLegacy with your new command line input.
+  The QUIT entry will exit DoomLegacy entirely.
+</p>
+<ul>
+  <li>HOME: Set your home directory location, where your config files and
+    savegames are kept, the same as "-home".</li>
+  <li>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD files.</li>
+  <li>CONFIG: The config file to use, the same as "-config".</li>
+  <li>SWITCH: Any of the switches allowed on the command line,
+    specified in the same format, such as "-opengl".</li>
+  <li>IWAD: The IWAD specified, the same as "-iwad".</li>
+  <li>GAME: The possible games, the same as "-game".</li>
+  <li>CONTINUE: Restart DoomLegacy with the new command line switches and
+    selections.</li>
+  <li>QUIT: Quit DoomLegacy entirely.</li>
+</ul>
 
 <h2 id="cmdline">COMMANDLINE OPTIONS</h2>
 
@@ -905,6 +922,7 @@ savegames are kept.</td>
   when needed.
   It is no longer critical to set enough memory on the command line,
   although it may make loading smoother.
+</p>
 <p>
   This switch on the SWITCH line of the DoomLegacy Launcher is
   ineffective because the memory system has already started by then.
@@ -912,6 +930,7 @@ savegames are kept.</td>
   that automatically increases the memory allocation as needed, so it
   is not needed.  If you were to compile DoomLegacy with the old ZONE_ZALLOC
   memory system selected, then this switch would be necessary to control it.
+</p>
 </td>
 </tr>
 
@@ -941,17 +960,22 @@ Game options
 <tr>
   <td>-game &lt;game-name&gt;</td>
 <td>
+  <p>
   Forces a particular game mode to be used. This replaces renaming
   the wad file. If an IWAD is not explicitly given, the appropriate
   IWAD will be automatically loaded.
+  </p>
   <p>
   Savegames are now marked with the game name, and will not load
   with a different game name.
+  </p>
   <p>
   The particulars about a particular game-name are in
   doc/technical/wad_selection.txt.
+  </p>
   <p>
   The valid game-name at this time, and the file names accepted are:
+  </p>
 <table class="def">
 <tr><th>game-name</th><th>mode</th><th>file name</th></tr>
 <tr><td>doom1</td><td>Doom shareware</td><td>doom1.wad, doom.wad</td></tr>
@@ -1007,7 +1031,7 @@ The following are valid game-names, but the mode is not supported yet.
 </tr>
 
 <tr>
-<td id="file">-deh &lt;filename1&gt; [&lt;filename2&gt;...]</td>
+<td id="deh">-deh &lt;filename1&gt; [&lt;filename2&gt;...]</td>
 <td>Load one or more DEH (DeHackEd) files or BEX files, which can change
   monster abilities and game text.  Also accepts -dehacked.
 </td>
@@ -1165,7 +1189,7 @@ Requires compiling with the MiniGL library and configuration.
 </tr>
 
 <tr>
-<td>-3dfx<br>-glide</td>
+<td>-3dfx<br/>-glide</td>
 <td>Hardware accelerated rendering using the Glide library for the Voodoo card.
 For Linux-X11-XSHM, Linux-X11-GGI, and WIN32 ports.
 Requires compiling with the Glide library and configuration.
@@ -1230,6 +1254,7 @@ For Linux-X11-XSHM port.
 </td>
 </tr>
 
+<tr>
 <td>-noendtext</td>
 <td>Suppress the game EndText screen, which could disrupt some terminal
 emulations because of the special character attributes used.  Much of this
@@ -1338,7 +1363,7 @@ For WIN32 port.
 </tr>
 
 
-<tr><td class="note" colspan="2">
+<tr><td class="note" colspan="2" id="cmd_network">
 Networking
 </td></tr>
 
@@ -1436,13 +1461,14 @@ Must be compiled with the DEBUGFILE compile option enabled.
 </td>
 </tr>
 
-<tr><td class="note" colspan="2">
-Multiplayer options
-</td></tr>
 <tr>
+<td class="note" colspan="2">
+Multiplayer options
+</td>
+</tr>
 
 <tr>
-<td>-deathmatch<br>-altdeath</td>
+<td>-deathmatch<br/>-altdeath</td>
 <td>
 Play deathmatch where multiple players fight each other to score kills.
 Normal deathmatch has weapons and a few special items respawn,
@@ -1486,10 +1512,11 @@ This may be used alone or with network play.
 </tr>
 
 
-<tr><td class="note" colspan="2">
-Demo options
-</td></tr>
 <tr>
+<td class="note" colspan="2">
+Demo options
+</td>
+</tr>
 
 <tr>
 <td>-playdemo &lt;file&gt;</td>
@@ -1509,10 +1536,11 @@ Use with -record.</td>
 </tr>
 
 
-<tr><td class="note" colspan="2">
-Development options
-</td></tr>
 <tr>
+<td class="note" colspan="2">
+Development options
+</td>
+</tr>
 
 <tr>
 <td>-devparm</td>
@@ -1541,7 +1569,7 @@ In Ultimate Doom mode -wart 3 1 will load devmaps/E3M1.</td>
 </tr>
 
 <tr>
-<td>-nodraw<br></td>
+<td>-nodraw<br/></td>
 <td>Timedemo option, to get execution time without drawing.
 Caution: no visible display so you must exit the game from memory (ESC, Q, RETURN, Y).
 </td>
@@ -1576,7 +1604,7 @@ Information
 
 <tr>
 <td>-h &lt;section&gt;</td>
-<td>Display one of the Help sections:<br>
+<td>Display one of the Help sections:<br/>
 <table class="def">
 <tr><th>section</th><th>content</th></tr>
 <tr><td>g</td><td>Help on game and wads</td></tr>
@@ -1589,16 +1617,17 @@ Information
 </td>
 </tr>
 
+<tr>
 <td>-v</td>
 <td>Verbose.  Print more information about warnings, wad errors, and the
 progression of startup and shutdown.</td>
 </tr>
 
+<tr>
 <td>-v2</td>
-<td>Very Verbose.  Print detailed information about the video system,
+<td>Very verbose.  Print detailed information about the video system,
 modes available and how the mode selection is handled.</td>
 </tr>
-
 </table>
 
 
@@ -1648,6 +1677,7 @@ modes available and how the mode selection is handled.</td>
   the DEHACKED lump.
   BEX is processed when BEX section names are encountered
   ("[STRINGS]", "[PARS]", "[CODEPTR]"), and will also handle INCLUDE.
+</p>
 </div>
 </body>
 </html>

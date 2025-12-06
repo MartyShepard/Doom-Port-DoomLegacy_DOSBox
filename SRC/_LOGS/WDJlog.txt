@@ -3788,3 +3788,24 @@ Revert VERSION and docs to 1.44 alpha5.
 Fix check on legacy wadversion to accept 1.44 and 1.45.
 The legacy.wad remains at 1.45.
 
+*** W96_verbose
+patchfile = w96_13c_verbose.patch
+- committed revision 1089   by wesley johnson
+Part of w96_win_sdl that did not get committed properly.
+Removes use of verbose in opengl, because Linux_X will make a dll, and
+the verbose will not be resolved at run-time.
+
+*** W97_savegame_menu
+patchfile = w97_1_savegame_menu.patch
+- committed revision 1092   by wesley johnson
+Fix several problems with savegame menu behavior.
+Savegame menus will no longer wrap to top of menu.
+They will return to the current scroll position when the menu is used
+again.
+Cleared status on unused savegame slots to prevent loading from them.
+Added some SAVEGAME defined names to replace constants, and used them
+throughout the savegame menu code.  This removed some latent bugs in places
+where the code was not properly accounting for SAVEGAME compile options.
+Clarified some of the names, organization, and use different names for
+menu slots and savegame slots.
+

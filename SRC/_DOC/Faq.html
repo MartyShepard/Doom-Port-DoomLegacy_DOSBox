@@ -11,7 +11,7 @@
 <body>
 <div class="column">
 <h1>Doom Legacy 1.45 FAQ</h1>
-<h1 class="tagline">Last updated 2014-1-9</h1>
+<h1 class="tagline">Last updated 2014-01-09</h1>
 
 <p>
 If you have any trouble with Doom Legacy, you might find a solution here.
@@ -40,7 +40,7 @@ please tell us so that we can update the FAQ and help other people!
    What is it?
   </dt>
   <dd>
-   You have a old version of doom.wad. Just upgrade your version to 1.9.
+   You have an old version of doom.wad. Just upgrade your version to 1.9.
    You can find a patch on the id Software site.
   </dd>
 </dl>
@@ -54,9 +54,11 @@ please tell us so that we can update the FAQ and help other people!
    offer improved and alternative behaviors over previous versions and other
    ports.
    The controls to select your preferred behavior for these features are
-   in the options menus.  Your settings will be saved to your config
+   in the <b>options menu</b>.  Your settings will be saved to your config
    file when you exit the game.  These features can also be controlled
    by setting variables using the console.
+   However, if you're looking for the 100% authentic 1990s Doom experience, you
+   could try <a href="http://www.chocolate-doom.org/wiki/index.php/Chocolate_Doom">Chocolate Doom</a>.
   </dd>
 </dl>
 
@@ -75,7 +77,7 @@ please tell us so that we can update the FAQ and help other people!
     </p>
     <p>
    Once the mouse or joystick is activated, you have to
-   bind the buttons to controls in the Setup Controls menu.
+   bind the buttons to controls in the <b>setup controls menu</b>.
     </p>
  </dd>
 </dl>
@@ -109,42 +111,47 @@ please tell us so that we can update the FAQ and help other people!
   <dt>The game display proportions are wrong.</dt>
   <dd>
   <p>
-   Doom was designed for a 320x200 display, which is 16:10.
-   All other display sizes displayed are adaptations, based on screen
-   width and height.
-   The pixels of the 320x200 display are not square, but most
-   modern display modes and monitors have square pixels.  This alters
-   some display artifacts like the shape of light splotches.
-   <p>
+   The original Doom graphics were designed for a 320x200 VGA display with
+   a 4:3 physical aspect ratio. Consequently the pixels on these displays had a 5:6
+   physical aspect ratio, unlike most modern displays which have
+   square pixels. This makes rendering the graphics on modern displays
+   somewhat complicated.
+  </p>
+  <p>
    The menus and intermission screens are scaled at integer ratios to
    fit the screen.  This will often leave bars at the edges.  Because
    these are drawn using color palette graphics from the wad, attempts
    at finer interpolation required looking up blended colors in a palette
    which lead to a muddy look.  Because of this the menus will be
    larger or smaller for some video display modes.
-   <p>
+  </p>
+  <p>
    The game rendering is fully scaled to display the same view at
    all video display modes.
-   <p>
+  </p>
+  <p>
    In software render mode, Doom Legacy will proportion the display to keep
    the original display appearance.  It will display with filler bars if
    necessary to do this.  The pixels will not be identical
    to those from the original Doom.
-   <p>
+  </p>
+  <p>
    In OpenGL mode using fullscreen, the introduction and intermission pictures
    are stretched to fill the screen.  This does not keep the original aspect ratio.
    The game rendering is adjusted to approximate the 320x200 screen
    size, and the field of view of the original software renderer, assuming the
    display is 4:3.
-   There is a FOV control, but it zooms and does not change the aspect ratio.
-   <p>
+   There is a FOV control, but it zooms and does not change the aspect
+   ratio.
+  </p>
+  <p>
    When you have a 16:9 display, Doom Legacy displays expecting a 4:3
    aspect, and the monitor will stretch it to the 16:9 shape.  This will alter
    the appearance of rooms and sprites.  Some monitors can be set to
    display a 4:3 aspect with black borders.
    The best alternative is to turn off fullscreen, and choose a window size
    that fills most of the screen.
-   </p>
+  </p>
   </dd>
 </dl>
 
@@ -170,7 +177,7 @@ please tell us so that we can update the FAQ and help other people!
 <dl>
   <dt>Where can I find Internet servers?</dt>
   <dd>
-    Try <a href="http://doomconnector.org/">Doom Connector</a>.
+    Try <a href="http://doomconnector.co.nr/">Doom Connector</a>.
   </dd>
 </dl>
 
