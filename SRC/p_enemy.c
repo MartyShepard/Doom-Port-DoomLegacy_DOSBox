@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: p_enemy.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -89,6 +89,7 @@
 
 #include "hardware/hw3sound.h"
 
+void A_Fall (mobj_t *actor);
 void FastMonster_OnChange(void);
 
 // enable the solid corpses option : still not finished
@@ -96,8 +97,12 @@ consvar_t cv_solidcorpse = {"solidcorpse","0",CV_NETVAR | CV_SAVE,CV_OnOff};
 consvar_t cv_fastmonsters = {"fastmonsters","0",CV_NETVAR | CV_CALL,CV_OnOff,FastMonster_OnChange};
 consvar_t cv_predictingmonsters = {"predictingmonsters","0",CV_NETVAR | CV_SAVE,CV_OnOff};	//added by AC for predmonsters
 
-// [WDJ] Monster friction
-void CV_monsterfriction_OnChange(void)
+// DarkWolf95: Monster Behavior
+CV_PossibleValue_t monbehavior_cons_t[]={{0,"Normal"},{1,"Coop"},{2,"Infight"},{0,NULL}};
+consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR, monbehavior_cons_t };
+
+// [WDJ] Monster friction, doorstuck
+void CV_monster_OnChange(void)
 {
     DemoAdapt_p_enemy();
 }
@@ -107,7 +112,16 @@ CV_PossibleValue_t monsterfriction_t[] = {
    {1,"MBF"},
    {2,"Momentum"},
    {0,NULL} };
-consvar_t cv_monsterfriction = {"monsterfriction","2", CV_NETVAR | CV_SAVE | CV_CALL, monsterfriction_t, CV_monsterfriction_OnChange};
+consvar_t cv_monsterfriction = {"monsterfriction","2", CV_NETVAR | CV_SAVE | CV_CALL, monsterfriction_t, CV_monster_OnChange};
+
+// Monster stuck on door edge
+CV_PossibleValue_t doorstuck_t[] = {
+   {0,"None"},
+   {1,"MBF"},
+   {2,"Boom"},
+   {0,NULL} };
+consvar_t cv_doorstuck = {"doorstuck","2", CV_NETVAR | CV_SAVE | CV_CALL, doorstuck_t, CV_monster_OnChange};
+
 
 
 typedef enum
@@ -122,7 +136,6 @@ typedef enum
     DI_SOUTHEAST,
     DI_NODIR,
     NUMDIRS
-
 } dirtype_t;
 
 
@@ -143,7 +156,6 @@ static dirtype_t diags[] =
 
 
 
-void A_Fall (mobj_t *actor);
 
 void FastMonster_OnChange(void)
 {
@@ -436,8 +448,16 @@ void DemoAdapt_p_enemy( void )
     }
     EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
     EN_old_pain_spawn = ( demoversion < 143 );
-    EN_mbf_doorstuck = ( demoversion > 203 );  // mbf demo
-    EN_doorstuck = ( demoversion >= 200 );
+    if( demoplayback && (demoversion < 144 || demoversion >= 200))
+    {
+        EN_mbf_doorstuck = ( demoversion > 203 );  // mbf demo
+        EN_doorstuck = ( demoversion >= 200 );
+    }
+    else
+    {
+        EN_mbf_doorstuck = (cv_doorstuck.value == 1);  // 1=MBF
+        EN_doorstuck = (cv_doorstuck.value > 0 );  // 0=none, 2=Boom
+    }
 #if 1
     if( verbose > 1 )
     { 
@@ -708,11 +728,13 @@ static void P_NewChaseDir (mobj_t*     actor)
 
     int         tdir;
     dirtype_t   olddir = actor->movedir;
-
     dirtype_t   turnaround = opposite[olddir];
 
     if (!actor->target)
-        I_Error ("P_NewChaseDir: called with no target");
+    {
+        I_SoftError ("P_NewChaseDir: called with no target");
+        return;
+    }
 
     trywalk_dropoffline = NULL;  // clear dropoff record
 

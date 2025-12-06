@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1073 2013-12-20 21:46:27Z wesleyjohnson $
+// $Id: m_menu.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1905,7 +1905,8 @@ void M_GameOption(int choice)
 menuitem_t AdvOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
-    {IT_STRING | IT_CVAR,0,"Monster friction"    ,&cv_monsterfriction    ,0},
+    {IT_STRING | IT_CVAR,0,"Monster friction"    ,&cv_monsterfriction    ,0},  // [WDJ]
+    {IT_STRING | IT_CVAR,0,"Monster door stuck"  ,&cv_doorstuck          ,0},  // [WDJ]
 #ifdef VOODOO_DOLL
     {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]

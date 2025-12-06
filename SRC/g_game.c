@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: g_game.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2581,8 +2581,9 @@ void G_BeginRecording (void)
     *demo_p++ = friction_model;
     *demo_p++ = cv_rndsoundpitch.value;  // uses M_Random
     *demo_p++ = cv_monbehavior.value;
+    *demo_p++ = cv_doorstuck.value;
     
-    for( i=8; i<32; i++ )  *demo_p++ = 0;
+    for( i=9; i<32; i++ )  *demo_p++ = 0;
 
     *demo_p++ = 0x55;   // Sync mark, start of data
     memset(oldcmd,0,sizeof(oldcmd));
@@ -2596,6 +2597,7 @@ byte pdss_instadeath;
 byte pdss_monsterfriction;
 byte pdss_monbehavior;
 byte pdss_rndsoundpitch;
+byte pdss_doorstuck;
 
 // The following are set by DemoAdapt:
 //  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
@@ -2618,6 +2620,7 @@ void playdemo_save_settings( void )
         pdss_monsterfriction = cv_monsterfriction.value;
         pdss_monbehavior = cv_monbehavior.value;
         pdss_rndsoundpitch = cv_rndsoundpitch.value; // calls M_Random
+        pdss_doorstuck = cv_doorstuck.value;
     }
     cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
 }
@@ -2631,6 +2634,7 @@ void playdemo_restore_settings( void )
         cv_monsterfriction.value = pdss_monsterfriction;
         cv_monbehavior.value = pdss_monbehavior;
         cv_rndsoundpitch.value = pdss_rndsoundpitch; // calls M_Random
+        cv_doorstuck.value = pdss_doorstuck;
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
 }
@@ -2995,6 +2999,7 @@ void G_DoPlayDemo (char *defdemoname)
         friction_model = *demo_p++;
         cv_rndsoundpitch.value = *demo_p++;  // uses M_Random
         cv_monbehavior.value = *demo_p++;
+        cv_doorstuck.value = *demo_p++;
 
         demo_p = demo_p_next;  // skip rest of settings
         if( *demo_p++ != 0x55 )  goto broken_header;  // Sync mark, start of data

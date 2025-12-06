@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: p_mobj.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -254,10 +254,6 @@ consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NUL
 consvar_t cv_gravity = { "gravity", "1", CV_NETVAR | CV_FLOAT | CV_SHOWMODIF };
 consvar_t cv_splats = { "splats", "1", CV_SAVE, CV_OnOff };
 consvar_t cv_maxsplats = { "maxsplats", "512", CV_SAVE, maxsplats_cons_t, NULL };
-
-// DarkWolf95: Monster Behavior
-CV_PossibleValue_t monbehavior_cons_t[]={{0,"Normal"},{1,"Coop"},{2,"Infight"},{0,NULL}};
-consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR, monbehavior_cons_t };
 
 static const fixed_t FloatBobOffsets[64] = {
     0, 51389, 102283, 152192,

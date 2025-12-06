@@ -3710,3 +3710,10 @@ patchfile = w96_5_win32_native.patch
 Updates to win32 native port code so that it compiles.
 Fixes code so that it compiles, but execution on my machine is
 crashing, which may be due to MinGW and library issues.
+
+*** W96_stuckdoor
+patchfile = w96_6_stuckdoor.patch
+- committed revision 1079   by wesley johnson
+Enable Monster stuck in door fixes from MBF and Boom.
+Adv. Menu gets the stuckdoor control.
+Saved to demo header and config.

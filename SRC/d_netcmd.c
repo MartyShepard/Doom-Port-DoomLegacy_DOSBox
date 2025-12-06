@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: d_netcmd.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -242,8 +242,6 @@ consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
 
-extern consvar_t   cv_monbehavior;
-
 #if defined( __DJGPP__ )	
 CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
 , {1, "4 BUttons"}
@@ -326,7 +324,6 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_itemrespawn);
     CV_RegisterVar(&cv_respawnmonsters);
     CV_RegisterVar(&cv_respawnmonsterstime);
-	CV_RegisterVar(&cv_monbehavior);
     CV_RegisterVar(&cv_fastmonsters);
     CV_RegisterVar(&cv_predictingmonsters);     //added by AC for predmonsters
     CV_RegisterVar(&cv_splats);

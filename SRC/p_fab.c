@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_fab.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -334,7 +334,10 @@ void D_RegisterMiscCommands (void)
     CV_RegisterVar (&cv_instadeath);
     CV_RegisterVar (&cv_voodoo_mode);
 #endif
+    // for p_enemy
+    CV_RegisterVar (&cv_monbehavior);
     CV_RegisterVar (&cv_monsterfriction);
+    CV_RegisterVar (&cv_doorstuck);
 }
 
 void  DemoAdapt_p_fab(void)  // local enables of p_fab
