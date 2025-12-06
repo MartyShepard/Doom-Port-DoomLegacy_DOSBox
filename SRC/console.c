@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1074 2013-12-31 02:36:32Z wesleyjohnson $
+// $Id: console.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -442,7 +442,6 @@ static void CON_InputInit (void)
         inputlines[i][0] = CON_PROMPTCHAR;
     inputline = 0;
     input_cx = 1;
-
 }
 
 
@@ -1058,6 +1057,7 @@ void CONS_Printf_va (const char *fmt, va_list ap)
         CON_DrawBackpic (con_backpic, 0, vid.width);    // put console background
         I_LoadingScreen ( txt );
 #else
+        V_ClearDisplay();
         // here we display the console background and console text
         // (no hardware accelerated support for these versions)
         CON_Drawer ();
@@ -1288,11 +1288,7 @@ void CON_DrawConsole (void)
     // draw console background
     if (!con_video)
     {
-        if( screens[0] )
-        {
-	    // minimal video support
-	    memset( screens[0], 0, vid.screen_size );  // clear to black
-	}
+        V_ClearDisplay();
     }
     else
     if (cons_backpic.value || con_forcepic)

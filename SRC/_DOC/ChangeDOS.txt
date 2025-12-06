@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01082 ]: w96 cleardisplay
+[01082 ]: w96 docs rev 1.45
 [01081 ]: w96 gdesc game file names
 [01080 ]: w96 hw misc
 [01079 ]: w96 monster stuck on door

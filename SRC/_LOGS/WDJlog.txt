@@ -3736,3 +3736,15 @@ Blasphemer:
   file = "BLASPHEM.WAD", "blasphem.wad", "heretic.wad"
 Ultimate mode:
   mode = ultdoom_retail
+
+*** W96_docs
+patchfile = w96_9_docs.patch
+- committed revision 1082   by wesley johnson
+Update docs for revsion 1.45.
+
+*** W96_cleardisplay
+patchfile = w96_10_cleardisplay.patch
+- committed revision 1083   by wesley johnson
+Add V_ClearDisplay function to give decent display clear for OpenGL.
+Fixes ghosting during CONS print scrolling.
+

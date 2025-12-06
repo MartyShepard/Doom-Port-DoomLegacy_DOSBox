@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1081 2014-01-17 21:48:40Z wesleyjohnson $
+// $Id: d_main.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1081"
+#define SVN_REV "1083"
 #endif
 
 // Version number: major.minor.revision
@@ -2323,6 +2323,7 @@ restart_command:
 #endif				
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
+        V_ClearDisplay();
 
 #ifdef HWRENDER
         if( rendermode != render_soft )
@@ -2548,7 +2549,7 @@ restart_command:
 
         if ((p = M_CheckParm("-playdemo")))
         {					
-			      CONS_Printf("Playing demo %s.\n", demo_name);
+            CONS_Printf("Playing demo %s.\n", demo_name);
             singledemo = true;  // quit after one demo
             G_DeferedPlayDemo(demo_name);
         }

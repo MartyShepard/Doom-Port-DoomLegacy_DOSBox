@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: m_menu.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -353,7 +353,6 @@ typedef enum {
   IT_DISABLED =   (IT_SPACE  | IT_GRAYPATCH),
 } menu_control_e;
 
-extern consvar_t   cv_monbehavior;
 
 
 typedef void (*menufunc_t)(int choice);
@@ -2498,7 +2497,7 @@ void M_DrawVideoMode(void)
 		        mdp->iscur = (dmode.modetype == vid.modenum.modetype
 				      && dmode.index == vid.modenum.index );
                     }
-		    dup = 1;
+                    dup = 1;
                     break;
                 }
             }
@@ -5267,7 +5266,7 @@ void M_LaunchMenu( void )
 
     do
     {
-        memset( screens[0], 0, vid.screen_size );  // clear to black
+        V_ClearDisplay();
         I_OsPolling();
         D_ProcessEvents ();  // menu responder
         M_Drawer(); // menu drawer

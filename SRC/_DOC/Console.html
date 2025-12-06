@@ -10,8 +10,8 @@
 <!-- $Id$ -->
 
 <body>
-<h1>Doom Legacy 1.44 Console Reference</h1>
-<h1 class="tagline">Last updated 2011-03-10</h1>
+<h1>Doom Legacy 1.45 Console Reference</h1>
+<h1 class="tagline">Last updated 2013-12-30</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -64,11 +64,12 @@ we have been inspired by it and have tried to implement the same
 functionality for the benefit of Quake/Doom fans.
 </p>
 
-<p>To open the console, press the <b>console key</b>. It is usually located just
-below ESC. You can set the console key at the Setup Controls
-menu.
-To exit the console, either press again the console key, or press
-<b>ESC</b>, which will bring up the menu, and shut the console.
+<p>To open the console, press the <b>console key</b>.
+The default console key is the accent key located just below ESC.
+You can change your console key using the Setup Controls menu, or edit it in
+the config.cfg file.
+To exit the console, either press the console key again, or press
+<b>ESC</b> which will close the console, and bring up the menu.
 </p>
 
 <p>The console displays all messages from the game. You can go back in
@@ -1015,6 +1016,10 @@ value. Boost needs to lie between 10 and 255.
 <td>
 Enables/disables clipping for the console player.
 Like the cheat code <b>idclip</b>.
+When noclip is on, the player can walk through walls and instantly
+move to the top of any platform, but cannot pick up items.
+This is useful for exploring, but is considered a cheat when used
+during game play.
 </td></tr>
 
 <!--
@@ -1030,9 +1035,13 @@ In the fly mode the player can fly using the <b>jump</b> control.
 God mode. Just like the cheat <b>iddqd</b>.
 </td></tr>
 
-<tr><td>gimme health | ammo | weapons | armor | keys | map | almostanything...</td>
+<tr><td>gimme health | ammo | weapons | armor | keys | map | fullmap
+| chainsaw | shotgun | supershotgun | chaingun | rocket | plasma | bfg
+| berserk </td>
 <td>
-The cheat à la carte.
+Gives the attributes or items to the player.
+Can have one or more cheat names on one gimme command,
+such as "gimme health armor keys".
 </td></tr>
 
 <tr><td>
@@ -1551,8 +1560,13 @@ This is an experimental variable for now since it's not yet
 optimized. I don't recommend you to use it, except if you have
 the cream of the cream PC. It's ok for some maps, though.
 </td></tr>
+<tr><td>
+gr_stats
+</td><td>-</td>
+<td>
+Prints out the memory usage of the hardware renderer.
+</td></tr>
 </table>
-
 
 
 <h3 id="sound_options">Sound options</h3>

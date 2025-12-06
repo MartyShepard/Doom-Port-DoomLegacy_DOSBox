@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1076 2013-12-31 02:44:03Z wesleyjohnson $
+// $Id: v_video.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -781,6 +781,24 @@ void VID_BlitLinearScreen(byte * srcptr, byte * destptr, int width, int height, 
     }
 }
 #endif
+
+// clear to black
+void V_ClearDisplay( void )
+{
+#ifdef HWRENDER   
+    if( rendermode != render_soft )
+    {
+        // Scaled
+        HWR_DrawFill(0, 0, 320, 200, 0);
+//        HWR_DrawFill(0, 0, vid.width, vid.height, 0);
+    }
+    else
+#endif
+    {
+        if( vid.display )
+	   memset( vid.display, 0, vid.screen_size );
+    }
+}
 
 // [WDJ] parameterized draw, used by V_DrawScaled, V_DrawMapped
 drawinfo_t  V_drawinfo;

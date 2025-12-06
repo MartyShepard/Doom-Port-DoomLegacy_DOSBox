@@ -13,9 +13,9 @@
 
 <div class="column">
 
-<h2>1.44 SVN1045 (2013-09-20)</h2>
+<h2>1.45 SVN1081 (2014-1-15)</h2>
 
-<h3>FEATURES 1.44 alpha4.x</h3>
+<h3>FEATURES 1.45</h3>
 <ul>
 <li>
 Revised the corona drawing to use sorted draw, with some menu options.
@@ -44,13 +44,32 @@ When not found, will create ".doomlegacy".
 <li>The splash screen, finale, and menu screens are now centered
 in the monitor window.</li>
 <li>Add a -screendeg command line option, which is a generalization of
--left and -right.
+-left and -right.</li>
+<li>
+The quoted button names (with spaces) in a quoted string are hard to read,
+and error prone.
+They can now be named using underlines in place of the spaces.
+Such names do not need to be quoted.<br>
+Example: alias ps0 "playersprites 0; bind mouse_3 ps1"
 </li>
+<li>When there are no secrets, no possible kills, or no items on a level,
+then draw a dash (minus) instead of 0%.</li>
+<li>New menu sounds that are much less harsh than the pistol shot have
+been added to legacy.wad.
+A menu selection allows selects automatic or a specific sound set.</li>
+<li>An error message screen now appears sooner, with more of the
+important error messages.</li>
+<li>A Launcher is built into DoomLegacy.  It is activated when
+the IWAD cannot be loaded, legacy.wad cannot be found,
+or if there are no switches on the command line.</li>
+<li>To handle when monsters get stuck on a door frame, there is a new
+doorstuck control to select either the MBF, or the Boom method of
+altering their movement to get them loose again.</li>
 </ul>
 
-<h3>BUG FIXES 1.44, alpha4.x</h3>
+<h3>BUG FIXES 1.45</h3>
 <ul>
-<li>Fixed a bug in hardware rendering caused by previous patch,
+<li>Fixed a bug in hardware rendering caused by a previous patch,
 triggered when an imp shoots a fireball.
 </li>
 <li>A single patch texture, with an offset, was generating the wrong
@@ -59,22 +78,24 @@ combine instead, which can handle this.  Also directs large patches
 to there to avoid multiple copies of the same large patch.
 </li>
 <li>Increased savegame buffer freespace to 64K to handle the large
-number of thinkers in hgh2.wad (which needed 12K).
+number of thinkers in hth2.wad (which needed 12K).
 </li>
 <li>Load the translucent tables for RGB modes too.</li>
 <li>Fix drawing of DeepWater, for several situations in ic2005.wad
 where textures are drawn pegged to mobile deepwater sectors.
-1) A translucent over a deepwater door.
-2) A transparent texture (electric arc) under a deepwater ceiling.
-3) A thin texture used for grid flooring, with deepwater ceiling to move it.
-The two sided middle textures must be pegged to the original ceiling,
+ <ul>
+ <li>A translucent over a deepwater door.</li>
+ <li>A transparent texture (electric arc) under a deepwater ceiling.</li>
+ <li>A thin texture used for grid flooring, with deepwater ceiling to move it.</li>
+ </ul>
+The two sided middle textures are now pegged to the original ceiling,
 not to the deepwater sector.
 </li>
 <li>Restore the palette after the Heretic E2M8 ending pic is shown.</li>
 <li>Fix sound effects to cut off sounds such as the chainsaw.
 Finer control of stopping sound effects is provided.</li>
 <li>Fix sound effect free memory that would cause Z_Free errors, such as
-with the ambiant sound in phobia.wad.</li>
+with the ambiant sound in phobiata.wad.</li>
 <li>Fix Boom DeepWater colormap error for hardware renderer.</li>
 <li>Hardware drawn sprites would be occluded by transparent walls behind them.
 Fixed hardware draw function to draw sprites and walls together
@@ -99,7 +120,7 @@ dependency files, and linking.  Fixes for compiling with MinGW and WIN32.
 <li>Applied patches from Alexey Dokuchaev to fix FreeBSD issues.</li>
 <li>Fixed free memory printout which was always printing "Free 0".</li>
 <li>Fix bug in translucent draw of sprite for 8bit screens.
-This affects phobia.wad fires, where would get random alpha.</li>
+This affects phobia.wad fires, where they would get random alpha.</li>
 <li>Remove uses of alloca, replacing them with calloc, and explicitly
 freeing the allocations.  Alloca is a problem with compatibility.</li>
 <li>Restore previous t_runscript and t_running commands so older wads that
@@ -120,7 +141,9 @@ SDL port.  Updated keycodes used by other ports to the interface used by the
 SDL port.</li>
 <li>Fixed WIN32 to use newer joystick interfaces.</li>
 <li>Fixed WIN32 WIN_NATIVE code to compile and run again with native
-and directdraw interfaces.</li>
+and directdraw interfaces.
+Not well tested, and not tested with latest Windows versions.
+</li>
 <li>Opengl would display HOM in some particular instances.
 Changing the save vertex test to an inequality cured the HOM.
 </li>
@@ -131,8 +154,51 @@ printing a warning message.
 </li>
 <li>Ticrate graph made consistent over all ports.</li>
 <li>Hardware draw of Boom 160 tagged translucent fixed.</li>
+<li>Fixed handling of escaped quotes within quotes in bind button
+command in script. </li>
+<li>Fix updates of player viewheight to provide a slow rise and fall
+for changes to the cv_viewheight.</li>
+<li>Disable menu movement from the mouse for a short interval
+(about 4 seconds) after each key press.  After the interval the mouse
+can be used to move in the menus again.  Does not affect mouse clicks.
+This stops accidental mouse input from moving the menu ptr.</li>
+<li>Check for a sound lump using plain name too, to find the amb sounds
+in hth2.wad, which were defaulting to pistol. Playing hth2.wad has the
+ambiance sounds now.
+<li>Fixed crash due to using a lump for more than one sfx, by using a
+copy.</li>
+<li>Fix AddSound to only remove a sound when sfx is full, and to use a
+usefulness test.</li>
+<li>Improved the software draw sprite ordering on 3d floors, where the
+sprite would be drawn under the floor.  It does not cure a similar problem with
+railings, which are higher than dead sprites.</li>
+<li>Fix the demo playback so it will play our own 144 DL format correctly.</li>
+<li>Added A_Random number generator for ambience, and B_Random for Bots,
+to reduce chance of interference with P_Random and demo playback.</li>
+<li>Infight and monbehavior vars organized and included in demo
+playback consideration.</li>
+<li>Boom demo playback improved, removed a segfault condition and some
+incompatibilities.  Added Boom stuckdoor code for demo playback.
+Still does not sync for very long.</li>
+<li>Boom Midi music lumps will now play when using older SDL library option.</li>
+<li>A central message function now consistently handles all messages,
+routing them to console, log file, and stderr text as directed by EMSG flags.
+Error, debug, verbose, and other special messges, use this facility.</li>
+<li>Search LEGACYWADDIR, default dir, and doomwaddir for legacy.wad.</li>
+<li>Linux-X11 Opengl library loading is fixed.  It previously would
+fail loading and leave the user in software render mode.</li>
+<li>Opengl transparent walls and fences were being culled when a left
+side wall also projected behind the player.  The test limit has
+been increased to -2000.0 to reduce this problem, which should be
+adequate for walls less than 1000 long.</li>
+<li>Hardware draw polygon vertexes are handled more cleanly.
+Some panels that were missed in polygon generation, are now drawn.</li>
+<li>Fix draw of hardware renderer Loading percentage box, by setting up
+draw options properly.</li>
 </ul>
 
+
+<h2>1.44 SVN999 (2012-12-16)</h2>
 
 <h3>FEATURES 1.44 alpha4</h3>
 <ul>

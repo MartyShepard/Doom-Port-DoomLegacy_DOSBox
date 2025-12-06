@@ -10,7 +10,7 @@
 
 <body>
 <div class="column">
-<h1>Doom Legacy 1.44 User Reference Manual</h1>
+<h1>Doom Legacy 1.45 User Reference Manual</h1>
 
 
 <div class="floatbox">
@@ -210,8 +210,16 @@
   Most of the settings that the launcher supported can now be set from menus and the console.
   However the -game, -file, and -config must be set from command line switches.
 <p>
-  One way is to create shortcuts to doomlegacy.  Specify in the shortcut the command line
-  and change starting directory to where the doomlegacy program resides.
+  Doomlegacy will invoke a Launcher window when it is started without
+  switches.  It will also invoke the Launcher window when the game
+  selection results or iwad selection are invalid.
+  The Launcher window provides input of the game switches, iwad,
+  config, home, and doomwad directories.
+<p>
+  Another way to start DoomLegacy is to create shortcuts.
+  These can be executed using a mouse.
+  Specify in the shortcut the command line, and change the starting directory
+  to where the doomlegacy program resides.
 <pre>
   Example shortcut for DoomLegacy with plutonia2 wad:
   Shortcut: dl_plut2
@@ -219,9 +227,10 @@
     current directory: c:\games\legacydir
 </pre>
 <p>
-  Another way is to create a batch file for each combination of switches, and run the
-  batch file to start doomlegacy.
-  Batch file examples (where legacydir, homedir, configdir, and waddir stand for directories that you specify).
+  Creating a batch file with the necessary commands is also an easy way
+  to record a combination of switches.  Run the batch file to start doomlegacy
+  with the particular game and PWAD.
+  In the following batch file examples, legacydir, homedir, configdir, and waddir stand for directories that you specify.
 <br>
 <pre>
   DOOM2.BAT
@@ -340,8 +349,8 @@ with your own selection of compile options.
 <p>
   Music requires SDL_mixer version 1.2.7 or later. Earlier SDL_mixer
   versions do not have a working RWOPS interface. Legacy can play music
-  using files instead, but this requires recompiling Legacy, allowing it
-  to detect the SDL_mixer version.
+  using files instead, but this requires recompiling Legacy, allowing
+  the compile to detect the SDL_mixer version.
 <p>
   SDL_mixer is a separate download and installation, and the latest is
   version 1.2.11.
@@ -353,14 +362,14 @@ with your own selection of compile options.
   In the Windows native version the sound is autodetected using DirectX so make sure your card works
   well with DirectX and then legacy will use it.
 <p>
-  Additionallym Legacy could utilize hardware 3D sound
+  Additionally, Legacy could utilize hardware 3D sound
   for making more realistic sound environment.
 <p>
   Specify -ds3d command line parameter to use generic 3D sound driver
   (DirectSound 3D). This driver are suitable for most 3D sound chips.
 <p>
-  FMOD is an alternative sound library.  To use FMOD, must compile with
-  the FMOD library and FMOD configuration selected.
+  FMOD is an alternative sound library.  To use FMOD, it must be compiled
+  with the FMOD library and FMOD configuration selected.
   FMOD support was incompletely developed, so compilation has not been
   sucessfull. FMOD compilation is disabled by default.
 </p>
@@ -593,14 +602,14 @@ gamma index : GAMMA value
 
 <h3>OpenGL renderer</h3>
 <p>
-  Legacy includes two different graphics engines, the old Doom
-  software renderer (with many improvements) and an OpenGL-based hardware renderer.
+  Legacy includes two different graphics engines, the old Doom software
+  renderer (with many improvements) and an OpenGL-based hardware renderer.
 </p>
 <p>
-  The OpenGL renderer is shinier and has fancier effects than the software one, but
-  it does not do everything that the software renderer does.
-  It does have coronas, explosion light, and other light effects that the software
-  renderer does not do.
+  The OpenGL renderer is shinier and has fancier effects than the software one,
+  but it does not do everything that the software renderer does.
+  It does have coronas, explosion light, and other light effects that the
+  software renderer does not do.
 <p>
   Some wads rely upon violating wad rules to get trick effects.
   These rely upon tricking the software renderer into not drawing something.
@@ -815,15 +824,36 @@ See <a href="console.html">here</a> for more about the console.
   <li>DEATHS: this ranking shows the players who have died the most!</li>
 </ul>
 
-  
+<h2 id="cmdline">LAUNCHER</h2>
+
+<p>The Launcher window is invoked when there is an error with the game
+selection, the iwad specified cannot be loaded, there is a fatal error
+in the startup, or if the command line is empty.
+<p>If there is an error, the console window will display first with
+the errors.  Pressing escape will proceed to the Launcher window.
+<p>The Launcher window has input lines like a menu.  Use the up and
+down arrow to move between items.  Type in names for the directories,
+or use backspace to erase names.  The left and right arrows will cycle
+through the game selections.  When satisfied, the continue entry will
+restart DoomLegacy with your new command line input.
+The QUIT entry will exit DoomLegacy entirely.
+<p>HOME: Set your home directory location, where your config files and
+savegames are kept, the same as "-home".
+<p>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD
+files.
+<p>CONFIG: The config file to use, the same as "-config".
+<p>SWITCH: Any of the switches allowed on the command line,
+specified in the same format, such as "-opengl".
+<p>IWAD: The IWAD specified, the same as "-iwad".
+<p>GAME: The possible games, the same as "-game".
+<p>CONTINUE: Restart DoomLegacy with the new command line switches and
+selections.
+<p>QUIT: Quit DoomLegacy entirely.
+
+
 <h2 id="cmdline">COMMANDLINE OPTIONS</h2>
 
 <p>Here are the command-line options Legacy recognizes:</p>
-
-<p>
-FIXME console commands cd, gr_stats, nodownload consvar
-FIXME video mode lists, window caption, cv_fullscreen..
-</p>
 
 <table class="def">
 <tr><th>option</th><th>description</th></tr>
@@ -875,6 +905,13 @@ savegames are kept.</td>
   when needed.
   It is no longer critical to set enough memory on the command line,
   although it may make loading smoother.
+<p>
+  This switch on the SWITCH line of the DoomLegacy Launcher is
+  ineffective because the memory system has already started by then.
+  However, DoomLegacy is compiled by default with the GROW_ZONE memory system,
+  that automatically increases the memory allocation as needed, so it
+  is not needed.  If you were to compile DoomLegacy with the old ZONE_ZALLOC
+  memory system selected, then this switch would be necessary to control it.
 </td>
 </tr>
 

@@ -10,8 +10,8 @@
 <!-- $Id$ -->
 <body>
 <div class="column">
-<h1>Doom Legacy 1.44 FAQ</h1>
-<h1 class="tagline">Last updated 2010-07-26</h1>
+<h1>Doom Legacy 1.45 FAQ</h1>
+<h1 class="tagline">Last updated 2014-1-9</h1>
 
 <p>
 If you have any trouble with Doom Legacy, you might find a solution here.
@@ -45,6 +45,21 @@ please tell us so that we can update the FAQ and help other people!
   </dd>
 </dl>
 
+<dl>
+  <dt>
+   The game does not look the same as other versions of Doom.
+  </dt>
+  <dd>
+   Doom Legacy is an advanced port with many new features.  These features
+   offer improved and alternative behaviors over previous versions and other
+   ports.
+   The controls to select your preferred behavior for these features are
+   in the options menus.  Your settings will be saved to your config
+   file when you exit the game.  These features can also be controlled
+   by setting variables using the console.
+  </dd>
+</dl>
+
 
 <h2><a name="input">Mouse/Joystick/Keyboard</a></h2>
 
@@ -55,8 +70,8 @@ please tell us so that we can update the FAQ and help other people!
    First, check that the mouse/joystick is activated : go at the
    console and type either 'use_mouse' (or use the respective
    menuitem) or 'use_joystick'.
-   If it tells '0' or off than the mouse/joystick is not used,
-   set the variable to 1. eg: 'use_mouse 1'.
+   If it is '0' or off then that mouse/joystick is disabled.
+   Set the variable to 1. eg: 'use_mouse 1'.
     </p>
     <p>
    Once the mouse or joystick is activated, you have to
@@ -78,8 +93,76 @@ please tell us so that we can update the FAQ and help other people!
   </dd>
 </dl>
 
+<dl>
+  <dt>The game display is sideways.</dt>
+  <dd>
+   Some monitors can be tilted to be tall, for working with documents.
+   They have display modes like 800x600, and 600x800.
+   They can detect 600x800 (where the 800 is the height), assume the
+   tilted mode, and display the raster accordingly.  Other tilt monitors
+   may sense the tilted mode with a switch instead.
+   Use the 800x600 video mode instead.
+  </dd>
+</dl>
+
+<dl>
+  <dt>The game display proportions are wrong.</dt>
+  <dd>
+  <p>
+   Doom was designed for a 320x200 display, which is 16:10.
+   All other display sizes displayed are adaptations, based on screen
+   width and height.
+   The pixels of the 320x200 display are not square, but most
+   modern display modes and monitors have square pixels.  This alters
+   some display artifacts like the shape of light splotches.
+   <p>
+   The menus and intermission screens are scaled at integer ratios to
+   fit the screen.  This will often leave bars at the edges.  Because
+   these are drawn using color palette graphics from the wad, attempts
+   at finer interpolation required looking up blended colors in a palette
+   which lead to a muddy look.  Because of this the menus will be
+   larger or smaller for some video display modes.
+   <p>
+   The game rendering is fully scaled to display the same view at
+   all video display modes.
+   <p>
+   In software render mode, Doom Legacy will proportion the display to keep
+   the original display appearance.  It will display with filler bars if
+   necessary to do this.  The pixels will not be identical
+   to those from the original Doom.
+   <p>
+   In OpenGL mode using fullscreen, the introduction and intermission pictures
+   are stretched to fill the screen.  This does not keep the original aspect ratio.
+   The game rendering is adjusted to approximate the 320x200 screen
+   size, and the field of view of the original software renderer, assuming the
+   display is 4:3.
+   There is a FOV control, but it zooms and does not change the aspect ratio.
+   <p>
+   When you have a 16:9 display, Doom Legacy displays expecting a 4:3
+   aspect, and the monitor will stretch it to the 16:9 shape.  This will alter
+   the appearance of rooms and sprites.  Some monitors can be set to
+   display a 4:3 aspect with black borders.
+   The best alternative is to turn off fullscreen, and choose a window size
+   that fills most of the screen.
+   </p>
+  </dd>
+</dl>
+
 
 <h2><a name="audio">Audio</a></h2>
+
+<dl>
+  <dt>The music volume control is not independent of the sound effects
+  volume control.
+  </dt>
+  <dd>
+  More recent Windows products changed the sound interface to implement
+  only one volume control for a program.  All the Doom ports are
+  having problems with this.  Doom Legacy has not implemented any of
+  the suggested solutions yet.  One requires starting an independent task to
+  play the music, just to get the independent volume control.
+  </dd>
+</dl>
 
 
 <h2><a name="network">Network</a></h2>

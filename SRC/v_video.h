@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: v_video.h 1083 2014-02-03 17:28:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -271,6 +271,9 @@ void V_DrawPerspView (byte *viewbuffer, int aiming);
 void VID_BlitLinearScreen (byte *srcptr, byte *destptr, int width,
                            int height, int srcrowbytes, int destrowbytes);
 
+// clear to black
+void V_ClearDisplay( void );
+  
 // [WDJ] 2012-02-06 Draw functions for all bpp, bytepp, and padded lines.
 
 // [WDJ] Common calc of the display buffer address for an x and y
