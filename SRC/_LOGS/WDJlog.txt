@@ -3908,3 +3908,10 @@ patchfile = w97_12_version145.patch
 - committed revision 1103   by wesley johnson
 Update docs and version numbers for 1.45.
 
+*** W97_patch_segfault
+patchfile = w97_13_patch_sf.patch
+- committed revision 1104   by wesley johnson
+Legacy demo segfaults because a colormap is getting used as a patch in
+a texture.  They both have the same name, BLUMAP.
+This patch stops the segfault by detecting when a patch offset will
+overrun the patch size.

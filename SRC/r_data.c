@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: r_data.c 1104 2014-05-02 22:02:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -115,6 +115,8 @@
 #define GENTEXT_REUSECOL
 //#define DEBUG_REUSECOL  (verbose > 1)
 //#define DEBUG_REUSECOL  verbose
+// Enable bad patch detection
+#define GENTEXT_BADPATCH_DETECT
 
 // [WDJ] debug flat
 //#define DEBUG_FLAT
@@ -292,6 +294,9 @@ typedef struct {
 #ifdef GENTEXT_REUSECOL
     uint32_t  usedpatchdata;    // to detect reuse, compaction
 #endif
+#ifdef GENTEXT_BADPATCH_DETECT
+    int   patchsize;
+#endif
 } compat_t;
    
 
@@ -361,6 +366,24 @@ byte* R_GenerateTexture (int texnum)
 	// [WDJ] Must use common patch read to preserve endian consistency.
 	// otherwise it will be in cache without endian changes.
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
+
+#ifdef GENTEXT_BADPATCH_DETECT
+        // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
+	// but it will return a colormap of the same name.
+	// Validity checks.
+	// colormap size = 0x2200 to 0x2248
+        {
+	    int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
+	    uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
+	    if( patch_colofs_size + 8 > patchsize )  // column list exceeds patch size
+	        goto make_dummy_texture;
+	    for( i=0; i< realpatch->width; i++)
+	    {
+	       if( *(pat_colofs++) > patchsize )
+		   goto make_dummy_texture;
+	    }
+	}
+#endif
 #if 1
         // [WDJ] Detect PNG patches.
 	if(    ((byte*)realpatch)[0]==137
@@ -375,6 +398,8 @@ byte* R_GenerateTexture (int texnum)
 	    // Enable when want to know which textures are triggering this.
 	    GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
 #endif
+make_dummy_texture:
+	  {
 	    // make a dummy texture
 	    int head_size = colofs_size + 8;
 	    txcblocksize = head_size + 4 + texture->height + 4;
@@ -402,6 +427,7 @@ byte* R_GenerateTexture (int texnum)
 	    for(i=0 ; i< texture->width ; i++ )
 	         colofs[i] = head_size;
 	    goto single_patch_finish;
+	  }
         }
 #endif
 #if 1
@@ -548,7 +574,13 @@ byte* R_GenerateTexture (int texnum)
         cp->width = realpatch->width;
         int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
         // add posts, without columnofs table and 8 byte patch header
+#ifdef GENTEXT_BADPATCH_DETECT
+        patchsize = W_LumpLength(texpatch->patchnum);
+        cp->patchsize = patchsize;
+        compostsize += patchsize - patch_colofs_size - 8;
+#else
         compostsize += W_LumpLength(texpatch->patchnum) - patch_colofs_size - 8;
+#endif
     }
     // Decide TGC_ format
     // Combined patches + table + header
@@ -642,6 +674,10 @@ byte* R_GenerateTexture (int texnum)
 	    {
 	        realpatch = cp->patch;
 	        uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
+#ifdef GENTEXT_BADPATCH_DETECT
+	        if( pat_colofs[patch_x] > cp->patchsize )  // detect bad patch
+		    goto patch_off;  // post is not within patch memory
+#endif
 	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
 	        if ( cp->postptr->topdelta == 0xFF )
 		    goto patch_off;
@@ -905,7 +941,7 @@ byte* R_GenerateTexture (int texnum)
 	    texture->name, txcblocksize, destpixels - texgen );
 #endif
     goto done;
-
+   
 #ifndef GENTEXT_REALLOC
  exceed_alloc_error:   
     I_SoftError("R_GenerateTexture: %8s exceeds allocated block, make picture\n", texture->name );
