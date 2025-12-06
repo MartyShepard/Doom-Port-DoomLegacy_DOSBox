@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01078 ]: Version numbers updated to 1.45.
+[01077 ]: CMake build system added.
 [01076 ]: w96 win32 native
 [01075 ]: w96 hw poly
 [01074 ]: w96 con printf

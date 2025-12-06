@@ -223,3 +223,11 @@ Docs fixed/beautified.
 rev 845
 Updated version to 1.44 alpha3.
 
+
+*** CMake build system
+rev 1077
+Added CMakeLists.txt files for building Legacy using CMake.
+Cross compilation does not work yet.
+
+*** Updated version to 1.45.0 beta1
+rev 1078
