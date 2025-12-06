@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_mobj.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1649,6 +1649,93 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     return mobj;
 }
 
+
+// [WDJ] Changes the mobj type.
+// Does not set mapthing
+// Returns false if fails the test.
+boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
+{
+    mobjtype_t  current_type = mo->type;
+    int old_flags = mo->flags;  // to restore
+    state_t *st;
+    mobjinfo_t *info;
+
+    info = &mobjinfo[type];
+    mo->height = info->height;
+    mo->radius = info->radius;
+    mo->flags = info->flags;
+
+    if( mmflags & MM_testsize )
+    {
+        // Test if the new size fits in current location.
+        // Requires x,y,z, floorz, ceilingz, 
+	// height, radius, flags (for pickup, noclip, solid)
+        if( ! P_TestMobjLocation(mo) )
+        {
+	    // does not fit, restore any changed fields
+	    info = &mobjinfo[current_type];
+	    mo->height = info->height;
+	    mo->radius = info->radius;
+	    mo->flags = info->flags;
+	    return false;
+	}
+    }
+       
+    // commit by updating all the fields
+    mo->special2 = current_type; // save type for restore
+    mo->type = type;
+    mo->info = info;
+    mo->flags |= old_flags & keepflags;  // keep some flags
+    mo->flags2 = info->flags2;
+    mo->health = info->spawnhealth;
+   
+    // Other things that SpawnMobj did that may be relevant
+    mo->reactiontime = (gameskill != sk_nightmare)? info->reactiontime : 0;
+
+    if ((demoversion < 129 && mo->type != MT_CHASECAM)
+//	|| gamemode == heretic  // if played heretic demo this would be important
+	)
+    {
+        // Heretic use of P_Random
+        mo->lastlook = P_Random() % MAXPLAYERS;
+    }
+    else
+        mo->lastlook = -1;    // stuff moved in P_enemy.P_LookForPlayer
+
+    // because action routines can not be called yet
+    st = &states[info->spawnstate];
+
+    mo->state = st;
+    mo->tics = st->tics;
+    mo->sprite = st->sprite;
+    mo->frame = st->frame;    // FF_FRAMEMASK for frame, and other bits..
+
+    if (mo->flags2 & MF2_FOOTCLIP
+	&& P_GetThingFloorType(mo) != FLOOR_SOLID
+	&& mo->floorz == mo->subsector->sector->floorheight
+	&& gamemode == heretic)
+        mo->flags2 |= MF2_FEETARECLIPPED;
+    else
+        mo->flags2 &= ~MF2_FEETARECLIPPED;
+
+    if (mo->type == MT_SPIRIT)
+        mo->thinker.function.acp1 = (actionf_p1) P_MobjNullThinker;
+    else
+    {
+        mo->thinker.function.acp1 = (actionf_p1) P_MobjThinker;
+        if( mo->thinker.next == NULL )  // Not currently linked into thinker
+	    P_AddThinker(&mo->thinker);
+    }
+   
+    if( mmflags & MM_telefog )
+    { 
+        mobj_t * fog = P_SpawnMobj(mo->x, mo->y, mo->z+TELEFOGHEIGHT, MT_TFOG);
+        S_StartSound(fog, sfx_telept);
+    }
+
+    return true;
+}
+
 //
 // P_RemoveMobj
 //
@@ -2276,6 +2363,8 @@ void P_SpawnSmoke(fixed_t x, fixed_t y, fixed_t z)
 // --------------------------------------------------------------------------
 // P_SpawnPuff
 // --------------------------------------------------------------------------
+// Heretic must have set PuffType before calling routines that call SpawnPuff.
+// Otherwise you get a player mobj stuck on the thing the player just punched.
 void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 {
     mobj_t *puff;

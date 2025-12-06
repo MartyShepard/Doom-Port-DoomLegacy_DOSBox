@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_cheat.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -536,6 +536,7 @@ void Command_CheatGimme_f(void)
 
         if (!strncmp(s, "health", 6))
         {
+	    // Also, gives chicken 100 health.
             if (plyr->mo)
                 plyr->mo->health = god_health;
 
@@ -802,7 +803,7 @@ static byte CheatWarpSeq[] = {
     0, 0, 0xff, 0
 };
 
-// Save a screenshot
+// Become a chicken
 static byte CheatChickenSeq[] = {
     CHEAT_ENCRYPT('c'),
     CHEAT_ENCRYPT('o'),
@@ -887,11 +888,11 @@ static boolean HandleCheats(byte key)
 
     if (netgame || gameskill == sk_nightmare)
     {   // Can't cheat in a net-game, or in nightmare mode
-        return (false);
+        return false;
     }
     if (consoleplayer_ptr->health <= 0)
     {   // Dead players can't cheat
-        return (false);
+        return false;
     }
     eat = false;
     for (i = 0; Cheats[i].func != NULL; i++)
@@ -939,9 +940,9 @@ static boolean CheatAddKey(Cheat_t * cheat, byte key, boolean * eat)
     {
         cheat->pos = cheat->sequence;
         cheat->currentArg = 0;
-        return (true);
+        return true;
     }
-    return (false);
+    return false;
 }
 
 //--------------------------------------------------------------------------
@@ -1145,11 +1146,13 @@ static void CheatChickenFunc(player_t * player, Cheat_t * cheat)
     {
         if (P_UndoPlayerChicken(player))
         {
+	    // [WDJ] Player mobj no longer changes.
             P_SetMessage(player, TXT_CHEATCHICKENOFF, false);
         }
     }
     else if (P_ChickenMorphPlayer(player))
     {
+        // [WDJ] Player mobj no longer changes.
         P_SetMessage(player, TXT_CHEATCHICKENON, false);
     }
 }

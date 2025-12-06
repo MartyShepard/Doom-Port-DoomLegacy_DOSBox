@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
+// $Id: doomdef.h 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -147,6 +147,11 @@ extern FILE *logstream;
 #if defined( WIN32 ) && !defined( LAUNCHER )
 #define LAUNCHER
 #endif
+
+// Player morph canceling invisibility and MF_SHADOW, is inconsistent.
+// The Heretic vanilla behavior cancels SHADOW when turned into a chicken.
+// #define PLAYER_CHICKEN_KEEPS_SHADOW
+
 // =========================================================================
 
 // Name of local directory for config files and savegames

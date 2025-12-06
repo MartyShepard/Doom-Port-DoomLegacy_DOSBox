@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01097 ]: w97 morph mobj
+[01096*]: w97 hw distance angle
+[01095*]: w97 hw fineangle
 [01094 ]: w97 distance angle
 [01093 ]: w97 fineangle
 [01092 ]: w97 savegame menu

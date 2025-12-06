@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_henemy.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -388,47 +388,29 @@ void A_ImpXDeath2(mobj_t *actor)
 //
 //----------------------------------------------------------------------------
 
-#define TELEFOGHEIGHT (32*FRACUNIT)
+// Monster chickens only.
+// [WDJ] Fixed to Morph the same mobj,
+// instead of hiding it as a corpse above the ceiling using S_FREETARGMOBJ.
 boolean P_UpdateChicken(mobj_t *actor, int tics)
 {
-        mobj_t *fog;
-        fixed_t x;
-        fixed_t y;
-        fixed_t z;
-        mobjtype_t moType;
-        mobj_t *mo;
-        mobj_t oldChicken;
+    mobjtype_t moType;
 
-        actor->special1 -= tics;
-        if(actor->special1 > 0)
-        {
-                return(false);
-        }
-        moType = actor->special2;
-        x = actor->x;
-        y = actor->y;
-        z = actor->z;
-        oldChicken = *actor;
-        P_SetMobjState(actor, S_FREETARGMOBJ);
-        mo = P_SpawnMobj(x, y, z, moType);
-        if(P_TestMobjLocation(mo) == false)
-        { // Didn't fit
-                P_RemoveMobj(mo);
-                mo = P_SpawnMobj(x, y, z, MT_CHICKEN);
-                mo->angle = oldChicken.angle;
-                mo->flags = oldChicken.flags;
-                mo->health = oldChicken.health;
-                mo->target = oldChicken.target;
-                mo->special1 = 5*TICRATE; // Next try in 5 seconds
-                mo->special2 = moType;
-                return(false);
-        }
-        mo->angle = oldChicken.angle;
-        mo->target = oldChicken.target;
-        fog = P_SpawnMobj(x, y, z+TELEFOGHEIGHT, MT_TFOG);
-        S_StartSound(fog, sfx_telept);
-        return(true);
+    actor->special1 -= tics;  // chicken tics for monsters
+    if(actor->special1 > 0)
+    {
+        return false;
+    }
+    moType = actor->special2;  // morphs save the previous type in special2
+    // morph back to monster moType
+    if( ! P_MorphMobj( actor, moType, MM_testsize|MM_telefog, MF_SHADOW ))
+    { // Didn't fit, restored fields
+        actor->special1 = 5*TICRATE; // Next try in 5 seconds
+        actor->special2 = moType;
+        return false;
+    }
+    return true;
 }
+
 
 //----------------------------------------------------------------------------
 //
@@ -1866,28 +1848,48 @@ void A_VolcBallImpact(mobj_t *ball)
 //
 //----------------------------------------------------------------------------
 
+// Player only.
+// [WDJ] Fixed to not change the player mobj.
 void A_SkullPop(mobj_t *actor)
 {
-        mobj_t *mo;
-        player_t *player;
+    player_t *player = actor->player;
 
-        actor->flags &= ~MF_SOLID;
-        mo = P_SpawnMobj(actor->x, actor->y, actor->z+48*FRACUNIT,
-                MT_BLOODYSKULL);
-        //mo->target = actor;
-        mo->momx = P_SignedRandom()<<9;
-        mo->momy = P_SignedRandom()<<9;
-        mo->momz = FRACUNIT*2+(P_Random()<<6);
-        // Attach player mobj to bloody skull
-        player = actor->player;
-        actor->player = NULL;
-        mo->player = player;
-        mo->health = actor->health;
-        mo->angle = actor->angle;
-        player->mo = mo;
-        player->aiming = 0;
-        player->damagecount = 32;
+    actor->flags &= ~MF_SOLID;
+#if 1
+    // Morph player mobj to bloody skull.
+    // Player is bloody skull, closest to original code.
+    int health = actor->health;  // usually 0 as this is used in death seq.
+    P_MorphMobj( actor, MT_BLOODYSKULL, 0, 0 );
+    actor->z += 48*FRACUNIT;
+    actor->momx = P_SignedRandom()<<9;
+    actor->momy = P_SignedRandom()<<9;
+    actor->momz = FRACUNIT*2+(P_Random()<<6);
+    actor->health = health;
+#else
+    // Spawn bloody skull as separate object
+    // Allows player to see bloody skull.
+    mobj_t *mo;
+    mo = P_SpawnMobj(actor->x, actor->y, actor->z+48*FRACUNIT, MT_BLOODYSKULL);
+    //mo->target = actor;
+    mo->momx = P_SignedRandom()<<9;
+    mo->momy = P_SignedRandom()<<9;
+    mo->momz = FRACUNIT*2+(P_Random()<<6);
+    mo->angle = actor->angle;
+    mo->health = actor->health;
+#if 0000
+    // Attach player mobj to bloody skull
+    // [WDJ] No, would leave current player mobj unattached.
+    // Legacy2 does not attach skull either.
+    actor->player = NULL;
+    mo->player = player;
+    player->mo = mo;  // change player mobj **
+    // This leaves old player mobj unattached as leaking memory.
+#endif
+#endif
+    player->aiming = 0;
+    player->damagecount = 32;
 }
+
 
 //----------------------------------------------------------------------------
 //
@@ -1937,6 +1939,8 @@ void A_CheckBurnGone(mobj_t *actor)
 //
 //----------------------------------------------------------------------------
 
+// Hide previous player mobj as corpse above the ceiling.
+// [WDJ] Uses of this have been changed to reuse the same mobj.
 void A_FreeTargMobj(mobj_t *mo)
 {
         mo->momx = mo->momy = mo->momz = 0;

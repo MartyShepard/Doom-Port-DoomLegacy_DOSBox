@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_heretic.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -298,7 +298,7 @@ void HereticPatchEngine(void)
     S_sfx[sfx_itmbk].priority = 10;
 
     // conflicting number for doomednum
-    // so desable doom mobjs and enabled heretic's one
+    // so disable doom mobjs and enable heretic's one
     mobjinfo[MT_SHOTGUY].doomednum = -1;
     mobjinfo[MT_MINOTAUR].doomednum = 9;
 

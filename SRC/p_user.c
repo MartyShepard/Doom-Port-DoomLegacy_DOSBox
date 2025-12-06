@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_user.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -632,31 +632,31 @@ void P_DeathThink (player_t* player)
 
 void P_ChickenPlayerThink(player_t *player)
 {
-        mobj_t * pmo = player->mo;
+    mobj_t * pmo = player->mo;
 
-        if(player->health > 0)
-        { // Handle beak movement
-                P_UpdateBeak(player, &player->psprites[ps_weapon]);
-        }
-        if(player->chickenTics&15)
-        {
-                return;
-        }
-        // Heretic uses of P_Random
-        if(!(pmo->momx+pmo->momy) && P_Random() < 160)
-        { // Twitch view angle
-                pmo->angle += P_SignedRandom()<<19;
-        }
-        if((pmo->z <= pmo->floorz) && (P_Random() < 32))
-        { // Jump and noise
-                pmo->momz += FRACUNIT;
-                P_SetMobjState(pmo, S_CHICPLAY_PAIN);
-                return;
-        }
-        if(P_Random() < 48)
-        { // Just noise
-                S_StartScreamSound(pmo, sfx_chicact);
-        }
+    if(player->health > 0)
+    { // Handle beak movement
+        P_UpdateBeak(player, &player->psprites[ps_weapon]);
+    }
+    if(player->chickenTics&15)
+    {
+        return;
+    }
+    // Heretic uses of P_Random
+    if(!(pmo->momx+pmo->momy) && P_Random() < 160)
+    { // Twitch view angle
+        pmo->angle += P_SignedRandom()<<19;
+    }
+    if((pmo->z <= pmo->floorz) && (P_Random() < 32))
+    { // Jump and noise
+        pmo->momz += FRACUNIT;
+        P_SetMobjState(pmo, S_CHICPLAY_PAIN);
+        return;
+    }
+    if(P_Random() < 48)
+    { // Just noise
+        S_StartScreamSound(pmo, sfx_chicact);
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -665,66 +665,59 @@ void P_ChickenPlayerThink(player_t *player)
 //
 //----------------------------------------------------------------------------
 
+// [WDJ] Fixed to keep the same player mobj.
+// Used to change the player mobj, and hide the prev as a corpse above
+// the ceiling using S_FREETARGMOBJ.
 boolean P_UndoPlayerChicken(player_t *player)
 {
-        mobj_t *fog;
-        mobj_t *mo;
-        mobj_t * pmo = player->mo;
-        fixed_t x, y, z;
-        angle_t angle;
-        int playerNum;
-        weapontype_t weapon;
-        int oldFlags;
-        int oldFlags2;
+    mobj_t *fog;
+    mobj_t * pmo = player->mo;
+    int player_num;
+    weapontype_t weapon;
+    int oldflags2;
 
-        x = pmo->x;
-        y = pmo->y;
-        z = pmo->z;
-        angle = pmo->angle;
-        weapon = pmo->special1;
-        oldFlags = pmo->flags;
-        oldFlags2 = pmo->flags2;
-        P_SetMobjState(pmo, S_FREETARGMOBJ);
-        mo = P_SpawnMobj(x, y, z, MT_PLAYER);
-        if(P_TestMobjLocation(mo) == false)
-        { // Didn't fit
-                P_RemoveMobj(mo);
-                mo = P_SpawnMobj(x, y, z, MT_CHICPLAYER);
-                mo->angle = angle;
-                mo->health = player->health;
-                mo->special1 = weapon;
-                mo->player = player;
-                mo->flags = oldFlags;
-                mo->flags2 = oldFlags2;
-                player->mo = mo;
-                player->chickenTics = 2*35;
-                return(false);
-        }
-        playerNum = player-players;
-        if(playerNum != 0)
-        { // Set color translation
-                mo->flags |= playerNum<<MF_TRANSSHIFT;
-        }
-        mo->angle = angle;
-        mo->player = player;
-        mo->reactiontime = 18;
-        if(oldFlags2&MF2_FLY)
-        {
-                mo->flags2 |= MF2_FLY;
-                mo->flags |= MF_NOGRAVITY;
-        }
-        player->chickenTics = 0;
-        player->powers[pw_weaponlevel2] = 0;
-        player->weaponinfo = wpnlev1info;
-        player->health = mo->health = MAXHEALTH;
-        player->mo = mo;
+    weapon = pmo->special1;  // saved by player morph
+    oldflags2 = pmo->flags2;
+    // Morph back into player
+    if( ! P_MorphMobj(pmo, MT_PLAYER, MM_testsize,
+#ifdef PLAYER_CHICKEN_KEEPS_SHADOW
+		      MF_SHADOW
+#else
+		      0
+#endif
+		      ) )
+    { // Didn't fit
+        player->chickenTics = 2*35;  // retry later
+        return false;
+    }
+    player_num = player - players;
+    if(player_num != 0)
+    { // Set color translation, always 0 in the info table flags
+        pmo->flags |= player_num<<MF_TRANSSHIFT;
+    }
+    if(oldflags2&MF2_FLY)  // preserve fly flags
+    {
+        pmo->flags2 |= MF2_FLY;
+        pmo->flags |= MF_NOGRAVITY;
+    }
+    pmo->reactiontime = 18;
+    player->chickenTics = 0;
+#ifndef PLAYER_CHICKEN_KEEPS_SHADOW
+    // Not in vanilla Heretic, but implied by clearing MF_SHADOW.
+    // Legacy2 clears it.
+    player->powers[pw_invisibility] = 0;
+#endif
+    player->powers[pw_weaponlevel2] = 0;
+    player->weaponinfo = wpnlev1info;
+    player->health = pmo->health = MAXHEALTH;
 
-        int angf = ANGLE_TO_FINE( angle );
-        fog = P_SpawnMobj(x+20*finecosine[angf], y+20*finesine[angf],
-			  z+TELEFOGHEIGHT, MT_TFOG);
-        S_StartSound(fog, sfx_telept);
-        P_PostChickenWeapon(player, weapon);
-        return(true);
+    // This telefog is placed differently than others.
+    int angf = ANGLE_TO_FINE( pmo->angle );
+    fog = P_SpawnMobj(pmo->x+20*finecosine[angf], pmo->y+20*finesine[angf],
+		      pmo->z+TELEFOGHEIGHT, MT_TFOG);
+    S_StartSound(fog, sfx_telept);
+    P_PostChickenWeapon(player, weapon);
+    return true;
 }
 
 //
@@ -1086,6 +1079,7 @@ void P_MoveSpirit (player_t* p,ticcmd_t *cmd, int realtics)
 
 boolean playerdeadview; //Fab:25-04-98:show dm rankings while in death view
 
+// Fixed to not change the player mobj.
 void P_PlayerThink (player_t* player)
 {
     ticcmd_t*           cmd;
@@ -1288,7 +1282,10 @@ void P_PlayerThink (player_t* player)
             player->chickenPeck -= 3;
         // Attempt to undo the chicken
         if(!--player->chickenTics)
+        {
+	    // Fixed to not change the player mobj.
             P_UndoPlayerChicken(player);
+	}
     }
 
     // cycle psprites
@@ -1539,6 +1536,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
     case arti_tomeofpower:
         if(player->chickenTics)
         { // Attempt to undo chicken
+	    // Fixed to not change the player mobj.
             if(P_UndoPlayerChicken(player) == false)
             { // Failed
                 P_DamageMobj(pmo, NULL, NULL, 10000);

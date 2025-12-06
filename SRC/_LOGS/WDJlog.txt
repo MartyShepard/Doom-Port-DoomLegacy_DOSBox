@@ -3823,7 +3823,7 @@ possible. Many usages use the fine angle table indexes more than once
 The most efficient code was favored which restricted the usage of the
 new macros in many places.
 
-*** W97_distangle
+*** W97_distance_angle
 patchfile = w97_3_distangle.patch
 - committed revision 1094   by wesley johnson
 Fix some of the rendering errors with distant walls.  This was due to
@@ -3837,5 +3837,28 @@ brings the accuracy up to 13 bits out of 32 bits (when compared to atan2).
 This fixes most of the render errors on Europe.wad and longdays.wad.
 There are still some walls not rendered due to distance, but they do not
 occlude the nearer walls.
+
+*** W97_hw_fineangle
+patchfile = w97_4_hw_fineangle.patch
+- committed revision 1095   by wesley johnson
+Extend the FINEANGLE patches to the hardware code.
+
+*** W97_hw_distance_angle
+patchfile = w97_5_hw_distangle.patch
+- committed revision 1096   by wesley johnson
+Extend the distangle patches to the hardware code.
+This does not have much effect because the OpenGL renderer has another
+distance limit.  It does not draw the far distant walls at all.
+
+*** W97_morphmobj
+patchfile = w97_6_morphmobj.patch
+- committed revision 1097   by wesley johnson
+Change Heretic chicken to use a MorphMobj function that preserves the
+current player mobj.  Fixes the Chicken and SkullPop functions to not
+change the player mobj.  They would do so during Line attacks and
+Damage.  This makes it safe for functions to keep a ptr to the player mobj.
+Fix the Chicken attack to set the PuffType.  This stops the chicken
+attack from creating a bogus player mobj on top of the attacked monster.
+
 
 

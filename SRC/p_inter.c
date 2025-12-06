@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_inter.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1961,6 +1961,7 @@ boolean P_TouchWhirlwind(mobj_t *target)
     return false;
 }
 
+
 //---------------------------------------------------------------------------
 //
 // FUNC P_ChickenMorphPlayer
@@ -1969,16 +1970,13 @@ boolean P_TouchWhirlwind(mobj_t *target)
 //
 //---------------------------------------------------------------------------
 
+// [WDJ] Fixed to keep the same player mobj.
+// Used to change the player mobj, and hide the prev as a corpse above
+// the ceiling using S_FREETARGMOBJ.  This could happen in Line attack or Damage.
 boolean P_ChickenMorphPlayer(player_t *player)
 {
     mobj_t *pmo;
-    mobj_t *fog;
-    mobj_t *chicken;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-    angle_t angle;
-    int oldFlags2;
+    int oldflags2;
     
     if(player->chickenTics)
     {
@@ -1987,38 +1985,35 @@ boolean P_ChickenMorphPlayer(player_t *player)
         { // Make a super chicken
             P_GivePower(player, pw_weaponlevel2);
         }
-        return(false);
+        return false;
     }
     if(player->powers[pw_invulnerability])
     { // Immune when invulnerable
-        return(false);
+        return false;
     }
     pmo = player->mo;
-    x = pmo->x;
-    y = pmo->y;
-    z = pmo->z;
-    angle = pmo->angle;
-    oldFlags2 = pmo->flags2;
-    P_SetMobjState(pmo, S_FREETARGMOBJ);
-    fog = P_SpawnMobj(x, y, z+TELEFOGHEIGHT, MT_TFOG);
-    S_StartSound(fog, sfx_telept);
-    chicken = P_SpawnMobj(x, y, z, MT_CHICPLAYER);
-    chicken->special1 = player->readyweapon;
-    chicken->angle = angle;
-    chicken->player = player;
-    player->health = chicken->health = MAXCHICKENHEALTH;
-    player->mo = chicken;
+    oldflags2 = pmo->flags2;
+    P_MorphMobj(pmo, MT_CHICPLAYER, MM_telefog,
+#ifdef PLAYER_CHICKEN_KEEPS_SHADOW
+		      MF_SHADOW
+#else
+		      0
+#endif
+		);
+    pmo->special1 = player->readyweapon;  // save for later restore
+    pmo->flags2 |= oldflags2&MF2_FLY;  // preserve fly
+    // spawnhealth for chicken is 100, this is 30
+    player->health = pmo->health = MAXCHICKENHEALTH;
     player->armorpoints = player->armortype = 0;
+#ifndef PLAYER_CHICKEN_KEEPS_SHADOW
+    // If keep MF_SHADOW and cancel invisibility, then MF_SHADOW is permananet.
     player->powers[pw_invisibility] = 0;
+#endif
     player->powers[pw_weaponlevel2] = 0;
     player->weaponinfo = wpnlev1info;
-    if(oldFlags2&MF2_FLY)
-    {
-        chicken->flags2 |= MF2_FLY;
-    }
-    player->chickenTics = CHICKENTICS;
+    player->chickenTics = CHICKENTICS;  // start chicken timer
     P_ActivateBeak(player);
-    return(true);
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -2027,21 +2022,14 @@ boolean P_ChickenMorphPlayer(player_t *player)
 //
 //---------------------------------------------------------------------------
 
+// Other actors, not players.
 boolean P_ChickenMorph(mobj_t *actor)
 {
-    mobj_t *fog;
-    mobj_t *chicken;
-    mobj_t *target;
     mobjtype_t moType;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-    angle_t angle;
-    int ghost;
     
     if(actor->player)
     {
-        return(false);
+        return false;
     }
     moType = actor->type;
     switch(moType)
@@ -2052,26 +2040,16 @@ boolean P_ChickenMorph(mobj_t *actor)
         case MT_MINOTAUR:
         case MT_SORCERER1:
         case MT_SORCERER2:
-            return(false);
+            return false;
         default:
             break;
     }
-    x = actor->x;
-    y = actor->y;
-    z = actor->z;
-    angle = actor->angle;
-    ghost = actor->flags&MF_SHADOW;
-    target = actor->target;
-    P_SetMobjState(actor, S_FREETARGMOBJ);
-    fog = P_SpawnMobj(x, y, z+TELEFOGHEIGHT, MT_TFOG);
-    S_StartSound(fog, sfx_telept);
-    chicken = P_SpawnMobj(x, y, z, MT_CHICKEN);
-    chicken->special2 = moType;
-    chicken->special1 = CHICKENTICS+P_Random();
-    chicken->flags |= ghost;
-    chicken->target = target;
-    chicken->angle = angle;
-    return(true);
+    
+    // preserve position, angle, target, invisible
+    P_MorphMobj(actor, MT_CHICKEN, MM_telefog, MF_SHADOW);
+    actor->special1 = CHICKENTICS+P_Random();  // monster chickentics
+    actor->special2 = moType;  // save type for restore
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -2165,6 +2143,7 @@ void P_AutoUseHealth(player_t *player, int saveHealth)
 // and other environmental stuff.
 //
 // Return true when damaged, for blood splats and other effects.
+// Fixed to not change the player mobj.
 boolean P_DamageMobj ( mobj_t*   target,
                        mobj_t*   inflictor,
                        mobj_t*   source,
@@ -2204,6 +2183,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         case MT_EGGFX:
             if(player)
             {
+	        // Fixed to not change the player mobj.
                 P_ChickenMorphPlayer(player);
             }
             else

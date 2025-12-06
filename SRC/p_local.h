@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: p_local.h 1097 2014-03-25 23:11:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -243,6 +243,14 @@ void P_RespawnSpecials (void);
 void P_RespawnWeapons(void);
 
 mobj_t*  P_SpawnMobj ( fixed_t x, fixed_t y, fixed_t z, mobjtype_t type );
+
+// Morph control flags
+typedef enum {
+   MM_testsize = 0x01,
+   MM_telefog  = 0x02
+} morphmobj_e;
+// Change the type and info, but keep the location and player.
+boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags );
 
 void    P_RemoveMobj (mobj_t* th);
 boolean P_SetMobjState (mobj_t* mobj, statenum_t state);
