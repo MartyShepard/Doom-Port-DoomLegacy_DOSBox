@@ -3868,13 +3868,22 @@ This improves readability and reduces size a bit.
 Cleanup some of the heretic code.  This is mostly indenting.
 This does not change functionality.
 
-*** W97_cleanup
+*** W97_cleanup_indent
 patchfile = w97_8_cleanup.patch
 - committed revision 1099   by wesley johnson
 Cleanup arrangement of many functions.
 This is mostly line organization and indenting.
 Some extern are moved to headers.  Some variables are renamed.
 Some more uses of ANGLEFINESHIFT are changed to use ANGLE_TO_FINE().
+This does not change functionality.
+
+*** W97_bot
+patchfile = w97_9_bot.patch
+- committed revision 1100   by wesley johnson
+Cleanup the bot code.  This is mostly indenting.
+Some function sections were altered to use tables.
+Some variables were added to share common calculations and remove
+duplicate code.
 This does not change functionality.
 
 

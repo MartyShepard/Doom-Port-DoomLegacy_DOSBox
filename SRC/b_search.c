@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: b_search.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -161,52 +161,52 @@ SearchNode_t* B_LLRemoveLastNode(LinkedList_t* list)
 
 void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNode_t* dest)
 {
-	int				cost, heuristic, f,
-					angle;
+    int cost, heuristic, f;
+    int angle;  // bot angles
 
-	SearchNode_t	*node;
-	sector_t		*sector;
+    SearchNode_t *node;
+    sector_t	*sector;
 
-	for (angle=0; angle<NUMBOTDIRS; angle++)
-	{
-		if (parent_node->dir[angle])
-		{
-			node = parent_node->dir[angle];
-			sector = R_PointInSubsector(posX2x(node->x), posY2y(node->y))->sector;
+    for (angle=0; angle<NUMBOTDIRS; angle++)
+    {
+        if (parent_node->dir[angle])
+        {
+	    node = parent_node->dir[angle];
+	    sector = R_PointInSubsector(posX2x(node->x), posY2y(node->y))->sector;
 
-			//if (!sector->firsttag/* && !sector->nexttag */&& ((((sector->ceilingheight - sector->floorheight) < (56<<FRACBITS))
-			//|| (sector->floorheight - R_PointInSubsector(parent_node->x, parent_node->y)->sector->floorheight) > (45<<FRACBITS)))) //can't fit
-			//	continue;
+	    //if (!sector->firsttag/* && !sector->nexttag */&& ((((sector->ceilingheight - sector->floorheight) < (56<<FRACBITS))
+	    //|| (sector->floorheight - R_PointInSubsector(parent_node->x, parent_node->y)->sector->floorheight) > (45<<FRACBITS)))) //can't fit
+	    //	continue;
 
-			cost = parent_node->costDir[angle] + parent_node->cost;
-			heuristic = P_AproxDistance(dest->x - node->x, dest->y - node->y) * 10000;
-			//CONS_Printf("got heuristic of %d\n", node->heuristic);
-			f = cost + heuristic;
+	    cost = parent_node->costDir[angle] + parent_node->cost;
+	    heuristic = P_AproxDistance(dest->x - node->x, dest->y - node->y) * 10000;
+	    //CONS_Printf("got heuristic of %d\n", node->heuristic);
+	    f = cost + heuristic;
 
-			if (node->visited		//if already been looked at before, and before look was better
-				&& (node->f <= f))
-					continue;
-				
-			if (B_PQFindNode(open, node))
-			{
-				//this node has already been pushed on the todo list
-				if (node->f <= f)
-					continue;
+	    if (node->visited		//if already been looked at before, and before look was better
+		 && (node->f <= f))
+	        continue;
 
-				//the path to get here this way is better then the old one's
-				//so use this instead, remove the old
-				//CONS_Printf("found better path\n");
-				B_PQRemoveNode(open, node);
-			}
+	    if (B_PQFindNode(open, node))
+	    {
+	        //this node has already been pushed on the todo list
+	        if (node->f <= f)
+		     continue;
 
-			node->cost = cost;
-			node->heuristic = heuristic;
-			node->f = f;
-			node->pprevious = parent_node;
-			B_PQInsertNode(open, node);
-			//CONS_Printf("pushed node at x:%d, y:%d\n", node->x>>FRACBITS, node->y>>FRACBITS);
-		}
+	        //the path to get here this way is better then the old one's
+	        //so use this instead, remove the old
+	        //CONS_Printf("found better path\n");
+	        B_PQRemoveNode(open, node);
+	    }
+
+	    node->cost = cost;
+	    node->heuristic = heuristic;
+	    node->f = f;
+	    node->pprevious = parent_node;
+	    B_PQInsertNode(open, node);
+	    //CONS_Printf("pushed node at x:%d, y:%d\n", node->x>>FRACBITS, node->y>>FRACBITS);
 	}
+    }
 }
 
 PriorityQ_t* B_PQCreatePQ(int mx)
@@ -234,18 +234,20 @@ void B_PQDelete(PriorityQ_t* pq)
 
 SearchNode_t* B_PQFindNode(PriorityQ_t* pq, SearchNode_t* node)
 {
-	int tempCurrent = 0;
-	if (pq->currentSize == 0)
-		return NULL;
+    int tempCurrent = 0;
+
+    if (pq->currentSize == 0)
+        return NULL;
 	
-	while(pq->heapArray[tempCurrent] != node)
-	{
-		tempCurrent++;
-		if ((tempCurrent >= pq->currentSize) || (pq->heapArray[tempCurrent] == NULL))
-			return NULL;
-	}
+    while(pq->heapArray[tempCurrent] != node)
+    {
+        tempCurrent++;
+        if ((tempCurrent >= pq->currentSize)
+	    || (pq->heapArray[tempCurrent] == NULL))
+	    return NULL;
+    }
 	
-	return pq->heapArray[tempCurrent];
+    return pq->heapArray[tempCurrent];
 }
 
 void B_PQInsertNode(PriorityQ_t* pq, SearchNode_t* newNode)
@@ -256,27 +258,27 @@ void B_PQInsertNode(PriorityQ_t* pq, SearchNode_t* newNode)
 
 SearchNode_t* B_PQRemoveNode(PriorityQ_t* pq, SearchNode_t* node)
 {
-	int			i,
-				tempCurrent = 0;
-	SearchNode_t*		foundNode;
+    int  i;
+    int  tempCurrent = 0;
+    SearchNode_t*  foundNode;
 
-	if (!pq->currentSize)	//if its empty
-		return NULL;
+    if (!pq->currentSize)	//if its empty
+        return NULL;
 	
-	while(pq->heapArray[tempCurrent] != node)
-	{
-		tempCurrent++;
-		if (pq->heapArray[tempCurrent] == NULL)
-			return NULL;
-	}
+    while(pq->heapArray[tempCurrent] != node)
+    {
+        tempCurrent++;
+        if (pq->heapArray[tempCurrent] == NULL)
+	    return NULL;
+    }
 
-	foundNode = pq->heapArray[tempCurrent];
+    foundNode = pq->heapArray[tempCurrent];
 
-	pq->heapArray[tempCurrent] = pq->heapArray[--pq->currentSize];
-	for (i = pq->currentSize/2 - 1; i >= 0; i--)
-		B_PQTrickleDown(pq, i);
+    pq->heapArray[tempCurrent] = pq->heapArray[--pq->currentSize];
+    for (i = pq->currentSize/2 - 1; i >= 0; i--)
+        B_PQTrickleDown(pq, i);
 
-	return foundNode;
+    return foundNode;
 }
 SearchNode_t* B_PQRemoveFirstNode(PriorityQ_t* pq)
 {
@@ -289,25 +291,27 @@ SearchNode_t* B_PQRemoveFirstNode(PriorityQ_t* pq)
 
 void B_PQTrickleDown(PriorityQ_t* pq, int index)
 {
-	int smallerChild;
-	SearchNode_t* top = pq->heapArray[index];        // save root
-	while(index < pq->currentSize/2)        // not on bottom row
-	{
-		int leftChild = 2*index+1;
-		int rightChild = leftChild+1;
-							  // find smaller child
-		if(rightChild < pq->currentSize && pq->heapArray[leftChild]->f < pq->heapArray[rightChild]->f)
-			smallerChild = leftChild;
-		else
-			smallerChild = rightChild;
-							  // top >= largerChild?
-		if(top->f <= pq->heapArray[smallerChild]->f)
-			break;
-							  // shift child up
-		pq->heapArray[index] = pq->heapArray[smallerChild];
-		index = smallerChild;             // go down
-	}  // end while
-	pq->heapArray[index] = top;             // root to index
+    int smallerChild;
+    SearchNode_t* top = pq->heapArray[index];        // save root
+
+    while(index < pq->currentSize/2)        // not on bottom row
+    {
+        int leftChild = 2*index+1;
+        int rightChild = leftChild+1;
+        // find smaller child
+        smallerChild = 
+	 (rightChild < pq->currentSize
+	  && pq->heapArray[leftChild]->f < pq->heapArray[rightChild]->f ) ?
+	      leftChild
+	    : rightChild;
+        // top >= largerChild?
+        if(top->f <= pq->heapArray[smallerChild]->f)
+	    break;
+        // shift child up
+        pq->heapArray[index] = pq->heapArray[smallerChild];
+        index = smallerChild;             // go down
+    }  // end while
+    pq->heapArray[index] = top;             // root to index
 }
 
 void B_PQTrickleUp(PriorityQ_t* pq, int index)
@@ -327,81 +331,81 @@ void B_PQTrickleUp(PriorityQ_t* pq, int index)
 
 boolean B_FindNextNode(player_t* p)
 {
-	boolean		found = false;
+    boolean found = false;
 
-	PriorityQ_t		*open;
-	SearchNode_t	*bestNode = NULL,	//if cant reach favourite item try heading towards this closest point
-					*tempNode;
-	LinkedList_t	*visitedList;
+    PriorityQ_t	 *open;
+    SearchNode_t *bestNode = NULL;  //if cant reach favourite item try heading towards this closest point
+    SearchNode_t *tempNode;
+    LinkedList_t *visitedList;
 
-	SearchNode_t* closestnode = B_GetNodeAt(p->mo->x, p->mo->y); //(B_FindClosestNode(p->mo->x, p->mo->y);
+    SearchNode_t* closestnode = B_GetNodeAt(p->mo->x, p->mo->y); //(B_FindClosestNode(p->mo->x, p->mo->y);
 
-	int numNodesSearched = 0;
-	if (closestnode)// || P_AproxDistance(p->mo->x - closestnode->x, p->mo->y - closestnode->y) > (BOTNODEGRIDSIZE<<1))	//no nodes can get here
-	{
-		B_LLClear(p->bot->path);
+    int numNodesSearched = 0;
+    if (closestnode)// || P_AproxDistance(p->mo->x - closestnode->x, p->mo->y - closestnode->y) > (BOTNODEGRIDSIZE<<1))	//no nodes can get here
+    {
+        B_LLClear(p->bot->path);
 
-		open = B_PQCreatePQ(numbotnodes);
-		visitedList = B_LLCreate();
+        open = B_PQCreatePQ(numbotnodes);
+        visitedList = B_LLCreate();
 
-		//CONS_Printf("closest node found is x:%d, y:%d\n", closestnode->x>>FRACBITS, closestnode->y>>FRACBITS);
-		closestnode->pprevious = NULL;
-		closestnode->cost = 0;
-		closestnode->f = closestnode->heuristic = P_AproxDistance (closestnode->x - p->bot->destNode->x, closestnode->y - p->bot->destNode->y) * 10000;
+        //CONS_Printf("closest node found is x:%d, y:%d\n", closestnode->x>>FRACBITS, closestnode->y>>FRACBITS);
+        closestnode->pprevious = NULL;
+        closestnode->cost = 0;
+        closestnode->f = closestnode->heuristic = P_AproxDistance (closestnode->x - p->bot->destNode->x, closestnode->y - p->bot->destNode->y) * 10000;
 
-		B_PQInsertNode(open, closestnode);
-		while (open->currentSize && !found)	//while there are nodes left to check			
-		{
-			tempNode = B_PQRemoveFirstNode(open);	//grab the best node
-			//CONS_Printf("doing node a node at x:%d, y:%d\n", tempNode->x>>FRACBITS, tempNode->y>>FRACBITS);
-			if (tempNode == p->bot->destNode)	//if have found a/the node closest to the thing
-			{	//I have found the sector where I want to get to
-				bestNode = tempNode;
+        B_PQInsertNode(open, closestnode);
+        while (open->currentSize && !found) //while there are nodes left to check
+        {
+	    tempNode = B_PQRemoveFirstNode(open);	//grab the best node
+	    //CONS_Printf("doing node a node at x:%d, y:%d\n", tempNode->x>>FRACBITS, tempNode->y>>FRACBITS);
+	    if (tempNode == p->bot->destNode)	//if have found a/the node closest to the thing
+	    {  //I have found the sector where I want to get to
+	        bestNode = tempNode;
 
-				found = true;
-			}
-			else
-			{
-				if (!bestNode || (tempNode->heuristic < bestNode->heuristic))
-					bestNode = tempNode;
+	        found = true;
+	    }
+	    else
+	    {
+	        if (!bestNode || (tempNode->heuristic < bestNode->heuristic))
+		    bestNode = tempNode;
 
-				B_NodePushSuccessors(open, tempNode, p->bot->destNode);
-				
-				if (!tempNode->visited)
-				{
-					B_LLInsertFirstNode(visitedList, tempNode);	//so later can set this back to not visited
-					tempNode->visited = true;
-				}
-			}
-			numNodesSearched++;
+	        B_NodePushSuccessors(open, tempNode, p->bot->destNode);
+
+	        if (!tempNode->visited)
+	        {
+		    B_LLInsertFirstNode(visitedList, tempNode);	//so later can set this back to not visited
+		    tempNode->visited = true;
 		}
-
-		while (visitedList->first)	//reset all visited nodes to not visited
-			B_LLRemoveFirstNode(visitedList)->visited = false;
-
-		if (bestNode && (bestNode != closestnode))
-		{
-			bestNode->pnext = NULL;
-			while (bestNode->pprevious != NULL)		//find the first node taken on way
-			{
-				tempNode = Z_Malloc(sizeof(SearchNode_t),PU_STATIC,0);
-				tempNode->x = bestNode->x;
-				tempNode->y = bestNode->y;
-				#ifdef SHOWBOTPATH
-					tempNode->mo = P_SpawnMobj(posX2x(tempNode->x), posY2y(tempNode->y), R_PointInSubsector(posX2x(tempNode->x), posY2y(tempNode->y))->sector->floorheight, MT_MISC49);
-				#endif
-				B_LLInsertFirstNode(p->bot->path, tempNode);
-				bestNode = bestNode->pprevious;
-			}
-
-			found = true;
-		}
-
-		B_PQDelete(open);
-		B_LLDelete(visitedList);
+	    }
+	    numNodesSearched++;
 	}
-	//else
-	//	CONS_Printf("Bot is stuck here x:%d y:%d\n", p->mo->x>>FRACBITS, p->mo->y>>FRACBITS);
 
-	return found;
+        while (visitedList->first)	//reset all visited nodes to not visited
+	    B_LLRemoveFirstNode(visitedList)->visited = false;
+
+        if (bestNode && (bestNode != closestnode))
+        {
+	    bestNode->pnext = NULL;
+	    while (bestNode->pprevious != NULL)		//find the first node taken on way
+	    {
+	        tempNode = Z_Malloc(sizeof(SearchNode_t),PU_STATIC,0);
+	        tempNode->x = bestNode->x;
+	        tempNode->y = bestNode->y;
+#ifdef SHOWBOTPATH
+	        tempNode->mo = P_SpawnMobj(posX2x(tempNode->x), posY2y(tempNode->y), R_PointInSubsector(posX2x(tempNode->x), posY2y(tempNode->y))->sector->floorheight, MT_MISC49);
+#endif
+	        B_LLInsertFirstNode(p->bot->path, tempNode);
+	        bestNode = bestNode->pprevious;
+	    }
+
+	    found = true;
+	}
+
+        B_PQDelete(open);
+        B_LLDelete(visitedList);
+    }
+    //else
+    //	CONS_Printf("Bot is stuck here x:%d y:%d\n", p->mo->x>>FRACBITS, p->mo->y>>FRACBITS);
+
+    return found;
 }

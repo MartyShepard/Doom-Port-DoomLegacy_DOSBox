@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: b_node.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -60,8 +60,8 @@ static sector_t *last_s;
 
 SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y)
 {
-	int  i, j,
-	     depth = 0;
+	int  i, j;
+	int  depth = 0;
 
 	botdirtype_t	dir = BDI_SOUTH;
 	SearchNode_t	*closestNode = NULL;
@@ -357,14 +357,14 @@ boolean B_CheckNodePosition(mobj_t* thing, fixed_t x, fixed_t y)
 
 boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t desty)
 {
-	fixed_t		nx = x2PosX(destx),
-			ny = y2PosY(desty);
+    fixed_t  nx = x2PosX(destx);
+    fixed_t  ny = y2PosY(desty);
 
-	botdoorfound = false;
-	botteledestfound = false;
+    botdoorfound = false;
+    botteledestfound = false;
 
-	if ((nx >= 0) && (nx < xSize) && (ny >= 0) && (ny < ySize))
-	{	
+    if ((nx >= 0) && (nx < xSize) && (ny >= 0) && (ny < ySize))
+    {	
 		botteledestx = destx;
 		botteledesty = desty;
 		last_s = R_PointInSubsector(x, y)->sector;
@@ -391,9 +391,9 @@ boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t
 		}
 		else
 			return P_PathTraverse (x, y, destx, desty, PT_ADDLINES, B_PTRPathTraverse);
-	}
+    }
 
-	return false;
+    return false;
 }
 
 int B_GetNodeCost(SearchNode_t* node)
@@ -443,12 +443,12 @@ void B_DeleteNode(SearchNode_t* node)
 
 void B_SetNodeTeleDest(SearchNode_t* node)
 {
-	fixed_t		x = x2ClosestPosX(botteledestx),
-			y = y2ClosestPosY(botteledesty);
+    fixed_t  x = x2ClosestPosX(botteledestx);
+    fixed_t  y = y2ClosestPosY(botteledesty);
 
-	//CONS_Printf("trying to make a tele node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
-        if( x >= 0 && x < xSize && y >=0 && y <= ySize )
-        {
+    //CONS_Printf("trying to make a tele node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
+    if( x >= 0 && x < xSize && y >=0 && y <= ySize )
+    {
 	
 		if (!botNodeArray[x][y])
 		{
@@ -460,21 +460,20 @@ void B_SetNodeTeleDest(SearchNode_t* node)
 		else
 			node->dir[BDI_TELEPORT] = botNodeArray[x][y];
 		node->costDir[BDI_TELEPORT] = 20000;//B_GetNodeCost(node->dir[TELEPORT]);
-	}
-        else
-        {
+    }
+    else
+    {
 	        I_SoftError( "Tele node bad pos, x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
-        }
+    }
 }
 
 void B_BuildNodes(SearchNode_t* node)
 {
-	fixed_t		angle,
-				nx, ny,
-				extraCost;
+    int      angle;
+    fixed_t  nx, ny, extraCost;
 
-	LinkedList_t *queue = B_LLCreate();
-	B_LLInsertFirstNode(queue, node);
+    LinkedList_t *queue = B_LLCreate();
+    B_LLInsertFirstNode(queue, node);
    // [WDJ] 1/22/2009 FreeDoom MAP10 can get stuck in this loop, sometimes.
    // It keeps cycling forever through the queue, putting entries back in,
    // because botNodeArray[nx][ny] == NULL.
@@ -483,8 +482,8 @@ void B_BuildNodes(SearchNode_t* node)
    // Some of the purgable memory blocks deleted were probably still in use
    // in this routine.  The handling of such memory by this routine is fragile,
    // it is suspicious, and probably needs a more robust fix.
-	while (!B_LLIsEmpty(queue))
-	{
+    while (!B_LLIsEmpty(queue))
+    {
 		node = B_LLRemoveLastNode(queue);
 		node->dir[BDI_TELEPORT] = NULL;
 
@@ -552,23 +551,23 @@ void B_BuildNodes(SearchNode_t* node)
 			else
 				node->dir[angle] = NULL;
 		}
-	}
+    }
 
-	B_LLDelete(queue);
+    B_LLDelete(queue);
 }
 
 void B_InitNodes( void )
 {
-	int  i, j, px, py,
-	     xMax = -1000000000,
-	     xMin = 1000000000,
-	     yMax = -1000000000,
-	     yMin = 1000000000;
+    int  i, j, px, py;
+    int  xMax = -1000000000;
+    int  xMin = 1000000000;
+    int  yMax = -1000000000;
+    int  yMin = 1000000000;
 
-	SearchNode_t* tempNode;
+    SearchNode_t* tempNode;
 
-	for (i=0; i<numvertexes; i++)
-	{
+    for (i=0; i<numvertexes; i++)
+    {
 		if (vertexes[i].x < xMin)
 			xMin = vertexes[i].x;
 		else if (vertexes[i].x > xMax)
@@ -578,29 +577,30 @@ void B_InitNodes( void )
 			yMin = vertexes[i].y;
 		else if (vertexes[i].y > yMax)
 			yMax = vertexes[i].y;
-	}
+    }
 //	xMin-=BOTNODEGRIDSIZE; xMax+=2*BOTNODEGRIDSIZE;
 //	yMin-=BOTNODEGRIDSIZE; yMax+=2*BOTNODEGRIDSIZE;
 
-        // [WDJ] On overly-large map max-min will overflow signed
-	xOffset = xMin/BOTNODEGRIDSIZE;
-	xSize = ceil( ((double)xMax - (double)xMin)/(double)BOTNODEGRIDSIZE) + 1;
-	yOffset = yMin/BOTNODEGRIDSIZE;	
-	ySize = ceil( ((double)yMax - (double)yMin)/(double)BOTNODEGRIDSIZE) + 1;
+    // [WDJ] On overly-large map max-min will overflow signed
+    xOffset = xMin/BOTNODEGRIDSIZE;
+    xSize = ceil( ((double)xMax - (double)xMin)/(double)BOTNODEGRIDSIZE) + 1;
+    yOffset = yMin/BOTNODEGRIDSIZE;	
+    ySize = ceil( ((double)yMax - (double)yMin)/(double)BOTNODEGRIDSIZE) + 1;
 
-	botNodeArray = (SearchNode_t***)Z_Malloc(xSize*sizeof(SearchNode_t*),PU_LEVEL,0);
-	for (i=0; i<xSize; i++)
-	{
+    botNodeArray = (SearchNode_t***)Z_Malloc(xSize*sizeof(SearchNode_t*),PU_LEVEL,0);
+    for (i=0; i<xSize; i++)
+    {
 		botNodeArray[i] = (SearchNode_t**)Z_Malloc(ySize*sizeof(SearchNode_t*),PU_LEVEL,0);
 
 		for (j=0; j<ySize; j++)
 			botNodeArray[i][j] = NULL;
-	}
+    }
 
-	numbotnodes = 0;
-	CONS_Printf("Building nodes for acbot.....\n");
-	for (i = 0; i < MAXPLAYERS; i++)
-	if (playerstarts[i])
+    numbotnodes = 0;
+    CONS_Printf("Building nodes for acbot.....\n");
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        if (playerstarts[i])
 	{
 		px = playerstarts[i]->x/(BOTNODEGRIDSIZE>>FRACBITS) - xOffset;
 		py = playerstarts[i]->y/(BOTNODEGRIDSIZE>>FRACBITS) - yOffset;
@@ -611,8 +611,10 @@ void B_InitNodes( void )
 			B_BuildNodes(tempNode);
 		}
 	}
+    }
 
-	for (i = 0; i < MAX_DM_STARTS; i++)
+    for (i = 0; i < MAX_DM_STARTS; i++)
+    {
 	if (deathmatchstarts[i])
 	{
 		px = deathmatchstarts[i]->x/(BOTNODEGRIDSIZE>>FRACBITS) - xOffset;
@@ -624,7 +626,8 @@ void B_InitNodes( void )
 			B_BuildNodes(tempNode);
 		}
 	}
+    }
 
-	CONS_Printf("Completed building %d nodes.\n", numbotnodes);
+    CONS_Printf("Completed building %d nodes.\n", numbotnodes);
 }
 
