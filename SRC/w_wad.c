@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1105 2014-05-02 22:03:29Z wesleyjohnson $
+// $Id: w_wad.c 1106 2014-05-02 22:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -153,6 +153,46 @@ void W_Shutdown(void)
 //                                                        LUMP BASED ROUTINES
 //===========================================================================
 
+// Lump Markers
+
+typedef struct {
+   char      markername[9];
+   uint8_t   marker_namespace;  // start marker namespace
+} marker_ident_t;
+
+// At the end of each section, return to LNS_global namespace.
+#define NUM_MARKER_IDENT   12
+// Fill each string with 0, out to 8 characters.
+marker_ident_t  marker_ident[ NUM_MARKER_IDENT ] =
+{
+   { "S_START\0", LNS_sprite }, // S_START to S_END
+   { "S_END\0\0\0",   LNS_global },
+   { "F_START\0", LNS_flat },   // F_START to F_END
+   { "F_END\0\0\0",   LNS_global },
+   { "C_START\0", LNS_colormap },  // C_START to C_END
+   { "C_END\0\0\0",   LNS_global },
+   { "SS_START",  LNS_sprite }, // SS_START to SS_END
+   { "SS_END\0\0",    LNS_global },
+   { "FF_START",  LNS_flat },   // FF_START to FF_END
+   { "FF_END\0\0",    LNS_global },
+   { "PP_START",  LNS_patch },  // PP_START to PP_END
+   { "PP_END\0\0",    LNS_global },
+};
+
+
+// Make the name into numerical for easy compares.
+static void  numerical_name( const char * name, lump_name_t * numname )
+{
+    numname->namecode = 0;  // clear
+    strncpy (numname->s, name, 8);
+    // in case the name was a full 8 chars (has no 0 term)
+    numname->s[8] = 0;
+    // case insensitive compares
+    strupr (numname->s);
+    // numname.namecode can now be used for compares as uint64_t
+}
+
+
 // W_AddFile
 // All files are optional, but at least one file must be
 //  found (PWAD, if all required lumps are present).
@@ -168,10 +208,11 @@ void W_Shutdown(void)
 int                     reloadlump;
 char*                   reloadname;
 
+
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
-//  now returns index into wadfiles[], you can get wadfile_t*
+//  Now returns index into wadfiles[], you can get wadfile_t*
 //  with:
 //       wadfiles[<return value>]
 //
@@ -187,7 +228,7 @@ int W_LoadWadFile (char *filename)
     lumpinfo_t*      lumpinfo;
     lumpcache_t*     lumpcache;
     wadfile_t*       wadfile;
-    int              i;
+    int              i, m;
     int              length;
     struct stat      bufstat;
     // findfile requires a buffer of (at least) MAX_WADPATH
@@ -195,6 +236,7 @@ int W_LoadWadFile (char *filename)
 #ifdef HWRENDER    
     MipPatch_t*      grPatch;
 #endif
+    lump_namespace_e within_namespace = LNS_global;
 
     //
     // check if limit of active wadfiles
@@ -242,6 +284,7 @@ int W_LoadWadFile (char *filename)
         lumpinfo = Z_Malloc (sizeof(lumpinfo_t),PU_STATIC,NULL);
         lumpinfo->position = 0;
         lumpinfo->size = bufstat.st_size;
+        lumpinfo->lump_namespace = LNS_dehacked;
         strncpy(lumpinfo->name, "DEHACKED", 8);
     }
     else 
@@ -274,15 +317,28 @@ int W_LoadWadFile (char *filename)
         read (handle, fileinfo, length);
         numlumps = header.numlumps;
         
+        within_namespace = LNS_global;  // each wad starts in global namespace
+
         // fill in lumpinfo array for this wad
 	flp = fileinfo;
         lump_p = lumpinfo = Z_Malloc (numlumps*sizeof(lumpinfo_t),PU_STATIC,NULL);
         for (i=0 ; i<numlumps ; i++, lump_p++, flp++)
         {
-            //lump_p->handle   = handle;
+	    // Make name compatible with compares using numerical_name.
+	    *((uint64_t*)&lump_p->name) = 0;  // clear
+	    strncpy (lump_p->name, flp->name, 8);
+	    // Check for namespace markers using clean lump name.
+	    for( m=0; m < NUM_MARKER_IDENT; m++ )
+	    {
+	       // Fast numerical name compare.
+	       if( *((uint64_t*)&lump_p->name) == *((uint64_t*)&marker_ident[m].markername) )
+		  within_namespace = marker_ident[m].marker_namespace;
+	    }
+	    // No uppercase because no other port does it here, and it would
+	    // catch lowercase named lumps that otherwise would be ignored.
+	    lump_p->lump_namespace = within_namespace;
             lump_p->position = LE_SWAP32(flp->filepos);
             lump_p->size     = LE_SWAP32(flp->size);
-            strncpy (lump_p->name, flp->name, 8);
         }
         free(fileinfo);
     }
@@ -448,79 +504,58 @@ int W_InitMultipleFiles (char** filenames)
 
 //
 //  W_CheckNumForName
-//  Returns -1 if name not found.
-//
+//  Lists are currently used by flats and colormaps.
+//  These are faster as they skip checking some names.
+//  Patches within textures use namespace to protect against trying to use
+//  another lump of the same name (colormap) as a patch.
 
-// this is normally always false, so external pwads take precedence,
-//  this is set true temporary as W_GetNumForNameFirst() is called
-static boolean scanforward = false;
-
-int W_CheckNumForName (char* name)
+//  Return lump id, or -1 if name not found.
+int W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
 {
-    union {
-                char    s[9];
-                int             x[2];
-    } name8;
-
-    int         i,j;
-    int         v1;
-    int         v2;
+    int  alternate = -1;
+    int  i,j;
+    lump_name_t name8;
     lumpinfo_t* lump_p;
 
-    // make the name into two integers for easy compares
-    strncpy (name8.s,name,8);
+    numerical_name( name, & name8 );
 
-    // in case the name was a fill 8 chars
-    name8.s[8] = 0;
-
-    // case insensitive
-    strupr (name8.s);
-
-    v1 = name8.x[0];
-    v2 = name8.x[1];
-
-    if (!scanforward)
+    // Scan wad files backwards so PWAD files take precedence.
+    for (i = numwadfiles-1 ; i>=0; i--)
     {
-        //
-        // scan wad files backwards so patch lump files take precedence
-        //
-        for (i = numwadfiles-1 ; i>=0; i--)
-        {
-            lump_p = wadfiles[i]->lumpinfo;
-
-            for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
-            {
-                if (    *(int *)lump_p->name == v1
-                     && *(int *)&lump_p->name[4] == v2)
-                {
-                    // high word is the wad file number
-                    return ((i<<16) + j);
-                }
-            }
-        }
-        // not found.
-        return -1;
-    }
-
-    //
-    // scan wad files forward, when original wad resources
-    //  must take precedence
-    //
-    for (i = 0; i<numwadfiles; i++)
-    {
+        // Scan forward within a wad file.
         lump_p = wadfiles[i]->lumpinfo;
         for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
-        {
-            if (    *(int *)lump_p->name == v1
-                 && *(int *)&lump_p->name[4] == v2)
-            {
-                return ((i<<16) + j);
-            }
-        }
+        { 
+	    // Fast numerical name compare.
+	    if ( *(uint64_t *)lump_p->name == name8.namecode )
+	    {
+	        // Name matches.
+		// Check if lump is from the wanted namespace.
+	        if( within_namespace == LNS_any
+		    || lump_p->lump_namespace == within_namespace )
+	        {
+		    // Return wad/lump identifier
+		    return ((i<<16) + j);
+		}
+	        // Wrong namespace.
+	        if( alternate == -1 )  // remember first lump found
+		   alternate = ((i<<16) + j);  // wad/lump identifier
+	    }
+	}
     }
-    // not found.
+    // Not found.
+    // Return first matching lump found in any namespace.
+    if( alternate != -1 )
+      return alternate;
     return -1;
 }
+
+//  Return lump id, or -1 if name not found.
+int W_CheckNumForName (const char* name)
+{
+    return W_Check_Namespace( name, LNS_any );
+}
+
 
 
 //
@@ -532,22 +567,12 @@ int W_CheckNumForName (char* name)
 //
 int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
 {
-    union {
-        char  s[9];
-        int   x[2];
-    } name8;
-
     int         i;
-    int         v1;
-    int         v2;
+    lump_name_t name8;
     lumpinfo_t* lump_p;
 
-    strncpy (name8.s,name,8);
-    name8.s[8] = 0;
-    strupr (name8.s);
-
-    v1 = name8.x[0];
-    v2 = name8.x[1];
+    // make the name into numerical for easy compares
+    numerical_name( name, & name8 );
 
     //
     // scan forward
@@ -559,8 +584,8 @@ int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
         lump_p = wadfiles[wadid]->lumpinfo + startlump;
         for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
         {
-            if ( *(int *)lump_p->name == v1
-              && *(int *)&lump_p->name[4] == v2)
+	    // Fast numerical name compare.
+            if ( *(uint64_t *)lump_p->name == name8.namecode )
             {
                 return ((wadid<<16)+i);
             }
@@ -595,16 +620,30 @@ int W_GetNumForName (char* name)
     return i;
 }
 
+// Scan wads files forward, IWAD precedence.
 int W_CheckNumForNameFirst (char* name)
 {
-    int i;
+    int i, j;
+    lump_name_t name8;
+    lumpinfo_t* lump_p;
 
-    // 3am coding.. force a scan of resource name forward, for one call
-    scanforward = true;
-    i = W_CheckNumForName (name);
-    scanforward = false;
+    numerical_name( name, & name8 );
 
-    return i;
+    // scan wad files forward, when original wad resources
+    //  must take precedence
+    for (i = 0; i<numwadfiles; i++)
+    {
+        lump_p = wadfiles[i]->lumpinfo;
+        for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
+        {
+            if ( *(uint64_t *)lump_p->name == name8.namecode )
+            {
+                return ((i<<16) + j);
+            }
+        }
+    }
+
+    return -1;
 }
 
 //
@@ -898,14 +937,20 @@ void* W_CachePatchNum ( int lump, int tag )
 #endif // HWRENDER version
 
 
-//
-//
-//
+// Find patch in LNS_patch namespace
 void* W_CachePatchName ( char* name, int tag )
 {
+    int lumpid;
     // substitute known name for name not found
-    if( W_CheckNumForName( name )<0 ) name = "BRDR_MM";
-    return W_CachePatchNum( W_GetNumForName(name), tag);
+    lumpid = W_Check_Namespace( name, LNS_patch );
+    if( lumpid == -1 )
+    {
+        name = "BRDR_MM";
+        lumpid = W_Check_Namespace( name, LNS_patch );
+        if( lumpid == -1 )
+        I_Error ("W_CachePatchName: %s not found!\n", name);
+    }
+    return W_CachePatchNum( lumpid, tag);
 }
 
 

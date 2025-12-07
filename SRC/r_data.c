@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1105 2014-05-02 22:03:29Z wesleyjohnson $
+// $Id: r_data.c 1106 2014-05-02 22:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1196,7 +1196,7 @@ void R_LoadTextures (void)
     for (i=0 ; i<nummappatches ; i++)
     {
         strncpy (name,name_p+i*8, 8);
-        patch_to_num[i] = W_CheckNumForName (name);
+        patch_to_num[i] = W_Check_Namespace( name, LNS_patch );
     }
     Z_Free (pnames);
 

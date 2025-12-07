@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1105 2014-05-02 22:03:29Z wesleyjohnson $
+// $Id: w_wad.h 1106 2014-05-02 22:05:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -68,29 +68,19 @@ typedef void MipPatch_t;
 #endif
 
 
-// [WDJ] Indicates cache miss, new lump read requires endian fixing.
-extern boolean lump_read;
-
 // ==============================================================
 //               WAD FILE STRUCTURE DEFINITIONS
 // ==============================================================
 
-// [WDJ] found unused 1/5/2010
-//typedef long   lumpnum_t;           // 16:16 long (wad num: lump num)
-
-
-// header of a wad file
-
+// Wad header format.
 typedef struct
 {
     char       identification[4];   // should be "IWAD" or "PWAD"
-    int        numlumps;            // how many resources
+    uint32_t   numlumps;            // how many resources
     uint32_t   infotableofs;        // the 'directory' of resources
 } wadinfo_t;
 
-
-// an entry of the wad directory
-
+// Wad lump format.
 typedef struct
 {
     uint32_t   filepos;             // file offset of the resource
@@ -101,11 +91,36 @@ typedef struct
 
 // in memory : initted at game startup
 
+// [WDJ] Fast lump name compare, transform to numerical.
+typedef union {
+    char  s[9];  // extra byte for 0 term, needed for strupr
+    uint64_t  namecode;  // name as numerical  (8 bytes)
+} lump_name_t;
+
+
+// [WDJ] Track the lump namespace (Wad markers)
+// Lump namespace
+typedef enum {
+   LNS_any,    // find lump in any namespace
+ // Boom namespaces
+   LNS_global, // any lump not in a namespace section
+   LNS_sprite, // S_START to S_END, or SS_START to SS_END
+   LNS_flat,   // F_START to F_END, or FF_START to FF_END
+   LNS_colormap,  // C_START to C_END
+ // Other namespaces
+   LNS_patch,  // PP_START to PP_END
+   LNS_dehacked,
+   LNS_legacy
+} lump_namespace_e;
+
+
+// Lump lookup info.
 typedef struct
 {
     char        name[8];            // filelump_t name[]
     uint32_t    position;           // filelump_t filepos
     uint32_t    size;               // filelump_t size
+    lump_namespace_e  lump_namespace;
 } lumpinfo_t;
 
 
@@ -138,6 +153,9 @@ typedef struct wadfile_s
 extern  int          numwadfiles;
 extern  wadfile_t*   wadfiles[MAX_WADFILES];
 
+// [WDJ] Indicates cache miss, new lump read requires endian fixing.
+extern boolean lump_read;
+
 
 // =========================================================================
 
@@ -153,7 +171,10 @@ int     W_LoadWadFile (char *filename);
 int     W_InitMultipleFiles (char** filenames);
 void    W_Reload (void);
 
-int     W_CheckNumForName (char* name);
+//  Return lump id, or -1 if name not found.
+int     W_Check_Namespace (const char* name, lump_namespace_e within_namespace);
+//  Return lump id, or -1 if name not found.
+int     W_CheckNumForName (const char* name);
 // this one checks only in one pwad
 int     W_CheckNumForNamePwad (char* name, int wadid, int startlump);
 int     W_GetNumForName (char* name);

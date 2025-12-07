@@ -3921,3 +3921,13 @@ patchfile = w97_14_lumpnum.patch
 - committed revision 1105   by wesley johnson
 Cleanup some lump numbering to use an existing macros.
 Some comments.
+
+*** W97_lump_namespace
+patchfile = w97_15_lump_namespace.patch
+- committed revision 1106   by wesley johnson
+Implement tracking of the wad namespace in the lump info.
+A patch lump will be searched for within the PATCH namespace first,
+and if not found then any lump of that name will be used.
+This fixes the Legacy demo wad so the BLUMAP colormap and BLUMAP patch
+occupy different namespaces.  The texture using the BLUMAP patch now
+finds the correct lump and does not need to be rejected.
