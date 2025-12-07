@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1050 2013-10-01 21:01:27Z wesleyjohnson $
+// $Id: wi_stuff.c 1107 2014-05-02 22:12:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -812,13 +812,10 @@ static void WI_drawPercent( int  x, int  y, int  pernum )
 // Display level completion time and par,
 //  or "sucks" message if overflow.
 //
-static void WI_drawTime ( int           x,
-                          int           y,
-                          int           t )
+static void WI_drawTime ( int x, int y, int t )
 {
-
-    int         div;
-    int         n;
+    int  timediv;  // div is keyword
+    int  n;
 
     if (t<0)
         return;
@@ -828,19 +825,19 @@ static void WI_drawTime ( int           x,
     if( (t <= ((gamedesc.gameflags & GD_idwad)? (61*59) : (24*60*60)) )
 	|| (sucks == NULL) )
     {
-        div = 1;
+        timediv = 1;
 
         do
         {
-            n = (t / div) % 60;
+            n = (t / timediv) % 60;
             x = WI_drawNum(x, y, n, 2) - (colon->width);
-            div *= 60;
+            timediv *= 60;
 
             // draw
-            if (div==60 || t / div)
+            if (timediv==60 || t / timediv)
                 V_DrawScaledPatch(x, y, colon);
 
-        } while (t / div);
+        } while (t / timediv);
     }
     else
     {
@@ -901,8 +898,8 @@ static void WI_updateShowNextLoc(void)
 static void WI_drawShowNextLoc(void)
 {
 
-    int         i;
-    int         last;
+    int  i;
+    int  last;
 
     if (cnt<=0)  // all removed no draw !!!
         return;
@@ -955,9 +952,7 @@ static int              dm_totals[MAXPLAYERS];
 
 static void WI_initDeathmatchStats(void)
 {
-
-    int         i;
-    int         j;
+    int i, j;
 
     state = StatCount;
     acceleratestage = 0;
@@ -965,13 +960,17 @@ static void WI_initDeathmatchStats(void)
     cnt_pause = TICRATE*DM_WAIT;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
+    {
          if (playeringame[i])
          {
              for(j=0; j<MAXPLAYERS; j++)
+	     {
                  if( playeringame[j] )
                      dm_frags[i][j] = plrs[i].frags[j];
+	     }
              
              dm_totals[i] = ST_PlayerFrags(i);
+	 }
     }
 
     WI_initAnimatedBack();
@@ -983,7 +982,7 @@ static void WI_updateDeathmatchStats(void)
 
     if( paused )
         return;
-    if (cnt_pause>0) cnt_pause--;
+    if (cnt_pause>0)   cnt_pause--;
     if (cnt_pause==0)
     {
         S_StartSound(0, sfx_slop);
@@ -1109,7 +1108,7 @@ static void WI_drawDeathmatchStats(void)
     }
     WI_drawRanking("Buchholz",85,RANKINGY,fragtab,scorelines,false,whiteplayer);
 
-    // count individuel
+    // count individual
     scorelines = 0;
     for (i=0; i<MAXPLAYERS; i++)
     {
@@ -1117,6 +1116,7 @@ static void WI_drawDeathmatchStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
+	    {
                 if (playeringame[j] && i!=j)
                 {
                      if(dm_frags[i][j]>dm_frags[j][i])
@@ -1125,6 +1125,7 @@ static void WI_drawDeathmatchStats(void)
                          if(dm_frags[i][j]==dm_frags[j][i])
                               fragtab[scorelines].count+=1;
                 }
+	    }
 
             fragtab[scorelines].num = i;
             fragtab[scorelines].color = players[i].skincolor;
@@ -1142,8 +1143,10 @@ static void WI_drawDeathmatchStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
+	    {
                 if (playeringame[j])
                      fragtab[scorelines].count+=dm_frags[j][i];
+	    }
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = players[i].skincolor;
             fragtab[scorelines].name  = player_names[i];
@@ -1165,15 +1168,19 @@ boolean teamingame(int teamnum)
    if (cv_teamplay.value == 1)
    {
        for(i=0;i<MAXPLAYERS;i++)
+       {
           if(playeringame[i] && players[i].skincolor==teamnum)
               return true;
+       }
    }
    else
    if (cv_teamplay.value == 2)
    {
        for(i=0;i<MAXPLAYERS;i++)
+       {
           if(playeringame[i] && players[i].skin==teamnum)
               return true;
+       }
    }
    return false;
 }
@@ -1214,8 +1221,10 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
+	    {
                 if (teamingame(j) && i!=j)
                     fragtab[scorelines].count+= dm_frags[i][j]*dm_totals[j];
+	    }
 
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
@@ -1414,9 +1423,7 @@ static void WI_initNetgameStats(void)
 static void WI_updateNetgameStats(void)
 {
 
-    int         i;
-    int         fsum;
-
+    int  i, cnt_target;
     boolean     stillticking = false;
 
     WI_updateAnimatedBack();
@@ -1451,16 +1458,17 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxkills < 0 )
+	    if( wbs->maxkills <= 0 )
 	    {
 	       // no kills
 	       cnt_kills[i] = -100;
 	       continue;
 	    }
 
-            cnt_kills[i] += 2;
-            if (cnt_kills[i] >= (plrs[i].skills * 100) / wbs->maxkills)
-                cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
+	    cnt_target = (plrs[i].skills * 100) / wbs->maxkills;
+	    cnt_kills[i] += 2;
+            if (cnt_kills[i] >= cnt_target)
+                cnt_kills[i] = cnt_target;
             else
                 stillticking = true;
         }
@@ -1475,16 +1483,17 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxitems < 0 )
+	    if( wbs->maxitems <= 0 )
 	    {
 	       // no items
 	       cnt_items[i] = -100;
 	       continue;
 	    }
 
+	    cnt_target = (plrs[i].sitems * 100) / wbs->maxitems;
             cnt_items[i] += 2;
-            if (cnt_items[i] >= (plrs[i].sitems * 100) / wbs->maxitems)
-                cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
+            if (cnt_items[i] >= cnt_target)
+                cnt_items[i] = cnt_target;
             else
                 stillticking = true;
         }
@@ -1498,16 +1507,17 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxsecret < 0 )
+	    if( wbs->maxsecret <= 0 )
 	    {
 	       // no secrets
 	       cnt_secret[i] = -100;
 	       continue;
 	    }
 
-            cnt_secret[i] += 2;
-            if (cnt_secret[i] >= (plrs[i].ssecret * 100) / wbs->maxsecret)
-                cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+	    cnt_target = (plrs[i].ssecret * 100) / wbs->maxsecret;
+	    cnt_secret[i] += 2;
+            if (cnt_secret[i] >= cnt_target)
+                cnt_secret[i] = cnt_target;
             else
                 stillticking = true;
         }
@@ -1526,10 +1536,10 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
+	    cnt_target = ST_PlayerFrags(i);
             cnt_frags[i] += 1;
-
-            if (cnt_frags[i] >= (fsum = ST_PlayerFrags(i)))
-                cnt_frags[i] = fsum;
+            if (cnt_frags[i] >= cnt_target)
+                cnt_frags[i] = cnt_target;
             else
                 stillticking = true;
         }
@@ -1672,8 +1682,10 @@ static void WI_updateStats(void)
     if (acceleratestage && sp_state != 10)
     {
         acceleratestage = 0;
-        cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
-        cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
+        cnt_kills[0] = ( wbs->maxkills > 0 ) ?
+	   (plrs[me].skills * 100) / wbs->maxkills : -100;
+        cnt_items[0] = ( wbs->maxitems > 0 ) ?
+	   (plrs[me].sitems * 100) / wbs->maxitems : -100;
         cnt_secret[0] = ( wbs->maxsecret > 0 ) ?
            (plrs[me].ssecret * 100) / wbs->maxsecret : -100;
         cnt_time = plrs[me].stime / TICRATE;

@@ -3931,3 +3931,12 @@ and if not found then any lump of that name will be used.
 This fixes the Legacy demo wad so the BLUMAP colormap and BLUMAP patch
 occupy different namespaces.  The texture using the BLUMAP patch now
 finds the correct lump and does not need to be rejected.
+
+*** W97_wi_stats
+patchfile = w97_16_wi_stats.patch
+- committed revision 1107   by wesley johnson
+Some player stats use a division by the total.  In wads where the
+total was 0, there would be a division by zero.  There was inadequate
+protection.  The protecting tests were expanded to protect all
+divisions by the total.
+Update docs to latest patches.

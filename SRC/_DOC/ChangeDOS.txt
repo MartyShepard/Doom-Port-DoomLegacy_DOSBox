@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01107 ]: w97 wi stats divide
 [01106 ]: w97 lump namespace
 [01105 ]: w97 lumpnum
 [01104 ]: w97 patch segfault

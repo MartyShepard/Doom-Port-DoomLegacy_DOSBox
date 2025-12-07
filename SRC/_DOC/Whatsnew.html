@@ -13,7 +13,7 @@
 
 <div class="column">
 
-<h2>1.45 SVN1103 (2014-4-15)</h2>
+<h2>1.45 SVN1107 (2014-5-2)</h2>
 
 <h3>FEATURES 1.45</h3>
 <ul>
@@ -39,6 +39,21 @@ attack from creating a bogus player sprite on top of its opponent.</li>
 <li>Using quicksave several times would freeze the menu system due to
 quicksave writting some status outside of an array.
 Fixed the quicksave status to be written in the correct location.</li>
+<li>The Legacy demo wad would segfault because a patch and colormap have the
+same name. Attempting to interpret a colormap as a patch lead to wild
+memory reads.
+Added checks for bad patches where post offsets exceed the patch size.
+This allows the Legacy demo wad to be played.</li>
+<li>Implemented lump namespace tracking.  Patch name search is now within the
+patch namespace first.  If the patch is not found in the patch namespace,
+then the first lump of that name in any namespace will be used,
+because of wads that do not use the namespaces.
+This fixes the Legacy demo wad problems with a colormap and patch of the
+same name.</li>
+<li>When level without any monsters finished, there was a chance of
+a divide by zero fault when calculating the stats.  Tests that protect
+against divide by zero have been expanded to all the stat divides,
+now showing that there were no monsters.</li>
 </ul>
 
 
