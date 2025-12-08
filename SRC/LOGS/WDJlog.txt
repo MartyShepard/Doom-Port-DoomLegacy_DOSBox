@@ -4053,3 +4053,11 @@ patchfile = w100_16_swap.patch
 For big endian machines, was missing in two places the reference to
 include m_swap.h.
 Fixes bug 617 as suggested by Alexey Dokuchaev.
+
+*** W100_loadfail
+patchfile = w100_17_loadfail.patch
+- commit revision 1131
+I got tired of starting Doom Legacy and finding some mistyped PWAD
+file had not been loaded.  The default now is for Doom Legacy to ERROR
+when a file does not load.
+This can be overridden by the -noloadfail switch.

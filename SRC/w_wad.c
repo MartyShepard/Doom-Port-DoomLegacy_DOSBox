@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1122 2014-06-23 18:13:40Z wesleyjohnson $
+// $Id: w_wad.c 1131 2014-08-30 14:10:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -275,10 +275,10 @@ int W_LoadWadFile (char *filename)
     if( strcasecmp( extension,"deh")==0
        || strcasecmp( extension,"bex")==0 )
     {
-        // this code emulate a wadfile with one lump name "DEHACKED" 
-        // at position 0 and size of the whole file
-        // this allow deh file to be like all wad, can be copied by network 
-        // and loaded at the console
+        // This code emulates a wadfile with one lump name "DEHACKED" 
+        // at position 0 and size of the whole file.
+        // This allow deh file to be copied by network and loaded at the
+        // console, like wad files.
         fstat(handle,&bufstat);
         numlumps = 1; 
         lumpinfo = Z_Malloc (sizeof(lumpinfo_t),PU_STATIC,NULL);
@@ -361,8 +361,10 @@ int W_LoadWadFile (char *filename)
         int t=I_GetTime();
         md5_stream (fhandle, wadfile->md5sum);
         if( devparm )
+        {
             GenPrintf(EMSG_dev, "md5 calc for %s took %f second\n",
                         wadfile->filename,(float)(I_GetTime()-t)/TICRATE);
+	}
     }
     fclose(fhandle);
     
@@ -464,8 +466,8 @@ void W_Reload (void)
 //
 // W_InitMultipleFiles
 // Pass a null terminated list of files to use.
-// All files are optional, but at least one file
-//  must be found.
+// All files are optional, but at least one file must be found.
+// Any load failure is indicated to the caller, for error handling.
 // Files with a .wad extension are idlink files
 //  with multiple lumps.
 // Other files are single lumps with the base filename
@@ -997,7 +999,8 @@ void* W_CacheRawAsPic( int lump, int width, int height, int tag)
     else
     {
         // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
-        if( tag == PU_CACHE )   tag = PU_CACHE_DEFAULT;
+        if( tag == PU_CACHE )
+	   tag = PU_CACHE_DEFAULT;
         Z_ChangeTag (lumpcache[llump], tag);
     }
 
@@ -1032,7 +1035,7 @@ void* W_CachePicName( char* name, int tag )
 }
 
 
-// search for all DEHACKED lump in all wads and load it
+// Search for all DEHACKED lump in all wads and load it.
 void W_LoadDehackedLumps( int wadnum )
 {
     int clump = 0;
@@ -1058,7 +1061,8 @@ uint64_t  W_lump_checksum( void* lumpptr )
     int lumpsize = Z_Datasize( lumpptr );
     uint64_t  checksum = 0;
     int i;
-    for( i=0; i<lumpsize; i++ )   checksum += ((byte*)lumpptr)[i];
+    for( i=0; i<lumpsize; i++ )
+      checksum += ((byte*)lumpptr)[i];
     return checksum;
 }
 
