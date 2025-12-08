@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_local.h 1117 2014-06-20 02:23:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -272,6 +272,8 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 //
 // P_ENEMY
 //
+extern  byte EN_mon_infight;   // monster to monster fighting
+extern  byte EN_mon_coop;  // monster coop
 
 extern  consvar_t cv_monbehavior;
 extern  consvar_t cv_monsterfriction;
@@ -402,7 +404,18 @@ extern int allow_pushers;
 extern byte  monster_friction;  // MBF demo flag
 extern byte  mbf_support;  // [WDJ] MBF enable
 			   // similar to prboom mbf_features, but as a flag
+
+typedef enum {
+ // Boom values
+   INFT_none,     // Boom demo value, Doom default of no infight.
+   INFT_infight,  // Boom demo value, Monster to monster fighting.
+ // Enhanced values
+   INFT_coop = 16,  // Legacy enhancement, and ZDoom option
+   INFT_infight_off,  // DEH
+} infight_e;
+// Values from infight_e and from Boom demo.
 extern byte  monster_infight; //DarkWolf95:November 21, 2003: Monsters Infight!
+extern byte  monster_infight_deh; // DEH input.
 
 typedef enum {
   FR_orig, FR_boom, FR_mbf, FR_prboom, FR_legacy, FR_heretic, FR_hexen

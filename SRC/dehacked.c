@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: dehacked.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1859,23 +1859,40 @@ static void readmisc(MYFILE *f)
          else if(!strcasecmp(word2,"Class"))  idkfa_armor_class=value;
       }
       else if(!strcasecmp(word,"BFG"))        doomweaponinfo[wp_bfg].ammopershoot = value;
+      else if(!strcasecmp(word,"Monsters Ignore"))
+      {
+	  // ZDoom at least
+	  // Looks like a coop setting
+	  switch( value )
+	  {
+ 	   case 0:
+	     monster_infight_deh = INFT_infight_off; // infight off
+	     break;
+	   default:
+	     monster_infight_deh = INFT_coop; // coop
+	     break;
+	  }
+      }
       else if(!strcasecmp(word,"Monsters"))
       {
 	  //DarkWolf95:November 21, 2003: Monsters Infight!
 	  //[WDJ] from prboom the string is "Monsters Infight"
-	  // value=202 -> off  value=221 -> on
 	  // cannot confirm any specific valid numbers
-	  monster_infight = value & 0x01;  // 202 and 221
-	  // previous behavior: default to on
-	  if( value == 0 )
-	      monster_infight = 1;
-	  if( value == 2 )   // extended behavior, coop monsters
+	  switch( value )
 	  {
-	      cv_monbehavior.value = 1;  // do not notify NET
-	      monster_infight = 0;
+	   case 221: // value=221 -> on (prboom)
+	   case 0: // previous behavior: default to on
+	   case 1: // if user tries to set it on
+	      monster_infight_deh = INFT_infight; // infight on
+	      break;
+	   case 202: // value=202 -> off (prboom)
+	   default:  // off
+	      monster_infight_deh = INFT_infight_off; // infight off
+	      break;
+	   case 3: // extended behavior, coop monsters
+	      monster_infight_deh = INFT_coop;
+	      break;
 	  }
-	  else
-	      cv_monbehavior.value = ( monster_infight ) ? 2:0;  // do not notify NET
       }
       else deh_error("Misc : unknown word '%s'\n",word);
     }
@@ -2211,6 +2228,7 @@ void DEH_Init(void)
       deh_musicname[i]=S_music[i].name;
   for(i=0;i<NUMTEXT;i++)
       deh_text[i]=text[i];
+  monster_infight_deh = INFT_none; // not set
 }
 
 #ifdef BEX_LANGUAGE

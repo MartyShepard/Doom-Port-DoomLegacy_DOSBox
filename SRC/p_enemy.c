@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1116 2014-06-20 02:22:17Z wesleyjohnson $
+// $Id: p_enemy.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -97,15 +97,21 @@ consvar_t cv_solidcorpse = {"solidcorpse","0",CV_NETVAR | CV_SAVE,CV_OnOff};
 consvar_t cv_fastmonsters = {"fastmonsters","0",CV_NETVAR | CV_CALL,CV_OnOff,FastMonster_OnChange};
 consvar_t cv_predictingmonsters = {"predictingmonsters","0",CV_NETVAR | CV_SAVE,CV_OnOff};	//added by AC for predmonsters
 
-// DarkWolf95: Monster Behavior
-CV_PossibleValue_t monbehavior_cons_t[]={{0,"Normal"},{1,"Coop"},{2,"Infight"},{0,NULL}};
-consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR, monbehavior_cons_t };
-
-// [WDJ] Monster friction, doorstuck
+// [WDJ] Monster friction, doorstuck, infight
 void CV_monster_OnChange(void)
 {
     DemoAdapt_p_enemy();
 }
+
+// DarkWolf95: Monster Behavior
+CV_PossibleValue_t monbehavior_cons_t[]={
+   {0,"Normal"},
+   {1,"Coop"},
+   {2,"Infight"},
+   {3,"Force Coop"},
+   {4,"Force Infight"},
+   {0,NULL}};
+consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR | CV_CALL, monbehavior_cons_t, CV_monster_OnChange };
 
 CV_PossibleValue_t monsterfriction_t[] = {
    {0,"None"},
@@ -349,8 +355,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 	 ||( (actor->target->health > 0)
 	     &&( !(actor->target->flags & MF_FRIEND)
 		 || (actor->target->player ?
-//		     (monster_infight || (P_Random()>128))  // pr_defect
-		     (cv_monbehavior.value!=1 || (P_Random()>128))  // pr_defect
+		     ((monster_infight == INFT_infight) || (P_Random()>128))  // pr_defect
 		     : !(actor->target->flags & MF_JUSTHIT) && P_Random()>128)  // pr_defect
 	        )
 	    );
@@ -457,6 +462,28 @@ void DemoAdapt_p_enemy( void )
     {
         EN_mbf_doorstuck = (cv_doorstuck.value == 1);  // 1=MBF
         EN_doorstuck = (cv_doorstuck.value > 0 );  // 0=none, 2=Boom
+    }
+    // Monster Infight enables, can be changed during game.
+    // Doom normal is no infight, no coop (see Boom).
+    monster_infight = monster_infight_deh;  // from DEH
+    switch( cv_monbehavior.value )  // from menu option, or demo
+    {
+     case 0: // Normal  (no infight)
+       break;
+     case 1: // Coop default
+       if( monster_infight_deh == INFT_none )  // no input
+	 monster_infight = INFT_coop;
+       break;
+     case 2: // Infight default
+       if( monster_infight_deh == INFT_none )  // no input
+	 monster_infight = INFT_infight;
+       break;
+     case 3: // Coop forced
+       monster_infight = INFT_coop;
+       break;
+     case 4: // Infight forced
+       monster_infight = INFT_infight;
+       break;
     }
 #if 1
     if( verbose > 1 )

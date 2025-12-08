@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_spec.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -166,6 +166,7 @@ byte  monster_friction = 1;  // MBF demo flag
 byte  mbf_support = 1;  // [WDJ] MBF enable
 			// similar to prboom mbf_features, but as a flag
 byte  monster_infight = 0; //DarkWolf95:November 21, 2003: Monsters Infight!
+byte  monster_infight_deh = 0; // DEH input.
 
 // [WDJ]
 friction_model_e  friction_model = FR_legacy;

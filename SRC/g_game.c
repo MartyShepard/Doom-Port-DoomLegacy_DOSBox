@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: g_game.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1357,11 +1357,11 @@ void G_PlayerReborn (int player)
     char        favoritweapon[NUMWEAPONS];
     boolean     originalweaponswitch;
     boolean     autoaim;
-    int         skin;                           //Fab: keep same skin
+    int         skin;   //Fab: keep same skin
 #ifdef CLIENTPREDICTION2
     mobj_t      *spirit;
 #endif
-    bot_t*		bot;	//added by AC for acbot
+    bot_t*      bot;	//added by AC for acbot
 
     memcpy (frags,players[player].frags,sizeof(frags));
     addfrags = players[player].addfrags;
@@ -2789,7 +2789,7 @@ void G_DoPlayDemo (char *defdemoname)
         cv_instadeath.value = 0;  // Die
 #endif
         cv_monbehavior.value = 0;  // do not notify NET
-        monster_infight = 0;
+        monster_infight = INFT_none;
     }
 
     // header[1]: byte: skill level 0..4
@@ -2915,8 +2915,8 @@ void G_DoPlayDemo (char *defdemoname)
 	    // [25] monkeys
 	    // [26..57] comp vector x32
 	    // [58] force old BSP
-	    monster_infight = demo_p[14];
-	    cv_monbehavior.value = ( monster_infight ) ? 2:0;  // do not notify NET
+	    monster_infight = demo_p[14]; // monster_infight from demo is 0/1
+	    cv_monbehavior.value = (monster_infight)? 2:0;  // do not notify NET
 	    monster_friction = demo_p[22];
 	}
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
