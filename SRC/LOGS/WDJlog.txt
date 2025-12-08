@@ -4130,3 +4130,9 @@ buffer between the commands, which could be 0.  This made it erratic when
 there were more than two commands in one tic.
 This fix removes the term 0 from the command string before appending.
 
+*** W101_legacy_error
+patchfile = w101_4_legacy_err.patch
+- commit revision 1137
+If there is a -game error then legacy.wad did not get loaded, which
+triggered additional error messages.  Fixed to load legacy.wad even
+when there is an error.

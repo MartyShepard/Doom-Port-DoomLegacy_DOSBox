@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: d_main.c 1137 2014-09-17 13:53:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1136"
+#define SVN_REV "1137"
 #endif
 
 // Version number: major.minor.revision
@@ -1617,6 +1617,7 @@ cleanup_ret:
 iwad_failure:
     I_SoftError("IWAD %s not found\n", pathiwad);
 fatal_err:
+    D_AddFile(legacywad);  // To prevent additional errors.
     fatal_error = 1;
     goto cleanup_ret;
 }
