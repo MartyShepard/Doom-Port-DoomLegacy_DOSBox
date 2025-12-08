@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1064 2013-12-14 00:18:23Z wesleyjohnson $
+// $Id: hu_stuff.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -672,47 +672,59 @@ typedef struct
 } fspic_t;
 
 fspic_t*   piclist = NULL;	// realloc, never deallocated
-int        maxpicsize = 0;
+int        num_piclist_alloc = 0;
 
 
-//
 // HU_InitFSPics
 // This function is called when Doom starts and every time the piclist needs
 // to be expanded.
 void HU_InitFSPics()
 {
+  fspic_t * npp;
   int  newstart, newend, i;
 
-  if(!maxpicsize)
+  newstart = num_piclist_alloc;
+  if( num_piclist_alloc == 0 )
   {
-    newstart = 0;
-    newend = maxpicsize = 128;
+    // Initial allocation.
+    newend = 128;
   }
   else
   {
-    newstart = maxpicsize;
-    newend = maxpicsize = (maxpicsize * 2);
+    // Double current allocation.
+    newend = (num_piclist_alloc * 2);
   }
 
-  piclist = realloc(piclist, sizeof(fspic_t) * maxpicsize);
-  // FIXME: check allocation fail [WDJ] 11/14/2009
+  npp = realloc(piclist, sizeof(fspic_t) * newend);
+  // Check allocation fail [WDJ]
+  if( npp == NULL )
+     return;
+  
+  // Commit to new allocation.
+  piclist = npp;
+  num_piclist_alloc = newend;
+
+  // Init the added slots to empty.
   for(i = newstart; i < newend; i++)
   {
     piclist[i].lumpnum = -1;
     piclist[i].data = NULL;
+    piclist[i].draw = false;
+    piclist[i].xpos = 0;
+    piclist[i].ypos = 0;
   }
 }
 
-
+// Return slot number (handle) for pic, [ 0 .. num_piclist_alloc-1 ].
 int  HU_GetFSPic(int lumpnum, int xpos, int ypos)
 {
-  int      i;
+  int  i;
 
-  if(!maxpicsize)
+  if(!num_piclist_alloc)
     HU_InitFSPics();
 
-  getpic:
-  for(i = 0; i < maxpicsize; i++)
+getpic_retry:  // retry
+  for(i = 0; i < num_piclist_alloc; i++)
   {
     if(piclist[i].lumpnum != -1)
       continue;
@@ -724,14 +736,15 @@ int  HU_GetFSPic(int lumpnum, int xpos, int ypos)
     return i;
   }
 
+  // Did not find an empty slot.
   HU_InitFSPics();
-  goto getpic;
+  goto getpic_retry;
 }
 
 
-int   HU_DeleteFSPic(int handle)
+int  HU_DeleteFSPic(int handle)
 {
-  if(handle < 0 || handle > maxpicsize)
+  if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
 
   piclist[handle].lumpnum = -1;
@@ -740,9 +753,9 @@ int   HU_DeleteFSPic(int handle)
 }
 
 
-int   HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos)
+int  HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos)
 {
-  if(handle < 0 || handle > maxpicsize)
+  if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
 
   if(piclist[handle].lumpnum == -1)
@@ -756,39 +769,42 @@ int   HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos)
 }
 
 
-int   HU_FSDisplay(int handle, boolean newval)
+// Enable or disable the drawing of a Pic.
+int  HU_FSDisplay(int handle, boolean enable_draw)
 {
-  if(handle < 0 || handle > maxpicsize)
+  if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
   if(piclist[handle].lumpnum == -1)
     return -1;
 
-  piclist[handle].draw = newval;
+  piclist[handle].draw = enable_draw;
   return 0;
 }
 
 
 void HU_DrawFSPics()
 {
-  int       i;
+  int  i;
 
   // [WDJ] Fragglescript overlays must be centered.
   // Needed for Chexquest-newmaps scope with crosshairs.
-  // Draw screen0, scaled, 0 at center
-  V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTER0 );
+  // Draw screen0, scaled, menu centering.
+  V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERMENU );
 
-  for(i = 0; i < maxpicsize; i++)
+  for(i = 0; i < num_piclist_alloc; i++)
   {
     if(piclist[i].lumpnum == -1 || piclist[i].draw == false)
-      continue;
+      continue;  // not enabled
+
     if(piclist[i].xpos >= vid.width || piclist[i].ypos >= vid.height)
-      continue;
+      continue;  // off screen right
 
     if(!piclist[i].data)
       piclist[i].data = (patch_t *) W_CachePatchNum(piclist[i].lumpnum, PU_STATIC); // endian fix
 
-    if((piclist[i].xpos + piclist[i].data->width) < 0 || (piclist[i].ypos + piclist[i].data->height) < 0)
-      continue;
+    if((piclist[i].xpos + piclist[i].data->width) < 0
+       || (piclist[i].ypos + piclist[i].data->height) < 0)
+      continue;  // off screen left
 
     V_DrawScaledPatch(piclist[i].xpos, piclist[i].ypos, piclist[i].data);
   }
@@ -799,7 +815,7 @@ void HU_DrawFSPics()
 void HU_ClearFSPics()
 {
 	piclist = NULL;
-	maxpicsize = 0;
+	num_piclist_alloc = 0;
 
 	HU_InitFSPics();
 }
@@ -877,7 +893,8 @@ void HU_Erase (void)
 //======================================================================
 
 // count frags for each team
-int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYERS][MAXPLAYERS])
+int HU_CreateTeamFragTbl(fragsort_t *fragtab,
+			 int dmtotals[], int fragtbl[MAXPLAYERS][MAXPLAYERS])
 {
     int i,j,k,scorelines,team;
 
@@ -912,12 +929,15 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,int dmtotals[],int fragtbl[MAXPLAYE
                      break;
                 }
 	    }  // for j
+
             if (j==scorelines)
-            {   // team not found add it
+            {   // team not found, add it
 
                 if(fragtbl)
+	        {
                     for(k=0; k<MAXPLAYERS; k++)
                         fragtbl[team][k] = 0;
+		}
 	        
                 fragtab[scorelines].count = ST_PlayerFrags(i);
                 fragtab[scorelines].num   = team;
@@ -962,7 +982,7 @@ void HU_drawDeathmatchRankings (void)
     boolean	 large;
 
     // Draw screen0, scaled, centered
-    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERSCREEN );
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERHORZ );
 
     // draw the ranking title panel
     if(!cv_splitscreen.value)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1107 2014-05-02 22:12:17Z wesleyjohnson $
+// $Id: wi_stuff.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1948,7 +1948,7 @@ static void WI_loadData(void)
         memset(screens[1], 0, vid.screen_size);
   
         // Draw background on screen1
-        V_SetupDraw( 1 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN ); // screen 1
+        V_SetupDraw( 1 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ ); // screen 1
         V_DrawScaledPatch(0, 0, W_CachePatchName(bgname, PU_CACHE));
         V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
     }
@@ -2167,7 +2167,7 @@ static void WI_unloadData(void)
 void WI_Drawer (void)
 {
     // all WI is draw screen0
-    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 
     switch (state)
     {

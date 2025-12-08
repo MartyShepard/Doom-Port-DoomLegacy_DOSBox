@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1128 2014-07-08 20:08:07Z wesleyjohnson $
+// $Id: m_menu.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3756,7 +3756,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     int      step,boff;
 
     // Draw to screen0, scaled
-    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 	      
     if( gamemode == heretic )
     {
@@ -4663,7 +4663,7 @@ void M_Drawer (void)
         return;
 
     // center the scaled graphics for the menu,
-    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTER0 );
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERMENU );
 
     // now that's more readable with a faded background (yeah like Quake...)
     if ( reg_colormaps )  // not before colormaps loaded
@@ -4673,7 +4673,7 @@ void M_Drawer (void)
     if (currentMenu->drawroutine)
         currentMenu->drawroutine();      // call current menu Draw routine
 
-    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERSCREEN );  // restore
+    V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART | V_CENTERHORZ );  // restore
 
 }
 

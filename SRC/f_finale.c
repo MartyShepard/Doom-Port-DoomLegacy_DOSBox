@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: f_finale.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -854,7 +854,7 @@ void F_Draw_interpic_Name( char * name )
 void F_Drawer (void)
 {
     // Draw to screen0, scaled
-    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 
     if (finalestage == 2)
     {

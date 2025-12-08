@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01134 ]: w101 chex draw
+[01133 ]: w100 Docs Version 1.45.1
 [01132 ]: w100 Version 1.45.1
 [01131 ]: w100 loadfail, and -noloadfail switch
 [01130 ]: w100 swap big endian

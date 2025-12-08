@@ -4066,3 +4066,20 @@ This can be overridden by the -noloadfail switch.
 patchfile = w100_18_version1451.patch
 - commit revision 1132
 Update version numbers for 1.45.1.
+
+*** W100_docs3
+patchfile = w100_19_docs3.patch
+- commit revision 1133
+Update docs for latest patches and version 1.45.1.
+
+*** W101_chex
+patchfile = w101_1_chex.patch
+- commit revision 1134
+Chexquest Newmaps specific fixes.
+Fix segfault when drawing black bars and crosshairs in software rendering.
+These graphics were meant for OpenGL where they would be stretched.
+Fixed the software rendering of V_DrawScaledPatch to stretch these specific
+Pics to screen width.
+Fixed names and comments of draw to reflect true nature of the centering.
+Changed selection names to V_CENTERMENU and V_CENTERHORZ.
+Fixed HU Pic allocation, support functions, and added accurate comments.

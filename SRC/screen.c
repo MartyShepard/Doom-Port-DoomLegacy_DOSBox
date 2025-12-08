@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: screen.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -416,6 +416,7 @@ void SCR_Recalc (void)
     }
 
     //added:18-02-98: calculate centering offset for the scaled menu
+    // Adds a left margin for CENTERMENU
     vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.width) +
                     (vid.width%BASEVIDWIDTH)/2;
 

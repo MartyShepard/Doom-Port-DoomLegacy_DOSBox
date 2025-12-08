@@ -13,10 +13,14 @@
 
 <div class="column">
 
-<h2>1.45.1</h2>
+<h2>1.45.1 SVN1133 (2014-08-29)</h2>
 
 <h3>FEATURES 1.45.1</h3>
 <ul>
+<li>When a file does not load, Doom Legacy will now default to fail
+with an error message, like many other ports.  This will invoke the Launcher.
+The -noloadfail switch causes it to ignore load errors as in previous
+versions of Doom Legacy.</li>
 </ul>
 
 <h3>BUG FIXES 1.45.1</h3>
@@ -49,7 +53,20 @@ same as in prboom and compatible with boom demo.
 They need to be rendered full height when the middle texture is transparent
 and the door is closed.
 </li>
+<li>
+Check for 3dfloors in monster sight line checks.  This will prevent
+monsters from trying to shoot the player through 3dfloors.
+</li>
+<li>
+They grey background text box has been positioned and sized wrong when using
+font1, as in the launcher menu, and the quit message from it.
+Have corrected it in the few places where the font1 and the grey box have
+unique code.
+</li>
+<li>For big endian machines, fix two missing include of m_swap.h in
+two source files.</li>
 </ul>
+
 
 
 <h2>1.45 SVN1107 (2014-5-2)</h2>

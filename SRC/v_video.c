@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1086 2014-02-03 17:33:54Z wesleyjohnson $
+// $Id: v_video.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -121,6 +121,8 @@
 #include "i_system.h"
   // I_GetTime
 #include "z_zone.h"
+#include "doomstat.h"
+  // gamemode
 
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
@@ -129,6 +131,13 @@
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
 #define ENABLE_DRAWEXT
 #endif
+
+// Chexquest Newmaps has black bars and crosshairs which are drawn at (-1,-1).
+// They are all black, not aligned, and the movement is slight,
+// so moving the draw is acceptable.
+// Enables the accurate clipping.  The default is to move the draw instead.
+//#define ENABLE_CLIP_DRAWSCALED
+
 
 // [WDJ] Interfaces to port video drivers, common to all
 
@@ -845,14 +854,14 @@ void V_SetupDraw( uint32_t screenflags )
 
     // The screen buffer, at an offset
     V_drawinfo.start_offset = 0;
-    if (screenflags & V_CENTERSCREEN)
+    if (screenflags & V_CENTERHORZ)
     {
-        // center the menus, finale, and other screens in the fullscreen
+        // Center horizontally the finale, and other screens in the fullscreen.
         V_drawinfo.start_offset += (vid.widthbytes - (BASEVIDWIDTH * V_drawinfo.xbytes)) / 2;
     }
-    if (screenflags & V_CENTER0)
+    if (screenflags & V_CENTERMENU)
     {
-        // center the graphic in the menu, (0,0) at center
+        // Center the menu by adding a left border.
         V_drawinfo.start_offset += ( vid.centerofs * vid.bytepp );
         // as previously was performed by scaleofs.
         // Enabled when the menu is displayed, and crosshairs.
@@ -861,7 +870,8 @@ void V_SetupDraw( uint32_t screenflags )
         // Except the menu, scaled graphics don't have to be centered.
     }
     V_drawinfo.screen = screenflags & V_SCREENMASK;  // screen number (usually 0)
-    V_drawinfo.drawp = screens[V_drawinfo.screen] + V_drawinfo.start_offset;
+    V_drawinfo.screen_start = screens[V_drawinfo.screen];  // screen buffer [0]
+    V_drawinfo.drawp = V_drawinfo.screen_start + V_drawinfo.start_offset;
 }
 
 
@@ -977,11 +987,12 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     fixed_t ofs;
     fixed_t colfrac;
 
-    // draw an hardware converted patch
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_drawinfo.screenflags|V_drawinfo.effectflags );
+        // Draw a hardware converted patch.
+        HWR_DrawPatch((MipPatch_t *) patch, x, y,
+		      V_drawinfo.screenflags|V_drawinfo.effectflags );
         return;
     }
 #endif
@@ -990,10 +1001,42 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     x -= patch->leftoffset;
 
     colfrac = V_drawinfo.x_unitfrac;
-
+   
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
     desttop = V_drawinfo.drawp + (y * V_drawinfo.y0bytes) + (x * V_drawinfo.x0bytes);
     destend = desttop + (patch->width * V_drawinfo.xbytes);  // test against desttop
+
+#ifndef ENABLE_CLIP_DRAWSCALED
+    if( desttop < V_drawinfo.screen_start )
+    {
+        // Protect against drawing outside of screen.
+	if( y < 0 )
+        {
+	    // Clip y
+	    desttop = V_drawinfo.drawp + (x * V_drawinfo.x0bytes);
+	}
+        // Compensate for the change in y.
+        destend = desttop + (patch->width * V_drawinfo.xbytes);
+        if( desttop < V_drawinfo.screen_start )
+        {
+	    // Clip x too.
+	    desttop = V_drawinfo.screen_start;
+	}
+
+#if 1
+        if( gamemode == chexquest1 && y == -1 )
+        {
+	    // Chexquest Newmaps black bars and crosshairs.
+	    // Were designed for OpenGL drawing, looks better when stretched.
+	    x = 0;
+	    y = 0;
+	    colfrac = colfrac * (vid.dupx * BASEVIDWIDTH) / vid.width;
+	    desttop = V_drawinfo.screen_start;
+	    destend = desttop + vid.ybytes;
+	}
+#endif
+    }
+#endif
 
     // only used in f_finale:F_CastDrawer
     if (V_drawinfo.effectflags & V_FLIPPEDPATCH)
@@ -1021,7 +1064,12 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
 	    {
 	        while (count--)
 	        {
+#ifdef ENABLE_CLIP_DRAWSCALED
+		    if( dest >= V_drawinfo.screen_start )
+		       V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
+#else
 		    V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
+#endif
 		    dest += vid.ybytes;
 		    ofs += V_drawinfo.y_unitfrac;
 		}
@@ -1031,7 +1079,12 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
 	    {
 	        while (count--)
 	        {
+#ifdef ENABLE_CLIP_DRAWSCALED
+		    if( dest >= V_drawinfo.screen_start )
+		       *dest = source[ofs >> FRACBITS];
+#else
 		    *dest = source[ofs >> FRACBITS];
+#endif
 		    dest += vid.ybytes;
 		    ofs += V_drawinfo.y_unitfrac;
 		}

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1132 2014-08-30 14:14:51Z wesleyjohnson $
+// $Id: d_main.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1132"
+#define SVN_REV "1134"
 #endif
 
 // Version number: major.minor.revision
@@ -852,7 +852,7 @@ void D_PageDrawer(char *lumpname)
     byte *dest;  // within screen buffer
 
     // [WDJ] Draw patch for all bpp, bytepp, and padded lines.
-    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERSCREEN );
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 
     // software mode which uses generally lower resolutions doesn't look
     // good when the pic is scaled, so it fills space around with a pattern,

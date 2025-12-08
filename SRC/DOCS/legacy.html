@@ -183,18 +183,18 @@ doomlegacy -iwad doom2.wad -file DM8.WAD
 <h3>Windows</h3>
 <p>
   It is important to change to the directory where doomlegacy resides.  Support files,
-  like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by DoomLegacy
+  like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by Doom Legacy
   and it looks in the current directory as last resort.
 </p>
 <p>
   Put your wad files in directory "\doomwads", or "\games\doomwads", or
-  in the current directory.  DoomLegacy will use the first that exists
+  in the current directory.  Doom Legacy will use the first that exists
   as the doomwaddir.  Set DOOMWADDIR in a batch file to specify a different wad directory.
 </p>
 <p>
   A "legacy" directory will be created in your home directory for savegames and saved config files.
   Set the environment variable "<b>HOME</b>" in a batch file, or use the -home switch
-  when starting DoomLegacy.
+  when starting Doom Legacy.
   Otherwise, it will check if the default home directory exists, "\legacyhome".
   If none are present, then it will use the current directory for home, but only if it is not root, "c:\".
 
@@ -204,7 +204,7 @@ doomlegacy -iwad doom2.wad -file DM8.WAD
 > doomlegacy -home c:\games\doomsave -config c:\games\plutconfig.cfg -game plutonia
 </div>
 <p>
-  Use the verbose switch -v, and DoomLegacy will print to stderr the directory
+  Use the verbose switch -v, and Doom Legacy will print to stderr the directory
   names that it used.  On Win98 this becomes a file named stderr.
   The use of directory names with spaces may fail.
 </p>
@@ -221,12 +221,12 @@ doomlegacy -iwad doom2.wad -file DM8.WAD
   config, home, and doomwad directories.
 </p>
 <p>
-  Another way to start DoomLegacy is to create shortcuts.
+  Another way to start Doom Legacy is to create shortcuts.
   These can be executed using a mouse.
   Specify in the shortcut the command line, and change the starting directory
   to where the doomlegacy program resides.
 </p>
-<div class="code">Example shortcut for DoomLegacy with plutonia2 wad:
+<div class="code">Example shortcut for Doom Legacy with plutonia2 wad:
 Shortcut: dl_plut2
   command: doomlegacy -game plutonia -file c:\games\pl2\PL2.WAD
   current directory: c:\games\legacydir
@@ -255,8 +255,11 @@ DM2MOD.BAT
 
 <h3>Windows with launcher</h3>
 <p>
-  The launcher is no longer actively supported, but older launchers will still work.
-  Most of the settings that the launcher supports can now be set from the console.
+  The previous separate launcher is no longer actively supported,
+  but older launchers will still work.  There are other Launchers that
+  can also be used, as most command line switches are somewhat standard.
+  Most of the settings that a launcher supports can now be set from the
+  console also, or an autoexec file.
 </p>
 <p>
   The launcher has some problems with setting home and config directories.
@@ -282,7 +285,8 @@ DM2MOD.BAT
     the wad files are located. This way you can easily share your wad
     files between different programs.  If it is not defined a default wad
     directory will be checked for existing, and then an alternate directory.
-    If none exist, then by default, Legacy looks for wad files in the current directory.
+    If none exist, then by default, Legacy looks for wad files in the
+    current directory.
   </li>
   <li>
     The variable <b>USER</b>, containing your username, is used as the
@@ -290,7 +294,7 @@ DM2MOD.BAT
   </li>
   <li>
     Your home directory is defined by the variable <b>HOME</b>.
-    In the home directory DoomLegacy will create a legacy directory to store
+    In the home directory Doom Legacy will create a legacy directory to store
     your config and savegame files.
     If this variable is not defined, a default legacy home directory will be
     checked for existing.  If none exist, then by default the current
@@ -315,7 +319,8 @@ DM2MOD.BAT
   mean that switching to OpenGL requires setting up the controls again.
 </p>
 <p>
-  Develop mode (-devgame or -devparm), will use devdataconfig.cfg as its config file.
+  Develop mode (-devgame or -devparm), will use devdataconfig.cfg
+  as its config file.
 </p>
 
   
@@ -339,7 +344,7 @@ DM2MOD.BAT
   
 
 <h3>Setting up the sound</h3>
-The binary downloads of DoomLegacy use SDL sound.
+The binary downloads of Doom Legacy use SDL sound.
 The other options require downloading source code and compiling
 with your own selection of compile options.
 <ul>
@@ -365,8 +370,8 @@ with your own selection of compile options.
 
 <li>WINDOWS
 <p>
-  In the Windows native version the sound is autodetected using DirectX so make sure your card works
-  well with DirectX and then legacy will use it.
+  In the Windows native version the sound is autodetected using DirectX so make
+  sure your card works well with DirectX and then legacy will use it.
 </p>
 <p>
   Additionally, Legacy could utilize hardware 3D sound
@@ -636,8 +641,10 @@ gamma index : GAMMA value
   It is SDL that interfaces with the video card drivers.
 </p>
 <p>
-  Video cards have different levels of hardware acceleration, and rendering speed.
-  Activate only as many fancy rendering options as your video card can draw fast.
+  Video cards have different levels of hardware acceleration,
+  and rendering speed.
+  Activate only as many fancy rendering options as your video card can
+  draw fast.
   Turning off Trilinear and Bilinear filtering can gain speed.
 </p>
 
@@ -686,7 +693,8 @@ See <a href="console.html">here</a> for more about the console.
     'up-to-date', not the others.
   </li>
   <li>
-    <a href="console.html#game_options">Critical game variables</a> are sent to all the players when they
+    <a href="console.html#game_options">Critical game variables</a>
+    are sent to all the players when they
     are changed on the server, and only the server can change them.
     Examples are 'allowjump', 'respawnitemtime', 'deathmatch', ...
   </li>
@@ -696,7 +704,9 @@ See <a href="console.html">here</a> for more about the console.
 <h3>Setting up a network game</h3>
 <p>
   A network game can be started either using the commandline
-  parameters <a href="#cmd_network">-server</a> and <a href="#cmd_network">-connect</a>, or from the multiplayer menu that
+  parameters <a href="#cmd_network">-server</a>
+  and <a href="#cmd_network">-connect</a>,
+  or from the multiplayer menu that
   allows you to connect to a server or create one yourself.
   
 </p>
@@ -849,23 +859,43 @@ Example C, a 3 player game, with _TWO_ computers, one is split-screen:
 <p>
   The Launcher window has input lines like a menu.  Use the up and
   down arrow to move between items.  Type in names for the directories,
-  or use backspace to erase names.  The left and right arrows will cycle
-  through the game selections.  When satisfied, the continue entry will
-  restart DoomLegacy with your new command line input.
-  The QUIT entry will exit DoomLegacy entirely.
+  or use backspace to erase names.  On the switches line the entire switch
+  syntax must be input, on the others only the name is input.
+  The left and right arrows will cycle through the game selections.
+  When you are satisfied, the continue entry will
+  restart Doom Legacy with your new command line input submitted.
+  The QUIT entry will exit Doom Legacy entirely.
 </p>
 <ul>
   <li>HOME: Set your home directory location, where your config files and
-    savegames are kept, the same as "-home".</li>
-  <li>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD files.</li>
-  <li>CONFIG: The config file to use, the same as "-config".</li>
-  <li>SWITCH: Any of the switches allowed on the command line,
-    specified in the same format, such as "-opengl".</li>
-  <li>IWAD: The IWAD specified, the same as "-iwad".</li>
-  <li>GAME: The possible games, the same as "-game".</li>
-  <li>CONTINUE: Restart DoomLegacy with the new command line switches and
-    selections.</li>
-  <li>QUIT: Quit DoomLegacy entirely.</li>
+    savegames are kept.
+    This will be submitted by the launcher using the "-home" switch.
+    <br>Example: "myhome", which will be submitted as "-home myhome".
+  </li>
+  <li>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD files.
+  </li>
+  <li>CONFIG: The config file to use.
+  This will be submitted by the launcher using the "-config" switch.
+  <br>Example: "myconfig", which will be submitted as "-config myconfig".
+  </li>
+  <li>SWITCH: Any of the switches allowed on the command line, specified in
+  the same format.
+  This line will be simply copied to the command line by the launcher.
+  <br>Example: "-opengl -nomusic -file map01.wad -deh fix2.deh".
+  </li>
+  <li>IWAD: A specific IWAD specified in place of the game IWAD.
+  This will be submitted by the launcher using the "-iwad" switch.
+  <br>Example: "myiwad", which will be submitted as "-iwad myiwad".
+  </li>
+  <li>GAME: The possible games, selected using the left and right arrow keys.
+  This will be submitted by the launcher using the "-game" switch.
+  <br>Example: "doom2", which will be submitted as "-game doom2".
+  </li>
+  <li>CONTINUE: Restart Doom Legacy with the new command line switches and
+    selections.
+  </li>
+  <li>QUIT: Quit Doom Legacy entirely.
+  </li>
 </ul>
 
 <h2 id="cmdline">COMMANDLINE OPTIONS</h2>
@@ -881,7 +911,8 @@ Config options
 
 <tr>
 <td>+&lt;console expression&gt;</td>
-<td>You can enter any number of <a href="console.html">console expressions</a> at the command line.<br/>
+<td>You can enter any number of <a href="console.html">console expressions</a>
+at the command line.<br/>
 They will be executed right after the configfile, but before autoexec.cfg.</td>
 </tr>
 
@@ -924,11 +955,11 @@ savegames are kept.</td>
   although it may make loading smoother.
 </p>
 <p>
-  This switch on the SWITCH line of the DoomLegacy Launcher is
+  This switch on the SWITCH line of the Doom Legacy Launcher is
   ineffective because the memory system has already started by then.
-  However, DoomLegacy is compiled by default with the GROW_ZONE memory system,
+  However, Doom Legacy is compiled by default with the GROW_ZONE memory system,
   that automatically increases the memory allocation as needed, so it
-  is not needed.  If you were to compile DoomLegacy with the old ZONE_ZALLOC
+  is not needed.  If you were to compile Doom Legacy with the old ZONE_ZALLOC
   memory system selected, then this switch would be necessary to control it.
 </p>
 </td>
@@ -971,7 +1002,7 @@ Game options
   </p>
   <p>
   The particulars about a particular game-name are in
-  doc/technical/wad_selection.txt.
+  docs/technical/wad_selection.txt.
   </p>
   <p>
   The valid game-name at this time, and the file names accepted are:
@@ -1038,6 +1069,15 @@ The following are valid game-names, but the mode is not supported yet.
 </tr>
 
 <tr>
+<td id="file">-noloadfail</td>
+<td>Doom Legacy will now fail with an error message when a file fails to load,
+like many other ports.  This will start the Launcher.
+The -noloadfail switch will cause it to ignore the load failure,
+as in previous versions of Doom Legacy.
+</td>
+</tr>
+
+<tr>
 <td>-loadgame &lt;num&gt;</td>
 <td>Load savegame by number.  This can only access the main savegame directory.
 Other command line options must set up the correct game and files.</td>
@@ -1068,7 +1108,8 @@ Does not affect games started from the menus.</td>
 
 <tr>
 <td>-respawn</td>
-<td>Respawn monsters when they are killed, in the game started from the command line.
+<td>Respawn monsters when they are killed, in the game started from the
+command line.
 Does not affect games started from the menus.</td>
 </tr>
 
@@ -1394,7 +1435,8 @@ USE_IPX compile option enabled.</td>
 
 <tr>
 <td>-udpport</td>
-<td>Specify the port to use on IPX or IP network.  The default should be 5029.</td>
+<td>Specify the port to use on IPX or IP network.
+The default should be 5029.</td>
 </tr>
 
 <tr>
@@ -1550,7 +1592,8 @@ Development options
 
 <tr>
   <td>-devgame &lt;game-name&gt;</td>
-<td>Development mode using devparm for the specified game, in the same format as -game.
+<td>Development mode using devparm for the specified game,
+in the same format as -game.
 User can include development files from working directories using -file.</td>
 </tr>
 
@@ -1571,7 +1614,8 @@ In Ultimate Doom mode -wart 3 1 will load devmaps/E3M1.</td>
 <tr>
 <td>-nodraw<br/></td>
 <td>Timedemo option, to get execution time without drawing.
-Caution: no visible display so you must exit the game from memory (ESC, Q, RETURN, Y).
+Caution: there is no visible display so you must exit the game from memory
+of the commands (ESC, Q, RETURN, Y).
 </td>
 </tr>
 
@@ -1586,7 +1630,8 @@ none of the draw ports honor this test.
 <td>+connect<br/>+map</td>
 <td>Options on -server.
 The actual usages of these have been lost.
-The "+connect" option will enable some server code, but is not same as -connect.
+The "+connect" option will enable some server code,
+but is not same as -connect.
 The "+map" option will issue a map command to change to the start map.
 Example: -server+connect+map
 </td>

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1083 2014-02-03 17:28:16Z wesleyjohnson $
+// $Id: v_video.h 1134 2014-09-17 13:48:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -123,8 +123,8 @@ void V_CopyRect ( int srcx, int srcy, int srcscrn,
 // V_Drawinfo flags (not uniformly supported by all functions (see src))
 typedef enum {
   V_SCREENMASK =         0x0000FF,
-  V_CENTERSCREEN =       0x000100,   // center the whole screen
-  V_CENTER0 =            0x000200,   // 0,0 is center of screen, menu
+  V_CENTERHORZ =         0x000100,   // center horizontally the whole screen
+  V_CENTERMENU =         0x000200,   // menu centering, vert and horz.
   V_NOSCALESTART =       0x010000,   // dont scale x,y, start coords
                                      // console, statusbar, crosshair
   V_NOSCALEPATCH =       0x020000,   // don't scale patch
@@ -143,6 +143,7 @@ typedef enum {
 typedef struct {
 // drawing
     byte * drawp;  // screen buffer, with centering offsets
+    byte * screen_start;  // screen buffer [0]
     unsigned int  start_offset; // offset, centering
     unsigned int  ybytes;   // dupy * ybytes, bytes per source line
     unsigned int  xbytes;   // dupx * bytepp, bytes per source pixel
