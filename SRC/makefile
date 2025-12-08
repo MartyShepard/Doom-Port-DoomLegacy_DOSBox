@@ -1,9 +1,9 @@
 #############################################################################
 #
-# $Id: Makefile 1086 2014-02-03 17:33:54Z wesleyjohnson $
+# $Id: Makefile 1114 2014-06-03 23:14:34Z smite-meister $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
-# Copyright (C) 1998-2013 by Doom Legacy Team.
+# Copyright (C) 1998-2014 by Doom Legacy Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -120,9 +120,13 @@
 # Until can find test for presence of svn, this is best that can be done.
 #SVN_ENABLE=1
 
-# Subdirectories for objects and binaries
-O=../objs
-BIN=../bin
+# Subdirectories for binaries and build intermediates
+BIN = bin
+BUILD = build
+O  = $(BUILD)/objs
+DD = $(BUILD)/dep
+WD = $(BUILD)/wad
+
 
 # Warning flags
 WFLAGS=-Wall
@@ -146,7 +150,7 @@ ifdef CC_WATCOM
 endif
 
 # Put user settings in this file, and they will be included with every invocation
-include ../make_options
+-include $(BUILD)/make_options
 
 # Customize to your debugging environment.
 ifdef DEBUG
@@ -309,7 +313,7 @@ ifeq ($(SMIF), SDL)
   endif
 
   OPTS+=-DHWRENDER -DSDL
-  OPTINC+=-I.
+  OPTINC+=-Isrc
 
   ifdef HAVE_MIXER
     OPTS+=-DHAVE_MIXER
@@ -363,7 +367,7 @@ ifeq ($(SMIF), LINUX_X11)
   ifdef X11_GGI
     # GGI
     OPTS+=-DVID_GGI
-    OPTINC:=-I.
+    OPTINC:=-Isrc
     LDFLAGS:=
     LIBS:=-lggi -lm
     # name of the exefile
@@ -373,7 +377,7 @@ ifeq ($(SMIF), LINUX_X11)
   else
     # standard X11
     OPTS+=$(POLL_POINTER)
-    OPTINC+=-I. -I/usr/X11R6/include
+    OPTINC+=-Isrc -I/usr/X11R6/include
     LDFLAGS:=-L/usr/X11R6/lib
     LIBS:=-lGL -lGLU -lXext -lX11 -lm -ldl -lXxf86vm
 
@@ -418,7 +422,7 @@ ifeq ($(SMIF), FREEBSD_X11)
   ifdef X11_GGI
     # GGI
     OPTS+=-DVID_GGI
-    OPTINC+=-I. -I/usr/local/include
+    OPTINC+=-Isrc -I/usr/local/include
     LDFLAGS:=
     LIBS:=-lggi -lm -lipx
     # name of the exefile
@@ -428,7 +432,7 @@ ifeq ($(SMIF), FREEBSD_X11)
   else
     # standard X11
     OPTS+=$(POLL_POINTER)
-    OPTINC+=-I. -I/usr/X11R6/include
+    OPTINC+=-Isrc -I/usr/X11R6/include
     LDFLAGS:=-L/usr/X11R6/lib
     LIBS:=-lXext -lX11 -lm -lXxf86vm -lipx -lkvm -pthread
     # name of the exefile
@@ -453,7 +457,7 @@ ifeq ($(SMIF), OS2_NATIVE)
   PROFILEMODE=1
 # options (separate OS2 library and OS2_NATIVE video)
   OPTS:=-D__OS2__ -DOS2_NATIVE
-  OPTINC+=-Zmt -I.. -I. -Ios2
+  OPTINC+=-Zmt -Isrc -Ios2
 
 #  DEBUGLIBS:=
   LIBS:=-g $(INTERFACE)/I_pm.def -lmmpm2 -lsocket
@@ -502,7 +506,7 @@ ifeq ($(SMIF), WIN32_NATIVE)
 
 # options (separate WIN32 library, and WIN_NATIVE video)
   OPTS:=-DWIN32 -DWIN_NATIVE
-  OPTINC+=-g -I.
+  OPTINC+=-g -Isrc
   ifdef DDINC
     OPTINC+=$(DDINC)
   endif
@@ -553,7 +557,7 @@ ifeq ($(SMIF), DJGPPDOS_NATIVE)
 
 # options
   OPTS:=-DPC_DOS
-  OPTINC+=-g -I.
+  OPTINC+=-g -Isrc
 
 #  DEBUGLIBS:=
   LIBS:=-lalleg -lsocket
@@ -696,41 +700,41 @@ endif
 endif
 
 
-# File ../make_options does not exist on first make
+# File $(BUILD)/make_options does not exist on first make
 # create dummy make_options file and dirs
 # create dirs without triggering a remake of make_options (a PHONY always triggers)
-../make_options :
+$(BUILD)/make_options :
 	@ echo "-------------------------------------------------------------------------------" \
 	&& echo "Initializing DoomLegacy make" \
 	&& echo "-------------------------------------------------------------------------------"
 ifdef DOSFILE
-	@echo # DoomLegacy Make options  > "../make_options"
+	@echo # DoomLegacy Make options  > "$(BUILD)/make_options"
 else
-	@echo \# DoomLegacy Make options  > "../make_options"
+	@echo "# DoomLegacy Make options"  > "$(BUILD)/make_options"
 endif
-	@echo # >> "../make_options"
-	@echo MAKE_OPTIONS_PRESENT=1  >> "../make_options"
+	@echo # >> "$(BUILD)/make_options"
+	@echo MAKE_OPTIONS_PRESENT=1  >> "$(BUILD)/make_options"
 ifdef WIN98
-	@echo WIN98=1  >> "../make_options"
+	@echo WIN98=1  >> "$(BUILD)/make_options"
 endif
 ifdef WIN32
-	@echo WIN32=1  >> "../make_options"
+	@echo WIN32=1  >> "$(BUILD)/make_options"
 endif
 ifdef WINNT
-	@echo WINNT=1  >> "../make_options"
+	@echo WINNT=1  >> "$(BUILD)/make_options"
 endif
 ifdef DOS
-	@echo DOS=1  >> "../make_options"
+	@echo DOS=1  >> "$(BUILD)/make_options"
 endif
 ifdef OS2
-	@echo OS2=1  >> "../make_options"
+	@echo OS2=1  >> "$(BUILD)/make_options"
 endif
 ifdef EXT_SMIF
-	@echo SMIF=$(EXT_SMIF)  >> "../make_options"
+	@echo SMIF=$(EXT_SMIF)  >> "$(BUILD)/make_options"
 endif
 	$(MAKE) dirs
 	@ echo "-------------------------------------------------------------------------------" \
-	&& echo "Edit ..\make_options file with OS selection, before running make again," \
+	&& echo "Edit $(BUILD)/make_options file with OS selection, before running make again," \
 	&& echo "or use make command line options every time." \
 	&& echo "-------------------------------------------------------------------------------"
 	stop  # stop make, by error if necessary
@@ -741,26 +745,26 @@ dirs :
 ifdef DOSFILE
 	@echo "Making dirs (WIN32/OS2/DOS)"
 	mkdir "$(BIN)"
-	mkdir "../objs"
-	mkdir "../dep"
+	mkdir "$(O)"
+	mkdir "$(DD)"
 else
 	@echo "Making dirs (Linux/BSD)"
 	mkdir -p $(BIN)
-	mkdir -p ../objs
-	mkdir -p ../dep
+	mkdir -p $(O)
+	mkdir -p $(DD)
 endif
 
 
 # Win32/OS2/DOS sees "/" as a switch, "\" is an escape to make
 clean:
 ifdef DOSFILE
-	@echo "Removing dep"
-	- $(RM) ..\dep\*.dep
+	@echo "Removing dependencies"
+	- $(RM) $(DD)\*.dep
 	@echo "Removing obj  $(O_WIN)"
 	- $(RM) $(O_WIN)\*.o
 else
-	@echo "Removing dep"
-	- $(RM) ../dep/*
+	@echo "Removing dependencies"
+	- $(RM) $(DD)/*
 	@echo "Removing obj  $(O)"
 	- $(RM) $(O)/*.o
 endif
@@ -776,12 +780,12 @@ endif
 
 
 # As all intermediates are kept outside of dist, there is nothing extra to do
-# except to remove ../make_options
+# except to remove $(BUILD)/make_options
 distclean: clean
 ifdef DOSFILE
-	- $(RM) ..\make_options
+	- $(RM) $(BUILD)\make_options
 else
-	- $(RM) ../make_options
+	- $(RM) $(BUILD)/make_options
 endif
 
 
@@ -801,21 +805,15 @@ ifdef WAD
 	@echo "Building a new legacy.wad using an old version $(WAD)..."
 ifdef DOSFILE
 	@echo "Untested"
-	- mkdir "..\wad"
-	cd "..\wad" ; \
-	&& "..\..\common\bin\wadtool" -x $(WAD) ; \
-	&& copy "..\trunk\resources\*" . ; \
-	&& "..\..\common\bin\wadtool" -c legacy.wad legacy.wad.inventory ; \
-	&& move legacy.wad $(BIN) ; \
-	&& $(RM) *.txt *.h *.lmp
+	@mkdir "$(WD)"
+	$(BIN)\wadtool.exe -x $(WAD) -d $(WD)
+	copy resources\* $(WD)
+	$(BIN)\wadtool.exe -c $(BIN)\legacy.wad -d $(WD) resources\legacy.wad.inventory
 else
-	- mkdir -p "../wad"
-	cd ../wad ; \
-	../../common/bin/wadtool -x $(WAD) ; \
-	cp ../trunk/resources/* . ; \
-	../../common/bin/wadtool -c legacy.wad legacy.wad.inventory ; \
-	mv legacy.wad $(BIN) ; \
-	rm *.txt *.h *.lmp
+	@mkdir -p $(WD)
+	$(BIN)/wadtool.exe -x $(WAD) -d $(WD)
+	cp resources/* $(WD)
+	$(BIN)/wadtool.exe -c $(BIN)/legacy.wad -d $(WD) resources/legacy.wad.inventory
 endif
 	@echo "Finished building legacy.wad."
 else
@@ -887,57 +885,57 @@ endif
 
 vpath %.o $(O)
 
-$(O)/*.o : doomdef.h
+#$(O)/*.o : doomdef.h
 
-$(O)/r_draw.o : r_draw.c r_draw8.c r_draw16.c r_draw24.c r_draw32.c
+$(O)/r_draw.o : src/r_draw.c src/r_draw8.c src/r_draw16.c src/r_draw24.c src/r_draw32.c
 
 
 # common obj rules
 
-$(O)/%.o: %.c
+$(O)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: $(INTERFACE)/%.c
+$(O)/%.o: src/$(INTERFACE)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: hardware/%.c
+$(O)/%.o: src/hardware/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # OS2 rules
 ifeq ($(SMIF), OS2_NATIVE)
-$(O)/%.res: os2/%.rc
-	rc.exe -i .\\os2 -r $< $@
+$(O)/%.res: src/os2/%.rc
+	rc.exe -i src/os2 -r $< $@
 endif
 
 
 # OpenGL rules
 ifeq ($(SMIF), SDL)
-$(O)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: src/hardware/r_opengl/r_opengl.c src/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ifdef MAC
 # Mac must have Objective-C main for SDL
-$(O)/SDLmain.o : sdl/SDLmain.m
+$(O)/SDLmain.o : src/sdl/SDLmain.m
 	$(CC) -x objective-c $(CFLAGS) $(FRAMEWORK) -c $< -o $@
 endif
 
 else 
 # LINUX_X11, FREEBSD_X11 at least
-$(O)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: src/hardware/r_opengl/r_opengl.c src/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -c $< -o $@
 endif
 
 
-$(O)/ogl_x11.o:  hardware/r_opengl/ogl_x11.c hardware/r_opengl/r_opengl.h
+$(O)/ogl_x11.o:  src/hardware/r_opengl/ogl_x11.c src/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -I/usr/X11R6/include -c $< -o $@ 
 
 
 # assembly rules
 ifdef USEASM
-$(O)/tmap.o: tmap.nas
+$(O)/tmap.o: src/tmap.nas
 	nasm -o $@ -f $(NASMFORMAT) $<
 
-$(O)/vid_copy.o: vid_copy.s
+$(O)/vid_copy.o: src/vid_copy.s
 	$(CC) $(OPTS) $(OPTINC) $(SFLAGS) -x assembler-with-cpp -c $< -o $@
 endif
 
@@ -979,49 +977,49 @@ Makefile:
 ifndef FORCE_AUTO_DEP
 # This PHONY disables automatic dep file generation when a file changes.
 # Define FORCE_AUTO_DEP to have automatic dep file generation.
-.PHONY : ../dep/*.dep
+.PHONY : $(DD)/*.dep
 endif
 
 .PHONY : depend  main_depend  interface_depend
-depend:  ../dep/main1.dep ../dep/main3.dep ../dep/main4.dep ../dep/main5.dep \
-../dep/main_d.dep ../dep/main_m.dep ../dep/main_p.dep \
-../dep/main_r.dep ../dep/main_t.dep \
-../dep/hard1.dep ../dep/hard2.dep
+depend:  $(DD)/main1.dep $(DD)/main3.dep $(DD)/main4.dep $(DD)/main5.dep \
+$(DD)/main_d.dep $(DD)/main_m.dep $(DD)/main_p.dep \
+$(DD)/main_r.dep $(DD)/main_t.dep \
+$(DD)/hard1.dep $(DD)/hard2.dep
 ifdef INTERFACE
-depend: ../dep/$(INTERFACE).dep
+depend: $(DD)/$(INTERFACE).dep
 endif
 
-../dep/main1.dep : a*.c b*.c c*.c
-../dep/main3.dep : q*.c s*.c
-../dep/main4.dep : f*.c g*.c h*.c
-../dep/main5.dep : v*.c z*.c i*.c
-../dep/main_d.dep : d*.c
-../dep/main_m.dep : m*.c
-../dep/main_p.dep : p*.c
-../dep/main_r.dep : r*.c
-../dep/main_t.dep : t*.c
+$(DD)/main1.dep : src/a*.c src/b*.c src/c*.c
+$(DD)/main3.dep : src/q*.c src/s*.c
+$(DD)/main4.dep : src/f*.c src/g*.c src/h*.c
+$(DD)/main5.dep : src/v*.c src/z*.c src/i*.c
+$(DD)/main_d.dep : src/d*.c
+$(DD)/main_m.dep : src/m*.c
+$(DD)/main_p.dep : src/p*.c
+$(DD)/main_r.dep : src/r*.c
+$(DD)/main_t.dep : src/t*.c
 # none: e*.c j*.c k*.c l*.c n*.c o*.c
-../dep/hard1.dep : hardware/*.c
-../dep/hard2.dep : hardware/*/*.c
-# $(INTERFACE).dep : $(INTERFACE)/*.c
-../dep/djgppdos.dep : djgppdos/*.c
-../dep/linux_x.dep : linux_x/*.c linux_x/musserv/*.c linux_x/sndserv/*.c
-../dep/os_2.dep : os2/*.c
-../dep/macos.dep : macos/*.c
-../dep/sdl.dep : sdl/*.c
-../dep/win32.dep : win32/*.c
+$(DD)/hard1.dep : src/hardware/*.c
+$(DD)/hard2.dep : src/hardware/*/*.c
+# $(INTERFACE).dep : src/$(INTERFACE)/*.c
+$(DD)/djgppdos.dep : src/djgppdos/*.c
+$(DD)/linux_x.dep : src/linux_x/*.c src/linux_x/musserv/*.c src/linux_x/sndserv/*.c
+$(DD)/os_2.dep : src/os2/*.c
+$(DD)/macos.dep : src/macos/*.c
+$(DD)/sdl.dep : src/sdl/*.c
+$(DD)/win32.dep : src/win32/*.c
 
 FIXDEP=1
 
 %.dep :
 	@echo "Making dependencies $(@F)"
 ifdef DOSFILE
-	$(CC) $(CFLAGS) -MM $^ > ..\dep\$(@F)
+	$(CC) $(CFLAGS) -MM $^ > $(DD)\$(@F)
 else
-	$(CC) $(CFLAGS) -MM $^ > ../dep/$(@F)
+	$(CC) $(CFLAGS) -MM $^ > $(DD)/$(@F)
 ifdef FIXDEP	
-	sed -e "s!^[a-zA-Z0-9_]*\.o:!\$$\(O)/&!" ../dep/$(@F) > ../dep/sed.dep
-	mv ../dep/sed.dep ../dep/$(@F)
+	sed -e "s!^[a-zA-Z0-9_]*\.o:!\$$\(O)/&!" $(DD)/$(@F) > $(DD)/sed.dep
+	mv $(DD)/sed.dep $(DD)/$(@F)
 endif
 endif
 
@@ -1029,19 +1027,19 @@ endif
 # Stop update of include files when clean
 ifdef MAKE_OPTIONS_PRESENT
 ifdef INCLUDE_DEPS
-include ../dep/main1.dep
-include ../dep/main3.dep
-include ../dep/main4.dep
-include ../dep/main5.dep
-include ../dep/main_d.dep
-include ../dep/main_p.dep
-include ../dep/main_m.dep
-include ../dep/main_r.dep
-include ../dep/main_t.dep
-include ../dep/hard1.dep
-include ../dep/hard2.dep
+include $(DD)/main1.dep
+include $(DD)/main3.dep
+include $(DD)/main4.dep
+include $(DD)/main5.dep
+include $(DD)/main_d.dep
+include $(DD)/main_p.dep
+include $(DD)/main_m.dep
+include $(DD)/main_r.dep
+include $(DD)/main_t.dep
+include $(DD)/hard1.dep
+include $(DD)/hard2.dep
 ifdef INTERFACE
- include ../dep/$(INTERFACE).dep
+ include $(DD)/$(INTERFACE).dep
 endif
 endif
 endif

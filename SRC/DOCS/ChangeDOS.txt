@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01118 ]: w100 Nomonsters switch
 [01117 ]: w100 Monsters Infight
 [01116 ]: w100 DEH Boss death
 [01115 ]: w100 savegame 1.44 recognized

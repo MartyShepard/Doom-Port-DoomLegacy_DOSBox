@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1103 2014-04-15 03:13:49Z wesleyjohnson $
+// $Id: d_main.c 1118 2014-06-20 02:23:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1117"
+#define SVN_REV "1118"
 #endif
 
 // Version number: major.minor.revision
@@ -2162,7 +2162,7 @@ restart_command:
     }
 #endif
 #endif
-   
+
     // load wad, including the main wad file
     W_InitMultipleFiles(startupwadfiles);
     
@@ -2428,6 +2428,10 @@ restart_command:
     if (!M_CheckParm("-nocd") && ! dedicated )
       I_InitCD();
 #endif
+
+    // Affects only the game started at the command line.
+    nomonsters = M_CheckParm("-nomonsters");
+
     if (M_CheckParm("-respawn"))
       COM_BufAddText("respawnmonsters 1\n");
     if (M_CheckParm("-coopmonsters"))
