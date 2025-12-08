@@ -4061,3 +4061,8 @@ I got tired of starting Doom Legacy and finding some mistyped PWAD
 file had not been loaded.  The default now is for Doom Legacy to ERROR
 when a file does not load.
 This can be overridden by the -noloadfail switch.
+
+*** W100_version1451
+patchfile = w100_18_version1451.patch
+- commit revision 1132
+Update version numbers for 1.45.1.
