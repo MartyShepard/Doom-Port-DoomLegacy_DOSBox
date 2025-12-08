@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01127 ]: w100 sight lines ffloor
+[01126*]: w100 Makefile
+[01125*]: w100 opengl tnt doors
+[01124*]: w100 opengl menu positioning
 [01123 ]: w100 flush messages
 [01122 ]: w100 memtag
 [01121 ]: w100 stuck monsters 3dfloor

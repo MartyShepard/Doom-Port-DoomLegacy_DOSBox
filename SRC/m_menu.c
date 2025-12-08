@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1101 2014-04-02 20:00:04Z wesleyjohnson $
+// $Id: m_menu.c 1124 2014-06-23 18:15:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4957,6 +4957,7 @@ void M_HandleFogColor (int choice);
 
 menu_t OGL_LightingDef, OGL_FogDef, OGL_ColorDef, OGL_DevDef;
 
+#define QUALITY_ITEM   2
 menuitem_t OpenGLOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0, "Mouse look"          , &cv_grmlook_extends_fov ,  0},
@@ -4980,19 +4981,20 @@ menuitem_t OGL_LightingMenu[]=
     {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Monsters' balls lighting", &cv_grmblighting      , 40},
 };
 
+#define FOG_COLOR_ITEM  1
 menuitem_t OGL_FogMenu[]=
 {
-    {IT_STRING | IT_CVAR, 0,"Fog"             , &cv_grfog              ,  0},
-    {IT_STRING | IT_KEYHANDLER,0, "Fog color" , M_HandleFogColor       , 10},
-    {IT_STRING | IT_CVAR, 0,"Fog density"     , &cv_grfogdensity       , 20},
+   {IT_STRING | IT_CVAR | IT_YOFFSET, 0,"Fog"             , &cv_grfog              ,  0},
+    {IT_STRING | IT_KEYHANDLER| IT_YOFFSET, 0, "Fog color" , M_HandleFogColor       , 10},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0,"Fog density"     , &cv_grfogdensity       , 20},
 };                                         
 
 menuitem_t OGL_ColorMenu[]=
 {
     //{IT_STRING | NOTHING, "Gamma correction", NULL                   ,  0},
-    {IT_STRING | IT_CVAR | IT_CV_SLIDER, 0,"red"  , &cv_grgammared     , 10},
-    {IT_STRING | IT_CVAR | IT_CV_SLIDER, 0,"green", &cv_grgammagreen   , 20},
-    {IT_STRING | IT_CVAR | IT_CV_SLIDER, 0,"blue" , &cv_grgammablue    , 30},
+    {IT_STRING | IT_CVAR | IT_CV_SLIDER | IT_YOFFSET, 0,"red"  , &cv_grgammared     , 10},
+    {IT_STRING | IT_CVAR | IT_CV_SLIDER | IT_YOFFSET, 0,"green", &cv_grgammagreen   , 20},
+    {IT_STRING | IT_CVAR | IT_CV_SLIDER | IT_YOFFSET, 0,"blue" , &cv_grgammablue    , 30},
     //{IT_STRING | IT_CVAR | IT_CV_SLIDER, "Constrast", &cv_grcontrast , 50},
 };
 
@@ -5074,14 +5076,14 @@ void M_DrawOpenGLMenu(void)
     mx = OpenGLOptionDef.x;
     my = OpenGLOptionDef.y;
     M_DrawGenericMenu(); // use generic drawer for cursor, items and title
+    // Draw the number in the Quality menu item.
     V_DrawString(BASEVIDWIDTH-mx-V_StringWidth(cv_scr_depth.string),
-                 my+currentMenu->menuitems[2].alphaKey,
+                 my+currentMenu->menuitems[QUALITY_ITEM].alphaKey,
                  V_WHITEMAP,
                  cv_scr_depth.string);
 }
 
 
-#define FOG_COLOR_ITEM  1
 //======================================================================
 // M_OGL_DrawFogMenu()
 //======================================================================
@@ -5092,6 +5094,7 @@ void M_OGL_DrawFogMenu(void)
     mx = OGL_FogDef.x;
     my = OGL_FogDef.y;
     M_DrawGenericMenu(); // use generic drawer for cursor, items and title
+    // Draw the fog color number in the menu.
     V_DrawString(BASEVIDWIDTH-mx-V_StringWidth (cv_grfogcolor.string),
                  my+currentMenu->menuitems[FOG_COLOR_ITEM].alphaKey,
                  V_WHITEMAP,

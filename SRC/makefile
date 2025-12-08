@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 1114 2014-06-03 23:14:34Z smite-meister $
+# $Id: Makefile 1126 2014-06-23 18:18:04Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2014 by Doom Legacy Team.
@@ -126,7 +126,15 @@ BUILD = build
 O  = $(BUILD)/objs
 DD = $(BUILD)/dep
 WD = $(BUILD)/wad
+# Invoke make with SRC= to compile other development directories.
+#ifndef SRC
+SRC=src
+#endif
 
+# Invoke make with MAKE_OPTIONS= to specify another file or location.
+#ifndef MAKE_OPTIONS
+MAKE_OPTIONS = $(BUILD)/make_options
+#endif
 
 # Warning flags
 WFLAGS=-Wall
@@ -150,7 +158,7 @@ ifdef CC_WATCOM
 endif
 
 # Put user settings in this file, and they will be included with every invocation
--include $(BUILD)/make_options
+-include $(MAKE_OPTIONS)
 
 # Customize to your debugging environment.
 ifdef DEBUG
@@ -700,41 +708,41 @@ endif
 endif
 
 
-# File $(BUILD)/make_options does not exist on first make
+# File make_options does not exist on first make
 # create dummy make_options file and dirs
 # create dirs without triggering a remake of make_options (a PHONY always triggers)
-$(BUILD)/make_options :
+$(MAKE_OPTIONS):
 	@ echo "-------------------------------------------------------------------------------" \
 	&& echo "Initializing DoomLegacy make" \
 	&& echo "-------------------------------------------------------------------------------"
 ifdef DOSFILE
-	@echo # DoomLegacy Make options  > "$(BUILD)/make_options"
+	@echo # DoomLegacy Make options  > "$(MAKE_OPTIONS)"
 else
-	@echo "# DoomLegacy Make options"  > "$(BUILD)/make_options"
+	@echo "# DoomLegacy Make options"  > "$(MAKE_OPTIONS)"
 endif
-	@echo # >> "$(BUILD)/make_options"
-	@echo MAKE_OPTIONS_PRESENT=1  >> "$(BUILD)/make_options"
+	@echo # >> "$(MAKE_OPTIONS)"
+	@echo MAKE_OPTIONS_PRESENT=1  >> "$(MAKE_OPTIONS)"
 ifdef WIN98
-	@echo WIN98=1  >> "$(BUILD)/make_options"
+	@echo WIN98=1  >> "$(MAKE_OPTIONS)"
 endif
 ifdef WIN32
-	@echo WIN32=1  >> "$(BUILD)/make_options"
+	@echo WIN32=1  >> "$(MAKE_OPTIONS)"
 endif
 ifdef WINNT
-	@echo WINNT=1  >> "$(BUILD)/make_options"
+	@echo WINNT=1  >> "$(MAKE_OPTIONS)"
 endif
 ifdef DOS
-	@echo DOS=1  >> "$(BUILD)/make_options"
+	@echo DOS=1  >> "$(MAKE_OPTIONS)"
 endif
 ifdef OS2
-	@echo OS2=1  >> "$(BUILD)/make_options"
+	@echo OS2=1  >> "$(MAKE_OPTIONS)"
 endif
 ifdef EXT_SMIF
-	@echo SMIF=$(EXT_SMIF)  >> "$(BUILD)/make_options"
+	@echo SMIF=$(EXT_SMIF)  >> "$(MAKE_OPTIONS)"
 endif
 	$(MAKE) dirs
 	@ echo "-------------------------------------------------------------------------------" \
-	&& echo "Edit $(BUILD)/make_options file with OS selection, before running make again," \
+	&& echo "Edit $(MAKE_OPTIONS) file with OS selection, before running make again," \
 	&& echo "or use make command line options every time." \
 	&& echo "-------------------------------------------------------------------------------"
 	stop  # stop make, by error if necessary
@@ -780,12 +788,12 @@ endif
 
 
 # As all intermediates are kept outside of dist, there is nothing extra to do
-# except to remove $(BUILD)/make_options
+# except to remove make_options
 distclean: clean
 ifdef DOSFILE
-	- $(RM) $(BUILD)\make_options
+	- $(RM) $(MAKE_OPTIONS)
 else
-	- $(RM) $(BUILD)/make_options
+	- $(RM) $(MAKE_OPTIONS)
 endif
 
 
@@ -887,55 +895,55 @@ vpath %.o $(O)
 
 #$(O)/*.o : doomdef.h
 
-$(O)/r_draw.o : src/r_draw.c src/r_draw8.c src/r_draw16.c src/r_draw24.c src/r_draw32.c
+$(O)/r_draw.o : $(SRC)/r_draw.c $(SRC)/r_draw8.c $(SRC)/r_draw16.c $(SRC)/r_draw24.c $(SRC)/r_draw32.c
 
 
 # common obj rules
 
-$(O)/%.o: src/%.c
+$(O)/%.o: $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: src/$(INTERFACE)/%.c
+$(O)/%.o: $(SRC)/$(INTERFACE)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: src/hardware/%.c
+$(O)/%.o: $(SRC)/hardware/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # OS2 rules
 ifeq ($(SMIF), OS2_NATIVE)
-$(O)/%.res: src/os2/%.rc
-	rc.exe -i src/os2 -r $< $@
+$(O)/%.res: $(SRC)/os2/%.rc
+	rc.exe -i $(SRC)/os2 -r $< $@
 endif
 
 
 # OpenGL rules
 ifeq ($(SMIF), SDL)
-$(O)/r_opengl.o: src/hardware/r_opengl/r_opengl.c src/hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: $(SRC)/hardware/r_opengl/r_opengl.c $(SRC)/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ifdef MAC
 # Mac must have Objective-C main for SDL
-$(O)/SDLmain.o : src/sdl/SDLmain.m
+$(O)/SDLmain.o : $(SRC)/sdl/SDLmain.m
 	$(CC) -x objective-c $(CFLAGS) $(FRAMEWORK) -c $< -o $@
 endif
 
 else 
 # LINUX_X11, FREEBSD_X11 at least
-$(O)/r_opengl.o: src/hardware/r_opengl/r_opengl.c src/hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: $(SRC)/hardware/r_opengl/r_opengl.c $(SRC)/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -c $< -o $@
 endif
 
 
-$(O)/ogl_x11.o:  src/hardware/r_opengl/ogl_x11.c src/hardware/r_opengl/r_opengl.h
+$(O)/ogl_x11.o:  $(SRC)/hardware/r_opengl/ogl_x11.c $(SRC)/hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -I/usr/X11R6/include -c $< -o $@ 
 
 
 # assembly rules
 ifdef USEASM
-$(O)/tmap.o: src/tmap.nas
+$(O)/tmap.o: $(SRC)/tmap.nas
 	nasm -o $@ -f $(NASMFORMAT) $<
 
-$(O)/vid_copy.o: src/vid_copy.s
+$(O)/vid_copy.o: $(SRC)/vid_copy.s
 	$(CC) $(OPTS) $(OPTINC) $(SFLAGS) -x assembler-with-cpp -c $< -o $@
 endif
 
@@ -989,25 +997,25 @@ ifdef INTERFACE
 depend: $(DD)/$(INTERFACE).dep
 endif
 
-$(DD)/main1.dep : src/a*.c src/b*.c src/c*.c
-$(DD)/main3.dep : src/q*.c src/s*.c
-$(DD)/main4.dep : src/f*.c src/g*.c src/h*.c
-$(DD)/main5.dep : src/v*.c src/z*.c src/i*.c
-$(DD)/main_d.dep : src/d*.c
-$(DD)/main_m.dep : src/m*.c
-$(DD)/main_p.dep : src/p*.c
-$(DD)/main_r.dep : src/r*.c
-$(DD)/main_t.dep : src/t*.c
+$(DD)/main1.dep : $(SRC)/a*.c $(SRC)/b*.c $(SRC)/c*.c
+$(DD)/main3.dep : $(SRC)/q*.c $(SRC)/s*.c
+$(DD)/main4.dep : $(SRC)/f*.c $(SRC)/g*.c $(SRC)/h*.c
+$(DD)/main5.dep : $(SRC)/v*.c $(SRC)/z*.c $(SRC)/i*.c
+$(DD)/main_d.dep : $(SRC)/d*.c
+$(DD)/main_m.dep : $(SRC)/m*.c
+$(DD)/main_p.dep : $(SRC)/p*.c
+$(DD)/main_r.dep : $(SRC)/r*.c
+$(DD)/main_t.dep : $(SRC)/t*.c
 # none: e*.c j*.c k*.c l*.c n*.c o*.c
-$(DD)/hard1.dep : src/hardware/*.c
-$(DD)/hard2.dep : src/hardware/*/*.c
-# $(INTERFACE).dep : src/$(INTERFACE)/*.c
-$(DD)/djgppdos.dep : src/djgppdos/*.c
-$(DD)/linux_x.dep : src/linux_x/*.c src/linux_x/musserv/*.c src/linux_x/sndserv/*.c
-$(DD)/os_2.dep : src/os2/*.c
-$(DD)/macos.dep : src/macos/*.c
-$(DD)/sdl.dep : src/sdl/*.c
-$(DD)/win32.dep : src/win32/*.c
+$(DD)/hard1.dep : $(SRC)/hardware/*.c
+$(DD)/hard2.dep : $(SRC)/hardware/*/*.c
+# $(INTERFACE).dep : $(SRC)/$(INTERFACE)/*.c
+$(DD)/djgppdos.dep : $(SRC)/djgppdos/*.c
+$(DD)/linux_x.dep : $(SRC)/linux_x/*.c $(SRC)/linux_x/musserv/*.c $(SRC)/linux_x/sndserv/*.c
+$(DD)/os_2.dep : $(SRC)/os2/*.c
+$(DD)/macos.dep : $(SRC)/macos/*.c
+$(DD)/sdl.dep : $(SRC)/sdl/*.c
+$(DD)/win32.dep : $(SRC)/win32/*.c
 
 FIXDEP=1
 
