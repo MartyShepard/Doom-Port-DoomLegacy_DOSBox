@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: p_enemy.c 1119 2014-06-20 02:25:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -2808,6 +2808,13 @@ void A_SpawnFly (mobj_t* mo)
         return; // still flying
 
     targ = mo->target;
+    if( targ == NULL )
+    {
+        // Happens if save game with cube flying.
+	// targ should be the previous braintarget.
+        int bt = ((braintargeton == 0)? numbraintargets : braintargeton) - 1;
+        targ = braintargets[bt];
+    }
 
     // First spawn teleport fog.
     fog = P_SpawnMobj (targ->x, targ->y, targ->z, MT_SPAWNFIRE);
