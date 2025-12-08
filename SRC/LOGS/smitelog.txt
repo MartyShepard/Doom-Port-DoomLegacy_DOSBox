@@ -2,6 +2,11 @@ smite-meister's log
 Doom Legacy 1.x
 Started: 2010-02-07
 
+*** Initial SVN import
+rev 1, 2009-09-23
+  * Initial SVN import from CVS module doomlegacy
+  * Bump version number to 1.44
+
 
 *** OLDWATER removal
 rev 596, 597
@@ -229,5 +234,13 @@ rev 1077
 Added CMakeLists.txt files for building Legacy using CMake.
 Cross compilation does not work yet.
 
+
 *** Updated version to 1.45.0 beta1
 rev 1078
+
+
+*** Source tree reorganization
+rev 1110-1113
+Source code went into trunk/src/, now the build happens entirely inside trunk/.
+Removed some unnecessary files, created necessary ones.
+Makefile has not been fixed yet.

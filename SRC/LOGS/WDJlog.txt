@@ -3940,3 +3940,50 @@ total was 0, there would be a division by zero.  There was inadequate
 protection.  The protecting tests were expanded to protect all
 divisions by the total.
 Update docs to latest patches.
+
+*** W100_savegame144
+patchfile = w100_1_savegame144.patch
+- committed revision 1115   by wesley johnson
+The savegame format is the same in 1.45 as it is in 1.44, so allow it
+to read 1.44 version savegames too.  Version 1.44 savegames may be
+readable for many versions because of the coded modular nature of additions
+to the format.
+
+*** W100_DEH_Boss_death
+patchfile = w100_2_DEH_Boss_death.patch
+- committed revision 1116   by wesley johnson
+DEH modified monsters should be able to trigger the Boss_death function
+by using the Keen_death. This will trigger tag=666 sectors.
+This restores the ability that was present in Vanilla Doom.
+
+*** W100_infight
+patchfile = w100_3_infight.patch
+- committed revision 1117   by wesley johnson
+Changes the way the menu infight control interacts with demo infight
+settings and DEH infight selections.  The previous coop and infight
+settings are defaults that can be overridden by DEH infight settings.
+This is similar to other ports, and seems to be the expected behavior.
+Added separate "Force Coop" and "Force Infight" menu control settings
+that will override any DEH infight settings.  This allows the user to
+still modify the infight behavior when they want.
+
+*** W100_nomonsters
+patchfile = w100_4_nomonsters.patch
+- committed revision 1118   by wesley johnson
+Restore the -nomonsters switch that got lost in the w95_startscreen patch.
+Had intended to move it and lost it entirely instead.
+There is no equivalent menu control.
+
+*** W100_spawnfly
+patchfile = w100_5_spawnfly.patch
+- committed revision 1119   by wesley johnson
+If a savegame has a flying cube, there may be a segfault.  The savegame
+does not handle saving a braintarget as a mobj.  This fixes the SpawnFly
+to get the previous braintarget when mobj->target is NULL.
+This protects the flying cube code, and perhaps the savegame can be fixed
+later too.
+
+*** W100_docs
+patchfile = w100_6_docs.patch
+- committed revision 1120   by wesley johnson
+Update docs for 1.45.1 bug fixes.

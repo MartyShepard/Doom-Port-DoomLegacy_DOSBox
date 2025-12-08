@@ -1,5 +1,12 @@
 * Not need to Compile.
 
+[01114*]: Makefile fixed, compilation seems to work again.
+[01113*]: Source tree reorganization done, Makefile not fixed yet.
+[01112*]: Source tree reorganization, part 2.
+[01111*]: Source tree reorganization, part 1.
+[01110*]: Testing moving files around with svn move.
+[01109*]: Makefiles fixed and simplified, compiles and links.
+[01108*]: Old uncommitted Legacy2 edits from way back.
 [01107 ]: w97 wi stats divide
 [01106 ]: w97 lump namespace
 [01105 ]: w97 lumpnum
