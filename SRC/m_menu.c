@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1124 2014-06-23 18:15:42Z wesleyjohnson $
+// $Id: m_menu.c 1128 2014-07-08 20:08:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -639,7 +639,8 @@ void M_DrawGenericMenu(void)
 		           if( use_font1 )
 		           {
 			       char * sp = cv->string;
-			       M_DrawTextBox(x+8,y+12,MAXSTRINGLENGTH,1);
+			       // Setup is centered, but this needs left justify.
+			       M_DrawTextBox(-BASEVIDWIDTH/2,y+12,BASEVIDWIDTH/7,1);
 			       while( *sp && w > BASEVIDWIDTH - 8 )
 			       {
 				   w -= fip->xinc;
@@ -3827,7 +3828,10 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     return;
 
   grey_bar:
-    V_DrawFill(x,y, width*fip->xinc, lines*fip->yinc, ci_grey );
+    // Message box centers string, using 8 bit width assumption.
+    // For now, correct the position.
+//    V_DrawFill(x,y, width*fip->xinc, lines*fip->yinc, ci_grey );
+    V_DrawFill(x/8, y, width*fip->xinc, lines*fip->yinc, ci_grey );
     goto done;
 }
 
@@ -4984,7 +4988,7 @@ menuitem_t OGL_LightingMenu[]=
 #define FOG_COLOR_ITEM  1
 menuitem_t OGL_FogMenu[]=
 {
-   {IT_STRING | IT_CVAR | IT_YOFFSET, 0,"Fog"             , &cv_grfog              ,  0},
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0,"Fog"             , &cv_grfog              ,  0},
     {IT_STRING | IT_KEYHANDLER| IT_YOFFSET, 0, "Fog color" , M_HandleFogColor       , 10},
     {IT_STRING | IT_CVAR | IT_YOFFSET, 0,"Fog density"     , &cv_grfogdensity       , 20},
 };                                         

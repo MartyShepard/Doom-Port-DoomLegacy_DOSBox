@@ -4029,18 +4029,18 @@ working directories.
 
 *** W100_docs2
 patchfile = w100_13_docs2.patch
-- commit revision 1127
+- commit revision 1126
 Update docs for latest patches.
 
 *** W100_sight_ffloor
 patchfile = w100_14_sight_ffloor.patch
-- commit revision 11??
+- commit revision 1127
 Add function to check 3dfloors for sight lines.  This will prevent
 monsters from trying to shoot the player through 3dfloors.
 
 *** W100_greybox
 patchfile = w100_15_greybox.patch
-- commit revision 11??
+- commit revision 1128
 They grey background text box is positioned and sized wrong when using font1,
 as in the launcher menu, and the quit message from it.
 There are several assumptions made by menu functions and conflicting
