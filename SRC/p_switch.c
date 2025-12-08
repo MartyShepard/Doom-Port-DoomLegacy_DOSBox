@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_switch.c 1130 2014-08-30 14:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,9 +54,12 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_main.h"
-#include "w_wad.h" //SoM: 3/22/2000
+#include "w_wad.h"
+  // SoM: 3/22/2000
 #include "z_zone.h"
 #include "t_script.h"
+#include "m_swap.h"
+  // LE_SWAP16
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE

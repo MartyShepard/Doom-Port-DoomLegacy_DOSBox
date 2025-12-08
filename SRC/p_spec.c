@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: p_spec.c 1130 2014-08-30 14:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -144,15 +144,20 @@
 #include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
-#include "p_setup.h"    //levelflats for flat animation
+#include "p_setup.h"
+  // levelflats for flat animation
 #include "r_data.h"
 #include "m_random.h"
+#include "m_swap.h"
+  // LE_SWAP32
 
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "dstrings.h" //SoM: 3/10/2000
-#include "r_main.h"   //Two extra includes.
+// SoM: 3/10/2000  Two extra includes.
+#include "dstrings.h"
+#include "r_main.h"
+
 #include "t_script.h"
 //#include "r_sky.h" // Portals
 

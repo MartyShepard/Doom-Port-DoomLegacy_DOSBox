@@ -37,6 +37,18 @@ There is no equivalent menu control.</li>
 flying cube. The savegame does not handle saving a braintarget as a mobj.
 The SpawnFly will get the previous braintarget when the target is NULL.
 </li>
+<li>Fix things collision check to ignore things on other 3dfloors.
+The allows monsters placed on upper and lower floors to not get stuck
+to each other.
+Also make the things collision check not block for NOCLIP and not SOLID,
+same as in prboom and compatible with boom demo.
+</li>
+<li>Flush messages so they appear sooner with Linux.</li>
+<li>Straighten out some positioning in the opengl menu options, and gamma.</li>
+<li>Fix the OpenGL rendering of the transparent doors in TNT Map21.
+They need to be rendered full height when the middle texture is transparent
+and the door is closed.
+</li>
 </ul>
 
 
