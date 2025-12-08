@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1106 2014-05-02 22:05:06Z wesleyjohnson $
+// $Id: w_wad.c 1122 2014-06-23 18:13:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1095,7 +1095,7 @@ void W_Profile (void)
         else
         {
             block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
-            if (block->tag < PU_PURGELEVEL)
+            if (block->memtag < PU_PURGELEVEL)
                 ch = 'S';
             else
                 ch = 'P';

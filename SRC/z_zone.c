@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: z_zone.c 1122 2014-06-23 18:13:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -220,7 +220,7 @@ static void Z_UnlinkFree(memblock_t *block)
 // mark the block free
 static void Z_MarkFree(memblock_t *block)
 {
-  block->tag = PU_FREE; // free block mark
+  block->memtag = PU_FREE; // free block mark
 //  block->id = 0;
   block->id = ZONEID;   // on free blocks too, as check
   block->user = NULL;
@@ -234,7 +234,7 @@ static void Z_CombineFreeBlock(memblock_t *block)
 
   // see if previous block is free, if so, merge blocks
   memblock_t *other = block->prev;
-  if (other->tag == PU_FREE)
+  if (other->memtag == PU_FREE)
   {
       other->size += block->size;
       other->next = block->next;
@@ -245,7 +245,7 @@ static void Z_CombineFreeBlock(memblock_t *block)
 #else
       block->id = 0;		// does not exist as a block
 #endif
-      block->tag = PU_INVALID;
+      block->memtag = PU_INVALID;
       if (block == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = other;
 
@@ -254,7 +254,7 @@ static void Z_CombineFreeBlock(memblock_t *block)
 
   // see if next block is free, if so, merge blocks
   other = block->next;
-  if (other->tag == PU_FREE)
+  if (other->memtag == PU_FREE)
   {
       block->size += other->size;
       block->next = other->next;
@@ -265,7 +265,7 @@ static void Z_CombineFreeBlock(memblock_t *block)
 #else
       other->id = 0;		// does not exist as a block
 #endif
-      other->tag = PU_INVALID;
+      other->memtag = PU_INVALID;
       if (other == mainzone->rover)	// rover block is gone, fix rover
 	mainzone->rover = block;
   }
@@ -307,7 +307,7 @@ void Z_ZoneInit ( int mb_zonesize )
     mainzone->size = zonesize;
     // setup the block head as protected
     Z_MarkFree( &mainzone->blocklist );	// Init as free
-    mainzone->blocklist.tag = PU_ZONE;	// protect head against free combine
+    mainzone->blocklist.memtag = PU_ZONE; // protect head against free combine
    
     // set the entire zone to one free block
     block = (memblock_t *)( (byte *)mainzone + sizeof(memzone_t) );
@@ -336,7 +336,7 @@ memblock_t*  Z_GrowZone( int reqsize, int std_grow )
         memblock_t * freezone = addzone + 1;	// next memblock
         // first memblock as static guard
         Z_MarkFree( addzone );
-        addzone->tag = PU_ZONE;	// untouchable guard
+        addzone->memtag = PU_ZONE;	// untouchable guard
         addzone->size = sizeof(memblock_t);
         // second memblock has remaining space as free block
         Z_MarkFree( freezone );
@@ -460,7 +460,7 @@ void Z_Free (void* ptr)
 for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; other = other->next)
 {
    if((other!=block) &&
-      (other->tag > PU_INVALID) &&
+      (other->memtag > PU_INVALID) &&
       other->user &&
       (other->user >= (void **)block) &&
       (other->user < (void **)(((byte *)block) + block->size)))
@@ -473,7 +473,7 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
 
     if (block->id != ZONEID)
         I_Error ("Z_Free: memory block has corrupt ZONEID: %x", block->id);
-    if (block->tag == PU_FREE)  return;	// already freed
+    if (block->memtag == PU_FREE)  return;	// already freed
 #ifdef PARANOIA
     // get direct a segv when using a pointer that isn't right
     memset(ptr,0,block->size-sizeof(memblock_t));
@@ -498,7 +498,7 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
 // Purge a block, conditionally
 void Z_Purge( memblock_t* block )
 {
-    if( block->tag >= PU_PURGELEVEL ) {
+    if( block->memtag >= PU_PURGELEVEL ) {
         // purge the block
         Z_Free((byte *)block + sizeof(memblock_t));
     }
@@ -544,7 +544,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     // convert tags that are not used to ones that are handled
     if( tag >= PU_PURGELEVEL )   tag = PU_LEVEL;
 #endif
-    newblock->tag = tag;
+    newblock->memtag = tag;
     newblock->id = ZONEID;
     newblock->user = user;
     newblock->size = memalloc_size;
@@ -620,7 +620,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     rover = mainzone->rover;
 
     // if there is a free block preceding base (there can be at most one), move one block back
-    if ( rover->prev->tag == PU_FREE )  // move back if prev is free
+    if ( rover->prev->memtag == PU_FREE )  // move back if prev is free
         rover = rover->prev;
 
     start = rover->prev;  // for test when have searched entire zone
@@ -676,9 +676,9 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 	    }
         }
 
-        if (rover->tag != PU_FREE)		// being used
+        if (rover->memtag != PU_FREE)		// being used
         {
-            if (rover->tag < current_purgelevel)  // < PU_CACHE or PU_PURGELEVEL
+            if (rover->memtag < current_purgelevel)  // < PU_CACHE or PU_PURGELEVEL
             {
                 // hit a block that can't be purged, so move past it
 
@@ -783,7 +783,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     {
         // stop at rover, end of tested blocks
         if( base->next == rover )   break;
-        if( base->next->tag == PU_ZONE )   break;  // failed, break tight loop
+        if( base->next->memtag == PU_ZONE )   break;  // failed, break tight loop
         // free the next block, combining it with base
 	Z_Purge( base->next );
     }
@@ -792,7 +792,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
         GenPrintf(EMSG_error,"Z_MALLOC: request= %i, alloc size= %i, aligned= %i\n", reqsize, memalloc_size, alignbits );
         GenPrintf(EMSG_error,"  got size= %i, accum size= %i\n", base->size, basesize );
         if( base->next == rover )  GenPrintf(EMSG_error, "  Hit rover\n");
-        if( base->next->tag == PU_ZONE )  GenPrintf(EMSG_error, "  Hit PU_ZONE\n");
+        if( base->next->memtag == PU_ZONE )  GenPrintf(EMSG_error, "  Hit PU_ZONE\n");
         if( base->id != ZONEID )  GenPrintf(EMSG_error, "  corrupt ZONEID= %x\n", base->id );
         I_Error("Z_MALLOC: internal error, combined blocks less than request size");
     }
@@ -826,7 +826,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     // commit to using the free block
 
     // tag marks block as in use
-    base->tag = tag;	// must be done before Z_CombineFreeBlock
+    base->memtag = tag;	// must be done before Z_CombineFreeBlock
     base->id = ZONEID;
     base->user = user;	// valid or NULL
 #ifdef ZDEBUG
@@ -895,14 +895,14 @@ void Z_FreeTags( memtag_e lowtag, memtag_e hightag )
         // get link before freeing
         memblock_t* next = block->next;
         // does not have any blocks with PU_FREE
-        if (block->tag >= lowtag && block->tag <= hightag)
+        if (block->memtag >= lowtag && block->memtag <= hightag)
         {
             Z_Free ( (byte *)block+sizeof(memblock_t));
 	}
         block = next;
 #else
         // PU_FREE and PU_ZONE are protected by limiting lowtag.
-        if (block->tag >= lowtag && block->tag <= hightag)
+        if (block->memtag >= lowtag && block->memtag <= hightag)
         {
 	    // Z_CombineFreeBlock can delete block, and block->next
 	    memblock_t* prev = block->prev;	// prev is safe from deletion
@@ -936,7 +936,7 @@ void Z_ChangeTags_To( memtag_e old_tag, memtag_e new_tag )
          block = block->next)
     {
         // free blocks will not match
-        if (block->tag == old_tag)  block->tag = new_tag;
+        if (block->memtag == old_tag)  block->memtag = new_tag;
     }
 #endif   
 }
@@ -958,9 +958,9 @@ void Z_DumpHeap(memtag_e lowtag, memtag_e hightag)
 
     for (block = mainzone->blocklist.next ; ; block = block->next)
     {
-        if (block->tag >= lowtag && block->tag <= hightag)
+        if (block->memtag >= lowtag && block->memtag <= hightag)
             CONS_Printf ("block:%p    size:%7i    user:%p    tag:%3i prev:%p next:%p\n",
-                    block, block->size, block->user, block->tag, block->next, block->prev);
+                    block, block->size, block->user, block->memtag, block->next, block->prev);
 
         if (block->next == &mainzone->blocklist)
         {
@@ -968,7 +968,7 @@ void Z_DumpHeap(memtag_e lowtag, memtag_e hightag)
             break;
         }
 #ifdef GROW_ZONE
-        if ( block->next->tag != PU_ZONE )	// exclude zone heads
+        if ( block->next->memtag != PU_ZONE )	// exclude zone heads
 #endif
         if ( (byte *)block + block->size != (byte *)block->next)
             CONS_Printf ("ERROR: block size does not touch the next block\n");
@@ -976,7 +976,7 @@ void Z_DumpHeap(memtag_e lowtag, memtag_e hightag)
         if ( block->next->prev != block)
             CONS_Printf ("ERROR: next block doesn't have proper back link\n");
 
-        if ( block->tag==PU_FREE && block->next->tag==PU_FREE )
+        if ( block->memtag==PU_FREE && block->next->memtag==PU_FREE )
             CONS_Printf ("ERROR: two consecutive free blocks\n");
     }
 }
@@ -996,7 +996,7 @@ void Z_FileDumpHeap (FILE* f)
     {
         i++;
         fprintf (f,"block:%p size:%7i user:%p tag:%3i prev:%p next:%p id:%7i\n",
-                 block, block->size, block->user, block->tag, block->prev, block->next, block->id);
+                 block, block->size, block->user, block->memtag, block->prev, block->next, block->id);
 
         if (block->next == &mainzone->blocklist)
         {
@@ -1009,7 +1009,7 @@ void Z_FileDumpHeap (FILE* f)
 	    fprintf (f,"ERROR: block doesn't have a proper user\n");
 
 #ifdef GROW_ZONE
-        if ( block->next->tag != PU_ZONE )	// exclude zone heads
+        if ( block->next->memtag != PU_ZONE )	// exclude zone heads
 #endif
         if ( (byte *)block + block->size != (byte *)block->next)
             fprintf (f,"ERROR: block size does not touch the next block\n");
@@ -1017,7 +1017,7 @@ void Z_FileDumpHeap (FILE* f)
         if ( block->next->prev != block)
             fprintf (f,"ERROR: next block doesn't have proper back link\n");
 
-        if ( block->tag==PU_FREE && block->next->tag==PU_FREE )
+        if ( block->memtag==PU_FREE && block->next->memtag==PU_FREE )
             fprintf (f,"ERROR: two consecutive free blocks\n");
     }
     fprintf (f,"Total : %d blocks\n"
@@ -1050,7 +1050,7 @@ void Z_CheckHeap (int i)
 
 #ifdef ZONE_ZALLOC
 #ifdef GROW_ZONE
-        if ( block->next->tag != PU_ZONE )	// exclude zone heads
+        if ( block->next->memtag != PU_ZONE )	// exclude zone heads
 #endif
         if ( (byte *)block + block->size != (byte *)block->next)
             I_Error ("Z_CheckHeap: block size does not touch the next block %d\n",i);
@@ -1059,7 +1059,7 @@ void Z_CheckHeap (int i)
         if ( block->next->prev != block)
             I_Error ("Z_CheckHeap: next block doesn't have proper back link %d\n",i);
 #ifdef ZONE_ZALLOC
-        if ( block->tag==PU_FREE && block->next->tag==PU_FREE )
+        if ( block->memtag==PU_FREE && block->next->memtag==PU_FREE )
             I_Error ("Z_CheckHeap: two consecutive free blocks %d\n",i);
 #endif
     }
@@ -1072,7 +1072,7 @@ void Z_CheckHeap (int i)
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2 ( void* ptr, memtag_e tag )
+void Z_ChangeTag2 ( void* ptr, memtag_e chtag )
 {
 #ifdef PLAIN_MALLOC
     return;
@@ -1084,43 +1084,43 @@ void Z_ChangeTag2 ( void* ptr, memtag_e tag )
     if (block->id != ZONEID)
         I_Error ("Z_ChangeTag: free block has corrupt ZONEID: %x", block->id);
 
-    if (tag >= PU_PURGELEVEL && !block->user)
+    if (chtag >= PU_PURGELEVEL && !block->user)
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");
 
-    if (tag == PU_FREE ) {
+    if (chtag == PU_FREE ) {
        GenPrintf(EMSG_warn,"Z_ChangeTag2 changing to 0 tag, conflict with FREE BLOCK\n" );
-       tag = PU_LEVEL;	// safe
-	// tag = PU_DAVE;	// if need to debug
+       chtag = PU_LEVEL;  // safe
+	// chtag = PU_DAVE;  // if need to debug
     }
 
     // [WDJ] protect PU_LOCK_SB against casual change
-    if (block->tag == PU_LOCK_SB && tag != PU_UNLOCK_CACHE)  goto done;
+    if (block->memtag == PU_LOCK_SB && chtag != PU_UNLOCK_CACHE)  goto done;
     
     // [WDJ] special tag changes which are conditional on existing tag
-    switch( tag ) {
+    switch( chtag ) {
      case PU_CACHE_DEFAULT:
        // Change to PU_CACHE_DEFAULT is conditional.
        // Protect non-purgable lumps against casual degrading to PU_CACHE
-       if (block->tag < PU_PURGELEVEL )  goto done;
-       tag = PU_CACHE;
+       if (block->memtag < PU_PURGELEVEL )  goto done;
+       chtag = PU_CACHE;
        break;
     
      case PU_LUMP:
        // PU_LUMP can become PU_CACHE, so do not override
        // a more restrictive tag
-       if (block->tag < PU_LUMP )  goto done;
+       if (block->memtag < PU_LUMP )  goto done;
        break;
        
      case PU_IN_USE:
        // Becomes PU_CACHE later, so do not override a more restrictive tag
-       if (block->tag < PU_IN_USE )  goto done;
+       if (block->memtag < PU_IN_USE )  goto done;
        break;
      default:
        break;
     }
 
 
-    block->tag = tag;
+    block->memtag = chtag;
 
 done:
     return;
@@ -1154,7 +1154,7 @@ void Z_FreeMemory (int *realfree,int *cachemem,int *usedmem,int *largefreeblock)
          block != &mainzone->blocklist;
          block = block->next)
     {
-        if ( block->tag == PU_FREE )
+        if ( block->memtag == PU_FREE )
         {
             // free memory
             *realfree += block->size;
@@ -1164,7 +1164,7 @@ void Z_FreeMemory (int *realfree,int *cachemem,int *usedmem,int *largefreeblock)
         }
         else
         {
-            if(block->tag >= PU_PURGELEVEL)
+            if(block->memtag >= PU_PURGELEVEL)
             {
                 // purgable memory (cache)
                 *cachemem += block->size;
@@ -1187,7 +1187,7 @@ void Z_FreeMemory (int *realfree,int *cachemem,int *usedmem,int *largefreeblock)
 //
 // Z_TagUsage
 // - return number of bytes currently allocated in the heap for the given tag
-int Z_TagUsage (memtag_e tagnum)
+int Z_TagUsage (memtag_e usetag)
 {
     int             bytes = 0;
 
@@ -1197,7 +1197,7 @@ int Z_TagUsage (memtag_e tagnum)
          block != &mainzone->blocklist;
          block = block->next)
     {
-        if (block->tag == tagnum)
+        if (block->memtag == usetag)
             bytes += block->size;
     }
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: z_zone.h 1122 2014-06-23 18:13:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -107,13 +107,13 @@ void    Z_FreeTags(memtag_e lowtag, memtag_e hightag);
 void    Z_DumpHeap(memtag_e lowtag, memtag_e hightag);
 void    Z_FileDumpHeap (FILE *f);
 void    Z_CheckHeap (int i);
-void    Z_ChangeTag2 (void *ptr, memtag_e tag);
+void    Z_ChangeTag2 (void *ptr, memtag_e chtag);
 
 // Change all allocations of old_tag to new_tag.
 void	Z_ChangeTags_To( memtag_e old_tag, memtag_e new_tag );
 
 // returns number of bytes allocated for one tag type
-int     Z_TagUsage(memtag_e tag);
+int     Z_TagUsage(memtag_e usetag);
 
 void    Z_FreeMemory (int *realfree, int *cachemem, int *usedmem, int *largefreeblock);
 
@@ -140,7 +140,7 @@ typedef struct memblock_s
   // [WDJ] only works for int >= 32bit, or else havoc in Z_ALLOC
   int                 id;     // should be == ZONEID (first field, first to be corrupted if the previous block overflows)
   int                 size;   // including the header and possibly tiny fragments
-  memtag_e            tag;    // purgelevel
+  memtag_e            memtag;    // purgelevel
 
   void**              user;   // if the block has a single owner, *user points to the beginning of the data area after header
   struct memblock_s*  next;

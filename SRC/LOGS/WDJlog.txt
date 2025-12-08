@@ -3990,7 +3990,7 @@ Update docs for 1.45.1 bug fixes.
 
 *** W100_stuck_3dfloor
 patchfile = w100_7_stuck_3dfloor.patch
-- commit revision 11??
+- commit revision 1121
 Fix things collision check to ignore things on other 3dfloors.
 The allows monsters placed on upper and lower floors to not get stuck
 to each other.
@@ -3999,37 +3999,36 @@ same as in prboom and compatible with boom demo.
 
 *** W100_memtag
 patchfile = w100_8_memtag.patch
-- commit revision 11??
+- commit revision 1122
 Change z_zone memory block tag to be named memtag, so that it does not
 get confused with the linedef tag.
 
 *** W100_flush
 patchfile = w100_9_flush.patch
-- commit revision 11??
+- commit revision 1123
 Flush messages so the appear sooner.
 
 *** W100_opengl_menu
 patchfile = w100_10_opengl_menu.patch
-- commit revision 11??
+- commit revision 1124
 Straighten out some positioning in the opengl menu options, and gamma.
 
 *** W100_opengl_tnt_doors
 patchfile = w100_11_opengl_tntdoors.patch
-- commit revision 11??
+- commit revision 1125
 Fix the OpenGL rendering of the transparent doors in TNT Map21.
 They need to be rendered full height when the middle texture is transparent
 and the door is closed.
 
 *** W100_makefile
 patchfile = w100_12_makefile.patch
-- commit revision 11??
+- commit revision 1126
 Modify makefile for development work in the new directory structure.
 It needed to support more options for compiling from alternative
 working directories.
 
 *** W100_docs2
 patchfile = w100_13_docs2.patch
-- commit revision 11??
+- commit revision 1127
 Update docs for latest patches.
-
 
