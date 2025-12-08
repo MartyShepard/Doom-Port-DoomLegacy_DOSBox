@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: p_map.c 1121 2014-06-23 18:11:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -482,6 +482,8 @@ static void add_spechit( line_t* ld )
 // PIT_CheckThing
 //
 // Check moving tm_thing against iterator thing
+// Requires tmr_floorz, and tmr_ceilingz from CheckPosition.
+// Return false when tm_thing is stopped by hitting this thing.
 static boolean PIT_CheckThing (mobj_t* thing)
 {
     fixed_t             blockdist;
@@ -516,7 +518,19 @@ static boolean PIT_CheckThing (mobj_t* thing)
     // thing and tm_thing overlap in x,y
     tmtopz = tm_thing->z + tm_thing->height;
     thing_topz = thing->z + thing->height;
-   
+
+#if 1   
+    if (demoversion >= 145)
+    {
+        // [WDJ] Fix problem with monsters on 3dfloors being stuck to monsters
+        // on other levels.
+        if( thing->z > tmr_ceilingz )
+	   goto ret_pass;  // other thing is above ceiling (on upper floor)
+        if( thing_topz < tmr_floorz )
+	   goto ret_pass;  // other thing is below floor (on lower floor)
+    }
+#endif
+
     // heretic stuffs
     if(tm_thing->flags2 & MF2_PASSMOBJ)
     { // check if a mobj passed over/under another object
@@ -663,6 +677,52 @@ static boolean PIT_CheckThing (mobj_t* thing)
 
     //added:24-02-98:compatibility with old demos, it used to return with...
     //added:27-02-98:for version 112+, nonsolid things pass through other things
+#if 1
+    // For all versions, check thing !SOLID eventually leads to return true.
+    if ( !(thing->flags & MF_SOLID) )
+       goto ret_pass;
+   
+    // The check thing is solid, (thing->flags & MF_SOLID == true)
+    // This function does not get called when (tm_thing->flags & MF_NOCLIP)
+    // so there is no need to check that.
+#if 0 
+    // Demo compatibility. Is unnecessary, unless Legacy becomes different.
+    if ( demoversion >= 200 )
+    {
+        // From prboom.
+	return (thing->flags & MF_NOCLIP) || !(tm_thing->flags & MF_SOLID);
+    }
+#endif   
+    if ( demoversion >= 145 )
+    {
+        // Also includes ( demoversion >= 200 ) from prboom, same code.
+
+        // A non-solid moving thing is not blocked by a solid.
+        // NOCLIP things are not blocking.
+        return (thing->flags & MF_NOCLIP) || !(tm_thing->flags & MF_SOLID);
+    }
+
+    // old versions
+    if ( demoversion<112 || demoversion>=132 )
+      goto ret_blocked;
+
+    // [WDJ] This strange check is for DoomLegacy versions 113..131.
+    // It looks like a mistake.
+    if ( !(tm_thing->flags & MF_SOLID) )
+      goto ret_blocked;  // A non-solid moving thing is blocked by a solid.
+   
+    // [WDJ] This z-checking code is for DoomLegacy versions 113..131.
+    // After version 132, the heretic z-checking code was added (PASSMOBJ),
+    // which is more specific.
+    // This code causes monsters to escape ledges on top of other monsters.
+ 
+    //added:22-02-98: added z checking at last
+    //SoM: 3/10/2000: Treat noclip things as non-solid!
+    // Already known: (thing->flags & MF_SOLID)
+    //  (tm_thing->flags & MF_SOLID), !(tm_thing->flags & MF_NOCLIP)
+    if ( !(thing->flags & MF_NOCLIP) )
+#else
+    // As it was previous to 2014.
     if (demoversion<112 || demoversion>=132 || !(tm_thing->flags & MF_SOLID))
         return !(thing->flags & MF_SOLID);
 
@@ -673,11 +733,14 @@ static boolean PIT_CheckThing (mobj_t* thing)
  
     //added:22-02-98: added z checking at last
     //SoM: 3/10/2000: Treat noclip things as non-solid!
-    if ((thing->flags & MF_SOLID)
+    if (   (thing->flags & MF_SOLID)
 	&& (tm_thing->flags & MF_SOLID)
 	&& !(thing->flags & MF_NOCLIP)
 	&& !(tm_thing->flags & MF_NOCLIP))
+#endif
     {
+        // Only apply when tm_thing and thing are both SOLID, and !NOCLIP.
+
         // pass under
         if ( tmtopz < thing->z)
         {
@@ -705,7 +768,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
 	    goto ret_blocked;  // did not make it over thing
 	}
 
-
         if (thing_topz > tmr_floorz)
         {
 	    // standing on top of another thing
@@ -716,7 +778,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     }
 
 ret_pass:   
-    // not solid not blocked
+    // not solid, or not blocked
     return true;
 
 ret_blocked:

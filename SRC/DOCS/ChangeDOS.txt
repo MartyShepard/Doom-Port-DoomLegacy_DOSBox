@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01121 ]: w100 stuck monsters 3dfloor
+[01120*]: w100 docs 1.45.1
 [01119 ]: w100 SpawnFly after savegame
 [01118 ]: w100 Nomonsters switch
 [01117 ]: w100 Monsters Infight

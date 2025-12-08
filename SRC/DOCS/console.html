@@ -826,6 +826,25 @@ Choose the time of respawn for the monsters, in seconds.
 </p>
 </td></tr>
 
+<tr><td>monsterbehavior</td><td>string</td>
+<td>
+Select the mode of monster infighting.
+<ul>
+  <li>Normal: Monsters take damage from missiles, but do not retaliate.</li>
+  <li>Coop: Monsters cooperate by default.  DEH settings in the wad
+  can override this.
+  This is the same setting as the -coopmonsters command line switch.</li>
+  <li>Infight: Monsters retaliate by default.  DEH settings in the wad
+  can override this.
+  This is the same setting as the -infight command line switch.</li>
+  <li>Force Coop: Monsters cooperate.
+  This overrides DEH infight settings.</li>
+  <li>Force Infight: Monsters retailiate and damage each other.
+  This overrides DEH infight settings.</li>
+</ul>
+Default is Normal.
+</td></tr>
+
 <tr><td>monsterfriction</td><td>string</td>
 <td>
 Select the mode of monster friction.
@@ -838,6 +857,7 @@ Select the mode of monster friction.
 </ul>
 Default is Momentum.
 </td></tr>
+
 
 <tr><td>playdemospeed</td><td>int</td>
 <td>

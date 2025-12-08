@@ -13,6 +13,33 @@
 
 <div class="column">
 
+<h2>1.45.1</h2>
+
+<h3>FEATURES 1.45.1</h3>
+<ul>
+</ul>
+
+<h3>BUG FIXES 1.45.1</h3>
+<ul>
+<li>Allow Version 1.44 savegames to be read. The format of Version
+1.44 savegames is the same as in 1.45 and will be compatible in many
+future versions.</li>
+<li>Allow DEH modified monsters to use Keen_death to trigger a boss
+death and trigger the tag=666 sectors.</li>
+<li>Allow DEH infight settings to override the Monster Behavior menu
+control. This makes the control similar to controls in other ports.
+Separate "Force Coop" and "Force Infight" settings are added to the control
+to allow the user to override DEH infight settings when they want.</li>
+<li>Restore the -nomonsters switch that got lost in the w95_startscreen patch.
+Had intended to move it and lost it entirely instead.
+There is no equivalent menu control.</li>
+<li>Prevent using a NULL ptr, when restoring a savegame that has a
+flying cube. The savegame does not handle saving a braintarget as a mobj.
+The SpawnFly will get the previous braintarget when the target is NULL.
+</li>
+</ul>
+
+
 <h2>1.45 SVN1107 (2014-5-2)</h2>
 
 <h3>FEATURES 1.45</h3>
