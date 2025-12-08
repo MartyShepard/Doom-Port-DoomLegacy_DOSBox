@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1047 2013-09-22 20:57:40Z wesleyjohnson $
+// $Id: g_input.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -84,9 +84,16 @@ consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 
 #ifdef SDL
 CV_PossibleValue_t mouse_motion_cons_t[]={{0,"Absolute"},{1,"Relative"},{0,NULL}};
-consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_cons_t, I_StartupMouse };
+consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_cons_t, CV_mouse_OnChange };
 #endif
-consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, I_StartupMouse };
+consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, CV_mouse_OnChange };
+
+
+// Called for cv_grabinput, cv_mouse_motion
+void  CV_mouse_OnChange( void )
+{
+   I_StartupMouse( !(paused || menuactive) );
+}
 
 
 int  mousex, mousey;

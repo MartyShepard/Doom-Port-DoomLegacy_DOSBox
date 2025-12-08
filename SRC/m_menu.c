@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: m_menu.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4697,6 +4697,8 @@ void M_StartControlPanel (void)
     }
 
     CON_ToggleOff ();   // dirty hack : move away console
+
+    I_StartupMouse( false );  // menu mode
 }
 
 //
@@ -4714,6 +4716,7 @@ void M_ClearMenus (boolean callexitmenufunc)
     }
 
     menuactive = 0;
+    I_StartupMouse( !paused );  // play mode if not paused
 }
 
 

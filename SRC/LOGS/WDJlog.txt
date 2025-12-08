@@ -4136,3 +4136,15 @@ patchfile = w101_4_legacy_err.patch
 If there is a -game error then legacy.wad did not get loaded, which
 triggered additional error messages.  Fixed to load legacy.wad even
 when there is an error.
+
+*** W101_mouse_release
+patchfile = w101_5_mouse_release.patch
+- commit revision 1138
+When the game is paused, or a menu is opened, the mouse containment is
+released so that other windows can be visited.
+
+*** W101_version1452
+patchfile = w101_6_version1452.patch
+- commit revision 1139
+Update version numbers for 1.45.2.
+Update docs for latest patches and version 1.45.2.

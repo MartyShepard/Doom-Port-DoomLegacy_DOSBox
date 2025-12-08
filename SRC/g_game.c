@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: g_game.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1045,6 +1045,7 @@ void G_DoLoadLevel (boolean resetplayer)
     memset(gamekeydown, 0, sizeof(gamekeydown));
     memset(gamekeytapped, 0, sizeof(gamekeytapped));
     mousex = mousey = mouse2x = mouse2y = 0;
+    I_StartupMouse( true );  // play mode
 
     // [WDJ] In case demo is from other than player1 (from prboom, killough)
     ST_Start();

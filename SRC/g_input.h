@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: g_input.h 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -182,5 +182,7 @@ void  G_Controldefault(void);
 void  G_SaveKeySetting(FILE *f);
 void  G_CheckDoubleUsage(int keynum);
 
+// Called for cv_usemouse, cv_grabinput, cv_mouse_motion
+void  CV_mouse_OnChange( void );
 
 #endif

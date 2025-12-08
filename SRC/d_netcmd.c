@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: d_netcmd.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -219,7 +219,7 @@ CV_PossibleValue_t mouse2port_cons_t[] = { {0, "/dev/gpmdata"}, {1, "/dev/ttyS0"
 CV_PossibleValue_t mouse2port_cons_t[] = { {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"}, {0, NULL} };
 #endif
 
-consvar_t cv_usemouse = { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse };
+consvar_t cv_usemouse = { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, CV_mouse_OnChange };
 consvar_t cv_usemouse2 = { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 };
 
 #ifdef LMOUSE2
@@ -809,6 +809,7 @@ void Got_Pause(char **cp, int playernum)
         paused ^= 1;
     else
         paused = READBYTE(*cp);
+
     if (!demoplayback)
     {
         if (netgame)
@@ -826,7 +827,9 @@ void Got_Pause(char **cp, int playernum)
         }
         else
             S_ResumeSound();
-        I_StartupMouse();  // pause updates mouse, grab
+
+        // Pause updates mouse, grab.
+        I_StartupMouse( !(paused || menuactive) );
     }
 }
 

@@ -13,6 +13,42 @@
 
 <div class="column">
 
+<h2>1.45.2 SVN1139 (2014-09-14)</h2>
+
+<h3>FEATURES 1.45.2</h3>
+<ul>
+<li>Pausing, or opening a menu, will now release the mouse containment
+so that other windows can be visited.  This allows dealing with network,
+and firewall boxes that may appear.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.45.2</h3>
+<ul>
+<li>The Makefile dependency was including files that were not part of
+the compile for the selected port and options.  This would lead to errors.
+Making of dependency has been sub-divided into smaller sets, which only
+include files appropriate for the selected port.
+</li>
+<li>The Makefile has been improved to allow environment CC, explict CC,
+and use of the clang compiler.  It also allows using it from outside the src
+directory, or for program development where is invoked on the current
+directory from scripts.
+</li>
+<li>
+Chexquest Newmaps specific fixes.
+Fix segfault when drawing black bars and crosshairs in software rendering.
+These graphics were meant for OpenGL where they would be stretched.
+</li>
+<li>When more than two commands were entered in one tic, such as in loadlevel
+setting of keys that execute fragglescript, often the third command would fail.
+A latent bug in the command append function was making multiple commands
+erratic.  After two appends, garbage characters would be left between commands
+due to extra buffer length that affected the append positioning.
+All the special keys in Chexquest Newmaps now work reliably.
+</li>
+</ul>
+
 <h2>1.45.1 SVN1133 (2014-08-29)</h2>
 
 <h3>FEATURES 1.45.1</h3>

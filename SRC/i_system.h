@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: i_system.h 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -128,7 +128,10 @@ uint64_t I_GetDiskFreeSpace(void);
 char *I_GetUserName(void);
 int  I_mkdir(const char *dirname, int unixright);
 
-void I_StartupMouse(void);
+// Called on video mode change, usemouse change, mousemotion change,
+// and game paused.
+//   play_mode : enable mouse containment during play
+void I_StartupMouse( boolean play_mode );
 void I_StartupMouse2(void);
 void doUngrabMouse(void);
 

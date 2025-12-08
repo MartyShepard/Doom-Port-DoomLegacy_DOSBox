@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: I_system.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -615,7 +615,8 @@ void I_StartupMouse2()
 
 //  Initialise the mouse. Doesnt need to be shutdown.
 //
-void I_StartupMouse (void)
+//   play_mode : enable mouse containment during play
+void I_StartupMouse ( boolean play_mode )
 {
     __dpmi_regs r;
 
@@ -626,6 +627,8 @@ void I_StartupMouse (void)
         I_ShutdownMouse2();
         return;
     }
+
+    // The mouse cannot escape the window, so play_mode has no effect.
 
     //detect mouse presence
     r.x.ax=0;
@@ -705,7 +708,7 @@ void I_GetEvent (void)
         int xmickeys,ymickeys,buttons;
         static int lastbuttons=0;
 
-        r.x.ax=0x0b;           // ask the mouvement not the position
+        r.x.ax=0x0b;           // ask for the movement, not the position
         __dpmi_int(0x33,&r);
         xmickeys=(signed short)r.x.cx;
         ymickeys=(signed short)r.x.dx;
