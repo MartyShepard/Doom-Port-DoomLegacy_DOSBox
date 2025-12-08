@@ -4072,7 +4072,7 @@ patchfile = w100_19_docs3.patch
 - commit revision 1133
 Update docs for latest patches and version 1.45.1.
 
-*** W101_chex
+*** W101_chex_draw
 patchfile = w101_1_chex.patch
 - commit revision 1134
 Chexquest Newmaps specific fixes.
@@ -4083,3 +4083,50 @@ Pics to screen width.
 Fixed names and comments of draw to reflect true nature of the centering.
 Changed selection names to V_CENTERMENU and V_CENTERHORZ.
 Fixed HU Pic allocation, support functions, and added accurate comments.
+
+*** W101_clang_compile
+patchfile = w101_2_clang.patch
+- commit revision 1135
+Fix Makefile for compiling using the clang compiler.
+  CC_CLANG=1
+Add options for specifying CC.
+  CC_EXPLICT=clang,  explicitly specifies the CC command.
+  CC_ENVIRONMENT  uses  CC ?= gcc  to give environment CC preference.
+Fix the Makefile dependency building to not visit files that are foreign
+to the selected port.
+The select SMIF port selects the proper dependency additions.
+  DEP_HARD
+  DEP_X11
+  DEP_DD
+  DEP_OPENGL
+  DEP_MINIGL
+This eliminates the problem clang has when encountering includes of windows.h
+while compiling from a Linux/BSD environment.
+Fixes bug #607.
+
+Added detection of the wrong port for port specific hardware files,
+with #error lines to inform the developer of the required port.
+
+The Makefile specifies a default SRC and BUILD directories.
+This Makefile can be used from outside the src directory, or by setting
+the MAKE_IN_SRC variable, it can be used from within the src directory.
+Running Make from within the source directories is prefered during
+program development because it is easy to compile one of the many source
+directories, using canned scripts.  The current directory is compiled.
+Running the Makefile from outside the src puts the src directory name in the
+dependency files, which is inconvienent when compiling sequential updates
+kept in separate src directories.
+
+*** W101_command_buffer
+patchfile = w101_3_command.patch
+- commit revision 1136
+Fixes bug #619, where Chexquest Newmaps command keys that run scripts for
+the book are not getting executed.
+There was a latent bug in the VS_Print function that is used to append text
+to the command buffer.  With each append it accumulated an extra character
+of length in the buffer.  This affected the positioning of the next append.
+After two appends, it would be leaving some of the previous garbage in the
+buffer between the commands, which could be 0.  This made it erratic when
+there were more than two commands in one tic.
+This fix removes the term 0 from the command string before appending.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1065 2013-12-14 00:20:17Z wesleyjohnson $
+// $Id: command.c 1136 2014-09-17 13:52:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -799,6 +799,7 @@ void VS_Clear (vsbuf_t *buf)
 }
 
 
+// Add length to the space in use.  Detect overflow.
 void *VS_GetSpace (vsbuf_t *buf, int length)
 {
     if (buf->cursize + length > buf->maxsize)
@@ -821,6 +822,8 @@ void *VS_GetSpace (vsbuf_t *buf, int length)
 }
 
 
+#if 0
+// [WDJ] Unused
 //  Copy data at end of variable sized buffer
 //
 boolean VS_Write (vsbuf_t *buf, void *data, int length)
@@ -832,6 +835,7 @@ boolean VS_Write (vsbuf_t *buf, void *data, int length)
   memcpy(to, data, length);
   return true;
 }
+#endif
 
 
 //  Print text in variable size buffer, like VS_Write + trailing 0
@@ -840,16 +844,26 @@ boolean VS_Print (vsbuf_t *buf, char *data)
 {
   int len = strlen(data) + 1;
   int old_size = buf->cursize;  // VS_GetSpace modifies cursize
+   
+  // Remove trailing 0 before any consideration.
+  // Otherwise the extra accumulates until garbage gets between the appends.
+  if( old_size )
+  {
+      if( buf->data[old_size-1] == 0 )
+         buf->cursize --;
+  }
 
-  byte *to = (byte *)VS_GetSpace(buf, len);  // len-1 would be enough if there already is a trailing zero, but...
-  if (!to)
-    return false;
-
-  if (old_size == 0 || buf->data[old_size-1]) // currently no trailing 0
-    memcpy(to, data, len); 
-  else
-    memcpy(to - 1, data, len); // write over the trailing 0
+  // len-1 would be enough if there already is a trailing zero, but...
+  byte *to = (byte *)VS_GetSpace(buf, len);
+  if (!to)  goto fail_cleanup;
+  
+  memcpy(to, data, len); 
   return true;
+   
+fail_cleanup:
+  // Restore
+  buf->cursize = old_size;
+  return false;
 }
 
 // =========================================================================
@@ -1015,7 +1029,7 @@ char *CV_CompleteVar (char *partial, int skips)
 }
 
 
-// set value to the variable, no check only for internal use
+// Set value to the variable, no check only for internal use
 //
 static void Setvalue (consvar_t *var, char *valstr)
 {

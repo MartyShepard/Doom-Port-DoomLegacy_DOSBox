@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 1126 2014-06-23 18:18:04Z wesleyjohnson $
+# $Id: Makefile 1135 2014-09-17 13:50:58Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2014 by Doom Legacy Team.
@@ -33,11 +33,12 @@
 # To compile, with options on make command:
 #   >> make SMIF=SDL HAVE_MIXER=1
 # Command line options have precedence over the make_options file.
-# To have values in the make_options file override those on make command line use override:
+# To have values in the make_options file override those on the make
+# command line, use override:
 #   override SMIF=SDL
 #
-# This uses GNU Make special commands.  It may work with other make programs, and has
-# work-arounds in some places.  It has been tested with mingw32-make.
+# This uses GNU Make special commands.  It may work with other make programs,
+# and has work-arounds in some places.  It has been tested with mingw32-make.
 # If you have problems, please use GNU Make, or gmake.
 #
 # If you have a workaround for another make, then submit it as a bug fix.
@@ -70,6 +71,9 @@
 # DOS=1
 # CC_MINGW=1
 # CC_WATCOM=1
+# CC_CLANG=1
+# CC_ENVIRONMENT=1
+# CC_EXPLICIT=clang
 # MAC=1
 # Mac compile using Linux SDL includes (MacPorts, Fink)
 # MAC_FRAMEWORK uses the native Mac SDL setup.
@@ -79,6 +83,7 @@
 #SMIF=SDL
 #SMIF=LINUX_X11
 #SMIF=FREEBSD_X11
+#SMIF=WIN32_NATIVE
 #SMIF=OS2_NATIVE
 #SMIF=DJGPPDOS_NATIVE
 
@@ -90,9 +95,9 @@
 
 # CD-Music enable/disable, if you don't have the special libraries, etc.
 #NOCDMUS=1
-#ifndef NOCDMUS
+ifndef NOCDMUS
   CDMUS=1
-#endif
+endif
 # Music options
 #openserver5
 # MUS_OS=SCOOS5
@@ -120,21 +125,76 @@
 # Until can find test for presence of svn, this is best that can be done.
 #SVN_ENABLE=1
 
-# Subdirectories for binaries and build intermediates
-BIN = bin
-BUILD = build
-O  = $(BUILD)/objs
-DD = $(BUILD)/dep
-WD = $(BUILD)/wad
+# This Makefile may be used in the src directory, or outside it.
+# During program development, it is much easier to put the Makefile in
+# the working directories, cd to the directory, and invoke the make.
+#MAKE_IN_SRC=1
+
 # Invoke make with SRC= to compile other development directories.
-#ifndef SRC
-SRC=src
-#endif
+ifndef SRC
+  ifdef MAKE_IN_SRC
+    # Default to the current directory.
+    SRC=.
+  else
+    # Default source directory.
+    SRC=src
+  endif
+endif
+ifeq ("$(SRC)", "")
+  # SRC is the current directory.
+  SRC:=.
+endif
+ifeq ("$(SRC)", ".")
+  # SRC is the current directory, src include is "-I.".
+  SRC:=.
+  SD:=
+  SRCINC:=-I.
+else
+  # SRC in a sub-directory, src include is "-I$(SRC)".
+  SD:=$(SRC)/
+  SRCINC:=-I$(SRC)
+endif
+
+# Invoke make with BUILD= to compile to other build directories.
+ifndef BUILD
+#  BUILD:=build
+  BUILD:=.
+endif
+ifeq ("$(BUILD)", ".")
+  # BUILD== "." is the main directory.
+  BUILD:=
+endif
+ifeq ("$(BUILD)", "")
+  # BUILD== "" is the main directory.
+  ifdef MAKE_IN_SRC
+    BUILD_DIR:=../
+  else
+    BUILD_DIR:=
+  endif
+else
+  # BUILD in a sub-directory.
+  ifdef MAKE_IN_SRC
+    BUILD_DIR:=../$(BUILD)/
+  else
+    BUILD_DIR:=$(BUILD)/
+  endif
+endif
 
 # Invoke make with MAKE_OPTIONS= to specify another file or location.
-#ifndef MAKE_OPTIONS
-MAKE_OPTIONS = $(BUILD)/make_options
-#endif
+ifndef MAKE_OPTIONS
+  MAKE_OPTIONS = $(BUILD_DIR)make_options
+endif
+
+# Subdirectories for binaries and build intermediates
+ifdef MAKE_IN_SRC
+  BIN = ../bin
+else
+  BIN = bin
+endif
+O  = $(BUILD_DIR)objs
+DD = $(BUILD_DIR)dep
+WD = $(BUILD_DIR)wad
+
 
 # Warning flags
 WFLAGS=-Wall
@@ -144,21 +204,41 @@ WFLAGS=-Wall
 OPTLEV=-O3
 #OPTLEV=-O5
 
-#use the x86 asm code (not always up to date)
-# only useful if have old compiler with bad optimization
+#Enable the x86 asm code (which is not always up to date).
+# This is only useful if have an old compiler with bad optimization.
 #USEASM=1
 
 # Uncomment if you want to use the POLL_POINTER hack in X11
 #POLL_POINTER=-DPOLL_POINTER
 
-# gcc or g++
-CC=gcc
-ifdef CC_WATCOM
-  CC=WATCOMC
-endif
-
-# Put user settings in this file, and they will be included with every invocation
+# Put user settings in this file, and they will be included with every
+# invocation of make.
 -include $(MAKE_OPTIONS)
+
+# Doom Legacy is developed with GCC.  MINGW gets used for Win32.
+# The behavior of the code under other compilers is uncertain.
+# Define CC_EXPLICIT in make_options to override this setting.
+#  CC_EXPLICT=my_compiler
+# Define CC_ENVIRONMENT to allow an environment CC to specify the compiler.
+
+ifdef CC_EXPLICIT
+  CC_SELECT:=$(CC_EXPLICIT)
+else
+  # gcc or g++
+  CC_SELECT:=gcc
+  ifdef CC_WATCOM
+    CC_SELECT:=WATCOMC
+  endif
+  ifdef CC_CLANG
+    CC_SELECT:=clang
+  endif
+endif
+ifdef CC_ENVIRONMENT
+  # Give an environment CC precedence in specifing the compiler.
+  CC ?= $(CC_SELECT)
+else
+  CC:=$(CC_SELECT)
+endif
 
 # Customize to your debugging environment.
 ifdef DEBUG
@@ -258,9 +338,13 @@ ifeq ($(SMIF), SDL)
 
   MAINOBJ:=i_main.o
   CDMUSOBJ:=i_cdmus.o
-  SMIFOBJS:=i_system.o i_video.o i_sound.o i_net.o filesrch.o dosstr.o endtxt.o \
+  SMIFOBJS:=i_system.o i_video.o i_sound.o i_net.o \
     hw_bsp.o hw_draw.o hw_light.o hw_main.o hw_md2.o hw_cache.o hw_trick.o \
-    r_opengl.o ogl_sdl.o hwsym_sdl.o
+    r_opengl.o ogl_sdl.o hwsym_sdl.o \
+    filesrch.o dosstr.o endtxt.o
+
+  DEP_HARD:=1
+  DEP_OPENGL:=1
 
 # platform
   ifdef WIN32
@@ -321,7 +405,7 @@ ifeq ($(SMIF), SDL)
   endif
 
   OPTS+=-DHWRENDER -DSDL
-  OPTINC+=-Isrc
+  OPTINC+=$(SRCINC)
 
   ifdef HAVE_MIXER
     OPTS+=-DHAVE_MIXER
@@ -334,8 +418,8 @@ ifeq ($(SMIF), SDL)
     # though they would change the default directory according to .app.
     SMIFOBJS+=SDLmain.o
     LIBS+=-lobjc
-    # optional places for include and libraries, unique to Mac
-    # enable MAC_FRAMEWORK if you really want to debug frameworks (I don't)
+    # Optional places for include and libraries, unique to Mac.
+    # Enable MAC_FRAMEWORK if you really want to debug frameworks (I don't).
     ifdef MAC_FRAMEWORK
       CFLAGS += -DMAC_FRAMEWORK
       FRAMEWORK = -framework Cocoa -framework OpenGL -framework SDL
@@ -354,6 +438,10 @@ ifeq ($(SMIF), LINUX_X11)
 
   MUSSERV:=linux_x/musserv
   SNDSERV:=linux_x/sndserv
+  
+  DEP_HARD:=1
+  DEP_X11:=1
+  DEP_OPENGL:=1
 
   #use the x86 asm code
   #USEASM=1
@@ -365,17 +453,19 @@ ifeq ($(SMIF), LINUX_X11)
   ifdef CDMUS
     OPTS+=-DMUSSERV
   endif
+  
   # objs common to xshm and ggi, video is added later
   MAINOBJ:=i_main.o
   CDMUSOBJ:=i_cdmus.o
-  SMIFOBJS:=i_system.o i_sound.o i_net.o searchp.o filesrch.o dosstr.o endtxt.o \
+  SMIFOBJS:=i_system.o i_sound.o i_net.o \
     hw_bsp.o hw_draw.o hw_light.o hw_main.o hw_md2.o hw_cache.o hw_trick.o \
-    r_opengl.o ogl_x11.o
+    r_opengl.o ogl_x11.o \
+    searchp.o filesrch.o dosstr.o endtxt.o
 
   ifdef X11_GGI
     # GGI
     OPTS+=-DVID_GGI
-    OPTINC:=-Isrc
+    OPTINC:=$(SRCINC)
     LDFLAGS:=
     LIBS:=-lggi -lm
     # name of the exefile
@@ -385,7 +475,7 @@ ifeq ($(SMIF), LINUX_X11)
   else
     # standard X11
     OPTS+=$(POLL_POINTER)
-    OPTINC+=-Isrc -I/usr/X11R6/include
+    OPTINC+=$(SRCINC) -I/usr/X11R6/include
     LDFLAGS:=-L/usr/X11R6/lib
     LIBS:=-lGL -lGLU -lXext -lX11 -lm -ldl -lXxf86vm
 
@@ -413,6 +503,10 @@ ifeq ($(SMIF), FREEBSD_X11)
   OSVERSION:=$(shell /sbin/sysctl -n kern.osreldate)
   OSMAJOR:=$(shell echo $(OSVERSION) | sed 's/.....$$//')
 
+  DEP_HARD:=1
+  DEP_X11:=1
+  DEP_OPENGL:=1
+
   #use the x86 asm code
   #USEASM:=1
 
@@ -424,13 +518,14 @@ ifeq ($(SMIF), FREEBSD_X11)
   # Note: free-bsd version of cdmus
   MAINOBJ:=i_main.o
   CDMUSOBJ:=i_cdmus_fbsd.o
-  SMIFOBJS:=i_system.o i_sound.o i_net.o searchp.o filesrch.o dosstr.o endtxt.o \
-    hw_bsp.o hw_draw.o hw_light.o hw_main.o hw_md2.o hw_cache.o hw_trick.o
-
+  SMIFOBJS:=i_system.o i_sound.o i_net.o \
+    hw_bsp.o hw_draw.o hw_light.o hw_main.o hw_md2.o hw_cache.o hw_trick.o \
+    searchp.o filesrch.o dosstr.o endtxt.o
+ 
   ifdef X11_GGI
     # GGI
     OPTS+=-DVID_GGI
-    OPTINC+=-Isrc -I/usr/local/include
+    OPTINC+=$(SRCINC) -I/usr/local/include
     LDFLAGS:=
     LIBS:=-lggi -lm -lipx
     # name of the exefile
@@ -440,7 +535,7 @@ ifeq ($(SMIF), FREEBSD_X11)
   else
     # standard X11
     OPTS+=$(POLL_POINTER)
-    OPTINC+=-Isrc -I/usr/X11R6/include
+    OPTINC+=$(SRCINC) -I/usr/X11R6/include
     LDFLAGS:=-L/usr/X11R6/lib
     LIBS:=-lXext -lX11 -lm -lXxf86vm -lipx -lkvm -pthread
     # name of the exefile
@@ -448,7 +543,6 @@ ifeq ($(SMIF), FREEBSD_X11)
     SFLAGS:=-g $(OPTS)
     SMIFOBJS+=i_video_xshm.o
   endif
-
 
 #=================================
 else
@@ -465,7 +559,7 @@ ifeq ($(SMIF), OS2_NATIVE)
   PROFILEMODE=1
 # options (separate OS2 library and OS2_NATIVE video)
   OPTS:=-D__OS2__ -DOS2_NATIVE
-  OPTINC+=-Zmt -Isrc -Ios2
+  OPTINC+=-Zmt $(SRCINC) -I$(SD)os2
 
 #  DEBUGLIBS:=
   LIBS:=-g $(INTERFACE)/I_pm.def -lmmpm2 -lsocket
@@ -489,6 +583,9 @@ ifeq ($(SMIF), WIN32_NATIVE)
   DOSFILE=1
   INTERFACE=win32
   NASMFORMAT:=coff
+
+  DEP_HARD:=1
+  DEP_DD:=1
 
   # DDINC="" alternative directory to find ddraw.h and other includes
   # DDLIB="" alternative directory to find ddraw and other libs
@@ -514,7 +611,7 @@ ifeq ($(SMIF), WIN32_NATIVE)
 
 # options (separate WIN32 library, and WIN_NATIVE video)
   OPTS:=-DWIN32 -DWIN_NATIVE
-  OPTINC+=-g -Isrc
+  OPTINC+=-g $(SRCINC)
   ifdef DDINC
     OPTINC+=$(DDINC)
   endif
@@ -546,7 +643,7 @@ ifeq ($(SMIF), WIN32_NATIVE)
 
   MAINOBJ:=win_main.o
   SMIFOBJS:=win_sys.o win_vid.o win_snd.o win_net.o win_cd.o \
-  filesrch.o fabdxlib.o mid2strm.o dx_error.o
+    filesrch.o fabdxlib.o mid2strm.o dx_error.o
 
 # name of the exefile
   EXENAME:=legacy.exe
@@ -560,12 +657,14 @@ ifeq ($(SMIF), DJGPPDOS_NATIVE)
   INTERFACE=djgppdos
   NASMFORMAT:=coff
 
+#  DEP_HARD:=1
+
 #use the x86 asm code
   #USEASM=1
 
 # options
   OPTS:=-DPC_DOS
-  OPTINC+=-g -Isrc
+  OPTINC+=-g $(SRCINC)
 
 #  DEBUGLIBS:=
   LIBS:=-lalleg -lsocket
@@ -650,13 +749,14 @@ endif
 
 # objs that are in main directories
 MOBJS:=\
-tables.o info.o dstrings.o \
 screen.o v_video.o \
+r_draw.o r_plane.o r_segs.o r_sky.o r_things.o r_splats.o \
+r_bsp.o r_data.o r_main.o \
 z_zone.o \
-r_draw.o r_plane.o r_segs.o r_sky.o r_things.o r_splats.o r_bsp.o r_data.o r_main.o \
-p_ceilng.o p_doors.o p_enemy.o p_floor.o p_genlin.o p_info.o p_inter.o p_lights.o \
-p_map.o p_maputl.o p_plats.o p_pspr.o p_setup.o p_sight.o p_spec.o \
-p_switch.o p_mobj.o p_telept.o p_tick.o p_user.o p_fab.o \
+p_sight.o p_mobj.o p_enemy.o p_user.o p_inter.o p_pspr.o \
+p_lights.o p_ceilng.o p_doors.o p_plats.o p_floor.o p_spec.o \
+p_switch.o p_genlin.o p_telept.o p_tick.o p_fab.o p_info.o p_setup.o \
+p_map.o p_maputl.o \
 p_heretic.o p_hsight.o \
 p_chex.o \
 sb_bar.o hu_stuff.o \
@@ -672,7 +772,7 @@ md5.o \
 m_menu.o m_misc.o m_argv.o m_bbox.o m_fixed.o m_swap.o m_cheat.o m_random.o \
 console.o command.o \
 p_saveg.o \
-w_wad.o dehacked.o \
+tables.o info.o dstrings.o dehacked.o w_wad.o \
 d_netcmd.o d_clisrv.o d_net.o d_netfil.o i_tcp.o \
 d_items.o d_main.o
 
@@ -683,8 +783,8 @@ MAINOBJ:=$(addprefix $(O)/, $(MAINOBJ))
 #=======================================================
 # rules
 #=======================================================
-# Do not have directories as prerequisites because their date is updated whenever
-# a file is output, which fouls up the rules.
+# Do not have directories as prerequisites because their date is updated
+# whenever a file is output, which fouls up the rules.
 
 .PHONY : all dirs clean distclean asm dll wad
 
@@ -708,9 +808,10 @@ endif
 endif
 
 
-# File make_options does not exist on first make
-# create dummy make_options file and dirs
-# create dirs without triggering a remake of make_options (a PHONY always triggers)
+# File make_options does not exist on first make.
+# Create dummy make_options file and dirs.
+# Create dirs without triggering a remake of make_options
+# (a PHONY always triggers).
 $(MAKE_OPTIONS):
 	@ echo "-------------------------------------------------------------------------------" \
 	&& echo "Initializing DoomLegacy make" \
@@ -840,12 +941,20 @@ objdump_draw: $(O)/r_draw.o
 
 # Make dll for X11
 dll : $(O)/r_opengl.o $(O)/ogl_x11.o
-	$(CC) -O3 -o $(BIN)/r_opengl.so -shared -nostartfiles $(O)/r_opengl.o $(O)/ogl_x11.o -L/usr/X11R6/lib -L/usr/local/lib -lX11 -lXext -lGL -lGLU -lm
+	$(CC) -O3 $(OPTS) -o $(BIN)/r_opengl.so -shared -nostartfiles \
+	  $(O)/r_opengl.o $(O)/ogl_x11.o \
+	  -L/usr/X11R6/lib -L/usr/local/lib -lX11 -lXext -lGL -lGLU -lm
 
 
 # Linux X11 sound and music servers
-export BASEOBJ:=$(O)/$(MUSSERV)
-export BASEBIN:=$(BIN)
+ifdef MAKE_IN_SRC
+  export BASEOBJ:=../../$(O)/$(MUSSERV)
+  export BASEBIN:=../../$(BIN)
+else
+  export BASEOBJ:=../../../$(O)/$(MUSSERV)
+  export BASEBIN:=../../../$(BIN)
+endif
+export CC
 export SMIF
 ifdef MUS_OS
   export MUS_OS
@@ -855,12 +964,12 @@ ifdef HAVE_ESD
 endif
 
 musserv:
-	cd $(MUSSERV) && $(MAKE) dirs
-	cd $(MUSSERV) && $(MAKE)
+	cd $(SD)$(MUSSERV) && $(MAKE) dirs
+	cd $(SD)$(MUSSERV) && $(MAKE)
 
 sndserv:
-	cd $(SNDSERV) && $(MAKE) dirs
-	cd $(SNDSERV) && $(MAKE) $(SNDSERV_EXTRAFLAGS)
+	cd $(SD)$(SNDSERV) && $(MAKE) dirs
+	cd $(SD)$(SNDSERV) && $(MAKE) $(SNDSERV_EXTRAFLAGS)
 
 
 #=======================================================
@@ -895,55 +1004,55 @@ vpath %.o $(O)
 
 #$(O)/*.o : doomdef.h
 
-$(O)/r_draw.o : $(SRC)/r_draw.c $(SRC)/r_draw8.c $(SRC)/r_draw16.c $(SRC)/r_draw24.c $(SRC)/r_draw32.c
+$(O)/r_draw.o : $(SD)r_draw.c $(SD)r_draw8.c $(SD)r_draw16.c $(SD)r_draw24.c $(SD)r_draw32.c
 
 
 # common obj rules
 
-$(O)/%.o: $(SRC)/%.c
+$(O)/%.o: $(SD)%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: $(SRC)/$(INTERFACE)/%.c
+$(O)/%.o: $(SD)$(INTERFACE)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(O)/%.o: $(SRC)/hardware/%.c
+$(O)/%.o: $(SD)hardware/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # OS2 rules
 ifeq ($(SMIF), OS2_NATIVE)
-$(O)/%.res: $(SRC)/os2/%.rc
-	rc.exe -i $(SRC)/os2 -r $< $@
+$(O)/%.res: $(SD)os2/%.rc
+	rc.exe -i $(SD)os2 -r $< $@
 endif
 
 
 # OpenGL rules
 ifeq ($(SMIF), SDL)
-$(O)/r_opengl.o: $(SRC)/hardware/r_opengl/r_opengl.c $(SRC)/hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: $(SD)hardware/r_opengl/r_opengl.c $(SD)hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ifdef MAC
 # Mac must have Objective-C main for SDL
-$(O)/SDLmain.o : $(SRC)/sdl/SDLmain.m
+$(O)/SDLmain.o : $(SD)sdl/SDLmain.m
 	$(CC) -x objective-c $(CFLAGS) $(FRAMEWORK) -c $< -o $@
 endif
 
 else 
 # LINUX_X11, FREEBSD_X11 at least
-$(O)/r_opengl.o: $(SRC)/hardware/r_opengl/r_opengl.c $(SRC)/hardware/r_opengl/r_opengl.h
+$(O)/r_opengl.o: $(SD)hardware/r_opengl/r_opengl.c $(SD)hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -c $< -o $@
 endif
 
 
-$(O)/ogl_x11.o:  $(SRC)/hardware/r_opengl/ogl_x11.c $(SRC)/hardware/r_opengl/r_opengl.h
+$(O)/ogl_x11.o:  $(SD)hardware/r_opengl/ogl_x11.c $(SD)hardware/r_opengl/r_opengl.h
 	$(CC) $(CFLAGS) -shared -nostartfiles -I/usr/X11R6/include -c $< -o $@ 
 
 
 # assembly rules
 ifdef USEASM
-$(O)/tmap.o: $(SRC)/tmap.nas
+$(O)/tmap.o: $(SD)tmap.nas
 	nasm -o $@ -f $(NASMFORMAT) $<
 
-$(O)/vid_copy.o: $(SRC)/vid_copy.s
+$(O)/vid_copy.o: $(SD)vid_copy.s
 	$(CC) $(OPTS) $(OPTINC) $(SFLAGS) -x assembler-with-cpp -c $< -o $@
 endif
 
@@ -988,34 +1097,65 @@ ifndef FORCE_AUTO_DEP
 .PHONY : $(DD)/*.dep
 endif
 
-.PHONY : depend  main_depend  interface_depend
+.PHONY : depend
 depend:  $(DD)/main1.dep $(DD)/main3.dep $(DD)/main4.dep $(DD)/main5.dep \
-$(DD)/main_d.dep $(DD)/main_m.dep $(DD)/main_p.dep \
-$(DD)/main_r.dep $(DD)/main_t.dep \
-$(DD)/hard1.dep $(DD)/hard2.dep
+ $(DD)/main_d.dep $(DD)/main_m.dep \
+ $(DD)/main_p1.dep $(DD)/main_p2.dep $(DD)/main_p3.dep $(DD)/main_ph.dep \
+ $(DD)/main_r.dep $(DD)/main_t.dep
+
+$(DD)/main1.dep : $(SD)a*.c $(SD)b*.c $(SD)c*.c
+$(DD)/main3.dep : $(SD)q*.c $(SD)s*.c
+$(DD)/main4.dep : $(SD)f*.c $(SD)g*.c $(SD)h*.c
+$(DD)/main5.dep : $(SD)v*.c $(SD)z*.c $(SD)i*.c
+$(DD)/main_d.dep : $(SD)d*.c
+$(DD)/main_m.dep : $(SD)m*.c
+$(DD)/main_p1.dep : $(SD)p_c*.c $(SD)p_d*.c $(SD)p_e*.c $(SD)p_f*.c
+$(DD)/main_p2.dep : $(SD)p_g*.c $(SD)p_i*.c $(SD)p_l*.c $(SD)p_m*.c
+$(DD)/main_p3.dep : $(SD)p_p*.c $(SD)p_s*.c $(SD)p_t*.c $(SD)p_u*.c
+$(DD)/main_ph.dep : $(SD)p_h*.c
+$(DD)/main_r.dep : $(SD)r*.c
+$(DD)/main_t.dep : $(SD)t*.c
+# none: e*.c j*.c k*.c l*.c n*.c o*.c
+
 ifdef INTERFACE
 depend: $(DD)/$(INTERFACE).dep
 endif
+# $(INTERFACE).dep : $(SD)$(INTERFACE)/*.c
+$(DD)/djgppdos.dep : $(SD)djgppdos/*.c
+$(DD)/linux_x.dep : $(SD)linux_x/*.c $(SD)linux_x/musserv/*.c $(SD)linux_x/sndserv/*.c
+$(DD)/os_2.dep : $(SD)os2/*.c
+$(DD)/macos.dep : $(SD)macos/*.c
+$(DD)/sdl.dep : $(SD)sdl/*.c
+$(DD)/win32.dep : $(SD)win32/*.c
 
-$(DD)/main1.dep : $(SRC)/a*.c $(SRC)/b*.c $(SRC)/c*.c
-$(DD)/main3.dep : $(SRC)/q*.c $(SRC)/s*.c
-$(DD)/main4.dep : $(SRC)/f*.c $(SRC)/g*.c $(SRC)/h*.c
-$(DD)/main5.dep : $(SRC)/v*.c $(SRC)/z*.c $(SRC)/i*.c
-$(DD)/main_d.dep : $(SRC)/d*.c
-$(DD)/main_m.dep : $(SRC)/m*.c
-$(DD)/main_p.dep : $(SRC)/p*.c
-$(DD)/main_r.dep : $(SRC)/r*.c
-$(DD)/main_t.dep : $(SRC)/t*.c
-# none: e*.c j*.c k*.c l*.c n*.c o*.c
-$(DD)/hard1.dep : $(SRC)/hardware/*.c
-$(DD)/hard2.dep : $(SRC)/hardware/*/*.c
-# $(INTERFACE).dep : $(SRC)/$(INTERFACE)/*.c
-$(DD)/djgppdos.dep : $(SRC)/djgppdos/*.c
-$(DD)/linux_x.dep : $(SRC)/linux_x/*.c $(SRC)/linux_x/musserv/*.c $(SRC)/linux_x/sndserv/*.c
-$(DD)/os_2.dep : $(SRC)/os2/*.c
-$(DD)/macos.dep : $(SRC)/macos/*.c
-$(DD)/sdl.dep : $(SRC)/sdl/*.c
-$(DD)/win32.dep : $(SRC)/win32/*.c
+ifdef DEP_HARD
+depend: $(DD)/hard1.dep
+$(DD)/hard1.dep : $(SD)hardware/*.c
+endif
+
+ifdef DEP_OPENGL
+depend: $(DD)/hardgl.dep
+$(DD)/hardgl.dep : $(SD)hardware/r_opengl/r_opengl.c
+endif
+
+ifdef DEP_DD
+# Direct-draw dependent dep.
+depend: $(DD)/hardwin.dep
+$(DD)/hardwin.dep : $(SD)hardware/r_d3d/*.cpp
+$(DD)/hardwin.dep : $(SD)hardware/s_ds3d/*.c
+$(DD)/hardwin.dep : $(SD)hardware/r_glide/*.c
+endif
+
+ifdef DEP_MINIGL
+depend: $(DD)/hardmini.dep
+$(DD)/hardmini.dep : $(SD)hardware/r_minigl/*.c
+endif
+
+ifdef DEP_X11
+depend: $(DD)/hardx11.dep
+$(DD)/hardx11.dep : $(SD)hardware/r_opengl/ogl_x11.c
+$(DD)/hardx11.dep : $(SD)hardware/r_opengl/r_opengl.c
+endif
 
 FIXDEP=1
 
@@ -1040,14 +1180,28 @@ include $(DD)/main3.dep
 include $(DD)/main4.dep
 include $(DD)/main5.dep
 include $(DD)/main_d.dep
-include $(DD)/main_p.dep
+include $(DD)/main_p1.dep
+include $(DD)/main_p2.dep
+include $(DD)/main_p3.dep
+include $(DD)/main_ph.dep
 include $(DD)/main_m.dep
 include $(DD)/main_r.dep
 include $(DD)/main_t.dep
 include $(DD)/hard1.dep
-include $(DD)/hard2.dep
 ifdef INTERFACE
  include $(DD)/$(INTERFACE).dep
+endif
+ifdef DEP_OPENGL
+ include $(DD)/hardgl.dep
+endif
+ifdef DEP_DD
+ include $(DD)/hardwin.dep
+endif
+ifdef DEP_MINIGL
+ include $(DD)/hardmini.dep
+endif
+ifdef DEP_X11
+ include $(DD)/hardx11.dep
 endif
 endif
 endif

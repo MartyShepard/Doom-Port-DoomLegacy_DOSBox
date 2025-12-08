@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_script.c 1136 2014-09-17 13:52:12Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -203,7 +203,7 @@ void T_RunScript(int scriptnum, mobj_t * t_trigger )
 }
 
 
-
+#if 0
 // T_RunThingScript:
 // identical to T_RunScript but runs a script
 // from the thingscript list rather than the
@@ -224,6 +224,7 @@ void T_RunThingScript(int n, mobj_t * t_trigger )
   
   run_script(script);*/
 }
+#endif
 
 
 
