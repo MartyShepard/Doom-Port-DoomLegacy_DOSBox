@@ -1,2 +1,2 @@
- Doom Legacy (Dos Only Port)
- Doom Legacy, Backup and Edit Repository for the DOS version
+Doom Legacy (Dos "only" Port)
+Backup and Edit Repository for the DOS version.
