@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1107"
+#define SVN_REV "1115"
 #endif
 
 // Version number: major.minor.revision
@@ -2322,7 +2322,7 @@ restart_command:
         // setup loading screen
         CONS_Printf("RequestFullGraphics...\n");
         I_RequestFullGraphics( cv_fullscreen.value );
-#endif				
+#endif			
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
         V_ClearDisplay();

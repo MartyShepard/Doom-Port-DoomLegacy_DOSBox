@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01115 ]: w100 savegame 1.44 recognized
 [01114*]: Makefile fixed, compilation seems to work again.
 [01113*]: Source tree reorganization done, Makefile not fixed yet.
 [01112*]: Source tree reorganization, part 2.
