@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01123 ]: w100 flush messages
 [01122 ]: w100 memtag
 [01121 ]: w100 stuck monsters 3dfloor
 [01120*]: w100 docs 1.45.1

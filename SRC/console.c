@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1083 2014-02-03 17:28:16Z wesleyjohnson $
+// $Id: console.c 1123 2014-06-23 18:14:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1019,6 +1019,7 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     {
         // Errors to terminal, and before graphics
         I_OutputMsg ("%s",txt);
+        fflush(NULL);
     }
 
 #if 0
