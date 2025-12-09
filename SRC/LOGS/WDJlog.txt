@@ -4352,3 +4352,40 @@ patchfile = w102_24_cv_inc.patch
 - commit revision 1164
 Give the CV_Possible_t system an INC option.  This is used to increment the
 wait time in 5 second increments.
+
+*** W103_wadtool
+zipfile = w103_1_wadtool.zip
+- commit revision 1165
+Wadtool has been missing from the legacy 1.45 build.
+Copied and revised wadtool from legacy2.
+Added directory switch to wadtool, to make it much easier to use in Makefile.
+Added reading lump by file name or lump name, so that an extracted wad
+can be rebuilt without having to change file names of the lumps.
+New files: tools/wadtool.cc
+
+*** W103_fixdep
+zipfile = w103_2_fixdep.zip
+- commit revision 1166
+Windows and DOS do not have sed, which is used to add the obj/
+directory to the dep file entries.
+The tool, fixdep, will do the same operation, making the dep files work
+on Windows and DOS.
+New files: tools/fixdep.c
+
+*** W103_makefile
+zipfile = w103_3_makefile.zip
+- commit revision 1167
+Heavily rewrote all Makefiles to reduce user errors and miss-information.
+Added Makefile to resources.
+Added error detections, error messages.
+Changed syntax of make_options.
+Now uses OS= for operating systems.
+Now uses CC_SELECT= for compiler select.
+Main Makefile now invokes sub-makefiles.
+Src makefile still has capability of being run directly, but other
+sub-Makefiles must be run from Main Makefile, as they use exported vars.
+Initial creation of make_options is now smarter and provides more informative.
+Created initial make_options for the various port targets.
+New files: make_options_nix, make_options_win, make_options_os2,
+make_options_dos, make_options_mac, tools/Makefile, resources/Makefile.
+
