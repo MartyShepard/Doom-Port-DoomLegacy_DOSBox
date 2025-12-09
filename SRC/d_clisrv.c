@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1144 2015-04-03 13:46:21Z wesleyjohnson $
+// $Id: d_clisrv.c 1147 2015-04-03 13:49:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -795,8 +795,9 @@ void CL_UpdateServerList( boolean internetsearch )
 // use adaptive send using net_bandwidth and stat.sendbytes
 static void CL_ConnectToServer( void )
 {
-    int     numnodes,nodewaited=doomcom->numnodes,i;
-    boolean waitmore;
+    int  numnodes, nodewaited=doomcom->numnodes;
+    int  nn;  // net node num
+    int  i;
     tic_t   asksent;
     tic_t   oldtic;
 
@@ -838,17 +839,22 @@ static void CL_ConnectToServer( void )
                     CL_Got_Fileneed(serverlist[i].info.num_fileneed,
 				    serverlist[i].info.fileneed    );
                     CONS_Printf("Checking files...\n");
-                    i = CL_CheckFiles();
-                    if( i==2 ) // cannot join for some reason
+                    switch( CL_CheckFiles() )
+		    {
+		     case CFR_iwad_error: // cannot join for some reason
+		     case CFR_insufficient_space:
 		        goto reset_to_title_exit;
-                    else if( i==1 )
+		     case CFR_no_files:
+		     case CFR_all_found:
                         cl_mode=CLM_askjoin;
-                    else
-                    {   // must download something
+		        break;
+                     case CFR_download_needed:
+		        // must download something
                         // no problem if can't send packet, we will retry later
                         if( Send_RequestFile() )
                             cl_mode=CLM_downloadfiles;
-                    }
+		        break;
+		    }
                     break;
                 }
                 // ask the info to the server (askinfo packet)
@@ -859,29 +865,23 @@ static void CL_ConnectToServer( void )
                 }
                 break;
             case CLM_downloadfiles :
-                waitmore=false;
-                for(i=0; i<cl_num_fileneed; i++)
-	        {
-                    if(cl_fileneed[i].status==FS_DOWNLOADING
-		       || cl_fileneed[i].status==FS_REQUESTED)
-                    {
-                        waitmore=true;
-                        break;
-                    }
-		}
-                if(waitmore)
+                if( CL_waiting_on_fileneed() )
                     break; // exit the case
 	        cl_mode=CLM_askjoin; //don't break case continue to cljoin request now
 	        // continue into next case
             case CLM_askjoin :
-                CL_Load_ServerFiles();
+                if( ! CL_Load_ServerFiles() )
+	        {
+		    // Cannot load some file.
+		    goto  reset_to_title_exit;
+		}
 #ifdef JOININGAME
                 // prepare structures to save the file
                 // WARNING: this can be useless in case of server not in GS_LEVEL
                 // but since the network layer don't provide ordered packet ...
                 CL_Prepare_Download_SaveGame(tmpsave);
 #endif
-                if( CL_Send_Join() )
+                if( CL_Send_Join() )  // join game
                     cl_mode=CLM_waitjoinresponse;
                 break;
 #ifdef JOININGAME
@@ -904,10 +904,7 @@ static void CL_ConnectToServer( void )
         Net_Packet_Handler();
         // connection closed by cancel or timeout
         if( !server && !netgame )
-        {
-            cl_mode = CLM_searching;
-            return;
-        }
+	    goto reset_to_searching;
         Net_AckTicker();
 
         // call it only once every tic
@@ -937,11 +934,10 @@ static void CL_ConnectToServer( void )
         {
 	    // Count the net nodes.
             numnodes=0;
-            for(i=0;i<MAXNETNODES;i++)
+            for(nn=0; nn<MAXNETNODES; nn++)
 	    {
-                if(nodeingame[i]) numnodes++;
+                if(nodeingame[nn])  numnodes++;
 	    }
-
         }
     }  while (!( (cl_mode == CLM_connected) &&
                  ( (!server) || (server && (nodewaited<=numnodes)) )));
@@ -953,6 +949,10 @@ static void CL_ConnectToServer( void )
     consoleplayer_ptr = displayplayer_ptr = &players[consoleplayer];
     return;
 
+reset_to_searching:
+    cl_mode = CLM_searching;
+    return;
+   
 reset_to_title_exit:
     CL_Reset();
     D_StartTitle();
@@ -1776,7 +1776,7 @@ static void server_cfg_handler( byte nnode )
 #ifdef CLIENTPREDICTION2
     localgametic = gametic;
 #endif
-    nodeingame[(byte)servernode]=true;
+    nodeingame[servernode]=true;
 
     // Handle a player on the server.
     serverplayer = netbuffer->u.servercfg.serverplayer;
@@ -2151,6 +2151,7 @@ static void Net_Packet_Handler(void)
             continue; //while
         }
 
+        // Known nodes only.
         netconsole = nnode_to_player[nnode];  // the player
 #ifdef PARANOIA
         if(!(netconsole & DRONE) && netconsole>=MAXPLAYERS)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: d_netfil.h 1147 2015-04-03 13:49:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -83,29 +83,37 @@ void D_NetFileInit(void);
 byte * Put_Server_FileNeed(void);
 void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str);
 void CL_Prepare_Download_SaveGame(const char *tmpsave);
-// boolean  CL_waiting_on_fileneed( void );
+boolean  CL_waiting_on_fileneed( void );
 
-// check file list in wadfiles return 0 when a file is not found 
-//                                    1 if all file are found 
-//                                    2 if you cannot connect (different wad version or 
-//                                                   no enought space to download files)
-int CL_CheckFiles(void);
-void CL_Load_ServerFiles(void);
+// Check file list in wadfiles return.
+typedef enum {
+   CFR_no_files,
+   CFR_all_found,
+   CFR_download_needed,
+   CFR_iwad_error,
+   CFR_insufficient_space // Does not seem to be used.
+} checkfiles_e;
 
-void SendFile(int node,char *filename, char fileid);
-void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid);
+checkfiles_e  CL_CheckFiles(void);
+boolean  CL_Load_ServerFiles(void);
+
+//void SendFile(byte to_node, char *filename, char fileid);
+void SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid);
 
 void Filetx_Ticker(void);
 void Got_Filetxpak(void);
 
 boolean Send_RequestFile(void);
-void Got_RequestFilePak(int node);
+void Got_RequestFilePak(byte nnode);
 
 
-void AbortSendFiles(int node);
+void AbortSendFiles(byte nnode);
 void CloseNetFile(void);
 
-boolean fileexist(char *filename,time_t time);
+#if 0
+// Unused
+boolean fileexist(char *filename, time_t chk_time);
+#endif
 
 // search a file in the wadpath, return FS_FOUND when found
 filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath);

@@ -4201,3 +4201,13 @@ Rename of network types, fields, macros, vars to be more readable, meaningful.
 Cleanup of packet ack functions.
 Comments.
 Fix a bug in cancel ack function.
+
+*** W102_netfile
+patchfile = w102_8_netfile.patch
+- commit revision 11??
+Cleanup of file download functions.
+Convert some I_Error to I_SoftError.
+Make messages more understandable.
+Use of ptrs makes for much smaller code.
+Remove unused code.
+
