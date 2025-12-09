@@ -4314,3 +4314,23 @@ patchfile = w102_19_makefile.patch
 - commit revision 1158
 Fix problems with directories when compiling in Win32.
 Fix some debugging of inline functions reported.
+
+*** W102_wait_player
+patchfile = w102_20_wait_player.patch
+- commit revision 1159
+Add menu to start network games while waiting for players with timeout.
+The server command line options for start and connect can now be
+done using the start server menu.
+Add wait for player net nodes, add timeout for waiting.
+Add display box for displaying the wait.
+Add a net communication command to pass the current waiting state
+to other waiting players.
+
+*** W102_legacywad_error
+patchfile = w102_21_legacywad_error.patch
+- commit revision 1160
+In patch  W101_legacy_error, a fix was made to stop a -game error from causing
+a missing legacy wad.  That has caused a new error, when legacy wad itself
+is not found.
+Fix AddFile to not segfault when filename is NULL.
+Fix previous patch to check for legacywad before trying to add it.

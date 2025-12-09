@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: m_menu.c 1160 2015-04-03 14:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4680,11 +4680,13 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
 
       default:
-#if 0       
+#if 1
 	// any other key: if a letter, try to find the corresponding menuitem
 	if (!isalpha(ch))
-	  goto ret_true;
+#else
+        if( ch == 0 )
 #endif
+	  goto ret_true;
 
         // from itemOn to bottom
         for (i = itemOn+1;i < currentMenu->numitems;i++)

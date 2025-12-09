@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: d_main.c 1160 2015-04-03 14:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1159"
+#define SVN_REV "1160"
 #endif
 
 // Version number: major.minor.revision
@@ -1057,6 +1057,9 @@ void D_AddFile(char *filename)
     int numwadfiles;
     char *newfile;
 
+    if( filename == NULL )
+        return;
+
     // find end of wad files by counting
     for (numwadfiles = 0; startupwadfiles[numwadfiles]; numwadfiles++)
         ;
@@ -1504,6 +1507,12 @@ void IdentifyVersion()
     {
         // BP: big hack for fullpath wad, we should use wadpath instead in d_addfile
         char *s = M_GetNextParm();
+        if ( s == NULL )
+        {
+	    I_SoftError("Switch -iwad <filename>.\n");
+	    goto fatal_err;
+	}
+
         if (s[0] == '/' || s[0] == '\\' || s[1] == ':')
             snprintf(pathiwad, _MAX_PATH-1, "%s", s);
         else
@@ -1514,7 +1523,11 @@ void IdentifyVersion()
         cv_iwad.flags &= ~CV_MODIFIED;
 #endif
 
-        if ( access(pathiwad, R_OK) < 0 )  goto iwad_failure;
+        if ( access(pathiwad, R_OK) < 0 )
+	{
+	    I_SoftError("IWAD %s not found\n", pathiwad);
+	    goto fatal_err;
+	}
 
 	char *filename = FIL_Filename_of( pathiwad );
         if ( gamedesc_index == NUM_GDESC ) // check forcing switch
@@ -1617,14 +1630,18 @@ void IdentifyVersion()
     }
     if( gamedesc.support_wad )
        D_AddFile( gamedesc.support_wad );
+
 cleanup_ret:
     free(legacywad);  // from strdup, free local copy of name
     return;
    
-iwad_failure:
-    I_SoftError("IWAD %s not found\n", pathiwad);
 fatal_err:
-    D_AddFile(legacywad);  // To prevent additional errors.
+    if( legacywad )
+    {
+        // [WDJ] Load legacywad if possible, because it contains parts of the
+        // user interface, and there will misleading errors.
+        D_AddFile(legacywad);  // To prevent additional errors.
+    }
     fatal_error = 1;
     goto cleanup_ret;
 }
@@ -1968,9 +1985,15 @@ restart_command:
 #ifdef LAUNCHER
         byte   userhome_parm = 0;
 #endif
-        if (M_CheckParm("-home") && M_IsNextParm())
+        if (M_CheckParm("-home"))
         {
             userhome = M_GetNextParm();
+	    if( userhome == NULL )
+	    {
+	        I_SoftError( "Switch  -home <directory>\n" );
+	        userhome = "";
+	        fatal_error = 1;
+	    }
 #ifdef LAUNCHER
             userhome_parm = 1;
 #endif
@@ -1999,7 +2022,7 @@ restart_command:
 #ifdef LAUNCHER       
         if( ! userhome_parm || init_sequence == 0 )
         {
-	    // save the input userhome for the Laucher, unless it came from -home
+	    // Save the input userhome for the Launcher, unless it came from -home.
 	    CV_Set( &cv_home, userhome );
 	    cv_home.flags &= ~CV_MODIFIED;
 	}
@@ -2475,7 +2498,14 @@ restart_command:
     if (M_CheckParm("-timer"))
     {
         char *s = M_GetNextParm();
-        COM_BufAddText(va("timelimit %s\n", s));
+        if( s == NULL )
+        {
+	    I_SoftError( "Switch  -timer <seconds>\n" );
+	}
+        else
+        {
+	    COM_BufAddText(va("timelimit %s\n", s));
+	}
     }
 
     if (M_CheckParm("-avg"))
@@ -2486,8 +2516,17 @@ restart_command:
 
     // turbo option, is not meant to be saved in config, still
     // supported at cmd-line for compatibility
-    if (M_CheckParm("-turbo") && M_IsNextParm())
-        COM_BufAddText(va("turbo %s\n", M_GetNextParm()));
+   if (M_CheckParm("-turbo"))
+    {
+        if( M_IsNextParm() )
+        {
+	    COM_BufAddText(va("turbo %s\n", M_GetNextParm()));
+	}
+	else
+        {
+	    I_SoftError( "Switch  -turbo <10-255>\n" );
+	}
+    }
 
     // push all "+" parameter at the command buffer
     M_PushSpecialParameters();
@@ -2549,8 +2588,14 @@ restart_command:
     p = M_CheckParm("-playdemo");
     if (!p)
         p = M_CheckParm("-timedemo");
-    if (p && M_IsNextParm())
+    if (p)
     {
+      if( ! M_IsNextParm() )
+      {
+	I_SoftError( "Switch  -playdemo <name>  or  -timedemo <name> \n" );
+      }
+      else
+      {
         char demo_name[MAX_WADPATH];  // filename
         // add .lmp to identify the EXTERNAL demo file
         // it is NOT possible to play an internal demo using -playdemo,
@@ -2584,6 +2629,7 @@ restart_command:
         gamestate = wipegamestate = GS_NULL;
 
         return;
+      }
     }
 
     p = M_CheckParm("-loadgame");
