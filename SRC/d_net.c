@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
+// $Id: d_net.c 1146 2015-04-03 13:48:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -84,14 +84,14 @@
 // normaly maketic>=gametic>0,
 
 #define FORCECLOSE         0x8000
-#define CONNECTIONTIMEOUT  (15*TICRATE)
+#define CONNECTION_TIMEOUT  (15*TICRATE)
 
-doomcom_t*  doomcom;
-netbuffer_t* netbuffer;        // points inside doomcom
+doomcom_t*  doomcom = NULL;
+netbuffer_t* netbuffer = NULL;  // points inside doomcom
 
 #ifdef DEBUGFILE
-FILE*       debugfile=NULL;        // put some net info in a file
-                              // during the game
+// Debug of some net info into a file, during the game.
+FILE*       debugfile = NULL;
 #endif
 
 // Rebound queue, self server to self client network.
@@ -100,6 +100,7 @@ static netbuffer_t reboundstore[MAXREBOUND];
 static uint16_t    reboundsize[MAXREBOUND];
 static int         rebound_head,rebound_tail;
 
+// Network interfaces (i_net.h)
 uint32_t    net_bandwidth;
 uint16_t    hardware_MAXPACKETLENGTH;
 
@@ -111,6 +112,26 @@ void    (*I_NetFreeNodenum) (int nodenum);
 int     (*I_NetMakeNode) (char *address);
 boolean (*I_NetOpenSocket) (void);
 
+// ---- Internal network, for single player game.
+
+void Internal_Get(void)
+{
+    doomcom->remotenode = -1;
+    // I_Error("Get without netgame\n");
+}
+
+void Internal_Send(void)
+{
+     I_SoftError("Send without netgame\n");
+}
+
+void Internal_FreeNodenum(int nodenum)
+{
+}
+
+// --- Network statistics
+
+int    net_packetheader_length;
 
 // Network stats.
 tic_t   stat_starttic;      // tic of start of stat interval
@@ -127,8 +148,6 @@ int     stat_tic_miss = 0;   // tics moved that are missing TICCMD_RECEIVED
 int    netstat_recv_bps, netstat_send_bps;
 float  netstat_lost_percent, netstat_dup_percent;  // packets
 float  netstat_gamelost_percent;  // tics lost
-
-int    net_packetheader_length;
 
 // Return true when stats have been updated.
 boolean Net_GetNetStat(void)
@@ -166,62 +185,99 @@ boolean Net_GetNetStat(void)
 }
 
 // -----------------------------------------------------------------
-//  Some stuct and function for acknowledgment of packets
+//  Some stuct and function of ACK packets
 // -----------------------------------------------------------------
-#define MAXACKPACKETS    64 // minimum number of nodes
+// Network Rules:
+// When a packet with an ack_req number is received, it is acknowledged
+// by returning that acknum in a later message to the same net node.
+// If this is not done, the sender will resend, or eventually conclude
+// that the connection has been lost.
+// A regular packet has room for one ack_return.  There is also a
+// special packet that can send the whole ack queue to a node.
+// An acknum is 1..255.  An acknum==0 represents no ACK.
+// The acknum for each net node are independent.
+// Due to the cmpack comparison method, the waiting ack are limited to a
+// range of 128.  Any compared ack values must be within +/-128.
+
+// The net node num (nnode) are internal to the Doom program communications.
+// Net node num are 1..MAXNETNODES, 0=myself, limited to 255 (byte).
+
+// Max ack packets that can be saved.  Must exceed the max number of net nodes.
+#define MAXACKPACKETS    64
+#if ( MAXACKPACKETS <= MAXNETNODES )
+# error Required: MAXACKPACKETS > MAXNETNODES
+#endif
+
+// Max number of acks to queue for return.
 #define MAXACKTOSEND     64
-#define URGENTFREESLOTENUM   6
-#define ACKTOSENDTIMEOUT  (TICRATE/17)
+#define URGENT_ACK_FREE_MIN   6
+#define ACK_TIMEOUT  (TICRATE/17)
+
+// An aid to traverse a circular ACK queue.
+#define ACKTOSEND_DEC( ats )  (((ats)+(MAXACKTOSEND-1))%MAXACKTOSEND)
+#define ACKTOSEND_INC( ats )  (((ats)+1)%MAXACKTOSEND)
+
+// INC the acknum, not using 0 which is not an ACK.
+#define ACK_INC_STMT( akn )   if( (++(akn))==0 )  (akn)=1
+#define ACK_DEC_STMT( akn )   if( (--(akn))==0 )  --(akn)
+
+
 
 typedef struct {
   byte   acknum;
-  byte   nextacknum;
-  byte   destinationnode;
+  byte   acknum_at_xmit;  // the current acknum at transmit, and re-transmit.
+  byte   destination_node;  // dest of the packet
+  byte   resent_cnt;  // num times has been resent (0..10)
   tic_t  senttime;
-  USHORT length;
-  USHORT resentnum; 
-  char   pak[MAXPACKETLENGTH];
+  uint16_t  length;
+  byte   pak[MAXPACKETLENGTH];  // the packet, for retransmission
 } ackpak_t;
 
 typedef enum {
-    CLOSE  = 1,    // flag is set when connection is closing
+    NODE_CLOSE  = 1,    // flag is set when connection is closing
 } node_flags_t;
 
-// table of packet that was not acknowleged can be resend (the sender window)
+// Table of packets that are waiting for ACK, or to be sent again.
+// Can be resent (the sender window).
 static ackpak_t ackpak[MAXACKPACKETS];
 
+// Node history and ack status.
 typedef struct {
-    // ack return to send (like slinding window protocol)
-    byte  firstacktosend;
+    // The next ack to return (like slinding window protocol)
+    // All outstanding ack less than it will also be considered ACK-ed.
+    byte  return_ack;  // an acknum from a previous msg (0=none)
 
-    // when no consecutive packet are received we keep in mind what packet 
-    // we already received in a queu 
-    byte  acktosend_head;
-    byte  acktosend_tail;
+    // Queue of ACK that must be returned (tail..(head-1)).
+    // Required when packets are not consecutive.
+    // Queue is empty when head=tail. Full when (head+1=tail).
+    byte  acktosend_head;  // index to acktosend, next insert
+    byte  acktosend_tail;  // index to acktosend, oldest acknum
     byte  acktosend[MAXACKTOSEND];
+   
+    // Send packets with an ack request (reliable).
+    byte  next_ackreq_num;  // the next ack_req to use
+    // Flow control : to not send too many packets for ack
+    byte  remote_prev_ack;  // the last ack return received from the net node
 
-    // automaticaly send keep alive packet when not enought trafic
-    tic_t lasttimeacktosend_sent;
-    // detect connection lost
-    tic_t lasttimepacketreceived;
+    // Automatically send ack packet when not enough traffic (keep alive).
+    tic_t lasttime_ack_returned;
+    // Detect connection lost.
+    tic_t lasttime_packet_received;
     
-    // flow control : do not sent to mush packet with ack 
-    byte  remotefirstack;
-    byte  nextacknum;
-
-    
-    byte   flags;
+    byte   flags;   // from node_flags_t
 // jacobson tcp timeout evaluation algorithm (Karn variation)
     fixed_t ping;
     fixed_t varping;
     int     timeout;   // computed with ping and varping
-} node_t;
+} netnode_t;
 
-static node_t nodes[MAXNETNODES];
+static netnode_t net_nodes[MAXNETNODES];
+
+#define  NET_NODE_NUM( nnode )   ( nnode - net_nodes )
 
 #define  PINGDEFAULT     ((200*TICRATE*FRACUNIT)/1000)
 #define  VARPINGDEFAULT  ( (50*TICRATE*FRACUNIT)/1000)
-#define  TIMEOUT(p,v)    (p+4*v+FRACUNIT/2)>>FRACBITS;
+#define  PING_TIMEOUT(p,v)    ((p)+(4*(v))+(FRACUNIT/2))>>FRACBITS;
 
 // return <0 if a<b (mod 256)
 //         0 if a=n (mod 256)
@@ -236,384 +292,535 @@ static int cmpack(byte a,byte b)
     return d;
 }
 
-// return a free acknum and copy netbuffer in the ackpak table
-static boolean GetFreeAcknum(byte *freeack, boolean lowtimer)
+// Save the netbuffer packet in the ackpak table.
+//   lowtimer : delayed sending
+// Return the assigned acknum.
+// Return 0 when fails.
+static byte Save_packet_acknum( boolean lowtimer )
 {
-   node_t *node=&nodes[doomcom->remotenode];
-   int i,numfreeslote=0;
+   boolean  low_priority = (netbuffer->packettype >= PT_CANFAIL); // low priority
+   int num_freeslot=0;
+   ackpak_t * ackpakp;
+   byte rnode = doomcom->remotenode;
+   netnode_t * np = & net_nodes[doomcom->remotenode];
 
-   if(cmpack((node->remotefirstack+MAXACKTOSEND) % 256,node->nextacknum)<0)
-   {
-       DEBFILE(va("too fast %d %d\n",node->remotefirstack,node->nextacknum));
-       return false;
-   }
+   // Flow control to avoid ack limitations.
+   if(cmpack((byte)(np->remote_prev_ack+MAXACKTOSEND), np->next_ackreq_num) < 0)
+       goto  too_fast;  // outstanding ack approaching limit of queue
 
-   for(i=0;i<MAXACKPACKETS;i++)
+   for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
    {
-       if(ackpak[i].acknum==0)
+       // Visit unused ackpak.
+       if(ackpakp->acknum==0)
        {
-           // for low priority packet, make sure let freeslotes so urgents packets can be sent
-           numfreeslote++;
-           if( netbuffer->packettype >= PT_CANFAIL && numfreeslote<URGENTFREESLOTENUM)
-               continue;
+	   // Found an unused ackpak.
+           if( low_priority )
+	   {
+	      // For low priority packet, make sure to leave some ackpak
+	      // free so urgent packets can be sent.
+	      num_freeslot++;
+	      if( num_freeslot < URGENT_ACK_FREE_MIN )
+		continue;  // skip, until have enough free ackpak
+	   }
 
-           ackpak[i].acknum=node->nextacknum;
-           ackpak[i].nextacknum=node->nextacknum;
-           node->nextacknum++;
-           if( node->nextacknum==0 )
-               node->nextacknum++;
-           ackpak[i].destinationnode=node-nodes;
-           ackpak[i].length=doomcom->datalength;
+	   // Save the packet and issue an acknum.
+           ackpakp->acknum = np->next_ackreq_num;
+           ackpakp->acknum_at_xmit = np->next_ackreq_num;  // first transmit
+	   ACK_INC_STMT( np->next_ackreq_num ); // skip acknum 0
+           ackpakp->destination_node = rnode;
+           ackpakp->length = doomcom->datalength;
+
            if(lowtimer)
            {
-               // lowtime mean can't be sent now so try it soon as possible
-               ackpak[i].senttime=0;
-               ackpak[i].resentnum = 1;
+               // lowtimer means it can't be sent now so try it soon as possible
+               ackpakp->senttime = 0;
+               ackpakp->resent_cnt = 1;
            }
            else
            {
-               ackpak[i].senttime=I_GetTime();
-               ackpak[i].resentnum = 0;
+               ackpakp->senttime = I_GetTime();
+               ackpakp->resent_cnt = 0;
            }
-           memcpy(ackpak[i].pak,netbuffer,ackpak[i].length);
-           
-           *freeack=ackpak[i].acknum;
-           
+           memcpy(ackpakp->pak, netbuffer, ackpakp->length);
+
            stat_ackpacket_sent++; // for stat
-           
-           return true;
+
+           return ackpakp->acknum;  // return the acknum
        }
    }
+   // Did not find free ackpacket.
 #ifdef PARANOIA
    if( devparm )
        CONS_Printf("No more free ackpacket\n");
 #endif
-   if( netbuffer->packettype < PT_CANFAIL )
-       I_Error("Connection lost\n");
+   // FIXME: wrong message or wrong place for this message.
+   if( netbuffer->packettype < PT_CANFAIL )  // high priority
+   {
+       I_SoftError("Connection lost\n");
+   }
+   return 0;
+
+   // Rare errors.
+too_fast:   
+   DEBFILE(va("Node %: too fast %d %d\n",
+	      rnode, np->remote_prev_ack, np->next_ackreq_num));
+   // Fail to send, to avoid overrunning dest buffers.
+   goto ret_fail;
+
+ret_fail:
+   return 0;
+}
+
+// Get the ack to send, from the ack queue of this node.
+static byte Get_return_ack(int nnode)
+{
+    net_nodes[nnode].lasttime_ack_returned = I_GetTime();
+    return net_nodes[nnode].return_ack;
+}
+
+// Dispense with any packet that has been waiting for this ACK.
+//  ackpakp : the ackpak to be removed
+// Called when have received an ack from the net node.
+static void Remove_ackpak( ackpak_t * ackpakp )
+{
+    byte dnode = ackpakp->destination_node;
+    netnode_t * dnp = & net_nodes[dnode];  // dest node of the ackpak
+
+    // Stats
+    fixed_t trueping = (I_GetTime() - ackpakp->senttime) << FRACBITS;
+
+    if( ackpakp->resent_cnt )
+    {
+        // +FRACUNIT/2 for round
+        dnp->ping = (dnp->ping*7 + trueping)/8;
+        dnp->varping = (dnp->varping*7 + abs(dnp->ping - trueping))/8;
+        dnp->timeout = PING_TIMEOUT(dnp->ping, dnp->varping);
+    }
+    DEBFILE(va("Remove ack %d  trueping %d  ping %f  var %f  timeout %d\n",
+	       ackpakp->acknum, trueping>>FRACBITS,
+	       FIXED_TO_FLOAT(dnp->ping), FIXED_TO_FLOAT(dnp->varping),
+	       dnp->timeout));
+
+    ackpakp->acknum=0;  // ackpak is now idle
+
+    if( dnp->flags & NODE_CLOSE )
+    {
+        // Marked to close when all ACK have been settled.
+        Net_CloseConnection( dnode );
+    }
+}
+
+// We have got a packet, proceed with the ack request and ack return.
+// Return false when acknum indicates it is a duplicate packet.
+static boolean Process_packet_ack()
+{
+    int ati;  // acktosend index
+    ackpak_t * ackpakp;
+    byte acknum;
+    byte nxtack;  // ACK are 1..255, circular
+    byte rnode = doomcom->remotenode;  // net node num
+    netnode_t * np = & net_nodes[doomcom->remotenode];
+
+    // Only process an ack return if it is greater than the previous ack.
+    if(netbuffer->ack_return
+       && cmpack(np->remote_prev_ack, netbuffer->ack_return) < 0)
+    {
+        // Received an ack_return, remove the ack from the ackpak.
+        np->remote_prev_ack = netbuffer->ack_return;
+        // Search the ackbuffer for net node and free it.
+        for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
+        {
+	    // Remove all ackpak waiting for acknum that are <= ack_return.
+            if( ackpakp->acknum
+		&& ackpakp->destination_node == rnode
+		&& cmpack(ackpakp->acknum, netbuffer->ack_return) <= 0 )
+	    {
+                Remove_ackpak( ackpakp );
+	    }
+	}
+    }
+
+    if( netbuffer->ack_req )
+    {
+        // Received a packet with ack_req, put it in queue to send the ack back.
+        acknum = netbuffer->ack_req;
+        stat_ackpacket_recv++;
+        if( cmpack(acknum, np->return_ack) <= 0 )
+	    goto dup_by_range;
+
+        // Check if the acknum is already in the queue.
+        // Check active queue, tail..(head-1).
+        for(ati = np->acktosend_tail;
+	    ati != np->acktosend_head;
+	    ati = ACKTOSEND_INC(ati)   )
+        {
+	    if(np->acktosend[ati] == acknum)   goto dup_ackpak_found;
+        }
+      
+        // Is a good packet so update the queue and return_ack.
+        // Must search for holes in the queue.
+        // Can only return ack when all previous ack have been received.
+	
+        // A missing acknum in the queue indicates a missing packet.
+        // Higher acknum will be blocked waiting for them.
+        // Because of this, received ack will not remove ack queue
+        // entries until return_ack is greater.
+
+        // Find next return_ack.
+        nxtack = np->return_ack;
+        ACK_INC_STMT( nxtack ); // skip acknum 0
+
+        if(acknum == nxtack)
+        {
+	    // This packet is next in order, which allows for ack cleanup.
+	    byte hm1; // head-1
+	    boolean change=true;
+
+	    np->return_ack = nxtack;
+	    ACK_INC_STMT( nxtack ); // skip acknum 0
+
+	    hm1 = ACKTOSEND_DEC( np->acktosend_head );  // latest queue entry
+	    // Find which ackpak can be ACK by return_ack.
+	    while(change)
+	    {
+	        change=false;
+	        // Search queue tail..(head-1)
+		// Find each acknum in seq.  Must deal with missing ack.
+	        for( ati = np->acktosend_tail;
+		     ati != np->acktosend_head;
+		     ati= ACKTOSEND_INC(ati)   )
+	        {
+		    if( cmpack(np->acktosend[ati],nxtack) <= 0 )
+		    {
+		        // Older acknum that is covered by this ack.
+		        if( np->acktosend[ati]==nxtack )
+		        {
+			    // Found the next acknum.
+			    // ACK this packet, and all older acknum.
+			    np->return_ack = nxtack;
+			    ACK_INC_STMT( nxtack ); // skip acknum 0
+			    change=true;
+			    // The ack will only be released if it is at the
+			    // tail or head of the queue.
+			}
+		        // The queue is in order of arrival of ack_req,
+			// which will not always be acknum ordered.
+			// All acknum less than nxtack will be considered
+			// ACK-ed by the current return_ack.  This also
+			// catches out-of-order ack_req.
+		        if( ati == np->acktosend_tail )
+		        {
+			    // Release the covered acknum at the tail.
+			    np->acktosend[np->acktosend_tail] = 0;
+			    np->acktosend_tail = ACKTOSEND_INC(ati);
+			}
+		        else if( ati == hm1 )
+		        {
+			    // Release the latest queue entry.
+			    np->acktosend[hm1] = 0;
+			    np->acktosend_head = hm1;  // move queue head
+			    hm1 = ACKTOSEND_DEC( hm1 );
+			    break;  // this was last checkable queue entry
+			}
+		        // Putting holes in the queue would interfere with
+			// the cmpack test, which cannot handle 0.  It would
+			// not save any queue space unless entries were moved.
+		    }
+		}
+	    }
+	}
+        else
+        {   // Out of order packet ( acknum != nxtack ).
+	    // Do not update the return_ack.
+	    // Put this ack in asktosend queue.
+	    // return_ack will be incremented when the next ack comes.
+	    byte newhead = ACKTOSEND_INC(np->acktosend_head);
+	    DEBFILE(va("Out of order packet: expected %d\n", nxtack));
+	    if(newhead == np->acktosend_tail)  goto queue_full;
+
+	    np->acktosend[np->acktosend_head] = acknum;
+	    np->acktosend_head = newhead;
+	}
+    }
+    return true;
+   
+queue_full:
+    // The ack queue is full. Discard the packet, sender will resend it.
+    // If we admit the packet we will not detect the duplication after :(
+    DEBFILE("Ack Queue full.\n");
+    return false;
+
+dup_by_range:
+   // Any acknum < return_ack have already been considered ACK-ed.
+   // Duplicate packet (per ack_req).
+   DEBFILE(va("Discard (by range) ack %d (duplicated)\n", acknum));
+   goto dup_reject;
+
+dup_ackpak_found:	      
+   // Already received, ack is in the queue.
+   DEBFILE(va("Discard ack %d (duplicated)\n", acknum));
+   goto dup_reject;
+
+dup_reject:
+   stat_duppacket++;
+   // Discard the packet (duplicate)
    return false;
 }
 
-// Get a ack to send in the queu of this node
-static byte GetAcktosend(int node)
+
+// Send a special packet with only the ack queue.
+void Net_Send_AcksPacket(int to_node)
 {
-    nodes[node].lasttimeacktosend_sent = I_GetTime();
-    return nodes[node].firstacktosend;
-}
-
-static void Removeack(int i)
-{
-    int node=ackpak[i].destinationnode;
-    fixed_t trueping=(I_GetTime()-ackpak[i].senttime)<<FRACBITS;
-    if( ackpak[i].resentnum )
-    {
-        // +FRACUNIT/2 for round
-        nodes[node].ping = (nodes[node].ping*7 + trueping)/8;
-        nodes[node].varping = (nodes[node].varping*7 + abs(nodes[node].ping-trueping))/8;
-        nodes[node].timeout = TIMEOUT(nodes[node].ping,nodes[node].varping);
-    }
-    DEBFILE(va("Remove ack %d trueping %d ping %f var %f timeout %d\n",ackpak[i].acknum,trueping>>FRACBITS,FIXED_TO_FLOAT(nodes[node].ping),FIXED_TO_FLOAT(nodes[node].varping),nodes[node].timeout));
-    ackpak[i].acknum=0;
-    if( nodes[node].flags & CLOSE )
-        Net_CloseConnection( node );
-}
-
-// we have got a packet proceed the ack request and ack return
-static boolean inline Processackpak()
-{
-   int i;
-   boolean goodpacket=true;
-   node_t *node=&nodes[doomcom->remotenode];
-
-// received a ack return remove the ack in the list
-   if(netbuffer->ack_return && cmpack(node->remotefirstack,netbuffer->ack_return)<0)
-   {
-       node->remotefirstack=netbuffer->ack_return;
-       // search the ackbuffer and free it
-       for(i=0;i<MAXACKPACKETS;i++)
-       {
-           if( ackpak[i].acknum &&
-               ackpak[i].destinationnode==node-nodes &&
-               cmpack(ackpak[i].acknum,netbuffer->ack_return)<=0 )
-	   {
-               Removeack(i);
-	   }
-       }
-   }
-
-// received a packet with ack put it in to queue for send the ack back
-   if( netbuffer->ack_req )
-   {
-       byte ack=netbuffer->ack_req;
-        stat_ackpacket_recv++;
-       if( cmpack(ack,node->firstacktosend)<=0 )
-       {
-           DEBFILE(va("Discard(1) ack %d (duplicated)\n",ack));
-           stat_duppacket++;
-           goodpacket=false; // discard packet (duplicat)
-       }
-       else
-       {
-           // check if it is not allready in the queue
-           for(i =node->acktosend_tail;
-               i!=node->acktosend_head;
-               i =(i+1)%MAXACKTOSEND    )
-               if(node->acktosend[i]==ack)
-               {
-                   DEBFILE(va("Discard(2) ack %d (duplicated)\n",ack));
-                   stat_duppacket++;
-                   goodpacket=false; // discard packet (duplicat)
-                   break;
-               }
-           if( goodpacket )
-           {
-               // is a good packet so increment the acknoledge number,then search a "hole" in the queue
-               byte nextfirstack=node->firstacktosend+1;
-               if(nextfirstack==0) nextfirstack=1;
-
-               if(ack==nextfirstack)
-               { 
-                   byte hm1; // head-1
-                   boolean change=true;
-
-                   node->firstacktosend=nextfirstack++;
-                   if(nextfirstack==0) nextfirstack=1;
-                   hm1=(node->acktosend_head-1+MAXACKTOSEND)%MAXACKTOSEND;
-                   while(change)
-                   {
-                       change=false;
-                       for( i=node->acktosend_tail;i!=node->acktosend_head;i=(i+1)%MAXACKTOSEND)
-		       {
-                           if( cmpack(node->acktosend[i],nextfirstack)<=0 )
-                           {
-                               if( node->acktosend[i]==nextfirstack )
-                               {
-                                   node->firstacktosend=nextfirstack++;
-                                   if(nextfirstack==0) nextfirstack=1;
-                                   change=true;
-                               }
-                               if( i==node->acktosend_tail )
-                               {
-                                   node->acktosend[node->acktosend_tail] = 0;
-                                   node->acktosend_tail = (i+1)%MAXACKTOSEND;
-                               }
-                               else
-			       {
-                                   if( i==hm1 )
-                                   {
-                                       node->acktosend[hm1] = 0;
-                                       node->acktosend_head = hm1;
-                                       hm1=(hm1-1+MAXACKTOSEND)%MAXACKTOSEND; 
-                                   }
-			       }
-                           }
-		       }
-                   }
-               }
-               else
-               { // out of order packet
-                 // don't increment firsacktosend, put it in asktosend queue
-                   // will be incremented when the nextfirstack come (code above)
-                   byte newhead=(node->acktosend_head+1)%MAXACKTOSEND;
-                   DEBFILE(va("out of order packet (%d expected)\n",nextfirstack));
-                   if(newhead != node->acktosend_tail)
-                   {
-                       node->acktosend[node->acktosend_head]=ack;
-                       node->acktosend_head = newhead;
-                   }
-                   else // buffer full discard packet, sender will resend it
-                       // remark that we can admit the packet but we will not detect the duplication after :(
-                   {
-                       DEBFILE("no more freeackret\n");
-                       goodpacket=false;
-                   }
-               }
-           }
-       }
-   }
-   return goodpacket;
-}
-
-// send special packet with only ack on it
-extern void Net_SendAcks(int node)
-{
+    // Send an packet with the ack queue.
+    // FIXME: this should have its own packet type.
     netbuffer->packettype = PT_NOTHING;
-    memcpy(netbuffer->u.textcmd,nodes[node].acktosend,MAXACKTOSEND);
-    HSendPacket(node,false,0,MAXACKTOSEND);
+    memcpy(netbuffer->u.textcmd, net_nodes[to_node].acktosend, MAXACKTOSEND);
+    HSendPacket(to_node,false,0,MAXACKTOSEND);
 }
 
-static void GotAcks(void)
+// Receive the special packet with only acks.
+static void Got_AcksPacket(void)
 {
-    int i,j;
+    int j;
+    byte rnode = doomcom->remotenode;
+    byte recv_acknum;  // acknum from the packet
+    ackpak_t * ackpakp;
 
+    // The body of the packet is the ack queue.
     for(j=0;j<MAXACKTOSEND;j++)
     {
-        if( netbuffer->u.textcmd[j] )
+        recv_acknum = netbuffer->u.textcmd[j];  // from the queue in the packet
+        if( recv_acknum == 0 )  continue;  // 0=invalid
+
+        // Find recv_acknum in our ack packets queue.
+	// Without regards to queue head or tail.
+        for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
         {
-           for(i=0;i<MAXACKPACKETS;i++)
-	   {
-               if( ackpak[i].acknum && 
-                   ackpak[i].destinationnode==doomcom->remotenode)
-               {
-                   if( ackpak[i].acknum==netbuffer->u.textcmd[j])
-                       Removeack(i);
-                   else
-                   // nextacknum is first equal to acknum, then when receiving bigger ack
-                   // there is big chance the packet is lost
-                   // when resent, nextacknum=nodes[node].nextacknum this will redo the same but with differant value
-                   if( cmpack(ackpak[i].nextacknum,netbuffer->u.textcmd[j])<=0 && ackpak[i].senttime>0)
-                       ackpak[i].senttime--; // hurry up
-               }
-	   }
+	    if( ackpakp->acknum
+		&& ackpakp->destination_node == rnode)
+	    {
+	        if( ackpakp->acknum == recv_acknum )
+	        {
+		    // Dispense with any packets that have been ACK'ed.
+		    Remove_ackpak( ackpakp );
+		}
+	        else
+	        {
+		    // As later acknum are received there is bigger
+		    // chance a packet is lost.
+		    // When the packet is first transmitted, or resent,
+		    // acknum_at_xmit is updated to the
+		    // net_nodes[rnode].next_ackreq_num.
+		    if( cmpack(ackpakp->acknum_at_xmit, recv_acknum) <= 0 )
+		    {
+		        // Will cause sooner retransmits of older packets
+		        // as the packet's acknum age.
+		        if( ackpakp->senttime > 0 )
+			    ackpakp->senttime--; // hurry up
+		    }
+		}
+	    }
 	}
     }
 }
 
-void Net_ConnectionTimeout( int node )
+
+void Net_ConnectionTimeout( int nnode )
 {
-    // send a very special packet to self (hack the reboundstore queu)
-    // main code will handle it
-    reboundstore[rebound_head].packettype = PT_NODE_TIMEOUT;
-    reboundstore[rebound_head].ack_req = 0;
-    reboundstore[rebound_head].ack_return = 0;
-    reboundstore[rebound_head].u.textcmd[0] = node;
+    netbuffer_t * rebp = & reboundstore[rebound_head];
+    // Send a very special packet to self (hack the reboundstore queu).
+    // Main code will handle it.
+    rebp->packettype = PT_NODE_TIMEOUT;
+    rebp->ack_req = 0;
+    rebp->ack_return = 0;
+    rebp->u.textcmd[0] = nnode;
     reboundsize[rebound_head] = PACKET_BASE_SIZE+1;
     rebound_head=(rebound_head+1)%MAXREBOUND;
 
     // do not redo it quickly (if we do not close connection is for a good reason !)
-    nodes[node].lasttimepacketreceived = I_GetTime();
+    net_nodes[nnode].lasttime_packet_received = I_GetTime();
 }
 
-// resend the data if needed
-extern void Net_AckTicker(void)
+// Resend some packets, if needed.
+void Net_AckTicker(void)
 {
-    int i;
+    int nn;  // net node num
+    // Get the time once.  It does not change that fast, and this
+    // keeps the record times consistent in this function. 
+    tic_t  curtime = I_GetTime();
+    ackpak_t * ackpakp;
+    netnode_t * np;
 
-    for(i=0;i<MAXACKPACKETS;i++)
+    // Check all ackpak for old packets.
+    for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
     {
-        node_t *node=&nodes[ackpak[i].destinationnode];
-        if(ackpak[i].acknum)
-        {
-            if(ackpak[i].senttime+node->timeout<I_GetTime())
-            {
-	        // Need to retransmit
-                if( ackpak[i].resentnum > 10 && (node->flags & CLOSE) )
-                {
-                    DEBFILE(va("ack %d sent 20 time so connection is supposed lost : node %d\n",i,node-nodes));
-                    Net_CloseConnection( (node-nodes) | FORCECLOSE);
+        if(ackpakp->acknum == 0)  continue;  // 0=inactive
 
-                    ackpak[i].acknum = 0;
-                    continue;
-                }
-	        // Retransmit
-                DEBFILE(va("Resend ack %d, %d<%d\n",ackpak[i].acknum,
-                           ackpak[i].senttime,
-                           node->timeout,
-                           I_GetTime()));
-                memcpy(netbuffer,ackpak[i].pak,ackpak[i].length);
-                ackpak[i].senttime=I_GetTime();
-                ackpak[i].resentnum++;
-                ackpak[i].nextacknum=node->nextacknum;
-                stat_retransmits++; // for stat
-                HSendPacket(node-nodes,false,ackpak[i].acknum,ackpak[i].length-PACKET_BASE_SIZE);
-            }
+        // An active ackpak.
+        np = & net_nodes[ackpakp->destination_node];
+        if((ackpakp->senttime + np->timeout) >= curtime)  continue;
+
+        // Need to retransmit
+        nn = ackpakp->destination_node;
+        if( (ackpakp->resent_cnt > 10) && (np->flags & NODE_CLOSE) )
+        {
+	    DEBFILE(va("Node %d: ack %d sent 10 times so connection is supposed lost\n",
+		       nn, ackpakp->acknum));
+	    Net_CloseConnection( nn | FORCECLOSE );
+
+	    ackpakp->acknum = 0;  // inactive
+	    continue;
 	}
+
+        // Retransmit
+        DEBFILE(va("Node %d: Resend ack %d, %d+%d<%d\n", nn,
+		   ackpakp->acknum, ackpakp->senttime, np->timeout, curtime));
+        memcpy(netbuffer, ackpakp->pak, ackpakp->length);
+        ackpakp->senttime = curtime;
+        ackpakp->resent_cnt++;
+        ackpakp->acknum_at_xmit = np->next_ackreq_num;
+        HSendPacket( nn, false, ackpakp->acknum,
+		     ackpakp->length - PACKET_BASE_SIZE );
+        stat_retransmits++; // for stat
     }
 
-    for(i=1;i<MAXNETNODES;i++)
+    for( nn=1; nn<MAXNETNODES; nn++)
     {
-        // this is something like node open flag
-        if( nodes[i].firstacktosend )
+        np = & net_nodes[nn];
+        // Using this something like a node open flag.
+        if( np->return_ack )
         {
-            // we haven't sent a packet since long time acknoledge packet if needed
-            if( nodes[i].lasttimeacktosend_sent + ACKTOSENDTIMEOUT < I_GetTime() )
-                Net_SendAcks(i);
+            // If we haven't sent a packet for a long time,
+	    // send acknowledge packets if needed.
+            if( (np->lasttime_ack_returned + ACK_TIMEOUT) < curtime )
+                Net_Send_AcksPacket(nn);
 
-            if( (nodes[i].flags & CLOSE) == 0 && 
-                nodes[i].lasttimepacketreceived + CONNECTIONTIMEOUT < I_GetTime() )
+            if( (np->lasttime_packet_received + CONNECTION_TIMEOUT) < curtime
+		&& (np->flags & NODE_CLOSE) == 0 )
 	    {
-                Net_ConnectionTimeout( i );
+                Net_ConnectionTimeout( nn );
 	    }
         }
     }
 }
 
-// remove last packet received ack before the resend the ackret
-// (the higer layer don't have room, or something else ....)
-void Net_Cancel_Packet_Ack(int node)  // nnode
+
+// Cancel the ack of the last packet received.  This forces the net node
+// to resend it.  This is an escape when the higher layer don't have room,
+// or something else ....)
+void Net_Cancel_Packet_Ack(int nnode)
 {
-    int hm1=(nodes[node].acktosend_head-1+MAXACKTOSEND)%MAXACKTOSEND;
-    DEBFILE(va("UnAcknowledg node %d\n",node));
-    if(!node)
-        return;
-    if( nodes[node].acktosend[hm1] == netbuffer->ack_req )
+    netnode_t * np;
+    int hm1;
+    byte nxtack;
+    byte cancel_acknum = netbuffer->ack_req;  // acknum to cancel
+
+    DEBFILE(va("UnAck node %d\n",nnode));
+
+    if(!nnode)
+        return;  // net node 0 is self
+    if(cancel_acknum==0)
+        return;  // cannot cancel acknum==0
+
+    np = & net_nodes[nnode];
+    nxtack = np->return_ack;
+    hm1 = ACKTOSEND_DEC( np->acktosend_head );  // last entry
+    if( np->acktosend[hm1] == cancel_acknum )
     {
-        nodes[node].acktosend[hm1] = 0;
-        nodes[node].acktosend_head = hm1;
+        // Remove canceled ack from the queue head.
+        np->acktosend[hm1] = 0;
+        np->acktosend_head = hm1;
     }
     else
-    if( nodes[node].firstacktosend == netbuffer->ack_req )
+#if 0
+    // This is unneeded as it is a subset of the next case.
+    if( nxtack == cancel_acknum )
     {
-        nodes[node].firstacktosend--;
-        if( nodes[node].firstacktosend==0 )
-            nodes[node].firstacktosend--;
+        // Only one ack needs to be undone.
+        ACK_DEC_STMT( nxtack );
+        np->return_ack = nxtack;
     }
     else
+#endif   
     {
-        while (nodes[node].firstacktosend!=netbuffer->ack_req)
+        // Put at the queue tail, all the intervening ack num.
+	// If nxtack==cancel_acknum already, then only the return_ack needs
+        // to updated.
+	// Leaving a hole in the queue would indicate missing packets, and it
+        // would wait for them, never sending the later ACK.
+	// This assumes they all fit, since they were just all removed.
+	// The canceled acknum must NOT be put in the queue.
+        while (nxtack != cancel_acknum)
         {
-            nodes[node].acktosend_tail = (nodes[node].acktosend_tail-1+MAXACKTOSEND)%MAXACKTOSEND;
-            nodes[node].acktosend[nodes[node].acktosend_tail]=nodes[node].firstacktosend;
+	    // Put nxtack back into the queue.
+            np->acktosend_tail = ACKTOSEND_DEC( np->acktosend_tail );
+            np->acktosend[np->acktosend_tail] = nxtack;
 
-            nodes[node].firstacktosend--;
-            if( nodes[node].firstacktosend==0 ) nodes[node].firstacktosend--;
+	    ACK_DEC_STMT( nxtack );
         }
-        nodes[node].firstacktosend++;
-        if( nodes[node].firstacktosend==0 ) nodes[node].firstacktosend++;
+        // nxtack==cancel_acknum, and the canceled acknum is NOT in the queue.
+#if 1
+	// The return_ack must be set just before the canceled acknum.
+        nxtack = cancel_acknum;
+        ACK_DEC_STMT( nxtack );
+#else
+        // [WDJ] Bug: For the nxtack!=cancel_acknum case, it undid the DEC of
+        // return_ack, which would have left return_ack greater than the
+        // canceled acknum.  This would be the same as not canceling the ack.
+        ACK_INC_STMT( nxtack );
+        // This has now been combined with the nxtack==acknum case, because
+        // the return_ack must be set just less than the canceled acknum in
+        // both cases.
+#endif
+        np->return_ack = nxtack;
     }
-//    I_Error("can't Removing ackret\n");
-
 }
 
-extern boolean Net_AllAckReceived(void)
+// Return true if all ackpak have been received.
+boolean Net_Test_AllAckReceived(void)
 {
-   int i;
+   ackpak_t * ackpakp;
 
-   for(i=0;i<MAXACKPACKETS;i++)
+   for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
    {
-      if(ackpak[i].acknum)
+      if(ackpakp->acknum)
           return false;
    }
 
    return true;
 }
 
-// wait the all ack_return with timout in second
-extern void Net_WaitAllAckReceived( ULONG timeout )
+// Wait for all ack_return.
+//  timeout : in seconds
+void Net_Wait_AllAckReceived( uint32_t timeout )
 {
-    tic_t tictac=I_GetTime();
-    timeout=tictac+timeout*TICRATE;
+    tic_t ct = I_GetTime();  // current time
+
+    timeout = ct + timeout*TICRATE;  // convert timeout to absolute time
 
     HGetPacket();
-    while(timeout>I_GetTime() && !Net_AllAckReceived())
+    while( !Net_Test_AllAckReceived() )
     {
-        while(tictac==I_GetTime()) ;
-        tictac=I_GetTime();
+        while(ct == I_GetTime()) { }  // wait for next tic
         HGetPacket();
         Net_AckTicker();
+        ct = I_GetTime();
+        if( ct > timeout )  break;  // Timeout
     }
 }
 
-static void InitNode( int node )
+static void InitNode( int nnode )
 {
-    nodes[node].acktosend_head  = 0;
-    nodes[node].acktosend_tail  = 0;
-    nodes[node].ping            = PINGDEFAULT;
-    nodes[node].varping         = VARPINGDEFAULT;
-    nodes[node].timeout         = TIMEOUT(nodes[node].ping,nodes[node].varping);
-    nodes[node].firstacktosend  = 0;
-    nodes[node].nextacknum      = 1;
-    nodes[node].remotefirstack  = 0;
-    nodes[node].flags           = 0;
+    netnode_t * np = & net_nodes[nnode];
+    np->acktosend_head  = 0;
+    np->acktosend_tail  = 0;
+    np->ping            = PINGDEFAULT;
+    np->varping         = VARPINGDEFAULT;
+    np->timeout         = PING_TIMEOUT(np->ping,np->varping);
+    np->return_ack      = 0;
+    np->next_ackreq_num = 1;
+    np->remote_prev_ack = 0;
+    np->flags           = 0;
 }
 
 static void InitAck()
@@ -628,16 +835,26 @@ static void InitAck()
 }
 
 // Remove from retransmit any packets of the indicated type.
-void Net_AbortPacketType(char packettype)
+void Net_AbortPacketType(byte packettype)
 {
-    int i;
-    for( i=0;i<MAXACKPACKETS;i++ )
+    ackpak_t * ackpakp;
+
+    // Check the retransmit ackpak for these type packets.
+    for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
     {
-         if( ackpak[i].acknum && 
-             (((netbuffer_t *)ackpak[i].pak)->packettype==packettype || packettype==-1 ))
-         {
-             ackpak[i].acknum=0;
-	 }
+        if( ackpakp->acknum == 0 )  continue;
+#if 1
+        if( ((netbuffer_t *)ackpakp->pak)->packettype==packettype )
+#else
+	// [WDJ] UNUSED: and not likely to be used.
+	// packettype=255 is ANY packet
+        if( packettype==255
+	    || (((netbuffer_t *)ackpakp->pak)->packettype==packettype) )
+#endif
+        {
+	    // Free the ackpak.
+	    ackpakp->acknum=0;
+	}
     }
 }
 
@@ -646,59 +863,65 @@ void Net_AbortPacketType(char packettype)
 // -----------------------------------------------------------------
 
 
-// remove a node, clear all ack from this node and reset askret
-extern void Net_CloseConnection(int node)
+// Remove a node, clear all ack from this node and reset askret
+//   nnode : the net node number
+//      may be OR with flag  FORCECLOSE.
+void Net_CloseConnection(int nnode)
 {
-    int i;
-    boolean forceclose = (node & FORCECLOSE)!=0;
-    node &= ~FORCECLOSE;
+    boolean forceclose = ((nnode & FORCECLOSE)!=0);
+    ackpak_t * ackpakp;
 
-    if( !node )
-        return;
+    nnode &= ~FORCECLOSE;
+    if( !nnode )
+        return;  // Cannot close self connection.
 
-    nodes[node].flags |= CLOSE;
+    net_nodes[nnode].flags |= NODE_CLOSE;
 
-    // try to Send ack back (two army problem)
-    if( GetAcktosend(node) )
+    // Try to Send ack back (two army problem).
+    if( net_nodes[nnode].return_ack )
     {
-        Net_SendAcks( node );
-        Net_SendAcks( node );
+        // Send some empty packets with acks.
+        Net_Send_AcksPacket( nnode );
+        Net_Send_AcksPacket( nnode );
     }
-    // check if we wait ack from this node
-    for(i=0;i<MAXACKPACKETS;i++)
+    // Check if we have to wait for ack from this node.
+    for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
     {
-        if( ackpak[i].acknum && ackpak[i].destinationnode==node)
+        if( ackpakp->acknum
+	    && ackpakp->destination_node == nnode )
         {
             if( !forceclose )
                 return;     // connection will be closed when ack is returned
-            else
-                ackpak[i].acknum = 0;
+
+	    // Net Timeout, ack not likely. Force close.
+	    ackpakp->acknum = 0;  // inactive
         }
     }
 
-    InitNode(node);
-    AbortSendFiles(node);
-    I_NetFreeNodenum(node);
+    // No waiting for ack from this net node.
+    InitNode(nnode);
+    AbortSendFiles(nnode);
+    I_NetFreeNodenum(nnode);
 }
 
 //
 // Checksum
 //
 // Return in net endian
-static unsigned NetbufferChecksum (void)
+static uint32_t  Netbuffer_Checksum (void)
 {
-    unsigned    c;
-    int         i,l;
+    int       i, len;
+    uint32_t  cs;
     unsigned char   *buf;
 
-    c = 0x1234567;
+    cs = 0x1234567;
 
-    l = doomcom->datalength - 4;
+    len = doomcom->datalength - 4;
     buf = (unsigned char*)netbuffer+4;
-    for (i=0 ; i<l ; i++,buf++)
-        c += (*buf) * (i+1);
+    for (i=0 ; i<len ; i++,buf++)
+        cs += (*buf) * (i+1);
 
-    return LE_SWAP32_FAST(c);
+    return LE_SWAP32_FAST(cs);
 }
 
 #ifdef DEBUGFILE
@@ -759,11 +982,10 @@ static char *packettypename[NUMPACKETTYPE]={
 
 static void DebugPrintpacket(char *header)
 {
-    fprintf (debugfile,"%-12s (node %d,ack %d,ackret %d,size %d) type(%d) : %s\n"
+    fprintf (debugfile,"%-12s (node %d,ackreq %d,ackret %d,size %d) type(%d) : %s\n"
                       ,header
                       ,doomcom->remotenode
-                      ,netbuffer->ack_req
-                      ,netbuffer->ack_return
+                      ,netbuffer->ack_req, netbuffer->ack_return
                       ,doomcom->datalength
                       ,netbuffer->packettype,packettypename[netbuffer->packettype]);
 
@@ -771,8 +993,8 @@ static void DebugPrintpacket(char *header)
     {
        case PT_ASKINFO:
            fprintf(debugfile
-                  ,"    time %u\n"
-                  ,(unsigned int)netbuffer->u.askinfo.time);
+                  ,"    send_time %u\n"
+                  ,(unsigned int)netbuffer->u.askinfo.send_time);
            break;
        case PT_CLIENTJOIN:
            fprintf(debugfile
@@ -826,9 +1048,9 @@ static void DebugPrintpacket(char *header)
                   ,netbuffer->u.serverinfo.numberofplayer
                   ,netbuffer->u.serverinfo.maxplayer
                   ,netbuffer->u.serverinfo.mapname
-                  ,netbuffer->u.serverinfo.fileneedednum
-                  ,(unsigned int)netbuffer->u.serverinfo.time);
-           fprintfstring(netbuffer->u.serverinfo.fileneeded,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.serverinfo.fileneeded);
+                  ,netbuffer->u.serverinfo.num_fileneed
+                  ,(unsigned int)netbuffer->u.serverinfo.trip_time);
+           fprintfstring(netbuffer->u.serverinfo.fileneed,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.serverinfo.fileneed);
            break;
        case PT_SERVERREFUSE :
            fprintf(debugfile
@@ -855,18 +1077,21 @@ static void DebugPrintpacket(char *header)
 // HSendPacket
 //
 //  packetlength : number of bytes in u part of packet
-extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetlength)
+// Return true when packet is sent.
+boolean HSendPacket(int to_node, boolean reliable, byte acknum,
+		    int packetlength)
 {
 
     doomcom->datalength = packetlength + PACKET_BASE_SIZE;
-    if (!node)
+    if(to_node == 0)
     {
+        // Send packet to self.
         if((rebound_head+1)%MAXREBOUND==rebound_tail)
         {
 #ifdef PARANOIA
-            CONS_Printf("No more rebound buf\n");
+            CONS_Printf("Empty rebound buf\n");
 #endif
-            return false;
+	    goto fail_ret;
         }
         memcpy(&reboundstore[rebound_head],netbuffer,doomcom->datalength);
         reboundsize[rebound_head]=doomcom->datalength;
@@ -874,7 +1099,7 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
 #ifdef DEBUGFILE
         if (debugfile)
         {
-            doomcom->remotenode = node;
+            doomcom->remotenode = to_node;
             DebugPrintpacket("SENDLOCAL");
         }
 #endif
@@ -884,48 +1109,52 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
 //    if (demoplayback)
 //        return true;
 
-    if (!netgame)
-        I_Error ("Tried to transmit to another node");
+    if (!netgame)   goto not_netgame;
 
-    // do this before GetFreeAcknum because this function
-    // backup the current paket
-    doomcom->remotenode = node;
-    if(doomcom->datalength<=0)
-    {
-        DEBFILE("HSendPacket : nothing to send\n");
-#ifdef DEBUGFILE
-        if (debugfile)
-            DebugPrintpacket("TRISEND");
-#endif
-        return false;
-    }
+    // Do this before Save_packet_acknum() because that function will
+    // backup the current packet.
+    doomcom->remotenode = to_node;
+    if(doomcom->datalength <= 0)   goto empty_packet;
 
-    if(node<MAXNETNODES) // can be a broadcast
-        netbuffer->ack_return=GetAcktosend(node);
-    else
-        netbuffer->ack_return=0;
+    // Include any pending ack.
+    netbuffer->ack_return = (to_node<MAXNETNODES)?
+       Get_return_ack(to_node)  // ack a previous packet
+       : 0;  // broadcast, no ack
+
     if(reliable)
     {
+        // Packet sent with an ack_req, and retransmitted if necessary.
         if( I_NetCanSend && !I_NetCanSend() )
         {
             if( netbuffer->packettype < PT_CANFAIL )
-                GetFreeAcknum(&netbuffer->ack_req,true) ;
+	    {
+	        // High priority, deferred transmit.
+                netbuffer->ack_req = Save_packet_acknum(true);
+	    }
 
             DEBFILE("HSendPacket : Out of bandwidth\n");
-            return false;
+	    goto fail_ret;
         }
         else
         {
-            if( !GetFreeAcknum(&netbuffer->ack_req,false) )
-                return false;
+	    // Save packet, issue an acknum.
+	    netbuffer->ack_req = Save_packet_acknum(false);
+            if( netbuffer->ack_req == 0 )  goto fail_ret;
 	}
     }
     else
-        netbuffer->ack_req=acknum;
+    {
+        // Either acknum==0, or this is a retransmit using existing acknum.
+        netbuffer->ack_req = acknum;
+    }
 
-    netbuffer->checksum=NetbufferChecksum ();
+    netbuffer->checksum = Netbuffer_Checksum();
     stat_sendbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
+#if 1
+    I_NetSend();
+#else
+    // DEBUG
     // simulate internet :)
     if( true || rand()<RAND_MAX/5 )
     {
@@ -942,7 +1171,24 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
             DebugPrintpacket("NOTSEND");
     }
 #endif
+#endif
     return true;
+
+// Rare errors
+not_netgame:
+    I_SoftError ("HSendPacket : not in netgame");
+    goto fail_ret;
+
+empty_packet:
+    DEBFILE("HSendPacket : abort send of empty packet\n");
+#ifdef DEBUGFILE
+    if (debugfile)
+        DebugPrintpacket("TRISEND");
+#endif
+    goto fail_ret;
+
+fail_ret:
+    return false;
 }
 
 //
@@ -950,11 +1196,11 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
 // Returns false if no packet is waiting
 // Check Datalength and checksum
 //
-extern boolean HGetPacket (void)
+boolean HGetPacket (void)
 {
-    // get a packet from my
     if (rebound_tail!=rebound_head)
     {
+        // Receive from self.  Get a packet from my local net queue.
         memcpy(netbuffer,&reboundstore[rebound_tail],reboundsize[rebound_tail]);
         doomcom->datalength = reboundsize[rebound_tail];
         if( netbuffer->packettype == PT_NODE_TIMEOUT )
@@ -970,63 +1216,51 @@ extern boolean HGetPacket (void)
         return true;
     }
 
-    if (!netgame)
-        return false;
+    if (!netgame)   goto fail_ret;
 
     I_NetGet();
 
-    if (doomcom->remotenode == -1)
-        return false;
+    if (doomcom->remotenode == -1)   goto fail_ret;  // no packet
 
     stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
-    if (doomcom->remotenode >= MAXNETNODES)
-    {
-        DEBFILE(va("receive packet from node %d !\n", doomcom->remotenode));
-        return false;
-    }
+    if (doomcom->remotenode >= MAXNETNODES)  goto bad_node_num;
 
-    nodes[doomcom->remotenode].lasttimepacketreceived = I_GetTime();
+    net_nodes[doomcom->remotenode].lasttime_packet_received = I_GetTime();
 
-    if (netbuffer->checksum != NetbufferChecksum ())
-    {
-        DEBFILE("Bad packet checksum\n");
-        return false;
-    }
+    if (netbuffer->checksum != Netbuffer_Checksum())  goto bad_checksum;
 
 #ifdef DEBUGFILE
     if (debugfile)
         DebugPrintpacket("GET");
 #endif
 
-    // proceed the ack and ack_return field
-    if(!Processackpak())
-        return false;    // discated (duplicated)
+    // Process the ack_num and ack_return fields.
+    if(!Process_packet_ack())    goto fail_ret;    // discated (duplicated)
 
     // a packet with just ack_return
     if( netbuffer->packettype == PT_NOTHING)
     {
-        GotAcks();
+        // Detect the special acks packet.
+        Got_AcksPacket();
         return false;
     }
 
     return true;
+
+// Rare errors
+bad_node_num:
+    DEBFILE(va("receive packet from node %d !\n", doomcom->remotenode));
+    goto fail_ret;
+
+bad_checksum:
+    DEBFILE("Bad packet checksum\n");
+    goto fail_ret;
+
+fail_ret:
+    return false;
 }
 
-void Internal_Get(void)
-{
-    doomcom->remotenode = -1;
-    // I_Error("Get without netgame\n");
-}
-
-void Internal_Send(void)
-{
-     I_Error("Send without netgame\n");
-}
-
-void Internal_FreeNodenum(int nodenum)
-{
-}
 
 //
 // D_Startup_NetGame
@@ -1035,7 +1269,7 @@ void Internal_FreeNodenum(int nodenum)
 // Returns true when a network connection is made.
 boolean D_Startup_NetGame(void)
 {
-    boolean ret=false;
+    boolean netgame_ok = false;
     int  num;
 
     InitAck();
@@ -1077,8 +1311,9 @@ boolean D_Startup_NetGame(void)
         netgame = I_InitTcpNetwork();
     }
     if( netgame )
-        ret = true;
-    if( !server && netgame )
+        netgame_ok = true;
+    // Server is init to true.  Remote client has it false.
+    if( !server && netgame )  // if already a remote client
         netgame = false;
     server = true; // The default mode is server.
                    // Set to Client mode when connect to another server.
@@ -1089,6 +1324,7 @@ boolean D_Startup_NetGame(void)
         // extratic causes redundant transmission of tics, to prevent
 	// retransmission of player movement
 	// Combination of the vanilla -extratic and -dup
+        num = 1;  // default param on -extratic
         if( M_IsNextParm() )
         {
             num = atoi(M_GetNextParm());
@@ -1097,8 +1333,6 @@ boolean D_Startup_NetGame(void)
 	    if( num > 20 )
 	       num = 20;  // reasonable
 	}
-        else
-            num = 1;
         CONS_Printf("Set extratic to %d\n", num);
         doomcom->extratics = num;
     }
@@ -1136,8 +1370,12 @@ boolean D_Startup_NetGame(void)
 
     if (doomcom->id != DOOMCOM_ID)
         I_Error ("Doomcom buffer invalid!");
+
     if (doomcom->numnodes>MAXNETNODES)
-        I_Error ("To many nodes (%d), max:%d",doomcom->numnodes,MAXNETNODES);
+    {
+        I_Error ("Too many network nodes (%d), max:%d",
+		 doomcom->numnodes, MAXNETNODES);
+    }
 
     netbuffer = (netbuffer_t *)&doomcom->data;
 
@@ -1163,7 +1401,7 @@ boolean D_Startup_NetGame(void)
 
     D_ClientServerInit();
 
-    return ret;
+    return netgame_ok;
 }
 
 
@@ -1174,7 +1412,7 @@ extern void D_CloseConnection( void )
     if( netgame )
     {
         // wait the ack_return with timout of 5 Sec
-        Net_WaitAllAckReceived(5);
+        Net_Wait_AllAckReceived(5);
 
         // close all connection
         for( i=0;i<MAXNETNODES;i++ )

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h 1142 2015-04-03 13:43:04Z wesleyjohnson $
+// $Id: d_net.h 1146 2015-04-03 13:48:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -46,10 +46,12 @@
 //  be transmitted.
 //
 
-// Max computers in a game.
+// Max computers in a game.  Limited to 255 (byte).
 #define MAXNETNODES             32
-#define BROADCASTADDR           MAXNETNODES // added xx/5/99: can use broadcast now
-#define MAXSPLITSCREENPLAYERS   2    // maximum number of players on a single computer
+// Broadcast added xx/5/99: can use broadcast now
+#define BROADCASTADDR           MAXNETNODES
+// Maximum number of players on a single computer.
+#define MAXSPLITSCREENPLAYERS   2
 
 // The periodic updating of net stats.
 #define STAT_PERIOD  (TICRATE*2)
@@ -69,14 +71,14 @@ void    Net_AckTicker(void);
 boolean Net_AllAckReceived(void);
 
 // if reliable return true if packet sent, 0 else
-boolean HSendPacket(int   node, boolean reliable, byte acknum, int packetlength);
+boolean HSendPacket(int to_node, boolean reliable, byte acknum, int packetlength);
 boolean HGetPacket(void);
 // Returns true when a network connection is made.
 boolean D_Startup_NetGame(void);
 void    D_CloseConnection( void );
 void    Net_Cancel_Packet_Ack(int nnode);
-void    Net_CloseConnection(int node);
-void    Net_AbortPacketType(char packettype);
-void    Net_SendAcks(int node);
-void    Net_WaitAllAckReceived( ULONG timeout );
+void    Net_CloseConnection(int nnode);
+void    Net_AbortPacketType(byte packettype);
+void    Net_Send_AcksPacket(int to_node);
+void    Net_Wait_AllAckReceived( uint32_t timeout );
 #endif

@@ -4193,3 +4193,11 @@ Cleanup of network packet functions.
 Find unused vars in network packet header.
 Change short to stdint types in packet header.  This should help with
 64bit and 32bit machines playing together.
+
+*** W102_net_ack
+patchfile = w102_7_net_ack.patch
+- commit revision 1146
+Rename of network types, fields, macros, vars to be more readable, meaningful.
+Cleanup of packet ack functions.
+Comments.
+Fix a bug in cancel ack function.
