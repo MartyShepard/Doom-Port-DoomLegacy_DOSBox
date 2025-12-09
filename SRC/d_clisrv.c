@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1142 2015-04-03 13:43:04Z wesleyjohnson $
+// $Id: d_clisrv.c 1143 2015-04-03 13:44:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -183,18 +183,18 @@ const int  NETWORK_VERSION = 21; // separate version number for network protocol
 // Server state
 boolean         server = true;           // true or false but !server=client
 boolean         serverrunning = false;
-char            serverplayer;
+byte            serverplayer;  // 255= no server player (same as -1)
 
 // Server specific vars.
-// player=-1 when unused
+// player=255 when unused
 // nodeingame[]=false when net node is unused
 static byte     player_to_nnode[MAXPLAYERS];
 
 static tic_t    cl_maketic[MAXNETNODES];  // unused
 
 // Server net node state
-static char     nnode_to_player[MAXNETNODES];  // -1 = unused
-static char     nnode_to_player2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
+static byte     nnode_to_player[MAXNETNODES];  // 255= unused
+static byte     nnode_to_player2[MAXNETNODES]; // splitscreen player, 255= unused
 static byte     playerpernode[MAXNETNODES]; // used specialy for splitscreen
 static byte     nodewaiting[MAXNETNODES];
 static boolean  nodeingame[MAXNETNODES];  // set false as nodes leave game
@@ -204,7 +204,7 @@ static tic_t    nextsend_tic[MAXNETNODES]; // what server sent to client
 static tic_t    next_tic_send;     // min of the nettics
 static tic_t    next_tic_clear=0;  // clear next_tic_clear to next_tic_send
 static tic_t    maketic;
-static short    consistancy[BACKUPTICS];
+static int16_t  consistency[BACKUPTICS];
 #ifdef CLIENTPREDICTION2
 tic_t localgametic;
 #endif
@@ -241,7 +241,7 @@ consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
 // some software don't support largest packet
 // (original sersetup, not exactly, but the probability of sending a packet
 // of 512 octet is like 0.1)
-USHORT software_MAXPACKETLENGTH;
+uint16_t  software_MAXPACKETLENGTH;
 
 // By Client, Server
 int ExpandTics (int low)
@@ -496,7 +496,7 @@ typedef enum {
 
 static cl_mode_t  cl_mode = CLM_searching;
 
-static short Consistancy(void);
+static int16_t  Consistency(void);
 static void Net_Packet_Handler(void);
 void SV_ResetServer( void );
 
@@ -638,7 +638,7 @@ static void CL_Load_Received_Savegame(void)
 
     // done
     unlink(tmpsave);  // delete file
-    consistancy[ BTIC_INDEX( gametic ) ] = Consistancy();
+    consistency[ BTIC_INDEX( gametic ) ] = Consistency();
     CON_ToggleOff ();
     return;
 
@@ -1257,8 +1257,8 @@ void D_ClientServerInit (void)
 static void Reset_NetNode(byte nnode)
 {
     nodeingame[nnode] = false;
-    nnode_to_player[nnode]=-1;
-    nnode_to_player2[nnode]=-1;
+    nnode_to_player[nnode] = 255;
+    nnode_to_player2[nnode] = 255;
     nettics[nnode]=gametic;
     nextsend_tic[nnode]=gametic;
     cl_maketic[nnode]=maketic;
@@ -1298,7 +1298,7 @@ void SV_ResetServer( void )
     if( dedicated )
     {
         nodeingame[0]=true;
-        serverplayer=-1;
+        serverplayer = 255;  // no server player
     }
     else
         serverplayer=consoleplayer;
@@ -1381,23 +1381,24 @@ void SV_AddNode(byte nnode)
 // Xcmd XD_ADDPLAYER
 void Got_NetXCmd_AddPlayer(char **p,int playernum)
 {
+    static uint32_t sendconfigtic = 0xffffffff;
+
     // [WDJ] Having error due to sign extension of byte read (signed char).
     unsigned int node=READBYTE(*p);  // unsigned
     unsigned int newplayernum=READBYTE(*p);  // unsigned
     boolean splitscreenplayer = newplayernum&0x80;
-    static ULONG sendconfigtic=0xffffffff;
 
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
 
     playeringame[newplayernum]=true;
     G_AddPlayer(newplayernum);
-    if( newplayernum+1>doomcom->numplayers )
+    if( newplayernum+1 > doomcom->numplayers )
         doomcom->numplayers=newplayernum+1;
     CONS_Printf("Player %d is in the game (node %d)\n",newplayernum,node);
 
-    // The server is creating my player.
     if(node==cl_nnode)
     {
+        // The server is creating my player.
         player_to_nnode[newplayernum]=0;  // for information only
         if(!splitscreenplayer)
         {
@@ -1450,6 +1451,8 @@ void Got_NetXCmd_AddBot(char **p, int playernum)  //added by AC for acbot
     CONS_Printf ("Bot %s has entered the game\n", player_names[newplayernum]);
 }
 
+// By Server.
+// Called by SV_SpawnServer, client_join_handler.
 boolean SV_AddWaitingPlayers(void)
 {
     int  node,n;
@@ -1471,9 +1474,11 @@ boolean SV_AddWaitingPlayers(void)
             for ( ;newplayernum<MAXPLAYERS;newplayernum++)
             {
                 for(n=0;n<MAXNETNODES;n++)
-                    if( nnode_to_player[n]  == newplayernum ||
-                        nnode_to_player2[n] == newplayernum )
+	        {
+                    if( nnode_to_player[n]  == newplayernum
+                        || nnode_to_player2[n] == newplayernum )
                         break;
+		}
                 if( n == MAXNETNODES )
                     break;
             }
@@ -1534,6 +1539,8 @@ boolean Game_Playing( void )
     return (server && serverrunning) || (!server && cl_mode==CLM_connected);
 }
 
+// By Server.
+// Called by D_ClientServerInit, Command_Map_f, Command_Load_f, 
 boolean SV_SpawnServer( void )
 {
     D_DisableDemo();
@@ -1690,20 +1697,22 @@ static void client_quit_handler( byte nnode, int netconsole )
     nodewaiting[nnode]= 0;
     if(netconsole >= 0 && playeringame[netconsole])
     {
-        char  buf[2];
-        buf[0]=netconsole;
+        byte  buf[2];
+        buf[0]=netconsole;  // kick player
         buf[1]=(netbuffer->packettype == PT_NODE_TIMEOUT) ?
 	   KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT;
         // Update other players by kicking nnode.
         Send_NetXCmd(XD_KICK,&buf,2);
-        nnode_to_player[nnode]=-1;
-        if(nnode_to_player2[nnode]!=-1
-	   && nnode_to_player2[nnode]>=0
-	   && playeringame[(byte)nnode_to_player2[nnode]])
+        nnode_to_player[nnode] = 255;
+
+        if( nnode_to_player2[nnode] < MAXPLAYERS )
         {
-	    buf[0]=nnode_to_player2[nnode];
-	    Send_NetXCmd(XD_KICK,&buf,2);
-	    nnode_to_player2[nnode]=-1;
+	    if( playeringame[nnode_to_player2[nnode]] )
+	    {
+	       buf[0]=nnode_to_player2[nnode]; // kick player2
+	       Send_NetXCmd(XD_KICK, &buf, 2);
+	    }
+	    nnode_to_player2[nnode] = 255;
 	}
     }
     Net_CloseConnection(nnode);
@@ -1764,8 +1773,8 @@ static void server_cfg_handler( byte nnode )
 
     // Handle a player on the server.
     serverplayer = netbuffer->u.servercfg.serverplayer;
-    if (serverplayer>=0)
-        player_to_nnode[(byte)serverplayer] = servernode;
+    if (serverplayer < MAXPLAYERS)  // 255 = no player
+        player_to_nnode[serverplayer] = servernode;
 
     doomcom->numplayers = netbuffer->u.servercfg.totalplayernum;
     cl_nnode = netbuffer->u.servercfg.clientnode;
@@ -2001,25 +2010,25 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
        || netcmd==PT_NODEKEEPALIVE || netcmd==PT_NODEKEEPALIVEMIS)
        return;
 
-    // Check consistancy
+    // Check consistency
     btic = BTIC_INDEX(start_tic);
     if((start_tic <= gametic)
        && (start_tic > (gametic - BACKUPTICS + 1))
-       && (consistancy[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy))) 
+       && (consistency[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistency))) 
     {
         // Failed the consistency check.
 #if 1
-        char buf[3];
+        byte buf[3];
 
         buf[0]=netconsole;
         buf[1]=KICK_MSG_CON_FAIL;
         Send_NetXCmd(XD_KICK, &buf, 2);
 #else
-        CONS_Printf("\2player %d kicked [%d] consistancy failure\n",netconsole,start_tic);
+        CONS_Printf("\2player %d kicked [%d] consistency failure\n",netconsole,start_tic);
 #endif
         DEBFILE(va("player %d kicked [%d] %d!=%d\n",
-		    netconsole,start_tic,consistancy[btic],
-		    LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy)));
+		    netconsole,start_tic,consistency[btic],
+		    LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
 
     }
 
@@ -2029,10 +2038,10 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
 	       &netbuffer->u.clientpak.cmd, 1);
 
     if( netcmd==PT_CLIENT2CMD
-	&& nnode_to_player2[nnode]>=0)
+	&& (nnode_to_player2[nnode] < MAXPLAYERS))
     {
         // Copy the ticcmd for player2.
-        TicCmdCopy(&netcmds[btic][(byte)nnode_to_player2[nnode]], 
+        TicCmdCopy(&netcmds[btic][nnode_to_player2[nnode]], 
 		   &netbuffer->u.client2pak.cmd2, 1);
     }
     return;
@@ -2203,18 +2212,18 @@ static void Net_Packet_Handler(void)
 // sends out a packet
 
 // no more use random generator, because at very first tic isn't yet synchronized
-static short Consistancy(void)
+static int16_t Consistency(void)
 {
-    short ret=0;
-    int   i;
+    int16_t ret=0;
+    int   pn;
 
     DEBFILE(va("TIC %d ",gametic));
-    for(i=0;i<MAXPLAYERS;i++)
+    for(pn=0; pn<MAXPLAYERS; pn++)
     {
-        if( playeringame[i] && players[i].mo )
+        if( playeringame[pn] && players[pn].mo )
         {
-            DEBFILE(va("p[%d].x = %f ",i,FIXED_TO_FLOAT(players[i].mo->x)));
-            ret+=players[i].mo->x;
+            DEBFILE(va("p[%d].x = %f ", pn, FIXED_TO_FLOAT(players[pn].mo->x)));
+            ret += players[pn].mo->x;
         }
     }
     DEBFILE(va("pos = %d, rnd %d\n",ret,P_GetRandIndex()));
@@ -2257,7 +2266,7 @@ static void CL_Send_ClientCmd (void)
     {
         int btic = BTIC_INDEX( gametic );
         TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds, 1);
-        netbuffer->u.clientpak.consistancy = LE_SWAP16_FAST(consistancy[btic]);
+        netbuffer->u.clientpak.consistency = LE_SWAP16_FAST(consistency[btic]);
 
         // send a special packet with 2 cmd for splitscreen
         if (cv_splitscreen.value)
@@ -2600,7 +2609,7 @@ void TryRunTics (tic_t realtics)
 	    }
             else
 	    {
-                consistancy[ BTIC_INDEX( gametic ) ] = Consistancy();
+                consistency[ BTIC_INDEX( gametic ) ] = Consistency();
 	    }
         }
     }

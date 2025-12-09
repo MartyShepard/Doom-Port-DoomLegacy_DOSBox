@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1141 2015-04-03 13:41:01Z wesleyjohnson $
+// $Id: d_clisrv.h 1143 2015-04-03 13:44:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -130,7 +130,7 @@ typedef enum   {
 typedef struct {
    byte        client_tic;
    byte        resendfrom;
-   short       consistancy;
+   int16_t     consistency;
    ticcmd_t    cmd;
 } clientcmd_pak;
 
@@ -139,7 +139,7 @@ typedef struct {
 typedef struct {
    byte        client_tic;
    byte        resendfrom;
-   short       consistancy;
+   int16_t     consistency;
    ticcmd_t    cmd;
    ticcmd_t    cmd2;
 } client2cmd_pak;
@@ -156,7 +156,7 @@ typedef struct {
 
 typedef struct {
    byte        version;    // exe from differant version don't work
-   ULONG       subversion; // contain build version and maybe crc
+   uint32_t    subversion; // contain build version and maybe crc
 
    // server lunch stuffs
    byte        serverplayer;
@@ -165,21 +165,21 @@ typedef struct {
    byte        clientnode;
    byte        gamestate;
    
-   ULONG       playerdetected; // playeringame vector in bit field
+   uint32_t    playerdetected; // playeringame vector in bit field
    byte        netcvarstates[0];
 } serverconfig_pak;
 
 typedef struct {
    byte        version;    // exe from differant version don't work
-   ULONG       subversion; // contain build version and maybe crc
+   uint32_t    subversion; // contain build version and maybe crc
    byte        localplayers;
    byte        mode;
 } clientconfig_pak;
 
 typedef struct {
    char        fileid;
-   ULONG       position;
-   USHORT      size;
+   uint32_t    position;
+   uint16_t    size;
    byte        data[100];  // size is variable using hardare_MAXPACKETLENGTH
 } filetx_pak;
 
@@ -260,7 +260,7 @@ extern consvar_t cv_playdemospeed;
 #define SERVER_TIC_BASE_SIZE offsetof(netbuffer_t, u.serverpak.cmds[0])
 
 extern boolean   server;
-extern USHORT    software_MAXPACKETLENGTH;
+extern uint16_t  software_MAXPACKETLENGTH;
 extern boolean   acceptnewnode;
 extern char      servernode;
 

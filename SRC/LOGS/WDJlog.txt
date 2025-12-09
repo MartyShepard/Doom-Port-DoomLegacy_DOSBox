@@ -4171,3 +4171,10 @@ Rewrite of parts of client/server code.
 Net node numbers are byte.
 Breakup 300 line packet handler function into smaller functions.
 Add comments.
+
+*** W102_clisrv_type
+patchfile = w102_4_clisrv_type.patch
+- commit revision 1143
+Change types, use byte, stdint instead of short, ULONG, USHORT.
+Change some types to unsigned.  Change unused from -1 to 255 unsigned.
+This makes for easier tests, no sign problems, and larger range.
