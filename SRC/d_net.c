@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1142 2015-04-03 13:43:04Z wesleyjohnson $
+// $Id: d_net.c 1144 2015-04-03 13:46:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -851,6 +851,7 @@ static void DebugPrintpacket(char *header)
 //
 // HSendPacket
 //
+//  packetlength : number of bytes in u part of packet
 extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetlength)
 {
 

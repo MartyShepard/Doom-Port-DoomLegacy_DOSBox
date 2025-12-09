@@ -4178,3 +4178,10 @@ patchfile = w102_4_clisrv_type.patch
 Change types, use byte, stdint instead of short, ULONG, USHORT.
 Change some types to unsigned.  Change unused from -1 to 255 unsigned.
 This makes for easier tests, no sign problems, and larger range.
+
+*** W102_clisrv_func
+patchfile = w102_5_clisrv_func.patch
+- commit revision 1144
+More cleanup of vars. Change type servernode to byte.
+Make some errors use I_SoftError.
+Simplify NetXCmd, Send_Tics.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1143 2015-04-03 13:44:42Z wesleyjohnson $
+// $Id: d_clisrv.h 1144 2015-04-03 13:46:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -262,7 +262,7 @@ extern consvar_t cv_playdemospeed;
 extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
 extern boolean   acceptnewnode;
-extern char      servernode;
+extern byte      servernode;  // the server net node, 255=none
 
 extern boolean   cl_drone;  // is a drone client
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: i_tcp.c 1144 2015-04-03 13:46:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -825,7 +825,7 @@ boolean I_InitTcpNetwork( void )
             doomcom->numnodes=MAXNETNODES;
 
         // server
-        servernode = 0;
+        servernode = 0;  // server set to self
         // FIXME:
         // ??? and now ?
         // server on a big modem ??? 4*isdn
