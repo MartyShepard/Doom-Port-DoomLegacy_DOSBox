@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: mserv.h 1153 2015-04-03 13:57:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -72,14 +72,17 @@ extern consvar_t cv_masterserver;
 extern consvar_t cv_servername;
 extern consvar_t cv_internetserver;
 
-char *GetMasterServerPort(void);
-char *GetMasterServerIP(void);
+char * MS_Get_MasterServerPort(void);
+char * MS_Get_MasterServerIP(void);
 
-void RegisterServer(int, int);
-void UnregisterServer(void);
+// MasterServer address is in cv_masterserver.
+void MS_RegisterServer(void);
+void MS_UnregisterServer(void);
 
-void SendPingToMasterServer(void);
+void MS_SendPing_MasterServer( tic_t cur_time );
 
-msg_server_t *GetShortServersList(void);
+msg_server_t * MS_Get_ShortServersList(void);
+
+void MS_Register_Commands(void);
 
 #endif

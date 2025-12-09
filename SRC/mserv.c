@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
+// $Id: mserv.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -143,10 +143,9 @@
 #include "i_net.h"
 #include "i_system.h"
 #include "d_clisrv.h"
+#include "d_net.h"
 
 // ================================ DEFINITIONS ===============================
-
-#define PACKET_SIZE 1024
 
 #define  MS_NO_ERROR                   0
 #define  MS_SOCKET_ERROR            -201
@@ -158,29 +157,45 @@
 #define  MS_GETHOSTNAME_ERROR       -221
 #define  MS_TIMEOUT_ERROR           -231
 
-// see master server code for the values
-#define ADD_SERVER_MSG               101
-#define REMOVE_SERVER_MSG            103
-#define GET_SERVER_MSG               200
-#define GET_SHORT_SERVER_MSG         205
-
-#define HEADER_SIZE ((long)sizeof(long)*3)
-
+#if 0
+// [WDJ] Unused
 #define HEADER_MSG_POS      0
 #define IP_MSG_POS         16
 #define PORT_MSG_POS       32
 #define HOSTNAME_MSG_POS   40
+#endif
 
 #ifndef SOCKET
 #define SOCKET int
 #endif
 
+// --- Master Server message format
+
+#define MS_PACKET_SIZE 1024
+
+// see master server code for the values
+enum {
+   MSGTYPE_ADD_SERVER_MSG       = 101,
+   MSGTYPE_REMOVE_SERVER_MSG    = 103,
+   MSGTYPE_GET_SERVER_MSG       = 200,
+   MSGTYPE_GET_SHORT_SERVER_MSG = 205
+} master_server_msgtype_e;
+
+// MS_Write modifies type, length to network byte order.
+// [WDJ] Fix sizes to stdint.  This seems to be a master server msg format.
 typedef struct {
-    long    id;
-    long    type;
-    long    length;
-    char    buffer[PACKET_SIZE];
+    int32_t id;
+    int32_t type;    // from master_server_msgtype_e
+    int32_t length;  // when <0 then MS_Write will use strlen
+    char    buffer[MS_PACKET_SIZE];
 } msg_t;
+
+//#define MS_HEADER_SIZE ((long)sizeof(long)*3)
+#define MS_HEADER_SIZE ((int32_t)sizeof(int32_t)*3)
+//#define MS_HEADER_SIZE  (offsetof(msg_t, buffer))
+
+
+// ---
 
 struct Copy_CVarMS_t
 {
@@ -199,6 +214,7 @@ struct Copy_CVarMS_t
 // it seems windows doesn't define that... maybe some other OS? OS/2
 int inet_aton(const char *hostname, struct in_addr *addr)
 {
+    // [WDJ] This cannot handle 255.255.255.255, which == INADDR_NONE.
     return ( (addr->s_addr=inet_addr(hostname)) != INADDR_NONE );
 }   
 #endif
@@ -206,12 +222,19 @@ int inet_aton(const char *hostname, struct in_addr *addr)
 static void Command_Listserv_f(void);
 //TODO: when we change the port or ip, unregister to the old master server, register to the new one
 
-#define DEF_PORT "28910"
+#define MS_DEFAULT_PORT "28910"
 consvar_t cv_internetserver= {"sv_public", "No", CV_SAVE, CV_YesNo };
 consvar_t cv_masterserver  = {"masterserver", "doomlegacy.dyndns.org:28910", CV_SAVE, NULL };
 consvar_t cv_servername    = {"sv_name", "Doom Legacy server", CV_SAVE, NULL };
 
-enum { MSCS_NONE, MSCS_WAITING, MSCS_REGISTERED, MSCS_FAILED } con_state = MSCS_NONE;
+typedef enum{
+    MSCS_NONE,
+    MSCS_WAITING,
+    MSCS_REGISTERED,
+    MSCS_FAILED
+} con_state_e;
+
+static con_state_e  con_state = MSCS_NONE;
 
 #define NEWCODE
 #ifndef NEWCODE
@@ -223,17 +246,19 @@ static int msnode=-1;
 #define current_port sock_port
 #endif
 
-static SOCKET               socket_fd = -1;  // TCP/IP socket
-static struct sockaddr_in   addr;
-static struct timeval       select_timeout;
-static fd_set               wset;
+// MasterServer communications.
+static SOCKET               ms_socket_fd = -1;  // TCP/IP socket
+static struct sockaddr_in   ms_addr;
 
-static int  MS_Connect(char *ip_addr, char *str_port, int async);
+#define  ASYNC   1
+static int  MS_Connect(char *ip_addr, char *str_port, int async_flag);
+static boolean  MS_Connect_MasterServer(void);
 static int  MS_Read(msg_t *msg);
 static int  MS_Write(msg_t *msg);
 static int  MS_GetIP(char *);
 
-void AddMServCommands(void)
+// Called by D_Register_ClientCommands.
+void MS_Register_Commands(void)
 {
     CV_RegisterVar(&cv_internetserver);
     CV_RegisterVar(&cv_masterserver);
@@ -241,11 +266,11 @@ void AddMServCommands(void)
     COM_AddCommand("listserv", Command_Listserv_f);
 }
 
-static void CloseConnection(void)
+static void MS_Close_socket(void)
 {
-    if (socket_fd > 0)
-        close(socket_fd);
-    socket_fd = -1;
+    if (ms_socket_fd > 0)
+        close(ms_socket_fd);
+    ms_socket_fd = -1;
 }
 
 static int GetServersList(void)
@@ -253,7 +278,7 @@ static int GetServersList(void)
     msg_t   msg;
     int     count = 0;
 
-    msg.type = GET_SERVER_MSG;
+    msg.type = MSGTYPE_GET_SERVER_MSG;
     msg.length = 0;
     if (MS_Write(&msg) < 0)
         return MS_WRITE_ERROR;
@@ -269,49 +294,42 @@ static int GetServersList(void)
         count++;
         CONS_Printf(msg.buffer);
     }
-
-
     return MS_READ_ERROR;
 }
 
 #define NUM_LIST_SERVER 10
-msg_server_t *GetShortServersList(void)
+
+// Return NULL when no servers list gotten.
+msg_server_t * MS_Get_ShortServersList(void)
 {
     static msg_server_t server_list[NUM_LIST_SERVER+1]; // +1 for easy test
-    msg_t               msg;
-    int                 i;
+    msg_t  msg;
+    int    i;
 
     //arf, we must be connected to the master server before writing to it
-    if (MS_Connect(GetMasterServerIP(), GetMasterServerPort(), 0))
-    {
-        CONS_Printf("cannot connect to the master server\n");
+    if( ! MS_Connect_MasterServer() )
         return NULL;
-    }
 
-    msg.type = GET_SHORT_SERVER_MSG;
+    msg.type = MSGTYPE_GET_SHORT_SERVER_MSG;
     msg.length = 0;
     if (MS_Write(&msg) < 0)
         return NULL;
 
-    for (i=0; (i<NUM_LIST_SERVER) && (MS_Read(&msg)>=0); i++)
+    for (i=0; i<NUM_LIST_SERVER; i++)
     {
-        if (msg.length == 0)
-        {
-            server_list[i].header[0] = 0;
-            CloseConnection();
-            return server_list;
-        }
+        if( MS_Read(&msg) < 0 )  goto read_err;
+        if (msg.length == 0)  break;
         memcpy(&server_list[i], msg.buffer, sizeof(msg_server_t));
         server_list[i].header[0] = 1;
     }
-    CloseConnection();
-    if (i==NUM_LIST_SERVER)
-    {
-        server_list[i].header[0] = 0;
-        return server_list;
-    }
-    else
-        return NULL;
+    // End of server list.
+    server_list[i].header[0] = 0;
+    MS_Close_socket();
+    return server_list;
+
+read_err:
+    MS_Close_socket();
+    return NULL;
 }
 
 static void Command_Listserv_f(void)
@@ -324,16 +342,13 @@ static void Command_Listserv_f(void)
 
     CONS_Printf("Retrieving server list...\n");
 
-    if (MS_Connect(GetMasterServerIP(), GetMasterServerPort(), 0))
-    {
-        CONS_Printf("cannot connect to the master server\n");
+    if( ! MS_Connect_MasterServer() )
         return;
-    }
 
     if (GetServersList())
-        CONS_Printf("cannot get server list\n");
+        CONS_Printf("Cannot get server list.\n");
 
-    CloseConnection();
+    MS_Close_socket();
 }
 
 static char *int2str(int n)
@@ -349,32 +364,44 @@ static char *int2str(int n)
     return &res[i+1];
 }
 
-int ConnectionFailed(void)
+// Return MS error code.
+static int MS_failed_connect(void)
 {
     con_state = MSCS_FAILED;
     CONS_Printf("Connection to master server failed\n");
-    CloseConnection();
+    MS_Close_socket();
     return MS_CONNECT_ERROR;
 }
 
-static int AddToMasterServer(void)
+// Return MS error code.
+static int RegisterInfo_on_MasterServer(void)
 {
     static int      retry = 0;
-    int             i, res;
-    socklen_t       j;
+    // [WDJ] Linux: select alters the timeout, it must be init each usage.
+    struct timeval  select_timeout = {0,0};
+    fd_set          write_set;  // modified by select
+    int             res;
+    int             optval;
+    socklen_t       optlen;
     msg_t           msg;
     msg_server_t    *info = (msg_server_t *) msg.buffer;
-    fd_set          tset;
 
-    memcpy(&tset, &wset, sizeof(tset));
-    res = select(socket_fd+1, NULL, &tset, NULL, &select_timeout);
+
+    // [WDJ] Simpler, smaller code to setup write_set on usage.
+    FD_ZERO(&write_set);
+    FD_SET(ms_socket_fd, &write_set);  
+    res = select(ms_socket_fd+1,
+		 NULL,  // read fd
+		 /*IN,OUT*/ &write_set,  // write fd to watch
+		 NULL,  // exceptions
+		 /*IN,OUT*/ &select_timeout);  // modified
     if (res == 0)
     {
         if (retry++ > 30) // an about 30 second timeout
         {
             retry = 0;
 	    CONS_Printf("Timeout on masterserver\n");
-            return ConnectionFailed();
+            return MS_failed_connect();
         }
         return MS_CONNECT_ERROR;
     }
@@ -382,17 +409,21 @@ static int AddToMasterServer(void)
     if (res < 0)
     {
 	CONS_Printf("Error on select : %s\n", strerror(errno));
-        return ConnectionFailed();
+        return MS_failed_connect();
     }
     
     // so, the socket is writable, but what does that mean, that the connection is
     // ok, or bad... let see that!
-    j = 4;
-    getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, (char *)&i, &j);
-    if (i != 0) // it was bad
+    optlen = 4;  // Linux alters this value.
+#ifdef LINUX   
+    getsockopt(ms_socket_fd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+#else
+    getsockopt(ms_socket_fd, SOL_SOCKET, SO_ERROR, (char *)&optval, &optlen);
+#endif
+    if (optval != 0) // it was bad
     {
         CONS_Printf("getsockopt: %s\n", strerror(errno));
-	return ConnectionFailed();
+	return MS_failed_connect();
     }
     
     strcpy(info->header, "");
@@ -402,19 +433,20 @@ static int AddToMasterServer(void)
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
     strcpy(registered_server.name, cv_servername.string);
 
-    msg.type = ADD_SERVER_MSG;
+    msg.type = MSGTYPE_ADD_SERVER_MSG;
     msg.length = sizeof(msg_server_t);
     if (MS_Write(&msg) < 0)
-        return ConnectionFailed();
+        return MS_failed_connect();
 
     CONS_Printf("The server has been registered on the master server...\n");
     con_state = MSCS_REGISTERED;
-    CloseConnection();
+    MS_Close_socket();
 
     return MS_NO_ERROR;
 }
 
-static int RemoveFromMasterSever(void)
+// Return MS error code.
+static int RemoveInfo_from_MasterServer(void)
 {
     msg_t           msg;
     msg_server_t    *info = (msg_server_t *) msg.buffer;
@@ -425,7 +457,7 @@ static int RemoveFromMasterSever(void)
     strcpy(info->name,   registered_server.name);
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
 
-    msg.type = REMOVE_SERVER_MSG;
+    msg.type = MSGTYPE_REMOVE_SERVER_MSG;
     msg.length = sizeof(msg_server_t);
     if (MS_Write(&msg) < 0)
         return MS_WRITE_ERROR;
@@ -433,7 +465,8 @@ static int RemoveFromMasterSever(void)
     return MS_NO_ERROR;
 }
 
-char *GetMasterServerPort(void)
+// Return ptr to port number string.
+char * MS_Get_MasterServerPort(void)
 {
     char *t = cv_masterserver.string;
 
@@ -442,11 +475,12 @@ char *GetMasterServerPort(void)
 
     if (*t)
         return ++t;
-    else
-        return DEF_PORT;
+
+    return MS_DEFAULT_PORT;  // default MasterServer port
 }
 
-char *GetMasterServerIP(void)
+// Return ptr to IP address string.
+char * MS_Get_MasterServerIP(void)
 {
     static char str_ip[64];
     char        *t = str_ip;
@@ -467,97 +501,107 @@ char *GetMasterServerIP(void)
 
 
 
-static void openUdpSocket()
+static void open_UDP_Socket()
 {
+    // Setup ping UDP addr from MasterServer IP, MasterServer port + 1.
+    uint32_t  ping_port = atoi(MS_Get_MasterServerPort()) + 1;
 #ifdef NEWCODE
+    // Using a player node.  This ties up a player node.
     if( I_NetMakeNode )
     {
         char hostname[24];
 
-        sprintf(hostname, "%s:%d", inet_ntoa(addr.sin_addr), atoi(GetMasterServerPort())+1);
+        sprintf(hostname, "%s:%d", inet_ntoa(ms_addr.sin_addr), ping_port );
         msnode = I_NetMakeNode(hostname);
+          // errors are neg numbers
     }
     else
         msnode = -1;
 #else
     memset(&udp_addr, 0, sizeof(udp_addr));
     udp_addr.sin_family = AF_INET;
-    udp_addr.sin_port = htons(atoi(GetMasterServerPort())+1);
+    udp_addr.sin_port = htons(ping_port);
     udp_addr.sin_addr.s_addr = addr.sin_addr.s_addr; // same IP as for TCP
 #endif
 }
 
-void RegisterServer(int s, int port)
+// By Server.
+// MasterServer address is in cv_masterserver.
+void MS_RegisterServer(void)
 {
     CONS_Printf("Registering this server to the master server...\n");
 
-    strcpy(registered_server.ip, GetMasterServerIP());
-    strcpy(registered_server.port, GetMasterServerPort());
+    strcpy(registered_server.ip, MS_Get_MasterServerIP());
+    strcpy(registered_server.port, MS_Get_MasterServerPort());
     //current_port = port;
     //mysocket = s;
 
-    if (MS_Connect(registered_server.ip, registered_server.port, 1))
+    if (MS_Connect(registered_server.ip, registered_server.port, ASYNC) < 0)
     {
-        CONS_Printf("cannot connect to the master server\n");
+        CONS_Printf("Cannot connect to the master server\n");
         return;
     }
-    openUdpSocket();
+    open_UDP_Socket();
 
-    // keep the TCP connection open until AddToMasterServer() is completed;
+    // Keep the TCP connection open until RegisterInfo_on_MasterServer() is completed;
 }
 
-void SendPingToMasterServer(void)
+// By Server.
+// Called by NetUpdate.
+void MS_SendPing_MasterServer( tic_t cur_time )
 {
     static tic_t   next_time = 0;
-    tic_t          cur_time;
 
-    cur_time = I_GetTime();
     if (cur_time > next_time) // ping every 2 second if possible
     {
-        next_time = cur_time+2*TICRATE;
+        next_time = cur_time + (2*TICRATE);  // 2 sec
 
         if (con_state == MSCS_WAITING)
-            AddToMasterServer();
+            RegisterInfo_on_MasterServer();
 
         if (con_state != MSCS_REGISTERED)
             return;
 
+        // Keep-alive tick to the MasterServer on MasterServer port+1.
         // cur_time is just a dummy data to send
 #ifdef NEWCODE
+        if( msnode < 0 )
+	    return;  // no UDP connection
+       
         *((tic_t *)netbuffer) = cur_time;
         doomcom->datalength = sizeof(cur_time);
         doomcom->remotenode = msnode;
-        I_NetSend();
+        I_NetSend();  // to packet port
 #else
         sendto(mysocket, (char*)&cur_time, sizeof(cur_time), 0, (struct sockaddr *)&udp_addr, sizeof(struct sockaddr));
 #endif
     }
 }
 
-void UnregisterServer()
+void MS_UnregisterServer()
 {
     if (con_state != MSCS_REGISTERED)
     {
         con_state = MSCS_NONE;
-        CloseConnection();
+        MS_Close_socket();
         return;
     }
     con_state = MSCS_NONE;
 
     CONS_Printf("Unregistering this server to the master server...\n");
 
-    if (MS_Connect(registered_server.ip, registered_server.port, 0))
+    if (MS_Connect(registered_server.ip, registered_server.port, 0) < 0)
     {
         CONS_Printf("cannot connect to the master server\n");
         return;
     }
 
-    if (RemoveFromMasterSever() < 0)
-        CONS_Printf("cannot remove this server from the master server\n");
+    if (RemoveInfo_from_MasterServer() < 0)
+        CONS_Printf("Cannot remove this server from the master server\n");
 
-    CloseConnection();
+    MS_Close_socket();
 #ifdef NEWCODE
-    I_NetFreeNode( msnode );
+    I_NetFreeNode( msnode );  // can be used on special net nodes too
 #endif
 }
 
@@ -568,12 +612,14 @@ static int MS_GetIP(char *hostname)
 {
     struct hostent *host_ent;
 
-    if (!inet_aton(hostname, &addr.sin_addr)) {
+    if (!inet_aton(hostname, &ms_addr.sin_addr))
+    {
         //TODO: only when we are connected to Internet, or use a non bloking call
         host_ent = gethostbyname(hostname);
         if (host_ent==NULL)
             return MS_GETHOSTBYNAME_ERROR;
-        memcpy(&addr.sin_addr, host_ent->h_addr_list[0], sizeof(struct in_addr));
+
+        memcpy(&ms_addr.sin_addr, host_ent->h_addr_list[0], sizeof(struct in_addr));
     }
     return 0;
 }
@@ -582,54 +628,71 @@ static int MS_GetIP(char *hostname)
 /*
 ** MS_Connect()
 */
-static int MS_Connect(char *ip_addr, char *str_port, int async)
+static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
 {
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
+    int res;
+   
+    memset(&ms_addr, 0, sizeof(ms_addr));
+    ms_addr.sin_family = AF_INET;
     I_InitTcpDriver(); // this is done only if not already done
 
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    // TCP connection socket.
+    ms_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(ms_socket_fd < 0)
         return MS_SOCKET_ERROR;
 
-    if (MS_GetIP(ip_addr)==MS_GETHOSTBYNAME_ERROR)
+    if( MS_GetIP(ip_addr) == MS_GETHOSTBYNAME_ERROR)
         return MS_GETHOSTBYNAME_ERROR;
-    addr.sin_port = htons(atoi(str_port));
 
-    if (async) // do asynchronous connection
+    ms_addr.sin_port = htons( atoi(str_port) );
+
+    if(async_flag) // do asynchronous connection
     {
-        int res = 1;
+        // Set ms_socket as non-blocking.
 #ifdef WIN32
+        // winsock.h:  int ioctlsocket(SOCKET,long,u_long *);
 	u_long test = 1; // [smite] I have no idea what this type is supposed to be
-        ioctlsocket(socket_fd, FIONBIO, &test);
+        ioctlsocket(ms_socket_fd, FIONBIO, &test);
 #else
-        ioctl(socket_fd, FIONBIO, &res);
+        res = 1;  // non-blocking true
+        ioctl(ms_socket_fd, FIONBIO, &res);
 #endif
-        res = connect(socket_fd, (struct sockaddr *) &addr, sizeof(addr));
+        res = connect(ms_socket_fd, (struct sockaddr *) &ms_addr, sizeof(ms_addr));
         if (res < 0)
         {
-#ifdef WIN32  // humm, on win32 it doesn't work with EINPROGRESS (stupid windows)
+#ifdef WIN32
+	    // humm, on win32 it doesn't work with EINPROGRESS (stupid windows)
             if (WSAGetLastError() != WSAEWOULDBLOCK)
 #else
             if (errno != EINPROGRESS)
 #endif
             {
                 con_state = MSCS_FAILED;
-                CloseConnection();
+                MS_Close_socket();
                 return MS_CONNECT_ERROR;
             }
         }
         con_state = MSCS_WAITING;
-        FD_ZERO(&wset);
-        FD_SET(socket_fd, &wset);  
-        select_timeout.tv_sec = 0, select_timeout.tv_usec = 0;
     }
     else
     {
-        if (connect(socket_fd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+        res = connect(ms_socket_fd, (struct sockaddr *) &ms_addr, sizeof(ms_addr));
+        if (res < 0)
             return MS_CONNECT_ERROR;
     }
 
     return 0;
+}
+
+
+static boolean MS_Connect_MasterServer(void)
+{
+    if( MS_Connect(MS_Get_MasterServerIP(), MS_Get_MasterServerPort(), 0) < 0)
+    {
+        CONS_Printf("Cannot connect to the master server.\n");
+        return false;
+    }
+    return true;
 }
 
 
@@ -638,17 +701,19 @@ static int MS_Connect(char *ip_addr, char *str_port, int async)
  */
 static int MS_Write(msg_t *msg)
 {
-    int len;
+    int len, cnt;
 
     if (msg->length < 0)
         msg->length = strlen(msg->buffer);
-    len = msg->length+HEADER_SIZE;
+    len = msg->length+MS_HEADER_SIZE;
 
+    // htonl has uint32_t operand and result.
     //msg->id = htonl(msg->id);
     msg->type = htonl(msg->type);
     msg->length = htonl(msg->length);
-
-    if (send(socket_fd, (char*)msg, len, 0) != len)
+   
+    cnt = send(ms_socket_fd, (char*)msg, len, 0);
+    if ( cnt != len)
         return MS_WRITE_ERROR;
 
     return 0;
@@ -660,17 +725,28 @@ static int MS_Write(msg_t *msg)
  */
 static int MS_Read(msg_t *msg)
 {
-    if (recv(socket_fd, (char*)msg, HEADER_SIZE, 0) != HEADER_SIZE)
+    int cnt, msglen;
+   
+    cnt = recv(ms_socket_fd, (char*)msg, MS_HEADER_SIZE, 0);
+    if( cnt != MS_HEADER_SIZE)
         return MS_READ_ERROR;
 
+    // ntohl has uint32_t operand and result.
     //msg->id = ntohl(msg->id);
     msg->type = ntohl(msg->type);
     msg->length = ntohl(msg->length);
 
+    // If only a header and no data, do not read the data.
     if (!msg->length) //Hurdler: fix a bug in Windows 2000
         return 0;
 
-    if (recv(socket_fd, (char*)msg->buffer, msg->length, 0) != msg->length)
+    // Protection against attackers.
+    msglen = msg->length;
+    if( msglen > MS_PACKET_SIZE )
+        msglen = MS_PACKET_SIZE;  // limit, to not overrun buffer
+
+    cnt = recv(ms_socket_fd, (char*)msg->buffer, msglen, 0);
+    if(cnt != msglen)
         return MS_READ_ERROR;
 
     return 0;

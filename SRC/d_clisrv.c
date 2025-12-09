@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1152 2015-04-03 13:56:46Z wesleyjohnson $
+// $Id: d_clisrv.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -756,6 +756,7 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
 }
 
 // By user, future Client.
+// Called by M_Connect.
 void CL_UpdateServerList( boolean internetsearch )
 {
     SL_ClearServerList(0);
@@ -774,8 +775,10 @@ void CL_UpdateServerList( boolean internetsearch )
         msg_server_t *server_list;
         int  i;
 
-        if( (server_list = GetShortServersList()) )
+        server_list = MS_Get_ShortServersList();
+        if( server_list )
         {
+	    // Poll the servers on the list to get ping time.
             for (i=0; server_list[i].header[0]; i++)
             {
                 int  node;
@@ -1366,8 +1369,9 @@ void D_Quit_NetGame (void)
             if( nodeingame[nn] )
                 HSendPacket(nn,true,0,0);
 	}
+        // Close registration with the Master Server.
         if ( serverrunning && cv_internetserver.value )
-             UnregisterServer(); 
+             MS_UnregisterServer(); 
     }
     else
     if( (servernode < MAXNETNODES)
@@ -1578,8 +1582,12 @@ boolean SV_SpawnServer( void )
         if( netgame )
         {
             I_NetOpenSocket();
+	    // Register with the Master Server.
             if( cv_internetserver.value )
-                RegisterServer(0, 0);
+	    {
+	        // MasterServer address is in cv_masterserver.
+                MS_RegisterServer();
+	    }
         }
 
         // server just connect to itself
@@ -2726,7 +2734,7 @@ void NetUpdate(void)
         // By Server
         //Hurdler: added for acking the master server
         if( cv_internetserver.value )
-            SendPingToMasterServer();
+            MS_SendPing_MasterServer( nowtime );
 
         if(!demoplayback)
 	    SV_Send_Tic_Update( realtics );

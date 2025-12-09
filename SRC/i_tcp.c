@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
+// $Id: i_tcp.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -263,6 +263,7 @@ typedef struct sockaddr_ipx {
 #  define close closesocket
 #endif
 
+
 // A network address, kept in network byte order.
 typedef union {
         struct sockaddr_in  ip;
@@ -295,7 +296,19 @@ int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
 // Network is big-endian, 386,486,586 PC are little-endian.
 // htons: host to net byte order
 // ntohs: net to host byte order
-  
+
+#if defined( WIN32) || defined( __OS2__) || defined( SOLARIS)
+// [WDJ] Also defined in mserv.c, but too small, will be inlined anyway.
+static inline
+int inet_aton(const char *hostname,
+	      /* OUT */ struct in_addr *addr)
+{
+    // [WDJ] This cannot handle 255.255.255.255, which == INADDR_NONE.
+    addr->s_addr = inet_addr(hostname);
+    return ( addr->s_addr != INADDR_NONE );
+}   
+#endif
+
 // To print error messages
 char *SOCK_AddrToStr(mysockaddr_t *sk)
 {

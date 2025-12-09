@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: d_netcmd.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -118,8 +118,16 @@
 
 #include "d_netcmd.h"
 #include "i_system.h"
+  // I_ functions
 #include "dstrings.h"
+#include "d_main.h"
+  // D_ functions
 #include "g_game.h"
+  // G_ functions
+#include "byteptr.h"
+  // WRITEBYTE, READBYTE
+
+// cv_ vars and settings from many sources, needed by Command_ functions
 #include "hu_stuff.h"
 #include "g_input.h"
 #include "m_menu.h"
@@ -131,13 +139,12 @@
 #include "s_sound.h"
 #include "m_misc.h"
 #include "am_map.h"
-#include "byteptr.h"
 #include "d_netfil.h"
 #include "p_spec.h"
 #include "m_cheat.h"
 #include "d_clisrv.h"
+#include "mserv.h"
 #include "v_video.h"
-#include "d_main.h"
 
 // ------
 // protos
@@ -185,8 +192,6 @@ void Command_ExitGame_f(void);
 
 void Command_Kill(void);
 
-//Added by Hurdler for master server connection
-void AddMServCommands(void);
 
 // =========================================================================
 //                           CLIENT VARIABLES
@@ -316,7 +321,7 @@ void D_Register_ClientCommands(void)
     COM_AddCommand("kill", Command_Kill);
 
     //Added by Hurdler for master server connection
-    AddMServCommands();
+    MS_Register_Commands();
 
     // p_mobj.c
     CV_RegisterVar(&cv_itemrespawntime);
