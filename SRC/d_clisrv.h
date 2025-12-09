@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: d_clisrv.h 1155 2015-04-03 14:00:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -251,6 +251,9 @@ typedef struct
 extern  netbuffer_t*   netbuffer;        
 
 extern consvar_t cv_playdemospeed;
+extern consvar_t cv_server1;
+extern consvar_t cv_server2;
+extern consvar_t cv_server3;
 
 //#define PACKET_BASE_SIZE     ((int)&( ((netbuffer_t *)0)->u))
 #define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
+// $Id: d_clisrv.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -175,7 +175,15 @@
 
 const int  NETWORK_VERSION = 21; // separate version number for network protocol (obsolete)
 
+typedef enum {
+   NS_idle,
+   NS_searching_server,
+   NS_waiting,
+   NS_active,
+   NS_shutdown
+} network_state_e;
 
+static network_state_e  network_state = NS_idle;
 
 #define PREDICTIONQUEUE         BACKUPTICS
 #define PREDICTIONMASK          (PREDICTIONQUEUE-1)
@@ -239,6 +247,9 @@ static textbuf_t  textcmds[BACKUPTICS][MAXPLAYERS];
 
 consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
 
+consvar_t cv_server1 = { "server1", "192.168.1.255", CV_SAVE, NULL };
+consvar_t cv_server2 = { "server2", "", CV_SAVE, NULL };
+consvar_t cv_server3 = { "server3", "", CV_SAVE, NULL };
 
 // some software don't support largest packet
 // (original sersetup, not exactly, but the probability of sending a packet
@@ -682,6 +693,21 @@ static void CL_Send_AskInfo( int to_node )
     HSendPacket(to_node, false, 0, sizeof(askinfo_pak));
 }
 
+
+// By Client.
+// Broadcast to find some servers.
+//   addrstr: broadcast addr string
+static void CL_Broadcast_AskInfo( char * addrstr )
+{
+    // Modifies the broadcast address.
+    if( addrstr
+        && Bind_Node_str( BROADCASTADDR, addrstr ) )
+    {
+        CL_Send_AskInfo( BROADCASTADDR );
+    }
+}
+
+
 server_info_t serverlist[MAXSERVERLIST];
 int serverlistcount=0;
 
@@ -759,6 +785,8 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
 // Called by M_Connect.
 void CL_UpdateServerList( boolean internetsearch )
 {
+    int  i;
+
     SL_ClearServerList(0);
 
     if( !netgame )
@@ -766,14 +794,17 @@ void CL_UpdateServerList( boolean internetsearch )
         I_NetOpenSocket();
         netgame = true;
         multiplayer = true;
+        network_state = NS_searching_server;
     }
+
     // Search for local servers.
-    CL_Send_AskInfo( BROADCASTADDR );
+    CL_Broadcast_AskInfo( cv_server1.string );
+    CL_Broadcast_AskInfo( cv_server2.string );
+    CL_Broadcast_AskInfo( cv_server3.string );
 
     if( internetsearch )
     {
         msg_server_t *server_list;
-        int  i;
 
         server_list = MS_Get_ShortServersList();
         if( server_list )
@@ -1355,6 +1386,11 @@ void D_Quit_NetGame (void)
     if (!netgame)
         return;
 
+    // [WDJ] This can tight loop when the network fails.
+    if( network_state == NS_shutdown )
+        return;
+    network_state = NS_shutdown;
+     
     DEBFILE("==== Quiting Game, closing connection ====\n" );
 
     // abort send/receive of files

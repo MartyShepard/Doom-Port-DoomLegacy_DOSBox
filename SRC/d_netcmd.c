@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
+// $Id: d_netcmd.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -359,6 +359,9 @@ void D_Register_ClientCommands(void)
     CV_RegisterVar(&cv_timelimit);
     CV_RegisterVar(&cv_playdemospeed);
     CV_RegisterVar(&cv_netstat);
+    CV_RegisterVar(&cv_server1);
+    CV_RegisterVar(&cv_server2);
+    CV_RegisterVar(&cv_server3);
 
     COM_AddCommand("load", Command_Load_f);
     Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);

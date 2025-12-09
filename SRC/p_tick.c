@@ -113,14 +113,14 @@ void P_AllocateThinker (thinker_t*      thinker)
 //
 // P_RunThinkers
 //
-void P_RunThinkers (void)
+void P_RunThinkers(void)
 {
-    thinker_t*  currentthinker;
+    thinker_t *currentthinker;
 
     currentthinker = thinkercap.next;
     while (currentthinker != &thinkercap)
     {
-        if ( currentthinker->function.acv == (actionf_v)(-1) )
+        if (currentthinker->function.acv == (actionf_v)(-1))
         {
             void *removeit;
             // time to remove it
@@ -129,16 +129,20 @@ void P_RunThinkers (void)
             removeit = currentthinker;
             currentthinker = currentthinker->next;
             Z_Free (removeit);  // mobj, etc.
+            continue;						
         }
-        else
+        else if (currentthinker->function.acp1==0)
         {
-            if (currentthinker->function.acp1)
-                currentthinker->function.acp1 (currentthinker);
             currentthinker = currentthinker->next;
+            continue;
         }
+        else if (currentthinker->function.acp1>0)
+				{
+          currentthinker->function.acp1(currentthinker);
+          currentthinker = currentthinker->next;
+				}
     }
 }
-
 
 
 //

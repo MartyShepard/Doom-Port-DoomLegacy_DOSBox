@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01155 ]: w102 search server
 [01154 ]: w102 ms ping
 [01153 ]: w102 mserv
 [01152 ]: w102 netcansend

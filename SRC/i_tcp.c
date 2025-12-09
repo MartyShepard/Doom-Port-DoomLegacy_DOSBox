@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1154 2015-04-03 13:58:51Z wesleyjohnson $
+// $Id: i_tcp.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -289,7 +289,7 @@ static SOCKET   mysocket = -1;
 
 
 #ifdef USE_IPX
-static boolean  ipx;
+static boolean  ipx_select;
 #endif
 int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
 
@@ -334,7 +334,11 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
 # else
         // Linux IPX, but Not FreeBSD
         sprintf(s,"%08x.%02x%02x%02x%02x%02x%02x:%d",
+#  if 1
+		  ntohl(sk->ipx.sipx_network),  // big_endian, 32bit
+#  else
                   sk->ipx.sipx_network,
+#  endif
                   (byte)sk->ipx.sipx_node[0],
                   (byte)sk->ipx.sipx_node[1],
                   (byte)sk->ipx.sipx_node[2],
@@ -441,6 +445,99 @@ void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port )
 #else
     node_hash[nnode] = 1;
 #endif
+}
+
+
+// Setup broadcast address to BROADCASTADDR entry.
+// To send broadcasts, PT_ASKINFO.
+// [WDJ] Broadcast address for network "192.168.1.x" is "192.168.1.255".
+// INADDR_BROADCAST is "255.255.255.255" which gives network unreachable.
+
+// Bind an inet or ipx address string to a net node.
+boolean  Bind_Node_str( int nnode, char * addrstr )
+{
+    mysockaddr_t address;
+
+    if( addrstr == NULL )   goto addr_fail;
+    if( addrstr[0] < '0' )  goto addr_fail;
+
+#ifdef USE_IPX
+    if(ipx_select)
+    {
+        // Network byte order is big-endian first.
+        int  cnt;
+
+# ifdef LINUX
+        // IPX address format (HEX) "7F20540F:5C0020040101"
+	// Keep it big-endian order, so do not have to convert.
+        byte   ba[11];
+        cnt = sscanf(addrstr,
+	      "%02hhx%02hhx%02hhx%02hhx.%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+	    &ba[0], &ba[1], &ba[2], &ba[3],
+	    &ba[4], &ba[5], &ba[6], &ba[7], &ba[8], &ba[9] );
+        if( cnt != 10 )  goto addr_fail;  // need exactly 10 digits
+
+        clientaddress[nnode].ipx.sipx_family = AF_IPX;
+        clientaddress[nnode].ipx.sipx_port = htons(sock_port);
+#  ifdef FREEBSD
+        // FreeBSD
+	// network: ipx.sipx_addr.xnet.s_net[0..1]   16 bit, big endian
+	// addr: ipx.sipx_addr.x_host.c_host[0..5]   8 bit
+	memcpy(&clientaddress[nnode].ipx.sipx_addr.x_net.s_net[0], &ba[0], 4 );
+	memcpy(&clientaddress[nnode].ipx.sipx_addr.x_host.c_host[0], &ba[4], 6 );
+#  else
+        // Linux, but Not FreeBSD
+	// network: ipx.sipx_network   32 bit, big endian
+	// addr: ipx.sipx_node[0..5]   8 bit
+	memcpy(&clientaddress[nnode].ipx.sipx_network, &ba[0], 4 );
+	memcpy(&clientaddress[nnode].ipx.sipx_node[0], &ba[4], 6 );
+#  endif
+# else
+        // Windows, etc.
+        // IPX address format (HEX) "7F20540F:5C0020040101"
+	// Keep it big-endian order, so do not have to convert.
+        // Windows is missing the hh conversion, at least in MINGW.
+	int  i;
+        int  ib[4], ic[6];
+        cnt = sscanf(addrstr,
+	      "%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x",
+	    &ib[0], &ib[1], &ib[2], &ib[3],
+	    &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5] );
+        if( cnt != 10 )  goto addr_fail;  // need exactly 10 digits
+
+        // Convert int to byte, keeping BIG endian.
+       	// network: ipx.sa_netnum[0..3]   8 bit
+	// addr:   ipx.sa_nodenum[0..5]   8 bit
+	for( i=0; i<4; i++ )
+	    clientaddress[nnode].ipx.sa_netnum[i] = ib[i];
+	for( i=0; i<6; i++ )
+	    clientaddress[nnode].ipx.sa_nodenum[i] = ic[i];
+# endif // linux
+# ifdef NODE_ADDR_HASHING
+//	node_hash[nnode] = IPX_hashaddr( &clientaddress[nnode] );
+        node_hash[nnode] = 1;  // send only
+# else
+        node_hash[nnode] = 1;  // send only
+# endif
+    }
+    else
+#endif // IPX
+    {
+        // INET
+        if( ! inet_aton( addrstr, &address.ip.sin_addr ) )
+	   goto addr_fail;
+
+        UDP_Bind_Node( nnode, address.ip.sin_addr.s_addr, sock_port );
+    }
+#if 0
+    // DEBUG
+    GenPrintf( EMSG_debug, "Bind Node %d to %s\n", nnode,
+	       SOCK_AddrToStr( &clientaddress[nnode] ) );
+#endif
+    return true;
+
+addr_fail:
+    return false;
 }
 
 
@@ -658,6 +755,8 @@ boolean  SOCK_Send(void)
     if( node_hash[nnode] == 0 )   goto node_unconnected;
 
     // sockaddr is defined in sys/socket.h
+    // MSG_DONTROUTE: Do not use a gateway, local network only.
+    // MSG_DONTWAIT: Do not block.
 #ifdef LINUX
     cnt = sendto(mysocket,
 		&doomcom->data, doomcom->datalength,  // packet
@@ -786,6 +885,21 @@ static SOCKET  UDP_Socket (void)
 		      sizeof(trueval));  // length of value
 #endif
 
+#if 1
+    // Set SO_DEBUG
+#ifdef LINUX
+    stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
+		      &trueval,  // option value
+		      sizeof(trueval));  // length of value
+#else
+    // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
+    stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
+		      // Some other port requires (char*), undocumented.
+		      (char *)&trueval,  // option value
+		      sizeof(trueval));  // length of value
+#endif
+#endif
+   
     // Set Network receive buffer size.
     optlen=sizeof(optval);  // Linux: gets modified
     // optval: gets the value of the option
@@ -836,15 +950,7 @@ static SOCKET  UDP_Socket (void)
     node_hash[0] = UDP_hashaddr( &clientaddress[0] );
 #endif
 
-    // Setup broadcast adress to BROADCASTADDR entry
-    // To send broadcasts, PT_ASKINFO
-    clientaddress[BROADCASTADDR].ip.sin_family      = AF_INET;
-    clientaddress[BROADCASTADDR].ip.sin_port        = htons(sock_port);
-    clientaddress[BROADCASTADDR].ip.sin_addr.s_addr = INADDR_BROADCAST;
-#ifdef NODE_ADDR_HASHING
-//    node_hash[BROADCASTADDR] = UDP_hashaddr( &clientaddress[BROADCASTADDR] );
-    node_hash[BROADCASTADDR] = 1;  // send only
-#endif
+    // [WDJ] Broadcast is now setup at use by CL_Broadcast_AskInfo.
 
     doomcom->extratics=1; // internet is very high ping
 
@@ -871,7 +977,7 @@ static SOCKET  IPX_Socket (void)
 #endif
     int    optval;
     socklen_t optlen;
-    int  stat, i;
+    int  stat;
 
     // allocate a socket
     s = socket (AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
@@ -945,35 +1051,7 @@ static SOCKET  IPX_Socket (void)
     // ipx header
     net_packetheader_length=30; // for stats
 
-    // setup broadcast adress to BROADCASTADDR entry
-#ifdef LINUX
-    clientaddress[BROADCASTADDR].ipx.sipx_family = AF_IPX;
-    clientaddress[BROADCASTADDR].ipx.sipx_port = htons(sock_port);
-#ifdef FREEBSD
-    // FreeBSD
-    clientaddress[BROADCASTADDR].ipx.sipx_addr.x_net.s_net[0] = 0;
-    clientaddress[BROADCASTADDR].ipx.sipx_addr.x_net.s_net[1] = 0;
-    for(i=0;i<6;i++)
-       clientaddress[BROADCASTADDR].ipx.sipx_addr.x_host.c_host[i] = (byte)0xFF;
-#else
-    // Linux, but Not FreeBSD
-    clientaddress[BROADCASTADDR].ipx.sipx_network = 0;
-    for(i=0;i<6;i++)
-       clientaddress[BROADCASTADDR].ipx.sipx_node[i] = (byte)0xFF;
-#endif
-#else
-    // Windows, etc.
-    clientaddress[BROADCASTADDR].ipx.sa_family = AF_IPX;
-    clientaddress[BROADCASTADDR].ipx.sa_socket = htons(sock_port);
-    for(i=0;i<4;i++)
-       clientaddress[BROADCASTADDR].ipx.sa_netnum[i] = 0;
-    for(i=0;i<6;i++)
-       clientaddress[BROADCASTADDR].ipx.sa_nodenum[i] = (byte)0xFF;
-#endif // linux
-#ifdef NODE_ADDR_HASHING
-//    node_hash[BROADCASTADDR] = IPX_hashaddr( &clientaddress[BROADCASTADDR] );
-    node_hash[BROADCASTADDR] = 1;  // send only
-#endif
+    // [WDJ] Broadcast is now setup at use by CL_Broadcast_AskInfo.
 
     SOCK_cmpaddr=IPX_cmpaddr;
 #ifdef NODE_ADDR_HASHING
@@ -1079,7 +1157,7 @@ int SOCK_NetMakeNode (char *hostname)
 
     // server address only in ip
 #ifdef USE_IPX
-    if(ipx)
+    if(ipx_select)
     {
         // ipx only
 #ifdef PARSE_LOCALHOSTNAME
@@ -1179,7 +1257,7 @@ boolean SOCK_OpenSocket( void )
     // build the socket
     // Setup up Broadcast.
 #ifdef USE_IPX
-    if(ipx) {
+    if(ipx_select) {
         mysocket = IPX_Socket ();
         net_bandwidth = 800000;
         hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
@@ -1204,7 +1282,7 @@ boolean I_InitTcpNetwork( void )
     int      num;
 
 #ifdef USE_IPX
-    ipx=M_CheckParm("-ipx");
+    ipx_select = M_CheckParm("-ipx");
 #endif
     
     // initilize the driver
@@ -1259,7 +1337,7 @@ boolean I_InitTcpNetwork( void )
         // server address only in ip
         if(serverhostname[0]
 #ifdef USE_IPX	   
-	   && !ipx
+	   && !ipx_select
 #endif
 	   )
         {

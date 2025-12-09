@@ -4270,3 +4270,17 @@ with time packets.
 New code, enabled with UDP_PING_SPECIAL, uses a utility net node, MS_PINGNODE,
 for this pinging.  This allows 32 players.
 A new function, UDP_Bind_Node, has been created to enable this.
+
+*** W102_search_server
+patchfile = w102_16_search_server.patch
+- commit revision 1155
+Fix the code to search for a server on the network.
+Added config vars  server1, server2, server3, so the user can save
+their server settings.  They can hold a server IP address such as
+"192.168.1.1", or a network broadcast address such as "192.168.1.255.
+The previous used broadcast address "255.255.255.255" was incorrect.
+That only returns "network unreachable" messages, because the network
+"255.255.255.0" is not known.
+Fix the network IPX address print and bind functions.
+Fix the network shutdown to not loop in error messages when the
+network fails.

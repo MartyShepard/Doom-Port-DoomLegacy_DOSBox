@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1154 2015-04-03 13:58:51Z wesleyjohnson $
+// $Id: i_net.h 1155 2015-04-03 14:00:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -154,6 +154,9 @@ extern void    (*I_NetCloseSocket) (void);
 //  saddr: IP address in network byte order
 //  port: port number in host byte order
 void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port );
+
+// Bind an inet or ipx address string to a net node.
+boolean  Bind_Node_str( int nnode, char * addrstr );
 
 
 boolean I_InitNetwork (void);
