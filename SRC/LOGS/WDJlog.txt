@@ -4346,3 +4346,9 @@ They have been recorded in i_tcp.c now, and the macos/i_tcp.c file deleted.
 patchfile = w102_23_mobj_return.patch
 - commit revision 1163
 Fix some mobj functions to have a final return stmt.
+
+*** W102_cv_inc
+patchfile = w102_24_cv_inc.patch
+- commit revision 1164
+Give the CV_Possible_t system an INC option.  This is used to increment the
+wait time in 5 second increments.

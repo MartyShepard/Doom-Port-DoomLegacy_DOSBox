@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: command.h 1164 2015-04-03 14:18:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -110,26 +110,26 @@ boolean VS_Print (vsbuf_t *buf, char *data); // strcats onto the sizebuf
 // Console variables
 //==================
 // console vars are variables that can be changed through code or console,
-// at RUN TIME. They can also act as simplified commands, because a func-
-// tion can be attached to a console var, which is called whenever the
+// at RUN TIME. They can also act as simplified commands, because a
+// function can be attached to a console var, which is called whenever the
 // variable is modified (using flag CV_CALL).
 
 // flags for console vars
 
 typedef enum
 {
-    CV_SAVE   = 1,    // save to config when quit game
-    CV_CALL   = 2,    // call function on change
-    CV_NETVAR = 4,    // send it when change (see logboris.txt at 12-4-2000)
-    CV_NOINIT = 8,    // dont call function when var is registered (1st set)
-    CV_FLOAT  = 16,    // the value is fixed 16:16, where unit is FRACUNIT
+    CV_SAVE   = 0x01, // save to config when quit game
+    CV_CALL   = 0x02, // call function on change
+    CV_NETVAR = 0x04, // send it when change (see logboris.txt at 12-4-2000)
+    CV_NOINIT = 0x08, // dont call function when var is registered (1st set)
+    CV_FLOAT  = 0x10, // the value is fixed 16:16, where unit is FRACUNIT
                       // (allow user to enter 0.45 for ex)
                       // WARNING: currently only supports set with CV_Set()
-    CV_NOTINNET = 32, // some varaiable can't be changed in network but is not netvar (ex: splitscreen)
-    CV_MODIFIED = 64, // this bit is set when cvar is modified
-    CV_SHOWMODIF = 128,   // say something when modified
-    CV_SHOWMODIFONETIME = 256,  // same but will be reset to 0 when modified, set in toggle
-    CV_HIDEN   = 1024,    // variable is not part of the cvar list so cannot be accessed by the console
+    CV_NOTINNET = 0x20, // some varaiable can't be changed in network but is not netvar (ex: splitscreen)
+    CV_MODIFIED = 0x40, // this bit is set when cvar is modified
+    CV_SHOWMODIF = 0x80,  // say something when modified
+    CV_SHOWMODIFONETIME = 0x100,  // same but will be reset to 0 when modified, set in toggle
+    CV_HIDEN   = 0x200,   // variable is not part of the cvar list so cannot be accessed by the console
                           // can only be set when we have the pointer to hit 
                           // used on the menu
 } cvflags_t;
@@ -140,12 +140,16 @@ struct CV_PossibleValue_s {
 };
 
 typedef struct CV_PossibleValue_s CV_PossibleValue_t;
+// [WDJ] CV_PossibleValue supports the following structures.
+// MIN .. MAX : First element has label MIN.  Last element is maximum value.
+// MIN INC .. MAX : Label INC is the increment.
+// List of values : Next or previous value on the list.
 
 typedef struct consvar_s
 {
     char    *name;
     char    *defaultvalue;
-    int     flags;             // flags see cvflags_t above
+    uint32_t flags;            // flags see cvflags_t above
     CV_PossibleValue_t *PossibleValue;  // table of possible values
     void    (*func) (void);    // called on change, if CV_CALL set
     int     value;             // for int and fixed_t

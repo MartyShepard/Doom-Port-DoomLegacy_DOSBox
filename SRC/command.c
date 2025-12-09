@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1136 2014-09-17 13:52:12Z wesleyjohnson $
+// $Id: command.c 1164 2015-04-03 14:18:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -1239,30 +1239,46 @@ void CV_SetValue (consvar_t *var, int value)
 
 void CV_AddValue (consvar_t *var, int increment)
 {
-    int   newvalue=var->value+increment;
+    int   newvalue = var->value + increment;
 
     if( var->PossibleValue )
     {
         if( strcmp(var->PossibleValue[MINpv].strvalue,"MIN")==0 )
         {
+	    // MIN .. MAX
+	    int min_value = var->PossibleValue[MINpv].value; 
+	    int max_value = MAXINT;
             int max;
-            // seach the next to last
-            for(max=0; var->PossibleValue[max+1].strvalue!=NULL; max++)
-            	;
-
-            if( newvalue<var->PossibleValue[MINpv].value )
+	    
+            // Search the list.
+            for(max=0; max<99 ; max++)
 	    {
-                newvalue+=var->PossibleValue[max].value-var->PossibleValue[MINpv].value+1;   // add the max+1
+	        if( var->PossibleValue[max].strvalue == NULL )
+		   break;
+	        if( strcmp(var->PossibleValue[max].strvalue,"INC")==0 )
+	        {
+		    // Has an INC
+		    newvalue = var->value
+		     + (increment * var->PossibleValue[max].value);
+		}
+	        else
+	        {
+		   max_value = var->PossibleValue[max].value;
+		}
 	    }
-            newvalue=var->PossibleValue[MINpv].value +
-                     (newvalue-var->PossibleValue[MINpv].value) %
-                       (var->PossibleValue[max].value -
-                        var->PossibleValue[MINpv].value+1);
+
+            if( newvalue < min_value )
+	    {
+                newvalue += max_value - min_value + 1;   // add the max+1
+	    }
+            newvalue = min_value
+	     + ((newvalue - min_value) % (max_value - min_value + 1));
 
             CV_SetValue(var,newvalue);
         }
         else
         {
+	    // List of Values
             int max,currentindice=-1,newindice;
 
             // this code do not support more than same value for differant PossibleValue
