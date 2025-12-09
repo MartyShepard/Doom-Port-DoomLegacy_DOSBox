@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: d_clisrv.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -189,9 +189,9 @@ static network_state_e  network_state = NS_idle;
 #define PREDICTIONMASK          (PREDICTIONQUEUE-1)
 
 // Server state
-boolean         server = true;           // true or false but !server=client
-boolean         serverrunning = false;
-byte            serverplayer;  // 255= no server player (same as -1)
+boolean  server = true; // false when Client connected to other server
+boolean  serverrunning = false;
+byte     serverplayer;  // 255= no server player (same as -1)
 
 // Server specific vars.
 // player=255 when unused
@@ -532,7 +532,6 @@ static cl_mode_t  cl_mode = CLM_searching;
 
 static int16_t  Consistency(void);
 static void Net_Packet_Handler(void);
-void SV_ResetServer( void );
 
 
 // By Client.
@@ -846,11 +845,13 @@ void CL_Update_ServerList( boolean internetsearch )
 
 // By User, future Client, and by server not dedicated.
 // Use adaptive send using net_bandwidth and stat.sendbytes.
+// Called by Command_connect, SV_SpawnServer
 //  servernode: if set then reconnect, else search
 static void CL_ConnectToServer( void )
 {
     int  numnodes;
-    int  nodewaited = doomcom->num_player_netnodes;
+    int  wait_nodes = cv_wait_players.value;  // wait for all players
+    int  wait_tics = cv_wait_timeout.value * TICRATE;
     int  nn;  // net node num
     int  i;
     tic_t   askinfo_tic;  // to repeat askinfo
@@ -1025,6 +1026,15 @@ static void CL_ConnectToServer( void )
 	   
             CON_Drawer ();
             I_FinishUpdate ();              // page flip or blit buffer
+	   
+	    if( server )
+	    {
+	        // Service the wait tics.
+	        if( wait_tics > 1 )
+	        {
+		    wait_tics--;  // count down to 1
+		}
+	    }
         }
 
         if(server)
@@ -1035,9 +1045,20 @@ static void CL_ConnectToServer( void )
 	    {
                 if(nodeingame[nn])  numnodes++;
 	    }
+	    if( wait_nodes )
+	    {
+	        // Waiting on player net nodes, with or without timeout.
+	        if( numnodes < wait_nodes )
+	        {
+		    // Waiting for player net nodes.
+		    if( wait_tics != 1 )  // timeout at 1
+		        continue;  // waiting only for number of players
+		}
+	    }
+	    else if( wait_tics > 1 )
+	        continue;  // waiting for players by timeout
         }
-    }  while (!( (cl_mode == CLM_connected) &&
-                 ( (!server) || (server && (nodewaited<=numnodes)) )));
+    } while ( cl_mode != CLM_connected );
 
     DEBFILE(va("Synchronization Finished\n"));
 
@@ -1059,6 +1080,7 @@ reset_to_title_exit:
     D_StartTitle();
     return;
 }
+
 
 // By User, future Client.
 void Command_connect(void)
@@ -1131,8 +1153,9 @@ static void CL_RemovePlayer(int playernum)
     if( server && !demoplayback )
     {
         byte nnode = player_to_nnode[playernum];
-        playerpernode[nnode]--;
-        if( playerpernode[nnode]<=0 )
+        if( playerpernode[nnode] )
+	    playerpernode[nnode]--;
+        if( playerpernode[nnode] == 0 )
         {
             nodeingame[player_to_nnode[playernum]] = false;
             Net_CloseConnection(player_to_nnode[playernum]);
@@ -1353,9 +1376,6 @@ void D_Init_ClientServer (void)
     }
 //    GenPrintf(EMSG_debug, "viewangleoffset=%i\n", viewangleoffset );
 
-    // for dedicated server, without player
-    dedicated=M_CheckParm("-dedicated")!=0;
-    
     COM_AddCommand("playerinfo",Command_PlayerInfo);
     COM_AddCommand("kick",Command_Kick);
     COM_AddCommand("connect",Command_connect);
@@ -1370,12 +1390,7 @@ void D_Init_ClientServer (void)
     localgametic = 0;
 
     // do not send anything before the real begin
-    SV_StopServer();
-
-    SV_ResetServer();
-
-    if(dedicated)
-	SV_SpawnServer();
+    SV_StopServer();  // as an Init
 }
 
 // nnode: 0..(MAXNETNODES-1)
@@ -1670,7 +1685,7 @@ boolean Game_Playing( void )
 }
 
 // By Server and Server-only commands.
-// Called by D_Init_ClientServer (dedicated server).
+// Called by D_Startup_NetGame (dedicated server).
 // Called by Command_Map_f, Command_Load_f (server).
 // Return true when a new player is added.
 boolean SV_SpawnServer( void )
@@ -2600,17 +2615,6 @@ static void SV_Send_Tics (void)
 //
 static void Local_Maketic(int realtics)
 {
-    if(dedicated)
-	return;
-    
-    I_OsPolling();       // i_getevent
-    D_ProcessEvents ();  // menu responder ???!!!
-                         // Cons responder
-                         // game responder call :
-                         //    HU_responder,St_responder, Am_responder
-                         //    F_responder (final)
-                         //    and G_MapEventsToControls
-
     rendergametic=gametic;
     // translate inputs (keyboard/mouse/joystick) into game controls
     G_BuildTiccmd(&localcmds, realtics, 0);
@@ -2683,6 +2687,7 @@ void SV_Maketic(void)
 static  int     net_load;
 #endif
 
+//  realtics: 0..5
 void TryRunTics (tic_t realtics)
 {
     // the machine have laged but is not so bad
@@ -2697,7 +2702,7 @@ void TryRunTics (tic_t realtics)
     if(singletics)
         realtics = 1;
 
-    if( realtics>= 1)
+    if( realtics > 0 )
         COM_BufExecute();            
 
     NetUpdate();
@@ -2732,9 +2737,12 @@ void TryRunTics (tic_t realtics)
     if (cl_need_tic > gametic)
     {
         if (demo_ctrl == DEMO_seq_advance)  // and not disabled
+        {
             D_DoAdvanceDemo ();
-        else
-        // run the count * tics
+	    return;
+	}
+
+        // Run the count * tics
         while (cl_need_tic > gametic)
         {
             DEBFILE(va("==== Runing tic %u (local %d)\n",gametic, localgametic));
@@ -2822,10 +2830,23 @@ void NetUpdate(void)
     if( !server )
         maketic = cl_need_tic;
 
-    Local_Maketic (realtics);    // make local tic, and call menu ?!
+    if( ! dedicated )
+    {
+        // Local Client
+        I_OsPolling();       // i_getevent
+        D_ProcessEvents ();
+          // menu responder ???!!!
+          // Cons responder
+          // game responder call :
+          //    HU_responder,St_responder, Am_responder
+          //    F_responder (final)
+          //    and G_MapEventsToControls
 
-    if( server && !demoplayback && !dedicated)
-        CL_Send_ClientCmd();     // send server tic
+        Local_Maketic (realtics);  // make local tic
+
+        if( server && !demoplayback )
+	    CL_Send_ClientCmd();     // send server tic
+    }
 
     Net_Packet_Handler();  // get packet from client or from server
 
@@ -2847,7 +2868,11 @@ void NetUpdate(void)
         if( Filetx_file_cnt )  // Rare to have file download in progress.
 	    Filetx_Ticker();
     }
+
     Net_AckTicker();
-    M_Ticker ();
-    CON_Ticker();
+    if( ! dedicated )
+    {
+        M_Ticker ();
+        CON_Ticker();
+    }
 }

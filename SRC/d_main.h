@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1070 2013-12-14 00:27:19Z wesleyjohnson $
+// $Id: d_main.h 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -54,9 +54,6 @@ extern char *doomwaddir;
 extern consvar_t cv_home, cv_doomwaddir, cv_iwad;
 
 extern byte  init_sequence;  // = 0 on first init
-
-// for dedicated server
-extern boolean dedicated;
 
 // Background color fades for FS
 extern unsigned long fadecolor;

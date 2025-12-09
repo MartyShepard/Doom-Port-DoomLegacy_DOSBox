@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: screen.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -67,7 +67,7 @@
 #include "st_stuff.h"
 #include "hu_stuff.h"
 #include "z_zone.h"
-#include "d_main.h"
+//#include "d_main.h"
 
 
 

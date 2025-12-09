@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: i_tcp.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1276,11 +1276,9 @@ boolean SOCK_OpenSocket( void )
 
 
 // Called by D_Startup_NetGame
-boolean I_Init_TCP_Network( void )
+void I_Init_TCP_Network( void )
 {
     char     serverhostname[255];
-    boolean  ret=0;
-    int      num;
 
 #ifdef USE_IPX
     ipx_select = M_CheckParm("-ipx");
@@ -1294,39 +1292,13 @@ boolean I_Init_TCP_Network( void )
         sock_port = atoi(M_GetNextParm());
 
     // parse network game options,
-    if ( M_CheckParm ("-server") || dedicated)
+    if ( server )
     {
-        server=true;
-
-        // if a number of clients (i.e. nodes) is specified, the server will wait for the clients to connect before starting
-        // if no number is specified here, the server starts with 1 client, others can join in-game.
-        // since Boris has implemented join in-game, there is no actual need for specifying a particular number here
-        // FIXME: for dedicated server, numnodes needs to be set to 0 upon start
-        if( M_IsNextParm() )
-        {
-	    // Number of players.
-            num = atoi(M_GetNextParm());
-	    if( num < 0 )
-	       num = 0;
-	    if( num > MAXNETNODES)
-               num = MAXNETNODES;
-	}
-        else if (dedicated)
-            num = 0;
-        else
-            num = 1;
-
-        doomcom->num_player_netnodes = num;
-
-        // server
-        servernode = 0;  // server set to self
         // FIXME:
         // ??? and now ?
         // server on a big modem ??? 4*isdn
         net_bandwidth = 16000;
         hardware_MAXPACKETLENGTH = INETPACKETLENGTH;
-
-        ret = true;
     }
     else if( M_CheckParm ("-connect") )
     {
@@ -1360,6 +1332,4 @@ boolean I_Init_TCP_Network( void )
     }
 
     I_NetOpenSocket = SOCK_OpenSocket;
-
-    return ret;
 }

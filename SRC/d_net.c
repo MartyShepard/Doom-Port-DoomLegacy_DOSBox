@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: d_net.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -46,7 +46,7 @@
 //
 //
 // DESCRIPTION:
-//      DOOM Network game communication and protocol,
+//      DOOM Network game communication and protocol, Low level functions,
 //      all OS independent parts.
 //
 //      Implements a Sliding window protocol, without receiver window
@@ -1324,18 +1324,20 @@ fail_ret:
 // D_Startup_NetGame
 // Works out player numbers among the net participants
 //
-// Returns true when a network connection is made.
+// Returns true when a network game is started by command line.
 boolean D_Startup_NetGame(void)
 {
-    boolean netgame_ok = false;
+    boolean client;
     int  num;
 
+    // Bring up low level functions.
     InitAck();
     rebound_tail=0;
     rebound_head=0;
 
     stat_starttic = I_GetTime();  // start netstat interval
 
+    // Default
     I_NetGet           = Internal_Get;
     I_NetSend          = Internal_Send;
     I_NetCanSend       = NULL;
@@ -1343,40 +1345,97 @@ boolean D_Startup_NetGame(void)
     I_NetFreeNode      = Internal_FreeNode;
     I_NetMakeNode      = NULL;
 
-    // Defaults
-    hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
-    net_bandwidth = 3000;
-   
+    // The default mode is server.
+    // Set to Client mode when connect to another server.
+    server = true;
+    netgame = false;
+    multiplayer = false;
+
+    // Need dedicated and server determined, before most other Init.
+    num = MAXNETNODES+9;  // invalid, cv_wait_players already has default.
+    dedicated = ( M_CheckParm("-dedicated") != 0 );
+    if( dedicated )
+    {
+        server = true;
+        netgame = true;
+        num = 0;  // dedicated number players
+        // -server can set some other wait nodes value
+    }
+
+    if ( M_CheckParm ("-server"))
+    {
+        server = true;
+        netgame = true;
+
+        // If a number of clients (i.e. nodes) is specified, the server will
+        // wait for the clients to connect before starting.
+        // If no number is specified here, the server starts with 1 client,
+        // others can join in-game.
+	// A value of 0 allows join in-game, and wait_timeout game start,
+        // with an unknown number of players.
+        if( M_IsNextParm() )
+        {
+	    // Number of players.
+            num = atoi(M_GetNextParm());
+	    if( num < 0 )
+	       num = 0;
+	    if( num > MAXNETNODES )
+               num = MAXNETNODES;
+	}
+        else
+            num = 1;
+        // Wait for player nodes during startup.
+    }
+
+    if( num < MAXNETNODES+1 )
+    {
+        // It is possible to escape to menus, and direct setting only the
+        // value interferes with menu setting of the value.
+        CV_SetValue( &cv_wait_players, num );
+    }
+
+    client = ( M_CheckParm ("-connect") != 0 );
+    if( client )
+    {
+        if( netgame )  // from -dedicated or -server
+        {
+	    I_SoftError( "Ignore -connect: conflict with -dedicated, -server.\n" );
+	}
+        else
+        {
+	    // Command_connect is invoked by Init_TCP_Network.
+	    server = false;
+	    netgame = true;
+	}
+    }
+
+    if( netgame )
+        multiplayer = true;
+
+
     // I_InitNetwork sets port dependent settings in doomcom and netgame.
     // Check and initialize the network driver.
-    multiplayer = false;
 
     // [WDJ] Can simplify this and doomcom when drop support for DOS net.
     // Only dos version with external driver will return true.
-    netgame = I_InitNetwork ();
-    if( !netgame )
+    // It uses -net to select DOSNET (vrs TCP or IP). Does not set netgame.
+    if( ! I_InitNetwork() )   // startup DOSNET
     {
         // InitNetwork did not init doomcom.
         // Init doomcom and netgame.
         doomcom=Z_Malloc(sizeof(doomcom_t),PU_STATIC,NULL);
         memset(doomcom,0,sizeof(doomcom_t));
         doomcom->id = DOOMCOM_ID;        
-        doomcom->numplayers = doomcom->num_player_netnodes = 1;
         doomcom->unused_deathmatch = 0;  // unused
         doomcom->consoleplayer = 0;
         doomcom->extratics = 0;
 
-        netgame = I_Init_TCP_Network();
+        I_Init_TCP_Network();
     }
-    if( netgame )
-        netgame_ok = true;
-    // Server is init to true.  Remote client has it false.
-    if( !server && netgame )  // if already a remote client
-        netgame = false;
-    server = true; // The default mode is server.
-                   // Set to Client mode when connect to another server.
+    doomcom->num_player_netnodes = 0;
     doomcom->unused_ticdup = 1;  // unused
-    
+    netbuffer = (netbuffer_t *)&doomcom->data;
+
     if (M_CheckParm ("-extratic"))
     {
         // extratic causes redundant transmission of tics, to prevent
@@ -1394,6 +1453,10 @@ boolean D_Startup_NetGame(void)
         CONS_Printf("Set extratic to %d\n", num);
         doomcom->extratics = num;
     }
+
+    // Defaults
+    hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
+    net_bandwidth = 3000;
 
     if(M_CheckParm ("-bandwidth"))
     {
@@ -1415,27 +1478,18 @@ boolean D_Startup_NetGame(void)
     software_MAXPACKETLENGTH=hardware_MAXPACKETLENGTH;
     if(M_CheckParm ("-packetsize"))
     {
-        int p=atoi(M_GetNextParm());
-        if(p<75)
-           p=75;
-        if(p>hardware_MAXPACKETLENGTH)
-           p=hardware_MAXPACKETLENGTH;
-        software_MAXPACKETLENGTH=p;
+        num = atoi(M_GetNextParm());
+        if(num < 75)
+	   num = 75;
+        if(num > hardware_MAXPACKETLENGTH)
+           num = hardware_MAXPACKETLENGTH;
+        software_MAXPACKETLENGTH = num;
     }
 
-    if( netgame )
-        multiplayer = true;
-
+#ifdef PARANOIA
     if (doomcom->id != DOOMCOM_ID)
         I_Error ("Doomcom buffer invalid!");
-
-    if (doomcom->num_player_netnodes > MAXNETNODES)  // player nodes only
-    {
-        I_Error ("Too many network nodes (%d), max:%d",
-		 doomcom->num_player_netnodes, MAXNETNODES);
-    }
-
-    netbuffer = (netbuffer_t *)&doomcom->data;
+#endif
 
 #ifdef DEBUGFILE
     if (M_CheckParm ("-debugfile"))
@@ -1457,9 +1511,15 @@ boolean D_Startup_NetGame(void)
     }
 #endif
 
-    D_Init_ClientServer();
+    // Bring up higher level functions.
+    D_Init_ClientServer(); // inits numplayers=0
 
-    return netgame_ok;
+    // Last because these need dedicated and server flags.
+    SV_ResetServer();
+    if(dedicated)
+	SV_SpawnServer();
+
+    return netgame;
 }
 
 

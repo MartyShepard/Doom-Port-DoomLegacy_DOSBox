@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1150 2015-04-03 13:53:52Z wesleyjohnson $
+// $Id: g_game.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1165,7 +1165,7 @@ handled:
 //
 void G_Ticker (void)
 {
-    ULONG       i;
+    int         i;
     int         buf;
     ticcmd_t*   cmd;
 

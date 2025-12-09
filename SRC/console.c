@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1150 2015-04-03 13:53:52Z wesleyjohnson $
+// $Id: console.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -558,13 +558,11 @@ void CON_ToggleOff (void)
 
 //  Console ticker : handles console move in/out, cursor blinking
 //
+// Call once per tic.
 void CON_Ticker (void)
 {
     int    i;
 
-    if(dedicated)
-	return;
-    
     // cursor blinking
     con_tick++;
     con_tick &= 7;

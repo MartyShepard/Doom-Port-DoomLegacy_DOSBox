@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
+// $Id: d_netcmd.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -712,6 +712,7 @@ void Command_Map_f(void)
         return;
     }
 
+    // By Server.
     strncpy(MAPNAME, carg.arg[1], MAX_WADPATH-1);
     MAPNAME[MAX_WADPATH-1] = '\0';
 
@@ -734,27 +735,34 @@ void Command_Map_f(void)
         }
     }
 
+    // Options of the map command.
     if ((i = COM_CheckParm("-skill")) != 0)
         buf[0] = atoi(COM_Argv(i + 1)) - 1;
     else
         buf[0] = gameskill;
 
+    // Signal using single bits.
+    //  bit 0: no monsters
+    //  bit 1: no reset players
+    buf[1] = 0;
     if ((i = COM_CheckParm("-monsters")) != 0)
-        buf[1] = (atoi(COM_Argv(i + 1)) == 0);
-    else
-        buf[1] = (nomonsters != 0);
-
-    // use only one bit
-    if (buf[1])
-        buf[1] = 1;
+    {
+        if( atoi(COM_Argv(i + 1)) == 0 )
+	    buf[1] = 0x01;
+    }
+    else if( nomonsters )
+        buf[1] = 0x01;
 
     if (COM_CheckParm("-noresetplayers"))
-        buf[1] |= 2;
+        buf[1] |= 0x02;
 
-    // spawn the server if needed
-    // reset players if there is a new one
+    // Spawn the server if needed.
+    // When that detects a new player, then Reset players.
     if (SV_SpawnServer())
-        buf[1] &= ~2;
+    {
+        // Added a new player.
+        buf[1] &= ~0x02;
+    }
 
     Send_NetXCmd(XD_MAP, buf, 2 + strlen(MAPNAME) + 1);
 }
@@ -762,16 +770,23 @@ void Command_Map_f(void)
 void Got_NetXCmd_Mapcmd(char **cp, int playernum)
 {
     char mapname[MAX_WADPATH];
-    int skill, resetplayer = 1;
+    byte opt, skill;
+    int  resetplayer = 1;
 
     skill = READBYTE(*cp);
     if (demoversion >= 128)
-        nomonsters = READBYTE(*cp);
-
-    if (demoversion >= 129)
     {
-        resetplayer = ((nomonsters & 2) == 0);
-        nomonsters &= 1;
+        // [WDJ] Do not use boolean nomonsters as an int.
+        opt = READBYTE(*cp);
+        if (demoversion >= 129)
+        {
+	    nomonsters = ( (opt & 0x01) != 0 );
+	    resetplayer = ( (opt & 0x02) == 0 );
+	}
+        else
+        {
+	    nomonsters = (opt > 0);
+	}
     }
     strncpy(mapname, *cp, MAX_WADPATH-1);
     mapname[MAX_WADPATH-1] = '\0';
@@ -984,6 +999,8 @@ void Command_ExitLevel_f(void)
         CONS_Printf("Only the server can exit the level\n");
         return;
     }
+
+    // By Server.
     if (gamestate != GS_LEVEL || demoplayback)
         CONS_Printf("You should be in a level to exit it !\n");
 
@@ -1011,6 +1028,7 @@ void Command_Load_f(void)
         return;
     }
 
+    // By Server.
     D_DisableDemo();
 
     // spawn a server if needed
@@ -1042,6 +1060,7 @@ void Command_Save_f(void)
         return;
     }
 
+    // By Server.
     p[0] = atoi(COM_Argv(1));  // slot num 0..99
     // save description string at [1]
     strncpy(&p[1], COM_Argv(2), SAVESTRINGSIZE-1);

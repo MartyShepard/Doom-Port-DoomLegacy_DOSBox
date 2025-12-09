@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.h 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: i_tcp.h 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -38,8 +38,8 @@
 
 extern int sock_port;
 
+void I_Init_TCP_Network(void);
 
-boolean I_Init_TCP_Network(void);
 //Hurdler: temporary addition for master server
 void I_Init_TCP_Driver(void);
 void I_Shutdown_TCP_Driver(void);

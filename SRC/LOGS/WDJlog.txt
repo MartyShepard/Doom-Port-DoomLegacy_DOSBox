@@ -4295,3 +4295,17 @@ Use Filetx_file_cnt as enable, to reduce cache pollution from loading
 the function just to find out there are no files.
 Added config variable for download file disable, as a command line
 switch was the only control.
+
+*** W102_net_menu
+patchfile = w102_18_net_menu.patch
+- commit revision 1157
+Create connect options menu.
+Create multiplayer options menu.
+Multiplayer menu can start server, or start dedicated server.
+Create wait_players variable, which can be selected by the Start Server menu,
+and the command line -server switch.
+Create wait_tics variable, which can be selected by the Start Server menu.
+Move connect, server, dedicated determinations to D_Startup_NetGame.
+Cleanup functions affected.
+Cleanup code around these changes.
+

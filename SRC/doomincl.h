@@ -94,6 +94,9 @@ void  GenPrintf (byte emsgflags, const char *fmt, ...);
 char  *va(char *format, ...);
 char  *Z_StrDup (const char *in);
 
+// Network
+extern  boolean  dedicated;  // dedicated server
+
 // g_game.h
 extern  boolean devparm;                // development mode (-devparm)
 

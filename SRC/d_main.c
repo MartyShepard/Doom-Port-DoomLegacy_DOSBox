@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1150 2015-04-03 13:53:52Z wesleyjohnson $
+// $Id: d_main.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1156"
+#define SVN_REV "1157"
 #endif
 
 // Version number: major.minor.revision
@@ -339,7 +339,7 @@ boolean singletics = false;     // timedemo
 boolean nomusic;
 boolean nosoundfx; // had clash with WATCOM i86.h nosound() function
 
-boolean dedicated = false;
+boolean dedicated = false;  // dedicated server
 
 byte    verbose = 0;
 
@@ -903,8 +903,9 @@ void D_PageDrawer(char *lumpname)
 // Called by G_CheckDemoStatus when timing or playing a demo
 void D_AdvanceDemo(void)
 {
-    // [WDJ] do not start a demo when a menu is open
-    if( !(demo_ctrl & DEMO_seq_disabled) && ! menuactive )
+    // [WDJ] do not start a demo when a menu or console is open
+    if( !(demo_ctrl & DEMO_seq_disabled) && ! menuactive
+        && ! console_open )
         demo_ctrl = DEMO_seq_advance;    // flag to trigger D_DoAdvanceDemo
 }
 
