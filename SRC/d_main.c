@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: d_main.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1140"
+#define SVN_REV "1141"
 #endif
 
 // Version number: major.minor.revision
@@ -2391,7 +2391,7 @@ restart_command:
     // [WDJ] This triggers the first draw to the screen,
     // debug it here instead of waiting for CONS_Printf in BloodTime_OnChange
     CONS_Printf( "Register...\n" );
-    D_Register_ClientCommands(); //Hurdler: be sure that this is called before D_CheckNetGame
+    D_Register_ClientCommands(); //Hurdler: be sure that this is called before D_Setup_NetGame
 
     D_Register_MiscCommands();	//[WDJ] more than just DeathMatch
     ST_AddCommands();
@@ -2513,7 +2513,7 @@ restart_command:
 
     // init all NETWORK
     CONS_Printf(text[D_CHECKNET_NUM]);
-    if (D_CheckNetGame())
+    if (D_Startup_NetGame())
         autostart = true;
 
     // check for a driver that wants intermission stats
@@ -2591,7 +2591,8 @@ restart_command:
             pagename = "TITLEPIC";
             gamestate = GS_DEDICATEDSERVER;
         }
-        else if (autostart || netgame || M_CheckParm("+connect") || M_CheckParm("-connect"))
+        else if (autostart || netgame
+		 || M_CheckParm("+connect") || M_CheckParm("-connect"))
         {
             //added:27-02-98: reset the current version number
             G_Downgrade(VERSION);

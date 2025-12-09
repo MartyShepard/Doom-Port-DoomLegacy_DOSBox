@@ -4148,3 +4148,19 @@ patchfile = w101_6_version1452.patch
 - commit revision 1139
 Update version numbers for 1.45.2.
 Update docs for latest patches and version 1.45.2.
+
+*** W102_network_rename
+patchfile = w102_1_network_rename.patch
+- commit revision 1140
+Rename vars and functions to be more readable and reflect what they do.
+Fix spelling and syntax of comments, messages, and error messages.
+Add comments.
+
+*** W102_clisrv_cleanup
+patchfile = w102_2_clisrv_cleanup.patch
+- commit revision 1141
+Cleanup of client/server code.  Add comments, simplify redundant
+expressions, use some macros, more renaming.
+Change to use a textbuf struct, textlen, and appropriate ptrs.
+Use ptrs instead of repeated indexing.
+

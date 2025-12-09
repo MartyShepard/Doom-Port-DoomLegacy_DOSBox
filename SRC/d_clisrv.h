@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: d_clisrv.h 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -299,8 +299,8 @@ boolean Game_Playing( void );
 
 
 // Broadcasts special packets to other players
-// to notify of game exit
-void    D_QuitNetGame (void);
+// to notify of game exit.
+void    D_Quit_NetGame (void);
 
 // How many ticks to run.
 void    TryRunTics (tic_t realtic);

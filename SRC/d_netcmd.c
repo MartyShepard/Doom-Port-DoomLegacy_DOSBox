@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: d_netcmd.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1057,7 +1057,7 @@ void Got_NetXCmd_SaveGamecmd(char **cp, int playernum)
 
 void Command_ExitGame_f(void)
 {
-    D_QuitNetGame();
+    D_Quit_NetGame();
     CL_Reset();
     D_StartTitle();
 }

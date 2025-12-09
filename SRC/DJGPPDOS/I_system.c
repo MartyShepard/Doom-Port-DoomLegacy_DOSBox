@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
+// $Id: I_system.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -331,7 +331,7 @@ void I_Error (const char *error, ...)
     if (demorecording)
         G_CheckDemoStatus();
 
-    D_QuitNetGame ();
+    D_Quit_NetGame ();
 
     I_Sleep( 3000 );  // to see some messages
     /* shutdown everything that was started ! */
@@ -366,7 +366,7 @@ void I_Quit (void)
     //added:03-01-98: maybe it needs that the ticcount continues,
     // or something else that will be finished by ShutdownSystem()
     // so I do it before.
-    D_QuitNetGame ();
+    D_Quit_NetGame ();
 
     /* shutdown everything that was started ! */
     I_ShutdownSystem();
@@ -566,7 +566,7 @@ void I_StartupMouse2()
     LOCK_VARIABLE(handlermouse2buttons);
     LOCK_VARIABLE(mouse2port);
     /*_go32_dpmi_lock_data(combytes,sizeof(combytes));*/
-		_go32_dpmi_lock_data((void *)&combytes[0],sizeof(combytes));
+    _go32_dpmi_lock_data((void *)&combytes[0],sizeof(combytes));
     LOCK_FUNCTION(I_MicrosoftMouseIntHandler);
     asm("sti");
 
@@ -613,7 +613,7 @@ void I_StartupMouse2()
 }
 #endif
 
-//  Initialise the mouse. Doesnt need to be shutdown.
+//  Initialise the mouse. Does not need to be shutdown.
 //
 //   play_mode : enable mouse containment during play
 void I_StartupMouse ( boolean play_mode )
@@ -1114,7 +1114,7 @@ static char msg[255];
     sprintf(msg, "%s\r\n"
 	    "This is an error of Legacy, try to send the following info to programmers\r\n", VERSION_BANNER);
 
-    //D_QuitNetGame ();  //say 'byebye' to other players when your machine
+    //D_Quit_NetGame ();  //say 'byebye' to other players when your machine
                         // crashes?... hmm... do they have to die with you???
 
     I_ShutdownSystem();
@@ -1130,7 +1130,7 @@ static void break_handler(int num)
 {
 static char msg[] = "Oh no! Back to reality!\r\n";
 
-    //D_QuitNetGame ();  //say 'byebye' to other players when your machine
+    //D_Quit_NetGame ();  //say 'byebye' to other players when your machine
                         // crashes?... hmm... do they have to die with you???
 
     I_ShutdownSystem();

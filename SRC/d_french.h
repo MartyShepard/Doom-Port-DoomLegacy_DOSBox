@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_french.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_french.h 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -76,7 +76,7 @@ text[M_INIT_NUM] = "M_Init: Init miscellaneous info.\n";
 text[R_INIT_NUM] = "R_Init: Init DOOM refresh daemon - ";
 text[P_INIT_NUM] = "\nP_Init: Init Playloop state.\n";
 text[I_INIT_NUM] = "I_Init: Setting up machine state.\n";
-text[D_CHECKNET_NUM] = "D_CheckNetGame: Checking network game status.\n";
+text[D_CHECKNET_NUM] = "D_Startup_NetGame: Checking network game status.\n";
 text[S_SETSOUND_NUM] = "S_Init: Setting up sound.\n";
 text[HU_INIT_NUM] = "HU_Init: Setting up heads up display.\n";
 text[ST_INIT_NUM] = "ST_Init: Init status bar.\n";

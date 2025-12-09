@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: dstrings.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -574,7 +574,7 @@ char *text[NUMTEXT] = {
     "R_Init: Init DOOM refresh daemon - ", // R_INIT
     "\nP_Init: Init Playloop state.\n", // P_INIT
     "I_Init: Setting up machine state.\n", // I_INIT
-    "D_CheckNetGame: Checking network game status.\n", // D_CHECKNET
+    "D_Startup_NetGame: Checking network game status.\n", // D_CHECKNET
     "S_Init: Setting up sound.\n", // S_SETSOUND
     "HU_Init: Setting up heads up display.\n", // HU_INIT
     "ST_Init: Init status bar.\n", // ST_INIT

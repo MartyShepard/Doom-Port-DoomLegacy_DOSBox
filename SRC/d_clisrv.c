@@ -128,6 +128,7 @@
 #include <unistd.h>
 
 #include "doomincl.h"
+#include "d_clisrv.h"
 #include "command.h"
 #include "i_net.h"
 #include "i_system.h"
@@ -153,7 +154,6 @@
 #include "m_misc.h"
 #include "am_map.h"
 #include "m_random.h"
-#include "d_clisrv.h"
 #include "mserv.h"
 #include "t_vari.h"
 
@@ -215,16 +215,24 @@ static byte     cl_nnode; // net node for this client, pointofview server
 static boolean  cl_packetmissed;
 static tic_t    cl_need_tic;
 
-static ticcmd_t localcmds;
-static byte     localtextcmd[MAXTEXTCMD];
-static ticcmd_t localcmds2;  // player 2
-static byte     localtextcmd2[MAXTEXTCMD]; // splitscreen player2
-
 char            servernode;       // the number of the server node
+
+// Index for netcmds and textcmds
+#define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
+// Text buffer for textcmds.
+typedef struct {
+   byte  buff[MAXTEXTCMD];
+} textbuf_t;
+  // The first byte of buff is the length.
+
+static ticcmd_t localcmds;
+static textbuf_t  localtextcmd;
+static ticcmd_t localcmds2;  // player 2
+static textbuf_t  localtextcmd2; // splitscreen player2
 
 // engine
 ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
-static byte     textcmds[BACKUPTICS][MAXPLAYERS][MAXTEXTCMD];
+static textbuf_t  textcmds[BACKUPTICS][MAXPLAYERS];
   // The first byte of textcmd is the length.
 
 consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
@@ -276,7 +284,8 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
    if(demoplayback)
        return;
 
-   if(localtextcmd[0]+1+nparam>MAXTEXTCMD)
+   int textlen = localtextcmd.buff[0];
+   if( (textlen + 1 + nparam) > MAXTEXTCMD)
    {
 #ifdef PARANOIA
        I_Error("Net command exceeds buffer size: netcmd %d\n", cmd_id);
@@ -286,13 +295,14 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
        return;
    }
    // Append
-   localtextcmd[0]++;
-   localtextcmd[localtextcmd[0]] = cmd_id;
+   textlen++;
+   localtextcmd.buff[textlen] = cmd_id;
    if(param && nparam)
    {
-       memcpy(&localtextcmd[localtextcmd[0]+1], param, nparam);
-       localtextcmd[0]+=nparam;
+       memcpy(&localtextcmd.buff[textlen+1], param, nparam);
+       textlen += nparam;
    }
+   localtextcmd.buff[0] = textlen;
 }
 
 // splitscreen player
@@ -301,7 +311,8 @@ void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
    if(demoplayback)
        return;
 
-   if(localtextcmd2[0]+1+nparam>MAXTEXTCMD)
+   int textlen = localtextcmd2.buff[0];
+   if( (textlen + 1 + nparam) > MAXTEXTCMD)
    {
 #ifdef PARANOIA
        I_Error("Net command exceeds buffer size: netcmd %d\n", cmd_id);
@@ -311,48 +322,53 @@ void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
        return;
    }
    // Append
-   localtextcmd2[0]++;
-   localtextcmd2[localtextcmd2[0]] = cmd_id;
+   textlen++;
+   localtextcmd2.buff[textlen] = cmd_id;
    if(param && nparam)
    {
-       memcpy(&localtextcmd2[localtextcmd2[0]+1], param, nparam);
-       localtextcmd2[0]+=nparam;
+       memcpy(&localtextcmd2.buff[textlen+1], param, nparam);
+       textlen += nparam;
    }
+   localtextcmd2.buff[0] = textlen;
 }
 
 
 static void D_Clear_ticcmd(int tic)
 {
     int i;
+    int btic = BTIC_INDEX( tic );
 
     for(i=0;i<MAXPLAYERS;i++)
     {
-        textcmds[tic%BACKUPTICS][i][0]=0;
-        netcmds[tic%BACKUPTICS][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
+        textcmds[btic][i].buff[0]=0;  // textlen
+        netcmds[btic][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
     }
-    DEBFILE(va("clear tic %5d (%2d)\n", tic, tic%BACKUPTICS));
+    DEBFILE(va("clear tic %5d (%2d)\n", tic, btic));
 }
 
 
 static void ExtraDataTicker(void)
 {
-    int  i,tic;
+    int  i;
     byte *curpos, *bufferend;
-
-    tic=gametic % BACKUPTICS;
+    int btic = BTIC_INDEX( gametic );
+    textbuf_t * textbuf;
+    int textlen;
 
     for(i=0;i<MAXPLAYERS;i++)
     {
         if((playeringame[i]) || (i==0))
         {
-            curpos=(byte *)&(textcmds[tic][i]);
-	   // [WDJ] need check for buffer overrun here !!
-            bufferend=&curpos[curpos[0]+1];
-            curpos++;
+	    textbuf = & textcmds[btic][i];
+	    textlen = textbuf->buff[0];
+            curpos=(byte *)&(textbuf->buff[1]);  // start of text
+	    // [WDJ] need check for buffer overrun here !!
+            bufferend = & textbuf->buff[textlen+1];  // end of text
             while(curpos<bufferend)
             {
                 if(*curpos < MAXNETXCMD && netxcmd_func[*curpos])
                 {
+		    // Execute a NetXCmd.
                     byte cmd_id=*curpos;
                     curpos++;
                     DEBFILE(va("executing x_cmd %d ply %d ", cmd_id,i));
@@ -362,10 +378,10 @@ static void ExtraDataTicker(void)
                 else
 	        {
 		    // [WDJ] Why should a bad demo command byte be fatal.
-                    I_SoftError("Got unknown net/demo command [%d]=%d (max %d)\n"
-                           ,curpos-(byte *)&(textcmds[tic][i])
-                           ,*curpos,textcmds[tic][i][0]);
-		    D_Clear_ticcmd(tic);
+                    I_SoftError("Got unknown net/demo command [%d]=%d (max %d)\n",
+                           (curpos - &(textbuf->buff[0])),
+                           *curpos, textlen);
+		    D_Clear_ticcmd(btic);
 		    return;
 		}
             }
@@ -405,60 +421,59 @@ static void ExtraDataTicker(void)
 // endif
 boolean AddLmpExtradata(byte **demo_point, int playernum)
 {
-    int  tic;
+    int  btic = BTIC_INDEX( gametic );
+    textbuf_t * textbuf = & textcmds[btic][playernum];
+    int  textlen = textbuf->buff[0];
 
-    tic=gametic % BACKUPTICS;
-    if(textcmds[tic][playernum][0]==0)
+    if(textlen == 0)  // anything in the buffer
         return false;
 
-    memcpy(*demo_point, textcmds[tic][playernum], textcmds[tic][playernum][0]+1);
-    *demo_point += textcmds[tic][playernum][0]+1;
+    memcpy(*demo_point, textbuf->buff, textlen+1);
+    *demo_point += textlen+1;
     return true;
 }
 
 void ReadLmpExtraData(byte **demo_pointer, int playernum)
 {
     unsigned char nextra,ex;
-    
+    int btic = BTIC_INDEX( gametic );
+    textbuf_t * textbuf = & textcmds[btic][playernum];
 
     if(!demo_pointer)
     {
-        textcmds[gametic%BACKUPTICS][playernum][0]=0;
+        textbuf->buff[0] = 0;  // text len
         return;
     }
     nextra=**demo_pointer;
     if(demoversion==112) // support old demos v1.12
     {
-        int    size=0;
+        int  textlen = 0;
         byte  *p = *demo_pointer+1; // skip nextra
-
-        textcmds[gametic%BACKUPTICS][playernum][0]=0;
 
         ex=*p++;
         if(ex & 1)
         {
-            size=textcmds[gametic%BACKUPTICS][playernum][0];
-            textcmds[gametic%BACKUPTICS][playernum][size+1]=XD_NAMEANDCOLOR;
-            memcpy(&textcmds[gametic%BACKUPTICS][playernum][size+2],
+            textbuf->buff[textlen+1] = XD_NAMEANDCOLOR;
+            memcpy(&textbuf->buff[textlen+2],
                    p,
                    MAXPLAYERNAME+1);
             p+=MAXPLAYERNAME+1;
-            textcmds[gametic%BACKUPTICS][playernum][0]+=MAXPLAYERNAME+1+1;
+	    textlen += MAXPLAYERNAME+1+1;
         }
         if(ex & 2)
         {
-            size=textcmds[gametic%BACKUPTICS][playernum][0];
-            textcmds[gametic%BACKUPTICS][playernum][size+1]=XD_WEAPONPREF;
-            memcpy(&textcmds[gametic%BACKUPTICS][playernum][size+2],
+            textbuf->buff[textlen+1] = XD_WEAPONPREF;
+            memcpy(&textbuf->buff[textlen+2],
                    p,
                    NUMWEAPONS+2);
             p+=NUMWEAPONS+2;
-            textcmds[gametic%BACKUPTICS][playernum][0]+=NUMWEAPONS+2+1;
+            textlen += NUMWEAPONS+2+1;
         }
+        textbuf->buff[0] = textlen;
         nextra--;
     }
     else
-        memcpy(textcmds[gametic%BACKUPTICS][playernum],*demo_pointer,nextra+1);
+        memcpy(textbuf->buff, *demo_pointer, nextra+1);
     // increment demo pointer
     *demo_pointer +=nextra+1;
 }
@@ -621,7 +636,7 @@ static void CL_Load_Received_Savegame(void)
 
     // done
     unlink(tmpsave);  // delete file
-    consistancy[gametic%BACKUPTICS]=Consistancy();
+    consistancy[ BTIC_INDEX( gametic ) ] = Consistancy();
     CON_ToggleOff ();
     return;
 
@@ -726,6 +741,7 @@ void SL_InsertServer( serverinfo_pak *info, int nnode)
     } while(move_in_list);
 }
 
+// By user, future Client.
 void CL_UpdateServerList( boolean internetsearch )
 {
     SL_ClearServerList(0);
@@ -928,6 +944,7 @@ reset_to_title_exit:
     return;
 }
 
+// By User, future Client.
 void Command_connect(void)
 {
     if( COM_Argc()<2 )
@@ -980,8 +997,9 @@ void Command_connect(void)
     CL_ConnectToServer();
 }
 
-static void ResetNode(int node);
+static void Reset_NetNode(int node);
 
+// Called by Kick cmd.
 static void CL_RemovePlayer(int playernum)
 {
     int i;
@@ -993,7 +1011,7 @@ static void CL_RemovePlayer(int playernum)
         {
             nodeingame[player_to_nnode[playernum]] = false;
             Net_CloseConnection(player_to_nnode[playernum]);
-            ResetNode(nnode);
+            Reset_NetNode(nnode);
         }
     }
 
@@ -1234,7 +1252,7 @@ void D_ClientServerInit (void)
 	SV_SpawnServer();
 }
 
-static void ResetNode(int nnode)
+static void Reset_NetNode(int nnode)
 {
     nodeingame[nnode] = false;
     nnode_to_player[nnode]=-1;
@@ -1246,6 +1264,7 @@ static void ResetNode(int nnode)
     playerpernode[nnode]=0;
 }
 
+// Called by D_ClientServerInit, SV_SpawnServer, CL_Reset,
 void SV_ResetServer( void )
 {
     int    i;
@@ -1262,7 +1281,7 @@ void SV_ResetServer( void )
     next_tic_clear=maketic;
 
     for (i=0 ; i<MAXNETNODES ; i++)
-        ResetNode(i);
+        Reset_NetNode(i);
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
@@ -1291,11 +1310,11 @@ void SV_ResetServer( void )
 }
 
 //
-// D_QuitNetGame
+// D_Quit_NetGame
 // Called before quitting to leave a net game
 // without hanging the other players
 //
-void D_QuitNetGame (void)
+void D_Quit_NetGame (void)
 {
     if (!netgame)
         return;
@@ -1537,16 +1556,17 @@ boolean SV_SpawnServer( void )
     return SV_AddWaitingPlayers();
 }
 
+// Called by D_ClientServerInit, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer.
 void SV_StopServer( void )
 {
     int i;
 
     gamestate = wipegamestate = GS_NULL;
 
-    localtextcmd[0]=0;
-    localtextcmd2[0]=0;
+    localtextcmd.buff[0]=0;  // text len
+    localtextcmd2.buff[0]=0; // text len
 
-    for(i=0;i<BACKUPTICS;i++)
+    for(i=0; i<BACKUPTICS; i++)
         D_Clear_ticcmd(i);
 
     consoleplayer=0;
@@ -1570,6 +1590,8 @@ void SV_StartSinglePlayerServer(void)
         multiplayer    = true;
 }
 
+// By Server.
+// Called by client_join_handler.
 static void SV_Send_Refuse(int to_node, char *reason)
 {
     strcpy(netbuffer->u.serverrefuse.reason, reason);
@@ -1584,12 +1606,16 @@ static int TotalTextCmdPerTic(int tic)
 {
     int i,total=1; // num of textcmds in the tic (ntextcmd byte)
 
-    tic %= BACKUPTICS;
+    int btic = BTIC_INDEX( tic );
 
     for(i=0;i<MAXPLAYERS;i++)
     {
-        if( ((i==0) || playeringame[i]) && textcmds[tic][i][0] )
-            total += 2 + textcmds[tic][i][0]; // "+2" for size and playernum
+        if( (i==0) || playeringame[i] )
+	{
+	    int textlen = textcmds[btic][i].buff[0];
+	    if( textlen )
+	       total += textlen + 2; // "+2" for size and playernum
+	}
     }
 
     return total;
@@ -1614,7 +1640,7 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
     }
 }
 
-// TODO : break this 300 line function to multiple functions
+
 
 //
 // Get Packets and invoke their Server and Client handlers.
@@ -1623,7 +1649,7 @@ static void Net_Packet_Handler(void)
 {
     int  netconsole;
     tic_t       realend,realstart;
-    int         p=maketic%BACKUPTICS;
+    int  btic = BTIC_INDEX( maketic );
     ticcmd_t    *pak;
     byte        *txtpak,numtxtpak;
     int         node;
@@ -1838,8 +1864,10 @@ static void Net_Packet_Handler(void)
                      break;
 
                 // check consistancy
-                if((realstart <= gametic) && (realstart > gametic-BACKUPTICS+1) &&
-                   (consistancy[realstart%BACKUPTICS] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy))) 
+		btic = BTIC_INDEX(realstart);
+                if((realstart <= gametic)
+		   && (realstart > (gametic - BACKUPTICS + 1))
+		   && (consistancy[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy))) 
                 {
 #if 1
                     char buf[3];
@@ -1850,16 +1878,20 @@ static void Net_Packet_Handler(void)
 #else
                     CONS_Printf("\2player %d kicked [%d] consistancy failure\n",netconsole,realstart);
 #endif
-                    DEBFILE(va("player %d kicked [%d] %d!=%d\n",netconsole,realstart,consistancy[realstart%BACKUPTICS],LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy)));
+                    DEBFILE(va("player %d kicked [%d] %d!=%d\n",
+			       netconsole,realstart,consistancy[btic],LE_SWAP16_FAST(netbuffer->u.clientpak.consistancy)));
 
                 }
 
                 // copy ticcmd
-                TicCmdCopy(&netcmds[maketic%BACKUPTICS][netconsole], &netbuffer->u.clientpak.cmd, 1);
+		btic = BTIC_INDEX( maketic );
+                TicCmdCopy(&netcmds[btic][netconsole],
+			   &netbuffer->u.clientpak.cmd, 1);
 
-                if( netbuffer->packettype==PT_CLIENT2CMD && nnode_to_player2[node]>=0)
+                if( netbuffer->packettype==PT_CLIENT2CMD
+		    && nnode_to_player2[node]>=0)
                 {
-                    TicCmdCopy(&netcmds[maketic%BACKUPTICS][(byte)nnode_to_player2[node]], 
+                    TicCmdCopy(&netcmds[btic][(byte)nnode_to_player2[node]], 
                                &netbuffer->u.client2pak.cmd2, 1);
                 }
 
@@ -1876,13 +1908,16 @@ static void Net_Packet_Handler(void)
                 {
                     int j;
                     tic_t tic=maketic;
+		    textbuf_t * textbuf;
+		    int textlen;
 
                     // check if tic that we are making isn't too large else we cannot send it :(
                     // doomcom->numplayers+1 "+1" since doomcom->numplayers can change within this time and sent time
                     j=software_MAXPACKETLENGTH-(netbuffer->u.textcmd[0]+2+SERVER_TIC_BASE_SIZE+(doomcom->numplayers+1)*sizeof(ticcmd_t));
 
                     // search a tic that has enough space in the ticcmd
-                    while((TotalTextCmdPerTic(tic)>j || netbuffer->u.textcmd[0]+textcmds[tic % BACKUPTICS][netconsole][0]>MAXTEXTCMD)
+                    while((TotalTextCmdPerTic(tic)>j
+			   || netbuffer->u.textcmd[0]+textcmds[BTIC_INDEX( tic )][netconsole].buff[0]>MAXTEXTCMD)
 			  && tic<(next_tic_send+BACKUPTICS))
                         tic++;
 
@@ -1893,13 +1928,15 @@ static void Net_Packet_Handler(void)
                         Net_UnAcknowledgPacket(node);
                         break;
                     }
+                    btic = BTIC_INDEX( tic );
+		    textbuf = & textcmds[btic][netconsole];
+		    textlen = textbuf->buff[0];
                     DEBFILE(va("textcmd put in tic %d at position %d (player %d) ftts %d mk %d\n",
-			       tic,textcmds[p][netconsole][0]+1,netconsole,next_tic_send,maketic));
-                    p=tic % BACKUPTICS;
-                    memcpy(&textcmds[p][netconsole][textcmds[p][netconsole][0]+1]
-                          ,netbuffer->u.textcmd+1
-                          ,netbuffer->u.textcmd[0]);
-                    textcmds[p][netconsole][0]+=netbuffer->u.textcmd[0];
+			       tic,textlen+1,netconsole,next_tic_send,maketic));
+                    memcpy(&textbuf->buff[ textlen+1 ],
+                          netbuffer->u.textcmd+1,
+                          netbuffer->u.textcmd[0]);
+                    textbuf->buff[0] += netbuffer->u.textcmd[0];
                 }
                 break;
             case PT_NODE_TIMEOUT:
@@ -1946,19 +1983,20 @@ static void Net_Packet_Handler(void)
 
                     for(i=realstart;i<realend;i++)
                     {
-                    // clear first
+		        // clear first
                         D_Clear_ticcmd(i);
 
-                    // copy the tics
-                        TicCmdCopy(netcmds[i%BACKUPTICS], pak, netbuffer->u.serverpak.numplayers);
+		        // copy the tics
+			btic = BTIC_INDEX( i );
+                        TicCmdCopy(netcmds[btic], pak, netbuffer->u.serverpak.numplayers);
                         pak+=netbuffer->u.serverpak.numplayers;
 
-                    // copy the textcmds
+		        // copy the textcmds
                         numtxtpak=*txtpak++;
                         for(j=0;j<numtxtpak;j++)
                         {
                             int k=*txtpak++; // playernum
-                            memcpy(textcmds[i%BACKUPTICS][k], txtpak, txtpak[0]+1);
+                            memcpy(textcmds[btic][k].buff, txtpak, txtpak[0]+1);
                             txtpak+=txtpak[0]+1;
                         }
                     }
@@ -2006,8 +2044,10 @@ static short Consistancy(void)
     return ret;
 }
 
+// By Server, Client.
 // send the client packet to the server
-static void CL_SendClientCmd (void)
+// Called by NetUpdate, 
+static void CL_Send_ClientCmd (void)
 {
 /* oops can do that until i have implemented a real dead reckoning
     static ticcmd_t lastcmdssent;
@@ -2036,8 +2076,9 @@ static void CL_SendClientCmd (void)
     else
     if( gamestate!=GS_NULL )
     {
+        int btic = BTIC_INDEX( gametic );
         TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds, 1);
-        netbuffer->u.clientpak.consistancy = LE_SWAP16_FAST(consistancy[gametic%BACKUPTICS]);
+        netbuffer->u.clientpak.consistancy = LE_SWAP16_FAST(consistancy[btic]);
 
         // send a special packet with 2 cmd for splitscreen
         if (cv_splitscreen.value)
@@ -2055,23 +2096,25 @@ static void CL_SendClientCmd (void)
     if( cl_mode == CLM_connected )
     {
         // send extra data if needed
-        if (localtextcmd[0])
+        if (localtextcmd.buff[0]) // text len
         {
+	    int len = localtextcmd.buff[0]+1;  // text len + cmd
             netbuffer->packettype=PT_TEXTCMD;
-            memcpy(netbuffer->u.textcmd,localtextcmd,localtextcmd[0]+1);
+            memcpy(netbuffer->u.textcmd, localtextcmd.buff, len);
             // all extra data have been sended
-            if( HSendPacket(servernode,true,0,localtextcmd[0]+1) ) // send can fail for some reasons...
-                localtextcmd[0]=0;
+            if( HSendPacket(servernode, true, 0, len)) // send can fail for some reasons...
+                localtextcmd.buff[0] = 0;  // text len
         }
         
         // send extra data if needed for player 2 (splitscreen)
-        if (localtextcmd2[0])
+        if (localtextcmd2.buff[0]) // text len
         {
+	    int len = localtextcmd2.buff[0]+1;  // text len + cmd
             netbuffer->packettype=PT_TEXTCMD2;
-            memcpy(netbuffer->u.textcmd,localtextcmd2,localtextcmd2[0]+1);
+            memcpy(netbuffer->u.textcmd, localtextcmd2.buff, len);
             // all extra data have been sended
-            if( HSendPacket(servernode,true,0,localtextcmd2[0]+1) ) // send can fail for some reasons...
-                localtextcmd2[0]=0;
+            if( HSendPacket(servernode, true, 0, len)) // send can fail for some reasons...
+                localtextcmd2.buff[0] = 0; // text len
         }
     }
 
@@ -2085,6 +2128,7 @@ static void SV_Send_Tics (void)
     tic_t realfirsttic, lasttictosend, i;
     ULONG n;
     int  j,packsize;
+    int  btic;
     char *bufpos;
     char *ntextcmd;
 
@@ -2159,25 +2203,28 @@ static void SV_Send_Tics (void)
             
             for(i=realfirsttic;i<lasttictosend;i++)
             {
-                TicCmdCopy((ticcmd_t*) bufpos, netcmds[i%BACKUPTICS], doomcom->numplayers);
+	        int btic = BTIC_INDEX( i );
+                TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], doomcom->numplayers);
                 bufpos+=doomcom->numplayers*sizeof(ticcmd_t);
             }
             
             // add textcmds
             for(i=realfirsttic;i<lasttictosend;i++)
             {
+	        btic = BTIC_INDEX( i );
                 ntextcmd=bufpos++;
                 *ntextcmd=0;
                 for(j=0;j<MAXPLAYERS;j++)
                 {
-                    int size=textcmds[i%BACKUPTICS][j][0];
+                    int textlen = textcmds[btic][j].buff[0];
                     
-                    if(((j==0) || playeringame[j]) && size)
+                    if(((j==0) || playeringame[j])
+		       && textlen)
                     {
                         (*ntextcmd)++;
-                        *bufpos++ = j;
-                        memcpy(bufpos,textcmds[i%BACKUPTICS][j],size+1);
-                        bufpos += size+1;
+                        *bufpos++ = j;  // playernum
+                        memcpy(bufpos, textcmds[btic][j].buff, textlen+1);
+                        bufpos += textlen+1;
                     }
                 }
             }
@@ -2234,17 +2281,19 @@ void SV_SpawnPlayer(int playernum, int x, int y, angle_t angle)
     // for futur copytic use the good x,y and angle!
     if( server )
     {
+        int btic = BTIC_INDEX( maketic );
 #ifdef CLIENTPREDICTION2
-        netcmds[maketic%BACKUPTICS][playernum].x=x;
-        netcmds[maketic%BACKUPTICS][playernum].y=y;
+        netcmds[btic][playernum].x=x;
+        netcmds[btic][playernum].y=y;
 #endif
-        netcmds[maketic%BACKUPTICS][playernum].angleturn=(angle>>16) | TICCMD_RECEIVED;
+        netcmds[btic][playernum].angleturn=(angle>>16) | TICCMD_RECEIVED;
     }
 }
 
 // create missed tic
 void SV_Maketic(void)
 {
+    int btic = BTIC_INDEX( maketic );
     int j;
 
     for(j=0;j<MAXNETNODES;j++)
@@ -2252,7 +2301,7 @@ void SV_Maketic(void)
        if(playerpernode[j])
        {
            int player=nnode_to_player[j];
-           if((netcmds[maketic%BACKUPTICS][player].angleturn & TICCMD_RECEIVED) == 0)   // we don't received this tic
+           if((netcmds[btic][player].angleturn & TICCMD_RECEIVED) == 0)   // we don't received this tic
            {
                int i;
 
@@ -2264,8 +2313,8 @@ void SV_Maketic(void)
                // copy the old tic
                for(i=0; i<playerpernode[j]; i++, player=nnode_to_player2[j])
                {
-                   netcmds[maketic%BACKUPTICS][player] = netcmds[(maketic-1)%BACKUPTICS][player];
-                   netcmds[maketic%BACKUPTICS][player].angleturn &=~TICCMD_RECEIVED;
+                   netcmds[btic][player] = netcmds[ BTIC_INDEX(maketic-1) ][player];
+                   netcmds[btic][player].angleturn &=~TICCMD_RECEIVED;
                }
            }
        }
@@ -2339,9 +2388,14 @@ void TryRunTics (tic_t realtics)
             gametic++;
             // skip paused tic in a demo
             if(demoplayback)
-            {   if(paused) cl_need_tic++; }
+            {
+	        if(paused)
+		   cl_need_tic++;
+	    }
             else
-                consistancy[gametic%BACKUPTICS]=Consistancy();
+	    {
+                consistancy[ BTIC_INDEX( gametic ) ] = Consistancy();
+	    }
         }
     }
 }
@@ -2380,14 +2434,14 @@ void NetUpdate(void)
 
     Local_Maketic (realtics);    // make local tic, and call menu ?!
     if( server && !demoplayback && !dedicated)
-        CL_SendClientCmd ();     // send it
+        CL_Send_ClientCmd();     // send server tic
     Net_Packet_Handler();  // get packet from client or from server
 
-    // client send the command after a receive of the server
-    // the server send before because in single player is beter
+    // Client sends its commands after a receive of the server tic.
+    // The server sends before because in single player is better.
 
     if( !server )
-        CL_SendClientCmd ();   // send tic cmd
+        CL_Send_ClientCmd();   // send tic cmd
     else
     {
         //Hurdler: added for acking the master server

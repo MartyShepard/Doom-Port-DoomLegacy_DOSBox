@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: d_net.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1025,10 +1025,11 @@ void Internal_FreeNodenum(int nodenum)
 }
 
 //
-// D_CheckNetGame
+// D_Startup_NetGame
 // Works out player numbers among the net participants
 //
-boolean D_CheckNetGame (void)
+// Returns true when a network connection is made.
+boolean D_Startup_NetGame(void)
 {
     boolean ret=false;
 
