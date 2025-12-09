@@ -167,7 +167,7 @@ boolean  External_Driver_Send(void)
     if((!doomatic) && (doomcom->remotenode==BROADCASTADDR))
     {
         int i;
-        for(i=1;i<doomcom->numnodes;i++)
+        for(i=1;i<doomcom->num_player_netnodes;i++)
         {
             doomcom->remotenode=i;
             doomcom->command=CMD_SEND;

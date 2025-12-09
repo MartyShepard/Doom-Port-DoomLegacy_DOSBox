@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
+// $Id: d_net.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -206,7 +206,16 @@ boolean Net_GetNetStat(void)
 // range of 128.  Any compared ack values must be within +/-128.
 
 // The net node num (nnode) are internal to the Doom program communications.
-// Net node num are 1..MAXNETNODES, 0=myself, limited to 255 (byte).
+// Net node num are 1..(MAX_CON_NETNODE-1), 0=myself,
+// limited to 254 (byte), 255=empty.
+#if ( MAX_CON_NETNODE > 254 )
+# error Required: MAX_CON_NETNODE <= 254
+#endif
+// Player net nodes num 1..MAXNETNODES,
+// limited to 127 by chat message packing.
+#if ( MAXNETNODES > 127 )
+# error Required: MAXNETNODES <= 127
+#endif
 
 // Max ack packets that can be saved.  Must exceed the max number of net nodes.
 #define MAXACKPACKETS    64
@@ -232,7 +241,7 @@ boolean Net_GetNetStat(void)
 typedef struct {
   byte   acknum;
   byte   acknum_at_xmit;  // the current acknum at transmit, and re-transmit.
-  byte   destination_node;  // dest of the packet
+  byte   destination_node;  // dest of the packet (0..(MAXNETNODES-1))
   byte   resent_cnt;  // num times has been resent (0..10)
   tic_t  senttime;
   uint16_t  length;
@@ -241,7 +250,7 @@ typedef struct {
 
 typedef enum {
     NODE_CLOSE  = 1,    // flag is set when connection is closing
-} node_flags_t;
+} node_flags_e;
 
 // Table of packets that are waiting for ACK, or to be sent again.
 // Can be resent (the sender window).
@@ -270,16 +279,17 @@ typedef struct {
     // Detect connection lost.
     tic_t lasttime_packet_received;
     
-    byte   flags;   // from node_flags_t
+    byte   flags;   // from node_flags_e
 // jacobson tcp timeout evaluation algorithm (Karn variation)
     fixed_t ping;
     fixed_t varping;
     int     timeout;   // computed with ping and varping
 } netnode_t;
 
+// Ack structure for player net nodes.
 static netnode_t net_nodes[MAXNETNODES];
 
-#define  NET_NODE_NUM( nnode )   ( nnode - net_nodes )
+// #define  NET_NODE_NUM( nnode )   ( nnode - net_nodes )
 
 #define  PINGDEFAULT     ((200*TICRATE*FRACUNIT)/1000)
 #define  VARPINGDEFAULT  ( (50*TICRATE*FRACUNIT)/1000)
@@ -307,8 +317,14 @@ static byte Save_packet_acknum( boolean lowtimer )
    boolean  low_priority = (netbuffer->packettype >= PT_CANFAIL); // low priority
    int num_freeslot=0;
    ackpak_t * ackpakp;
-   byte rnode = doomcom->remotenode;
-   netnode_t * np = & net_nodes[doomcom->remotenode];
+   byte rnode;
+   netnode_t * np;
+
+   rnode = doomcom->remotenode;
+   if( rnode >= MAXNETNODES )
+       goto ret_fail;  // not a player packet
+
+   np = & net_nodes[rnode];
 
    // Flow control to avoid ack limitations.
    if(cmpack((byte)(np->remote_prev_ack+MAXACKTOSEND), np->next_ackreq_num) < 0)
@@ -378,7 +394,8 @@ ret_fail:
 }
 
 // Get the ack to send, from the ack queue of this node.
-static byte Get_return_ack(int nnode)
+//  nnode: 0..(MAXNETNODES-1)
+static byte Get_return_ack(byte nnode)
 {
     net_nodes[nnode].lasttime_ack_returned = I_GetTime();
     return net_nodes[nnode].return_ack;
@@ -389,7 +406,7 @@ static byte Get_return_ack(int nnode)
 // Called when have received an ack from the net node.
 static void Remove_ackpak( ackpak_t * ackpakp )
 {
-    byte dnode = ackpakp->destination_node;
+    byte dnode = ackpakp->destination_node;  // 0..(MAXNETNODES-1) by caller
     netnode_t * dnp = & net_nodes[dnode];  // dest node of the ackpak
 
     // Stats
@@ -424,8 +441,14 @@ static boolean Process_packet_ack()
     ackpak_t * ackpakp;
     byte acknum;
     byte nxtack;  // ACK are 1..255, circular
-    byte rnode = doomcom->remotenode;  // net node num
-    netnode_t * np = & net_nodes[doomcom->remotenode];
+    byte rnode;
+    netnode_t * np;
+   
+    rnode = doomcom->remotenode;  // net node num
+    if( rnode >= MAXNETNODES )
+        goto ret_fail;  // not a player net node
+
+    np = & net_nodes[rnode];
 
     // Only process an ack return if it is greater than the previous ack.
     if(netbuffer->ack_return
@@ -570,11 +593,13 @@ dup_ackpak_found:
 dup_reject:
    stat_duppacket++;
    // Discard the packet (duplicate)
+ret_fail:
    return false;
 }
 
 
 // Send a special packet with only the ack queue.
+//  to_node: 0..(MAXNETNODES-1)
 void Net_Send_AcksPacket(int to_node)
 {
     // Send an packet with the ack queue.
@@ -588,10 +613,14 @@ void Net_Send_AcksPacket(int to_node)
 static void Got_AcksPacket(void)
 {
     int j;
-    byte rnode = doomcom->remotenode;
+    byte rnode;
     byte recv_acknum;  // acknum from the packet
     ackpak_t * ackpakp;
 
+    rnode = doomcom->remotenode;
+    if( rnode >= MAXNETNODES )
+       return;  // not a player packet
+	
     // The body of the packet is the ack queue.
     for(j=0;j<MAXACKTOSEND;j++)
     {
@@ -631,7 +660,8 @@ static void Got_AcksPacket(void)
 }
 
 
-void Net_ConnectionTimeout( int nnode )
+// nnode:  1..(MAXNETNODES-1)
+void Net_ConnectionTimeout( byte nnode )
 {
     netbuffer_t * rebp = & reboundstore[rebound_head];
     // Send a very special packet to self (hack the reboundstore queu).
@@ -714,6 +744,7 @@ void Net_AckTicker(void)
 // Cancel the ack of the last packet received.  This forces the net node
 // to resend it.  This is an escape when the higher layer don't have room,
 // or something else ....)
+//   nnode: 0..(MAXNETNODES-1)
 void Net_Cancel_Packet_Ack(int nnode)
 {
     netnode_t * np;
@@ -815,6 +846,8 @@ void Net_Wait_AllAckReceived( uint32_t timeout )
     }
 }
 
+// Init Ack for player net nodes.
+//  nnode: 0..(MAXNETNODES-1)
 static void InitNode( int nnode )
 {
     netnode_t * np = & net_nodes[nnode];
@@ -837,7 +870,7 @@ static void InitAck()
       ackpak[i].acknum=0;
 
    for(i=0;i<MAXNETNODES;i++)
-       InitNode( i );
+       InitNode( i );  // Init Ack for player net nodes.
 }
 
 // Remove from retransmit any packets of the indicated type.
@@ -870,7 +903,7 @@ void Net_AbortPacketType(byte packettype)
 
 
 // Remove a node, clear all ack from this node and reset askret
-//   nnode : the net node number
+//   nnode : the net node number, 0..(MAX_CON_NETNODE-1)
 //      may be OR with flag  FORCECLOSE.
 void Net_CloseConnection(int nnode)
 {
@@ -878,9 +911,21 @@ void Net_CloseConnection(int nnode)
     ackpak_t * ackpakp;
 
     nnode &= ~FORCECLOSE;
-    if( !nnode )
+    if( nnode >= MAXNETNODES )
+    {
+#if 0
+        // [WDJ] GCC 4.5.2  Compiler bug.
+        goto free_done;
+#else
+        // [WDJ] Smaller code by 3K.
+        I_NetFreeNode(nnode);
+        return;
+#endif
+    }
+    if( nnode == 0 )
         return;  // Cannot close self connection.
 
+    // Shutdown player net node.
     net_nodes[nnode].flags |= NODE_CLOSE;
 
     // Try to Send ack back (two army problem).
@@ -907,7 +952,13 @@ void Net_CloseConnection(int nnode)
     // No waiting for ack from this net node.
     InitNode(nnode);
     AbortSendFiles(nnode);
+#if 0
+// [WDJ] GCC 4.5.2 Using this label triggers a compiler bug that costs 3K size.
+// An if {}, also costs 3K in program size ! All variations.
+free_done:
+#endif
     I_NetFreeNode(nnode);
+    return;
 }
 
 //
@@ -1123,7 +1174,7 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
     doomcom->remotenode = to_node;
     if(doomcom->datalength <= 0)   goto empty_packet;
 
-    // Include any pending ack.
+    // Include any pending return_ack, player nodes only.
     netbuffer->ack_return = (to_node<MAXNETNODES)?
        Get_return_ack(to_node)  // ack a previous packet
        : 0;  // broadcast, no ack
@@ -1228,9 +1279,12 @@ boolean HGetPacket (void)
 
     stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
-    if (doomcom->remotenode >= MAXNETNODES)  goto bad_node_num;
-
-    net_nodes[doomcom->remotenode].lasttime_packet_received = I_GetTime();
+    if( doomcom->remotenode < MAXNETNODES )
+    {
+        // Player netnode
+        net_nodes[doomcom->remotenode].lasttime_packet_received = I_GetTime();
+    }
+    else if (doomcom->remotenode >= MAX_CON_NETNODE)  goto bad_node_num;
 
     if (netbuffer->checksum != Netbuffer_Checksum())  goto bad_checksum;
 
@@ -1307,7 +1361,7 @@ boolean D_Startup_NetGame(void)
         doomcom=Z_Malloc(sizeof(doomcom_t),PU_STATIC,NULL);
         memset(doomcom,0,sizeof(doomcom_t));
         doomcom->id = DOOMCOM_ID;        
-        doomcom->numplayers = doomcom->numnodes = 1;
+        doomcom->numplayers = doomcom->num_player_netnodes = 1;
         doomcom->unused_deathmatch = 0;  // unused
         doomcom->consoleplayer = 0;
         doomcom->extratics = 0;
@@ -1375,10 +1429,10 @@ boolean D_Startup_NetGame(void)
     if (doomcom->id != DOOMCOM_ID)
         I_Error ("Doomcom buffer invalid!");
 
-    if (doomcom->numnodes>MAXNETNODES)
+    if (doomcom->num_player_netnodes > MAXNETNODES)  // player nodes only
     {
         I_Error ("Too many network nodes (%d), max:%d",
-		 doomcom->numnodes, MAXNETNODES);
+		 doomcom->num_player_netnodes, MAXNETNODES);
     }
 
     netbuffer = (netbuffer_t *)&doomcom->data;
@@ -1419,7 +1473,7 @@ extern void D_CloseConnection( void )
         Net_Wait_AllAckReceived(5);
 
         // close all connection
-        for( i=0;i<MAXNETNODES;i++ )
+        for( i=0; i<MAX_CON_NETNODE; i++ )
             Net_CloseConnection(i | FORCECLOSE);
 
         InitAck();

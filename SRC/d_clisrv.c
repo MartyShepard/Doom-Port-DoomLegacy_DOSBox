@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: d_clisrv.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -795,7 +795,8 @@ void CL_UpdateServerList( boolean internetsearch )
 // use adaptive send using net_bandwidth and stat.sendbytes
 static void CL_ConnectToServer( void )
 {
-    int  numnodes, nodewaited=doomcom->numnodes;
+    int  numnodes;
+    int  nodewaited = doomcom->num_player_netnodes;
     int  nn;  // net node num
     int  i;
     tic_t   asksent;
@@ -805,10 +806,13 @@ static void CL_ConnectToServer( void )
 
     CONS_Printf("Press ESC to abort\n");
     if( servernode >= MAXNETNODES )
+    {
+        // init value and BROADCASTADDR
         CONS_Printf("Searching the server...\n");
+    }
     else
         CONS_Printf("Contacting the server...\n");
-    DEBFILE(va("Waiting %d nodes\n", doomcom->numnodes));
+    DEBFILE(va("Waiting %d nodes\n", doomcom->num_player_netnodes));
     gamestate = wipegamestate = GS_WAITINGPLAYERS;
 
     numnodes=1;
@@ -921,7 +925,7 @@ static void CL_ConnectToServer( void )
 	        goto reset_to_title_exit;
             }
             if( key=='s' && server) 
-                doomcom->numnodes=numnodes;
+                doomcom->num_player_netnodes = numnodes;
 
             Filetx_Ticker();
             oldtic=I_GetTime();
@@ -982,7 +986,10 @@ void Command_connect(void)
     {
         // used in menu to connect to a server in the list
         if( netgame && strcasecmp(COM_Argv(1),"node")==0 )
+        {
+	    // example: "connect node 4"
             servernode = atoi(COM_Argv(2));
+	}
         else
         if( netgame )
         {
@@ -997,10 +1004,16 @@ void Command_connect(void)
             multiplayer = true;
         
             if( strcasecmp(COM_Argv(1),"any")==0 )
+	    {
+	        // Connect to first lan server found.
                 servernode = BROADCASTADDR;
+	    }
             else
             if( I_NetMakeNode )
+	    {
+	        // Connect to server at IP addr.
                 servernode = I_NetMakeNode(COM_Argv(1));
+	    }
             else
             {
                 CONS_Printf("There is no server identification with this network driver\n");
@@ -1012,7 +1025,7 @@ void Command_connect(void)
     CL_ConnectToServer();
 }
 
-static void Reset_NetNode(byte node);
+static void Reset_NetNode(byte nnode);
 
 // Called by Kick cmd.
 static void CL_RemovePlayer(int playernum)
@@ -1073,7 +1086,7 @@ void CL_Reset (void)
     multiplayer = false;
     servernode=0;  // server to self
     server=true;
-    doomcom->numnodes=1;
+    doomcom->num_player_netnodes=1;
     doomcom->numplayers=1;
     SV_StopServer();
     SV_ResetServer();
@@ -1267,6 +1280,7 @@ void D_ClientServerInit (void)
 	SV_SpawnServer();
 }
 
+// nnode: 0..(MAXNETNODES-1)
 static void Reset_NetNode(byte nnode)
 {
     nodeingame[nnode] = false;

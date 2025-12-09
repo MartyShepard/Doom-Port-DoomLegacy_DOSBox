@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1149 2015-04-03 13:52:40Z wesleyjohnson $
+// $Id: i_net.h 1151 2015-04-03 13:55:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -75,7 +75,7 @@ typedef struct
 
     // Info common to all nodes.
     // Console is always node 0.
-    uint16_t            numnodes;
+    uint16_t            num_player_netnodes;
     // Flag: 1 = no duplication, 2-5 = dup for slow nets.
     uint16_t            unused_ticdup;
     // Number of extratics in each packet.

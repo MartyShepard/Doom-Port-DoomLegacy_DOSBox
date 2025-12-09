@@ -82,6 +82,10 @@
 
 #include "../i_joy.h"
 #include "../dstrings.h"
+#include "../d_event.h"
+extern int eventtail;
+extern uint64_t *freespace;
+
 
 //### let's try with Allegro ###
 #define  alleg_mouse_unused

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
+// $Id: i_tcp.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -262,15 +262,31 @@ typedef union {
 #endif
 }  mysockaddr_t;
 
-static mysockaddr_t clientaddress[MAXNETNODES+1];
+// Player and additional net nodes.
+static mysockaddr_t clientaddress[MAX_CON_NETNODE];
+
+#define NODE_ADDR_HASHING
+#ifdef NODE_ADDR_HASHING
+// To receive must set to hash of clientaddress.
+// To send, any value > 0 will enable.
+#else
+// Use node_hash as node connected flag.
+#endif
+// Contains address hash, is 0 when unused.  Hash is not allowed to be 0.
+static byte     node_hash[MAX_CON_NETNODE];
         
 static SOCKET   mysocket = -1;
-static boolean  nodeconnected[MAXNETNODES+1];
+
+
 #ifdef USE_IPX
 static boolean  ipx;
 #endif
 int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
 
+// Network is big-endian, 386,486,586 PC are little-endian.
+// htons: host to net byte order
+// ntohs: net to host byte order
+  
 // To print error messages
 char *SOCK_AddrToStr(mysockaddr_t *sk)
 {
@@ -278,6 +294,7 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
 
     if( sk->ip.sin_family==AF_INET)
     {
+        // Internet address
         sprintf(s,"%d.%d.%d.%d:%d",((byte *)(&(sk->ip.sin_addr.s_addr)))[0],
                                    ((byte *)(&(sk->ip.sin_addr.s_addr)))[1],
                                    ((byte *)(&(sk->ip.sin_addr.s_addr)))[2],
@@ -289,7 +306,11 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
 #ifdef LINUX
     if( sk->ipx.sipx_family==AF_IPX )
     {
-#ifndef FREEBSD
+# ifdef FREEBSD
+        // FreeBSD IPX
+        sprintf(s,"%s", ipx_ntoa(sk->ipx.sipx_addr));
+# else
+        // Linux IPX, but Not FreeBSD
         sprintf(s,"%08x.%02x%02x%02x%02x%02x%02x:%d",
                   sk->ipx.sipx_network,
                   (byte)sk->ipx.sipx_node[0],
@@ -299,14 +320,13 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
                   (byte)sk->ipx.sipx_node[4],
                   (byte)sk->ipx.sipx_node[5],
                   sk->ipx.sipx_port);
-#else
-       sprintf(s,"%s", ipx_ntoa(sk->ipx.sipx_addr));
-#endif
+# endif
     }
 #else
-    // not Linux
+    // IPX Windows, OS2, DJGPP
     if( sk->ipx.sa_family==AF_IPX )
     {
+        // IPX address
         sprintf(s,"%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x:%d",
                   (byte)sk->ipx.sa_netnum[0],
                   (byte)sk->ipx.sa_netnum[1],
@@ -328,30 +348,62 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
 }
 
 #ifdef USE_IPX
-boolean IPX_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
+boolean IPX_cmpaddr(mysockaddr_t *a, mysockaddr_t *b)
 {
 #ifdef LINUX
 #ifdef FREEBSD
+    // FreeBSD: IPX address compare
     return ipx_neteq( a->ipx.sipx_addr, b->ipx.sipx_addr) &&
            ipx_hosteq( a->ipx.sipx_addr, b->ipx.sipx_addr );
 #else
+    // Linux (except FreeBSD): IPX address compare
     return ((memcmp(&(a->ipx.sipx_network) ,&(b->ipx.sipx_network) ,4)==0) &&
             (memcmp(&(a->ipx.sipx_node),&(b->ipx.sipx_node),6)==0));
 #endif
 #else
+    // Windows, OS2, DJGPP: IPX address compare
     return ((memcmp(&(a->ipx.sa_netnum) ,&(b->ipx.sa_netnum) ,4)==0) &&
             (memcmp(&(a->ipx.sa_nodenum),&(b->ipx.sa_nodenum),6)==0));
 #endif // linux
 }
+
+#ifdef NODE_ADDR_HASHING
+byte  IPX_hashaddr(mysockaddr_t *a)
+{
+    // Not allowed to be 0.
+    // Big endian, want final addr byte.
+#ifdef LINUX
+    // Linux: IPX address hash
+    return ((byte)(a->ipx.sipx_node[5])) | 0x80;
+#else
+    // Windows, OS2, DJGPP: IPX address hash
+    return ((byte)(a->ipx.sa_nodenum[5])) | 0x80;
+#endif // linux
+}
+#endif
+
 #endif // USE_IPX
 
-boolean UDP_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
+boolean UDP_cmpaddr(mysockaddr_t *a, mysockaddr_t *b)
 {
-    return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr && a->ip.sin_port == b->ip.sin_port);
+    return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr
+	    && a->ip.sin_port == b->ip.sin_port);
 }
+
+#ifdef NODE_ADDR_HASHING
+byte  UDP_hashaddr(mysockaddr_t *a)
+{
+    // Not allowed to be 0.
+    // Big endian, want final addr byte.
+    return ((byte*)(&(a->ip.sin_addr.s_addr)))[3] | 0x80;
+}
+#endif
 
 // Indirect function for net address compare.
 boolean (*SOCK_cmpaddr) (mysockaddr_t *a, mysockaddr_t *b);
+#ifdef NODE_ADDR_HASHING
+byte    (*SOCK_hashaddr) (mysockaddr_t *a);
+#endif
 
 
 // Return net node.  When nodes full, return 255.
@@ -359,11 +411,16 @@ static byte get_freenode( void )
 {
     byte nn;
 
+    // Only this range is dynamically allocated, the others are preallocated.
     for( nn=1; nn<MAXNETNODES; nn++)  // self is not free
     {
-        if( !nodeconnected[nn] )
+        if( node_hash[nn] == 0 )
         {
-            nodeconnected[nn]=true;
+#ifdef NODE_ADDR_HASHING
+            node_hash[nn]=1;  // enable send, but hash is needed to receive
+#else
+            node_hash[nn]=1;  // used as node_connection flag
+#endif
             return nn;
         }
     }
@@ -385,10 +442,8 @@ void SOCK_FreeNode(int nnode)
     }
 #endif
 
-    // Disconnect.
-    nodeconnected[nnode]=false;
-
-    // put invalid address
+    // Disconnect and invalid address.
+    node_hash[nnode] = 0;
     memset(&clientaddress[nnode], 0, sizeof(clientaddress[nnode]));
 }
 
@@ -400,6 +455,9 @@ void SOCK_FreeNode(int nnode)
 boolean  SOCK_Get(void)
 {
     byte  nnode;
+#ifdef NODE_ADDR_HASHING
+    byte  hashaddr;
+#endif
     int   rcnt;  // data bytes received
     socklen_t     fromlen;
     mysockaddr_t  fromaddress;
@@ -428,9 +486,18 @@ boolean  SOCK_Get(void)
     
 //    DEBFILE(va("Get from %s\n",SOCK_AddrToStr(&fromaddress)));
 
+    // Find remote node number, player nodes only.
+#ifdef NODE_ADDR_HASHING
+    hashaddr = SOCK_hashaddr( &fromaddress );  // hash != 0
+    // GenPrintf(EMSG_debug, "hashaddr=%d\n", hashaddr );
+#endif
     // find remote node number
     for (nnode=0; nnode<MAXNETNODES; nnode++)
     {
+#ifdef NODE_ADDR_HASHING
+        // [WDJ] avoid testing null addresses.
+        if( node_hash[nnode] != hashaddr )  continue;
+#endif
         if( SOCK_cmpaddr(&fromaddress, &(clientaddress[nnode])) )
 	     goto return_node;  // found match
     }
@@ -439,6 +506,10 @@ boolean  SOCK_Get(void)
     nnode = get_freenode();  // Find a free node.
     if(nnode >= MAXNETNODES)  goto no_nodes;
 
+#ifdef NODE_ADDR_HASHING
+    // Set node_hash[nnode] to enable receive.
+    node_hash[nnode] = hashaddr;
+#endif
     // Save the addr of the net node.
     memcpy(&clientaddress[nnode], &fromaddress, fromlen);
 #ifdef DEBUGFILE
@@ -493,26 +564,27 @@ recv_err:
     }
     // Many other errors.
     I_Error("SOCK_Get\n");
- 
+
 no_nodes:
- #ifdef DEBUGFILE
+#ifdef DEBUGFILE
     // node table full
     if( debugfile )
         fprintf(debugfile,"SOCK_Get: Free nodes all used.\n");
- #endif
+#endif
     net_error = NE_nodes_exhausted;
     goto no_packet;
-   
+
 no_packet:
     doomcom->remotenode = -1;  // no packet
     return false;
 }
 
 
-static fd_set  write_set;  // Linux: modified by select
+// Setup by SOCK_OpenSocket().
+static fd_set  write_set;
 
 // Function for I_NetCanSend().
-// Check if we can send (to save a buffer transfer).
+// check if we can send (do not go over the buffer)
 boolean SOCK_CanSend(void)
 {
     // [WDJ] Linux: select modifies timeval, so it must be init with each call.
@@ -547,7 +619,7 @@ boolean  SOCK_Send(void)
     byte  nnode = doomcom->remotenode;
     int  cnt;  // chars sent
                          
-    if( !nodeconnected[doomcom->remotenode] )  goto node_unconnected;
+    if( node_hash[nnode] == 0 )   goto node_unconnected;
 
     // sockaddr is defined in sys/socket.h
 #ifdef LINUX
@@ -613,7 +685,6 @@ node_unconnected:
 err_return:
     return false;
 }
-
 
 
 //
@@ -720,18 +791,31 @@ static SOCKET  UDP_Socket (void)
     // ip + udp
     net_packetheader_length = 20 + 8; // for stats
 
+    // should not receive from self, but will set it up anyway.
     clientaddress[0].ip.sin_family      = AF_INET;
     clientaddress[0].ip.sin_port        = htons(sock_port);
-    clientaddress[0].ip.sin_addr.s_addr = INADDR_LOOPBACK; //GetLocalAddress(); // my own ip
-                                      // inet_addr("127.0.0.1");
-    // setup broadcast adress to BROADCASTADDR entry
+    clientaddress[0].ip.sin_addr.s_addr = INADDR_LOOPBACK;
+                                  // inet_addr("127.0.0.1");
+#ifdef NODE_ADDR_HASHING
+    node_hash[0] = UDP_hashaddr( &clientaddress[0] );
+#endif
+
+    // Setup broadcast adress to BROADCASTADDR entry
+    // To send broadcasts, PT_ASKINFO
     clientaddress[BROADCASTADDR].ip.sin_family      = AF_INET;
     clientaddress[BROADCASTADDR].ip.sin_port        = htons(sock_port);
     clientaddress[BROADCASTADDR].ip.sin_addr.s_addr = INADDR_BROADCAST;
+#ifdef NODE_ADDR_HASHING
+//    node_hash[BROADCASTADDR] = UDP_hashaddr( &clientaddress[BROADCASTADDR] );
+    node_hash[BROADCASTADDR] = 1;  // send only
+#endif
 
     doomcom->extratics=1; // internet is very high ping
 
     SOCK_cmpaddr=UDP_cmpaddr;
+#ifdef NODE_ADDR_HASHING
+    SOCK_hashaddr=UDP_hashaddr;
+#endif
     return s;
    
 no_socket:
@@ -829,17 +913,20 @@ static SOCKET  IPX_Socket (void)
 #ifdef LINUX
     clientaddress[BROADCASTADDR].ipx.sipx_family = AF_IPX;
     clientaddress[BROADCASTADDR].ipx.sipx_port = htons(sock_port);
-#ifndef FREEBSD
-    clientaddress[BROADCASTADDR].ipx.sipx_network = 0;
-    for(i=0;i<6;i++)
-       clientaddress[BROADCASTADDR].ipx.sipx_node[i] = (byte)0xFF;
-#else
+#ifdef FREEBSD
+    // FreeBSD
     clientaddress[BROADCASTADDR].ipx.sipx_addr.x_net.s_net[0] = 0;
     clientaddress[BROADCASTADDR].ipx.sipx_addr.x_net.s_net[1] = 0;
     for(i=0;i<6;i++)
        clientaddress[BROADCASTADDR].ipx.sipx_addr.x_host.c_host[i] = (byte)0xFF;
+#else
+    // Linux, but Not FreeBSD
+    clientaddress[BROADCASTADDR].ipx.sipx_network = 0;
+    for(i=0;i<6;i++)
+       clientaddress[BROADCASTADDR].ipx.sipx_node[i] = (byte)0xFF;
 #endif
 #else
+    // Windows, etc.
     clientaddress[BROADCASTADDR].ipx.sa_family = AF_IPX;
     clientaddress[BROADCASTADDR].ipx.sa_socket = htons(sock_port);
     for(i=0;i<4;i++)
@@ -847,8 +934,15 @@ static SOCKET  IPX_Socket (void)
     for(i=0;i<6;i++)
        clientaddress[BROADCASTADDR].ipx.sa_nodenum[i] = (byte)0xFF;
 #endif // linux
+#ifdef NODE_ADDR_HASHING
+//    node_hash[BROADCASTADDR] = IPX_hashaddr( &clientaddress[BROADCASTADDR] );
+    node_hash[BROADCASTADDR] = 1;  // send only
+#endif
 
     SOCK_cmpaddr=IPX_cmpaddr;
+#ifdef NODE_ADDR_HASHING
+    SOCK_hashaddr=IPX_hashaddr;
+#endif
     return s;
 
 no_ipx:
@@ -1001,6 +1095,9 @@ int SOCK_NetMakeNode (char *hostname)
     clientaddress[newnode].ip.sin_family      = AF_INET;
     clientaddress[newnode].ip.sin_port        = portnum;
     clientaddress[newnode].ip.sin_addr.s_addr = newaddr.ip.sin_addr.s_addr;
+#ifdef NODE_ADDR_HASHING
+    node_hash[newnode] = SOCK_hashaddr( &newaddr );  // hash != 0
+#endif
 
 clean_ret:
     free(localhostname);
@@ -1024,11 +1121,10 @@ boolean SOCK_OpenSocket( void )
 
     memset(clientaddress,0,sizeof(clientaddress));
 
-    for(i=0;i<MAXNETNODES;i++)
-        nodeconnected[i]=false;
-
-    nodeconnected[0] = true; // always connected to self
-    nodeconnected[BROADCASTADDR] = true;
+    node_hash[0] = 1; // always connected to self
+    for(i=1; i<MAX_CON_NETNODE; i++)
+        node_hash[i] = 0;
+   
     I_NetSend        = SOCK_Send;
     I_NetGet         = SOCK_Get;
     I_NetCloseSocket = SOCK_CloseSocket;
@@ -1102,7 +1198,7 @@ boolean I_InitTcpNetwork( void )
         else
             num = 1;
 
-        doomcom->numnodes = num;
+        doomcom->num_player_netnodes = num;
 
         // server
         servernode = 0;  // server set to self

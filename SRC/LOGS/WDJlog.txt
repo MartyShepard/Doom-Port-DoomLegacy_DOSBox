@@ -4236,3 +4236,12 @@ patchfile = w102_11_console_open.patch
 - commit revision 1150
 Add a console_open state var.  Test it so that demos do not startup
 and steal the display when the console is open.
+
+*** W102_netnodes
+patchfile = w102_12_netnodes.patch
+- commit revision 1151
+The player netnodes and utility netnodes are differentiated.
+Provision is made for additional utility netnodes.
+Network Ack is limited to player netnodes.  Tests are included to insure
+that only player netnodes are used to index the Ack structures.
+Comment the TCP network variations, and network node ranges.

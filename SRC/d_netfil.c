@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1147 2015-04-03 13:49:10Z wesleyjohnson $
+// $Id: d_netfil.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -139,6 +139,7 @@ typedef struct {
    FILE*      currentfile;
 } transfer_t;
 
+// Only transfer files to player nodes.
 static transfer_t transfer[MAXNETNODES];
 
 // read time of file : stat _stmtime
@@ -546,7 +547,7 @@ memory_err:
 }
 
 // Close and release the current transfer of the net node.
-//  nnode : for net node
+//  nnode : net node,  0..(MAXNETNODES-1)
 void EndSend(byte nnode)
 {
     transfer_t * tnnp = & transfer[nnode];
@@ -579,7 +580,7 @@ void EndSend(byte nnode)
 // Called by NetUpdate, CL_ConnectToServer.
 void Filetx_Ticker(void)
 {
-    static byte txnode=0;  // net node num
+    static byte txnode=0;  // net node num, 0..(MAXNETNODES-1)
     byte       nn;  // net node num
 
     TAH_e      access_tah;
@@ -603,7 +604,7 @@ void Filetx_Ticker(void)
     {
         // Round robin, fair share.
         nn = (txnode+1)%MAXNETNODES;
-        for( tcnt=0; tcnt<MAXNETNODES; tcnt++ )
+        for( tcnt=0; tcnt<MAXNETNODES; tcnt++ )  // counter
         {
 	    if(transfer[nn].txlist)
 	         goto found;
@@ -710,7 +711,7 @@ file_size_err:
 
 file_read_err:
     perror("FileTx");
-    I_SoftError("Filetx: Read err on %s at %d of %d bytes",
+    I_SoftError("Filetx: Read err on %s at %d of %d bytes\n",
 		 ftxp->filename, tnnp->position, size);
     goto reject;
 
@@ -824,6 +825,8 @@ reject:
     return;
 }
 
+// nnode:  0..(MAXNETNODES-1)
+// Called by Net_CloseConnection, CloseNetFile
 void AbortSendFiles(byte nnode)
 {
     while(transfer[nnode].txlist)
