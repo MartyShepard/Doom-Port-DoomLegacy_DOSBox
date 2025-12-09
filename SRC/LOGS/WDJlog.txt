@@ -4261,3 +4261,12 @@ patchfile = w102_14_mserv.patch
 Cleanup MasterServer code.
 Convert some MasterServer message fields to stdint types.
 Fix bug in select call, Linux select modifies the parameters.
+
+*** W102_ms_ping
+patchfile = w102_15_ms_ping.patch
+- commit revision 1154
+The MasterServer code was using a player node to ping the MasterServer
+with time packets.
+New code, enabled with UDP_PING_SPECIAL, uses a utility net node, MS_PINGNODE,
+for this pinging.  This allows 32 players.
+A new function, UDP_Bind_Node, has been created to enable this.

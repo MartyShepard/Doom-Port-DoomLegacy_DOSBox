@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1153 2015-04-03 13:57:45Z wesleyjohnson $
+// $Id: mserv.c 1154 2015-04-03 13:58:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -236,15 +236,12 @@ typedef enum{
 
 static con_state_e  con_state = MSCS_NONE;
 
-#define NEWCODE
-#ifndef NEWCODE
-static SOCKET               mysocket;        // UDP socket
-static int                  current_port;
-static struct sockaddr_in   udp_addr;
-#else
-static int msnode=-1;
-#define current_port sock_port
-#endif
+// Using SOCK UDP for pinging the MasterServer.
+// UDP_PING_SPECIAL: use this special node so do not tie up a player net node.
+// This allows having all 32 players.
+#define UDP_PING_SPECIAL  MS_PINGNODE
+
+static int msnode = -1;  // net node for pinging the MasterServer.
 
 // MasterServer communications.
 static SOCKET               ms_socket_fd = -1;  // TCP/IP socket
@@ -428,7 +425,7 @@ static int RegisterInfo_on_MasterServer(void)
     
     strcpy(info->header, "");
     strcpy(info->ip,     "");
-    strcpy(info->port,   int2str(current_port));
+    strcpy(info->port,   int2str(sock_port));
     strcpy(info->name,   cv_servername.string);
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
     strcpy(registered_server.name, cv_servername.string);
@@ -453,7 +450,7 @@ static int RemoveInfo_from_MasterServer(void)
 
     strcpy(info->header, "");
     strcpy(info->ip,     "");
-    strcpy(info->port,   int2str(current_port));
+    strcpy(info->port,   int2str(sock_port));
     strcpy(info->name,   registered_server.name);
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
 
@@ -505,7 +502,17 @@ static void open_UDP_Socket()
 {
     // Setup ping UDP addr from MasterServer IP, MasterServer port + 1.
     uint32_t  ping_port = atoi(MS_Get_MasterServerPort()) + 1;
-#ifdef NEWCODE
+
+#ifdef UDP_PING_SPECIAL
+    // Using a special node.
+    if( I_NetMakeNode )  // UDP functions connected
+    {
+        msnode = MS_PINGNODE;
+        UDP_Bind_Node(MS_PINGNODE, ms_addr.sin_addr.s_addr, ping_port );
+    }
+    else
+        msnode = -1;
+#else
     // Using a player node.  This ties up a player node.
     if( I_NetMakeNode )
     {
@@ -517,11 +524,6 @@ static void open_UDP_Socket()
     }
     else
         msnode = -1;
-#else
-    memset(&udp_addr, 0, sizeof(udp_addr));
-    udp_addr.sin_family = AF_INET;
-    udp_addr.sin_port = htons(ping_port);
-    udp_addr.sin_addr.s_addr = addr.sin_addr.s_addr; // same IP as for TCP
 #endif
 }
 
@@ -533,8 +535,6 @@ void MS_RegisterServer(void)
 
     strcpy(registered_server.ip, MS_Get_MasterServerIP());
     strcpy(registered_server.port, MS_Get_MasterServerPort());
-    //current_port = port;
-    //mysocket = s;
 
     if (MS_Connect(registered_server.ip, registered_server.port, ASYNC) < 0)
     {
@@ -564,17 +564,13 @@ void MS_SendPing_MasterServer( tic_t cur_time )
 
         // Keep-alive tick to the MasterServer on MasterServer port+1.
         // cur_time is just a dummy data to send
-#ifdef NEWCODE
         if( msnode < 0 )
 	    return;  // no UDP connection
-       
+
         *((tic_t *)netbuffer) = cur_time;
         doomcom->datalength = sizeof(cur_time);
         doomcom->remotenode = msnode;
         I_NetSend();  // to packet port
-#else
-        sendto(mysocket, (char*)&cur_time, sizeof(cur_time), 0, (struct sockaddr *)&udp_addr, sizeof(struct sockaddr));
-#endif
     }
 }
 
@@ -600,9 +596,7 @@ void MS_UnregisterServer()
         CONS_Printf("Cannot remove this server from the master server\n");
 
     MS_Close_socket();
-#ifdef NEWCODE
     I_NetFreeNode( msnode );  // can be used on special net nodes too
-#endif
 }
 
 /*

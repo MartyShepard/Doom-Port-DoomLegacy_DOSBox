@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1151 2015-04-03 13:55:36Z wesleyjohnson $
+// $Id: i_net.h 1154 2015-04-03 13:58:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -149,6 +149,12 @@ extern int     (*I_NetMakeNode) (char *address);
 extern boolean (*I_NetOpenSocket) (void);
 // Close the network socket, and all net node connections.
 extern void    (*I_NetCloseSocket) (void);
+
+// Set address and port of special nodes.
+//  saddr: IP address in network byte order
+//  port: port number in host byte order
+void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port );
+
 
 boolean I_InitNetwork (void);
 
