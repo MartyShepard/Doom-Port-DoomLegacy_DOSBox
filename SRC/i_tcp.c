@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1144 2015-04-03 13:46:21Z wesleyjohnson $
+// $Id: i_tcp.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -791,6 +791,7 @@ boolean I_InitTcpNetwork( void )
 {
     char     serverhostname[255];
     boolean  ret=0;
+    int      num;
 
 #ifdef USE_IPX
     ipx=M_CheckParm("-ipx");
@@ -813,16 +814,19 @@ boolean I_InitTcpNetwork( void )
         // since Boris has implemented join in-game, there is no actual need for specifying a particular number here
         // FIXME: for dedicated server, numnodes needs to be set to 0 upon start
         if( M_IsNextParm() )
-            doomcom->numnodes=atoi(M_GetNextParm());
+        {
+            num = atoi(M_GetNextParm());
+	    if( num < 0 )
+	       num = 0;
+	    if( num > MAXNETNODES)
+               num = MAXNETNODES;
+	}
         else if (dedicated)
-            doomcom->numnodes=0;
+            num = 0;
         else
-            doomcom->numnodes=1;
+            num = 1;
 
-        if (doomcom->numnodes<0)
-            doomcom->numnodes=0;
-        if (doomcom->numnodes>MAXNETNODES)
-            doomcom->numnodes=MAXNETNODES;
+        doomcom->numnodes = num;
 
         // server
         servernode = 0;  // server set to self

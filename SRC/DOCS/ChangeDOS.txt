@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01145 ]: w102 net cleanup
+          DOS Compile Fix I_Netc.c, Update vars
+					
 [01144 ]: w102 clisrv func
 [01143 ]: w102 clisrv type
 [01142 ]: w102 clisrv rewrite

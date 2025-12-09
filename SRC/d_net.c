@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1144 2015-04-03 13:46:21Z wesleyjohnson $
+// $Id: d_net.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -47,12 +47,13 @@
 //
 // DESCRIPTION:
 //      DOOM Network game communication and protocol,
-//      all OS independend parts.
+//      all OS independent parts.
 //
-//      Implemente a Sliding window protocol without receiver window
-//      (out of order reception)
+//      Implements a Sliding window protocol, without receiver window
+//      (out of order reception).
 //      This protocol use mix of "goback n" and "selective repeat" implementation
-//      The NOTHING packet is send when connection is idle for acknowledge packets
+//      The NOTHING packet is sent when the connection is idle,
+//      to acknowledge packets
 //
 //-----------------------------------------------------------------------------
 
@@ -73,13 +74,13 @@
 // NETWORKING
 //
 // gametic is the tic about to (or currently being) run
+// maketic is the tic that hasn't had control made for it yet
 // server:
-//   maketic is the tic that hasn't had control made for it yet
-//   nettics : is the tic for eatch node
-//   firsttictosend : is the lowest value of nettics
+//   nettics is the tic for each node
+//   next_tic_send is the lowest value of nettics
 // client:
-//   neededtic : is the tic needed by the client for run the game
-//   firsttictosend : is used to optimize a condition
+//   cl_need_tic is the tic needed by the client for run the game
+//   next_tic_send is used to optimize a condition
 // normaly maketic>=gametic>0,
 
 #define FORCECLOSE         0x8000
@@ -93,12 +94,14 @@ FILE*       debugfile=NULL;        // put some net info in a file
                               // during the game
 #endif
 
+// Rebound queue, self server to self client network.
 #define     MAXREBOUND 8
 static netbuffer_t reboundstore[MAXREBOUND];
-static short       reboundsize[MAXREBOUND];
+static uint16_t    reboundsize[MAXREBOUND];
 static int         rebound_head,rebound_tail;
-int         net_bandwidth;
-short       hardware_MAXPACKETLENGTH;
+
+uint32_t    net_bandwidth;
+uint16_t    hardware_MAXPACKETLENGTH;
 
 void    (*I_NetGet) (void);
 void    (*I_NetSend) (void);
@@ -1033,6 +1036,7 @@ void Internal_FreeNodenum(int nodenum)
 boolean D_Startup_NetGame(void)
 {
     boolean ret=false;
+    int  num;
 
     InitAck();
     rebound_tail=0;
@@ -1050,20 +1054,23 @@ boolean D_Startup_NetGame(void)
     // Defaults
     hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
     net_bandwidth = 3000;
-    // I_InitNetwork sets doomcom and netgame
-    // check and initialize the network driver
+   
+    // I_InitNetwork sets port dependent settings in doomcom and netgame.
+    // Check and initialize the network driver.
     multiplayer = false;
 
-    // only dos version with external driver will return true
+    // [WDJ] Can simplify this and doomcom when drop support for DOS net.
+    // Only dos version with external driver will return true.
     netgame = I_InitNetwork ();
     if( !netgame )
     {
-        // Create netgame.
+        // InitNetwork did not init doomcom.
+        // Init doomcom and netgame.
         doomcom=Z_Malloc(sizeof(doomcom_t),PU_STATIC,NULL);
         memset(doomcom,0,sizeof(doomcom_t));
         doomcom->id = DOOMCOM_ID;        
         doomcom->numplayers = doomcom->numnodes = 1;
-        doomcom->deathmatch = false;
+        doomcom->unused_deathmatch = 0;  // unused
         doomcom->consoleplayer = 0;
         doomcom->extratics = 0;
 
@@ -1075,7 +1082,7 @@ boolean D_Startup_NetGame(void)
         netgame = false;
     server = true; // The default mode is server.
                    // Set to Client mode when connect to another server.
-    doomcom->ticdup = 1;
+    doomcom->unused_ticdup = 1;  // unused
     
     if (M_CheckParm ("-extratic"))
     {
@@ -1083,10 +1090,17 @@ boolean D_Startup_NetGame(void)
 	// retransmission of player movement
 	// Combination of the vanilla -extratic and -dup
         if( M_IsNextParm() )
-            doomcom->extratics = atoi(M_GetNextParm());
+        {
+            num = atoi(M_GetNextParm());
+	    if( num < 0 )
+	       num = 0;
+	    if( num > 20 )
+	       num = 20;  // reasonable
+	}
         else
-            doomcom->extratics = 1;
-        CONS_Printf("Set extratic to %d\n",doomcom->extratics);
+            num = 1;
+        CONS_Printf("Set extratic to %d\n", num);
+        doomcom->extratics = num;
     }
 
     if(M_CheckParm ("-bandwidth"))

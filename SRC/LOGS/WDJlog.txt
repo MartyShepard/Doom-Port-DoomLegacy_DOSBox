@@ -4185,3 +4185,11 @@ patchfile = w102_5_clisrv_func.patch
 More cleanup of vars. Change type servernode to byte.
 Make some errors use I_SoftError.
 Simplify NetXCmd, Send_Tics.
+
+*** W102_net_cleanup
+patchfile = w102_6_net_cleanup.patch
+- commit revision 1145
+Cleanup of network packet functions.
+Find unused vars in network packet header.
+Change short to stdint types in packet header.  This should help with
+64bit and 32bit machines playing together.

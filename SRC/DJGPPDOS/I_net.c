@@ -119,12 +119,12 @@ boolean I_InitNetwork (void)
         COM_BufAddText("connect any\n");
 
     // ipx + time + 4 (padding)
-    net_packetheader_length/*packetheaderlength*/=30+4+4;
+    net_packetheader_length=30+4+4;
 
     // 13-5-99 : added to pass legacy version to doomatic
     if( doomatic )
     {
-        doomcom->episode = VERSION;
+        doomcom->unused_episode = VERSION;
         hardware_MAXPACKETLENGTH=1350;
     }
     else
@@ -141,7 +141,7 @@ void External_Driver_Get(void)
     doomcom->command=CMD_GET;
 
     // it normaly save a task switch to the processor
-    if(doomatic && !doomcom->drone)
+    if(doomatic && !doomcom->unused_drone)
     {
         doomcom->remotenode = -1;
         return;

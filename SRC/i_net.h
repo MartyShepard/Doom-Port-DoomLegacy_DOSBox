@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_net.h 1145 2015-04-03 13:47:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -41,6 +41,8 @@
 #ifndef I_NET_H
 #define I_NET_H
 
+#include <stdint.h>
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -50,44 +52,46 @@
 #define MAXPACKETLENGTH  1450 // For use in a LAN
 #define INETPACKETLENGTH 512 // For use on the internet
 
-extern short hardware_MAXPACKETLENGTH;
-extern int   net_bandwidth; // in byte/s
+extern uint16_t  hardware_MAXPACKETLENGTH;
+extern uint32_t  net_bandwidth; // in byte/s
 
+// [WDJ] Can simplify doomcom when drop support for DOS net.
+// Fixed as stdint sizes.
 typedef struct
 {
     // Supposed to be DOOMCOM_ID
-    long                id;
+    uint32_t            id;
 
-    // DOOM executes an int to execute commands.
-    short               intnum;
-    // Communication between DOOM and the driver.
+    // (DOSNET) DOOM executes an int to execute commands.
+    int16_t             intnum;
+    // (DOSNET) Communication between DOOM and the driver.
     // Is CMD_SEND or CMD_GET.
-    short               command;
+    uint16_t            command;
     // Is dest for send, set by get (-1 = no packet).
-    short               remotenode;
+    int16_t             remotenode;
 
     // Number of bytes in doomdata to be sent
-    short               datalength;
+    uint16_t            datalength;
 
     // Info common to all nodes.
-    // Console is allways node 0.
-    short               numnodes;
+    // Console is always node 0.
+    uint16_t            numnodes;
     // Flag: 1 = no duplication, 2-5 = dup for slow nets.
-    short               ticdup;
-    // Flag: 1 = send a backup tic in every packet.
-    short               extratics;
+    uint16_t            unused_ticdup;
+    // Number of extratics in each packet.
+    uint16_t            extratics;
     // deathmatch type 0=coop, 1=deathmatch 1 ,2 = deathmatch 2.
-    short               deathmatch;
+    uint16_t            unused_deathmatch;
     // Flag: -1 = new game, 0-5 = load savegame
-    short               savegame;
-    short               episode;        // 1-3
-    short               map;            // 1-9
-    short               skill;          // 1-5
+    int16_t             unused_savegame;
+    int16_t             unused_episode;        // 1-3
+    int16_t             unused_map;            // 1-9
+    int16_t             unused_skill;          // 1-5
 
     // Info specific to this node.
-    short               consoleplayer;
+    int16_t             consoleplayer;
     // Number total of players
-    short               numplayers;
+    uint16_t            numplayers;
 
     // These are related to the 3-display mode,
     //  in which two drones looking left and right
@@ -95,9 +99,9 @@ typedef struct
     //  on two additional computers.
     // Probably not operational anymore. (maybe a day in Legacy)
     // 1 = left, 0 = center, -1 = right
-    short               angleoffset;
+    int16_t             unused_angleoffset;
     // 1 = drone
-    short               drone;
+    uint16_t            unused_drone;
 
     // The packet data to be sent.
     char                data[MAXPACKETLENGTH];
@@ -112,7 +116,7 @@ extern void    (*I_NetGet) (void);                // return packet in doomcom st
 extern void    (*I_NetSend) (void);               // send packet within doomcom struct
 extern boolean (*I_NetCanSend) (void);            // ask to driver if all is ok to send data now
 extern void    (*I_NetFreeNodenum) (int nodenum); // close a connection 
-extern int     (*I_NetMakeNode) (char *address);  // open a connection with spécified address
+extern int     (*I_NetMakeNode) (char *address);  // open a connection with specified address
 extern boolean (*I_NetOpenSocket) (void);         // opend all connections
 extern void    (*I_NetCloseSocket) (void);        // close all connections no more allow geting any packet 
 

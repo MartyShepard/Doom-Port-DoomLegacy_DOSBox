@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
+// $Id: d_netcmd.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -467,6 +467,7 @@ void D_Register_ClientCommands(void)
 //                            CLIENT STUFF
 // =========================================================================
 
+// By Client.
 //  name, color, or skin has changed
 //
 void Send_NameColor(void)
