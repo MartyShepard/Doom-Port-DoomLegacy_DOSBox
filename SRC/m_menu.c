@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: m_menu.c 1158 2015-04-03 14:08:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2775,7 +2775,7 @@ menu_t  DirDef =
 
 
 // Draw the current DIR line above list
-inline void draw_dir_line( int line_y )
+static void draw_dir_line( int line_y )
 {
     V_DrawString( DirDef.x, line_y, 0, "DIR");
     M_DrawSaveLoadBorder( DirDef.x+32, line_y, 0);

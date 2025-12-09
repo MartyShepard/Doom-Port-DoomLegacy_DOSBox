@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: v_video.c 1158 2015-04-03 14:08:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -223,7 +223,7 @@ float gamma_lookup_table[25] = {
    0.50		// doom gamma table 5
 };
 
-inline float gamma_lookup( int ind )
+static inline float gamma_lookup( int ind )
 {
    return gamma_lookup_table[ ind + 12 ];
 }

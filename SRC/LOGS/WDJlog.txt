@@ -4309,3 +4309,8 @@ Move connect, server, dedicated determinations to D_Startup_NetGame.
 Cleanup functions affected.
 Cleanup code around these changes.
 
+*** W102_makefile
+patchfile = w102_19_makefile.patch
+- commit revision 1158
+Fix problems with directories when compiling in Win32.
+Fix some debugging of inline functions reported.

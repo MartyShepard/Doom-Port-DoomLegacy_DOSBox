@@ -1,6 +1,6 @@
 #############################################################################
 #
-# $Id: Makefile 1135 2014-09-17 13:50:58Z wesleyjohnson $
+# $Id: Makefile 1158 2015-04-03 14:08:39Z wesleyjohnson $
 # GNU Make makefile for Doom Legacy (legacy@newdoom.com)
 #
 # Copyright (C) 1998-2014 by Doom Legacy Team.
@@ -691,7 +691,10 @@ endif
 # DOS/OS2/WIN32 file differences
 ifdef DOSFILE
   RM:=del
+  BIN_WIN:=$(subst /,\,$(BIN))
   O_WIN:=$(subst /,\,$(O))
+  DD_WIN:=$(subst /,\,$(DD))
+  WD_WIN:=$(subst /,\,$(WD))
 endif
 
 OPTOBJS:=
@@ -853,9 +856,9 @@ endif
 dirs :
 ifdef DOSFILE
 	@echo "Making dirs (WIN32/OS2/DOS)"
-	mkdir "$(BIN)"
-	mkdir "$(O)"
-	mkdir "$(DD)"
+	mkdir "$(BIN_WIN)"
+	mkdir "$(O_WIN)"
+	mkdir "$(DD_WIN)"
 else
 	@echo "Making dirs (Linux/BSD)"
 	mkdir -p $(BIN)
@@ -868,7 +871,7 @@ endif
 clean:
 ifdef DOSFILE
 	@echo "Removing dependencies"
-	- $(RM) $(DD)\*.dep
+	- $(RM) $(DD_WIN)\*.dep
 	@echo "Removing obj  $(O_WIN)"
 	- $(RM) $(O_WIN)\*.o
 else
@@ -914,10 +917,10 @@ ifdef WAD
 	@echo "Building a new legacy.wad using an old version $(WAD)..."
 ifdef DOSFILE
 	@echo "Untested"
-	@mkdir "$(WD)"
-	$(BIN)\wadtool.exe -x $(WAD) -d $(WD)
-	copy resources\* $(WD)
-	$(BIN)\wadtool.exe -c $(BIN)\legacy.wad -d $(WD) resources\legacy.wad.inventory
+	@mkdir "$(WD_WIN)"
+	$(BIN)\wadtool.exe -x $(WAD) -d $(WD_WIN)
+	copy resources\* $(WD_WIN)
+	$(BIN)\wadtool.exe -c $(BIN_WIN)\legacy.wad -d $(WD_WIN) resources\legacy.wad.inventory
 else
 	@mkdir -p $(WD)
 	$(BIN)/wadtool.exe -x $(WAD) -d $(WD)
@@ -1162,7 +1165,7 @@ FIXDEP=1
 %.dep :
 	@echo "Making dependencies $(@F)"
 ifdef DOSFILE
-	$(CC) $(CFLAGS) -MM $^ > $(DD)\$(@F)
+	$(CC) $(CFLAGS) -MM $^ > $(DD_WIN)\$(@F)
 else
 	$(CC) $(CFLAGS) -MM $^ > $(DD)/$(@F)
 ifdef FIXDEP	
