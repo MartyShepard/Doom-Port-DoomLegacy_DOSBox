@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
+// $Id: p_mobj.c 1163 2015-04-03 14:18:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2804,8 +2804,8 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     dist = P_CheckMissileSpawn(th);
     if (demoversion < 131)
         return th;
-    else
-        return dist ? th : NULL;
+
+    return dist ? th : NULL;
 }
 
 //
@@ -2899,8 +2899,8 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 
     if (demoversion < 131)
         return th;
-    else
-        return slope ? th : NULL;
+
+    return slope ? th : NULL;
 }
 
 

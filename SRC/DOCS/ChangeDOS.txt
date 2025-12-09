@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01163 ]: w102 mobj return
+[01162*]: del macos/i_tcp.c
 [01161 ]: w102 macos tcp
 [01160 ]: w102 legacywad error
 [01159 ]: w102 wait player
