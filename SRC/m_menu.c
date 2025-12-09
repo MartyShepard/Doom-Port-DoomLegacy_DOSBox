@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1158 2015-04-03 14:08:39Z wesleyjohnson $
+// $Id: m_menu.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1026,7 +1026,7 @@ consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
 consvar_t cv_newdeathmatch  = {"newdeathmatch"  ,"3",CV_HIDEN,deathmatch_cons_t};
 CV_PossibleValue_t wait_players_cons_t[]=   {{0,"MIN"}, {32,"MAX"}, {0,NULL}};
-consvar_t cv_wait_players = {"wait_players" ,"1",CV_HIDEN,wait_players_cons_t};
+consvar_t cv_wait_players = {"wait_players" ,"2",CV_HIDEN,wait_players_cons_t};
 CV_PossibleValue_t wait_timeout_cons_t[]=   {{0,"MIN"}, {120,"MAX"}, {0,NULL}};
 consvar_t cv_wait_timeout = {"wait_timeout" ,"0",CV_HIDEN,wait_timeout_cons_t};
 
@@ -1044,6 +1044,7 @@ void M_StartServer( int choice )
         nodrawers = true;
         I_ShutdownGraphics();
     }
+    D_WaitPlayer_Setup();
 
     COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -monsters %d skill %d\n", 
                       StartSplitScreenGame, cv_newdeathmatch.value, 
@@ -4346,6 +4347,11 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
     }
 
+    if( gamestate == GS_WAITINGPLAYERS )
+    {
+        if( D_WaitPlayer_Response( key ) )
+	    goto ret_true;
+    }
 
     // when the menu is not open
     if (!menuactive)

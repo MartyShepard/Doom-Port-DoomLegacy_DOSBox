@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_net.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1034,6 +1034,7 @@ static char *packettypename[NUMPACKETTYPE]={
     "TEXTCMD2",
     "CLIENTJOIN",
     "NODETIMEOUT",
+    "WAITINFO",
 
 };
 

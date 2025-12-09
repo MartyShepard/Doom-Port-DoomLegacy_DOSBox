@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_main.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1158"
+#define SVN_REV "1159"
 #endif
 
 // Version number: major.minor.revision
@@ -534,7 +534,12 @@ void D_Display(void)
         case GS_DEDICATEDSERVER:
         case GS_DEMOSCREEN:
             D_PageDrawer(pagename);
+            break;
+
         case GS_WAITINGPLAYERS:
+            D_WaitPlayer_Drawer();
+            break;
+
         case GS_NULL:
             break;
     }
@@ -2300,6 +2305,7 @@ restart_command:
     dedicated = M_CheckParm("-dedicated") != 0;
     if( dedicated )
     {
+        nodrawers = true;
         I_ShutdownGraphics();
         EMSG_flags = EMSG_log;
     }
@@ -2590,7 +2596,7 @@ restart_command:
         if (dedicated && server)
         {
             pagename = "TITLEPIC";
-            gamestate = GS_DEDICATEDSERVER;
+            gamestate = GS_WAITINGPLAYERS;
         }
         else if (autostart || netgame
 		 || M_CheckParm("+connect") || M_CheckParm("-connect"))

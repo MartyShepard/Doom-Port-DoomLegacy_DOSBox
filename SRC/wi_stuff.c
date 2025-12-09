@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: wi_stuff.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -75,6 +75,8 @@
 #include "p_info.h"
 #include "dehacked.h"
   // pars_valid_bex
+#include "m_menu.h"
+  // M_DrawTextBox
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -846,6 +848,24 @@ static void WI_drawTime ( int x, int y, int t )
     }
 }
 
+// For startup wait, and deathmatch wait.
+void WI_draw_wait( int net_nodes, int wait_nodes, int wait_tics )
+{
+    char * waitmsg;
+
+    // Using va_buffer (m_misc.c)
+    if( wait_nodes )
+       waitmsg = va("WAIT NODES %2d/%2d : TIMEOUT %4d",
+		    net_nodes, wait_nodes, wait_tics/TICRATE);
+    else
+       waitmsg = va("START IN %4d", wait_tics/TICRATE);
+    //i=V_StringWidth(num);
+    M_DrawTextBox( 106, 20, 25, 1 );
+    V_DrawString( 116, 28, V_WHITEMAP, waitmsg );
+}
+
+
+
 static void WI_unloadData(void);
 
 static void WI_End(void)
@@ -1061,7 +1081,6 @@ static void WI_drawDeathmatchStats(void)
     int          scorelines;
     int          whiteplayer;
     fragsort_t   fragtab[MAXPLAYERS];
-    char         *timeleft;
 
     WI_slamBackground();
 
@@ -1155,10 +1174,6 @@ static void WI_drawDeathmatchStats(void)
         }
     }
     WI_drawRanking("deads",245,RANKINGY,fragtab,scorelines,false,whiteplayer);
-
-    timeleft=va("start in %d",cnt_pause/TICRATE);
-    //i=V_StringWidth(num);
-    V_DrawString (200, 30, V_WHITEMAP, timeleft);
 }
 
 boolean teamingame(int teamnum)
@@ -2178,6 +2193,8 @@ void WI_Drawer (void)
                 WI_drawTeamsStats();
             else
                 WI_drawDeathmatchStats();
+	    
+	    WI_draw_wait( 0, 0, cnt_pause );
         }
         else if (multiplayer)
             WI_drawNetgameStats();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_clisrv.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -172,8 +172,13 @@
 //   next_tic_send is used to optimize a condition
 // normaly maketic>=gametic>0,
 
-
+// The addition of wait messages should be transparent to previous network
+// versions.
+#if 1
 const int  NETWORK_VERSION = 21; // separate version number for network protocol (obsolete)
+#else
+const int  NETWORK_VERSION = 22; // separate version number for network protocol (obsolete)
+#endif
 
 typedef enum {
    NS_idle,
@@ -690,6 +695,172 @@ failed_exit:
 
 #endif
 
+// ----- Wait for Server to start net game.
+//#define WAITPLAYER_DEBUG
+
+static byte  num_netnodes;
+static byte  wait_nodes = 0;
+static tic_t wait_tics  = 0;
+static tic_t prev_tic = 0;
+
+static void SV_Send_NetWait( void )
+{
+    int nn;
+
+    netbuffer->packettype = PT_NETWAIT;
+    netbuffer->u.netwait.num_netnodes = num_netnodes;
+    netbuffer->u.netwait.wait_nodes = wait_nodes;
+    netbuffer->u.netwait.wait_tics = LE_SWAP16( wait_tics );
+    netbuffer->u.netwait.p_rand_index = P_GetRandIndex(); // to sync P_Random
+#ifdef WAITPLAYER_DEBUG
+    GenPrintf( EMSG_debug, "WaitPlayer update: wait_nodes=%d  num_netnodes=%d  wait_tics=%d\n",
+	       num_netnodes, wait_nodes, wait_tics );
+#endif
+    for(nn=1; nn<MAXNETNODES; nn++)
+    {
+        if(nodeingame[nn])
+        {
+	    HSendPacket(nn, false, 0, sizeof(netwait_pak));
+#ifdef WAITPLAYER_DEBUG
+	    GenPrintf( EMSG_debug, "  sent to player[ %d ]\n", nn );
+#endif
+	}
+    }
+}
+void D_WaitPlayer_Drawer( void )
+{
+    WI_draw_wait( num_netnodes, wait_nodes, wait_tics );
+}
+
+void D_WaitPlayer_Setup( void )
+{
+    if( netgame )
+    {
+        if( server )
+        {
+	    // Wait for all player nodes, during netgame.
+	    wait_nodes = cv_wait_players.value;
+	    wait_tics = cv_wait_timeout.value * TICRATE;
+	}
+        else
+        {
+	    // Wait indefinite, until server updates the wait.
+	    wait_nodes = 99;
+	    wait_tics = 0;
+        }
+    }
+    else
+    {
+        // Single player and local games.
+        wait_nodes = 0;
+        wait_tics = 0;
+    }
+    gamestate = wipegamestate = GS_WAITINGPLAYERS;
+}
+
+// Return true when start game.
+static boolean  D_WaitPlayer_Ticker()
+{
+    int  nn;
+
+    if( server )
+    {
+        // Count the net nodes.
+        num_netnodes=0;
+        for(nn=0; nn<MAXNETNODES; nn++)
+        {
+	    // Only counting nodes with players.
+	    if(nodeingame[nn])
+	    {
+	        if( playerpernode[nn] > 0 )
+		    num_netnodes++;
+	    }
+	}
+
+        if( wait_tics > 0 || wait_nodes > 0 )
+        {
+	    // Service the wait tics.
+	    if( wait_tics > 1 )
+	    {
+	        wait_tics--;  // count down to 1
+	    }
+
+	    static  byte net_update_cnt = 0;
+	    if( ++net_update_cnt > 4 )
+	    {
+	        net_update_cnt = 0;
+	        // Update all net nodes
+	        SV_Send_NetWait();
+	    }
+	}
+    }
+
+    // Clients and Server do same tests.
+    if( wait_nodes )
+    {
+        // Waiting on player net nodes, with or without timeout.
+        if( num_netnodes < wait_nodes )
+        {
+	    // Waiting for player net nodes.
+	    if( wait_tics != 1 )  // timeout at 1
+	       goto wait_ret;  // waiting only for number of players
+	}
+    }
+    else if( wait_tics > 1 )
+        goto wait_ret;  // waiting for players by timeout
+
+    if( server )
+    {
+        // All nodes need to get info to stop waiting.
+        SV_Send_NetWait();
+#ifdef WAITPLAYER_DEBUG
+        GenPrintf( EMSG_debug, "Start game sent to players at tic=%d\n", gametic   );
+#endif
+    }
+    return true;  // start game
+    
+
+wait_ret:
+    return false;  // keep waiting
+}
+
+boolean  D_WaitPlayer_Response( int key )
+{
+    // User response handler
+    switch( key )
+    {
+     case 'q':
+     case KEY_ESCAPE:
+        if( ! dedicated )
+        {
+	    D_Quit_NetGame();
+	    SV_StopServer();
+	    SV_ResetServer();
+	    D_StartTitle();
+	    netgame = multiplayer = false;
+	    return true;
+	}
+        break;
+     case 's':
+        if( server )
+        {
+	    // Start game, stop waiting for player nodes.
+	    wait_nodes = 0;
+	    wait_tics = 0;
+	    SV_Send_NetWait();
+#ifdef WAITPLAYER_DEBUG
+	    GenPrintf( EMSG_debug, "Start game (key) sent at tic=%d\n", gametic );
+#endif
+	    return true;
+	}
+        break;
+    }
+    return false;
+}
+
+
+// ----- Connect to Server
+
 // By Client.
 // Ask the server for some info.
 //   to_node : when BROADCASTADDR then all servers will respond
@@ -849,15 +1020,11 @@ void CL_Update_ServerList( boolean internetsearch )
 //  servernode: if set then reconnect, else search
 static void CL_ConnectToServer( void )
 {
-    int  numnodes;
-    int  wait_nodes = cv_wait_players.value;  // wait for all players
-    int  wait_tics = cv_wait_timeout.value * TICRATE;
-    int  nn;  // net node num
     int  i;
     tic_t   askinfo_tic;  // to repeat askinfo
-    tic_t   oldtic;
 
     cl_mode = CLM_searching;
+    D_WaitPlayer_Setup();
 
     CONS_Printf("Press Q or ESC to abort\n");
     if( servernode >= MAXNETNODES )
@@ -867,11 +1034,9 @@ static void CL_ConnectToServer( void )
     }
     else
         CONS_Printf("Contacting the server...\n");
-    DEBFILE(va("Waiting %d nodes\n", doomcom->num_player_netnodes));
-    gamestate = wipegamestate = GS_WAITINGPLAYERS;
 
-    numnodes=1;
-    oldtic=I_GetTime()-1;
+    DEBFILE(va("Waiting %d nodes\n", wait_nodes));
+
     askinfo_tic = 0;
     SL_Clear_ServerList(servernode);  // clear all except the current server
     // Every player goes through here to connect to game, including a
@@ -1008,55 +1173,31 @@ static void CL_ConnectToServer( void )
         Net_AckTicker();
 
         // Operations performed only once every tic.
-        if( oldtic!=I_GetTime() )
+        if( prev_tic != I_GetTime() )
         {
-	    // user response handler
-            int key;
+	    prev_tic = I_GetTime();
 
+	    // User response handler
             I_OsPolling();
-            key = I_GetKey();
-            if( key==KEY_ESCAPE || key=='q' )  goto quit_ret;
-            if( key=='s' && server) 
-                doomcom->num_player_netnodes = numnodes;
-
-            oldtic=I_GetTime();
+	    switch( I_GetKey() )
+	    {
+	      case 'q':
+	      case KEY_ESCAPE:
+	         goto quit_ret;
+	    }
 
 	    if( Filetx_file_cnt )  // File download in progress.
 	        Filetx_Ticker();
 	   
+#if 0
+	    // Supporting the wait during connect, like it was in the previous
+	    // code, has marginal value.  Seems to cause more problems.
+	    D_WaitPlayer_Ticker( 0 );
+	    if( wait_tics > 0 || wait_nodes > 0 )
+	        D_WaitPlayer_Drawer();
+#endif
             CON_Drawer ();
             I_FinishUpdate ();              // page flip or blit buffer
-	   
-	    if( server )
-	    {
-	        // Service the wait tics.
-	        if( wait_tics > 1 )
-	        {
-		    wait_tics--;  // count down to 1
-		}
-	    }
-        }
-
-        if(server)
-        {
-	    // Count the net nodes.
-            numnodes=0;
-            for(nn=0; nn<MAXNETNODES; nn++)
-	    {
-                if(nodeingame[nn])  numnodes++;
-	    }
-	    if( wait_nodes )
-	    {
-	        // Waiting on player net nodes, with or without timeout.
-	        if( numnodes < wait_nodes )
-	        {
-		    // Waiting for player net nodes.
-		    if( wait_tics != 1 )  // timeout at 1
-		        continue;  // waiting only for number of players
-		}
-	    }
-	    else if( wait_tics > 1 )
-	        continue;  // waiting for players by timeout
         }
     } while ( cl_mode != CLM_connected );
 
@@ -1408,7 +1549,7 @@ static void Reset_NetNode(byte nnode)
     playerpernode[nnode]=0;
 }
 
-// Called by D_Init_ClientServer, SV_SpawnServer, CL_Reset,
+// Called by D_Init_ClientServer, SV_SpawnServer, CL_Reset, D_WaitPlayer_Response
 void SV_ResetServer( void )
 {
     int    i;
@@ -1708,6 +1849,8 @@ boolean SV_SpawnServer( void )
 	    }
         }
 
+        D_WaitPlayer_Setup();
+
         // server just connect to itself
         if( !dedicated )
             CL_ConnectToServer();
@@ -1716,7 +1859,8 @@ boolean SV_SpawnServer( void )
     return SV_AddWaitingPlayers();
 }
 
-// Called by D_Init_ClientServer, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer.
+// Called by D_Init_ClientServer, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer,
+// D_WaitPlayer_Response.
 void SV_StopServer( void )
 {
     int i;
@@ -2347,6 +2491,16 @@ static void Net_Packet_Handler(void)
                 if( !server )
                     Got_Filetxpak();
                 break;
+	    case PT_NETWAIT:
+	        if( !server )
+	        {
+		    // Updates of wait for players, from the server.
+		    num_netnodes = netbuffer->u.netwait.num_netnodes;
+		    wait_nodes = netbuffer->u.netwait.wait_nodes;
+		    wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
+		    P_SetRandIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
+		}
+	        break;
             default:
                 DEBFILE(va("Unknown packet type: type %d node %d\n",
 			   netbuffer->packettype, nnode));
@@ -2404,8 +2558,9 @@ static void CL_Send_ClientCmd (void)
     netbuffer->u.clientpak.resendfrom = cl_need_tic;
     netbuffer->u.clientpak.client_tic = gametic;
 
-    if(gamestate==GS_WAITINGPLAYERS)
+    if( gamestate == GS_WAITINGPLAYERS )
     {
+        // Server is waiting for network players before starting the game.
         // send NODEKEEPALIVE, or NODEKEEPALIVEMIS packet
         netbuffer->packettype = PT_NODEKEEPALIVE + cmd_options;
 //        packetsize = sizeof(clientcmd_pak)-sizeof(ticcmd_t)-sizeof(int16_t);
@@ -2413,7 +2568,7 @@ static void CL_Send_ClientCmd (void)
         HSendPacket (servernode,false,0,packetsize);
     }
     else
-    if( gamestate!=GS_NULL )
+    if( gamestate != GS_NULL )
     {
         int btic = BTIC_INDEX( gametic );
         TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds, 1);
@@ -2734,6 +2889,27 @@ void TryRunTics (tic_t realtics)
     }
 #endif
 
+    if( gamestate == GS_WAITINGPLAYERS )
+    {
+        // Server is waiting for network players.
+	// To wait, execution must not reach G_Ticker.
+        if( !server && !netgame )
+	    goto error_ret;  // connection closed by cancel or timeout
+       
+        if( realtics <= 0 )
+	    return;
+       
+        // Once per tic
+        // Wait for players before netgame starts.
+        if( ! D_WaitPlayer_Ticker() )
+	    return;  // Waiting
+
+        // Start game
+        if( dedicated )
+	    gamestate = GS_DEDICATEDSERVER;
+        // Others must wait for load game to set gamestate to GS_LEVEL.
+    }
+
     if (cl_need_tic > gametic)
     {
         if (demo_ctrl == DEMO_seq_advance)  // and not disabled
@@ -2762,6 +2938,11 @@ void TryRunTics (tic_t realtics)
 	    }
         }
     }
+    return;
+
+error_ret:
+    D_StartTitle();
+    return;
 }
 
 // By Server
@@ -2774,6 +2955,7 @@ static void SV_Send_Tic_Update( int count )
     next_tic_send = gametic;
     for( nn=0; nn<MAXNETNODES; nn++)
     {
+        // Max of gametic and nettics[].
         if(nodeingame[nn]
 	   && nettics[nn]<next_tic_send )
         {
@@ -2782,10 +2964,10 @@ static void SV_Send_Tic_Update( int count )
     }
 
     // Don't erase tics not acknowledged
-    if( maketic+count >= (next_tic_send+BACKUPTICS) )
+    if( (maketic+count) >= (next_tic_send+BACKUPTICS) )
         count = (next_tic_send+BACKUPTICS) - maketic - 1;
 
-    while( count-- )
+    while( count-- > 0 )
         SV_Maketic();  // create missed tics and increment maketic
 
     // clear only when acknowledged
@@ -2818,10 +3000,7 @@ void NetUpdate(void)
     }
     if( realtics > 5 )
     {
-        if( server )
-            realtics=1;
-        else
-            realtics=5;
+        realtics = ( server )? 1 : 5;
     }
 
     // Executed once per tic, with realtics = 1..5.

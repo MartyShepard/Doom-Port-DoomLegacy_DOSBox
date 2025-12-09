@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_clisrv.h 1159 2015-04-03 14:09:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -120,6 +120,7 @@ typedef enum   {
     PT_TEXTCMD2,      // extra text command from the client (splitscreen)
     PT_CLIENTJOIN,    // client want to join used in start game
     PT_NODE_TIMEOUT,  // packet is sent to self when connection timeout
+    PT_NETWAIT,       // network game wait timer info
  // count for table
     NUMPACKETTYPE
 } packettype_t;
@@ -183,10 +184,17 @@ typedef struct {
    byte        data[100];  // size is variable using hardare_MAXPACKETLENGTH
 } filetx_pak;
 
+typedef struct {
+    byte       num_netnodes;
+    byte       wait_nodes;  // if non-zero, wait for player net nodes
+    uint16_t   wait_tics;  // if non-zero, the timeout tics
+    byte       p_rand_index; // to sync P_Random
+} netwait_pak;
+
 #define MAXSERVERNAME 32
 typedef struct {
     byte       version;
-    ULONG      subversion;
+    uint32_t   subversion;
     byte       numberofplayer;
     byte       maxplayer;
     byte       deathmatch;
@@ -241,6 +249,7 @@ typedef struct
                serverinfo_pak    serverinfo;
                serverrefuse_pak  serverrefuse;
                askinfo_pak       askinfo;
+               netwait_pak       netwait;
            } u;
 
 } netbuffer_t;
@@ -307,6 +316,11 @@ boolean Game_Playing( void );
 // Broadcasts special packets to other players
 // to notify of game exit.
 void    D_Quit_NetGame (void);
+
+// Wait Player interface.
+void    D_WaitPlayer_Setup( void );
+void    D_WaitPlayer_Drawer( void );
+boolean D_WaitPlayer_Response( int key );
 
 // How many ticks to run.
 void    TryRunTics (tic_t realtic);
