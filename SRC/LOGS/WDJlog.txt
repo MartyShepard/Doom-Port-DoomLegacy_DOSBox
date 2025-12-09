@@ -4245,3 +4245,12 @@ Provision is made for additional utility netnodes.
 Network Ack is limited to player netnodes.  Tests are included to insure
 that only player netnodes are used to index the Ack structures.
 Comment the TCP network variations, and network node ranges.
+
+*** W102_netcansend
+patchfile = w102_13_netcansend.patch
+- commit revision 1152
+Allow Linux to use the I_NetCanSend test.  Linux select calls can alter the
+timeval field value and write_set values.  They cannot be static,
+must be init on each call.
+Fix some error messages.  Add some comments.
+Change some ipx socket address fields to stdint types.

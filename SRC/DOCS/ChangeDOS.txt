@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01152 ]: w102 netcansend
 [01151 ]: w102 netnodes
 [01150 ]: w102 console open
 [01149 ]: w102 net error

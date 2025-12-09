@@ -122,6 +122,7 @@
 #include <stdio.h>
 
 #ifdef __OS2__
+  // sys/types.h is also included unconditionally by doomincl.h
 # include <sys/types.h>
 # include <sys/time.h>
 #endif // __OS2__
@@ -135,6 +136,8 @@
 # include <wsipx.h>
 # endif // USE_IPX
 #else
+  // Not Windows
+
 # if !defined(SCOUW2) && !defined(SCOUW7) && !defined(__OS2__)
 #  include <arpa/inet.h>
 # endif
@@ -175,11 +178,12 @@
 #ifdef USE_IPX
 //#define strerror  lsck_strerror
 // ipx not yet supported in libsocket (cut and pasted from wsipx.h (winsock)
+// [WDJ] Updated to stdint
 typedef struct sockaddr_ipx {
-    short sa_family;
+    int16_t   sa_family;
     char  sa_netnum[4];
     char  sa_nodenum[6];
-    unsigned short sa_socket;
+    uint16_t  sa_socket;
 } SOCKADDR_IPX, *PSOCKADDR_IPX;
 #define NSPROTO_IPX      1000
 #endif // USE_IPX
@@ -190,11 +194,12 @@ typedef struct sockaddr_ipx {
 #ifdef USE_IPX
 // ipx not yet supported in libsocket (cut and pasted from wsipx.h (winsock)
 #define AF_IPX          23              /* Novell Internet Protocol */
+// [WDJ] Updated to stdint.
 typedef struct sockaddr_ipx {
-    short sa_family;
+    int16_t   sa_family;
     char  sa_netnum[4];
     char  sa_nodenum[6];
-    unsigned short sa_socket;
+    uint16_t  sa_socket;
 } SOCKADDR_IPX, *PSOCKADDR_IPX;
 #define NSPROTO_IPX      1000
 #endif // USE_IPX
@@ -218,6 +223,7 @@ typedef struct sockaddr_ipx {
 # endif // USE_IPX
 #endif // linux
 
+  // END of Not Windows
 #endif // win32
 
 #include "i_system.h"
@@ -236,8 +242,10 @@ typedef struct sockaddr_ipx {
 #ifdef errno
 #  undef errno
 #endif
-#  define errno             h_errno // some very strange things happen when not use h_error ?!?
-#else // linux or djgpp
+   // some very strange things happen when not use h_error ?!?
+#  define errno         h_errno
+#else
+   // linux, djgpp, os2, non-windows
 #  define  SOCKET int
 #  define  INVALID_SOCKET -1
 # ifdef FREEBSD
@@ -248,13 +256,14 @@ typedef struct sockaddr_ipx {
 # endif
 #endif
 
-// win32 or djgpp
 #if defined( WIN32) || defined( __DJGPP__ ) 
+   // win32 or djgpp
     // winsock stuff (in winsock a socket is not a file)
 #  define ioctl ioctlsocket
 #  define close closesocket
 #endif
 
+// A network address, kept in network byte order.
 typedef union {
         struct sockaddr_in  ip;
 #ifdef USE_IPX
@@ -491,7 +500,6 @@ boolean  SOCK_Get(void)
     hashaddr = SOCK_hashaddr( &fromaddress );  // hash != 0
     // GenPrintf(EMSG_debug, "hashaddr=%d\n", hashaddr );
 #endif
-    // find remote node number
     for (nnode=0; nnode<MAXNETNODES; nnode++)
     {
 #ifdef NODE_ADDR_HASHING
@@ -580,11 +588,10 @@ no_packet:
 }
 
 
-// Setup by SOCK_OpenSocket().
-static fd_set  write_set;
+static fd_set  write_set;  // Linux: modified by select
 
 // Function for I_NetCanSend().
-// check if we can send (do not go over the buffer)
+// Check if we can send (to save a buffer transfer).
 boolean SOCK_CanSend(void)
 {
     // [WDJ] Linux: select modifies timeval, so it must be init with each call.
@@ -743,7 +750,7 @@ static SOCKET  UDP_Socket (void)
 		      &trueval,  // option value
 		      sizeof(trueval));  // length of value
 #else
-    // winsock.h  setsockopt(SOCKET, int, int, const char*, int)
+    // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
 		      // Some other port requires (char*), undocumented.
 		      (char *)&trueval,  // option value
@@ -1134,6 +1141,9 @@ boolean SOCK_OpenSocket( void )
 
 #ifdef __WIN32__
     // seem like not work with libsocket nor linux :(
+    I_NetCanSend  = SOCK_CanSend;
+#else
+    // [WDJ] Fixed, Linux can change select time.
     I_NetCanSend  = SOCK_CanSend;
 #endif
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
+// $Id: d_clisrv.c 1152 2015-04-03 13:56:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -259,7 +259,7 @@ int ExpandTics (int low)
     if (delta < -64)
         return (maketic&~0xff) + 256 + low;
 #ifdef PARANOIA
-    I_SoftError ("ExpandTics: strange value %i at maketic %i", low, maketic);
+    I_SoftError ("ExpandTics: strange value %i at maketic %i\n", low, maketic);
 #endif
     return 0;
 }
@@ -657,7 +657,7 @@ static void CL_Load_Received_Savegame(void)
     return;
 
 cannot_read_file:
-    I_SoftError ("Can't read savegame sent");
+    I_SoftError ("Can't read savegame sent\n");
     goto failed_exit; // must deallocate savebuffer
 
 load_failed:
