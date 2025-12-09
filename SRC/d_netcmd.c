@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
+// $Id: d_netcmd.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -150,14 +150,14 @@ void Command_UnbindJoyaxis_f();
 
 void Command_WeaponPref(void);
 
-void Got_NameAndcolor(char **cp, int playernum);
-void Got_WeaponPref(char **cp, int playernum);
-void Got_Mapcmd(char **cp, int playernum);
-void Got_ExitLevelcmd(char **cp, int playernum);
-void Got_LoadGamecmd(char **cp, int playernum);
-void Got_SaveGamecmd(char **cp, int playernum);
-void Got_Pause(char **cp, int playernum);
-void Got_UseArtefact(char **cp, int playernum);
+void Got_NetXCmd_NameColor(char **cp, int playernum);
+void Got_NetXCmd_WeaponPref(char **cp, int playernum);
+void Got_NetXCmd_Mapcmd(char **cp, int playernum);
+void Got_NetXCmd_ExitLevelcmd(char **cp, int playernum);
+void Got_NetXCmd_LoadGamecmd(char **cp, int playernum);
+void Got_NetXCmd_SaveGamecmd(char **cp, int playernum);
+void Got_NetXCmd_Pause(char **cp, int playernum);
+void Got_NetXCmd_UseArtifact(char **cp, int playernum);
 
 void TeamPlay_OnChange(void);
 void FragLimit_OnChange(void);
@@ -192,24 +192,24 @@ void AddMServCommands(void);
 //                           CLIENT VARIABLES
 // =========================================================================
 
-void SendWeaponPref(void);
-void SendNameAndColor(void);
-void SendNameAndColor2(void);
+void Send_WeaponPref(void);
+void Send_NameColor(void);
+void Send_NameColor2(void);
 
 // these two are just meant to be saved to the config
-consvar_t cv_playername = { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT, NULL, SendNameAndColor };
-consvar_t cv_playercolor = { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, SendNameAndColor };
+consvar_t cv_playername = { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_NameColor };
+consvar_t cv_playercolor = { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, Send_NameColor };
 
 // player's skin, saved for commodity, when using a favorite skins wad..
-consvar_t cv_skin = { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , SendNameAndColor };
-consvar_t cv_weaponpref = { "weaponpref", "014576328", CV_SAVE | CV_CALL | CV_NOINIT, NULL, SendWeaponPref };
-consvar_t cv_autoaim = { "autoaim", "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, SendWeaponPref };
-consvar_t cv_originalweaponswitch = { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, SendWeaponPref };
+consvar_t cv_skin = { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , Send_NameColor };
+consvar_t cv_weaponpref = { "weaponpref", "014576328", CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_WeaponPref };
+consvar_t cv_autoaim = { "autoaim", "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
+consvar_t cv_originalweaponswitch = { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
 
 // secondary player for splitscreen mode
-consvar_t cv_playername2 = { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT, NULL, SendNameAndColor2 };
-consvar_t cv_playercolor2 = { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, SendNameAndColor2 };
-consvar_t cv_skin2 = { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , SendNameAndColor2 };
+consvar_t cv_playername2 = { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_NameColor2 };
+consvar_t cv_playercolor2 = { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, Send_NameColor2 };
+consvar_t cv_skin2 = { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , Send_NameColor2 };
 
 CV_PossibleValue_t usemouse_cons_t[] = { {0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL} };
 
@@ -267,9 +267,8 @@ consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick
 //                           CLIENT STARTUP
 // =========================================================================
 
-// register client and server commands
-//
-void D_RegisterClientCommands(void)
+// Register client and server commands.
+void D_Register_ClientCommands(void)
 {
     int i;
 
@@ -279,12 +278,12 @@ void D_RegisterClientCommands(void)
     //
     // register commands
     //
-    RegisterNetXCmd(XD_NAMEANDCOLOR, Got_NameAndcolor);
-    RegisterNetXCmd(XD_WEAPONPREF, Got_WeaponPref);
-    RegisterNetXCmd(XD_MAP, Got_Mapcmd);
-    RegisterNetXCmd(XD_EXITLEVEL, Got_ExitLevelcmd);
-    RegisterNetXCmd(XD_PAUSE, Got_Pause);
-    RegisterNetXCmd(XD_USEARTEFACT, Got_UseArtefact);
+    Register_NetXCmd(XD_NAMEANDCOLOR, Got_NetXCmd_NameColor);
+    Register_NetXCmd(XD_WEAPONPREF, Got_NetXCmd_WeaponPref);
+    Register_NetXCmd(XD_MAP, Got_NetXCmd_Mapcmd);
+    Register_NetXCmd(XD_EXITLEVEL, Got_NetXCmd_ExitLevelcmd);
+    Register_NetXCmd(XD_PAUSE, Got_NetXCmd_Pause);
+    Register_NetXCmd(XD_USEARTIFACT, Got_NetXCmd_UseArtifact);
 
     COM_AddCommand("playdemo", Command_Playdemo_f);
     COM_AddCommand("timedemo", Command_Timedemo_f);
@@ -357,9 +356,9 @@ void D_RegisterClientCommands(void)
     CV_RegisterVar(&cv_netstat);
 
     COM_AddCommand("load", Command_Load_f);
-    RegisterNetXCmd(XD_LOADGAME, Got_LoadGamecmd);
+    Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);
     COM_AddCommand("save", Command_Save_f);
-    RegisterNetXCmd(XD_SAVEGAME, Got_SaveGamecmd);
+    Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGamecmd);
     // r_things.c (skin NAME)
     CV_RegisterVar(&cv_skin);
     // secondary player (splitscreen)
@@ -470,7 +469,7 @@ void D_RegisterClientCommands(void)
 
 //  name, color, or skin has changed
 //
-void SendNameAndColor(void)
+void Send_NameColor(void)
 {
     char buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
 
@@ -486,11 +485,11 @@ void SendNameAndColor(void)
     WRITESTRINGN(p, svstr, SKINNAMESIZE)
     *(p - 1) = 0;       // finish the string;
 
-    SendNetXCmd(XD_NAMEANDCOLOR, buf, p - buf);
+    Send_NetXCmd(XD_NAMEANDCOLOR, buf, (p - buf));
 }
 
 // splitscreen
-void SendNameAndColor2(void)
+void Send_NameColor2(void)
 {
     char buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
 
@@ -506,10 +505,10 @@ void SendNameAndColor2(void)
     WRITESTRINGN(p, svstr, SKINNAMESIZE)
     *(p - 1) = 0;       // finish the string;
 
-    SendNetXCmd2(XD_NAMEANDCOLOR, buf, p - buf);
+    Send_NetXCmd2(XD_NAMEANDCOLOR, buf, (p - buf));
 }
 
-void Got_NameAndcolor(char **cp, int playernum)
+void Got_NetXCmd_NameColor(char **cp, int playernum)
 {
     player_t *p = &players[playernum];
     char * lcp = *cp; // local cp
@@ -559,7 +558,7 @@ void Got_NameAndcolor(char **cp, int playernum)
     *cp = lcp;  // OUT once
 }
 
-void SendWeaponPref(void)
+void Send_WeaponPref(void)
 {
     char buf[NUMWEAPONS + 2];
 
@@ -571,13 +570,13 @@ void SendWeaponPref(void)
     buf[0] = cv_originalweaponswitch.value;
     memcpy(buf + 1, cv_weaponpref.string, NUMWEAPONS);
     buf[1 + NUMWEAPONS] = cv_autoaim.value;
-    SendNetXCmd(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
+    Send_NetXCmd(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
     // FIXME : the split screen player have the same weapon pref of the first player
     if (cv_splitscreen.value)
-        SendNetXCmd2(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
+        Send_NetXCmd2(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
 }
 
-void Got_WeaponPref(char **cp, int playernum)
+void Got_NetXCmd_WeaponPref(char **cp, int playernum)
 {
     players[playernum].originalweaponswitch = *(*cp)++;
     memcpy(players[playernum].favoritweapon, *cp, NUMWEAPONS);
@@ -585,12 +584,12 @@ void Got_WeaponPref(char **cp, int playernum)
     players[playernum].autoaim_toggle = *(*cp)++;
 }
 
-void D_SendPlayerConfig(void)
+void D_Send_PlayerConfig(void)
 {
-    SendNameAndColor();
+    Send_NameColor();
     if (cv_splitscreen.value)
-        SendNameAndColor2();
-    SendWeaponPref();
+        Send_NameColor2();
+    Send_WeaponPref();
 }
 
 // ========================================================================
@@ -747,10 +746,10 @@ void Command_Map_f(void)
     if (SV_SpawnServer())
         buf[1] &= ~2;
 
-    SendNetXCmd(XD_MAP, buf, 2 + strlen(MAPNAME) + 1);
+    Send_NetXCmd(XD_MAP, buf, 2 + strlen(MAPNAME) + 1);
 }
 
-void Got_Mapcmd(char **cp, int playernum)
+void Got_NetXCmd_Mapcmd(char **cp, int playernum)
 {
     char mapname[MAX_WADPATH];
     int skill, resetplayer = 1;
@@ -800,10 +799,10 @@ void Command_Pause(void)
         buf = atoi(COM_Argv(1)) != 0;
     else
         buf = !paused;
-    SendNetXCmd(XD_PAUSE, &buf, 1);
+    Send_NetXCmd(XD_PAUSE, &buf, 1);
 }
 
-void Got_Pause(char **cp, int playernum)
+void Got_NetXCmd_Pause(char **cp, int playernum)
 {
     if (demoversion < 131)
         paused ^= 1;
@@ -929,7 +928,7 @@ void FragLimit_OnChange(void)
     }
 }
 
-ULONG timelimit_tics = 0;
+uint32_t  timelimit_tics = 0;
 
 void TimeLimit_OnChange(void)
 {
@@ -978,10 +977,10 @@ void Command_ExitLevel_f(void)
     if (gamestate != GS_LEVEL || demoplayback)
         CONS_Printf("You should be in a level to exit it !\n");
 
-    SendNetXCmd(XD_EXITLEVEL, NULL, 0);
+    Send_NetXCmd(XD_EXITLEVEL, NULL, 0);
 }
 
-void Got_ExitLevelcmd(char **cp, int playernum)
+void Got_NetXCmd_ExitLevelcmd(char **cp, int playernum)
 {
     G_ExitLevel();
 }
@@ -1008,10 +1007,10 @@ void Command_Load_f(void)
     SV_SpawnServer();
 
     slot = atoi(COM_Argv(1));
-    SendNetXCmd(XD_LOADGAME, &slot, 1);
+    Send_NetXCmd(XD_LOADGAME, &slot, 1);
 }
 
-void Got_LoadGamecmd(char **cp, int playernum)
+void Got_NetXCmd_LoadGamecmd(char **cp, int playernum)
 {
     byte slot = *(*cp)++;
     G_DoLoadGame(slot);
@@ -1037,10 +1036,11 @@ void Command_Save_f(void)
     // save description string at [1]
     strncpy(&p[1], COM_Argv(2), SAVESTRINGSIZE-1);
     p[SAVESTRINGSIZE] = '\0';
-    SendNetXCmd(XD_SAVEGAME, &p, strlen(&p[1]) + 2);
+
+    Send_NetXCmd(XD_SAVEGAME, &p, strlen(&p[1]) + 2);
 }
 
-void Got_SaveGamecmd(char **cp, int playernum)
+void Got_NetXCmd_SaveGamecmd(char **cp, int playernum)
 {
     byte slot;
     char description[SAVESTRINGSIZE];
@@ -1062,7 +1062,7 @@ void Command_ExitGame_f(void)
     D_StartTitle();
 }
 
-void Got_UseArtefact(char **cp, int playernum)
+void Got_NetXCmd_UseArtifact(char **cp, int playernum)
 {
     int art = READBYTE(*cp);
     P_PlayerUseArtifact(&players[playernum], art);
@@ -1070,5 +1070,5 @@ void Got_UseArtefact(char **cp, int playernum)
 
 void Command_Kill(void)
 {
-	P_KillMobj(players[consoleplayer].mo, NULL, players[consoleplayer].mo);
+    P_KillMobj(players[consoleplayer].mo, NULL, players[consoleplayer].mo);
 }

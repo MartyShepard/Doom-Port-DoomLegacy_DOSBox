@@ -119,7 +119,7 @@ boolean I_InitNetwork (void)
         COM_BufAddText("connect any\n");
 
     // ipx + time + 4 (padding)
-    packetheaderlength=30+4+4;
+    net_packetheader_length/*packetheaderlength*/=30+4+4;
 
     // 13-5-99 : added to pass legacy version to doomatic
     if( doomatic )

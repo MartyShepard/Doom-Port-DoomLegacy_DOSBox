@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1102 2014-04-14 22:15:49Z wesleyjohnson $
+// $Id: r_main.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1214,7 +1214,7 @@ void R_SetupFrame (player_t* player)
         aimingangle=player->aiming;
         viewangle = viewmobj->angle+viewangleoffset;
 
-        if(!demoplayback && player->playerstate!=PST_DEAD && !drone)
+        if(!demoplayback && player->playerstate!=PST_DEAD && !cl_drone)
         {
             if(player== consoleplayer_ptr)
             {
@@ -1533,7 +1533,7 @@ void R_RenderPlayerView (player_t* player)
 //                    ENGINE COMMANDS & VARS
 // =========================================================================
 
-void R_RegisterEngineStuff (void)
+void R_Register_EngineStuff (void)
 {
     //26-07-98
     CV_RegisterVar (&cv_gravity);

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
+// $Id: b_game.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -169,7 +169,7 @@ void Command_AddBot(void)
 	}
 
 
-	SendNetXCmd(XD_ADDBOT,&buf,1);
+	Send_NetXCmd(XD_ADDBOT, &buf, 1);
 }
 
 void B_AddCommands()

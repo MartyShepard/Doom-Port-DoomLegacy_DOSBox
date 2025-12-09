@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: command.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -179,7 +179,7 @@ void  CV_SaveVariables (FILE *f);
 // load/save gamesate (load and save option and for network join in game)
 void CV_SaveNetVars( char **p );
 void CV_LoadNetVars( char **p );
-void Got_NetVar(char **p,int playernum);
+void Got_NetXCmd_NetVar(char **p, int playernum);
 
 consvar_t *CV_FindVar (char *name);
 

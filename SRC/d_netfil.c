@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: d_netfil.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -126,36 +126,40 @@
 typedef struct filetx_s {
     TAH_e    release_tah; // release, access method
     char     *filename;   // name of the file, or ptr to the data
-    ULONG    size;
+    uint32_t data_size;   // size of data transfer
     char     fileid;
     int      node;        // destination
     struct filetx_s *next; // a queue
 } filetx_t;
 
 // current transfers (one for eatch node)
-struct {
+typedef struct {
    filetx_t  *txlist; 
-   ULONG      position;
+   uint32_t   position;  // file and data transfer position
    FILE*      currentfile;
-} transfer[MAXNETNODES];
+} transfer_t;
+
+static transfer_t transfer[MAXNETNODES];
 
 // read time of file : stat _stmtime
 // write time of file : utime
 
-// receiver structure
-int fileneedednum;
-fileneeded_t fileneeded[MAX_WADFILES];
-char *downloaddir="DOWNLOAD";
+// Client receiver structure
+int cl_num_fileneed;
+fileneed_t cl_fileneed[MAX_WADFILES];
+
+char * downloaddir="DOWNLOAD";
 
 
-// fill the serverinfo packet with wad file loaded
-byte *PutFileNeeded(void)
+// By server.
+// Fill the serverinfo packet with wad files loaded by the game on the server.
+byte * Put_Server_FileNeed(void)
 {
     int   i;
     byte *p;  // macros want byte*
     char  wadfilename[MAX_WADPATH];
 
-    p=(byte *)&netbuffer->u.serverinfo.fileneeded;
+    p=(byte *)&netbuffer->u.serverinfo.fileneed;
     for(i=0;i<numwadfiles;i++)
     {
         WRITEU32(p,wadfiles[i]->filesize);
@@ -164,20 +168,21 @@ byte *PutFileNeeded(void)
         WRITESTRING(p,wadfilename);
         WRITEMEM(p,wadfiles[i]->md5sum,16);
     }
-    netbuffer->u.serverinfo.fileneedednum=i;
+    netbuffer->u.serverinfo.num_fileneed = i;
     return p;
 }
 
-// parse the serverinfo packet and fill fileneeded table on client 
-void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
+// By Client
+// Handle the received serverinfo packet and fill client fileneed table.
+void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
 {
     int i;
 
-    fileneedednum=fileneedednum_parm;
-    byte *p = fileneededstr;
-    for(i=0;i<fileneedednum;i++)
+    cl_num_fileneed = num_fileneed_parm;
+    byte *p = fileneed_str;
+    for(i=0; i<cl_num_fileneed; i++)
     {
-        fileneeded_t * fnp = &fileneeded[i];
+        fileneed_t * fnp = & cl_fileneed[i];  // client fileneed
         fnp->status = FS_NOTFOUND;
         fnp->totalsize = READU32(p);
         fnp->phandle = NULL;
@@ -194,31 +199,37 @@ void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr)
     }
 }
 
-// 
-void CL_PrepareDownloadSaveGame(const char *tmpsave)
+// By Client.
+// First step in join game, fileneed and savegame.
+void CL_Prepare_Download_SaveGame(const char *tmpsave)
 {
-    fileneedednum = 1;
-    fileneeded[0].status = FS_REQUESTED;
-    fileneeded[0].totalsize = -1;
-    fileneeded[0].phandle = NULL;
-    memset(fileneeded[0].md5sum,0,16);
-    strcpy(fileneeded[0].filename,tmpsave);
+    cl_num_fileneed = 1;
+    cl_fileneed[0].status = FS_REQUESTED;
+    cl_fileneed[0].totalsize = -1;
+    cl_fileneed[0].phandle = NULL;
+    memset(cl_fileneed[0].md5sum, 0, 16);
+    strcpy(cl_fileneed[0].filename, tmpsave);
 }
 
 
-// send the name of file who status is FS_NOTFOUND of the fileneeded table
-boolean SendRequestFile(void)
+// By Client.
+// Send to the server the names of requested files.
+// Files who status is FS_NOTFOUND in the fileneed table are sent.
+// Return false when there is a failure.
+boolean Send_RequestFile(void)
 {
     int   i;
-    ULONG totalfreespaceneeded=0;
+    uint32_t  totalfreespaceneeded=0;
+    fileneed_t * fnp;
 
     if( M_CheckParm("-nodownload") )
     {
         char s[1024]="";
 
-        for(i=0;i<fileneedednum;i++)
+        // Check for missing files.
+        for(i=0; i<cl_num_fileneed; i++)
         {
-	    fileneeded_t * fnp = &fileneeded[i];
+	    fnp = & cl_fileneed[i];
             if( fnp->status!=FS_FOUND )
             {
                 strcat(s,"  \"");
@@ -253,9 +264,9 @@ boolean SendRequestFile(void)
 
     netbuffer->packettype = PT_REQUESTFILE;
     byte *p = netbuffer->u.textcmd;
-    for(i=0;i<fileneedednum;i++)
+    for(i=0; i<cl_num_fileneed; i++)
     {
-        fileneeded_t * fnp = &fileneeded[i];
+        fnp = & cl_fileneed[i];
         if( fnp->status==FS_NOTFOUND || fnp->status == FS_MD5SUMBAD)
         {
 	    char filetmp[ MAX_WADPATH ];
@@ -285,14 +296,14 @@ boolean SendRequestFile(void)
     return HSendPacket(servernode,true,0,p-netbuffer->u.textcmd);
 }
 
-// get request filepak and put it to the send queue
-void Got_RequestFilePak(int node)
+// Received request filepak. Put the files to the send queue.
+void Got_RequestFilePak(int nnode)
 {
     char *p = (char *)netbuffer->u.textcmd;
 
     while(*p!=-1)
     {
-        SendFile(node,p+1,*p);
+        SendFile(nnode, p+1, *p);
         p++; // skip fileid
         SKIPSTRING(p);
     }
@@ -313,19 +324,19 @@ int CL_CheckFiles(void)
     // do not check file date, also don't download it (copyright problem) 
     strcpy(wadfilename,wadfiles[0]->filename);
     nameonly(wadfilename);
-    if( strcasecmp(wadfilename,fileneeded[0].filename)!=0 )
+    if( strcasecmp(wadfilename,cl_fileneed[0].filename)!=0 )
     {
         M_SimpleMessage(va("You cannot connect to this server\n"
                           "since it uses %s\n"
                           "You are using %s\n",
-                          fileneeded[0].filename,wadfilename));
+                          cl_fileneed[0].filename,wadfilename));
         return 2;
     }
-    fileneeded[0].status=FS_OPEN;
+    cl_fileneed[0].status=FS_OPEN;
 
-    for (i=1;i<fileneedednum;i++)
+    for (i=1;i<cl_num_fileneed;i++)
     {
-        fileneeded_t * fnp = &fileneeded[i];
+        fileneed_t * fnp = &cl_fileneed[i];
         if(devparm)
 	    GenPrintf(EMSG_dev, "searching for '%s' ", fnp->filename);
         
@@ -356,13 +367,13 @@ int CL_CheckFiles(void)
 }
 
 // load it now
-void CL_LoadServerFiles(void)
+void CL_Load_ServerFiles(void)
 {
     int i;
     
-    for (i=1;i<fileneedednum;i++)
+    for (i=1;i<cl_num_fileneed;i++)
     {
-        fileneeded_t * fnp = &fileneeded[i];
+        fileneed_t * fnp = &cl_fileneed[i];
         if( fnp->status == FS_OPEN )
             // already loaded
             continue;
@@ -448,7 +459,7 @@ void SendFile(int node,char *filename, char fileid)
     filetosend++;
 }
 
-void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid)
+void SendData(int node, byte *data, uint32_t size, TAH_e tah, char fileid)
 {
     filetx_t **q,*p;
 
@@ -460,11 +471,12 @@ void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid)
     p=*q;
     p->release_tah=tah;
     p->filename = (char *)data;
-    p->size=size;
+    p->data_size=size;
     p->fileid=fileid;
     p->next=NULL; // end of list
 
-    DEBFILE(va("Sending ram %x( size:%d) to %d (id=%d)\n",p->filename,size,node,fileid));
+    DEBFILE(va("Sending ram %x( size:%d) to %d (id=%d)\n",
+	       p->filename, size, node, fileid));
 
     filetosend++;
 }
@@ -494,11 +506,13 @@ void EndSend(int node)
 
 #define PACKETPERTIC net_bandwidth/(TICRATE*software_MAXPACKETLENGTH)
 
-void FiletxTicker(void)
+// Called by NetUpdate, CL_ConnectToServer.
+void Filetx_Ticker(void)
 {
-    static int currentnode=0;
+    static int currentnode=0;  // net node num
+
     filetx_pak *p;
-    ULONG      size;
+    uint32_t   size;
     filetx_t   *f;
     TAH_e      access_tah;
     int        i, tcnt;
@@ -545,7 +559,7 @@ found:
 		    I_Error("Error getting filesize of %s\n", f->filename);
 		}
 
-	        f->size = filesize;
+	        f->data_size = filesize;
 	        fseek(transfer[i].currentfile, 0, SEEK_SET);            
 	    }
 	    else
@@ -554,9 +568,9 @@ found:
 	}
 
         p=&netbuffer->u.filetxpak;
-        size=software_MAXPACKETLENGTH-(FILETXHEADER+BASEPACKETSIZE);
-        if( f->size-transfer[i].position<size )
-	    size=f->size-transfer[i].position;
+        size=software_MAXPACKETLENGTH-(FILETX_HEADER_SIZE+PACKET_BASE_SIZE);
+        if((f->data_size - transfer[i].position) < size )
+	    size = f->data_size - transfer[i].position;
         if(access_tah == TAH_FILE)
         {
 	    if( fread(p->data,size,1,transfer[i].currentfile) != 1 )
@@ -566,13 +580,13 @@ found:
 	    memcpy(p->data,&f->filename[transfer[i].position],size);
         p->position = transfer[i].position;
         // put flag so receiver know the totalsize
-        if( transfer[i].position+size==f->size )
+        if( transfer[i].position+size == f->data_size )
 	    p->position |= 0x80000000;
         p->position = LE_SWAP32_FAST(p->position);
         p->size     = LE_SWAP16_FAST(size);
         p->fileid   = f->fileid;
         netbuffer->packettype=PT_FILEFRAGMENT;
-        if (!HSendPacket(i,true,0,FILETXHEADER+size ) ) // reliable SEND
+        if (!HSendPacket(i,true,0,FILETX_HEADER_SIZE+size ) ) // reliable SEND
         { // not sent for some odd reason
 	    // retry at next call
 	    if(access_tah == TAH_FILE)
@@ -583,7 +597,7 @@ found:
         else
         { // success
 	    transfer[i].position+=size;
-	    if(transfer[i].position==f->size) //  finish ?
+	    if(transfer[i].position == f->data_size) //  finish ?
 	        EndSend(i);
 	}
     }
@@ -591,26 +605,27 @@ found:
 
 void Got_Filetxpak(void)
 {
+    static int stat_cnt = 0;  // steps spent receiving file
+   
     int filenum=netbuffer->u.filetxpak.fileid;
-static int time=0;
 
-    if(filenum>=fileneedednum)
+    if(filenum>=cl_num_fileneed)
     {
-        DEBFILE(va("filefragment not needed %d>%d\n",filenum,fileneedednum));
+        DEBFILE(va("filefragment not needed %d>%d\n", filenum, cl_num_fileneed));
         return;
     }
 
-    if( fileneeded[filenum].status==FS_REQUESTED )
+    if( cl_fileneed[filenum].status==FS_REQUESTED )
     {
-        if(fileneeded[filenum].phandle) I_Error("Got_Filetxpak : file already open\n");
-        fileneeded[filenum].phandle=fopen(fileneeded[filenum].filename,"wb");
-        if(!fileneeded[filenum].phandle) I_Error("Can't create file %s : disk full ?",fileneeded[filenum].filename);
-        CONS_Printf("\r%s...",fileneeded[filenum].filename);
-        fileneeded[filenum].currentsize = 0; 
-        fileneeded[filenum].status=FS_DOWNLOADING;
+        if(cl_fileneed[filenum].phandle) I_Error("Got_Filetxpak : file already open\n");
+        cl_fileneed[filenum].phandle=fopen(cl_fileneed[filenum].filename,"wb");
+        if(!cl_fileneed[filenum].phandle) I_Error("Can't create file %s : disk full ?",cl_fileneed[filenum].filename);
+        CONS_Printf("\r%s...",cl_fileneed[filenum].filename);
+        cl_fileneed[filenum].bytes_recv = 0; 
+        cl_fileneed[filenum].status=FS_DOWNLOADING;
     }
 
-    if( fileneeded[filenum].status==FS_DOWNLOADING )
+    if( cl_fileneed[filenum].status==FS_DOWNLOADING )
     {
 	// Swap file position and size on big_endian machines.
 	netbuffer->u.filetxpak.position	= LE_SWAP32_FAST(netbuffer->u.filetxpak.position);
@@ -621,39 +636,39 @@ static int time=0;
         if( netbuffer->u.filetxpak.position & 0x80000000 ) 
         {
             netbuffer->u.filetxpak.position &= ~0x80000000;
-            fileneeded[filenum].totalsize = netbuffer->u.filetxpak.position + netbuffer->u.filetxpak.size;
+            cl_fileneed[filenum].totalsize = netbuffer->u.filetxpak.position + netbuffer->u.filetxpak.size;
         }
         // we can receive packet in the wrong order, anyway all os support gaped file
-        fseek(fileneeded[filenum].phandle,netbuffer->u.filetxpak.position,SEEK_SET);
-        if( fwrite(netbuffer->u.filetxpak.data,netbuffer->u.filetxpak.size,1,fileneeded[filenum].phandle)!=1 )
-            I_Error("Can't write %s : disk full ?\n",fileneeded[filenum].filename);
-        fileneeded[filenum].currentsize+=netbuffer->u.filetxpak.size;
-        if(time==0)
+        fseek(cl_fileneed[filenum].phandle,netbuffer->u.filetxpak.position,SEEK_SET);
+        if( fwrite(netbuffer->u.filetxpak.data,netbuffer->u.filetxpak.size,1,cl_fileneed[filenum].phandle)!=1 )
+            I_Error("Can't write %s : disk full ?\n",cl_fileneed[filenum].filename);
+        cl_fileneed[filenum].bytes_recv+=netbuffer->u.filetxpak.size;
+        if(stat_cnt==0)
         {
             Net_GetNetStat();
-            CONS_Printf("\r%s %dK/%dK %.1fK/s",fileneeded[filenum].filename,
-                                               fileneeded[filenum].currentsize>>10,
-                                               fileneeded[filenum].totalsize>>10,
-                                               ((float)getbps)/1024);
+            CONS_Printf("\r%s %dK/%dK %.1fK/s",cl_fileneed[filenum].filename,
+                                               cl_fileneed[filenum].bytes_recv>>10,
+                                               cl_fileneed[filenum].totalsize>>10,
+			((float)netstat_recv_bps)/1024);
         }
 
         // finish ?
-        if(fileneeded[filenum].currentsize==fileneeded[filenum].totalsize) 
+        if(cl_fileneed[filenum].bytes_recv==cl_fileneed[filenum].totalsize) 
         {
-            fclose(fileneeded[filenum].phandle);
-            fileneeded[filenum].phandle=NULL;
-            fileneeded[filenum].status=FS_FOUND;
-            CONS_Printf("\rDownloading %s...(done)\n",fileneeded[filenum].filename);
+            fclose(cl_fileneed[filenum].phandle);
+            cl_fileneed[filenum].phandle=NULL;
+            cl_fileneed[filenum].status=FS_FOUND;
+            CONS_Printf("\rDownloading %s...(done)\n",cl_fileneed[filenum].filename);
         }
     }
     else
         I_Error("Received a file not requested\n");
     // send ack back quickly
 
-    if(++time==4)
+    if(++stat_cnt==4)
     {
         Net_SendAcks(servernode);
-        time=0;
+        stat_cnt=0;
     }
 
 }
@@ -674,7 +689,7 @@ void CloseNetFile(void)
     // receiving a file ?
     for( i=0;i<MAX_WADFILES;i++ )
     {
-        fileneeded_t * fnp = &fileneeded[i];
+        fileneed_t * fnp = &cl_fileneed[i];
         if( fnp->status==FS_DOWNLOADING && fnp->phandle)
         {
             fclose(fnp->phandle);

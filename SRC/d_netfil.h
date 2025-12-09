@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_netfil.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -69,34 +69,36 @@ typedef struct {
     char    filename[MAX_WADPATH];
     unsigned char    md5sum[16];
     // used only for download
-    FILE    *phandle;  
-    ULONG   currentsize;
-    ULONG   totalsize;
+    FILE    *phandle;     // open file (owned)
+    uint32_t bytes_recv;  // to determine when done and for status
+    uint32_t totalsize;
     filestatus_e status;        // the value returned by recsearch
-} fileneeded_t;
+} fileneed_t;
 
-extern int fileneedednum;
-extern fileneeded_t fileneeded[MAX_WADFILES];
+extern int cl_num_fileneed;
+extern fileneed_t cl_fileneed[MAX_WADFILES];
 
 void D_NetFileInit(void);
 
-byte *PutFileNeeded(void);
-void D_ParseFileneeded(int fileneedednum_parm, byte *fileneededstr);
-void CL_PrepareDownloadSaveGame(const char *tmpsave);
+byte * Put_Server_FileNeed(void);
+void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str);
+void CL_Prepare_Download_SaveGame(const char *tmpsave);
+// boolean  CL_waiting_on_fileneed( void );
 
 // check file list in wadfiles return 0 when a file is not found 
 //                                    1 if all file are found 
 //                                    2 if you cannot connect (different wad version or 
 //                                                   no enought space to download files)
 int CL_CheckFiles(void);
-void CL_LoadServerFiles(void);
+void CL_Load_ServerFiles(void);
+
 void SendFile(int node,char *filename, char fileid);
 void SendData(int node, byte *data, ULONG size, TAH_e tah, char fileid);
 
-void FiletxTicker(void);
+void Filetx_Ticker(void);
 void Got_Filetxpak(void);
 
-boolean SendRequestFile(void);
+boolean Send_RequestFile(void);
 void Got_RequestFilePak(int node);
 
 

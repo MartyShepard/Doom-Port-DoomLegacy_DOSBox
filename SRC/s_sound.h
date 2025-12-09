@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1052 2013-10-01 21:05:06Z wesleyjohnson $
+// $Id: s_sound.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,8 +101,8 @@ typedef enum
 extern consvar_t  play_mode;
 #endif
 
-// register sound vars and commands at game startup
-void S_RegisterSoundStuff (void);
+// Register sound vars and commands at game startup.
+void S_Register_SoundStuff (void);
 
 
 //

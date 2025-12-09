@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_tcp.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -532,7 +532,7 @@ SOCKET UDP_Socket (void)
     }
 
     // ip + udp
-    packetheaderlength=20 + 8; // for stats
+    net_packetheader_length = 20 + 8; // for stats
 
     clientaddress[0].ip.sin_family      = AF_INET;
     clientaddress[0].ip.sin_port        = htons(sock_port);
@@ -598,7 +598,7 @@ SOCKET IPX_Socket (void)
     }
 
     // ipx header
-    packetheaderlength=30; // for stats
+    net_packetheader_length=30; // for stats
 
     // setup broadcast adress to BROADCASTADDR entry
 #ifdef LINUX

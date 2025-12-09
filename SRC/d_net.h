@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_net.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -51,15 +51,19 @@
 #define BROADCASTADDR           MAXNETNODES // added xx/5/99: can use broadcast now
 #define MAXSPLITSCREENPLAYERS   2    // maximum number of players on a single computer
 
-#define STATLENGTH  (TICRATE*2)
+// The periodic updating of net stats.
+#define STAT_PERIOD  (TICRATE*2)
 
-// stat of net
-extern  int    getbps,sendbps;
-extern  float  lostpercent,duppercent,gamelostpercent;
-extern  int    packetheaderlength;
+// NetStat globals
+extern int    netstat_recv_bps, netstat_send_bps;
+extern float  netstat_lost_percent, netstat_dup_percent;
+extern float  netstat_gamelost_percent;
+
 boolean Net_GetNetStat(void);
-extern  int    getbytes;
-extern  int64_t  sendbytes;        // realtime updated 
+
+extern int    net_packetheader_length;
+extern int       stat_getbytes;
+extern uint64_t  stat_sendbytes;        // realtime updated 
 
 void    Net_AckTicker(void);
 boolean Net_AllAckReceived(void);

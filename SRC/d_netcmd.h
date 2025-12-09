@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_netcmd.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -85,7 +85,7 @@ extern consvar_t   cv_teamplay;
 extern consvar_t   cv_teamdamage;
 extern consvar_t   cv_fraglimit;
 extern consvar_t   cv_timelimit;
-extern ULONG timelimit_tics;
+extern uint32_t  timelimit_tics;
 extern consvar_t   cv_allowturbo ;
 extern consvar_t   cv_allowexitlevel;
 
@@ -110,13 +110,13 @@ typedef enum {
     XD_PAUSE,
     XD_ADDPLAYER,
     XD_ADDBOT,	//added by AC for acbot
-    XD_USEARTEFACT,
+    XD_USEARTIFACT,
     MAXNETXCMD
 } netxcmd_t;
 
 // add game commands, needs cleanup
-void D_RegisterClientCommands (void);
-void D_SendPlayerConfig(void);
+void D_Register_ClientCommands (void);
+void D_Send_PlayerConfig(void);
 void Command_ExitGame_f(void);
 
 #endif

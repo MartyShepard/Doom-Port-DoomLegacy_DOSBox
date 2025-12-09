@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: s_sound.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -247,7 +247,7 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
 
 static void S_StopChannel(int cnum);
 
-void S_RegisterSoundStuff(void)
+void S_Register_SoundStuff(void)
 {
     if (dedicated)
         return;

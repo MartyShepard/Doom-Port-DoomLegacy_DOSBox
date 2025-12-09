@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1046 2013-09-22 20:55:51Z wesleyjohnson $
+// $Id: d_net.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -86,7 +86,7 @@
 #define CONNECTIONTIMEOUT  (15*TICRATE)
 
 doomcom_t*  doomcom;
-doomdata_t* netbuffer;        // points inside doomcom
+netbuffer_t* netbuffer;        // points inside doomcom
 
 #ifdef DEBUGFILE
 FILE*       debugfile=NULL;        // put some net info in a file
@@ -94,7 +94,7 @@ FILE*       debugfile=NULL;        // put some net info in a file
 #endif
 
 #define     MAXREBOUND 8
-static doomdata_t  reboundstore[MAXREBOUND];
+static netbuffer_t reboundstore[MAXREBOUND];
 static short       reboundsize[MAXREBOUND];
 static int         rebound_head,rebound_tail;
 int         net_bandwidth;
@@ -109,45 +109,53 @@ int     (*I_NetMakeNode) (char *address);
 boolean (*I_NetOpenSocket) (void);
 
 
-// network stats
-tic_t       statstarttic;
-int         getbytes=0;
-int64_t     sendbytes=0;
-int         retransmit=0   ,duppacket=0;
-int         sendackpacket=0,getackpacket=0;
-int         ticruned=0     ,ticmiss=0;
+// Network stats.
+tic_t   stat_starttic;      // tic of start of stat interval
+int     stat_getbytes = 0;  // bytes received this interval
+uint64_t  stat_sendbytes = 0;  // bytes sent, total
+int     stat_retransmits = 0;  // packets resent
+int     stat_duppacket = 0;  // received duplicate packets
+int     stat_ackpacket_sent = 0;  // sent ack packets
+int     stat_ackpacket_recv = 0;  // received ack packets
+int     stat_tic_moved = 0;  // tics to move player
+int     stat_tic_miss = 0;   // tics moved that are missing TICCMD_RECEIVED
 
-// globals
-int    getbps,sendbps;
-float  lostpercent,duppercent,gamelostpercent;
-int    packetheaderlength;
+// NetStat globals
+int    netstat_recv_bps, netstat_send_bps;
+float  netstat_lost_percent, netstat_dup_percent;  // packets
+float  netstat_gamelost_percent;  // tics lost
 
+int    net_packetheader_length;
+
+// Return true when stats have been updated.
 boolean Net_GetNetStat(void)
 {
-    tic_t t=I_GetTime();
-static int oldsendbyte=0;
-    if( statstarttic+STATLENGTH<=t )
+    static uint64_t  prev_stat_sendbyte = 0;
+   
+    tic_t ct = I_GetTime();
+    if( stat_starttic+STAT_PERIOD <= ct )
     {
-        getbps=(getbytes*TICRATE)/(t-statstarttic);
-        sendbps=((sendbytes-oldsendbyte)*TICRATE)/(t-statstarttic);
-        if(sendackpacket)
-            lostpercent=100.0*(float)retransmit/(float)sendackpacket;
-        else
-            lostpercent=0;
-        if(getackpacket)
-            duppercent=100.0*(float)duppacket/(float)getackpacket;
-        else
-            duppercent=0;
-        if( ticruned )
-            gamelostpercent=100.0*(float)ticmiss/(float)ticruned;
-        else
-            gamelostpercent=0;
+        // Stats are old, update them.
+        netstat_recv_bps = (stat_getbytes*TICRATE)/(ct - stat_starttic);
+        netstat_send_bps = ((stat_sendbytes - prev_stat_sendbyte)*TICRATE)
+	                 /(ct - stat_starttic);
+        
+        netstat_lost_percent = (stat_ackpacket_sent)?
+	 100.0*(float)stat_retransmits/(float)stat_ackpacket_sent
+	 : 0.0;
+	netstat_dup_percent = (stat_ackpacket_recv)?
+	 100.0*(float)stat_duppacket/(float)stat_ackpacket_recv
+	 : 0.0;
+	netstat_gamelost_percent = ( stat_tic_moved )?
+	 100.0*(float)stat_tic_miss/(float)stat_tic_moved
+	 : 0.0;
 
-        ticmiss=ticruned=0;
-        oldsendbyte=sendbytes;
-        getbytes=0;
-        sendackpacket=getackpacket=duppacket=retransmit=0;
-        statstarttic=t;
+        prev_stat_sendbyte = stat_sendbytes;
+        stat_getbytes=0;
+        stat_ackpacket_sent = stat_ackpacket_recv = 0;
+        stat_duppacket = stat_retransmits = 0;
+        stat_tic_miss = stat_tic_moved = 0;
+        stat_starttic = ct;
 
         return 1;
     }
@@ -268,7 +276,7 @@ static boolean GetFreeAcknum(byte *freeack, boolean lowtimer)
            
            *freeack=ackpak[i].acknum;
            
-           sendackpacket++; // for stat
+           stat_ackpacket_sent++; // for stat
            
            return true;
        }
@@ -314,15 +322,15 @@ static boolean inline Processackpak()
    node_t *node=&nodes[doomcom->remotenode];
 
 // received a ack return remove the ack in the list
-   if(netbuffer->ackreturn && cmpack(node->remotefirstack,netbuffer->ackreturn)<0)
+   if(netbuffer->ack_return && cmpack(node->remotefirstack,netbuffer->ack_return)<0)
    {
-       node->remotefirstack=netbuffer->ackreturn;
+       node->remotefirstack=netbuffer->ack_return;
        // search the ackbuffer and free it
        for(i=0;i<MAXACKPACKETS;i++)
        {
            if( ackpak[i].acknum &&
                ackpak[i].destinationnode==node-nodes &&
-               cmpack(ackpak[i].acknum,netbuffer->ackreturn)<=0 )
+               cmpack(ackpak[i].acknum,netbuffer->ack_return)<=0 )
 	   {
                Removeack(i);
 	   }
@@ -330,14 +338,14 @@ static boolean inline Processackpak()
    }
 
 // received a packet with ack put it in to queue for send the ack back
-   if( netbuffer->ack )
+   if( netbuffer->ack_req )
    {
-       byte ack=netbuffer->ack;
-       getackpacket++;
+       byte ack=netbuffer->ack_req;
+        stat_ackpacket_recv++;
        if( cmpack(ack,node->firstacktosend)<=0 )
        {
            DEBFILE(va("Discard(1) ack %d (duplicated)\n",ack));
-           duppacket++;
+           stat_duppacket++;
            goodpacket=false; // discard packet (duplicat)
        }
        else
@@ -349,7 +357,7 @@ static boolean inline Processackpak()
                if(node->acktosend[i]==ack)
                {
                    DEBFILE(va("Discard(2) ack %d (duplicated)\n",ack));
-                   duppacket++;
+                   stat_duppacket++;
                    goodpacket=false; // discard packet (duplicat)
                    break;
                }
@@ -461,11 +469,11 @@ void Net_ConnectionTimeout( int node )
 {
     // send a very special packet to self (hack the reboundstore queu)
     // main code will handle it
-    reboundstore[rebound_head].packettype = PT_NODETIMEOUT;
-    reboundstore[rebound_head].ack = 0;
-    reboundstore[rebound_head].ackreturn = 0;
+    reboundstore[rebound_head].packettype = PT_NODE_TIMEOUT;
+    reboundstore[rebound_head].ack_req = 0;
+    reboundstore[rebound_head].ack_return = 0;
     reboundstore[rebound_head].u.textcmd[0] = node;
-    reboundsize[rebound_head]=BASEPACKETSIZE+1;
+    reboundsize[rebound_head] = PACKET_BASE_SIZE+1;
     rebound_head=(rebound_head+1)%MAXREBOUND;
 
     // do not redo it quickly (if we do not close connection is for a good reason !)
@@ -484,6 +492,7 @@ extern void Net_AckTicker(void)
         {
             if(ackpak[i].senttime+node->timeout<I_GetTime())
             {
+	        // Need to retransmit
                 if( ackpak[i].resentnum > 10 && (node->flags & CLOSE) )
                 {
                     DEBFILE(va("ack %d sent 20 time so connection is supposed lost : node %d\n",i,node-nodes));
@@ -492,6 +501,7 @@ extern void Net_AckTicker(void)
                     ackpak[i].acknum = 0;
                     continue;
                 }
+	        // Retransmit
                 DEBFILE(va("Resend ack %d, %d<%d\n",ackpak[i].acknum,
                            ackpak[i].senttime,
                            node->timeout,
@@ -500,8 +510,8 @@ extern void Net_AckTicker(void)
                 ackpak[i].senttime=I_GetTime();
                 ackpak[i].resentnum++;
                 ackpak[i].nextacknum=node->nextacknum;
-                retransmit++; // for stat
-                HSendPacket(node-nodes,false,ackpak[i].acknum,ackpak[i].length-BASEPACKETSIZE);
+                stat_retransmits++; // for stat
+                HSendPacket(node-nodes,false,ackpak[i].acknum,ackpak[i].length-PACKET_BASE_SIZE);
             }
 	}
     }
@@ -532,13 +542,13 @@ extern void Net_UnAcknowledgPacket(int node)
     DEBFILE(va("UnAcknowledg node %d\n",node));
     if(!node)
         return;
-    if( nodes[node].acktosend[hm1] == netbuffer->ack )
+    if( nodes[node].acktosend[hm1] == netbuffer->ack_req )
     {
         nodes[node].acktosend[hm1] = 0;
         nodes[node].acktosend_head = hm1;
     }
     else
-    if( nodes[node].firstacktosend == netbuffer->ack )
+    if( nodes[node].firstacktosend == netbuffer->ack_req )
     {
         nodes[node].firstacktosend--;
         if( nodes[node].firstacktosend==0 )
@@ -546,7 +556,7 @@ extern void Net_UnAcknowledgPacket(int node)
     }
     else
     {
-        while (nodes[node].firstacktosend!=netbuffer->ack)
+        while (nodes[node].firstacktosend!=netbuffer->ack_req)
         {
             nodes[node].acktosend_tail = (nodes[node].acktosend_tail-1+MAXACKTOSEND)%MAXACKTOSEND;
             nodes[node].acktosend[nodes[node].acktosend_tail]=nodes[node].firstacktosend;
@@ -574,7 +584,7 @@ extern boolean Net_AllAckReceived(void)
    return true;
 }
 
-// wait the all ackreturn with timout in second
+// wait the all ack_return with timout in second
 extern void Net_WaitAllAckReceived( ULONG timeout )
 {
     tic_t tictac=I_GetTime();
@@ -614,13 +624,14 @@ static void InitAck()
        InitNode( i );
 }
 
-extern void Net_AbortPacketType(char packettype)
+// Remove from retransmit any packets of the indicated type.
+void Net_AbortPacketType(char packettype)
 {
     int i;
     for( i=0;i<MAXACKPACKETS;i++ )
     {
          if( ackpak[i].acknum && 
-             (((doomdata_t *)ackpak[i].pak)->packettype==packettype || packettype==-1 ))
+             (((netbuffer_t *)ackpak[i].pak)->packettype==packettype || packettype==-1 ))
          {
              ackpak[i].acknum=0;
 	 }
@@ -748,8 +759,8 @@ static void DebugPrintpacket(char *header)
     fprintf (debugfile,"%-12s (node %d,ack %d,ackret %d,size %d) type(%d) : %s\n"
                       ,header
                       ,doomcom->remotenode
-                      ,netbuffer->ack
-                      ,netbuffer->ackreturn
+                      ,netbuffer->ack_req
+                      ,netbuffer->ack_return
                       ,doomcom->datalength
                       ,netbuffer->packettype,packettypename[netbuffer->packettype]);
 
@@ -843,7 +854,7 @@ static void DebugPrintpacket(char *header)
 extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetlength)
 {
 
-    doomcom->datalength = packetlength+BASEPACKETSIZE;
+    doomcom->datalength = packetlength + PACKET_BASE_SIZE;
     if (!node)
     {
         if((rebound_head+1)%MAXREBOUND==rebound_tail)
@@ -886,30 +897,30 @@ extern boolean HSendPacket(int   node,boolean reliable ,byte acknum,int packetle
     }
 
     if(node<MAXNETNODES) // can be a broadcast
-        netbuffer->ackreturn=GetAcktosend(node);
+        netbuffer->ack_return=GetAcktosend(node);
     else
-        netbuffer->ackreturn=0;
+        netbuffer->ack_return=0;
     if(reliable)
     {
         if( I_NetCanSend && !I_NetCanSend() )
         {
             if( netbuffer->packettype < PT_CANFAIL )
-                GetFreeAcknum(&netbuffer->ack,true) ;
+                GetFreeAcknum(&netbuffer->ack_req,true) ;
 
             DEBFILE("HSendPacket : Out of bandwidth\n");
             return false;
         }
         else
         {
-            if( !GetFreeAcknum(&netbuffer->ack,false) )
+            if( !GetFreeAcknum(&netbuffer->ack_req,false) )
                 return false;
 	}
     }
     else
-        netbuffer->ack=acknum;
+        netbuffer->ack_req=acknum;
 
     netbuffer->checksum=NetbufferChecksum ();
-    sendbytes+=(packetheaderlength+doomcom->datalength); // for stat
+    stat_sendbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
     // simulate internet :)
     if( true || rand()<RAND_MAX/5 )
@@ -942,7 +953,7 @@ extern boolean HGetPacket (void)
     {
         memcpy(netbuffer,&reboundstore[rebound_tail],reboundsize[rebound_tail]);
         doomcom->datalength = reboundsize[rebound_tail];
-        if( netbuffer->packettype == PT_NODETIMEOUT )
+        if( netbuffer->packettype == PT_NODE_TIMEOUT )
             doomcom->remotenode = netbuffer->u.textcmd[0];
         else
             doomcom->remotenode = 0;
@@ -963,7 +974,7 @@ extern boolean HGetPacket (void)
     if (doomcom->remotenode == -1)
         return false;
 
-    getbytes+=(packetheaderlength+doomcom->datalength); // for stat
+    stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
     if (doomcom->remotenode >= MAXNETNODES)
     {
@@ -984,11 +995,11 @@ extern boolean HGetPacket (void)
         DebugPrintpacket("GET");
 #endif
 
-    // proceed the ack and ackreturn field
+    // proceed the ack and ack_return field
     if(!Processackpak())
         return false;    // discated (duplicated)
 
-    // a packet with just ackreturn
+    // a packet with just ack_return
     if( netbuffer->packettype == PT_NOTHING)
     {
         GotAcks();
@@ -1017,7 +1028,7 @@ void Internal_FreeNodenum(int nodenum)
 // D_CheckNetGame
 // Works out player numbers among the net participants
 //
-extern boolean D_CheckNetGame (void)
+boolean D_CheckNetGame (void)
 {
     boolean ret=false;
 
@@ -1025,7 +1036,7 @@ extern boolean D_CheckNetGame (void)
     rebound_tail=0;
     rebound_head=0;
 
-    statstarttic=I_GetTime();
+    stat_starttic = I_GetTime();  // start netstat interval
 
     I_NetGet           = Internal_Get;
     I_NetSend          = Internal_Send;
@@ -1034,6 +1045,7 @@ extern boolean D_CheckNetGame (void)
     I_NetFreeNodenum   = Internal_FreeNodenum;
     I_NetMakeNode      = NULL;
 
+    // Defaults
     hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
     net_bandwidth = 3000;
     // I_InitNetwork sets doomcom and netgame
@@ -1044,6 +1056,7 @@ extern boolean D_CheckNetGame (void)
     netgame = I_InitNetwork ();
     if( !netgame )
     {
+        // Create netgame.
         doomcom=Z_Malloc(sizeof(doomcom_t),PU_STATIC,NULL);
         memset(doomcom,0,sizeof(doomcom_t));
         doomcom->id = DOOMCOM_ID;        
@@ -1110,7 +1123,7 @@ extern boolean D_CheckNetGame (void)
     if (doomcom->numnodes>MAXNETNODES)
         I_Error ("To many nodes (%d), max:%d",doomcom->numnodes,MAXNETNODES);
 
-    netbuffer = (doomdata_t *)&doomcom->data;
+    netbuffer = (netbuffer_t *)&doomcom->data;
 
 #ifdef DEBUGFILE
     if (M_CheckParm ("-debugfile"))
@@ -1144,7 +1157,7 @@ extern void D_CloseConnection( void )
 
     if( netgame )
     {
-        // wait the ackreturn with timout of 5 Sec
+        // wait the ack_return with timout of 5 Sec
         Net_WaitAllAckReceived(5);
 
         // close all connection

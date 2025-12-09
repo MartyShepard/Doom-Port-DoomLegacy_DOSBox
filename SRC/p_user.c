@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_user.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -327,9 +327,10 @@ void P_MovePlayer (player_t* player)
     pmo->angle += (cmd->angleturn<<16);
 #endif
 
-    ticruned++;
+    stat_tic_moved++;
     if( (cmd->angleturn & TICCMD_RECEIVED) == 0)
-        ticmiss++;
+        stat_tic_miss++;
+
     // Do not let the player control movement
     //  if not onground.
     onground = (pmo->z <= pmo->floorz) 

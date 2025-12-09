@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1079 2014-01-10 21:25:59Z wesleyjohnson $
+// $Id: p_fab.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -315,7 +315,7 @@ void BloodTime_OnChange (void)
 
 
 // [WDJ] All misc init
-void D_RegisterMiscCommands (void)
+void D_Register_MiscCommands (void)
 {
     // add commands for deathmatch rules and style (like more blood) :)
     CV_RegisterVar (&cv_solidcorpse);                 //p_enemy

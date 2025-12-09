@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_fab.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -49,7 +49,7 @@ void Translucency_OnChange(void);  // update translucent info
 void P_SetTranslucencies (void);
 
 // [WDJ] All misc init
-// add commands for deathmatch rules and style (like more blood) :)
-void D_RegisterMiscCommands (void);
+// Add commands for deathmatch rules and style (like more blood) :)
+void D_Register_MiscCommands (void);
 
 #endif

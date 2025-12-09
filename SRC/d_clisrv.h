@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_clisrv.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -90,32 +90,37 @@
 //
 // Packet structure
 //
+// Index to packettypename[]
 typedef enum   {
     PT_NOTHING,       // to send a nop through network :)
+ // High priority
     PT_SERVERCFG,     // server config used in start game (stay 1 for backward compatibility issue)
-                      // this is positive responce to CLIENTJOIN request
+                      // this is positive response to CLIENTJOIN request
     PT_CLIENTCMD,     // ticcmd of the client
-    PT_CLIENTMIS,     // same as above with but saying resend from
-    PT_CLIENT2CMD,    // 2 cmd in the packed for splitscreen
-    PT_CLIENT2MIS,    // same as above with but saying resend from
+    PT_CLIENTMIS,     // same as above but saying resend from
+    PT_CLIENT2CMD,    // with player 2, ticcmd of the client
+    PT_CLIENT2MIS,    // with player 2, same as above but saying resend from
     PT_NODEKEEPALIVE, // same but without ticcmd and consistancy
     PT_NODEKEEPALIVEMIS,
     PT_SERVERTICS,    // all cmd for the tic
-    PT_SERVERREFUSE,  // server refuse joiner (reson incide)
-    PT_SERVERSHUTDOWN,// self explain
+    PT_SERVERREFUSE,  // server refuse joiner (reason inside)
+    PT_SERVERSHUTDOWN,// server is shutting down
     PT_CLIENTQUIT,    // client close the connection
                       
-    PT_ASKINFO,       // anyone can ask info to the server
+    PT_ASKINFO,       // to ask info of the server (anyone)
     PT_SERVERINFO,    // send game & server info (gamespy)
     PT_REQUESTFILE,   // client request a file transfer
 
-    PT_CANFAIL,       // this is kind of priority, biger then CANFAIL the HSendPacket(,true,,) can return false
-                      // also this packet can't occupate all slotes
+ // Low Priority
+    PT_CANFAIL,       // A priority boundary
+                      // This packet can't occupy all slots.
+ // with HSendPacket(,true,,) these can return false
     PT_FILEFRAGMENT=PT_CANFAIL, // a part of a file
     PT_TEXTCMD,       // extra text command from the client
     PT_TEXTCMD2,      // extra text command from the client (splitscreen)
     PT_CLIENTJOIN,    // client want to join used in start game
-    PT_NODETIMEOUT,   // packed is sent to self when connection timeout
+    PT_NODE_TIMEOUT,  // packet is sent to self when connection timeout
+ // count for table
     NUMPACKETTYPE
 } packettype_t;
 
@@ -185,27 +190,27 @@ typedef struct {
     byte       numberofplayer;
     byte       maxplayer;
     byte       deathmatch;
-    tic_t      time;
+    tic_t      trip_time;   // askinfo time in packet, ping time in list
     float      load;        // unused for the moment
     char       mapname[8];
     char       servername[MAXSERVERNAME];
-    byte       fileneedednum;
-    byte       fileneeded[4096];   // is filled with writexxx (byteptr.h)
+    byte       num_fileneed;
+    byte       fileneed[4096];   // is filled with writexxx (byteptr.h)
 } serverinfo_pak;
 
-#define MAXSERVERLIST 32  // depend only of the display
+#define MAXSERVERLIST 32  // limited by the display
 typedef struct { 
     serverinfo_pak info;
-    int  node;
-} serverelem_t;
+    byte  server_node;  // network node this server is on
+} server_info_t;
 
-extern serverelem_t serverlist[MAXSERVERLIST];
+extern server_info_t  serverlist[MAXSERVERLIST];
 extern int serverlistcount;
 
 
 typedef struct {
    byte        version;
-   tic_t       time;          // used for ping evaluation
+   tic_t       send_time;      // used for ping evaluation
 } askinfo_pak;
 
 typedef struct {
@@ -218,10 +223,11 @@ typedef struct {
 //
 typedef struct
 {                
-    unsigned   checksum;
-    byte       ack;           // if not null the node ask a acknolegement
-                              // the receiver must to resend the ack
-    byte       ackreturn;     // the return of the ack number
+    uint32_t   checksum;
+    byte       ack_req;       // Ask for an acknowlegement with this ack num.
+   			      // 0= no ack
+    byte       ack_return;    // Return the ack number of a packet.
+                              // 0= no ack
 
     byte       packettype;
     byte       reserved;      // padding
@@ -237,39 +243,41 @@ typedef struct
                askinfo_pak       askinfo;
            } u;
 
-} doomdata_t;
+} netbuffer_t;
 
 //#pragma pack()
 
 // points inside doomcom
-extern  doomdata_t*   netbuffer;        
+extern  netbuffer_t*   netbuffer;        
 
 extern consvar_t cv_playdemospeed;
 
-//#define BASEPACKETSIZE     ((int)&( ((doomdata_t *)0)->u))
-#define BASEPACKETSIZE     offsetof(doomdata_t, u)
-//#define FILETXHEADER       ((int)   ((filetx_pak *)0)->data)
-#define FILETXHEADER       offsetof(filetx_pak, data)
-//#define BASESERVERTICSSIZE  ((int)&( ((doomdata_t *)0)->u.serverpak.cmds[0]))
-#define BASESERVERTICSSIZE offsetof(doomdata_t, u.serverpak.cmds[0])
+//#define PACKET_BASE_SIZE     ((int)&( ((netbuffer_t *)0)->u))
+#define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)
+//#define FILETX_HEADER_SIZE       ((int)   ((filetx_pak *)0)->data)
+#define FILETX_HEADER_SIZE   offsetof(filetx_pak, data)
+//#define SERVER_TIC_BASE_SIZE  ((int)&( ((netbuffer_t *)0)->u.serverpak.cmds[0]))
+#define SERVER_TIC_BASE_SIZE offsetof(netbuffer_t, u.serverpak.cmds[0])
 
 extern boolean   server;
 extern USHORT    software_MAXPACKETLENGTH;
 extern boolean   acceptnewnode;
 extern char      servernode;
-extern boolean   drone;
+
+extern boolean   cl_drone;  // is a drone client
 
 extern consvar_t cv_allownewplayer;
 extern consvar_t cv_maxplayers;
 
-// used in d_net, the only depandence
+// Used in d_net, the only dependence.
 int     ExpandTics (int low);
 void    D_ClientServerInit (void);
 
 // initialise the other field
-void    RegisterNetXCmd(netxcmd_t id,void (*cmd_f) (char **p,int playernum));
-void    SendNetXCmd(byte id,void *param,int nparam);
-void    SendNetXCmd2(byte id,void *param,int nparam); // splitsreen player
+void    Register_NetXCmd(netxcmd_t cmd_id,
+			void (*cmd_f) (char **p, int playernum));
+void    Send_NetXCmd(byte cmd_id, void *param, int nparam);
+void    Send_NetXCmd2(byte cmd_id, void *param, int nparam); // splitsreen player
 
 // Create any new ticcmds and broadcast to other players.
 void    NetUpdate (void);
@@ -287,14 +295,14 @@ void    CL_RemoveSplitscreenPlayer( void );
 void    CL_Reset (void);
 void    CL_UpdateServerList( boolean internetsearch );
 // is there a game running
-boolean Playing( void );
+boolean Game_Playing( void );
 
 
 // Broadcasts special packets to other players
-//  to notify of game exit
+// to notify of game exit
 void    D_QuitNetGame (void);
 
-//? how many ticks to run?
+// How many ticks to run.
 void    TryRunTics (tic_t realtic);
 
 // extra data for lmps

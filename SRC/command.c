@@ -300,7 +300,6 @@ static char        *com_argv[MAX_ARGS];
 static char        *com_null_string = "";
 static char        *com_args = NULL;          // current command args or NULL
 
-void Got_NetVar(char **p,int playernum);
 
 //  Initialize command buffer and add basic commands
 //
@@ -321,7 +320,7 @@ void COM_Init (void)
     COM_AddCommand ("wait", COM_Wait_f);
     COM_AddCommand ("help", COM_Help_f);
     COM_AddCommand ("toggle", COM_Toggle_f);
-    RegisterNetXCmd(XD_NETVAR,Got_NetVar);
+    Register_NetXCmd(XD_NETVAR, Got_NetXCmd_NetVar);
 }
 
 
@@ -1131,7 +1130,7 @@ finish:
 //      2 byte for variable identification
 //      then the value of the variable followed with a 0 byte (like str)
 //
-void Got_NetVar(char **p,int playernum)
+void Got_NetXCmd_NetVar(char **p, int playernum)
 {
     byte * bp = (byte*) *p;	// macros READ,SKIP want byte*
 
@@ -1174,7 +1173,7 @@ void CV_LoadNetVars( char **p )
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
         if (cvar->flags & CV_NETVAR)
-	    Got_NetVar(p, 0);
+	    Got_NetXCmd_NetVar(p, 0);
     }
 }
 
@@ -1210,8 +1209,9 @@ void CV_Set (consvar_t *var, char *value)
 	byte buf[BUFSIZE], *p; // macros want byte*
 	p = buf;
         WRITEU16(p, var->netid);
-        WRITESTRINGN(p, value, BUFSIZE-2-1); *p = '\0'; // [smite] WRITESTRINGN _should_ make sure the NUL gets there in all cases, but alas
-        SendNetXCmd(XD_NETVAR, buf, p-buf);
+        WRITESTRINGN(p, value, BUFSIZE-2-1);
+	*p = '\0'; // [smite] WRITESTRINGN _should_ make sure the NUL gets there in all cases, but alas
+        Send_NetXCmd(XD_NETVAR, buf, (p - buf));
 	return;
       }
       else if (var->flags & CV_NOTINNET)

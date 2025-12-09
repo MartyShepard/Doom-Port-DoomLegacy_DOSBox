@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1094 2014-03-25 23:05:59Z wesleyjohnson $
+// $Id: r_main.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -216,5 +216,5 @@ void R_SetupFrame (player_t* player);
 void   R_RenderPlayerView (player_t *player);
 
 // add commands related to engine, at game startup
-void   R_RegisterEngineStuff (void);
+void   R_Register_EngineStuff (void);
 #endif

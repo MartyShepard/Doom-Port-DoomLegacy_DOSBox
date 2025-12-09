@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1115 2014-06-20 02:19:27Z wesleyjohnson $
+// $Id: p_saveg.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3054,7 +3054,7 @@ void P_LoadNetVars( void )
     {
         if( count>=mincnt )
 	    if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
-        Got_NetVar((char**)&save_p, 0);
+        Got_NetXCmd_NetVar((char**)&save_p, 0);
     }
 //    GenPrintf(EMSG_info, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
 }

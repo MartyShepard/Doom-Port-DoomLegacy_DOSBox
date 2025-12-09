@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: doomstat.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -344,6 +344,7 @@ extern  int             bodyqueslot;
 //extern  ticcmd_t        localcmds[BACKUPTICS];
 
 extern  ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
-extern int   ticruned, ticmiss;
+// Collect stats for netstat.
+extern int   stat_tic_moved, stat_tic_miss;
 
 #endif //__D_STATE__
