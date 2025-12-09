@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: hu_stuff.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -244,6 +244,9 @@ void TeamPlay_OnChange(void)
     }
 }
 
+//#define SAYCODE_BROADCAST0
+
+// SAY: Broadcast to all players.
 void Command_Say_f (void)
 {
     char buf[255];
@@ -255,7 +258,11 @@ void Command_Say_f (void)
         return;
     }
 
-    buf[0]=0;
+#ifdef SAYCODE_BROADCAST0
+    buf[0]=0;  // 0 as broadcast, conflicts with player 0
+#else
+    buf[0]=255;  // broadcast
+#endif
     strcpy(&buf[1],COM_Argv(1));
     for(i=2; i<j; i++)
     {
@@ -266,10 +273,12 @@ void Command_Say_f (void)
        // +2 because 1 for buf[0] and the other for null terminated string
 }
 
+// SAYTO: Send to a player.
 void Command_Sayto_f (void)
 {
-    char buf[255];
+    byte playernum;
     int i,j;
+    char buf[255];
 
     if((j=COM_Argc())<3)
     {
@@ -277,9 +286,16 @@ void Command_Sayto_f (void)
         return;
     }
 
-    buf[0]=nametonum(COM_Argv(1));
-    if(buf[0]==-1)
-        return;
+    // Players 0..(MAXPLAYERS-1) are known as Player 1 to MAXPLAYERS to user.
+    playernum = player_name_to_num(COM_Argv(1));
+    if(playernum > MAXPLAYERS)
+        return;  // not found
+
+#ifdef SAYCODE_BROADCAST0
+    if( playernum == 0 )  // 0 is broadcast
+        playernum = 0x40;  // [WDJ] kludge fix of player 0
+#endif
+    buf[0] = playernum;    // 0..127
     strcpy(&buf[1],COM_Argv(2));
     for(i=3; i<j; i++)
     {
@@ -289,6 +305,7 @@ void Command_Sayto_f (void)
     Send_NetXCmd(XD_SAY, buf, strlen(buf+1)+2);
 }
 
+// SAYTEAM: To all team members of this player.
 void Command_Sayteam_f (void)
 {
     char buf[255];
@@ -300,7 +317,14 @@ void Command_Sayteam_f (void)
         return;
     }
 
-    buf[0]=-consoleplayer;
+    // Players 0..(MAXPLAYERS-1) are known as Player 1 to MAXPLAYERS to user.
+#ifdef SAYCODE_BROADCAST0
+    buf[0] = -(consoleplayer);  // 0 is broadcast
+    if( buf[0] == 0 )
+        buf[0] = -0x40;  // [WDJ] kludge fix of player 0
+#else
+    buf[0] = consoleplayer & 0x80;  // 128..254
+#endif
     strcpy(&buf[1],COM_Argv(1));
     for(i=2; i<j; i++)
     {
@@ -311,18 +335,54 @@ void Command_Sayteam_f (void)
         // +2 because 1 for buf[0] and the other for null terminated string
 }
 
+// [WDJ] Previous Say/Sayto/Sayteam system was broken.
+// NEW:
+//  to: 0..127 player
+//      128..254 team
+//      255 broadcast
+// OLD:
 // netsyntax : to : byte  1->32  player 1 to 32
 //                        0      all
 //                       -1->-32 say team -numplayer of the sender
 
 void Got_NetXCmd_Saycmd(char **p, int playernum)
 {
-    char to;
-    to=*(*p)++;
+    const char * tostr = "";
+    byte to = *(*p)++;
 
-    if(to==0 || to==consoleplayer || consoleplayer==playernum
-       || (to<0 && ST_SameTeam(consoleplayer_ptr,&players[-to])) )
-         CONS_Printf("\3%s: %s\n", player_names[playernum], *p);
+#ifdef SAYCODE_BROADCAST0
+    byte pn = (to & 0x1F); // to player num 0..32
+
+    // Decode the various sources
+    if( to == 0 )  // Say uses 0 broadcast
+    {
+        to = 255;  // to match later broadcast tests
+    }
+    else if( to & 0x80 )
+    {
+	pn = (-(signed char)to) & 0x1F;  // Team encoding
+    }
+    else
+    {
+        to &= ~0x40;  // mask 0x40 of player 0, but keep test valid
+    }
+#else
+    byte pn = (to & 0x7F); // to player num 0..126
+#endif
+
+    if(playernum==consoleplayer
+       || to==255 // broadcast
+       || ( (to < MAXPLAYERS) && pn==consoleplayer )
+       || ( (to & 0x80) // Team broadcast from pn
+	    && pn < MAXPLAYERS
+	    && ST_SameTeam(consoleplayer_ptr,&players[pn])) )
+    {
+        if( to==255 )
+	  tostr = " All";
+        else if( to & 0x80 )
+	  tostr = " Team";
+        CONS_Printf("\3%s%s: %s\n", player_names[playernum], tostr, *p);
+    }
 
     *p+=strlen(*p)+1;
 }

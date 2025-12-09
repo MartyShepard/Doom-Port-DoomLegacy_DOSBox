@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h 1146 2015-04-03 13:48:10Z wesleyjohnson $
+// $Id: d_net.h 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -72,7 +72,7 @@ boolean Net_AllAckReceived(void);
 
 // if reliable return true if packet sent, 0 else
 boolean HSendPacket(int to_node, boolean reliable, byte acknum, int packetlength);
-boolean HGetPacket(void);
+boolean HGetPacket (void);
 // Returns true when a network connection is made.
 boolean D_Startup_NetGame(void);
 void    D_CloseConnection( void );

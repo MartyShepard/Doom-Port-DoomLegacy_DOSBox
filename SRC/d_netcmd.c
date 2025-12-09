@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
+// $Id: d_netcmd.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -521,6 +521,7 @@ void Got_NetXCmd_NameColor(char **cp, int playernum)
     if (p->mo)
         p->mo->flags = (p->mo->flags & ~MF_TRANSLATION) | ((p->skincolor) << MF_TRANSSHIFT);
 
+    // Players 0..(MAXPLAYERS-1) are init as Player 1 ..
     // name
     if (demoversion >= 128)
     {

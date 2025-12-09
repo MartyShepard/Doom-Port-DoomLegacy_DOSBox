@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: g_game.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1351,11 +1351,11 @@ void G_PlayerReborn (int player)
 {
     player_t*   p;
     int         i;
-    USHORT      frags[MAXPLAYERS];
+    uint16_t    frags[MAXPLAYERS];
+    uint16_t    addfrags;
     int         killcount;
     int         itemcount;
     int         secretcount;
-    USHORT      addfrags;
 
     //from Boris
     int         skincolor;

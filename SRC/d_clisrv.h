@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1144 2015-04-03 13:46:21Z wesleyjohnson $
+// $Id: d_clisrv.h 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -309,8 +309,9 @@ void    TryRunTics (tic_t realtic);
 boolean AddLmpExtradata(byte **demo_p,int playernum);
 void    ReadLmpExtraData(byte **demo_pointer,int playernum);
 
-// translate a playername in a player number return -1 if not found and
-// print a error message in the console
-int     nametonum(char *name);
+// Name can be player number, or player name.
+// Return player number.
+// Return 255, and put msg to console, when name not found.
+byte player_name_to_num(char *name);
 
 #endif

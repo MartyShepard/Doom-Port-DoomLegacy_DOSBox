@@ -4204,10 +4204,20 @@ Fix a bug in cancel ack function.
 
 *** W102_netfile
 patchfile = w102_8_netfile.patch
-- commit revision 11??
+- commit revision 1147
 Cleanup of file download functions.
 Convert some I_Error to I_SoftError.
 Make messages more understandable.
 Use of ptrs makes for much smaller code.
 Remove unused code.
 
+*** W102_sayto
+patchfile = w102_9_sayto.patch
+- commit revision 1148
+Talk network had broken code.  Cannot make work with old network code.
+Used 0 broadcast, and for player[0], and -(0) for team of player[0].
+Change talk packet to coding where:
+0..127 = talk to player
+0x80 | (0..127) = broadcast to player's team
+255 = broadcast
+Cleanup code for talk.

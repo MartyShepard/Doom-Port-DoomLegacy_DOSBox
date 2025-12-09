@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1147 2015-04-03 13:49:10Z wesleyjohnson $
+// $Id: d_clisrv.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1108,32 +1108,34 @@ void Command_PlayerInfo(void)
     }
 }
 
-int nametonum(char *name)
+// Name can be player number, or player name.
+// Players 0..(MAXPLAYERS-1) are known as Player 1 .. to the user.
+// Return player number, 0..(MAXPLAYERS-1).
+// Return 255, and put msg to console, when name not found.
+byte player_name_to_num(char *name)
 {
-    int playernum,i;
+    // Player num can be 0..250 (limited to MAXPLAYERS).
+    int playernum, i;
 
-    if( strcmp(name,"0")==0 )
-        return 0;
-
-    playernum=atoi(name);
-
-    if(playernum)
+    playernum=atoi(name);   // test as player number 1..MAXPLAYERS
+    if((playernum > 0) && (playernum <= MAXPLAYERS))
     {
+        playernum --;  // convert to 0..MAXPLAYERS
         if(playeringame[playernum])
             return playernum;
-        else 
-            return -1;
+        goto no_player;
     }
 
+    // Search for player by name.
     for(i=0;i<MAXPLAYERS;i++)
     {
         if(playeringame[i] && strcasecmp(player_names[i],name)==0)
             return i;
     }
     
-    CONS_Printf("there is no player named\"%s\"\n",name);
-
-    return -1;
+no_player:   
+    CONS_Printf("There is no player named\"%s\"\n",name);
+    return 255;
 }
 
 // network kick message codes
@@ -1154,10 +1156,9 @@ void Command_Kick(void)
 
     if(server)
     {
-        int pn = nametonum(COM_Argv(1));
-        if(pn==-1)
-           return;
-        Send_NetXCmd_p2(XD_KICK, pn, KICK_MSG_GO_AWAY);
+        int pn = player_name_to_num(COM_Argv(1));
+        if(pn < MAXPLAYERS)
+	   Send_NetXCmd_p2(XD_KICK, pn, KICK_MSG_GO_AWAY);
     }
     else
     {
@@ -1395,7 +1396,7 @@ void Got_NetXCmd_AddPlayer(char **p,int playernum)
     static uint32_t sendconfigtic = 0xffffffff;
 
     // [WDJ] Having error due to sign extension of byte read (signed char).
-    unsigned int node=READBYTE(*p);  // unsigned
+    byte nnode=READBYTE(*p);  // unsigned
     unsigned int newplayernum=READBYTE(*p);  // unsigned
     boolean splitscreenplayer = newplayernum&0x80;
 
@@ -1405,9 +1406,10 @@ void Got_NetXCmd_AddPlayer(char **p,int playernum)
     G_AddPlayer(newplayernum);
     if( newplayernum+1 > doomcom->numplayers )
         doomcom->numplayers=newplayernum+1;
-    CONS_Printf("Player %d is in the game (node %d)\n",newplayernum,node);
+    // [WDJ] Players are 1..MAXPLAYERS to the user.
+    CONS_Printf("Player %d is in the game (node %d)\n", (newplayernum+1), nnode);
 
-    if(node==cl_nnode)
+    if(nnode==cl_nnode)
     {
         // The server is creating my player.
         player_to_nnode[newplayernum]=0;  // for information only
