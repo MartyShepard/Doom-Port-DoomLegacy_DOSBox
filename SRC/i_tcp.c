@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: i_tcp.c 1161 2015-04-03 14:13:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -205,6 +205,11 @@ typedef struct sockaddr_ipx {
 #endif // USE_IPX
 #endif // os2
 
+#ifdef MACOS_DI
+// [WDJ] 4/2015 Merged macos/i_tcp.c here, very few significant differences.
+// They did not have any IPX code.  It would need includes.
+# undef USE_IPX
+#endif
 
 #ifdef LINUX
 # include <sys/time.h>
@@ -239,9 +244,9 @@ typedef struct sockaddr_ipx {
 #ifdef __WIN32__
     // some undefined under win32
 #  define IPPORT_USERRESERVED 5000
-#ifdef errno
+# ifdef errno
 #  undef errno
-#endif
+# endif
    // some very strange things happen when not use h_error ?!?
 #  define errno         h_errno
 #else
@@ -412,8 +417,12 @@ byte  IPX_hashaddr(mysockaddr_t *a)
 
 boolean UDP_cmpaddr(mysockaddr_t *a, mysockaddr_t *b)
 {
+#ifdef MACOS_DI   
+    return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr);
+#else
     return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr
 	    && a->ip.sin_port == b->ip.sin_port);
+#endif
 }
 
 #ifdef NODE_ADDR_HASHING
@@ -594,7 +603,11 @@ boolean  SOCK_Get(void)
     byte  hashaddr;
 #endif
     int   rcnt;  // data bytes received
+#ifdef MACOS_DI
+    size_t        fromlen;
+#else
     socklen_t     fromlen;
+#endif
     mysockaddr_t  fromaddress;
 
     fromlen = sizeof(fromaddress);  // num bytes of addr for OUT
@@ -734,6 +747,7 @@ boolean SOCK_CanSend(void)
     // BP:ok, no prob since it is ignored in windows :)
     // Linux: select man page specifies (highest file descriptor + 1).
     // winsock.h: select(int, fd_set*, fd_set*, fd_set*, const struct timeval*)
+    // [WDJ] MACOS_DI had select( 1, ... ) but I do not think that was correct.
     stat = select(mysocket + 1,
 		  NULL,  // read fd
 		  /*IN,OUT*/ &write_set,  // write fd to watch
@@ -944,8 +958,12 @@ static SOCKET  UDP_Socket (void)
     // should not receive from self, but will set it up anyway.
     clientaddress[0].ip.sin_family      = AF_INET;
     clientaddress[0].ip.sin_port        = htons(sock_port);
+#ifdef MACOS_DI
+    clientaddress[0].ip.sin_addr.s_addr = inet_addr("127.0.0.1");
+#else
     clientaddress[0].ip.sin_addr.s_addr = INADDR_LOOPBACK;
                                   // inet_addr("127.0.0.1");
+#endif
 #ifdef NODE_ADDR_HASHING
     node_hash[0] = UDP_hashaddr( &clientaddress[0] );
 #endif
@@ -1105,6 +1123,7 @@ void SOCK_CloseSocket( void )
 
 void I_Shutdown_TCP_Driver(void)
 {
+    //A.J. possible bug fix. I_ShutdownTcpDriver never used in Mac version   
     if( mysocket!=-1 )
         SOCK_CloseSocket();
 
@@ -1286,7 +1305,11 @@ void I_Init_TCP_Network( void )
     
     // Initialize the driver.
     I_Init_TCP_Driver();
+#ifdef MACOS_DI
+    // [WDJ] Do not know why they did not use I_Shutdown_TCP_Driver.
+#else
     I_AddExitFunc (I_Shutdown_TCP_Driver);
+#endif
 
     if ( M_CheckParm ("-udpport") )
         sock_port = atoi(M_GetNextParm());
@@ -1298,7 +1321,12 @@ void I_Init_TCP_Network( void )
         // ??? and now ?
         // server on a big modem ??? 4*isdn
         net_bandwidth = 16000;
+
+#ifdef MACOS_DI
+        hardware_MAXPACKETLENGTH = 512;
+#else
         hardware_MAXPACKETLENGTH = INETPACKETLENGTH;
+#endif
     }
     else if( M_CheckParm ("-connect") )
     {

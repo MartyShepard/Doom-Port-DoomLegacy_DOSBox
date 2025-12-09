@@ -4334,3 +4334,10 @@ a missing legacy wad.  That has caused a new error, when legacy wad itself
 is not found.
 Fix AddFile to not segfault when filename is NULL.
 Fix previous patch to check for legacywad before trying to add it.
+
+*** W102_macos_tcp
+patchfile = w102_22_macos_tcp.patch
+- commit revision 1161
+Merged macos/i_tcp.c file into main i_tcp.c file.  There were very few
+differences and I do not know if they were significant, or just old.
+They have been recorded in i_tcp.c now, and the macos/i_tcp.c file deleted.
