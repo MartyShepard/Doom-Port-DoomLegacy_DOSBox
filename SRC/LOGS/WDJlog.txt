@@ -4230,3 +4230,9 @@ Return boolean from I_NetGet and I_NetSend, so that network situations
 can be handled without crashing the program.
 Reorganize some of the low level network functions.
 Comment the OS variations, network tests, and calls.
+
+*** W102_console_open
+patchfile = w102_11_console_open.patch
+- commit revision 1150
+Add a console_open state var.  Test it so that demos do not startup
+and steal the display when the console is open.

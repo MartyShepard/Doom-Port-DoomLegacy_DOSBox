@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: g_game.c 1150 2015-04-03 13:53:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -684,8 +684,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         turnright = turnright || joyxmove > 0;
         turnleft  = turnleft  || joyxmove < 0;
     }
-#endif		
-  
+#endif
     // strafing and yaw
     if (strafe)
     {
@@ -718,14 +717,6 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 	cmd->angleturn -= angleturn[tspeed];
       if (turnleft)
 	cmd->angleturn += angleturn[tspeed];
-#if defined( __DJGPP__ )
-//        if ( joyxmove && analogjoystickmove )
-//        {
-            //faB: JOYAXISRANGE should be 1023 ( divide by 1024 )
-//            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
-            //CONS_Printf ("joyxmove %d  angleturn %d\n", joyxmove, cmd->angleturn);
-//        }
-#endif				
     }
 
     // forwards/backwards, strafing
@@ -744,7 +735,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 #if defined( __DJGPP__ )					
     if ( joyymove && analogjoystickmove && !cv_joystickfreelook.value) 
         forward -= ( (joyymove * forwardmove[1]) >> 10 ); // ANALOG!	
-#endif			
+#endif
     //added:07-02-98: some people strafe left & right with mouse buttons
     if (G_KEY_DOWN(gc_straferight))
         side += sidemove[speed];
@@ -1935,7 +1926,6 @@ char  savegamename[MAX_WADPATH];
 // not SAVEGAME99, so net game saves are universally accepted.
 void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
 {
-		
 #ifdef SAVEGAMEDIR
 
     #if defined( __DJGPP__ )
@@ -1956,7 +1946,7 @@ void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
        int save_len = strlen(savegamename)-strlen(dosroot);
        if (strncmp (savegamename,dosroot,strlen(dosroot)) == 0)
        {
-           /* Entferne "dosroot" aus dem savegamename ("X:/xxx/") wegen mÃ¶glicher duplikate */
+           /* Entferne "dosroot" aus dem savegamename ("X:/xxx/") wegen möglicher duplikate */
            memmove (savegamename-strlen(dosroot),savegamename,strlen(savegamename));
 	   savegamename[save_len]='\0';					
        }
@@ -3028,12 +3018,14 @@ void G_DoPlayDemo (char *defdemoname)
         precache = false;
         G_InitNew (skill, G_BuildMapName(episode, map),true);
         precache = true;
-        CON_ToggleOff (); // will be done at the end of map command
     }
     else
+    {
         // wait map command in the demo
         gamestate = wipegamestate = GS_WAITINGPLAYERS;
+    }
 
+    CON_ToggleOff (); // may be also done at the end of map command
     return;
 
 broken_header:   

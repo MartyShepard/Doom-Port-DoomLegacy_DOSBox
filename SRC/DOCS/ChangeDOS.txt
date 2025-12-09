@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01150 ]: w102 console open
 [01149 ]: w102 net error
 [01148 ]: w102 sayto
 [01147 ]: w102 netfile

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1123 2014-06-23 18:14:51Z wesleyjohnson $
+// $Id: console.c 1150 2015-04-03 13:53:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -134,7 +134,8 @@ int      con_tick;       // console ticker for anim or blinking prompt cursor
                          // con_scrollup should use time (currenttime - lasttime)..
 
 boolean  consoletoggle;  // true when console key pushed, ticker will handle
-boolean  consoleready;   // console prompt is ready
+boolean  console_ready;  // console prompt is ready
+boolean  console_open = false;  // console is open
 
 int      con_destlines;  // vid lines used by console at final position
 int      con_curlines;   // vid lines currently used by console
@@ -169,11 +170,16 @@ int      con_scrollup;   // how many rows of text to scroll up (pgup/pgdn)
 int      con_lineowner[CON_MAXHUDLINES]; //In splitscreen, which player gets this line of text
                                          //0 or 1 is player 1, 2 is player 2
 
-// hold 32 last lines of input for history
-#define  CON_MAXPROMPTCHARS    256
 #define  CON_PROMPTCHAR        '>'
 
-char     inputlines[32][CON_MAXPROMPTCHARS]; // hold last 32 prompt lines
+// Hold last CON_MAX_LINEHIST prompt lines.
+// [WDJ] Power 2 only, due to INDEXMASK.
+#define  CON_MAX_LINEHIST    32
+#define  CON_MAX_LINEHIST_INDEXMASK  (CON_MAX_LINEHIST-1)
+#define  CON_MAX_LINELEN    256
+
+// First char is prompt.
+char     inputlines[CON_MAX_LINEHIST][CON_MAX_LINELEN];
 
 int      inputline;      // current input line number
 int      inputhist;      // line number of history input line to restore
@@ -241,7 +247,7 @@ static void CONS_Clear_f (void)
     con_scrollup = 0;
 }
 
-
+// Keys defined by the BIND command.
 static char *bindtable[NUMINPUTS];
 
 void CONS_Bind_f(void)
@@ -438,7 +444,7 @@ static void CON_InputInit (void)
 
     // prepare the first prompt line
     memset (inputlines,0,sizeof(inputlines));
-    for (i=0; i<32; i++)
+    for (i=0; i<CON_MAX_LINEHIST; i++)
         inputlines[i][0] = CON_PROMPTCHAR;
     inputline = 0;
     input_cx = 1;
@@ -535,7 +541,7 @@ void CON_ClearHUD (void)
 
 
 // Force console to move out immediately
-// note: con_ticker will set consoleready false
+// note: con_ticker will set console_ready false
 void CON_ToggleOff (void)
 {
     if (!con_destlines)
@@ -546,6 +552,7 @@ void CON_ToggleOff (void)
     CON_ClearHUD ();
     con_forcepic = 0;
     con_clipviewtop = -1;       //remove console clipping of view
+    console_open = false;  // instant off
 }
 
 
@@ -567,9 +574,9 @@ void CON_Ticker (void)
     {
         consoletoggle = false;
 
-        // toggle off console
         if (con_destlines > 0)
         {
+	    // toggle off console
             con_destlines = 0;
             CON_ClearHUD ();
         }
@@ -589,7 +596,7 @@ void CON_Ticker (void)
 
     // console movement
     if (con_destlines!=con_curlines)
-        CON_MoveConsole ();
+        CON_MoveConsole ();  // update con_curlines
 
 
     // clip the view, so that the part under the console is not drawn
@@ -606,10 +613,10 @@ void CON_Ticker (void)
 
     // check if console ready for prompt
 //    if ((con_curlines==con_destlines) && (con_destlines>=20))
-    if (con_destlines>=20)
-        consoleready = true;
-    else
-        consoleready = false;
+    console_ready = (con_destlines >= 20);
+
+    // To detect console.
+    console_open = ((con_destlines + con_curlines) != 0);
 
     // make overlay messages disappear after a while
     for (i=0 ; i<con_hudlines; i++)
@@ -631,6 +638,12 @@ static int     comskips,varskips;
 
     char *cmd = NULL;
 
+    // [WDJ]  The compiler re-optimizes the returns.  Collecting them
+    // into common return true, and return false, has no net effect.
+    //  
+    // Return true: eat the key
+    //        false: reject the key
+    
     if(chat_on)
         return false; 
 
@@ -640,22 +653,16 @@ static int     comskips,varskips;
 
     int key = ev->data1;
 
-//
-//  check for console toggle key
-//
+    // Detect console activate key (user definable).
     if (key == gamecontrol[gc_console][0] ||
-        key == gamecontrol[gc_console][1] )
-    {
-        consoletoggle = true;
-        return true;
-    }
+        key == gamecontrol[gc_console][1] )   goto toggle_console;
 
-//
-//  check other keys only if console prompt is active
-//
-    if (!consoleready && key < NUMINPUTS) // metzgermeister: boundary check !!
+    if (! console_ready)
     {
-        if(bindtable[key])
+        // Console prompt not active.  This is the path during game play.
+        // Check game playing keys defined by BIND command.
+	// metzgermeister: boundary check !!
+        if((key < NUMINPUTS) && bindtable[key])
         {
             COM_BufAddText (bindtable[key]);
             COM_BufAddText ("\n");
@@ -664,16 +671,17 @@ static int     comskips,varskips;
         return false;
     }
 
+    // Console prompt active
+    // [WDJ] Trying to use a switch stmt, increases the size for unknown
+    // reasons related to optimization.  It uses extra tests to gain speed.
+    // It optimizes the repeated tests of the key better than the switch.
+
     // eat shift only if console active
     if (key == KEY_RSHIFT || key == KEY_LSHIFT)
       return true;
 
     // escape key toggle off console
-    if (key == KEY_ESCAPE)
-    {
-        consoletoggle = true;
-        return true;
-    }
+    if (key == KEY_ESCAPE)   goto toggle_console;
 
     // command completion forward (tab) and backward (shift-tab)
     if (key == KEY_TAB)
@@ -694,6 +702,7 @@ static int     comskips,varskips;
         }
         else
         {
+	    // comskips < 0  indicates var name completion
             if (shiftdown)
             {
                 if (comskips<0)
@@ -718,15 +727,18 @@ static int     comskips,varskips;
         {
             cmd = COM_CompleteCommand (completion, comskips);
             if (!cmd)
+	    {
+	        // No command, try var completion.
                 // dirty:make sure if comskips is zero, to have a neg value
                 comskips = -(comskips+1);
+	    }
         }
         if (comskips<0)
             cmd = CV_CompleteVar (completion, varskips);
 
         if (cmd)
         {
-            memset(inputlines[inputline]+1,0,CON_MAXPROMPTCHARS-1);
+            memset(inputlines[inputline]+1,0,CON_MAX_LINELEN-1);
             strcpy (inputlines[inputline]+1, cmd);
             input_cx = strlen(cmd)+1;
             inputlines[inputline][input_cx] = ' ';
@@ -735,6 +747,7 @@ static int     comskips,varskips;
         }
         else
         {
+	    // No command, no var completion.  Backup off this candidate.
             if (comskips>0)
                 comskips--;
             else
@@ -752,7 +765,6 @@ static int     comskips,varskips;
             con_scrollup++;
         return true;
     }
-    else
     if (key == KEY_PGDN)
     {
         if (con_scrollup>0)
@@ -766,7 +778,6 @@ static int     comskips,varskips;
         con_scrollup = (con_totallines-((con_curlines-16)>>3));
         return true;
     }
-    else
     // most recent text in buffer
     if (key == KEY_END)
     {
@@ -778,7 +789,7 @@ static int     comskips,varskips;
     if (key == KEY_ENTER)
     {
         if (input_cx<2)
-            return true;
+            return true;  // nothing significant
 
         // push the command
         COM_BufAddText (inputlines[inputline]+1);
@@ -786,10 +797,11 @@ static int     comskips,varskips;
 
         CONS_Printf("%s\n",inputlines[inputline]);
 
-        inputline = (inputline+1) & 31;
+        // Advance to next inputline.
+        inputline = (inputline+1) & CON_MAX_LINEHIST_INDEXMASK;
         inputhist = inputline;
 
-        memset(inputlines[inputline],0,CON_MAXPROMPTCHARS);
+        memset(inputlines[inputline],0,CON_MAX_LINELEN);
         inputlines[inputline][0] = CON_PROMPTCHAR;
         input_cx = 1;
 
@@ -799,7 +811,7 @@ static int     comskips,varskips;
     // backspace command prompt
     if (key == KEY_BACKSPACE)
     {
-        if (input_cx>1)
+        if (input_cx>1)  // back to prompt
         {
             input_cx--;
             inputlines[inputline][input_cx] = 0;
@@ -812,15 +824,15 @@ static int     comskips,varskips;
     {
         // copy one of the previous inputlines to the current
         do{
-            inputhist = (inputhist - 1) & 31;   // cycle back
+            inputhist = (inputhist - 1) & CON_MAX_LINEHIST_INDEXMASK; // cycle back
         }while (inputhist!=inputline && !inputlines[inputhist][1]);
 
         // stop at the last history input line, which is the
         // current line + 1 because we cycle through the 32 input lines
         if (inputhist==inputline)
-            inputhist = (inputline + 1) & 31;
+            inputhist = (inputline + 1) & CON_MAX_LINEHIST_INDEXMASK;
 
-        memcpy (inputlines[inputline],inputlines[inputhist],CON_MAXPROMPTCHARS);
+        memcpy (inputlines[inputline],inputlines[inputhist],CON_MAX_LINELEN);
         input_cx = strlen(inputlines[inputline]);
 
         return true;
@@ -830,11 +842,12 @@ static int     comskips,varskips;
     if (key == KEY_DOWNARROW)
     {
         if (inputhist==inputline) return true;
+
         do{
-            inputhist = (inputhist + 1) & 31;
+            inputhist = (inputhist + 1) & CON_MAX_LINEHIST_INDEXMASK;
         } while (inputhist!=inputline && !inputlines[inputhist][1]);
 
-        memset (inputlines[inputline],0,CON_MAXPROMPTCHARS);
+        memset (inputlines[inputline],0,CON_MAX_LINELEN);
 
         // back to currentline
         if (inputhist==inputline)
@@ -869,17 +882,21 @@ static int     comskips,varskips;
       return false;
 
     // add key to cmd line here
-    if (input_cx<CON_MAXPROMPTCHARS)
+    if (input_cx<CON_MAX_LINELEN)
     {
         // make sure letters are lowercase for commands & cvars
         if (c >= 'A' && c <= 'Z')
             c = c + 'a' - 'A';
 
         inputlines[inputline][input_cx] = c;
-        inputlines[inputline][input_cx+1] = 0;
         input_cx++;
+        inputlines[inputline][input_cx] = 0;
     }
 
+    return true;
+ 
+toggle_console:
+    consoletoggle = true;  // signal to CON_Ticker
     return true;
 }
 

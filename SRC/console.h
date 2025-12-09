@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: console.h 1068 2013-12-14 00:24:57Z wesleyjohnson $
+// $Id: console.h 1150 2015-04-03 13:53:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -46,6 +46,8 @@ void CON_Register (void);
 void CON_VideoInit (void);
 
 boolean CON_Responder (event_t *ev);
+
+extern boolean console_open;  // console is open, no demos
 
 // set true when screen size has changed, to adapt console
 extern boolean con_recalc;
