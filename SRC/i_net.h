@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1145 2015-04-03 13:47:13Z wesleyjohnson $
+// $Id: i_net.h 1149 2015-04-03 13:52:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,7 +53,7 @@
 #define INETPACKETLENGTH 512 // For use on the internet
 
 extern uint16_t  hardware_MAXPACKETLENGTH;
-extern uint32_t  net_bandwidth; // in byte/s
+extern uint32_t  net_bandwidth; // in byte/sec
 
 // [WDJ] Can simplify doomcom when drop support for DOS net.
 // Fixed as stdint sizes.
@@ -111,14 +111,44 @@ typedef struct
 extern doomcom_t *doomcom;
 // Called by D_DoomMain.
 
-// to be defined by the network driver
-extern void    (*I_NetGet) (void);                // return packet in doomcom struct
-extern void    (*I_NetSend) (void);               // send packet within doomcom struct
-extern boolean (*I_NetCanSend) (void);            // ask to driver if all is ok to send data now
-extern void    (*I_NetFreeNodenum) (int nodenum); // close a connection 
-extern int     (*I_NetMakeNode) (char *address);  // open a connection with specified address
-extern boolean (*I_NetOpenSocket) (void);         // opend all connections
-extern void    (*I_NetCloseSocket) (void);        // close all connections no more allow geting any packet 
+// Report network errors with global because so many callers ignore it,
+// and it is difficult to pass back up through so many layers.
+// This also allows for simpler error returns in the functions.
+typedef enum {
+   NE_success = 0,
+   NE_empty = -1,
+   // some doomatic errors
+   NE_congestion = -401,
+   NE_network_unreachable = -402,
+   NE_node_unconnected = -403,
+   NE_nodes_exhausted = -404,
+   NE_not_netgame = -405,
+   NE_fail = -499
+} network_error_e;
+
+// This is only set on error, it does not indicate success.
+// If a test of success is necessary, clear it before the network call.
+extern network_error_e  net_error;
+
+// Indirections, to be instantiated by the network driver
+// Return packet into doomcom struct.
+// Return true when got packet.  Error in net_error.
+extern boolean (*I_NetGet) (void);
+// Send packet from within doomcom struct.
+// Return true when packet has been sent.  Error in net_error.
+extern boolean (*I_NetSend) (void);
+// Return true if network is ready to send.
+extern boolean (*I_NetCanSend) (void);
+// Close the net node connection.
+extern void    (*I_NetFreeNode) (int nodenum);
+// Open a net node connection with a specified address.
+// Return the net node number, or network_error_e.  Error in net_error.
+extern int     (*I_NetMakeNode) (char *address);
+// Open the network socket.
+// Return true if the socket is open.
+extern boolean (*I_NetOpenSocket) (void);
+// Close the network socket, and all net node connections.
+extern void    (*I_NetCloseSocket) (void);
 
 boolean I_InitNetwork (void);
 

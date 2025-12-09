@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1145 2015-04-03 13:47:13Z wesleyjohnson $
+// $Id: i_tcp.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -237,9 +237,6 @@ typedef struct sockaddr_ipx {
 #  undef errno
 #endif
 #  define errno             h_errno // some very strange things happen when not use h_error ?!?
-#  define EWOULDBLOCK   WSAEWOULDBLOCK
-#  define EMSGSIZE      WSAEMSGSIZE
-#  define ECONNREFUSED  WSAECONNREFUSED
 #else // linux or djgpp
 #  define  SOCKET int
 #  define  INVALID_SOCKET -1
@@ -353,130 +350,276 @@ boolean UDP_cmpaddr(mysockaddr_t *a,mysockaddr_t *b)
     return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr && a->ip.sin_port == b->ip.sin_port);
 }
 
-boolean (*SOCK_cmpaddr) (mysockaddr_t *a,mysockaddr_t *b);
+// Indirect function for net address compare.
+boolean (*SOCK_cmpaddr) (mysockaddr_t *a, mysockaddr_t *b);
 
 
-static int getfreenode( void )
+// Return net node.  When nodes full, return 255.
+static byte get_freenode( void )
 {
-    int j;
+    byte nn;
 
-    for(j=0;j<MAXNETNODES;j++)
-        if( !nodeconnected[j] )
+    for( nn=1; nn<MAXNETNODES; nn++)  // self is not free
+    {
+        if( !nodeconnected[nn] )
         {
-            nodeconnected[j]=true;
-            return j;
+            nodeconnected[nn]=true;
+            return nn;
         }
-    return -1;
+    }
+    return 255;
 }
 
-//Hurdler: something is wrong with Robert's patch and win2k
-void SOCK_Get(void)
+// Function for I_NetFreeNode().
+void SOCK_FreeNode(int nnode)
 {
-    int           i,j,c;
+    // can't disconnect to self :)
+    if( nnode == 0 )
+        return;
+
+#ifdef DEBUGFILE
+    if( debugfile )
+    {
+        fprintf(debugfile,"Free node %d (%s)\n",
+		nnode, SOCK_AddrToStr(&clientaddress[nnode]));
+    }
+#endif
+
+    // Disconnect.
+    nodeconnected[nnode]=false;
+
+    // put invalid address
+    memset(&clientaddress[nnode], 0, sizeof(clientaddress[nnode]));
+}
+
+
+//Hurdler: something is wrong with Robert's patch and win2k
+// Function for I_NetGet().
+// Return packet into doomcom struct.
+// Return true when got packet.  Error in net_error.
+boolean  SOCK_Get(void)
+{
+    byte  nnode;
+    int   rcnt;  // data bytes received
     socklen_t     fromlen;
     mysockaddr_t  fromaddress;
 
-    fromlen = sizeof(fromaddress);
-    c = recvfrom (mysocket, (char *)&doomcom->data, MAXPACKETLENGTH, 0,
-                  (struct sockaddr *)&fromaddress, &fromlen );
-    if (c == -1 )
-    {
-        if ( (errno==EWOULDBLOCK) || 
-             (errno==EMSGSIZE)    || 
-             (errno==ECONNREFUSED) )
-        {
-             doomcom->remotenode = -1;      // no packet
-             return;
-        }
-        I_Error ("SOCK_Get: %s",strerror(errno));
-    }
+    fromlen = sizeof(fromaddress);  // num bytes of addr for OUT
+    // fromaddress: OUT the actual address.
+    // fromlen: IN sizeof fromaddress, OUT the actual length of the address.
+#ifdef LINUX
+    rcnt = recvfrom(mysocket,
+		    &doomcom->data,  // packet
+		    MAXPACKETLENGTH,  // packet length
+		    0,  // flags
+                    /*OUT*/ (struct sockaddr *)&fromaddress,  // net address
+		    /*IN,OUT*/ &fromlen );  // net address length
+#else
+    // winsock.h  recvfrom(SOCKET, char*, int, int, struct sockaddr*, int*)
+    rcnt = recvfrom(mysocket,
+		    // Some other port requires (char*), undocumented.
+		    (char *)&doomcom->data,
+		    MAXPACKETLENGTH,  // packet length
+		    0,  // flags
+                    /*OUT*/ (struct sockaddr *)&fromaddress,  // net address
+		    /*IN,OUT*/ &fromlen );  // net address length
+#endif
+    if(rcnt < 0)  goto recv_err;
     
 //    DEBFILE(va("Get from %s\n",SOCK_AddrToStr(&fromaddress)));
 
     // find remote node number
-    for (i=0 ; i<MAXNETNODES ; i++)
-        if ( SOCK_cmpaddr(&fromaddress,&(clientaddress[i])) )
-        {
-            doomcom->remotenode = i;      // good packet from a game player
-            doomcom->datalength = c;
-            return;
-        }
-
-    // not found
-    // find a free slot
-    j=getfreenode();
-    if(j>0)
+    for (nnode=0; nnode<MAXNETNODES; nnode++)
     {
-        memcpy(&clientaddress[j],&fromaddress,fromlen);
-#ifdef DEBUGFILE
-        if( debugfile )
-            fprintf(debugfile,"New node detected : node:%d address:%s\n",j,SOCK_AddrToStr(&clientaddress[j]));
-#endif
-        doomcom->remotenode = j; // good packet from a game player
-        doomcom->datalength = c;
-        return;
+        if( SOCK_cmpaddr(&fromaddress, &(clientaddress[nnode])) )
+	     goto return_node;  // found match
     }
 
+    // Net node not found.
+    nnode = get_freenode();  // Find a free node.
+    if(nnode >= MAXNETNODES)  goto no_nodes;
+
+    // Save the addr of the net node.
+    memcpy(&clientaddress[nnode], &fromaddress, fromlen);
 #ifdef DEBUGFILE
-    // node table full
     if( debugfile )
-        fprintf(debugfile,"New node detected : No more free slote\n");
+    {
+        fprintf(debugfile,"New node detected: node:%d address:%s\n",
+		nnode, SOCK_AddrToStr(&clientaddress[nnode]));
+    }
 #endif
 
-    doomcom->remotenode = -1;               // no packet
+return_node:
+    doomcom->remotenode = nnode; // good packet from a game player
+    doomcom->datalength = rcnt;
+    return true;
+
+    // Rare errors
+recv_err:
+    // Send failed, determine the error.
+#ifdef __WIN32__
+    if(errno == WSAEWOULDBLOCK || errno == WSATRY_AGAIN )  // no message
+#else
+    if(errno == EWOULDBLOCK || errno == EAGAIN)   // no message
+#endif
+    {
+        net_error = NE_empty;
+        goto no_packet;
+    }
+
+#ifdef __WIN32__
+    if( (errno == WSAEMSGSIZE)   // message too large
+	|| (errno == WSAECONNREFUSED) )  // connection refused
+#else
+    if( (errno == EMSGSIZE)   // message too large
+	|| (errno == ECONNREFUSED) )  // connection refused
+#endif
+    {
+        net_error = NE_fail;
+        goto no_packet;
+    }
+   
+    I_SoftError("SOCK_Get: %s\n", strerror(errno));
+
+#ifdef __WIN32__
+    if( errno == WSAENETUNREACH || errno == WSAEFAULT || errno == WSAEBADF )
+#else
+    if( errno == ENETUNREACH || errno == EFAULT || errno == EBADF )
+#endif   
+    {
+        // network unreachable
+        net_error = NE_network_unreachable; // allows test net without crashing
+        goto no_packet;
+    }
+    // Many other errors.
+    I_Error("SOCK_Get\n");
+ 
+no_nodes:
+ #ifdef DEBUGFILE
+    // node table full
+    if( debugfile )
+        fprintf(debugfile,"SOCK_Get: Free nodes all used.\n");
+ #endif
+    net_error = NE_nodes_exhausted;
+    goto no_packet;
+   
+no_packet:
+    doomcom->remotenode = -1;  // no packet
+    return false;
 }
 
-fd_set set;
 
-// check if we can send (do not go over the buffer)
+static fd_set  write_set;  // Linux: modified by select
+
+// Function for I_NetCanSend().
+// Check if we can send (to save a buffer transfer).
 boolean SOCK_CanSend(void)
 {
-static struct timeval timeval_for_select={0,0};
+    // [WDJ] Linux: select modifies timeval, so it must be init with each call.
+    struct timeval timeval_0 = {0,0};  // immediate
+    int stat;
+
+    // [WDJ] Linux: write_set is modified by the select call, so it must
+    // be init each call.  Smaller code with write_set static global.
+    FD_ZERO(&write_set);
+    FD_SET(mysocket, &write_set);
     // huh Boris, are you sure about the 1th argument:
     // it is the highest-numbered descriptor in any of the three
     // sets, plus 1 (I suppose mysocket + 1).
     // BP:ok, no prob since it is ignored in windows :)
-    return select(mysocket + 1,NULL,&set,NULL,&timeval_for_select);
+    // Linux: select man page specifies (highest file descriptor + 1).
+    // winsock.h: select(int, fd_set*, fd_set*, fd_set*, const struct timeval*)
+    stat = select(mysocket + 1,
+		  NULL,  // read fd
+		  /*IN,OUT*/ &write_set,  // write fd to watch
+		  NULL,  // exceptions
+		  /*IN,OUT*/ &timeval_0   // timeout
+		 );
+    return ( stat > 0 );
 }
 
-void SOCK_Send(void)
+
+// Function for I_NetSend().
+// Send packet from within doomcom struct.
+// Return true when packet has been sent.  Error in net_error.
+boolean  SOCK_Send(void)
 {
-    int         c;
+    byte  nnode = doomcom->remotenode;
+    int  cnt;  // chars sent
                          
-    if( !nodeconnected[doomcom->remotenode] )
-        return;
+    if( !nodeconnected[doomcom->remotenode] )  goto node_unconnected;
 
-    c = sendto (mysocket , (char *)&doomcom->data, doomcom->datalength
-                ,0,(struct sockaddr *)&clientaddress[doomcom->remotenode]
-                ,sizeof(struct sockaddr));
-
-//    DEBFILE(va("send to %s\n",SOCK_AddrToStr(&clientaddress[doomcom->remotenode])));
-    // ECONNREFUSED was send by linux port
-    if (c == -1 && errno!=ECONNREFUSED && errno!=EWOULDBLOCK)
-        I_Error ("SOCK_Send sending to node %d (%s): %s",doomcom->remotenode,SOCK_AddrToStr(&clientaddress[doomcom->remotenode]),strerror(errno));
-}
-
-void SOCK_FreeNodenum(int numnode)
-{
-    // can't disconnect to self :)
-    if(!numnode)
-        return;
-
-#ifdef DEBUGFILE
-    if( debugfile )
-        fprintf(debugfile,"Free node %d (%s)\n",numnode,SOCK_AddrToStr(&clientaddress[numnode]));
+    // sockaddr is defined in sys/socket.h
+#ifdef LINUX
+    cnt = sendto(mysocket,
+		&doomcom->data, doomcom->datalength,  // packet
+                0,  // flags
+		(struct sockaddr *)&clientaddress[nnode],  // net address
+                sizeof(struct sockaddr));  // net address length
+#else
+    // winsock.h: sendto(SOCKET, char*, int, int, struct sockaddr*, int)
+    cnt = sendto(mysocket,
+		// Some other port requires (char*), undocumented.
+		(char *)&doomcom->data, doomcom->datalength,  // packet
+                0,  // flags
+		(struct sockaddr *)&clientaddress[nnode],  // net address
+                sizeof(struct sockaddr));  // net address length
 #endif
 
-    nodeconnected[numnode]=false;
+//    DEBFILE(va("send to %s\n",SOCK_AddrToStr(&clientaddress[doomcom->remotenode])));
+    if( cnt < 0 )  goto send_err;
+    return true;
+   
+    // Rare error.
+send_err:
+//  if( errno == ENOBUFS )  // out of buffer space
+#ifdef __WIN32__
+    if( errno == WSAEWOULDBLOCK || errno == WSATRY_AGAIN )
+#else
+    // Linux
+    // ECONNREFUSED can be got in linux port.
+    if( errno == ECONNREFUSED || errno == EWOULDBLOCK || errno == EAGAIN )
+#endif
+    {
+        net_error = NE_congestion;  // silent
+        goto err_return;
+    }
 
-    // put invalid address
-    memset(&clientaddress[numnode],0,sizeof(clientaddress[numnode]));
+//        printf( "errno= %d  ", errno );
+    I_SoftError("SOCK_Send to node %d (%s): %s\n",
+		 nnode,
+		 SOCK_AddrToStr(&clientaddress[nnode]),
+		 strerror(errno));
+
+//#if defined(WIN32) && defined(__MINGW32__)
+#ifdef __WIN32__
+    if( errno == WSAENETUNREACH || errno == WSAEFAULT || errno == WSAEBADF )
+#else
+    // Linux
+    if( errno == ENETUNREACH || errno == EFAULT || errno == EBADF )
+#endif
+    {
+        // network unreachable
+        net_error = NE_network_unreachable; // allows test net without crashing
+        goto err_return;
+    }
+    // Many other errors.
+    I_Error("SOCK_Send\n");
+
+node_unconnected:
+    net_error = NE_node_unconnected;
+    goto err_return;
+
+err_return:
+    return false;
 }
+
+
 
 //
 // UDPsocket
 //
-SOCKET UDP_Socket (void)
+static SOCKET  UDP_Socket (void)
 {
     SOCKET s;
     struct sockaddr_in  address;
@@ -485,13 +628,17 @@ SOCKET UDP_Socket (void)
 #else
     int    trueval = true;
 #endif
-    int i;
-    socklen_t j;
+    int optval;
+    socklen_t optlen;
+    int stat;
 
     // allocate a socket
     s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s<0 || s==INVALID_SOCKET)
-        I_Error ("Udp_socket: Can't create socket: %s",strerror(errno));
+    {
+        I_SoftError("UDP_socket: Create socket failed: %s\n", strerror(errno));
+        goto no_socket;
+    }
 
     memset (&address, 0, sizeof(address));
     address.sin_family = AF_INET;
@@ -500,7 +647,7 @@ SOCKET UDP_Socket (void)
     //Hurdler: I'd like to put a server and a client on the same computer
     //BP: in fact for client we can use any free port we want i have read 
     //    in some doc that connect in udp can do it for us...
-    if ( (i = M_CheckParm ("-clientport"))!=0 )
+    if( M_CheckParm ("-clientport") )
     {
         if( !M_IsNextParm() )
             I_Error("syntax : -clientport <portnum>");
@@ -509,26 +656,65 @@ SOCKET UDP_Socket (void)
     else
         address.sin_port = htons(sock_port);
 
-    if (bind (s, (struct sockaddr *)&address, sizeof(address)) == -1)
-        I_Error ("UDP_Bind: %s", strerror(errno));
+    stat = bind (s, (struct sockaddr *)&address, sizeof(address) );
+    if (stat == -1)
+    {
+        I_SoftError("UDP_Socket: Bind failed: %s\n", strerror(errno));
+        goto no_socket;
+    }
 
     // make it non blocking
     ioctl (s, FIONBIO, &trueval);
 
     // make it broadcastable
-    setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&trueval, sizeof(trueval));
+#ifdef LINUX
+    stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
+		      &trueval,  // option value
+		      sizeof(trueval));  // length of value
+#else
+    // winsock.h  setsockopt(SOCKET, int, int, const char*, int)
+    stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
+		      // Some other port requires (char*), undocumented.
+		      (char *)&trueval,  // option value
+		      sizeof(trueval));  // length of value
+#endif
 
-    j=4;
-    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, &j); // FIXME: so an int value is written to a (char *); portability!!!!!!!
-    CONS_Printf("Network system buffer : %dKb\n",i>>10);
+    // Set Network receive buffer size.
+    optlen=sizeof(optval);  // Linux: gets modified
+    // optval: gets the value of the option
+    // optlen: gets the actual length of the option
+#ifdef LINUX
+    stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
+		      /* OUT */ &optval,  // option value
+		      /* IN,OUT */ &optlen);  // available length
+#else
+    // FIXME: so an int value is written to a (char *); portability!!!!!!!
+    // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
+    stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
+		      // Some other port requires (char*), undocumented.
+		      /* OUT */ (char *)&optval,  // option value
+		      /* IN,OUT */ &optlen);  // available length
+#endif
+    CONS_Printf("Network receive buffer: %dKb\n", optval>>10);
 
-    if(i < 64<<10) // 64k
+    if(optval < (64<<10)) // 64k
     {
-        i=64<<10;
-        if( setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, sizeof(i))!=0 )
-            CONS_Printf("Can't set buffer length to 64k, file transfer will be bad\n");
+        optval = (64<<10);
+#ifdef LINUX
+        stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
+			  &optval,
+			  sizeof(optval));
+#else
+        // winsock.h  setsockopt(SOCKET, int, int, const char*, int)
+        stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
+			  // Some other port requires (char*), undocumented.
+			  (char *)&optval,
+			  sizeof(optval));
+#endif
+        if( stat < 0 )
+            CONS_Printf("Network receive buffer: Failed to set buffer to 64k.\n");
         else
-            CONS_Printf("Network system buffer set to : %d\n",i);
+            CONS_Printf("Network receive buffer: set to %dKb\n", optval>>10);
     }
 
     // ip + udp
@@ -547,10 +733,14 @@ SOCKET UDP_Socket (void)
 
     SOCK_cmpaddr=UDP_cmpaddr;
     return s;
+   
+no_socket:
+    return -1;
 }
 
+
 #ifdef USE_IPX
-SOCKET IPX_Socket (void)
+static SOCKET  IPX_Socket (void)
 {
     SOCKET s;
     SOCKADDR_IPX  address;
@@ -559,13 +749,17 @@ SOCKET IPX_Socket (void)
 #else
     int    trueval = true;
 #endif
-    int    i;
-    socklen_t j;
+    int    optval;
+    socklen_t optlen;
+    int  stat, i;
 
     // allocate a socket
     s = socket (AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
     if (s<0 || s==INVALID_SOCKET)
-        I_Error ("IPX_socket: Can't create socket: %s",strerror(errno));
+    {
+        I_SoftError("IPX_socket: Create socket failed: %s\n", strerror(errno));
+        goto no_ipx;
+    }
 
     memset (&address, 0, sizeof(address));
 #ifdef LINUX
@@ -575,26 +769,57 @@ SOCKET IPX_Socket (void)
     address.sa_family = AF_IPX;
     address.sa_socket = htons(sock_port);
 #endif // linux
-    if (bind (s, (struct sockaddr *)&address, sizeof(address)) == -1)
-        I_Error ("IPX_Bind: %s", strerror(errno));
+    stat = bind (s, (struct sockaddr *)&address, sizeof(address));
+    if( stat == -1)
+    {
+        I_SoftError("IPX_Socket: Bind failed: %s\n", strerror(errno));
+        goto no_ipx;
+    }
 
     // make it non blocking
     ioctl (s, FIONBIO, &trueval);
 
     // make it broadcastable
-    setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&trueval, sizeof(trueval));
+#ifdef LINUX
+    stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
+		      &trueval,  // option value
+		      sizeof(trueval));
+#else
+    // winsock.h:  setsockopt(SOCKET, int, int, const char*, int)
+    stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
+		      // Some other port requires (char*), undocumented.
+		      (char *)&trueval,  // option value
+		      sizeof(trueval));
+#endif
 
-    // set receive buffer to 64Kb
-    j=4;
-    getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, &j);
-    CONS_Printf("Network system receive buffer : %d\n",i);
-    if(i<128<<10)
+    // Set Network receive buffer size.
+    optlen=sizeof(optval);  // gets modified
+    // optval: gets the value of the option
+    // optlen: gets the actual length of the option
+#ifdef LINUX
+    stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
+		      /* OUT */ &optval,  // option value
+		      /* IN,OUT */ &optlen);  // available length
+#else
+    // FIXME: so an int value is written to a (char *); portability!!!!!!!
+    // winsock.h  getsockopt(SOCKET, int, int, char*, int*)
+    stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
+		      // Some other port requires (char*), undocumented.
+		      /* OUT */ (char *)&optval,  // option value
+		      /* IN,OUT */ &optlen);  // available length
+#endif
+    // [WDJ] Had remnants of 64K.  Set to 128K.
+    CONS_Printf("Network receive buffer: %dKb\n", optval>>10);
+    if(optval < (128<<10)) // 128K
     {
-        i=64<<10;
-        if( setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&i, sizeof(i))!=0 )
-            CONS_Printf("Can't set receive buffer length to 64k, file transfer will be bad\n");
+        optval = (128<<10);
+        stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
+			  (char *)&optval,
+			  sizeof(optval));
+        if( stat < 0 )
+            CONS_Printf("Network receive buffer: Failed to set buffer to 128k.\n");
         else
-            CONS_Printf("Network system receive buffer set to : %d\n",i);
+            CONS_Printf("Network receive buffer: set to %dKb\n", optval>>10);
     }
 
     // ipx header
@@ -622,8 +847,12 @@ SOCKET IPX_Socket (void)
     for(i=0;i<6;i++)
        clientaddress[BROADCASTADDR].ipx.sa_nodenum[i] = (byte)0xFF;
 #endif // linux
+
     SOCK_cmpaddr=IPX_cmpaddr;
     return s;
+
+no_ipx:
+    return -1;
 }
 #endif // USE_IPX
 
@@ -649,14 +878,17 @@ void I_InitTcpDriver(void)
 }
 
 
+// Function for I_NetCloseSocket().
 void SOCK_CloseSocket( void )
 {
     if( mysocket>=0 )
     {
         //if( server )
         //    UnregisterServer(); 
+#ifdef __DJGPP__
 // quick fix bug in libsocket 0.7.4 beta 4 onder winsock 1.1 (win95)
-#ifndef __DJGPP__
+#else
+        // Not DJGPP
         close(mysocket);
 #endif
         mysocket = -1;
@@ -681,31 +913,56 @@ void I_ShutdownTcpDriver(void)
 }
 
 
+// Function for I_NetMakeNode().
+// Called by CL_UpdateServerList, Command_connect, mserv:open_UDP_Socket
+// Return the net node number, or network_error_e.
 int SOCK_NetMakeNode (char *hostname)
 {
     int newnode;
-    char *localhostname = strdup(hostname);
+    mysockaddr_t  newaddr;
+    char *localhostname;  // owns string
     char *portchar;
     int portnum = htons(sock_port);
 
+    // [WDJ] From command line can get "192.168.127.34:5234:"
+    // From console only get ""192.168.127.34", the port portion is stripped.
+    localhostname = strdup(hostname);
+    //GenPrintf(EMSG_debug, "Parm localhostname=%s\n", localhostname );
+#define PARSE_LOCALHOSTNAME
+#ifdef PARSE_LOCALHOSTNAME
+    // Split into ip address and port.
+    char * st = localhostname;
+    strtok(st,":");  // overwrite the colon with a 0.
+    portchar = strtok(NULL,":");
+    if( portchar )
+        portnum = htons(atoi(portchar));
+#else
+    // OLD code duplicates effort.
     // retrieve portnum from address !
     strtok(localhostname,":");
     portchar = strtok(NULL,":");
     if( portchar )
         portnum = htons(atoi(portchar));
     free(localhostname);
+#endif
+    //GenPrintf(EMSG_debug, "  hostname=%s  portchar=%s\n", localhostname, portchar );
 
     // server address only in ip
 #ifdef USE_IPX
     if(ipx)
     {
         // ipx only
+#ifdef PARSE_LOCALHOSTNAME
+        free(localhostname);
+#endif
         return BROADCASTADDR;
     }
 #endif
+
     // tcp/ip
-    {
-        struct  hostent *hostentry;      // host information entry
+#ifdef PARSE_LOCALHOSTNAME
+    // Previous operation on localhostname already parsed out the ip addr.
+#else
         char            *t;
 
          // remove the port in the hostname as we've it already
@@ -713,35 +970,54 @@ int SOCK_NetMakeNode (char *hostname)
         while ((*t != ':') && (*t != '\0'))
             t++;
         *t = '\0';
+#endif
+    //GenPrintf(EMSG_debug, "  ip hostname=%s\n", localhostname );
 
-        newnode = getfreenode();
-        if( newnode == -1 )
-            return -1;
-        // find ip of the server
-        clientaddress[newnode].ip.sin_family      = AF_INET;
-        clientaddress[newnode].ip.sin_port        = portnum;
-        clientaddress[newnode].ip.sin_addr.s_addr = inet_addr(localhostname);
+    // Too early, but avoids resolving names we cannot use.
+    newnode = get_freenode();
+    if( newnode >= MAXNETNODES )
+        goto no_nodes;  // out of nodes
 
-        if(clientaddress[newnode].ip.sin_addr.s_addr==INADDR_NONE) // not a ip ask to the dns
+    // Find the IP of the server.
+    // [WDJ] This cannot handle addr 255.255.255.255 which == INADDR_NONE.
+    newaddr.ip.sin_addr.s_addr = inet_addr(localhostname);
+    if(newaddr.ip.sin_addr.s_addr==INADDR_NONE) // not a ip, ask the dns
+    {
+        struct hostent * hostentry;      // host information entry
+        CONS_Printf("Resolving %s\n",localhostname);
+        hostentry = gethostbyname (localhostname);
+        if (!hostentry)
         {
-            CONS_Printf("Resolving %s\n",localhostname);
-            hostentry = gethostbyname (localhostname);
-            if (!hostentry)
-            {
-                CONS_Printf ("%s unknow\n", localhostname);
-                I_NetFreeNodenum(newnode);
-                free(localhostname);
-                return -1;
-            }
-            clientaddress[newnode].ip.sin_addr.s_addr = *(int *)hostentry->h_addr_list[0];
-        }
-        CONS_Printf("Resolved %s\n",inet_ntoa(*(struct in_addr *)&clientaddress[newnode].ip.sin_addr.s_addr));
-        free(localhostname);
-
+	    CONS_Printf ("%s unknown\n", localhostname);
+	    I_NetFreeNode(newnode);  // release the newnode
+	    goto abort_makenode;
+	}
+        newaddr.ip.sin_addr.s_addr = *(int *)hostentry->h_addr_list[0];
     }
+    CONS_Printf("Resolved %s\n",
+		 inet_ntoa(*(struct in_addr *)&newaddr.ip.sin_addr.s_addr));
+
+    // Commit to the new node.
+    clientaddress[newnode].ip.sin_family      = AF_INET;
+    clientaddress[newnode].ip.sin_port        = portnum;
+    clientaddress[newnode].ip.sin_addr.s_addr = newaddr.ip.sin_addr.s_addr;
+
+clean_ret:
+    free(localhostname);
     return newnode;
+
+    // Rare errors.
+abort_makenode:
+    newnode = NE_fail;
+    goto clean_ret;
+
+no_nodes:
+    newnode = NE_nodes_exhausted;
+    goto clean_ret;
 }
 
+
+// Function for I_NetOpenSocket().
 boolean SOCK_OpenSocket( void )
 {
     int i;
@@ -756,7 +1032,7 @@ boolean SOCK_OpenSocket( void )
     I_NetSend        = SOCK_Send;
     I_NetGet         = SOCK_Get;
     I_NetCloseSocket = SOCK_CloseSocket;
-    I_NetFreeNodenum = SOCK_FreeNodenum;
+    I_NetFreeNode    = SOCK_FreeNode;
     I_NetMakeNode    = SOCK_NetMakeNode;
 
 
@@ -766,6 +1042,7 @@ boolean SOCK_OpenSocket( void )
 #endif
 
     // build the socket
+    // Setup up Broadcast.
 #ifdef USE_IPX
     if(ipx) {
         mysocket = IPX_Socket ();
@@ -775,15 +1052,13 @@ boolean SOCK_OpenSocket( void )
     else
 #endif // USE_IPX
     {
+        // TCP, UDP
         mysocket = UDP_Socket ();
        // if (server && cv_internetserver.value)
        //     RegisterServer(mysocket, sock_port);
     }
-    // for select
-    FD_ZERO(&set);
-    FD_SET(mysocket,&set);
 
-    return mysocket != -1;
+    return (mysocket >= 0);
 }
 
 
@@ -815,6 +1090,7 @@ boolean I_InitTcpNetwork( void )
         // FIXME: for dedicated server, numnodes needs to be set to 0 upon start
         if( M_IsNextParm() )
         {
+	    // Number of players.
             num = atoi(M_GetNextParm());
 	    if( num < 0 )
 	       num = 0;

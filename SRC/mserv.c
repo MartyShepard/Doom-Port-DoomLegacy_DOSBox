@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: mserv.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -557,7 +557,7 @@ void UnregisterServer()
 
     CloseConnection();
 #ifdef NEWCODE
-    I_NetFreeNodenum( msnode );
+    I_NetFreeNode( msnode );
 #endif
 }
 

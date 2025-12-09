@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1146 2015-04-03 13:48:10Z wesleyjohnson $
+// $Id: d_net.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,29 +103,35 @@ static int         rebound_head,rebound_tail;
 // Network interfaces (i_net.h)
 uint32_t    net_bandwidth;
 uint16_t    hardware_MAXPACKETLENGTH;
+network_error_e  net_error;
 
-void    (*I_NetGet) (void);
-void    (*I_NetSend) (void);
+boolean (*I_NetGet) (void);
+boolean (*I_NetSend) (void);
 boolean (*I_NetCanSend) (void);
 void    (*I_NetCloseSocket) (void);
-void    (*I_NetFreeNodenum) (int nodenum);
+void    (*I_NetFreeNode) (int nodenum);
 int     (*I_NetMakeNode) (char *address);
 boolean (*I_NetOpenSocket) (void);
 
 // ---- Internal network, for single player game.
 
-void Internal_Get(void)
+boolean Internal_Get(void)
 {
     doomcom->remotenode = -1;
     // I_Error("Get without netgame\n");
+    net_error = NE_not_netgame;
+    return  false;
 }
 
-void Internal_Send(void)
+// Function for I_NetSend().
+boolean Internal_Send(void)
 {
-     I_SoftError("Send without netgame\n");
+    I_SoftError("Send without netgame\n");
+    net_error = NE_not_netgame;
+    return  false;
 }
 
-void Internal_FreeNodenum(int nodenum)
+void Internal_FreeNode(int nodenum)
 {
 }
 
@@ -901,7 +907,7 @@ void Net_CloseConnection(int nnode)
     // No waiting for ack from this net node.
     InitNode(nnode);
     AbortSendFiles(nnode);
-    I_NetFreeNodenum(nnode);
+    I_NetFreeNode(nnode);
 }
 
 //
@@ -1076,7 +1082,8 @@ static void DebugPrintpacket(char *header)
 //
 // HSendPacket
 //
-//  packetlength : number of bytes in u part of packet
+//  packetlength: number of bytes in u part of packet
+//  acknum: retransmit of a packet with this acknum
 // Return true when packet is sent.
 boolean HSendPacket(int to_node, boolean reliable, byte acknum,
 		    int packetlength)
@@ -1126,6 +1133,8 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
         // Packet sent with an ack_req, and retransmitted if necessary.
         if( I_NetCanSend && !I_NetCanSend() )
         {
+	    // Network cannot transmit right now.
+	    // Enhancement for slow networks, not required.
             if( netbuffer->packettype < PT_CANFAIL )
 	    {
 	        // High priority, deferred transmit.
@@ -1135,12 +1144,9 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
             DEBFILE("HSendPacket : Out of bandwidth\n");
 	    goto fail_ret;
         }
-        else
-        {
-	    // Save packet, issue an acknum.
-	    netbuffer->ack_req = Save_packet_acknum(false);
-            if( netbuffer->ack_req == 0 )  goto fail_ret;
-	}
+        // Save packet, issue an acknum.
+        netbuffer->ack_req = Save_packet_acknum(false);
+        if( netbuffer->ack_req == 0 )  goto fail_ret;
     }
     else
     {
@@ -1152,17 +1158,17 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
     stat_sendbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
 #if 1
-    I_NetSend();
+    return I_NetSend();
 #else
     // DEBUG
     // simulate internet :)
-    if( true || rand()<RAND_MAX/5 )
+    if( rand()<RAND_MAX/5 )
     {
 #ifdef DEBUGFILE
         if (debugfile)
             DebugPrintpacket("SEND");
 #endif
-        I_NetSend();
+        return I_NetSend();
     }
 #ifdef DEBUGFILE
     else
@@ -1171,16 +1177,16 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
             DebugPrintpacket("NOTSEND");
     }
 #endif
+    return true;  // indicates sent, but gets lost
 #endif
-    return true;
 
 // Rare errors
 not_netgame:
-    I_SoftError ("HSendPacket : not in netgame");
+    I_SoftError ("HSendPacket: not in netgame\n");
     goto fail_ret;
 
 empty_packet:
-    DEBFILE("HSendPacket : abort send of empty packet\n");
+    DEBFILE("HSendPacket: abort send of empty packet\n");
 #ifdef DEBUGFILE
     if (debugfile)
         DebugPrintpacket("TRISEND");
@@ -1218,9 +1224,7 @@ boolean HGetPacket (void)
 
     if (!netgame)   goto fail_ret;
 
-    I_NetGet();
-
-    if (doomcom->remotenode == -1)   goto fail_ret;  // no packet
+    if( ! I_NetGet() )   goto fail_ret;  // no packet
 
     stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
@@ -1250,11 +1254,11 @@ boolean HGetPacket (void)
 
 // Rare errors
 bad_node_num:
-    DEBFILE(va("receive packet from node %d !\n", doomcom->remotenode));
+    DEBFILE(va("HGetPacket: receive packet from node %d !\n", doomcom->remotenode));
     goto fail_ret;
 
 bad_checksum:
-    DEBFILE("Bad packet checksum\n");
+    DEBFILE("HGetPacket: Bad packet checksum\n");
     goto fail_ret;
 
 fail_ret:
@@ -1282,7 +1286,7 @@ boolean D_Startup_NetGame(void)
     I_NetSend          = Internal_Send;
     I_NetCanSend       = NULL;
     I_NetCloseSocket   = NULL;
-    I_NetFreeNodenum   = Internal_FreeNodenum;
+    I_NetFreeNode      = Internal_FreeNode;
     I_NetMakeNode      = NULL;
 
     // Defaults
@@ -1427,7 +1431,7 @@ extern void D_CloseConnection( void )
         I_NetSend          = Internal_Send;
         I_NetCanSend       = NULL;
         I_NetCloseSocket   = NULL;
-        I_NetFreeNodenum   = Internal_FreeNodenum;
+        I_NetFreeNode	   = Internal_FreeNode;
         I_NetMakeNode      = NULL;
         netgame = false;
     }

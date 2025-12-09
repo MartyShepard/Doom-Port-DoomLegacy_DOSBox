@@ -4221,3 +4221,12 @@ Change talk packet to coding where:
 0x80 | (0..127) = broadcast to player's team
 255 = broadcast
 Cleanup code for talk.
+
+*** W102_net_error
+patchfile = w102_10_net_error.patch
+- commit revision 1149
+Create net_error to return useful error codes from the Net functions.
+Return boolean from I_NetGet and I_NetSend, so that network situations
+can be handled without crashing the program.
+Reorganize some of the low level network functions.
+Comment the OS variations, network tests, and calls.
