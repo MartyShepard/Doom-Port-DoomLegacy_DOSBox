@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
+// $Id: d_net.c 1142 2015-04-03 13:43:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -536,7 +536,7 @@ extern void Net_AckTicker(void)
 
 // remove last packet received ack before the resend the ackret
 // (the higer layer don't have room, or something else ....)
-extern void Net_UnAcknowledgPacket(int node)
+void Net_Cancel_Packet_Ack(int node)  // nnode
 {
     int hm1=(nodes[node].acktosend_head-1+MAXACKTOSEND)%MAXACKTOSEND;
     DEBFILE(va("UnAcknowledg node %d\n",node));

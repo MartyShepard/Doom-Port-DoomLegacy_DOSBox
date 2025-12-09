@@ -4164,3 +4164,10 @@ expressions, use some macros, more renaming.
 Change to use a textbuf struct, textlen, and appropriate ptrs.
 Use ptrs instead of repeated indexing.
 
+*** W102_clisrv_rewrite
+patchfile = w102_3_clisrv_rewrite.patch
+- commit revision 1142
+Rewrite of parts of client/server code.
+Net node numbers are byte.
+Breakup 300 line packet handler function into smaller functions.
+Add comments.
