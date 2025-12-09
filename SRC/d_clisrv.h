@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1155 2015-04-03 14:00:53Z wesleyjohnson $
+// $Id: d_clisrv.h 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -254,6 +254,7 @@ extern consvar_t cv_playdemospeed;
 extern consvar_t cv_server1;
 extern consvar_t cv_server2;
 extern consvar_t cv_server3;
+extern consvar_t cv_downloadfiles;
 
 //#define PACKET_BASE_SIZE     ((int)&( ((netbuffer_t *)0)->u))
 #define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)
@@ -273,8 +274,8 @@ extern consvar_t cv_allownewplayer;
 extern consvar_t cv_maxplayers;
 
 // Used in d_net, the only dependence.
+void    D_Init_ClientServer (void);
 int     ExpandTics (int low);
-void    D_ClientServerInit (void);
 
 // initialise the other field
 void    Register_NetXCmd(netxcmd_t cmd_id,
@@ -296,7 +297,7 @@ void    SV_ResetServer( void );
 void    CL_AddSplitscreenPlayer( void );
 void    CL_RemoveSplitscreenPlayer( void );
 void    CL_Reset (void);
-void    CL_UpdateServerList( boolean internetsearch );
+void    CL_Update_ServerList( boolean internetsearch );
 // is there a game running
 boolean Game_Playing( void );
 

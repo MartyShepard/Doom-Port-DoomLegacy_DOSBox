@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
+// $Id: i_tcp.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1066,22 +1066,22 @@ no_ipx:
 
 //Hurdler: temporary addition and changes for master server
 
-static int init_tcp_driver = 0;
+static byte TCP_driver_flag = 0;
 
-void I_InitTcpDriver(void)
+void I_Init_TCP_Driver(void)
 {
-    if (!init_tcp_driver)
+    if (!TCP_driver_flag)
     {
 #ifdef __WIN32__
         WSADATA winsockdata;
         if( WSAStartup(MAKEWORD(1,1),&winsockdata) )
-            I_Error("No Tcp/Ip driver detected");
+            I_Error("No TCP/IP driver detected");
 #endif
 #ifdef __DJGPP_
         if( !__lsck_init() )
-            I_Error("No Tcp/Ip driver detected");
+            I_Error("No TCP/IP driver detected");
 #endif
-        init_tcp_driver = 1;
+        TCP_driver_flag = 1;
     }
 }
 
@@ -1103,12 +1103,12 @@ void SOCK_CloseSocket( void )
     }
 }
 
-void I_ShutdownTcpDriver(void)
+void I_Shutdown_TCP_Driver(void)
 {
     if( mysocket!=-1 )
         SOCK_CloseSocket();
 
-    if ( init_tcp_driver )
+    if ( TCP_driver_flag )
     {
 #ifdef __WIN32__
         WSACleanup();
@@ -1116,13 +1116,13 @@ void I_ShutdownTcpDriver(void)
 #ifdef __DJGPP__
         __lsck_uninit();
 #endif
-        init_tcp_driver = 0;
+        TCP_driver_flag = 0;
     }
 }
 
 
 // Function for I_NetMakeNode().
-// Called by CL_UpdateServerList, Command_connect, mserv:open_UDP_Socket
+// Called by CL_Update_ServerList, Command_connect, mserv:open_UDP_Socket
 // Return the net node number, or network_error_e.
 int SOCK_NetMakeNode (char *hostname)
 {
@@ -1167,7 +1167,7 @@ int SOCK_NetMakeNode (char *hostname)
     }
 #endif
 
-    // tcp/ip
+    // TCP/IP
 #ifdef PARSE_LOCALHOSTNAME
     // Previous operation on localhostname already parsed out the ip addr.
 #else
@@ -1275,7 +1275,8 @@ boolean SOCK_OpenSocket( void )
 }
 
 
-boolean I_InitTcpNetwork( void )
+// Called by D_Startup_NetGame
+boolean I_Init_TCP_Network( void )
 {
     char     serverhostname[255];
     boolean  ret=0;
@@ -1285,9 +1286,9 @@ boolean I_InitTcpNetwork( void )
     ipx_select = M_CheckParm("-ipx");
 #endif
     
-    // initilize the driver
-    I_InitTcpDriver(); 
-    I_AddExitFunc (I_ShutdownTcpDriver);
+    // Initialize the driver.
+    I_Init_TCP_Driver();
+    I_AddExitFunc (I_Shutdown_TCP_Driver);
 
     if ( M_CheckParm ("-udpport") )
         sock_port = atoi(M_GetNextParm());

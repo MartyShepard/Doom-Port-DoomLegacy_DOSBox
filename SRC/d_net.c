@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
+// $Id: d_net.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1366,7 +1366,7 @@ boolean D_Startup_NetGame(void)
         doomcom->consoleplayer = 0;
         doomcom->extratics = 0;
 
-        netgame = I_InitTcpNetwork();
+        netgame = I_Init_TCP_Network();
     }
     if( netgame )
         netgame_ok = true;
@@ -1457,7 +1457,7 @@ boolean D_Startup_NetGame(void)
     }
 #endif
 
-    D_ClientServerInit();
+    D_Init_ClientServer();
 
     return netgame_ok;
 }

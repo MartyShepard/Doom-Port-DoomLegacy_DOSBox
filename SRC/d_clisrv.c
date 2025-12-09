@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1155 2015-04-03 14:00:53Z wesleyjohnson $
+// $Id: d_clisrv.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -119,7 +119,7 @@
 //
 // DESCRIPTION:
 //      DOOM Network game communication and protocol,
-//      all OS independent parts.
+//      High Level Client / Server communications and functions.
 //
 //-----------------------------------------------------------------------------
 
@@ -250,6 +250,14 @@ consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
 consvar_t cv_server1 = { "server1", "192.168.1.255", CV_SAVE, NULL };
 consvar_t cv_server2 = { "server2", "", CV_SAVE, NULL };
 consvar_t cv_server3 = { "server3", "", CV_SAVE, NULL };
+
+CV_PossibleValue_t downloadfiles_cons_t[] = {{0,"Allowed"}
+                                           ,{1,"No Download"}
+                                           ,{0,NULL}};
+
+
+consvar_t cv_downloadfiles = {"downloadfiles"  ,"0", CV_SAVE, downloadfiles_cons_t};
+
 
 // some software don't support largest packet
 // (original sersetup, not exactly, but the probability of sending a packet
@@ -512,6 +520,7 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
 // Client state
 typedef enum {
    CLM_searching,
+   CLM_download_req,
    CLM_downloadfiles,
    CLM_askjoin,
    CLM_waitjoinresponse,
@@ -628,7 +637,7 @@ static void SV_Send_SaveGame(int to_node)
     if( length < 0 )   return;	// overrun buffer
    
     // then send it !
-    SendData(to_node, savebuffer, length, TAH_MALLOC_FREE, 0);
+    SV_SendData(to_node, savebuffer, length, TAH_MALLOC_FREE, 0);
     // SendData frees the savebuffer using free() after it is sent.
     // This is the only use of TAH_MALLOC_FREE.
 }
@@ -708,10 +717,14 @@ static void CL_Broadcast_AskInfo( char * addrstr )
 }
 
 
+// --- ServerList
+
 server_info_t serverlist[MAXSERVERLIST];
 int serverlistcount=0;
 
-static void SL_ClearServerList( int connectedserver )
+// Clear the serverlist, closing connections.
+//  connectedserver: except this server
+static void SL_Clear_ServerList( int connectedserver )
 {
     int i;
     for( i=0; i<serverlistcount; i++ )
@@ -725,7 +738,8 @@ static void SL_ClearServerList( int connectedserver )
     serverlistcount = 0;
 }
 
-static int SL_SearchServer( byte nnode )
+// Find the server in the serverlist.
+static int SL_Find_Server( byte nnode )
 {
     int i;
     for( i=0; i<serverlistcount; i++ )
@@ -737,6 +751,7 @@ static int SL_SearchServer( byte nnode )
     return -1;
 }
 
+// Insert the server into the serverlist.
 static void SL_InsertServer( serverinfo_pak *info, byte nnode)
 {
     tic_t  test_time;
@@ -744,7 +759,7 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
     int i, i2;
 
     // search if not already on it
-    i = SL_SearchServer( nnode );
+    i = SL_Find_Server( nnode );
     if( i==-1 )
     {
         // not found add it
@@ -783,11 +798,11 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
 
 // By user, future Client.
 // Called by M_Connect.
-void CL_UpdateServerList( boolean internetsearch )
+void CL_Update_ServerList( boolean internetsearch )
 {
     int  i;
 
-    SL_ClearServerList(0);
+    SL_Clear_ServerList(0);
 
     if( !netgame )
     {
@@ -826,19 +841,24 @@ void CL_UpdateServerList( boolean internetsearch )
     }
 }
 
-// use adaptive send using net_bandwidth and stat.sendbytes
+
+// ----- Connect to Server
+
+// By User, future Client, and by server not dedicated.
+// Use adaptive send using net_bandwidth and stat.sendbytes.
+//  servernode: if set then reconnect, else search
 static void CL_ConnectToServer( void )
 {
     int  numnodes;
     int  nodewaited = doomcom->num_player_netnodes;
     int  nn;  // net node num
     int  i;
-    tic_t   asksent;
+    tic_t   askinfo_tic;  // to repeat askinfo
     tic_t   oldtic;
 
-    cl_mode=CLM_searching;
+    cl_mode = CLM_searching;
 
-    CONS_Printf("Press ESC to abort\n");
+    CONS_Printf("Press Q or ESC to abort\n");
     if( servernode >= MAXNETNODES )
     {
         // init value and BROADCASTADDR
@@ -851,61 +871,100 @@ static void CL_ConnectToServer( void )
 
     numnodes=1;
     oldtic=I_GetTime()-1;
-    asksent=-TICRATE/2;
-    SL_ClearServerList(servernode);
-    // loop until connected or user escapes
+    askinfo_tic = 0;
+    SL_Clear_ServerList(servernode);  // clear all except the current server
+    // Every player goes through here to connect to game, including a
+    // single player on the server.
+    // Loop until connected or user escapes.
+    // Because of the combination above, this loop must include code for
+    // server responding.
     do {
         switch(cl_mode) {
             case CLM_searching :
                 // serverlist is updated by GetPacket function
-                if( serverlistcount>0 )
+                if( serverlistcount <= 0 )
+	        {
+		    // Don't have a serverlist.
+		    // Poll the server (askinfo packet).
+		    if( askinfo_tic <= I_GetTime() )
+		    {
+		        // Don't be noxious on the network.
+		        // Every 2 seconds is often enough.
+		        askinfo_tic = I_GetTime() + (TICRATE*2);
+		        if( servernode < MAXNETNODES )
+		        {
+			    // Specific server.
+			    CL_Send_AskInfo(servernode);
+			}
+		        else
+		        {
+			    // Any
+			    CL_Update_ServerList( false );
+			}
+		    }
+                }
+		else
                 {
-                    // this can be a response to our broadcast request
+		    // Have a serverlist, serverlistcount > 0.
+                    // This can be a response to our broadcast request
                     if( servernode >= MAXNETNODES )
                     {
-		        // Invalid servernode.
+		        // Invalid servernode, get best server from serverlist.
                         i = 0;
                         servernode = serverlist[i].server_node;
                         CONS_Printf("Found, ");
                     }
                     else
                     {
-                        i=SL_SearchServer(servernode);
+		        // Have a current server.  Find it in the serverlist.
+                        i = SL_Find_Server(servernode);
+		        // Check if it shutdown, or is missing for some reason.
                         if (i<0)
                             break; // the case
                     }
+		    // Check server for files needed.
                     CL_Got_Fileneed(serverlist[i].info.num_fileneed,
 				    serverlist[i].info.fileneed    );
                     CONS_Printf("Checking files...\n");
                     switch( CL_CheckFiles() )
 		    {
-		     case CFR_iwad_error: // cannot join for some reason
-		     case CFR_insufficient_space:
-		        goto reset_to_title_exit;
 		     case CFR_no_files:
 		     case CFR_all_found:
-                        cl_mode=CLM_askjoin;
+                        cl_mode = CLM_askjoin;
 		        break;
                      case CFR_download_needed:
-		        // must download something
-                        // no problem if can't send packet, we will retry later
-                        if( Send_RequestFile() )
-                            cl_mode=CLM_downloadfiles;
+		        cl_mode = CLM_download_req;
 		        break;
+		     case CFR_iwad_error: // cannot join for some reason
+		     case CFR_insufficient_space:
+		     default:
+		        goto reset_to_title_exit;
 		    }
                     break;
                 }
-                // ask the info to the server (askinfo packet)
-                if(asksent+TICRATE/2<I_GetTime())
-                {
-                    CL_Send_AskInfo(servernode);
-                    asksent=I_GetTime();
-                }
                 break;
+	    case CLM_download_req:
+	        // Must download something.
+	        // Check -nodownload switch, or request downloads.
+	        switch( Send_RequestFile() )
+	        {
+		 case RFR_success:
+		    cl_mode = CLM_downloadfiles;
+		    break;
+		 case RFR_send_fail:
+		    break;  // retry later
+		 case RFR_insufficient_space: // Does not seem to be used.
+		 case RFR_nodownload:
+		 default:
+		    // Due to -nodownload switch, or other fatal error.
+		    goto  reset_to_title_exit;
+		}
+	        break;
             case CLM_downloadfiles :
                 if( CL_waiting_on_fileneed() )
-                    break; // exit the case
-	        cl_mode=CLM_askjoin; //don't break case continue to cljoin request now
+                    break; // continue looping
+	        // Have all downloaded files.
+	        cl_mode = CLM_askjoin;
 	        // continue into next case
             case CLM_askjoin :
                 if( ! CL_Load_ServerFiles() )
@@ -917,35 +976,37 @@ static void CL_ConnectToServer( void )
                 // prepare structures to save the file
                 // WARNING: this can be useless in case of server not in GS_LEVEL
                 // but since the network layer don't provide ordered packet ...
+		// This can be repeated, if CL_Send_Join fails.
                 CL_Prepare_Download_SaveGame(tmpsave);
 #endif
                 if( CL_Send_Join() )  // join game
-                    cl_mode=CLM_waitjoinresponse;
+                    cl_mode = CLM_waitjoinresponse;
                 break;
+            case CLM_waitjoinresponse :
+	        // see server_cfg_handler()
+	        break;
 #ifdef JOININGAME
             case CLM_downloadsavegame :
-                if( cl_fileneed[0].status==FS_FOUND )
-                {
-                    CL_Load_Received_Savegame();
-                    gamestate = GS_LEVEL;
-                    cl_mode=CLM_connected;
-                }           //don't break case continue to CLM_connected
-                else
-                    break;
+                if( cl_fileneed[0].status != FS_FOUND )
+	            break; // continue loop
+
+	        // Have received the savegame from the server.
+	        CL_Load_Received_Savegame();
+	        gamestate = GS_LEVEL;  // game loaded
+	        cl_mode = CLM_connected;
+                // don't break case continue to CLM_connected
 #endif
-	        // continue into next case
-            case CLM_waitjoinresponse :
             case CLM_connected :
                 break;
         }
 
         Net_Packet_Handler();
-        // connection closed by cancel or timeout
         if( !server && !netgame )
-	    goto reset_to_searching;
+	    goto reset_to_searching;  // connection closed by cancel or timeout
+
         Net_AckTicker();
 
-        // call it only once every tic
+        // Operations performed only once every tic.
         if( oldtic!=I_GetTime() )
         {
 	    // user response handler
@@ -953,17 +1014,15 @@ static void CL_ConnectToServer( void )
 
             I_OsPolling();
             key = I_GetKey();
-            if (key==KEY_ESCAPE)
-            {
-                M_SimpleMessage ("Network game synchronization aborted.\n\nPress ESC\n");
-	        goto reset_to_title_exit;
-            }
+            if( key==KEY_ESCAPE || key=='q' )  goto quit_ret;
             if( key=='s' && server) 
                 doomcom->num_player_netnodes = numnodes;
 
-            Filetx_Ticker();
             oldtic=I_GetTime();
 
+	    if( Filetx_file_cnt )  // File download in progress.
+	        Filetx_Ticker();
+	   
             CON_Drawer ();
             I_FinishUpdate ();              // page flip or blit buffer
         }
@@ -990,7 +1049,11 @@ static void CL_ConnectToServer( void )
 reset_to_searching:
     cl_mode = CLM_searching;
     return;
-   
+
+quit_ret:
+    M_SimpleMessage ("Network game synchronization aborted.\n\nPress ESC\n");
+    goto reset_to_title_exit;
+
 reset_to_title_exit:
     CL_Reset();
     D_StartTitle();
@@ -1102,6 +1165,7 @@ static void CL_RemovePlayer(int playernum)
     }
 }
 
+// By Client and non-specific code, to reset client connect.
 void CL_Reset (void)
 {
     if (demorecording)
@@ -1255,8 +1319,8 @@ consvar_t cv_maxplayers     = {"sv_maxplayers","32",CV_NETVAR,maxplayers_cons_t,
 void Got_NetXCmd_AddPlayer(char **p, int playernum);
 void Got_NetXCmd_AddBot(char **p,int playernum);	//added by AC for acbot
 
-// called one time at init
-void D_ClientServerInit (void)
+// Called one time at init, by D_Startup_NetGame.
+void D_Init_ClientServer (void)
 {
   DEBFILE(va("==== %s debugfile ====\n", VERSION_BANNER));
 
@@ -1329,7 +1393,7 @@ static void Reset_NetNode(byte nnode)
     playerpernode[nnode]=0;
 }
 
-// Called by D_ClientServerInit, SV_SpawnServer, CL_Reset,
+// Called by D_Init_ClientServer, SV_SpawnServer, CL_Reset,
 void SV_ResetServer( void )
 {
     int    i;
@@ -1520,6 +1584,7 @@ void Got_NetXCmd_AddBot(char **p, int playernum)  //added by AC for acbot
 
 // By Server.
 // Called by SV_SpawnServer, client_join_handler.
+// Return true when a new player is added.
 boolean SV_AddWaitingPlayers(void)
 {
     boolean  newplayer_added = false;  // return
@@ -1604,8 +1669,10 @@ boolean Game_Playing( void )
     return (server && serverrunning) || (!server && cl_mode==CLM_connected);
 }
 
-// By Server.
-// Called by D_ClientServerInit, Command_Map_f, Command_Load_f, 
+// By Server and Server-only commands.
+// Called by D_Init_ClientServer (dedicated server).
+// Called by Command_Map_f, Command_Load_f (server).
+// Return true when a new player is added.
 boolean SV_SpawnServer( void )
 {
     D_DisableDemo();
@@ -1634,7 +1701,7 @@ boolean SV_SpawnServer( void )
     return SV_AddWaitingPlayers();
 }
 
-// Called by D_ClientServerInit, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer.
+// Called by D_Init_ClientServer, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer.
 void SV_StopServer( void )
 {
     int i;
@@ -1744,7 +1811,7 @@ static void client_join_handler( byte nnode )
 #ifdef JOININGAME
     if( nodewaiting[nnode] )
     {
-        if( gamestate == GS_LEVEL && newnode)
+        if( (gamestate == GS_LEVEL) && newnode)
         {
 	    SV_Send_SaveGame(nnode); // send game data
 	    CONS_Printf("Send savegame\n");
@@ -2222,7 +2289,8 @@ static void Net_Packet_Handler(void)
 #endif
 
 
-        switch(netbuffer->packettype) {
+        switch(netbuffer->packettype)
+        {
 	    // ---- Server Handling Client packets ----------
             case PT_CLIENTCMD  :
             case PT_CLIENT2CMD :
@@ -2724,23 +2792,23 @@ static void SV_Send_Tic_Update( int count )
 
 void NetUpdate(void)
 {
-    static tic_t gametime=0;
+    static tic_t prev_netupdate_time=0;
     tic_t        nowtime;
     int          realtics;	// time is actually long [WDJ]
 
     nowtime  = I_GetTime();
-    realtics = nowtime - gametime;
+    realtics = nowtime - prev_netupdate_time;
 
     if( realtics <= 0 )
     {
-      if( realtics > -100000 )  // [WDJ] 1/16/2009  validity check
-	return;     // nothing new to update
+        if( realtics > -100000 )  // [WDJ] 1/16/2009  validity check
+	    return;     // same tic as previous
 
-      // [WDJ] 1/16/2009 something is wrong, like time has wrapped.
-      // Program gets stuck waiting for this, so force it out.
-      realtics = 5;
+        // [WDJ] 1/16/2009 something is wrong, like time has wrapped.
+        // Program gets stuck waiting for this, so force it out.
+        realtics = 1;
     }
-    if( realtics>5 )
+    if( realtics > 5 )
     {
         if( server )
             realtics=1;
@@ -2748,7 +2816,8 @@ void NetUpdate(void)
             realtics=5;
     }
 
-    gametime = nowtime;
+    // Executed once per tic, with realtics = 1..5.
+    prev_netupdate_time = nowtime;
 
     if( !server )
         maketic = cl_need_tic;
@@ -2773,10 +2842,12 @@ void NetUpdate(void)
             MS_SendPing_MasterServer( nowtime );
 
         if(!demoplayback)
-	    SV_Send_Tic_Update( realtics );
+	    SV_Send_Tic_Update( realtics );  // realtics > 0
+
+        if( Filetx_file_cnt )  // Rare to have file download in progress.
+	    Filetx_Ticker();
     }
     Net_AckTicker();
     M_Ticker ();
     CON_Ticker();
-    Filetx_Ticker();
 }

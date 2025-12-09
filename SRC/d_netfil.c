@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1151 2015-04-03 13:55:36Z wesleyjohnson $
+// $Id: d_netfil.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -134,7 +134,7 @@ typedef struct filetx_s {
 
 // Current transfers (one for each node).
 typedef struct {
-   filetx_t  *txlist; 
+   filetx_t  *txlist;    // only set by server
    uint32_t   position;  // file and data transfer position
    FILE*      currentfile;
 } transfer_t;
@@ -151,7 +151,7 @@ fileneed_t cl_fileneed[MAX_WADFILES];
 
 char * downloaddir = "DOWNLOAD";
 
-static void SendFile(byte to_node, char *filename, char fileid);
+static void SV_SendFile(byte to_node, char *filename, char fileid);
 
 // By server.
 // Fill the serverinfo packet with wad files loaded by the game on the server.
@@ -232,15 +232,18 @@ void CL_Prepare_Download_SaveGame(const char *tmpsave)
 // By Client.
 // Send to the server the names of requested files.
 // Files who status is FS_NOTFOUND in the fileneed table are sent.
-// Return false when there is a failure.
-boolean Send_RequestFile(void)
+// Return RFR_success when request succeeds.
+reqfile_e  Send_RequestFile(void)
 {
     int   i;
     uint32_t  totalfreespaceneeded=0;
     fileneed_t * fnp;
 
-    if( M_CheckParm("-nodownload") )
+    if( M_CheckParm("-nodownload")
+      || cv_downloadfiles.value == 1 )  // no download
     {
+        int j;
+        int len;
         char s[1024];
 
         // Check for missing files.
@@ -250,6 +253,9 @@ boolean Send_RequestFile(void)
 	    fnp = & cl_fileneed[i];
             if( fnp->status!=FS_FOUND )
             {
+	        len = strlen(s);
+	        if( len > (sizeof(s)-80) )  break;  // prevent buffer overrun
+
                 strcat(s,"  \"");
                 strcat(s,fnp->filename);
                 strcat(s,"\"");
@@ -259,20 +265,15 @@ boolean Send_RequestFile(void)
                     strcat(s," not found");
 		    break;
                  case FS_MD5SUMBAD:
-		   {
-                    int j;
-                    int strl;
-
                     strcat(s," has wrong md5sum, needs: ");
-                    strl = strlen(s);
 
                     for(j=0; j<16; j++)
                     {
-                        sprintf(&s[strl+2*j],"%02x", fnp->md5sum[j]);
+                        sprintf(&s[len],"%02x", fnp->md5sum[j]);
+		        len += 2;
                     }
-                    s[strl+32]='\0';
+                    s[len]='\0';
 		    break;
-		   }
                  case FS_OPEN:
                     strcat(s," found, ok");
 		    break;
@@ -284,14 +285,14 @@ boolean Send_RequestFile(void)
             }
 	}
         if( s[0] == 0 )
-	    return true;  // All files are satisfied
+	    return RFR_success;    // All files are satisfied
 
         // This error message needs to be with s[].
         I_SoftError("To play with this server you should have these files:\n"
                     "%s\n"
 		    "Remove -nodownload if you want to get them from the server!\n",
 		     s );
-        return false;
+        return RFR_nodownload;
     }
 
     // Make up a request packet to get files from the server.
@@ -321,14 +322,16 @@ boolean Send_RequestFile(void)
 
     // prepare to download
     I_mkdir(downloaddir,0755);
-    return HSendPacket(servernode,true,0,p-netbuffer->u.textcmd);
+    if( ! HSendPacket(servernode, true, 0, p-netbuffer->u.textcmd) )
+        return RFR_send_fail;
+    return RFR_success;
 
     // Rare errors
 insufficient_space:
     I_SoftError("To play on this server you should download %dKb\n"
 		"but you have only %dKb freespace on this drive\n",
 		totalfreespaceneeded, availablefreespace);
-    return false;
+    return RFR_insufficient_space;
 }
 
 // By Server.
@@ -340,7 +343,7 @@ void Got_RequestFilePak(byte nnode)
 
     while(*p!=-1)
     {
-        SendFile(nnode, p+1, *p);
+        SV_SendFile(nnode, p+1, *p);
         p++; // skip fileid
         SKIPSTRING(p);
     }
@@ -446,12 +449,16 @@ boolean  CL_Load_ServerFiles(void)
     return true;
 }
 
-// little optimization to test if there is a file in the queue
-static int filetosend=0;
+// By Server.
+// A little optimization to test if there is a file in the queue.
+// Tested by caller of Filetx_Ticker, as enable.
+// Only the server can enable it.
+int Filetx_file_cnt = 0;
 
+// By Server.
 // Send a file to client.
 //   to_node : the client node.
-static void SendFile(byte to_node, char *filename, char fileid)
+static void SV_SendFile(byte to_node, char *filename, char fileid)
 {
     filetx_t **q,*p;
     int i;
@@ -512,14 +519,15 @@ send_found:
     p->fileid=fileid;
     p->next=NULL; // end of list
 
-    filetosend++;
+    Filetx_file_cnt++;
     return;
  
 memory_err:
-    I_Error("SendFile: Memory exhausted\n");
+    I_Error("SV_SendFile: Memory exhausted\n");
 }
 
-void SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid)
+// By Server.
+void SV_SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid)
 {
     filetx_t **q,*p;
 
@@ -539,19 +547,25 @@ void SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid)
     DEBFILE(va("Sending ram %x( size:%d) to %d (id=%d)\n",
 	       p->filename, size, to_node, fileid));
 
-    filetosend++;
+    Filetx_file_cnt++;
     return;
 
 memory_err:
     I_Error("SendData: Memory exhausted\n");
 }
 
+// By Server.
 // Close and release the current transfer of the net node.
 //  nnode : net node,  0..(MAXNETNODES-1)
-void EndSend(byte nnode)
+static void SV_EndSend(byte nnode)
 {
     transfer_t * tnnp = & transfer[nnode];
     filetx_t *p = tnnp->txlist;  // the transfer list
+   
+    if( ! p )  // cannot ensure who can call and what state they are in
+        return;
+
+    // By Server.
     // Deallocation
     switch (p->release_tah) {
     case TAH_FILE:
@@ -574,9 +588,10 @@ void EndSend(byte nnode)
     tnnp->txlist = p->next;  // remove filetx from the list
     free(p);
     // Master transfer status
-    filetosend--;
+    Filetx_file_cnt--;
 }
 
+// By Server.
 // Called by NetUpdate, CL_ConnectToServer.
 void Filetx_Ticker(void)
 {
@@ -592,7 +607,9 @@ void Filetx_Ticker(void)
     filetx_t   * ftxp;
     transfer_t * tnnp;  // transfer for net node
 
-    if( filetosend==0 )   goto reject;  // nothing to do
+    if( Filetx_file_cnt == 0 )   goto reject;  // nothing to do
+   
+    // By Server, only server has Filetx_file_cnt > 0.
 
     // Packets per tic
     packet_cnt = net_bandwidth/(TICRATE*software_MAXPACKETLENGTH);
@@ -600,7 +617,7 @@ void Filetx_Ticker(void)
        packet_cnt++;
     // (((stat_sendbytes-nowsentbyte)*TICRATE)/(I_GetTime()-starttime)<(uint32_t)net_bandwidth)
 
-    while( packet_cnt-- && filetosend!=0)
+    while( packet_cnt-- && (Filetx_file_cnt > 0) )
     {
         // Round robin, fair share.
         nn = (txnode+1)%MAXNETNODES;
@@ -635,7 +652,7 @@ found:
 		    perror("FileTx");
 		    I_SoftError("FileTx: Cannot open file %s\n",
 				 ftxp->filename);
-		    EndSend(nn);
+		    SV_EndSend(nn);
 		    continue;
 		}
 	       
@@ -697,7 +714,7 @@ found:
         if(tnnp->position == ftxp->data_size)
         {
 	    // All sent
-	    EndSend(nn);
+	    SV_EndSend(nn);
 	}
     } // while
     return;
@@ -706,7 +723,7 @@ found:
 file_size_err:
     perror("FileTx");
     I_SoftError("FileTx: Error getting filesize of %s\n", ftxp->filename);
-    EndSend(nn);
+    SV_EndSend(nn);
     goto reject;
 
 file_read_err:
@@ -716,8 +733,8 @@ file_read_err:
     goto reject;
 
 transfer_not_found:
-    I_SoftError("Filetx: filetosend=%d but filetosend not found\n", filetosend);
-    filetosend = 0;
+    I_SoftError("Filetx: Filetx_file_cnt=%d but Filetx file not found\n", Filetx_file_cnt);
+    Filetx_file_cnt = 0;
     goto reject;
 
 reject:
@@ -825,12 +842,16 @@ reject:
     return;
 }
 
+// By Server, Client, to cleanup sending files.
 // nnode:  0..(MAXNETNODES-1)
 // Called by Net_CloseConnection, CloseNetFile
 void AbortSendFiles(byte nnode)
 {
     while(transfer[nnode].txlist)
-        EndSend(nnode);
+    {
+        // By Server, only server have txlist set.
+        SV_EndSend(nnode);
+    }
 }
 
 void CloseNetFile(void)

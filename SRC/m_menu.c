@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: m_menu.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -208,6 +208,8 @@
 #endif
 
 #include "d_net.h"
+#include "d_clisrv.h"
+  // server1, server2, server3
 #include "mserv.h"
 #include "p_inter.h"
 
@@ -894,14 +896,15 @@ static int localservercount;
 
 void M_Refresh( int choice )
 {
-    CL_UpdateServerList( cv_serversearch.value );
+    CL_Update_ServerList( cv_serversearch.value );
 }
 
 menuitem_t  ConnectMenu[] =
 {
     {IT_STRING | IT_CVAR ,0,"Search On"       ,&cv_serversearch       ,0},
     {IT_STRING | IT_CALL ,0,"Refresh"         ,M_Refresh              ,0},
-    {IT_WHITESTRING | IT_SPACE,0,"Server Name                      ping plys dm" ,0 ,0},
+    {IT_WHITESTRING | IT_SPACE,0,
+	        "Server Name                           ping players dm" ,0 ,0},
     {IT_STRING | IT_SPACE,0,""             ,M_Connect              ,0},
     {IT_STRING | IT_SPACE,0,""             ,M_Connect              ,0},
     {IT_STRING | IT_SPACE,0,""             ,M_Connect              ,0},
@@ -919,24 +922,28 @@ menuitem_t  ConnectMenu[] =
 
 void M_DrawConnectMenu( void )
 {
-    int i;
+    int i, sly;
     char *p;
 
     for( i=FIRSTSERVERLINE; i<localservercount+FIRSTSERVERLINE; i++ )
         ConnectMenu[i].status = IT_STRING | IT_SPACE;
 
+    sly = currentMenu->y + (FIRSTSERVERLINE * STRINGHEIGHT);
     if( serverlistcount <= 0 )
-        V_DrawString (currentMenu->x,currentMenu->y+FIRSTSERVERLINE*STRINGHEIGHT,0,"No server found");
+        V_DrawString (currentMenu->x, sly, 0, "No server found");
     else
-    for( i=0;i<serverlistcount && i+FIRSTSERVERLINE<sizeof(ConnectMenu)/sizeof(menuitem_t);i++ )
+    for( i=0; i<serverlistcount; i++ )
     {
-        V_DrawString (currentMenu->x,currentMenu->y+(FIRSTSERVERLINE+i)*STRINGHEIGHT,0,serverlist[i].info.servername);
+        if( i >= ((sizeof(ConnectMenu)/sizeof(menuitem_t)) - FIRSTSERVERLINE) )
+	    break; // too many to draw all
+        V_DrawString (currentMenu->x, sly, 0, serverlist[i].info.servername);
         p = va("%d", serverlist[i].info.trip_time);  // ping time
-        V_DrawString (currentMenu->x+200-V_StringWidth(p),currentMenu->y+(FIRSTSERVERLINE+i)*STRINGHEIGHT,0,p);
+        V_DrawString (currentMenu->x + 200 - V_StringWidth(p), sly, 0, p);
         p = va("%d/%d  %d", serverlist[i].info.numberofplayer,
                             serverlist[i].info.maxplayer,
                             serverlist[i].info.deathmatch);
-        V_DrawString (currentMenu->x+250-V_StringWidth(p),currentMenu->y+(FIRSTSERVERLINE+i)*STRINGHEIGHT,0,p);
+        V_DrawString (currentMenu->x + 250 - V_StringWidth(p), sly, 0, p);
+        sly += STRINGHEIGHT;
 
         ConnectMenu[i+FIRSTSERVERLINE].status = IT_STRING | IT_CALL;
     }
@@ -4810,6 +4817,7 @@ void M_Init (void)
     CV_RegisterVar(&cv_nextmap );
     CV_RegisterVar(&cv_newdeathmatch);
     CV_RegisterVar(&cv_serversearch);
+    CV_RegisterVar(&cv_downloadfiles);
     CV_RegisterVar(&cv_menusound);
 }
 

@@ -4284,3 +4284,14 @@ That only returns "network unreachable" messages, because the network
 Fix the network IPX address print and bind functions.
 Fix the network shutdown to not loop in error messages when the
 network fails.
+
+*** W102_filetx
+patchfile = w102_17_filetx.patch
+- commit revision 1156
+Cleanup the code for server file transfer.
+Cleanup code for client connect to server.
+Use some meaningful return codes, so errors are propagated to the caller.
+Use Filetx_file_cnt as enable, to reduce cache pollution from loading
+the function just to find out there are no files.
+Added config variable for download file disable, as a command line
+switch was the only control.
