@@ -394,6 +394,7 @@ ifdef DJGPPDOS_NATIVE
   TOOL_DIRCOMP2=TOOLS\DIRCOMP2.EXE
   TOOL_CONVERT=TOOLS\CONVERT.EXE
   TOOL_FIXDEP=TOOLS\FIXDEP.EXE
+  TOOL_WADTOOL=TOOLS\WADTOOL.EXE	
 	
 endif
 
@@ -513,12 +514,14 @@ OBJS :=  $(OBJS) \
   OBJSTOOLS :=  $(OBJSTOOLS) \
 		$(O)/dircomp2.o  \
 		$(O)/convert.o \
-		$(O)/fixdep.o
+		$(O)/fixdep.o \
+		$(O)/wadtool.o		
 		
 all: $(BIN)/$(EXENAME) \
      $(BIN)/$(TOOL_DIRCOMP2) \
 		 $(BIN)/$(TOOL_CONVERT)	\
-		 $(BIN)/$(TOOL_FIXDEP)
+		 $(BIN)/$(TOOL_FIXDEP) \
+		 $(BIN)/$(TOOL_WADTOOL)		 
 		 
 	cp $(BIN)/$(EXENAME) $(BIN)/DOOM3.EXE
 
@@ -555,6 +558,10 @@ $(BIN)/$(TOOL_FIXDEP):	$(O) $(O)/fixdep.o
 	redir -o /_GCC/_FIXDEP.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(O)/fixdep.o \
 	-o $(BIN)/$(TOOL_FIXDEP) $(LIBS)	
 
+$(BIN)/$(TOOL_WADTOOL):	$(O) $(O)/wadtool.o	
+	redir -o /_GCC/_WADTOOL.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) $(O)/wadtool.o $(O)/md5.o \
+	-o $(BIN)/$(TOOL_WADTOOL) $(LIBS)	
+	
 $(O):
 	@mkdir $(O)
 
@@ -566,6 +573,8 @@ $(O)/convert.o: tools/convert.c
 		redir -o /_GCC/convert.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 $(O)/fixdep.o: tools/fixdep.c
 		redir -o /_GCC/fixdep.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+$(O)/wadtool.o: tools/wadtool.c md5.h
+		redir -o /_GCC/wadtool.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 		
 #dependecy made by gcc itself ! (see makedep.mak for more)
 $(O)/dstrings.o: dstrings.c dstrings.h d_englsh.h

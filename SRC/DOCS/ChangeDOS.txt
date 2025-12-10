@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01167F]: Add Wadtool.c
+          DOS: Added a conversion Wadtool.c (pure C) from Wadtool.cc (C++)
+          DOS: Makefile MakeDOS updated
+					
 [01167*]: w103 Makefiles and make_options
 [01166*]: w103 fixdep.c added
 [01165*]: w103 revised wadtool.cc added
