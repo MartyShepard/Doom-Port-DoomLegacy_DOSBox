@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: st_lib.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -102,7 +102,7 @@ void STlib_drawNum ( st_number_t*  n,
 
     int    neg;
    
-    // Draw to fg_stbar, screen0 status bar
+    // Draw to stbar_fg, screen0 status bar
 
     n->oldnum = *n->num;
 
@@ -123,12 +123,12 @@ void STlib_drawNum ( st_number_t*  n,
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect1: %d %d %d %d %d %d %d %d val: %d\n",
-              x, n->y, BG, w*numdigits, h, x, n->y, fg_stbar, num);
+              x, n->y, BG, w*numdigits, h, x, n->y, stbar_fg, num);
 #endif
     // dont clear background in overlay
     if (!st_overlay &&
          rendermode==render_soft)   //faB:current hardware mode always refresh the statusbar
-        V_CopyRect(x, n->y, BG, w*numdigits, h, x, n->y, fg_stbar);
+        V_CopyRect(x, n->y, BG, w*numdigits, h, x, n->y, stbar_fg);
 
     // if non-number, do not draw it
     if (num == 1994)
@@ -227,11 +227,11 @@ void STlib_updateMultIcon ( st_multicon_t*        mi,
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
-                            x, y, BG, w, h, x, y, fg_stbar);
+                            x, y, BG, w, h, x, y, stbar_fg);
 #endif
             //faB:current hardware mode always refresh the statusbar
             if (!st_overlay && rendermode==render_soft)   
-                V_CopyRect(x, y, BG, w, h, x, y, fg_stbar);
+                V_CopyRect(x, y, BG, w, h, x, y, stbar_fg);
         }
         V_DrawScaledPatch(mi->x, mi->y, mi->p[*mi->inum]);
         mi->oldinum = *mi->inum;
@@ -279,11 +279,11 @@ void STlib_updateBinIcon ( st_binicon_t*         bi,
         {
 #ifdef DEBUG
        CONS_Printf("V_CopyRect3: %d %d %d %d %d %d %d %d\n",
-                            x, y, BG, w, h, x, y, fg_stbar);
+                            x, y, BG, w, h, x, y, stbar_fg);
 #endif
             if (!st_overlay &&
                 rendermode==render_soft ) //faB:current hardware mode always refresh the statusbar
-                V_CopyRect(x, y, BG, w, h, x, y, fg_stbar);
+                V_CopyRect(x, y, BG, w, h, x, y, stbar_fg);
         }
 
         bi->oldval = *bi->val;

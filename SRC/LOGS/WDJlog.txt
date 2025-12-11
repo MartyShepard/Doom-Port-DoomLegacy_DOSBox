@@ -4422,4 +4422,21 @@ The header for endtext printing is now port independent, removing a
 header file from every port. The endtext code has been given a proper
 copyright and credit.
 
+- commit revision 1171
+Files removed: macos/endtxt.h sdl/endtxt.h linux_x/endtxt.h
+
+*** W103_heretic_status
+patchfile = w103_7_heretic_status.patch
+- commit revision 1172
+Cleanup of the Heretic status code.  Rename many functions to make it
+more clear that they are the Heretic versions of the status bar functions.
+Renames some Heretic status bar vars as stbar_xxx, to more readily
+identify them as Heretic status bar variables.
+The draw of the Heretic status bar has a darkening of the chain on the
+ends (shadow).  This code was 8 bit palette draw only, which left
+draw artifacts for other draw modes.  This draw has been updated to
+correctly draw shading for the other draw modes too.
+
+
+
 

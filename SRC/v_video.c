@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1158 2015-04-03 14:08:39Z wesleyjohnson $
+// $Id: v_video.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -146,7 +146,7 @@ rendermode_e    rendermode=render_soft;
 byte  req_bitpp = 8;  // set by d_main checks on command line
 byte  req_drawmode = REQ_default;  // reqdrawmode_t
 
-byte  graphics_state = 0; // Is used in console.c and screen.c
+byte  graphics_state = VGS_off; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
@@ -169,7 +169,7 @@ void CV_usegamma_OnChange();
 void CV_gammafunc_OnChange();
 // In m_menu.c
 void MenuGammaFunc_dependencies( byte gamma_en,
-				 byte black_en, byte bright_en );
+                                 byte black_en, byte bright_en );
 
 CV_PossibleValue_t gamma_func_t[] = {
    {0,"Gamma"},
@@ -194,16 +194,18 @@ static byte gammatable[256];	// shared by all gamma table generators
 /// Build a gamma table
 static void R_BuildGammaTable(float gamma)
 {
-  int i;
+    int i;
 
-  // calculate gammatable anew each time
-  for (i=0; i<256; i++)
+    // Calculate gammatable anew each time.
+    for (i=0; i<256; i++)
+    {
 #ifdef __USE_ISOC99
-    // round is ISOC99
-    gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
+        // round is ISOC99
+        gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
 #else
-    gammatable[i] = rint(255.0*pow((i+1)/256.0, gamma));
+        gammatable[i] = rint(255.0*pow((i+1)/256.0, gamma));
 #endif
+    }
 }
 
 
@@ -211,52 +213,56 @@ static void R_BuildGammaTable(float gamma)
 
 // table of gamma value for each slider position
 float gamma_lookup_table[25] = {
-   1.48, 1.44, 1.4, 1.36, 1.32, 1.28, 1.24, 1.2, 1.16, 1.12, 1.08, 1.04,
-   1.0,		// doom gamma table 1   // at index 0
-   0.96, 0.92,
-   0.88,	// doom gamma table 2
-   0.836, 0.793,
-   0.75,	// doom gamma table 3
-   0.706, 0.663,
-   0.62,	// doom gamma table 4
-   0.58, 0.54,
-   0.50		// doom gamma table 5
+    1.48, 1.44, 1.4, 1.36, 1.32, 1.28, 1.24, 1.2, 1.16, 1.12, 1.08, 1.04,
+    1.0,	// doom gamma table 1   // at index 0
+    0.96, 0.92,
+    0.88,	// doom gamma table 2
+    0.836, 0.793,
+    0.75,	// doom gamma table 3
+    0.706, 0.663,
+    0.62,	// doom gamma table 4
+    0.58, 0.54,
+    0.50	// doom gamma table 5
 };
 
+// ind: -12 .. +12
 static inline float gamma_lookup( int ind )
 {
-   return gamma_lookup_table[ ind + 12 ];
+    return gamma_lookup_table[ ind + 12 ];
 }
 
 static void put_gammatable( int i, float fv )
 {
 #ifdef __USE_ISOC99
     // roundf is ISOC99
-   int gv = roundf( fv );
+    int gv = roundf( fv );
 #else
-   int gv = rint( fv );
+    int gv = rint( fv );
 #endif
-   if( gv < 0 ) gv = 0; 
-   if( gv > 255 ) gv = 255;
-   gammatable[i] = gv;
+    if( gv < 0 )
+        gv = 0; 
+    if( gv > 255 )
+        gv = 255;
+    gammatable[i] = gv;
 }
 
 // Generate a power law table from gamma, plus a black level offset
 static void
   R_Generate_gamma_black_table( void )
 {
-   int i;
+    int i;
 //   float b0 = ((float) cv_black.value ) * (16.0 / 12.0); // black
-   float b0 = ((float) cv_black.value ) / 2.0; // black
-   float pow_max = 255.0 - b0;
-   float gam = gamma_lookup( cv_usegamma.value );  // gamma
-   
-   gammatable[0] = 0;	// absolute black
+    float b0 = ((float) cv_black.value ) / 2.0; // black
+    float pow_max = 255.0 - b0;
+    float gam = gamma_lookup( cv_usegamma.value );  // gamma
 
-   for( i=1; i<=255; i++ ) {
-      float fi = ((float) i) / 255.0;
-      put_gammatable( i, b0 + (powf( fi, gam ) * pow_max) );
-   }
+    gammatable[0] = 0;	// absolute black
+
+    for( i=1; i<=255; i++ )
+    {
+        float fi = ((float) i) / 255.0;
+        put_gammatable( i, b0 + (powf( fi, gam ) * pow_max) );
+    }
 }
 
 #if 0
@@ -265,26 +271,28 @@ static void
 static void
   R_Generate_gamma_black_adj_table( void )
 {
-   // limits of black adjustment
+    // limits of black adjustment
 #  define BLACK_SIZE  48
-   int i, gv;
-   float gvf;
-   float gam = gamma_lookup( cv_usegamma.value );  // gamma
-   float blkgam = gamma_lookup( cv_black.value ); // black
-   
-   gammatable[0] = 0;	// absolute black
+    int i, gv;
+    float gvf;
+    float gam = gamma_lookup( cv_usegamma.value );  // gamma
+    float blkgam = gamma_lookup( cv_black.value ); // black
 
-   for( i=1; i<=255; i++ ) {
-      float fi = ((float) i) / 255.0;
-      gvf = powf( fi, gam ) * 255.0;
-      if( i < BLACK_SIZE ) {
-	 // Black adjustment, using a power function over the black range.
-	 // At neutral, powf = i, so adj = powf - i.
-	 fi = ((float) i) / BLACK_SIZE;
-	 gvf += (powf( fi, blkgam ) * BLACK_SIZE) - ((float)i);
-      }
-      put_gammatable( i, gvf );
-   }
+    gammatable[0] = 0;	// absolute black
+
+    for( i=1; i<=255; i++ )
+    {
+        float fi = ((float) i) / 255.0;
+        gvf = powf( fi, gam ) * 255.0;
+        if( i < BLACK_SIZE )
+        {
+            // Black adjustment, using a power function over the black range.
+            // At neutral, powf = i, so adj = powf - i.
+            fi = ((float) i) / BLACK_SIZE;
+            gvf += (powf( fi, blkgam ) * BLACK_SIZE) - ((float)i);
+        }
+        put_gammatable( i, gvf );
+    }
 }
 #endif
 
@@ -294,98 +302,103 @@ static void
 {
 #  define BRIGHT_MIN  60
 #  define BRIGHT_MID  130
-   int i, di, start_index, end_index;
-   float bf = ((float)cv_bright.value) * (256.0 / 6.0 / 12.0);
-   float n3 = bf*bf*bf;
-   float d2 = bf*bf;
-   float gf, w0;
+    int i, di, start_index, end_index;
+    float bf = ((float)cv_bright.value) * (256.0 / 6.0 / 12.0);
+    float n3 = bf*bf*bf;
+    float d2 = bf*bf;
+    float gf, w0;
+
+    R_Generate_gamma_black_table();
    
-   R_Generate_gamma_black_table();
-   
-   // bright correct using curve: witch of agnesi
-   // y = (d**3)/(x**2 + d**2)
-   // MIN to MID
-   start_index = BRIGHT_MIN;
-   end_index = BRIGHT_MID;
-   do {
-      di = end_index - start_index;
-      w0 = (n3 / ( (di*di) + d2 )) / di; 	// witch at low point / di
-      for( i=start_index; i<=end_index; i++ ) {
-	 di = abs(BRIGHT_MID - i);
-	 gf = n3 / ( (di*di) + d2 );	// witch of agnesi
-	 gf -= w0 * di; // smooth transition on tail
-	 // add adjustment to table
-	 put_gammatable( i, gammatable[i] + gf );
-      }
-      // MID to 255
-      start_index = BRIGHT_MID + 1;
-      end_index = 255;
+    // bright correct using curve: witch of agnesi
+    // y = (d**3)/(x**2 + d**2)
+    // MIN to MID
+    start_index = BRIGHT_MIN;
+    end_index = BRIGHT_MID;
+    do
+    {
+       di = end_index - start_index;
+       w0 = (n3 / ( (di*di) + d2 )) / di; 	// witch at low point / di
+       for( i=start_index; i<=end_index; i++ )
+       {
+           di = abs(BRIGHT_MID - i);
+           gf = n3 / ( (di*di) + d2 );	// witch of agnesi
+           gf -= w0 * di; // smooth transition on tail
+           // add adjustment to table
+           put_gammatable( i, gammatable[i] + gf );
+       }
+       // MID to 255
+       start_index = BRIGHT_MID + 1;
+       end_index = 255;
    } while( i < 255 );
 }
 
 static void
   R_Generate_smooth5_linear_gamma_table( void )
 {
-   const int bl_index = 28;
-   const int bl_ref_offset = 20; // (8 .. 28 .. 50);
-   const int wl_index = 128;
-   const int wl_ref_offset = 48; // (60 .. 128 .. 176);
-   float bl_offset = ((float) cv_black.value ) * bl_ref_offset / 12.0;
-   float wl_offset = ((float) cv_bright.value ) * wl_ref_offset / 12.0;
-   float b0 = 0.0, lf = 1.0;
-   int i, start_index, end_index, seg = 0;
+    const int bl_index = 28;
+    const int bl_ref_offset = 20; // (8 .. 28 .. 50);
+    const int wl_index = 128;
+    const int wl_ref_offset = 48; // (60 .. 128 .. 176);
+    float bl_offset = ((float) cv_black.value ) * bl_ref_offset / 12.0;
+    float wl_offset = ((float) cv_bright.value ) * wl_ref_offset / 12.0;
+    float b0 = 0.0, lf = 1.0;
+    int i, start_index, end_index, seg = 0;
 
-   // monotonic checks
-   if( (wl_offset + wl_index) < (bl_offset + bl_index + 5) ) {
-      // enforce monotonic by altering wl
-      wl_offset = bl_offset + bl_index + 5 - wl_index;
-   }
-   if( (wl_offset + wl_index) > 250.0 ) {
-      // enforce monotonic by altering wl
-      wl_offset = 250.0 - wl_index;
-   }
-   // eqn: bl_offset = ( b0 + (lf * bl_index))
-   b0 = bl_offset * 5 / 16;
-   if( b0 < 0.0 ) b0 = 0;
-   gammatable[0] = 0;	// absolute black
-   gammatable[1] = (b0 * 5)/16;	// near black
-   gammatable[2] = (b0 * 11)/16;
-   gammatable[3] = (b0 * 15)/16;
+    // monotonic checks
+    if( (wl_offset + wl_index) < (bl_offset + bl_index + 5) ) {
+        // enforce monotonic by altering wl
+        wl_offset = bl_offset + bl_index + 5 - wl_index;
+    }
+    if( (wl_offset + wl_index) > 250.0 ) {
+        // enforce monotonic by altering wl
+        wl_offset = 250.0 - wl_index;
+    }
+    // eqn: bl_offset = ( b0 + (lf * bl_index))
+    b0 = bl_offset * 5 / 16;
+    if( b0 < 0.0 ) b0 = 0;
+    gammatable[0] = 0;	// absolute black
+    gammatable[1] = (b0 * 5)/16;	// near black
+    gammatable[2] = (b0 * 11)/16;
+    gammatable[3] = (b0 * 15)/16;
 
-   // generate rest of table in three linear segments
-   end_index = 3; // start at 4
-   for( seg=0; seg<=2; seg++ ){
-      start_index = end_index + 1;
-      switch( seg ) {
-       case 0:
-         // linear from [1] to [bl_index]
-	 end_index = bl_index;
-	 lf = (bl_offset - b0) / bl_index;
-	 break;
-       case 1:
-	 // linear from [bl_index+1] to [wl_index]
-	 // eqn: bl_index + bl_offset = bl_index + ( b0 + (lf * bl_index))
-	 // eqn: wl_index + wl_offset = wl_index + ( b0 + (lf * wl_index))
-	 end_index = wl_index;
-	 lf = ( wl_offset - bl_offset ) / ( wl_index - bl_index );
-	 b0 = bl_offset - (lf * bl_index);
-	 break;
-       case 2:
-	 // linear from [wl_index+1] to [255]
-	 end_index = 255;
-	 lf =  - wl_offset / (255 - wl_index);
-	 b0 = wl_offset - (lf * wl_index);
-	 break;
-      }
+    // generate rest of table in three linear segments
+    end_index = 3; // start at 4
+    for( seg=0; seg<=2; seg++ )
+    {
+        start_index = end_index + 1;
+        switch( seg )
+        {
+         case 0:
+           // linear from [1] to [bl_index]
+           end_index = bl_index;
+           lf = (bl_offset - b0) / bl_index;
+           break;
+         case 1:
+           // linear from [bl_index+1] to [wl_index]
+           // eqn: bl_index + bl_offset = bl_index + ( b0 + (lf * bl_index))
+           // eqn: wl_index + wl_offset = wl_index + ( b0 + (lf * wl_index))
+           end_index = wl_index;
+           lf = ( wl_offset - bl_offset ) / ( wl_index - bl_index );
+           b0 = bl_offset - (lf * bl_index);
+           break;
+         case 2:
+           // linear from [wl_index+1] to [255]
+           end_index = 255;
+           lf =  - wl_offset / (255 - wl_index);
+           b0 = wl_offset - (lf * wl_index);
+           break;
+        }
       
-      for( i=start_index; i<=end_index; i++ ) {
-	 put_gammatable( i, (b0 + ( lf * i ) + i)); // linear
-	 // smooth over 5 using weights 3 3 4 3 3
- 	 gammatable[i-2] =
-	   ((gammatable[i-4] + gammatable[i-3] + gammatable[i-1] + gammatable[i])*3
-	      + gammatable[i-2]*4 ) / 16;
-      }
-   }
+        for( i=start_index; i<=end_index; i++ )
+        {
+            put_gammatable( i, (b0 + ( lf * i ) + i)); // linear
+            // smooth over 5 using weights 3 3 4 3 3
+            gammatable[i-2] = ((gammatable[i-4] + gammatable[i-3]
+                                + gammatable[i-1] + gammatable[i])*3
+                               + gammatable[i-2]*4 ) / 16;
+        }
+    }
 }
 
 #endif
@@ -394,12 +407,12 @@ static void
 // [WDJ] Default palette for Launch, font1, error messages
 #define DEFAULT_PALSIZE  (3*6)
 byte default_pal[ DEFAULT_PALSIZE ] = {
-   0, 0, 0,
-   10, 10, 10,
-   253, 253, 253,
-   250, 0, 0,
-   0, 250, 0,
-   0, 0, 250,
+    0, 0, 0,
+    10, 10, 10,
+    253, 253, 253,
+    250, 0, 0,
+    0, 250, 0,
+    0, 0, 250,
 };
 
 
@@ -514,7 +527,7 @@ void CV_usegamma_OnChange(void)
     // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
     R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
 #endif
-    if( graphics_state == VGS_fullactive )
+    if( graphics_state >= VGS_active )
     {
         // reload palette
         LoadPalette("PLAYPAL");
@@ -596,16 +609,16 @@ boolean V_CanDraw( byte bitpp )
 {
     if( bitpp==8
 #ifdef ENABLE_DRAW15
-	|| (bitpp==15)
+        || (bitpp==15)
 #endif
 #ifdef ENABLE_DRAW16
-	|| (bitpp==16)
+        || (bitpp==16)
 #endif
 #ifdef ENABLE_DRAW24
-	|| (bitpp==24)
+        || (bitpp==24)
 #endif
 #ifdef ENABLE_DRAW32
-	|| (bitpp==32)
+        || (bitpp==32)
 #endif
        ) return 1;
     return 0;
@@ -633,16 +646,16 @@ void V_DrawPixel(byte * line, int x, byte color)
         {
             register uint16_t * s16 = (uint16_t*) line;
             s16[x] = color8.to16[ color ];
-	}
+        }
         break;
 #endif
 #ifdef ENABLE_DRAW24
      case DRAW24:
         {
-	    pixelunion32_t c32;
-	    c32.ui32 = color8.to32[ color ];
-	    register pixel24_t * s24 = (pixel24_t*) line;
-	    s24[x] = c32.pix24;
+            pixelunion32_t c32;
+            c32.ui32 = color8.to32[ color ];
+            register pixel24_t * s24 = (pixel24_t*) line;
+            s24[x] = c32.pix24;
         }
         break;
 #endif       
@@ -685,7 +698,7 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
         while(count--)
         {
             *(uint16_t*)line = color8.to16[ *(src++) ];
-	    line += 2;
+            line += 2;
         }
         break;
 #endif
@@ -696,8 +709,8 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
         {
             pixelunion32_t c32;
             c32.ui32 = color8.to32[ *(src++) ];
-	    *(pixel24_t*)line = c32.pix24;
-	    line += 3;
+            *(pixel24_t*)line = c32.pix24;
+            line += 3;
         }
         break;
 #endif
@@ -707,7 +720,7 @@ void V_DrawPixels(byte * line, int x, int count, byte* src)
         while(count--)
         {
             *(uint32_t*)line = color8.to32[ *(src++) ];
-	    line += 4;
+            line += 4;
         }
         break;
 #endif
@@ -805,7 +818,7 @@ void V_ClearDisplay( void )
 #endif
     {
         if( vid.display )
-	   memset( vid.display, 0, vid.screen_size );
+           memset( vid.display, 0, vid.screen_size );
     }
 }
 
@@ -839,14 +852,14 @@ void V_SetupDraw( uint32_t screenflags )
     if (screenflags & V_NOSCALESTART)
     {
         V_drawinfo.y0bytes = vid.ybytes;  // unscaled
-	V_drawinfo.x0bytes = vid.bytepp;
-	V_drawinfo.dupx0 = 1;
+        V_drawinfo.x0bytes = vid.bytepp;
+        V_drawinfo.dupx0 = 1;
     }
     else
     {
         V_drawinfo.y0bytes = vid.dupy * vid.ybytes;  // scaled
-	V_drawinfo.x0bytes = vid.dupx * vid.bytepp;
-	V_drawinfo.dupx0 = vid.dupx;
+        V_drawinfo.x0bytes = vid.dupx * vid.bytepp;
+        V_drawinfo.dupx0 = vid.dupx;
     }
 
     V_drawinfo.x_unitfrac = FixedDiv(FRACUNIT, V_drawinfo.dupx << FRACBITS);
@@ -865,7 +878,7 @@ void V_SetupDraw( uint32_t screenflags )
         V_drawinfo.start_offset += ( vid.centerofs * vid.bytepp );
         // as previously was performed by scaleofs.
         // Enabled when the menu is displayed, and crosshairs.
-	// The menu is scaled, a round multiple of the original pixels to
+        // The menu is scaled, a round multiple of the original pixels to
         // keep the graphics clean, then it is centered a little.
         // Except the menu, scaled graphics don't have to be centered.
     }
@@ -928,25 +941,25 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
-	    if(vid.drawmode != DRAW8PAL)
-	    {
-	        while (count--)
-	        {
-		    V_DrawPixel( dest, 0, colormap[ source[ofs >> FRACBITS]] );
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	    }
-	    else
+            if(vid.drawmode != DRAW8PAL)
+            {
+                while (count--)
+                {
+                    V_DrawPixel( dest, 0, colormap[ source[ofs >> FRACBITS]] );
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+            }
+            else
 #endif
-	    {
-	        // DRAW8PAL
-		while (count--)
-	        { 
-		    *dest = colormap[ source[ofs >> FRACBITS]];
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
+            {
+                // DRAW8PAL
+                while (count--)
+                { 
+                    *dest = colormap[ source[ofs >> FRACBITS]];
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
             }
             column = (column_t *) ((byte *) column + column->length + 4);
         }
@@ -962,7 +975,7 @@ void V_DrawMappedPatch_Name ( int x, int y, char* name, byte* colormap )
    // The patch is used only in this function
    V_DrawMappedPatch ( x, y,
                        W_CachePatchName( name, PU_CACHE ),  // endian fix
-		       colormap );
+                       colormap );
 }
 
 
@@ -992,7 +1005,7 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     {
         // Draw a hardware converted patch.
         HWR_DrawPatch((MipPatch_t *) patch, x, y,
-		      V_drawinfo.screenflags|V_drawinfo.effectflags );
+                      V_drawinfo.screenflags|V_drawinfo.effectflags );
         return;
     }
 #endif
@@ -1010,30 +1023,30 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     if( desttop < V_drawinfo.screen_start )
     {
         // Protect against drawing outside of screen.
-	if( y < 0 )
+        if( y < 0 )
         {
-	    // Clip y
-	    desttop = V_drawinfo.drawp + (x * V_drawinfo.x0bytes);
-	}
+            // Clip y
+            desttop = V_drawinfo.drawp + (x * V_drawinfo.x0bytes);
+        }
         // Compensate for the change in y.
         destend = desttop + (patch->width * V_drawinfo.xbytes);
         if( desttop < V_drawinfo.screen_start )
         {
-	    // Clip x too.
-	    desttop = V_drawinfo.screen_start;
-	}
+            // Clip x too.
+            desttop = V_drawinfo.screen_start;
+        }
 
 #if 1
         if( gamemode == chexquest1 && y == -1 )
         {
-	    // Chexquest Newmaps black bars and crosshairs.
-	    // Were designed for OpenGL drawing, looks better when stretched.
-	    x = 0;
-	    y = 0;
-	    colfrac = colfrac * (vid.dupx * BASEVIDWIDTH) / vid.width;
-	    desttop = V_drawinfo.screen_start;
-	    destend = desttop + vid.ybytes;
-	}
+            // Chexquest Newmaps black bars and crosshairs.
+            // Were designed for OpenGL drawing, looks better when stretched.
+            x = 0;
+            y = 0;
+            colfrac = colfrac * (vid.dupx * BASEVIDWIDTH) / vid.width;
+            desttop = V_drawinfo.screen_start;
+            destend = desttop + vid.ybytes;
+        }
 #endif
     }
 #endif
@@ -1060,35 +1073,35 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
-	    if(vid.drawmode != DRAW8PAL)
-	    {
-	        while (count--)
-	        {
+            if(vid.drawmode != DRAW8PAL)
+            {
+                while (count--)
+                {
 #ifdef ENABLE_CLIP_DRAWSCALED
-		    if( dest >= V_drawinfo.screen_start )
-		       V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
+                    if( dest >= V_drawinfo.screen_start )
+                       V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
 #else
-		    V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
+                    V_DrawPixel( dest, 0, source[ofs >> FRACBITS] );
 #endif
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	    }
-	    else
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+            }
+            else
 #endif
-	    {
-	        while (count--)
-	        {
+            {
+                while (count--)
+                {
 #ifdef ENABLE_CLIP_DRAWSCALED
-		    if( dest >= V_drawinfo.screen_start )
-		       *dest = source[ofs >> FRACBITS];
+                    if( dest >= V_drawinfo.screen_start )
+                       *dest = source[ofs >> FRACBITS];
 #else
-		    *dest = source[ofs >> FRACBITS];
+                    *dest = source[ofs >> FRACBITS];
 #endif
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	    }
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+            }
 
             column = (column_t *) ((byte *) column + column->length + 4);
         }
@@ -1187,18 +1200,18 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
         col += colfrac_inc;
         while (column->topdelta != 0xff)
         {
-	    source = (byte *) column + 3;
-	    dest = desttop + (column->topdelta * dup_ybytes);
-	    count = (column->length * count_dupy) >> 1;  // dupy or dupy/2
-	    ofs = 0;
-	    while (count--)
-	    {
-	        V_DrawPixel( dest, 0, colormap[source[ofs >> FRACBITS]] );
-	        dest += vid.ybytes;
-	        ofs += rowfrac_inc;
-	    }
-	    column = (column_t *) ((byte *) column + column->length + 4);
-	}
+            source = (byte *) column + 3;
+            dest = desttop + (column->topdelta * dup_ybytes);
+            count = (column->length * count_dupy) >> 1;  // dupy or dupy/2
+            ofs = 0;
+            while (count--)
+            {
+                V_DrawPixel( dest, 0, colormap[source[ofs >> FRACBITS]] );
+                dest += vid.ybytes;
+                ofs += rowfrac_inc;
+            }
+            column = (column_t *) ((byte *) column + column->length + 4);
+        }
     }
 }
 #endif
@@ -1253,71 +1266,71 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
 
             ofs = 0;
 #ifdef ENABLE_DRAWEXT
-	    switch(vid.drawmode)
-	    {
-	     default:
-	     case DRAW8PAL:
-	        while (count--)
-	        {
-		    register unsigned int color = source[ofs >> FRACBITS];
-		    *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	        break;
+            switch(vid.drawmode)
+            {
+             default:
+             case DRAW8PAL:
+                while (count--)
+                {
+                    register unsigned int color = source[ofs >> FRACBITS];
+                    *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+                break;
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
-	     case DRAW15:
-	     case DRAW16:
-	        while (count--)
-	        {
-		    register unsigned int color = source[ofs >> FRACBITS];
-		    register uint16_t * s16 = (uint16_t*) dest;
-		    *s16 =( ((color8.to16[color]>>1) & mask_01111) +
-			    (((*s16)>>1) & mask_01111) );
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	        break;
+             case DRAW15:
+             case DRAW16:
+                while (count--)
+                {
+                    register unsigned int color = source[ofs >> FRACBITS];
+                    register uint16_t * s16 = (uint16_t*) dest;
+                    *s16 =( ((color8.to16[color]>>1) & mask_01111) +
+                            (((*s16)>>1) & mask_01111) );
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+                break;
 #endif
 #ifdef ENABLE_DRAW24
-	     case DRAW24:
-	        while (count--)
-	        {
-		    register unsigned int color = source[ofs >> FRACBITS];
-		    pixelunion32_t c32;
-		    c32.ui32 = (color8.to32[ color ]>>1) & 0x7F7F7F; // 01111111 on pix24
-		    register pixel24_t * s24 = (pixel24_t*) dest;
-		    s24->r = c32.pix24.r + (s24->r>>1);
-		    s24->g = c32.pix24.g + (s24->g>>1);
-		    s24->b = c32.pix24.b + (s24->b>>1);
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	        break;
+             case DRAW24:
+                while (count--)
+                {
+                    register unsigned int color = source[ofs >> FRACBITS];
+                    pixelunion32_t c32;
+                    c32.ui32 = (color8.to32[ color ]>>1) & 0x7F7F7F; // 01111111 on pix24
+                    register pixel24_t * s24 = (pixel24_t*) dest;
+                    s24->r = c32.pix24.r + (s24->r>>1);
+                    s24->g = c32.pix24.g + (s24->g>>1);
+                    s24->b = c32.pix24.b + (s24->b>>1);
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+                break;
 #endif
 #ifdef ENABLE_DRAW32
-	     case DRAW32:
-	        while (count--)
-	        {
-		    register unsigned int color = source[ofs >> FRACBITS];
-		    register uint32_t * s32 = (uint32_t*) dest;
-		    *s32 = ((color8.to32[ color ]>>1) & 0x007F7F7F)
-		         + (((*s32)>>1) & 0x007F7F7F) + (*s32 & 0xFF000000);
-		    dest += vid.ybytes;
-		    ofs += V_drawinfo.y_unitfrac;
-		}
-	        break;
+             case DRAW32:
+                while (count--)
+                {
+                    register unsigned int color = source[ofs >> FRACBITS];
+                    register uint32_t * s32 = (uint32_t*) dest;
+                    *s32 = ((color8.to32[ color ]>>1) & 0x007F7F7F)
+                         + (((*s32)>>1) & 0x007F7F7F) + (*s32 & 0xFF000000);
+                    dest += vid.ybytes;
+                    ofs += V_drawinfo.y_unitfrac;
+                }
+                break;
 #endif
-	    }
+            }
 #else
-	    // Degenerate DRAW8PAL only
-	    while (count--)
-	    {
-	        register unsigned int color = source[ofs >> FRACBITS];
-	        *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
-	        dest += vid.ybytes;
-	        ofs += V_drawinfo.y_unitfrac;
-	    }
+            // Degenerate DRAW8PAL only
+            while (count--)
+            {
+                register unsigned int color = source[ofs >> FRACBITS];
+                *dest = translucenttables[ ((color << 8) & 0xFF00) + (*dest & 0xFF) ];
+                dest += vid.ybytes;
+                ofs += V_drawinfo.y_unitfrac;
+            }
 #endif
 
             column = (column_t *) ((byte *) column + column->length + 4);
@@ -1483,23 +1496,23 @@ static void V_BlitScalePic(int x1, int y1, pic_t * pic)
     // scaled, with x centering
     dest = V_drawinfo.drawp + (max(0, y1) * vid.ybytes) + (max(0, x1) * vid.bytepp);
     // y clipping to the screen
-    if (y1 + (pic_height * vid.dupy) >= vid.width)
-        pic_height = (vid.width - y1) / vid.dupy - 1;
+    if (y1 + (pic_height * vid.dupy) >= vid.height)
+        pic_height = ((vid.height - y1) / vid.dupy) - 1;
     // WARNING no x clipping (not needed for the moment)
 
     for (y = max(0, -y1 / vid.dupy); y < pic_height; y++)
     {
         for (dupy = vid.dupy; dupy; dupy--)
         {
-	    int xb = 0;
+            int xb = 0;
             src = pic->data + (y * pic_width);
             for (x = 0; x < pic_width; x++)
             {
                 for (dupx = vid.dupx; dupx; dupx--)
-		    V_DrawPixel(dest, xb++, *src);
+                    V_DrawPixel(dest, xb++, *src);
                 src++;
             }
-	    dest += vid.ybytes;
+            dest += vid.ybytes;
         }
     }
 }
@@ -1540,7 +1553,7 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 #endif
 
     V_BlitScalePic(x1, y1,
-		   W_CacheRawAsPic(lumpnum, width, height, PU_CACHE));
+                   W_CacheRawAsPic(lumpnum, width, height, PU_CACHE));
 }
 
 
@@ -1700,18 +1713,18 @@ void V_DrawFadeScreen(void)
         // 8 bpp palette fade
         for (y = 0; y < vid.height; y++)
         {
-	    buf = (uint32_t *) (screens[0] + (y * vid.ybytes));
-	    for (x = 0; x < w4; x++)
-	    {
-	        // fade four at a time
-	        quad = buf[x];
-	        p1 = fadetable[quad & 255];
-	        p2 = fadetable[(quad >> 8) & 255];
-	        p3 = fadetable[(quad >> 16) & 255];
-	        p4 = fadetable[quad >> 24];
-	        buf[x] = (p4 << 24) | (p3 << 16) | (p2 << 8) | p1;
-	    }
-	}
+            buf = (uint32_t *) (screens[0] + (y * vid.ybytes));
+            for (x = 0; x < w4; x++)
+            {
+                // fade four at a time
+                quad = buf[x];
+                p1 = fadetable[quad & 255];
+                p2 = fadetable[(quad >> 8) & 255];
+                p3 = fadetable[(quad >> 16) & 255];
+                p4 = fadetable[quad >> 24];
+                buf[x] = (p4 << 24) | (p3 << 16) | (p2 << 8) | p1;
+            }
+        }
         break;
 #ifdef ENABLE_DRAW15
      case DRAW15:
@@ -1736,13 +1749,13 @@ void V_DrawFadeScreen(void)
      fade_loop:
         for (y = 0; y < vid.height; y++)
         {
-	    buf = (uint32_t *) (screens[0] + (y * vid.ybytes)); 
+            buf = (uint32_t *) (screens[0] + (y * vid.ybytes)); 
             for (x = 0; x < w4; x++)
-	    {
-	        *buf = (*buf >> 1) & mask;
-	        buf++;
+            {
+                *buf = (*buf >> 1) & mask;
+                buf++;
              }
-	}
+        }
         break;
 #endif       
      default:
@@ -1826,8 +1839,8 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
             for (x = 0; x < w4; x++)
             {
                 *buf = ((((*buf >> 2) & mask) + green_tint) )
-		        | (*buf & alpha);
-	        buf++;  // compiler complains when combined above
+                        | (*buf & alpha);
+                buf++;  // compiler complains when combined above
             }
         }
         break;
@@ -1840,10 +1853,10 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
             pixel24_t * p24 = (pixel24_t*)( screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp) );
             for (x = w4; x > 0; x--)
             { 
-	        p24->b >>= 2; // blue
-	        p24->g = ((uint16_t)(p24->g) >> 2) + GREEN_TINT_255; // green
-	        p24->r >>= 2; // red
-	        p24 ++;
+                p24->b >>= 2; // blue
+                p24->g = ((uint16_t)(p24->g) >> 2) + GREEN_TINT_255; // green
+                p24->r >>= 2; // red
+                p24 ++;
             }
         }
         break;
@@ -2021,15 +2034,15 @@ void V_Drawfont1_char(int x, int y, byte c)
         lbp = &lb[0];
         for( i=0; i<FONT1_WIDTH; i++ )  // convert bit map to color bytes
         {
-	   for( d=V_drawinfo.dupx; d>0; d-- )
-	       *(lbp++) = ( fbit & 0x01 )? fcolor : ci_black;
-	   fbit >>= 1;
+           for( d=V_drawinfo.dupx; d>0; d-- )
+               *(lbp++) = ( fbit & 0x01 )? fcolor : ci_black;
+           fbit >>= 1;
         }
         for( d=V_drawinfo.dupy; d>0; d-- )
         {
-	    V_DrawPixels(dp, 0, chwidth, lb);
-	    dp += vid.ybytes;
-	}
+            V_DrawPixels(dp, 0, chwidth, lb);
+            dp += vid.ybytes;
+        }
     }
 }
 
@@ -2063,7 +2076,7 @@ void V_Drawfont1_string(int x, int y, int option, char *string)
         if (c == '\n')
         {
             cx = x0;
-	    dp0 += (FONT1_HEIGHT+3) * V_drawinfo.dupy;
+            dp0 += (FONT1_HEIGHT+3) * V_drawinfo.dupy;
             continue;
         }
 
@@ -2072,25 +2085,25 @@ void V_Drawfont1_string(int x, int y, int option, char *string)
 
         if (c >= 33)
         {
-	    dp = dp0 + cx;  // dest of char
-	    fb = ((c & 0x7f) - FONT1_START) * FONT1_HEIGHT;  // in font addressing
-	    for( fy=0; fy<FONT1_HEIGHT; fy++ )  // font lines
-	    {
-	        fbit = font1_bits[ fb + fy ];
-	        lbp = &lb[0];
-	        for( i=0; i<FONT1_WIDTH; i++ )  // convert bit map to color bytes
-	        {
-		    for( d=V_drawinfo.dupx; d>0; d-- )  // dup width
-		      *(lbp++) = ( fbit & 0x01 )? fcolor : ci_black;
-		    fbit >>= 1;
-		}
-	        for( d=V_drawinfo.dupy; d>0; d-- )  // dup height
-	        {
-		    V_DrawPixels(dp, 0, chwidth, lb);
-		    dp += vid.ybytes;
-		}
-	    }
-	}
+            dp = dp0 + cx;  // dest of char
+            fb = ((c & 0x7f) - FONT1_START) * FONT1_HEIGHT;  // in font addressing
+            for( fy=0; fy<FONT1_HEIGHT; fy++ )  // font lines
+            {
+                fbit = font1_bits[ fb + fy ];
+                lbp = &lb[0];
+                for( i=0; i<FONT1_WIDTH; i++ )  // convert bit map to color bytes
+                {
+                    for( d=V_drawinfo.dupx; d>0; d-- )  // dup width
+                      *(lbp++) = ( fbit & 0x01 )? fcolor : ci_black;
+                    fbit >>= 1;
+                }
+                for( d=V_drawinfo.dupy; d>0; d-- )  // dup height
+                {
+                    V_DrawPixels(dp, 0, chwidth, lb);
+                    dp += vid.ybytes;
+                }
+            }
+        }
         cx += chspace_bytes;
     }
 }
@@ -2163,7 +2176,7 @@ void V_DrawString(int x, int y, int option, char *string)
     cy = y;
     // V_NOSCALESTART already covered by SetupDraw
     if ((V_drawinfo.screenflags & V_NOSCALESTART)
-	&& (V_drawinfo.screenflags & V_SCALEPATCH))
+        && (V_drawinfo.screenflags & V_SCALEPATCH))
     {
         // Draw will not do x,y scaling, so spacing must be scaled here
         dupx = vid.dupx;
@@ -2196,7 +2209,7 @@ void V_DrawString(int x, int y, int option, char *string)
             continue;
         }
 
-	//[segabor]
+        //[segabor]
         w = hu_font[c]->width * dupx;	// hu_font is endian fixed
         if (cx + w > scrwidth)
             break;
@@ -2208,6 +2221,7 @@ void V_DrawString(int x, int y, int option, char *string)
     }
 }
 
+#if 0
 // Handy utility function.
 // SSNTails 06-10-2003
 // unused
@@ -2265,6 +2279,7 @@ void V_DrawCenteredString(int x, int y, int option, char *string)
         cx += w;
     }
 }
+#endif
 
 //
 // Find string width from hu_font chars
@@ -2290,7 +2305,7 @@ int V_StringWidth(char *string)
         if (c < 0 || c >= HU_FONTSIZE)
             w += 4;
         else
-	    //[segabor]
+            //[segabor]
             w += hu_font[c]->width;  // hu_font is endian fixed
     }
 
@@ -2328,7 +2343,7 @@ void V_DrawTextB(char *text, int x, int y)
         }
         else
         {
-	    // FontB only has uppercase
+            // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawScaledPatch(x, y, p);
             x += p->width - 1;
@@ -2350,7 +2365,7 @@ void V_DrawTextBGray(char *text, int x, int y)
         }
         else
         {
-	    // FontB only has uppercase
+            // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawMappedPatch(x, y, p, graymap);
             x += p->width - 1;
@@ -2381,7 +2396,7 @@ int V_TextBWidth(char *text)
         }
         else
         {
-	    // FontB only has uppercase
+            // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             width += p->width - 1;
         }
@@ -2499,8 +2514,8 @@ void V_Setup_VideoDraw(void)
 static byte fpsgraph[FPS_POINTS];
 #endif
 
-// [WDJ] Draw ticrate graph at bottom of screen
-// removed from port drivers so do not have to maintain 4 copies of it
+// [WDJ] Draw ticrate graph at bottom of screen.
+// Removed from port drivers so do not have to maintain 4 copies of it.
 void V_Draw_ticrate_graph( void )
 {
     static tic_t lasttic;
@@ -2520,39 +2535,39 @@ void V_Draw_ticrate_graph( void )
 #ifdef DRAW_FPSGRAPH
         if( nt - shifttic > FPS_SHIFTTIC )
         {
-	    // try to get somewhat constant horz. time scale
-	    shifttic += FPS_SHIFTTIC;
+            // try to get somewhat constant horz. time scale
+            shifttic += FPS_SHIFTTIC;
             // shift it left
             memmove( &fpsgraph[0], &fpsgraph[1], FPS_POINTS*sizeof(fpsgraph[0]));
-	}
+        }
         fpsgraph[FPS_POINTS-1]=FPS_MAXTICKS-tics;
 
         if( rendermode == render_soft )
         {
             // draw grid of dots
             for(j=0; j<=FPS_MAXTICKS*FPS_SCALE*vid.dupy; j+=2*FPS_SCALE*vid.dupy)
-	    {
-	        byte * dest = V_GetDrawAddr( 0, (vid.height-1-j) );
+            {
+                byte * dest = V_GetDrawAddr( 0, (vid.height-1-j) );
                 for (i=0; i<FPS_POINTS*FPS_SCALE*vid.dupx; i+=2*FPS_SCALE*vid.dupx)
-		    V_DrawPixel( dest, i, 0xff );
+                    V_DrawPixel( dest, i, 0xff );
             }
 
             // draw the graph
             for (i=0; i<FPS_POINTS; i++)
-	    {
-	        byte * dest = V_GetDrawAddr( 0, vid.height-1-(fpsgraph[i]*FPS_SCALE*vid.dupy) );
-	        // draw line at the graph height
+            {
+                byte * dest = V_GetDrawAddr( 0, vid.height-1-(fpsgraph[i]*FPS_SCALE*vid.dupy) );
+                // draw line at the graph height
                 for(k=0; k<FPS_SCALE*vid.dupx; k++)
-		    V_DrawPixel( dest, (i*FPS_SCALE*vid.dupx)+k, 0xff );
-	    }
+                    V_DrawPixel( dest, (i*FPS_SCALE*vid.dupx)+k, 0xff );
+            }
 #else
-	    // draws little dots on the bottom of the screen
-	    byte * dest = V_GetDrawAddr( 3, (vid.height-2) );
+            // draws little dots on the bottom of the screen
+            byte * dest = V_GetDrawAddr( 3, (vid.height-2) );
       
-	    for (i=0; i<tics*2; i+=2)
-	        V_DrawPixel( dest, i * vid.dupy, 0x04 ); // white
-	    for ( ; i<20*2; i+=2)
-	        V_DrawPixel( dest, i * vid.dupy, 0x00 );
+            for (i=0; i<tics*2; i+=2)
+                V_DrawPixel( dest, i * vid.dupy, 0x04 ); // white
+            for ( ; i<20*2; i+=2)
+                V_DrawPixel( dest, i * vid.dupy, 0x00 );
 #endif
         }
 #ifdef HWRENDER
@@ -2562,8 +2577,8 @@ void V_Draw_ticrate_graph( void )
             for(j=0; j<=20*FPS_SCALE*vid.dupy; j+=2*FPS_SCALE*vid.dupy)
             {
                 k=(vid.height-1-j);
-	        p.a.y = k;
-	        p.b.y = k;
+                p.a.y = k;
+                p.b.y = k;
                 for (i=0; i<FPS_POINTS*FPS_SCALE*vid.dupx; i+=2*FPS_SCALE*vid.dupx)
                 {
                     p.a.x = i;
@@ -2687,16 +2702,12 @@ void V_DrawTiltView(byte * viewbuffer)
 #endif
 #endif
 
+
+#ifdef PERSPCORRECT
 //
 // Test 'scrunch perspective correction' tm (c) ect.
 //
 //added:05-04-98:
-
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-void V_DrawPerspView(byte * viewbuffer, int aiming)
-{
-}
-#else
 
 // Called by D_Display
 // - instead of I_Finish update with page flip
@@ -2735,19 +2746,23 @@ void V_DrawPerspView(byte * viewbuffer, int aiming)
         if( vid.bytepp > 1 )
         {
           while (w--)
-	  {
-	    V_DrawPixel( dest, 0, source[xfrac >> FRACBITS] );
-	    dest += vid.bytepp;
+          {
+            V_DrawPixel( dest, 0, source[xfrac >> FRACBITS] );
+            dest += vid.bytepp;
             xfrac += xfracstep;
-	  }
-	}else
-#else
-        while (w--)
+          }
+        }
+        else
+#endif
         {
+          // 8 bit per pixel
+          while (w--)
+          {
             *dest++ = source[xfrac >> FRACBITS];
             xfrac += xfracstep;
+          }
         }
-#endif
+
         scale += scalestep;
         source += vid.ybytes;
     }

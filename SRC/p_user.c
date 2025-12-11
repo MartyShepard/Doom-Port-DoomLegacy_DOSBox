@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: p_user.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1459,7 +1459,7 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
 		   || player == displayplayer2_ptr ) // NULL when unused
                 {
                     S_StartSound(NULL, sfx_artiuse);
-                    ArtifactFlash = 4;
+                    H_ArtifactFlash = 4;
                 }
             }
             else

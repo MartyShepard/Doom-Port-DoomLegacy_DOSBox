@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: screen.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -220,7 +220,7 @@ void SCR_SetMode (void)
         mask_11100 = 0x739C;  // 0 11100 11100 11100 mask out the lowest bits of R,G,B
         mask_11000 = 0x6318;  // 0 11000 11000 11000 mask out the lowest bits of R,G,B
         mask_r = 0x7C00;  // 0 11111 00000 00000 mask of R
-	mask_g = 0x03E0;  // 0 00000 11111 00000 mask of G
+        mask_g = 0x03E0;  // 0 00000 11111 00000 mask of G
         mask_b = 0x001F;  // 0 00000 00000 11111 mask of B
         mask_rb = 0x7C1F;  // 0 11111 00000 11111 mask of R and B
         goto highcolor_common;
@@ -236,7 +236,7 @@ void SCR_SetMode (void)
         mask_11110 = 0xE79C;  // 11100 111100 11100 mask out the lowest bits of R,G,B
         mask_11100 = 0xC718;  // 11000 111000 11000 mask out the lowest bits of R,G,B
         mask_r = 0xF800;  // 11111 000000 00000 mask of R
-	mask_g = 0x07E0;  // 00000 111111 00000 mask of G (green cast due to 1 more bit)
+        mask_g = 0x07E0;  // 00000 111111 00000 mask of G (green cast due to 1 more bit)
         mask_b = 0x001F;  // 00000 000000 11111 mask of B
         mask_rb = 0xF81F;  // 11111 000000 11111 mask of R and B
 #else
@@ -247,7 +247,7 @@ void SCR_SetMode (void)
         mask_11100 = 0xE71C;  // 11100 111000 11100 mask out the lowest bits of R,G,B
         mask_11000 = 0xC618;  // 11000 110000 11000 mask out the lowest bits of R,G,B
         mask_r = 0xF800;  // 11111 000000 00000 mask of R
-	mask_g = 0x07C0;  // 00000 111110 00000 mask of G (5 bit each)
+        mask_g = 0x07C0;  // 00000 111110 00000 mask of G (5 bit each)
         mask_b = 0x001F;  // 00000 000000 11111 mask of B
         mask_rb = 0xF81F;  // 11111 000000 11111 mask of R and B
 #endif
@@ -261,7 +261,7 @@ void SCR_SetMode (void)
         colfunc = basecolfunc = R_DrawColumn_16;
         skincolfunc = R_DrawTranslatedColumn_16;
         transcolfunc = R_DrawTranslucentColumn_16;
-	shadecolfunc = R_DrawShadeColumn_16;
+        shadecolfunc = R_DrawShadeColumn_16;
         fogcolfunc = R_DrawFogColumn_16;
 
         spanfunc = basespanfunc = R_DrawSpan_16;
@@ -281,7 +281,7 @@ void SCR_SetMode (void)
         colfunc = basecolfunc = R_DrawColumn_24;
         skincolfunc = R_DrawTranslatedColumn_24;
         transcolfunc = R_DrawTranslucentColumn_24;
-	shadecolfunc = R_DrawShadeColumn_24;
+        shadecolfunc = R_DrawShadeColumn_24;
         fogcolfunc = R_DrawFogColumn_24;
 
         spanfunc = basespanfunc = R_DrawSpan_24;
@@ -301,7 +301,7 @@ void SCR_SetMode (void)
         colfunc = basecolfunc = R_DrawColumn_32;
         skincolfunc = R_DrawTranslatedColumn_32;
         transcolfunc = R_DrawTranslucentColumn_32;
-	shadecolfunc = R_DrawShadeColumn_32;
+        shadecolfunc = R_DrawShadeColumn_32;
         fogcolfunc = R_DrawFogColumn_32;
 
         spanfunc = basespanfunc = R_DrawSpan_32;
@@ -454,7 +454,7 @@ void SCR_Recalc (void)
     con_recalc = true;
 //    CON_ToggleOff ();  // make sure con height is right for new screen height
 
-    st_recalc = true;
+    stbar_recalc = true;
     am_recalc = true;
 }
 
@@ -466,8 +466,7 @@ void SCR_Recalc (void)
 void SCR_CheckDefaultMode (void)
 {
     int p;
-    int scr_forcex;     // resolution asked from the cmd-line
-    int scr_forcey;
+    int scr_forcex, scr_forcey;     // resolution asked from the cmd-line
     byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
 
     if(dedicated)
@@ -494,7 +493,8 @@ void SCR_CheckDefaultMode (void)
     }
     else
     {
-        CONS_Printf("Default resolution: %d x %d (%d bits)\n",cv_scr_width.value,cv_scr_height.value,cv_scr_depth.value);
+        CONS_Printf("Default resolution: %d x %d (%d bits)\n",
+             cv_scr_width.value,cv_scr_height.value,cv_scr_depth.value);
         // see note above
         setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value, modetype);
     }
@@ -519,7 +519,7 @@ void SCR_ChangeFullscreen (void)
     if (!allow_fullscreen)
         return;
 
-    if(graphics_state == VGS_fullactive)
+    if( graphics_state >= VGS_startup )
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
         byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;

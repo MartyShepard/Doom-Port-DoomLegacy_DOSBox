@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: p_local.h 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -429,11 +429,12 @@ void  DemoAdapt_p_user( void );
 void  DemoAdapt_p_enemy( void );
 void  DemoAdapt_p_floor( void );
 
-
-// heretic specific
+// Alter for Doom or Heretic.
 extern int ceilmovesound;
 extern int doorclosesound;
-extern int ArtifactFlash;
+
+// Heretic specific
+extern int H_ArtifactFlash;
 
 #define TELEFOGHEIGHT  (32*FRACUNIT)
 extern mobjtype_t      PuffType;

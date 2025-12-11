@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
+// $Id: m_cheat.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -962,7 +962,7 @@ static void CheatGodFunc(player_t * player, Cheat_t * cheat)
     {
         P_SetMessage(player, TXT_CHEATGODOFF, false);
     }
-    st_recalc = true;
+    stbar_recalc = true;
 }
 
 static void CheatNoClipFunc(player_t * player, Cheat_t * cheat)

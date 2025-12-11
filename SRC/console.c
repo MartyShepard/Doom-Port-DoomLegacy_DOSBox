@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: console.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -585,8 +585,8 @@ void CON_Ticker (void)
             if (con_destlines < 20)
                 con_destlines = 20;
             else
-            if (con_destlines > vid.height-stbarheight)
-                con_destlines = vid.height-stbarheight;
+            if (con_destlines > (vid.height - stbar_height) )
+                con_destlines = vid.height - stbar_height;
 
             con_destlines &= ~0x3;      // multiple of text row height
         }
@@ -1065,8 +1065,8 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     // if not in display loop, force screen update
     if ( con_self_refresh || (EMSG_flags & EMSG_now) )
     {
-        if( graphics_state <= VGS_shutdown )   goto done;
-        // have graphics, but do not have refresh loop running
+        if( graphics_state < VGS_active )   goto done;
+        // Have graphics, but do not have refresh loop running.
 #if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
@@ -1082,9 +1082,9 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     }
     else if ( ! con_video )
     {
-        if( (graphics_state <= VGS_shutdown) || ! vid.display )   goto done;
-        // messages before graphics
-        CON_DrawConsole ();
+        if( graphics_state < VGS_active || ! vid.display )   goto done;
+        // Text messages without con_video graphics.
+        CON_DrawConsole ();  // Text with or without con_video
         I_FinishUpdate ();
     }
  done:
@@ -1110,7 +1110,7 @@ void CONS_Error (char *msg)
     EMSG_flags |= EMSG_error;
 
 #ifdef WIN_NATIVE
-    if(graphics_state <= VGS_shutdown)
+    if( graphics_state < VGS_active )
     {
         I_MsgBox (msg);
         return;

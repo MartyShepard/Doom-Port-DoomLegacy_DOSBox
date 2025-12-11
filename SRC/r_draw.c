@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: r_draw.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -404,7 +404,7 @@ void R_InitViewBuffer ( int   width,
     if (width == vid.width)
         viewwindowy = 0;
     else
-        viewwindowy = (vid.height-stbarheight-height) >> 1;
+        viewwindowy = (vid.height - stbar_height - height) >> 1;
 
     // [WDJ] Table fixed for all bpp, bytepp, and padding
     // Precalculate all row offsets for screen[0] buffer.
@@ -603,12 +603,12 @@ void R_DrawViewBorder (void)
     /*
     if( (vid.width>ST_WIDTH) && (vid.height!=rdraw_viewheight) )
     {
-        ofs  = (vid.height-stbarheight)*vid.ybytes;
+        ofs  = (vid.height - stbar_height) * vid.ybytes;
         side = (vid.width-ST_WIDTH)>>1;
         R_VideoErase(ofs,side);
 
         ofs += (vid.width-side);
-        for (i=1;i<stbarheight;i++)
+        for (i=1;i<stbar_height;i++)
         {
             R_VideoErase(ofs,side<<1);  //wraparound right to left border
             ofs += vid.width;
@@ -621,7 +621,7 @@ void R_DrawViewBorder (void)
    
     // rdraw_viewheight is the height of the window within the border
     // draw view border
-    top  = (vid.height-stbarheight-rdraw_viewheight) >>1;
+    top  = (vid.height - stbar_height - rdraw_viewheight) >>1;
     topbytes = top * vid.ybytes;
     side = (vid.width-rdraw_scaledviewwidth) >>1;
 
@@ -645,7 +645,7 @@ void R_DrawViewBorder (void)
 
 #ifdef DIRTY_RECT
     // useless, old dirty rectangle stuff
-    //V_MarkRect (0,0,vid.width, vid.height-stbarheight);
+    //V_MarkRect (0,0,vid.width, vid.height - stbar_height);
 #endif
 }
 

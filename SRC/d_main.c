@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
+// $Id: d_main.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1171"
+#define SVN_REV "1172"
 #endif
 
 // Version number: major.minor.revision
@@ -506,14 +506,14 @@ void D_ProcessEvents(void)
         ev = &events[eventtail];
 
         if (M_Responder(ev)) // Menu input
-	  ;   // menu ate the event
+          ;   // menu ate the event
         else if (CON_Responder(ev)) // console input
-	  ;
-	else
-	  G_Responder(ev);
+          ;
+        else
+          G_Responder(ev);
 
-	eventtail++;
-	eventtail = eventtail & (MAXEVENTS - 1);
+        eventtail++;
+        eventtail = eventtail & (MAXEVENTS - 1);
     }
 }
 
@@ -559,7 +559,7 @@ void D_Display(void)
         //added:26-01-98: NOTE! setsizeneeded is set by SCR_Recalc()
         SCR_Recalc();
           // setsizeneeded -> redrawsbar
-          // con_recalc, st_recalc, am_recalc
+          // con_recalc, stbar_recalc, am_recalc
     }
 
     // change the view size if needed
@@ -678,14 +678,14 @@ void D_Display(void)
                 else
 #endif
                 {
-		    // Alter the draw tables to draw into second player window
+                    // Alter the draw tables to draw into second player window
                     //faB: Boris hack :P !!
                     viewwindowy = vid.height / 2;
                     memcpy(ylookup, ylookup2, rdraw_viewheight * sizeof(ylookup[0]));
 
                     R_RenderPlayerView(displayplayer2_ptr);
 
-		    // Restore first player tables
+                    // Restore first player tables
                     viewwindowy = 0;
                     memcpy(ylookup, ylookup1, rdraw_viewheight * sizeof(ylookup[0]));
                 }
@@ -727,10 +727,10 @@ void D_Display(void)
 #ifdef HWRENDER
     // Exl: draw a faded background
     if (fadealpha != 0 && rendermode != render_soft)
-	HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
+        HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
 #endif
 
-	//FIXME: draw either console or menu, not the two
+        //FIXME: draw either console or menu, not the two
     CON_Drawer();
 
     M_Drawer(); // menu is drawn even on top of everything
@@ -758,14 +758,15 @@ void D_Display(void)
 #ifdef TILTVIEW
         //added:12-02-98: tilt view when marine dies... just for fun
         if (gamestate == GS_LEVEL && cv_tiltview.value
-	    && displayplayer_ptr->playerstate == PST_DEAD)
+            && displayplayer_ptr->playerstate == PST_DEAD)
         {
             V_DrawTiltView(screens[0]);
         }
         else
 #endif
 #ifdef PERSPCORRECT
-        if (gamestate == GS_LEVEL && cv_perspcorr.value)
+        if (gamestate == GS_LEVEL && cv_perspcorr.value
+           && rendermode == render_soft )
         {
             V_DrawPerspView(screens[0], displayplayer_ptr->aiming);
         }
@@ -773,9 +774,9 @@ void D_Display(void)
 #endif
         {
             //I_BeginProfile();
-	    // display a graph of ticrate 
-	    if (cv_ticrate.value )
-	        V_Draw_ticrate_graph();
+            // display a graph of ticrate 
+            if (cv_ticrate.value )
+                V_Draw_ticrate_graph();
             I_FinishUpdate();   // page flip or blit buffer
             //CONS_Printf ("last frame update took %d\n", I_EndProfile());
         }
@@ -842,7 +843,7 @@ void D_DoomLoop(void)
     SCR_Recalc();
 
     D_ClearEvents();  // clear input events to prevent startup jerks,
-   		      // motion during screen wipe still gets through
+                         // motion during screen wipe still gets through
 
     while (1)
     {
@@ -951,16 +952,16 @@ void D_PageDrawer(char *lumpname)
 
             for (y = 0; y < vid.height; y++)
             {
-	        // repeatly draw a 64 pixel wide flat
-	        dest = screens[0] + (y * vid.ybytes);  // within screen buffer
+                // repeatly draw a 64 pixel wide flat
+                dest = screens[0] + (y * vid.ybytes);  // within screen buffer
                 for (x = 0; x < vid.width / 64; x++)
                 {
-		    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
+                    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
                     dest += (64 * vid.bytepp);
                 }
                 if (vid.width & 63)
                 {
-		    V_DrawPixels( dest, 0, (vid.width & 63), &src[(y & 63) << 6]);
+                    V_DrawPixels( dest, 0, (vid.width & 63), &src[(y & 63) << 6]);
                 }
             }
         }
@@ -1175,12 +1176,13 @@ boolean  Search_doomwaddir( char * filename, int search_depth,
         // Form a full filename.
         cat_filename( fbuf, doomwaddir[wdi], filename );
         // If it exists then use it.
-        if( access(fbuf, R_OK) == 0 )				
-            return true;						
-            
+        if( access(fbuf, R_OK) == 0 )
+            return true;
     }
     return false;
 }
+
+
 
 //
 // D_AddFile
@@ -1262,115 +1264,115 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
 // GDESC_freedoom: FreeDoom project, DoomII replacement
    { "FreeDoom", NULL, "freedoom",
         {"freedoom2.wad", "freedoom.wad","doom2.wad"}, NULL,
-	{"FREEDOOM", NULL}, LN_MAP01, 0,
-	0, GDESC_freedoom, doom2_commercial },
+        {"FREEDOOM", NULL}, LN_MAP01, 0,
+        0, GDESC_freedoom, doom2_commercial },
 // GDESC_freedm: FreeDM project, DoomII deathmatch
    { "FreeDM", NULL, "freedm",
         {"freedm.wad","doom.wad",NULL}, NULL,
-	{"FREEDOOM", "FREEDM"}, LN_MAP01, 0,
-	0, GDESC_freedm, doom2_commercial },
+        {"FREEDOOM", "FREEDM"}, LN_MAP01, 0,
+        0, GDESC_freedm, doom2_commercial },
 // GDESC_doom2: doom2wad
    { "Doom2", "DOOM 2: Hell on Earth", "doom2",
-	{"doom2.wad",NULL,NULL}, NULL,
-	{NULL, NULL}, LN_MAP01, LN_TITLE,
-	GD_idwad, GDESC_doom2, doom2_commercial },
+        {"doom2.wad",NULL,NULL}, NULL,
+        {NULL, NULL}, LN_MAP01, LN_TITLE,
+        GD_idwad, GDESC_doom2, doom2_commercial },
 // GDESC_freedoom_ultimate: FreeDoom project, Ultimate Doom replacement
    { "Ultimate FreeDoom", NULL, "freedu",
-	{"freedoom1.wad", "freedu.wad","doomu.wad"}, NULL,
-	{"FREEDOOM", "E4M1"}, LN_E1M1+LN_E2M2, 0,
-	0, GDESC_freedoom_ultimate, ultdoom_retail },
+        {"freedoom1.wad", "freedu.wad","doomu.wad"}, NULL,
+        {"FREEDOOM", "E4M1"}, LN_E1M1+LN_E2M2, 0,
+        0, GDESC_freedoom_ultimate, ultdoom_retail },
 // GDESC_ultimate: Doom1 1995, doomuwad
 //                 Doom1 1995 on floppy (doom_se.wad)
    { "Ultimate Doom", "The Ultimate DOOM", "doomu",
-	{"doomu.wad","doom_se.wad","doom.wad"}, NULL,
-	{"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE,
-	GD_idwad, GDESC_ultimate, ultdoom_retail },
+        {"doomu.wad","doom_se.wad","doom.wad"}, NULL,
+        {"E4M1", NULL}, LN_E1M1+LN_E2M2, LN_TITLE,
+        GD_idwad, GDESC_ultimate, ultdoom_retail },
 // GDESC_doom: DoomI 1994, doomwad
    { "Doom", "DOOM Registered", "doom",
-	{"doom.wad",NULL,NULL}, NULL,
-	{"E3M9", NULL}, LN_E1M1+LN_E2M2, LN_TITLE,
-	GD_idwad, GDESC_doom, doom_registered },
+        {"doom.wad",NULL,NULL}, NULL,
+        {"E3M9", NULL}, LN_E1M1+LN_E2M2, LN_TITLE,
+        GD_idwad, GDESC_doom, doom_registered },
 // GDESC_doom_shareware: DoomI shareware, doom1wad
    { "Doom shareware", "DOOM Shareware", "doom1",
-	{"doom1.wad","doom.wad",NULL}, NULL,
-	{NULL, NULL}, LN_E1M1, LN_TITLE,
-	GD_idwad, GDESC_doom_shareware, doom_shareware },
+        {"doom1.wad","doom.wad",NULL}, NULL,
+        {NULL, NULL}, LN_E1M1, LN_TITLE,
+        GD_idwad, GDESC_doom_shareware, doom_shareware },
 // GDESC_plutonia: FinalDoom : Plutonia, DoomII engine
    { "Plutonia", "DOOM 2: Plutonia Experiment", "plutonia",
-	{"plutonia.wad",NULL,NULL}, NULL,
-	{"CAMO1", NULL}, LN_MAP01, LN_TITLE,
-	GD_idwad, GDESC_plutonia, doom2_commercial },
+        {"plutonia.wad",NULL,NULL}, NULL,
+        {"CAMO1", NULL}, LN_MAP01, LN_TITLE,
+        GD_idwad, GDESC_plutonia, doom2_commercial },
 // GDESC_tnt: FinalDoom : Tnt Evilution, DoomII engine
    { "Tnt Evilution", "DOOM 2: TNT - Evilution", "tnt",
-	{"tnt.wad",NULL,NULL}, NULL,
-	{"REDTNT2", NULL}, LN_MAP01, LN_TITLE,
-	GD_idwad, GDESC_tnt, doom2_commercial },
+        {"tnt.wad",NULL,NULL}, NULL,
+        {"REDTNT2", NULL}, LN_MAP01, LN_TITLE,
+        GD_idwad, GDESC_tnt, doom2_commercial },
 // GDESC_blasphemer: FreeDoom project, DoomII replacement
    { "Blasphemer", NULL, "blasphem",
-	{"BLASPHEM.WAD","blasphem.wad","heretic.wad"}, NULL,
-	{"BLASPHEM", NULL}, LN_E1M1+LN_TITLE, 0,
-	0, GDESC_blasphemer, heretic },
+        {"BLASPHEM.WAD","blasphem.wad","heretic.wad"}, NULL,
+        {"BLASPHEM", NULL}, LN_E1M1+LN_TITLE, 0,
+        0, GDESC_blasphemer, heretic },
 // GDESC_heretic: Heretic
    { "Heretic", NULL, "heretic",
-	{"heretic.wad",NULL,NULL}, NULL,
-	{NULL, NULL}, LN_E1M1+LN_E2M2+LN_TITLE, 0,
-	GD_idwad, GDESC_heretic, heretic },
+        {"heretic.wad",NULL,NULL}, NULL,
+        {NULL, NULL}, LN_E1M1+LN_E2M2+LN_TITLE, 0,
+        GD_idwad, GDESC_heretic, heretic },
 // GDESC_heretic_shareware: Heretic shareware
    { "Heretic shareware", NULL, "heretic1",
-	{"heretic1.wad","heretic.wad",NULL}, NULL,
-	{NULL, NULL}, LN_E1M1+LN_TITLE, LN_E2M2,
-	GD_idwad, GDESC_heretic_shareware, heretic },
+        {"heretic1.wad","heretic.wad",NULL}, NULL,
+        {NULL, NULL}, LN_E1M1+LN_TITLE, LN_E2M2,
+        GD_idwad, GDESC_heretic_shareware, heretic },
 // GDESC_hexen: Hexen
    { "Hexen", NULL, "hexen",
-	{"hexen.wad",NULL,NULL}, NULL,
-	{"MAP40", NULL}, LN_MAP01+LN_TITLE, 0,
-	GD_idwad/*|GD_unsupported*/, GDESC_hexen, hexen },
+        {"hexen.wad",NULL,NULL}, NULL,
+        {"MAP40", NULL}, LN_MAP01+LN_TITLE, 0,
+        GD_idwad/*|GD_unsupported*/, GDESC_hexen, hexen },
 // GDESC_hexen_demo: Hexen
    { "Hexen Demo", NULL, "hexen1",
-	{"hexen1.wad","hexen.wad",NULL}, NULL,
-	{NULL, NULL}, LN_MAP01+LN_TITLE, 0,
-	GD_idwad/*|GD_unsupported*/, GDESC_hexen_demo, hexen },
+        {"hexen1.wad","hexen.wad",NULL}, NULL,
+        {NULL, NULL}, LN_MAP01+LN_TITLE, 0,
+        GD_idwad/*|GD_unsupported*/, GDESC_hexen_demo, hexen },
 // GDESC_strife: Strife
    { "Strife", NULL, "strife",
-	{"strife.wad",NULL,NULL}, NULL,
-	{"ENDSTRF", "MAP20"}, LN_MAP01, 0,
-	GD_idwad/*|GD_unsupported*/, GDESC_strife, strife },
+        {"strife.wad",NULL,NULL}, NULL,
+        {"ENDSTRF", "MAP20"}, LN_MAP01, 0,
+        GD_idwad/*|GD_unsupported*/, GDESC_strife, strife },
 // GDESC_strife_shareware: Strife shareware
    { "Strife shareware", NULL, "strife0",
-	{"strife0.wad","strife.wad",NULL}, NULL,
-	{"ENDSTRF", NULL}, 0, LN_MAP01,
-	GD_idwad/*|GD_unsupported*/, GDESC_strife_shareware, strife },
+        {"strife0.wad","strife.wad",NULL}, NULL,
+        {"ENDSTRF", NULL}, 0, LN_MAP01,
+        GD_idwad/*|GD_unsupported*/, GDESC_strife_shareware, strife },
 // GDESC_chex1: Chex Quest
    { "Chex Quest", NULL, "chex1",
-	{"chex1.wad","chex.wad",NULL}, NULL,
-	{"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE,
-	GD_iwad_pref, GDESC_chex1, chexquest1 },
+        {"chex1.wad","chex.wad",NULL}, NULL,
+        {"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE,
+        GD_iwad_pref, GDESC_chex1, chexquest1 },
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode",
-	{"doomu.wad","doom.wad",NULL}, NULL,
-	{ NULL, NULL}, LN_E1M1, 0,
-	0, GDESC_ultimate, ultdoom_retail },
+        {"doomu.wad","doom.wad",NULL}, NULL,
+        { NULL, NULL}, LN_E1M1, 0,
+        0, GDESC_ultimate, ultdoom_retail },
 // GDESC_doom_mode: DoomI replacement
    { "Doom mode", NULL, "doommode",
         {"doom1.wad","doom.wad",NULL}, NULL,
-	{ NULL, NULL}, LN_E1M1, 0,
-	0, GDESC_doom_mode, doom_registered },
+        { NULL, NULL}, LN_E1M1, 0,
+        0, GDESC_doom_mode, doom_registered },
 // GDESC_heretic_mode: Heretic replacement
    { "Heretic mode", NULL, "heremode",
         {"heretic.wad",NULL,NULL}, NULL,
-	{ NULL, NULL}, LN_E1M1, 0,
-	0, GDESC_heretic_mode, heretic },
+        { NULL, NULL}, LN_E1M1, 0,
+        0, GDESC_heretic_mode, heretic },
 // GDESC_hexen_mode: Hexen replacement
    { "Hexen mode", NULL, "hexemode",
         {"hexen.wad",NULL,NULL}, NULL,
-	{ NULL, NULL}, LN_MAP01, 0,
-	GD_idwad/*GD_unsupported*/, GDESC_hexen_mode, hexen },
+        { NULL, NULL}, LN_MAP01, 0,
+        GD_idwad/*GD_unsupported*/, GDESC_hexen_mode, hexen },
 // GDESC_other: Other iwads, all DoomII features enabled,
 // strings are ptrs to buffers
    { other_gname, public_title, "",
         {other_iwad_filename,NULL,NULL}, NULL,
-	{ NULL, NULL}, LN_MAP01, 0,
-	GD_iwad_pref, GDESC_other, doom2_commercial }
+        { NULL, NULL}, LN_MAP01, 0,
+        GD_iwad_pref, GDESC_other, doom2_commercial }
 };
 
 #ifdef LAUNCHER
@@ -1424,16 +1426,16 @@ byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
         if( fread( &lumpx, sizeof(lumpx), 1, wadfile ) < 1 )   goto read_err;
 #ifdef DEBUG       
         int cmp = strncasecmp( lumpx.name, lumpname, 8 );
-	if( strncasecmp( lumpx.name, "TITLE", 5 ) == 0 )
-	 printf( "%8s %c %8s \n", lumpx.name,
-		 ( (cmp<0)?'<': (cmp>0)? '>' :'='),
-		  lumpname);
+        if( strncasecmp( lumpx.name, "TITLE", 5 ) == 0 )
+         printf( "%8s %c %8s \n", lumpx.name,
+                 ( (cmp<0)?'<': (cmp>0)? '>' :'='),
+                  lumpname);
 #endif       
         for( lc=0; lc<count; lc++ )
         {
             if( strncasecmp( lumpx.name, lumpnames[lc], 8 ) == 0 )
-	        result |= 1<<lc;  // found it, record it
-	}
+                result |= 1<<lc;  // found it, record it
+        }
     }
     fclose( wadfile );
 
@@ -1466,7 +1468,7 @@ boolean Check_keylumps ( game_desc_t * gmtp, const char * wadname )
     if( gmtp->require_lump | gmtp->reject_lump )
     {
         lumpbits = Check_lumps( wadname,
-			       common_lump_names, COMMON_LUMP_LIST_SIZE );
+                               common_lump_names, COMMON_LUMP_LIST_SIZE );
         if((gmtp->require_lump & lumpbits) != gmtp->require_lump )  goto fail;
         if( gmtp->reject_lump & lumpbits )  goto fail;
     }
@@ -1604,15 +1606,15 @@ void IdentifyVersion()
         char *temp = M_GetNextParm();
         if( temp == NULL )
         {
-	    I_SoftError( "Switch  -game <name> or -devgame <name>\n" );
+            I_SoftError( "Switch  -game <name> or -devgame <name>\n" );
             goto fatal_err;
-	}
-	for( gmi=0; gmi<GDESC_other; gmi++ )
+        }
+        for( gmi=0; gmi<GDESC_other; gmi++ )
         {
-	    // compare to recognized game mode names
-	    if (!strcmp(temp, game_desc_table[gmi].idstr))
-		goto game_switch_found;
-	}
+            // compare to recognized game mode names
+            if (!strcmp(temp, game_desc_table[gmi].idstr))
+                goto game_switch_found;
+        }
         I_SoftError( "Switch  -game %s  not recognized\n", temp );
         goto fatal_err;
        
@@ -1623,40 +1625,41 @@ void IdentifyVersion()
         // handle the recognized special -devgame switch
         if( devparm )
         {
-	    // devparm = true;
+            // devparm = true;
 #if 0
-	    strcpy(configfile, DEVDATA CONFIGFILENAME); // moved
-	    // [WDJ] Old, irrelevant, and it was interfering with new
-	    // GDESC changes.
-	    // Better to just use -file so I am disabling it.
-	    switch( gamedesc_index )
-	    {
-	     case GDESC_doom_shareware:
-	       // instead use:
-	       //  doomlegacy -devgame doom1 -file data_se/texture1.lmp data_se/pnames.lmp
-	       D_AddFile(DEVDATA "doom1.wad");
-	       D_AddFile(DEVMAPS "data_se/texture1.lmp");
-	       D_AddFile(DEVMAPS "data_se/pnames.lmp");
-	       goto got_iwad;
-	     case GDESC_doom:
-	       // instead use:
-	       //   doomlegacy -devgame doom1 -file data_se/texture1.lmp data_se/texture2.lmp data_se/pnames.lmp
-	       D_AddFile(DEVDATA "doom.wad");
-	       D_AddFile(DEVMAPS "data_se/texture1.lmp");
-	       D_AddFile(DEVMAPS "data_se/texture2.lmp");
-	       D_AddFile(DEVMAPS "data_se/pnames.lmp");
-	       goto got_iwad;
-	     case GDESC_doom2:
-	       // instead use:
-	       //   doomlegacy -devgame doom2 -file cdata/texture1.lmp cdata/pnames.lmp
-	       D_AddFile(DEVDATA "doom2.wad");
-	       D_AddFile(DEVMAPS "cdata/texture1.lmp");
-	       D_AddFile(DEVMAPS "cdata/pnames.lmp");
-	       goto got_iwad;
-	    }
+            strcpy(configfile, DEVDATA CONFIGFILENAME); // moved
+            // [WDJ] Old, irrelevant, and it was interfering with new
+            // GDESC changes.
+            // Better to just use -file so I am disabling it.
+            switch( gamedesc_index )
+            {
+             case GDESC_doom_shareware:
+               // instead use:
+               //  doomlegacy -devgame doom1 -file data_se/texture1.lmp data_se/pnames.lmp
+               D_AddFile(DEVDATA "doom1.wad");
+               D_AddFile(DEVMAPS "data_se/texture1.lmp");
+               D_AddFile(DEVMAPS "data_se/pnames.lmp");
+               goto got_iwad;
+             case GDESC_doom:
+               // instead use:
+               //   doomlegacy -devgame doom1 -file data_se/texture1.lmp data_se/texture2.lmp data_se/pnames.lmp
+               D_AddFile(DEVDATA "doom.wad");
+               D_AddFile(DEVMAPS "data_se/texture1.lmp");
+               D_AddFile(DEVMAPS "data_se/texture2.lmp");
+               D_AddFile(DEVMAPS "data_se/pnames.lmp");
+               goto got_iwad;
+             case GDESC_doom2:
+               // instead use:
+               //   doomlegacy -devgame doom2 -file cdata/texture1.lmp cdata/pnames.lmp
+               D_AddFile(DEVDATA "doom2.wad");
+               D_AddFile(DEVMAPS "cdata/texture1.lmp");
+               D_AddFile(DEVMAPS "cdata/pnames.lmp");
+               goto got_iwad;
+            }
 #endif
-	}
+        }
     }
+   
 
     // Specify the name of the IWAD file to use, so we can have several IWAD's
     // in the same directory, and/or have legacy.exe only once in a different location
@@ -1666,9 +1669,9 @@ void IdentifyVersion()
         char *s = M_GetNextParm();
         if ( s == NULL )
         {
-	    I_SoftError("Switch -iwad <filename>.\n");
-	    goto fatal_err;
-	}
+            I_SoftError("Switch -iwad <filename>.\n");
+            goto fatal_err;
+        }
 
         if (s[0] == '/' || s[0] == '\\' || s[1] == ':')
         {
@@ -1677,7 +1680,7 @@ void IdentifyVersion()
             pathiwad[_MAX_PATH-1] = '\0';
         }
         else
-        {										
+        {
             // Relative path
             // Find the IWAD in the doomwaddir.
             if( ! Search_doomwaddir( s, IWAD_SEARCH_DEPTH, /*OUT*/ pathiwad ) )
@@ -1694,48 +1697,48 @@ void IdentifyVersion()
 #endif
 
         if ( access(pathiwad, R_OK) < 0 )
-	{
+        {
             I_SoftError("IWAD %s not found\n", s);
             Print_search_directories( EMSG_error, 0x02 );
-	    goto fatal_err;
-	}
+            goto fatal_err;
+        }
 
-	char *filename = FIL_Filename_of( pathiwad );
+        char *filename = FIL_Filename_of( pathiwad );
         if ( gamedesc_index == NUM_GDESC ) // check forcing switch
         {
-	    // No forcing switch
-	    // [WDJ] search game table for matching iwad name
-	    for( gmi=0; gmi<GDESC_other; gmi++ )
-	    {
-	        game_desc_t * gmtp = &game_desc_table[gmi];
-	        int w;
-	        // check each possible filename listed
-	        for( w=0; w<3; w++ )
-	        {
-		    if( gmtp->iwad_filename[w] == NULL ) break;
+            // No forcing switch
+            // [WDJ] search game table for matching iwad name
+            for( gmi=0; gmi<GDESC_other; gmi++ )
+            {
+                game_desc_t * gmtp = &game_desc_table[gmi];
+                int w;
+                // check each possible filename listed
+                for( w=0; w<3; w++ )
+                {
+                    if( gmtp->iwad_filename[w] == NULL ) break;
                     if( strcasecmp(gmtp->iwad_filename[w], filename) == 0 )
-	            {
-		        if( Check_keylumps( gmtp, pathiwad ) )
-			    goto got_gmi_iwad;
-		    }
-		}
-	    }
-	    // unknown IWAD is GDESC_other
-	    gamedesc_index = GDESC_other;
-	}
+                    {
+                        if( Check_keylumps( gmtp, pathiwad ) )
+                            goto got_gmi_iwad;
+                    }
+                }
+            }
+            // unknown IWAD is GDESC_other
+            gamedesc_index = GDESC_other;
+        }
 
-        other_names = 1;	// preserve other names when forcing switch
+        other_names = 1;        // preserve other names when forcing switch
         // for save game header
         strncpy( other_iwad_filename, filename, DESCNAME_SIZE );
         other_iwad_filename[ DESCNAME_SIZE-1 ] = 0; // safe
         // create game name from the wad name, used in save game
         strncpy( other_gname, other_iwad_filename, DESCNAME_SIZE );
         other_gname[ DESCNAME_SIZE-1 ] = 0;	// safe
-       	// use the wad name, without the ".wad" as the gname
+               // use the wad name, without the ".wad" as the gname
         {
             char * dp = strchr( other_gname, '.' );
             if( dp )  *dp = 0;
-	}
+        }
         goto got_iwad;
     }
     // No -iwad switch:
@@ -1745,9 +1748,9 @@ void IdentifyVersion()
         // make iwad name by switch
         // use pathiwad to output wad path from Check_wad_filenames
         if( Check_wad_filenames( gamedesc_index, pathiwad ) )
-	    goto got_iwad;
-        I_SoftError("IWAD %s/%s not found\n",
-		    doomwaddir, game_desc_table[gamedesc_index].iwad_filename[0]);
+            goto got_iwad;
+        I_SoftError("IWAD %s not found in:\n",
+                     game_desc_table[gamedesc_index].iwad_filename[0]);
         Print_search_directories( EMSG_error, 0x02 );
         goto fatal_err;
     }
@@ -1757,15 +1760,15 @@ void IdentifyVersion()
     {
         // use pathiwad to output wad path from Check_wad_filenames
         if( Check_wad_filenames( gmi, pathiwad ) )
-	    goto got_gmi_iwad;
+            goto got_gmi_iwad;
     }
 
     I_SoftError("Main WAD file not found\n"
-	    "You need doom.wad, doom2.wad, heretic.wad or some other IWAD file\n"
-	    "from any shareware, commercial or free version of Doom or Heretic!\n"
+            "You need doom.wad, doom2.wad, heretic.wad or some other IWAD file\n"
+            "from any shareware, commercial or free version of Doom or Heretic!\n"
 #if !defined(__WIN32__) && !(defined __DJGPP__)
-	    "If you have one of those files, be sure its name is lowercase\n"
-	    "or use the -iwad command line switch.\n"
+            "If you have one of those files, be sure its name is lowercase\n"
+            "or use the -iwad command line switch.\n"
 #endif
             );
     goto fatal_err;
@@ -1907,17 +1910,17 @@ void D_CheckWadVersion()
     {
         hs[hlen] = '\0';
         if (sscanf(hs, "Doom Legacy WAD V%d.%d", &wv2, &wadversion) == 2)
-	  wadversion += wv2 * 100;
+          wadversion += wv2 * 100;
     }
     if (wadversion != cur_wadversion)
     {
         I_SoftError("Your legacy.wad file is version %d.%d, you need version %d.%d\n"
-		"Use the legacy.wad that came in the same archive as this executable.\n"
-		"\n"
+                "Use the legacy.wad that came in the same archive as this executable.\n"
+                "\n"
                 "Use -nocheckwadversion to remove this check,\n"
-		"but this can cause Legacy to crash.\n",
-		(wadversion / 100), (wadversion % 100),
-		(int)(cur_wadversion / 100), (int)(cur_wadversion % 100) );
+                "but this can cause Legacy to crash.\n",
+                (wadversion / 100), (wadversion % 100),
+                (int)(cur_wadversion / 100), (int)(cur_wadversion % 100) );
         if( wadversion < min_wadversion )
             fatal_error = 1;
     }
@@ -2120,7 +2123,7 @@ void D_DoomMain()
     // After this line is code that deals with configuration,
     // game and wad selection, and finding files and directories.
     // It may retry some actions and may execute functions multiple times.
-		
+
 #ifdef LAUNCHER   
 // ----------- launcher restarts here 
 restart_command:
@@ -2209,9 +2212,9 @@ restart_command:
         if( (! userhome_parm || init_sequence == 0)
           && userhome )
         {
-	    // Save the input userhome for the Launcher, unless it came from -home.
-	    CV_Set( &cv_home, userhome );
-	    cv_home.flags &= ~CV_MODIFIED;
+            // Save the input userhome for the Launcher, unless it came from -home.
+            CV_Set( &cv_home, userhome );
+            cv_home.flags &= ~CV_MODIFIED;
         }
 #endif
 
@@ -2265,18 +2268,19 @@ restart_command:
         {
             // Make a default legacy home in the program directory.
             // default absolute path, do not set to ""
-#if defined( __DJGPP__ )		
-            getcwd(dosroot, MAX_WADPATH-1);				
-						progdir = dosroot;
-						sprintf(dirbuf, "%s/", dosroot);
-						legacyhome = strdup( dirbuf );										
-#else						
+            #if defined( __DJGPP__ )		
+             getcwd(dosroot, MAX_WADPATH-1);
+             progdir = dosroot;
+             sprintf(dirbuf, "%s/", dosroot);
+             legacyhome = strdup( dirbuf );
+            #else						
             cat_filename( dirbuf, progdir, DEFHOME );
-            legacyhome = strdup( dirbuf );  // malloc, will be free.					
+            legacyhome = strdup( dirbuf );  // malloc, will be free.
 #endif
             if( verbose )
                 GenPrintf(EMSG_ver, "Default legacyhome= %s\n", legacyhome );
         }
+
         // Make the legacyhome directory
         if( access(legacyhome, R_OK) < 0 )  // not found
         {
@@ -2343,12 +2347,10 @@ restart_command:
             }
         }
     }
-//#if 0
-    if (M_CheckParm("-listdirs") || M_CheckParm("-ld"))
-    {
-      Print_search_directories( EMSG_debug, 0x0F );
-	  }    
-//#endif
+#if 0 || defined( __DJGPP__ )
+    if (M_CheckParm("-listdirs") || M_CheckParm("-ld"))    
+    Print_search_directories( EMSG_debug, 0x0F );
+#endif
 
     if( verbose )
     {
@@ -2557,8 +2559,8 @@ restart_command:
         "The main IWAD file is not found, or does not have PLAYPAL lump.\n"
         "The IWAD can be either doom.wad, doom1.wad, doom2.wad, tnt.wad\n"
         "plutonia.wad, heretic.wad, or heretic1.wad from any shareware\n"
-	"or commercial version of Doom or Heretic, or some other IWAD!\n"
-	"Cannot use legacy.wad, nor a PWAD, for an IWAD.\n" );
+        "or commercial version of Doom or Heretic, or some other IWAD!\n"
+        "Cannot use legacy.wad, nor a PWAD, for an IWAD.\n" );
     }
 
     if( fatal_error )
@@ -2582,26 +2584,26 @@ restart_command:
         // I_RequestFullGraphics macht kein sinn weil die DOS Version kein Fenstermodus nativ hat.
         if( M_CheckParm("-highcolor") )
         {
-	    req_drawmode = REQ_highcolor;  // 15 or 16 bpp
-	}
+            req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+        }
         if( M_CheckParm("-truecolor") )
         {
-	    req_drawmode = REQ_truecolor;  // 24 or 32 bpp
-	}
+            req_drawmode = REQ_truecolor;  // 24 or 32 bpp
+        }
         if( M_CheckParm("-native") )
         {
-	    req_drawmode = REQ_native;  // bpp of the default screen
-	}
+            req_drawmode = REQ_native;  // bpp of the default screen
+        }
         p = M_CheckParm("-bpp");  // specific bit per pixel color
         if( p )
         {
-	    // binding, should fail if cannot find a mode
-	    req_bitpp = atoi(myargv[p + 1]);
-	    if( V_CanDraw( req_bitpp ) )
-	      req_drawmode = REQ_specific;
-	    else
-	      I_Error( "-bpp invalid\n");
-	}
+            // binding, should fail if cannot find a mode
+            req_bitpp = atoi(myargv[p + 1]);
+            if( V_CanDraw( req_bitpp ) )
+              req_drawmode = REQ_specific;
+            else
+              I_Error( "-bpp invalid\n");
+        }
 
         //--------------------------------------------------------- CONSOLE
         // setup loading screen
@@ -2614,7 +2616,7 @@ restart_command:
 
 #ifdef HWRENDER
         if( rendermode != render_soft )
-	    HWR_Startup();  // hardware render init
+            HWR_Startup();  // hardware render init
 #endif
         // we need the font of the console
         CONS_Printf(text[HU_INIT_NUM]);
@@ -2743,12 +2745,12 @@ restart_command:
         char *s = M_GetNextParm();
         if( s == NULL )
         {
-	    I_SoftError( "Switch  -timer <seconds>\n" );
-	}
+            I_SoftError( "Switch  -timer <seconds>\n" );
+        }
         else
         {
-	    COM_BufAddText(va("timelimit %s\n", s));
-	}
+            COM_BufAddText(va("timelimit %s\n", s));
+        }
     }
 
     if (M_CheckParm("-avg"))
@@ -2763,12 +2765,12 @@ restart_command:
     {
         if( M_IsNextParm() )
         {
-	    COM_BufAddText(va("turbo %s\n", M_GetNextParm()));
-	}
-	else
+            COM_BufAddText(va("turbo %s\n", M_GetNextParm()));
+        }
+        else
         {
-	    I_SoftError( "Switch  -turbo <10-255>\n" );
-	}
+            I_SoftError( "Switch  -turbo <10-255>\n" );
+        }
     }
 
     // push all "+" parameter at the command buffer
@@ -2835,7 +2837,7 @@ restart_command:
     {
       if( ! M_IsNextParm() )
       {
-	I_SoftError( "Switch  -playdemo <name>  or  -timedemo <name> \n" );
+        I_SoftError( "Switch  -playdemo <name>  or  -timedemo <name> \n" );
       }
       else
       {
@@ -2849,14 +2851,14 @@ restart_command:
         // get spaced filename or directory
         while (M_IsNextParm())
         {
-	    // [WDJ] Protect against long demo name on command line
-	    int dn_free = MAX_WADPATH - 2 - strlen(demo_name);
-	    if( dn_free > 1 )
-	    {
+            // [WDJ] Protect against long demo name on command line
+            int dn_free = MAX_WADPATH - 2 - strlen(demo_name);
+            if( dn_free > 1 )
+            {
                 strcat(demo_name, " ");
                 strncat(demo_name, M_GetNextParm(), dn_free );
                 demo_name[MAX_WADPATH-1] = '\0';
-	    }
+            }
         }
         FIL_DefaultExtension(demo_name, ".lmp");
 

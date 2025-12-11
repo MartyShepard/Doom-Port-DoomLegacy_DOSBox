@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: screen.h 1172 2015-05-22 18:59:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -73,11 +73,11 @@
 // Size of statusbar.
 #define ST_HEIGHT    32
 #define ST_WIDTH     320
-// heretic one's
-#define SBARHEIGHT      42                      // status bar height at bottom of screen
+// Heretic, status bar height at bottom of screen.
+#define H_STBAR_HEIGHT   42
 
 
-extern int stbarheight;     // when scaled
+extern int stbar_height;   // status bar, may be scaled
 
 //added:20-01-98: used now as a maximum video mode size for extra vesa modes.
 
