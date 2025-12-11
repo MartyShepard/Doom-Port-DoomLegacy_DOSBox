@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1131 2014-08-30 14:10:59Z wesleyjohnson $
+// $Id: w_wad.c 1176 2015-11-16 22:31:22Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -838,7 +838,8 @@ void* W_CacheLumpName ( char* name, int tag )
 
 // Cache the patch with endian conversion
 // [WDJ] Only read patches using this function, hardware render too.
-inline void* W_CachePatchNum_Endian ( int lump, int tag )
+// [WDJ] Removed inline because is also called from in hardware/hw_cache.c.
+void* W_CachePatchNum_Endian ( int lump, int tag )
 {
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__

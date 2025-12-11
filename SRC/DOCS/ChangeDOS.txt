@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01176 ]: w104 remove inline
+[01175*]: w104 src Makefile again
+[01174*]: w103 remove old tools/makefile
 [01173 ]: w103 filesearch
 [01172 ]: w103 Heretic status
 [01171*]: w103 remove endtxt.h
