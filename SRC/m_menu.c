@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1164 2015-04-03 14:18:57Z wesleyjohnson $
+// $Id: m_menu.c 1168 2015-05-22 18:36:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -5405,7 +5405,7 @@ void M_LaunchMenu( void )
         M_Change_2Param( "-home", cv_home.string );
     // add doomwaddir
     if( (cv_doomwaddir.flags & CV_MODIFIED) && cv_doomwaddir.string )
-        doomwaddir = cv_doomwaddir.string;
+        doomwaddir[0] = cv_doomwaddir.string;
     // add config
     if(cv_config.flags & CV_MODIFIED)
         M_Change_2Param( "-config", cv_config.string );

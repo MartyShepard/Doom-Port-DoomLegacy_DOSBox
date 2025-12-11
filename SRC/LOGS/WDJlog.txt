@@ -4389,3 +4389,16 @@ Created initial make_options for the various port targets.
 New files: make_options_nix, make_options_win, make_options_os2,
 make_options_dos, make_options_mac, tools/Makefile, resources/Makefile.
 
+*** W103_doomdir
+patchfile = w103_4_doomdir.patch
+- commit revision 1168
+Increased the number of directories searched to 24.
+These directories are set in doomdef.h, according to the OS,
+and are searched for legacy.wad, and the IWAD.
+On failure, will print out the directories searched, as an aid to the
+player to setup the game.
+Implement I_Get_Prog_Dir, for all ports, so can reliably get legacy.wad.
+On some ports this can use special system calls.  The fallback code
+looks at argv[0] and extracts the directory.
+
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1138 2014-09-17 13:55:10Z wesleyjohnson $
+// $Id: i_system.h 1168 2015-05-22 18:36:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -127,6 +127,12 @@ void I_ShutdownSystem (void);
 uint64_t I_GetDiskFreeSpace(void);
 char *I_GetUserName(void);
 int  I_mkdir(const char *dirname, int unixright);
+
+// Get the directory of this program.
+//   defdir: the default directory, if must use argv[0] method (may be NULL)
+//   dirbuf: a buffer of length MAX_WADPATH, 
+// Return true when success, dirbuf contains the directory.
+boolean I_Get_Prog_Dir( char * defdir, /*OUT*/ char * dirbuf );
 
 // Called on video mode change, usemouse change, mousemotion change,
 // and game paused.

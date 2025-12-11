@@ -77,6 +77,9 @@ extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
 #if defined( __DJGPP__ )
 boolean    highcolor; // local
 int        BitsColor; // Definiert die Bit Palette
+extern void vsync(void);        //Allegro
+extern void _vsync_in(void);    //Allegro
+extern void _vsync_out_h(void); //Allegro
 #endif
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;

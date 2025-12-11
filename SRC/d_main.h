@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_main.h 1168 2015-05-22 18:36:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -49,7 +49,8 @@ extern tic_t      rendergametic;
 // to make savegamename and directories
 extern char * legacyhome;
 extern int  legacyhome_len;
-extern char *doomwaddir;
+#define MAX_NUM_DOOMWADDIR  28
+extern char *doomwaddir[MAX_NUM_DOOMWADDIR];
 
 extern consvar_t cv_home, cv_doomwaddir, cv_iwad;
 

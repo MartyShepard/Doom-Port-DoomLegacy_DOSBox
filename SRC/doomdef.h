@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1097 2014-03-25 23:11:34Z wesleyjohnson $
+// $Id: doomdef.h 1168 2015-05-22 18:36:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -25,6 +25,9 @@
 #ifndef DOOMDEF_H
 #define DOOMDEF_H
 
+#if defined (__DJGPP__)
+#include <unistd.h>     // getcwd, chdir, usw.
+#endif
 // =========================================================================
 // Compile settings, configuration, tuning, and options
 
@@ -174,15 +177,61 @@ extern FILE *logstream;
 #define DEFAULTDIR2 "legacy"
 #endif
 
-#if defined PC_DOS || defined WIN32
-#define DEFWADS1  "\\doomwads"
-#define DEFWADS2  "\\games\\doomwads"
-#define DEFHOME   "\\legacyhome"
+#if defined PC_DOS || defined WIN32 || defined OS2
+// HOME is ~
+// Allowed DEFWADS01..DEFWADS21
+#if 1
+#define DEFWADS01  "~\\games\\doom"
+#define DEFWADS02  "~\\games\\doomwads"
+#define DEFWADS03  "~\\games\\doomlegacy\\wads"
 #else
-#define DEFWADS1  "/usr/local/share/games/doomwads"
-#define DEFWADS2  "/usr/local/games/doomwads"
-#define DEFHOME   "/usr/local/games/legacyhome"
+#define DEFWADS01  "games\\doom"
+#define DEFWADS02  "games\\doomwads"
+#define DEFWADS03  "games\\doomlegacy\\wads"
 #endif
+#define DEFWADS04  "\\doomwads"
+#define DEFWADS05  "\\games\\doomwads"
+#define DEFWADS06  "\\games\\doom"
+//#define DEFWADS07  "\\games\\doom"
+//#define DEFWADS08  "\\games\\doom"
+#if defined WIN32 || defined OS2
+#define DEFWADS10  "\\Program Files\\doomlegacy\\wads"
+#endif
+
+// When cannot find user $(HOME), make a home in the executable dir.
+#ifdef PC_DOS
+#define DEFHOME    "DL_HOME"
+#else
+#define DEFHOME    "legacyhome"
+#endif
+//#define LEGACYWADDIR  ""
+
+#else
+// Linux, unix, FreeBSD, Mac
+// HOME is ~
+// Allowed DEFWADS01..DEFWADS21
+#define DEFWADS01  "~/games/doomlegacy/wads"
+#define DEFWADS02  "~/games/doomwads"
+#define DEFWADS03  "~/games/doom"
+#define DEFWADS04  "/usr/local/share/games/doomlegacy/wads"
+#define DEFWADS05  "/usr/local/share/games/doomwads"
+#define DEFWADS06  "/usr/local/share/games/doom"
+#define DEFWADS07  "/usr/local/games/doomlegacy/wads"
+#define DEFWADS08  "/usr/local/games/doomwads"
+#define DEFWADS09  "/usr/share/games/doom"
+#define DEFWADS10  "/usr/share/games/doomlegacy/wads"
+#define DEFWADS11  "/usr/share/games/doomwads"
+#define DEFWADS12  "/usr/games/doomlegacy/wads"
+#define DEFWADS13  "/usr/games/doomwads"
+
+#define DEFWADS16  "~/games/doomlegacy"
+#define DEFWADS17  "/usr/local/share/games/doomlegacy"
+#define DEFWADS18  "/usr/local/games/doomlegacy"
+#define DEFWADS19  "/usr/share/games/doomlegacy"
+#define DEFWADS20  "/usr/games/doomlegacy"
+
+// Linux, When cannot find user $(HOME), make a home in the executable dir.
+#define DEFHOME    "legacyhome"
 
 #if defined(__APPLE__) && defined(__MACH__)
 // Use defined Mac resources (app folder)
@@ -191,9 +240,19 @@ extern FILE *logstream;
 // Legacy wad for Mac
 //#define  LEGACYWADDIR  ".app"
 #define  LEGACYWADDIR  "/usr/local/share/games/doomlegacy"
+
 #else
+// Linux, FreeBSD
 #define  LEGACYWADDIR  "/usr/local/share/games/doomlegacy"
+
 #endif
+
+#endif
+
+
+// How many subdirectories deep to search.
+#define  GAME_SEARCH_DEPTH   3
+#define  IWAD_SEARCH_DEPTH   5
 
 // =========================================================================
 
@@ -227,5 +286,46 @@ extern FILE *logstream;
 #define NEWTICRATERATIO   1  // try 4 for 140 fps :)
 #define TICRATE         (OLDTICRATE*NEWTICRATERATIO)
 
+#if defined( __DJGPP__ )
+  /*
+    Das ist doch total krank mit den verzeicnissen
+		Nnun denn. Spiegeln wir die Verzeichniss wie ftp.idgames.
+	*/
+  #undef DEFHOME
+  #undef DEFAULTDIR1
+  #undef DEFAULTDIR2	
+  #undef DEFWADS01
+  #undef DEFWADS02
+  #undef DEFWADS03
+  #undef DEFWADS04
+  #undef DEFWADS05
+  #undef DEFWADS06
+
+  #define DEFHOME    ""
+  #define LEGACYWADDIR  ""
+  #define DEFAULTDIR1 "C:\\DOOM"
+  #define DEFAULTDIR2 "C:\\DOOM2"
+  #define DEFWADS01  "WADS"
+  #define DEFWADS02  "DOOMWADS"
+  #define DEFWADS03  "MEGAWADS"
+  #define DEFWADS04  "DOOM\\WADS"
+  #define DEFWADS05  "DOOM\\MEGAWADS"
+  #define DEFWADS06  "DOOM\\DTHMATCH"
+  #define DEFWADS07  "DOOM\\PORTS"
+  #define DEFWADS08  "WADS\\0-9"
+  #define DEFWADS09  "WADS\\A-C"
+  #define DEFWADS10  "WADS\\D-F"
+  #define DEFWADS11  "WADS\\G-I"
+  #define DEFWADS12  "WADS\\J-L"
+  #define DEFWADS13  "WADS\\M-O"
+  #define DEFWADS14  "WADS\\P-R"
+  #define DEFWADS15  "WADS\\S-U"
+  #define DEFWADS16  "WADS\\V-Z"
+  #define DEFWADS17  "HERETIC\\WADS"
+  #define DEFWADS18  "HERETIC\\MEGAWADS"
+  #define DEFWADS19  "HERETIC\\DTHMATCH"
+  #define DEFWADS20  "HERETIC\\PORTS"
+  #define DEFWADS21  "HACX"
+#endif
 
 #endif  // DOOMDEF_H

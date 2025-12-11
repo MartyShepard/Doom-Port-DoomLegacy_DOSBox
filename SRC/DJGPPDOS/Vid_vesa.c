@@ -188,7 +188,7 @@ void *real2ptr(unsigned int real)
 void VID_InitVGAModes(void)
 {
     // do not include Mode 0 (INITIAL) in count
-    all_vidmodes = &vgavidmodes[0];
+    all_vidmodes = &vgavidmodes[1];
     num_all_vidmodes += NUMVGAVIDMODES;
 				
 }
@@ -211,10 +211,11 @@ range_t  VID_ModeRange( byte modetype )
     if(modetype == MODE_fullscreen)
     {   // fullscreen  2..
         mrange.first = NUMVGAVIDMODES;
-        mrange.last = mrange.first + num_full_vidmodes;
+        mrange.last = mrange.first + num_full_vidmodes-1;
     }
     else
-    {   // window   1..
+    {   // window   1..,
+	      // does not include mode 0
         mrange.last = num_all_vidmodes;
     }
     return mrange;
@@ -249,19 +250,19 @@ char *VID_ModeInfo (modenum_t modenum, char **ppheader)
 modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
 {
     modenum_t  modenum = { MODE_NOP, 0 };
-    int mi = 1;
-    int tdist = MAXINT;
-    int bestdist;
-    vmode_t * best;
+    int tdist;
+    int bestdist = MAXINT;
+		int mi = 1;
     vmode_t * pv = all_vidmodes;
 
-    //if( rmodetype == MODE_fullscreen )
-    //{
-        //if( num_full_vidmodes == 0 )  goto done;
-        mi += NUMVGAVIDMODES;  // fullscreen modes start after
+    if( rmodetype == MODE_fullscreen )
+    {
+        if( num_full_vidmodes == 0 )  goto done;
+        mi = NUMVGAVIDMODES;  // fullscreen modes start after
         pv = full_vidmodes;
 				
-    //}
+    }
+		modenum.modetype = rmodetype;
     for ( ; pv!=NULL; pv=pv->next )
     {
         tdist = abs(pv->width - rw) + abs(pv->height - rh);
@@ -269,14 +270,12 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
         if( bestdist > tdist )
         {
 	    bestdist = tdist;
-	    best = pv;
+	    modenum.index = mi;
 			
 	    if( tdist == 0 )  break;   // found exact match
 	}
 	mi++;
     }
-    modenum.index = mi;
-    modenum.modetype = rmodetype;
 
 done:
     return modenum;
@@ -325,9 +324,9 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
 {
     // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     vmode_t *pv = all_vidmodes;  // window
-    int mi = modenum.index;      // 0..
+    int mi = modenum.index-1;      // 0..
 
-    if ( modenum.modetype == MODE_fullscreen )
+    if ( modenum.modetype == 0 )
     {
         pv = full_vidmodes;
         mi = modenum.index - NUMVGAVIDMODES;  // 2..
@@ -808,7 +807,7 @@ no_vesa:
             vesa_modes[nummodes].bytesperpixel = (vesamodeinfo.BitsPerPixel+1)/8;
             
 
-            sprintf (&VesaResolution, "%dx%dx%d", vesamodeinfo.XResolution, vesamodeinfo.YResolution, vesamodeinfo.BitsPerPixel);						
+            sprintf (VesaResolution, "%dx%dx%d", vesamodeinfo.XResolution, vesamodeinfo.YResolution, vesamodeinfo.BitsPerPixel);						
             GenPrintf( EMSG_info,  " - Added Vesa Mode: %-2d - %s\n",nummodes, VesaResolution);
 											
             nummodes++;
@@ -965,10 +964,8 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
 //added:21-03-98:
 void VID_Command_NumModes_f (void)
 {
-    int     nummodes;
-
-    nummodes = VID_NumModes ();
-    CONS_Printf ("%d video mode(s) available(s)\n", nummodes);
+     range_t  mr = VID_ModeRange( MODE_fullscreen );
+     GenPrintf( EMSG_info, "Video modes %d to %d available(s)\n", mr.first, mr.last );		 
 }
 
 
@@ -976,21 +973,18 @@ void VID_Command_NumModes_f (void)
 //
 void VID_Command_ModeInfo_f (void)
 {
+    range_t  mr = VID_ModeRange( MODE_fullscreen );
+    modenum_t   mn = {MODE_fullscreen, 0};
     vmode_t     *pv;
-    modenum_t   mn;
 
     if (COM_Argc()!=2)
         mn = vid.modenum;          // describe the current mode
     else
-    {
-        mn.index = atoi (COM_Argv(1));   //    .. the given mode number
-        mn.modetype = vid.modenum.modetype;  // keep same
-    }
+       mn.index = atoi (COM_Argv(1));   //    .. the given mode number
 
-
-    if (mn.index > VID_NumModes())
+    if (mn.index > mr.last || mn.index < mr.first ) //faB: dont accept the windowed mode 0
     {
-        CONS_Printf ("No such video mode\n");
+        GenPrintf( EMSG_warn, "No such video mode\n");
         return;
     }
 
@@ -1004,29 +998,36 @@ void VID_Command_ModeInfo_f (void)
 //
 void VID_Command_ModeList_f (void)
 {
-    int         i, nummodes;
-    char        *pinfo, *pheader;
-    vmode_t     *pv;
+    range_t  mr = VID_ModeRange( MODE_fullscreen );
+    modenum_t   mn = {MODE_fullscreen, 0};
+    int         i;
+    char        *modename;
+    char        *attr_str;
+		vmode_t     *pv;
     boolean     na;
-    modenum_t mn = {MODE_window, 0};
+    
+		na = false;
 
-    na = false;
-
-    nummodes = VID_NumModes ();
-    for (i=0 ; i<=nummodes ; i++)
+    for (i=mr.first ; i<=mr.last ; i++)
     {			  
-	mn.index = i;
+	      mn.index = i;
+				modename = VID_GetModeName (mn);
         pv = VID_GetModePtr (mn);
-        pinfo = VID_ModeInfo (mn, &pheader);
-
+        if( pv )
+				{
+			  /*
+			  attr_str = (pv->bytesperpixel==1)? " (hicolor)" : "";
+				GenPrintf( EMSG_info, "%d: %s%s\n", i, modename, attr_str);
+				*/
         if (i==0 || pv->bytesperpixel==1)
-            CONS_Printf ("%d: %s\n", i, pinfo);
+            GenPrintf( EMSG_info, "%d: %s\n", i, modename);
         else if (pv->bytesperpixel==2)
-            CONS_Printf ("%d: %s (Highcolor 15/16Bit)\n", i, pinfo);
+            GenPrintf( EMSG_info, "%d: %s (Highcolor 15/16Bit)\n", i, modename);
         else if (pv->bytesperpixel==3)
-            CONS_Printf ("%d: %s (Truecolor 24Bit)\n", i, pinfo);
+            GenPrintf( EMSG_info, "%d: %s (Truecolor 24Bit)\n", i, modename);
         else if (pv->bytesperpixel==4)
-            CONS_Printf ("%d: %s (Truecolor 32Bit)\n", i, pinfo);
+            GenPrintf( EMSG_info, "%d: %s (Truecolor 32Bit)\n", i, modename);
+				}
     }
 
 }
@@ -1036,20 +1037,19 @@ void VID_Command_ModeList_f (void)
 //
 void VID_Command_Mode_f (void)
 {	  
-    vmode_t   *pv;
-    modenum_t  mn;
-
+    range_t  mr = VID_ModeRange( MODE_fullscreen );
+    modenum_t   mn = {MODE_fullscreen, 0};
+    vmode_t *pv;
+		
     if (COM_Argc()!=2)
     {
-        CONS_Printf ("vid_mode <modenum> : set video mode\n");
+        GenPrintf( EMSG_warn, "vid_mode <modenum> : set video mode\n");
         return;
     }
 
     mn.index = atoi(COM_Argv(1));
-    mn.modetype = vid.modenum.modetype;  // keep same
-
-    if (mn.index >= VID_NumModes())
-        CONS_Printf ("No such video mode\n");
+    if (mn.index > mr.last || mn.index < mr.first ) //faB: dont accept the windowed mode 0
+        GenPrintf( EMSG_warn, "No such video mode\n");
     else
     {
         // request vid mode change

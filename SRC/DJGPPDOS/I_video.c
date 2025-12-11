@@ -131,9 +131,8 @@ void I_FinishUpdate (void)
        do {
        } while (!(inportb(0x3DA) & 8));  // while not VRI
 #else
-       //vsync(); // allegro wait for vsync
-       /*
-        allegro vsync(); crash. Using from Alegro Internal.h
+	     /*
+       vsync(); // allegro wait for vsync (crash. Using from Alegro Internal.h)
        */
        _vsync_in();
 			 				
@@ -365,12 +364,12 @@ void I_StartupGraphics( void )
     {
         highcolor = (req_drawmode == REQ_highcolor);
         BitsColor = 15;
-        sprintf (&BitName, "HighColor: %dbit", BitsColor);	
+        sprintf (BitName, "HighColor: %dbit", BitsColor);	
     }else if( req_drawmode == REQ_truecolor)
     {
         highcolor = (req_drawmode == REQ_truecolor);
         BitsColor = 32;
-        sprintf (&BitName, "TrueColor: %dbit", BitsColor);		
+        sprintf (BitName, "TrueColor: %dbit", BitsColor);		
     }else if( req_drawmode == REQ_specific)
     {
        switch(req_bitpp)
@@ -378,30 +377,30 @@ void I_StartupGraphics( void )
           case 15:
            highcolor = true;
            BitsColor = 15;
-           sprintf (&BitName, "HighColor: %dbit", BitsColor);
+           sprintf (BitName, "HighColor: %dbit", BitsColor);
            break;
           case 16:
            highcolor = true;
            BitsColor = 16;
-           sprintf (&BitName, "HighColor: %dbit", BitsColor);
+           sprintf (BitName, "HighColor: %dbit", BitsColor);
            break;
           case 24:
            highcolor = true;
            BitsColor = 24;
-           sprintf (&BitName, "TrueColor: %dbit", BitsColor);
+           sprintf (BitName, "TrueColor: %dbit", BitsColor);
            break;
           case 32:
            highcolor = true;
            BitsColor = 32;
-           sprintf (&BitName, "TrueColor: %dbit", BitsColor);
+           sprintf (BitName, "TrueColor: %dbit", BitsColor);
            break;
           default:
            highcolor = false;
-           sprintf (&BitName, "%dbit", BitsColor);
+           sprintf (BitName, "%dbit", BitsColor);
            break;
         }
     }else
-		    sprintf (&BitName, "%dbit", BitsColor);
+		    sprintf (BitName, "%dbit", BitsColor);
 			
     GenPrintf( EMSG_info, "Vid_Init %s Modes...\n",BitName);
     // set the startup window

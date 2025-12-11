@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1160 2015-04-03 14:11:03Z wesleyjohnson $
+// $Id: d_main.c 1168 2015-05-22 18:36:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2015 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1164"
+#define SVN_REV "1168"
 #endif
 
 // Version number: major.minor.revision
@@ -359,10 +359,84 @@ byte    fatal_error = 0;
 // to make savegamename and directories, in m_menu.c
 char *legacyhome = NULL;
 int   legacyhome_len;
-char *doomwaddir = NULL;
-char *defdir = NULL;  // default dir
 
-char *defhome = DEFHOME; // required GCC 4
+char *dirlist[] =
+  { DEFWADS01,
+#ifdef DEFWADS02
+    DEFWADS02,
+#endif
+#ifdef DEFWADS03
+    DEFWADS03,
+#endif
+#ifdef DEFWADS04
+    DEFWADS04,
+#endif
+#ifdef DEFWADS05
+    DEFWADS05,
+#endif
+#ifdef DEFWADS06
+    DEFWADS06,
+#endif
+#ifdef DEFWADS07
+    DEFWADS07,
+#endif
+#ifdef DEFWADS08
+    DEFWADS08,
+#endif
+#ifdef DEFWADS09
+    DEFWADS09,
+#endif
+#ifdef DEFWADS10
+    DEFWADS10,
+#endif
+#ifdef DEFWADS11
+    DEFWADS11,
+#endif
+#ifdef DEFWADS12
+    DEFWADS12,
+#endif
+#ifdef DEFWADS13
+    DEFWADS13,
+#endif
+#ifdef DEFWADS14
+    DEFWADS14,
+#endif
+#ifdef DEFWADS15
+    DEFWADS15,
+#endif
+#ifdef DEFWADS16
+    DEFWADS16,
+#endif
+#ifdef DEFWADS17
+    DEFWADS17,
+#endif
+#ifdef DEFWADS18
+    DEFWADS18,
+#endif
+#ifdef DEFWADS19
+    DEFWADS19,
+#endif
+#ifdef DEFWADS20
+    DEFWADS20,
+#endif
+#ifdef DEFWADS21
+    DEFWADS21,
+#endif
+  };
+// Doomwaddir allocation:
+// [0] = DOOMWADDIR.  (ref)
+// [1] = reserved for dynamic use  (ref)
+// [2] = reserved for dynamic use  (ref)
+#define DOOMWADDIR_DIRLIST   3
+// [3.. (MAX_NUM_DOOMWADDIR - 3)] = DEFWADSxx   (ref or malloc)
+// [MAX_NUM_DOOMWADDIR-2] = reserved for dynamic use  (ref)
+// [MAX_NUM_DOOMWADDIR-1] = reserved for dynamic use  (ref)
+char * doomwaddir[MAX_NUM_DOOMWADDIR];
+
+static byte defdir_stat = 0;  // when defdir valid
+static char * defdir = NULL;  // default dir  (malloc)
+static char * progdir = NULL;  // program dir  (malloc)
+static char * progdir_wads = NULL;  // program wads directory  (malloc)
 
 #ifdef LAUNCHER
 consvar_t cv_home = {"home", "", CV_HIDEN, NULL};
@@ -380,6 +454,9 @@ extern char mac_md2_wad[FILENAME_SIZE];	    // md2.wad in Resources
 extern char mac_user_home[FILENAME_SIZE];   // for config and savegames
 #endif
 #endif
+
+
+
 
 //
 // EVENT HANDLING
@@ -452,6 +529,7 @@ gamestate_t wipegamestate = GS_DEMOSCREEN;
 CV_PossibleValue_t screenslink_cons_t[] = { {0, "None"}, {wipe_ColorXForm + 1, "Crossfade"}, {wipe_Melt + 1, "Melt"}, {0, NULL} };
 consvar_t cv_screenslink = { "screenlink", "2", CV_SAVE, screenslink_cons_t };
 
+static
 void D_Display(void)
 {
     static boolean menuactivestate = false;
@@ -743,6 +821,7 @@ boolean spirit_update;
 
 //#define SAVECPU_EXPERIMENTAL
 
+// Called by port main program.
 void D_DoomLoop(void)
 {
     tic_t oldentertics, entertic, realtics, rendertimeout = -1;
@@ -1048,6 +1127,61 @@ void D_DisableDemo(void)
 //   D_DoomMain
 // =========================================================================
 
+
+// Print out the search directories for verbose, and error.
+//   emf: EMSG_ver, EMSG_error, EMSG_warn
+//   enables: 0x01 legacy.wad order
+//            0x02 IWAD order
+//            0x0F verbose all
+static
+void  Print_search_directories( byte emf, byte enables )
+{
+    int wdi;
+    GenPrintf(emf, "Search directories:\n");
+    // Extra legacy.wad search, and verbose.
+    if( (enables&0x01) && progdir )
+        GenPrintf(emf, " progdir: %s\n", progdir );
+    // Verbose only. For IWAD or legacy.wad they are in doomwaddir entries.
+    if( (enables==0x0F) && progdir_wads )
+        GenPrintf(emf, "        : %s\n", progdir_wads );
+    if( (enables==0x0F) && defdir )
+        GenPrintf(emf, " defdir: %s\n", defdir );
+#ifdef LEGACYWADDIR
+    GenPrintf(emf, " LEGACYWADDIR: %s\n", LEGACYWADDIR );
+#endif
+    for( wdi=0; wdi<MAX_NUM_DOOMWADDIR; wdi++ )
+    {
+        if( doomwaddir[wdi] )
+            GenPrintf(emf, " Doomwaddir[%i]: %s\n", wdi, doomwaddir[wdi] );
+    }
+}
+
+// Search the search directories for the file.
+//  filename: the search file
+//  fbuf: the file name buffer, must be length _MAX_PATH
+//  search_depth:  if > 0 then search subdirectories to that depth
+// Return true when found, with the file path in the fbuf parameter.
+static
+boolean  Search_doomwaddir( char * filename, int search_depth,
+         /* OUT */  char * fbuf )
+{
+    int wdi;
+   
+    for( wdi=0; wdi<MAX_NUM_DOOMWADDIR; wdi++ )
+    {
+        if( doomwaddir[wdi] == NULL )  continue;
+        if( access( doomwaddir[wdi], X_OK ) )  continue;
+
+        // Form a full filename.
+        cat_filename( fbuf, doomwaddir[wdi], filename );
+        // If it exists then use it.
+        if( access(fbuf, R_OK) == 0 )				
+            return true;						
+            
+    }
+    return false;
+}
+
 //
 // D_AddFile
 //
@@ -1251,6 +1385,7 @@ game_desc_t *  D_GameDesc( int i )
 
 // Check all lump names in lumpnames list, count is limited to 8
 // Return byte has a bit set for each lumpname found.
+static
 byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
 {
     wadinfo_t   header;
@@ -1346,9 +1481,9 @@ fail:
 
 // Checks the possible wad filenames in GDESC_ entry.
 // Return true when found and keylumps verified
-// Leaves name in pathiwad.
+// Leaves name in pathbuf_p, which must be of MAX_PATH length.
 static
-boolean  Check_wad_filenames( int gmi, char * pathiwad )
+boolean  Check_wad_filenames( int gmi, char * pathbuf_p )
 {
     game_desc_t * gmtp = &game_desc_table[gmi];
     int w;
@@ -1356,21 +1491,21 @@ boolean  Check_wad_filenames( int gmi, char * pathiwad )
     for( w=0; w<3; w++ )
     {
         if( gmtp->iwad_filename[w] == NULL ) break;
-        // form a full filename
-        cat_filename( pathiwad, doomwaddir, gmtp->iwad_filename[w] );
-        // if it exists then use it
-        if( access(pathiwad, R_OK) == 0 )
+
+        if( Search_doomwaddir( gmtp->iwad_filename[w], GAME_SEARCH_DEPTH,
+                               /*OUT*/ pathbuf_p ) )
         {
-	    // file exists
-	    if( Check_keylumps( gmtp, pathiwad ) )
-	        return true;
-	}
+            // File exists.
+            if( Check_keylumps( gmtp, pathbuf_p ) )
+                return true;
+        }
     }
     return false;
 }
 
 
 // May be called again after command restart
+static
 void IdentifyVersion()
 {
     char pathiwad[_MAX_PATH + 16];
@@ -1384,6 +1519,13 @@ void IdentifyVersion()
     // find legacy.wad, IWADs
     // and... Doom LEGACY !!! :)
     char *legacywad = NULL;
+
+    if( verbose )
+    {
+        Print_search_directories( EMSG_ver, 0x0F );
+    }
+
+
 #if defined(__APPLE__) && defined(__MACH__) && defined( EXT_MAC_DIR_SPEC )
     //[segabor]: on Mac OS X legacy.wad is within .app folder
     // for uniformity, use the strdup at found_legacy_wad
@@ -1392,42 +1534,58 @@ void IdentifyVersion()
     // check other locations
 #endif
 
-    // [WDJ]: find legacy.wad
-    // pathiwad must be MAX_WADPATH to be used by cat_filename
+    // [WDJ]: find legacy.wad .
+    // pathiwad must be MAX_WADPATH to be used by cat_filename.
+    // Look in program directory first, because executable may have
+    // its own version of legacy.wad.
+    if( progdir && ( access( progdir, R_OK) == 0 ) )
+    {
+        // [WDJ] look for legacy.wad with doomlegacy
+        cat_filename(pathiwad, progdir, "legacy.wad");
+        if( access( pathiwad, R_OK) == 0 )   goto found_legacy_wad;
+    }
+
 #ifdef LEGACYWADDIR
-    // [WDJ] Try LEGACYWADDIR first
+    // [WDJ] Try LEGACYWADDIR as the first wad dir.
     if( access( LEGACYWADDIR , R_OK) == 0 )
     {
         // [WDJ] legacy.wad is in shared directory
         cat_filename(pathiwad, LEGACYWADDIR, "legacy.wad");
         if( access( pathiwad, R_OK) == 0 )   goto found_legacy_wad;
     }
-    else
 #endif
 
-    if( defdir && ( access( defdir, R_OK) == 0 ) )
-    {
-        // [WDJ] legacy.wad is with doomlegacy
-        cat_filename(pathiwad, defdir, "legacy.wad");
-        if( access( pathiwad, R_OK) == 0 )   goto found_legacy_wad;
-    }
-    if( doomwaddir && ( access( doomwaddir, R_OK) == 0 ) )
-    { 
-        // [WDJ] legacy.wad is with other wads
-        cat_filename(pathiwad, doomwaddir, "legacy.wad");
-        if( access( pathiwad, R_OK) == 0 )   goto found_legacy_wad;
-    }
+    // Search wad directories.
+    doomwaddir[1] = defdir/*defdir_wads*/;
+    doomwaddir[1] = progdir_wads;
+    if( Search_doomwaddir( "legacy.wad", 0, /*OUT*/ pathiwad ) )
+         goto found_legacy_wad;
+
     I_SoftError( "legacy.wad not found\n" );  // fatal exit
+    GenPrintf(EMSG_error, "Looked for legacy.wad in:\n" );
+    Print_search_directories( EMSG_error, 0x01 );
     goto fatal_err;
    
    
  found_legacy_wad:
     legacywad = strdup( pathiwad );  // malloc
+    doomwaddir[1] = NULL;
 
     if( verbose )
     {
-        GenPrintf(EMSG_ver, "Doomwaddir: %s\n" "Legacy.wad: %s\n", doomwaddir, legacywad );
+        GenPrintf(EMSG_ver, "Legacy.wad: %s\n", legacywad );
     }
+
+    // Wad search order.
+    if( defdir_stat )
+    {
+        // Search current dir near first, for other wad searches.
+        doomwaddir[1] = defdir;
+    }
+    // Search progdir/wads early, for other wad searches.
+    doomwaddir[2] = progdir_wads;
+    // Search last, for other wad searches.
+    doomwaddir[MAX_NUM_DOOMWADDIR-1] = progdir;
 
     /*
        French stuff.
@@ -1499,7 +1657,6 @@ void IdentifyVersion()
 #endif
 	}
     }
-   
 
     // Specify the name of the IWAD file to use, so we can have several IWAD's
     // in the same directory, and/or have legacy.exe only once in a different location
@@ -1514,18 +1671,32 @@ void IdentifyVersion()
 	}
 
         if (s[0] == '/' || s[0] == '\\' || s[1] == ':')
+        {
+            // Absolute path
             snprintf(pathiwad, _MAX_PATH-1, "%s", s);
+            pathiwad[_MAX_PATH-1] = '\0';
+        }
         else
-            snprintf(pathiwad, _MAX_PATH-1, "%s/%s", doomwaddir, s);
-        pathiwad[_MAX_PATH-1] = '\0';
-#ifdef LAUNCHER       
+        {										
+            // Relative path
+            // Find the IWAD in the doomwaddir.
+            if( ! Search_doomwaddir( s, IWAD_SEARCH_DEPTH, /*OUT*/ pathiwad ) )
+            {
+                // Not found in doomwaddir.
+                strncpy( pathiwad, s, MAX_WADPATH );
+                pathiwad[ MAX_WADPATH-1 ] = 0;
+            }
+        }
+
+#ifdef LAUNCHER
         CV_Set( & cv_iwad, pathiwad );  // for launcher
         cv_iwad.flags &= ~CV_MODIFIED;
 #endif
 
         if ( access(pathiwad, R_OK) < 0 )
 	{
-	    I_SoftError("IWAD %s not found\n", pathiwad);
+            I_SoftError("IWAD %s not found\n", s);
+            Print_search_directories( EMSG_error, 0x02 );
 	    goto fatal_err;
 	}
 
@@ -1577,6 +1748,7 @@ void IdentifyVersion()
 	    goto got_iwad;
         I_SoftError("IWAD %s/%s not found\n",
 		    doomwaddir, game_desc_table[gamedesc_index].iwad_filename[0]);
+        Print_search_directories( EMSG_error, 0x02 );
         goto fatal_err;
     }
     // No -iwad switch, and no mode select switch:
@@ -1754,13 +1926,13 @@ void D_CheckWadVersion()
 //
 // D_DoomMain
 //
-// Called from system main to processes setup, returns before game starts
+// Called from port main program to processes setup.
+// Returns before game starts.
 void D_DoomMain()
 {
-    int p;
-    char file[FILENAME_SIZE];
+    int p, wdi;
+    char fbuf[FILENAME_SIZE];
     char dirbuf[_MAX_PATH ];
-    byte defdir_stat = 0;
 
     int startepisode;
     int startmap;
@@ -1769,7 +1941,10 @@ void D_DoomMain()
 #ifdef FRENCH_INLINE
     french_early_text();
 #endif
-
+#if defined( __DJGPP__ )		
+    char dosroot[MAX_WADPATH];
+#endif
+						
     // print version banner just once here, use it anywhere
     sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING);
     demoversion = VERSION;
@@ -1817,17 +1992,36 @@ void D_DoomMain()
     // get the current directory (possible problem on NT with "." as current dir)
     if (getcwd(dirbuf, _MAX_PATH) != NULL)
     {
+        // Need a working default dir, to prevent "" leading to root files.
         if( (strlen(dirbuf) > 4)
-	    || (strcmp( dirbuf, "." ) == 0) )   // systems that pass "."
+            || (strcmp( dirbuf, "." ) == 0) )   // systems that pass "."
         {
-	    defdir = strdup( dirbuf );
-	    defdir_stat = 1;
+            defdir = strdup( dirbuf );
             if( verbose )
-                GenPrintf(EMSG_ver,"Current directory: %s\n", defdir);
+                GenPrintf(EMSG_ver, "Current directory: %s\n", defdir);
+
+            if( access( defdir, X_OK ) == 0 )
+                defdir_stat = 1;
         }
     }
 
-    doomwaddir = getenv("DOOMWADDIR");  // ptr to environment string
+    if( I_Get_Prog_Dir( defdir, /*OUT*/ dirbuf ) )
+    {
+
+        progdir = strdup( dirbuf );
+        if( verbose )
+          GenPrintf(EMSG_ver, "Program directory: %s\n", progdir);
+
+        // Set the directories that are relative to the program directory.
+        if( access( progdir, X_OK ) == 0 )
+        {
+            cat_filename(dirbuf, progdir, "wads");
+            progdir_wads = strdup(dirbuf);
+        }
+    }
+
+    memset( doomwaddir, 0, sizeof(doomwaddir) );
+    doomwaddir[0] = getenv("DOOMWADDIR");  // ptr to environment string
 
     // CDROM overrides doomwaddir (when valid)
     if (M_CheckParm("-cdrom"))
@@ -1839,26 +2033,10 @@ void D_DoomMain()
         // so do not put such in old doom "c:\\doomdata".
         // Substitute CDROM for doomwaddir, but not legacyhome.
         if( defdir )
-            doomwaddir = ""; // wads from cur dir
+            doomwaddir[0] = ""; // wads from cur dir
         defdir_stat = 0; // do not let legacyhome use current dir
     }
 
-    if (!doomwaddir)
-    {
-        // Default searches
-        if( access(DEFWADS1, R_OK) == 0 )
-        {
-            doomwaddir = DEFWADS1;
-        }
-        else if( access(DEFWADS2, R_OK) == 0 )
-        {
-            doomwaddir = DEFWADS2;
-        }
-        else if( defdir_stat )
-            doomwaddir = strdup(defdir);  // have working default dir, "" leads to root files
-        else
-            doomwaddir = DEFWADS1; // won't work, but will print out where data should go
-    }
 #if 0
 //[WDJ] disabled in 143beta_macosx
 // was test on MACOS_DI but could exclude or include __MACH__ ??
@@ -1868,13 +2046,13 @@ void D_DoomMain()
     if (!strcasecmp(doomwaddir, "/"))
     {
         // doomwaddir maybe malloc string, maybe not
-        doomwaddir = I_GetWadDir();
+        doomwaddir[0] = I_GetWadDir();
     }
 #endif
 #endif
 
     EMSG_flags = EMSG_text | EMSG_log;
-
+						
     CONS_Printf(text[Z_INIT_NUM]);
     // Cannot Init nor register cv_ vars until after Z_Init and some
     // other systems are init first.
@@ -1933,7 +2111,7 @@ void D_DoomMain()
     CV_RegisterVar(&cv_home);
     CV_RegisterVar(&cv_doomwaddir);
     CV_RegisterVar(&cv_iwad);
-    CV_Set( &cv_doomwaddir, doomwaddir ? doomwaddir : "" );
+    CV_Set( &cv_doomwaddir, doomwaddir[0] ? doomwaddir[0] : "" );
     cv_doomwaddir.flags &= ~CV_MODIFIED;
 #endif
 
@@ -1942,7 +2120,7 @@ void D_DoomMain()
     // After this line is code that deals with configuration,
     // game and wad selection, and finding files and directories.
     // It may retry some actions and may execute functions multiple times.
-
+		
 #ifdef LAUNCHER   
 // ----------- launcher restarts here 
 restart_command:
@@ -1959,21 +2137,11 @@ restart_command:
     }
     dedicated = M_CheckParm("-dedicated") != 0;
 
-    if( legacyhome && legacyhome != defhome )
+    if( legacyhome )
        free( legacyhome );  // from previous
 #endif
 
     EMSG_flags = EMSG_text | EMSG_log | EMSG_CONS;
-
-    // identify the main IWAD file to use
-    IdentifyVersion();  // game, iwad
-    modifiedgame = false;
-
-    // Title page
-    const char *gametitle = gamedesc.startup_title;  // set by IdentifyVersion
-    if( gametitle == NULL )   gametitle = gamedesc.gname;
-    if( gametitle )
-      CONS_Printf("%s\n", gametitle);
 
     devparm |= M_CheckParm("-devparm");  // -devparm or -devgame
     if (devparm)
@@ -1988,95 +2156,133 @@ restart_command:
         if (M_CheckParm("-home"))
         {
             userhome = M_GetNextParm();
-	    if( userhome == NULL )
-	    {
-	        I_SoftError( "Switch  -home <directory>\n" );
-	        userhome = "";
-	        fatal_error = 1;
-	    }
+            if( userhome == NULL )
+            {
+                I_SoftError( "Switch  -home <directory>\n" );
+                userhome = "";
+                fatal_error = 1;
+            }
 #ifdef LAUNCHER
             userhome_parm = 1;
 #endif
-	}
+        }
         else
         {
             userhome = getenv("HOME");
-	}
+#ifdef WIN32
+            // Windows XP, 
+            if( !userhome )
+                 userhome = getenv("UserProfile");
+#endif
+        }
 
         if (!userhome)
         {
 #if !defined( __DJGPP__ )					
             if(verbose)
                 GenPrintf(EMSG_ver, "Please set $HOME to your home directory, or use -home switch\n");
-            // Try to use current directory and defaults
 
-            // use absolute default directory, not root
+#if 0
+            // [WDJ] Using current directory just lead to the user losing
+            // the config and savegames.
+
+            // Try to use current directory and defaults
+            // Make an absolute default directory, not root.
             if( defdir_stat )
             {
                 // have working default dir
                 // userhome cannot be "", because save games can end up in root directory
-                userhome = strdup(defdir);  // malloc
+                cat_filename( dirbuf, defdir, defhome );
+                userhome = strdup(dirbuf);  // malloc
+                if(verbose)
+                    GenPrintf(EMSG_ver, " Using userhome= %s\n", userhome );
             }
-#endif						
-	}	
+            else
+            {
+                GenPrintf(EMSG_warn, " No home dir, and no defdir.\n" );
+            }
+#endif
+#endif
+        }
+
 #ifdef LAUNCHER       
-        if( ! userhome_parm || init_sequence == 0 )
+        if( (! userhome_parm || init_sequence == 0)
+          && userhome )
         {
 	    // Save the input userhome for the Launcher, unless it came from -home.
 	    CV_Set( &cv_home, userhome );
 	    cv_home.flags &= ~CV_MODIFIED;
-	}
+        }
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__) && defined( EXT_MAC_DIR_SPEC )
-	//[segabor] ... ([WDJ] MAC port has vars handy)
-//	sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
-	cat_filename( configfile, mac_user_home, "DooMLegacy.cfg" );
-	sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
+        //[segabor] ... ([WDJ] MAC port has vars handy)
+//        sprintf(configfile, "%s/DooMLegacy.cfg", mac_user_home);
+        cat_filename( configfile, mac_user_home, "DooMLegacy.cfg" );
+        sprintf(savegamename, "%s/Saved games/Game %%d.doomSaveGame", mac_user_home);
         if ( ! userhome)
-	    userhome = mac_user_home;
-        // legacyhome = mac_user_home;
-	// Needs slash
+            userhome = mac_user_home;
+        // legacyhome = strdup( mac_user_home );
+        // Needs slash
         legacyhome = (char*) malloc( strlen(userhome) + 3 );
         // example: "/home/user/"
         sprintf(legacyhome, "%s/", userhome);
 #else
-        // Make the home directory
+        // Find the legacyhome directory
         if (userhome)
         {
-	    // [WDJ] find directory, .doomlegacy, or .legacy
-	    char dirpath[ MAX_WADPATH ];
+            // [WDJ] find directory, .doomlegacy, or .legacy
+            char dirpath[ MAX_WADPATH ];
 
-	    // form directory filename, with slash (for savegamename)
-	    cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
-	    // if it exists then use it
-	    if( access(dirpath, R_OK) < 0 )  // not found
-	    {
-	        // not there, try 2nd choice
-	        cat_filename( dirpath, userhome, DEFAULTDIR2 SLASH );
-	        if( access(dirpath, R_OK) < 0 )  // not found
-	        {
-		    // not there either, then make primary default dir
-		    cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
-		}
-	    }
+            // form directory filename, with slash (for savegamename)
+            cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
+            // if it exists then use it
+            if( access(dirpath, R_OK) < 0 )  // not found
+            {
+                // not there, try 2nd choice
+                cat_filename( dirpath, userhome, DEFAULTDIR2 SLASH );
+                if( access(dirpath, R_OK) < 0 )  // not found
+                {
+                    // not there either, then make primary default dir
+                    cat_filename( dirpath, userhome, DEFAULTDIR1 SLASH );
+                }
+            }
             // make subdirectory in userhome
             // example: "/home/user/.doomlegacy/"
-	    legacyhome = strdup( dirpath );  // malloc
+            legacyhome = strdup( dirpath );  // malloc
         }
         else
         {
-            // default absolute path, do not set to ""
-            legacyhome = defhome;
-#if defined( __DJGPP__ )
-            char dosroot[MAX_WADPATH];
-            getcwd(dosroot, MAX_WADPATH-1);
-            sprintf(legacyhome, "%s/", dosroot);
-#endif
+            // Check for an existing DEFHOME in current directory.
+            // Only if user has made it.
+            if( access(DEFHOME, R_OK) == 0 )  // legacy home found
+            {
+                legacyhome = strdup( DEFHOME );  // malloc, will be free.
+            }
         }
+
+        if( ! legacyhome )
+        {
+            // Make a default legacy home in the program directory.
+            // default absolute path, do not set to ""
+#if defined( __DJGPP__ )		
+            getcwd(dosroot, MAX_WADPATH-1);				
+						progdir = dosroot;
+						sprintf(dirbuf, "%s/", dosroot);
+						legacyhome = strdup( dirbuf );										
+#else						
+            cat_filename( dirbuf, progdir, DEFHOME );
+            legacyhome = strdup( dirbuf );  // malloc, will be free.					
+#endif
+            if( verbose )
+                GenPrintf(EMSG_ver, "Default legacyhome= %s\n", legacyhome );
+        }
+        // Make the legacyhome directory
         if( access(legacyhome, R_OK) < 0 )  // not found
         {
-	    I_mkdir( legacyhome, 0700);
+            if( verbose )
+                GenPrintf(EMSG_ver, "MKDIR legacyhome= %s\n", legacyhome );
+            I_mkdir( legacyhome, 0700);
         }
         legacyhome_len = strlen(legacyhome);
        
@@ -2088,8 +2294,8 @@ restart_command:
             // may be a problem if opengl cannot really be started
             if (M_CheckParm("-opengl"))
             {
-	        // example: /home/user/.legacy/glconfig.cfg
-		cfgstr = "gl" CONFIGFILENAME;
+                // example: /home/user/.legacy/glconfig.cfg
+                cfgstr = "gl" CONFIGFILENAME;
             }
             else if( devparm )
             {
@@ -2098,10 +2304,10 @@ restart_command:
             }
             else
             {
-	        // example: /home/user/.legacy/config.cfg
+                // example: /home/user/.legacy/config.cfg
                 cfgstr = CONFIGFILENAME;
             }
-	    cat_filename( configfile, legacyhome, cfgstr );
+            cat_filename( configfile, legacyhome, cfgstr );
         }
 
 #ifdef SAVEGAMEDIR
@@ -2116,13 +2322,49 @@ restart_command:
 #endif
         savegamename[MAX_WADPATH-1] = '\0';
 #endif
+
+        // [WDJ] Would have a doomwaddir in the config file too, but LoadConfig
+        // is done way too late for that.
+        for( wdi=0; wdi<(sizeof(dirlist)/sizeof(char*)); wdi++ )
+        {
+            char ** dwp = & doomwaddir[wdi+DOOMWADDIR_DIRLIST]; // where it goes in doomwaddir
+            if( *dwp && (*dwp != dirlist[wdi]) )
+                free( *dwp );  // was malloc
+            // Default searches
+            if( dirlist[wdi] && dirlist[wdi][0] == '~' )
+            {
+                // Relative to user home.
+                cat_filename( dirbuf, (userhome? userhome : "" ), &dirlist[wdi][2]);
+                *dwp = strdup( dirbuf );  // (malloc)
+            }
+            else
+            {
+                *dwp = dirlist[wdi];  // (ref)
+            }
+        }
     }
+//#if 0
+    if (M_CheckParm("-listdirs") || M_CheckParm("-ld"))
+    {
+      Print_search_directories( EMSG_debug, 0x0F );
+	  }    
+//#endif
 
     if( verbose )
     {
         GenPrintf(EMSG_ver, "Config: %s\n", configfile );
         GenPrintf(EMSG_ver, "Savegames: %s\n", savegamename );
     }
+
+    // identify the main IWAD file to use
+    IdentifyVersion();  // game, iwad
+    modifiedgame = false;
+
+    // Title page
+    const char *gametitle = gamedesc.startup_title;  // set by IdentifyVersion
+    if( gametitle == NULL )   gametitle = gamedesc.gname;
+    if( gametitle )
+      CONS_Printf("%s\n", gametitle);
 
     // add any files specified on the command line with -file wadfile
     // to the wad list
@@ -2132,15 +2374,16 @@ restart_command:
     p = M_CheckParm("-wart");
     if (p)
     {
-        myargv[p][4] = 'p';     // big hack, change to -warp
+        // big hack, change to -warp so a later CheckParam does the warp.
+        myargv[p][4] = 'p';
 
-        // Map name handling.
+        // Map name handling.  Form wad name from map/episode numbers.
         switch (gamemode)
         {
             case doom_shareware:
             case ultdoom_retail:
             case doom_registered:
-                sprintf(file, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
+                sprintf(fbuf, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
                 CONS_Printf("Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
                 break;
 
@@ -2148,12 +2391,12 @@ restart_command:
             default:
                 p = atoi(myargv[p + 1]);
                 if (p < 10)
-                    sprintf(file, "~" DEVMAPS "cdata/map0%i.wad", p);
+                    sprintf(fbuf, "~" DEVMAPS "cdata/map0%i.wad", p);
                 else
-                    sprintf(file, "~" DEVMAPS "cdata/map%i.wad", p);
+                    sprintf(fbuf, "~" DEVMAPS "cdata/map%i.wad", p);
                 break;
         }
-        D_AddFile(file);
+        D_AddFile(fbuf);
         // continue and execute -warp
     }
 
@@ -2199,7 +2442,7 @@ restart_command:
     {
        // Some wad failed to load.
        if( !M_CheckParm( "-noloadfail" ) )
-	 fatal_error = true;
+         fatal_error = true;
     }
     
     if ( !M_CheckParm("-nocheckwadversion") )
@@ -2233,17 +2476,17 @@ restart_command:
         // Check for fake IWAD with right name,
         // but w/o all the lumps of the registered version.
         if (gamemode == doom_registered)
-	{
-	    int i;
+        {
+            int i;
             for (i = 0; i < 23; i++)
                 if (W_CheckNumForName(name[i]) < 0)
                     CONS_Printf("\nThis is not the registered version.");
-	}
+        }
       }
    
       // If additonal PWAD files are used, print modified banner
       if (modifiedgame)
-	  CONS_Printf(text[MODIFIED_NUM]);
+          CONS_Printf(text[MODIFIED_NUM]);
 
       // Check and print which version is executed.
       switch (gamemode)
@@ -2273,24 +2516,24 @@ restart_command:
 #if 0
 # if 0
         setmodeneeded = VID_GetModeForSize(800,600);
-#endif
+# endif
         V_SetPalette(0);
         SCR_SetMode();      // change video mode
         SCR_Recalc();
 #endif
         if ( fatal_error )
         {
-	    CONS_Printf("Fatal error display: (press ESC to continue).\n");
+            CONS_Printf("Fatal error display: (press ESC to continue).\n");
             con_destlines = BASEVIDHEIGHT;
-	    do
-	    {
-	        CON_DrawConsole();
-	        I_OsPolling();
-	        D_ProcessEvents ();  // menu and console responder
-	        CON_Ticker ();
-	        I_UpdateNoBlit();
-	        I_FinishUpdate();       // page flip or blit buffer
-	    } while( con_destlines>0 );
+            do
+            {
+                CON_DrawConsole();
+                I_OsPolling();
+                D_ProcessEvents ();  // menu and console responder
+                CON_Ticker ();
+                I_UpdateNoBlit();
+                I_FinishUpdate();       // page flip or blit buffer
+            } while( con_destlines>0 );
         }
         init_sequence = 1;
         M_LaunchMenu();  // changes init_sequence > 1 to exit restart loop
@@ -2304,7 +2547,7 @@ restart_command:
 #endif
     
     //--------------------------------------------------------- 
-    // After this line are committed to the game and video port selected.
+    // After this line, are committed to the game and video port selected.
     // Use I_Error.
 
     if ( W_CheckNumForName ( "PLAYPAL" ) < 0 )
@@ -2516,7 +2759,7 @@ restart_command:
 
     // turbo option, is not meant to be saved in config, still
     // supported at cmd-line for compatibility
-   if (M_CheckParm("-turbo"))
+    if (M_CheckParm("-turbo"))
     {
         if( M_IsNextParm() )
         {
@@ -2617,6 +2860,7 @@ restart_command:
         }
         FIL_DefaultExtension(demo_name, ".lmp");
 
+
         if ((p = M_CheckParm("-playdemo")))
         {					
             CONS_Printf("Playing demo %s.\n", demo_name);
@@ -2645,7 +2889,7 @@ restart_command:
             gamestate = GS_WAITINGPLAYERS;
         }
         else if (autostart || netgame
-		 || M_CheckParm("+connect") || M_CheckParm("-connect"))
+                 || M_CheckParm("+connect") || M_CheckParm("-connect"))
         {
             //added:27-02-98: reset the current version number
             G_Downgrade(VERSION);
@@ -2691,7 +2935,7 @@ void I_SoftError (const char *errmsg, ...)
 //  GenPrintf(EMSG_debug,"errval=%d\n", errval );   // debug
     for( index = 0; index < SE_msgcnt; index ++ ){
        if( errmsg == SE_msg[index] ){
-	  if( errval == SE_val[index] ) goto done;	// it is a repeat msg
+          if( errval == SE_val[index] ) goto done;	// it is a repeat msg
        }
     }
     // save comparison info
@@ -2807,7 +3051,10 @@ static void Help( void )
 	"-bpp num        Video mode in (8,15,16,24,32) bpp\n"
 	"-nocheckwadversion   Ignore legacy.wad version\n"
 #ifdef BEX_LANGUAGE
-	"-lang name      Load BEX language file name.bex\n"
+	"-lang name      Load BEX language file name.bex\n"	
+#endif
+#if defined (__DJGPP__)
+	"-listdirs/-ld   List supportet directorys\n"
 #endif
 	);
      break;
