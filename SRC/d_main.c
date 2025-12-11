@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: d_main.c 1173 2015-05-22 19:00:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -253,6 +253,7 @@
 
 #include "wi_stuff.h"
 #include "w_wad.h"
+#include "filesrch.h"
 
 #include "z_zone.h"
 #include "d_main.h"
@@ -297,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1172"
+#define SVN_REV "1173"
 #endif
 
 // Version number: major.minor.revision
@@ -1178,6 +1179,18 @@ boolean  Search_doomwaddir( char * filename, int search_depth,
         // If it exists then use it.
         if( access(fbuf, R_OK) == 0 )
             return true;
+#if !defined (__DJGPP__)
+        // Unter DOS verlängert und verlangsamt "search_depth" den start erheblich.
+        if( search_depth )
+        {
+            filestatus_e  fstat;
+            strncpy( fbuf, filename, MAX_WADPATH );
+            fbuf[ MAX_WADPATH - 1 ] = 0;
+            fstat = filesearch( fbuf, doomwaddir[wdi], NULL, true, search_depth );
+            if( fstat == FS_FOUND )
+                return true;
+        }
+#endif				
     }
     return false;
 }
@@ -1558,7 +1571,6 @@ void IdentifyVersion()
 #endif
 
     // Search wad directories.
-    doomwaddir[1] = defdir/*defdir_wads*/;
     doomwaddir[1] = progdir_wads;
     if( Search_doomwaddir( "legacy.wad", 0, /*OUT*/ pathiwad ) )
          goto found_legacy_wad;

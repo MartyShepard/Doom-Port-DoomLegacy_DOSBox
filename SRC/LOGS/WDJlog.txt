@@ -4437,6 +4437,14 @@ ends (shadow).  This code was 8 bit palette draw only, which left
 draw artifacts for other draw modes.  This draw has been updated to
 correctly draw shading for the other draw modes too.
 
+*** W103_filesearch
+patchfile = w103_8_filesearch.patch
+- commit revision 1173
+Add directory depth search to doomwaddir search.
+IWAD search will now search 3 or 5 deep in the doomwaddir directories.
+Rewrite filesearch function in sdl, to add tests for malloc fail, tests
+for open fail, and to reorder some operations.
+
 
 
 
