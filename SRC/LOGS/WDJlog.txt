@@ -4445,6 +4445,28 @@ IWAD search will now search 3 or 5 deep in the doomwaddir directories.
 Rewrite filesearch function in sdl, to add tests for malloc fail, tests
 for open fail, and to reorder some operations.
 
+*** W103_tools makefile
+- commit revision 1174
+Remove file: tools/makefile  (was replaced by tools/Makefile)
 
+*** W104_src_makefile
+patchfile = w104_1_src_makefile.zip
+- commit revision 1175
+Add file: src/Makefile
+This is a re-submit of the Makefile from W103_makefile, which seems
+to be missing in the svn.
+
+*** W104_inline
+patchfile = w104_2_inline.patch
+- commit revision 1176
+The inline keyword is causing some problems with some compilers.
+Remove it and let compiler do any inlines it can.
+
+*** W104_misc
+patchfile = w104_3_misc.patch
+- commit revision 1177
+Remove some extraneous extern from p_local.h.
+Add a blank line to clisrv.c.
+Add a comment to linux_x/i_video_shm.c.
 
 

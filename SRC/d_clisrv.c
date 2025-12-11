@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: d_clisrv.c 1177 2015-11-16 22:34:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -727,6 +727,7 @@ static void SV_Send_NetWait( void )
 	}
     }
 }
+
 void D_WaitPlayer_Drawer( void )
 {
     WI_draw_wait( num_netnodes, wait_nodes, wait_tics );

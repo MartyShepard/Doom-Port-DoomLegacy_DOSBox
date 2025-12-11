@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: p_local.h 1177 2015-11-16 22:34:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -272,9 +272,6 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 //
 // P_ENEMY
 //
-extern  byte EN_mon_infight;   // monster to monster fighting
-extern  byte EN_mon_coop;  // monster coop
-
 extern  consvar_t cv_monbehavior;
 extern  consvar_t cv_monsterfriction;
 extern  consvar_t cv_doorstuck;
