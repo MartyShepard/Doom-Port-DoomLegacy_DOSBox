@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1168 2015-05-22 18:36:56Z wesleyjohnson $
+// $Id: I_system.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -108,7 +108,6 @@ extern uint64_t *freespace;
 
 
 // Do not execute cleanup code more than once. See Shutdown_xxx() routines.
-extern byte graphics_started;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;
@@ -192,9 +191,9 @@ JoyType_t   Joystick;
 
 void I_WaitJoyButton (void)
 {
-     CON_Drawer();
+     CON_Drawer ();
      I_FinishUpdate ();        // page flip or blit buffer
-		 
+
      do {
          poll_joystick();
      } while (!(joy_b1 || joy_b2));
@@ -289,15 +288,17 @@ void I_OutputMsg (char *error, ...)
     // dont flush the message!
 }
 
+#if 0
 int errorcount=0; // control recursive errors
 int shutdowning=false;
-
+#endif
 //added 31-12-97 : display error messy after shutdowngfx/ Marty: Type Fixed
 void I_Error (const char *error, ...)
 {
     va_list     argptr;
     // added 11-2-98 recursive error detecting
 
+#if 0
     if(shutdowning)
     {
         errorcount++;
@@ -309,6 +310,7 @@ void I_Error (const char *error, ...)
           exit(-1);       // recursive errors detected
     }
     shutdowning=true;
+#endif
 
     // put message to stderr
     va_start (argptr,error);
@@ -324,6 +326,9 @@ void I_Error (const char *error, ...)
 
     va_end (argptr);
 
+#if 1
+    D_Quit_Save( QUIT_panic );  // No save, safe shutdown
+#else
     //added:18-02-98: save one time is enough!
     if (!errorcount)
     {
@@ -340,6 +345,7 @@ void I_Error (const char *error, ...)
     I_Sleep( 3000 );  // to see some messages
     /* shutdown everything that was started ! */
     I_ShutdownSystem();
+#endif
 
     fprintf (stderr, "\nPress ENTER");
     fflush( stderr );
@@ -349,6 +355,15 @@ void I_Error (const char *error, ...)
 }
 
 
+// The system dependent part of I_Quit.
+void I_Quit_System (void)
+{
+    exit(0);
+}
+
+
+#if 0
+// Replaced by D_Quit_Save, I_Quit_System
 //
 // I_Quit : shutdown everything cleanly, in reverse order of Startup.
 //
@@ -385,6 +400,33 @@ void I_Quit (void)
 
     exit(0);
 }
+#endif
+
+// Show the EndText, after the graphics are shutdown.
+void I_Show_EndText( uint16_t * text )
+{
+#if 1
+    puttext(1,1,80,25, (byte*)text);
+#else
+    byte* endoom;
+    // [WDJ] Fix errors during I_Error shutdown.
+    int enddoom_num = W_CheckNumForName("ENDDOOM");
+    if( enddoom_num < 0 )
+        return;  // Avoid repeat errors during bad environment shutdown.
+
+    endoom = W_CacheLumpName(enddoom_num,PU_CACHE);
+    puttext(1,1,80,25,endoom);
+#endif
+    gotoxy(1,24);
+
+#if 0   
+    if(shutdowning || errorcount)
+        I_Error("Errors detected (count=%d)", errorcount);
+#endif
+
+    fflush(stderr);
+}
+
 
 
 // sleeps for the given amount of milliseconds
@@ -1159,7 +1201,7 @@ void  I_StartupSystem(void)
     i_love_bill = win95;
 
    // some 'more globals than globals' things to initialize here ?
-   graphics_started = false;
+   graphics_state = VGS_startup;
    keyboard_started = false;
    sound_started = false;
    timer_started = false;
@@ -1234,10 +1276,12 @@ char *I_GetUserName(void)
 static char username[MAXPLAYERNAME];
      char  *p;
      if((p=getenv("USER"))==NULL)
+     {
          if((p=getenv("user"))==NULL)
             if((p=getenv("USERNAME"))==NULL)
                if((p=getenv("username"))==NULL)
                   return NULL;
+     }
      strncpy(username,p,MAXPLAYERNAME);
 
      if( strcmp(username,"")==0 )

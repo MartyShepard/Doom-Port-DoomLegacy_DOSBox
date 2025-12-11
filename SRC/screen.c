@@ -519,7 +519,7 @@ void SCR_ChangeFullscreen (void)
     if (!allow_fullscreen)
         return;
 
-    if(graphics_started)
+    if(graphics_state == VGS_fullactive)
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
         byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;

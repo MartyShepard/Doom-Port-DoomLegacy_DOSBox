@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: g_game.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3123,7 +3123,7 @@ boolean G_CheckDemoStatus (void)
     if (demoplayback)
     {
         if (singledemo)
-            I_Quit ();
+            I_Quit();  // No return
         G_StopDemo();
         D_AdvanceDemo ();
         return true;
@@ -3138,7 +3138,6 @@ boolean G_CheckDemoStatus (void)
 
         CONS_Printf("\2Demo %s recorded\n",demoname);
         return true;
-        //I_Quit ();
     }
 
     return false;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1168 2015-05-22 18:36:56Z wesleyjohnson $
+// $Id: d_main.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1168"
+#define SVN_REV "1170"
 #endif
 
 // Version number: major.minor.revision
@@ -2969,6 +2969,109 @@ done:
 }
 
 
+// The system independent quit and save config.
+void D_Quit_Save ( quit_severity_e severity )
+{
+    // Prevent recursive I_Quit(), mainly due to situation problems.
+    static byte quitseq = 0;
+    uint16_t *  endtext = NULL;
+
+    // If this gets called twice, it cannot just return.
+    // Some shutdown routine called I_Quit again due to an error and we
+    // cannot get back to the previous invocation to finish the shutdown.
+    if( quitseq == 0 )
+    {
+        quitseq = 1;
+        //added:16-02-98: when recording a demo, should exit using 'q' key,
+        //   but sometimes we forget and use 'F10'.. so save here too.
+        if (demorecording)
+           G_CheckDemoStatus();
+    }
+    if( quitseq < 2 )
+    {
+        quitseq = 2;
+        D_Quit_NetGame ();
+    }
+    if( quitseq < 5 )
+    {
+        quitseq = 5;
+        I_ShutdownSound();
+    }
+#ifdef CDMUS
+    if( quitseq < 6 )
+    {
+        quitseq = 6;
+        I_ShutdownCD();
+    }
+#endif
+    if( quitseq < 8 )
+    {
+        quitseq = 8;
+        if( severity == QUIT_normal )
+            M_SaveConfig (NULL);
+    }
+    if( quitseq < 10 )
+    {
+        quitseq = 10;
+        if( (severity == QUIT_normal)
+             && ! M_CheckParm("-noendtxt") )
+        {
+            // [WDJ] Check on errors during I_Error shutdown.
+            // Avoid repeat errors during bad environment shutdown.
+            int endtxt_num = W_CheckNumForName("ENDOOM");
+            if( endtxt_num >= 0 )
+                endtext = W_CacheLumpNum( endtxt_num, PU_STATIC );
+            // If there are any more errors, then do not show the end text.
+        }
+    }
+    if( quitseq < 11 )
+    {
+        quitseq = 11;
+        // Close open wad files.
+        // Neccesity for a Mac.  Open files hang devices.
+        W_Shutdown();
+    }
+    if( quitseq < 15 )
+    {
+        quitseq = 15;
+#if !defined (__DJGPP__)				
+        I_Shutdown_IO();
+#endif
+    }
+    if( quitseq < 20 )
+    {
+        quitseq = 20;
+        if( severity != QUIT_normal )
+            I_Sleep( 3000 );  // to see some messages
+        I_ShutdownGraphics();
+    }
+    if( quitseq < 22 )
+    {
+        quitseq = 22;
+        I_ShutdownSystem();
+    }
+    if( quitseq < 29 )
+    {
+        quitseq = 29;
+        if( (severity == QUIT_normal)
+          && endtext )
+        {
+            // Show the ENDOOM text
+            printf("\r");
+            I_Show_EndText( endtext );
+        }
+    }
+}
+
+// I_Quit exits with (exit 0).
+// No return
+void I_Quit (void)
+{
+    D_Quit_Save( QUIT_normal );
+    I_Quit_System();  // No Return
+}
+
+
 static void Help( void )
 {
   char * np = M_GetNextParm();
@@ -2977,19 +3080,19 @@ static void Help( void )
   {
     printf
        ("Usage: doomlegacy"
-#ifdef HWRENDER			 
-			 " [-opengl]"
+#ifdef HWRENDER	
+        " [-opengl]"
 #endif
-			 " [-iwad xxx.wad] [-file pwad.wad ...]\n"
-	"--version   Print Doom Legacy version\n"
-	"-h     Help\n"
-	"-h g   Help game and wads\n"
-	"-h m   Help multiplayer\n"
-	"-h c   Help config\n"
-	"-h s   Help server\n"
-	"-h d   Help demo\n"
-	"-h D   Help Devmode\n"
-	);
+        " [-iwad xxx.wad] [-file pwad.wad ...]\n"
+        "--version   Print Doom Legacy version\n"
+        "-h     Help\n"
+        "-h g   Help game and wads\n"
+        "-h m   Help multiplayer\n"
+        "-h c   Help config\n"
+        "-h s   Help server\n"
+        "-h d   Help demo\n"
+        "-h D   Help Devmode\n"
+        );
      return;
   }
   switch( np[0] )
@@ -2997,108 +3100,108 @@ static void Help( void )
    case 'g': // game
      printf
        (
-	"-game name      doomu, doom2, tnt, plutonia, freedoom, heretic, chex1, etc.\n"
-	"-iwad file      The game wad\n"
-	"-file file      Load DEH and PWAD files (one or more)\n"
-	"-deh  file      Load DEH files (one or more)\n"
-	"-loadgame num   Load savegame num\n"  
-	"-episode 2      Goto episode 2, level 1\n"
-	"-skill 3        Skill 1 to 5\n"
-	"-warp 13        Goto map13\n"
-	"-warp 1 3       Goto episode 1 level 3\n"
-	"-nomonsters     No monsters\n"
-	"-respawn        Monsters respawn after killed\n"
-	"-coopmonsters   Monsters cooperate\n"
-	"-infight        Monsters fight each other\n"
-	"-fast           Monsters are fast\n"
-	"-predicting     Monsters aim better\n"
-	"-turbo num      Player speed %%, 10 to 255\n"   
-	);
+        "-game name      doomu, doom2, tnt, plutonia, freedoom, heretic, chex1, etc.\n"
+        "-iwad file      The game wad\n"
+        "-file file      Load DEH and PWAD files (one or more)\n"
+        "-deh  file      Load DEH files (one or more)\n"
+        "-loadgame num   Load savegame num\n"  
+        "-episode 2      Goto episode 2, level 1\n"
+        "-skill 3        Skill 1 to 5\n"
+        "-warp 13        Goto map13\n"
+        "-warp 1 3       Goto episode 1 level 3\n"
+        "-nomonsters     No monsters\n"
+        "-respawn        Monsters respawn after killed\n"
+        "-coopmonsters   Monsters cooperate\n"
+        "-infight        Monsters fight each other\n"
+        "-fast           Monsters are fast\n"
+        "-predicting     Monsters aim better\n"
+        "-turbo num      Player speed %%, 10 to 255\n"   
+        );
      break;
    case 'm': // multiplayer
      printf
        (
-	"-teamplay       Play with teams by color\n"
-	"-teamskin       Play with teams using skins\n"
-	"-splitscreen    Two players on this screen\n"
-	"-deathmatch     Deathmatch, weapons respawn\n"
-	"-altdeath       Deathmatch, items respawn\n"
-	"-timer num      Timelimit in minutes\n"
-	"-avg            Austin 20 min rounds\n"
-	);
+        "-teamplay       Play with teams by color\n"
+        "-teamskin       Play with teams using skins\n"
+        "-splitscreen    Two players on this screen\n"
+        "-deathmatch     Deathmatch, weapons respawn\n"
+        "-altdeath       Deathmatch, items respawn\n"
+        "-timer num      Timelimit in minutes\n"
+        "-avg            Austin 20 min rounds\n"
+        );
      break;
    case 'c': // config
      printf
        (
-	"-v   -v2        Verbose\n"
-	"-home name      Config and savegame directory\n"
-	"-config file    Config file\n"
+        "-v   -v2        Verbose\n"
+        "-home name      Config and savegame directory\n"
+        "-config file    Config file\n"
 #ifdef HWRENDER		
-	"-opengl         OpenGL hardware renderer\n"
+        "-opengl         OpenGL hardware renderer\n"
 #endif
-	"-nosound        No sound effects\n"
+        "-nosound        No sound effects\n"
 #ifdef CDMUS
-	"-nocd           No CD music\n"
+        "-nocd           No CD music\n"
 #endif
-	"-nomusic        No music\n"
-	"-precachesound  Preload sound effects\n"
-	"-mb num         Pre-allocate num MiB of memory\n"
-	"-width num      Video mode width\n"
-	"-height num     Video mode height\n"
-	"-highcolor      Request 15bpp or 16bpp\n"
-	"-truecolor      Request 24bpp or 32bpp\n"
-	"-native         Video mode in native bpp\n"
-	"-bpp num        Video mode in (8,15,16,24,32) bpp\n"
-	"-nocheckwadversion   Ignore legacy.wad version\n"
+        "-nomusic        No music\n"
+        "-precachesound  Preload sound effects\n"
+        "-mb num         Pre-allocate num MiB of memory\n"
+        "-width num      Video mode width\n"
+        "-height num     Video mode height\n"
+        "-highcolor      Request 15bpp or 16bpp\n"
+        "-truecolor      Request 24bpp or 32bpp\n"
+        "-native         Video mode in native bpp\n"
+        "-bpp num        Video mode in (8,15,16,24,32) bpp\n"
+        "-nocheckwadversion   Ignore legacy.wad version\n"
 #ifdef BEX_LANGUAGE
-	"-lang name      Load BEX language file name.bex\n"	
+        "-lang name      Load BEX language file name.bex\n"
 #endif
 #if defined (__DJGPP__)
-	"-listdirs/-ld   List supportet directorys\n"
+        "-listdirs/-ld   List supportet directorys\n"
 #endif
-	);
+        );
      break;
    case 's': // server
      printf
        (
-	"-server         Start as game server\n"
-	"-dedicated      Dedicated server, no player\n"
-	"-connect name   Connect to server name\n"
-	"-bandwidth bps  Net bandwidth in bytes/sec\n"
-	"-packetsize num Net packetsize\n"
-	"-nodownload     No download from server\n"
-	"-nofiles        Download all from server\n"
-	"-clientport x   Use port x for client\n"
-	"-udpport x      Use udp port x for server (and client)\n"
+        "-server         Start as game server\n"
+        "-dedicated      Dedicated server, no player\n"
+        "-connect name   Connect to server name\n"
+        "-bandwidth bps  Net bandwidth in bytes/sec\n"
+        "-packetsize num Net packetsize\n"
+        "-nodownload     No download from server\n"
+        "-nofiles        Download all from server\n"
+        "-clientport x   Use port x for client\n"
+        "-udpport x      Use udp port x for server (and client)\n"
 #ifdef USE_IPX
-	"-ipx            Use IPX\n"
+        "-ipx            Use IPX\n"
 #endif
-	"-extratic x     Send redundant player movement\n"
-	"-debugfile file Log to debug file\n"
-	"-left           Left slaved view\n"
-	"-right          Right slaved view\n"
-	"-screendeg x    Slaved view at x degrees\n"
-	);
+        "-extratic x     Send redundant player movement\n"
+        "-debugfile file Log to debug file\n"
+        "-left           Left slaved view\n"
+        "-right          Right slaved view\n"
+        "-screendeg x    Slaved view at x degrees\n"
+        );
      break;
    case 'd': // demo
      printf
        (
-	"-record file    Record demo to file\n"
-	"-maxdemo num    Limit record demo size, in KiB\n"
-	"-playdemo file  Play demo from file\n"
-	);
+        "-record file    Record demo to file\n"
+        "-maxdemo num    Limit record demo size, in KiB\n"
+        "-playdemo file  Play demo from file\n"
+        );
      break;
    case 'D': // devmode
      printf
        (
-	"-devparm        Develop mode\n"
-	"-devgame gamename  Develop mode, and specify game\n"
-	"-wart 3 1       Load file devmaps/E3M1.wad, then warp to it\n"
-	"-wart 13        Load file devmaps/cdata/map13.wad, then warp to it\n"
-	"-timedemo file  Timedemo from file\n"
-	"-nodraw         Timedemo without draw\n"
-	"-noblit         Timedemo without blit\n"
-	);
+        "-devparm        Develop mode\n"
+        "-devgame gamename  Develop mode, and specify game\n"
+        "-wart 3 1       Load file devmaps/E3M1.wad, then warp to it\n"
+        "-wart 13        Load file devmaps/cdata/map13.wad, then warp to it\n"
+        "-timedemo file  Timedemo from file\n"
+        "-nodraw         Timedemo without draw\n"
+        "-noblit         Timedemo without blit\n"
+        );
      break;
   }
 }

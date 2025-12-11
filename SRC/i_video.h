@@ -74,6 +74,7 @@ typedef struct {
 
 extern boolean  allow_fullscreen;  // controlled by i_video
 extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
+extern byte graphics_state;
 #if defined( __DJGPP__ )
 boolean    highcolor; // local
 int        BitsColor; // Definiert die Bit Palette

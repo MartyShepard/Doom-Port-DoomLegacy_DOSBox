@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: I_video.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,7 +63,7 @@
 //dosstuff -newly added
 unsigned long dascreen;
 static int gfx_use_vesa1;
-
+extern byte graphics_state;
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
@@ -260,8 +260,10 @@ void I_ShutdownGraphics (void)
 {
     __dpmi_regs r;
 
-    if( !graphics_started )
+    if( graphics_state <= VGS_shutdown )
         return;
+
+    graphics_state = VGS_shutdown;  // to catch some repeats due to errors
 
     // free the last video mode screen buffers
     if (vid.buffer)
@@ -284,7 +286,7 @@ void I_ShutdownGraphics (void)
        __dpmi_int(0x10,&r);
     }
 
-    graphics_started = false;
+    graphics_state = VGS_off;
 }
 
 
@@ -339,11 +341,12 @@ int set_vesa1_mode( int width, int height )
 // Initialize the graphics system, with a initial window.
 void I_StartupGraphics( void )
 {
-	  char BitName[20];
+    char BitName[20];
 		
     modenum_t initial_mode = {MODE_window, 0};
     // pre-init by V_Init_VideoControl
 
+    graphics_state = VGS_startup;
     // remember the exact screen mode we were...
     I_SaveOldVideoMode();
    
@@ -400,7 +403,7 @@ void I_StartupGraphics( void )
            break;
         }
     }else
-		    sprintf (BitName, "%dbit", BitsColor);
+    sprintf (BitName, "%dbit", BitsColor);
 			
     GenPrintf( EMSG_info, "Vid_Init %s Modes...\n",BitName);
     // set the startup window
@@ -412,7 +415,7 @@ void I_StartupGraphics( void )
         if( VID_SetMode ( initial_mode ) < 0 )  goto abort_error;
     };
 
-    graphics_started = true;
+    graphics_state = /*VGS_active*/VGS_fullactive;
 		CONS_Printf( "Vid_Init...Successfully\n");
     return;
 
@@ -437,6 +440,7 @@ void I_RequestFullGraphics( byte select_fullscreen )
     initial_mode = VID_GetModeForSize( vid.width, vid.height,
 				       (select_fullscreen ? MODE_fullscreen: MODE_window));
     VID_SetMode ( initial_mode );
+    graphics_state = VGS_fullactive;
 }
 
 // for debuging

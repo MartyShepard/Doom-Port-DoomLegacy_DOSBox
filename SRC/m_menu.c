@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1168 2015-05-22 18:36:56Z wesleyjohnson $
+// $Id: m_menu.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3742,7 +3742,7 @@ void M_QuitResponse(int ch)
             while (dlyd_time > I_GetTime()) ;
         }
     }
-    I_Quit ();
+    I_Quit();  // No return
 }
 
 

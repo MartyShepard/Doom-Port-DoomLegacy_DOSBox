@@ -4401,4 +4401,25 @@ Implement I_Get_Prog_Dir, for all ports, so can reliably get legacy.wad.
 On some ports this can use special system calls.  The fallback code
 looks at argv[0] and extracts the directory.
 
+*** W103_install_docs
+zipfile = w103_5_install_docs.zip
+- commit revision 1169
+Create a separate install document with the comprehensive information
+on installing.  This is more visible for someone looking for install
+information than having the information buried in legacy.html.
+New files: doc/INSTALL.html
+
+*** W103_quit
+patchfile = w103_6_quit.patch
+- commit revision 1170
+There is now a port independent video status, which also serves during
+shutdown to prevent quit looping on errors.  When legacy.wad was not
+found, a quit loop was triggered due to more errors on shutdown.
+Shutdown is now handled by D_Quit_Save, which has complete sequencing
+of the shutdown, even with multiple errors retriggering the Quit.
+This simplifies the port code, and only one copy needs to be maintained.
+The header for endtext printing is now port independent, removing a
+header file from every port. The endtext code has been given a proper
+copyright and credit.
+
 

@@ -1065,7 +1065,7 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     // if not in display loop, force screen update
     if ( con_self_refresh || (EMSG_flags & EMSG_now) )
     {
-        if( ! graphics_started )   goto done;
+        if( ! graphics_state == VGS_fullactive )   goto done;
         // have graphics, but do not have refresh loop running
 #if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
@@ -1082,7 +1082,7 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     }
     else if ( ! con_video )
     {
-        if( ! graphics_started || ! vid.display )   goto done;
+        if( ! graphics_state == VGS_fullactive || ! vid.display )   goto done;
         // messages before graphics
         CON_DrawConsole ();
         I_FinishUpdate ();
@@ -1110,7 +1110,7 @@ void CONS_Error (char *msg)
     EMSG_flags |= EMSG_error;
 
 #ifdef WIN_NATIVE
-    if(!graphics_started)
+    if(!graphics_state == VGS_fullactive)
     {
         I_MsgBox (msg);
         return;

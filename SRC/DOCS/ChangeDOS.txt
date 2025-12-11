@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01170 ]: w103 quit controller
+          Compile fixes (graphics_started > graphics_state)
+					
+[01169 ]: w103 install docs
 [01168 ]: w103 doom directories
           DOS: Compile Fix.
           DOS: Vesa angepasst

@@ -117,29 +117,64 @@
 <h2 id="install">INSTALL</h2>
 
 <p>
-  Installing Doom Legacy is simple, just follow these steps:
-  
+  Installing Doom Legacy depends upon the operating system and the
+user preferences:
+
+A full explanation of the source packages install is in the
+<a href=INSTALL.html>INSTALL</a> manual.
 </p>
+<h3>Preferences</h3>
+Select one of install methods.  This will determine where the binary,
+wads, and docs are installed.  In some cases a directory may be specified.
+
+<h4>System Share Install</h4>
+Install to a System executable directory, like "/usr/local/bin" or
+"/Program Files".
+The docs and wads are installed to a user share directory, like
+"/usr/local/share/games/doomlegacy" or "c:/games".
+The owner of the files will be privileged.
+
+<h4>Games Share Install</h4>
+Install the binary in the games directory, but wads and docs in a
+system share directory, for use by all system users.
+The default games directory is games/doomlegacy and the default share
+directory .
+The owner of the files will be privileged.
+A directory may be specified.
+
+<h4>Games Install</h4>
+Install in the games directory, for use by all system users.
+All components will be installed into the same games directory, which by
+default is "/usr/local/games/doomlegacy" or "c:/games/doomlegacy".
+The owner of the files will be privileged.
+A specific directory may be specified.
+
+<h4>User Install</h4>
+Install for the use of the immediate user, owned by the immediate user.
+The install directory must be within the user directory space.
+The User may specify a directory.
+
+
 <h3>Linux</h3>
 <p>
-  Choose an installation directory that all players can use, like <b>/usr/local/games/doomlegacy</b>.
-  Unpack the tar file contents here. The installation directory needs to include the
-  doomlegacy binary, legacy.wad, and autoexec.cfg.  The tar file will
-  also install the Doom Legacy docs there.
-</p>
+  The installation can be system-wide or just for the user.  Some wad
+  files can also be installed system-wide.  These can be put into one of
+  the system wad directories.
+  The user can also keep private wad directories.
+  All will be searched, see the search directory list in the
+  <a href=INSTALL.html>INSTALL</a> manual.
 <p>
   The IWAD files should go in a separate directory that can be shared
   between all Doom source ports (such as <b>/usr/local/share/games/doomwads</b>).
   You can set the <b>DOOMWADDIR</b> environment variable to point this directory in a login script or a game starting script.
   If <b>DOOMWADDIR</b> is not set, Doom Legacy will try the
-  directories <b>/usr/local/share/games/doomwads</b>,
-  and <b>/usr/local/games/doomwads</b>,
-  and the installation directory.
+  directories of the search list, and the installation directory.
 </p>
 <p>
-  You can also make soft links in the abovementioned IWAD directory to
+  You can also make soft links one of the above mentioned directories to
   point to the actual IWAD files.
-  The valid file names can be found in docs/technical/wad_selection.txt.
+  The valid file names for each game selection can be found in
+  docs/technical/wad_selection.txt.
 </p>
 <div class="code">$ ln -s wads/idgames/doom1.wad  doom1.wad
 $ ln -s wads/idgames/doom2.wad  doom2.wad
@@ -182,21 +217,48 @@ doomlegacy -iwad doom2.wad -file DM8.WAD
 
 <h3>Windows</h3>
 <p>
-  It is important to change to the directory where doomlegacy resides.  Support files,
-  like wads, legacy.wad, autoexec.cfg, and config.cfg, need to be found by Doom Legacy
-  and it looks in the current directory as last resort.
+  The installation can be system style, a games directory, or within the
+  user home directory.
+  Some wad files can be put into one of the absolute path wad directories,
+  making them available to all users and all doom programs.
+  The user can also keep private wad directories relative to HOME.
+  All will be searched, see the search directory list in the
+  <a href=INSTALL.html>INSTALL</a> manual.
+<p>
+  The installation should put all files in known directories, which
+  makes it easy to start Doom Legacy without needing to change to the
+  program directory.
+  If there is difficulty, it will be due to Doom Legacy not finding your
+  HOME directory, not finding where legacy.wad is stored, or not finding
+  the IWAD.  Ensure there is a consistent HOME directory to use the same
+  config file each time you play.
+  Put the needed files in known directories, and check that that the HOME or
+  UserProfile environment variable is set to your home directory.
+  When started with the "-v" switch, Doom Legacy will print to
+  stderr.txt where it finds directories and the search list.
+  Support files, like wads, legacy.wad, autoexec.cfg, and config.cfg,
+  need to be found by Doom Legacy.
+  The known directories are listed in the 
+  <a href=INSTALL.html>INSTALL</a> manual.
 </p>
 <p>
-  Put your wad files in directory "\doomwads", or "\games\doomwads", or
-  in the current directory.  Doom Legacy will use the first that exists
-  as the doomwaddir.  Set DOOMWADDIR in a batch file to specify a different wad directory.
+  Put your wad files in known directories of the search list,
+  like "\doomwads", or "\games\doomwads", or in the current directory.
+  Doom Legacy will look in all directories of the search directory list.
+  Setting DOOMWADDIR environment variable specifies an additional wad directory
+  to be searched.  This can be set at login, or in a batch file that
+  starts Doom Legacy.
 </p>
 <p>
-  A "legacy" directory will be created in your home directory for savegames and saved config files.
+  A "legacy" directory will be created in your home directory for savegames
+  and saved config files.
   Set the environment variable "<b>HOME</b>" in a batch file, or use the -home switch
   when starting Doom Legacy.
-  Otherwise, it will check if the default home directory exists, "\legacyhome".
-  If none are present, then it will use the current directory for home, but only if it is not root, "c:\".
+  In Windows, "<b>UserProfile</b>" will be checked as an alternative to HOME.
+  Otherwise, it will check for an alternative home directory exists,
+  <b>"legacyhome"</b>.
+  As a last resort, it will try to create <b>"legacyhome"</b> in the
+  program directory.
 
   Overriding by using the -home and -config switches, examples:
 </p>
@@ -256,10 +318,10 @@ DM2MOD.BAT
 <h3>Windows with launcher</h3>
 <p>
   The previous separate launcher is no longer actively supported,
-  but older launchers will still work.  There are other Launchers that
-  can also be used, as most command line switches are somewhat standard.
-  Most of the settings that a launcher supports can now be set from the
-  console also, or an autoexec file.
+  but older launchers will still work.  Other Launchers can also be used,
+  as most command line switches are somewhat standard.
+  Most of the settings that a launcher supports can now also be set from the
+  console also, or using an autoexec file.
 </p>
 <p>
   The launcher has some problems with setting home and config directories.
@@ -267,7 +329,8 @@ DM2MOD.BAT
   "-config mydir\config.cfg", and/or "-home homedir" in options.
 </p>
 <ul>
-  <li>Unpack the archive to a suitable program directory, like C:\legacy</li>
+  <li>Unpack the archive to a suitable program directory,
+      like <b>C:\games\doomlegacy</b></li>
   <li>Start the Launcher</li>
   <li>Fill in required information about WAD locations and hardware options</li>
   <li>Launch the game!</li>
@@ -275,30 +338,31 @@ DM2MOD.BAT
 
 <h3>Environment variables</h3>
 <p>
-  You can set the following environment variables to
-  have additional control over Legacy behavior. None of them are
-  required.
+  The following environment variables alter Doom Legacy behavior.
+  None of them are required.
 </p>
 <ul>
   <li>
-    The environment variable <b>DOOMWADDIR</b> defines the path where
-    the wad files are located. This way you can easily share your wad
-    files between different programs.  If it is not defined a default wad
-    directory will be checked for existing, and then an alternate directory.
-    If none exist, then by default, Legacy looks for wad files in the
-    current directory.
+    <b>DOOMWADDIR</b>: This environment variable defines a path where
+    wad files are located. This way you can easily share your wad
+    files between different programs.
   </li>
   <li>
-    The variable <b>USER</b>, containing your username, is used as the
+    <b>USER</b>: This variable contains your username, is used as the
     default value for your player name in multiplayer games.
   </li>
   <li>
-    Your home directory is defined by the variable <b>HOME</b>.
+    <b>HOME</b>: This variable indicates your home directory.
     In the home directory Doom Legacy will create a legacy directory to store
     your config and savegame files.
     If this variable is not defined, a default legacy home directory will be
-    checked for existing.  If none exist, then by default the current
-    directory will be used for home.
+    checked for existing, or one created in the program directory.
+    Failure to have a consistent HOME will lead to losing your config,
+    and savegames will not be saved.
+  </li>
+  <li>
+    <b>UserProfile</b>: This variable is checked on Windows systems as
+    a substitute for HOME, if HOME is not defined.
   </li>
 </ul>
 
@@ -708,7 +772,6 @@ See <a href="console.html">here</a> for more about the console.
   and <a href="#cmd_network">-connect</a>,
   or from the multiplayer menu that
   allows you to connect to a server or create one yourself.
-  
 </p>
 <p>
   Legacy uses the UDP port 5029 only and can accept messages from any
@@ -719,10 +782,15 @@ See <a href="console.html">here</a> for more about the console.
   If you are familiar with IpAutoforward funtionality of Linux,
   you can make a usable IP appear.
 </p>
-<h4> The server</h4>
+<h4>The server</h4>
 <p>
-  Start a server with one of the following server commands.
-  One player can play on the server itself. Other switches can also be
+  Start a server from the Multiplayer menu or from the command line.
+  One player can play on the server itself.
+</p>
+<h4>Server command line switches</h4>
+<p>
+  Doom Legacy can start as a server from the command line with
+  one of the following commands.  Other switches can also be
   included to select the game and wad.
 </p>
 <div class="code">$ doomlegacy -server &lt;num-of-computers&gt;
@@ -742,24 +810,48 @@ See <a href="console.html">here</a> for more about the console.
 </p>
 <h4>Clients</h4>
 <p>
-  Clients are the other players who join in the server.
+  Clients are the other players who join the game by connecting to the server.
   Each additional player connects to the server with one of the following
   connect commands.
+</p>
+
+<p>
+  To detect servers on the local network, the local network search
+  address must be specified in one of the server config vars, server1,
+  server2, or server3.  These can be set using the console.
+  Your computer might have an IP address such as "192.168.1.14".
+  For a network would be "192.168.1".
+  The network broadcast address is the network address with last number as 255.
+  Doom Legacy servers on the network will answer the broadcast.
+</p>
+<div class="code"> >server2 "192.168.1.255"
+</div>
+
+<p>
+  Servers can be specified by any of the config vars, server1, server2, or
+  server3.  The address is checked for a running server.
+</p>
+<div class="code"> >server1 "10.42.22.63"
+</div>
+  
+<h4>Client command line switches</h4>
+<p>
+  Doom Legacy can connect to the server from the command line with
+  one of the following connect commands.
+</p>
+<p>
+  To connect to a specific server computer using their ip address.
 </p>
 <div class="code">$ doomlegacy -connect &lt;ip address of server&gt;
 </div>
 <p>
-  Connects to a specific server computer using their ip address.
+  Without the ip address, it will auto-detect the server on the LAN.
+  This only works when computers are directly connected. If you play through
+  internet, only the servers on a local internet can be auto-detected.
 </p>
 <div class="code">$ doomlegacy -connect
 </div>
-<p>
-  This will auto-detect a server on a LAN. This only works when
-  computers are directly connected. If you play through internet,
-  the server can NOT be auto-detected, and you must specify it's
-  IP address.
-</p>
-  
+<br>
 <div class="code">Example A, 3 players on a LAN:
   player 1 (the server)
   $ doomlegacy -server 3

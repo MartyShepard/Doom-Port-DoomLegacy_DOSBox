@@ -146,7 +146,7 @@ rendermode_e    rendermode=render_soft;
 byte  req_bitpp = 8;  // set by d_main checks on command line
 byte  req_drawmode = REQ_default;  // reqdrawmode_t
 
-byte  graphics_started = 0; // Is used in console.c and screen.c
+byte  graphics_state = 0; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
@@ -514,7 +514,7 @@ void CV_usegamma_OnChange(void)
     // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
     R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
 #endif
-    if( graphics_started )
+    if( graphics_state == VGS_fullactive )
     {
         // reload palette
         LoadPalette("PLAYPAL");

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: d_netcmd.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -939,7 +939,7 @@ void Command_Version_f(void)
 //
 void Command_Quit_f(void)
 {
-    I_Quit();
+    I_Quit();  // No return
 }
 
 void FragLimit_OnChange(void)
