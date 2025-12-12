@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_prepro.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -124,7 +124,7 @@ fs_section_t* find_section_start(char *brace)
   while(current)
     {
       if(current->start == brace)
-	return current;
+        return current;
       current = current->next;
     }
   
@@ -147,11 +147,11 @@ fs_section_t* find_section_end(char *brace)
       fs_section_t *current = fs_current_script->sections[n];
       
       while(current)
-	{
-	  if(current->end == brace)
-	    return current;        // found it
-	  current = current->next;
-	}
+        {
+          if(current->end == brace)
+            return current;        // found it
+          current = current->next;
+        }
     }
   
   return NULL;    // not found
@@ -209,40 +209,40 @@ char* process_find_char(char *data, char find)
       if(*data==find) return data;
       if(*data=='\"')       // found a quote: ignore stuff in it
       {
-	  data++;
-	  while(*data && *data != '\"')
-	  {
-	      // escape sequence ?
-	      if(*data=='\\') data++;
-	      data++;
-	  }
-	  // error: end of script in a constant
-	  if(!*data) return NULL;
+          data++;
+          while(*data && *data != '\"')
+          {
+              // escape sequence ?
+              if(*data=='\\') data++;
+              data++;
+          }
+          // error: end of script in a constant
+          if(!*data) return NULL;
       }
 
       // comments: blank out
 
       if(*data=='/' && *(data+1)=='*')        // /* -- */ comment
       {
-	  while(*data && (*data != '*' || *(data+1) != '/') )
-	  {
-	      *data=' '; data++;
-	  }
-	  if(*data)
-	    *data = *(data+1) = ' ';   // blank the last bit
-	  else
-	  {
-	      fs_src_cp = data;
-	      // script terminated in comment
-	      script_error("script terminated inside comment\n");
-	  }
+          while(*data && (*data != '*' || *(data+1) != '/') )
+          {
+              *data=' '; data++;
+          }
+          if(*data)
+            *data = *(data+1) = ' ';   // blank the last bit
+          else
+          {
+              fs_src_cp = data;
+              // script terminated in comment
+              script_error("script terminated inside comment\n");
+          }
       }
       if(*data=='/' && *(data+1)=='/')        // // -- comment
       {
-	while(*data != '\n')
-	  {
-	    *data=' '; data++;       // blank out
-	  }
+        while(*data != '\n')
+          {
+            *data=' '; data++;       // blank out
+          }
       }
 
       // labels
@@ -250,27 +250,27 @@ char* process_find_char(char *data, char find)
       if(*data==':'  // ':' -- a label
          && fs_current_script->scriptnum != -1)   // not levelscript
       {
-	  char *labelptr = data-1;
-	  
-	  while(!isop(*labelptr)) labelptr--;
-	  new_label(labelptr+1);
+          char *labelptr = data-1;
+
+          while(!isop(*labelptr)) labelptr--;
+          new_label(labelptr+1);
       }
       
       if(*data=='{')  // { -- } sections: add 'em
       {
-	  fs_section_t *newsec = new_section(data);
-	  
-	  newsec->type = FSST_empty;
-	  // find the ending } and save
-	  newsec->end = process_find_char(data+1, '}');
-	  if(!newsec->end)
-	    {                // brace not found
-	      fs_src_cp = data;
-	      script_error("section error: no ending brace\n");
-	      return NULL;
-	    }
-	  // continue from the end of the section
-	  data = newsec->end;
+          fs_section_t *newsec = new_section(data);
+
+          newsec->type = FSST_empty;
+          // find the ending } and save
+          newsec->end = process_find_char(data+1, '}');
+          if(!newsec->end)
+            {                // brace not found
+              fs_src_cp = data;
+              script_error("section error: no ending brace\n");
+              return NULL;
+            }
+          // continue from the end of the section
+          data = newsec->end;
       }
       data++;
   }
@@ -325,11 +325,11 @@ void dry_run_script( void )
       
       if(fs_current_section && tokentype[0] == TT_function)
       {
-	  if(!strcmp(tokens[0], "if"))
-	  {
+          if(!strcmp(tokens[0], "if"))
+          {
               fs_current_section->type = FSST_if;
-	      continue;
-	  }
+              continue;
+          }
           else if(!strcmp(tokens[0], "elseif"))
           {
               fs_current_section->type = FSST_elseif;
@@ -340,13 +340,13 @@ void dry_run_script( void )
               fs_current_section->type = FSST_else;
               continue;
           }
-	  else if(!strcmp(tokens[0], "while") ||
-		  !strcmp(tokens[0], "for"))
-	  {
-	      fs_current_section->type = FSST_loop;
-	      fs_current_section->data.data_loop.loopstart = fs_linestart_cp;
-	      continue;
-	  }
+          else if(!strcmp(tokens[0], "while") ||
+                  !strcmp(tokens[0], "for"))
+          {
+              fs_current_section->type = FSST_loop;
+              fs_current_section->data.data_loop.loopstart = fs_linestart_cp;
+              continue;
+          }
       }
   }
   

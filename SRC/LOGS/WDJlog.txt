@@ -4469,4 +4469,24 @@ Remove some extraneous extern from p_local.h.
 Add a blank line to clisrv.c.
 Add a comment to linux_x/i_video_shm.c.
 
+*** W104_untab1
+patchfile = w104_4_untab1.patch
+- commit revision 1178
+Remove leading tabs from lines.
+dehacked.c
+p_chex.c
+r_defs.h
+r_things.c
+t_func.c
+t_parse.c
+t_prepro.c
+t_spec.c
 
+*** W104_untab2
+patchfile = w104_5_untab2.patch
+- commit revision 1179
+Remove leading tabs from lines.
+p_floor.c
+p_genlin.c
+p_setup.c
+p_spec.c

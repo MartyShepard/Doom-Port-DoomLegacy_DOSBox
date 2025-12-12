@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_parse.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -154,7 +154,7 @@ static void next_token( void )
         break;
      default:
         tt = isop(*fs_src_cp) ? TT_operator
-	   : isnum(*fs_src_cp) ? TT_number : TT_name;
+           : isnum(*fs_src_cp) ? TT_number : TT_name;
         break;
     }
 done:   
@@ -504,14 +504,14 @@ void run_statement( void )
         else if (!strcmp(tokens[0], "elseif"))
         {
             if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-	        goto err_elseif_without_if;
+                goto err_elseif_without_if;
             fs_current_script->lastiftrue = spec_elseif(fs_current_script->lastiftrue) ? true : false;
             return;
         }
         else if (!strcmp(tokens[0], "else"))
         {
             if (!fs_prev_section || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-	        goto err_else_without_if;
+                goto err_else_without_if;
             spec_else(fs_current_script->lastiftrue);
             fs_current_script->lastiftrue = true;
             return;
@@ -535,8 +535,8 @@ void run_statement( void )
         if (!strcmp(tokens[0], "else"))
         {
             if (!fs_prev_section
-		|| (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
-	        goto err_else_without_if;
+                || (fs_prev_section->type != FSST_if && fs_prev_section->type != FSST_elseif))
+                goto err_else_without_if;
             spec_else(fs_current_script->lastiftrue);
             fs_current_script->lastiftrue = true;
             return;
@@ -745,11 +745,11 @@ fs_value_t evaluate_expression(int start, int stop)
         // 5-3-2 is (5-3)-2 not 5-(3-2)
 
         if (-1 !=
-	    (n = (
-		  (operators[i].direction == D_forward) ? find_operator_backwards : find_operator
-		  ) (start, stop, operators[i].string)
-	     )
-	    )
+            (n = (
+                  (operators[i].direction == D_forward) ? find_operator_backwards : find_operator
+                  ) (start, stop, operators[i].string)
+             )
+            )
         {
             // CONS_Printf("operator %s, %i-%i-%i\n", operators[count].string, start, n, stop);
 
@@ -769,11 +769,11 @@ fs_value_t evaluate_expression(int start, int stop)
 
         for (i = start; i <= stop; i++)
         {
-	    len += 1 + strlen( tokens[i] );
-	    if( len > ERRSTR_LEN ) break;
-	    strcat( errstr, " " );
-	    strcat( errstr, tokens[i] );
-	}
+            len += 1 + strlen( tokens[i] );
+            if( len > ERRSTR_LEN ) break;
+            strcat( errstr, " " );
+            strcat( errstr, tokens[i] );
+        }
         errstr[ERRSTR_LEN] = '\0';
 
         script_error("could not evaluate expression: %s\n", errstr);
@@ -804,7 +804,7 @@ void script_error(const char *fmt, ...)
         {
             if (*temp == '\n')
                 linenum++;      // count EOLs
-	}
+        }
         CONS_Printf(", %i", linenum);
     }
     CONS_Printf(": ");

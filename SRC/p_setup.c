@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1080 2014-01-10 21:27:26Z wesleyjohnson $
+// $Id: p_setup.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -367,10 +367,10 @@ void P_LoadSegs (int lump)
         vn2 = LE_SWAP16(ml->v2);
         if( vn1 > numvertexes || vn2 > numvertexes )
         {
-	    I_SoftError("Seg vertex bad %d,%d\n", vn1,vn2 );
-	    // zero both out together, make seg safer (otherwise will cross another line)
-	    vn1 = vn2 = 0;
-	}
+            I_SoftError("Seg vertex bad %d,%d\n", vn1,vn2 );
+            // zero both out together, make seg safer (otherwise will cross another line)
+            vn1 = vn2 = 0;
+        }
         li->v1 = &vertexes[vn1];
         li->v2 = &vertexes[vn2];
 
@@ -378,7 +378,7 @@ void P_LoadSegs (int lump)
         // used for the hardware render
         if (rendermode != render_soft)
         {
-	    li->pv1 = li->pv2 = NULL;
+            li->pv1 = li->pv2 = NULL;
             li->length = P_SegLength (li);
             //Hurdler: 04/12/2000: for now, only used in hardware mode
             li->lightmaps = NULL; // list of static lightmap for this seg
@@ -390,25 +390,25 @@ void P_LoadSegs (int lump)
         linedef = LE_SWAP16(ml->linedef);
         // [WDJ] Detect buggy wad, bad linedef number
         if( linedef > numlines ) {
-	    I_SoftError( "P_LoadSegs, linedef #%i, > numlines %i\n", linedef, numlines );
-	    linedef = 0; // default
-	}
+            I_SoftError( "P_LoadSegs, linedef #%i, > numlines %i\n", linedef, numlines );
+            linedef = 0; // default
+        }
         ldef = &lines[linedef];
         li->linedef = ldef;
         side = LE_SWAP16(ml->side);
         if( side != 0 && side != 1 )
         {
-	    // [WDJ] buggy wad
-	    I_SoftError( "P_LoadSegs, bad side index\n");
-	    side = 0;  // assume was using wrong side
+            // [WDJ] buggy wad
+            I_SoftError( "P_LoadSegs, bad side index\n");
+            side = 0;  // assume was using wrong side
         }
         // side1 required to have sidenum != NULL_INDEX
         if( ldef->sidenum[side] == NULL_INDEX )
         {
-	    // [WDJ] buggy wad
-	    I_SoftError( "P_LoadSegs, using missing sidedef\n");
-	    side = 0;  // assume was using wrong side
-	}
+            // [WDJ] buggy wad
+            I_SoftError( "P_LoadSegs, using missing sidedef\n");
+            side = 0;  // assume was using wrong side
+        }
         li->side = side;
         li->sidedef = &sides[ldef->sidenum[side]];
         li->frontsector = sides[ldef->sidenum[side]].sector;
@@ -514,16 +514,16 @@ int P_AddLevelFlat ( char* flatname )
     if( levelflats )
     {
         // scan through the already found flats
-	lfp = & levelflats[0];
+        lfp = & levelflats[0];
         for (i=0; i<numlevelflats; i++)
         {
-	    if ( *(int *)lfp->name == v1
-		 && *(int *)&lfp->name[4] == v2)
-	    {
-	        goto found_level_flat;  // return i
-	    }
-	    lfp ++;
-	}
+            if ( *(int *)lfp->name == v1
+                 && *(int *)&lfp->name[4] == v2)
+            {
+                goto found_level_flat;  // return i
+            }
+            lfp ++;
+        }
     }
 
     // create new flat entry in levelflats
@@ -533,18 +533,18 @@ int P_AddLevelFlat ( char* flatname )
     if (numlevelflats>=levelflat_max)
     {
         // grow number of levelflats
-	// use Z_Malloc directly because it is usually a small number
+        // use Z_Malloc directly because it is usually a small number
         levelflat_max += LEVELFLAT_INC;  // alloc more levelflats
         levelflat_t* new_levelflats =
             Z_Malloc (levelflat_max*sizeof(levelflat_t), PU_LEVEL, NULL);
         // must zero because unanimated are left to defaults
         memset( &new_levelflats[numlevelflats], 0,
-		(levelflat_max - numlevelflats)*sizeof(levelflat_t) );
+                (levelflat_max - numlevelflats)*sizeof(levelflat_t) );
         if( levelflats )
         {
-	    memcpy (new_levelflats, levelflats, numlevelflats*sizeof(levelflat_t));
-	    Z_Free ( levelflats );
-	}
+            memcpy (new_levelflats, levelflats, numlevelflats*sizeof(levelflat_t));
+            Z_Free ( levelflats );
+        }
         levelflats = new_levelflats;
     }
 
@@ -635,7 +635,7 @@ void P_LoadSectors (int lump)
         ss->prevsec = -1;
 
         ss->modelsec = -1; //SoM: 3/17/2000: This causes some real problems
-       			   // [WDJ] Is now dependent upon model
+                           // [WDJ] Is now dependent upon model
         ss->model = SM_normal; //SoM: 3/20/2000, [WDJ] 11/14/2009
         ss->friction = ORIG_FRICTION;  // normal friction
         ss->movefactor = ORIG_FRICTION_FACTOR;
@@ -757,11 +757,11 @@ void P_LoadThings (int lump)
 
         if( gamedesc_id == GDESC_tnt && gamemap == 31)
         {
-	    // Fix TNT MAP31 bug: yellow keycard is multiplayer only
-	    // Released a fixed copy of TNT later, but CDROM have this bug.
-	    if( mt->type == 6 )  // Yellow keycard
-	       mt->options &= ~MTF_MPSPAWN;  // Remove multiplayer only flag
-	}
+            // Fix TNT MAP31 bug: yellow keycard is multiplayer only
+            // Released a fixed copy of TNT later, but CDROM have this bug.
+            if( mt->type == 6 )  // Yellow keycard
+               mt->options &= ~MTF_MPSPAWN;  // Remove multiplayer only flag
+        }
 
         P_SpawnMapthing (mt);
     }
@@ -840,34 +840,34 @@ void P_LoadLineDefs (int lump)
         ld->sidenum[1] = LE_SWAP16(mld->sidenum[1]);
 
         // [WDJ] detect common wad errors and make playable, similar to prboom
-	if( ld->sidenum[0] == NULL_INDEX )
+        if( ld->sidenum[0] == NULL_INDEX )
         {
-	    // linedef is required to always have valid sidedef1
-	    I_SoftError( "Linedef %i is missing sidedef1\n", i );
-	    ld->sidenum[0] = 0;  // arbitrary valid sidedef
-	}
+            // linedef is required to always have valid sidedef1
+            I_SoftError( "Linedef %i is missing sidedef1\n", i );
+            ld->sidenum[0] = 0;  // arbitrary valid sidedef
+        }
         else if ( ld->sidenum[0] >= numsides )
         {
-	    I_SoftError( "Linedef %i has sidedef1 bad index\n", i );
-	    ld->sidenum[0] = 0;  // arbitrary valid sidedef
+            I_SoftError( "Linedef %i has sidedef1 bad index\n", i );
+            ld->sidenum[0] = 0;  // arbitrary valid sidedef
         }
-	if( ld->sidenum[1] == NULL_INDEX )
-	{
-	    if( ld->flags & ML_TWOSIDED )
-	    {
-	        // two-sided linedef is required to always have valid sidedef2
-	        I_SoftError( "Linedef %i is missing sidedef2\n", i );
-	        // fix one or the other
+        if( ld->sidenum[1] == NULL_INDEX )
+        {
+            if( ld->flags & ML_TWOSIDED )
+            {
+                // two-sided linedef is required to always have valid sidedef2
+                I_SoftError( "Linedef %i is missing sidedef2\n", i );
+                // fix one or the other
 //	        ld->sidenum[1] = 0;  // arbitrary valid sidedef
-	        ld->flags &= ~ML_TWOSIDED;
-	    }
-	}
-	else if ( ld->sidenum[1] >= numsides )
-	{
-	    I_SoftError( "Linedef %i has sidedef2 bad index\n", i );
-	    ld->sidenum[1] = 0;  // arbitrary valid sidedef
-	}
-	
+                ld->flags &= ~ML_TWOSIDED;
+            }
+        }
+        else if ( ld->sidenum[1] >= numsides )
+        {
+            I_SoftError( "Linedef %i has sidedef2 bad index\n", i );
+            ld->sidenum[1] = 0;  // arbitrary valid sidedef
+        }
+
        
         // special linedef has special sidedef1
         if (ld->sidenum[0] != NULL_INDEX && ld->special)
@@ -898,25 +898,25 @@ void P_LoadLineDefs2()
       switch( ld->special ) 
       {
        case 260:  // Boom transparency
-	 // sidedef1 of master linedef has the transparency map
-	 // Similar effect to Boom, no alternatives
-	 {
-	     int eff = ld->translu_eff;  // TRANSLU_med, or TRANSLU_ext + lumpid
-	     short tag = ld->tag;
-	     if( tag )
-	     {
-		 // Same tagged linedef get it too (both sidedefs).
-		 int li;
-		 for( li=numlines-1; li>=0; li-- )
-		 {
-		     if( lines[li].tag == tag )
-		        lines[li].translu_eff = eff;
-		     // Cannot use special because Boom allows tagged lines
-		     // to have the transparent effect simultaneously with
-		     // other linedef effects.
-		 }
-	     }
-	 }
+         // sidedef1 of master linedef has the transparency map
+         // Similar effect to Boom, no alternatives
+         {
+             int eff = ld->translu_eff;  // TRANSLU_med, or TRANSLU_ext + lumpid
+             short tag = ld->tag;
+             if( tag )
+             {
+                 // Same tagged linedef get it too (both sidedefs).
+                 int li;
+                 for( li=numlines-1; li>=0; li-- )
+                 {
+                     if( lines[li].tag == tag )
+                        lines[li].translu_eff = eff;
+                     // Cannot use special because Boom allows tagged lines
+                     // to have the transparent effect simultaneously with
+                     // other linedef effects.
+                 }
+             }
+         }
       }
   }
 }
@@ -999,8 +999,8 @@ void P_LoadSideDefs2(int lump)
       // [WDJ] Check for buggy wad, like prboom
       if( secnum >= numsectors )
       {
-	  I_SoftError( "SideDef %i has bad sector number %i\n", sdnum, secnum );
-	  secnum = 0; // arbitrary use of sector 0
+          I_SoftError( "SideDef %i has bad sector number %i\n", sdnum, secnum );
+          secnum = 0; // arbitrary use of sector 0
       }
       sd->sector = sec = &sectors[secnum];
 
@@ -1009,19 +1009,19 @@ void P_LoadSideDefs2(int lump)
       {
         case 242:	// Boom deep water, sidedef1 texture is colormap
         case 280:       //SoM: 3/22/2000: Legacy water type.
-	  // Sets topmap,midmap,bottommap colormaps, in the tagged sectors.
-	  // Uses the model sector lightlevel underwater, and over ceiling.
-	  // [WDJ] There is no good reason for HWRENDER to block recording the
-	  // colormaps if the worse that the hardware renderer does is ignore them.
-	  {
+          // Sets topmap,midmap,bottommap colormaps, in the tagged sectors.
+          // Uses the model sector lightlevel underwater, and over ceiling.
+          // [WDJ] There is no good reason for HWRENDER to block recording the
+          // colormaps if the worse that the hardware renderer does is ignore them.
+          {
             num = R_CheckTextureNumForName(msd->toptexture);
             if(num == -1)	// if not texture
             {
-	      // must be colormap
+              // must be colormap
               sec->topmap = R_ColormapNumForName(msd->toptexture);
               num = 0;
             }
-	    sd->toptexture = num; // never set to -1
+            sd->toptexture = num; // never set to -1
 
             num = R_CheckTextureNumForName(msd->midtexture);
             if(num == -1)
@@ -1029,7 +1029,7 @@ void P_LoadSideDefs2(int lump)
               sec->midmap = R_ColormapNumForName(msd->midtexture);
               num = 0;
             }
-	    sd->midtexture = num; // never set to -1
+            sd->midtexture = num; // never set to -1
 
 
             num = R_CheckTextureNumForName(msd->bottomtexture);
@@ -1038,27 +1038,27 @@ void P_LoadSideDefs2(int lump)
               sec->bottommap = R_ColormapNumForName(msd->bottomtexture);
               num = 0;
             }
-	    sd->bottomtexture = num; // never set to -1
-	  }
-  	  break;   // [WDJ]  no fall through
+            sd->bottomtexture = num; // never set to -1
+          }
+          break;   // [WDJ]  no fall through
 
         case 282:                       //SoM: 4/4/2000: Just colormap transfer
-	  // Set the colormap of all tagged sectors.
+          // Set the colormap of all tagged sectors.
 
-	  // SoM: R_CreateColormap will only create a colormap in software mode...
-	  // [WDJ] Expanded to hardware mode too.
-	  {
-	    if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
+          // SoM: R_CreateColormap will only create a colormap in software mode...
+          // [WDJ] Expanded to hardware mode too.
+          {
+            if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
             {
- 	      // generate colormap from sidedef1 texture text strings
+              // generate colormap from sidedef1 texture text strings
               sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture);
               sd->toptexture = sd->bottomtexture = 0;
               sec->extra_colormap = &extra_colormaps[sec->midmap];
             }
             else
             {
-	      // textures never set to -1
-	      if((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
+              // textures never set to -1
+              if((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
                 sd->toptexture = 0;
               else
                 sd->toptexture = num;
@@ -1071,63 +1071,63 @@ void P_LoadSideDefs2(int lump)
               else
                 sd->bottomtexture = num;
             }
-	  }
-	  break;  // [WDJ]  no fall through
-	   	  // case 282, if(render_soft), was falling through,
-	          // but as 260 has same tests, the damage was benign
-	   
+          }
+          break;  // [WDJ]  no fall through
+                  // case 282, if(render_soft), was falling through,
+                  // but as 260 has same tests, the damage was benign
+
 
         case 260:	// Boom transparency
-	  // When tag=0: this sidedef middle texture is made translucent using TRANMAP.
-	  // When tag!=0: all same tagged linedef have their middle texture
-	  // made translucent using sidedef1.
-	  // If this sidedef middle texture is a TRANMAP, size=64K, then it
-	  // is used for the transluceny.
-	  // This always affects both sidedefs.
-	  // never set to -1, 0=no_texture
-	  // Do not mangle special because Boom allows tagged lines
-	  // to have the transparent effect simultaneously with
-	  // other linedef effects.
-	  eff = TRANSLU_med;  // default TRANMAP
-	  sd->midtexture = 0;  // default, no texture
-	  // texture name = "TRANMAP" means use TRANSLU_med
-	  if( strncasecmp("TRANMAP", msd->midtexture, 8) != 0 )
-	  {
-	      // From Boom, any lump can be transparency map if it is right size
-	      int spec_num = W_CheckNumForName( msd->midtexture );
-	      if( spec_num > 0 && W_LumpLength(spec_num) == 65536 )
-	      {
-		  int translu_map_num = R_setup_translu_store( spec_num );
-		  eff = TRANSLU_ext + translu_map_num;
-		  // LoadLineDefs2 will propagate it to other linedefs
-	      }
-	      else
-	      {
-		  // Not lump name or not right size
-		  // midtexture is texture
-		  num = R_CheckTextureNumForName(msd->midtexture);
-		  sd->midtexture = (num == -1) ? 0 : num;
-	      }
-	  }
-	  {
-	      // Find parent linedef and update, otherwise would have to use
-	      // some field to pass translu_eff back up to it.
-	      int li;
-	      for( li=numlines-1; li>=0; li-- )
-	      {
-		  if( lines[li].sidenum[0] == sdnum )  // found parent linedef
-		  {
-		      lines[li].translu_eff = eff;
-		      break;
-		  }
-	      }
-	  }
+          // When tag=0: this sidedef middle texture is made translucent using TRANMAP.
+          // When tag!=0: all same tagged linedef have their middle texture
+          // made translucent using sidedef1.
+          // If this sidedef middle texture is a TRANMAP, size=64K, then it
+          // is used for the transluceny.
+          // This always affects both sidedefs.
+          // never set to -1, 0=no_texture
+          // Do not mangle special because Boom allows tagged lines
+          // to have the transparent effect simultaneously with
+          // other linedef effects.
+          eff = TRANSLU_med;  // default TRANMAP
+          sd->midtexture = 0;  // default, no texture
+          // texture name = "TRANMAP" means use TRANSLU_med
+          if( strncasecmp("TRANMAP", msd->midtexture, 8) != 0 )
+          {
+              // From Boom, any lump can be transparency map if it is right size
+              int spec_num = W_CheckNumForName( msd->midtexture );
+              if( spec_num > 0 && W_LumpLength(spec_num) == 65536 )
+              {
+                  int translu_map_num = R_setup_translu_store( spec_num );
+                  eff = TRANSLU_ext + translu_map_num;
+                  // LoadLineDefs2 will propagate it to other linedefs
+              }
+              else
+              {
+                  // Not lump name or not right size
+                  // midtexture is texture
+                  num = R_CheckTextureNumForName(msd->midtexture);
+                  sd->midtexture = (num == -1) ? 0 : num;
+              }
+          }
+          {
+              // Find parent linedef and update, otherwise would have to use
+              // some field to pass translu_eff back up to it.
+              int li;
+              for( li=numlines-1; li>=0; li-- )
+              {
+                  if( lines[li].sidenum[0] == sdnum )  // found parent linedef
+                  {
+                      lines[li].translu_eff = eff;
+                      break;
+                  }
+              }
+          }
 
           num = R_CheckTextureNumForName(msd->toptexture);
-	  sd->toptexture = (num == -1) ? 0 : num;
+          sd->toptexture = (num == -1) ? 0 : num;
 
           num = R_CheckTextureNumForName(msd->bottomtexture);
-	  sd->bottomtexture = (num == -1) ? 0 : num;
+          sd->bottomtexture = (num == -1) ? 0 : num;
           break;
 /*        case 260: // killough 4/11/98: apply translucency to 2s normal texture
           sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
@@ -1145,20 +1145,20 @@ void P_LoadSideDefs2(int lump)
         case 301:	// Legacy translucent 3D water in tagged
         case 302:	// Legacy 3D fog in tagged
         case 304:	// Legacy opaque fluid (because of inside)
-	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
-	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
-	    // Uses model sector colormap and lightlevel
-	    // Interpret texture name string as decimal alpha and fogwater effect
+            // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+            // Upper texture encodes the translucent alpha: #nnn  => 0..255
+            // Uses model sector colormap and lightlevel
+            // Interpret texture name string as decimal alpha and fogwater effect
             sd->toptexture = R_Create_FW_effect( sd->special, msd->toptexture );
-	    sd->bottomtexture = 0;
+            sd->bottomtexture = 0;
             sd->midtexture = R_TextureNumForName(msd->midtexture); // side texture
             break;
 
         default:                        // normal cases
           // SoM: Lots of people are sick of texture errors. 
           // Hurdler: see r_data.c for my suggestion
-	  // [WDJ] 0=no-texture, texture not found returns default texture.
-	  // Textures never set to -1, so these texture num are safe to use as array index.
+          // [WDJ] 0=no-texture, texture not found returns default texture.
+          // Textures never set to -1, so these texture num are safe to use as array index.
           sd->midtexture = R_TextureNumForName(msd->midtexture);
           sd->toptexture = R_TextureNumForName(msd->toptexture);
           sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
@@ -1221,33 +1221,33 @@ void P_LoadBlockMap (int lump)
       uint32_t  bme = LE_SWAP16(wadblockmaplump[i]);  // offset
       // upon overflow, the bme will wrap to low values
       if ( (bme < firstlist)  // too small to be valid
-	   && (bme < 0x1000) && (prev_bme > 0xf000))  // wrapped
+           && (bme < 0x1000) && (prev_bme > 0xf000))  // wrapped
       {
-	  // first or repeated overflow
-	  overflow_corr += 0x00010000;
-	  GenPrintf(EMSG_warn,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
-		   i, overflow_corr );
+          // first or repeated overflow
+          overflow_corr += 0x00010000;
+          GenPrintf(EMSG_warn,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
+                   i, overflow_corr );
       }
       prev_bme = bme;  // uncorrected
       // correct for overflow, or else try without correction
       if ( overflow_corr )
       {
-	  uint32_t bmec = bme + overflow_corr;
-	  // First entry of list is 0, but high odds of hitting one randomly.
-	  // Check for valid blockmap offset, and offset overflow
-	  if ( bmec <= lastlist
+          uint32_t bmec = bme + overflow_corr;
+          // First entry of list is 0, but high odds of hitting one randomly.
+          // Check for valid blockmap offset, and offset overflow
+          if ( bmec <= lastlist
                && wadblockmaplump[bmec] == 0      // valid start list
-	       && ((bmec - blockmaphead[i-1]) < 1000))  // reasonably close sequentially
+               && ((bmec - blockmaphead[i-1]) < 1000))  // reasonably close sequentially
           {
-	      bme = bmec;
-	  }
+              bme = bmec;
+          }
       }
      
       if ( bme > lastlist )
-	  I_Error("Blockmap offset[%i]= %i, exceeds bounds.\n", i, bme);
+          I_Error("Blockmap offset[%i]= %i, exceeds bounds.\n", i, bme);
       if ( bme < firstlist
-	   || wadblockmaplump[bme] != 0 )  // not start list
-	  I_Error("Bad blockmap offset[%i]= %i.\n", i, bme);
+           || wadblockmaplump[bme] != 0 )  // not start list
+          I_Error("Bad blockmap offset[%i]= %i.\n", i, bme);
       blockmaphead[i] = bme;
   }
   // read blockmap lists
@@ -1267,23 +1267,23 @@ void P_LoadBlockMap (int lump)
   blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
   memset (blocklinks, 0, count);
 /* Original
-		blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
-		blockmap = blockmaplump+4;
-		count = W_LumpLength (lump)/2;
+                blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
+                blockmap = blockmaplump+4;
+                count = W_LumpLength (lump)/2;
 
-		for (i=0 ; i<count ; i++)
-			blockmaplump[i] = LE_SWAP16(blockmaplump[i]);
+                for (i=0 ; i<count ; i++)
+                        blockmaplump[i] = LE_SWAP16(blockmaplump[i]);
 
-		bmaporgx = blockmaplump[0]<<FRACBITS;
-		bmaporgy = blockmaplump[1]<<FRACBITS;
-		bmapwidth = blockmaplump[2];
-		bmapheight = blockmaplump[3];
-	}
+                bmaporgx = blockmaplump[0]<<FRACBITS;
+                bmaporgy = blockmaplump[1]<<FRACBITS;
+                bmapwidth = blockmaplump[2];
+                bmapheight = blockmaplump[3];
+        }
 
-	// clear out mobj chains
-	count = sizeof(*blocklinks)*bmapwidth*bmapheight;
-	blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
-	memset (blocklinks, 0, count);
+        // clear out mobj chains
+        count = sizeof(*blocklinks)*bmapwidth*bmapheight;
+        blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
+        memset (blocklinks, 0, count);
  */
 }
 
@@ -1313,36 +1313,36 @@ void P_GroupLines (void)
         // [WDJ] Detct buggy wad
         if( ss->firstline > numsegs )
         {
-	    I_Error( "P_GroupLines: subsector firstline %i > numsegs %i\n",
-			 ss->firstline, numsegs );
-	}
+            I_Error( "P_GroupLines: subsector firstline %i > numsegs %i\n",
+                         ss->firstline, numsegs );
+        }
         seg = &segs[ss->firstline];  // first seg of the subsector
         if( seg->sidedef )
         {
-	    // normal
-	    ss->sector = seg->sidedef->sector;
-	}
+            // normal
+            ss->sector = seg->sidedef->sector;
+        }
         else
         {
-	    // [WDJ] prboom can play Europe.wad, but Legacy segfaults, cannot have that.
-	    // buggy wad, try to recover
-	    I_SoftError( "P_GroupLines, subsector without sidedef1 sector\n");
-	    // find one good reference in all the segs, like in prboom does
-	    for(j=0; j < ss->numlines; j++ )
-	    {
-	        if( seg->sidedef )
-	        {
-		    ss->sector = seg->sidedef->sector;
-		    GenPrintf(EMSG_error, " found sector in seg #%d\n", j );
-		    goto continue_subsectors;
-		}
-	        seg++;	// step through segs from firstline
-	    }
-	    // subsector has no sector
-	    I_SoftError( "P_GroupLines, subsector defaulted to sector[0]\n");
-	    // [WDJ] arbitrarily use sector[0], because these usually are not visible.
-	    ss->sector = & sectors[0];
-	}
+            // [WDJ] prboom can play Europe.wad, but Legacy segfaults, cannot have that.
+            // buggy wad, try to recover
+            I_SoftError( "P_GroupLines, subsector without sidedef1 sector\n");
+            // find one good reference in all the segs, like in prboom does
+            for(j=0; j < ss->numlines; j++ )
+            {
+                if( seg->sidedef )
+                {
+                    ss->sector = seg->sidedef->sector;
+                    GenPrintf(EMSG_error, " found sector in seg #%d\n", j );
+                    goto continue_subsectors;
+                }
+                seg++;	// step through segs from firstline
+            }
+            // subsector has no sector
+            I_SoftError( "P_GroupLines, subsector defaulted to sector[0]\n");
+            // [WDJ] arbitrarily use sector[0], because these usually are not visible.
+            ss->sector = & sectors[0];
+        }
        continue_subsectors:
         continue;
     }
@@ -1356,13 +1356,13 @@ void P_GroupLines (void)
         // have missing frontsector, but other ports (like prboom) cope
         if( li->frontsector )
         {
-	    total++;
+            total++;
             li->frontsector->linecount++;
-	}
+        }
         else
         {
-	    I_SoftError( "P_GroupLines, linedef #%d missing frontsector\n", i );
-	}
+            I_SoftError( "P_GroupLines, linedef #%d missing frontsector\n", i );
+        }
 
         if (li->backsector && li->backsector != li->frontsector)
         {
@@ -1383,8 +1383,8 @@ void P_GroupLines (void)
         li = lines;  // &lines[0]
         for (j=0 ; j<numlines ; j++, li++)
         {
-	    // for each line
-	    // check if it has this sector as a side
+            // for each line
+            // check if it has this sector as a side
             if (li->frontsector == sector || li->backsector == sector)
             {
                 *linebuffer++ = li; // add it to this segment
@@ -1534,7 +1534,7 @@ boolean P_SetupLevel (int           episode,
     int         i;
 
     GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_CONS|EMSG_now)),
-	       "Setup Level\n" );
+               "Setup Level\n" );
 
     //Initialize sector node list.
     P_Initsecnode();
@@ -1561,13 +1561,13 @@ boolean P_SetupLevel (int           episode,
     {
         sector_t * sp = &sectors[i];
         if( sp )
-	{
-	    if( sp->attached )  // from realloc in P_AddFakeFloor
-	    {
-	        free( sp->attached );
-	        sp->attached = NULL;
-	    }
-	}
+        {
+            if( sp->attached )  // from realloc in P_AddFakeFloor
+            {
+                free( sp->attached );
+                sp->attached = NULL;
+            }
+        }
     }
 
     I_Sleep( 100 );  // give menu sound a chance to finish
@@ -1718,10 +1718,10 @@ boolean P_SetupLevel (int           episode,
                 G_DoReborn(i);
             }
             else if( demoversion>=128 )
-	    {
-	        players[i].mo = NULL;
-	        G_CoopSpawnPlayer (i);
-	    }
+            {
+                players[i].mo = NULL;
+                G_CoopSpawnPlayer (i);
+            }
         }
     }
 

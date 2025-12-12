@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1117 2014-06-20 02:23:10Z wesleyjohnson $
+// $Id: dehacked.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -170,7 +170,7 @@ size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
     {
         ULONG i;
         // read lines except for any '\r'
-	// But should only be taking the '\r' off end of line (/cr/lf)
+        // But should only be taking the '\r' off end of line (/cr/lf)
         for(i=0; i<byteread; )
         {
             char c=*f->curpos++;
@@ -207,14 +207,14 @@ boolean  filename_reject( char * src, int maxlen )
      int j;
      for( j=0; ; j++ )
      {
-	 if( j >= maxlen ) goto reject;
-	 register char ch = src[j];
-	 // legal values, all else is illegal
-	 if(! (( ch >= 'A' && ch <= 'Z' )
-	    || ( ch >= 'a' && ch <= 'z' )
-	    || ( ch >= '0' && ch <= '9' )
-	    || ( ch == '_' ) ))
-	    goto reject;
+         if( j >= maxlen ) goto reject;
+         register char ch = src[j];
+         // legal values, all else is illegal
+         if(! (( ch >= 'A' && ch <= 'Z' )
+            || ( ch >= 'a' && ch <= 'z' )
+            || ( ch >= '0' && ch <= '9' )
+            || ( ch == '_' ) ))
+            goto reject;
      }
      return false; // no reject
   reject:
@@ -303,52 +303,52 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
     if( drstype == DRS_string )
     {
         // Test new string against table
-	// Fixes when Chex replacement strings have fewer %s in them,
-	// so Chex newmaps.wad can replace that string again.
-	int text_id = oldstring - (&text[0]);
+        // Fixes when Chex replacement strings have fewer %s in them,
+        // so Chex newmaps.wad can replace that string again.
+        int text_id = oldstring - (&text[0]);
         byte num_s = 0;
-	int i;
+        int i;
         // look up in table
         for(i=0; ; i++)
         {
-	    if( format_ref_table[i].text_id > NUMTEXT )  break;
-	    if( format_ref_table[i].text_id == text_id )
-	    {
-	        num_s = format_ref_table[i].num_s;
-	        drstype = DRS_format;
-	        break;
-	    }
-	}
-	    
+            if( format_ref_table[i].text_id > NUMTEXT )  break;
+            if( format_ref_table[i].text_id == text_id )
+            {
+                num_s = format_ref_table[i].num_s;
+                drstype = DRS_format;
+                break;
+            }
+        }
+
         for(i=0; ;)
         {
             // new string must have same or fewer %
             newp = strchr( newp, '%' );
             if( newp == NULL ) break;
-	    if( drstype == DRS_format )
-	    {
-	        // must block %n, write to memory
-	        // Only %s are left in the text strings
-	        switch( newp[1] )
-	        {
-		 case '%': // literal %
-		   break;
-		 case 's':
-		   i++;
-		   if( i > num_s )   goto bad_replacement;
-		   break;
-		 default:
-		   goto bad_replacement;
-		}
-	    }
-	    else
-	    {
-	        // only  %% allowed
-	        if( newp[1] != '%' )
-		    newp[0] = ' '; // rubout the %
-	    }
-	    newp +=2;
-	}
+            if( drstype == DRS_format )
+            {
+                // must block %n, write to memory
+                // Only %s are left in the text strings
+                switch( newp[1] )
+                {
+                 case '%': // literal %
+                   break;
+                 case 's':
+                   i++;
+                   if( i > num_s )   goto bad_replacement;
+                   break;
+                 default:
+                   goto bad_replacement;
+                }
+            }
+            else
+            {
+                // only  %% allowed
+                if( newp[1] != '%' )
+                    newp[0] = ' '; // rubout the %
+            }
+            newp +=2;
+        }
     }
 
     // rewrite backslash literals into newstring, because it only gets shorter
@@ -359,60 +359,60 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
         // Must convert \n to LF.
         register char ch = *newp;
         if( ch == 0x5C ) // backslash
-	{
-	    char * endvp = NULL;
-	    unsigned long v;
-	    ch = *(++newp);
-	    switch( ch )
-	    {
-	     case 'N': // some file are all caps
-	     case 'n': // newline
-	       ch = '\n';  // LF char
-	       goto incl_char;
-	     case '\0': // safety
-	       goto term_string;
-	     case '0': // NUL, should be unnecessary
-	       goto term_string;
-	     case 'x':  // hex
-	       // These do not get interpreted unless we do it here.
-	       // Need this for foreign language ??
-	       v = strtoul( &newp[1], &endvp, 16);  // get hex
-	       goto check_backslash_value;
-	     default:
-	       if( ch >= '1' && ch <= '9' )  // octal
-	       {
-		   // These do not get interpreted unless we do it here.
-		   // Need this for foreign language ??
-		   v = strtoul( newp, &endvp, 8);  // get octal
-		   goto check_backslash_value;
-	       }
-	    }
-	    continue; // ignore unrecognized backslash
+        {
+            char * endvp = NULL;
+            unsigned long v;
+            ch = *(++newp);
+            switch( ch )
+            {
+             case 'N': // some file are all caps
+             case 'n': // newline
+               ch = '\n';  // LF char
+               goto incl_char;
+             case '\0': // safety
+               goto term_string;
+             case '0': // NUL, should be unnecessary
+               goto term_string;
+             case 'x':  // hex
+               // These do not get interpreted unless we do it here.
+               // Need this for foreign language ??
+               v = strtoul( &newp[1], &endvp, 16);  // get hex
+               goto check_backslash_value;
+             default:
+               if( ch >= '1' && ch <= '9' )  // octal
+               {
+                   // These do not get interpreted unless we do it here.
+                   // Need this for foreign language ??
+                   v = strtoul( newp, &endvp, 8);  // get octal
+                   goto check_backslash_value;
+               }
+            }
+            continue; // ignore unrecognized backslash
 
          check_backslash_value:
-	    if( v > 255 ) goto bad_char;  // long check
-	    ch = v;
-	    newp = endvp - 1; // continue after number
-	    // check value against tests
-	}
+            if( v > 255 ) goto bad_char;  // long check
+            ch = v;
+            newp = endvp - 1; // continue after number
+            // check value against tests
+        }
         // reject special character attacks
 #if defined( FRENCH_INLINE ) || defined( BEX_LANGUAGE )
         // place checks for allowed foreign lang chars here
-	// reported dangerous escape chars
-	if( (unsigned char)ch == 133 )  goto bad_char;
+        // reported dangerous escape chars
+        if( (unsigned char)ch == 133 )  goto bad_char;
         if( (unsigned char)ch >= 254 )  goto bad_char;
 //	    if( ch == 27 ) continue;  // ESCAPE
 #else
         if( (unsigned char)ch > 127 )  goto bad_char;
 #endif       
         if( ch < 32 )
-	{
-	    if( ch == '\t' )  ch = ' ';  // change to space
-	    if( ch == '\r' )  continue;  // remove
-	    if( ch == '\n' )  goto incl_char;
-	    if( ch == '\0' )  goto term_string;   // end of string
-	    goto bad_char;
-	}
+        {
+            if( ch == '\t' )  ch = ' ';  // change to space
+            if( ch == '\r' )  continue;  // remove
+            if( ch == '\n' )  goto incl_char;
+            if( ch == '\0' )  goto term_string;   // end of string
+            goto bad_char;
+        }
      incl_char:
         // After a backslash, chp < newp
         *chp++ = ch; // rewrite
@@ -431,8 +431,8 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
 #ifdef DEH_RECOVER_STRINGS
     // check if was in replacement string bounds
     if( *oldstring && deh_string_ptr_min
-	&& *oldstring >= deh_string_ptr_min
-	&& *oldstring <= deh_string_ptr_max )
+        && *oldstring >= deh_string_ptr_min
+        && *oldstring <= deh_string_ptr_max )
         free( *oldstring );
     // track replacement string bounds
     if( deh_string_ptr_min == NULL || nb < deh_string_ptr_min )
@@ -639,95 +639,95 @@ static void readthing(MYFILE *f, int deh_thing_id )
 
       if(!strcasecmp(word,"Bits"))
       {
-	  boolean flags2x_hit = 0; // doomlegacy extensions hit
-	  flag_name_t * fnp; // BEX flag names ptr
+          boolean flags2x_hit = 0; // doomlegacy extensions hit
+          flag_name_t * fnp; // BEX flag names ptr
 
-	  flags1 = flags2 = 0;
-	  for(;;)
-	  {
-	      word = strtok(NULL, " +|\t=\n");
-	      if( word == NULL )  goto set_flags;
-	      if( word[0] == '\n' )   goto set_flags;
-	      // detect bits by integer value
-	      if( isdigit( word[0] ) )
-	      {
-		  // old style integer value, flags only (not flags2)
-		  flags1 = atoi(word);  // numeric entry
-		  if( flags1 & MF_TRANSLUCENT )
-		  {
-		      // Boom bit defined in boomdeh.txt
-		      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
-		      GenPrintf(EMSG_text|EMSG_log, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
-		      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
-		      {
-			  // assume TRANSLUCENT, check for known exceptions
-			  GenPrintf(EMSG_text|EMSG_log, "MF_TRANSLUCENT\n");
-		      }
-		      else
-		      {
-			  // assume FLOORHUGGER, check for known exceptions
-			  flags1 &= ~MF_TRANSLUCENT;
-			  mip->flags2 |= MF2_FLOORHUGGER;
-			  GenPrintf(EMSG_text|EMSG_log, "MF_FLOORHUGGER\n");
-		      }
-		  }
-		  mip->flags = flags1; // we are still using same flags bit order
-		  flags_valid_deh = true;
-		  goto next_line;
-	      }
-	      // handle BEX flag names
-	      for( fnp = &BEX_flag_name_table[0]; ; fnp++ )
-	      {
-		  if(fnp->name == NULL)  goto name_unknown;
-		  if(!strcasecmp( word, fnp->name ))  // find name
-		  {
-		      switch( fnp->ctrl )
-		      {
-		       case BF1:
-		         flags1 |= fnp->flagval;
-			 break;
-		       case BF2x: // DoomLegacy extension BEX name
-			 flags2x_hit = 1;
-		       case BF2: // standard name that happens to be MF2
-		         flags2 |= fnp->flagval;
-			 break;
-		       default:
-			 goto name_unknown;
-		      }
-		      // if next entry is same keyword then process it too
-		      if( (fnp[1].name != fnp[0].name) )
-		         goto next_word; // done with this word
-		      // next entry is same word, process it too
-		  }
-	      }
-	    name_unknown:
-	      deh_error("Bits name unknown: %s\n", word);
-	      // continue with next keyword
-	    next_word:
-	      continue;
-	  }
-	
+          flags1 = flags2 = 0;
+          for(;;)
+          {
+              word = strtok(NULL, " +|\t=\n");
+              if( word == NULL )  goto set_flags;
+              if( word[0] == '\n' )   goto set_flags;
+              // detect bits by integer value
+              if( isdigit( word[0] ) )
+              {
+                  // old style integer value, flags only (not flags2)
+                  flags1 = atoi(word);  // numeric entry
+                  if( flags1 & MF_TRANSLUCENT )
+                  {
+                      // Boom bit defined in boomdeh.txt
+                      // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
+                      GenPrintf(EMSG_text|EMSG_log, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
+                      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
+                      {
+                          // assume TRANSLUCENT, check for known exceptions
+                          GenPrintf(EMSG_text|EMSG_log, "MF_TRANSLUCENT\n");
+                      }
+                      else
+                      {
+                          // assume FLOORHUGGER, check for known exceptions
+                          flags1 &= ~MF_TRANSLUCENT;
+                          mip->flags2 |= MF2_FLOORHUGGER;
+                          GenPrintf(EMSG_text|EMSG_log, "MF_FLOORHUGGER\n");
+                      }
+                  }
+                  mip->flags = flags1; // we are still using same flags bit order
+                  flags_valid_deh = true;
+                  goto next_line;
+              }
+              // handle BEX flag names
+              for( fnp = &BEX_flag_name_table[0]; ; fnp++ )
+              {
+                  if(fnp->name == NULL)  goto name_unknown;
+                  if(!strcasecmp( word, fnp->name ))  // find name
+                  {
+                      switch( fnp->ctrl )
+                      {
+                       case BF1:
+                         flags1 |= fnp->flagval;
+                         break;
+                       case BF2x: // DoomLegacy extension BEX name
+                         flags2x_hit = 1;
+                       case BF2: // standard name that happens to be MF2
+                         flags2 |= fnp->flagval;
+                         break;
+                       default:
+                         goto name_unknown;
+                      }
+                      // if next entry is same keyword then process it too
+                      if( (fnp[1].name != fnp[0].name) )
+                         goto next_word; // done with this word
+                      // next entry is same word, process it too
+                  }
+              }
+            name_unknown:
+              deh_error("Bits name unknown: %s\n", word);
+              // continue with next keyword
+            next_word:
+              continue;
+          }
+
         set_flags:
-	  mip->flags = flags1;
-	  // clear std flags in flags2
-	  mip->flags2 &= ~(MF2_SLIDE|MF2_FLOORBOUNCE);
-	  if( flags2x_hit )
-	  { 
-	      // clear extension flags2 only if some extension names appeared
-	      mip->flags2 = 0;
-	  }
+          mip->flags = flags1;
+          // clear std flags in flags2
+          mip->flags2 &= ~(MF2_SLIDE|MF2_FLOORBOUNCE);
+          if( flags2x_hit )
+          {
+              // clear extension flags2 only if some extension names appeared
+              mip->flags2 = 0;
+          }
 #ifdef CHECK_FLAGS2_DEFAULT
-	  else
-	  {
-	      // Unless explicitly used BF2x bit, then put in default bits
-	      // Avoid by using MF2CLEAR
-	      mip->flags2 = flags2_default_value;
-	  }
+          else
+          {
+              // Unless explicitly used BF2x bit, then put in default bits
+              // Avoid by using MF2CLEAR
+              mip->flags2 = flags2_default_value;
+          }
 #endif	 
-	  mip->flags2 |= flags2;
-	  flags_valid_deh = true;
-	next_line:
-	  continue; // next line
+          mip->flags2 |= flags2;
+          flags_valid_deh = true;
+        next_line:
+          continue; // next line
       }
 
       // set the value in apropriet field
@@ -816,17 +816,17 @@ static void readsound(MYFILE* f, int deh_sound_id)
       word=strtok(s," ");
       if(!strcasecmp(word,"Offset"))
       {
-	  value-=150360;
+          value-=150360;
           if(value<=64) value/=8;
           else if(value<=260) value=(value+4)/8;
           else value=(value+8)/8;
           if(value>=-1 && value<sfx_freeslot0-1)
-	      ssp->name=deh_sfxnames[value+1];
-	  else
-	      deh_error("Sound %d : offset out of bound\n", deh_sound_id);
+              ssp->name=deh_sfxnames[value+1];
+          else
+              deh_error("Sound %d : offset out of bound\n", deh_sound_id);
       }
       else if(!strcasecmp(word,"Zero/One"))
-	  ssp->flags = ( value? SFX_single : 0 );
+          ssp->flags = ( value? SFX_single : 0 );
       else if(!strcasecmp(word,"Value"))    ssp->priority   =value;
       else deh_error("Sound %d : unknown word '%s'\n", deh_sound_id,word);
     }
@@ -969,8 +969,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
       {
         if(!strncmp(deh_sprnames[i],s,len1))
         {
-	  // May be const string, which will segfault on write
-	  deh_replace_string( &sprnames[i], str2, DRS_name );
+          // May be const string, which will segfault on write
+          deh_replace_string( &sprnames[i], str2, DRS_name );
           return;
         }
       }
@@ -986,9 +986,9 @@ static void readtext(MYFILE* f, int len1, int len2 )
       {
         if(!strcmp(deh_sfxnames[i],str1))
         {
-	  // sfx name may be Z_Malloc(7) or a const string
-	  // May be const string, which will segfault on write
-	  deh_replace_string( &S_sfx[i].name, str2, DRS_name );
+          // sfx name may be Z_Malloc(7) or a const string
+          // May be const string, which will segfault on write
+          deh_replace_string( &S_sfx[i].name, str2, DRS_name );
           return;
         }
       }
@@ -998,8 +998,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
       {
         if( deh_musicname[i] && (!strcmp(deh_musicname[i], str1)) )
         {
-	  // May be const string, which will segfault on write
-	  deh_replace_string( &S_music[i].name, str2, DRS_name );
+          // May be const string, which will segfault on write
+          deh_replace_string( &S_music[i].name, str2, DRS_name );
           return;
         }
       }
@@ -1010,8 +1010,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
     {
       if(!strncmp(deh_text[i],s,len1) && strlen(deh_text[i])==(unsigned)len1)
       {
-	// May be const string, which will segfault on write
-	deh_replace_string( &text[i], str2, DRS_string );
+        // May be const string, which will segfault on write
+        deh_replace_string( &text[i], str2, DRS_string );
         return;
       }
     }
@@ -1023,7 +1023,7 @@ static void readtext(MYFILE* f, int len1, int len2 )
 
        if(len1>ltxt && strstr(s,deh_text[i]))
        {
-	   // found text to be replaced
+           // found text to be replaced
            char *t;
 
            // remove space for center the text
@@ -1044,8 +1044,8 @@ static void readtext(MYFILE* f, int len1, int len2 )
               }
            }
            t[0]='\0';
-	   // May be const string, which will segfault on write
-	   deh_replace_string( &text[i], &(s[len1]), DRS_string );
+           // May be const string, which will segfault on write
+           deh_replace_string( &text[i], &(s[len1]), DRS_string );
            return;
        }
     }
@@ -1055,22 +1055,22 @@ static void readtext(MYFILE* f, int len1, int len2 )
        uint32_t hash = 0;
        for(i=0; i<len1; i++)
        {
-	   if( s[i] >= '0' )
-	   {
-	       if( hash&0x80000000 )
-		  hash ++;
-	       hash <<= 1;
-	       hash += toupper( s[i] ) - '0';
-	   }
+           if( s[i] >= '0' )
+           {
+               if( hash&0x80000000 )
+                  hash ++;
+               hash <<= 1;
+               hash += toupper( s[i] ) - '0';
+           }
        }
        for(i=0;;i++)
        {
-	   if( hash_text_table[i].indirect >= NUMTEXT ) break;  // not found
-	   if( hash_text_table[i].hash == hash )
-	   {
-	       deh_replace_string( &text[hash_text_table[i].indirect], &(s[len1]), DRS_string );
-	       return;
-	   }
+           if( hash_text_table[i].indirect >= NUMTEXT ) break;  // not found
+           if( hash_text_table[i].hash == hash )
+           {
+               deh_replace_string( &text[hash_text_table[i].indirect], &(s[len1]), DRS_string );
+               return;
+           }
        }
        if( devparm && verbose )
            GenPrintf(EMSG_text|EMSG_log, "Text hash= 0x%08x :", hash);
@@ -1474,23 +1474,23 @@ static void bex_strings( MYFILE* f, byte bex_permission )
       if( *cp == '\"' )  cp++;  // skip leading double quote
       while( *cp )
       {   // copy text upto CR
-	  if( *cp == '\n' ) break;
-	  *stp++ = *cp++;
-	  if( stp >= &stxt[BEX_MAX_STRING_LEN] ) break;
+          if( *cp == '\n' ) break;
+          *stp++ = *cp++;
+          if( stp >= &stxt[BEX_MAX_STRING_LEN] ) break;
       }
       // remove trailing space
       while( stp > stxt && stp[-1] == ' ')
-	  stp --;
+          stp --;
       // test for continuation line
       if( ! (stp > stxt && stp[-1] == '\\') )
-	  break;  // no backslash continuation
+          break;  // no backslash continuation
       stp--;  // remove backslash
       if( stp > stxt && stp[-1] == '\"' )
-	  stp --;  // remove trailing doublequote
+          stp --;  // remove trailing doublequote
       // get continuation line to sb, skipping comments.
       // [WDJ] questionable, but boom202 code skips comments between continuation lines.
       if( ! myfgets_nocom(sb, sizeof(sb), f) )
-	  break; // no more lines
+          break; // no more lines
       cp = &sb[0];
     } while ( *cp );
     if( stp > stxt && stp[-1] == '\"' )
@@ -1503,25 +1503,25 @@ static void bex_strings( MYFILE* f, byte bex_permission )
         if( bex_string_table[i].kstr == NULL )  goto no_text_change;
         if(!strcmp(bex_string_table[i].kstr, keyw))  // BEX keyword search
         {
-	    int text_index = bex_string_table[i].text_num;
+            int text_index = bex_string_table[i].text_num;
 #ifdef BEX_SAVEGAMENAME
-	    // protect file names against attack
-	    if( i == SAVEGAMENAME_NUM )
-	    {
-	        if( filename_reject( stxt, 10 )  goto no_text_change;
-	    }
+            // protect file names against attack
+            if( i == SAVEGAMENAME_NUM )
+            {
+                if( filename_reject( stxt, 10 )  goto no_text_change;
+            }
 #endif
-	    if( i >= perm_min && text_index < NUMTEXT)
-	    {
+            if( i >= perm_min && text_index < NUMTEXT)
+            {
                 // May be const string, which will segfault on write
-	        deh_replace_string( &text[text_index], stxt, DRS_string );
-	    }
-	    else
-	    {
-	        // change blocked, but not an error
-	    }
-	    goto next_keyw;
-	}
+                deh_replace_string( &text[text_index], stxt, DRS_string );
+            }
+            else
+            {
+                // change blocked, but not an error
+            }
+            goto next_keyw;
+        }
     }
   no_text_change:
     deh_error("Text not changed :%s\n", keyw);
@@ -1556,8 +1556,8 @@ static void bex_pars( MYFILE* f )
         deh_error( "Bad par E%dM%d\n", episode, level );
       else
       {
-	pars[episode][level] = partime;
-	pars_valid_bex = true;
+        pars[episode][level] = partime;
+        pars_valid_bex = true;
       }
     }
     else if( nn == 2 )
@@ -1568,8 +1568,8 @@ static void bex_pars( MYFILE* f )
         deh_error( "Bad PAR MAP%d\n", level );
       else
       {
-	cpars[level-1] = partime;
-	pars_valid_bex = true;
+        cpars[level-1] = partime;
+        pars_valid_bex = true;
       }
     }
     else
@@ -1687,13 +1687,13 @@ static void bex_codeptr( MYFILE* f )
     nn = sscanf( &s[5], "%d = %s", &framenum, funcname );
     if( nn != 2 )
     {
-	deh_error( "Bad FRAME syntax\n" );
+        deh_error( "Bad FRAME syntax\n" );
         continue;
     }
     if( framenum < 0 || framenum > NUMSTATES )
     {
-	deh_error( "Bad BEX FRAME number %d\n", framenum );
-	continue;
+        deh_error( "Bad BEX FRAME number %d\n", framenum );
+        continue;
     }
     // search action table
     for(i=0;  ;i++)
@@ -1701,10 +1701,10 @@ static void bex_codeptr( MYFILE* f )
         if( bex_action_table[i].kstr == NULL )  goto no_action_change;
         if(!strcasecmp(bex_action_table[i].kstr, funcname))  // BEX action search
         {
-	    // change the sprite behavior at the framenum
-	    states[framenum].action.acv = bex_action_table[i].action.acv;
-	    goto next_keyw;
-	}
+            // change the sprite behavior at the framenum
+            states[framenum].action.acv = bex_action_table[i].action.acv;
+            goto next_keyw;
+        }
     }
   no_action_change:
     deh_error("Action not changed : FRAME %d\n", framenum);
@@ -1861,38 +1861,38 @@ static void readmisc(MYFILE *f)
       else if(!strcasecmp(word,"BFG"))        doomweaponinfo[wp_bfg].ammopershoot = value;
       else if(!strcasecmp(word,"Monsters Ignore"))
       {
-	  // ZDoom at least
-	  // Looks like a coop setting
-	  switch( value )
-	  {
- 	   case 0:
-	     monster_infight_deh = INFT_infight_off; // infight off
-	     break;
-	   default:
-	     monster_infight_deh = INFT_coop; // coop
-	     break;
-	  }
+          // ZDoom at least
+          // Looks like a coop setting
+          switch( value )
+          {
+           case 0:
+             monster_infight_deh = INFT_infight_off; // infight off
+             break;
+           default:
+             monster_infight_deh = INFT_coop; // coop
+             break;
+          }
       }
       else if(!strcasecmp(word,"Monsters"))
       {
-	  //DarkWolf95:November 21, 2003: Monsters Infight!
-	  //[WDJ] from prboom the string is "Monsters Infight"
-	  // cannot confirm any specific valid numbers
-	  switch( value )
-	  {
-	   case 221: // value=221 -> on (prboom)
-	   case 0: // previous behavior: default to on
-	   case 1: // if user tries to set it on
-	      monster_infight_deh = INFT_infight; // infight on
-	      break;
-	   case 202: // value=202 -> off (prboom)
-	   default:  // off
-	      monster_infight_deh = INFT_infight_off; // infight off
-	      break;
-	   case 3: // extended behavior, coop monsters
-	      monster_infight_deh = INFT_coop;
-	      break;
-	  }
+          //DarkWolf95:November 21, 2003: Monsters Infight!
+          //[WDJ] from prboom the string is "Monsters Infight"
+          // cannot confirm any specific valid numbers
+          switch( value )
+          {
+           case 221: // value=221 -> on (prboom)
+           case 0: // previous behavior: default to on
+           case 1: // if user tries to set it on
+              monster_infight_deh = INFT_infight; // infight on
+              break;
+           case 202: // value=202 -> off (prboom)
+           default:  // off
+              monster_infight_deh = INFT_infight_off; // infight off
+              break;
+           case 3: // extended behavior, coop monsters
+              monster_infight_deh = INFT_coop;
+              break;
+          }
       }
       else deh_error("Misc : unknown word '%s'\n",word);
     }
@@ -2022,38 +2022,38 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
     if(word!=NULL)
     {
       if( word[0] == '\n' )  // ignore blank line
-	continue;
+        continue;
       if(!strncmp(word, "[STRINGS]", 9))
       {
-	bex_strings(f, bex_permission);
-	continue;
+        bex_strings(f, bex_permission);
+        continue;
       }
       else if(!strncmp(word, "[PARS]", 6))
       {
         bex_pars(f);
-	continue;
+        continue;
       }
       else if(!strncmp(word, "[CODEPTR]", 9))
       {
         bex_codeptr(f);
-	continue;
+        continue;
       }
       else if(!strncmp(word, "INCLUDE", 7))
       {
-	word=strtok(NULL," ");
-	if(!strcasecmp( word, "NOTEXT" ))
-	{
-	  bex_include_notext = 1;
-	  word=strtok(NULL," "); // filename
-	}
-	bex_include( word ); // include file
-	bex_include_notext = 0;
-	continue;
+        word=strtok(NULL," ");
+        if(!strcasecmp( word, "NOTEXT" ))
+        {
+          bex_include_notext = 1;
+          word=strtok(NULL," "); // filename
+        }
+        bex_include( word ); // include file
+        bex_include_notext = 0;
+        continue;
       }
       else if(!strncmp(word, "Engine", 6)
-	      || !strncmp(word, "Data", 4)
-	      || !strncmp(word, "IWAD", 4) )
-	 continue; // WhackEd2 data, ignore it
+              || !strncmp(word, "Data", 4)
+              || !strncmp(word, "IWAD", 4) )
+         continue; // WhackEd2 data, ignore it
        
       word2=strtok(NULL," ");  // id number
       if(word2!=NULL)
@@ -2062,7 +2062,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
 
         if(!strcasecmp(word,"Thing"))
         {
-	  // "Thing <num>"
+          // "Thing <num>"
           if(i<=NUMMOBJTYPES && i>0)
             readthing(f,i);
           else
@@ -2070,7 +2070,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
         }
         else if(!strcasecmp(word,"Frame"))
              {
-	       // "Frame <num>"
+               // "Frame <num>"
                if(i<NUMSTATES && i>=0)
                   readframe(f,i);
                else
@@ -2078,7 +2078,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Pointer"))
              {
-	       // "Pointer <num>"
+               // "Pointer <num>"
                word=strtok(NULL," "); // get frame
                if((word=strtok(NULL,")"))!=NULL)
                {
@@ -2096,7 +2096,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Sound"))
              {
-	       // "Sound <num>"
+               // "Sound <num>"
                if(i<NUMSFX && i>=0)
                    readsound(f,i);
                else
@@ -2104,7 +2104,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Sprite"))
              {
-	       // "Sprite <num>"
+               // "Sprite <num>"
                if(i<NUMSPRITES && i>=0)
                {
                  if(myfgets(s,sizeof(s),f)!=NULL)
@@ -2122,7 +2122,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Text"))
              {
-	       // "Text <num>"
+               // "Text <num>"
                int j;
 
                if((word=strtok(NULL," "))!=NULL)
@@ -2136,7 +2136,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Weapon"))
              {
-	       // "Weapon <num>"
+               // "Weapon <num>"
                if(i<NUMWEAPONS && i>=0)
                    readweapon(f,i);
                else
@@ -2144,28 +2144,28 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
              }
         else if(!strcasecmp(word,"Ammo"))
              {
-	       // "Ammo <num>"
+               // "Ammo <num>"
                if(i<NUMAMMO && i>=0)
                    readammo(f,i);
                else
                    deh_error("Ammo %d don't exist\n",i);
              }
         else if(!strcasecmp(word,"Misc"))
-	       // "Misc <num>"
+               // "Misc <num>"
                readmisc(f);
         else if(!strcasecmp(word,"Cheat"))
-	       // "Cheat <num>"
+               // "Cheat <num>"
                readcheat(f);
         else if(!strcasecmp(word,"Doom"))
              {
-	       // "Doom <num>"
+               // "Doom <num>"
                int ver = searchvalue(strtok(NULL,"\n"));
                if( ver!=19)
                   deh_error("Warning : patch from a different doom version (%d), only version 1.9 is supported\n",ver);
              }
         else if(!strcasecmp(word,"Patch"))
              {
-	       // "Patch <num>"
+               // "Patch <num>"
                word=strtok(NULL," ");
                if(word && !strcasecmp(word,"format"))
                {

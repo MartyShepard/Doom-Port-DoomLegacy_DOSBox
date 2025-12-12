@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_genlin.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -197,7 +197,7 @@ manual_floor:
       }
       else if( line->frontsector )  // except fragglescript with no frontsector
       {
-	// trigger frontsector model change
+        // trigger frontsector model change
         mfloor->texture = line->frontsector->floorpic;
         switch (ChgT)
         {
@@ -394,7 +394,7 @@ manual_ceiling:
       }
       else if( line->frontsector )  // except fragglescript with no frontsector
       {
-	// trigger frontsector model change
+        // trigger frontsector model change
         ceiling->texture = line->frontsector->ceilingpic;
         switch (ChgT)
         {
@@ -694,9 +694,9 @@ manual_stair:
       ok = 0;
       for (i = 0; i < sec->linecount; i++)
       {
-	// for each line in sector linelist
+        // for each line in sector linelist
         register line_t * slinei = sec->linelist[i];
-	   // [WDJ] ptr slinei, saves 0 bytes, but is easier to read.
+           // [WDJ] ptr slinei, saves 0 bytes, but is easier to read.
         if ( !(slinei->backsector) )   // ignore line with no backsector
           continue;
                                   

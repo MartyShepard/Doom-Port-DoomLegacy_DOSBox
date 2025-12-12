@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1130 2014-08-30 14:08:47Z wesleyjohnson $
+// $Id: p_spec.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -169,7 +169,7 @@ int variable_friction = 1;
 int allow_pushers = 1;
 byte  monster_friction = 1;  // MBF demo flag
 byte  mbf_support = 1;  // [WDJ] MBF enable
-			// similar to prboom mbf_features, but as a flag
+                        // similar to prboom mbf_features, but as a flag
 byte  monster_infight = 0; //DarkWolf95:November 21, 2003: Monsters Infight!
 byte  monster_infight_deh = 0; // DEH input.
 
@@ -316,7 +316,7 @@ void P_InitPicAnims (void)
     {
        for (i = 0; animdefs[i].istexture != -1; i++)
        {
-	  animdefs[i].speed = LE_SWAP32(animdefs[i].speed);
+          animdefs[i].speed = LE_SWAP32(animdefs[i].speed);
        }
     }
 #endif
@@ -413,12 +413,12 @@ void P_FindAnimatedFlat (int animnum)
             foundflats->speed = anims[animnum].speed;
 
             if (devparm)
-	    {
+            {
                 GenPrintf(EMSG_dev,
-		   "animflat: %#03d name:%.8s animseq:%d numpics:%d speed:%d\n",
+                   "animflat: %#03d name:%.8s animseq:%d numpics:%d speed:%d\n",
                             i, foundflats->name, foundflats->animseq,
                             foundflats->numpics,foundflats->speed);
-	    }
+            }
         }
     }
 
@@ -601,10 +601,10 @@ fixed_t P_FindNextHighestFloor(sector_t *sec, int currentheight)
       int height = other->floorheight;
       while (++i < sec->linecount)
       {
-	// for rest of lines in sector linelist
+        // for rest of lines in sector linelist
         if ((other = getNextSector(sec->linelist[i],sec))
-	    && other->floorheight < height
-	    && other->floorheight > currentheight)
+            && other->floorheight < height
+            && other->floorheight > currentheight)
           height = other->floorheight;
       }
       return height;
@@ -635,18 +635,18 @@ fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight)
   {
     // for all lines in sector linelist
     if ((other = getNextSector(sec->linelist[i],sec))
-	&& other->floorheight < currentheight)
+        && other->floorheight < currentheight)
     {
       int height = other->floorheight;
       while (++i < sec->linecount)
       {
-	// for rest of lines in sector linelist
+        // for rest of lines in sector linelist
         if ((other = getNextSector(sec->linelist[i],sec))
-	    && other->floorheight > height
-	    && other->floorheight < currentheight)
-	{
+            && other->floorheight > height
+            && other->floorheight < currentheight)
+        {
           height = other->floorheight;
-	}
+        }
       }
       return height;
     }
@@ -673,18 +673,18 @@ fixed_t P_FindNextLowestCeiling(sector_t *sec, int currentheight)
   {
     // for all lines in sector linelist
     if ((other = getNextSector(sec->linelist[i],sec))
-	&& other->ceilingheight < currentheight)
+        && other->ceilingheight < currentheight)
     {
       int height = other->ceilingheight;
       while (++i < sec->linecount)
       {
-	// for rest of lines in sector linelist
+        // for rest of lines in sector linelist
         if ((other = getNextSector(sec->linelist[i],sec))
-	    && other->ceilingheight > height
-	    && other->ceilingheight < currentheight)
-	{
+            && other->ceilingheight > height
+            && other->ceilingheight < currentheight)
+        {
           height = other->ceilingheight;
-	}
+        }
       }
       return height;
     }
@@ -713,18 +713,18 @@ fixed_t P_FindNextHighestCeiling(sector_t *sec, int currentheight)
   {
     // for all lines in sector linelist
     if ((other = getNextSector(sec->linelist[i],sec))
-	&& other->ceilingheight > currentheight)
+        && other->ceilingheight > currentheight)
     {
       int height = other->ceilingheight;
       while (++i < sec->linecount)
       {
-	// for rest of lines in sector linelist
+        // for rest of lines in sector linelist
         if ((other = getNextSector(sec->linelist[i],sec))
-	    && other->ceilingheight < height
-	    && other->ceilingheight > currentheight)
-	{
+            && other->ceilingheight < height
+            && other->ceilingheight > currentheight)
+        {
           height = other->ceilingheight;
-	}
+        }
       }
       return height;
     }
@@ -1388,8 +1388,8 @@ boolean P_WasSecret(sector_t *sec)
 //
 void
 P_CrossSpecialLine ( int           linenum,
-		     int           side,
-		     mobj_t*       thing )
+                     int           side,
+                     mobj_t*       thing )
 {
     line_t*     line;
     line = &lines[linenum];
@@ -1400,8 +1400,8 @@ P_CrossSpecialLine ( int           linenum,
 
 void
 P_ActivateCrossedLine ( line_t*       line,
-			int           side,
-			mobj_t*       thing)
+                        int           side,
+                        mobj_t*       thing)
 {
     int         ok;
     int         forceuse; //SoM: 4/26/2000: ALLTRIGGER should allow monsters to use generalized types too!
@@ -1440,10 +1440,10 @@ P_ActivateCrossedLine ( line_t*       line,
       else if ((unsigned)line->special >= GenFloorBase)
       {
         if (!thing->player)
-	{
+        {
           if (((line->special & FloorChange) || !(line->special & FloorModel)) && !forceuse)
             return;     // FloorModel is "Allow Monsters" if FloorChange is 0
-	}
+        }
         if (!line->tag)
           return;
         linefunc = EV_DoGenFloor;
@@ -1451,10 +1451,10 @@ P_ActivateCrossedLine ( line_t*       line,
       else if ((unsigned)line->special >= GenCeilingBase)
       {
         if (!thing->player)
-	{
+        {
           if (((line->special & CeilingChange) || !(line->special & CeilingModel)) && !forceuse)
             return;     // CeilingModel is "Allow Monsters" if CeilingChange is 0
-	}
+        }
         if (!line->tag)
           return;
         linefunc = EV_DoGenCeiling;
@@ -1477,7 +1477,7 @@ P_ActivateCrossedLine ( line_t*       line,
         if (!thing->player)
           return;                     // monsters disallowed from unlocking doors
         if (((line->special&TriggerType)==TRIG_WalkOnce)
-	    || ((line->special&TriggerType)==TRIG_WalkMany))
+            || ((line->special&TriggerType)==TRIG_WalkMany))
         {
           if (!P_CanUnlockGenDoor(line,thing->player))
             return;
@@ -1489,10 +1489,10 @@ P_ActivateCrossedLine ( line_t*       line,
       else if ((unsigned)line->special >= GenLiftBase)
       {
         if (!thing->player)
-	{
+        {
           if (!(line->special & LiftMonster) && !forceuse)
             return; // monsters disallowed
-	}
+        }
         if (!line->tag)
           return;
         linefunc = EV_DoGenLift;
@@ -1500,10 +1500,10 @@ P_ActivateCrossedLine ( line_t*       line,
       else if ((unsigned)line->special >= GenStairsBase)
       {
         if (!thing->player)
-	{
+        {
           if (!(line->special & StairMonster) && !forceuse)
             return; // monsters disallowed
-	}
+        }
         if (!line->tag)
           return;
         linefunc = EV_DoGenStairs;
@@ -1511,10 +1511,10 @@ P_ActivateCrossedLine ( line_t*       line,
       else if ((unsigned)line->special >= GenCrusherBase)
       {
         if (!thing->player)
-	{
+        {
           if (!(line->special & StairMonster) && !forceuse)
             return; // monsters disallowed
-	}
+        }
         if (!line->tag)
           return;
         linefunc = EV_DoGenCrusher;
@@ -1542,43 +1542,43 @@ P_ActivateCrossedLine ( line_t*       line,
     {
         ok = 0;
         if( gamemode == heretic
-	    && (line->special == 4 || line->special==39 || line->special == 97) )
-	{
+            && (line->special == 4 || line->special==39 || line->special == 97) )
+        {
             ok = 1;
-	}
+        }
         else
-	{
+        {
           switch(line->special)
           {
-	     // Doom monster triggered special linedefs
-	   case 39:      // TELEPORT TRIGGER
-	   case 97:      // TELEPORT RETRIGGER
-	   case 125:     // TELEPORT MONSTERONLY TRIGGER
-	   case 126:     // TELEPORT MONSTERONLY RETRIGGER
-	   case 4:       // RAISE DOOR
-	   case 10:      // PLAT DOWN-WAIT-UP-STAY TRIGGER
-	   case 88:      // PLAT DOWN-WAIT-UP-STAY RETRIGGER
-	     ok = 1;
-	     break; 
-	     // SoM: 3/4/2000: Add boom compatibility for extra monster usable
-	     // linedef types.
-	   case 208:     //SoM: Silent thing teleporters
-	   case 207:
-	   case 243:     //Silent line to line teleporter
-	   case 244:     //Same as above but trigger once.
-	   case 262:     //Same as 243 but reversed
-	   case 263:     //Same as 244 but reversed
-	   case 264:     //Monster only, silent, trigger once, reversed
-	   case 265:     //Same as 264 but repeatable
-	   case 266:     //Monster only, silent, trigger once
-	   case 267:     //Same as 266 bot repeatable
-	   case 268:     //Monster only, silent, trigger once, set pos to thing
-	   case 269:     //Monster only, silent, repeatable, set pos to thing
-	     if(boomsupport)
-	       ok = 1;
-	     break;
-	  }
-	} // if else
+             // Doom monster triggered special linedefs
+           case 39:      // TELEPORT TRIGGER
+           case 97:      // TELEPORT RETRIGGER
+           case 125:     // TELEPORT MONSTERONLY TRIGGER
+           case 126:     // TELEPORT MONSTERONLY RETRIGGER
+           case 4:       // RAISE DOOR
+           case 10:      // PLAT DOWN-WAIT-UP-STAY TRIGGER
+           case 88:      // PLAT DOWN-WAIT-UP-STAY RETRIGGER
+             ok = 1;
+             break;
+             // SoM: 3/4/2000: Add boom compatibility for extra monster usable
+             // linedef types.
+           case 208:     //SoM: Silent thing teleporters
+           case 207:
+           case 243:     //Silent line to line teleporter
+           case 244:     //Same as above but trigger once.
+           case 262:     //Same as 243 but reversed
+           case 263:     //Same as 244 but reversed
+           case 264:     //Monster only, silent, trigger once, reversed
+           case 265:     //Same as 264 but repeatable
+           case 266:     //Monster only, silent, trigger once
+           case 267:     //Same as 266 bot repeatable
+           case 268:     //Monster only, silent, trigger once, set pos to thing
+           case 269:     //Monster only, silent, repeatable, set pos to thing
+             if(boomsupport)
+               ok = 1;
+             break;
+          }
+        } // if else
         //SoM: Anything can trigger this line!
         if(line->flags & ML_ALLTRIGGER)
           ok = 1;
@@ -1797,7 +1797,7 @@ P_ActivateCrossedLine ( line_t*       line,
         if( gamemode == heretic )
         {
           EV_DoDoor( line, VD_normalDoor, VDOORSPEED * 3);
-	}
+        }
         else
         {
           // Build Stairs Turbo 16
@@ -2021,7 +2021,7 @@ P_ActivateCrossedLine ( line_t*       line,
         {
             // Blazing Door Open (faster than TURBO!)
             EV_DoDoor( line, VD_blazeOpen, 4*VDOORSPEED);
-	}
+        }
         break;
 
       case 107:
@@ -2029,7 +2029,7 @@ P_ActivateCrossedLine ( line_t*       line,
         {
             // Blazing Door Close (faster than TURBO!)
             EV_DoDoor( line, VD_blazeClose, 4*VDOORSPEED);
-	}
+        }
         break;
 
       case 120:
@@ -2057,7 +2057,7 @@ P_ActivateCrossedLine ( line_t*       line,
       default:
         if(boomsupport)
         {
-	  // Boom special linedefs
+          // Boom special linedefs
           switch(line->special) {
             //SoM: 3/4/2000:Boom Walk once triggers.
             //SoM: 3/4/2000:Yes this is "copied" code! I just cleaned it up. Did you think I was going to retype all this?!
@@ -2310,8 +2310,8 @@ P_ActivateCrossedLine ( line_t*       line,
               if (!thing->player)
                 EV_SilentTeleport(line, side, thing);
               break;
-	  }
-	}
+          }
+        }
     }
 }
 
@@ -2340,10 +2340,10 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       else if ((unsigned)line->special >= GenFloorBase)
       {
         if (!thing->player)
-	{
+        {
           if ((line->special & FloorChange) || !(line->special & FloorModel))
             return;   // FloorModel is "Allow Monsters" if FloorChange is 0
-	}
+        }
         if (!line->tag) //jff 2/27/98 all gun generalized types require tag
           return;
 
@@ -2352,10 +2352,10 @@ void P_ShootSpecialLine ( mobj_t*       thing,
       else if ((unsigned)line->special >= GenCeilingBase)
       {
         if (!thing->player)
-	{
+        {
           if ((line->special & CeilingChange) || !(line->special & CeilingModel))
             return;   // CeilingModel is "Allow Monsters" if CeilingChange is 0
-	}
+        }
         if (!line->tag) //jff 2/27/98 all gun generalized types require tag
           return;
         linefunc = EV_DoGenCeiling;
@@ -2378,7 +2378,7 @@ void P_ShootSpecialLine ( mobj_t*       thing,
         if (!thing->player)
           return;   // monsters disallowed from unlocking doors
         if (((line->special&TriggerType)==TRIG_GunOnce)
-	    || ((line->special&TriggerType)==TRIG_GunMany))
+            || ((line->special&TriggerType)==TRIG_GunMany))
         { //jff 4/1/98 check for being a gun type before reporting door type
           if (!P_CanUnlockGenDoor(line,thing->player))
             return;
@@ -2502,7 +2502,7 @@ void P_ShootSpecialLine ( mobj_t*       thing,
               break;
               //jff end addition of new gun linedefs
           }
-	}
+        }
         break;
     }
 }
@@ -2522,7 +2522,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
         case 5:
           // HELLSLIME DAMAGE
           if (!player->powers[pw_ironfeet])  // rad suit
-	  {
+          {
               if (instantdamage)
               {
                   P_DamageMobj (player->mo, NULL, NULL, 10);
@@ -2532,16 +2532,16 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
                   if( demoversion>=125 )
                       P_SpawnSmoke (player->mo->x, player->mo->y, player->mo->z);
               }
-	  }
+          }
           break;
 
         case 7:
           // NUKAGE DAMAGE
           if (!player->powers[pw_ironfeet])  // rad suit
-	  {
+          {
               if (instantdamage)
                   P_DamageMobj (player->mo, NULL, NULL, 5);
-	  }
+          }
           break;
 
         case 16:
@@ -2602,7 +2602,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
          break;
        case 3: // 10/20 damage per 31 ticks
          if ((!player->powers[pw_ironfeet] || P_Random()<5) // pr_slimehurt
-	     && instantdamage)  // take damage even with suit
+             && instantdamage)  // take damage even with suit
          {
              P_DamageMobj (player->mo, NULL, NULL, 20);
          }
@@ -2652,10 +2652,10 @@ void P_PlayerOnSpecial3DFloor(player_t* player)
 
       if ((demoversion >= 125)
         && (player->mo->eflags & MF_JUSTHITFLOOR)
-	&& (sector->model < SM_fluid) // not water
-	&& (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
+        && (sector->model < SM_fluid) // not water
+        && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
       {
-	// hit solid ground
+        // hit solid ground
         instantdamage = true;
       }
       else
@@ -2665,7 +2665,7 @@ void P_PlayerOnSpecial3DFloor(player_t* player)
     {
       //Water and DEATH FOG!!! heh
       if((player->mo->z > *rover->topheight)
-	 || ((player->mo->z + player->mo->height) < *rover->bottomheight) )
+         || ((player->mo->z + player->mo->height) < *rover->bottomheight) )
         continue;
       instantdamage = !(leveltime % (32*NEWTICRATERATIO));
     }
@@ -2716,9 +2716,9 @@ void P_PlayerInSpecialSector (player_t* player)
 
     //Fab: jumping in lava/slime does instant damage (no jump cheat)
     if ((demoversion >= 125)
-	&& (player->mo->eflags & MF_JUSTHITFLOOR)
+        && (player->mo->eflags & MF_JUSTHITFLOOR)
         && (sector->model < SM_fluid)  // not in water
-	&& (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
+        && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
     {
         // hit solid ground
         instantdamage = true;
@@ -3067,12 +3067,12 @@ void P_SpawnSpecials (void)
             break;
 
           case 15:
-	    if( gamemode == heretic )
-	    {
-	        sector->friction = FRICTION_LOW;  // ice sector
-	        sector->movefactor = (ORIG_FRICTION_FACTOR/4);
-	    }
-	    break;
+            if( gamemode == heretic )
+            {
+                sector->friction = FRICTION_LOW;  // ice sector
+                sector->movefactor = (ORIG_FRICTION_FACTOR/4);
+            }
+            break;
 
 //	  case 16: // see P_HerePlayerInSpecialSector, Damage_LavaHefty
           case 17:
@@ -3104,46 +3104,46 @@ void P_SpawnSpecials (void)
         // Not all specials use nor require this, so no error messages
         if( effline->sidenum[0] != NULL_INDEX )
         {
-	    // get model sector and sector number from side 0
-	    model_secp = sides[ effline->sidenum[0] ].sector;  // frontsector
+            // get model sector and sector number from side 0
+            model_secp = sides[ effline->sidenum[0] ].sector;  // frontsector
             model_secnum = model_secp - sectors; // sector index
-	}
+        }
        
         int fsecn = -1;  // init search FindSector
         switch(effline->special)
         {
-	  // [WDJ] Protect here, if model is set then ensure modelsec >= 0
-	  // model sector == control sector
+          // [WDJ] Protect here, if model is set then ensure modelsec >= 0
+          // model sector == control sector
 
           // support for drawn heights coming from different sector
           case 242:	// Boom deep water
-	    // Divides the tagged sectors using the model sector ceiling
-	    // and floor, heights and flats.
-	    // Renders within and beyond tagged sectors floor and ceiling,
-	    // which can make them invisible.
-	    // Uses top texture, middle texture, bottom texture as colormaps,
-	    // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
-	    // Uses the model sector lightlevel underwater, and over ceiling.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // Divides the tagged sectors using the model sector ceiling
+            // and floor, heights and flats.
+            // Renders within and beyond tagged sectors floor and ceiling,
+            // which can make them invisible.
+            // Uses top texture, middle texture, bottom texture as colormaps,
+            // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
+            // Uses the model sector lightlevel underwater, and over ceiling.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               sectors[fsecn].modelsec = model_secnum;
               sectors[fsecn].model = SM_Boom_deep_water;
               sectors[fsecn].friction = water_friction;
               sectors[fsecn].movefactor = water_movefactor;
-	    }
-	    boom_detect = 1;
+            }
+            boom_detect = 1;
             break;
 
           //SoM: 3/20/2000: support for drawn heights coming from different sector
           case 280:	// Legacy water
-	    // 3D water uses model sector ceiling and floor, heights and flats.
-	    // The model sector floor and ceiling are rendered as top of water,
-	    // and fake ceiling, only within limits of tagged sector.
-	    // Uses top texture, middle texture, bottom texture as colormaps,
-	    // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
-	    // Uses the model sector lightlevel underwater, and over ceiling.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // 3D water uses model sector ceiling and floor, heights and flats.
+            // The model sector floor and ceiling are rendered as top of water,
+            // and fake ceiling, only within limits of tagged sector.
+            // Uses top texture, middle texture, bottom texture as colormaps,
+            // in the tagged sectors. Otherwise, they can be a normal texture of the sidedef.
+            // Uses the model sector lightlevel underwater, and over ceiling.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
             {
               sectors[fsecn].modelsec = model_secnum;
@@ -3151,174 +3151,174 @@ void P_SpawnSpecials (void)
               sectors[fsecn].friction = water_friction;
               sectors[fsecn].movefactor = water_movefactor;
             }
-	    legacy_detect = 1;
+            legacy_detect = 1;
             break;
 
           //SoM: 4/4/2000: HACK! Copy colormaps. Just plain colormaps.
           case 282:	// Legacy generate colormap, use in tagged
-	    // use the colormap in all tagged sectors
+            // use the colormap in all tagged sectors
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
             {
               sectors[fsecn].midmap = effline->frontsector->midmap;
               sectors[fsecn].model = SM_colormap;
             }
-	    legacy_detect = 1;
+            legacy_detect = 1;
             break;
 
           case 281:	// Legacy solid 3D floor with shadow, in tagged
-	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
-	    // The middle texture is the slab sides.
-	    // Under the 3Dfloor is the light and colormap of the model sector.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+            // The middle texture is the slab sides.
+            // Under the 3Dfloor is the light and colormap of the model sector.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		FF_EXISTS|FF_SOLID|FF_OUTER_SIDES|FF_OUTER_PLANES
-		|FF_CUTSOLIDS|FF_CUTEXTRA );
-	    }
-	    legacy_detect = 1;
+                FF_EXISTS|FF_SOLID|FF_OUTER_SIDES|FF_OUTER_PLANES
+                |FF_CUTSOLIDS|FF_CUTEXTRA );
+            }
+            legacy_detect = 1;
             break;
 
           case 289:	// Legacy solid 3D floor without shadow, in tagged
-	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
-	    // The middle texture is the slab sides.
-	    // Light below the slab is the same as above.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+            // The middle texture is the slab sides.
+            // Light below the slab is the same as above.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
                 FF_EXISTS|FF_SOLID|FF_OUTER_SIDES|FF_OUTER_PLANES
-		|FF_NOSHADE|FF_CUTSOLIDS|FF_CUTEXTRA );
-	    }
-	    legacy_detect = 1;
+                |FF_NOSHADE|FF_CUTSOLIDS|FF_CUTEXTRA );
+            }
+            legacy_detect = 1;
             break;
 
           // TL block
           case 300:	// Legacy solid translucent 3D floor in tagged
-	    // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
-	    // The middle texture is the slab sides, displayed translucent.
-	    // Light below the slab is the same as above.
-	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
-	    if ( model_secnum < 0 )  goto missing_model;
+            // 3Dfloor slab uses model sector ceiling and floor, heights and flats.
+            // The middle texture is the slab sides, displayed translucent.
+            // Light below the slab is the same as above.
+            // Upper texture encodes the translucent alpha: #nnn  => 0..255
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		FF_EXISTS|FF_SOLID|FF_TRANSLUCENT|FF_OUTER_SIDES|FF_OUTER_PLANES
-		|FF_NOSHADE|FF_EXTRA|FF_CUTEXTRA );
-	    }
-	    legacy_detect = 1;
+                FF_EXISTS|FF_SOLID|FF_TRANSLUCENT|FF_OUTER_SIDES|FF_OUTER_PLANES
+                |FF_NOSHADE|FF_EXTRA|FF_CUTEXTRA );
+            }
+            legacy_detect = 1;
             break;
 
           // TL water
           case 301:	// Legacy translucent 3D water in tagged
-	    // The middle texture is the water sides, displayed translucent.
-	    // Upper texture encodes the translucent alpha: #nnn  => 0..255
-	    flags = fw_linedef_flags_table[FWF_water];
-	    goto water_fakefloor;
+            // The middle texture is the water sides, displayed translucent.
+            // Upper texture encodes the translucent alpha: #nnn  => 0..255
+            flags = fw_linedef_flags_table[FWF_water];
+            goto water_fakefloor;
 
           // Opaque water
           case 304:	// Legacy opaque fluid
-	    // The middle texture is the slab sides, forced opaque.
-	    // Upper texture encodes fog alpha: #nnn  => 0..255
-	    flags = fw_linedef_flags_table[FWF_opaque_water];
+            // The middle texture is the slab sides, forced opaque.
+            // Upper texture encodes fog alpha: #nnn  => 0..255
+            flags = fw_linedef_flags_table[FWF_opaque_water];
 
-	  water_fakefloor:
-	    // 3D water uses model sector ceiling and floor, heights and flats.
-	    // Within the water or fog is the lightlevel and colormap of the model sector.
-	    // Over and Under is the light and colormap of the sector.
-	    if ( model_secnum < 0 )  goto missing_model;
-	    model_secp->friction = water_friction;
-	    model_secp->movefactor = water_movefactor;
-	    {
-	        side_t * sd = & sides[ effline->sidenum[0] ];
-	        fogwater_t * fwp = & fweff[ sd->toptexture ];
-	        // fog and water flags vary
-		flags = fogwater_flags_table[fwp->effect] | flags;
-	        while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	        {
-		    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
-		}
-	        sd->toptexture = 1;
-	    }
-	    legacy_detect = 1;
+          water_fakefloor:
+            // 3D water uses model sector ceiling and floor, heights and flats.
+            // Within the water or fog is the lightlevel and colormap of the model sector.
+            // Over and Under is the light and colormap of the sector.
+            if ( model_secnum < 0 )  goto missing_model;
+            model_secp->friction = water_friction;
+            model_secp->movefactor = water_movefactor;
+            {
+                side_t * sd = & sides[ effline->sidenum[0] ];
+                fogwater_t * fwp = & fweff[ sd->toptexture ];
+                // fog and water flags vary
+                flags = fogwater_flags_table[fwp->effect] | flags;
+                while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+                {
+                    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
+                }
+                sd->toptexture = 1;
+            }
+            legacy_detect = 1;
             break;
 
           // Fog
           case 302:	// Legacy 3D fog in tagged
-	    // Fog uses model sector ceiling and floor heights.
+            // Fog uses model sector ceiling and floor heights.
             // Within the fog is the lightlevel and colormap of the model sector.
-	    // Over and Under is the light and colormap of the sector.
-	    if ( model_secnum < 0 )  goto missing_model;
-	    {
-	        side_t * sd = & sides[ effline->sidenum[0] ];
-	        fogwater_t * fwp = & fweff[ sd->toptexture ];
-	        // all get FF_FOG, but FW_inside does not get FF_FOGFACE
-		flags = fogwater_flags_table[fwp->effect] | fw_linedef_flags_table[FWF_fog];
-	        while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	        {
-		    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
-	        }
-	    }
-	    legacy_detect = 1;
+            // Over and Under is the light and colormap of the sector.
+            if ( model_secnum < 0 )  goto missing_model;
+            {
+                side_t * sd = & sides[ effline->sidenum[0] ];
+                fogwater_t * fwp = & fweff[ sd->toptexture ];
+                // all get FF_FOG, but FW_inside does not get FF_FOGFACE
+                flags = fogwater_flags_table[fwp->effect] | fw_linedef_flags_table[FWF_fog];
+                while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
+                {
+                    P_AddFakeFloor(&sectors[fsecn], model_secp, effline, flags);
+                }
+            }
+            legacy_detect = 1;
             break;
 
           // Light effect
           case 303:	// Legacy 3D ceiling light in tagged
-	    // Light uses model sector ceiling heights.
+            // Light uses model sector ceiling heights.
             // Below the ceiling is the lightlevel and colormap of the model sector.
-	    if ( model_secnum < 0 )  goto missing_model;
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		FF_EXISTS|FF_CUTSPRITES );
-	    }
-	    legacy_detect = 1;
+                FF_EXISTS|FF_CUTSPRITES );
+            }
+            legacy_detect = 1;
             break;
 
           // Inner light effect
           case 305:	// Legacy inner light, within slab
-	    // Light uses model sector ceiling and floor heights.
+            // Light uses model sector ceiling and floor heights.
             // Within the light bounds is the lightlevel and colormap of the model sector.
-	    if ( model_secnum < 0 )  goto missing_model;
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		FF_EXISTS|FF_SLAB_SHADOW|FF_CUTSPRITES );
-	    }
-	    legacy_detect = 1;
+                FF_EXISTS|FF_SLAB_SHADOW|FF_CUTSPRITES );
+            }
+            legacy_detect = 1;
             break;
 
           // Invisible barrier
           case 306:	// Legacy invisible floor
-	    // 3Dfloor slab uses model sector ceiling and floor heights.
-	    // No light effects, it is invisible.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // 3Dfloor slab uses model sector ceiling and floor heights.
+            // No light effects, it is invisible.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
-	    {
+            {
               P_AddFakeFloor(&sectors[fsecn], model_secp, effline,
-		FF_EXISTS|FF_SOLID );
-	    }
-	    legacy_detect = 1;
+                FF_EXISTS|FF_SOLID );
+            }
+            legacy_detect = 1;
             break;
 
           // Boom independent floor lighting (e.g. lava)
           case 213:
-	    // Set floor light to light in control sector.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // Set floor light to light in control sector.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               sectors[fsecn].floorlightsec = model_secnum;
-	    boom_detect = 1;
+            boom_detect = 1;
             break;
 
           // Boom independent ceiling lighting
           case 261:
-	    // Set ceiling light to light in control sector.
-	    if ( model_secnum < 0 )  goto missing_model;
+            // Set ceiling light to light in control sector.
+            if ( model_secnum < 0 )  goto missing_model;
             while ((fsecn = P_FindSectorFromLineTag(effline,fsecn)) >= 0)
               sectors[fsecn].ceilinglightsec = model_secnum;
-	    boom_detect = 1;
+            boom_detect = 1;
             break;
-		  
+
           // Instant lower for floor SSNTails 06-13-2002
           case 290:
             EV_DoFloor( effline, FT_instantLower);
@@ -3367,22 +3367,22 @@ void P_Config_FW_Specials (void)
     {
         for(ffloor = sector->ffloors; ffloor; )
         {
-	    if( ffloor->fw_effect )  // that use fogwater effect
-	    {
-	        fwp = & fweff[ffloor->fw_effect];
-	        if((fwp->flags & FWF_default_effect) && (fwp->flags & FWF_index)) // set defaults
-	        {
-		    // fog and water flags vary
-		    ffloor->flags =
-		     fw_linedef_flags_table[fwp->flags & FWF_index]
-		     | fogwater_flags_table[fwp->effect];
-		}
+            if( ffloor->fw_effect )  // that use fogwater effect
+            {
+                fwp = & fweff[ffloor->fw_effect];
+                if((fwp->flags & FWF_default_effect) && (fwp->flags & FWF_index)) // set defaults
+                {
+                    // fog and water flags vary
+                    ffloor->flags =
+                     fw_linedef_flags_table[fwp->flags & FWF_index]
+                     | fogwater_flags_table[fwp->effect];
+                }
 
-	        // get fog and translucent alpha
-	        ffloor->alpha = fweff[ffloor->fw_effect].alpha;
-	    }
-	    ffloor = ffloor->next;
-	}
+                // get fog and translucent alpha
+                ffloor->alpha = fweff[ffloor->fw_effect].alpha;
+            }
+            ffloor = ffloor->next;
+        }
     } // for sector
 }
 
@@ -3444,7 +3444,7 @@ void T_Scroll(scroll_t *s)
       mobj_t *thing;
 
     case SCROLL_side:                   //Scroll wall texture
-	side = sides + affectee;
+        side = sides + affectee;
         side->textureoffset += dx;
         side->rowoffset += dy;
         break;
@@ -3612,20 +3612,20 @@ static void P_SpawnScrollers(void)
           // scroll wall according to linedef
           // (same direction and speed as scrolling floors)
         case 254:  // Boom scroll tagged wall, sync with floor/ceiling
-	 {
-	  register int linenum = -1;
+         {
+          register int linenum = -1;
           while ((linenum = P_FindLineFromLineTag(lnp,linenum)) >= 0)
             if (linenum != i)
               Add_WallScroller(dx, dy, &lines[linenum], control, accel);
-	 }
+         }
           break;
 
         case 255:  // Boom scroll wall by sidedef offsets
-	 {
-	  register int linenum = lines[i].sidenum[0];
+         {
+          register int linenum = lines[i].sidenum[0];
           Add_Scroller(SCROLL_side, -sides[linenum].textureoffset,
                        sides[linenum].rowoffset, -1, linenum, accel);
-	 }
+         }
           break;
 
         case 48:                  // scroll first side
@@ -3688,20 +3688,20 @@ void T_Friction(friction_t *f)
     {
         // sector does not have friction, check if any 3d floor has friction
         if(sec->ffloors)
-	{
-	    ffloor_t*  rover;
+        {
+            ffloor_t*  rover;
 
-	    for(rover = sec->ffloors; rover; rover = rover->next)
-	    {
-	        // Do some small extra checks here to possibly save unneeded work.
-	        if(!(rover->master->frontsector->special & FRICTION_MASK))
-		   continue;
-	        foundfloor = true;
-	    }
-	}
+            for(rover = sec->ffloors; rover; rover = rover->next)
+            {
+                // Do some small extra checks here to possibly save unneeded work.
+                if(!(rover->master->frontsector->special & FRICTION_MASK))
+                   continue;
+                foundfloor = true;
+            }
+        }
 
-	if( ! foundfloor) // Not even a 3d floor has the FRICTION_MASK.
-	   return;
+        if( ! foundfloor) // Not even a 3d floor has the FRICTION_MASK.
+           return;
     }
 
     // Assign the friction value to players on the floor, non-floating,
@@ -3787,86 +3787,86 @@ static void P_SpawnFriction( sector_t * sec )
     {
         if (lnp->special == 223)  // Boom Friction by length linedef
         {
-	    if( sec && (sec->tag != lnp->tag) ) // specific sector test
-	        continue;
-	    // From Boom ref:
-	    // The length of the linedef controls the friction in the tagged sector.
-	    // Length < 100 : stickiness, like mud
-	    // Length > 100 : slippery, like ice
-	    // Only works on a like tagged sector with the friction enable bit set,
-	    // which allows the effect to be turned on/off.
-	    // Demo sync is a known problem (see prboom).
+            if( sec && (sec->tag != lnp->tag) ) // specific sector test
+                continue;
+            // From Boom ref:
+            // The length of the linedef controls the friction in the tagged sector.
+            // Length < 100 : stickiness, like mud
+            // Length > 100 : slippery, like ice
+            // Only works on a like tagged sector with the friction enable bit set,
+            // which allows the effect to be turned on/off.
+            // Demo sync is a known problem (see prboom).
 
-	    // line length controls magnitude
+            // line length controls magnitude
             int length = P_AproxDistance(lnp->dx,lnp->dy)>>FRACBITS;
             // [WDJ] ZDoom uses 0xD001, prboom uses 0xD000
-	    // At length=100, friction should equal ORIG_FRICTION = 0xE800
+            // At length=100, friction should equal ORIG_FRICTION = 0xE800
 //            friction = (0x1EB8*length)/0x80 + 0xD000;
             friction = (0x1EB8*length)/0x80 + 0xD001;
 
-	    // [WDJ] friction and movefactor limiting appeared in
-	    // mbf, prboom, and legacy demos.
-	    // I see no reason to exclude it for older demos, as it only prevents weird effects.
-	    if(friction > FRACUNIT)
-	        friction = FRACUNIT;
-	    if(friction < 0)
-		friction = 0;
+            // [WDJ] friction and movefactor limiting appeared in
+            // mbf, prboom, and legacy demos.
+            // I see no reason to exclude it for older demos, as it only prevents weird effects.
+            if(friction > FRACUNIT)
+                friction = FRACUNIT;
+            if(friction < 0)
+                friction = 0;
 
             // The following check might seem odd. At the time of movement,
             // the move distance is multiplied by 'friction/0x10000', so a
             // higher friction value actually means 'less friction'.
 
             if (friction > ORIG_FRICTION)       // ice
-	    {
-	        if( raven ) // heretic or hexen
-	          // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
-	          movefactor = ((0x10092 - friction)*(0x40))/0x110 + 0x238;
-		else
-	          movefactor = ((0x10092 - friction)*(0x70))/0x158; // boom ice
-	    }
+            {
+                if( raven ) // heretic or hexen
+                  // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
+                  movefactor = ((0x10092 - friction)*(0x40))/0x110 + 0x238;
+                else
+                  movefactor = ((0x10092 - friction)*(0x70))/0x158; // boom ice
+            }
             else
                 movefactor = ((friction - 0xDB34)*(0xA))/0x80;  // mud
 
 // [WDJ] To see friction calculations, uncomment this print
 // GenPrintf(EMSG_debug, "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
 
-	    // killough 8/28/98: prevent odd situations
-	    if (movefactor < 32)
-	        movefactor = 32;
+            // killough 8/28/98: prevent odd situations
+            if (movefactor < 32)
+                movefactor = 32;
 
-	    if( sec )
-	    {
-	        // update one specific sector
-		sec->friction = friction;
-	        sec->movefactor = movefactor;
+            if( sec )
+            {
+                // update one specific sector
+                sec->friction = friction;
+                sec->movefactor = movefactor;
 #ifdef FRICTIONTHINKER
-	        // [WDJ] Friction thinkers are obsolete.
-		if( frictionthinker )
-	        {
-		    // Thinkers used only for some demos.
+                // [WDJ] Friction thinkers are obsolete.
+                if( frictionthinker )
+                {
+                    // Thinkers used only for some demos.
                     Add_Friction(friction, movefactor, sec-sectors);
-		}
+                }
 #endif
-	        continue;
-	    }
-	   
-	    // set friction in all sectors with the same linedef tag
-	    fsecn = -1; // init search FindSector
+                continue;
+            }
+
+            // set friction in all sectors with the same linedef tag
+            fsecn = -1; // init search FindSector
             while ((fsecn = P_FindSectorFromLineTag(lnp,fsecn)) >= 0)
-	    {
-	        // Sector friction
-		sectors[fsecn].friction = friction;
-	        sectors[fsecn].movefactor = movefactor;
+            {
+                // Sector friction
+                sectors[fsecn].friction = friction;
+                sectors[fsecn].movefactor = movefactor;
 #ifdef FRICTIONTHINKER
-	        // [WDJ] Friction thinkers are obsolete.
-		if( frictionthinker )
-	        {
-		    // Thinkers used only for some demos.
+                // [WDJ] Friction thinkers are obsolete.
+                if( frictionthinker )
+                {
+                    // Thinkers used only for some demos.
                     Add_Friction(friction, movefactor, fsecn);
-		}
+                }
 #endif
-	    }
-	}
+            }
+        }
     }
 }
 
@@ -3882,7 +3882,7 @@ void P_Update_Special_Sector( sector_t * sec, short new_special )
     sec->friction = FRICTION_NORM;
     sec->movefactor = ORIG_FRICTION_FACTOR;
     if (gamemode == heretic
-	&& new_special == 15 )   // Friction_Low
+        && new_special == 15 )   // Friction_Low
     {
         sec->friction = FRICTION_LOW;
         sec->movefactor = ORIG_FRICTION_FACTOR/4;
@@ -3891,9 +3891,9 @@ void P_Update_Special_Sector( sector_t * sec, short new_special )
     {
         if( friction_model == FR_legacy )
         {  // water_friction
-	    sec->friction = FRICTION_NORM * 97/100;  // slog
-	    sec->movefactor = 8*((FRICTION_NORM-48 - 0xDB34)*(0xA))/0x80; // non stick
-	}
+            sec->friction = FRICTION_NORM * 97/100;  // slog
+            sec->movefactor = 8*((FRICTION_NORM-48 - 0xDB34)*(0xA))/0x80; // non stick
+        }
     }
     // FRICTION_MASK is Boom generalized sector type ( special > 32 )
     // Can override other sector special friction
@@ -3971,14 +3971,14 @@ boolean PIT_PushThing(mobj_t* thing)
                  ((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
        
         // Square law distance effect by Killough 10/98, from prboom (not in Boom)
-	// [WDJ] Modified to float
-	if( speed > 0 && mbf_support )
+        // [WDJ] Modified to float
+        if( speed > 0 && mbf_support )
         {
-	    float fdx = thing->x - sx;
-	    float fdy = thing->y - sy;
-	    float mag = tmpusher->magnitude;
-	    speed = (int)( mag * ((float)(1<<23) * (float)(1<<FRACBITS) * (float)(1<<FRACBITS) * 2 )
-	            / ( fdx*fdx + fdy*fdy + 1));
+            float fdx = thing->x - sx;
+            float fdy = thing->y - sy;
+            float mag = tmpusher->magnitude;
+            speed = (int)( mag * ((float)(1<<23) * (float)(1<<FRACBITS) * (float)(1<<FRACBITS) * 2 )
+                    / ( fdx*fdx + fdy*fdy + 1));
         }
 
         // If speed <= 0, you're outside the effective radius. You also have
@@ -3991,7 +3991,7 @@ boolean PIT_PushThing(mobj_t* thing)
                 pushangle += ANG180;    // away
             thing->momx += FixedMul(speed, cosine_ANG(pushangle));
             thing->momy += FixedMul(speed, sine_ANG(pushangle));
-	}
+        }
     }
     return true;
 }
@@ -4030,24 +4030,24 @@ void T_Pusher(pusher_t *p)
     {
         if (!(sec->special & PUSH_MASK)) // Main sector doesn't have one, so let's check the rovers.
         {
-	    boolean foundfloor = false;
+            boolean foundfloor = false;
 
-	    if(sec->ffloors)
-	    {
-	        ffloor_t*  rover;
+            if(sec->ffloors)
+            {
+                ffloor_t*  rover;
 
-	        for(rover = sec->ffloors; rover; rover = rover->next)
-	        {
-		    // Do some small extra checks here to possibly save unneeded work.
-		    if(!(rover->master->frontsector->special & PUSH_MASK))
-		         continue;
-		    foundfloor = true;
-		}
-	    }
+                for(rover = sec->ffloors; rover; rover = rover->next)
+                {
+                    // Do some small extra checks here to possibly save unneeded work.
+                    if(!(rover->master->frontsector->special & PUSH_MASK))
+                         continue;
+                    foundfloor = true;
+                }
+            }
 
-	    if(! foundfloor) // Not even a 3d floor has the PUSH_MASK.
-	        return;
-	}
+            if(! foundfloor) // Not even a 3d floor has the PUSH_MASK.
+                return;
+        }
     }
 
     // For constant pushers (wind/current) there are 3 situations:
@@ -4089,7 +4089,7 @@ void T_Pusher(pusher_t *p)
         {
             for (by=yl ; by<=yh ; by++)
                 P_BlockThingsIterator(bx,by,PIT_PushThing);
-	}
+        }
         return;
     }
 
@@ -4099,104 +4099,104 @@ void T_Pusher(pusher_t *p)
     {
         if (sec->model > SM_fluid) // special water sector
         {
-	   sm_ht = sectors[sec->modelsec].floorheight;
-	   water_sector = true;
-	}
+           sm_ht = sectors[sec->modelsec].floorheight;
+           water_sector = true;
+        }
 
         // Boom
         node = sec->touching_thinglist; // things touching this sector
         for ( ; node ; node = node->m_snext)
         {
-	    thing = node->m_thing;
-	    if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
-	        continue;
-	    if (p->type == PP_wind)
-	    {
-	        if (! water_sector) // NOT special water sector
-	        {
-		    if (thing->z > thing->floorz) // above ground
-		    {
-		        xspeed = p->x_mag; // full force
-		        yspeed = p->y_mag;
-		    }
-	            else // on ground
-	            {
-		        xspeed = (p->x_mag)>>1; // half force
-		        yspeed = (p->y_mag)>>1;
-		    }
-		}
-	        else // special water sector
-	        {
-		    if (thing->z > sm_ht) // above ground
-		    {
-		        xspeed = p->x_mag; // full force
-		        yspeed = p->y_mag;
-		    }
-		    else if (thing->player->viewz < sm_ht) // underwater
-		        xspeed = yspeed = 0; // no force
-		    else // wading in water
-		    {
-		        xspeed = (p->x_mag)>>1; // half force
-		        yspeed = (p->y_mag)>>1;
-		    }
-		}
-	    }
-	    else // PP_current
-	    {
-	        // Added Z currents SSNTails 06-10-2002
-	        if (! water_sector) // NOT special water sector
-	        {
-		    if (thing->z > sec->floorheight) // above ground
-		        xspeed = yspeed = 0; // no force
-	            else // on ground
-	            {
-		        if(p->type == PP_upcurrent)
-			    thing->momz += p->magnitude;
-		        else if(p->type == PP_downcurrent)
-			    thing->momz -= p->magnitude;
-		        else
-		        {
-			    xspeed = p->x_mag; // full force
-			    yspeed = p->y_mag;
-			}
-		    }
-		}
-	        else // special water sector
-	        {
-		    if (thing->z > sm_ht) // above ground
-		        xspeed = yspeed = 0; // no force
-	            else // underwater
-	            {
-		        if(p->type == PP_upcurrent)
-			    thing->momz += p->magnitude;
-		        else if(p->type == PP_downcurrent)
-			    thing->momz -= p->magnitude;
-		        else
-		        {
-			    xspeed = p->x_mag; // full force
-			    yspeed = p->y_mag;
-			}
-		    }
-		}
-	    }
+            thing = node->m_thing;
+            if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+                continue;
+            if (p->type == PP_wind)
+            {
+                if (! water_sector) // NOT special water sector
+                {
+                    if (thing->z > thing->floorz) // above ground
+                    {
+                        xspeed = p->x_mag; // full force
+                        yspeed = p->y_mag;
+                    }
+                    else // on ground
+                    {
+                        xspeed = (p->x_mag)>>1; // half force
+                        yspeed = (p->y_mag)>>1;
+                    }
+                }
+                else // special water sector
+                {
+                    if (thing->z > sm_ht) // above ground
+                    {
+                        xspeed = p->x_mag; // full force
+                        yspeed = p->y_mag;
+                    }
+                    else if (thing->player->viewz < sm_ht) // underwater
+                        xspeed = yspeed = 0; // no force
+                    else // wading in water
+                    {
+                        xspeed = (p->x_mag)>>1; // half force
+                        yspeed = (p->y_mag)>>1;
+                    }
+                }
+            }
+            else // PP_current
+            {
+                // Added Z currents SSNTails 06-10-2002
+                if (! water_sector) // NOT special water sector
+                {
+                    if (thing->z > sec->floorheight) // above ground
+                        xspeed = yspeed = 0; // no force
+                    else // on ground
+                    {
+                        if(p->type == PP_upcurrent)
+                            thing->momz += p->magnitude;
+                        else if(p->type == PP_downcurrent)
+                            thing->momz -= p->magnitude;
+                        else
+                        {
+                            xspeed = p->x_mag; // full force
+                            yspeed = p->y_mag;
+                        }
+                    }
+                }
+                else // special water sector
+                {
+                    if (thing->z > sm_ht) // above ground
+                        xspeed = yspeed = 0; // no force
+                    else // underwater
+                    {
+                        if(p->type == PP_upcurrent)
+                            thing->momz += p->magnitude;
+                        else if(p->type == PP_downcurrent)
+                            thing->momz -= p->magnitude;
+                        else
+                        {
+                            xspeed = p->x_mag; // full force
+                            yspeed = p->y_mag;
+                        }
+                    }
+                }
+            }
 
-	    if(p->type != PP_downcurrent && p->type != PP_upcurrent)
-	    {
-	        thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
-	        thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
-	    }
+            if(p->type != PP_downcurrent && p->type != PP_upcurrent)
+            {
+                thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
+                thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
+            }
 
-	}
+        }
     }
     else // New support
     {
         // Kudos to P_MobjCheckWater().
         // SSNTails 09-25-2002
-	// Excludes Boom_deep_water for some reason.
+        // Excludes Boom_deep_water for some reason.
 
         // [WDJ] Was very confused, separate the deep water,
         // surface water and lava.
-	// Boom_deep_water re-enabled.
+        // Boom_deep_water re-enabled.
 
         // [WDJ] An old test for Legacy_water was wrapped around everything
         // and prevented detecting FLOOR_WATER and LAVA.
@@ -4204,139 +4204,139 @@ void T_Pusher(pusher_t *p)
         // Sector tests, independent of nodes
         if (sec->model > SM_fluid)	// Legacy and Boom water
         {
-	    sm_ht = (sectors[sec->modelsec].floorheight);
-	    water_sector = true;
-	}
-	else if (sec->floortype == FLOOR_WATER || sec->floortype == FLOOR_LAVA) // Lava support
-	{
-	    sm_ht = sec->floorheight + (FRACUNIT/4); // water texture
-	    water_sector = true;
-	}
+            sm_ht = (sectors[sec->modelsec].floorheight);
+            water_sector = true;
+        }
+        else if (sec->floortype == FLOOR_WATER || sec->floortype == FLOOR_LAVA) // Lava support
+        {
+            sm_ht = sec->floorheight + (FRACUNIT/4); // water texture
+            water_sector = true;
+        }
 
        
         node = sec->touching_thinglist; // things touching this sector
         for ( ; node ; node = node->m_snext)
         {
-	    thing = node->m_thing;
-	    if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
-	        continue;
+            thing = node->m_thing;
+            if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+                continue;
 
-	    touching = false;  // [WDJ] reset so each thing is independent
-	    inwater = false;
+            touching = false;  // [WDJ] reset so each thing is independent
+            inwater = false;
 
-	    // Find the area that the 'thing' is in
-	    if(water_sector) // Sector has water
-	    {
-	        // Is possible to have touching and inwater at same time
-		// with these tests.
-	        if ((thing->z <= sm_ht) && (thing->z+thing->height > sm_ht))
-		  touching = true;	// touching, but part above water
+            // Find the area that the 'thing' is in
+            if(water_sector) // Sector has water
+            {
+                // Is possible to have touching and inwater at same time
+                // with these tests.
+                if ((thing->z <= sm_ht) && (thing->z+thing->height > sm_ht))
+                  touching = true;	// touching, but part above water
 
-	        if (thing->z+(thing->height>>1) <= sm_ht)
-		  inwater = true;	// more than half in water
-	    }
-			
-	    // Not "else"! Check ALL possibilities!
-	    // Can skip fake floors if both are already set.
-	    if(( !(inwater && touching)) // Do fake floors if either is false
-	        && sec->ffloors)
-	    {
-	        // water not decisive, check fake floors
-	        ffloor_t*  rover;
-
-	        for(rover = sec->ffloors; rover; rover = rover->next)
-	        {
-		    if(*rover->topheight < thing->z || *rover->bottomheight > (thing->z + (thing->height >> 1)))
-		        continue;
-
-		    if(!(rover->master->frontsector->special & PUSH_MASK))
-		        continue;
-
-		    // check for immersed in a fake floor
-		    if(thing->z + thing->height > *rover->topheight)
-		        touching = true;
-
-		    if(thing->z + (thing->height >> 1) < *rover->topheight)
-		        inwater = true;
-		}
-	    }
-
-	    if (thing->z == sec->floorheight)
-	        touching = true;
-			
-	    if (p->type == PP_wind)
-	    {
-	        if (!touching && !inwater) // above ground
-	        {
-		    xspeed = p->x_mag; // full force
-		    yspeed = p->y_mag;
-		}
-	        else if (touching) // on ground
-	        {
-		    xspeed = (p->x_mag)>>1; // half force
-		    yspeed = (p->y_mag)>>1;
-		}
-	        else if (inwater) // underwater
-		    xspeed = yspeed = 0; // no force
-	        else
-		    xspeed = yspeed = 0;
-	    }
-	    else if (p->type == PP_upwind)
-	    {
-	        if (!touching && !inwater) // above ground
-	        {
-		    thing->momz += p->magnitude;
-		}
-	        else if (touching) // on ground
-	        {
-		    thing->momz += (p->magnitude)>>1;
-		}
-	        else if (inwater) // underwater
-		    xspeed = yspeed = 0; // no force
-	        else 
-		    xspeed = yspeed = 0;
+                if (thing->z+(thing->height>>1) <= sm_ht)
+                  inwater = true;	// more than half in water
             }
-	    else if (p->type == PP_downwind)
+
+            // Not "else"! Check ALL possibilities!
+            // Can skip fake floors if both are already set.
+            if(( !(inwater && touching)) // Do fake floors if either is false
+                && sec->ffloors)
+            {
+                // water not decisive, check fake floors
+                ffloor_t*  rover;
+
+                for(rover = sec->ffloors; rover; rover = rover->next)
+                {
+                    if(*rover->topheight < thing->z || *rover->bottomheight > (thing->z + (thing->height >> 1)))
+                        continue;
+
+                    if(!(rover->master->frontsector->special & PUSH_MASK))
+                        continue;
+
+                    // check for immersed in a fake floor
+                    if(thing->z + thing->height > *rover->topheight)
+                        touching = true;
+
+                    if(thing->z + (thing->height >> 1) < *rover->topheight)
+                        inwater = true;
+                }
+            }
+
+            if (thing->z == sec->floorheight)
+                touching = true;
+
+            if (p->type == PP_wind)
             {
                 if (!touching && !inwater) // above ground
-	        {
-		    thing->momz -= p->magnitude;
-		}
-	        else if (touching) // on ground
-	        {
-                    thing->momz -= (p->magnitude)>>1;
-		}
-	        else if (inwater) // underwater
-		    xspeed = yspeed = 0; // no force
-                else  
-		    xspeed = yspeed = 0;
+                {
+                    xspeed = p->x_mag; // full force
+                    yspeed = p->y_mag;
+                }
+                else if (touching) // on ground
+                {
+                    xspeed = (p->x_mag)>>1; // half force
+                    yspeed = (p->y_mag)>>1;
+                }
+                else if (inwater) // underwater
+                    xspeed = yspeed = 0; // no force
+                else
+                    xspeed = yspeed = 0;
             }
-	    else // PP_current
-	    {
-	        // Added Z currents SSNTails 06-10-2002
-	        if(!touching && !inwater) // Not in water at all
-		    xspeed = yspeed = 0; // no force
-	        else // underwater / touching water
-	        {
-		    if(p->type == PP_upcurrent)
-		        thing->momz += p->magnitude;
-		    else if(p->type == PP_downcurrent)
-		        thing->momz -= p->magnitude;
-		    else
-		    {
-		        xspeed = p->x_mag; // full force
-		        yspeed = p->y_mag;
-		    }
-		}
-	    }
+            else if (p->type == PP_upwind)
+            {
+                if (!touching && !inwater) // above ground
+                {
+                    thing->momz += p->magnitude;
+                }
+                else if (touching) // on ground
+                {
+                    thing->momz += (p->magnitude)>>1;
+                }
+                else if (inwater) // underwater
+                    xspeed = yspeed = 0; // no force
+                else
+                    xspeed = yspeed = 0;
+            }
+            else if (p->type == PP_downwind)
+            {
+                if (!touching && !inwater) // above ground
+                {
+                    thing->momz -= p->magnitude;
+                }
+                else if (touching) // on ground
+                {
+                    thing->momz -= (p->magnitude)>>1;
+                }
+                else if (inwater) // underwater
+                    xspeed = yspeed = 0; // no force
+                else  
+                    xspeed = yspeed = 0;
+            }
+            else // PP_current
+            {
+                // Added Z currents SSNTails 06-10-2002
+                if(!touching && !inwater) // Not in water at all
+                    xspeed = yspeed = 0; // no force
+                else // underwater / touching water
+                {
+                    if(p->type == PP_upcurrent)
+                        thing->momz += p->magnitude;
+                    else if(p->type == PP_downcurrent)
+                        thing->momz -= p->magnitude;
+                    else
+                    {
+                        xspeed = p->x_mag; // full force
+                        yspeed = p->y_mag;
+                    }
+                }
+            }
 
-	    if(p->type != PP_downcurrent && p->type != PP_upcurrent
-	        && p->type != PP_upwind && p->type != PP_downwind)
-	    {
-	        thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
-	        thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
-	    }
-	} // for
+            if(p->type != PP_downcurrent && p->type != PP_upcurrent
+                && p->type != PP_upwind && p->type != PP_downwind)
+            {
+                thing->momx += xspeed<<(FRACBITS-PUSH_FACTOR);
+                thing->momy += yspeed<<(FRACBITS-PUSH_FACTOR);
+            }
+        } // for
     } // if else
 }
 
@@ -4358,7 +4358,7 @@ mobj_t* P_GetPushThing(int s)
             return thing;
           default:
             break;
-	}
+        }
         thing = thing->snext;
     }
     return NULL;
@@ -4388,28 +4388,28 @@ static void P_SpawnPushers(void)
             break;
           case 226: // push/pull
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
-	    {
+            {
                 thing = P_GetPushThing(fsecn);
                 if (thing) // No MT_P* means no effect
                     Add_Pusher( PP_push, l->dx, l->dy, thing, fsecn);
-	    }
+            }
             break;
           case 292: // current up SSNTails 06-10-2002
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
                 Add_Pusher( PP_upcurrent, l->dx, l->dy, NULL, fsecn);
             break;
-	  case 293: // current down SSNTails 06-10-2002
+          case 293: // current down SSNTails 06-10-2002
             while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
                 Add_Pusher( PP_downcurrent, l->dx, l->dy, NULL, fsecn);
             break;
-	  case 294: // wind up SSNTails 06-14-2003
-	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+          case 294: // wind up SSNTails 06-14-2003
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
                 Add_Pusher( PP_upwind, l->dx, l->dy, NULL, fsecn);
-	    break;
-	  case 295: // wind down SSNTails 06-14-2003
-	    while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
+            break;
+          case 295: // wind down SSNTails 06-14-2003
+            while ((fsecn = P_FindSectorFromLineTag(l,fsecn)) >= 0)
                 Add_Pusher( PP_downwind, l->dx, l->dy, NULL, fsecn);
-	    break;
-	} // switch
+            break;
+        } // switch
     } // for
 }

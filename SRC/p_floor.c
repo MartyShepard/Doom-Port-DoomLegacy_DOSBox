@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_floor.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -95,11 +95,11 @@ void DemoAdapt_p_floor( void )
 //SoM: I had to copy the entire function from Boom because it was causing errors.
 // Move a floor or ceiling, update all affected structures.
 result_e T_MovePlane ( sector_t*     sector,
-		       fixed_t       speed,
-		       fixed_t       dest,
-		       boolean       crush, // enables crushing damage
-		       int           floorOrCeiling,
-		       int           direction )
+                       fixed_t       speed,
+                       fixed_t       dest,
+                       boolean       crush, // enables crushing damage
+                       int           floorOrCeiling,
+                       int           direction )
 {
   boolean       flag;
   fixed_t       lastpos;    // when hit something, must return to lastpos
@@ -115,8 +115,8 @@ result_e T_MovePlane ( sector_t*     sector,
       lastpos = sector->floorheight;
       if(direction < 0)
       {
-	  // Move floor down
-	  newheight = sector->floorheight - speed;
+          // Move floor down
+          newheight = sector->floorheight - speed;
           //SoM: 3/20/2000: Make splash when platform floor hits water
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
@@ -146,10 +146,10 @@ result_e T_MovePlane ( sector_t*     sector,
             flag = P_CheckSector(sector,crush);
             if(flag == true && sector->numattached) // 3D floor only
             {
-	      // Diff here between Boom and original Doom.
-	      // This code not in Boom, added back by prboom.
-	      // It stops floors from moving when objects stuck in ceiling.
-	      // May be necessary because of 3D floors.
+              // Diff here between Boom and original Doom.
+              // This code not in Boom, added back by prboom.
+              // It stops floors from moving when objects stuck in ceiling.
+              // May be necessary because of 3D floors.
               sector->floorheight = lastpos;
               P_CheckSector(sector, crush);
               return MP_crushed;
@@ -159,7 +159,7 @@ result_e T_MovePlane ( sector_t*     sector,
       else
       {
           // Move floor up
-	  newheight = sector->floorheight + speed;
+          newheight = sector->floorheight + speed;
           // keep floor from moving thru ceilings
           //SoM: 3/20/2000: Make splash when platform floor hits water
           if((sector->model == SM_Legacy_water) && boomsupport)
@@ -171,7 +171,7 @@ result_e T_MovePlane ( sector_t*     sector,
 //          destheight = (!boomsupport || dest<sector->ceilingheight)?
 //                          dest : sector->ceilingheight;
           destheight = (boomsupport && (dest > sector->ceilingheight))?
-		sector->ceilingheight : dest;
+                sector->ceilingheight : dest;
           if (newheight > destheight)
           { // reached dest, or start was above dest
             sector->floorheight = destheight;  // final position
@@ -208,11 +208,11 @@ result_e T_MovePlane ( sector_t*     sector,
       lastpos = sector->ceilingheight;
       if(direction < 0)
       {
-	  // Move ceiling down
-	  newheight = sector->ceilingheight - speed;
+          // Move ceiling down
+          newheight = sector->ceilingheight - speed;
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
-	    // make sound when ceiling hits water
+            // make sound when ceiling hits water
             if((newheight < sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight > sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
@@ -222,7 +222,7 @@ result_e T_MovePlane ( sector_t*     sector,
 //          destheight = (!boomsupport || dest>sector->floorheight)?
 //                          dest : sector->floorheight;
           destheight = (boomsupport && (dest<sector->floorheight))?
-		sector->floorheight : dest;
+                sector->floorheight : dest;
           if (newheight < destheight)
           { // reached dest, or start was below dest
             sector->ceilingheight = destheight;  // final position
@@ -251,11 +251,11 @@ result_e T_MovePlane ( sector_t*     sector,
       }
       else
       {
-	  // Move ceiling up
-	  newheight = sector->ceilingheight + speed;
+          // Move ceiling up
+          newheight = sector->ceilingheight + speed;
           if((sector->model == SM_Legacy_water) && boomsupport)
           {
-	    // make sound when ceiling hits water
+            // make sound when ceiling hits water
             if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
@@ -265,28 +265,28 @@ result_e T_MovePlane ( sector_t*     sector,
           { // reached dest, or start was above dest
             sector->ceilingheight = dest;  // final position
 #if 0
-	    // alternative plan
-	    // wad specific intercepts
-	    if ( lastpos > dest ) // insta-move, started wrong side of dest
-	    {
-	        if( gamedesc_id == GDESC_doom2 )  return MP_pastdest; // ignore
-	    }
+            // alternative plan
+            // wad specific intercepts
+            if ( lastpos > dest ) // insta-move, started wrong side of dest
+            {
+                if( gamedesc_id == GDESC_doom2 )  return MP_pastdest; // ignore
+            }
 #endif
             flag = P_CheckSector(sector,crush);
 #ifdef COMPAT_FLOOR_STOP
             // [WDJ] Doom2 Map05 will close secret rooms tagged with 9, unless
-	    // the ceiling is stopped.  Cannot be conditional on 3D floor.
+            // the ceiling is stopped.  Cannot be conditional on 3D floor.
             if (flag == true)
 #else
             // [WDJ] BUG: Doom2 Map05, this closes secret rooms tagged with 9,
-	    // because the ceiling is not stopped.
+            // because the ceiling is not stopped.
             if (flag == true && sector->numattached)
 # if 0
-	    // alternative plan
+            // alternative plan
             if (flag == true
-		&&( sector->numattached
-		    || lastpos > dest ) // insta-move, started wrong side of dest
-		)
+                &&( sector->numattached
+                    || lastpos > dest ) // insta-move, started wrong side of dest
+                )
 # endif
 #endif
             {
@@ -302,12 +302,12 @@ result_e T_MovePlane ( sector_t*     sector,
             flag = P_CheckSector(sector,crush);
             if (flag == true && sector->numattached) // 3D floor only
             {
-	      // This code not in Boom.
-	      // It stops ceiling from moving when objects stuck in floor.
-	      // Doom2 Map06, spider demon will not be crushed because
-	      // is stuck in ceiling on first try.
-	      // May be necessary because of 3D floors.
-	      // Crush on 3D floor may cause moving floor to get stuck.
+              // This code not in Boom.
+              // It stops ceiling from moving when objects stuck in floor.
+              // Doom2 Map06, spider demon will not be crushed because
+              // is stuck in ceiling on first try.
+              // May be necessary because of 3D floors.
+              // Crush on 3D floor may cause moving floor to get stuck.
               sector->ceilingheight = lastpos;
               P_CheckSector(sector,crush);
               return MP_crushed;
@@ -345,14 +345,14 @@ void T_MoveFloor(floormove_t* mfloor)
             {
               case FT_donutRaise:
                 mfloor->sector->floorpic = mfloor->texture;
-	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 break;
               case FT_genFloorChgT: //SoM: 3/6/2000: Add support for General types
               case FT_genFloorChg0:
                 //SoM: 3/6/2000: this records the old special of the sector
                 mfloor->sector->oldspecial = mfloor->oldspecial;
                 // Don't break.
-	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
               case FT_genFloorChg:
                 mfloor->sector->floorpic = mfloor->texture;
                 break;
@@ -368,12 +368,12 @@ void T_MoveFloor(floormove_t* mfloor)
                 // SoM: 3/6/2000: Store old special type
                 mfloor->sector->oldspecial = mfloor->oldspecial;
                 mfloor->sector->floorpic = mfloor->texture;
-	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 break;
               case FT_genFloorChgT:
               case FT_genFloorChg0:
                 mfloor->sector->oldspecial = mfloor->oldspecial;
-	        P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
                 // Don't break
               case FT_genFloorChg:
                 mfloor->sector->floorpic = mfloor->texture;
@@ -635,7 +635,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             mfloor->floordestheight = mfloor->sector->floorheight + 24 * FRACUNIT;
             sec->floorpic = line->frontsector->floorpic;
             sec->oldspecial = line->frontsector->oldspecial;
-	    P_Update_Special_Sector( sec, line->frontsector->special );
+            P_Update_Special_Sector( sec, line->frontsector->special );
             break;
 
           case FT_raiseToTexture:
@@ -655,18 +655,18 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
                       (!boomsupport && !side->bottomtexture))
-		  {
+                  {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
-		  }
+                  }
                   side = getSide(secnum,i,1);
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
                       (!boomsupport && !side->bottomtexture))
-		  {
+                  {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
-		  }
+                  }
                 }
               }
               if (!boomsupport)
@@ -707,7 +707,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
               mfloor->oldspecial = sec->oldspecial;
             }
             break;
-		  // Instant Lower SSNTails 06-13-2002
+                  // Instant Lower SSNTails 06-13-2002
           case FT_instantLower:
             mfloor->direction = -1;
             mfloor->sector = sec;
@@ -761,7 +761,7 @@ int EV_DoChange ( line_t* line, change_e changetype )
         {
           sec->floorpic = secm->floorpic;
           sec->oldspecial = secm->oldspecial;
-	  P_Update_Special_Sector( sec, secm->special );
+          P_Update_Special_Sector( sec, secm->special );
         }
         break;
       default:
@@ -860,7 +860,7 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
       do_another = 0;
       for (i = 0; i < sec->linecount; i++)
       {
-	// for each line of the sector linelist
+        // for each line of the sector linelist
         if ( !((sec->linelist[i])->flags & ML_TWOSIDED) )
           continue;
                                   
@@ -878,7 +878,7 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
         if (tsec->floorpic != texture)
           continue;
 
-	// Boom moves stair incr, but cannot use on TNT MAP30
+        // Boom moves stair incr, but cannot use on TNT MAP30
         if (!EN_boom_stairbuild_fix) // jff 6/19/98 prevent double stepsize
           height += stairsize; // jff 6/28/98 change demo compatibility
 
@@ -886,7 +886,7 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
         if (P_SectorActive( S_floor_special, tsec)) //jff 2/22/98
           continue;
 
- 	// Boom stairbuild fix
+        // Boom stairbuild fix
         if (EN_boom_stairbuild_fix) // jff 6/19/98 increase height AFTER continue
           height += stairsize; // jff 6/28/98 change demo compatibility
 
@@ -904,9 +904,9 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
         mfloor->speed = speed;
         mfloor->floordestheight = height;
         mfloor->type = FT_buildStair; //jff 3/31/98 do not leave uninited
-	mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
-	mfloor->texture = 0;     // init
-	mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
+        mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
+        mfloor->texture = 0;     // init
+        mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
 
         do_another = 1;
         break;
@@ -967,11 +967,11 @@ int EV_DoDonut(line_t*  line)
       if (!boomsupport)
       {
         if (!(s2->linelist[i]->flags & ML_TWOSIDED)
-	    || (s2->linelist[i]->backsector == s1))
+            || (s2->linelist[i]->backsector == s1))
           continue;
       }
       else if (!s2->linelist[i]->backsector
-	       || s2->linelist[i]->backsector == s1)
+               || s2->linelist[i]->backsector == s1)
         continue;
 
       rtn = 1; //jff 1/26/98 no donut action - no switch change on return

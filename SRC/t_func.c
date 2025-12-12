@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: t_func.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -254,7 +254,7 @@ int  arg_playernum( fs_value_t * arg, const char * funcname )
         playernum = intvalue(*arg);
 
     if ( playernum >= MAXPLAYERS
-	 || ! playeringame[playernum] )  goto player_err;
+         || ! playeringame[playernum] )  goto player_err;
     return playernum;
 
 mobj_err:
@@ -333,7 +333,7 @@ fs_section_t * in_looping_section(void)
         while (current)
         {
             if (current->type == FSST_loop) // a loop?
-	    {
+            {
                 // check to see if it's a loop that we're inside
                 if (fs_src_cp >= current->start && fs_src_cp <= current->end)
                 {
@@ -341,7 +341,7 @@ fs_section_t * in_looping_section(void)
                     if (!loopfnd || (current->start > loopfnd->start))
                         loopfnd = current; // save it
                 }
-	    }
+            }
             current = current->next;
         }
     }
@@ -436,7 +436,7 @@ void SF_Input(void)
    // Doing gets() will probably freeze program until user cancels the input.
    // If it does errmsg "not available in doom", then why do it, FIXME maybe ??
         static char inputstr[128];
-	// [WDJ] NEVER use gets(), it can overrun the buffer, use fgets()
+        // [WDJ] NEVER use gets(), it can overrun the buffer, use fgets()
         fgets(inputstr, 128, stdin);
 
         t_return.type = FSVT_string;
@@ -696,26 +696,26 @@ void SF_PlayerAddFrag(void)
 
     playernum1 = intvalue(t_argv[0]);
     if ( playernum1 < MAXPLAYERS        // [WDJ] Safe limit
-	 && playeringame[playernum1] )  // [WDJ] Only if player in game
+         && playeringame[playernum1] )  // [WDJ] Only if player in game
     {
         if (t_argc == 1)
         {
-	    // player1 fragged
-	    players[playernum1].addfrags++;
-	    t_return.value.f = players[playernum1].addfrags;
-	}
+            // player1 fragged
+            players[playernum1].addfrags++;
+            t_return.value.f = players[playernum1].addfrags;
+        }
         else
         {
-	    // player1 fragged by player2
-	    int playernum2 = intvalue(t_argv[1]);
+            // player1 fragged by player2
+            int playernum2 = intvalue(t_argv[1]);
 
-	    if ( playernum2 < MAXPLAYERS        // [WDJ] Safe limit
-		 && playeringame[playernum2] )  // [WDJ] Only if player in game
-	    {
-	        players[playernum1].frags[playernum2]++;
-	        t_return.value.f = players[playernum1].frags[playernum2];
-	    }
-	}
+            if ( playernum2 < MAXPLAYERS        // [WDJ] Safe limit
+                 && playeringame[playernum2] )  // [WDJ] Only if player in game
+            {
+                players[playernum1].frags[playernum2]++;
+                t_return.value.f = players[playernum1].frags[playernum2];
+            }
+        }
     }
 done:
     return;
@@ -748,7 +748,7 @@ void SF_PlayerObj(void)
     }
 
     if ( plnum < MAXPLAYERS        // [WDJ] Safe limit
-	 && playeringame[plnum] )  // [WDJ] Only if player in game
+         && playeringame[plnum] )  // [WDJ] Only if player in game
         t_return.value.mobj = players[plnum].mo;
 done:
     return;
@@ -770,7 +770,7 @@ void SF_MobjIsPlayer(void)
     else
     {
         mobj_t * mobj = MobjForSvalue(t_argv[0]);
-	t_return.value.i = (mobj)? (mobj->player ? 1 : 0) : 0;
+        t_return.value.i = (mobj)? (mobj->player ? 1 : 0) : 0;
     }
     return;
 }
@@ -788,7 +788,7 @@ void SF_SkinColor(void)
 
     playernum = arg_playernum( &t_argv[0], "SkinColor" );
     if( playernum >= MAXPLAYERS )  goto done;
-				   
+
     if(t_argc == 2)
     {
         // set skincolor
@@ -796,16 +796,16 @@ void SF_SkinColor(void)
 
         if(colour > NUMSKINCOLORS-1)  // [WDJ] was NUMSKINCOLORS
         {
-	    script_error("SkinColor: skin colour %i > %i\n", colour, NUMSKINCOLORS-1);
-	    goto done;
-	}
+            script_error("SkinColor: skin colour %i > %i\n", colour, NUMSKINCOLORS-1);
+            goto done;
+        }
 
         players[playernum].skincolor = colour;
         players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
 
         CV_SetValue (&cv_playercolor, colour);
     }
-	
+
     t_return.value.i = players[playernum].skincolor;
 done:   
     return;
@@ -866,9 +866,9 @@ bad_keyvalue:
 
 /*	DarkWolf95:September 17, 2004:playerkeysb
 
-	Returns players[i].cards as a whole, since FS supports binary operators.
-	Also allows you to set upper two bits of cards (64 & 128).  Thus the user
-	can have two new boolean values to work with.  CTF, Runes, Tag...
+        Returns players[i].cards as a whole, since FS supports binary operators.
+        Also allows you to set upper two bits of cards (64 & 128).  Thus the user
+        can have two new boolean values to work with.  CTF, Runes, Tag...
  */
 
 // Test or Set
@@ -876,7 +876,7 @@ bad_keyvalue:
 void SF_PlayerKeysByte(void)
 {
     int playernum = 0;
-	
+
     if (t_argc < 1)  goto err_numarg;
 
     t_return.type = FSVT_int;
@@ -891,7 +891,7 @@ void SF_PlayerKeysByte(void)
         // set keys
         unsigned int keybyte = intvalue(t_argv[1]);  
         if(keybyte > 255)	// don't overflow
-	    keybyte = 0;
+            keybyte = 0;
 
         players[playernum].cards = keybyte;  // set
     }
@@ -1109,9 +1109,9 @@ bad_weapon:
 void SF_PlayerPitch(void)
 {
     int playernum;
-	
+
     if (!t_argc)  goto err_numarg;
-	
+
     t_return.type = FSVT_fixed;
     t_return.value.f = 0;  // default
 
@@ -1243,15 +1243,15 @@ void SF_Spawn(void)
         t_return.value.mobj->spawnpoint = mthing;
         if (mthing)
         {
-	    //Hurdler: fix the crashing bug of respawning monster
-	    // 2002/9/7
-	    mthing->x = x >> FRACBITS;
-	    mthing->y = y >> FRACBITS;
-	    mthing->z = z >> FRACBITS;
-	    mthing->angle = angle >> FRACBITS;
-	    mthing->type = mobjinfo[objtype].doomednum;  // objtype;
-	    mthing->mobj = t_return.value.mobj;
-	}
+            //Hurdler: fix the crashing bug of respawning monster
+            // 2002/9/7
+            mthing->x = x >> FRACBITS;
+            mthing->y = y >> FRACBITS;
+            mthing->z = z >> FRACBITS;
+            mthing->angle = angle >> FRACBITS;
+            mthing->type = mobjinfo[objtype].doomednum;  // objtype;
+            mthing->mobj = t_return.value.mobj;
+        }
     }
 done:
     return;
@@ -1402,9 +1402,9 @@ void SF_SetObjPosition(void)
         mobj->x = intvalue(t_argv[1]) << FRACBITS;
 
         if(t_argc >= 3)
-	    mobj->y = intvalue(t_argv[2]) << FRACBITS;
+            mobj->y = intvalue(t_argv[2]) << FRACBITS;
         if(t_argc == 4)
-	    mobj->z = intvalue(t_argv[3]) << FRACBITS;
+            mobj->z = intvalue(t_argv[3]) << FRACBITS;
 
         P_SetThingPosition(mobj);
     }
@@ -1415,7 +1415,7 @@ err_numarg:
     missing_arg_str("SetObjPosition", "2, 3 or 4");
     goto done;
 }
-	
+
 
 // Resurrect( mobj )
 void SF_Resurrect(void)
@@ -1428,20 +1428,20 @@ void SF_Resurrect(void)
     if( mo )  // [WDJ]
     {
         if(!mo->info->raisestate)  //Don't resurrect things that can't be resurrected
-	    goto done;
+            goto done;
 
-	P_SetMobjState (mo, mo->info->raisestate);
-	if( demoversion<129 )
-	    mo->height <<= 2;
-	else
-	{
-	    mo->height = mo->info->height;
-	    mo->radius = mo->info->radius;
-	}
-	
-	mo->flags = mo->info->flags;
-	mo->health = mo->info->spawnhealth;
-	mo->target = NULL;
+        P_SetMobjState (mo, mo->info->raisestate);
+        if( demoversion<129 )
+            mo->height <<= 2;
+        else
+        {
+            mo->height = mo->info->height;
+            mo->radius = mo->info->radius;
+        }
+
+        mo->flags = mo->info->flags;
+        mo->health = mo->info->spawnhealth;
+        mo->target = NULL;
     }
 done:
     return;
@@ -1478,17 +1478,17 @@ void SF_ObjAngle(void)
     {
         if(t_argc > 1)
         {
-	    // set angle
-	    //iori: now able to change the player's angle, not just mobj's
-	    if(mo == consoleplayer_ptr->mo)
-	    {
-	        localangle = FixedToAngle(fixedvalue(t_argv[1]));
-	    }
-	    else
-	    {
-	        mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
-	    }
-	}
+            // set angle
+            //iori: now able to change the player's angle, not just mobj's
+            if(mo == consoleplayer_ptr->mo)
+            {
+                localangle = FixedToAngle(fixedvalue(t_argv[1]));
+            }
+            else
+            {
+                mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
+            }
+        }
         t_return.value.f = (int)AngleToFixed(mo->angle);
     }
 }
@@ -1678,12 +1678,12 @@ void SF_ObjFlag(void)
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
         {
-	    // set flags on arg mobj
-	    if( intvalue(t_argv[2]) )   // 0 or 1
-	        mo->flags |= flagmsk;  // set the flag
-	    else
-	        mo->flags &= ~flagmsk;  // clear the flag
-	    //P_UpdateThinker(&mo->thinker);     // update thinker
+            // set flags on arg mobj
+            if( intvalue(t_argv[2]) )   // 0 or 1
+                mo->flags |= flagmsk;  // set the flag
+            else
+                mo->flags &= ~flagmsk;  // clear the flag
+            //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
         t_return.value.i = !!(mo->flags & flagmsk);  // test flag, to boolean
@@ -1729,12 +1729,12 @@ void SF_ObjFlag2(void)
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
         {
-	    // set flags on arg mobj
-	    if( intvalue(t_argv[2]) )   // 0 or 1
-	        mo->flags2 |= flagmsk;  // set the flag
-	    else
-	        mo->flags2 &= ~flagmsk;  // clear the flag
-	    //P_UpdateThinker(&mo->thinker);     // update thinker
+            // set flags on arg mobj
+            if( intvalue(t_argv[2]) )   // 0 or 1
+                mo->flags2 |= flagmsk;  // set the flag
+            else
+                mo->flags2 &= ~flagmsk;  // clear the flag
+            //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
         t_return.value.i = !!(mo->flags2 & flagmsk);  // test flag, to boolean
@@ -1777,12 +1777,12 @@ void SF_ObjEFlag(void)
         uint32_t flagmsk = (1 << flagnum);
         if (t_argc == 3)
         {
-	    // set flags on arg mobj
-	    if( intvalue(t_argv[2]) )   // 0 or 1
-	        mo->eflags |= flagmsk;  // set the flag
-	    else
-	        mo->eflags &= ~flagmsk;  // clear the flag
-	    //P_UpdateThinker(&mo->thinker);     // update thinker
+            // set flags on arg mobj
+            if( intvalue(t_argv[2]) )   // 0 or 1
+                mo->eflags |= flagmsk;  // set the flag
+            else
+                mo->eflags &= ~flagmsk;  // clear the flag
+            //P_UpdateThinker(&mo->thinker);     // update thinker
         }
 
         t_return.value.i = !!(mo->eflags & flagmsk);  // test flag, to boolean
@@ -1871,16 +1871,16 @@ void SF_MobjTarget(void)
         if (t_argv[1].type != FSVT_mobj && intvalue(t_argv[1]) == -1)
         {
             // Set target to NULL
-	    mo->target = NULL;
+            mo->target = NULL;
             P_SetMobjState(mo, mo->info->spawnstate);
         }
         else
         {
-	    target = MobjForSvalue(t_argv[1]);
+            target = MobjForSvalue(t_argv[1]);
 
-	    // Also remember node here
-	    if (target->type == MT_NODE)
-	        mo->targetnode = target;
+            // Also remember node here
+            if (target->type == MT_NODE)
+                mo->targetnode = target;
 
             mo->target = target;
             P_SetMobjState(mo, mo->info->seestate);
@@ -1910,7 +1910,7 @@ void SF_MobjMomx(void)
     if( mo )
     {
         if (t_argc > 1)
-	    mo->momx = fixedvalue(t_argv[1]);  // set
+            mo->momx = fixedvalue(t_argv[1]);  // set
         t_return.value.f = mo->momx;  // test
     }
 done:
@@ -1935,7 +1935,7 @@ void SF_MobjMomy(void)
     if( mo )
     {
         if (t_argc > 1)
-	    mo->momy = fixedvalue(t_argv[1]);  // set
+            mo->momy = fixedvalue(t_argv[1]);  // set
         t_return.value.f = mo->momy;  // test
     }
 done:
@@ -1960,7 +1960,7 @@ void SF_MobjMomz(void)
     if( mo )
     {
         if (t_argc > 1)
-	    mo->momz = fixedvalue(t_argv[1]);  // set
+            mo->momz = fixedvalue(t_argv[1]);  // set
         t_return.value.f = mo->momz;  // test
     }
 done:
@@ -2011,7 +2011,7 @@ void SF_LineAttack(void)
     angle_t aiming;
     int  damage, angle, slope;
     int	 short fixedtodeg = 182.033;
-	
+
     if (t_argc < 3)  goto err_numarg; // [WDJ]
 
     mo = MobjForSvalue(t_argv[0]);
@@ -2019,7 +2019,7 @@ void SF_LineAttack(void)
 
     damage = intvalue(t_argv[2]);
     angle = (intvalue(t_argv[1]) * (ANG45 / 45));
-	
+
     if(t_argc == 4)
     {
         aiming = fixedvalue(t_argv[3]) * fixedtodeg;
@@ -2369,7 +2369,7 @@ void SF_HealObj(void)
      case 0:
         // Heal trigger to default health
         mo = fs_current_script->trigger;
-	heal = mo->info->spawnhealth;
+        heal = mo->info->spawnhealth;
         break;
      case 1:
         // Heal arg mobj to default health
@@ -2412,7 +2412,7 @@ void SF_SetNodeNext(void)
 
     nextmo = MobjForSvalue(t_argv[1]);
     if( !nextmo )  goto done;  // [WDJ]
-	
+
     // Check if both mobjs are NODE
     if (mo->type != MT_NODE || nextmo->type != MT_NODE)  goto err_notnode;
     mo->nextnode = nextmo;
@@ -2466,7 +2466,7 @@ void SF_SetNodeScript(void)
     mo = MobjForSvalue(t_argv[0]);
     if( !mo )  goto done;  // [WDJ]
     if (mo->type != MT_NODE)  goto err_notnode;
-	  
+
     sn = intvalue(t_argv[1]);
 
     // Check if the script is defined
@@ -2776,12 +2776,12 @@ void SF_MoveCamera(void)
        if ( !P_TryMove(camera, x, y, true) )
        {
 #if 1
-	  // [WDJ] force it past the obstruction, no errors,
-	  // keep game playable, do not police script during gameplay
-	  camera->x = x;
-	  camera->y = y;
+          // [WDJ] force it past the obstruction, no errors,
+          // keep game playable, do not police script during gameplay
+          camera->x = x;
+          camera->y = y;
 #else
-	  goto err_move;
+          goto err_move;
 #endif
        }
     }
@@ -2905,7 +2905,7 @@ void SF_SectorEffect(void)
 {
     int tagnum, select, secnum;
     sector_t * sector;
-	
+
     if (t_argc != 2)  goto err_numarg;  // [WDJ]
 
     tagnum = intvalue(t_argv[0]);
@@ -2920,53 +2920,53 @@ void SF_SectorEffect(void)
 
         switch (select)
         {
-	  case 1:
-	    // FLICKERING LIGHTS
-	    P_SpawnLightFlash (sector);
-	    break;
+          case 1:
+            // FLICKERING LIGHTS
+            P_SpawnLightFlash (sector);
+            break;
 
-	  case 2:
-	    // STROBE FAST
-	    P_SpawnStrobeFlash(sector,FASTDARK,0);
-	    break;
+          case 2:
+            // STROBE FAST
+            P_SpawnStrobeFlash(sector,FASTDARK,0);
+            break;
 
-	  case 3:
-	    // STROBE SLOW
-	    P_SpawnStrobeFlash(sector,SLOWDARK,0);
-	    break;
+          case 3:
+            // STROBE SLOW
+            P_SpawnStrobeFlash(sector,SLOWDARK,0);
+            break;
 
-	  case 8:
-	    // GLOWING LIGHT
-	    P_SpawnGlowingLight(sector);
-	    break;
+          case 8:
+            // GLOWING LIGHT
+            P_SpawnGlowingLight(sector);
+            break;
 
-	  //case 9: SECRET SECTOR
+          //case 9: SECRET SECTOR
 
-	  case 10:
-	    // DOOR CLOSE IN 30 SECONDS
-	    P_SpawnDoorCloseIn30 (sector);
-	    break;
+          case 10:
+            // DOOR CLOSE IN 30 SECONDS
+            P_SpawnDoorCloseIn30 (sector);
+            break;
 
-	  case 12:
-	    // SYNC STROBE SLOW
-	    P_SpawnStrobeFlash (sector, SLOWDARK, 1);
-	    break;
+          case 12:
+            // SYNC STROBE SLOW
+            P_SpawnStrobeFlash (sector, SLOWDARK, 1);
+            break;
 
-	  case 13:
-	    // SYNC STROBE FAST
-	    P_SpawnStrobeFlash (sector, FASTDARK, 1);
-	    break;
+          case 13:
+            // SYNC STROBE FAST
+            P_SpawnStrobeFlash (sector, FASTDARK, 1);
+            break;
 
-	  case 14:
-	    // DOOR RAISE IN 5 MINUTES
-	    P_SpawnDoorRaiseIn5Mins (sector, secnum);
-	    break;
+          case 14:
+            // DOOR RAISE IN 5 MINUTES
+            P_SpawnDoorRaiseIn5Mins (sector, secnum);
+            break;
 
-	  case 17:
-	    //LIGHT FLICKERS RANDOMLY
-	    P_SpawnFireFlicker(sector);
-	    break;
-	}
+          case 17:
+            //LIGHT FLICKERS RANDOMLY
+            P_SpawnFireFlicker(sector);
+            break;
+        }
     }
 
 #if 0
@@ -3006,19 +3006,19 @@ void SF_FloorHeight(void)
     {
         // set floorheight
         fixed_t arg_flrheight = fixedvalue(t_argv[1]);  // set floorheight
-	boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
+        boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
 
         // set all sectors with tag
-	secnum = -1;
+        secnum = -1;
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-	    sector_t * sec = &sectors[secnum];
-	    result_e res =
-	     T_MovePlane(sec,
-			 abs(arg_flrheight - sec->floorheight), // speed
-			 arg_flrheight, arg_crush, 0,  // dest, crush, move floor
-			 (arg_flrheight > sec->floorheight) ? 1 : -1); // direction
-	    if ( res == MP_crushed)
+            sector_t * sec = &sectors[secnum];
+            result_e res =
+             T_MovePlane(sec,
+                         abs(arg_flrheight - sec->floorheight), // speed
+                         arg_flrheight, arg_crush, 0,  // dest, crush, move floor
+                         (arg_flrheight > sec->floorheight) ? 1 : -1); // direction
+            if ( res == MP_crushed)
                 returnval = 0;  // signal crushing
         }
     }
@@ -3111,19 +3111,19 @@ void SF_CeilingHeight(void)
     {
         // set ceilingheight
         fixed_t arg_cheight = fixedvalue(t_argv[1]);  // set ceilingheight
-	boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
+        boolean arg_crush = (t_argc == 3) ? intvalue(t_argv[2]) : false;
 
         // set all sectors with tag
-	secnum = -1;
+        secnum = -1;
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-	    sector_t * sec = &sectors[secnum];
-	    result_e res =
-	     T_MovePlane(sec,
-			 abs(arg_cheight - sec->ceilingheight), // speed
-			 arg_cheight, arg_crush, 1,  // dest, crush, move ceiling
-			 (arg_cheight > sec->ceilingheight) ? 1 : -1); // direction
-	    if ( res == MP_crushed)
+            sector_t * sec = &sectors[secnum];
+            result_e res =
+             T_MovePlane(sec,
+                         abs(arg_cheight - sec->ceilingheight), // speed
+                         arg_cheight, arg_crush, 1,  // dest, crush, move ceiling
+                         (arg_cheight > sec->ceilingheight) ? 1 : -1); // direction
+            if ( res == MP_crushed)
                 returnval = 0;  // signal crushing
         }
     }
@@ -3220,10 +3220,10 @@ void SF_LightLevel(void)
     {
         // set all sectors with tag
         int arg_light = intvalue(t_argv[1]);
-	secnum = -1;  // init search
+        secnum = -1;  // init search
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-	    // all sectors with tagnum
+            // all sectors with tagnum
             sectors[secnum].lightlevel = arg_light;
         }
     }
@@ -3289,7 +3289,7 @@ void SF_FloorTexture(void)
             // when flat not found, defaults to first flat
 
         // set all sectors with tag
-	secnum = -1;  // init search
+        secnum = -1;  // init search
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
             sectors[secnum].floorpic = picnum;
@@ -3334,20 +3334,20 @@ void SF_SectorColormap(void)
         int mapnum = R_ColormapNumForName(t_argv[1].value.s);
 
         // set all sectors with tag
-	secnum = -1; // init search
+        secnum = -1; // init search
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
-	    sector_t * sec = &sectors[secnum];
+            sector_t * sec = &sectors[secnum];
             if (mapnum == -1)
             {
-	        // remove colormap
+                // remove colormap
                 sec->midmap = 0;
                 sec->model = SM_normal;
                 sec->modelsec = 0;
             }
             else
             {
-	        // set colormap
+                // set colormap
                 sec->midmap = mapnum;
                 sec->model = SM_colormap;
                 sec->modelsec = 0;
@@ -3394,7 +3394,7 @@ void SF_CeilingTexture(void)
             // when flat not found, defaults to first flat
 
         // set all sectors with tag
-	secnum = -1; // init search
+        secnum = -1; // init search
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {
             sectors[secnum].ceilingpic = picnum;
@@ -3618,26 +3618,26 @@ void SF_SetLineTexture(void)
       linenum = -1; // init search
       while (( linenum = P_FindLineFromTag(tagnum, linenum)) >= 0)
       {
-	  line_t * linep = &lines[linenum];
-	  if (linep->sidenum[side] == NULL_INDEX)
-	  {
+          line_t * linep = &lines[linenum];
+          if (linep->sidenum[side] == NULL_INDEX)
+          {
 #if 0
-	      // [WDJ] Unnecessary error, error is not in script
-	      script_error("nonexistant side\n");
-	      goto done;
+              // [WDJ] Unnecessary error, error is not in script
+              script_error("nonexistant side\n");
+              goto done;
 #endif
-	  }
-	  else
-	  {
-	      side_t * sidep = & sides[linep->sidenum[side]];
-	      // textures, 0=no-texture, otherwise valid
-	      if(sectionflags & 1)
-	         sidep->toptexture = picnum;
-	      if(sectionflags & 2)
-	         sidep->midtexture = picnum;
-	      if(sectionflags & 4)
-	         sidep->bottomtexture = picnum;
-	  }
+          }
+          else
+          {
+              side_t * sidep = & sides[linep->sidenum[side]];
+              // textures, 0=no-texture, otherwise valid
+              if(sectionflags & 1)
+                 sidep->toptexture = picnum;
+              if(sectionflags & 2)
+                 sidep->midtexture = picnum;
+              if(sectionflags & 4)
+                 sidep->bottomtexture = picnum;
+          }
       }
     }
 done:
@@ -4138,7 +4138,7 @@ void SF_ModifyHUPic(void)
 
     handle = intvalue(t_argv[0]);
     if (HU_ModifyFSPic(handle, W_GetNumForName(stringvalue(t_argv[1])),
-		       intvalue(t_argv[2]), intvalue(t_argv[3])) == -1)
+                       intvalue(t_argv[2]), intvalue(t_argv[3])) == -1)
         goto err_handle;
 done:
     return;

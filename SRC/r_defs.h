@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1075 2013-12-31 02:41:08Z wesleyjohnson $
+// $Id: r_defs.h 1178 2015-11-25 20:01:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -235,7 +235,7 @@ typedef enum
   FF_CUTEXTRA          = 0x80,   //Must cut hidden translucent pixels
   FF_CUTSPRITES        = 0x100,  //Must cut sprites, Final Step in 3D water
   FF_EXTRA             = 0x200,  //Translucent, water, and fog,
-				 //It gets cut by FF_CUTEXTRAS
+                                 //It gets cut by FF_CUTEXTRAS
   FF_FLUID             = 0x400,  //Fluid surface
   FF_TRANSLUCENT       = 0x800,  //Translucent (see through)
   FF_FOG               = 0x1000, //Fog area
@@ -277,7 +277,7 @@ typedef struct ffloor_s
   struct ffloor_s* prev;
 
   uint16_t         fw_effect;		// index to fweff, 0 is unused
-   					// FF_FOG, FF_TRANSLUCENT, alpha
+                                        // FF_FOG, FF_TRANSLUCENT, alpha
   uint8_t          alpha;
   uint8_t          lastlight;		// light index, FF_SLAB_SHADOW
 } ffloor_t;
@@ -381,7 +381,7 @@ typedef struct sector_s
     // thinker_t for reversable actions
     // make thinkers on floors, ceilings, lighting, independent of one another
     void *floordata;
-   		     // ZMalloc PU_LEVSPEC, in EV_DoFloor
+                     // ZMalloc PU_LEVSPEC, in EV_DoFloor
     void *ceilingdata;
     void *lightingdata;
   
@@ -414,7 +414,7 @@ typedef struct sector_s
     // list of mobjs that are at least partially in the sector
     // thinglist is a subset of touching_thinglist
     struct msecnode_s *touching_thinglist;               // phares 3/14/98  
-   				    // nodes are ZMalloc PU_LEVEL, by P_GetSecnode
+                                    // nodes are ZMalloc PU_LEVEL, by P_GetSecnode
     //SoM: 3/6/2000: end stuff...
 
     // list of ptrs to lines that have this sector as a side
@@ -423,13 +423,13 @@ typedef struct sector_s
 
     //SoM: 2/23/2000: Improved fake floor hack
     ffloor_t *          ffloors;    // 3D floor list
-   				    // ZMalloc PU_LEVEL, in P_AddFakeFloor
+                                    // ZMalloc PU_LEVEL, in P_AddFakeFloor
     int  *              attached;   // list of control sectors (by secnum)
-   				    // realloc in P_AddFakeFloor
-   				    // [WDJ] 7/2010 deallocate in P_SetupLevel
+                                    // realloc in P_AddFakeFloor
+                                    // [WDJ] 7/2010 deallocate in P_SetupLevel
     int                 numattached;
     ff_lightlist_t *    lightlist;  // fake floor lights
-   				    // ZMalloc PU_LEVEL, in R_Prep3DFloors
+                                    // ZMalloc PU_LEVEL, in R_Prep3DFloors
     int                 numlights;
     boolean             moved;  // floor was moved
 
@@ -517,7 +517,7 @@ typedef struct line_s
     // Animation related.
     uint16_t	flags;
         // [WDJ] flags should be unsigned, but binary gets larger??
-   	// test shows that unsigned costs 4 more bytes per (flag & ML_bit)
+        // test shows that unsigned costs 4 more bytes per (flag & ML_bit)
     short       special;  // special linedef code
     short       tag;	  // special affects sectors with same tag id
 
@@ -548,7 +548,7 @@ typedef struct line_s
     
     //SoM: 3/6/2000
     int translu_eff;       // translucency effect table, 0 == none 
-   			   // TRANSLU_med or (TRANSLU_ext + translu_store index)
+                           // TRANSLU_med or (TRANSLU_ext + translu_store index)
     int firsttag,nexttag;  // improves searches for tags.
 
 //    int ecolormap;         // SoM: Used for 282 linedefs
@@ -650,19 +650,19 @@ typedef struct
        // side1 is right side when looking from v1 to v2  (start to end)
 
     int         side;
-	// 0= seg is on right side of linedef
-	// 1= seg is on left side of linedef (seg direction is opposite linedef)
+        // 0= seg is on right side of linedef
+        // 1= seg is on left side of linedef (seg direction is opposite linedef)
 
     fixed_t     offset;
-	// offset from linedef start or end, to segment vertex v1
-	// when side=0, is offset from start of linedef to start of seg
-	// when side=1, is offset from end of linedef to start of seg
+        // offset from linedef start or end, to segment vertex v1
+        // when side=0, is offset from start of linedef to start of seg
+        // when side=1, is offset from end of linedef to start of seg
 
     angle_t     angle;	// Binary Angle wad angle converted
-	// EAST  = 0x00000000
-	// NORTH = 0x40000000
-	// WEST  = 0x80000000
-	// SOUTH = 0xC0000000
+        // EAST  = 0x00000000
+        // NORTH = 0x40000000
+        // WEST  = 0x80000000
+        // SOUTH = 0xC0000000
 
     line_t*     linedef;  // (derived from linedef index in wad)
     side_t*     sidedef;  // segment sidedef (derived from linedef and side)
@@ -703,14 +703,14 @@ typedef struct
 
     // Bounding box for each child.
     fixed_t     bbox[2][4];
-	// bbox[0]= right child, all segs of right must be within the box
-	// bbox[1]= left child, all segs of left must be within the box
+        // bbox[0]= right child, all segs of right must be within the box
+        // bbox[1]= left child, all segs of left must be within the box
 
     // If NF_SUBSECTOR is set then rest of it is a subsector index,
     // otherwise it is another node index.
     unsigned short children[2];
-	// children[0]= right
-	// children[1]= left
+        // children[0]= right
+        // children[1]= left
 
 } node_t;
 
@@ -723,8 +723,8 @@ typedef struct
 typedef struct
 {
     byte                topdelta; 	// y offset within patch of this post
-   	// reads (0xFF) at column termination (not a valid post_t)
-	// BP: humf, -1 with byte ! (unsigned char) test WARNING
+        // reads (0xFF) at column termination (not a valid post_t)
+        // BP: humf, -1 with byte ! (unsigned char) test WARNING
     byte                length;         // length data bytes follows
 } post_t;
 
@@ -890,7 +890,7 @@ typedef struct vissprite_s
     int                 sz_top;
 
     int                 cut;  //0 for none, bit 1 for top, bit 2 for bottom
-   				// OR of spritecut_e
+                                // OR of spritecut_e
 } vissprite_t;
 
 
