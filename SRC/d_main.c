@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1191 2015-12-01 22:20:55Z wesleyjohnson $
+// $Id: d_main.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -253,7 +253,6 @@
 
 #include "wi_stuff.h"
 #include "w_wad.h"
-#include "filesrch.h"
 
 #include "z_zone.h"
 #include "d_main.h"
@@ -298,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1193"
+#define SVN_REV "1194"
 #endif
 
 // Version number: major.minor.revision
@@ -1027,22 +1026,22 @@ void D_DoAdvanceDemo(void)
                     pagetic = 210 + 140;
                     pagename = "TITLE";
                     S_StartMusic(mus_htitl);
-#if defined CDMUS	&& defined (__DJGPP__)								
-										I_PlayCD (1, true); 
+#if defined CDMUS && defined (__DJGPP__)
+                    I_PlayCD (1, true);
 #endif
                     break;
                 case doom2_commercial:
                     pagetic = TICRATE * 11;
                     S_StartMusic(mus_dm2ttl);
-#if defined CDMUS	&& defined (__DJGPP__)										
-										I_PlayCD (1, true);
+#if defined CDMUS && defined (__DJGPP__)
+                    I_PlayCD (1, true);
 #endif										
                     break;
                 default:
                     pagetic = 170;
                     S_StartMusic(mus_intro);
-#if defined CDMUS	&& defined (__DJGPP__)										
-										I_PlayCD (1, true);
+#if defined CDMUS && defined (__DJGPP__)
+                    I_PlayCD (1, true);
 #endif
                     break;
             }
@@ -1170,42 +1169,7 @@ void  Print_search_directories( byte emf, byte enables )
     }
 }
 
-// Search the search directories for the file.
-//  filename: the search file
-//  fbuf: the file name buffer, must be length _MAX_PATH
-//  search_depth:  if > 0 then search subdirectories to that depth
-// Return true when found, with the file path in the fbuf parameter.
-static
-boolean  Search_doomwaddir( char * filename, int search_depth,
-         /* OUT */  char * fbuf )
-{
-    int wdi;
-   
-    for( wdi=0; wdi<MAX_NUM_DOOMWADDIR; wdi++ )
-    {
-        if( doomwaddir[wdi] == NULL )  continue;
-        if( access( doomwaddir[wdi], X_OK ) )  continue;
 
-        // Form a full filename.
-        cat_filename( fbuf, doomwaddir[wdi], filename );
-        // If it exists then use it.
-        if( access(fbuf, R_OK) == 0 )
-            return true;
-#if !defined (__DJGPP__)
-        // Unter DOS verlängert und verlangsamt "search_depth" den start erheblich.
-        if( search_depth )
-        {
-            filestatus_e  fstat;
-            strncpy( fbuf, filename, MAX_WADPATH );
-            fbuf[ MAX_WADPATH - 1 ] = 0;
-            fstat = filesearch( fbuf, doomwaddir[wdi], NULL, true, search_depth );
-            if( fstat == FS_FOUND )
-                return true;
-        }
-#endif				
-    }
-    return false;
-}			
 
 //
 // D_AddFile
@@ -2016,11 +1980,11 @@ void D_DoomMain()
 
 #if defined( __DJGPP__ )
     if (M_CheckParm("-listwads") || M_CheckParm("-lw"))
-		{
-			printf("%s\n", legacytitle);
+    {
+      printf("%s\n", legacytitle);
       ListSupportetWads();
       exit(0);
-		}
+    }
 #endif
 
     CONS_Printf("%s\n", legacytitle);
@@ -3246,23 +3210,6 @@ static void Help( void )
 #if defined (__DJGPP__)
 void ListSupportetWads(void)
 {
-	/*
-typedef struct
-{
-    char * 	gname;	       // game name, used in savegame
-    char *	startup_title; // startup page
-    char *	idstr;	       // used for directory and command line
-    char * 	iwad_filename[3]; // possible filenames
-   			       // doom, doom2, heretic, heretic1, hexen, etc.
-    char *	support_wad;   // another wad to support the game
-    const char * keylump[2];   // required lump names
-    byte	require_lump;  // lumps that must appear (bit set)
-    byte	reject_lump;   // lumps that must not appear (bit set)
-    uint16_t	gameflags;     // assorted flags from gameflags_e
-    game_desc_e gamedesc_id;   // independent of table index, safer
-    gamemode_e	gamemode;
-} game_desc_t;	
-	*/
   
  int iWad_index = NUM_GDESC; // nothing
  int gmi;
@@ -3271,51 +3218,57 @@ typedef struct
 				
  printf("DoomLegacy Supportet: %d Games\n",iWad_index);
 
-  for( gmi=0; gmi<iWad_index-1; gmi++ )
-  {    		
-		 iWadSupport = game_desc_table[gmi];
-		 
-     if ((gmi + 1) % 4 == 0)
-     {
-       printf("\n--- Press Space, Enter to continue or ESC to abort ---");
-       fflush(stdout);
+ for( gmi=0; gmi<iWad_index-1; gmi++ )
+ {
+   iWadSupport = game_desc_table[gmi];
 
-       int c;
-       do {
-            c = getch();            // wartet auf Tastendruck (kein Enter nötig)
-          } while (c != ' ' && c != 13 && c != 27);  // Space, Enter oder ESC
+   if ((gmi + 1) % 4 == 0)
+   {
+    printf("\n--- Press Space, Enter to continue or ESC to abort ---");
+    fflush(stdout);
 
-            if (c == 27) {              // ESC = Abbruch
-                printf("\nAbgebrochen.\n");
-                break;
-            }
-            printf("\r                                      \r"); // Zeile löschen
-     }else
-       printf("\n");
+    int c;
+    do {
+       c = getch();            // wartet auf Tastendruck (kein Enter nötig)
+       } while (c != ' ' && c != 13 && c != 27);  // Space, Enter oder ESC
+
+       if (c == 27) {              // ESC = Abbruch
+         printf("\nAbgebrochen.\n");
+         break;
+       }
+       printf("\r                                      \r"); // Zeile löschen
+   }
+   else
+     printf("\n");
 				
-		 if (iWadSupport.startup_title == NULL)
-			 if (iWadSupport.gameflags & GD_unsupported)
-		       printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.gname);
-       else
-           printf("Supportet: %-15s\n",iWadSupport.gname);		
-		 else
-			 if (iWadSupport.gameflags & GD_unsupported)
-		       printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.startup_title);
+    if (iWadSupport.startup_title == NULL)
+    {
+        if (iWadSupport.gameflags & GD_unsupported)
+            printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.gname);
+        else
+            printf("Supportet: %-15s\n",iWadSupport.gname);
+    }
+    else
+    {
+       if (iWadSupport.gameflags & GD_unsupported)
+           printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.startup_title);
        else
            printf("Supportet: %-15s\n",iWadSupport.startup_title);
-				
-	  printf("Directory: C:\\%s\\\n",iWadSupport.idstr);
+    }
+
+    printf("Directory: C:\\%s\\\n",iWadSupport.idstr);
 					
-		for( wad=0; wad<3-1; wad++ )
-		{
-			if (iWadSupport.iwad_filename[wad] == NULL)
-				continue;			
+    for( wad=0; wad<3-1; wad++ )
+    {
+      if (iWadSupport.iwad_filename[wad] == NULL)
+          continue;			
+      
       printf("     iWad: %s\n",iWadSupport.iwad_filename[wad]);
-		}
-		
-		if (iWadSupport.support_wad != NULL)
-      printf("Support : %s\n",iWadSupport.support_wad);			
-  }
+    }
+
+    if (iWadSupport.support_wad != NULL)
+        printf("Support : %s\n",iWadSupport.support_wad);			
+    }
 }
 #endif
 

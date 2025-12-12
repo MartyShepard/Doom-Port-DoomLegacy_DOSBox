@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
+// $Id: w_wad.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -219,9 +219,10 @@ static char*  reload_filename;
 //  return -1 in case of problem
 //
 // BP: Can now load dehacked files (ext .deh)
-int W_LoadWadFile (char *filename)
+int W_LoadWadFile (const char *filename)
 {
     int              filenum = numwadfiles;  // return value
+    filestatus_e     fs;
     int              handle;
     FILE             *fhandle;
     int              numlumps;
@@ -249,29 +250,32 @@ int W_LoadWadFile (char *filename)
 
     strncpy(filenamebuf, filename, MAX_WADPATH-1);
     filenamebuf[MAX_WADPATH-1] = '\0';
-    filename = filenamebuf;
+
     // open wad file
-    if ( (handle = open (filename,O_RDONLY|O_BINARY,0666)) == -1)
+    handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
+    if( handle == -1 )
     {
         // not in cur dir, must search
-        nameonly(filename); // leave full path here
-        if( findfile(filename, NULL, true) )  // returns dir+filename
+        nameonly(filenamebuf); // only search for the name
+
+        // findfile returns dir+filename
+        fs = findfile(filenamebuf, NULL, /*OUT*/ filenamebuf);
+	if( fs == FS_NOTFOUND )
         {
-            if ( (handle = open (filename,O_RDONLY|O_BINARY,0666)) == -1)
-            {
-                CONS_Printf ("Can't open %s\n", filename);
-                return -1;
-            }
+            CONS_Printf ("File %s not found.\n", filenamebuf);
+            return -1;
         }
-        else
+
+        handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
+        if( handle == -1 )
         {
-            CONS_Printf ("File %s not found.\n", filename);
+            CONS_Printf ("Can't open %s\n", filenamebuf);
             return -1;
         }
     }
 
     // detect dehacked file with the "deh" extension, or bex files
-    char * extension = &filename[strlen(filename)-3];
+    char * extension = &filenamebuf[strlen(filenamebuf)-3];
     if( strcasecmp( extension,"deh")==0
        || strcasecmp( extension,"bex")==0 )
     {
@@ -301,7 +305,7 @@ int W_LoadWadFile (char *filename)
             // Homebrew levels?
             if (strncmp(header.identification,"PWAD",4))
             {
-                CONS_Printf ("%s doesn't have IWAD or PWAD id\n", filename);
+                CONS_Printf ("%s doesn't have IWAD or PWAD id\n", filenamebuf);
                 return -1;
             }
             // ???modifiedgame = true;
@@ -347,7 +351,7 @@ int W_LoadWadFile (char *filename)
     //
     fstat(handle,&bufstat);
     wadfile = Z_Malloc (sizeof (wadfile_t),PU_STATIC,NULL);
-    wadfile->filename = Z_StrDup(filename);
+    wadfile->filename = Z_StrDup(filenamebuf);
     wadfile->handle = handle;
     wadfile->numlumps = numlumps;
     wadfile->lumpinfo = lumpinfo;
@@ -399,7 +403,7 @@ int W_LoadWadFile (char *filename)
     wadfiles[filenum] = wadfile;
     numwadfiles++;
 
-    CONS_Printf ("Added file %s (%i lumps)\n", filename, numlumps);
+    CONS_Printf ("Added file %s (%i lumps)\n", filenamebuf, numlumps);
     W_LoadDehackedLumps( filenum );
     return filenum;
 }

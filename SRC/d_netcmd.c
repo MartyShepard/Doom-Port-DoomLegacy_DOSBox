@@ -692,7 +692,7 @@ void Command_Stopdemo_f(void)
 //
 void Command_Map_f(void)
 {
-    // findfile requires a buffer of (at least) MAX_WADPATH
+    // Build complex net command in buf.
     char buf[MAX_WADPATH + 3];
 #define MAPNAME (&buf[2])
     int i;
@@ -719,7 +719,7 @@ void Command_Map_f(void)
     if (FIL_CheckExtension(MAPNAME))
     {
         // here check if file exist !!!
-        if (!findfile(MAPNAME, NULL, false))
+        if (!findfile(MAPNAME, NULL, NULL))
         {
             CONS_Printf("\2File %s' not found\n", MAPNAME);
             return;

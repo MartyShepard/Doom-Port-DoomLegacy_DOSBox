@@ -629,7 +629,7 @@ $(O)/i_system.o: $(INTERFACE)/i_system.c doomdef.h \
 	redir -o /_GCC/i_system.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/tables.o: tables.c tables.h m_fixed.h doomtype.h
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	redir -o /_GCC/tables.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/f_finale.o: f_finale.c doomdef.h doomtype.h g_state.h m_swap.h \
  am_map.h d_event.h dstrings.h d_englsh.h d_main.h w_wad.h f_finale.h \
@@ -1116,7 +1116,7 @@ $(O)/d_netfil.o: d_netfil.c doomdef.h doomtype.h g_state.h m_swap.h \
  doomstat.h doomdata.h d_player.h d_items.h p_pspr.h m_fixed.h \
  tables.h info.h d_think.h p_mobj.h d_ticcmd.h d_clisrv.h d_netcmd.h \
  command.h g_game.h d_event.h i_net.h i_system.h m_argv.h d_net.h \
- d_netfil.h z_zone.h md5.h filesrch.h
+ d_netfil.h z_zone.h md5.h
 	redir -o /_GCC/d_netfil.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/t_func.o: t_func.c command.h doomstat.h doomtype.h d_main.h \
@@ -1158,7 +1158,7 @@ $(O)/md5.o: md5.c md5.h
 $(O)/p_chex.o: p_chex.c
 	redir -o /_GCC/p_chex.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
-$(O)/filesrch.o: $(INTERFACE)/filesrch.c filesrch.h d_netfil.h
+$(O)/filesrch.o: $(INTERFACE)/filesrch.c d_netfil.h
 	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/b_game.o: b_game.c b_bot.h b_game.h b_look.h \
@@ -1178,13 +1178,13 @@ $(O)/b_search.o: b_search.c g_game.h r_defs.h p_local.h \
  m_random.h r_main.h z_zone.h b_search.h b_node.h
 
 $(O)/%.o: %.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	redir -o /_GCC/__%.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/%.o: $(INTERFACE)/%.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	redir -o /_GCC/$(INTERFACE)__.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/%.o: hardware/%.c
-	redir -o /_GCC/filesrch.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	redir -o /_GCC/hardware_%.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 # To dump draw functions to assembly
 objdump_draw: $(O)/r_draw.o

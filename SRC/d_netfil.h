@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: d_netfil.h 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -45,6 +45,7 @@
 
 #include "doomdef.h"
   // MAX_WADPATH
+#include "doomtype.h"
 #include "w_wad.h"
   // MAX_WADFILES
 
@@ -62,7 +63,8 @@ typedef enum {
     FS_REQUESTED,
     FS_DOWNLOADING,
     FS_OPEN,        // is opened and used in w_wad
-    FS_MD5SUMBAD
+    FS_MD5SUMBAD,
+    FS_SECURITY  // rejected for security reasons
 } filestatus_e;
 
 typedef struct {
@@ -123,10 +125,49 @@ void CloseNetFile(void);
 boolean fileexist(char *filename, time_t chk_time);
 #endif
 
-// search a file in the wadpath, return FS_FOUND when found
-filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath);
-filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum);
 
 void nameonly(char *s);
+
+
+//  filename : check the md5 sum of this file
+//  wantedmd5sum : compare to this md5 sum, NULL if no check
+// Return :
+//   FS_FOUND : when md5 sum matches, or if no check when file opens for reading
+//   FS_MD5SUMBAD : when md5 sum does not match
+filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum);
+
+// Search the doom directories, simplified, with owner privilege.
+//  filename: the search file
+//  search_depth: if > 0 then search subdirectories to that depth
+//  completepath: the file name buffer, must be length MAX_WADPATH
+// Return true when found, with the file path in the completepath parameter.
+boolean  Search_doomwaddir( const char * filename, int search_depth,
+		 /* OUT */  char * completepath );
+
+// Search the doom directories, with md5, restricted privilege.
+//  filename : the filename to be found
+//  wantedmd5sum : NULL for no md5 check
+//  completepath : when not NULL, return the full path and name
+//      must be a buffer of MAX_WADPATH
+// return FS_NOTFOUND
+//        FS_MD5SUMBAD
+//        FS_FOUND
+//        FS_SECURITY
+filestatus_e  findfile( const char * filename, const byte * wantedmd5sum,
+                        /*OUT*/ char * completepath );
+
+// INTERFACE
+
+//  filename : the filename to be found
+//  wantedmd5sum : NULL for no md5 check
+//  completepath : when not NULL, return the full path and name
+//      must be a buffer of MAX_WADPATH
+//  maxsearchdepth : subdir depth, when 0 only search given directory
+// return FS_NOTFOUND
+//        FS_MD5SUMBAD
+//        FS_FOUND
+filestatus_e sys_filesearch( const char * filename, const char * startpath,
+			     const byte * wantedmd5sum, int maxsearchdepth,
+			     /*OUT*/ char * completepath );
 
 #endif // D_NETFIL_H

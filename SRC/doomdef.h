@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1189 2015-12-01 22:18:35Z wesleyjohnson $
+// $Id: doomdef.h 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -251,8 +251,8 @@ extern FILE *logstream;
 
 
 // How many subdirectories deep to search.
-#define  GAME_SEARCH_DEPTH   3
-#define  IWAD_SEARCH_DEPTH   5
+#define  GAME_SEARCH_DEPTH   1/*3*/
+#define  IWAD_SEARCH_DEPTH   1/*5*/
 
 // =========================================================================
 
@@ -261,12 +261,7 @@ extern FILE *logstream;
 
 // Limit MAXPLAYERS (and others) to 250.
 // TODO: ... more!!!
-#if defined( __DJGPP__ )
-//Need value: d_player.h:150: error: flexible array member not at end of struct.
 #define MAXPLAYERS              32
-#else
-#define MAXPLAYERS 
-#endif
 #define MAXSKINS                MAXPLAYERS
 #define PLAYERSMASK             (MAXPLAYERS-1)
 #define MAXPLAYERNAME           21
@@ -298,8 +293,8 @@ extern FILE *logstream;
 #if defined( __DJGPP__ )
   /*
     Das ist doch total krank mit den verzeicnissen
-		Nnun denn. Spiegeln wir die Verzeichniss wie ftp.idgames.
-	*/
+    Nnun denn. Spiegeln wir die Verzeichniss wie ftp.idgames.
+  */
   #undef DEFHOME
   #undef DEFAULTDIR1
   #undef DEFAULTDIR2	

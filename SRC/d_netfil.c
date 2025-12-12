@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: d_netfil.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -119,8 +119,9 @@
 #include "p_setup.h"
 #include "m_misc.h"
 #include "m_menu.h"
+#include "d_main.h"
+  // DOOMWADDIR
 #include "md5.h"
-#include "filesrch.h"
 
 // sender structure
 typedef struct filetx_s {
@@ -400,7 +401,8 @@ checkfiles_e  CL_CheckFiles(void)
         if( fnp->status!=FS_NOTFOUND )
            continue;
 
-        fnp->status = findfile(fnp->filename, fnp->md5sum, true);
+        fnp->status = findfile(fnp->filename, fnp->md5sum,
+			       /*OUT*/ fnp->filename);
         if(devparm)
 	    GenPrintf(EMSG_dev, "found %d\n", fnp->status);
         if( fnp->status != FS_FOUND )
@@ -499,7 +501,8 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
     
     // Not found error handling.
     DEBFILE(va("%s not found in wadfiles\n", filename));
-    if(findfile(tx_filename,NULL,true)==0)
+   
+    if( findfile( tx_filename, NULL, /*OUT*/ tx_filename ) == FS_NOTFOUND )
     {
         // not found
         // don't inform client (probably hacker)
@@ -919,7 +922,12 @@ boolean fileexist(char *filename, time_t chk_time)
 }
 #endif
 
-filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum)
+//  filename : check the md5 sum of this file
+//  wantedmd5sum : compare to this md5 sum, NULL if no check
+// Return :
+//   FS_FOUND : when md5 sum matches, or if no check when file opens for reading
+//   FS_MD5SUMBAD : when md5 sum does not match
+filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum)
 {
     FILE *fhandle;
     unsigned char md5sum[16];
@@ -945,11 +953,85 @@ filestatus_e checkfilemd5(char *filename, unsigned char *wantedmd5sum)
     return return_val;
 }
 
-// filename must be a buffer of MAX_WADPATH
-filestatus_e findfile(char *filename, unsigned char *wantedmd5sum, boolean completepath)
+
+// Search the search directories for the file, with all controls.
+//  filename: the search file
+//  search_depth: if > 0 then search subdirectories to that depth
+//  wantedmd5sum : NULL for no md5 check
+//  completepath: the file name buffer, must be length MAX_WADPATH
+// Return FS_FOUND, with the file path in the completepath parameter.
+//   FS_NOTFOUND
+//   FS_MD5SUMBAD
+static
+filestatus_e  FullSearch_doomwaddir( const char * filename, int search_depth,
+                    const byte * wantedmd5sum,
+                    /* OUT */  char * completepath )
 {
-    //FIXME: implement wadpath-search
-    //just for the start... recursive 10 levels from current dir should bring back old behaviour
-    
-    return filesearch(filename, ".", wantedmd5sum, completepath, 10);
+    filestatus_e  fs = FS_NOTFOUND;
+    int wdi;
+   
+    for( wdi=0; wdi<MAX_NUM_DOOMWADDIR; wdi++ )
+    {
+        if( doomwaddir[wdi] == NULL )  continue;
+        if( access( doomwaddir[wdi], X_OK ) )  continue;
+
+        fs = sys_filesearch( filename, doomwaddir[wdi], wantedmd5sum,
+                             search_depth, completepath );
+        if( fs == FS_FOUND )  break;
+    }
+    return fs;
+}
+
+// Search the doom directories, simplified, with owner privilege.
+//  filename: the search file
+//  search_depth: if > 0 then search subdirectories to that depth
+//  completepath: the file name buffer, must be length MAX_WADPATH
+// Return true when found, with the file path in the completepath parameter.
+boolean  Search_doomwaddir( const char * filename, int search_depth,
+		 /* OUT */  char * completepath )
+{
+    return( FullSearch_doomwaddir( filename, search_depth, NULL,
+			       /*OUT*/ completepath ) == FS_FOUND );
+}
+
+
+// Search the doom directories, with md5, restricted privilege.
+//  filename : the filename to be found
+//  wantedmd5sum : NULL for no md5 check
+//  completepath : when not NULL, return the full path and name
+//      must be a buffer of MAX_WADPATH
+// return FS_NOTFOUND
+//        FS_MD5SUMBAD
+//        FS_FOUND
+//        FS_SECURITY
+filestatus_e  findfile( const char * filename, const byte * wantedmd5sum,
+                        /*OUT*/ char * completepath )
+{
+    filestatus_e ret_val;
+
+    // Restrict Net access to only relevant files, for security.
+    const char * extension = &filename[strlen(filename)-3];
+    if( strcasecmp( extension,"wad")!=0
+       && strcasecmp( extension,"deh")!=0
+       && strcasecmp( extension,"bex")!=0 )
+       return FS_SECURITY;
+
+    // Net is only allowed access to public wad directories.
+    doomwaddir[1] = NULL;
+    doomwaddir[2] = NULL;
+    ret_val = FullSearch_doomwaddir( filename, GAME_SEARCH_DEPTH, wantedmd5sum,
+                    /* OUT */  completepath );
+
+#if 1
+    return ret_val;
+#else
+    if( ret_val == FS_FOUND )
+        return FS_FOUND;
+
+    // [WDJ] 10 levels had it thrash for a long time when given a bad name.
+    // Not needed with above directory searches.
+    // This is a security risk that allows anyone to download private files
+    // off your computer.
+    return sys_filesearch(filename, ".", wantedmd5sum, 3, completepath);
+#endif
 }

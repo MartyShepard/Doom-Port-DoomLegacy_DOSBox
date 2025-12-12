@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1106 2014-05-02 22:05:06Z wesleyjohnson $
+// $Id: w_wad.h 1194 2015-12-26 19:08:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -163,7 +163,7 @@ void W_Shutdown(void);
 
 // load and add a wadfile to the active wad files, return wad file number
 // (you can get wadfile_t pointer: the return value indexes wadfiles[])
-int     W_LoadWadFile (char *filename);
+int     W_LoadWadFile (const char *filename);
 
 //added 4-1-98 initmultiplefiles now return 1 if all ok 0 else
 //             so that it stops with a message if a file was not found
