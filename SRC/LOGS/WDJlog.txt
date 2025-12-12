@@ -4577,3 +4577,8 @@ Remove leading tabs from lines.
 g_game.c
 g_input.c
 hu_stuff.c
+
+*** W104_hexen_err
+patchfile = w104_17_hexen_err.patch
+- commit revision 1191
+Give hexen unsupported error message on -game switch.

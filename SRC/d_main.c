@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1182 2015-11-25 20:09:25Z wesleyjohnson $
+// $Id: d_main.c 1191 2015-12-01 22:20:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1190"
+#define SVN_REV "1191"
 #endif
 
 // Version number: major.minor.revision
@@ -326,6 +326,9 @@ static void Help(void);
 static void Clear_SoftError(void);
 void HereticPatchEngine(void);
 //void Chex1PatchEngine(void);
+#if defined (__DJGPP__)
+  void ListSupportetWads(void);
+#endif
 
 char * startupwadfiles[MAX_WADFILES];
 
@@ -1193,9 +1196,7 @@ boolean  Search_doomwaddir( char * filename, int search_depth,
 #endif				
     }
     return false;
-}
-
-
+}			
 
 //
 // D_AddFile
@@ -1344,7 +1345,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
    { "Hexen Demo", NULL, "hexen1",
         {"hexen1.wad","hexen.wad",NULL}, NULL,
         {NULL, NULL}, LN_MAP01+LN_TITLE, 0,
-        GD_idwad/*|GD_unsupported*/, GDESC_hexen_demo, hexen },
+        GD_idwad|GD_unsupported, GDESC_hexen_demo, hexen },
 // GDESC_strife: Strife
    { "Strife", NULL, "strife",
         {"strife.wad",NULL,NULL}, NULL,
@@ -1635,6 +1636,8 @@ void IdentifyVersion()
         // switch forces the GDESC_ selection
         gamedesc_index = gmi;
         gamedesc = game_desc_table[gamedesc_index]; // copy the game descriptor
+        if (gamedesc.gameflags & GD_unsupported)  goto unsupported_wad;
+
         // handle the recognized special -devgame switch
         if( devgame )
         {
@@ -1801,11 +1804,7 @@ void IdentifyVersion()
     raven = (gamemode == heretic) || (gamemode == hexen);
     CONS_Printf("IWAD recognized: %s\n", gamedesc.gname);
 
-    if (gamedesc.gameflags & GD_unsupported)
-    {
-        I_SoftError("Doom Legacy currently does not support this game.\n");
-        goto fatal_err;
-    }
+    if (gamedesc.gameflags & GD_unsupported)  goto unsupported_wad;
 
     D_AddFile(pathiwad);
     D_AddFile(legacywad);  // So can replace some graphics with Legacy ones.
@@ -1822,6 +1821,10 @@ void IdentifyVersion()
 cleanup_ret:
     free(legacywad);  // from strdup, free local copy of name
     return;
+
+unsupported_wad:
+    I_SoftError("Doom Legacy currently does not support this game.\n");
+    goto fatal_err;
    
 fatal_err:
     if( legacywad )
@@ -2001,6 +2004,15 @@ void D_DoomMain()
       Help();
       exit(0);
     }
+
+#if defined( __DJGPP__ )
+    if (M_CheckParm("-listwads") || M_CheckParm("-lw"))
+		{
+			printf("%s\n", legacytitle);
+      ListSupportetWads();
+      exit(0);
+		}
+#endif
 
     CONS_Printf("%s\n", legacytitle);
 
@@ -3174,6 +3186,7 @@ static void Help( void )
 #endif
 #if defined (__DJGPP__)
         "-listdirs/-ld   Lists supportet search directorys\n"
+        "-listwads/-lw   Lists supportet iWads\n"
 #endif
         );
      break;
@@ -3221,3 +3234,79 @@ static void Help( void )
      break;
   }
 }
+#if defined (__DJGPP__)
+void ListSupportetWads(void)
+{
+	/*
+typedef struct
+{
+    char * 	gname;	       // game name, used in savegame
+    char *	startup_title; // startup page
+    char *	idstr;	       // used for directory and command line
+    char * 	iwad_filename[3]; // possible filenames
+   			       // doom, doom2, heretic, heretic1, hexen, etc.
+    char *	support_wad;   // another wad to support the game
+    const char * keylump[2];   // required lump names
+    byte	require_lump;  // lumps that must appear (bit set)
+    byte	reject_lump;   // lumps that must not appear (bit set)
+    uint16_t	gameflags;     // assorted flags from gameflags_e
+    game_desc_e gamedesc_id;   // independent of table index, safer
+    gamemode_e	gamemode;
+} game_desc_t;	
+	*/
+  
+ int iWad_index = NUM_GDESC; // nothing
+ int gmi;
+ int wad;
+ game_desc_t     iWadSupport;	 // active desc 
+				
+ printf("DoomLegacy Supportet: %d Games\n",iWad_index);
+
+  for( gmi=0; gmi<iWad_index-1; gmi++ )
+  {    		
+		 iWadSupport = game_desc_table[gmi];
+		 
+     if ((gmi + 1) % 4 == 0)
+     {
+       printf("\n--- Press Space, Enter to continue or ESC to abort ---");
+       fflush(stdout);
+
+       int c;
+       do {
+            c = getch();            // wartet auf Tastendruck (kein Enter nötig)
+          } while (c != ' ' && c != 13 && c != 27);  // Space, Enter oder ESC
+
+            if (c == 27) {              // ESC = Abbruch
+                printf("\nAbgebrochen.\n");
+                break;
+            }
+            printf("\r                                      \r"); // Zeile löschen
+     }else
+       printf("\n");
+				
+		 if (iWadSupport.startup_title == NULL)
+			 if (iWadSupport.gameflags & GD_unsupported)
+		       printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.gname);
+       else
+           printf("Supportet: %-15s\n",iWadSupport.gname);		
+		 else
+			 if (iWadSupport.gameflags & GD_unsupported)
+		       printf("Supportet: %-15s [Not Supportet]\n",iWadSupport.startup_title);
+       else
+           printf("Supportet: %-15s\n",iWadSupport.startup_title);
+				
+	  printf("Directory: C:\\%s\\\n",iWadSupport.idstr);
+					
+		for( wad=0; wad<3-1; wad++ )
+		{
+			if (iWadSupport.iwad_filename[wad] == NULL)
+				continue;			
+      printf("     iWad: %s\n",iWadSupport.iwad_filename[wad]);
+		}
+		
+		if (iWadSupport.support_wad != NULL)
+      printf("Support : %s\n",iWadSupport.support_wad);			
+  }
+}
+#endif
+
