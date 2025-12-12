@@ -4558,3 +4558,8 @@ The code for Doomu has the tall-torch corona turned on, but
 the Chex1 patch turns it off.
 This fixes the Chex newmaps fireflies, as far as I know.
 
+*** W104_deh_comment
+patchfile = w104_14_deh_comment.patch
+- commit revision 1188
+Catch some BEX comments so they do not cause error messages.
+Fixes messages in toxdm1.wad.
