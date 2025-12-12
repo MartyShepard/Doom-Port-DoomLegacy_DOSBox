@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: t_spec.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -63,7 +63,8 @@ int find_operator(int start, int stop, char *value);
 
 void spec_brace( void )
 {
-  if(script_debug) CONS_Printf("brace\n");
+  if(script_debug)
+    CONS_Printf("brace\n");
   
   if(fs_bracetype != BRACKET_close)  // only deal with closing } braces
     goto done;

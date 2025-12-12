@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1176 2015-11-16 22:31:22Z wesleyjohnson $
+// $Id: w_wad.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -205,8 +205,8 @@ static void  numerical_name( const char * name, lump_name_t * numname )
 //  specially to allow map reloads.
 // But: the reload feature is a fragile hack...
 
-int                     reloadlump;
-char*                   reloadname;
+static int    reload_lumpnum;
+static char*  reload_filename;
 
 
 //  Allocate a wadfile, setup the lumpinfo (directory) and
@@ -425,11 +425,11 @@ void W_Reload (void)
     filelump_t*         flp;
     lumpcache_t*        lumpcache;
 
-    if (!reloadname)
+    if (!reload_filename)
         return;
 
-    if ( (handle = open (reloadname,O_RDONLY | O_BINARY)) == -1)
-        I_Error ("W_Reload: couldn't open %s",reloadname);
+    if ( (handle = open (reload_filename,O_RDONLY | O_BINARY)) == -1)
+        I_Error ("W_Reload: couldn't open %s",reload_filename);
 
     read (handle, &header, sizeof(header));
     lumpcount = LE_SWAP32(header.numlumps);
@@ -440,8 +440,8 @@ void W_Reload (void)
     read (handle, fileinfo, length);
 
     // Fill in lumpinfo
-    filenum = WADFILENUM(reloadlump);
-    lumpnum = LUMPNUM(reloadlump);
+    filenum = WADFILENUM(reload_lumpnum);
+    lumpnum = LUMPNUM(reload_lumpnum);
     lump_p = & wadfiles[filenum]->lumpinfo[ lumpnum ];
     lumpcache = wadfiles[filenum]->lumpcache;
 
@@ -562,11 +562,10 @@ int W_CheckNumForName (const char* name)
 
 //
 //  Same as the original, but checks in one pwad only
-//  wadid is a wad number
 //  (Used for sprites loading)
-//
-//  'startlump' is the lump number to start the search
-//
+//    wadid :  the wad number
+//    startlump : the lump number to start the search
+//  Return lump number.
 int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
 {
     int         i;
@@ -711,8 +710,8 @@ int  W_ReadLumpHeader ( int           lump,
 /*    if (lif->handle == -1)
     {
         // reloadable file, so use open / read / close
-        if ( (handle = open (reloadname,O_RDONLY|O_BINARY,0666)) == -1)
-            I_Error ("W_ReadLumpHeader: couldn't open %s",reloadname);
+        if ( (handle = open (reload_filename,O_RDONLY|O_BINARY,0666)) == -1)
+            I_Error ("W_ReadLumpHeader: couldn't open %s",reload_filename);
     }
     else
 */
@@ -1173,8 +1172,8 @@ int W_AddFile (char *filename)
     if (filename[0] == '~')
     {
         filename++;
-        reloadname = filename;
-        reloadlump = numlumps;
+        reload_filename = filename;
+        reload_lumpnum = numlumps;
     }
 
     if ( (handle = open (filename,O_RDONLY | O_BINARY)) == -1)
@@ -1228,7 +1227,7 @@ int W_AddFile (char *filename)
 
     lump_p = &lumpinfo[startlump];
 
-    storehandle = reloadname ? -1 : handle;
+    storehandle = reload_filename ? -1 : handle;
 
     for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
     {
@@ -1238,7 +1237,7 @@ int W_AddFile (char *filename)
         strncpy (lump_p->name, fileinfo->name, 8);
     }
 
-    if (reloadname)
+    if (reload_filename)
         close (handle);
 
     return 1;

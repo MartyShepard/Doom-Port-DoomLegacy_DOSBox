@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: t_parse.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -83,7 +83,7 @@ int fs_killscript;               // when set to true, stop the script quickly
 char *tokens[T_MAXTOKENS];
 tokentype_t tokentype[T_MAXTOKENS];
 int num_tokens = 0;
-int script_debug = false;
+byte script_debug = false;
 
 fs_value_t nullvar = { FSVT_int, {0} };    // null var for empty return
 
@@ -841,8 +841,8 @@ char * stringvalue(fs_value_t v)
             snprintf(buffer, STRVAL_BUFLEN, "%g", val);
         }
 
-            case FSVT_array:
-                 return "array";
+        case FSVT_array:
+            return "array";
 
         case FSVT_int:
         default:

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
+// $Id: p_genlin.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -69,7 +69,7 @@ int EV_DoGenFloor ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;  // sector index
+    secnum = sec - sectors;  // sector index
     manual = true;  // force exit from loop
     goto manual_floor;  // jump into loop
   }
@@ -261,7 +261,7 @@ int EV_DoGenCeiling ( line_t*  line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;  // force exit from loop
     goto manual_ceiling;  // jump into loop
   }
@@ -460,7 +460,7 @@ int EV_DoGenLift ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;     // force exit from loop
     goto manual_lift;  // jump into loop
   }
@@ -591,7 +591,7 @@ int EV_DoGenStairs ( line_t* line )
   sector_t*             sec;
   sector_t*             tsec;
 
-  floormove_t*  	mfloor;
+  floormove_t*          mfloor;
     
   fixed_t               stairsize;
   fixed_t               speed;
@@ -611,7 +611,7 @@ int EV_DoGenStairs ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;
     goto manual_stair;
   }
@@ -699,12 +699,12 @@ manual_stair:
       {
         // for each line in sector linelist
         register line_t * slinei = sec->linelist[i];
-           // [WDJ] ptr slinei, saves 0 bytes, but is easier to read.
+            // [WDJ] ptr slinei, saves 0 bytes, but is easier to read.
         if ( !(slinei->backsector) )   // ignore line with no backsector
           continue;
                                   
         tsec = slinei->frontsector;
-        new_secnum = tsec-sectors; // frontsector sector num
+        new_secnum = tsec - sectors; // frontsector sector num
           
         if (secnum != new_secnum)  // ignore line with different frontsector
           continue;
@@ -790,7 +790,7 @@ int EV_DoGenCrusher ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;
     goto manual_crusher;
   }
@@ -880,7 +880,7 @@ int EV_DoGenLockedDoor ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;
     goto manual_locked;
   }
@@ -976,7 +976,7 @@ int EV_DoGenDoor ( line_t* line )
   if (Trig==TRIG_PushOnce || Trig==TRIG_PushMany)
   {
     if (!(sec = line->backsector))  goto done;
-    secnum = sec-sectors;
+    secnum = sec - sectors;
     manual = true;
     goto manual_door;
   }

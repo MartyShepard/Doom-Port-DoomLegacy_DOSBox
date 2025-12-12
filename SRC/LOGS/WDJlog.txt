@@ -4597,3 +4597,10 @@ something else).  Added some checks to the savegame restore to detect
 sector or linedef numbers that exceed the established structures.
 This will detect some existing savegames as corrupted.  They could be
 fixed by correcting the map number in the savegame.
+
+*** W104_misc
+patchfile = w104_19_misc.patch
+- commit revision 1193
+Make fogcolor default assign to work for any endian.
+Some misc indent alignments and spacing.
+Remove some extern from the code, and into header files.

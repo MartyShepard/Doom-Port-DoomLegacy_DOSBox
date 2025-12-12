@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_parse.h 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -192,7 +192,7 @@ enum    // brace types: where current_section is a { or }
 };
 
 extern fs_value_t nullvar;
-extern int script_debug;
+extern byte script_debug;
 
 extern script_t * fs_current_script;
 extern mobj_t * fs_trigger_obj;

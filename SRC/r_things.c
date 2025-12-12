@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: r_things.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -220,15 +220,17 @@ char*           spritename;
 //
 void R_InstallSpriteLump ( int           lumppat,     // graphics patch
                            short         spritelump_id, // spritelump_t
-                           unsigned      frame,
-                           unsigned      rotation,
+                           unsigned int  frame,
+                           unsigned int  rotation,
                            boolean       flipped )
 {
     int         r;
 
     if (frame >= 29 || rotation > 8)
+    {
         I_Error("R_InstallSpriteLump: "
                 "Bad frame characters in lump %i", spritelump_id);
+    }
 
     if ((int)frame > maxframe)
         maxframe = frame;

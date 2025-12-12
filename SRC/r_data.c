@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1106 2014-05-02 22:05:06Z wesleyjohnson $
+// $Id: r_data.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -104,6 +104,7 @@
 #include "p_local.h"
 #include "r_data.h"
 #include "w_wad.h"
+  // numwadfiles
 #include "z_zone.h"
 #include "p_setup.h" //levelflats
 #include "v_video.h" //pLocalPalette
@@ -1408,8 +1409,6 @@ void R_InitExtraColormaps()
 lumplist_t*  flats;
 int          numflatlists;
 
-extern int   numwadfiles;
-
 
 void R_InitFlats ()
 {
@@ -1422,7 +1421,7 @@ void R_InitFlats ()
   flats = NULL;
   cfile = clump = 0;
 
-  for(;cfile < numwadfiles;cfile ++, clump = 0)
+  for(;cfile < numwadfiles; cfile ++, clump = 0)
   {
 #ifdef DEBUG_FLAT
     GenPrintf(EMSG_debug, "Flats in file %i\n", cfile );
