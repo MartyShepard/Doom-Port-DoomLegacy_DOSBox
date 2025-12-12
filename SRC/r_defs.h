@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: r_defs.h 1180 2015-11-25 20:05:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -479,12 +479,11 @@ typedef struct
     short       bottomtexture;
     short       midtexture;
 
+    //SoM: 3/6/2000: This is the special of the linedef this side belongs to.
+    short       linedef_special;
+
     // Sector the SideDef is facing.
     sector_t*   sector;
-
-    //SoM: 3/6/2000: This is the special of the linedef this side belongs to.
-    int         special;
-
 } side_t;
 
 

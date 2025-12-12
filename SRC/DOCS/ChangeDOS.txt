@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01180 ]: w104_6 splash sector change
 [01179 ]: w104_5 untab2
 [01178 ]: w104_4 untab1
 [01177 ]: w104 misc

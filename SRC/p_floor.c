@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
+// $Id: p_floor.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -326,79 +326,91 @@ result_e T_MovePlane ( sector_t*     sector,
 void T_MoveFloor(floormove_t* mfloor)
 {
     result_e    res = 0;
+    sector_t *  secmov;  // moving sector
 
     res = T_MovePlane(mfloor->sector,
                       mfloor->speed,
                       mfloor->floordestheight,
                       mfloor->crush, 0, mfloor->direction);
 
+    secmov = mfloor->sector;
+
     if (!(leveltime % (8*NEWTICRATERATIO)))
-        S_StartSound((mobj_t *)&mfloor->sector->soundorg,
-                     ceilmovesound);
+        S_StartSound((mobj_t *)&secmov->soundorg, ceilmovesound);
+
+    // [WDJ] Floortype was set by setup according to floorpic.
+    // If the floorpic is changed, then also change the floortype.
+    // If the floortype is not changed then water splashes from water
+    // textures will still be heard after the texture change.
 
     if (res == MP_pastdest)
     {
         //mfloor->sector->specialdata = NULL;
-        if (mfloor->direction == 1)
+        if (mfloor->direction == 1)   // raise
         {
             switch(mfloor->type)
             {
-              case FT_donutRaise:
-                mfloor->sector->floorpic = mfloor->texture;
-                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+              case FT_donutRaise:  // Doom, Heretic
+                secmov->floorpic = mfloor->new_floorpic;
+                secmov->floortype = mfloor->new_floortype;
+                P_Update_Special_Sector( secmov, mfloor->new_sec_special );
                 break;
-              case FT_genFloorChgT: //SoM: 3/6/2000: Add support for General types
-              case FT_genFloorChg0:
+              //SoM: 3/6/2000: Add support for General types
+              case FT_genFloorChgT: // Boom, change sector type
+              case FT_genFloorChg0: // Boom, zero sector type
                 //SoM: 3/6/2000: this records the old special of the sector
-                mfloor->sector->oldspecial = mfloor->oldspecial;
-                // Don't break.
-                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
-              case FT_genFloorChg:
-                mfloor->sector->floorpic = mfloor->texture;
+                secmov->oldspecial = mfloor->old_sec_special;
+                P_Update_Special_Sector( secmov, mfloor->new_sec_special );
+                // change floorpic too
+              case FT_genFloorChg: // Boom, change only texture
+                secmov->floorpic = mfloor->new_floorpic;
+                secmov->floortype = mfloor->new_floortype;
                 break;
               default:
                 break;
             }
         }
-        else if (mfloor->direction == -1)
+        else if (mfloor->direction == -1)   // lower
         {
             switch(mfloor->type)
             {
-              case FT_lowerAndChange:
+              case FT_lowerAndChange:  // Doom, Heretic
                 // SoM: 3/6/2000: Store old special type
-                mfloor->sector->oldspecial = mfloor->oldspecial;
-                mfloor->sector->floorpic = mfloor->texture;
-                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
+                secmov->oldspecial = mfloor->old_sec_special;
+                secmov->floorpic = mfloor->new_floorpic;
+                secmov->floortype = mfloor->new_floortype;
+                P_Update_Special_Sector( secmov, mfloor->new_sec_special );
                 break;
-              case FT_genFloorChgT:
-              case FT_genFloorChg0:
-                mfloor->sector->oldspecial = mfloor->oldspecial;
-                P_Update_Special_Sector( mfloor->sector, mfloor->newspecial );
-                // Don't break
-              case FT_genFloorChg:
-                mfloor->sector->floorpic = mfloor->texture;
+              case FT_genFloorChgT:  // Boom, change sector type
+              case FT_genFloorChg0:  // Boom, zero sector type
+                secmov->oldspecial = mfloor->old_sec_special;
+                P_Update_Special_Sector( secmov, mfloor->new_sec_special );
+                // change floorpic too
+              case FT_genFloorChg:  // Boom, change only texture
+                secmov->floorpic = mfloor->new_floorpic;
+                secmov->floortype = mfloor->new_floortype;
                 break;
               default:
                 break;
             }
         }
 
-        mfloor->sector->floordata = NULL; // Clear up the thinker so others can use it
+        secmov->floordata = NULL; // Clear up the thinker so others can use it
         P_RemoveThinker(&mfloor->thinker);
 
         // SoM: This code locks out stair steps while generic, retriggerable generic stairs
         // are building.
       
-        if (mfloor->sector->stairlock==-2) // if this sector is stairlocked
+        if (secmov->stairlock==-2) // if this sector is stairlocked
         {
-          sector_t *sec = mfloor->sector;
+          sector_t *sec = secmov;
           sec->stairlock=-1;              // thinker done, promote lock to -1
 
           while (sec->prevsec>=0 && sectors[sec->prevsec].stairlock!=-2)
             sec = &sectors[sec->prevsec]; // search for a non-done thinker
           if (sec->prevsec==-1)           // if all thinkers previous are done
           {
-            sec = mfloor->sector;          // search forward
+            sec = secmov;          // search forward
             while (sec->nextsec>=0 && sectors[sec->nextsec].stairlock!=-2) 
               sec = &sectors[sec->nextsec];
             if (sec->nextsec==-1)         // if all thinkers ahead are done too
@@ -415,7 +427,7 @@ void T_MoveFloor(floormove_t* mfloor)
 
         if ((mfloor->type == FT_buildStair && gamemode == heretic) || 
             gamemode != heretic)
-            S_StartSound((mobj_t *)&mfloor->sector->soundorg, sfx_pstop);
+            S_StartSound((mobj_t *)&secmov->soundorg, sfx_pstop);
     }
 
 }
@@ -526,6 +538,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
         mfloor = Z_Malloc (sizeof(*mfloor), PU_LEVSPEC, 0);
         P_AddThinker (&mfloor->thinker);
         sec->floordata = mfloor; //SoM: 2/5/2000
+        mfloor->sector = sec;  // [WDJ] is same for every action
         mfloor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
         mfloor->type = floortype;
         mfloor->crush = false;
@@ -534,7 +547,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
         {
           case FT_lowerFloor:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = P_FindHighestFloorSurrounding(sec);
             break;
@@ -542,7 +555,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             //jff 02/03/30 support lowering floor by 24 absolute
           case FT_lowerFloor24:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = mfloor->sector->floorheight + 24 * FRACUNIT;
             break;
@@ -550,14 +563,14 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             //jff 02/03/30 support lowering floor by 32 absolute (fast)
           case FT_lowerFloor32Turbo:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED*4;
             mfloor->floordestheight = mfloor->sector->floorheight + 32 * FRACUNIT;
             break;
 
           case FT_lowerFloorToLowest:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
             break;
@@ -565,7 +578,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             //jff 02/03/30 support lowering floor to next lowest floor
           case FT_lowerFloorToNearest:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight =
               P_FindNextLowestFloor(sec,mfloor->sector->floorheight);
@@ -573,7 +586,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
 
           case FT_turboLower:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED * 4;
             mfloor->floordestheight = P_FindHighestFloorSurrounding(sec);
             if (mfloor->floordestheight != sec->floorheight || gamemode == heretic )
@@ -584,7 +597,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
             mfloor->crush = true;
           case FT_raiseFloor:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = P_FindLowestCeilingSurrounding(sec);
             if (mfloor->floordestheight > sec->ceilingheight)
@@ -594,21 +607,21 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
 
           case FT_raiseFloorTurbo:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED*4;
             mfloor->floordestheight = P_FindNextHighestFloor(sec,sec->floorheight);
             break;
 
           case FT_raiseFloorToNearest:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = P_FindNextHighestFloor(sec,sec->floorheight);
             break;
 
           case FT_raiseFloor24:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = mfloor->sector->floorheight + 24 * FRACUNIT;
             break;
@@ -616,24 +629,25 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
           // SoM: 3/6/2000: support straight raise by 32 (fast)
           case FT_raiseFloor32Turbo:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED*4;
             mfloor->floordestheight = mfloor->sector->floorheight + 32 * FRACUNIT;
             break;
 
           case FT_raiseFloor512:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = mfloor->sector->floorheight + 512 * FRACUNIT;
             break;
 
           case FT_raiseFloor24AndChange:
             mfloor->direction = 1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = mfloor->sector->floorheight + 24 * FRACUNIT;
             sec->floorpic = line->frontsector->floorpic;
+            sec->floortype = line->frontsector->floortype;
             sec->oldspecial = line->frontsector->oldspecial;
             P_Update_Special_Sector( sec, line->frontsector->special );
             break;
@@ -645,7 +659,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
 
               if (boomsupport) minsize = 32000<<FRACBITS; //SoM: 3/6/2000: ???
               mfloor->direction = 1;
-              mfloor->sector = sec;
+//              mfloor->sector = sec;
               mfloor->speed = FLOORSPEED;
               for (i = 0; i < sec->linecount; i++)
               {
@@ -684,33 +698,35 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
           //SoM: 3/6/2000: Boom changed allot of stuff I guess, and this was one of 'em 
           case FT_lowerAndChange:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FLOORSPEED;
             mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
-            mfloor->texture = sec->floorpic;
+            mfloor->new_floorpic = sec->floorpic;
+            mfloor->new_floortype = sec->floortype;
 
-            // jff 1/24/98 make sure floor->newspecial gets initialized
+            // jff 1/24/98 make sure mfloor->new_sec_special gets initialized
             // in case no surrounding sector is at floordestheight
             // --> should not affect compatibility <--
-            mfloor->newspecial = sec->special; 
+            mfloor->new_sec_special = sec->special; 
             //jff 3/14/98 transfer both old and new special
-            mfloor->oldspecial = sec->oldspecial;
+            mfloor->old_sec_special = sec->oldspecial;
     
             //jff 5/23/98 use model subroutine to unify fixes and handling
             // BP: heretic have change something here
             sec = P_FindModelFloorSector(mfloor->floordestheight,sec-sectors);
             if (sec)
             {
-              mfloor->texture = sec->floorpic;
-              mfloor->newspecial = sec->special;
+              mfloor->new_floorpic = sec->floorpic;
+              mfloor->new_floortype = sec->floortype;
+              mfloor->new_sec_special = sec->special;
               //jff 3/14/98 transfer both old and new special
-              mfloor->oldspecial = sec->oldspecial;
+              mfloor->old_sec_special = sec->oldspecial;
             }
             break;
                   // Instant Lower SSNTails 06-13-2002
           case FT_instantLower:
             mfloor->direction = -1;
-            mfloor->sector = sec;
+//            mfloor->sector = sec;
             mfloor->speed = FIXED_MAX/2; // Go too fast and you'll cause problems...
             mfloor->floordestheight = P_FindLowestFloorSurrounding(sec);
             break;
@@ -752,6 +768,7 @@ int EV_DoChange ( line_t* line, change_e changetype )
     {
       case CH_MODEL_trig_only:
         sec->floorpic = line->frontsector->floorpic;
+        sec->floortype = line->frontsector->floortype;
         sec->oldspecial = line->frontsector->oldspecial;
         P_Update_Special_Sector( sec, line->frontsector->special );
         break;
@@ -760,6 +777,7 @@ int EV_DoChange ( line_t* line, change_e changetype )
         if (secm) // if no model, no change
         {
           sec->floorpic = secm->floorpic;
+          sec->floortype = secm->floortype;
           sec->oldspecial = secm->oldspecial;
           P_Update_Special_Sector( sec, secm->special );
         }
@@ -841,8 +859,9 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
     mfloor->direction = 1;
     mfloor->sector = sec;
     mfloor->type = FT_buildStair;   //jff 3/31/98 do not leave uninited
-    mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
-    mfloor->texture = 0;     // init
+    mfloor->new_sec_special = 0;  // init, see DoomWiki staircase bug
+    mfloor->new_floorpic = 0;     // init
+    mfloor->new_floortype = FLOOR_SOLID;
     mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
     mfloor->speed = speed;
     height = sec->floorheight + stairsize;
@@ -904,8 +923,8 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
         mfloor->speed = speed;
         mfloor->floordestheight = height;
         mfloor->type = FT_buildStair; //jff 3/31/98 do not leave uninited
-        mfloor->newspecial = 0;  // init, see DoomWiki staircase bug
-        mfloor->texture = 0;     // init
+        mfloor->new_sec_special = 0;  // init, see DoomWiki staircase bug
+        mfloor->new_floorpic = 0;     // init
         mfloor->crush = crushing;  //jff 2/27/98 fix uninitialized crush field
 
         do_another = 1;
@@ -988,8 +1007,8 @@ int EV_DoDonut(line_t*  line)
       mfloor->direction = 1;
       mfloor->sector = s2;
       mfloor->speed = FLOORSPEED / 2;
-      mfloor->texture = s2model->floorpic;
-      mfloor->newspecial = 0;
+      mfloor->new_floorpic = s2model->floorpic;
+      mfloor->new_sec_special = 0;
       mfloor->floordestheight = s2model->floorheight;
         
       //  Spawn lowering donut-hole pillar

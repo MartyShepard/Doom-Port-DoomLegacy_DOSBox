@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
+// $Id: p_setup.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -871,7 +871,7 @@ void P_LoadLineDefs (int lump)
        
         // special linedef has special sidedef1
         if (ld->sidenum[0] != NULL_INDEX && ld->special)
-          sides[ld->sidenum[0]].special = ld->special;
+          sides[ld->sidenum[0]].linedef_special = ld->special;
     }
 
     Z_Free (data);
@@ -1005,7 +1005,7 @@ void P_LoadSideDefs2(int lump)
       sd->sector = sec = &sectors[secnum];
 
       // original linedef types are 1..141, higher values are extensions
-      switch (sd->special)
+      switch (sd->linedef_special)
       {
         case 242:	// Boom deep water, sidedef1 texture is colormap
         case 280:       //SoM: 3/22/2000: Legacy water type.
@@ -1149,7 +1149,8 @@ void P_LoadSideDefs2(int lump)
             // Upper texture encodes the translucent alpha: #nnn  => 0..255
             // Uses model sector colormap and lightlevel
             // Interpret texture name string as decimal alpha and fogwater effect
-            sd->toptexture = R_Create_FW_effect( sd->special, msd->toptexture );
+            sd->toptexture = R_Create_FW_effect( sd->linedef_special,
+                                                 msd->toptexture );
             sd->bottomtexture = 0;
             sd->midtexture = R_TextureNumForName(msd->midtexture); // side texture
             break;

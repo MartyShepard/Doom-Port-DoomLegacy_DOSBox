@@ -4490,3 +4490,12 @@ p_floor.c
 p_genlin.c
 p_setup.c
 p_spec.c
+
+*** W104_splash_sec_change
+patchfile = w104_6_splash_sec_change.patch
+- commit revision 1180
+On a sector change, the flat can be changed.
+DoomLegacy identifies the flat picture to enable splash sounds.
+Boom did not have water splash sounds, and the splash sound
+remains when the flat changes.  When the sector flat picture
+changes, the sector floortype must be copied from the model sector too.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
+// $Id: p_genlin.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,9 +97,10 @@ manual_floor:
     mfloor->crush = Crsh;
     mfloor->direction = Dirn? 1 : -1;
     mfloor->sector = sec;
-    mfloor->texture = sec->floorpic;
-    mfloor->newspecial = sec->special;
-    mfloor->oldspecial = sec->oldspecial;
+    mfloor->new_floorpic = sec->floorpic;
+    mfloor->new_floortype = sec->floortype;  // no change
+    mfloor->new_sec_special = sec->special;
+    mfloor->old_sec_special = sec->oldspecial;
     mfloor->type = FT_genFloor;
 
     // set the speed of motion
@@ -174,17 +175,18 @@ manual_floor:
           P_FindModelFloorSector(mfloor->floordestheight,secnum);
         if (sec)
         {
-          mfloor->texture = sec->floorpic;
+          mfloor->new_floorpic = sec->floorpic;
+          mfloor->new_floortype = sec->floortype;
           switch(ChgT)
           {
             case FCH_FChgZero:  // zero type
-              mfloor->newspecial = 0;
-              mfloor->oldspecial = 0;
+              mfloor->new_sec_special = 0;
+              mfloor->old_sec_special = 0;
               mfloor->type = FT_genFloorChg0;
               break;
             case FCH_FChgTyp:   // copy type
-              mfloor->newspecial = sec->special;
-              mfloor->oldspecial = sec->oldspecial;
+              mfloor->new_sec_special = sec->special;
+              mfloor->old_sec_special = sec->oldspecial;
               mfloor->type = FT_genFloorChgT;
               break;
             case FCH_FChgTxt:   // leave type be
@@ -198,17 +200,18 @@ manual_floor:
       else if( line->frontsector )  // except fragglescript with no frontsector
       {
         // trigger frontsector model change
-        mfloor->texture = line->frontsector->floorpic;
+        mfloor->new_floorpic = line->frontsector->floorpic;
+        mfloor->new_floortype = line->frontsector->floortype;
         switch (ChgT)
         {
           case FCH_FChgZero:    // zero type
-            mfloor->newspecial = 0;
-            mfloor->oldspecial = 0;
+            mfloor->new_sec_special = 0;
+            mfloor->old_sec_special = 0;
             mfloor->type = FT_genFloorChg0;
             break;
           case FCH_FChgTyp:     // copy type
-            mfloor->newspecial = line->frontsector->special;
-            mfloor->oldspecial = line->frontsector->oldspecial;
+            mfloor->new_sec_special = line->frontsector->special;
+            mfloor->old_sec_special = line->frontsector->oldspecial;
             mfloor->type = FT_genFloorChgT;
             break;
           case FCH_FChgTxt:     // leave type be
@@ -286,9 +289,9 @@ manual_ceiling:
     ceiling->crush = Crsh;
     ceiling->direction = Dirn? 1 : -1;
     ceiling->sector = sec;
-    ceiling->texture = sec->ceilingpic;
-    ceiling->newspecial = sec->special;
-    ceiling->oldspecial = sec->oldspecial;
+    ceiling->new_ceilingpic = sec->ceilingpic;
+    ceiling->new_sec_special = sec->special;
+    ceiling->old_sec_special = sec->oldspecial;
     ceiling->tag = sec->tag;
     ceiling->type = CT_genCeiling;
 
@@ -371,17 +374,17 @@ manual_ceiling:
           P_FindModelCeilingSector(targheight,secnum);
         if (sec)
         {
-          ceiling->texture = sec->ceilingpic;
+          ceiling->new_ceilingpic = sec->ceilingpic;
           switch (ChgT)
           {
             case CCH_CChgZero:  // type is zeroed
-              ceiling->newspecial = 0;
-              ceiling->oldspecial = 0;
+              ceiling->new_sec_special = 0;
+              ceiling->old_sec_special = 0;
               ceiling->type = CT_genCeilingChg0;
               break;
             case CCH_CChgTyp:   // type is copied
-              ceiling->newspecial = sec->special;
-              ceiling->oldspecial = sec->oldspecial;
+              ceiling->new_sec_special = sec->special;
+              ceiling->old_sec_special = sec->oldspecial;
               ceiling->type = CT_genCeilingChgT;
               break;
             case CCH_CChgTxt:   // type is left alone
@@ -395,17 +398,17 @@ manual_ceiling:
       else if( line->frontsector )  // except fragglescript with no frontsector
       {
         // trigger frontsector model change
-        ceiling->texture = line->frontsector->ceilingpic;
+        ceiling->new_ceilingpic = line->frontsector->ceilingpic;
         switch (ChgT)
         {
           case CCH_CChgZero:    // type is zeroed
-            ceiling->newspecial = 0;
-            ceiling->oldspecial = 0;
+            ceiling->new_sec_special = 0;
+            ceiling->old_sec_special = 0;
             ceiling->type = CT_genCeilingChg0;
             break;
           case CCH_CChgTyp:     // type is copied
-            ceiling->newspecial = line->frontsector->special;
-            ceiling->oldspecial = line->frontsector->oldspecial;
+            ceiling->new_sec_special = line->frontsector->special;
+            ceiling->old_sec_special = line->frontsector->oldspecial;
             ceiling->type = CT_genCeilingChgT;
             break;
           case CCH_CChgTxt:     // type is left alone
@@ -815,8 +818,8 @@ manual_crusher:
     ceiling->crush = true;
     ceiling->direction = -1;
     ceiling->sector = sec;
-    ceiling->texture = sec->ceilingpic;
-    ceiling->newspecial = sec->special;
+    ceiling->new_ceilingpic = sec->ceilingpic;
+    ceiling->new_sec_special = sec->special;
     ceiling->tag = sec->tag;
     ceiling->type = Slnt? CT_genSilentCrusher : CT_genCrusher;
     ceiling->topheight = sec->ceilingheight;

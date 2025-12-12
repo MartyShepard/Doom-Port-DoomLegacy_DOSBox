@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_ceilng.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_ceilng.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,17 +103,19 @@ void T_MoveCeiling (ceiling_t* ceiling)
             {
 
               case CT_raiseToHighest:
-              case CT_genCeiling: //SoM: 3/6/2000
+              //SoM: 3/6/2000
+              case CT_genCeiling:  // Boom, general ceiling move
                 P_RemoveActiveCeiling(ceiling);
                 break;
 
               // SoM: 3/6/2000: movers with texture change, change the texture then get removed
-              case CT_genCeilingChgT:
-              case CT_genCeilingChg0:
-                ceiling->sector->special = ceiling->newspecial;
-                ceiling->sector->oldspecial = ceiling->oldspecial;
-              case CT_genCeilingChg:
-                ceiling->sector->ceilingpic = ceiling->texture;
+              case CT_genCeilingChgT:  // Boom, change sector type
+              case CT_genCeilingChg0:  // Boom, zero sector type
+                ceiling->sector->special = ceiling->new_sec_special;
+                ceiling->sector->oldspecial = ceiling->old_sec_special;
+                // change ceilingpic too
+              case CT_genCeilingChg:  // Boom, change only texture
+                ceiling->sector->ceilingpic = ceiling->new_ceilingpic;
                 P_RemoveActiveCeiling(ceiling);
                 break;
 
@@ -176,13 +178,13 @@ void T_MoveCeiling (ceiling_t* ceiling)
               
               // in the case of ceiling mover/changer, change the texture
               // then remove the active ceiling
-              case CT_genCeilingChgT:
-              case CT_genCeilingChg0:
-                ceiling->sector->special = ceiling->newspecial;
+              case CT_genCeilingChgT:  // Boom
+              case CT_genCeilingChg0:  // Boom
+                ceiling->sector->special = ceiling->new_sec_special;
                 //jff add to fix bug in special transfers from changes
-                ceiling->sector->oldspecial = ceiling->oldspecial;
-              case CT_genCeilingChg:
-                ceiling->sector->ceilingpic = ceiling->texture;
+                ceiling->sector->oldspecial = ceiling->old_sec_special;
+              case CT_genCeilingChg:  // Boom
+                ceiling->sector->ceilingpic = ceiling->new_ceilingpic;
                 P_RemoveActiveCeiling(ceiling);
                 break;
     
