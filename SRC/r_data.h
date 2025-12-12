@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1064 2013-12-14 00:18:23Z wesleyjohnson $
+// $Id: r_data.h 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -150,6 +150,7 @@ typedef struct
 //   array[ 0.. numtextures-1 ] of texture_t*,
 //   but [0] is unusable because it conflicts with 0=no-texture.
 extern texture_t**     textures;
+extern int             numtextures;
 
 //extern lighttable_t    *colormaps;
 extern CV_PossibleValue_t Color_cons_t[];

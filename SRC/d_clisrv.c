@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1177 2015-11-16 22:34:10Z wesleyjohnson $
+// $Id: d_clisrv.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -580,10 +580,16 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
     netbuffer->u.serverinfo.deathmatch = cv_deathmatch.value;
     strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
-    if(gamemapname[0])
-        strcpy(netbuffer->u.serverinfo.mapname,gamemapname);
+    if(game_map_filename[0])
+    {
+        // Map command external wad file.
+        strcpy(netbuffer->u.serverinfo.mapname,game_map_filename);
+    }
     else
+    {
+        // existing map       
         strcpy(netbuffer->u.serverinfo.mapname,G_BuildMapName(gameepisode,gamemap));
+    }
 
     p=Put_Server_FileNeed();
 

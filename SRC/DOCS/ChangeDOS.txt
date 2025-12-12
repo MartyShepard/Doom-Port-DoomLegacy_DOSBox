@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01192 ]: w104 map command
 [01191 ]: w104 hexen err
           DOS: Added -listwads/-lw
 					

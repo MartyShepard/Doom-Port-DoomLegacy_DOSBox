@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1180 2015-11-25 20:05:57Z wesleyjohnson $
+// $Id: p_setup.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -200,7 +200,6 @@
 //
 boolean         newlevel = false;
 boolean         doom1level = false;    // doom 1 level running under doom 2
-char            *levelmapname = NULL;  // to savegame and info
 
 int             numvertexes;
 vertex_t*       vertexes;
@@ -858,7 +857,7 @@ void P_LoadLineDefs (int lump)
                 // two-sided linedef is required to always have valid sidedef2
                 I_SoftError( "Linedef %i is missing sidedef2\n", i );
                 // fix one or the other
-//	        ld->sidenum[1] = 0;  // arbitrary valid sidedef
+//              ld->sidenum[1] = 0;  // arbitrary valid sidedef
                 ld->flags &= ~ML_TWOSIDED;
             }
         }
@@ -1520,19 +1519,22 @@ void P_SetupLevelSky (void)
 //
 // P_SetupLevel
 //
-// added comment : load the level from a lump file or from a external wad !
+// Load the level from an existing lump or from a external wad !
 // Purge all previous PU_LEVEL memory.
-extern int numtextures;
-char       *maplumpname;
+int    level_lumpnum = 0;  // for info and comparative savegame
+char*  level_mapname = NULL;  // to savegame and info
 
-int        lastloadedmaplumpnum; // for comparative savegame
-
-boolean P_SetupLevel (int           episode,
-                      int           map,
-                      skill_t       skill,
-                      char*         wadname)      // for wad files
+//  to_episode : change to episode num
+//  to_map : change to map number
+//  to_skill : change to skill
+//  map_wadname : map command, load wad file
+boolean P_SetupLevel (int      to_episode,
+                      int      to_map,
+                      skill_t  to_skill,
+                      char*    map_wadname)      // for wad files
 {
-    int         i;
+    char  *sl_mapname = NULL;
+    int   i;
 
     GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_CONS|EMSG_now)),
                "Setup Level\n" );
@@ -1540,6 +1542,7 @@ boolean P_SetupLevel (int           episode,
     //Initialize sector node list.
     P_Initsecnode();
 
+    // Clear existing level variables and reclaim memory.
     totalkills = totalitems = totalsecret = wminfo.maxfrags = 0;
     wminfo.partime = 180;
     for (i=0 ; i<MAXPLAYERS ; i++)
@@ -1606,36 +1609,38 @@ boolean P_SetupLevel (int           episode,
     
     P_InitThinkers ();
 
+    // Loading new level map.
     // if working with a devlopment map, reload it
     W_Reload ();
 
-    //
-    //  load the map from internal game resource or external wad file
-    //
-    if (wadname)
+    // Load the map from existing game resource or external wad file.
+    if (map_wadname && map_wadname[0] )
     {
-        char *firstmap=NULL;
+        // External wad file load.
+        level_id_t level_id;
 
-        // go back to title screen if no map is loaded
-        if (!P_AddWadFile (wadname,&firstmap) ||
-            firstmap==NULL)            // no maps were found
+        if (!P_AddWadFile (map_wadname, &level_id) ||
+            level_id.mapname==NULL)            // no maps were found
         {
+            // go back to title screen if no map is loaded
             return false;
         }
 
-        // P_AddWadFile() sets lumpname
-        lastloadedmaplumpnum = W_GetNumForName(firstmap);
-        maplumpname = firstmap;
+        // From the added wad, returned by P_AddWadFile().
+        to_episode = gameepisode = level_id.episode;
+        to_map = gamemap = level_id.map;
+        sl_mapname = level_id.mapname;  // mapname from P_AddWadFile
     }
     else
     {
-        // internal game map
-        lastloadedmaplumpnum = W_GetNumForName (maplumpname = G_BuildMapName(episode,map));
+        // Existing game map
+        sl_mapname = G_BuildMapName(to_episode,to_map);
     }
 
-    // determine this level map name for savegame and info next level
-    if(levelmapname) Z_Free(levelmapname);
-    levelmapname = Z_Strdup(maplumpname, PU_STATIC, 0);  // MAP01 or E1M1, etc.
+    // Determine this level map name for savegame and info next level.
+    if(level_mapname)   Z_Free(level_mapname);
+    level_mapname = Z_Strdup(sl_mapname, PU_STATIC, 0);  // MAP01 or E1M1, etc.
+    level_lumpnum = W_GetNumForName(sl_mapname);
 
     leveltime = 0;
 
@@ -1647,7 +1652,9 @@ boolean P_SetupLevel (int           episode,
     R_ClearColormaps();  // colormap ZMalloc cleared by Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1)
 
 #ifdef FRAGGLESCRIPT
-    P_LoadLevelInfo (lastloadedmaplumpnum);    // load level lump info(level name etc)
+    // load level lump info(level name etc)
+    // Dependent upon level_mapname, level_lumpnum.
+    P_LoadLevelInfo();
 #endif
 
     //SoM: We've loaded the music lump, start the music.
@@ -1665,18 +1672,18 @@ boolean P_SetupLevel (int           episode,
     //R_InitPortals ();
 
     // note: most of this ordering is important
-    P_LoadBlockMap (lastloadedmaplumpnum+ML_BLOCKMAP);
-    P_LoadVertexes (lastloadedmaplumpnum+ML_VERTEXES);
-    P_LoadSectors  (lastloadedmaplumpnum+ML_SECTORS);
-    P_LoadSideDefs (lastloadedmaplumpnum+ML_SIDEDEFS);
+    P_LoadBlockMap (level_lumpnum+ML_BLOCKMAP);
+    P_LoadVertexes (level_lumpnum+ML_VERTEXES);
+    P_LoadSectors  (level_lumpnum+ML_SECTORS);
+    P_LoadSideDefs (level_lumpnum+ML_SIDEDEFS);
 
-    P_LoadLineDefs (lastloadedmaplumpnum+ML_LINEDEFS);
-    P_LoadSideDefs2(lastloadedmaplumpnum+ML_SIDEDEFS);
+    P_LoadLineDefs (level_lumpnum+ML_LINEDEFS);
+    P_LoadSideDefs2(level_lumpnum+ML_SIDEDEFS);
     P_LoadLineDefs2();
-    P_LoadSubsectors (lastloadedmaplumpnum+ML_SSECTORS);
-    P_LoadNodes (lastloadedmaplumpnum+ML_NODES);
-    P_LoadSegs (lastloadedmaplumpnum+ML_SEGS);
-    rejectmatrix = W_CacheLumpNum (lastloadedmaplumpnum+ML_REJECT,PU_LEVEL);
+    P_LoadSubsectors (level_lumpnum+ML_SSECTORS);
+    P_LoadNodes (level_lumpnum+ML_NODES);
+    P_LoadSegs (level_lumpnum+ML_SEGS);
+    rejectmatrix = W_CacheLumpNum (level_lumpnum+ML_REJECT,PU_LEVEL);
     P_GroupLines ();
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
@@ -1701,7 +1708,7 @@ boolean P_SetupLevel (int           episode,
     P_InitAmbientSound ();
     P_InitMonsters ();
     P_OpenWeapons ();
-    P_LoadThings (lastloadedmaplumpnum+ML_THINGS);
+    P_LoadThings (level_lumpnum+ML_THINGS);
     P_CloseWeapons ();
 
     // set up world state
@@ -1735,9 +1742,9 @@ boolean P_SetupLevel (int           episode,
 #ifdef CDMUS
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
     if (gamemode==doom2_commercial)
-        I_PlayCD (map, true);                // Doom2, 32 maps
+        I_PlayCD (to_map, true);                // Doom2, 32 maps
     else
-        I_PlayCD ((episode-1)*9+map, true);  // Doom1, 9maps per episode
+        I_PlayCD ((to_episode-1)*9+ to_map, true);  // Doom1, 9maps per episode
 #endif
 
     // preload graphics
@@ -1760,26 +1767,31 @@ boolean P_SetupLevel (int           episode,
 
     script_camera_on = false;
 
-    B_InitNodes();		//added by AC for acbot
+    B_InitNodes();  //added by AC for acbot
 
     //CONS_Printf("%d vertexs %d segs %d subsector\n",numvertexes,numsegs,numsubsectors);
     return true;
 }
 
 
-//
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
-boolean P_AddWadFile (char* wadfilename,char **firstmapname)
+//  wadfilename : filename of wad to be loaded 
+//  firstmap_out : /*OUT*/  info about the first level map
+boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
 {
-    int         firstmapreplaced;
+    int         wadfilenum;
     wadfile_t*  wadfile;
-    char*       name;
-    int         i,j,num,wadfilenum;
     lumpinfo_t* lumpinfo;
-    int         replaces;
+    char*       name;
+    int         firstmapreplaced;
+    int         i,j,num;
+    int         replace_cnt;
     boolean     texturechange;
+
+    if( firstmap_out )
+       firstmap_out->mapname = NULL;
 
     if ((wadfilenum = W_LoadWadFile (wadfilename))==-1)
     {
@@ -1792,7 +1804,7 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
     // search for sound replacements
     //
     lumpinfo = wadfile->lumpinfo;
-    replaces = 0;
+    replace_cnt = 0;
     texturechange=false;
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
@@ -1812,24 +1824,24 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
 
                     S_FreeSfx (&S_sfx[j]);
 
-                    replaces++;
+                    replace_cnt++;
                 }
             }
         }
         else
-        if( memcmp(name,"TEXTURE1",8)==0    // find texture replesement too
+        if( memcmp(name,"TEXTURE1",8)==0    // find texture replacement too
          || memcmp(name,"TEXTURE2",8)==0
          || memcmp(name,"PNAMES",6)==0)
             texturechange=true;
     }
-    if (!devparm && replaces)
-        CONS_Printf ("%d sounds replaced\n", replaces);
+    if (!devparm && replace_cnt)
+        CONS_Printf ("%d sounds replaced\n", replace_cnt);
 
     //
     // search for music replacements
     //
     lumpinfo = wadfile->lumpinfo;
-    replaces = 0;
+    replace_cnt = 0;
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
         name = lumpinfo->name;
@@ -1837,11 +1849,11 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
         {
             if (devparm)
                 GenPrintf(EMSG_dev, "Music %.8s replaced\n", name);
-            replaces++;
+            replace_cnt++;
         }
     }
-    if (!devparm && replaces)
-        CONS_Printf ("%d musics replaced\n", replaces);
+    if (!devparm && replace_cnt)
+        CONS_Printf ("%d musics replaced\n", replace_cnt);
 
     //
     // search for sprite replacements
@@ -1865,11 +1877,11 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
     // search for maps
     //
     lumpinfo = wadfile->lumpinfo;
-    firstmapreplaced = 0;
+    firstmapreplaced = MAXINT;  // invalid
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
         name = lumpinfo->name;
-        num = firstmapreplaced;
+        num = 0;  // invalid
         if (gamemode==doom2_commercial)       // Doom2
         {
             if (name[0]=='M' &&
@@ -1888,21 +1900,27 @@ boolean P_AddWadFile (char* wadfilename,char **firstmapname)
                 ((unsigned)name[3]-'0')<='9' &&
                 name[4]==0)
             {
-                num = ((name[1]-'0')<<16) + (name[3]-'0');
+                num = ((name[1]-'0')<<8) + (name[3]-'0');
                 CONS_Printf ("Episode %d map %d\n", name[1]-'0',
                                                     name[3]-'0');
             }
         }
-        if (num && (num<firstmapreplaced || !firstmapreplaced))
+        // The lowest numbered map is the first map. No map 0.
+        if ( (num>0) && (num < firstmapreplaced) )
         {
             firstmapreplaced = num;
-            if(firstmapname) *firstmapname = name;
+            if(firstmap_out)  /* OUT */
+            {
+                firstmap_out->mapname = name;
+                firstmap_out->episode = num >> 8;
+                firstmap_out->map = num & 0xFF;
+            }
         }
     }
-    if (!firstmapreplaced)
+    if ( firstmapreplaced >= 0xFFFF )  // invalid
         CONS_Printf ("no maps added\n");
 
-    // reload status bar (warning should have valide player !)
+    // reload status bar (warning should have valid player !)
     if( gamestate == GS_LEVEL )
         ST_Start();
 

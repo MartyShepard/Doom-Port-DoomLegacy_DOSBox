@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: p_info.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_info.h 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -46,7 +46,7 @@
   // NUMWEAPONS
 #include "command.h"
 
-void P_LoadLevelInfo(int lumpnum);
+void P_LoadLevelInfo(void);
 
 void P_CleanLine(char *line);
 

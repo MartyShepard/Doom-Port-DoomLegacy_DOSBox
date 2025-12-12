@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: p_saveg.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -838,7 +838,7 @@ void P_ArchiveWorld(void)
     byte diff2;
 
     // [WDJ] protect lump during this function
-    ms = W_CacheLumpNum(lastloadedmaplumpnum + ML_SECTORS, PU_IN_USE);	// mapsectors temp
+    ms = W_CacheLumpNum(level_lumpnum + ML_SECTORS, PU_IN_USE);	// mapsectors temp
     // [WDJ] Fix endian as compare temp to internal.
     // 
     ss = sectors;
@@ -932,8 +932,8 @@ void P_ArchiveWorld(void)
     }
     WRITEU16(put, 0xffff);  // mark end of world sector section
 
-    mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_IN_USE); // linedefs temp
-    msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_IN_USE); // sidedefs temp
+    mld = W_CacheLumpNum(level_lumpnum + ML_LINEDEFS, PU_IN_USE); // linedefs temp
+    msd = W_CacheLumpNum(level_lumpnum + ML_SIDEDEFS, PU_IN_USE); // sidedefs temp
     // [WDJ] Fix endian as compare temp to internal.
     li = lines;
     // do lines
@@ -1056,12 +1056,15 @@ void P_UnArchiveWorld(void)
         if (i == 0xffff) // end of world sector section
             break;
 
+        if( i >= numsectors )  goto bad_sec_id_err;
+        secp = & sectors[i];
+
         diff = READBYTE(get);
         if (diff & SD_DIFF2)
             diff2 = READBYTE(get);
         else
             diff2 = 0;
-        secp = & sectors[i];
+       
         if (diff & SD_FLOORHT)
             secp->floorheight = READFIXED(get);
         if (diff & SD_CEILHT)
@@ -1117,8 +1120,11 @@ void P_UnArchiveWorld(void)
 
         if (i == 0xffff)  // end of world linedef section
             break;
-        diff = READBYTE(get);
+
+        if( i >= numlines )  goto bad_line_id_err;
         li = &lines[i];
+       
+        diff = READBYTE(get);
 
         if (diff & LD_DIFF2)
             diff2 = READBYTE(get);
@@ -1151,6 +1157,19 @@ void P_UnArchiveWorld(void)
     }
 
     save_p = get;
+    return;
+
+bad_sec_id_err:
+    I_SoftError("LoadGame: Bad sector ID.\n");
+    goto failed;
+
+bad_line_id_err:
+    I_SoftError("LoadGame: Bad linedef ID.\n");
+    goto failed;
+
+failed:
+    save_game_abort = 1;
+    return;
 }
 
 //
@@ -2989,7 +3008,7 @@ boolean SG_fragglescript_detect( void )
 // =======================================================================
 void P_ArchiveMisc()
 {
-    ULONG pig = 0;
+    uint32_t pig = 0;
     int i;
 
     WRITEBYTE(save_p, gameskill);
@@ -3008,7 +3027,7 @@ void P_ArchiveMisc()
 
 boolean P_UnArchiveMisc()
 {
-    ULONG pig;
+    uint32_t pig;
     int i;
 
     SG_Readbuf();
@@ -3070,8 +3089,8 @@ void P_LoadNetVars( void )
 char * level_wad( void )
 {
     char * mapwad;
-    // lastloadedmaplumpnum contains index to the wad containing current map.
-    int mapwadnum = WADFILENUM( lastloadedmaplumpnum );
+    // level_lumpnum contains index to the wad containing current map.
+    int mapwadnum = WADFILENUM( level_lumpnum );
     if( mapwadnum >= numwadfiles )  goto defname;
     mapwad = wadfiles[ mapwadnum ]->filename;
     if( mapwad == NULL )  goto defname;
@@ -3146,7 +3165,7 @@ void P_Write_Savegame_Header( const char * description )
     // Do not use WRITESTRING as that will put term 0 into the header.
     len = sprintf( (char *)save_p, sg_head_format,
 		   VERSION, description, gamedesc.gname,
-		   level_wad(), levelmapname, l_min, l_sec );
+		   level_wad(), level_mapname, l_min, l_sec );
     save_p += len;  // does not include string term 0
     WRITE_command_line();
     len = sprintf( (char *)save_p, sg_head_END );
@@ -3261,7 +3280,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 
 
 // Called from menu via G_DoSaveGame via network Got_SaveGamecmd,
-// and called from SV_SendSaveGame by network for JOININGAME.
+// and called from SV_Send_SaveGame by network for JOININGAME.
 // Write game data to savegame buffer.
 void P_SaveGame( void )
 {   

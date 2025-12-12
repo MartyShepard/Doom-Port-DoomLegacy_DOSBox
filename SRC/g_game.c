@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1190 2015-12-01 22:19:32Z wesleyjohnson $
+// $Id: g_game.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -222,9 +222,9 @@ void    G_DoWorldDone (void);
 //
 byte            demoversion;
 
-byte            gameepisode;
-byte            gamemap;
-char            gamemapname[MAX_WADPATH];      // an external wad filename
+byte            gameepisode;  // current game episode number  1..4
+byte            gamemap;      // current game map number 1..31
+char            game_map_filename[MAX_WADPATH];      // an external wad filename
 
 
 gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
@@ -629,7 +629,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
       }
       else if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
                ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
-	return true;
+        return true;
       break;
 
     default:
@@ -1005,7 +1005,8 @@ void G_DoLoadLevel (boolean resetplayer)
         players[i].addfrags = 0;
     }
 
-    if (!P_SetupLevel (gameepisode, gamemap, gameskill, gamemapname[0] ? gamemapname:NULL) )
+    // game_map_filename is external wad
+    if (!P_SetupLevel (gameepisode, gamemap, gameskill, game_map_filename ))
     {
         // fail so reset game stuff
         Command_ExitGame_f();
@@ -2198,7 +2199,8 @@ void G_InitNew (skill_t skill, char* mapname, boolean resetplayer)
     if (FIL_CheckExtension(mapname))
     {
         // external map file
-        strncpy (gamemapname, mapname, MAX_WADPATH);
+        strncpy (game_map_filename, mapname, MAX_WADPATH);
+        // dummy values, to be set by P_SetupLevel.
         gameepisode = 1;
         gamemap = 1;
     }
@@ -2215,7 +2217,7 @@ void G_InitNew (skill_t skill, char* mapname, boolean resetplayer)
             return;
         }
 
-        gamemapname[0] = 0;             // means not an external wad file
+        game_map_filename[0] = 0;             // means not an external wad file
         if (gamemode==doom2_commercial)       //doom2
         {
             gamemap = atoi(mapname+3);  // get xx out of MAPxx

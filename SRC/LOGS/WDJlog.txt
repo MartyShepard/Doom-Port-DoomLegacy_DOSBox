@@ -4582,3 +4582,18 @@ hu_stuff.c
 patchfile = w104_17_hexen_err.patch
 - commit revision 1191
 Give hexen unsupported error message on -game switch.
+
+*** W104_map_command
+patchfile = w104_18_map_command.patch
+- commit revision 1192
+Fix map command level setup to set the gameepisode and gamemap correctly.
+This also caused the wrong music to be played and the wrong level setups
+to be used.
+This would also lead to corrupted savegames, saving the wrong map number.
+During savegame loading, it would use the wrong map to size the level
+structures, which would lead to the save game restoring
+some structure changes outside of the structure boundaries (overwriting
+something else).  Added some checks to the savegame restore to detect
+sector or linedef numbers that exceed the established structures.
+This will detect some existing savegames as corrupted.  They could be
+fixed by correcting the map number in the savegame.

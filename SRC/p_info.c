@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1047 2013-09-22 20:57:40Z wesleyjohnson $
+// $Id: p_info.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -288,13 +288,13 @@ void P_ClearLevelVars(void)
   info_creator = "unknown";
   info_partime = -1;
 
-  if(gamemode == doom2_commercial && isExMy(levelmapname))
+  if(gamemode == doom2_commercial && isExMy(level_mapname))
   {
     static char nextlevel[10];
     info_nextlevel = nextlevel;
 
     // set the next episode
-    strcpy(nextlevel, levelmapname);
+    strcpy(nextlevel, level_mapname);
     nextlevel[3] ++;
     if(nextlevel[3] > '9')  // next episode
     {
@@ -302,7 +302,7 @@ void P_ClearLevelVars(void)
       nextlevel[1] ++;
     }
 
-    info_music = levelmapname;
+    info_music = level_mapname;
   }
   else
     info_nextlevel = "";
@@ -403,6 +403,7 @@ void P_ParseInterText(char *line)
 
 boolean default_weaponowned[NUMWEAPONS];
 
+// Init weapon positions, dependent upon info.
 void P_InitWeapons(void)
 {
   char *s;
@@ -412,9 +413,9 @@ void P_InitWeapons(void)
   s = info_weapons;
 
   while(*s)
-    {
+  {
       switch(*s)
-        {
+      {
         case '3': default_weaponowned[wp_shotgun] = true; break;
         case '4': default_weaponowned[wp_chaingun] = true; break;
         case '5': default_weaponowned[wp_missile] = true; break;
@@ -422,9 +423,9 @@ void P_InitWeapons(void)
         case '7': default_weaponowned[wp_bfg] = true; break;
         case '8': default_weaponowned[wp_supershotgun] = true; break;
         default: break;
-        }
+      }
       s++;
-    }
+  }
 }
 
 #if 0
@@ -439,18 +440,20 @@ void P_InitWeapons(void)
 
 static char *levelname;
 
+// Determine game specific level name.
+// From P_SetupLevel, level_mapname.
 // Called by P_LoadLevelInfo
 void P_FindLevelName(void)
 {
-  extern char *maplumpname;
-
-  // determine the level name
-  // there are a number of sources from which it can come from,
-  // getting the right one is the tricky bit =)
-  // info level name from level lump (p_info.c) ?
-
+  // Determine the level name.
+  // There are a number of sources from which it can come from,
+  // getting the right one is the tricky bit =).
+  
   if(*info_levelname)
+  {
+      // info level name from level lump (p_info.c) ?
       levelname = info_levelname;
+  }
   else if(!newlevel || deh_loaded)
   {
       // not a new level or dehacked level names
@@ -459,7 +462,7 @@ void P_FindLevelName(void)
 	// Heretic shareware, Heretic, Blasphemer
         levelname = text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
       }
-      else if(isMAPxy(maplumpname))
+      else if(isMAPxy(level_mapname))
       {
 	switch( gamedesc_id )
 	{
@@ -477,19 +480,19 @@ void P_FindLevelName(void)
 	   break;
 	}
       }
-      else if(isExMy(maplumpname))
+      else if(isExMy(level_mapname))
       {
 	// Doom shareware, Doom, UltDoom, UltFreeDoom, ChexQuest
         levelname = text[HUSTR_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
       }
       else
-        levelname = maplumpname;
+        levelname = level_mapname;
   }
   else        //  otherwise just put "new level"
   {
       static char newlevelstr[50];
 
-      sprintf(newlevelstr, "%s: new level", maplumpname);
+      sprintf(newlevelstr, "%s: new level", level_mapname);
       levelname = newlevelstr;
   }
 }
@@ -568,7 +571,8 @@ void P_ParseInfoCmd(char *line)
 // Load the info lump for a level. Call P_ParseInfoCmd for each
 // line of the lump.
 
-void P_LoadLevelInfo(int lumpnum)
+// Dependent upon level_mapname, level_lumpnum.
+void P_LoadLevelInfo( void )
 {
   char      *lump;
   char      *endlump_cp;
@@ -581,13 +585,13 @@ void P_LoadLevelInfo(int lumpnum)
   info_readtype = RT_OTHER;  // global to I_ParseInfoCmd
   P_ClearLevelVars();  // clear vars and init levelscript
 
-  lumpsize = maxscriptsize = W_LumpLength(lumpnum);
+  lumpsize = maxscriptsize = W_LumpLength(level_lumpnum);
   readline = Z_Malloc(lumpsize + 1, PU_IN_USE, 0);
   rlp = &readline[0];
 
   if(lumpsize > 0)
   {
-    fs_src_cp = lump = W_CacheLumpNum(lumpnum, PU_IN_USE);  // level info
+    fs_src_cp = lump = W_CacheLumpNum(level_lumpnum, PU_IN_USE);  // level info
     endlump_cp = lump + lumpsize; // end of lump
     while(fs_src_cp < endlump_cp)
     {
@@ -616,7 +620,11 @@ void P_LoadLevelInfo(int lumpnum)
   }
   Z_Free(readline);
 
+  // These are affected by P_ClearLevelVars().
+  // Init weapon positions, dependent upon weapons info.
   P_InitWeapons();
+  // Determine game specific level name.
+  // Dependent upon info level vars and level_mapname.
   P_FindLevelName();
 
   //Set the gravity for the level!
