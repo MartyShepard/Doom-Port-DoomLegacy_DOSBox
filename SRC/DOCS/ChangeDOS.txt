@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01189 ]: w104 teamname
+          Compile Fix: flexible array member not at end of struct.
+					
 [01188 ]: w104 deh comment
 [01187 ]: w104_13 corona func, chex newmaps
 [01186 ]: w104_12 SPLGT_ enum sprite light corona

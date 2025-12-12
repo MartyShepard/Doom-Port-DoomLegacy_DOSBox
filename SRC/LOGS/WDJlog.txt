@@ -4563,3 +4563,9 @@ patchfile = w104_14_deh_comment.patch
 - commit revision 1188
 Catch some BEX comments so they do not cause error messages.
 Fixes messages in toxdm1.wad.
+
+*** W104_teamname
+patchfile = w104_15_teamname.patch
+- commit revision 1189
+Initialize team names to NULL upon creation.
+Fix segfault in set_team_name, when setting teamplay from console.

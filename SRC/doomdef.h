@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1168 2015-05-22 18:36:56Z wesleyjohnson $
+// $Id: doomdef.h 1189 2015-12-01 22:18:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -259,10 +259,18 @@ extern FILE *logstream;
 // The maximum number of players, multiplayer/networking.
 // NOTE: it needs more than this to increase the number of players...
 
-#define MAXPLAYERS              32      // TODO: ... more!!!
+// Limit MAXPLAYERS (and others) to 250.
+// TODO: ... more!!!
+#if defined( __DJGPP__ )
+//Need value: d_player.h:150: error: flexible array member not at end of struct.
+#define MAXPLAYERS              32
+#else
+#define MAXPLAYERS 
+#endif
 #define MAXSKINS                MAXPLAYERS
 #define PLAYERSMASK             (MAXPLAYERS-1)
 #define MAXPLAYERNAME           21
+// Limit MAXTEAMS to 250.
 #define MAXTEAMS		32
 
 // Determined by skin color tables
@@ -283,7 +291,8 @@ extern FILE *logstream;
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
 #define OLDTICRATE       35
-#define NEWTICRATERATIO   1  // try 4 for 140 fps :)
+// Set 1 for standard, try 4 for 140 fps :)
+#define NEWTICRATERATIO   1
 #define TICRATE         (OLDTICRATE*NEWTICRATERATIO)
 
 #if defined( __DJGPP__ )

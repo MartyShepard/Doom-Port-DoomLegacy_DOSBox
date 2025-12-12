@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: g_game.h 1189 2015-12-01 22:18:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -76,7 +76,7 @@ typedef struct {
     char * name;  // always allocated string
 } PACKED_ATTR  team_info_t;
 extern team_info_t*  team_info[MAXTEAMS];
-extern short         num_teams;
+extern byte          num_teams;  // limited to MAXTEAMS (32)
 
 team_info_t*  get_team( int team_num );
 void  set_team_name( int team_num, char * str );
