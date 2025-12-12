@@ -4569,3 +4569,11 @@ patchfile = w104_15_teamname.patch
 - commit revision 1189
 Initialize team names to NULL upon creation.
 Fix segfault in set_team_name, when setting teamplay from console.
+
+*** W104_untab4
+patchfile = w104_16_untab4.patch
+- commit revision 1190
+Remove leading tabs from lines.
+g_game.c
+g_input.c
+hu_stuff.c

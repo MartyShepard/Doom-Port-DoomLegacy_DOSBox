@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: hu_stuff.c 1190 2015-12-01 22:19:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -180,12 +180,12 @@ void HU_Init(void)
             sprintf(buffer, "STCFN%.3d", j);
         j++;
         if( W_CheckNumForName( buffer ) < 0 )
-	{
-	    // font not found
-	    hu_font[i] = NULL;
-	    use_font1 = 1;
-	    continue;
-	}
+        {
+            // font not found
+            hu_font[i] = NULL;
+            use_font1 = 1;
+            continue;
+        }
         hu_font[i] = (patch_t *) W_CachePatchName(buffer, PU_STATIC); // endian fix
     }
 
@@ -233,14 +233,14 @@ void TeamPlay_OnChange(void)
     {
         // color
         for(i=0; i<NUMSKINCOLORS; i++)
-	    set_team_name( i, Color_Names[i]);
+            set_team_name( i, Color_Names[i]);
     }
     else
     if(cv_teamplay.value==2)
     {
         // skins
         for(i=0; i<numskins; i++)
-	    set_team_name( i, skins[i].name);
+            set_team_name( i, skins[i].name);
     }
 }
 
@@ -360,7 +360,7 @@ void Got_NetXCmd_Saycmd(char **p, int playernum)
     }
     else if( to & 0x80 )
     {
-	pn = (-(signed char)to) & 0x1F;  // Team encoding
+        pn = (-(signed char)to) & 0x1F;  // Team encoding
     }
     else
     {
@@ -374,13 +374,13 @@ void Got_NetXCmd_Saycmd(char **p, int playernum)
        || to==255 // broadcast
        || ( (to < MAXPLAYERS) && pn==consoleplayer )
        || ( (to & 0x80) // Team broadcast from pn
-	    && pn < MAXPLAYERS
-	    && ST_SameTeam(consoleplayer_ptr,&players[pn])) )
+            && pn < MAXPLAYERS
+            && ST_SameTeam(consoleplayer_ptr,&players[pn])) )
     {
         if( to==255 )
-	  tostr = " All";
+          tostr = " All";
         else if( to & 0x80 )
-	  tostr = " Team";
+          tostr = " Team";
         CONS_Printf("\3%s%s: %s\n", player_names[playernum], tostr, *p);
     }
 
@@ -395,7 +395,7 @@ void HU_Ticker(void)
     player_t    *pl;
 
     if(dedicated)
-	return;
+        return;
     
     hu_tick++;
     hu_tick &= 7;        //currently only to blink chat input cursor
@@ -495,9 +495,9 @@ boolean HU_Responder (event_t *ev)
       // enter chat mode
       if (key == gamecontrol[gc_talkkey][0] || key == gamecontrol[gc_talkkey][1])
       {
-	  chat_on = true;
-	  HU_Chat_clear();
-	  return true;
+          chat_on = true;
+          HU_Chat_clear();
+          return true;
       }
   }
   else
@@ -507,49 +507,49 @@ boolean HU_Responder (event_t *ev)
       // send a macro
       if (altdown)
       {
-	  c = c - '0';
-	  if (c > 9 || c < 0)
-	    return false;
+          c = c - '0';
+          if (c > 9 || c < 0)
+            return false;
 
-	  // current message stays unchanged
+          // current message stays unchanged
 
-	  // send the macro message
-	  COM_BufInsertText(va("say %s", chat_macros[c]->string));
-	  
-	  // if there is no unfinished message, leave chat mode and notify that it was sent
-	  if (HU_Chat_empty())
-	    chat_on = false;
+          // send the macro message
+          COM_BufInsertText(va("say %s", chat_macros[c]->string));
+
+          // if there is no unfinished message, leave chat mode and notify that it was sent
+          if (HU_Chat_empty())
+            chat_on = false;
       }
       else
       {
-	  // chat input
-	  if (key == KEY_ESCAPE)
-	  {
-	      // close chat
-	      chat_on = false; 
-	  }
-	  else if (key == KEY_ENTER)
-	  {
-	      // send the message
-	      if (tail > 1)
-		HU_Chat_send(w_chat);
+          // chat input
+          if (key == KEY_ESCAPE)
+          {
+              // close chat
+              chat_on = false;
+          }
+          else if (key == KEY_ENTER)
+          {
+              // send the message
+              if (tail > 1)
+                HU_Chat_send(w_chat);
 
-	      HU_Chat_clear();
-	      chat_on = false;
-	  }
-	  else if (key == KEY_BACKSPACE)
-	  {
-	      // erase a char
-	      HU_Chat_pop_back();
-	  }
-	  else if (c >= ' ' && c <= '~')
-	  {
-	      // add a char
-	      if (!HU_Chat_push_back(c))
-		plr->message = HUSTR_MSGU;  // out of space
-	  }
-	  else
-	    return false; // let the event go
+              HU_Chat_clear();
+              chat_on = false;
+          }
+          else if (key == KEY_BACKSPACE)
+          {
+              // erase a char
+              HU_Chat_pop_back();
+          }
+          else if (c >= ' ' && c <= '~')
+          {
+              // add a char
+              if (!HU_Chat_push_back(c))
+                plr->message = HUSTR_MSGU;  // out of space
+          }
+          else
+            return false; // let the event go
       }
 
       return true; // ate the key
@@ -874,10 +874,10 @@ void HU_DrawFSPics()
 
 void HU_ClearFSPics()
 {
-	piclist = NULL;
-	num_piclist_alloc = 0;
+        piclist = NULL;
+        num_piclist_alloc = 0;
 
-	HU_InitFSPics();
+        HU_InitFSPics();
 }
 
 //======================================================================
@@ -954,7 +954,7 @@ void HU_Erase (void)
 
 // count frags for each team
 int HU_CreateTeamFragTbl(fragsort_t *fragtab,
-			 int dmtotals[], int fragtbl[MAXPLAYERS][MAXPLAYERS])
+                         int dmtotals[], int fragtbl[MAXPLAYERS][MAXPLAYERS])
 {
     int i,j,k,scorelines,team;
 
@@ -963,24 +963,24 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
     {
         if (playeringame[i])
         {
-	    team = (cv_teamplay.value==1) ? players[i].skincolor
-	                                  : players[i].skin;
+            team = (cv_teamplay.value==1) ? players[i].skincolor
+                                          : players[i].skin;
 
             for(j=0; j<scorelines; j++)
-	    {
+            {
                 if (fragtab[j].num == team)
                 { // found there team
                      if(fragtbl)
                      {
                          for(k=0; k<MAXPLAYERS; k++)
-			 {
+                         {
                              if(playeringame[k])
                              {
                                  int k_indx = (cv_teamplay.value==1) ?
-				     players[k].skincolor : players[k].skin;
-				 fragtbl[team][k_indx] += players[i].frags[k];
-			     }
-			 }
+                                     players[k].skincolor : players[k].skin;
+                                 fragtbl[team][k_indx] += players[i].frags[k];
+                             }
+                         }
                      }
 
                      fragtab[j].count += ST_PlayerFrags(i);
@@ -988,17 +988,17 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
                          dmtotals[team]=fragtab[j].count;
                      break;
                 }
-	    }  // for j
+            }  // for j
 
             if (j==scorelines)
             {   // team not found, add it
 
                 if(fragtbl)
-	        {
+                {
                     for(k=0; k<MAXPLAYERS; k++)
                         fragtbl[team][k] = 0;
-		}
-	        
+                }
+
                 fragtab[scorelines].count = ST_PlayerFrags(i);
                 fragtab[scorelines].num   = team;
                 fragtab[scorelines].color = players[i].skincolor;
@@ -1007,14 +1007,14 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
                 if(fragtbl)
                 {
                     for(k=0; k<MAXPLAYERS; k++)
-		    {
+                    {
                         if(playeringame[k])
                         {
-			    int k_indx = (cv_teamplay.value==1) ?
-			        players[k].skincolor : players[k].skin;
-			    fragtbl[team][k_indx] += players[i].frags[k];
-			}
-		    }
+                            int k_indx = (cv_teamplay.value==1) ?
+                                players[k].skincolor : players[k].skin;
+                            fragtbl[team][k_indx] += players[i].frags[k];
+                        }
+                    }
                 }
 
                 if(dmtotals)
@@ -1072,21 +1072,21 @@ void HU_drawDeathmatchRankings (void)
 
     if (scorelines>9)
         scorelines = 9; //dont draw past bottom of screen, show the best only
-	else if (cv_splitscreen.value && scorelines > 4)
-		scorelines = 4;
+        else if (cv_splitscreen.value && scorelines > 4)
+                scorelines = 4;
 
-	if(cv_splitscreen.value)
-	{
-		y = (100 - (12 * (scorelines + 1) / 2)) + 15;
-		title = "Rankings";
-		large = false;
-	}
-	else
-	{
-		y = 70;
-		title = NULL;
-		large = true;
-	}
+        if(cv_splitscreen.value)
+        {
+                y = (100 - (12 * (scorelines + 1) / 2)) + 15;
+                title = "Rankings";
+                large = false;
+        }
+        else
+        {
+                y = 70;
+                title = NULL;
+                large = true;
+        }
 
     if(cv_teamplay.value==0)
         WI_drawRanking(title,80, y,fragtab,scorelines, large,whiteplayer);

@@ -174,10 +174,10 @@ void  G_MapEventsToControls (event_t *ev)
     {
       case ev_keydown:
         if (ev->data1 < NUMINPUTS)
-	  {
-	    gamekeydown[ev->data1] = true;
-	    gamekeytapped[ev->data1] = true; // reset in G_BuildTiccmd
-	  }
+          {
+            gamekeydown[ev->data1] = true;
+            gamekeytapped[ev->data1] = true; // reset in G_BuildTiccmd
+          }
         break;
 
       case ev_keyup:
@@ -509,17 +509,17 @@ int G_KeyStringtoNum(char *keystr)
     {
         // [WDJ] Got tired trying to fix bugs about a quoted button name
         // within a the quoted script string like alias.
-	// Let them specify the button name with underlines and we will
-	// equate it to the name with spaces, and it does not require those
+        // Let them specify the button name with underlines and we will
+        // equate it to the name with spaces, and it does not require those
         // escaped quotes.
-	//   mouse_3  --> "mouse 3"
+        //   mouse_3  --> "mouse 3"
         for (j=0; j<len; j++ )
         {
-	    if ( keystr[j] == '_' )
-	    {
-	        keystr[j] = ' ';
-	        stat = 1;
-	    }
+            if ( keystr[j] == '_' )
+            {
+                keystr[j] = ' ';
+                stat = 1;
+            }
         }
         if ( stat )   goto retry_search;  // found some '_', try it again
     }
@@ -588,11 +588,11 @@ void G_SaveKeySetting(FILE *f)
     for(i=1;i<num_gamecontrols;i++)
     {
         fprintf(f,"setcontrol \"%s\" \"%s\"",
-		gamecontrolname[i],
-		G_KeynumToString(gamecontrol[i][0]));
+                gamecontrolname[i],
+                G_KeynumToString(gamecontrol[i][0]));
 
         if(gamecontrol[i][1])
-	    fprintf(f," \"%s\"\n",
+            fprintf(f," \"%s\"\n",
                         G_KeynumToString(gamecontrol[i][1]));
         else
             fprintf(f,"\n");
@@ -601,14 +601,14 @@ void G_SaveKeySetting(FILE *f)
     for(i=1;i<num_gamecontrols;i++)
     {
         fprintf(f, "setcontrol2 \"%s\" \"%s\"",
-		gamecontrolname[i],
-		G_KeynumToString(gamecontrol2[i][0]));
+                gamecontrolname[i],
+                G_KeynumToString(gamecontrol2[i][0]));
 
         if(gamecontrol2[i][1])
-	    fprintf(f, " \"%s\"\n",
-		    G_KeynumToString(gamecontrol2[i][1]));
+            fprintf(f, " \"%s\"\n",
+                    G_KeynumToString(gamecontrol2[i][1]));
         else
-	    fprintf(f,"\n");
+            fprintf(f,"\n");
     }
 
 #if !defined( __DJGPP__ )
@@ -617,7 +617,7 @@ void G_SaveKeySetting(FILE *f)
     {
         joybinding_t j = joybindings[i];
         fprintf(f, "bindjoyaxis %d %d %d %d %f\n",
-		j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
+                j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
     }
 #endif
 }
@@ -707,7 +707,7 @@ void Command_BindJoyaxis_f()
     for(i=0; i<num_joybindings; i++) {
       j = joybindings[i];
       CONS_Printf("%d %d %d %d %f\n", j.joynum, j.axisnum,
-		  j.playnum, (int)j.action, j.scale);
+                  j.playnum, (int)j.action, j.scale);
     }
     return;
   }
@@ -715,7 +715,7 @@ void Command_BindJoyaxis_f()
   if (carg.num == 4 || carg.num > 6)
   {
     CONS_Printf("bindjoyaxis [joynum] [axisnum] [playnum] [action] [scale]  to bind\n"
-		"bindjoyaxis [joynum] [axisnum]  to unbind\n");
+                "bindjoyaxis [joynum] [axisnum]  to unbind\n");
     return;
   }
 
@@ -751,8 +751,8 @@ void Command_BindJoyaxis_f()
     for(i=0; i<num_joybindings; i++) {
       joybinding_t temp = joybindings[i];
       if((j.joynum == temp.joynum) &&
-	 (j.axisnum == -1 || j.axisnum == temp.axisnum))
-	continue; // We have a binding to prune.
+         (j.axisnum == -1 || j.axisnum == temp.axisnum))
+        continue; // We have a binding to prune.
 
       keep_bindings[num_keep_bindings++] = temp; // keep it
     }
@@ -787,16 +787,16 @@ void Command_BindJoyaxis_f()
     for(i=0; i<num_joybindings; i++) {
       joybinding_t j2 = joybindings[i];
       if(j2.joynum == j.joynum && j2.axisnum == j.axisnum) {
-	joybindings[i] = j;
-	CONS_Printf("Joystick binding modified.\n");
-	return;
+        joybindings[i] = j;
+        CONS_Printf("Joystick binding modified.\n");
+        return;
       }
     }
     // new binding
     if (num_joybindings < MAX_JOYBINDINGS)
     {
-	joybindings[num_joybindings++] = j;
-	CONS_Printf("Joystick binding added.\n");
+        joybindings[num_joybindings++] = j;
+        CONS_Printf("Joystick binding added.\n");
     }
     else
       CONS_Printf("Maximum number of joystick bindings reached.\n");

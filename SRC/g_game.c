@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1189 2015-12-01 22:18:35Z wesleyjohnson $
+// $Id: g_game.c 1190 2015-12-01 22:19:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -600,7 +600,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                 return true;
       }
       else if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] ){
- 		keyup_armed = true;  // [WDJ] enable keyup event
+                keyup_armed = true;  // [WDJ] enable keyup event
                 return true;
       }
 
@@ -609,23 +609,23 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
     case ev_keyup:
       if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
       {
-	  if( keyup_armed )  // [WDJ] Only if the keydown was not intercepted by some other responder
-	  {
-	      if( ply->st_inventoryTics )
-	         ply->st_inventoryTics = 0;
-	      else if( ply->inventory[ply->inv_ptr].count>0 )
-	      {
-		  if( ply == consoleplayer_ptr )
-		  {
-		      Send_NetXCmd( XD_USEARTIFACT,
-				   &ply->inventory[ply->inv_ptr].type, 1);
-		  } else {
-		      Send_NetXCmd2( XD_USEARTIFACT,
-				    &ply->inventory[ply->inv_ptr].type, 1);
-		  }
-	      }
-	      return true;	// [WDJ] same as other event intercepts
-	  }
+          if( keyup_armed )  // [WDJ] Only if the keydown was not intercepted by some other responder
+          {
+              if( ply->st_inventoryTics )
+                 ply->st_inventoryTics = 0;
+              else if( ply->inventory[ply->inv_ptr].count>0 )
+              {
+                  if( ply == consoleplayer_ptr )
+                  {
+                      Send_NetXCmd( XD_USEARTIFACT,
+                                   &ply->inventory[ply->inv_ptr].type, 1);
+                  } else {
+                      Send_NetXCmd2( XD_USEARTIFACT,
+                                    &ply->inventory[ply->inv_ptr].type, 1);
+                  }
+              }
+              return true;	// [WDJ] same as other event intercepts
+          }
       }
       else if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
                ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
@@ -722,9 +722,9 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
       int tspeed = (turnheld[which_player] < SLOWTURNTICS) ? 2 : speed;
 
       if (turnright)
-	cmd->angleturn -= angleturn[tspeed];
+        cmd->angleturn -= angleturn[tspeed];
       if (turnleft)
-	cmd->angleturn += angleturn[tspeed];
+        cmd->angleturn += angleturn[tspeed];
     }
 
     // forwards/backwards, strafing
@@ -828,7 +828,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
             pitch += mousey<<19;
       }
       else if (cv_mouse_move.value)
-	forward += mousey;
+        forward += mousey;
 
       if (strafe)
         side += mousex*2;
@@ -841,16 +841,16 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     {
       if (mouseaiming)
       {
-	keyboard_look[which_player] = false;
+        keyboard_look[which_player] = false;
 
         // looking up/down
         if (cv_mouse2_invert.value)
-	  pitch -= mouse2y<<19;
+          pitch -= mouse2y<<19;
         else
           pitch += mouse2y<<19;
       }
       else if (cv_mouse2_move.value)
-	forward += mouse2y;
+        forward += mouse2y;
 
       if (strafe)
         side += mouse2x*2;
@@ -866,16 +866,16 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
       joybinding_t j = joybindings[i];
 
       if (j.playnum != which_player)
-	continue;
+        continue;
 
       int value = (int)(j.scale * I_JoystickGetAxis(j.joynum, j.axisnum));
       switch (j.action)
       {
-	case ja_pitch  : pitch = value << 16; break;
-	case ja_move   : forward += value; break;
-	case ja_turn   : cmd->angleturn += value; break;
-	case ja_strafe : side += value; break;
-	default: break;
+        case ja_pitch  : pitch = value << 16; break;
+        case ja_move   : forward += value; break;
+        case ja_turn   : cmd->angleturn += value; break;
+        case ja_strafe : side += value; break;
+        default: break;
       }
     }
 #endif
@@ -985,7 +985,7 @@ void G_DoLoadLevel (boolean resetplayer)
     int             i;
 
     levelstarttic = gametic;        // for time calculation
-	
+
     // Reset certain attributes
     // (should be in resetplayer 'if'?)
     fadealpha = 0;
@@ -1067,7 +1067,7 @@ boolean G_Responder (event_t* ev)
     // allow spy mode changes even during the demo
     if (gamestate == GS_LEVEL && ev->type == ev_keydown
         && ev->data1 == KEY_F12
-	&& (singledemo || !cv_deathmatch.value) )
+        && (singledemo || !cv_deathmatch.value) )
     {
         // spy mode
         do
@@ -1094,7 +1094,7 @@ boolean G_Responder (event_t* ev)
         if (ev->type == ev_keydown)
         {
             M_StartControlPanel ();
-	    goto handled;
+            goto handled;
         }
         goto rejected;
     }
@@ -1108,31 +1108,31 @@ boolean G_Responder (event_t* ev)
             consoleplayer_ptr->skincolor = (consoleplayer_ptr->skincolor+1) % NUMSKINCOLORS;
             consoleplayer_ptr->mo->flags |= (consoleplayer_ptr->skincolor)<<MF_TRANSSHIFT;
             G_DeathMatchSpawnPlayer (0);
-	    goto handled;
+            goto handled;
         }
 #endif
         if(!multiplayer)
         {
            if( cht_Responder (ev))
-	      goto handled;
-	}
+              goto handled;
+        }
         if (HU_Responder (ev))
-	    goto handled; // chat ate the event
+            goto handled; // chat ate the event
         if (ST_Responder (ev))
-	    goto handled; // status window ate it
+            goto handled; // status window ate it
         if (AM_Responder (ev))
-	    goto handled; // automap ate it
+            goto handled; // automap ate it
         if (G_InventoryResponder (consoleplayer_ptr, gamecontrol, ev))
-	    goto handled;
+            goto handled;
         if (displayplayer2_ptr && G_InventoryResponder (displayplayer2_ptr, gamecontrol2, ev))
-	    goto handled;
+            goto handled;
         //added:07-02-98: map the event (key/mouse/joy) to a gamecontrol
     }
 
     if (gamestate == GS_FINALE)
     {
         if (F_Responder (ev))
-	    goto handled;  // finale ate the event
+            goto handled;  // finale ate the event
     }
 
 
@@ -1145,7 +1145,7 @@ boolean G_Responder (event_t* ev)
         if (ev->data1 == KEY_PAUSE)
         {
             COM_BufAddText("pause\n");
-	    goto handled;
+            goto handled;
         }
         goto handled;
 
@@ -1189,7 +1189,7 @@ void G_Ticker (void)
                 if( players[i].st_inventoryTics )
                     players[i].st_inventoryTics--;
             }
-	}
+        }
     }
 
     // do things to change the game state
@@ -1463,8 +1463,8 @@ boolean G_CheckSpot ( int           playernum,
             if (playeringame[i]
                 && players[i].mo->x == mthing->x << FRACBITS
                 && players[i].mo->y == mthing->y << FRACBITS)
-	        goto failexit;
-	}
+                goto failexit;
+        }
         return true;
     }
 
@@ -1479,14 +1479,14 @@ boolean G_CheckSpot ( int           playernum,
         {
             // color
             if(player->skincolor!=(ss->sector->teamstartsec-1)) // -1 because wanted to know when it is set
-	        goto failexit;
+                goto failexit;
         }
         else
         if(cv_teamplay.value==2)
         {
             // skins
             if(player->skin!=(ss->sector->teamstartsec-1)) // -1 because wanted to know when it is set
-	        goto failexit;
+                goto failexit;
         }
     }
    
@@ -1635,7 +1635,7 @@ void G_DoReborn (int playernum)
         {
             if(G_DeathMatchSpawnPlayer (playernum))
                return;
-	    // use coop spots too if deathmatch spots occupied
+            // use coop spots too if deathmatch spots occupied
         }
 
         G_CoopSpawnPlayer (playernum);
@@ -1736,7 +1736,7 @@ void G_DoCompleted (void)
                 F_StartFinale();
                 return;
             }
-	    break; // [WDJ] 4/11/2012  map 8 is not secret level, and prboom and boom do not fall thru here.
+            break; // [WDJ] 4/11/2012  map 8 is not secret level, and prboom and boom do not fall thru here.
           case 9:
             for (i=0 ; i<MAXPLAYERS ; i++)
                 players[i].didsecret = true;
@@ -1748,15 +1748,15 @@ void G_DoCompleted (void)
     {
         if( !modifiedgame && gamemap == 5 )  // original chexquest ends at E1M5
         {
-		if(cv_deathmatch.value)
-			wminfo.next=0;
-		else
-		{
-			CL_Reset();
-			F_StartFinale();
-			return;
-		}
-	}
+                if(cv_deathmatch.value)
+                        wminfo.next=0;
+                else
+                {
+                        CL_Reset();
+                        F_StartFinale();
+                        return;
+                }
+        }
     }
 
     if(!dedicated)
@@ -1779,7 +1779,7 @@ void G_DoCompleted (void)
               case 31 : wminfo.next = 31; break;
               default : wminfo.next = 15;break;
             }
-	}
+        }
         else
         {
             switch(gamemap)
@@ -1788,7 +1788,7 @@ void G_DoCompleted (void)
               case 32: wminfo.next = 15; break;
               default: wminfo.next = gamemap;
             }
-	}
+        }
     }
     else
     if (gamemode == heretic)
@@ -2322,10 +2322,10 @@ boolean G_Downgrade(int version)
         boomsupport = 1;
         if( version < 200 )  // flags loaded by (Boom, MBF, prboom) demos
         {
-	    // settings not loaded from demo
-	    allow_pushers = 1;	// of Boom 2.02
-	    variable_friction = 1;  // of Boom 2.02
-	}
+            // settings not loaded from demo
+            allow_pushers = 1;	// of Boom 2.02
+            variable_friction = 1;  // of Boom 2.02
+        }
     }
 
     // [WDJ] enable of "Marine's Best Friend" feature emulation
@@ -2340,9 +2340,9 @@ boolean G_Downgrade(int version)
      : (version <= 143)? FR_boom  // old legacy demos
      : (version > 200) ?
        (
-	  (version <= 202)? FR_boom  // boom 200, 201, 202
-	: (version == 203)? FR_mbf
-	: FR_prboom  // prboom
+          (version <= 202)? FR_boom  // boom 200, 201, 202
+        : (version == 203)? FR_mbf
+        : FR_prboom  // prboom
        )
      : ( demoplayback )? friction_model  // loaded by demo144 format
      : FR_legacy;  // new model, default
@@ -2550,7 +2550,7 @@ void G_BeginRecording (void)
     *demo_p++ = 'D';   // "DL" for DoomLegacy
     *demo_p++ = 'L';   
     *demo_p++ = 1;     // non-zero format version (demo144_format)
-   		       // 0 would be an older version with new header.
+                       // 0 would be an older version with new header.
     *demo_p++ = VERSION;  // version of doomlegacy that recorded it.
     *demo_p++ = rec_version;  // actual DoomLegacy demoversion recorded
     *demo_p++ = 0;     // demo subversion, when needed
@@ -2750,29 +2750,29 @@ void G_DoPlayDemo (char *defdemoname)
         // Read the "Boom" or "MBF" header line
         if( *demo_p == 0x1d )
         {
-	    byte header[10];
-	    byte compatibility;  // Boom 2.00 compatibility flags
-	    demo_p ++;
-	    for ( i=0; i<9; i++ )
-	    {
-	        header[i] = *demo_p++;
-	        if( header[i] == 0xe6 )  break;
-	    }
-	    header[i] = 0;
-	    // MBF and prboom header have compatibility level
-	    compatibility = *demo_p++;
+            byte header[10];
+            byte compatibility;  // Boom 2.00 compatibility flags
+            demo_p ++;
+            for ( i=0; i<9; i++ )
+            {
+                header[i] = *demo_p++;
+                if( header[i] == 0xe6 )  break;
+            }
+            header[i] = 0;
+            // MBF and prboom header have compatibility level
+            compatibility = *demo_p++;
 #ifdef DEBUG_DEMO
-	    GenPrintf(EMSG_debug, " Boom demo header: %s.\n", header );
-	    GenPrintf(EMSG_debug, " compatibility 0x%x.\n", compatibility );
+            GenPrintf(EMSG_debug, " Boom demo header: %s.\n", header );
+            GenPrintf(EMSG_debug, " compatibility 0x%x.\n", compatibility );
 #endif
-	    boomdemo = 1;
-	    boomsupport = ! compatibility;
-	    cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
-	}
+            boomdemo = 1;
+            boomsupport = ! compatibility;
+            cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
+        }
         else
         {
-	    goto broken_header;
-	}
+            goto broken_header;
+        }
     }
 
     if (demoversion < VERSION)
@@ -2827,18 +2827,18 @@ void G_DoPlayDemo (char *defdemoname)
 #endif
         // header[5]: byte: respawn boolean
         if (demoversion < 128 || demo144_format)
-	    // store it, using the console will set it too late
-	    cv_respawnmonsters.value=*demo_p++;
+            // store it, using the console will set it too late
+            cv_respawnmonsters.value=*demo_p++;
         else
             demo_p++;  // legacy demo, ignore respawnmonsters
 
         // header[6]: byte: fast boolean
         if (demoversion < 128 || demo144_format)
         {
-	    // store it, using the console will set it too late
-	    cv_fastmonsters.value=*demo_p++;
-	    cv_fastmonsters.func();
-	}
+            // store it, using the console will set it too late
+            cv_fastmonsters.value=*demo_p++;
+            cv_fastmonsters.func();
+        }
         else
 	    demo_p++;  // legacy demo, ignore fastmonsters
 
@@ -2867,26 +2867,26 @@ void G_DoPlayDemo (char *defdemoname)
        // header[9..12]: byte: player[1..4] present boolean
         for (i=0 ; i<4 ; i++) {
 #ifdef DEBUG_DEMO
-	    if( *demo_p )
-	         GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
+            if( *demo_p )
+                 GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
             playeringame[i] = *demo_p++;
-	}
+        }
     }
     else if( boomdemo )
     {
         // Boom ReadOptions
-       	// [WDJ] according to prboom
+        // [WDJ] according to prboom
         // [0] monsters remember
         // [1] variable friction
         // [2] weapon recoil
         // [3] allow pushers
         // [4] ??
         // [5] player bobbing
-	// [6] respawn
-	// [7] fast monsters
-	// [8] no monsters
-	variable_friction = demo_p[1];
+        // [6] respawn
+        // [7] fast monsters
+        // [8] no monsters
+        variable_friction = demo_p[1];
         allow_pushers = demo_p[3];
 #ifdef DEBUG_DEMO
         GenPrintf(EMSG_debug, " respawn %i.\n", (int)demo_p[6] );
@@ -2903,35 +2903,35 @@ void G_DoPlayDemo (char *defdemoname)
         // [10..13] random number seed
         //   When demo insurance, Boom has random number generator per usage,
         //   all initialized from this seed.  DoomLegacy does not have this.
-	// Seed is not needed for the standard random number generators.
+        // Seed is not needed for the standard random number generators.
         if( demoversion >= 203 ) // MBF and prboom
         {
-	    // [14] monster infighting
-	    // [15] dogs
-	    // [16..17] ??
-	    // [18..19] distfriend
-	    // [20] monster backing
-	    // [21] monster avoid hazards
-	    // [22] monster friction
-	    // [23] help friends
-	    // [24] dog jumping
-	    // [25] monkeys
-	    // [26..57] comp vector x32
-	    // [58] force old BSP
-	    monster_infight = demo_p[14]; // monster_infight from demo is 0/1
-	    cv_monbehavior.value = (monster_infight)? 2:0;  // do not notify NET
-	    monster_friction = demo_p[22];
-	}
+            // [14] monster infighting
+            // [15] dogs
+            // [16..17] ??
+            // [18..19] distfriend
+            // [20] monster backing
+            // [21] monster avoid hazards
+            // [22] monster friction
+            // [23] help friends
+            // [24] dog jumping
+            // [25] monkeys
+            // [26..57] comp vector x32
+            // [58] force old BSP
+            monster_infight = demo_p[14]; // monster_infight from demo is 0/1
+            cv_monbehavior.value = (monster_infight)? 2:0;  // do not notify NET
+            monster_friction = demo_p[22];
+        }
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
         // byte: player[1..32] present boolean
-	// Boom saved room for 32 players even though only supported 4
+        // Boom saved room for 32 players even though only supported 4
         for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
-	    if( *demo_p )
-	         GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
+            if( *demo_p )
+                 GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
             playeringame[i] = *demo_p++;
-	}
+        }
     }
     else
     {
@@ -2948,33 +2948,33 @@ void G_DoPlayDemo (char *defdemoname)
 
         if (demoversion<113)
         {
-	   // header[9..16]: byte: player[1..8] present boolean
+           // header[9..16]: byte: player[1..8] present boolean
             for (i=0 ; i<8 ; i++) {
 #ifdef DEBUG_DEMO
-	        if( *demo_p )
-	            GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
+                if( *demo_p )
+                    GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
-	    }
+            }
         }
         else
         {
- 	    // header[17]: byte: multiplayer boolean
+            // header[17]: byte: multiplayer boolean
             if( demoversion>=131 ) {
                 multiplayer = *demo_p++;
 #ifdef DEBUG_DEMO
  		GenPrintf(EMSG_debug, " multi-player %i.\n", (int)multiplayer );
 #endif
-	    }
+            }
 
- 	    // header[18..50]: byte: player[1..32] present boolean
+            // header[18..50]: byte: player[1..32] present boolean
             for (i=0 ; i<32 ; i++) {
 #ifdef DEBUG_DEMO
-	        if( *demo_p )
-	            GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
+                if( *demo_p )
+                    GenPrintf(EMSG_debug, " player %i present %i.\n", i+1, (int)*demo_p );
 #endif
                 playeringame[i] = *demo_p++;
-	    }
+            }
         }
 #if MAXPLAYERS>32
 #error Please add support for old lmps
@@ -2999,9 +2999,9 @@ void G_DoPlayDemo (char *defdemoname)
 #endif
 #ifdef VOODOO_DOLL
         if( *demo_p >= 0x40 )
-	   voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
+           voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
         else
-	   voodoo_mode = 3;  // default
+           voodoo_mode = 3;  // default
         cv_instadeath.value = *demo_p++;  // voodoo doll instadeath, 0 is default
 #else
         demo_p += 2; 	// no voodoo
