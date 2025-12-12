@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1183 2015-11-25 20:10:34Z wesleyjohnson $
+// $Id: dehacked.c 1185 2015-11-25 20:12:49Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -123,8 +123,10 @@ typedef struct {
 char* myfgets(char *buf, int bufsize, myfile_t *f)
 {
     int i=0;
+
     if( myfeof(f) )
         return NULL;
+
     bufsize--;  // we need a extra byte for null terminated string
     while(i<bufsize && !myfeof(f) )
     {
@@ -140,8 +142,12 @@ char* myfgets(char *buf, int bufsize, myfile_t *f)
 #endif
     //CONS_Printf("fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
 
-    if( devparm && verbose )
-        GenPrintf(EMSG_text|EMSG_log,"DEH: %s",buf);  // buf has \n
+    if( (devparm && verbose) || (verbose>1) )
+    {
+        // List DEH lines, but not blank lines.
+	if( i > 1 ) 
+	  GenPrintf(EMSG_text|EMSG_log,"DEH: %s", buf);  // buf has \n
+    }
     return buf;
 }
 
@@ -189,7 +195,8 @@ static void deh_error(const char * fmt, ...)
 {
     va_list   ap;
 
-    if (devparm)
+    // Show the DEH errors for devparm, devgame, or verbose switches.   
+    if (devparm || verbose)
     {
        va_start(ap, fmt);
        CONS_Printf_va( fmt, ap );
@@ -209,6 +216,7 @@ boolean  filename_reject( char * src, int maxlen )
      for( j=0; ; j++ )
      {
          if( j >= maxlen ) goto reject;
+
          register char ch = src[j];
          // legal values, all else is illegal
          if(! (( ch >= 'A' && ch <= 'Z' )
@@ -218,6 +226,7 @@ boolean  filename_reject( char * src, int maxlen )
             goto reject;
      }
      return false; // no reject
+
   reject:
      return true; // rejected
 }
@@ -402,7 +411,7 @@ void deh_replace_string( char ** oldstring, char * newstring, DRS_type_e drstype
         // reported dangerous escape chars
         if( (unsigned char)ch == 133 )  goto bad_char;
         if( (unsigned char)ch >= 254 )  goto bad_char;
-//	    if( ch == 27 ) continue;  // ESCAPE
+//          if( ch == 27 ) continue;  // ESCAPE
 #else
         if( (unsigned char)ch > 127 )  goto bad_char;
 #endif       
@@ -957,12 +966,28 @@ static void readtext(myfile_t* f, int len1, int len2 )
     if( bex_include_notext )
        return;  // BEX INCLUDE NOTEXT is active, blocks Text replacements
 
+#if 0
+    // Debugging trigger
     if( strncmp(s,"GREATER RUNES", 13) == 0 )
     {
         GenPrintf(EMSG_text|EMSG_log, "Text:%s\n", s);
     }
+#endif
+
     str2 = &s[len1];
     s[len1+len2]='\0';
+
+    if( devparm && verbose )
+    {
+        // Readable listing of DEH text replacement.
+        // Make copy of str1 so can terminate string.
+        int len3 = (len1<999)?len1:999;
+        char str3[1000];
+        strncpy( str3, s, len3);
+        str3[len3] = 0;
+        GenPrintf(EMSG_text|EMSG_log, "FROM:%s\nTO:%s\n", str3, str2);
+    }
+
     if((len1 == 4) && (len2 == 4))  // sprite names are always 4 chars
     {
       // sprite table
@@ -979,7 +1004,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
     if((len1 <= 6) && (len2 <= 6))  // sound effect names limited to 6 chars
     {
       // these names are strings, so compare them correctly
-      char str1[6];
+      char str1[8];  // make long enough for 0 term too
       strncpy( str1, s, len1 ); // copy name to proper string
       str1[len1] = '\0';
       // sound table
@@ -2183,6 +2208,7 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
         deh_error("No word in this line:\n%s\n",s);
 
   } // end while
+
   if (deh_num_error>0)
   {
       CONS_Printf("%d warning(s) in the dehacked file\n",deh_num_error);
