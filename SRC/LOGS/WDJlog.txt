@@ -4513,3 +4513,8 @@ patchfile = w104_8_devgame.patch
 - commit revision 1182
 Checking of devgame switch was hiding value of devparm switch.
 Fixed so they use independent vars, but devgame will set devparm.
+
+*** W104_deh_myfile
+patchfile = w104_9_myfile.patch
+- commit revision 1183
+Change naming MYFILE to myfile_t to follow project rules, less confusion.

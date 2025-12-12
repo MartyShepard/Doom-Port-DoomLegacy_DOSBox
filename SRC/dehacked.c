@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: dehacked.c 1183 2015-11-25 20:10:34Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -109,18 +109,18 @@ static char       *deh_text[NUMTEXT];
 
 #define MAXLINELEN  200
 
-// the code was first written for a file
-// and converted to use memory with these functions
+// The code was first written for a file
+// and converted to use memory with these functions.
 typedef struct {
     char *data;
     char *curpos;
     int size;
-} MYFILE;
+} myfile_t;
 
 #define myfeof( a )  (a->data+a->size<=a->curpos)
 
-// get string upto \n, or eof
-char* myfgets(char *buf, int bufsize, MYFILE *f)
+// Get string upto \n, or eof.
+char* myfgets(char *buf, int bufsize, myfile_t *f)
 {
     int i=0;
     if( myfeof(f) )
@@ -145,10 +145,11 @@ char* myfgets(char *buf, int bufsize, MYFILE *f)
     return buf;
 }
 
-// get line, skipping comments
-char* myfgets_nocom(char *buf, int bufsize, MYFILE *f)
+// Get line, skipping comments.
+char* myfgets_nocom(char *buf, int bufsize, myfile_t *f)
 {
     char* ret;
+
     do {
         ret = myfgets( buf, bufsize, f );
     } while( ret && ret[0] == '#' );   // skip comment
@@ -158,7 +159,7 @@ char* myfgets_nocom(char *buf, int bufsize, MYFILE *f)
 
 // Read multiple lines into buf
 // Only used for text.
-size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
+size_t  myfread( char *buf, size_t reqsize, myfile_t *f )
 {
     size_t byteread = f->size - (f->curpos-f->data);  // bytes left
     if( reqsize < byteread )
@@ -168,8 +169,8 @@ size_t  myfread( char *buf, size_t reqsize, MYFILE *f )
 #endif
     if( byteread>0 )
     {
-        ULONG i;
-        // read lines except for any '\r'
+        uint32_t i;
+        // Read lines except for any '\r'.
         // But should only be taking the '\r' off end of line (/cr/lf)
         for(i=0; i<byteread; )
         {
@@ -622,7 +623,7 @@ static int searchvalue(char *s)
   }
 }
 
-static void readthing(MYFILE *f, int deh_thing_id )
+static void readthing(myfile_t *f, int deh_thing_id )
 {
   // DEH thing 1.. , but mobjinfo array is 0..
   mobjinfo_t *  mip = & mobjinfo[ deh_thing_id - 1 ];
@@ -723,7 +724,7 @@ static void readthing(MYFILE *f, int deh_thing_id )
               // Avoid by using MF2CLEAR
               mip->flags2 = flags2_default_value;
           }
-#endif	 
+#endif
           mip->flags2 |= flags2;
           flags_valid_deh = true;
         next_line:
@@ -773,7 +774,7 @@ Sprite subnumber = 32968
 Duration = 200
 Next frame = 200
 */
-static void readframe(MYFILE* f, int deh_frame_id)
+static void readframe(myfile_t* f, int deh_frame_id)
 {
   state_t *  fsp = & states[ deh_frame_id ];
   char s[MAXLINELEN];
@@ -801,7 +802,7 @@ static void readframe(MYFILE* f, int deh_frame_id)
   } while(s[0]!='\n' && !myfeof(f));
 }
 
-static void readsound(MYFILE* f, int deh_sound_id)
+static void readsound(myfile_t* f, int deh_sound_id)
 {
   sfxinfo_t *  ssp = & S_sfx[ deh_sound_id ];
   char s[MAXLINELEN];
@@ -935,7 +936,7 @@ static hash_text_t   hash_text_table[] =
     {0, 0xFFFF}  // last has invalid indirect
 };
 
-static void readtext(MYFILE* f, int len1, int len2 )
+static void readtext(myfile_t* f, int len1, int len2 )
 {
   char s[2001];
   char * str2;
@@ -1432,7 +1433,7 @@ bex_text_t  bex_string_table[] =
 
 // BEX [STRINGS] section
 // permission: 0=game, 1=adv, 2=language
-static void bex_strings( MYFILE* f, byte bex_permission )
+static void bex_strings( myfile_t* f, byte bex_permission )
 {
   char stxt[BEX_MAX_STRING_LEN+1];
   char keyw[BEX_KEYW_LEN];
@@ -1532,7 +1533,7 @@ static void bex_strings( MYFILE* f, byte bex_permission )
 }
 
 // BEX [PARS] section
-static void bex_pars( MYFILE* f )
+static void bex_pars( myfile_t* f )
 {
   char s[MAXLINELEN];
   int  episode, level, partime;
@@ -1668,7 +1669,7 @@ bex_codeptr_t  bex_action_table[] = {
 
 
 // BEX [CODEPTR] section
-static void bex_codeptr( MYFILE* f )
+static void bex_codeptr( myfile_t* f )
 {
   char funcname[BEX_KEYW_LEN];
   char s[MAXLINELEN];
@@ -1719,7 +1720,7 @@ void bex_include( char * inclfilename )
 {
   static boolean include_nested = 0;
   
-  // MYFILE is local to DEH_LoadDehackedLump
+  // myfile_t is local to DEH_LoadDehackedLump
   
   if( include_nested )
   {
@@ -1746,7 +1747,7 @@ Bobbing frame = 13
 Shooting frame = 17
 Firing frame = 10
 */
-static void readweapon(MYFILE *f, int deh_weapon_id)
+static void readweapon(myfile_t *f, int deh_weapon_id)
 {
   weaponinfo_t * wip = & doomweaponinfo[ deh_weapon_id ];
   char s[MAXLINELEN];
@@ -1779,7 +1780,7 @@ Per ammo = 40
 extern int clipammo[];
 extern int GetWeaponAmmo[];
 
-static void readammo(MYFILE *f,int num)
+static void readammo(myfile_t *f,int num)
 {
   char s[MAXLINELEN];
   char *word;
@@ -1817,7 +1818,7 @@ extern int soul_health;
 extern int mega_health;
 
 
-static void readmisc(MYFILE *f)
+static void readmisc(myfile_t *f)
 {
   char s[MAXLINELEN];
   char *word,*word2;
@@ -1949,7 +1950,7 @@ static void change_cheat_code(byte *cheatseq, byte *newcheat)
 }
 
 // Read cheat section
-static void readcheat(MYFILE *f)
+static void readcheat(myfile_t *f)
 {
   char s[MAXLINELEN];
   char *word,*word2;
@@ -2002,7 +2003,7 @@ static void readcheat(MYFILE *f)
 
 
 // permission: 0=game, 1=adv, 2=language
-void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
+void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
 {
   
   char       s[1000];
@@ -2054,7 +2055,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
               || !strncmp(word, "Data", 4)
               || !strncmp(word, "IWAD", 4) )
          continue; // WhackEd2 data, ignore it
-       
+
       word2=strtok(NULL," ");  // id number
       if(word2!=NULL)
       {
@@ -2198,7 +2199,7 @@ void DEH_LoadDehackedFile(MYFILE* f, byte bex_permission)
 // file that are converted to wad in w_wad.c)
 void DEH_LoadDehackedLump(int lump)
 {
-    MYFILE f;
+    myfile_t f;
     
     f.size = W_LumpLength(lump);
     f.data = Z_Malloc(f.size + 1, PU_IN_USE, 0);  // temp
@@ -2242,7 +2243,7 @@ void BEX_load_language( char * langname, byte bex_permission )
     int  bytesread;
     struct stat  bufstat;
     char filename[MAX_WADPATH];
-    MYFILE f;
+    myfile_t f;
 
     f.data = NULL;
     if( langname == NULL )
