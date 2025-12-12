@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01186 ]: w104_12 SPLGT_ enum sprite light corona
 [01185 ]: w104_11 deh text change
 [01184 ]: w104_10 deh listing
 [01183 ]: w104_9 myfile_t

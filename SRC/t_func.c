@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1178 2015-11-25 20:01:46Z wesleyjohnson $
+// $Id: t_func.c 1186 2015-11-25 20:24:52Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -4221,7 +4221,8 @@ void SF_SetCorona(void)
         switch (what)
         {
             case 0:
-                lspr[num].type = ival;
+                // Set sprite light corona lights.
+                lspr[num].splgt_flags = ival;
                 break;
             case 1:
                 lspr[num].light_xoffset = fval;
@@ -4256,7 +4257,7 @@ void SF_SetCorona(void)
     else
     {
         int num = t_argv[0].value.i;    // which corona we want to modify
-        lspr[num].type = t_argv[1].value.i;
+        lspr[num].splgt_flags = t_argv[1].value.i;
         lspr[num].light_xoffset = t_argv[2].value.f;
         lspr[num].light_yoffset = t_argv[3].value.f;
         if (t_argv[4].type == FSVT_string)

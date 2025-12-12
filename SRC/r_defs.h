@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1180 2015-11-25 20:05:57Z wesleyjohnson $
+// $Id: r_defs.h 1186 2015-11-25 20:24:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2012 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2015 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -607,23 +607,41 @@ typedef struct msecnode_s
 } msecnode_t;
 
 
+// [WDJ] Sprite light sources bit defines.
+// The _SPR names are defined in legacy.wad for use in fragglescript scripts.
+typedef enum {
+   // UNDEFINED_SPR = 0
+  SPLGT_none     = 0x00, // actually just for testing
+   // CORONOA_SPR = 1
+  SPLGT_corona   = 0x01, // emit a corona
+   // DYNLIGHT_SPR = 2
+  SPLGT_dynamic  = 0x02, // emit dynamic lighting
+   // LIGHT_SPR = 3
+  SPLGT_light    = (SPLGT_dynamic|SPLGT_corona),
+   // ROCKET_SPR = 0x13
+  SPLGT_rocket   = 0x10 | (SPLGT_dynamic|SPLGT_corona),
+//SPLGT_monster  = 0x04,
+//SPLGT_ammo     = 0x08,
+//SPLGT_bonus    = 0x20,
+} sprite_light_e;
+
+  
 //Hurdler: 04/12/2000: for now, only used in hardware mode
 //                     maybe later for software as well?
 //                     that's why it's moved here
 typedef struct light_s 
 {
-    USHORT  type;           // light,... (cfr #define in hwr_light.c)
+    uint16_t  splgt_flags;   // sprite_light_e, used in hwr_light.c
 
     float   light_xoffset;
     float   light_yoffset;  // y offset to adjust corona's height
 
-    ULONG   corona_color;   // color of the light for static lighting
+    uint32_t  corona_color;   // color of the light for static lighting
     float   corona_radius;  // radius of the coronas
 
-    ULONG   dynamic_color;  // color of the light for dynamic lighting
+    uint32_t  dynamic_color;  // color of the light for dynamic lighting
     float   dynamic_radius; // radius of the light ball
     float   dynamic_sqrradius; // radius^2 of the light ball
-
 } light_t;
 
 

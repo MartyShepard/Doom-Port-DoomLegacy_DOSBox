@@ -4535,3 +4535,12 @@ Text replacement failed when string was 6 chars long because the
 search name str1 corrupted the stack, hitting the deh line buffer.
 Made search name longer to include term 0.
 
+*** W104_splgt
+patchfile = w104_12_splgt.patch
+- commit revision 1186
+Make sprite dynamic light enum, sprite_light_e, with values SPLGT_xxx.
+Define the sprite light xxx_SPR types as a combination of the flags.
+Use the enum flags for type bit testing.
+Remove dynamic light macros, putting the dynamic light structure access
+in the program code.  Use a structure ptr to access fields, instead of
+repeated indexing.
