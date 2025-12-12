@@ -4499,3 +4499,17 @@ DoomLegacy identifies the flat picture to enable splash sounds.
 Boom did not have water splash sounds, and the splash sound
 remains when the flat changes.  When the sector flat picture
 changes, the sector floortype must be copied from the model sector too.
+
+*** W104_untab3
+patchfile = w104_7_untab3.patch
+- commit revision 1181
+Remove leading tabs from lines.
+hardware/hw_light.c
+hardware/hw_main.c
+hardware/hw_main.h
+
+*** W104_devgame
+patchfile = w104_8_devgame.patch
+- commit revision 1182
+Checking of devgame switch was hiding value of devparm switch.
+Fixed so they use independent vars, but devgame will set devparm.

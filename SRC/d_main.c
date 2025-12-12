@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1173 2015-05-22 19:00:35Z wesleyjohnson $
+// $Id: d_main.c 1182 2015-11-25 20:09:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -298,7 +298,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1180"
+#define SVN_REV "1182"
 #endif
 
 // Version number: major.minor.revision
@@ -1527,6 +1527,7 @@ void IdentifyVersion()
     // GenPrintf(EMSG_debug, "MAX_PATH: %i\n", _MAX_PATH);
 
     boolean  other_names = 0;	// indicates -iwad other names
+    boolean  devgame = false;   // indicates -devgame <game>    
 
     int gamedesc_index = NUM_GDESC; // nothing
     int gmi;
@@ -1610,10 +1611,10 @@ void IdentifyVersion()
     // [WDJ] were too many chained ELSE. Figured it out once and used direct goto.
 
     // [WDJ] Old switches -shdev, -regdev, -comdev are now -devgame <game>
-    // Later is direct test of -devparm
-    devparm = M_CheckParm("-devgame");
+    // Earlier did direct test of -devparm, do not overwrite it.
+    devgame = M_CheckParm("-devgame");
     // [WDJ] search for one of the listed GDESC_ forcing switches
-    if ( devparm || M_CheckParm("-game") )
+    if ( devgame || M_CheckParm("-game") )
     {
         char *temp = M_GetNextParm();
         if( temp == NULL )
@@ -1635,9 +1636,9 @@ void IdentifyVersion()
         gamedesc_index = gmi;
         gamedesc = game_desc_table[gamedesc_index]; // copy the game descriptor
         // handle the recognized special -devgame switch
-        if( devparm )
+        if( devgame )
         {
-            // devparm = true;
+            devparm = true;
 #if 0
             strcpy(configfile, DEVDATA CONFIGFILENAME); // moved
             // [WDJ] Old, irrelevant, and it was interfering with new
@@ -2067,7 +2068,7 @@ void D_DoomMain()
 #endif
 
     EMSG_flags = EMSG_text | EMSG_log;
-						
+
     CONS_Printf(text[Z_INIT_NUM]);
     // Cannot Init nor register cv_ vars until after Z_Init and some
     // other systems are init first.
@@ -2452,6 +2453,7 @@ restart_command:
 #endif
 
     // Load wad, including the main wad file.
+    // This will read DEH and BEX files.  Need devparm and verbose.
     if( W_InitMultipleFiles(startupwadfiles) == 0 )
     {
        // Some wad failed to load.
@@ -3171,7 +3173,7 @@ static void Help( void )
         "-lang name      Load BEX language file name.bex\n"
 #endif
 #if defined (__DJGPP__)
-        "-listdirs/-ld   List supportet directorys\n"
+        "-listdirs/-ld   Lists supportet search directorys\n"
 #endif
         );
      break;

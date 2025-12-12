@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01182 ]: w104_8 devgame switch
+[01181*]: w104_7 untab3
 [01180 ]: w104_6 splash sector change
 [01179 ]: w104_5 untab2
 [01178 ]: w104_4 untab1
