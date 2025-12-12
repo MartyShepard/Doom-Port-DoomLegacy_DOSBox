@@ -4544,3 +4544,17 @@ Use the enum flags for type bit testing.
 Remove dynamic light macros, putting the dynamic light structure access
 in the program code.  Use a structure ptr to access fields, instead of
 repeated indexing.
+
+*** W104_corona_func
+patchfile = w104_13_corona_func.patch
+- commit revision 1187
+Rewrite parts of fragglescript corona function to fix Chex newmaps bugs.
+Rewrite func as String_to_RGBA func to handle any length hex value string.
+
+Chex newmaps does not turn on the corona type flags for the
+fireflies.  To make the fireflies work, the corona is turned on if it is
+0 when a write to the corona color is made.
+The code for Doomu has the tall-torch corona turned on, but
+the Chex1 patch turns it off.
+This fixes the Chex newmaps fireflies, as far as I know.
+

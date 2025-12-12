@@ -1,10 +1,10 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1186 2015-11-25 20:24:52Z wesleyjohnson $
+// $Id: t_func.c 1187 2015-11-25 20:27:43Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
-// Copyright (C) 2001-2011 by DooM Legacy Team.
+// Copyright (C) 2001-2015 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -183,6 +183,11 @@
 #include "t_func.h"
 #include "t_array.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_light.h"
+  // lspr
+#endif
+
 
 fs_value_t  evaluate_expression(int start, int stop);
 int find_operator(int start, int stop, char *value);
@@ -210,8 +215,10 @@ char *  Z_cat_args( int i1 )
     tempstr[0] = '\0';
 
     for (i = i1; i < t_argc; i++)
+    {
 //        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
         strcat(tempstr, stringvalue(t_argv[i])); // append
+    }
 
     return tempstr;
 }
@@ -864,11 +871,11 @@ bad_keyvalue:
     goto done;
 }
 
-/*	DarkWolf95:September 17, 2004:playerkeysb
+/*  DarkWolf95:September 17, 2004:playerkeysb
 
-        Returns players[i].cards as a whole, since FS supports binary operators.
-        Also allows you to set upper two bits of cards (64 & 128).  Thus the user
-        can have two new boolean values to work with.  CTF, Runes, Tag...
+    Returns players[i].cards as a whole, since FS supports binary operators.
+    Also allows you to set upper two bits of cards (64 & 128).  Thus the user
+    can have two new boolean values to work with.  CTF, Runes, Tag...
  */
 
 // Test or Set
@@ -890,7 +897,7 @@ void SF_PlayerKeysByte(void)
     {
         // set keys
         unsigned int keybyte = intvalue(t_argv[1]);  
-        if(keybyte > 255)	// don't overflow
+        if(keybyte > 255)  // don't overflow
             keybyte = 0;
 
         players[playernum].cards = keybyte;  // set
@@ -2007,7 +2014,7 @@ err_objtype:
 // LineAttack( mobj, angle, damage, {pitch})
 void SF_LineAttack(void)
 {
-    mobj_t	*mo;
+    mobj_t * mo;
     angle_t aiming;
     int  damage, angle, slope;
     int	 short fixedtodeg = 182.033;
@@ -2026,7 +2033,9 @@ void SF_LineAttack(void)
         slope = AIMINGTOSLOPE(aiming);
     }
     else
+    {
         slope = P_AimLineAttack(mo, angle, MISSILERANGE);  // auto aim
+    }
 
     P_LineAttack(mo, angle, MISSILERANGE, slope, damage);
 done:
@@ -2295,8 +2304,8 @@ err_numarg:
 // ObjState( {mobj}, state )
 void SF_ObjState(void)
 {
-    int		state, newstate;
-    mobj_t	*mo;
+    int      state, newstate;
+    mobj_t * mo;
 
     t_return.type = FSVT_int;
     t_return.value.i = 0;  // default
@@ -2400,10 +2409,8 @@ err_numarg:
 // SetNodeNext( mobj, next_mobj )
 void SF_SetNodeNext(void)
 {
-
-    mobj_t* mo;		// Affected
+    mobj_t* mo;  // Affected
     mobj_t* nextmo;
-
 
     if (t_argc != 2)  goto err_numarg;
 
@@ -4179,14 +4186,59 @@ err_handle:
 // Hurdler: I'm enjoying FS capability :)
 
 #ifdef HWRENDER
-extern light_t lspr[];
 
+// Debug color setting.
+//#define SHOW_COLOR_SETTING
+// [WDJ] Use the new String_to_RGBA function.
+#define USE_STRING_TO_RGBA
+
+#ifdef USE_STRING_TO_RGBA
+// [WDJ] Rewritten to process Hex ARGB and RGB string, any length, any machine.
+uint32_t String_to_RGBA(char *s)
+{
+    // [WDJ] Handles any length hex value, and no macros.
+    RGBA_t   valrgb;  // Cannot trust byte order of rgba component.
+    uint32_t valhex = 0;
+    // Convert string to hex
+    while( *s ) {
+       register byte v = *s;
+       if( v >= '0' && v <= '9' )
+       {
+           v -= '0';
+       }else if( v >= 'A' && v <= 'F' )
+       {
+           v -= ('A' - 10);
+       }else if( v >= 'a' && v <= 'f' )
+       {
+           v -= ('a' - 10);
+       }
+       else
+         break;  // Not a hex digit
+
+       valhex = (valhex<<4) + v;
+       s++;
+    }
+    // Convert hex to RGB bytes.
+    // Macro UINT2RGBA does not work, gives wrong colors.
+    // Was read as A R G B
+    valrgb.s.blue = valhex;  // LSB byte
+    valrgb.s.green = valhex>>8;
+    valrgb.s.red = valhex>>16;
+    valrgb.s.alpha = valhex>>24;
+    return valrgb.rgba;
+}
+#else
+// [WDJ] Not hex, has mangled byte order.
+// If string is short, will read random color.
+// Not BIG_ENDIAN compatible.
 int String2Hex(char *s)
 {
+   // [WDJ] Strange shifting is to get the RGB into the Intel byte order.
 #define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
     return (HEX2INT(s[0]) << 4) + (HEX2INT(s[1]) << 0) + (HEX2INT(s[2]) << 12) + (HEX2INT(s[3]) << 8) + (HEX2INT(s[4]) << 20) + (HEX2INT(s[5]) << 16) + (HEX2INT(s[6]) << 28) + (HEX2INT(s[7]) << 24);
 #undef HEX2INT
 }
+#endif
 
 // SetCorona( id, attribute, value )
 // id: corona id number
@@ -4206,46 +4258,96 @@ int String2Hex(char *s)
 // dynamic_radius: wall lighting size
 void SF_SetCorona(void)
 {
+    int num;
+
     if (rendermode == render_soft)
         return; // do nothing in software mode
+
     if (t_argc != 3 && t_argc != 7)   goto err_numarg;
+
+    num = t_argv[0].value.i;    // which corona we want to modify
+    if( num >= NUMLIGHTS )
+        return;
 
     //this function accept 2 kinds of parameters
     if (t_argc == 3)
     {
-        int num = t_argv[0].value.i;    // which corona we want to modify
         int what = t_argv[1].value.i;   // what we want to modify (type, color, offset,...)
-        int ival = t_argv[2].value.i;   // the value of what we modify
+        int ival = t_argv[2].value.i;   // new value
         double fval = ((double) t_argv[2].value.f / FRACUNIT);
-
+       
+        // The fragglescript corona sets.
         switch (what)
         {
-            case 0:
+            case 0:  // CORONA_TYPE is int
                 // Set sprite light corona lights.
                 lspr[num].splgt_flags = ival;
                 break;
-            case 1:
+            case 1:  // CORONA_OFFX is fixed
                 lspr[num].light_xoffset = fval;
                 break;
-            case 2:
+            case 2:  // CORONA_OFFY is fixed
                 lspr[num].light_yoffset = fval;
                 break;
-            case 3:
+            case 3:  // CORONA_COLOR is (string or int)
+#ifdef USE_STRING_TO_RGBA
+                lspr[num].corona_color = (t_argv[2].type == FSVT_string)?
+                    String_to_RGBA(t_argv[2].value.s)
+                    : ival;
+#else
                 if (t_argv[2].type == FSVT_string)
                     lspr[num].corona_color = String2Hex(t_argv[2].value.s);
                 else
                     memcpy(&lspr[num].corona_color, &ival, sizeof(int));
+#endif
+#ifdef SHOW_COLOR_SETTING
+                // Show the corona color setting.
+                if( devparm && verbose )
+                {
+                    if(t_argv[2].type == FSVT_string)
+                       GenPrintf( EMSG_debug, "CORONA_COLOR = %s, rgba=%x\n",
+                                  t_argv[2].value.s, lspr[num].corona_color );
+                    else
+                       GenPrintf( EMSG_debug, "CORONA_COLOR = %x, rgba=%x\n",
+                                  ival, lspr[num].corona_color );
+                }
+#endif
+#ifdef USE_STRING_TO_RGBA
+                // Chex newmaps fix. The flags are set 0 for Chex1.
+                // If CORONA_COLOR is set, then corona should be enabled.
+                if( lspr[num].splgt_flags == 0 )
+                    lspr[num].splgt_flags = SPLGT_corona;
+#endif
                 break;
-            case 4:
+            case 4:  // CORONA_SIZE is fixed
                 lspr[num].corona_radius = fval;
                 break;
-            case 5:
+            case 5:  // LIGHT_COLOR is (string or int)
+#ifdef USE_STRING_TO_RGBA
+                lspr[num].dynamic_color = (t_argv[2].type == FSVT_string)?
+                    String_to_RGBA(t_argv[2].value.s)
+                    : ival;
+#else
+                // [WDJ] Mangles the RGB colors.
                 if (t_argv[2].type == FSVT_string)
                     lspr[num].dynamic_color = String2Hex(t_argv[2].value.s);
                 else
                     memcpy(&lspr[num].dynamic_color, &ival, sizeof(int));
+#endif
+#ifdef SHOW_COLOR_SETTING
+                // Show the dynamic color setting.
+                if( devparm && verbose )
+                {
+                    if(t_argv[2].type == FSVT_string)
+                       GenPrintf( EMSG_debug, "LIGHT_COLOR = %s, rgba=%x\n",
+                                  t_argv[2].value.s, lspr[num].dynamic_color );
+                    else
+                       GenPrintf( EMSG_debug, "LIGHT_COLOR = %x, rgba=%x\n",
+                                  ival, lspr[num].dynamic_color );
+                }
+#endif
                 break;
-            case 6:
+            case 6:  // LIGHT_SIZE is fixed
                 lspr[num].dynamic_radius = fval;
                 lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
                 break;
@@ -4256,21 +4358,53 @@ void SF_SetCorona(void)
     }
     else
     {
-        int num = t_argv[0].value.i;    // which corona we want to modify
+        // Set all fields of sprite corona light.
         lspr[num].splgt_flags = t_argv[1].value.i;
         lspr[num].light_xoffset = t_argv[2].value.f;
         lspr[num].light_yoffset = t_argv[3].value.f;
+#ifdef USE_STRING_TO_RGBA
+        lspr[num].corona_color = (t_argv[4].type == FSVT_string)?
+            String_to_RGBA(t_argv[4].value.s)
+            : t_argv[4].value.i;
+#else
+        // [WDJ] Mangles the RGB colors.
         if (t_argv[4].type == FSVT_string)
             lspr[num].corona_color = String2Hex(t_argv[4].value.s);
         else
             memcpy(&lspr[num].corona_color, &t_argv[4].value.i, sizeof(int));
+#endif
         lspr[num].corona_radius = t_argv[5].value.f;
+#ifdef USE_STRING_TO_RGBA
+        lspr[num].dynamic_color = (t_argv[6].type == FSVT_string)?
+            String_to_RGBA(t_argv[6].value.s)
+            : t_argv[6].value.i;
+#else
+        // [WDJ] Mangles the RGB colors.
         if (t_argv[6].type == FSVT_string)
             lspr[num].dynamic_color = String2Hex(t_argv[6].value.s);
         else
             memcpy(&lspr[num].dynamic_color, &t_argv[6].value.i, sizeof(int));
+#endif
         lspr[num].dynamic_radius = t_argv[7].value.f;
         lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
+#ifdef SHOW_COLOR_SETTING
+        // Show the corona color setting.
+        if( devparm && verbose )
+        {
+            if(t_argv[4].type == FSVT_string)
+               GenPrintf( EMSG_debug, "CORONA_COLOR = %s, rgba=%x\n",
+                          t_argv[4].value.s, lspr[num].corona_color );
+            else
+               GenPrintf( EMSG_debug, "CORONA_COLOR = %x, rgba=%x\n",
+                          t_argv[4].value.i, lspr[num].corona_color );
+            if(t_argv[2].type == FSVT_string)
+               GenPrintf( EMSG_debug, "LIGHT_COLOR = %s, rgba=%x\n",
+                          t_argv[6].value.s, lspr[num].dynamic_color );
+            else
+               GenPrintf( EMSG_debug, "LIGHT_COLOR = %x, rgba=%x\n",
+                          t_argv[6].value.i, lspr[num].dynamic_color );
+        }
+#endif
     }
 done:
     return;

@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 1186 2015-11-25 20:24:52Z wesleyjohnson $
+// $Id: p_chex.c 1187 2015-11-25 20:27:43Z wesleyjohnson $
 //
-// Copyright (C) 2003-2010 by DooM Legacy Team.
+// Copyright (C) 2003-2015 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,11 @@
 #include "z_zone.h"
 #include "p_chex.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_light.h"
+  // lspr
+#endif
+
 extern byte cheat_mus_seq[];
 extern byte cheat_choppers_seq[];
 extern byte cheat_god_seq[];
@@ -46,9 +51,6 @@ extern byte cheat_clev_seq[];
 extern byte cheat_mypos_seq[];
 extern byte cheat_amap_seq[];
 
-#ifdef HWRENDER
-extern light_t lspr[];
-#endif
 
 void Chex1PatchEngine(void)
 {
