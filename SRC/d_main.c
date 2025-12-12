@@ -1027,14 +1027,23 @@ void D_DoAdvanceDemo(void)
                     pagetic = 210 + 140;
                     pagename = "TITLE";
                     S_StartMusic(mus_htitl);
+#if defined CDMUS	&& defined (__DJGPP__)								
+										I_PlayCD (1, true); 
+#endif
                     break;
                 case doom2_commercial:
                     pagetic = TICRATE * 11;
                     S_StartMusic(mus_dm2ttl);
+#if defined CDMUS	&& defined (__DJGPP__)										
+										I_PlayCD (1, true);
+#endif										
                     break;
                 default:
                     pagetic = 170;
                     S_StartMusic(mus_intro);
+#if defined CDMUS	&& defined (__DJGPP__)										
+										I_PlayCD (1, true);
+#endif
                     break;
             }
             gamestate = GS_DEMOSCREEN;

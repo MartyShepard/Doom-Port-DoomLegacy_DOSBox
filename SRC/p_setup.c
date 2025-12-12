@@ -18,6 +18,8 @@
 //
 //
 // $Log: p_setup.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.49  2004/07/27 08:19:37  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -1742,9 +1744,17 @@ boolean P_SetupLevel (int      to_episode,
 #ifdef CDMUS
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
     if (gamemode==doom2_commercial)
+#if defined (__DJGPP__)			
+        I_PlayCD (to_map+1, true);                // Doom2, 32 maps
+#else
         I_PlayCD (to_map, true);                // Doom2, 32 maps
+#endif			
     else
+#if defined (__DJGPP__)				
+        I_PlayCD ((to_episode-1)*9+ to_map+1, true);  // Doom1, 9maps per episode
+#else
         I_PlayCD ((to_episode-1)*9+ to_map, true);  // Doom1, 9maps per episode
+#endif
 #endif
 
     // preload graphics

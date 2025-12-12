@@ -1,6 +1,9 @@
 * Not need to Compile.
 
 [01192 ]: w104 map command
+          DOS: CD Track 1 = TitleMusic
+               CD Track 2++ GameMusic
+							 
 [01191 ]: w104 hexen err
           DOS: Added -listwads/-lw
 					
