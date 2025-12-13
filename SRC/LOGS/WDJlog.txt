@@ -4680,3 +4680,11 @@ patchfile = w104_27_drawinfo.patch
 - commit revision 1201
 Change V_drawinfo, to just drawinfo.  It appears everywhere in v_video.c,
 and very little anywhere else.
+
+*** W104_patch_offset
+patchfile = w104_28_patch_offset.patch
+- commit revision 1202
+The topoffset and leftoffset were calculated wrong for patch draws when
+SCALEPATCH, but not SCALESTART.  The offsets must have SCALEPATCH
+scaling applied, not SCALESTART scaling.  This did not happen in
+vanilla code, but occurs in new applications of scaling, such as font size.

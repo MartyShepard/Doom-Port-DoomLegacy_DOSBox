@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: v_video.c 1202 2015-12-26 19:22:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -929,11 +929,10 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
     }
 #endif
 
-    y -= patch->topoffset;
-    x -= patch->leftoffset;
-
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
     desttop = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
+    // [WDJ] offsets are subject to DRAWSCALE dup.
+    desttop -= (patch->topoffset * drawinfo.ybytes) + (patch->leftoffset * drawinfo.xbytes);
 //    destend = desttop + (patch->width * drawinfo.xbytes);  // test against desttop
 
 #ifdef DIRTY_RECT
@@ -997,7 +996,7 @@ void V_DrawMappedPatch_Name ( int x, int y, char* name, byte* colormap )
 // V_DrawScaledPatch
 //   like V_DrawPatch, but scaled 2,3,4 times the original size and position
 //   this is used for menu and title screens, with high resolutions
-//  per drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
+//  per drawinfo, with V_SCALESTART, V_SCALEPATCH
 //
 //added:05-02-98:
 // default params : scale patch and scale start
@@ -1026,13 +1025,12 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     }
 #endif
 
-    y -= patch->topoffset;
-    x -= patch->leftoffset;
-
     colfrac = drawinfo.x_unitfrac;
    
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
     desttop = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
+    // [WDJ] offsets are subject to DRAWSCALE dup.
+    desttop -= (patch->topoffset * drawinfo.ybytes) + (patch->leftoffset * drawinfo.xbytes);
     destend = desttop + (patch->width * drawinfo.xbytes);  // test against desttop
 
 #ifndef ENABLE_CLIP_DRAWSCALED
@@ -1125,7 +1123,7 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     }
 }
 
-//  per drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
+//  per drawinfo, with V_SCALESTART, V_SCALEPATCH
 // with temp patch load to cache
 void V_DrawScaledPatch_Name(int x, int y, char * name )
 {
@@ -1134,7 +1132,7 @@ void V_DrawScaledPatch_Name(int x, int y, char * name )
                        W_CachePatchName( name, PU_CACHE ) );  // endian fix
 }
 
-//  per drawinfo, with V_SCALEDSTART, V_SCALEDPATCH
+//  per drawinfo, with V_SCALESTART, V_SCALEPATCH
 // with temp patch load to cache
 void V_DrawScaledPatch_Num(int x, int y, int patch_num )
 {
@@ -1173,9 +1171,6 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
     }
 #endif
 
-    y -= patch->topoffset;
-    x -= patch->leftoffset;
-
     colfrac = FixedDiv(FRACUNIT, dupx << FRACBITS);
     rowfrac = FixedDiv(FRACUNIT, dupy << FRACBITS);
 
@@ -1191,6 +1186,8 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
     rowfrac_inc = rowfrac;
 
     desttop = screens[scrn & 0xFF] + (y * vid.ybytes) + (x * vid.bytepp);
+    // [WDJ] offsets are subject to DRAWSCALE dup.
+    desttop -= (patch->topoffset * drawinfo.ybytes) + (patch->leftoffset * drawinfo.xbytes);
     destend = desttop;
 
 //    if( (scrn & V_NOSCALEPATCH) )
@@ -1259,16 +1256,17 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
     }
 #endif
 
-    y -= patch->topoffset * drawinfo.dupy;
-    x -= patch->leftoffset * drawinfo.dupx;
-
 #ifdef DIRTY_RECT
     if (!(scrn & 0xff))
+//    y -= patch->topoffset * drawinfo.dupy;
+//    x -= patch->leftoffset * drawinfo.dupx;
         V_MarkRect(x, y, patch->width * drawinfo.dupx, patch->height * drawinfo.dupy);
 #endif
 
     // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
     desttop = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
+    // [WDJ] offsets are subject to DRAWSCALE dup.
+    desttop -= (patch->topoffset * drawinfo.ybytes) + (patch->leftoffset * drawinfo.xbytes);
 //    destend = desttop + (patch->width * drawinfo.xbytes);  // test against desttop
 
     wf = patch->width << FRACBITS;
@@ -1382,6 +1380,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
     }
 #endif
 
+    // No scaling, so can apply offsets in the old method.
     y -= patch->topoffset;
     x -= patch->leftoffset;
 #ifdef RANGECHECK
