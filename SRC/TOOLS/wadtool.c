@@ -220,7 +220,7 @@ void help_info(void)
            "   \tIf no lumpnames are given, extract the entire contents of wadfile\n"
 	         "Option:\n"
            "  wadtool -d <dir> <command> to/from the <dir>\n\n"
-           "Copyright 2004-2015 Doom Legacy Team. [- C Version - Marty2Life 2025 -]\n"					 
+           "Copyright 2004-2015 Doom Legacy Team. [- C Version - Marty2Doom 2025 -]\n"					 
 					 );
 }
 

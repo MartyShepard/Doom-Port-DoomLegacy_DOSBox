@@ -4709,3 +4709,8 @@ these are used by V_DrawString so it can use unscaled character positioning.
 Cleaned up the console draw code, adjusting the indent to make the
 console text more readable.
 Gave console and hud text proportional font drawing.
+
+*** W105_ver
+patchfile = w105_1_ver.patch
+- commit revision 1204
+Change to version 145.3, in preparation for 145.4 release.
