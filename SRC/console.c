@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: console.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -123,6 +123,8 @@ static void CONS_French_f (void)
 #include "hardware/hw_main.h"
 #endif
 
+#define CONSOLE_PROPORTIONAL
+
 boolean  con_started=false;  // console has been initialised
 boolean  con_video=false;  // text mode until video started
 boolean  con_self_refresh=false;  // true at game startup, screen need refreshing
@@ -164,6 +166,7 @@ int      con_cy;         // cursor line number in con_buffer, is always
 
 int      con_totallines; // lines of console text into the console buffer
 int      con_width;      // columns of chars, depend on vid mode width
+int      con_indent;     // pixel indent of console
 
 int      con_scrollup;   // how many rows of text to scroll up (pgup/pgdn)
 
@@ -471,9 +474,35 @@ static void CON_RecalcSize ( int width )
 
     con_recalc = false;
 
-    new_conwidth = (width>>3)-2;  // going to be the new con_width
+    // Calculate the new con_width.
+    if( width != vid.width )
+    {
+        // Before vid setup, so without any vid information
+        con_indent = 10;
+        if( width > 630 )
+	   new_conwidth = (width>>4) - 2;
+        else
+	   new_conwidth = (width>>3) - 2;
+    }
+    else
+    {
+        // Have graphics and vid information.
+        con_indent = vid.dupx * 10;  // indent of console text to avoid edge
+        V_SetupFont( cv_con_fontsize.value, NULL, 0 );
+#ifdef CONSOLE_PROPORTIONAL
+        // Averages shorter text, but could overwrite right margin.
+        new_conwidth = (width - con_indent - 1) / (drawfont.xinc * 7/8);
+#else
+        // Fixed font size, between left and right margin.
+        new_conwidth = (width - con_indent - con_indent) / drawfont.xinc;
+#endif
+    }
     if ( new_conwidth < min_conwidth )
+    {
+        con_indent -= min_conwidth - new_conwidth;
+        if( con_indent < 2 )  con_indent = 2; 
         new_conwidth = min_conwidth;
+    }
 
     // check for change of video width
     if (new_conwidth == con_width)
@@ -1150,13 +1179,13 @@ void GenPrintf (byte emsgflags, const char *fmt, ...)
 
 // draw console prompt line
 //
-static void CON_DrawInput (void)
+static void CON_DrawInput ( int y )
 {
     char    *p;
-    int     x,y;
+    int     x;
 
     // Draw console text, screen0
-    // V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+    // V_SetupDraw( 0 | V_NOSCALE );
 
     // input line scrolls left if it gets too long
     //
@@ -1164,16 +1193,31 @@ static void CON_DrawInput (void)
     if (input_cx>=con_width)
         p += input_cx - con_width + 1;
 
-    y = con_curlines - 12;
-
+#ifdef CONSOLE_PROPORTIONAL
+    int xj, xcursor;
+    x = con_indent;
+    for(xj=0; xj<con_width; xj++)
+    {
+        if( xj == input_cx )
+	   xcursor = x;
+        x += V_DrawCharacter( x, y, p[xj] );  // red
+    }
+#else
+    // Fixed width font.
     for(x=0; x<con_width; x++)
-        V_DrawCharacter( (x+1)<<3, y, p[x] );  // red
+        V_DrawCharacter( x * drawfont.xinc + con_indent, y, p[x] );  // red
+#endif
 
     // draw the blinking cursor
     //
+#ifdef CONSOLE_PROPORTIONAL
+    if (con_tick<4)
+        V_DrawCharacter( xcursor, y, 0x80 | '_' );  // white
+#else
     x = (input_cx>=con_width) ? con_width - 1 : input_cx;
     if (con_tick<4)
-        V_DrawCharacter( (x+1)<<3, y, 0x80 | '_' );  // white
+        V_DrawCharacter( x * drawfont.xinc + con_indent, y, 0x80 | '_' );  // white
+#endif
 }
 
 
@@ -1186,19 +1230,28 @@ static void CON_DrawInput (void)
 
 static void CON_DrawHudlines (void)
 {
+    fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
+    boolean    is2;  // player 2 text
     char       *p;
-    int        i,x,y,y2;
+    int        y1,y2,x,y,i;
 
     if (con_hudlines<=0)
         return;
 
-    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+    V_SetupFont( cv_msg_fontsize.value, fip, V_NOSCALE );
 
-    if (chat_on)
-        y = 8;   // leave place for chat input in the first row of text
-    else
-        y = 0;
-    y2 = 0; //player 2's message y in splitscreen
+    // player1 message y
+    y1 = (chat_on) ?
+      drawfont.yinc  // leave place for chat input in the first row of text
+      : 0;
+    y = y1;
+    // player2 message y in splitscreen
+#ifdef HWRENDER
+    // by Mysterial, moved by [WDJ]
+    y2 = gr_viewheight;
+#else    
+    y2 = 0;
+#endif
 
     for (i= con_cy-con_hudlines+1; i<=con_cy; i++)
     {
@@ -1208,21 +1261,31 @@ static void CON_DrawHudlines (void)
             continue;
 
         p = &con_buffer[(i%con_totallines)*con_width];
+        is2 = (con_lineowner[i%con_hudlines] == 2);
+        y = (is2)? y2 : y1;
 
+#ifdef CONSOLE_PROPORTIONAL
+        x = drawfont.xinc;  // indent
+        int xj;
+        for (xj=0; xj<con_width; xj++)
+        {
+            // red, proportional width font
+            x += V_DrawCharacter ( x, y, p[xj] );
+//            x += V_DrawCharacter ( x, y, (p[x]&0x7f) );  // force red
+        }
+#else
         for (x=0; x<con_width; x++)
         {
-#ifdef HWRENDER //Added by Mysterial
-            if (con_lineowner[i%con_hudlines] == 2)
-                V_DrawCharacter ( x<<3, y2+gr_viewheight, (p[x]&0xff) );  // red
-            else
-#endif
-                V_DrawCharacter ( x<<3, y, (p[x]&0xff) );  // red
+            // red, fixed width font
+            V_DrawCharacter ( (x+1)*drawfont.xinc, y, p[x] );
+//            V_DrawCharacter ( (x+1)*drawfont.xinc, y, (p[x]&0x7f) );
         }
+#endif
 
-        if (con_lineowner[i%con_hudlines] == 2)
-           y2 += 8;
+        if ( is2 )
+           y2 += drawfont.yinc;
         else
-           y += 8;
+           y1 += drawfont.yinc;
     }
 
     // top screen lines that might need clearing when view is reduced
@@ -1289,10 +1352,10 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 void CON_DrawConsole (void)
 {
     // vid : from video setup
+    fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
     char  *p;
     int   i,x,y;
     int   w = 0, x2 = 0;
-    fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
 
     if (con_curlines <= 0)
         return;
@@ -1300,7 +1363,7 @@ void CON_DrawConsole (void)
     if ( rendermode != render_soft && use_font1 )
         return;  // opengl graphics without hu_font loaded yet
 
-    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+    V_SetupFont( cv_con_fontsize.value, fip, V_NOSCALE );
 
     //FIXME: refresh borders only when console bg is translucent
     con_clearlines = con_curlines;    // clear console draw from view borders
@@ -1360,22 +1423,35 @@ void CON_DrawConsole (void)
         i--;
 
     // draw lines with font1 or wad font
-    for (y=con_curlines-20; y>=0; y-=fip->yinc,i--)
+    for (y=con_curlines - (drawfont.yinc * 2); y>=0; y-=drawfont.yinc)
     {
         if (i<0)
             i=0;
 
         p = &con_buffer[(i%con_totallines)*con_width];
 
+#ifdef CONSOLE_PROPORTIONAL
+        x = con_indent;  // indent
+        int xj;
+        for (xj=0; xj<con_width; xj++)
+        {
+            // red, proportional width font
+            x += V_DrawCharacter ( x, y, p[xj] );
+//            x += V_DrawCharacter ( x, y, (p[x]&0x7f) );  // force red
+        }
+#else
+        // red, fixed width font
         for (x=0;x<con_width;x++)
-            V_DrawCharacter( (x+1)*fip->xinc, y, p[x] );  // red
+            V_DrawCharacter( x * drawfont.xinc + con_indent, y, p[x] );
+#endif
+        i--;
     }
 
 
     // draw prompt if enough place (not while game startup)
     //
     if ((con_curlines==con_destlines) && (con_curlines>=20) && !con_self_refresh)
-        CON_DrawInput ();
+        CON_DrawInput ( con_curlines - drawfont.yinc );
 }
 
 
@@ -1392,8 +1468,10 @@ void CON_Drawer (void)
     if ( use_font1 )
         return;  // hu_font not loaded yet
 
+#ifndef CONSOLE_PROPORTIONAL
     //Fab: bighack: patch 'I' letter leftoffset so it centers
     hu_font['I'-HU_FONTSTART]->leftoffset = -2;
+#endif
 
     if (con_curlines>0)
         CON_DrawConsole ();
@@ -1401,5 +1479,7 @@ void CON_Drawer (void)
     if (gamestate==GS_LEVEL)
         CON_DrawHudlines ();
 
+#ifndef CONSOLE_PROPORTIONAL
     hu_font['I'-HU_FONTSTART]->leftoffset = 0;
+#endif
 }

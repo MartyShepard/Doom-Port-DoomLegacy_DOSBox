@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: am_map.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1473,6 +1473,8 @@ void AM_drawCrosshair(int color)
 
 void AM_Drawer (void)
 {
+    int y;
+
     if (!automapactive) return;
 
     AM_clearFB(BACKGROUND);
@@ -1488,12 +1490,18 @@ void AM_Drawer (void)
     AM_drawMarks();
 
     // mapname
-    {
-        int y;
-        y = BASEVIDHEIGHT - ((gamemode == heretic)? H_STBAR_HEIGHT : ST_HEIGHT)-1;
+#if 0
+    V_SetupFont( cv_msg_fontsize.value, NULL, V_SCALESTART );
+#else
+    // Reduced font, Limited to Small to Med4
+    V_SetupFont( ((cv_msg_fontsize.value > 2) ? cv_msg_fontsize.value - 1 : 1),
+                  NULL, V_SCALESTART );
+#endif
 
-        V_DrawString( 20, y - V_StringHeight(P_LevelName()), 0, P_LevelName());
-    }
+    y = BASEVIDHEIGHT - ((gamemode == heretic)? H_STBAR_HEIGHT : ST_HEIGHT)
+        - drawfont.font_height - 1;
+    V_DrawString( 20, y, 0, P_LevelName());
+    V_SetupDraw( drawinfo.prev_screenflags );
 
 #ifdef DIRTY_RECT
     V_MarkRect(f_x, f_y, f_w, f_h);

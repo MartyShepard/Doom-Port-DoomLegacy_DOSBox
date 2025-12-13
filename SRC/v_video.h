@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: v_video.h 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -78,6 +78,8 @@ extern  int     dirtybox[4];
 
 extern  consvar_t cv_ticrate;
 extern  consvar_t cv_darkback;
+extern  consvar_t cv_con_fontsize;
+extern  consvar_t cv_msg_fontsize;
 extern  consvar_t cv_usegamma;
 // Gamma Funcs
 extern  consvar_t cv_gammafunc;
@@ -124,12 +126,12 @@ typedef enum {
   V_SCREENMASK =         0x0000FF,
   V_CENTERHORZ =         0x000100,   // center horizontally the whole screen
   V_CENTERMENU =         0x000200,   // menu centering, vert and horz.
-  V_NOSCALESTART =       0x010000,   // dont scale x,y, start coords
-                                     // console, statusbar, crosshair
-  V_NOSCALEPATCH =       0x020000,   // don't scale patch
-                                     // console, chat, statusbar
-  V_SCALESTART =         0x040000,   // scale x,y, start coords
-  V_SCALEPATCH =         0x080000,   // scale patch
+  V_NOSCALE =            0x000000,   // dont scale x,y, start coords
+                                     // console, statusbar, crosshair, patch
+                                     // Placeholder only, not tested.
+  V_SCALESTART =         0x010000,   // scale x,y, start coords
+  V_SCALEPATCH =         0x020000,   // scale patch
+  V_FINESCALEPATCH =     0x040000,   // fine scale patch by drawfront
 // effects
   V_EFFECTMASK =        0xFF00000,
   V_WHITEMAP =           0x100000,   // draw white (for v_drawstring)
@@ -148,9 +150,14 @@ typedef struct {
     unsigned int  xbytes;   // dupx * bytepp, bytes per source pixel
     unsigned int  y0bytes;   // bytes per source line per SCALESTART
     unsigned int  x0bytes;   // bytes per source pixel per SCALESTART
-    byte dupx, dupy; // dup pixels for some screen sizes
-    byte dupx0;      // dup for x0, per SCALESTART
-    fixed_t  y_unitfrac, x_unitfrac;
+    // Some software draw is using fdupx.
+    float  fdupx, fdupy; // dup pixels per SCALEPATCH
+#ifdef HWRENDER
+    float  fdupx0, fdupy0;  // dup per SCALESTART
+#endif
+    byte  dupx, dupy; // dup pixels for some screen sizes, per SCALEPATCH
+    byte  dupx0, dupy0; // dup per SCALESTART
+    fixed_t  y_unitfrac, x_unitfrac;  // per SCALEPATCH
     byte  screen;
 // externally setable
     uint32_t  effectflags;  // special effects
@@ -161,14 +168,38 @@ typedef struct {
     uint32_t  screenflags;   // screen and drawflags_e set by screenflags
     uint32_t  prev_screenflags;  // for restore
         // can restore by V_SetupDrawinfo( prev_screenflags );
+
+    unsigned int  x0bytes_saved, y0bytes_saved;   // saved copy
+#ifdef HWRENDER
+    float  fdupx0_saved, fdupy0_saved;  // per SCALESTART
+#endif
 } drawinfo_t;
 
 // current draw info
 extern drawinfo_t  drawinfo;
 
-// setup for draw screen, scaled, and centering
+// Setup drawinfo for draw screen, scaled, and centering
 // Can use saved V_drawinfo.screenflags or use V_drawinfo.prev_screenflags
 void V_SetupDraw( uint32_t screenflags );  // screen + drawflags_e
+
+
+// Font draw information.
+typedef struct {
+    float  scale;  // scale of font 1.0 .. 5.0
+    float  ratio;  // ratio of font sizing, 0.0 .. 1.0
+    unsigned int  xinc, yinc;  // draw fixed sizes, scaled
+    byte   dupx0, dupy0;  // dup for SCALESTART
+    float  fdupx0, fdupy0;  // per SCALESTART
+    byte   font_height;  // unscaled
+} drawfont_t;
+
+// Current draw font info.
+extern drawfont_t  drawfont;
+
+// Setup drawfont for DrawCharacter and DrawString.
+// Uses V_SetupDraw.
+//  option : V_SCALESTART
+void  V_SetupFont( int font_size, fontinfo_t * fip, uint32_t option );
 
 
 //added:03-02-98:like V_DrawPatch, + using a colormap.
@@ -254,7 +285,8 @@ void V_DrawFade(int x1, int x2, int y2,
                 uint32_t tint_rgba );
 
 //added:20-03-98: draw a single character
-void V_DrawCharacter (int x, int y, byte c);
+// Return pixel width.
+int V_DrawCharacter (int x, int y, byte c);
 
 //added:05-02-98: draw a string using the hu_font
 void V_DrawString (int x, int y, int option, char* string);

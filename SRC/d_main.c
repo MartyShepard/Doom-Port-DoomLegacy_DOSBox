@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: d_main.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1202"
+#define SVN_REV "1203"
 #endif
 
 // Version number: major.minor.revision
@@ -2161,6 +2161,7 @@ restart_command:
        free( legacyhome );  // from previous
 #endif
 
+    V_SetupFont( 1, NULL, 0 );  // Startup font size
     EMSG_flags = EMSG_text | EMSG_log | EMSG_CONS;
 
     devparm |= M_CheckParm("-devparm");  // -devparm or -devgame

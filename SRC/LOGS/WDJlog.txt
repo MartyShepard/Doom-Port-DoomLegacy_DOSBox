@@ -4688,3 +4688,24 @@ The topoffset and leftoffset were calculated wrong for patch draws when
 SCALEPATCH, but not SCALESTART.  The offsets must have SCALEPATCH
 scaling applied, not SCALESTART scaling.  This did not happen in
 vanilla code, but occurs in new applications of scaling, such as font size.
+
+*** W104_fontsize
+patchfile = w104_29_fontsize.patch
+- commit revision 1203
+Add menu entries to control the console font size and the message font size.
+The small font size is the unscaled draw.
+The med font sizes are use the FINESCALE drawing.
+The large font size is a scaled draw.
+Removed the V_NOSCALESTART and V_NOSCALEPATCH options, in favor of
+V_SCALESTART, V_SCALEPATCH, V_FINESCALEPATCH, and V_NOSCALE options.
+The flag V_NOSCALE is 0, not tested, and is only a visual placeholder.
+Created a V_SetupFont, that controls font size for drawing.
+It uses V_FINESCALEPATCH and V_SetupDraw to control font size.
+V_DrawString has to honor SCALESTART in positioning the string, but
+also needs to position characters drawn by V_DrawScaledPatch and V_DrawMappedPatch.
+This code could not handle all situations.
+Have created two functions that turn off SCALESTART and restore it, and
+these are used by V_DrawString so it can use unscaled character positioning.
+Cleaned up the console draw code, adjusting the indent to make the
+console text more readable.
+Gave console and hud text proportional font drawing.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1202 2015-12-26 19:22:53Z wesleyjohnson $
+// $Id: v_video.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -165,6 +165,24 @@ CV_PossibleValue_t darkback_sel_t[] = {
    {0,NULL} };
 consvar_t cv_darkback = { "darkback", "1", CV_SAVE, darkback_sel_t, NULL };
 
+void CV_fontsize_OnChange(void)
+{
+    con_recalc = 1;
+}
+
+CV_PossibleValue_t fontsize_t[] = {
+   {1,"Small"},
+   {2,"Med2"},
+   {3,"Med3"},
+   {4,"Med4"},
+   {5,"Large"},
+   {0,NULL} };
+consvar_t cv_con_fontsize =
+  { "con_fontsize", "Med2", CV_SAVE|CV_CALL, fontsize_t, CV_fontsize_OnChange };
+consvar_t cv_msg_fontsize =
+  { "msg_fontsize", "Large", CV_SAVE|CV_CALL, fontsize_t, CV_fontsize_OnChange };
+
+
 CV_PossibleValue_t ticrate_sel_t[] = {
    {0,"Off"},
    {1,"Graph"},
@@ -172,9 +190,11 @@ CV_PossibleValue_t ticrate_sel_t[] = {
    {0,NULL} };
 consvar_t cv_ticrate = { "vid_ticrate", "0", 0, ticrate_sel_t, NULL };
 
+
 // synchronize page flipping with screen refresh
 // unused and for compatibility reason
 consvar_t cv_vidwait = {"vid_wait", "1", CV_SAVE, CV_OnOff};
+
 
 
 void CV_usegamma_OnChange();
@@ -584,6 +604,8 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_vidwait);
     CV_RegisterVar(&cv_ticrate);
     CV_RegisterVar(&cv_darkback);
+    CV_RegisterVar(&cv_con_fontsize);
+    CV_RegisterVar(&cv_msg_fontsize);
     // Needs be done for config loading
     CV_RegisterVar(&cv_usegamma);
     CV_RegisterVar(&cv_black);
@@ -837,6 +859,8 @@ void V_ClearDisplay( void )
 drawinfo_t  drawinfo;
   
 // [WDJ] setup drawinfo for window, scaling and flag options
+// Normally, also calls V_SetupFont for Large text.
+//  screenflags : combination of drawflags_e
 // usage:
 //  desttop = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
 //  destend = desttop + (patch->width * drawinfo.xbytes);  // test against desttop
@@ -849,34 +873,57 @@ void V_SetupDraw( uint32_t screenflags )
     drawinfo.screenflags = screenflags;
     drawinfo.effectflags = drawinfo.screen_effectflags = screenflags & V_EFFECTMASK;
 
-    if (screenflags & V_NOSCALEPATCH)
-    {
-        drawinfo.dupx = drawinfo.dupy = 1;  // unscaled
+    if (screenflags & V_FINESCALEPATCH)
+    {   // Fine scaling, Scaled text
+        // Sizing slider factor is set in drawfont.ratio by V_SetFont.
+        drawinfo.fdupx = (vid.fdupx * drawfont.ratio) + (1.0 - drawfont.ratio);
+        drawinfo.fdupy = (vid.fdupy * drawfont.ratio) + (1.0 - drawfont.ratio);
+        drawinfo.dupx = (int)(drawinfo.fdupx + 0.5);
+        drawinfo.dupy = (int)(drawinfo.fdupy + 0.5);
+    }
+    else if (screenflags & V_SCALEPATCH)
+    {   // Scaled patches and Large text.
+        drawinfo.dupx = vid.dupx;
+        drawinfo.dupy = vid.dupy;
+        drawinfo.fdupx = vid.fdupx;
+        drawinfo.fdupy = vid.fdupy;
     }
     else
-    {
-        drawinfo.dupx = vid.dupx;   // scaled
-        drawinfo.dupy = vid.dupy;
+    {   // Unscaled and Small text.
+        drawinfo.dupx = drawinfo.dupy = 1;
+        drawinfo.fdupx = drawinfo.fdupy = 1.0;
     }
     drawinfo.ybytes = drawinfo.dupy * vid.ybytes;  // bytes per source line
     drawinfo.xbytes = drawinfo.dupx * vid.bytepp;  // bytes per source pixel
-
-    if (screenflags & V_NOSCALESTART)
-    {
-        drawinfo.y0bytes = vid.ybytes;  // unscaled
-        drawinfo.x0bytes = vid.bytepp;
-        drawinfo.dupx0 = 1;
-    }
-    else
-    {
-        drawinfo.y0bytes = vid.dupy * vid.ybytes;  // scaled
-        drawinfo.x0bytes = vid.dupx * vid.bytepp;
-        drawinfo.dupx0 = vid.dupx;
-    }
-
     drawinfo.x_unitfrac = FixedDiv(FRACUNIT, drawinfo.dupx << FRACBITS);
     drawinfo.y_unitfrac = FixedDiv(FRACUNIT, drawinfo.dupy << FRACBITS);
 
+
+    if (screenflags & V_SCALESTART)
+    {
+        drawinfo.dupx0 = vid.dupx;  // scaled
+        drawinfo.dupy0 = vid.dupy;
+#ifdef HWRENDER
+        drawinfo.fdupx0 = vid.fdupx;
+        drawinfo.fdupy0 = vid.fdupy;
+#endif
+    }
+    else
+    {
+        drawinfo.dupx0 = 1;  // unscaled
+        drawinfo.dupy0 = 1;
+#ifdef HWRENDER
+        drawinfo.fdupx0 = 1.0;
+        drawinfo.fdupy0 = 1.0;
+#endif
+    }
+    drawinfo.x0bytes_saved = drawinfo.x0bytes = drawinfo.dupx0 * vid.bytepp;
+    drawinfo.y0bytes_saved = drawinfo.y0bytes = drawinfo.dupy0 * vid.ybytes;
+#ifdef HWRENDER
+    drawinfo.fdupx0_saved = drawinfo.fdupx0;
+    drawinfo.fdupy0_saved = drawinfo.fdupy0;
+#endif
+   
     // The screen buffer, at an offset
     drawinfo.start_offset = 0;
     if (screenflags & V_CENTERHORZ)
@@ -897,6 +944,40 @@ void V_SetupDraw( uint32_t screenflags )
     drawinfo.screen = screenflags & V_SCREENMASK;  // screen number (usually 0)
     drawinfo.screen_start = screens[drawinfo.screen];  // screen buffer [0]
     drawinfo.drawp = drawinfo.screen_start + drawinfo.start_offset;
+
+    if ( ! (screenflags & V_FINESCALEPATCH))
+    {
+        // Setup the standard scaled font. Pass V_SCALESTART.
+        V_SetupFont( 0, NULL, screenflags );
+    }
+}
+
+// [WDJ] Layered drawing routines (such as DrawString) will have a problem
+// with V_SCALESTART needing to be applied to their x,y parameters, and not
+// to the x,y they generate for drawing individual characters, and the like.
+// Provide support for turning off the SCALESTART, temporarily.
+// This only supports two layers of drawing. Not using local saved copies
+// gains speed, simplicity, and hides the mechanism.
+
+void  V_SetupDraw_NO_SCALESTART( void )
+{
+    drawinfo.x0bytes = vid.bytepp;
+    drawinfo.y0bytes = vid.ybytes;
+#ifdef HWRENDER
+    drawinfo.fdupx0  = 1.0;
+    drawinfo.fdupy0  = 1.0;
+#endif
+}
+
+
+void  V_SetupDraw_Restore_SCALESTART( void )
+{
+    drawinfo.x0bytes = drawinfo.x0bytes_saved;
+    drawinfo.y0bytes = drawinfo.y0bytes_saved;
+#ifdef HWRENDER
+    drawinfo.fdupx0 = drawinfo.fdupx0_saved;
+    drawinfo.fdupy0 = drawinfo.fdupy0_saved;
+#endif
 }
 
 
@@ -924,7 +1005,8 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, drawinfo.screenflags|drawinfo.effectflags, colormap);
+        // Fully subject to drawinfo.
+        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags, colormap);
         return;
     }
 #endif
@@ -1019,8 +1101,7 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     if (rendermode != render_soft)
     {
         // Draw a hardware converted patch.
-        HWR_DrawPatch((MipPatch_t *) patch, x, y,
-                      drawinfo.screenflags|drawinfo.effectflags );
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags );
         return;
     }
 #endif
@@ -1190,7 +1271,6 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
     desttop -= (patch->topoffset * drawinfo.ybytes) + (patch->leftoffset * drawinfo.xbytes);
     destend = desttop;
 
-//    if( (scrn & V_NOSCALEPATCH) )
     if (vid.dupx > 1 && vid.dupy > 1)
     {
         destend += (patch->width * dupx * vid.bytepp);
@@ -1255,6 +1335,7 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
         return;
     }
 #endif
+
 
 #ifdef DIRTY_RECT
     if (!(scrn & 0xff))
@@ -1375,7 +1456,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_NOSCALESTART | V_NOSCALEPATCH);
+        HWR_DrawPatch((MipPatch_t *) patch, x, y, V_NOSCALE);
         return;
     }
 #endif
@@ -2057,7 +2138,8 @@ fontinfo_t * V_FontInfo( void )
 //  Draw font1 fixed width character
 //  NOT FOR OPENGL ***
 //  Scaled or Unscaled x, y.
-void V_Drawfont1_char(int x, int y, byte c)
+static
+int  V_Drawfont1_char(int x, int y, byte c)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
@@ -2069,14 +2151,14 @@ void V_Drawfont1_char(int x, int y, byte c)
     byte lb[FONT1_WIDTH*8];
 
     c &= 0x7f;
-    if( c < 33 )  return;
+    if( c < 33 )  return 0;
     fb = (c - FONT1_START) * FONT1_HEIGHT;  // in font addressing
 
     chwidth = FONT1_WIDTH * drawinfo.dupx;
     dp = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
 
     if(((x * drawinfo.dupx0) + chwidth) > vid.width)
-        return;
+        return 0;
    
 #if 0
     // check for overdraw of underline
@@ -2105,11 +2187,13 @@ void V_Drawfont1_char(int x, int y, byte c)
             dp += vid.ybytes;
         }
     }
+    return chwidth;
 }
 
 //  Draw font1 fixed width string
 //  NOT FOR OPENGL ***
 //  Scaled or Unscaled x, y.
+//  Called by V_DrawString.
 void V_Drawfont1_string(int x, int y, int option, char *string)
 {
     // vid : from video setup
@@ -2171,11 +2255,75 @@ void V_Drawfont1_string(int x, int y, int option, char *string)
     }
 }
 
+// Current draw font info.
+drawfont_t  drawfont;
+
+// Setup drawfont for DrawCharacter and DrawString.
+// Uses V_SetupDraw.
+//  option : V_SCALESTART
+void  V_SetupFont( int font_size, fontinfo_t * fip, uint32_t option )
+{
+    // V_SetupDraw calls here with font_size = 0, do not call back.
+    if( font_size > 0 )
+    {
+        // Scale, Large = 5.0, Small = 1.0
+        drawfont.scale = (float)font_size + 0.000001;
+        // Small is not quite at 1.0, let it round down only when it has to.
+        drawfont.ratio = (drawfont.scale - 0.90) / (5.0 - 0.90);  // 0.0 .. 1.0
+        // V_SetupDraw( V_FINESCALEPATCH ) scales by drawfont.scale.
+        // Do not pass option V_SCALESTART to draw.  Handled by DrawString.
+        V_SetupDraw( V_FINESCALEPATCH | option );
+    }
+    else
+    {
+        drawfont.scale = 5.0;
+        drawfont.ratio = 1.0;
+    }
+   
+    if( fip == NULL )
+       fip = V_FontInfo();  // default
+
+    drawfont.font_height = fip->height;
+
+#ifdef HWRENDER
+    if( rendermode == render_soft )
+    {
+        drawfont.xinc = fip->xinc * drawinfo.dupx;
+        drawfont.yinc = fip->yinc * drawinfo.dupy;
+    }
+    else
+    {
+        drawfont.xinc = (int) fip->xinc * drawinfo.fdupx;
+        drawfont.yinc = (int) fip->yinc * drawinfo.fdupy;
+    }
+#else
+    drawfont.xinc = fip->xinc * drawinfo.dupx;
+    drawfont.yinc = fip->yinc * drawinfo.dupy;
+#endif
+
+    // SCALESTART for font drawing, separate from drawinfo.
+    if( option & V_SCALESTART )
+    {
+        drawfont.dupx0 = vid.dupx;
+        drawfont.dupy0 = vid.dupy;
+        drawfont.fdupx0 = vid.fdupx;
+        drawfont.fdupy0 = vid.fdupy;
+    }
+    else
+    {
+        drawfont.dupx0 = 1;
+        drawfont.dupy0 = 1;
+        drawfont.fdupx0 = 1.0;
+        drawfont.fdupy0 = 1.0;
+    }
+}
+
 
 // Writes a single character (draw WHITE if bit 7 set)
 //
 //added:20-03-98:
-void V_DrawCharacter(int x, int y, byte c)
+// Return pixel width.
+int V_DrawCharacter(int x, int y, byte c)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
@@ -2185,24 +2333,24 @@ void V_DrawCharacter(int x, int y, byte c)
 
     if ( use_font1 && (rendermode==render_soft))
     {
-         V_Drawfont1_char( x, y, c);
-         return;
+         return  V_Drawfont1_char( x, y, c);;
     }
 
     // hufont only has uppercase
     c = toupper(c) - HU_FONTSTART;
     if (c >= HU_FONTSIZE)
-        return;
+        return  4 * drawinfo.dupx;  // space and non-printing chars
 
-    w = (hu_font[c]->width);
-    if (((x * drawinfo.dupx0) + w) > vid.width)
-        return;
+    w = hu_font[c]->width * drawinfo.dupx;  // proportional width
+    if (((x * drawfont.dupx0) + w) > vid.width)
+        return 0;
 
     if (white)
-        // draw with colormap, WITHOUT scale
         V_DrawMappedPatch(x, y, hu_font[c], whitemap);
     else
         V_DrawScaledPatch(x, y, hu_font[c]);
+
+    return w + 1;
 }
 
 //
@@ -2211,26 +2359,38 @@ void V_DrawCharacter(int x, int y, byte c)
 //
 //added:05-02-98:
 // Default is V_SCALESTART and V_SCALEPATCH
-// option V_NOSCALESTART controls spacing
+// option V_SCALESTART controls spacing
 // Can use DrawInfo which is also set to SCALESTART and SCALEPATCH
 // Called am_map: option=0
 // Called d_main netstats: option = V_WHITEMAP, BASEWIDTH relative
 // Called f_finale cast member names: option=0
 // Called hu_stuff tips: SetupDraw(SCALESTART, SCALEPATCH)
 // Called menu: option=0 or V_WHITEMAP, within SetupDraw(SCALESTART, SCALEPATCH)
-// Called st_stuff status overlay: option NOSCALESTART (does its own scaling)
-//    within SetupDraw( NOSCALESTART, SCALEPATCH )
+// Called st_stuff status overlay: (does its own scaling), option=0
+//    within SetupDraw( NOSCALE, SCALEPATCH )
 // Called wi_stuff YAH: option 0 or V_WHITEMAP, within SetupDraw(SCALESTART, SCALEPATCH)
 void V_DrawString(int x, int y, int option, char *string)
 {
+    // Save draw SCALESTART setting, and switch to NO SCALESTART drawing.
+    // The combination of SCALESTART to this DrawString, and NO SCALEPATCH
+    // drawing, cannot be handled with dup. Must turn off SCALESTART.
     // vid : from video setup
     // drawinfo : from V_SetupDraw
-    int w;
+    float w;
     char *ch;
     int c;
-    int cx, cy;
-    int dupx, dupy; // to fix spacing scaling
-    int scrwidth = BASEVIDWIDTH;
+    float cx, cy;  // to support hw_draw
+    float dupx, dupy; // to fix spacing scaling
+
+#if 0
+    // Moved from V_DrawCenteredString, as an option.
+    // unused
+    if( option & V_CENTERHORZ )
+    {
+       x = (vid.width - V_StringWidth(string)) / 2;
+       if( x < 0 )   x = 0;
+    }
+#endif
 
     if ( use_font1 && (rendermode==render_soft))
     {
@@ -2239,24 +2399,34 @@ void V_DrawString(int x, int y, int option, char *string)
     }
 
     ch = string;
-    cx = x;
-    cy = y;
-    // V_NOSCALESTART already covered by SetupDraw
-    if ((drawinfo.screenflags & V_NOSCALESTART)
-        && (drawinfo.screenflags & V_SCALEPATCH))
+
+#ifdef HWRENDER
+    if( rendermode != render_soft )
     {
-        // Draw will not do x,y scaling, so spacing must be scaled here
-        dupx = vid.dupx;
-        dupy = vid.dupy;
-        scrwidth = vid.width;
+        // Character spacing must be scaled here.
+        dupx = drawinfo.fdupx;
+        dupy = drawinfo.fdupy;
+   
+        // V_SCALESTART to DrawString must be handled here.
+        cx = x * drawfont.fdupx0;
+        cy = y * drawfont.fdupy0;
     }
     else
+#endif
     {
-        // Draw will do x,y scaling, and correct spacing
-        dupx = dupy = 1;
+        // Character spacing must be scaled here.
+        dupx = drawinfo.dupx;
+        dupy = drawinfo.dupy;
+   
+        // V_SCALESTART to DrawString must be handled here.
+        cx = x * drawfont.dupx0;
+        cy = y * drawfont.dupy0;
     }
 
-    while (1)
+    // Change draw to NO SCALESTART, for positioning of characters.
+    V_SetupDraw_NO_SCALESTART();
+
+    for(;;)
     {
         c = *ch++;
         if (!c)
@@ -2277,77 +2447,20 @@ void V_DrawString(int x, int y, int option, char *string)
         }
 
         //[segabor]
-        w = hu_font[c]->width * dupx;	// hu_font is endian fixed
-        if (cx + w > scrwidth)
+        // hu_font is endian fixed
+        w = hu_font[c]->width * dupx;	// proportional width
+        if (cx + w > vid.width)
             break;
         if (option & V_WHITEMAP)
-            V_DrawMappedPatch(cx, cy, hu_font[c], whitemap);
+            V_DrawMappedPatch( (int)cx, (int)cy, hu_font[c], whitemap);
         else
-            V_DrawScaledPatch(cx, cy, hu_font[c]);
+            V_DrawScaledPatch( (int)cx, (int)cy, hu_font[c]);
         cx += w;
     }
+
+    V_SetupDraw_Restore_SCALESTART();  // Restore SetupDraw
 }
 
-#if 0
-// Handy utility function.
-// SSNTails 06-10-2003
-// unused
-void V_DrawCenteredString(int x, int y, int option, char *string)
-{
-    // vid : from video setup
-    int w;
-    char *ch;
-    int c;
-    int cx;
-    int cy;
-    int dupx, dupy, scrwidth = BASEVIDWIDTH;
-
-    x -= V_StringWidth(string) / 2;
-
-    ch = string;
-    cx = x;
-    cy = y;
-    if (option & V_NOSCALESTART)
-    {
-        dupx = vid.dupx;
-        dupy = vid.dupy;
-        scrwidth = vid.width;
-    }
-    else
-        dupx = dupy = 1;
-
-    while (1)
-    {
-        c = *ch++;
-        if (!c)
-            break;
-        if (c == '\n')
-        {
-            cx = x;
-            cy += 12 * dupy;
-            continue;
-        }
-
-        // hufont only has uppercase
-        c = toupper(c) - HU_FONTSTART;
-        if (c < 0 || c >= HU_FONTSIZE)
-        {
-            cx += 4 * dupx;
-            continue;
-        }
-
-        w = (hu_font[c]->width) * dupx;
-        if (cx + w > scrwidth)
-            break;
-
-        if (option & V_WHITEMAP)
-            V_DrawMappedPatch(cx, cy, hu_font[c], whitemap);
-        else
-            V_DrawScaledPatch(cx, cy, hu_font[c]);
-        cx += w;
-    }
-}
-#endif
 
 //
 // Find string width from hu_font chars
@@ -2380,6 +2493,8 @@ int V_StringWidth(char *string)
     return w;
 }
 
+#if 0
+// Unused, see V_FontInfo, and drawinfo
 //
 // Find string height from hu_font chars
 //
@@ -2387,6 +2502,7 @@ int V_StringHeight(char *string)
 {
     return (hu_font[0]->height);
 }
+#endif
 
 //---------------------------------------------------------------------------
 //

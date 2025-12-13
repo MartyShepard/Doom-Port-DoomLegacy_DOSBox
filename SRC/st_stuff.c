@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: st_stuff.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1271,7 +1271,7 @@ void ST_CalcPos(void)
     else
     {
         // smaller unscaled status bar in center
-        stbar_fg = FG | V_NOSCALEPATCH | V_NOSCALESTART | V_TRANSLUCENTPATCH;
+        stbar_fg = FG | V_NOSCALE | V_TRANSLUCENTPATCH;
         stbar_scalex = stbar_scaley = 1;
         stbar_x = (vid.width - ST_WIDTH)>>1;  // center
         stbar_y = vid.height - stbar_height;
@@ -1568,7 +1568,7 @@ void ST_drawOverlayNum (int       x,            // right border!
     int       w = (numpat[0]->width);
     boolean   neg;
 
-    V_SetupDraw( FG | V_NOSCALESTART | V_SCALEPATCH | V_TRANSLUCENTPATCH );
+    V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH | V_TRANSLUCENTPATCH );
 
     // in the special case of 0, you draw 0
     if (!num)
@@ -1630,7 +1630,7 @@ void ST_overlayDrawer ()
     int    lowerbar_y = SCY(198) - (int)( 16 * sf_dupy );
 
     // Draw screen0, scaled, abs position
-    V_SetupDraw( FG | V_NOSCALESTART | V_SCALEPATCH );
+    V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH );
 
     cmds = cv_stbaroverlay.string;
 
@@ -1702,7 +1702,7 @@ void ST_overlayDrawer ()
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->killcount, totalkills);
-               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(1), V_NOSCALESTART, buf);
+               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(1), 0, buf);
            }
            break;
 
@@ -1711,7 +1711,7 @@ void ST_overlayDrawer ()
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->secretcount, totalsecret);
-               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(11), V_NOSCALESTART, buf);
+               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(11), 0, buf);
            }
            break;
 
@@ -1721,7 +1721,7 @@ void ST_overlayDrawer ()
                char buf[8];
                int framerate = 35;
                sprintf(buf, "%d FPS", framerate);
-               V_DrawString(SCX(2), SCY(4), V_NOSCALESTART, buf);
+               V_DrawString(SCX(2), SCY(4), 0, buf);
            }
            break;
            */

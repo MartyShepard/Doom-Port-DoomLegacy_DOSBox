@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: hu_stuff.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -568,30 +568,34 @@ boolean HU_Responder (event_t *ev)
 static void HU_DrawChat (void)
 {
     // vid : from video setup
-    int  i,c,y;
-    int  cwidth = vid.width >> 3;   // 8 pixel per char
+    int  i,x,y;
    
-    // Draw to screen0, unscaled
-    V_SetupDraw( 0 | V_NOSCALEPATCH | V_NOSCALESTART );
+    V_SetupFont( cv_msg_fontsize.value, NULL, V_NOSCALE );
 
-    c=0;
     i=0;
+    x=HU_INPUTX;
     y=HU_INPUTY;
     while (w_chat[i])
     {
-        //Hurdler: isn't it better like that?
-        V_DrawCharacter( HU_INPUTX + (c<<3), y, w_chat[i++] | 0x80 );  // white
-
-        c++;
-        if (c>=cwidth)
+#if 1
+        // Proportional Font  
+        x += V_DrawCharacter( x, y, w_chat[i++] | 0x80 );  // white
+#else
+        // Fixed width Font  
+        V_DrawCharacter( x, y, w_chat[i++] | 0x80 );  // white
+        x += drawfont.xinc;
+#endif
+       
+        if (x >= vid.width)
         {
-            c = 0;
-            y+=8;
+            x = HU_INPUTX;
+            y += drawfont.yinc;
         }
     }
 
+    // Cursor blink
     if (hu_tick<4)
-        V_DrawCharacter( HU_INPUTX + (c<<3), y, '_' | 0x80 );  // white
+        V_DrawCharacter( x, y, '_' | 0x80 );  // white
 }
 
 
@@ -1127,9 +1131,9 @@ void HU_drawCrosshair (void)
     if (cv_crosshairscale.value)
         V_SetupDraw( 0 | V_SCALEPATCH | V_SCALESTART );
     else
-        V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALESTART );
+        V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALE );
 #else
-    V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALESTART );
+    V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALE );
 #endif
 
 #ifdef HWRENDER
