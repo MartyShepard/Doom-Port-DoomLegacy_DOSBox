@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: t_array.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -96,9 +96,9 @@ void T_Init_FSArrayList(void)
 #endif
        for( ; sfap; sfap=sfap_nxt )
        {
-	  if( sfap->values )   Z_Free( sfap->values );
-	  sfap_nxt = sfap->next;  // get next before deallocate
-	  Z_Free( sfap );
+          if( sfap->values )   Z_Free( sfap->values );
+          sfap_nxt = sfap->next;  // get next before deallocate
+          Z_Free( sfap );
        }
    }
    else
@@ -164,7 +164,7 @@ void SF_NewArray(void)
    {
       // strings, arrays are ignored
       if(t_argv[i].type == FSVT_string || t_argv[i].type == FSVT_array)
-	 continue;
+         continue;
 
       // copy all the argument values into the local array
       memcpy(&(newArray->values[i]), &t_argv[i], sizeof(fs_value_t));
@@ -219,24 +219,24 @@ void SF_NewEmptyArray(void)
    // initialize each value
    switch(t_argv[1].value.i)
    {
-		case 0:
-			newval.type = FSVT_int;
-			newval.value.i = 0;
-			break;
-		case 1:
-			newval.type = FSVT_fixed;
-			newval.value.f = 0;
-			break;
-		case 2:
-			newval.type = FSVT_mobj;
-			newval.value.mobj = NULL;
-			break;
+                case 0:
+                        newval.type = FSVT_int;
+                        newval.value.i = 0;
+                        break;
+                case 1:
+                        newval.type = FSVT_fixed;
+                        newval.value.f = 0;
+                        break;
+                case 2:
+                        newval.type = FSVT_mobj;
+                        newval.value.mobj = NULL;
+                        break;
    }
 
    for(i=0; i<t_argv[0].value.i; i++)
    {
       // Copy the new element into the array
-	  memcpy(&(newArray->values[i]), &newval, sizeof(fs_value_t));
+          memcpy(&(newArray->values[i]), &newval, sizeof(fs_value_t));
    }
 
    T_Add_FSArray(newArray); // add the new array to the save list
@@ -291,7 +291,7 @@ void SF_ArrayCopyInto(void)
    for(i=0; i<source->length; i++)
    {
       memcpy(&(target->values[i]), &(source->values[i]), 
-	     sizeof(fs_value_t));
+             sizeof(fs_value_t));
    }
 done:
    return;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: am_map.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -515,7 +515,7 @@ static void AM_initVariables(void)
         {
             if (playeringame[pnum])
                 break;
-	}
+        }
     }
 
     plr = &players[pnum];
@@ -744,7 +744,7 @@ boolean AM_Responder ( event_t*      ev )
             if (bigstate)
             {
                 AM_saveScaleAndLoc();
-	        AM_newscale( min_scale_mtof );
+                AM_newscale( min_scale_mtof );
             }
             else AM_restoreScaleAndLoc();
             break;
@@ -865,7 +865,7 @@ void AM_updateLightLev(void)
 void AM_Ticker (void)
 {
     if(dedicated)
-	return;
+        return;
 
     if (!automapactive)
         return;
@@ -1144,7 +1144,7 @@ void AM_drawFline_soft ( fline_t*       fl,
         d = ay - ax/2;
         while (1)
         {
-	    V_DrawPixel( &fb[y*vid.ybytes], x, color);
+            V_DrawPixel( &fb[y*vid.ybytes], x, color);
             if (x == fl->b.x) return;
             if (d>=0)
             {
@@ -1160,7 +1160,7 @@ void AM_drawFline_soft ( fline_t*       fl,
         d = ax - ay/2;
         while (1)
         {
-	    V_DrawPixel( &fb[y*vid.ybytes], x, color);
+            V_DrawPixel( &fb[y*vid.ybytes], x, color);
             if (y == fl->b.y) return;
             if (d >= 0)
             {
@@ -1408,8 +1408,8 @@ void AM_drawPlayers(void)
         else
         {
             color = (p->skincolor) ?
-	       SKIN_TO_SKINMAP(p->skincolor)[GREENS+8]
-	     : GREENS ;  // default
+               SKIN_TO_SKINMAP(p->skincolor)[GREENS+8]
+             : GREENS ;  // default
         }
 
         AM_drawLineCharacter (

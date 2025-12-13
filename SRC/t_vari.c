@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 982 2012-12-04 04:06:13Z wesleyjohnson $
+// $Id: t_vari.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -91,11 +91,11 @@ void T_ClearHubScript( void )
   {
       while(hub_script.variables[i])
       {
-	  fs_variable_t *next = hub_script.variables[i]->next;
-	  if(hub_script.variables[i]->type == FSVT_string)
-	    Z_Free(hub_script.variables[i]->value.s);
-	  Z_Free(hub_script.variables[i]);
-	  hub_script.variables[i] = next;
+          fs_variable_t *next = hub_script.variables[i]->next;
+          if(hub_script.variables[i]->type == FSVT_string)
+            Z_Free(hub_script.variables[i]->value.s);
+          Z_Free(hub_script.variables[i]);
+          hub_script.variables[i] = next;
       }
   }
 }
@@ -114,7 +114,7 @@ fs_variable_t * find_variable(char *name)
   {
       // check this script
       if((var = variableforname(current, name)))
-	return var;
+        return var;
       current = current->parent;    // try the parent of this one
   }
 
@@ -175,7 +175,7 @@ fs_variable_t * variableforname(script_t *script, char *name)
   while(current)
   {
       if(!strcmp(name, current->name))        // found it?
-	return current;         
+        return current;
       current = current->next;        // check next in chain
   }
   
@@ -195,19 +195,19 @@ void clear_variables(script_t *script)
       // go thru this chain
       while(current)
       {
-	  // labels are added before variables, during
-	  // preprocessing, so will be at the end of the chain
-	  // we can be sure there are no more variables to free
-	  if(current->type == FSVT_label)
-	    break;
-	  
-	  next = current->next; // save for after freeing
-	  
-	  // if a string, free string data
-	  if(current->type == FSVT_string)
-	    Z_Free(current->value.s);
-	  
-	  current = next; // go to next in chain
+          // labels are added before variables, during
+          // preprocessing, so will be at the end of the chain
+          // we can be sure there are no more variables to free
+          if(current->type == FSVT_label)
+            break;
+
+          next = current->next; // save for after freeing
+
+          // if a string, free string data
+          if(current->type == FSVT_string)
+            Z_Free(current->value.s);
+
+          current = next; // go to next in chain
       }
       // start of labels or NULL
       script->variables[i] = current;
@@ -271,7 +271,7 @@ void setvariablevalue(fs_variable_t *v, fs_value_t newvalue)
 
       // alloc memory for string
       if(v->type == FSVT_string)   // static in case a global_script var
-	v->value.s = Z_Malloc(256, PU_STATIC, 0);
+        v->value.s = Z_Malloc(256, PU_STATIC, 0);
       // fall through to set value like any other var
   }
 
@@ -447,10 +447,10 @@ fs_value_t evaluate_function(int start, int stop)
       // check for -1: no more ','s 
       if(endpoint == -1)
       {               // evaluate the last expression
-	  endpoint = stop;
+          endpoint = stop;
       }
       if(endpoint-1 < startpoint)
-	break;
+        break;
       
       argv[argc] = evaluate_expression(startpoint, endpoint-1);
       endpoint++;    // skip the ','
@@ -518,20 +518,20 @@ fs_value_t OPstructure(int start, int n, int stop)
       
       while(endpoint < stop)
       {
-	  startpoint = endpoint;
-	  endpoint = find_operator(startpoint, stop-1, ",");
-	  
-	  // check for -1: no more ','s 
-	  if(endpoint == -1)
-	  {               // evaluate the last expression
-	      endpoint = stop;
-	  }
-	  if(endpoint-1 < startpoint)
-	    break;
-	  
-	  argv[argc] = evaluate_expression(startpoint, endpoint-1);
-	  endpoint++;    // skip the ','
-	  argc++;
+          startpoint = endpoint;
+          endpoint = find_operator(startpoint, stop-1, ",");
+
+          // check for -1: no more ','s
+          if(endpoint == -1)
+          {               // evaluate the last expression
+              endpoint = stop;
+          }
+          if(endpoint-1 < startpoint)
+            break;
+
+          argv[argc] = evaluate_expression(startpoint, endpoint-1);
+          endpoint++;    // skip the ','
+          argc++;
       }
   }
 

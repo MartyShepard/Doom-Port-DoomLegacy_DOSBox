@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 1136 2014-09-17 13:52:12Z wesleyjohnson $
+// $Id: t_script.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -318,31 +318,31 @@ static boolean wait_finished(runningscript_t *script)
     case WT_none: break;	      // always finished
     case WT_scriptwait:               // waiting for script to finish
       {
-	runningscript_t *current;
-	for(current = fs_runningscripts.next; current; current = current->next)
-	{
-	    if(current == script) continue;  // ignore this script
-	    if(current->script->scriptnum == script->wait_data)
-	      goto ret_wait;  // script still running
-	}
+        runningscript_t *current;
+        for(current = fs_runningscripts.next; current; current = current->next)
+        {
+            if(current == script) continue;  // ignore this script
+            if(current->script->scriptnum == script->wait_data)
+              goto ret_wait;  // script still running
+        }
       }
       break;  // finished
 
     case WT_delay:                          // just count down
       {
-	return --script->wait_data <= 0;
+        return --script->wait_data <= 0;
       }
     
     case WT_tagwait:
       {
-	int secnum = -1;
+        int secnum = -1;
 
-	while ((secnum = P_FindSectorFromTag(script->wait_data, secnum)) >= 0)
-	{
-	    sector_t *sec = &sectors[secnum];
-	    if(sec->floordata || sec->ceilingdata || sec->lightingdata)
-	      goto ret_wait;  // not finished
-	}
+        while ((secnum = P_FindSectorFromTag(script->wait_data, secnum)) >= 0)
+        {
+            sector_t *sec = &sectors[secnum];
+            if(sec->floordata || sec->ceilingdata || sec->lightingdata)
+              goto ret_wait;  // not finished
+        }
       }
       break;  // finished
 
@@ -370,26 +370,26 @@ void T_DelayedScripts( void )
   {
       if(wait_finished(current))
       {
-	  // copy out the script variables from the
-	  // runningscript_t
+          // copy out the script variables from the
+          // runningscript_t
 
-	  for(i=0; i<VARIABLESLOTS; i++)
-	    current->script->variables[i] = current->variables[i];
-	  current->script->trigger = current->trigger; // copy trigger
-	  
-	  // continue the script
+          for(i=0; i<VARIABLESLOTS; i++)
+            current->script->variables[i] = current->variables[i];
+          current->script->trigger = current->trigger; // copy trigger
 
-	  continue_script(current->script, current->savepoint);
-	  
-	  // unhook from chain and free
+          // continue the script
 
-	  current->prev->next = current->next;
-	  if(current->next) current->next->prev = current->prev;
-	  next = current->next;   // save before freeing
-	  free_runningscript(current);
+          continue_script(current->script, current->savepoint);
+
+          // unhook from chain and free
+
+          current->prev->next = current->next;
+          if(current->next) current->next->prev = current->prev;
+          next = current->next;   // save before freeing
+          free_runningscript(current);
       }
       else
-	next = current->next;
+        next = current->next;
       current = next;   // continue to next in chain
   }
                 
@@ -424,10 +424,10 @@ static runningscript_t * T_SaveCurrentScript( void )
       // to prevent them being removed when the script stops
 
       while(fs_current_script->variables[i]
-	    && fs_current_script->variables[i]->type != FSVT_label)
+            && fs_current_script->variables[i]->type != FSVT_label)
       {
-	fs_current_script->variables[i] =
-	  fs_current_script->variables[i]->next;
+        fs_current_script->variables[i] =
+          fs_current_script->variables[i]->next;
       }
   }
   runscr->trigger = fs_current_script->trigger;      // save trigger
@@ -558,9 +558,9 @@ void SF_StartScript( void )
       // remove all the variables from the script variable list
       // we only start with the basic labels
       while(runscr->variables[i] &&
-	    runscr->variables[i]->type != FSVT_label)
-	runscr->variables[i] =
-	  runscr->variables[i]->next;
+            runscr->variables[i]->type != FSVT_label)
+        runscr->variables[i] =
+          runscr->variables[i]->next;
   }
   // copy trigger
   runscr->trigger = fs_current_script->trigger;
@@ -596,8 +596,8 @@ void SF_ScriptRunning( void )
   {
       if(current->script->scriptnum == snum)
       {
-	  t_return.value.i = 1;  // found, and running
-	  goto done;
+          t_return.value.i = 1;  // found, and running
+          goto done;
       }
   }
 
@@ -630,21 +630,21 @@ void COM_T_Running_f (void)
       CONS_Printf("%i:", current->script->scriptnum);
       switch(current->wait_type)
       {
-	case WT_none:
-	  CONS_Printf("waiting for nothing?\n");
-	  break;
-	case WT_delay:
-	  CONS_Printf("delay %i tics\n", current->wait_data);
-	  break;
-	case WT_tagwait:
-	  CONS_Printf("waiting for tag %i\n", current->wait_data);
-	  break;
-	case WT_scriptwait:
-	  CONS_Printf("waiting for script %i\n", current->wait_data);
-	  break;
-	default:
-	  CONS_Printf("unknown wait type \n");
-	  break;
+        case WT_none:
+          CONS_Printf("waiting for nothing?\n");
+          break;
+        case WT_delay:
+          CONS_Printf("delay %i tics\n", current->wait_data);
+          break;
+        case WT_tagwait:
+          CONS_Printf("waiting for tag %i\n", current->wait_data);
+          break;
+        case WT_scriptwait:
+          CONS_Printf("waiting for script %i\n", current->wait_data);
+          break;
+        default:
+          CONS_Printf("unknown wait type \n");
+          break;
       }
       current = current->next;
   }

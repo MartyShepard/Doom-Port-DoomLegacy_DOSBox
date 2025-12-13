@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1098 2014-03-25 23:12:56Z wesleyjohnson $
+// $Id: p_pspr.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -593,7 +593,7 @@ void A_Punch ( player_t* player, pspdef_t* psp )
     {
         S_StartAttackSound(pmo, sfx_punch);
         pmo->angle = R_PointToAngle2 (pmo->x, pmo->y,
-				      lar_linetarget->x, lar_linetarget->y);
+                                      lar_linetarget->x, lar_linetarget->y);
     }
 }
 
@@ -681,7 +681,7 @@ void A_FirePlasma ( player_t*     player,
     P_SetPsprite (player,
                   ps_flash,
                   player->weaponinfo[player->readyweapon].flashstate+(P_Random ()&1) );
-   		  // pr_plasma
+                  // pr_plasma
 
     //added:16-02-98: added player arg3
     P_SpawnPlayerMissile (player->mo, MT_PLASMA);
@@ -827,18 +827,18 @@ void A_FireShotgun2 ( player_t*     player,
     {
         if( demoversion > 114 && demoversion < 144 )
         {
-	    // Old legacy order, slope, damage, angle
-	    slope = bulletslope + (P_SignedRandom()<<5);
-	    damage = 5*(P_Random ()%3+1);
-	    angle = pmo->angle + (P_SignedRandom() << 19);
-	}
+            // Old legacy order, slope, damage, angle
+            slope = bulletslope + (P_SignedRandom()<<5);
+            damage = 5*(P_Random ()%3+1);
+            angle = pmo->angle + (P_SignedRandom() << 19);
+        }
         else
         {
-	    // [WDJ] Boom, P_Random order is damage, angle, slope
-	    damage = 5*(P_Random ()%3+1);  // pr_shotgun
-	    angle = pmo->angle + (P_SignedRandom() << 19);
-	    slope = bulletslope + (P_SignedRandom()<<5);  // pr_shotgun
-	}
+            // [WDJ] Boom, P_Random order is damage, angle, slope
+            damage = 5*(P_Random ()%3+1);  // pr_shotgun
+            angle = pmo->angle + (P_SignedRandom() << 19);
+            slope = bulletslope + (P_SignedRandom()<<5);  // pr_shotgun
+        }
         P_LineAttack (pmo,
                       angle,
                       MISSILERANGE,

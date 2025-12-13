@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1195"
+#define SVN_REV "1196"
 #endif
 
 // Version number: major.minor.revision
@@ -1321,7 +1321,7 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
         GD_idwad|GD_unsupported, GDESC_hexen_demo, hexen },
 // GDESC_strife: Strife
    { "Strife", NULL, "strife",
-        {"strife.wad",NULL,NULL}, NULL,
+        {"strife.wad","STRIFE1.WAD","VOICES.WAD"}, NULL,
         {"ENDSTRF", "MAP20"}, LN_MAP01, 0,
         GD_idwad/*|GD_unsupported*/, GDESC_strife, strife },
 // GDESC_strife_shareware: Strife shareware
@@ -1334,6 +1334,13 @@ game_desc_t  game_desc_table[ NUM_GDESC ] =
         {"chex1.wad","chex.wad",NULL}, NULL,
         {"W94_1", "POSSH0M0"}, LN_E1M1, LN_TITLE,
         GD_iwad_pref, GDESC_chex1, chexquest1 },
+#if defined (__DJGPP__)
+// GDESC_doom2: HacX
+   { "HacX", "HacX: Twitch 'n' Kill", "HACX",
+        {"HACX.wad",NULL,NULL}, NULL,
+        {NULL, NULL}, LN_MAP01, LN_TITLE,
+        GD_idwad, GDESC_doom2, doom2_commercial },
+#endif				
 // GDESC_ultimate_mode: Ultimate Doom replacement
    { "Ultimate mode", NULL, "ultimode",
         {"doomu.wad","doom.wad",NULL}, NULL,

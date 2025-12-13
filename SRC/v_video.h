@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1134 2014-09-17 13:48:56Z wesleyjohnson $
+// $Id: v_video.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -116,8 +116,8 @@ fontinfo_t * V_FontInfo( void );
 
 // position and width is in src pixels
 void V_CopyRect ( int srcx, int srcy, int srcscrn,
-		  int width, int height,
-		  int destx, int desty, int destscrn );
+                  int width, int height,
+                  int destx, int desty, int destscrn );
 
 
 // V_Drawinfo flags (not uniformly supported by all functions (see src))
@@ -179,8 +179,8 @@ void V_DrawMappedPatch ( int x, int y,
 
 // with temp patch load to cache
 void V_DrawMappedPatch_Name ( int x, int y,
-			      char*         name,
-			      byte*         colormap );
+                              char*         name,
+                              byte*         colormap );
 
 //added:05-02-98:V_DrawPatch scaled 2,3,4 times size and position.
 // default params : scale patch and scale start
@@ -224,8 +224,8 @@ void V_DrawScalePic_Num ( int x1, int y1, int lumpnum );
 
 // Heretic raw pic
 void V_DrawRawScreen_Num(int x, int y,
-			 int lumpnum,
-			 int width, int height);
+                         int lumpnum,
+                         int width, int height);
 
 #ifdef DIRTY_RECT
 void V_MarkRect ( int x, int y,

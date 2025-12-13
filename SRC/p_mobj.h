@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_mobj.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -379,7 +379,7 @@ typedef struct mobj_s
 
     // Nodes
     struct mobj_s*	nextnode;   // Next node object to chase after touching
-				    // current target (which must be MT_NODE).
+                                    // current target (which must be MT_NODE).
     struct mobj_s*	targetnode; // Target node to remember when encountering a player
     int			nodescript; // Script to run when this node is touched
     int			nodewait;   // How many ticks to wait at this node

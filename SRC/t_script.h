@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_script.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -55,7 +55,7 @@ struct runningscript_s
     WT_scriptwait,  // wait for script to finish
   } wait_type;
   int wait_data;  // data for wait: tagnum, counter, script number etc
-	
+
   // saved variables
   fs_variable_t *variables[VARIABLESLOTS];
   

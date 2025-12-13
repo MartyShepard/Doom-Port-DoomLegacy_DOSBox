@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1163 2015-04-03 14:18:04Z wesleyjohnson $
+// $Id: p_mobj.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -210,12 +210,12 @@ void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
         // cannot create voodoo for player without mobj
         if( ! playeringame[playernum] )  // no player
         {
-	    if( voodoo_mode == VM_target )
-	        playernum = 0;  // will redirect target anyway
-	    else
-	        return;  // cannot create voodoo
-	   		 // will have to create it later if player joins late
-	}
+            if( voodoo_mode == VM_target )
+                playernum = 0;  // will redirect target anyway
+            else
+                return;  // cannot create voodoo
+                         // will have to create it later if player joins late
+        }
     }
 
     CONS_Printf("Spawn Voodoo doll, player %d.\n", playernum);
@@ -442,37 +442,37 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
     if( player ) // not voodoo doll
     {
         if (player->bob_momx > -STOPSPEED && player->bob_momx < STOPSPEED
-	    && player->bob_momy > -STOPSPEED && player->bob_momy < STOPSPEED
-	    && player->cmd.forwardmove == 0
-	    && player->cmd.sidemove == 0 )
+            && player->bob_momy > -STOPSPEED && player->bob_momy < STOPSPEED
+            && player->cmd.forwardmove == 0
+            && player->cmd.sidemove == 0 )
         {
-	    // [WDJ] stop player bobbing
-	    player->bob_momx = player->bob_momy = 0;
+            // [WDJ] stop player bobbing
+            player->bob_momx = player->bob_momy = 0;
 
-	    // [WDJ] stop player walking sprite
-	    // if in a walking frame, stop moving
-	    if( mo->type != MT_SPIRIT )
-	    {
-	        if (player->chickenTics)
-	        {  // Heretic
-		    if ((unsigned) ((player->mo->state - states) - S_CHICPLAY_RUN1) < 4)
-		        P_SetMobjState(player->mo, S_CHICPLAY);
-		}
-	        else
-	        {
-		    if ((unsigned) ((player->mo->state - states) - S_PLAY_RUN1) < 4)
-		        P_SetMobjState(player->mo, S_PLAY);
-		}
-	    }
-	}
+            // [WDJ] stop player walking sprite
+            // if in a walking frame, stop moving
+            if( mo->type != MT_SPIRIT )
+            {
+                if (player->chickenTics)
+                {  // Heretic
+                    if ((unsigned) ((player->mo->state - states) - S_CHICPLAY_RUN1) < 4)
+                        P_SetMobjState(player->mo, S_CHICPLAY);
+                }
+                else
+                {
+                    if ((unsigned) ((player->mo->state - states) - S_PLAY_RUN1) < 4)
+                        P_SetMobjState(player->mo, S_PLAY);
+                }
+            }
+        }
         else
         {
-	    // [WDJ] The walking and bob have always taken too long to stop
-	    // slow down bob before player stops
+            // [WDJ] The walking and bob have always taken too long to stop
+            // slow down bob before player stops
 # define FRICTION_BOB   (FRICTION_NORM*15/16)
-	    player->bob_momx = FixedMul( player->bob_momx, FRICTION_BOB);
-	    player->bob_momy = FixedMul( player->bob_momy, FRICTION_BOB);
-	}
+            player->bob_momx = FixedMul( player->bob_momx, FRICTION_BOB);
+            player->bob_momy = FixedMul( player->bob_momy, FRICTION_BOB);
+        }
     }
 #endif
 
@@ -482,19 +482,19 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
     // [WDJ] Restored deleted voodoo checks, originally made by Killough 10/98,
     // from examination of prboom and zdoom,.
     if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
-	&& mo->momy > -STOPSPEED && mo->momy < STOPSPEED
-	&& (!player  // and voodoo_dolls
-	    || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
+        && mo->momy > -STOPSPEED && mo->momy < STOPSPEED
+        && (!player  // and voodoo_dolls
+            || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
     {
 #ifndef BOB_MOM
         // if in a walking frame, stop moving
         if (player)  // not if voodoo doll (do not affect player mobj)
         {
-	  if( mo->type != MT_SPIRIT )
-	  {
+          if( mo->type != MT_SPIRIT )
+          {
             if (player->chickenTics)
             {
-	        // Heretic
+                // Heretic
                 if ((unsigned) ((player->mo->state - states) - S_CHICPLAY_RUN1) < 4)
                     P_SetMobjState(player->mo, S_CHICPLAY);
             }
@@ -503,7 +503,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
                 if ((unsigned) ((player->mo->state - states) - S_PLAY_RUN1) < 4)
                     P_SetMobjState(player->mo, S_PLAY);
             }
-	  }
+          }
         } // player
 #endif	   
         mo->momx = 0;
@@ -512,79 +512,79 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
     else
     {
         // not stopped
-	// [WDJ] 3/2011 new bobbing and friction here, mostly Killough etal. 10/98.
+        // [WDJ] 3/2011 new bobbing and friction here, mostly Killough etal. 10/98.
         if ((mo->eflags & MF_UNDERWATER)
-	    && demoversion >= 128 )
+            && demoversion >= 128 )
         {
-	    // slow down in water, not too much for playability issues
-	    friction = FRICTION_NORM *3/4;
+            // slow down in water, not too much for playability issues
+            friction = FRICTION_NORM *3/4;
 //	    mo->momx = FixedMul(mo->momx, FRICTION_NORM *3/4);
 //	    mo->momy = FixedMul(mo->momy, FRICTION_NORM *3/4);
 //	    return;
-	}
-	else if (mo->z > mo->floorz)
+        }
+        else if (mo->z > mo->floorz)
         { 
-	    // not standing on a floor
-	    // MF2_ONMOBJ has FRICTION_NORM
-	    if ( !(mo->flags2 & MF2_ONMOBJ))
-	    {
-	        // not on obj or monster
-	        if (mo->flags2 & MF2_FLY)
-	        {
-		    // heretic fly, and fly cheat
-		    friction = FRICTION_FLY;
-		}
-	        else
-	        {
-		    return; // jumping players and falling have no friction
-		}
-	    }
-	}
+            // not standing on a floor
+            // MF2_ONMOBJ has FRICTION_NORM
+            if ( !(mo->flags2 & MF2_ONMOBJ))
+            {
+                // not on obj or monster
+                if (mo->flags2 & MF2_FLY)
+                {
+                    // heretic fly, and fly cheat
+                    friction = FRICTION_FLY;
+                }
+                else
+                {
+                    return; // jumping players and falling have no friction
+                }
+            }
+        }
         // standing on a floor
         else if(friction_model == FR_heretic)
         {
 #if 1
-	    friction = P_GetFriction( mo );  // heretic friction in sector
+            friction = P_GetFriction( mo );  // heretic friction in sector
 #else	   
             if (mo->subsector->sector->special == 15)      // Friction_Low
             {
-	        friction = FRICTION_LOW;
+                friction = FRICTION_LOW;
             }
             else
             {
-	        friction = FRICTION_NORM;
+                friction = FRICTION_NORM;
             }
 #endif       
         }
         else if(friction_model >= FR_mbf)
         {
-	    // latest sector based friction model in common use (MBF, prboom, zdoom)
-	    friction = P_GetFriction( mo );
-	}
+            // latest sector based friction model in common use (MBF, prboom, zdoom)
+            friction = P_GetFriction( mo );
+        }
         else if(friction_model == FR_boom)
         {
             //SoM: 3/28/2000: Use boom friction.
             if ((oldx == mo->x) && (oldy == mo->y))     // Did you go anywhere?
             {
-	        // Use original friction to not bob so much when not moving
-		// but enough to escape being stuck in wall.
-	        friction = ORIG_FRICTION;
+                // Use original friction to not bob so much when not moving
+                // but enough to escape being stuck in wall.
+                friction = ORIG_FRICTION;
             }
             else
 #ifdef FRICTIONTHINKER
             {
-	       	friction = mo->friction;  // from friction thinker
+                friction = mo->friction;  // from friction thinker
             }
             mo->friction = ORIG_FRICTION;
 #else
             {
-	        friction = P_GetFriction( mo );  // a reasonable substitute
+                friction = P_GetFriction( mo );  // a reasonable substitute
             }
 #endif
         }
         else
         {
-	    friction = FRICTION_NORM; // FR_orig
+            friction = FRICTION_NORM; // FR_orig
         }
         mo->momx = FixedMul(mo->momx, friction);
         mo->momy = FixedMul(mo->momy, friction);
@@ -669,7 +669,7 @@ void P_XYMovement(mobj_t * mo)
     // makes steps equal in size, and makes loop test faster and predictable.
     // Boom bug had only the positive tests.
     if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
-	|| ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
+        || ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
     {
         xmove >>= 1;
         ymove >>= 1;
@@ -677,7 +677,7 @@ void P_XYMovement(mobj_t * mo)
     }
     if (mo->info->speed > (mo->radius*2)) // faster than radius*2
     {
-	// Mancubus missiles and the like.
+        // Mancubus missiles and the like.
         xmove >>= 1;
         ymove >>= 1;
         numsteps *= 2;
@@ -697,9 +697,9 @@ void P_XYMovement(mobj_t * mo)
         if (P_TryMove(mo, ptryx, ptryy, true)) //SoM: 4/10/2000
         {   // success
             // hack for playability : walk in-air to jump over a small wall
-	    if (player)
-	        player->cheats &= ~CF_JUMPOVER;
-	}
+            if (player)
+                player->cheats &= ~CF_JUMPOVER;
+        }
         else  // P_TryMove
         {
             // blocked move
@@ -710,7 +710,7 @@ void P_XYMovement(mobj_t * mo)
             // BP:1.28 no more use CF_JUMPOVER, but i leave it for backward lmps compatibility
             if (player)
             {
-	        // tmr_floorz returned by P_TryMove
+                // tmr_floorz returned by P_TryMove
                 if (tmr_floorz - mo->z > MAXSTEPMOVE)
                 {
                     if (mo->momz > 0)
@@ -720,22 +720,22 @@ void P_XYMovement(mobj_t * mo)
                 }
             }
 
-	    // Boom has only player slides, but heretic has SLIDE attribute
+            // Boom has only player slides, but heretic has SLIDE attribute
             if (mo->flags2 & MF2_SLIDE)
             {   // try to slide along it
-	        // Alters momx,momy, and calls P_TryMove
+                // Alters momx,momy, and calls P_TryMove
                 P_SlideMove(mo);
             }
             else if (mo->flags & MF_MISSILE)
-	    {
-	        // TODO: put missile bounce here
-	        goto missile_impact;
-	    }
+            {
+                // TODO: put missile bounce here
+                goto missile_impact;
+            }
             else
-	    {
+            {
                 mo->momx = mo->momy = 0;
-	        break;  // otherwise does not stop
-	    }
+                break;  // otherwise does not stop
+            }
         }
     } while ( --numsteps );
 
@@ -750,19 +750,19 @@ void P_XYMovement(mobj_t * mo)
             // debug option for no sliding at all
             mo->momx = mo->momy = 0;
 #ifdef BOB_MOM
-	    player->bob_momx = player->bob_momy = 0;
+            player->bob_momx = player->bob_momy = 0;
 #endif	     
             return;
         }
         else if (player->cheats & CF_FLYAROUND)  // fly cheat
         {
-	    // [WDJ] Heretic FLY was removed from here because it should be
-	    // subject to underwater and other tests, as in Legacy2.
-	    // Implement FLYAROUND using heretic fly, avoiding extra tests.
-	    int f2 = mo->flags2;
-	    mo->flags2 |= MF2_FLY;
+            // [WDJ] Heretic FLY was removed from here because it should be
+            // subject to underwater and other tests, as in Legacy2.
+            // Implement FLYAROUND using heretic fly, avoiding extra tests.
+            int f2 = mo->flags2;
+            mo->flags2 |= MF2_FLY;
             P_XYFriction(mo, oldx, oldy);
-	    mo->flags2 = f2;
+            mo->flags2 = f2;
             return;
         }
 //        if(mo->z <= mo->subsector->sector->floorheight)
@@ -770,8 +770,8 @@ void P_XYMovement(mobj_t * mo)
     }
 
     if ((mo->z > mo->floorz)
-	&& !(mo->flags2 & (MF2_FLY | MF2_ONMOBJ))
-	&& !(mo->eflags & MF_UNDERWATER))
+        && !(mo->flags2 & (MF2_FLY | MF2_ONMOBJ))
+        && !(mo->eflags & MF_UNDERWATER))
     {
         return; // no friction when airborne
     }
@@ -784,7 +784,7 @@ void P_XYMovement(mobj_t * mo)
         {
             if (demoversion < 132)
             {
-	        // original and Boom test
+                // original and Boom test
                 if (mo->z != mo->subsector->sector->floorheight)
                     return;
             }
@@ -812,26 +812,26 @@ missile_impact:
     // explode a missile
     // tmr_ceilingline returned by P_TryMove
     if (tmr_ceilingline
-	&& tmr_ceilingline->backsector
-	&& tmr_ceilingline->backsector->ceilingpic == skyflatnum
-	&& tmr_ceilingline->frontsector
-	&& tmr_ceilingline->frontsector->ceilingpic == skyflatnum
-	&& mo->subsector->sector->ceilingheight == mo->ceilingz)
+        && tmr_ceilingline->backsector
+        && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+        && tmr_ceilingline->frontsector
+        && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
+        && mo->subsector->sector->ceilingheight == mo->ceilingz)
     {
         if (!boomsupport || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
         {
-	    // Hack to prevent missiles exploding against the sky.
-	    // Does not handle sky floors.
-	    //SoM: 4/3/2000: Check frontsector as well..
-	    if (mo->type == MT_BLOODYSKULL)
-	    {
-	        mo->momx = mo->momy = 0;
-	        mo->momz = -FRACUNIT;
-	    }
-	    else
-	        P_RemoveMobj(mo); // missile quietly dissappears
-	    return;
-	}
+            // Hack to prevent missiles exploding against the sky.
+            // Does not handle sky floors.
+            //SoM: 4/3/2000: Check frontsector as well..
+            if (mo->type == MT_BLOODYSKULL)
+            {
+                mo->momx = mo->momy = 0;
+                mo->momz = -FRACUNIT;
+            }
+            else
+                P_RemoveMobj(mo); // missile quietly dissappears
+            return;
+        }
     }
 
     // draw damage on wall
@@ -851,8 +851,8 @@ missile_impact:
         misl.dy = mo->momy;
         frac = P_InterceptVector(&divl, &misl);
         R_AddWallSplat( tmr_blockingline,
-			P_PointOnLineSide(mo->x, mo->y, tmr_blockingline),
-			"A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
+                        P_PointOnLineSide(mo->x, mo->y, tmr_blockingline),
+                        "A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
     }
 #endif
     // --------------------------------------------------------- SPLAT TEST
@@ -886,20 +886,20 @@ void P_ZMovement(mobj_t * mo)
             if (!(rovflr->flags & FF_SOLID) || !(rovflr->flags & FF_EXISTS))
                 continue;
 
-	    midfloor =
-	       *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight) / 2);
-	    if (abs(mo->z - midfloor) < abs(thingtop - midfloor))
-	    { 
-	        // closer to feet
+            midfloor =
+               *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight) / 2);
+            if (abs(mo->z - midfloor) < abs(thingtop - midfloor))
+            {
+                // closer to feet
                 if (*rovflr->topheight > mo->floorz)
                     mo->floorz = *rovflr->topheight;
-	    }
-	    else
-	    {
-	        // closer to head
+            }
+            else
+            {
+                // closer to head
                 if (*rovflr->bottomheight < mo->ceilingz)
-		    mo->ceilingz = *rovflr->bottomheight;
-	    }
+                    mo->ceilingz = *rovflr->bottomheight;
+            }
         }
     }
 #endif
@@ -907,14 +907,14 @@ void P_ZMovement(mobj_t * mo)
     // check for smooth step up
     if (player && (mo->z < mo->floorz)
 #ifdef VOODOO_DOLL
-	&& !voodoo_mo  // voodoo does not pass this to player view
+        && !voodoo_mo  // voodoo does not pass this to player view
 #endif
 #ifdef CLIENTPREDICTION2
-	&& mo->type != MT_PLAYER
+        && mo->type != MT_PLAYER
 #else
         && mo->type != MT_SPIRIT
 #endif
-	)
+        )
     {
         player->viewheight -= mo->floorz - mo->z;
 
@@ -942,7 +942,7 @@ void P_ZMovement(mobj_t * mo)
     }
 
     if (player && (mo->flags2 & MF2_FLY)
-	&& !(mo->z <= mo->floorz) && (leveltime & 2))
+        && !(mo->z <= mo->floorz) && (leveltime & 2))
     {
         // add the bobbing pattern
         mo->z += finesine[(FINEANGLES / 20 * leveltime >> 2) & FINEMASK];
@@ -992,11 +992,11 @@ void P_ZMovement(mobj_t * mo)
         {
             if (player
 #ifdef VOODOO_DOLL
-		&& !voodoo_mo  // voodoo does not pass this to player view
+                && !voodoo_mo  // voodoo does not pass this to player view
 #endif
-		&& (mo->momz < -8 * FRACUNIT)
-		&& !(mo->flags2 & MF2_FLY)
-		)
+                && (mo->momz < -8 * FRACUNIT)
+                && !(mo->flags2 & MF2_FLY)
+                )
             {
                 // Squat down.
                 // Decrease viewheight for a moment
@@ -1061,12 +1061,12 @@ void P_ZMovement(mobj_t * mo)
 #ifdef VOODOO_DOLL
             && !voodoo_mo  // voodoo does not pass this to sound
 #endif
-	    && (demoversion >= 112)
-	    && !(player->cheats & CF_FLYAROUND) && !(mo->flags2 & MF2_FLY)
-	    && (mo->momz > 8 * FRACUNIT))
+            && (demoversion >= 112)
+            && !(player->cheats & CF_FLYAROUND) && !(mo->flags2 & MF2_FLY)
+            && (mo->momz > 8 * FRACUNIT))
         {
             S_StartSound(mo, sfx_ouch);
-	}
+        }
 
         // hit the ceiling
         if (mo->momz > 0)
@@ -1081,8 +1081,8 @@ void P_ZMovement(mobj_t * mo)
         {
             //SoM: 4/3/2000: Don't explode on the sky!
             if ( mo->subsector->sector->ceilingpic == skyflatnum
-		 && mo->subsector->sector->ceilingheight == mo->ceilingz
-		 && demoversion >= 129)
+                 && mo->subsector->sector->ceilingheight == mo->ceilingz
+                 && demoversion >= 129)
             {
                 if (mo->type == MT_BLOODYSKULL)
                 {
@@ -1101,8 +1101,8 @@ void P_ZMovement(mobj_t * mo)
 
     // z friction in water
     if ((demoversion >= 128)
-	&& ((mo->eflags & (MF_TOUCHWATER | MF_UNDERWATER)))
-	&& !(mo->flags & (MF_MISSILE | MF_SKULLFLY)) )
+        && ((mo->eflags & (MF_TOUCHWATER | MF_UNDERWATER)))
+        && !(mo->flags & (MF_MISSILE | MF_SKULLFLY)) )
     {
         mo->momz = FixedMul(mo->momz, FRICTION_NORM * 3 / 4);
     }
@@ -1139,15 +1139,15 @@ void P_NightmareRespawn(mobj_t * mobj)
         // Nightmare respawn at (0,0) bug fix, as in PrBoom, Eternity
         if( EN_catch_respawn_0 && x==0 && y==0 )
         {
-	    x = mobj->x;
-	    y = mobj->y;
+            x = mobj->x;
+            y = mobj->y;
         }
 #endif
         if(mthing->options & MTF_FS_SPAWNED)
         {
-	    at_mobj_position = 2;
-	    z = mobj->z;  // FS spawn
-	}
+            at_mobj_position = 2;
+            z = mobj->z;  // FS spawn
+        }
     }
 
     mobj->flags |= MF_SOLID;  // [WDJ] must be solid to check position (Boom bug)
@@ -1183,7 +1183,7 @@ void P_NightmareRespawn(mobj_t * mobj)
     if (mthing)
     {
         if (mthing->options & (MTF_FS_SPAWNED|MTF_EXTRA))
-	    mobj->spawnpoint = NULL;  // prevent free of extra mapthing
+            mobj->spawnpoint = NULL;  // prevent free of extra mapthing
         mthing->mobj = mo;  // [WDJ] replace ref to old monster (missing in PrBoom)
     }
 
@@ -1221,7 +1221,7 @@ void P_MobjCheckWater(mobj_t * mobj)
     fixed_t z;
 
     if (demoversion < 128
-	|| mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
+        || mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
         return;
     //
     // see if we are in water, and set some flags for later
@@ -1232,7 +1232,7 @@ void P_MobjCheckWater(mobj_t * mobj)
 
     //SoM: 3/28/2000: Only use 280 water type of water. Some boom levels get messed up.
     if ((sector->model == SM_Legacy_water)
-	|| (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
+        || (sector->floortype == FLOOR_WATER && sector->modelsec == -1))
     {
         if (sector->model == SM_Legacy_water)     // special sector water
             z = (sectors[sector->modelsec].floorheight);
@@ -1288,9 +1288,9 @@ void P_MobjCheckWater(mobj_t * mobj)
 */
     // blood doesnt make noise when it falls in water
     if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
-	&& ((mobj->eflags & (MF_TOUCHWATER | MF_UNDERWATER)) )
-	&& mobj->type != MT_BLOOD
-	&& demoversion < 132)
+        && ((mobj->eflags & (MF_TOUCHWATER | MF_UNDERWATER)) )
+        && mobj->type != MT_BLOOD
+        && demoversion < 132)
         P_SpawnSplash(mobj, z); //SoM: 3/17/2000
 }
 
@@ -1330,8 +1330,8 @@ void P_MobjThinker(mobj_t * mobj)
 #ifdef CLIENTPREDICTION2
     // move player mobj (not the spirit) to spirit position (sent by ticcmd)
     if ((mobj->type == MT_PLAYER)
-	&& (player)
-	&& ((player->cmd.angleturn & (TICCMD_XY | TICCMD_RECEIVED)) == (TICCMD_XY | TICCMD_RECEIVED)) && (mobj->player->playerstate == PST_LIVE)
+        && (player)
+        && ((player->cmd.angleturn & (TICCMD_XY | TICCMD_RECEIVED)) == (TICCMD_XY | TICCMD_RECEIVED)) && (mobj->player->playerstate == PST_LIVE)
         && demoversion > 130)
     {
         int oldx = mobj->x, oldy = mobj->y;
@@ -1350,7 +1350,7 @@ void P_MobjThinker(mobj_t * mobj)
                     CL_ResetSpiritPosition(mobj);
 
                     if(verbose > 1)
-		        GenPrintf(EMSG_ver, "\2MissPrediction\n");
+                        GenPrintf(EMSG_ver, "\2MissPrediction\n");
                 }
             }
             mobj->eflags &= ~MF_NOZCHECKING;
@@ -1366,7 +1366,7 @@ void P_MobjThinker(mobj_t * mobj)
 
         // FIXME: decent NOP/NULL/Nil function pointer please.
         if ((mobj->thinker.function.acv == (actionf_v) (-1)))
-	    goto done;     // mobj was removed
+            goto done;     // mobj was removed
     }
     if (mobj->flags2 & MF2_FLOATBOB)
     {   // Floating item bobbing motion
@@ -1388,7 +1388,7 @@ void P_MobjThinker(mobj_t * mobj)
                 // FIXME : should check only with things, not lines
                 P_CheckPosition(mobj, mobj->x, mobj->y);
 
-	        // tmr_floorz, tmr_ceilingz, tmr_floorthing returned by P_CheckPosition
+                // tmr_floorz, tmr_ceilingz, tmr_floorthing returned by P_CheckPosition
                 mobj->floorz = tmr_floorz;
                 mobj->ceilingz = tmr_ceilingz;
                 if (tmr_floorthing)
@@ -1416,9 +1416,9 @@ void P_MobjThinker(mobj_t * mobj)
             {
                 if (player
 #ifdef VOODOO_DOLL
-		    && (player->mo == mobj)  // not a voodoo doll
+                    && (player->mo == mobj)  // not a voodoo doll
 #endif
-		 )
+                 )
                 {
                     if ((mobj->momz < -8 * FRACUNIT) && !(mobj->flags2 & MF2_FLY))
                     {
@@ -1444,7 +1444,7 @@ void P_MobjThinker(mobj_t * mobj)
 
         // FIXME: decent NOP/NULL/Nil function pointer please.
         if (mobj->thinker.function.acv == (actionf_v) (-1))
-	    goto done;     // mobj was removed
+            goto done;     // mobj was removed
     }
     else
         mobj->eflags &= ~MF_JUSTHITFLOOR;
@@ -1465,7 +1465,7 @@ void P_MobjThinker(mobj_t * mobj)
         // you can cycle through multiple states in a tic
         if (!mobj->tics)
             if (!P_SetMobjState(mobj, mobj->state->nextstate))
-	       goto done; // freed itself
+               goto done; // freed itself
     }
     else
     {
@@ -1669,16 +1669,16 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     {
         // Test if the new size fits in current location.
         // Requires x,y,z, floorz, ceilingz, 
-	// height, radius, flags (for pickup, noclip, solid)
+        // height, radius, flags (for pickup, noclip, solid)
         if( ! P_TestMobjLocation(mo) )
         {
-	    // does not fit, restore any changed fields
-	    info = &mobjinfo[current_type];
-	    mo->height = info->height;
-	    mo->radius = info->radius;
-	    mo->flags = info->flags;
-	    return false;
-	}
+            // does not fit, restore any changed fields
+            info = &mobjinfo[current_type];
+            mo->height = info->height;
+            mo->radius = info->radius;
+            mo->flags = info->flags;
+            return false;
+        }
     }
        
     // commit by updating all the fields
@@ -1694,7 +1694,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
 
     if ((demoversion < 129 && mo->type != MT_CHASECAM)
 //	|| gamemode == heretic  // if played heretic demo this would be important
-	)
+        )
     {
         // Heretic use of P_Random
         mo->lastlook = P_Random() % MAXPLAYERS;
@@ -1711,9 +1711,9 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     mo->frame = st->frame;    // FF_FRAMEMASK for frame, and other bits..
 
     if (mo->flags2 & MF2_FOOTCLIP
-	&& P_GetThingFloorType(mo) != FLOOR_SOLID
-	&& mo->floorz == mo->subsector->sector->floorheight
-	&& gamemode == heretic)
+        && P_GetThingFloorType(mo) != FLOOR_SOLID
+        && mo->floorz == mo->subsector->sector->floorheight
+        && gamemode == heretic)
         mo->flags2 |= MF2_FEETARECLIPPED;
     else
         mo->flags2 &= ~MF2_FEETARECLIPPED;
@@ -1724,7 +1724,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     {
         mo->thinker.function.acp1 = (actionf_p1) P_MobjThinker;
         if( mo->thinker.next == NULL )  // Not currently linked into thinker
-	    P_AddThinker(&mo->thinker);
+            P_AddThinker(&mo->thinker);
     }
    
     if( mmflags & MM_telefog )
@@ -1749,8 +1749,8 @@ void P_RemoveMobj(mobj_t * mobj)
     // Do not respawn: missiles, fire, cube monsters
     // Respawn: weapons, ammo, health, armor, powerups
     if ( mobj->spawnpoint  // [WDJ] no more respawn without mapthing
-	&& (mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED)
-	&& (mobj->type != MT_INV) && (mobj->type != MT_INS) )
+        && (mobj->flags & MF_SPECIAL) && !(mobj->flags & MF_DROPPED)
+        && (mobj->type != MT_INV) && (mobj->type != MT_INS) )
     {
         // Respawn
         itemrespawnque[iquehead] = mobj->spawnpoint;  // mapthing or Extra_MapThing
@@ -1762,10 +1762,10 @@ void P_RemoveMobj(mobj_t * mobj)
             iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
     }
     else if ( mobj->spawnpoint
-	      && mobj->spawnpoint->options & (MTF_FS_SPAWNED|MTF_EXTRA))
+              && mobj->spawnpoint->options & (MTF_FS_SPAWNED|MTF_EXTRA))
     {
         // extra mapthing
-	P_Free_Extra_Mapthing( mobj->spawnpoint );
+        P_Free_Extra_Mapthing( mobj->spawnpoint );
         mobj->spawnpoint = NULL;
     }
 
@@ -1832,15 +1832,15 @@ void P_RespawnSpecials(void)
     {
         if (mthing->options & MTF_FS_SPAWNED)
         {
-	    z = mthing->z << FRACBITS;
-	}
+            z = mthing->z << FRACBITS;
+        }
         else
         {
-	    // [WDJ] at floor height, even when mobj spawns on the ceiling.
-	    // Actual height is too difficult and too late (like other ports).
-	    subsector_t * ss = R_PointInSubsector(x, y);
-	    z = ss->sector->floorheight;
-	}
+            // [WDJ] at floor height, even when mobj spawns on the ceiling.
+            // Actual height is too difficult and too late (like other ports).
+            subsector_t * ss = R_PointInSubsector(x, y);
+            z = ss->sector->floorheight;
+        }
         mo = P_SpawnMobj(x, y, z, MT_IFOG);  // teleport fog
         S_StartSound(mo, sfx_itmbk);
     }
@@ -1854,7 +1854,7 @@ void P_RespawnSpecials(void)
     if (mobjinfo[i].flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
     else if(mthing->options & MTF_FS_SPAWNED)
-	z = mthing->z << FRACBITS;	//DarkWolf95:This still wasn't fixed?! Keep Z for FS stuff.
+        z = mthing->z << FRACBITS;	//DarkWolf95:This still wasn't fixed?! Keep Z for FS stuff.
     else
         z = ONFLOORZ;
 
@@ -1929,16 +1929,16 @@ void P_RespawnWeapons(void)
         // spawn a teleport fog at the new spot
         ss = R_PointInSubsector(x, y);
         if(mthing->options & MTF_FS_SPAWNED)
-	    mo = P_SpawnMobj(x, y, mthing->z << FRACBITS, MT_IFOG);
+            mo = P_SpawnMobj(x, y, mthing->z << FRACBITS, MT_IFOG);
         else
-	    mo = P_SpawnMobj(x, y, ss->sector->floorheight, MT_IFOG);
+            mo = P_SpawnMobj(x, y, ss->sector->floorheight, MT_IFOG);
         S_StartSound(mo, sfx_itmbk);
 
         // spawn it
         if (mobjinfo[i].flags & MF_SPAWNCEILING)
             z = ONCEILINGZ;
-	else if(mthing->options & MTF_FS_SPAWNED)
-	    z = mthing->z << FRACBITS;
+        else if(mthing->options & MTF_FS_SPAWNED)
+            z = mthing->z << FRACBITS;
         else
             z = ONFLOORZ;
 
@@ -2000,17 +2000,17 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     {
         if( voodoo_mode != VM_vanilla )
         {
-	    if( cv_solidcorpse.value )
-	    { 
-	        // convert to corpse
-	        p->mo->flags |= MF_CORPSE|MF_SOLID;
-	        p->mo->player = NULL;  // no voodoo, zombie
-	    }
-	    else
-	    {
-	        P_RemoveMobj( p->mo );
-	    }
-	}
+            if( cv_solidcorpse.value )
+            {
+                // convert to corpse
+                p->mo->flags |= MF_CORPSE|MF_SOLID;
+                p->mo->player = NULL;  // no voodoo, zombie
+            }
+            else
+            {
+                P_RemoveMobj( p->mo );
+            }
+        }
     }
 #endif   
     mobj = P_SpawnMobj(x, y, z, MT_PLAYER);
@@ -2107,15 +2107,15 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
        int i;
        for (i=0 ; i<nummapthings ; i++)
        {
-	   mapthing_t* mt = &mapthings[i];
-	   if( mt->type == mtpn ) // a spawnpoint for this player
-	   {
-	       // if not the last playerstart, then spawn as voodoo doll
-	       if( mt != playerstarts[playernum] && mt->mobj == NULL )
-	       {
-		   P_SpawnVoodoo( playernum, mt );
-	       }
-	   }
+           mapthing_t* mt = &mapthings[i];
+           if( mt->type == mtpn ) // a spawnpoint for this player
+           {
+               // if not the last playerstart, then spawn as voodoo doll
+               if( mt != playerstarts[playernum] && mt->mobj == NULL )
+               {
+                   P_SpawnVoodoo( playernum, mt );
+               }
+           }
        }
    }
 #endif   
@@ -2168,11 +2168,11 @@ void P_SpawnMapthing (mapthing_t* mthing)
         // the last is the actual player start point.
         // For all playernum, seen in Plutonia MAP06.
         if( playerstarts[playernum] ) {
-	    // Spawn the previous player start point as a voodoo doll.
-	    // Such a voodoo doll can trip linedefs, but is not counted as
-	    // a monster nor as a player.
-	    P_SpawnVoodoo( playernum, playerstarts[playernum] );
-	}
+            // Spawn the previous player start point as a voodoo doll.
+            // Such a voodoo doll can trip linedefs, but is not counted as
+            // a monster nor as a player.
+            P_SpawnVoodoo( playernum, playerstarts[playernum] );
+        }
 #endif
 
         // save spots for respawning in network games
@@ -2402,7 +2402,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
             puff->tics = 1;
 
         // don't make punches spark on the wall
-	// la_attackrange is global var param of LineAttack
+        // la_attackrange is global var param of LineAttack
         if (la_attackrange == MELEERANGE)
             P_SetMobjState(puff, S_PUFF3);
     }
@@ -2454,17 +2454,17 @@ boolean PTR_BloodTraverse(intercept_t * in)
       hitline:
         P_MakeDivline(li, &divl);
         frac = P_InterceptVector(&divl, &trace);
-	// Chexquest: has green splats, BLUDA0, BLUDB0, and BLUDC0
+        // Chexquest: has green splats, BLUDA0, BLUDB0, and BLUDC0
         if (gamemode == heretic)
         {
-	    // BLODC0 from heretic wad
+            // BLODC0 from heretic wad
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLODC0", z, frac, SPLATDRAWMODE_TRANS);
-	}
+        }
         else
         {
-	    // BLUDC0 from wad or legacy.wad, green splat for chexquest
+            // BLUDC0 from wad or legacy.wad, green splat for chexquest
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLUDC0", z, frac, SPLATDRAWMODE_TRANS);
-	}
+        }
         return false;
     }
 
@@ -2853,7 +2853,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     //                use the mouseaiming
     // lar_linetarget returned by P_AimLineAttack
     if (!(source->player->autoaim_toggle && cv_allowautoaim.value)
-	|| (!lar_linetarget && demoversion > 111))
+        || (!lar_linetarget && demoversion > 111))
     {
         if (demoversion >= 128)
             slope = AIMINGTOSLOPE(source->player->aiming);
@@ -2931,13 +2931,13 @@ mapthing_t * P_Get_Extra_Mapthing( uint16_t flags )
     {
         // allocate some mapthings as a chunk
         extra_mapthing_t * mapthing_chunk =
-	    Z_Malloc( sizeof(extra_mapthing_t), PU_LEVEL, NULL);
+            Z_Malloc( sizeof(extra_mapthing_t), PU_LEVEL, NULL);
         memset( mapthing_chunk, 0, sizeof(extra_mapthing_t) );  // zeroed
         mapthing_chunk->link = extra_mapthing_chunk;  // link
         extra_mapthing_chunk = mapthing_chunk;
         for( i=EXTRA_MAPTHING_INC-1; i>=0; i-- )
         {
-	    P_Free_Extra_Mapthing( &mapthing_chunk->mt_array[i] );
+            P_Free_Extra_Mapthing( &mapthing_chunk->mt_array[i] );
         }
     }
     // get free mapthing
@@ -2966,7 +2966,7 @@ unsigned int P_Extra_Mapthing_Index( mapthing_t * mtp )
     if (chunk == NULL)  goto not_found;
     // find chunk that contains mthing
     while( ((mtp < &chunk->mt_array[0])
-	    || (mtp > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
+            || (mtp > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
     {
        chunk = chunk->link;
        if (chunk == NULL)  goto not_found;
@@ -2996,26 +2996,26 @@ mapthing_t * P_Traverse_Extra_Mapthing( mapthing_t * prev )
     {
         // find chunk that contains mthing
         while( ((prev < &chunk->mt_array[0])
-		|| (prev > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
+                || (prev > &chunk->mt_array[EXTRA_MAPTHING_INC-1]) ))
         {
-	    chunk = chunk->link;
-	    if (chunk == NULL)  goto done;
-	}
+            chunk = chunk->link;
+            if (chunk == NULL)  goto done;
+        }
     }
     while( option_flags == 0 )   // skip unused
     {
         // advance to next mthing
         if( mtp < &chunk->mt_array[EXTRA_MAPTHING_INC-1] )
         {
-	    mtp ++;
-	}
+            mtp ++;
+        }
         else
         {
             // next chunk
-	    chunk = chunk->link;  // advance chunk
-	    if (chunk == NULL)  goto done;
-	    mtp = &chunk->mt_array[0];  // first entry
-	}
+            chunk = chunk->link;  // advance chunk
+            if (chunk == NULL)  goto done;
+            mtp = &chunk->mt_array[0];  // first entry
+        }
         option_flags = mtp->options;
     }
     return mtp;

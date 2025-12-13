@@ -4624,3 +4624,18 @@ Give the ticrate display a numeric FPS display, in addition
 to the graphical display.
 Cleanup old code and remove other old options.
 
+*** W104_untab5
+patchfile = w104_22_untab5.patch
+- commit revision 1196
+Remove leading tabs from lines.
+am_map.c
+m_menu.c
+p_mobj.c
+p_mobj.h
+p_pspr.c
+t_array.c
+t_script.c
+t_script.h
+t_vari.c
+v_video.h
+
