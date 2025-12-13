@@ -4674,3 +4674,9 @@ alpha value and apply a low value color tint (but not high color values).
 Its 8bit palette draw is color limited to the only console green tint.
 FS screen fade now applies to software draw too (but no color with 8bit).
 Cleanup the FS fade function, and FS fade variables.
+
+*** W104_drawinfo
+patchfile = w104_27_drawinfo.patch
+- commit revision 1201
+Change V_drawinfo, to just drawinfo.  It appears everywhere in v_video.c,
+and very little anywhere else.

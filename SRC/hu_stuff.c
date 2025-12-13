@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1190 2015-12-01 22:19:32Z wesleyjohnson $
+// $Id: hu_stuff.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -162,7 +162,7 @@ void HU_Init(void)
     char        buffer[9];
 
     if(dedicated)
-	return;
+        return;
     
     COM_AddCommand ("say"    , Command_Say_f);
     COM_AddCommand ("sayto"  , Command_Sayto_f);
@@ -567,6 +567,7 @@ boolean HU_Responder (event_t *ev)
 //
 static void HU_DrawChat (void)
 {
+    // vid : from video setup
     int  i,c,y;
     int  cwidth = vid.width >> 3;   // 8 pixel per char
    
@@ -844,6 +845,7 @@ int  HU_FSDisplay(int handle, boolean enable_draw)
 
 void HU_DrawFSPics()
 {
+  // vid : from video setup
   int  i;
 
   // [WDJ] Fragglescript overlays must be centered.
@@ -869,7 +871,7 @@ void HU_DrawFSPics()
     V_DrawScaledPatch(piclist[i].xpos, piclist[i].ypos, piclist[i].data);
   }
   // restore
-  //V_SetupDraw( V_drawinfo.prev_screenflags );
+  //V_SetupDraw( drawinfo.prev_screenflags );
 }
 
 void HU_ClearFSPics()
@@ -894,6 +896,7 @@ static int     oldclearlines;
 
 void HU_Erase (void)
 {
+    // vid : from video setup
     int topline;
     int bottomline;
     int y,yoffset;
@@ -1047,8 +1050,8 @@ void HU_drawDeathmatchRankings (void)
     // draw the ranking title panel
     if(!cv_splitscreen.value)
     {
-	patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);  // endian fix
-	V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2, 5, p);
+        patch_t*  p = W_CachePatchName("RANKINGS",PU_CACHE);  // endian fix
+        V_DrawScaledPatch ((BASEVIDWIDTH-p->width)/2, 5, p);
     }
 
     // count frags for each present player
@@ -1113,6 +1116,7 @@ void HU_drawDeathmatchRankings (void)
 
 void HU_drawCrosshair (void)
 {
+    // vid : from video setup
     int y;
 
     int chv = cv_crosshair.value & 3;
@@ -1148,7 +1152,7 @@ void HU_drawCrosshair (void)
 
         V_DrawTranslucentPatch (vid.width>>1, y, crosshair[chv-1]);
     }
-    // V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
+    // V_SetupDraw( drawinfo.prev_screenflags );  // restore
 }
 
 

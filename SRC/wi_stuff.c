@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: wi_stuff.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -468,6 +468,7 @@ static patch_t**        lnames;
 
 static void WI_slamBackground(void)
 {
+    // vid : from video setup
     // draw background on screen0
     if( gamemode == heretic && state == StatCount)
         V_DrawFlatFill( 0, 0, vid.width/vid.dupx, vid.height/vid.dupy, W_CheckNumForName("FLOOR16"));
@@ -1932,6 +1933,7 @@ void WI_Ticker(void)
 
 static void WI_loadData(void)
 {
+    // vid : from video setup
     int         i, j;
     anim_inter_t*  ai; // interpic animation data
     char        name[9];
@@ -1965,7 +1967,7 @@ static void WI_loadData(void)
         // Draw background on screen1
         V_SetupDraw( 1 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ ); // screen 1
         V_DrawScaledPatch(0, 0, W_CachePatchName(bgname, PU_CACHE));
-        V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
+        V_SetupDraw( drawinfo.prev_screenflags );  // restore
     }
 
     // UNUSED unsigned char *pic = screens[1];

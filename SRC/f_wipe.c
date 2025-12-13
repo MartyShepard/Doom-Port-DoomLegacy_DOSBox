@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_wipe.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: f_wipe.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,6 +63,8 @@ static uint16_t  mask1 = 0, mask2 = 0;
 static
 void wipe_initColorXForm ( void )
 {
+    // vid : from video setup
+
 //    memcpy(wipe_scr, wipe_scr_start, width*height*vid.bytepp);
     // copy wipe_scr_start to wipe_scr
     VID_BlitLinearScreen( wipe_scr_start, wipe_scr,
@@ -137,6 +139,7 @@ static
 int wipe_doColorXForm ( int ticks )
 
 {
+    // vid : from video setup
     static int  slowdown=0;
     boolean     changed = false;
     int y;
@@ -228,6 +231,7 @@ static int*  melty;  // y indexes for melt
 static
 void wipe_initMelt ( void )
 {
+    // vid : from video setup
     int i, my;
     int meltwidth = vid.width/2;  // melt is 2 pixels at a time
 
@@ -255,6 +259,7 @@ void wipe_initMelt ( void )
 static
 int wipe_doMelt ( int ticks )
 {
+    // vid : from video setup
     boolean  done = true;
 #ifdef ENABLE_DRAWEXT
     int  cpycnt = vid.bytepp + vid.bytepp;  // 2 pixels
@@ -355,6 +360,7 @@ int wipe_StartScreen ( void )
 // [WDJ] always full copy
 int wipe_EndScreen ( void )
 {
+    // vid : from video setup
     wipe_scr_end = screens[3];
     I_ReadScreen(wipe_scr_end);  // copy vid.display in screen format
     // restore start scr.

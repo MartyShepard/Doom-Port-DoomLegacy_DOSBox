@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: m_misc.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -531,6 +531,7 @@ boolean WritePCXfile ( char*         filename,
 //
 void M_ScreenShot (void)
 {
+    // vid : from video setup
     int         i;
     byte*       linear;
     char        lbmname[MAX_WADPATH];

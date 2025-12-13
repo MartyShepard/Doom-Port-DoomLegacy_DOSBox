@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: d_main.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1200"
+#define SVN_REV "1201"
 #endif
 
 // Version number: major.minor.revision
@@ -535,6 +535,7 @@ consvar_t cv_screenslink = { "screenlink", "2", CV_SAVE, screenslink_cons_t };
 static
 void D_Display(void)
 {
+    // vid : from video setup
     static boolean menuactivestate = false;
     static gamestate_t oldgamestate = -1;
     static int borderdrawcount;

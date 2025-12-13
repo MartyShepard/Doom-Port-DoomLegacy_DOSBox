@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: v_video.h 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -164,7 +164,7 @@ typedef struct {
 } drawinfo_t;
 
 // current draw info
-extern drawinfo_t  V_drawinfo;
+extern drawinfo_t  drawinfo;
 
 // setup for draw screen, scaled, and centering
 // Can use saved V_drawinfo.screenflags or use V_drawinfo.prev_screenflags

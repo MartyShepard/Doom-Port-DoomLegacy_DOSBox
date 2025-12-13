@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: console.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -408,6 +408,7 @@ void CON_Register(void)
 // after FullGraphics
 void CON_VideoInit(void)
 {
+    // vid : from video setup
     if(dedicated)
 	return;
     
@@ -561,6 +562,7 @@ void CON_ToggleOff (void)
 // Call once per tic.
 void CON_Ticker (void)
 {
+    // vid : from video setup
     int    i;
 
     // cursor blinking
@@ -1012,6 +1014,7 @@ static void CON_Print (char *msg)
 // Caller must have va_start, va_end
 void CONS_Printf_va (const char *fmt, va_list ap)
 {
+    // vid : from video setup
     char  txt[CONS_BUF_SIZE];
 
     // print the error
@@ -1236,6 +1239,7 @@ static void CON_DrawHudlines (void)
 //
 static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 {
+    // vid : from video setup
     int   pic_h = pic->height;
     int   pic_w = pic->width;
     int   x, y;
@@ -1284,6 +1288,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 //
 void CON_DrawConsole (void)
 {
+    // vid : from video setup
     char  *p;
     int   i,x,y;
     int   w = 0, x2 = 0;

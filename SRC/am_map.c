@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: am_map.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -894,7 +894,8 @@ void AM_Ticker (void)
 //
 void AM_clearFB(int color)
 {
-#ifdef HWRENDER 
+    // vid : from video setup
+#ifdef HWRENDER
     if (rendermode != render_soft)
     {
         HWR_clearAutomap ();
@@ -1108,6 +1109,7 @@ void AM_drawFline_soft ( fline_t*       fl,
                          int            color )
 
 {
+    // vid : from video setup
     register int x, y;
     register int dx, dy;
     register int sx, sy;
@@ -1458,6 +1460,7 @@ void AM_drawMarks(void)
 
 void AM_drawCrosshair(int color)
 {
+    // vid : from video setup
     if( rendermode!=render_soft )
     {
         // BP: should be putpixel here

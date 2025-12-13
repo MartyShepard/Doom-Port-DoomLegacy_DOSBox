@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: m_menu.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3897,7 +3897,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     
 
   done:   
-    V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
+    V_SetupDraw( drawinfo.prev_screenflags );  // restore
    
     return;
 
