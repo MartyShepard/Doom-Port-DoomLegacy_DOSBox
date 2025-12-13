@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_saveg.c 1198 2015-12-26 19:16:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1880,7 +1880,7 @@ void P_ArchiveThinkers(void)
                 WRITE32(save_p, mobj->dropped_ammo_count);
         }
         // Use action as determinant of its owner.
-	// acv == -1  means deallocated (see P_RemoveThinker)
+	// acv == T_RemoveThinker : means deallocated (see P_RemoveThinker)
         else if (th->function.acv == (actionf_v) NULL)
         {
 	    // No action function.
@@ -2015,7 +2015,7 @@ void P_ArchiveThinkers(void)
             continue;
         }
 #ifdef PARANOIA
-        else if (th->function.acp1 != (actionf_p1)(-1)) // wait garbage collection
+        else if (th->function.acp1 != (actionf_p1)T_RemoveThinker) // wait garbage collection
         {
             I_SoftError("SaveGame: Unknown thinker type %p\n", th->function.acp1);
 	}

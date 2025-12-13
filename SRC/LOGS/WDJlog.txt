@@ -4639,3 +4639,16 @@ t_script.h
 t_vari.c
 v_video.h
 
+*** W104_bob
+patchfile = w104_23_bob.patch
+- commit revision 1197
+Make BOB_MOM code a standard feature, remove compile tests.
+Make VOODOO_DOLL code a standard feature, remove compile tests.
+Make GAMMA_FUNCS code a standard feature, remove compile tests.
+
+*** W104_funcnull
+patchfile = w104_24_funcnull.patch
+- commit revision 1198
+Give the thinker funcs a proper name for remove thinker, instead of -1.
+Create a remove thinker action function.  Simplify some of the thinker code.
+Still has NULL as no action, but do not delete thinker.

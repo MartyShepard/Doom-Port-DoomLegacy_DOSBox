@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_plats.c 1198 2015-12-26 19:16:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -328,7 +328,7 @@ void P_ActivateInStasis(int tag)
   }
 }
 
-//SoM: 3/7/2000: use Boom code insted.
+//SoM: 3/7/2000: use Boom code instead.
 int EV_StopPlat(line_t* line)
 {
   platlist_t *pl;

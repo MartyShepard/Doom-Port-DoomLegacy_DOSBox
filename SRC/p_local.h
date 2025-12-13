@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_local.h 1198 2015-12-26 19:16:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -181,7 +181,8 @@ extern  thinker_t       thinkercap;
 
 void P_InitThinkers (void);
 void P_AddThinker (thinker_t* thinker);
-void P_RemoveThinker (thinker_t* thinker);
+void P_RemoveThinker (thinker_t* thinker);  // Remove the thinker.
+void T_RemoveThinker (thinker_t* thinker);  // Thinker removal action
 
 
 //

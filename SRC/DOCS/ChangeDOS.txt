@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01198 ]: w104 funcnull
 [01197 ]: w104 bob voodoo gamma standard feature
 [01196 ]: w104 untab5
 [01195 ]: w104 ticrate
