@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: v_video.c 1195 2015-12-26 19:11:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -152,7 +152,14 @@ byte  graphics_state = VGS_off; // Is used in console.c and screen.c
 boolean allow_fullscreen = false;
 boolean mode_fullscreen = false;
   
-consvar_t cv_ticrate = { "vid_ticrate", "0", 0, CV_OnOff, NULL };
+
+CV_PossibleValue_t ticrate_sel_t[] = {
+   {0,"Off"},
+   {1,"Graph"},
+   {2,"Numeric"},
+   {0,NULL} };
+consvar_t cv_ticrate = { "vid_ticrate", "0", 0, ticrate_sel_t, NULL };
+
 // synchronize page flipping with screen refresh
 // unused and for compatibility reason
 consvar_t cv_vidwait = {"vid_wait", "1", CV_SAVE, CV_OnOff};
@@ -2504,15 +2511,14 @@ void V_Setup_VideoDraw(void)
 }
 
 
-#define DRAW_FPSGRAPH
-#ifdef DRAW_FPSGRAPH
+// ---- Draw Frame-per-second graph
+
 #define FPS_POINTS  35
 #define FPS_SCALE    4
 #define FPS_MAXTICKS 20
 #define FPS_SHIFTTIC 10
 
 static byte fpsgraph[FPS_POINTS];
-#endif
 
 // [WDJ] Draw ticrate graph at bottom of screen.
 // Removed from port drivers so do not have to maintain 4 copies of it.
@@ -2529,18 +2535,17 @@ void V_Draw_ticrate_graph( void )
     lasttic = nt;
     if (tics > FPS_MAXTICKS) tics = FPS_MAXTICKS;
 
-    // display a graph of ticrate 
-    if (cv_ticrate.value )
+    // Display a graph of ticrate.
+    if(cv_ticrate.value == 1)
     {
-#ifdef DRAW_FPSGRAPH
         if( nt - shifttic > FPS_SHIFTTIC )
         {
             // try to get somewhat constant horz. time scale
             shifttic += FPS_SHIFTTIC;
             // shift it left
-            memmove( &fpsgraph[0], &fpsgraph[1], FPS_POINTS*sizeof(fpsgraph[0]));
+            memmove( &fpsgraph[0], &fpsgraph[1], (FPS_POINTS-1)*sizeof(fpsgraph[0]));
         }
-        fpsgraph[FPS_POINTS-1]=FPS_MAXTICKS-tics;
+        fpsgraph[FPS_POINTS-1]= FPS_MAXTICKS - tics;
 
         if( rendermode == render_soft )
         {
@@ -2560,15 +2565,6 @@ void V_Draw_ticrate_graph( void )
                 for(k=0; k<FPS_SCALE*vid.dupx; k++)
                     V_DrawPixel( dest, (i*FPS_SCALE*vid.dupx)+k, 0xff );
             }
-#else
-            // draws little dots on the bottom of the screen
-            byte * dest = V_GetDrawAddr( 3, (vid.height-2) );
-      
-            for (i=0; i<tics*2; i+=2)
-                V_DrawPixel( dest, i * vid.dupy, 0x04 ); // white
-            for ( ; i<20*2; i+=2)
-                V_DrawPixel( dest, i * vid.dupy, 0x00 );
-#endif
         }
 #ifdef HWRENDER
         else
@@ -2597,6 +2593,30 @@ void V_Draw_ticrate_graph( void )
             }
         }
 #endif
+    }
+    else if(cv_ticrate.value == 2)
+    {
+        static byte accum_frame = 0;
+        int accum_tic = 0;
+        int i;
+        
+        // Sometimes tics = 0, for a frame.
+        // Use fpsgraph for smoothing the FPS over several frames.
+        memmove( &fpsgraph[0], &fpsgraph[1], (FPS_POINTS-1)*sizeof(fpsgraph[0]));
+        fpsgraph[FPS_POINTS-1]= tics;
+        if( accum_frame < FPS_POINTS )   accum_frame++;  // startup
+        for( i=0; i<accum_frame; i++ )
+        {
+            accum_tic += fpsgraph[i];  // total tics over the frames
+        }
+        if( accum_tic > 1 )
+        {
+            char buff[20];
+            sprintf(buff,"FPS: %4i", ((int)accum_frame * TICRATE)/accum_tic );
+            V_SetupDraw( V_SCALEPATCH | V_SCALESTART );
+            V_DrawString ( 8, 160, V_WHITEMAP, buff);
+            V_SetupDraw( V_drawinfo.prev_screenflags );  // restore
+        }
     }
 }
 

@@ -4604,3 +4604,23 @@ patchfile = w104_19_misc.patch
 Make fogcolor default assign to work for any endian.
 Some misc indent alignments and spacing.
 Remove some extern from the code, and into header files.
+
+*** W104_mapwad
+patchfile = w104_20_mapwad.patch
+- commit revision 1194
+Give the console map command a file search like the command line.
+The command line has more privileges, the map command is more
+restricted.
+The map command, as a network command, is restricted to ".DEH",
+".BEX", and ".WAD" files, and within public doomwaddir directories.
+The previous search of 10 directories deep is removed as a security risk.
+Now it searches the doomwaddir list, to 4 subdirectories deep.
+
+*** W104_ticrate
+patchfile = w104_21_ticrate.patch
+- commit revision 1195
+Put a ticrate display control in the video menu.
+Give the ticrate display a numeric FPS display, in addition
+to the graphical display.
+Cleanup old code and remove other old options.
+

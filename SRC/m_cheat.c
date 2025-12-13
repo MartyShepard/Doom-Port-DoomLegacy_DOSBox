@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: m_cheat.c 1195 2015-12-26 19:11:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1050,7 +1050,7 @@ static void CheatKeysFunc(player_t * player, Cheat_t * cheat)
 
 static void CheatTickerFunc(player_t * player, Cheat_t * cheat)
 {
-    cv_ticrate.value = !cv_ticrate.value;
+    cv_ticrate.value = (cv_ticrate.value)? 0:1;  // Off <-> Graph
     if (cv_ticrate.value)
     {
         P_SetMessage(player, TXT_CHEATTICKERON, false);

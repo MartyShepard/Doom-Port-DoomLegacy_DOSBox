@@ -292,8 +292,7 @@ extern FILE *logstream;
 
 #if defined( __DJGPP__ )
   /*
-    Das ist doch total krank mit den verzeicnissen
-    Nnun denn. Spiegeln wir die Verzeichniss wie ftp.idgames.
+    Nun denn. Spiegeln wir die Verzeichniss wie ftp.idgames.
   */
   #undef DEFHOME
   #undef DEFAULTDIR1
@@ -309,27 +308,27 @@ extern FILE *logstream;
   #define LEGACYWADDIR  ""
   #define DEFAULTDIR1 "C:\\DOOM"
   #define DEFAULTDIR2 "C:\\DOOM2"
-  #define DEFWADS01  "WADS"
-  #define DEFWADS02  "DOOMWADS"
-  #define DEFWADS03  "MEGAWADS"
-  #define DEFWADS04  "DOOM\\WADS"
-  #define DEFWADS05  "DOOM\\MEGAWADS"
-  #define DEFWADS06  "DOOM\\DTHMATCH"
-  #define DEFWADS07  "DOOM\\PORTS"
-  #define DEFWADS08  "WADS\\0-9"
-  #define DEFWADS09  "WADS\\A-C"
-  #define DEFWADS10  "WADS\\D-F"
-  #define DEFWADS11  "WADS\\G-I"
-  #define DEFWADS12  "WADS\\J-L"
-  #define DEFWADS13  "WADS\\M-O"
-  #define DEFWADS14  "WADS\\P-R"
-  #define DEFWADS15  "WADS\\S-U"
-  #define DEFWADS16  "WADS\\V-Z"
-  #define DEFWADS17  "HERETIC\\WADS"
-  #define DEFWADS18  "HERETIC\\MEGAWADS"
-  #define DEFWADS19  "HERETIC\\DTHMATCH"
-  #define DEFWADS20  "HERETIC\\PORTS"
-  #define DEFWADS21  "HACX"
+  #define DEFWADS01  ""
+  #define DEFWADS02  ""
+  #define DEFWADS03  "DOOM1\\WADS"
+  #define DEFWADS04  "DOOM2\\WADS"
+  #define DEFWADS05  "HERETIC\\WADS"
+  #define DEFWADS06  "WADS"
+  #define DEFWADS07  "WADS\\GRAPHICS"
+  #define DEFWADS08  "WADS\\THEMES"
+  #define DEFWADS09  "WADS\\MUSIC"
+  #define DEFWADS10  "WADS\\PORTS"
+  #define DEFWADS11  "WADS\\DTHMATCH"
+  #define DEFWADS12  "WADS\\MEGAWADS"
+  #define DEFWADS13  "WADS\\0-9"
+  #define DEFWADS14  "WADS\\A-C"
+  #define DEFWADS15  "WADS\\D-F"
+  #define DEFWADS16  "WADS\\G-I"
+  #define DEFWADS17  "WADS\\J-L"
+  #define DEFWADS18  "WADS\\M-O"
+  #define DEFWADS19  "WADS\\P-R"
+  #define DEFWADS20  "WADS\\S-U"
+  #define DEFWADS21  "WADS\\V-Z"
 #endif
 
 #endif  // DOOMDEF_H

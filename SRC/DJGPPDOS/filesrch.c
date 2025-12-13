@@ -138,10 +138,10 @@ filestatus_e  sys_filesearch( const char * filename, const char * startpath,
             {
                 strncpy(completepath, searchpath, MAX_WADPATH-1);
                 completepath[MAX_WADPATH-1] = '\0';
-								//CONS_Printf("Sys_Filesearch: [%-2d] = %s\n",x,completepath );
             }
             // Close the open directories.
-            for(; depth >= 0; closedir(dirhandle_stack[depth--]));
+						/* Muss man unter DOS Verzeicnisse scließen? It mir neu?
+            /* for(; depth >= 0; closedir(dirhandle_stack[depth--]));*/
             break;
         }
     }
