@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1195 2015-12-26 19:11:14Z wesleyjohnson $
+// $Id: v_video.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -171,8 +171,6 @@ byte *screens[NUMSCREENS+1];
 
 
 void CV_usegamma_OnChange();
-
-#ifdef GAMMA_FUNCS
 void CV_gammafunc_OnChange();
 // In m_menu.c
 void MenuGammaFunc_dependencies( byte gamma_en,
@@ -191,10 +189,6 @@ CV_PossibleValue_t gamma_br_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
 consvar_t cv_bright = { "bright", "0", CV_SAVE | CV_CALL, gamma_br_cons_t, CV_usegamma_OnChange };
 CV_PossibleValue_t gamma_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
 consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
-#else
-CV_PossibleValue_t gamma_cons_t[] = { {0, "MIN"}, {4, "MAX"}, {0, NULL} };
-consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
-#endif
 
 static byte gammatable[256];	// shared by all gamma table generators
 
@@ -215,8 +209,6 @@ static void R_BuildGammaTable(float gamma)
     }
 }
 
-
-#ifdef GAMMA_FUNCS
 
 // table of gamma value for each slider position
 float gamma_lookup_table[25] = {
@@ -408,8 +400,6 @@ static void
     }
 }
 
-#endif
-
 
 // [WDJ] Default palette for Launch, font1, error messages
 #define DEFAULT_PALSIZE  (3*6)
@@ -514,7 +504,6 @@ void V_SetPaletteLump(char *pal)
 
 void CV_usegamma_OnChange(void)
 {
-#ifdef GAMMA_FUNCS
     switch( cv_gammafunc.value ){
      case 1:
         R_Generate_gamma_black_table();
@@ -529,11 +518,11 @@ void CV_usegamma_OnChange(void)
      default:
         R_BuildGammaTable( gamma_lookup( cv_usegamma.value));
         break;
-    }
-#else
+#if 0       
     // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
     R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
 #endif
+    }
     if( graphics_state >= VGS_active )
     {
         // reload palette
@@ -542,7 +531,6 @@ void CV_usegamma_OnChange(void)
     }
 }
 
-#ifdef GAMMA_FUNCS
 enum{ GFU_GAMMA = 0x01, GFU_BLACK = 0x02, GFU_BRIGHT = 0x04 };
 byte  gammafunc_usage[4] =
 {
@@ -558,7 +546,7 @@ void CV_gammafunc_OnChange(void)
     MenuGammaFunc_dependencies( gu&GFU_GAMMA, gu&GFU_BLACK, gu&GFU_BRIGHT );
     CV_usegamma_OnChange();
 }
-#endif
+
 
 // [WDJ] Init before calling port video driver
 // Common init to all port video drivers
@@ -587,11 +575,9 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_ticrate);
     // Needs be done for config loading
     CV_RegisterVar(&cv_usegamma);
-#ifdef GAMMA_FUNCS
     CV_RegisterVar(&cv_black);
     CV_RegisterVar(&cv_bright);
     CV_RegisterVar(&cv_gammafunc);
-#endif
 }
 
 

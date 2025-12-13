@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: r_main.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -47,7 +47,6 @@
 #define R_MAIN_H
 
 #include "doomdef.h"
-  // BOOM_GLOBAL_COLORMAP
 #include "doomtype.h"
 #include "d_player.h"
 #include "r_data.h"
@@ -142,10 +141,8 @@ extern sector_t *  view_fogmodel;  // viewer is in a FF_FOG floor
 extern lighttable_t*    view_colormap;  // full lightlevel range colormaps
 extern extracolormap_t *  view_extracolormap;
 
-#ifdef BOOM_GLOBAL_COLORMAP
 extern byte EN_boom_colormap;  // compatibility, user preference
 void BoomColormap_detect( void );
-#endif
 
 // Number of diminishing brightness levels.
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1121 2014-06-23 18:11:35Z wesleyjohnson $
+// $Id: p_map.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -139,10 +139,8 @@ int             *spechit = NULL;                //SoM: 3/15/2000: Limit removal
 		// realloc, never deallocated
 int             numspechit = 0;
 
-#ifdef VOODOO_DOLL
 //[WDJ] Attempt to track player that triggers voodoo inflicted damage
 player_t *      spechit_player = NULL;
-#endif
 
 //SoM: 3/15/2000
 msecnode_t*  sector_list = NULL;
@@ -186,7 +184,6 @@ static boolean PIT_StompThing (mobj_t* thing)
     if ( gamemode==heretic && !(tm_thing->flags2 & MF2_TELESTOMP))
         return false;
 
-#ifdef VOODOO_DOLL
     int  damage = 10000;  // fatal
     if( (tm_thing->player && (tm_thing->player->mo != tm_thing))
 	&& (thing->player && (thing->player->mo != thing)) )
@@ -231,10 +228,6 @@ static boolean PIT_StompThing (mobj_t* thing)
 	}
     }
     P_DamageMobj (thing, tm_thing, tm_thing, damage);
-#else   
-
-    P_DamageMobj (thing, tm_thing, tm_thing, 10000);
-#endif
 
     return true;
 }
@@ -1288,7 +1281,6 @@ boolean P_TryMove ( mobj_t*       thing,
             {
                 if (ld->special)
 	        {
-#ifdef VOODOO_DOLL
 		    // [WDJ] Attempt to track player that triggers voodoo doll
 		    if((voodoo_mode >= VM_target) && (thing->player))
 		    {
@@ -1299,7 +1291,6 @@ boolean P_TryMove ( mobj_t*       thing,
 			    spechit_player = thing->player;
 			}
 		    }
-#endif
                     P_CrossSpecialLine (ld-lines, oldside, thing);
 		}
             }
@@ -1616,7 +1607,6 @@ void P_SlideMove (mobj_t* mo)
     mo->momx = tsm_xmove;
     mo->momy = tsm_ymove;
 
-#ifdef BOB_MOM
     // [WDJ] bobfactor from killough, via prboom, adapted to legacy.
     // killough 10/98: affect the bobbing the same way (but not voodoo dolls)
     if (mo->player && mo->player->mo == mo)
@@ -1639,7 +1629,6 @@ void P_SlideMove (mobj_t* mo)
 	    pl->bob_momy = tsm_ymove;
 #endif
     }
-#endif
 
     if (!P_TryMove (mo, mo->x+tsm_xmove, mo->y+tsm_ymove, true))
     {
@@ -2363,7 +2352,6 @@ boolean PTR_UseTraverse (intercept_t* in)
     if (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1)
         side = 1;
 
-#ifdef VOODOO_DOLL
     if( P_UseSpecialLine (usething, in->d.line, side) )
     {
         // [WDJ] Attempt to track player that triggers voodoo doll
@@ -2376,10 +2364,6 @@ boolean PTR_UseTraverse (intercept_t* in)
 	    }
 	}
     }
-#else   
-    //  return false;           // don't use back side
-    P_UseSpecialLine (usething, in->d.line, side);
-#endif
 
     // can't use for than one special line in a row
     // SoM: USE MORE THAN ONE!

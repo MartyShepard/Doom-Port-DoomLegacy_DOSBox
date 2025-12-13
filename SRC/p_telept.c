@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: p_telept.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -124,10 +124,9 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
             CL_ResetSpiritPosition(thing);
         }
 #endif
-#ifdef BOB_MOM
         // [WDJ] kill bob momentum or player will keep bobbing for a while
         player->bob_momx = player->bob_momy = 0;
-#endif
+
         // move chasecam at new player location
         if ( camera.chase == player )
             P_ResetCamera (player);

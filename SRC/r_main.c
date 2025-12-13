@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: r_main.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -250,7 +250,7 @@ consvar_t cv_grtranslucenthud = {"gr_translucenthud","255",CV_SAVE|CV_CALL,grtra
 
 consvar_t cv_screenshotdir = { "screenshotdir", "", CV_SAVE, NULL };
 
-#ifdef BOOM_GLOBAL_COLORMAP
+// Boom Colormap Selection
 CV_PossibleValue_t boom_colormap_cons_t[]={
    {0,"Sector visible"},  // Sector colormap rules
    {1,"Boom visible"},  // Boom colormap, visible
@@ -280,7 +280,6 @@ void BoomColormap_detect(void)
        break;
     }
 }
-#endif
 
 // matches fogwater_effect_e
 CV_PossibleValue_t  fogwater_effect_cons_t[]={
@@ -1266,7 +1265,6 @@ void R_SetupFrame (player_t* player)
         view_extracolormap = viewer_sector->extra_colormap;
     }
 
-#ifdef BOOM_GLOBAL_COLORMAP
     // [WDJ] Because of interactions with extra colormaps, precedence must
     // be determined at the usage.  The Boom 282 colormap overrides all
     // normal colormap and extra colormap, but not fixedcolormap.
@@ -1290,7 +1288,7 @@ void R_SetupFrame (player_t* player)
 	    }
 	}
     }
-#endif
+
     // Find a FF_FOG or fog extracolormap that viewer is within.
     // FF_FOG is a ffloor, not a model sector
     if( viewer_sector->ffloors )
@@ -1578,9 +1576,7 @@ void R_Register_EngineStuff (void)
         HWR_AddCommands ();
 #endif
 
-#ifdef BOOM_GLOBAL_COLORMAP
     CV_RegisterVar (&cv_boom_colormap);
-#endif
     CV_RegisterVar (&cv_water_effect);
     CV_RegisterVar (&cv_fog_effect);
 }

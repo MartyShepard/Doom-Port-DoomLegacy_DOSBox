@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: m_menu.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1762,9 +1762,7 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
     {IT_STRING | IT_CVAR,0,    "Random sound pitch",&cv_rndsoundpitch , 0},
     {IT_STRING | IT_CVAR,0,    "Menu Sounds",       &cv_menusound     , 0},
-#ifdef BOOM_GLOBAL_COLORMAP
     {IT_STRING | IT_CVAR,0,    "Boom Colormap"    , &cv_boom_colormap , 0},
-#endif
     {IT_STRING | IT_CVAR,0,    "Water Effect"    , &cv_water_effect   , 0},
     {IT_STRING | IT_CVAR,0,    "Fog Effect"      , &cv_fog_effect     , 0},
 };
@@ -1788,7 +1786,6 @@ menu_t  EffectsOptionsDef =
 menuitem_t VideoOptionsMenu[]=
 {
     {IT_STRING | IT_SUBMENU,0, "Video Modes..."   , &VidModeDef       , 0},
-#ifdef GAMMA_FUNCS
 // if these are moved then fix MenuGammaFunc_dependencies
     {IT_STRING | IT_CVAR,0,    "Gamma Function"   , &cv_gammafunc     , 0},
     {IT_STRING | IT_CVAR
@@ -1797,10 +1794,6 @@ menuitem_t VideoOptionsMenu[]=
      | IT_CV_SLIDER     ,0,    "Black level"      , &cv_black         , 0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_bright        , 0},
-#else
-    {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_usegamma      , 0},
-#endif
 #ifndef __DJGPP__
     {IT_STRING | IT_CVAR,0,    "Fullscreen"       , &cv_fullscreen    , 0},
 #endif
@@ -1827,7 +1820,6 @@ menu_t  VideoOptionsDef =
     0
 };
 
-#ifdef GAMMA_FUNCS
 void MenuGammaFunc_dependencies( byte gamma_en,
                                  byte black_en, byte bright_en )
 {
@@ -1841,7 +1833,6 @@ void MenuGammaFunc_dependencies( byte gamma_en,
      ( bright_en ) ? (IT_STRING | IT_CVAR | IT_CV_SLIDER )
        : (IT_WHITESTRING | IT_SPACE);
 }
-#endif
 
 //===========================================================================
 //                        Mouse OPTIONS MENU
@@ -1937,10 +1928,8 @@ menuitem_t AdvOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Monster friction"    ,&cv_monsterfriction    ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Monster door stuck"  ,&cv_doorstuck          ,0},  // [WDJ]
-#ifdef VOODOO_DOLL
     {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]
-#endif
 #ifdef DOORDELAY_CONTROL
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
 #endif
@@ -4438,16 +4427,11 @@ boolean M_Responder (event_t* ev)
             M_QuitDOOM(0);
             goto ret_true;
 
-          //added:10-02-98: the gamma toggle is now also in the Options menu
-          case KEY_F11:
+          case KEY_F11:           // Gamma
             S_StartSound(NULL, menu_sfx_open);
-#ifdef GAMMA_FUNCS
             // bring up the gamma menu
             M_StartControlPanel();
             M_SetupNextMenu (&VideoOptionsDef);
-#else
-            CV_AddValue (&cv_usegamma,+1);
-#endif	   
             goto ret_true;
 
           // Pop-up menu

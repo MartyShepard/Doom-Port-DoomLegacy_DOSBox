@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 1148 2015-04-03 13:50:57Z wesleyjohnson $
+// $Id: d_player.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -124,7 +124,7 @@ typedef struct player_s
     fixed_t             deltaviewheight;
     // bob effect
     fixed_t             bob;
-#if defined( BOB_MOM ) && !defined( __DJGPP__ )
+#if !defined( __DJGPP__ )
     // bob momentum, adjusted for friction
     fixed_t		bob_momx, bob_momy;
 #endif
@@ -231,7 +231,7 @@ typedef struct player_s
 
     // True if the player cannot use game controls (moving, shooting, aiming)
     boolean locked;
-#if defined( BOB_MOM ) && defined( __DJGPP__ )
+#if defined( __DJGPP__ )
     // Because a Struct Padding & Alignment Bug in GCC 2.81. I put the ifdef at the End.
     // GCC 2.8x Bugzilla #2215 – "Conditional members in structs cause wrong padding on i386"
     fixed_t		bob_momx, bob_momy;

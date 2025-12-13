@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1177 2015-11-16 22:34:10Z wesleyjohnson $
+// $Id: p_local.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -89,7 +89,7 @@
 #define P_LOCAL_H
 
 #include "doomdef.h"
-  // VOODOO_DOLL, DOORDELAY_CONTROL
+  // DOORDELAY_CONTROL
 #include "doomtype.h"
   // tic_t
 #include "command.h"
@@ -160,7 +160,7 @@ extern  consvar_t  cv_doordelay;
 // standard ticks per second
 #define adj_ticks_per_sec  35
 #endif
-#ifdef VOODOO_DOLL
+
 // [WDJ] 2/7/2011 Voodoo doll controls and support
 extern consvar_t  cv_instadeath;
 extern consvar_t  cv_voodoo_mode;
@@ -169,7 +169,7 @@ typedef enum {
 } voodoo_mode_e;
 extern voodoo_mode_e  voodoo_mode;
 extern player_t *  spechit_player; // last player to trigger switch or linedef
-#endif
+
 
 //
 // P_TICK

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1097 2014-03-25 23:11:34Z wesleyjohnson $
+// $Id: p_inter.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -725,7 +725,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
 
     sound = sfx_itemup;
     player = toucher->player;
-#ifdef VOODOO_DOLL
+
     if( player &&
 	toucher != player->mo )  // voodoo doll toucher
     {
@@ -741,7 +741,6 @@ void P_TouchSpecialThing ( mobj_t*       special,
         if( !player || !player->mo )
 	    return; // player left or voodoo multiplayer spawn
     }
-#endif
 
 #ifdef PARANOIA
     if( !player )
@@ -1454,10 +1453,8 @@ static void P_DeathMessages ( mobj_t*       target,
     if (!target || !target->player)
         return;
 
-#ifdef VOODOO_DOLL
     if (target->player->mo != target )  // voodoo doll died
         return;
-#endif
    
     if (source && source->player)
     {
@@ -2395,7 +2392,6 @@ boolean P_DamageMobj ( mobj_t*   target,
             damage -= saved;
         }
 
-#ifdef VOODOO_DOLL
         // [WDJ] 2/7/2011 Intercept voodoo damage
         boolean voodoo_target = (player->mo != target);
 	if( voodoo_target )
@@ -2446,7 +2442,7 @@ boolean P_DamageMobj ( mobj_t*   target,
 	        target = player->mo;
 	    }
 	}
-#endif
+
 
         // added team play and teamdamage (view logboris at 13-8-98 to understand)
 	// [WDJ] 2/7/2011  Allow damage to player when:
@@ -2472,9 +2468,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         // compiler will reduce them during optimization anyway.
         if( (! source)		   // no source interaction, sector damage etc.
 	    || (! source->player)  // monster attack
-#ifdef VOODOO_DOLL
 	    || voodoo_target	   // allowed voodoo damage
-#endif
             || (damage>1000)       // telefrag and death-ball
             || (demoversion < 125) // old demoversion bypasses restrictions
             || (source==target)    // self-inflicted

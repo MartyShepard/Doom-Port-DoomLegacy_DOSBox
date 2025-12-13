@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: p_mobj.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -154,7 +154,6 @@ byte EN_catch_respawn_0 = 1;  // enable catch Nightmare respawn at (0,0)
 #endif
 
 
-#ifdef VOODOO_DOLL
 // [WDJ] Voodoo doll 4/30/2009
 // #define VOODOO_DEBUG
 
@@ -236,7 +235,6 @@ void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
         spechit_player = &players[0];  // default picker
     }
 }
-#endif
 
 // protos.
 CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}
@@ -424,18 +422,16 @@ void P_ThrustMobj(mobj_t * mo, angle_t angle, fixed_t move)
 // Called from P_MobjThinker
 void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 {
+    fixed_t friction = FRICTION_NORM;
     //valid only if player avatar
     player_t *player = mo->player;
-#ifdef VOODOO_DOLL
+
     // voodoo dolls do not depend on player cmd, and do not affect player
     boolean voodoo_mo = (player && (player->mo != mo));
     if( voodoo_mo )
        player = NULL;  // simplify the tests
-#endif
-    fixed_t friction = FRICTION_NORM;
 
 
-#ifdef BOB_MOM
     // [WDJ] Player bob and state are dependent upon bob effect, not world motion.
     // Standing on a conveyor should not keep the player sprite walking.
     // Watch a two player game on a really greasy floor to see the difference.
@@ -474,7 +470,6 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
             player->bob_momy = FixedMul( player->bob_momy, FRICTION_BOB);
         }
     }
-#endif
 
 
     // Stop when below minimum.
@@ -487,6 +482,8 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
             || (player->cmd.forwardmove == 0 && player->cmd.sidemove == 0)))
     {
 #ifndef BOB_MOM
+        // [WDJ] Appearance of walking was moved above to be controlled
+        // by bob_mom, instead of mo->mom.
         // if in a walking frame, stop moving
         if (player)  // not if voodoo doll (do not affect player mobj)
         {
@@ -749,9 +746,7 @@ void P_XYMovement(mobj_t * mo)
         {
             // debug option for no sliding at all
             mo->momx = mo->momy = 0;
-#ifdef BOB_MOM
             player->bob_momx = player->bob_momy = 0;
-#endif	     
             return;
         }
         else if (player->cheats & CF_FLYAROUND)  // fly cheat
@@ -869,9 +864,7 @@ void P_ZMovement(mobj_t * mo)
     fixed_t dist;
     fixed_t delta;
     player_t *player = mo->player;
-#ifdef VOODOO_DOLL
     boolean voodoo_mo = (player && (player->mo != mo));
-#endif
 
 #ifdef FIXROVERBUGS
     // Intercept the stupid 'fall through 3dfloors' bug SSNTails 06-13-2002
@@ -906,9 +899,7 @@ void P_ZMovement(mobj_t * mo)
 
     // check for smooth step up
     if (player && (mo->z < mo->floorz)
-#ifdef VOODOO_DOLL
         && !voodoo_mo  // voodoo does not pass this to player view
-#endif
 #ifdef CLIENTPREDICTION2
         && mo->type != MT_PLAYER
 #else
@@ -991,9 +982,7 @@ void P_ZMovement(mobj_t * mo)
         if (mo->momz < 0)       // falling
         {
             if (player
-#ifdef VOODOO_DOLL
                 && !voodoo_mo  // voodoo does not pass this to player view
-#endif
                 && (mo->momz < -8 * FRACUNIT)
                 && !(mo->flags2 & MF2_FLY)
                 )
@@ -1058,9 +1047,7 @@ void P_ZMovement(mobj_t * mo)
 
         //added:22-02-98: player avatar hits his head on the ceiling, ouch!
         if (player
-#ifdef VOODOO_DOLL
             && !voodoo_mo  // voodoo does not pass this to sound
-#endif
             && (demoversion >= 112)
             && !(player->cheats & CF_FLYAROUND) && !(mo->flags2 & MF2_FLY)
             && (mo->momz > 8 * FRACUNIT))
@@ -1414,12 +1401,8 @@ void P_MobjThinker(mobj_t * mobj)
             }
             else
             {
-                if (player
-#ifdef VOODOO_DOLL
-                    && (player->mo == mobj)  // not a voodoo doll
-#endif
-                 )
-                {
+                if (player && (player->mo == mobj))
+                {   // Player, not a voodoo doll
                     if ((mobj->momz < -8 * FRACUNIT) && !(mobj->flags2 & MF2_FLY))
                     {
                         PlayerLandedOnThing(mobj, onmo);
@@ -1991,7 +1974,6 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 
     z = ONFLOORZ;
 
-#ifdef VOODOO_DOLL
     // [WDJ] If there is already an mobj for this player, then it is the
     // zombie of a player.  It can be made corpse or removed.
     // It cannot be reused because of all the fields that are setup by P_SpawnMobj.
@@ -2012,7 +1994,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
             }
         }
     }
-#endif   
+
     mobj = P_SpawnMobj(x, y, z, MT_PLAYER);
     //SoM:
     mthing->mobj = mobj;
@@ -2055,10 +2037,8 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
 
     p->flamecount = 0;
     p->flyheight = 0;
-#ifdef BOB_MOM
     p->bob_momx = 0;
     p->bob_momy = 0;
-#endif
 
     // setup gun psprite
     P_SetupPsprites(p);
@@ -2098,7 +2078,6 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     if (camera.chase == p)
         P_ResetCamera(p);
 
-#ifdef VOODOO_DOLL
    if( ! ( voodoo_mode == VM_vanilla && cv_deathmatch.value ) )
    {
        // [WDJ] Create any missing personal voodoo dolls for this player
@@ -2118,7 +2097,6 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
            }
        }
    }
-#endif   
 }
 
 //
@@ -2162,7 +2140,6 @@ void P_SpawnMapthing (mapthing_t* mthing)
        // Map expanded player starts 4001..4028 to playernum 4..31
        int playernum = (mthing->type < 4000)? (mthing->type - 1) : (mthing->type - 4001 + 4);
        
-#ifdef VOODOO_DOLL
         // [WDJ] Detect voodoo doll as multiple start points.
         // Extra player start points spawn voodoo dolls,
         // the last is the actual player start point.
@@ -2173,7 +2150,6 @@ void P_SpawnMapthing (mapthing_t* mthing)
             // a monster nor as a player.
             P_SpawnVoodoo( playernum, playerstarts[playernum] );
         }
-#endif
 
         // save spots for respawning in network games
         playerstarts[playernum] = mthing;

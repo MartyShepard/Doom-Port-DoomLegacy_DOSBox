@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: g_game.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -228,10 +228,7 @@ char            game_map_filename[MAX_WADPATH];      // an external wad filename
 
 
 gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
-#if 0
-// [WDJ] Replaced by gamedesc_id, GDESC_
-gamemission_t   gamemission = doom;
-#endif
+
 boolean         raven = false;
 language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
@@ -1491,10 +1488,9 @@ boolean G_CheckSpot ( int           playernum,
         }
     }
    
-#ifdef BOB_MOM
     // [WDJ] kill bob momentum or player will keep bobbing at spawn spot
     player->bob_momx = player->bob_momy = 0;
-#endif
+
     // [WDJ] This uses the corpse mobj to do the collision check.
     // MF_SOLID is required for CheckPosition, and corpse might not be solid
     // Least amount of hassle is to temp change and restore.
@@ -1761,7 +1757,7 @@ void G_DoCompleted (void)
     }
 
     if(!dedicated)
-	wminfo.didsecret = consoleplayer_ptr->didsecret;
+        wminfo.didsecret = consoleplayer_ptr->didsecret;
     wminfo.epsd = gameepisode -1;
     wminfo.last = gamemap -1;
 
@@ -2582,13 +2578,8 @@ void G_BeginRecording (void)
 #else
     *demo_p++ = 0; 	// no doordelay
 #endif
-#ifdef VOODOO_DOLL
     *demo_p++ = 0x40 + voodoo_mode;  // 0 is not default
     *demo_p++ = cv_instadeath.value;  // voodoo doll instadeath, 0 is default
-#else
-    *demo_p++ = 0; 	// no voodoo_mode
-    *demo_p++ = 0; 	// no instadeath
-#endif
     *demo_p++ = cv_monsterfriction.value;
     *demo_p++ = friction_model;
     *demo_p++ = cv_rndsoundpitch.value;  // uses M_Random
@@ -2789,10 +2780,8 @@ void G_DoPlayDemo (char *defdemoname)
 #ifdef DOORDELAY_CONTROL
         adj_ticks_per_sec = 35; // default
 #endif
-#ifdef VOODOO_DOLL       
         voodoo_mode = 0;  // Vanilla
         cv_instadeath.value = 0;  // Die
-#endif
         cv_monbehavior.value = 0;  // do not notify NET
         monster_infight = INFT_none;
     }
@@ -2842,7 +2831,7 @@ void G_DoPlayDemo (char *defdemoname)
             cv_fastmonsters.func();
         }
         else
-	    demo_p++;  // legacy demo, ignore fastmonsters
+            demo_p++;  // legacy demo, ignore fastmonsters
 
         // header[7]: byte: no monsters present boolean
         nomonsters  = *demo_p++;
@@ -2965,7 +2954,7 @@ void G_DoPlayDemo (char *defdemoname)
             if( demoversion>=131 ) {
                 multiplayer = *demo_p++;
 #ifdef DEBUG_DEMO
- 		GenPrintf(EMSG_debug, " multi-player %i.\n", (int)multiplayer );
+                GenPrintf(EMSG_debug, " multi-player %i.\n", (int)multiplayer );
 #endif
             }
 
@@ -2999,15 +2988,11 @@ void G_DoPlayDemo (char *defdemoname)
 #else
         demo_p++; 	// no doordelay
 #endif
-#ifdef VOODOO_DOLL
-        if( *demo_p >= 0x40 )
+        if( *demo_p >= 0x40 )  // Voodoo doll control
            voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
         else
            voodoo_mode = 3;  // default
         cv_instadeath.value = *demo_p++;  // voodoo doll instadeath, 0 is default
-#else
-        demo_p += 2; 	// no voodoo
-#endif
         cv_monsterfriction.value = *demo_p++;
         friction_model = *demo_p++;
         cv_rndsoundpitch.value = *demo_p++;  // uses M_Random

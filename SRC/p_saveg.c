@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: p_saveg.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2196,14 +2196,12 @@ void P_UnArchiveThinkers(void)
 		        if (displayplayer2 == i)  // player 2
 			    localangle2 = mobj->angle;
 		    }
-#ifdef VOODOO_DOLL		   
 		    else if( i >= 128 && i < MAXPLAYERS+128 )
 		    { 
 		        // voodoo dolls
 		        i -= 128; // voodoo doll flag
 		        mobj->player = &players[i];
 		    }
-#endif
 		    else
 		    {
 		        // [WDJ] FIXME later, for now accept previous savegames
@@ -2253,11 +2251,7 @@ void P_UnArchiveThinkers(void)
                    if( (diff & MD_Z) == 0 )
                    mobj->z = mobj->floorz;
                  */
-#ifdef VOODOO_DOLL
                 if (mobj->player && (mobj->player->mo == mobj)) // real player
-#else
-                if (mobj->player)
-#endif
                 {
                     mobj->player->viewz = mobj->player->mo->z + mobj->player->viewheight;
                     //CONS_Printf("viewz = %f\n",FIXED_TO_FLOAT(mobj->player->viewz));

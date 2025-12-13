@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: p_fab.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -64,7 +64,6 @@ consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorD
 #endif
 
 
-#ifdef VOODOO_DOLL
 // [WDJ] 2/3/2011  Insta-death by voodoo doll, subverted.
 CV_PossibleValue_t instadeath_cons_t[]={{0,"Die"}, {1,"Damage"}, {2,"Zap"}, {0,NULL}};
 consvar_t cv_instadeath = {"instadeath", "0", CV_SAVE|CV_NETVAR, instadeath_cons_t, NULL};
@@ -80,7 +79,7 @@ void VoodooMode_OnChange( void )
 
 CV_PossibleValue_t voodoo_mode_cons_t[]={{0,"Vanilla"}, {1,"Multispawn"}, {2,"Target"}, {3, "Auto"}, {0,NULL}};
 consvar_t cv_voodoo_mode = {"voodoo_mode", "3", CV_CALL|CV_SAVE|CV_NETVAR, voodoo_mode_cons_t, VoodooMode_OnChange};
-#endif
+
 
 // Translucency
 
@@ -329,11 +328,9 @@ void D_Register_MiscCommands (void)
     // see p_doors.c
     CV_RegisterVar (&cv_doordelay);
 #endif   
-#ifdef VOODOO_DOLL
     // [WDJ] 2/7/2011 Voodoo
     CV_RegisterVar (&cv_instadeath);
     CV_RegisterVar (&cv_voodoo_mode);
-#endif
     // for p_enemy
     CV_RegisterVar (&cv_monbehavior);
     CV_RegisterVar (&cv_monsterfriction);
@@ -348,9 +345,7 @@ void  DemoAdapt_p_fab(void)  // local enables of p_fab
 #ifdef DOORDELAY_CONTROL
         DoorDelay_OnChange();
 #endif
-#ifdef VOODOO_DOLL
         // cv_instadeath not covered here
         VoodooMode_OnChange();
-#endif
     }
 }

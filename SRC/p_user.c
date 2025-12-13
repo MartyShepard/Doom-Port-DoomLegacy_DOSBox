@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: p_user.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -108,7 +108,7 @@ void P_Thrust(player_t *player, angle_t angle, fixed_t move)
     pmo->momy += FixedMul(move, sine_ANG(angle));
 }
 
-#ifdef BOB_MOM
+
 // P_Thrust_Bob
 // [WDJ] Thrust and independent bob.
 // Contribute to bob effort, independent of thrust momentum.
@@ -125,7 +125,7 @@ static void P_Thrust_Bob( player_t * player, angle_t angle, fixed_t moveth, fixe
     player->bob_momx += FixedMul(movebob, finecosine[angf]);
     player->bob_momy += FixedMul(movebob, finesine[angf]);
 }
-#endif
+
 
 
 #ifdef CLIENTPREDICTION2
@@ -176,13 +176,8 @@ void P_CalcHeight (player_t* player)
         smo = player->spirit;
 #endif
 
-#ifdef BOB_MOM
     player->bob = ((FixedMul (player->bob_momx,player->bob_momx)
                    +FixedMul (player->bob_momy,player->bob_momy))*NEWTICRATERATIO)>>2;
-#else
-    player->bob = ((FixedMul (smo->momx, smo->momx)
-                   +FixedMul (smo->momy, smo->momy))*NEWTICRATERATIO)>>2;
-#endif   
 
     // [WDJ] Boom 2.02, when on ice, limited bob to MAXBOB>>2.
     // Moving onto ice would cause sudden bob position change.
@@ -375,21 +370,13 @@ void P_MovePlayer (player_t* player)
 	    }
             else
 	    {
-#ifdef BOB_MOM
 	        P_Thrust_Bob( player, pmo->angle, cmd->forwardmove*movefactor, cmd->forwardmove*bobfactor );
-#else	       
-	        P_Thrust (player, pmo->angle, cmd->forwardmove*movefactor);
-#endif	       
 	    }
         }
     
         if (cmd->sidemove && onground)
         {
-#ifdef BOB_MOM
             P_Thrust_Bob( player, pmo->angle-ANG90, cmd->sidemove*movefactor, cmd->sidemove*bobfactor );
-#else
-            P_Thrust (player, pmo->angle-ANG90, cmd->sidemove*movefactor);
-#endif
 	}
 
         player->aiming = (signed char)cmd->aiming;
@@ -428,11 +415,7 @@ void P_MovePlayer (player_t* player)
                     movepushforward >>= 3;
             }
 
-#ifdef BOB_MOM
             P_Thrust_Bob( player, pmo->angle, movepushforward, cmd->forwardmove*bobfactor);
-#else
-            P_Thrust (player, pmo->angle, movepushforward);
-#endif
         }
 
         if (cmd->sidemove)
@@ -451,11 +434,7 @@ void P_MovePlayer (player_t* player)
                     movepushside >>= 3;
 	    }
 
-#ifdef BOB_MOM
             P_Thrust_Bob( player, pmo->angle-ANG90, movepushside, cmd->sidemove*bobfactor);
-#else
-            P_Thrust (player, pmo->angle-ANG90, movepushside);
-#endif
         }
 
         // mouselook swim when waist underwater

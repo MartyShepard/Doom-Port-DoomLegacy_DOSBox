@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1194 2015-12-26 19:08:47Z wesleyjohnson $
+// $Id: doomdef.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -61,14 +61,11 @@ extern FILE *logstream;
 // For Boom demo compatibility, spawns friction thinkers
 #define FRICTIONTHINKER
 
-// Select type of bob code
-#define BOB_MOM
-
 // [WDJ] Voodoo doll 4/30/2009
 // A voodoo doll is an accident of having multiple start points for a player.
 // It has been used in levels as a token to trip linedefs and create
 // sequenced actions, and thus are required to play some wads, like FreeDoom.
-#define VOODOO_DOLL
+// Voodoo doll code is selectable, now a standard feature, 12/15/2015.
 
 // [WDJ] Gives a menu item that allows adjusting the time a door waits open.
 // A few of the timed doors in doom2 are near impossible to get thru in time,
@@ -80,7 +77,7 @@ extern FILE *logstream;
 
 // [WDJ] 6/22/2009  Generate gamma table using two settings,
 // and a selected function.
-#define GAMMA_FUNCS
+// Gamma funcs are selectable, now a standard feature, 12/15/2015.
 
 // [WDJ] 3/25/2010  Savegame slots 0..99
 #define SAVEGAME99
@@ -126,8 +123,8 @@ extern FILE *logstream;
 #endif
 
 // [WDJ] 6/5/2012 Boom global colormap
-// Optional for now
-#define BOOM_GLOBAL_COLORMAP
+// Boom global colormap is selectable, now a standard feature, 12/15/2015.
+
 
 // If IPX network code is to be included
 // This may be overridden for some ports.
@@ -251,7 +248,7 @@ extern FILE *logstream;
 
 
 // How many subdirectories deep to search.
-#define  GAME_SEARCH_DEPTH   1/*3*/
+#define  GAME_SEARCH_DEPTH   1/*4*/
 #define  IWAD_SEARCH_DEPTH   1/*5*/
 
 // =========================================================================

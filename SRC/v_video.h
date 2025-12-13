@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: v_video.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,7 +53,6 @@
 #define V_VIDEO_H
 
 #include "doomdef.h"
-  // GAMMA_FUNCS
 #include "doomtype.h"
 #include "r_defs.h"
   // patch_t
@@ -79,11 +78,10 @@ extern  int     dirtybox[4];
 
 extern  consvar_t cv_ticrate;
 extern  consvar_t cv_usegamma;
-#ifdef GAMMA_FUNCS
+// Gamma Funcs
 extern  consvar_t cv_gammafunc;
 extern  consvar_t cv_black;	// input to gammafunc
 extern  consvar_t cv_bright;	// input to gammafunc
-#endif
 
 // Early setup of video controls, register cv_ vars
 void V_Init_VideoControl( void );

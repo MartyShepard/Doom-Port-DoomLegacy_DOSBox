@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1179 2015-11-25 20:04:02Z wesleyjohnson $
+// $Id: p_spec.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3347,9 +3347,7 @@ void P_SpawnSpecials (void)
 
     // [WDJ] Last so Boom friction linedef can override other sector frictions.
     P_SpawnFriction(NULL);  //New friction model using linedefs
-#ifdef BOOM_GLOBAL_COLORMAP
     BoomColormap_detect();
-#endif
 }
 
 
