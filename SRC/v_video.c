@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: v_video.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -143,6 +143,11 @@
 
 rendermode_e    rendermode=render_soft;
 
+// Each screen is vid.screen_size (which may be larger than width * height)
+// width*height is wrong for the Mac, which pads buffer to power of 2
+// someone stuck in an extra screen ptr
+byte *screens[NUMSCREENS+1];
+
 byte  req_bitpp = 8;  // set by d_main checks on command line
 byte  req_drawmode = REQ_default;  // reqdrawmode_t
 
@@ -151,7 +156,14 @@ byte  graphics_state = VGS_off; // Is used in console.c and screen.c
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
 boolean mode_fullscreen = false;
-  
+
+// Darker background
+CV_PossibleValue_t darkback_sel_t[] = {
+   {0,"Half"},
+   {1,"Med"},
+   {2,"Dark"},
+   {0,NULL} };
+consvar_t cv_darkback = { "darkback", "1", CV_SAVE, darkback_sel_t, NULL };
 
 CV_PossibleValue_t ticrate_sel_t[] = {
    {0,"Off"},
@@ -163,11 +175,6 @@ consvar_t cv_ticrate = { "vid_ticrate", "0", 0, ticrate_sel_t, NULL };
 // synchronize page flipping with screen refresh
 // unused and for compatibility reason
 consvar_t cv_vidwait = {"vid_wait", "1", CV_SAVE, CV_OnOff};
-
-// Each screen is vid.screen_size (which may be larger than width * height)
-// width*height is wrong for the Mac, which pads buffer to power of 2
-// someone stuck in an extra screen ptr
-byte *screens[NUMSCREENS+1];
 
 
 void CV_usegamma_OnChange();
@@ -573,6 +580,7 @@ void V_Init_VideoControl( void )
    
     CV_RegisterVar(&cv_vidwait);
     CV_RegisterVar(&cv_ticrate);
+    CV_RegisterVar(&cv_darkback);
     // Needs be done for config loading
     CV_RegisterVar(&cv_usegamma);
     CV_RegisterVar(&cv_black);
@@ -1575,8 +1583,10 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
     h *= vid.dupy;
 
     for (v = 0; v < h; v++, dest += vid.ybytes)
+    {
         for (u = 0; u < w; u++)
             V_DrawPixel(dest, u, color);
+    }
 }
 
 //
@@ -1676,164 +1686,115 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
     }
 }
 
-//
-//  Fade all the screen buffer, so that the menu is more readable,
-//  especially now that we use the small hufont in the menus...
-//
-void V_DrawFadeScreen(void)
+
+
+//  General Draw Fade.
+//   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
+//   fade_alpha : 1 (no fade) .. 255 (faded)
+//   fade_index : from fadescreen_draw8, or fadecons_draw8 table
+//   tint_rgba : added color tint, small color values only
+void V_DrawFade(int x1, int x2, int y2,
+                uint32_t fade_alpha, unsigned int fade_index,
+                uint32_t tint_rgba )
 {
-    int x, y, w4;
-    uint32_t *buf;  // within video buffer
-    uint32_t quad;
-#ifdef ENABLE_DRAWEXT
-    uint32_t mask;
-#endif
-    byte p1, p2, p3, p4;
-    byte *fadetable = (byte*) & reg_colormaps[ LIGHTTABLE(16) ];
-
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode != render_soft)
-    {
-        HWR_FadeScreenMenuBack(0x01010160, 0x80, 0);  //faB: hack, 0 means full height :o
-        return;
-    }
-#endif
-
-    w4 = (vid.widthbytes >> 2);  // 4 bytes at a time
-    switch(vid.drawmode)
-    {
-     case DRAW8PAL:
-        // 8 bpp palette fade
-        for (y = 0; y < vid.height; y++)
-        {
-            buf = (uint32_t *) (screens[0] + (y * vid.ybytes));
-            for (x = 0; x < w4; x++)
-            {
-                // fade four at a time
-                quad = buf[x];
-                p1 = fadetable[quad & 255];
-                p2 = fadetable[(quad >> 8) & 255];
-                p3 = fadetable[(quad >> 16) & 255];
-                p4 = fadetable[quad >> 24];
-                buf[x] = (p4 << 24) | (p3 << 16) | (p2 << 8) | p1;
-            }
-        }
-        break;
-#ifdef ENABLE_DRAW15
-     case DRAW15:
-        mask = 0x3DEF3DEF;  // 0 01111 01111 01111
-        goto fade_loop;
-#endif
-#ifdef ENABLE_DRAW16
-     case DRAW16:
-        mask = 0x7BEF7BEF;  // 01111 011111 01111
-        goto fade_loop;
-#endif
-#ifdef ENABLE_DRAW24
-     case DRAW24:
-        mask = 0x7F7F7F7F;
-        goto fade_loop;
-#endif
-#ifdef ENABLE_DRAW32
-     case DRAW32:
-        mask = 0xFF7F7F7F;  // alpha unchanged
-#endif
-#ifdef ENABLE_DRAWEXT
-     fade_loop:
-        for (y = 0; y < vid.height; y++)
-        {
-            buf = (uint32_t *) (screens[0] + (y * vid.ybytes)); 
-            for (x = 0; x < w4; x++)
-            {
-                *buf = (*buf >> 1) & mask;
-                buf++;
-             }
-        }
-        break;
-#endif       
-     default:
-        break;
-    }
-}
-
-
-// Simple translucence with one color, coords are resolution dependent
-//
-//added:20-03-98: console test
-void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
-{
+    RGBA_t tint;
+    byte * fadetab, * greentab;
 #ifdef ENABLE_DRAWEXT
     int w4 = x2 - x1;
-    uint32_t mask, green_tint, alpha=0;
-# define GREEN_TINT_255  0x16
+#endif
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
+    uint32_t mask_g2, mask_r2, mask_b2;
+    uint32_t tint_g, tint_r, tint_b;
 #endif
     int x, y;
-    byte p1, p2, p3, p4;
     uint32_t *buf;
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
+#ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_FadeScreenMenuBack(0x00500000, (0xff/2), y2);
+        // Note: y1 is always 0.
+        // OpenGL requires stronger color tint.
+        HWR_FadeScreenMenuBack( tint_rgba, 0xFF - fade_alpha, y2 );
         return;
     }
 #endif
 
+    tint.rgba = tint_rgba;
     switch(vid.drawmode)
     {
      case DRAW8PAL:
         // 8bpp palette, accessed 4 bytes at a time
+        fadetab = (byte*) ( reg_colormaps )?
+             & reg_colormaps[ LIGHTTABLE(fade_index) ]
+           : graymap;  // at startup, before reg_colormaps loaded
+        // Palette draw only has facility for console green tint.
+        greentab = ( tint.s.green )?  greenmap : & reg_colormaps[ 0 ];
         x1 >>= 2;
         x2 >>= 2;
-        for (y = y1; y < y2; y++)
+        for (y = 0; y < y2; y++)
         {
-            buf = (uint32_t *) (screens[0] + (y * vid.ybytes));
+            buf = (uint32_t *) V_GetDrawAddr( x1, y );
             for (x = x1; x < x2; x++)
             {
-                uint32_t quad = buf[x];
-                p1 = greenmap[quad & 255];
-                p2 = greenmap[(quad >> 8) & 255];
-                p3 = greenmap[(quad >> 16) & 255];
-                p4 = greenmap[quad >> 24];
-                buf[x] = (p4 << 24) | (p3 << 16) | (p2 << 8) | p1;
+                register uint32_t quad = buf[x];
+                register uint32_t q2 = greentab[fadetab[quad & 0xFF]];
+                q2 |= ((uint32_t) greentab[fadetab[(quad >> 8) & 0xFF]]) << 8;
+                q2 |= ((uint32_t) greentab[fadetab[(quad >> 16) & 0xFF]]) << 16;
+                q2 |= ((uint32_t) greentab[fadetab[quad >> 24]]) << 24;
+                buf[x] = q2;
             }
         }
         break;
 #ifdef ENABLE_DRAW15
      case DRAW15:
-//        mask = 0x3DEF3DEF;  // 0 01111 01111 01111
-        mask = 0x1CE71CE7;  // 0 00111 00111 00111
-        green_tint = (GREEN_TINT_255 >> 3) * 0x00200020;  // 0 00000 00001 00000
-        w4 >>= 1;
-        goto fade_loop;
+        // 2 pixels at a time  (5,5,5)
+        mask_r2 = 0x04000400L;  // 0 00001 00000 00000
+        mask_g2 = 0x00200020L;  // 0 00000 00001 00000
+        goto fade15_16;
 #endif
 #ifdef ENABLE_DRAW16
      case DRAW16:
-//        mask = 0x7BEF7BEF;  // 01111 011111 01111
-        mask = 0x39E739E7;  // 00111 001111 00111
-        green_tint = (GREEN_TINT_255 >> 2) * 0x00200020;  // 0 00000 00001 00000
-        w4 >>= 1;
-        goto fade_loop;
+        // 2 pixels at a time  (5,6,5)
+        mask_r2 = 0x08000800L;  // 00001 000000 00000
+        mask_g2 = 0x00400040L;  // 00000 000010 00000
+        goto fade15_16;
 #endif
+#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 )
+     fade15_16:
+        // 2 pixels at a time
+        tint_r = (tint.s.red >> 3) * mask_r2;
+        tint_g = (tint.s.green >> 3) * mask_g2;
+        tint_b = (uint32_t)(tint.s.blue >> 3) * 0x00010001L;  // 0 00000 00000 00001
+        // Must do components separately because of carry from one pixel to next.
+        mask_r2 = ((uint32_t) mask_r << 16 ) | mask_r;
+        mask_g2 = ((uint32_t) mask_g << 16 ) | mask_g;
+        mask_b2 = ((uint32_t) mask_b << 16 ) | mask_b;
+        w4 >>= 1;  // 2 bytes at a time
+        for (y = 0; y < y2; y++)
+        {
+            buf = (uint32_t *) V_GetDrawAddr( x1, y );
+            for (x = w4; x > 0; x--)
+            {
+                *buf = (((((*buf & mask_g2) >> 8) * fade_alpha) + tint_g) & mask_g2)
+                     | (((((*buf & mask_r2) >> 8) * fade_alpha) + tint_r) & mask_r2)
+                     | (((((*buf & mask_b2) * fade_alpha) >> 8) + tint_b) & mask_b2);
+                buf++;  // compiler complains when combined above
+            }
+        }
+        break;
+#endif       
 #ifdef ENABLE_DRAW32
      case DRAW32:
-        // assume ARGB format
-//        mask = 0x007F7F7F;  // alpha unchanged
-        mask = 0x003F3F3F;  // alpha unchanged
-        alpha = 0xFF000000;
-        green_tint = GREEN_TINT_255 << 8;
-        goto fade_loop;
-#endif
-#if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW32 )
-     fade_loop:
-        for (y = y1; y < y2; y++)
+        // RGB
+        for (y = 0; y < y2; y++)
         {
-            buf = (uint32_t *) (screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp));
-            for (x = 0; x < w4; x++)
-            {
-                *buf = ((((*buf >> 2) & mask) + green_tint) )
-                        | (*buf & alpha);
-                buf++;  // compiler complains when combined above
+            pixel32_t * p32 = (pixel32_t*) V_GetDrawAddr( x1, y );
+            for (x = w4; x > 0; x--)
+            { 
+                p32->b = ((p32->b * fade_alpha) >> 8) + tint.s.blue; // blue
+                p32->g = ((p32->g * fade_alpha) >> 8) + tint.s.green; // green
+                p32->r = ((p32->r * fade_alpha) >> 8) + tint.s.red; // red
+                p32 ++;
             }
         }
         break;
@@ -1841,14 +1802,14 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 #ifdef ENABLE_DRAW24
      case DRAW24:
         // RGB
-        for (y = y1; y < y2; y++)
+        for (y = 0; y < y2; y++)
         {
-            pixel24_t * p24 = (pixel24_t*)( screens[0] + (y * vid.ybytes) + (x1 * vid.bytepp) );
+            pixel24_t * p24 = (pixel24_t*) V_GetDrawAddr( x1, y );
             for (x = w4; x > 0; x--)
             { 
-                p24->b >>= 2; // blue
-                p24->g = ((uint16_t)(p24->g) >> 2) + GREEN_TINT_255; // green
-                p24->r >>= 2; // red
+                p24->b = ((p24->b * fade_alpha) >> 8) + tint.s.blue; // blue
+                p24->g = ((p24->g * fade_alpha) >> 8) + tint.s.green; // green
+                p24->r = ((p24->r * fade_alpha) >> 8) + tint.s.red; // red
                 p24 ++;
             }
         }
@@ -1858,6 +1819,84 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
         break;
     }
 }
+
+
+// [WDJ] Tables for darkback
+// index by cv_darkback
+// LIGHTTABLE[ 0 .. 31 ]
+byte fadescreen_draw8[3] =
+{
+  16,  // half
+  20,  // med
+  24   // dark
+};
+
+// Dark enough that menu is readable.
+byte fadescreen_alpha[3] =
+{
+  0x70,  // half
+  0x44,  // med
+  0x2C   // dark
+};
+
+
+//
+//  Fade all the screen buffer, so that the menu is more readable,
+//  especially now that we use the small hufont in the menus...
+//
+void V_DrawFadeScreen(void)
+{
+    V_DrawFade( 0, vid.width, vid.height,
+                fadescreen_alpha[ cv_darkback.value ],
+                fadescreen_draw8[ cv_darkback.value ],
+                0 );
+}
+
+
+//  [WDJ] Tables for darkback
+// index by cv_darkback
+byte fadecons_draw8[3] =
+{
+   3,  // half
+  15,  // med
+  23   // dark
+};
+
+// Dark enough that red text is lighter and easily readable.
+byte fadecons_alpha[3] =
+{
+  0x80,  // half
+  0x40,  // med
+  0x20   // dark
+};
+
+byte fadecons_green[3] =
+{
+  0x16,  // half
+  0x12,  // med
+  0x08   // dark
+};
+
+
+// Fade the console background with fade alpha and green tint per cv_darkback.
+//
+//added:20-03-98: console test
+//   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
+void V_DrawFadeConsBack(int x1, int x2, int y2)
+{
+    uint32_t tint = RGBA(0, fadecons_green[ cv_darkback.value ], 0, 0);
+
+#ifdef HWRENDER
+    // The green tint is weak for OpenGL.
+    if (rendermode != render_soft)
+       tint = tint*2;  // works for small values of green < 127
+#endif
+    V_DrawFade( x1, x2, y2,
+                fadecons_alpha[ cv_darkback.value ],
+                fadecons_draw8[ cv_darkback.value ],
+                tint );
+}
+
 
 // [WDJ]  Default Font
 #define FONT1_WIDTH 7

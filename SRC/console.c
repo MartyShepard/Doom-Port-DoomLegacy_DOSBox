@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: console.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1328,8 +1328,17 @@ void CON_DrawConsole (void)
             CON_DrawBackpic (con_bordleft,0,w);
             CON_DrawBackpic (con_bordright,x2,w);
         }
+        // translucent background
         //Hurdler: what's the correct value of w and x2 in hardware mode ???
-        V_DrawFadeConsBack (w,0,x2,con_curlines);     // translucent background
+#if 0
+        // Darken the borders too
+        if( cv_darkback.value )
+            V_DrawFadeConsBack (0, vid.width, con_curlines);
+        else
+            V_DrawFadeConsBack (w, x2, con_curlines);
+#else
+        V_DrawFadeConsBack (w, x2, con_curlines);
+#endif
     }
 
     // draw console text lines from bottom to top

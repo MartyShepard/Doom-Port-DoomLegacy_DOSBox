@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
+// $Id: d_main.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1199"
+#define SVN_REV "1200"
 #endif
 
 // Version number: major.minor.revision
@@ -727,11 +727,22 @@ void D_Display(void)
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
 
-#ifdef HWRENDER
     // Exl: draw a faded background
-    if (fadealpha != 0 && rendermode != render_soft)
-        HWR_FadeScreenMenuBack(fadecolor, fadealpha, 0);
+    if( fs_fadealpha != 0 )
+    {
+#ifdef HWRENDER
+        if( rendermode != render_soft)
+        {
+            HWR_FadeScreenMenuBack(fs_fadecolor, fs_fadealpha, vid.height);
+        }
+        else
 #endif
+        {
+            // Fade for software draw.
+            V_DrawFade(0, vid.width, vid.height, (0xFF - fs_fadealpha),
+                       (fs_fadealpha * 32 / 0x100), fs_fadecolor );
+        }
+    }
 
         //FIXME: draw either console or menu, not the two
     CON_Drawer();

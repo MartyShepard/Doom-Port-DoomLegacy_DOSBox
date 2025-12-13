@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: d_clisrv.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -155,7 +155,7 @@
 #include "am_map.h"
 #include "m_random.h"
 #include "mserv.h"
-#include "t_vari.h"
+#include "t_script.h"
 
 #include "b_game.h"	//added by AC for acbot
 
@@ -1361,7 +1361,7 @@ void CL_Reset (void)
     SV_ResetServer();
 
     T_ClearHubScript();	//DarkWolf95: Originally implemented by Exl
-    fadealpha = 0;
+    fs_fadealpha = 0;
     HU_ClearFSPics();
 
     // reset game engine

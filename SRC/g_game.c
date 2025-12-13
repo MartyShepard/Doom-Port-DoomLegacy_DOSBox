@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: g_game.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -196,6 +196,7 @@
 #include "p_inter.h"
 #include "p_info.h"
 #include "byteptr.h"
+#include "t_script.h"
 
 #include "b_game.h"	//added by AC for acbot
 
@@ -276,10 +277,12 @@ boolean         precache = true;        // if true, load all graphics at start
 wbstartstruct_t wminfo;                 // parms for world map / intermission
 
 
+#if defined (__DJGPP__)
 // Background color fades for FS
-unsigned long fadecolor;
-int fadealpha;
-
+// Compile Error Fix
+uint32_t fs_fadecolor;  // RGBA
+int      fs_fadealpha;
+#endif
 
 void ShowMessage_OnChange(void);
 void AllowTurbo_OnChange(void);
@@ -985,7 +988,7 @@ void G_DoLoadLevel (boolean resetplayer)
 
     // Reset certain attributes
     // (should be in resetplayer 'if'?)
-    fadealpha = 0;
+    fs_fadealpha = 0;
     extramovefactor = 0;
     jumpgravity = (6*FRACUNIT/NEWTICRATERATIO);  // re-init
     consoleplayer_ptr->locked = false;

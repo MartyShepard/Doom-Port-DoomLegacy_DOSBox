@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: v_video.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,6 +77,7 @@ extern  int     dirtybox[4];
 #endif
 
 extern  consvar_t cv_ticrate;
+extern  consvar_t cv_darkback;
 extern  consvar_t cv_usegamma;
 // Gamma Funcs
 extern  consvar_t cv_gammafunc;
@@ -238,8 +239,19 @@ void V_DrawFlatFill (int x, int y, int w, int h, int flatnum);
 //added:10-02-98: fade down the screen buffer before drawing the menu over
 void V_DrawFadeScreen (void);
 
+// Fade the console background with fade alpha and green tint per cv_darkback.
 //added:20-03-98: test console
-void V_DrawFadeConsBack (int x1, int y1, int x2, int y2);
+//   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
+void V_DrawFadeConsBack (int x1, int x2, int y2);
+
+//  General Draw Fade.
+//   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
+//   fade_alpha : 1 (no fade) .. 255 (faded)
+//   fade_index : from fadescreen_draw8, or fadecons_draw8 table
+//   tint_rgba : added color tint, small color values only
+void V_DrawFade(int x1, int x2, int y2,
+                uint32_t fade_alpha, unsigned int fade_index,
+                uint32_t tint_rgba );
 
 //added:20-03-98: draw a single character
 void V_DrawCharacter (int x, int y, byte c);

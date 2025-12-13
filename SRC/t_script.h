@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: t_script.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -78,6 +78,10 @@ void T_ConsRun();
 extern script_t  fs_levelscript;  // the stored scripts for the level
 extern runningscript_t  fs_runningscripts;  // currently running
 extern mobj_t *  fs_run_trigger;  // the trigger parameter on RunScript
+
+// Background color fades for FS
+extern uint32_t fs_fadecolor;  // RGBA
+extern int      fs_fadealpha;
 
 void T_AddCommands();
 

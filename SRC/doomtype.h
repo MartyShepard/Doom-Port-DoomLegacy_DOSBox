@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: doomtype.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -230,21 +230,35 @@ int strlwr(char *n);
 #define MININT    ((int)0x80000000)
 #endif
 
+// This is compatible with SDL_color (R,G,B,-).
 typedef union {
     uint32_t  rgba;
-    struct {
-        byte  red;
+    struct {  // component memory order ( R, G, B, A )
+        byte  red;    // LITTLE_ENDIAN LSB
         byte  green;
         byte  blue;
         byte  alpha;
     } s;
 } RGBA_t;
 
+// [WDJ] Note that RGBA cannot be trusted to be the order of the components.
+// SDL uses the term RGBA, SDL opengl uses it extensively.
+// The literal RGBA() is the same order as RGBA_t, which works for SDL calls,
+// The order of RGBA in memory is (A,B,G,R).
+// BIG_ENDIAN that is (A,B,G,R), and LITTLE_ENDIAN is (R,G,B,A).
+// UINT2RGBA reverses the byte order for LITTLE_ENDIAN, which is often not
+// what you want.  Mostly, it is just confusing, so avoid it.
+// SDL_PixelFormat identifies the actual component order and fields.
+// The component order for 32bit pixels in video buffers is (A,R,G,B),
+// which is different.
+
 #ifdef __BIG_ENDIAN__
     // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #define UINT2RGBA(a) a
+#define RGBA( r, g, b, a )  (((r)<<24)|((g)<<16)|((b)<<8)|(a))
 #else
-#define UINT2RGBA(a) ((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((ULONG)a&0xff000000)>>24)
+#define UINT2RGBA(a) (((a)&0xff)<<24)|(((a)&0xff00)<<8)|(((a)&0xff0000)>>8)|((((uint32_t)(a))&0xff000000)>>24)
+#define RGBA( r, g, b, a )  ((r)|((g)<<8)|((b)<<16)|((a)<<24))
 #endif
 
 #endif  //__DOOMTYPE__

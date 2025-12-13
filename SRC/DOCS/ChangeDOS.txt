@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01200 ]: w104 dark background console
+          DOS: Fs_Fade/Color compile fix
+					
 [01199 ]: w104 gamma_full choice
 [01198 ]: w104 funcnull
 [01197 ]: w104 bob voodoo gamma standard feature

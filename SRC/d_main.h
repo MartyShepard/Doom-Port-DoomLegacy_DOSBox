@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1168 2015-05-22 18:36:56Z wesleyjohnson $
+// $Id: d_main.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,10 +55,6 @@ extern char *doomwaddir[MAX_NUM_DOOMWADDIR];
 extern consvar_t cv_home, cv_doomwaddir, cv_iwad;
 
 extern byte  init_sequence;  // = 0 on first init
-
-// Background color fades for FS
-extern unsigned long fadecolor;
-extern int fadealpha;
 
 // the infinite loop of D_DoomLoop() called from win_main for windows version
 void D_DoomLoop (void);

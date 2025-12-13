@@ -678,7 +678,7 @@ $(O)/g_game.o: g_game.c doomdef.h doomtype.h g_state.h m_swap.h command.h \
  r_state.h r_draw.h r_main.h r_sky.h s_sound.h sounds.h g_game.h \
  doomstat.h d_clisrv.h g_input.h keys.h p_fab.h m_cheat.h m_misc.h \
  m_menu.h m_argv.h hu_stuff.h st_stuff.h z_zone.h i_video.h p_inter.h \
- byteptr.h i_joy.h
+ byteptr.h i_joy.h t_script.h
 	redir -o /_GCC/g_game.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/m_menu.o: m_menu.c am_map.h d_event.h doomtype.h g_state.h doomdef.h \
