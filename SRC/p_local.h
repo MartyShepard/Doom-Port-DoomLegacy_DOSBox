@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1198 2015-12-26 19:16:46Z wesleyjohnson $
+// $Id: p_local.h 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -347,7 +347,7 @@ extern fixed_t  la_attackrange;  // max range of weapon
 fixed_t P_AimLineAttack ( mobj_t* t1, angle_t angle, fixed_t distance );
 
 void P_LineAttack ( mobj_t* t1, angle_t angle, fixed_t distance,
-		    fixed_t slope, int damage );
+                    fixed_t slope, int damage );
 
 void P_RadiusAttack ( mobj_t* spot, mobj_t* source, int damage );
 
@@ -377,7 +377,7 @@ extern int              clipammo[NUMAMMO];
 void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher );
 
 boolean P_DamageMobj ( mobj_t* target, mobj_t* inflictor,
-		       mobj_t* source, int damage );
+                       mobj_t* source, int damage );
 
 //
 // P_SIGHT
@@ -401,7 +401,7 @@ extern int variable_friction;
 extern int allow_pushers;
 extern byte  monster_friction;  // MBF demo flag
 extern byte  mbf_support;  // [WDJ] MBF enable
-			   // similar to prboom mbf_features, but as a flag
+                           // similar to prboom mbf_features, but as a flag
 
 typedef enum {
  // Boom values

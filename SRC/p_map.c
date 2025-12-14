@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_map.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -117,7 +117,7 @@ fixed_t         tmr_dropoffz;   // the lowest point contacted (monster check)
 
 // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
 mobj_t*         tmr_floorthing; // standing on another thing
-				// the thing corresponding to tmr_floorz
+                                // the thing corresponding to tmr_floorz
                                 // or NULL if tmr_floorz is from a sector
 
 //added:28-02-98: used at P_ThingHeightClip() for moving sectors
@@ -136,7 +136,7 @@ line_t*         tmr_dropoffline;
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
 int             *spechit = NULL;                //SoM: 3/15/2000: Limit removal
-		// realloc, never deallocated
+                // realloc, never deallocated
 int             numspechit = 0;
 
 //[WDJ] Attempt to track player that triggers voodoo inflicted damage
@@ -186,46 +186,46 @@ static boolean PIT_StompThing (mobj_t* thing)
 
     int  damage = 10000;  // fatal
     if( (tm_thing->player && (tm_thing->player->mo != tm_thing))
-	&& (thing->player && (thing->player->mo != thing)) )
+        && (thing->player && (thing->player->mo != thing)) )
     {
         // [WDJ] Insta-death by teleporting a voodoo doll onto another one.
-	// Used by some wads.
-	// Once a voodoo teleport instadeath trap is triggered by one player,
+        // Used by some wads.
+        // Once a voodoo teleport instadeath trap is triggered by one player,
         // most wads cannot reset, and other players can then walk through the trap.
-	// On cv_instadeath=damage or zap, the same player can trip it and then
-	// walk through it on the second try.  Best we can do.
+        // On cv_instadeath=damage or zap, the same player can trip it and then
+        // walk through it on the second try.  Best we can do.
         if( voodoo_mode != VM_vanilla )
         {
-	    // Original Doom target is thing->player
-	    if( voodoo_mode >= VM_target )
-	    {
-	        // Because the wad decouples the trigger from the effect, there
-	        // is no good way to determine which player should be killed.
-	        // Target last player to trigger a switch or linedef.
-	        if( spechit_player && spechit_player->mo)
-		    thing = spechit_player->mo;   // redirect the damage
-	    }
-	    // knock player back
+            // Original Doom target is thing->player
+            if( voodoo_mode >= VM_target )
+            {
+                // Because the wad decouples the trigger from the effect, there
+                // is no good way to determine which player should be killed.
+                // Target last player to trigger a switch or linedef.
+                if( spechit_player && spechit_player->mo)
+                    thing = spechit_player->mo;   // redirect the damage
+            }
+            // knock player back
             thing->momx *= -32;
             thing->momy *= -32;
             thing->momz += -8;
-	}
-	switch( cv_instadeath.value )
+        }
+        switch( cv_instadeath.value )
         {
-	 // 0: default .. DIE
-	 case 1: // Damage instead
-	   damage = 20;
-	   thing->reactiontime = 36;  // stun them
-	   break;
-	 case 2: // Zap instead
-	   damage = 5;
-	   thing->reactiontime = 72;  // stun them better
-	   break;
-	 default:
-	   // Block damage in deathmatch, it would always kill player1
-	   if( cv_deathmatch.value > 0 )
-	      damage = 0;
-	}
+         // 0: default .. DIE
+         case 1: // Damage instead
+           damage = 20;
+           thing->reactiontime = 36;  // stun them
+           break;
+         case 2: // Zap instead
+           damage = 5;
+           thing->reactiontime = 72;  // stun them better
+           break;
+         default:
+           // Block damage in deathmatch, it would always kill player1
+           if( cv_deathmatch.value > 0 )
+              damage = 0;
+        }
     }
     P_DamageMobj (thing, tm_thing, tm_thing, damage);
 
@@ -260,36 +260,36 @@ fixed_t  P_GetFriction( const mobj_t * mo )
         // traverse the list of sectors touching this thing
         while( msnp )
         {
-	    secp = msnp->m_sector;
-	    if(mo->z <= secp->floorheight)
-	    {
-	        // on sector floor
-	        if(secp->friction < got_friction)
-	        {
-		    got_friction = secp->friction;
-		    got_movefactor = secp->movefactor;
-		}
-	    }
-	    // also check if any 3d floor has friction
-	    for(fff = secp->ffloors; fff; fff = fff->next)
-	    {
-	        if(mo->z <= *fff->topheight && mo_top > *fff->bottomheight )
-	        {
-		    // on 3d floor (or embedded in it)
-		    sector_t * fffsec = &sectors[fff->model_secnum];
-		    if(fffsec->friction < got_friction)
-		    {
-		        got_friction = fffsec->friction;
-		        got_movefactor = fffsec->movefactor;
-		    }
-		}
-	    }
-	    msnp = msnp->m_tnext;
-	}
+            secp = msnp->m_sector;
+            if(mo->z <= secp->floorheight)
+            {
+                // on sector floor
+                if(secp->friction < got_friction)
+                {
+                    got_friction = secp->friction;
+                    got_movefactor = secp->movefactor;
+                }
+            }
+            // also check if any 3d floor has friction
+            for(fff = secp->ffloors; fff; fff = fff->next)
+            {
+                if(mo->z <= *fff->topheight && mo_top > *fff->bottomheight )
+                {
+                    // on 3d floor (or embedded in it)
+                    sector_t * fffsec = &sectors[fff->model_secnum];
+                    if(fffsec->friction < got_friction)
+                    {
+                        got_friction = fffsec->friction;
+                        got_movefactor = fffsec->movefactor;
+                    }
+                }
+            }
+            msnp = msnp->m_tnext;
+        }
         if( got_friction == FIXED_MAX )
         {
-	    got_friction = 0xFFF0;  // must not be touching floor, air friction
-	}
+            got_friction = 0xFFF0;  // must not be touching floor, air friction
+        }
     }
     else
     {
@@ -322,19 +322,19 @@ int  P_GetMoveFactor(mobj_t* mo)
       // modern friction model, introduced in MBF
       P_GetFriction( mo );  // sets got_friction and got_movefactor
       if( got_friction < ORIG_FRICTION   // muddy, sludge
-	  && (got_movefactor < (ORIG_FRICTION_FACTOR/4)))  // not water
+          && (got_movefactor < (ORIG_FRICTION_FACTOR/4)))  // not water
       {
-	  // phares 3/11/98: you start off slowly, then increase as
-	  // you get better footing
+          // phares 3/11/98: you start off slowly, then increase as
+          // you get better footing
           
-	  int momentum = (P_AproxDistance(mo->momx,mo->momy));
-	  if (momentum > MORE_FRICTION_MOMENTUM<<2)
-	      got_movefactor <<= 3;
+          int momentum = (P_AproxDistance(mo->momx,mo->momy));
+          if (momentum > MORE_FRICTION_MOMENTUM<<2)
+              got_movefactor <<= 3;
 
-	  else if (momentum > MORE_FRICTION_MOMENTUM<<1)
+          else if (momentum > MORE_FRICTION_MOMENTUM<<1)
               got_movefactor <<= 2;
           
-	  else if (momentum > MORE_FRICTION_MOMENTUM)
+          else if (momentum > MORE_FRICTION_MOMENTUM)
               got_movefactor <<= 1;
       }
       
@@ -358,22 +358,22 @@ int  P_GetMoveFactor(mobj_t* mo)
       {
           got_movefactor = mo->movefactor;
           mo->movefactor = ORIG_FRICTION_FACTOR;  // reset
-	 
-	  if(got_movefactor < (ORIG_FRICTION_FACTOR/4)) // not water
-	  {
-	      // phares 3/11/98: you start off slowly, then increase as
-	      // you get better footing
+
+          if(got_movefactor < (ORIG_FRICTION_FACTOR/4)) // not water
+          {
+              // phares 3/11/98: you start off slowly, then increase as
+              // you get better footing
           
-	      int momentum = (P_AproxDistance(mo->momx,mo->momy));
-	      if (momentum > MORE_FRICTION_MOMENTUM<<2)
-	         got_movefactor <<= 3;
+              int momentum = (P_AproxDistance(mo->momx,mo->momy));
+              if (momentum > MORE_FRICTION_MOMENTUM<<2)
+                 got_movefactor <<= 3;
           
-	      else if (momentum > MORE_FRICTION_MOMENTUM<<1)
-	         got_movefactor <<= 2;
+              else if (momentum > MORE_FRICTION_MOMENTUM<<1)
+                 got_movefactor <<= 2;
           
-	      else if (momentum > MORE_FRICTION_MOMENTUM)
-	         got_movefactor <<= 1;
-	  }
+              else if (momentum > MORE_FRICTION_MOMENTUM)
+                 got_movefactor <<= 1;
+          }
       }
   }
 #endif
@@ -518,9 +518,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
         // [WDJ] Fix problem with monsters on 3dfloors being stuck to monsters
         // on other levels.
         if( thing->z > tmr_ceilingz )
-	   goto ret_pass;  // other thing is above ceiling (on upper floor)
+           goto ret_pass;  // other thing is above ceiling (on upper floor)
         if( thing_topz < tmr_floorz )
-	   goto ret_pass;  // other thing is below floor (on lower floor)
+           goto ret_pass;  // other thing is below floor (on lower floor)
     }
 #endif
 
@@ -536,7 +536,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         {
             if(tm_thing->z >= thing_topz)  goto ret_pass;  // tm_thing over thing
             if(tmtopz < thing->z)  goto ret_pass;  // tm_thing under thing
-	}
+        }
     }
 
     // check for skulls slamming into things
@@ -550,9 +550,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
         tm_thing->momx = tm_thing->momy = tm_thing->momz = 0;
 
         P_SetMobjState (tm_thing,
-			(gamemode == heretic) ? tm_thing->info->seestate
-			                      : tm_thing->info->spawnstate
-			);
+                        (gamemode == heretic) ? tm_thing->info->seestate
+                                              : tm_thing->info->spawnstate
+                        );
 
         goto ret_blocked;  // stop moving
     }
@@ -570,30 +570,30 @@ static boolean PIT_CheckThing (mobj_t* thing)
         if (tmtopz < thing->z)  goto ret_pass;  // underneath
 
         if (tm_thing->target
-	    && (
-		tm_thing->target->type == thing->type
-		|| (tm_thing->target->type == MT_KNIGHT  && thing->type == MT_BRUISER)
-		|| (tm_thing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) )
-	    )
+            && (
+                tm_thing->target->type == thing->type
+                || (tm_thing->target->type == MT_KNIGHT  && thing->type == MT_BRUISER)
+                || (tm_thing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) )
+            )
         {
             // Don't hit same species as originator.
             if (thing == tm_thing->target)
-	        goto ret_pass;
+                goto ret_pass;
 
             if (thing->type != MT_PLAYER)
             {
                 // Boom - Let players missile other players. ??
-	        // [WDJ] these are monsters, not players.
+                // [WDJ] these are monsters, not players.
                 if( monster_infight != INFT_infight )  // when not infighting
-		    goto ret_blocked;  // Explode, but do no damage.
+                    goto ret_blocked;  // Explode, but do no damage.
             }
         }
 
         // DarkWolf95: Don't damage other monsters
-	if( (monster_infight == INFT_coop)  // monster coop
-	   && tm_thing->target->type != MT_PLAYER
-	   && thing->type != MT_PLAYER)
-	    goto ret_blocked;
+        if( (monster_infight == INFT_coop)  // monster coop
+           && tm_thing->target->type != MT_PLAYER
+           && thing->type != MT_PLAYER)
+            goto ret_blocked;
 
         if (! (thing->flags & MF_SHOOTABLE) )
         {
@@ -621,23 +621,23 @@ static boolean PIT_CheckThing (mobj_t* thing)
                 thing->momy += tm_thing->momy >> 2;
             }
             numspechit = 0;
-	    goto ret_pass;
+            goto ret_pass;
         }
 
         // damage / explode
         damage = ((P_Random()%8)+1)*tm_thing->info->damage;
         if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage)
-	    && (thing->flags & MF_NOBLOOD)==0
-	    && demoversion>=129
-	    )
+            && (thing->flags & MF_NOBLOOD)==0
+            && demoversion>=129
+            )
         {
-	     P_SpawnBloodSplats (tm_thing->x, tm_thing->y, tm_thing->z, damage, thing->momx, thing->momy);
-	}
-	goto ret_blocked;   // don't traverse any more
+             P_SpawnBloodSplats (tm_thing->x, tm_thing->y, tm_thing->z, damage, thing->momx, thing->momy);
+        }
+        goto ret_blocked;   // don't traverse any more
     }
 
     if (thing->flags2 & MF2_PUSHABLE
-	&& !(tm_thing->flags2 & MF2_CANNOTPUSH))
+        && !(tm_thing->flags2 & MF2_CANNOTPUSH))
     {                         // Push thing
         thing->momx += tm_thing->momx >> 2;
         thing->momy += tm_thing->momy >> 2;
@@ -683,7 +683,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     if ( demoversion >= 200 )
     {
         // From prboom.
-	return (thing->flags & MF_NOCLIP) || !(tm_thing->flags & MF_SOLID);
+        return (thing->flags & MF_NOCLIP) || !(tm_thing->flags & MF_SOLID);
     }
 #endif   
     if ( demoversion >= 145 )
@@ -727,9 +727,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
     //added:22-02-98: added z checking at last
     //SoM: 3/10/2000: Treat noclip things as non-solid!
     if (   (thing->flags & MF_SOLID)
-	&& (tm_thing->flags & MF_SOLID)
-	&& !(thing->flags & MF_NOCLIP)
-	&& !(tm_thing->flags & MF_NOCLIP))
+        && (tm_thing->flags & MF_SOLID)
+        && !(thing->flags & MF_NOCLIP)
+        && !(tm_thing->flags & MF_NOCLIP))
 #endif
     {
         // Only apply when tm_thing and thing are both SOLID, and !NOCLIP.
@@ -739,7 +739,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         {
             if (thing->z < tmr_ceilingz)
                 tmr_ceilingz = thing->z;
-	    goto ret_pass;
+            goto ret_pass;
         }
 
         // trying to go over thing
@@ -749,21 +749,21 @@ static boolean PIT_CheckThing (mobj_t* thing)
         // (dont climb max. 24units while already in air)
         // if not in air, let P_TryMove() decide if its not too high
         if (tm_thing->player
-	    && tm_thing->z < thing_topz
-	    && tm_thing->z > tm_thing->floorz )  // block while in air
+            && tm_thing->z < thing_topz
+            && tm_thing->z > tm_thing->floorz )  // block while in air
         {
-	    // collide
+            // collide
 #if 0
-	    // no bounce, so same momentum as other thing
-	    tm_thing->momx = thing->momx;
+            // no bounce, so same momentum as other thing
+            tm_thing->momx = thing->momx;
             tm_thing->momy = thing->momy;
 #endif
-	    goto ret_blocked;  // did not make it over thing
-	}
+            goto ret_blocked;  // did not make it over thing
+        }
 
         if (thing_topz > tmr_floorz)
         {
-	    // standing on top of another thing
+            // standing on top of another thing
             tmr_floorz = thing_topz;
             tmr_floorthing = thing;       //thing we may stand on
         }
@@ -806,7 +806,7 @@ static boolean PIT_CrossLine (line_t* ld)
           tm_bbox[BOXTOP]    < ld->bbox[BOXBOTTOM] ||
           tm_bbox[BOXBOTTOM] > ld->bbox[BOXTOP]))
       if (P_PointOnLineSide(from_x,from_y,ld) != P_PointOnLineSide(targ_x,targ_y,ld))
-	  goto ret_blocked;
+          goto ret_blocked;
   }
   return true; // line doesn't block trajectory
 
@@ -849,9 +849,9 @@ boolean PIT_CheckLine (line_t* ld)
     {
       // one sided line
       if( tm_thing->flags & MF_MISSILE
-	 && ld->special
-   	 && demoversion>=132
-	 )
+         && ld->special
+         && demoversion>=132
+         )
           add_spechit(ld);
 
       goto ret_blocked;  // blocked by one sided line
@@ -898,12 +898,12 @@ boolean PIT_CheckLine (line_t* ld)
     // Missiles now explode on wall surface instead of within wall.
     // Needed for fix of Mancubus fireball going through wall.
     if ( tm_thing->flags & MF_MISSILE
-	 && demoversion>=144)
+         && demoversion>=144)
     {
         // Check if missile hit low or high on side of this wall
-	if ( tm_thing->z < openbottom
-	     || (tm_thing->z + tm_thing->height) > opentop )
-	    goto ret_blocked;  // hit upper or lower texture
+        if ( tm_thing->z < openbottom
+             || (tm_thing->z + tm_thing->height) > opentop )
+            goto ret_blocked;  // hit upper or lower texture
     }
 
     return true;  // pass the lines
@@ -968,7 +968,7 @@ boolean P_CheckCrossLine ( mobj_t* thing, fixed_t x, fixed_t y )
     {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_CrossLine))
-	        goto ret_blocked;
+                goto ret_blocked;
     }
 
     return false;
@@ -1048,20 +1048,20 @@ boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
       {
         if(!(rovflr->flags & FF_SOLID) || !(rovflr->flags & FF_EXISTS)) continue;
 
-	midfloor =
-	   *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight)/2);
-	if( abs(thing->z - midfloor) < abs(thingtop - midfloor) )
-	{
-	    // feet are closer
-	    if(*rovflr->topheight > tmr_floorz)
-	        tmr_floorz = tmr_dropoffz = *rovflr->topheight;
-	}
-	else
-	{
-	    // head is closer
-	    if(*rovflr->bottomheight < tmr_ceilingz )
-	        tmr_ceilingz = *rovflr->bottomheight;
-	}
+        midfloor =
+           *rovflr->bottomheight + ((*rovflr->topheight - *rovflr->bottomheight)/2);
+        if( abs(thing->z - midfloor) < abs(thingtop - midfloor) )
+        {
+            // feet are closer
+            if(*rovflr->topheight > tmr_floorz)
+                tmr_floorz = tmr_dropoffz = *rovflr->topheight;
+        }
+        else
+        {
+            // head is closer
+            if(*rovflr->bottomheight < tmr_ceilingz )
+                tmr_ceilingz = *rovflr->bottomheight;
+        }
       }
     }
 
@@ -1084,8 +1084,8 @@ boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
     // BP: added MF_NOCLIPTHING :used by camera to don't be blocked by things
     if(!(thing->flags & MF_NOCLIPTHING)
        && (thing->flags & MF_SOLID || thing->flags & MF_MISSILE))
-		/* DarkWolf95:don't check non-solids against other things, 
-		   keep them in the map though, so still check against lines */
+                /* DarkWolf95:don't check non-solids against other things,
+                   keep them in the map though, so still check against lines */
     {
         xl = (tm_bbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
         xh = (tm_bbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -1097,7 +1097,7 @@ boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
             for (by=yl ; by<=yh ; by++)
                 if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
                     return false;
-	}
+        }
     }
     // check lines
     xl = (tm_bbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
@@ -1109,7 +1109,7 @@ boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
     {
         for (by=yl ; by<=yh ; by++)
             if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
-	        goto ret_blocked;
+                goto ret_blocked;
     }
 
     return true;
@@ -1130,7 +1130,7 @@ static void CheckMissileImpact(mobj_t *mobj)
     int i;
     
     if( demoversion<132 || !numspechit
-	|| !(mobj->flags&MF_MISSILE) || !mobj->target)
+        || !(mobj->flags&MF_MISSILE) || !mobj->target)
         return;
 
     if(!mobj->target->player)
@@ -1169,26 +1169,26 @@ boolean P_TryMove ( mobj_t*       thing,
     {
         fixed_t maxstep = MAXSTEPMOVE;
         if (tmr_ceilingz - tmr_floorz < thing->height)
-	    goto impact;  // doesn't fit
+            goto impact;  // doesn't fit
 
         tmr_floatok = true;
 
         if ( !(thing->flags & MF_TELEPORT)
              && (thing->z+thing->height > tmr_ceilingz) // hit ceiling
              && !(thing->flags2&MF2_FLY))  // not heretic fly
-	    goto impact;  // mobj must lower itself to fit
+            goto impact;  // mobj must lower itself to fit
 
         if(thing->flags2&MF2_FLY)  // heretic fly
         {
             if(thing->z+thing->height > tmr_ceilingz) // hit ceiling
             {
                 thing->momz = -8*FRACUNIT;
-	        goto block_move;
+                goto block_move;
             }
             else if(thing->z < tmr_floorz && (tmr_floorz-tmr_dropoffz > 24*FRACUNIT))
             {
                 thing->momz = 8*FRACUNIT;
-	        goto block_move;
+                goto block_move;
             }
         }
 
@@ -1200,35 +1200,35 @@ boolean P_TryMove ( mobj_t*       thing,
              // The Minotaur floor fire (MT_MNTRFX2) can step up any amount
              && thing->type != MT_MNTRFX2
              && (tmr_floorz - thing->z > maxstep ) )
-	    goto impact;  // too big a step up
+            goto impact;  // too big a step up
 
         if((thing->flags & MF_MISSILE)
-	   && tmr_floorz > thing->z)
+           && tmr_floorz > thing->z)
             CheckMissileImpact(thing);
 
         if( tmr_dropoffline )
         {
-	    if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE  // excessive height
-		&& !(thing->flags&(MF_DROPOFF|MF_FLOAT)) // not player, missile, shot, puff, etc.
-		&& !tmr_floorthing )
-	    {
-	        // [WDJ] Meant to prevent walking off a dropoff, it also prevents
-	        // getting away from one once the thing is over it.
-	        // Monsters will repeat call until find successful direction.
-	        if( !boomsupport || !allowdropoff )
-	        {
-		    goto block_move;  // inform caller, returning tmr_dropoffline
-		}
-	        // [WDJ] Trying to moderate momentum here causes too many side-effects
-	        // like barrels getting stuck at conveyor edge.
-	        // Barrels only have momentum.
-		// Successful move, returning tmr_dropoffline.
-	    }
-	    else
-	    {
-	        tmr_dropoffline = NULL;  // cancel notification
-	    }
-	}
+            if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE  // excessive height
+                && !(thing->flags&(MF_DROPOFF|MF_FLOAT)) // not player, missile, shot, puff, etc.
+                && !tmr_floorthing )
+            {
+                // [WDJ] Meant to prevent walking off a dropoff, it also prevents
+                // getting away from one once the thing is over it.
+                // Monsters will repeat call until find successful direction.
+                if( !boomsupport || !allowdropoff )
+                {
+                    goto block_move;  // inform caller, returning tmr_dropoffline
+                }
+                // [WDJ] Trying to moderate momentum here causes too many side-effects
+                // like barrels getting stuck at conveyor edge.
+                // Barrels only have momentum.
+                // Successful move, returning tmr_dropoffline.
+            }
+            else
+            {
+                tmr_dropoffline = NULL;  // cancel notification
+            }
+        }
     }
 
     // the move is ok,
@@ -1239,8 +1239,8 @@ boolean P_TryMove ( mobj_t*       thing,
     //                stop jumping it succeeded
     // BP: removed in 1.28 because we can move in air now
     if ( demoplayback<128 && demoplayback>=112
-	 && thing->player
-	 && (thing->player->cheats & CF_JUMPOVER) )
+         && thing->player
+         && (thing->player->cheats & CF_JUMPOVER) )
     {
         if (tmr_floorz > thing->floorz + MAXSTEPMOVE)
             thing->momz >>= 2;
@@ -1280,19 +1280,19 @@ boolean P_TryMove ( mobj_t*       thing,
             if (side != oldside)
             {
                 if (ld->special)
-	        {
-		    // [WDJ] Attempt to track player that triggers voodoo doll
-		    if((voodoo_mode >= VM_target) && (thing->player))
-		    {
-		        if( thing->player->mo == thing )
-		        {
-			    // Real player
-			    // remember last player that tripped a special
-			    spechit_player = thing->player;
-			}
-		    }
+                {
+                    // [WDJ] Attempt to track player that triggers voodoo doll
+                    if((voodoo_mode >= VM_target) && (thing->player))
+                    {
+                        if( thing->player->mo == thing )
+                        {
+                            // Real player
+                            // remember last player that tripped a special
+                            spechit_player = thing->player;
+                        }
+                    }
                     P_CrossSpecialLine (ld-lines, oldside, thing);
-		}
+                }
             }
         }
     }
@@ -1335,12 +1335,12 @@ boolean P_ThingHeightClip (mobj_t* thing)
     
     // walker in contact with floor (direct or indirect)
     if ( onfloor
-	&& !(thing->flags & MF_NOGRAVITY))
+        && !(thing->flags & MF_NOGRAVITY))
     {
         // walking monsters rise and fall with the floor
         // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
         if (!tmr_floorthing)  // unless standing on something
-	    thing->z = thing->floorz;
+            thing->z = thing->floorz;
         // crush ok
     }
     else if (thing->z+thing->height >= tmr_ceilingz)  // in contact with ceiling
@@ -1613,20 +1613,20 @@ void P_SlideMove (mobj_t* mo)
     {
         // [WDJ] Slide is an impact with a static object where only world mom applies.
         // The impact effect upon bob_mom depends upon that will force the bob_mom
-	// to 
+        // to
         player_t * pl = mo->player;
 #if 0
-	// [WDJ] Because this is impact with fixed wall, it should
+        // [WDJ] Because this is impact with fixed wall, it should
         // affect bob_mom the same way.
         pl->bob_momx = FixedMul (pl->bob_momx, tsm_bestslidefrac);
         pl->bob_momy = FixedMul (pl->bob_momy, tsm_bestslidefrac);
 #else       
         // killough 10/98:
-	// [WDJ] Should not transfer world mom to bob_mom.
+        // [WDJ] Should not transfer world mom to bob_mom.
         if( abs(pl->bob_momx) > abs(tsm_xmove) )
-	    pl->bob_momx = tsm_xmove;
+            pl->bob_momx = tsm_xmove;
         if( abs(pl->bob_momy) > abs(tsm_ymove) )
-	    pl->bob_momy = tsm_ymove;
+            pl->bob_momy = tsm_ymove;
 #endif
     }
 
@@ -1697,15 +1697,15 @@ boolean PTR_AimTraverse (intercept_t* in)
         if (li->frontsector->floorheight != li->backsector->floorheight)
         {
             slope = FixedDiv (openbottom - la_shootz , dist);
-	    // see_bottomslope return by P_AimLineAttack
-	    if (slope > see_bottomslope)
+            // see_bottomslope return by P_AimLineAttack
+            if (slope > see_bottomslope)
                 see_bottomslope = slope;
         }
 
         if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
         {
             slope = FixedDiv (opentop - la_shootz , dist);
-	    // see_topslope return by P_AimLineAttack
+            // see_topslope return by P_AimLineAttack
             if (slope < see_topslope)
                 see_topslope = slope;
         }
@@ -1730,8 +1730,8 @@ boolean PTR_AimTraverse (intercept_t* in)
             for(; rovflr; rovflr = rovflr->next)
             {
               if( !(rovflr->flags & FF_SOLID)
-		 || !(rovflr->flags & FF_EXISTS))
-		 continue;
+                 || !(rovflr->flags & FF_EXISTS))
+                 continue;
 
               highslope = FixedDiv (*rovflr->topheight - la_shootz, dist);
               lowslope = FixedDiv (*rovflr->bottomheight - la_shootz, dist);
@@ -1739,13 +1739,13 @@ boolean PTR_AimTraverse (intercept_t* in)
                 return false;
 
               if(lar_lastz > *rovflr->topheight
-		 && dir == -1
-		 && lar_aimslope < highslope)
+                 && dir == -1
+                 && lar_aimslope < highslope)
                 frontflag |= 0x2;
 
               if(lar_lastz < *rovflr->bottomheight
-		 && dir == 1
-		 && lar_aimslope > lowslope)
+                 && dir == 1
+                 && lar_aimslope > lowslope)
                 frontflag |= 0x2;
             }
           }
@@ -1765,13 +1765,13 @@ boolean PTR_AimTraverse (intercept_t* in)
                 return false;
 
               if( lar_lastz > *rovflr->topheight
-		 && dir == -1
-		 && lar_aimslope < highslope)
+                 && dir == -1
+                 && lar_aimslope < highslope)
                 frontflag |= 0x4;
 
               if( lar_lastz < *rovflr->bottomheight
-		  && dir == 1
-		  && lar_aimslope > lowslope)
+                  && dir == 1
+                  && lar_aimslope > lowslope)
                 frontflag |= 0x4;
             }
           }
@@ -1791,8 +1791,8 @@ boolean PTR_AimTraverse (intercept_t* in)
 
     // DarkWolf95: Don't damage other monsters
     if( (monster_infight == INFT_coop)  // monster coop
-	&& la_shootthing->type != MT_PLAYER
-	&& th->type != MT_PLAYER)
+        && la_shootthing->type != MT_PLAYER
+        && th->type != MT_PLAYER)
     {
         return true;
     }
@@ -1932,13 +1932,13 @@ boolean PTR_ShootTraverse (intercept_t* in)
                 goto hitline;
 
               if( lar_lastz > *rovflr->topheight
-		 && dir == -1
-		 && lar_aimslope < highslope)
+                 && dir == -1
+                 && lar_aimslope < highslope)
                 frontflag |= 0x2;
 
               if( lar_lastz < *rovflr->bottomheight
-		 && dir == 1
-		 && lar_aimslope > lowslope)
+                 && dir == 1
+                 && lar_aimslope > lowslope)
                 frontflag |= 0x2;
             }
           }
@@ -1958,13 +1958,13 @@ boolean PTR_ShootTraverse (intercept_t* in)
                 goto hitline;
 
               if( lar_lastz > *rovflr->topheight
-		 && dir == -1
-		 && lar_aimslope < highslope)
+                 && dir == -1
+                 && lar_aimslope < highslope)
                 frontflag |= 0x4;
 
               if( lar_lastz < *rovflr->bottomheight
-		 && dir == 1
-		 && lar_aimslope > lowslope)
+                 && dir == 1
+                 && lar_aimslope > lowslope)
                 frontflag |= 0x4;
             }
           }
@@ -2005,12 +2005,12 @@ boolean PTR_ShootTraverse (intercept_t* in)
                 if(!(rovflr->flags & FF_SOLID)) continue;
 
                 if( dir == 1
-		   && *rovflr->bottomheight < ceilingz
-		   && *rovflr->bottomheight > lar_lastz)
+                   && *rovflr->bottomheight < ceilingz
+                   && *rovflr->bottomheight > lar_lastz)
                   ceilingz = *rovflr->bottomheight;
                 if( dir == -1
-		   && *rovflr->topheight > floorz
-		   && *rovflr->topheight < lar_lastz)
+                   && *rovflr->topheight > floorz
+                   && *rovflr->topheight < lar_lastz)
                   floorz = *rovflr->topheight;
               }
             }
@@ -2022,11 +2022,11 @@ boolean PTR_ShootTraverse (intercept_t* in)
                 hitplane = true;
             }
             else if ((z < floorz) && distz)
-	    {
-	        clipz = la_shootz - floorz;
-	        frac = -FixedDiv( FixedMul(frac,clipz), distz );
-	        hitplane = true;
-	    }
+            {
+                clipz = la_shootz - floorz;
+                frac = -FixedDiv( FixedMul(frac,clipz), distz );
+                hitplane = true;
+            }
             if(sector->ffloors)
             {
                 if(dir == 1 && z > ceilingz)
@@ -2099,16 +2099,16 @@ boolean PTR_ShootTraverse (intercept_t* in)
 
     // DarkWolf95: Don't damage other monsters
     if( (monster_infight == INFT_coop)  // monster coop
-	&& la_shootthing->type != MT_PLAYER
-	&& th->type != MT_PLAYER)
+        && la_shootthing->type != MT_PLAYER
+        && th->type != MT_PLAYER)
     {
         return true;
     }
 
     // check for physical attacks on a ghost
     if (gamemode == heretic
-	&& (th->flags & MF_SHADOW)
-	&& la_shootthing->player->readyweapon == wp_staff)
+        && (th->flags & MF_SHADOW)
+        && la_shootthing->player->readyweapon == wp_staff)
         return true;
 
     // check angles to see if the thing can be aimed at
@@ -2140,12 +2140,12 @@ boolean PTR_ShootTraverse (intercept_t* in)
           continue;
 
         if( dir == -1
-	   && *rovflr->topheight < lar_lastz
-	   && *rovflr->topheight > th->z + th->height)
+           && *rovflr->topheight < lar_lastz
+           && *rovflr->topheight > th->z + th->height)
           return true;
         if( dir == 1
-	   && *rovflr->bottomheight > lar_lastz
-	   && *rovflr->bottomheight < th->z)
+           && *rovflr->bottomheight > lar_lastz
+           && *rovflr->bottomheight < th->z)
           return true;
       }
     }
@@ -2357,12 +2357,12 @@ boolean PTR_UseTraverse (intercept_t* in)
         // [WDJ] Attempt to track player that triggers voodoo doll
         if((voodoo_mode >= VM_target) && (usething->player))
         {
-	    if( usething->player->mo == usething )
-	    {
-	        // Real player pushed a switch
-	        spechit_player = usething->player;
-	    }
-	}
+            if( usething->player->mo == usething )
+            {
+                // Real player pushed a switch
+                spechit_player = usething->player;
+            }
+        }
     }
 
     // can't use for than one special line in a row
@@ -2466,8 +2466,8 @@ boolean PIT_RadiusAttack (mobj_t* thing)
         }
         // must be in direct path
         if( P_DamageMobj (thing, bombspot, bombsource, damage)
-	    && (thing->flags & MF_NOBLOOD)==0
-	    && demoversion>=129 )
+            && (thing->flags & MF_NOBLOOD)==0
+            && demoversion>=129 )
             P_SpawnBloodSplats (thing->x,thing->y,thing->z, damage, momx, momy);
     }
 
@@ -2578,8 +2578,8 @@ boolean PIT_ChangeSector (mobj_t*  thing)
         P_DamageMobj(thing,NULL,NULL,10);
 
         if( demoversion<132
-	    || (!(leveltime % (16*NEWTICRATERATIO))
-		&& !(thing->flags&MF_NOBLOOD)) )
+            || (!(leveltime % (16*NEWTICRATERATIO))
+                && !(thing->flags&MF_NOBLOOD)) )
         {
             // spray blood in a random direction
             mo = P_SpawnMobj (thing->x,
@@ -2670,17 +2670,17 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
       // Update things until all are visited.
       do {
         for (ns=sec->touching_thinglist; ns; ns=ns->m_snext)
-	{
+        {
           if (!ns->visited)               // unprocessed thing found
           {
             ns->visited  = true;         // mark thing as processed
             if (!(ns->m_thing->flags & MF_NOBLOCKMAP))
-	    {
+            {
               PIT_ChangeSector(ns->m_thing); // ns may get removed to freelist
-	      if( ns->m_sector != sec )  break;  // was freed
-	    }
+              if( ns->m_sector != sec )  break;  // was freed
+            }
           }
-	}
+        }
       } while (ns);
     }
   }
@@ -2699,11 +2699,11 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
           {
               ns->visited  = true;          // mark thing as processed
               if (!(ns->m_thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
-	      {
+              {
                   PIT_ChangeSector(ns->m_thing);    // process it
-		  // may have removed ns to freelist
-		  if( ns->m_sector != sector )  break;  // was freed
-	      }
+                  // may have removed ns to freelist
+                  if( ns->m_sector != sector )  break;  // was freed
+              }
           }
       }
   } while (ns);  // repeat from scratch until all things left are marked valid
@@ -3025,13 +3025,13 @@ static void P_FakeZMovement(mobj_t *mo)
     {       // float down towards target if too close
         if(!(mo->flags&MF_SKULLFLY) && !(mo->flags&MF_INFLOAT))
         {
-	    dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
-	    delta =( mo->target->z + (mo->height>>1)) - mo->z;
-	    if (delta < 0 && dist < -(delta*3))
-	       mo->z -= FLOATSPEED;
-	    else if (delta > 0 && dist < (delta*3))
-	       mo->z += FLOATSPEED;
-	}
+            dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
+            delta =( mo->target->z + (mo->height>>1)) - mo->z;
+            if (delta < 0 && dist < -(delta*3))
+               mo->z -= FLOATSPEED;
+            else if (delta > 0 && dist < (delta*3))
+               mo->z += FLOATSPEED;
+        }
     }
     if(mo->player && mo->flags2&MF2_FLY && !(mo->z <= mo->floorz)
         && leveltime&2)
@@ -3047,41 +3047,41 @@ static void P_FakeZMovement(mobj_t *mo)
         mo->z = mo->floorz;
         if(mo->momz < 0)
         {
-	    mo->momz = 0;
-	}
+            mo->momz = 0;
+        }
         if(mo->flags&MF_SKULLFLY)
         { // The skull slammed into something
-	    mo->momz = -mo->momz;
-	}
+            mo->momz = -mo->momz;
+        }
         if(mo->info->crashstate && (mo->flags&MF_CORPSE))
         {
-	    return;
-	}
+            return;
+        }
     }
     else if(mo->flags2&MF2_LOGRAV)
     {
         if(mo->momz == 0)
-	   mo->momz = -(cv_gravity.value>>3)*2;
+           mo->momz = -(cv_gravity.value>>3)*2;
         else
-	   mo->momz -= cv_gravity.value>>3;
+           mo->momz -= cv_gravity.value>>3;
     }
     else if (! (mo->flags & MF_NOGRAVITY) )
     {
         if (mo->momz == 0)
-	   mo->momz = -cv_gravity.value*2;
+           mo->momz = -cv_gravity.value*2;
         else
-	   mo->momz -= cv_gravity.value;
+           mo->momz -= cv_gravity.value;
     }
 
     if (mo->z + mo->height > mo->ceilingz)
     {       // hit the ceiling
         if (mo->momz > 0)
-	   mo->momz = 0;
+           mo->momz = 0;
         mo->z = mo->ceilingz - mo->height;
         if (mo->flags & MF_SKULLFLY)
         {       // the skull slammed into something
-	    mo->momz = -mo->momz;
-	}
+            mo->momz = -mo->momz;
+        }
     }
 }
 
@@ -3150,7 +3150,7 @@ mobj_t *P_CheckOnmobj(mobj_t *thing)
                 *tm_thing = oldmo;
                 return onmobj;
             }
-	}
+        }
     }
 
     *tm_thing = oldmo;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_inter.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -172,7 +172,7 @@ int FindBestWeapon(player_t *player)
         {
             actualweapon = i;
             actualprior = player->favoritweapon[i];
-	 }
+         }
     }
     
     return actualweapon;
@@ -356,7 +356,7 @@ boolean P_GiveWeapon ( player_t*     player,
         //added:16-01-98:changed consoleplayer to displayplayer
         //               (hear the sounds from the viewpoint)
         if (player == displayplayer_ptr
-	    || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
+            || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
             S_StartSound (NULL, sfx_wpnup);
         return false;
     }
@@ -727,19 +727,19 @@ void P_TouchSpecialThing ( mobj_t*       special,
     player = toucher->player;
 
     if( player &&
-	toucher != player->mo )  // voodoo doll toucher
+        toucher != player->mo )  // voodoo doll toucher
     {
         if( voodoo_mode >= VM_target )
         {
-	    // Target last player to trigger a switch or linedef.
-	    if( spechit_player && spechit_player->mo )
-	    {
-	        player = spechit_player;
-	        toucher = player->mo;
-	    }
-	}
+            // Target last player to trigger a switch or linedef.
+            if( spechit_player && spechit_player->mo )
+            {
+                player = spechit_player;
+                toucher = player->mo;
+            }
+        }
         if( !player || !player->mo )
-	    return; // player left or voodoo multiplayer spawn
+            return; // player left or voodoo multiplayer spawn
     }
 
 #ifdef PARANOIA
@@ -892,7 +892,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
         // if health was used, then give message
         if(cv_showmessages.value==1)
         {
-	    // use fix from prboom, thanks to Quasar
+            // use fix from prboom, thanks to Quasar
             if (player->health < 50) // old health was < 25, before adding 25
                 player->message = GOTMEDINEED;
             else
@@ -1764,7 +1764,7 @@ void P_KillMobj ( mobj_t*       target,
         }
         if (target->player == displayplayer2_ptr) // NULL when unused
         {
-	    // player 2
+            // player 2
             //added:22-02-98: recenter view for next live...
             localaiming2 = 0;
         }
@@ -1870,7 +1870,7 @@ void P_KillMobj ( mobj_t*       target,
     {
         //DarkWolf95: Support for Chex Quest
         if(gamemode == chexquest1)  //don't drop monster ammo in chex quest
-	   return;
+           return;
 
         switch (target->type)
         {
@@ -1992,11 +1992,11 @@ boolean P_ChickenMorphPlayer(player_t *player)
     oldflags2 = pmo->flags2;
     P_MorphMobj(pmo, MT_CHICPLAYER, MM_telefog,
 #ifdef PLAYER_CHICKEN_KEEPS_SHADOW
-		      MF_SHADOW
+                      MF_SHADOW
 #else
-		      0
+                      0
 #endif
-		);
+                );
     pmo->special1 = player->readyweapon;  // save for later restore
     pmo->flags2 |= oldflags2&MF2_FLY;  // preserve fly
     // spawnhealth for chicken is 100, this is 30
@@ -2180,7 +2180,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         case MT_EGGFX:
             if(player)
             {
-	        // Fixed to not change the player mobj.
+                // Fixed to not change the player mobj.
                 P_ChickenMorphPlayer(player);
             }
             else
@@ -2286,8 +2286,8 @@ boolean P_DamageMobj ( mobj_t*   target,
         angf = ANGLE_TO_FINE(ang);
 
         if(gamemode == heretic
-	    && source && (source == inflictor)
-	    && source->player
+            && source && (source == inflictor)
+            && source->player
             && source->player->powers[pw_weaponlevel2]
             && source->player->readyweapon == wp_staff)
         {
@@ -2301,7 +2301,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
         else
         {
-	    // all other thrusting weapons
+            // all other thrusting weapons
             amomx = FixedMul (thrust, finecosine[angf]);
             amomy = FixedMul (thrust, finesine[angf]);
             target->momx += amomx;
@@ -2309,8 +2309,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             
             // added momz (do it better for missiles explosion)
             if ( source
-		 && demoversion>=124
-		 && (demoversion<129 || !cv_allowrocketjump.value))
+                 && demoversion>=124
+                 && (demoversion<129 || !cv_allowrocketjump.value))
             {
                 int dist,z;
                 
@@ -2394,93 +2394,93 @@ boolean P_DamageMobj ( mobj_t*   target,
 
         // [WDJ] 2/7/2011 Intercept voodoo damage
         boolean voodoo_target = (player->mo != target);
-	if( voodoo_target )
+        if( voodoo_target )
         {
-	    mobj_t * voodoo_thing = target;
-	    if(voodoo_mode >= VM_target)
-	    {
-	        // Multiplayer and single player:
-	        // try to find someone appropriate, instead of spawn point player.
-	        // Target source player causing damage
-	        if( source && source->player
-		    && (source->player->mo == source) )
-	        {
-		    // Shooting any voodoo doll, select shooting player
-		    player = source->player;
-	        }
-	        // Target last player to trigger a switch or linedef.
-	        else if( spechit_player && spechit_player->mo )
-	        {
-		    player = spechit_player;
-		}
-	    }
-	    if(! player->mo )  // this player is not present
-	    {
-	        if( voodoo_mode < VM_target )
-	        {
-	            // remove this voodoo doll to avoid segfaults
-		    P_RemoveMobj( voodoo_thing );
-		}
-	        return false;
-	    }
-	    if( voodoo_mode == VM_vanilla )
-	    {
-	        target->health -= damage;  // damage the voodoo too
-	    }
-	    else
-	    {
-	        if( multiplayer && (damage > player->health))
-	        {
-		    // Kill the voodoo, so it cannot kill after respawn.
-		    // Voodoo doll in crusher is game fatal otherwise.
-		    voodoo_thing->health = 0;
-		    voodoo_thing->player = NULL;
-		    P_KillMobj ( voodoo_thing, inflictor, source );
-		    spechit_player = NULL;  // cancel voodoo damage
-		}
-	        // let player mobj get the damage, no Zombies
-	        target = player->mo;
-	    }
-	}
+            mobj_t * voodoo_thing = target;
+            if(voodoo_mode >= VM_target)
+            {
+                // Multiplayer and single player:
+                // try to find someone appropriate, instead of spawn point player.
+                // Target source player causing damage
+                if( source && source->player
+                    && (source->player->mo == source) )
+                {
+                    // Shooting any voodoo doll, select shooting player
+                    player = source->player;
+                }
+                // Target last player to trigger a switch or linedef.
+                else if( spechit_player && spechit_player->mo )
+                {
+                    player = spechit_player;
+                }
+            }
+            if(! player->mo )  // this player is not present
+            {
+                if( voodoo_mode < VM_target )
+                {
+                    // remove this voodoo doll to avoid segfaults
+                    P_RemoveMobj( voodoo_thing );
+                }
+                return false;
+            }
+            if( voodoo_mode == VM_vanilla )
+            {
+                target->health -= damage;  // damage the voodoo too
+            }
+            else
+            {
+                if( multiplayer && (damage > player->health))
+                {
+                    // Kill the voodoo, so it cannot kill after respawn.
+                    // Voodoo doll in crusher is game fatal otherwise.
+                    voodoo_thing->health = 0;
+                    voodoo_thing->player = NULL;
+                    P_KillMobj ( voodoo_thing, inflictor, source );
+                    spechit_player = NULL;  // cancel voodoo damage
+                }
+                // let player mobj get the damage, no Zombies
+                target = player->mo;
+            }
+        }
 
 
         // added team play and teamdamage (view logboris at 13-8-98 to understand)
-	// [WDJ] 2/7/2011  Allow damage to player when:
-	// olddemo (version < 125) // because they did not have these restrictions
-	// OR telefrag        // not subject to friendly fire tests
-	// OR no source       // no source interaction, sector damage etc.
-	// OR NOT sourceplayer  // monster attack
-	// OR (source==target)  // self inflicted damage (missile launcher)
-	// OR voodoo_target   // voodoo damage allowed by previous tests
-	// OR NOT multiplayer  // single player
+        // [WDJ] 2/7/2011  Allow damage to player when:
+        // olddemo (version < 125) // because they did not have these restrictions
+        // OR telefrag        // not subject to friendly fire tests
+        // OR no source       // no source interaction, sector damage etc.
+        // OR NOT sourceplayer  // monster attack
+        // OR (source==target)  // self inflicted damage (missile launcher)
+        // OR voodoo_target   // voodoo damage allowed by previous tests
+        // OR NOT multiplayer  // single player
         // OR ( coop         // all on same team
         //     AND cv_teamdamage  // team members can hurt each other
         //    )
         // OR ( deathmatch   // teams or individual, not coop
         //     AND ( NOT teamplay
-	//               // otherwise teamplay
-	//           OR cv_teamdamage   // team members can hurt each other
+        //               // otherwise teamplay
+        //           OR cv_teamdamage   // team members can hurt each other
         //           OR (target.team != source.team)
-	//         )
+        //         )
         //    )
-	// [WDJ] For readability and understanding, please do not try to reduce
+        // [WDJ] For readability and understanding, please do not try to reduce
         // these equations, they are not executed very often, and the
         // compiler will reduce them during optimization anyway.
         if( (! source)		   // no source interaction, sector damage etc.
-	    || (! source->player)  // monster attack
-	    || voodoo_target	   // allowed voodoo damage
+            || (! source->player)  // monster attack
+            || voodoo_target	   // allowed voodoo damage
             || (damage>1000)       // telefrag and death-ball
             || (demoversion < 125) // old demoversion bypasses restrictions
             || (source==target)    // self-inflicted
-	    || (! multiplayer)     // single player
-	    || ( (cv_deathmatch.value==0) && cv_teamdamage.value )  // coop
+            || (! multiplayer)     // single player
+            || ( (cv_deathmatch.value==0) && cv_teamdamage.value )  // coop
             || ( (cv_deathmatch.value>0)      // deathmatch 1,2,3
-		 && ( (!cv_teamplay.value)    // no teams
-		      || cv_teamdamage.value  // can damage within team
-		      || ! ST_SameTeam(source->player,player) // diff team
-		    )
-		 )
-	    )
+                 && ( (!cv_teamplay.value)    // no teams
+                      || cv_teamdamage.value  // can damage within team
+                      || ! ST_SameTeam(source->player,player) // diff team
+                    )
+                 )
+            )
         {
             if(damage >= player->health
                 && ((gameskill == sk_baby) || cv_deathmatch.value)
@@ -2492,8 +2492,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             player->health -= damage;   // mirror mobj health here for Dave
             if (player->health < 0)
                 player->health = 0;
-	    if( player->mo )
-	        player->mo->health = player->health; // keep mobj and player health same
+            if( player->mo )
+                player->mo->health = player->health; // keep mobj and player health same
 
             player->damagecount += damage;  // add damage after armor / invuln
 
@@ -2506,8 +2506,8 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
         else
         {
-	    takedamage = false;  // block damage
-	}
+            takedamage = false;  // block damage
+        }
         player->attacker = source;
     }
     else

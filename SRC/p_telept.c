@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_telept.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -292,7 +292,7 @@ int EV_SilentTeleport(line_t *line, int side, mobj_t *thing)
               if ( camera.chase == player )
                  P_ResetCamera (player);
 
-	  }
+          }
           return 1;
       }
     }
@@ -428,7 +428,7 @@ int EV_SilentLineTeleport(line_t *line, int side, mobj_t *thing,
             // SoM: 3/15/2000: move chasecam at new player location
             if ( camera.chase == player )
                P_ResetCamera (player);
-	}
+        }
 
         return 1;
     }

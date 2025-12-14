@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1119 2014-06-20 02:25:11Z wesleyjohnson $
+// $Id: p_enemy.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -351,14 +351,14 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         actor->flags &= ~MF_JUSTHIT;
 #ifdef MF_FRIEND
         // Boom has two calls of P_Random, which affect demos
-	return  !(actor->flags & MF_FRIEND)
-	 ||( (actor->target->health > 0)
-	     &&( !(actor->target->flags & MF_FRIEND)
-		 || (actor->target->player ?
-		     ((monster_infight == INFT_infight) || (P_Random()>128))  // pr_defect
-		     : !(actor->target->flags & MF_JUSTHIT) && P_Random()>128)  // pr_defect
-	        )
-	    );
+        return  !(actor->flags & MF_FRIEND)
+         ||( (actor->target->health > 0)
+             &&( !(actor->target->flags & MF_FRIEND)
+                 || (actor->target->player ?
+                     ((monster_infight == INFT_infight) || (P_Random()>128))  // pr_defect
+                     : !(actor->target->flags & MF_JUSTHIT) && P_Random()>128)  // pr_defect
+                )
+            );
 #else
         return true;
 #endif
@@ -440,7 +440,7 @@ void DemoAdapt_p_enemy( void )
     if( demoplayback && (friction_model != FR_legacy))
     {
         // monster_friction set by Boom, MBF, prboom demo
-	// defaulted by others
+        // defaulted by others
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
         EN_monster_momentum = 0;  // 2=momentum
     }
@@ -472,11 +472,11 @@ void DemoAdapt_p_enemy( void )
        break;
      case 1: // Coop default
        if( monster_infight_deh == INFT_none )  // no input
-	 monster_infight = INFT_coop;
+         monster_infight = INFT_coop;
        break;
      case 2: // Infight default
        if( monster_infight_deh == INFT_none )  // no input
-	 monster_infight = INFT_infight;
+         monster_infight = INFT_infight;
        break;
      case 3: // Coop forced
        monster_infight = INFT_coop;
@@ -489,11 +489,11 @@ void DemoAdapt_p_enemy( void )
     if( verbose > 1 )
     { 
         GenPrintf(EMSG_ver, "friction_model=%i, monster_friction=%i\n",
-		friction_model, monster_friction );
+                friction_model, monster_friction );
         GenPrintf(EMSG_ver, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
-		EN_mbf_enemyfactor,  EN_monster_momentum );
+                EN_mbf_enemyfactor,  EN_monster_momentum );
         GenPrintf(EMSG_ver, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
-		EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
+                EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
     }
 #endif
 }
@@ -548,68 +548,68 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
         // Thus: momf = (1- (FRICTION_NORM/FRACUNIT)) * R
         // For R=0.5, momf = 0.046875 = 3/64
         float  momf = ( EN_mbf_enemyfactor )? 0.0 : 0.046875f;  // default
-	float  mdiffm = 1.0f;  // movefactor diff mult (to reduce effect)
+        float  mdiffm = 1.0f;  // movefactor diff mult (to reduce effect)
        
-	P_GetMoveFactor(actor);  // sets got_movefactor, got_friction
+        P_GetMoveFactor(actor);  // sets got_movefactor, got_friction
         if( got_friction < FRICTION_NORM )
         {   // mud
-	    if( EN_mbf_enemyfactor )
-	    {   // MBF, prboom: modify speed
-	        mdiffm = 0.5f;  // 1/2 by MBF
-	    }
-	    else
-	    {   // DoomLegacy:
-	        // movefactor is for cmd=25, but speed=8 for player size actor
-	        mdiffm = 0.64f;  // by experiment, larger is slower
-	    }
-	}
+            if( EN_mbf_enemyfactor )
+            {   // MBF, prboom: modify speed
+                mdiffm = 0.5f;  // 1/2 by MBF
+            }
+            else
+            {   // DoomLegacy:
+                // movefactor is for cmd=25, but speed=8 for player size actor
+                mdiffm = 0.64f;  // by experiment, larger is slower
+            }
+        }
         else if (got_friction > FRICTION_NORM )
         {   // ice
-	    // Avoid adding momentum into walls
-	    tryx = actor->x + dx;
-	    tryy = actor->y + dy;
-	    // [WDJ] Do not use TryMove to check position, as it has
-	    // too many side effects and is not reversible.
-	    // Cannot just reset actor x,y.
-	    if (P_CheckPosition (actor, tryx, tryy))
-	    { // success, give it momentum too
-	        if( EN_mbf_enemyfactor )
-	        {   // MBF, prboom:
-		    speed = 0;  // put it all into momf
-		    momf = 0.25f;  // becomes MBF equation
-		}
-	        else
-	        {   // DoomLegacy:
-		    // monsters a little better in slime than humans
-		    mdiffm = 0.62f; // by experiment, larger is slower
+            // Avoid adding momentum into walls
+            tryx = actor->x + dx;
+            tryy = actor->y + dy;
+            // [WDJ] Do not use TryMove to check position, as it has
+            // too many side effects and is not reversible.
+            // Cannot just reset actor x,y.
+            if (P_CheckPosition (actor, tryx, tryy))
+            { // success, give it momentum too
+                if( EN_mbf_enemyfactor )
+                {   // MBF, prboom:
+                    speed = 0;  // put it all into momf
+                    momf = 0.25f;  // becomes MBF equation
+                }
+                else
+                {   // DoomLegacy:
+                    // monsters a little better in slime than humans
+                    mdiffm = 0.62f; // by experiment, larger is slower
 #if 0
-		    // [WDJ] proportional as movefactor decreases
-		    // This worked better than MBF, but still showed friction transistion accel and decel.
-		    fixed_t pro = FRACUNIT * (ORIG_FRICTION_FACTOR - got_movefactor) / (ORIG_FRICTION_FACTOR*69/100);
-		    if( pro > FRACUNIT )  pro = FRACUNIT; // limit to 1
-		    fixed_t anti_pro = (FRACUNIT - pro);
-		    momf = FixedMul( momf, pro ); // pro to momentum
-		    anti_pro = FixedMul(anti_pro, anti_pro); // (1-pro)**2 to speed
-		    got_movefactor = FixedMul( got_movefactor, anti_pro);
+                    // [WDJ] proportional as movefactor decreases
+                    // This worked better than MBF, but still showed friction transistion accel and decel.
+                    fixed_t pro = FRACUNIT * (ORIG_FRICTION_FACTOR - got_movefactor) / (ORIG_FRICTION_FACTOR*69/100);
+                    if( pro > FRACUNIT )  pro = FRACUNIT; // limit to 1
+                    fixed_t anti_pro = (FRACUNIT - pro);
+                    momf = FixedMul( momf, pro ); // pro to momentum
+                    anti_pro = FixedMul(anti_pro, anti_pro); // (1-pro)**2 to speed
+                    got_movefactor = FixedMul( got_movefactor, anti_pro);
 #endif		       
-		}
-	    }
-	    else
-	    {
-	        momf = 0.0f;  // otherwise they get stuck at walls
-	    }
-	}
+                }
+            }
+            else
+            {
+                momf = 0.0f;  // otherwise they get stuck at walls
+            }
+        }
         // [WDJ] Apply mdiffm to difference between movefactor and normal.
         // movefactor has ORIG_FRICTION_FACTOR
-	// movediff = (got_movefactor - ORIG_FRICTION_FACTOR) * mdiffm
+        // movediff = (got_movefactor - ORIG_FRICTION_FACTOR) * mdiffm
         // ratio = (ORIG_FRICTION_FACTOR + movediff) / ORIG_FRICTION_FACTOR
         float mf_ratio = (
-	  (((float)(got_movefactor - ORIG_FRICTION_FACTOR)) * mdiffm)
-	    + ((float)ORIG_FRICTION_FACTOR)
-	  ) / ((float)ORIG_FRICTION_FACTOR);
+          (((float)(got_movefactor - ORIG_FRICTION_FACTOR)) * mdiffm)
+            + ((float)ORIG_FRICTION_FACTOR)
+          ) / ((float)ORIG_FRICTION_FACTOR);
 
         // modify speed by movefactor
-	speed = (int) ( speed * mf_ratio ); // MBF, prboom: no momentum
+        speed = (int) ( speed * mf_ratio ); // MBF, prboom: no momentum
 
         // [WDJ] Trying to use momentum for some sectors and not for others
         // results in stall when entering an icy momentum sector,
@@ -617,22 +617,22 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
         // Use it for all sectors to the same degree (except in demo compatibility).
         if( momf > 0.0 )  // not disabled
         {
-	    // It is necessary that there be full speed at dead stop to get
-	    // monsters unstuck from walls and each other.
-	    // Some wads like TNT have overlapping monster starting positions.
-	    if( actor->momx || actor->momy )  // if not at standstill
+            // It is necessary that there be full speed at dead stop to get
+            // monsters unstuck from walls and each other.
+            // Some wads like TNT have overlapping monster starting positions.
+            if( actor->momx || actor->momy )  // if not at standstill
                 speed /= 2;  // half of speed goes to momentum
-	    // apply momentum
-	    momf *= mf_ratio;
-	    actor->momx += (int) ( dx * momf );
-	    actor->momy += (int) ( dy * momf );
-	}
+            // apply momentum
+            momf *= mf_ratio;
+            actor->momx += (int) ( dx * momf );
+            actor->momy += (int) ( dy * momf );
+        }
         else
         {
-	    // if momf disabled, then minimum speed
-	    // Minimum speed with momf causes them to walk off ledges.
-	    if( speed == 0 )  speed = 1;
-	}
+            // if momf disabled, then minimum speed
+            // Minimum speed with momf causes them to walk off ledges.
+            if( speed == 0 )  speed = 1;
+        }
     }
     
     tryx = actor->x + speed * xspeed[actor->movedir];
@@ -641,13 +641,13 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
     if (!P_TryMove (actor, tryx, tryy, false))  // do not allow dropoff
     {
         // blocked move
-	// Monsters will be here multiple times in each step while
-	// trying to find sucessful path.
+        // Monsters will be here multiple times in each step while
+        // trying to find sucessful path.
         actor->momx = old_momx;  // cancel any momentum changes for next try
         actor->momy = old_momy;
 
-	// open any specials
-	// tmr_floatok, tmr_floorz returned by P_TryMove
+        // open any specials
+        // tmr_floatok, tmr_floorz returned by P_TryMove
         if (actor->flags & MF_FLOAT && tmr_floatok)
         {
             // must adjust height
@@ -668,28 +668,28 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
         while (numspechit--)
         {
             ld = &lines[ spechit[numspechit] ];
-	    // [WDJ] FIXME: Monsters get stuck in the door track when
-	    // they see the door activation and nothing else.
+            // [WDJ] FIXME: Monsters get stuck in the door track when
+            // they see the door activation and nothing else.
             // if the special is not a door
             // that can be opened,
             // return false
             if (P_UseSpecialLine (actor, ld,0))
-	    {
-	        if( EN_mbf_doorstuck && (ld == tmr_blockingline))
-		   hit_block = 1;
+            {
+                if( EN_mbf_doorstuck && (ld == tmr_blockingline))
+                   hit_block = 1;
                 good = true;
-	    }
+            }
         }
         if ( good && EN_doorstuck )
         {
-	    // [WDJ] Calls of P_Random here in Boom, affects Demo sync.
-	    // A line blocking the monster got activated, a little randomness
-	    // to get unstuck from door frame.
-	    if (EN_mbf_doorstuck)
-	        good = (P_Random() >= 230) ^ (hit_block);  // MBF, pr_opendoor
-	    else
-	        good = P_Random() & 3;  // Boom jff, 25% fail, pr_trywalk
-	}
+            // [WDJ] Calls of P_Random here in Boom, affects Demo sync.
+            // A line blocking the monster got activated, a little randomness
+            // to get unstuck from door frame.
+            if (EN_mbf_doorstuck)
+                good = (P_Random() >= 230) ^ (hit_block);  // MBF, pr_opendoor
+            else
+                good = P_Random() & 3;  // Boom jff, 25% fail, pr_trywalk
+        }
         return good;
     }
     else  // TryMove
@@ -697,12 +697,12 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
         // successful move
         if( EN_monster_momentum && tmr_dropoffline )
         {
-	    // [WDJ] last move sensed dropoff
-	    // Reduce momentum near dropoffs, friction 0x4000 to 0xE000
+            // [WDJ] last move sensed dropoff
+            // Reduce momentum near dropoffs, friction 0x4000 to 0xE000
 #define  FRICTION_DROPOFF   0x6000
-	    actor->momx = FixedMul(actor->momx, FRICTION_DROPOFF);
-	    actor->momy = FixedMul(actor->momx, FRICTION_DROPOFF);
-	}
+            actor->momx = FixedMul(actor->momx, FRICTION_DROPOFF);
+            actor->momy = FixedMul(actor->momx, FRICTION_DROPOFF);
+        }
         actor->flags &= ~MF_INFLOAT;
     }
 
@@ -737,7 +737,7 @@ static boolean P_TryWalk (mobj_t* actor)
     {
         // record if failing due to dropoff
         if( tmr_dropoffline )
-	    trywalk_dropoffline = tmr_dropoffline;
+            trywalk_dropoffline = tmr_dropoffline;
         return false;
     }
     actor->movecount = P_Random()&15;
@@ -788,7 +788,7 @@ static void P_NewChaseDir (mobj_t*     actor)
     {
         actor->movedir = diags[((deltay<0)<<1)+(deltax>0)];
         if (actor->movedir != turnaround && P_TryWalk(actor))
-	    goto accept_move;
+            goto accept_move;
     }
 
     // try other directions
@@ -811,7 +811,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         if (P_TryWalk(actor))
         {
             // either moved forward or attacked
-	    goto accept_move;
+            goto accept_move;
         }
     }
 
@@ -820,7 +820,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         actor->movedir =d[2];
 
         if (P_TryWalk(actor))
-	    goto accept_move;
+            goto accept_move;
     }
 
     // there is no direct path to the player,
@@ -830,7 +830,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         actor->movedir =olddir;
 
         if (P_TryWalk(actor))
-	    goto accept_move;
+            goto accept_move;
     }
 
     // randomly determine direction of search
@@ -845,7 +845,7 @@ static void P_NewChaseDir (mobj_t*     actor)
                 actor->movedir =tdir;
 
                 if ( P_TryWalk(actor) )
-		    goto accept_move;
+                    goto accept_move;
             }
         }
     }
@@ -860,7 +860,7 @@ static void P_NewChaseDir (mobj_t*     actor)
                 actor->movedir =tdir;
 
                 if ( P_TryWalk(actor) )
-		    goto accept_move;
+                    goto accept_move;
             }
         }
     }
@@ -869,50 +869,50 @@ static void P_NewChaseDir (mobj_t*     actor)
     {
         actor->movedir =turnaround;
         if ( P_TryWalk(actor) )
-	    goto accept_move;
+            goto accept_move;
     }
 
     // [WDJ] to not glide off ledges, unless conveyor
     if( EN_monster_momentum && trywalk_dropoffline )
     {
         // [WDJ] Momentum got actor stuck on edge,
-	// but just reversing momentum is too much for conveyor.
-	// Move perpendicular to dropoff line to get unstuck.
+        // but just reversing momentum is too much for conveyor.
+        // Move perpendicular to dropoff line to get unstuck.
         fixed_t  dax, day;
         if( actor->subsector->sector == trywalk_dropoffline->frontsector )
         {
-	    // vector to frontsector
-	    dax = trywalk_dropoffline->dy;
-	    day = -trywalk_dropoffline->dx;
-	}
+            // vector to frontsector
+            dax = trywalk_dropoffline->dy;
+            day = -trywalk_dropoffline->dx;
+        }
         else if( actor->subsector->sector == trywalk_dropoffline->backsector )
         {
-	    // vector to backsector
-	    dax = -trywalk_dropoffline->dy;
-	    day = trywalk_dropoffline->dx;
-	}
+            // vector to backsector
+            dax = -trywalk_dropoffline->dy;
+            day = trywalk_dropoffline->dx;
+        }
         else
         {
-	    actor->momx = actor->momy = 0;
-	    goto no_move;  // don't move across the dropoff
-	}
-	// Observe monsters on ledge, how long they stay stuck,
+            actor->momx = actor->momy = 0;
+            goto no_move;  // don't move across the dropoff
+        }
+        // Observe monsters on ledge, how long they stay stuck,
         // and on conveyor, how long they take to fall off.
         // Tuned backpedal speed constant.
-	register int  backpedal = (actor->info->speed * 0x87BB);
+        register int  backpedal = (actor->info->speed * 0x87BB);
 //        GenPrintf(EMSG_debug, "backpedal 0x%X ", backpedal );
         // Vector away from line
         fixed_t  dal = P_AproxDistance(dax,day);
         dal = FixedDiv( dal, backpedal );
-	if( dal > 1 )
+        if( dal > 1 )
         {
-	    dax = FixedDiv( dax, dal );  // shorten vector
-	    day = FixedDiv( day, dal );
-	}
+            dax = FixedDiv( dax, dal );  // shorten vector
+            day = FixedDiv( day, dal );
+        }
 
 //        GenPrintf(EMSG_debug, "stuck delta (0x%X,0x%X)\n", dax, day );
         if (P_TryMove (actor, actor->x + dax, actor->y + day, true))  // allow cross dropoff
-	    goto accept_move;
+            goto accept_move;
 
     no_move:
         // must fall off conveyor end, but not off high ledges
@@ -949,10 +949,10 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
     }
 
     // Don't look for a player if ignoring
-	if (actor->eflags & MF_IGNOREPLAYER)
-		return false;
+        if (actor->eflags & MF_IGNOREPLAYER)
+                return false;
 
-	sector = actor->subsector->sector;
+        sector = actor->subsector->sector;
 
     // BP: first time init, this allow minimum lastlook changes
     if( actor->lastlook<0 && demoversion>=129 )
@@ -1017,17 +1017,17 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         // Remember old target node for later
         if (actor->target)
         {
-	    if(actor->target->type == MT_NODE)
-	       actor->targetnode = actor->target;
-	}
-		
+            if(actor->target->type == MT_NODE)
+               actor->targetnode = actor->target;
+        }
+
         // New target found
         actor->target = player->mo;
         return true;
     }
 
 
-	return false;
+        return false;
 }
 
 //
@@ -1127,9 +1127,9 @@ void A_Chase (mobj_t*   actor)
         // We are pausing at a node, just look for players
         if ( actor->target && actor->target->type == MT_NODE)
         {
-			P_LookForPlayers(actor, false);
-			return;
-	}
+                        P_LookForPlayers(actor, false);
+                        return;
+        }
     }
 
 
@@ -1169,27 +1169,27 @@ void A_Chase (mobj_t*   actor)
 // [WDJ] compiler complains, "suggest parenthesis"
 #if 0
    // Original code was
-	if (!actor->target
+        if (!actor->target
         || !(actor->target->flags&MF_SHOOTABLE)
-		&& actor->target->type != MT_NODE
-		&& !(actor->eflags & MF_IGNOREPLAYER))
+                && actor->target->type != MT_NODE
+                && !(actor->eflags & MF_IGNOREPLAYER))
 #else     
 // but, based on other tests, the last two tests were added later.
 // [WDJ] I think they meant:
     if ( !( actor->target &&
-	   ( actor->target->flags&MF_SHOOTABLE
-	     || actor->target->type == MT_NODE
-	   ))
-	 && !(actor->eflags & MF_IGNOREPLAYER)
-	)
+           ( actor->target->flags&MF_SHOOTABLE
+             || actor->target->type == MT_NODE
+           ))
+         && !(actor->eflags & MF_IGNOREPLAYER)
+        )
 #endif       
     {
         // look for a new target
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
-		
-	// This monster will start waiting again
-	P_SetMobjState (actor, actor->info->spawnstate);
+
+        // This monster will start waiting again
+        P_SetMobjState (actor, actor->info->spawnstate);
         return;
     }
 
@@ -1244,51 +1244,51 @@ void A_Chase (mobj_t*   actor)
     {
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
-		
+
     }
 
 
-	
+
     // Patrolling nodes
     if (actor->target && actor->target->type == MT_NODE)
     {
 
-		// Check if a player is near
-		if (P_LookForPlayers(actor, false))
-		{
-			// We found one, let him know we saw him!
-			S_StartScreamSound(actor, actor->info->seesound);
-			return;
-		}
+                // Check if a player is near
+                if (P_LookForPlayers(actor, false))
+                {
+                        // We found one, let him know we saw him!
+                        S_StartScreamSound(actor, actor->info->seesound);
+                        return;
+                }
 
-		// Did we touch a node as target?
-		if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) <= actor->target->info->radius)
-		{
-			
-			// Execute possible FS script
-			if (actor->target->nodescript)
-			{
-				T_RunScript((actor->target->nodescript - 1), actor);
-			}
+                // Did we touch a node as target?
+                if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) <= actor->target->info->radius)
+                {
 
-			// Do we wait here?
-			if (actor->target->nodewait)
-				actor->reactiontime = actor->target->nodewait;
+                        // Execute possible FS script
+                        if (actor->target->nodescript)
+                        {
+                                T_RunScript((actor->target->nodescript - 1), actor);
+                        }
 
-			// Set next node, if any
-			if (actor->target->nextnode)
-			{
-				actor->target = actor->target->nextnode;
-				actor->targetnode = actor->target->nextnode;	// Also remember it, if we will
-			}													// encounter an enemy
-			else
-			{
-				actor->target = NULL;
-				actor->targetnode = NULL;
-			}
+                        // Do we wait here?
+                        if (actor->target->nodewait)
+                                actor->reactiontime = actor->target->nodewait;
 
-			return;
-		}
+                        // Set next node, if any
+                        if (actor->target->nextnode)
+                        {
+                                actor->target = actor->target->nextnode;
+                                actor->targetnode = actor->target->nextnode;	// Also remember it, if we will
+                        }													// encounter an enemy
+                        else
+                        {
+                                actor->target = NULL;
+                                actor->targetnode = NULL;
+                        }
+
+                        return;
+                }
     }
 
 
@@ -1766,14 +1766,14 @@ void A_VileChase (mobj_t* actor)
 
                     P_SetMobjState (corpsehit,info->raisestate);
                     if( demoversion<129 )
-		    {
-		        // original code, with ghost bug
-			// does not work when monster has been crushed
+                    {
+                        // original code, with ghost bug
+                        // does not work when monster has been crushed
                         corpsehit->height <<= 2;
-		    }
+                    }
                     else
                     {
-		        // fix vile revives crushed monster as ghost bug
+                        // fix vile revives crushed monster as ghost bug
                         corpsehit->height = info->height;
                         corpsehit->radius = info->radius;
                     }
@@ -2019,66 +2019,66 @@ void A_SkullAttack (mobj_t* actor)
     if (cv_predictingmonsters.value || (actor->eflags & MF_PREDICT))	//added by AC for predmonsters
     {
 
-		boolean canHit;
- 		fixed_t	px, py, pz;
-		int	t, time;
-		subsector_t *sec;
+                boolean canHit;
+                fixed_t	px, py, pz;
+                int	t, time;
+                subsector_t *sec;
 
-		dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
-		time = dist/SKULLSPEED;
-		time = P_AproxDistance (dest->x + dest->momx*time - actor->x,
-								dest->y + dest->momy*time - actor->y)/SKULLSPEED;
+                dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
+                time = dist/SKULLSPEED;
+                time = P_AproxDistance (dest->x + dest->momx*time - actor->x,
+                                                                dest->y + dest->momy*time - actor->y)/SKULLSPEED;
 
-		canHit = 0;
-		t = time + 4;
-		do
-		{
-			t-=4;
-			if (t < 1)
-				t = 1;
-			px = dest->x + dest->momx*t;
-			py = dest->y + dest->momy*t;
-			pz = dest->z + dest->momz*t;
-			canHit = P_CheckSight2(actor, dest, px, py, pz);
-		} while (!canHit && (t > 1));
+                canHit = 0;
+                t = time + 4;
+                do
+                {
+                        t-=4;
+                        if (t < 1)
+                                t = 1;
+                        px = dest->x + dest->momx*t;
+                        py = dest->y + dest->momy*t;
+                        pz = dest->z + dest->momz*t;
+                        canHit = P_CheckSight2(actor, dest, px, py, pz);
+                } while (!canHit && (t > 1));
 
-		sec = R_PointInSubsector(px, py);
-		if (!sec)
-			sec = dest->subsector;
+                sec = R_PointInSubsector(px, py);
+                if (!sec)
+                        sec = dest->subsector;
 
-		if (pz < sec->sector->floorheight)
-			pz = sec->sector->floorheight;
-		else if (pz > sec->sector->ceilingheight)
-			pz = sec->sector->ceilingheight - dest->height;
+                if (pz < sec->sector->floorheight)
+                        pz = sec->sector->floorheight;
+                else if (pz > sec->sector->ceilingheight)
+                        pz = sec->sector->ceilingheight - dest->height;
 
-		ang = R_PointToAngle2 (actor->x, actor->y, px, py);
+                ang = R_PointToAngle2 (actor->x, actor->y, px, py);
 
-		// fuzzy player
-		if (dest->flags & MF_SHADOW)
-		{
-			if( gamemode == heretic )
-		            ang += P_SignedRandom()<<21; 
-			else
-		            ang += P_SignedRandom()<<20;
-		}
+                // fuzzy player
+                if (dest->flags & MF_SHADOW)
+                {
+                        if( gamemode == heretic )
+                            ang += P_SignedRandom()<<21;
+                        else
+                            ang += P_SignedRandom()<<20;
+                }
 
-		actor->angle = ang;
-		actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
-		actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
+                actor->angle = ang;
+                actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
+                actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
 
-		actor->momz = (pz+(dest->height>>1) - actor->z) / t;
+                actor->momz = (pz+(dest->height>>1) - actor->z) / t;
     }
     else
     {
-		ang = actor->angle;
-		actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
-		actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
-		dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
-		dist = dist / SKULLSPEED;
+                ang = actor->angle;
+                actor->momx = FixedMul (SKULLSPEED, cosine_ANG(ang));
+                actor->momy = FixedMul (SKULLSPEED, sine_ANG(ang));
+                dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
+                dist = dist / SKULLSPEED;
 
-		if (dist < 1)
-			dist = 1;
-		actor->momz = (dest->z+(dest->height>>1) - actor->z) / dist;
+                if (dist < 1)
+                        dist = 1;
+                actor->momz = (dest->z+(dest->height>>1) - actor->z) / dist;
     }
 }
 
@@ -2116,7 +2116,7 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
     // if there are already 20 skulls on the level,
     // don't spit another one
     if (count > EN_skull_limit)
-	goto no_skull;
+        goto no_skull;
     }
 #endif   
 
@@ -2138,19 +2138,19 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
        // Check before spawning if spawn spot is valid, not in a wall,
        // not crossing any lines that monsters could not cross.
        if( P_CheckCrossLine( actor, x, y ) )
-	   goto no_skull;
+           goto no_skull;
        
        newmobj = P_SpawnMobj (x, y, z, MT_SKULL);
        
        // [WDJ] Could not think of better way to check this.
        // So modified from prboom (by phares).
        {
-	   register sector_t * nmsec = newmobj->subsector->sector;
-	   // check for above ceiling or below floor
-	   // skull z may be modified by SpawnMobj, so check newmobj itself
-	   if( ( (newmobj->z + newmobj->height) > nmsec->ceilingheight )
-	       || ( newmobj->z < nmsec->floorheight ) )
-	       goto remove_skull;
+           register sector_t * nmsec = newmobj->subsector->sector;
+           // check for above ceiling or below floor
+           // skull z may be modified by SpawnMobj, so check newmobj itself
+           if( ( (newmobj->z + newmobj->height) > nmsec->ceilingheight )
+               || ( newmobj->z < nmsec->floorheight ) )
+               goto remove_skull;
        }
     }
 
@@ -2359,25 +2359,25 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
           if((boss_type != MT_FATSO)
             && (boss_type != MT_BABY)
             && (boss_type != MT_KEEN))
-	        goto no_action;
+                goto no_action;
     }
 #if 1
     // [WDJ] Untested
     // This could be done with compatibility switch, as in prboom.
     else if( (gamemode == doom_shareware || gamemode == doom_registered)
-	     && gameepisode < 4 )
+             && gameepisode < 4 )
     {
         // [WDJ] Revert to behavior before UltimateDoom,
         // to fix "Doomsday of UAC" bug.
         if (gamemap != 8)
-	    goto no_action;
+            goto no_action;
         // Allow all boss types in each episode, (for PWAD)
-	// E1: all, such as Baron and Cyberdemon
+        // E1: all, such as Baron and Cyberdemon
         // E2,E3,E4: all except Baron
         // [WDJ] Logic from prboom
         if (gameepisode != 1)
             if (boss_type == MT_BRUISER)
-	        goto no_action;
+                goto no_action;
     }
 #endif   
     else
@@ -2385,34 +2385,34 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
         switch(gameepisode)
         {
           case 1:
-	    // Doom E1M8: When all Baron are dead,
-	    //   execute lowerFloortoLowest(sectors tagged 666).
+            // Doom E1M8: When all Baron are dead,
+            //   execute lowerFloortoLowest(sectors tagged 666).
             if (gamemap != 8)
-	        goto no_action;
+                goto no_action;
 
-	    // This test was added in UltimateDoom,
-	    // some PWAD from before then, such as "Doomsday of UAC" which
-	    // requires death of last Baron and last Cyberdemon, will fail.
+            // This test was added in UltimateDoom,
+            // some PWAD from before then, such as "Doomsday of UAC" which
+            // requires death of last Baron and last Cyberdemon, will fail.
             if (boss_type != MT_BRUISER)
-	        goto no_action;
+                goto no_action;
             break;
 
           case 2:
-	    // Doom E2M8: When last Cyberdemon is dead, level ends.
+            // Doom E2M8: When last Cyberdemon is dead, level ends.
             if (gamemap != 8)
-	        goto no_action;
+                goto no_action;
 
             if (boss_type != MT_CYBORG)
-	        goto no_action;
+                goto no_action;
             break;
 
           case 3:
-	    // Doom E3M8: When last Spidermastermind is dead, level ends.
+            // Doom E3M8: When last Spidermastermind is dead, level ends.
             if (gamemap != 8)
-	        goto no_action;
+                goto no_action;
 
             if (boss_type != MT_SPIDER)
-	        goto no_action;
+                goto no_action;
 
             break;
 
@@ -2420,27 +2420,27 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             switch(gamemap)
             {
               case 6:
-	        // Doom E4M6: When last Cyberdemon is dead,
-	        //   execute blazeOpen(doors tagged 666).
+                // Doom E4M6: When last Cyberdemon is dead,
+                //   execute blazeOpen(doors tagged 666).
                 if (boss_type != MT_CYBORG)
-		    goto no_action;
+                    goto no_action;
                 break;
 
               case 8:
-	        // Doom E4M8: When last Spidermastermind is dead,
-		//   execute lowerFloortoLowest(sectors tagged 666).
+                // Doom E4M8: When last Spidermastermind is dead,
+                //   execute lowerFloortoLowest(sectors tagged 666).
                 if (boss_type != MT_SPIDER)
-		    goto no_action;
+                    goto no_action;
                 break;
 
               default:
-	        goto no_action;
+                goto no_action;
             }
             break;
 
           default:
             if (gamemap != 8)
-	        goto no_action;
+                goto no_action;
             break;
         }
 
@@ -2463,20 +2463,20 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             continue;
 
         // Fixes MAP07 bug where if last arachnotron is killed while first
-	// still in death sequence, then both would trigger this code
+        // still in death sequence, then both would trigger this code
         // and the floor would be raised twice (bad).
         mo2 = (mobj_t *)th;
         // Check all boss of the same type
         if ( mo2 != mo
-	    && mo2->type == boss_type )
+            && mo2->type == boss_type )
         {
-	    // Check if really dead and finished the death sequence.
-	    if( mo2->health > 0  // the old test (doom original 1.9)
-		|| mo2->state != P_FinalState(mo2->info->deathstate) )
-	    {
-	        // other boss not dead
-		goto no_action;
-	    }
+            // Check if really dead and finished the death sequence.
+            if( mo2->health > 0  // the old test (doom original 1.9)
+                || mo2->state != P_FinalState(mo2->info->deathstate) )
+            {
+                // other boss not dead
+                goto no_action;
+            }
         }
     }
 
@@ -2487,31 +2487,31 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
         {
             if(gamemap == 7)
             {
-	        // Doom2 MAP07: When last Mancubus is dead, execute lowerFloortoLowest.
-		//   execute lowerFloortoLowest(sectors tagged 666).
+                // Doom2 MAP07: When last Mancubus is dead, execute lowerFloortoLowest.
+                //   execute lowerFloortoLowest(sectors tagged 666).
                 lineop.tag = 666;
                 EV_DoFloor( &lineop, FT_lowerFloorToLowest);
             }
-	    goto done;
+            goto done;
         }
         if (boss_type == MT_BABY)
         {
             if(gamemap == 7)
             {
-	        // Doom2 MAP07: When last Arachnotron is dead,
-	        //   execute raisetoTexture(sectors tagged 667).
+                // Doom2 MAP07: When last Arachnotron is dead,
+                //   execute raisetoTexture(sectors tagged 667).
                 lineop.tag = 667;
                 EV_DoFloor( &lineop, FT_raiseToTexture);
             }
-	    goto done;
+            goto done;
         }
         else if(boss_type == MT_KEEN)
         {
-	    // Doom2 MAP32: When last Keen is dead,
-	    //   execute doorOpen(doors tagged 666).
+            // Doom2 MAP32: When last Keen is dead,
+            //   execute doorOpen(doors tagged 666).
             lineop.tag = 666;
             EV_DoDoor( &lineop, VD_dooropen, VDOORSPEED);
-	    goto done;
+            goto done;
         }
     }
     else
@@ -2519,28 +2519,28 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
         switch(gameepisode)
         {
           case 1:
-	    // Doom E1M8: When all Baron are dead, execute lowerFloortoLowest
-	    //   on all sectors tagged 666.
+            // Doom E1M8: When all Baron are dead, execute lowerFloortoLowest
+            //   on all sectors tagged 666.
             lineop.tag = 666;
             EV_DoFloor( &lineop, FT_lowerFloorToLowest);
-	    goto done;
+            goto done;
 
           case 4:
             switch(gamemap)
             {
               case 6:
-	        // Doom E4M6: When last Cyberdemon is dead, execute blazeOpen.
-	        //   on all doors tagged 666.
+                // Doom E4M6: When last Cyberdemon is dead, execute blazeOpen.
+                //   on all doors tagged 666.
                 lineop.tag = 666;
                 EV_DoDoor( &lineop, VD_blazeOpen, 4*VDOORSPEED);
-	        goto done;
+                goto done;
 
               case 8:
-	        // Doom E4M8: When last Spidermastermind is dead, execute lowerFloortoLowest.
-	        //   on all sectors tagged 666.
+                // Doom E4M8: When last Spidermastermind is dead, execute lowerFloortoLowest.
+                //   on all sectors tagged 666.
                 lineop.tag = 666;
                 EV_DoFloor( &lineop, FT_lowerFloorToLowest);
-	        goto done;
+                goto done;
             }
         }
     }
@@ -2811,7 +2811,7 @@ void A_SpawnFly (mobj_t* mo)
     if( targ == NULL )
     {
         // Happens if save game with cube flying.
-	// targ should be the previous braintarget.
+        // targ should be the previous braintarget.
         int bt = ((braintargeton == 0)? numbraintargets : braintargeton) - 1;
         targ = braintargets[bt];
     }
@@ -2895,9 +2895,9 @@ void A_StartWeaponFS(player_t *player, pspdef_t *psp)
    // check all pointers for validacy
    if(player && psp && psp->state)
    {
-		misc1 = psp->tics;
-		psp->tics = 0;
-		T_RunScript(misc1, player->mo);
+                misc1 = psp->tics;
+                psp->tics = 0;
+                T_RunScript(misc1, player->mo);
    }
 }
 

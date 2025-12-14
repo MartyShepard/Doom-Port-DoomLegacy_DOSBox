@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_user.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -215,37 +215,37 @@ void P_CalcHeight (player_t* player)
 
         if (viewheight != prev_viewheight)
         {
-	    // cv_viewheight has changed
-	    if ( prev_viewheight < 0 )
-	    {
-	        player->viewheight = viewheight;  // init quickly
-	    }
-	    else
-	    {
-	        // provide a gradual viewheight change
-	        fixed_t dv = (viewheight - prev_viewheight) >> 3;
-	        // when dv == 0, let through unaltered viewheight,
-		// otherwise altered viewheight keeps retriggering this code
-		if (dv)
-		   viewheight = prev_viewheight + dv;  // slow rise and fall
-	        on_floor_viewheight = prev_viewheight;  // lessen falling effect
-	        player->deltaviewheight = (viewheight - player->viewheight) >> 3;
-	    }
-	    prev_viewheight = viewheight;
-	}
+            // cv_viewheight has changed
+            if ( prev_viewheight < 0 )
+            {
+                player->viewheight = viewheight;  // init quickly
+            }
+            else
+            {
+                // provide a gradual viewheight change
+                fixed_t dv = (viewheight - prev_viewheight) >> 3;
+                // when dv == 0, let through unaltered viewheight,
+                // otherwise altered viewheight keeps retriggering this code
+                if (dv)
+                   viewheight = prev_viewheight + dv;  // slow rise and fall
+                on_floor_viewheight = prev_viewheight;  // lessen falling effect
+                player->deltaviewheight = (viewheight - player->viewheight) >> 3;
+            }
+            prev_viewheight = viewheight;
+        }
 
         player->viewheight += player->deltaviewheight;
 
         if (player->viewheight > on_floor_viewheight)
         {
-	    // player feet not on floor, so fall to viewheight
+            // player feet not on floor, so fall to viewheight
             player->viewheight = viewheight;
             player->deltaviewheight = 0;
         }
 
         if (player->viewheight < viewheight/2)
         {
-	    // rise from floor
+            // rise from floor
             player->viewheight = viewheight/2;
             if (player->deltaviewheight <= 0)
                 player->deltaviewheight = 1;
@@ -292,8 +292,8 @@ void DemoAdapt_p_user( void )
     EN_move_doom =
        (gamemode != heretic)
        && ( (demoversion<128)  // legacy demo and orig doom
-	    || (demoversion>=200 && demoversion <=202) // boom demo
-	    );
+            || (demoversion>=200 && demoversion <=202) // boom demo
+            );
 
 #ifdef ABSOLUTEANGLE
     // abs angle in legacy demos only
@@ -344,7 +344,7 @@ void P_MovePlayer (player_t* player)
 
         // [WDJ] Test the friction and movefactor from GetMovefactor.
         bobfactor = (got_friction < ORIG_FRICTION) ?
-	     got_movefactor  // mud
+             got_movefactor  // mud
            : ORIG_FRICTION_FACTOR;  // ice  (killough)
 //           : (ORIG_FRICTION_FACTOR + got_movefactor)/2;  // ice [WDJ]
 
@@ -364,20 +364,20 @@ void P_MovePlayer (player_t* player)
             // dirty hack to let the player avatar walk over a small wall
             // while in the air
             if (jumpover)
-	    {
-	        if(pmo->momz > 0)
-		    P_Thrust (player, pmo->angle, 5*movefactor);
-	    }
+            {
+                if(pmo->momz > 0)
+                    P_Thrust (player, pmo->angle, 5*movefactor);
+            }
             else
-	    {
-	        P_Thrust_Bob( player, pmo->angle, cmd->forwardmove*movefactor, cmd->forwardmove*bobfactor );
-	    }
+            {
+                P_Thrust_Bob( player, pmo->angle, cmd->forwardmove*movefactor, cmd->forwardmove*bobfactor );
+            }
         }
     
         if (cmd->sidemove && onground)
         {
             P_Thrust_Bob( player, pmo->angle-ANG90, cmd->sidemove*movefactor, cmd->sidemove*bobfactor );
-	}
+        }
 
         player->aiming = (signed char)cmd->aiming;
     }
@@ -388,12 +388,12 @@ void P_MovePlayer (player_t* player)
         player->aiming = cmd->aiming<<16;
         if( player->chickenTics )
         {
-	    // [WDJ] Moved to after other movefactor, so it can have some effect.
+            // [WDJ] Moved to after other movefactor, so it can have some effect.
             // movefactor = 2500;  // heretic chicken
-	    // Modify movefactor to chicken size, (chicken on ice)
-	    movefactor = movefactor * 625 / 512;
-	      // * 2500 / 2048
-	}
+            // Modify movefactor to chicken size, (chicken on ice)
+            movefactor = movefactor * 625 / 512;
+              // * 2500 / 2048
+        }
 
         if (cmd->forwardmove)
         {
@@ -429,10 +429,10 @@ void P_MovePlayer (player_t* player)
                     movepushside = movepushside *3/4;
             }
             else
-	    {
+            {
                 if (!onground)
                     movepushside >>= 3;
-	    }
+            }
 
             P_Thrust_Bob( player, pmo->angle-ANG90, movepushside, cmd->sidemove*bobfactor);
         }
@@ -583,15 +583,15 @@ void P_DeathThink (player_t* player)
         //added:22-02-98:
         // change aiming to look up or down at the attacker (DOESNT WORK)
         // FIXME : the aiming returned seems to be too up or down... later
-	/*
-	fixed_t dist = P_AproxDistance(attacker->x - pmo->x, attacker->y - pmo->y);
-	fixed_t dz = attacker->z +(attacker->height>>1) -pmo->z;
-	angle_t pitch = 0;
-	if (dist)
-	  pitch = ArcTan(FixedDiv(dz, dist));
-	*/
-	int32_t pitch = (attacker->z - pmo->z)>>17;
-	player->aiming = G_ClipAimingPitch(pitch);
+        /*
+        fixed_t dist = P_AproxDistance(attacker->x - pmo->x, attacker->y - pmo->y);
+        fixed_t dz = attacker->z +(attacker->height>>1) -pmo->z;
+        angle_t pitch = 0;
+        if (dist)
+          pitch = ArcTan(FixedDiv(dz, dist));
+        */
+        int32_t pitch = (attacker->z - pmo->z)>>17;
+        player->aiming = G_ClipAimingPitch(pitch);
 
     }
     else if (player->damagecount)
@@ -661,11 +661,11 @@ boolean P_UndoPlayerChicken(player_t *player)
     // Morph back into player
     if( ! P_MorphMobj(pmo, MT_PLAYER, MM_testsize,
 #ifdef PLAYER_CHICKEN_KEEPS_SHADOW
-		      MF_SHADOW
+                      MF_SHADOW
 #else
-		      0
+                      0
 #endif
-		      ) )
+                      ) )
     { // Didn't fit
         player->chickenTics = 2*35;  // retry later
         return false;
@@ -694,7 +694,7 @@ boolean P_UndoPlayerChicken(player_t *player)
     // This telefog is placed differently than others.
     int angf = ANGLE_TO_FINE( pmo->angle );
     fog = P_SpawnMobj(pmo->x+20*finecosine[angf], pmo->y+20*finesine[angf],
-		      pmo->z+TELEFOGHEIGHT, MT_TFOG);
+                      pmo->z+TELEFOGHEIGHT, MT_TFOG);
     S_StartSound(fog, sfx_telept);
     P_PostChickenWeapon(player, weapon);
     return true;
@@ -1102,9 +1102,9 @@ void P_PlayerThink (player_t* player)
     if (player->playerstate == PST_DEAD)
     {
         //Fab:25-04-98: show the dm rankings while dead, only in deathmatch
-	//DarkWolf95:July 03, 2003:fixed bug where rankings only show on player1's death
+        //DarkWolf95:July 03, 2003:fixed bug where rankings only show on player1's death
         if (player== displayplayer_ptr
-	    || player== displayplayer2_ptr ) // NULL when unused
+            || player== displayplayer2_ptr ) // NULL when unused
             playerdeadview = true;
 
         P_DeathThink (player);
@@ -1164,7 +1164,7 @@ void P_PlayerThink (player_t* player)
             //
             // make sure we disturb the surface of water (we touch it)
             //
-	    int waterz = pmo->subsector->sector->floorheight + (FRACUNIT/4);
+            int waterz = pmo->subsector->sector->floorheight + (FRACUNIT/4);
 
             // half in the water
             if(pmo->eflags & MF_TOUCHWATER)
@@ -1264,9 +1264,9 @@ void P_PlayerThink (player_t* player)
         // Attempt to undo the chicken
         if(!--player->chickenTics)
         {
-	    // Fixed to not change the player mobj.
+            // Fixed to not change the player mobj.
             P_UndoPlayerChicken(player);
-	}
+        }
     }
 
     // cycle psprites
@@ -1435,7 +1435,7 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
             { // Artifact was used - remove it from inventory
                 P_PlayerRemoveArtifact(player, i);
                 if(player == consoleplayer_ptr 
-		   || player == displayplayer2_ptr ) // NULL when unused
+                   || player == displayplayer2_ptr ) // NULL when unused
                 {
                     S_StartSound(NULL, sfx_artiuse);
                     H_ArtifactFlash = 4;
@@ -1500,24 +1500,24 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
     {
     case arti_invulnerability:
         if(!P_GivePower(player, pw_invulnerability))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_invisibility:
         if(!P_GivePower(player, pw_invisibility))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_health:
         if(!P_GiveBody(player, 25))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_superhealth:
         if(!P_GiveBody(player, 100))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_tomeofpower:
         if(player->chickenTics)
         { // Attempt to undo chicken
-	    // Fixed to not change the player mobj.
+            // Fixed to not change the player mobj.
             if(P_UndoPlayerChicken(player) == false)
             { // Failed
                 P_DamageMobj(pmo, NULL, NULL, 10000);
@@ -1535,7 +1535,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         else
         {
             if(!P_GivePower(player, pw_weaponlevel2))
-	        goto ret_fail;
+                goto ret_fail;
             if(player->readyweapon == wp_staff)
             {
                 P_SetPsprite(player, ps_weapon, S_STAFFREADY2_1);
@@ -1548,7 +1548,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         break;
     case arti_torch:
         if(!P_GivePower(player, pw_infrared))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_firebomb:
         angle = pmo->angle>>ANGLETOFINESHIFT;
@@ -1566,7 +1566,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
         break;
     case arti_fly:
         if(!P_GivePower(player, pw_flight))
-	    goto ret_fail;
+            goto ret_fail;
         break;
     case arti_teleport:
         P_ArtiTele(player);

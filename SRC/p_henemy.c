@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_henemy.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -115,30 +115,30 @@ boolean P_LookForMonsters(mobj_t *actor)
     {
         if(think->function.acp1 != (actionf_p1)P_MobjThinker)
         { // Not a mobj thinker
-	    continue;
-	}
+            continue;
+        }
         mo = (mobj_t *)think;
         if(!(mo->flags&MF_COUNTKILL) || (mo == actor) || (mo->health <= 0))
         { // Not a valid monster
-	    continue;
-	}
+            continue;
+        }
         if(P_AproxDistance(actor->x-mo->x, actor->y-mo->y)
-	    > MONS_LOOK_RANGE)
+            > MONS_LOOK_RANGE)
         { // Out of range
-	    continue;
-	}
+            continue;
+        }
         if(P_Random() < 16)
         { // Skip
-	    continue;
-	}
+            continue;
+        }
         if(count++ > MONS_LOOK_LIMIT)
         { // Stop searching
-	    return(false);
-	}
+            return(false);
+        }
         if(!P_CheckSight(actor, mo))
         { // Out of sight
-	    continue;
-	}
+            continue;
+        }
         // Found a target monster
         actor->target = mo;
         return(true);
@@ -650,23 +650,23 @@ void A_Srcr1Attack(mobj_t *actor)
         mo = P_SpawnMissile(actor, actor->target, MT_SRCRFX1);
         if(mo)
         {
-	    momz = mo->momz;
-	    angle = mo->angle;
-	    P_SpawnMissileAngle(actor, MT_SRCRFX1, angle-ANGLE_1*3, momz);
-	    P_SpawnMissileAngle(actor, MT_SRCRFX1, angle+ANGLE_1*3, momz);
-	}
+            momz = mo->momz;
+            angle = mo->angle;
+            P_SpawnMissileAngle(actor, MT_SRCRFX1, angle-ANGLE_1*3, momz);
+            P_SpawnMissileAngle(actor, MT_SRCRFX1, angle+ANGLE_1*3, momz);
+        }
         if(actor->health < actor->info->spawnhealth/3)
         { // Maybe attack again
-	    if(actor->special1)
-	    { // Just attacked, so don't attack again
-	        actor->special1 = 0;
-	    }
-	    else
-	    { // Set state to attack again
-	        actor->special1 = 1;
-	        P_SetMobjState(actor, S_SRCR1_ATK4);
-	    }
-	}
+            if(actor->special1)
+            { // Just attacked, so don't attack again
+                actor->special1 = 0;
+            }
+            else
+            { // Set state to attack again
+                actor->special1 = 1;
+                P_SetMobjState(actor, S_SRCR1_ATK4);
+            }
+        }
     }
 }
 
@@ -813,7 +813,7 @@ void A_GenWizard(mobj_t *actor)
     mobj_t *fog;
 
     mo = P_SpawnMobj(actor->x, actor->y,
-		     actor->z-mobjinfo[MT_WIZARD].height/2, MT_WIZARD);
+                     actor->z-mobjinfo[MT_WIZARD].height/2, MT_WIZARD);
     if(P_TestMobjLocation(mo) == false)
     { // Didn't fit
         P_RemoveMobj(mo);
@@ -887,8 +887,8 @@ void A_MinotaurAtk1(mobj_t *actor)
         P_DamageMobj(actor->target, actor, actor, HITDICE(4));
         if((player = actor->target->player) != NULL)
         { // Squish the player
-	    player->deltaviewheight = -16*FRACUNIT;
-	}
+            player->deltaviewheight = -16*FRACUNIT;
+        }
     }
 }
 
@@ -930,8 +930,8 @@ void A_MinotaurDecide(mobj_t *actor)
         actor->special1 = TICRATE/2; // Charge duration
     }
     else if(target->z == target->floorz
-	    && dist < 9*64*FRACUNIT
-	    && P_Random() < 220)
+            && dist < 9*64*FRACUNIT
+            && P_Random() < 220)
     { // Floor fire attack
         P_SetMobjState(actor, S_MNTR_ATK3_1);
         actor->special2 = 0;
@@ -1026,16 +1026,16 @@ void A_MinotaurAtk3(mobj_t *actor)
         P_DamageMobj(actor->target, actor, actor, HITDICE(5));
         if((player = actor->target->player) != NULL)
         { // Squish the player
-	    player->deltaviewheight = -16*FRACUNIT;
-	}
+            player->deltaviewheight = -16*FRACUNIT;
+        }
     }
     else
     {
         mo = P_SpawnMissile(actor, actor->target, MT_MNTRFX2);
         if(mo != NULL)
         {
-	    S_StartSound(mo, sfx_minat1);
-	}
+            S_StartSound(mo, sfx_minat1);
+        }
     }
     if(P_Random() < 192 && actor->special2 == 0)
     {
@@ -1134,36 +1134,36 @@ void A_HHeadAttack(mobj_t *actor)
         baseFire = P_SpawnMissile(actor, target, MT_HEADFX3);
         if(baseFire != NULL)
         {
-	    P_SetMobjState(baseFire, S_HHEADFX3_4); // Don't grow
-	    for(i = 0; i < 5; i++)
-	    {
-	        fire = P_SpawnMobj(baseFire->x, baseFire->y, baseFire->z, MT_HEADFX3);
-	        if(i == 0)
-	        {
-		    S_StartSound(actor, sfx_hedat1);
-		}
-	        fire->target = baseFire->target;
-	        fire->angle = baseFire->angle;
-	        fire->momx = baseFire->momx;
-	        fire->momy = baseFire->momy;
-	        fire->momz = baseFire->momz;
-	        //fire->damage = 0;
-	        fire->health = (i+1)*2;
-	        P_CheckMissileSpawn(fire);
-	    }
-	}
+            P_SetMobjState(baseFire, S_HHEADFX3_4); // Don't grow
+            for(i = 0; i < 5; i++)
+            {
+                fire = P_SpawnMobj(baseFire->x, baseFire->y, baseFire->z, MT_HEADFX3);
+                if(i == 0)
+                {
+                    S_StartSound(actor, sfx_hedat1);
+                }
+                fire->target = baseFire->target;
+                fire->angle = baseFire->angle;
+                fire->momx = baseFire->momx;
+                fire->momy = baseFire->momy;
+                fire->momz = baseFire->momz;
+                //fire->damage = 0;
+                fire->health = (i+1)*2;
+                P_CheckMissileSpawn(fire);
+            }
+        }
     }
     else
     { // Whirlwind
         mo = P_SpawnMissile(actor, target, MT_WHIRLWIND);
         if(mo != NULL)
         {
-	    mo->z -= 32*FRACUNIT;
-	    mo->tracer = target;
-	    mo->special2 = 50; // Timer for active sound
-	    mo->health = 20*TICRATE; // Duration
-	    S_StartSound(actor, sfx_hedat3);
-	}
+            mo->z -= 32*FRACUNIT;
+            mo->tracer = target;
+            mo->special2 = 50; // Timer for active sound
+            mo->health = 20*TICRATE; // Duration
+            S_StartSound(actor, sfx_hedat3);
+        }
     }
 }
 
@@ -1384,20 +1384,20 @@ void A_HScream(mobj_t *actor)
         // Handle the different player death screams
         if(actor->special1 < 10)
         { // Wimpy death sound
-	    S_StartSound(actor, sfx_plrwdth);
-	}
+            S_StartSound(actor, sfx_plrwdth);
+        }
         else if(actor->health > -50)
         { // Normal death sound
-	    S_StartSound(actor, actor->info->deathsound);
-	}
+            S_StartSound(actor, actor->info->deathsound);
+        }
         else if(actor->health > -100)
         { // Crazy death sound
-	    S_StartSound(actor, sfx_plrcdth);
-	}
+            S_StartSound(actor, sfx_plrcdth);
+        }
         else
         { // Extreme death sound
-	    S_StartSound(actor, sfx_gibdth);
-	}
+            S_StartSound(actor, sfx_gibdth);
+        }
         break;
      default:
         S_StartSound(actor, actor->info->deathsound);
@@ -1520,8 +1520,8 @@ void A_RemovePod(mobj_t *actor)
         mo = actor->target;
         if(mo->special1 > 0)
         {
-	    mo->special1--;
-	}
+            mo->special1--;
+        }
     }
 }
 
@@ -1578,13 +1578,13 @@ void P_Massacre(void)
     {
         if(think->function.acp1 != (actionf_p1)P_MobjThinker)
         { // Not a mobj thinker
-	    continue;
-	}
+            continue;
+        }
         mo = (mobj_t *)think;
         if((mo->flags&MF_COUNTKILL) && (mo->health > 0))
         {
-	    P_DamageMobj(mo, NULL, NULL, 10000);
-	}
+            P_DamageMobj(mo, NULL, NULL, 10000);
+        }
     }
 }
 
@@ -1613,7 +1613,7 @@ void A_HBossDeath(mobj_t *actor)
     static const mobjtype_t bossType[6] =
     {
         MT_HHEAD,	// episode 1
-	MT_MINOTAUR,
+        MT_MINOTAUR,
         MT_SORCERER2,
         MT_HHEAD,
         MT_MINOTAUR,	// episode 5
@@ -1637,13 +1637,13 @@ void A_HBossDeath(mobj_t *actor)
     {
         if(think->function.acp1 != (actionf_p1)P_MobjThinker)
         { // Not a mobj thinker
-	    continue;
-	}
+            continue;
+        }
         mo = (mobj_t *)think;
         if((mo != actor) && (mo->type == actor->type) && !(mo->flags & MF_CORPSE))
         { // Found a living boss
-	    return;
-	}
+            return;
+        }
     }
     if(gameepisode > 1)
     { // Kill any remaining monsters
@@ -1692,8 +1692,8 @@ void A_SpawnTeleGlitter(mobj_t *actor)
     int r = P_Random();
     int s = P_Random();
     mo = P_SpawnMobj(actor->x+((r&31)-16)*FRACUNIT,
-		     actor->y+((s&31)-16)*FRACUNIT,
-		     actor->subsector->sector->floorheight, MT_TELEGLITTER);
+                     actor->y+((s&31)-16)*FRACUNIT,
+                     actor->subsector->sector->floorheight, MT_TELEGLITTER);
     mo->momz = FRACUNIT/4;
 }
 
@@ -1710,8 +1710,8 @@ void A_SpawnTeleGlitter2(mobj_t *actor)
     int r = P_Random();
     int s = P_Random();
     mo = P_SpawnMobj(actor->x+((r&31)-16)*FRACUNIT,
-		     actor->y+((s&31)-16)*FRACUNIT,
-		     actor->subsector->sector->floorheight, MT_TELEGLITTER2);
+                     actor->y+((s&31)-16)*FRACUNIT,
+                     actor->subsector->sector->floorheight, MT_TELEGLITTER2);
     mo->momz = FRACUNIT/4;
 }
 
@@ -1786,7 +1786,7 @@ void A_VolcanoBlast(mobj_t *volcano)
     for(i = 0; i < count; i++)
     {
         blast = P_SpawnMobj(volcano->x, volcano->y,
-			    volcano->z+44*FRACUNIT, MT_VOLCANOBLAST); // MT_VOLCANOBLAST
+                            volcano->z+44*FRACUNIT, MT_VOLCANOBLAST); // MT_VOLCANOBLAST
         blast->target = volcano;
         angle = P_Random()<<24;
         blast->angle = angle;

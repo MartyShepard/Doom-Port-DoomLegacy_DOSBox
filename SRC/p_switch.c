@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1130 2014-08-30 14:08:47Z wesleyjohnson $
+// $Id: p_switch.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -199,13 +199,13 @@ void P_InitSwitchList(void)
       // default missing textures to texture 1
       if( tex1 == -1 )
       {
-	  I_SoftError("Switch %i missing texture %s, using 1\n", i, alphSwitchList[i].name1 );
-	  tex1 = 1;
+          I_SoftError("Switch %i missing texture %s, using 1\n", i, alphSwitchList[i].name1 );
+          tex1 = 1;
       }
       if( tex2 == -1 )
       {
-	  I_SoftError("Switch %i missing texture %s, using 1\n", i, alphSwitchList[i].name2 );
-	  tex2 = 1;
+          I_SoftError("Switch %i missing texture %s, using 1\n", i, alphSwitchList[i].name2 );
+          tex2 = 1;
       }
       switchlist[index++] = tex1;
       switchlist[index++] = tex2;
@@ -243,7 +243,7 @@ void P_StartButton ( line_t*       line,
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
             buttonlist[i].btimer = time;
-	    // Bug fix: Save button sound origin as sector
+            // Bug fix: Save button sound origin as sector
             buttonlist[i].soundorg = (mobj_t *)&line->frontsector->soundorg;
             return;
         }
@@ -1067,7 +1067,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
             // end of added SR linedef types
 
           }
-	}
+        }
         break;
 
 
