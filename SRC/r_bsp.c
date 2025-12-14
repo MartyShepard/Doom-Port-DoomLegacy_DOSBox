@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: r_bsp.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -324,14 +324,14 @@ int R_DoorClosed(void)
 
     // preserve a kind of transparent door/lift special effect:
     && (backsector->ceilingheight >= frontsector->ceilingheight
-	|| curline->sidedef->toptexture)  // 0=no-texture
+        || curline->sidedef->toptexture)  // 0=no-texture
 
     && (backsector->floorheight <= frontsector->floorheight
-	|| curline->sidedef->bottomtexture) // 0=no-texture
+        || curline->sidedef->bottomtexture) // 0=no-texture
 
     // properly render skies (consider door "open" if both ceilings are sky):
     && (backsector->ceilingpic != skyflatnum
-	|| frontsector->ceilingpic != skyflatnum)
+        || frontsector->ceilingpic != skyflatnum)
     );
 }
 
@@ -373,20 +373,20 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       // Replace floor and ceiling height with other sector's heights.
       if( viewer_underwater )
       {
-	  // under the model sector floor
-      	  tempsec->floorheight = sec->floorheight;
-	  tempsec->ceilingheight = modsecp->floorheight-1;
+          // under the model sector floor
+          tempsec->floorheight = sec->floorheight;
+          tempsec->ceilingheight = modsecp->floorheight-1;
       }
       else
       {
-	  // view above the model sector floor
-	  tempsec->floorheight   = modsecp->floorheight;
-	  tempsec->ceilingheight = modsecp->ceilingheight;
+          // view above the model sector floor
+          tempsec->floorheight   = modsecp->floorheight;
+          tempsec->ceilingheight = modsecp->ceilingheight;
       }
      
       if ((viewer_underwater && !back) || viewz <= modsecp->floorheight)
       {                   // head-below-floor hack
-	  // view under the model sector floor
+          // view under the model sector floor
           tempsec->floorpic    = modsecp->floorpic;
           tempsec->floor_xoffs = modsecp->floor_xoffs;
           tempsec->floor_yoffs = modsecp->floor_yoffs;
@@ -395,9 +395,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
           {
             if (modsecp->ceilingpic == skyflatnum)
             {
-	        // Boom ref: F_SKY1 as control sector ceiling gives strange effect.
-		// Underwater, only the control sector floor appears
-	        // and it "envelops" the player.
+                // Boom ref: F_SKY1 as control sector ceiling gives strange effect.
+                // Underwater, only the control sector floor appears
+                // and it "envelops" the player.
                 tempsec->floorheight   = tempsec->ceilingheight+1;
                 tempsec->ceilingpic    = tempsec->floorpic;
                 tempsec->ceiling_xoffs = tempsec->floor_xoffs;
@@ -414,22 +414,22 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
           tempsec->lightlevel  = modsecp->lightlevel;
 
-	  // use model substitute, or model light
-	  floorlightsubst = (modsecp->floorlightsec >= 0) ?  modsecp->floorlightsec : sec->modelsec;
-	  ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
+          // use model substitute, or model light
+          floorlightsubst = (modsecp->floorlightsec >= 0) ?  modsecp->floorlightsec : sec->modelsec;
+          ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
       }
       else
       {
         if (viewer_overceiling
-	    && (sec->ceilingheight > modsecp->ceilingheight))
+            && (sec->ceilingheight > modsecp->ceilingheight))
         {   // Above-ceiling hack
-	    // view over the model sector ceiling
+            // view over the model sector ceiling
             tempsec->ceilingheight = modsecp->ceilingheight;
             tempsec->floorheight   = modsecp->ceilingheight + 1;
 
-	        // Boom ref: F_SKY1 as control sector floor gives strange effect.
-		// Over the ceiling, only the control sector ceiling appears
-	        // and it "envelops" the player.
+                // Boom ref: F_SKY1 as control sector floor gives strange effect.
+                // Over the ceiling, only the control sector ceiling appears
+                // and it "envelops" the player.
             tempsec->floorpic    = tempsec->ceilingpic    = modsecp->ceilingpic;
             tempsec->floor_xoffs = tempsec->ceiling_xoffs = modsecp->ceiling_xoffs;
             tempsec->floor_yoffs = tempsec->ceiling_yoffs = modsecp->ceiling_yoffs;
@@ -438,7 +438,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
             if (modsecp->floorpic != skyflatnum)
             {
-	        // view over ceiling, model floor/ceiling
+                // view over ceiling, model floor/ceiling
                 tempsec->ceilingheight = sec->ceilingheight;
                 tempsec->floorpic      = modsecp->floorpic;
                 tempsec->floor_xoffs   = modsecp->floor_xoffs;
@@ -447,11 +447,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
             tempsec->lightlevel  = modsecp->lightlevel;
 
-	    // use model substitute, or model light
-	    floorlightsubst = (modsecp->floorlightsec >= 0) ? modsecp->floorlightsec : sec->modelsec;
-	    ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
+            // use model substitute, or model light
+            floorlightsubst = (modsecp->floorlightsec >= 0) ? modsecp->floorlightsec : sec->modelsec;
+            ceilinglightsubst = (modsecp->ceilinglightsec >= 0) ? modsecp->ceilinglightsec : sec->modelsec;
         }
-	// else normal view
+        // else normal view
       }
       sec = tempsec;
 
@@ -471,9 +471,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       colormapnum = modsecp->bottommap; // Legacy colormap, underwater
       if(sec->floorlightsec >= 0)
       {
-	// use substitute light
+        // use substitute light
         floorlightsubst = ceilinglightsubst = sec->floorlightsec;
-	tempsec->lightlevel = sectors[sec->floorlightsec].lightlevel;
+        tempsec->lightlevel = sectors[sec->floorlightsec].lightlevel;
       }
       if(modsecp->floorheight < tempsec->ceilingheight)
       {
@@ -489,9 +489,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       colormapnum = modsecp->topmap; // Legacy colormap, over ceiling
       if(sec->ceilinglightsec >= 0)
       {
-	// use substitute light
+        // use substitute light
         floorlightsubst = ceilinglightsubst = sec->ceilinglightsec;
-	tempsec->lightlevel = sectors[sec->ceilinglightsec].lightlevel;
+        tempsec->lightlevel = sectors[sec->ceilinglightsec].lightlevel;
       }
       if(modsecp->ceilingheight > tempsec->floorheight)
       {
@@ -514,7 +514,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       }
       else
       {
-	floorlightsubst = -1; // revert floor to no subst
+        floorlightsubst = -1; // revert floor to no subst
       }
       if(modsecp->ceilingheight < tempsec->ceilingheight)
       {
@@ -525,7 +525,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       }
       else
       {
-	ceilinglightsubst = -1; // revert ceiling to no subst
+        ceilinglightsubst = -1; // revert ceiling to no subst
       }
     }
     sec = tempsec;
@@ -864,7 +864,7 @@ void R_Subsector (int num)
     sub->sector->extra_colormap = frontsector->extra_colormap;
 
     if ((frontsector->floorheight < viewz)
-	|| (frontsector->model > SM_fluid &&
+        || (frontsector->model > SM_fluid &&
             sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
         // visplane global parameter
@@ -909,18 +909,18 @@ void R_Subsector (int num)
       {
 
         if(!(fff->flags & (FF_OUTER_PLANES|FF_INNER_PLANES))
-	   || !(fff->flags & FF_EXISTS))
+           || !(fff->flags & FF_EXISTS))
           continue;
 
         ffplane[numffplane].plane = NULL;
         if(*fff->bottomheight <= frontsector->ceilingheight
-	 && *fff->bottomheight >= frontsector->floorheight
+         && *fff->bottomheight >= frontsector->floorheight
          && ((viewz < *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
-	     || (viewz > *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
-	 // [WDJ] What about (viewz == *fff->bottomheight) ???
+             || (viewz > *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
+         // [WDJ] What about (viewz == *fff->bottomheight) ???
 //DEBUG	 && ((viewz <= *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
 //DEBUG	     || (viewz >= *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
-	{
+        {
           light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
           ffplane[numffplane].plane = R_FindPlane(*fff->bottomheight,
                                   *fff->bottompic,
@@ -930,17 +930,17 @@ void R_Subsector (int num)
                                   frontsector->lightlist[light].extra_colormap,
                                   fff);
 
-	  ffplane[numffplane].height = *fff->bottomheight;
+          ffplane[numffplane].height = *fff->bottomheight;
           ffplane[numffplane].ffloor = fff;
           numffplane++;
-	  if(numffplane >= MAXFFLOORS)
+          if(numffplane >= MAXFFLOORS)
             break;
-	}
+        }
         if(*fff->topheight >= frontsector->floorheight
-	 && *fff->topheight <= frontsector->ceilingheight
+         && *fff->topheight <= frontsector->ceilingheight
          && ((viewz > *fff->topheight && (fff->flags & FF_OUTER_PLANES))
-	     || (viewz < *fff->topheight && (fff->flags & FF_INNER_PLANES))))
-	 // [WDJ] What about (viewz == *fff->topheight) ???
+             || (viewz < *fff->topheight && (fff->flags & FF_INNER_PLANES))))
+         // [WDJ] What about (viewz == *fff->topheight) ???
 //DEBUG	 && ((viewz >= *fff->topheight && (fff->flags & FF_OUTER_PLANES))
 //DEBUG         (viewz <= *fff->topheight && (fff->flags & FF_INNER_PLANES))))
         {
@@ -955,9 +955,9 @@ void R_Subsector (int num)
               ffplane[numffplane].height = *fff->topheight;
               ffplane[numffplane].ffloor = fff;
               numffplane++;
-	      if(numffplane >= MAXFFLOORS)
-	        break;
-	}
+              if(numffplane >= MAXFFLOORS)
+                break;
+        }
       }
     }
 
@@ -999,7 +999,7 @@ void R_Prep3DFloors(sector_t*  sector)
   {
     if((rover->flags & FF_EXISTS)
        && (!(rover->flags & FF_NOSHADE)
-	   || (rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
+           || (rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
     {
       count++;
       if(rover->flags & FF_SLAB_SHADOW)  // uses two entries
@@ -1038,8 +1038,8 @@ void R_Prep3DFloors(sector_t*  sector)
     for(rover = sector->ffloors; rover; rover = rover->next)
     {
       if(!(rover->flags & FF_EXISTS)
-	 || ((rover->flags & FF_NOSHADE)
-	     && !(rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
+         || ((rover->flags & FF_NOSHADE)
+             && !(rover->flags & (FF_CUTSOLIDS|FF_CUTEXTRA|FF_CUTSPRITES))) )
         continue;
 
       // find highest topheight, lower than maxheight
@@ -1051,7 +1051,7 @@ void R_Prep3DFloors(sector_t*  sector)
       }
       // FF_SLAB_SHADOW considers bottomheight too, light limited to slab
       if(rover->flags & FF_SLAB_SHADOW
-	 && *rover->bottomheight > bestheight && *rover->bottomheight < maxheight)
+         && *rover->bottomheight > bestheight && *rover->bottomheight < maxheight)
       {
         best = rover;
         bestheight = *rover->bottomheight;
@@ -1098,16 +1098,16 @@ void R_Prep3DFloors(sector_t*  sector)
       // Below this slab, the light is from above this slab.
       if(bestheight == *best->bottomheight)
       {
-	// [WDJ] segfault here in Chexquest-newmaps E2M2, best->lastlight wild value
-	// Stopped segfault by init to 0.
-	// Happens when bottom is found without finding top.
-	// Get from lastlight indirect.
+        // [WDJ] segfault here in Chexquest-newmaps E2M2, best->lastlight wild value
+        // Stopped segfault by init to 0.
+        // Happens when bottom is found without finding top.
+        // Get from lastlight indirect.
         sector->lightlist[i].lightlevel = sector->lightlist[best->lastlight].lightlevel;
         sector->lightlist[i].extra_colormap = sector->lightlist[best->lastlight].extra_colormap;
       }
       else
       {
-	// Slab light does not show below slab, indirect to light above slab
+        // Slab light does not show below slab, indirect to light above slab
         best->lastlight = i - 1;
       }
     }

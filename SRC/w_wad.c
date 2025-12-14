@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1205 2016-01-19 19:42:49Z wesleyjohnson $
+// $Id: w_wad.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -260,7 +260,7 @@ int W_LoadWadFile (const char *filename)
 
         // findfile returns dir+filename
         fs = findfile(filenamebuf, NULL, /*OUT*/ filenamebuf);
-	if( fs == FS_NOTFOUND )
+        if( fs == FS_NOTFOUND )
         {
             CONS_Printf ("File %s not found.\n", filenamebuf);
             return -1;
@@ -324,23 +324,23 @@ int W_LoadWadFile (const char *filename)
         within_namespace = LNS_global;  // each wad starts in global namespace
 
         // fill in lumpinfo array for this wad
-	flp = fileinfo;
+        flp = fileinfo;
         lump_p = lumpinfo = Z_Malloc (numlumps*sizeof(lumpinfo_t),PU_STATIC,NULL);
         for (i=0 ; i<numlumps ; i++, lump_p++, flp++)
         {
-	    // Make name compatible with compares using numerical_name.
-	    *((uint64_t*)&lump_p->name) = 0;  // clear
-	    strncpy (lump_p->name, flp->name, 8);
-	    // Check for namespace markers using clean lump name.
-	    for( m=0; m < NUM_MARKER_IDENT; m++ )
-	    {
-	       // Fast numerical name compare.
-	       if( *((uint64_t*)&lump_p->name) == *((uint64_t*)&marker_ident[m].markername) )
-		  within_namespace = marker_ident[m].marker_namespace;
-	    }
-	    // No uppercase because no other port does it here, and it would
-	    // catch lowercase named lumps that otherwise would be ignored.
-	    lump_p->lump_namespace = within_namespace;
+            // Make name compatible with compares using numerical_name.
+            *((uint64_t*)&lump_p->name) = 0;  // clear
+            strncpy (lump_p->name, flp->name, 8);
+            // Check for namespace markers using clean lump name.
+            for( m=0; m < NUM_MARKER_IDENT; m++ )
+            {
+               // Fast numerical name compare.
+               if( *((uint64_t*)&lump_p->name) == *((uint64_t*)&marker_ident[m].markername) )
+                  within_namespace = marker_ident[m].marker_namespace;
+            }
+            // No uppercase because no other port does it here, and it would
+            // catch lowercase named lumps that otherwise would be ignored.
+            lump_p->lump_namespace = within_namespace;
             lump_p->position = LE_SWAP32(flp->filepos);
             lump_p->size     = LE_SWAP32(flp->size);
         }
@@ -368,7 +368,7 @@ int W_LoadWadFile (const char *filename)
         {
             GenPrintf(EMSG_dev, "md5 calc for %s took %f second\n",
                         wadfile->filename,(float)(I_GetTime()-t)/TICRATE);
-	}
+        }
     }
     fclose(fhandle);
     
@@ -493,9 +493,9 @@ int W_InitMultipleFiles (char** filenames)
     {
         if( W_LoadWadFile (*filenames) == -1 )
         {
-	    rc = 0;
-	    GenPrintf( EMSG_warn, "File not found: %s\n", *filenames );
-	}
+            rc = 0;
+            GenPrintf( EMSG_warn, "File not found: %s\n", *filenames );
+        }
     }
 
     if (!numwadfiles)
@@ -532,22 +532,22 @@ int W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
         lump_p = wadfiles[i]->lumpinfo;
         for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
         { 
-	    // Fast numerical name compare.
-	    if ( *(uint64_t *)lump_p->name == name8.namecode )
-	    {
-	        // Name matches.
-		// Check if lump is from the wanted namespace.
-	        if( within_namespace == LNS_any
-		    || lump_p->lump_namespace == within_namespace )
-	        {
-		    // Return wad/lump identifier
-		    return ((i<<16) + j);
-		}
-	        // Wrong namespace.
-	        if( alternate == -1 )  // remember first lump found
-		   alternate = ((i<<16) + j);  // wad/lump identifier
-	    }
-	}
+            // Fast numerical name compare.
+            if ( *(uint64_t *)lump_p->name == name8.namecode )
+            {
+                // Name matches.
+                // Check if lump is from the wanted namespace.
+                if( within_namespace == LNS_any
+                    || lump_p->lump_namespace == within_namespace )
+                {
+                    // Return wad/lump identifier
+                    return ((i<<16) + j);
+                }
+                // Wrong namespace.
+                if( alternate == -1 )  // remember first lump found
+                   alternate = ((i<<16) + j);  // wad/lump identifier
+            }
+        }
     }
     // Not found.
     // Return first matching lump found in any namespace.
@@ -589,7 +589,7 @@ int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
         lump_p = wadfiles[wadid]->lumpinfo + startlump;
         for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
         {
-	    // Fast numerical name compare.
+            // Fast numerical name compare.
             if ( *(uint64_t *)lump_p->name == name8.namecode )
             {
                 return ((wadid<<16)+i);
@@ -852,15 +852,15 @@ void* W_CachePatchNum_Endian ( int lump, int ztag )
     {
         patch->height = LE_SWAP16(patch->height);
         patch->width = LE_SWAP16(patch->width);
-	patch->topoffset = LE_SWAP16(patch->topoffset);
-	patch->leftoffset = LE_SWAP16(patch->leftoffset);
+        patch->topoffset = LE_SWAP16(patch->topoffset);
+        patch->leftoffset = LE_SWAP16(patch->leftoffset);
         {
-	    // [WDJ] columnofs[ 0 .. width-1 ]
-	    // The patch structure only shows 8, but there can be many more.
+            // [WDJ] columnofs[ 0 .. width-1 ]
+            // The patch structure only shows 8, but there can be many more.
             int i = patch->width - 1;
             for( ; i>=0; i-- )
-	       patch->columnofs[i] = LE_SWAP32( patch->columnofs[i] );
-	}
+               patch->columnofs[i] = LE_SWAP32( patch->columnofs[i] );
+        }
     }
     return patch;
 #else
@@ -992,7 +992,7 @@ void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
 
         // Allocation is larger than what W_CacheLumpNum does
         pic_t* pic = Z_Malloc (W_LumpLength (lump)+sizeof(pic_t),
-			       ztag, &lumpcache[llump]);
+                               ztag, &lumpcache[llump]);
         // read lump + pic into pic->data (instead of lumpcache)
         W_ReadLumpHeader (lump, pic->data, 0);
         // set pic info from caller parameters, (which are literals)
@@ -1004,7 +1004,7 @@ void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
     {
         // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
         if( ztag == PU_CACHE )
-	   ztag = PU_CACHE_DEFAULT;
+           ztag = PU_CACHE_DEFAULT;
         Z_ChangeTag (lumpcache[llump], ztag);
     }
 

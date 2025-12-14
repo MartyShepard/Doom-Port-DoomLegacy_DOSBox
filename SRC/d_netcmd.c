@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
+// $Id: d_netcmd.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -536,14 +536,14 @@ void Got_NetXCmd_NameColor(char **cp, int playernum)
         if (strcasecmp(player_names[playernum], lcp))
             CONS_Printf("%s renamed to %s\n", player_names[playernum], lcp);
         // READSTRING(lcp, player_names[playernum]);  // overflow unsafe
-	// [WDJ] String overflow safe
+        // [WDJ] String overflow safe
         {
-	    int pn_len = strlen( lcp ) + 1;
+            int pn_len = strlen( lcp ) + 1;
             int read_len = min( pn_len, MAXPLAYERNAME-1 );  // length safe
             memcpy(player_names[playernum], lcp, read_len);
-	    player_names[playernum][MAXPLAYERNAME-1] = '\0';
+            player_names[playernum][MAXPLAYERNAME-1] = '\0';
             lcp += pn_len;  // whole
-	}
+        }
     }
     else
     {
@@ -748,7 +748,7 @@ void Command_Map_f(void)
     if ((i = COM_CheckParm("-monsters")) != 0)
     {
         if( atoi(COM_Argv(i + 1)) == 0 )
-	    buf[1] = 0x01;
+            buf[1] = 0x01;
     }
     else if( nomonsters )
         buf[1] = 0x01;
@@ -780,13 +780,13 @@ void Got_NetXCmd_Mapcmd(char **cp, int playernum)
         opt = READBYTE(*cp);
         if (demoversion >= 129)
         {
-	    nomonsters = ( (opt & 0x01) != 0 );
-	    resetplayer = ( (opt & 0x02) == 0 );
-	}
+            nomonsters = ( (opt & 0x01) != 0 );
+            resetplayer = ( (opt & 0x02) == 0 );
+        }
         else
         {
-	    nomonsters = (opt > 0);
-	}
+            nomonsters = (opt > 0);
+        }
     }
     strncpy(mapname, *cp, MAX_WADPATH-1);
     mapname[MAX_WADPATH-1] = '\0';

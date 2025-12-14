@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: wi_stuff.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -482,7 +482,7 @@ static void WI_slamBackground(void)
     }
     else 
     {
-	// [WDJ] was draw to screen1, but hw draw does not differentiate
+        // [WDJ] was draw to screen1, but hw draw does not differentiate
         // hardware draw, ( to screen0 same as above )
         V_DrawScaledPatch(0, 0, W_CachePatchName(bgname, PU_CACHE));
     }
@@ -510,7 +510,7 @@ static void WI_drawLF(void)
     }
     else
     {
-	//[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
+        //[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
         V_DrawScaledPatch ((BASEVIDWIDTH - (lnames[wbs->last]->width))/2,
                             y, lnames[wbs->last]);
         y += (5 * (lnames[wbs->last]->height))/4;
@@ -537,7 +537,7 @@ static void WI_drawEL(void)
     }
     else
     {
-	//[segabor]: 'SHORT' BUG !    [WDJ] Patch read does endian conversion
+        //[segabor]: 'SHORT' BUG !    [WDJ] Patch read does endian conversion
         V_DrawScaledPatch((BASEVIDWIDTH - (entering->width))/2,
                           y, entering);
         // draw level
@@ -633,7 +633,7 @@ static void WI_initAnimatedBack(void)
     int         i;
     anim_inter_t*  ai;
 
-	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+        //DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
     if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
@@ -663,7 +663,7 @@ static void WI_updateAnimatedBack(void)
     int         i;
     anim_inter_t*  ai;
 
-	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+        //DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
     if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
@@ -716,7 +716,7 @@ static void WI_drawAnimatedBack(void)
     anim_inter_t*  ai; // interpic animation data
 
     //BP: fixed it was "if (doom2_commercial)" 
-	//DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
+        //DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
     if (gamemode == doom2_commercial || gamemode == heretic || *info_interpic)
         return;
 
@@ -801,7 +801,7 @@ static void WI_drawPercent( int  x, int  y, int  pernum )
     if (pernum < 0)
     {
         if (pernum == -100 )  // no secrets, items, etc..
-	   V_DrawScaledPatch(x, y, wiminus);
+           V_DrawScaledPatch(x, y, wiminus);
         return;
     }
 
@@ -826,7 +826,7 @@ static void WI_drawTime ( int x, int y, int t )
     // [WDJ] 1/12/2009 fix crashes in heretic, no sucks
     // Old PAR behavior for id wads, otherwise allow them 24 hrs.
     if( (t <= ((gamedesc.gameflags & GD_idwad)? (61*59) : (24*60*60)) )
-	|| (sucks == NULL) )
+        || (sucks == NULL) )
     {
         timediv = 1;
 
@@ -857,7 +857,7 @@ void WI_draw_wait( int net_nodes, int wait_nodes, int wait_tics )
     // Using va_buffer (m_misc.c)
     if( wait_nodes )
        waitmsg = va("WAIT NODES %2d/%2d : TIMEOUT %4d",
-		    net_nodes, wait_nodes, wait_tics/TICRATE);
+                    net_nodes, wait_nodes, wait_tics/TICRATE);
     else
        waitmsg = va("START IN %4d", wait_tics/TICRATE);
     //i=V_StringWidth(num);
@@ -935,7 +935,7 @@ static void WI_drawShowNextLoc(void)
         if( gameepisode < 4 )
             IN_DrawYAH();
     }
-	//DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
+        //DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
     if ( gamemode != doom2_commercial && wbs->epsd<=2 && !*info_interpic)
     {
@@ -985,13 +985,13 @@ static void WI_initDeathmatchStats(void)
          if (playeringame[i])
          {
              for(j=0; j<MAXPLAYERS; j++)
-	     {
+             {
                  if( playeringame[j] )
                      dm_frags[i][j] = plrs[i].frags[j];
-	     }
+             }
              
              dm_totals[i] = ST_PlayerFrags(i);
-	 }
+         }
     }
 
     WI_initAnimatedBack();
@@ -1042,7 +1042,7 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
                 fragtable[j] = fragtable[j+1];
                 fragtable[j+1] = temp;
             }
-	}
+        }
     }
 
     if(title)
@@ -1056,8 +1056,8 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
         // draw color background
         skin_color = fragtable[i].color;
         color = (skin_color) ?
-	   SKIN_TO_SKINMAP(skin_color)[ colornum ]
-	 : reg_colormaps[ colornum ];  // default green skin
+           SKIN_TO_SKINMAP(skin_color)[ colornum ]
+         : reg_colormaps[ colornum ];  // default green skin
         V_DrawFill (x-1,y-1, (large ? 40 : 26),9, color);
 
         // draw frags count
@@ -1066,7 +1066,7 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
 
         // draw name
         V_DrawString (x+(large ? 64 : 29), y,
-		      ((plnum == white) ? V_WHITEMAP : 0), fragtable[i].name);
+                      ((plnum == white) ? V_WHITEMAP : 0), fragtable[i].name);
 
         y += 12;
         if (y>=BASEVIDHEIGHT)
@@ -1136,7 +1136,7 @@ static void WI_drawDeathmatchStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
-	    {
+            {
                 if (playeringame[j] && i!=j)
                 {
                      if(dm_frags[i][j]>dm_frags[j][i])
@@ -1145,7 +1145,7 @@ static void WI_drawDeathmatchStats(void)
                          if(dm_frags[i][j]==dm_frags[j][i])
                               fragtab[scorelines].count+=1;
                 }
-	    }
+            }
 
             fragtab[scorelines].num = i;
             fragtab[scorelines].color = players[i].skincolor;
@@ -1163,10 +1163,10 @@ static void WI_drawDeathmatchStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
-	    {
+            {
                 if (playeringame[j])
                      fragtab[scorelines].count+=dm_frags[j][i];
-	    }
+            }
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = players[i].skincolor;
             fragtab[scorelines].name  = player_names[i];
@@ -1237,10 +1237,10 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
-	    {
+            {
                 if (teamingame(j) && i!=j)
                     fragtab[scorelines].count+= dm_frags[i][j]*dm_totals[j];
-	    }
+            }
 
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
@@ -1258,7 +1258,7 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
-	    {
+            {
                 if (teamingame(j) && i!=j)
                 {
                      if(dm_frags[i][j]>dm_frags[j][i])
@@ -1267,7 +1267,7 @@ static void WI_drawTeamsStats(void)
                          if(dm_frags[i][j]==dm_frags[j][i])
                               fragtab[scorelines].count+=1;
                 }
-	    }
+            }
 
             fragtab[scorelines].num = i;
             fragtab[scorelines].color = i;
@@ -1285,10 +1285,10 @@ static void WI_drawTeamsStats(void)
         {
             fragtab[scorelines].count = 0;
             for (j=0; j<MAXPLAYERS; j++)
-	    {
+            {
                 if (teamingame(j))
                      fragtab[scorelines].count+=dm_frags[j][i];
-	    }
+            }
             fragtab[scorelines].num   = i;
             fragtab[scorelines].color = i;
             fragtab[scorelines].name  = get_team_name(i);
@@ -1454,11 +1454,11 @@ static void WI_updateNetgameStats(void)
                 continue;
 
             cnt_kills[i] = ( wbs->maxkills > 0 ) ?
-	       (plrs[i].skills * 100) / wbs->maxkills : -100;
+               (plrs[i].skills * 100) / wbs->maxkills : -100;
             cnt_items[i] = ( wbs->maxitems > 0 ) ?
-	       (plrs[i].sitems * 100) / wbs->maxitems : -100;
-	    cnt_secret[i] = ( wbs->maxsecret > 0 ) ?
-	       (plrs[i].ssecret * 100) / wbs->maxsecret : -100;
+               (plrs[i].sitems * 100) / wbs->maxitems : -100;
+            cnt_secret[i] = ( wbs->maxsecret > 0 ) ?
+               (plrs[i].ssecret * 100) / wbs->maxsecret : -100;
 
             if (dofrags)
                 cnt_frags[i] = ST_PlayerFrags(i);
@@ -1474,15 +1474,15 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxkills <= 0 )
-	    {
-	       // no kills
-	       cnt_kills[i] = -100;
-	       continue;
-	    }
+            if( wbs->maxkills <= 0 )
+            {
+               // no kills
+               cnt_kills[i] = -100;
+               continue;
+            }
 
-	    cnt_target = (plrs[i].skills * 100) / wbs->maxkills;
-	    cnt_kills[i] += 2;
+            cnt_target = (plrs[i].skills * 100) / wbs->maxkills;
+            cnt_kills[i] += 2;
             if (cnt_kills[i] >= cnt_target)
                 cnt_kills[i] = cnt_target;
             else
@@ -1490,7 +1490,7 @@ static void WI_updateNetgameStats(void)
         }
 
         if (!stillticking)
-	    goto next_state;
+            goto next_state;
     }
     else if (ng_state == 4)
     {
@@ -1499,14 +1499,14 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxitems <= 0 )
-	    {
-	       // no items
-	       cnt_items[i] = -100;
-	       continue;
-	    }
+            if( wbs->maxitems <= 0 )
+            {
+               // no items
+               cnt_items[i] = -100;
+               continue;
+            }
 
-	    cnt_target = (plrs[i].sitems * 100) / wbs->maxitems;
+            cnt_target = (plrs[i].sitems * 100) / wbs->maxitems;
             cnt_items[i] += 2;
             if (cnt_items[i] >= cnt_target)
                 cnt_items[i] = cnt_target;
@@ -1514,24 +1514,24 @@ static void WI_updateNetgameStats(void)
                 stillticking = true;
         }
         if (!stillticking)
-	    goto next_state;
+            goto next_state;
     }
     else if (ng_state == 6)
     {
-	for (i=0 ; i<MAXPLAYERS ; i++)
+        for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if (!playeringame[i])
                 continue;
 
-	    if( wbs->maxsecret <= 0 )
-	    {
-	       // no secrets
-	       cnt_secret[i] = -100;
-	       continue;
-	    }
+            if( wbs->maxsecret <= 0 )
+            {
+               // no secrets
+               cnt_secret[i] = -100;
+               continue;
+            }
 
-	    cnt_target = (plrs[i].ssecret * 100) / wbs->maxsecret;
-	    cnt_secret[i] += 2;
+            cnt_target = (plrs[i].ssecret * 100) / wbs->maxsecret;
+            cnt_secret[i] += 2;
             if (cnt_secret[i] >= cnt_target)
                 cnt_secret[i] = cnt_target;
             else
@@ -1540,9 +1540,9 @@ static void WI_updateNetgameStats(void)
 
         if (!stillticking)
         {
-	    // skip ng_state 8 if no frags
-	    if ( !dofrags )  ng_state += 2;
-	    goto next_state;
+            // skip ng_state 8 if no frags
+            if ( !dofrags )  ng_state += 2;
+            goto next_state;
         }
     }
     else if (ng_state == 8)
@@ -1552,7 +1552,7 @@ static void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-	    cnt_target = ST_PlayerFrags(i);
+            cnt_target = ST_PlayerFrags(i);
             cnt_frags[i] += 1;
             if (cnt_frags[i] >= cnt_target)
                 cnt_frags[i] = cnt_target;
@@ -1564,7 +1564,7 @@ static void WI_updateNetgameStats(void)
         {
             S_StartSound(0, sfx_pldeth);
             ng_state++;
-	    goto done;
+            goto done;
         }
     }
     else if (ng_state == 10)
@@ -1656,7 +1656,7 @@ static void WI_drawNetgameStats(void)
         x = NG_STATSX;
         colormap = (players[i].skincolor) ?
              SKIN_TO_SKINMAP( players[i].skincolor ) // skins 1..
-	   : & reg_colormaps[0]; // no translation table for green guy
+           : & reg_colormaps[0]; // no translation table for green guy
 
         V_DrawMappedPatch(x-(stpb->width), y, stpb, colormap);
 
@@ -1699,9 +1699,9 @@ static void WI_updateStats(void)
     {
         acceleratestage = 0;
         cnt_kills[0] = ( wbs->maxkills > 0 ) ?
-	   (plrs[me].skills * 100) / wbs->maxkills : -100;
+           (plrs[me].skills * 100) / wbs->maxkills : -100;
         cnt_items[0] = ( wbs->maxitems > 0 ) ?
-	   (plrs[me].sitems * 100) / wbs->maxitems : -100;
+           (plrs[me].sitems * 100) / wbs->maxitems : -100;
         cnt_secret[0] = ( wbs->maxsecret > 0 ) ?
            (plrs[me].ssecret * 100) / wbs->maxsecret : -100;
         cnt_time = plrs[me].stime / TICRATE;
@@ -1714,49 +1714,49 @@ static void WI_updateStats(void)
     {
         if ( wbs->maxkills <= 0 )
         {
-	    cnt_kills[0] = -100;
-	    goto next_state;  // no kills
-	}
+            cnt_kills[0] = -100;
+            goto next_state;  // no kills
+        }
 
         cnt_kills[0] += 2;
 
         if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs->maxkills)
         {
             cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
-	    goto next_state;
+            goto next_state;
         }
     }
     else if (sp_state == 4)
     {
         if ( wbs->maxitems <= 0 )
         {
-	    cnt_items[0] = -100;
-	    goto next_state;  // no items
-	}
+            cnt_items[0] = -100;
+            goto next_state;  // no items
+        }
 
         cnt_items[0] += 2;
 
         if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs->maxitems)
         {
             cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
-	    goto next_state;
+            goto next_state;
         }
     }
     else if (sp_state == 6)
     {
         if ( wbs->maxsecret <= 0 )
         {
-	    cnt_secret[0] = -100;
-	    goto next_state;  // no secrets
-	}
+            cnt_secret[0] = -100;
+            goto next_state;  // no secrets
+        }
 
         cnt_secret[0] += 2;
 
         if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs->maxsecret)
         {
-	    cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
-	    goto next_state;
-	}
+            cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+            goto next_state;
+        }
     }
 
     else if (sp_state == 8)
@@ -1773,7 +1773,7 @@ static void WI_updateStats(void)
             cnt_par = wbs->partime / TICRATE;
 
             if (cnt_time >= plrs[me].stime / TICRATE)
-	        goto next_state;
+                goto next_state;
         }
     }
     else if (sp_state == 10)
@@ -1818,9 +1818,9 @@ static void WI_drawStats(void)
     // but not PWAD unless BEX has set PARS.
     boolean draw_pars = pars_valid_bex
      || ( (gamedesc.gameflags & GD_idwad)
-	  && gamemode!=heretic
-	  && (wbs->epsd < 3)
-	  && !modifiedgame );
+          && gamemode!=heretic
+          && (wbs->epsd < 3)
+          && !modifiedgame );
     // line height
     int lh = (3 * (num[0]->height))/2;
 
@@ -1913,11 +1913,11 @@ void WI_Ticker(void)
     {
       case StatCount:
         if (cv_deathmatch.value)
-	    WI_updateDeathmatchStats();
+            WI_updateDeathmatchStats();
         else if (multiplayer)
-	    WI_updateNetgameStats();
+            WI_updateNetgameStats();
         else
-	    WI_updateStats();
+            WI_updateStats();
         break;
 
       case ShowNextLoc:
@@ -2144,10 +2144,10 @@ static void WI_unloadData(void)
             for (j=0; j<NUMANIMS[wbs->epsd]; j++)
             {
                 if (wbs->epsd != 1 || j != 8)
-	        {
+                {
                     for (i=0; i<anim_inter_info[wbs->epsd][j].nanims; i++)
                         Z_ChangeTag( anim_inter_info[wbs->epsd][j].p[i], PU_UNLOCK_CACHE);
-		}
+                }
             }
         }
       }
@@ -2195,8 +2195,8 @@ void WI_Drawer (void)
                 WI_drawTeamsStats();
             else
                 WI_drawDeathmatchStats();
-	    
-	    WI_draw_wait( 0, 0, cnt_pause );
+
+            WI_draw_wait( 0, 0, cnt_pause );
         }
         else if (multiplayer)
             WI_drawNetgameStats();

@@ -4720,3 +4720,74 @@ patchfile = w105_2_ztag.patch
 - commit revision 1205
 The tag in ZAlloc will be known as ztag in user code, to differentiate it
 from Doom tags.
+
+*** W105_untab6
+patchfile = w105_3_untab6.patch
+- commit revision 1206
+Remove leading tabs from lines.
+d_net.c
+d_netcmd.c
+d_netfil.c
+d_netfil.h
+hardware/hw_bsp.c
+hardware/hw_draw.c
+r_bsp.c
+w_wad.c
+wi_stuff.c
+
+*** W105_findfile
+patchfile = w105_4_findfile.patch
+- commit revision 1207
+Some changes to file searches to handle absolute and relative files.
+Doomwaddir searches only look for a simple filename in a directory.
+Make net access to file system more secure, with explicit checks for
+complex filenames, and only allowing doomwaddir searches with simple
+file names.
+
+*** W105_asm
+patchfile = w105_5_asm_cc.patch
+- commit revision 1208
+In asm, Clang does not accept "%cc", as it is not a register.
+Gcc used to accept "%cc", and probably still does.
+In the asm clobbered section, cc and memory should not use %.
+Fixes bug #0620.
+
+*** W105_bad_sidedef
+patchfile = w105_6_bad_sidedef.patch
+- commit revision 1209
+The wad 2002ado.wad has many sidedef with bad sector numbers, but they
+are also unused.  They were left by the editor.
+Fixed the error reporting to ignore those with sector number = 65535
+unless verbose is ON.  Also to report if any line is using the sidedef.
+
+*** W105_untab7
+patchfile = w105_7_untab7.patch
+- commit revision 1210
+Remove leading tabs from lines.
+p_enemy.c
+p_henemy.c
+p_inter.c
+p_local.h
+p_map.c
+p_switch.c
+p_telept.c
+p_user.c
+
+*** W105_corpse
+patchfile = w105_8_corpse.patch
+- commit revision 1211
+Fix BossDeath failure.
+It was due to A_Fall setting health for solid corpse damage.
+Corpse must have health < 0.  There are too many tests against health
+all over the code to change them all.
+Solid Corpse health is now (0 .. -spawnhealth).  Upon reaching -spawnhealth
+the corpse is Killed, becoming gibs.
+In DamageMobj, the corpse handling is intercepted earlier and handled
+separately.
+Removed the extraneous tests against MF_CORPSE.
+Fixed the health when restoring old savegames.
+
+*** W105_give_health
+patchfile = w105_9_givehealth.patch
+- commit revision 1212
+Change P_GiveBody to P_GiveHealth.

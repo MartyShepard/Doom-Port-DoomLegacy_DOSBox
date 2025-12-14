@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01206 ]: w105 untab6
 [01205 ]: w105 ztag
 [01204 ]: w105 version 145.3
 [01203 ]: w104 fontsize console and message

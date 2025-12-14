@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
+// $Id: d_netfil.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -190,14 +190,14 @@ void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
         fnp->totalsize = READU32(p);
         fnp->phandle = NULL;
         //READSTRING(p,fnp->filename); // overflow unsafe
-	// [WDJ] String overflow safe
+        // [WDJ] String overflow safe
         {
-	    int fn_len = strlen( (char*)p ) + 1;
+            int fn_len = strlen( (char*)p ) + 1;
             int read_len = min( fn_len, MAX_WADPATH-1 );  // length safe
-	    memcpy(fnp->filename, p, read_len);
-	    fnp->filename[MAX_WADPATH-1] = '\0';
+            memcpy(fnp->filename, p, read_len);
+            fnp->filename[MAX_WADPATH-1] = '\0';
             p += fn_len;  // whole
-	}
+        }
         READMEM(p,fnp->md5sum,16);
     }
 }
@@ -209,9 +209,9 @@ boolean  CL_waiting_on_fileneed( void )
    for(i=0; i<cl_num_fileneed; i++)
    {
       if(cl_fileneed[i].status==FS_DOWNLOADING
-	 || cl_fileneed[i].status==FS_REQUESTED)
+         || cl_fileneed[i].status==FS_REQUESTED)
       {
-	 return true;
+         return true;
       }
    }
    return false;
@@ -248,51 +248,51 @@ reqfile_e  Send_RequestFile(void)
         char s[1024];
 
         // Check for missing files.
-	s[0]=0;
+        s[0]=0;
         for(i=0; i<cl_num_fileneed; i++)
         {
-	    fnp = & cl_fileneed[i];
+            fnp = & cl_fileneed[i];
             if( fnp->status!=FS_FOUND )
             {
-	        len = strlen(s);
-	        if( len > (sizeof(s)-80) )  break;  // prevent buffer overrun
+                len = strlen(s);
+                if( len > (sizeof(s)-80) )  break;  // prevent buffer overrun
 
                 strcat(s,"  \"");
                 strcat(s,fnp->filename);
                 strcat(s,"\"");
                 switch(fnp->status)
-		{
-		 case FS_NOTFOUND:
+                {
+                 case FS_NOTFOUND:
                     strcat(s," not found");
-		    break;
+                    break;
                  case FS_MD5SUMBAD:
                     strcat(s," has wrong md5sum, needs: ");
 
                     for(j=0; j<16; j++)
                     {
                         sprintf(&s[len],"%02x", fnp->md5sum[j]);
-		        len += 2;
+                        len += 2;
                     }
                     s[len]='\0';
-		    break;
+                    break;
                  case FS_OPEN:
                     strcat(s," found, ok");
-		    break;
-		 default:
-		    strcat(s, " unknown reason");
-		    break;
-		}
+                    break;
+                 default:
+                    strcat(s, " unknown reason");
+                    break;
+                }
                 strcat(s,"\n");
             }
-	}
+        }
         if( s[0] == 0 )
-	    return RFR_success;    // All files are satisfied
+            return RFR_success;    // All files are satisfied
 
         // This error message needs to be with s[].
         I_SoftError("To play with this server you should have these files:\n"
                     "%s\n"
-		    "Remove -nodownload if you want to get them from the server!\n",
-		     s );
+                    "Remove -nodownload if you want to get them from the server!\n",
+                     s );
         return RFR_nodownload;
     }
 
@@ -304,15 +304,15 @@ reqfile_e  Send_RequestFile(void)
         fnp = & cl_fileneed[i];
         if( fnp->status==FS_NOTFOUND || fnp->status == FS_MD5SUMBAD)
         {
-	    char filetmp[ MAX_WADPATH ];
+            char filetmp[ MAX_WADPATH ];
             if( fnp->status==FS_NOTFOUND )
                 totalfreespaceneeded += fnp->totalsize;
-	    strcpy( filetmp, fnp->filename );
+            strcpy( filetmp, fnp->filename );
             nameonly(filetmp);
             WRITECHAR(p,i);  // fileid
             WRITESTRING(p,filetmp);
             // put it in download dir 
-	    cat_filename( fnp->filename, downloaddir, filetmp );
+            cat_filename( fnp->filename, downloaddir, filetmp );
             fnp->status = FS_REQUESTED;
         }
     }
@@ -330,8 +330,8 @@ reqfile_e  Send_RequestFile(void)
     // Rare errors
 insufficient_space:
     I_SoftError("To play on this server you should download %dKb\n"
-		"but you have only %dKb freespace on this drive\n",
-		totalfreespaceneeded, availablefreespace);
+                "but you have only %dKb freespace on this drive\n",
+                totalfreespaceneeded, availablefreespace);
     return RFR_insufficient_space;
 }
 
@@ -382,7 +382,7 @@ checkfiles_e  CL_CheckFiles(void)
     {
         fnp = &cl_fileneed[i];
         if(devparm)
-	    GenPrintf(EMSG_dev, "searching for '%s' ", fnp->filename);
+            GenPrintf(EMSG_dev, "searching for '%s' ", fnp->filename);
         
         // check in already loaded files
         for(j=1;wadfiles[j];j++)
@@ -393,7 +393,7 @@ checkfiles_e  CL_CheckFiles(void)
                 && !memcmp(wadfiles[j]->md5sum, fnp->md5sum, 16))
             {
                 if(devparm)
-		   GenPrintf(EMSG_dev, "already loaded\n");
+                   GenPrintf(EMSG_dev, "already loaded\n");
                 fnp->status = FS_OPEN;
                 break;
             }
@@ -402,9 +402,9 @@ checkfiles_e  CL_CheckFiles(void)
            continue;
 
         fnp->status = findfile(fnp->filename, fnp->md5sum,
-			       /*OUT*/ fnp->filename);
+                               /*OUT*/ fnp->filename);
         if(devparm)
-	    GenPrintf(EMSG_dev, "found %d\n", fnp->status);
+            GenPrintf(EMSG_dev, "found %d\n", fnp->status);
         if( fnp->status != FS_FOUND )
             ret = CFR_download_needed;
     }
@@ -427,7 +427,7 @@ boolean  CL_Load_ServerFiles(void)
         {
             // already loaded
             continue;
-	}
+        }
         else
         if( fnp->status == FS_FOUND )
         {
@@ -444,9 +444,9 @@ boolean  CL_Load_ServerFiles(void)
         else
         {
             I_SoftError("Try to load file %s with status of %d\n",
-			 fnp->filename, fnp->status);
-	    return false;
-	}
+                         fnp->filename, fnp->status);
+            return false;
+        }
     }
     return true;
 }
@@ -494,8 +494,8 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
         {
             // copy filename with full path
             strncpy(tx_filename, wadfiles[i]->filename, MAX_WADPATH-1);
-	    tx_filename[MAX_WADPATH-1] = '\0';
-	    goto send_found;
+            tx_filename[MAX_WADPATH-1] = '\0';
+            goto send_found;
         }
     }
     
@@ -548,7 +548,7 @@ void SV_SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid
     p->next=NULL; // end of list
 
     DEBFILE(va("Sending ram %x( size:%d) to %d (id=%d)\n",
-	       p->filename, size, to_node, fileid));
+               p->filename, size, to_node, fileid));
 
     Filetx_file_cnt++;
     return;
@@ -575,7 +575,7 @@ static void SV_EndSend(byte nnode)
         if( tnnp->currentfile )
         {
             fclose( tnnp->currentfile );
-	}
+        }
         free(p->filename);
         break;
     case TAH_Z_FREE:
@@ -626,10 +626,10 @@ void Filetx_Ticker(void)
         nn = (txnode+1)%MAXNETNODES;
         for( tcnt=0; tcnt<MAXNETNODES; tcnt++ )  // counter
         {
-	    if(transfer[nn].txlist)
-	         goto found;
-	    nn = (nn+1)%MAXNETNODES;
-	}
+            if(transfer[nn].txlist)
+                 goto found;
+            nn = (nn+1)%MAXNETNODES;
+        }
         // no transfer to do
         goto transfer_not_found;  // no transfer to do
 
@@ -642,60 +642,60 @@ found:
         fp = tnnp->currentfile;
         if(!fp) // file not already open
         {
-	    if(access_tah == TAH_FILE)
-	    {
-	        // open the file to transfer
-	        long filesize;
+            if(access_tah == TAH_FILE)
+            {
+                // open the file to transfer
+                long filesize;
 
-	        fp = fopen(ftxp->filename,"rb");
-	        tnnp->currentfile = fp;  // owner of open file
+                fp = fopen(ftxp->filename,"rb");
+                tnnp->currentfile = fp;  // owner of open file
 
-	        if(! fp)
-	        {
-		    perror("FileTx");
-		    I_SoftError("FileTx: Cannot open file %s\n",
-				 ftxp->filename);
-		    SV_EndSend(nn);
-		    continue;
-		}
-	       
-	        fseek(fp, 0, SEEK_END);
-	        filesize = ftell( fp );
+                if(! fp)
+                {
+                    perror("FileTx");
+                    I_SoftError("FileTx: Cannot open file %s\n",
+                                 ftxp->filename);
+                    SV_EndSend(nn);
+                    continue;
+                }
 
-	        // nobody wants to transfer a file bigger than 4GB!
-	        // and computers will never need more than 640kb of RAM ;-)
-	        if(-1 == filesize)  goto file_size_err;
+                fseek(fp, 0, SEEK_END);
+                filesize = ftell( fp );
 
-	        ftxp->data_size = filesize;
-	        fseek(fp, 0, SEEK_SET);            
-	    }
-	    else
-	    {
-	        tnnp->currentfile = (FILE *)1;  // faked open flag
-	    }
-	    tnnp->position = 0;
-	}
+                // nobody wants to transfer a file bigger than 4GB!
+                // and computers will never need more than 640kb of RAM ;-)
+                if(-1 == filesize)  goto file_size_err;
+
+                ftxp->data_size = filesize;
+                fseek(fp, 0, SEEK_SET);
+            }
+            else
+            {
+                tnnp->currentfile = (FILE *)1;  // faked open flag
+            }
+            tnnp->position = 0;
+        }
 
         pak=&netbuffer->u.filetxpak;
         size = software_MAXPACKETLENGTH - (FILETX_HEADER_SIZE+PACKET_BASE_SIZE);
         if( ftxp->data_size - tnnp->position < size )
-	    size = ftxp->data_size - tnnp->position;
+            size = ftxp->data_size - tnnp->position;
         if(access_tah == TAH_FILE)
         {
-	    if( fread(pak->data,size,1, tnnp->currentfile) != 1 )
-	        goto file_read_err;
-	}
+            if( fread(pak->data,size,1, tnnp->currentfile) != 1 )
+                goto file_read_err;
+        }
         else
         {
-	    memcpy(pak->data, &ftxp->filename[ tnnp->position ], size);
-	}
+            memcpy(pak->data, &ftxp->filename[ tnnp->position ], size);
+        }
         pak->position = tnnp->position;
         // put flag so receiver know the totalsize
         if( tnnp->position + size == ftxp->data_size )
         {
-	    // End of send file flag.
-	    pak->position |= 0x80000000;
-	}
+            // End of send file flag.
+            pak->position |= 0x80000000;
+        }
         pak->position = LE_SWAP32_FAST(pak->position);
         pak->size     = LE_SWAP16_FAST(size);
         pak->fileid   = ftxp->fileid;
@@ -703,22 +703,22 @@ found:
         // Reliable SEND
         if (!HSendPacket(nn,true,0,FILETX_HEADER_SIZE+size ) )
         { // not sent for some odd reason
-	    // retry at next call
-	    if(access_tah == TAH_FILE)
-	    {
-	        // Data transfer reposition
+            // retry at next call
+            if(access_tah == TAH_FILE)
+            {
+                // Data transfer reposition
                 fseek( fp, tnnp->position, SEEK_SET);
-	    }
-	    // exit the while (can't send this one why should i send the next ?
-	    break;
-	}
+            }
+            // exit the while (can't send this one why should i send the next ?
+            break;
+        }
         // Record each fragment of file transfer.
         tnnp->position += size;
         if(tnnp->position == ftxp->data_size)
         {
-	    // All sent
-	    SV_EndSend(nn);
-	}
+            // All sent
+            SV_EndSend(nn);
+        }
     } // while
     return;
 
@@ -732,7 +732,7 @@ file_size_err:
 file_read_err:
     perror("FileTx");
     I_SoftError("Filetx: Read err on %s at %d of %d bytes\n",
-		 ftxp->filename, tnnp->position, size);
+                 ftxp->filename, tnnp->position, size);
     goto reject;
 
 transfer_not_found:
@@ -774,35 +774,35 @@ void Got_Filetxpak(void)
 
     if( fnp->status == FS_DOWNLOADING )
     {
-	// Swap file position and size on big_endian machines.
-	netbuffer->u.filetxpak.position	= LE_SWAP32_FAST(netbuffer->u.filetxpak.position);
-	netbuffer->u.filetxpak.size	= LE_SWAP16_FAST(netbuffer->u.filetxpak.size);
+        // Swap file position and size on big_endian machines.
+        netbuffer->u.filetxpak.position	= LE_SWAP32_FAST(netbuffer->u.filetxpak.position);
+        netbuffer->u.filetxpak.size	= LE_SWAP16_FAST(netbuffer->u.filetxpak.size);
 
         // use a special trick to know when file is finished (not always used)
         // WARNING: filepak can arrive out of order so don't stop now !
         if( netbuffer->u.filetxpak.position & 0x80000000 ) 
         {
-	    // End of send file flag.
+            // End of send file flag.
             netbuffer->u.filetxpak.position &= ~0x80000000;
             fnp->totalsize = netbuffer->u.filetxpak.position + netbuffer->u.filetxpak.size;
         }
         // we can receive packet in the wrong order, anyway all os support gaped file
-	fp = fnp->phandle;  // file being loaded
+        fp = fnp->phandle;  // file being loaded
         fname = fnp->filename;  // for status and err msgs
         fseek(fp, netbuffer->u.filetxpak.position, SEEK_SET);
         if( fwrite(netbuffer->u.filetxpak.data, netbuffer->u.filetxpak.size, 1, fp) != 1 )
-	   goto file_write_err;
+           goto file_write_err;
         fnp->bytes_recv += netbuffer->u.filetxpak.size;
 
         if(stat_cnt==0)
         {
-	    // Update stats on screen.
+            // Update stats on screen.
             Net_GetNetStat();
             CONS_Printf("\r%s %dK/%dK %.1fK/s",
-			fname,
-			fnp->bytes_recv>>10,
-			fnp->totalsize>>10,
-			((float)netstat_recv_bps)/1024);
+                        fname,
+                        fnp->bytes_recv>>10,
+                        fnp->totalsize>>10,
+                        ((float)netstat_recv_bps)/1024);
         }
 
         // Detect when all of file received.
@@ -892,7 +892,7 @@ void nameonly(char *s)
   {
       if( (s[j]=='\\') || (s[j]==':') || (s[j]=='/') )
       {
-	  // [WDJ] DO NOT USE memcpy, these may overlap, use memmove
+          // [WDJ] DO NOT USE memcpy, these may overlap, use memmove
           memmove(s, &(s[j+1]), strlen(&(s[j+1]))+1 );
           return;
       }
@@ -988,10 +988,10 @@ filestatus_e  FullSearch_doomwaddir( const char * filename, int search_depth,
 //  completepath: the file name buffer, must be length MAX_WADPATH
 // Return true when found, with the file path in the completepath parameter.
 boolean  Search_doomwaddir( const char * filename, int search_depth,
-		 /* OUT */  char * completepath )
+                 /* OUT */  char * completepath )
 {
     return( FullSearch_doomwaddir( filename, search_depth, NULL,
-			       /*OUT*/ completepath ) == FS_FOUND );
+                               /*OUT*/ completepath ) == FS_FOUND );
 }
 
 
