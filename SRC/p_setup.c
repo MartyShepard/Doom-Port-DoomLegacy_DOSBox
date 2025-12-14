@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1209 2016-01-19 19:48:22Z wesleyjohnson $
+// $Id: p_setup.c 1214 2016-03-08 18:41:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1719,7 +1719,7 @@ boolean P_SetupLevel (int      to_episode,
         HWR_ResetLights();
         // Correct missing sidedefs & deep water trick
         HWR_CorrectSWTricks();
-        HWR_CreatePlanePolygons (numnodes-1);
+        HWR_CreatePlanePolygons();
     }
 #endif
 
@@ -1786,7 +1786,7 @@ boolean P_SetupLevel (int      to_episode,
     if (rendermode != render_soft)
     {
         HWR_PrepLevelCache (numtextures);
-        HWR_CreateStaticLightmaps (numnodes-1);
+        HWR_CreateStaticLightmaps();
     }
 #endif
 

@@ -4792,9 +4792,15 @@ patchfile = w105_9_givehealth.patch
 - commit revision 1212
 Change P_GiveBody to P_GiveHealth.
 
+*** W105_bsp
+patchfile = w105_10_bsp.patch
+- commit revision 1213
+Some cleanup of the software bsp, doorclosed flag.
+Removed some stuff that was commented out.
+
 *** W105_hardware
-patchfile = w105_10_hardware.patch
-- commit revision 12??
+patchfile = w105_11_hardware.patch
+- commit revision 1214
 Cleanup naming, syntax, and parameters in hardware files.
 Preparation for fixing the hardware draw problems.
 Removed some old code that was commented out.
