@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1214 2016-03-08 18:41:27Z wesleyjohnson $
+// $Id: p_setup.c 1223 2016-04-07 17:25:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1575,7 +1575,7 @@ boolean P_SetupLevel (int      to_episode,
     {
         players[i].killcount = players[i].secretcount
             = players[i].itemcount = 0;
-        players[i].mo = NULL;
+        players[i].mo = NULL;  // will be freed with PU_LEVEL
 #ifdef CLIENTPREDICTION2
         players[i].spirit = NULL;
 #endif
@@ -1741,20 +1741,18 @@ boolean P_SetupLevel (int      to_episode,
     P_SpawnSpecials ();
     P_InitBrainTarget();
 
-    //BP: spawnplayers now (before all structure are not inititialized)
+    //BP: spawnplayers after all structures are inititialized
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if (playeringame[i])
         {
             if (cv_deathmatch.value)
             {
-                players[i].mo = NULL;
                 G_DoReborn(i);
             }
             else if( demoversion>=128 )
             {
-                players[i].mo = NULL;
-                G_CoopSpawnPlayer (i);
+                G_CoopSpawnPlayer(i);
             }
         }
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
+// $Id: g_game.c 1223 2016-04-07 17:25:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -403,6 +403,8 @@ char * get_team_name( int team_num )
 }
 
 
+// Simplified body queue.  The Doom bodyqueue was way complicated.
+// A way to have player corpses stay around, but limit how many.
 mobj_t*   bodyque[BODYQUESIZE];
 int       bodyqueslot;
 
@@ -1445,57 +1447,80 @@ void G_PlayerReborn (int player)
         p->maxammo[i] = maxammo[i];
 }
 
+// [WDJ] Use a temporary mobj to test position.
+// This can be modified to suit,
+// and being static does not leave dangling ptrs into stack space.
+// Need flags, flags2, radius, height.
+static mobj_t  tstobj;
+
 //
-// G_CheckSpot
+// G_Player_SpawnSpot
 // Returns false if the player cannot be respawned
 // at the given mapthing_t spot because something is occupying it
+// Generate spawn fog.
+// Spawn player at the spot.
 //
-boolean G_CheckSpot ( int           playernum,
-                      mapthing_t*   mthing )
+//  playernum : the player to check and spawn
+//  spot : the level map spawn spot
+// Return true when spawn spot is clear.
+boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
 {
     fixed_t       x, y;
     subsector_t*  ss;
+    sector_t *    ssec;
     mobj_t*       mo;
     player_t *    player = & players[playernum];
-    boolean       br;
-    int           flags_save, i;
 
     // added 25-4-98 : maybe there is no player start
-    if(!mthing || mthing->type<0)   goto failexit;
+    if(!spot || spot->type<0)   goto failexit;
     if( ! player )   goto failexit;
 
-    if (!player->mo)
+    // The spawn spot location
+    tstobj.x = x = spot->x << FRACBITS;
+    tstobj.y = y = spot->y << FRACBITS;
+
+#if 0
+    // First spawn with no checks, is only kept because it is in Doom.
+    // This does not work after any player moves an inch,
+    // such as joining a network game.
+    // Using static tstobj, tests now can be done without player->mo.
+    if ((gametic == levelstarttic) && (player->mo == NULL))
     {
+        int i;
         // first spawn of level, before corpses
+        // Not all player[i].mo are init yet, see P_SetupLevel().
         for (i=0 ; i<playernum ; i++)
         {
+	    // Check if another player is on this spot.
             // added 15-1-98 check if player is in game (mistake from id)
             if (playeringame[i]
-                && players[i].mo->x == mthing->x << FRACBITS
-                && players[i].mo->y == mthing->y << FRACBITS)
+                && players[i].mo->x == x
+                && players[i].mo->y == y)
                 goto failexit;
         }
-        return true;
+        // No fog, and no spawn sound.
+        goto silent_spawn;
     }
+#endif   
 
-    x = mthing->x << FRACBITS;
-    y = mthing->y << FRACBITS;
     ss = R_PointInSubsector (x,y);
+    ssec = ss->sector;
+    tstobj.z = ssec->floorheight;
 
     // check for respawn in team-sector
-    if(ss->sector->teamstartsec)
+    if(ssec->teamstartsec)
     {
         if(cv_teamplay.value==1)
         {
             // color
-            if(player->skincolor!=(ss->sector->teamstartsec-1)) // -1 because wanted to know when it is set
+            if(player->skincolor!=(ssec->teamstartsec-1)) // -1 because wanted to know when it is set
                 goto failexit;
         }
         else
         if(cv_teamplay.value==2)
         {
             // skins
-            if(player->skin!=(ss->sector->teamstartsec-1)) // -1 because wanted to know when it is set
+            if(player->skin!=(ssec->teamstartsec-1)) // -1 because wanted to know when it is set
                 goto failexit;
         }
     }
@@ -1503,19 +1528,31 @@ boolean G_CheckSpot ( int           playernum,
     // [WDJ] kill bob momentum or player will keep bobbing at spawn spot
     player->bob_momx = player->bob_momy = 0;
 
-    // [WDJ] This uses the corpse mobj to do the collision check.
-    // MF_SOLID is required for CheckPosition, and corpse might not be solid
-    // Least amount of hassle is to temp change and restore.
-    flags_save = player->mo->flags;
-    player->mo->flags |= MF_SOLID;
-    br = P_CheckPosition (player->mo, x, y);
-    player->mo->flags = flags_save;
-    if (! br )
-        goto failexit;
+    // [WDJ] Test spawn spot for any player or blocking object.
+    // Use tstobj, so do not need player mobj.  There may not be one.
+    // Needed for spawning off of map spawn spots, and for multiple players.
+    // Spawn test position is already set.
+    // MF_SOLID is required to test against objects.
+    // MF_PICKUP is off to prevent picking up objects.
+    // MF2_PASSMOBJ is off, as in Heretic.
+    tstobj.player = NULL;  // so cannot take damage during test
+    tstobj.type = MT_PLAYER;
+    tstobj.info = &mobjinfo[MT_PLAYER];
+    tstobj.radius = tstobj.info->radius;
+    tstobj.height = tstobj.info->height;
+    tstobj.flags2 = tstobj.info->flags2 & ~MF2_PASSMOBJ;
+    tstobj.flags = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF;
+    if( ! P_CheckPosition (&tstobj, x, y) )   goto failexit;
+   
+    // Spawn Spot accepted. Start spawn process.
 
-    // flush an old corpse if needed
+    // If there is no corpse, there is no respawn fog nor sound.
+    if( player->mo == NULL )   goto silent_spawn;
+
+    // Flush an old corpse from queue, if needed.
     if (bodyqueslot >= BODYQUESIZE)
         P_RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]);
+    // Put player mobj in the body queue.
     bodyque[bodyqueslot%BODYQUESIZE] = player->mo;
     bodyqueslot++;
 
@@ -1527,16 +1564,20 @@ boolean G_CheckSpot ( int           playernum,
     // This code fixes the bug.
     // Unsigned fine angle worked, but better to use angle_t conversion too,
     // which is done by wad_to_angle returning unsigned angle_t.
-    int angf = ANGLE_TO_FINE( wad_to_angle(mthing->angle) );
+    int angf = ANGLE_TO_FINE( wad_to_angle(spot->angle) );
 
     mo = P_SpawnMobj (x+20*finecosine[angf], y+20*finesine[angf],
-                      ss->sector->floorheight, MT_TFOG);
+                      ssec->floorheight, MT_TFOG);
 
     //added:16-01-98:consoleplayer -> displayplayer (hear snds from viewpt)
     // removed 9-12-98: why not ????
     if ( displayplayer_ptr->viewz != 1 )
         S_StartSound (mo, sfx_telept);  // don't start sound on first frame
 
+silent_spawn:
+    // Spawn the player at the spawn spot.
+    P_SpawnPlayer (spot, playernum);
+   
     return true;
 
 failexit:
@@ -1549,30 +1590,33 @@ failexit:
 // Spawns a player at one of the random death match spots
 // called at level load and each death
 //
+// Return true when spawned.
 boolean G_DeathMatchSpawnPlayer (int playernum)
 {
     int  i,j,n;
 
     if( !numdmstarts )
-        I_Error("No deathmatch start in this map !");
+    {
+        I_SoftError("No deathmatch start in this map!");
+        return false;
+    }
 
     if(demoversion<123)
-        n=20;
+        n=20;  // Doom
     else
         n=64;
 
+    // Random select a deathmatch spot.  Try n times for an unoccupied one.
     for (j=0 ; j<n ; j++)
     {
         i = P_Random() % numdmstarts;
-        if (G_CheckSpot (playernum, deathmatchstarts[i]) )
-        {
-            P_SpawnPlayer (deathmatchstarts[i], playernum);
+        if (G_Player_SpawnSpot(playernum, deathmatchstarts[i]) )
             return true;
-        }
     }
 
     if(demoversion<113)
     {
+        // Doom method of last recourse.
         // no good spot, so the player will probably get stuck
         P_SpawnPlayer (playerstarts[playernum], playernum);
         return true;
@@ -1580,44 +1624,79 @@ boolean G_DeathMatchSpawnPlayer (int playernum)
     return false;
 }
 
+// Will always spawn the player somewhere.
 void G_CoopSpawnPlayer (int playernum)
 {
+    mapthing_t * coop_spawn = playerstarts[playernum];
     int i;
 
-    // no deathmatch use the spot
-    if (G_CheckSpot (playernum, playerstarts[playernum]) )
-    {
-        P_SpawnPlayer (playerstarts[playernum], playernum);
+    // Check for the COOP player spot unoccupied.
+    if (G_Player_SpawnSpot(playernum, coop_spawn) )
         return;
-    }
 
-    // try to spawn at one of the other players spots
+    // Try to spawn at one of the other players spots.
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-        if (G_CheckSpot (playernum, playerstarts[i]) )
-        {
-            P_SpawnPlayer (playerstarts[i], playernum);
+        if (G_Player_SpawnSpot(playernum, playerstarts[i]) )
             return;
-        }
-        // he's going to be inside something.  Too bad.
     }
 
     if(demoversion<113)
-        P_SpawnPlayer (playerstarts[playernum], playernum);
-    else
     {
-        int  selections;
-
-        if( !numdmstarts)
-            I_Error("No deathmatch start in this map !");
-        selections = P_Random() % numdmstarts;
-        P_SpawnPlayer (deathmatchstarts[selections], playernum);
+        // Doom method of last recourse.
+        P_SpawnPlayer (coop_spawn, playernum);
+        return;
     }
+   
+    // [WDJ] Spawn at random offsets from the coop_spawn location.
+    // This allows more players than spawn spots.
+    if( coop_spawn == NULL )
+        coop_spawn = playerstarts[0];  // first player start should always exist
+
+    if( coop_spawn )
+    {
+        // Static spawn index, so if a player gets a difficult spawn,
+        // it does not repeat every spawn.
+        static int32_t spind = 1;
+
+        mapthing_t rcs = * coop_spawn;  // roving coop spawn
+        mobj_t spot1;  // param to P_CheckCrossLine
+        spot1.x = coop_spawn->x<<16;  // coop_spawn map location
+        spot1.y = coop_spawn->y<<16;
+
+        for(i=255; i>0; i--)
+        {
+            spind += 83;  // scatter the pattern with prime 83
+            // The low 8 bits of rv will cycle through all patterns in 256 iter.
+            // Range (-15..15) * (player_radius + 2)
+            rcs.x = coop_spawn->x + (((spind & 0x0F) - 8) * 18);
+            rcs.y = coop_spawn->y + ((((spind >> 4) & 0x0F) - 8) * 18);
+        
+            // Not allowed to cross any blocking lines, to keep it out of the void.
+            if( P_CheckCrossLine( &spot1, rcs.x<<16, rcs.y<<16 ) )  continue;
+
+            if (G_Player_SpawnSpot(playernum, &rcs) )
+                return;
+        }
+    }
+
+    // Try to use a deathmatch spot.
+    // No message about deathmatch starts in coop mode.
+    if( numdmstarts )
+    {
+        // May be second attempt at deathmatch spots.
+        if( G_DeathMatchSpawnPlayer( playernum )  )
+	    return;
+    }
+
+    // Probably will spawn within someone.
+    P_SpawnPlayer (coop_spawn, playernum);
 }
 
 //
 // G_DoReborn
 //
+// Called from: P_SetupLevel, G_Ticker
 void G_DoReborn (int playernum)
 {
     player_t*  player = &players[playernum];
@@ -1640,7 +1719,7 @@ void G_DoReborn (int playernum)
             player->mo->flags2 &= ~MF2_DONTDRAW;
         }
         // spawn at random spot if in death match
-        if (cv_deathmatch.value)
+        if (cv_deathmatch.value)   // 0=COOP
         {
             if(G_DeathMatchSpawnPlayer (playernum))
                return;

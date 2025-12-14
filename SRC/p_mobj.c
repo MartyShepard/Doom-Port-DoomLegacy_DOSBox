@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1198 2015-12-26 19:16:46Z wesleyjohnson $
+// $Id: p_mobj.c 1223 2016-04-07 17:25:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1401,7 +1401,8 @@ void P_MobjThinker(mobj_t * mobj)
             else
             {
                 if (player && (player->mo == mobj))
-                {   // Player, not a voodoo doll
+                {
+                    // Player, not a voodoo doll
                     if ((mobj->momz < -8 * FRACUNIT) && !(mobj->flags2 & MF2_FLY))
                     {
                         PlayerLandedOnThing(mobj, onmo);
@@ -1596,7 +1597,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->z = z;
     }
 
-    // [WDJ] Where does mobj get spawnpoint set ???
+    // [WDJ] Spawnpoint set by last Spawn (monsters and objects).
     if (mobj->spawnpoint)
     {
         if ((mobj->spawnpoint->options >> 7) != 0 && !mobj->spawnpoint->z)

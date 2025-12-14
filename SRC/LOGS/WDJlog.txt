@@ -4841,3 +4841,86 @@ Trim: Chains together the segs, and applies those chains that cross the
 NonConvex : Leaves the non-convex polygons.  My nVidia supplied
   OpenGL library seems to tolerate the non-convex polygons.
 
+*** W105_hwpoly
+patchfile = w105_13_hwpoly.patch
+- commit revision 1216
+Expanded use of wpoly to rest of polygon building code.
+Change to drawing poly is now done in finalize_polygons().
+
+*** W105_crack1
+patchfile = w105_14_crack1.patch
+- commit revision 1217
+Apply some hw draw crack remedies.
+Check the cross product, so an added vertex does not make the crack worse.
+Fix a bug when a seg-chain cut only cuts one side of the polygon.
+Add some comments.
+
+*** W105_bsp_sector
+patchfile = w105_15_bsp_sector.patch
+- commit revision 1218
+The bsp in the wad file has errors.  One error is that sometimes it has
+the wrong sector number for a subsector.  This results in drawing the
+wrong sector.
+Try to dectect some of these.
+Created a routine to find the correct sector by finding the closest
+facing linedef to a point within the subsector.
+This fixes one of the missing sector draws for a sign in BOOMEDIT.WAD.
+
+*** W105_hwsky
+patchfile = w105_16_hwsky.patch
+- commit revision 1219
+Fix the hardware render sky drawing to block walls and flats drawn
+inside buildings.  Sky sectors are supposed draw sky over the walls,
+which blocks the view of any taller sectors behind the wall.
+Draw these sky walls invisible to set the z-buffer to block draws behind
+the wall.  The sky is already drawn as a background, and will show through.
+
+*** W105_crack2
+patchfile = w105_17_crack2.patch
+- commit revision 1220
+The polytile remedy.
+It enters the same vertex in adjacent poly when splitting a poly at an angle
+that may cause crack errors.  This should prevent cracks before they start.
+In the existing routines, it is hard to find these poly points after other
+poly splitting has taken place.  It was going to get very complex to fix it.
+This can eventually replace that search.
+There is some conflict with some existing crack repair routines,
+so it is made optional.  It does not seem to do harm, but its effect is
+not yet obvious.
+A control,  gr_polytile, can turn it off and on.
+
+*** W105_bsp_clean
+patchfile = w105_18_bsp_clean.patch
+- commit revision 1221
+Cleanup some bsp and segs drawn code.
+Indent fixes, line rearrangement.
+Add comments.
+Make some I_Error into I_SoftError, so user can save the game at least.
+Rearrange logic of doorclosed.
+Comment out some unused struct fields (waterclip, scaleseg).
+Rename some vars to avoid C++ keywords.
+
+*** W105_crack3
+patchfile = w105_19_crack3.patch
+- commit revision 1222
+Fix the indenting in the polytile code.
+Add handling of a seg cutting that hits only one vertex.
+Remove some older unused box code.
+
+*** W105_spawn
+patchfile = w105_20_spawn.patch
+- commit revision 1223
+Rewrite of spawning code.  It could not handle more multiple players
+than spawning spots, and network join spawning was suspect.
+
+Converted G_CheckSpot, to G_Player_SpawnSpot, which now
+does the collision check, the spawn fog, and the player spawn.
+Added check of objects and players using a static mobj, so as to not
+depend upon any player mobj.  This eliminates the need for the
+spawn without a check from the original Doom code.
+
+The Coop spawning now tries to spawn at 255 locations around the spawn
+spot, to handle collisions, and to allow more players than spawn spots.
+Deathmatch spawn will also try Coop spawning if it needs to.
+Coop spawn will try Deathmatch spawn locations (last) if it needs to.
+

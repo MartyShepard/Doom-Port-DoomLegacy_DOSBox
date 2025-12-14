@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01223 ]: w105 spawn
+[01222*]: w105 crack3
 [01221 ]: w105 bsp clean
 [01220*]: w105 crack2
 [01219*]: w105 hw sky draw
