@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
+// $Id: d_netfil.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -401,7 +401,8 @@ checkfiles_e  CL_CheckFiles(void)
         if( fnp->status!=FS_NOTFOUND )
            continue;
 
-        fnp->status = findfile(fnp->filename, fnp->md5sum,
+        // Net security permissions.
+        fnp->status = findfile(fnp->filename, fnp->md5sum, true,
                                /*OUT*/ fnp->filename);
         if(devparm)
             GenPrintf(EMSG_dev, "found %d\n", fnp->status);
@@ -482,7 +483,7 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
     strncpy(tx_filename, filename, MAX_WADPATH-1);
     tx_filename[MAX_WADPATH-1] = '\0';
     
-    // a minimum of security, can only get file in legacy directory
+    // a minimum of security, can only get file in legacy wad directories
     nameonly(tx_filename);
 
     // Find the requested file in loaded files.
@@ -502,7 +503,8 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
     // Not found error handling.
     DEBFILE(va("%s not found in wadfiles\n", filename));
    
-    if( findfile( tx_filename, NULL, /*OUT*/ tx_filename ) == FS_NOTFOUND )
+    // Net security permissions.
+    if( findfile( tx_filename, NULL, true, /*OUT*/ tx_filename ) == FS_NOTFOUND )
     {
         // not found
         // don't inform client (probably hacker)
@@ -955,7 +957,7 @@ filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum)
 
 
 // Search the search directories for the file, with all controls.
-//  filename: the search file
+//  filename: simple filename to find in a doomwaddir
 //  search_depth: if > 0 then search subdirectories to that depth
 //  wantedmd5sum : NULL for no md5 check
 //  completepath: the file name buffer, must be length MAX_WADPATH
@@ -995,9 +997,35 @@ boolean  Search_doomwaddir( const char * filename, int search_depth,
 }
 
 
+// Determine if the filename is simple, or has an inherent file path.
+// Return the correct inherent filepath.
+// Return NULL for a simple filename.
+const char *  file_searchpath( const char * filename )
+{
+    // Leading char test, must be before any relative path test.
+    if( filename[0] == '/' || filename[0] == '\\' || filename[1] == ':' )
+        return "";  // Absolute path
+    if( filename[0] == '.' && filename[1] == '.' )
+        return "";  // Relative blank path.
+
+    // Complex filename are file path.
+    if( strpbrk( filename, ":/\\~" ) )
+    {
+        return ".";  // Relative to default path
+    }
+
+    if( strstr( filename, ".." ) )
+    {
+        return ".";  // Relative to default path
+    }
+
+    return NULL;  // Simple
+}
+
 // Search the doom directories, with md5, restricted privilege.
 //  filename : the filename to be found
 //  wantedmd5sum : NULL for no md5 check
+//  net_secure : true for net downloads, restricted access
 //  completepath : when not NULL, return the full path and name
 //      must be a buffer of MAX_WADPATH
 // return FS_NOTFOUND
@@ -1005,20 +1033,56 @@ boolean  Search_doomwaddir( const char * filename, int search_depth,
 //        FS_FOUND
 //        FS_SECURITY
 filestatus_e  findfile( const char * filename, const byte * wantedmd5sum,
+                        boolean  net_secure,
                         /*OUT*/ char * completepath )
 {
     filestatus_e ret_val;
 
-    // Restrict Net access to only relevant files, for security.
-    const char * extension = &filename[strlen(filename)-3];
-    if( strcasecmp( extension,"wad")!=0
-       && strcasecmp( extension,"deh")!=0
-       && strcasecmp( extension,"bex")!=0 )
-       return FS_SECURITY;
+    const char * ipath = file_searchpath( filename );
+    // Complex filename are file path.
+    if( ipath )
+    {
+        if( net_secure )
+        {
+            // Net access
+            // No absolute paths, no subdirectories.
+            // Cannot back out of directories.
+            return FS_SECURITY;
+        }
 
-    // Net is only allowed access to public wad directories.
-    doomwaddir[1] = NULL;
-    doomwaddir[2] = NULL;
+        // Test for reading.
+        // Do not need ipath for actual absolute or relative access.
+        if( access( filename, R_OK ) != 0 )
+            return FS_NOTFOUND;
+
+        if( completepath )
+            cat_filename( completepath, "", filename );
+        return FS_FOUND;
+    }
+       
+    // Simple filename for search doomwaddir.
+    if( net_secure )
+    { 
+        // Restrict Net access to only relevant files, for security.
+        const char * extension = &filename[strlen(filename)-3];
+        if( strcasecmp( extension,"wad")!=0
+           && strcasecmp( extension,"deh")!=0
+           && strcasecmp( extension,"bex")!=0 )
+           return FS_SECURITY;
+       
+        // Net is only allowed access to public wad directories.
+        doomwaddir[1] = NULL;
+        doomwaddir[2] = NULL;
+        doomwaddir[MAX_NUM_DOOMWADDIR-2] = NULL;
+        doomwaddir[MAX_NUM_DOOMWADDIR-1] = NULL;
+    }
+    else
+    {
+        // defdir is usually "."
+        owner_wad_search_order();
+    }
+
+    // Search doomwaddir for simple filename.
     ret_val = FullSearch_doomwaddir( filename, GAME_SEARCH_DEPTH, wantedmd5sum,
                     /* OUT */  completepath );
 
@@ -1031,7 +1095,7 @@ filestatus_e  findfile( const char * filename, const byte * wantedmd5sum,
     // [WDJ] 10 levels had it thrash for a long time when given a bad name.
     // Not needed with above directory searches.
     // This is a security risk that allows anyone to download private files
-    // off your computer.
+    // off your computer (using an altered DoomLegacy).
     return sys_filesearch(filename, ".", wantedmd5sum, 3, completepath);
 #endif
 }

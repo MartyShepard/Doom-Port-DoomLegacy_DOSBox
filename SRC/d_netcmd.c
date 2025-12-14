@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
+// $Id: d_netcmd.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -719,7 +719,8 @@ void Command_Map_f(void)
     if (FIL_CheckExtension(MAPNAME))
     {
         // here check if file exist !!!
-        if (!findfile(MAPNAME, NULL, NULL))
+	// Owner security permissions.
+        if (!findfile(MAPNAME, NULL, false, NULL))
         {
             CONS_Printf("\2File %s' not found\n", MAPNAME);
             return;

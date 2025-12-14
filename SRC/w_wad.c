@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
+// $Id: w_wad.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -259,7 +259,8 @@ int W_LoadWadFile (const char *filename)
         nameonly(filenamebuf); // only search for the name
 
         // findfile returns dir+filename
-        fs = findfile(filenamebuf, NULL, /*OUT*/ filenamebuf);
+	// Owner security permissions.
+        fs = findfile(filenamebuf, NULL, false, /*OUT*/ filenamebuf);
         if( fs == FS_NOTFOUND )
         {
             CONS_Printf ("File %s not found.\n", filenamebuf);

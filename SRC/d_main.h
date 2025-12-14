@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: d_main.h 1207 2016-01-19 19:46:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -51,6 +51,9 @@ extern char * legacyhome;
 extern int  legacyhome_len;
 #define MAX_NUM_DOOMWADDIR  28
 extern char *doomwaddir[MAX_NUM_DOOMWADDIR];
+
+// Setup variable doomwaddir for owner usage.
+void  owner_wad_search_order( void );
 
 extern consvar_t cv_home, cv_doomwaddir, cv_iwad;
 
