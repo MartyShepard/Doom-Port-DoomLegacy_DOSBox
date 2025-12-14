@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: g_game.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,6 +66,8 @@
 #include "doomstat.h"
 #include "d_event.h"
 
+// ---- Teams
+
 // [WDJ] cannot write to const team_names
 // Created basic team record
 typedef struct {
@@ -90,17 +92,37 @@ extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
 extern  char      game_map_filename[MAX_WADPATH];
 extern  boolean   nomonsters;   // checkparm of -nomonsters
 
+// --- Event actions
+
+typedef enum
+{
+    ga_nothing,
+    ga_completed,
+    ga_worlddone,
+    //HeXen
+/*
+    ga_initnew,
+    ga_newgame,
+    ga_loadgame,
+    ga_savegame,
+    ga_leavemap,
+    ga_singlereborn
+*/
+} gameaction_e;
+
+extern  gameaction_e    gameaction;
+
 // ======================================
 // DEMO playback/recording related stuff.
 // ======================================
 
 // demoplaying back and demo recording
-extern  boolean demoplayback;
-extern  boolean demorecording;
+extern  boolean   demoplayback;
+extern  boolean   demorecording;
 extern  boolean   timingdemo;       
 
 // Quit after playing a demo from cmdline.
-extern  boolean         singledemo;
+extern  boolean   singledemo;
 
 // gametic at level start
 extern  tic_t     levelstarttic;  
@@ -111,6 +133,7 @@ extern consvar_t  cv_crosshair;
 extern consvar_t  cv_showmessages;
 extern consvar_t  cv_fastmonsters;
 extern consvar_t  cv_predictingmonsters;  //added by AC for predmonsters
+
 
 void Command_Turbo_f (void);
 
@@ -127,23 +150,29 @@ extern angle_t localaiming,localaiming2; // should be a angle_t but signed
 extern int extramovefactor;		// Extra speed to move at
 
 
-//
-// GAME
-//
-void    G_DoReborn (int playernum);
+// ---- Player Spawn
+void G_DoReborn (int playernum);
 boolean G_DeathMatchSpawnPlayer (int playernum);
 void G_CoopSpawnPlayer (int playernum);
-void    G_PlayerReborn (int player);
+void G_PlayerReborn (int player);
 
-void G_InitNew (skill_t skill, char* mapname, boolean resetplayer);
+void G_AddPlayer( int playernum );
+
+// ---- Game load
+
+void G_InitNew (skill_e skill, char* mapname, boolean resetplayer);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew (skill_t skill, char* mapname, boolean StartSplitScreenGame);
+void G_DeferedInitNew (skill_e skill, char* mapname, boolean StartSplitScreenGame);
 void G_DoLoadLevel (boolean resetplayer);
 
 void G_DeferedPlayDemo (char* demo);
+
+boolean G_Downgrade(int version);
+
+// --- Save Games
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
@@ -160,10 +189,13 @@ extern char savegamename[MAX_WADPATH];
 
 void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot );
 
+void CheckSaveGame(size_t size);
+
 // Called by M_Responder.
 void G_DoSaveGame(int slot, char* description);
 void G_SaveGame  (int slot, char* description);
 
+// --- Demo
 // Only called by startup code.
 void G_RecordDemo (char* name);
 
@@ -175,19 +207,15 @@ void G_DoneLevelLoad(void);
 void G_StopDemo(void);
 boolean G_CheckDemoStatus (void);
 
+// --- Level Func
 void G_ExitLevel (void);
 void G_SecretExitLevel (void);
-
 void G_NextLevel (void);
 
 void G_Ticker (void);
 boolean G_Responder (event_t*   ev);
 
-boolean G_Downgrade(int version);
 
-void G_AddPlayer( int playernum );
-
-void CheckSaveGame(size_t size);
 
 // [WDJ] 8/2011 Par times can now be modified.
 extern int pars[4][10];

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_event.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_event.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -35,7 +35,6 @@
 #define D_EVENT_H
 
 #include "doomtype.h"
-#include "g_state.h"
 
 // Input event types.
 typedef enum
@@ -67,8 +66,6 @@ typedef struct
 extern  event_t         events[MAXEVENTS];
 extern  int             eventhead;
 extern  int             eventtail;
-
-extern  gameaction_t    gameaction;
 
 // current modifier key status
 extern boolean shiftdown;

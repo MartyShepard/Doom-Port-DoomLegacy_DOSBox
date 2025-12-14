@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01224 ]: w105 g_state
 [01223 ]: w105 spawn
 [01222*]: w105 crack3
 [01221 ]: w105 bsp clean

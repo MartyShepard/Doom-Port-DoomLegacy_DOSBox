@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: doomstat.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -74,7 +74,6 @@
 // We need the player data structure as well.
 #include "d_player.h"
 #include "d_clisrv.h"
-#include "g_state.h"
 
 // Game mode handling - identify IWAD version,
 //  handle IWAD dependend animations etc.
@@ -208,8 +207,18 @@ extern  language_t   language;
 // Selected skill type, map etc.
 // =============================
 
+// skill levels
+typedef enum
+{
+    sk_baby,
+    sk_easy,
+    sk_medium,
+    sk_hard,
+    sk_nightmare
+} skill_e;
+
 // Selected by user.
-extern  skill_t         gameskill;	// easy, medium, hard
+extern  skill_e         gameskill;	// easy, medium, hard
 extern  byte            gameepisode;	// Doom episode, 1..4
 extern  byte            gamemap;	// level 1..32
 
@@ -246,14 +255,14 @@ extern  boolean statusbaractive;
 extern  boolean menuactive;     // Menu overlayed?
 extern  boolean paused;         // Game Pause?
 
-extern  boolean         nodrawers;
-extern  boolean         noblit;
+extern  boolean nodrawers;
+extern  boolean noblit;
 
-extern  int             viewwindowx;
-extern  int             viewwindowy;
-extern  int             rdraw_viewheight;		// was viewheight
-extern  int             rdraw_viewwidth;		// was viewwidth
-extern  int             rdraw_scaledviewwidth;		// was scaledrviewwidth
+extern  int     viewwindowx;
+extern  int     viewwindowy;
+extern  int     rdraw_viewheight;		// was viewheight
+extern  int     rdraw_viewwidth;		// was viewwidth
+extern  int     rdraw_scaledviewwidth;		// was scaledrviewwidth
 
 
 
@@ -318,17 +327,37 @@ extern  int             maxammo[NUMAMMO];
 // =====================================
 //
 
+// The current state of the game
+typedef enum
+{
+    GS_NULL = 0,                // at begin
+    GS_LEVEL,                   // we are playing
+    GS_INTERMISSION,            // gazing at the intermission screen
+    GS_FINALE,                  // game final animation
+    GS_DEMOSCREEN,              // looking at a demo
+    //legacy
+    GS_DEDICATEDSERVER,         // added 27-4-98 : new state for dedicated server
+    GS_WAITINGPLAYERS,          // added 3-9-98 : waiting player in net game
+    // Non-state, out-of-band flags
+    GS_FORCEWIPE                // wipegamestate only
+} gamestate_e;
+
+extern  gamestate_e     gamestate;
+
+// gamestate_e is unsigned
+
+// wipegamestate can be set to GS_FORCEWIPE
+//  to force a wipe on the next draw
+extern  gamestate_e     wipegamestate;
+
 // if true, load all graphics at level load
 extern  boolean         precache;
-
-
-// wipegamestate can be set to -1
-//  to force a wipe on the next draw
-extern  gamestate_t     wipegamestate;
 
 //?
 // debug flag to cancel adaptiveness
 extern  boolean         singletics;
+
+
 
 #define   BODYQUESIZE     32
 

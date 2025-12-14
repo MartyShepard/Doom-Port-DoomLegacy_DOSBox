@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1223 2016-04-07 17:25:06Z wesleyjohnson $
+// $Id: p_setup.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1556,7 +1556,7 @@ char*  level_mapname = NULL;  // to savegame and info
 //  map_wadname : map command, load wad file
 boolean P_SetupLevel (int      to_episode,
                       int      to_map,
-                      skill_t  to_skill,
+                      skill_e  to_skill,
                       char*    map_wadname)      // for wad files
 {
     char  *sl_mapname = NULL;

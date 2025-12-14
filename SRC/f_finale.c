@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1205 2016-01-19 19:42:49Z wesleyjohnson $
+// $Id: f_finale.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -338,7 +338,7 @@ void F_Ticker (void)
                 {
                     finalecount = 0;
                     finalestage = 1;
-                    wipegamestate = -1;             // force a wipe
+                    wipegamestate = GS_FORCEWIPE;             // force a wipe
                     if (!raven && gameepisode == 3)
                         S_StartMusic (mus_bunny);
                 }

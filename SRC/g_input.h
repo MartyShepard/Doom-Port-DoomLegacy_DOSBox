@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1138 2014-09-17 13:55:10Z wesleyjohnson $
+// $Id: g_input.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -148,7 +148,7 @@ extern consvar_t       cv_allowrocketjump;
 extern consvar_t       cv_allowautoaim;
 
 extern boolean gamekeydown[NUMINPUTS];
-
+extern boolean gamekeytapped[NUMINPUTS];
 #if defined( __DJGPP__ )
 extern int             joyxmove;
 extern int             joyymove;

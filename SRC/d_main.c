@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
+// $Id: d_main.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -297,7 +297,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1223"
+#define SVN_REV "1224"
 #endif
 
 // Version number: major.minor.revision
@@ -541,9 +541,9 @@ void D_ProcessEvents(void)
 //
 
 
-// wipegamestate can be set to -1 to force a wipe on the next draw
-// added comment : there is a wipe each change of the gamestate
-gamestate_t wipegamestate = GS_DEMOSCREEN;
+// There is a wipe each change of the gamestate.
+// wipegamestate can be set to GS_FORCEWIPE to force a wipe on the next draw.
+gamestate_e wipegamestate = GS_DEMOSCREEN;
 CV_PossibleValue_t screenslink_cons_t[] = { {0, "None"}, {wipe_ColorXForm + 1, "Crossfade"}, {wipe_Melt + 1, "Melt"}, {0, NULL} };
 consvar_t cv_screenslink = { "screenlink", "2", CV_SAVE, screenslink_cons_t };
 
@@ -552,8 +552,9 @@ void D_Display(void)
 {
     // vid : from video setup
     static boolean menuactivestate = false;
-    static gamestate_t oldgamestate = -1;
+    static gamestate_e oldgamestate = GS_FORCEWIPE; // invalid state
     static int borderdrawcount;
+
     tic_t nowtime;
     tic_t tics;
     tic_t wipestart;
@@ -585,7 +586,7 @@ void D_Display(void)
     if (setsizeneeded)
     {
         R_ExecuteSetViewSize();  // set rdraw, view scale, limits, projection
-        oldgamestate = -1;      // force background redraw
+        oldgamestate = GS_FORCEWIPE;  // force background redraw
         borderdrawcount = 3;
         redrawsbar = true;
     }
@@ -638,6 +639,7 @@ void D_Display(void)
             break;
 
         case GS_NULL:
+        default:
             break;
     }
 
@@ -2291,7 +2293,7 @@ restart_command:
         {
             // Make a default legacy home in the program directory.
             // default absolute path, do not set to ""
-            #if defined( __DJGPP__ )		
+        #if defined( __DJGPP__ )		
              getcwd(dosroot, MAX_WADPATH-1);
              progdir = dosroot;
              sprintf(dirbuf, "%s/", dosroot);
@@ -2299,7 +2301,7 @@ restart_command:
             #else						
             cat_filename( dirbuf, progdir, DEFHOME );
             legacyhome = strdup( dirbuf );  // malloc, will be free.
-#endif
+        #endif
             if( verbose )
                 GenPrintf(EMSG_ver, "Default legacyhome= %s\n", legacyhome );
         }
