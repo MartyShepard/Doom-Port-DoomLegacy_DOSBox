@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_inter.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1661,7 +1661,7 @@ void P_KillMobj ( mobj_t*       target,
     // scream a corpse :)
     if( target->flags & MF_CORPSE )
     {
-        // turn it to gibs
+        // Turn it to gibs.
         P_SetMobjState (target, S_GIBS);
 
         target->flags &= ~MF_SOLID;
@@ -1685,7 +1685,7 @@ void P_KillMobj ( mobj_t*       target,
 
     if( demoversion < 131 )
     {
-        // in version 131 and higher this is done later in a_fall 
+        // Version 131 and after this is done later in A_Fall.
         // (this fix the stepping monster)
         target->flags   |= MF_CORPSE|MF_DROPOFF;
         target->height >>= 2;
@@ -1778,9 +1778,12 @@ void P_KillMobj ( mobj_t*       target,
 */
     }
 
-    if (( (gamemode != heretic && target->health < -target->info->spawnhealth)
-        ||(gamemode == heretic && target->health < -(target->info->spawnhealth>>1)))
-        && target->info->xdeathstate)
+    if ( target->info->xdeathstate
+	 && ( target->health < -(
+	    (gamemode == heretic)? (target->info->spawnhealth>>1)  // heretic
+               : target->info->spawnhealth  // doom
+            ) )
+       )
     {
         P_SetMobjState (target, target->info->xdeathstate);
     }
@@ -2156,7 +2159,8 @@ boolean P_DamageMobj ( mobj_t*   target,
     if ( !(target->flags & MF_SHOOTABLE) )
         return false; // shouldn't happen...
 
-    if (target->health <= 0)
+    // [WDJ] Solid Corpse health < 0.
+    if( (target->health <= 0) && !(target->flags & MF_CORPSE) )
         return false;
 
     if ( target->flags & MF_SKULLFLY )
@@ -2354,9 +2358,20 @@ boolean P_DamageMobj ( mobj_t*   target,
 #endif  
         }
     }
+   
+    // Solid Corpse specific
+    if( target->flags & MF_CORPSE )
+    {
+        target->health -= damage;
+        // [WDJ] Corpse health < 0, so solid corpse test is < 0.
+        if( target->health < -target->info->spawnhealth )
+            P_KillMobj ( target, inflictor, source );  // to gibs
+        // Keep corpse from ticking the P_Random in the pain test.
+        return true;    
+    }
 
     // target player specific
-    if (player && (target->flags & MF_CORPSE)==0)
+    if (player)
     {
         // end of game hell hack
         if (target->subsector->sector->special == 11

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_henemy.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1640,9 +1640,17 @@ void A_HBossDeath(mobj_t *actor)
             continue;
         }
         mo = (mobj_t *)think;
-        if((mo != actor) && (mo->type == actor->type) && !(mo->flags & MF_CORPSE))
-        { // Found a living boss
-            return;
+        // [WDJ] Corpse health is < 0.
+        // If two monsters are killed at the same time, this test may occur
+        // while first is corpse and second is not.  But the simple health
+        // test may trigger twice because second monster already has
+        // health < 0 during the first death test.
+//        if((mo != actor) && (mo->type == actor->type) && (mo->health > 0))
+        if((mo != actor) && (mo->type == actor->type))
+        {
+            if( !(mo->flags & MF_CORPSE)
+                || (mo->health > 0) )
+                return;  // Found a less than dead boss
         }
     }
     if(gameepisode > 1)

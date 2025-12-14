@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_enemy.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -1139,7 +1139,8 @@ void A_Chase (mobj_t*   actor)
         if (gamemode != heretic 
             && (!actor->target
               || actor->target->health <= 0
-              || (actor->target->flags & MF_CORPSE)))
+//              || (actor->target->flags & MF_CORPSE)  // corpse health < 0
+            ) )
         {
             actor->threshold = 0;
         }
@@ -1410,7 +1411,7 @@ void A_CPosRefire (mobj_t* actor)
 
     if (!actor->target
         || actor->target->health <= 0
-        || actor->target->flags & MF_CORPSE
+//        || actor->target->flags & MF_CORPSE  // corpse health < 0
         || !P_CheckSight (actor, actor->target) )
     {
         P_SetMobjState (actor, actor->info->seestate);
@@ -1428,7 +1429,7 @@ void A_SpidRefire (mobj_t* actor)
 
     if (!actor->target
         || actor->target->health <= 0
-        || actor->target->flags & MF_CORPSE
+//        || actor->target->flags & MF_CORPSE  // corpse health < 0
         || !P_CheckSight (actor, actor->target) )
     {
         P_SetMobjState (actor, actor->info->seestate);
@@ -2270,17 +2271,29 @@ void A_Pain (mobj_t* actor)
 //
 //  A dying thing falls to the ground (monster deaths)
 //
+// Invoked by state during death sequence, after P_KillMobj.
 void A_Fall (mobj_t *actor)
 {
     // actor is on ground, it can be walked over
     if (!cv_solidcorpse.value)
         actor->flags &= ~MF_SOLID;
+
     if( demoversion >= 131 )
     {
+        // Before version 131 this is done later in P_KillMobj.
         actor->flags   |= MF_CORPSE|MF_DROPOFF;
-        actor->height >>= 2;
+        actor->height = actor->info->height>>2;
         actor->radius -= (actor->radius>>4);      //for solid corpses
-        actor->health = actor->info->spawnhealth>>1;
+        // [WDJ] Corpse health must be < 0.
+        // Too many health checks all over the place, like BossDeath.
+        if( actor->health >= 0 )
+            actor->health = -1;
+        if( actor->health > -actor->info->spawnhealth )
+        {
+	    // Not gibbed yet.
+	    // Determine health until gibbed, keep some of the damage.
+            actor->health = (actor->health - actor->info->spawnhealth)/2;
+        }
     }
 
     // So change this if corpse objects
@@ -2336,7 +2349,8 @@ static state_t *P_FinalState(statenum_t state)
 // Possibly trigger special effects
 // if on first boss level
 //
-// Triggered by actor state change action.
+// Triggered by actor state change action, last in death sequence.
+// A_Fall usually occurs before this.
 // Heretic: see A_HBossDeath() in p_henemy.c
 // [WDJ]  Keen death does not have tests for mo->type and thus allows
 // Dehacked monsters to trigger Keen death and BossDeath effects.
@@ -2471,7 +2485,13 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             && mo2->type == boss_type )
         {
             // Check if really dead and finished the death sequence.
+            // [WDJ] Corpse has health < 0.
+            // If two monsters are killed at the same time, this test may occur
+            // while first is corpse and second is not.  But the simple health
+            // test may trigger twice because second monster already has
+            // health < 0 during the first death test.
             if( mo2->health > 0  // the old test (doom original 1.9)
+		|| !(mo2->flags & MF_CORPSE)
                 || mo2->state != P_FinalState(mo2->info->deathstate) )
             {
                 // other boss not dead

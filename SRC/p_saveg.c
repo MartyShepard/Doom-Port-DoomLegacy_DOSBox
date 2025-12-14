@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1198 2015-12-26 19:16:46Z wesleyjohnson $
+// $Id: p_saveg.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2237,6 +2237,12 @@ void P_UnArchiveThinkers(void)
                     mobj->special2 = READ32(save_p);
                 if (diff & MD_AMMO)
                     mobj->dropped_ammo_count = READ32(save_p);
+
+                // [WDJ] Fix old savegames for corpse health < 0.
+                if((mobj->flags & MF_CORPSE) && (mobj->health >= 0))
+                {
+                    mobj->health = -mobj->health - (mobj->info->spawnhealth/2);
+                }
 
                 // now set deductable field
                 // TODO : save this too
