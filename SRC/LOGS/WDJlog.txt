@@ -4714,3 +4714,9 @@ Gave console and hud text proportional font drawing.
 patchfile = w105_1_ver.patch
 - commit revision 1204
 Change to version 145.3, in preparation for 145.4 release.
+
+*** W105_ztag
+patchfile = w105_2_ztag.patch
+- commit revision 1205
+The tag in ZAlloc will be known as ztag in user code, to differentiate it
+from Doom tags.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: f_finale.c 1205 2016-01-19 19:42:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -330,7 +330,7 @@ void F_Ticker (void)
 
             if( gamemode != doom2_commercial)
             {
-                ULONG f = finalecount;
+                uint32_t  f = finalecount;
                 if( f >= MAXINT/2 )
                     f -= MAXINT/2;
 

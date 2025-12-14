@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1194 2015-12-26 19:08:47Z wesleyjohnson $
+// $Id: w_wad.h 1205 2016-01-19 19:42:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -144,9 +144,9 @@ typedef struct wadfile_s
     lumpinfo_t*      lumpinfo;
     lumpcache_t*     lumpcache;
     MipPatch_t*      hwrcache;   // patches are cached in renderer's native format
-    int              numlumps;          // this wad's number of resources
+    int              numlumps;   // this wad's number of resources
     int              handle;
-    ULONG            filesize;          // for network
+    uint32_t         filesize;   // for network
     unsigned char    md5sum[16];
 } wadfile_t;
 
@@ -190,23 +190,26 @@ int     W_ReadLumpHeader (int lump, void* dest, int size);
 //added:06-02-98: now calls W_ReadLumpHeader() with full lump size
 void    W_ReadLump (int lump, void *dest);
 
-void*   W_CacheLumpNum (int lump, int tag);
-void*   W_CacheLumpName (char* name, int tag);
+//  ztag : the Zone memory allocation tag (see memtag_e)
+//  lump : lump number with embedded wad number
 
-void*   W_CachePatchName (char* name, int tag);
+void*   W_CacheLumpNum (int lump, int ztag);
+void*   W_CacheLumpName (char* name, int ztag);
 
-void*   W_CachePatchNum (int lump, int tag);                        // return a patch_t
-void*   W_CachePatchNum_Endian ( int lump, int tag );
+void*   W_CachePatchName (char* name, int ztag);
+
+void*   W_CachePatchNum (int lump, int ztag);                        // return a patch_t
+void*   W_CachePatchNum_Endian ( int lump, int ztag );
 #ifdef HWRENDER
 // [WDJ] Called from hardware render for special mapped sprites
 void*   W_CacheMappedPatchNum ( int lump, uint32_t drawflags );
 #endif
 
-void*   W_CacheRawAsPic( int lump, int width, int height, int tag); // return a pic_t
+void*   W_CacheRawAsPic( int lump, int width, int height, int ztag); // return a pic_t
 
 // Cache and endian convert a pic_t
-void*   W_CachePicNum( int lumpnum, int tag );
-void*   W_CachePicName( char* name, int tag );
+void*   W_CachePicNum( int lumpnum, int ztag );
+void*   W_CachePicName( char* name, int ztag );
 
 // [WDJ] Return a sum unique to a lump, to detect replacements.
 // The lumpptr must be to a Z_Malloc lump.

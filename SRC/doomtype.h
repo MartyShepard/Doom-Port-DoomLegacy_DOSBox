@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: doomtype.h 1205 2016-01-19 19:42:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -136,6 +136,7 @@ typedef enum {
 # define ASMCALL
 #endif
 
+// [WDJ] This program uses strcasecmp, strncasecmp.
 #if defined( __MSC__) || defined( __OS2__)
     // Microsoft VisualC++
     #define strncasecmp             strnicmp
@@ -160,12 +161,12 @@ typedef enum {
     #endif		
 #endif
 
-#if 0
+//#if 0
 // [WDJ] changed all stricmp to strcasecmp
 // [smite] we should use standard funcs
-#define stricmp(x,y) strcasecmp(x,y)
-#define strnicmp(x,y,n) strncasecmp(x,y,n)
-#endif
+//#define stricmp(x,y) strcasecmp(x,y)
+//#define strnicmp(x,y,n) strncasecmp(x,y,n)
+//#endif
 
 
 #if !defined(WIN32) && !defined(__WINDOWS__)

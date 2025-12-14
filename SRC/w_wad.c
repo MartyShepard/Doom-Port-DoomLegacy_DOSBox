@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1194 2015-12-26 19:08:47Z wesleyjohnson $
+// $Id: w_wad.c 1205 2016-01-19 19:42:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -756,7 +756,7 @@ void W_ReadLump ( int           lump,
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 boolean lump_read;	// set by W_CacheLumpNum
 
-void* W_CacheLumpNum ( int lump, int tag )
+void* W_CacheLumpNum ( int lump, int ztag )
 {
     lumpcache_t*  lumpcache;
 
@@ -792,7 +792,7 @@ void* W_CacheLumpNum ( int lump, int tag )
         // read the lump in
 
         //CONS_Printf ("cache miss on lump %i\n",lump);
-        byte* ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[llump]);
+        byte* ptr = Z_Malloc (W_LumpLength (lump), ztag, &lumpcache[llump]);
         W_ReadLumpHeader (lump, ptr, 0);   // read whole lump
 //        W_ReadLumpHeader (lump, lumpcache[llump], 0);   // read whole lump
         lump_read = 1; // cache miss, read lump, caller must apply endian fix
@@ -801,8 +801,8 @@ void* W_CacheLumpNum ( int lump, int tag )
     {
         //CONS_Printf ("cache hit on lump %i\n",lump);
         // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
-        if( tag == PU_CACHE )   tag = PU_CACHE_DEFAULT;
-        Z_ChangeTag (lumpcache[llump], tag);
+        if( ztag == PU_CACHE )   ztag = PU_CACHE_DEFAULT;
+        Z_ChangeTag (lumpcache[llump], ztag);
         lump_read = 0;  // cache hit, cache already has endian fixes
     }
 
@@ -813,9 +813,9 @@ void* W_CacheLumpNum ( int lump, int tag )
 // ==========================================================================
 // W_CacheLumpName
 // ==========================================================================
-void* W_CacheLumpName ( char* name, int tag )
+void* W_CacheLumpName ( char* name, int ztag )
 {
-    return W_CacheLumpNum (W_GetNumForName(name), tag);
+    return W_CacheLumpNum (W_GetNumForName(name), ztag);
 }
 
 
@@ -842,11 +842,11 @@ void* W_CacheLumpName ( char* name, int tag )
 // Cache the patch with endian conversion
 // [WDJ] Only read patches using this function, hardware render too.
 // [WDJ] Removed inline because is also called from in hardware/hw_cache.c.
-void* W_CachePatchNum_Endian ( int lump, int tag )
+void* W_CachePatchNum_Endian ( int lump, int ztag )
 {
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
-    patch_t * patch = W_CacheLumpNum(lump,tag);
+    patch_t * patch = W_CacheLumpNum(lump, ztag);
     // [WDJ] If newly read patch then fix endian.
     if( lump_read )
     {
@@ -865,7 +865,7 @@ void* W_CachePatchNum_Endian ( int lump, int tag )
     return patch;
 #else
     // [WDJ] Optimized version for little-endian, much faster
-    return W_CacheLumpNum(lump,tag);
+    return W_CacheLumpNum(lump, ztag);
 #endif
 }
 
@@ -873,12 +873,12 @@ void* W_CachePatchNum_Endian ( int lump, int tag )
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 
 // Called from many draw functions
-void* W_CachePatchNum ( int lump, int tag )
+void* W_CachePatchNum ( int lump, int ztag )
 {
     MipPatch_t*   grPatch;
 
     if( rendermode == render_soft ) {
-        return W_CachePatchNum_Endian ( lump, tag );
+        return W_CachePatchNum_Endian ( lump, ztag );
     }
    
     // hardware render
@@ -936,15 +936,15 @@ void* W_CacheMappedPatchNum ( int lump, uint32_t drawflags )
 
 #else // HWRENDER version
 // Software renderer
-void* W_CachePatchNum ( int lump, int tag )
+void* W_CachePatchNum ( int lump, int ztag )
 {
-    return W_CachePatchNum_Endian( lump, tag );
+    return W_CachePatchNum_Endian( lump, ztag );
 }
 #endif // HWRENDER version
 
 
 // Find patch in LNS_patch namespace
-void* W_CachePatchName ( char* name, int tag )
+void* W_CachePatchName ( char* name, int ztag )
 {
     int lumpid;
     // substitute known name for name not found
@@ -956,14 +956,14 @@ void* W_CachePatchName ( char* name, int tag )
         if( lumpid == -1 )
         I_Error ("W_CachePatchName: %s not found!\n", name);
     }
-    return W_CachePatchNum( lumpid, tag);
+    return W_CachePatchNum( lumpid, ztag);
 }
 
 
 // convert raw heretic picture to legacy pic_t format
 // Used for heretic: TITLE, HELP1, HELP2, ORDER, CREDIT, FINAL1, FINAL2, E2END
 // Used for raven demo screen
-void* W_CacheRawAsPic( int lump, int width, int height, int tag)
+void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
 {
     // [WDJ] copy of CacheLumpNum with larger lump allocation,
     // read into pic, and no endian fixes
@@ -992,7 +992,7 @@ void* W_CacheRawAsPic( int lump, int width, int height, int tag)
 
         // Allocation is larger than what W_CacheLumpNum does
         pic_t* pic = Z_Malloc (W_LumpLength (lump)+sizeof(pic_t),
-			       tag, &lumpcache[llump]);
+			       ztag, &lumpcache[llump]);
         // read lump + pic into pic->data (instead of lumpcache)
         W_ReadLumpHeader (lump, pic->data, 0);
         // set pic info from caller parameters, (which are literals)
@@ -1003,9 +1003,9 @@ void* W_CacheRawAsPic( int lump, int width, int height, int tag)
     else
     {
         // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
-        if( tag == PU_CACHE )
-	   tag = PU_CACHE_DEFAULT;
-        Z_ChangeTag (lumpcache[llump], tag);
+        if( ztag == PU_CACHE )
+	   ztag = PU_CACHE_DEFAULT;
+        Z_ChangeTag (lumpcache[llump], ztag);
     }
 
     return lumpcache[llump];
@@ -1013,11 +1013,11 @@ void* W_CacheRawAsPic( int lump, int width, int height, int tag)
 
 
 // Cache and endian convert a pic_t
-void* W_CachePicNum( int lumpnum, int tag )
+void* W_CachePicNum( int lumpnum, int ztag )
 {
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
-    pic_t * pt = W_CacheLumpNum ( lumpnum, tag );
+    pic_t * pt = W_CacheLumpNum ( lumpnum, ztag );
     // [WDJ] If newly read pic then fix endian.
     if( lump_read )
     {
@@ -1028,7 +1028,7 @@ void* W_CachePicNum( int lumpnum, int tag )
     return pt;
 #else
     // [WDJ] Optimized version for little-endian, much faster
-    return W_CacheLumpNum(lumpnum,tag);
+    return W_CacheLumpNum(lumpnum, ztag);
 #endif
 }
 
