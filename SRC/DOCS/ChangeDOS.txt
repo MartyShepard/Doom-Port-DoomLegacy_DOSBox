@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01212 ]: w105 give health
 [01211 ]: w105 corpse
 [01210 ]: w105 untab7
 [01209 ]: w105 bad sidedef

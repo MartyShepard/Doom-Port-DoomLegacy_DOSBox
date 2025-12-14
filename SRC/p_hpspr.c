@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_hpspr.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1455,7 +1455,7 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     }
     if(player->powers[pw_weaponlevel2])
     {
-        P_GiveBody(player, damage>>1);
+        P_GiveHealth(player, damage>>1);
         S_StartSound(pmo, sfx_gntpow);
     }
     else

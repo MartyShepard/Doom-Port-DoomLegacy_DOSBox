@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_user.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1507,11 +1507,11 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
             goto ret_fail;
         break;
     case arti_health:
-        if(!P_GiveBody(player, 25))
+        if(!P_GiveHealth(player, 25))
             goto ret_fail;
         break;
     case arti_superhealth:
-        if(!P_GiveBody(player, 100))
+        if(!P_GiveHealth(player, 100))
             goto ret_fail;
         break;
     case arti_tomeofpower:

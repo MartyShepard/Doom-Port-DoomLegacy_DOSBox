@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
+// $Id: p_inter.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -398,11 +398,11 @@ boolean P_GiveWeapon ( player_t*     player,
 
 
 //
-// P_GiveBody
-// Returns false if the body isn't needed at all
+// P_GiveHealth  (P_GiveBody)
+// Returns false if the health isn't needed at all
 //
-boolean P_GiveBody ( player_t*     player,
-                     int           num )
+boolean P_GiveHealth ( player_t*     player,
+                       int           num )
 {
     int max;
     
@@ -463,8 +463,8 @@ static boolean P_GiveCard ( player_t*     player,
 //
 // P_GivePower
 //
-boolean P_GivePower ( player_t*     player,
-                      int /*powertype_t*/   power )
+//  power : powertype index
+boolean P_GivePower ( player_t* player, int power )
 {
     if (power == pw_invulnerability)
     {
@@ -527,7 +527,7 @@ boolean P_GivePower ( player_t*     player,
 
     if (power == pw_strength)
     {
-        P_GiveBody (player, 100);
+        P_GiveHealth (player, 100);
         player->powers[power] = 1;
         return true;
     }
@@ -877,7 +877,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
         // medikits, heals
       case SPR_PTN1: // Item_HealingPotion
       case SPR_STIM:
-        if (!P_GiveBody (player, 10))
+        if (!P_GiveHealth (player, 10))
             return;
         if(cv_showmessages.value==1)
             player->message = GOTSTIM;
@@ -887,7 +887,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
         // [WDJ] fix medkit message
         // DoomWiki fix would put messages first, but that would give
         // message even when not using the medkit
-        if (!P_GiveBody (player, 25))  // add 25 to health
+        if (!P_GiveHealth (player, 25))  // add 25 to health
             return;
         // if health was used, then give message
         if(cv_showmessages.value==1)

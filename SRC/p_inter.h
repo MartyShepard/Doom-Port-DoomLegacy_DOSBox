@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_inter.h 1212 2016-01-19 19:50:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,14 +59,17 @@ void VerifFavoritWeapon (player_t *player);
 
 int FindBestWeapon(player_t *player);
 
-boolean P_GivePower(player_t*, int);
+//  power : powertype index
+boolean P_GivePower ( player_t* player, int power );
+
+//  num : amount of health
+boolean P_GiveHealth( player_t* player, int num );
+
 void P_CheckFragLimit(player_t *p);
 
 void P_KillMobj ( mobj_t*       target,
                   mobj_t*       inflictor,
                   mobj_t*       source );
-boolean P_GiveBody ( player_t*     player,
-                     int           num );
 
 
 //added:28-02-98: boooring handling of thing(s) on top of thing(s)
