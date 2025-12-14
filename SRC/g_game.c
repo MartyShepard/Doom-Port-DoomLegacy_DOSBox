@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: g_game.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1193,15 +1193,24 @@ void G_Ticker (void)
         }
     }
 
-    // do things to change the game state
+    // Do things to change the game state.
     while (gameaction != ga_nothing)
     {
         switch (gameaction)
         {
-            case ga_completed :  G_DoCompleted (); break;
-            case ga_worlddone :  G_DoWorldDone (); break;
-            case ga_nothing   :  break;
-            default : I_Error("gameaction = %d\n", gameaction);
+            case ga_completed:
+                G_DoCompleted ();
+                break;
+            case ga_worlddone:
+                G_DoWorldDone ();
+                break;
+            case ga_nothing:
+                break;
+            default:
+                // [WDJ] Softer recovery.
+                I_SoftError("GAME: gameaction = %d\n", gameaction);
+                gameaction = ga_nothing;
+                break;
         }
     }
 

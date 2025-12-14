@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: r_plane.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -606,7 +606,8 @@ void R_ExpandPlane(visplane_t*  pl, int start, int stop)
 // Setup spanstart for next span at rows (t2..b2),
 //    except when disabled by t2>viewheight
 // at planeheight, using spanfunc
-// Param t1,b1,t2,b2 are y values.
+//  t1, b1: top and bottom y at x-1
+//  t2, b2: top and bottom y at x
 void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 )
 {
     // [WDJ] 11/10/2009  Fix crash in 3DHorror wad, sloppy limit checks on
@@ -693,7 +694,6 @@ void R_DrawPlanes (void)
         if (pl->picnum == skyflatnum)
         {
             //added:12-02-98: use correct aspect ratio scale
-            //dc_iscale = FixedDiv (FRACUNIT, pspriteyscale);
             dc_iscale = skyscale;
 
 // Kik test non-moving sky .. weird
@@ -721,8 +721,8 @@ void R_DrawPlanes (void)
                 if (dc_yl <= dc_yh && dc_yh >= 0 && dc_yl < rdraw_viewheight )
                 {
 		   //[WDJ] phobiata.wad has many views that need clipping
-		    if ( dc_yl < 0 )   dc_yl = 0;
-		    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+                    if ( dc_yl < 0 )   dc_yl = 0;
+                    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
                     angle = (viewangle + x_to_viewangle[x])>>ANGLETOSKYSHIFT;
                     dc_x = x;
                     dc_source = R_GetColumn(skytexture, angle);

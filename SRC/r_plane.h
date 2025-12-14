@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1053 2013-10-01 21:06:41Z wesleyjohnson $
+// $Id: r_plane.h 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -99,7 +99,7 @@ typedef struct visplane_s
   // SoM: frontscale should be stored in the first seg of the subsector
   // where the planes themselves are stored. I'm doing this now because
   // the old way caused trouble with the drawseg array was re-sized.
-  int    scaleseg;
+//  int    scaleseg;
 
   struct ffloor_s* ffloor;  // ffloor_t, when derived from fake floor
 } visplane_t;
@@ -121,7 +121,7 @@ extern planefunction_t  ceilingfunc_t;
 
 extern short            floorclip[MAXVIDWIDTH];
 extern short            ceilingclip[MAXVIDWIDTH];
-extern short            waterclip[MAXVIDWIDTH];   //added:18-02-98:WATER!
+//extern short            waterclip[MAXVIDWIDTH];   //added:18-02-98:WATER!
 extern fixed_t          backscale[MAXVIDWIDTH];
 extern fixed_t          yslopetab[MAXVIDHEIGHT*4];
 

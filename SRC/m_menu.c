@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: m_menu.c 1215 2016-03-08 18:45:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -4430,7 +4430,8 @@ boolean M_Responder (event_t* ev)
             M_QuitDOOM(0);
             goto ret_true;
 
-          case KEY_F11:           // Gamma
+          //added:10-02-98: the gamma toggle is now also in the Options menu
+          case KEY_F11:
             S_StartSound(NULL, menu_sfx_open);
             // bring up the gamma menu
             M_StartControlPanel();
@@ -5090,6 +5091,7 @@ menuitem_t OGL_DevMenu[]=
 //    {IT_STRING | IT_CVAR, "Polygon smooth"  , &cv_grpolygonsmooth    ,  0},
     {IT_STRING | IT_CVAR, 0, "MD2 models"      , &cv_grmd2              , 10},
     {IT_STRING | IT_CVAR, 0, "Translucent walls", &cv_grtranswall       , 20},
+    {IT_STRING | IT_CVAR, 0, "Polygon shape"  , &cv_grpolyshape         , 30},
 };
 
 menu_t  OpenGLOptionDef =

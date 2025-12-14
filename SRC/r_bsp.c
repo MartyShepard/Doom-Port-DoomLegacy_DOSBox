@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1213 2016-03-08 18:38:23Z wesleyjohnson $
+// $Id: r_bsp.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -132,7 +132,6 @@ typedef struct
 {
     int first;
     int last;
-
 } cliprange_t;
 
 
@@ -158,6 +157,7 @@ void R_ClipSolidWallSegment( int first, int last )
 
     // Find the first range that touches the range
     //  (adjacent pixels are touching).
+    // Note that there are initial boundary entries that are off-screen.
     start = solidsegs;
     while (start->last < first-1)
         start++;
@@ -169,19 +169,26 @@ void R_ClipSolidWallSegment( int first, int last )
             // Post is entirely visible (above start),
             //  so insert a new clippost.
             R_StoreWallRange (first, last);
-            next = new_seg_end;
-            new_seg_end++;
-            //SoM: 3/28/2000: NO MORE CRASHING!
-            if(new_seg_end - solidsegs > MAXSEGS)
-              I_Error("R_ClipSolidWallSegment: Solid Segs overflow!\n");
 
-            while (next != start)
+            //SoM: 3/28/2000: NO MORE CRASHING!
+            if(new_seg_end > & solidsegs[MAXSEGS-1] )
             {
-                *next = *(next-1);
-                next--;
+                // [WDJ] Soft recovery
+                I_SoftError("R_ClipSolidWallSegment: Solid Segs overflow!\n");
+                // Reuse segs, bad drawing, but keeps from crashing.
+                new_seg_end = & solidsegs[MAXSEGS-4];
             }
-            next->first = first;
-            next->last = last;
+
+	    // Shift segs up from start to new_seg_end.
+            if( start < new_seg_end )
+            {
+                memmove( start+1, start,
+                         sizeof(cliprange_t) * (new_seg_end - start) );
+            }
+            new_seg_end++;
+            // New seg post at start
+            start->first = first;
+            start->last = last;
             return;
         }
 
@@ -235,8 +242,13 @@ void R_ClipSolidWallSegment( int first, int last )
     new_seg_end = start+1;
 
     //SoM: 3/28/2000: NO MORE CRASHING!
-    if(new_seg_end - solidsegs > MAXSEGS)
-      I_Error("R_ClipSolidWallSegment: Solid Segs overflow!\n");
+    if(new_seg_end > & solidsegs[MAXSEGS] )
+    {
+        // [WDJ] Soft recovery
+        I_SoftError("R_ClipSolidWallSegment: Solid Segs overflow!\n");
+        // Reuse segs, bad drawing, but keeps from crashing.
+        new_seg_end = & solidsegs[MAXSEGS-4];
+    }
 }
 
 
@@ -624,21 +636,24 @@ void R_AddLine (seg_t*  lineseg)
 
     backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
 
-    doorclosed = 0; //SoM: 3/25/2000
-
     // Closed door.
     if (backsector->ceilingheight <= frontsector->floorheight
         || backsector->floorheight >= frontsector->ceilingheight)
+    {
+        // Rare, misalignment of openings.
+        doorclosed = 0; //SoM: 3/25/2000
         goto clipsolid;
+    }
 
     //SoM: 3/25/2000: Check for automap fix. Store in doorclosed for r_segs.c
-    if ((doorclosed = R_DoorClosed()))
-      goto clipsolid;
+    doorclosed = R_DoorClosed();
+    if (doorclosed)  goto clipsolid;
 
     // Window.
     if (backsector->ceilingheight != frontsector->ceilingheight
         || backsector->floorheight != frontsector->floorheight)
         goto clippass;
+
 
     // Reject empty lines used for triggers
     //  and special events.

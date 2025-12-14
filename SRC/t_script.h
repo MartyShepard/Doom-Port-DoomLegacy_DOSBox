@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: t_script.h 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -58,7 +58,7 @@ struct runningscript_s
 
   // saved variables
   fs_variable_t *variables[VARIABLESLOTS];
-  
+
   runningscript_t *prev, *next;  // for chain
   mobj_t *trigger;
 };

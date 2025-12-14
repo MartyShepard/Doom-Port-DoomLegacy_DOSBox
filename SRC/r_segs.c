@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1213 2016-03-08 18:38:23Z wesleyjohnson $
+// $Id: r_segs.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2024,18 +2024,18 @@ void R_StoreWallRange( int   start, int   stop)
     }
     else
     {
-        // UNUSED: try to fix the stretched line bug
 #if 0
+        // UNUSED: try to fix the stretched line bug
         if (rw_distance < FRACUNIT/2)
         {
-            fixed_t         trx,try;
+            fixed_t         tr_x,tr_y;
             fixed_t         gxt,gyt;
             
-            trx = curline->v1->x - viewx;
-            try = curline->v1->y - viewy;
+            tr_x = curline->v1->x - viewx;
+            tr_y = curline->v1->y - viewy;
             
-            gxt = FixedMul(trx,viewcos);
-            gyt = -FixedMul(try,viewsin);
+            gxt = FixedMul(tr_x,viewcos);
+            gyt = -FixedMul(tr_y,viewsin);
             ds_p->scale1 = FixedDiv(projection, gxt-gyt)<<detailshift;
         }
 #endif

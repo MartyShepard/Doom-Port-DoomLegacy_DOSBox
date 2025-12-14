@@ -4812,3 +4812,32 @@ Many comments added.
 Choose the SPRITE_LIGHTLEVEL conditional selection, removing the alterative.
 Removed some dup_view variables, because they did nothing special.
 Chose the PLANE_MERGE_SORT conditional selection, removing the old sort code.
+
+*** W105_hwbsp
+patchfile = w105_12_hwbsp.patch
+- commit revision 1215
+Rewrite of hardware draw polygon creation.  This uses a wpoly_t structure
+with vertex pointers that makes it much easier to maintain common vertexes.
+The final polygons are converted to the current polygon structure so
+the drawing code is not affected.
+
+Fixes some polygon errors in wads such as BOOMEDIT.WAD, and phobiata.wad,
+using OpenGL.
+
+The BSP walk procedure gives the subsector convex polygon, and a list
+of segs.  Cutting the subsector polygon with the segs introduces errors,
+and the result might not be convex.
+Example: BOOMEDIT.WAD, map01, subsector 206, has segs from linedef 104
+and linedef 110, that meet in the subsector making it non-convex.
+The void space behind linedefs 104 and 110 cannot be eliminated easily.
+
+Added a control to select polygon shape options. The default is Trim.
+Subsector: Disables cutting with segs.
+Fat : Ignores any seg that does not cross the subsector polygon entirely.
+Trim: Chains together the segs, and applies those chains that cross the
+  subsector polygon.  It might create a non-convex polygon, so a check removes
+  the center vertex where sides meet at an interior angle
+  greater than 180 degrees.
+NonConvex : Leaves the non-convex polygons.  My nVidia supplied
+  OpenGL library seems to tolerate the non-convex polygons.
+

@@ -1,5 +1,12 @@
 * Not need to Compile.
 
+[01221 ]: w105 bsp clean
+[01220*]: w105 crack2
+[01219*]: w105 hw sky draw
+[01218*]: w105 bsp sector
+[01217*]: w105 crack1
+[01216*]: w105 hwpoly
+[01215*]: w105 hwbsp
 [01214 ]: w105 hardware draw
 [01213 ]: w105 bsp
 [01212 ]: w105 give health
