@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1186 2015-11-25 20:24:52Z wesleyjohnson $
+// $Id: r_defs.h 1213 2016-03-08 18:38:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -129,7 +129,8 @@
   // MAXVIDWIDTH, MAXVIDHEIGHT
 
 
-#define NULL_INDEX 0xFFFF  // or -1. Used in line_t::sidenum and maplinedef_t::sidenum.
+// Max index (or -1). Used in line_t::sidenum and maplinedef_t::sidenum.
+#define NULL_INDEX   0xFFFF
 
 
 // Silhouette, needed for clipping Segs (mainly)
@@ -140,9 +141,6 @@ typedef enum {
    SIL_TOP     = 0x02
 } Silhouette_e;
 
-//faB: was upped to 512, but still people come with levels that break the
-//     limits, so had to do an ugly re-alloc to get rid of the overflow.
-//#define MAXDRAWSEGS             256        // see r_segs.c for more
 
 // SoM: Moved this here...
 // This could be wider for >8 bit display.
@@ -197,9 +195,7 @@ typedef struct
 //
 typedef struct
 {
-    fixed_t     x;
-    fixed_t     y;
-
+    fixed_t     x, y;
 } vertex_t;
 
 
@@ -214,10 +210,7 @@ struct line_s;
 typedef struct
 {
     thinker_t           thinker;        // not used for anything
-    fixed_t             x;
-    fixed_t             y;
-    fixed_t             z;
-
+    fixed_t             x, y, z;
 } degenmobj_t;
 
 //SoM: 3/23/2000: Store fake planes in a resizable array instead of just by
@@ -359,8 +352,8 @@ typedef struct sector_s
     int nexttag,firsttag;        //SoM: 3/6/2000: by killough: improves searches for tags.
 
     // 0 = untraversed, 1,2 = sndlines -1
-    short       soundtraversed;
-    short       floortype;  // see floortype_t beffor 
+    byte        soundtraversed;
+    byte        floortype;  // see floortype_e
 
     // thing that made a sound (or null)
     mobj_t*     soundtarget;
@@ -725,10 +718,9 @@ typedef struct
 
     // If NF_SUBSECTOR is set then rest of it is a subsector index,
     // otherwise it is another node index.
-    unsigned short children[2];
+    uint16_t    children[2];
         // children[0]= right
         // children[1]= left
-
 } node_t;
 
 
@@ -855,12 +847,10 @@ typedef struct vissprite_s
     struct vissprite_s* prev;
     struct vissprite_s* next;
 
-    int                 x1;
-    int                 x2;
+    int                 x1, x2;
 
     // for line side calculation
-    fixed_t             gx;
-    fixed_t             gy;
+    fixed_t             gx, gy;
 
     // global bottom / top for silhouette clipping, world coordinates
     fixed_t             gz_bot;

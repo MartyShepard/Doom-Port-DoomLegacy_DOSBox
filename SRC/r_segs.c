@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: r_segs.c 1213 2016-03-08 18:38:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2129,6 +2129,9 @@ void R_StoreWallRange( int   start, int   stop)
             // ds_p->spr_topclip = screenheightarray;
         }
         
+
+#if 0
+// Duplicated by fix below.
         if (backsector->ceilingheight <= frontsector->floorheight)
         {
 	    // backsector below frontsector
@@ -2144,24 +2147,22 @@ void R_StoreWallRange( int   start, int   stop)
             ds_p->sil_top_height = FIXED_MIN;
             ds_p->silhouette |= SIL_TOP;
         }
+#endif
 
         //SoM: 3/25/2000: This code fixes an automap bug that didn't check
         // frontsector->ceiling and backsector->floor to see if a door was closed.
         // Without the following code, sprites get displayed behind closed doors.
+        if (doorclosed || backsector->ceilingheight<=frontsector->floorheight)
         {
-          extern int doorclosed;    // killough 1/17/98, 2/8/98, 4/7/98
-          if (doorclosed || backsector->ceilingheight<=frontsector->floorheight)
-          {
-              ds_p->spr_bottomclip = negonearray;
-              ds_p->sil_bottom_height = FIXED_MAX;
-              ds_p->silhouette |= SIL_BOTTOM;
-          }
-          if (doorclosed || backsector->floorheight>=frontsector->ceilingheight)
-          {                   // killough 1/17/98, 2/8/98
-              ds_p->spr_topclip = screenheightarray;
-              ds_p->sil_top_height = FIXED_MIN;
-              ds_p->silhouette |= SIL_TOP;
-          }
+            ds_p->spr_bottomclip = negonearray;
+            ds_p->sil_bottom_height = FIXED_MAX;
+            ds_p->silhouette |= SIL_BOTTOM;
+        }
+        if (doorclosed || backsector->floorheight>=frontsector->ceilingheight)
+        {                   // killough 1/17/98, 2/8/98
+            ds_p->spr_topclip = screenheightarray;
+            ds_p->sil_top_height = FIXED_MIN;
+            ds_p->silhouette |= SIL_TOP;
         }
 
         worldbacktop = backsector->ceilingheight - viewz;

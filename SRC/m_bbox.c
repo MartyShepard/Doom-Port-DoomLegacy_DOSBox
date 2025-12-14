@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_bbox.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_bbox.c 1213 2016-03-08 18:38:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -39,6 +39,8 @@ void M_ClearBox (fixed_t *box)
     box[BOXBOTTOM] = box[BOXLEFT] = FIXED_MAX;
 }
 
+//  box : bounding box, INOUT
+//  x,y : vertex to add into the box
 void M_AddToBox ( fixed_t*      box,
                   fixed_t       x,
                   fixed_t       y )
@@ -50,6 +52,8 @@ void M_AddToBox ( fixed_t*      box,
     if (y>box[BOXTOP   ])   box[BOXTOP   ] = y;
 }
 
+//  box : bounding box
+//  x,y : return true if this vertex is in the box
 boolean M_PointInBox ( fixed_t*      box,
                        fixed_t       x,
                        fixed_t       y )

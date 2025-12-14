@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1206 2016-01-19 19:45:57Z wesleyjohnson $
+// $Id: r_bsp.c 1213 2016-03-08 18:38:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -106,16 +106,11 @@ sector_t*       backsector;
 //Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
 //         default is 128 segs, so it means nearly 1Mb allocated
 // Drawsegs set by R_StoreWallRange, used by R_CreateDrawNodes
-//drawseg_t     drawsegs[MAXDRAWSEGS];
 drawseg_t*      drawsegs=NULL;  // allocated drawsegs
-unsigned        maxdrawsegs;    // number allocated
+uint16_t        maxdrawsegs;    // number allocated
 drawseg_t*      ds_p = NULL;    // last drawseg used (tail)
 drawseg_t*      firstnewseg = NULL;  // unused
 
-
-//SoM:3/25/2000: indicates doors closed wrt automap bugfix:
-int      doorclosed;
-  // used r_segs.c
 
 //
 // R_ClearDrawSegs
@@ -315,6 +310,11 @@ void R_ClearClipSegs (void)
 // It assumes that Doom has already ruled out a door being closed because
 // of front-back closure (e.g. front floor is taller than back ceiling).
 
+//SoM:3/25/2000: indicates doors closed wrt automap bugfix:
+byte   doorclosed;  // 0=open
+  // used r_segs.c
+
+// Called by R_AddLine, HWR_AddLine
 int R_DoorClosed(void)
 {
   return (
@@ -611,6 +611,7 @@ void R_AddLine (seg_t*  lineseg)
     x1 = viewangle_to_x[ ANGLE_TO_FINE(angle1+ANG90) ];  // left
     x2 = viewangle_to_x[ ANGLE_TO_FINE(angle2+ANG90) ];  // right
 
+    // [WDJ] This is where PrBoom fixes gaps in OpenGL, by adding segs.
     // Does not cross a pixel?
     if (x1 >= x2)  //SoM: 3/17/2000: Killough said to change the == to >= for... "robustness"?
         return;

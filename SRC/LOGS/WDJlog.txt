@@ -4791,3 +4791,18 @@ Fixed the health when restoring old savegames.
 patchfile = w105_9_givehealth.patch
 - commit revision 1212
 Change P_GiveBody to P_GiveHealth.
+
+*** W105_hardware
+patchfile = w105_10_hardware.patch
+- commit revision 12??
+Cleanup naming, syntax, and parameters in hardware files.
+Preparation for fixing the hardware draw problems.
+Removed some old code that was commented out.
+Removed old poly allocation.
+Removed extraneous parameters.
+Separated out loading_status as separate function.
+Made BSP poly statistics conditional on DEBUG_HWBSP.
+Many comments added.
+Choose the SPRITE_LIGHTLEVEL conditional selection, removing the alterative.
+Removed some dup_view variables, because they did nothing special.
+Chose the PLANE_MERGE_SORT conditional selection, removing the old sort code.
