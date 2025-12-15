@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01232 ]: w105 netwait
 [01231 ]: w105 waterplane
 [01230 ]: w105 DCK water test disable
 [01229 ]: w105 pickup flash

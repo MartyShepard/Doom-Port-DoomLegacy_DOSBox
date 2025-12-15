@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: d_clisrv.c 1232 2016-05-24 17:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -397,16 +397,16 @@ static void ExtraDataTicker(void)
     {
         if((playeringame[i]) || (i==0))
         {
-	    textbuf = & textcmds[btic][i];
-	    textlen = textbuf->buff[0];
+            textbuf = & textcmds[btic][i];
+            textlen = textbuf->buff[0];
             curpos=(byte *)&(textbuf->buff[1]);  // start of text
-	    // [WDJ] need check for buffer overrun here !!
+            // [WDJ] need check for buffer overrun here !!
             bufferend = & textbuf->buff[textlen+1];  // end of text
             while(curpos<bufferend)
             {
                 if(*curpos < MAXNETXCMD && netxcmd_func[*curpos])
                 {
-		    // Execute a NetXCmd.
+                    // Execute a NetXCmd.
                     byte cmd_id=*curpos;
                     curpos++;
                     DEBFILE(va("Executing x_cmd %d ply %d ", cmd_id,i));
@@ -414,14 +414,14 @@ static void ExtraDataTicker(void)
                     DEBFILE("Execute done\n");
                 }
                 else
-	        {
-		    // [WDJ] Why should a bad demo command byte be fatal.
+                {
+                    // [WDJ] Why should a bad demo command byte be fatal.
                     I_SoftError("Got unknown net/demo command [%d]=%d (max %d)\n",
                            (curpos - &(textbuf->buff[0])),
                            *curpos, textlen);
-		    D_Clear_ticcmd(btic);
-		    return;
-		}
+                    D_Clear_ticcmd(btic);
+                    return;
+                }
             }
         }
     }
@@ -496,7 +496,7 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
                    p,
                    MAXPLAYERNAME+1);
             p+=MAXPLAYERNAME+1;
-	    textlen += MAXPLAYERNAME+1+1;
+            textlen += MAXPLAYERNAME+1+1;
         }
         if(ex & 2)
         {
@@ -705,7 +705,8 @@ failed_exit:
 //#define WAITPLAYER_DEBUG
 
 static byte  num_netnodes;
-static byte  wait_nodes = 0;
+static byte  num_netplayer;  // wait for netplayer, some nodes are 2 players
+static byte  wait_netplayer = 0;
 static tic_t wait_tics  = 0;
 static tic_t prev_tic = 0;
 
@@ -714,29 +715,29 @@ static void SV_Send_NetWait( void )
     int nn;
 
     netbuffer->packettype = PT_NETWAIT;
-    netbuffer->u.netwait.num_netnodes = num_netnodes;
-    netbuffer->u.netwait.wait_nodes = wait_nodes;
+    netbuffer->u.netwait.num_netplayer = num_netplayer;
+    netbuffer->u.netwait.wait_netplayer = wait_netplayer;
     netbuffer->u.netwait.wait_tics = LE_SWAP16( wait_tics );
     netbuffer->u.netwait.p_rand_index = P_GetRandIndex(); // to sync P_Random
 #ifdef WAITPLAYER_DEBUG
-    GenPrintf( EMSG_debug, "WaitPlayer update: wait_nodes=%d  num_netnodes=%d  wait_tics=%d\n",
-	       num_netnodes, wait_nodes, wait_tics );
+    GenPrintf( EMSG_debug, "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
+               num_netnodes, num_netplayer, wait_netplayer, wait_tics );
 #endif
     for(nn=1; nn<MAXNETNODES; nn++)
     {
         if(nodeingame[nn])
         {
-	    HSendPacket(nn, false, 0, sizeof(netwait_pak));
+            HSendPacket(nn, false, 0, sizeof(netwait_pak));
 #ifdef WAITPLAYER_DEBUG
-	    GenPrintf( EMSG_debug, "  sent to player[ %d ]\n", nn );
+            GenPrintf( EMSG_debug, "  sent to player[ %d ]\n", nn );
 #endif
-	}
+        }
     }
 }
 
 void D_WaitPlayer_Drawer( void )
 {
-    WI_draw_wait( num_netnodes, wait_nodes, wait_tics );
+    WI_draw_wait( num_netnodes, num_netplayer, wait_netplayer, wait_tics );
 }
 
 void D_WaitPlayer_Setup( void )
@@ -745,21 +746,21 @@ void D_WaitPlayer_Setup( void )
     {
         if( server )
         {
-	    // Wait for all player nodes, during netgame.
-	    wait_nodes = cv_wait_players.value;
-	    wait_tics = cv_wait_timeout.value * TICRATE;
-	}
+            // Wait for all player nodes, during netgame.
+            wait_netplayer = cv_wait_players.value;
+            wait_tics = cv_wait_timeout.value * TICRATE;
+        }
         else
         {
-	    // Wait indefinite, until server updates the wait.
-	    wait_nodes = 99;
-	    wait_tics = 0;
+            // Wait indefinite, until server updates the wait.
+            wait_netplayer = 99;
+            wait_tics = 0;
         }
     }
     else
     {
         // Single player and local games.
-        wait_nodes = 0;
+        wait_netplayer = 0;
         wait_tics = 0;
     }
     gamestate = wipegamestate = GS_WAITINGPLAYERS;
@@ -774,44 +775,48 @@ static boolean  D_WaitPlayer_Ticker()
     {
         // Count the net nodes.
         num_netnodes=0;
+        num_netplayer=0;
         for(nn=0; nn<MAXNETNODES; nn++)
         {
-	    // Only counting nodes with players.
-	    if(nodeingame[nn])
-	    {
-	        if( playerpernode[nn] > 0 )
-		    num_netnodes++;
-	    }
-	}
+            // Only counting nodes with players.
+            if(nodeingame[nn])
+            {
+                if( playerpernode[nn] > 0 )
+                {
+                    num_netnodes ++;
+                    num_netplayer += playerpernode[nn];
+                }
+            }
+        }
 
-        if( wait_tics > 0 || wait_nodes > 0 )
+        if( wait_tics > 0 || wait_netplayer > 0 )
         {
-	    // Service the wait tics.
-	    if( wait_tics > 1 )
-	    {
-	        wait_tics--;  // count down to 1
-	    }
+            // Service the wait tics.
+            if( wait_tics > 1 )
+            {
+                wait_tics--;  // count down to 1
+            }
 
-	    static  byte net_update_cnt = 0;
-	    if( ++net_update_cnt > 4 )
-	    {
-	        net_update_cnt = 0;
-	        // Update all net nodes
-	        SV_Send_NetWait();
-	    }
-	}
+            static  byte net_update_cnt = 0;
+            if( ++net_update_cnt > 4 )
+            {
+                net_update_cnt = 0;
+                // Update all net nodes
+                SV_Send_NetWait();
+            }
+        }
     }
 
     // Clients and Server do same tests.
-    if( wait_nodes )
+    if( wait_netplayer > 0 )
     {
         // Waiting on player net nodes, with or without timeout.
-        if( num_netnodes < wait_nodes )
+        if( num_netplayer < wait_netplayer )
         {
-	    // Waiting for player net nodes.
-	    if( wait_tics != 1 )  // timeout at 1
-	       goto wait_ret;  // waiting only for number of players
-	}
+            // Waiting for player net nodes.
+            if( wait_tics != 1 )  // timeout at 1
+               goto wait_ret;  // waiting only for number of players
+        }
     }
     else if( wait_tics > 1 )
         goto wait_ret;  // waiting for players by timeout
@@ -840,26 +845,26 @@ boolean  D_WaitPlayer_Response( int key )
      case KEY_ESCAPE:
         if( ! dedicated )
         {
-	    D_Quit_NetGame();
-	    SV_StopServer();
-	    SV_ResetServer();
-	    D_StartTitle();
-	    netgame = multiplayer = false;
-	    return true;
-	}
+            D_Quit_NetGame();
+            SV_StopServer();
+            SV_ResetServer();
+            D_StartTitle();
+            netgame = multiplayer = false;
+            return true;
+        }
         break;
      case 's':
         if( server )
         {
-	    // Start game, stop waiting for player nodes.
-	    wait_nodes = 0;
-	    wait_tics = 0;
-	    SV_Send_NetWait();
+            // Start game, stop waiting for player nodes.
+            wait_netplayer = 0;
+            wait_tics = 0;
+            SV_Send_NetWait();
 #ifdef WAITPLAYER_DEBUG
-	    GenPrintf( EMSG_debug, "Start game (key) sent at tic=%d\n", gametic );
+            GenPrintf( EMSG_debug, "Start game (key) sent at tic=%d\n", gametic );
 #endif
-	    return true;
-	}
+            return true;
+        }
         break;
     }
     return false;
@@ -956,18 +961,18 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
     for(;;) {
         i2 = i;  // prev position of updated entry
         if( i>0
-	    && test_time < serverlist[i-1].info.trip_time )
+            && test_time < serverlist[i-1].info.trip_time )
         {
             i--;
         }
         else
         if( (i+1)<serverlistcount
-	    && test_time > serverlist[i+1].info.trip_time )
+            && test_time > serverlist[i+1].info.trip_time )
         {
             i++;
         }
         else
-	    break;  // done
+            break;  // done
         serverlist[i2] = serverlist[i];  // move other to prev position
         serverlist[i] = se;  // new position
     }
@@ -1001,7 +1006,7 @@ void CL_Update_ServerList( boolean internetsearch )
         server_list = MS_Get_ShortServersList();
         if( server_list )
         {
-	    // Poll the servers on the list to get ping time.
+            // Poll the servers on the list to get ping time.
             for (i=0; server_list[i].header[0]; i++)
             {
                 int  node;
@@ -1042,7 +1047,7 @@ static void CL_ConnectToServer( void )
     else
         CONS_Printf("Contacting the server...\n");
 
-    DEBFILE(va("Waiting %d nodes\n", wait_nodes));
+    DEBFILE(va("Waiting %d players\n", wait_netplayer));
 
     askinfo_tic = 0;
     SL_Clear_ServerList(servernode);  // clear all except the current server
@@ -1056,117 +1061,117 @@ static void CL_ConnectToServer( void )
             case CLM_searching :
                 // serverlist is updated by GetPacket function
                 if( serverlistcount <= 0 )
-	        {
-		    // Don't have a serverlist.
-		    // Poll the server (askinfo packet).
-		    if( askinfo_tic <= I_GetTime() )
-		    {
-		        // Don't be noxious on the network.
-		        // Every 2 seconds is often enough.
-		        askinfo_tic = I_GetTime() + (TICRATE*2);
-		        if( servernode < MAXNETNODES )
-		        {
-			    // Specific server.
-			    CL_Send_AskInfo(servernode);
-			}
-		        else
-		        {
-			    // Any
-			    CL_Update_ServerList( false );
-			}
-		    }
-                }
-		else
                 {
-		    // Have a serverlist, serverlistcount > 0.
+                    // Don't have a serverlist.
+                    // Poll the server (askinfo packet).
+                    if( askinfo_tic <= I_GetTime() )
+                    {
+                        // Don't be noxious on the network.
+                        // Every 2 seconds is often enough.
+                        askinfo_tic = I_GetTime() + (TICRATE*2);
+                        if( servernode < MAXNETNODES )
+                        {
+                            // Specific server.
+                            CL_Send_AskInfo(servernode);
+                        }
+                        else
+                        {
+                            // Any
+                            CL_Update_ServerList( false );
+                        }
+                    }
+                }
+                else
+                {
+                    // Have a serverlist, serverlistcount > 0.
                     // This can be a response to our broadcast request
                     if( servernode >= MAXNETNODES )
                     {
-		        // Invalid servernode, get best server from serverlist.
+                        // Invalid servernode, get best server from serverlist.
                         i = 0;
                         servernode = serverlist[i].server_node;
                         CONS_Printf("Found, ");
                     }
                     else
                     {
-		        // Have a current server.  Find it in the serverlist.
+                        // Have a current server.  Find it in the serverlist.
                         i = SL_Find_Server(servernode);
-		        // Check if it shutdown, or is missing for some reason.
+                        // Check if it shutdown, or is missing for some reason.
                         if (i<0)
                             break; // the case
                     }
-		    // Check server for files needed.
+                    // Check server for files needed.
                     CL_Got_Fileneed(serverlist[i].info.num_fileneed,
-				    serverlist[i].info.fileneed    );
+                                    serverlist[i].info.fileneed    );
                     CONS_Printf("Checking files...\n");
                     switch( CL_CheckFiles() )
-		    {
-		     case CFR_no_files:
-		     case CFR_all_found:
+                    {
+                     case CFR_no_files:
+                     case CFR_all_found:
                         cl_mode = CLM_askjoin;
-		        break;
+                        break;
                      case CFR_download_needed:
-		        cl_mode = CLM_download_req;
-		        break;
-		     case CFR_iwad_error: // cannot join for some reason
-		     case CFR_insufficient_space:
-		     default:
-		        goto reset_to_title_exit;
-		    }
+                        cl_mode = CLM_download_req;
+                        break;
+                     case CFR_iwad_error: // cannot join for some reason
+                     case CFR_insufficient_space:
+                     default:
+                        goto reset_to_title_exit;
+                    }
                     break;
                 }
                 break;
-	    case CLM_download_req:
-	        // Must download something.
-	        // Check -nodownload switch, or request downloads.
-	        switch( Send_RequestFile() )
-	        {
-		 case RFR_success:
-		    cl_mode = CLM_downloadfiles;
-		    break;
-		 case RFR_send_fail:
-		    break;  // retry later
-		 case RFR_insufficient_space: // Does not seem to be used.
-		 case RFR_nodownload:
-		 default:
-		    // Due to -nodownload switch, or other fatal error.
-		    goto  reset_to_title_exit;
-		}
-	        break;
+            case CLM_download_req:
+                // Must download something.
+                // Check -nodownload switch, or request downloads.
+                switch( Send_RequestFile() )
+                {
+                 case RFR_success:
+                    cl_mode = CLM_downloadfiles;
+                    break;
+                 case RFR_send_fail:
+                    break;  // retry later
+                 case RFR_insufficient_space: // Does not seem to be used.
+                 case RFR_nodownload:
+                 default:
+                    // Due to -nodownload switch, or other fatal error.
+                    goto  reset_to_title_exit;
+                }
+                break;
             case CLM_downloadfiles :
                 if( CL_waiting_on_fileneed() )
                     break; // continue looping
-	        // Have all downloaded files.
-	        cl_mode = CLM_askjoin;
-	        // continue into next case
+                // Have all downloaded files.
+                cl_mode = CLM_askjoin;
+                // continue into next case
             case CLM_askjoin :
                 if( ! CL_Load_ServerFiles() )
-	        {
-		    // Cannot load some file.
-		    goto  reset_to_title_exit;
-		}
+                {
+                    // Cannot load some file.
+                    goto  reset_to_title_exit;
+                }
 #ifdef JOININGAME
                 // prepare structures to save the file
                 // WARNING: this can be useless in case of server not in GS_LEVEL
                 // but since the network layer don't provide ordered packet ...
-		// This can be repeated, if CL_Send_Join fails.
+                // This can be repeated, if CL_Send_Join fails.
                 CL_Prepare_Download_SaveGame(tmpsave);
 #endif
                 if( CL_Send_Join() )  // join game
                     cl_mode = CLM_waitjoinresponse;
                 break;
             case CLM_waitjoinresponse :
-	        // see server_cfg_handler()
-	        break;
+                // see server_cfg_handler()
+                break;
 #ifdef JOININGAME
             case CLM_downloadsavegame :
                 if( cl_fileneed[0].status != FS_FOUND )
-	            break; // continue loop
+                    break; // continue loop
 
-	        // Have received the savegame from the server.
-	        CL_Load_Received_Savegame();
-	        gamestate = GS_LEVEL;  // game loaded
-	        cl_mode = CLM_connected;
+                // Have received the savegame from the server.
+                CL_Load_Received_Savegame();
+                gamestate = GS_LEVEL;  // game loaded
+                cl_mode = CLM_connected;
                 // don't break case continue to CLM_connected
 #endif
             case CLM_connected :
@@ -1175,33 +1180,33 @@ static void CL_ConnectToServer( void )
 
         Net_Packet_Handler();
         if( !server && !netgame )
-	    goto reset_to_searching;  // connection closed by cancel or timeout
+            goto reset_to_searching;  // connection closed by cancel or timeout
 
         Net_AckTicker();
 
         // Operations performed only once every tic.
         if( prev_tic != I_GetTime() )
         {
-	    prev_tic = I_GetTime();
+            prev_tic = I_GetTime();
 
-	    // User response handler
+            // User response handler
             I_OsPolling();
-	    switch( I_GetKey() )
-	    {
-	      case 'q':
-	      case KEY_ESCAPE:
-	         goto quit_ret;
-	    }
+            switch( I_GetKey() )
+            {
+              case 'q':
+              case KEY_ESCAPE:
+                 goto quit_ret;
+            }
 
-	    if( Filetx_file_cnt )  // File download in progress.
-	        Filetx_Ticker();
-	   
+            if( Filetx_file_cnt )  // File download in progress.
+                Filetx_Ticker();
+
 #if 0
-	    // Supporting the wait during connect, like it was in the previous
-	    // code, has marginal value.  Seems to cause more problems.
-	    D_WaitPlayer_Ticker( 0 );
-	    if( wait_tics > 0 || wait_nodes > 0 )
-	        D_WaitPlayer_Drawer();
+            // Supporting the wait during connect, like it was in the previous
+            // code, has marginal value.  Seems to cause more problems.
+            D_WaitPlayer_Ticker( 0 );
+            if( wait_tics > 0 || wait_netplayer > 0 )
+                D_WaitPlayer_Drawer();
 #endif
             CON_Drawer ();
             I_FinishUpdate ();              // page flip or blit buffer
@@ -1254,9 +1259,9 @@ void Command_connect(void)
         // used in menu to connect to a server in the list
         if( netgame && strcasecmp(COM_Argv(1),"node")==0 )
         {
-	    // example: "connect node 4"
+            // example: "connect node 4"
             servernode = atoi(COM_Argv(2));
-	}
+        }
         else
         if( netgame )
         {
@@ -1271,16 +1276,16 @@ void Command_connect(void)
             multiplayer = true;
         
             if( strcasecmp(COM_Argv(1),"any")==0 )
-	    {
-	        // Connect to first lan server found.
+            {
+                // Connect to first lan server found.
                 servernode = BROADCASTADDR;
-	    }
+            }
             else
             if( I_NetMakeNode )
-	    {
-	        // Connect to server at IP addr.
+            {
+                // Connect to server at IP addr.
                 servernode = I_NetMakeNode(COM_Argv(1));
-	    }
+            }
             else
             {
                 CONS_Printf("There is no server identification with this network driver\n");
@@ -1302,7 +1307,7 @@ static void CL_RemovePlayer(int playernum)
     {
         byte nnode = player_to_nnode[playernum];
         if( playerpernode[nnode] )
-	    playerpernode[nnode]--;
+            playerpernode[nnode]--;
         if( playerpernode[nnode] == 0 )
         {
             nodeingame[player_to_nnode[playernum]] = false;
@@ -1330,7 +1335,7 @@ static void CL_RemovePlayer(int playernum)
     playeringame[playernum] = false;
     player_to_nnode[playernum] = -1;
     while(playeringame[doomcom->numplayers-1]==0
-	  && doomcom->numplayers>1)
+          && doomcom->numplayers>1)
     {
         doomcom->numplayers--;
     }
@@ -1377,15 +1382,15 @@ void Command_PlayerInfo(void)
         if(playeringame[i])
         {
             if(serverplayer==i)
-	    {
+            {
                 CONS_Printf("\2num:%2d  node:%2d  %s\n",
-			    i, player_to_nnode[i], player_names[i]);
-	    }
+                            i, player_to_nnode[i], player_names[i]);
+            }
             else
-	    {
+            {
                 CONS_Printf("num:%2d  node:%2d  %s\n",
-			    i, player_to_nnode[i], player_names[i]);
-	    }
+                            i, player_to_nnode[i], player_names[i]);
+            }
         }
     }
 }
@@ -1440,7 +1445,7 @@ void Command_Kick(void)
     {
         int pn = player_name_to_num(COM_Argv(1));
         if(pn < MAXPLAYERS)
-	   Send_NetXCmd_p2(XD_KICK, pn, KICK_MSG_GO_AWAY);
+           Send_NetXCmd_p2(XD_KICK, pn, KICK_MSG_GO_AWAY);
     }
     else
     {
@@ -1515,12 +1520,12 @@ void D_Init_ClientServer (void)
         cl_drone = true;
         if( M_IsNextParm() )
         {
-	    // does not accept negative numbers, use 270, 315, etc
-	    viewangleoffset = atoi(M_GetNextParm()) * (ANG90 / 90);
-	    // it is cheating to have screen looking behind player
-	    if( viewangleoffset < -ANG90 )  viewangleoffset = -ANG90;
-	    if( viewangleoffset > ANG90 )  viewangleoffset = ANG90;
-	}
+            // does not accept negative numbers, use 270, 315, etc
+            viewangleoffset = atoi(M_GetNextParm()) * (ANG90 / 90);
+            // it is cheating to have screen looking behind player
+            if( viewangleoffset < -ANG90 )  viewangleoffset = -ANG90;
+            if( viewangleoffset > ANG90 )  viewangleoffset = ANG90;
+        }
     }
 //    GenPrintf(EMSG_debug, "viewangleoffset=%i\n", viewangleoffset );
 
@@ -1631,7 +1636,7 @@ void D_Quit_NetGame (void)
         {
             if( nodeingame[nn] )
                 HSendPacket(nn,true,0,0);
-	}
+        }
         // Close registration with the Master Server.
         if ( serverrunning && cv_internetserver.value )
              MS_UnregisterServer(); 
@@ -1698,13 +1703,13 @@ void Got_NetXCmd_AddPlayer(char **p,int playernum)
         {
             consoleplayer=newplayernum;
             displayplayer=newplayernum;
-	    displayplayer_ptr = consoleplayer_ptr = &players[newplayernum];
+            displayplayer_ptr = consoleplayer_ptr = &players[newplayernum];
             DEBFILE("Spawning me\n");
         }
         else
         {
             displayplayer2=newplayernum;
-	    displayplayer2_ptr = &players[displayplayer2];
+            displayplayer2_ptr = &players[displayplayer2];
             DEBFILE("Spawning my brother\n");
         }
     }
@@ -1769,28 +1774,28 @@ boolean SV_AddWaitingPlayers(void)
             for( ;newplayernum<MAXPLAYERS; newplayernum++)
             {
                 for(nn=0; nn<MAXNETNODES; nn++)
-	        {
+                {
                     if( nnode_to_player[nn]  == newplayernum
                         || nnode_to_player2[nn] == newplayernum )
                         break;
-		}
+                }
                 if( nn == MAXNETNODES )
-		    break;  // found an unused player number
+                    break;  // found an unused player number
             }
             
 #ifdef PARANOIA
             // Should never happen because we check the number of players
-	    // before accepting the join.
+            // before accepting the join.
             if(newplayernum==MAXPLAYERS)
                 I_Error("SV_AddWaitingPlayers: Reached MAXPLAYERS\n");
 #endif
             player_to_nnode[newplayernum] = nnode;
 
             if( playerpernode[nnode]<1 )
-	    {
+            {
                 nnode_to_player[nnode] = newplayernum;
-	        playernum_param = newplayernum;
-	    }
+                playernum_param = newplayernum;
+            }
             else
             {
                 nnode_to_player2[nnode] = newplayernum;
@@ -1803,7 +1808,7 @@ boolean SV_AddWaitingPlayers(void)
                 doomcom->numplayers++;  //we must send the change to other players
             
             DEBFILE(va("Server added player %d net node %d\n",
-		       newplayernum, nnode));
+                       newplayernum, nnode));
             // use the next free slot (we can't put playeringame[j]=true here)
             newplayernum++; 
         }
@@ -1848,12 +1853,12 @@ boolean SV_SpawnServer( void )
         if( netgame )
         {
             I_NetOpenSocket();
-	    // Register with the Master Server.
+            // Register with the Master Server.
             if( cv_internetserver.value )
-	    {
-	        // MasterServer address is in cv_masterserver.
+            {
+                // MasterServer address is in cv_masterserver.
                 MS_RegisterServer();
-	    }
+            }
         }
 
         D_WaitPlayer_Setup();
@@ -1921,7 +1926,7 @@ static void server_askinfo_handler( byte nnode )
     {
         // Make the send_time the round trip ping time.
         SV_Send_ServerInfo(nnode,
-			   LE_SWAP32_FAST(netbuffer->u.askinfo.send_time));
+                           LE_SWAP32_FAST(netbuffer->u.askinfo.send_time));
         Net_CloseConnection(nnode);  // a temp connection
     }
 }
@@ -1935,18 +1940,18 @@ static void client_join_handler( byte nnode )
     boolean newnode=false;
 #endif
     if( netbuffer->u.clientcfg.version != VERSION
-	|| LE_SWAP32_FAST(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
+        || LE_SWAP32_FAST(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
     {
         SV_Send_Refuse(nnode,
-	   va("Different DOOM versions cannot play a net game! (server version %s)",
-	       VERSION_BANNER));
+           va("Different DOOM versions cannot play a net game! (server version %s)",
+               VERSION_BANNER));
         return;
     }
     // nnode==0 is self, which is always accepted.
     if(!cv_allownewplayer.value && nnode!=0 )
     {
         SV_Send_Refuse(nnode,
-	  "The server is not accepting people for the moment");
+          "The server is not accepting people for the moment");
         return;
     }
    
@@ -1954,7 +1959,7 @@ static void client_join_handler( byte nnode )
     if( (doomcom->numplayers + 1) > cv_maxplayers.value)
     {
         SV_Send_Refuse(nnode,
-	   va("Maximum of player reached (max:%d)", cv_maxplayers.value));
+           va("Maximum of player reached (max:%d)", cv_maxplayers.value));
         return;
     }
    
@@ -1965,10 +1970,10 @@ static void client_join_handler( byte nnode )
         SV_AddNode(nnode);
         if(!SV_Send_ServerConfig(nnode))
         {
-	    // TODO : fix this !!!
-	    CONS_Printf("Internal Error 5 : client lost\n");
-	    return;
-	}
+            // TODO : fix this !!!
+            CONS_Printf("Internal Error 5 : client lost\n");
+            return;
+        }
         DEBFILE("New node joined\n");
 #ifdef JOININGAME
         newnode = true;
@@ -1979,9 +1984,9 @@ static void client_join_handler( byte nnode )
     {
         if( (gamestate == GS_LEVEL) && newnode)
         {
-	    SV_Send_SaveGame(nnode); // send game data
-	    CONS_Printf("Send savegame\n");
-	}
+            SV_Send_SaveGame(nnode); // send game data
+            CONS_Printf("Send savegame\n");
+        }
         SV_AddWaitingPlayers();
     }
 #endif
@@ -2000,20 +2005,20 @@ static void client_quit_handler( byte nnode, int netconsole )
     if(netconsole >= 0 && playeringame[netconsole])
     {
         byte reason = (netbuffer->packettype == PT_NODE_TIMEOUT) ?
-	   KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT;
+           KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT;
         // Update other players by kicking nnode.
         Send_NetXCmd_p2(XD_KICK, netconsole, reason);  // kick player
         nnode_to_player[nnode] = 255;
 
         if( nnode_to_player2[nnode] < MAXPLAYERS )
         {
-	    if( playeringame[nnode_to_player2[nnode]] )
-	    {
-	       // kick player2
-	       Send_NetXCmd_p2(XD_KICK, nnode_to_player2[nnode], reason);
-	    }
-	    nnode_to_player2[nnode] = 255;
-	}
+            if( playeringame[nnode_to_player2[nnode]] )
+            {
+               // kick player2
+               Send_NetXCmd_p2(XD_KICK, nnode_to_player2[nnode], reason);
+            }
+            nnode_to_player2[nnode] = 255;
+        }
     }
     Net_CloseConnection(nnode);
     nodeingame[nnode]=false;
@@ -2041,8 +2046,8 @@ static void server_refuse_handler( byte nnode )
     if( cl_mode == CLM_waitjoinresponse )
     {
         M_SimpleMessage(va("Server %i refuses connection\n\nReason :\n%s",
-			   nnode,
-			   netbuffer->u.serverrefuse.reason));
+                           nnode,
+                           netbuffer->u.serverrefuse.reason));
         CL_Reset();
         D_StartTitle();
     }
@@ -2081,7 +2086,7 @@ static void server_cfg_handler( byte nnode )
 
     CONS_Printf("Join accepted, wait next map change...\n");
     DEBFILE(va("Server accept join gametic=%d, client net node=%d\n",
-	       gametic, cl_nnode));
+               gametic, cl_nnode));
 
     uint32_t  playerdet = LE_SWAP32_FAST(netbuffer->u.servercfg.playerdetected);
     for(j=0;j<MAXPLAYERS;j++)
@@ -2152,29 +2157,29 @@ static void unknown_host_handler( byte nnode )
      // handled in d_netfil.c
      case PT_FILEFRAGMENT :
         if( !server )
-	    Got_Filetxpak();
+            Got_Filetxpak();
         break;
      case PT_REQUESTFILE :
         if( server )
-	    Got_RequestFilePak(nnode);
+            Got_RequestFilePak(nnode);
         break;
      case PT_NODE_TIMEOUT:
      case PT_CLIENTQUIT:
         if( server )
-	    Net_CloseConnection(nnode);
+            Net_CloseConnection(nnode);
         break;
      case PT_SERVERTICS:
         if( nnode == servernode )
         {
-	    // do not remove my own server
-	    // (we have just to get a out of order packet)
-	    break;
-	}
+            // do not remove my own server
+            // (we have just to get a out of order packet)
+            break;
+        }
         // Server tic from unknown source.
         // Fall through to default.
      default:
         DEBFILE(va("Unknown packet received (%d) from unknown host !\n",
-		   netbuffer->packettype));
+                   netbuffer->packettype));
         Net_CloseConnection(nnode);  // a temp connection
         break; // ignore it
     } // switch
@@ -2191,11 +2196,11 @@ static int TotalTextCmdPerTic(int tic)
     for(i=0;i<MAXPLAYERS;i++)
     {
         if( (i==0) || playeringame[i] )
-	{
-	    int textlen = textcmds[btic][i].buff[0];
-	    if( textlen )
-	       total += textlen + 2; // "+2" for size and playernum
-	}
+        {
+            int textlen = textcmds[btic][i].buff[0];
+            if( textlen )
+               total += textlen + 2; // "+2" for size and playernum
+        }
     }
 
     return total;
@@ -2209,14 +2214,14 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
     for (i = 0; i < n; src++, dst++, i++)
     {
 #ifdef CLIENTPREDICTION2
-	dst->x = LE_SWAP32_FAST(src->x);
-	dst->y = LE_SWAP32_FAST(src->y);
+        dst->x = LE_SWAP32_FAST(src->x);
+        dst->y = LE_SWAP32_FAST(src->y);
 #endif
-	dst->forwardmove = src->forwardmove;
-	dst->sidemove    = src->sidemove;
-	dst->angleturn   = LE_SWAP16_FAST(src->angleturn);
-	dst->aiming      = LE_SWAP16_FAST(src->aiming);
-	dst->buttons     = src->buttons;
+        dst->forwardmove = src->forwardmove;
+        dst->sidemove    = src->sidemove;
+        dst->angleturn   = LE_SWAP16_FAST(src->angleturn);
+        dst->aiming      = LE_SWAP16_FAST(src->aiming);
+        dst->buttons     = src->buttons;
     }
 }
 
@@ -2237,8 +2242,8 @@ static void net_textcmd_handler( byte nnode, int netconsole )
     // Note: doomcom->numplayers+1 is "+1" because doomcom->numplayers
     // can change within this time and sent time.
     mpsize = software_MAXPACKETLENGTH
-	 - ( ntextsize + 2 + SERVER_TIC_BASE_SIZE
-	    + ((doomcom->numplayers+1) * sizeof(ticcmd_t)) );
+         - ( ntextsize + 2 + SERVER_TIC_BASE_SIZE
+            + ((doomcom->numplayers+1) * sizeof(ticcmd_t)) );
 
     // Search for a tic that has enough space in the ticcmd.
     tic = maketic;
@@ -2246,7 +2251,7 @@ static void net_textcmd_handler( byte nnode, int netconsole )
     {
         textbuf = & textcmds[ BTIC_INDEX( tic ) ][netconsole];
         if( (ntextsize + textbuf->buff[0]) <= MAXTEXTCMD )
-	  break; // found one
+          break; // found one
         tic++;
         if( tic >= (next_tic_send+BACKUPTICS) )  goto drop_packet;
     }
@@ -2255,19 +2260,19 @@ static void net_textcmd_handler( byte nnode, int netconsole )
     textbuf = & textcmds[btic][netconsole];
     textlen = textbuf->buff[0];
     DEBFILE(va("Textcmd: btic %d buff[%d] player %d nxttic %d maketic %d\n",
-	       btic, textlen+1, netconsole, next_tic_send, maketic));
+               btic, textlen+1, netconsole, next_tic_send, maketic));
     // Append to the selected buffer.
     memcpy(&textbuf->buff[ textlen+1 ],
-	   netbuffer->u.textcmd+1,  // the text
-	   ntextsize);
+           netbuffer->u.textcmd+1,  // the text
+           ntextsize);
     textbuf->buff[0] += ntextsize;  // text len
     return;
    
 drop_packet:
     // Drop the packet, let the node resend it.
     DEBFILE(va("Textcmd too long: max %d used %d maketic %d nxttic %d node %d player %d\n",
-	       mpsize, TotalTextCmdPerTic(maketic), maketic, next_tic_send,
-	       nnode, netconsole));
+               mpsize, TotalTextCmdPerTic(maketic), maketic, next_tic_send,
+               nnode, netconsole));
     Net_Cancel_Packet_Ack(nnode);
     return;
 }
@@ -2287,9 +2292,9 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
     end_tic = ExpandTics (netbuffer->u.clientpak.resendfrom);
 
     if(  netcmd == PT_CLIENTMIS
-	 || netcmd == PT_CLIENT2MIS
-	 || netcmd == PT_NODEKEEPALIVEMIS 
-	 || nextsend_tic[nnode] < end_tic )
+         || netcmd == PT_CLIENT2MIS
+         || netcmd == PT_NODEKEEPALIVEMIS
+         || nextsend_tic[nnode] < end_tic )
     {
         nextsend_tic[nnode] = end_tic;
     }
@@ -2298,7 +2303,7 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
     if( nettics[nnode] > end_tic )
     {
         DEBFILE(va("Out of order ticcmd discarded: nettics %d\n",
-		   nettics[nnode]));
+                   nettics[nnode]));
         return;
     }
 
@@ -2322,25 +2327,25 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
 #else
         // Debug message instead.
         GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
-		    netconsole, start_tic);
+                    netconsole, start_tic);
 #endif
         DEBFILE(va("Kick player %d at tic %d, consistency %d != %d\n",
-		    netconsole, start_tic, consistency[btic],
-		    LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
+                    netconsole, start_tic, consistency[btic],
+                    LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
 
     }
 
     // Copy the ticcmd
     btic = BTIC_INDEX( maketic );
     TicCmdCopy(&netcmds[btic][netconsole],
-	       &netbuffer->u.clientpak.cmd, 1);
+               &netbuffer->u.clientpak.cmd, 1);
 
     if( netcmd==PT_CLIENT2CMD
-	&& (nnode_to_player2[nnode] < MAXPLAYERS))
+        && (nnode_to_player2[nnode] < MAXPLAYERS))
     {
         // Copy the ticcmd for player2.
         TicCmdCopy(&netcmds[btic][nnode_to_player2[nnode]], 
-		   &netbuffer->u.client2pak.cmd2, 1);
+                   &netbuffer->u.client2pak.cmd2, 1);
     }
     return;
 }
@@ -2374,7 +2379,7 @@ static void servertic_handler( byte nnode )
     ticp = netbuffer->u.serverpak.cmds;
     // After the nettics are the net textcmds
     txtp = (byte *)&netbuffer->u.serverpak.cmds[
-	   netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics];
+           netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics];
 
     for(ti = start_tic; ti<end_tic; ti++)
     {
@@ -2390,10 +2395,10 @@ static void servertic_handler( byte nnode )
         num_txt = *(txtp++);  // number of txtcmd
         for(j=0; j<num_txt; j++)
         {
-	    int pn = *txtp++; // playernum
-	    memcpy(textcmds[btic][pn].buff, txtp, txtp[0]+1);
-	    txtp += txtp[0]+1;
-	}
+            int pn = *txtp++; // playernum
+            memcpy(textcmds[btic][pn].buff, txtp, txtp[0]+1);
+            txtp += txtp[0]+1;
+        }
     }
 
     cl_need_tic = end_tic;
@@ -2418,29 +2423,29 @@ static void Net_Packet_Handler(void)
         nnode = doomcom->remotenode;
         // ---- Universal Handling ----------
         switch(netbuffer->packettype) {
-	 case PT_CLIENTJOIN:
-	    if( server )
-	        client_join_handler( nnode );
+         case PT_CLIENTJOIN:
+            if( server )
+                client_join_handler( nnode );
             continue;
-	 case PT_SERVERSHUTDOWN:
-	    if( !server && (nnode == servernode) )
-	        server_shutdown_handler();
+         case PT_SERVERSHUTDOWN:
+            if( !server && (nnode == servernode) )
+                server_shutdown_handler();
             continue;
          case PT_NODE_TIMEOUT:
-	    if( !server && (nnode == servernode) )
-	    {
-	        server_timeout_handler();
-	        continue;
-	    }
-	    break; // There are other PT_NODE_TIMEOUT handler.
-	 case PT_SERVERINFO:
-	    server_info_handler( nnode );
+            if( !server && (nnode == servernode) )
+            {
+                server_timeout_handler();
+                continue;
+            }
+            break; // There are other PT_NODE_TIMEOUT handler.
+         case PT_SERVERINFO:
+            server_info_handler( nnode );
             continue;
-	}
+        }
 
         if(!nodeingame[nnode])
         {
-	    unknown_host_handler( nnode );
+            unknown_host_handler( nnode );
             continue; //while
         }
 
@@ -2451,13 +2456,13 @@ static void Net_Packet_Handler(void)
         {
             I_Error("bad table nnode_to_player : node %d player %d",
                      doomcom->remotenode,netconsole);
-	}
+        }
 #endif
 
 
         switch(netbuffer->packettype)
         {
-	    // ---- Server Handling Client packets ----------
+            // ---- Server Handling Client packets ----------
             case PT_CLIENTCMD  :
             case PT_CLIENT2CMD :
             case PT_CLIENTMIS  :
@@ -2465,53 +2470,53 @@ static void Net_Packet_Handler(void)
             case PT_NODEKEEPALIVE :
             case PT_NODEKEEPALIVEMIS :
                 if(server)
-	             client_cmd_handler(netbuffer->packettype, nnode, netconsole );
+                     client_cmd_handler(netbuffer->packettype, nnode, netconsole );
                 break;
             case PT_TEXTCMD2 : // splitscreen special
                 netconsole=nnode_to_player2[nnode];
-	        // fall through
+                // fall through
             case PT_TEXTCMD :
                 if(server)
-	        {
-		    if( netconsole<0 || netconsole>=MAXPLAYERS )
-		    {
-		        // Do not ACK the packet from a strange netconsole.
-		        Net_Cancel_Packet_Ack(nnode);
-		        break;
-		    }
-	            net_textcmd_handler( nnode, netconsole );
-		}
+                {
+                    if( netconsole<0 || netconsole>=MAXPLAYERS )
+                    {
+                        // Do not ACK the packet from a strange netconsole.
+                        Net_Cancel_Packet_Ack(nnode);
+                        break;
+                    }
+                    net_textcmd_handler( nnode, netconsole );
+                }
                 break;
             case PT_NODE_TIMEOUT:
             case PT_CLIENTQUIT:
                 if(server)
-	            client_quit_handler( nnode, netconsole );
+                    client_quit_handler( nnode, netconsole );
                 break;
 
             // ---- CLIENT Handling Server packets ----------
             case PT_SERVERTICS :
-	        servertic_handler( nnode );
+                servertic_handler( nnode );
                 break;
             case PT_SERVERCFG :
-	        break;
+                break;
             case PT_FILEFRAGMENT :
                 if( !server )
                     Got_Filetxpak();
                 break;
-	    case PT_NETWAIT:
-	        if( !server )
-	        {
-		    // Updates of wait for players, from the server.
-		    num_netnodes = netbuffer->u.netwait.num_netnodes;
-		    wait_nodes = netbuffer->u.netwait.wait_nodes;
-		    wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
-		    P_SetRandIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
-		}
-	        break;
+            case PT_NETWAIT:
+                if( !server )
+                {
+                    // Updates of wait for players, from the server.
+                    num_netplayer = netbuffer->u.netwait.num_netplayer;
+                    wait_netplayer = netbuffer->u.netwait.wait_netplayer;
+                    wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
+                    P_SetRandIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
+                }
+                break;
             default:
                 DEBFILE(va("Unknown packet type: type %d node %d\n",
-			   netbuffer->packettype, nnode));
-	        break;
+                           netbuffer->packettype, nnode));
+                break;
         } // end switch
     } // end while
 }
@@ -2584,7 +2589,7 @@ static void CL_Send_ClientCmd (void)
         // send a special packet with 2 cmd for splitscreen
         if (cv_splitscreen.value)
         {
-	    // send PT_CLIENT2CMD, or PT_CLIENT2CMDMIS packet
+            // send PT_CLIENT2CMD, or PT_CLIENT2CMDMIS packet
             netbuffer->packettype = PT_CLIENT2CMD + cmd_options;
             TicCmdCopy(&netbuffer->u.client2pak.cmd2, &localcmds2, 1);
             packetsize = sizeof(client2cmd_pak);
@@ -2600,7 +2605,7 @@ static void CL_Send_ClientCmd (void)
         // send extra data if needed
         if (localtextcmd.buff[0]) // text len
         {
-	    int len = localtextcmd.buff[0]+1;  // text len + cmd
+            int len = localtextcmd.buff[0]+1;  // text len + cmd
             netbuffer->packettype=PT_TEXTCMD;
             memcpy(netbuffer->u.textcmd, localtextcmd.buff, len);
             // all extra data have been sended
@@ -2611,7 +2616,7 @@ static void CL_Send_ClientCmd (void)
         // send extra data if needed for player 2 (splitscreen)
         if (localtextcmd2.buff[0]) // text len
         {
-	    int len = localtextcmd2.buff[0]+1;  // text len + cmd
+            int len = localtextcmd2.buff[0]+1;  // text len + cmd
             netbuffer->packettype=PT_TEXTCMD2;
             memcpy(netbuffer->u.textcmd, localtextcmd2.buff, len);
             // all extra data have been sended
@@ -2645,7 +2650,7 @@ static void SV_Send_Tics (void)
         if( ! nodeingame[nnode] )  continue;
 
         // Send a packet to each client node in this game.
-	// They may be different, with individual status.
+        // They may be different, with individual status.
         end_tic = maketic;
           // The last tic to send is one before maketic.
 
@@ -2654,65 +2659,65 @@ static void SV_Send_Tics (void)
        
         if(start_tic >= maketic)
         {
-	    // We have sent all tics, so we will use the extrabandwidth
-	    // to resend packets that are supposed lost.
-	    // This is necessary since lost packet detection works when we
-	    // have received packet with (firsttic > cl_need_tic)
-	    // (in the getpacket servertics case).
-	    DEBFILE(va("Send Tics none: node %d maketic %u nxttic %u nettic %u\n", 
-		       nnode, maketic, nextsend_tic[nnode], nettics[nnode]));
-	    start_tic = nettics[nnode];
-	    if( start_tic >= maketic )
-	        continue;  // all tic are ok, do next node
-	    if( (nnode + resend_cnt++)&3 )  // some kind of randomness
-	        continue;  // skip it
-	    DEBFILE(va("Resend from tic %d\n", start_tic));
-	}
+            // We have sent all tics, so we will use the extrabandwidth
+            // to resend packets that are supposed lost.
+            // This is necessary since lost packet detection works when we
+            // have received packet with (firsttic > cl_need_tic)
+            // (in the getpacket servertics case).
+            DEBFILE(va("Send Tics none: node %d maketic %u nxttic %u nettic %u\n",
+                       nnode, maketic, nextsend_tic[nnode], nettics[nnode]));
+            start_tic = nettics[nnode];
+            if( start_tic >= maketic )
+                continue;  // all tic are ok, do next node
+            if( (nnode + resend_cnt++)&3 )  // some kind of randomness
+                continue;  // skip it
+            DEBFILE(va("Resend from tic %d\n", start_tic));
+        }
 
         // Limit start to first new tic we have.
         if( start_tic < next_tic_send )
-	    start_tic = next_tic_send;
+            start_tic = next_tic_send;
 
         // Compute the length of the packet and cut it if too large.
         packsize = SERVER_TIC_BASE_SIZE;
         for(ti=start_tic; ti<end_tic; ti++)
         {
-	    // All of the ticcmd
-	    packsize += sizeof(ticcmd_t) * doomcom->numplayers;
-	    // All of the textcmd
-	    packsize += TotalTextCmdPerTic(ti);
+            // All of the ticcmd
+            packsize += sizeof(ticcmd_t) * doomcom->numplayers;
+            // All of the textcmd
+            packsize += TotalTextCmdPerTic(ti);
 
-	    if( packsize > software_MAXPACKETLENGTH )
-	    {
-	        // Exceeds max packet size.
-	        DEBFILE(va("Packet too large (%d) at tic %d (should be from %d to %d)\n", 
-			    packsize, ti, start_tic, end_tic));
-	        end_tic = ti;  // limit this packet due to size
+            if( packsize > software_MAXPACKETLENGTH )
+            {
+                // Exceeds max packet size.
+                DEBFILE(va("Packet too large (%d) at tic %d (should be from %d to %d)\n",
+                            packsize, ti, start_tic, end_tic));
+                end_tic = ti;  // limit this packet due to size
 
-	        // too bad :
-	        // Too many players have sent extradata and there is too
-	        // much data for one tic packet.
-	        // Too avoid it put the data on the next tic (see getpacket 
-	        // textcmd case). But when numplayer changes the computation
-	        // can be different
-	        if(end_tic == start_tic)
-	        {
-		    // No tics made it into the packet.
-		    if( packsize > MAXPACKETLENGTH )
-		    {
-		        I_Error("Too many players: cannot send %d data for %d players to net node %d\n"
-				"Well sorry nobody is perfect....\n",
-				packsize, doomcom->numplayers, nnode);
-		    }
-		    else
-		    {
-		        end_tic++;  // send it anyway !
-		        DEBFILE("Sending empty tic anyway\n");
-		    }
-		}
-	        break;
-	    }
-	}
+                // too bad :
+                // Too many players have sent extradata and there is too
+                // much data for one tic packet.
+                // Too avoid it put the data on the next tic (see getpacket
+                // textcmd case). But when numplayer changes the computation
+                // can be different
+                if(end_tic == start_tic)
+                {
+                    // No tics made it into the packet.
+                    if( packsize > MAXPACKETLENGTH )
+                    {
+                        I_Error("Too many players: cannot send %d data for %d players to net node %d\n"
+                                "Well sorry nobody is perfect....\n",
+                                packsize, doomcom->numplayers, nnode);
+                    }
+                    else
+                    {
+                        end_tic++;  // send it anyway !
+                        DEBFILE("Sending empty tic anyway\n");
+                    }
+                }
+                break;
+            }
+        }
             
         // Send the tics, start_tic..(end_tic-1), in one packet.
 
@@ -2725,47 +2730,47 @@ static void SV_Send_Tics (void)
         // All the ticcmd_t, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
         {
-	    int btic = BTIC_INDEX( ti );
-	    TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], doomcom->numplayers);
-	    bufpos += doomcom->numplayers * sizeof(ticcmd_t);
-	}
+            int btic = BTIC_INDEX( ti );
+            TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], doomcom->numplayers);
+            bufpos += doomcom->numplayers * sizeof(ticcmd_t);
+        }
             
         // All the textcmd, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
         {
-	    btic = BTIC_INDEX( ti );
-	    num_txt_p = bufpos++; // the num textcmd field
-	    num_txt = 0;
-	    for(pn=0; pn<MAXPLAYERS; pn++)
-	    {
-	        if((pn==0) || playeringame[pn])
-	        {
-		    int textlen = textcmds[btic][pn].buff[0];
-		    if(textlen)
+            btic = BTIC_INDEX( ti );
+            num_txt_p = bufpos++; // the num textcmd field
+            num_txt = 0;
+            for(pn=0; pn<MAXPLAYERS; pn++)
+            {
+                if((pn==0) || playeringame[pn])
+                {
+                    int textlen = textcmds[btic][pn].buff[0];
+                    if(textlen)
                     {
                         *(bufpos++) = pn;  // playernum
-		        // The textcmd is textlen, text.
+                        // The textcmd is textlen, text.
                         memcpy(bufpos, textcmds[btic][pn].buff, textlen+1);
                         bufpos += textlen+1;
                         num_txt++; // inc the number of textcmd
                     }
-		}
-	    }
-	    // There must be a num txtcmd field for every tic, even if 0.
-	    *num_txt_p = num_txt; // the number of textcmd
-	}
+                }
+            }
+            // There must be a num txtcmd field for every tic, even if 0.
+            *num_txt_p = num_txt; // the number of textcmd
+        }
         packsize = bufpos - (char *)&(netbuffer->u);
 
         HSendPacket(nnode, false, 0, packsize);
 
-	// Record next tic for this net node.
-	// Extratic causes redundant transmission of tics.
-	ti = (end_tic - doomcom->extratics);  // normal
+        // Record next tic for this net node.
+        // Extratic causes redundant transmission of tics.
+        ti = (end_tic - doomcom->extratics);  // normal
         // When tic is too large, only one tic is sent so don't go backward !
         if( ti <= start_tic )
-	   ti = end_tic;  // num tics is too small for extratics
+           ti = end_tic;  // num tics is too small for extratics
         if( ti < nettics[nnode] )
-	   ti = nettics[nnode];
+           ti = nettics[nnode];
         nextsend_tic[nnode] = ti;
     }
     // node 0 is me !
@@ -2822,24 +2827,24 @@ void SV_Maketic(void)
         player=nnode_to_player[nnode];
         if((netcmds[btic][player].angleturn & TICCMD_RECEIVED) == 0)
         {
-	    // Catch startup glitch where playerpernode gets set
-	    // before the player is actually setup.
-	    if( ! playeringame[player] )  continue;
+            // Catch startup glitch where playerpernode gets set
+            // before the player is actually setup.
+            if( ! playeringame[player] )  continue;
 
-	    DEBFILE(va("MISS tic %4u for node %d\n", maketic, nnode));
+            DEBFILE(va("MISS tic %4u for node %d\n", maketic, nnode));
 #ifdef PARANOIA
-	    if( devparm )
-	        GenPrintf(EMSG_dev, "\2Client %d Miss tic %d\n", nnode, maketic);
+            if( devparm )
+                GenPrintf(EMSG_dev, "\2Client %d Miss tic %d\n", nnode, maketic);
 #endif
-	    // Copy the previous tic
-	    bticprev = BTIC_INDEX(maketic-1);
-	    for(i=0; i<playerpernode[nnode]; i++)
-	    {
-	        netcmds[btic][player] = netcmds[bticprev][player];
-	        netcmds[btic][player].angleturn &= ~TICCMD_RECEIVED;
-	        player = nnode_to_player2[nnode];
-	    }
-	}
+            // Copy the previous tic
+            bticprev = BTIC_INDEX(maketic-1);
+            for(i=0; i<playerpernode[nnode]; i++)
+            {
+                netcmds[btic][player] = netcmds[bticprev][player];
+                netcmds[btic][player].angleturn &= ~TICCMD_RECEIVED;
+                player = nnode_to_player2[nnode];
+            }
+        }
     }
     // all tic are now present, make the next
     maketic++;
@@ -2891,7 +2896,7 @@ void TryRunTics (tic_t realtics)
         fprintf (debugfile,
                  "------------ Tryruntic : REAL:%lu NEED:%lu GAME:%lu LOAD: %i\n",
                  (unsigned long)realtics, (unsigned long)cl_need_tic,
-		 (unsigned long)gametic, net_load);
+                 (unsigned long)gametic, net_load);
         net_load=100000;
     }
 #endif
@@ -2899,21 +2904,21 @@ void TryRunTics (tic_t realtics)
     if( gamestate == GS_WAITINGPLAYERS )
     {
         // Server is waiting for network players.
-	// To wait, execution must not reach G_Ticker.
+        // To wait, execution must not reach G_Ticker.
         if( !server && !netgame )
-	    goto error_ret;  // connection closed by cancel or timeout
+            goto error_ret;  // connection closed by cancel or timeout
        
         if( realtics <= 0 )
-	    return;
+            return;
        
         // Once per tic
         // Wait for players before netgame starts.
         if( ! D_WaitPlayer_Ticker() )
-	    return;  // Waiting
+            return;  // Waiting
 
         // Start game
         if( dedicated )
-	    gamestate = GS_DEDICATEDSERVER;
+            gamestate = GS_DEDICATEDSERVER;
         // Others must wait for load game to set gamestate to GS_LEVEL.
     }
 
@@ -2922,8 +2927,8 @@ void TryRunTics (tic_t realtics)
         if (demo_ctrl == DEMO_seq_advance)  // and not disabled
         {
             D_DoAdvanceDemo ();
-	    return;
-	}
+            return;
+        }
 
         // Run the count * tics
         while (cl_need_tic > gametic)
@@ -2936,13 +2941,13 @@ void TryRunTics (tic_t realtics)
             // skip paused tic in a demo
             if(demoplayback)
             {
-	        if(paused)
-		   cl_need_tic++;
-	    }
+                if(paused)
+                   cl_need_tic++;
+            }
             else
-	    {
+            {
                 consistency[ BTIC_INDEX( gametic ) ] = Consistency();
-	    }
+            }
         }
     }
     return;
@@ -2964,10 +2969,10 @@ static void SV_Send_Tic_Update( int count )
     {
         // Max of gametic and nettics[].
         if(nodeingame[nn]
-	   && nettics[nn]<next_tic_send )
+           && nettics[nn]<next_tic_send )
         {
-	   next_tic_send = nettics[nn];
-	}
+           next_tic_send = nettics[nn];
+        }
     }
 
     // Don't erase tics not acknowledged
@@ -2999,7 +3004,7 @@ void NetUpdate(void)
     if( realtics <= 0 )
     {
         if( realtics > -100000 )  // [WDJ] 1/16/2009  validity check
-	    return;     // same tic as previous
+            return;     // same tic as previous
 
         // [WDJ] 1/16/2009 something is wrong, like time has wrapped.
         // Program gets stuck waiting for this, so force it out.
@@ -3031,7 +3036,7 @@ void NetUpdate(void)
         Local_Maketic (realtics);  // make local tic
 
         if( server && !demoplayback )
-	    CL_Send_ClientCmd();     // send server tic
+            CL_Send_ClientCmd();     // send server tic
     }
 
     Net_Packet_Handler();  // get packet from client or from server
@@ -3049,10 +3054,10 @@ void NetUpdate(void)
             MS_SendPing_MasterServer( nowtime );
 
         if(!demoplayback)
-	    SV_Send_Tic_Update( realtics );  // realtics > 0
+            SV_Send_Tic_Update( realtics );  // realtics > 0
 
         if( Filetx_file_cnt )  // Rare to have file download in progress.
-	    Filetx_Ticker();
+            Filetx_Ticker();
     }
 
     Net_AckTicker();

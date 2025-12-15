@@ -102,14 +102,13 @@ typedef enum
     ga_completed,
     ga_worlddone,
     //HeXen
-/*
     ga_initnew,
     ga_newgame,
     ga_loadgame,
     ga_savegame,
     ga_leavemap,
     ga_singlereborn
-*/
+
 } gameaction_e;
 
 extern  gameaction_e    gameaction;

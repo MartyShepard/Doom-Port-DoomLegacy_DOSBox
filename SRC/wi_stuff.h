@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.h 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: wi_stuff.h 1232 2016-05-24 17:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,6 +63,6 @@ void WI_drawRanking(char *title, int x, int y, fragsort_t *fragtable,
                     int scorelines, boolean large, int white);
 
 // For startup wait, and deathmatch wait.
-void WI_draw_wait( int net_nodes, int wait_nodes, int wait_tics );
+void WI_draw_wait( int net_nodes, int net_players, int wait_players, int wait_tics );
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1159 2015-04-03 14:09:40Z wesleyjohnson $
+// $Id: d_clisrv.h 1232 2016-05-24 17:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -185,8 +185,8 @@ typedef struct {
 } filetx_pak;
 
 typedef struct {
-    byte       num_netnodes;
-    byte       wait_nodes;  // if non-zero, wait for player net nodes
+    byte       num_netplayer;  // count players due to 2 player nodes
+    byte       wait_netplayer;  // if non-zero, wait for player net nodes
     uint16_t   wait_tics;  // if non-zero, the timeout tics
     byte       p_rand_index; // to sync P_Random
 } netwait_pak;

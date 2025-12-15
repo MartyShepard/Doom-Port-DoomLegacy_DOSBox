@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: wi_stuff.c 1232 2016-05-24 17:11:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -851,19 +851,34 @@ static void WI_drawTime ( int x, int y, int t )
 }
 
 // For startup wait, and deathmatch wait.
-void WI_draw_wait( int net_nodes, int wait_nodes, int wait_tics )
+void WI_draw_wait( int net_nodes, int net_players, int wait_players, int wait_tics )
 {
+    int  length = 25, lines = 1;
     char * waitmsg;
+    char * msg2 = NULL;
 
     // Using va_buffer (m_misc.c)
-    if( wait_nodes )
-       waitmsg = va("WAIT NODES %2d/%2d : TIMEOUT %4d",
-                    net_nodes, wait_nodes, wait_tics/TICRATE);
+    if( wait_players )
+    {
+        waitmsg = va("WAIT PLAYERS %2d/%2d : NODES %2d : TIMEOUT %4d",
+                    net_players, wait_players, net_nodes, wait_tics/TICRATE);
+        length = 28;
+        if( server )
+        {
+	    lines = 2;
+	    msg2 = " s = start now,  q = escape";
+        }
+    }
     else
-       waitmsg = va("START IN %4d", wait_tics/TICRATE);
+    {
+        waitmsg = va("START IN %4d", wait_tics/TICRATE);
+        length = 10;
+    }
     //i=V_StringWidth(num);
-    M_DrawTextBox( 106, 20, 25, 1 );
+    M_DrawTextBox( 106, 20, length, lines );
     V_DrawString( 116, 28, V_WHITEMAP, waitmsg );
+    if( msg2 )
+        V_DrawString( 116, 36, V_WHITEMAP, msg2 );
 }
 
 
@@ -2197,7 +2212,7 @@ void WI_Drawer (void)
             else
                 WI_drawDeathmatchStats();
 
-            WI_draw_wait( 0, 0, cnt_pause );
+            WI_draw_wait( 0, 0, 0, cnt_pause );
         }
         else if (multiplayer)
             WI_drawNetgameStats();
