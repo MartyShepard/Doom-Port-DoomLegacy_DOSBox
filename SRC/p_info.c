@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: p_info.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -229,8 +229,8 @@ void P_ParseLevelVar(char *cmd)
           switch(current->type)
           {
             case IVT_STRING:
-	      // Just drop the previous string value, it may be const.
-	      // Recover such strings at end-level
+              // Just drop the previous string value, it may be const.
+              // Recover such strings at end-level
               *(char**)current->variable         // +5 for safety
                 = Z_Malloc(strlen(equals)+5, PU_LEVEL, NULL);
               strcpy(*(char**)current->variable, equals);
@@ -238,20 +238,20 @@ void P_ParseLevelVar(char *cmd)
 
             case IVT_INT:
               *(int*)current->variable = atoi(equals);
-	      break;
+              break;
 
             case IVT_CONSOLECMD:
               {
-		// consolecmd = <string>
-		// pass the string as a console command
+                // consolecmd = <string>
+                // pass the string as a console command
                 char t[256];
                 snprintf(t, 255, "%s\n", equals);
-		t[255] = '\0';
+                t[255] = '\0';
                 COM_BufAddText(t);
               }
               break;
-	  }
-	  break; // exit loop, only one name will match
+          }
+          break; // exit loop, only one name will match
       }
       current++;
   }
@@ -459,30 +459,30 @@ void P_FindLevelName(void)
       // not a new level or dehacked level names
       if( gamemode == heretic )
       {
-	// Heretic shareware, Heretic, Blasphemer
+        // Heretic shareware, Heretic, Blasphemer
         levelname = text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
       }
       else if(isMAPxy(level_mapname))
       {
-	switch( gamedesc_id )
-	{
-	 case GDESC_plutonia:
-	   // Plutonia
-	   levelname = text[PHUSTR_1_NUM + gamemap-1];
-	   break;
-	 case GDESC_tnt:
-	   // TNT
-	   levelname = text[THUSTR_1_NUM + gamemap-1];
-	   break;
-	 default:
-	   // Doom2, FreeDoom, FreeDM
-	   levelname = text[HUSTR_1_NUM + gamemap-1];
-	   break;
-	}
+        switch( gamedesc_id )
+        {
+         case GDESC_plutonia:
+           // Plutonia
+           levelname = text[PHUSTR_1_NUM + gamemap-1];
+           break;
+         case GDESC_tnt:
+           // TNT
+           levelname = text[THUSTR_1_NUM + gamemap-1];
+           break;
+         default:
+           // Doom2, FreeDoom, FreeDM
+           levelname = text[HUSTR_1_NUM + gamemap-1];
+           break;
+        }
       }
       else if(isExMy(level_mapname))
       {
-	// Doom shareware, Doom, UltDoom, UltFreeDoom, ChexQuest
+        // Doom shareware, Doom, UltDoom, UltFreeDoom, ChexQuest
         levelname = text[HUSTR_E1M1_NUM + (gameepisode-1)*9+gamemap-1];
       }
       else
@@ -598,18 +598,18 @@ void P_LoadLevelInfo( void )
         register char ch = *fs_src_cp;
         if(ch == '\n') // end of line
         {
-	  *rlp = '\0';
+          *rlp = '\0';
           P_ParseInfoCmd(readline);  // parse line
-	  rlp = &readline[0];  // clear for next line
+          rlp = &readline[0];  // clear for next line
         }
         else
         {
           // add to line if valid char
           if(isprint(ch) || ch == '{' || ch == '}')
           {
-	    *rlp++ = ch; // add char
+            *rlp++ = ch; // add char
           }
-	}
+        }
         fs_src_cp++;
     }
 
@@ -682,14 +682,14 @@ char *P_LevelNameByNum( int episode, int map )
            switch( gamedesc_id )
            {
                case GDESC_tnt :
-	           levnam = text[THUSTR_1_NUM + map-1];
-	           break;
+                   levnam = text[THUSTR_1_NUM + map-1];
+                   break;
                case GDESC_plutonia :
-	           levnam = text[PHUSTR_1_NUM + map-1];
-	           break;
+                   levnam = text[PHUSTR_1_NUM + map-1];
+                   break;
                default :
-	           levnam = text[HUSTR_1_NUM + map-1];
-	           break;
+                   levnam = text[HUSTR_1_NUM + map-1];
+                   break;
            }
            break;
        case  heretic:  // and shareware, blasphemer

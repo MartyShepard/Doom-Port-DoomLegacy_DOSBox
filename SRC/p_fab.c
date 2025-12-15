@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_fab.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -242,37 +242,37 @@ void P_SetTranslucencies (void)
         tr_enable = false;  // default
         switch( translucent_enable )
         {
-	 case TE_off:  // reset translucent
-	    break;
-	 case TE_all:  // independent of info MF_TRANSLUCENT
-	    tr_enable = true;
-	    break;
-	 case TE_boom: // ignore DoomLegacy extensions
-	    if(tip->flag_mt & TRF_ext)  break;
-	    // continue to TE_ext to test flag
-	 case TE_ext:  // all flag, including DoomLegacy extensions
-	    if(tip->flag_mt == TRF_noflag)  // does not check MF_TRANSLUCENT
-	    {
-	        tr_enable = true;
-	    }
-	    else
-	    {
-	        // check info flag MF_TRANSLUCENT, maybe modified by BEX
-	        register int mobjindex = tip->flag_mt & TRF_MT;
-	        if( mobjindex < NUMMOBJTYPES
-		    &&  mobjinfo[mobjindex].flags & MF_TRANSLUCENT )
-		    tr_enable = true;
-	    }
-	    break;
-	}
+         case TE_off:  // reset translucent
+            break;
+         case TE_all:  // independent of info MF_TRANSLUCENT
+            tr_enable = true;
+            break;
+         case TE_boom: // ignore DoomLegacy extensions
+            if(tip->flag_mt & TRF_ext)  break;
+            // continue to TE_ext to test flag
+         case TE_ext:  // all flag, including DoomLegacy extensions
+            if(tip->flag_mt == TRF_noflag)  // does not check MF_TRANSLUCENT
+            {
+                tr_enable = true;
+            }
+            else
+            {
+                // check info flag MF_TRANSLUCENT, maybe modified by BEX
+                register int mobjindex = tip->flag_mt & TRF_MT;
+                if( mobjindex < NUMMOBJTYPES
+                    &&  mobjinfo[mobjindex].flags & MF_TRANSLUCENT )
+                    tr_enable = true;
+            }
+            break;
+        }
         // change the info state tables for the object
         laststate = &states[tip->last_state];
         for( state = &states[tip->first_state]; state <= laststate; state++ )
         {
-	    state->frame &= ~FF_TRANSMASK;  // clear previous translucent
-	    if( tr_enable )
-	        state->frame |= (tip->translu_sel<<FF_TRANSSHIFT);
-	}
+            state->frame &= ~FF_TRANSMASK;  // clear previous translucent
+            if( tr_enable )
+                state->frame |= (tip->translu_sel<<FF_TRANSSHIFT);
+        }
     }
 }
 

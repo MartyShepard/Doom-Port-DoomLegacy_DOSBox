@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: sb_bar.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -253,12 +253,12 @@ void SB_Heretic_Ticker(void)
         delta = (HealthMarker-curHealth)>>2;
         if(delta < 1)
         {
-	    delta = 1;
-	}
+            delta = 1;
+        }
         else if(delta > 8)
         {
-	    delta = 8;
-	}
+            delta = 8;
+        }
         HealthMarker -= delta;
     }
     else if(curHealth > HealthMarker)
@@ -266,12 +266,12 @@ void SB_Heretic_Ticker(void)
         delta = (curHealth-HealthMarker)>>2;
         if(delta < 1)
         {
-	    delta = 1;
-	}
+            delta = 1;
+        }
         else if(delta > 8)
         {
-	    delta = 8;
-	}
+            delta = 8;
+        }
         HealthMarker += delta;
     }
 }
@@ -295,14 +295,14 @@ static void DrINumber(signed int val, int x, int y)
     {
         if(val < -9)
         {
-	    V_DrawScaledPatch_Name(x+1, y+1, "LAME");
-	}
+            V_DrawScaledPatch_Name(x+1, y+1, "LAME");
+        }
         else
         {
-	    val = -val;
-	    V_DrawScaledPatch(x+18, y, PatchINumbers[val]);
-	    V_DrawScaledPatch(x+9, y, PatchNEGATIVE);
-	}
+            val = -val;
+            V_DrawScaledPatch(x+18, y, PatchINumbers[val]);
+            V_DrawScaledPatch(x+9, y, PatchNEGATIVE);
+        }
         return;
     }
 
@@ -451,9 +451,9 @@ static void ShadeLine(int x, int y, int shade)
         shades = & reg_colormaps[ LIGHTTABLE( 9 + shade*2 ) ];
         while(height--)
         {
-	    *(dest) = *(shades + *dest);
-	    dest += vid.ybytes;
-	}
+            *(dest) = *(shades + *dest);
+            dest += vid.ybytes;
+        }
         break;
 #ifdef ENABLE_DRAW15
      case DRAW15:
@@ -471,9 +471,9 @@ static void ShadeLine(int x, int y, int shade)
         shadeshift = chain_shift_table[shade];
         while(height--)
         {
-	    *((uint16_t*)dest) = (*((uint16_t*)dest) >> shadeshift) & mask;
-	    dest += vid.ybytes;
-	}
+            *((uint16_t*)dest) = (*((uint16_t*)dest) >> shadeshift) & mask;
+            dest += vid.ybytes;
+        }
         break;
 #endif
      default:
@@ -481,9 +481,9 @@ static void ShadeLine(int x, int y, int shade)
         mask = chain_mask_table32[shade];
         while(height--)
         {
-	    *((uint32_t*)dest) = (*((uint32_t*)dest) >> shadeshift) & mask;
-	    dest += vid.ybytes;
-	}
+            *((uint32_t*)dest) = (*((uint32_t*)dest) >> shadeshift) & mask;
+            dest += vid.ybytes;
+        }
         break;
     }
 }
@@ -509,9 +509,9 @@ static void ShadeChain(void)
     {
         for(i2 = i1*2*stbar_scalex; i2 < ((i1+1)*2*stbar_scalex); i2++ )
         {
-	    ShadeLine(chain_x1+i2, chain_y, i1);
-	    ShadeLine(chain_x2+i2, chain_y, 7-i1);
-	}
+            ShadeLine(chain_x1+i2, chain_y, i1);
+            ShadeLine(chain_x2+i2, chain_y, 7-i1);
+        }
     }
 }
 
@@ -594,7 +594,7 @@ void SB_Heretic_Drawer( boolean refresh )
         {
             if ( rendermode==render_soft )
                 V_CopyRect(0, vid.height-stbar_height, BG, vid.width,
-			   stbar_height, 0, vid.height-stbar_height, FG);
+                           stbar_height, 0, vid.height-stbar_height, FG);
 
             V_DrawScaledPatch(stbar_x, stbar_y, PatchBARBACK);
             if(consoleplayer_ptr->cheats&CF_GODMODE)
@@ -735,8 +735,8 @@ void H_PaletteFlash(void)
         palette = (CPlayer->damagecount+7)>>3;
         if(palette >= NUMREDPALS)
         {
-	    palette = NUMREDPALS-1;
-	}
+            palette = NUMREDPALS-1;
+        }
         palette += STARTREDPALS;
     }
     else if(CPlayer->bonuscount)
@@ -744,8 +744,8 @@ void H_PaletteFlash(void)
         palette = (CPlayer->bonuscount+7)>>3;
         if(palette >= NUMBONUSPALS)
         {
-	    palette = NUMBONUSPALS-1;
-	}
+            palette = NUMBONUSPALS-1;
+        }
         palette += STARTBONUSPALS;
     }
     else
@@ -761,33 +761,33 @@ void H_PaletteFlash(void)
 #ifdef HWRENDER
         if ( (rendermode == render_opengl) || (rendermode == render_d3d) )
         {
-	    // Imitate the palette flash
-	    //Hurdler: TODO: see if all heretic palettes are properly managed
-	    switch (palette) {
-	      case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // no changes
-	      case 0x01: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-	      case 0x02: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-	      case 0x03: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff3030a7); break; // red
-	      case 0x04: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2727b7); break; // red
-	      case 0x05: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2020c7); break; // red
-	      case 0x06: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1717d7); break; // red
-	      case 0x07: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1010e7); break; // red
-	      case 0x08: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff0707f7); break; // red
-	      case 0x09: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-	      case 0x0a: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff70a090); break; // light green
-	      case 0x0b: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff67b097); break; // light green
-	      case 0x0c: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60c0a0); break; // light green
-	      case 0x0d: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60ff60); break; // green
-	      case 0x0e: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-	      case 0x0f: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-	    }
-	}
+            // Imitate the palette flash
+            //Hurdler: TODO: see if all heretic palettes are properly managed
+            switch (palette) {
+              case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // no changes
+              case 0x01: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
+              case 0x02: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
+              case 0x03: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff3030a7); break; // red
+              case 0x04: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2727b7); break; // red
+              case 0x05: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2020c7); break; // red
+              case 0x06: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1717d7); break; // red
+              case 0x07: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1010e7); break; // red
+              case 0x08: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff0707f7); break; // red
+              case 0x09: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
+              case 0x0a: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff70a090); break; // light green
+              case 0x0b: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff67b097); break; // light green
+              case 0x0c: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60c0a0); break; // light green
+              case 0x0d: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60ff60); break; // green
+              case 0x0e: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
+              case 0x0f: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
+            }
+        }
         else
 #endif
         {
-	    if( !cv_splitscreen.value )
-	        V_SetPalette (palette);
-	}
+            if( !cv_splitscreen.value )
+                V_SetPalette (palette);
+        }
     }
 }
 
@@ -812,17 +812,17 @@ static void DrawCommonBar(void)
         healthPos = HealthMarker;
         if(healthPos < 0)
         {
-	    healthPos = 0;
-	}
+            healthPos = 0;
+        }
         if(healthPos > 100)
         {
-	    healthPos = 100;
-	}
+            healthPos = 100;
+        }
         healthPos = (healthPos*256)/100;
         V_DrawScaledPatch(stbar_x, stbar_y+32, PatchCHAINBACK);
         chainY = stbar_y + 33;
-	if(HealthMarker != CPlayer->mo->health)
-	    chainY += ChainWiggle;
+        if(HealthMarker != CPlayer->mo->health)
+            chainY += ChainWiggle;
         V_DrawScaledPatch(stbar_x+2+(healthPos%17), chainY, PatchCHAIN);
         V_DrawScaledPatch(stbar_x+17+healthPos, chainY, PatchLIFEGEM);
         V_DrawScaledPatch(stbar_x, stbar_y+32, PatchLTFACE);
@@ -850,8 +850,8 @@ static void H_DrawMainBar(void)
     {
         V_DrawScaledPatch(stbar_x+180, stbar_y+3, PatchBLACKSQ);
         V_DrawScaledPatch(stbar_x+182, stbar_y+3,
-	    W_CachePatchNum( W_GetNumForName("useartia") + H_ArtifactFlash - 1,
-	    PU_CACHE));
+            W_CachePatchNum( W_GetNumForName("useartia") + H_ArtifactFlash - 1,
+            PU_CACHE));
         H_ArtifactFlash--;
         oldarti = -1; // so that the correct artifact fills in after the flash
 #ifdef USE_UPDATESTATE
@@ -859,15 +859,15 @@ static void H_DrawMainBar(void)
 #endif
     }
     else if(oldarti != CPlayer->inv_ptr
-	    || oldartiCount != CPlayer->inventory[CPlayer->inv_ptr].count)
+            || oldartiCount != CPlayer->inventory[CPlayer->inv_ptr].count)
     {
         V_DrawScaledPatch(stbar_x+180, stbar_y+3, PatchBLACKSQ);
         if( CPlayer->inventory[CPlayer->inv_ptr].type > 0 )
         {
-	    V_DrawScaledPatch_Name(stbar_x+179,stbar_y+2, 
-		 patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
-	    DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+201, stbar_y+24);
-	}
+            V_DrawScaledPatch_Name(stbar_x+179,stbar_y+2,
+                 patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
+            DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+201, stbar_y+24);
+        }
         oldarti = CPlayer->inv_ptr;
         oldartiCount = CPlayer->inventory[CPlayer->inv_ptr].count;
 #ifdef USE_UPDATESTATE
@@ -881,26 +881,26 @@ static void H_DrawMainBar(void)
         temp = ST_PlayerFrags(CPlayer-players);
         if(temp != oldfrags)
         {
-	    V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
-	    DrINumber(temp, stbar_x+61, stbar_y+12);
-	    oldfrags = temp;
+            V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
+            DrINumber(temp, stbar_x+61, stbar_y+12);
+            oldfrags = temp;
 #ifdef USE_UPDATESTATE
-	    H_UpdateState |= HUS_statbar;
+            H_UpdateState |= HUS_statbar;
 #endif
-	}
+        }
     }
     else
     {
         temp = min(max(0,HealthMarker),100);
         if(oldlife != temp)
         {
-	    oldlife = temp;
-	    V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
-	    DrINumber(temp, stbar_x+61, stbar_y+12);
+            oldlife = temp;
+            V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
+            DrINumber(temp, stbar_x+61, stbar_y+12);
 #ifdef USE_UPDATESTATE
-	    H_UpdateState |= HUS_statbar;
+            H_UpdateState |= HUS_statbar;
 #endif
-	}
+        }
     }
 
     // Keys
@@ -908,16 +908,16 @@ static void H_DrawMainBar(void)
     {
         if(CPlayer->cards & it_yellowcard)
         {
-	    V_DrawScaledPatch_Name(stbar_x+153, stbar_y+6, "ykeyicon");
-	}
+            V_DrawScaledPatch_Name(stbar_x+153, stbar_y+6, "ykeyicon");
+        }
         if(CPlayer->cards & it_redcard)
         {
-	    V_DrawScaledPatch_Name(stbar_x+153, stbar_y+14, "gkeyicon");
-	}
+            V_DrawScaledPatch_Name(stbar_x+153, stbar_y+14, "gkeyicon");
+        }
         if(CPlayer->cards & it_bluecard)
         {
-	    V_DrawScaledPatch_Name(stbar_x+153, stbar_y+22, "bkeyicon");
-	}
+            V_DrawScaledPatch_Name(stbar_x+153, stbar_y+22, "bkeyicon");
+        }
         oldkeys = playerkeys;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
@@ -930,10 +930,10 @@ static void H_DrawMainBar(void)
         V_DrawScaledPatch(stbar_x+108, stbar_y+3, PatchBLACKSQ);
         if(temp && CPlayer->readyweapon > 0 && CPlayer->readyweapon < 7)
         {
-	    DrINumber(temp, stbar_x+109, stbar_y+4);
-	    V_DrawScaledPatch_Name(stbar_x+111, stbar_y+14,
-				   ammopic[CPlayer->readyweapon-1]);
-	}
+            DrINumber(temp, stbar_x+109, stbar_y+4);
+            V_DrawScaledPatch_Name(stbar_x+111, stbar_y+14,
+                                   ammopic[CPlayer->readyweapon-1]);
+        }
         oldammo = temp;
         oldweapon = CPlayer->readyweapon;
 #ifdef USE_UPDATESTATE
@@ -974,23 +974,23 @@ static void H_DrawInventoryBar(void)
     {
         //V_DrawScaledPatch(stbar_x+50+i*31, stbar_y+2, 0, W_CachePatchName("ARTIBOX", PU_CACHE));
         if(CPlayer->inventorySlotNum > x+i
-	   && CPlayer->inventory[x+i].type != arti_none)
+           && CPlayer->inventory[x+i].type != arti_none)
         {
-	    V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+2,
-				   patcharti[CPlayer->inventory[x+i].type]);
-	    DrSmallNumber(CPlayer->inventory[x+i].count, stbar_x+69+i*31, stbar_y+24);
-	}
+            V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+2,
+                                   patcharti[CPlayer->inventory[x+i].type]);
+            DrSmallNumber(CPlayer->inventory[x+i].count, stbar_x+69+i*31, stbar_y+24);
+        }
     }
     V_DrawScaledPatch(stbar_x+50+CPlayer->st_curpos*31, stbar_y+31, PatchSELECTBOX);
     if(x != 0)
     {
         V_DrawScaledPatch(stbar_x+38, stbar_y+1,
-	    !(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
+            !(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
     }
     if(CPlayer->inventorySlotNum-x > 7)
     {
         V_DrawScaledPatch(stbar_x+269, stbar_y+1,
-	    !(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
+            !(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
     }
 }
 
@@ -1019,40 +1019,40 @@ static void H_DrawFullScreenStuff(void)
     {
         if( CPlayer->inventory[CPlayer->inv_ptr].type > 0)
         {
-	    V_DrawFuzzPatch(stbar_x+286, stbar_y+12,
-		W_CachePatchName("ARTIBOX", PU_CACHE) );
-	    V_DrawScaledPatch_Name(stbar_x+286, stbar_y+12, 
+            V_DrawFuzzPatch(stbar_x+286, stbar_y+12,
+                W_CachePatchName("ARTIBOX", PU_CACHE) );
+            V_DrawScaledPatch_Name(stbar_x+286, stbar_y+12,
                 patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
-	    DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+307, stbar_y+34);
-	}
+            DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+307, stbar_y+34);
+        }
     }
     else
     {
         x = CPlayer->inv_ptr-CPlayer->st_curpos;
         for(i = 0; i < 7; i++)
         {
-	    V_DrawFuzzPatch(stbar_x+50+i*31, stbar_y+10,
-		W_CachePatchName("ARTIBOX", PU_CACHE) );
-	    if(CPlayer->inventorySlotNum > x+i
-	       && CPlayer->inventory[x+i].type != arti_none)
-	    {
-	        V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+10,
-		    patcharti[CPlayer->inventory[x+i].type] );
-	        DrSmallNumber(CPlayer->inventory[x+i].count, 69+i*31, stbar_y+32);
-	    }
-	}
+            V_DrawFuzzPatch(stbar_x+50+i*31, stbar_y+10,
+                W_CachePatchName("ARTIBOX", PU_CACHE) );
+            if(CPlayer->inventorySlotNum > x+i
+               && CPlayer->inventory[x+i].type != arti_none)
+            {
+                V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+10,
+                    patcharti[CPlayer->inventory[x+i].type] );
+                DrSmallNumber(CPlayer->inventory[x+i].count, 69+i*31, stbar_y+32);
+            }
+        }
         V_DrawScaledPatch(stbar_x+50+CPlayer->st_curpos*31, stbar_y+39,
-	    PatchSELECTBOX );
+            PatchSELECTBOX );
         if(x != 0)
         {
-	    V_DrawScaledPatch(stbar_x+38, stbar_y+9,
-		!(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
-	}
+            V_DrawScaledPatch(stbar_x+38, stbar_y+9,
+                !(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
+        }
         if(CPlayer->inventorySlotNum-x > 7)
         {
-	    V_DrawScaledPatch(stbar_x+269, stbar_y+9,
-		!(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
-	}
+            V_DrawScaledPatch(stbar_x+269, stbar_y+9,
+                !(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_lights.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -259,16 +259,16 @@ int EV_TurnTagLightsOff(line_t* line)
         // for each sector
         if (sector->tag == line->tag)
         {
-	    // for each sector with matching tag
+            // for each sector with matching tag
             min = sector->lightlevel;
             for (i = 0; i < sector->linecount; i++)
             {
-	        // for all lines in sector linelist
+                // for all lines in sector linelist
                 templine = sector->linelist[i];
                 tsec = getNextSector(templine,sector);
                 if (!tsec)
                     continue;
-	        // find any lower light level
+                // find any lower light level
                 if (tsec->lightlevel < min)
                     min = tsec->lightlevel;
             }
@@ -298,21 +298,21 @@ int EV_LightTurnOn ( line_t* line, int bright )
         int tbright = bright; //SoM: 3/7/2000: Search for maximum per sector
         if (sector->tag == line->tag)
         {
-	    // for each sector with matching tag
+            // for each sector with matching tag
             // bright = 0 means to search
             // for highest light level in surrounding sectors
             if (!bright)
             {
                 for (j = 0; j < sector->linecount; j++)
                 {
-		    // for each line in sector linelist
+                    // for each line in sector linelist
                     templine = sector->linelist[j];
                     temp = getNextSector(templine,sector);
 
                     if (!temp)
                         continue;
 
-		    // find any brighter light level
+                    // find any brighter light level
                     if (temp->lightlevel > tbright) //SoM: 3/7/2000
                         tbright = temp->lightlevel;
                 }

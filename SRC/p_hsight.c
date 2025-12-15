@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hsight.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_hsight.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -43,7 +43,7 @@
 /*
 ==============================================================================
 
-							P_CheckSight
+                                                        P_CheckSight
 
 This uses specialized forms of the maputils routines for optimized performance
 

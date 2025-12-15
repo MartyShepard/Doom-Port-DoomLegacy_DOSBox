@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
+// $Id: p_saveg.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -193,7 +193,7 @@ size_t  P_Savegame_length( void )
     if (length > savebuffer_size)
     {
         I_SoftError ("Savegame buffer overrun, need %i\n", length);
-   	return -1;
+        return -1;
     }
 #ifdef SAVEBUF_REPORT_MIN_FREE
     if( (savebuffer_size - length) < savebuf_min_free )
@@ -288,10 +288,10 @@ void SG_Writebuf( void )
         void * newbuf = realloc( savebuffer, newsize);
         if( newbuf == NULL )
         {
-	    I_SoftError ("Savegame buffer realloc fail at %i bytes.\n", newsize);
-	    // will fail when buffer gets overrun, which might not happen
-	    goto done;
-	}
+            I_SoftError ("Savegame buffer realloc fail at %i bytes.\n", newsize);
+            // will fail when buffer gets overrun, which might not happen
+            goto done;
+        }
         savebuffer = newbuf;
         savebuffer_size = newsize;
         // [WDJ] Enable the following to see buffer increases
@@ -305,7 +305,7 @@ void SG_Writebuf( void )
 #endif
         goto done;
     }
-			     
+
     // flush the buffer
     if( FIL_ExtWriteFile( &extfile, length ) < 0 )
     {
@@ -339,10 +339,10 @@ void SG_Readbuf( void )
     {
         // do not load more until little is left
         if( (extfile.bufcnt - len1) >= SAVEBUF_FREE_TRIGGER )
-	    goto done;
+            goto done;
 
-	extfile.bufcnt -= len1;  // data still in buffer
-	memmove( savebuffer, save_p, extfile.bufcnt ); // shuffle data down
+        extfile.bufcnt -= len1;  // data still in buffer
+        memmove( savebuffer, save_p, extfile.bufcnt ); // shuffle data down
     }
     else
     {   // really empty (like first time)
@@ -637,7 +637,7 @@ void P_ArchivePlayers(void)
 
         for (j = 0; j < NUMPSPRITES; j++)
         {
-	    pspdef_t * psp = & ply->psprites[j];
+            pspdef_t * psp = & ply->psprites[j];
             if (psp->state)
                 WRITEU16(save_p, (psp->state - states) + 1);
             else
@@ -737,7 +737,7 @@ void P_UnArchivePlayers(void)
 
         for (j = 0; j < NUMPSPRITES; j++)
         {
-	    pspdef_t * psp = & ply->psprites[j];
+            pspdef_t * psp = & ply->psprites[j];
             flags = READU16(save_p);
             if (flags)
                 psp->state = &states[flags - 1];
@@ -950,7 +950,7 @@ void P_ArchiveWorld(void)
 
         if (li->sidenum[0] != NULL_INDEX)
         {
-	    mapsidedef_t * msd0 = &msd[li->sidenum[0]];
+            mapsidedef_t * msd0 = &msd[li->sidenum[0]];
             si = &sides[li->sidenum[0]];
             if (si->textureoffset != LE_SWAP16(msd0->textureoffset) << FRACBITS)
                 diff |= LD_S1TEXOFF;
@@ -967,7 +967,7 @@ void P_ArchiveWorld(void)
         }
         if (li->sidenum[1] != NULL_INDEX)
         {
-	    mapsidedef_t * msd1 = &msd[li->sidenum[1]];
+            mapsidedef_t * msd1 = &msd[li->sidenum[1]];
             si = &sides[li->sidenum[1]];
             if (si->textureoffset != LE_SWAP16(msd1->textureoffset) << FRACBITS)
                 diff2 |= LD_S2TEXOFF;
@@ -1071,7 +1071,7 @@ void P_UnArchiveWorld(void)
             secp->ceilingheight = READFIXED(get);
         if (diff & SD_FLOORPIC)
         {
-	    secp->floorpic = P_AddLevelFlat((char *)get);  // find id
+            secp->floorpic = P_AddLevelFlat((char *)get);  // find id
             get += 8;
         }
         if (diff & SD_CEILPIC)
@@ -1083,10 +1083,10 @@ void P_UnArchiveWorld(void)
             secp->lightlevel = READ16(get);
         if (diff & SD_SPECIAL)
         {
-	    // OK to update, savegame linedef changes are not read yet,
-	    // but linedef changes do not affect sectors that are already setup.
-	    P_Update_Special_Sector( secp, READ16(get) );
-	}
+            // OK to update, savegame linedef changes are not read yet,
+            // but linedef changes do not affect sectors that are already setup.
+            P_Update_Special_Sector( secp, READ16(get) );
+        }
 
         if (diff2 & SD_FXOFFS)
             secp->floor_xoffs = READFIXED(get);
@@ -1490,16 +1490,16 @@ static void P_Archive_Mapthing(void)
         mtid = P_Extra_Mapthing_Index(mthing);
         if (mtid)
         {
-	    // no diffs, no wad mapthing to compare to
-	    WRITE32(save_p, mtid );
-	    WRITE16(save_p, mthing->x );
-	    WRITE16(save_p, mthing->y );
-	    WRITE16(save_p, mthing->z );
-	    WRITE16(save_p, mthing->angle );
-	    WRITE16(save_p, mthing->type );  // objtype
-	    WRITE16(save_p, mthing->options );
-	    SG_Writebuf();
-	}
+            // no diffs, no wad mapthing to compare to
+            WRITE32(save_p, mtid );
+            WRITE16(save_p, mthing->x );
+            WRITE16(save_p, mthing->y );
+            WRITE16(save_p, mthing->z );
+            WRITE16(save_p, mthing->angle );
+            WRITE16(save_p, mthing->type );  // objtype
+            WRITE16(save_p, mthing->options );
+            SG_Writebuf();
+        }
     }
     // mark the end of the save section using reserved id
     WRITE32(save_p, 0);
@@ -1522,9 +1522,9 @@ static void P_UnArchive_Mapthing( void )
         mthing = P_Get_Extra_Mapthing( 0 );  // allocate
         if (!mthing)
         {
-	    reason = "Cannot get extra mapthing";
-	    goto err_report;
-	}
+            reason = "Cannot get extra mapthing";
+            goto err_report;
+        }
         Map_Mapthing_ID( mtid, mthing );
         mthing->x = READ16(save_p);
         mthing->y = READ16(save_p);
@@ -1708,17 +1708,17 @@ void P_ArchiveThinkers(void)
     {
         if (th->function.acp1 == (actionf_p1) P_MobjThinker)
         {
-	    // Mobj thinker
+            // Mobj thinker
             mobj = (mobj_t *) th;
 
 #if 0
-	    // [WDJ] DEBUG
-	    boolean voodoo_doll = 0;
-	    if( mobj->player )
-	    {
-	        if( mobj->player->mo != mobj )
-		   voodoo_doll = 1;
-	    }
+            // [WDJ] DEBUG
+            boolean voodoo_doll = 0;
+            if( mobj->player )
+            {
+                if( mobj->player->mo != mobj )
+                   voodoo_doll = 1;
+            }
 #endif
 /*
             // not a monster nor a pickable item so don't save it
@@ -1728,17 +1728,17 @@ void P_ArchiveThinkers(void)
                 || (mobj->type == MT_BLOOD) )
                 continue;
 */
-	    // Either save MD_SPAWNPOINT, or save MD_TYPE, or both
+            // Either save MD_SPAWNPOINT, or save MD_TYPE, or both
             if (mobj->spawnpoint
-		&& (!(mobj->spawnpoint->options & MTF_FS_SPAWNED))
-		&& (mobj->info->doomednum != -1))
+                && (!(mobj->spawnpoint->options & MTF_FS_SPAWNED))
+                && (mobj->info->doomednum != -1))
             {
                 // spawnpoint is not modified but we must save it since it is a identifier
                 diff = MD_SPAWNPOINT;
 
                 if ((mobj->x != mobj->spawnpoint->x << FRACBITS)
-		    || (mobj->y != mobj->spawnpoint->y << FRACBITS)
-		    || (mobj->angle != wad_to_angle(mobj->spawnpoint->angle)))
+                    || (mobj->y != mobj->spawnpoint->y << FRACBITS)
+                    || (mobj->angle != wad_to_angle(mobj->spawnpoint->angle)))
                     diff |= MD_POS;
                 if (mobj->info->doomednum != mobj->spawnpoint->type)
                     diff |= MD_TYPE;
@@ -1747,9 +1747,9 @@ void P_ArchiveThinkers(void)
             {
                 // not a map spawned thing so make it from scratch
                 diff = MD_POS | MD_TYPE;
-	        // if might respawn then need to save spawnpoint too
-	        if( mobj->spawnpoint )
-		    diff |= MD_SPAWNPOINT;  // save extra mapthing ref
+                // if might respawn then need to save spawnpoint too
+                if( mobj->spawnpoint )
+                    diff |= MD_SPAWNPOINT;  // save extra mapthing ref
             }
 
             // not the default but the most probable
@@ -1806,8 +1806,8 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_mobj);	// mark as mobj
             WRITEU32(save_p, diff);
             // Save ID number of this Mobj so that pointers can be restored.
-	    // NOTE: does not check if this mobj has been already saved, so it'd better not appear twice.
-	    WRITE_MobjPointerID(save_p, mobj);
+            // NOTE: does not check if this mobj has been already saved, so it'd better not appear twice.
+            WRITE_MobjPointerID(save_p, mobj);
             WRITEFIXED(save_p, mobj->z);        // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
             WRITEFIXED(save_p, mobj->floorz);
 
@@ -1850,12 +1850,12 @@ void P_ArchiveThinkers(void)
             if (diff & MD_EFLAGS)
                 WRITEU32(save_p, mobj->eflags);
             if (diff & MD_PLAYER)
-	    {
-	        unsigned int st = mobj->player - players;
-	        if( mobj->player->mo != mobj )
-		   st += 128;  // voodoo doll flag
+            {
+                unsigned int st = mobj->player - players;
+                if( mobj->player->mo != mobj )
+                   st += 128;  // voodoo doll flag
                 WRITEBYTE(save_p, st);
-	    }
+            }
             if (diff & MD_MOVEDIR)
                 WRITE32(save_p, mobj->movedir);
             if (diff & MD_MOVECOUNT)
@@ -1865,9 +1865,9 @@ void P_ArchiveThinkers(void)
             if (diff & MD_LASTLOOK)
                 WRITE32(save_p, mobj->lastlook);
             if (diff & MD_TARGET)
-	        WRITE_MobjPointerID(save_p, mobj->target);
+                WRITE_MobjPointerID(save_p, mobj->target);
             if (diff & MD_TRACER)
-	        WRITE_MobjPointerID(save_p, mobj->tracer);
+                WRITE_MobjPointerID(save_p, mobj->tracer);
             if (diff & MD_FRICTION)
                 WRITE32(save_p, mobj->friction);
             if (diff & MD_MOVEFACTOR)
@@ -1880,42 +1880,42 @@ void P_ArchiveThinkers(void)
                 WRITE32(save_p, mobj->dropped_ammo_count);
         }
         // Use action as determinant of its owner.
-	// acv == T_RemoveThinker : means deallocated (see P_RemoveThinker)
+        // acv == T_RemoveThinker : means deallocated (see P_RemoveThinker)
         else if (th->function.acv == (actionf_v) NULL)
         {
-	    // No action function.
-	    // This thinker can be a stopped ceiling or platform.
-	    // Each sector action has a separate thinker.
+            // No action function.
+            // This thinker can be a stopped ceiling or platform.
+            // Each sector action has a separate thinker.
 
-	    boolean done = false;
+            boolean done = false;
             //SoM: 3/15/2000: Boom stuff...
             ceilinglist_t *cl;
-	   
-	    // search for this thinker being a stopped active ceiling
+
+            // search for this thinker being a stopped active ceiling
             for (cl = activeceilings; cl; cl = cl->next)
-	    {
+            {
                 if (cl->ceiling == (ceiling_t *) th)  // found in ceilinglist
                 {
-		    WRITE_ceiling( (ceiling_t*)th, 0 ); // stopped ceiling 
-		    done = true;
-		    break;
+                    WRITE_ceiling( (ceiling_t*)th, 0 ); // stopped ceiling
+                    done = true;
+                    break;
                 }
-	    }
+            }
 
-	    if (done)
-	      continue;
+            if (done)
+              continue;
 
-	    // [smite] Added a similar search for stopped plats.
+            // [smite] Added a similar search for stopped plats.
             platlist_t *pl;
-	    // search for this thinker being a stopped active platform
-	    for (pl = activeplats; pl; pl = pl->next)
-	    {
+            // search for this thinker being a stopped active platform
+            for (pl = activeplats; pl; pl = pl->next)
+            {
                 if (pl->plat == (plat_t *) th)  // found in platform list
                 {
-		    WRITE_plat( (plat_t *)th, 0 ); // stopped plat
-		    break;
+                    WRITE_plat( (plat_t *)th, 0 ); // stopped plat
+                    break;
                 }
-	    }
+            }
 
             continue;
         }
@@ -1926,43 +1926,43 @@ void P_ArchiveThinkers(void)
         }
         else if (th->function.acp1 == (actionf_p1) T_PlatRaise)
         {
-	    WRITE_plat( (plat_t *)th, 1 ); // moving plat
+            WRITE_plat( (plat_t *)th, 1 ); // moving plat
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_VerticalDoor)
         {
             WRITEBYTE(save_p, tc_door);  // door marker
-	    vldoor_t *door = (vldoor_t *)th;
-	    WRITE_SECTOR_THINKER( door, vldoor_t, type );
-	    WRITE_LINE_PTR( door->line );  // can be NULL
+            vldoor_t *door = (vldoor_t *)th;
+            WRITE_SECTOR_THINKER( door, vldoor_t, type );
+            WRITE_LINE_PTR( door->line );  // can be NULL
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_MoveFloor)
         {
             WRITEBYTE(save_p, tc_floor);  // floor marker
-	    floormove_t *floormv = (floormove_t *)th;
-	    WRITE_SECTOR_THINKER( floormv, floormove_t, type );
+            floormove_t *floormv = (floormove_t *)th;
+            WRITE_SECTOR_THINKER( floormv, floormove_t, type );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_LightFlash)
         {
             WRITEBYTE(save_p, tc_flash);
             lightflash_t *flash = (lightflash_t *)th;
-	    WRITE_SECTOR_THINKER( flash, lightflash_t, count );
+            WRITE_SECTOR_THINKER( flash, lightflash_t, count );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_StrobeFlash)
         {
             WRITEBYTE(save_p, tc_strobe);
             strobe_t *strobe = (strobe_t *)th;
-	    WRITE_SECTOR_THINKER( strobe, strobe_t, count );
+            WRITE_SECTOR_THINKER( strobe, strobe_t, count );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Glow)
         {
             WRITEBYTE(save_p, tc_glow);
             glow_t *glow = (glow_t *)th;
-	    WRITE_SECTOR_THINKER( glow, glow_t, minlight );
+            WRITE_SECTOR_THINKER( glow, glow_t, minlight );
             continue;
         }
         else
@@ -1971,14 +1971,14 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_fireflicker);
             fireflicker_t *fireflicker = (fireflicker_t *)th;
-	    WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, count );
+            WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, count );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_LightFade)
         {
             WRITEBYTE(save_p, tc_lightfade);
             lightlevel_t *fade = (lightlevel_t *)th;
-	    WRITE_SECTOR_THINKER( fade, lightlevel_t, destlevel );
+            WRITE_SECTOR_THINKER( fade, lightlevel_t, destlevel );
             continue;
         }
         else
@@ -1987,38 +1987,38 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_elevator);
             elevator_t *elevator = (elevator_t *)th;
-	    WRITE_SECTOR_THINKER( elevator, elevator_t, type );
-	    continue;
+            WRITE_SECTOR_THINKER( elevator, elevator_t, type );
+            continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Scroll)
         {
             WRITEBYTE(save_p, tc_scroll);
-	    scroll_t *scroll = (scroll_t *)th;
-	    WRITE_THINKER( scroll, scroll_t, type );
+            scroll_t *scroll = (scroll_t *)th;
+            WRITE_THINKER( scroll, scroll_t, type );
             continue;
         }
 #ifdef FRICTIONTHINKER
         else if (th->function.acp1 == (actionf_p1) T_Friction)
         {
-	    // Friction thinkers are obsolete
+            // Friction thinkers are obsolete
             WRITEBYTE(save_p, tc_friction);
-	    friction_t *friction = (friction_t *)th;
-	    WRITE_THINKER( friction, friction_t, affectee );
+            friction_t *friction = (friction_t *)th;
+            WRITE_THINKER( friction, friction_t, affectee );
             continue;
         }
 #endif       
         else if (th->function.acp1 == (actionf_p1) T_Pusher)
         {
-	    WRITEBYTE(save_p, tc_pusher);
-	    pusher_t *pusher = (pusher_t *)th;
-	    WRITE_THINKER( pusher, pusher_t, type );
+            WRITEBYTE(save_p, tc_pusher);
+            pusher_t *pusher = (pusher_t *)th;
+            WRITE_THINKER( pusher, pusher_t, type );
             continue;
         }
 #ifdef PARANOIA
         else if (th->function.acp1 != (actionf_p1)T_RemoveThinker) // wait garbage collection
         {
             I_SoftError("SaveGame: Unknown thinker type %p\n", th->function.acp1);
-	}
+        }
 #endif
 
         SG_Writebuf();
@@ -2058,7 +2058,7 @@ void P_UnArchiveThinkers(void)
                   || (mobj->type == MT_BLOOD) ) )
 */
             P_RemoveMobj((mobj_t *) currentthinker);
-	}
+        }
         else
             Z_Free(currentthinker);
 
@@ -2083,20 +2083,20 @@ void P_UnArchiveThinkers(void)
                 memset(mobj, 0, sizeof(mobj_t));
 
                 diff = READU32(save_p);
-	        // [WDJ] initializing the lookup for GetMobjPointer and READ_MobjPointerID(),
-	        // this is the id number for the mobj being read here.
+                // [WDJ] initializing the lookup for GetMobjPointer and READ_MobjPointerID(),
+                // this is the id number for the mobj being read here.
                 MapMobjID(READU32(save_p), mobj); // assign the ID to the newly created mobj
 
                 mobj->z = READFIXED(save_p);    // Force this so 3dfloor problems don't arise. SSNTails 03-17-2002
                 mobj->floorz = READFIXED(save_p);
 
-	        // [WDJ] Keep all combinations of MD_SPAWNPOINT and MD_TYPE,
-		// so can read older savegames made with different invariants.
+                // [WDJ] Keep all combinations of MD_SPAWNPOINT and MD_TYPE,
+                // so can read older savegames made with different invariants.
                 if (diff & MD_SPAWNPOINT)
                 {
-		    READ_MAPTHING_PTR( mobj->spawnpoint );
-		    if( mobj->spawnpoint )
-		        mobj->spawnpoint->mobj = mobj;
+                    READ_MAPTHING_PTR( mobj->spawnpoint );
+                    if( mobj->spawnpoint )
+                        mobj->spawnpoint->mobj = mobj;
                 }
                 if (diff & MD_TYPE)
                 {
@@ -2104,19 +2104,19 @@ void P_UnArchiveThinkers(void)
                 }
                 else
                 {
-		    // [WDJ] even if have MD_SPAWNPOINT, the lookup might return NULL
-		    if( mobj->spawnpoint == NULL )
-		    {
-		        reason = "No Type and No Spawnpoint";
-		        goto err_report;
-		    }
+                    // [WDJ] even if have MD_SPAWNPOINT, the lookup might return NULL
+                    if( mobj->spawnpoint == NULL )
+                    {
+                        reason = "No Type and No Spawnpoint";
+                        goto err_report;
+                    }
                     for (i = 0; i < NUMMOBJTYPES; i++)
                         if (mobj->spawnpoint->type == mobjinfo[i].doomednum)
                             break;
                     if (i == NUMMOBJTYPES)
                     {
-		        reason = "Spawnpoint type invalid";
-		        goto err_report;
+                        reason = "Spawnpoint type invalid";
+                        goto err_report;
                     }
                     mobj->type = i;
                 }
@@ -2186,28 +2186,28 @@ void P_UnArchiveThinkers(void)
                 if (diff & MD_PLAYER)
                 {
                     i = READBYTE(save_p);
-		    if( i < MAXPLAYERS )
-		    {
-		        mobj->player = &players[i];
-		        mobj->player->mo = mobj;  // connect player to this mobj
-		        // added for angle prediction
-		        if (consoleplayer == i)
-			    localangle = mobj->angle;
-		        if (displayplayer2 == i)  // player 2
-			    localangle2 = mobj->angle;
-		    }
-		    else if( i >= 128 && i < MAXPLAYERS+128 )
-		    { 
-		        // voodoo dolls
-		        i -= 128; // voodoo doll flag
-		        mobj->player = &players[i];
-		    }
-		    else
-		    {
-		        // [WDJ] FIXME later, for now accept previous savegames
-		        I_SoftError( "Savegame load: mobj has bad player id, %d, setting to 0.\n", i );
-		        i = 0;
-		    }
+                    if( i < MAXPLAYERS )
+                    {
+                        mobj->player = &players[i];
+                        mobj->player->mo = mobj;  // connect player to this mobj
+                        // added for angle prediction
+                        if (consoleplayer == i)
+                            localangle = mobj->angle;
+                        if (displayplayer2 == i)  // player 2
+                            localangle2 = mobj->angle;
+                    }
+                    else if( i >= 128 && i < MAXPLAYERS+128 )
+                    {
+                        // voodoo dolls
+                        i -= 128; // voodoo doll flag
+                        mobj->player = &players[i];
+                    }
+                    else
+                    {
+                        // [WDJ] FIXME later, for now accept previous savegames
+                        I_SoftError( "Savegame load: mobj has bad player id, %d, setting to 0.\n", i );
+                        i = 0;
+                    }
                 }
                 if (diff & MD_MOVEDIR)
                     mobj->movedir = READ32(save_p);
@@ -2220,9 +2220,9 @@ void P_UnArchiveThinkers(void)
                 else
                     mobj->lastlook = -1;
                 if (diff & MD_TARGET)
-		  mobj->target_id = READU32(save_p); // id number is replaced with the corresponding pointer at the end of the function
+                  mobj->target_id = READU32(save_p); // id number is replaced with the corresponding pointer at the end of the function
                 if (diff & MD_TRACER)
-		  mobj->tracer_id = READU32(save_p); // same here
+                  mobj->tracer_id = READU32(save_p); // same here
                 if (diff & MD_FRICTION)
                     mobj->friction = READ32(save_p);
                 else
@@ -2252,7 +2252,7 @@ void P_UnArchiveThinkers(void)
                 P_SetThingPosition(mobj);
 
                 /*
-		   // This causes 3dfloor problems! SSNTails 03-17-2002
+                   // This causes 3dfloor problems! SSNTails 03-17-2002
                    mobj->floorz = mobj->subsector->sector->floorheight;
                    if( (diff & MD_Z) == 0 )
                    mobj->z = mobj->floorz;
@@ -2268,130 +2268,130 @@ void P_UnArchiveThinkers(void)
                 break;
 
             case tc_ceiling:
-	      {
-		ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( ceiling, ceiling_t, type );
+              {
+                ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( ceiling, ceiling_t, type );
                 ceiling->sector->ceilingdata = ceiling;
-		byte moving = READBYTE(save_p); // moving ceiling?
-		ceiling->thinker.function.acp1 = moving ? (actionf_p1)T_MoveCeiling : NULL;
+                byte moving = READBYTE(save_p); // moving ceiling?
+                ceiling->thinker.function.acp1 = moving ? (actionf_p1)T_MoveCeiling : NULL;
                 P_AddActiveCeiling(ceiling);
-	      }
-	      break;
+              }
+              break;
 
             case tc_door:
-	      {
+              {
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( door, vldoor_t, type );
- 		READ_LINE_PTR( door->line );  // can be NULL
+                READ_SECTOR_THINKER( door, vldoor_t, type );
+                READ_LINE_PTR( door->line );  // can be NULL
                 door->sector->ceilingdata = door;
                 door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
-	      }
-	      break;
+              }
+              break;
 
             case tc_floor:
-	      {
-		floormove_t *floormv = Z_Malloc(sizeof(*floormv), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( floormv, floormove_t, type );
+              {
+                floormove_t *floormv = Z_Malloc(sizeof(*floormv), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( floormv, floormove_t, type );
                 floormv->sector->floordata = floormv;
                 floormv->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-	      }
-	      break;
+              }
+              break;
 
             case tc_plat:
-	      {
-		plat_t *plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( plat, plat_t, type );
+              {
+                plat_t *plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( plat, plat_t, type );
                 plat->sector->floordata = plat;
-		byte moving = READBYTE(save_p); // moving plat?
-		plat->thinker.function.acp1 = moving ? (actionf_p1)T_PlatRaise : NULL;
+                byte moving = READBYTE(save_p); // moving plat?
+                plat->thinker.function.acp1 = moving ? (actionf_p1)T_PlatRaise : NULL;
                 P_AddActivePlat(plat);
-	      }
-	      break;
+              }
+              break;
 
             case tc_flash:
-	      {
-		lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( flash, lightflash_t, count );
+              {
+                lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( flash, lightflash_t, count );
                 flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
-	      }
-	      break;
+              }
+              break;
 
             case tc_strobe:
-	      {
-		strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( strobe, strobe_t, count );
+              {
+                strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( strobe, strobe_t, count );
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
-	      }
-	      break;
+              }
+              break;
 
             case tc_glow:
-	      {
-		glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( glow, glow_t, minlight );
+              {
+                glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( glow, glow_t, minlight );
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
-	      }
-	      break;
-	      
+              }
+              break;
+
             case tc_fireflicker:
-	      {
-		fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( fireflicker, fireflicker_t, count );
+              {
+                fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( fireflicker, fireflicker_t, count );
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
-	      }
-	      break;
-	      
+              }
+              break;
+
             case tc_lightfade:
-	      {
-		lightlevel_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( fade, lightlevel_t, destlevel );
+              {
+                lightlevel_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( fade, lightlevel_t, destlevel );
                 fade->thinker.function.acp1 = (actionf_p1) T_LightFade;
-	      }
-	      break;
+              }
+              break;
 
             case tc_elevator:
-	      {
-		elevator_t *elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
-		READ_SECTOR_THINKER( elevator, elevator_t, type );
+              {
+                elevator_t *elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
+                READ_SECTOR_THINKER( elevator, elevator_t, type );
                 elevator->sector->floordata = elevator; //jff 2/22/98
                 elevator->sector->ceilingdata = elevator;       //jff 2/22/98
                 elevator->thinker.function.acp1 = (actionf_p1) T_MoveElevator;
-	      }
-	      break;
+              }
+              break;
 
             case tc_scroll:
-	      {
-		scroll_t *scroll = Z_Malloc(sizeof(scroll_t), PU_LEVEL, NULL);
-		READ_THINKER( scroll, scroll_t, type );
+              {
+                scroll_t *scroll = Z_Malloc(sizeof(scroll_t), PU_LEVEL, NULL);
+                READ_THINKER( scroll, scroll_t, type );
                 scroll->thinker.function.acp1 = (actionf_p1) T_Scroll;
-	      }
-	      break;
+              }
+              break;
 
             case tc_friction:
-	      {
+              {
 #ifdef FRICTIONTHINKER
-		 // friction thinkers are obsolete
-		friction_t *friction = Z_Malloc(sizeof(friction_t), PU_LEVEL, NULL);
-		READ_THINKER( friction, friction_t, affectee );
+                 // friction thinkers are obsolete
+                friction_t *friction = Z_Malloc(sizeof(friction_t), PU_LEVEL, NULL);
+                READ_THINKER( friction, friction_t, affectee );
                 friction->thinker.function.acp1 = (actionf_p1) T_Friction;
 #else
-		// skip, to handle old savegames
-		save_p += sizeof(thinker_t);
+                // skip, to handle old savegames
+                save_p += sizeof(thinker_t);
 #endif
-	      }
-	      break;
+              }
+              break;
 
             case tc_pusher:
-	      {
-		pusher_t *pusher = Z_Malloc(sizeof(pusher_t), PU_LEVEL, NULL);
-		READ_THINKER( pusher, pusher_t, type );
+              {
+                pusher_t *pusher = Z_Malloc(sizeof(pusher_t), PU_LEVEL, NULL);
+                READ_THINKER( pusher, pusher_t, type );
                 pusher->source = P_GetPushThing(pusher->affectee);
                 pusher->thinker.function.acp1 = (actionf_p1) T_Pusher;
-	      }
+              }
                 break;
 
             default:
               I_SoftError("LoadGame: Unknown thinker type %p", tclass);
-	      goto err_exit;
+              goto err_exit;
         }
     }
 
@@ -2400,12 +2400,12 @@ void P_UnArchiveThinkers(void)
     {
       if (currentthinker->function.acp1 == (actionf_p1) P_MobjThinker)
       {
-	mobj = (mobj_t *) currentthinker;
-	if (mobj->tracer)
-	  mobj->tracer = GetMobjPointer(mobj->tracer_id);
+        mobj = (mobj_t *) currentthinker;
+        if (mobj->tracer)
+          mobj->tracer = GetMobjPointer(mobj->tracer_id);
 
-	if (mobj->target)
-	  mobj->target = GetMobjPointer(mobj->target_id);
+        if (mobj->target)
+          mobj->target = GetMobjPointer(mobj->target_id);
       }
     }
     return;
@@ -2497,7 +2497,7 @@ static void  WRITE_SFArrayPtr( fs_array_t * arrayptr )
     fs_array_t *cur = fs_arraylist;
 #endif
     while(cur && (cur != arrayptr))  // verify if valid ptr
-	    cur = cur->next;
+            cur = cur->next;
 
     // zero is unused, so use it for NULL
     // The arrays have been numbered in saveindex, see ReadSFArrayPtr
@@ -2518,11 +2518,11 @@ static fs_array_t * READ_SFArrayPtr( void )
 #else
         cur = fs_arraylist;  // start of all arrays
 #endif
-	while(cur)	// search for matching saveindex
-	{
+        while(cur)	// search for matching saveindex
+        {
             if(svindx == cur->saveindex)  break;
             cur = cur->next;
-	}
+        }
         // not found is NULL ptr
     }
     return cur;   // which may be NULL
@@ -2539,24 +2539,24 @@ void P_ArchiveSValue(fs_value_t *s)
   {
     case FSVT_string:
       {
-	strcpy((char *)save_p, s->value.s);
-	save_p += strlen(s->value.s) + 1;
-	break;
+        strcpy((char *)save_p, s->value.s);
+        save_p += strlen(s->value.s) + 1;
+        break;
       }
     case FSVT_int:
       {
-	WRITE32(save_p, s->value.i);
-	break;
+        WRITE32(save_p, s->value.i);
+        break;
       }
     case FSVT_fixed:
       {
-	WRITEFIXED(save_p, s->value.f);
-	break;
+        WRITEFIXED(save_p, s->value.f);
+        break;
       }
     case FSVT_mobj:
       {
-	WRITE_MobjPointerID(save_p, s->value.mobj);
-	break;
+        WRITE_MobjPointerID(save_p, s->value.mobj);
+        break;
       }
     default:
       // other types do not appear in user scripts
@@ -2570,24 +2570,24 @@ void P_UnArchiveSValue(fs_value_t *s)
   {
     case FSVT_string:
       {
-	s->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
-	save_p += strlen(s->value.s) + 1;
-	break;
+        s->value.s = Z_Strdup((char *)save_p, PU_LEVEL, 0);
+        save_p += strlen(s->value.s) + 1;
+        break;
       }
     case FSVT_int:
       {
-	s->value.i = READ32(save_p);
-	break;
+        s->value.i = READ32(save_p);
+        break;
       }
     case FSVT_fixed:
       {
-	s->value.f = READFIXED(save_p);
-	break;
+        s->value.f = READFIXED(save_p);
+        break;
       }
     case FSVT_mobj:
       {
-	s->value.mobj = READ_MobjPointerID(save_p);
-	break;
+        s->value.mobj = READ_MobjPointerID(save_p);
+        break;
       }
     default:
       break;
@@ -2637,18 +2637,18 @@ void P_ArchiveFSVariables(fs_variable_t **vars)
       // Those that are not handled by P_ArchiveSValue
       if (sv->type == FSVT_array) // haleyjd: arrays
       {
-	  WRITE_SFArrayPtr( sv->value.a );
-	  break;
+          WRITE_SFArrayPtr( sv->value.a );
+          break;
       }
       else
       {
-	  // [smite] TODO fs_variable_t should simply inherit fs_value_t
-	  // also fs_value_t should have array as a possible subtype
-	  fs_value_t s;
-	  s.type  = sv->type;
+          // [smite] TODO fs_variable_t should simply inherit fs_value_t
+          // also fs_value_t should have array as a possible subtype
+          fs_value_t s;
+          s.type  = sv->type;
 
-	  s.value.mobj = sv->value.mobj; // HACK largest type in union
-	  P_ArchiveSValue(&s);
+          s.value.mobj = sv->value.mobj; // HACK largest type in union
+          P_ArchiveSValue(&s);
       }
 
       sv = sv->next;
@@ -2684,12 +2684,12 @@ void P_UnArchiveFSVariables(fs_variable_t **vars)
     }
     else
     {
-	// [smite] TODO fs_variable_t should simply inherit fs_value_t, but...
-	fs_value_t s;
-	s.type = sv->type;
+        // [smite] TODO fs_variable_t should simply inherit fs_value_t, but...
+        fs_value_t s;
+        s.type = sv->type;
 
-	P_UnArchiveSValue(&s);
-	sv->value.mobj = s.value.mobj; // HACK largest type in union
+        P_UnArchiveSValue(&s);
+        sv->value.mobj = s.value.mobj; // HACK largest type in union
     }
 
     // link in the new variable
@@ -2992,8 +2992,8 @@ boolean SG_fragglescript_detect( void )
     if( fs_runningscripts.next ) goto found_state;  // there is a running script
     if( script_camera_on ) goto found_state;
     if( script_camera.mo || script_camera.viewheight
-	|| script_camera.aiming || script_camera.startangle )
-     		goto found_state; // camera was on
+        || script_camera.aiming || script_camera.startangle )
+                goto found_state; // camera was on
  
     return 0;
 
@@ -3072,7 +3072,7 @@ void P_LoadNetVars( void )
     for (;;count++)
     {
         if( count>=mincnt )
-	    if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
+            if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
         Got_NetXCmd_NetVar((char**)&save_p, 0);
     }
 //    GenPrintf(EMSG_info, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
@@ -3164,8 +3164,8 @@ void P_Write_Savegame_Header( const char * description )
     // Save Langid game header
     // Do not use WRITESTRING as that will put term 0 into the header.
     len = sprintf( (char *)save_p, sg_head_format,
-		   VERSION, description, gamedesc.gname,
-		   level_wad(), level_mapname, l_min, l_sec );
+                   VERSION, description, gamedesc.gname,
+                   level_wad(), level_mapname, l_min, l_sec );
     save_p += len;  // does not include string term 0
     WRITE_command_line();
     len = sprintf( (char *)save_p, sg_head_END );
@@ -3319,10 +3319,10 @@ void P_SaveGame( void )
     uint32_t k;
     for (k=0; k < mobj_ptrmap.used; k++)
       {
-	I_OutputMsg("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
-	if (mobj_ptrmap.map[k].pointer == NULL)
-	  I_Error("P_SaveGame: Hole in mobj_ptrmap!\n");
-	//CONS_Printf("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
+        I_OutputMsg("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
+        if (mobj_ptrmap.map[k].pointer == NULL)
+          I_Error("P_SaveGame: Hole in mobj_ptrmap!\n");
+        //CONS_Printf("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
       }
 #endif
 

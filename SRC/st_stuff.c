@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: st_stuff.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -463,8 +463,8 @@ static void ST_refreshBackground(void)
 
         // draw the faceback for the statusbarplayer
         colormap = (plyr->skincolor) ?
-	     SKIN_TO_SKINMAP( plyr->skincolor )
-	   : & reg_colormaps[0]; // default green skin
+             SKIN_TO_SKINMAP( plyr->skincolor )
+           : & reg_colormaps[0]; // default green skin
 
         V_DrawMappedPatch (stbar_x+ST_FX, stbar_y, faceback, colormap);
 
@@ -580,7 +580,7 @@ static void ST_updateFaceWidget(void)
             // being attacked
             priority = 7;
 
-	    // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
+            // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
 //            if (plyr->health - st_oldhealth > ST_MUCHPAIN) // orig bug
             if (st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
@@ -636,7 +636,7 @@ static void ST_updateFaceWidget(void)
         // getting hurt because of your own damn stupidity
         if (plyr->damagecount)
         {
-	    // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
+            // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
 //            if (plyr->health - st_oldhealth > ST_MUCHPAIN)
             if (st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
@@ -880,7 +880,7 @@ void ST_doPaletteStuff(void)
         //             than the palettes defined in the wad
 
         {
-	    // Imitate the special object screen tints for each special palette.
+            // Imitate the special object screen tints for each special palette.
             //CONS_Printf("palette: %d\n", palette);
             switch (palette) {
                 case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // pas de changement
@@ -1480,7 +1480,7 @@ void ST_Init (void)
     int     i;
 
     if(dedicated)
-	return;
+        return;
     
     //added:26-01-98:screens[4] is allocated at videomode setup, and
     //               set at V_Init(), the first time being at SCR_Recalc()
@@ -1493,7 +1493,7 @@ void ST_Init (void)
             break;
         case heretic :
             if(W_CheckNumForName("e2m1")==-1)
-	        // GDESC_heretic_shareware
+                // GDESC_heretic_shareware
                 st_borderflat_num = W_GetNumForName ("FLOOR04");
             else
                 st_borderflat_num = W_GetNumForName ("FLAT513");
@@ -1675,17 +1675,17 @@ void ST_overlayDrawer ()
 
          case 'k': // draw keys
            c=1;
-	   key_y = lowerbar_y - (8 * sf_dupy);
+           key_y = lowerbar_y - (8 * sf_dupy);
            for (i=0;i<3;i++)
-	   {
+           {
                 if( plyr->cards & (1<<(i+3)) ) // first skull then card
                     V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-				      key_y, keys[i+3]);
+                                      key_y, keys[i+3]);
                 else
                 if( plyr->cards & (1<<i) )
                     V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-				      key_y, keys[i]);
-	   }
+                                      key_y, keys[i]);
+           }
            break;
 
          case 'm': // draw armor

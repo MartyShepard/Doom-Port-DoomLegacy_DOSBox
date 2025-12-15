@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
+// $Id: p_hpspr.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -384,20 +384,20 @@ void A_BeakReady(player_t *player, pspdef_t *psp)
         P_SetMobjState(pmo, S_CHICPLAY_ATK1);
         if(player->powers[pw_weaponlevel2])
         {
-	    P_SetPsprite(player, ps_weapon, S_BEAKATK2_1);
-	}
+            P_SetPsprite(player, ps_weapon, S_BEAKATK2_1);
+        }
         else
         {
-	    P_SetPsprite(player, ps_weapon, S_BEAKATK1_1);
-	}
+            P_SetPsprite(player, ps_weapon, S_BEAKATK1_1);
+        }
         P_NoiseAlert(pmo, pmo);
     }
     else
     {
         if(pmo->state == &states[S_CHICPLAY_ATK1])
         { // Take out of attack state
-	    P_SetMobjState(pmo, S_CHICPLAY);
-	}
+            P_SetMobjState(pmo, S_CHICPLAY);
+        }
         player->attackdown = false;
     }
 }
@@ -412,7 +412,7 @@ void A_BeakRaise(player_t *player, pspdef_t *psp)
 {
     psp->sy = WEAPONTOP;
     P_SetPsprite(player, ps_weapon,
-		 wpnlev1info[player->readyweapon].readystate);
+                 wpnlev1info[player->readyweapon].readystate);
 }
 
 //****************************************************************************
@@ -444,7 +444,7 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
     if(lar_linetarget)
     {
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
-				     lar_linetarget->x, lar_linetarget->y);
+                                     lar_linetarget->x, lar_linetarget->y);
     }
     S_StartSound(pmo, sfx_chicpk1+(P_Random()%3));
     player->chickenPeck = 12;
@@ -473,7 +473,7 @@ void A_BeakAttackPL2(player_t *player, pspdef_t *psp)
     if(lar_linetarget)
     {
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
-				     lar_linetarget->x, lar_linetarget->y);
+                                     lar_linetarget->x, lar_linetarget->y);
     }
     S_StartSound(pmo, sfx_chicpk1+(P_Random()%3));
     player->chickenPeck = 12;
@@ -505,7 +505,7 @@ void A_StaffAttackPL1(player_t *player, pspdef_t *psp)
         //S_StartSound(pmo, sfx_stfhit);
         // turn to face target
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
-				     lar_linetarget->x, lar_linetarget->y);
+                                     lar_linetarget->x, lar_linetarget->y);
     }
 }
 
@@ -535,7 +535,7 @@ void A_StaffAttackPL2(player_t *player, pspdef_t *psp)
         //S_StartSound(pmo, sfx_stfpow);
         // turn to face target
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
-				     lar_linetarget->x, lar_linetarget->y);
+                                     lar_linetarget->x, lar_linetarget->y);
     }
 }
 
@@ -588,38 +588,38 @@ void P_BlasterMobjThinker(mobj_t *mobj)
         changexy = mfx || mfy;
         for(i = 0; i < 8; i++)
         {
-	    if(changexy)
-	    {
-	        if(!P_TryMove(mobj, mobj->x+mfx, mobj->y+mfy, true))
-	        { // Blocked move
-		    P_ExplodeMissile(mobj);
-		    return;
-		}
-	    }
-	    mobj->z += mfz;
-	    if(mobj->z <= mobj->floorz)
-	    { // Hit the floor
-	        mobj->z = mobj->floorz;
-	        P_HitFloor(mobj);
-	        P_ExplodeMissile(mobj);
-	        return;
-	    }
-	    if(mobj->z+mobj->height > mobj->ceilingz)
-	    { // Hit the ceiling
-	        mobj->z = mobj->ceilingz-mobj->height;
-	        P_ExplodeMissile(mobj);
-	        return;
-	    }
-	    if(changexy && (P_Random() < 64))
-	    {
-	        z = mobj->z-8*FRACUNIT;
-	        if(z < mobj->floorz)
-	        {
-		    z = mobj->floorz;
-		}
-	        P_SpawnMobj(mobj->x, mobj->y, z, MT_BLASTERSMOKE);
-	    }
-	}
+            if(changexy)
+            {
+                if(!P_TryMove(mobj, mobj->x+mfx, mobj->y+mfy, true))
+                { // Blocked move
+                    P_ExplodeMissile(mobj);
+                    return;
+                }
+            }
+            mobj->z += mfz;
+            if(mobj->z <= mobj->floorz)
+            { // Hit the floor
+                mobj->z = mobj->floorz;
+                P_HitFloor(mobj);
+                P_ExplodeMissile(mobj);
+                return;
+            }
+            if(mobj->z+mobj->height > mobj->ceilingz)
+            { // Hit the ceiling
+                mobj->z = mobj->ceilingz-mobj->height;
+                P_ExplodeMissile(mobj);
+                return;
+            }
+            if(changexy && (P_Random() < 64))
+            {
+                z = mobj->z-8*FRACUNIT;
+                if(z < mobj->floorz)
+                {
+                    z = mobj->floorz;
+                }
+                P_SpawnMobj(mobj->x, mobj->y, z, MT_BLASTERSMOKE);
+            }
+        }
     }
     // Advance the state
     if(mobj->tics != -1)
@@ -627,11 +627,11 @@ void P_BlasterMobjThinker(mobj_t *mobj)
         mobj->tics--;
         while(!mobj->tics)
         {
-	    if(!P_SetMobjState(mobj, mobj->state->nextstate))
-	    { // mobj was removed
-	        return;
-	    }
-	}
+            if(!P_SetMobjState(mobj, mobj->state->nextstate))
+            { // mobj was removed
+                return;
+            }
+        }
     }
 }
 
@@ -726,7 +726,7 @@ void A_FireMacePL1B(player_t *player, pspdef_t *psp)
     }
     player->ammo[am_mace] -= USE_MACE_AMMO_1;
     ball = P_SpawnMobj(pmo->x, pmo->y, pmo->z+28*FRACUNIT
-		       - FOOTCLIPSIZE*((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
+                       - FOOTCLIPSIZE*((pmo->flags2&MF2_FEETARECLIPPED) != 0), MT_MACEFX2);
     ball->momz = 2*FRACUNIT+((player->aiming)<<(FRACBITS-5));
     ball->z += (player->aiming)<<(FRACBITS-4);
     ball->target = pmo;
@@ -764,7 +764,7 @@ void A_FireMacePL1(player_t *player, pspdef_t *psp)
     psp->sx = ((P_Random()&3)-2)*FRACUNIT;
     psp->sy = WEAPONTOP+(P_Random()&3)*FRACUNIT;
     ball = P_SPMAngle(player->mo, MT_MACEFX1,
-		      player->mo->angle + (((P_Random()&7)-4)<<24));
+                      player->mo->angle + (((P_Random()&7)-4)<<24));
     if(ball)
     {
         ball->special1 = 16; // tics till dropoff
@@ -900,8 +900,8 @@ void A_FireMacePL2(player_t *player, pspdef_t *psp)
         // lar_linetarget returned by P_AimLineAttack, via P_SPMAngle
         if(lar_linetarget)
         {
-	    mo->tracer = lar_linetarget;
-	}
+            mo->tracer = lar_linetarget;
+        }
     }
     S_StartSound(pmo, sfx_lobsht);
 }
@@ -930,41 +930,41 @@ void A_DeathBallImpact(mobj_t *ball)
         target = ball->tracer;
         if(target)
         {
-	    if(!(target->flags&MF_SHOOTABLE))
-	    { // Target died
-	        ball->tracer = 0;
-	    }
-	    else
-	    { // Seek
-	        angle = R_PointToAngle2(ball->x, ball->y,
+            if(!(target->flags&MF_SHOOTABLE))
+            { // Target died
+                ball->tracer = 0;
+            }
+            else
+            { // Seek
+                angle = R_PointToAngle2(ball->x, ball->y,
                                         target->x, target->y);
-	        newAngle = true;
-	    }
-	}
+                newAngle = true;
+            }
+        }
         else
         { // Find new target
-	    for(i = 0; i < 16; i++)
-	    {
-	        P_AimLineAttack(ball, angle, 10*64*FRACUNIT);
-	        // lar_linetarget returned by P_AimLineAttack
-	        if(lar_linetarget && ball->target != lar_linetarget)
-	        {
-		    ball->tracer = lar_linetarget;
-		    angle = R_PointToAngle2(ball->x, ball->y,
-					    lar_linetarget->x, lar_linetarget->y);
-		    newAngle = true;
-		    break;
-		}
-	        angle += ANG45/2;
-	    }
-	}
+            for(i = 0; i < 16; i++)
+            {
+                P_AimLineAttack(ball, angle, 10*64*FRACUNIT);
+                // lar_linetarget returned by P_AimLineAttack
+                if(lar_linetarget && ball->target != lar_linetarget)
+                {
+                    ball->tracer = lar_linetarget;
+                    angle = R_PointToAngle2(ball->x, ball->y,
+                                            lar_linetarget->x, lar_linetarget->y);
+                    newAngle = true;
+                    break;
+                }
+                angle += ANG45/2;
+            }
+        }
         if(newAngle)
         {
-	    ball->angle = angle;
-	    int angf = ANGLE_TO_FINE(angle);
-	    ball->momx = FixedMul(ball->info->speed, finecosine[angf]);
-	    ball->momy = FixedMul(ball->info->speed, finesine[angf]);
-	}
+            ball->angle = angle;
+            int angf = ANGLE_TO_FINE(angle);
+            ball->momx = FixedMul(ball->info->speed, finecosine[angf]);
+            ball->momy = FixedMul(ball->info->speed, finesine[angf]);
+        }
         P_SetMobjState(ball, ball->info->spawnstate);
         S_StartSound(ball, sfx_pstop);
     }
@@ -1151,20 +1151,20 @@ void A_AddPlayerRain(mobj_t *actor)
     { // Terminate an active rain
         if(player->rain1->health < player->rain2->health)
         {
-	    if(player->rain1->health > 16)
-	    {
-	        player->rain1->health = 16;
-	    }
-	    player->rain1 = NULL;
-	}
+            if(player->rain1->health > 16)
+            {
+                player->rain1->health = 16;
+            }
+            player->rain1 = NULL;
+        }
         else
         {
-	    if(player->rain2->health > 16)
-	    {
-	        player->rain2->health = 16;
-	    }
-	    player->rain2 = NULL;
-	}
+            if(player->rain2->health > 16)
+            {
+                player->rain2->health = 16;
+            }
+            player->rain2 = NULL;
+        }
     }
     // Add rain mobj to list
     if(player->rain1)
@@ -1196,21 +1196,21 @@ void A_SkullRodStorm(mobj_t *actor)
         player_num = multiplayer ? actor->special2 : 0;
         if(!playeringame[player_num])
         { // Player left the game
-	    return;
-	}
+            return;
+        }
         player = &players[player_num];
         if(player->health <= 0)
         { // Player is dead
-	    return;
-	}
+            return;
+        }
         if(player->rain1 == actor)
         {
-	    player->rain1 = NULL;
-	}
+            player->rain1 = NULL;
+        }
         else if(player->rain2 == actor)
         {
-	    player->rain2 = NULL;
-	}
+            player->rain2 = NULL;
+        }
         return;
     }
     if(P_Random() < 25)
@@ -1435,8 +1435,8 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     {
         if(P_Random() > 64)
         {
-	    player->extralight = (player->extralight)? 0:LIGHT_UNIT;
-	}
+            player->extralight = (player->extralight)? 0:LIGHT_UNIT;
+        }
         S_StartSound(pmo, sfx_gntful);
         return;
     }
@@ -1465,20 +1465,20 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     // lar_linetarget returned by P_AimLineAttack, P_LineAttack
     // turn to face target
     angle = R_PointToAngle2(pmo->x, pmo->y,
-			    lar_linetarget->x, lar_linetarget->y);
+                            lar_linetarget->x, lar_linetarget->y);
     if(angle - pmo->angle > ANG180)
     {
         if(angle - pmo->angle < -ANG90/20)
-	  pmo->angle = angle + ANG90/21;
+          pmo->angle = angle + ANG90/21;
         else
-	  pmo->angle -= ANG90/20;
+          pmo->angle -= ANG90/20;
     }
     else
     {
         if(angle - pmo->angle > ANG90/20)
-	  pmo->angle = angle - ANG90/21;
+          pmo->angle = angle - ANG90/21;
         else
-	  pmo->angle += ANG90/20;
+          pmo->angle += ANG90/20;
     }
     pmo->flags |= MF_JUSTATTACKED;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_maputl.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -343,58 +343,58 @@ void P_LineOpening (line_t* linedef)
         // [WDJ] Old logic, in a complicated way, determined if head was
         // closer to slab top, or feet were closer slab bottom.
         // This is same as midslab being above or below midthing.
-	// Test against midthing*2, and save all the divides and abs().
+        // Test against midthing*2, and save all the divides and abs().
         fixed_t  midthing2 = tm_thing->z + tm_thing->z + tm_thing->height ; // midthing*2
         ffloor_t*  rovflr;
 
         // Check for frontsector 3dfloors
         if(front->ffloors)
-	{
+        {
           for(rovflr = front->ffloors; rovflr; rovflr = rovflr->next)
           {
             if(!(rovflr->flags & FF_SOLID)) continue;
 
-	    // mid of slab >= mid of thing
-	    // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
-	    if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
-	    {
-	        // head is closer
-	        if(*rovflr->bottomheight < opentop)
-		    opentop = *rovflr->bottomheight;
-	    }
-	    else
-	    {
-	        // feet are closer
-	        if(*rovflr->topheight > frontfloor)
-		    frontfloor = *rovflr->topheight;
-	    }
+            // mid of slab >= mid of thing
+            // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
+            if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
+            {
+                // head is closer
+                if(*rovflr->bottomheight < opentop)
+                    opentop = *rovflr->bottomheight;
+            }
+            else
+            {
+                // feet are closer
+                if(*rovflr->topheight > frontfloor)
+                    frontfloor = *rovflr->topheight;
+            }
           }
-	}
+        }
 
         // Check for backsector 3dfloors
         if(back->ffloors)
-	{
+        {
           for(rovflr = back->ffloors; rovflr; rovflr = rovflr->next)
           {
             if(!(rovflr->flags & FF_SOLID))
               continue;
 
-	    // mid of slab >= mid of thing
-	    // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
-	    if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
-	    {
-	        // head is closer
-	        if(*rovflr->bottomheight < opentop)
-		    opentop = *rovflr->bottomheight;
-	    }
-	    else
-	    {
-	        // feet are closer
-	        if(*rovflr->topheight > backfloor)
-		    backfloor = *rovflr->topheight;
-	    }
+            // mid of slab >= mid of thing
+            // (bottom + top)/2  >= (th->z + (th->z + th->height))/2
+            if( (*rovflr->bottomheight + *rovflr->topheight) >= midthing2 )
+            {
+                // head is closer
+                if(*rovflr->bottomheight < opentop)
+                    opentop = *rovflr->bottomheight;
+            }
+            else
+            {
+                // feet are closer
+                if(*rovflr->topheight > backfloor)
+                    backfloor = *rovflr->topheight;
+            }
           }
-	}
+        }
     }
 
     // now frontfloor and backfloor account for 3d floors too
@@ -592,7 +592,7 @@ void P_SetThingPosition (mobj_t* thing)
 //
 // x,y are blockmap indexes
 boolean P_BlockLinesIterator(int x, int y,
-			     boolean (*func)(line_t*))
+                             boolean (*func)(line_t*))
 {
     if (x<0 || y<0 ||
         x >= bmapwidth || y >= bmapheight)
