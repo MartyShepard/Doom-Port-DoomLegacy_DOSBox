@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
+// $Id: p_inter.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -119,18 +119,58 @@ int     MAXHEALTH= 100;
 //
 //--------------------------------------------------------------------------
 
-boolean ultimatemsg;
+// [WDJ] Replaces the Heretic ultimatemsg flag for IDKFA and IDDQD.
+// That made the IDKFA and IDDQD message block most other messages,
+// until the next player tic.
+// But Legacy message timing is different and separate.
+// A user control limits the messages seen based on the message level,
+// (Off, minimal, normal, verbose, debug).
+// This also uses the new message level as priority for competing messages
+// that are issued in the same tic.
 
-void P_SetMessage(player_t *player, char *message, boolean ultmsg)
+// Player Message for cheats and object interactions.
+// Subject to message level control.
+// This does not attempt to duplicate Heretic message blocking identically,
+// as it has finer control.
+// msglevel:
+//   0..9    debug
+//   10..19  verbose
+//   20..29  normal play
+//   30..39  minimal msg play
+//   40..49  major
+//   50..59  god mode messages
+//   60..64  mandatory (even when messages are off)
+void P_SetMessage(player_t *player, char *message, byte msglevel)
 {
-    if((ultimatemsg || !cv_showmessages.value) && !ultmsg)
+    // This actually optimizes cheaper than a table.
+    switch( cv_showmessages.value )
+    {
+     case 4: // debug level
+        break;
+     case 3: // verbose level
+        if( msglevel < 10 )  return;
+        break;
+     case 2: // play level
+        if( msglevel < 20 )  return;
+        break;
+     case 1: // minimal msg play level
+        if( msglevel < 30 )  return;
+        break;
+     default: // off
+        // Does not block mandatory messages.
+        if( msglevel < 60 )  return;
+        break;
+    }
+
+    // Check competing messages in same tic.
+    // Per player, to support splitplayer.
+    if( player->msglevel > msglevel )
         return;
-    
+
+    player->msglevel = msglevel;
     player->message = message;
     //player->messageTics = MESSAGETICS;
     //BorderTopRefresh = true;
-    if( ultmsg )
-        ultimatemsg = true;
 }
 
 //
@@ -195,6 +235,7 @@ static const weapontype_t GetAmmoChange[] =
 // Returns false if the ammo can't be picked up at all
 //
 
+static
 boolean P_GiveAmmo ( player_t*     player,
                      ammotype_t    ammo,
                      int           count )
@@ -326,6 +367,7 @@ static int has_ammo_dropped = 0;
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
+static
 boolean P_GiveWeapon ( player_t*     player,
                        weapontype_t  weapon,
                        boolean       dropped )
@@ -428,6 +470,7 @@ boolean P_GiveHealth ( player_t*     player,
 // Returns false if the armor is worse
 // than the current armor.
 //
+static
 boolean P_GiveArmor ( player_t*     player,
                       int           armortype )
 {
@@ -448,7 +491,8 @@ boolean P_GiveArmor ( player_t*     player,
 //
 // P_GiveCard
 //
-static boolean P_GiveCard ( player_t*     player,
+static
+boolean P_GiveCard ( player_t*     player,
                             card_t        card )
 {
     if (player->cards & card )
@@ -599,6 +643,7 @@ boolean P_GiveArtifact(player_t *player, artitype_t arti, mobj_t *mo)
 //
 //---------------------------------------------------------------------------
 
+static
 void P_SetDormantArtifact(mobj_t *arti)
 {
         arti->flags &= ~MF_SPECIAL;
@@ -703,6 +748,10 @@ void P_TouchSpecialThing ( mobj_t*       special,
                            mobj_t*       toucher )
 {                  
     player_t*   player;
+    char *      msg = NULL;
+    byte        msglevel = 20;  // normal play for common ammo
+    spritenum_t group = 0xFFFF;  // combined handling by spritenum
+    boolean     special_dropped;  // special item was dropped
     int         i;
     fixed_t     delta;
     int         sound;
@@ -751,43 +800,47 @@ void P_TouchSpecialThing ( mobj_t*       special,
     // FWF support
     has_ammo_dropped = special->dropped_ammo_count;
 
+    // Avoid muiltiple conversions to boolean.
+    special_dropped = (boolean)(special->flags & MF_DROPPED);
 
     // Identify by sprite.
     switch (special->sprite)
     {
       case SPR_SHLD: // Item_Shield1
         // armor
-      case SPR_ARM1:
+      case SPR_ARM1:  // common armor
         if (!P_GiveArmor (player, green_armor_class))
             return;
-        player->message = GOTARMOR;
+        msg = GOTARMOR;
+        msglevel = 28;
         break;
 
       case SPR_SHD2: // Item_Shield2
       case SPR_ARM2:
         if (!P_GiveArmor (player, blue_armor_class))
             return;
-        player->message = GOTMEGA;
+        msg = GOTMEGA;
+        msglevel = 37;
         break;
 
         // bonus items
-      case SPR_BON1:
+      case SPR_BON1:  // common health inc
         player->health++;               // can go over 100%
         if (player->health > 2*MAXHEALTH)
             player->health = 2*MAXHEALTH;
         player->mo->health = player->health;
-        if(cv_showmessages.value==1)
-            player->message = GOTHTHBONUS;
+        msg = GOTHTHBONUS;
+        msglevel = 22;
         break;
 
-      case SPR_BON2:
+      case SPR_BON2:  // common armor inc
         player->armorpoints++;          // can go over 100%
         if (player->armorpoints > max_armor)
             player->armorpoints = max_armor;
         if (!player->armortype)
             player->armortype = 1;
-        if(cv_showmessages.value==1)
-           player->message = GOTARMBONUS;
+        msg = GOTARMBONUS;
+        msglevel = 22;
         break;
 
       case SPR_SOUL:
@@ -795,7 +848,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
         if (player->health > maxsoul)
             player->health = maxsoul;
         player->mo->health = player->health;
-        player->message = GOTSUPER;
+        msg = GOTSUPER;
+        msglevel = 38;
         sound = sfx_getpow;
         break;
 
@@ -805,7 +859,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
         player->health = mega_health;
         player->mo->health = player->health;
         P_GiveArmor (player,2);
-        player->message = GOTMSPHERE;
+        msg = GOTMSPHERE;
+        msglevel = 38;
         sound = sfx_getpow;
         break;
 
@@ -813,74 +868,67 @@ void P_TouchSpecialThing ( mobj_t*       special,
         // leave cards for everyone
       case SPR_BKYY: // Key_Blue
       case SPR_BKEY:
+        group = SPR_BKEY;        
         if( P_GiveCard (player, it_bluecard) )
         {
-            player->message = GOTBLUECARD;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTBLUECARD;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
       case SPR_CKYY: // Key_Yellow
       case SPR_YKEY:
+        group = SPR_BKEY;        
         if( P_GiveCard (player, it_yellowcard) )
         {
-            player->message = GOTYELWCARD;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTYELWCARD;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
       case SPR_AKYY: // Key_Green
       case SPR_RKEY:
+        group = SPR_BKEY;        
         if (P_GiveCard (player, it_redcard))
         {
-            player->message = GOTREDCARD;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTREDCARD;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
       case SPR_BSKU:
+        group = SPR_BKEY;        
         if (P_GiveCard (player, it_blueskull))
         {
-            player->message = GOTBLUESKUL;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTBLUESKUL;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
       case SPR_YSKU:
+        group = SPR_BKEY;        
         if (P_GiveCard (player, it_yellowskull))
         {
-            player->message = GOTYELWSKUL;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTYELWSKUL;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
       case SPR_RSKU:
+        group = SPR_BKEY;        
         if (P_GiveCard (player, it_redskull))
         {
-            player->message = GOTREDSKULL;
-            if( gamemode == heretic ) sound = sfx_keyup;
+            msg = GOTREDSKULL;
+            msglevel = 45;
         }
-        if (!multiplayer)
-            break;
-        return;
+        break;
 
         // medikits, heals
       case SPR_PTN1: // Item_HealingPotion
       case SPR_STIM:
         if (!P_GiveHealth (player, 10))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTSTIM;
+        msg = GOTSTIM;
         break;
 
       case SPR_MEDI:
@@ -890,13 +938,16 @@ void P_TouchSpecialThing ( mobj_t*       special,
         if (!P_GiveHealth (player, 25))  // add 25 to health
             return;
         // if health was used, then give message
-        if(cv_showmessages.value==1)
+        // use fix from prboom, thanks to Quasar
+        if (player->health < 50) // old health was < 25, before adding 25
         {
-            // use fix from prboom, thanks to Quasar
-            if (player->health < 50) // old health was < 25, before adding 25
-                player->message = GOTMEDINEED;
-            else
-                player->message = GOTMEDIKIT;
+            msg = GOTMEDINEED;
+            msglevel = 31;
+        }
+        else
+        {
+            msg = GOTMEDIKIT;
+            msglevel = 23;
         }
         break;
 
@@ -904,72 +955,70 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PTN2: // Arti_HealingPotion
           if(P_GiveArtifact(player, arti_health, special))
           {
-              if( cv_showmessages.value==1 )
-                  P_SetMessage(player, TXT_ARTIHEALTH, false);
-              
+              P_SetMessage(player, TXT_ARTIHEALTH, 28);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_SOAR: // Arti_Fly
           if(P_GiveArtifact(player, arti_fly, special))
           {
-              P_SetMessage(player, TXT_ARTIFLY, false);
+              P_SetMessage(player, TXT_ARTIFLY, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_INVU: // Arti_Invulnerability
           if(P_GiveArtifact(player, arti_invulnerability, special))
           {
-              P_SetMessage(player, TXT_ARTIINVULNERABILITY, false);
+              P_SetMessage(player, TXT_ARTIINVULNERABILITY, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_PWBK: // Arti_TomeOfPower
           if(P_GiveArtifact(player, arti_tomeofpower, special))
           {
-              P_SetMessage(player, TXT_ARTITOMEOFPOWER, false);
+              P_SetMessage(player, TXT_ARTITOMEOFPOWER, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_INVS: // Arti_Invisibility
           if(P_GiveArtifact(player, arti_invisibility, special))
           {
-              P_SetMessage(player, TXT_ARTIINVISIBILITY, false);
+              P_SetMessage(player, TXT_ARTIINVISIBILITY, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_EGGC: // Arti_Egg
           if(P_GiveArtifact(player, arti_egg, special))
           {
-              P_SetMessage(player, TXT_ARTIEGG, false);
+              P_SetMessage(player, TXT_ARTIEGG, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_SPHL: // Arti_SuperHealth
           if(P_GiveArtifact(player, arti_superhealth, special))
           {
-              P_SetMessage(player, TXT_ARTISUPERHEALTH, false);
+              P_SetMessage(player, TXT_ARTISUPERHEALTH, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_TRCH: // Arti_Torch
           if(P_GiveArtifact(player, arti_torch, special))
           {
-              P_SetMessage(player, TXT_ARTITORCH, false);
+              P_SetMessage(player, TXT_ARTITORCH, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_FBMB: // Arti_FireBomb
           if(P_GiveArtifact(player, arti_firebomb, special))
           {
-              P_SetMessage(player, TXT_ARTIFIREBOMB, false);
+              P_SetMessage(player, TXT_ARTIFIREBOMB, 31);
               P_SetDormantArtifact(special);
           }
           return;
       case SPR_ATLP: // Arti_Teleport
           if(P_GiveArtifact(player, arti_teleport, special))
           {
-              P_SetMessage(player, TXT_ARTITELEPORT, false);
+              P_SetMessage(player, TXT_ARTITELEPORT, 31);
               P_SetDormantArtifact(special);
           }
           return;
@@ -978,14 +1027,16 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PINV:
         if (!P_GivePower (player, pw_invulnerability))
             return;
-        player->message = GOTINVUL;
+        msg = GOTINVUL;
+        msglevel = 34;
         sound = sfx_getpow;
         break;
 
       case SPR_PSTR:
         if (!P_GivePower (player, pw_strength))
             return;
-        player->message = GOTBERSERK;
+        msg = GOTBERSERK;
+        msglevel = 34;
         if (player->readyweapon != wp_fist)
             player->pendingweapon = wp_fist;
         sound = sfx_getpow;
@@ -994,14 +1045,16 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PINS:
         if (!P_GivePower (player, pw_invisibility))
             return;
-        player->message = GOTINVIS;
+        msg = GOTINVIS;
+        msglevel = 34;
         sound = sfx_getpow;
         break;
 
       case SPR_SUIT:
         if (!P_GivePower (player, pw_ironfeet))
             return;
-        player->message = GOTSUIT;
+        msg = GOTSUIT;
+        msglevel = 32;
         sound = sfx_getpow;
         break;
 
@@ -1009,7 +1062,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PMAP:
         if (!P_GivePower (player, pw_allmap))
             return;
-        player->message = GOTMAP;
+        msg = GOTMAP;
+        msglevel = 31;
         if( gamemode != heretic )
             sound = sfx_getpow;
         break;
@@ -1017,172 +1071,120 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PVIS:
         if (!P_GivePower (player, pw_infrared))
             return;
-        player->message = GOTVISOR;
+        msg = GOTVISOR;
+        msglevel = 32;
         sound = sfx_getpow;
         break;
 
         // heretic Ammo
       case SPR_AMG1: // Ammo_GoldWandWimpy
-          if(!P_GiveAmmo(player, am_goldwand, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOGOLDWAND1, false);
-          break;
+        if(!P_GiveAmmo(player, am_goldwand, special->health))
+            return;
+        msg = TXT_AMMOGOLDWAND1;
+        break;
       case SPR_AMG2: // Ammo_GoldWandHefty
-          if(!P_GiveAmmo(player, am_goldwand, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOGOLDWAND2, false);
-          break;
+        if(!P_GiveAmmo(player, am_goldwand, special->health))
+            return;
+        msg = TXT_AMMOGOLDWAND2;
+        break;
       case SPR_AMM1: // Ammo_MaceWimpy
-          if(!P_GiveAmmo(player, am_mace, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOMACE1, false);
-          break;
+        if(!P_GiveAmmo(player, am_mace, special->health))
+            return;
+        msg = TXT_AMMOMACE1;
+        break;
       case SPR_AMM2: // Ammo_MaceHefty
-          if(!P_GiveAmmo(player, am_mace, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOMACE2, false);
-          break;
+        if(!P_GiveAmmo(player, am_mace, special->health))
+            return;
+        msg = TXT_AMMOMACE2;
+        break;
       case SPR_AMC1: // Ammo_CrossbowWimpy
-          if(!P_GiveAmmo(player, am_crossbow, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOCROSSBOW1, false);
-
-          break;
+        if(!P_GiveAmmo(player, am_crossbow, special->health))
+            return;
+        msg = TXT_AMMOCROSSBOW1;
+        break;
       case SPR_AMC2: // Ammo_CrossbowHefty
-          if(!P_GiveAmmo(player, am_crossbow, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOCROSSBOW2, false);
-          break;
+        if(!P_GiveAmmo(player, am_crossbow, special->health))
+            return;
+        msg = TXT_AMMOCROSSBOW2;
+        break;
       case SPR_AMB1: // Ammo_BlasterWimpy
-          if(!P_GiveAmmo(player, am_blaster, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOBLASTER1, false);
-          break;
+        if(!P_GiveAmmo(player, am_blaster, special->health))
+            return;
+        msg = TXT_AMMOBLASTER1;
+        break;
       case SPR_AMB2: // Ammo_BlasterHefty
-          if(!P_GiveAmmo(player, am_blaster, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOBLASTER2, false);
-          break;
+        if(!P_GiveAmmo(player, am_blaster, special->health))
+            return;
+        msg = TXT_AMMOBLASTER2;
+        break;
       case SPR_AMS1: // Ammo_SkullRodWimpy
-          if(!P_GiveAmmo(player, am_skullrod, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOSKULLROD1, false);
-          break;
+        if(!P_GiveAmmo(player, am_skullrod, special->health))
+            return;
+        msg = TXT_AMMOSKULLROD1;
+        break;
       case SPR_AMS2: // Ammo_SkullRodHefty
-          if(!P_GiveAmmo(player, am_skullrod, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOSKULLROD2, false);
-          break;
+        if(!P_GiveAmmo(player, am_skullrod, special->health))
+            return;
+        msg = TXT_AMMOSKULLROD2;
+        break;
       case SPR_AMP1: // Ammo_PhoenixRodWimpy
-          if(!P_GiveAmmo(player, am_phoenixrod, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOPHOENIXROD1, false);
-          break;
+        if(!P_GiveAmmo(player, am_phoenixrod, special->health))
+            return;
+        msg = TXT_AMMOPHOENIXROD1;
+        break;
       case SPR_AMP2: // Ammo_PhoenixRodHefty
-          if(!P_GiveAmmo(player, am_phoenixrod, special->health))
-          {
-              return;
-          }
-          if( cv_showmessages.value==1 )
-              P_SetMessage(player, TXT_AMMOPHOENIXROD2, false);
-          break;
+        if(!P_GiveAmmo(player, am_phoenixrod, special->health))
+            return;
+        msg = TXT_AMMOPHOENIXROD2;
+        break;
 
         // ammo
       case SPR_CLIP:
-        if (special->flags & MF_DROPPED)
-        {
-            if (!P_GiveAmmo (player,am_clip,clipammo[am_clip]/2))
-                return;
-        }
-        else
-        {
-            if (!P_GiveAmmo (player,am_clip,clipammo[am_clip]))
-                return;
-        }
-        if(cv_showmessages.value==1)
-            player->message = GOTCLIP;
+        if (!P_GiveAmmo (player, am_clip,
+               ((special_dropped)? clipammo[am_clip]/2 : clipammo[am_clip]) ))
+        msg = GOTCLIP;
         break;
 
       case SPR_AMMO:
         if (!P_GiveAmmo (player, am_clip,5*clipammo[am_clip]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTCLIPBOX;
+        msg = GOTCLIPBOX;
         break;
 
       case SPR_ROCK:
         if (!P_GiveAmmo (player, am_misl,clipammo[am_misl]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTROCKET;
+        msg = GOTROCKET;
         break;
 
       case SPR_BROK:
         if (!P_GiveAmmo (player, am_misl,5*clipammo[am_misl]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTROCKBOX;
+        msg = GOTROCKBOX;
         break;
 
       case SPR_CELL:
         if (!P_GiveAmmo (player, am_cell,clipammo[am_cell]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTCELL;
+        msg = GOTCELL;
         break;
 
       case SPR_CELP:
         if (!P_GiveAmmo (player, am_cell,5*clipammo[am_cell]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTCELLBOX;
+        msg = GOTCELLBOX;
         break;
 
       case SPR_SHEL:
         if (!P_GiveAmmo (player, am_shell,clipammo[am_shell]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTSHELLS;
+        msg = GOTSHELLS;
         break;
 
       case SPR_SBOX:
         if (!P_GiveAmmo (player, am_shell,5*clipammo[am_shell]))
             return;
-        if(cv_showmessages.value==1)
-            player->message = GOTSHELLBOX;
+        msg = GOTSHELLBOX;
         break;
 
       case SPR_BPAK:
@@ -1194,7 +1196,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
         }
         for (i=0 ; i<NUMAMMO ; i++)
             P_GiveAmmo (player, i, clipammo[i]);
-        player->message = GOTBACKPACK;
+        msg = GOTBACKPACK;
+        msglevel = 27;
         break;
 
       case SPR_BAGH: // Item_BagOfHolding
@@ -1209,108 +1212,110 @@ void P_TouchSpecialThing ( mobj_t*       special,
         P_GiveAmmo(player, am_crossbow, AMMO_CBOW_WIMPY);
         P_GiveAmmo(player, am_skullrod, AMMO_SKRD_WIMPY);
         P_GiveAmmo(player, am_phoenixrod, AMMO_PHRD_WIMPY);
-        P_SetMessage(player, TXT_ITEMBAGOFHOLDING, false);
+        msg = TXT_ITEMBAGOFHOLDING;
+        msglevel = 27;
         break;
 
         // weapons
       case SPR_BFUG:
-        if (!P_GiveWeapon (player, wp_bfg, special->flags&MF_DROPPED) )
+        if (!P_GiveWeapon (player, wp_bfg, special_dropped) )
             return;
-        player->message = GOTBFG9000;
+        msg = GOTBFG9000;
+        msglevel = 38;
         sound = sfx_wpnup;
         break;
 
       case SPR_MGUN:
-        if (!P_GiveWeapon (player, wp_chaingun, special->flags&MF_DROPPED) )
+        if (!P_GiveWeapon (player, wp_chaingun, special_dropped) )
             return;
-        player->message = GOTCHAINGUN;
+        msg = GOTCHAINGUN;
+        msglevel = 29;
         sound = sfx_wpnup;
         break;
 
       case SPR_CSAW:
         if (!P_GiveWeapon (player, wp_chainsaw, false) )
             return;
-        player->message = GOTCHAINSAW;
+        msg = GOTCHAINSAW;
+        msglevel = 21;
         sound = sfx_wpnup;
         break;
 
       case SPR_LAUN:
-        if (!P_GiveWeapon (player, wp_missile, special->flags&MF_DROPPED) )
+        if (!P_GiveWeapon (player, wp_missile, special_dropped) )
             return;
-        player->message = GOTLAUNCHER;
+        msg = GOTLAUNCHER;
+        msglevel = 32;
         sound = sfx_wpnup;
         break;
 
       case SPR_PLAS:
-        if (!P_GiveWeapon (player, wp_plasma, special->flags&MF_DROPPED) )
+        if (!P_GiveWeapon (player, wp_plasma, special_dropped) )
             return;
-        player->message = GOTPLASMA;
+        msg = GOTPLASMA;
+        msglevel = 32;
         sound = sfx_wpnup;
         break;
 
       case SPR_SHOT:
-        if (!P_GiveWeapon (player, wp_shotgun, special->flags&MF_DROPPED ) )
+        if (!P_GiveWeapon (player, wp_shotgun, special_dropped) )
             return;
-        player->message = GOTSHOTGUN;
+        msg = GOTSHOTGUN;
+        msglevel = 24;
         sound = sfx_wpnup;
         break;
 
       case SPR_SGN2:
-        if (!P_GiveWeapon (player, wp_supershotgun, special->flags&MF_DROPPED ) )
+        if (!P_GiveWeapon (player, wp_supershotgun, special_dropped) )
             return;
-        player->message = GOTSHOTGUN2;
+        msg = GOTSHOTGUN2;
+        msglevel = 32;
         sound = sfx_wpnup;
         break;
 
       // heretic weapons
       case SPR_WMCE: // Weapon_Mace
-          if(!P_GiveWeapon(player, wp_mace,special->flags&MF_DROPPED))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNMACE, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_mace, special_dropped))
+            return;
+        msg = TXT_WPNMACE;
+        msglevel = 32;
+        sound = sfx_wpnup;
+        break;
       case SPR_WBOW: // Weapon_Crossbow
-          if(!P_GiveWeapon(player, wp_crossbow,special->flags&MF_DROPPED))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNCROSSBOW, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_crossbow, special_dropped))
+            return;
+        msg = TXT_WPNCROSSBOW;
+        msglevel = 24;
+        sound = sfx_wpnup;
+        break;
       case SPR_WBLS: // Weapon_Blaster
-          if(!P_GiveWeapon(player, wp_blaster,special->flags&MF_DROPPED))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNBLASTER, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_blaster, special_dropped))
+            return;
+        msg = TXT_WPNBLASTER;
+        msglevel = 32;
+        sound = sfx_wpnup;
+        break;
       case SPR_WSKL: // Weapon_SkullRod
-          if(!P_GiveWeapon(player, wp_skullrod, special->flags&MF_DROPPED))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNSKULLROD, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_skullrod, special_dropped))
+            return;
+        msg = TXT_WPNSKULLROD;
+        msglevel = 36;
+        sound = sfx_wpnup;
+        break;
       case SPR_WPHX: // Weapon_PhoenixRod
-          if(!P_GiveWeapon(player, wp_phoenixrod, special->flags&MF_DROPPED))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNPHOENIXROD, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_phoenixrod, special_dropped))
+            return;
+        msg = TXT_WPNPHOENIXROD;
+        msglevel = 38;
+        sound = sfx_wpnup;
+        break;
       case SPR_WGNT: // Weapon_Gauntlets
-          if(!P_GiveWeapon(player, wp_gauntlets, false))
-          {
-              return;
-          }
-          P_SetMessage(player, TXT_WPNGAUNTLETS, false);
-          sound = sfx_wpnup;
-          break;
+        if(!P_GiveWeapon(player, wp_gauntlets, false))
+            return;
+        msg = TXT_WPNGAUNTLETS;
+        msglevel = 21;
+        sound = sfx_wpnup;
+        break;
 
       default:
         // SoM: New gettable things with FraggleScript!
@@ -1318,6 +1323,18 @@ void P_TouchSpecialThing ( mobj_t*       special,
         return;
     }
 
+    if( msg )
+    {
+        P_SetMessage( player, msg, msglevel );
+    }
+    if( group == SPR_BKEY )  // all keys
+    {
+        // keycard
+        if( gamemode == heretic )
+            sound = sfx_keyup;
+        if (multiplayer)  return;  // leave keys in multiplayer
+    }
+   
     if (special->flags & MF_COUNTITEM)
         player->itemcount++;
     P_RemoveMobj ( special );
@@ -1443,9 +1460,10 @@ void P_UnlinkFloorThing(mobj_t*   mobj)
 
 // Death messages relating to the target (dying) player
 //
-static void P_DeathMessages ( mobj_t*       target,
-                              mobj_t*       inflictor,
-                              mobj_t*       source )
+static
+void P_DeathMessages ( mobj_t*  target,
+                       mobj_t*  inflictor,
+                       mobj_t*  source )
 {
     int     w;
     char    *str;
@@ -1625,7 +1643,8 @@ void P_CheckFragLimit(player_t *p)
  *
  ************************************************************
  */
-static int P_AmmoInWeapon(player_t *player)
+static
+int P_AmmoInWeapon(player_t *player)
 {
     ammotype_t  ammo = player->weaponinfo[player->readyweapon].ammo;
     int         ammo_count = player->ammo[ammo];
@@ -1779,8 +1798,8 @@ void P_KillMobj ( mobj_t*       target,
     }
 
     if ( target->info->xdeathstate
-	 && ( target->health < -(
-	    (gamemode == heretic)? (target->info->spawnhealth>>1)  // heretic
+         && ( target->health < -(
+            (gamemode == heretic)? (target->info->spawnhealth>>1)  // heretic
                : target->info->spawnhealth  // doom
             ) )
        )
@@ -1912,6 +1931,7 @@ void P_KillMobj ( mobj_t*       target,
 //
 //---------------------------------------------------------------------------
 
+static
 void P_MinotaurSlam(mobj_t *source, mobj_t *target)
 {
     angle_t angle;
@@ -1934,6 +1954,7 @@ void P_MinotaurSlam(mobj_t *source, mobj_t *target)
 //
 //---------------------------------------------------------------------------
 
+static
 boolean P_TouchWhirlwind(mobj_t *target)
 {
     int randVal;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: d_player.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -181,6 +181,7 @@ typedef struct player_s
 
     // Hint messages.
     char*               message;
+    byte                msglevel;  // priority of the message
 
     // For screen flashing (red or bright).
     int                 damagecount;

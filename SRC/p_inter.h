@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.h 1212 2016-01-19 19:50:36Z wesleyjohnson $
+// $Id: p_inter.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -81,5 +81,17 @@ void P_MoveSupportThings (mobj_t* mobj, fixed_t xmove,
 void P_LinkFloorThing(mobj_t* mobj);
 void P_UnlinkFloorThing(mobj_t* mobj);
 */
+
+// Player Message for cheats and object interations.
+// Subject to message level control.
+// msglevel:
+//   0..9    debug
+//   10..19  verbose
+//   20..29  normal play
+//   30..39  minimal msg play
+//   40..49  major
+//   50..59  god mode messages
+//   60..64  mandatory (even when messages are off)
+void  P_SetMessage(player_t *player, char *message, byte msglevel);
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_local.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -475,7 +475,6 @@ boolean P_CheckMissileSpawn (mobj_t* th);
 void P_ThrustMobj(mobj_t *mo, angle_t angle, fixed_t move);
 void P_Thrust(player_t *player, angle_t angle, fixed_t move);
 void P_ExplodeMissile (mobj_t* mo);
-void P_SetMessage(player_t *player, char *message, boolean ultmsg);
 boolean P_GiveArtifact(player_t *player, artitype_t arti, mobj_t *mo);
 boolean P_ChickenMorphPlayer(player_t *player);
 void P_Massacre(void);

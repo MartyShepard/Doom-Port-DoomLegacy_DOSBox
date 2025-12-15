@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: p_spec.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -146,6 +146,8 @@
 #include "p_local.h"
 #include "p_setup.h"
   // levelflats for flat animation
+#include "p_inter.h"
+  // P_SetMessage
 #include "r_data.h"
 #include "m_random.h"
 #include "m_swap.h"
@@ -1087,6 +1089,7 @@ int  P_FindMinSurroundingLight ( sector_t*  sector, int max )
 //
 boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
 {
+  char * msg;
   // does this line special distinguish between skulls and keys?
   int skulliscard = (line->special & LockedNKeys)>>LockedNKeysShift;
 
@@ -1104,9 +1107,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         !(player->cards & it_yellowskull)
       )
       {
-        player->message = PD_ANY;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = PD_ANY;
+        goto oof_blocked;	
       }
       break;
     case DKY_R_card:
@@ -1116,9 +1118,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_redskull))
       )
       {
-        player->message = skulliscard? PD_REDK : PD_REDC;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_REDK : PD_REDC;
+        goto oof_blocked;	
       }
       break;
     case DKY_B_card:
@@ -1128,9 +1129,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_blueskull))
       )
       {
-        player->message = skulliscard? PD_BLUEK : PD_BLUEC;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_BLUEK : PD_BLUEC;
+        goto oof_blocked;	
       }
       break;
     case DKY_Y_card:
@@ -1140,9 +1140,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_yellowskull))
       )
       {
-        player->message = skulliscard? PD_YELLOWK : PD_YELLOWC;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_YELLOWK : PD_YELLOWC;
+        goto oof_blocked;	
       }
       break;
     case DKY_R_skull:
@@ -1152,9 +1151,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_redcard))
       )
       {
-        player->message = skulliscard? PD_REDK : PD_REDS;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_REDK : PD_REDS;
+        goto oof_blocked;	
       }
       break;
     case DKY_B_skull:
@@ -1164,9 +1162,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_bluecard))
       )
       {
-        player->message = skulliscard? PD_BLUEK : PD_BLUES;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_BLUEK : PD_BLUES;
+        goto oof_blocked;	
       }
       break;
     case DKY_Y_skull:
@@ -1176,9 +1173,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         (!skulliscard || !(player->cards & it_yellowcard))
       )
       {
-        player->message = skulliscard? PD_YELLOWK : PD_YELLOWS;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = skulliscard? PD_YELLOWK : PD_YELLOWS;
+        goto oof_blocked;	
       }
       break;
     case DKY_allkeys:
@@ -1195,9 +1191,8 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         )
       )
       {
-        player->message = PD_ALL6;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = PD_ALL6;
+        goto oof_blocked;	
       }
       if
       (
@@ -1212,13 +1207,17 @@ boolean P_CanUnlockGenDoor( line_t* line, player_t* player)
         )
       )
       {
-        player->message = PD_ALL3;
-        S_StartScreamSound(player->mo, sfx_oof);
-        return false;
+        msg = PD_ALL3;
+        goto oof_blocked;	
       }
       break;
   }
   return true;
+
+oof_blocked:
+  P_SetMessage( player, msg, 31 );
+  S_StartScreamSound(player->mo, sfx_oof);
+  return false;
 }
 
 

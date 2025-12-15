@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: am_map.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,6 +53,8 @@
 #include "g_input.h"
 #include "m_cheat.h"
 #include "p_local.h"
+#include "p_inter.h"
+  // P_SetMessage
 #include "r_defs.h"
 #include "v_video.h"
 #include "st_stuff.h"
@@ -682,14 +684,13 @@ void AM_Start (void)
 //
 // Handle events (user inputs) in automap mode
 //
-boolean AM_Responder ( event_t*      ev )
+boolean AM_Responder ( event_t *  ev )
 {
-
-    int rc;
     static int cheatstate=0;
     static char buffer[20];
 
-    rc = false;
+    char * msg = NULL;
+    int rc = false;
 
     if (!automapactive)
     {
@@ -751,20 +752,20 @@ boolean AM_Responder ( event_t*      ev )
           case AM_FOLLOWKEY:
             followplayer = !followplayer;
             f_oldloc.x = FIXED_MAX;
-            plr->message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
+            msg = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
             break;
           case AM_GRIDKEY:
             grid = !grid;
-            plr->message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
+            msg = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
             break;
           case AM_MARKKEY:
             sprintf(buffer, "%s %d", AMSTR_MARKEDSPOT, markpointnum);
-            plr->message = buffer;
+            msg = buffer;
             AM_addMark();
             break;
           case AM_CLEARMARKKEY:
             AM_clearMarks();
-            plr->message = AMSTR_MARKSCLEARED;
+            msg = AMSTR_MARKSCLEARED;
             break;
           default:
             cheatstate=0;
@@ -795,6 +796,11 @@ boolean AM_Responder ( event_t*      ev )
             ftom_zoommul = FRACUNIT;
             break;
         }
+    }
+
+    if( plr && msg )
+    {
+        P_SetMessage( plr, msg, 63 );  // map control on/off
     }
 
     return rc;

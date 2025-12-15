@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: g_game.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -91,6 +91,8 @@ extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
 
 extern  char      game_map_filename[MAX_WADPATH];
 extern  boolean   nomonsters;   // checkparm of -nomonsters
+
+extern  boolean   gameplay_msg;  // True during gameplay
 
 // --- Event actions
 

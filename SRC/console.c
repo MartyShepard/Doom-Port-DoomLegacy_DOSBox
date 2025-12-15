@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: console.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -272,7 +272,7 @@ void CONS_Bind_f(void)
                 CONS_Printf("%s : \"%s\"\n",G_KeynumToString (key),bindtable[key]);
                 nb=1;
             }
-	}
+        }
         if(!nb)
             CONS_Printf("Empty\n");
         return;
@@ -413,7 +413,7 @@ void CON_VideoInit(void)
 {
     // vid : from video setup
     if(dedicated)
-	return;
+        return;
     
     // make sure it is ready for the loading screen
     CON_RecalcSize ( vid.width );
@@ -480,9 +480,9 @@ static void CON_RecalcSize ( int width )
         // Before vid setup, so without any vid information
         con_indent = 10;
         if( width > 630 )
-	   new_conwidth = (width>>4) - 2;
+           new_conwidth = (width>>4) - 2;
         else
-	   new_conwidth = (width>>3) - 2;
+           new_conwidth = (width>>3) - 2;
     }
     else
     {
@@ -605,7 +605,7 @@ void CON_Ticker (void)
 
         if (con_destlines > 0)
         {
-	    // toggle off console
+            // toggle off console
             con_destlines = 0;
             CON_ClearHUD ();
         }
@@ -690,7 +690,7 @@ static int     comskips,varskips;
     {
         // Console prompt not active.  This is the path during game play.
         // Check game playing keys defined by BIND command.
-	// metzgermeister: boundary check !!
+        // metzgermeister: boundary check !!
         if((key < NUMINPUTS) && bindtable[key])
         {
             COM_BufAddText (bindtable[key]);
@@ -756,11 +756,11 @@ static int     comskips,varskips;
         {
             cmd = COM_CompleteCommand (completion, comskips);
             if (!cmd)
-	    {
-	        // No command, try var completion.
+            {
+                // No command, try var completion.
                 // dirty:make sure if comskips is zero, to have a neg value
                 comskips = -(comskips+1);
-	    }
+            }
         }
         if (comskips<0)
             cmd = CV_CompleteVar (completion, varskips);
@@ -776,7 +776,7 @@ static int     comskips,varskips;
         }
         else
         {
-	    // No command, no var completion.  Backup off this candidate.
+            // No command, no var completion.  Backup off this candidate.
             if (comskips>0)
                 comskips--;
             else
@@ -1077,6 +1077,31 @@ void CONS_Printf_va (const char *fmt, va_list ap)
 #endif
 
     if( ! con_started )  goto done;
+
+    if( gameplay_msg )
+    {
+        // During game playing, honor the showmessage option.
+        switch( EMSG_flags & EMSG_cat )
+        {
+         case EMSG_playmsg_cat:
+            break;  // already checked by P_SetMessage()
+         case EMSG_ver_cat: // verbose msgs
+            if( cv_showmessages.value < 3 )  return;
+            break;
+         case EMSG_warn_cat: // warning category
+            if( cv_showmessages.value < 2 )  return;
+            break;
+         case EMSG_debug_cat: // debug category
+         case EMSG_dev_cat:   // development category
+            if( cv_showmessages.value < 4 )  return;
+            break;
+         case EMSG_info_cat: // info
+         default: // no category
+            if( cv_showmessages.value < 3 )  return;
+            break;
+         }
+    }
+
     if( EMSG_flags & EMSG_error )
     {
 #ifndef LAUNCHER
@@ -1199,7 +1224,7 @@ static void CON_DrawInput ( int y )
     for(xj=0; xj<con_width; xj++)
     {
         if( xj == input_cx )
-	   xcursor = x;
+           xcursor = x;
         x += V_DrawCharacter( x, y, p[xj] );  // red
     }
 #else
@@ -1380,7 +1405,7 @@ void CON_DrawConsole (void)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
         if (rendermode!=render_soft)
             V_DrawScalePic_Num (0, con_curlines-200*vid.fdupy,
-				W_GetNumForName ("CONSBACK") );
+                                W_GetNumForName ("CONSBACK") );
         else
 #endif
             CON_DrawBackpic (con_backpic,0,vid.width);   // picture as background

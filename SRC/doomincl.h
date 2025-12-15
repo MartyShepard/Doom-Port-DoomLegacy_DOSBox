@@ -53,25 +53,31 @@
 // [WDJ] Enables for messages to various outputs
 // Many choices so can be individually configured.
 typedef enum {
-   EMSG_text = 0x01,  // stderr
-   EMSG_CONS = 0x02,
-   EMSG_log  = 0x04,
-   EMSG_debtst = 0x10, // subject to debug enable
-   EMSG_now  = 0x20, // immediate update
-   EMSG_error = 0x40,
+   EMSG_cat = 0x07, // category subject to display enables
+   EMSG_playmsg_cat = 0x01,
+   EMSG_ver_cat = 0x02,
+   EMSG_info_cat = 0x03,
+   EMSG_warn_cat = 0x04,
+   EMSG_dev_cat = 0x06,
+   EMSG_debug_cat = 0x07,
+   EMSG_error = 0x08,
+   EMSG_text = 0x10,  // stderr
+   EMSG_CONS = 0x20,
+   EMSG_log  = 0x40,
+   EMSG_now  = 0x80, // immediate update
 #if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
-   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_dev = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_debug = EMSG_text|EMSG_CONS|EMSG_log|EMSG_debtst,
+   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log|EMSG_warn_cat,
+   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log|EMSG_info_cat,
+   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log|EMSG_ver_cat,
+   EMSG_dev = EMSG_text|EMSG_CONS|EMSG_log|EMSG_dev_cat,
+   EMSG_debug = EMSG_text|EMSG_CONS|EMSG_log||EMSG_debug_cat,
 #else
    // Linux, Mac
-   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log,
-   EMSG_dev = EMSG_text|EMSG_log,
-   EMSG_debug = EMSG_text|EMSG_log|EMSG_debtst,
+   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log|EMSG_warn_cat,
+   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log|EMSG_info_cat,
+   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log|EMSG_ver_cat,
+   EMSG_dev = EMSG_text|EMSG_log|EMSG_dev_cat,
+   EMSG_debug = EMSG_text|EMSG_log|EMSG_debug_cat,
 #endif
    EMSG_all = EMSG_text|EMSG_CONS|EMSG_log,
 } EMSG_e;

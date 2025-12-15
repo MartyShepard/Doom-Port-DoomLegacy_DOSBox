@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_doors.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,6 +59,7 @@
 #include "doomincl.h"
 #include "doomstat.h"
 #include "p_local.h"
+#include "p_inter.h"
 #include "r_state.h"
 #include "dstrings.h"
 #include "s_sound.h"
@@ -234,9 +235,9 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                     default:
                         door->direction = 1;
-		        // [WDJ] Bug from DoomWiki, blaze door hits something and raises with normal sound.
-			// Test for type of door and play appropriate sound.
-		        S_StartSound((mobj_t *)&door->sector->soundorg,
+                        // [WDJ] Bug from DoomWiki, blaze door hits something and raises with normal sound.
+                        // Test for type of door and play appropriate sound.
+                        S_StartSound((mobj_t *)&door->sector->soundorg,
                              (door->speed >= 4) ? sfx_bdopn : sfx_doropn);
                         break;
                 }
@@ -316,6 +317,7 @@ int
 EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
 {
     player_t * player = thing->player;
+    char * msg;
 
     if (!player)  goto ret0;
 
@@ -325,8 +327,8 @@ EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
         case 133:
             if (!(player->cards & it_bluecard) && !(player->cards & it_blueskull))
             {
-                player->message = PD_BLUEO;
-	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
+                msg = PD_BLUEO;
+                goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
 
@@ -334,8 +336,8 @@ EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
         case 135:
             if (!(player->cards & it_redcard) && !(player->cards & it_redskull))
             {
-                player->message = PD_REDO;
-	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
+                msg = PD_REDO;
+                goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
 
@@ -343,8 +345,8 @@ EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
         case 137:
             if (!(player->cards & it_yellowcard) && !(player->cards & it_yellowskull))
             {
-                player->message = PD_YELLOWO;
-	        goto oof_blocked;     //SoM: 3/6/200: killough's idea
+                msg = PD_YELLOWO;
+                goto oof_blocked;     //SoM: 3/6/200: killough's idea
             }
             break;
     }
@@ -352,6 +354,7 @@ EV_DoLockedDoor ( line_t* line, vldoor_e type, mobj_t* thing, fixed_t speed )
     return EV_DoDoor(line, type, speed);
 
 oof_blocked:
+    P_SetMessage( player, msg, 31 );
     S_StartScreamSound(player->mo, sfx_oof);
 ret0:
     return 0;
@@ -530,6 +533,7 @@ int
 EV_VerticalDoor ( line_t* line, mobj_t* thing )
 {
     player_t * player = thing->player;
+    char * msg = NULL;
     int secnum;
     sector_t *sec;
     vldoor_t *door;
@@ -545,7 +549,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
             if (!player)  goto ret0;
             if (!(player->cards & it_bluecard) && !(player->cards & it_blueskull))
             {
-                player->message = PD_BLUEK;
+                msg = PD_BLUEK;
                 goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
@@ -555,7 +559,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
             if (!player)  goto ret0;
             if (!(player->cards & it_yellowcard) && !(player->cards & it_yellowskull))
             {
-                player->message = PD_YELLOWK;
+                msg = PD_YELLOWK;
                 goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
@@ -565,7 +569,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
             if (!player)  goto ret0;
             if (!(player->cards & it_redcard) && !(player->cards & it_redskull))
             {
-                player->message = PD_REDK;
+                msg = PD_REDK;
                 goto oof_blocked;        //SoM: 3/6/2000: Killough's idea
             }
             break;
@@ -585,7 +589,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
         // [WDJ] From prboom fixes doc (cph 2001/04/05).
         // Doom bug: Door will not raise when already have ceiling action.
         // Cannot assume door thinker, as there is also a ceiling thinker.
-	// All thinkers must have this thinker field first.
+        // All thinkers must have this thinker field first.
         if( door->thinker.function.acp1 == (actionf_p1)T_VerticalDoor )
         {
           switch (line->special)
@@ -604,8 +608,8 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
 
                     door->direction = -1;       // start going down immediately
                 }
-	        goto ret1;
-	  }
+                goto ret1;
+          }
         }
     }
 
@@ -673,6 +677,8 @@ ret1:
     return 1;
    
 oof_blocked:
+    if( msg )
+        P_SetMessage( player, msg, 31 );
     S_StartScreamSound(player->mo, sfx_oof);
 ret0:
     return 0;

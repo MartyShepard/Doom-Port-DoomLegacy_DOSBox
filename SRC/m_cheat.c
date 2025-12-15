@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1195 2015-12-26 19:11:14Z wesleyjohnson $
+// $Id: m_cheat.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -51,10 +51,12 @@
 #include "r_local.h"
 #include "p_local.h"
 #include "p_inter.h"
+  // P_SetMessage
 
 #include "m_cheat.h"
 
-#include "i_sound.h"    // for I_PlayCD()
+#include "i_sound.h"
+  // for I_PlayCD()
 #include "s_sound.h"
 #include "v_video.h"
 #include "st_stuff.h"
@@ -524,8 +526,8 @@ void Command_CheatGimme_f(void)
     {
       if (k == 1)
       {
-	 // player 2
-	 if ( ! cv_splitscreen.value )  break;
+         // player 2
+         if ( ! cv_splitscreen.value )  break;
          plyr = displayplayer2_ptr;
          if ( ! plyr )  break;
       }
@@ -536,7 +538,7 @@ void Command_CheatGimme_f(void)
 
         if (!strncmp(s, "health", 6))
         {
-	    // Also, gives chicken 100 health.
+            // Also, gives chicken 100 health.
             if (plyr->mo)
                 plyr->mo->health = god_health;
 
@@ -956,11 +958,11 @@ static void CheatGodFunc(player_t * player, Cheat_t * cheat)
     player->cheats ^= CF_GODMODE;
     if (player->cheats & CF_GODMODE)
     {
-        P_SetMessage(player, TXT_CHEATGODON, false);
+        P_SetMessage(player, TXT_CHEATGODON, 58);
     }
     else
     {
-        P_SetMessage(player, TXT_CHEATGODOFF, false);
+        P_SetMessage(player, TXT_CHEATGODOFF, 58);
     }
     stbar_recalc = true;
 }
@@ -970,11 +972,11 @@ static void CheatNoClipFunc(player_t * player, Cheat_t * cheat)
     player->cheats ^= CF_NOCLIP;
     if (player->cheats & CF_NOCLIP)
     {
-        P_SetMessage(player, TXT_CHEATNOCLIPON, false);
+        P_SetMessage(player, TXT_CHEATNOCLIPON, 59);
     }
     else
     {
-        P_SetMessage(player, TXT_CHEATNOCLIPOFF, false);
+        P_SetMessage(player, TXT_CHEATNOCLIPOFF, 59);
     }
 }
 
@@ -1009,7 +1011,7 @@ static void CheatWeaponsFunc(player_t * player, Cheat_t * cheat)
     {
         player->ammo[i] = player->maxammo[i];
     }
-    P_SetMessage(player, TXT_CHEATWEAPONS, false);
+    P_SetMessage(player, TXT_CHEATWEAPONS, 51);
 }
 
 static void CheatPowerFunc(player_t * player, Cheat_t * cheat)
@@ -1017,12 +1019,12 @@ static void CheatPowerFunc(player_t * player, Cheat_t * cheat)
     if (player->powers[pw_weaponlevel2])
     {
         player->powers[pw_weaponlevel2] = 0;
-        P_SetMessage(player, TXT_CHEATPOWEROFF, false);
+        P_SetMessage(player, TXT_CHEATPOWEROFF, 51);
     }
     else
     {
         P_UseArtifact(player, arti_tomeofpower);
-        P_SetMessage(player, TXT_CHEATPOWERON, false);
+        P_SetMessage(player, TXT_CHEATPOWERON, 51);
     }
 }
 
@@ -1036,7 +1038,7 @@ static void CheatHealthFunc(player_t * player, Cheat_t * cheat)
     {
         player->health = player->mo->health = MAXHEALTH;
     }
-    P_SetMessage(player, TXT_CHEATHEALTH, false);
+    P_SetMessage(player, TXT_CHEATHEALTH, 51);
 }
 
 static void CheatKeysFunc(player_t * player, Cheat_t * cheat)
@@ -1045,7 +1047,7 @@ static void CheatKeysFunc(player_t * player, Cheat_t * cheat)
 
     player->cards |= it_allkeys;
     playerkeys = 7;     // Key refresh flags
-    P_SetMessage(player, TXT_CHEATKEYS, false);
+    P_SetMessage(player, TXT_CHEATKEYS, 51);
 }
 
 static void CheatTickerFunc(player_t * player, Cheat_t * cheat)
@@ -1053,22 +1055,22 @@ static void CheatTickerFunc(player_t * player, Cheat_t * cheat)
     cv_ticrate.value = (cv_ticrate.value)? 0:1;  // Off <-> Graph
     if (cv_ticrate.value)
     {
-        P_SetMessage(player, TXT_CHEATTICKERON, false);
+        P_SetMessage(player, TXT_CHEATTICKERON, 11);
     }
     else
     {
-        P_SetMessage(player, TXT_CHEATTICKEROFF, false);
+        P_SetMessage(player, TXT_CHEATTICKEROFF, 11);
     }
 }
 
 static void CheatArtifact1Func(player_t * player, Cheat_t * cheat)
 {
-    P_SetMessage(player, TXT_CHEATARTIFACTS1, false);
+    P_SetMessage(player, TXT_CHEATARTIFACTS1, 51);
 }
 
 static void CheatArtifact2Func(player_t * player, Cheat_t * cheat)
 {
-    P_SetMessage(player, TXT_CHEATARTIFACTS2, false);
+    P_SetMessage(player, TXT_CHEATARTIFACTS2, 51);
 }
 
 static void CheatArtifact3Func(player_t * player, Cheat_t * cheat)
@@ -1084,10 +1086,10 @@ static void CheatArtifact3Func(player_t * player, Cheat_t * cheat)
     {   // All artifacts
         for (i = arti_none + 1; i < NUMARTIFACTS; i++)
         {
-	    // [WDJ] Fix strange test of shareware enum
-	    if (gamedesc_id == GDESC_heretic_shareware)
-	    {
-	        // heretic shareware does not have these
+            // [WDJ] Fix strange test of shareware enum
+            if (gamedesc_id == GDESC_heretic_shareware)
+            {
+                // heretic shareware does not have these
                 if (i == arti_superhealth || i == arti_teleport)
                   continue;
             }
@@ -1096,29 +1098,29 @@ static void CheatArtifact3Func(player_t * player, Cheat_t * cheat)
                 P_GiveArtifact(player, i, NULL);
             }
         }
-        P_SetMessage(player, TXT_CHEATARTIFACTS3, false);
+        P_SetMessage(player, TXT_CHEATARTIFACTS3, 51);
     }
     else if (type > arti_none && type < NUMARTIFACTS && count > 0 && count < 10)
     {
         // [WDJ] Fix strange test of shareware enum
         if (gamedesc_id == GDESC_heretic_shareware)
         {
-	    // heretic shareware does not have these
-	    if (type == arti_superhealth || type == arti_teleport)
-	    {
-	        P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, false);
-	        return;
-	    }
+            // heretic shareware does not have these
+            if (type == arti_superhealth || type == arti_teleport)
+            {
+                P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, 59);
+                return;
+            }
         }
         for (i = 0; i < count; i++)
         {
             P_GiveArtifact(player, type, NULL);
         }
-        P_SetMessage(player, TXT_CHEATARTIFACTS3, false);
+        P_SetMessage(player, TXT_CHEATARTIFACTS3, 48);
     }
     else
     {   // Bad input
-        P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, false);
+        P_SetMessage(player, TXT_CHEATARTIFACTSFAIL, 59);
     }
 }
 
@@ -1134,7 +1136,7 @@ static void CheatWarpFunc(player_t * player, Cheat_t * cheat)
     if (W_CheckNumForName(mapname) > 0)
     {
         G_DeferedInitNew(gameskill, mapname, false);
-        P_SetMessage(player, TXT_CHEATWARP, false);
+        P_SetMessage(player, TXT_CHEATWARP, 58);
     }
 }
 
@@ -1146,21 +1148,21 @@ static void CheatChickenFunc(player_t * player, Cheat_t * cheat)
     {
         if (P_UndoPlayerChicken(player))
         {
-	    // [WDJ] Player mobj no longer changes.
-            P_SetMessage(player, TXT_CHEATCHICKENOFF, false);
+            // [WDJ] Player mobj no longer changes.
+            P_SetMessage(player, TXT_CHEATCHICKENOFF, 59);
         }
     }
     else if (P_ChickenMorphPlayer(player))
     {
         // [WDJ] Player mobj no longer changes.
-        P_SetMessage(player, TXT_CHEATCHICKENON, false);
+        P_SetMessage(player, TXT_CHEATCHICKENON, 59);
     }
 }
 
 static void CheatMassacreFunc(player_t * player, Cheat_t * cheat)
 {
     P_Massacre();
-    P_SetMessage(player, TXT_CHEATMASSACRE, false);
+    P_SetMessage(player, TXT_CHEATMASSACRE, 58);
 }
 
 static void CheatIDKFAFunc(player_t * player, Cheat_t * cheat)
@@ -1175,11 +1177,13 @@ static void CheatIDKFAFunc(player_t * player, Cheat_t * cheat)
         player->weaponowned[i] = false;
     }
     player->pendingweapon = wp_staff;
-    P_SetMessage(player, TXT_CHEATIDKFA, true);
+    P_SetMessage(player, TXT_CHEATIDKFA, 57);
+    // Does not have a turn-off.
 }
 
 static void CheatIDDQDFunc(player_t * player, Cheat_t * cheat)
 {
     P_DamageMobj(player->mo, NULL, player->mo, 10000);
-    P_SetMessage(player, TXT_CHEATIDDQD, true);
+    P_SetMessage(player, TXT_CHEATIDDQD, 56);
+    // Does not have a turn-off.
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: g_game.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -237,6 +237,7 @@ boolean         modifiedgame;                  // Set if homebrew PWAD stuff has
 gamestate_e     gamestate = GS_NULL;
 gameaction_e    gameaction;
 boolean         paused;
+boolean         gameplay_msg = false;   // enable game play message control
 
 boolean         timingdemo;             // if true, exit with report on completion
 boolean         nodrawers;              // for comparative timing purposes
@@ -302,7 +303,7 @@ consvar_t cv_mouse2_invert    = {"invertmouse2","0",CV_SAVE,CV_OnOff};
 consvar_t cv_mouse2_move      = {"mousemove2"  ,"1",CV_SAVE,CV_OnOff};
 consvar_t cv_alwaysfreelook2  = {"alwaysmlook2","0",CV_SAVE,CV_OnOff};
 
-consvar_t cv_showmessages     = {"showmessages","1",CV_SAVE | CV_CALL | CV_NOINIT,showmessages_cons_t,ShowMessage_OnChange};
+consvar_t cv_showmessages     = {"showmessages","2",CV_SAVE | CV_CALL | CV_NOINIT,showmessages_cons_t,ShowMessage_OnChange};
 consvar_t cv_allowturbo       = {"allowturbo"  ,"0",CV_NETVAR | CV_CALL, CV_YesNo, AllowTurbo_OnChange};
 
 #if MAXPLAYERS>32
@@ -417,7 +418,7 @@ void ShowMessage_OnChange(void)
     if (!cv_showmessages.value)
         CONS_Printf("%s\n",MSGOFF);
     else
-        CONS_Printf("%s\n",MSGON);
+        CONS_Printf("%s: %s\n",MSGON, cv_showmessages.string );
 }
 
 
@@ -989,6 +990,7 @@ void G_DoLoadLevel (boolean resetplayer)
     int             i;
 
     levelstarttic = gametic;        // for time calculation
+    gameplay_msg = false;
 
     // Reset certain attributes
     // (should be in resetplayer 'if'?)
@@ -1060,6 +1062,8 @@ void G_DoLoadLevel (boolean resetplayer)
     // clear hud messages remains (usually from game startup)
     HU_ClearFSPics();
     CON_ClearHUD ();
+
+    gameplay_msg = true;
 }
 
 //
@@ -1279,6 +1283,7 @@ void G_Ticker (void)
       case GS_NULL:
       default:
         // do nothing
+        gameplay_msg = false;
         break;
     }
 }
