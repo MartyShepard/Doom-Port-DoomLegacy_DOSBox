@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1205 2016-01-19 19:42:49Z wesleyjohnson $
+// $Id: w_wad.h 1237 2016-06-14 17:07:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -127,6 +127,8 @@ typedef struct
 // =========================================================================
 //                         DYNAMIC WAD LOADING
 // =========================================================================
+
+typedef uint32_t   lumpnum_t;
 
 #define WADFILENUM(lump)       ((lump)>>16)   // wad file number in upper word
 #define LUMPNUM(lump)          ((lump)&0xffff)    // lump number for this pwad

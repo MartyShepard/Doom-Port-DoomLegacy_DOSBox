@@ -4965,3 +4965,144 @@ The closest sprites are always drawn.
 The farther sprites depend upon the distance from the viewer and priority.
 The priority takes into consideration the object height, and if it is a
 corpse, missile, or monster.
+
+*** W105_untab8
+patchfile = w105_25_untab8.patch
+- commit revision 1228
+Remove leading tabs from lines.
+p_fab.c
+p_heretic.c
+p_hpspr.c
+p_hsight.c
+p_info.c
+p_lights.c
+p_maputl.c
+p_saveg.c
+p_spec.h
+p_tick.c
+sb_bar.c
+st_stuff.c
+
+*** W105_pickupflash
+patchfile = w105_26_pickupflash.patch
+- commit revision 1229
+Create a control for pickup flash.
+  off : no flash
+  status : parts of the status bar flash color
+  half : the palette flash is half intensity
+  vanilla : the Vanilla Doom palette flash
+The status bar pickup flash applies to the status bar and overlay
+status. The appropriate box is flashed with a color.
+Heretic is also affected, but uses different flash colors.
+
+Made a DrawVidFill function that accepts screen scaled parameters.
+Improved the hardware draw version by using precaluclated vid fields.
+These precalculate some of the multiplies by 2.0 and divisions by
+vid.width and vid.height.
+(fx_center, fy_center, fx_scale2, fy_scale2)
+
+*** W105_dck
+patchfile = w105_27_dck.patch
+- commit revision 1230
+Removed (with #ifdef) some code for testing water planes using DCK work-around.
+DCK is an obsolete wad editor for DOS and Win95, that only allowed
+linedefs 0..255.  It could not create some Boom and DoomLegacy water
+sectors, so they were using negative tag values.
+
+*** W105_waterplane
+patchfile = w105_28_waterplane.patch
+- commit revision 1231
+When a water surface is close to eye level, the water plane is not
+drawn completely.  This was showing HOM or sky.
+Move clip plane closer to the player.
+Detect when player has water surface near eye level and draw both above
+and below the water until eye level is cleanly above or below the
+water level.  When the eye level is exactly level with the water surface
+the player can see both above and below the water.
+There are still some sky flashing for OpenGL, but it is due to
+something else.
+
+*** W105_netwait
+patchfile = w105_29_netwait.patch
+- commit revision 1232
+Change the net wait to count players instead of nodes.
+This allows machines with split screen players to be handled cleanly.
+Playing with only split players will now start cleanly without
+having to fiddle the wait parameters.
+Clean up the wait message box.
+Add a hint line to the wait box for the start and quit keys.
+
+Remove leading tabs from lines.
+  d_clisrv.c
+
+*** W105_untab9
+patchfile = w105_30_untab9.patch
+- commit revision 1233
+Remove leading tabs from lines.
+doomstat.h
+f_finale.c
+g_game.c
+hw_cache.c
+hw_trick.c
+p_inter.c
+r_draw.c
+r_main.c
+st_stuff.c
+wi_stuff.c
+
+*** W105_heretic_server
+patchfile = w105_31_heretic_server.patch
+- commit revision 1234
+Change variables like raven, to raven_heretic_hexen, so they are self
+explanatory without having to know Doom history.
+Fix the start server so it also works for Heretic and UltDoom.
+The start server menu now changes to give selection of the episode style
+of map naming when appropriate.
+When a player becomes a chicken, clear the skins setting in the mobj
+so the other players can see a chicken.  Otherwise the skins overrides
+the chicken sprite.  Restore the skin upon un-chicken-ing.
+If the player dies while a chicken, they leave a chicken corpse.
+
+*** W105_statusbar
+patchfile = w105_32_statusbar.patch
+- commit revision 1235
+Rewrite of all the status bar, overlay status, and status palette
+flash routines, so they work cleanly with splitscreen.
+For all draw modes except 8bit palette draw, each split screen can now
+palette flash individually.
+Move the status palette flash to the RenderPlayer code so the correct palette
+is always used when drawing a splitscreen.
+The status draw routines now used plyr as a parameter that is passed in,
+so that each splitscreen reflects the status of that player.  Use of the
+global single player ( st_plyr ) has been minimized, mostly used in the
+single player only status bar code sections.
+Splitscreen only can use overlay status, as the status bar saves state
+to speed up drawing, and it only saves for the one player.  This is now
+much more extensively commented, denoting exactly which functions are affected.
+Provide for some state saving according to the splitscreen view position
+for hardware draw.  For example, this requires the sky draw variable to
+be saved for each screen position.
+The Heretic status bar code has been updated the same as the Doom
+status bar code, and now shares some of the same tables and variables.
+Move the hardware palette flash to the hardware code, and enable
+it from a hardware code determined setting.
+Rewrote the stlib for the status bar drawing to remove unnecessary
+parameters.  Moved the minus sign and percent to be part of the number
+font passed to the stlib.  Made refresh and erase into global control vars
+so they can be setup once.
+
+*** W105_flatsize
+patchfile = w105_33_flatsize.patch
+- commit revision 1236
+Move the switch tests in the flat rendering to the setup phase by
+saving a flat size_index in the levelflat structure.
+Retrieve pre-calculated values for each flat size from tables indexed
+by the size_index.
+Pass the picnum to the plane render functions instead of the lumpnum.
+Save the picnum instead of the lumpnum for planes.
+
+*** W105_flatsize_b
+patchfile = w105_33b_flatsize.patch
+- commit revision 1237
+Fixed a lumpnum field that was made too small.
+Error showed up with phobiata.wad, or probably any wad with animated flats.

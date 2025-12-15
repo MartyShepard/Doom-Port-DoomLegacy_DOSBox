@@ -325,19 +325,32 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
     // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     vmode_t *pv = all_vidmodes;  // window
     int mi = modenum.index-1;      // 0..
-
+    byte TextStartup=1;
+		
     if ( modenum.modetype == 0 )
     {
         pv = full_vidmodes;
         mi = modenum.index - NUMVGAVIDMODES;  // 2..
     }
 
-    if (!pv || mi < 0 ){I_SoftError("VID_error 1\n");	goto fail;}
+
+    if (!pv || mi < 0 ) 
+		{
+			if (TextStartup=0)
+			{
+			  I_SoftError("VID_error 1\n");
+			  goto fail;
+			}
+		}
 
     while (mi--)
     {
         pv = pv->next;			
-        if (!pv){I_SoftError("VID_error 2\n"); goto fail;}
+        if (!pv)
+				{
+					I_SoftError("VID_error 2\n");
+					goto fail;
+				}
     }
     return pv;
 fail:
@@ -574,30 +587,29 @@ int VID_VesaGetModeInfo (int modenum)
 
 
 #ifdef DEBUG
+        modeinfo_t modeinfo;
         CONS_Printf("VID: (VESA) info for mode 0x%x\n", modeinfo.modenum);
-        CONS_Printf("  mode attrib = 0x%0x\n", modeinfo.mode_attributes);
-        CONS_Printf("  win a attrib = 0x%0x\n", *(unsigned char*)(infobuf+2));
-        CONS_Printf("  win b attrib = 0x%0x\n", *(unsigned char*)(infobuf+3));
-        CONS_Printf("  win a seg 0x%0x\n", (int) modeinfo.winasegment);
-        CONS_Printf("  win b seg 0x%0x\n", (int) modeinfo.winbsegment);
-        CONS_Printf("  bytes per scanline = %d\n",
-                modeinfo.bytes_per_scanline);
-        CONS_Printf("  width = %d, height = %d\n", modeinfo.width,
-                modeinfo.height);
-        CONS_Printf("  win = %c\n", 'A' + modeinfo.win);
-        CONS_Printf("  win granularity = %d\n", modeinfo.granularity);
-        CONS_Printf("  win size = %d\n", modeinfo.win_size);
-        CONS_Printf("  bits per pixel = %d\n", modeinfo.bits_per_pixel);
-        CONS_Printf("  bytes per pixel = %d\n", modeinfo.bytes_per_pixel);
-        CONS_Printf("  memory model = 0x%x\n", modeinfo.memory_model);
-        CONS_Printf("  num pages = %d\n", modeinfo.num_pages);
-        CONS_Printf("  red width = %d\n", modeinfo.red_width);
-        CONS_Printf("  red pos = %d\n", modeinfo.red_pos);
-        CONS_Printf("  green width = %d\n", modeinfo.green_width);
-        CONS_Printf("  green pos = %d\n", modeinfo.green_pos);
-        CONS_Printf("  blue width = %d\n", modeinfo.blue_width);
-        CONS_Printf("  blue pos = %d\n", modeinfo.blue_pos);
-        CONS_Printf("  phys mem = %x\n", modeinfo.pptr);
+        CONS_Printf("  mode attrib        = 0x%0x\n", modeinfo.mode_attributes);
+        /*CONS_Printf("  win a attrib       = 0x%0x\n", *(unsigned char*)(infobuf+2));*/
+        /*CONS_Printf("  win b attrib       = 0x%0x\n", *(unsigned char*)(infobuf+3));*/
+        CONS_Printf("  win a seg          = 0x%0x\n", (int) modeinfo.winasegment);
+        CONS_Printf("  win b seg          = 0x%0x\n", (int) modeinfo.winbsegment);
+        CONS_Printf("  bytes per scanline = %d\n",modeinfo.bytes_per_scanline);
+        CONS_Printf("  width = %d, height = %d\n", modeinfo.width,modeinfo.height);
+        CONS_Printf("  win                = %c\n", 'A' + modeinfo.win);
+        CONS_Printf("  win granularity    = %d\n", modeinfo.granularity);
+        CONS_Printf("  win size           = %d\n", modeinfo.win_size);
+        CONS_Printf("  bits per pixel     = %d\n", modeinfo.bits_per_pixel);
+        CONS_Printf("  bytes per pixel    = %d\n", modeinfo.bytes_per_pixel);
+        CONS_Printf("  memory model       = 0x%x\n", modeinfo.memory_model);
+        CONS_Printf("  num pages          = %d\n", modeinfo.num_pages);
+        CONS_Printf("  red width          = %d\n", modeinfo.red_width);
+        CONS_Printf("  red pos            = %d\n", modeinfo.red_pos);
+        CONS_Printf("  green width        = %d\n", modeinfo.green_width);
+        CONS_Printf("  green pos          = %d\n", modeinfo.green_pos);
+        CONS_Printf("  blue width         = %d\n", modeinfo.blue_width);
+        CONS_Printf("  blue pos           = %d\n", modeinfo.blue_pos);
+        CONS_Printf("  phys mem           = %x\n", modeinfo.pptr);				
 #endif
     }
 
@@ -806,10 +818,10 @@ no_vesa:
 
             vesa_modes[nummodes].bytesperpixel = (vesamodeinfo.BitsPerPixel+1)/8;
             
-
+#ifdef DEBUG
             sprintf (VesaResolution, "%dx%dx%d", vesamodeinfo.XResolution, vesamodeinfo.YResolution, vesamodeinfo.BitsPerPixel);						
             GenPrintf( EMSG_info,  " - Added Vesa Mode: %-2d - %s\n",nummodes, VesaResolution);
-											
+#endif											
             nummodes++;
         }
     }
@@ -886,18 +898,17 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     //set mode 0x13
     regs.h.ah = 0;
-    regs.h.al = 0x13;
+    regs.h.al = 0x108/*0x13*/; // Benutze 0x108 (640x480 Textmodus als Start)
     __dpmi_int(0x10, &regs);
 
     // here it is the standard VGA 64k window, not an LFB
     // (you could have 320x200x256c with LFB in the vesa modes)
     lvid->direct = (byte *) real2ptr (0xa0000);
     lvid->numpages = 1;
-    lvid->bytepp = currentmode_p->bytesperpixel;
+    lvid->bytepp = currentmode_p->bytesperpixel+1;
 
     return 1;
 }
-
 
 // ========================================================================
 // Set video mode routine for VESA video modes, see VID_SetMode()
@@ -911,16 +922,32 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
     extra = currentmode_p->extradata;
 
 #ifdef DEBUG
- CONS_Printf("VID_VesaInitMode...\n");
- CONS_Printf(" currentmode_p->name %s\n",currentmode_p->name);
- CONS_Printf("               width %d\n",currentmode_p->width);
- CONS_Printf("               height %d\n",currentmode_p->height);
- CONS_Printf("               rowbytes %d\n",currentmode_p->rowbytes);
- CONS_Printf("               windowed %d\n",currentmode_p->windowed);
- CONS_Printf("               numpages %d\n",currentmode_p->numpages);
- CONS_Printf(" currentmode_p->extradata :\n");
- CONS_Printf("                ->vesamode %x\n",extra->vesamode);
- CONS_Printf("                ->linearmem %x\n\n",extra->linearmem);
+ CONS_Printf("\n\n=== VID_VesaInitMode DEBUG Mode: ===\n");
+ CONS_Printf("currentmode_p->Name %s\n",currentmode_p->name);
+ CONS_Printf(" Width   : %d\n",currentmode_p->width);
+ CONS_Printf(" Height  : %d\n",currentmode_p->height);
+ CONS_Printf(" Rowbytes: %d\n",currentmode_p->rowbytes);
+ CONS_Printf(" Numpages: %d\n",currentmode_p->numpages); 
+ switch(currentmode_p->modetype)
+ {
+   case 0:CONS_Printf(" ModeType: %d [MODE_NOP]\n",currentmode_p->modetype);break;
+   case 1:CONS_Printf(" ModeType: %d [MODE_window]\n",currentmode_p->modetype);break;
+   case 2:CONS_Printf(" ModeType: %d [MODE_fullscreen]\n",currentmode_p->modetype);break;
+   case 3:CONS_Printf(" ModeType: %d [MODE_voodoo]\n",currentmode_p->modetype);break;
+   case 4:CONS_Printf(" ModeType: %d [MODE_either]\n",currentmode_p->modetype);break;
+   case 5:CONS_Printf(" ModeType: %d [MODE_other]\n",currentmode_p->modetype);break;		
+ } 
+ switch(currentmode_p->bytesperpixel)
+ {
+	 case 1:CONS_Printf(" BytesPerPixel %d [8bit]\n",currentmode_p->bytesperpixel);break;
+   case 2:CONS_Printf(" BytesPerPixel %d [15/16bit]\n",currentmode_p->bytesperpixel);break;
+   case 3:CONS_Printf(" BytesPerPixel %d [24bit]\n",currentmode_p->bytesperpixel);break;
+   case 4:CONS_Printf(" BytesPerPixel %d [32bit]\n",currentmode_p->bytesperpixel);break;		
+ } 
+
+ CONS_Printf("currentmode_p->Extradata :\n");
+ CONS_Printf(" ->VesaMode  = %x\n",extra->vesamode);
+ CONS_Printf(" ->LinearMEM = %x\n\n",extra->linearmem);
 #endif
 
     //added:20-01-98:no page flipping now... TO DO!!!

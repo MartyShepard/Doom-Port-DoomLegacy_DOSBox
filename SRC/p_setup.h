@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1236 2016-05-24 17:35:36Z wesleyjohnson $
+// $Id: p_setup.h 1237 2016-06-14 17:07:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -66,7 +66,7 @@ typedef struct
     uint16_t    size_index;     // flat size index
 
     // for flat animation
-    uint16_t    baselumpnum;    // first flat in animation
+    uint32_t    baselumpnum;    // first flat in animation
     int16_t     animseq;        // start pos. in the anim sequence
     uint16_t    numpics;
     int16_t     speed;

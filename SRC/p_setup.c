@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1236 2016-05-24 17:35:36Z wesleyjohnson $
+// $Id: p_setup.c 1237 2016-06-14 17:07:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -466,7 +466,7 @@ void P_LoadSubsectors (int lump)
 // Return the flat size_index.
 //   flatsize : the flat lump size
 // Called by P_PrecacheLevelFlats at level load time.
-uint16_t P_flatsize_to_index( int flatsize )
+uint16_t P_flatsize_to_index( int flatsize, char * name )
 {
   switch(flatsize)
   {
@@ -484,6 +484,9 @@ uint16_t P_flatsize_to_index( int flatsize )
       return 2;
     case 32*32: // 32x32 lump
       return 1;
+    default:
+      if( verbose && name )
+          GenPrintf( EMSG_warn, "Flat size not handled, %s, size=%i\n", name, flatsize );
   }
   return 0;
 }
@@ -509,7 +512,7 @@ int P_PrecacheLevelFlats( void )
   for(i = 0; i < numlevelflats; i++)
   {
     lump = levelflats[i].lumpnum;
-    levelflats[i].size_index = P_flatsize_to_index( W_LumpLength(lump) );
+    levelflats[i].size_index = P_flatsize_to_index( W_LumpLength(lump), NULL );
     if(devparm)
       flatmemory += W_LumpLength(lump);
     R_GetFlat (lump);
@@ -585,7 +588,7 @@ int P_AddLevelFlat ( char* flatname )
 
     // store the flat lump number
     lfp->lumpnum = R_FlatNumForName (flatname);
-    lfp->size_index = P_flatsize_to_index( W_LumpLength(lfp->lumpnum) );
+    lfp->size_index = P_flatsize_to_index( W_LumpLength(lfp->lumpnum), flatname );
 
  found_level_flat:
     return i;    // level flat id

@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01237 ]: w105 33b flatsize bug
+          DOS: Vesa Update
+					
 [01236 ]: w105 flatsize
 [01235 ]: w105 statusbar
 [01234 ]: w105 heretic server
