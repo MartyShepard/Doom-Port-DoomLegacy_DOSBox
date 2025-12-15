@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
+// $Id: r_things.c 1227 2016-05-24 17:00:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -711,26 +711,36 @@ static vissprite_t     overflowsprite;
 // [WDJ] New vissprite sorted by scale
 // Closer sprites get preference in the vissprite list when too many.
 // Sorted list is farthest to nearest (circular).
-static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
+//   scale : the draw scale, representing distance from viewer
+//   dist_pri : distance priority, 0..255, dead are low, monsters are high
+static
+vissprite_t* R_NewVisSprite ( fixed_t scale, byte dist_pri,
+                             /*OUT*/ vissprite_t * oldsprite )
 {
-    vspr_count ++;	// allocation stat
     vissprite_t * vs;
     register vissprite_t * ns;
 
+    vspr_count ++;	// allocation stat
     if (vissprite_p == vissprite_last)  // array full ?
     { 
+        unsigned int rn, cnt;
         // array is full
-        vspr_random += 0x01001; // semi-random stirring
+        vspr_random += 0x021019; // semi-random stirring (prime)
         if ( vsprsortedhead.next->scale > scale )
         { 
-            // new sprite is farther than farthest sprite in array,
+            // New sprite is farther than farthest sprite in array,
             // even far sprites have random chance of being seen (flicker)
-            if ((vspr_random & 0x0F000) != 0)
+            // Avg (pri=128) monster has 1/16 chance.
+            if (((vspr_random >> 8) & 0x7FF) > dist_pri)
                 return &overflowsprite;
         }
-        // must remove a sprite to make room
+        // Must remove a sprite to make room.
+        // Sacrifice a random sprite from farthest half.
+        // Skip a random number of sprites, at least 1.
+        // Try for a tapering distance effect.
+        rn = (vspr_random & 0x000F) + ((vspr_max - vspr_halfcnt) >> 7);
+        for( cnt = 2; ; cnt-- )  // tries to find lower priority
         {
-            // Sacrifice a random sprite from farthest half
             if( vspr_halfcnt <= 0 ) // halfway count trigger
             {
                 // init, or re-init
@@ -738,16 +748,18 @@ static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
                 vissprite_far = vsprsortedhead.next; // farthest
             }
             vs = vissprite_far;
-            // Skip a random number of sprites, at least 1
-            // Move vissprite_far off the sprite that will be removed
-            // Try for a tapering distance effect.
-            int n = (vspr_random & 0x000F) + ((vspr_max - vspr_halfcnt) >> 7) + 1;
-            vspr_halfcnt -= n;  // count down to halfway
-            for( ; n > 0 ; n -- )
+            rn ++;  // at least 1
+            // Move vissprite_far off the sprite that will be removed.
+            vspr_halfcnt -= rn;  // count down to halfway
+            for( ; rn > 0 ; rn -- )
             {
                 vissprite_far = vissprite_far->next; // to nearer sprites
             }
+            // Compare priority, but only a few times.
+            if( cnt == 0 )  break;
+            if( vs->dist_priority <= dist_pri )   break;
         }
+
         // unlink it so it can be re-linked by distance
         vs->next->prev = vs->prev;
         vs->prev->next = vs->next;
@@ -757,17 +769,18 @@ static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
         // still filling up array
         vs = vissprite_p ++;
     }
-    // set links so order is farthest to nearest
-    // check the degenerate case first and avoid this test in the loop below
+
+    // Set links so order is farthest to nearest.
+    // Check the degenerate case first and avoid this test in the loop below.
     // Empty list looks to have head as max nearest sprite, so first is farthest.
     if (vsprsortedhead.next->scale > scale)
     {
-        // new is farthest, this will happen often because of close preference
+        // New is farthest, this will happen often because of close preference.
         ns = &vsprsortedhead; // farthest is linked after head
     }
     else
     {
-        // search nearest to farthest
+        // Search nearest to farthest.
         // The above farthest check ensures that search will hit something farther.
         ns = vsprsortedhead.prev; // nearest
         while( ns->scale > scale )  // while new is farther
@@ -776,7 +789,7 @@ static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
         }
     }
     // ns is farther than new
-    // copy before linking, is easier
+    // Copy before linking, is easier.
     if( oldsprite )
         memcpy( vs, oldsprite, sizeof(vissprite_t));
     // link new vs after ns (nearer than ns)
@@ -784,6 +797,7 @@ static vissprite_t* R_NewVisSprite ( fixed_t scale, vissprite_t * oldsprite )
     vs->next->prev = vs;
     ns->next = vs;
     vs->prev = ns;
+    vs->dist_priority = dist_pri;
 
     return vs;
 }
@@ -1008,7 +1022,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
         
     // Found a split! Make a new sprite, copy the old sprite to it, and
     // adjust the heights.
-    newsprite = R_NewVisSprite ( sprite->scale, sprite );
+    newsprite = R_NewVisSprite( sprite->scale, sprite->dist_priority, sprite );
 
     sprite->cut |= SC_BOTTOM;
     sprite->gz_bot = lightheight;
@@ -1102,6 +1116,7 @@ static void R_ProjectSprite (mobj_t* thing)
     boolean             flip;
 
     int                 index;
+    byte                dist_pri;  // distance priority
 
     vissprite_t*        vis;
 
@@ -1271,11 +1286,24 @@ static void R_ProjectSprite (mobj_t* thing)
       }
     }
 
-    // store information in a vissprite
-    vis = R_NewVisSprite ( yscale, NULL );
+    // Store information in a vissprite.
+    dist_pri = thing->height >> 16;  // height (fixed_t), 0..120, 56=norm.
+    if( thing->flags & MF_MISSILE )
+        dist_pri += 60;  // missiles are important
+    else
+    {
+        // CORPSE may not be MF_SHOOTABLE.
+        if( thing->flags & MF_CORPSE )
+            dist_pri >>= 2;  // corpse has much less priority
+        else if( thing->flags & (MF_SHOOTABLE|MF_COUNTKILL) )
+            dist_pri += 20;  // monsters are important too
+    }
+
+    vis = R_NewVisSprite ( yscale, dist_pri, NULL );
     // do not waste time on the massive number of sprites in the distance
     if( vis == &overflowsprite )  // test for rejected, or too far
         return;
+
     // [WDJ] Only pass water models, not colormap model sectors
     vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
     vis->mobjflags = thing->flags;

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01227 ]: sprite dist
+[01226 ]: w105 sorted hardware sprites
 [01225 ]: w105 player messages
 [01224 ]: w105 g_state
 [01223 ]: w105 spawn

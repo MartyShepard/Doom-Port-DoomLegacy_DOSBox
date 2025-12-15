@@ -5089,7 +5089,9 @@ menuitem_t OGL_ColorMenu[]=
 menuitem_t OGL_DevMenu[]=
 {
 //    {IT_STRING | IT_CVAR, "Polygon smooth"  , &cv_grpolygonsmooth    ,  0},
+#ifdef TRANSWALL_CHOICE
     {IT_STRING | IT_CVAR, 0, "MD2 models"      , &cv_grmd2              , 10},
+#endif
     {IT_STRING | IT_CVAR, 0, "Translucent walls", &cv_grtranswall       , 20},
     {IT_STRING | IT_CVAR, 0, "Polygon shape"  , &cv_grpolyshape         , 30},
 };

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1213 2016-03-08 18:38:23Z wesleyjohnson $
+// $Id: r_defs.h 1227 2016-05-24 17:00:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -877,9 +877,11 @@ typedef struct vissprite_s
 
     //Fab:29-04-98: for MF_SHADOW sprites, which translucency table to use
     byte*               translucentmap;
-    byte		translucent_index;
+    byte                translucent_index;
+   
+    byte                dist_priority;  // 0..255, when too many sprites   
 
-    int                 mobjflags;
+    uint32_t            mobjflags;  // mobjflag_e, MF_
 
     // SoM: 3/6/2000: height sector for underwater/fake ceiling support
     int                 heightsec;
@@ -896,7 +898,7 @@ typedef struct vissprite_s
     int                 sz_bot;
     int                 sz_top;
 
-    int                 cut;  //0 for none, bit 1 for top, bit 2 for bottom
+    uint8_t             cut;  //0 for none, bit 1 for top, bit 2 for bottom
                                 // OR of spritecut_e
 } vissprite_t;
 

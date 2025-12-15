@@ -4924,3 +4924,44 @@ spot, to handle collisions, and to allow more players than spawn spots.
 Deathmatch spawn will also try Coop spawning if it needs to.
 Coop spawn will try Deathmatch spawn locations (last) if it needs to.
 
+*** W105_gstate
+patchfile = w105_21_gstate.patch
+- commit revision 1224
+Remove files g_state.h  g_state.c.
+They only declared a few variables, and do not exist in legacy 2.
+The file doomstat.h already exists to declare such state variables.
+Add GS_FORCEWIPE, to avoid storing -1 in an enum variable.
+Clean up some other extern, and some enum type names.
+
+*** W105_playermsg
+patchfile = w105_22_playermsg.patch
+- commit revision 1225
+Expand the show messages option to (Off, minimal, play, verbose, diag).
+This control now affects all messages displayed during play.
+If the player sets to minimal, they will not get messages for minor
+object pickups like ammo, but will get messages for important things,
+like the BFG.
+Each player message now calls P_SetMessage, with a level value.
+Calling P_SetMessage is now required, to process cv_showmessages, so
+direct setting of player->message is no longer allowed.
+Replace the Heretic ultimatemsg boolean, with priority tests derived from the
+message level.
+The memory expansion message can now be blocked.  The EMSG categories
+are now explicit in the enum code, so that GenPrintf info, warnings, debug,
+and other print categories are properly tested during playing.
+
+*** W105_sorted_sprite
+patchfile = w105_23_sortedsprite.patch
+- commit revision 1226
+Remove old code (DRAW_UNSORTED) and choice code (DRAW_CHOICE) in
+hardware renderer.  The new code (DRAW_SORTED) of w89_draw_sorted
+is used, which sorts transparent walls and sprites.
+
+*** W105_spritedist
+patchfile = w105_24_spritedist.patch
+- commit revision 1227
+Improve the handling of drawing an excessive numbers of sprites.
+The closest sprites are always drawn.
+The farther sprites depend upon the distance from the viewer and priority.
+The priority takes into consideration the object height, and if it is a
+corpse, missile, or monster.
