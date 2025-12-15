@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_map.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2544,8 +2544,9 @@ boolean PIT_ChangeSector (mobj_t*  thing)
     // crunch bodies to giblets
     if (thing->flags & MF_CORPSE)
     {
-        if( !raven )
+        if( !raven_heretic_hexen )
         {
+            // Doom crush
             P_SetMobjState (thing, S_GIBS);
             thing->flags &= ~MF_SOLID;
             //added:22-02-98: lets have a neat 'crunch' sound!

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1099 2014-03-25 23:15:00Z wesleyjohnson $
+// $Id: p_heretic.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -85,28 +85,28 @@ int P_FaceMobj(mobj_t *source, mobj_t *target, angle_t *delta)
         diff = angle2 - angle1;
         if(diff > ANG180)
         {
-	    *delta = ANGLE_MAX - diff;
-	    return 0;
-	}
+            *delta = ANGLE_MAX - diff;
+            return 0;
+        }
         else
         {
-	    *delta = diff;
-	    return 1;
-	}
+            *delta = diff;
+            return 1;
+        }
     }
     else
     {
         diff = angle1 - angle2;
         if(diff > ANG180)
         {
-	    *delta = ANGLE_MAX - diff;
-	    return 1;
-	}
+            *delta = ANGLE_MAX - diff;
+            return 1;
+        }
         else
         {
-	    *delta = diff;
-	    return 0;
-	}
+            *delta = diff;
+            return 0;
+        }
     }
 }
 
@@ -142,8 +142,8 @@ boolean P_SeekerMissile(mobj_t *actor, angle_t thresh, angle_t turnMax)
         delta >>= 1;
         if(delta > turnMax)
         {
-	    delta = turnMax;
-	}
+            delta = turnMax;
+        }
     }
     if(dir)
     { // Turn clockwise
@@ -162,9 +162,9 @@ boolean P_SeekerMissile(mobj_t *actor, angle_t thresh, angle_t turnMax)
        dist = P_AproxDistance(target->x-actor->x, target->y-actor->y);
        dist = dist/actor->info->speed;
        if(dist < 1)
-	  dist = 1;
+          dist = 1;
        actor->momz = (target->z+(target->height>>1)
-		      -(actor->z+(actor->height>>1)))/dist;
+                      -(actor->z+(actor->height>>1)))/dist;
     }
     return true;
 }
@@ -220,8 +220,6 @@ mobj_t *P_SpawnMissileAngle(mobj_t *source, mobjtype_t type,
 }
 
 
-boolean inventory = false;
-
 extern int GetWeaponAmmo[];
 extern byte cheat_mus_seq[];
 extern byte cheat_choppers_seq[];
@@ -239,7 +237,7 @@ void HereticPatchEngine(void)
 {
     ceilmovesound = sfx_dormov;
     doorclosesound = sfx_doropn;
-    inventory = true;
+    have_inventory = true;
 
     // we can put such thinks in a dehacked lump, maybe for later
     S_sfx[sfx_oof].name        = "plroof";

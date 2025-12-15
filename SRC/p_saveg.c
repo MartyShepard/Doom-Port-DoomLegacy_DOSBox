@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_saveg.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -648,7 +648,7 @@ void P_ArchivePlayers(void)
         }
         WRITEU16(save_p, flags);
 
-        if (inventory)
+        if (have_inventory)
         {
             WRITEBYTE(save_p, ply->inventorySlotNum);
             for (j = 0; j < ply->inventorySlotNum; j++)
@@ -749,7 +749,7 @@ void P_UnArchivePlayers(void)
 
         flags = READU16(save_p);
 
-        if (inventory)
+        if (have_inventory)
         {
             ply->inventorySlotNum = READBYTE(save_p);
             for (j = 0; j < ply->inventorySlotNum; j++)

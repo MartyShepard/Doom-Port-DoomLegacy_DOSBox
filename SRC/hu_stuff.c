@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: hu_stuff.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -83,9 +83,11 @@
 
 // Data.
 #include "dstrings.h"
-#include "st_stuff.h"   //added:05-02-98: ST_HEIGHT
+#include "st_stuff.h"
+  //added:05-02-98: ST_HEIGHT
 #include "r_local.h"
-#include "wi_stuff.h"  // for drawrankings
+#include "wi_stuff.h"
+  // for drawrankings
 #include "p_info.h"
 #include "p_inter.h"
   // P_SetMessage
@@ -176,10 +178,11 @@ void HU_Init(void)
     j = (gamemode == heretic) ? 1 : HU_FONTSTART;
     for (i=0; i<HU_FONTSIZE; i++)
     {
-        if( raven )
-            sprintf(buffer, "FONTA%.2d", j>59 ? 59 : j);
+        if( raven_heretic_hexen )
+            sprintf(buffer, "FONTA%.2d", ((j>59)? 59 : j));
         else
             sprintf(buffer, "STCFN%.3d", j);
+
         j++;
         if( W_CheckNumForName( buffer ) < 0 )
         {

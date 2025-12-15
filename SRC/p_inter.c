@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: p_inter.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -532,10 +532,12 @@ boolean P_GiveCard ( player_t*     player,
 //  power : powertype index
 boolean P_GivePower ( player_t* player, int power )
 {
+    // Was using inventory to detect heretic and hexen rules,
+    // but these rules have nothing to do with inventory.
     if (power == pw_invulnerability)
     {
         // Already have it
-        if( inventory && player->powers[power] > BLINKTHRESHOLD )
+        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD )
             return false;
 
         player->powers[power] = INVULNTICS;
@@ -544,7 +546,7 @@ boolean P_GivePower ( player_t* player, int power )
     if(power == pw_weaponlevel2)
     {
         // Already have it
-        if( inventory && player->powers[power] > BLINKTHRESHOLD)
+        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD)
             return false;
 
         player->powers[power] = WPNLEV2TICS;
@@ -554,7 +556,7 @@ boolean P_GivePower ( player_t* player, int power )
     if (power == pw_invisibility)
     {
         // Already have it
-        if( inventory && player->powers[power] > BLINKTHRESHOLD)
+        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD)
             return false;
 
         player->powers[power] = INVISTICS;
@@ -566,6 +568,7 @@ boolean P_GivePower ( player_t* player, int power )
         // Already have it
         if(player->powers[power] > BLINKTHRESHOLD)
             return(false);
+
         player->powers[power] = FLIGHTTICS;
         player->mo->flags2 |= MF2_FLY;
         player->mo->flags |= MF_NOGRAVITY;
@@ -2056,6 +2059,9 @@ boolean P_ChickenMorphPlayer(player_t *player)
                 );
     pmo->special1 = player->readyweapon;  // save for later restore
     pmo->flags2 |= oldflags2&MF2_FLY;  // preserve fly
+    // Clear skin so it does not override chicken.
+    pmo->skin = NULL;  // Chickens all look alike.
+    pmo->flags &= ~MF_TRANSLATION; // no color translation for chicken
     // spawnhealth for chicken is 100, this is 30
     player->health = pmo->health = MAXCHICKENHEALTH;
     player->armorpoints = player->armortype = 0;

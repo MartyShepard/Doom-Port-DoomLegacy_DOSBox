@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: m_menu.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1023,6 +1023,7 @@ CV_PossibleValue_t exmy_cons_t[] ={{11,"e1m1"} ,{12,"e1m2"} ,{13,"e1m3"}
 consvar_t cv_skill    = {"skill"    ,"4",CV_HIDEN,skill_cons_t};
 consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
+consvar_t cv_nextepmap  = {"nextepmap"  ,"11",CV_HIDEN,exmy_cons_t};
 extern CV_PossibleValue_t deathmatch_cons_t[];
 consvar_t cv_newdeathmatch  = {"newdeathmatch"  ,"3",CV_HIDEN,deathmatch_cons_t};
 CV_PossibleValue_t wait_players_cons_t[]=   {{0,"MIN"}, {32,"MAX"}, {0,NULL}};
@@ -1048,7 +1049,8 @@ void M_StartServer( int choice )
 
     COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -monsters %d skill %d\n", 
                       StartSplitScreenGame, cv_newdeathmatch.value, 
-                      cv_nextmap.string, cv_monsters.value, cv_skill.value));
+                      (gamemode==doom2_commercial)? cv_nextmap.string : cv_nextepmap.string,
+                      cv_monsters.value, cv_skill.value));
     // skin change
     if (StartSplitScreenGame
         && ( ! displayplayer2_ptr
@@ -1075,6 +1077,11 @@ menuitem_t  ServerMenu[] =
                          0,"Dedicated"       ,M_StartServer        ,120}  // 9
 };
 
+menuitem_t  ServerMenu_Map =
+    {IT_STRING | IT_CVAR,0,"Map"             ,&cv_nextmap          ,0};
+menuitem_t  ServerMenu_EpisodeMap =
+    {IT_STRING | IT_CVAR,0,"Episode Map"     ,&cv_nextepmap        ,0};
+
 menu_t  ServerDef =
 {
     "M_STSERV", // in legacy.wad
@@ -1090,6 +1097,10 @@ menu_t  ServerDef =
 void M_StartServerMenu(int choice)
 {
     if( M_already_playing(0) )  return;
+
+    ServerMenu[0] = (gamemode==doom2_commercial)?
+         ServerMenu_Map  // Doom2
+       : ServerMenu_EpisodeMap;  // Ult doom, Heretic
 
     // StartSplitScreenGame already set by TwoPlayer menu
     M_SetupNextMenu(&ServerDef);
@@ -1760,6 +1771,7 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
     {IT_STRING | IT_CVAR,0,    "Sprites limit"    , &cv_spritelim     , 0},
     {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
+    {IT_STRING | IT_CVAR,0,    "Pickup Flash"     , &cv_pickupflash   , 0},
     {IT_STRING | IT_CVAR,0,    "Random sound pitch",&cv_rndsoundpitch , 0},
     {IT_STRING | IT_CVAR,0,    "Menu Sounds",       &cv_menusound     , 0},
     {IT_STRING | IT_CVAR,0,    "Boom Colormap"    , &cv_boom_colormap , 0},
@@ -3761,12 +3773,12 @@ void M_DrawThermo ( int   x,
                     int   y,
                     consvar_t *cv)
 {
-    int xx,i;
+    int xx,i, cursory;
     int leftlump,rightlump,centerlump[2],cursorlump;
 
     // Draw to screen0, scaled
     xx = x;
-    if( raven )
+    if( raven_heretic_hexen )
     {
         xx -= 32-8;
         leftlump      = W_GetNumForName("M_SLDLT");
@@ -3774,6 +3786,7 @@ void M_DrawThermo ( int   x,
         centerlump[0] = W_GetNumForName("M_SLDMD1"); 
         centerlump[1] = W_GetNumForName("M_SLDMD2"); 
         cursorlump    = W_GetNumForName("M_SLDKB");  
+        cursory = y+7;
     }
     else
     {
@@ -3782,6 +3795,7 @@ void M_DrawThermo ( int   x,
         centerlump[0] = W_GetNumForName("M_THERMM"); 
         centerlump[1] = W_GetNumForName("M_THERMM"); 
         cursorlump    = W_GetNumForName("M_THERMO");  
+        cursory = y;
     }
     { // temp use of left thermo patch
       patch_t *pt = W_CachePatchNum(leftlump,PU_CACHE);  // endian fix
@@ -3790,7 +3804,7 @@ void M_DrawThermo ( int   x,
     }
     for (i=0;i<16;i++)
     {
-        // alternate center patches (raven)
+        // alternate center patches (raven_heretic_hexen)
         V_DrawScaledPatch_Num (xx,y, centerlump[i & 1] );
         xx += 8;
     }
@@ -3799,7 +3813,7 @@ void M_DrawThermo ( int   x,
     xx = (cv->value - cv->PossibleValue[0].value) * (15*8) /
          (cv->PossibleValue[1].value - cv->PossibleValue[0].value);
 
-    V_DrawScaledPatch_Num ((x+8) + xx, (raven ? y+7 : y), cursorlump );
+    V_DrawScaledPatch_Num ((x+8) + xx, cursory, cursorlump );
 }
 
 
@@ -4886,6 +4900,7 @@ void M_Init (void)
     CV_RegisterVar(&cv_skill);
     CV_RegisterVar(&cv_monsters);
     CV_RegisterVar(&cv_nextmap );
+    CV_RegisterVar(&cv_nextepmap );
     CV_RegisterVar(&cv_newdeathmatch);
     CV_RegisterVar(&cv_wait_players);
     CV_RegisterVar(&cv_wait_timeout);
@@ -4908,7 +4923,7 @@ void M_Configure (void)
 
     // Reversible
     // remove the inventory key from the menu !
-    cval = ( inventory )? (IT_CONTROL) : IT_LITLSPACE;
+    cval = ( have_inventory )? (IT_CONTROL) : IT_LITLSPACE;
     for( i=0; i<ControlDef2.numitems; i++)
     {
         if( ControlMenu2[i].alphaKey == gc_invprev ||

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: g_game.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -229,7 +229,8 @@ char            game_map_filename[MAX_WADPATH];      // an external wad filename
 
 gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
 
-boolean         raven = false;
+boolean         raven_heretic_hexen = false;
+boolean         have_inventory = false;      // Heretic, Hexen
 language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
 
@@ -561,7 +562,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
   // use up an inventory item when game saving.
   static boolean keyup_armed = false;
    
-  if (!inventory)
+  if (! have_inventory)
     return false;
 
   switch (ev->type)

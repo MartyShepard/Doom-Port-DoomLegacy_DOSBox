@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: p_spec.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3005,7 +3005,7 @@ void P_SpawnSpecials (void)
         if (sector->special&SECRET_MASK) //SoM: 3/8/2000: count secret flags
           totalsecret++;
 
-        switch (raven ? sector->special : sector->special&31)
+        switch (raven_heretic_hexen ? sector->special : sector->special&0x1F)
         {
           case 1:
             // FLICKERING LIGHTS
@@ -3023,7 +3023,7 @@ void P_SpawnSpecials (void)
             break;
 
           case 4:
-            if( raven )
+            if( raven_heretic_hexen )
                 break; // see P_HerePlayerInSpecialSector, Scroll_EastLavaDamage
             // STROBE FAST/DEATH SLIME
             P_SpawnStrobeFlash(sector,FASTDARK,0);
@@ -3815,9 +3815,12 @@ static void P_SpawnFriction( sector_t * sec )
 
             if (friction > ORIG_FRICTION)       // ice
             {
-                if( raven ) // heretic or hexen
+                if( raven_heretic_hexen )
+                {
+                  // heretic or hexen
                   // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
                   movefactor = ((0x10092 - friction)*(0x40))/0x110 + 0x238;
+                }
                 else
                   movefactor = ((0x10092 - friction)*(0x70))/0x158; // boom ice
             }

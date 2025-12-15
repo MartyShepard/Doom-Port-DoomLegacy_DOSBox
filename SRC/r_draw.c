@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: r_draw.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -69,12 +69,14 @@
 #include "doomincl.h"
 #include "doomstat.h"
 #include "r_local.h"
-#include "st_stuff.h"   //added:24-01-98:need ST_HEIGHT
+#include "st_stuff.h"
+  //added:24-01-98:need ST_HEIGHT
 #include "i_video.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "console.h" //Som: Until I get buffering finished
+#include "console.h"
+  //Som: Until I get buffering finished
 #include "r_draw.h"
 
 #ifdef HWRENDER
@@ -136,7 +138,8 @@ byte*                   dc_source;
 // -----------------------
 // translucency stuff here
 // -----------------------
-#define NUM_TRANSLUCENTTABLES  5     // how many translucency tables are used
+// The number of translucency tables that are used.
+#define NUM_TRANSLUCENTTABLES  5
 
 byte*                   translucenttables;    // translucency tables
 
@@ -435,10 +438,11 @@ void R_InitViewBuffer ( int   width,
 // Store the lumpnumber of the viewborder patches.
 //
 int viewborderlump[8];
+
 void R_InitViewBorder (void)
 {
-    if( raven )
-    {
+    if( raven_heretic_hexen )
+    {   // Heretic, Hexen
         viewborderlump[BRDR_T]  = W_GetNumForName ("bordt");
         viewborderlump[BRDR_B]  = W_GetNumForName ("bordb");
         viewborderlump[BRDR_L]  = W_GetNumForName ("bordl");
@@ -449,7 +453,7 @@ void R_InitViewBorder (void)
         viewborderlump[BRDR_BR] = W_GetNumForName ("bordbr");
     }
     else
-    {
+    {   // Doom
         viewborderlump[BRDR_T]  = W_GetNumForName ("brdr_t");
         viewborderlump[BRDR_B]  = W_GetNumForName ("brdr_b");
         viewborderlump[BRDR_L]  = W_GetNumForName ("brdr_l");

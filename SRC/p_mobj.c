@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1223 2016-04-07 17:25:06Z wesleyjohnson $
+// $Id: p_mobj.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2169,7 +2169,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
     }
 
     // Check for boss spots
-    if (raven && mthing->type == 56)    // Monster_BossSpot
+    if (raven_heretic_hexen && mthing->type == 56)    // Monster_BossSpot
     {
         P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->angle * ANGLE_1);   // SSNTails 06-10-2003
         return;

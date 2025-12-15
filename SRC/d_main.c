@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: d_main.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -261,12 +261,14 @@
 #include "p_chex.h"
 
 #ifdef HWRENDER
-#include "hardware/hw_main.h"   // 3D View Rendering
+#include "hardware/hw_main.h"
+  // 3D View Rendering
 #endif
 
 #include "hardware/hw3sound.h"
 
-#include "b_game.h"     //added by AC for acbot
+#include "b_game.h"
+  //added by AC for acbot
 
 #ifdef FRENCH_INLINE
 #include "d_french.h"
@@ -297,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1233"
+#define SVN_REV "1234"
 #endif
 
 // Version number: major.minor.revision
@@ -544,6 +546,7 @@ void D_ProcessEvents(void)
 // There is a wipe each change of the gamestate.
 // wipegamestate can be set to GS_FORCEWIPE to force a wipe on the next draw.
 gamestate_e wipegamestate = GS_DEMOSCREEN;
+
 CV_PossibleValue_t screenslink_cons_t[] = { {0, "None"}, {wipe_ColorXForm + 1, "Crossfade"}, {wipe_Melt + 1, "Melt"}, {0, NULL} };
 consvar_t cv_screenslink = { "screenlink", "2", CV_SAVE, screenslink_cons_t };
 
@@ -998,7 +1001,7 @@ void D_PageDrawer(char *lumpname)
             }
         }
     }
-    if (raven && demosequence != 2)     // big hack for legacy's credits
+    if (raven_heretic_hexen && demosequence != 2)     // big hack for legacy's credits
     {
         V_DrawRawScreen_Num(0, 0, W_GetNumForName(lumpname), 320, 200);
         if (demosequence == 0 && pagetic <= 140)
@@ -1800,7 +1803,7 @@ void IdentifyVersion()
     }
     gamedesc_id = gamedesc.gamedesc_id;
     gamemode = gamedesc.gamemode;
-    raven = (gamemode == heretic) || (gamemode == hexen);
+    raven_heretic_hexen = (gamemode == heretic) || (gamemode == hexen);
     CONS_Printf("IWAD recognized: %s\n", gamedesc.gname);
 
     if (gamedesc.gameflags & GD_unsupported)  goto unsupported_wad;

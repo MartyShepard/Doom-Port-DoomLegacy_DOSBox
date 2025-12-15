@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: doomstat.h 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -177,8 +177,8 @@ game_desc_t *  D_GameDesc( int i );
 extern game_desc_e     gamedesc_id; // unique game id
 extern game_desc_t     gamedesc;    // active desc used by most of legacy
 extern gamemode_e      gamemode;
-extern boolean         inventory;   // true with heretic and hexen
-extern boolean         raven;       // true with heretic and hexen
+extern boolean         have_inventory;   // true with heretic and hexen
+extern boolean         raven_heretic_hexen;  // true with heretic and hexen
 
 // Set if homebrew PWAD stuff has been added.
 extern  boolean	       modifiedgame;

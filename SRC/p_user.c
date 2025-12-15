@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: p_user.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,6 +63,8 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "r_main.h"
+#include "r_things.h"
+  // skins
 #include "s_sound.h"
 #include "p_setup.h"
 #include "p_inter.h"
@@ -652,7 +654,6 @@ boolean P_UndoPlayerChicken(player_t *player)
 {
     mobj_t *fog;
     mobj_t * pmo = player->mo;
-    int player_num;
     weapontype_t weapon;
     int oldflags2;
 
@@ -670,16 +671,14 @@ boolean P_UndoPlayerChicken(player_t *player)
         player->chickenTics = 2*35;  // retry later
         return false;
     }
-    player_num = player - players;
-    if(player_num != 0)
-    { // Set color translation, always 0 in the info table flags
-        pmo->flags |= player_num<<MF_TRANSSHIFT;
-    }
     if(oldflags2&MF2_FLY)  // preserve fly flags
     {
         pmo->flags2 |= MF2_FLY;
         pmo->flags |= MF_NOGRAVITY;
     }
+    // Restore player skin and skincolor.
+    pmo->skin = &skins[player->skin];  // restore player skin
+    pmo->flags |= (player->skincolor) << MF_TRANSSHIFT;
     pmo->reactiontime = 18;
     player->chickenTics = 0;
 #ifndef PLAYER_CHICKEN_KEEPS_SHADOW
@@ -1291,6 +1290,7 @@ void P_PlayerThink (player_t* player)
 
     if (player->powers[pw_ironfeet])
         player->powers[pw_ironfeet]--;
+
     if (player->powers[pw_flight])
     {
         if(!--player->powers[pw_flight])
@@ -1307,7 +1307,7 @@ void P_PlayerThink (player_t* player)
     }
     if(player->powers[pw_weaponlevel2])
     {
-        if(!--player->powers[pw_weaponlevel2])
+        if( --player->powers[pw_weaponlevel2] == 0 )
         {
             player->weaponinfo = wpnlev1info;
             // end of weaponlevel2 power
