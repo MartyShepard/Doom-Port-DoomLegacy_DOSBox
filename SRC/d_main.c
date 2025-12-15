@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: d_main.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -299,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1234"
+#define SVN_REV "1235"
 #endif
 
 // Version number: major.minor.revision
@@ -1054,6 +1054,10 @@ void D_DoAdvanceDemo(void)
             switch (gamemode)
             {
                 case hexen:
+                    pagetic = 210 + 140;
+                    pagename = "TITLE";
+                    S_StartMusic(hexen);
+                    break;
                 case heretic:
                     pagetic = 210 + 140;
                     pagename = "TITLE";
@@ -2301,7 +2305,7 @@ restart_command:
              progdir = dosroot;
              sprintf(dirbuf, "%s/", dosroot);
              legacyhome = strdup( dirbuf );
-            #else						
+        #else						
             cat_filename( dirbuf, progdir, DEFHOME );
             legacyhome = strdup( dirbuf );  // malloc, will be free.
         #endif
@@ -2644,6 +2648,7 @@ restart_command:
         V_ClearDisplay();
 
 #ifdef HWRENDER
+        EN_HWR_flashpalette = 0;  // software and default
         if( rendermode != render_soft )
             HWR_Startup();  // hardware render init
 #endif

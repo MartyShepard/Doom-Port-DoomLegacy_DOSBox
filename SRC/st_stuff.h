@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: st_stuff.h 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -42,16 +42,23 @@
 #include "d_event.h"
 #include "d_player.h"
 
+// Vars used by Doom and Heretic status display.
+extern player_t *  st_plyr;  // Single Player status display
+extern boolean  stbar_on;  // status bar active
+extern boolean  st_overlay_on;   // status overlay enable
+
+extern byte     st_card;  // key card state displayed  (Doom, Heretic)
+
 //software mode : position according to resolution, not scaled
 //hardware mode : original coords, scaled to current resolution, correct aspect
 extern int stbar_fg;  // FG with status bar draw flags
 extern int stbar_x, stbar_y;  // status bar position
 extern int stbar_scalex, stbar_scaley;  // status bar scaling
-extern boolean  stbar_on;  // status bar active
 
 // Need this for SCR_Recalc() coz widgets coords change with resolutions.
 extern boolean  stbar_recalc;
 
+extern int st_palette;  // Doom and Heretic
 // pickupflash shifts
 extern byte pickupflash_table[ 4 ];
 
@@ -89,6 +96,10 @@ void ST_AddCommands (void);
 // force redraw
 void ST_Invalidate(void);
 
+// Set status palette for player.
+void ST_doPaletteStuff( player_t * plyr );
+// Set status palette 0 for camera.
+void ST_Palette0( void );
 
 // States for status bar code.
 typedef enum
@@ -122,14 +133,13 @@ boolean ST_SameTeam(player_t *a,player_t *b);
 // only one function for calculation : more simple code
 int  ST_PlayerFrags (int playernum);
 
-//--------------------
-// status bar overlay
-//--------------------
-extern boolean    st_overlay;   // sb overlay on or off when fullscreen
 
 // Heretic status bar
 void SB_Heretic_Init(void);
 void SB_Heretic_Ticker(void);
 void SB_Heretic_Drawer( boolean refresh );
+
+// Flash for Heretic status
+void H_PaletteFlash( player_t * plyr );
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: r_main.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -894,10 +894,10 @@ void R_ExecuteSetViewSize (void)
     setdetail = cv_detaillevel.value;
 
     // status bar overlay at viewsize 11
-    st_overlay = (cv_viewsize.value==11);
+    st_overlay_on = (cv_viewsize.value==11);
     //DarkWolf95: Support for Chex Quest
     if (gamemode == chexquest1)
-       st_overlay = 0;  //don't allow overlay status bar in Chex Quest
+       st_overlay_on = 0;  //don't allow overlay status bar in Chex Quest
 
     // clamp detail level (actually ignore it, keep it for later who knows)
     if (setdetail)
@@ -1140,11 +1140,12 @@ subsector_t* R_IsPointInSubsector ( fixed_t x, fixed_t y )
 // R_SetupFrame
 //
 
-void P_ResetCamera (player_t *player);
-
 // WARNING : a should be unsigned but to add with 2048, it isn't !
 #define AIMINGTODY(a) ((tangent_ANG(a)*160)>>FRACBITS)
 
+// Setup viewx, viewy, viewz, and other view global variables.
+// Called by R_RenderPlayerView.
+// Called by HWR_RenderPlayerView.
 void R_SetupFrame (player_t* player)
 {
     int  i;
@@ -1177,9 +1178,10 @@ void R_SetupFrame (player_t* player)
             I_Error("no mobj for the camera");
 #endif
         viewz = viewmobj->z;
-        fixedcolormap_num = camera.fixedcolormap;
         aimingangle=script_camera.aiming;
         viewangle = viewmobj->angle;
+        ST_Palette0();  // Doom and Heretic
+        fixedcolormap_num = camera.fixedcolormap;
     }
     else
 #endif
@@ -1191,9 +1193,20 @@ void R_SetupFrame (player_t* player)
             P_ResetCamera(player);  // reset the camera
         viewmobj = camera.mo;
         viewz = viewmobj->z + (viewmobj->height>>1);
-        fixedcolormap_num = camera.fixedcolormap;
         aimingangle=camera.aiming;
         viewangle = viewmobj->angle;
+#if 1
+        // Player cam does not see player status palette.
+        ST_Palette0();   // Doom and Heretic
+#else
+        // Player cam sees player status palette.
+        // Can now handle splitplayer flashes.
+        if( gamemode == heretic )
+            H_PaletteFlash( player );
+        else
+            ST_doPaletteStuff( player );
+#endif
+        fixedcolormap_num = camera.fixedcolormap;
     }
     else
     {
@@ -1211,7 +1224,14 @@ void R_SetupFrame (player_t* player)
 #else
         viewmobj = player->mo;
 #endif
+        
+        // Can now handle splitplayer flashes.
+        if( gamemode == heretic )
+            H_PaletteFlash( player );
+        else
+            ST_doPaletteStuff( player );
         fixedcolormap_num = player->fixedcolormap;
+
         aimingangle=player->aiming;
         viewangle = viewmobj->angle+viewangleoffset;
 

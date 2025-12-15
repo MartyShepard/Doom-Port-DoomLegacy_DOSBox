@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: sb_bar.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,18 +103,17 @@ int H_ArtifactFlash;
 static void ShadeChain(void);
 static void DrINumber(signed int val, int x, int y);
 static void DrBNumber(signed int val, int x, int y);
-static void DrawCommonBar(void);
-static void H_DrawMainBar(void);
-static void H_DrawInventoryBar(void);
-static void H_DrawFullScreenStuff(void);
-static void H_PaletteFlash(void);
+static void DrawCommonBar( player_t * plyr );
+static void H_DrawMainBar( player_t * plyr );
+static void H_DrawInventoryBar( player_t * plyr );
+static void H_OverlayDrawer( byte status_position, player_t * plyr );
 
 
 // Private Data
 
 static int HealthMarker;
 static int ChainWiggle;
-static player_t *CPlayer;
+// Use st_plyr for Single Player status.
 
 
 // #define USE_PLAYPALETTE
@@ -131,7 +130,7 @@ enum{
   HUS_fullview = 0x01,
   HUS_statbar = 0x02,   // am drawing the status bar
   HUS_messages = 0x04,  // unused
-  HUS_fullscreen = 0x08
+  HUS_overlay = 0x08
 };
 
 // [WDJ] This gets set, but is never read ?
@@ -265,7 +264,7 @@ void SB_Heretic_Ticker(void)
     }
     if(curHealth < HealthMarker)
     {
-        delta = (HealthMarker-curHealth)>>2;
+        delta = (HealthMarker - curHealth)>>2;
         if(delta < 1)
         {
             delta = 1;
@@ -278,7 +277,7 @@ void SB_Heretic_Ticker(void)
     }
     else if(curHealth > HealthMarker)
     {
-        delta = (curHealth-HealthMarker)>>2;
+        delta = (curHealth - HealthMarker)>>2;
         if(delta < 1)
         {
             delta = 1;
@@ -356,7 +355,7 @@ void V_DrawShadowedPatch(int x,int y, patch_t *p)
     V_DrawScaledPatch(x,y,p);
 }
 
-// Called by H_DrawFullScreenStuff
+// Called by H_OverlayDrawer
 // Draw screen0, scaled start (V_SCALESTART|0)
 #define V_DrawFuzzPatch(x,y,p)     V_DrawTranslucentPatch(x,y,p)
 
@@ -572,7 +571,7 @@ static int oldarmor = -1;
 static int oldweapon = -1;
 static int oldhealth = -1;
 static int oldlife = -1;
-static int oldkeys = -1;
+// oldkeys now uses st_card
 
 
 
@@ -580,6 +579,7 @@ void SB_Heretic_Drawer( boolean refresh )
 {
     static boolean hitCenterFrame;
 
+    player_t * plyr;
     int frame;
 
     if( stbar_recalc )
@@ -594,19 +594,33 @@ void SB_Heretic_Drawer( boolean refresh )
     // Draw to stbar_fg, screen0, flags selected by status bar style
     V_SetupDraw( stbar_fg );
 
-    CPlayer = displayplayer_ptr;
-    if( !stbar_on )
+    plyr = st_plyr = displayplayer_ptr;
+    if( st_overlay_on )
     {
-        // Status bar not on.
-        if( cv_viewsize.value == 11 )
+        // Overlay status
+        if( cv_splitscreen.value )
         {
-            H_DrawFullScreenStuff();
-            SB_state = SBS_refresh;
+            if((vid.drawmode != DRAW8PAL) && st_palette != 0 )
+                ST_Palette0();
+
+            // player 1 is upper
+            H_OverlayDrawer ( 1, displayplayer_ptr );
+            if( displayplayer2_ptr )
+            {
+                // player 2 is lower
+                H_OverlayDrawer( 0, displayplayer2_ptr );
+            }
         }
+        else if( !playerdeadview )
+        {
+            H_OverlayDrawer( 0, displayplayer_ptr );
+        }
+        SB_state = SBS_refresh;
     }
-    else
+    else if( stbar_on )
     {
         // Status bar on.
+        // Single Player only, keeps old status.
         if(SB_state == SBS_refresh)
         {
             if ( rendermode==render_soft )
@@ -623,47 +637,53 @@ void SB_Heretic_Drawer( boolean refresh )
             }
             oldhealth = -1;
         }
-        DrawCommonBar();
-        if(!CPlayer->st_inventoryTics)
+
+        DrawCommonBar( plyr );
+
+        if(!plyr->st_inventoryTics)
         {
+            // Display main status bar
             if(SB_state != SBS_status)
             {
                 // Main interface
                 V_DrawScaledPatch(stbar_x+34, stbar_y+2, PatchSTATBAR);
+                // Refresh all status
                 oldarti = -1;
                 oldammo = -1;
                 oldarmor = -1;
                 oldweapon = -1;
                 oldfrags = -9999; //can't use -1, 'cuz of negative frags
                 oldlife = -1;
-                oldkeys = -1;
+                st_card = -1;
             }
-            H_DrawMainBar();
+            H_DrawMainBar( plyr );
             SB_state = SBS_status;
         }
         else
         {
+            // Display inventory bar
             if(SB_state != SBS_inventory)
             {
                 V_DrawScaledPatch(stbar_x+34, stbar_y+2, PatchINVBAR);
             }
-            H_DrawInventoryBar();
+            H_DrawInventoryBar( plyr );
             SB_state = SBS_inventory;
         }
     }
-    H_PaletteFlash();
+
+    // Palette flash effects moved to R_SetupFrame and RenderPlayer.
     
     // Flight icons
-    if(CPlayer->powers[pw_flight])
+    if(plyr->powers[pw_flight])
     {
         // Draw screen0, scaled
         V_SetupDraw( FG );
 
-        if(CPlayer->powers[pw_flight] > BLINKTHRESHOLD
-            || !(CPlayer->powers[pw_flight]&16))
+        if(plyr->powers[pw_flight] > BLINKTHRESHOLD
+            || !(plyr->powers[pw_flight]&0x10))  // blink rate
         {
             frame = (leveltime/3)&15;
-            if(CPlayer->mo->flags2&MF2_FLY)
+            if(plyr->mo->flags2&MF2_FLY)
             {
                 if(hitCenterFrame && (frame != 15 && frame != 0))
                 {
@@ -702,13 +722,13 @@ void SB_Heretic_Drawer( boolean refresh )
         }
     }
     
-    if(CPlayer->powers[pw_weaponlevel2] && !CPlayer->chickenTics)
+    if(plyr->powers[pw_weaponlevel2] && !plyr->chickenTics)
     {
         // Draw screen0, scaled
         V_SetupDraw( FG );
 
-        if(CPlayer->powers[pw_weaponlevel2] > BLINKTHRESHOLD
-            || !(CPlayer->powers[pw_weaponlevel2]&16))
+        if(plyr->powers[pw_weaponlevel2] > BLINKTHRESHOLD
+            || !(plyr->powers[pw_weaponlevel2]&0x10)) // blink rate
         {
             frame = (leveltime/3)&15;
             V_DrawScaledPatch_Num(300, 17, spinbooklump+frame);
@@ -725,42 +745,38 @@ void SB_Heretic_Drawer( boolean refresh )
 #endif
         }
     }
-    /*
-    if(CPlayer->powers[pw_weaponlevel2] > BLINKTHRESHOLD
-    || (CPlayer->powers[pw_weaponlevel2]&8))
+#if 0
+    if(plyr->powers[pw_weaponlevel2] > BLINKTHRESHOLD
+       || (plyr->powers[pw_weaponlevel2]&0x08))  // blink rate
     {
-    V_DrawScaledPatch_Name(stbar_x+291, 0, 0, "ARTIPWBK");
+        V_DrawScaledPatch_Name(stbar_x+291, 0, 0, "ARTIPWBK");  // tome of power
     }
     else
     {
-    BorderTopRefresh = true;
+//        BorderTopRefresh = true;
     }
-    }
-    */
+#endif
 }
+
 
 // Sets the new palette based upon current values of player->damagecount
 // and player->bonuscount.
-void H_PaletteFlash(void)
+void H_PaletteFlash( player_t * plyr )
 {
-    static int sb_palette = 0;
-
     int palette;
 
-    CPlayer = consoleplayer_ptr;
-
-    if(CPlayer->damagecount)
+    if(plyr->damagecount)
     {
-        palette = STARTREDPALS + ((CPlayer->damagecount+7)>>3);
+        palette = STARTREDPALS + ((plyr->damagecount+7)>>3);
 
         if (palette >= (STARTREDPALS+NUMREDPALS))
             palette = STARTREDPALS+NUMREDPALS-1;
     }
-    else if(CPlayer->bonuscount && (cv_pickupflash.value>=2))
+    else if(plyr->bonuscount && (cv_pickupflash.value>=2))
     {
         // Pickup object palette flash.
         palette = STARTBONUSPALS
-           + ((CPlayer->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
+           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
 
         if (palette >= (STARTBONUSPALS+NUMBONUSPALS))
             palette = STARTBONUSPALS+NUMBONUSPALS-1;
@@ -771,38 +787,23 @@ void H_PaletteFlash(void)
     }
 
 
-    if(palette != sb_palette)
+    if(palette != st_palette)
     {
-        sb_palette = palette;
+        st_palette = palette;
 
 #ifdef HWRENDER
-        if ( (rendermode == render_opengl) || (rendermode == render_d3d) )
+        if( EN_HWR_flashpalette )
         {
             // Imitate the palette flash
-            //Hurdler: TODO: see if all heretic palettes are properly managed
-            switch (palette) {
-              case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // no changes
-              case 0x01: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-              case 0x02: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-              case 0x03: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff3030a7); break; // red
-              case 0x04: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2727b7); break; // red
-              case 0x05: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2020c7); break; // red
-              case 0x06: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1717d7); break; // red
-              case 0x07: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1010e7); break; // red
-              case 0x08: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff0707f7); break; // red
-              case 0x09: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-              case 0x0a: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff70a090); break; // light green
-              case 0x0b: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff67b097); break; // light green
-              case 0x0c: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60c0a0); break; // light green
-              case 0x0d: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60ff60); break; // green
-              case 0x0e: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-              case 0x0f: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-            }
+            HWR_SetFlashPalette( palette );
         }
         else
 #endif
         {
-            if( !cv_splitscreen.value )
+            // Splitscreen cannot use palette effects when 8bit palette draw,
+            // but other draw modes can.
+            if( ((cv_splitscreen.value == 0) || (vid.drawmode != DRAW8PAL))
+                || !palette )
                 V_SetPalette (palette);
         }
     }
@@ -815,7 +816,8 @@ void H_PaletteFlash(void)
 //---------------------------------------------------------------------------
 
 // to stbar_fg, screen0 status bar
-static void DrawCommonBar(void)
+// Called by SB_Heretic_Drawer
+static void DrawCommonBar( player_t * plyr )
 {
     int chainY;
     int healthPos;
@@ -838,7 +840,7 @@ static void DrawCommonBar(void)
         healthPos = (healthPos*256)/100;
         V_DrawScaledPatch(stbar_x, stbar_y+32, PatchCHAINBACK);
         chainY = stbar_y + 33;
-        if(HealthMarker != CPlayer->mo->health)
+        if(HealthMarker != plyr->mo->health)
             chainY += ChainWiggle;
         V_DrawScaledPatch(stbar_x+2+(healthPos%17), chainY, PatchCHAIN);
         V_DrawScaledPatch(stbar_x+17+healthPos, chainY, PatchLIFEGEM);
@@ -858,7 +860,7 @@ static void DrawCommonBar(void)
 //---------------------------------------------------------------------------
 
 // to stbar_fg
-static void H_DrawMainBar(void)
+static void H_DrawMainBar( player_t * plyr )
 {
     int temp;
 
@@ -875,18 +877,18 @@ static void H_DrawMainBar(void)
         H_UpdateState |= HUS_statbar;
 #endif
     }
-    else if(oldarti != CPlayer->inv_ptr
-            || oldartiCount != CPlayer->inventory[CPlayer->inv_ptr].count)
+    else if(oldarti != plyr->inv_ptr
+            || oldartiCount != plyr->inventory[plyr->inv_ptr].count)
     {
         V_DrawScaledPatch(stbar_x+180, stbar_y+3, PatchBLACKSQ);
-        if( CPlayer->inventory[CPlayer->inv_ptr].type > 0 )
+        if( plyr->inventory[plyr->inv_ptr].type > 0 )
         {
             V_DrawScaledPatch_Name(stbar_x+179,stbar_y+2,
-                 patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
-            DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+201, stbar_y+24);
+                 patcharti[plyr->inventory[plyr->inv_ptr].type]);
+            DrSmallNumber(plyr->inventory[plyr->inv_ptr].count, stbar_x+201, stbar_y+24);
         }
-        oldarti = CPlayer->inv_ptr;
-        oldartiCount = CPlayer->inventory[CPlayer->inv_ptr].count;
+        oldarti = plyr->inv_ptr;
+        oldartiCount = plyr->inventory[plyr->inv_ptr].count;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
 #endif
@@ -895,7 +897,7 @@ static void H_DrawMainBar(void)
     // Frags
     if(cv_deathmatch.value)
     {
-        temp = ST_PlayerFrags(CPlayer-players);
+        temp = ST_PlayerFrags(plyr-players);
         if(temp != oldfrags)
         {
             V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
@@ -908,7 +910,7 @@ static void H_DrawMainBar(void)
     }
     else
     {
-        if(CPlayer->health_pickup && ( cv_pickupflash.value == 1 ))
+        if(plyr->health_pickup && ( cv_pickupflash.value == 1 ))
         {
             // Health pickup flash
             V_DrawFill(stbar_x+57, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
@@ -928,74 +930,74 @@ static void H_DrawMainBar(void)
     }
 
     // Keys
-    if(CPlayer->key_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->key_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Key pickup flash
         V_DrawFill(stbar_x+153, stbar_y+6, 10, 23, FLASH_KEYS_COLOR);
-        oldkeys = 0;
-        if(CPlayer->key_pickup == 1)
+        st_card = 0;
+        if(plyr->key_pickup == 1)
         {
             SB_state = SBS_refresh;
-            CPlayer->key_pickup = 0;
+            plyr->key_pickup = 0;
         }
     }
-    if(oldkeys != CPlayer->cards)
+    if(plyr->cards != st_card)
     {
-        if(CPlayer->cards & it_yellowcard)
+        st_card = plyr->cards;
+        if(plyr->cards & it_yellowcard)
         {
             V_DrawScaledPatch_Name(stbar_x+153, stbar_y+6, "ykeyicon");
         }
-        if(CPlayer->cards & it_redcard)
+        if(plyr->cards & it_redcard)
         {
             V_DrawScaledPatch_Name(stbar_x+153, stbar_y+14, "gkeyicon");
         }
-        if(CPlayer->cards & it_bluecard)
+        if(plyr->cards & it_bluecard)
         {
             V_DrawScaledPatch_Name(stbar_x+153, stbar_y+22, "bkeyicon");
         }
-        oldkeys = CPlayer->cards;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
 #endif
     }
     // Ammo
-    if(CPlayer->ammo_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->ammo_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Ammo pickup flash
         V_DrawFill(stbar_x+108, stbar_y+5, 32, 11, FLASH_BLK_COLOR);
         oldammo = -2;
     }
-    temp = CPlayer->ammo[wpnlev1info[CPlayer->readyweapon].ammo];
-    if(oldammo != temp || oldweapon != CPlayer->readyweapon)
+    temp = plyr->ammo[wpnlev1info[plyr->readyweapon].ammo];
+    if(oldammo != temp || oldweapon != plyr->readyweapon)
     {
         if( oldammo > -2 )  // not flash
             V_DrawScaledPatch(stbar_x+108, stbar_y+3, PatchBLACKSQ);
-        if(temp && CPlayer->readyweapon > 0 && CPlayer->readyweapon < 7)
+        if(temp && plyr->readyweapon > 0 && plyr->readyweapon < 7)
         {
             DrINumber(temp, stbar_x+109, stbar_y+4);
             V_DrawScaledPatch_Name(stbar_x+111, stbar_y+14,
-                                   ammopic[CPlayer->readyweapon-1]);
+                                   ammopic[plyr->readyweapon-1]);
         }
         oldammo = temp;
-        oldweapon = CPlayer->readyweapon;
+        oldweapon = plyr->readyweapon;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
 #endif
     }
 
     // Armor
-    if(CPlayer->armor_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->armor_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Armor pickup flash
         V_DrawFill(stbar_x+224, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
         oldarmor = -2;  // no background
     }
-    if(oldarmor != CPlayer->armorpoints)
+    if(oldarmor != plyr->armorpoints)
     {
         if( oldarmor > -2 )  // not flash
             V_DrawScaledPatch(stbar_x+224, stbar_y+13, PatchARMCLEAR);
-        DrINumber(CPlayer->armorpoints, stbar_x+228, stbar_y+12);
-        oldarmor = CPlayer->armorpoints;
+        DrINumber(plyr->armorpoints, stbar_x+228, stbar_y+12);
+        oldarmor = plyr->armorpoints;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
 #endif
@@ -1009,12 +1011,12 @@ static void H_DrawMainBar(void)
 //---------------------------------------------------------------------------
 
 // Draw to stbar_fg, screen0 status bar
-static void H_DrawInventoryBar(void)
+static void H_DrawInventoryBar( player_t * plyr )
 {
     int i;
     int x;
 
-    x = CPlayer->inv_ptr-CPlayer->st_curpos;
+    x = plyr->inv_ptr - plyr->st_curpos;
 #ifdef USE_UPDATESTATE
     H_UpdateState |= HUS_statbar;
 #endif
@@ -1022,21 +1024,21 @@ static void H_DrawInventoryBar(void)
     for(i = 0; i < 7; i++)
     {
         //V_DrawScaledPatch(stbar_x+50+i*31, stbar_y+2, 0, W_CachePatchName("ARTIBOX", PU_CACHE));
-        if(CPlayer->inventorySlotNum > x+i
-           && CPlayer->inventory[x+i].type != arti_none)
+        if(plyr->inventorySlotNum > x+i
+           && plyr->inventory[x+i].type != arti_none)
         {
             V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+2,
-                                   patcharti[CPlayer->inventory[x+i].type]);
-            DrSmallNumber(CPlayer->inventory[x+i].count, stbar_x+69+i*31, stbar_y+24);
+                                   patcharti[plyr->inventory[x+i].type]);
+            DrSmallNumber(plyr->inventory[x+i].count, stbar_x+69+i*31, stbar_y+24);
         }
     }
-    V_DrawScaledPatch(stbar_x+50+CPlayer->st_curpos*31, stbar_y+31, PatchSELECTBOX);
+    V_DrawScaledPatch(stbar_x+50+plyr->st_curpos*31, stbar_y+31, PatchSELECTBOX);
     if(x != 0)
     {
         V_DrawScaledPatch(stbar_x+38, stbar_y+1,
             !(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
     }
-    if(CPlayer->inventorySlotNum-x > 7)
+    if(plyr->inventorySlotNum-x > 7)
     {
         V_DrawScaledPatch(stbar_x+269, stbar_y+1,
             !(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
@@ -1045,84 +1047,93 @@ static void H_DrawInventoryBar(void)
 
 // Overlay status, no status bar.
 // to stbar_fg
-static void H_DrawFullScreenStuff(void)
+//   status_position : 0=lower, 1=upper
+static void H_OverlayDrawer( byte status_position, player_t * plyr )
 {
     int i;
     int x;
     int temp;
+    // Draw at original size.
+    int sby = cv_splitscreen.value ?
+       (status_position ? (BASEVIDHEIGHT/2) - (BASEVIDHEIGHT-stbar_y) // player 1
+       : stbar_y ) //  player 2
+     : stbar_y;  // Single player
 
 #ifdef USE_UPDATESTATE
-    H_UpdateState |= HUS_fullscreen;
+    H_UpdateState |= HUS_overlay;
 #endif
+
     if(cv_pickupflash.value == 1)
     {
         // pickup flashes
-        if(CPlayer->key_pickup)
+        if(plyr->key_pickup)
         {
-            V_DrawFill(360, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(360, sby+36, 20, 6, FLASH_OV_COLOR);
         }
-        if(CPlayer->armor_pickup)
+        if(plyr->armor_pickup)
         {
-            V_DrawFill(270, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(270, sby+36, 20, 6, FLASH_OV_COLOR);
         }
-        if(CPlayer->ammo_pickup)
+        if(plyr->ammo_pickup)
         {
-            V_DrawFill(120, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(120, sby+36, 20, 6, FLASH_OV_COLOR);
         }
-        if(CPlayer->health_pickup)
+        if(plyr->health_pickup)
         {
             // Assume 3 digits  0..200
-            V_DrawFill(5, stbar_y+24, 36, 16, FLASH_OV_COLOR);
+            V_DrawFill(5, sby+24, 36, 16, FLASH_OV_COLOR);
         }
     }
+
     // Health overlay
-    if(CPlayer->mo->health > 0)
-        DrBNumber(CPlayer->mo->health, 5, stbar_y+22);
+    if(plyr->mo->health > 0)
+        DrBNumber(plyr->mo->health, 5, sby+22);
     else
-        DrBNumber(0, 5, stbar_y+22);
+        DrBNumber(0, 5, sby+22);
 
     if(cv_deathmatch.value)
     {
-        temp = ST_PlayerFrags(CPlayer-players);
-        DrINumber(temp, 45, stbar_y+27);
+        temp = ST_PlayerFrags(plyr-players);
+        DrINumber(temp, 45, sby+27);
     }
 
-    if(!CPlayer->st_inventoryTics)
+    if(!plyr->st_inventoryTics)
     {
-        if( CPlayer->inventory[CPlayer->inv_ptr].type > 0)
+        if( plyr->inventory[plyr->inv_ptr].type > 0)
         {
-            V_DrawFuzzPatch(stbar_x+286, stbar_y+12,
+            V_DrawFuzzPatch(stbar_x+286, sby+12,
                 W_CachePatchName("ARTIBOX", PU_CACHE) );
-            V_DrawScaledPatch_Name(stbar_x+286, stbar_y+12,
-                patcharti[CPlayer->inventory[CPlayer->inv_ptr].type]);
-            DrSmallNumber(CPlayer->inventory[CPlayer->inv_ptr].count, stbar_x+307, stbar_y+34);
+            V_DrawScaledPatch_Name(stbar_x+286, sby+12,
+                patcharti[plyr->inventory[plyr->inv_ptr].type]);
+            DrSmallNumber(plyr->inventory[plyr->inv_ptr].count, stbar_x+307, sby+34);
         }
     }
     else
     {
-        x = CPlayer->inv_ptr-CPlayer->st_curpos;
+        // Overlay inventory
+        x = plyr->inv_ptr - plyr->st_curpos;
         for(i = 0; i < 7; i++)
         {
-            V_DrawFuzzPatch(stbar_x+50+i*31, stbar_y+10,
+            V_DrawFuzzPatch(stbar_x+50+i*31, sby+10,
                 W_CachePatchName("ARTIBOX", PU_CACHE) );
-            if(CPlayer->inventorySlotNum > x+i
-               && CPlayer->inventory[x+i].type != arti_none)
+            if(plyr->inventorySlotNum > x+i
+               && plyr->inventory[x+i].type != arti_none)
             {
-                V_DrawScaledPatch_Name(stbar_x+50+i*31, stbar_y+10,
-                    patcharti[CPlayer->inventory[x+i].type] );
-                DrSmallNumber(CPlayer->inventory[x+i].count, 69+i*31, stbar_y+32);
+                V_DrawScaledPatch_Name(stbar_x+50+i*31, sby+10,
+                    patcharti[plyr->inventory[x+i].type] );
+                DrSmallNumber(plyr->inventory[x+i].count, 69+i*31, sby+32);
             }
         }
-        V_DrawScaledPatch(stbar_x+50+CPlayer->st_curpos*31, stbar_y+39,
+        V_DrawScaledPatch(stbar_x+50+plyr->st_curpos*31, sby+39,
             PatchSELECTBOX );
         if(x != 0)
         {
-            V_DrawScaledPatch(stbar_x+38, stbar_y+9,
+            V_DrawScaledPatch(stbar_x+38, sby+9,
                 !(leveltime&4) ? PatchINVLFGEM1 : PatchINVLFGEM2);
         }
-        if(CPlayer->inventorySlotNum-x > 7)
+        if(plyr->inventorySlotNum-x > 7)
         {
-            V_DrawScaledPatch(stbar_x+269, stbar_y+9,
+            V_DrawScaledPatch(stbar_x+269, sby+9,
                 !(leveltime&4) ? PatchINVRTGEM1 : PatchINVRTGEM2);
         }
     }

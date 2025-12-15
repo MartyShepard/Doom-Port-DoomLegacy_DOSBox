@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
+// $Id: st_stuff.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -100,6 +100,11 @@
 #include "hardware/hw_main.h"
 #endif
 
+// Doom and Heretic use ST_Drawer.
+// Almost everything else that is ST_  is Doom Only.
+// Heretic has its own status bar drawer that uses SB_ functions in sb_bar.c.
+// There is very little shared code, but some sharing attempts are being made.
+
 //protos
 void ST_createWidgets(void);
 
@@ -130,7 +135,7 @@ void ST_createWidgets(void);
   //added:08-01-98:status bar position changes according to resolution.
 #define ST_FX                     143
 // This is now dynamic
-#define ST_Y                    stbar_y
+// #define ST_Y                    stbar_y
 
 // Number of status faces.
 #define ST_NUMPAINFACES         5
@@ -275,11 +280,14 @@ static uint8_t  ammobox_y[4] = { 5, 11, 23, 17 };
  // Height, in lines.
 #define ST_OUTHEIGHT            1
 
+#if 0
+// UNUSED
 #define ST_MAPWIDTH     \
     (strlen(mapnames[(gameepisode-1)*9+(gamemap-1)]))
 
 //added:24-01-98:unused ?
 //#define ST_MAPTITLEX  (vid.width - ST_MAPWIDTH * ST_CHATFONTWIDTH)
+#endif
 
 #define ST_MAPTITLEY            0
 #define ST_MAPHEIGHT            1
@@ -293,11 +301,8 @@ int stbar_fg = FG | V_TRANSLUCENTPATCH;
 
 
 //added:02-02-98: set true if widgets coords need to be recalculated
+// Set by functions that change the window or status bar size.
 boolean     stbar_recalc;
-
-// main player in game
-//Hurdler: no not static!
-player_t*   plyr;
 
 // ST_Start() has just been called
 boolean     st_force_refresh;
@@ -332,14 +337,11 @@ static boolean          st_notdeathmatch;
 // main bar left
 static patch_t*         sbar;
 
-// 0-9, tall numbers
-static patch_t*         tallnum[10];
-
-// tall % sign
-static patch_t*         tallpercent;
+// 0-9, tall numbers, minus at [10], percent at [11].
+static patch_t*         tallnum[12];
 
 // 0-9, short, yellow (,different!) numbers
-static patch_t*         shortnum[10];
+static patch_t*         shortnum[12];
 
 // 3 key-cards, 3 skulls
 static patch_t*         keys[NUMCARDS];
@@ -363,7 +365,7 @@ static st_number_t      w_ready;
 static st_number_t      w_frags;
 
 // health widget
-static st_percent_t     w_health;
+static st_number_t      w_health;
 
 // arms background
 static st_binicon_t     w_armsbg;
@@ -378,7 +380,7 @@ static st_multicon_t    w_faces;
 static st_multicon_t    w_keyboxes[6];
 
 // armor widget
-static st_percent_t     w_armor;
+static st_number_t      w_armor;
 
 // ammo widgets
 static st_number_t      w_ammo[4];
@@ -387,13 +389,22 @@ static st_number_t      w_ammo[4];
 static st_number_t      w_maxammo[4];
 
 
+// ------------------------------------------
+// Status bar state.
+// Doom only.
+// Single player only (can handle only one status bar).
+// Splitscreen must use status overlay, which does not have state.
 
- // number of frags so far in deathmatch
+// Status bar player, also used by Heretic status display
+player_t*  st_plyr = NULL;
+
+// number of frags so far in deathmatch
 static int      st_fragscount;
 
 // used to use appopriately pained face
 static int      st_oldhealth = -1;
 
+// Doom only, but has room for Heretic weapons.
 // used for evil grin
 static boolean  oldweaponsowned[NUMWEAPONS];
 
@@ -404,51 +415,56 @@ static int      st_facecount = 0;
 static int      st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static byte     st_card;  // card state displayed
+byte     st_card;  // card state displayed  (Doom, Heretic)
 static byte     st_num_keyboxes;
 static int      keyboxes[6];  // 0..3 keycards skulls, 4..6 dual display
 
 // a random number per tick
 static int      st_randomnumber;
 
+
 // ------------------------------------------
-//             status bar overlay
+//        Doom status overlay variables
 // ------------------------------------------
 
-// icons for overlay
-static   int   sbohealth;
-static   int   sbofrags;
-static   int   sboarmor;
-static   int   sboammo[NUMWEAPONS];
+// Doom only.
+// Icons for status bar.
+static int   sbo_health, sbo_frags, sbo_armor;
+static int   sbo_ammo[NUMWEAPONS];
+
+
+// ------------------------------------------
+//        Doom status bar
+// ------------------------------------------
+
 
 
 //
 // STATUS BAR CODE
 //
-static void ST_refreshBackground(void)
+// Single player only, when stbar_on.
+//  Global : st_plyr
+static void ST_refreshBackground( void )
 {
-    byte*       colormap;
+    byte * colormap;
 
-    if (stbar_on)
-    {
-        // Draw background, with status bar flag settings
-        V_SetupDraw( BG | (stbar_fg & ~V_SCREENMASK) );
+    // Draw background, with status bar flag settings
+    V_SetupDraw( BG | (stbar_fg & ~V_SCREENMASK) );
 
-        // software mode copies patch to BG buffer,
-        // hardware modes directly draw the statusbar to the screen
-        V_DrawScaledPatch(stbar_x, stbar_y, sbar);
+    // software mode copies patch to BG buffer,
+    // hardware modes directly draw the statusbar to the screen
+    V_DrawScaledPatch(stbar_x, stbar_y, sbar);
 
-        // draw the faceback for the statusbarplayer
-        colormap = (plyr->skincolor) ?
-             SKIN_TO_SKINMAP( plyr->skincolor )
+    // draw the faceback for the statusbarplayer
+    colormap = (st_plyr->skincolor) ?
+             SKIN_TO_SKINMAP( st_plyr->skincolor )
            : & reg_colormaps[0]; // default green skin
 
-        V_DrawMappedPatch (stbar_x+ST_FX, stbar_y, faceback, colormap);
+    V_DrawMappedPatch (stbar_x+ST_FX, stbar_y, faceback, colormap);
 
-        // copy the statusbar buffer to the screen
-        if ( rendermode==render_soft )
-            V_CopyRect(0, vid.height-stbar_height, BG, vid.width, stbar_height, 0, vid.height-stbar_height, FG);
-    }
+    // copy the statusbar buffer to the screen
+    if ( rendermode==render_soft )
+        V_CopyRect(0, vid.height-stbar_height, BG, vid.width, stbar_height, 0, vid.height-stbar_height, FG);
 }
 
 
@@ -477,16 +493,14 @@ boolean ST_Responder (event_t* ev)
   return false;
 }
 
-
-
+// Global : st_plyr
 static int ST_calcPainOffset(void)
 {
-    int         health;
+    // [WDJ] FIXME : This thrashes when splitplayer, but it is correct.
     static int  lastcalc;
     static int  oldhealth = -1;
 
-    health = plyr->health > 100 ? 100 : plyr->health;
-
+    int  health = st_plyr->health > 100 ? 100 : st_plyr->health;
     if (health != oldhealth)
     {
         lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
@@ -502,11 +516,15 @@ static int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //  dead > evil grin > turned head > straight ahead
 //
+// Doom only.
+// Single Player status only.
+// Global : st_plyr
 static void ST_updateFaceWidget(void)
 {
     static int  fw_last_attackdown_cnt = -1;
     static int  fw_priority = 0;  // priority of face effects
 
+    player_t *  plyr = st_plyr;
     int         i;
     angle_t     badguyangle;
     angle_t     diffang;
@@ -531,6 +549,7 @@ static void ST_updateFaceWidget(void)
             // picking up bonus
             doevilgrin = false;
 
+            // Doom only.
             for (i=0;i<NUMWEAPONS;i++)
             {
                 if (oldweaponsowned[i] != plyr->weaponowned[i])
@@ -707,11 +726,16 @@ int ST_PlayerFrags (int playernum)
 }
 
 
+// Doom only.
+// Single player status bar only.
+//  Global : st_plyr
 // Called by: ST_Ticker
 static void ST_updateWidgets(void)
 {
     static int  largeammo = NON_NUMBER; // means "n/a"
+
     int         i;
+    player_t *  plyr = st_plyr;
 
 #ifdef PARANOIA
     if(!plyr)  return;  // not likely, but have soft fail
@@ -789,6 +813,7 @@ static void ST_updateWidgets(void)
 
     // refresh everything if this is him coming back to life
     ST_updateFaceWidget();
+    st_oldhealth = plyr->health;
 
     // used by the w_armsbg widget
     st_notdeathmatch = !cv_deathmatch.value;
@@ -798,11 +823,11 @@ static void ST_updateWidgets(void)
     // get rid of chat window if up because of message
     if (!--st_msgcounter)
         st_chat = st_oldchat;
-
 }
 
 static boolean  st_stopped = true;
 
+//  Global : st_plyr
 void ST_Ticker (void)
 {
     if( st_stopped )
@@ -814,19 +839,22 @@ void ST_Ticker (void)
         return;
     }
 
+    // Doom only.
     st_clock++;
     st_randomnumber = M_Random();
-    ST_updateWidgets();
-    st_oldhealth = plyr->health;
 
+    // Update immediately upon display changes.
+    if((cv_viewsize.value<11) || automapactive )
+        ST_updateWidgets();
 }
 
-static int st_palette = 0;
-// Used by Heretic too.
+// These are used by Heretic too.
+int st_palette = 0;
 byte pickupflash_table[ 4 ] = { 6, 5, 4, 3 }; // Vanilla=[3]=3
 
-// Called by: ST_Drawer
-void ST_doPaletteStuff(void)
+// Single and SplitPlayer, Software and Hardware Render.
+// Called by: R_SetupFrame, from R_RenderPlayerView, HWR_RenderPlayerView
+void ST_doPaletteStuff( player_t * plyr )
 {
     int  palette;
     int  red_cnt;
@@ -860,8 +888,8 @@ void ST_doPaletteStuff(void)
             palette = STARTBONUSPALS+NUMBONUSPALS-1;
     }
     else
-    if ( plyr->powers[pw_ironfeet] > 4*32
-      || plyr->powers[pw_ironfeet]&8)
+    if ( plyr->powers[pw_ironfeet] > BLINKTHRESHOLD
+         || plyr->powers[pw_ironfeet]&0x08)  // blink rate
         palette = RADIATIONPAL;
     else
         palette = 0;
@@ -876,57 +904,63 @@ void ST_doPaletteStuff(void)
     {
         st_palette = palette;
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-        if ( (rendermode == render_opengl) || (rendermode == render_d3d) )
-        
-        //faB - NOW DO ONLY IN SOFTWARE MODE, LETS FIX THIS FOR GOOD OR NEVER
-        //      idea : use a true color gradient from frame to frame, because we
-        //             are in true color in HW3D, we can have smoother palette change
-        //             than the palettes defined in the wad
-
+#ifdef HWRENDER
+        if( EN_HWR_flashpalette )  // some hardware draw can flash palette
         {
-            // Imitate the special object screen tints for each special palette.
+            // Imitate the palette flash
             //CONS_Printf("palette: %d\n", palette);
-            switch (palette) {
-                case 0x00: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0x0); break;  // pas de changement
-                case 0x01: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-                case 0x02: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff373797); break; // red
-                case 0x03: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff3030a7); break; // red
-                case 0x04: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2727b7); break; // red
-                case 0x05: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff2020c7); break; // red
-                case 0x06: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1717d7); break; // red
-                case 0x07: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff1010e7); break; // red
-                case 0x08: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff0707f7); break; // red
-                case 0x09: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-                case 0x0a: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff70a090); break; // light green
-                case 0x0b: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff67b097); break; // light green
-                case 0x0c: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60c0a0); break; // light green
-                case 0x0d: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xff60ff60); break; // green
-                case 0x0e: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-                case 0x0f: HWD.pfnSetSpecialState(HWD_SET_TINT_COLOR, 0xffff6060); break; // blue
-            }
+            HWR_SetFlashPalette( palette );
         }
         else
 #endif
         {
-            if( !cv_splitscreen.value || !palette )
+            // Splitscreen cannot use palette effects when 8bit palette draw,
+            // but other draw modes can.
+            if( ((cv_splitscreen.value == 0) || (vid.drawmode != DRAW8PAL))
+                || !palette )
                 V_SetPalette (palette);
         }
     }
 }
 
-// Called by: ST_doRefresh, ST_diffDraw, when stbar_on
+// Set status palette 0 for camera.
+void ST_Palette0( void )
+{
+    if (st_palette)
+    {
+#ifdef HWRENDER
+        if ( EN_HWR_flashpalette )
+        {
+            // Imitate the palette flash
+            HWR_SetFlashPalette( 0 );	    
+        }
+        else
+#endif
+        {
+            V_SetPalette(0);
+        }
+
+        // Record it as the status palette.
+        st_palette = 0;
+    }
+}
+
+
+// Single player only, when stbar_on.
+// Called by: ST_Drawer, when stbar_on.
 // STlib refresh enable is now setup by caller.
 // Only called when stbar_on == true, so more tests are pointless.
 static void ST_drawWidgets( void )
 {
     int  i;
+    player_t * plyr;
 
     // Draw stbar_fg, screen0 status bar
     V_SetupDraw( stbar_fg );  // for all STlib
 
     if( cv_pickupflash.value == 1 )
     {
+        plyr = st_plyr;
         // Pickup flash on the status bar.
         if( plyr->ammo_pickup )
         {
@@ -934,11 +968,11 @@ static void ST_drawWidgets( void )
         }
         if( plyr->armor_pickup )
         {
-            w_armor.ni.command = STLIB_FLASH;
+            w_armor.command = STLIB_FLASH;
         }
         if( plyr->health_pickup )
         {
-            w_health.ni.command = STLIB_FLASH;
+            w_health.command = STLIB_FLASH;
         }
         if( plyr->key_pickup )
         {
@@ -993,30 +1027,6 @@ static void ST_drawWidgets( void )
         STlib_updateMultIcon(&w_keyboxes[i]);
 }
 
-// Called by ST_Drawer when stbar_on
-static void ST_doRefresh(void)
-{
-    // This is not executed as frequently as ST_diffDraw, so it is more
-    // complicated, in order to keep ST_diffDraw and ST_drawWidgets simpler.
-    
-    // Draw status bar background to off-screen buff
-    ST_refreshBackground();
-
-    stlib_enable_erase = !st_overlay && rendermode==render_soft;
-    // Command to force global refresh from BG
-    stlib_force_refresh = true;
-
-    // and refresh all widgets
-    ST_drawWidgets();
-}
-
-// Called by ST_Drawer when stbar_on
-static void ST_diffDraw(void)
-{
-    stlib_force_refresh = false;
-    // update all widgets
-    ST_drawWidgets();
-}
 
 void ST_Invalidate(void)
 {
@@ -1024,10 +1034,14 @@ void ST_Invalidate(void)
     st_card = 0;
 }
 
-void ST_overlayDrawer ();
+static void ST_overlayDrawer ( byte status_position, player_t * plyr );
 
+// Doom and Heretic.
+// For player, and both splitscreen players.
+// Called by D_Display
 void ST_Drawer ( boolean refresh )
 {
+    // Respond to these changes immediately, so cannot be in any setup.
     stbar_on = (cv_viewsize.value<11) || automapactive;
 
     if( gamemode == heretic )
@@ -1036,24 +1050,21 @@ void ST_Drawer ( boolean refresh )
         return;
     }
 
+    // Doom Only.
     //added:30-01-98:force a set of the palette by doPaletteStuff()
     if (vid.recalc)
         st_palette = -1;
 
-    // Do red-/gold-shifts from damage/items
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-//25/08/99: Hurdler: palette changes is done for all players,
-//                   not only player1 ! That's why this part 
-//                   of code is moved somewhere else.
-    if (rendermode==render_soft)
-#endif
-        ST_doPaletteStuff();
+    // Player status palette interactions moved to R_SetupFrame
+    // so that Splitplayer can be handled.
 
+    // Splitplayer restricted to overlay or status bar off.
     if( stbar_on )
     {
-        // after ST_Start(), screen refresh needed, or vid mode change
+        // Single player only (st_plyr), keeping state.
         if (st_force_refresh || refresh || stbar_recalc )
         {
+            // after ST_Start(), screen refresh needed, or vid mode change
             if (stbar_recalc)  //recalc widget coords after vid mode change
             {
                 ST_createWidgets ();
@@ -1061,28 +1072,45 @@ void ST_Drawer ( boolean refresh )
             }
             st_force_refresh = false;
             st_card = 0;
-            ST_doRefresh();
+
+            // This is not executed as frequently as drawing, so it is more
+            // complicated, in order to keep ST_drawWidgets simpler.
+    
+            // Draw status bar background to BG buffer
+            ST_refreshBackground();   // st_plyr
+
+            stlib_enable_erase = (rendermode==render_soft);
+            stlib_force_refresh = true;  // stlib refreshes from BG buffer.
         }
         else
         {
             // Otherwise, update as little as possible
-            ST_diffDraw();
+            stlib_force_refresh = false;
         }
+        // Update all widgets using stlib.
+        ST_drawWidgets();
     }
-    else
+    else if( st_overlay_on )
     {
-        if( st_overlay )
+        // Overlay status over screen.
+        // Any minimal state kept, must be per splitscreen (see hardware).
+        // Does not use stlib.
+        if( cv_splitscreen.value )
         {
-            if( !playerdeadview || cv_splitscreen.value)
+            if((vid.drawmode != DRAW8PAL) && st_palette != 0 )
+                ST_Palette0();
+
+            // player 1 is upper
+            ST_overlayDrawer ( 1, displayplayer_ptr );
+            if( displayplayer2_ptr )
             {
-                plyr= displayplayer_ptr;
-                ST_overlayDrawer ();
+                // player 2 is lower
+                ST_overlayDrawer( 0, displayplayer2_ptr );
             }
-            if( cv_splitscreen.value && displayplayer2_ptr )
-            {
-                plyr= displayplayer2_ptr;
-                ST_overlayDrawer ();
-            }
+        }
+        else if( !playerdeadview )
+        {
+            ST_overlayDrawer( 0, displayplayer_ptr );
         }
     }
 }
@@ -1105,10 +1133,11 @@ static void ST_loadGraphics(void)
         sprintf(namebuf, "STYSNUM%d", i);
         shortnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
     }
+    tallnum[10] = (patch_t *) W_CachePatchName("STTMINUS", PU_LOCK_SB);
+    tallnum[11] = (patch_t *) W_CachePatchName("STTPRCNT", PU_LOCK_SB);
+    shortnum[10] = NULL; // has no minus
+    shortnum[11] = NULL; // has no percent
 
-    // Load percent key.
-    //Note: why not load STMINUS here, too?
-    tallpercent = (patch_t *) W_CachePatchName("STTPRCNT", PU_LOCK_SB);
 
     // key cards
     // FreeDoom and DoomII have STKEYS 0..5.
@@ -1155,6 +1184,7 @@ void ST_loadFaceGraphics (char *facestr)
     if( strlen(facestr)>3 )
         facestr[3]='\0';
     strcpy (namelump, facestr);  // copy base name
+    // namebuf points after base face name, for appending to base name
     namebuf = namelump;
     while (*namebuf>' ') namebuf++;
 
@@ -1199,10 +1229,13 @@ void ST_loadFaceGraphics (char *facestr)
 }
 
 
+#if 0
+// Unused
 static void ST_loadData(void)
 {
     ST_loadGraphics();
 }
+#endif
 
 void ST_unloadGraphics(void)
 {
@@ -1218,8 +1251,8 @@ void ST_unloadGraphics(void)
             Z_ChangeTag(tallnum[i], PU_UNLOCK_CACHE);
             Z_ChangeTag(shortnum[i], PU_UNLOCK_CACHE);
         }
-        // unload tall percent
-        Z_ChangeTag(tallpercent, PU_UNLOCK_CACHE);
+        Z_ChangeTag(tallnum[10], PU_UNLOCK_CACHE);  // minus
+        Z_ChangeTag(tallnum[11], PU_UNLOCK_CACHE);  // percent
         
         // unload arms background
         Z_ChangeTag(armsbg, PU_UNLOCK_CACHE);
@@ -1236,13 +1269,10 @@ void ST_unloadGraphics(void)
     }
 
     ST_unloadFaceGraphics ();
-
-    // Note: nobody ain't seen no unloading
-    //   of stminus yet. Dude.
-
 }
 
 // made separate so that skins code can reload custom face graphics
+// Called by SetPlayerSkin, ST_unloadGraphics
 void ST_unloadFaceGraphics (void)
 {
     int    i;
@@ -1259,12 +1289,16 @@ void ST_unloadFaceGraphics (void)
 }
 
 
+#if 0
+// Unused
 void ST_unloadData(void)
 {
     ST_unloadGraphics();
 }
+#endif
 
-void ST_initData(void)
+// Doom only.
+static void ST_init_stbar(void)
 {
 
     int         i;
@@ -1279,12 +1313,13 @@ void ST_initData(void)
     else
         statusbarplayer = consoleplayer;
 
-    plyr = &players[statusbarplayer];
+    // Single player status state init.
+    st_plyr = &players[statusbarplayer];
 
     st_clock = 0;
     st_chatstate = StartChatState;
 
-    stbar_on = true;
+    stbar_on = true;  // ST_Drawer clears it for Splitscreen
     st_oldchat = st_chat = false;
     st_cursor_on = false;
 
@@ -1293,15 +1328,15 @@ void ST_initData(void)
 
     st_oldhealth = -1;
 
+    // Doom only.
     for (i=0;i<NUMWEAPONS;i++)
-        oldweaponsowned[i] = plyr->weaponowned[i];
+        oldweaponsowned[i] = st_plyr->weaponowned[i];
 
     st_card = 0;  // no keys
     st_num_keyboxes = 3;
     for (i=0;i<6;i++)
         keyboxes[i] = -1;
 
-    STlib_init();
 }
 
 
@@ -1338,6 +1373,8 @@ void ST_CalcPos(void)
     }
 }
 
+// Single player init.
+// Also can be called at init of Splitscreen game.
 //added:30-01-98: NOTE: this is called at any level start, view change,
 //                      and after vid mode change.
 void ST_createWidgets(void)
@@ -1351,19 +1388,19 @@ void ST_createWidgets(void)
                   stbar_x + ST_AMMOX,
                   stbar_y + ST_AMMOY,
                   tallnum,
-                  &plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
+                  &st_plyr->ammo[st_plyr->weaponinfo[st_plyr->readyweapon].ammo],
                   ST_AMMOWIDTH );
 
     // the last weapon type
-//    w_ready.data = plyr->readyweapon;
+//    w_ready.data = st_plyr->readyweapon;
 
     // health percentage
-    STlib_initPercent(&w_health,
-                      stbar_x + ST_HEALTHX,
-                      stbar_y + ST_HEALTHY,
-                      tallnum,
-                      &plyr->health,
-                      tallpercent);
+    STlib_initNum(&w_health,
+                  stbar_x + ST_HEALTHX,
+                  stbar_y + ST_HEALTHY,
+                  tallnum,
+                  &st_plyr->health,
+                  3 );
 
     // arms background
     STlib_initBinIcon(&w_armsbg,
@@ -1378,7 +1415,7 @@ void ST_createWidgets(void)
         STlib_initMultIcon(&w_arms[i],
                       stbar_x + ST_ARMSX + (i%3)*ST_ARMSXSPACE,
                       stbar_y + ST_ARMSY + (i/3)*ST_ARMSYSPACE,
-                      arms[i], (int *) &plyr->weaponowned[i+1] );
+                      arms[i], (int *) &st_plyr->weaponowned[i+1] );
     }
 
     // frags sum, draw enabled by cv_deathmatch
@@ -1397,12 +1434,12 @@ void ST_createWidgets(void)
                        &st_faceindex );
 
     // armor percentage - should be colored later
-    STlib_initPercent(&w_armor,
-                      stbar_x + ST_ARMORX,
-                      stbar_y + ST_ARMORY,
-                      tallnum,
-                      &plyr->armorpoints,
-                      tallpercent);
+    STlib_initNum(&w_armor,
+                  stbar_x + ST_ARMORX,
+                  stbar_y + ST_ARMORY,
+                  tallnum,
+                  &st_plyr->armorpoints,
+                  3 );
 
     // keyboxes 0-6, in vertical column
     for( i=0; i<6; i++ )
@@ -1422,14 +1459,14 @@ void ST_createWidgets(void)
                   stbar_x + ST_AMMOSX,
                   stbar_y + ammobox_y[i],
                   shortnum,
-                  &plyr->ammo[i],
+                  &st_plyr->ammo[i],
                   ST_AMMOS_WIDTH);
         // max ammo count (all four kinds)
         STlib_initNum(&w_maxammo[i],
                   stbar_x + ST_MAXAMMOSX,
                   stbar_y + ammobox_y[i],
                   shortnum,
-                  &plyr->maxammo[i],
+                  &st_plyr->maxammo[i],
                   ST_MAXAMMOS_WIDTH);
     }
 }
@@ -1439,23 +1476,34 @@ static void ST_Stop (void)
     if (st_stopped)
         return;
 
-    V_SetPalette (0);
+//    V_SetPalette (0);
+    ST_Palette0();
 
     st_stopped = true;
 }
 
+// Doom or Heretic.
+// Single and SplitPlayer.
+// Called by G_DoLoadLevel, P_SpawnPlayer, P_AddWadFile
+// Called by ST_changeDemoView
 void ST_Start (void)
 {
+    // Doom and Heretic common.
+    st_plyr = &players[statusbarplayer];
+
     if( gamemode == heretic )
     {
-        plyr = &players[statusbarplayer];
         st_stopped = false;
         return;
     }
+
+    // Doom only.
     if (!st_stopped)
         ST_Stop();
 
-    ST_initData();
+    // Init as if Single player.
+    // When AutoMap displayed, shows Status bar for player1.
+    ST_init_stbar();
     ST_createWidgets();
     st_stopped = false;
     stbar_recalc = false;  //added:02-02-98: widgets coords have been setup
@@ -1502,31 +1550,36 @@ void ST_Init (void)
     }
     // [WDJ] Lock against other users of same patch releasing it!.
     scr_borderflat = W_CacheLumpNum (st_borderflat_num, PU_LOCK_SB);
+
     if( gamemode == heretic )
     {
         SB_Heretic_Init();
         return;
     }
+   
+    // Doom only
     veryfirsttime = 0;
-    ST_loadData();
+//    ST_loadData();
+    ST_loadGraphics();
 
     //
     // cache the status bar overlay icons  (fullscreen mode)
     //
-    sbohealth = W_GetNumForName ("SBOHEALT");
-    sbofrags  = W_GetNumForName ("SBOFRAGS");
-    sboarmor  = W_GetNumForName ("SBOARMOR");
+    sbo_health = W_GetNumForName ("SBOHEALT");
+    sbo_frags  = W_GetNumForName ("SBOFRAGS");
+    sbo_armor  = W_GetNumForName ("SBOARMOR");
 
+    // With Heretic, NUMWEAPONS = 18.
+    // Doom weapons are 0..8, chainsaw = 7.
     for (i=0;i<NUMWEAPONS;i++)
     {
-        if (i>0 && i!=7)
-            sboammo[i] = W_GetNumForName (va("SBOAMMO%c",'0'+i));
-        else
-            sboammo[i] = 0;
+        sbo_ammo[i] = (i>0 && i!=7 && i<=8)?
+            W_GetNumForName (va("SBOAMMO%c",'0'+i))
+            : 0;
     }
 }
 
- //added:16-01-98: change the status bar too, when pressing F12 while viewing
+//added:16-01-98: change the status bar too, when pressing F12 while viewing
 //                 a demo.
 void ST_changeDemoView (void)
 {
@@ -1542,7 +1595,7 @@ void ST_changeDemoView (void)
 
 consvar_t cv_stbaroverlay = {"overlay","kahmf",CV_SAVE,NULL};
 
-boolean   st_overlay;
+boolean   st_overlay_on;  // status overlay for Doom and Heretic
 
 
 void ST_AddCommands (void)
@@ -1596,22 +1649,22 @@ void ST_drawOverlayNum (int       x,            // right border!
         num /= 10;
     }
 
-    // draw a minus sign if necessary
-    if (neg)
-        V_DrawScaledPatch(x - (8*vid.dupx), y, sttminus);
+    // draw a minus sign if necessary, minus is at [10] in the number font
+    if (neg && numpat[10])
+        V_DrawScaledPatch(x - (8*vid.dupx), y, numpat[10]);
 }
 
-
-static inline int SCY( int y )
+//  y : status position normally
+//  y0 : status base position as modified for splitscreen
+static inline int SCY( int y, int y0 )
 { 
     //31/10/99: fixed by Hurdler so it _works_ also in hardware mode
     // do not scale to resolution for hardware accelerated
     // because these modes always scale by default
-    y = y * vid.fdupy;     // scale to resolution
+    y = (int)( y * vid.fdupy );     // scale to resolution
     if ( cv_splitscreen.value ) {
-        y >>= 1;
-        if (plyr != &players[statusbarplayer])
-            y += vid.height / 2;
+        y >>= 1; // half sized screens
+        y += y0; // base position of upper or lower screen
     }
     return y;
 }
@@ -1623,9 +1676,10 @@ static inline int SCX( int x )
 }
 
 static
-void  ST_drawOverlayKeys( int x, int y, byte cards )
+void  ST_drawOverlayKeys( int x, int y, player_t * plyr )
 {
     int  i, yh, xinc, yinc;
+    byte cards = plyr->cards;
 
     xinc = (int)((ST_KEY_WIDTH + 1) * vid.fdupx);
     yinc = (int)((ST_KEY_HEIGHT + 1) * vid.fdupy);
@@ -1657,14 +1711,17 @@ void  ST_drawOverlayKeys( int x, int y, byte cards )
 //  Draw the status bar overlay, customisable : the user choose which
 //  kind of information to overlay
 //
-void ST_overlayDrawer ()
+//   status_position : 0=lower, 1=upper
+static
+void ST_overlayDrawer ( byte status_position, player_t * plyr )
 {
     char*  cmds;
     char   c;
     int    i;
     // [WDJ] 8/2012 fix opengl overlay position to use fdupy
     float  sf_dupy = (rendermode == render_soft)? vid.dupy : vid.fdupy ;
-    int    lowerbar_y = SCY(198) - (int)( 16 * sf_dupy );
+    int  y0 = status_position ? 0 : vid.height / 2;
+    int  lowerbar_y = SCY(198,y0) - (int)( 16 * sf_dupy );
 
     // Draw screen0, scaled, abs position
     V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH );
@@ -1683,7 +1740,7 @@ void ST_overlayDrawer ()
                              plyr->health,
                              tallnum, NULL, plyr->health_pickup);
 
-           V_DrawScalePic_Num (SCX(52), lowerbar_y, sbohealth);
+           V_DrawScalePic_Num (SCX(52), lowerbar_y, sbo_health);
            break;
 
          case 'f': // draw frags
@@ -1691,16 +1748,16 @@ void ST_overlayDrawer ()
 
            if (cv_deathmatch.value)
            {
-               ST_drawOverlayNum(SCX(300), SCY(2),
+               ST_drawOverlayNum(SCX(300), SCY(2,y0),
                                  st_fragscount,
                                  tallnum, NULL, 0);
 
-               V_DrawScalePic_Num (SCX(302), SCY(2), sbofrags);
+               V_DrawScalePic_Num (SCX(302), SCY(2,y0), sbo_frags);
            }
            break;
 
          case 'a': // draw ammo
-           i = sboammo[plyr->readyweapon];
+           i = sbo_ammo[plyr->readyweapon];
            if (i)
            {
                ST_drawOverlayNum(SCX(234), lowerbar_y,
@@ -1712,7 +1769,7 @@ void ST_overlayDrawer ()
            break;
 
          case 'k': // draw keys
-           ST_drawOverlayKeys( SCX(318), lowerbar_y - (8 * sf_dupy), plyr->cards );
+           ST_drawOverlayKeys( SCX(318), lowerbar_y - (8 * sf_dupy), plyr );
            break;
 
          case 'm': // draw armor
@@ -1720,7 +1777,7 @@ void ST_overlayDrawer ()
                              plyr->armorpoints,
                              tallnum, NULL, plyr->armor_pickup);
 
-           V_DrawScalePic_Num (SCX(302), lowerbar_y, sboarmor);
+           V_DrawScalePic_Num (SCX(302), lowerbar_y, sbo_armor);
            break;
 
          // added by Hurdler for single player only
@@ -1729,7 +1786,7 @@ void ST_overlayDrawer ()
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->killcount, totalkills);
-               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(1), 0, buf);
+               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(1,y0), 0, buf);
            }
            break;
 
@@ -1738,7 +1795,7 @@ void ST_overlayDrawer ()
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->secretcount, totalsecret);
-               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(11), 0, buf);
+               V_DrawString(SCX(318-V_StringWidth(buf)), SCY(11,y0), 0, buf);
            }
            break;
 
@@ -1748,7 +1805,7 @@ void ST_overlayDrawer ()
                char buf[8];
                int framerate = 35;
                sprintf(buf, "%d FPS", framerate);
-               V_DrawString(SCX(2), SCY(4), 0, buf);
+               V_DrawString(SCX(2), SCY(4,y0), 0, buf);
            }
            break;
            */

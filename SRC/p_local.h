@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: p_local.h 1235 2016-05-24 17:33:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -441,6 +441,8 @@ extern mobjtype_t      PuffType;
 
 #define MAXCHICKENHEALTH 30
 
+// Now used by Heretic and Doom powers (ironfeet).
+// A power counts down to 0. Below BLINKTHRESHOLD, there is a warning blink.
 #define BLINKTHRESHOLD  (4*32)
 #define WPNLEV2TICS     (40*TICRATE)
 #define FLIGHTTICS      (60*TICRATE)
