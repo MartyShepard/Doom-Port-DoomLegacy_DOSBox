@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_spec.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2527,7 +2527,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
                   P_DamageMobj (player->mo, NULL, NULL, 10);
 
                   // spawn a puff of smoke
-                  //CONS_Printf ("damage!\n"); //debug
+                  //debug_Printf ("damage!\n"); //debug
                   if( demoversion>=125 )
                       P_SpawnSmoke (player->mo->x, player->mo->y, player->mo->z);
               }
@@ -2579,7 +2579,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 
         default:
           //SoM: 3/8/2000: Just ignore.
-          //CONS_Printf ("P_PlayerInSpecialSector: unknown special %i",
+          //debug_Printf("P_PlayerInSpecialSector: unknown special %i",
           //             sector->special);
           break;
       };
@@ -3828,7 +3828,7 @@ static void P_SpawnFriction( sector_t * sec )
                 movefactor = ((friction - 0xDB34)*(0xA))/0x80;  // mud
 
 // [WDJ] To see friction calculations, uncomment this print
-// GenPrintf(EMSG_debug, "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
+// debug_Printf( "Friction Line  length = %d, Friction = %X, Movefactor = %d\n", length, friction, movefactor);
 
             // killough 8/28/98: prevent odd situations
             if (movefactor < 32)

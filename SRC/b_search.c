@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
+// $Id: b_search.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -180,7 +180,7 @@ void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNo
 
 	    cost = parent_node->costDir[angle] + parent_node->cost;
 	    heuristic = P_AproxDistance(dest->x - node->x, dest->y - node->y) * 10000;
-	    //CONS_Printf("got heuristic of %d\n", node->heuristic);
+	    //debug_Printf("got heuristic of %d\n", node->heuristic);
 	    f = cost + heuristic;
 
 	    if (node->visited		//if already been looked at before, and before look was better
@@ -195,7 +195,7 @@ void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNo
 
 	        //the path to get here this way is better then the old one's
 	        //so use this instead, remove the old
-	        //CONS_Printf("found better path\n");
+	        //debug_Printf("found better path\n");
 	        B_PQRemoveNode(open, node);
 	    }
 
@@ -204,7 +204,7 @@ void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNo
 	    node->f = f;
 	    node->pprevious = parent_node;
 	    B_PQInsertNode(open, node);
-	    //CONS_Printf("pushed node at x:%d, y:%d\n", node->x>>FRACBITS, node->y>>FRACBITS);
+	    //debug_Printf("pushed node at x:%d, y:%d\n", node->x>>FRACBITS, node->y>>FRACBITS);
 	}
     }
 }
@@ -348,7 +348,7 @@ boolean B_FindNextNode(player_t* p)
         open = B_PQCreatePQ(numbotnodes);
         visitedList = B_LLCreate();
 
-        //CONS_Printf("closest node found is x:%d, y:%d\n", closestnode->x>>FRACBITS, closestnode->y>>FRACBITS);
+        //debug_Printf("closest node found is x:%d, y:%d\n", closestnode->x>>FRACBITS, closestnode->y>>FRACBITS);
         closestnode->pprevious = NULL;
         closestnode->cost = 0;
         closestnode->f = closestnode->heuristic = P_AproxDistance (closestnode->x - p->bot->destNode->x, closestnode->y - p->bot->destNode->y) * 10000;
@@ -357,7 +357,7 @@ boolean B_FindNextNode(player_t* p)
         while (open->currentSize && !found) //while there are nodes left to check
         {
 	    tempNode = B_PQRemoveFirstNode(open);	//grab the best node
-	    //CONS_Printf("doing node a node at x:%d, y:%d\n", tempNode->x>>FRACBITS, tempNode->y>>FRACBITS);
+	    //debug_Printf("doing node a node at x:%d, y:%d\n", tempNode->x>>FRACBITS, tempNode->y>>FRACBITS);
 	    if (tempNode == p->bot->destNode)	//if have found a/the node closest to the thing
 	    {  //I have found the sector where I want to get to
 	        bestNode = tempNode;

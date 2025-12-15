@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
+// $Id: w_wad.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -792,7 +792,7 @@ void* W_CacheLumpNum ( int lump, int ztag )
     {
         // read the lump in
 
-        //CONS_Printf ("cache miss on lump %i\n",lump);
+        //debug_Printf ("cache miss on lump %i\n",lump);
         byte* ptr = Z_Malloc (W_LumpLength (lump), ztag, &lumpcache[llump]);
         W_ReadLumpHeader (lump, ptr, 0);   // read whole lump
 //        W_ReadLumpHeader (lump, lumpcache[llump], 0);   // read whole lump
@@ -800,7 +800,7 @@ void* W_CacheLumpNum ( int lump, int ztag )
     }
     else
     {
-        //CONS_Printf ("cache hit on lump %i\n",lump);
+        //debug_Printf ("cache hit on lump %i\n",lump);
         // [WDJ] Do not degrade lump to PU_CACHE while it is in use.
         if( ztag == PU_CACHE )   ztag = PU_CACHE_DEFAULT;
         Z_ChangeTag (lumpcache[llump], ztag);

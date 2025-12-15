@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1161 2015-04-03 14:13:50Z wesleyjohnson $
+// $Id: i_tcp.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -540,7 +540,7 @@ boolean  Bind_Node_str( int nnode, char * addrstr )
     }
 #if 0
     // DEBUG
-    GenPrintf( EMSG_debug, "Bind Node %d to %s\n", nnode,
+    debug_Printf( "Bind Node %d to %s\n", nnode,
 	       SOCK_AddrToStr( &clientaddress[nnode] ) );
 #endif
     return true;
@@ -637,7 +637,7 @@ boolean  SOCK_Get(void)
     // Find remote node number, player nodes only.
 #ifdef NODE_ADDR_HASHING
     hashaddr = SOCK_hashaddr( &fromaddress );  // hash != 0
-    // GenPrintf(EMSG_debug, "hashaddr=%d\n", hashaddr );
+    // debug_Printf( "hashaddr=%d\n", hashaddr );
 #endif
     for (nnode=0; nnode<MAXNETNODES; nnode++)
     {
@@ -1154,7 +1154,7 @@ int SOCK_NetMakeNode (char *hostname)
     // [WDJ] From command line can get "192.168.127.34:5234:"
     // From console only get ""192.168.127.34", the port portion is stripped.
     localhostname = strdup(hostname);
-    //GenPrintf(EMSG_debug, "Parm localhostname=%s\n", localhostname );
+    //debug_Printf( "Parm localhostname=%s\n", localhostname );
 #define PARSE_LOCALHOSTNAME
 #ifdef PARSE_LOCALHOSTNAME
     // Split into ip address and port.
@@ -1172,7 +1172,7 @@ int SOCK_NetMakeNode (char *hostname)
         portnum = htons(atoi(portchar));
     free(localhostname);
 #endif
-    //GenPrintf(EMSG_debug, "  hostname=%s  portchar=%s\n", localhostname, portchar );
+    //debug_Printf( "  hostname=%s  portchar=%s\n", localhostname, portchar );
 
     // server address only in ip
 #ifdef USE_IPX
@@ -1198,7 +1198,7 @@ int SOCK_NetMakeNode (char *hostname)
             t++;
         *t = '\0';
 #endif
-    //GenPrintf(EMSG_debug, "  ip hostname=%s\n", localhostname );
+    //debug_Printf( "  ip hostname=%s\n", localhostname );
 
     // Too early, but avoids resolving names we cannot use.
     newnode = get_freenode();

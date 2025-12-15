@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1237 2016-06-14 17:07:14Z wesleyjohnson $
+// $Id: p_setup.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -698,7 +698,7 @@ void P_LoadSectors (int lump)
     Z_Free (data);
 
     // whoa! there is usually no more than 25 different flats used per level!!
-    //CONS_Printf ("%d flats found\n", numlevelflats);
+    //debug_Printf("Load Sectors: %d flats found\n", numlevelflats);
 
     // set the sky flat num
     skyflatnum = P_AddLevelFlat ("F_SKY1");
@@ -1594,7 +1594,7 @@ boolean P_SetupLevel (int      to_episode,
     char  *sl_mapname = NULL;
     int   i;
 
-    GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_CONS|EMSG_now)),
+    GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_console|EMSG_now)),
                "Setup Level\n" );
 
     //Initialize sector node list.
@@ -1833,7 +1833,7 @@ boolean P_SetupLevel (int      to_episode,
 
     B_InitNodes();  //added by AC for acbot
 
-    //CONS_Printf("%d vertexs %d segs %d subsector\n",numvertexes,numsegs,numsubsectors);
+    //debug_Printf("P_SetupLevel: %d vertexs %d segs %d subsector\n",numvertexes,numsegs,numsubsectors);
     return true;
 }
 

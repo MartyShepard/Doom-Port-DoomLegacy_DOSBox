@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
+// $Id: b_look.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -270,7 +270,7 @@ void B_LookForThings (player_t* p)
     {
         if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
         {
-	    itemWeight = 0;  //initalise to no weight, best items have greatest weight
+	    itemWeight = 0;  //initialize to no weight, best items have greatest weight
 	    mo = (mobj_t *)currentthinker;
 	    thingDistance = P_AproxDistance (p->mo->x - mo->x, p->mo->y - mo->y);
 
@@ -296,7 +296,7 @@ void B_LookForThings (player_t* p)
 			    {
 			        furthestTeammateDistance = thingDistance;
 			        p->bot->teammate = mo;
-			        //CONS_Printf("found a teammate\n");
+			        //debug_Printf("found a teammate\n");
 			    }
 			}
 		        else //i can not reach this teammate
@@ -312,7 +312,7 @@ void B_LookForThings (player_t* p)
 			    {
 			        closestUnseenTeammateDistance = thingDistance;
 			        p->bot->closestUnseenTeammate = mo;
-			        //CONS_Printf("found a teammate\n");
+			        //debug_Printf("found a teammate\n");
 			    }
 			}
 
@@ -835,11 +835,11 @@ void B_LookForThings (player_t* p)
 		        bestItem = mo;
 		        bestItemDistance = thingDistance;
 		        bestItemWeight = itemWeight;
-		        //CONS_Printf("best item set to x:%d y:%d for type:%d\n", mo->x>>FRACBITS, mo->y>>FRACBITS, mo->type);
+		        //debug_Printf("best item set to x:%d y:%d for type:%d\n", mo->x>>FRACBITS, mo->y>>FRACBITS, mo->type);
 		    }
 
 		    //if (!tempNode)
-		    //	CONS_Printf("could not find a node here x:%d y:%d for type:%d\n", mo->x>>FRACBITS, mo->y>>FRACBITS, mo->type);
+		    //	debug_Printf("could not find a node here x:%d y:%d for type:%d\n", mo->x>>FRACBITS, mo->y>>FRACBITS, mo->type);
 		}
 	    }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 1100 2014-03-25 23:16:53Z wesleyjohnson $
+// $Id: b_node.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -246,7 +246,7 @@ boolean B_PTRPathTraverse (intercept_t *in)
 							botteledesty = m->y;
 							botteletype = line->special;
 
-							//CONS_Printf("found a teleport thing going to x:%d, y:%d\n", botteledestx, botteledesty);
+							//debug_Printf("found a teleport thing going to x:%d, y:%d\n", botteledestx, botteledesty);
 						}
 					}
 				}
@@ -267,7 +267,7 @@ boolean B_PTRPathTraverse (intercept_t *in)
 					botteledesty = (lines[i].v1->y+lines[i].v2->y)/2 - ((line->v1->y+line->v2->y)/2 - botteledesty);
 					botteletype = line->special;
 
-					//CONS_Printf("found a teleporter line going to x:%d, y:%d\n", botteledestx, botteledesty);
+					//debug_Printf("found a teleporter line going to x:%d, y:%d\n", botteledestx, botteledesty);
 				    }
 				    break;
 				  }
@@ -426,7 +426,7 @@ SearchNode_t* B_CreateNode(fixed_t x, fixed_t y)
 	newnode->x = x;
 	newnode->y = y;
 
-	//CONS_Printf("Created node at x:%d, y:%d.\n", (x>>FRACBITS), (y>>FRACBITS));
+	//debug_Printf("Created node at x:%d, y:%d.\n", (x>>FRACBITS), (y>>FRACBITS));
 	botNodeArray[x][y] = newnode;
 	/*newnode->mo = P_SpawnMobj(posX2x(newnode->x), posY2y(newnode->y), R_PointInSubsector(posX2x(newnode->x), posY2y(newnode->y))->sector->floorheight, MT_MISC49);*/
 
@@ -446,14 +446,14 @@ void B_SetNodeTeleDest(SearchNode_t* node)
     fixed_t  x = x2ClosestPosX(botteledestx);
     fixed_t  y = y2ClosestPosY(botteledesty);
 
-    //CONS_Printf("trying to make a tele node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
+    //debug_Printf("trying to make a tele node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
     if( x >= 0 && x < xSize && y >=0 && y <= ySize )
     {
 	
 		if (!botNodeArray[x][y])
 		{
 			node->dir[BDI_TELEPORT] = B_CreateNode(x, y);
-			//CONS_Printf("created teleporter node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
+			//debug_Printf("created teleporter node at x:%d, y:%d\n", botteledestx>>FRACBITS, botteledesty>>FRACBITS);
 			numbotnodes++;
 			B_BuildNodes(node->dir[BDI_TELEPORT]);
 		}

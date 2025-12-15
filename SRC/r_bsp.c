@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
+// $Id: r_bsp.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1281,7 +1281,7 @@ void R_RenderBSPNode (int bspnum)
         if ((bsp = *--bspnum_p) == NULL )
         {
             // we're done
-            //CONS_Printf ("Subsectors visited: %d\n", visited);
+            //debug_Printf("Subsectors visited: %d\n", visited);
             return;
         }
 

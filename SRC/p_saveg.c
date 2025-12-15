@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_saveg.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1023,7 +1023,7 @@ void P_ArchiveWorld(void)
     }
     WRITEU16(put, 0xffff);  // mark end of world linedef section
 
-    //CONS_Printf("sector saved %d/%d, line saved %d/%d\n",statsec,numsectors,statline,numlines);
+    //debug_Printf("sector saved %d/%d, line saved %d/%d\n",statsec,numsectors,statline,numlines);
     save_p = put;
     Z_ChangeTags_To( PU_IN_USE, PU_CACHE ); // now can free
 }
@@ -2260,7 +2260,7 @@ void P_UnArchiveThinkers(void)
                 if (mobj->player && (mobj->player->mo == mobj)) // real player
                 {
                     mobj->player->viewz = mobj->player->mo->z + mobj->player->viewheight;
-                    //CONS_Printf("viewz = %f\n",FIXED_TO_FLOAT(mobj->player->viewz));
+                    //debug_Printf("P_UnArchiveThinkers: viewz = %f\n",FIXED_TO_FLOAT(mobj->player->viewz));
                 }
                 mobj->ceilingz = mobj->subsector->sector->ceilingheight;
                 mobj->thinker.function.acp1 = (actionf_p1) P_MobjThinker;
@@ -3322,7 +3322,7 @@ void P_SaveGame( void )
         I_OutputMsg("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
         if (mobj_ptrmap.map[k].pointer == NULL)
           I_Error("P_SaveGame: Hole in mobj_ptrmap!\n");
-        //CONS_Printf("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
+        //debug_Printf("P_SaveGame: %d  %p\n", k, mobj_ptrmap.map[k].pointer);
       }
 #endif
 

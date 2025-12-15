@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
+// $Id: p_enemy.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -235,7 +235,8 @@ static const struct
 
 static mobj_t*         soundtarget;
 
-static void P_RecursiveSound ( sector_t*  sec, int soundblocks )
+//  soundblocks : 0..1 number of sound blocking linedefs
+static void P_RecursiveSound ( sector_t*  sec, byte soundblocks )
 {
     int         i;
     line_t*     check;
@@ -257,7 +258,7 @@ static void P_RecursiveSound ( sector_t*  sec, int soundblocks )
         // for each line of the sector linelist
         check = sec->linelist[i];
         if (! (check->flags & ML_TWOSIDED) )
-            continue;
+            continue;  // nothing on other side
 
         P_LineOpening (check);
 
@@ -271,7 +272,10 @@ static void P_RecursiveSound ( sector_t*  sec, int soundblocks )
 
         if (check->flags & ML_SOUNDBLOCK)
         {
-            if (!soundblocks)
+            // Sound blocking linedef
+            // If 0, then continue recursion with 1 soundblock.
+            // If 1, then this is second, which blocks the sound.
+            if (soundblocks == 0)
                 P_RecursiveSound (other, 1);
         }
         else
@@ -900,7 +904,7 @@ static void P_NewChaseDir (mobj_t*     actor)
         // and on conveyor, how long they take to fall off.
         // Tuned backpedal speed constant.
         register int  backpedal = (actor->info->speed * 0x87BB);
-//        GenPrintf(EMSG_debug, "backpedal 0x%X ", backpedal );
+//        debug_Printf( "backpedal 0x%X ", backpedal );
         // Vector away from line
         fixed_t  dal = P_AproxDistance(dax,day);
         dal = FixedDiv( dal, backpedal );
@@ -910,7 +914,7 @@ static void P_NewChaseDir (mobj_t*     actor)
             day = FixedDiv( day, dal );
         }
 
-//        GenPrintf(EMSG_debug, "stuck delta (0x%X,0x%X)\n", dax, day );
+//        debug_Printf( "stuck delta (0x%X,0x%X)\n", dax, day );
         if (P_TryMove (actor, actor->x + dax, actor->y + day, true))  // allow cross dropoff
             goto accept_move;
 
@@ -2290,8 +2294,8 @@ void A_Fall (mobj_t *actor)
             actor->health = -1;
         if( actor->health > -actor->info->spawnhealth )
         {
-	    // Not gibbed yet.
-	    // Determine health until gibbed, keep some of the damage.
+            // Not gibbed yet.
+            // Determine health until gibbed, keep some of the damage.
             actor->health = (actor->health - actor->info->spawnhealth)/2;
         }
     }
@@ -2491,7 +2495,7 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             // test may trigger twice because second monster already has
             // health < 0 during the first death test.
             if( mo2->health > 0  // the old test (doom original 1.9)
-		|| !(mo2->flags & MF_CORPSE)
+                || !(mo2->flags & MF_CORPSE)
                 || mo2->state != P_FinalState(mo2->info->deathstate) )
             {
                 // other boss not dead

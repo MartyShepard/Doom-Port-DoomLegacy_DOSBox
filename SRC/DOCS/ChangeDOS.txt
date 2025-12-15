@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01238 ]: w105 34 printf
 [01237 ]: w105 33b flatsize bug
           DOS: Vesa Update
 					

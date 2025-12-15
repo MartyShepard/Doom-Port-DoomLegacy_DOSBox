@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1122 2014-06-23 18:13:40Z wesleyjohnson $
+// $Id: z_zone.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -396,18 +396,18 @@ void Z_Init (void)
         uint64_t  total;
         freemem_mb = I_GetFreeMem(&total)>>20;
         total_mb = total >> 20;	// MiB
-// CONS_Printf( "Total mem: %ld .. ", total );
+// GenPrintf( EMSG_info, "Total mem: %ld .. ", total );
         // freemem_mb==0, means that it is unavailable.
         if( freemem_mb )
         {
 	    // [WDJ] total_mb, freemem_mb must be int, otherwise on 32 bit Linux
 	    // print will report "free 0", and probably other errors occur too.
-	    CONS_Printf("System memory %d MiB, free %d MiB\n", total_mb, freemem_mb);
+	    GenPrintf( EMSG_info, "System memory %d MiB, free %d MiB\n", total_mb, freemem_mb);
 	}
         else
         {
 	    if( (total & 0x0F) != 0x01 )  // not guessing
-	        CONS_Printf("System memory %d MiB\n", total_mb);
+	        GenPrintf( EMSG_info, "System memory %d MiB\n", total_mb);
 	    freemem_mb = total_mb >> 3;  // guess at free
 	}
         // [WDJ] We assume that the system uses memory for disk cache.
@@ -429,7 +429,7 @@ void Z_Init (void)
     }
     // [WDJ] mem limited to 2047 MB by 32bit int
     if( mb_wanted > 2047 )   mb_wanted = 2047;	// [WDJ]
-    CONS_Printf ("%d MiB requested for Z_Init.\n", mb_wanted);
+    GenPrintf( EMSG_info, "%d MiB requested for Z_Init.\n", mb_wanted);
     Z_ZoneInit( mb_wanted );
 #endif
 
@@ -959,8 +959,10 @@ void Z_DumpHeap(memtag_e lowtag, memtag_e hightag)
     for (block = mainzone->blocklist.next ; ; block = block->next)
     {
         if (block->memtag >= lowtag && block->memtag <= hightag)
+        {
             CONS_Printf ("block:%p    size:%7i    user:%p    tag:%3i prev:%p next:%p\n",
                     block, block->size, block->user, block->memtag, block->next, block->prev);
+	}
 
         if (block->next == &mainzone->blocklist)
         {

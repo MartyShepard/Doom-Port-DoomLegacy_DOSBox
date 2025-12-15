@@ -50,39 +50,43 @@
 
 // commonly used routines - moved here for include convenience
 
+// [WDJ] Message types, subject to routing and output controls.
+// Many choices so can be individually configured.
+// There are tables indexed by EMSG_cat in console.c.
+typedef enum {
+   EMSG_cat = 0x0F, // mask category subject to display enables
+ // one of the following categories
+   EMSG_CONS = 0x00,  // existing unclassified CONS_Printf messages.
+   EMSG_playmsg = 0x01,
+   EMSG_playmsg2 = 0x02,
+   EMSG_console = 0x05,  // console interactive
+   EMSG_6,
+   EMSG_7,
+   EMSG_info = 0x08,
+   EMSG_ver = 0x09,  // verbose
+   EMSG_debug = 0x0A,
+   EMSG_dev = 0x0B,
+   EMSG_warn = 0x0C,
+   EMSG_errlog = 0x0D,  // stderr and log, but not console
+   EMSG_error = 0x0E,
+   EMSG_error2 = 0x0F,  // severe error
+ // additional flags
+   EMSG_now  = 0x40, // immediate update
+   EMSG_all = 0x80
+} EMSG_e;
+
 // [WDJ] Enables for messages to various outputs
 // Many choices so can be individually configured.
 typedef enum {
-   EMSG_cat = 0x07, // category subject to display enables
-   EMSG_playmsg_cat = 0x01,
-   EMSG_ver_cat = 0x02,
-   EMSG_info_cat = 0x03,
-   EMSG_warn_cat = 0x04,
-   EMSG_dev_cat = 0x06,
-   EMSG_debug_cat = 0x07,
-   EMSG_error = 0x08,
-   EMSG_text = 0x10,  // stderr
-   EMSG_CONS = 0x20,
-   EMSG_log  = 0x40,
-   EMSG_now  = 0x80, // immediate update
-#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
-   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log|EMSG_warn_cat,
-   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log|EMSG_info_cat,
-   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log|EMSG_ver_cat,
-   EMSG_dev = EMSG_text|EMSG_CONS|EMSG_log|EMSG_dev_cat,
-   EMSG_debug = EMSG_text|EMSG_CONS|EMSG_log||EMSG_debug_cat,
-#else
-   // Linux, Mac
-   EMSG_warn = EMSG_text|EMSG_CONS|EMSG_log|EMSG_warn_cat,
-   EMSG_info = EMSG_text|EMSG_CONS|EMSG_log|EMSG_info_cat,
-   EMSG_ver = EMSG_text|EMSG_CONS|EMSG_log|EMSG_ver_cat,
-   EMSG_dev = EMSG_text|EMSG_log|EMSG_dev_cat,
-   EMSG_debug = EMSG_text|EMSG_log|EMSG_debug_cat,
-#endif
-   EMSG_all = EMSG_text|EMSG_CONS|EMSG_log,
-} EMSG_e;
+   EOUT_hud = 0x01,   // hud message lines
+   EOUT_con = 0x04,   // console
+   EOUT_text = 0x10,  // stderr
+   EOUT_log  = 0x20,  // log file
+   EOUT_all = EOUT_text|EOUT_con|EOUT_log,
+} EOUT_e;
 
 extern  byte  EMSG_flags;  // EMSG_e
+extern  byte  EOUT_flags;  // EOUT_e
 extern  byte  fatal_error;
 
 // i_system.h
@@ -90,11 +94,16 @@ void  I_Error (const char *error, ...);
 void  I_SoftError (const char *errmsg, ...);
 
 // console.h
+//  emsg : EMSG_e
 void  CONS_Printf (const char *fmt, ...);
-void  CONS_Printf_va (const char *fmt, va_list ap );
+void  CONS_Printf_va (const byte emsg, const char *fmt, va_list ap );
 // For info, debug, dev, verbose messages
 // print to text, console, and logs
-void  GenPrintf (byte emsgflags, const char *fmt, ...);
+void  GenPrintf (const byte emsg, const char *fmt, ...);
+// Console interaction printf interface.
+void  con_Printf (const char *fmt, ...);
+// Debug printf interface.
+void  debug_Printf (const char *fmt, ...);
 
 // m_misc.h
 char  *va(char *format, ...);

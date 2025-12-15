@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
+// $Id: r_data.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -342,7 +342,7 @@ byte* R_GenerateTexture (int texnum)
 #if 0
     // To debug problems with specific textures
     if( strncmp(texture->name, "TEKWALL5", 8 ) == 0 )
-       GenPrintf(EMSG_debug,"GenerateTexture - match\n");
+       debug_Printf("GenerateTexture - match\n");
 #endif
 
     // single-patch textures can have holes and may be used on
@@ -437,7 +437,7 @@ make_dummy_texture:
 	    // [WDJ] Cannot copy patch to texture.
 	    // Fixes tekwall2, tekwall3, tekwall5 in FreeDoom,
 	    // which use right half of large combined patches.
-//	    GenPrintf(EMSG_debug,"GenerateTexture %s: offset forced multipatch\n", texture->name );
+//	    debug_Printf("GenerateTexture %s: offset forced multipatch\n", texture->name );
 	    goto multipatch_combine;
 	}
 #endif
@@ -455,7 +455,7 @@ make_dummy_texture:
 	    }
 	    else
 	    {
-//	        GenPrintf(EMSG_debug,"GenerateTexture %s: width forced multipatch\n", texture->name );
+//	        debug_Printf("GenerateTexture %s: width forced multipatch\n", texture->name );
 	        goto multipatch_combine;
 	    }
 	}
@@ -543,7 +543,7 @@ make_dummy_texture:
         Z_ChangeTag (realpatch, PU_CACHE);  // safe
         texturecolumnofs[texnum] = colofs;
         texture->texture_model = TM_patch;
-        //CONS_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
+        //debug_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
         texgen = txcblock;
         goto done;
     }
@@ -693,7 +693,7 @@ make_dummy_texture:
 		    int rpx = (cp->originx < 0) ? -cp->originx : 0;  // x in patch
 #ifdef DEBUG_REUSECOL
 		    if( DEBUG_REUSECOL )
-		       GenPrintf(EMSG_debug,"GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
+		       debug_Printf("GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
 #endif
 		    for( ; rpx<patch_x; rpx++ )  // find reused column
 		    {
@@ -706,7 +706,7 @@ make_dummy_texture:
 			    int livepatchcount2 = 0;
 #ifdef DEBUG_REUSECOL
 			    if( DEBUG_REUSECOL )
-			       GenPrintf(EMSG_debug,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+			       debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
 			    // [WDJ] If reused column is reused alone in both cases,
 			    // then assume they will be identical in final texture too.
@@ -730,7 +730,7 @@ make_dummy_texture:
 			    post_t * ppp = cp->postptr;
 #ifdef DEBUG_REUSECOL
 			    if( DEBUG_REUSECOL )
-			       GenPrintf(EMSG_debug,"GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+			       debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
 			    // [WDJ] Comparision is made difficult by the pad bytes,
 			    // which we set to 0, and Requiem.wad does not.
@@ -781,7 +781,7 @@ make_dummy_texture:
 #ifdef DEBUG_REUSECOL
        		 // DEBUG: enable to see column reuse
 	         if( DEBUG_REUSECOL )
-	           GenPrintf(EMSG_debug,"GenerateTexture: reuse %i\n", reuse_column);
+	           debug_Printf("GenerateTexture: reuse %i\n", reuse_column);
 #endif
 	         continue;  // next x
 	    }
@@ -971,7 +971,7 @@ make_dummy_texture:
     //   array[ width ] of column ( array[ height ] pixels )
 
     txcblocksize = colofs_size + (texture->width * texture->height);
-    //CONS_Printf ("R_GenTex MULTI  %.8s size: %d\n",texture->name,txcblocksize);
+    //debug_Printf ("R_GenTex MULTI  %.8s size: %d\n",texture->name,txcblocksize);
 
     txcblock = Z_Malloc (txcblocksize,
                       PU_IN_USE,  // will change at end of this function
@@ -1292,7 +1292,7 @@ void R_LoadTextures (void)
         memmove(texture->name, mtexture->name, sizeof(texture->name));	
 #if 0
         // [WDJ] DEBUG TRACE, watch where the textures go
-        GenPrintf(EMSG_debug, "Texture[%i] = %8.8s\n", i, mtexture->name);
+        debug_Printf( "Texture[%i] = %8.8s\n", i, mtexture->name);
 #endif
         mpatch = &mtexture->patches[0]; // first patch ind in texture lump
         texpatch = &texture->patches[0];
@@ -1424,13 +1424,13 @@ void R_InitFlats ()
   for(;cfile < numwadfiles; cfile ++, clump = 0)
   {
 #ifdef DEBUG_FLAT
-    GenPrintf(EMSG_debug, "Flats in file %i\n", cfile );
+    debug_Printf( "Flats in file %i\n", cfile );
 #endif	 
     startnum = W_CheckNumForNamePwad("F_START", cfile, clump);
     if(startnum == -1)
     {
 #ifdef DEBUG_FLAT
-      GenPrintf(EMSG_debug, "F_START not found, file %i\n", cfile );
+      debug_Printf( "F_START not found, file %i\n", cfile );
 #endif	 
       clump = 0;
       startnum = W_CheckNumForNamePwad("FF_START", cfile, clump);
@@ -1438,7 +1438,7 @@ void R_InitFlats ()
       if(startnum == -1) //If STILL -1, search the whole file!
       {
 #ifdef DEBUG_FLAT
-	GenPrintf(EMSG_debug, "FF_START not found, file %i\n", cfile );
+	debug_Printf( "FF_START not found, file %i\n", cfile );
 #endif	 
         flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
         flats[numflatlists].wadfile = cfile;
@@ -1452,12 +1452,12 @@ void R_InitFlats ()
     endnum = W_CheckNumForNamePwad("F_END", cfile, clump);
     if(endnum == -1) {
 #ifdef DEBUG_FLAT
-      GenPrintf(EMSG_debug, "F_END not found, file %i\n", cfile );
+      debug_Printf( "F_END not found, file %i\n", cfile );
 #endif	 
       endnum = W_CheckNumForNamePwad("FF_END", cfile, clump);
 #ifdef DEBUG_FLAT
       if( endnum == -1 ) {
-	 GenPrintf(EMSG_debug, "FF_END not found, file %i\n", cfile );
+	 debug_Printf( "FF_END not found, file %i\n", cfile );
       }
 #endif	 
     }
@@ -2776,7 +2776,7 @@ int R_TextureNumForName (char* name)
 #  define trace_SIZE 512
    static char debugtrace_RTNFN[ trace_SIZE ];
    if( i<trace_SIZE && debugtrace_RTNFN[i] != 0x55 ) {
-      GenPrintf(EMSG_debug, "Texture %8.8s is texture[%i]\n", name, i);
+      debug_Printf( "Texture %8.8s is texture[%i]\n", name, i);
       debugtrace_RTNFN[i] = 0x55;
    }
 #  undef trace_SIZE   
@@ -2876,7 +2876,7 @@ void R_PrecacheLevel (void)
         // note: pre-caching individual patches that compose textures became
         //       obsolete since we now cache entire composite textures
     }
-    //CONS_Printf ("total mem for %d textures: %d k\n",numgenerated,texturememory>>10);
+    //debug_Printf("total mem for %d textures: %d k\n",numgenerated,texturememory>>10);
     free(texturepresent);
 
     //

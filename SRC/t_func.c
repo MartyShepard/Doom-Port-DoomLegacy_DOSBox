@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1200 2015-12-26 19:19:34Z wesleyjohnson $
+// $Id: t_func.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2015 by DooM Legacy Team.
@@ -540,7 +540,7 @@ void SF_TimedTip(void)
     if (fs_current_script->trigger->player == displayplayer_ptr)
     {
         char * tempstr = Z_cat_args(1);  // concat arg1, arg2, ...
-        //CONS_Printf("%s\n", tempstr);
+        //debug_Printf("%s\n", tempstr);
         HU_SetTip(tempstr, tiptime);
         Z_Free(tempstr);
     }
@@ -565,7 +565,7 @@ void SF_PlayerTip(void)
     if ( plnum == consoleplayer )
     {
         char * tempstr = Z_cat_args(1);  // concat arg1, arg2, ...
-        //CONS_Printf("%s\n", tempstr);
+        //debug_Printf("%s\n", tempstr);
         HU_SetTip(tempstr, 53);
         Z_Free(tempstr);
     }
@@ -2700,7 +2700,7 @@ void SF_MoveCamera(void)
         }
     }
 
-    //CONS_Printf("angle: cam=%i, target=%i; dir: %i; quads: 1=%i, 2=%i\n", camera->angle / ANGLE_1, targetangle / ANGLE_1, angledir, quad1, quad2);
+    //debug_Printf("angle: cam=%i, target=%i; dir: %i; quads: 1=%i, 2=%i\n", camera->angle / ANGLE_1, targetangle / ANGLE_1, angledir, quad1, quad2);
     // set the step variables based on distance and speed...
     mobjangle = R_PointToAngle2(camera->x, camera->y, target->x, target->y);
 
@@ -2723,7 +2723,7 @@ void SF_MoveCamera(void)
             else
                 fanglestep = 360;
 
-            //CONS_Printf("fstep: %f, fdist: %f, fmspeed: %f, ms: %i\n", fanglestep, fangledist, fmovestep, FixedDiv(xydist, movespeed) >> FRACBITS);
+            //debug_Printf("fstep: %f, fdist: %f, fmspeed: %f, ms: %i\n", fanglestep, fangledist, fmovestep, FixedDiv(xydist, movespeed) >> FRACBITS);
 
             anglestep = (fanglestep * ANGLE_1);
         }
@@ -4305,10 +4305,10 @@ void SF_SetCorona(void)
                 if( devparm && verbose )
                 {
                     if(t_argv[2].type == FSVT_string)
-                       GenPrintf( EMSG_debug, "CORONA_COLOR = %s, rgba=%x\n",
+                       debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",
                                   t_argv[2].value.s, lspr[num].corona_color );
                     else
-                       GenPrintf( EMSG_debug, "CORONA_COLOR = %x, rgba=%x\n",
+                       debug_Printf( "CORONA_COLOR = %x, rgba=%x\n",
                                   ival, lspr[num].corona_color );
                 }
 #endif
@@ -4339,10 +4339,10 @@ void SF_SetCorona(void)
                 if( devparm && verbose )
                 {
                     if(t_argv[2].type == FSVT_string)
-                       GenPrintf( EMSG_debug, "LIGHT_COLOR = %s, rgba=%x\n",
+                       debug_Printf( "LIGHT_COLOR = %s, rgba=%x\n",
                                   t_argv[2].value.s, lspr[num].dynamic_color );
                     else
-                       GenPrintf( EMSG_debug, "LIGHT_COLOR = %x, rgba=%x\n",
+                       debug_Printf( "LIGHT_COLOR = %x, rgba=%x\n",
                                   ival, lspr[num].dynamic_color );
                 }
 #endif
@@ -4392,16 +4392,16 @@ void SF_SetCorona(void)
         if( devparm && verbose )
         {
             if(t_argv[4].type == FSVT_string)
-               GenPrintf( EMSG_debug, "CORONA_COLOR = %s, rgba=%x\n",
+               debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",
                           t_argv[4].value.s, lspr[num].corona_color );
             else
-               GenPrintf( EMSG_debug, "CORONA_COLOR = %x, rgba=%x\n",
+               debug_Printf( "CORONA_COLOR = %x, rgba=%x\n",
                           t_argv[4].value.i, lspr[num].corona_color );
             if(t_argv[2].type == FSVT_string)
-               GenPrintf( EMSG_debug, "LIGHT_COLOR = %s, rgba=%x\n",
+               debug_Printf( "LIGHT_COLOR = %s, rgba=%x\n",
                           t_argv[6].value.s, lspr[num].dynamic_color );
             else
-               GenPrintf( EMSG_debug, "LIGHT_COLOR = %x, rgba=%x\n",
+               debug_Printf( "LIGHT_COLOR = %x, rgba=%x\n",
                           t_argv[6].value.i, lspr[num].dynamic_color );
         }
 #endif

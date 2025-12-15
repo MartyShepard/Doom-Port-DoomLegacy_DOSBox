@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
+// $Id: r_segs.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -239,7 +239,7 @@ static void R_DrawSplatColumn (column_t* column)
             dc_source = (byte *)column + 3;
             dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
             
-            //CONS_Printf("l %d h %d %d\n",dc_yl,dc_yh, column->length);
+            //debug_Printf("l %d h %d %d\n",dc_yl,dc_yh, column->length);
             // Drawn by either R_DrawColumn
             //  or (SHADOW) R_DrawFuzzColumn.
             colfunc ();
@@ -1941,7 +1941,7 @@ void R_RenderSegLoop (void)
 	// The cause of the overflow many times seems to be the step value.
         if( bottomfrac < topfrac ) {
 	   // Uncomment to see which map areas cause this overflow.
-//	   GenPrintf(EMSG_debug,"Overflow break: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+//	   debug_Printf("Overflow break: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
 	   break;
 	}
     }
@@ -2537,7 +2537,7 @@ void R_StoreWallRange( int   start, int   stop)
     if( bottomfrac < topfrac )
     {
        // enable print to see where this happens
-//     GenPrintf(EMSG_debug,"Overflow mult: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+//     debug_Printf("Overflow mult: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
        return;
     }
 
@@ -2730,7 +2730,7 @@ void R_StoreWallRange( int   start, int   stop)
     if( bottomfrac < topfrac )
     {
        // Enable to see where this happens.
-//       GenPrintf(EMSG_debug,"Overflow in call: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
+//       debug_Printf("Overflow in call: bottomfrac(%i) < topfrac(%i)\n", bottomfrac, topfrac );
        return;
     }
 

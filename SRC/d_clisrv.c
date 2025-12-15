@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1232 2016-05-24 17:11:03Z wesleyjohnson $
+// $Id: d_clisrv.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -720,7 +720,7 @@ static void SV_Send_NetWait( void )
     netbuffer->u.netwait.wait_tics = LE_SWAP16( wait_tics );
     netbuffer->u.netwait.p_rand_index = P_GetRandIndex(); // to sync P_Random
 #ifdef WAITPLAYER_DEBUG
-    GenPrintf( EMSG_debug, "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
+    debug_Printf( "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
                num_netnodes, num_netplayer, wait_netplayer, wait_tics );
 #endif
     for(nn=1; nn<MAXNETNODES; nn++)
@@ -729,7 +729,7 @@ static void SV_Send_NetWait( void )
         {
             HSendPacket(nn, false, 0, sizeof(netwait_pak));
 #ifdef WAITPLAYER_DEBUG
-            GenPrintf( EMSG_debug, "  sent to player[ %d ]\n", nn );
+            debug_Printf( "  sent to player[ %d ]\n", nn );
 #endif
         }
     }
@@ -826,7 +826,7 @@ static boolean  D_WaitPlayer_Ticker()
         // All nodes need to get info to stop waiting.
         SV_Send_NetWait();
 #ifdef WAITPLAYER_DEBUG
-        GenPrintf( EMSG_debug, "Start game sent to players at tic=%d\n", gametic   );
+        debug_Printf( "Start game sent to players at tic=%d\n", gametic   );
 #endif
     }
     return true;  // start game
@@ -861,7 +861,7 @@ boolean  D_WaitPlayer_Response( int key )
             wait_tics = 0;
             SV_Send_NetWait();
 #ifdef WAITPLAYER_DEBUG
-            GenPrintf( EMSG_debug, "Start game (key) sent at tic=%d\n", gametic );
+            debug_Printf( "Start game (key) sent at tic=%d\n", gametic );
 #endif
             return true;
         }
@@ -1527,7 +1527,7 @@ void D_Init_ClientServer (void)
             if( viewangleoffset > ANG90 )  viewangleoffset = ANG90;
         }
     }
-//    GenPrintf(EMSG_debug, "viewangleoffset=%i\n", viewangleoffset );
+//    debug_Printf( "viewangleoffset=%i\n", viewangleoffset );
 
     COM_AddCommand("playerinfo",Command_PlayerInfo);
     COM_AddCommand("kick",Command_Kick);

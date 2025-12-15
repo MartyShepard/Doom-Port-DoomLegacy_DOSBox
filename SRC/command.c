@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1164 2015-04-03 14:18:57Z wesleyjohnson $
+// $Id: command.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -631,7 +631,7 @@ static void COM_Exec_f (void)
 // load file
 
     length = FIL_ReadFile (carg.arg[1], &buf);
-    //CONS_Printf ("debug file length : %d\n",length);
+    //debug_Printf ("debug file length : %d\n",length);
 
     if (!buf)
     {
@@ -679,17 +679,17 @@ static void COM_Help_f (void)
         cvar = CV_FindVar (carg.arg[1]);
         if( cvar )
         {
-            CONS_Printf("Variable %s:\n",cvar->name);
-            CONS_Printf("  flags :");
+            con_Printf("Variable %s:\n",cvar->name);
+            con_Printf("  flags :");
             if( cvar->flags & CV_SAVE )
-                CONS_Printf("AUTOSAVE ");
+                con_Printf("AUTOSAVE ");
             if( cvar->flags & CV_FLOAT )
-                CONS_Printf("FLOAT ");
+                con_Printf("FLOAT ");
             if( cvar->flags & CV_NETVAR )
-                CONS_Printf("NETVAR ");
+                con_Printf("NETVAR ");
             if( cvar->flags & CV_CALL )
-                CONS_Printf("ACTION ");
-            CONS_Printf("\n");
+                con_Printf("ACTION ");
+            con_Printf("\n");
             if( cvar->PossibleValue )
             {
                 if(strcasecmp(cvar->PossibleValue[0].strvalue,"MIN")==0)
@@ -699,44 +699,44 @@ static void COM_Help_f (void)
                         if(!strcasecmp(cvar->PossibleValue[i].strvalue,"MAX"))
                             break;
 		    }
-                    CONS_Printf("  range from %d to %d\n",cvar->PossibleValue[0].value,cvar->PossibleValue[i].value);
+                    con_Printf("  range from %d to %d\n",cvar->PossibleValue[0].value,cvar->PossibleValue[i].value);
                 }
                 else
                 {
-                    CONS_Printf("  possible value :\n",cvar->name);
+                    con_Printf("  possible value :\n",cvar->name);
                     while(cvar->PossibleValue[i].strvalue)
                     {
-                        CONS_Printf("    %-2d : %s\n",cvar->PossibleValue[i].value,cvar->PossibleValue[i].strvalue);
+                        con_Printf("    %-2d : %s\n",cvar->PossibleValue[i].value,cvar->PossibleValue[i].strvalue);
                         i++;
                     }
                 }
             }
         }
         else
-            CONS_Printf("No Help for this command/variable\n");
+            con_Printf("No Help for this command/variable\n");
     }
     else
     {
         // commands
-        CONS_Printf("\2Commands\n");
+        con_Printf("\2Commands\n");
         for (cmd=com_commands ; cmd ; cmd=cmd->next)
         {
-            CONS_Printf("%s ",cmd->name);
+            con_Printf("%s ",cmd->name);
             i++;
         }
 
         // variable
-        CONS_Printf("\2\nVariables\n");
+        con_Printf("\2\nVariables\n");
         for (cvar=consvar_vars; cvar; cvar = cvar->next)
         {
-            CONS_Printf("%s ",cvar->name);
+            con_Printf("%s ",cvar->name);
             i++;
         }
 
-        CONS_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
+        con_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
 
         if( devparm )
-            CONS_Printf("\2Total : %d\n",i);
+            con_Printf("\2Total : %d\n",i);
     }
 }
 

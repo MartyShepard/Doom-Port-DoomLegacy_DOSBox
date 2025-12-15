@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: hu_stuff.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -411,7 +411,7 @@ void HU_Ticker(void)
     if ( pl->message )
     {
         // Player message blocking is handled by P_SetMessage.
-        GenPrintf(EMSG_CONS|EMSG_playmsg_cat, "%s\n", pl->message);
+        GenPrintf(EMSG_playmsg, "%s\n", pl->message);
         pl->message = NULL;
         pl->msglevel = 0;
     }
@@ -423,7 +423,7 @@ void HU_Ticker(void)
         if ( pl->message )
         {
             // Player message blocking is handled by P_SetMessage.
-            GenPrintf(EMSG_CONS|EMSG_playmsg_cat, "\4%s\n", pl->message);
+            GenPrintf(EMSG_playmsg2, "%s\n", pl->message);
             pl->message = NULL;
             pl->msglevel = 0;
         }

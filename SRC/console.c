@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: console.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -125,22 +125,25 @@ static void CONS_French_f (void)
 
 #define CONSOLE_PROPORTIONAL
 
-boolean  con_started=false;  // console has been initialised
-boolean  con_video=false;  // text mode until video started
+// External control
 boolean  con_self_refresh=false;  // true at game startup, screen need refreshing
-boolean  con_forcepic=true;  // at startup toggle console translucency when
-                             // first off
 boolean  con_recalc;     // set true when screen size has changed
 
-int      con_tick;       // console ticker for anim or blinking prompt cursor
+// Internal state
+static boolean  con_started=false;  // console has been initialised
+static boolean  con_video=false;  // text mode until video started
+static boolean  con_forcepic=true;  // at startup toggle console translucency when
+                             // first off
+
+static int  con_tick;    // console ticker for anim or blinking prompt cursor
                          // con_scrollup should use time (currenttime - lasttime)..
 
-boolean  consoletoggle;  // true when console key pushed, ticker will handle
-boolean  console_ready;  // console prompt is ready
+static boolean  consoletoggle;  // true when console key pushed, ticker will handle
+static boolean  console_ready;  // console prompt is ready
 boolean  console_open = false;  // console is open
 
 int      con_destlines;  // vid lines used by console at final position
-int      con_curlines;   // vid lines currently used by console
+static int  con_curlines;  // vid lines currently used by console
 
 int      con_clipviewtop;// clip value for planes & sprites, so that the
                          // part of the view covered by the console is not
@@ -150,28 +153,31 @@ int      con_clipviewtop;// clip value for planes & sprites, so that the
 // TODO: choose max hud msg lines
 #define  CON_MAXHUDLINES      5
 
-static int      con_hudlines;        // number of console heads up message lines
-int      con_hudtime[5];      // remaining time of display for hud msg lines
-
+// Global interface with hu_stuff.
 int      con_clearlines; // top screen lines to refresh when view reduced
 boolean  con_hudupdate;  // when messages scroll, we need a backgrnd refresh
 
+// Internal state.
+static int  con_hudlines;  // number of console heads up message lines
+static int  con_hudtime[CON_MAXHUDLINES];  // remaining time of display for hud msg lines
+
+// To support splitscreen, 0=upper, 1=lower, 5=console only
+static byte  con_viewnum[CON_MAXHUDLINES];
+
 
 // console text output
-char*    con_line;       // console text output current line
-int      con_cx;         // cursor position in current line
-int      con_cy;         // cursor line number in con_buffer, is always
+static char* con_line;   // console text output current line
+static int  con_cx;      // cursor position in current line
+static int  con_cy;      // cursor line number in con_buffer, is always
                          //  increasing, and wrapped around in the text
                          //  buffer using modulo.
 
-int      con_totallines; // lines of console text into the console buffer
-int      con_width;      // columns of chars, depend on vid mode width
-int      con_indent;     // pixel indent of console
+static int  con_totallines; // lines of console text into the console buffer
+static int  con_width;      // columns of chars, depend on vid mode width
+static int  con_indent;     // pixel indent of console
 
-int      con_scrollup;   // how many rows of text to scroll up (pgup/pgdn)
+static int  con_scrollup;   // how many rows of text to scroll up (pgup/pgdn)
 
-int      con_lineowner[CON_MAXHUDLINES]; //In splitscreen, which player gets this line of text
-                                         //0 or 1 is player 1, 2 is player 2
 
 #define  CON_PROMPTCHAR        '>'
 
@@ -182,20 +188,20 @@ int      con_lineowner[CON_MAXHUDLINES]; //In splitscreen, which player gets thi
 #define  CON_MAX_LINELEN    256
 
 // First char is prompt.
-char     inputlines[CON_MAX_LINEHIST][CON_MAX_LINELEN];
+static char inputlines[CON_MAX_LINEHIST][CON_MAX_LINELEN];
 
-int      inputline;      // current input line number
-int      inputhist;      // line number of history input line to restore
-int      input_cx;       // position in current input line
+static int  inputline;  // current input line number
+static int  inputhist;  // line number of history input line to restore
+static int  input_cx;   // position in current input line
 
-pic_t*   con_backpic;    // console background picture, loaded static
-pic_t*   con_bordleft;
-pic_t*   con_bordright;  // console borders in translucent mode
+static pic_t*  con_backpic;  // console background picture, loaded static
+static pic_t*  con_bordleft;
+static pic_t*  con_bordright;  // console borders in translucent mode
 
 
 // protos.
 static void CON_InputInit (void);
-static void CON_Print (char *msg);
+static void CON_Print (byte control, char *msg);
 static void CONS_Clear_f (void);
 static void CON_RecalcSize ( int width );
 
@@ -212,7 +218,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth);
 #define  CON_BUFFERSIZE   16384
 #endif
 
-char     con_buffer[CON_BUFFERSIZE];
+static char  con_buffer[CON_BUFFERSIZE];
 
 
 // how many seconds the hud messages lasts on the screen
@@ -253,7 +259,7 @@ static void CONS_Clear_f (void)
 // Keys defined by the BIND command.
 static char *bindtable[NUMINPUTS];
 
-void CONS_Bind_f(void)
+static void CONS_Bind_f(void)
 {
     int  key;
     COM_args_t  carg;
@@ -263,7 +269,7 @@ void CONS_Bind_f(void)
     if ( carg.num!=2 && carg.num!=3 )
     {
         int nb = 0;
-        CONS_Printf ("bind <keyname> [<command>]\n");
+        CONS_Printf("bind <keyname> [<command>]\n");
         CONS_Printf("\2bind table :\n");
         for(key=0;key<NUMINPUTS;key++)
         {
@@ -531,7 +537,7 @@ static void CON_RecalcSize ( int width )
                 while(string[conw]==' ' && conw) conw--;
                 string[conw+1]='\n';
                 string[conw+2]='\0';
-                CON_Print(string);
+                CON_Print( 5, string);  // console only
             }
         }
     }
@@ -731,7 +737,7 @@ static int     comskips,varskips;
         }
         else
         {
-	    // comskips < 0  indicates var name completion
+            // comskips < 0  indicates var name completion
             if (shiftdown)
             {
                 if (comskips<0)
@@ -932,16 +938,15 @@ toggle_console:
 
 //  Insert a new line in the console text buffer
 //
-static void CON_Linefeed (int second_player_message)
+//  viewnum : splitscreen 0=upper, 1=lower, single player uses 0, 5=console only
+static void CON_Linefeed (byte viewnum)
 {
-    // set time for heads up messages
-    con_hudtime[con_cy%con_hudlines] = cons_msgtimeout.value*TICRATE;
+    con_viewnum[con_cy%con_hudlines] = viewnum; // May be msg for player2
 
-    if (second_player_message == 1)
-        con_lineowner[con_cy%con_hudlines] = 2; //Msg for second player
-    else
-        con_lineowner[con_cy%con_hudlines] = 1;
-        
+    // set time for heads up messages
+    con_hudtime[con_cy%con_hudlines] =
+        (viewnum < 2)? cons_msgtimeout.value*TICRATE : 0;
+
     con_cy++;
     con_cx = 0;
 
@@ -955,55 +960,54 @@ static void CON_Linefeed (int second_player_message)
 
 //  Outputs text into the console text buffer
 //
-//TODO: fix this mess!!
-static void CON_Print (char *msg)
+static void CON_Print (byte control, char *msg)
 {
-    int      l;
-    int      mask=0;
-    int      second_player_message=0;
+    int  l;  // word length
+    int  text_color=0;  // 0x80 is white text flag
+    int  viewnum=0;  // 0=upper, 1=lower, Single player uses 0. 5=console only
+
+    viewnum = control & 0x0F;
 
     //TODO: finish text colors
     if (*msg<5)
     {
-      if (*msg=='\2')  // set white color
-          mask = 128;
-      else if (*msg=='\3')
-      {
-          mask = 128;                         // white text + sound
-          if ( gamemode == doom2_commercial )
-              S_StartSound(0, sfx_radio);
-          else
-              S_StartSound(0, sfx_tink);
-      }
-      else if (*msg=='\4') //Splitscreen: This message is for the second player
-          second_player_message = 1;
-      
+        switch( *msg )
+        {
+         case '\2' :  // white text
+            text_color = 0x80;
+            break;
+         case '\3' :  // white text + sound
+            text_color = 0x80; // white text
+            if ( gamemode == doom2_commercial )
+                S_StartSound(0, sfx_radio);
+            else
+                S_StartSound(0, sfx_tink);
+            break;
+         default:
+            break;
+        }
     }
 
     while (*msg)
     {
-        // skip non-printable characters and white spaces
-        while (*msg && *msg<=' ')
+        // handle non-printable characters and white spaces
+        while ( *msg <= ' ' )
         {
-            // carriage return
-            if (*msg=='\r')
+            switch( *msg )
             {
+             case '\r':  // carriage return
                 con_cy--;
-                CON_Linefeed (second_player_message);
-            }
-            else
-            // linefeed
-            if (*msg=='\n')
-                CON_Linefeed (second_player_message);
-            else
-            if (*msg==' ')
-            {
+                CON_Linefeed (viewnum);
+                break;
+             case '\n':  // linefeed
+                CON_Linefeed (viewnum);
+                break;
+             case ' ':  // leading space
                 con_line[con_cx++] = ' ';
-                if (con_cx>=con_width)
-                    CON_Linefeed(second_player_message);
-            }
-            else if (*msg=='\t')
-            {
+                if (con_cx >= con_width)
+                    CON_Linefeed(viewnum);
+                break;
+             case '\t':  // tab
                 //adds tab spaces for nice layout in console
                 do
                 {
@@ -1011,26 +1015,29 @@ static void CON_Print (char *msg)
                 } while (con_cx%4 != 0);
                 
                 if (con_cx>=con_width)
-                    CON_Linefeed(second_player_message);
+                    CON_Linefeed(viewnum);
+                break;
+             case 0:  // End of string
+                return;
+
+             default:
+                break;
             }
             msg++;
         }
 
-        if (*msg==0)
-            return;
-
         // printable character
-        for (l=0; l<con_width && msg[l]>' '; l++)
-            ;
+        // Find end of word
+        for (l=0; l<con_width; l++)
+            if( msg[l] <= ' ' )  break;  // until space, or EOS
 
-        // word wrap
+        // word wrap when word is too long for the rest of the width
         if (con_cx+l>con_width)
-            CON_Linefeed (second_player_message);
+            CON_Linefeed (viewnum);
 
         // a word at a time
         for ( ; l>0; l--)
-            con_line[con_cx++] = *(msg++) | mask;
-
+            con_line[con_cx++] = *(msg++) | text_color;
     }
 }
 
@@ -1039,10 +1046,63 @@ static void CON_Print (char *msg)
 //
 #define CONS_BUF_SIZE 1024
 
-// [WDJ] print from va_list
-// Caller must have va_start, va_end
-void CONS_Printf_va (const char *fmt, va_list ap)
+
+// Tables for comparison to cv_gameplay.
+// {0,"Off"},{1,"Minimal"},{2,"Play"},{3,"Verbose"},{4,"Debug"},{5,"Dev"},
+
+// Show messages on hud when cv_gameplay is set at or higher than this table.
+// Otherwise route message only to the console.
+// 0 always shows the message on the hud.
+// indexed by EMSG_cat
+static byte gameplay_hud_message_table[ 16 ] =
 {
+ 3, // EMSG_CONS
+ 0, // EMSG_playmsg
+ 0, // EMSG_playmsg2
+ 0, // unk3
+ 0, // unk4
+ 250, // EMSG_console
+ 0, // unk6
+ 0, // unk7
+ 2, // EMSG_info
+ 3, // EMSG_ver
+ 4, // EMSG_debug
+ 5, // EMSG_dev
+ 2, // EMSG_warn
+ 0, // EMSG_errlog
+ 0, // EMSG_error
+ 0  // EMSG_error2
+};
+// Show messages on console when cv_gameplay is set at or higher than this table.
+// 0 always shows the message on the console.
+// indexed by EMSG_cat
+static byte gameplay_con_message_table[ 16 ] =
+{
+ 1, // EMSG_CONS
+ 0, // EMSG_playmsg
+ 0, // EMSG_playmsg2
+ 0, // unk3
+ 0, // unk4
+ 1, // EMSG_console
+ 0, // unk6
+ 0, // unk7
+ 1, // EMSG_info
+ 2, // EMSG_ver
+ 3, // EMSG_debug
+ 4, // EMSG_dev
+ 0, // EMSG_warn
+ 0, // EMSG_errlog
+ 0, // EMSG_error
+ 0  // EMSG_error2
+};
+
+// [WDJ] print from va_list
+// Caller must have va_start, va_end, or else run-time segfault will occur.
+void CONS_Printf_va (const byte emsg, const char *fmt, va_list ap)
+{
+    byte eout = EOUT_flags;
+    byte ecat = emsg & EMSG_cat;
+    byte viewnum = 0;
     // vid : from video setup
     char  txt[CONS_BUF_SIZE];
 
@@ -1050,19 +1110,75 @@ void CONS_Printf_va (const char *fmt, va_list ap)
     vsnprintf(txt, CONS_BUF_SIZE, fmt, ap);
     txt[CONS_BUF_SIZE-1] = '\0'; // term, when length limited
 
+    // Route the message to various outputs according to category.
+    switch( ecat )
+    {
+     case EMSG_playmsg:
+        eout = EOUT_hud | EOUT_con;
+        viewnum = 0;
+        break;
+     case EMSG_playmsg2:  // player2 splitscreen
+        eout = EOUT_hud | EOUT_con;
+        viewnum = 1;
+        break;
+     case EMSG_console:  // console interactive
+        eout = EOUT_con;  // console only
+        viewnum = 5;       
+        break;
+     case EMSG_warn:
+        eout |= EOUT_all;
+        break;
+     case EMSG_errlog:  // stderr and log, but not console
+        eout = EOUT_text | EOUT_log;
+        break;
+     case EMSG_error: // error soft
+        eout |= EOUT_all;
+        break;
+     case EMSG_error2: // error severe
+        eout = EOUT_all | EOUT_hud;
+        break;
+     case EMSG_debug: // debug category
+#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
+        eout = EOUT_text | EOUT_con | EOUT_log;
+#else
+        // Linux, Mac
+        eout = EOUT_text | EOUT_log;
+#endif
+        if( cv_showmessages.value >= 4 )
+            eout |= EOUT_con | EOUT_hud;
+        break;
+     case EMSG_dev:   // development category
+        eout &= ~EOUT_hud;
+#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
+        eout |= EOUT_con;
+#else
+        // Linux, Mac
+        eout = EOUT_text | EOUT_log;
+#endif
+        break;
+     default:
+        break;
+    }
+
+    if( emsg & EMSG_all )
+       eout |= EOUT_text | EOUT_con | EOUT_log;
+
 #ifdef LOGMESSAGES
-    // echo console prints to log file
-    if (logstream)
-      fputs(txt, logstream);
+    if( eout & EOUT_log )
+    { 
+        // echo console prints to log file
+        if (logstream)
+            fputs(txt, logstream);
+    }
 #endif
     DEBFILE(txt);
 
     // Disable debug messages for release version
 #ifndef  SHOW_DEBUG_MESSAGES
-    if( EMSG_flags & EMSG_debtst )  goto done;  // disable debug messages
+    if( ecat == EMSG_debug )  goto done;  // disable debug messages
 #endif
 
-    if( EMSG_flags & (EMSG_text | EMSG_error) )
+    if( eout & EOUT_text )
     {
         // Errors to terminal, and before graphics
         I_OutputMsg ("%s",txt);
@@ -1072,55 +1188,51 @@ void CONS_Printf_va (const char *fmt, va_list ap)
 #if 0
 #ifdef LINUX
     // Keep debug messages off console, for some versions
-    if( EMSG_flags & EMSG_debtst )  goto done;
+    if( ecat == EMSG_debug )  goto done;
 #endif
 #endif
 
     if( ! con_started )  goto done;
 
+    // During gameplay the hud is dedicated to the game, according
+    // to the cv_showmessages setting.
     if( gameplay_msg )
     {
         // During game playing, honor the showmessage option.
-        switch( EMSG_flags & EMSG_cat )
-        {
-         case EMSG_playmsg_cat:
-            break;  // already checked by P_SetMessage()
-         case EMSG_ver_cat: // verbose msgs
-            if( cv_showmessages.value < 3 )  return;
-            break;
-         case EMSG_warn_cat: // warning category
-            if( cv_showmessages.value < 2 )  return;
-            break;
-         case EMSG_debug_cat: // debug category
-         case EMSG_dev_cat:   // development category
-            if( cv_showmessages.value < 4 )  return;
-            break;
-         case EMSG_info_cat: // info
-         default: // no category
-            if( cv_showmessages.value < 3 )  return;
-            break;
-         }
+        if( cv_showmessages.value < (int)gameplay_hud_message_table[ ecat ] )
+            viewnum = 5;  // console only	    
+        if( cv_showmessages.value < (int)gameplay_con_message_table[ ecat ] )
+            return;
     }
 
-    if( EMSG_flags & EMSG_error )
+#if 0
+    // Other ecat tests have already forced EOUT_con for error messages.
+#ifdef LAUNCHER
+    // Allow errors to go to Launcher fatal error display.
+#else
+    if( (ecat == EMSG_error) || (ecat == EMSG_error2) )
     {
-#ifndef LAUNCHER
-        // Blocks error to Launcher fatal error display
-        // errors to CON unless no con_video yet
+        // Errors to CON, unless no con_video yet.
         if( ! con_video )  goto done;
-#endif
     }
-    else if( ! (EMSG_flags & EMSG_CONS) )  goto done;  // no CONS flag
-   
-    // print to EMSG_CONS
-    // write message in con text buffer
-    CON_Print (txt);
+#endif
+#endif
+
+    // Situations inherited from EMSG_flags settings.
+    if( (eout & (EOUT_hud|EOUT_con)) == 0  )  goto done;  // no CONS flag
+
+    if( (eout & (EOUT_hud|EOUT_con)) == EOUT_con )
+       viewnum = 5;  // console only
+
+    // Output to EOUT_con, EOUT_hud, splitscreen.
+    // Write the message in con text buffer.
+    CON_Print ( viewnum, txt );
 
     // make sure new text is visible
     con_scrollup = 0;
 
     // if not in display loop, force screen update
-    if ( con_self_refresh || (EMSG_flags & EMSG_now) )
+    if ( con_self_refresh || (emsg & EMSG_now) )
     {
         if( graphics_state < VGS_active )   goto done;
         // Have graphics, but do not have refresh loop running.
@@ -1149,12 +1261,14 @@ void CONS_Printf_va (const char *fmt, va_list ap)
 }
 
 // General printf interface for CONS_Printf
+// Due to script files and indirect commands, many error messages
+// still go through here, so they are seen on stderr.
 void CONS_Printf (const char *fmt, ...)
 {
     va_list ap;
 
     va_start(ap, fmt);
-    CONS_Printf_va( fmt, ap );
+    CONS_Printf_va( EMSG_flags, fmt, ap );
     va_end(ap);
 }
 
@@ -1163,9 +1277,6 @@ void CONS_Printf (const char *fmt, ...)
 //
 void CONS_Error (char *msg)
 {
-    byte save_emsg_flags = EMSG_flags;
-    EMSG_flags |= EMSG_error;
-
 #ifdef WIN_NATIVE
     if( graphics_state < VGS_active )
     {
@@ -1173,27 +1284,50 @@ void CONS_Error (char *msg)
         return;
     }
 #endif
-    CONS_Printf ("\2%s",msg);   // write error msg in different colour
+    // Must pass msg through an interface that uses va_start, va_end.
+    GenPrintf( EMSG_error, "\2%s", msg);   // write error msg in different colour
 
     // CONS_Printf ("Press ENTER to continue\n");
     // dirty quick hack, but for the good cause
     // while (I_GetKey() != KEY_ENTER)
     //   ;
-    EMSG_flags = save_emsg_flags;
 }
 
-
-// For info, debug, dev, verbose messages
-// print to text, console, and logs
-void GenPrintf (byte emsgflags, const char *fmt, ...)
+// Console interaction printf interface.
+// This only routes the print to the console, not the logs, not to stderr.
+// Do not use this for command error messages, because many commands are
+// used in scripts, or exec indirectly, and the user would not see
+// the error messages.
+void con_Printf (const char *fmt, ...)
 {
     va_list ap;
-    byte save_emsg_flags = EMSG_flags;  // emsgflags are temporary
-    EMSG_flags = (EMSG_flags & EMSG_text) | emsgflags;
+
     va_start(ap, fmt);
-    CONS_Printf_va( fmt, ap );  // print to text, console, and logs
+    CONS_Printf_va( EMSG_console, fmt, ap );
     va_end(ap);
-    EMSG_flags = save_emsg_flags;
+}
+
+// Debug printf interface.
+// Easy to use replacement for debug messages going through CONS_Printf.
+void debug_Printf (const char *fmt, ...)
+{
+    va_list ap;
+
+    // It is still possible to use GenPrintf(EMSG_debug, ) which is
+    // why there will be no special tests here.
+    va_start(ap, fmt);
+    CONS_Printf_va( EMSG_debug, fmt, ap );
+    va_end(ap);
+}
+
+// For info, debug, dev, verbose messages.
+// Print to output set by EOUT_flags.
+void GenPrintf (const byte emsg, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    CONS_Printf_va( emsg, fmt, ap );  // print to text, console, and logs
+    va_end(ap);
 }
 
 
@@ -1256,7 +1390,7 @@ static void CON_DrawInput ( int y )
 static void CON_DrawHudlines (void)
 {
     fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
-    boolean    is2;  // player 2 text
+    byte     viewnum;
     char       *p;
     int        y1,y2,x,y,i;
 
@@ -1273,9 +1407,9 @@ static void CON_DrawHudlines (void)
     // player2 message y in splitscreen
 #ifdef HWRENDER
     // by Mysterial, moved by [WDJ]
-    y2 = gr_viewheight;
+    y2 = (rendermode==render_soft)? rdraw_viewheight : gr_viewheight;
 #else    
-    y2 = 0;
+    y2 = rdraw_viewheight;
 #endif
 
     for (i= con_cy-con_hudlines+1; i<=con_cy; i++)
@@ -1285,9 +1419,12 @@ static void CON_DrawHudlines (void)
         if (con_hudtime[i%con_hudlines] == 0)
             continue;
 
+        viewnum = con_viewnum[i%con_hudlines];
+        // viewnum: 0=upper, 1=lower, 5=console only
+        if( viewnum > 1 )  continue;  // console only
+        y = (viewnum == 1)? y2 : y1;
+
         p = &con_buffer[(i%con_totallines)*con_width];
-        is2 = (con_lineowner[i%con_hudlines] == 2);
-        y = (is2)? y2 : y1;
 
 #ifdef CONSOLE_PROPORTIONAL
         x = drawfont.xinc;  // indent
@@ -1307,7 +1444,8 @@ static void CON_DrawHudlines (void)
         }
 #endif
 
-        if ( is2 )
+        // viewnum: 0=upper, 1=lower
+        if ( viewnum == 1 )
            y2 += drawfont.yinc;
         else
            y1 += drawfont.yinc;

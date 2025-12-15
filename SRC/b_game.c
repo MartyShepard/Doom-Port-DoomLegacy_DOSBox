@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: b_game.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -284,7 +284,7 @@ void B_ChangeWeapon (player_t* p)
         p->cmd.buttons &= ~BT_ATTACK;	//stop rocket from jamming;
     p->bot->lastNumWeapons = numWeapons;
 
-    //CONS_Printf("p->bot->weaponchangetimer is %d\n", p->bot->weaponchangetimer);
+    //debug_Printf("p->bot->weaponchangetimer is %d\n", p->bot->weaponchangetimer);
 }
 
 #define ANG5 (ANG90/18)
@@ -341,39 +341,39 @@ void B_AimWeapon(player_t* p)
         if (gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
         {
 	    missileSpeed = 0;
-	    //CONS_Printf("rocketspeed zero\n");
+	    //debug_Printf("rocketspeed zero\n");
 	    break;
 	}
         else
         {
 	    missileSpeed = mobjinfo[MT_ROCKET].speed;
-	    //CONS_Printf("rocketspeed perfect\n");
+	    //debug_Printf("rocketspeed perfect\n");
 	}
         break;
      case wp_plasma:
         if (gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
         {
 	    missileSpeed = 0;
-	    //CONS_Printf("plasmaspeed = zero\n");
+	    //debug_Printf("plasmaspeed = zero\n");
 	    break;
 	}
         else
         {
 	    missileSpeed = mobjinfo[MT_PLASMA].speed;
-	    //CONS_Printf("plasmaspeed perfect\n");
+	    //debug_Printf("plasmaspeed perfect\n");
 	    break;
 	}
      case wp_bfg:
         if (gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
         {
 	    missileSpeed = 0;
-	    //CONS_Printf("BFGspeed = zero\n");
+	    //debug_Printf("BFGspeed = zero\n");
 	    break;
 	}
         else
         {
 	    missileSpeed = mobjinfo[MT_BFG].speed;
-	    //CONS_Printf("BFGspeed perfect\n");
+	    //debug_Printf("BFGspeed perfect\n");
 	    break;
 	}
      default:
@@ -549,7 +549,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		   || (enemy_readyweapon == wp_shotgun)
 		   || (enemy_readyweapon == wp_chaingun);
 
-	        //CONS_Printf("heading for an enemy\n");
+	        //debug_Printf("heading for an enemy\n");
 	        targetDistance = P_AproxDistance (pmo->x - pbot->closestEnemy->x, pmo->y - pbot->closestEnemy->y)>>FRACBITS;
 	        if ((targetDistance > 300)
 		    || (p->readyweapon == wp_fist)
@@ -595,7 +595,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 	        if (B_LookForSpecialLine(p, &x, &y)
 		    && B_ReachablePoint(p, pmo->subsector->sector, x, y))	//look for an unactivated switch/door
 	        {
-		    //CONS_Printf("found a special line\n");
+		    //debug_Printf("found a special line\n");
 		    B_TurnTowardsPoint(p, x, y);
 		    if (P_AproxDistance (pmo->x - x, pmo->y - y) <= USERANGE)
 		    {
@@ -627,7 +627,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		        pbot->lastMobj = NULL;	//just went through teleporter
 		    else
 		    {
-		        //CONS_Printf("heading towards last mobj\n");
+		        //debug_Printf("heading towards last mobj\n");
 		        B_TurnTowardsPoint(p, pbot->lastMobjX, pbot->lastMobjY);
 		        forwardmove = botforwardmove[botspeed];
 		    }
@@ -639,7 +639,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		    if (pbot->bestItem)
 		    {
 		        SearchNode_t* temp = B_GetNodeAt(pbot->bestItem->x, pbot->bestItem->y);
-		        //CONS_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
+		        //debug_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
 		        if (pbot->destNode != temp)
 			    B_LLClear(pbot->path);
 		        pbot->destNode = temp;
@@ -647,7 +647,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		    else if (pbot->closestUnseenTeammate)
 		    {
 		        SearchNode_t* temp = B_GetNodeAt(pbot->closestUnseenTeammate->x, pbot->closestUnseenTeammate->y);
-		        //CONS_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
+		        //debug_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
 		        if (pbot->destNode != temp)
 			    B_LLClear(pbot->path);
 		        pbot->destNode = temp;
@@ -655,7 +655,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		    else if (pbot->closestUnseenEnemy)
 		    {
 		        SearchNode_t* temp = B_GetNodeAt(pbot->closestUnseenEnemy->x, pbot->closestUnseenEnemy->y);
-		        //CONS_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
+		        //debug_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
 		        if (pbot->destNode != temp)
 			    B_LLClear(pbot->path);
 		        pbot->destNode = temp;
@@ -678,7 +678,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 			}
 
 						
-		        //CONS_Printf("at x%d, y%d\n", pbot->wantedItemNode->x>>FRACBITS, pbot->wantedItemNode->y>>FRACBITS);
+		        //debug_Printf("at x%d, y%d\n", pbot->wantedItemNode->x>>FRACBITS, pbot->wantedItemNode->y>>FRACBITS);
 		        if (B_LLIsEmpty(pbot->path)
 			    || !B_NodeReachable(NULL, pmo->x, pmo->y, posX2x(pbot->path->first->x), posY2y(pbot->path->first->y))
 			       // > (BOTNODEGRIDSIZE<<2))
@@ -686,7 +686,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 		        {
 			    if (!B_FindNextNode(p))	//search for next node
 			    {
-			        //CONS_Printf("Bot stuck at x:%d y:%d could not find a path to x:%d y:%d\n",pmo->x>>FRACBITS, pmo->y>>FRACBITS, posX2x(pbot->destNode->x)>>FRACBITS, posY2y(pbot->destNode->y)>>FRACBITS);
+			        //debug_Printf("Bot stuck at x:%d y:%d could not find a path to x:%d y:%d\n",pmo->x>>FRACBITS, pmo->y>>FRACBITS, posX2x(pbot->destNode->x)>>FRACBITS, posY2y(pbot->destNode->y)>>FRACBITS);
 
 			        pbot->destNode = NULL;	//can't get to it
 			    }
@@ -694,8 +694,8 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 
 		        if (!B_LLIsEmpty(pbot->path))
 		        {
-			    //CONS_Printf("turning towards node at x%d, y%d\n", (pbot->nextItemNode->x>>FRACBITS), (pbot->nextItemNode->y>>FRACBITS));
-			    //CONS_Printf("it has a distance %d\n", (P_AproxDistance(pmo->x - pbot->nextItemNode->x, pmo->y - pbot->nextItemNode->y)>>FRACBITS));
+			    //debug_Printf("turning towards node at x%d, y%d\n", (pbot->nextItemNode->x>>FRACBITS), (pbot->nextItemNode->y>>FRACBITS));
+			    //debug_Printf("it has a distance %d\n", (P_AproxDistance(pmo->x - pbot->nextItemNode->x, pmo->y - pbot->nextItemNode->y)>>FRACBITS));
 			    B_TurnTowardsPoint(p, posX2x(pbot->path->first->x), posY2y(pbot->path->first->y));
 			    forwardmove = botforwardmove[1];//botspeed];
 			}

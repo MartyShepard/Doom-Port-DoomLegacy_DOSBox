@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: st_stuff.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -908,7 +908,7 @@ void ST_doPaletteStuff( player_t * plyr )
         if( EN_HWR_flashpalette )  // some hardware draw can flash palette
         {
             // Imitate the palette flash
-            //CONS_Printf("palette: %d\n", palette);
+            //debug_Printf("palette: %d\n", palette);
             HWR_SetFlashPalette( palette );
         }
         else

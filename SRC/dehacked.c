@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1188 2015-12-01 22:16:58Z wesleyjohnson $
+// $Id: dehacked.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -140,13 +140,13 @@ char* myfgets(char *buf, int bufsize, myfile_t *f)
 #ifdef DEBUG_DEH
     memset( &buf[i], 0, bufsize-i-1 );
 #endif
-    //CONS_Printf("fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
+    //debug_Printf( "fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
 
     if( (devparm && verbose) || (verbose>1) )
     {
         // List DEH lines, but not blank lines.
 	if( i > 1 ) 
-	  GenPrintf(EMSG_text|EMSG_log,"DEH: %s", buf);  // buf has \n
+	  GenPrintf(EMSG_errlog, "DEH: %s", buf);  // buf has \n
     }
     return buf;
 }
@@ -199,7 +199,7 @@ static void deh_error(const char * fmt, ...)
     if (devparm || verbose)
     {
        va_start(ap, fmt);
-       CONS_Printf_va( fmt, ap );
+       CONS_Printf_va( EMSG_error, fmt, ap );
        va_end(ap);
     }
 
@@ -667,18 +667,18 @@ static void readthing(myfile_t *f, int deh_thing_id )
                   {
                       // Boom bit defined in boomdeh.txt
                       // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
-                      GenPrintf(EMSG_text|EMSG_log, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
+                      GenPrintf(EMSG_errlog, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
                       if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
                       {
                           // assume TRANSLUCENT, check for known exceptions
-                          GenPrintf(EMSG_text|EMSG_log, "MF_TRANSLUCENT\n");
+                          GenPrintf(EMSG_errlog, "MF_TRANSLUCENT\n");
                       }
                       else
                       {
                           // assume FLOORHUGGER, check for known exceptions
                           flags1 &= ~MF_TRANSLUCENT;
                           mip->flags2 |= MF2_FLOORHUGGER;
-                          GenPrintf(EMSG_text|EMSG_log, "MF_FLOORHUGGER\n");
+                          GenPrintf(EMSG_errlog, "MF_FLOORHUGGER\n");
                       }
                   }
                   mip->flags = flags1; // we are still using same flags bit order
@@ -970,7 +970,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
     // Debugging trigger
     if( strncmp(s,"GREATER RUNES", 13) == 0 )
     {
-        GenPrintf(EMSG_text|EMSG_log, "Text:%s\n", s);
+        GenPrintf(EMSG_errlog, "Text:%s\n", s);
     }
 #endif
 
@@ -985,7 +985,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
         char str3[1000];
         strncpy( str3, s, len3);
         str3[len3] = 0;
-        GenPrintf(EMSG_text|EMSG_log, "FROM:%s\nTO:%s\n", str3, str2);
+        GenPrintf(EMSG_errlog, "FROM:%s\nTO:%s\n", str3, str2);
     }
 
     if((len1 == 4) && (len2 == 4))  // sprite names are always 4 chars
@@ -1099,7 +1099,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
            }
        }
        if( devparm && verbose )
-           GenPrintf(EMSG_text|EMSG_log, "Text hash= 0x%08x :", hash);
+           GenPrintf(EMSG_errlog, "Text hash= 0x%08x :", hash);
     }
 
     s[len1]='\0';
@@ -1798,8 +1798,15 @@ static void readweapon(myfile_t *f, int deh_weapon_id)
 }
 
 /*
+Ammo 1
 Max ammo = 400
 Per ammo = 40
+
+where:
+  Ammo 0 = Bullets
+  Ammo 1 = Shells (shotgun)
+  Ammo 2 = Cells
+  Ammo 3 = Rockets
 */
 
 extern int clipammo[];
@@ -1819,7 +1826,11 @@ static void readammo(myfile_t *f,int num)
       word=strtok(s," ");
 
            if(!strcasecmp(word,"Max"))  maxammo[num] =value;
-      else if(!strcasecmp(word,"Per")) { clipammo[num]=value;GetWeaponAmmo[num] = 2*value; }
+      else if(!strcasecmp(word,"Per"))
+      {
+          clipammo[num]=value;	// amount of ammo for small item
+          GetWeaponAmmo[num] = 2*value;  // per weapon
+      }
       else if(!strcasecmp(word,"Perweapon")) GetWeaponAmmo[num] = 2*value; 
       else deh_error("Ammo %d : unknown word '%s'\n",num,word);
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: screen.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -184,7 +184,7 @@ void SCR_SetMode (void)
     //
     //  setup the right draw routines for either 8bpp or 16bpp
     //
-    //CONS_Printf ("SCR_SetMode : vid.bitpp is %d\n", vid.bitpp);
+    //debug_Printf ("SCR_SetMode : vid.bitpp is %d\n", vid.bitpp);
     // set the appropriate drawer for the sky (tall or short)
     // vid.bitpp is already protected by V_Setup_VideoDraw
     switch( vid.bitpp )

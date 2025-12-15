@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_mobj.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -175,7 +175,7 @@ byte EN_catch_respawn_0 = 1;  // enable catch Nightmare respawn at (0,0)
 void P_Set_Voodoo( int playernum, mobj_t * voodoo_mobj )
 {
 #ifdef VOODOO_DEBUG   
-    GenPrintf(EMSG_debug,"Set Voodoo mobj\n");
+    debug_Printf("Set Voodoo mobj\n");
 #endif
     // Must have player set for P_XYMovement and P_ActivateCrossedLine
     // NULL player will not trip W1 linedef, P_ActivateCrossedLine uses test
@@ -1570,7 +1570,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
            mobj->eflags &= ~MF_ONGROUND;
 
            //if (mobj->type == MT_BARREL)
-           //   GenPrintf(EMSG_debug,"barrel at z %d floor %d ceiling %d\n",mobj->z,mobj->floorz,mobj->ceilingz);
+           //   debug_Printf("barrel at z %d floor %d ceiling %d\n",mobj->z,mobj->floorz,mobj->ceilingz);
 
            }
            else
@@ -1593,7 +1593,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     }
     else
     {
-        //CONS_Printf("mobj spawned at z %d\n",z>>16);
+        //debug_Printf("P_SpawnMobj: mobj spawned at z %d\n",z>>16);
         mobj->z = z;
     }
 
@@ -2470,7 +2470,7 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     // spawn the usual falling blood sprites at location
     // Creates bloodthing passed to PTR_BloodTraverse
     P_SpawnBlood(x, y, z, damage);
-    //CONS_Printf ("spawned blood counter %d\n", counter++);
+    //debug_Printf ("spawned blood counter %d\n", counter++);
 
     if (demoversion < 129)
         return;
@@ -2505,8 +2505,8 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
         distance /=8;  // less violence to splats
     }
 
-    //CONS_Printf ("spawning %d bloodsplats at distance of %d\n", numsplats, distance);
-    //CONS_Printf ("damage %d\n", damage);
+    //debug_Printf ("spawning %d bloodsplats at distance of %d\n", numsplats, distance);
+    //debug_Printf ("damage %d\n", damage);
     bloodspawnpointx = x;
     bloodspawnpointy = y;
     //uses 'bloodthing' set by P_SpawnBlood()
