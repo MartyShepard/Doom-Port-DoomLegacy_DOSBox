@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01236 ]: w105 flatsize
 [01235 ]: w105 statusbar
 [01234 ]: w105 heretic server
 [01233 ]: w105 untab9

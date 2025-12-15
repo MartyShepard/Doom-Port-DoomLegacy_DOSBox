@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: p_setup.h 1236 2016-05-24 17:35:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -61,13 +61,15 @@ extern  int             numdmstarts;
 typedef struct
 {
     char        name[8];        // resource name from wad
-    int         lumpnum;        // lump number of the flat
+    uint32_t    lumpnum;        // lump number of the flat (mod by animation)
+
+    uint16_t    size_index;     // flat size index
 
     // for flat animation
-    int         baselumpnum;
-    int         animseq;        // start pos. in the anim sequence
-    int         numpics;
-    int         speed;
+    uint16_t    baselumpnum;    // first flat in animation
+    int16_t     animseq;        // start pos. in the anim sequence
+    uint16_t    numpics;
+    int16_t     speed;
 } levelflat_t;
 
 extern unsigned int    numlevelflats;

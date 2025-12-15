@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
+// $Id: r_plane.c 1236 2016-05-24 17:35:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -278,11 +278,11 @@ void R_MapPlane ( int y, int x1, int x2 )
         ds_colormap = planezlight[index];
         if(vsp_currentplane->extra_colormap || view_colormap)
         {
-	    // reverse indexing, and change to extra_colormap
-	    int lightindex = ds_colormap - reg_colormaps;
-	    lighttable_t* cm = view_colormap? view_colormap : vsp_currentplane->extra_colormap->colormap;
-	    ds_colormap = & cm[ lightindex ];
-	}
+            // reverse indexing, and change to extra_colormap
+            int lightindex = ds_colormap - reg_colormaps;
+            lighttable_t* cm = view_colormap? view_colormap : vsp_currentplane->extra_colormap->colormap;
+            ds_colormap = & cm[ lightindex ];
+        }
     }
 
     ds_y = y;
@@ -346,7 +346,7 @@ void R_ClearPlanes (player_t *player)
         *vispl_free_tail = vispl_hashtab[i];
         vispl_hashtab[i] = NULL;
         while( *vispl_free_tail )
-	    vispl_free_tail = &(*vispl_free_tail)->next;
+            vispl_free_tail = &(*vispl_free_tail)->next;
     }
 
     lastopening = openings;
@@ -499,7 +499,7 @@ visplane_t*  R_CheckPlane( visplane_t*   pl,
     if (x > intrh)
     {
         // no valid top[] within intersect range
-	// No overlap, can extend visplane to union
+        // No overlap, can extend visplane to union
         pl->minx = unionl;
         pl->maxx = unionh;
     }
@@ -740,7 +740,48 @@ void R_DrawPlanes (void)
     }
 }
 
+// ----
+// Flat size_index tables for R_DrawSinglePlane.
 
+// Fixed to int shift in draw.
+// Indexed by flat size_index.
+static byte      flat_fracbits_tab[ 8 ] =
+{
+    FRACBITS,  // 0
+    FRACBITS - 5,  // 32x32 flat
+    FRACBITS - 6,  // 64x64 flat
+    FRACBITS - 7,  // 128x128 flat
+    FRACBITS - 8,  // 256x256 flat
+    FRACBITS - 9,  // 512x512 flat
+    FRACBITS - 10,  // 1024x1024 flat
+    FRACBITS - 11,  // 2048x2048 flat
+};
+// Flat Index mask
+// Indexed by flat size_index.
+static fixed_t  flat_imask_tab[ 8 ] =
+{
+    0, // 0
+    (32<<FRACBITS) - 1, // 32x32 flat
+    (64<<FRACBITS) - 1, // 64x64 flat
+    (128<<FRACBITS) - 1, // 128x128 flat
+    (256<<FRACBITS) - 1, // 256x256 flat
+    (512<<FRACBITS) - 1, // 512x512 flat
+    (1024<<FRACBITS) - 1, // 1024x1024 flat
+    (2048<<FRACBITS) - 1, // 2048x2048 flat
+};
+// Flat Y address mask
+// Indexed by flat size_index.
+static fixed_t  flat_ymask_tab[ 8 ] =
+{
+    0, // 0
+    ((32-1)<<5), // 32x32 flat
+    ((64-1)<<6), // 64x64 flat
+    ((128-1)<<7), // 128x128 flat
+    ((256-1)<<8), // 256x256 flat
+    ((512-1)<<9), // 512x512 flat
+    ((1024-1)<<10), // 1024x1024 flat
+    ((2048-1)<<11), // 2048x2048 flat
+};
 
 
 void R_DrawSinglePlane(visplane_t* pl)
@@ -768,17 +809,17 @@ void R_DrawSinglePlane(visplane_t* pl)
 
       if((ffp->flags & FF_FOG) && !(ffp->flags & FF_FLUID))
       {
-	  spanfunc = fogspanfunc; // R_DrawFogSpan_8 16 ..
-	  addlight = extralight_fog;
+          spanfunc = fogspanfunc; // R_DrawFogSpan_8 16 ..
+          addlight = extralight_fog;
       }
       else
       {
-	  spanfunc = transspanfunc; // R_DrawTranslucentSpan_8 16 ..
-	  if( ! (pl->extra_colormap && pl->extra_colormap->fog))
-	  {
-	     addlight = 0;
-	     vlight = 255;
-	  }
+          spanfunc = transspanfunc; // R_DrawTranslucentSpan_8 16 ..
+          if( ! (pl->extra_colormap && pl->extra_colormap->fog))
+          {
+             addlight = 0;
+             vlight = 255;
+          }
       }
     }
   }
@@ -801,48 +842,10 @@ void R_DrawSinglePlane(visplane_t* pl)
   // [WDJ] Flat use is safe from alloc, change to PU_CACHE at function exit.
   ds_source = (byte *) R_GetFlat (levelflats[pl->picnum].lumpnum);
 
-  int size = W_LumpLength(levelflats[pl->picnum].lumpnum);
-  switch(size)
-  {
-    case 2048*2048: // 2048x2048 lump
-      flatsize = 2048;
-      flat_ymask = 2047<<11;
-      flatbitsz = 11;
-      break;
-    case 1024*1024: // 1024x1024 lump
-      flatsize = 1024;
-      flat_ymask = 1023<<10;
-      flatbitsz = 10;
-      break;
-    case 512*512:// 512x512 lump
-      flatsize = 512;
-      flat_ymask = 511<<9;
-      flatbitsz = 9;
-      break;
-    case 256*256: // 256x256 lump
-      flatsize = 256;
-      flat_ymask = 255<<8;
-      flatbitsz = 8;
-      break;
-    case 128*128: // 128x128 lump
-      flatsize = 128;
-      flat_ymask = 127<<7;
-      flatbitsz = 7;
-      break;
-    case 32*32: // 32x32 lump
-      flatsize = 32;
-      flat_ymask = 31<<5;
-      flatbitsz = 5;
-      break;
-    default: // 64x64 lump
-      flatsize = 64;
-      flat_ymask = 0x3f<<6;
-      flatbitsz = 6;
-      break;
-  }
-  flatfracbits = FRACBITS - flatbitsz;  // fixed to int shift in draw
-  flat_imask = (flatsize<<FRACBITS) - 1;  // index mask
-
+  int sizeindex = levelflats[pl->picnum].size_index;
+  flatfracbits = flat_fracbits_tab[sizeindex];
+  flat_imask = flat_imask_tab[sizeindex];
+  flat_ymask = flat_ymask_tab[sizeindex];
 
   xoffs = pl->xoffs;
   yoffs = pl->yoffs;
@@ -865,9 +868,9 @@ void R_DrawSinglePlane(visplane_t* pl)
   for (x=pl->minx ; x<= stop ; x++)
   {
     R_MakeSpans( x,
-		pl->top[x-1], pl->bottom[x-1],	// draw range (except first)
+                pl->top[x-1], pl->bottom[x-1],	// draw range (except first)
                 pl->top[x], pl->bottom[x]	// setup spanstart range
-		);
+                );
   }
 
 
