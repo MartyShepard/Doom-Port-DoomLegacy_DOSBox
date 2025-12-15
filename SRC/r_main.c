@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
+// $Id: r_main.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -325,12 +325,12 @@ void SplitScreen_OnChange(void)
     {
         // multiplayer demo ??
         int i;
-	// [WDJ] Do not break splitscreen setups when a demo runs
-	if( displayplayer2_ptr )  return;  // already have a player2
+        // [WDJ] Do not break splitscreen setups when a demo runs
+        if( displayplayer2_ptr )  return;  // already have a player2
        
         // [WDJ] This code does not guarantee that the demo will get
-	// a player2, thus all code using player2 cannot assume that
-	// displayplayer2_ptr is valid, even when cv_splitscreen.
+        // a player2, thus all code using player2 cannot assume that
+        // displayplayer2_ptr is valid, even when cv_splitscreen.
 
         // find any player to be player2
         for( i=0; i<MAXPLAYERS;i++)
@@ -338,10 +338,10 @@ void SplitScreen_OnChange(void)
             if( playeringame[i] && i!=consoleplayer )
             {
                 displayplayer2 = i;
-	        displayplayer2_ptr = &players[displayplayer2];
+                displayplayer2_ptr = &players[displayplayer2];
                 break;
             }
-	}
+        }
     }
 }
 
@@ -466,7 +466,7 @@ angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
             ra = (x1>y1)? 
                 // octant 0, ra = 0..ANG45
                 tantoangle[ SlopeDiv(y1,x1)]
-	     :
+             :
                 // octant 1, ra = ANG45..ANG90
                 ANG90-1 - tantoangle[ SlopeDiv(x1,y1)] ;
         }
@@ -476,7 +476,7 @@ angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
             ra = (x1>y1)?
                 // octant 8, ra = ANG315..0 due to angle wrap
                 -tantoangle[ SlopeDiv(y1,x1)]
-	     :
+             :
                 // octant 7, ra = AN270..ANG315
                 ANG270 + tantoangle[ SlopeDiv(x1,y1)] ;
         }
@@ -489,7 +489,7 @@ angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
             ra = (x1>y1)?
                 // octant 3, ra = ANG135..ANG180
                 ANG180-1 - tantoangle[ SlopeDiv(y1,x1)]
-	     :
+             :
                 // octant 2, ra = ANG90..ANG135
                 ANG90 + tantoangle[ SlopeDiv(x1,y1)] ;
         }
@@ -499,7 +499,7 @@ angle_t R_PointToAngle2 ( fixed_t  x2, fixed_t  y2,
             ra = (x1>y1)?
                 // octant 4, ra = AN180..ANG225
                 ANG180 + tantoangle[ SlopeDiv(y1,x1)]
-	     :
+             :
                  // octant 5, ra = ANG225..ANG270
                 ANG270-1 - tantoangle[ SlopeDiv(x1,y1)] ;
         }
@@ -525,7 +525,7 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
     // [WDJ] Fix from PrBoom (e6y).
     // For large x or y, resort to the slower but accurate lib function.
     if (  x > FIXED_MAX/4 || x < -FIXED_MAX/4
-	  || y > FIXED_MAX/4 || y < -FIXED_MAX/4 )
+          || y > FIXED_MAX/4 || y < -FIXED_MAX/4 )
     {
         // PrBoom used a 1 point cache, but that is too small.
         return (int) (atan2(y,x) * ANG180 / M_PI);
@@ -538,7 +538,7 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
             vpa = (x>y)? 
                 // octant 0, vpa = 0..ANG45
                 tantoangle[ SlopeDiv_64(y,x)]
-	     :
+             :
                 // octant 1, vpa = ANG45..ANG90
                 ANG90-1 - tantoangle[ SlopeDiv_64(x,y)] ;
         }
@@ -548,7 +548,7 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
             vpa = (x>y)?
                 // octant 8, vpa = ANG315..0 due to angle wrap
                 -tantoangle[ SlopeDiv(y,x)]
-	     :
+             :
                 // octant 7, vpa = AN270..ANG315
                 ANG270 + tantoangle[ SlopeDiv_64(x,y)] ;
         }
@@ -561,7 +561,7 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
             vpa = (x>y)?
                 // octant 3, vpa = ANG135..ANG180
                 ANG180-1 - tantoangle[ SlopeDiv_64(y,x)]
-	     :
+             :
                 // octant 2, vpa = ANG90..ANG135
                 ANG90 + tantoangle[ SlopeDiv_64(x,y)] ;
         }
@@ -571,7 +571,7 @@ angle_t R_PointToAngle ( fixed_t x, fixed_t y)
             vpa = (x>y)?
                 // octant 4, vpa = AN180..ANG225
                 ANG180 + tantoangle[ SlopeDiv_64(y,x)]
-	     :
+             :
                  // octant 5, vpa = ANG225..ANG270
                 ANG270-1 - tantoangle[ SlopeDiv_64(x,y)] ;
         }
@@ -1011,7 +1011,7 @@ void R_ExecuteSetViewSize (void)
             if (level >= NUMCOLORMAPS)
                 level = NUMCOLORMAPS-1;
 
-	    scalelight[i][j] = & reg_colormaps[ LIGHTTABLE( level ) ];
+            scalelight[i][j] = & reg_colormaps[ LIGHTTABLE( level ) ];
         }
     }
 
@@ -1161,7 +1161,7 @@ void R_SetupFrame (player_t* player)
     {
         // with splitplayer, only the first player will get the chase camera
         if( !camera.chase )
-	     P_ResetCamera(player);  // set chase = player
+             P_ResetCamera(player);  // set chase = player
     }
     else
         camera.chase = NULL;
@@ -1188,7 +1188,7 @@ void R_SetupFrame (player_t* player)
         // chase camera as viewer
         // use outside cam view
         if (!camera.mo)  // because LoadLevel removes camera
-	    P_ResetCamera(player);  // reset the camera
+            P_ResetCamera(player);  // reset the camera
         viewmobj = camera.mo;
         viewz = viewmobj->z + (viewmobj->height>>1);
         fixedcolormap_num = camera.fixedcolormap;
@@ -1225,7 +1225,7 @@ void R_SetupFrame (player_t* player)
             else
                 if(player== displayplayer2_ptr)  // NULL when unused
                 {
-		    // player 2
+                    // player 2
                     viewangle = localangle2;
                     aimingangle=localaiming2;
                 }
@@ -1280,19 +1280,19 @@ void R_SetupFrame (player_t* player)
         // [WDJ] 4/11/2012 restore compatible Boom colormap handling
         if( viewer_sector->model == SM_Boom_deep_water )
         {
-	    sector_t * modsecp = & sectors[ viewer_modelsec ];
-	    // -1 or a valid colormap num
-	    int bcm_num = (viewz < modsecp->floorheight) ?
-	       modsecp->bottommap
-	     : (viewz > modsecp->ceilingheight)?
-	       modsecp->topmap
-	     : modsecp->midmap;
-	    // only enable view_colormap when overriding globally
-	    if(bcm_num >= 0 && bcm_num < num_extra_colormaps)
-	    {
-	       view_extracolormap = & extra_colormaps[bcm_num];
-	    }
-	}
+            sector_t * modsecp = & sectors[ viewer_modelsec ];
+            // -1 or a valid colormap num
+            int bcm_num = (viewz < modsecp->floorheight) ?
+               modsecp->bottommap
+             : (viewz > modsecp->ceilingheight)?
+               modsecp->topmap
+             : modsecp->midmap;
+            // only enable view_colormap when overriding globally
+            if(bcm_num >= 0 && bcm_num < num_extra_colormaps)
+            {
+               view_extracolormap = & extra_colormaps[bcm_num];
+            }
+        }
     }
 
     // Find a FF_FOG or fog extracolormap that viewer is within.
@@ -1302,29 +1302,29 @@ void R_SetupFrame (player_t* player)
         ffloor_t * ffp;
         for( ffp=viewer_sector->ffloors; ffp; ffp=ffp->next )
         {
-	    if( ( ffp->flags & FF_FOG )
-		&& ( ffp->model_secnum >= 0 )
-	        && ( viewz < *(ffp->topheight) ) && ( viewz > *(ffp->bottomheight) )
-		)
+            if( ( ffp->flags & FF_FOG )
+                && ( ffp->model_secnum >= 0 )
+                && ( viewz < *(ffp->topheight) ) && ( viewz > *(ffp->bottomheight) )
+                )
             {
-	        view_fogfloor = ffp;
-	        view_fogmodel = & sectors[ ffp->model_secnum ];
-	        // Fog already colors surrounding view by looking through
-	        // fog sheets, planes, and face sheet.
-		// This is an extra effect enabled by colormap fog flag.
-	        if( view_fogmodel->extra_colormap && view_fogmodel->extra_colormap->fog )
-	        {
-		    // fog colors all walls, floors, and things
-		    view_extracolormap = view_fogmodel->extra_colormap;
-		}
-	        else
-	        {
-		    // viewer fake floor without colormap overrides viewer sector colormap
-		    view_extracolormap = NULL;
-		}
-	        break;
-	    }
-	}
+                view_fogfloor = ffp;
+                view_fogmodel = & sectors[ ffp->model_secnum ];
+                // Fog already colors surrounding view by looking through
+                // fog sheets, planes, and face sheet.
+                // This is an extra effect enabled by colormap fog flag.
+                if( view_fogmodel->extra_colormap && view_fogmodel->extra_colormap->fog )
+                {
+                    // fog colors all walls, floors, and things
+                    view_extracolormap = view_fogmodel->extra_colormap;
+                }
+                else
+                {
+                    // viewer fake floor without colormap overrides viewer sector colormap
+                    view_extracolormap = NULL;
+                }
+                break;
+            }
+        }
     }
     if( view_fogfloor )
     {
@@ -1513,18 +1513,18 @@ void R_RenderPlayerView (player_t* player)
     R_DrawMasked ();
 
     if( view_fogfloor
-	&& ( view_fogfloor->flags & FF_FOGFACE  ) )
+        && ( view_fogfloor->flags & FF_FOGFACE  ) )
     {
         int fog_extralight = (player->extralight * view_fogfloor->alpha) >> 7;
         R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 0 );  // random scale
         if( extralight )
-	   R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 32*FRACUNIT );
+           R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 32*FRACUNIT );
     }
 
     // If enabled, draw the weapon psprites on top of everything
     // but not on side views, nor on camera views.
     if (cv_psprites.value && !viewangleoffset && !script_camera_on
-	&& camera.chase != player )
+        && camera.chase != player )
         R_DrawPlayerSprites ();
 
     // Check for new console commands.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: f_finale.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -148,9 +148,9 @@ void F_StartFinale (void)
       // DOOM II and missions packs with E1, M34
       case doom2_commercial:
       {
-	  // Doom2, Plutonia, TNT
-	  // These text are always sequential in text[].
-	  int textnum = 0;
+          // Doom2, Plutonia, TNT
+          // These text are always sequential in text[].
+          int textnum = 0;
 
           S_ChangeMusic(mus_read_m, true);
 
@@ -184,22 +184,22 @@ void F_StartFinale (void)
               // Ouch.
               break;
           }
-	  switch( gamedesc_id )
-	  {
-	   case GDESC_plutonia:
-	     // P1TEXT, P2TEXT, P3TEXT, P4TEXT, P5TEXT, P6TEXT
-	     textnum += P1TEXT_NUM;
-	     break;
-	   case GDESC_tnt:
-	     // T1TEXT, T2TEXT, T3TEXT, T4TEXT, T5TEXT, T6TEXT
-	     textnum += T1TEXT_NUM;
-	     break;
-	   default:
-	     // C1TEXT, C2TEXT, C3TEXT, C4TEXT, C5TEXT, C6TEXT
-	     textnum += C1TEXT_NUM;
-	     break;
-	  }
-	  finaletext = text[textnum];
+          switch( gamedesc_id )
+          {
+           case GDESC_plutonia:
+             // P1TEXT, P2TEXT, P3TEXT, P4TEXT, P5TEXT, P6TEXT
+             textnum += P1TEXT_NUM;
+             break;
+           case GDESC_tnt:
+             // T1TEXT, T2TEXT, T3TEXT, T4TEXT, T5TEXT, T6TEXT
+             textnum += T1TEXT_NUM;
+             break;
+           default:
+             // C1TEXT, C2TEXT, C3TEXT, C4TEXT, C5TEXT, C6TEXT
+             textnum += C1TEXT_NUM;
+             break;
+          }
+          finaletext = text[textnum];
           break;
       }
 
@@ -230,15 +230,15 @@ void F_StartFinale (void)
                   break;
           }
           break;
-	}
+        }
 
       case chexquest1: //DarkWolf95: Support for Chex Quest
         {
-	  S_ChangeMusic(mus_victor, true);
-	  finaleflat = "FLOOR0_6";
-	  finaletext = E1TEXT;
-	  break;
-	}
+          S_ChangeMusic(mus_victor, true);
+          finaleflat = "FLOOR0_6";
+          finaletext = E1TEXT;
+          break;
+        }
 
       // Indeterminate.
       default:
@@ -270,16 +270,16 @@ boolean F_Responder (event_t *event)
         // test for any palette that is not PLAYPAL (Heretic underwater)
         if( finale_palette )
         {
-	   V_SetPaletteLump("PLAYPAL");  // clear finale_palette
-	   finale_palette = 0;
-	   V_DrawFill(0, 0, 320, 200, 0);  // clear pic to black
-	}
+           V_SetPaletteLump("PLAYPAL");  // clear finale_palette
+           finale_palette = 0;
+           V_DrawFill(0, 0, 320, 200, 0);  // clear pic to black
+        }
         if( gamemode == heretic )
         {
-	   // no support to draw heretic cast
-	   finalestage = 3;  // goto title
-	   goto catch_event;
-	}
+           // no support to draw heretic cast
+           finalestage = 3;  // goto title
+           goto catch_event;
+        }
         break;
       case 2:  // cast
         return F_CastResponder (event);
@@ -311,7 +311,7 @@ void F_Ticker (void)
                     // force text to be write 
                     finalecount += MAXINT/2;
                 else
-	        {
+                {
                     if (gamemode == doom2_commercial)
                     {
                         if (gamemap == 30)
@@ -325,7 +325,7 @@ void F_Ticker (void)
                     else
                         // next animation state (just above)
                         finalecount = MAXINT;
-		}
+                }
             }
 
             if( gamemode != doom2_commercial)
@@ -802,26 +802,26 @@ void F_DrawHeretic( void )
       case 1:
         if( finalestage > 1 )  goto credit_page;
         if(W_CheckNumForName("e2m1")==-1)
-	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
+            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
         else
-	    goto credit_page;
+            goto credit_page;
         break;
       case 2:
         // was F_DrawUnderwater()
         switch(finalestage)
         {
           case 1:
-	    if( finale_palette != 12 )  // [WDJ] heretic E2PAL
-	    {
-	        finale_palette = 12;
-	        V_SetPaletteLump("E2PAL");
-	    }
-	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("E2END"),320,200);
-	    break;
-	  case 3:
-	    V_DrawRawScreen_Num(0, 0, W_CheckNumForName("TITLE"),320,200);
-	    //D_StartTitle(); // go to intro/demo mode.
-	}
+            if( finale_palette != 12 )  // [WDJ] heretic E2PAL
+            {
+                finale_palette = 12;
+                V_SetPaletteLump("E2PAL");
+            }
+            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("E2END"),320,200);
+            break;
+          case 3:
+            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("TITLE"),320,200);
+            //D_StartTitle(); // go to intro/demo mode.
+        }
         break;
       case 3:
         F_DemonScroll();
@@ -872,29 +872,29 @@ void F_Drawer (void)
     {
         if( gamemode == heretic )
         {
-	    F_DrawHeretic();
+            F_DrawHeretic();
         }
         else
         {
-	   switch (gameepisode)
-	   {
-	    case 1:
-	      if ( gamemode == ultdoom_retail || gamemode == chexquest1 )
-		F_Draw_interpic_Name( text[CREDIT_NUM] );
-	      else
-		F_Draw_interpic_Name( text[HELP2_NUM] );
-	      break;
-	    case 2:
-	      F_Draw_interpic_Name( text[VICTORY2_NUM] );
-	      break;
-	    case 3:
-	      F_BunnyScroll ();
-	      break;
-	    case 4:
-	      F_Draw_interpic_Name( text[ENDPIC_NUM] );
-	      break;
-	   }
-	}
+           switch (gameepisode)
+           {
+            case 1:
+              if ( gamemode == ultdoom_retail || gamemode == chexquest1 )
+                F_Draw_interpic_Name( text[CREDIT_NUM] );
+              else
+                F_Draw_interpic_Name( text[HELP2_NUM] );
+              break;
+            case 2:
+              F_Draw_interpic_Name( text[VICTORY2_NUM] );
+              break;
+            case 3:
+              F_BunnyScroll ();
+              break;
+            case 4:
+              F_Draw_interpic_Name( text[ENDPIC_NUM] );
+              break;
+           }
+        }
     }
 
 }

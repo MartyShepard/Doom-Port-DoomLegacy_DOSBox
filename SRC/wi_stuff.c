@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1232 2016-05-24 17:11:03Z wesleyjohnson $
+// $Id: wi_stuff.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -865,8 +865,8 @@ void WI_draw_wait( int net_nodes, int net_players, int wait_players, int wait_ti
         length = 28;
         if( server )
         {
-	    lines = 2;
-	    msg2 = " s = start now,  q = escape";
+            lines = 2;
+            msg2 = " s = start now,  q = escape";
         }
     }
     else

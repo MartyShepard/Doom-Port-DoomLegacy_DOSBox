@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: doomstat.h 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -154,7 +154,7 @@ typedef struct
     char *	startup_title; // startup page
     char *	idstr;	       // used for directory and command line
     char * 	iwad_filename[3]; // possible filenames
-   			       // doom, doom2, heretic, heretic1, hexen, etc.
+                               // doom, doom2, heretic, heretic1, hexen, etc.
     char *	support_wad;   // another wad to support the game
     const char * keylump[2];   // required lump names
     byte	require_lump;  // lumps that must appear (bit set)

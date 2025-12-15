@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: st_stuff.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -756,7 +756,7 @@ static void ST_updateWidgets(void)
                 // Enable display of both skulls and keycards.
                 st_num_keyboxes = 6;
                 // Shift keybox[ 0..6 ] positions, into two vertical columns
-		// Skulls will now be in [3..6]
+                // Skulls will now be in [3..6]
                 for( i=0; i<6; i++ )
                 {
                     keyboxes[i] = -1;  // clear previous recorded skulls

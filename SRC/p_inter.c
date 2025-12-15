@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: p_inter.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -290,7 +290,7 @@ boolean P_GiveAmmo ( player_t*     player,
         else
         {
             player->ammo_pickup += PICKUP_FLASH_TICS/2;  // some other ammo
-	    if( player->ammo_pickup > 35 )
+            if( player->ammo_pickup > 35 )
                 player->ammo_pickup = 35;
         }
     }

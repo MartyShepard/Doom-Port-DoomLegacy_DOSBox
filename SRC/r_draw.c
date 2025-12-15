@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: r_draw.c 1233 2016-05-24 17:12:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -90,12 +90,12 @@
 // (view is already used by player, window is also used, rw_ is used)
 byte*           viewimage;
 int             rdraw_viewwidth;		// was viewwidth
-			// width used by drawing routines
-			// half of pixel width when low res
+                        // width used by drawing routines
+                        // half of pixel width when low res
 int             rdraw_scaledviewwidth;		// was scaledrviewwidth
-			// width of view window in pixels
+                        // width of view window in pixels
 int             rdraw_viewheight;		// was viewheight
-			// height of view window in rows (pixels)
+                        // height of view window in rows (pixels)
 // position of smaller rdraw_view window within vid window
 int             viewwindowx;
 int             viewwindowy;
@@ -348,18 +348,18 @@ void R_InitTranslationTables (void)
         skin_trans_entry_t * skintr = & skindesc->skin[sk-1]; // skins 1..
         for (i=0 ; i<256 ; i++)
         {
-	    byte newcolor = i; // default is to keep the color the same
-	    if ( i >= skindesc->range_start && i <= skindesc->range_end )
-	    {
-	        int ri = i - skindesc->range_start; // ramp index
-	        // new color is color_start + ramp index
-		newcolor = ( ri < skintr->num_using_ramp1 )?
-		    skintr->skin_ramp_colornum1
-		    : (skintr->skin_ramp_colornum2 - skintr->num_using_ramp1);
- 		newcolor += ri;
-	    }
-	    trantab[i] = newcolor;
-	}
+            byte newcolor = i; // default is to keep the color the same
+            if ( i >= skindesc->range_start && i <= skindesc->range_end )
+            {
+                int ri = i - skindesc->range_start; // ramp index
+                // new color is color_start + ramp index
+                newcolor = ( ri < skintr->num_using_ramp1 )?
+                    skintr->skin_ramp_colornum1
+                    : (skintr->skin_ramp_colornum2 - skintr->num_using_ramp1);
+                newcolor += ri;
+            }
+            trantab[i] = newcolor;
+        }
     }
 }
 
@@ -496,14 +496,14 @@ void R_FillBackScreen (void)
         for (x=0 ; x<(vid.width/64) ; x++)
         {
 //            memcpy (dest, src+((y&63)<<6), 64);
-	    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
+            V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
             dest += (64 * vid.bytepp);
         }
 
         if (vid.width&63)
         {
 //            memcpy (dest, src+((y&63)<<6), vid.width&63);
-	    V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
+            V_DrawPixels( dest, 0, 64, &src[(y & 63) << 6]);
         }
     }
 
