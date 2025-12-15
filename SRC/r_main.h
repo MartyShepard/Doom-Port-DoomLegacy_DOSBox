@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: r_main.h 1231 2016-05-24 17:09:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -132,7 +132,9 @@ extern sector_t * viewer_sector;
 extern int      viewer_modelsec;
 extern boolean  viewer_has_model;
 extern boolean  viewer_underwater;  // only set when viewer_has_model
+extern boolean  viewer_at_water;    // viewer straddles the water plane
 extern boolean  viewer_overceiling; // only set when viewer_has_model
+extern boolean  viewer_at_ceiling;  // viewer straddles the ceiling plane
 
 extern ffloor_t *  view_fogfloor;  // viewer is in a FF_FOG floor
 extern sector_t *  view_fogmodel;  // viewer is in a FF_FOG floor

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1221 2016-04-07 17:21:49Z wesleyjohnson $
+// $Id: r_plane.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -720,7 +720,7 @@ void R_DrawPlanes (void)
 
                 if (dc_yl <= dc_yh && dc_yh >= 0 && dc_yl < rdraw_viewheight )
                 {
-		   //[WDJ] phobiata.wad has many views that need clipping
+                    //[WDJ] phobiata.wad has many views that need clipping
                     if ( dc_yl < 0 )   dc_yl = 0;
                     if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
                     angle = (viewangle + x_to_viewangle[x])>>ANGLETOSKYSHIFT;

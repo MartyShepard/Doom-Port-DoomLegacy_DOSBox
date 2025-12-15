@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: r_main.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -176,7 +176,9 @@ sector_t * viewer_sector;
 int      viewer_modelsec;
 boolean  viewer_has_model;
 boolean  viewer_underwater;  // only set when viewer_has_model
+boolean  viewer_at_water;    // viewer straddles the water plane
 boolean  viewer_overceiling; // only set when viewer_has_model
+boolean  viewer_at_ceiling;  // viewer straddles the ceiling plane
 
 // Boom colormap, and global viewer coloring
 lighttable_t*           view_colormap;  // full lightlevel range colormaps
@@ -1249,7 +1251,11 @@ void R_SetupFrame (player_t* player)
     // Use of modelsec is protected by model field, do not test for -1.
     viewer_has_model  = viewer_sector->model > SM_fluid;
     viewer_underwater = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight);
+    viewer_at_water = viewer_has_model && (viewz <= sectors[viewer_modelsec].floorheight + 2)
+      && (viewz >= sectors[viewer_modelsec].floorheight - 2);
     viewer_overceiling = viewer_has_model && (viewz >= sectors[viewer_modelsec].ceilingheight);
+    viewer_at_ceiling = viewer_has_model && (viewz <= sectors[viewer_modelsec].ceilingheight + 2)
+      && (viewz >= sectors[viewer_modelsec].ceilingheight - 2);
 
     sscount = 0;
 

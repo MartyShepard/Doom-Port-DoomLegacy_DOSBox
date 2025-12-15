@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1227 2016-05-24 17:00:46Z wesleyjohnson $
+// $Id: r_things.c 1231 2016-05-24 17:09:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1265,6 +1265,13 @@ static void R_ProjectSprite (mobj_t* thing)
       sector_t * thingmodsecp = & sectors[thingmodelsec];
 
       // [WDJ] 4/20/2010  Added some structure and ()
+      // [WDJ] Could use viewer_at_water to force view of objects above and
+      // below to be seen simultaneously.
+      // Instead have choosen to have objects underwater not be seen until
+      // viewer_underwater.
+      // When at viewer_at_water, will not see objects above nor below the water.
+      // As this has some validity in reality, and does not generate HOM,
+      // will live with it.  It is transient, and most players will not notice.
       if (viewer_has_model)
       {
           // [WDJ] FakeFlat uses viewz<=floor, and thing used viewz<floor,
@@ -1279,7 +1286,7 @@ static void R_ProjectSprite (mobj_t* thing)
           // They both should be the same or else things do not
           // appear when just over ceiling.
           if( viewer_overceiling ?
-              ((gz_top < thingmodsecp->ceilingheight) && (viewz >= thingmodsecp->ceilingheight))
+              ((gz_top < thingmodsecp->ceilingheight) && (viewz > thingmodsecp->ceilingheight))
               : (thing->z >= thingmodsecp->ceilingheight)
               )
               return;
