@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: v_video.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -842,9 +842,8 @@ void V_ClearDisplay( void )
 #ifdef HWRENDER
     if( rendermode != render_soft )
     {
-        // Scaled
-        HWR_DrawFill(0, 0, 320, 200, 0);
-//        HWR_DrawFill(0, 0, vid.width, vid.height, 0);
+        // Screen vid.b
+        HWR_DrawVidFill(0, 0, vid.width, vid.height, 0);
     }
     else
 #endif
@@ -1665,7 +1664,10 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 //
 // per drawinfo centering, always screen 0, V_SCALEPATCH, V_SCALESTART
 //added:05-02-98:
-void V_DrawFill(int x, int y, int w, int h, byte color)
+
+// Scaled to vid screen.
+//  x, y : screen coord.
+void V_DrawVidFill(int x, int y, int w, int h, byte color)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
@@ -1675,16 +1677,13 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawFill(x, y, w, h, color);
+        HWR_DrawVidFill(x, y, w, h, color);
         return;
     }
 #endif
 
-    dest = screens[0] + (y * vid.dupy * vid.ybytes) + (x * vid.dupx * vid.bytepp);
+    dest = screens[0] + (y * vid.ybytes) + (x * vid.bytepp);
     dest += drawinfo.start_offset;
-
-    w *= vid.dupx;
-    h *= vid.dupy;
 
     for (v = 0; v < h; v++, dest += vid.ybytes)
     {
@@ -1692,6 +1691,14 @@ void V_DrawFill(int x, int y, int w, int h, byte color)
             V_DrawPixel(dest, u, color);
     }
 }
+
+// Scaled to (320,200)
+void V_DrawFill(int x, int y, int w, int h, byte color)
+{
+    // vid : from video setup
+    V_DrawVidFill( x * vid.dupx, y * vid.dupy, w * vid.dupx, h * vid.dupy, color);
+}
+
 
 //
 //  Fills a box of pixels using a flat texture as a pattern,

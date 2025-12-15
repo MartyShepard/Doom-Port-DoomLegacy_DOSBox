@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1212 2016-01-19 19:50:36Z wesleyjohnson $
+// $Id: p_user.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1335,6 +1335,17 @@ void P_PlayerThink (player_t* player)
 
     if (player->bonuscount)
         player->bonuscount--;
+
+    if (player->key_pickup)
+        player->key_pickup--;
+    if (player->health_pickup)
+        player->health_pickup--;
+    if (player->armor_pickup)
+        player->armor_pickup--;
+    if (player->ammo_pickup)
+        player->ammo_pickup--;
+    if (player->weapon_pickup)
+        player->weapon_pickup--;
 
     // Handling colormaps.
     if (player->powers[pw_invulnerability])

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: st_stuff.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,6 +52,8 @@ extern boolean  stbar_on;  // status bar active
 // Need this for SCR_Recalc() coz widgets coords change with resolutions.
 extern boolean  stbar_recalc;
 
+// pickupflash shifts
+extern byte pickupflash_table[ 4 ];
 
 // update all global position variables (just above)
 void ST_CalcPos(void);
@@ -59,6 +61,9 @@ void ST_CalcPos(void);
 //
 // STATUS BAR
 //
+
+// non-number out-of-band signal for int.  (Doom used 1994)
+#define  NON_NUMBER   0x7FFF
 
 // Called by main loop.
 boolean ST_Responder (event_t* ev);

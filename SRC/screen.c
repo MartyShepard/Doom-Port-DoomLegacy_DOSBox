@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: screen.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -319,6 +319,10 @@ void SCR_SetMode (void)
         goto bpp_err;
     }
     vid.widthbytes = vid.width * vid.bytepp;  // to save multiplies
+    vid.fx_center = (float) vid.width * 0.5f;   
+    vid.fy_center = 2.0f / (float)vid.width;
+    vid.fx_scale2 = (float) vid.height * 0.5f;   
+    vid.fy_scale2 = 2.0f / (float)vid.height;
 
     V_SetPalette (0);
 
@@ -376,6 +380,10 @@ void SCR_Startup (void)
     vid.fdupy = (float)vid.height/BASEVIDHEIGHT; //1.0f;
     vid.dupx = (int)vid.fdupx; //1;
     vid.dupy = (int)vid.fdupy; //1;
+    vid.fx_center = (float) vid.width * 0.5f;   
+    vid.fx_scale2 = 2.0f / (float)vid.width;
+    vid.fy_center = (float) vid.height * 0.5f;   
+    vid.fy_scale2 = 2.0f / (float)vid.height;
 
     //vid.baseratio = FRACUNIT; //Hurdler: not used anymore
 
@@ -414,6 +422,11 @@ void SCR_Recalc (void)
         vid.fdupy = (float)vid.height / BASEVIDHEIGHT;
         //vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS); //Hurdler: not used anymore
     }
+    vid.fx_center = (float) vid.width * 0.5f;   
+    vid.fx_scale2 = 2.0f / (float)vid.width;
+    vid.fy_center = (float) vid.height * 0.5f;   
+    vid.fy_scale2 = 2.0f / (float)vid.height;
+
 
     //added:18-02-98: calculate centering offset for the scaled menu
     // Adds a left margin for CENTERMENU

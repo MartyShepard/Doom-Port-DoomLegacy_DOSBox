@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: screen.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -132,6 +132,8 @@ typedef struct viddef_s
  // special uses
     int         dupx,dupy;       // scale 1,2,3 value for menus & overlays
     float       fdupx,fdupy;     // same as dupx,dupy but exact value when aspect ratio isn't 320/200
+    float       fx_center,fy_center; // half width height
+    float       fx_scale2,fy_scale2; // 2.0 / width, 2.0 / height
     int         centerofs;       // centering for the scaled menu gfx
 
     //int         baseratio;       // SoM: Used to get the correct value for lighting walls //Hurdler: not used anymore

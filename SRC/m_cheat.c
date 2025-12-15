@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: m_cheat.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1043,10 +1043,7 @@ static void CheatHealthFunc(player_t * player, Cheat_t * cheat)
 
 static void CheatKeysFunc(player_t * player, Cheat_t * cheat)
 {
-    extern int playerkeys;
-
     player->cards |= it_allkeys;
-    playerkeys = 7;     // Key refresh flags
     P_SetMessage(player, TXT_CHEATKEYS, 51);
 }
 

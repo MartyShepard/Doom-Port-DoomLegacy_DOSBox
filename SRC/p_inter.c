@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: p_inter.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -100,6 +100,7 @@
   // cv_allowrocketjump
 
 #define BONUSADD        6
+#define PICKUP_FLASH_TICS     10
 
 
 // a weapon is found with two clip loads,
@@ -240,7 +241,7 @@ boolean P_GiveAmmo ( player_t*     player,
                      ammotype_t    ammo,
                      int           count )
 {
-    int         oldammo;
+    unsigned int oldammo, newammo;
 
     if (ammo == am_noammo)
         return false;
@@ -251,7 +252,8 @@ boolean P_GiveAmmo ( player_t*     player,
         return false;
     }
 
-    if ( player->ammo[ammo] == player->maxammo[ammo]  )
+    oldammo = player->ammo[ammo];
+    if ( oldammo == player->maxammo[ammo]  )
         return false;
 /*
     if (num)
@@ -263,20 +265,35 @@ boolean P_GiveAmmo ( player_t*     player,
         || gameskill == sk_nightmare)
     {
         if( gamemode == heretic )
-            count += count>>1;
+            count += count>>1;  // add 50% more
         else
             // give double ammo in trainer mode,
             // you'll need in nightmare
-            count <<= 1;
-
+            count <<= 1;  // add 100% more
     }
 
 
-    oldammo = player->ammo[ammo];
-    player->ammo[ammo] += count;
+    newammo = oldammo + count;
 
-    if (player->ammo[ammo] > player->maxammo[ammo])
-        player->ammo[ammo] = player->maxammo[ammo];
+    if (newammo > player->maxammo[ammo])
+        newammo = player->maxammo[ammo];
+
+    player->ammo[ammo] = newammo;
+
+    if( newammo > oldammo )
+    {
+        // ammo pickup screen indication
+        if(ammo == player->weaponinfo[player->readyweapon].ammo)
+        {
+            player->ammo_pickup = PICKUP_FLASH_TICS; // ammo for current weapon
+        }
+        else
+        {
+            player->ammo_pickup += PICKUP_FLASH_TICS/2;  // some other ammo
+	    if( player->ammo_pickup > 35 )
+                player->ammo_pickup = 35;
+        }
+    }
 
     // If non zero ammo,
     // don't change up weapons,
@@ -383,6 +400,7 @@ boolean P_GiveWeapon ( player_t*     player,
             return false;
 
         player->bonuscount += BONUSADD;
+        player->weapon_pickup = PICKUP_FLASH_TICS;
         player->weaponowned[weapon] = true;
 
         if (cv_deathmatch.value)
@@ -429,6 +447,7 @@ boolean P_GiveWeapon ( player_t*     player,
     {
         gaveweapon = true;
         player->weaponowned[weapon] = true;
+        player->weapon_pickup = PICKUP_FLASH_TICS;
         if (player->originalweaponswitch
         || player->favoritweapon[weapon] > player->favoritweapon[player->readyweapon])
             player->pendingweapon = weapon;    // Doom2 original stuff
@@ -460,6 +479,7 @@ boolean P_GiveHealth ( player_t*     player,
         player->health = max;
     player->mo->health = player->health;
 
+    player->health_pickup = PICKUP_FLASH_TICS;
     return true;
 }
 
@@ -483,6 +503,7 @@ boolean P_GiveArmor ( player_t*     player,
     player->armortype = armortype;
     player->armorpoints = hits;
 
+    player->armor_pickup = PICKUP_FLASH_TICS;
     return true;
 }
 
@@ -493,13 +514,14 @@ boolean P_GiveArmor ( player_t*     player,
 //
 static
 boolean P_GiveCard ( player_t*     player,
-                            card_t        card )
+                     card_t        card )
 {
     if (player->cards & card )
         return false;
 
-    player->bonuscount = BONUSADD;
     player->cards |= card;
+    player->bonuscount = BONUSADD;
+    player->key_pickup = PICKUP_FLASH_TICS;
     return true;
 }
 
@@ -752,7 +774,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
     byte        msglevel = 20;  // normal play for common ammo
     spritenum_t group = 0xFFFF;  // combined handling by spritenum
     boolean     special_dropped;  // special item was dropped
-    int         i;
+    int         val, i;
     fixed_t     delta;
     int         sound;
 
@@ -825,18 +847,23 @@ void P_TouchSpecialThing ( mobj_t*       special,
 
         // bonus items
       case SPR_BON1:  // common health inc
-        player->health++;               // can go over 100%
-        if (player->health > 2*MAXHEALTH)
-            player->health = 2*MAXHEALTH;
-        player->mo->health = player->health;
+        val = player->health + 1;               // can go over 100%
+        if (val > 2*MAXHEALTH)
+            val = 2*MAXHEALTH;
+        if((val > player->health) && (player->health_pickup < 35))
+            player->health_pickup += PICKUP_FLASH_TICS/2;
+        player->mo->health = player->health = val;
         msg = GOTHTHBONUS;
         msglevel = 22;
         break;
 
       case SPR_BON2:  // common armor inc
-        player->armorpoints++;          // can go over 100%
-        if (player->armorpoints > max_armor)
-            player->armorpoints = max_armor;
+        val = player->armorpoints + 1;          // can go over 100%
+        if (val > max_armor)
+            val = max_armor;
+        if((val > player->armorpoints) && (player->armor_pickup < 35))
+            player->armor_pickup += PICKUP_FLASH_TICS/2;
+        player->armorpoints = val;       
         if (!player->armortype)
             player->armortype = 1;
         msg = GOTARMBONUS;
@@ -844,10 +871,12 @@ void P_TouchSpecialThing ( mobj_t*       special,
         break;
 
       case SPR_SOUL:
-        player->health += soul_health;
-        if (player->health > maxsoul)
-            player->health = maxsoul;
-        player->mo->health = player->health;
+        val = player->health + soul_health;
+        if (val > maxsoul)
+            val = maxsoul;
+        if((val > player->health) && (player->health_pickup < 35))
+            player->health_pickup += PICKUP_FLASH_TICS;
+        player->mo->health = player->health = val;
         msg = GOTSUPER;
         msglevel = 38;
         sound = sfx_getpow;
@@ -858,6 +887,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
             return;
         player->health = mega_health;
         player->mo->health = player->health;
+        if(player->health_pickup < 35)
+            player->health_pickup += PICKUP_FLASH_TICS;
         P_GiveArmor (player,2);
         msg = GOTMSPHERE;
         msglevel = 38;
@@ -1461,9 +1492,9 @@ void P_UnlinkFloorThing(mobj_t*   mobj)
 // Death messages relating to the target (dying) player
 //
 static
-void P_DeathMessages ( mobj_t*  target,
-                       mobj_t*  inflictor,
-                       mobj_t*  source )
+void P_DeathMessages ( mobj_t*       target,
+                       mobj_t*       inflictor,
+                       mobj_t*       source )
 {
     int     w;
     char    *str;
@@ -1623,8 +1654,10 @@ void P_CheckFragLimit(player_t *p)
         int fragteam=0,i;
 
         for(i=0;i<MAXPLAYERS;i++)
+        {
             if(ST_SameTeam(p,&players[i]))
                 fragteam += ST_PlayerFrags(i);
+        }
 
         if(cv_fraglimit.value<=fragteam)
             G_ExitLevel();
@@ -1660,9 +1693,9 @@ int P_AmmoInWeapon(player_t *player)
 //      target is the 'target' of the attack, target dies...
 //      inflictor is the weapon, missile, creature melee, or NULL, (for messages)
 //                                          113
-void P_KillMobj ( mobj_t*       target,
-                  mobj_t*       inflictor,
-                  mobj_t*       source )
+void P_KillMobj ( mobj_t*  target,
+                  mobj_t*  inflictor,
+                  mobj_t*  source )
 {
     mobjtype_t  item = 0;
     mobj_t*     mo;

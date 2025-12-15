@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1203 2015-12-26 19:24:20Z wesleyjohnson $
+// $Id: v_video.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -263,7 +263,12 @@ void V_MarkRect ( int x, int y,
 #endif
 
 //added:05-02-98: fill a box with a single color
+// Scaled to vid screen.
+//  x, y : screen coord.
+void V_DrawVidFill(int x, int y, int w, int h, byte color);
+// Scaled to (320,200).
 void V_DrawFill(int x, int y, int w, int h, byte color);
+
 //added:06-02-98: fill a box with a flat as a pattern
 void V_DrawFlatFill (int x, int y, int w, int h, int flatnum);
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1172 2015-05-22 18:59:12Z wesleyjohnson $
+// $Id: st_lib.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -47,16 +47,27 @@
 #include "v_video.h"
 #include "z_zone.h"
 
-#include "i_video.h"    //rendermode
+#include "i_video.h"
+  // rendermode
+
 //#define DEBUG
 
 // [WDJ] all STlib, number, etc. patches are already endian fixed
+
+#define FLASH_COLOR  0x72
+
+// STlib global enables.
+// Clear to background, except when overlay or hardware draw.
+//faB:current hardware mode always refresh the statusbar
+boolean  stlib_enable_erase = false;
+// Set when redrawing from some unknown state, clear when additive update.
+boolean  stlib_force_refresh = true;
 
 //
 // Hack display negative frags.
 //  Loads and store the stminus lump.
 //
-patch_t*                sttminus;
+patch_t *  sttminus;
 
 void STlib_init(void)
 {
@@ -65,49 +76,70 @@ void STlib_init(void)
 
 
 // Initialize number widget
-void STlib_initNum ( st_number_t*          n,
-                     int                   x,
-                     int                   y,
-                     patch_t**             pl,
-                     int*                  num,
-                     boolean*              on,
-                     int                   width )
+//  patch_list : font
+void STlib_initNum ( st_number_t * ni,
+                     int  x, int  y,
+                     patch_t ** patch_list,
+                     int * num,
+                     int   width )
 {
-    n->x        = x;
-    n->y        = y;
-    n->oldnum   = 0;
-    n->width    = width;        // number of digits
-    n->num      = num;
-    n->on       = on;
-    n->p        = pl;
+    ni->x        = x;
+    ni->y        = y;
+    ni->width    = width;        // number of digits
+    ni->num      = num;
+    ni->patches  = patch_list;
+    ni->prev_num = NON_NUMBER;
+    ni->command  = STLIB_REFRESH;
 }
 
 
 //
-// A fairly efficient way to draw a number
-//  based on differences from the old number.
-// Note: worth the trouble?
+// Draw when the number changes from the previous value,
+// or by command in status.
 //
-void STlib_drawNum ( st_number_t*  n,
-                     boolean       refresh )
+// Called by STlib_updateNum from ST_drawWidgets, when sbar_on
+void STlib_updateNum ( st_number_t*  ni )
 {
-
-    int    numdigits = n->width;
-    int    num = *n->num;
-
+    int    numdigits = ni->width;
+    int    num = *ni->num;
+      // number to be drawn.  NON_NUMBER is not drawn
+    boolean   neg;
     // [WDJ] all ST patches are already endian fixed
-    int    w = n->p[0]->width;
-    int    h = n->p[0]->height;
-    int    x = n->x;
-
-    int    neg;
+    int    w = ni->patches[0]->width;
+    int    h = ni->patches[0]->height;
+    int    x;
    
     // Draw to stbar_fg, screen0 status bar
 
-    n->oldnum = *n->num;
+    // clear the area
+    x = ni->x - numdigits*w;
+
+#ifdef DEBUG
+       CONS_Printf("V_CopyRect1: %d %d %d %d %d %d %d %d val: %d\n",
+              x, ni->y, BG, w*numdigits, h, x, ni->y, stbar_fg, num);
+#endif
+    if( ni->command == STLIB_FLASH )
+    {
+        V_DrawFill( x, ni->y, w*numdigits, h, FLASH_COLOR );
+        ni->command = STLIB_REFRESH;
+    }
+    else
+    {
+        // Clear to background, except when overlay or hardware draw.
+        //faB:current hardware mode always refresh the statusbar
+        if(stlib_enable_erase)
+           V_CopyRect(x, ni->y, BG, w*numdigits, h, x, ni->y, stbar_fg);
+
+        ni->command = 0;
+    }
+
+    ni->prev_num = num;
+
+    // if non-number, do not draw it
+    if (num == NON_NUMBER)
+        return;
 
     neg = num < 0;
-
     if (neg)
     {
         if (numdigits == 2 && num < -9)
@@ -118,175 +150,154 @@ void STlib_drawNum ( st_number_t*  n,
         num = -num;
     }
 
-    // clear the area
-    x = n->x - numdigits*w;
-
-#ifdef DEBUG
-       CONS_Printf("V_CopyRect1: %d %d %d %d %d %d %d %d val: %d\n",
-              x, n->y, BG, w*numdigits, h, x, n->y, stbar_fg, num);
-#endif
-    // dont clear background in overlay
-    if (!st_overlay &&
-         rendermode==render_soft)   //faB:current hardware mode always refresh the statusbar
-        V_CopyRect(x, n->y, BG, w*numdigits, h, x, n->y, stbar_fg);
-
-    // if non-number, do not draw it
-    if (num == 1994)
-        return;
-
-    x = n->x;
+    x = ni->x;
 
     // in the special case of 0, you draw 0
-    if (!num)
-        V_DrawScaledPatch(x - w, n->y, n->p[ 0 ]);
+    if (num == 0)
+        V_DrawScaledPatch(x - w, ni->y, ni->patches[ 0 ]);
 
     // draw the new number
     while (num && numdigits--)
     {
         x -= w;
-        V_DrawScaledPatch(x, n->y, n->p[ num % 10 ]);
+        V_DrawScaledPatch(x, ni->y, ni->patches[ num % 10 ]);
         num /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-        V_DrawScaledPatch(x - 8, n->y, sttminus);
+        V_DrawScaledPatch(x - 8, ni->y, sttminus);
 }
 
 
 //
-void STlib_updateNum ( st_number_t*          n,
-                       boolean               refresh )
-{
-    if (*n->on) STlib_drawNum(n, refresh);
-}
-
-
-//
-void STlib_initPercent ( st_percent_t*         p,
+//  patch_list : font
+void STlib_initPercent ( st_percent_t*         per,
                          int                   x,
                          int                   y,
-                         patch_t**             pl,
+                         patch_t**             patch_list,
                          int*                  num,
-                         boolean*              on,
                          patch_t*              percent )
 {
-    STlib_initNum(&p->n, x, y, pl, num, on, 3);
-    p->p = percent;
+    STlib_initNum(&per->ni, x, y, patch_list, num, 3);
+    per->patch = percent;
 }
 
 
 
 
-void STlib_updatePercent ( st_percent_t*         per,
-                           int                   refresh )
+void STlib_updatePercent ( st_percent_t*  per )
 {
-    if (refresh && *per->n.on)
-        V_DrawScaledPatch(per->n.x, per->n.y, per->p);
+    if (per->ni.command == STLIB_REFRESH || stlib_force_refresh )
+        V_DrawScaledPatch(per->ni.x, per->ni.y, per->patch);
 
-    STlib_updateNum(&per->n, refresh);
+    STlib_updateNum(&per->ni);
 }
 
 
 
-void STlib_initMultIcon ( st_multicon_t*        i,
-                          int                   x,
-                          int                   y,
-                          patch_t**             il,
-                          int*                  inum,
-                          boolean*              on )
+void STlib_initMultIcon ( st_multicon_t *  mi,
+                          int x, int y,
+                          patch_t **  patch_list,
+                          int * icon_index )
 {
-    i->x        = x;
-    i->y        = y;
-    i->oldinum  = -1;
-    i->inum     = inum;
-    i->on       = on;
-    i->p        = il;
+    mi->x = x;
+    mi->y = y;
+    mi->icon_index = icon_index;
+    mi->patches  = patch_list;
+    mi->prev_icon_index = -1;  // detectable invalid
+    mi->command = STLIB_REFRESH;
 }
 
 
 
-void STlib_updateMultIcon ( st_multicon_t*        mi,
-                            boolean               refresh )
+void STlib_updateMultIcon ( st_multicon_t*  mi )
 {
-    int                 w;
-    int                 h;
-    int                 x;
-    int                 y;
+    int  iconindex = *(mi->icon_index);
 
-    if (*mi->on
-        && (mi->oldinum != *mi->inum || refresh)
-        && (*mi->inum!=-1))
+    if ((mi->prev_icon_index != iconindex) || mi->command || stlib_force_refresh )
     {
-        if (mi->oldinum != -1)
+        // Icon display has changed from previous.
+        if( mi->command == STLIB_FLASH )
         {
-            x = mi->x - mi->p[mi->oldinum]->leftoffset;
-            y = mi->y - mi->p[mi->oldinum]->topoffset;
-            w = mi->p[mi->oldinum]->width;
-            h = mi->p[mi->oldinum]->height;
-
+            // Actual flash is drawn elsewhere, over several icons positions
+            // at once.
+            mi->command = STLIB_FLASH_CLEAR;
+        }
+        else if(mi->prev_icon_index >= 0 || mi->command || stlib_force_refresh )
+        {
+            //faB:current hardware mode always refresh the statusbar
+            // Copy the background at this screen position, erasing previous Icon.
+            if( stlib_enable_erase )
+            {
+                int erase_index = (mi->prev_icon_index >= 0)? mi->prev_icon_index : 0;
+                patch_t * pp = mi->patches[erase_index];
+                int x = mi->x - pp->leftoffset;
+                int y = mi->y - pp->topoffset;
+                int w = pp->width;
+                int h = pp->height;
 #ifdef DEBUG
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
                             x, y, BG, w, h, x, y, stbar_fg);
 #endif
-            //faB:current hardware mode always refresh the statusbar
-            if (!st_overlay && rendermode==render_soft)   
                 V_CopyRect(x, y, BG, w, h, x, y, stbar_fg);
+            }
+
+            mi->command = 0;
         }
-        V_DrawScaledPatch(mi->x, mi->y, mi->p[*mi->inum]);
-        mi->oldinum = *mi->inum;
+        // Draw icon patch.       
+        if(iconindex >= 0)
+            V_DrawScaledPatch(mi->x, mi->y, mi->patches[iconindex]);
+
+        mi->prev_icon_index = iconindex;
     }
 }
 
 
 
-void STlib_initBinIcon ( st_binicon_t*         b,
+void STlib_initBinIcon ( st_binicon_t *        bi,
                          int                   x,
                          int                   y,
-                         patch_t*              i,
-                         boolean*              val,
-                         boolean*              on )
+                         patch_t *             patch,
+                         boolean *             val )
 {
-    b->x        = x;
-    b->y        = y;
-    b->oldval   = 0;
-    b->val      = val;
-    b->on       = on;
-    b->p        = i;
+    bi->x        = x;
+    bi->y        = y;
+    bi->boolval  = val;
+    bi->patch    = patch;
+    bi->prev_val = 0;
+    bi->command  = STLIB_REFRESH;
 }
 
 
 
-void STlib_updateBinIcon ( st_binicon_t*         bi,
-                           boolean               refresh )
+void STlib_updateBinIcon ( st_binicon_t*   bi )
 {
-    int                 x;
-    int                 y;
-    int                 w;
-    int                 h;
+    boolean on = *bi->boolval;
 
-    if (*bi->on
-        && (bi->oldval != *bi->val || refresh))
+    if ((bi->prev_val != on) || bi->command || stlib_force_refresh)
     {
-        x = bi->x - bi->p->leftoffset;
-        y = bi->y - bi->p->topoffset;
-        w = bi->p->width;
-        h = bi->p->height;
-
-        if (*bi->val)
-            V_DrawScaledPatch(bi->x, bi->y, bi->p);
-        else
+        // Update the icon display.
+        // BinIcon does not flash.
+        if (on)
+            V_DrawScaledPatch(bi->x, bi->y, bi->patch);
+        else if (stlib_enable_erase)
         {
+            //faB:current hardware mode always refresh the statusbar
+            // Erase icon by copying background.
+            int x = bi->x - bi->patch->leftoffset;
+            int y = bi->y - bi->patch->topoffset;
+            int w = bi->patch->width;
+            int h = bi->patch->height;
+
 #ifdef DEBUG
        CONS_Printf("V_CopyRect3: %d %d %d %d %d %d %d %d\n",
                             x, y, BG, w, h, x, y, stbar_fg);
 #endif
-            if (!st_overlay &&
-                rendermode==render_soft ) //faB:current hardware mode always refresh the statusbar
-                V_CopyRect(x, y, BG, w, h, x, y, stbar_fg);
+            V_CopyRect(x, y, BG, w, h, x, y, stbar_fg);
         }
 
-        bi->oldval = *bi->val;
+        bi->prev_val = on;
+        bi->command = 0;
     }
-
 }

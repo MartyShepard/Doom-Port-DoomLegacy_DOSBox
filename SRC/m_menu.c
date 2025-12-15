@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1215 2016-03-08 18:45:15Z wesleyjohnson $
+// $Id: m_menu.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3823,6 +3823,7 @@ void M_DrawSelCell ( menu_t*       menu,
 //  to read the text with all the stuff in the background...
 //
 //added:06-02-98:
+//  x, y : position (320,200)
 void M_DrawTextBox (int x, int y, int width, int lines)
 {
     fontinfo_t * fip = V_FontInfo();
@@ -5089,10 +5090,10 @@ menuitem_t OGL_ColorMenu[]=
 menuitem_t OGL_DevMenu[]=
 {
 //    {IT_STRING | IT_CVAR, "Polygon smooth"  , &cv_grpolygonsmooth    ,  0},
-#ifdef TRANSWALL_CHOICE
     {IT_STRING | IT_CVAR, 0, "MD2 models"      , &cv_grmd2              , 10},
-#endif
+#ifdef TRANSWALL_CHOICE
     {IT_STRING | IT_CVAR, 0, "Translucent walls", &cv_grtranswall       , 20},
+#endif
     {IT_STRING | IT_CVAR, 0, "Polygon shape"  , &cv_grpolyshape         , 30},
 };
 

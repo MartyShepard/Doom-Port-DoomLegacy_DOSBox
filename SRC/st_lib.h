@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: st_lib.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -45,37 +45,60 @@
 #define BG 1
 #define FG 0
 
+// STlib global enables.
+// These are removed to globals to make the repetitive update calls
+// as clean as possible, thus smaller and faster.
+// These enables only need to be changed infrequently.
+
+// Enable to erase from copy BG.  Clear for overlay and hardware draw.
+extern boolean  stlib_enable_erase;
+
+// Enable to refresh from BG.  Clear to do additive updates.
+extern boolean  stlib_force_refresh;
+  // This replaces the refresh parameter which appeared on every call,
+  // and only infrequently was set.
+
 //
 // Typedefs of widgets
 //
+// [WDJ]  Removed on flag from all widgets.
+// It was only tested immediately with a return from the draw function.
+// The caller can do the same test with much less overhead,
+// and much clearer code, without all the indirection and ptrs.
+
+// Widget commands
+typedef enum {
+    STLIB_REFRESH = 2,
+    STLIB_FLASH,
+    STLIB_FLASH_CLEAR
+} stlib_command_e;
 
 // Number widget
 
 typedef struct
 {
+    // flash
+    byte     command;   //  stlib_command_e
+
     // upper right-hand corner
     //  of the number (right-justified)
-    int         x;
-    int         y;
+    uint16_t   x, y;
 
     // max # of digits in number
-    int         width;
+    byte       width;
 
-    // last number value
-    int         oldnum;
-
+    // last number value  (-1000 .. +1000)
+    int32_t    prev_num;
+   
     // pointer to current value
-    int*        num;
-
-    // pointer to boolean stating
-    //  whether to update number
-    boolean*    on;
+    int32_t *  num;
 
     // list of patches for 0-9
-    patch_t**   p;
+    patch_t**  patches;
 
+    // unused
     // user data
-    int data;
+//    int data;
 
 } st_number_t;
 
@@ -86,10 +109,10 @@ typedef struct
 typedef struct
 {
     // number information
-    st_number_t         n;
+    st_number_t    ni;
 
     // percent sign graphic
-    patch_t*            p;
+    patch_t*       patch;
 
 } st_percent_t;
 
@@ -98,25 +121,24 @@ typedef struct
 // Multiple Icon widget
 typedef struct
 {
+    // flash
+    byte     command;   //  stlib_command_e
+
      // center-justified location of icons
-    int                 x;
-    int                 y;
+    uint16_t   x, y;
 
-    // last icon number
-    int                 oldinum;
+    // last icon number index  (0 .. +1000)
+    int16_t    prev_icon_index;
 
-    // pointer to current icon
-    int*                inum;
-
-    // pointer to boolean stating
-    //  whether to update icon
-    boolean*            on;
+    // pointer to current icon index
+    int *      icon_index;
 
     // list of icons
-    patch_t**           p;
+    patch_t**  patches;
 
+    // unused
     // user data
-    int                 data;
+//    int                 data;
 
 } st_multicon_t;
 
@@ -127,25 +149,24 @@ typedef struct
 
 typedef struct
 {
-    // center-justified location of icon
-    int                 x;
-    int                 y;
+    // flash
+    byte     command;   //  stlib_command_e
 
-    // last icon value
-    int                 oldval;
+    // center-justified location of icon
+    uint16_t   x, y;
+
+    boolean    prev_val;
 
     // pointer to current icon status
-    boolean*            val;
+    boolean *  boolval;
 
-    // pointer to boolean
-    //  stating whether to update icon
-    boolean*            on;
-
-
-    patch_t*            p;      // icon
-    int                 data;   // user data
+    patch_t *  patch;      // icon
+ 
+    // unused
+//    int                 data;   // user data
 
 } st_binicon_t;
+
 
 extern patch_t*         sttminus;       // from ST_lib
 
@@ -162,32 +183,32 @@ void STlib_init(void);
 
 
 // Number widget routines
-void STlib_initNum ( st_number_t* n, int x, int y,
-  patch_t** pl, int* num, boolean* on, int width );
+void STlib_initNum ( st_number_t* ni, int x, int y,
+  patch_t** patch_list, int* num, int width );
 
-void STlib_updateNum ( st_number_t* n, boolean refresh );
+void STlib_updateNum ( st_number_t* ni );
 
 
 // Percent widget routines
-void STlib_initPercent ( st_percent_t* p, int x, int y,
-  patch_t** pl, int* num, boolean* on, patch_t* percent );
+void STlib_initPercent ( st_percent_t* per, int x, int y,
+  patch_t** patch_list, int* num, patch_t* percent );
 
 
-void STlib_updatePercent ( st_percent_t* per, int refresh );
+void STlib_updatePercent ( st_percent_t* per );
 
 
-// Multiple Icon widget routines
+// Multiple Icson widget routines
 void STlib_initMultIcon ( st_multicon_t* mi, int x, int y,
-  patch_t** il, int* inum, boolean* on );
+  patch_t** patch_list, int* icon_index );
 
 
-void STlib_updateMultIcon ( st_multicon_t* mi, boolean refresh );
+void STlib_updateMultIcon ( st_multicon_t* mi );
 
 // Binary Icon widget routines
 
-void STlib_initBinIcon ( st_binicon_t* b, int x, int y,
-  patch_t* i, boolean* val, boolean* on );
+void STlib_initBinIcon ( st_binicon_t* bi, int x, int y,
+  patch_t* patch, boolean* val );
 
-void STlib_updateBinIcon ( st_binicon_t* bi, boolean refresh );
+void STlib_updateBinIcon ( st_binicon_t* bi );
 
 #endif

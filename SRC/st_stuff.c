@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: st_stuff.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -103,7 +103,8 @@
 //protos
 void ST_createWidgets(void);
 
-extern fixed_t waterheight;
+
+#define FLASH_COLOR  0x72
 
 //
 // STATUS BAR DATA
@@ -131,10 +132,6 @@ extern fixed_t waterheight;
 // This is now dynamic
 #define ST_Y                    stbar_y
 
-// Should be set to patch width
-//  for tall numbers later on
-#define ST_TALLNUMWIDTH         (tallnum[0]->width)
-
 // Number of status faces.
 #define ST_NUMPAINFACES         5
 #define ST_NUMSTRAIGHTFACES     3
@@ -157,7 +154,7 @@ extern fixed_t waterheight;
 #define ST_DEADFACE             (ST_GODFACE+1)
 
 #define ST_FACESX               143
-#define ST_FACESY               (ST_Y+0)
+#define ST_FACESY               0
 
 #define ST_EVILGRINCOUNT        (2*TICRATE)
 #define ST_STRAIGHTFACECOUNT    (TICRATE/2)
@@ -179,101 +176,86 @@ extern fixed_t waterheight;
 // AMMO number pos.
 #define ST_AMMOWIDTH            3
 #define ST_AMMOX                44
-#define ST_AMMOY                (ST_Y+3)
+#define ST_AMMOY                3
 
 // HEALTH number pos.
 #define ST_HEALTHWIDTH          3
 #define ST_HEALTHX              90
-#define ST_HEALTHY              (ST_Y+3)
+#define ST_HEALTHY              3
 
 // Weapon pos.
 #define ST_ARMSX                111
-#define ST_ARMSY                (ST_Y+4)
+#define ST_ARMSY                4
 #define ST_ARMSBGX              104
-#define ST_ARMSBGY              (ST_Y)
+#define ST_ARMSBGY              0
 #define ST_ARMSXSPACE           12
 #define ST_ARMSYSPACE           10
 
 // Frags pos.
 #define ST_FRAGSX               138
-#define ST_FRAGSY               (ST_Y+3)
+#define ST_FRAGSY               3
 #define ST_FRAGSWIDTH           2
 
 // ARMOR number pos.
 #define ST_ARMORWIDTH           3
 #define ST_ARMORX               221
-#define ST_ARMORY               (ST_Y+3)
+#define ST_ARMORY               3
 
 // Key icon positions.
-#define ST_KEY0WIDTH            8
-#define ST_KEY0HEIGHT           5
-#define ST_KEY0X                239
-#define ST_KEY0Y                (ST_Y+3)
-#define ST_KEY1WIDTH            ST_KEY0WIDTH
-#define ST_KEY1X                239
-#define ST_KEY1Y                (ST_Y+13)
-#define ST_KEY2WIDTH            ST_KEY0WIDTH
-#define ST_KEY2X                239
-#define ST_KEY2Y                (ST_Y+23)
+#define ST_KEYSBOX_X   236
+#define ST_KEYSBOX_Y   2
+#define ST_KEYSBOX_W   13
+#define ST_KEYSBOX_H   30
+// They appear in a vertical column, so share x positions.
+#define ST_KEY_WIDTH   6
+#define ST_KEY_HEIGHT  5
+#define ST_KEYX        239
+#define ST_KEYDX       2
+#define ST_KEYDY       2
+static uint8_t  keybox_y[6] = { 3, 13, 23, 3, 13, 23 };
+static uint8_t  keybox_dual_x[6] =
+ { ST_KEYX-ST_KEYDX, ST_KEYX-ST_KEYDX, ST_KEYX-ST_KEYDX,
+   ST_KEYX+ST_KEYDX, ST_KEYX+ST_KEYDX, ST_KEYX+ST_KEYDX };
+static uint8_t  keybox_dual_y[6] =
+ {  3-ST_KEYDY, 13-ST_KEYDY, 23-ST_KEYDY,
+    3+ST_KEYDY, 13+ST_KEYDY, 23+ST_KEYDY };
 
-// Ammunition counter.
-#define ST_AMMO0WIDTH           3
-#define ST_AMMO0HEIGHT          6
-#define ST_AMMO0X               288
-#define ST_AMMO0Y               (ST_Y+5)
-#define ST_AMMO1WIDTH           ST_AMMO0WIDTH
-#define ST_AMMO1X               288
-#define ST_AMMO1Y               (ST_Y+11)
-#define ST_AMMO2WIDTH           ST_AMMO0WIDTH
-#define ST_AMMO2X               288
-#define ST_AMMO2Y               (ST_Y+23)
-#define ST_AMMO3WIDTH           ST_AMMO0WIDTH
-#define ST_AMMO3X               288
-#define ST_AMMO3Y               (ST_Y+17)
+// Ammunition counter, and max ammo, in two columns in status bar.
+// Max ammo changes when backpack aquired.
+#define ST_AMMOS_WIDTH          3
+#define ST_MAXAMMOS_WIDTH       3
+#define ST_AMMOSX               288
+#define ST_MAXAMMOSX            314
+static uint8_t  ammobox_y[4] = { 5, 11, 23, 17 };
 
-// Indicate maximum ammunition.
-// Only needed because backpack exists.
-#define ST_MAXAMMO0WIDTH        3
-#define ST_MAXAMMO0HEIGHT       5
-#define ST_MAXAMMO0X            314
-#define ST_MAXAMMO0Y            (ST_Y+5)
-#define ST_MAXAMMO1WIDTH        ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO1X            314
-#define ST_MAXAMMO1Y            (ST_Y+11)
-#define ST_MAXAMMO2WIDTH        ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO2X            314
-#define ST_MAXAMMO2Y            (ST_Y+23)
-#define ST_MAXAMMO3WIDTH        ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO3X            314
-#define ST_MAXAMMO3Y            (ST_Y+17)
 
 //faB: unused stuff from the Doom alpha version ?
 // pistol
 //#define ST_WEAPON0X           110
-//#define ST_WEAPON0Y           (ST_Y+4)
+//#define ST_WEAPON0Y           4
 // shotgun
 //#define ST_WEAPON1X           122
-//#define ST_WEAPON1Y           (ST_Y+4)
+//#define ST_WEAPON1Y           4
 // chain gun
 //#define ST_WEAPON2X           134
-//#define ST_WEAPON2Y           (ST_Y+4)
+//#define ST_WEAPON2Y           4
 // missile launcher
 //#define ST_WEAPON3X           110
-//#define ST_WEAPON3Y           (ST_Y+13)
+//#define ST_WEAPON3Y           13
 // plasma gun
 //#define ST_WEAPON4X           122
-//#define ST_WEAPON4Y           (ST_Y+13)
+//#define ST_WEAPON4Y           13
 // bfg
 //#define ST_WEAPON5X           134
-//#define ST_WEAPON5Y           (ST_Y+13)
+//#define ST_WEAPON5Y           13
 
 // WPNS title
 //#define ST_WPNSX              109
-//#define ST_WPNSY              (ST_Y+23)
+//#define ST_WPNSY              23
 
  // DETH title
 //#define ST_DETHX              109
-//#define ST_DETHY              (ST_Y+23)
+//#define ST_DETHY              23
 
 //Incoming messages window location
 // #define ST_MSGTEXTX     (viewwindowx)
@@ -318,7 +300,7 @@ boolean     stbar_recalc;
 player_t*   plyr;
 
 // ST_Start() has just been called
-boolean     st_firsttime;
+boolean     st_force_refresh;
 
 // used to execute ST_Init() only once
 static int  veryfirsttime = 1;
@@ -346,12 +328,6 @@ static boolean          st_cursor_on;
 
 // !deathmatch
 static boolean          st_notdeathmatch;
-
-// !deathmatch && stbar_on
-static boolean          st_armson;
-
-// !deathmatch
-static boolean          st_fragson;
 
 // main bar left
 static patch_t*         sbar;
@@ -392,7 +368,6 @@ static st_percent_t     w_health;
 // arms background
 static st_binicon_t     w_armsbg;
 
-
 // weapon ownership widgets
 static st_multicon_t    w_arms[6];
 
@@ -400,7 +375,7 @@ static st_multicon_t    w_arms[6];
 static st_multicon_t    w_faces;
 
 // keycard widgets
-static st_multicon_t    w_keyboxes[3];
+static st_multicon_t    w_keyboxes[6];
 
 // armor widget
 static st_percent_t     w_armor;
@@ -429,7 +404,9 @@ static int      st_facecount = 0;
 static int      st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int      keyboxes[3];
+static byte     st_card;  // card state displayed
+static byte     st_num_keyboxes;
+static int      keyboxes[6];  // 0..3 keycards skulls, 4..6 dual display
 
 // a random number per tick
 static int      st_randomnumber;
@@ -488,7 +465,7 @@ boolean ST_Responder (event_t* ev)
         switch(ev->data1)
         {
           case AM_MSGENTERED:
-            st_firsttime = true;        // force refresh of status bar
+            st_force_refresh = true;        // force refresh of status bar
             break;
 
           case AM_MSGEXITED:
@@ -527,25 +504,27 @@ static int ST_calcPainOffset(void)
 //
 static void ST_updateFaceWidget(void)
 {
+    static int  fw_last_attackdown_cnt = -1;
+    static int  fw_priority = 0;  // priority of face effects
+
     int         i;
     angle_t     badguyangle;
     angle_t     diffang;
-    static int  lastattackdown = -1;
-    static int  priority = 0;
     boolean     doevilgrin;
 
-    if (priority < 10)
+    // Highest priority first
+    if (fw_priority < 10)
     {
-        // dead
         if (!plyr->health)
         {
-            priority = 9;
+            // dead
+            fw_priority = 9;
             st_faceindex = ST_DEADFACE;
             st_facecount = 1;
         }
     }
 
-    if (priority < 9)
+    if (fw_priority < 9)
     {
         if (plyr->bonuscount)
         {
@@ -563,7 +542,7 @@ static void ST_updateFaceWidget(void)
             if (doevilgrin)
             {
                 // evil grin if just picked up weapon
-                priority = 8;
+                fw_priority = 8;  // allow retrigger evil grin
                 st_facecount = ST_EVILGRINCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_EVILGRINOFFSET;
             }
@@ -571,14 +550,14 @@ static void ST_updateFaceWidget(void)
 
     }
 
-    if (priority < 8)
+    if (fw_priority < 8)
     {
         if (plyr->damagecount
             && plyr->attacker
             && plyr->attacker != plyr->mo)
         {
             // being attacked
-            priority = 7;
+            fw_priority = 7;  // allow attack test retrigger
 
             // [WDJ] Ouch-face when damage>20, fix from DoomWiki, same as prboom
 //            if (plyr->health - st_oldhealth > ST_MUCHPAIN) // orig bug
@@ -586,7 +565,7 @@ static void ST_updateFaceWidget(void)
             {
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
-                priority = 8; // [WDJ] Necessary to keep ouchface visible
+                fw_priority = 8; // [WDJ] Necessary to keep ouchface visible
             }
             else
             {
@@ -631,7 +610,7 @@ static void ST_updateFaceWidget(void)
         }
     }
 
-    if (priority < 7)
+    if (fw_priority < 7)
     {
         // getting hurt because of your own damn stupidity
         if (plyr->damagecount)
@@ -640,66 +619,59 @@ static void ST_updateFaceWidget(void)
 //            if (plyr->health - st_oldhealth > ST_MUCHPAIN)
             if (st_oldhealth - plyr->health > ST_MUCHPAIN)
             {
-                priority = 7;
+                fw_priority = 7;  // no pain retrigger
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
             }
             else
             {
-                priority = 6;
+                fw_priority = 6;  // allow pain test retrigger
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
             }
-
         }
-
     }
 
-    if (priority < 6)
+    if (fw_priority < 6)
     {
         // rapid firing
         if (plyr->attackdown)
         {
-            if (lastattackdown==-1)
-                lastattackdown = ST_RAMPAGEDELAY;
-            else if (!--lastattackdown)
+            if (fw_last_attackdown_cnt < 0)
+                fw_last_attackdown_cnt = ST_RAMPAGEDELAY;
+            else if (--fw_last_attackdown_cnt == 0)
             {
-                priority = 5;
-                st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
+                fw_last_attackdown_cnt = 1;
+                fw_priority = 5;  // continual retrigger, no timer
                 st_facecount = 1;
-                lastattackdown = 1;
+                st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
             }
         }
         else
-            lastattackdown = -1;
-
+            fw_last_attackdown_cnt = -1;
     }
 
-    if (priority < 5)
+    if (fw_priority < 5)
     {
         // invulnerability
         if ((plyr->cheats & CF_GODMODE)
             || plyr->powers[pw_invulnerability])
         {
-            priority = 4;
-
-            st_faceindex = ST_GODFACE;
+            fw_priority = 4;  // continual retrigger, no timer
             st_facecount = 1;
-
+            st_faceindex = ST_GODFACE;
         }
-
     }
 
     // look left or look right if the facecount has timed out
-    if (!st_facecount)
+    if (st_facecount == 0)
     {
+        fw_priority = 0;  // clear
         st_faceindex = ST_calcPainOffset() + (st_randomnumber % 3);
         st_facecount = ST_STRAIGHTFACECOUNT;
-        priority = 0;
     }
 
     st_facecount--;
-
 }
 
 boolean ST_SameTeam(player_t *a,player_t *b)
@@ -718,29 +690,31 @@ boolean ST_SameTeam(player_t *a,player_t *b)
 //       when we need the frags
 int ST_PlayerFrags (int playernum)
 {
+    player_t * player = &players[playernum];
     int    i,frags;
 
-    frags = players[playernum].addfrags;
+    frags = player->addfrags;
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if ((cv_teamplay.value==0 && i != playernum)
-         || (cv_teamplay.value && !ST_SameTeam(&players[i],&players[playernum])) )
-            frags += players[playernum].frags[i];
+         || (cv_teamplay.value && !ST_SameTeam(&players[i], player)) )
+            frags += player->frags[i];
         else
-            frags -= players[playernum].frags[i];
+            frags -= player->frags[i];
     }
 
     return frags;
 }
 
 
+// Called by: ST_Ticker
 static void ST_updateWidgets(void)
 {
-    static int  largeammo = 1994; // means "n/a"
+    static int  largeammo = NON_NUMBER; // means "n/a"
     int         i;
 
 #ifdef PARANOIA
-    if(!plyr) I_Error("plyr==NULL\n");
+    if(!plyr)  return;  // not likely, but have soft fail
 #endif
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr->readyweapon)
@@ -758,7 +732,7 @@ static void ST_updateWidgets(void)
     //   dir = 1;
     // tic++;
     // }
-    w_ready.data = plyr->readyweapon;
+//    w_ready.data = plyr->readyweapon;
 
     // if (*w_ready.on)
     //  STlib_updateNum(&w_ready, true);
@@ -766,12 +740,51 @@ static void ST_updateWidgets(void)
     //  }
 
     // update keycard multiple widgets
-    for (i=0;i<3;i++)
+    if( plyr->cards != st_card )
     {
-        keyboxes[i] = (plyr->cards & (1<<i)) ? i : -1;
+        // fraggle script can take a key, so keyboxes must not be sticky.
+        if( ~plyr->cards & st_card )
+        {
+             st_force_refresh = true;  // a card was taken
+             st_card = 0;
+        }
+        if( (plyr->cards & 0x07) && (plyr->cards & 0x38) )
+        {
+            // Have both keycards and skulls.
+            if(((st_card & 0x07) == 0) || ((st_card & 0x38) == 0))
+            {
+                // Enable display of both skulls and keycards.
+                st_num_keyboxes = 6;
+                // Shift keybox[ 0..6 ] positions, into two vertical columns
+		// Skulls will now be in [3..6]
+                for( i=0; i<6; i++ )
+                {
+                    keyboxes[i] = -1;  // clear previous recorded skulls
+                    w_keyboxes[i].x = stbar_x + keybox_dual_x[i],
+                    w_keyboxes[i].y = stbar_y + keybox_dual_y[i],
+                    w_keyboxes[i].command = STLIB_REFRESH;   // to clear old card positions
+                }
+            }
+        }
+        st_card = plyr->cards;
 
-        if (plyr->cards & (1<<(i+3)) )
-            keyboxes[i] = i+3;
+        for (i=0;i<3;i++)
+        {
+            // keycards
+            keyboxes[i] = ((st_card >> i) & 0x01) ? i : -1;
+
+            // skull keys
+            if ((st_card >> i) & 0x08)
+            {
+                keyboxes[i+3] = i+3;  // dual display
+                if( st_num_keyboxes == 3 )
+                    keyboxes[i] = i+3;  // only skull display
+            }
+            else
+            {
+                keyboxes[i+3] = -1;  // skull off in dual display
+            }
+        }
     }
 
     // refresh everything if this is him coming back to life
@@ -779,12 +792,6 @@ static void ST_updateWidgets(void)
 
     // used by the w_armsbg widget
     st_notdeathmatch = !cv_deathmatch.value;
-
-    // used by w_arms[] widgets
-    st_armson = stbar_on && !cv_deathmatch.value;
-
-    // used by w_frags widget
-    st_fragson = cv_deathmatch.value && stbar_on;
 
     st_fragscount = ST_PlayerFrags(statusbarplayer);
 
@@ -815,44 +822,42 @@ void ST_Ticker (void)
 }
 
 static int st_palette = 0;
+// Used by Heretic too.
+byte pickupflash_table[ 4 ] = { 6, 5, 4, 3 }; // Vanilla=[3]=3
 
-
+// Called by: ST_Drawer
 void ST_doPaletteStuff(void)
 {
+    int  palette;
+    int  red_cnt;
 
-    int         palette;
-    int         cnt;
-    int         bzc;
-
-    cnt = plyr->damagecount;
+    red_cnt = plyr->damagecount;
 
     if (plyr->powers[pw_strength])
     {
         // slowly fade the berzerk out
-        bzc = 12 - (plyr->powers[pw_strength]>>6);
+        int bzc = 12 - (plyr->powers[pw_strength]>>6);
 
-        if (bzc > cnt)
-            cnt = bzc;
+        if (bzc > red_cnt)
+            red_cnt = bzc;
     }
 
-    if (cnt)
+    if (red_cnt)
     {
-        palette = (cnt+7)>>3;
+        palette = STARTREDPALS + ((red_cnt+7)>>3);
 
-        if (palette >= NUMREDPALS)
-            palette = NUMREDPALS-1;
-
-        palette += STARTREDPALS;
+        if (palette >= (STARTREDPALS+NUMREDPALS))
+            palette = STARTREDPALS+NUMREDPALS-1;
     }
     else
-    if (plyr->bonuscount)
+    if (plyr->bonuscount && (cv_pickupflash.value>=2))
     {
-        palette = (plyr->bonuscount+7)>>3;
+        // Pickup object palette flash.
+        palette = STARTBONUSPALS
+           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
 
-        if (palette >= NUMBONUSPALS)
-            palette = NUMBONUSPALS-1;
-
-        palette += STARTBONUSPALS;
+        if (palette >= (STARTBONUSPALS+NUMBONUSPALS))
+            palette = STARTBONUSPALS+NUMBONUSPALS-1;
     }
     else
     if ( plyr->powers[pw_ironfeet] > 4*32
@@ -910,63 +915,113 @@ void ST_doPaletteStuff(void)
     }
 }
 
-static void ST_drawWidgets(boolean refresh)
+// Called by: ST_doRefresh, ST_diffDraw, when stbar_on
+// STlib refresh enable is now setup by caller.
+// Only called when stbar_on == true, so more tests are pointless.
+static void ST_drawWidgets( void )
 {
-    int         i;
+    int  i;
 
     // Draw stbar_fg, screen0 status bar
     V_SetupDraw( stbar_fg );  // for all STlib
 
-    // used by w_arms[] widgets
-    st_armson = stbar_on && !cv_deathmatch.value;
+    if( cv_pickupflash.value == 1 )
+    {
+        // Pickup flash on the status bar.
+        if( plyr->ammo_pickup )
+        {
+            w_ready.command = STLIB_FLASH;
+        }
+        if( plyr->armor_pickup )
+        {
+            w_armor.ni.command = STLIB_FLASH;
+        }
+        if( plyr->health_pickup )
+        {
+            w_health.ni.command = STLIB_FLASH;
+        }
+        if( plyr->key_pickup )
+        {
+            // Flash entire box.
+            // Do not know which one was picked up.
+            V_DrawFill(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y,
+                       ST_KEYSBOX_W, ST_KEYSBOX_H, FLASH_COLOR);
+            // Prevent the key icons from performing background refresh.
+            for (i=0;i<st_num_keyboxes;i++)
+                w_keyboxes[i].command = STLIB_FLASH;
+        }
+        else if( w_keyboxes[0].command == STLIB_FLASH_CLEAR )
+        {
+            // Restore the background
+            V_CopyRect(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y, BG,
+                       ST_KEYSBOX_W, ST_KEYSBOX_H,
+                       stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y, stbar_fg);
+            // Refresh the key icons.
+            for (i=0;i<st_num_keyboxes;i++)
+                w_keyboxes[i].command = STLIB_REFRESH;
+        }
+    }
 
-    // used by w_frags widget
-    st_fragson = cv_deathmatch.value && stbar_on;
-
-    STlib_updateNum(&w_ready, refresh);
+    STlib_updateNum(&w_ready);  // current weapon ammo
 
     for (i=0;i<4;i++)
     {
-        STlib_updateNum(&w_ammo[i], refresh);
-        STlib_updateNum(&w_maxammo[i], refresh);
+        STlib_updateNum(&w_ammo[i]);
+        STlib_updateNum(&w_maxammo[i]);
     }
 
-    STlib_updatePercent(&w_health, refresh);
-    STlib_updatePercent(&w_armor, refresh);
+    STlib_updatePercent(&w_health);
+    STlib_updatePercent(&w_armor);
 
-    STlib_updateBinIcon(&w_armsbg, refresh);
+    STlib_updateBinIcon(&w_armsbg);
 
-    for (i=0;i<6;i++)
-        STlib_updateMultIcon(&w_arms[i], refresh);
+    if( cv_deathmatch.value )
+    {
+        // frags on
+        STlib_updateNum(&w_frags);
+    }
+    else   
+    {
+        // arms on
+        for (i=0;i<6;i++)
+            STlib_updateMultIcon(&w_arms[i]);
+    }
 
-    STlib_updateMultIcon(&w_faces, refresh);
+    STlib_updateMultIcon(&w_faces);
 
-    for (i=0;i<3;i++)
-        STlib_updateMultIcon(&w_keyboxes[i], refresh);
-
-    STlib_updateNum(&w_frags, refresh);
-
+    for (i=0;i<st_num_keyboxes;i++)
+        STlib_updateMultIcon(&w_keyboxes[i]);
 }
 
+// Called by ST_Drawer when stbar_on
 static void ST_doRefresh(void)
 {
-
-    // draw status bar background to off-screen buff
+    // This is not executed as frequently as ST_diffDraw, so it is more
+    // complicated, in order to keep ST_diffDraw and ST_drawWidgets simpler.
+    
+    // Draw status bar background to off-screen buff
     ST_refreshBackground();
 
+    stlib_enable_erase = !st_overlay && rendermode==render_soft;
+    // Command to force global refresh from BG
+    stlib_force_refresh = true;
+
     // and refresh all widgets
-    ST_drawWidgets(true);
+    ST_drawWidgets();
 }
 
+// Called by ST_Drawer when stbar_on
 static void ST_diffDraw(void)
 {
+    stlib_force_refresh = false;
     // update all widgets
-    ST_drawWidgets(false);
+    ST_drawWidgets();
 }
 
 void ST_Invalidate(void)
 {
-    st_firsttime = true;
+    st_force_refresh = true;
+    st_card = 0;
 }
 
 void ST_overlayDrawer ();
@@ -997,19 +1052,22 @@ void ST_Drawer ( boolean refresh )
     if( stbar_on )
     {
         // after ST_Start(), screen refresh needed, or vid mode change
-        if (st_firsttime || refresh || stbar_recalc )
+        if (st_force_refresh || refresh || stbar_recalc )
         {
             if (stbar_recalc)  //recalc widget coords after vid mode change
             {
                 ST_createWidgets ();
                 stbar_recalc = false;
             }
-            st_firsttime = false;
+            st_force_refresh = false;
+            st_card = 0;
             ST_doRefresh();
         }
         else
+        {
             // Otherwise, update as little as possible
             ST_diffDraw();
+        }
     }
     else
     {
@@ -1053,6 +1111,7 @@ static void ST_loadGraphics(void)
     tallpercent = (patch_t *) W_CachePatchName("STTPRCNT", PU_LOCK_SB);
 
     // key cards
+    // FreeDoom and DoomII have STKEYS 0..5.
     for (i=0;i<NUMCARDS;i++)
     {
         sprintf(namebuf, "STKEYS%d", i);
@@ -1210,7 +1269,7 @@ void ST_initData(void)
 
     int         i;
 
-    st_firsttime = true;
+    st_force_refresh = true;
 
     //added:16-01-98:'link' the statusbar display to a player, which could be
     //               another player than consoleplayer, for example, when you
@@ -1237,11 +1296,12 @@ void ST_initData(void)
     for (i=0;i<NUMWEAPONS;i++)
         oldweaponsowned[i] = plyr->weaponowned[i];
 
-    for (i=0;i<3;i++)
+    st_card = 0;  // no keys
+    st_num_keyboxes = 3;
+    for (i=0;i<6;i++)
         keyboxes[i] = -1;
 
     STlib_init();
-
 }
 
 
@@ -1289,154 +1349,89 @@ void ST_createWidgets(void)
     // ready weapon ammo
     STlib_initNum(&w_ready,
                   stbar_x + ST_AMMOX,
-                  ST_AMMOY,
+                  stbar_y + ST_AMMOY,
                   tallnum,
                   &plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
-                  &stbar_on,
                   ST_AMMOWIDTH );
 
     // the last weapon type
-    w_ready.data = plyr->readyweapon;
+//    w_ready.data = plyr->readyweapon;
 
     // health percentage
     STlib_initPercent(&w_health,
                       stbar_x + ST_HEALTHX,
-                      ST_HEALTHY,
+                      stbar_y + ST_HEALTHY,
                       tallnum,
                       &plyr->health,
-                      &stbar_on,
                       tallpercent);
 
     // arms background
     STlib_initBinIcon(&w_armsbg,
                       stbar_x + ST_ARMSBGX,
-                      ST_ARMSBGY,
+                      stbar_y + ST_ARMSBGY,
                       armsbg,
-                      &st_notdeathmatch,
-                      &stbar_on);
+                      &st_notdeathmatch );
 
-    // weapons owned
+    // weapons owned, draw enabled by !cv_deathmatch
     for(i=0;i<6;i++)
     {
         STlib_initMultIcon(&w_arms[i],
-                           stbar_x + ST_ARMSX+(i%3)*ST_ARMSXSPACE,
-                           ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-                           arms[i], (int *) &plyr->weaponowned[i+1],
-                           &st_armson);
+                      stbar_x + ST_ARMSX + (i%3)*ST_ARMSXSPACE,
+                      stbar_y + ST_ARMSY + (i/3)*ST_ARMSYSPACE,
+                      arms[i], (int *) &plyr->weaponowned[i+1] );
     }
 
-    // frags sum
+    // frags sum, draw enabled by cv_deathmatch
     STlib_initNum(&w_frags,
                   stbar_x + ST_FRAGSX,
-                  ST_FRAGSY,
+                  stbar_y + ST_FRAGSY,
                   tallnum,
                   &st_fragscount,
-                  &st_fragson,
                   ST_FRAGSWIDTH);
 
     // faces
     STlib_initMultIcon(&w_faces,
                        stbar_x + ST_FACESX,
-                       ST_FACESY,
+                       stbar_y + ST_FACESY,
                        faces,
-                       &st_faceindex,
-                       &stbar_on);
+                       &st_faceindex );
 
     // armor percentage - should be colored later
     STlib_initPercent(&w_armor,
                       stbar_x + ST_ARMORX,
-                      ST_ARMORY,
+                      stbar_y + ST_ARMORY,
                       tallnum,
                       &plyr->armorpoints,
-                      &stbar_on, tallpercent);
+                      tallpercent);
 
-    // keyboxes 0-2
-    STlib_initMultIcon(&w_keyboxes[0],
-                       stbar_x + ST_KEY0X,
-                       ST_KEY0Y,
-                       keys,
-                       &keyboxes[0],
-                       &stbar_on);
+    // keyboxes 0-6, in vertical column
+    for( i=0; i<6; i++ )
+    {
+        STlib_initMultIcon(&w_keyboxes[i],
+                       stbar_x + ST_KEYX,
+                       stbar_y + keybox_y[i],
+                       keys,  // patches
+                       &keyboxes[i] );
+    }
 
-    STlib_initMultIcon(&w_keyboxes[1],
-                       stbar_x + ST_KEY1X,
-                       ST_KEY1Y,
-                       keys,
-                       &keyboxes[1],
-                       &stbar_on);
-
-    STlib_initMultIcon(&w_keyboxes[2],
-                       stbar_x + ST_KEY2X,
-                       ST_KEY2Y,
-                       keys,
-                       &keyboxes[2],
-                       &stbar_on);
-
-    // ammo count (all four kinds)
-    STlib_initNum(&w_ammo[0],
-                  stbar_x + ST_AMMO0X,
-                  ST_AMMO0Y,
+    for( i=0; i<4; i++ )
+    {
+        // In vertical column.
+        // ammo count (all four kinds)
+        STlib_initNum(&w_ammo[i],
+                  stbar_x + ST_AMMOSX,
+                  stbar_y + ammobox_y[i],
                   shortnum,
-                  &plyr->ammo[0],
-                  &stbar_on,
-                  ST_AMMO0WIDTH);
-
-    STlib_initNum(&w_ammo[1],
-                  stbar_x + ST_AMMO1X,
-                  ST_AMMO1Y,
+                  &plyr->ammo[i],
+                  ST_AMMOS_WIDTH);
+        // max ammo count (all four kinds)
+        STlib_initNum(&w_maxammo[i],
+                  stbar_x + ST_MAXAMMOSX,
+                  stbar_y + ammobox_y[i],
                   shortnum,
-                  &plyr->ammo[1],
-                  &stbar_on,
-                  ST_AMMO1WIDTH);
-
-    STlib_initNum(&w_ammo[2],
-                  stbar_x + ST_AMMO2X,
-                  ST_AMMO2Y,
-                  shortnum,
-                  &plyr->ammo[2],
-                  &stbar_on,
-                  ST_AMMO2WIDTH);
-
-    STlib_initNum(&w_ammo[3],
-                  stbar_x + ST_AMMO3X,
-                  ST_AMMO3Y,
-                  shortnum,
-                  &plyr->ammo[3],
-                  &stbar_on,
-                  ST_AMMO3WIDTH);
-
-    // max ammo count (all four kinds)
-    STlib_initNum(&w_maxammo[0],
-                  stbar_x + ST_MAXAMMO0X,
-                  ST_MAXAMMO0Y,
-                  shortnum,
-                  &plyr->maxammo[0],
-                  &stbar_on,
-                  ST_MAXAMMO0WIDTH);
-
-    STlib_initNum(&w_maxammo[1],
-                  stbar_x + ST_MAXAMMO1X,
-                  ST_MAXAMMO1Y,
-                  shortnum,
-                  &plyr->maxammo[1],
-                  &stbar_on,
-                  ST_MAXAMMO1WIDTH);
-
-    STlib_initNum(&w_maxammo[2],
-                  stbar_x + ST_MAXAMMO2X,
-                  ST_MAXAMMO2Y,
-                  shortnum,
-                  &plyr->maxammo[2],
-                  &stbar_on,
-                  ST_MAXAMMO2WIDTH);
-
-    STlib_initNum(&w_maxammo[3],
-                  stbar_x + ST_MAXAMMO3X,
-                  ST_MAXAMMO3Y,
-                  shortnum,
-                  &plyr->maxammo[3],
-                  &stbar_on,
-                  ST_MAXAMMO3WIDTH);
+                  &plyr->maxammo[i],
+                  ST_MAXAMMOS_WIDTH);
+    }
 }
 
 static void ST_Stop (void)
@@ -1559,21 +1554,32 @@ void ST_AddCommands (void)
 //  Draw a number, scaled, over the view
 //  Always draw the number completely since it's overlay
 //
+//   x, y: scaled position
+static
 void ST_drawOverlayNum (int       x,            // right border!
                         int       y,
                         int       num,
                         patch_t** numpat,
-                        patch_t*  percent )
+                        patch_t*  percent,
+                        byte      pickup_flash )
 {
-    int       w = (numpat[0]->width);
+    int  hf = numpat[0]->height;
+    int  wf = numpat[0]->width;
+    int  wfv = wf * vid.dupx;
     boolean   neg;
 
     V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH | V_TRANSLUCENTPATCH );
+   
+    if( pickup_flash && (cv_pickupflash.value == 1))
+    {
+        // Assume 3 digits  0..200
+        V_DrawVidFill(x - (wfv*3), y, wfv*3, hf*vid.dupy, FLASH_COLOR);
+    }
 
     // in the special case of 0, you draw 0
-    if (!num)
+    if (num == 0)
     {
-        V_DrawScaledPatch(x - (w*vid.dupx), y, numpat[ 0 ]);
+        V_DrawScaledPatch(x - wfv, y, numpat[ 0 ]);
         return;
     }
 
@@ -1585,7 +1591,7 @@ void ST_drawOverlayNum (int       x,            // right border!
     // draw the number
     while (num)
     {
-        x -= (w * vid.dupx);
+        x -= wfv;
         V_DrawScaledPatch(x, y, numpat[ num % 10 ]);
         num /= 10;
     }
@@ -1616,6 +1622,37 @@ static inline int SCX( int x )
     return x * vid.fdupx;
 }
 
+static
+void  ST_drawOverlayKeys( int x, int y, byte cards )
+{
+    int  i, yh, xinc, yinc;
+
+    xinc = (int)((ST_KEY_WIDTH + 1) * vid.fdupx);
+    yinc = (int)((ST_KEY_HEIGHT + 1) * vid.fdupy);
+    yh = y;  // upper row is same as lower row when no skull keys
+    // if both skull and cards, then move cards up a row	  
+    if( cards & 0x38 )
+        yh -= yinc;
+
+    if( plyr->key_pickup && (cv_pickupflash.value == 1))
+    {
+        V_DrawVidFill(x - (xinc*3), yh, (xinc*3), y - yh + yinc, FLASH_COLOR);
+    }
+   
+    for (i=0;i<3;i++)
+    {
+        x -= xinc;
+        if( (cards >> i) & 0x08 ) // skull
+        {
+            V_DrawScaledPatch(x, y, keys[i+3]);  // skull graphic lower row
+        }
+        if( (cards >> i) & 0x01 ) // card
+        {
+            V_DrawScaledPatch(x, yh, keys[i]);  // keycard graphic upper row
+        }
+    }
+}
+
 
 //  Draw the status bar overlay, customisable : the user choose which
 //  kind of information to overlay
@@ -1624,13 +1661,14 @@ void ST_overlayDrawer ()
 {
     char*  cmds;
     char   c;
-    int    i, key_y;
+    int    i;
     // [WDJ] 8/2012 fix opengl overlay position to use fdupy
     float  sf_dupy = (rendermode == render_soft)? vid.dupy : vid.fdupy ;
     int    lowerbar_y = SCY(198) - (int)( 16 * sf_dupy );
 
     // Draw screen0, scaled, abs position
     V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH );
+    // x, y are already scaled.
 
     cmds = cv_stbaroverlay.string;
 
@@ -1643,7 +1681,7 @@ void ST_overlayDrawer ()
          case 'h': // draw health
            ST_drawOverlayNum(SCX(50), lowerbar_y,
                              plyr->health,
-                             tallnum,NULL);
+                             tallnum, NULL, plyr->health_pickup);
 
            V_DrawScalePic_Num (SCX(52), lowerbar_y, sbohealth);
            break;
@@ -1655,7 +1693,7 @@ void ST_overlayDrawer ()
            {
                ST_drawOverlayNum(SCX(300), SCY(2),
                                  st_fragscount,
-                                 tallnum,NULL);
+                                 tallnum, NULL, 0);
 
                V_DrawScalePic_Num (SCX(302), SCY(2), sbofrags);
            }
@@ -1667,31 +1705,20 @@ void ST_overlayDrawer ()
            {
                ST_drawOverlayNum(SCX(234), lowerbar_y,
                                  plyr->ammo[plyr->weaponinfo[plyr->readyweapon].ammo],
-                                 tallnum,NULL);
+                                 tallnum, NULL, plyr->ammo_pickup);
 
                V_DrawScalePic_Num (SCX(236), lowerbar_y, i);
            }
            break;
 
          case 'k': // draw keys
-           c=1;
-           key_y = lowerbar_y - (8 * sf_dupy);
-           for (i=0;i<3;i++)
-           {
-                if( plyr->cards & (1<<(i+3)) ) // first skull then card
-                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-                                      key_y, keys[i+3]);
-                else
-                if( plyr->cards & (1<<i) )
-                    V_DrawScaledPatch(SCX(318)-(c++)*(ST_KEY0WIDTH*vid.dupx),
-                                      key_y, keys[i]);
-           }
+           ST_drawOverlayKeys( SCX(318), lowerbar_y - (8 * sf_dupy), plyr->cards );
            break;
 
          case 'm': // draw armor
            ST_drawOverlayNum(SCX(300), lowerbar_y,
                              plyr->armorpoints,
-                             tallnum,NULL);
+                             tallnum, NULL, plyr->armor_pickup);
 
            V_DrawScalePic_Num (SCX(302), lowerbar_y, sboarmor);
            break;

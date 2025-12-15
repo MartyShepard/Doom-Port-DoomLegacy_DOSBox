@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: g_game.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -133,6 +133,7 @@ extern  tic_t     levelstarttic;
 extern consvar_t  cv_crosshair;
 //extern consvar_t  cv_crosshairscale;
 extern consvar_t  cv_showmessages;
+extern consvar_t  cv_pickupflash;
 extern consvar_t  cv_fastmonsters;
 extern consvar_t  cv_predictingmonsters;  //added by AC for predmonsters
 

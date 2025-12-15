@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: sb_bar.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -73,6 +73,21 @@
 // Public Data
 
 int H_ArtifactFlash;
+
+// Heretic yellow for overlay flash
+#define FLASH_OV_COLOR   140
+// Heretic color for ammo flash on black
+#define FLASH_BLK_COLOR  138
+// Heretic color for health, armor flash on gray
+#define FLASH_GRY_COLOR  124
+// Heretic color for keys
+#define FLASH_KEYS_COLOR  2
+// Heretic colors
+//  2..9  dark grays
+//  218  light green
+//  140  yellow
+//  138  dark yellow
+//  124  light amber
 
 // Macros
 
@@ -546,7 +561,9 @@ char ammopic[][10] =
         {"INAMLOB"}
 };
 
-static int SB_state = -1;
+typedef enum { SBS_refresh, SBS_status, SBS_inventory } SB_state_e;
+static int SB_state = SBS_refresh;
+
 static int oldarti = -1;
 static int oldartiCount = 0;
 static int oldfrags = -9999;
@@ -557,7 +574,7 @@ static int oldhealth = -1;
 static int oldlife = -1;
 static int oldkeys = -1;
 
-int playerkeys = 0;
+
 
 void SB_Heretic_Drawer( boolean refresh )
 {
@@ -572,7 +589,7 @@ void SB_Heretic_Drawer( boolean refresh )
     }
 
     if( refresh )
-        SB_state = -1;
+        SB_state = SBS_refresh;
 
     // Draw to stbar_fg, screen0, flags selected by status bar style
     V_SetupDraw( stbar_fg );
@@ -584,17 +601,19 @@ void SB_Heretic_Drawer( boolean refresh )
         if( cv_viewsize.value == 11 )
         {
             H_DrawFullScreenStuff();
-            SB_state = -1;
+            SB_state = SBS_refresh;
         }
     }
     else
     {
         // Status bar on.
-        if(SB_state == -1)
+        if(SB_state == SBS_refresh)
         {
             if ( rendermode==render_soft )
+            {
                 V_CopyRect(0, vid.height-stbar_height, BG, vid.width,
                            stbar_height, 0, vid.height-stbar_height, FG);
+            }
 
             V_DrawScaledPatch(stbar_x, stbar_y, PatchBARBACK);
             if(consoleplayer_ptr->cheats&CF_GODMODE)
@@ -607,7 +626,7 @@ void SB_Heretic_Drawer( boolean refresh )
         DrawCommonBar();
         if(!CPlayer->st_inventoryTics)
         {
-            if(SB_state != 0)
+            if(SB_state != SBS_status)
             {
                 // Main interface
                 V_DrawScaledPatch(stbar_x+34, stbar_y+2, PatchSTATBAR);
@@ -620,16 +639,16 @@ void SB_Heretic_Drawer( boolean refresh )
                 oldkeys = -1;
             }
             H_DrawMainBar();
-            SB_state = 0;
+            SB_state = SBS_status;
         }
         else
         {
-            if(SB_state != 1)
+            if(SB_state != SBS_inventory)
             {
                 V_DrawScaledPatch(stbar_x+34, stbar_y+2, PatchINVBAR);
             }
             H_DrawInventoryBar();
-            SB_state = 1;
+            SB_state = SBS_inventory;
         }
     }
     H_PaletteFlash();
@@ -732,21 +751,19 @@ void H_PaletteFlash(void)
 
     if(CPlayer->damagecount)
     {
-        palette = (CPlayer->damagecount+7)>>3;
-        if(palette >= NUMREDPALS)
-        {
-            palette = NUMREDPALS-1;
-        }
-        palette += STARTREDPALS;
+        palette = STARTREDPALS + ((CPlayer->damagecount+7)>>3);
+
+        if (palette >= (STARTREDPALS+NUMREDPALS))
+            palette = STARTREDPALS+NUMREDPALS-1;
     }
-    else if(CPlayer->bonuscount)
+    else if(CPlayer->bonuscount && (cv_pickupflash.value>=2))
     {
-        palette = (CPlayer->bonuscount+7)>>3;
-        if(palette >= NUMBONUSPALS)
-        {
-            palette = NUMBONUSPALS-1;
-        }
-        palette += STARTBONUSPALS;
+        // Pickup object palette flash.
+        palette = STARTBONUSPALS
+           + ((CPlayer->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
+
+        if (palette >= (STARTBONUSPALS+NUMBONUSPALS))
+            palette = STARTBONUSPALS+NUMBONUSPALS-1;
     }
     else
     {
@@ -891,11 +908,18 @@ static void H_DrawMainBar(void)
     }
     else
     {
+        if(CPlayer->health_pickup && ( cv_pickupflash.value == 1 ))
+        {
+            // Health pickup flash
+            V_DrawFill(stbar_x+57, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
+            oldlife = -2;
+        }
         temp = min(max(0,HealthMarker),100);
         if(oldlife != temp)
         {
+            if( oldlife > -2 )  // not flash
+                V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
             oldlife = temp;
-            V_DrawScaledPatch(stbar_x+57, stbar_y+13, PatchARMCLEAR);
             DrINumber(temp, stbar_x+61, stbar_y+12);
 #ifdef USE_UPDATESTATE
             H_UpdateState |= HUS_statbar;
@@ -904,7 +928,18 @@ static void H_DrawMainBar(void)
     }
 
     // Keys
-    if(oldkeys != playerkeys)
+    if(CPlayer->key_pickup && ( cv_pickupflash.value == 1 ))
+    {
+        // Key pickup flash
+        V_DrawFill(stbar_x+153, stbar_y+6, 10, 23, FLASH_KEYS_COLOR);
+        oldkeys = 0;
+        if(CPlayer->key_pickup == 1)
+        {
+            SB_state = SBS_refresh;
+            CPlayer->key_pickup = 0;
+        }
+    }
+    if(oldkeys != CPlayer->cards)
     {
         if(CPlayer->cards & it_yellowcard)
         {
@@ -918,16 +953,23 @@ static void H_DrawMainBar(void)
         {
             V_DrawScaledPatch_Name(stbar_x+153, stbar_y+22, "bkeyicon");
         }
-        oldkeys = playerkeys;
+        oldkeys = CPlayer->cards;
 #ifdef USE_UPDATESTATE
         H_UpdateState |= HUS_statbar;
 #endif
     }
     // Ammo
+    if(CPlayer->ammo_pickup && ( cv_pickupflash.value == 1 ))
+    {
+        // Ammo pickup flash
+        V_DrawFill(stbar_x+108, stbar_y+5, 32, 11, FLASH_BLK_COLOR);
+        oldammo = -2;
+    }
     temp = CPlayer->ammo[wpnlev1info[CPlayer->readyweapon].ammo];
     if(oldammo != temp || oldweapon != CPlayer->readyweapon)
     {
-        V_DrawScaledPatch(stbar_x+108, stbar_y+3, PatchBLACKSQ);
+        if( oldammo > -2 )  // not flash
+            V_DrawScaledPatch(stbar_x+108, stbar_y+3, PatchBLACKSQ);
         if(temp && CPlayer->readyweapon > 0 && CPlayer->readyweapon < 7)
         {
             DrINumber(temp, stbar_x+109, stbar_y+4);
@@ -942,9 +984,16 @@ static void H_DrawMainBar(void)
     }
 
     // Armor
+    if(CPlayer->armor_pickup && ( cv_pickupflash.value == 1 ))
+    {
+        // Armor pickup flash
+        V_DrawFill(stbar_x+224, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
+        oldarmor = -2;  // no background
+    }
     if(oldarmor != CPlayer->armorpoints)
     {
-        V_DrawScaledPatch(stbar_x+224, stbar_y+13, PatchARMCLEAR);
+        if( oldarmor > -2 )  // not flash
+            V_DrawScaledPatch(stbar_x+224, stbar_y+13, PatchARMCLEAR);
         DrINumber(CPlayer->armorpoints, stbar_x+228, stbar_y+12);
         oldarmor = CPlayer->armorpoints;
 #ifdef USE_UPDATESTATE
@@ -994,6 +1043,7 @@ static void H_DrawInventoryBar(void)
     }
 }
 
+// Overlay status, no status bar.
 // to stbar_fg
 static void H_DrawFullScreenStuff(void)
 {
@@ -1004,6 +1054,28 @@ static void H_DrawFullScreenStuff(void)
 #ifdef USE_UPDATESTATE
     H_UpdateState |= HUS_fullscreen;
 #endif
+    if(cv_pickupflash.value == 1)
+    {
+        // pickup flashes
+        if(CPlayer->key_pickup)
+        {
+            V_DrawFill(360, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+        }
+        if(CPlayer->armor_pickup)
+        {
+            V_DrawFill(270, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+        }
+        if(CPlayer->ammo_pickup)
+        {
+            V_DrawFill(120, stbar_y+36, 20, 6, FLASH_OV_COLOR);
+        }
+        if(CPlayer->health_pickup)
+        {
+            // Assume 3 digits  0..200
+            V_DrawFill(5, stbar_y+24, 36, 16, FLASH_OV_COLOR);
+        }
+    }
+    // Health overlay
     if(CPlayer->mo->health > 0)
         DrBNumber(CPlayer->mo->health, 5, stbar_y+22);
     else
@@ -1056,16 +1128,3 @@ static void H_DrawFullScreenStuff(void)
     }
 }
 
-#if 0
-// [WDJ] Unused
-//--------------------------------------------------------------------------
-//
-// FUNC SB_Heretic_Responder
-//
-//--------------------------------------------------------------------------
-
-boolean SB_Heretic_Responder(event_t *event)
-{
-    return false;
-}
-#endif
