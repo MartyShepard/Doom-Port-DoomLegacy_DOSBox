@@ -84,8 +84,8 @@
 #define MIN_MAIN_MEM_MB		 8
 #define NORM_MAIN_MEM_MB	24
 #define MAX_MAIN_MEM_MB		80
-#define GROW_MIN_MAIN_MEM_MB	2 //8
-#define GROW_MAIN_MEM_MB	 2//8
+#define GROW_MIN_MAIN_MEM_MB	 8
+#define GROW_MAIN_MEM_MB	 8
 
 // Choose one (and only one) memory system.
 // [WDJ] Because of the widely varying systems that Legacy can run on, it is
