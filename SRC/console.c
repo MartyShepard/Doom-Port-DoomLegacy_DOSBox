@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: console.c 1239 2016-06-14 17:11:31Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -592,6 +592,10 @@ void CON_ToggleOff (void)
 }
 
 
+static event_t  con_autorepeat_ev;
+static byte     con_autorepeat_tick = 0;
+
+
 //  Console ticker : handles console move in/out, cursor blinking
 //
 // Call once per tic.
@@ -660,6 +664,13 @@ void CON_Ticker (void)
         if (con_hudtime[i]<0)
             con_hudtime[i]=0;
     }
+
+    if( con_autorepeat_tick )
+    {
+        con_autorepeat_tick --;
+        if( con_autorepeat_tick == 1 )
+            CON_Responder( & con_autorepeat_ev );
+    }
 }
 
 
@@ -684,7 +695,10 @@ static int     comskips,varskips;
 
     // let go keyup events, don't eat them
     if (ev->type != ev_keydown)
+    {
+        con_autorepeat_tick = 0;
         return false;
+    }
 
     int key = ev->data1;
 
@@ -798,13 +812,13 @@ static int     comskips,varskips;
     {
         if (con_scrollup < (con_totallines-((con_curlines-16)>>3)) )
             con_scrollup++;
-        return true;
+        goto enable_autorepeat;
     }
     if (key == KEY_PGDN)
     {
         if (con_scrollup>0)
             con_scrollup--;
-        return true;
+        goto enable_autorepeat;
     }
 
     // oldset text in buffer
@@ -932,6 +946,10 @@ static int     comskips,varskips;
  
 toggle_console:
     consoletoggle = true;  // signal to CON_Ticker
+    return true;
+enable_autorepeat:
+    con_autorepeat_ev = *ev;
+    con_autorepeat_tick = 4;
     return true;
 }
 

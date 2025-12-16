@@ -5106,3 +5106,38 @@ patchfile = w105_33b_flatsize.patch
 - commit revision 1237
 Fixed a lumpnum field that was made too small.
 Error showed up with phobiata.wad, or probably any wad with animated flats.
+
+*** W105_printf
+patchfile = w105_34_printf.patch
+- commit revision 1238
+Modified the CONS_Printf functions to better handle categories.
+This fixes the console help function, whose output was blocked when
+game playing.
+
+Output routing flags are now separate from category flags, as EOUT.
+The output routing is no longer encoded into the EMSG flags.
+The hud output is now more independent of the console output.
+
+The GenPrint EMSG parameter now selects a category, and has only a
+couple special flags (EMSG_now, EMSG_all).
+This is now directly passed to the CONS_Printf_va function so that the
+global default flags do not need to be temporarily modified.
+Many message categories now directly modify output routing in CONS_Printf_va.
+There is a category that outputs only to the console (EMSG_console), and one
+that only outputs to the log and stderr (EMSG_errlog).
+
+Changed the gameplay message selections to:
+Off, minimal, play, verbose, debug, dev.
+This controls which messages are seen on the hud and the console
+during gameplay.
+
+Created a direct debug printf function (debug_Printf) that makes
+debug printing simpler.
+
+Fixed the font1 output so that spaces appear in the printed line.
+
+*** W105_autorepeat
+patchfile = w105_35_autorepeat.patch
+- commit revision 1239
+Add autorepeat to the console scrolling page-up and page-down keys.
+This is done in software, so that the keyboard setup remains the same.

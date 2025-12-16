@@ -348,8 +348,8 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
         pv = pv->next;			
         if (!pv)
 				{
-					I_SoftError("VID_error 2\n");
-					goto fail;
+          //I_SoftError("VID_error 2\n");					
+          goto fail;					
 				}
     }
     return pv;
