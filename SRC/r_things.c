@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: r_things.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -1744,7 +1744,7 @@ static void R_CreateDrawNodes( void )
   int           i, p, x1, x2;
   fixed_t       delta;
   int           sintersect;
-  fixed_t       gzm;
+//  fixed_t       gzm;
   fixed_t       pz_mid; // mid of sprite
   fixed_t       scale;
 
@@ -1815,7 +1815,7 @@ static void R_CreateDrawNodes( void )
         continue;
 
       sintersect = (vsp->x1 + vsp->x2) / 2;
-      gzm = (vsp->gz_bot + vsp->gz_top) / 2;
+//      gzm = (vsp->gz_bot + vsp->gz_top) / 2;
       pz_mid = (vsp->pz_bot + vsp->pz_top) / 2;
 
       // search drawnodes

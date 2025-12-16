@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: r_segs.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1966,7 +1966,7 @@ void R_StoreWallRange( int   start, int   stop)
     ff_lightlist_t      *ff_light;
     r_lightlist_t       *rlight;
     ffloor_t 		* bff, * fff;  // backsector fake floor, frontsector fake floor
-    fixed_t             lheight;
+//    fixed_t             lheight;  // unused
 
     if (ds_p == &drawsegs[maxdrawsegs])   expand_drawsegs();
     
@@ -2568,9 +2568,12 @@ void R_StoreWallRange( int   start, int   stop)
         rlight->flags = ff_light->flags;
         if(ff_light->caster && ff_light->caster->flags & FF_SOLID)
         {
+#if 0
+          // [WDJ] At some time this became unused.
           lheight = (*ff_light->caster->bottomheight > frontsector->ceilingheight) ?
 	      frontsector->ceilingheight + FRACUNIT
 	     : *ff_light->caster->bottomheight;
+#endif
 	  // in screen coord.
           rlight->botheight = (centeryfrac >> 4) - FixedMul((*ff_light->caster->bottomheight - viewz) >> 4, rw_scale);
           rlight->botheightstep = -FixedMul (rw_scalestep, (*ff_light->caster->bottomheight - viewz) >> 4);

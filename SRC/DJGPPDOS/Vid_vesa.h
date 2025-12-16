@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: Vid_vesa.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -30,8 +30,8 @@
 #ifndef VID_VESA_H
 #define VID_VESA_H
 
-#include "../doomtype.h"
-#include "../screen.h"
+#include "doomtype.h"
+#include "screen.h"
 
 #define NUMSCREENS    4 //Temporary
 #define MODE_SUPPORTED_IN_HW    0x0001

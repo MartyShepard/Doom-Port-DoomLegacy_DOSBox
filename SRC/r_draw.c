@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: r_draw.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -659,13 +659,14 @@ void R_DrawViewBorder (void)
 void R_DrawColumnShadowed(void)
 {
     int count;
-    int realyh, realyl;
+//    int realyh, realyl;
+    int realyh;
     int i;
     int height, bheight = 0;
     int solid = 0;
 
     realyh = dc_yh;
-    realyl = dc_yl;
+//    realyl = dc_yl;
 
     count = dc_yh - dc_yl;
 

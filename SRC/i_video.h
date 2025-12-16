@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1069 2013-12-14 00:26:30Z wesleyjohnson $
+// $Id: i_video.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -147,7 +147,7 @@ void I_FinishUpdate (void);
 
 void I_ReadScreen (byte* scr);
 
-#if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
+#if defined(SMIF_WIN_NATIVE) || defined(SMIF_OS2_NATIVE) 
 // printf to loading screen
 void I_LoadingScreen ( const char * msg );
 #endif

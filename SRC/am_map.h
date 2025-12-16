@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: am_map.h 1112 2014-06-03 21:54:41Z smite-meister $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -34,8 +34,8 @@
 #include "d_event.h"
   // event_t
 // current modifier key status
-boolean shiftdown;
-boolean altdown;
+//boolean shiftdown;
+//boolean altdown;
 
 typedef struct
 {

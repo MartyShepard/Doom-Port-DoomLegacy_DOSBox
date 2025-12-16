@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: qmus2mid.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -311,7 +311,7 @@ int qmus2mid (byte *mus,  // input mus
     byte     MIDIchan2track[16];
     char     MUS2MIDchannel[16];
 
-    char ouch = 0;
+//    char ouch = 0;  // unused
 
     //r = ReadMUSheader (&MUSh, file_mus);
     MUSh = (MUSheader *)mus;
@@ -435,15 +435,15 @@ int qmus2mid (byte *mus,  // input mus
             et = event_type( event );
             MUSchannel = channel( event );
         }
-        else
-            ouch = 1;
+//        else
+//            ouch = 1;
     }
 
     if (!division)
         division = 89;
         // prboom defaults to 70, all callers pass 64
 
-#ifndef SDL
+#ifndef SMIF_SDL
     for (i = 0; i < 16; i++)
     {
         if (track[i].current && track[i].data)

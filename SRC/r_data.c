@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: r_data.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -225,11 +225,11 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
                            int           cacheheight )  // limit
 {
     int         count;
-    int         position;
+    int         position;  // dest
     byte*       source;
-    byte*       dest;
+//    byte*       dest;
 
-    dest = (byte *)cache;// + 3;
+//    dest = (byte *)cache;// + 3;
 
     // Assemble a texture from column post data from wad lump.
     // Column is a series of posts (post_t), terminated by 0xFF
@@ -1747,7 +1747,8 @@ void  R_Colormap_Analyze( int mapnum )
 	    h4r = 0.00;
 	    m4_fog = 1;
 	}
-        if( cnt * 2 < try_cnt )  m4_fog = 1;
+        if( cnt * 2 < try_cnt )
+            m4_fog = 1;
         h4r = h4r * (0.66 / 1.732);  // correction for testing at 1/3 max brightness
         float h4 = 1.0 - h4r;
         int m4_red, m4_blue, m4_green;
@@ -1791,7 +1792,8 @@ void  R_Colormap_Analyze( int mapnum )
 	       (int)(255.0*h4), m4_red, m4_green, m4_blue, m4_fog );
 #endif      
         // Not great, get some tints wrong, and sometimes too light.
-        work_rgba.s.alpha = (int)(h4 * 255.0);
+        // Give m4_fog some treatment, to stop compiler messages.
+        work_rgba.s.alpha = (int)(h4 * 255.0) - (m4_fog * 2.0);
         work_rgba.s.red = m4_red;
         work_rgba.s.green = m4_green;
         work_rgba.s.blue = m4_blue;

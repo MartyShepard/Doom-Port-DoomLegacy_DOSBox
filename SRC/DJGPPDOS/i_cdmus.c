@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_cdmus.c 538 2009-09-23 23:24:07Z smite-meister $
+// $Id: i_cdmus.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -29,15 +29,15 @@
 //      
 //-----------------------------------------------------------------------------
 
-#include "../doomincl.h"
+#include "doomincl.h"
 
 // CD-Audio library by Brennan Underwood
 #include "bcd.h"
 
-#include "../i_sound.h"
-#include "../command.h"
-#include "../i_system.h"
-#include "../s_sound.h"
+#include "i_sound.h"
+#include "command.h"
+#include "i_system.h"
+#include "s_sound.h"
 
 // ------
 // protos

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01245 ]: w105 gcc 4.8
+[01244 ]: w105 40 fix svn
 [01243 ]: w105 39 sound
           DOS: Compile Fix
 					

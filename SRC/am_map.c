@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: am_map.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -686,7 +686,6 @@ void AM_Start (void)
 //
 boolean AM_Responder ( event_t *  ev )
 {
-    static int cheatstate=0;
     static char buffer[20];
 
     char * msg = NULL;
@@ -768,8 +767,8 @@ boolean AM_Responder ( event_t *  ev )
             msg = AMSTR_MARKSCLEARED;
             break;
           default:
-            cheatstate=0;
             rc = false;
+            break;
         }
     }
 

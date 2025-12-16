@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1138 2014-09-17 13:55:10Z wesleyjohnson $
+// $Id: g_input.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -82,7 +82,7 @@ consvar_t  cv_controlperkey = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons
 //SoM: 3/28/2000: Working rocket jumping.
 consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 
-#ifdef SDL
+#ifdef SMIF_SDL
 CV_PossibleValue_t mouse_motion_cons_t[]={{0,"Absolute"},{1,"Relative"},{0,NULL}};
 consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_cons_t, CV_mouse_OnChange };
 #endif

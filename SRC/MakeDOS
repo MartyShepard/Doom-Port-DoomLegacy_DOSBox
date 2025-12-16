@@ -306,6 +306,9 @@ endif
 ifdef BEXLANGUAGE
 BEX_LANGUAGE=1
 endif
+ifdef SURROUND
+SURROUND=1
+endif
 
 # CD-Music enable/disable, if you don't have the special libraries, etc.
 #ifndef NOCDMUS
@@ -321,7 +324,7 @@ ifdef DJGPPDOS_NATIVE
     USEASM=1
 	
 	# options
-    OPTS=-DPC_DOS -g -I.
+    OPTS=-DPC_DOS -DSMIF_PC_DOS -g -I.
 
 	LIBS=-lm -lalleg
 	 
@@ -333,6 +336,12 @@ ifdef DJGPPDOS_NATIVE
 	ifdef BEX_LANGUAGE
 	   OPTS+=-DBEX_LANGUAGE
 	endif
+		
+	ENABLE_DRAW24=1
+	ENABLE_DRAW32=1
+	
+	OPTS+=-DENABLE_DRAW24
+	OPTS+=-DENABLE_DRAW32
 	
 	LIBS+=-lsocket
 	

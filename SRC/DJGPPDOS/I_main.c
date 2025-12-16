@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_main.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: I_main.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -30,12 +30,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include "../doomincl.h"
+#include "doomincl.h"
 
-#include "../m_argv.h"
-#include "../d_main.h"
+#include "m_argv.h"
+#include "d_main.h"
 
-#include "../i_system.h"
+#include "i_system.h"
 
 int main ( int argc, char** argv )
 {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_setup.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -761,7 +761,7 @@ void P_LoadThings (int lump)
 
     int                 i;
     mapthing_t*         mt;
-    boolean             spawn;
+//    boolean             spawn;
     byte               *data;
 
     data = W_CacheLumpNum (lump,PU_LEVEL);  // temp things lump
@@ -777,7 +777,7 @@ void P_LoadThings (int lump)
     mt = mapthings;
     for (i=0 ; i<nummapthings ; i++, mt++, dmt++)
     {
-        spawn = true;
+//        spawn = true;
 
         // Do spawn all other stuff.
         // SoM: Do this first so all the mapthing slots are filled!

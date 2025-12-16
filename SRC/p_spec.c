@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_spec.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2974,7 +2974,6 @@ void P_SpawnSpecials (void)
     sector_t*   sector;
     uint32_t    flags;
     int         i;
-    int         episode;
     // update all special sectors
     fixed_t  water_friction = FRICTION_NORM;
     int  water_movefactor = ORIG_FRICTION_FACTOR;
@@ -2988,9 +2987,12 @@ void P_SpawnSpecials (void)
         water_movefactor = 8*((FRICTION_NORM-48 - 0xDB34)*(0xA))/0x80; // non stick
     }
 
-    episode = 1;
+#if 0
+    // [WDJ] At one time this may have been important, but is not used now.
+    int episode = 1;
     if (W_CheckNumForName("texture2") >= 0)
         episode = 2;
+#endif
 
     //  Init special SECTORs.
     sector = sectors;

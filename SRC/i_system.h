@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.h 1170 2015-05-22 18:40:52Z wesleyjohnson $
+// $Id: i_system.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -131,7 +131,7 @@ void I_Tactile (int on, int off, int total);
 //                the return code 0 of I_Quit();
 void I_OutputMsg (char *error, ...);
 
-#ifdef WIN_NATIVE
+#ifdef SMIF_WIN_NATIVE
 void I_MsgBox (char * msg );
 #endif
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
+// $Id: I_video.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -32,7 +32,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "../doomincl.h"
+#include "doomincl.h"
   // stdlib, strings, stdio, defines
 
 #include <stdlib.h>
@@ -52,11 +52,11 @@
 #include <dos.h>
 #include <sys/nearptr.h>
 
-#include "../i_system.h"
-#include "../v_video.h"
-#include "../m_argv.h"
+#include "i_system.h"
+#include "v_video.h"
+#include "m_argv.h"
 #include "vid_vesa.h"
-#include "../i_video.h"
+#include "i_video.h"
   // cv_fullscreen etc..
 
 
@@ -100,7 +100,7 @@ void I_UpdateNoBlit (void)
 //added:16-01-98:wanted to profile the VID_BlitLinearScreen() asm code.
 //#define TIMING      //uncomment this to enable profiling
 #ifdef TIMING
-#include "../p5prof.h"
+#include "p5prof.h"
 static   long long mycount;
 static   long long mytotal = 0;
 static   unsigned long  nombre = TICRATE*10;

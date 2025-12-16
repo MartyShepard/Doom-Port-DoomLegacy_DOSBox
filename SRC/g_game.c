@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: g_game.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2068,7 +2068,7 @@ void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
 #else
     sprintf(namebuf, savegamename, slot);
 #endif
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
     if( slot > 9 )
     {
         // shorten name to 8 char

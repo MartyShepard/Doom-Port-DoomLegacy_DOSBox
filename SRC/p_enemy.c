@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_enemy.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -943,7 +943,7 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
     int         c;
     int         stop;
     player_t*   player;
-    sector_t*   sector;
+//    sector_t*   sector;
     angle_t     an;
     fixed_t     dist;
 
@@ -956,7 +956,7 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         if (actor->eflags & MF_IGNOREPLAYER)
                 return false;
 
-        sector = actor->subsector->sector;
+//        sector = actor->subsector->sector;
 
     // BP: first time init, this allow minimum lastlook changes
     if( actor->lastlook<0 && demoversion>=129 )

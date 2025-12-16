@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
+// $Id: Vid_vesa.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -36,12 +36,12 @@
 
 #include <stdlib.h>
 
-#include "../doomincl.h"
+#include "doomincl.h"
   // MAXVIDWIDTH, MAXVIDHEIGHT
   // I_Error(), CONS_Printf
-//#include "../i_system.h"
+//#include "i_system.h"
 #include "vid_vesa.h"
-#include "../screen.h"
+#include "screen.h"
 
 #include <dpmi.h>
 #include <go32.h>
@@ -50,9 +50,9 @@
 #include <sys/segments.h>
 #include <sys/nearptr.h>
 
-#include "../console.h"
-#include "../command.h"            //added:21-03-98: vid_xxx commands
-#include "../i_video.h"
+#include "console.h"
+#include "command.h"            //added:21-03-98: vid_xxx commands
+#include "i_video.h"
 
 
 // PROTOS

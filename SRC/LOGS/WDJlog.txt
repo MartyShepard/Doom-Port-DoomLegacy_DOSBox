@@ -5210,3 +5210,26 @@ Added a field to the sound info tables for the Heretic limit channels.
 This limits how many channels can have the same sfx.
 Checks this limit when trying to get a channel.
 
+*** W105_fix_svn
+patchfile = w105_40_fix_svn.patch
+- commit revision 1244
+Somehow got two copies of a palette patch in the hardware/hw_cache.c file.
+
+*** W105_gcc
+patchfile = w105_41_gcc.patch
+- commit revision 1245
+Fix problems caused by use of gcc 4.8.
+The SDL defined, as set by "-DSDL", is not recognized by the
+command line of gcc 4.8, for reasons unknown.
+This define has been changed to SMIF_SDL, which does work.
+The other SMIF determined defines were also changed from using VID_ to:
+SMIF_WIN_NATIVE, SMIF_OS2_NATIVE, SMIF_X11, SMIF_X11_GGI, SMIF_PC_DOS.
+This makes this more obvious that this is a user selected option (SMIF),
+and not a detection of the OS.
+
+Gcc 4.8 detects variables that are set but not used, and issues many
+warning messages.  Many of these are left over from the original Doom
+source code.  Have hunted each down and fixed each, by deleting the
+dangling variable, commenting it out, or in one case making use of it.
+
+

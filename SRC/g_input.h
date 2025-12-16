@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
+// $Id: g_input.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -115,7 +115,7 @@ extern consvar_t   cv_mouse_move;
 extern consvar_t   cv_mouse_invert;
 extern consvar_t   cv_mouse_sens_x;
 extern consvar_t   cv_mouse_sens_y;
-#ifdef SDL
+#ifdef SMIF_SDL
 extern consvar_t   cv_mouse_motion;
 #endif
 

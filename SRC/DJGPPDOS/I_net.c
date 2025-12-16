@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_net.c 1149 2015-04-03 13:52:40Z wesleyjohnson $
+// $Id: I_net.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -38,7 +38,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "../doomincl.h"
+#include "doomincl.h"
   // stdio, stdlib, strings, defines
 
 #include <netinet/in.h>
@@ -51,16 +51,16 @@
 #include <dos.h>
 #include <sys/nearptr.h>
 
-#include "../doomstat.h"
+#include "doomstat.h"
 
-#include "../i_system.h"
-#include "../d_event.h"
-#include "../d_net.h"
-#include "../m_argv.h"
+#include "i_system.h"
+#include "d_event.h"
+#include "d_net.h"
+#include "m_argv.h"
 
-#include "../z_zone.h"
-#include "../i_net.h"
-#include "../i_tcp.h"
+#include "z_zone.h"
+#include "i_net.h"
+#include "i_tcp.h"
 
 //
 // NETWORKING

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: t_func.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2015 by DooM Legacy Team.
@@ -3601,7 +3601,7 @@ void SF_SetLineTexture(void)
     int tagnum, linenum;
     unsigned int side;
     int sectionflags;
-    line_t *line;
+//    line_t *line;
 
     if(t_argc != 4)  goto err_numarg;
 
@@ -3610,7 +3610,7 @@ void SF_SetLineTexture(void)
     // check on existing line
     linenum = P_FindLineFromTag(tagnum, -1);
     if(linenum < 0)  goto err_noline;
-    line = &lines[linenum];  // for return value
+//    line = &lines[linenum];  // for return value
 
     side = (unsigned) intvalue(t_argv[2]);
     if( side > 1 )  side = 1;  // easier than an error

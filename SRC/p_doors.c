@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: p_doors.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -534,7 +534,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
 {
     player_t * player = thing->player;
     char * msg = NULL;
-    int secnum;
+//    int secnum;
     sector_t *sec;
     vldoor_t *door;
 //    int         side; //SoM: 3/6/2000
@@ -581,7 +581,7 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
 
     // if the sector has an active thinker, use it
     sec = sides[line->sidenum[1]].sector;
-    secnum = sec - sectors; // sector number
+//    secnum = sec - sectors; // sector number
 
     if (sec->ceilingdata)       //SoM: 3/6/2000
     {

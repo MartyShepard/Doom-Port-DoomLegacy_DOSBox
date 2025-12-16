@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_inter.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2141,26 +2141,24 @@ boolean P_AutoUseChaosDevice(player_t *player)
 //
 //---------------------------------------------------------------------------
 
+// From Heretic
 void P_AutoUseHealth(player_t *player, int saveHealth)
 {
     int i;
     int count;
     int normalCount;
-    int normalSlot;
     int superCount;
-    int superSlot;
-    
+
+    // Uses P_PlayerUseArtifact, so do not need to know inventory slot.
     normalCount = superCount = 0;
     for(i = 0; i < player->inventorySlotNum; i++)
     {
         if(player->inventory[i].type == arti_health)
         {
-            normalSlot = i;
             normalCount = player->inventory[i].count;
         }
         else if(player->inventory[i].type == arti_superhealth)
         {
-            superSlot = i;
             superCount = player->inventory[i].count;
         }
     }

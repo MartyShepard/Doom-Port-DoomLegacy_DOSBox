@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: b_search.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -165,14 +165,13 @@ void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNo
     int angle;  // bot angles
 
     SearchNode_t *node;
-    sector_t	*sector;
 
     for (angle=0; angle<NUMBOTDIRS; angle++)
     {
         if (parent_node->dir[angle])
         {
 	    node = parent_node->dir[angle];
-	    sector = R_PointInSubsector(posX2x(node->x), posY2y(node->y))->sector;
+            //sector_t * sector = R_PointInSubsector(posX2x(node->x), posY2y(node->y))->sector;
 
 	    //if (!sector->firsttag/* && !sector->nexttag */&& ((((sector->ceilingheight - sector->floorheight) < (56<<FRACBITS))
 	    //|| (sector->floorheight - R_PointInSubsector(parent_node->x, parent_node->y)->sector->floorheight) > (45<<FRACBITS)))) //can't fit

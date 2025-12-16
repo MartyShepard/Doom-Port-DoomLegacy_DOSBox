@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: hw3sound.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
-// Copyright (C) 2001 by DooM Legacy Team.
+// Copyright (C) 2001, 2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,19 +38,11 @@
 
 #ifdef HW3SOUND
 #include "hw3dsdrv.h"
-//#include "../s_sound.h"
-//#include "../p_mobj.h"
+//#include "s_sound.h"
+//#include "p_mobj.h"
 
 // Default sound mode (original stereo mode)
 enum { HWS_DEFAULT_MODE = 0 };
-
-typedef enum 
-{
-    CT_NORMAL = 0,
-    CT_ATTACK,
-    CT_SCREAM,
-    CT_AMBIENT
-} channel_type_t;
 
 extern int  hws_mode;           // Current sound mode
 
@@ -58,13 +50,6 @@ extern int  HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev);
 extern void HW3S_Shutdown(void);
 extern int  HW3S_GetVersion(void);
 
-// Common case - start 3D or 2D source
-extern void HW3S_StartSound(const void *origin, int sfx_id);
-
-// Special cases of 3D sources
-extern void S_StartAmbientSound(int sfx_id, int volume);
-extern void S_StartAttackSound(const void *origin, int sfx_id);
-extern void S_StartScreamSound(const void *origin, int sfx_id);
 
 // Starts 3D sound with specified parameters
 // origin      - for object movement tracking. NULL are possible value (no movement tracking)
@@ -72,10 +57,12 @@ extern void S_StartScreamSound(const void *origin, int sfx_id);
 // cone_parm   - 3D source cone parameters. NULL are possible value (default cone will be used)
 // channel     - 
 // sfx_id      - sfx id
+// priority    - -10..2560, ascending priority, Heretic style
 // vol         - sound volume
 // pitch       - sound pitching value
 // Returns:    - sound id
-extern int HW3S_I_StartSound(const void *origin, source3D_data_t *source_parm, channel_type_t channel, int sfx_id, int vol, int pitch, int sep);
+extern int HW3S_I_StartSound(const void *origin, source3D_data_t *source_parm, channel_type_t channel, sfxid_t sfx_id,
+                             int16_t priority, int vol, int pitch, int sep);
 
 extern void HW3S_FillSourceParameters(mobj_t *origin, source3D_data_t *data, channel_type_t   c_type);
 
@@ -93,14 +80,6 @@ extern void HW3S_SetSfxVolume(int volume);
 extern int  HW3S_SoundIsPlaying(int handle);
 extern void HW3S_SetSourcesNum(void);
 extern int  HW3S_SoundPlaying(void *origin, int id);
-
-#else // HW3SOUND
-
-#if !defined (__DJGPP__)
-#define S_StartAmbientSound(i,v) S_StartSoundAtVolume(NULL,i,v)
-#define S_StartAttackSound  S_StartSound
-#define S_StartScreamSound  S_StartSound
-#endif
 
 #endif // HW3SOUND
 

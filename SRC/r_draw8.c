@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_draw8.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -146,7 +146,7 @@ void R_DrawColumn_8(void)
 // SoM: Experiment to make software go faster. Taken from the Boom source
 void R_DrawColumn_8(void)
 {
-    int count, ccount;
+    int count;
     register byte *dest;
     register fixed_t frac;
     fixed_t fracstep;
@@ -164,8 +164,6 @@ void R_DrawColumn_8(void)
         return;
     }
 #endif
-
-    ccount = count;
 
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.

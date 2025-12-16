@@ -630,8 +630,13 @@ static void COM_Exec_f (void)
 
 // load file
 
+#ifdef DEBUG_EXEC_FILE_LENGTH
+    int length;
     length = FIL_ReadFile (carg.arg[1], &buf);
-    //debug_Printf ("debug file length : %d\n",length);
+    debug_Printf ("EXEC: file length = %d\n", length);
+#else   
+    FIL_ReadFile (carg.arg[1], &buf);
+#endif
 
     if (!buf)
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1211 2016-01-19 19:49:51Z wesleyjohnson $
+// $Id: p_henemy.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1536,7 +1536,7 @@ void A_RemovePod(mobj_t *actor)
 void A_MakePod(mobj_t *actor)
 {
     mobj_t *mo;
-    fixed_t x, y, z;
+    fixed_t x, y;
 
     if(actor->special1 == MAX_GEN_PODS)
     { // Too many generated pods
@@ -1544,7 +1544,6 @@ void A_MakePod(mobj_t *actor)
     }
     x = actor->x;
     y = actor->y;
-    z = actor->z;
     mo = P_SpawnMobj(x, y, ONFLOORZ, MT_POD);
     if(P_CheckPosition(mo, x, y) == false)
     { // Didn't fit

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: d_main.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -299,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1242"
+#define SVN_REV "1245"
 #endif
 
 // Version number: major.minor.revision
@@ -356,7 +356,7 @@ byte    fatal_error = 0;
 // name buffer sizes including directory and everything
 #define FILENAME_SIZE  256
 
-#if defined PC_DOS || defined __WIN32__ || defined __OS2__
+#if defined SMIF_PC_DOS || defined __WIN32__ || defined __OS2__
 # define  SLASH  "\\"
 #else
 # define  SLASH  "/"

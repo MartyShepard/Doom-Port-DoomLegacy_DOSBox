@@ -40,7 +40,7 @@
 #include <io.h>
 #endif
 
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
 #include <conio.h>
 #endif
 

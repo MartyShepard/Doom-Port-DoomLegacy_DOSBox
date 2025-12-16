@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
+// $Id: d_netcmd.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -389,7 +389,7 @@ void D_Register_ClientCommands(void)
 
     //g_input.c
     CV_RegisterVar(&cv_grabinput);
-#ifdef SDL
+#ifdef SMIF_SDL
     CV_RegisterVar(&cv_mouse_motion);
 #endif
     CV_RegisterVar(&cv_usemouse);

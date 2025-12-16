@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1170 2015-05-22 18:40:52Z wesleyjohnson $
+// $Id: I_system.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -35,7 +35,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "../doomincl.h"
+#include "doomincl.h"
   // stdlib, stdio, strings, defines
 
 #include <stdlib.h>
@@ -59,30 +59,30 @@
  #include <keys.h>
 #endif
 
-#include "../m_misc.h"
-#include "../i_video.h"
-#include "../i_sound.h"
-#include "../i_system.h"
-#include "../d_net.h"
-#include "../g_game.h"
+#include "m_misc.h"
+#include "i_video.h"
+#include "i_sound.h"
+#include "i_system.h"
+#include "d_net.h"
+#include "g_game.h"
 
-#include "../d_main.h"
+#include "d_main.h"
 
-#include "../m_argv.h"
+#include "m_argv.h"
 
-#include "../w_wad.h"
-#include "../z_zone.h"
-#include "../g_input.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "g_input.h"
 
-#include "../console.h"
+#include "console.h"
 
 #ifdef __GNUG__
- #pragma implementation "../i_system.h"
+ #pragma implementation "i_system.h"
 #endif
 
-#include "../i_joy.h"
-#include "../dstrings.h"
-#include "../d_event.h"
+#include "i_joy.h"
+#include "dstrings.h"
+#include "d_event.h"
 extern int eventtail;
 extern uint64_t *freespace;
 
@@ -111,6 +111,9 @@ extern uint64_t *freespace;
 byte keyboard_started=false;
 byte sound_started=false;
 byte timer_started=false;
+
+boolean shiftdown = false;
+boolean altdown = false;
 
 /* Mouse stuff */
 byte mouse_detected=false;

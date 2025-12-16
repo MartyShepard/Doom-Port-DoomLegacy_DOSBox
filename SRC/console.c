@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1239 2016-06-14 17:11:31Z wesleyjohnson $
+// $Id: console.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1156,7 +1156,7 @@ void CONS_Printf_va (const byte emsg, const char *fmt, va_list ap)
         eout = EOUT_all | EOUT_hud;
         break;
      case EMSG_debug: // debug category
-#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
+#if defined(SMIF_PC_DOS) || defined(WIN32) || defined(SMIF_OS2_NATIVE)
         eout = EOUT_text | EOUT_con | EOUT_log;
 #else
         // Linux, Mac
@@ -1167,7 +1167,7 @@ void CONS_Printf_va (const byte emsg, const char *fmt, va_list ap)
         break;
      case EMSG_dev:   // development category
         eout &= ~EOUT_hud;
-#if defined(PC_DOS) || defined(WIN32) || defined(OS2_NATIVE)
+#if defined(SMIF_PC_DOS) || defined(WIN32) || defined(SMIF_OS2_NATIVE)
         eout |= EOUT_con;
 #else
         // Linux, Mac
@@ -1254,7 +1254,7 @@ void CONS_Printf_va (const byte emsg, const char *fmt, va_list ap)
     {
         if( graphics_state < VGS_active )   goto done;
         // Have graphics, but do not have refresh loop running.
-#if defined(WIN_NATIVE) || defined(OS2_NATIVE) 
+#if defined(SMIF_WIN_NATIVE) || defined(SMIF_OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
         CON_DrawBackpic (con_backpic, 0, vid.width);    // put console background
@@ -1295,7 +1295,7 @@ void CONS_Printf (const char *fmt, ...)
 //
 void CONS_Error (char *msg)
 {
-#ifdef WIN_NATIVE
+#ifdef SMIF_WIN_NATIVE
     if( graphics_state < VGS_active )
     {
         I_MsgBox (msg);
@@ -1367,11 +1367,11 @@ static void CON_DrawInput ( int y )
     // input line scrolls left if it gets too long
     //
     p = inputlines[inputline];
-    if (input_cx>=con_width)
+    if (input_cx >= con_width)
         p += input_cx - con_width + 1;
 
 #ifdef CONSOLE_PROPORTIONAL
-    int xj, xcursor;
+    int xj, xcursor = 0;
     x = con_indent;
     for(xj=0; xj<con_width; xj++)
     {

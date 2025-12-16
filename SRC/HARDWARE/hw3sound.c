@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: hw3sound.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 2001 by DooM Legacy Team.
 //
@@ -43,19 +43,19 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "../doomincl.h"
+#include "doomincl.h"
 #include "hw3sound.h"
-#include "../i_sound.h"
-#include "../s_sound.h"
-#include "../w_wad.h"
+#include "i_sound.h"
+#include "s_sound.h"
+#include "w_wad.h"
 
-#include "../g_game.h"
-#include "../tables.h"
-#include "../sounds.h"
-#include "../r_main.h" 
-#include "../r_things.h"
-#include "../m_random.h"
-#include "../z_zone.h"
+#include "g_game.h"
+#include "tables.h"
+#include "sounds.h"
+#include "r_main.h" 
+#include "r_things.h"
+#include "m_random.h"
+#include "z_zone.h"
 
 #define ANGLE2DEG(x) (((double)(x)) / ((double)ANG45/45))
 

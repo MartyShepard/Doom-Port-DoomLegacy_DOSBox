@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: m_menu.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1859,7 +1859,7 @@ menuitem_t MouseOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Always MouseLook", &cv_alwaysfreelook  ,0},
     {IT_STRING | IT_CVAR,0,"Mouse Move",    &cv_mouse_move      ,0},
     {IT_STRING | IT_CVAR,0,"Invert Mouse",  &cv_mouse_invert    ,0},
-#ifdef SDL
+#ifdef SMIF_SDL
     {IT_STRING | IT_CVAR,0,"Mouse motion",  &cv_mouse_motion    ,0},
 #endif
     {IT_STRING | IT_CVAR,0,"Grab input", &cv_grabinput ,0},
@@ -2985,6 +2985,9 @@ void M_Get_SaveDir (int choice)
     {
         dent = readdir( legdir );
         // PROBLEM: how to identify a directory
+        if( dent )
+        {
+        }
     }
     closedir( legdir );
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1197 2015-12-26 19:14:45Z wesleyjohnson $
+// $Id: doomdef.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -117,7 +117,7 @@ extern FILE *logstream;
 // To save code size, can turn off some drawing bpp that you cannot use.
 #define ENABLE_DRAW15
 #define ENABLE_DRAW16
-#ifdef PC_DOS
+#ifndef SMIF_PC_DOS
 #define ENABLE_DRAW24
 #define ENABLE_DRAW32
 #endif
@@ -196,7 +196,7 @@ extern FILE *logstream;
 #endif
 
 // When cannot find user $(HOME), make a home in the executable dir.
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
 #define DEFHOME    "DL_HOME"
 #else
 #define DEFHOME    "legacyhome"
@@ -271,7 +271,7 @@ extern FILE *logstream;
 #define SAVESTRINGSIZE          24
 
 // Used for many file path buffer sizes
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
 #define MAX_WADPATH   128
 #else
 // was too short for network systems

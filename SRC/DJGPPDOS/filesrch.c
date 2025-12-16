@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "..\d_netfil.h"
-#include "../m_misc.h"
+#include "d_netfil.h"
+#include "m_misc.h"
 
 #define MAX_SRCHPATH (MAX_WADPATH * 2)
 
@@ -29,15 +29,13 @@ filestatus_e  sys_filesearch( const char * filename, const char * startpath,
     filestatus_e retval = FS_NOTFOUND;
     DIR ** dirhandle_stack;  // (malloc)
     DIR * dirhandle;
-		struct dirent *dent;
+    struct dirent *dent;
     struct stat fstat;		
     int * index_stack;  // each directory in the searchpath  (malloc)
     int depth=0;
     int cur_index, remspace;  // searchpath
     char searchpath[MAX_SRCHPATH];
-    
-		int x=0;
-		
+    int x=0;
     maxsearchdepth = 0; // Marty
     if( maxsearchdepth < 1 )
        maxsearchdepth = 0;
@@ -66,9 +64,10 @@ filestatus_e  sys_filesearch( const char * filename, const char * startpath,
     {
         cur_index--;
     }
+
     for(;;)
     {		
-	      x++;				
+	x++;				
         searchpath[cur_index]=0;
         dent = readdir( dirhandle );  // next dir entry
         if( !dent)  // done with dir
@@ -127,7 +126,7 @@ filestatus_e  sys_filesearch( const char * filename, const char * startpath,
         }
         else
         */
-				if ( strcasecmp(filename, dent->d_name) == 0 )
+        if ( strcasecmp(filename, dent->d_name) == 0 )
         {
             // Found the filename.
             retval = checkfile_md5(searchpath, wantedmd5sum);
@@ -140,7 +139,7 @@ filestatus_e  sys_filesearch( const char * filename, const char * startpath,
                 completepath[MAX_WADPATH-1] = '\0';
             }
             // Close the open directories.
-						/* Muss man unter DOS Verzeicnisse scließen? It mir neu?
+            /* Muss man unter DOS Verzeicnisse scließen? It mir neu?
             /* for(; depth >= 0; closedir(dirhandle_stack[depth--]));*/
             break;
         }
