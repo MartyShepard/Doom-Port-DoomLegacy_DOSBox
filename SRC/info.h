@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: info.h 1240 2016-06-14 17:12:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Portions Copyright (C) 1998-2000 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,9 +49,12 @@
 #ifndef INFO_H
 #define INFO_H
 
+#include <stdint.h>
 // Needed for action function pointer handling.
 #include "d_think.h"
   // actionf_t
+#include "m_fixed.h"
+  // fixed_t
 
 typedef enum
 {
@@ -2526,15 +2529,32 @@ S_DUMMY,        // Exl: Tox's FS script running states
 S_DUMMY2,
 
     NUMSTATES
-} statenum_t;
+} statenum_e;
+
+// Has explicit S_NULL, does not use -1.
+#if NUMSTATES >= 0xFFFE
+#error  NUMSTATES exceeds 16 bits
+#endif
+typedef uint16_t  statenum_t;
 
 
 typedef struct
 {
   spritenum_t   sprite;
+#if 1
+  uint32_t      frame;  //faB: we use the upper 16bits for translucency
+                        //     and other shade effects
+    // Flags that may be in frame, see p_pspr.h.
+    // FF_FRAMEMASK,  frame number 15 bits
+    // FF_FULLBRIGHT
+    // FF_SMOKESHADE
+    // FF_TRANSMASK
+  int16_t       tics;  // number of tics frame runs, -1, 0..2000
+#else
   long          frame;          //faB: we use the upper 16bits for translucency
                                 //     and other shade effects
   long          tics;
+#endif
   // void       (*action) ();
   actionf_t     action;
   statenum_t    nextstate;
@@ -2867,31 +2887,31 @@ MT_SOUNDWATERFALL,
 
 typedef struct
 {
-    int doomednum;
-    int spawnstate;
-    int spawnhealth;
-    int seestate;
-    int seesound;
-    int reactiontime;
-    int attacksound;
-    int painstate;
-    int painchance;
-    int painsound;
-    int meleestate;
-    int missilestate;
-    int crashstate;   // from heretic/hexen
-    int deathstate;
-    int xdeathstate;
-    int deathsound;
-    int speed;
-    int radius;
-    int height;
-    int mass;
-    int damage;
-    int activesound;
-    int flags;
-    int raisestate;
-    int flags2;       // from heretic/hexen
+    int16_t doomednum;  // mapthing_t type, or -1
+    statenum_t spawnstate;
+    int16_t spawnhealth;
+    statenum_t seestate;
+    int16_t seesound;
+    int16_t activesound;
+    int16_t reactiontime;
+    int16_t attacksound;
+    statenum_t painstate;
+    int16_t painchance;
+    int16_t painsound;
+    statenum_t meleestate;
+    statenum_t missilestate;
+    statenum_t crashstate;   // from heretic/hexen
+    statenum_t deathstate;
+    statenum_t xdeathstate;
+    int16_t deathsound;
+    statenum_t raisestate;
+    fixed_t speed;
+    fixed_t radius;
+    fixed_t height;
+    int32_t mass;  // Brain is very heavy
+    int16_t damage;
+    uint32_t flags;   // mobjflag_e
+    uint32_t flags2;  // from heretic/hexen  mobjflag2_e
 } mobjinfo_t;
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];

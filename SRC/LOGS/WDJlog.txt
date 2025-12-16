@@ -5141,3 +5141,18 @@ patchfile = w105_35_autorepeat.patch
 - commit revision 1239
 Add autorepeat to the console scrolling page-up and page-down keys.
 This is done in software, so that the keyboard setup remains the same.
+
+*** W105_info_flags
+patchfile = w105_36_info_flags.patch
+- commit revision 1240
+All the info fields are now mostly stdint, with a few fixed_t, instead
+of all using the default int (which could be 64 bits).
+This alone reduced the program size by 10K.
+Moved activesound to after the seesound field.
+Moved raisestate to after the xdeathstate field.
+Fixed some other anomolies in the info declarations, such as using
+sfx_None instead of 0.
+Added a missing deathstate field in MT_SPIRIT.
+Changed the flags in info to uint32_t.
+Changed the flags in mobj_t to uint32_t also.
+Changed some flag vars in the code to uint32_t also.

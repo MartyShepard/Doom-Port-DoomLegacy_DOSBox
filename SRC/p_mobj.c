@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_mobj.c 1240 2016-06-14 17:12:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -279,13 +279,14 @@ static const fixed_t FloatBobOffsets[64] = {
 //SoM: 4/7/2000: Boom code...
 boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
 {
+    static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
+    static int recursion;       // detects recursion
+   
     state_t *st;
 
     //remember states seen, to detect cycles:
 
-    static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
     statenum_t *seenstate = seenstate_tab;      // pointer to table
-    static int recursion;       // detects recursion
     statenum_t i = state;       // initial state
     boolean ret = true;         // return value
     statenum_t tempstate[NUMSTATES];    // for use with recursion
@@ -592,13 +593,14 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 // Called by P_MobjThinker
 void P_XYMovement(mobj_t * mo)
 {
+    //when up against walls
+    static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
+
     int numsteps = 1;
     fixed_t ptryx, ptryy;
     player_t *player;
     fixed_t xmove, ymove;
     fixed_t oldx, oldy;         //reducing bobbing/momentum on ice
-    //when up against walls
-    static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
     //added:18-02-98: if it's stopped
     if (!mo->momx && !mo->momy)
@@ -610,7 +612,7 @@ void P_XYMovement(mobj_t * mo)
             mo->momx = mo->momy = mo->momz = 0;
 
             //added:18-02-98: comment: set in 'search new direction' state?
-            P_SetMobjState(mo, gamemode == heretic ? mo->info->seestate : mo->info->spawnstate);
+            P_SetMobjState(mo, ((gamemode == heretic) ? mo->info->seestate : mo->info->spawnstate));
         }
         return;
     }
@@ -754,7 +756,7 @@ void P_XYMovement(mobj_t * mo)
             // [WDJ] Heretic FLY was removed from here because it should be
             // subject to underwater and other tests, as in Legacy2.
             // Implement FLYAROUND using heretic fly, avoiding extra tests.
-            int f2 = mo->flags2;
+            uint32_t f2 = mo->flags2;
             mo->flags2 |= MF2_FLY;
             P_XYFriction(mo, oldx, oldy);
             mo->flags2 = f2;
@@ -1484,7 +1486,7 @@ void P_MobjNullThinker(mobj_t * mobj)
 // P_SpawnMobj
 //
 // Does not set mapthing
-mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
+mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 {
     mobj_t *mobj;
     state_t *st;
@@ -1638,7 +1640,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
 {
     mobjtype_t  current_type = mo->type;
-    int old_flags = mo->flags;  // to restore
+    uint32_t old_flags = mo->flags;  // to restore
     state_t *st;
     mobjinfo_t *info;
 

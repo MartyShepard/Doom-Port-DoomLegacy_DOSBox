@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: p_mobj.h 1240 2016-06-14 17:12:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -268,7 +268,7 @@ typedef enum {
     MF2_DONTDRAW       =     0x00100000,      // don't generate a vissprite
     MF2_FLOORHUGGER    =     0x00200000,      // stays on the floor
         
-} mobjflag2_t;
+} mobjflag2_e;
 
 //
 //  New mobj extra flags
@@ -277,26 +277,26 @@ typedef enum {
 typedef enum
 {
     // The mobj stands on solid floor (not on another mobj or in air)
-    MF_ONGROUND          = 1,
+    MF_ONGROUND          = 0x0001,
     // The mobj just hit the floor while falling, this is cleared on next frame
     // (instant damage in lava/slime sectors to prevent jump cheat..)
-    MF_JUSTHITFLOOR      = 2,
+    MF_JUSTHITFLOOR      = 0x0002,
     // The mobj stands in a sector with water, and touches the surface
     // this bit is set once and for all at the start of mobjthinker
-    MF_TOUCHWATER        = 4,
+    MF_TOUCHWATER        = 0x0004,
     // The mobj stands in a sector with water, and his waist is BELOW the water surface
     // (for player, allows swimming up/down)
-    MF_UNDERWATER        = 8,
+    MF_UNDERWATER        = 0x0008,
     // Set by P_MovePlayer() to disable gravity add in P_MobjThinker() ( for gameplay )
-    MF_SWIMMING          = 16,
+    MF_SWIMMING          = 0x0010,
     // used for client prediction code, player can't be blocked in z by walls
     // it is set temporarely when player follow the spirit
-    MF_NOZCHECKING       = 32,
+    MF_NOZCHECKING       = 0x0020,
     // "Friendly"; the mobj ignores players
-    MF_IGNOREPLAYER	 = 64,
+    MF_IGNOREPLAYER	 = 0x0040,
     // Actor will predict where the player will be
-    MF_PREDICT		 = 128,
-} mobjeflag_t;
+    MF_PREDICT		 = 0x0080,
+} mobjeflag_e;
 
 
 #if NUMSKINCOLORS > 16
@@ -359,9 +359,9 @@ typedef struct mobj_s
 
     int                 tics;   // state tic counter
     state_t*            state;
-    int                 flags;
-    int                 eflags; //added:28-02-98: extra flags see above
-    int                 flags2; // heretic stuff
+    uint32_t            flags;  // mobjflag_e
+    uint32_t            eflags; //added:28-02-98: mobjeflag_e
+    uint32_t            flags2; // heretic mobjflag2_e
     int                 special1;
     int                 special2;
     int                 health;

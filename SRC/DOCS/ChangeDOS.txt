@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01240 ]: w105 info flags
 [01239 ]: w105 autorepeat console
 [01238 ]: w105 34 printf
 [01237 ]: w105 33b flatsize bug
