@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: v_video.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1693,11 +1693,43 @@ void V_DrawVidFill(int x, int y, int w, int h, byte color)
 }
 
 // Scaled to (320,200)
+//   x, y, w, h : (320,200)
 void V_DrawFill(int x, int y, int w, int h, byte color)
 {
     // vid : from video setup
     V_DrawVidFill( x * vid.dupx, y * vid.dupy, w * vid.dupx, h * vid.dupy, color);
 }
+
+//  per drawinfo, scaled start and size
+//  x, y : screen coord.
+void V_DrawScaledFill(int x, int y, int w, int h, byte color)
+{
+    // vid : from video setup
+    // drawinfo : from V_SetupDraw
+    byte *dest;  // within screen buffer
+    int u, v;
+
+#ifdef HWRENDER
+    if (rendermode != render_soft)
+    {
+        HWR_DrawVidFill( x * drawinfo.fdupx0, y * drawinfo.fdupy0,
+                         w * drawinfo.fdupx, h * drawinfo.fdupy, color );
+        return;
+    }
+#endif
+
+    // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
+    dest = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
+    w *= drawinfo.dupx;
+    h *= drawinfo.dupy;
+
+    for (v = 0; v < h; v++, dest += vid.ybytes)
+    {
+        for (u = 0; u < w; u++)
+            V_DrawPixel(dest, u, color);
+    }
+}
+
 
 
 //

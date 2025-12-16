@@ -5232,4 +5232,25 @@ warning messages.  Many of these are left over from the original Doom
 source code.  Have hunted each down and fixed each, by deleting the
 dangling variable, commenting it out, or in one case making use of it.
 
+*** W105_msys
+patchfile = w105_42_msys_A.patch, w105_42_msys_B.patch
+- commit revision 1246
+Concerning compiling and running on a Win32 XP machine.
+On a computer with MSYS installed, it has caused some strange problems.
+It provides a HOME environment variable, for its own use.  The code
+now detects when HOME is from MSYS and ignores it so it can get to
+the XP home directory.
+
+MSYS also provides a RM command, but the shell does not recognize the
+DEL command when used from mingw32-make,
+which is causing problems with Makefile cleanup.
+
+MSYS shell will not execute DOS commands, so MSYS commands and MSYS
+legal directory specifications have to be substituted everywhere.
+
+*** W105_flash_opengl
+patchfile = w105_43_flash_opengl.patch
+- commit revision 1247
+Fix the pickup flash for OpenGL, and for small status bar.
+Make a V_DrawScaledFill that matches the other scaled draws.
 

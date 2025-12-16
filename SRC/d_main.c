@@ -299,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1245"
+#define SVN_REV "1247"
 #endif
 
 // Version number: major.minor.revision
@@ -2205,6 +2205,11 @@ restart_command:
         {
             userhome = getenv("HOME");
 #ifdef WIN32
+            if( strstr( userhome, "MSYS" ) )
+            {
+                 // Ignore MSYS HOME, it is not the one wanted.	
+                userhome = NULL;
+            }
             // Windows XP, 
             if( !userhome )
                  userhome = getenv("UserProfile");

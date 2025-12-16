@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: st_lib.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,7 +88,8 @@ void STlib_initNum ( st_number_t * ni,
 // Draw when the number changes from the previous value,
 // or by command in status.
 //
-// Called by STlib_updateNum from ST_drawWidgets, when sbar_on
+// Called by ST_drawWidgets, when sbar_on
+// Called by STlib_updatePercent
 void STlib_updateNum ( st_number_t*  ni )
 {
     int    numdigits = ni->width;
@@ -111,7 +112,7 @@ void STlib_updateNum ( st_number_t*  ni )
 #endif
     if( ni->command == STLIB_FLASH )
     {
-        V_DrawFill( x, ni->y, w*numdigits, h, FLASH_COLOR );
+        V_DrawScaledFill( x, ni->y, w*numdigits, h, FLASH_COLOR );
         ni->command = STLIB_REFRESH;
     }
     else

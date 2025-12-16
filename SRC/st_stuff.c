@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: st_stuff.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -974,17 +974,19 @@ static void ST_drawWidgets( void )
         {
             w_health.command = STLIB_FLASH;
         }
+
         if( plyr->key_pickup )
         {
             // Flash entire box.
             // Do not know which one was picked up.
-            V_DrawFill(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y,
+            V_DrawScaledFill(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y,
                        ST_KEYSBOX_W, ST_KEYSBOX_H, FLASH_COLOR);
             // Prevent the key icons from performing background refresh.
             for (i=0;i<st_num_keyboxes;i++)
                 w_keyboxes[i].command = STLIB_FLASH;
         }
-        else if( w_keyboxes[0].command == STLIB_FLASH_CLEAR )
+        else if( w_keyboxes[0].command == STLIB_FLASH_CLEAR
+	         && rendermode == render_soft )
         {
             // Restore the background
             V_CopyRect(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y, BG,
