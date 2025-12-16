@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1240 2016-06-14 17:12:33Z wesleyjohnson $
+// $Id: p_mobj.c 1241 2016-06-14 17:13:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1100,16 +1100,27 @@ void P_ZMovement(mobj_t * mo)
 
 //
 // P_NightmareRespawn
+// Monsters
 //
 void P_NightmareRespawn(mobj_t * mobj)
 {
+    uint32_t old_flags;
+    fixed_t  old_height;
     fixed_t x,y,z;
-    subsector_t *ss;
+    fixed_t fog_height;
+    mobj_t *fog_mo;
     mobj_t *mo;  // new mobj for respawn
     mapthing_t * mthing = mobj->spawnpoint;
     byte  at_mobj_position = 0;
 
+#if 1
+    // [WDJ] Teleport from corpse position, which may be on 3d-floor.
+    z = mobj->z;
+#else
+    // From Boom
     z = mobj->subsector->sector->floorheight;  // for teleport from
+#endif
+    
     // Hurdler: respawn FS spawned mobj at their last position (they have no mapthing)
     // [WDJ] Since 2002/9/7, FS spawn have a extra mapthing as spawnpoint
     if (!mthing)
@@ -1123,7 +1134,7 @@ void P_NightmareRespawn(mobj_t * mobj)
     {
         x = mthing->x << FRACBITS;
         y = mthing->y << FRACBITS;
-#if 1
+
         // [WDJ] The above fix will not work when respawn have mthing
         // Nightmare respawn at (0,0) bug fix, as in PrBoom, Eternity
         if( EN_catch_respawn_0 && x==0 && y==0 )
@@ -1131,7 +1142,7 @@ void P_NightmareRespawn(mobj_t * mobj)
             x = mobj->x;
             y = mobj->y;
         }
-#endif
+
         if(mthing->options & MTF_FS_SPAWNED)
         {
             at_mobj_position = 2;
@@ -1139,23 +1150,35 @@ void P_NightmareRespawn(mobj_t * mobj)
         }
     }
 
+    // [WDJ] Modify mobj for position test.
+    // Must consider solid corpses that modify the mobj.
+    old_flags = mobj->flags;
+    old_height = mobj->height;
     mobj->flags |= MF_SOLID;  // [WDJ] must be solid to check position (Boom bug)
+    mobj->height = mobj->info->height;  // will have to fit this height
     // somthing is occupying it's position?
-    if (!P_CheckPosition(mobj, x, y))
-        return; // no respwan
+    if (!P_CheckPosition(mobj, x, y))  goto no_respawn;
 
     // spawn a teleport fog at old spot
     // because of removal of the body?
-    mo = P_SpawnMobj(mobj->x, mobj->y, z + (gamemode == heretic ? TELEFOGHEIGHT : 0), MT_TFOG);
+    fog_height = (gamemode == heretic) ? TELEFOGHEIGHT : 0;
+    mo = P_SpawnMobj(mobj->x, mobj->y, z + fog_height, MT_TFOG);
     // initiate teleport sound
     S_StartSound(mo, sfx_telept);
 
-    // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector(x, y);
+    // Spawn a teleport fog at the new spot.
+    // [WDJ] It should be over the new object, but cannot move this spawn
+    // after the object spawn because they may use P_Random,
+    // and that would affect demos.
+#if 1
+    // The fog z will be moved later to be over the monster.
+    fog_mo = P_SpawnMobj(x, y, 0, MT_TFOG);
+#else
+    // Spawn the fog on the floor.
+    subsector_t * ss = R_PointInSubsector(x, y);
 
-    mo = P_SpawnMobj(x, y, ss->sector->floorheight + (gamemode == heretic ? TELEFOGHEIGHT : 0), MT_TFOG);
-
-    S_StartSound(mo, sfx_telept);
+    fog_mo = P_SpawnMobj(x, y, ss->sector->floorheight + fog_height, MT_TFOG);
+#endif
 
     // spawn it
     if (mobj->info->flags & MF_SPAWNCEILING)
@@ -1190,8 +1213,19 @@ void P_NightmareRespawn(mobj_t * mobj)
 
     mo->reactiontime = 18;
 
+    // [WDJ] Move fog z over the monster.
+    fog_mo->z = mo->z + fog_height;
+    S_StartSound(fog_mo, sfx_telept);  // fog sound
+
     // remove the old monster,
     P_RemoveMobj(mobj);  // does Z_Free
+    return;
+
+no_respawn:
+    // put it back the way it was.
+    mobj->flags = old_flags;
+    mobj->height = old_height;
+    return;
 }
 
 
@@ -1780,6 +1814,7 @@ void P_RespawnSpecials(void)
 {
     fixed_t x, y, z;
     mobj_t *mo;
+    mobj_t *fog_mo = NULL;
     mapthing_t *mthing;
 
     int i;
@@ -1811,9 +1846,15 @@ void P_RespawnSpecials(void)
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
 
-    // spawn a teleport fog at the new spot
     if (gamemode != heretic)
     {
+        // Spawn a teleport fog at the new spot.
+        // Will move later to correct z, so that it is over the object,
+        // even if it is on 3d-floor.
+#if 1
+        // Spawn does not check z.
+        fog_mo = P_SpawnMobj(x, y, 0, MT_IFOG);  // teleport fog
+#else
         if (mthing->options & MTF_FS_SPAWNED)
         {
             z = mthing->z << FRACBITS;
@@ -1825,8 +1866,8 @@ void P_RespawnSpecials(void)
             subsector_t * ss = R_PointInSubsector(x, y);
             z = ss->sector->floorheight;
         }
-        mo = P_SpawnMobj(x, y, z, MT_IFOG);  // teleport fog
-        S_StartSound(mo, sfx_itmbk);
+        fog_mo = P_SpawnMobj(x, y, z, MT_IFOG);  // teleport fog
+#endif
     }
 
     // find which type to spawn
@@ -1849,6 +1890,12 @@ void P_RespawnSpecials(void)
 
     if (gamemode == heretic)
         S_StartSound(mo, sfx_itmbk);
+    else
+    {
+        // Move fog z over the new object.
+        fog_mo->z = mo->z;
+        S_StartSound(fog_mo, sfx_itmbk);
+    }
 
     // pull it from the que
     iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);

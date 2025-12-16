@@ -5156,3 +5156,9 @@ Added a missing deathstate field in MT_SPIRIT.
 Changed the flags in info to uint32_t.
 Changed the flags in mobj_t to uint32_t also.
 Changed some flag vars in the code to uint32_t also.
+
+*** W105_spawn_fog
+patchfile = w105_37_spawn_fog.patch
+- commit revision 1241
+Move the spawn fog over the spawned monster and spawned object.
+
