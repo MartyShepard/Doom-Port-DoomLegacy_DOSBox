@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_sound.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -64,6 +64,10 @@
 void  I_GetSfx (sfxinfo_t*  sfx);  // read lump to sfx data, length
 void  I_FreeSfx (sfxinfo_t* sfx);
 
+// The volumes for the hardware and software mixers.
+extern int mix_sfxvolume;
+extern int mix_musicvolume;
+
 
 // Init at program start...
 void I_StartupSound();
@@ -81,7 +85,8 @@ void I_ShutdownSound(void);
 //
 
 // Starts a sound in a particular sound channel.
-int I_StartSound ( int id, int vol, int sep, int pitch, int priority );
+//  vol : 0..255
+int I_StartSound ( sfxid_t sfxid, int vol, int sep, int pitch, int priority );
 
 
 // Stops a sound channel.

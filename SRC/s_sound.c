@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: s_sound.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2013 by DooM Legacy Team.
+// Copyright (C) 1998-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -184,17 +184,16 @@ consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };
 // when to clip out sounds
 // Does not fit the large outdoor areas.
 // added 2-2-98 in 8 bit volume control (befort  (1200*0x10000))
-#define S_CLIPPING_DIST         (1200*0x10000)
+// Is 1200 in Boom, 1600 in Heretic.
+#define S_FAR_DIST         1200
 
 // Distance tp origin when sounds should be maxed out.
 // This should relate to movement clipping resolution
 // (see BLOCKMAP handling).
 // Originally: (200*0x10000).
+// Is 200 in Boom, 0 In Heretic.
 // added 2-2-98 in 8 bit volume control (befort  (160*0x10000))
-#define S_CLOSE_DIST            (160*0x10000)
-
-// added 2-2-98 in 8 bit volume control (befort  remove the +4)
-#define S_ATTENUATOR            ((S_CLIPPING_DIST-S_CLOSE_DIST)>>(FRACBITS+4))
+#define S_CLOSE_DIST        160
 
 // Adjustable by menu.
 #define NORM_VOLUME             snd_MaxVolume
@@ -204,7 +203,7 @@ consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };
 #define NORM_SEP                128
 
 #define S_PITCH_PERTURB         1
-#define S_STEREO_SWING          (96*0x10000)
+#define S_STEREO_SWING          (96<<FRACBITS)
 
 #ifdef SURROUND
 #define SURROUND_SEP            -128
@@ -215,8 +214,10 @@ consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };
 
 typedef struct
 {
+    // When empty, sfxinfo=NULL, priority=-0x3FFF.
     // sound information (if null, channel avail.)
     sfxinfo_t *sfxinfo;
+    int16_t   priority;  // Heretic style signed priority, adjusted for dist,
 
     // origin of sound
     void *origin;
@@ -226,7 +227,8 @@ typedef struct
 
 } channel_t;
 
-// the set of channels available
+// The set of channels available.
+// Number of channels is set by cv_numChannels
 static channel_t *channels;
 
 // whether songs are mus_paused
@@ -243,9 +245,19 @@ static int nextcleanup;
 //
 // Internals.
 //
-int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, int *pitch);
+typedef struct {
+    int volume;
+    int sep;
+    int pitch;
+    int dist; // integer part of sound distance
+} sound_param_t;
+
+static
+boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
+                            /*OUT*/ sound_param_t * sp );
 
 static void S_StopChannel(int cnum);
+
 
 void S_Register_SoundStuff(void)
 {
@@ -312,7 +324,10 @@ static void SetChannelsNum(void)
 
     // Free all channels for use
     for (i = 0; i < cv_numChannels.value; i++)
-        channels[i].sfxinfo = 0;
+    {
+        channels[i].sfxinfo = NULL;
+        channels[i].origin = NULL;
+    }
 
 }
 
@@ -351,18 +366,18 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     if (W_CheckNumForName(lmpname) == -1)
     {
         // sound not found
-	// try plain name too (hth2.wad amb*)
+        // try plain name too (hth2.wad amb*)
         if (W_CheckNumForName(sfx->name) >= 0)
         {
-	    sfxlump = W_GetNumForName(sfx->name);
-	    goto lump_found;
-	}
+            sfxlump = W_GetNumForName(sfx->name);
+            goto lump_found;
+        }
 
         if( verbose > 1 )
-	    GenPrintf(EMSG_ver, "Sound missing: %s, Using default sound\n", lmpname);
-	// Heretic shareware: get many missing sound names at sound init,
-	// but not after game starts.  These come from list of sounds
-	// in sounds.c, but not all those are in the game.
+            GenPrintf(EMSG_ver, "Sound missing: %s, Using default sound\n", lmpname);
+        // Heretic shareware: get many missing sound names at sound init,
+        // but not after game starts.  These come from list of sounds
+        // in sounds.c, but not all those are in the game.
         if (gamemode == heretic)
             sfxlump = W_GetNumForName("keyup");
         else
@@ -372,6 +387,7 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     {
         sfxlump = W_GetNumForName(lmpname);
     }
+
  lump_found:
     // if lump not found, W_GetNumForName would have done I_Error
     sfx->lumpnum = sfxlump;
@@ -404,19 +420,19 @@ static void S_GetSfx( sfxinfo_t * sfx )
 //        CONS_Printf ("cached sound %s\n", sfx->name);
         if (sfx->link)
         {
-	    // NOTE: linked sounds use the link data at StartSound time
-	    // Example is the chaingun sound linked to pistol.
-	    if( ! sfx->link->data )
-	        I_GetSfx( sfx->link );
-	    // Linked to previously loaded
-	    sfx->data = sfx->link->data;
-	    sfx->length = sfx->link->length;
-	}
+            // NOTE: linked sounds use the link data at StartSound time
+            // Example is the chaingun sound linked to pistol.
+            if( ! sfx->link->data )
+                I_GetSfx( sfx->link );
+            // Linked to previously loaded
+            sfx->data = sfx->link->data;
+            sfx->length = sfx->link->length;
+        }
         else
         {
-	    // Load data from WAD file.
-	    I_GetSfx( sfx );
-	}
+            // Load data from WAD file.
+            I_GetSfx( sfx );
+        }
     }
 }
 
@@ -433,9 +449,9 @@ void S_FreeSfx( sfxinfo_t * sfx )
 
         if( sfx->data )    // if not already free
         {
-	    Z_Free( sfx->data );
-	    sfx->data = NULL;
-	}
+            Z_Free( sfx->data );
+            sfx->data = NULL;
+        }
     }
 }
 
@@ -447,7 +463,7 @@ void S_FreeSfx( sfxinfo_t * sfx )
 //
 void S_Init(int sfxVolume, int musicVolume)
 {
-    int i;
+    sfxid_t i;
 
     if (dedicated)
         return;
@@ -472,10 +488,10 @@ void S_Init(int sfxVolume, int musicVolume)
 #if 1
         // [WDJ] Single Saw sound fix.
         // SFX_saw marks some additional sounds that may need SFX_single.
-	// The need for these may be obsolete.
+        // The need for these may be obsolete.
         // Need to know the situation that required single saw sound.
-	if( sfx->flags & SFX_saw )
-	   sfx->flags |= SFX_single;
+        if( sfx->flags & SFX_saw )
+           sfx->flags |= SFX_single;
 #endif
     }
 
@@ -492,7 +508,7 @@ void S_Init(int sfxVolume, int musicVolume)
         {
             // NOTE: linked sounds use the link's data at StartSound time
             if (S_sfx[i].name && !S_sfx[i].link)
-	        S_GetSfx( & S_sfx[i] );
+                S_GetSfx( & S_sfx[i] );
         }
 
         CONS_Printf(" pre-cached all sound data\n");
@@ -529,6 +545,7 @@ void S_StopSounds(void)
     }
 }
 
+// Called by P_SetupLevel.
 void S_StartSounds(void)
 {
     int mnum;
@@ -578,19 +595,25 @@ void S_StartSounds(void)
 
 
 //
-// S_getChannel :
+// S_get_channel :
 //   Kill origin sounds, dependent upon sfx flags.
 //   Reuse the channel, or find another channel.
 //   Return channel number, if none available, return -1.
 //
-static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
+//  priority : Heretic style ascending signed priority adjusted for distance
+static int S_get_channel(void *origin, sfxinfo_t * sfxinfo, int16_t priority )
 {
     // [WDJ] Like PrBoom, separate channel for player tagged sfx
     uint32_t kill_flags = (sfxinfo->flags & (SFX_player|SFX_saw)) | SFX_org_kill;
-    int16_t priority = -1;  // higher is lower priority
+    int16_t low_priority = priority;  // neg is lower priority
     int pick_cnum = -1;
+    int chanlimit = sfxinfo->limit_channels; // 1..99
     int cnum;  // channel number to use
     channel_t * c;
+
+    // Using the Heretic system, higher num is higher priority.
+    // Priority adjusted by dist.
+    //  pri *= ( 10 - (dist/160));
 
     // Find an open channel, or lowest priority
     // Stop previous origin sound, so do not break from loop
@@ -598,34 +621,46 @@ static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
     for (cnum = cv_numChannels.value-1; cnum >= 0 ; cnum--)
     {
         c = & channels[cnum];
-        if (! c->sfxinfo)   // empty
-        {
-            pick_cnum = cnum;
-	    priority = 0x3FFF;  // empty is already lowest priority
-	    continue;
-	}
         // stop previous origin sound
         if (origin && c->origin == origin)
         {
-	    // reuse channel with same origin, flags, when SFX_org_kill
-	    if((c->sfxinfo->flags & (SFX_player|SFX_saw|SFX_org_kill)) == kill_flags )
-	        goto reuse_cnum;
-	}
-        // find lowest priority ( 256 is lowest )
-        if (c->sfxinfo->priority > priority)
+            if( ! c->sfxinfo )  goto reuse_cnum;  // empty
+            // reuse channel with same origin, flags, when SFX_org_kill
+            if((c->sfxinfo->flags & (SFX_player|SFX_saw|SFX_org_kill)) == kill_flags )
+                goto reuse_cnum;
+        }
+        if (! c->sfxinfo)   // empty
         {
-	    pick_cnum = cnum;
-	    priority = c->sfxinfo->priority;
-	}
+            pick_cnum = cnum;
+            low_priority = -0x3FFF;  // empty is already lowest priority
+            continue;
+        }
+        // Heretic style channel limits per sfx.
+        if (c->sfxinfo == sfxinfo) 
+            chanlimit --;
+        // Find lowest priority ( neg is lowest ).
+        if (c->priority < low_priority)
+        {
+            pick_cnum = cnum;
+            low_priority = c->priority;
+        }
     }
+
+    // Heretic style channel limits.
+    if( chanlimit <= 0 )
+#if 1     
+        priority -= (NORM_PRIORITY/2);  // soft limit
+#else
+        return -1;  // already at or over limit
+#endif
 
     cnum = pick_cnum;
     if( pick_cnum >= 0 )
     {
-        if( priority > 1024 )  // found empty
-	    goto use_cnum;
-        if( sfxinfo->priority <= priority )  // can replace this sound
-	    goto reuse_cnum;
+        if( low_priority == -0x3FFF )  // found empty
+            goto use_cnum;
+        if( priority >= low_priority )  // can replace this sound
+            goto reuse_cnum;
     }
     // No lower priority.  Sorry, Charlie.
     return -1;
@@ -637,18 +672,23 @@ static int S_getChannel(void *origin, sfxinfo_t * sfxinfo)
 
     // channel is decided to be cnum.
     c->sfxinfo = sfxinfo;
+    c->priority = priority;
     c->origin = origin;
 
     return cnum;
 }
 
 
-void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
+// Does the sfx special case handling for all drivers.
+//  volume : 0..255
+// Called by StartSound.
+// Called by hardware S_StartAmbientSound.
+void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
+                          channel_type_t ct_type )
 {
-    int sep = 0;  // compiler
-    int pitch;
-    int priority;
-    sfxinfo_t *sfx;
+    sound_param_t sp1;
+    int priority;  // Heretic style signed priority, nominally -10 .. 2560.
+    sfxinfo_t * sfx;
     int cnum;
 
     mobj_t *origin = (mobj_t *) origin_p;
@@ -656,18 +696,19 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     if (nosoundfx || (origin && origin->type == MT_SPIRIT))
         goto done;
 
-#ifdef HW3SOUND
-    if (hws_mode != HWS_DEFAULT_MODE)
+#if 0
+    if( gamemode == heretic )
     {
-        HW3S_StartSound(origin, sfx_id);
-        goto done;
-    };
+        if( origin == NULL )
+            origin = consoleplayer_ptr->mo;
+        // volume = (volume*(snd_MaxVolume+1)*8)>>7;
+    }
 #endif
-
+   
 #if 0
     // Debug.
-    debug_Printf( "S_StartSoundAtVolume: playing sound %d (%s)\n",
-		sfx_id, S_sfx[sfx_id].name );
+    debug_Printf( "S_StartSoundAtVolume: playing sound %d (%s), volume = %i\n",
+                sfx_id, S_sfx[sfx_id].name, volume );
 #endif
 
 #ifdef PARANOIA
@@ -680,10 +721,14 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 #endif
 
     sfx = &S_sfx[sfx_id];
+//    priority = sfx->priority;  // Heretic
+//    priority = NORM_PRIORITY;  // Boom
+    sp1.pitch = NORM_PITCH;
+    sp1.sep = 128;
 
     if ((sfx->skinsound >= 0) && origin && origin->skin)
     {
-        // it redirect player sound to the sound in the skin table
+        // redirect player sound to the sound in the skin table
         sfx_id = ((skin_t *) origin->skin)->soundsid[sfx->skinsound];
         sfx = &S_sfx[sfx_id];
     }
@@ -691,12 +736,20 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     // Initialize sound parameters
     if (sfx->link)
     {
-        pitch = sfx->pitch;
-        priority = sfx->priority;
-        volume += sfx->volume;
-
-        if (volume < 1)
-            goto done;
+        if( sfx->link_mod > 0 )
+        {
+            // Doom only
+            // Only modifies pitch, and we don't even implement that.
+            // The only link entry had NORM_PRIORITY.
+            sp1.pitch = link_mods[sfx->link_mod].pitch;
+//          priority = sfx->priority;  // Boom
+            volume += link_mods[sfx->link_mod].mod_volume;
+#if 0
+            // There are no sfx link mods that would trigger this.
+            if (volume < 1)
+                goto done;
+#endif
+        }
 
         // added 2-2-98 SfxVolume is now the hardware volume, don't mix up
         //    if (volume > SfxVolume)
@@ -708,54 +761,57 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     }
     else
     {
-        pitch = NORM_PITCH;
-        priority = NORM_PRIORITY;
+//        pitch = NORM_PITCH;
+//        priority = NORM_PRIORITY;  // Boom ignored the sfx priority.
     }
 
+    sp1.volume = volume;
+    sp1.dist = 0;
     // Check to see if it is audible,
     //  and if not, modify the params
 
     //added:16-01-98:changed consoleplayer to displayplayer
     //[WDJ] added displayplayer2_ptr tests, stop segfaults
-    if (origin && origin != displayplayer_ptr->mo
-	&& !(cv_splitscreen.value && displayplayer2_ptr && origin == displayplayer2_ptr->mo))
+    if (origin
+        && (origin != displayplayer_ptr->mo)
+        && !(cv_splitscreen.value && displayplayer2_ptr
+             && (origin == displayplayer2_ptr->mo) ) )
     {
-        int rc, rc2;
-        int volume2 = volume, sep2 /*=sep*/ , pitch2 = pitch;
-        rc = S_AdjustSoundParams(displayplayer_ptr->mo, origin, &volume, &sep, &pitch);
+        sound_param_t sp2 = sp1;  // must save before AdjustSound
+        boolean audible1, audible2;
+
+        audible1 = S_AdjustSoundParams(displayplayer_ptr->mo, origin, &sp1);
         if (cv_splitscreen.value && displayplayer2_ptr)
         {
- 	    // splitscreen sound for player2
-            rc2 = S_AdjustSoundParams(displayplayer2_ptr->mo, origin, &volume2, &sep2, &pitch2);
-            if (!rc2)
+            // splitscreen sound for player2
+            audible2 = S_AdjustSoundParams(displayplayer2_ptr->mo, origin, &sp2);
+            if (!audible2)
             {
-                if (!rc)
+                if (!audible1)
                     goto done;
             }
-            else if (!rc || (rc && volume2 > volume))
+            else if (!audible1 || (audible1 && (sp2.volume > sp1.volume)))
             {
-                volume = volume2;
-                sep = sep2;
-                pitch = pitch2;
+                sp1 = sp2;  // as heard by player 2
                 if (origin->x == displayplayer2_ptr->mo->x
-		    && origin->y == displayplayer2_ptr->mo->y)
+                    && origin->y == displayplayer2_ptr->mo->y)
                 {
-                    sep = NORM_SEP;
+                    sp1.sep = NORM_SEP;
                 }
             }
         }
-        else if (!rc)
-	    goto done;
+        else if (!audible1)
+            goto done;
 
         if (origin->x == displayplayer_ptr->mo->x
-	    && origin->y == displayplayer_ptr->mo->y)
+            && origin->y == displayplayer_ptr->mo->y)
         {
-            sep = NORM_SEP;
+            sp1.sep = NORM_SEP;
         }
     }
     else
     {
-        sep = NORM_SEP;
+        sp1.sep = NORM_SEP;
     }
 
     // hacks to vary the sfx pitches
@@ -770,33 +826,63 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
     {
         if (gamemode == heretic)
         {
-            pitch = 128 + (M_Random() & 7);
-	    pitch -= (M_Random() & 7);
-	}
+            // Heretic
+            sp1.pitch = 128 + (M_Random() & 7);
+            sp1.pitch -= (M_Random() & 7);
+        }
         else
         {
+            // From Boom
             if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit)
-                pitch += 8 - (M_Random() & 15);
+                sp1.pitch += 8 - (M_Random() & 15);
             else if (sfx_id != sfx_itemup && sfx_id != sfx_tink)
-                pitch += 16 - (M_Random() & 31);
+                sp1.pitch += 16 - (M_Random() & 31);
         }
     }
+    else if( demoplayback )
+    {
+        M_Random(); M_Random();  // to keep demo sync
+    }
 
-    if (pitch < 0)
-        pitch = NORM_PITCH;
-    if (pitch > 255)
-        pitch = 255;
+    if (sp1.pitch < 0)
+        sp1.pitch = NORM_PITCH;
+    if (sp1.pitch > 255)
+        sp1.pitch = 255;
+
+    if( gamemode == heretic )
+    {
+        // Heretic highest priority is 256, lowest 1.
+        priority = sfx->priority * (10 - (sp1.dist/160) );
+    }
+    else
+    {
+        // [WDJ] Boom was using NORM_PRIORITY for everything, ignoring the
+        // sfx priority, but we have the Heretic system, so why not use it.
+        // Doom highest priority is 1, lowest is 256.
+        priority = 257 - sfx->priority;  // Convert to Heretic system.
+        // Because of wads with 100 monsters, mod for dist too.
+        priority -= NORM_PRIORITY * sp1.dist / S_FAR_DIST;
+    }
+
+#ifdef HW3SOUND
+    if (hws_mode != HWS_DEFAULT_MODE)
+    {
+        HW3S_I_StartSound(origin, NULL, ct_type, sfx_id, priority,
+                          sp1.volume, sp1.pitch, sp1.sep);
+        goto done;
+    };
+#endif
 
     // Kill origin sound, reuse channel, or find a channel
     // Dependent upon sfx flags
-    cnum = S_getChannel(origin, sfx);
+    cnum = S_get_channel(origin, sfx, priority);
     if (cnum < 0)
         goto done;
 
     // cache data if necessary
     // NOTE : set sfx->data NULL sfx->lump -1 to force a reload
     if (!sfx->data)
-        S_GetSfx( sfx );
+        S_GetSfx( sfx );  // handles linked sfx too
 
     // [WDJ] usefulness of a recent sound
     if( sfx->usefulness < 10 )
@@ -813,34 +899,61 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume)
 #ifdef SURROUND
     // judgecutor:
     // Avoid channel reverse if surround
-    if (stereoreverse.value && sep != SURROUND_SEP)
-        sep = (~sep) & 255;
+    if (stereoreverse.value && sp1.sep != SURROUND_SEP)
+        sp1.sep = (~sp1.sep) & 255;
 #else
     //added:11-04-98:
     if (stereoreverse.value)
-        sep = (~sep) & 255;
+        sp1.sep = (~sp1.sep) & 255;
 #endif
 
     //debug_Printf("stereo %d reverse %d\n", sep, stereoreverse.value);
 
     // Returns a handle to a mixer/output channel.
     channels[cnum].handle =
-      I_StartSound(sfx_id, volume, sep, pitch, priority);
+      I_StartSound(sfx_id, sp1.volume, sp1.sep, sp1.pitch, priority);
 done:
     return;
 }
 
-void S_StartSound(void *origin, int sfx_id)
+// Most sfx sounds are called through this interface.
+void S_StartSound(const void *origin, int sfx_id)
 {
     // the volume is handled 8 bits
 
 #ifdef HW3SOUND
     if (hws_mode != HWS_DEFAULT_MODE)
-        HW3S_StartSound(origin, sfx_id);
+        HW3S_I_StartSound(origin, NULL, CT_NORMAL, sfx_id, 255, sp1.pitch, NORMAL_SEP);
     else
 #endif
-        S_StartSoundAtVolume(origin, sfx_id, 255);
+        S_StartSoundAtVolume(origin, sfx_id, 255, CT_NORMAL);
 }
+
+
+void S_StartAttackSound(const void *origin, sfxid_t sfx_id)
+{
+    S_StartSoundAtVolume((void*)origin, sfx_id, 255, CT_ATTACK);
+}
+
+void S_StartScreamSound(const void *origin, sfxid_t sfx_id)
+{  
+    S_StartSoundAtVolume((void*)origin, sfx_id, 255, CT_SCREAM);
+}
+
+void S_StartAmbientSound(sfxid_t sfx_id, int volume)
+{
+#ifdef HW3SOUND
+    if (hws_mode != HWS_DEFAULT_MODE)
+    {
+        volume += 30;
+        if (volume > 255)
+            volume = 255;
+    }
+#endif
+    S_StartSoundAtVolume(NULL, sfx_id, volume, CT_AMBIENT);
+}
+
+
 
 void S_StopSound(void *origin)
 {
@@ -862,13 +975,14 @@ void S_StopSound(void *origin)
     {
         if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
         {
-	    if( (channels[cnum].sfxinfo->flags & SFX_org_kill) )
-	    {
-	        S_StopChannel(cnum);
-	    }
-	}
+            if( (channels[cnum].sfxinfo->flags & SFX_org_kill) )
+            {
+                S_StopChannel(cnum);
+            }
+        }
     }
 }
+
 
 //
 // Stop and resume music, during game PAUSE.
@@ -904,16 +1018,17 @@ void S_ResumeSound(void)
 //
 // Updates music & sounds
 //
-static int actualsfxvolume;     //check for change through console
-static int actualmusicvolume;
 
+// The volumes for the hardware and software mixers.
+// Range 0..31
+int mix_sfxvolume = 0;
+int mix_musicvolume = 0;
+
+// Called by D_DoomLoop upon tics.
 void S_UpdateSounds(void)
 {
-    int audible;
+    sound_param_t sp1;
     int cnum;
-    int volume;
-    int sep;
-    int pitch;
     sfxinfo_t *sfx;
     channel_t *c;
 
@@ -923,9 +1038,9 @@ void S_UpdateSounds(void)
         return;
 
     // Update sound/music volumes, if changed manually at console
-    if (actualsfxvolume != cv_soundvolume.value)
+    if (mix_sfxvolume != cv_soundvolume.value)
         S_SetSfxVolume(cv_soundvolume.value);
-    if (actualmusicvolume != cv_musicvolume.value)
+    if (mix_musicvolume != cv_musicvolume.value)
         S_SetMusicVolume(cv_musicvolume.value);
 
 #ifdef HW3SOUND
@@ -965,59 +1080,70 @@ void S_UpdateSounds(void)
 
         if (c->sfxinfo)
         {
-            if (I_SoundIsPlaying(c->handle))
-            {
-                // initialize parameters
-                volume = 255;   //8 bits internal volume precision
-                pitch = NORM_PITCH;
-                sep = NORM_SEP;
-
-                if (sfx->link)  // strange (BP)
-                {
-                    pitch = sfx->pitch;
-                    volume += sfx->volume;
-                    if (volume < 1)
-                    {
-                        S_StopChannel(cnum);
-                        continue;
-                    }
-                }
-
-                // check non-local sounds for distance clipping
-                //  or modify their params
-                if (c->origin && listener != c->origin
-		    && !(cv_splitscreen.value && displayplayer2_ptr && c->origin == displayplayer2_ptr->mo))
-                {
-                    int audible2;
-                    int volume2 = volume, sep2 = sep, pitch2 = pitch;
-                    audible = S_AdjustSoundParams(listener, c->origin, &volume, &sep, &pitch);
-
-                    if (cv_splitscreen.value && displayplayer2_ptr)
-                    {
-		        // splitscreen sound for player2
-                        audible2 = S_AdjustSoundParams(displayplayer2_ptr->mo, c->origin, &volume2, &sep2, &pitch2);
-                        if (audible2 && (!audible || (audible && volume2 > volume)))
-                        {
-                            audible = true;
-                            volume = volume2;
-                            sep = sep2;
-                            pitch = pitch2;
-                        }
-                    }
-
-                    if (!audible)
-                    {
-                        S_StopChannel(cnum);
-                    }
-                    else
-                        I_UpdateSoundParams(c->handle, volume, sep, pitch);
-                }
-            }
-            else
+            if ( ! I_SoundIsPlaying(c->handle))
             {
                 // if channel is allocated but sound has stopped,
                 //  free it
                 S_StopChannel(cnum);
+                continue;
+            }
+
+            // Sound is still playing, adjust for player or source movement.
+            // Initialize parameters
+            sp1.volume = 255;   //8 bits internal volume precision
+            sp1.pitch = NORM_PITCH;
+            sp1.sep = NORM_SEP;
+
+            if (sfx->link)  // strange (BP)
+            {
+                if( sfx->link_mod > 0 )
+                {
+                    // Doom only
+                    // Only modifies pitch, and we don't even implement that.
+                    sp1.pitch = link_mods[sfx->link_mod].pitch;
+                    sp1.volume += link_mods[sfx->link_mod].mod_volume;
+#if 0
+                    // There are no sfx link mods that would trigger this.
+                    if (sp1.volume < 1)
+                    {
+                        S_StopChannel(cnum);
+                        continue;
+                    }
+#endif
+                }
+            }
+
+            // check non-local sounds for distance clipping
+            //  or modify their params
+            if (c->origin
+                && (listener != c->origin)
+                && !(cv_splitscreen.value && displayplayer2_ptr
+                     && (c->origin == displayplayer2_ptr->mo) ) )
+            {
+                sound_param_t sp2 = sp1;
+                boolean audible1, audible2;
+
+                audible1 = S_AdjustSoundParams(listener, c->origin, &sp1);
+
+                if (cv_splitscreen.value && displayplayer2_ptr)
+                {
+                    // splitscreen sound for player2
+                    audible2 = S_AdjustSoundParams(displayplayer2_ptr->mo, c->origin, &sp2);
+                    if (audible2
+                        && (!audible1 || (sp2.volume > sp1.volume)) )
+                    {
+                        audible1 = true;
+                        sp1 = sp2;
+                    }
+                }
+
+                if (!audible1)
+                {
+                    S_StopChannel(cnum);
+                    continue;		   
+                }
+
+                I_UpdateSoundParams(c->handle, sp1.volume, sp1.sep, sp1.pitch);
             }
         }
     }
@@ -1029,15 +1155,16 @@ void S_UpdateSounds(void)
 
 }
 
+//  volume : volume control,  0..31
 void S_SetMusicVolume(int volume)
 {
     if (volume < 0 || volume > 31)
-        CONS_Printf("musicvolume should be between 0-31\n");
+    {
+        GenPrintf( EMSG_warn, "musicvolume should be between 0-31\n");
+        volume = ( volume < 0 ) ? 0 : 31;  // clamp
+    }
 
-    volume &= 31;
-
-    CV_SetValue(&cv_musicvolume, volume);
-    actualmusicvolume = cv_musicvolume.value;   //check for change of var
+    mix_musicvolume = volume;  // check for change of var
 
     I_SetMusicVolume(volume);
 
@@ -1046,19 +1173,22 @@ void S_SetMusicVolume(int volume)
 #endif
 }
 
+//  volume : volume control,  0..31
 void S_SetSfxVolume(int volume)
 {
     if (volume < 0 || volume > 31)
-        CONS_Printf("sfxvolume should be between 0-31\n");
+    {
+        GenPrintf( EMSG_warn, "sfxvolume should be between 0-31\n");
+        volume = ( volume < 0 ) ? 0 : 31;  // clamp
+    }
 
-    CV_SetValue(&cv_soundvolume, volume & 31);
-    actualsfxvolume = cv_soundvolume.value;     //check for change of var
+    mix_sfxvolume = volume; // check for change of var
 
 #ifdef HW3SOUND
-    hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume & 31) : HW3S_SetSfxVolume(volume & 31);
+    hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume) : HW3S_SetSfxVolume(volume & 31);
 #else
     // now hardware volume
-    I_SetSfxVolume(volume & 31);
+    I_SetSfxVolume(volume);
 #endif
 
 }
@@ -1161,7 +1291,7 @@ void S_StopMusic()
 
         I_StopSong(mus_playing->handle);
         I_UnRegisterSong(mus_playing->handle);
-	Z_ChangeTag(mus_playing->data, PU_CACHE);
+        Z_ChangeTag(mus_playing->data, PU_CACHE);
 
         mus_playing->data = NULL;
         mus_playing = NULL;
@@ -1199,7 +1329,10 @@ static void S_StopChannel(int cnum)
         c->sfxinfo->usefulness--;
 #endif
 
-        c->sfxinfo = 0;
+        if( (c->sfxinfo->flags & SFX_org_kill) == 0 )
+           c->origin = NULL;  // do not reuse
+        c->sfxinfo = NULL;
+        c->priority = -0x3FFF;
     }
 }
 
@@ -1209,12 +1342,16 @@ static void S_StopChannel(int cnum)
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, int *pitch)
+//   sp : /*OUT*/ sep, volume, 0..255
+// Return true if the sound is audible.
+static
+boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
+                            /*OUT*/ sound_param_t * sp )
 {
-    fixed_t approx_dist;
-    fixed_t adx;
-    fixed_t ady;
+    int approx_dist;  // integer part of dist
+    fixed_t adx, ady;
     angle_t angle;
+    int v;
    
     if( ! listener )  return 0;  // [WDJ] Stop splitscreen segfault.
 
@@ -1224,12 +1361,18 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
     ady = abs(listener->y - source->y);
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
-    approx_dist = adx + ady - ((adx < ady ? adx : ady) >> 1);
+    approx_dist = (adx + ady - (((adx < ady)? adx : ady) >> 1)) >> FRACBITS;
+    // [WDJ] Used everywhere coarsely, so pass integer part.
+    sp->dist = approx_dist;
 
     // Original has MAP08 without sound clipping by distance
-    if (gamemap != 8 && approx_dist > S_CLIPPING_DIST)
+    // Boom    if(approx_dist > 1200)
+    // Heretic if(approx_dist > 1600)
+    // Vanilla Doom2: (gamemap != 8 && approx_dist > S_FAR_DIST)
+    //   doom2 map 8 apparantly was a joke level.
+    if ( approx_dist > S_FAR_DIST )
     {
-        return 0;
+        return false;  // not audible
     }
 
     // angle of source to listener
@@ -1243,42 +1386,78 @@ int S_AdjustSoundParams(mobj_t * listener, mobj_t * source, int *vol, int *sep, 
 #ifdef SURROUND
 
     // Produce a surround sound for angle from 105 till 255
-    if (cv_surround.value && (angle > (ANG90 + (ANG45 / 3)) && angle < (ANG270 - (ANG45 / 3))))
-        *sep = SURROUND_SEP;
+    if (cv_surround.value
+        && (angle > (ANG90 + (ANG45 / 3)) && angle < (ANG270 - (ANG45 / 3))))
+        sp->sep = SURROUND_SEP;
     else
     {
 #endif
         // stereo separation
-        *sep = 128 - (FixedMul(S_STEREO_SWING, sine_ANG(angle)) >> FRACBITS);
+        sp->sep = 128 - (FixedMul(S_STEREO_SWING, sine_ANG(angle)) >> FRACBITS);
 
 #ifdef SURROUND
     }
 #endif
 
     // volume calculation
+    // Multiplication by snd_SfxVolume has been moved to port drivers.
+    // This generates a position relative volume, 0..255.
     if (approx_dist < S_CLOSE_DIST)
     {
         // added 2-2-98 SfxVolume is now hardware volume
-        *vol = 255;     //snd_SfxVolume;
-    }
-    // Original had MAP08 making distant sound effects louder than near.
-    // removed hack here for gamemap==8 (it made far sound still present)
-    else
-    {
-        // distance effect
-	// Where old equation had snd_SfxVolume this has 15
-        *vol = (15 * ((S_CLIPPING_DIST - approx_dist) >> FRACBITS)) / S_ATTENUATOR;
+        sp->volume = 255;     //snd_SfxVolume;
+        return true;
     }
 
-    return (*vol > 0);
+    // Original had MAP08 making distant sound effects louder than near.
+    // removed hack here for gamemap==8 (it made far sound still present)
+    if( gamemode == heretic )
+    {
+        // Heretic distance effect
+        // Used sndmax: 0..31, default was 31.
+        // Heretic  volume= (sndmax*16 + dist * (-sndmax*16)/MAX_SND_DIST) >> 9;
+        //          volume= ((sndmax*16) - ((dist*sndmax*16)/MAX_SND_DIST)) >> 9;
+        // Heretic has sndcurve lump:  volume= sndcurve[dist];
+        v = ( (255*16) - ( (255*16*approx_dist) / S_FAR_DIST ) ) >> 4;
+    }
+    else
+    {
+        // Doom/Boom distance effect.
+        // Used snd_SfxVolume: 0..15, default was 15.
+        //  We use volume 0..255.
+        // PrBoom: v = (snd_SfxVolume * ((S_FAR_DIST-approx_dist)>>FRACBITS)*8)
+        //             / ((S_FAR_DIST-S_CLOSE_DIST)>>FRACBITS)
+#if 1
+        v = (240 * (S_FAR_DIST - approx_dist)) / (S_FAR_DIST-S_CLOSE_DIST);
+#else
+        // added 2-2-98 in 8 bit volume control (befort  remove the +4)
+        // Range 0..240
+        v = (15 * (S_FAR_DIST - approx_dist))
+             / ((S_FAR_DIST-S_CLOSE_DIST)>>4);
+//#define S_ATTENUATOR   ((S_FAR_DIST-S_CLOSE_DIST)>>(FRACBITS+4))
+//      v = (15 * ((S_FAR_DIST - approx_dist) >> FRACBITS)) / S_ATTENUATOR;
+#endif
+    }
+
+    if( v > 255 )
+    {
+        v = 255;
+        if( devparm )
+            GenPrintf( EMSG_dev, "AdjustSound maxxed volume.\n" );
+    }
+    sp->volume = v;
+
+    return (v > 0);
 }
 
 
 // SoM: Searches through the channels and checks for origin or id.
-// returns 0 of not found, returns 1 if found.
-// if id<0, then don't check it...
-int S_SoundPlaying(void *origin, int id)
+//   origin : the object to check,  if NULL do not check it
+//   sfxid : the sfx to check,  if sfx_None do not check it
+// returns true if either is found.
+boolean  S_SoundPlaying(void *origin, sfxid_t sfxid)
 {
+    sfxinfo_t * sfx;
     int cnum;
 
 #ifdef HW3SOUND
@@ -1288,11 +1467,15 @@ int S_SoundPlaying(void *origin, int id)
     }
 #endif
 
+    // Enable match test when sfxid specified.
+    sfx = ( sfxid == sfx_None )? NULL : & S_sfx[sfxid];
+   
     for (cnum = 0; cnum < cv_numChannels.value; cnum++)
     {
         if (origin && channels[cnum].origin == origin)
             return 1;
-        if (id >= 0 && (channels[cnum].sfxinfo - S_sfx == id))
+
+        if ( sfx && (channels[cnum].sfxinfo == sfx) )
             return 1;
     }
     return 0;
@@ -1310,9 +1493,11 @@ void S_StartSoundName(void *mo, char *soundname)
     {
         if (!S_sfx[sfxid].name)
             continue;
+
         if (!strcasecmp(S_sfx[sfxid].name, soundname))
-	    goto play_sfx;  // found name
+            goto play_sfx;  // found name
     }
+
     // add soundname to S_sfx
     // [WDJ] S_AddSoundFx now handles search for free slot and remove
     // of least useful sfx when full.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1240 2016-06-14 17:12:33Z wesleyjohnson $
+// $Id: info.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -49,7 +49,8 @@
 #ifndef INFO_H
 #define INFO_H
 
-#include <stdint.h>
+#include "doomtype.h"
+  // sfxid_t, stdint
 // Needed for action function pointer handling.
 #include "d_think.h"
   // actionf_t
@@ -2885,25 +2886,26 @@ MT_SOUNDWATERFALL,
 
 } mobjtype_t;
 
+
 typedef struct
 {
     int16_t doomednum;  // mapthing_t type, or -1
     statenum_t spawnstate;
     int16_t spawnhealth;
     statenum_t seestate;
-    int16_t seesound;
-    int16_t activesound;
+    sfxid_t  seesound;
+    sfxid_t  activesound;
     int16_t reactiontime;
-    int16_t attacksound;
+    sfxid_t  attacksound;
     statenum_t painstate;
     int16_t painchance;
-    int16_t painsound;
+    sfxid_t  painsound;
     statenum_t meleestate;
     statenum_t missilestate;
     statenum_t crashstate;   // from heretic/hexen
     statenum_t deathstate;
     statenum_t xdeathstate;
-    int16_t deathsound;
+    sfxid_t  deathsound;
     statenum_t raisestate;
     fixed_t speed;
     fixed_t radius;

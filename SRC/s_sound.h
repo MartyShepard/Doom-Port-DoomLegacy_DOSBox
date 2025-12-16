@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: s_sound.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -126,14 +126,31 @@ void S_GetSfxLump( sfxinfo_t * sfx );
 // [WDJ] Common routine to Free data for a sfx
 void S_FreeSfx( sfxinfo_t * sfx );
 
+// Used by hardware sound.
+// Easier to pass by default instead of making it conditional.
+typedef enum 
+{
+    CT_NORMAL = 0,
+    CT_ATTACK,
+    CT_SCREAM,
+    CT_AMBIENT
+} channel_type_t;
+
 //
 // Start sound for thing at <origin>
 //  using <sound_id> from sounds.h
 //
-void S_StartSound( void* origin, int sound_id );
+
+void S_StartSound(const void* origin, int sfx_id );
+
+// Special cases of 3D sources
+void S_StartAmbientSound(sfxid_t sfx_id, int volume);
+void S_StartAttackSound(const void *origin, sfxid_t sfx_id);
+void S_StartScreamSound(const void *origin, sfxid_t sfx_id);
 
 // Will start a sound at a given volume.
-void S_StartSoundAtVolume ( void* origin, int sound_id, int volume );
+void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
+			  channel_type_t ct_type );
 
 // Stop sound for thing at <origin>
 void S_StopSound(void* origin);
@@ -160,10 +177,16 @@ void S_ResumeSound(void);
 //
 void S_UpdateSounds(void);
 
+//  volume : volume control,  0..31
 void S_SetMusicVolume(int volume);
+//  volume : volume control,  0..31
 void S_SetSfxVolume(int volume);
 
-int S_SoundPlaying(void *origin, int id);
+//   origin : the object to check,  if NULL do not check it
+//   sfxid : the sfx to check,  if sfx_None do not check it
+// returns true if either is found.
+boolean  S_SoundPlaying(void *origin, sfxid_t sfxid);
+
 void S_StartSoundName(void *mo, char *soundname);
 
 #endif

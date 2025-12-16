@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: hw3sound.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 2001 by DooM Legacy Team.
 //
@@ -75,6 +75,7 @@ typedef struct source_s
 {
     sfxinfo_t       *sfxinfo;
     void            *origin;
+    int16_t         priority;   // Heretic style signed adjusted priority.
     int             handle;     // Internal source handle
     channel_type_t  type;       // Sound type (attack, scream, etc)
 } source_t;
@@ -219,13 +220,15 @@ void HW3S_StopSounds()
 
 
 //=============================================================================
-static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo )
+static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo, int16_t priority )
 {
     //
     //   If none available, return -1.  Otherwise source #.
     //   source number to use
 
-    int         snum;
+    int    low_snum = -1;
+    int16_t low_priority;
+    int    snum;
     source_t*   src;
 
     // Find an open source
@@ -234,35 +237,34 @@ static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo )
         if (!src->sfxinfo)
             break;
 
-        if (origin && src->origin ==  origin)
+        if (origin && (src->origin == origin))
         {
             HW3S_KillSource(snum);
-            break;
+            return snum;
         }
     }
 
     // None available
-    if (snum == num_sources)
+    // Look for lowest priority, lower than sfx.
+    low_priority = priority;
+    for (snum = 0, src = sources ; snum < num_sources ; src++, snum++)
     {
-        // Look for lower priority
-        for (snum = 0, src = sources ; snum < num_sources ; src++, snum++)
-            if (src->sfxinfo->priority >= sfxinfo->priority) 
-                break;
-
-        if (snum == num_sources)
+        if (src->priority < low_priority)
         {
-            // FUCK!  No lower priority.  Sorry, Charlie.
-            return -1;
-        }
-        else
-        {
-            // Otherwise, kick out lower priority
-            
-            HW3S_KillSource(snum);
+            low_priority = src->priority;
+            low_snum = snum;
         }
     }
+
+    if (low_snum >= 0 )
+    {
+        // Kick out lower priority
+        HW3S_KillSource(low_snum);
+        return low_snum;
+    }
     
-    return snum;
+    // No lower priority.  Sorry, Charlie.
+    return -1;
 }
 
 
@@ -271,7 +273,7 @@ void HW3S_FillSourceParameters(mobj_t           *origin,
                                source3D_data_t  *data, 
                                channel_type_t   c_type)
 {
-    fixed_t an;
+    int angf;
     fixed_t x, y, z;
     
     if (origin && origin != players[displayplayer].mo)
@@ -291,9 +293,9 @@ void HW3S_FillSourceParameters(mobj_t           *origin,
 
         if (c_type == CT_ATTACK)
         {
-            an = origin->angle >> ANGLETOFINESHIFT;
-            x += FixedMul(16*FRACUNIT, finecosine[an]);
-            y += FixedMul(16*FRACUNIT, finesine[an]);
+            angf = ANGLE_TO_FINE(origin->angle);
+            x += FixedMul(16*FRACUNIT, finecosine[angf]);
+            y += FixedMul(16*FRACUNIT, finesine[angf]);
             z += origin->height >> 1;
         }
 
@@ -323,9 +325,10 @@ static void make_outphase_sfx(void *dest, void *src, int size)
 }
 
 
-//int HW3S_Start3DSound(const void *origin, source3D_data_t *source_parm, cone_def_t *cone_parm, channel_type_t channel, int sfx_id, int vol, int pitch);
 //=============================================================================
-int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channel_type_t c_type, int sfx_id, int volume, int pitch, int sep)
+int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm,
+                      channel_type_t c_type, sfxid_t sfx_id, int16_t priority,
+                      int volume, int pitch, int sep)
 {
     
     sfxinfo_t       *sfx;
@@ -334,65 +337,16 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channe
     sfx_data_t      sfx_data;
     int             s_num;
     source_t        *source;
-  
-    if(nosoundfx || (origin && origin->type == MT_SPIRIT))
-        return -1;
+
+    // Linked sfx, pitch, sep, distance adjustments, and splitscreen
+    // have all been handleded by S_StartSoundAtVolume(), before calling here.
 
     sfx = &S_sfx[sfx_id];
 
-    if (sfx->skinsound!=-1 && origin && origin->skin)
-    {
-        // it redirect player sound to the sound in the skin table
-        sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
-        sfx    = &S_sfx[sfx_id];
-    }
-
-    // Initialize sound parameters
-    if (sfx->link)
-    {
-        //priority = sfx->priority;
-        volume += sfx->volume;
-        pitch = sfx->pitch;
-        if (volume < 1)
-            return -1;
-
-        sfx->data = sfx->link->data;
-    }
-   
     if (!sfx->data)
     {
-        if (!sfx->link)
-            sfx->data = I_GetSfx (sfx);
-        else
-        {
-            sfx->data = I_GetSfx (sfx->link);
-            sfx->link->data = sfx->data;
-        }
+        sfx->data = I_GetSfx (sfx);  // handles linked sfx too
     }
-
-    // judgecutor 08-16-2002
-    // Sound pitching for both Doom and Heretic
-    if (cv_rndsoundpitch.value)
-    {
-        if (gamemode != heretic)
-        {
-            if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit)
-                pitch += 8 - (M_Random()&15);
-            else if (sfx_id != sfx_itemup && sfx_id != sfx_tink)
-                pitch += 16 - (M_Random()&31);
-        }
-        else
-            pitch = 128 + (M_Random() & 7) - (M_Random() & 7);
-    }
-
-    if (pitch < 0)
-        pitch = NORMAL_PITCH;
-
-    if (pitch > 255)
-        pitch = 255;    
-
-    if (sep < 0)
-        sep = 128;
 
     sfx_data.data = sfx->data;
     sfx_data.id = sfx_id;
@@ -402,7 +356,7 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channe
 
     //sfx_data.length = W_LumpLength(sfx->lumpnum);
     sfx_data.length = *((unsigned short*) sfx->data + 2) + 4 * sizeof(unsigned short);
-    sfx_data.priority = sfx->priority;
+    sfx_data.priority = priority;  // use adjusted priority
         
     if (origin && origin == players[displayplayer].mo)
     {
@@ -456,7 +410,7 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channe
     } 
     else
     {
-        s_num = HW3S_GetSource(origin, sfx);
+        s_num = HW3S_GetSource(origin, sfx, priority);
 
         if (s_num  < 0)
         {
@@ -487,57 +441,19 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channe
 
     source->sfxinfo = sfx;
     source->origin = origin;
+    source->priority = priority;	   
     HW3DS.pfnStartSource(source->handle);
     return s_num;
 
 }
 
 
-// Start normal sound
-//=============================================================================
-void HW3S_StartSound(const void *origin, int sfx_id)
-{
-    HW3S_I_StartSound(origin, NULL, CT_NORMAL, sfx_id, 255, NORMAL_PITCH, NORMAL_SEP);
-}
-
-
-//=============================================================================
-void S_StartAttackSound(const void *origin, int sfx_id)
-{
-    if (hws_mode != HWS_DEFAULT_MODE)
-        HW3S_I_StartSound(origin, NULL, CT_ATTACK, sfx_id, 255, NORMAL_PITCH, NORMAL_SEP);
-    else
-        S_StartSound((void*)origin, sfx_id);
-}
-
-void S_StartScreamSound(const void *origin, int sfx_id)
-{  
-    if (hws_mode != HWS_DEFAULT_MODE)
-        HW3S_I_StartSound(origin, NULL, CT_SCREAM, sfx_id, 255, NORMAL_PITCH, NORMAL_SEP);
-    else
-        S_StartSound((void*)origin, sfx_id);
-}
-
-void S_StartAmbientSound(int sfx_id, int volume)
-{
-    if (hws_mode != HWS_DEFAULT_MODE)
-    {
-        volume += 30;
-        if (volume > 255)
-            volume = 255;
-
-        HW3S_I_StartSound(NULL, NULL, CT_AMBIENT, sfx_id, volume, NORMAL_SEP, NORMAL_PITCH);
-    }
-    else
-        S_StartSoundAtVolume(NULL, sfx_id, volume);
-}
-
 
 //=============================================================================
 BOOL HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 {
     int                succ;
-    int                an;
+    int                angf;
     source3D_data_t    source_data; 
   
     if (HW3DS.pfnStartup(FatalErrorFunction, snd_dev))
@@ -572,13 +488,13 @@ BOOL HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
         // relative to listener
         ZeroMemory(&ambient_sdata, sizeof(ambient_sdata));
 
-        an = (ANG180 + ANG90/3) >> ANGLETOFINESHIFT;
+        angf = ANGLE_TO_FINE(ANG180 + ANG90/3);
 
         ambient_sdata.left.head_relative = 1;
         ambient_sdata.left.pos.x 
-            = FIXED_TO_FLOAT(FixedMul((MIN_DISTANCE * FRACUNIT), finecosine[an]));
+            = FIXED_TO_FLOAT(FixedMul((MIN_DISTANCE * FRACUNIT), finecosine[angf]));
         ambient_sdata.left.pos.y 
-            = FIXED_TO_FLOAT(FixedMul((MIN_DISTANCE * FRACUNIT), finesine[an]));
+            = FIXED_TO_FLOAT(FixedMul((MIN_DISTANCE * FRACUNIT), finesine[angf]));
         ambient_sdata.left.max_distance = MAX_DISTANCE;
         ambient_sdata.left.min_distance = MIN_DISTANCE;
         

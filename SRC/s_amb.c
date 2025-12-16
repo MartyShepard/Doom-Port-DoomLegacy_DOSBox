@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: s_amb.c 1055 2013-10-09 20:14:01Z wesleyjohnson $
+// $Id: s_amb.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -39,57 +39,67 @@
 #include "doomincl.h"
 #include "g_game.h"
 #include "p_local.h"
-#include "p_setup.h"    //levelflats for flat animation
+#include "p_setup.h"
+  //levelflats for flat animation
 #include "r_data.h"
 #include "m_random.h"
 
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "dstrings.h" //SoM: 3/10/2000
-#include "r_main.h"   //Two extra includes.
+#include "dstrings.h"
+  //SoM: 3/10/2000
+#include "r_main.h"
+  //Two extra includes.
 #include "t_script.h"
 
 // 3D sound
-#include "hardware/hw3sound.h"
+//#include "hardware/hw3sound.h"
 
-#define MAX_AMBIENT_SFX 8 // Per level
+// [WDJ] To support Heretic need 8. Added more to support larger Heretic wads.
+#define MAX_AMBIENT_SFX   16 // Per level
 
+// From Heretic.
 // Types
 
 typedef enum
-{
-        afxcmd_play,            // (sound)
-        afxcmd_playabsvol,      // (sound, volume)
-        afxcmd_playrelvol,      // (sound, volume)
-        afxcmd_delay,           // (ticks)
-        afxcmd_delayrand,       // (andbits)
-        afxcmd_end                      // ()
+{                          // parameters in seq after the command
+   afxcmd_play,            // (sound)
+   afxcmd_playabsvol,      // (sound, volume)
+   afxcmd_playrelvol,      // (sound, volume)
+   afxcmd_delay,           // (ticks)
+   afxcmd_delayrand,       // (andbits)
+   afxcmd_end              // ()
 } afxcmd_t;
+
+// Heretic used int. That is too large, and will be worse with 64 bit machine.
+// So far, largest value is sfx_amb10, which is 0xf7.
+typedef int16_t   ambseq_t;
 
 // Data
 
-int *LevelAmbientSfx[MAX_AMBIENT_SFX];
-int *AmbSfxPtr;
-int AmbSfxCount;
-int AmbSfxTics;
-int AmbSfxVolume;
+static ambseq_t * LevelAmbientSfx[MAX_AMBIENT_SFX];
+static ambseq_t * AmbSfxPtr;  // ptr to cmds and parameters
+static int AmbSfxCount;
+static int AmbSfxTics;
+static int AmbSfxVolume;
 
-int AmbSndSeqInit[] =
+// Heretic Ambient Sfx Sequences
+ambseq_t AmbSndSeqInit[] =
 { // Startup
         afxcmd_end
 };
-int AmbSndSeq1[] =
+ambseq_t AmbSndSeq1[] =
 { // Scream
         afxcmd_play, sfx_amb1,
         afxcmd_end
 };
-int AmbSndSeq2[] =
+ambseq_t AmbSndSeq2[] =
 { // Squish
         afxcmd_play, sfx_amb2,
         afxcmd_end
 };
-int AmbSndSeq3[] =
+ambseq_t AmbSndSeq3[] =
 { // Drops
         afxcmd_play, sfx_amb3,
         afxcmd_delay, 16,
@@ -111,7 +121,7 @@ int AmbSndSeq3[] =
         afxcmd_delayrand, 31,
         afxcmd_end
 };
-int AmbSndSeq4[] =
+ambseq_t AmbSndSeq4[] =
 { // SlowFootSteps
         afxcmd_play, sfx_amb4,
         afxcmd_delay, 15,
@@ -130,7 +140,7 @@ int AmbSndSeq4[] =
         afxcmd_playrelvol, sfx_amb11, -3,
         afxcmd_end
 };
-int AmbSndSeq5[] =
+ambseq_t AmbSndSeq5[] =
 { // Heartbeat
         afxcmd_play, sfx_amb5,
         afxcmd_delay, 35,
@@ -141,7 +151,7 @@ int AmbSndSeq5[] =
         afxcmd_play, sfx_amb5,
         afxcmd_end
 };
-int AmbSndSeq6[] =
+ambseq_t AmbSndSeq6[] =
 { // Bells
         afxcmd_play, sfx_amb6,
         afxcmd_delay, 17,
@@ -152,17 +162,17 @@ int AmbSndSeq6[] =
         afxcmd_playrelvol, sfx_amb6, -8,
         afxcmd_end
 };
-int AmbSndSeq7[] =
+ambseq_t AmbSndSeq7[] =
 { // Growl
         afxcmd_play, sfx_bstsit,
         afxcmd_end
 };
-int AmbSndSeq8[] =
+ambseq_t AmbSndSeq8[] =
 { // Magic
         afxcmd_play, sfx_amb8,
         afxcmd_end
 };
-int AmbSndSeq9[] =
+ambseq_t AmbSndSeq9[] =
 { // Laughter
         afxcmd_play, sfx_amb9,
         afxcmd_delay, 16,
@@ -177,7 +187,7 @@ int AmbSndSeq9[] =
         afxcmd_playrelvol, sfx_amb10, -4,
         afxcmd_end
 };
-int AmbSndSeq10[] =
+ambseq_t AmbSndSeq10[] =
 { // FastFootsteps
         afxcmd_play, sfx_amb4,
         afxcmd_delay, 8,
@@ -197,7 +207,8 @@ int AmbSndSeq10[] =
         afxcmd_end
 };
 
-int *AmbientSfx[] =
+#define NUM_AMBIENT_SFX  10
+ambseq_t * AmbientSfx[NUM_AMBIENT_SFX] =
 {
         AmbSndSeq1,             // Scream
         AmbSndSeq2,             // Squish
@@ -233,13 +244,19 @@ void P_InitAmbientSound(void)
 //
 //----------------------------------------------------------------------------
 
+// Ambient sound object in level map.
+//  sequence : the thing type - 1200, ambient things are 1200..1300
 void P_AddAmbientSfx(int sequence)
 {
+    if( sequence < NUM_AMBIENT_SFX )
+    {
         if(AmbSfxCount == MAX_AMBIENT_SFX)
         {
-                I_Error("Too many ambient sound sequences");
+            I_SoftError("Too many ambient sound sequences");
+            return;
         }
         LevelAmbientSfx[AmbSfxCount++] = AmbientSfx[sequence];
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -250,64 +267,66 @@ void P_AddAmbientSfx(int sequence)
 //
 //----------------------------------------------------------------------------
 
+// Called by P_Ticker.
 void P_AmbientSound(void)
 {
-        afxcmd_t cmd;
-        int sound;
-        boolean done;
+    afxcmd_t cmd;
+    sfxid_t sound;
 
-        if(!AmbSfxCount)
-        { // No ambient sound sequences on current level
-                return;
-        }
-        if(--AmbSfxTics)
+    if(!AmbSfxCount)
+    { // No ambient sound sequences on current level
+        return;
+    }
+
+    if(--AmbSfxTics)  // sequence delay
+    {
+        return;
+    }
+
+    // Loops until it starts another delay.
+    for(;;)
+    {
+        cmd = *AmbSfxPtr++;
+        switch(cmd)
         {
-                return;
+         case afxcmd_play:
+            AmbSfxVolume = A_Random()>>2;
+            S_StartAmbientSound(*AmbSfxPtr++, AmbSfxVolume);
+            break;
+         case afxcmd_playabsvol:
+            sound = *AmbSfxPtr++;
+            AmbSfxVolume = *AmbSfxPtr++;
+            S_StartAmbientSound(sound, AmbSfxVolume);
+            break;
+	 case afxcmd_playrelvol:
+            sound = *AmbSfxPtr++;
+            AmbSfxVolume += *AmbSfxPtr++;
+            if(AmbSfxVolume < 0)
+            {
+                AmbSfxVolume = 0;
+            }
+            else if(AmbSfxVolume > 127)
+            {
+                AmbSfxVolume = 127;
+            }
+            S_StartAmbientSound(sound, AmbSfxVolume);
+            break;
+	 case afxcmd_delay:
+            AmbSfxTics = *AmbSfxPtr++;
+	    goto done;
+	 case afxcmd_delayrand:
+	    AmbSfxTics = A_Random()&(*AmbSfxPtr++);
+	    goto done;
+	 default:
+	    GenPrintf( EMSG_error, "P_AmbientSound: Unknown afxcmd %d", cmd);
+	    // fall into end to start another sequence.
+	 case afxcmd_end:
+	    // Delay, and start another ambient sound.
+            AmbSfxTics = 6*TICRATE+A_Random();
+            AmbSfxPtr = LevelAmbientSfx[A_Random()%AmbSfxCount];
+	    goto done;
         }
-        done = false;
-        do
-        {
-                cmd = *AmbSfxPtr++;
-                switch(cmd)
-                {
-                        case afxcmd_play:
-                                AmbSfxVolume = A_Random()>>2;
-                                S_StartAmbientSound(*AmbSfxPtr++, AmbSfxVolume);
-                                break;
-                        case afxcmd_playabsvol:
-                                sound = *AmbSfxPtr++;
-                                AmbSfxVolume = *AmbSfxPtr++;
-                                S_StartAmbientSound(sound, AmbSfxVolume);
-                                break;
-                        case afxcmd_playrelvol:
-                                sound = *AmbSfxPtr++;
-                                AmbSfxVolume += *AmbSfxPtr++;
-                                if(AmbSfxVolume < 0)
-                                {
-                                        AmbSfxVolume = 0;
-                                }
-                                else if(AmbSfxVolume > 127)
-                                {
-                                        AmbSfxVolume = 127;
-                                }
-                                S_StartAmbientSound(sound, AmbSfxVolume);
-                                break;
-                        case afxcmd_delay:
-                                AmbSfxTics = *AmbSfxPtr++;
-                                done = true;
-                                break;
-                        case afxcmd_delayrand:
-                                AmbSfxTics = A_Random()&(*AmbSfxPtr++);
-                                done = true;
-                                break;
-                        case afxcmd_end:
-                                AmbSfxTics = 6*TICRATE+A_Random();
-                                AmbSfxPtr = LevelAmbientSfx[A_Random()%AmbSfxCount];
-                                done = true;
-                                break;
-                        default:
-                                CONS_Printf("P_AmbientSound: Unknown afxcmd %d", cmd);
-                                break;
-                }
-        } while(done == false);
+    }
+done:
+    return;
 }

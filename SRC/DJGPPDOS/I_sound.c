@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1042 2013-08-26 20:30:08Z wesleyjohnson $
+// $Id: I_sound.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -155,7 +155,9 @@ void I_SetSfxVolume(int volume)
     if(nosoundfx)
         return;
 
-    set_volume (cv_soundvolume.value*255/31,-1);
+    // Can use mix_sfxvolume (0..31), or set local volume vars.
+    // mix_sfxvolume = volume;
+    set_volume (volume*255/31,-1);
 }
 
 // MUSIC API - dummy. Some code from DOS version.
@@ -181,26 +183,28 @@ void I_SetMusicVolume(int volume)
 //  priority, it is ignored.
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
-//
-int I_StartSound ( int           id,
-                   int           vol,
-                   int           sep,
-                   int           pitch,
-                   int           priority )
+/* Neue Deklaration */
+int I_StartSound(sfxid_t sfxid, int vol, int sep, int pitch, int priority)
 {
-  int voice;
+    int voice;
 
-  if(nosoundfx)
-      return 0;
+    if (nosoundfx)
+        return 0;
 
-  // UNUSED
-  priority = 0;
+    /* priority wird in alten Ports ignoriert – bleibt so */
+    (void)priority;  /* UNUSED – vermeidet Compiler-Warning */
 
-  pitch=(pitch-128)/2+128;
-  voice=play_sample(S_sfx[id].data,vol,sep,(pitch*1000)/128,0);
+    /* Pitch umrechnen: 0-255 → 128 ±127 → wie in alten Ports */
+    pitch = (pitch - 128) / 2 + 128;
 
-  // Returns a handle
-  return (id<<VOICESSHIFT)+voice;
+    /* sfxid_t ist meist ein enum oder typedef int → einfach casten */
+    int id = (int)sfxid;
+
+    /* Alte Funktion aufrufen – play_sample erwartet den alten Index */
+    voice = play_sample(S_sfx[id].data, vol, sep, (pitch * 1000) / 128, 0);
+
+    /* Rückgabewert bleibt identisch: (id << VOICESSHIFT) + voice */
+    return (id << VOICESSHIFT) + voice;
 }
 
 // You need the handle returned by StartSound.

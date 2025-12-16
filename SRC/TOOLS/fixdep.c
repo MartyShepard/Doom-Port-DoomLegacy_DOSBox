@@ -83,7 +83,7 @@ void  put_linebuf( const char * srcline )
         if( tail->next == NULL )  goto memory_error;
         tail = tail->next;
         // Init the new container.
-        memset( tail, 0, sizeof(tail) );
+        memset( tail, 0, sizeof( linebuf_t ) );
         tail->next = NULL;
         // First content in the new container.
         tail_index = 0;

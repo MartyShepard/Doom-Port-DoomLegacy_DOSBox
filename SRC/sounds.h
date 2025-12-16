@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1060 2013-12-13 20:25:47Z wesleyjohnson $
+// $Id: sounds.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -43,7 +43,8 @@
 #ifndef SOUNDS_H
 #define SOUNDS_H
 
-#include <stdint.h>
+#include "doomtype.h"
+  // sfxid_t, stdint
 
 // 10 customisable sounds for Skins
 typedef enum {
@@ -98,12 +99,9 @@ struct sfxinfo_struct
 
     // referenced sound if a link
     sfxinfo_t*  link;
+    byte        link_mod;  // index to param modifiers (only chgun actually)
 
-    // pitch if a link
-    int16_t     pitch;
-
-    // volume if a link
-    int16_t     volume;
+    byte        limit_channels;  // number of channels allowed
 
     // sound that can be remapped for a skin, indexes skins[].skinsounds
     // 0 up to (NUMSKINSOUNDS-1), -1 = not skin specifc
@@ -128,6 +126,10 @@ struct sfxinfo_struct
     int32_t     length;  // length of sound data
 };
 
+typedef struct {
+    int16_t     pitch;
+    int16_t     mod_volume;
+} link_mod_t;
 
 
 
@@ -155,6 +157,7 @@ typedef struct
 
 // the complete set of sound effects
 extern sfxinfo_t        S_sfx[];
+extern link_mod_t       link_mods[];
 
 // the complete set of music
 extern musicinfo_t      S_music[];
@@ -586,10 +589,16 @@ typedef enum
     NUMSFX
 } sfxenum_e;
 
+// typedef uint16_t   sfxid_t;  // defined in doomtype.h
+
 
 void   S_InitRuntimeSounds (void);
-int    S_AddSoundFx (char *name, uint32_t flags);
-void   S_RemoveSoundFx (int id);
+// Add a new sound fx into a free sfx slot.
+// Return sfx id.
+sfxid_t  S_AddSoundFx (char *name, uint32_t flags);
+// Only can remove from sfx slots, the loadable sfx sounds.
+
+void   S_RemoveSoundFx (sfxid_t sfxid);
 
 
 int    S_AddMusic  (char *name);

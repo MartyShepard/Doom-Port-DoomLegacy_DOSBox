@@ -96,9 +96,11 @@ extern int  HW3S_SoundPlaying(void *origin, int id);
 
 #else // HW3SOUND
 
+#if !defined (__DJGPP__)
 #define S_StartAmbientSound(i,v) S_StartSoundAtVolume(NULL,i,v)
 #define S_StartAttackSound  S_StartSound
 #define S_StartScreamSound  S_StartSound
+#endif
 
 #endif // HW3SOUND
 

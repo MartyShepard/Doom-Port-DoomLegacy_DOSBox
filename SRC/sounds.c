@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1061 2013-12-14 00:12:42Z wesleyjohnson $
+// $Id: sounds.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -204,330 +204,352 @@ musicinfo_t S_music[NUMMUSIC] =
 
 sfxinfo_t S_sfx[NUMSFX] =
 {
-  // S_sfx[0] needs to be a dummy for odd reasons.
-  //   priority (1..256), 1 is highest priority, 64 is avg
-  //               |  link           skinsound  
-  //               |  |     volume   |  flags
-  //               |  |      | pitch |  |
-  { "none"     ,   0, NULL, -1, -1, -1 },
+  // Volume is diff (+-), so should be 0, but no entry uses it
+  // BEX can set name, priority, and flags (SFX_single).
+  // Fields: name, priority, link, link_mod, limit_channels, skinsound, flags
 
-  { "pistol"   ,  64, NULL, -1, -1, -1, SFX_saw },
-  { "shotgn"   ,  64, NULL, -1, -1, -1 },
-  { "sgcock"   ,  64, NULL, -1, -1, -1 },
-  { "dshtgn"   ,  64, NULL, -1, -1, -1 },
-  { "dbopn\0"  ,  64, NULL, -1, -1, -1 },
-  { "dbcls\0"  ,  64, NULL, -1, -1, -1 },
-  { "dbload"   ,  64, NULL, -1, -1, -1 },
-  { "plasma"   ,  64, NULL, -1, -1, -1 },
-  { "bfg\0\0\0",  64, NULL, -1, -1, -1 },
-  { "sawup\0"  ,  64, NULL, -1, -1, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
-  { "sawidl"   , 118, NULL, -1, -1, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
-  { "sawful"   ,  64, NULL, -1, -1, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
-  { "sawhit"   ,  64, NULL, -1, -1, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
-  { "rlaunc"   ,  64, NULL, -1, -1, -1 },
-  { "rxplod"   ,  70, NULL, -1, -1, -1 },
-  { "firsht"   ,  70, NULL, -1, -1, -1 },
-  { "firxpl"   ,  70, NULL, -1, -1, -1 },
-  { "pstart"   , 100, NULL, -1, -1, -1 },
-  { "pstop\0"  , 100, NULL, -1, -1, -1 },
-  { "doropn"   , 100, NULL, -1, -1, -1, SFX_org_kill },
-  { "dorcls"   , 100, NULL, -1, -1, -1, SFX_org_kill },
-  { "stnmov"   , 119, NULL, -1, -1, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
-  { "swtchn"   ,  78, NULL, -1, -1, -1 },
-  { "swtchx"   ,  78, NULL, -1, -1, -1 },
-  { "plpain"   ,  96, NULL, -1, -1, SKSPLPAIN},
-  { "dmpain"   ,  96, NULL, -1, -1, -1 },
-  { "popain"   ,  96, NULL, -1, -1, -1 },
-  { "vipain"   ,  96, NULL, -1, -1, -1 },
-  { "mnpain"   ,  96, NULL, -1, -1, -1 },
-  { "pepain"   ,  96, NULL, -1, -1, -1 },
-  { "slop\0\0" ,  78, NULL, -1, -1, SKSSLOP},
-  { "itemup"   ,  78, NULL, -1, -1, -1, SFX_single|SFX_player },
-  { "wpnup"    ,  78, NULL, -1, -1, -1, SFX_single|SFX_player },
-  { "oof\0\0\0",  96, NULL, -1, -1, SKSOOF, SFX_player },
-  { "telept"   ,  32, NULL, -1, -1, -1 },
-  { "posit1"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "posit2"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "posit3"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "bgsit1"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "bgsit2"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "sgtsit"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "cacsit"   ,  98, NULL, -1, -1, -1, SFX_single},
-  { "brssit"   ,  94, NULL, -1, -1, -1, SFX_single},
-  { "cybsit"   ,  92, NULL, -1, -1, -1, SFX_single},
-  { "spisit"   ,  90, NULL, -1, -1, -1, SFX_single},
-  { "bspsit"   ,  90, NULL, -1, -1, -1, SFX_single},
-  { "kntsit"   ,  90, NULL, -1, -1, -1, SFX_single},
-  { "vilsit"   ,  90, NULL, -1, -1, -1, SFX_single},
-  { "mansit"   ,  90, NULL, -1, -1, -1, SFX_single},
-  { "pesit\0"  ,  90, NULL, -1, -1, -1, SFX_single},
-  { "sklatk"   ,  70, NULL, -1, -1, -1 },
-  { "sgtatk"   ,  70, NULL, -1, -1, -1 },
-  { "skepch"   ,  70, NULL, -1, -1, -1 },
-  { "vilatk"   ,  70, NULL, -1, -1, -1 },
-  { "claw\0\0" ,  70, NULL, -1, -1, -1 },
-  { "skeswg"   ,  70, NULL, -1, -1, -1 },
-  { "pldeth"   ,  32, NULL, -1, -1, SKSPLDETH},
-  { "pdiehi"   ,  32, NULL, -1, -1, SKSPDIEHI},
-  { "podth1"   ,  70, NULL, -1, -1, -1 },
-  { "podth2"   ,  70, NULL, -1, -1, -1 },
-  { "podth3"   ,  70, NULL, -1, -1, -1 },
-  { "bgdth1"   ,  70, NULL, -1, -1, -1 },
-  { "bgdth2"   ,  70, NULL, -1, -1, -1 },
-  { "sgtdth"   ,  70, NULL, -1, -1, -1 },
-  { "cacdth"   ,  70, NULL, -1, -1, -1 },
-  { "skldth"   ,  70, NULL, -1, -1, -1 },
-  { "brsdth"   ,  32, NULL, -1, -1, -1 },
-  { "cybdth"   ,  32, NULL, -1, -1, -1 },
-  { "spidth"   ,  32, NULL, -1, -1, -1 },
-  { "bspdth"   ,  32, NULL, -1, -1, -1 },
-  { "vildth"   ,  32, NULL, -1, -1, -1 },
-  { "kntdth"   ,  32, NULL, -1, -1, -1 },
-  { "pedth\0"  ,  32, NULL, -1, -1, -1 },
-  { "skedth"   ,  32, NULL, -1, -1, -1 },
-  { "posact"   , 120, NULL, -1, -1, -1, SFX_single},
-  { "bgact\0"  , 120, NULL, -1, -1, -1, SFX_single},
-  { "dmact\0"  , 120, NULL, -1, -1, -1, SFX_single},
-  { "bspact"   , 100, NULL, -1, -1, -1, SFX_single},
-  { "bspwlk"   , 100, NULL, -1, -1, -1, SFX_single},
-  { "vilact"   , 100, NULL, -1, -1, -1, SFX_single},
-  { "noway\0"  ,  78, NULL, -1, -1, SKSNOWAY, SFX_player },
-  { "barexp"   ,  60, NULL, -1, -1, -1 },
-  { "punch\0"  ,  64, NULL, -1, -1, SKSPUNCH },
-  { "hoof\0\0" ,  70, NULL, -1, -1, -1 },
-  { "metal\0"  ,  70, NULL, -1, -1, -1 },
-  { "chgun\0"  ,  64, &S_sfx[sfx_pistol], 150, 0, -1 },
-  { "tink\0\0" ,  60, NULL, -1, -1, -1 },
-  { "bdopn\0"  , 100, NULL, -1, -1, -1 },
-  { "bdcls\0"  , 100, NULL, -1, -1, -1 },
-  { "itmbk\0"  , 100, NULL, -1, -1, -1 },
-  { "flame\0"  ,  32, NULL, -1, -1, -1 },
-  { "flamst"   ,  32, NULL, -1, -1, -1 },
-  { "getpow"   ,  60, NULL, -1, -1, -1, SFX_player },
-  { "bospit"   ,  70, NULL, -1, -1, -1 },
-  { "boscub"   ,  70, NULL, -1, -1, -1 },
-  { "bossit"   ,  70, NULL, -1, -1, -1 },
-  { "bospn\0"  ,  70, NULL, -1, -1, -1 },
-  { "bosdth"   ,  70, NULL, -1, -1, -1 },
-  { "manatk"   ,  70, NULL, -1, -1, -1 },
-  { "mandth"   ,  70, NULL, -1, -1, -1 },
-  { "sssit\0"  ,  70, NULL, -1, -1, -1 },
-  { "ssdth\0"  ,  70, NULL, -1, -1, -1 },
-  { "keenpn"   ,  70, NULL, -1, -1, -1 },
-  { "keendt"   ,  70, NULL, -1, -1, -1 },
-  { "skeact"   ,  70, NULL, -1, -1, -1 },
-  { "skesit"   ,  70, NULL, -1, -1, -1 },
-  { "skeatk"   ,  70, NULL, -1, -1, -1 },
-  { "radio\0"  ,  60, NULL, -1, -1, SKSRADIO },
+  // Doom sounds.
+  // Limits have been added.
+  // Boom ignored the priority, except for the one link entry.
+  // Doom priority (1..256), 1 is highest priority, 64 is avg
+  //               |  link
+  //               |  |  link_mod
+  //               |  |     | limit_channels
+  //               |  |     |   |  skinsound
+  //               |  |     |   |   |  flags
+  { "none"     ,   0, NULL, 0,  0, -1 },    // S_sfx[0] is sfx_None.
+
+  { "pistol"   ,  64, NULL, 0, 99, -1, SFX_saw },
+  { "shotgn"   ,  64, NULL, 0, 99, -1 },
+  { "sgcock"   ,  64, NULL, 0, 99, -1 },
+  { "dshtgn"   ,  64, NULL, 0, 99, -1 },
+  { "dbopn\0"  ,  64, NULL, 0, 99, -1 },
+  { "dbcls\0"  ,  64, NULL, 0, 99, -1 },
+  { "dbload"   ,  64, NULL, 0, 99, -1 },
+  { "plasma"   ,  64, NULL, 0, 99, -1 },
+  { "bfg\0\0\0",  64, NULL, 0, 99, -1 },
+  { "sawup\0"  ,  64, NULL, 0,  4, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
+  { "sawidl"   , 118, NULL, 0,  4, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
+  { "sawful"   ,  64, NULL, 0,  4, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
+  { "sawhit"   ,  64, NULL, 0,  4, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
+  { "rlaunc"   ,  64, NULL, 0, 99, -1 },
+  { "rxplod"   ,  70, NULL, 0, 99, -1 },
+  { "firsht"   ,  70, NULL, 0, 99, -1 },
+  { "firxpl"   ,  70, NULL, 0, 99, -1 },
+  { "pstart"   , 100, NULL, 0,  4, -1 },
+  { "pstop\0"  , 100, NULL, 0,  4, -1 },
+  { "doropn"   , 100, NULL, 0,  4, -1, SFX_org_kill },
+  { "dorcls"   , 100, NULL, 0,  4, -1, SFX_org_kill },
+  { "stnmov"   , 119, NULL, 0,  4, -1, SFX_saw|SFX_id_fin|SFX_org_kill },
+  { "swtchn"   ,  78, NULL, 0, 99, -1 },
+  { "swtchx"   ,  78, NULL, 0, 99, -1 },
+  { "plpain"   ,  96, NULL, 0,  8, SKSPLPAIN},
+  { "dmpain"   ,  96, NULL, 0,  8, -1 },
+  { "popain"   ,  96, NULL, 0,  8, -1 },
+  { "vipain"   ,  96, NULL, 0,  8, -1 },
+  { "mnpain"   ,  96, NULL, 0,  8, -1 },
+  { "pepain"   ,  96, NULL, 0,  8, -1 },
+  { "slop\0\0" ,  78, NULL, 0,  9, SKSSLOP},
+  { "itemup"   ,  78, NULL, 0,  2, -1, SFX_single|SFX_player },
+  { "wpnup"    ,  78, NULL, 0,  2, -1, SFX_single|SFX_player },
+  { "oof\0\0\0",  96, NULL, 0,  2, SKSOOF, SFX_player },
+  { "telept"   ,  32, NULL, 0, 99, -1 },
+  { "posit1"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "posit2"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "posit3"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "bgsit1"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "bgsit2"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "sgtsit"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "cacsit"   ,  98, NULL, 0, 99, -1, SFX_single},
+  { "brssit"   ,  94, NULL, 0, 99, -1, SFX_single},
+  { "cybsit"   ,  92, NULL, 0, 99, -1, SFX_single},
+  { "spisit"   ,  90, NULL, 0, 99, -1, SFX_single},
+  { "bspsit"   ,  90, NULL, 0, 99, -1, SFX_single},
+  { "kntsit"   ,  90, NULL, 0, 99, -1, SFX_single},
+  { "vilsit"   ,  90, NULL, 0, 99, -1, SFX_single},
+  { "mansit"   ,  90, NULL, 0, 99, -1, SFX_single},
+  { "pesit\0"  ,  90, NULL, 0, 99, -1, SFX_single},
+  { "sklatk"   ,  70, NULL, 0, 99, -1 },
+  { "sgtatk"   ,  70, NULL, 0, 99, -1 },
+  { "skepch"   ,  70, NULL, 0, 99, -1 },
+  { "vilatk"   ,  70, NULL, 0, 99, -1 },
+  { "claw\0\0" ,  70, NULL, 0, 99, -1 },
+  { "skeswg"   ,  70, NULL, 0, 99, -1 },
+  { "pldeth"   ,  32, NULL, 0,  4, SKSPLDETH},
+  { "pdiehi"   ,  32, NULL, 0,  4, SKSPDIEHI},
+  { "podth1"   ,  70, NULL, 0, 99, -1 },
+  { "podth2"   ,  70, NULL, 0, 99, -1 },
+  { "podth3"   ,  70, NULL, 0, 99, -1 },
+  { "bgdth1"   ,  70, NULL, 0, 99, -1 },
+  { "bgdth2"   ,  70, NULL, 0, 99, -1 },
+  { "sgtdth"   ,  70, NULL, 0, 99, -1 },
+  { "cacdth"   ,  70, NULL, 0, 99, -1 },
+  { "skldth"   ,  70, NULL, 0, 99, -1 },
+  { "brsdth"   ,  32, NULL, 0, 99, -1 },
+  { "cybdth"   ,  32, NULL, 0, 99, -1 },
+  { "spidth"   ,  32, NULL, 0, 99, -1 },
+  { "bspdth"   ,  32, NULL, 0, 99, -1 },
+  { "vildth"   ,  32, NULL, 0, 99, -1 },
+  { "kntdth"   ,  32, NULL, 0, 99, -1 },
+  { "pedth\0"  ,  32, NULL, 0, 99, -1 },
+  { "skedth"   ,  32, NULL, 0, 99, -1 },
+  { "posact"   , 120, NULL, 0, 99, -1, SFX_single},
+  { "bgact\0"  , 120, NULL, 0, 99, -1, SFX_single},
+  { "dmact\0"  , 120, NULL, 0, 99, -1, SFX_single},
+  { "bspact"   , 100, NULL, 0, 99, -1, SFX_single},
+  { "bspwlk"   , 100, NULL, 0, 99, -1, SFX_single},
+  { "vilact"   , 100, NULL, 0, 99, -1, SFX_single},
+  { "noway\0"  ,  78, NULL, 0,  4, SKSNOWAY, SFX_player },
+  { "barexp"   ,  60, NULL, 0, 99, -1 },
+  { "punch\0"  ,  64, NULL, 0,  4, SKSPUNCH },
+  { "hoof\0\0" ,  70, NULL, 0, 99, -1 },
+  { "metal\0"  ,  70, NULL, 0, 99, -1 },
+  { "chgun\0"  ,  64, &S_sfx[sfx_pistol], 1, 32, -1 },
+      // [1] pitch=150, volume +0, normal priority.
+      // This is the only link entry in Doom.
+  { "tink\0\0" ,  60, NULL, 0, 99, -1 },
+  { "bdopn\0"  , 100, NULL, 0, 99, -1 },
+  { "bdcls\0"  , 100, NULL, 0, 99, -1 },
+  { "itmbk\0"  , 100, NULL, 0, 99, -1 },
+  { "flame\0"  ,  32, NULL, 0, 99, -1 },
+  { "flamst"   ,  32, NULL, 0, 99, -1 },
+  { "getpow"   ,  60, NULL, 0,  4, -1, SFX_player },
+  { "bospit"   ,  70, NULL, 0, 99, -1 },
+  { "boscub"   ,  70, NULL, 0, 99, -1 },
+  { "bossit"   ,  70, NULL, 0, 99, -1 },
+  { "bospn\0"  ,  70, NULL, 0, 99, -1 },
+  { "bosdth"   ,  70, NULL, 0, 99, -1 },
+  { "manatk"   ,  70, NULL, 0, 99, -1 },
+  { "mandth"   ,  70, NULL, 0, 99, -1 },
+  { "sssit\0"  ,  70, NULL, 0, 99, -1 },
+  { "ssdth\0"  ,  70, NULL, 0, 99, -1 },
+  { "keenpn"   ,  70, NULL, 0, 99, -1 },
+  { "keendt"   ,  70, NULL, 0, 99, -1 },
+  { "skeact"   ,  70, NULL, 0, 99, -1 },
+  { "skesit"   ,  70, NULL, 0, 99, -1 },
+  { "skeatk"   ,  70, NULL, 0, 99, -1 },
+  { "radio\0"  ,  60, NULL, 0,  4, SKSRADIO },
 
   //added:22-02-98: sound when the player avatar jumps in air 'hmpf!'
-  { "jump\0\0" ,  60, NULL, -1, -1, SKSJUMP, SFX_player },
-  { "ouch\0\0" ,  64, NULL, -1, -1, SKSOUCH, SFX_player },
+  { "jump\0\0" ,  60, NULL, 0,  4, SKSJUMP, SFX_player },
+  { "ouch\0\0" ,  64, NULL, 0,  4, SKSOUCH, SFX_player },
 
   //added:09-08-98:test water sounds
-  { "gloop\0"  ,  60, NULL, -1, -1, -1 },
-  { "splash"   ,  64, NULL, -1, -1, -1 },
-  { "floush"   ,  64, NULL, -1, -1, -1 },
+  { "gloop\0"  ,  60, NULL, 0, 99, -1 },
+  { "splash"   ,  64, NULL, 0, 99, -1 },
+  { "floush"   ,  64, NULL, 0, 99, -1 },
 
-// heretic sounds
-
-  { "gldhit",  32, NULL, -1, -1, -1 },
-  { "gntful",  32, NULL, -1, -1, -1 },
-  { "gnthit",  32, NULL, -1, -1, -1 },
-  { "gntpow",  32, NULL, -1, -1, -1 },
-//  { "gntact",  32, NULL, -1, -1, -1 },
-  { "gntuse",  32, NULL, -1, -1, -1 },
-  { "phosht",  32, NULL, -1, -1, -1 },
-  { "phohit",  32, NULL, -1, -1, -1 },
-  { "-phopow", 32, &S_sfx[sfx_hedat1], -1, -1, -1 },
-  { "lobsht",  20, NULL, -1, -1, -1 },
-  { "lobhit",  20, NULL, -1, -1, -1 },
-  { "lobpow",  20, NULL, -1, -1, -1 },
-  { "hrnsht",  32, NULL, -1, -1, -1 },
-  { "hrnhit",  32, NULL, -1, -1, -1 },
-  { "hrnpow",  32, NULL, -1, -1, -1 },
-  { "ramphit", 32, NULL, -1, -1, -1 },
-  { "ramrain", 10, NULL, -1, -1, -1 },
-  { "bowsht",  32, NULL, -1, -1, -1 },
-  { "stfhit",  32, NULL, -1, -1, -1 },
-  { "stfpow",  32, NULL, -1, -1, -1 },
-  { "stfcrk",  32, NULL, -1, -1, -1 },
-  { "impsit",  32, NULL, -1, -1, -1 },
-  { "impat1",  32, NULL, -1, -1, -1 },
-  { "impat2",  32, NULL, -1, -1, -1 },
-  { "impdth",  80, NULL, -1, -1, -1 },
-  { "-impact", 20, &S_sfx[sfx_impsit], -1, -1, -1 },
-  { "imppai",  32, NULL, -1, -1, -1 },
-  { "mumsit",  32, NULL, -1, -1, -1 },
-  { "mumat1",  32, NULL, -1, -1, -1 },
-  { "mumat2",  32, NULL, -1, -1, -1 },
-  { "mumdth",  80, NULL, -1, -1, -1 },
-  { "-mumact", 20, &S_sfx[sfx_mumsit], -1, -1, -1 },
-  { "mumpai",  32, NULL, -1, -1, -1 },
-  { "mumhed",  32, NULL, -1, -1, -1 },
-  { "bstsit",  32, NULL, -1, -1, -1 },
-  { "bstatk",  32, NULL, -1, -1, -1 },
-  { "bstdth",  80, NULL, -1, -1, -1 },
-  { "bstact",  20, NULL, -1, -1, -1 },
-  { "bstpai",  32, NULL, -1, -1, -1 },
-  { "clksit",  32, NULL, -1, -1, -1 },
-  { "clkatk",  32, NULL, -1, -1, -1 },
-  { "clkdth",  80, NULL, -1, -1, -1 },
-  { "clkact",  20, NULL, -1, -1, -1 },
-  { "clkpai",  32, NULL, -1, -1, -1 },
-  { "snksit",  32, NULL, -1, -1, -1 },
-  { "snkatk",  32, NULL, -1, -1, -1 },
-  { "snkdth",  80, NULL, -1, -1, -1 },
-  { "snkact",  20, NULL, -1, -1, -1 },
-  { "snkpai",  32, NULL, -1, -1, -1 },
-  { "kgtsit",  32, NULL, -1, -1, -1 },
-  { "kgtatk",  32, NULL, -1, -1, -1 },
-  { "kgtat2",  32, NULL, -1, -1, -1 },
-  { "kgtdth",  80, NULL, -1, -1, -1 },
-  { "-kgtact", 20, &S_sfx[sfx_kgtsit], -1, -1, -1 },
-  { "kgtpai",  32, NULL, -1, -1, -1 },
-  { "wizsit",  32, NULL, -1, -1, -1 },
-  { "wizatk",  32, NULL, -1, -1, -1 },
-  { "wizdth",  80, NULL, -1, -1, -1 },
-  { "wizact",  20, NULL, -1, -1, -1 },
-  { "wizpai",  32, NULL, -1, -1, -1 },
-  { "minsit",  32, NULL, -1, -1, -1 },
-  { "minat1",  32, NULL, -1, -1, -1 },
-  { "minat2",  32, NULL, -1, -1, -1 },
-  { "minat3",  32, NULL, -1, -1, -1 },
-  { "mindth",  80, NULL, -1, -1, -1 },
-  { "minact",  20, NULL, -1, -1, -1 },
-  { "minpai",  32, NULL, -1, -1, -1 },
-  { "hedsit",  32, NULL, -1, -1, -1 },
-  { "hedat1",  32, NULL, -1, -1, -1 },
-  { "hedat2",  32, NULL, -1, -1, -1 },
-  { "hedat3",  32, NULL, -1, -1, -1 },
-  { "heddth",  80, NULL, -1, -1, -1 },
-  { "hedact",  20, NULL, -1, -1, -1 },
-  { "hedpai",  32, NULL, -1, -1, -1 },
-  { "sorzap",  32, NULL, -1, -1, -1 },
-  { "sorrise", 32, NULL, -1, -1, -1 },
-  { "sorsit",  200,NULL, -1, -1, -1 },
-  { "soratk",  32, NULL, -1, -1, -1 },
-  { "soract",  200,NULL, -1, -1, -1 },
-  { "sorpai",  200,NULL, -1, -1, -1 },
-  { "sordsph", 200,NULL, -1, -1, -1 },
-  { "sordexp", 200,NULL, -1, -1, -1 },
-  { "sordbon", 200,NULL, -1, -1, -1 },
-  { "-sbtsit", 32, &S_sfx[sfx_bstsit], -1, -1, -1 },
-  { "-sbtatk", 32, &S_sfx[sfx_bstatk], -1, -1, -1 },
-  { "sbtdth",  80, NULL, -1, -1, -1 },
-  { "sbtact",  20, NULL, -1, -1, -1 },
-  { "sbtpai",  32, NULL, -1, -1, -1 },
-//  { "plroof",  32, NULL, -1, -1, -1 },
-  { "plrpai",  32, NULL, -1, -1, -1 },
-  { "plrdth",  80, NULL, -1, -1, -1 },
-  { "gibdth",  100,NULL, -1, -1, -1 },
-  { "plrwdth", 80, NULL, -1, -1, -1 },
-  { "plrcdth", 100,NULL, -1, -1, -1 },
-  { "itemup",  32, NULL, -1, -1, -1, SFX_player },
-  { "wpnup",   32, NULL, -1, -1, -1, SFX_player },
-//  { "telept",  50, NULL, -1, -1, -1 },
-  { "doropn",  40, NULL, -1, -1, -1 },
-  { "dorcls",  40, NULL, -1, -1, -1 },
-  { "dormov",  40, NULL, -1, -1, -1 },
-  { "artiup",  32, NULL, -1, -1, -1, SFX_player },
-//  { "switch",  40, NULL, -1, -1, -1 },
-  { "pstart",  40, NULL, -1, -1, -1 },
-  { "pstop",   40, NULL, -1, -1, -1 },
-  { "stnmov",  40, NULL, -1, -1, -1 },
-  { "chicpai", 32, NULL, -1, -1, -1 },
-  { "chicatk", 32, NULL, -1, -1, -1 },
-  { "chicdth", 40, NULL, -1, -1, -1 },
-  { "chicact", 32, NULL, -1, -1, -1 },
-  { "chicpk1", 32, NULL, -1, -1, -1 },
-  { "chicpk2", 32, NULL, -1, -1, -1 },
-  { "chicpk3", 32, NULL, -1, -1, -1 },
-  { "keyup"  , 50, NULL, -1, -1, -1, SFX_player },
-  { "ripslop", 16, NULL, -1, -1, -1 },
-  { "newpod" , 16, NULL, -1, -1, -1 },
-  { "podexp" , 40, NULL, -1, -1, -1 },
-  { "bounce" , 16, NULL, -1, -1, -1 },
-  { "-volsht", 16, &S_sfx[sfx_bstatk], -1, -1, -1 },
-  { "-volhit", 16, &S_sfx[sfx_lobhit], -1, -1, -1 },
-  { "burn"   , 10, NULL, -1, -1, -1 },
-  { "splash" , 10, NULL, -1, -1, -1 },
-  { "gloop"  , 10, NULL, -1, -1, -1 },
-//  { "respawn", 10, NULL, -1, -1, -1 },
-  { "blssht" , 32, NULL, -1, -1, -1 },
-  { "blshit" , 32, NULL, -1, -1, -1 },
-//  { "chat"   , 100,NULL, -1, -1, -1 },
-  { "artiuse", 32, NULL, -1, -1, -1, SFX_player },
-  { "gfrag"  , 100,NULL, -1, -1, -1 },
-  { "waterfl", 16, NULL, -1, -1, -1 },
+  // Heretic sounds.
+  // Heretic highest priority is 255, 1 is lowest, 32 is avg.
+  { "gldhit",  32, NULL, 0,  2, -1 },
+     // 2 channels
+  { "gntful",  32, NULL, 0, 99, -1 },
+  { "gnthit",  32, NULL, 0, 99, -1 },
+  { "gntpow",  32, NULL, 0, 99, -1 },
+//  { "gntact",  32, NULL, 0, 99, -1 },
+  { "gntuse",  32, NULL, 0, 99, -1 },
+  { "phosht",  32, NULL, 0,  2, -1 },
+  { "phohit",  32, NULL, 0, 99, -1 },
+  { "-phopow", 32, &S_sfx[sfx_hedat1], 0,  1, -1 },
+  { "lobsht",  20, NULL, 0,  2, -1 },
+  { "lobhit",  20, NULL, 0,  2, -1 },
+  { "lobpow",  20, NULL, 0,  2, -1 },
+  { "hrnsht",  32, NULL, 0,  2, -1 },
+  { "hrnhit",  32, NULL, 0,  2, -1 },
+  { "hrnpow",  32, NULL, 0,  2, -1 },
+  { "ramphit", 32, NULL, 0,  2, -1 },
+  { "ramrain", 10, NULL, 0,  2, -1 },
+  { "bowsht",  32, NULL, 0,  2, -1 },
+  { "stfhit",  32, NULL, 0,  2, -1 },
+  { "stfpow",  32, NULL, 0,  2, -1 },
+  { "stfcrk",  32, NULL, 0,  2, -1 },
+  { "impsit",  32, NULL, 0,  2, -1 },
+  { "impat1",  32, NULL, 0,  2, -1 },
+  { "impat2",  32, NULL, 0,  2, -1 },
+  { "impdth",  80, NULL, 0,  2, -1 },
+  { "-impact", 20, &S_sfx[sfx_impsit], 0,  2, -1 },
+  { "imppai",  32, NULL, 0,  2, -1 },
+  { "mumsit",  32, NULL, 0,  2, -1 },
+  { "mumat1",  32, NULL, 0,  2, -1 },
+  { "mumat2",  32, NULL, 0,  2, -1 },
+  { "mumdth",  80, NULL, 0,  2, -1 },
+  { "-mumact", 20, &S_sfx[sfx_mumsit], 0,  2, -1 },
+  { "mumpai",  32, NULL, 0,  2, -1 },
+  { "mumhed",  32, NULL, 0,  2, -1 },
+  { "bstsit",  32, NULL, 0,  2, -1 },
+  { "bstatk",  32, NULL, 0,  2, -1 },
+  { "bstdth",  80, NULL, 0,  2, -1 },
+  { "bstact",  20, NULL, 0,  2, -1 },
+  { "bstpai",  32, NULL, 0,  2, -1 },
+  { "clksit",  32, NULL, 0,  2, -1 },
+  { "clkatk",  32, NULL, 0,  2, -1 },
+  { "clkdth",  80, NULL, 0,  2, -1 },
+  { "clkact",  20, NULL, 0,  2, -1 },
+  { "clkpai",  32, NULL, 0,  2, -1 },
+  { "snksit",  32, NULL, 0,  2, -1 },
+  { "snkatk",  32, NULL, 0,  2, -1 },
+  { "snkdth",  80, NULL, 0,  2, -1 },
+  { "snkact",  20, NULL, 0,  2, -1 },
+  { "snkpai",  32, NULL, 0,  2, -1 },
+  { "kgtsit",  32, NULL, 0,  2, -1 },
+  { "kgtatk",  32, NULL, 0,  2, -1 },
+  { "kgtat2",  32, NULL, 0,  2, -1 },
+  { "kgtdth",  80, NULL, 0,  2, -1 },
+  { "-kgtact", 20, &S_sfx[sfx_kgtsit], 0,  2, -1 },
+  { "kgtpai",  32, NULL, 0,  2, -1 },
+  { "wizsit",  32, NULL, 0,  2, -1 },
+  { "wizatk",  32, NULL, 0,  2, -1 },
+  { "wizdth",  80, NULL, 0,  2, -1 },
+  { "wizact",  20, NULL, 0,  2, -1 },
+  { "wizpai",  32, NULL, 0,  2, -1 },
+  { "minsit",  32, NULL, 0,  2, -1 },
+  { "minat1",  32, NULL, 0,  2, -1 },
+  { "minat2",  32, NULL, 0,  2, -1 },
+  { "minat3",  32, NULL, 0,  2, -1 },
+  { "mindth",  80, NULL, 0,  2, -1 },
+  { "minact",  20, NULL, 0,  2, -1 },
+  { "minpai",  32, NULL, 0,  2, -1 },
+  { "hedsit",  32, NULL, 0,  2, -1 },
+  { "hedat1",  32, NULL, 0,  2, -1 },
+  { "hedat2",  32, NULL, 0,  2, -1 },
+  { "hedat3",  32, NULL, 0,  2, -1 },
+  { "heddth",  80, NULL, 0,  2, -1 },
+  { "hedact",  20, NULL, 0,  2, -1 },
+  { "hedpai",  32, NULL, 0,  2, -1 },
+  { "sorzap",  32, NULL, 0,  2, -1 },
+  { "sorrise", 32, NULL, 0,  2, -1 },
+  { "sorsit",  200,NULL, 0,  2, -1 },
+  { "soratk",  32, NULL, 0,  2, -1 },
+  { "soract",  200,NULL, 0,  2, -1 },
+  { "sorpai",  200,NULL, 0,  2, -1 },
+  { "sordsph", 200,NULL, 0,  2, -1 },
+  { "sordexp", 200,NULL, 0,  2, -1 },
+  { "sordbon", 200,NULL, 0,  2, -1 },
+  { "-sbtsit", 32, &S_sfx[sfx_bstsit], 0,  2, -1 },
+  { "-sbtatk", 32, &S_sfx[sfx_bstatk], 0,  2, -1 },
+  { "sbtdth",  80, NULL, 0,  2, -1 },
+  { "sbtact",  20, NULL, 0,  2, -1 },
+  { "sbtpai",  32, NULL, 0,  2, -1 },
+//  { "plroof",  32, NULL, 0,  2, -1 },
+  { "plrpai",  32, NULL, 0,  2, -1 },
+  { "plrdth",  80, NULL, 0,  2, -1 },
+  { "gibdth",  100,NULL, 0,  2, -1 },
+  { "plrwdth", 80, NULL, 0,  2, -1 },
+  { "plrcdth", 100,NULL, 0,  2, -1 },
+  { "itemup",  32, NULL, 0,  2, -1, SFX_player },
+  { "wpnup",   32, NULL, 0,  2, -1, SFX_player },
+//  { "telept",  50, NULL, 0,  2, -1 },
+  { "doropn",  40, NULL, 0,  2, -1 },
+  { "dorcls",  40, NULL, 0,  2, -1 },
+  { "dormov",  40, NULL, 0,  2, -1 },
+  { "artiup",  32, NULL, 0,  2, -1, SFX_player },
+//  { "switch",  40, NULL, 0,  2, -1 },
+  { "pstart",  40, NULL, 0,  2, -1 },
+  { "pstop",   40, NULL, 0,  2, -1 },
+  { "stnmov",  40, NULL, 0,  2, -1 },
+  { "chicpai", 32, NULL, 0,  2, -1 },
+  { "chicatk", 32, NULL, 0,  2, -1 },
+  { "chicdth", 40, NULL, 0,  2, -1 },
+  { "chicact", 32, NULL, 0,  2, -1 },
+  { "chicpk1", 32, NULL, 0,  2, -1 },
+  { "chicpk2", 32, NULL, 0,  2, -1 },
+  { "chicpk3", 32, NULL, 0,  2, -1 },
+  { "keyup"  , 50, NULL, 0,  2, -1, SFX_player },
+  { "ripslop", 16, NULL, 0,  2, -1 },
+  { "newpod" , 16, NULL, 0, 99, -1 },
+  { "podexp" , 40, NULL, 0, 99, -1 },
+  { "bounce" , 16, NULL, 0,  2, -1 },
+  { "-volsht", 16, &S_sfx[sfx_bstatk], 0,  2, -1 },
+  { "-volhit", 16, &S_sfx[sfx_lobhit], 0,  2, -1 },
+  { "burn"   , 10, NULL, 0,  2, -1 },
+  { "splash" , 10, NULL, 0,  1, -1 },
+  { "gloop"  , 10, NULL, 0,  2, -1 },
+//  { "respawn", 10, NULL, 0,  1, -1 },
+  { "blssht" , 32, NULL, 0,  2, -1 },
+  { "blshit" , 32, NULL, 0,  2, -1 },
+//  { "chat"   , 100,NULL, -1,  1, -1 },
+  { "artiuse", 32, NULL, 0,  1, -1, SFX_player },
+  { "gfrag"  , 100,NULL, 0,  1, -1 },
+  { "waterfl", 16, NULL, 0,  2, -1 },
 
   // Monophonic sounds
+  // Low priority
 
-  { "wind"   , 16, NULL, -1, -1, -1 },
-  { "amb1"   ,  1, NULL, -1, -1, -1 },
-  { "amb2"   ,  1, NULL, -1, -1, -1 },
-  { "amb3"   ,  1, NULL, -1, -1, -1 },
-  { "amb4"   ,  1, NULL, -1, -1, -1 },
-  { "amb5"   ,  1, NULL, -1, -1, -1 },
-  { "amb6"   ,  1, NULL, -1, -1, -1 },
-  { "amb7"   ,  1, NULL, -1, -1, -1 },
-  { "amb8"   ,  1, NULL, -1, -1, -1 },
-  { "amb9"   ,  1, NULL, -1, -1, -1 },
-  { "amb10"  ,  1, NULL, -1, -1, -1 },
-  { "amb11"  ,  1, NULL, -1, -1, -1 },
-  { "menuud" ,  2, NULL, -1, -1, -1, SFX_single},
-  { "menuva" ,  2, NULL, -1, -1, -1, SFX_single},
-  { "menuen" ,  2, NULL, -1, -1, -1, SFX_single},
-  { "menuop" ,  2, NULL, -1, -1, -1, SFX_single},
-  { "menuac" ,  2, NULL, -1, -1, -1, SFX_single}
+  { "wind"   , 16, NULL, 0,  1, -1 },
+  { "amb1"   ,  1, NULL, 0,  1, -1 },
+  { "amb2"   ,  1, NULL, 0,  1, -1 },
+  { "amb3"   ,  1, NULL, 0,  1, -1 },
+  { "amb4"   ,  1, NULL, 0,  1, -1 },
+  { "amb5"   ,  1, NULL, 0,  1, -1 },
+  { "amb6"   ,  1, NULL, 0,  1, -1 },
+  { "amb7"   ,  1, NULL, 0,  1, -1 },
+  { "amb8"   ,  1, NULL, 0,  1, -1 },
+  { "amb9"   ,  1, NULL, 0,  1, -1 },
+  { "amb10"  ,  1, NULL, 0,  1, -1 },
+  { "amb11"  ,  1, NULL, 0,  1, -1 },
+  { "menuud" ,  2, NULL, 0,  1, -1, SFX_single},
+  { "menuva" ,  2, NULL, 0,  1, -1, SFX_single},
+  { "menuen" ,  2, NULL, 0,  1, -1, SFX_single},
+  { "menuop" ,  2, NULL, 0,  1, -1, SFX_single},
+  { "menuac" ,  2, NULL, 0,  1, -1, SFX_single}
   // skin sounds free slots to add sounds at run time (Boris HACK!!!)
   // initialized to NULL
 };
+
+link_mod_t  link_mods[] =
+{
+  // Boom has pitch=0 for most entries, we had -1 (which has no meaning)
+  {  128,  0 },  // default mods
+  {  150,  0 },  // chgun
+};
+
 
 
 // Prepare free sfx slots to add sfx at run time
 void S_InitRuntimeSounds (void)
 {
-    int  i;
+    sfxid_t  i;
 
     for (i=sfx_freeslot0; i<=sfx_lastfreeslot; i++)
         S_sfx[i].name = NULL;
 }
 
 // Add a new sound fx into a free sfx slot.
-int S_AddSoundFx (char *name, uint32_t flags)
+// Return sfx id.
+sfxid_t  S_AddSoundFx (char *name, uint32_t flags)
 {
     uint16_t least_usefulness = 8000;
-    int leastid = 0;
-    int sfxid;
+    sfxid_t  leastid = sfx_None;
+    sfxid_t  sfxid;
 
-    // quick search for free slot
+    // sfx slots are sfxid_t that are reserved for loadable sfx.
+    // Quick search for free slot, which start at sfx_freeslot0.
     for(sfxid=sfx_freeslot0; sfxid<NUMSFX; sfxid++)
     {
         // find empty sfx slot
         if(!S_sfx[sfxid].name)
-	   goto addsfx;
+           goto addsfx;
     }
-    // no free slots, try to remove least useful
-    // separate loop because the SoundPlaying test is a search
+    // No free slots, try to remove least useful.
+    // This is a separate loop because the SoundPlaying test is a search.
     for(sfxid=sfx_freeslot0; sfxid<NUMSFX; sfxid++)
     {
         // degrade all equally
         if ( S_sfx[sfxid].usefulness > -8000 )
-	   S_sfx[sfxid].usefulness --;
+           S_sfx[sfxid].usefulness --;
         // find least useful
         // all entries must be valid because empty slot search failed
         if ( S_sfx[sfxid].skinsound < 0  // not a skin sound
-	     && S_sfx[sfxid].usefulness < least_usefulness)
+             && S_sfx[sfxid].usefulness < least_usefulness)
         {
-	    if (!S_SoundPlaying(NULL, sfxid))
-	    {
-	        least_usefulness = S_sfx[sfxid].usefulness;
-	        leastid = sfxid;
-	    }
-	}
+            if (!S_SoundPlaying(NULL, sfxid))
+            {
+                least_usefulness = S_sfx[sfxid].usefulness;
+                leastid = sfxid;
+            }
+        }
     }
-    if ( leastid )
+    if ( leastid != sfx_None )
     {
         // clear the leastid slot
         S_RemoveSoundFx( leastid );
@@ -543,9 +565,11 @@ int S_AddSoundFx (char *name, uint32_t flags)
     S_sfx[sfxid].name[6]='\0';
     S_sfx[sfxid].flags= flags;
     S_sfx[sfxid].priority=60;
-    S_sfx[sfxid].link=0;
-    S_sfx[sfxid].pitch=-1;
-    S_sfx[sfxid].volume=-1;
+    S_sfx[sfxid].link=NULL;
+    S_sfx[sfxid].link_mod=0;
+    S_sfx[sfxid].limit_channels=99;
+//    S_sfx[sfxid].pitch=-1;
+//    S_sfx[sfxid].volume=-1;
     S_sfx[sfxid].lumpnum=-1;
     S_sfx[sfxid].skinsound=-1;
     S_sfx[sfxid].usefulness=-1;
@@ -556,18 +580,19 @@ int S_AddSoundFx (char *name, uint32_t flags)
 }
 
 
-void S_RemoveSoundFx (int id)
+// Only can remove from sfx slots, the loadable sfx sounds.
+void S_RemoveSoundFx (sfxid_t sfxid)
 {
-    if (id>=sfx_freeslot0 &&
-        id<=sfx_lastfreeslot &&
-        S_sfx[id].name)
+    if (sfxid >= sfx_freeslot0 &&
+        sfxid <= sfx_lastfreeslot &&
+        S_sfx[sfxid].name)
     {
         if( verbose > 1 )
-	    GenPrintf(EMSG_ver, "RemoveSoundFx: %s\n", S_sfx[id].name );
-        S_FreeSfx(&S_sfx[id]);
-        Z_Free(S_sfx[id].name);
-        S_sfx[id].lumpnum=-1;
-        S_sfx[id].name=NULL;  // free sfx slot to use again
+            GenPrintf(EMSG_ver, "RemoveSoundFx: %s\n", S_sfx[sfxid].name );
+        S_FreeSfx(&S_sfx[sfxid]);
+        Z_Free(S_sfx[sfxid].name);
+        S_sfx[sfxid].lumpnum=-1;
+        S_sfx[sfxid].name=NULL;  // free sfx slot to use again
     }
 }
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: d_main.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -299,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1241"
+#define SVN_REV "1242"
 #endif
 
 // Version number: major.minor.revision
@@ -2821,7 +2821,8 @@ restart_command:
     //
     CONS_Printf(text[S_SETSOUND_NUM]);
     nosoundfx = M_CheckParm("-nosound");
-    nomusic = M_CheckParm("-nomusic");  // WARNING: DOS version initmusic in I_StartupSound
+    nomusic = M_CheckParm("-nomusic");
+    // WARNING: DOS version initmusic in I_StartupSound
     I_StartupSound();
 #if defined( __DJGPP__ )		
     I_InitMusic();      // setup music buffer for quick mus2mid

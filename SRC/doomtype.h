@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1205 2016-01-19 19:42:49Z wesleyjohnson $
+// $Id: doomtype.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -161,13 +161,6 @@ typedef enum {
     #endif		
 #endif
 
-//#if 0
-// [WDJ] changed all stricmp to strcasecmp
-// [smite] we should use standard funcs
-//#define stricmp(x,y) strcasecmp(x,y)
-//#define strnicmp(x,y,n) strncasecmp(x,y,n)
-//#endif
-
 
 #if !defined(WIN32) && !defined(__WINDOWS__)
 #define min(x,y) ( ((x)<(y)) ? (x) : (y) )
@@ -230,6 +223,9 @@ int strlwr(char *n);
 // used in many places
 #define MININT    ((int)0x80000000)
 #endif
+
+// Sound effect id type.
+typedef  uint16_t  sfxid_t;
 
 // This is compatible with SDL_color (R,G,B,-).
 typedef union {

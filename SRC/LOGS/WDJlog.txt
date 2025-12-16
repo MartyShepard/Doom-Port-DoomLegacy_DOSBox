@@ -5162,3 +5162,51 @@ patchfile = w105_37_spawn_fog.patch
 - commit revision 1241
 Move the spawn fog over the spawned monster and spawned object.
 
+*** W105_fixdep
+patchfile = w105_38_fixdep.patch
+- commit revision 1242
+Fix a sizeof() compile issue in fixdep.
+
+*** W105_sound
+patchfile = w105_39_sound.patch
+- commit revision 1243
+Restructure the sound info table, and sound priority system.
+Created new types to regularize the sfx parameters.
+
+Fix Heretic sounds.  The channels were saturated with copies
+of the same sound, which was a faint low priority sound.
+
+Heretic uses ascending priority, while Doom and the code used
+descending priority.  The Heretic priority system is more capable,
+and Heretic handles more types of sound, so switched everything to using
+signed ascending priorities in the range -10..2560.
+
+The priority is also altered for distance, so faint sounds can get replaced.
+This required that priority be passed as a parameter, replacing any
+reference to the priority in the sfx info tables.
+
+Made the Doom sound priorities get used, instead of mostly ignored.
+The Doom priorities from the info tables are converted to ascending at
+the time they are read, which now is in only one place.
+Dehacked changes to info for Doom and Heretic should function as before.
+
+Changed code so all sounds go through S_StartSoundAtVolume,
+which now is the only function that calls  HW3D_I_StartSound functions.
+The complications for Heretic, priority, skin sounds, and linked sounds,
+are now only handled in this one place.
+Moved the sound functions for attack, scream, and ambience, out of
+HW3D_ to s_sound.c, and they now only call S_StartSoundAtVolume, with
+a new ct_type parameter.
+
+The linked sounds in the sound info are strange, and mostly non-functional.
+Heretic and Doom are no better.
+Doom only has one linked sound, sfx_chgun, and it does not actually modify
+the pitch or volume, even though fields and code were dedicated to doing that.
+Heretic did not keep that aspect of the sound info tables.
+Removed the link parameters from the sound info tables, and substituted
+an index to another small table.  Fixed the altered param to make more sense.
+
+Added a field to the sound info tables for the Heretic limit channels.
+This limits how many channels can have the same sfx.
+Checks this limit when trying to get a channel.
+

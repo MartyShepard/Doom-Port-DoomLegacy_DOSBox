@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01243 ]: w105 39 sound
+          DOS: Compile Fix
+					
+[01242 ]: w105 38 fixdep sizeof
 [01241 ]: w105 spawn fog
 [01240 ]: w105 info flags
 [01239 ]: w105 autorepeat console
