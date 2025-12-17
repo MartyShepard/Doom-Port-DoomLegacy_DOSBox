@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1256 2016-09-20 16:50:12Z wesleyjohnson $
+// $Id: p_mobj.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -324,7 +324,7 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
     } while (!mobj->tics && !seenstate[state]);   // killough 4/9/98
 
     if (ret && !mobj->tics)     // killough 4/9/98: detect state cycles
-        CONS_Printf("Warning: State Cycle Detected");
+        GenPrintf(EMSG_warn, "Warning: State Cycle Detected");
 
     if (!--recursion)
     {
@@ -1308,7 +1308,7 @@ void P_MobjCheckWater(mobj_t * mobj)
 
 /*
     if( (mobj->eflags ^ oldeflags) & MF_TOUCHWATER)
-        CONS_Printf("touchewater %d\n",mobj->eflags & MF_TOUCHWATER ? 1 : 0);
+        CONS_Printf("touchwater %d\n",mobj->eflags & MF_TOUCHWATER ? 1 : 0);
     if( (mobj->eflags ^ oldeflags) & MF_UNDERWATER)
         CONS_Printf("underwater %d\n",mobj->eflags & MF_UNDERWATER ? 1 : 0);
 */
@@ -1845,7 +1845,7 @@ void P_RespawnSpecials(void)
     if (!mthing)
     {
         // [WDJ] No NULL in itemrespawnque, should no longer happen
-        CONS_Printf("Warning: NULL respawn ptr.\n");
+        GenPrintf(EMSG_warn, "Warning: NULL respawn ptr.\n");
         // pull it from the que
         iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
         return;
@@ -2262,7 +2262,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
     if (i == NUMMOBJTYPES)
     {
-        CONS_Printf("\2P_SpawnMapthing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
+        I_SoftError("\2P_SpawnMapthing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
         return;
     }
 

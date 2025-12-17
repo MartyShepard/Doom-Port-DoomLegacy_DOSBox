@@ -1318,7 +1318,7 @@ boolean I_Get_Prog_Dir( char * defdir, /*OUT*/ char * dirbuf )
         // argv[0] is relative to current dir
         if( defdir )
         {
-	    cat_filename( dirbuf, defdir, arg0p );
+	    cat_filename( dirbuf, ""/*defdir*/, arg0p ); //defdir ausgeklammert weil .. Program directory: d:/bin\d:/bin
 	    goto got_path;
 	}
     }

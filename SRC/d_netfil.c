@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: d_netfil.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -321,7 +321,7 @@ reqfile_e  Send_RequestFile(void)
     }
     WRITECHAR(p,-1);
     uint64_t availablefreespace = I_GetDiskFreeSpace();
-    // CONS_Printf("free byte %d\n",availablefreespace);
+    // debug_Printf("free byte %d\n",availablefreespace);
     if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
 
     // prepare to download
@@ -772,7 +772,7 @@ void Got_Filetxpak(void)
         fp = fopen( fname,"wb" );
         fnp->phandle = fp;  // owner of open file
         if(!fp)  goto file_create_err;
-        CONS_Printf("\r%s...", fname);
+        GenPrintf(EMSG_hud, "\r%s ...", fname);
         fnp->bytes_recv = 0; 
         fnp->status = FS_DOWNLOADING;
     }
@@ -803,7 +803,7 @@ void Got_Filetxpak(void)
         {
             // Update stats on screen.
             Net_GetNetStat();
-            CONS_Printf("\r%s %dK/%dK %.1fK/s",
+            GenPrintf(EMSG_hud, "\r%s %dK/%dK %.1fK/s",
                         fname,
                         fnp->bytes_recv>>10,
                         fnp->totalsize>>10,
@@ -816,7 +816,7 @@ void Got_Filetxpak(void)
             fclose( fp );
             fnp->phandle = NULL;
             fnp->status = FS_FOUND;
-            CONS_Printf("\rDownloading %s...(done)\n", fname);
+            GenPrintf(EMSG_hud, "\rDownloading %s ... (done)\n", fname);
         }
     }
     else

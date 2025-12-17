@@ -60,7 +60,7 @@ typedef enum {
    EMSG_playmsg = 0x01,
    EMSG_playmsg2 = 0x02,
    EMSG_console = 0x05,  // console interactive
-   EMSG_6,
+   EMSG_hud = 0x06,  // interactive messages, network
    EMSG_7,
    EMSG_info = 0x08,
    EMSG_ver = 0x09,  // verbose
@@ -85,25 +85,25 @@ typedef enum {
    EOUT_all = EOUT_text|EOUT_con|EOUT_log,
 } EOUT_e;
 
-extern  byte  EMSG_flags;  // EMSG_e
 extern  byte  EOUT_flags;  // EOUT_e
 extern  byte  fatal_error;
 
-// i_system.h
-void  I_Error (const char *error, ...);
-void  I_SoftError (const char *errmsg, ...);
-
 // console.h
-//  emsg : EMSG_e
+// Global param: EOUT_flags
 void  CONS_Printf (const char *fmt, ...);
-void  CONS_Printf_va (const byte emsg, const char *fmt, va_list ap );
 // For info, debug, dev, verbose messages
 // print to text, console, and logs
+//  emsg : EMSG_e
 void  GenPrintf (const byte emsg, const char *fmt, ...);
+void  GenPrintf_va (const byte emsg, const char *fmt, va_list ap );
 // Console interaction printf interface.
 void  con_Printf (const char *fmt, ...);
 // Debug printf interface.
 void  debug_Printf (const char *fmt, ...);
+
+// i_system.h
+void  I_Error (const char *error, ...);
+void  I_SoftError (const char *errmsg, ...);
 
 // m_misc.h
 char  *va(char *format, ...);

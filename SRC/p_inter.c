@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: p_inter.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -249,7 +249,7 @@ boolean P_GiveAmmo ( player_t*     player,
 
     if (ammo < 0 || ammo > NUMAMMO)
     {
-        CONS_Printf ("\2P_GiveAmmo: bad type %i", ammo);
+        GenPrintf(EMSG_warn, "\2P_GiveAmmo: bad type %i", ammo);
         return false;
     }
 

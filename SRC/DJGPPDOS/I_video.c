@@ -341,6 +341,8 @@ int set_vesa1_mode( int width, int height )
 // Initialize the graphics system, with a initial window.
 void I_StartupGraphics( void )
 {
+	  // EOUT_flags: ohne EOUT_con in DOS Starten
+	  EOUT_flags = EOUT_text | EOUT_log;
     char BitName[20];
 		
     modenum_t initial_mode = {MODE_window, 0};
@@ -417,6 +419,9 @@ void I_StartupGraphics( void )
 
     graphics_state = /*VGS_active*/VGS_fullactive;
 		CONS_Printf( "Vid_Init...Successfully\n");
+
+    // Add EOUT_con
+		EOUT_flags |= EOUT_con;
     return;
 
 abort_error:

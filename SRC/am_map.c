@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: am_map.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1130,7 +1130,7 @@ void AM_drawFline_soft ( fline_t*       fl,
            || fl->b.x < 0 || fl->b.x >= f_w
            || fl->b.y < 0 || fl->b.y >= f_h)
     {
-        CONS_Printf("line clipping problem %d \r", lc_prob_count++);
+        debug_Printf("line clipping problem %d \r", lc_prob_count++);
         return;
     }
 #endif

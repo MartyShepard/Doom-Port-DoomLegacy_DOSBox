@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: t_parse.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -810,7 +810,7 @@ void script_error(const char *fmt, ...)
     CONS_Printf(": ");
 
     va_start(ap, fmt);
-    CONS_Printf_va(EMSG_error, fmt, ap);
+    GenPrintf_va(EMSG_error, fmt, ap);
     va_end(ap);
 
     // make a noise

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: sounds.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -556,7 +556,7 @@ sfxid_t  S_AddSoundFx (char *name, uint32_t flags)
         sfxid = leastid;
         goto addsfx;
     }
-    CONS_Printf("\2No more free sound slots\n");
+    GenPrintf(EMSG_warn, "\2No more free sound slots\n");
     return 0;
 
  addsfx:
@@ -618,7 +618,7 @@ int S_AddMusic(char *name)
     }
   }
 
-  CONS_Printf("All music slots are full!\n");
+  GenPrintf(EMSG_warn, "All music slots are full!\n");
   return 0;
 }
 

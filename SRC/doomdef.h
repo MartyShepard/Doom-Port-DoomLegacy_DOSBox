@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: doomdef.h 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -33,15 +33,13 @@
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
-#define PARANOIA                // do some test that never happens but maybe
-#if !defined( __DJGPP__ )
-#define LOGMESSAGES             // write message in log.txt (win32 and Linux only for the moment)
-#ifdef LOGMESSAGES
-extern FILE *logstream;
-#endif
+// Do some extra tests, that never happens but maybe.
+#define PARANOIA
+// write message in log.txt (win32 and Linux only for the moment)
+#define LOGMESSAGES
 #define LOGLINELEN  80
-#endif
-#define SHOW_DEBUG_MESSAGES
+// Default to show debug messages.
+//#define DEBUG_MESSAGES_ON
 
 // [WDJ] Machine speed limitations.
 // Leave undefined for netplay, or make sure all machines have same setting.
@@ -118,8 +116,8 @@ extern FILE *logstream;
 #define ENABLE_DRAW15
 #define ENABLE_DRAW16
 #ifndef SMIF_PC_DOS
-#define ENABLE_DRAW24
-#define ENABLE_DRAW32
+# define ENABLE_DRAW24
+# define ENABLE_DRAW32
 #endif
 
 // [WDJ] 6/5/2012 Boom global colormap

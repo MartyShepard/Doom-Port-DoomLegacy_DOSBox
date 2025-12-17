@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: p_setup.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1860,7 +1860,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
 
     if ((wadfilenum = W_LoadWadFile (wadfilename))==-1)
     {
-        CONS_Printf ("couldn't load wad file %s\n", wadfilename);
+        GenPrintf(EMSG_warn, "could not load wad file %s\n", wadfilename);
         return false;
     }
     wadfile = wadfiles[wadfilenum];
@@ -1900,7 +1900,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
             texturechange=true;
     }
     if (!devparm && replace_cnt)
-        CONS_Printf ("%d sounds replaced\n", replace_cnt);
+        GenPrintf(EMSG_dev, "%d sounds replaced\n", replace_cnt);
 
     //
     // search for music replacements
@@ -1918,7 +1918,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
         }
     }
     if (!devparm && replace_cnt)
-        CONS_Printf ("%d musics replaced\n", replace_cnt);
+        GenPrintf(EMSG_dev, "%d musics replaced\n", replace_cnt);
 
     //
     // search for sprite replacements
@@ -1954,7 +1954,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
                 name[2]=='P')
             {
                 num = (name[3]-'0')*10 + (name[4]-'0');
-                CONS_Printf ("Map %d\n", num);
+                GenPrintf(EMSG_info, "Map %d\n", num);
             }
         }
         else
@@ -1966,7 +1966,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
                 name[4]==0)
             {
                 num = ((name[1]-'0')<<8) + (name[3]-'0');
-                CONS_Printf ("Episode %d map %d\n", name[1]-'0',
+                GenPrintf(EMSG_info, "Episode %d map %d\n", name[1]-'0',
                                                     name[3]-'0');
             }
         }
@@ -1983,7 +1983,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
         }
     }
     if ( firstmapreplaced >= 0xFFFF )  // invalid
-        CONS_Printf ("no maps added\n");
+        GenPrintf(EMSG_info, "No maps added\n");
 
     // reload status bar (warning should have valid player !)
     if( gamestate == GS_LEVEL )

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
+// $Id: wi_stuff.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -591,8 +591,10 @@ static void WI_drawOnLnode ( int           n,
     if (fits && i<2)
         V_DrawScaledPatch(lnodes->x, lnodes->y, c[i]);
     else
+    {
         // DEBUG
-        CONS_Printf("Could not place patch on level %d\n", n+1);
+        debug_Printf("Could not place patch on level %d\n", n+1);
+    }
 }
 
 

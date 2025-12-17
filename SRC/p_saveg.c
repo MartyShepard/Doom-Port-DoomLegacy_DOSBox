@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_saveg.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -173,7 +173,7 @@ byte *  P_Alloc_savebuffer( boolean large_size )
     save_p = savebuffer = (byte *)malloc(savebuffer_size);
     if( ! savebuffer)
     {
-        CONS_Printf (" Cannot allocate memory for savegame\n");
+        I_SoftError(" Cannot allocate memory for savegame\n");
         return NULL;
     }
     extfile.buffer = savebuffer;

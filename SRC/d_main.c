@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: d_main.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -293,13 +293,23 @@
 	#endif
 	
 	static const char DOSSTRING[] = "[" DOSNAME "]";
+	
+char *Posix_Deform_Path(char *path)
+{
+    char *p = path;
+    for (*p = path[0]; p && *p; p++)
+         if (*p == '/') *p = '\\';
+    
+		return path;
+}
+	
 #else
 	static const char DOSSTRING[] = "";	
 #endif
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1263"
+#define SVN_REV "1264"
 #endif
 
 // Version number: major.minor.revision
@@ -2026,6 +2036,9 @@ void D_DoomMain()
     // get the current directory (possible problem on NT with "." as current dir)
     if (getcwd(dirbuf, _MAX_PATH) != NULL)
     {
+			  #if defined (__DJGPP__)
+			    Posix_Deform_Path(dirbuf);
+			  #endif			
         // Need a working default dir, to prevent "" leading to root files.
         if( (strlen(dirbuf) > 4)
             || (strcmp( dirbuf, "." ) == 0) )   // systems that pass "."
@@ -2043,6 +2056,9 @@ void D_DoomMain()
     {
 
         progdir = strdup( dirbuf );
+			  #if defined (__DJGPP__)
+			    Posix_Deform_Path(progdir);
+			  #endif				
         if( verbose )
           GenPrintf(EMSG_ver, "Program directory: %s\n", progdir);
 
@@ -2060,7 +2076,7 @@ void D_DoomMain()
     // CDROM overrides doomwaddir (when valid)
     if (M_CheckParm("-cdrom"))
     {
-        CONS_Printf(D_CDROM);
+        GenPrintf(EMSG_hud, D_CDROM);
         // [WDJ] Execute DoomLegacy off CDROM ??
         // DoomLegacy already has separate doomwaddir and legacyhome.
         // Legacy is not compatible with other port config and savegames,
@@ -2085,7 +2101,7 @@ void D_DoomMain()
 #endif
 #endif
 
-    EOUT_flags = EOUT_text | EOUT_log;
+    EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
     CONS_Printf(text[Z_INIT_NUM]);
     // Cannot Init nor register cv_ vars until after Z_Init and some
@@ -2232,7 +2248,7 @@ restart_command:
             {
                 // have working default dir
                 // userhome cannot be "", because save games can end up in root directory
-                cat_filename( dirbuf, defdir, defhome );
+                cat_filename( dirbuf, defdir, DEFHOME );
                 userhome = strdup(dirbuf);  // malloc
                 if(verbose)
                     GenPrintf(EMSG_ver, " Using userhome= %s\n", userhome );
@@ -2307,8 +2323,9 @@ restart_command:
             // default absolute path, do not set to ""
         #if defined( __DJGPP__ )		
              getcwd(dosroot, MAX_WADPATH-1);
+						 Posix_Deform_Path(dosroot);
              progdir = dosroot;
-             sprintf(dirbuf, "%s/", dosroot);
+             sprintf(dirbuf, "%s\\", dosroot);
              legacyhome = strdup( dirbuf );
         #else						
             cat_filename( dirbuf, progdir, DEFHOME );
@@ -2403,7 +2420,7 @@ restart_command:
     const char *gametitle = gamedesc.startup_title;  // set by IdentifyVersion
     if( gametitle == NULL )   gametitle = gamedesc.gname;
     if( gametitle )
-      CONS_Printf("%s\n", gametitle);
+      GenPrintf(EMSG_info, "%s\n", gametitle);
 
     // add any files specified on the command line with -file wadfile
     // to the wad list
@@ -2423,7 +2440,7 @@ restart_command:
             case ultdoom_retail:
             case doom_registered:
                 sprintf(fbuf, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
-                CONS_Printf("Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
+                GenPrintf(EMSG_info, "Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
                 break;
 
             case doom2_commercial:
@@ -2948,13 +2965,12 @@ restart_command:
 
 
 // Print error and continue game [WDJ] 1/19/2009
-#define SoftError_listsize   8
-static const char *  SE_msg[SoftError_listsize];
-static uint32_t      SE_val[SoftError_listsize]; // we only want to compare
+#define SOFTERROR_LISTSIZE   8
+static const char *  SE_msg[SOFTERROR_LISTSIZE];
+static uint32_t      SE_val[SOFTERROR_LISTSIZE]; // we only want to compare
 static int  SE_msgcnt = 0;
 static int  SE_next_msg_slot = 0;
 
-byte  EMSG_flags = EMSG_CONS;  // EMSG_e default
 byte  EOUT_flags = EOUT_text | EOUT_log;  // EOUT_e
 
 static void Clear_SoftError(void)
@@ -2968,7 +2984,8 @@ static void Clear_SoftError(void)
 void I_SoftError (const char *errmsg, ...)
 {
     va_list     argptr;
-    int		index, errval;
+    int         index;
+    uint32_t    errval;
 
     // Message first.
     va_start (argptr,errmsg);
@@ -2984,12 +3001,14 @@ void I_SoftError (const char *errmsg, ...)
     SE_msg[SE_next_msg_slot] = errmsg;
     SE_val[SE_next_msg_slot] = errval;
     SE_next_msg_slot++;
-    if( SE_next_msg_slot >= SoftError_listsize )  SE_next_msg_slot = 0;  // wrap
-    if( SE_msgcnt < SoftError_listsize ) SE_msgcnt++;  // limit
+    if( SE_next_msg_slot > SE_msgcnt )
+       SE_msgcnt = SE_next_msg_slot;  // max
+    if( SE_next_msg_slot >= SOFTERROR_LISTSIZE )
+       SE_next_msg_slot = 0;  // wrap
     // Error, always prints EMSG_text
     fprintf (stderr, "Warn: ");
     va_start (argptr,errmsg);
-    CONS_Printf_va( EMSG_error, errmsg, argptr );  // handles EOUT_con
+    GenPrintf_va( EMSG_error, errmsg, argptr );  // handles EOUT_con
     va_end (argptr);
 
 done:   
@@ -3089,6 +3108,9 @@ void D_Quit_Save ( quit_severity_e severity )
             I_Show_EndText( endtext );
         }
     }
+#if defined (__DJGPP__) && defined LOGMESSAGES
+    if (logstream) fclose(logstream);
+#endif		
 }
 
 // I_Quit exits with (exit 0).
@@ -3161,7 +3183,11 @@ static void Help( void )
    case 'c': // config
      printf
        (
+#if defined (__DJGPP__)			 
+        "-v   -v2        Verbose (activte Log \"LEGACY.LOG\")\n"
+#else
         "-v   -v2        Verbose\n"
+#endif			
         "-home name      Config and savegame directory\n"
         "-config file    Config file\n"
 #ifdef HWRENDER		

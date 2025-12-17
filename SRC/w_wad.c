@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: w_wad.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -256,7 +256,7 @@ int W_LoadWadFile (const char *filename)
     //
     if (filenum>=MAX_WADFILES)
     {
-        CONS_Printf ("Maximum wad files reached\n");
+        GenPrintf(EMSG_warn, "Maximum wad files reached\n");
         return -1;
     }
 
@@ -275,14 +275,14 @@ int W_LoadWadFile (const char *filename)
         fs = findfile(filenamebuf, NULL, false, /*OUT*/ filenamebuf);
         if( fs == FS_NOTFOUND )
         {
-            CONS_Printf ("File %s not found.\n", filenamebuf);
+            GenPrintf(EMSG_warn, "File %s not found.\n", filenamebuf);
             return -1;
         }
 
         handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
         if( handle == -1 )
         {
-            CONS_Printf ("Can't open %s\n", filenamebuf);
+            GenPrintf(EMSG_warn, "Can't open %s\n", filenamebuf);
             return -1;
         }
     }
@@ -318,7 +318,7 @@ int W_LoadWadFile (const char *filename)
             // Homebrew levels?
             if (strncmp(header.identification,"PWAD",4))
             {
-                CONS_Printf ("%s doesn't have IWAD or PWAD id\n", filenamebuf);
+                GenPrintf(EMSG_warn, "%s doesn't have IWAD or PWAD id\n", filenamebuf);
                 return -1;
             }
             // ???modifiedgame = true;
@@ -416,7 +416,7 @@ int W_LoadWadFile (const char *filename)
     wadfiles[filenum] = wadfile;
     numwadfiles++;
 
-    CONS_Printf ("Added file %s (%i lumps)\n", filenamebuf, numlumps);
+    GenPrintf(EMSG_info, "Added file %s (%i lumps)\n", filenamebuf, numlumps);
     W_LoadDehackedLumps( filenum );
     return filenum;
 }
@@ -1062,7 +1062,7 @@ void W_LoadDehackedLumps( int wadnum )
         clump = W_CheckNumForNamePwad("DEHACKED", wadnum, clump);
         if(clump == -1)
             break;
-        CONS_Printf("Loading dehacked from %s\n",wadfiles[wadnum]->filename);
+        GenPrintf(EMSG_info, "Loading dehacked from %s\n",wadfiles[wadnum]->filename);
         DEH_LoadDehackedLump(clump);
         clump++;
     }

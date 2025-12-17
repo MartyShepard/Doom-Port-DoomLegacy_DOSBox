@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1201 2015-12-26 19:21:12Z wesleyjohnson $
+// $Id: m_misc.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -404,7 +404,7 @@ void M_SaveConfig (char *filename)
             strcpy(configfile,filename);  // filename is already MAX_WADPATH
         else
         {
-            CONS_Printf ("Couldn't save game config file %s\n",filename);
+            I_SoftError("Could not save game config file %s\n",filename);
             return;
         }
     }
@@ -413,7 +413,7 @@ void M_SaveConfig (char *filename)
         f = fopen (configfile, "w");
         if (!f)
         {
-            CONS_Printf ("Couldn't save game config file %s\n",configfile);
+            I_SoftError("Could not save game config file %s\n",configfile);
             return;
         }
     }
@@ -637,7 +637,13 @@ void cat_filename( char * dest, const char * dn, const char * fn )
     {
         // if directory does not have '/' then include one in format
         char ch = dn[ dnlen-1 ]; // last char
-        if( ! ( ch == '/' || ch == '\\' ))   format = "%s/%s";
+        if( ! ( ch == '/' || ch == '\\' ))
+        #if defined (__DJGPP__)
+					format = "%s\\%s";
+				#else
+					format = "%s/%s";
+				#endif
+				
     }
     snprintf(dest, MAX_WADPATH-1, format, dn, fn);
     dest[MAX_WADPATH-1] = '\0';

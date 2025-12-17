@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: dehacked.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -199,7 +199,7 @@ static void deh_error(const char * fmt, ...)
     if (devparm || verbose)
     {
        va_start(ap, fmt);
-       CONS_Printf_va( EMSG_error, fmt, ap );
+       GenPrintf_va( EMSG_error, fmt, ap );
        va_end(ap);
     }
 

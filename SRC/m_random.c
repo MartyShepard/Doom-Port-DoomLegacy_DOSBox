@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1055 2013-10-09 20:14:01Z wesleyjohnson $
+// $Id: m_random.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,14 +87,14 @@ int P_SignedRandom ()
 
 byte P_Random2 (char *a,int b)
 {
-    CONS_Printf("P_Random at : %sp %d\n",a,b);
+    debug_Printf("P_Random at : %sp %d\n",a,b);
     return rndtable[++prndindex];
 }
 
 int P_SignedRandom2 (char *a,int b)
 {
     int r;
-    CONS_Printf("P_SignedRandom at : %sp %d\n",a,b);
+    debug_Printf("P_SignedRandom at : %sp %d\n",a,b);
     r = rndtable[++prndindex];
     return r-rndtable[++prndindex];
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: g_game.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1095,7 +1095,7 @@ boolean G_Responder (event_t* ev)
             ST_changeDemoView ();
 
         //added:11-04-98: tell who's the view
-        CONS_Printf("Viewpoint : %s\n", player_names[displayplayer]);
+        GenPrintf(EMSG_hud, "Viewpoint : %s\n", player_names[displayplayer]);
         goto handled;
     }
 
@@ -2227,7 +2227,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 
     gameaction = ga_nothing;
     #if defined( __DJGPP__ )
-    CONS_Printf("Save Game Nr:%d \"%s\"\n",savegameslot,savename);
+    GenPrintf(EMSG_info|EMSG_all,"Save Game Nr:%d \"%s\"\n",savegameslot,savename);
     #endif
     consoleplayer_ptr->message = GGSAVED;
 
@@ -2397,7 +2397,7 @@ boolean G_Downgrade(int version)
         // disable rocket trails
         states[S_ROCKET].action.acv = NULL; //NULL like in Doom2 v1.9
 
-        // Boris : for older demos, initalise the new skincolor value
+        // Boris : for older demos, initialize the new skincolor value
         //         also disable the new preferred weapons order.
         for(i=0;i<4;i++)
         {
@@ -2787,7 +2787,7 @@ void G_DoPlayDemo (char *defdemoname)
         FIL_DefaultExtension(defdemoname,".lmp");
         if (!FIL_ReadFile (defdemoname, &demobuffer) )
         {
-            CONS_Printf ("\2ERROR: couldn't open file '%s'.\n", defdemoname);
+            GenPrintf(EMSG_warn, "\2ERROR: couldn't open file '%s'.\n", defdemoname);
             goto no_demo;
         }
         demo_p = demobuffer;
@@ -2839,7 +2839,7 @@ void G_DoPlayDemo (char *defdemoname)
 
     if (demoversion < 109 || demoversion >= 215)
     {
-        CONS_Printf("\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, VERSION);
+        GenPrintf(EMSG_warn, "\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, VERSION);
         goto kill_demo;
     }
    
@@ -3238,7 +3238,7 @@ boolean G_CheckDemoStatus (void)
         Z_Free (demobuffer);
         demorecording = false;
 
-        CONS_Printf("\2Demo %s recorded\n",demoname);
+        GenPrintf(EMSG_hud, "\2Demo %s recorded\n", demoname);
         return true;
     }
 

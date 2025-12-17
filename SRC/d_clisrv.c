@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: d_clisrv.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -315,9 +315,9 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
    if( (textlen + 1 + nparam) > MAXTEXTCMD)
    {
 #ifdef PARANOIA
-       I_Error("Net command exceeds buffer size: netcmd %d\n", cmd_id);
+       I_SoftError("Net command exceeds buffer size: netcmd %d\n", cmd_id);
 #else
-       CONS_Printf("\2Net Command exceeds buffer\n");
+       GenPrintf(EMSG_warn, "\2Net Command exceeds buffer\n");
 #endif
        return;
    }
@@ -344,7 +344,7 @@ void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
 #ifdef PARANOIA
        I_Error("Net command exceeds buffer size: netcmd %d\n", cmd_id);
 #else
-       CONS_Printf("\2Net Command fail\n");
+       GenPrintf(EMSG_warn, "\2Net Command fail\n");
 #endif
        return;
    }
@@ -544,7 +544,7 @@ static void Net_Packet_Handler(void);
 // Called by CL_ConnectToServer.
 static boolean  CL_Send_Join( void )
 {
-    CONS_Printf("Send join request...\n");
+    GenPrintf(EMSG_hud, "Send join request...\n");
     netbuffer->packettype=PT_CLIENTJOIN;
 
     // Declare how many players at this node.
@@ -665,7 +665,7 @@ static void CL_Load_Received_Savegame(void)
     // file is open and savebuffer allocated
     // No Header on network sent savegame
 
-    CONS_Printf("loading savegame\n");
+    GenPrintf(EMSG_hud, "Loading savegame\n");
 
     G_Downgrade (VERSION);
 
@@ -691,7 +691,7 @@ cannot_read_file:
     goto failed_exit; // must deallocate savebuffer
 
 load_failed:
-    CONS_Printf("Can't load the level !!!\n");
+    GenPrintf(EMSG_error, "Can't load the level !!!\n");
 failed_exit:
     // needed when there are error tests before Closefile.
     P_Savegame_Error_Closefile();  // deallocate savebuffer
@@ -1038,14 +1038,14 @@ static void CL_ConnectToServer( void )
     cl_mode = CLM_searching;
     D_WaitPlayer_Setup();
 
-    CONS_Printf("Press Q or ESC to abort\n");
+    GenPrintf(EMSG_hud, "Press Q or ESC to abort\n");
     if( servernode >= MAXNETNODES )
     {
         // init value and BROADCASTADDR
-        CONS_Printf("Searching the server...\n");
+        GenPrintf(EMSG_hud, "Searching for a DoomLegacy server ...\n");
     }
     else
-        CONS_Printf("Contacting the server...\n");
+        GenPrintf(EMSG_hud, "Contacting the DoomLegacy server ...\n");
 
     DEBFILE(va("Waiting %d players\n", wait_netplayer));
 
@@ -1090,7 +1090,7 @@ static void CL_ConnectToServer( void )
                         // Invalid servernode, get best server from serverlist.
                         i = 0;
                         servernode = serverlist[i].server_node;
-                        CONS_Printf("Found, ");
+                        GenPrintf(EMSG_hud, " Found, ");
                     }
                     else
                     {
@@ -1103,7 +1103,7 @@ static void CL_ConnectToServer( void )
                     // Check server for files needed.
                     CL_Got_Fileneed(serverlist[i].info.num_fileneed,
                                     serverlist[i].info.fileneed    );
-                    CONS_Printf("Checking files...\n");
+                    GenPrintf(EMSG_hud, " Checking files ...\n");
                     switch( CL_CheckFiles() )
                     {
                      case CFR_no_files:
@@ -1458,21 +1458,21 @@ void Got_NetXCmd_KickCmd(char **p, int playernum)
     int pnum=READBYTE(*p);  // unsigned player num
     int msg =READBYTE(*p);  // unsigned kick message
 
-    CONS_Printf("\2%s ",player_names[pnum]);
+    GenPrintf(EMSG_hud, "\2%s ", player_names[pnum]);
 
     switch(msg)
     {
        case KICK_MSG_GO_AWAY:
-               CONS_Printf("has been kicked (Go away)\n");
+               GenPrintf(EMSG_hud, "has been kicked (Go away)\n");
                break;
        case KICK_MSG_CON_FAIL:
-               CONS_Printf("has been kicked (Consistency failure)\n");
+               GenPrintf(EMSG_hud, "has been kicked (Consistency failure)\n");
                break;
        case KICK_MSG_TIMEOUT:
-               CONS_Printf("left the game (Connection timeout)\n");
+               GenPrintf(EMSG_hud, "left the game (Connection timeout)\n");
                break;
        case KICK_MSG_PLAYER_QUIT:
-               CONS_Printf("left the game\n");
+               GenPrintf(EMSG_hud, "left the game\n");
                break;
     }
     if( pnum==consoleplayer )
@@ -1693,7 +1693,7 @@ void Got_NetXCmd_AddPlayer(char **p,int playernum)
     if( newplayernum+1 > doomcom->numplayers )
         doomcom->numplayers=newplayernum+1;
     // [WDJ] Players are 1..MAXPLAYERS to the user.
-    CONS_Printf("Player %d is in the game (node %d)\n", (newplayernum+1), nnode);
+    GenPrintf(EMSG_hud, "Player %d is in the game (node %d)\n", (newplayernum+1), nnode);
 
     if(nnode==cl_nnode)
     {
@@ -1747,7 +1747,7 @@ void Got_NetXCmd_AddBot(char **p, int playernum)  //added by AC for acbot
 
     multiplayer=1;
 
-    CONS_Printf ("Bot %s has entered the game\n", player_names[newplayernum]);
+    GenPrintf(EMSG_hud, "Bot %s has entered the game\n", player_names[newplayernum]);
 }
 
 // By Server.
@@ -1847,7 +1847,7 @@ boolean SV_SpawnServer( void )
 
     if( serverrunning == false )
     {
-        CONS_Printf("Starting Server....\n");
+        GenPrintf(EMSG_hud, "Starting Server ...\n");
         serverrunning = true;
         SV_ResetServer();
         if( netgame )
@@ -1971,7 +1971,7 @@ static void client_join_handler( byte nnode )
         if(!SV_Send_ServerConfig(nnode))
         {
             // TODO : fix this !!!
-            CONS_Printf("Internal Error 5 : client lost\n");
+            GenPrintf(EMSG_error, "Client Join Comm Failure: client lost\n");
             return;
         }
         DEBFILE("New node joined\n");
@@ -1985,7 +1985,7 @@ static void client_join_handler( byte nnode )
         if( (gamestate == GS_LEVEL) && newnode)
         {
             SV_Send_SaveGame(nnode); // send game data
-            CONS_Printf("Send savegame\n");
+            GenPrintf(EMSG_info, "Send savegame\n");
         }
         SV_AddWaitingPlayers();
     }
@@ -2084,7 +2084,7 @@ static void server_cfg_handler( byte nnode )
     doomcom->numplayers = netbuffer->u.servercfg.totalplayernum;
     cl_nnode = netbuffer->u.servercfg.clientnode;
 
-    CONS_Printf("Join accepted, wait next map change...\n");
+    GenPrintf(EMSG_hud, "Join accepted, wait next map change ...\n");
     DEBFILE(va("Server accept join gametic=%d, client net node=%d\n",
                gametic, cl_nnode));
 

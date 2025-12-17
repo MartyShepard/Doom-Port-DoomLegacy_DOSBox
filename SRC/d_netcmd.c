@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: d_netcmd.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -840,9 +840,9 @@ void Got_NetXCmd_Pause(char **cp, int playernum)
         if (netgame)
         {
             if (paused)
-                CONS_Printf("Game paused by %s\n", player_names[playernum]);
+                GenPrintf(EMSG_hud, "Game paused by %s\n", player_names[playernum]);
             else
-                CONS_Printf("Game unpaused by %s\n", player_names[playernum]);
+                GenPrintf(EMSG_hud, "Game unpaused by %s\n", player_names[playernum]);
         }
 
         if (paused)
@@ -960,12 +960,12 @@ void TimeLimit_OnChange(void)
 {
     if (cv_timelimit.value)
     {
-        CONS_Printf("Levels will end after %d minute(s).\n", cv_timelimit.value);
+        GenPrintf(EMSG_hud, "Levels will end after %d minute(s).\n", cv_timelimit.value);
         timelimit_tics = cv_timelimit.value * 60 * TICRATE;
     }
     else
     {
-        CONS_Printf("Time limit disabled\n");
+        GenPrintf(EMSG_hud, "Time limit disabled\n");
         timelimit_tics = 0;
     }
 }

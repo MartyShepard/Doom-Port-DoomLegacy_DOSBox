@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: r_things.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -526,7 +526,7 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
         }
     }
 
-    CONS_Printf ("%d sprites added from file %s\n", addsprites, wadfiles[wadnum]->filename);//Fab
+    GenPrintf(EMSG_info, "%d sprites added from file %s\n", addsprites, wadfiles[wadnum]->filename);//Fab
     //CONS_Error ("press enter\n");
 }
 
@@ -679,7 +679,7 @@ void R_InitSprites (char** namelist)
     /*
     for (i=0; i<numsprites; i++)
          if (sprites[i].numframes<1)
-             CONS_Printf ("R_InitSprites: sprite %s has no frames at all\n", sprnames[i]);
+             I_SoftError("R_InitSprites: sprite %s has no frames at all\n", sprnames[i]);
     */
 }
 
@@ -2367,7 +2367,7 @@ void SetPlayerSkin (int playernum, char *skinname)
         }
     }
 
-    CONS_Printf("Skin %s not found\n",skinname);
+    GenPrintf(EMSG_warn, "Skin %s not found\n", skinname);
     players[playernum].skin = 0;  // not found put the old marine skin
 
     // a copy of the skin value
@@ -2444,7 +2444,7 @@ void R_AddSkins (int wadnum)
     {
         if (numskins>MAXSKINS)
         {
-            CONS_Printf ("ignored skin (%d skins maximum)\n",MAXSKINS);
+            GenPrintf(EMSG_warn, "ignored skin (%d skins maximum)\n", MAXSKINS);
             lastlump++;
             continue; //faB:so we know how many skins couldn't be added
         }

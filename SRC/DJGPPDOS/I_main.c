@@ -37,11 +37,32 @@
 
 #include "i_system.h"
 
+#ifdef LOGMESSAGES
+#include <stdio.h>
+#include <string.h>
+FILE *logstream = NULL;
+#endif
+
 int main ( int argc, char** argv )
 {
     myargc = argc;
     myargv = argv;
 
+    #ifdef LOGMESSAGES
+		int i;
+		for (i = 1; i < myargc; i++)
+		{
+			if (strcmp(argv[i], "-v") == 0)
+			{
+				logstream = fopen("LEGACY.LOG", "wb");
+      }
+      else if (strcmp(argv[i], "-v2") == 0)
+      {
+        logstream = fopen("LEGACY.LOG", "wb");
+      }
+    }     
+    #endif
+		
      //added:03-01-98:
     //       Setup signal handlers and other stuff BEFORE ANYTHING ELSE!
     I_StartupSystem();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1156 2015-04-03 14:02:00Z wesleyjohnson $
+// $Id: mserv.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -287,11 +287,11 @@ static int GetServersList(void)
         if (msg.length == 0)
         {
             if (!count)
-                CONS_Printf("No server currently running.\n");
+                GenPrintf(EMSG_hud, "No server currently running.\n");
             return MS_NO_ERROR;
         }
         count++;
-        CONS_Printf(msg.buffer);
+        GenPrintf(EMSG_hud, msg.buffer);
     }
     return MS_READ_ERROR;
 }
@@ -335,17 +335,17 @@ static void Command_Listserv_f(void)
 {
     if (con_state == MSCS_WAITING)
     {
-        CONS_Printf("Not yet registered to the master server.\n");
+        GenPrintf(EMSG_hud, "Not yet registered to the master server.\n");
         return;
     }
 
-    CONS_Printf("Retrieving server list...\n");
+    GenPrintf(EMSG_hud, "Retrieving server list ...\n");
 
     if( ! MS_Connect_MasterServer() )
         return;
 
     if (GetServersList())
-        CONS_Printf("Cannot get server list.\n");
+        GenPrintf(EMSG_warn, "Cannot get server list.\n");
 
     MS_Close_socket();
 }
@@ -367,7 +367,7 @@ static char *int2str(int n)
 static int MS_failed_connect(void)
 {
     con_state = MSCS_FAILED;
-    CONS_Printf("Connection to master server failed\n");
+    GenPrintf(EMSG_error, "Connection to master server failed\n");
     MS_Close_socket();
     return MS_CONNECT_ERROR;
 }
@@ -399,7 +399,7 @@ static int RegisterInfo_on_MasterServer(void)
         if (retry++ > 30) // an about 30 second timeout
         {
             retry = 0;
-	    CONS_Printf("Timeout on masterserver\n");
+	    GenPrintf(EMSG_error, "Timeout on masterserver\n");
             return MS_failed_connect();
         }
         return MS_CONNECT_ERROR;
@@ -407,7 +407,7 @@ static int RegisterInfo_on_MasterServer(void)
     retry = 0;
     if (res < 0)
     {
-	CONS_Printf("Error on select : %s\n", strerror(errno));
+	GenPrintf(EMSG_error, "Masterserver register: %s\n", strerror(errno));
         return MS_failed_connect();
     }
     
@@ -421,7 +421,7 @@ static int RegisterInfo_on_MasterServer(void)
 #endif
     if (optval != 0) // it was bad
     {
-        CONS_Printf("getsockopt: %s\n", strerror(errno));
+        GenPrintf(EMSG_error, "Masterserver register getsockopt: %s\n", strerror(errno));
 	return MS_failed_connect();
     }
     
@@ -437,7 +437,7 @@ static int RegisterInfo_on_MasterServer(void)
     if (MS_Write(&msg) < 0)
         return MS_failed_connect();
 
-    CONS_Printf("The server has been registered on the master server...\n");
+    GenPrintf(EMSG_hud, "This server has been registered on the master server.\n");
     con_state = MSCS_REGISTERED;
     MS_Close_socket();
 
@@ -533,14 +533,14 @@ static void open_UDP_Socket()
 // MasterServer address is in cv_masterserver.
 void MS_RegisterServer(void)
 {
-    CONS_Printf("Registering this server to the master server...\n");
+    GenPrintf(EMSG_hud, "Registering this server to the master server ...\n");
 
     strcpy(registered_server.ip, MS_Get_MasterServerIP());
     strcpy(registered_server.port, MS_Get_MasterServerPort());
 
     if (MS_Connect(registered_server.ip, registered_server.port, ASYNC) < 0)
     {
-        CONS_Printf("Cannot connect to the master server\n");
+        GenPrintf(EMSG_hud, "Cannot connect to the master server\n");
         return;
     }
     open_UDP_Socket();
@@ -586,16 +586,16 @@ void MS_UnregisterServer()
     }
     con_state = MSCS_NONE;
 
-    CONS_Printf("Unregistering this server to the master server...\n");
+    GenPrintf(EMSG_hud, "Unregistering this server to the master server...\n");
 
     if (MS_Connect(registered_server.ip, registered_server.port, 0) < 0)
     {
-        CONS_Printf("cannot connect to the master server\n");
+        GenPrintf(EMSG_error, "  Cannot connect to the master server\n");
         return;
     }
 
     if (RemoveInfo_from_MasterServer() < 0)
-        CONS_Printf("Cannot remove this server from the master server\n");
+        GenPrintf(EMSG_error, "Cannot remove this server from the master server\n");
 
     MS_Close_socket();
     I_NetFreeNode( msnode );  // can be used on special net nodes too
@@ -685,7 +685,7 @@ static boolean MS_Connect_MasterServer(void)
 {
     if( MS_Connect(MS_Get_MasterServerIP(), MS_Get_MasterServerPort(), 0) < 0)
     {
-        CONS_Printf("Cannot connect to the master server.\n");
+        GenPrintf(EMSG_error, "Cannot connect to the master server.\n");
         return false;
     }
     return true;

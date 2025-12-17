@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[01264 ]: w105 printf
+          DOS: Compile Fix
+          DOS: Log Message added
+          DOS: Posix/Unix path deformed from '/' to '\\'
+
 [01263 ]: w105 tcp err
 [01262 ]: w105 win98
 [01261 ]: w105 heretic switches
