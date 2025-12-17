@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: r_things.c 1267 2016-09-20 17:26:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -228,8 +228,9 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 
     if (frame >= 29 || rotation > 8)
     {
-        I_Error("R_InstallSpriteLump: "
+        I_SoftError("R_InstallSpriteLump: "
                 "Bad frame characters in lump %i", spritelump_id);
+        return;
     }
 
     if ((int)frame > maxframe)
@@ -307,7 +308,7 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 //
 boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum, int startlump, int endlump)
 {
-    int         l, lumpnum;
+    int         l, lumpnum, lumpfnd = 0;
     int         intname;
     int         frame;
     int         rotation;
@@ -376,6 +377,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
             //----------------------------------------------------
 
+            lumpfnd = lumpnum;
             R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation, false);
 
             if (lumpinfo[l].name[6])
@@ -400,7 +402,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
         //check only after all initial pwads added
         //if (spritedef->numframes == 0)
-        //    I_Error ("R_AddSpriteDefs: no initial frames found for sprite %s\n",
+        //    I_SoftError("R_AddSpriteDefs: no initial frames found for sprite %s\n",
         //             namelist[i]);
 
         // sprite already has frames, and is not replaced by this wad
@@ -424,7 +426,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             debug_Printf( "R_InitSprites: No patches found "
                      "for %s frame %c \n", sprname, frame+'A');
 #else
-            I_Error ("R_InitSprites: No patches found "
+            I_SoftError ("R_InitSprites: No patches found "
                      "for %s frame %c", sprname, frame+'A');
 #endif
             break;
@@ -436,12 +438,18 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
           case 1:
             // must have all 8 frames
             for (rotation=0 ; rotation<8 ; rotation++)
+            {
                 // we test the patch lump, or the id lump whatever
                 // if it was not loaded the two are -1
                 if (sprtemp[frame].lumppat[rotation] == -1)
-                    I_Error ("R_InitSprites: Sprite %s frame %c "
+	        {
+                    I_SoftError("R_InitSprites: Sprite %s frame %c "
                              "is missing rotations",
                              sprname, frame+'A');
+                    // Limp, use the last sprite lump read for this sprite.
+                    sprtemp[frame].lumppat[rotation] = lumpfnd;
+		}
+            }
             break;
         }
     }
@@ -2455,7 +2463,10 @@ void R_AddSkins (int wadnum)
         // for strtok
         buf2 = (char *) malloc (size+1);
         if(!buf2)
-             I_Error("R_AddSkins: No more free memory\n");
+        {
+             I_SoftError("R_AddSkins: No more free memory\n");
+             return;
+	}
         memcpy (buf2,buf,size);
         buf2[size] = '\0';
 
@@ -2478,7 +2489,10 @@ void R_AddSkins (int wadnum)
 //            CONS_Error("ga");
 
             if (!value)
-                I_Error ("R_AddSkins: syntax error in S_SKIN lump# %d in WAD %s\n", lumpnum&0xFFFF, wadfiles[wadnum]->filename);
+            {
+                I_SoftError("R_AddSkins: syntax error in S_SKIN lump# %d in WAD %s\n", lumpnum&0xFFFF, wadfiles[wadnum]->filename);
+                return;
+            }
 
             if (!strcasecmp(token,"name"))
             {
@@ -2521,7 +2535,11 @@ void R_AddSkins (int wadnum)
                     }
                 }
                 if(!found)
-                    I_Error("R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n",token,lumpnum&0xFFFF,wadfiles[wadnum]->filename);
+                {
+                    I_SoftError("R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n",
+                               token, lumpnum&0xFFFF, wadfiles[wadnum]->filename);
+                    return;
+                }
             }
 next_token:
             token = strtok (NULL,"\r\n= ");

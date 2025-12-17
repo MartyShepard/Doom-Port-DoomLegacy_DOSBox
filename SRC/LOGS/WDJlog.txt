@@ -5457,3 +5457,16 @@ Choose the new chat network coding, and removed the old code.
 Optimized the functions better.
 
 This will be for Version 1.46 and is not compatible with older DoomLegacy.
+
+*** W105_error
+patchfile = w105_63_error.patch
+- commit revision 1267
+Converted some run-time I_Error, to I_SoftError with a recovery fix.
+This allows the player to save the game, or to see the effects of
+a wad development error.
+Converted I_Error in r_data.c colormap loading, r_things.c sprite
+loading, and a skins memory alloc error.
+
+When a sprite does not have all the rotations present, it will no longer
+I_Error, but will substitute another sprite frame for the missing one,
+with an error message.
