@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01263 ]: w105 tcp err
+[01262 ]: w105 win98
 [01261 ]: w105 heretic switches
 [01260 ]: w105 hw ticrate
 [01259 ]: w105 extmidi

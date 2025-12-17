@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1155 2015-04-03 14:00:53Z wesleyjohnson $
+// $Id: i_net.h 1263 2016-09-20 17:22:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -119,10 +119,12 @@ typedef enum {
    NE_empty = -1,
    // some doomatic errors
    NE_congestion = -401,
-   NE_network_unreachable = -402,
-   NE_node_unconnected = -403,
-   NE_nodes_exhausted = -404,
-   NE_not_netgame = -405,
+   NE_network_reset = -402,
+   NE_network_unreachable = -403,
+   NE_unknown_net_error = -404,
+   NE_node_unconnected = -405,
+   NE_nodes_exhausted = -406,
+   NE_not_netgame = -410,
    NE_fail = -499
 } network_error_e;
 

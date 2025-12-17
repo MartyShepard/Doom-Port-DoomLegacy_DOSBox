@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: i_tcp.c 1263 2016-09-20 17:22:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -306,7 +306,7 @@ int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
 // [WDJ] Also defined in mserv.c, but too small, will be inlined anyway.
 static inline
 int inet_aton(const char *hostname,
-	      /* OUT */ struct in_addr *addr)
+              /* OUT */ struct in_addr *addr)
 {
     // [WDJ] This cannot handle 255.255.255.255, which == INADDR_NONE.
     addr->s_addr = inet_addr(hostname);
@@ -340,7 +340,7 @@ char *SOCK_AddrToStr(mysockaddr_t *sk)
         // Linux IPX, but Not FreeBSD
         sprintf(s,"%08x.%02x%02x%02x%02x%02x%02x:%d",
 #  if 1
-		  ntohl(sk->ipx.sipx_network),  // big_endian, 32bit
+                  ntohl(sk->ipx.sipx_network),  // big_endian, 32bit
 #  else
                   sk->ipx.sipx_network,
 #  endif
@@ -421,7 +421,7 @@ boolean UDP_cmpaddr(mysockaddr_t *a, mysockaddr_t *b)
     return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr);
 #else
     return (a->ip.sin_addr.s_addr == b->ip.sin_addr.s_addr
-	    && a->ip.sin_port == b->ip.sin_port);
+            && a->ip.sin_port == b->ip.sin_port);
 #endif
 }
 
@@ -478,49 +478,49 @@ boolean  Bind_Node_str( int nnode, char * addrstr )
 
 # ifdef LINUX
         // IPX address format (HEX) "7F20540F:5C0020040101"
-	// Keep it big-endian order, so do not have to convert.
+        // Keep it big-endian order, so do not have to convert.
         byte   ba[11];
         cnt = sscanf(addrstr,
-	      "%02hhx%02hhx%02hhx%02hhx.%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
-	    &ba[0], &ba[1], &ba[2], &ba[3],
-	    &ba[4], &ba[5], &ba[6], &ba[7], &ba[8], &ba[9] );
+              "%02hhx%02hhx%02hhx%02hhx.%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+            &ba[0], &ba[1], &ba[2], &ba[3],
+            &ba[4], &ba[5], &ba[6], &ba[7], &ba[8], &ba[9] );
         if( cnt != 10 )  goto addr_fail;  // need exactly 10 digits
 
         clientaddress[nnode].ipx.sipx_family = AF_IPX;
         clientaddress[nnode].ipx.sipx_port = htons(sock_port);
 #  ifdef FREEBSD
         // FreeBSD
-	// network: ipx.sipx_addr.xnet.s_net[0..1]   16 bit, big endian
-	// addr: ipx.sipx_addr.x_host.c_host[0..5]   8 bit
-	memcpy(&clientaddress[nnode].ipx.sipx_addr.x_net.s_net[0], &ba[0], 4 );
-	memcpy(&clientaddress[nnode].ipx.sipx_addr.x_host.c_host[0], &ba[4], 6 );
+        // network: ipx.sipx_addr.xnet.s_net[0..1]   16 bit, big endian
+        // addr: ipx.sipx_addr.x_host.c_host[0..5]   8 bit
+        memcpy(&clientaddress[nnode].ipx.sipx_addr.x_net.s_net[0], &ba[0], 4 );
+        memcpy(&clientaddress[nnode].ipx.sipx_addr.x_host.c_host[0], &ba[4], 6 );
 #  else
         // Linux, but Not FreeBSD
-	// network: ipx.sipx_network   32 bit, big endian
-	// addr: ipx.sipx_node[0..5]   8 bit
-	memcpy(&clientaddress[nnode].ipx.sipx_network, &ba[0], 4 );
-	memcpy(&clientaddress[nnode].ipx.sipx_node[0], &ba[4], 6 );
+        // network: ipx.sipx_network   32 bit, big endian
+        // addr: ipx.sipx_node[0..5]   8 bit
+        memcpy(&clientaddress[nnode].ipx.sipx_network, &ba[0], 4 );
+        memcpy(&clientaddress[nnode].ipx.sipx_node[0], &ba[4], 6 );
 #  endif
 # else
         // Windows, etc.
         // IPX address format (HEX) "7F20540F:5C0020040101"
-	// Keep it big-endian order, so do not have to convert.
+        // Keep it big-endian order, so do not have to convert.
         // Windows is missing the hh conversion, at least in MINGW.
-	int  i;
+        int  i;
         int  ib[4], ic[6];
         cnt = sscanf(addrstr,
-	      "%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x",
-	    &ib[0], &ib[1], &ib[2], &ib[3],
-	    &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5] );
+              "%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x",
+            &ib[0], &ib[1], &ib[2], &ib[3],
+            &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5] );
         if( cnt != 10 )  goto addr_fail;  // need exactly 10 digits
 
         // Convert int to byte, keeping BIG endian.
-       	// network: ipx.sa_netnum[0..3]   8 bit
-	// addr:   ipx.sa_nodenum[0..5]   8 bit
-	for( i=0; i<4; i++ )
-	    clientaddress[nnode].ipx.sa_netnum[i] = ib[i];
-	for( i=0; i<6; i++ )
-	    clientaddress[nnode].ipx.sa_nodenum[i] = ic[i];
+        // network: ipx.sa_netnum[0..3]   8 bit
+        // addr:   ipx.sa_nodenum[0..5]   8 bit
+        for( i=0; i<4; i++ )
+            clientaddress[nnode].ipx.sa_netnum[i] = ib[i];
+        for( i=0; i<6; i++ )
+            clientaddress[nnode].ipx.sa_nodenum[i] = ic[i];
 # endif // linux
 # ifdef NODE_ADDR_HASHING
 //	node_hash[nnode] = IPX_hashaddr( &clientaddress[nnode] );
@@ -534,14 +534,14 @@ boolean  Bind_Node_str( int nnode, char * addrstr )
     {
         // INET
         if( ! inet_aton( addrstr, &address.ip.sin_addr ) )
-	   goto addr_fail;
+           goto addr_fail;
 
         UDP_Bind_Node( nnode, address.ip.sin_addr.s_addr, sock_port );
     }
 #if 0
     // DEBUG
     debug_Printf( "Bind Node %d to %s\n", nnode,
-	       SOCK_AddrToStr( &clientaddress[nnode] ) );
+               SOCK_AddrToStr( &clientaddress[nnode] ) );
 #endif
     return true;
 
@@ -582,7 +582,7 @@ void SOCK_FreeNode(int nnode)
     if( debugfile )
     {
         fprintf(debugfile,"Free node %d (%s)\n",
-		nnode, SOCK_AddrToStr(&clientaddress[nnode]));
+                nnode, SOCK_AddrToStr(&clientaddress[nnode]));
     }
 #endif
 
@@ -598,6 +598,7 @@ void SOCK_FreeNode(int nnode)
 // Return true when got packet.  Error in net_error.
 boolean  SOCK_Get(void)
 {
+    uint32_t errno2;
     byte  nnode;
 #ifdef NODE_ADDR_HASHING
     byte  hashaddr;
@@ -615,20 +616,20 @@ boolean  SOCK_Get(void)
     // fromlen: IN sizeof fromaddress, OUT the actual length of the address.
 #ifdef LINUX
     rcnt = recvfrom(mysocket,
-		    &doomcom->data,  // packet
-		    MAXPACKETLENGTH,  // packet length
-		    0,  // flags
+                    &doomcom->data,  // packet
+                    MAXPACKETLENGTH,  // packet length
+                    0,  // flags
                     /*OUT*/ (struct sockaddr *)&fromaddress,  // net address
-		    /*IN,OUT*/ &fromlen );  // net address length
+                    /*IN,OUT*/ &fromlen );  // net address length
 #else
     // winsock.h  recvfrom(SOCKET, char*, int, int, struct sockaddr*, int*)
     rcnt = recvfrom(mysocket,
-		    // Some other port requires (char*), undocumented.
-		    (char *)&doomcom->data,
-		    MAXPACKETLENGTH,  // packet length
-		    0,  // flags
+                    // Some other port requires (char*), undocumented.
+                    (char *)&doomcom->data,
+                    MAXPACKETLENGTH,  // packet length
+                    0,  // flags
                     /*OUT*/ (struct sockaddr *)&fromaddress,  // net address
-		    /*IN,OUT*/ &fromlen );  // net address length
+                    /*IN,OUT*/ &fromlen );  // net address length
 #endif
     if(rcnt < 0)  goto recv_err;
     
@@ -646,7 +647,7 @@ boolean  SOCK_Get(void)
         if( node_hash[nnode] != hashaddr )  continue;
 #endif
         if( SOCK_cmpaddr(&fromaddress, &(clientaddress[nnode])) )
-	     goto return_node;  // found match
+             goto return_node;  // found match
     }
 
     // Net node not found.
@@ -663,7 +664,7 @@ boolean  SOCK_Get(void)
     if( debugfile )
     {
         fprintf(debugfile,"New node detected: node:%d address:%s\n",
-		nnode, SOCK_AddrToStr(&clientaddress[nnode]));
+                nnode, SOCK_AddrToStr(&clientaddress[nnode]));
     }
 #endif
 
@@ -674,11 +675,12 @@ return_node:
 
     // Rare errors
 recv_err:
+    errno2 = errno; // save it, print will overwrite it
     // Send failed, determine the error.
 #ifdef __WIN32__
-    if(errno == WSAEWOULDBLOCK || errno == WSATRY_AGAIN )  // no message
+    if(errno2 == WSAEWOULDBLOCK || errno2 == WSATRY_AGAIN )  // no message
 #else
-    if(errno == EWOULDBLOCK || errno == EAGAIN)   // no message
+    if(errno2 == EWOULDBLOCK || errno2 == EAGAIN)   // no message
 #endif
     {
         net_error = NE_empty;
@@ -686,23 +688,36 @@ recv_err:
     }
 
 #ifdef __WIN32__
-    if( (errno == WSAEMSGSIZE)   // message too large
-	|| (errno == WSAECONNREFUSED) )  // connection refused
+    if( (errno2 == WSAEMSGSIZE)   // message too large
+        || (errno2 == WSAECONNREFUSED) )  // connection refused
 #else
-    if( (errno == EMSGSIZE)   // message too large
-	|| (errno == ECONNREFUSED) )  // connection refused
+    if( (errno2 == EMSGSIZE)   // message too large
+        || (errno2 == ECONNREFUSED) )  // connection refused
 #endif
     {
         net_error = NE_fail;
         goto no_packet;
     }
    
-    I_SoftError("SOCK_Get: %s\n", strerror(errno));
+    I_SoftError("SOCK_Get: %s \n    Error %x (%d)\n",
+                strerror(errno2), errno2, errno2);
+
+    // Recoverable conditions.
+#ifdef __WIN32__
+    if( errno2 == WSAECONNRESET || errno2 == WSAECONNABORTED )
+#else
+    // Linux
+    if( errno2 == ECONNRESET || errno2 == ECONNABORTED )
+#endif
+    {
+        net_error = NE_network_reset;  // transient condition
+        goto no_packet;
+    }
 
 #ifdef __WIN32__
-    if( errno == WSAENETUNREACH || errno == WSAEFAULT || errno == WSAEBADF )
+    if( errno2 == WSAENETUNREACH || errno2 == WSAEFAULT || errno2 == WSAEBADF )
 #else
-    if( errno == ENETUNREACH || errno == EFAULT || errno == EBADF )
+    if( errno2 == ENETUNREACH || errno2 == EFAULT || errno2 == EBADF )
 #endif   
     {
         // network unreachable
@@ -710,7 +725,13 @@ recv_err:
         goto no_packet;
     }
     // Many other errors.
+#if 1
+    // Because of new errors, give it a chance to recover or reset.
+    net_error = NE_unknown_net_error;
+    goto no_packet;
+#else
     I_Error("SOCK_Get\n");
+#endif
 
 no_nodes:
 #ifdef DEBUGFILE
@@ -749,11 +770,11 @@ boolean SOCK_CanSend(void)
     // winsock.h: select(int, fd_set*, fd_set*, fd_set*, const struct timeval*)
     // [WDJ] MACOS_DI had select( 1, ... ) but I do not think that was correct.
     stat = select(mysocket + 1,
-		  NULL,  // read fd
-		  /*IN,OUT*/ &write_set,  // write fd to watch
-		  NULL,  // exceptions
-		  /*IN,OUT*/ &timeval_0   // timeout
-		 );
+                  NULL,  // read fd
+                  /*IN,OUT*/ &write_set,  // write fd to watch
+                  NULL,  // exceptions
+                  /*IN,OUT*/ &timeval_0   // timeout
+                 );
     return ( stat > 0 );
 }
 
@@ -763,6 +784,7 @@ boolean SOCK_CanSend(void)
 // Return true when packet has been sent.  Error in net_error.
 boolean  SOCK_Send(void)
 {
+    uint32_t errno2;
     byte  nnode = doomcom->remotenode;
     int  cnt;  // chars sent
                          
@@ -773,17 +795,17 @@ boolean  SOCK_Send(void)
     // MSG_DONTWAIT: Do not block.
 #ifdef LINUX
     cnt = sendto(mysocket,
-		&doomcom->data, doomcom->datalength,  // packet
+                &doomcom->data, doomcom->datalength,  // packet
                 0,  // flags
-		(struct sockaddr *)&clientaddress[nnode],  // net address
+                (struct sockaddr *)&clientaddress[nnode],  // net address
                 sizeof(struct sockaddr));  // net address length
 #else
     // winsock.h: sendto(SOCKET, char*, int, int, struct sockaddr*, int)
     cnt = sendto(mysocket,
-		// Some other port requires (char*), undocumented.
-		(char *)&doomcom->data, doomcom->datalength,  // packet
+                // Some other port requires (char*), undocumented.
+                (char *)&doomcom->data, doomcom->datalength,  // packet
                 0,  // flags
-		(struct sockaddr *)&clientaddress[nnode],  // net address
+                (struct sockaddr *)&clientaddress[nnode],  // net address
                 sizeof(struct sockaddr));  // net address length
 #endif
 
@@ -793,31 +815,42 @@ boolean  SOCK_Send(void)
    
     // Rare error.
 send_err:
-//  if( errno == ENOBUFS )  // out of buffer space
+    errno2 = errno; // save it, print will overwrite it
+//  if( errno2 == ENOBUFS )  // out of buffer space
 #ifdef __WIN32__
-    if( errno == WSAEWOULDBLOCK || errno == WSATRY_AGAIN )
+    if( errno2 == WSAEWOULDBLOCK || errno2 == WSATRY_AGAIN )
 #else
     // Linux
     // ECONNREFUSED can be got in linux port.
-    if( errno == ECONNREFUSED || errno == EWOULDBLOCK || errno == EAGAIN )
+    if( errno2 == ECONNREFUSED || errno2 == EWOULDBLOCK || errno2 == EAGAIN )
 #endif
     {
         net_error = NE_congestion;  // silent
         goto err_return;
     }
 
-//        printf( "errno= %d  ", errno );
-    I_SoftError("SOCK_Send to node %d (%s): %s\n",
-		 nnode,
-		 SOCK_AddrToStr(&clientaddress[nnode]),
-		 strerror(errno));
+    I_SoftError("SOCK_Send to node %d (%s): %s\n    Error %x (%d)\n",
+                 nnode, SOCK_AddrToStr(&clientaddress[nnode]),
+                 strerror(errno2), errno2, errno2);
+
+    // Recoverable conditions.
+#ifdef __WIN32__
+    if( errno2 == WSAECONNRESET || errno2 == WSAECONNABORTED )
+#else
+    // Linux
+    if( errno2 == ECONNRESET || errno2 == ECONNABORTED )
+#endif
+    {
+        net_error = NE_network_reset;  // transient condition
+        goto err_return;
+    }
 
 //#if defined(WIN32) && defined(__MINGW32__)
 #ifdef __WIN32__
-    if( errno == WSAENETUNREACH || errno == WSAEFAULT || errno == WSAEBADF )
+    if( errno2 == WSAENETUNREACH || errno2 == WSAEFAULT || errno2 == WSAEBADF )
 #else
     // Linux
-    if( errno == ENETUNREACH || errno == EFAULT || errno == EBADF )
+    if( errno2 == ENETUNREACH || errno2 == EFAULT || errno2 == EBADF )
 #endif
     {
         // network unreachable
@@ -825,7 +858,13 @@ send_err:
         goto err_return;
     }
     // Many other errors.
+#if 1
+    // Because of new errors, give it a chance to recover or reset.
+    net_error = NE_unknown_net_error;
+    goto err_return;
+#else
     I_Error("SOCK_Send\n");
+#endif
 
 node_unconnected:
     net_error = NE_node_unconnected;
@@ -889,28 +928,28 @@ static SOCKET  UDP_Socket (void)
     // make it broadcastable
 #ifdef LINUX
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
-		      &trueval,  // option value
-		      sizeof(trueval));  // length of value
+                      &trueval,  // option value
+                      sizeof(trueval));  // length of value
 #else
     // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
-		      // Some other port requires (char*), undocumented.
-		      (char *)&trueval,  // option value
-		      sizeof(trueval));  // length of value
+                      // Some other port requires (char*), undocumented.
+                      (char *)&trueval,  // option value
+                      sizeof(trueval));  // length of value
 #endif
 
 #if 1
     // Set SO_DEBUG
 #ifdef LINUX
     stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
-		      &trueval,  // option value
-		      sizeof(trueval));  // length of value
+                      &trueval,  // option value
+                      sizeof(trueval));  // length of value
 #else
     // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
-		      // Some other port requires (char*), undocumented.
-		      (char *)&trueval,  // option value
-		      sizeof(trueval));  // length of value
+                      // Some other port requires (char*), undocumented.
+                      (char *)&trueval,  // option value
+                      sizeof(trueval));  // length of value
 #endif
 #endif
    
@@ -920,15 +959,15 @@ static SOCKET  UDP_Socket (void)
     // optlen: gets the actual length of the option
 #ifdef LINUX
     stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
-		      /* OUT */ &optval,  // option value
-		      /* IN,OUT */ &optlen);  // available length
+                      /* OUT */ &optval,  // option value
+                      /* IN,OUT */ &optlen);  // available length
 #else
     // FIXME: so an int value is written to a (char *); portability!!!!!!!
     // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
-		      // Some other port requires (char*), undocumented.
-		      /* OUT */ (char *)&optval,  // option value
-		      /* IN,OUT */ &optlen);  // available length
+                      // Some other port requires (char*), undocumented.
+                      /* OUT */ (char *)&optval,  // option value
+                      /* IN,OUT */ &optlen);  // available length
 #endif
     CONS_Printf("Network receive buffer: %dKb\n", optval>>10);
 
@@ -937,14 +976,14 @@ static SOCKET  UDP_Socket (void)
         optval = (64<<10);
 #ifdef LINUX
         stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
-			  &optval,
-			  sizeof(optval));
+                          &optval,
+                          sizeof(optval));
 #else
         // winsock.h  setsockopt(SOCKET, int, int, const char*, int)
         stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
-			  // Some other port requires (char*), undocumented.
-			  (char *)&optval,
-			  sizeof(optval));
+                          // Some other port requires (char*), undocumented.
+                          (char *)&optval,
+                          sizeof(optval));
 #endif
         if( stat < 0 )
             CONS_Printf("Network receive buffer: Failed to set buffer to 64k.\n");
@@ -1026,14 +1065,14 @@ static SOCKET  IPX_Socket (void)
     // make it broadcastable
 #ifdef LINUX
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
-		      &trueval,  // option value
-		      sizeof(trueval));
+                      &trueval,  // option value
+                      sizeof(trueval));
 #else
     // winsock.h:  setsockopt(SOCKET, int, int, const char*, int)
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
-		      // Some other port requires (char*), undocumented.
-		      (char *)&trueval,  // option value
-		      sizeof(trueval));
+                      // Some other port requires (char*), undocumented.
+                      (char *)&trueval,  // option value
+                      sizeof(trueval));
 #endif
 
     // Set Network receive buffer size.
@@ -1042,15 +1081,15 @@ static SOCKET  IPX_Socket (void)
     // optlen: gets the actual length of the option
 #ifdef LINUX
     stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
-		      /* OUT */ &optval,  // option value
-		      /* IN,OUT */ &optlen);  // available length
+                      /* OUT */ &optval,  // option value
+                      /* IN,OUT */ &optlen);  // available length
 #else
     // FIXME: so an int value is written to a (char *); portability!!!!!!!
     // winsock.h  getsockopt(SOCKET, int, int, char*, int*)
     stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
-		      // Some other port requires (char*), undocumented.
-		      /* OUT */ (char *)&optval,  // option value
-		      /* IN,OUT */ &optlen);  // available length
+                      // Some other port requires (char*), undocumented.
+                      /* OUT */ (char *)&optval,  // option value
+                      /* IN,OUT */ &optlen);  // available length
 #endif
     // [WDJ] Had remnants of 64K.  Set to 128K.
     CONS_Printf("Network receive buffer: %dKb\n", optval>>10);
@@ -1058,8 +1097,8 @@ static SOCKET  IPX_Socket (void)
     {
         optval = (128<<10);
         stat = setsockopt(s, SOL_SOCKET, SO_RCVBUF,
-			  (char *)&optval,
-			  sizeof(optval));
+                          (char *)&optval,
+                          sizeof(optval));
         if( stat < 0 )
             CONS_Printf("Network receive buffer: Failed to set buffer to 128k.\n");
         else
@@ -1215,14 +1254,14 @@ int SOCK_NetMakeNode (char *hostname)
         hostentry = gethostbyname (localhostname);
         if (!hostentry)
         {
-	    CONS_Printf ("%s unknown\n", localhostname);
-	    I_NetFreeNode(newnode);  // release the newnode
-	    goto abort_makenode;
-	}
+            CONS_Printf ("%s unknown\n", localhostname);
+            I_NetFreeNode(newnode);  // release the newnode
+            goto abort_makenode;
+        }
         newaddr.ip.sin_addr.s_addr = *(int *)hostentry->h_addr_list[0];
     }
     CONS_Printf("Resolved %s\n",
-		 inet_ntoa(*(struct in_addr *)&newaddr.ip.sin_addr.s_addr));
+                 inet_ntoa(*(struct in_addr *)&newaddr.ip.sin_addr.s_addr));
 
     // Commit to the new node.
     clientaddress[newnode].ip.sin_family      = AF_INET;
@@ -1338,9 +1377,9 @@ void I_Init_TCP_Network( void )
         // server address only in ip
         if(serverhostname[0]
 #ifdef USE_IPX	   
-	   && !ipx_select
+           && !ipx_select
 #endif
-	   )
+           )
         {
             COM_BufAddText("connect \"");
             COM_BufAddText(serverhostname);
