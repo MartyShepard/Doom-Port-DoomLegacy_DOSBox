@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: r_draw.c 1249 2016-08-04 14:34:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -688,7 +688,7 @@ void R_DrawColumnShadowed(void)
     for (i = 0; i < dc_numlights; i++)
     {
         // If the height of the light is above the column, get the colormap
-        // anyway because the lighting of the top should be effected.
+        // anyway because the lighting of the top should be affected.
         solid = dc_lightlist[i].flags & FF_CUTSOLIDS;
 
         height = dc_lightlist[i].height >> 12;

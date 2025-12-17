@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
+// $Id: v_video.c 1249 2016-08-04 14:34:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -128,6 +128,16 @@
 #include "hardware/hw_glob.h"
 #endif
 
+
+// Enable when DEBUG and cannot see text.
+//#define DEBUG_FORCE_COLOR
+#ifdef DEBUG_FORCE_COLOR
+# if ( defined(DEBUG_WINDOWED) && defined(WIN32) )
+#  define DEBUG_FORCE_COLOR_WIN
+# endif
+#endif
+
+
 #if defined( ENABLE_DRAW15 ) || defined( ENABLE_DRAW16 ) || defined( ENABLE_DRAW24 ) || defined( ENABLE_DRAW32 )
 #define ENABLE_DRAWEXT
 #endif
@@ -219,7 +229,22 @@ consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_useg
 
 static byte gammatable[256];	// shared by all gamma table generators
 
-/// Build a gamma table
+static void put_gammatable( int i, float fv )
+{
+#ifdef __USE_ISOC99
+    // roundf is ISOC99
+    int gv = (int) roundf( fv );
+#else
+    int gv = (int) rint( fv );
+#endif
+    if( gv < 0 )
+        gv = 0; 
+    if( gv > 255 )
+        gv = 255;
+    gammatable[i] = gv;
+}
+
+// Build a gamma table
 static void R_BuildGammaTable(float gamma)
 {
     int i;
@@ -227,12 +252,10 @@ static void R_BuildGammaTable(float gamma)
     // Calculate gammatable anew each time.
     for (i=0; i<256; i++)
     {
-#ifdef __USE_ISOC99
-        // round is ISOC99
-        gammatable[i] = round(255.0*pow((i+1)/256.0, gamma));
-#else
-        gammatable[i] = rint(255.0*pow((i+1)/256.0, gamma));
-#endif
+        // Split this calculation, and use the put_gammatable function
+        // to control possible errors in non-Linux systems.
+        double di = (double)(i+1) / 256.0;
+        put_gammatable( i, pow( di, gamma) * 255.0 );
     }
 }
 
@@ -257,20 +280,6 @@ static inline float gamma_lookup( int ind )
     return gamma_lookup_table[ ind + 12 ];
 }
 
-static void put_gammatable( int i, float fv )
-{
-#ifdef __USE_ISOC99
-    // roundf is ISOC99
-    int gv = roundf( fv );
-#else
-    int gv = rint( fv );
-#endif
-    if( gv < 0 )
-        gv = 0; 
-    if( gv > 255 )
-        gv = 255;
-    gammatable[i] = gv;
-}
 
 // Generate a power law table from gamma, plus a black level offset
 static void
@@ -330,11 +339,15 @@ static void
 #  define BRIGHT_MID  130
     int i, di, start_index, end_index;
     float bf = ((float)cv_bright.value) * (256.0 / 6.0 / 12.0);
-    float n3 = bf*bf*bf;
-    float d2 = bf*bf;
+    float n3 = bf*bf*bf;  // -1728 .. 1728
+    float d2 = bf*bf;  // 144 .. 0 .. 144
     float gf, w0;
 
     R_Generate_gamma_black_table();
+
+    // The following only modifies the gamma table with brightness.
+    // Linux handles d2=0 without error, but MINGW does not.
+    if( d2 < 0.1 )  return;
    
     // bright correct using curve: witch of agnesi
     // y = (d**3)/(x**2 + d**2)
@@ -343,20 +356,20 @@ static void
     end_index = BRIGHT_MID;
     do
     {
-       di = end_index - start_index;
-       w0 = (n3 / ( (di*di) + d2 )) / di; 	// witch at low point / di
-       for( i=start_index; i<=end_index; i++ )
-       {
-           di = abs(BRIGHT_MID - i);
-           gf = n3 / ( (di*di) + d2 );	// witch of agnesi
-           gf -= w0 * di; // smooth transition on tail
-           // add adjustment to table
-           put_gammatable( i, gammatable[i] + gf );
-       }
-       // MID to 255
-       start_index = BRIGHT_MID + 1;
-       end_index = 255;
-   } while( i < 255 );
+        di = end_index - start_index;
+        w0 = (n3 / ( (di*di) + d2 )) / di; 	// witch at low point / di
+        for( i=start_index; i<=end_index; i++ )
+        {
+            di = abs(BRIGHT_MID - i);
+            gf = n3 / ( (di*di) + d2 );	// witch of agnesi
+            gf -= w0 * di; // smooth transition on tail
+            // add adjustment to table
+            put_gammatable( i, gammatable[i] + gf );
+        }
+        // MID to 255
+        start_index = BRIGHT_MID + 1;
+        end_index = 255;
+    } while( i < 255 );
 }
 
 static void
@@ -429,7 +442,7 @@ static void
 
 
 // [WDJ] Default palette for Launch, font1, error messages
-#define DEFAULT_PALSIZE  (3*6)
+#define DEFAULT_PALSIZE  (3*9)
 byte default_pal[ DEFAULT_PALSIZE ] = {
     0, 0, 0,
     10, 10, 10,
@@ -437,11 +450,16 @@ byte default_pal[ DEFAULT_PALSIZE ] = {
     250, 0, 0,
     0, 250, 0,
     0, 0, 250,
+    120, 0, 0,  // protection for DEBUG_FORCE_COLOR
+    0, 120, 0,
+    0, 0, 120,
 };
-
 
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
+#ifdef DEBUG_FORCE_COLOR_WIN
+int    num_palette = 0;
+#endif
 
 // keep a copy of the palette so that we can get the RGB
 // value for a color index at any time.
@@ -470,6 +488,9 @@ static void LoadPalette(char *lumpname)
     Z_Free(pLocalPalette);
 
   pLocalPalette = Z_Malloc(sizeof(RGBA_t) * palsize, PU_STATIC, NULL);
+#ifdef DEBUG_FORCE_COLOR_WIN
+  num_palette = palsize >> 8;  // number of 256 byte palettes
+#endif
 
   for (i = 0; i < palsize; i++)
   {
@@ -481,6 +502,7 @@ static void LoadPalette(char *lumpname)
 //        else
       pLocalPalette[i].s.alpha = 0xff;
   }
+
   // update our console colors from whatever is available
   // in palette 0 of pLocalPalette
   ci_black = NearestColor( 0, 0, 0 );
@@ -501,6 +523,19 @@ void V_SetPalette(int palettenum)
     if (!pLocalPalette)
         LoadPalette("PLAYPAL");
 
+#ifdef DEBUG_FORCE_COLOR_WIN
+    // Enable when DEBUG and cannot see text.
+    if( palettenum <= num_palette )
+    {
+        // Palette fix during debug, otherwise black text on black background
+        RGBA_t * pp = &pLocalPalette[palettenum * 256];
+        if( pp[6].s.red < 96 )
+            pp[6].s.red = 96;  // at least get red text on black
+        if( pp[7].s.green < 96 )
+            pp[7].s.green = 96;  // at least get green text on black
+    }
+#endif
+
 #ifdef HWRENDER
     if (rendermode != render_soft)
         HWR_SetPalette(&pLocalPalette[palettenum * 256]);
@@ -514,10 +549,12 @@ void V_SetPalette(int palettenum)
     }
 }
 
+// Called by finale: F_DrawHeretic, F_Responder
 void V_SetPaletteLump(char *pal)
 {
     // vid : from video setup
     LoadPalette(pal);
+
 #ifdef HWRENDER
     if (rendermode != render_soft)
         HWR_SetPalette(pLocalPalette);

@@ -1465,6 +1465,8 @@ void R_RotateBuffere (void)
 // for all duration of rendering, and being released only once at the end..
 // I mean, there is a win16lock() or something that lasts all the rendering,
 // so maybe we should release screen lock before each netupdate below..?
+// [WDJ] Our video buffer is not locked, only driver can lock direct
+// buffer, and only for duration of transfer.
 
 void R_DrawPlayerSprites (void);
 

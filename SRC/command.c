@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: command.c 1250 2016-08-04 14:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -616,7 +616,6 @@ static void COM_Echo_f (void)
 //
 static void COM_Exec_f (void)
 {
-    int     length;
     byte*   buf=NULL;
     COM_args_t  carg;
    
@@ -1037,6 +1036,7 @@ char *CV_CompleteVar (char *partial, int skips)
 //
 static void Setvalue (consvar_t *var, char *valstr)
 {
+    char  value_str[64];  // print %d cannot exceed 64
     if(var->PossibleValue)
     {
         int v=atoi(valstr);
@@ -1055,15 +1055,18 @@ static void Setvalue (consvar_t *var, char *valstr)
             if(var->PossibleValue[i].strvalue==NULL)
                 I_Error("Bounded cvar \"%s\" without Maximum !",var->name);
 #endif
-            if(v<var->PossibleValue[0].value)
+            // [WDJ] Cannot print into const string.
+            if(v < var->PossibleValue[0].value)
             {
-               v=var->PossibleValue[0].value;
-               sprintf(valstr,"%d",v);
+                v = var->PossibleValue[0].value;
+                sprintf(value_str,"%d", v);
+                valstr = value_str;
             }
-            if(v>var->PossibleValue[i].value)
+            if(v > var->PossibleValue[i].value)
             {
-               v=var->PossibleValue[i].value;
-               sprintf(valstr,"%d",v);
+                v = var->PossibleValue[i].value;
+                sprintf(value_str,"%d", v);
+                valstr = value_str;
 	    }
         }
         else

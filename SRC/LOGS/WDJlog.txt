@@ -5262,3 +5262,25 @@ not finished.  Have finished it, along with stat code to identify
 directories for systems that do not have dirent D_TYPE either.
 Rearranged the code to only have one function that is customized for dirent.
 
+*** W105_pal_gamma
+patchfile = w105_45_pal_gamma.patch
+- commit revision 1249
+Fix palette problems on Windows systems.
+A gamma function was putting a 0 in gammatable[ 0x82 ], on Windows, but
+not on Linux.  This would zero any color component that happened to be 0x82.
+It was caused by (0.0 / 0.0) in the gamma-bright-black gamma function.
+It is curious that the floating point NaN would not affect the gamma
+table generated on Linux.
+I remember someone informing me about a gamma problem some time ago,
+but I could not find the fault using Linux.
+It had to wait until extensive testing on a Windows system.
+
+Fixed some other suspect code in the palette and colormaps.
+
+*** W105_cv_string
+patchfile = w105_46_cvstring.patch
+- commit revision 1250
+When a cv var set value exceeds the bounds, the code attempts to rewrite
+the value string.  The string could be a const string such as during init,
+which segfaults on modern systems like Linux.
+Fix the code to write a buffer instead.

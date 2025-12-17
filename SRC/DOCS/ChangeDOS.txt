@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01250 ]: w105 cv string
+[01249 ]: w105 pal gamma
 [01248 ]: w105 dirent
 [01247 ]: w105 flash opengl
 [01246 ]: w105 msys makefile
