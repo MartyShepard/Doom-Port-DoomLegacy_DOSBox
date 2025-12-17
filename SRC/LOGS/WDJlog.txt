@@ -5363,3 +5363,15 @@ Added code to kill drone notes (that did not get shut off).
 In spite of redundant attempts to shut them off, sometimes the current
 notes of a song will still drone on until the song loops.  Something causes
 all the Midi commands to shut off those notes to get ignored.
+
+*** W105_state_null
+patchfile = w105_52_state_null.patch
+- commit revision 1256
+During debugging some segfaults were coming from dereferencing an mobj
+mobj->state->nextstate, after it had been removed.
+Setting mobj->state to an invalid integer did not work.  The segfault was
+difficult to track down, so causing a segfault was just a distraction.
+It has been changed to  &states[S_NULL]  when removed, which will not segfault.
+Also, a test for this value was added to the state transition code
+that was segfaulting, to block the dereference.
+

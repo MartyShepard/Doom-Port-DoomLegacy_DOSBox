@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1241 2016-06-14 17:13:28Z wesleyjohnson $
+// $Id: p_mobj.c 1256 2016-09-20 16:50:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -282,13 +282,13 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
     static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
     static int recursion;       // detects recursion
    
+    boolean ret = true;         // return value
     state_t *st;
 
     //remember states seen, to detect cycles:
 
     statenum_t *seenstate = seenstate_tab;      // pointer to table
     statenum_t i = state;       // initial state
-    boolean ret = true;         // return value
     statenum_t tempstate[NUMSTATES];    // for use with recursion
 
     if (recursion++)    // if recursion detected,
@@ -298,7 +298,9 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
     {
         if (state == S_NULL)
         {
-            mobj->state = (state_t *) S_NULL;
+            // [WDJ] This can be dereferenced, even after being removed.
+//            mobj->state = (state_t *) S_NULL;
+            mobj->state = &states[S_NULL];
             P_RemoveMobj(mobj);
             ret = false;
             break;      // killough 4/9/98
@@ -347,6 +349,7 @@ boolean P_SetMobjStateNF(mobj_t * mobj, statenum_t state)
 
     if (state == S_NULL)
     {   // Remove mobj
+        mobj->state = &states[S_NULL];
         P_RemoveMobj(mobj);
         return (false);
     }
@@ -1482,8 +1485,13 @@ void P_MobjThinker(mobj_t * mobj)
 
         // you can cycle through multiple states in a tic
         if (!mobj->tics)
+        {
+            // [WDJ] This would segfault if mobj had been removed.
+            if( mobj->state == &states[S_NULL] )
+               goto done;
             if (!P_SetMobjState(mobj, mobj->state->nextstate))
                goto done; // freed itself
+        }
     }
     else
     {
