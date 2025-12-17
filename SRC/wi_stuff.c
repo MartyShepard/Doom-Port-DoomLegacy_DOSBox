@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: wi_stuff.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -466,12 +466,16 @@ static patch_t**        lnames;
 // slam background
 // UNUSED static unsigned char *background=0;
 
+// Called by WI_drawStats, WI_drawDeathmatchStats, WI_drawTeamsStats
+// Called by WI_drawNetgameStats, WI_drawShowNextLoc
 static void WI_slamBackground(void)
 {
+    // all WI_draw is from WI_Drawer, draw screen0, scale
+   
     // vid : from video setup
     // draw background on screen0
     if( gamemode == heretic && state == StatCount)
-        V_DrawFlatFill( 0, 0, vid.width/vid.dupx, vid.height/vid.dupy, W_CheckNumForName("FLOOR16"));
+        V_ScreenFlatFill( W_CheckNumForName("FLOOR16") );
     else
     if (rendermode==render_soft) 
     {
@@ -628,6 +632,10 @@ static void IN_DrawYAH(void)
 
 
 
+// Called by WI_Start->WI_initStats
+// Called by WI_Start->WI_initDeathmatchStats
+// Called by WI_initShowNextLoc
+// Called by WI_updateShowNextLoc
 static void WI_initAnimatedBack(void)
 {
     int         i;
@@ -914,6 +922,7 @@ static void WI_updateNoState(void) {
 static boolean          snl_pointeron = false;
 
 
+// Called by WI_updateNetgameStats, WI_updateStats
 static void WI_initShowNextLoc(void)
 {
     state = ShowNextLoc;
@@ -933,6 +942,7 @@ static void WI_updateShowNextLoc(void)
         snl_pointeron = (cnt & 31) < 20;
 }
 
+// Called by WI_Drawer, WI_drawNoState
 static void WI_drawShowNextLoc(void)
 {
 
@@ -978,6 +988,7 @@ static void WI_drawShowNextLoc(void)
 
 }
 
+// Called by WI_Drawer
 static void WI_drawNoState(void)
 {
     snl_pointeron = true;
@@ -988,6 +999,7 @@ static void WI_drawNoState(void)
 static int              dm_frags[MAXPLAYERS][MAXPLAYERS];
 static int              dm_totals[MAXPLAYERS];
 
+// Called by WI_Start
 static void WI_initDeathmatchStats(void)
 {
     int i, j;
@@ -1014,6 +1026,7 @@ static void WI_initDeathmatchStats(void)
     WI_initAnimatedBack();
 }
 
+// Called by WI_Ticker
 static void WI_updateDeathmatchStats(void)
 {
     WI_updateAnimatedBack();
@@ -1093,6 +1106,7 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
 
 #define RANKINGY 60
 
+// Called by WI_Drawer
 static void WI_drawDeathmatchStats(void)
 {
     int          i,j;
@@ -1100,6 +1114,7 @@ static void WI_drawDeathmatchStats(void)
     int          whiteplayer;
     fragsort_t   fragtab[MAXPLAYERS];
 
+    // all WI is draw screen0, scale
     WI_slamBackground();
 
     // draw animated background
@@ -1218,6 +1233,7 @@ boolean teamingame(int teamnum)
    return false;
 }
 
+// Called by WI_Drawer
 static void WI_drawTeamsStats(void)
 {
     int          i,j;
@@ -1225,6 +1241,7 @@ static void WI_drawTeamsStats(void)
     int          whiteplayer;
     fragsort_t   fragtab[MAXPLAYERS];
 
+    // all WI is draw screen0, scale
     WI_slamBackground();
 
     // draw animated background
@@ -1425,6 +1442,7 @@ static int      cnt_frags[MAXPLAYERS];
 static int      dofrags;
 static int      ng_state;
 
+// Called by WI_Start
 static void WI_initNetgameStats(void)
 {
 
@@ -1620,6 +1638,7 @@ done:
 
 
 
+// Called by WI_Drawer
 static void WI_drawNetgameStats(void)
 {
     int         i;
@@ -1627,6 +1646,7 @@ static void WI_drawNetgameStats(void)
     int         pwidth = percent->width;
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
+    // all WI is draw screen0, scale
     WI_slamBackground();
 
     // draw animated background
@@ -1695,6 +1715,7 @@ static void WI_drawNetgameStats(void)
 
 static int sp_state;
 
+// Called by WI_Start
 static void WI_initStats(void)
 {
     state = StatCount;
@@ -1829,8 +1850,10 @@ done:
     return;
 }
 
+// Called by WI_Drawer
 static void WI_drawStats(void)
 {
+    // all WI is draw screen0, scale
     // [WDJ] Display PAR for certain id games, unless modified,
     // but not PWAD unless BEX has set PARS.
     boolean draw_pars = pars_valid_bex
@@ -1841,6 +1864,7 @@ static void WI_drawStats(void)
     // line height
     int lh = (3 * (num[0]->height))/2;
 
+    // all WI is draw screen0, scale
     WI_slamBackground();
 
     // draw animated background
@@ -1877,6 +1901,7 @@ static void WI_drawStats(void)
 
 }
 
+// Called by WI_Ticker
 static void WI_checkForAccelerate(void)
 {
     int   i;
@@ -2200,7 +2225,7 @@ static void WI_unloadData(void)
 
 void WI_Drawer (void)
 {
-    // all WI is draw screen0
+    // all WI is draw screen0, scale
     V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 
     switch (state)

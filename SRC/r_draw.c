@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1249 2016-08-04 14:34:10Z wesleyjohnson $
+// $Id: r_draw.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -527,18 +527,26 @@ void R_FillBackScreen (void)
         boff = 8;
     }
 
+    // Draw to screen1
+    // top
     patch = W_CacheLumpNum (viewborderlump[BRDR_T],PU_CACHE);
-    for (x=0 ; x<rdraw_scaledviewwidth ; x+=step)
-        V_DrawPatch (viewwindowx+x,viewwindowy-boff,1,patch);
+    for (x=viewwindowx; x<(viewwindowx+rdraw_scaledviewwidth); x+=step)
+        V_DrawPatch (x, viewwindowy-boff, 1, patch);
+    // bottom
     patch = W_CacheLumpNum (viewborderlump[BRDR_B],PU_CACHE);
-    for (x=0 ; x<rdraw_scaledviewwidth ; x+=step)
-        V_DrawPatch (viewwindowx+x,viewwindowy+rdraw_viewheight,1,patch);
+    for (x=viewwindowx; x<(viewwindowx+rdraw_scaledviewwidth); x+=step)
+        V_DrawPatch (x, viewwindowy+rdraw_viewheight, 1, patch);
     patch = W_CacheLumpNum (viewborderlump[BRDR_L],PU_CACHE);
-    for (y=0 ; y<rdraw_viewheight ; y+=step)
-        V_DrawPatch (viewwindowx-boff,viewwindowy+y,1,patch);
+    // Vertical edge is not an even multiple, so draw last aligned.
+    // left
+    for (y=viewwindowy; y<(viewwindowy+rdraw_viewheight-step); y+=step)
+        V_DrawPatch (viewwindowx-boff, y, 1, patch);
+    V_DrawPatch (viewwindowx-boff, (viewwindowy+rdraw_viewheight-step), 1, patch);
+    // right
     patch = W_CacheLumpNum (viewborderlump[BRDR_R],PU_CACHE);
-    for (y=0 ; y<rdraw_viewheight ; y+=step)
-        V_DrawPatch (viewwindowx+rdraw_scaledviewwidth,viewwindowy+y,1,patch);
+    for (y=viewwindowy; y<(viewwindowy+rdraw_viewheight-step); y+=step)
+        V_DrawPatch (viewwindowx+rdraw_scaledviewwidth, y, 1, patch);
+    V_DrawPatch (viewwindowx+rdraw_scaledviewwidth, (viewwindowy+rdraw_viewheight-step), 1, patch);
 
     // Draw beveled corners.
     V_DrawPatch (viewwindowx-boff,
@@ -591,7 +599,7 @@ void R_DrawViewBorder (void)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
     {
-        HWR_DrawViewBorder (0);
+        HWR_DrawViewBorder (0);  // 0 means draw all
         return;
     }
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1248 2016-08-04 14:32:52Z wesleyjohnson $
+// $Id: m_menu.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -649,7 +649,7 @@ void M_DrawGenericMenu(void)
                                    sp++;
                                }
                                V_DrawString (x+8,y+12,0, sp);
-//			       if( skullAnimCounter<4 && i==itemOn )
+//                             if( skullAnimCounter<4 && i==itemOn )
                                if( i==itemOn )
                                   V_DrawCharacter( x+8+w, y+12,  '_' | 0x80);  // white
                            }
@@ -3911,8 +3911,11 @@ void M_DrawTextBox (int x, int y, int width, int lines)
    
     V_DrawScaledPatch_Num (cx, cy, viewborderlump[BRDR_BL] );
 
-    // draw middle
-    V_DrawFlatFill (x+boff, y+boff, width*step, lines*step, st_borderflat_num);
+    // draw background
+    // Flat fill per drawinfo, centering.
+    // Reduce scale of Doom background to (0..2) so text is easier to read.
+    V_DrawFlatFill (x+boff, y+boff, width*step, lines*step,
+                   (raven_heretic_hexen ? 15:0), st_borderflat_num);
 
     // draw top and bottom
     cx += boff;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1247 2016-08-04 14:24:34Z wesleyjohnson $
+// $Id: v_video.h 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -126,9 +126,9 @@ typedef enum {
   V_SCREENMASK =         0x0000FF,
   V_CENTERHORZ =         0x000100,   // center horizontally the whole screen
   V_CENTERMENU =         0x000200,   // menu centering, vert and horz.
-  V_NOSCALE =            0x000000,   // dont scale x,y, start coords
+  V_NOSCALE =            0x004000,   // dont scale x,y, start coords
                                      // console, statusbar, crosshair, patch
-                                     // Placeholder only, not tested.
+  V_DRAWINFO =           0x008000,   // enable using drawinfo, where option
   V_SCALESTART =         0x010000,   // scale x,y, start coords
   V_SCALEPATCH =         0x020000,   // scale patch
   V_FINESCALEPATCH =     0x040000,   // fine scale patch by drawfront
@@ -271,8 +271,13 @@ void V_DrawFill(int x, int y, int w, int h, byte color);
 // Scaled by drawinfo.
 void V_DrawScaledFill(int x, int y, int w, int h, byte color);
 
-//added:06-02-98: fill a box with a flat as a pattern
-void V_DrawFlatFill (int x, int y, int w, int h, int flatnum);
+//  Per drawinfo, scaled, centering.
+//  For fullscreen, set w=vid.width.
+//   x, y, w, h : screen coordinates
+//   scale : 0 .. 15
+void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum);
+// Fill entire screen with flat.
+void V_ScreenFlatFill( int flatnum );
 
 //added:10-02-98: fade down the screen buffer before drawing the menu over
 void V_DrawFadeScreen (void);

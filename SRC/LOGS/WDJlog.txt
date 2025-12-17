@@ -5289,3 +5289,35 @@ Fix the code to write a buffer instead.
 patchfile = w105_47_heretic_flash.patch
 - commit revision 1251
 Fix the pickup flash for unscaled status bar in heretic.
+
+*** W105_flatfill
+patchfile = w105_48_flatfill.patch
+- commit revision 1252
+Fixes segfaults caused by flatfill draw writing out-of-buffer.
+Added comments in all affected areas.
+Added Function V_ScreenFlatFill, to flat fill the screen.
+
+Rewrote FlatFill functions.
+- Added detection of scaling in option, so can handle both vid coordinates
+used when filling entire screen, and base coordinates used for menus.
+Other automated methods had failures, the caller must set the option correctly.
+- Removed dependence upon drawinfo for vid coordinate drawing.
+It is usally setup for scaled drawing, but might not.
+- Converted test on flat size to used flat size indexing, like the other
+flat drawing functions.
+- Stabilized the edge matching of tiling used for HWR_DrawViewBorder.
+- Added a fill scale so that Doom background flats can be scaled down.
+This makes it easier to read menu and message text, such as the Quit box.
+
+Rewrote DrawPatch function.
+- Added detection of scaling in option, so can handle both vid coordinates
+used when drawing entire screen, and base coordinates used for menus.
+Other automated methods had failures, the caller must set the option correctly.
+
+Rewrote DrawViewBorder functions.
+- Fix HWR draw to also draw heretic alignments and use heretic offsets.
+- Fix HWR draw and software draw to align last edge patch. The edge patch
+size does not divide evenly into the viewport size.
+- HWR_DrawViewBorder draws in vid coordinates now instead of base coordinates.
+This does not suffer from misalignment and math errors.
+

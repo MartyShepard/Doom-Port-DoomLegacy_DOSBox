@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: hu_stuff.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -908,6 +908,8 @@ static int     oldclearlines;
 
 void HU_Erase (void)
 {
+    static  int     secondframelines;
+
     // vid : from video setup
     int topline;
     int bottomline;
@@ -915,7 +917,6 @@ void HU_Erase (void)
 
     //faB: clear hud msgs on double buffer (Glide mode)
     boolean secondframe;
-    static  int     secondframelines;
 
     if (con_clearlines==oldclearlines && !con_hudupdate && !chat_on)
         return;

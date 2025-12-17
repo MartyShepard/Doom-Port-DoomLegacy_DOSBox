@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: p_setup.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -466,6 +466,7 @@ void P_LoadSubsectors (int lump)
 // Return the flat size_index.
 //   flatsize : the flat lump size
 // Called by P_PrecacheLevelFlats at level load time.
+// Called by V_DrawVidFlatFill, HWR_DrawFlatFill.
 uint16_t P_flatsize_to_index( int flatsize, char * name )
 {
   switch(flatsize)

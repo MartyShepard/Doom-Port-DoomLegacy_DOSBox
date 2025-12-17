@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1249 2016-08-04 14:34:10Z wesleyjohnson $
+// $Id: v_video.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -123,6 +123,9 @@
 #include "z_zone.h"
 #include "doomstat.h"
   // gamemode
+#include "p_setup.h"
+  // P_flatsize_to_index
+
 
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
@@ -815,8 +818,8 @@ void V_CopyRect(int srcx, int srcy, int srcscrn, int width, int height, int dest
         destx *= vid.dupx;
         desty *= vid.dupy;
     }
-    srcscrn &= 0xffff;
-    destscrn &= 0xffff;
+    srcscrn &= V_SCREENMASK;
+    destscrn &= V_SCREENMASK;
 
 #ifdef RANGECHECK
     if (srcx < 0 || srcx + width > vid.width || srcy < 0 || srcy + height > vid.height || destx < 0 || destx + width > vid.width || desty < 0 || desty + height > vid.height || (unsigned) srcscrn > 4
@@ -1024,6 +1027,7 @@ void  V_SetupDraw_Restore_SCALESTART( void )
 //
 //added:05-02-98:
 // [WDJ] all patches are cached endian fixed 1/5/2010
+//  x, y : drawinfo coordinates
 // Called by draw char/string, menu, wi_stuff (screen0, scaled)
 // Called by ST_refreshBackground to draw face on status bar (with flags)
 void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
@@ -1136,8 +1140,9 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        // Draw a hardware converted patch.
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags );
+        // Draw a hardware converted patch, using drawinfo scaling.
+        HWR_DrawPatch((MipPatch_t *) patch, x, y,
+                      drawinfo.effectflags | V_DRAWINFO );
         return;
     }
 #endif
@@ -1367,7 +1372,9 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawPatch((MipPatch_t *) patch, x, y, drawinfo.screenflags|drawinfo.effectflags );
+        // Enable drawinfo scaling.
+        HWR_DrawPatch((MipPatch_t *) patch, x, y,
+                      drawinfo.screenflags|drawinfo.effectflags|V_DRAWINFO );
         return;
     }
 #endif
@@ -1492,6 +1499,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
+        // Vid coordinates.
         HWR_DrawPatch((MipPatch_t *) patch, x, y, V_NOSCALE);
         return;
     }
@@ -1699,11 +1707,9 @@ void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 //
 //  Fills a box of pixels with a single color
 //
-// per drawinfo centering, always screen 0, V_SCALEPATCH, V_SCALESTART
-//added:05-02-98:
-
-// Scaled to vid screen.
-//  x, y : screen coord.
+// Vid range coordinates.
+// per drawinfo centering, always screen 0
+//  x, y : screen coord. in vid range.
 void V_DrawVidFill(int x, int y, int w, int h, byte color)
 {
     // vid : from video setup
@@ -1769,14 +1775,41 @@ void V_DrawScaledFill(int x, int y, int w, int h, byte color)
 
 
 
+// Indexed by flat size_index.
+static byte  fill_sizeshift_tab[ 8 ] =
+{
+    0,  // 0
+    5,  // 32x32 flat
+    6,  // 64x64 flat
+    7,  // 128x128 flat
+    8,  // 256x256 flat
+    9,  // 512x512 flat
+    10,  // 1024x1024 flat
+    11,  // 2048x2048 flat
+};
+
+// Fill Flat Index mask
+// Indexed by flat size_index.
+static uint16_t  fill_mask_tab[ 8 ] =
+{
+    0, // 0
+    32 - 1, // 32x32 flat
+    64 - 1, // 64x64 flat
+    128 - 1, // 128x128 flat
+    256 - 1, // 256x256 flat
+    512 - 1, // 512x512 flat
+    1024 - 1, // 1024x1024 flat
+    2048 - 1, // 2048x2048 flat
+};
+
+//  Fills a box of pixels using a flat texture as a pattern.
+//  Per drawinfo, scaled, centering.
+//  For fullscreen, set w=vid.width.
 //
-//  Fills a box of pixels using a flat texture as a pattern,
-//  scaled to screen size.
-//
-//added:06-02-98:
-// per drawinfo, scaled, centering
-// Called by WI_slamBackground, F_TextWrite (entire screen), M_DrawTextBox
-void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
+//   x, y, w, h : drawinfo coordinates (if w=vid.width then vid coordinates)
+//   scale : 0..15, where 0=unscaled, 15=full scaled
+// Called by M_DrawTextBox
+void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
@@ -1785,18 +1818,22 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
     fixed_t dx, dy, xfrac, yfrac;
     byte *src;
     byte *flat;
-    int size;
-    int flatsize, flatshift;
+    int imask, sizeshift;
 
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
-        HWR_DrawFlatFill(x, y, w, h, flatnum);
+        if( w == vid.width )
+            HWR_DrawVidFlatFill(x, y, w, h, scale, flatnum);
+        else
+            HWR_DrawVidFlatFill((x * drawinfo.fdupx0), (y * drawinfo.fdupy0),
+                (w * drawinfo.fdupx), (h * drawinfo.fdupy), scale, flatnum);
         return;
     }
 #endif
 
-    size = W_LumpLength(flatnum);
+#if 0   
+    int size = W_LumpLength(flatnum);
 
     switch (size)
     {
@@ -1829,43 +1866,62 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
             flatshift = 6;
             break;
     }
+#endif   
 
+//    int sizeindex = levelflats[picnum].size_index;
+    int sizeindex = P_flatsize_to_index( W_LumpLength(flatnum), NULL );
+    sizeshift = fill_sizeshift_tab[sizeindex];
+    imask = fill_mask_tab[sizeindex];
     flat = W_CacheLumpNum(flatnum, PU_CACHE);
 
-#if 1
-    // Draw per drawinfo
-    dest = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
-    dx = drawinfo.x_unitfrac;
-    dy = drawinfo.y_unitfrac;
-    w *= drawinfo.dupx;
-    h *= drawinfo.dupy;
-#else
-    // Draw to screen0, scaled
-    int dupx = vid.dupx;
-    int dupy = vid.dupy;
+    if( w == vid.width )
+    {
+        // fullscreen, assume that also x=0, y=0
+        dest = screens[0];
+//        dest = screens[0] + (y * vid.ybytes) + (x * vid.bytepp);
+    }
+    else
+    {
+        // Draw per drawinfo
+        dest = drawinfo.drawp + (y * drawinfo.y0bytes) + (x * drawinfo.x0bytes);
+        w *= drawinfo.dupx;
+        h *= drawinfo.dupy;
+    }
 
-    dest = screens[0] + (y * dupy * vid.ybytes) + (x * dupx * vid.bytepp);
-    dest += drawinfo.start_offset;
-
-    dx = FixedDiv(FRACUNIT, dupx << FRACBITS);
-    dy = FixedDiv(FRACUNIT, dupy << FRACBITS);
-
-    w *= dupx;
-    h *= dupy;
-#endif
+    // Scale flat proportional, 0..15 => 1..vid.dup
+    dx = FixedDiv(FRACUNIT,
+         ((((vid.dupx-1) << (FRACBITS-4)) * scale) + (1<<FRACBITS)) );
+    dy = FixedDiv(FRACUNIT,
+         ((((vid.dupy-1) << (FRACBITS-4)) * scale) + (1<<FRACBITS)) );
 
     yfrac = 0;
-    for (v = 0; v < h; v++, dest += vid.ybytes)
+    for (v = 0; v < h; v++)
     {
         xfrac = 0;
-        src = flat + (((yfrac >> (FRACBITS - 1)) & (flatsize - 1)) << flatshift);
+        src = & flat[((yfrac >> (FRACBITS - 1)) & imask) << sizeshift];
         for (u = 0; u < w; u++)
         {
-            V_DrawPixel(dest, u, src[(xfrac >> FRACBITS) & (flatsize - 1)]);
+            V_DrawPixel(dest, u, src[(xfrac >> FRACBITS) & imask]);
             xfrac += dx;
         }
         yfrac += dy;
+        dest += vid.ybytes;
     }
+}
+
+
+// Fill entire screen with flat.
+// Called by WI_slamBackground, F_TextWrite (entire screen), M_DrawTextBox
+void V_ScreenFlatFill( int flatnum )
+{
+#ifdef HWRENDER
+    if (rendermode != render_soft)
+    {
+        HWR_DrawVidFlatFill(0, 0, vid.width, vid.height, 15, flatnum);
+        return;
+    }
+#endif
+    V_DrawFlatFill( 0, 0, vid.width, vid.height, 15, flatnum);
 }
 
 
@@ -1916,7 +1972,7 @@ void V_DrawFade(int x1, int x2, int y2,
         x2 >>= 2;
         for (y = 0; y < y2; y++)
         {
-            buf = (uint32_t *) V_GetDrawAddr( x1, y );
+            buf = (uint32_t *) V_GetDrawAddr( 0, y );
             for (x = x1; x < x2; x++)
             {
                 register uint32_t quad = buf[x];
