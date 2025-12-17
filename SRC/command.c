@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1250 2016-08-04 14:35:24Z wesleyjohnson $
+// $Id: command.c 1253 2016-08-29 21:04:57Z wesleyjohnson $
 //
 // Copyright (C) 1998-2011 by DooM Legacy Team.
 //
@@ -264,7 +264,8 @@ void COM_BufExecute ( void )
       {
             i++;
             com_text.cursize -= i;
-            memcpy (text, text+i, com_text.cursize);
+            // Shuffle text, overlap copy.  Bug fix by Ryan bug_0626.
+            memmove(text, text+i, com_text.cursize);
       }
 
       // execute the command line
@@ -1037,6 +1038,15 @@ char *CV_CompleteVar (char *partial, int skips)
 static void Setvalue (consvar_t *var, char *valstr)
 {
     char  value_str[64];  // print %d cannot exceed 64
+
+#ifdef PARANOIA
+    if( valstr == NULL )
+    {
+        I_SoftError( "SetValue NULL string: %s\n", var->name );
+        return;
+    }
+#endif
+
     if(var->PossibleValue)
     {
         int v=atoi(valstr);

@@ -5321,3 +5321,9 @@ size does not divide evenly into the viewport size.
 - HWR_DrawViewBorder draws in vid coordinates now instead of base coordinates.
 This does not suffer from misalignment and math errors.
 
+*** W105_bug0626
+patchfile = w105_49_bug0626.patch
+- commit revision 1253
+Fix bug 0626, submitted by Ryan.
+Change memcpy to memmove in command.c because it overlaps dest.
+Reported that it was causing segfaults.
