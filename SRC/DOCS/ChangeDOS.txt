@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01248 ]: w105 dirent
 [01247 ]: w105 flash opengl
 [01246 ]: w105 msys makefile
 [01245 ]: w105 gcc 4.8

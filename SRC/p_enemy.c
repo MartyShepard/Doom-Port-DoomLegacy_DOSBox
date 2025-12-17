@@ -2282,7 +2282,8 @@ void A_Fall (mobj_t *actor)
     if (!cv_solidcorpse.value)
         actor->flags &= ~MF_SOLID;
 
-    if( demoversion >= 131 )
+    // Solid corpse bug!?
+    if( !cv_solidcorpse.value/*demoversion >= 131*/ )
     {
         // Before version 131 this is done later in P_KillMobj.
         actor->flags   |= MF_CORPSE|MF_DROPOFF;

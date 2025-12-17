@@ -5254,3 +5254,11 @@ patchfile = w105_43_flash_opengl.patch
 Fix the pickup flash for OpenGL, and for small status bar.
 Make a V_DrawScaledFill that matches the other scaled draws.
 
+*** W105_dirent
+patchfile = w105_44_dirent.patch
+- commit revision 1248
+Systems that do not have ftw.h have to use dirent.h, and that code was
+not finished.  Have finished it, along with stat code to identify
+directories for systems that do not have dirent D_TYPE either.
+Rearranged the code to only have one function that is customized for dirent.
+

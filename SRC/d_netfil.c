@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1207 2016-01-19 19:46:54Z wesleyjohnson $
+// $Id: d_netfil.c 1248 2016-08-04 14:32:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -78,9 +78,11 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+
 #ifdef __OS2__
 #include <sys/types.h>
 #endif // __OS2__
+
 #include <sys/stat.h>
 
 #include <time.h>
@@ -90,15 +92,16 @@
 #include <direct.h>
 #else
 #include <sys/types.h>
-#include <dirent.h>
+//#include <dirent.h>
 #include <utime.h>
 #endif
 
-#ifndef __WIN32__
-#include <unistd.h>
-#else
+#ifdef __WIN32__
 #include <sys/utime.h>
+#else
+#include <unistd.h>
 #endif
+
 #ifdef __DJGPP__
 #include <dir.h>
 #include <utime.h>

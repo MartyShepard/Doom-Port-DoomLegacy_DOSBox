@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: m_menu.c 1248 2016-08-04 14:32:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2923,55 +2923,90 @@ int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
     return 0;
 }
 
-void M_Dir_scroll (int amount)
-{
-    // Do not scroll if at end of list
-    if( (amount > 0) && ( savegamedisp[SAVEGAME_NUM_MSLOT-1].desc[0] == '\0' ))
-        return;  // at end of dir list
-    clear_remaining_savegamedisp( 0 );
-    scroll_index += amount;
-    if( scroll_index < 0 )   scroll_index = 0;
-    slotindex = -scroll_index; // countdown reading dir entries
-    ftw( legacyhome, ftw_directory_entry, 1 );
-}
-
-// Called from menu
-void M_Get_SaveDir (int choice)
-{
-    // Any mode, directory is personal choice
-    // Directory menu with choices
-    DirDef.prevMenu = currentMenu;	// return to Load or Save
-    scroll_index = 0;  // start at top of dir list
-    M_SetupNextMenu(&DirDef);
-    scroll_callback = M_Dir_scroll;
-    delete_callback = M_Dir_delete;
-   
-    clear_remaining_savegamedisp( 0 );
-    slotindex = 0;
-    ftw( legacyhome, ftw_directory_entry, 1 );
-}
-
 #else
 
 #include <sys/types.h>
 #include <dirent.h>
 
+#ifndef _DIRENT_HAVE_D_TYPE
+#include <sys/stat.h>
+#include "m_misc.h"
+#endif
+
+#endif
+
+// Get directories into savegamedisp, starting at skip_count.
+void  get_directory_entries( int skip_count )
+{
+#ifdef USE_FTW
+    // Use ftw
+    slotindex = -skip_count;
+    ftw( legacyhome, ftw_directory_entry, 1 );
+#else
+    // Use dirent
+
+#ifndef _DIRENT_HAVE_D_TYPE
+    // Have to use stat to identify directories.
+    char dentfile[MAX_WADPATH];
+    struct stat dentstat;
+#endif
+   
+    struct dirent * dent;
+    DIR * legdir;
+
+    legdir = opendir( legacyhome );
+    if( legdir == NULL )  return;
+
+    slotindex = -skip_count;
+    for (;;)
+    {
+        dent = readdir( legdir );  // Read directory entry
+        if( dent == NULL )  break;
+        // Ignore the self reference.
+        if( strcmp( dent->d_name, "." ) == 0 )   continue;
+#ifdef _DIRENT_HAVE_D_TYPE
+        // Unix systems have the D_TYPE, but others are unlikely.
+        if( dent->d_type != DT_DIR )  continue;  // Only want directories
+#else
+        // Get status to check if is a directory.
+        cat_filename( dentfile, legacyhome, dent->d_name );       
+        stat( dentfile, &dentstat );
+        if( ! S_ISDIR( dentstat.st_mode ))  continue;  // Only want directories
+#endif
+
+        if( slotindex >= 0 )  // because of dir list scrolling
+        {
+            // Only want the name after legacyhome
+            strncpy( savegamedisp[slotindex].desc, dent->d_name, SAVESTRINGSIZE-1 );
+            savegamedisp[slotindex].desc[SAVESTRINGSIZE-1] = '\0';
+            // The up-dir is passed as an empty string.
+            if( strcmp( savegamedisp[slotindex].desc, ".." ) == 0 )
+                savegamedisp[slotindex].desc[0] = 0;
+        }
+        slotindex++;
+        if( slotindex >= NUM_DIRLINE )  break;  // full
+    }
+    closedir( legdir );
+#endif
+}
+
+
 void M_Dir_scroll (int amount)
 {
     // Do not scroll if at end of list
     if( (amount > 0) && ( savegamedisp[SAVEGAME_NUM_MSLOT-1].desc[0] == '\0' ))
         return;  // at end of dir list
+
     clear_remaining_savegamedisp( 0 );
-    slotindex = -scroll_index;
+    // countdown reading dir entries
+    scroll_index += amount;
+    if( scroll_index < 0 )   scroll_index = 0;
+    get_directory_entries( scroll_index );
 }
 
 // Called from menu
 void M_Get_SaveDir (int choice)
 {
-    struct dirent * dent;
-    DIR * legdir;
-    int i;
-
     // Any mode, directory is personal choice
     // Directory menu with choices
     DirDef.prevMenu = currentMenu;	// return to Load or Save
@@ -2979,19 +3014,10 @@ void M_Get_SaveDir (int choice)
     scroll_callback = M_Dir_scroll;
     delete_callback = M_Dir_delete;
 
-    legdir = opendir( legacyhome );
-    if( legdir == NULL )  return;
-    for (i = 0; i < NUM_DIRLINE; i++)
-    {
-        dent = readdir( legdir );
-        // PROBLEM: how to identify a directory
-        if( dent )
-        {
-        }
-    }
-    closedir( legdir );
+    clear_remaining_savegamedisp( 0 );
+    scroll_index = 0;  // start at top of dir list
+    get_directory_entries( 0 );
 }
-#endif
    
 #endif
 
