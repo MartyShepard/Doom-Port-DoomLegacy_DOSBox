@@ -52,15 +52,9 @@ int main ( int argc, char** argv )
 		int i;
 		for (i = 1; i < myargc; i++)
 		{
-			if (strcmp(argv[i], "-v") == 0)
-			{
-				logstream = fopen("LEGACY.LOG", "wb");
-      }
-      else if (strcmp(argv[i], "-v2") == 0)
-      {
-        logstream = fopen("LEGACY.LOG", "wb");
-      }
-    }     
+      if ((strcmp(argv[i], "-v") == 0) || (strcmp(argv[i], "-v2") == 0))    
+			   logstream = fopen("LEGACY.LOG", "wb");
+    } 
     #endif
 		
      //added:03-01-98:

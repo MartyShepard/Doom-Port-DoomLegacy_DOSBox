@@ -294,14 +294,17 @@
 	
 	static const char DOSSTRING[] = "[" DOSNAME "]";
 	
-char *Posix_Deform_Path(char *path)
-{
+	// Proto
+	void ListSupportetWads(void);
+		
+  char *Posix_Deform_Path(char *path)
+  {
     char *p = path;
     for (*p = path[0]; p && *p; p++)
          if (*p == '/') *p = '\\';
     
 		return path;
-}
+  }
 	
 #else
 	static const char DOSSTRING[] = "";	
@@ -309,7 +312,7 @@ char *Posix_Deform_Path(char *path)
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1264"
+#define SVN_REV "1265"
 #endif
 
 // Version number: major.minor.revision
@@ -338,9 +341,6 @@ static void Help(void);
 static void Clear_SoftError(void);
 void HereticPatchEngine(void);
 //void Chex1PatchEngine(void);
-#if defined (__DJGPP__)
-  void ListSupportetWads(void);
-#endif
 
 char * startupwadfiles[MAX_WADFILES];
 

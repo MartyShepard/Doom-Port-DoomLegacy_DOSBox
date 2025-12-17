@@ -5440,3 +5440,11 @@ Add DEBUG_MESSAGE_ON to doomdef.h, which disables blocking of
 debug_Printf messages in the released version, during normal play.
 The debug_Printf are enabled if verbose is on, or if Options message is
 at debug or higher level.
+
+*** W105_playmsg
+patchfile = w105_61_playmsg.patch
+- commit revision 1265
+Fix some play messages that were not being seen,
+Death messages, secret sector.
+The death messages and fragglescript print are fixed for splitscreen.
+
