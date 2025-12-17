@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01251 ]: w105 heretic flash
 [01250 ]: w105 cv string
 [01249 ]: w105 pal gamma
 [01248 ]: w105 dirent

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: sb_bar.c 1251 2016-08-29 21:00:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -303,7 +303,7 @@ static void DrINumber(signed int val, int x, int y)
     patch_t *patch;
     int oldval;
 
-    // draw stbar_fg
+    // draw stbar_fg, maybe scaled or not
     oldval = val;
     if(val < 0)
     {
@@ -365,7 +365,7 @@ static void DrBNumber(signed int val, int x, int y)
         int xpos;
         int oldval;
 
-        // Draw to stbar_fg
+        // Draw to stbar_fg, maybe scaled or not
         oldval = val;
         xpos = x;
         if(val < 0)
@@ -592,6 +592,7 @@ void SB_Heretic_Drawer( boolean refresh )
         SB_state = SBS_refresh;
 
     // Draw to stbar_fg, screen0, flags selected by status bar style
+    // Maybe scaled or not scaled.
     V_SetupDraw( stbar_fg );
 
     plyr = st_plyr = displayplayer_ptr;
@@ -815,7 +816,7 @@ void H_PaletteFlash( player_t * plyr )
 //
 //---------------------------------------------------------------------------
 
-// to stbar_fg, screen0 status bar
+// To stbar_fg, screen0 status bar, maybe scaled or not scaled.
 // Called by SB_Heretic_Drawer
 static void DrawCommonBar( player_t * plyr )
 {
@@ -859,7 +860,7 @@ static void DrawCommonBar( player_t * plyr )
 //
 //---------------------------------------------------------------------------
 
-// to stbar_fg
+// To stbar_fg, maybe scaled or not scaled.
 static void H_DrawMainBar( player_t * plyr )
 {
     int temp;
@@ -913,7 +914,7 @@ static void H_DrawMainBar( player_t * plyr )
         if(plyr->health_pickup && ( cv_pickupflash.value == 1 ))
         {
             // Health pickup flash
-            V_DrawFill(stbar_x+57, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
+            V_DrawScaledFill(stbar_x+57, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
             oldlife = -2;
         }
         temp = min(max(0,HealthMarker),100);
@@ -933,7 +934,7 @@ static void H_DrawMainBar( player_t * plyr )
     if(plyr->key_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Key pickup flash
-        V_DrawFill(stbar_x+153, stbar_y+6, 10, 23, FLASH_KEYS_COLOR);
+        V_DrawScaledFill(stbar_x+153, stbar_y+6, 10, 23, FLASH_KEYS_COLOR);
         st_card = 0;
         if(plyr->key_pickup == 1)
         {
@@ -964,7 +965,7 @@ static void H_DrawMainBar( player_t * plyr )
     if(plyr->ammo_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Ammo pickup flash
-        V_DrawFill(stbar_x+108, stbar_y+5, 32, 11, FLASH_BLK_COLOR);
+        V_DrawScaledFill(stbar_x+108, stbar_y+5, 32, 11, FLASH_BLK_COLOR);
         oldammo = -2;
     }
     temp = plyr->ammo[wpnlev1info[plyr->readyweapon].ammo];
@@ -989,7 +990,7 @@ static void H_DrawMainBar( player_t * plyr )
     if(plyr->armor_pickup && ( cv_pickupflash.value == 1 ))
     {
         // Armor pickup flash
-        V_DrawFill(stbar_x+224, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
+        V_DrawScaledFill(stbar_x+224, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
         oldarmor = -2;  // no background
     }
     if(oldarmor != plyr->armorpoints)

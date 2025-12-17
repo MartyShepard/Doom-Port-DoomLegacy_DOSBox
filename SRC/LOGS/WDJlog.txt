@@ -5284,3 +5284,8 @@ When a cv var set value exceeds the bounds, the code attempts to rewrite
 the value string.  The string could be a const string such as during init,
 which segfaults on modern systems like Linux.
 Fix the code to write a buffer instead.
+
+*** W105_heretic_flash
+patchfile = w105_47_heretic_flash.patch
+- commit revision 1251
+Fix the pickup flash for unscaled status bar in heretic.
