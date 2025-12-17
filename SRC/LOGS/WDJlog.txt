@@ -5470,3 +5470,9 @@ loading, and a skins memory alloc error.
 When a sprite does not have all the rotations present, it will no longer
 I_Error, but will substitute another sprite frame for the missing one,
 with an error message.
+
+*** W105_netdef
+patchfile = w105_64_netdef.patch
+- commit revision 1268
+Changed to use stdint types in the network tic packet, to standardize
+the tic packet for both 32 bit and 64 bit machines.

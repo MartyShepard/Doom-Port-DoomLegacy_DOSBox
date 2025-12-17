@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_ticcmd.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_ticcmd.h 1268 2016-09-20 17:26:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -86,11 +86,11 @@ typedef struct
     fixed_t      x;
     fixed_t      y;
 #endif
-    char         forwardmove;    // *2048 for move
-    char         sidemove;       // *2048 for move
-    short        angleturn;      // <<16 for angle delta
+    int8_t       forwardmove;    // *2048 for move
+    int8_t       sidemove;       // *2048 for move
+    int16_t      angleturn;      // <<16 for angle delta
                                  // SAVED AS A BYTE into demos
-    short        aiming;    // pitch angle (up-down)
+    int16_t      aiming;    // pitch angle (up-down)
     byte         buttons;
 } ticcmd_t;
 

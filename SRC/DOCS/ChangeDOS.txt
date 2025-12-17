@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01268 ]: w105 netdef
 [01267 ]: w105 error
 [01266 ]: w105 chat
 [01265 ]: w105 playmsg
