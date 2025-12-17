@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01261 ]: w105 heretic switches
 [01260 ]: w105 hw ticrate
 [01259 ]: w105 extmidi
 [01258 ]: w105 hwsky work

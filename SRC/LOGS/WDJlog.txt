@@ -5396,3 +5396,17 @@ patchfile = w105_56_hw_ticrate.patch
 Fix the draw scaling for the hardware ticrate display.
 It was drawing an unscaled graph on a scaled grid.
 
+*** W105_heretic_switches
+patchfile = w105_57_heretic_switches.patch
+- commit revision 1261
+Fix the switches array and SWITCHES lump processing lump.
+Heretic was trying to process Doom switch names, giving many error messages.
+The w85_heretic_SWITCHES SVN966 patch, removed the (episode==4) test to
+allow Heretic/Blasphemer gamemode to process the Boom SWITCHES lump.
+The same test also distinguished Heretic switch names from Doom switch names
+which were just stuck on the end of the same list.
+Made a separate Heretic switch name list, removing them from the Boom switch
+names list.  Cleanup of other strange coding vestiges in the switches.
+Fixed the test of switch textures so the local messages and texture fixes
+are used, instead of using a texture check that has automatic warning messages.
+

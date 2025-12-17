@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1210 2016-01-19 19:49:09Z wesleyjohnson $
+// $Id: p_switch.c 1261 2016-09-20 17:19:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,7 +64,7 @@
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
 //
-switchlist_t oldalphSwitchList[] =
+switchlist_t doom_alphSwitchList[] =
 {
     // Doom shareware episode 1 switches
     {"SW1BRCOM","SW2BRCOM",     1},
@@ -112,21 +112,30 @@ switchlist_t oldalphSwitchList[] =
     {"SW1MARB", "SW2MARB",      3},
     {"SW1SKULL","SW2SKULL",     3},
 
+    {"\0",      "\0",           0}
+};
+
+switchlist_t heretic_alphSwitchList[] =
+{
     // heretic
-    {"SW1OFF",  "SW1ON",        4},
-    {"SW2OFF",  "SW2ON",        4},
+    {"SW1OFF",  "SW1ON",        1},
+    {"SW2OFF",  "SW2ON",        1},
 
     {"\0",      "\0",           0}
 };
 
 //SoM: 3/22/2000: Switch limit removal
-//int             switchlist[MAXSWITCHES * 2];
 
-static int             *switchlist=NULL;
-static int             max_numswitches;
-static int             numswitches;
+// Increment in switches array.  May be as small as 2, or more than 40.
+#define NUMSWITCHES_INC  32
 
-button_t        buttonlist[MAXBUTTONS];
+static int *  switchlist = NULL;  // malloc
+static int    max_numswitches = 0;  // allocated switch array
+static int    numswitches = 0;  // actual number of entries in switchlist
+static int    numswitch_pairs = 0;  // strangness from Doom, renamed numswitches
+
+button_t      buttonlist[MAXBUTTONS];
+
 
 //
 // P_InitSwitchList
@@ -136,9 +145,13 @@ button_t        buttonlist[MAXBUTTONS];
 void P_InitSwitchList(void)
 {
   int            i, index = 0;
-  int            episode; 
-  switchlist_t   *alphSwitchList;
+  int            episode; // select switches based on game
+  switchlist_t   * alphSwitchList = NULL;
+  switchlist_t   * switches_lump = NULL;
 
+  //SoM: 3/22/2000: No Switches lump? Use old table!
+  // DOOM, HERETIC, and HERETIC shareware do not have SWITCHES lump.
+  alphSwitchList = doom_alphSwitchList;  // default
   switch (gamemode){
       case doom_registered :
       case ultdoom_retail:
@@ -148,16 +161,27 @@ void P_InitSwitchList(void)
           episode = 3;
           break;
       case heretic :
-          episode = 4;
+          episode = 4;  // As was in 1.45, Blasphemer may need this as test.
+#if 0
+          // Like Heretic.  But it would not gain anything because
+          // there are only two switches in the list and both are needed.
+          if( gamedesc_id == GDESC_heretic )
+            episode = 2;
+          if( gamedesc_id == GDESC_heretic_shareware )
+            episode = 1;
+#endif
+          alphSwitchList = heretic_alphSwitchList;
           break;
       default:
           episode = 1;
   }
 
-  //SoM: 3/22/2000: No Switches lump? Use old table!
+  // Check for Boom SWITCHES lump.
   if(W_CheckNumForName("SWITCHES") != -1)
   {
-    alphSwitchList = (switchlist_t *)W_CacheLumpName("SWITCHES", PU_IN_USE);
+    // Load the SWITCHES lump.
+    switches_lump = (switchlist_t *)W_CacheLumpName("SWITCHES", PU_IN_USE);
+    alphSwitchList = switches_lump;
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
     // [WDJ] Endian conversion, only when BIG_ENDIAN, when from wad,
@@ -170,32 +194,29 @@ void P_InitSwitchList(void)
     }
 #endif
   }
-  else 
-    alphSwitchList = oldalphSwitchList;
 
   // initialization for artificial levels without switches (yes, they exist!)
-  if(NULL == switchlist)
+  if( switchlist == NULL )
       switchlist = malloc(sizeof(*switchlist));
   
   for (i=0;alphSwitchList[i].episode!=0;i++)
   {
-    if (index+1 >= max_numswitches)
-      switchlist = realloc(switchlist, sizeof *switchlist *
-          (max_numswitches = max_numswitches ? max_numswitches*2 : 8));
-
-#if 1
-    // [WDJ] 11/9/2012, remove restriction on Heretic
-    if (alphSwitchList[i].episode <= episode)
-#else
-    // [WDJ] I can only guess what this was supposed to accomplish, but
-    // none of the other ports are restricting it this way, and a fix has
-    // been requested to allow Heretic (and Blasphemer) PWAD to use SWITCHES.
-    if (alphSwitchList[i].episode <= episode && 
-        (gamemode != heretic || alphSwitchList[i].episode == 4)) 
-#endif
+    if (index+1 >= max_numswitches)  // use 2 at a time
     {
-      int tex1 = R_TextureNumForName(alphSwitchList[i].name1);
-      int tex2 = R_TextureNumForName(alphSwitchList[i].name2);
+      // [WDJ] Unnecessary complicated *2 size, simplified to inc size.
+      // Must have 1 extra for terminating -1 entry.
+      max_numswitches += NUMSWITCHES_INC;
+      switchlist = realloc(switchlist, sizeof(*switchlist) * (max_numswitches+1) );
+    }
+
+    // [WDJ] 11/9/2012, remove restriction on Heretic using SWITCHES lump.
+    // [WDJ] 9/1/2016, handle default list without error messages.
+    // Blasphemer may have a SWITCHES lump, cannot assume contents.
+    if (alphSwitchList[i].episode <= episode)
+    {
+      // Check, without error first.
+      int tex1 = R_CheckTextureNumForName(alphSwitchList[i].name1);
+      int tex2 = R_CheckTextureNumForName(alphSwitchList[i].name2);
       // default missing textures to texture 1
       if( tex1 == -1 )
       {
@@ -212,12 +233,15 @@ void P_InitSwitchList(void)
     }
   }
 
-  numswitches = index/2;
-  switchlist[index] = -1;
+  // [WDJ] The index/2 is from Doom and Heretic.  It accomplishes nothing as
+  // the only usage had it *2 again. Made it less misleading.
+  numswitch_pairs = index/2;
+  numswitches = numswitch_pairs * 2;
+  switchlist[index] = -1;  // unnecessary, never checked
 
   //SoM: 3/22/2000: Don't change tag if not from lump
-  if(alphSwitchList != oldalphSwitchList)
-    Z_ChangeTag(alphSwitchList,PU_CACHE);
+  if( switches_lump )
+    Z_ChangeTag( switches_lump, PU_CACHE);
 }
 
 
@@ -286,7 +310,7 @@ void P_ChangeSwitchTexture ( line_t*       line,
     if (line->special == 11)
         sound = sfx_swtchx;
 
-    for (i = 0; i < numswitches*2; i++)
+    for (i = 0; i < numswitches; i++)
     {
         if (switchlist[i] == texTop)
         {
