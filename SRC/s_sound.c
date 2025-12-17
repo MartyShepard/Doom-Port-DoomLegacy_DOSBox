@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1255 2016-08-29 21:28:38Z wesleyjohnson $
+// $Id: sounds.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -142,9 +142,10 @@ CV_PossibleValue_t musserv_opt_cons_t[] = {
    {1, "Midi"},
    {2, "TiMidity"},
    {3, "FluidSynth"},
-   {4, "Synth"},
-   {5, "FM Synth"},
-   {6, "Awe32 Synth"},
+   {4, "Ext Midi"},
+   {5, "Synth"},
+   {6, "FM Synth"},
+   {7, "Awe32 Synth"},
    {0, NULL}
 };
 
