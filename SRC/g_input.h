@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: g_input.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
 //
-// Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License

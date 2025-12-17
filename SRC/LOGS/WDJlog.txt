@@ -5375,3 +5375,7 @@ It has been changed to  &states[S_NULL]  when removed, which will not segfault.
 Also, a test for this value was added to the state transition code
 that was segfaulting, to block the dereference.
 
+*** W105_misc
+patchfile = w105_53_misc.patch
+- commit revision 1257
+Update copyright dates and comments.

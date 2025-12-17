@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: hw3sound.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
 //
-// Copyright (C) 2001 by DooM Legacy Team.
+// Copyright (C) 2001-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License

@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1248 2016-08-04 14:32:52Z wesleyjohnson $
+// $Id: d_netfil.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
