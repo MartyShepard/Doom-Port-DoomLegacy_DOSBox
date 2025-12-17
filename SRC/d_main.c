@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1245 2016-08-04 14:21:00Z wesleyjohnson $
+// $Id: d_main.c 1255 2016-08-29 21:28:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -299,7 +299,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1253"
+#define SVN_REV "1255"
 #endif
 
 // Version number: major.minor.revision
@@ -500,7 +500,7 @@ void D_PostEvent(const event_t * ev)
 }
 
 // just for lock this function
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
 void D_PostEvent_end(void)
 {
 };
@@ -1846,7 +1846,7 @@ fatal_err:
 /* ======================================================================== */
 // Just print the nice red titlebar like the original DOOM2 for DOS.
 /* ======================================================================== */
-#ifdef PC_DOS
+#ifdef SMIF_PC_DOS
 void D_Titlebar(const char *title1, const char *title2)
 {
     // DOOM LEGACY banner
@@ -2207,10 +2207,10 @@ restart_command:
 #ifdef WIN32
             if( strstr( userhome, "MSYS" ) )
             {
-                 // Ignore MSYS HOME, it is not the one wanted.	
+                // Ignore MSYS HOME, it is not the one wanted.
                 userhome = NULL;
             }
-            // Windows XP, 
+            // Windows XP,
             if( !userhome )
                  userhome = getenv("UserProfile");
 #endif
@@ -2827,7 +2827,7 @@ restart_command:
     CONS_Printf(text[S_SETSOUND_NUM]);
     nosoundfx = M_CheckParm("-nosound");
     nomusic = M_CheckParm("-nomusic");
-    // WARNING: DOS version initmusic in I_StartupSound
+    // Music init is in I_StartupSound
     I_StartupSound();
 #if defined( __DJGPP__ )		
     I_InitMusic();      // setup music buffer for quick mus2mid
@@ -2992,7 +2992,7 @@ void I_SoftError (const char *errmsg, ...)
     CONS_Printf_va( EMSG_error, errmsg, argptr );  // handles EOUT_con
     va_end (argptr);
 
-done: 
+done:   
     fflush( stderr );
 }
 

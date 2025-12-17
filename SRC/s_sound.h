@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: s_sound.h 1255 2016-08-29 21:28:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,12 +74,13 @@ extern consvar_t cv_numChannels;
 extern consvar_t cv_rndsoundpitch;
 
 #ifdef SNDSERV
-extern consvar_t sndserver_cmd;
-extern consvar_t sndserver_arg;
+extern consvar_t cv_sndserver_cmd;
+extern consvar_t cv_sndserver_arg;
 #endif
 #ifdef MUSSERV
-extern consvar_t musserver_cmd;
-extern consvar_t musserver_arg;
+extern consvar_t cv_musserver_cmd;
+extern consvar_t cv_musserver_arg;
+extern consvar_t cv_musserver_opt;
 #endif
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
@@ -140,8 +141,7 @@ typedef enum
 // Start sound for thing at <origin>
 //  using <sound_id> from sounds.h
 //
-
-void S_StartSound(const void* origin, int sfx_id );
+void S_StartSound(const void* origin, int sound_id );
 
 // Special cases of 3D sources
 void S_StartAmbientSound(sfxid_t sfx_id, int volume);
@@ -159,10 +159,10 @@ void S_StopSound(void* origin);
 // Start music using <music_id> from sounds.h
 void S_StartMusic(int music_id);
 
-// Start music using <music_id> from sounds.h,
-//  and set whether looping
-void S_ChangeMusic (int music_num, int looping);
-void S_ChangeMusicName(char *name, int looping);
+// Start music using <music_id> from sounds.h.
+//   looping : non-zero if continuous looping of music
+void S_ChangeMusic (int music_num, byte looping);
+void S_ChangeMusicName(char *name, byte looping);
 
 // Stops the music fer sure.
 void S_StopMusic(void);

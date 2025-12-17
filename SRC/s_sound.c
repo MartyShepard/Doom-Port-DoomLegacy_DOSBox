@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: s_sound.c 1255 2016-08-29 21:28:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -126,24 +126,35 @@
 // 3D Sound Interface
 #include "hardware/hw3sound.h"
 
-#ifdef MUSSERV
-#include <sys/msg.h>
-struct musmsg
-{
-    long msg_type;
-    char msg_text[12];
-};
-extern int msg_id;
-#endif
 
 // commands for music and sound servers
 #ifdef MUSSERV
-consvar_t musserver_cmd = { "musserver_cmd", "musserver", CV_SAVE };
-consvar_t musserver_arg = { "musserver_arg", "-t 20 -f -u 0", CV_SAVE };
+consvar_t cv_musserver_cmd = { "musserver_cmd", "musserver", CV_SAVE };
+consvar_t cv_musserver_arg = { "musserver_arg", "-t 20", CV_SAVE };
+
+void CV_musserv_opt_OnChange( void )
+{
+    I_SetMusicOption();
+}
+
+CV_PossibleValue_t musserv_opt_cons_t[] = {
+   {0, "Default"},
+   {1, "Midi"},
+   {2, "TiMidity"},
+   {3, "FluidSynth"},
+   {4, "Synth"},
+   {5, "FM Synth"},
+   {6, "Awe32 Synth"},
+   {0, NULL}
+};
+
+consvar_t cv_musserver_opt = { "musserver_opt", "Default", CV_SAVE | CV_CALL,
+             musserv_opt_cons_t, CV_musserv_opt_OnChange };
 #endif
+
 #ifdef SNDSERV
-consvar_t sndserver_cmd = { "sndserver_cmd", "llsndserv", CV_SAVE };
-consvar_t sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
+consvar_t cv_sndserver_cmd = { "sndserver_cmd", "llsndserv", CV_SAVE };
+consvar_t cv_sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 #endif
 
 #define SURROUND
@@ -269,12 +280,13 @@ void S_Register_SoundStuff(void)
     CV_RegisterVar(&precachesound);
 
 #ifdef SNDSERV
-    CV_RegisterVar(&sndserver_cmd);
-    CV_RegisterVar(&sndserver_arg);
+    CV_RegisterVar(&cv_sndserver_cmd);
+    CV_RegisterVar(&cv_sndserver_arg);
 #endif
 #ifdef MUSSERV
-    CV_RegisterVar(&musserver_cmd);
-    CV_RegisterVar(&musserver_arg);
+    CV_RegisterVar(&cv_musserver_cmd);
+    CV_RegisterVar(&cv_musserver_arg);
+    CV_RegisterVar(&cv_musserver_opt);
 #endif
 #ifdef SURROUND
     CV_RegisterVar(&cv_surround);
@@ -1204,7 +1216,8 @@ void S_StartMusic(int m_id)
 //
 // S_ChangeMusicName
 // Changes music by name
-void S_ChangeMusicName(char *name, int looping)
+//   looping : non-zero if continuous looping of music
+void S_ChangeMusicName(char *name, byte looping)
 {
     int music;
 
@@ -1225,7 +1238,7 @@ void S_ChangeMusicName(char *name, int looping)
     }
 }
 
-void S_ChangeMusic(int music_num, int looping)
+void S_ChangeMusic(int music_num, byte looping)
 {
     musicinfo_t *music;
 
@@ -1257,26 +1270,17 @@ void S_ChangeMusic(int music_num, int looping)
         else
             music->lumpnum = W_GetNumForName(va("d_%s", music->name));
     }
+#ifdef MUSSERV
+    // Play song, with information for ports with music servers.
+    music->data = NULL;
+    music->handle = I_PlayServerSong( music->name, music->lumpnum, looping );
+#else
     // load & register it
     music->data = (void *) W_CacheLumpNum(music->lumpnum, PU_MUSIC);
     music->handle = I_RegisterSong(music->data, W_LumpLength(music->lumpnum));
-
-#ifdef MUSSERV
-
-    if (msg_id != -1)
-    {
-        struct musmsg msg_buffer;
-
-        msg_buffer.msg_type = 6;
-        memset(msg_buffer.msg_text, 0, sizeof(msg_buffer.msg_text));
-        sprintf(msg_buffer.msg_text, "d_%s", music->name);
-        msgsnd(msg_id, (struct msgbuf *) &msg_buffer, sizeof(msg_buffer.msg_text), IPC_NOWAIT);
-    }
-
-#endif /* #ifdef MUSSERV */
-
     // play it
     I_PlaySong(music->handle, looping);
+#endif
 
     mus_playing = music;
 }
@@ -1291,9 +1295,12 @@ void S_StopMusic()
 
         I_StopSong(mus_playing->handle);
         I_UnRegisterSong(mus_playing->handle);
-        Z_ChangeTag(mus_playing->data, PU_CACHE);
-
+#ifndef MUSSERV
+        if( mus_playing->data )
+            Z_ChangeTag(mus_playing->data, PU_CACHE);
         mus_playing->data = NULL;
+#endif
+
         mus_playing = NULL;
     }
 }

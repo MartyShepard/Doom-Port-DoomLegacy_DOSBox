@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1252 2016-08-29 21:03:35Z wesleyjohnson $
+// $Id: m_menu.c 1255 2016-08-29 21:28:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2228,6 +2228,7 @@ enum
     SVM_sfx_empty2,
     SVM_cdaudio_vol,
     SVM_sfx_empty3,
+    SVM_sfx_mus_pref,
     SVM_sound_end
 } SVM_sound_e;
 
@@ -2241,6 +2242,9 @@ menuitem_t SoundMenu[]=
 #ifdef CDMUS
     {IT_CVARMAX   | IT_PATCH ,"M_CDVOL" ,"CD Volume"   ,&cd_volume       ,'c'}, // in legacy.wad
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cd_volume           },
+#endif
+#ifdef MUSSERV
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Music Pref",  &cv_musserver_opt , 110},
 #endif
 };
 

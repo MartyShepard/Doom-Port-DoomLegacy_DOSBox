@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01255 ]: w105 mussrv
+[01254 ]: w105 linux make
 [01253 ]: w105 bug0626
 [01252 ]: w105 flatfill
 [01251 ]: w105 heretic flash

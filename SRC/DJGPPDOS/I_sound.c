@@ -448,7 +448,7 @@ void I_ShutdownMusic(void)
     music_started=false;
 }
 
-void I_PlaySong(int handle, int looping)
+void I_PlaySong(int handle, byte looping)
 {
     if(nomusic)
         return;

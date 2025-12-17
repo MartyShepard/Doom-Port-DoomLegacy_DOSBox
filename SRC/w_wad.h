@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1237 2016-06-14 17:07:14Z wesleyjohnson $
+// $Id: w_wad.h 1255 2016-08-29 21:28:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -154,6 +154,9 @@ typedef struct wadfile_s
 
 extern  int          numwadfiles;
 extern  wadfile_t*   wadfiles[MAX_WADFILES];
+
+// Return the wadfile info for the lumpnum
+wadfile_t * lumpnum_to_wad( int lumpnum );
 
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 extern boolean lump_read;

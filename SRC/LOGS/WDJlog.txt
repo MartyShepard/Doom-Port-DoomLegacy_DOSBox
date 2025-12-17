@@ -5327,3 +5327,39 @@ patchfile = w105_49_bug0626.patch
 Fix bug 0626, submitted by Ryan.
 Change memcpy to memmove in command.c because it overlaps dest.
 Reported that it was causing segfaults.
+
+*** W105_linux_make
+patchfile = w105_50_linux_make.patch
+- commit revision 1254
+Fixes some problems with clean and distclean in the linux port Makefiles.
+
+*** W105_mussrv
+patchfile = w105_51_mussrv.patch
+- commit revision 1255
+Rewrite of most of the musserver for linux_x.  Now it has music again.
+Changed the music server interface to s_sound.  The other ports with
+musservers will have to be updated to the new interface.
+
+Rewrote the musserver, especially the IPC message formats.
+The musserver no longer searches the doom wad.  It is sent the exact wad
+file and lump to read using IPC messages.
+The sound device to use can be changed using a menu option.
+The preferred sound device is sent to the musserver using an IPC command.
+This allows the sound device setup to be performed while there is some
+music playing.
+Added FluidSynth to the device selection.
+Rewrote the musserver command line switches entirely.
+  see "  >> musserver -h " for details
+
+Fixed many problems with the musserver code.
+Starting the musserver using system causes it to have Init as a parent.
+This makes watching for the parent to die, useless.
+The correct process id is sent to the musserver using an IPC message.
+
+Added code to throttle the Midi commands, so it does not get so far
+ahead in the song.  There is no way to shut off the music that has
+already been sent to the Midi device, or TiMidity.
+Added code to kill drone notes (that did not get shut off).
+In spite of redundant attempts to shut them off, sometimes the current
+notes of a song will still drone on until the song loops.  Something causes
+all the Midi commands to shut off those notes to get ignored.
