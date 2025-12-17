@@ -5448,3 +5448,12 @@ Fix some play messages that were not being seen,
 Death messages, secret sector.
 The death messages and fragglescript print are fixed for splitscreen.
 
+*** W105_chat
+patchfile = w105_62_chat.patch
+- commit revision 1266
+Fix the netplay chat so that it appears on the HUD.
+Display of the chat message works for splitscreen.
+Choose the new chat network coding, and removed the old code.
+Optimized the functions better.
+
+This will be for Version 1.46 and is not compatible with older DoomLegacy.
