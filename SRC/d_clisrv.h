@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1232 2016-05-24 17:11:03Z wesleyjohnson $
+// $Id: d_clisrv.h 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -147,14 +147,17 @@ typedef struct {
 
 // Server to client packet
 // this packet is too large !!!!!!!!!
+#define NUM_SERVERTIC_CMD   45
 typedef struct {
    byte        starttic;
    byte        numtics;
    byte        numplayers;
-   ticcmd_t    cmds[45]; // normaly [BACKUPTIC][MAXPLAYERS] but too large
+   ticcmd_t    cmds[NUM_SERVERTIC_CMD]; // normaly [BACKUPTIC][MAXPLAYERS] but too large
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
 } servertics_pak;
 
+// [WDJ] As of 9/2016 there are 37 CV_NETVAR.
+#define NETCVAR_BUFF_LEN  4096
 typedef struct {
    byte        version;    // exe from differant version don't work
    uint32_t    subversion; // contain build version and maybe crc
@@ -167,7 +170,7 @@ typedef struct {
    byte        gamestate;
    
    uint32_t    playerdetected; // playeringame vector in bit field
-   byte        netcvarstates[0];
+   byte        netcvarstates[NETCVAR_BUFF_LEN];
 } serverconfig_pak;
 
 typedef struct {
@@ -192,6 +195,7 @@ typedef struct {
 } netwait_pak;
 
 #define MAXSERVERNAME 32
+#define FILENEED_BUFF_LEN  4096
 typedef struct {
     byte       version;
     uint32_t   subversion;
@@ -203,7 +207,7 @@ typedef struct {
     char       mapname[8];
     char       servername[MAXSERVERNAME];
     byte       num_fileneed;
-    byte       fileneed[4096];   // is filled with writexxx (byteptr.h)
+    byte       fileneed[FILENEED_BUFF_LEN];   // is filled with writexxx (byteptr.h)
 } serverinfo_pak;
 
 #define MAXSERVERLIST 32  // limited by the display
@@ -233,7 +237,7 @@ typedef struct
 {                
     uint32_t   checksum;
     byte       ack_req;       // Ask for an acknowlegement with this ack num.
-   			      // 0= no ack
+                              // 0= no ack
     byte       ack_return;    // Return the ack number of a packet.
                               // 0= no ack
 
@@ -284,15 +288,28 @@ extern boolean   cl_drone;  // is a drone client
 extern consvar_t cv_allownewplayer;
 extern consvar_t cv_maxplayers;
 
+typedef struct xcmd_s {
+    byte * curpos;  // text position, updated by command execution
+    byte * endpos;  // end+1 of command text
+    byte cmd;
+    byte playernum; // from player
+} xcmd_t;
+
 // Used in d_net, the only dependence.
 void    D_Init_ClientServer (void);
 int     ExpandTics (int low);
 
 // initialise the other field
-void    Register_NetXCmd(netxcmd_t cmd_id,
-			void (*cmd_f) (char **p, int playernum));
+void    Register_NetXCmd(netxcmd_e cmd_id,
+                        void (*cmd_f) (xcmd_t * xc));
 void    Send_NetXCmd(byte cmd_id, void *param, int nparam);
 void    Send_NetXCmd2(byte cmd_id, void *param, int nparam); // splitsreen player
+
+// command.c
+void Got_NetXCmd_NetVar(xcmd_t * xc);
+// load/save gamesate (load and save option and for network join in game)
+void CV_SaveNetVars(xcmd_t * xc);
+void CV_LoadNetVars(xcmd_t * xc);
 
 // Create any new ticcmds and broadcast to other players.
 void    NetUpdate (void);

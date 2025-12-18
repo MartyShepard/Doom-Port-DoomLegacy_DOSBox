@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: d_clisrv.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -174,10 +174,10 @@
 
 // The addition of wait messages should be transparent to previous network
 // versions.
-#if 1
-const int  NETWORK_VERSION = 21; // separate version number for network protocol (obsolete)
-#else
 const int  NETWORK_VERSION = 22; // separate version number for network protocol (obsolete)
+
+#if NUM_SERVERTIC_CMD < BACKUPTICS
+# error Not enough NUM_SERVERTIC_CMD
 #endif
 
 typedef enum {
@@ -236,7 +236,9 @@ byte            servernode = 255; // server net node, 255=none
 #define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
 // Text buffer for textcmds.
 typedef struct {
-   byte  buff[MAXTEXTCMD];
+   // The first byte is the length of the text, excluding the length byte.
+   // One extra byte at end for 0 termination, to protect against malicious use.
+   byte  buff[MAXTEXTCMD + 1];
 } textbuf_t;
   // The first byte of buff is the length.
 
@@ -293,9 +295,9 @@ int ExpandTics (int low)
 // -----------------------------------------------------------------
 
 // NetXCmd indirection.
-static void (*netxcmd_func[MAXNETXCMD])(char **p,int playernum);
+static void (*netxcmd_func[MAXNETXCMD]) (xcmd_t * xc);
 
-void Register_NetXCmd(netxcmd_t cmd_id, void (*cmd_f) (char **p,int playernum))
+void Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc))
 {
 #ifdef PARANOIA
    if(cmd_id >= MAXNETXCMD)
@@ -322,6 +324,7 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
        return;
    }
    // Append
+   // First byte is the cmd, followed by its parameters (binary or string).
    textlen++;
    localtextcmd.buff[textlen] = cmd_id;
    if(param && nparam)
@@ -342,7 +345,7 @@ void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
    if( (textlen + 1 + nparam) > MAXTEXTCMD)
    {
 #ifdef PARANOIA
-       I_Error("Net command exceeds buffer size: netcmd %d\n", cmd_id);
+       I_SoftError("Net command exceeds buffer size: netcmd %d\n", cmd_id);
 #else
        GenPrintf(EMSG_warn, "\2Net Command fail\n");
 #endif
@@ -387,41 +390,55 @@ static void D_Clear_ticcmd(int tic)
 
 static void ExtraDataTicker(void)
 {
-    int  i;
-    byte *curpos, *bufferend;
     int btic = BTIC_INDEX( gametic );
+    int pn;
     textbuf_t * textbuf;
+    byte * endbuf;
+    byte * endtxt;  // independent of changes by called xfunc
     int textlen;
+    xcmd_t  xcmd;
 
-    for(i=0;i<MAXPLAYERS;i++)
+    for(pn=0; pn<MAXPLAYERS; pn++)
     {
-        if((playeringame[i]) || (i==0))
+        // Execute commands of any player in the game, and always for pn=0.
+        if( ! playeringame[pn] && (pn>0) )  continue;
+
+        xcmd.playernum = pn;
+        textbuf = & textcmds[btic][pn];
+        endbuf = & textbuf->buff[MAXTEXTCMD-1];
+        endbuf[1] = 0;  // Protect against malicious strings.
+        textlen = textbuf->buff[0];  // 0..255
+#if 256 > MAXTEXTCMD
+        if( textlen > MAXTEXTCMD-1 )   textlen = MAXTEXTCMD-1;  // bad length
+#endif       
+        // Not all commands have strings, some have two strings.
+        // Inventory has just a byte number.
+        xcmd.curpos = (byte*)&(textbuf->buff[1]);  // start of text
+        endtxt = &(textbuf->buff[textlen]);  // end of text
+        if( endtxt > endbuf )  endtxt = endbuf;
+        endtxt[1] = 0;  // Protect against malicious strings.
+        xcmd.endpos = endtxt;
+        // One or more commands are within curpos..endpos
+        while(xcmd.curpos <= endtxt)
         {
-            textbuf = & textcmds[btic][i];
-            textlen = textbuf->buff[0];
-            curpos=(byte *)&(textbuf->buff[1]);  // start of text
-            // [WDJ] need check for buffer overrun here !!
-            bufferend = & textbuf->buff[textlen+1];  // end of text
-            while(curpos<bufferend)
+            xcmd.cmd = *(xcmd.curpos++);
+            if(xcmd.cmd < MAXNETXCMD && netxcmd_func[xcmd.cmd])
             {
-                if(*curpos < MAXNETXCMD && netxcmd_func[*curpos])
-                {
-                    // Execute a NetXCmd.
-                    byte cmd_id=*curpos;
-                    curpos++;
-                    DEBFILE(va("Executing x_cmd %d ply %d ", cmd_id,i));
-                    (netxcmd_func[cmd_id])((char **)&curpos,i);
-                    DEBFILE("Execute done\n");
-                }
-                else
-                {
-                    // [WDJ] Why should a bad demo command byte be fatal.
-                    I_SoftError("Got unknown net/demo command [%d]=%d (max %d)\n",
-                           (curpos - &(textbuf->buff[0])),
-                           *curpos, textlen);
-                    D_Clear_ticcmd(btic);
-                    return;
-                }
+                // Execute a NetXCmd.
+                // The NetXCmd must update xcmd.curpos.
+                DEBFILE(va("Executing xcmd %d player %d ", xcmd.cmd, pn));
+                (netxcmd_func[xcmd.cmd])(&xcmd);
+                // nextcmd_func updates curpos, without knowing textlen
+                DEBFILE("Execute done\n");
+            }
+            else
+            {
+                // [WDJ] Why should a bad demo command byte be fatal.
+                I_SoftError("Got unknown net/demo command [%d]=%d len=%d\n",
+                           (xcmd.curpos - &(textbuf->buff[0])),
+                           xcmd.cmd, textlen);
+                D_Clear_ticcmd(btic);
+                return;
             }
         }
     }
@@ -602,7 +619,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
 static boolean SV_Send_ServerConfig(int to_node)
 {
     int   i,playermask=0;
-    byte  *p;
+    xcmd_t xc;
 
     netbuffer->packettype=PT_SERVERCFG;
     for(i=0;i<MAXPLAYERS;i++)
@@ -620,11 +637,14 @@ static boolean SV_Send_ServerConfig(int to_node)
     netbuffer->u.servercfg.gametic         = LE_SWAP32_FAST(gametic);
     netbuffer->u.servercfg.clientnode      = to_node;
     netbuffer->u.servercfg.gamestate       = gamestate;
-    p = netbuffer->u.servercfg.netcvarstates;
-    CV_SaveNetVars((char**)&p);
-    // p is 1 past last cvar (if none then is at netcvarstates)
 
-    return HSendPacket(to_node, true, 0, p-((byte *)&netbuffer->u));
+    xc.playernum = 0;
+    xc.curpos = netbuffer->u.servercfg.netcvarstates;
+    xc.endpos = xc.curpos + NETCVAR_BUFF_LEN - 1;
+    CV_SaveNetVars( &xc );
+    // curpos is 1 past last cvar (if none then is at netcvarstates)
+
+    return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
 }
 
 #define JOININGAME
@@ -698,8 +718,8 @@ failed_exit:
     return;
 }
 
-
 #endif
+
 
 // ----- Wait for Server to start net game.
 //#define WAITPLAYER_DEBUG
@@ -1453,10 +1473,10 @@ void Command_Kick(void)
     }
 }
 
-void Got_NetXCmd_KickCmd(char **p, int playernum)
+void Got_NetXCmd_KickCmd(xcmd_t * xc)
 {
-    int pnum=READBYTE(*p);  // unsigned player num
-    int msg =READBYTE(*p);  // unsigned kick message
+    int pnum=READBYTE(xc->curpos);  // unsigned player num
+    int msg =READBYTE(xc->curpos);  // unsigned kick message
 
     GenPrintf(EMSG_hud, "\2%s ", player_names[pnum]);
 
@@ -1492,8 +1512,8 @@ CV_PossibleValue_t maxplayers_cons_t[]={{1,"MIN"},{32,"MAX"},{0,NULL}};
 consvar_t cv_allownewplayer = {"sv_allownewplayers","1",0,CV_OnOff};
 consvar_t cv_maxplayers     = {"sv_maxplayers","32",CV_NETVAR,maxplayers_cons_t,NULL,32};
 
-void Got_NetXCmd_AddPlayer(char **p, int playernum);
-void Got_NetXCmd_AddBot(char **p,int playernum);	//added by AC for acbot
+void Got_NetXCmd_AddPlayer(xcmd_t * xc);
+void Got_NetXCmd_AddBot(xcmd_t * xc);	//added by AC for acbot
 
 // Called one time at init, by D_Startup_NetGame.
 void D_Init_ClientServer (void)
@@ -1677,13 +1697,13 @@ void SV_AddNode(byte nnode)
 }
 
 // Xcmd XD_ADDPLAYER
-void Got_NetXCmd_AddPlayer(char **p,int playernum)
+void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 {
     static uint32_t sendconfigtic = 0xffffffff;
 
     // [WDJ] Having error due to sign extension of byte read (signed char).
-    byte nnode=READBYTE(*p);  // unsigned
-    unsigned int newplayernum=READBYTE(*p);  // unsigned
+    byte nnode = READBYTE(xc->curpos);  // unsigned
+    unsigned int newplayernum = READBYTE(xc->curpos);  // unsigned
     boolean splitscreenplayer = newplayernum&0x80;
 
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
@@ -1730,10 +1750,10 @@ void Got_NetXCmd_AddPlayer(char **p,int playernum)
 }
 
 // Xcmd XD_ADDBOT
-void Got_NetXCmd_AddBot(char **p, int playernum)  //added by AC for acbot
+void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
 {
     // [WDJ] Having error due to sign extension of byte read (signed char).
-    unsigned int newplayernum=READBYTE(*p);  // unsigned
+    unsigned int newplayernum=READBYTE(xc->curpos);  // unsigned
     //int node = 0;
     //int i = 0;
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
@@ -2060,7 +2080,7 @@ static void server_refuse_handler( byte nnode )
 static void server_cfg_handler( byte nnode )
 {
     int j;
-    byte *p;
+    xcmd_t xc;
 
     if( cl_mode != CLM_waitjoinresponse )
         return;
@@ -2094,8 +2114,11 @@ static void server_cfg_handler( byte nnode )
         playeringame[j]=( playerdet & (1<<j) ) != 0;
     }
 
-    p = netbuffer->u.servercfg.netcvarstates;
-    CV_LoadNetVars( (char**)&p );
+    xc.playernum = 0;
+    xc.curpos = netbuffer->u.servercfg.netcvarstates;
+    xc.endpos = xc.curpos + NETCVAR_BUFF_LEN - 1;
+    CV_LoadNetVars( &xc );
+
 #ifdef JOININGAME
     cl_mode = ( netbuffer->u.servercfg.gamestate == GS_LEVEL ) ?
        CLM_downloadsavegame : CLM_connected;
@@ -2359,8 +2382,9 @@ static void servertic_handler( byte nnode )
     tic_t  start_tic, end_tic, ti;
     ticcmd_t * ticp;  // net tics
     byte * txtp;  // net txtcmd text
+    byte * endcmds;  // for buffer overrun tests
     byte   num_txt;
-    int    btic, j;
+    int    btic, j, k;
 
     start_tic = ExpandTics (netbuffer->u.serverpak.starttic);
     end_tic   = start_tic + netbuffer->u.serverpak.numtics;
@@ -2377,9 +2401,12 @@ static void servertic_handler( byte nnode )
     // The needed tic is within this packet.
     // Nettics
     ticp = netbuffer->u.serverpak.cmds;
+    endcmds = (byte*)&ticp[NUM_SERVERTIC_CMD];
     // After the nettics are the net textcmds
-    txtp = (byte *)&netbuffer->u.serverpak.cmds[
-           netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics];
+    k = netbuffer->u.serverpak.numplayers * netbuffer->u.serverpak.numtics;
+    if( k >= NUM_SERVERTIC_CMD )  goto exceed_buffer;
+    txtp = (byte *)&netbuffer->u.serverpak.cmds[k];
+    // txtp uses cmd space for text
 
     for(ti = start_tic; ti<end_tic; ti++)
     {
@@ -2388,6 +2415,7 @@ static void servertic_handler( byte nnode )
 
         // Copy the tics
         btic = BTIC_INDEX( ti );
+        // btic limited to BACKUPTICS-1
         TicCmdCopy(netcmds[btic], ticp, netbuffer->u.serverpak.numplayers);
         ticp += netbuffer->u.serverpak.numplayers;
 
@@ -2395,15 +2423,26 @@ static void servertic_handler( byte nnode )
         num_txt = *(txtp++);  // number of txtcmd
         for(j=0; j<num_txt; j++)
         {
-            int pn = *txtp++; // playernum
-            memcpy(textcmds[btic][pn].buff, txtp, txtp[0]+1);
-            txtp += txtp[0]+1;
+            int pn = *(txtp++); // playernum
+            int len = txtp[0]+1;  // max len of 256
+            if( txtp + len > endcmds )  goto exceed_buffer;
+#if 256 > MAXTEXTCMD
+            if( len < MAXTEXTCMD )  // prevent dest overrun
+#endif
+            // force string termination to defend against malicious packets
+            //pn[len-1] = 0;  ?? are they all strings
+            memcpy(textcmds[btic][pn].buff, txtp, len);
+            txtp += len;
         }
     }
 
     cl_need_tic = end_tic;
     return;
 
+   
+ exceed_buffer:
+    I_SoftError("Nettics exceed buffer\n");
+    return;
  not_in_packet:
     DEBFILE(va("Needed tic not in packet tic bounds: tic %u\n", cl_need_tic));
     return;

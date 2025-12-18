@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: command.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -203,24 +203,24 @@ void COM_BufExecute ( void )
           ||( strncmp(text,"addfile",7) == 0 )
           ||( strncmp(text,"loadconfig",10) == 0 )
           ||( strncmp(text,"saveconfig",10) == 0 )
-	  ) ? 0 : 1;  // has filename : is script with quoted strings
+          ) ? 0 : 1;  // has filename : is script with quoted strings
 
       for (i=0; i < com_text.cursize; i++)
       {
-	register char ch = text[i];
+        register char ch = text[i];
         if (ch == '"') // non-escaped quote 
-	  in_quote = !in_quote;
-	else if( in_quote )
-	{
+          in_quote = !in_quote;
+        else if( in_quote )
+        {
           if (script && (ch == '\\')) // escape sequence
-	  {
+          {
 #if 1
-	      // [WDJ] Only doublequote and backslash really matter
-	      i += 1;  // skip it, because other parser does too
-	      continue;
+              // [WDJ] Only doublequote and backslash really matter
+              i += 1;  // skip it, because other parser does too
+              continue;
 #else
               switch (text[i+1])
-	      {
+              {
                 case '\\': // backslash
                 case '"':  // double quote
                 case 't':  // tab
@@ -232,17 +232,17 @@ void COM_BufExecute ( void )
                   // unknown sequence, parser will give an error later on.
                   break;
               }
-	      continue;
+              continue;
 #endif	     
-	  }
-	}
-	else
-	{ // not in quoted string
+          }
+        }
+        else
+        { // not in quoted string
           if (ch == ';') // semicolon separates commands
             break;
-	  if (ch == '\n' || ch == '\r') // always separate commands
-	    break;
-	}
+          if (ch == '\n' || ch == '\r') // always separate commands
+            break;
+        }
       }
 
 
@@ -700,10 +700,10 @@ static void COM_Help_f (void)
                 if(strcasecmp(cvar->PossibleValue[0].strvalue,"MIN")==0)
                 {
                     for(i=1; cvar->PossibleValue[i].strvalue!=NULL; i++)
-		    {
+                    {
                         if(!strcasecmp(cvar->PossibleValue[i].strvalue,"MAX"))
                             break;
-		    }
+                    }
                     con_Printf("  range from %d to %d\n",cvar->PossibleValue[0].value,cvar->PossibleValue[i].value);
                 }
                 else
@@ -809,10 +809,10 @@ void *VS_GetSpace (vsbuf_t *buf, int length)
     if (buf->cursize + length > buf->maxsize)
     {
         if (!buf->allowoverflow)
-	  return NULL;
+          return NULL;
 
         if (length > buf->maxsize)
-	  return NULL;
+          return NULL;
 
         buf->overflowed = true;
         CONS_Printf ("VS buffer overflow");
@@ -1056,10 +1056,10 @@ static void Setvalue (consvar_t *var, char *valstr)
             int i;
             // search for maximum
             for(i=1;var->PossibleValue[i].strvalue!=NULL;i++)
-	    {
+            {
                 if(!strcasecmp(var->PossibleValue[i].strvalue,"MAX"))
                     break;
-	    }
+            }
 
 #ifdef PARANOIA
             if(var->PossibleValue[i].strvalue==NULL)
@@ -1077,7 +1077,7 @@ static void Setvalue (consvar_t *var, char *valstr)
                 v = var->PossibleValue[i].value;
                 sprintf(value_str,"%d", v);
                 valstr = value_str;
-	    }
+            }
         }
         else
         {
@@ -1086,21 +1086,21 @@ static void Setvalue (consvar_t *var, char *valstr)
 
             // check first strings
             for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
-	    {
+            {
                 if(!strcasecmp(var->PossibleValue[i].strvalue,valstr))
                     goto found;
-	    }
+            }
             if(!v)
-	    {
+            {
                if(strcmp(valstr,"0")!=0) // !=0 if valstr!="0"
                     goto error;
-	    }
+            }
             // check int now
             for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
-	    {
+            {
                 if(v==var->PossibleValue[i].value)
                     goto found;
-	    }
+            }
 
 error:      // not found
             CONS_Printf("\"%s\" is not a possible value for \"%s\"\n", valstr, var->name);
@@ -1148,27 +1148,35 @@ finish:
 //      2 byte for variable identification
 //      then the value of the variable followed with a 0 byte (like str)
 //
-void Got_NetXCmd_NetVar(char **p, int playernum)
+void Got_NetXCmd_NetVar(xcmd_t * xc)
 {
-    byte * bp = (byte*) *p;	// macros READ,SKIP want byte*
+    byte * bp = xc->curpos;	// macros READ,SKIP want byte*
 
     consvar_t *cvar = CV_FindNetVar(READU16(bp));
     char *svalue = (char *)bp;
-    SKIPSTRING(bp);
-    *p = (char*)bp;	// return updated ptr only once
+    while( *(bp++) ) {  // find 0 term
+       if( bp > xc->endpos )  goto buff_overrun;  // bad string
+    }
+    xc->curpos = bp;	// return updated ptr only once
     if(cvar==NULL)
     {
         CONS_Printf("\2Netvar not found\n");
         return;
     }
     Setvalue(cvar,svalue);
+    return;
+
+buff_overrun:
+    xc->curpos = xc->endpos+2;  // indicate overrun
+    return;
 }
 
-// get implicit parameter save_p
-void CV_SaveNetVars( char **p )
+
+// Called by SV_Send_ServerConfig, P_SaveGame.
+void CV_SaveNetVars(xcmd_t * xc)
 {
     consvar_t  *cvar;
-    byte * bp = (byte*) *p;	// macros want byte*
+    byte * bp = xc->curpos;	// macros want byte*
 
     // we must send all cvar because on the other side maybe
     // it have a cvar modified and here not (same for true savegame)
@@ -1176,25 +1184,42 @@ void CV_SaveNetVars( char **p )
     {
         if (cvar->flags & CV_NETVAR)
         {
+            // potential buffer overrun test
+            if((bp + 2 + strlen( cvar->string)) > xc->endpos )  goto buff_overrun;
+            // Format:  netid int16, var_string str0.
             WRITE16(bp,cvar->netid);
-            WRITESTRING(bp,cvar->string);
+            bp = write_string(bp, cvar->string);
         }
     }
-    *p = (char*)bp;	// return updated ptr only once
+    xc->curpos = bp;	// return updated ptr only once
+    return;
+
+buff_overrun:
+    I_SoftError( "Net Vars overrun available packet space\n" );
+    return;
 }
 
-// get implicit parameter save_p
-void CV_LoadNetVars( char **p )
+// Only used for server state.
+void CV_LoadNetVars(xcmd_t * xc)
 {
     consvar_t  *cvar;
 
+    // Read netvar from byte stream, identified by netid.
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
         if (cvar->flags & CV_NETVAR)
-	    Got_NetXCmd_NetVar(p, 0);
+            Got_NetXCmd_NetVar( xc );
+        // curpos on last read can go to endpos+1
+        if(xc->curpos > xc->endpos+1)  goto buff_overrun;
     }
+    return;
+
+buff_overrun:
+    I_SoftError( "Load Net Vars overran packet buffer\n" );
+    return;
 }
 
+#define SET_BUFSIZE 128
 
 //  does as if "<varname> <value>" is entered at the console
 //
@@ -1221,21 +1246,19 @@ void CV_Set (consvar_t *var, char *value)
             return;
         }
 
-	// send the value of the variable
-//        const int BUFSIZE = 128;  // not tolerated by all compilers
-#define BUFSIZE 128
-	byte buf[BUFSIZE], *p; // macros want byte*
-	p = buf;
+        // send the value of the variable
+        byte buf[SET_BUFSIZE], *p; // macros want byte*
+        p = buf;
+        // Format:  netid int16, var_string str0.
         WRITEU16(p, var->netid);
-        WRITESTRINGN(p, value, BUFSIZE-2-1);
-	*p = '\0'; // [smite] WRITESTRINGN _should_ make sure the NUL gets there in all cases, but alas
+        p = write_stringn(p, value, SET_BUFSIZE-2-1);
         Send_NetXCmd(XD_NETVAR, buf, (p - buf));
-	return;
+        return;
       }
       else if (var->flags & CV_NOTINNET)
       {
-	CONS_Printf("This variable cannot be changed during a netgame.\n");
-	return;
+        CONS_Printf("This variable cannot be changed during a netgame.\n");
+        return;
       }
     }
 
@@ -1263,48 +1286,48 @@ void CV_AddValue (consvar_t *var, int increment)
     {
         if( strcmp(var->PossibleValue[MINpv].strvalue,"MIN")==0 )
         {
-	    // MIN .. MAX
-	    int min_value = var->PossibleValue[MINpv].value; 
-	    int max_value = MAXINT;
+            // MIN .. MAX
+            int min_value = var->PossibleValue[MINpv].value; 
+            int max_value = MAXINT;
             int max;
-	    
+
             // Search the list.
             for(max=0; max<99 ; max++)
-	    {
-	        if( var->PossibleValue[max].strvalue == NULL )
-		   break;
-	        if( strcmp(var->PossibleValue[max].strvalue,"INC")==0 )
-	        {
-		    // Has an INC
-		    newvalue = var->value
-		     + (increment * var->PossibleValue[max].value);
-		}
-	        else
-	        {
-		   max_value = var->PossibleValue[max].value;
-		}
-	    }
+            {
+                if( var->PossibleValue[max].strvalue == NULL )
+                   break;
+                if( strcmp(var->PossibleValue[max].strvalue,"INC")==0 )
+                {
+                    // Has an INC
+                    newvalue = var->value
+                     + (increment * var->PossibleValue[max].value);
+                }
+                else
+                {
+                   max_value = var->PossibleValue[max].value;
+                }
+            }
 
             if( newvalue < min_value )
-	    {
+            {
                 newvalue += max_value - min_value + 1;   // add the max+1
-	    }
+            }
             newvalue = min_value
-	     + ((newvalue - min_value) % (max_value - min_value + 1));
+             + ((newvalue - min_value) % (max_value - min_value + 1));
 
             CV_SetValue(var,newvalue);
         }
         else
         {
-	    // List of Values
+            // List of Values
             int max,currentindice=-1,newindice;
 
             // this code do not support more than same value for differant PossibleValue
             for(max=0; var->PossibleValue[max].strvalue!=NULL; max++)
-	    {
+            {
                 if( var->PossibleValue[max].value==var->value )
                     currentindice=max;
-	    }
+            }
             max--;
 #ifdef PARANOIA
             if( currentindice==-1 )
@@ -1409,39 +1432,38 @@ skipwhite:
             {
               // NUL in the middle of a quoted string. Missing closing quote?
               CONS_Printf("Error: Quoted string ended prematurely.\n");
-	      goto term_done;
+              goto term_done;
             }
 #endif						
-	    
             if (c == '"') // closing quote
-	      goto term_done;
-	    
+              goto term_done;
+
             if ( script && (c == '\\')) // c-like escape sequence
             {
-	      switch (*data)
-	      {
-	      case '\\':  // backslash
-		com_token[len++] = '\\'; break;
+              switch (*data)
+              {
+              case '\\':  // backslash
+                com_token[len++] = '\\'; break;
 
-	      case '"':  // double quote
-		com_token[len++] = '"'; break;
+              case '"':  // double quote
+                com_token[len++] = '"'; break;
 
-	      case 't':  // tab
-		com_token[len++] = '\t'; break;
+              case 't':  // tab
+                com_token[len++] = '\t'; break;
 
-	      case 'n':  // newline
-		com_token[len++] = '\n'; break;
+              case 'n':  // newline
+                com_token[len++] = '\n'; break;
 
-	      default:
-		CONS_Printf("Error: Unknown escape sequence '\\%c'\n", *data);
-		break;
-	      }
+              default:
+                CONS_Printf("Error: Unknown escape sequence '\\%c'\n", *data);
+                break;
+              }
 
-	      data++;
-	      continue;
-	    }
+              data++;
+              continue;
+            }
 
-	    // normal char
+            // normal char
             com_token[len++] = c;
         }
 #if defined( __DJGPP__ )					

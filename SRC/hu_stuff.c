@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1266 2016-09-20 17:25:35Z wesleyjohnson $
+// $Id: hu_stuff.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -153,7 +153,7 @@ static void HU_DrawTip();
 void Command_Say_f (void);
 void Command_Sayto_f (void);
 void Command_Sayteam_f (void);
-void Got_NetXCmd_Saycmd(char **p, int playernum);
+void Got_NetXCmd_Saycmd(xcmd_t * xc);
 
 // Initialise Heads up
 // once at game startup.
@@ -331,14 +331,18 @@ void Command_Sayteam_f (void)
 //      0x80 & team number, team= 0..126
 //      255 broadcast
 
-//  playernum : from player
-void Got_NetXCmd_Saycmd(char **p, int playernum)
+void Got_NetXCmd_Saycmd( xcmd_t * xc )
 {
+    // Command: ( byte: to_player_id, string0: message )
+    // XCmd buffer has forced 0 term to protect against malicious message.
     const char * tostr = "";
-    byte to = *(*p)++;
+    char * fromstr;
+    byte * p = xc->curpos;
+    byte to = *(p++);
     byte pn = (to & 0x7F); // to player num 0..126
 
-    if( playernum >= MAXPLAYERS )  goto done;  // cannot index player_names
+    if( xc->playernum >= MAXPLAYERS )  goto done;  // cannot index player_names
+    fromstr = player_names[xc->playernum];  // never NULL
 
     if( to==255 )
     {
@@ -355,30 +359,31 @@ void Got_NetXCmd_Saycmd(char **p, int playernum)
         }
     }
 
-    if(playernum==consoleplayer
+    if(xc->playernum == consoleplayer
        || to==255 // broadcast
        || ( (to < MAXPLAYERS) && pn==consoleplayer )
        || ( (to & 0x80) // Team broadcast from pn
             && ST_SameTeam(consoleplayer_ptr,&players[pn])) )
     {
-        GenPrintf( EMSG_playmsg, "\3%s%s: %s\n", player_names[playernum], tostr, *p);
+        GenPrintf( EMSG_playmsg, "\3%s%s: %s\n", fromstr, tostr, p);
     }
 
     if(  displayplayer2_ptr )
     {
         // Splitscreen
-        if(playernum==displayplayer2
+        if(xc->playernum == displayplayer2
            || to==255 // broadcast
            || ( (to < MAXPLAYERS) && pn==displayplayer2 )
            || ( (to & 0x80) // Team broadcast from pn
                 && ST_SameTeam(displayplayer2_ptr,&players[pn])) )
         {
-            GenPrintf( EMSG_playmsg2, "\3%s%s: %s\n", player_names[playernum], tostr, *p);
+            GenPrintf( EMSG_playmsg2, "\3%s%s: %s\n", fromstr, tostr, p);
         }
     }
 
 done:
-    *p += strlen(*p)+1;
+    p += strlen((char*)p) + 1;  // incl term 0
+    xc->curpos = p;
 }
 
 

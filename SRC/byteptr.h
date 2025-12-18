@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: byteptr.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: byteptr.h 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -85,9 +85,12 @@ static inline void write_32(byte **p, int32_t val)
 // use as body of if,while, etc..
 // Would make these inline functions, but cannot because they
 // modify their parameters.
-#define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); } while ((b)[tmp_i++]); }
-#define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR((p), (b)[tmp_i]); if (!(b)[tmp_i]) break; tmp_i++; } while (tmp_i<(n)); }
 #define WRITEMEM(p,s,n)     { memcpy((p),(s),(n)); (p)+=(n); }
+
+// Replace complicated WRITESTRING macros, with proper functions.
+// Implemented in d_netcmd.c
+byte *  write_string( byte *dst, char *src);
+byte *  write_stringn( byte *dst, char* src, int num );
 
 
 // [WDJ] Put () around all macros that return values, to ensure closure in expr.
@@ -107,7 +110,6 @@ static inline void write_32(byte **p, int32_t val)
 // use as body of if,while, etc..
 // Would make these inline functions, but cannot because they
 // modify their parameters.
-#define READSTRING(p,s)     { int tmp_i=0; do { (s)[tmp_i] = READBYTE(p); } while ((s)[tmp_i++]); }
 #define SKIPSTRING(p)       { while(READBYTE(p)); }
 #define READMEM(p,s,n)      { memcpy(s, p, n); p+=n; }
 

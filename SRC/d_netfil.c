@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: d_netfil.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -165,16 +165,19 @@ byte * Put_Server_FileNeed(void)
     byte *p;  // macros want byte*
     char  wadfilename[MAX_WADPATH];
 
+    // Format: Series of file descriptor, number of file in packet field.
+    // Dest buff length: fileneed[FILENEED_BUFF_LEN]
     p=(byte *)&netbuffer->u.serverinfo.fileneed;
     for(i=0;i<numwadfiles;i++)
     {
+        // Format: filesize int32, filename str0, md5sum 16byte
         WRITEU32(p,wadfiles[i]->filesize);
         strcpy(wadfilename,wadfiles[i]->filename);
         nameonly(wadfilename);
-        WRITESTRING(p,wadfilename);
+        p = write_string(p, wadfilename);
         WRITEMEM(p,wadfiles[i]->md5sum,16);
     }
-    netbuffer->u.serverinfo.num_fileneed = i;
+    netbuffer->u.serverinfo.num_fileneed = i;  // numwadfiles
     return p;
 }
 
@@ -182,27 +185,51 @@ byte * Put_Server_FileNeed(void)
 // Handle the received serverinfo packet and fill client fileneed table.
 void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
 {
-    int i;
+    int i, fn_len;
+    byte *p = fileneed_str;
+    byte * bufend16 = &fileneed_str[FILENEED_BUFF_LEN - 1 - 16];
+    byte * next0;
+    // NULL when not found
+   
+    // Format: Series of file descriptor, number of file as parameter.
+    // Src buff length: fileneed[FILENEED_BUFF_LEN]
+    // Must have 0 term.
+    // Last 16 bytes of content will be md5sum, so cannot just tack on 0.
 
     cl_num_fileneed = num_fileneed_parm;
-    byte *p = fileneed_str;
-    for(i=0; i<cl_num_fileneed; i++)
+    for(i=0; i<cl_num_fileneed; i++)  // MAX_WADFILES
     {
+        // Format: filesize int32, filename str0, md5sum 16byte
         fileneed_t * fnp = & cl_fileneed[i];  // client fileneed
+
+        // Protect against malicious packet without 0 term.
+        if( p >= bufend16 )  goto bad_packet;  // buffer overrun
+
         fnp->status = FS_NOTFOUND;
         fnp->totalsize = READU32(p);
         fnp->phandle = NULL;
-        //READSTRING(p,fnp->filename); // overflow unsafe
+
         // [WDJ] String overflow safe
+        next0 = memchr( p, '\0', bufend16 - p );
+        if((next0 == NULL) || (next0 > bufend16))
         {
-            int fn_len = strlen( (char*)p ) + 1;
-            int read_len = min( fn_len, MAX_WADPATH-1 );  // length safe
-            memcpy(fnp->filename, p, read_len);
-            fnp->filename[MAX_WADPATH-1] = '\0';
-            p += fn_len;  // whole
+            fnp->filename[0] = '\0';
+	    goto bad_packet;  // overran last 0 term.
         }
+        // Test on next0 guarantees that there is a 0 term.
+        fn_len = next0 - p + 1;  // strnlen equiv.
+        int read_len = min( fn_len, MAX_WADPATH-1 );  // length safe
+        memcpy(fnp->filename, p, read_len);
+        fnp->filename[MAX_WADPATH-1] = '\0';
+        p += fn_len;  // whole, next0 + 1
+
         READMEM(p,fnp->md5sum,16);
     }
+    return;
+
+bad_packet:
+    GenPrintf(EMSG_warn, "Fileneed bad packet\n" );
+    return;
 }
 
 // By Client
@@ -313,7 +340,7 @@ reqfile_e  Send_RequestFile(void)
             strcpy( filetmp, fnp->filename );
             nameonly(filetmp);
             WRITECHAR(p,i);  // fileid
-            WRITESTRING(p,filetmp);
+            p = write_string(p, filetmp);
             // put it in download dir 
             cat_filename( fnp->filename, downloaddir, filetmp );
             fnp->status = FS_REQUESTED;

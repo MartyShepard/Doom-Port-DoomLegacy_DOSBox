@@ -5476,3 +5476,16 @@ patchfile = w105_64_netdef.patch
 - commit revision 1268
 Changed to use stdint types in the network tic packet, to standardize
 the tic packet for both 32 bit and 64 bit machines.
+
+*** W105_netstr
+patchfile = w105_65_netstr.patch
+- commit revision 1269
+Hardened the network XCmd code against malicious packets.
+Changed the network XCmd code to use a structure parameter with enough
+buffer information to limit string operations that do not find the 0 term.
+Removed some of the Macros that the previous code was using in favor of
+local customized and hardened string handling code.
+
+Bumped the network version number to 22.
+The differences in the packet are slight, but this is done mostly to eliminate
+the older code from usage for security reasons.

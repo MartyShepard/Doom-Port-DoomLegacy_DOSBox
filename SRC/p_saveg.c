@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: p_saveg.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3063,17 +3063,28 @@ void P_LoadNetVars( void )
 {
     const int mincnt = 23; // Smallest number of netvar in a 144 savegame
     int count = 0;
+    xcmd_t  xc;
+
     // [WDJ] Every addition of a cv_ var changes the number of NetVar loaded here.
     // Make it adaptable so that old save games can be loaded.
     // This works for now, but it is a conflict between SYNC_sync
     // and the netvar id number.
     SG_Readbuf();
     // continue loading net vars until hit the sync
+    xc.playernum = 0;
+    xc.endpos = & savebuffer[savebuffer_size-1];
     for (;;count++)
     {
         if( count>=mincnt )
             if( save_p[0] == SYNC_sync && save_p[1] == SYNC_misc ) break;
-        Got_NetXCmd_NetVar((char**)&save_p, 0);
+        xc.curpos = save_p;
+        Got_NetXCmd_NetVar( &xc );
+        save_p = xc.curpos;
+        if( save_p > xc.endpos )
+        {
+            save_game_abort = 1;  // Buffer overrun
+            break;
+        }
     }
 //    GenPrintf(EMSG_info, "Loaded %d netvars\n", count ); // [WDJ] DEBUG
 }
@@ -3283,11 +3294,16 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
 // and called from SV_Send_SaveGame by network for JOININGAME.
 // Write game data to savegame buffer.
 void P_SaveGame( void )
-{   
+{
+    xcmd_t xc;
+
     InitPointermap_Save(&mobj_ptrmap, 1024);
 
     SG_SaveSync( SYNC_net );
-    CV_SaveNetVars((char **) &save_p);
+    xc.playernum = 0;
+    xc.curpos = save_p;
+    xc.endpos = & savebuffer[savebuffer_size-1];
+    CV_SaveNetVars( &xc );
     SG_SaveSync( SYNC_misc );
     P_ArchiveMisc();
     SG_SaveSync( SYNC_players );
@@ -3339,7 +3355,6 @@ boolean P_LoadGame(void)
     InitPointermap_Load(&mapthg_ptrmap, 64);
 
     if( ! SG_ReadSync( SYNC_net, 0 ) )  goto sync_err;
-//    CV_LoadNetVars((char **) &save_p);
     P_LoadNetVars();
     if( ! SG_ReadSync( SYNC_misc, 0 ) )  goto sync_err;
     // Misc does level setup, and purges all previous PU_LEVEL memory.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: d_netcmd.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -157,14 +157,14 @@ void Command_UnbindJoyaxis_f();
 
 void Command_WeaponPref(void);
 
-void Got_NetXCmd_NameColor(char **cp, int playernum);
-void Got_NetXCmd_WeaponPref(char **cp, int playernum);
-void Got_NetXCmd_Mapcmd(char **cp, int playernum);
-void Got_NetXCmd_ExitLevelcmd(char **cp, int playernum);
-void Got_NetXCmd_LoadGamecmd(char **cp, int playernum);
-void Got_NetXCmd_SaveGamecmd(char **cp, int playernum);
-void Got_NetXCmd_Pause(char **cp, int playernum);
-void Got_NetXCmd_UseArtifact(char **cp, int playernum);
+void Got_NetXCmd_NameColor(xcmd_t * xc);
+void Got_NetXCmd_WeaponPref(xcmd_t * xc);
+void Got_NetXCmd_Mapcmd(xcmd_t * xc);
+void Got_NetXCmd_ExitLevelcmd(xcmd_t * xc);
+void Got_NetXCmd_LoadGamecmd(xcmd_t * xc);
+void Got_NetXCmd_SaveGamecmd(xcmd_t * xc);
+void Got_NetXCmd_Pause(xcmd_t * xc);
+void Got_NetXCmd_UseArtifact(xcmd_t * xc);
 
 void TeamPlay_OnChange(void);
 void FragLimit_OnChange(void);
@@ -471,6 +471,41 @@ void D_Register_ClientCommands(void)
 
 }
 
+//--- string
+// [WDJ] The compiler will likely inline these.
+// The macro versions were unreadable, and thus unmaintainable.
+
+// Only use this on internal strings that are known to have 0 term.
+// Will always terminate the string.
+// Return next buffer location.
+byte *  write_string(byte *dst, char *src)
+{
+  // copy src str0 to buffer dst, until reach 0 term.
+  do {
+    WRITECHAR(dst, *src);
+  }
+  while ( *(src++) );
+  return dst;
+}
+
+// Will always terminate the string.
+// Return next buffer location
+byte *  write_stringn( byte *dst, char* src, int num )
+{
+  // copy src str0 to buffer dst, until reach 0 term or num of char reached.
+  for(;;) {
+    WRITECHAR(dst, *src);
+    if ( *(src++) == 0 )  break;
+    num--;
+    if(num == 0) {  // do not exceed num char
+      dst[-1] = 0;  // overwrite last char with 0
+      break;
+    }
+  }
+  return dst;
+}
+
+
 // =========================================================================
 //                            CLIENT STUFF
 // =========================================================================
@@ -480,19 +515,19 @@ void D_Register_ClientCommands(void)
 //
 void Send_NameColor(void)
 {
-    char buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
+    byte buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1];
+    byte *p;
 
     p = buf;
+    // Format:  color byte, player_name str0, skin_name str0.
     WRITEBYTE(p, cv_playercolor.value);
-    WRITESTRINGN(p, cv_playername.string, MAXPLAYERNAME);
-    *(p - 1) = 0;       // finish the string;
+    p = write_stringn(p, cv_playername.string, MAXPLAYERNAME);
 
     // check if player has the skin loaded (cv_skin may have
     //  the name of a skin that was available in the previous game)
     cv_skin.value = R_SkinAvailable(cv_skin.string);
     char * svstr = (cv_skin.value)? cv_skin.string : DEFAULTSKIN;
-    WRITESTRINGN(p, svstr, SKINNAMESIZE)
-    *(p - 1) = 0;       // finish the string;
+    p = write_stringn(p, svstr, SKINNAMESIZE);
 
     Send_NetXCmd(XD_NAMEANDCOLOR, buf, (p - buf));
 }
@@ -500,28 +535,29 @@ void Send_NameColor(void)
 // splitscreen
 void Send_NameColor2(void)
 {
-    char buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
+    byte buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
 
     p = buf;
+    // Format:  color byte, player_name str0, skin_name str0.
     WRITEBYTE(p, cv_playercolor2.value);
-    WRITESTRINGN(p, cv_playername2.string, MAXPLAYERNAME);
-    *(p - 1) = 0;       // finish the string;
+    p = write_stringn(p, cv_playername2.string, MAXPLAYERNAME);
 
     // check if player has the skin loaded (cv_skin may have
     //  the name of a skin that was available in the previous game)
     cv_skin2.value = R_SkinAvailable(cv_skin2.string);
     char * svstr = (cv_skin2.value)? cv_skin2.string : DEFAULTSKIN;
-    WRITESTRINGN(p, svstr, SKINNAMESIZE)
-    *(p - 1) = 0;       // finish the string;
+    p = write_stringn(p, svstr, SKINNAMESIZE);
 
     Send_NetXCmd2(XD_NAMEANDCOLOR, buf, (p - buf));
 }
 
-void Got_NetXCmd_NameColor(char **cp, int playernum)
+void Got_NetXCmd_NameColor(xcmd_t * xc)
 {
-    player_t *p = &players[playernum];
-    char * lcp = *cp; // local cp
+    player_t * p = &players[xc->playernum];
+    char * pname = player_names[xc->playernum];
+    char * lcp = (char*)xc->curpos; // local cp
 
+    // Format:  color byte, player_name str0, skin_name str0.
     // color
     p->skincolor = READBYTE(lcp) % NUMSKINCOLORS;
 
@@ -533,39 +569,42 @@ void Got_NetXCmd_NameColor(char **cp, int playernum)
     // name
     if (demoversion >= 128)
     {
-        if (strcasecmp(player_names[playernum], lcp))
-            CONS_Printf("%s renamed to %s\n", player_names[playernum], lcp);
-        // READSTRING(lcp, player_names[playernum]);  // overflow unsafe
+        if (strcasecmp(pname, lcp))
+            CONS_Printf("%s renamed to %s\n", pname, lcp);
         // [WDJ] String overflow safe
         {
             int pn_len = strlen( lcp ) + 1;
             int read_len = min( pn_len, MAXPLAYERNAME-1 );  // length safe
-            memcpy(player_names[playernum], lcp, read_len);
-            player_names[playernum][MAXPLAYERNAME-1] = '\0';
+            memcpy(pname, lcp, read_len);
+            pname[MAXPLAYERNAME-1] = '\0';
             lcp += pn_len;  // whole
         }
     }
     else
     {
-        memcpy(player_names[playernum], lcp, MAXPLAYERNAME);
+        memcpy(pname, lcp, MAXPLAYERNAME);
         lcp += MAXPLAYERNAME;
     }
+
+    // Protection against malicious packet.
+    if( (byte*)lcp >= xc->endpos )  goto done;
 
     // skin
     if (demoversion < 120 || demoversion >= 125)
     {
         if (demoversion >= 128)
         {
-            SetPlayerSkin(playernum, lcp);
+            SetPlayerSkin(xc->playernum, lcp);
             SKIPSTRING(lcp);
         }
         else
         {
-            SetPlayerSkin(playernum, lcp);
+            SetPlayerSkin(xc->playernum, lcp);
             lcp += (SKINNAMESIZE + 1);
         }
     }
-    *cp = lcp;  // OUT once
+done:
+    xc->curpos = (byte*)lcp;  // OUT once
 }
 
 void Send_WeaponPref(void)
@@ -577,6 +616,9 @@ void Send_WeaponPref(void)
         CONS_Printf("weaponpref must have %d characters", NUMWEAPONS);
         return;
     }
+    // Format: original_weapon_switch  byte,
+    //         weapon_pref  char[NUMWEAPONS],
+    //         autoaim  byte.
     buf[0] = cv_originalweaponswitch.value;
     memcpy(buf + 1, cv_weaponpref.string, NUMWEAPONS);
     buf[1 + NUMWEAPONS] = cv_autoaim.value;
@@ -586,12 +628,16 @@ void Send_WeaponPref(void)
         Send_NetXCmd2(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
 }
 
-void Got_NetXCmd_WeaponPref(char **cp, int playernum)
+void Got_NetXCmd_WeaponPref(xcmd_t * xc)
 {
-    players[playernum].originalweaponswitch = *(*cp)++;
-    memcpy(players[playernum].favoritweapon, *cp, NUMWEAPONS);
-    *cp += NUMWEAPONS;
-    players[playernum].autoaim_toggle = *(*cp)++;
+    player_t * p = &players[xc->playernum];
+    // Format: original_weapon_switch  byte,
+    //         weapon_pref  char[NUMWEAPONS],
+    //         autoaim  byte.
+    p->originalweaponswitch = *(xc->curpos++);
+    memcpy(p->favoritweapon, xc->curpos, NUMWEAPONS);
+    xc->curpos += NUMWEAPONS;
+    p->autoaim_toggle = *(xc->curpos++);
 }
 
 void D_Send_PlayerConfig(void)
@@ -736,6 +782,9 @@ void Command_Map_f(void)
         }
     }
 
+    // Format: skill byte, (no_reset_players, no_monsters) byte,
+    //         map_name str0.
+
     // Options of the map command.
     if ((i = COM_CheckParm("-skill")) != 0)
         buf[0] = atoi(COM_Argv(i + 1)) - 1;
@@ -768,17 +817,19 @@ void Command_Map_f(void)
     Send_NetXCmd(XD_MAP, buf, 2 + strlen(MAPNAME) + 1);
 }
 
-void Got_NetXCmd_Mapcmd(char **cp, int playernum)
+void Got_NetXCmd_Mapcmd(xcmd_t * xc)
 {
     char mapname[MAX_WADPATH];
     byte opt, skill;
     int  resetplayer = 1;
 
-    skill = READBYTE(*cp);
+    // Format: skill byte, (no_reset_players, no_monsters) byte,
+    //         map_name str0.
+    skill = READBYTE(xc->curpos);
     if (demoversion >= 128)
     {
         // [WDJ] Do not use boolean nomonsters as an int.
-        opt = READBYTE(*cp);
+        opt = READBYTE(xc->curpos);
         if (demoversion >= 129)
         {
             nomonsters = ( (opt & 0x01) != 0 );
@@ -789,9 +840,9 @@ void Got_NetXCmd_Mapcmd(char **cp, int playernum)
             nomonsters = (opt > 0);
         }
     }
-    strncpy(mapname, *cp, MAX_WADPATH-1);
+    strncpy(mapname, (char*)xc->curpos, MAX_WADPATH-1);
     mapname[MAX_WADPATH-1] = '\0';
-    *cp += strlen(mapname) + 1;
+    xc->curpos += strlen(mapname) + 1;
 
     CONS_Printf("Warping to map...\n");
     if (demoplayback && !timingdemo)
@@ -821,6 +872,7 @@ void Command_Restart_f(void)
 void Command_Pause(void)
 {
     char buf;
+    // Format: (pause) byte.
     if (COM_Argc() > 1)
         buf = atoi(COM_Argv(1)) != 0;
     else
@@ -828,21 +880,23 @@ void Command_Pause(void)
     Send_NetXCmd(XD_PAUSE, &buf, 1);
 }
 
-void Got_NetXCmd_Pause(char **cp, int playernum)
+void Got_NetXCmd_Pause(xcmd_t * xc)
 {
+    // Format: (pause) byte.
     if (demoversion < 131)
         paused ^= 1;
     else
-        paused = READBYTE(*cp);
+        paused = READBYTE(xc->curpos);
 
     if (!demoplayback)
     {
         if (netgame)
         {
+            char * bystr = player_names[xc->playernum];
             if (paused)
-                GenPrintf(EMSG_hud, "Game paused by %s\n", player_names[playernum]);
+                GenPrintf(EMSG_hud, "Game paused by %s\n", bystr);
             else
-                GenPrintf(EMSG_hud, "Game unpaused by %s\n", player_names[playernum]);
+                GenPrintf(EMSG_hud, "Game unpaused by %s\n", bystr);
         }
 
         if (paused)
@@ -1008,7 +1062,7 @@ void Command_ExitLevel_f(void)
     Send_NetXCmd(XD_EXITLEVEL, NULL, 0);
 }
 
-void Got_NetXCmd_ExitLevelcmd(char **cp, int playernum)
+void Got_NetXCmd_ExitLevelcmd(xcmd_t * xc)
 {
     G_ExitLevel();
 }
@@ -1035,13 +1089,15 @@ void Command_Load_f(void)
     // spawn a server if needed
     SV_SpawnServer();
 
+    // Format: save_slot byte.
     slot = atoi(COM_Argv(1));
     Send_NetXCmd(XD_LOADGAME, &slot, 1);
 }
 
-void Got_NetXCmd_LoadGamecmd(char **cp, int playernum)
+void Got_NetXCmd_LoadGamecmd(xcmd_t * xc)
 {
-    byte slot = *(*cp)++;
+    // Format: save_slot byte.
+    byte slot = *(xc->curpos++);
     G_DoLoadGame(slot);
 }
 
@@ -1061,6 +1117,7 @@ void Command_Save_f(void)
         return;
     }
 
+    // Format: save_slot byte, save_description str0.
     // By Server.
     p[0] = atoi(COM_Argv(1));  // slot num 0..99
     // save description string at [1]
@@ -1070,16 +1127,17 @@ void Command_Save_f(void)
     Send_NetXCmd(XD_SAVEGAME, &p, strlen(&p[1]) + 2);
 }
 
-void Got_NetXCmd_SaveGamecmd(char **cp, int playernum)
+void Got_NetXCmd_SaveGamecmd(xcmd_t * xc)
 {
     byte slot;
     char description[SAVESTRINGSIZE];
 
-    slot = *(*cp)++;
-    // transmitted as SAVESTRINGSIZE, but protect against net error or attack
-    strncpy(description, *cp, SAVESTRINGSIZE-1);
+    // Format: save_slot byte, save_description str0.
+    slot = *(xc->curpos++);
+    // Transmitted as SAVESTRINGSIZE, but protect against net error or attack.
+    strncpy(description, (char*)xc->curpos, SAVESTRINGSIZE-1);
     description[SAVESTRINGSIZE-1] = '\0';
-    *cp += strlen(description) + 1;
+    xc->curpos += strlen(description) + 1;
 
     // Write the save game file
     G_DoSaveGame(slot, description);
@@ -1092,10 +1150,11 @@ void Command_ExitGame_f(void)
     D_StartTitle();
 }
 
-void Got_NetXCmd_UseArtifact(char **cp, int playernum)
+void Got_NetXCmd_UseArtifact(xcmd_t * xc)
 {
-    int art = READBYTE(*cp);
-    P_PlayerUseArtifact(&players[playernum], art);
+    // Format: artifact  byte.
+    int art = READBYTE(xc->curpos);
+    P_PlayerUseArtifact(&players[xc->playernum], art);
 }
 
 void Command_Kill(void)
