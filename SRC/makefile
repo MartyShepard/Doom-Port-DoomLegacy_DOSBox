@@ -1347,7 +1347,11 @@ $(FIXDEP):
 %.dep : | $(FIXDEP)
   ifeq ($(CC_SELECT), MINGW)
 	@echo "Making MINGW dependencies $(@F)"
+   ifdef HAVE_DOSCOMMAND
+	$(CC) $(CFLAGS) -MM $^ > $(DD_WIN)\$(@F)
+   else
 	$(CC) $(CFLAGS) -MM $^ > $(DD)/$(@F)
+   endif
 	$(FIXDEP)  $(O)/  $(DD_WIN)\$(@F)
   else
 	@echo "Making WIN dependencies $(@F)"

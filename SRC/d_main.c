@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1270 2016-09-20 17:40:09Z wesleyjohnson $
+// $Id: d_main.c 1272 2016-09-29 02:07:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,11 +312,11 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1270"
+#define SVN_REV "1272"
 #endif
 
 // Version number: major.minor.revision
-const int  VERSION  = 147; // major*100 + minor
+const int  VERSION  = 146; // major*100 + minor
 const int  REVISION = 1;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "Alpha (Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
@@ -2036,9 +2036,9 @@ void D_DoomMain()
     // get the current directory (possible problem on NT with "." as current dir)
     if (getcwd(dirbuf, _MAX_PATH) != NULL)
     {
-			  #if defined (__DJGPP__)
-			    Posix_Deform_Path(dirbuf);
-			  #endif			
+        #if defined (__DJGPP__)
+         Posix_Deform_Path(dirbuf);
+        #endif			
         // Need a working default dir, to prevent "" leading to root files.
         if( (strlen(dirbuf) > 4)
             || (strcmp( dirbuf, "." ) == 0) )   // systems that pass "."
@@ -2056,9 +2056,9 @@ void D_DoomMain()
     {
 
         progdir = strdup( dirbuf );
-			  #if defined (__DJGPP__)
-			    Posix_Deform_Path(progdir);
-			  #endif				
+        #if defined (__DJGPP__)
+         Posix_Deform_Path(progdir);
+        #endif				
         if( verbose )
           GenPrintf(EMSG_ver, "Program directory: %s\n", progdir);
 
@@ -2150,11 +2150,15 @@ void D_DoomMain()
     I_StartupGraphics();    // window
     SCR_Startup();
 
+    if( verbose > 1 )
+        CONS_Printf("Init DEH, cht, menu\n");
     // save Doom, Heretic, Chex strings for DEH
     DEH_Init();  // Init DEH before files and lumps loaded
     cht_Init();	 // init iwad independent cheats info, needed by Responder
 
     M_Init();    // init menu
+    if( verbose > 1 )
+        CONS_Printf("Console inits\n");
     CON_Register();
 
 #ifdef LAUNCHER
@@ -2198,6 +2202,8 @@ restart_command:
     if (devparm)
       CONS_Printf(D_DEVSTR);
 
+    if( verbose > 1 )
+        CONS_Printf("Find HOME\n");
     // userhome section
     {
         char * userhome = NULL;
@@ -2220,15 +2226,23 @@ restart_command:
         else
         {
             userhome = getenv("HOME");
+            if( userhome && verbose > 1 )
+                CONS_Printf("HOME = %s\n", userhome);
 #ifdef WIN32
-            if( strstr( userhome, "MSYS" ) )
+            if( userhome && strstr( userhome, "MSYS" ) )
             {
                 // Ignore MSYS HOME, it is not the one wanted.
+                if( verbose > 1 )
+                    CONS_Printf("Ignore MYS HOME = %s\n", userhome);
                 userhome = NULL;
             }
             // Windows XP,
             if( !userhome )
+            {
                  userhome = getenv("UserProfile");
+                 if( userhome && verbose > 1 )
+                     CONS_Printf("UserProfile = %s\n", userhome);
+            }
 #endif
         }
 
@@ -2323,7 +2337,7 @@ restart_command:
             // default absolute path, do not set to ""
         #if defined( __DJGPP__ )		
              getcwd(dosroot, MAX_WADPATH-1);
-						 Posix_Deform_Path(dosroot);
+             Posix_Deform_Path(dosroot);
              progdir = dosroot;
              sprintf(dirbuf, "%s\\", dosroot);
              legacyhome = strdup( dirbuf );

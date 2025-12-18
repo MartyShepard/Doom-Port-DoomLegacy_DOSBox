@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01272 ]: w105 home
+[01271 ]: w105 docs 1.46
 [01270 ]: w105 Version 1.46.1
 [01269 ]: w105 harden netstr
 [01268 ]: w105 netdef

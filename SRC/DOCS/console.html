@@ -55,7 +55,7 @@ in a hurry!
 
 <h3 id="usage">Console usage</h3>
 
-<p>With Doom Legacy's console, you will be able to change a lot of game
+<p>With Doom Legacy's console, you will be able to change most of the game
 parameters from within the game, and customise it to your preferences.
 The console is simply a command prompt, where you can enter commands
 and change the values of game variables.
@@ -188,6 +188,13 @@ different configuration files.
 While the configuration files support any commands, and are executed
 like a script, you should not edit them, because they are always overwritten
 when the game exits.
+</p>
+
+<p>Some variables, like gravity, are not saved.  They are restored to
+initial settings everytime DoomLegacy is started.  These might be
+changed for a specific game, but would not want to be saved, as that
+would affect all games that follow.  See Autoexec.cfg and exec files for
+setting up DoomLegacy for a specific game.
 </p>
 
 
@@ -399,14 +406,54 @@ disappearing. Set this to 0, and you will never see any
 messages outside the console (HUD means heads-up display).
 </td></tr>
 
-<tr><td>showmessages &lt;0-2&gt;</td><td>int</td>
+<tr><td>showmessages<br>&lt;0-5&gt;</td><td>int</td>
 <td>
-0: never show any messages on the screen.<br/>
-1: always show the messages (default).<br/>
-There is one more setting, 2, that can only be entered at
-the console, it will show all messages except most of the
-"picked up ..." style messages. Useful if you are tired of
-the "picked up ammo", "picked up health bonus" etc. messages.
+Limits the messages that are shown on the HUD during gameplay.
+<ul>
+<li>Off: never show any messages on the screen.</li>
+<li>Minimal: Important play messages are shown, like you got the BFG.
+Common messages, like those about ammo, are not shown.</li>
+<li>Play: The standard Play messages are shown, but verbose and diagnostic
+messages are not (default).</li>
+<li>Verbose: Verbose messages too.</li>
+<li>Debug:  Debug and Verbose messages too.</li>
+<li>Dev: Development.  All messages are shown.</li>
+</ul>
+There is also a control for this in the Options menu.
+</td></tr>
+<tr><td>darkback<br>&lt;0-2&gt;</td><td>int</td>
+<td>
+The console background is darkened to make the text easier to read.
+This controls how dark it gets.<ul>
+<li>Half: Half darkness (40%).</li>
+<li>Med: Middle darkness (25%).</li>
+<li>Dark: Darkest (17%).</li>
+</ul>
+ There is also a control for this in the Video menu.
+</td></tr>
+<tr><td>con_fontsize &lt;1-5&gt;</td><td>int</td>
+<td>
+The console fontsize.
+<ul>
+<li>Small: Smallest font.</li>
+<li>Med2:</li>
+<li>Med3:</li>
+<li>Med4:</li>
+<li>Large: Largest font.</li>
+</ul>
+There is also a control for this in the Video menu.
+</td></tr>
+<tr><td>msg_fontsize &lt;1-5&gt;</td><td>int</td>
+<td>
+The HUD message fontsize. 
+<ul>
+<li>Small: Smallest font.</li>
+<li>Med2:</li>
+<li>Med3:</li>
+<li>Med4:</li>
+<li>Large: Largest font.</li>
+</ul>
+There is also a control for this in the Video menu.
 </td></tr>
 </table>
 
@@ -437,9 +484,22 @@ in the deathmatch rankings. Use "" if the name contains spaces,
 e.g. <span class="example">name "dj fabbe"</span>
 </td></tr>
 
-<tr><td>color &lt;0-10&gt;</td><td>int</td>
+<tr><td>color<br>&lt;0 - 10&gt;</td><td>int</td>
 <td>
 Choose your avatar's color.
+<ul>
+<li> 0: Green</li>
+<li> 1: Gray</li>
+<li> 2: Brown</li>
+<li> 3: Red</li>
+<li> 4: Light Gray</li>
+<li> 5: Light Brown</li>
+<li> 6: Light Red</li>
+<li> 7: Light Blue</li>
+<li> 8: Blue</li>
+<li> 9: Yellow</li>
+<li>10: Beige</li>
+</ul>
 </td></tr>
 
 <tr><td>skin</td><td>string</td>
@@ -511,11 +571,16 @@ consider this the manual weapon change.
 </p>
 </td></tr>
 
-<tr><td>crosshair &lt;0-3&gt;</td><td>int</td>
+<tr><td>crosshair<br>&lt;0 - 3&gt;</td><td>int</td>
 <td>
-Choose whether to use a crosshair. The options
-are no crosshair (0), white cross (1), green angle (2), and red point (3).
+Choose the type of aiming point (crosshair) that appears on the screen.
+<ul>
+<li>Off:  No crosshair</li>
+<li>Cross: Large white + with an open center, the largest crosshair.
+<li>Angle: Small vertical and horizontal green lines.  The aiming point is where the two lines meet.
+<li>Point: Red aiming dot, like a laser pointer.
 </td></tr>
+There is a control in the Options menu.
 </table>
 
 
@@ -559,6 +624,7 @@ Setting use_mouse to 0 will disable the mouse. The next time
 you start the game, the mouse won't be detected.
 
 Set use_mouse to 1 to search for a mouse, and activate it.
+There is also a control for this in the Mouse menu.
 </td></tr>
 
 <tr><td>invertmouse</td><td>bool</td>
@@ -566,17 +632,20 @@ Set use_mouse to 1 to search for a mouse, and activate it.
 Set invertmouse to 1 to invert the mouse y (up and down) axis.
 This is for freelook only, you will look up, when moving the mouse
 down (backward), and look down when moving mouse forward.
+There is also a control for this in the Mouse menu.
 </td></tr>
 
 <tr><td>mousemove</td><td>bool</td>
 <td>
 Enable/disable mouse y-axis for forward/backward movement.
+There is also a control for this in the Mouse menu.
 </td></tr>
 
 <tr><td>mousesensx<br/>
 mousesensy</td><td>int</td>
 <td>
 Sets the mouse sensitivity in the x and y directions.
+There is also a control for this in the Mouse menu.
 </td></tr>
 </table>
 
@@ -611,6 +680,7 @@ Relative: Uses the newer relative motion interface, which
 may not work on some SDL library ports.  It is reported to work with
 Linux and Windows.
 Does not affect mouse2.
+There is also a control for this in the Mouse menu.
 </td></tr>
 
 <tr><td>grabinput</td><td>bool</td>
@@ -619,6 +689,7 @@ Sets the SDL grabinput attribute.  This keeps the mouse in the window.
 It also disables most of any window manager's keyboard and mouse functions,
 so DoomLegacy gets all combination events.
 Pause releases grabinput to let the mouse be used outside of DoomLegacy.
+There is also a control for this in the Mouse menu.
 </td></tr>
 </table>
 
@@ -1233,7 +1304,33 @@ It is displayed on clients' screens when they are searching for servers.
 <tr><td>sv_public</td><td>bool</td>
 <td>
 If true, your server will announce itself to the master server so that
-it will be visible also outside the local network.
+it will be visible outside the local network.
+</td></tr>
+
+<tr><td>server1<br>server2<br>server3</td><td>string</td>
+<td>
+The IP addresses (server1, server2, server3)
+that will be checked to find the DoomLegacy server.
+The server should have an IP address such as
+"192.168.1.1", or a network broadcast address such as "192.168.1.255".
+For a home network, addresses should be 192.168.nn.xx, where all your
+computers have the same nn, but different xx (nn=1..254, xx=1..254).
+Do not use addresses such as 255.255.nn.xx as those do not work.
+Default is "192.168.1.255".
+<br>These can be set in the Connect menu.
+</td></tr>
+
+<tr><td>wait_players<br>&lt;0 - 32&gt;</td><td>int</td>
+<td>
+Wait for this number of players to join before starting the game.
+This can be specified in the network menu when starting the server.
+</td></tr>
+
+<tr><td>wait_timeout<br>&lt;0 - 120&gt;</td><td>int</td>
+<td>
+Wait timeout in seconds.  When the timeout expires, start the game
+even if there are fewer players than specified by wait_players.
+This can be specified in the network menu when starting the server.
 </td></tr>
 
 <tr><td>sv_allownewplayers</td><td>bool</td>
@@ -1257,6 +1354,7 @@ registering your server.
 <td>
 Print network statistics on the HUD?
 </td></tr>
+
 </table>
 
 
@@ -1266,6 +1364,8 @@ Print network statistics on the HUD?
 
 <p>
 These variables control many visual aspects of the game.
+<br>The GAMMA_FUNCS code replaces the original 5 level gamma with other controls.  The GAMMA_FUNCS
+code is now standard (no longer optional).
 </p>
 
 <table class="def">
@@ -1276,7 +1376,7 @@ These variables control many visual aspects of the game.
 Choose between fullscreen and windowed mode.
 </td></tr>
 
-<tr><td>scr_depth &lt;8|16|24|32&gt;</td><td>int</td>
+<tr><td>scr_depth<br>&lt;8|16|24|32&gt;</td><td>int</td>
 <td>
 Screen color depth in bits.
 </td></tr>
@@ -1291,53 +1391,47 @@ Screen width in pixels.
 Screen height in pixels.
 </td></tr>
 
-<tr><td>gamma &lt;0-4&gt;</td><td>int</td>
-<td>
-The original gamma level control (brightness).
-The GAMMA_FUNCS compile option replaces it with other controls.
-</td></tr>
-
-<tr><td>gammafunc &lt;gamma | gamma_black | gamma_bright_black | linear &gt;
+<tr><td>gammafunc<br>&lt;0 - 3&gt;
 </td><td>int</td>
 <td>
 Select the gamma curve function for controlling display brightness.<br/>
-Gamma is the brightness encoding curve for CRT displays.<br/>
-Gamma_black adds a black level control.<br/>
-Gamma_bright_black has black level and brightness controls.<br/>
-Linear is linear segment approximation, useful for some LCD displays.<br/>
 The function selected enables appropriate control sliders.<br/>
-Requires GAMMA_FUNCS compile option.
+Gamma is the brightness encoding curve for CRT displays.<br/>
+<ul>
+<li>Gamma:  Gamma adjustment (-12 - +12).</li>
+<li>Gamma_black:  Gamma and a black level control (-12 - +12).</li>
+<li>Gamma_full:  Gamma, black level, and brightness controls (-12 - +12).</li>
+<li>Linear:  Linear segment approximation, useful for some LCD displays.</li>
+</ul>
+There is a control for this in the Video menu.
 </td></tr>
 
-<tr><td>gamma &lt;-12 - 12 &gt;
+<tr><td>gamma<br>&lt;-12 - 12&gt;
 </td><td>int</td>
 <td>
 Fine gamma control for all gamma functions (slider index, not the actual GAMMA value).
 Default is 0, which is no-correction (GAMMA=1.0).<br/>
 Original gamma settings are at (0, -3, -6, -9, -12).<br/>
 See Gamma table in <a href="legacy.html#gamma">User Reference Manual</a>.<br/>
-Requires GAMMA_FUNCS compile option.
 </td></tr>
 
-<tr><td>black &lt;-12 - 12 &gt;
+<tr><td>black<br>&lt;-12 - 12&gt;
 </td><td>int</td>
 <td>
 Fine black level control for Gamma_black and Gamma_bright_black functions.
 Adjusts the black end of the curve to get even blacks and grays in dark rooms.<br/>
 Normal is 0.<br/>
-Requires GAMMA_FUNCS compile option.
 </td></tr>
 
-<tr><td>bright &lt;-12 - 12 &gt;
+<tr><td>bright<br>&lt;-12 - 12&gt;
 </td><td>int</td>
 <td>
 Fine brightness control for Gamma_bright_black function.
 Adjusts the bright end of the curve to get evenness in bright lit rooms.<br/>
 Normal is 0.<br/>
-Requires GAMMA_FUNCS compile option.
 </td></tr>
 
-<tr><td>viewsize &lt;3-11&gt;</td><td>int</td>
+<tr><td>viewsize<br>&lt;3 - 11&gt;</td><td>int</td>
 <td>
 Choose the size of the game viewport.<br/>
 '3' is the smallest view window.<br/>
@@ -1345,7 +1439,7 @@ Choose the size of the game viewport.<br/>
 '11' is the full viewsize without the status bar.
 </td></tr>
 
-<tr><td>viewheight &lt;16-56&gt;</td><td>int</td>
+<tr><td>viewheight<br>&lt;16 - 56&gt;</td><td>int</td>
 <td>
 Set the height of the viewpoint (the height of the eyes above the floor).
 The normal value for the Doom marine is 41.
@@ -1389,12 +1483,27 @@ floor before disappearing. Useful for tracking down your prey :)
 Enable/disable translucent sprites.
 </td></tr>
 
-<tr><td>screenlink &lt;0|1|2&gt;</td><td>int</td>
+<tr><td>screenlink<br>&lt;0|1|2&gt;</td><td>int</td>
 <td>
 Change the screen link between
-  0: none,
-  1: normal melting, and
-  2: crossfade (it was in the original code, we just enabled it).
+<ul>
+<li>0: None: none </li>
+<li>1: Crossfade: crossfade (it was in the original code, we just enabled it). </li>
+<li>2: Melt: normal melting </li>
+</ul>
+This is the Screens Link control in the Effects menu.
+</td></tr>
+
+<tr><td>pickupflash<br>&lt;0 - 3&gt;</td><td>int</td>
+<td>
+Change the screen link between
+<ul>
+<li>Off: no pickup flash </li>
+<li>Status: Flash the status bar in the area where the item is displayed.  If the player picks up ammo, the ammo display will flash.</li>
+<li>Half: Half intensity palette flash.  Slightly less confusing than the full intensity palette flash.</li>
+<li>Vanilla: The Vanilla Doom palette flash.  It is similar enough to the palette flash of being hit to be confusing.</li>
+</ul>
+This is the Pickup Flash control in the Effects menu.
 </td></tr>
 
 <tr><td>playersprites</td><td>bool</td>
@@ -1410,7 +1519,8 @@ Enable/disable bloodsplats and bullet holes on walls.
 
 <tr><td>scalestatusbar</td><td>bool</td>
 <td>
-Should the status bar graphics be scaled?
+The status bar can be small or scaled up.
+<br>This is the Scale Status Bar control in the video menu.
 </td></tr>
 
 <tr><td>hud_overlay</td><td>string</td>
@@ -1431,13 +1541,22 @@ s: show secret found count
 </td></tr>
 
 
-<tr><td>framerate</td><td>bool</td>
+<tr><td>ticrate<br> &lt;0 - 2&gt;</td><td>int</td>
 <td>
-When true, the game shows the current framerate (frames/s) in the game window.
+The ticrate is displayed as Frames Per Second.
+<ul>
+<li>Off: Display of frame rate is off.</li>
+<li>Graph:  Draw a scrolling graph of the Frames Per Second.</li>
+<li>Numeric:  Display the Frames Per Second.</li>
+</ul>
+This is the Show Ticrate control in the Video menu.
 </td></tr>
+
 
 <tr><td>fuzzymode</td><td>bool</td>
 <td>
+Enables the Vanilla Doom fuzzy draw for cloaked monsters instead of
+the newer translucent draw.
 </td></tr>
 </table>
 
@@ -1586,6 +1705,55 @@ gr_stats
 <td>
 Prints out the memory usage of the hardware renderer.
 </td></tr>
+<tr><td>
+gr_solvetjoin
+</td><td>bool</td>
+<td>
+Experimental control to disable the Solve T-join problem code.  The function
+tries to combine vertexes that are close together. 
+</td></tr>
+<tr><td>
+gr_polyshape
+</td><td>int</td>
+<td>
+Controls the polygon generation, and what shape is allowed.
+The least amount of overdraw usually gives the fastest rendering.
+<ul>
+<li>Subsector : Disables cutting the subsector polygon.
+The polygon is the shape of the BSP subsector.
+Has the most overdraw into void areas.
+</li>
+<li>Fat : Trims void space from the subsector polygon with segs that
+cross the entire subsector.  Ignores short segs.
+The floor and ceiling overdraw into void areas.
+</li>
+<li>Trim : Trims the subsector polygons with the segs.
+Combines short segs to find cuts across the entire subsector.
+When a polygon becomes non-convex, then selected vertexes are removed until
+it is convex.
+Usually generates smaller polygons than Fat, but there is still some
+overdraw into void areas where the polygon is forced to be convex.
+</li>
+<li>NotConvex : Generates polygons with the least overdraw, but some
+may be non-convex due to the shape and segs of the subsector.
+The polygons are required to be convex for hardware draw,
+but some libraries may tolerate drawing non-convex polygons.
+My nVidia supplied OpenGL library apparantly does.
+Test at your own risk, but I do not recommend using it.
+</li>
+</ul>
+The default is Trim.
+</td></tr>
+
+<tr><td>
+gr_polytile
+</td><td>bool</td>
+<td>
+Enables the polytile code that shares vertexes between poly so as to
+prevent cracks between polys from forming.  This control allows the user to disable this code easily.
+Default is enabled.
+</td></tr>
+
 </table>
 
 
@@ -1600,17 +1768,19 @@ Variables controlling sound and music.
 
 <tr><td>soundvolume &lt;0-31&gt;</td><td>int</td>
 <td>
-Sound effects volume.
+Sound effects volume.   There is a control for this in the Sound menu.
 </td></tr>
 
 <tr><td>musicvolume &lt;0-31&gt;</td><td>int</td>
 <td>
-Well.
+The game music volume (Midi).  The game music is embeded in the game IWAD and PWAD.
+There is a control for this in the Sound menu.
 </td></tr>
 
 <tr><td>cd_volume &lt;0-31&gt;</td><td>int</td>
 <td>
-CD music volume.
+CD music volume.  This is music is from any CD that is in the CD drive,
+not music from the game.  There is a control for this in the Sound Menu.
 </td></tr>
 
 <tr><td>snd_channels</td><td>int</td>
@@ -1621,7 +1791,8 @@ choose a value from 8 to 16, which is enough.
 
 <tr><td>stereoreverse</td><td>bool</td>
 <td>
-Reverse the roles of the left and right stereo channels?
+Reverse the the left and right stereo channels.  This is necessary if you hear a monster
+from the right, but then get hit from the left.
 </td></tr>
 
 <tr><td>surround</td><td>bool</td>
@@ -1631,9 +1802,71 @@ Use a software "surround" effect?
 
 <tr><td>precachesound</td><td>bool</td>
 <td>
-Should all sounds be loaded at the map startup, or only when they're
-needed?
+Enables loading all sounds at the map startup, to eliminate delays in playing sound effects.
+Disk drive activity to load sounds during play can be annoying.
 </td></tr>
+
+<tr><td>menusound &lt;0-3&gt;</td><td>int</td>
+<td>The sound played during menu movements.
+<br>The menu sound selections.
+<ul>
+<li>Auto: DoomLegacy will automatically select the menu sound.</li>
+<li>Legacy: Softer wooden clack sounds.</li>
+<li>Doom: Gun shots mostly.  Only when playing Doom.</li>
+<li>Heretic: Heretic clicks.  Only when playing Heretic.</li>
+</ul>
+There is a control for this in the Effects menu.
+</td></tr>
+
+<tr><td>musserv_opt</td><td>int</td>
+<td>
+This is only present in the Linux X port with the separate musserver.
+<br>Sound Device Preeference select for playing Midi music.  It determines the order
+that sound ports are tried.
+If the preferred port is not found, some other port will be used.
+<ul>
+<li>Default: </li>
+<li>Midi: Any midi synth.</li>
+<li>TiMidity: TiMidity synth.</li>
+<li>FluidSynth: FluidSynth synth.</li>
+<li>Ext Midi: An external Midi device.  When a external port is found, such as in Alsa, but there
+is no actual external midi device, the musserver will use the external port anyway (producing silent music).</li>
+<li>Synth: FM or Awe32 synth</li>
+<li>FM Synth: FM Synth such as a SoundBlaster port.</li>
+<li>Awe32 Synth: Only works if Awe32 support is compiled into the musserver.</li>
+</ul>
+This is the Music Pref. control in the Sound menu (only in Linux X port).
+<br> For a list of devices: "musserver -l"
+</td></tr>
+
+<tr><td>musserv_cmd</td><td>string</td>
+<td>
+This is only present in the Linux X port with the separate musserver.
+<br>The command to start the music server.
+<br>Default value:  "musserver".
+</td></tr>
+
+<tr><td>musserv_arg</td><td>string</td>
+<td>
+This is only present in the Linux X port with the separate musserver.
+<br>The arguments to pass to the music server when it is started.
+<br>Default value:  "-t 20".
+</td></tr>
+
+<tr><td>sndserv_cmd</td><td>string</td>
+<td>
+This is only present in the Linux X port with the separate sound server.
+<br>The command to start the music server.
+<br>Default value:  "llsndserv".
+</td></tr>
+
+<tr><td>sndserv_arg</td><td>string</td>
+<td>
+This is only present in the Linux X port with the separate sound server.
+<br>The arguments to pass to the sound server when it is started.
+<br>Default value:  "-quiet".
+</td></tr>
+
 </table>
 
 </div>

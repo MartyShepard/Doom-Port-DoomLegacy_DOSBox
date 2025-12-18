@@ -13,6 +13,571 @@
 
 <div class="column">
 
+<h2>1.46.1 SVN1271 (2016-09-20)</h2>
+
+<h3>FEATURES 1.46.1</h3>
+<ul>
+<li>
+There is a new docs file, doc/INSTALL.html, that just deals with
+installing DoomLegacy.
+</li>
+<li>Network behavior has been updated and is greatly improved.
+The discovery of DoomLegacy server nodes has been improved.
+Network startup has been changed to handle early and late game joiners
+much better.
+</li>
+<li>
+The Network play interface has been improved.
+The number of players and timeout can be selected by the server
+DoomLegacy, from the menus.
+The waiting display gives the number of players, and a timeout counter.
+</li>
+<li>
+There are now three server addresses (server1, server2, server3)
+that will be checked.
+They can hold a server IP address such as
+"192.168.1.1", or a network broadcast address such as "192.168.1.255".
+For a home network, addresses should be 192.168.nn.xx, where all your
+computers have the same nn, but different xx (nn=1..254, xx=1..254).
+Do not use addresses such as 255.255.nn.xx as those do not work.
+</li>
+<li>Better network error reporting.
+</li>
+<li>Network file download is now protected at the server so that DoomLegacy
+cannot be used to snoop on your computer.
+It will transfer wad files found by the server DoomLegacy in the
+legacy wad directories, and only if they have .wad, .deh, or .bex
+filename extensions.
+Complex filenames (using ../ to back out of a directory, having ':',
+or '\' or '/') and absolute
+filenames are explicitly blocked by the server as a SECURITY issue.
+The previous search of 10 directories deep was a security risk, and has been
+replaced with a new search system.
+</li>
+<li>
+DoomLegacy will now search through upto 24 specific directories to find
+legacy.wad, the IWAD, PWAD, DEH, and BEX files.
+On failure, (or -v2 verbose), DoomLegacy will print out the directories
+searched, as an aid to the player to setup the game.
+For legacy.wad, the environment variable LEGACYWADDIR specifies the
+first directory in the search list.
+The environment variable DOOMWADDIR specifies the first directory in
+the search list for the other files.
+The search directories include absolute and HOME relative directories,
+(the HOME environment variable needs to be set).
+Most search directories, which are fixed at compile-time, are specified
+in doomdef.h, according to the operating system.
+There are some spare slots for users who wish to compile DoomLegacy with some
+additional search directories.
+</li>
+<li>
+DoomLegacy will also search sub-directories.
+The IWAD search will go 5 directories deep.
+The game file search will go 3 directories deep.
+</li>
+<li>
+The console map command now does a file search like the command line.
+The command line has more privileges, the map command is more
+restricted.
+The map command, as a network command, is restricted to ".DEH",
+".BEX", and ".WAD" files, and within public doomwaddir directories.
+Now it searches the doomwaddir list, to 4 subdirectories deep.
+</li>
+<li>Many fatal error exits have been changed to soft error messages,
+leaving the player in the game with a chance to save the game.  Many of
+the situations are transient problems that would resolve themselves when
+the player leaves the affected map area.  This most strongly affects wad
+development, buggy wads, and wads not meant for DoomLegacy.
+</li>
+<li>
+Many debugging and information messages are suppressed during normal
+startup.
+Command line switches "-devgame", "-devparm", "-v", and "-v2" will
+enable many more informative and warning messages (to stderr).
+A readable listing of DEH text replacement is presented when selecting
+devparm or verbose, ( -devparm -v ).
+</li>
+<li>
+The ticrate display control is now in the video menu.
+The ticrate display now has a numeric FPS display, in addition
+to the graphical display.
+</li>
+<li>
+There is now a menu control with 3 darkness settings of the background and console.
+The dark setting darkens the background so the menu are easier to
+read against the background.  It also darkens the console background to
+make console text easier to read.
+</li>
+<li>
+There are now menu entries to control the console font size and the message font size.
+The console and hud text now draw proportional fonts.
+</li>
+<li>
+OpenGL drawing got improved.  There is an now a menu option that
+controls how odd shaped polygons that sometime occur are handled.
+The display anomolies will vary with the selection.
+If you do not understand this, just leave it at Trim.
+<br><br>Polygon shape option selection. The default is Trim.
+<ul>
+<li>Subsector: Disables cutting with segs.</li>
+<li>Fat : Ignores any seg that does not cross the subsector polygon
+entirely.</li>
+<li>Trim: Chains together the segs, and applies those chains that cross the
+  subsector polygon.  It might create a non-convex polygon, so a check removes
+  the center vertex where sides meet at an interior angle
+  greater than 180 degrees.</li>
+<li>NonConvex : Leaves the non-convex polygons.  My nVidia supplied
+  OpenGL library seems to tolerate the non-convex polygons.  Others
+may fail.</li>
+</ul>
+<br>
+</li>
+<li>
+The show messages option has been expanded to (Off, minimal, play, verbose, diag, dev).
+This control now affects all messages displayed during play.
+If the player sets it to minimal, they will not get messages for minor
+object pickups like ammo, but will get messages for important things,
+like the BFG.
+</li>
+<li>
+Improved the handling when drawing an excessive numbers of sprites.
+The closest sprites are always drawn.
+The farther sprites depend upon the distance from the viewer and priority.
+The priority takes into consideration the object height, and if it is a
+corpse, missile, or monster.
+</li>
+<li>
+There are now alternatives to the palette flash when picking up ammo
+The pickup palette flash is similar to that used when the player is hit.
+<br>
+<br>Pickup Flash menu control.
+<ul>
+<li>  off : no flash</li>
+<li>  status : parts of the status bar flash color</li>
+<li>  half : the palette flash is half intensity</li>
+<li>  vanilla : the Vanilla Doom palette flash</li>
+</ul>
+<br>The status bar pickup flash applies to the status bar and overlay
+status. The appropriate box is flashed with a color.
+Heretic is also affected, but uses different flash colors.
+</li>
+<li>
+Added autorepeat to the console scrolling page-up and page-down keys.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.46.1</h3>
+<ul>
+<li>
+Fixed BossDeath detection failure so special linedefs now trigger.
+Solid Corpse health is now (0 .. -spawnhealth).  Upon reaching -spawnhealth
+the corpse is Killed, becoming gibs.
+Fixed the solid corpse health when restoring old savegames.
+</li>
+<li>
+Fixed the Chex newmaps fireflies, as far as I know.
+Rewrote parts of fragglescript corona function to fix Chex newmaps bugs.
+Rewrote the String_to_RGBA func to handle any length hex value string.
+
+<br>Chex newmaps does not turn on the corona type flags for the
+fireflies.  To make the fireflies work, the code now turns on the corona
+automatically if it is 0 when a write to the corona color is made.
+The code for Doomu has the tall-torch corona turned on, but
+the Chex1 patch turns it off.
+</li>
+<li>
+Catch some BEX comments so they do not cause error messages.
+Fixes messages in toxdm1.wad.
+</li>
+<li>
+The wad 2002ado.wad has many sidedef with bad sector numbers, but they
+are also unused.  They were left by the editor.
+Fixed the error reporting to ignore those with sector number = 65535
+unless verbose is ON.  Also to report if any line is using the sidedef.
+</li>
+<li>Network ack bug fix, and cleanup of the ack code.
+</li>
+<li>Network chat fixed so that player 0, team 0, and broadcast to all players
+are no longer confused.  This changes the chat protocol (DoomLegacy 1.46)
+and is incompatible with any previous version of DoomLegacy.
+Display of the chat message now works for splitscreen.
+</li>
+<li>
+Network errors are now caught so they do not crash the program.
+</li>
+<li>
+Network packets now have standardized stdint field sizes, so that 64bit
+and 32bit machines have a chance of playing together.
+</li>
+<li>
+Master server pinging has been fixed to not use a player node.  This now
+allows all 32 players when using the Master server.  This new behavior
+is a compile conditional that is enabled by default in the source code.
+</li>
+<li>
+Block demos from starting up when the console is open.
+</li>
+<li>
+Fixed some problems with compiling in Windows systems using MinGW.
+Works around some nasty command problems that occur if MSYS is present.
+Needs to use mingw32-make as the MSYS make still fails to compile some
+files, due to the search paths of include files.
+</li>
+<li>Fixed errors due to not finding the legacy.wad file.
+AddFile will no longer segfault when a filename is NULL.
+</li>
+<li>
+Gave the CV_Possible_t system an INC option.  This is used to increment the
+wait time in 5 second increments.
+</li>
+<li>
+Wadtool has been missing from the legacy 1.45 build.
+Copied and revised the wadtool from legacy2.
+Added a directory switch to wadtool, to make it much easier to use in a Makefile.
+Added reading a lump by file name or lump name, so that an extracted wad
+can be rebuilt without having to change file names of the lumps.
+</li>
+<li>
+Windows and DOS do not have sed, which is used to add the "obj/"
+directory to the dep file entries.
+The new tool, fixdep, will do the same operation, making the dep files work
+on Windows and DOS.
+</li>
+<li>
+Heavily rewrote all Makefiles to reduce user errors and miss-information.
+To compile, the user first selects one of the make_options sample
+files, copies it and modifies it to suit.
+The syntax of make_options has changed, so previous versions will not be
+fully compatible.
+Now uses OS= for operating systems.
+Now uses CC_SELECT= for compiler select.
+The src Makefile still has the capability of being run directly, but other
+sub-Makefiles must be run from the Main Makefile, as they use exported vars.
+</li>
+<li>
+There is now a port independent video status, which also serves during
+shutdown to prevent quit looping on errors.  When legacy.wad was not
+found, a quit loop was triggered due to more errors on shutdown.
+Shutdown is now handled by D_Quit_Save, which has complete sequencing
+of the shutdown, even with multiple errors retriggering the Quit.
+</li>
+<li>
+The Heretic status bar has a darkening of the chain on the
+ends (shadow).  This code was 8 bit palette draw only, which left
+draw artifacts for other draw modes.  This draw has been updated to
+correctly draw shading for the other draw modes too.
+</li>
+<li>
+The inline keyword is causing some problems with some compilers.
+Remove it and let compiler do any inlines it can.
+</li>
+<li>
+DoomLegacy identifies the flat picture to enable splash sounds.
+Fixed sector changes to also change the splash sound when the sector
+flat picture changes.
+</li>
+<li>
+Make the deh_error function show DEH errors for any of
+devgame, devparm, or v (verbose) switches.
+</li>
+<li>
+Fixed DEH text replacement that failed when the name string was 6 chars long.
+</li>
+<li>
+Checking of the devgame switch was hiding the value of the devparm switch.
+Fixed so they use independent vars, but devgame will set devparm.
+</li>
+<li>
+Initialize team names to NULL upon creation.
+Fixes segfault in set_team_name, when setting teamplay from console.
+</li>
+<li>
+Give hexen unsupported error message on -game switch.
+</li>
+<li>
+Fix map command level setup to set the gameepisode and gamemap correctly.
+This also caused the wrong music to be played and the wrong level setups
+to be used.
+<br>
+This would also lead to corrupted savegames, saving the wrong map number
+in some situations.
+Later, during savegame loading, it would use the wrong map to size the level
+structures, which would lead to the save game restoring
+some structure changes outside of the structure boundaries (overwriting
+something else).  Have also added some checks to the savegame restore to
+detect sector or linedef numbers that exceed the established structures.
+This will detect some existing savegames as corrupted.  They could be
+fixed by correcting the map number in the savegame.
+</li>
+<li>
+Make fogcolor default assign work for any endian.
+</li>
+<li>
+Made BOB_MOM code a standard feature, removed compile tests.
+<br>Made VOODOO_DOLL code a standard feature, removed compile tests.
+<br>Made GAMMA_FUNCS code a standard feature, removed compile tests.
+</li>
+<li>
+Rename gamma_bright_black choice to be gamma_full, so it fits in the menu.
+Make it the default choice, which will minimize problems with
+existing config files.
+</li>
+<li>
+Fixed where the topoffset and leftoffset were calculated wrong for patch
+draws when SCALEPATCH, but not SCALESTART.  This did not happen in
+vanilla code, but occurs in new applications of scaling, such as font size.
+</li>
+<li>
+Fix bug #0620.
+In asm, Clang does not accept "%cc", as it is not a register.
+Gcc used to accept "%cc", and probably still does.
+In the asm clobbered section, cc and memory should not use %.
+</li>
+<li>
+Fixed some OpenGL polygon errors in wads such as BOOMEDIT.WAD, and
+phobiata.wad.
+<br>
+Rewrote of hardware draw polygon creation.  This uses a new structure
+with vertex pointers that makes it much easier to maintain common vertexes.
+The final polygons are converted to the current polygon structure so
+the drawing code is not affected.
+<br>The BSP walk procedure gives a subsector convex polygon, and a list
+of segs.  Cutting the subsector polygon with the segs introduces errors,
+and the result might not be convex.
+</li>
+<li>
+Applied some hardware draw crack remedies.
+Check the cross product, so an added vertex does not make the crack worse.
+Fixed a bug when a seg-chain cut only cuts one side of the polygon.
+</li>
+<li>
+Fixed one of the missing sector draws for a sign in BOOMEDIT.WAD.
+<br>
+The bsp in the wad file has errors.  One error is that sometimes it has
+the wrong sector number for a subsector.  This results in drawing the
+wrong sector.
+Added code to try to dectect some of these.
+Created a routine to find the correct sector by finding the closest
+facing linedef to a point within the subsector.
+</li>
+<li>
+Fixed the hardware render sky drawing to block walls and flats drawn
+inside buildings.  Sky sectors are supposed to draw sky over the walls,
+which blocks the view of any taller sectors behind the wall.
+</li>
+<li>
+The polytile remedy, to prevent polygon cracks.
+<br>It enters the same vertex in adjacent poly when splitting a poly at an
+angle that may cause crack errors.  This should prevent cracks before they start.
+In the existing routines, it is hard to find these poly points after other
+poly splitting has taken place.  It was going to get very complex to fix it.
+This can eventually replace that search.
+There is some conflict with some existing crack repair routines,
+so it is made optional.  It does not seem to do harm, but its effect is
+not yet obvious.
+<br>A control,  gr_polytile, can turn it off and on.
+</li>
+<li>
+Rewrote the spawning code so it can handle more multiple players
+than spawning spots, and provide better network join spawning.
+<br>
+The Coop spawning now tries to spawn at 255 locations around the spawn
+spot, to handle collisions, and to allow more players than spawn spots.
+Deathmatch spawn will also try Coop spawning if it needs to.
+Coop spawn will try Deathmatch spawn locations (last) if it needs to.
+</li>
+<li>
+Removed old optional draw code, (DRAW_UNSORTED) and (DRAW_CHOICE) in
+the hardware renderer.  The new code (DRAW_SORTED) of w89_draw_sorted
+is used, which sorts transparent walls and sprites.
+</li>
+<li>
+When a water surface is close to eye level, the water plane is not
+drawn completely.  This was showing HOM or sky.
+Moved the clip plane closer to the player.
+Detects when the player has water surface near eye level and draws both above
+and below the water until eye level is cleanly above or below the
+water level.  When the eye level is exactly level with the water surface
+the player can see both above and below the water.
+There are still some sky flashing for OpenGL, but it is due to
+something else.
+</li>
+<li>
+Changed the net wait to count players instead of nodes.
+This allows machines with split screen players to be handled cleanly.
+Playing with only split players will now start cleanly without
+having to fiddle the wait parameters.
+</li>
+<li>
+Fix the start server so it also works for Heretic and UltDoom.
+The start server menu now changes to give selection of the episode style
+of map naming when appropriate.
+</li>
+<li>
+Fixed the skins setting when a player becomes a chicken, so the other
+players can see a chicken.  Otherwise the skins setting overrides
+the chicken sprite.  Restore the skin upon un-chicken-ing.
+If the player dies while a chicken, they leave a chicken corpse.
+</li>
+<li>
+Rewrote all of the status bar, overlay status, and status palette
+flash routines, so they work cleanly with splitscreen.
+For all draw modes except 8bit palette draw, each split screen can now
+palette flash individually.
+<br>
+Splitscreen only can use overlay status, as the status bar saves state
+to speed up drawing, and it only saves for the one player.
+</li>
+<li>
+Fixed a lumpnum field that was made too small.
+Error showed up with phobiata.wad, or probably any wad with animated flats.
+</li>
+<li>
+Fixed the font1 output so that spaces appear in the printed line.
+</li>
+<li>
+Moved the spawn fog to be over the spawned monster and spawned object.
+</li>
+<li>
+Restructured the sound priority system, and sound effect parameters.
+
+<br>Fixed Heretic sounds.  The channels were saturated with copies
+of the same sound, which was a faint low priority sound.
+<br>
+Heretic uses ascending priority, while Doom and the code used
+descending priority.  The Heretic priority system is more capable,
+and Heretic handles more types of sound, so switched everything to using
+signed ascending priorities.
+<br>
+The priority is also altered for distance, so faint sounds can get replaced.
+<br>
+Made the Doom sound priorities get used, instead of mostly ignored.
+Dehacked changes to info for Doom and Heretic should function as before.
+<br>
+Added Heretic limit channels capability.
+This limits how many channels can have the same sfx.
+It checks this limit when trying to get a channel.
+</li>
+<li>
+Fixed problems caused by use of gcc 4.8.
+The SDL defined, as set by "-DSDL", is not recognized by the
+command line of gcc 4.8, for reasons unknown.
+This define has been changed to SMIF_SDL, which does work.
+The other SMIF determined defines were also changed from using VID_ to:
+SMIF_WIN_NATIVE, SMIF_OS2_NATIVE, SMIF_X11, SMIF_X11_GGI, SMIF_PC_DOS.
+This makes this more obvious that this is a user selected option (SMIF),
+and not a detection of the OS.
+<br>
+Gcc 4.8 detects variables that are set but not used, and issues many
+warning messages.  Many of these are left over from the original Doom
+source code.  Have hunted each down and fixed each, by deleting the
+dangling variable, commenting it out, or in one case making use of it.
+</li>
+<li>
+Concerning compiling and running on a Win32 XP machine.
+<br>On a computer with MSYS installed, it has caused some strange problems.
+MSYS provides a HOME environment variable for its own use.  The code
+now detects when HOME is from MSYS and ignores it so it can get to
+the XP home directory.
+<br>
+The MSYS shell intecepts commands from the Makefile.
+The MSYS shell will not execute DOS commands, nor pass them to the DOS
+command processor, so MSYS commands and MSYS legal directory specifications
+have to be substituted everywhere.
+</li>
+<li>
+Systems that do not have ftw.h have to use dirent.h, and that code was
+not finished.  Have finished it, along with stat code to identify
+directories for systems that do not have dirent D_TYPE either.
+</li>
+<li>
+Fixed palette problems on Windows/Intel systems.
+<br>A gamma function that was performing (0.0/0.0) was putting a 0 in the
+gammatable when run on Windows/Intel, but not on my Linux/Athlon.
+There was an informal report about such a gamma problem some time ago,
+but it did not occur on my Linux/Athlon development system.
+Extensive testing on a Windows/Intel system confirmed the cause.
+</li>
+<li>
+When a cv var set value exceeds the bounds, the code attempts to rewrite
+the value string.  The string could be a const string such as during init,
+which segfaults on modern systems like Linux.
+Fixed the code to write a buffer instead.
+</li>
+<li>
+Fixed segfaults caused by flatfill draw writing out-of-buffer.
+Added a fill scale so that Doom background flats can be scaled down.
+This makes it easier to read menu and message text, such as the Quit box.
+</li>
+<li>
+Fix bug 0626, submitted by Ryan.
+Change memcpy to memmove in command.c because it overlaps dest.
+Reported that it was causing segfaults.
+</li>
+<li>
+Fixed some problems with clean and distclean in the Linux port Makefiles.
+</li>
+<li>
+Rewrote of most of the musserver for linux_x.  Now it has music again.
+The IPC message formats in this musserver have been customized for DoomLegacy.
+The musserver no longer searches the doom wad.  It is sent the exact wad
+file and lump to read using IPC messages.
+The sound device to use can be changed using a menu option.
+The preferred sound device is sent to the musserver using an IPC command.
+This allows the sound device setup to be performed while there is some
+music playing.
+Added FluidSynth to the device selection.
+<br>
+Fixed many problems with the musserver code.
+<br>
+Added code to throttle the Midi commands, so it does not get so far
+ahead in the song.  There is no way to shut off the music that has
+already been sent to the Midi device, or TiMidity.
+Added code to kill drone notes (that did not get shut off).
+In spite of redundant attempts to shut them off, sometimes the current
+notes of a song will still drone on until the song loops.
+</li>
+<li>
+Changed the state setting of removed mobj, so that dereferencing the
+mobj state will not segfault.  A segfault was occuring during testing,
+so in some special cases the removed mobj might still be referenced.
+</li>
+<li>
+Heretic wads can use the SWITCHES lump.  They no longer need to have
+the episode=4.
+</li>
+<li>
+Add handling of TCP connection reset and connection aborted errors
+that were transient errors with WinXP.
+</li>
+<li>
+Add DEBUG_MESSAGE_ON to doomdef.h, which enables debug_Printf messages
+to be shown without needing verbose.  Only used in development compiles.
+</li>
+<li>
+Converted some run-time I_Error, to I_SoftError with a recovery fix.
+This allows the player to save the game, or to see the effects of
+a wad development error.
+When a sprite does not have all the rotations present, it will no longer
+I_Error, but will substitute another sprite frame for the missing one,
+with an error message.
+</li>
+<li>
+Changed to use stdint types in the network tic packet, to standardize
+the tic packet for both 32 bit and 64 bit machines.
+</li>
+<li>
+Hardened the network XCmd code against malicious packets.
+<br>Bumped the network version number to 22.
+The differences in the packet are slight, but this is done mostly to eliminate
+the older code from usage for security reasons.
+</li>
+<li>
+The DoomLegacy coding standard has space indenting only.  The extraneous
+tab indenting is being systematically removed as files are edited.
+</li>
+</ul>
+
 <h2>1.45.2 SVN1139 (2014-09-14)</h2>
 
 <h3>FEATURES 1.45.2</h3>
