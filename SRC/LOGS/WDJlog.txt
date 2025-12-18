@@ -5635,4 +5635,36 @@ patchfile = w106_7_zzone.patch
 - commit revision 1285
 Some fixes to the alternative zone memory system, used for debugging.
 
+*** W106_x11_sound
+patchfile = w106_8_x11_sound.patch
+- commit revision 1286
+Rewrite of X11 sound server.  Much of the code was not used, being
+blindly copied into the sound server because some other sound system had it.
+Disabled the unused code for several kinds of alternative sound systems that
+were not selected.
+Remove redundant files:
+  linux_x/sndserv/sounds.c
+  linux_x/sndserv/sounds.h
+
+*** W106_version1462_1287_docs
+patchfile = w106_9_version1462_1287_docs.patch
+- commit revision 1287
+Release 1.46.2 again, due to finding another bug before making the release.
+Update Release docs and VER.
+
+*** W106_messagebox
+patchfile = w106_10_messagebox.patch
+- commit revision 1288
+The text in the message box is not in the box.
+Setup the message box position for non-menu message boxes.
+
+The Message box is positioned badly for video modes other than 800x600.
+This is due to menu centering Setup that differs from message box setup.
+Make the caller do the Setup to make it consistent for menus.
+
+Adjust connect menu position to give more room to the boxes.
+
+Fix the menu centering for video modes that pad the video lines.
+
+
 

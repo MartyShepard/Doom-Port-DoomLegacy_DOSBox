@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -754,7 +754,7 @@ See <a href="console.html">here</a> for more about the console.
   </li>
   <li>
     Consistency failure now only kicks out the player who was not
-    'up-to-date', not the others.
+    consistent with the server.  The other players are not affected.
   </li>
   <li>
     <a href="console.html#game_options">Critical game variables</a>
@@ -776,12 +776,23 @@ See <a href="console.html">here</a> for more about the console.
 <p>
   Legacy uses the UDP port 5029 only and can accept messages from any
   port so it works perfectly with NAT (Network Address Translation).
-
+<p>
   Because the IP of any computer behind the firewall is not routable 
   the server cannot get a usable IP address during player join-game.
   If you are familiar with IpAutoforward funtionality of Linux,
   you can make a usable IP appear.
 </p>
+<p>
+  The port used can be specified using a command line switch "-udpport 5102".
+  You must avoid any existing port your ISP may be using for services.
+  Multiple Doom Legacy servers can coexist on the same network, playing
+  separate games, as long as they use different port numbers.
+<p>The user reserved UDP ports start at 5000.
+  For Doom Legacy, I recommend using port numbers greater than 5029,
+  such as 5100 .. 5199,
+  to avoid conflicts with other programs.
+</p>
+
 <h4>The server</h4>
 <p>
   Start a server from the Multiplayer menu or from the command line.
@@ -903,7 +914,40 @@ Example C, a 3 player game, with _TWO_ computers, one is split-screen:
   In other words, Doom Legacy doesn't use interpolation to make
   the game smooth when it is not in reality.
 </p>
-  
+
+
+<h4>Consistency</h4>
+
+<p>The Doom Legacy server performs a consistency check on the player
+positions.  If it detects a consistency failure, it will kick out the
+player.
+</p>
+<p>Doom Legacy 1.46.2 introduces consistency repair.
+The server now keeps a consistency error count for each node.
+Upon detecting a consistency error with a node, the server will try a
+series of escalating repair attempts before it kicks the node out of the game.
+<ul>
+<li>Server sends a repair message with the player current position, momentum,
+the random number index, and the current tick.  This is usually
+adequate to repair a minor anomoly, or math difference.
+</li>
+<li>At 3 consistency errors, the server repair message suggests a savegame.
+The client requests a savegame download from the server,
+and then a position update.  The client screen will briefly go black
+duing the download.  Because the game does not pause during this, the
+player may find they have been mobbed and even killed.
+</li>
+<li>When the consistency errors exceed 7, the server kicks the player node.
+</li>
+<li>The server reduces the consistency error count when there are no errors.
+</li>
+</ul>
+<p>
+Due to the network repair messages, and other messages that changed codes,
+Doom Legacy 1.46.2 is network incompatible with previous versions of DoomLegacy.
+</p>
+
+
 
 <h3>Multiplayer intermission screen</h3>
 

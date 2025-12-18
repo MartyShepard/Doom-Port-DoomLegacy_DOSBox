@@ -13,6 +13,72 @@
 
 <div class="column">
 
+<h2>1.46.2 SVN1287 (2016-12-10)</h2>
+
+<h3>FEATURES 1.46.2</h3>
+
+<ul>
+<li>To improve the situation with players being kicked due to
+consistency errors, network repair messages have been added.
+This makes 1.46.2 network incompatible with previous versions of DoomLegacy.
+Because 1.46.1 had a serious bug and should not be used, this should not
+cause many compatibility problems.
+
+The server now keeps a consistency error count for each node.
+Upon detecting a consistency error with a node, the server will try a
+series of escalating repair attempts before it kicks the node out of the game.
+<ul>
+<li>Server sends the player current position, momentum, the random
+number index, and the current tick.
+</li>
+<li>At 3 consistency errors, the server suggests a savegame.
+The client requests a savegame download from the server,
+and then a position update.  The client screen will briefly go black
+duing the download.
+</li>
+<li>When consistency errors exceed 7, the server kicks the player node.
+</li>
+<li>When a node is consistent, the server counts down the
+consistency error count.
+</li>
+</ul>
+</li>
+<li>
+A network download displays the file download activity in
+a box with speed and file size.  This replaced some of the existing hud
+messages, and others were updated to be more helpful and informative.
+</li>
+
+</ul>
+
+<h3>BUG FIXES 1.46.2</h3>
+<ul>
+<li>Fix the savegame corruption introduced by an interface change in 1.46.1.
+During a savegame write, the netvars were overwritten in the buffer.
+A savegame read would notice the netvars were missing and issued a
+savegame corruption message.
+</li>
+<li>
+A network game would display different textures when it downloaded the
+wad file, than if it loaded the wad file from the command line.
+Any texture or patch change by the loaded file would
+affect textures, so it now clears the cache and rebuilds all textures.
+</li>
+<li>
+Fixed the download display screen to have a background draw so the background
+does not flicker due to hardware double buffer swaps.
+</li>
+<li>
+Fix a Heretic status bar draw that was drawing outside the screen
+buffer.
+</li>
+<li>
+Rewrite of the X11 version sound server code, and the internal sound
+driver.  Added some functionality and cleaned up the unused code.
+Separated the code for the 3 sound driver alternatives.
+</li>
+</ul>
+
 <h2>1.46.1 SVN1276 (2016-10-08)</h2>
 
 <h3>FEATURES 1.46.1</h3>

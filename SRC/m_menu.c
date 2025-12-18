@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: m_menu.c 1288 2016-12-30 17:47:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2041,7 +2041,7 @@ menu_t  ConnectOptionDef =
     &MPOptionDef,
     ConnectOptionMenu,
     M_DrawGenericMenu,
-    60,40,
+    28,40,
     0
 };
 
@@ -3871,6 +3871,10 @@ void M_DrawSelCell ( menu_t*       menu,
 //
 //added:06-02-98:
 //  x, y : position (320,200)
+// Called by M_DrawGenericMenu, M_DrawSetupMultiPlayerMenu, M_DrawMessageMenu
+// The caller must call V_SetupDraw with V_SCALESTART | V_SCALEPATCH,
+// selecting V_CENTERHORZ or V_CENTERMENU, to have consistent positioning.
+// V_CENTERMENU has a y shift, which differs from V_CENTERHORZ.
 void M_DrawTextBox (int x, int y, int width, int lines)
 {
     fontinfo_t * fip = V_FontInfo();
@@ -3880,7 +3884,6 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     int      step,boff;
 
     // Draw to screen0, scaled
-    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
 
     if( gamemode == heretic )
     {
@@ -3950,8 +3953,6 @@ void M_DrawTextBox (int x, int y, int width, int lines)
     
 
   done:   
-    V_SetupDraw( drawinfo.prev_screenflags );  // restore
-   
     return;
 
   grey_bar:
@@ -4062,6 +4063,7 @@ void M_SimpleMessage ( const char * string )
 
 #define MAXMSGLINELEN 256
 
+// Called by M_Drawer.
 void M_DrawMessageMenu(void)
 {
     int    y;
@@ -4070,6 +4072,10 @@ void M_DrawMessageMenu(void)
     int    start,lines;
     char   *msg=currentMenu->menuitems[0].text;
 
+    // Draw to screen0, scaled
+    // Not part of a menu.
+    V_SetupDraw( 0 | V_SCALESTART | V_SCALEPATCH | V_CENTERHORZ );
+   
     // Draw to screen0, scaled
     y=currentMenu->y;
     start = 0;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: screen.c 1288 2016-12-30 17:47:59Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -429,9 +429,10 @@ void SCR_Recalc (void)
 
 
     //added:18-02-98: calculate centering offset for the scaled menu
-    // Adds a left margin for CENTERMENU
-    vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.width) +
-                    (vid.width%BASEVIDWIDTH)/2;
+    // Adds a left margin and top margin for CENTERMENU
+    // Fixed to account for video buffer line padding.
+    vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.ybytes) +
+                    (((vid.width%BASEVIDWIDTH)/2)  * vid.bytepp) ;
 
     // patch the asm code depending on vid buffer rowbytes
 #ifdef USEASM
