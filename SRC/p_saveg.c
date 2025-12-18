@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: p_saveg.c 1279 2016-11-29 18:53:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -3304,6 +3304,7 @@ void P_SaveGame( void )
     xc.curpos = save_p;
     xc.endpos = & savebuffer[savebuffer_size-1];
     CV_SaveNetVars( &xc );
+    save_p = xc.curpos;
     SG_SaveSync( SYNC_misc );
     P_ArchiveMisc();
     SG_SaveSync( SYNC_players );
