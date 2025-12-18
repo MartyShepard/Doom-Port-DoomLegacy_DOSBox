@@ -5489,3 +5489,10 @@ local customized and hardened string handling code.
 Bumped the network version number to 22.
 The differences in the packet are slight, but this is done mostly to eliminate
 the older code from usage for security reasons.
+
+*** W105_version1461
+patchfile = w105_66_version1461.patch
+- commit revision 1270
+Update version numbers for 1.46.1.
+Still uses legacy.wad 145, no need to change that.
+

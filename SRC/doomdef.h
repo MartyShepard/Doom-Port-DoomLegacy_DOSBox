@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: doomdef.h 1270 2016-09-20 17:40:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -34,7 +34,7 @@
 // Uncheck this to compile debugging code
 //#define RANGECHECK
 // Do some extra tests, that never happens but maybe.
-#define PARANOIA
+//#define PARANOIA
 // write message in log.txt (win32 and Linux only for the moment)
 #define LOGMESSAGES
 #define LOGLINELEN  80

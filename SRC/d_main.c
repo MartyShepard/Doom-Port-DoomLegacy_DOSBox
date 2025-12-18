@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: d_main.c 1270 2016-09-20 17:40:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,12 +312,12 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1269"
+#define SVN_REV "1270"
 #endif
 
 // Version number: major.minor.revision
-const int  VERSION  = 145; // major*100 + minor
-const int  REVISION = 3;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  VERSION  = 147; // major*100 + minor
+const int  REVISION = 1;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "Alpha (Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
