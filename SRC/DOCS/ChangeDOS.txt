@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01284 ]: w106 shadechain
+[01283*]: w106 version 1.46.2
+[01282*]: w106 docs
 [01281 ]: w106 net repair
 [01280 ]: w106 loadwad
 [01279 ]: w106 savegame
