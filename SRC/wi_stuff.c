@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: wi_stuff.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1047,21 +1047,25 @@ static void WI_updateDeathmatchStats(void)
 
 //  Quick-patch for the Cave party 19-04-1998 !!
 //
+//  width : the column width
 void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
-                    int scorelines, boolean large, int white)
+                    int scorelines, boolean large, int white, int colwidth)
 {
+    char  buf[33];
     int   i,j;
     int   skin_color, color;
-    char  num[12];
     int   plnum;
     int   frags;
     int   colornum;
     fragsort_t temp;
 
+   
     if( gamemode == heretic )
         colornum = 230;
     else
         colornum = 0x78;
+   
+    if( colwidth > 32 )  colwidth=32;
 
     // sort the frags count
     for (i=0; i<scorelines; i++)
@@ -1090,15 +1094,18 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
         color = (skin_color) ?
            SKIN_TO_SKINMAP(skin_color)[ colornum ]
          : reg_colormaps[ colornum ];  // default green skin
-        V_DrawFill (x-1,y-1, (large ? 40 : 26),9, color);
+        V_DrawScaledFill (x-1,y-1, (large ? 40 : 26),9, color);
 
-        // draw frags count
-        sprintf(num,"%3i", frags );
-        V_DrawString (x+(large ? 32 : 24)-V_StringWidth(num), y, 0, num);
+        // draw frags count, right justified
+        sprintf(buf,"%3i", frags );
+        V_DrawString (x+(large ? 32 : 24)-V_StringWidth(buf), y, 0, buf);
 
-        // draw name
+        // draw name, truncate to colwidth
+	memset(buf, ' ', 32);  // to defeat string centering
+        snprintf(buf, 31, "%s", fragtable[i].name );
+        buf[colwidth] = 0;  // truncate to column width
         V_DrawString (x+(large ? 64 : 29), y,
-                      ((plnum == white) ? V_WHITEMAP : 0), fragtable[i].name);
+                      ((plnum == white) ? V_WHITEMAP : 0), buf);
 
         y += 12;
         if (y>=BASEVIDHEIGHT)
@@ -1141,7 +1148,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Frags",5,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Frags", 5, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count buchholz
     scorelines = 0;
@@ -1160,7 +1167,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Buchholz",85,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Buchholz", 85, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count individual
     scorelines = 0;
@@ -1187,7 +1194,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("indiv.",165,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("indiv.", 165, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count deads
     scorelines = 0;
@@ -1208,7 +1215,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("deads",245,RANKINGY,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("deads", 245, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 }
 
 boolean teamingame(int teamnum)
@@ -1263,7 +1270,7 @@ static void WI_drawTeamsStats(void)
     // count frags for each present player
     scorelines = HU_CreateTeamFragTbl(fragtab,dm_totals,dm_frags);
 
-    WI_drawRanking("Frags",5,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Frags", 5, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count buchholz
     scorelines = 0;
@@ -1284,7 +1291,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Buchholz",85,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("Buchholz", 85, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count individuel
     scorelines = 0;
@@ -1311,7 +1318,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("indiv.",165,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("indiv.", 165, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count deads
     scorelines = 0;
@@ -1332,7 +1339,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("deads",245,80,fragtab,scorelines,false,whiteplayer);
+    WI_drawRanking("deads", 245, 80, fragtab, scorelines, false, whiteplayer, 6);
 }
 
 

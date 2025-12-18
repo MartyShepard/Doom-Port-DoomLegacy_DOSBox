@@ -5510,3 +5510,13 @@ Add tests for HOME environment string NULL before using it.
 This would crash DoomLegacy on Windows, where HOME is not usually set
 (when do not have MSYS).
 Thanks to testing by Eckehardt Luhm.
+
+*** W105_rankings
+patchfile = w105_69_rankings.patch
+- commit revision 1273
+Thanks to testing by Eckehardt Luhm.
+Fix color bars in deathmatch rankings in OpenGL.
+Limit names to column widths in the rankings.
+Fix DrawFill for opengl so that positions match other draws.
+Some fixes to status bar usage of the draw fill.
+

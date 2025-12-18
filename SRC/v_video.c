@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1260 2016-09-20 17:18:34Z wesleyjohnson $
+// $Id: v_video.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1739,6 +1739,13 @@ void V_DrawVidFill(int x, int y, int w, int h, byte color)
 //   x, y, w, h : (320,200)
 void V_DrawFill(int x, int y, int w, int h, byte color)
 {
+#ifdef HWRENDER
+    if (rendermode != render_soft)
+    {
+        HWR_DrawVidFill(x * vid.fdupx, y * vid.fdupy, w * vid.fdupx, h * vid.fdupy, color);
+        return;
+    }
+#endif
     // vid : from video setup
     V_DrawVidFill( x * vid.dupx, y * vid.dupy, w * vid.dupx, h * vid.dupy, color);
 }

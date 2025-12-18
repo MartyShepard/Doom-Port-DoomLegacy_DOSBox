@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1251 2016-08-29 21:00:57Z wesleyjohnson $
+// $Id: sb_bar.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1066,18 +1066,19 @@ static void H_OverlayDrawer( byte status_position, player_t * plyr )
 
     if(cv_pickupflash.value == 1)
     {
+        // OpenGL, the inventory at right edge of screen is at stbar_x+286
         // pickup flashes
         if(plyr->key_pickup)
         {
-            V_DrawFill(360, sby+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(stbar_x+260, sby+36, 20, 6, FLASH_OV_COLOR);
         }
         if(plyr->armor_pickup)
         {
-            V_DrawFill(270, sby+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(stbar_x+200, sby+36, 20, 6, FLASH_OV_COLOR);
         }
         if(plyr->ammo_pickup)
         {
-            V_DrawFill(120, sby+36, 20, 6, FLASH_OV_COLOR);
+            V_DrawFill(100, sby+36, 20, 6, FLASH_OV_COLOR);
         }
         if(plyr->health_pickup)
         {

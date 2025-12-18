@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: hu_stuff.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1082,24 +1082,24 @@ void HU_drawDeathmatchRankings (void)
 
     if (scorelines>9)
         scorelines = 9; //dont draw past bottom of screen, show the best only
-        else if (cv_splitscreen.value && scorelines > 4)
-                scorelines = 4;
+    else if (cv_splitscreen.value && scorelines > 4)
+        scorelines = 4;
 
-        if(cv_splitscreen.value)
-        {
-                y = (100 - (12 * (scorelines + 1) / 2)) + 15;
-                title = "Rankings";
-                large = false;
-        }
-        else
-        {
-                y = 70;
-                title = NULL;
-                large = true;
-        }
+    if(cv_splitscreen.value)
+    {
+        y = (100 - (12 * (scorelines + 1) / 2)) + 15;
+        title = "Rankings";
+        large = false;
+    }
+    else
+    {
+        y = 70;
+        title = NULL;
+        large = true;
+    }
 
     if(cv_teamplay.value==0)
-        WI_drawRanking(title,80, y,fragtab,scorelines, large,whiteplayer);
+        WI_drawRanking(title, 80, y, fragtab, scorelines, large, whiteplayer, 32);
     else
     {
         // draw the frag to the right
@@ -1108,7 +1108,7 @@ void HU_drawDeathmatchRankings (void)
         scorelines = HU_CreateTeamFragTbl(fragtab,NULL,NULL);
 
         // and the team frag to the left
-        WI_drawRanking("Teams",80, y,fragtab,scorelines,large,players[whiteplayer].skincolor);
+        WI_drawRanking("Teams", 80, y, fragtab, scorelines, large, players[whiteplayer].skincolor, 32);
     }
 }
 
