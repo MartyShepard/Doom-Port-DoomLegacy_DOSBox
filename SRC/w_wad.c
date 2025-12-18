@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: w_wad.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -231,6 +231,7 @@ static char*  reload_filename;
 //  return -1 in case of problem
 //
 // BP: Can now load dehacked files (ext .deh)
+// Called by W_InitMultipleFiles, P_AddWadFile.
 int W_LoadWadFile (const char *filename)
 {
     int              filenum = numwadfiles;  // return value

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: d_netfil.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -109,19 +109,21 @@
 
 #include "doomincl.h"
 #include "doomstat.h"
+#include "d_net.h"
+#include "d_netfil.h"
 #include "d_clisrv.h"
 #include "g_game.h"
 #include "i_net.h"
 #include "i_system.h"
 #include "m_argv.h"
-#include "d_net.h"
 #include "w_wad.h"
-#include "d_netfil.h"
 #include "z_zone.h"
 #include "byteptr.h"
 #include "p_setup.h"
 #include "m_misc.h"
 #include "m_menu.h"
+#include "v_video.h"
+  // V_DrawString
 #include "d_main.h"
   // DOOMWADDIR
 #include "md5.h"
@@ -214,7 +216,7 @@ void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
         if((next0 == NULL) || (next0 > bufend16))
         {
             fnp->filename[0] = '\0';
-	    goto bad_packet;  // overran last 0 term.
+            goto bad_packet;  // overran last 0 term.
         }
         // Test on next0 guarantees that there is a 0 term.
         fn_len = next0 - p + 1;  // strnlen equiv.
@@ -232,19 +234,57 @@ bad_packet:
     return;
 }
 
+#define BUFFSIZE 128
 // By Client
 boolean  CL_waiting_on_fileneed( void )
 {
-   int i;
-   for(i=0; i<cl_num_fileneed; i++)
-   {
-      if(cl_fileneed[i].status==FS_DOWNLOADING
-         || cl_fileneed[i].status==FS_REQUESTED)
+    static byte  stat_cnt2 = 0;
+    boolean  waiting = false;
+    char b[BUFFSIZE];
+    int i;
+    int pos = 0;
+   
+    // [WDJ] Status reporting moved here, consistent file report in a box.
+    // Update stats on screen.
+
+    M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
+    if(stat_cnt2++ > 4)
+    {
+        stat_cnt2 = 0;
+        // First call in CL_ConnectToServer
+        Net_GetNetStat();
+    }
+    snprintf( b, BUFFSIZE-1, "Download File     %4.2f KBPS", (float)netstat_recv_bps/1024 );
+    b[BUFFSIZE-1] = 0;
+    V_DrawString (30, NETFILE_BOX_Y+8, 0, b);
+   
+    for(i=0; i<cl_num_fileneed; i++)
+    {
+      fileneed_t * fnp = & cl_fileneed[i];
+      if(fnp->status==FS_DOWNLOADING || fnp->status==FS_REQUESTED)
       {
-         return true;
+        waiting = true;
+        // Display the actively loading files, in the box, first 4.
+        if( pos < (8*4) )
+        {
+          char * f = strchr( fnp->filename, '/' );
+          f = (f)? f+1 : fnp->filename;
+          snprintf( b, BUFFSIZE-1, "%-40s  %4i  %4i",
+              f, fnp->totalsize>>10, fnp->bytes_recv>>10 );
+          b[BUFFSIZE-1] = 0;
+          V_DrawString (12, NETFILE_BOX_Y+16+pos, 0, b );
+          pos += 8;
+        }
       }
-   }
-   return false;
+    }
+
+    if( verbose>1 && ! waiting )
+    {
+        // Print final Stat
+        GenPrintf(EMSG_info, "Download speed  %4.2f KBPS",
+                        ((float)netstat_recv_bps)/1024);
+    }
+    return waiting;
 }
 
 // By Client.
@@ -531,6 +571,7 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
     }
     
     // Not found error handling.
+    GenPrintf( EMSG_ver, "Requested file, %s, not found in wadfiles.\n", filename );
     DEBFILE(va("%s not found in wadfiles\n", filename));
    
     // Net security permissions.
@@ -547,6 +588,7 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
 
     // Found the file.
 send_found:   
+    GenPrintf( EMSG_ver, "Sending file %s to %d.\n", filename, to_node );
     DEBFILE(va("Sending file %s to %d (id=%d)\n", filename, to_node, fileid));
     p->release_tah=TAH_FILE;
     // size initialized at file open 
@@ -776,6 +818,8 @@ reject:
     return;
 }
 
+
+// Called by Net_Packet_Handler, unknown_host_handler.
 void Got_Filetxpak(void)
 {
     static int stat_cnt = 0;  // steps spent receiving file
@@ -799,6 +843,7 @@ void Got_Filetxpak(void)
         fp = fopen( fname,"wb" );
         fnp->phandle = fp;  // owner of open file
         if(!fp)  goto file_create_err;
+
         GenPrintf(EMSG_hud, "\r%s ...", fname);
         fnp->bytes_recv = 0; 
         fnp->status = FS_DOWNLOADING;
@@ -826,6 +871,7 @@ void Got_Filetxpak(void)
            goto file_write_err;
         fnp->bytes_recv += netbuffer->u.filetxpak.size;
 
+#if 0
         if(stat_cnt==0)
         {
             // Update stats on screen.
@@ -836,6 +882,7 @@ void Got_Filetxpak(void)
                         fnp->totalsize>>10,
                         ((float)netstat_recv_bps)/1024);
         }
+#endif       
 
         // Detect when all of file received.
         if(fnp->bytes_recv == fnp->totalsize)

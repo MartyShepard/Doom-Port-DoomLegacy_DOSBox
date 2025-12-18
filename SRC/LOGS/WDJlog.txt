@@ -5562,3 +5562,27 @@ Added the missing line to update the savegame position.
 Testing should have caught this, and it may have been noticed.
 But other bugs being fixed at the same time may have confused things.
 It did not affect reading an old savegame.
+
+*** W106_netfile
+patchfile = w106_2_netfile.patch
+- commit revision 1280
+Fix some network file download problems.
+
+A network game would display different textures when it downloaded the
+wad file, than if it loaded the wad file from the command line.  The
+routine for adding a wad file tried to find and update textures, which
+did not work.  Any texture or patch change by the loaded file would
+affect textures, so it is safer to just clear the cache and rebuild all
+textures.
+
+Gave the network download a display of file download activity, in
+a box with speed and file size.  This replaced some of the existing hud
+messages, and others were updated to be more helpful and informative.
+Gave it a background draw so the background does not flicker due to
+hardware double buffer swaps.
+
+Used LE_SWAP32 instead of LE_SWAP32_FAST in the one time network code,
+as speed is not an issue there.
+
+Init the command line file load list properly.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: d_netfil.h 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -48,6 +48,8 @@
 #include "doomtype.h"
 #include "w_wad.h"
   // MAX_WADFILES
+  
+#define NETFILE_BOX_Y  100
 
 // Type of storage, after transmission handling
 typedef enum {

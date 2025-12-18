@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1274 2016-09-29 02:15:38Z wesleyjohnson $
+// $Id: d_main.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1279"
+#define SVN_REV "1280"
 #endif
 
 // Version number: major.minor.revision
@@ -342,7 +342,8 @@ static void Clear_SoftError(void);
 void HereticPatchEngine(void);
 //void Chex1PatchEngine(void);
 
-char * startupwadfiles[MAX_WADFILES];
+// Null terminated list of files.
+char * startupwadfiles[MAX_WADFILES+1];
 
 // command line switches
 boolean devparm = false;        // started game with -devparm
@@ -648,6 +649,9 @@ void D_Display(void)
             break;
 
         case GS_WAITINGPLAYERS:
+            // [WDJ] Because hardware may double buffer, need to overwrite
+            // background. Waiting loop may get alternating backgrounds.
+            D_PageDrawer(pagename);  // provide background
             D_WaitPlayer_Drawer();
             break;
 
@@ -1232,6 +1236,8 @@ void D_AddFile(char *filename)
     // find end of wad files by counting
     for (numwadfiles = 0; startupwadfiles[numwadfiles]; numwadfiles++)
         ;
+    if( numwadfiles >= MAX_WADFILES )
+        I_Error ( "Too many wadfiles, max=%i.\n", MAX_WADFILES );
 
     newfile = malloc(strlen(filename) + 1);
     strcpy(newfile, filename);
@@ -1986,6 +1992,7 @@ void D_DoomMain()
 
     D_Make_legacytitle();
 
+    memset( startupwadfiles, 0, sizeof(startupwadfiles) );
     CON_Init();  // vid, zone independent
     EOUT_flags |= EOUT_con;  // all msgs to CON buffer
     use_font1 = 1;  // until PLAYPAL and fonts loaded

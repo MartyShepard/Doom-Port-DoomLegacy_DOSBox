@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: d_clisrv.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
-// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1998-2016 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -128,22 +128,23 @@
 #include <unistd.h>
 
 #include "doomincl.h"
+#include "doomstat.h"
 #include "d_clisrv.h"
 #include "command.h"
 #include "i_net.h"
 #include "i_system.h"
 #include "i_video.h"
+#include "v_video.h"
 #include "d_net.h"
 #include "d_netcmd.h"
+#include "d_netfil.h"
 #include "d_main.h"
 #include "g_game.h"
 #include "hu_stuff.h"
 #include "keys.h"
-#include "doomstat.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "console.h"
-#include "d_netfil.h"
 #include "byteptr.h"
 
 #include "p_saveg.h"
@@ -574,7 +575,7 @@ static boolean  CL_Send_Join( void )
         netbuffer->u.clientcfg.localplayers=1;
 
     netbuffer->u.clientcfg.version = VERSION;
-    netbuffer->u.clientcfg.subversion = LE_SWAP32_FAST(NETWORK_VERSION);
+    netbuffer->u.clientcfg.subversion = LE_SWAP32(NETWORK_VERSION);
 
     return HSendPacket(servernode,true,0,sizeof(clientconfig_pak));
 }
@@ -589,9 +590,9 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
 
     netbuffer->packettype=PT_SERVERINFO;
     netbuffer->u.serverinfo.version = VERSION;
-    netbuffer->u.serverinfo.subversion = LE_SWAP32_FAST(NETWORK_VERSION);
+    netbuffer->u.serverinfo.subversion = LE_SWAP32(NETWORK_VERSION);
     // return back the time value so client can compute there ping
-    netbuffer->u.serverinfo.trip_time = LE_SWAP32_FAST(reqtime);
+    netbuffer->u.serverinfo.trip_time = LE_SWAP32(reqtime);
     netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
@@ -629,12 +630,12 @@ static boolean SV_Send_ServerConfig(int to_node)
     }
 
     netbuffer->u.servercfg.version         = VERSION;
-    netbuffer->u.servercfg.subversion      = LE_SWAP32_FAST(NETWORK_VERSION);
+    netbuffer->u.servercfg.subversion      = LE_SWAP32(NETWORK_VERSION);
 
     netbuffer->u.servercfg.serverplayer    = serverplayer;
     netbuffer->u.servercfg.totalplayernum  = doomcom->numplayers;
-    netbuffer->u.servercfg.playerdetected  = LE_SWAP32_FAST(playermask);
-    netbuffer->u.servercfg.gametic         = LE_SWAP32_FAST(gametic);
+    netbuffer->u.servercfg.playerdetected  = LE_SWAP32(playermask);
+    netbuffer->u.servercfg.gametic         = LE_SWAP32(gametic);
     netbuffer->u.servercfg.clientnode      = to_node;
     netbuffer->u.servercfg.gamestate       = gamestate;
 
@@ -900,7 +901,7 @@ static void CL_Send_AskInfo( int to_node )
 {
     netbuffer->packettype = PT_ASKINFO;
     netbuffer->u.askinfo.version = VERSION;
-    netbuffer->u.askinfo.send_time = LE_SWAP32_FAST(I_GetTime());
+    netbuffer->u.askinfo.send_time = LE_SWAP32(I_GetTime());
     HSendPacket(to_node, false, 0, sizeof(askinfo_pak));
 }
 
@@ -1044,6 +1045,7 @@ void CL_Update_ServerList( boolean internetsearch )
 }
 
 
+
 // ----- Connect to Server
 
 // By User, future Client, and by server not dedicated.
@@ -1147,6 +1149,7 @@ static void CL_ConnectToServer( void )
                 switch( Send_RequestFile() )
                 {
                  case RFR_success:
+                    Net_GetNetStat();  // init for later display
                     cl_mode = CLM_downloadfiles;
                     break;
                  case RFR_send_fail:
@@ -1159,6 +1162,7 @@ static void CL_ConnectToServer( void )
                 }
                 break;
             case CLM_downloadfiles :
+                // Wait test, and display loading files.
                 if( CL_waiting_on_fileneed() )
                     break; // continue looping
                 // Have all downloaded files.
@@ -1185,6 +1189,8 @@ static void CL_ConnectToServer( void )
                 break;
 #ifdef JOININGAME
             case CLM_downloadsavegame :
+                M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
+                V_DrawString (30, NETFILE_BOX_Y+8, 0, "Download Savegame");
                 if( cl_fileneed[0].status != FS_FOUND )
                     break; // continue loop
 
@@ -1946,7 +1952,7 @@ static void server_askinfo_handler( byte nnode )
     {
         // Make the send_time the round trip ping time.
         SV_Send_ServerInfo(nnode,
-                           LE_SWAP32_FAST(netbuffer->u.askinfo.send_time));
+                           LE_SWAP32(netbuffer->u.askinfo.send_time));
         Net_CloseConnection(nnode);  // a temp connection
     }
 }
@@ -1960,7 +1966,7 @@ static void client_join_handler( byte nnode )
     boolean newnode=false;
 #endif
     if( netbuffer->u.clientcfg.version != VERSION
-        || LE_SWAP32_FAST(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
+        || LE_SWAP32(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
     {
         SV_Send_Refuse(nnode,
            va("Different DOOM versions cannot play a net game! (server version %s)",
@@ -2052,7 +2058,7 @@ static void server_info_handler( byte nnode )
 {
     // Compute ping in ms.
     netbuffer->u.serverinfo.trip_time =
-     (I_GetTime() - LE_SWAP32_FAST(netbuffer->u.serverinfo.trip_time))*1000/TICRATE; 
+     (I_GetTime() - LE_SWAP32(netbuffer->u.serverinfo.trip_time))*1000/TICRATE; 
     netbuffer->u.serverinfo.servername[MAXSERVERNAME-1]=0;
 
     SL_InsertServer( &netbuffer->u.serverinfo, nnode);
@@ -2088,7 +2094,7 @@ static void server_cfg_handler( byte nnode )
     if(!server)
     {
         // Clients not on the server, update to server time.
-        maketic = gametic = cl_need_tic = LE_SWAP32_FAST(netbuffer->u.servercfg.gametic);
+        maketic = gametic = cl_need_tic = LE_SWAP32(netbuffer->u.servercfg.gametic);
     }
 
 #ifdef CLIENTPREDICTION2
@@ -2108,7 +2114,7 @@ static void server_cfg_handler( byte nnode )
     DEBFILE(va("Server accept join gametic=%d, client net node=%d\n",
                gametic, cl_nnode));
 
-    uint32_t  playerdet = LE_SWAP32_FAST(netbuffer->u.servercfg.playerdetected);
+    uint32_t  playerdet = LE_SWAP32(netbuffer->u.servercfg.playerdetected);
     for(j=0;j<MAXPLAYERS;j++)
     {
         playeringame[j]=( playerdet & (1<<j) ) != 0;

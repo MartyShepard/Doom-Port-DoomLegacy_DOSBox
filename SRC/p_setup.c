@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: p_setup.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1844,6 +1844,7 @@ boolean P_SetupLevel (int      to_episode,
 //
 //  wadfilename : filename of wad to be loaded 
 //  firstmap_out : /*OUT*/  info about the first level map
+// Called by Command_Addfile, CL_Load_ServerFiles.
 boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
 {
     int         wadfilenum;
@@ -1853,7 +1854,6 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     int         firstmapreplaced;
     int         i,j,num;
     int         replace_cnt;
-    boolean     texturechange;
 
     if( firstmap_out )
        firstmap_out->mapname = NULL;
@@ -1870,7 +1870,6 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     //
     lumpinfo = wadfile->lumpinfo;
     replace_cnt = 0;
-    texturechange=false;
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
         name = lumpinfo->name;
@@ -1893,11 +1892,6 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
                 }
             }
         }
-        else
-        if( memcmp(name,"TEXTURE1",8)==0    // find texture replacement too
-         || memcmp(name,"TEXTURE2",8)==0
-         || memcmp(name,"PNAMES",6)==0)
-            texturechange=true;
     }
     if (!devparm && replace_cnt)
         GenPrintf(EMSG_dev, "%d sounds replaced\n", replace_cnt);
@@ -1925,13 +1919,12 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     //
     R_AddSpriteDefs (sprnames, numwadfiles-1);
 
-    //
-    // search for texturechange replacements
-    //
-    if( texturechange ) // inited in the sound check
-        R_LoadTextures();       // numtexture changes
-    else
-        R_FlushTextureCache();  // just reload it from file
+    // [WDJ] This previously would try to detect texture changes.
+    // But any change of patch or texture will invalidate the current
+    // cached textures, so the only safe thing to do is rebuild them all.
+    // This fixes bad textures on netgames, and after Map command.
+    R_FlushTextureCache();  // clear all previous
+    R_LoadTextures();       // reload all textures
 
     //
     // look for skins

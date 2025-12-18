@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01280 ]: w106 loadwad
 [01279 ]: w106 savegame
 [01278 ]: w105 offset signed
 [01277 ]: w105 vid ybytes signed
