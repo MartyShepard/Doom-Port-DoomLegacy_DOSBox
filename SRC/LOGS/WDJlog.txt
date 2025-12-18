@@ -5586,3 +5586,25 @@ as speed is not an issue there.
 
 Init the command line file load list properly.
 
+*** W106_netrepair
+patchfile = w106_3_netrepair.patch
+- commit revision 1281
+Fix some network consistency check problems.
+The network version has been incremented to 23, which makes this version
+incompatible with any previous DoomLegacy.  Some command enumeration
+has moved, due to the priority implied in the command ordering.
+
+Sometimes there will be a consistent consistency check failure, for
+unknown reasons.
+The server now has the ability to fix the player, instead of just kick
+them from the game.
+Added an PT_REPAIR network command to allow the server to repair the player
+position, the random number index, and the gametic.
+
+A count of recent consistency failures is kept so that an escalating
+series of actions can be taken.
+1. Repair the player position.
+2. Repair the node with a savegame, which will maintain the
+player at their current position.
+3. The Kick command will be issued.
+

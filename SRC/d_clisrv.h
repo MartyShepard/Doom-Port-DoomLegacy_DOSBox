@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: d_clisrv.h 1281 2016-12-09 02:21:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -110,6 +110,7 @@ typedef enum   {
     PT_ASKINFO,       // to ask info of the server (anyone)
     PT_SERVERINFO,    // send game & server info (gamespy)
     PT_REQUESTFILE,   // client request a file transfer
+    PT_REPAIR,        // repair position, consistency fix
 
  // Low Priority
     PT_CANFAIL,       // A priority boundary
@@ -155,6 +156,35 @@ typedef struct {
    ticcmd_t    cmds[NUM_SERVERTIC_CMD]; // normaly [BACKUPTIC][MAXPLAYERS] but too large
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
 } servertics_pak;
+
+// Repair messages triggered by consistency fault.
+typedef enum   {
+  RQ_NULL,
+// to client
+  RQ_PLAYER,
+  RQ_SUG_SAVEGAME, // server suggests a savegame
+  RQ_MONSTER,  // not yet implemented
+  RQ_OBJECT,   // not yet implemented
+// to server
+  RQ_REQ_TO_SERVER = 100,
+  RQ_REQ_SAVEGAME,  // Request of savegame
+  RQ_REQ_PLAYER,    // Request of player update
+} repair_type_e;
+
+typedef struct {
+   uint16_t    id_num;
+   uint32_t    angle;
+   int32_t     x, y, z;
+   int32_t     momx, momy, momz;
+} pos_repair_t;
+
+// Server update of client.
+typedef struct {
+   byte        repair_type;
+   byte        p_rand_index; // to sync P_Random
+   tic_t       gametic;
+   pos_repair_t  pos;
+} repair_pak;
 
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
 #define NETCVAR_BUFF_LEN  4096
@@ -243,17 +273,19 @@ typedef struct
 
     byte       packettype;
     byte       reserved;      // padding
-    union  {   clientcmd_pak     clientpak;
-               client2cmd_pak    client2pak;
-               servertics_pak    serverpak;
-               serverconfig_pak  servercfg;
-               byte              textcmd[MAXTEXTCMD+1];
-               filetx_pak        filetxpak;
-               clientconfig_pak  clientcfg;
-               serverinfo_pak    serverinfo;
-               serverrefuse_pak  serverrefuse;
-               askinfo_pak       askinfo;
-               netwait_pak       netwait;
+    union  {
+      clientcmd_pak     clientpak;
+      client2cmd_pak    client2pak;
+      servertics_pak    serverpak;
+      serverconfig_pak  servercfg;
+      byte              textcmd[MAXTEXTCMD+1];
+      filetx_pak        filetxpak;
+      clientconfig_pak  clientcfg;
+      serverinfo_pak    serverinfo;
+      serverrefuse_pak  serverrefuse;
+      askinfo_pak       askinfo;
+      netwait_pak       netwait;
+      repair_pak        repair;
            } u;
 
 } netbuffer_t;

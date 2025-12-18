@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
+// $Id: d_netfil.c 1281 2016-12-09 02:21:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -669,7 +669,7 @@ static void SV_EndSend(byte nnode)
 }
 
 // By Server.
-// Called by NetUpdate, CL_ConnectToServer.
+// Called by NetUpdate, CL_ConnectToServer, repair_handler.
 void Filetx_Ticker(void)
 {
     static byte txnode=0;  // net node num, 0..(MAXNETNODES-1)

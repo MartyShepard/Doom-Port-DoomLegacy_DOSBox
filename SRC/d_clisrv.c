@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
+// $Id: d_clisrv.c 1281 2016-12-09 02:21:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -160,6 +160,7 @@
 
 #include "b_game.h"	//added by AC for acbot
 
+
 //
 // NETWORKING
 //
@@ -175,7 +176,11 @@
 
 // The addition of wait messages should be transparent to previous network
 // versions.
-const int  NETWORK_VERSION = 22; // separate version number for network protocol (obsolete)
+const int  NETWORK_VERSION = 23; // separate version number for network protocol (obsolete)
+
+
+#define JOININGAME
+
 
 #if NUM_SERVERTIC_CMD < BACKUPTICS
 # error Not enough NUM_SERVERTIC_CMD
@@ -213,6 +218,7 @@ static byte     nnode_to_player[MAXNETNODES];  // 255= unused
 static byte     nnode_to_player2[MAXNETNODES]; // splitscreen player, 255= unused
 static byte     playerpernode[MAXNETNODES]; // used specialy for splitscreen
 static byte     nodewaiting[MAXNETNODES];
+static byte     consistency_faults[MAXNETNODES];
 static boolean  nodeingame[MAXNETNODES];  // set false as nodes leave game
 static tic_t    nettics[MAXNETNODES];     // what tic the client have received
 static tic_t    nextsend_tic[MAXNETNODES]; // what server sent to client
@@ -543,16 +549,18 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
 // Client state
 typedef enum {
    CLM_searching,
+   CLM_server_files,
    CLM_download_req,
-   CLM_downloadfiles,
+   CLM_download_files,
    CLM_askjoin,
-   CLM_waitjoinresponse,
-   CLM_downloadsavegame,
+   CLM_wait_join_response,
+   CLM_download_savegame,
    CLM_connected
 } cl_mode_t;
 
 static cl_mode_t  cl_mode = CLM_searching;
 
+static void CL_ConnectToServer(void);
 static int16_t  Consistency(void);
 static void Net_Packet_Handler(void);
 
@@ -648,7 +656,6 @@ static boolean SV_Send_ServerConfig(int to_node)
     return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
 }
 
-#define JOININGAME
 #ifdef JOININGAME
 
 // By Server.
@@ -722,6 +729,183 @@ failed_exit:
 #endif
 
 
+
+// ----- Consistency fail, repair position.
+static tic_t prev_tic = 0;
+
+
+// By Server.
+// Send a player repair message.
+//  pn : player number
+//  to_node : the net node
+static void SV_Send_player_repair( int pn, byte to_node )
+{
+    mobj_t * mo;
+
+    netbuffer->u.repair.repair_type = RQ_PLAYER;
+    netbuffer->u.repair.pos.id_num = pn;
+    if( ! playeringame[pn] )  return;
+    mo = players[pn].mo;
+    if( ! mo )  return;
+    netbuffer->u.repair.pos.angle = mo->angle;
+    netbuffer->u.repair.pos.x = mo->x;
+    netbuffer->u.repair.pos.y = mo->y;
+    netbuffer->u.repair.pos.z = mo->z;
+    netbuffer->u.repair.pos.momx = mo->momx;
+    netbuffer->u.repair.pos.momy = mo->momy;
+    netbuffer->u.repair.pos.momz = mo->momz;
+    HSendPacket(to_node, false, 0, sizeof(repair_pak));
+}
+
+
+// By Client.
+// Repair the player from the repair message in the netbuffer.
+static void CL_player_repair( void )
+{
+    int pn;
+    mobj_t * mo;
+
+    pn = netbuffer->u.repair.pos.id_num;
+    if( ! playeringame[pn] )  return;
+    mo = players[pn].mo;
+    if( ! mo )  return;
+    mo->angle = netbuffer->u.repair.pos.angle;
+    mo->x = netbuffer->u.repair.pos.x;
+    mo->y = netbuffer->u.repair.pos.y;
+    mo->z = netbuffer->u.repair.pos.z;
+    mo->momx = netbuffer->u.repair.pos.momx;
+    mo->momy = netbuffer->u.repair.pos.momy;
+    mo->momz = netbuffer->u.repair.pos.momz;
+}
+
+// By Server.
+// Send a position repair to the client.
+//  to_node : to the player node
+//  repair_type : RQ_PLAYER, RQ_SUG_SAVEGAME
+static void SV_Send_Pos_repair( byte repair_type, byte to_node )
+{
+    netbuffer->packettype = PT_REPAIR;
+    netbuffer->u.repair.gametic = LE_SWAP32_FAST(gametic);
+    netbuffer->u.repair.p_rand_index = P_GetRandIndex(); // to sync P_Random
+       
+#ifdef JOININGAME
+    if( repair_type == RQ_SUG_SAVEGAME )
+    {
+        netbuffer->u.repair.repair_type = RQ_SUG_SAVEGAME;
+        HSendPacket(to_node, false, 0, sizeof(repair_pak));
+        return;
+    }
+#endif
+
+    SV_Send_player_repair( nnode_to_player[ to_node ], to_node );
+   
+    if( nnode_to_player2[ to_node ] < 255 )
+    {
+        SV_Send_player_repair( nnode_to_player2[ to_node ], to_node );
+    }
+}
+
+
+#ifdef JOININGAME
+// By Client.
+// Send a request for a savegame.
+//  msg_type : RQ_REQ_SAVEGAME, RQ_REQ_PLAYER
+static void CL_Send_Req_repair( repair_type_e msg_type )
+{
+    netbuffer->packettype=PT_REPAIR;
+    netbuffer->u.repair.repair_type = msg_type;
+
+    HSendPacket(servernode, true, 0, sizeof(repair_pak));
+}
+#endif
+
+// [WDJ] Attempt to fix consistency errors.
+// By Client and Server
+// Act upon the received position repair from server.
+static void repair_handler( byte nnode )
+{
+    // Message is PT_REPAIR
+    int msg_type = netbuffer->u.repair.repair_type;
+    if( (msg_type < RQ_REQ_TO_SERVER) && ! server )
+    {
+        // Server repairs client.
+        gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
+        P_SetRandIndex( netbuffer->u.repair.p_rand_index ); // to sync P_Random
+    }
+   
+    switch( msg_type )
+    {
+     case RQ_PLAYER:
+        // Server repairs player position.
+        CL_player_repair();
+        break;
+
+#ifdef JOININGAME
+     case RQ_SUG_SAVEGAME:
+        // Server suggests downloading a savegame from the server.
+        CL_Prepare_Download_SaveGame(tmpsave);
+        CL_Send_Req_repair( RQ_REQ_SAVEGAME ); // to server
+        // Loop here while savegame is downloaded.
+        while( cl_fileneed[0].status != FS_FOUND )
+        {
+            Net_Packet_Handler();
+            if( !server && !netgame )
+                goto reset_to_title_exit;  // connection closed by cancel or timeout
+
+            Net_AckTicker();
+
+            // Operations performed only once every tic.
+            if( prev_tic != I_GetTime() )
+            {
+                prev_tic = I_GetTime();
+
+                // User response handler
+                I_OsPolling();
+                switch( I_GetKey() )
+                {
+                  case 'q':
+                  case KEY_ESCAPE:
+		     goto reset_to_title_exit;
+                }
+
+                // Server upkeep
+                if( Filetx_file_cnt )  // File download in progress.
+                    Filetx_Ticker();
+            }
+        }
+
+        // Have received the savegame from the server.
+        CL_Load_Received_Savegame();
+        CL_Send_Req_repair( RQ_REQ_PLAYER ); // to server
+        break;
+
+     case RQ_REQ_SAVEGAME:
+        // Client has requested a savegame repair
+        if( ! server ) break;   // only handled by server
+        if(gamestate == GS_LEVEL)
+        {
+            SV_Send_SaveGame( nnode ); // send game data
+            GenPrintf(EMSG_info, "Send savegame\n");
+        }
+        break;
+       
+     case RQ_REQ_PLAYER:
+        // Client has requested a player repair
+        if( ! server ) break;   // only handled by server
+        SV_Send_Pos_repair( RQ_PLAYER, nnode );
+#endif
+     default:
+        break;
+    }
+    return;
+   
+reset_to_title_exit:
+    CL_Reset();
+    D_StartTitle();
+    return;
+}
+
+
 // ----- Wait for Server to start net game.
 //#define WAITPLAYER_DEBUG
 
@@ -729,7 +913,6 @@ static byte  num_netnodes;
 static byte  num_netplayer;  // wait for netplayer, some nodes are 2 players
 static byte  wait_netplayer = 0;
 static tic_t wait_tics  = 0;
-static tic_t prev_tic = 0;
 
 static void SV_Send_NetWait( void )
 {
@@ -963,7 +1146,7 @@ static void SL_InsertServer( serverinfo_pak *info, byte nnode)
 
     // search if not already on it
     i = SL_Find_Server( nnode );
-    if( i==-1 )
+    if( i < 0 )
     {
         // not found add it
         if( serverlistcount >= MAXSERVERLIST )
@@ -1055,12 +1238,11 @@ void CL_Update_ServerList( boolean internetsearch )
 static void CL_ConnectToServer( void )
 {
     int  i;
-    tic_t   askinfo_tic;  // to repeat askinfo
+    tic_t   askinfo_tic = 0;  // to repeat askinfo
 
     cl_mode = CLM_searching;
     D_WaitPlayer_Setup();
 
-    GenPrintf(EMSG_hud, "Press Q or ESC to abort\n");
     if( servernode >= MAXNETNODES )
     {
         // init value and BROADCASTADDR
@@ -1071,8 +1253,9 @@ static void CL_ConnectToServer( void )
 
     DEBFILE(va("Waiting %d players\n", wait_netplayer));
 
-    askinfo_tic = 0;
     SL_Clear_ServerList(servernode);  // clear all except the current server
+
+    GenPrintf(EMSG_hud, "Press Q or ESC to abort\n");
     // Every player goes through here to connect to game, including a
     // single player on the server.
     // Loop until connected or user escapes.
@@ -1082,65 +1265,65 @@ static void CL_ConnectToServer( void )
         switch(cl_mode) {
             case CLM_searching :
                 // serverlist is updated by GetPacket function
-                if( serverlistcount <= 0 )
+                if( serverlistcount > 0 )
                 {
-                    // Don't have a serverlist.
-                    // Poll the server (askinfo packet).
-                    if( askinfo_tic <= I_GetTime() )
-                    {
-                        // Don't be noxious on the network.
-                        // Every 2 seconds is often enough.
-                        askinfo_tic = I_GetTime() + (TICRATE*2);
-                        if( servernode < MAXNETNODES )
-                        {
-                            // Specific server.
-                            CL_Send_AskInfo(servernode);
-                        }
-                        else
-                        {
-                            // Any
-                            CL_Update_ServerList( false );
-                        }
-                    }
+                    cl_mode = CLM_server_files;
+                    break;
                 }
-                else
+                // Don't have a serverlist.
+                // Poll the server (askinfo packet).
+                if( askinfo_tic <= I_GetTime() )
                 {
-                    // Have a serverlist, serverlistcount > 0.
-                    // This can be a response to our broadcast request
-                    if( servernode >= MAXNETNODES )
+                    // Don't be noxious on the network.
+                    // Every 2 seconds is often enough.
+                    askinfo_tic = I_GetTime() + (TICRATE*2);
+                    if( servernode < MAXNETNODES )
                     {
-                        // Invalid servernode, get best server from serverlist.
-                        i = 0;
-                        servernode = serverlist[i].server_node;
-                        GenPrintf(EMSG_hud, " Found, ");
+                        // Specific server.
+                        CL_Send_AskInfo(servernode);
                     }
                     else
                     {
-                        // Have a current server.  Find it in the serverlist.
-                        i = SL_Find_Server(servernode);
-                        // Check if it shutdown, or is missing for some reason.
-                        if (i<0)
-                            break; // the case
+                        // Any
+                        CL_Update_ServerList( false );
                     }
-                    // Check server for files needed.
-                    CL_Got_Fileneed(serverlist[i].info.num_fileneed,
-                                    serverlist[i].info.fileneed    );
-                    GenPrintf(EMSG_hud, " Checking files ...\n");
-                    switch( CL_CheckFiles() )
-                    {
-                     case CFR_no_files:
-                     case CFR_all_found:
-                        cl_mode = CLM_askjoin;
-                        break;
-                     case CFR_download_needed:
-                        cl_mode = CLM_download_req;
-                        break;
-                     case CFR_iwad_error: // cannot join for some reason
-                     case CFR_insufficient_space:
-                     default:
-                        goto reset_to_title_exit;
-                    }
+                }
+                break;
+            case CLM_server_files :
+                // Have a serverlist, serverlistcount > 0.
+                // This can be a response to our broadcast request
+                if( servernode < MAXNETNODES )
+                {
+                    // Have a current server.  Find it in the serverlist.
+                    i = SL_Find_Server(servernode);
+                    // Check if it shutdown, or is missing for some reason.
+                    if (i<0)
+                        return;  // go back to user
+                }
+                else
+                {
+                    // Invalid servernode, get best server from serverlist.
+                    i = 0;
+                    servernode = serverlist[i].server_node;
+                    GenPrintf(EMSG_hud, " Found, ");
+                }
+                // Check server for files needed.
+                CL_Got_Fileneed(serverlist[i].info.num_fileneed,
+                                serverlist[i].info.fileneed    );
+                GenPrintf(EMSG_hud, " Checking files ...\n");
+                switch( CL_CheckFiles() )
+                {
+                 case CFR_no_files:
+                 case CFR_all_found:
+                    cl_mode = CLM_askjoin;
                     break;
+                 case CFR_download_needed:
+                    cl_mode = CLM_download_req;
+                    break;
+                 case CFR_iwad_error: // cannot join for some reason
+                 case CFR_insufficient_space:
+                 default:
+                    goto reset_to_title_exit;
                 }
                 break;
             case CLM_download_req:
@@ -1150,7 +1333,7 @@ static void CL_ConnectToServer( void )
                 {
                  case RFR_success:
                     Net_GetNetStat();  // init for later display
-                    cl_mode = CLM_downloadfiles;
+                    cl_mode = CLM_download_files;
                     break;
                  case RFR_send_fail:
                     break;  // retry later
@@ -1161,7 +1344,7 @@ static void CL_ConnectToServer( void )
                     goto  reset_to_title_exit;
                 }
                 break;
-            case CLM_downloadfiles :
+            case CLM_download_files :
                 // Wait test, and display loading files.
                 if( CL_waiting_on_fileneed() )
                     break; // continue looping
@@ -1182,13 +1365,13 @@ static void CL_ConnectToServer( void )
                 CL_Prepare_Download_SaveGame(tmpsave);
 #endif
                 if( CL_Send_Join() )  // join game
-                    cl_mode = CLM_waitjoinresponse;
+                    cl_mode = CLM_wait_join_response;
                 break;
-            case CLM_waitjoinresponse :
+            case CLM_wait_join_response :
                 // see server_cfg_handler()
                 break;
 #ifdef JOININGAME
-            case CLM_downloadsavegame :
+            case CLM_download_savegame :
                 M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
                 V_DrawString (30, NETFILE_BOX_Y+8, 0, "Download Savegame");
                 if( cl_fileneed[0].status != FS_FOUND )
@@ -2069,7 +2252,7 @@ static void server_info_handler( byte nnode )
 // PT_SERVERREFUSE from Server.
 static void server_refuse_handler( byte nnode )
 {
-    if( cl_mode == CLM_waitjoinresponse )
+    if( cl_mode == CLM_wait_join_response )
     {
         M_SimpleMessage(va("Server %i refuses connection\n\nReason :\n%s",
                            nnode,
@@ -2088,7 +2271,7 @@ static void server_cfg_handler( byte nnode )
     int j;
     xcmd_t xc;
 
-    if( cl_mode != CLM_waitjoinresponse )
+    if( cl_mode != CLM_wait_join_response )
         return;
 
     if(!server)
@@ -2127,7 +2310,7 @@ static void server_cfg_handler( byte nnode )
 
 #ifdef JOININGAME
     cl_mode = ( netbuffer->u.servercfg.gamestate == GS_LEVEL ) ?
-       CLM_downloadsavegame : CLM_connected;
+       CLM_download_savegame : CLM_connected;
 #else
     cl_mode = CLM_connected;
 #endif
@@ -2345,23 +2528,47 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
        return;
 
     // Check consistency
-    btic = BTIC_INDEX(start_tic);
     if((start_tic <= gametic)
-       && (start_tic > (gametic - BACKUPTICS + 1))
-       && (consistency[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)))
+       && (start_tic > (gametic - BACKUPTICS + 1)) )
     {
-        // Failed the consistency check.
+        // within previous tics
+        btic = BTIC_INDEX(start_tic);
+        if(consistency[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistency))
+        {
+            // Failed the consistency check.
+            byte confault = ++consistency_faults[nnode];  // failure count
+            if( confault > 7 )
+            {
+                // Failed the consistency check too many times
 #if 1
-        Send_NetXCmd_p2(XD_KICK, netconsole, KICK_MSG_CON_FAIL);
+                Send_NetXCmd_p2(XD_KICK, netconsole, KICK_MSG_CON_FAIL);
 #else
-        // Debug message instead.
-        GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
+                // Debug message instead.
+                GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
                     netconsole, start_tic);
 #endif
-        DEBFILE(va("Kick player %d at tic %d, consistency %d != %d\n",
+                DEBFILE(va("Kick player %d at tic %d, consistency %d != %d\n",
                     netconsole, start_tic, consistency[btic],
                     LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
 
+            }
+#ifdef JOININGAME
+            else if( (confault & 0x3) == 3 )
+            {
+                // try to use savegame to fix consistency
+                SV_Send_Pos_repair(RQ_SUG_SAVEGAME, nnode);
+            }
+#endif
+            else
+            {
+                // try to fix consistency
+                SV_Send_Pos_repair(RQ_PLAYER, nnode);
+            }
+        }
+        else if( consistency_faults[nnode] > 0 )
+        {
+            consistency_faults[nnode] -- ;
+        }
     }
 
     // Copy the ticcmd
@@ -2531,6 +2738,9 @@ static void Net_Packet_Handler(void)
                     }
                     net_textcmd_handler( nnode, netconsole );
                 }
+                break;
+            case PT_REPAIR:
+                repair_handler( nnode );  // server and client
                 break;
             case PT_NODE_TIMEOUT:
             case PT_CLIENTQUIT:
