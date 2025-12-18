@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
+// $Id: wi_stuff.c 1277 2016-10-15 18:48:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_video.h"
 #include "v_video.h"
+#include "screen.h"
 #include "z_zone.h"
 #include "console.h"
 #include "p_info.h"

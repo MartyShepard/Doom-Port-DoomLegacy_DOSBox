@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: screen.h 1277 2016-10-15 18:48:59Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -111,12 +111,18 @@ typedef struct viddef_s
     byte      * display;         // buffer that gets displayed, screen[0]
     byte      * screen1;         // allocated memory screen[1]
 
- // Display and screen drawing with correct padding
- // Sometimes is not same as direct_size
+ // Display and screen drawing with correct padding.
+ // Sometimes is not the same as direct_size.
  // Use these, they are corrected for padded scanlines and multibyte pixels
-    unsigned int widthbytes;     // width * bytepp, to save multiplies
-    unsigned int ybytes;         // addr line = & display[ y * ybytes ]
     unsigned int screen_size;    // screens and display
+ // [WDJ] These are unsigned values, kept in signed vars.
+ // When unsigned vars are 64 bit multiplied with signed offsets,
+ // it gives large unsigned results, which leads to segfault.
+ // Keep these as signed to prevent sign errors when they are multiplied
+ // by signed parameters.
+    int   widthbytes;     // width * bytepp, to save multiplies
+    int   ybytes;         // addr line = & display[ y * ybytes ]
+
  // basic video mode attributes
  // [WDJ] signed width, height for easy math, (draw errors if unsigned)
     int         width;          // PIXELS per scanline

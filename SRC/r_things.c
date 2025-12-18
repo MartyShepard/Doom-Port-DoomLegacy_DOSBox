@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1267 2016-09-20 17:26:04Z wesleyjohnson $
+// $Id: r_things.c 1278 2016-10-15 20:57:22Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -364,8 +364,9 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             //BP: we cannot use special trick in hardware mode because feet in ground caused by z-buffer
             if( rendermode != render_soft )
             {
-                uint16_t p_topoffset = LE_SWAP16(patch.topoffset);
-                uint16_t p_height = LE_SWAP16(patch.height);
+                // topoffset may be negative, use signed compare
+                int16_t p_topoffset = LE_SWAP16(patch.topoffset);
+                int16_t p_height = LE_SWAP16(patch.height);
                 if( p_topoffset>0 && p_topoffset<p_height) // not for psprite
                 {
                     // perfect is patch.height but sometime it is too high

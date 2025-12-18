@@ -19,7 +19,7 @@
 </p>
 
 <h1><a name="top">FraggleScript Basics</a></h1>
-<h1 class="tagline">Last updated 2011-03-03</h1>
+<h1 class="tagline">Last updated 2016-09-21</h1>
 
 <div class="floatbox">
 <ul>
@@ -131,9 +131,9 @@ be invoked in several manners, which is covered in the
 <h2><a name="vars">Variables and Data Types</a></h2>
 
 <p>One way in which scripts can accomplish things is
-to interact with variables. Variables can be of three natures, explained as
-follows:
+to interact with variables.
 </p>
+Variables can be of three natures, explained as follows:
 <ul>
 <li>
 <p>
@@ -217,8 +217,8 @@ This is an important distinction to remember.
 <p>
 Variable names may be of arbitrary length, but should not be named with any
 FraggleScript reserved word.
-FraggleScript has four primary data types as follows:
 </p>
+FraggleScript has four primary data types as follows:
 <ul>
 <li>
 <p>
@@ -246,10 +246,10 @@ Example:
 <li>
 <p>
 <span class="keyword">string</span> - a string of ASCII characters. 
-FraggleScript strings are limited in length to 256 characters. The following 
-escape sequences are supported:
+FraggleScript strings are limited in length to 256 characters.
 </p>
 <p>
+The following escape sequences are supported:<br>
 \n - line break<br/>
 \\ - a literal \ character<br/>
 \" - a literal " character<br/>
@@ -305,9 +305,9 @@ are not, in general, meaningful.
 <h3><a name="coercions">Type Coercions</a></h3>
 
 <p>FraggleScript is a weakly typed language, and
-as such, coercions are made freely between all data types. These coercions
-follow the rules below:
+as such, coercions are made freely between all data types.
 </p>
+These coercions follow the rules below:
 <p>
 Conversion to <span class="keyword">int</span> from:
 </p>
@@ -403,8 +403,9 @@ an mobj reference to a mapthing to affect.
 The function reference lists the parameters that each function expects, but
 there are some important things to take note of. As mentioned in the previous
 section, type coercions can occur when functions are passed parameters of other
-types. An excellent example is the following:
+types.
 </p>
+An excellent example is the following:<br>
 <div class="code">script 0
 {
    startscript("1");
@@ -416,10 +417,8 @@ of a script to run. Here it has been passed a string, "1". Strings will be
 converted to the integer they represent, if possible, so this string is
 automatically coerced into the integer value 1, and the script 1 will be started.
 </p>
-<p>
 An example of a coercion that is NOT meaningful in the intended manner would be
-the following:
-</p>
+the following:<br>
 <div class="code">script 0
 {
    mobj halif = 0;
@@ -428,15 +427,20 @@ the following:
 }
 </div>
 <p>
-mobj references can be assigned using integer literals, but the rules for
+Fragglescript mobj references can be assigned using integer literals,
+but the rules for
 coercion from mobj to int state that -1 is always returned for an mobj value
 (this is because there is *not* a one-to-one mapping between mobj references,
 which can include objects spawned after map startup which do not have a number,
-and integers). This statement has the effect of
+and integers).
 </p>
+<p>
+This statement has the effect of calling startscript with -1, and since -1
+is not in the domain of startscript, a script error occurs.
+</p>
+Effect of mobj reference, an Error:<br>
 <div class="code">startscript(-1);</div>
 <p>
-and since -1 is not in the domain of startscript, a script error occurs.
 </p>
 <p>
 Parameter coercions of this type should be avoided for purposes of clarity and 
@@ -452,9 +456,8 @@ these types of functions and what they do.
 <p>
 Functions may return values, and in fact, most useful functions do. To capture
 the return value of a function, you simply assign it to a variable.
-<br/>
-Example:
 </p>
+Example of a return value:<br>
 <div class="code">script 0
 {
    fixed dist;
@@ -465,19 +468,25 @@ Example:
 <p>
 This places the fixed-point distance between the points (0,0) and (1,1) into
 the fixed variable dist. It is *not* necessary to capture the return value of
-a function simply because it has one. For instance,
+a function simply because it has one.
 </p>
+Example of ignoring a return value:<br>
 <div class="code">script 0
 {
    pointtodist(0, 0, 1, 1);
 }
 </div>
 <p>
-is a valid statement; it is simply useless since pointtodist has no side
-effects, or things that occur within a function call that affect the program 
-environment. Likewise, it is possible to use function return values without
-explicitly capturing them in variables, like in the following example:
+A statement ignoring the return value of a function like pointtodist is valid,
+and is normal when using functions with side effects, like changing the
+program state, or program environment.
+But since pointtodist has no side effects, returning a value is all it
+does, the call in this particular example is suspiciously useless.
+Likewise, it is possible to use function return values without
+explicitly capturing them in variables, such as using them directly as
+a parameter to another function, or testing them directly.
 </p>
+Example directly using the result of one function as a parameter:<br>
 <div class="code">script 0
 {
    print(spawn(IMP, 0, 0, 0));
@@ -507,9 +516,8 @@ in the surrounding program environment, which in FraggleScript is referred to
 as the levelscript. Function calls placed in the levelscript will be executed
 once (and only once) at the beginning of the level. This is commonly used to
 start scripts to perform certain actions.
-<br/>
-Example:
 </p>
+Levelscript example:<br>
 <div class="code">[scripts]
 
 script 0
@@ -536,21 +544,20 @@ structures, and each are covered here in full.
 
 <h3><span class="keyword">while</span></h3>
 <p>
-The while loop is the basic loop control structure. It will continually loop
+The while-loop is the basic loop control structure. It will continually loop
 through its statements until its condition evaluates to 0, or false.
-<br/>
-Basic syntax:
 </p>
+Loop basic syntax:<br>
 <div class="code">while(&lt;condition&gt;)
 {
    &lt;statements&gt;
 }
 </div>
 <p>
-Unlike in C, the braces are required to surround the block statement of a while
-loop, even if it only contains one statement. An operative example would be the
-following:
+Unlike in C, the braces are required to surround the block statement of a
+while-loop, even if it only contains one statement.
 </p>
+Loop requires braces:<br>
 <div class="code">script 0
 {
    int i = 0;
@@ -566,18 +573,17 @@ This code would print the numbers 0 through 9 to the console.
 </p>
 <p>
 The continue() and break() functions are capable of modifying the behavior of
-the while loop. continue() causes the loop to return to the beginning and run
-the next iteration, while break() causes the loop to exit completely, returning
+the while-loop. A continue() causes the loop to return to the beginning and run
+the next iteration.  A break() causes the loop to exit completely, returning
 control to the surrounding script.
 </p>
 <p>
-A while loop can run forever if its condition is never false, but if you write
+A while-loop can run forever if its condition is never false, but if you write
 a loop like this, be sure to call one of the wait functions inside the body of
 the loop, or else the game will wait on the script to finish forever, effectively
 forcing you to reboot!
-<br/>
-Example:
 </p>
+Forever loop needs a wait():<br>
 <div class="code">script 0
 {
    while(1)
@@ -600,12 +606,11 @@ FraggleScript.
 </h3>
 
 <p>
-The for loop is a more sophisticated loop structure that takes three parameters.
-Note that unlike C, the FraggleScript for parameters are separated by commas, not
+The for-loop is a more sophisticated loop structure that takes three parameters.
+Note that unlike C, the FraggleScript for-loop parameters are separated by commas, not
 by semicolons, and all 3 are required to be present.
-<br/>
-Basic syntax:
 </p>
+Loop syntax:<br>
 <div class="code">for(&lt;initialization&gt;, &lt;condition&gt;, &lt;iteration&gt;)
 {
    &lt;statements&gt;
@@ -618,13 +623,12 @@ that that variable is within a certain bound, and the iteration statement
 increments the variable by a certain amount.
 </p>
 <p>
-Braces are again required, and the continue() and break() statements work the
-same way here as they do for while(), with the exception that a continuing
-for loop will check its condition and perform its iteration, whereas a while
-loop ignorantly repeats.
-<br/>
-An operative example:
+Braces are again required.  The continue() and break() statements work
+similar as they do in a while-loop, except that a continue() in a
+for-loop will check the for-loop condition
+and perform the for-loop iteration.
 </p>
+Operative example of a for-loop:<br>
 <div class="code">script 0
 {
    int i;
@@ -636,11 +640,13 @@ An operative example:
 }
 </div>
 <p>
-This for loop is equivalent to the while loop example above. while and for
-are logically equivalent in general, for simply provides a cleaner way to 
-specify the exact loop behavior. for is a rather complex statement form, so
+This for-loop is equivalent to the while-loop example above.
+In general, while-loops and for-loops are logically equivalent,
+the for-loop simply provides a cleaner way to 
+specify the exact loop behavior.
+The for-loop is rather complex statement but is very useful, so
 if this explanation is insufficient, any decent reference on the C language
-should have more information that is applicable.
+should have more examples of for-loop usages that might be applicable.
 </p>
 
 <h3>
@@ -648,14 +654,14 @@ should have more information that is applicable.
 <span class="keyword">else</span>
 </h3>
 <p>
-if tests its condition, and if the condition evaluates to any non-zero value,
-or true, the statements inside its body are executed. Note that unlike while
-and for, braces are not required for an if statement UNLESS you either intend
-for the if body to contain more than one statement, OR you intend to place an
-elseif or else clause after the if.
-<br/>
-Basic syntax:
+The if-stmt tests its condition, and if the condition evaluates to any non-zero value,
+or true, the statements inside its body are executed.
+Braces are not required for a simple if-stmt (unlike the while-loop
+and for-loop), which has no clauses.
+Braces are required when the if-stmt body contains more than one statement,
+or when there is an elseif-clause or else-clause attached to the if-stmt.
 </p>
+Basic syntax of the if-stmt:<br>
 <div class="code">if(&lt;condition&gt;)
   &lt;statement&gt;
   
@@ -664,9 +670,7 @@ if(&lt;condition&gt;)
    &lt;statements&gt;
 }
 </div>
-<p>
-Examples:
-</p>
+<br>Examples of if-stmt:<br>
 <div class="code">if(i > 10)
   return();
 </div>
@@ -677,15 +681,20 @@ Examples:
 }
 </div>
 <p>
-elseif and else are ancilliary clauses that execute when their corresponding
-if statement was not true. elseif tests its own additional condition, and if
-it is false, control passes to the next elseif or else, if one exists. An if
-can have any number of elseif clauses, and one else clause following it. If 
-there is an else clause, it must always be last. When the if statement
-evaluates to true, no elseif or else clauses will be executed.
-<br/>
-Example:
+The elseif-clause and else-clause are ancilliary clauses of an if-stmt that
+execute when their attached if-stmt was not true.  They must immediately
+follow their attached if-stmt, else they will be illegal syntax.
+The elseif-clause tests an additional if-stmt condition, and when true,
+executes its code section.
+If it is false, control passes to the next elseif-clause or else-clause, if one exists.
+An if-stmt can have any number of elseif-clause attached.
+There can only be one else-clause attached to an if-stmt, and it
+must be last. The else-clause executes its code section when all of the
+attached if-stmt and elseif-stmt test conditions evaluated to false.
+When the if-stmt evaluates to true, any attached elseif-clause or else-clause
+will not be executed, nor will their test conditions be evalutated.
 </p>
+Complex if-stmt example:<br>
 <div class="code">script 0
 {
    int i = rnd()%10;
@@ -752,16 +761,17 @@ Currently supported activation models include the following:
        A host of new linedef types are provided to allow activation of scripts
        from within levels:
     </p>
-       <ul>
-         <li> 272  WR  Start script with tag number</li>
-         <li> 273  WR  Start script, 1-way trigger</li>
-         <li> 274  W1  Start script with tag number</li>
-         <li> 275  W1  Start script, 1-way trigger</li>
-         <li> 276  SR  Start script with tag number</li>
-         <li> 277  S1  Start script with tag number</li>
-         <li> 278  GR  Start script with tag number</li>
-         <li> 279  G1  Start script with tag number</li>
-       </ul>
+    <table class="def">
+    <tr><th>code</th><th>trigger</th><th>description</th></tr>
+    <tr><td>272</td><td>WR</td><td>Start script with tag number</td></tr>
+    <tr><td>273</td><td>WR</td><td>Start script, 1-way trigger</td></tr>
+    <tr><td>274</td><td>W1</td><td>Start script with tag number</td></tr>
+    <tr><td>275</td><td>W1</td><td>Start script, 1-way trigger</td></tr>
+    <tr><td>276</td><td>SR</td><td>Start script with tag number</td></tr>
+    <tr><td>277</td><td>S1</td><td>Start script with tag number</td></tr>
+    <tr><td>278</td><td>GR</td><td>Start script with tag number</td></tr>
+    <tr><td>279</td><td>G1</td><td>Start script with tag number</td></tr>
+    </table>
     <p>
        To use these lines, simply give them the appropriate type and set the
        linedef's tag number to the script number you want to be called. The
@@ -785,10 +795,11 @@ from left to right.
     <p>
        Coercions: none<br/>
        
-       The structure operator - can be used to beautify function calls by
-       moving the first argument outside the parameter list<br/>
-       Example:
+       The dot-structure operator - can be used to beautify function calls by
+       moving the first argument outside the parameter list.
+       A function call "xx.fn(2)" is the same as "fn(xx,2)".
     </p>
+Object-oriented function call example:<br>
 <div class="code">script 0
 {
    mobj halif = spawn(DWARF, 0, 0, 0);
@@ -804,17 +815,21 @@ from left to right.
   <dt>--</dt><dd>
        Coercions: string -> int, mobj -> int<br/>
   
-       The decrement operator - use to lower the value of the operand by 1 -
-       if the operator occurs before the operand as a prefix, then the operation
-       is performed first before the value can be used, but if it is used as
-       a postfix operator, the variable's current value is propagated, and then
+       The decrement operator - lowers the value of the operand by 1.
+       As a prefix operator (appears before the operand), the decrement
+       is performed before the value can be used.  As a postfix operator
+       (appears after the operand), the variable's current value is propagated, and then
        the decrement occurs.</dd>
       
   <dt>++</dt><dd>
        Coercions: string -> int, mobj -> int<br/>
        
-       The increment operator - similar to decrement, but increases the variable's
-       value by 1.</dd>
+       The increment operator - increases the variable's value by 1.
+       As a prefix operator (appears before the operand), the increment
+       is performed before the value can be used.  As a postfix operator
+       (appears after the operand), the variable's current value is propagated, and then
+       the increment occurs.</dd>
+       </dd>
   
   <dt>!</dt><dd>
        Coercions: all -> int<br/>

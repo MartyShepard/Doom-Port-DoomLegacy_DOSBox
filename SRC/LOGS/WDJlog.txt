@@ -5525,3 +5525,8 @@ patchfile = w105_70_bot_respawn.patch
 - commit revision 1274
 Delay the bot respawn by 6 seconds, so they are not so overwhelming.
 
+*** W105_docs2
+patchfile = w105_71_docs2.patch
+- commit revision 1275
+Update some more docs and README for Release Version 1.46.
+

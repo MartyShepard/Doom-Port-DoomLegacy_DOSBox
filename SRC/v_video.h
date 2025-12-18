@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1252 2016-08-29 21:03:35Z wesleyjohnson $
+// $Id: v_video.h 1277 2016-10-15 18:48:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -146,10 +146,15 @@ typedef struct {
     byte * drawp;  // screen buffer, with centering offsets
     byte * screen_start;  // screen buffer [0]
     unsigned int  start_offset; // offset, centering
-    unsigned int  ybytes;   // dupy * ybytes, bytes per source line
-    unsigned int  xbytes;   // dupx * bytepp, bytes per source pixel
-    unsigned int  y0bytes;   // bytes per source line per SCALESTART
-    unsigned int  x0bytes;   // bytes per source pixel per SCALESTART
+    // [WDJ] These are unsigned values kept in signed vars.
+    // When unsigned vars are 64 bit multiplied with signed offsets,
+    // it gives large unsigned results, which leads to segfault.
+    // Keep these as signed to prevent sign errors when they are multiplied
+    // by signed patch offsets.
+    int  ybytes;   // dupy * ybytes, bytes per source line
+    int  xbytes;   // dupx * bytepp, bytes per source pixel
+    int  y0bytes;   // bytes per source line per SCALESTART
+    int  x0bytes;   // bytes per source pixel per SCALESTART
     // Some software draw is using fdupx.
     float  fdupx, fdupy; // dup pixels per SCALEPATCH
 #ifdef HWRENDER

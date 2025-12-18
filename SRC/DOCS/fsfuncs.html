@@ -18,7 +18,7 @@ Note: We'd like to thank Quasar for allowing us to modify the docs of the
 </p>
  
 <h1><a name="top">FraggleScript Function Reference</a></h1>
-<h1 class="tagline">Last updated 2012-07-05</h1>
+<h1 class="tagline">Last updated 2016-09-20</h1>
 
 <div class="floatbox">
 <ul>
@@ -47,28 +47,31 @@ Notation for the following description:
 [return-type] : The type of data returned by the function.<br>
 This may by int for
 integers, fixed for fixed-point numbers, string for strings, mobj for a mapthing
-reference, array for an array reference, 'a for an arbitrary type, label for the
-literal name of a label, or void for nothing. If a function returns void, it 
+reference, array for an array reference, the type name for any other arbitrary type,
+label for the literal name of a label, or void for nothing. If a function returns void, it 
 cannot be meaningfully used in an assignment statement or as a parameter to 
 another function because it does not evaluate to any meaningful value. Also 
 notice that void is not actually a keyword in FraggleScript, and you cannot
 declare variables of type void.
 </p><p>
 [function-name] : The name of the function.<br>
-Use this to call it in your program.
-</p><p>
-Example:
+Use this name to call the function in your program, in the form "name(x)".
 </p>
-<div class="code">script 0
-{
-  print("Hello World!\n");
-}
-</div>
 <p>
 [parameter-list] : The parameters passed into the function.<br>
 If this is empty, then the function does not accept any
 parameters.
-</p><p>
+</p>
+Function call example:<br>
+<div class="code">script 0
+{
+  print("Hello Dwarf King!\n");
+  dwarfking = spawn(DWARF, 300, -1012, 0, -44);
+  dooropen( 3 );
+}
+</div>
+
+<p>
 <h4 id="paramtype">Parameter type:</h4>
 Items appear in the list as [type] [name] constructs,
 where [type] indicates the type of variable you can pass in this position,
@@ -77,14 +80,17 @@ actual parameter will be coerced into the parameter type by automatic
 type conversion.
 </p><p>
 <h4 id="optparam">Optional parameters:</h4>
-Parameter items appearing in the descriptions
-inside square brackets — [ ] — are optional parameters.
-The square brackets do not appear in the script actual parameters.
+Optional parameter items appear in the descriptions
+inside square brackets, such as "[ int optional_z_position ]".
+These square brackets only appear in the descriptions to denote that
+those parameters are optional, not to be confused with array brackets
+which are part of an array reference.
+Do not include the optional parameter denoting square brackets in any actual script.
 When there are two optional parameters, then to use the second requires that
-the first be present also (they are positional).<br>
+the first also be present (they are positional).<br>
 <br>
 Example:  void opendoor(int tagnum, [int waittime], [int speed]) <br>
-Valid usages (using named consts) would be:<br>
+Valid usages for this description (using named consts) would be:<br>
 <ul>
 <li>dooropen( tag1 )</li>
 <li>dooropen( tag1, wait15 )</li>
@@ -103,12 +109,13 @@ Valid usages (using named consts) would be:<br>
 </ul>
 </p><p>
 <h4 id="varlistparam">Variable list of parameters:</h4>
-Appears as "..." in the function
-description.
-The actual function call takes a variable number of parameters, up to
-128 total.
-The number of actual parameters allowed for the ... is 128 minus the number
-parameters that occur before the ellipsis.
+Appears as "..." in the function description.
+At the position of the "...", the actual function call takes a variable number
+of parameters, up to 128 parameters for the function.
+The number of actual parameters allowed for the "..." is 128 minus the number
+of any other function parameters.
+The "..." only appears in the function description to denote a
+variable number of parameters, do not include it in any script.
 </p><p>
 <h4 id="scripttrigger">Script trigger mobj:</h4>
 The mobj (player or monster) that triggered the
@@ -141,15 +148,17 @@ The functions internally convert them to and from degrees.</li>
 An int parameter that identifies the type of an object.
 Object type consts are defined in the header THINGS.H, which is in
 <a href="editing.html#wadcontents">legacy.wad</a>.
-To use these consts include THINGS.H in the script file.<br>
-Example:<br>
+To use these consts include THINGS.H in the script file.
+The include will be performed just before run-time.
+</p>
+Example of include:<br>
 <div class="code">[scripts]
 include("things.h");
 spawn( DEMON, 1024, 522, 0 );
 </div>
 <br>
-<span class="warning">Do not use numbers to refer to object
-types as they will change between versions</span>.
+<span class="warning">Do not use literal numbers to refer to object
+types as they may change between versions</span>.
 </p>
 
 <h2><a name="basic_ctrl">Basic Flow Control</a></h2>
@@ -157,7 +166,7 @@ types as they will change between versions</span>.
 <dl>
   <dt><a name="break">void break()</a></dt>
   <dd>
-    Exits the loop statements, while() and for(). It will only exit
+    Exits the while-loop or for-loop construct. It will only exit
     from the inner-most loop in which it lies.  Goto can also be used
     to exit a loop.
   </dd>
@@ -190,7 +199,10 @@ types as they will change between versions</span>.
     <p>
     Brings in variables and statements from the lump named lumpname as if
     they were defined in the current module. Note that included lumps
-    cannot contain scripts or block statements involving braces. Example:</p>
+    cannot contain scripts or block statements involving braces.
+    The include is performed just before run-time.
+    </p>
+    Include example:<br>
 <div class="code">[scripts]
 
 include("things.h")
@@ -1266,8 +1278,9 @@ script 0
     Previous versions caused a script error.<br>
     <br>    
     Best used in a loop that calls it repeatedly, until it returns 0, waiting
-    for the next gametic.<br>
-    Example:<br>
+    for the next gametic.
+    <br>
+    Camera example:<br>
 <div class="code">script 5
 {
   // move mapthing 126 as a camera
