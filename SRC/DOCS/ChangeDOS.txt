@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01285 ]: w106 zzone debug
 [01284 ]: w106 shadechain
 [01283*]: w106 version 1.46.2
 [01282*]: w106 docs

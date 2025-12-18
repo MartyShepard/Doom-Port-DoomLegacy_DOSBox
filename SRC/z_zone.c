@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: z_zone.c 1285 2016-12-19 03:08:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -71,6 +71,9 @@
 #include "hardware/hw_drv.h"
    // for hardware memory stats
 #endif
+
+// [WDJ] Include some pad memory, and check it for memory block overrun.
+//#define PADMEM  1024
 
 // [WDJ] 1/24/2009 Memory control defines.
 // Amount of main memory to allocate, in MB
@@ -371,7 +374,7 @@ void Z_Init (void)
     // setup the linked list, rest of mainzone is unused
     memhead.rover = NULL;
     memhead.size = 0;
-    memhead.blocklist.tag = PU_ZONE; // mark head, no combines anyway
+    memhead.blocklist.memtag = PU_ZONE; // mark head, no combines anyway
 #ifdef TAGGED_MALLOC
     // init circular linking, TAGGED needs the lists
     memhead.blocklist.next = memhead.blocklist.prev = &memhead.blocklist;
@@ -450,11 +453,14 @@ void Z_Free (void* ptr)
     memblock_t*  block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
 
 #ifdef ZDEBUG
+#ifndef PLAIN_MALLOC
    memblock_t*         other;
    // SoM: HARDERCORE debuging
    // Write all Z_Free's to a debug file
+#ifdef DEBUGFILE   
    if(debugfile)
      fprintf(debugfile, "ZFREE@File: %s, line: %i\n", file, line);
+#endif
    //BP: hardcore debuging
    // check if there is not a user in this zone
 for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; other = other->next)
@@ -469,6 +475,7 @@ for (other = mainzone->blocklist.next ; other->next != &mainzone->blocklist; oth
        I_Error("Z_Free: Pointer %s:%d in zone at %s:%i",other->ownerfile,other->ownerline,file,line);
    }
 }
+#endif
 #endif
 
     if (block->id != ZONEID)
@@ -532,6 +539,9 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     reqsize = (reqsize + 3) & ~3;	// alloc rounded up to next 4 byte alignment
     // account for size of block header
     memalloc_size = reqsize + sizeof(memblock_t);
+#if defined( ZDEBUG ) && defined( PADMEM )
+    memalloc_size += PADMEM;
+#endif
 
     newblock = malloc(memalloc_size);
     if( newblock == NULL ){
@@ -550,6 +560,9 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     newblock->size = memalloc_size;
     void* basedata = (byte*)newblock + sizeof(memblock_t);
     if (user) *user = basedata;
+#if defined( ZDEBUG ) && defined( PADMEM )
+    memset( &((byte*)basedata)[reqsize], 0, PADMEM );
+#endif
     return basedata;
 }
 
@@ -613,6 +626,9 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     reqsize = (reqsize + 3) & ~3;	// alloc rounded up to next 4 byte alignment
     // account for size of block header
     memalloc_size = reqsize + sizeof(memblock_t);
+#if defined( ZDEBUG ) && defined( PADMEM )
+    memalloc_size += PADMEM;
+#endif
 
     // scan through the block list,
     // looking for the first free block of sufficient size,
@@ -866,6 +882,9 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 
     // next allocation will start looking here
     mainzone->rover = base->next;
+#if defined( ZDEBUG ) && defined( PADMEM )
+    memset( &((byte*)blockdata)[reqsize], 0, PADMEM );
+#endif
 
     return blockdata;
 }

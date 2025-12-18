@@ -5608,3 +5608,31 @@ series of actions can be taken.
 player at their current position.
 3. The Kick command will be issued.
 
+*** W106_docs4
+patchfile = w106_4_docs.patch
+- commit revision 1282
+Update the docs for 1.46.2.
+
+*** W106_net
+patchfile = w106_5_version1462.patch
+- commit revision 1283
+Update the version to 1.46.2.
+
+*** W106_shadechain
+patchfile = w106_6_shadechain.patch
+- commit revision 1284
+Heretic shade chain draw procedure is drawing outside the display
+buffer.  This corrupts other memory blocks.
+Restore the line with the correct scaling.
+This had been changed during diagnosis of drawing errors, but should
+not have been committed to the code base.
+This has been latent for around a year because, for some unknown reason,
+the SDL version does not show symptoms, unlike the X11 version which
+will segfault after 2 or 3 level maps.
+
+*** W106_zzone
+patchfile = w106_7_zzone.patch
+- commit revision 1285
+Some fixes to the alternative zone memory system, used for debugging.
+
+
