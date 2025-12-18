@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: b_game.c 1274 2016-09-29 02:15:38Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -177,6 +177,7 @@ void B_AddCommands()
 	COM_AddCommand ("addbot", Command_AddBot);
 }
 
+static
 void B_AvoidMissile(player_t* p, mobj_t* missile)
 {
 	fixed_t  missileAngle = R_PointToAngle2 (p->mo->x, p->mo->y,
@@ -190,6 +191,7 @@ void B_AvoidMissile(player_t* p, mobj_t* missile)
 		p->cmd.sidemove = botsidemove[1];
 }
 
+static
 void B_ChangeWeapon (player_t* p)
 {
     boolean  hasWeaponAndAmmo[NUMWEAPONS];
@@ -297,6 +299,7 @@ fixed_t B_AngleDiff(mobj_t* mo, fixed_t x, fixed_t y)
 	return ((R_PointToAngle2 (mo->x, mo->y, x, y)) - mo->angle);
 }
 
+static
 void B_TurnTowardsPoint(player_t* p, fixed_t x, fixed_t y)
 {
     int  botspeed;
@@ -318,6 +321,7 @@ void B_TurnTowardsPoint(player_t* p, fixed_t x, fixed_t y)
         p->cmd.angleturn -= botangleturn[botspeed];
 }
 
+static
 void B_AimWeapon(player_t* p)
 {
     mobj_t  *dest = p->bot->closestEnemy;
@@ -769,7 +773,26 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 	    B_AvoidMissile(p, pbot->closestMissile);
     }
     else
-        cmd->buttons |= BT_USE;	//I want to respawn
+    {
+        // Dead
+        if( demoversion < 146 )
+        {
+            cmd->buttons |= BT_USE;	//I want to respawn
+        }
+        else
+        {
+	    // Version 1.46
+	    // [WDJ] Slow down bot respawn, so they are not so overwhelming.
+            cmd->buttons = 0;
+            if( p->damagecount )
+            {
+                p->damagecount = 0;
+                pbot->avoidtimer = 6 * TICRATE; // wait
+            }
+            if( --pbot->avoidtimer <= 0 )
+                cmd->buttons |= BT_USE;	//I want to respawn
+        }
+    }
 	
     memcpy (netcmd, cmd, sizeof(*cmd));
 } // end of BOT_Thinker

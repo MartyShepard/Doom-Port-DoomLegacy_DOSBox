@@ -5520,3 +5520,8 @@ Limit names to column widths in the rankings.
 Fix DrawFill for opengl so that positions match other draws.
 Some fixes to status bar usage of the draw fill.
 
+*** W105_bot_respawn
+patchfile = w105_70_bot_respawn.patch
+- commit revision 1274
+Delay the bot respawn by 6 seconds, so they are not so overwhelming.
+

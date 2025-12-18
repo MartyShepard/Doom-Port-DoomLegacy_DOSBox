@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01274 ]: w105 bot respawn
 [01273 ]: w105 rankings
 [01272 ]: w105 home
 [01271 ]: w105 docs 1.46
