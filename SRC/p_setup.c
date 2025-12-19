@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
+// $Id: p_setup.c 1305 2017-04-07 17:19:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -469,25 +469,30 @@ void P_LoadSubsectors (int lump)
 // Called by V_DrawVidFlatFill, HWR_DrawFlatFill.
 uint16_t P_flatsize_to_index( int flatsize, char * name )
 {
-  switch(flatsize)
-  {
-    case 2048*2048: // 2048x2048 lump
+  // Drawing as 64*64 (lumpsize=4096) was the default.
+  // Heretic LAVA flats are 4160, an odd size; use 64*64.
+  // Heretic F_SKY1 flat is 4, an odd size,
+  // but it is a placeholder that is never drawn.
+  if( flatsize >= 2048*2048 ) // 2048x2048 lump
       return 7;
-    case 1024*1024: // 1024x1024 lump
+  if( flatsize >= 1024*1024 ) // 1024x1024 lump
       return 6;
-    case 512*512: // 512x512 lump
+  if( flatsize >= 512*512 ) // 512x512 lump
       return 5;
-    case 256*256: // 256x256 lump
+  if( flatsize >= 256*256 ) // 256x256 lump
       return 4;
-    case 128*128: // 128x128 lump
+  if( flatsize >= 128*128 ) // 128x128 lump
       return 3;
-    case 64*64: // 64x64 lump
+  if( flatsize >= 64*64 ) // 64x64 lump
       return 2;
-    case 32*32: // 32x32 lump
+  if( flatsize >= 32*32 ) // 32x32 lump
       return 1;
-    default:
-      if( verbose && name )
-          GenPrintf( EMSG_warn, "Flat size not handled, %s, size=%i\n", name, flatsize );
+  if( verbose && name )
+  {
+      char buf[10];
+      memcpy( buf, name, 8 ); // no termination on flat name
+      buf[8] = 0;
+      GenPrintf( EMSG_warn, "Flat size not handled, %s, size=%i\n", buf, flatsize );
   }
   return 0;
 }

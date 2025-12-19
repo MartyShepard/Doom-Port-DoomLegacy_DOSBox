@@ -5772,3 +5772,15 @@ Create a consistent light level type.
 Use the light level type consistently in all the code.
 Adjust and fix other type problems in the light level code.
 This will help to avoid sign-extension errors.
+
+*** W107_heretic_flat
+patchfile = w107_2_heretic_flat.patch
+- commit revision 1305
+Heretic E1M8 is displaying a default gray flat for the lava floor.
+The LAVA flats in Heretic E1M8 are not a standard size (6150), so the flat
+logic cannot classify their size.  These flats likely have an extra row (64x65).
+Change the flat size classification to inequalities, to display odd flat sizes
+as the next smaller recognized size.  This will almost always be 64x64.
+The Heretic F_SKY1 flat has a size of 4, but it is never displayed.
+Fixes bug 0638.
+
