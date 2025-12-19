@@ -312,12 +312,12 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1299"
+#define SVN_REV "1301"
 #endif
 
 // Version number: major.minor.revision
 const int  VERSION  = 146; // major*100 + minor
-const int  REVISION = 2;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 3;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "(Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
@@ -879,9 +879,11 @@ void D_DoomLoop(void)
     if (demorecording)
         G_BeginRecording();
 
-    // user settings
-    COM_BufAddText("exec autoexec.cfg\n");
-
+    if( access( "autoexec.cfg", R_OK) == 0 )
+    {
+        // user settings
+        COM_BufAddText("exec autoexec.cfg\n");	
+    }
     // end of loading screen: CONS_Printf() will no more call FinishUpdate()
     con_self_refresh = false;
 

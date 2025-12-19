@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01301 ]: w106 version 1.46.3 and docs
+[01300 ]: w106 autoexec
 [01299 ]: w106 command line connect
           DOS: Fixed blackscreen 15,16,24,32 BPP
 					

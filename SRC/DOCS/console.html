@@ -11,7 +11,7 @@
 
 <body>
 <h1>Doom Legacy 1.46 Console Reference</h1>
-<h1 class="tagline">Last updated 2016-09-20</h1>
+<h1 class="tagline">Last updated 2017-02-18</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -1134,31 +1134,6 @@ Gives the attributes or items to the player.
 Can have one or more cheat names on one gimme command,
 such as "gimme health armor keys".
 </td></tr>
-
-<tr><td>
-cd on | off | remap | reset | open | 
-info | play &lt;track&gt; | loop &lt;track&gt; |
-stop | pause | resume
-</td>
-<td>
-Play audio CDs. Most of the subcommand should be self-explanatory.<br/>
-<p>
-  reset: Check for a new cd, read the track info. Use after changing
-  the CD.
-  <br/>
-  info: List the tracks on the CD. The track being played is printed
-  in white.
-  <br/>
-  remap: Remap CD tracks. Normally, the game plays the track xx in the
-  map MAPxx, and ExMy corresponds to track number 9*x+y.
-  This command is useful to adapt your favorite cd music
-  to Doom's levels, let's have an example:<br/>
-  <br/>
-  cd remap 5 3 1 4 2<br/>
-  <br/>
-  At map 1, the game will play track 5 etc. The same track number can
-  be also be repeated.
-</p>
 </td></tr>
 </table>
 
@@ -1868,6 +1843,67 @@ This is only present in the Linux X port with the separate sound server.
 </td></tr>
 
 </table>
+
+<p>CDROM Music commands</p>
+
+<table class="def">
+<tr><th>command</th><th>definition</th></tr>
+<tr><td>
+cd on | off | remap | reset | open | 
+info | play &lt;track&gt; | loop &lt;track&gt; |
+stop | pause | resume
+</td>
+<td>
+Play audio CDs.  The track numbers start at 1.<br/>
+<p>
+  reset: Check for a new cd, read the track info. Use after changing
+  the CD.
+  <br/>
+  info: Prints useful info about the CD like how many tracks it has.
+  <br/>
+  remap: Remap the CD track played for each level map.
+</p>
+</td></tr>
+</table>
+
+<p>
+  Loading the CDROM is slow.  You need to wait until the CDROM is done
+  loading the CDROM before you can even get info on it.  If you have
+  multiple CDROM, DoomLegacy will try to use the first.  Under Linux
+  this /dev/cdrom.
+<p>
+  SDL cannot control the CDROM music volume.  Under SDL the CDROM music
+  volume control has been reduced to an on/off switch, which does PAUSE.
+  SDL 1.2.15 is the end of CDROM support in SDL.  SDL 2.x will not
+  support CDROM music.
+<p>
+  Playing the CDROM music with loop (repeat the song) requires DoomLegacy
+  to check that the music has stopped.  With Linux, and probably some other
+  systems too, this CDROM hardware check blocks execution for about 1/4 second.
+  With previous DoomLegacy versions, this check occurred every 2 seconds.
+  DoomLegacy 1.46.3 checks every 4 seconds, near the expected end of
+  the music, and only when it set to loop the music.
+<p>
+  This CDROM check can be avoided entirely by not using using cd play loop.
+  Using CDROM music play loop in a netgame may get you kicked due to
+  consistency failure, due to the CDROM check blocking play.
+  When loading a new level map, if cd is enabled it will start play loop
+  of the track for that map.  Playing a CD using a separate program
+  on your computer may work better, especially during net play.
+<p>
+  Normally, the game plays track xx during map MAPxx.
+  With Doom ExMy levels, the track number is 9*x+y.
+  The remap command is useful to choose which cd music is played for each
+  level map.  All the level maps must be listed sequentially in the remap
+  command, it always starts from map01.
+  Let's have an example:<br/>
+  <br/>
+  cd remap 5 3 1 4 2<br/>
+  <br/>
+  At map 1, the game will play track 5 etc. The same track number can
+  be also be repeated.
+</p>
+<br>
 
 </div>
 </body>

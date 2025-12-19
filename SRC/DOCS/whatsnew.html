@@ -13,6 +13,52 @@
 
 <div class="column">
 
+<h2>1.46.3 SVN1301 (2017-2-19)</h2>
+
+<h3>FEATURES 1.46.3</h3>
+<ul>
+<li>Fuzzy shadow draw control has been added to the effects menu.
+The translucent draw control has been expanded.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.46.3</h3>
+<ul>
+<li>Video modes switches could cause segfault if a video print triggered
+console output.  This was occuring in the linux_x xshm port when
+verbose was enabled.
+Changes to the video status indication were made to prevent print
+statements in the video mode switch from causing a console update.
+Some previous video print outputs are restored.
+</li>
+<li>CDROM music has not worked in Linux.  It has problems in SDL, even in
+windows.  The plan was to disable it, as SDL 2 does not support
+CDROM music.  However, after some effort, it has been made to work again
+in Linux X11 and SDL.
+<br>This is likely the last version that will have CDROM music support.
+Checking the CDROM status, in Linux, is a blocking IO call that stops
+all action in the game for 1/4 second, which is very noticable.
+</li>
+<li>The Doom shotgun and other player weapons were drawn with a visible
+scanline below them.
+Moved the weapon down to the lower edge for Doom (but not Heretic).
+Fixes bug 0455.
+</li>
+<li>
+Fixed controls for smoke, shadow, and translucent, which were interacting
+and confused. Improved the implementation.  Fixes bug 0631.
+</li>
+<li>
+Fixed the -connect command line switch detection, which was triggering an
+error message due to a redundant setting of netgame.  Fixes bug 0634.
+</li>
+<li>
+Eliminate an extraneous error message about autoexec.cfg.  Check that
+it exists before trying to exec it.
+</li>
+</ul>
+
+
 <h2>1.46.2 SVN1287 (2016-12-10)</h2>
 
 <h3>FEATURES 1.46.2</h3>
