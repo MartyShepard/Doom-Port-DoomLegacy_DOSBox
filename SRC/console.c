@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: console.c 1315 2017-04-20 21:33:15Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -466,17 +466,20 @@ static void CON_InputInit (void)
 //                        CONSOLE EXECUTION
 //======================================================================
 
+// [WDJ] This originally was (BASEVIDWIDTH>>3)-2, but that gives 38,
+// and the LARGE font overruns the right margin at 30.
+#define MIN_CONWIDTH  32
+#define MAX_CONWIDTH  200
 
 //  Called at screen size change to set the rows and line size of the
 //  console text buffer.
 //
 static void CON_RecalcSize ( int width )
 {
-    int   min_conwidth = (BASEVIDWIDTH>>3)-2;  // minimum console width
     int   new_conwidth, oldcon_width, oldnumlines, oldcon_cy;
     int   i, conw;
-    char  tmp_buffer[CON_BUFFERSIZE];
-    char  string[CON_BUFFERSIZE]; // BP: it is a line but who know
+    char  con2[CON_BUFFERSIZE];
+    char  line2[MAX_CONWIDTH+4]; // BP: it is a line but who know ([WDJ] 30..94)
 
     con_recalc = false;
 
@@ -496,19 +499,24 @@ static void CON_RecalcSize ( int width )
         con_indent = vid.dupx * 10;  // indent of console text to avoid edge
         V_SetupFont( cv_con_fontsize.value, NULL, 0 );
 #ifdef CONSOLE_PROPORTIONAL
-        // Averages shorter text, but could overwrite right margin.
-        new_conwidth = (width - con_indent - 1) / (drawfont.xinc * 7/8);
+        // Averages shorter text, but could overrun right margin.
+        // Proportional width of print is (hu_font[c].width * dupx + 1).
+	// As drawfont.xinc is fixed, and some characters are wider ('M', 'W'),
+	// it is still possible to overrun the right margin.
+        new_conwidth = (width - con_indent - con_indent) / (drawfont.xinc + 1);
 #else
         // Fixed font size, between left and right margin.
         new_conwidth = (width - con_indent - con_indent) / drawfont.xinc;
 #endif
     }
-    if ( new_conwidth < min_conwidth )
+    if ( new_conwidth < MIN_CONWIDTH )
     {
-        con_indent -= min_conwidth - new_conwidth;
+        con_indent -= MIN_CONWIDTH - new_conwidth;
         if( con_indent < 2 )  con_indent = 2; 
-        new_conwidth = min_conwidth;
+        new_conwidth = MIN_CONWIDTH;
     }
+    if (new_conwidth > MAX_CONWIDTH)
+        new_conwidth = MAX_CONWIDTH;
 
     // check for change of video width
     if (new_conwidth == con_width)
@@ -518,7 +526,7 @@ static void CON_RecalcSize ( int width )
     oldcon_width = con_width;
     oldnumlines = con_totallines;
     oldcon_cy = con_cy;
-    memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
+    memcpy(con2, con_buffer, CON_BUFFERSIZE);
 
     // setup to new width
     con_width = new_conwidth;
@@ -528,16 +536,17 @@ static void CON_RecalcSize ( int width )
     // re-arrange console text buffer to keep text
     if(oldcon_width) // not the first time
     {
-        for(i=oldcon_cy+1;i<oldcon_cy+oldnumlines;i++)
+        for(i=oldcon_cy+1; i<oldcon_cy+oldnumlines; i++)
         {
-            if( tmp_buffer[(i% oldnumlines)*oldcon_width])
+	    char * con2p = &con2[(i% oldnumlines)*oldcon_width];
+            if( *con2p )
             {
-                memcpy(string, &tmp_buffer[(i% oldnumlines)*oldcon_width], oldcon_width);
+                memcpy(line2, con2p, oldcon_width);
                 conw=oldcon_width-1;
-                while(string[conw]==' ' && conw) conw--;
-                string[conw+1]='\n';
-                string[conw+2]='\0';
-                CON_Print( 5, string);  // console only
+                while(line2[conw]==' ' && conw) conw--;
+                line2[conw+1]='\n';
+                line2[conw+2]='\0';
+                CON_Print( 5, line2);  // console only
             }
         }
     }

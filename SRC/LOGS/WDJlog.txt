@@ -5851,3 +5851,30 @@ Removed tests for -1 that were from testing for EOF, as the buffers
 do not have a terminator for EOF.
 Removed extraneous parameters from the qmus2midi function call.
 
+*** W107_float
+patchfile = w107_10_float.patch
+- commit revision 1314
+Literals like 1.25 are actually double and will generate run-time
+double operations.  When the target is float, code size will be reduced
+by changing them to a float literal, such as 1.25f.
+This does not work for float comparisions. Using a float literal in a
+inequality will often make the code grow in size.  The default code generation
+avoids using the basic float comparision, apparantly because of some
+buggy CPU's.
+There is an instruction for float literal 0.0 so that is not affected.
+Later processors have an instruction for float literal 1.0 also.  But
+that is not the default so sometimes it should be a float literal too.
+
+*** W107_console
+patchfile = w107_11_console.patch
+- commit revision 1315
+The console often overruns the right margin.  The proportional font can be
+drawn shorter than the fixed width font, but the actual width is unpredictable.
+Reduced the console width to keep it within the margins for most font
+sizes and screen sizes.
+Some of the font chars ('M' and 'W') are wider than normal, and this can
+still cause the line to exceed the right margin.
+Changed the min console width from 38 to 32, because the large font can
+overrun the right margin at 30 characters.
+Modified some of the console recalc code to be more readable and smaller.
+Fixes bug 636.
