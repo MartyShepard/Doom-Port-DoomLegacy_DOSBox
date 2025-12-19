@@ -5691,5 +5691,29 @@ The default selection is SEARCH1.
 For future expansion and to easily allow user modifications,
 have added SEARCH2, SEARCH3, Dev6, Dev7, Dev8, Dev9.
 
+*** W106_video
+patchfile = w106_12_video.patch
+- commit revision 1295
+Video modes switches can cause segfault if a print stmt reaches the
+console output.  This was occuring in the linux_x xshm video when
+verbose was enabled.
+Changes to the video status indication are made to prevent print
+statements in the video mode switch from causing a console update.
+A variable, vid.draw_ready, is added.  It is not enabled until the vid
+and screen structures are updated by SCR_SetMode, and V_Setup_VideoDraw().
+Some previous video print outputs are restored.
 
+*** W106_cdrom
+patchfile = w106_13_cdrom.patch
+- commit revision 1296
+CDROM music has not worked in Linux.  It has problems in SDL, even in
+windows.  The plan was to disable it, as SDL 2 is not going to support
+CDROM music anyway.
+However, it showed signs of working, and after some effort, it now works.
+This is likely the last version that will have CDROM music support.
+Checking the CDROM status, in Linux, is a blocking IO call that stops
+all action in the game for 1/4 second, which is very noticable.
+Getting the estimated play time and using that for loop timing
+eliminates all but one status check.
+There were many other changes to fix logical mistakes.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: m_menu.c 1296 2017-02-13 18:48:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2241,11 +2241,20 @@ menuitem_t SoundMenu[]=
     {IT_CVARMAX   | IT_PATCH ,"M_MUSVOL","Music Volume",&cv_musicvolume  ,'m'},
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cv_musicvolume      },
 #ifdef CDMUS
+#ifdef SMIF_SDL
+    // [WDJ] SDL cannot control CDROM volume.
+    {IT_SPACE, NULL, NULL, NULL },
+    {IT_STRING | IT_CVAR, 0, "CD Volume on", &cd_volume },  // on off
+#else   
     {IT_CVARMAX   | IT_PATCH ,"M_CDVOL" ,"CD Volume"   ,&cd_volume       ,'c'}, // in legacy.wad
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cd_volume           },
 #endif
+#endif
 #ifdef MUSSERV
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Music Pref",  &cv_musserver_opt , 110},
+#if !defined(CDMUS) || !defined(SMIF_SDL)
+    {IT_SPACE, NULL, NULL, NULL },
+#endif
+    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Music Pref",  &cv_musserver_opt },
 #endif
 };
 

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01296 ]: w106 cdrom
 [01295 ]: w106 video mode change
 [01294*]: w106 linux sound
 [01293*]: Release bash script added.
