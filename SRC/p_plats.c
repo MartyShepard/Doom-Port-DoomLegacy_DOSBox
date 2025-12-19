@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1198 2015-12-26 19:16:46Z wesleyjohnson $
+// $Id: p_plats.c 1316 2017-04-21 19:37:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -99,6 +99,23 @@ void T_PlatRaise(plat_t* plat)
                   plat->status = PLATS_in_stasis;  //for reactivation of toggle
                 }
 
+                if( gamemode == heretic )
+                {
+                    // Heretic: Must not remove others, or else can retrigger.
+                    switch(plat->type)
+                    {
+                      case PLATT_downWaitUpStay:
+                      case PLATT_raiseAndChange:
+                        P_RemoveActivePlat(plat);
+                        break;
+                      // case PLATT_raiseToNearestAndChange:
+                      default:
+                        break;
+                    }
+                    return;
+                }
+
+                // Doom and Boom
                 switch(plat->type)
                 {
                   case PLATT_blazeDWUS:

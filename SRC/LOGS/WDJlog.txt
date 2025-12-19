@@ -5878,3 +5878,14 @@ Changed the min console width from 38 to 32, because the large font can
 overrun the right margin at 30 characters.
 Modified some of the console recalc code to be more readable and smaller.
 Fixes bug 636.
+
+*** W107_heretic_plat
+patchfile = w107_12_heretic_plat.patch
+- commit revision 1316
+Fix bug 642.
+Heretic E4M1 has a platform, using linedef 22 (raiseToNearestAndChange),
+that would retrigger.
+Boom code for the same linedef was releasing the thinker, allowing the
+platform to operate again.
+For gamemode heretic, made it use the heretic test, which does not
+remove the thinker for this linedef action.
