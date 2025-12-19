@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1263 2016-09-20 17:22:00Z wesleyjohnson $
+// $Id: i_tcp.c 1290 2016-12-30 18:39:55Z segabor $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -230,6 +230,13 @@ typedef struct sockaddr_ipx {
 
   // END of Not Windows
 #endif // win32
+
+#ifdef __APPLE__
+// IPX is not supported on macOS
+# ifdef USE_IPX
+#   undef USE_IPX
+# endif
+#endif
 
 #include "i_system.h"
 #include "i_net.h"

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01290 ]: Disable IPX support on macOS
+[01289 ]: Fix typos
 [01288 ]: w106 messagebox
 [01287 ]: w106 version 146.2 1287 docs
 [01286*]: w106 x11sound
