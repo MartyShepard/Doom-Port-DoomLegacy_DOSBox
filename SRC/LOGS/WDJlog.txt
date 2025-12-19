@@ -5717,7 +5717,7 @@ Getting the estimated play time and using that for loop timing
 eliminates all but one status check.
 There were many other changes to fix logical mistakes.
 
-*** W106_cdrom
+*** W106_shotgun_position
 patchfile = w106_14_shotgun_pos.patch
 - commit revision 1297
 The shotgun and other player weapons are a pixel too high, which leaves
@@ -5737,3 +5737,25 @@ control in effects menu.
 Expanded translucency control in effects menu.
 Fixed Smoke draw function assign.
 Fixes bug 0631.
+
+*** W106_connect
+patchfile = w106_16_connect.patch
+- commit revision 1299
+The -connect command line switch was not working due to multiple
+tests of the switch, and multiple enablings, triggering an error message.
+Setting of the critical variable, netgame, is reduced to one location
+for connect, the indirect connect command issued during init of TCP.
+This is the wrong place for testing the connect switch, but TCP is using
+information in the connect parameter to set its own parameters.
+
+*** W106_autoexec
+patchfile = w106_17_autoexec.patch
+- commit revision 1300
+Test for existance of the autoexec.cfg file before issuing an exec upon it.
+This eliminates the extraneous error message about autoexec.cfg.
+
+*** W106_version1463_1301_docs
+patchfile = w106_18_version1463_1301_docs.patch
+- commit revision 1301
+Update the docs for Release 1.46.3.
+Update the version to 1.46.3.

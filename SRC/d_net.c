@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: d_net.c 1299 2017-02-18 21:12:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1406,7 +1406,9 @@ boolean D_Startup_NetGame(void)
         {
             // Command_connect is invoked by Init_TCP_Network.
             server = false;
-            netgame = true;
+	    // Init_TCP_Network tests -connect, and tests netgame,
+	    // then issues connect command that sets netgame, and multiplayer.
+//            netgame = true;  
         }
     }
 

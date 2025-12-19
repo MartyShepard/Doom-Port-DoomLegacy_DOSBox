@@ -1,11 +1,14 @@
 * Not need to Compile.
 
+[01299 ]: w106 command line connect
+          DOS: Fixed blackscreen 15,16,24,32 BPP
+					
 [01298 ]: w106 shadow and fuzzy draw control
           Add New Menu Entries
 					
 [01297 ]: w106 shotgun position					
 [01296 ]: w106 cdrom
-[01295 ]: w106 video mode change
+[01295 ]: w106 video mode change = bpp 15,16,24,32 bit funktioniert nicht
 [01294*]: w106 linux sound
 [01293*]: Release bash script added.
 [01292*]: Fix macOS specific build options in src/Makefile
