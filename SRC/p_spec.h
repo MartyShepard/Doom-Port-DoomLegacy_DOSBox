@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: p_spec.h 1307 2017-04-10 17:21:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -80,6 +80,8 @@
 
 //      Define values for map objects
 #define MO_TELEPORTMAN          14
+
+#define SAVE_VERSION_144
 
 // at game start
 void    P_InitPicAnims (void);
@@ -216,7 +218,7 @@ typedef struct
     int         minlight, maxlight;
     int         direction;    // 1 = up, -1 = down
 
-} glow_t;
+} glow_144_t;
 
 //SoM: thinker struct for fading lights. ToDo: Add effects for light
 // transition
@@ -245,7 +247,7 @@ typedef struct
     thinker_t   thinker;  // must be first for ptr conversion
     sector_t*   sector;	  // saved
  // State to be saved in save game (p_saveg.c)
- // Savegame saves fields (count ... )
+ // Savegame saves fields (minlight ... )
     lightlev_t  minlight, maxlight;
     int32_t     count;  
 
@@ -258,7 +260,7 @@ typedef struct
     thinker_t   thinker;  // must be first for ptr conversion
     sector_t*   sector;
  // State to be saved in save game (p_saveg.c)
- // Savegame saves fields (count ... )
+ // Savegame saves fields (minlight ... )
     lightlev_t  minlight, maxlight;
     int32_t     mintime, maxtime;
     int32_t     count;
@@ -272,7 +274,7 @@ typedef struct
     thinker_t   thinker;  // must be first for ptr conversion
     sector_t*   sector;  // saved
  // State to be saved in save game (p_saveg.c)
- // Savegame saves fields (count ... )
+ // Savegame saves fields (minlight ... )
     lightlev_t  minlight, maxlight;
     int32_t     darktime;
     int32_t     brighttime;
@@ -301,7 +303,7 @@ typedef struct
   thinker_t thinker;  // must be first for ptr conversion
   sector_t *sector;  // saved
  // State to be saved in save game (p_saveg.c)
- // Savegame saves fields (destlevel ... )
+ // Savegame saves fields (destlight ... )
   lightlev_t  destlight;
   lightlev_t  speed;
 

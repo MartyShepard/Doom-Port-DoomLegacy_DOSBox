@@ -5793,3 +5793,14 @@ Added an enable to block the enemy monster code from overriding the
 gravity.  Added menu controls (monstergravity) and a demo field for it.
 Fixes bug 0632.
 
+*** W107_savegame
+patchfile = w107_4_savegame.patch
+- commit revision 1307
+The savegame format was corrupted by w107_1_lightlev.
+Fix the savegame to write in VERSION_144 format.
+Reading the new light thinkers has been fixed, but is disabled.
+The light thinkers savegame format may be changed again before
+being enabled for release code.
+Made DEFINE for controlling the light thinker read and write formats.
+The new lightlev savegame format is disabled, and has not yet been written
+by a release version, so the LIGHT147_VERSION define has a dummy value.

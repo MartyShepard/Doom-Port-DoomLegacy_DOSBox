@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: p_saveg.c 1307 2017-04-10 17:21:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -114,8 +114,17 @@
 #define MIN_READSAVE_VERSION  144
 #define MAX_READSAVE_VERSION  VERSION
 
+// For now write the light thinkers in VERSION 144 format.
+#define WRITE_LF_VER_144   1
+// Enable code for reading VERSION 144 format light thinkers,
+// when savegame version is less than LIGHT147_VERSION.
+#define READ_LF_VER_144    1
+// The lowest savegame version where the new light formats were written.
+#define LIGHT147_VERSION     999
+
 byte * save_p;
 boolean  save_game_abort = 0;
+int  sg_version = 0;
 
 // =======================================================================
 //          Save Buffer Support
@@ -1664,6 +1673,22 @@ enum
     READMEM(save_p, ((byte *)(th))+offset, (sizeof(*th)-offset));\
     P_AddThinker(&(th)->thinker); }
 
+#ifdef WRITE_LF_VER_144
+#define WRITE144_SECTOR_THINKER(th, th144, typ, field) \
+  { int offset = offsetof( typ, field );\
+    WRITE_SECTOR_PTR( (th)->sector );\
+    WRITEMEM(save_p, ((byte *)(th144))+offset, (sizeof(*th144)-offset)); }
+#endif
+
+#ifdef READ_LF_VER_144
+#define READ144_SECTOR_THINKER(th, th144, typ, field) \
+  { int offset = offsetof( typ, field );\
+    READ_SECTOR_PTR( (th)->sector );\
+    READMEM(save_p, ((byte *)(th144))+offset, (sizeof(*th144)-offset));\
+    P_AddThinker(&(th)->thinker); }
+#endif
+
+
 // No extra fields
 #define WRITE_THINKER(th, typ, field) \
   { int offset = offsetof( typ, field );\
@@ -1948,21 +1973,49 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_flash);
             lightflash_t *flash = (lightflash_t *)th;
+#ifdef WRITE_LF_VER_144
+	    lightflash_144_t  lf;
+	    lf.count = flash->count;
+            lf.minlight = flash->minlight;
+            lf.maxlight = flash->maxlight;
+            lf.maxtime = flash->maxtime;
+            lf.mintime = flash->mintime;
+            WRITE144_SECTOR_THINKER( flash, &lf, lightflash_144_t, count );
+#else
             WRITE_SECTOR_THINKER( flash, lightflash_t, minlight );
+#endif
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_StrobeFlash)
         {
             WRITEBYTE(save_p, tc_strobe);
             strobe_t *strobe = (strobe_t *)th;
+#ifdef WRITE_LF_VER_144
+            strobe_144_t  st;
+            st.count = strobe->count;
+            st.minlight = strobe->minlight;
+            st.maxlight = strobe->maxlight;
+            st.darktime = strobe->darktime;
+            st.brighttime = strobe->brighttime;
+            WRITE144_SECTOR_THINKER( strobe, &st, strobe_144_t, count );
+#else
             WRITE_SECTOR_THINKER( strobe, strobe_t, minlight );
+#endif
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Glow)
         {
             WRITEBYTE(save_p, tc_glow);
             glow_t *glow = (glow_t *)th;
+#ifdef WRITE_LF_VER_144
+            glow_144_t  gl;
+            gl.minlight = glow->minlight;
+            gl.maxlight = glow->maxlight;
+            gl.direction = glow->direction;
+            WRITE144_SECTOR_THINKER( glow, &gl, glow_144_t, minlight );
+#else
             WRITE_SECTOR_THINKER( glow, glow_t, minlight );
+#endif
             continue;
         }
         else
@@ -1971,14 +2024,29 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_fireflicker);
             fireflicker_t *fireflicker = (fireflicker_t *)th;
+#ifdef WRITE_LF_VER_144
+            fireflicker_144_t  ff;
+            ff.count = fireflicker->count;
+            ff.minlight = fireflicker->minlight;
+            ff.maxlight = fireflicker->maxlight;
+            WRITE144_SECTOR_THINKER( fireflicker, &ff, fireflicker_144_t, count );
+#else
             WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, minlight );
+#endif
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_LightFade)
         {
             WRITEBYTE(save_p, tc_lightfade);
             lightfader_t *fade = (lightfader_t *)th;
+#ifdef WRITE_LF_VER_144
+            lightfader_144_t  lf;
+            lf.destlevel = fade->destlight;
+            lf.speed = fade->speed;
+            WRITE144_SECTOR_THINKER( fade, &lf, lightfader_144_t, destlevel );
+#else
             WRITE_SECTOR_THINKER( fade, lightfader_t, destlight );
+#endif
             continue;
         }
         else
@@ -2311,11 +2379,12 @@ void P_UnArchiveThinkers(void)
             case tc_flash:
               {
                 lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
-#ifdef SAVE_VERSION_144
-                if( save_version < 147 )
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
                 {
                   lightflash_144_t  lf;
-                  READ_SECTOR_THINKER( &lf, lightflash_t, count );
+                  READ144_SECTOR_THINKER( flash, &lf, lightflash_144_t, count );
+                  flash->count = lf.count;
                   flash->minlight = lf.minlight;
                   flash->maxlight = lf.maxlight;
                   flash->mintime = lf.mintime;
@@ -2333,11 +2402,11 @@ void P_UnArchiveThinkers(void)
             case tc_strobe:
               {
                 strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
-#ifdef SAVE_VERSION_144
-                if( save_version < 147 )
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
                 {
                   strobe_144_t  st;
-                  READ_SECTOR_THINKER( &st, strobe_144_t, count );
+                  READ144_SECTOR_THINKER( strobe, &st, strobe_144_t, count );
                   strobe->minlight = st.minlight;
                   strobe->maxlight = st.maxlight;
                   strobe->darktime = st.darktime;
@@ -2356,11 +2425,11 @@ void P_UnArchiveThinkers(void)
             case tc_glow:
               {
                 glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
-#ifdef SAVE_VERSION_144
-                if( save_version < 147 )
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
                 {
                   glow_144_t  gl;
-                  READ_SECTOR_THINKER( &gl, glow_144_t, minlight );
+                  READ144_SECTOR_THINKER( glow, &gl, glow_144_t, minlight );
                   glow->minlight = gl.minlight;
                   glow->maxlight = gl.maxlight;
                   glow->direction = gl.direction;
@@ -2377,11 +2446,11 @@ void P_UnArchiveThinkers(void)
             case tc_fireflicker:
               {
                 fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
-#ifdef SAVE_VERSION_144
-                if( save_version < 147 )
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
                 {
                   fireflicker_144_t  ff;
-                  READ_SECTOR_THINKER( &ff, fireflicker_144_t, count );
+                  READ144_SECTOR_THINKER( fireflicker, &ff, fireflicker_144_t, count );
                   fireflicker->minlight = ff.minlight;
                   fireflicker->maxlight = ff.maxlight;
                   fireflicker->count = ff.count;
@@ -2398,13 +2467,13 @@ void P_UnArchiveThinkers(void)
             case tc_lightfade:
               {
                 lightfader_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
-#ifdef SAVE_VERSION_144
-                if( save_version < 147 )
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
                 {
                   lightfader_144_t  lf;
-                  READ_SECTOR_THINKER( &lf, lightfader_144_t, destlevel );
-                  fade->destlight = gl.destlevel;
-                  fade->speed = gl.speed;
+                  READ144_SECTOR_THINKER( fade, &lf, lightfader_144_t, destlevel );
+                  fade->destlight = lf.destlevel;
+                  fade->speed = lf.speed;
                 }
                 else		 
 #endif
@@ -3295,7 +3364,6 @@ void  term_header_line( char * infodest )
 boolean P_Read_Savegame_Header( savegame_info_t * infop)
 {
     char * reason;
-    int sg_version;
 
     // Read header
     save_game_abort = 0;	// all sync reads will check this
