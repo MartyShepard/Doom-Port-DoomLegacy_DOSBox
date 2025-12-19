@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1281 2016-12-09 02:21:16Z wesleyjohnson $
+// $Id: d_netfil.c 1311 2017-04-20 21:25:29Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -412,7 +412,7 @@ void Got_RequestFilePak(byte nnode)
 {
     char *p = (char *)netbuffer->u.textcmd;
 
-    while(*p!=-1)
+    while((byte)*p!=0xFF)
     {
         SV_SendFile(nnode, p+1, *p);
         p++; // skip fileid

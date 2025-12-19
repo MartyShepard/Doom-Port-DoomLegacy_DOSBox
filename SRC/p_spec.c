@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: p_spec.c 1311 2017-04-20 21:25:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -215,7 +215,7 @@ typedef struct
 #pragma pack(1) //Hurdler: 04/04/2000: I think pragma is more portable
 typedef struct
 {
-    char        istexture;      // 0= flat, 1= texture, -1= end
+    byte        istexture;      // 0= flat, 1= texture, 0xFF= end
     char        endname[9];
     char        startname[9];
     int32_t     speed;
@@ -284,7 +284,7 @@ animdef_t    harddefs[] =
     {true,      "LAVAFL3",      "LAVAFL1",      6}, // Texture: Lavaflow
     {true,      "WATRWAL3",     "WATRWAL1",     4}, // Texture: Waterfall
 
-    {-1}
+    {0xFF}
 };
 
 
@@ -316,7 +316,7 @@ void P_InitPicAnims (void)
     // and not when cache hit.
     if( lump_read )
     {
-       for (i = 0; animdefs[i].istexture != -1; i++)
+       for (i = 0; animdefs[i].istexture != 0xFF; i++)
        {
           animdefs[i].speed = LE_SWAP32(animdefs[i].speed);
        }
@@ -330,7 +330,7 @@ void P_InitPicAnims (void)
   }
 
   maxanims = 0;
-  for (i = 0; animdefs[i].istexture != -1; i++, maxanims++)	// count
+  for (i = 0; animdefs[i].istexture != 0xFF; i++, maxanims++)	// count
      ;
   anims = (animtex_t *)malloc(sizeof(animtex_t) * maxanims);
   if( anims == NULL ) {
@@ -338,7 +338,7 @@ void P_InitPicAnims (void)
   }
 
   lastanim = anims;
-  for (i = 0; animdefs[i].istexture != -1; i++)
+  for (i = 0; animdefs[i].istexture != 0xFF; i++)
   {
     // Anim defs that do not apply to this level are ignored.
     // Thus anims can be shorter than the maxanims.

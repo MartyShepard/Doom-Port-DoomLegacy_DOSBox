@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_tick.c 1311 2017-04-20 21:25:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -120,7 +120,9 @@ void P_RunThinkers (void)
     {
         next_thinker = currentthinker->next;  // because of T_RemoveThinker
         if (currentthinker->function.acp1)
+        {
             currentthinker->function.acp1 (currentthinker);
+        }
         currentthinker = next_thinker;
     }
 }
