@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1294 2017-01-19 15:18:29Z wesleyjohnson $
+// $Id: s_sound.c 1313 2017-04-20 21:29:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -117,6 +117,7 @@
 
 #include "i_sound.h"
 #include "s_sound.h"
+#include "qmus2mid.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "d_main.h"
@@ -1284,7 +1285,7 @@ void S_ChangeMusic(int music_num, byte looping)
     music->handle = I_PlayServerSong( music->name, music->lumpnum, looping );
 #else
     // load & register it
-    music->data = (void *) W_CacheLumpNum(music->lumpnum, PU_MUSIC);
+    music->data = (void *) S_CacheMusicLump(music->lumpnum);
     music->handle = I_RegisterSong(music->data, W_LumpLength(music->lumpnum));
     // play it
     I_PlaySong(music->handle, looping);

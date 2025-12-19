@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01313 ]: w107 qmus2mid
+[01312*]: w107 qmus2mid
 [01311 ]: w107 byte1
 [01310*]: w107 ARCH make
 [01309 ]: w107 inventory key (Heretic)

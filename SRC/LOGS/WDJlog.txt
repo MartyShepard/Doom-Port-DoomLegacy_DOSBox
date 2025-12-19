@@ -5836,7 +5836,18 @@ Compiling for i686 can reduce the code size by 30K.
 
 *** W107_byte1
 patchfile = w107_8_byte1.patch
-- commit revision 13xx
+- commit revision 1311
 Fix some type conversion problems that affect big-endian machines.
 Mostly byte comparisions to -1, and automatic type conversion
 from unsigned to int.
+
+*** W107_midi
+patchfile = w107_9_midi.patch
+- commit revision 1313
+Rewrote much of the qmus2midi conversion to bring it up to date.
+Changed buffers and variables from char to byte.
+Fixed comparisons that affect compilation on big-endian machines.
+Removed tests for -1 that were from testing for EOF, as the buffers
+do not have a terminator for EOF.
+Removed extraneous parameters from the qmus2midi function call.
+

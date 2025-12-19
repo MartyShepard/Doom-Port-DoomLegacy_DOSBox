@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: I_sound.c 1313 2017-04-20 21:29:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -505,7 +505,7 @@ void I_UnRegisterSong(int handle)
 int I_RegisterSong(void* data,int len)
 {
     int e;
-    ULONG midlenght;
+    ULONG midlength;
     if(nomusic)
         return 1;
 
@@ -514,7 +514,9 @@ int I_RegisterSong(void* data,int len)
         // convert mus to mid with a wonderfull function
         // thanks to S.Bacquet for the source of qmus2mid
         // convert mus to mid and load it in memory
-        if((e=qmus2mid((char *)data,musicbuffer,89,64,0,len,MIDBUFFERSIZE,&midlenght))!=0)
+        e = qmus2mid((char *)data, len, 89, 0, MIDBUFFERSIZE,
+	    /*INOUT*/ musicbuffer, &midlength);
+        if( e != QM_success )
         {
             CONS_Printf("Cannot convert mus to mid, converterror :%d\n",e);
             return 0;

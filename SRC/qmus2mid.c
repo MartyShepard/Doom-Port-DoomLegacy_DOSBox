@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: qmus2mid.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: qmus2mid.c 1313 2017-04-20 21:29:35Z wesleyjohnson $
 //
 // Copyright (C) 1995 by Sebastien Bacquet.
-// Portions Copyright (C) 1998-2016 by DooM Legacy Team.
+// Portions Copyright (C) 1998-2017 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,9 +37,21 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomincl.h"
+#include "qmus2mid.h"
+#include "w_wad.h"
+#include "z_zone.h"
+
 //defined OS2_MIDI_FILE_TO_FILE
 #if defined __OS2__ && defined OS2_MIDI_FILE_TO_FILE
 // OS2 is using a file to file version of qmus, in os2/qmus2mid2.c
+
+// Call this function to load all music lumps.
+// OS2 does not need to consider big endian.
+void* S_CacheMusicLump(int lump)
+{
+    return W_CacheLumpNum(lump, PU_MUSIC);
+}
 
 #else
 
@@ -50,11 +62,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "doomincl.h"
-#include "qmus2mid.h"
 #include "i_system.h"
 #include "byteptr.h"
 #include "m_swap.h"
+
 
 // MUS events
 #define MUS_EV_SCOREEND     6
@@ -73,7 +84,6 @@
 #define MIDITRACKSRC  "\000\377\003\035"
   // 0x00, 0xff, 0x03, 0x1d
 
-
 struct MUSheader_s
 {
     char          ID[4];            // identifier "MUS" 0x1A
@@ -88,20 +98,58 @@ struct MUSheader_s
 };
 typedef struct MUSheader_s MUSheader;
 
-// internal
-struct Track
+
+// Call this function to load all music lumps.
+// Handle endian at lump load time, avoiding excessive byteswapping.
+// Placed here because this file knows the header format, and music lumps
+// are only loaded every few minutes, not hundred times a second.
+// Function from ppc bug report, by Adam Stylinski.
+// Modified by WDJ.
+void* S_CacheMusicLump(int lump)
 {
-    unsigned long  current;
-    char           vel;
-    long           DeltaTime;
-    unsigned char  LastEvent;
-    char           *data;            /* Primary data */
-};
+#ifdef __BIG_ENDIAN__
+    // Cache Music Lump Endian
+    void *data = W_CacheLumpNum(lump, PU_MUSIC); 
+    if (lump_read && memcmp(data, MUSHEADER, 4) == 0) {
+        /* Header should be at beginning of opaque data pointer */
+        MUSheader *mh = (MUSheader*)data;
+        mh->scoreLength = LE_SWAP16(mh->scoreLength);
+        mh->scoreStart = LE_SWAP16(mh->scoreStart);
+        mh->channels = LE_SWAP16(mh->channels);
+        mh->sec_channels = LE_SWAP16(mh->sec_channels);
+        mh->instrCnt = LE_SWAP16(mh->instrCnt);
+        /* Probably unnecessary if this is just padding */
+        mh->dummy = LE_SWAP16(mh->dummy);
 
-static struct Track track[16];
-uint32_t  track_buffersize = 65536UL;  /* 64 Ko */
+        uint16_t i;
+        for (i = 0; i < mh->instrCnt; ++i) {
+            mh->instruments[i] = LE_SWAP16(mh->instruments[i]);
+        }
+    }
 
-static unsigned char MUS2MIDcontrol[15] =
+    return data;
+#else
+    return W_CacheLumpNum(lump, PU_MUSIC);
+#endif
+}
+
+
+
+// internal
+typedef struct Track
+{
+    // [WDJ] Arranged for better packing.
+    byte      *data;     // Track MIDI data
+    uint32_t  current;   // current buffer position
+    uint32_t  limit;     // write buffer limit
+    uint32_t  DeltaTime;
+    byte      vel;
+    byte      LastEvent; // test last event, for compression
+} track_t;
+
+static track_t  track[16];
+
+static byte  MUS2MIDcontrol[15] =
 {
         0,                  /* Program change - not a MIDI control change */
         0x00,               /* Bank select */
@@ -120,8 +168,7 @@ static unsigned char MUS2MIDcontrol[15] =
         0x79                /* Reset all controllers */
 };
 
-static byte    MUSchannel;
-static byte    MIDItrack;
+static byte    track_full;
 
 #define fwritemem(p,s,n,f)  memcpy(*f,p,n*s);*f+=(s*n)
 
@@ -140,9 +187,13 @@ static void BE_write_32(byte **p, int32_t val)
   *p += sizeof(int32_t);
 }
 
-#define last(e)         ((unsigned char)(e & 0x80))
-#define event_type(e)   ((unsigned char)((e & 0x7F)>>4))
-#define channel(e)      ((unsigned char)(e & 0x0F))
+#define last(e)         ((byte)(e & 0x80))
+#define event_type(e)   ((byte)((e & 0x7F)>>4))
+#define channel(e)      ((byte)(e & 0x0F))
+
+// [WDJ] The original qmus2midi tested for -1 returned by getc().
+// The MUS format in a lump does not have -1 terminator.
+// This test has been removed everywhere.
 
 
 static void FreeTracks ( void )
@@ -150,27 +201,61 @@ static void FreeTracks ( void )
     int i;
 
     for (i = 0; i < 16; i++ )
+    {
         if (track[i].data )
             free( track[i].data );
+    }
 }
 
 
-static void TWriteByte (byte MIDItrack, char bbyte)
+// [WDJ] buffersize will now grow dynamically.
+// Only a few music tracks will realloc.
+// A few with one track at 21K, a 39K, a 45K.
+#define TRACK_BUFFERSIZE      16000
+#define TRACK_BUFFERSIZE_INC  16000
+#define TRACK_GUARD           16
+
+static void TWriteByte (track_t * trk, byte bbyte)
 {
     uint32_t pos;
 
-    pos = track[MIDItrack].current;
-    if (pos < track_buffersize )
-        track[MIDItrack].data[pos] = bbyte;
-    else
-        I_Error("Mus Convert Error : Track buffer full.\n");
-
-    track[MIDItrack].current++;
+    pos = trk->current;
+    if (pos > trk->limit )
+    {
+        // Incremental allocation is more reasonable.
+        uint32_t  new_size = trk->limit + (TRACK_GUARD + TRACK_BUFFERSIZE_INC);
+#if 0
+        GenPrintf( EMSG_debug, "Midi track realloc %i\n", new_size);
+#endif
+        byte *  new_data = realloc( trk->data, new_size );
+        if( new_data )
+        {
+            trk->data = new_data;
+            trk->limit = new_size - TRACK_GUARD;
+	}
+        else
+	{
+            if ( track_full == 0 )
+            {
+                I_SoftError("Mus Convert Error : Track buffer full.\n");
+                track_full = 1;  // track full
+                // finish MIDI event, play what we got.
+            }
+            if( pos > (trk->limit + (TRACK_GUARD - 1)) )
+            {
+	        // Do not write
+                return;
+            }
+        }
+    }
+    trk->data[pos] = bbyte;
+    trk->current++;
+    return;
 }
 
 // write midi format, big endian
 // value: all valid bytes have bit8 set except the last byte (LSB)
-static void TWriteVarLen (byte tracknum, uint32_t value)
+static void TWriteVarLen ( track_t * trk, uint32_t value)
 {
     uint32_t buffer;
 
@@ -184,11 +269,10 @@ static void TWriteVarLen (byte tracknum, uint32_t value)
     }
     while( 1 )
     {
-        TWriteByte( tracknum, (byte)buffer);
-        if (buffer & 0x80 )  // detect last byte
-            buffer >>= 8;
-        else
+        TWriteByte( trk, (byte)buffer);
+        if ((buffer & 0x80) == 0 )  // detect last byte
             break;
+        buffer >>= 8;
     }
 }
 
@@ -210,11 +294,11 @@ static void WriteTrack (int tracknum, byte **file)
     /* Do we risk overflow here ? */
     trksize = (uint16_t)track[tracknum].current + 4;
     fwritemem( "MTrk", 4, 1, file );  // track header
-    if (!tracknum )
+    if (tracknum == 0)
         trksize += 33;
 
     fwrite32( trksize, file );
-    if (!tracknum)
+    if (tracknum == 0)
     {
         memset(*file,'\0',33);
         *file+=33;
@@ -244,55 +328,62 @@ static void WriteFirstTrack (byte **file)
 static uint32_t ReadTime( byte **musfp )
 {
     uint32_t timev = 0;
-    int   bbyte;
+    byte bbyte;
 
     // MUS time is variable length, last byte has bit8=0
     do
     {
         bbyte = *(*musfp)++;
-        if (bbyte != EOF )
-            timev = (timev << 7) + (bbyte & 0x7F);
-    } while( (bbyte != EOF) && (bbyte & 0x80) );
+        timev = (timev << 7) + (bbyte & 0x7F);
+    } while( bbyte & 0x80 );
 
     return timev;
 }
 
 // return first MIDI channel available, except percussion channel 9
 // fixed ch assign for percussion: MUS ch15 -> midi ch9
-static char FirstChannelAvailable (char MUS2MIDchannel[])
+static byte FirstChannelAvailable (byte MUS2MIDchannel[])
 {
     int i;
-    signed char max = -1;  // so first is 0
+    int maxch = -1;  // so first is 0
 
     // note: skip channel 15 which is percussions
     for (i = 0; i < 15; i++ )
-        if (MUS2MIDchannel[i] > max )  // find max of assigned ch
-            max = MUS2MIDchannel[i];
+    {
+        // Channel 0xFF is unused.
+        byte mch = MUS2MIDchannel[i];
+        if( mch == 0xFF )  continue;  // unused
 
+        if ( (int)mch > maxch )  // find max of assigned ch
+            maxch = mch;
+    }
+
+    maxch ++; // next channel is free
     // MIDI channel 9 is used for percussions
-    return (max == 8 ? 10 : max+1);
+    return (maxch == 9 ? 10 : maxch);
 }
 
 // write MIDI event code, with compression
-static void MidiEvent(byte newevent)
+static void MidiEvent(track_t * trk, byte newevent)
 {
     // compression does not repeat same event
-    if ((newevent != track[MIDItrack].LastEvent) /*|| nocomp*/ )
+    if ((newevent != trk->LastEvent) /*|| nocomp*/ )
     {
-        TWriteByte( MIDItrack, newevent );
-        track[MIDItrack].LastEvent = newevent;
+        TWriteByte( trk, newevent );
+        trk->LastEvent = newevent;
     }
 }
+
 
 // Convert MUS to MIDI
 // Return QMUS_error_code_e, 0 on success
 int qmus2mid (byte *mus,  // input mus
-              byte *mid,  // output buffer in memory
-              uint16_t division, // ticks per quarter note
-              int buffersize, // using track buffersize
-              int nocomp,     // no compression, is ignored
               int muslength,  // input mus length
+              uint16_t division, // ticks per quarter note
+              int nocomp,     // no compression, is ignored
               int midbuffersize, // output buffer length
+    /*INOUT*/
+              byte *mid,  // output buffer in memory
               unsigned long* midilength)    //faB: returns midi file length in here
 {
   static   MUSheader* MUSh;
@@ -301,24 +392,28 @@ int qmus2mid (byte *mus,  // input mus
     byte*    file_mid = mid;     // pointer into output buffer
     byte*    musend = mus + muslength;
 
-    byte     MIDIchannel;
-    byte     et;
-    uint16_t TrackCnt=0;
-    int      i, event, data;
-    uint32_t    DeltaTime;
-    uint32_t    TotalTime=0;
-
+    byte     MUSchannel;
+    byte     MUS2MIDchannel[16];
     byte     MIDIchan2track[16];
-    char     MUS2MIDchannel[16];
+    byte     TrackCnt=0;
+    byte     MIDIchannel;
+    byte     MIDItrack;
+    track_t* trk;
 
-//    char ouch = 0;  // unused
+    uint32_t DeltaTime;
+    uint32_t TotalTime=0;
 
-    //r = ReadMUSheader (&MUSh, file_mus);
+    int      i;
+    unsigned int  event;
+    byte     data;
+    byte     et;
+
+    track_full = 0; // global abort flag
+
     MUSh = (MUSheader *)mus;
-    if (strncmp (MUSh->ID, MUSHEADER, 4))
+    if (memcmp(MUSh->ID, MUSHEADER, 4))
         return QM_NOTMUSFILE;
 
-    //fseek( file_mus, MUSh.scoreStart, SEEK_SET );
     file_mus = mus + MUSh->scoreStart;
 
     if (MUSh->channels > 15)      /* <=> MUSchannels+drums > 16 */
@@ -326,94 +421,106 @@ int qmus2mid (byte *mus,  // input mus
 
     for (i=0; i<16; i++)
     {
-        MUS2MIDchannel[i] = -1;  // channel not used (yet)
+        MUS2MIDchannel[i] = 0xFF;  // channel not used (yet)
         track[i].current = 0;
         track[i].vel = 64;
         track[i].DeltaTime = 0;
         track[i].LastEvent = 0;
         track[i].data = NULL;
+        track[i].limit = 0;
     }
 
-    if (buffersize)
-        track_buffersize = ((uint32_t) buffersize) << 10;
+    if (division == 0)
+        division = 89;
+        // prboom defaults to 70, all callers pass 64
 
-    event = *(file_mus++);
-    et    = event_type (event);
-    MUSchannel = channel (event);
-
-    while ( (et != MUS_EV_SCOREEND)
-	    && file_mus < musend
-             && (event != EOF) )
+    while (( file_mus < musend ) && (track_full == 0))
     {
-        if (MUS2MIDchannel[MUSchannel] == -1)
+        event = *(file_mus++);
+        et = event_type( event );
+        if( et == MUS_EV_SCOREEND )    break;
+
+        MUSchannel = channel( event );
+
+        if (MUS2MIDchannel[MUSchannel] == 0xFF)
         {
+            // Previously Unused, need to allocate track.
             MIDIchannel = MUS2MIDchannel[MUSchannel] =
                 // if percussion use channel 9
-                ((MUSchannel == 15) ? 9 : FirstChannelAvailable (MUS2MIDchannel) );
+                ((MUSchannel == 15) ? 9
+		: FirstChannelAvailable (MUS2MIDchannel) );
             MIDItrack = MIDIchan2track[MIDIchannel] = (byte)TrackCnt++;
-            if (!(track[MIDItrack].data = (char *) malloc(track_buffersize) ))
+            if (!(track[MIDItrack].data = (byte *) malloc(TRACK_BUFFERSIZE) ))
             {
                 FreeTracks();
                 return QM_MEMALLOC;
             }
+	    track[MIDItrack].limit = TRACK_BUFFERSIZE - TRACK_GUARD;
         }
         else
         {
             MIDIchannel = MUS2MIDchannel[MUSchannel];
             MIDItrack   = MIDIchan2track [MIDIchannel];
         }
-        TWriteVarLen( MIDItrack, track[MIDItrack].DeltaTime );
-        track[MIDItrack].DeltaTime = 0;
+        trk = &track[ MIDItrack ];
+        TWriteVarLen( trk, trk->DeltaTime );
+        trk->DeltaTime = 0;
         switch (et)
         {
 	 case 0 :  // release note
-            MidiEvent((byte)0x90 | MIDIchannel);
+#ifdef WIN32
+            // From prboom
+            // killough 10/7/98: Fix noise problems by not allowing compression.
+	    // [WDJ] Prevent compression of this event.
+	    trk->LastEvent = 0xFF;
+#endif
+            MidiEvent( trk, (byte)0x90 | MIDIchannel);
             
             data = *(file_mus++);
-            TWriteByte( MIDItrack, (byte)(data & 0x7F));
-            TWriteByte( MIDItrack, 0 );
+            TWriteByte( trk, (byte)(data & 0x7F));
+            TWriteByte( trk, 0 );
             break;
             
 	 case 1 :  // play note
-            MidiEvent((byte)0x90 | MIDIchannel);
+            MidiEvent( trk, (byte)0x90 | MIDIchannel);
             
             data = *(file_mus++);
-            TWriteByte( MIDItrack, (byte)(data & 0x7F));
+            TWriteByte( trk, (byte)(data & 0x7F));
             if (data & 0x80)
-                track[MIDItrack].vel = (*file_mus++) & 0x7F;
-            TWriteByte( MIDItrack, track[MIDItrack].vel );
+                trk->vel = (*file_mus++) & 0x7F;
+            TWriteByte( trk, track[MIDItrack].vel );
             break;
             
 	 case 2 :  // bend note
-            MidiEvent((byte)0xE0 | MIDIchannel);
+            MidiEvent( trk, (byte)0xE0 | MIDIchannel);
             
             data = *(file_mus++);
-            TWriteByte( MIDItrack, (data & 1) << 6 );
-            TWriteByte( MIDItrack, data >> 1 );
+            TWriteByte( trk, (data & 1) << 6 );
+            TWriteByte( trk, data >> 1 );
             break;
 	 case 3 :  // sys event
-            MidiEvent((byte)0xB0 | MIDIchannel);
+            MidiEvent( trk, (byte)0xB0 | MIDIchannel);
             
             data = *(file_mus++);
-            TWriteByte( MIDItrack, MUS2MIDcontrol[data] );
+            TWriteByte( trk, MUS2MIDcontrol[data] );
             if (data == 12 )
-                TWriteByte( MIDItrack, MUSh->channels+1 );
+                TWriteByte( trk, MUSh->channels+1 );
             else
-                TWriteByte( MIDItrack, 0 );
+                TWriteByte( trk, 0 );
             break;
 	 case 4 :  // control change
             data = *(file_mus++);
             if (data )
             {
-                MidiEvent((byte)0xB0 | MIDIchannel);
+                MidiEvent( trk, (byte)0xB0 | MIDIchannel);
                 
-                TWriteByte( MIDItrack, MUS2MIDcontrol[data] );
+                TWriteByte( trk, MUS2MIDcontrol[data] );
             }
             else  /* program change */
-                MidiEvent((byte)0xC0 | MIDIchannel);
+                MidiEvent( trk, (byte)0xC0 | MIDIchannel);
             
             data = *(file_mus++);
-            TWriteByte( MIDItrack, data & 0x7F );
+            TWriteByte( trk, data & 0x7F );
             break;
 	 case 5 :  // unknown
 	 case 7 :  // unknown
@@ -429,29 +536,18 @@ int qmus2mid (byte *mus,  // input mus
             for (i = 0; i < (int) TrackCnt; i++ )
                 track[i].DeltaTime += DeltaTime;
         }
-        event = *(file_mus++);
-        if (event != EOF )
-        {
-            et = event_type( event );
-            MUSchannel = channel( event );
-        }
-//        else
-//            ouch = 1;
     }
-
-    if (!division)
-        division = 89;
-        // prboom defaults to 70, all callers pass 64
 
 #ifndef SMIF_SDL
     for (i = 0; i < 16; i++)
     {
-        if (track[i].current && track[i].data)
+        trk = &track[i];
+        if (trk->current && trk->data)
         {
-            TWriteByte(i, (byte)0x00); // midi end of track code
-            TWriteByte(i, (byte)0xFF);
-            TWriteByte(i, (byte)0x2F);
-            TWriteByte(i, (byte)0x00);
+            TWriteByte( trk, (byte)0x00); // midi end of track code
+            TWriteByte( trk, (byte)0xFF);
+            TWriteByte( trk, (byte)0x2F);
+            TWriteByte( trk, (byte)0x00);
         }
     }
 #endif
@@ -461,18 +557,20 @@ int qmus2mid (byte *mus,  // input mus
       GenPrintf(EMSG_warn,"QMUS end without score end\n");
 #endif
 
+    // Write out MIDI.
     WriteMIDheader( TrackCnt+1, division, &file_mid );
     WriteFirstTrack( &file_mid );
     for (i = 0; i < (int) TrackCnt; i++ )
         WriteTrack( i, &file_mid );
 
-    if (file_mid>mid+midbuffersize)
+    if (file_mid > (mid + midbuffersize))
         return QM_MIDTOOLARGE;
 
     FreeTracks();
 
     //faB: return length of Midi data
-    *midilength = (file_mid - mid);
+    if( midilength )
+        *midilength = (file_mid - mid);
 
     return 0;
 }
