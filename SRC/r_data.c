@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1267 2016-09-20 17:26:04Z wesleyjohnson $
+// $Id: r_data.c 1314 2017-04-20 21:31:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1724,11 +1724,11 @@ void  R_Colormap_Analyze( int mapnum )
 		        dn4 = pLocalPalette[cm1].s.blue - pLocalPalette[cm2].s.blue;
 		        break;
 		    }
-		    if( dn4 && (dd4 > 0.01 || dd4 < -0.01))
+		    if( dn4 && (dd4 > 0.01f || dd4 < -0.01f))
 		    {
 		        float h3 = (float)dn4 / (float)dd4;
-		        if( h3 > 1.0 )   h3 = 1.0;
-		        if( h3 < 0.01 )  h3 = 0.01;
+		        if( h3 > 1.0f )   h3 = 1.0;
+		        if( h3 < 0.01f )  h3 = 0.01f;
 		        h4r += h3;  // total for avg
 		        cnt ++;
 		    }
@@ -1740,7 +1740,7 @@ void  R_Colormap_Analyze( int mapnum )
         int m4_fog = 0;
         // h = 0.0 is a useless table
         if( h4r > 0.99 ) {
-	    h4r = 0.99;
+	    h4r = 0.99f;
 	    m4_fog = 1;
 	}
         if( h4r < 0.00 ) {
@@ -1749,7 +1749,7 @@ void  R_Colormap_Analyze( int mapnum )
 	}
         if( cnt * 2 < try_cnt )
             m4_fog = 1;
-        h4r = h4r * (0.66 / 1.732);  // correction for testing at 1/3 max brightness
+        h4r = h4r * (0.66f / 1.732f);  // correction for testing at 1/3 max brightness
         float h4 = 1.0 - h4r;
         int m4_red, m4_blue, m4_green;
 #if 0
@@ -1789,11 +1789,11 @@ void  R_Colormap_Analyze( int mapnum )
         // Enable to see results of analysis.
         GenPrintf(EMSG_info,
 	       "Analyze4: alpha=%i  red=%i  green=%i  blue=%i  fog=%i\n",
-	       (int)(255.0*h4), m4_red, m4_green, m4_blue, m4_fog );
+	       (int)(255.0f*h4), m4_red, m4_green, m4_blue, m4_fog );
 #endif      
         // Not great, get some tints wrong, and sometimes too light.
         // Give m4_fog some treatment, to stop compiler messages.
-        work_rgba.s.alpha = (int)(h4 * 255.0) - (m4_fog * 2.0);
+        work_rgba.s.alpha = (int)(h4 * 255.0f) - (m4_fog * 2.0f);
         work_rgba.s.red = m4_red;
         work_rgba.s.green = m4_green;
         work_rgba.s.blue = m4_blue;
@@ -2173,7 +2173,7 @@ byte NearestColor(byte r, byte g, byte b)
 int RoundUp(double number)
 {
   if(number > 255.0)
-    return 255.0;
+    return 255;
   if(number < 0)
     return 0;
 

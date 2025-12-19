@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: v_video.c 1314 2017-04-20 21:31:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -258,11 +258,11 @@ static void R_BuildGammaTable(float gamma)
         // Split this calculation, and use the put_gammatable function
         // to control possible errors in non-Linux systems.
         double di = (double)(i+1) / 256.0;
-        put_gammatable( i, pow( di, gamma) * 255.0 );
+        put_gammatable( i, pow( di, gamma) * 255.0f );
     }
 }
 
-
+// Declaring table with f literal (1.28f) seems to make no difference.
 // table of gamma value for each slider position
 float gamma_lookup_table[25] = {
     1.48, 1.44, 1.4, 1.36, 1.32, 1.28, 1.24, 1.2, 1.16, 1.12, 1.08, 1.04,
@@ -290,15 +290,15 @@ static void
 {
     int i;
 //   float b0 = ((float) cv_black.value ) * (16.0 / 12.0); // black
-    float b0 = ((float) cv_black.value ) / 2.0; // black
-    float pow_max = 255.0 - b0;
+    float b0 = ((float) cv_black.value ) / 2.0f; // black
+    float pow_max = 255.0f - b0;
     float gam = gamma_lookup( cv_usegamma.value );  // gamma
 
     gammatable[0] = 0;	// absolute black
 
     for( i=1; i<=255; i++ )
     {
-        float fi = ((float) i) / 255.0;
+        float fi = ((float) i) / 255.0f;
         put_gammatable( i, b0 + (powf( fi, gam ) * pow_max) );
     }
 }
@@ -320,8 +320,8 @@ static void
 
     for( i=1; i<=255; i++ )
     {
-        float fi = ((float) i) / 255.0;
-        gvf = powf( fi, gam ) * 255.0;
+        float fi = ((float) i) / 255.0f;
+        gvf = powf( fi, gam ) * 255.0f;
         if( i < BLACK_SIZE )
         {
             // Black adjustment, using a power function over the black range.
@@ -341,7 +341,7 @@ static void
 #  define BRIGHT_MIN  60
 #  define BRIGHT_MID  130
     int i, di, start_index, end_index;
-    float bf = ((float)cv_bright.value) * (256.0 / 6.0 / 12.0);
+    float bf = ((float)cv_bright.value) * (256.0f / 6.0f / 12.0f);
     float n3 = bf*bf*bf;  // -1728 .. 1728
     float d2 = bf*bf;  // 144 .. 0 .. 144
     float gf, w0;
@@ -382,8 +382,8 @@ static void
     const int bl_ref_offset = 20; // (8 .. 28 .. 50);
     const int wl_index = 128;
     const int wl_ref_offset = 48; // (60 .. 128 .. 176);
-    float bl_offset = ((float) cv_black.value ) * bl_ref_offset / 12.0;
-    float wl_offset = ((float) cv_bright.value ) * wl_ref_offset / 12.0;
+    float bl_offset = ((float) cv_black.value ) * bl_ref_offset / 12.0f;
+    float wl_offset = ((float) cv_bright.value ) * wl_ref_offset / 12.0f;
     float b0 = 0.0, lf = 1.0;
     int i, start_index, end_index, seg = 0;
 
@@ -392,9 +392,9 @@ static void
         // enforce monotonic by altering wl
         wl_offset = bl_offset + bl_index + 5 - wl_index;
     }
-    if( (wl_offset + wl_index) > 250.0 ) {
+    if( (wl_offset + wl_index) > 250.0f ) {
         // enforce monotonic by altering wl
-        wl_offset = 250.0 - wl_index;
+        wl_offset = 250.0f - wl_index;
     }
     // eqn: bl_offset = ( b0 + (lf * bl_index))
     b0 = bl_offset * 5 / 16;
@@ -594,7 +594,7 @@ void CV_usegamma_OnChange(void)
         break;
 #if 0       
     // old-style gamma levels are defined by gamma == 1-0.125*cv_usegamma.value
-    R_BuildGammaTable(1.0 -0.125*cv_usegamma.value);
+    R_BuildGammaTable(1.0f - 0.125f * cv_usegamma.value);
 #endif
     }
     if( graphics_state >= VGS_active )
@@ -921,9 +921,9 @@ void V_SetupDraw( uint32_t screenflags )
     {   // Fine scaling, Scaled text
         // Sizing slider factor is set in drawfont.ratio by V_SetFont.
         drawinfo.fdupx = (vid.fdupx * drawfont.ratio) + (1.0 - drawfont.ratio);
-        drawinfo.fdupy = (vid.fdupy * drawfont.ratio) + (1.0 - drawfont.ratio);
-        drawinfo.dupx = (int)(drawinfo.fdupx + 0.5);
-        drawinfo.dupy = (int)(drawinfo.fdupy + 0.5);
+        drawinfo.fdupy = (vid.fdupy * drawfont.ratio) + (1.0f - drawfont.ratio);
+        drawinfo.dupx = (int)(drawinfo.fdupx + 0.5f);
+        drawinfo.dupy = (int)(drawinfo.fdupy + 0.5f);
     }
     else if (screenflags & V_SCALEPATCH)
     {   // Scaled patches and Large text.
@@ -935,7 +935,7 @@ void V_SetupDraw( uint32_t screenflags )
     else
     {   // Unscaled and Small text.
         drawinfo.dupx = drawinfo.dupy = 1;
-        drawinfo.fdupx = drawinfo.fdupy = 1.0;
+        drawinfo.fdupx = drawinfo.fdupy = 1.0f;
     }
     drawinfo.ybytes = drawinfo.dupy * vid.ybytes;  // bytes per source line
     drawinfo.xbytes = drawinfo.dupx * vid.bytepp;  // bytes per source pixel
@@ -957,8 +957,8 @@ void V_SetupDraw( uint32_t screenflags )
         drawinfo.dupx0 = 1;  // unscaled
         drawinfo.dupy0 = 1;
 #ifdef HWRENDER
-        drawinfo.fdupx0 = 1.0;
-        drawinfo.fdupy0 = 1.0;
+        drawinfo.fdupx0 = 1.0f;
+        drawinfo.fdupy0 = 1.0f;
 #endif
     }
     drawinfo.x0bytes_saved = drawinfo.x0bytes = drawinfo.dupx0 * vid.bytepp;
@@ -1008,8 +1008,8 @@ void  V_SetupDraw_NO_SCALESTART( void )
     drawinfo.x0bytes = vid.bytepp;
     drawinfo.y0bytes = vid.ybytes;
 #ifdef HWRENDER
-    drawinfo.fdupx0  = 1.0;
-    drawinfo.fdupy0  = 1.0;
+    drawinfo.fdupx0  = 1.0f;
+    drawinfo.fdupy0  = 1.0f;
 #endif
 }
 
@@ -2416,17 +2416,17 @@ void  V_SetupFont( int font_size, fontinfo_t * fip, uint32_t option )
     if( font_size > 0 )
     {
         // Scale, Large = 5.0, Small = 1.0
-        drawfont.scale = (float)font_size + 0.000001;
+        drawfont.scale = (float)font_size + 0.000001f;
         // Small is not quite at 1.0, let it round down only when it has to.
-        drawfont.ratio = (drawfont.scale - 0.90) / (5.0 - 0.90);  // 0.0 .. 1.0
+        drawfont.ratio = (drawfont.scale - 0.90f) / (5.0f - 0.90f);  // 0.0 .. 1.0
         // V_SetupDraw( V_FINESCALEPATCH ) scales by drawfont.scale.
         // Do not pass option V_SCALESTART to draw.  Handled by DrawString.
         V_SetupDraw( V_FINESCALEPATCH | option );
     }
     else
     {
-        drawfont.scale = 5.0;
-        drawfont.ratio = 1.0;
+        drawfont.scale = 5.0f;
+        drawfont.ratio = 1.0f;
     }
    
     if( fip == NULL )
@@ -2462,8 +2462,8 @@ void  V_SetupFont( int font_size, fontinfo_t * fip, uint32_t option )
     {
         drawfont.dupx0 = 1;
         drawfont.dupy0 = 1;
-        drawfont.fdupx0 = 1.0;
-        drawfont.fdupy0 = 1.0;
+        drawfont.fdupx0 = 1.0f;
+        drawfont.fdupy0 = 1.0f;
     }
 }
 
