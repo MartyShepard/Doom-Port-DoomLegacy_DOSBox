@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_lights.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -371,7 +371,7 @@ void P_SpawnGlowingLight( sector_t*  sector)
     gp->thinker.function.acp1 = (actionf_p1) T_Glow;
     gp->direction = -1;
 
-    sector->special &= ~31; //SoM: 3/7/2000: Reset only non-generic types.
+    sector->special &= ~0x1F; //SoM: 3/7/2000: Reset only non-generic types.
 }
 
 
@@ -380,9 +380,9 @@ void P_SpawnGlowingLight( sector_t*  sector)
 //
 // Fade all the lights in sectors with a particular tag to a new value
 //
-void P_FadeLight(int tag, int destvalue, int speed)
+void P_FadeLight(int tag, lightlev_t destvalue, lightlev_t speed)
 {
-  lightlevel_t *ll;
+  lightfader_t * lf;
 
   // search all sectors for ones with tag
   int secnum = -1; // init search FindSector
@@ -391,14 +391,14 @@ void P_FadeLight(int tag, int destvalue, int speed)
       sector_t *sector = &sectors[secnum];
       sector->lightingdata = sector;    // just set it to something
 
-      ll = Z_Malloc(sizeof(*ll), PU_LEVSPEC, 0);
-      ll->thinker.function.acp1 = (actionf_p1)T_LightFade;
+      lf = Z_Malloc(sizeof(*lf), PU_LEVSPEC, 0);
+      lf->thinker.function.acp1 = (actionf_p1)T_LightFade;
 
-      P_AddThinker(&ll->thinker);       // add thinker
+      P_AddThinker(&lf->thinker);       // add thinker
 
-      ll->sector = sector;
-      ll->destlevel = destvalue;
-      ll->speed = speed;
+      lf->sector = sector;
+      lf->destlight = destvalue;
+      lf->speed = speed;
   }
 }
 
@@ -409,39 +409,32 @@ void P_FadeLight(int tag, int destvalue, int speed)
 // Just fade the light level in a sector to a new level
 //
 
-void T_LightFade(lightlevel_t *ll)
+void T_LightFade(lightfader_t * lf)
 {
-  if(ll->sector->lightlevel < ll->destlevel)
+  lightlev_t seclight = lf->sector->lightlevel;
+   
+  if(seclight < lf->destlight)
   {
-      // increase the lightlevel
-    if(ll->sector->lightlevel + ll->speed >= ll->destlevel)
-    {
-          // stop changing light level
-       ll->sector->lightlevel = ll->destlevel;    // set to dest lightlevel
-
-       ll->sector->lightingdata = NULL;          // clear lightingdata
-       P_RemoveThinker(&ll->thinker);    // remove thinker       
-    }
-    else
-    {
-        ll->sector->lightlevel += ll->speed; // move lightlevel
-    }
+    // increase the lightlevel
+    seclight += lf->speed; // move lightlevel
+    if(seclight >= lf->destlight)
+      goto achieved_target;
   }
   else
   {
-        // decrease lightlevel
-    if(ll->sector->lightlevel - ll->speed <= ll->destlevel)
-    {
-          // stop changing light level
-       ll->sector->lightlevel = ll->destlevel;    // set to dest lightlevel
-
-       ll->sector->lightingdata = NULL;          // clear lightingdata
-       P_RemoveThinker(&ll->thinker);            // remove thinker       
-    }
-    else
-    {
-        ll->sector->lightlevel -= ll->speed;      // move lightlevel
-    }
+    // decrease lightlevel
+    seclight -= lf->speed; // move lightlevel
+    if(seclight <= lf->destlight)
+      goto achieved_target;
   }
+  lf->sector->lightlevel = seclight;
+  return;
+   
+achieved_target:
+  // stop changing light level
+  lf->sector->lightlevel = lf->destlight;    // set to dest lightlevel
+
+  lf->sector->lightingdata = NULL;          // clear lightingdata
+  P_RemoveThinker(&lf->thinker);            // remove thinker       
 }
 

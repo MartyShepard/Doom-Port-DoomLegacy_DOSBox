@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1265 2016-09-20 17:24:23Z wesleyjohnson $
+// $Id: p_spec.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1050,10 +1050,10 @@ static void P_InitTagLists(void)
 // Find minimum light from an adjacent sector
 //
 // max is the default value
-int  P_FindMinSurroundingLight ( sector_t*  sector, int max )
+lightlev_t  P_FindMinSurroundingLight ( sector_t*  sector, lightlev_t max )
 {
     int         i;
-    int         min;
+    lightlev_t  min;
     line_t*     line;
     sector_t*   check;
 

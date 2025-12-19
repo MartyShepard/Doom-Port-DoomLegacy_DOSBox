@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_segs.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -50,7 +50,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 );
 
 void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor);
 
-void R_RenderFog( ffloor_t* fff, sector_t * fogsec, int foglight,
+void R_RenderFog( ffloor_t* fff, sector_t * fogsec, lightlev_t foglight,
 		  fixed_t scale );
 
 void R_StoreWallRange( int start, int stop );

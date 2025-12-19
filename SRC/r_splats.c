@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: r_splats.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -483,7 +483,7 @@ static void R_RenderFloorSplat (floorsplat_t* pSplat, vertex_t* verts, byte* pTe
     // prepare values for all the splat
     ds_source = (byte *)W_CacheLumpNum(pSplat->pic,PU_CACHE);
     planeheight = abs(pSplat->z - viewz);
-    int vlight = pSplat->subsector->sector->lightlevel + extralight;
+    lightlev_t  vlight = pSplat->subsector->sector->lightlevel + extralight;
     planezlight =
         (vlight < 0) ? zlight[0]
       : (vlight >= 255) ? zlight[LIGHTLEVELS-1]

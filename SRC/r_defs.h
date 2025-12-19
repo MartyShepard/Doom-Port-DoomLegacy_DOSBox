@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1227 2016-05-24 17:00:46Z wesleyjohnson $
+// $Id: r_defs.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -163,6 +163,7 @@ typedef byte    lighttable_t;  // light map table
 //#define NUM_RGBA_LEVELS  32
 //#define LIGHT_TO_RGBA_SHIFT  3
 
+
 // SoM: ExtraColormap type. Use for extra_colormaps from now on.
 typedef struct
 {
@@ -248,13 +249,13 @@ typedef struct ffloor_s
   // references to model sector, to pass through changes immediately
   fixed_t          *topheight;  // model sector ceiling
   short            *toppic;
-  short            *toplightlevel;
+  lightlev_t       *toplightlevel;
   fixed_t          *topxoffs;
   fixed_t          *topyoffs;
 
   fixed_t          *bottomheight;  // model sector floor
   short            *bottompic;
-  //short            *bottomlightlevel;
+  //lightlev_t     *bottomlightlevel;
   fixed_t          *bottomxoffs;
   fixed_t          *bottomyoffs;
 
@@ -279,13 +280,14 @@ typedef struct ffloor_s
 // SoM: This struct holds information for shadows casted by 3D floors.
 // This information is contained inside the sector_t and is used as the base
 // information for casted shadows.
+// The item for a fake-floor light list.
 typedef struct lightlist_s {
   fixed_t                 height;
-  int                     flags;
-  short *                 lightlevel;
+  uint32_t                flags;
+  lightlev_t *            lightlevel;
   extracolormap_t*        extra_colormap;
   ffloor_t*               caster;
-} ff_lightlist_t;
+} ff_light_t;
 
 
 // SoM: This struct is used for rendering walls with shadows casted on them...
@@ -294,11 +296,11 @@ typedef struct r_lightlist_s {
   fixed_t                 heightstep;
   fixed_t                 botheight;
   fixed_t                 botheightstep;
-  short                   lightlevel;
-  short                   vlight;  // visible light 0..255
+  lightlev_t              lightlevel;
+  lightlev_t              vlight;  // visible light 0..255
   extracolormap_t*        extra_colormap;
   lighttable_t*           rcolormap;
-  int                     flags;
+  uint32_t                flags;
 } r_lightlist_t;
 
 
@@ -345,7 +347,7 @@ typedef struct sector_s
     fixed_t     ceilingheight;
     short       floorpic;
     short       ceilingpic;
-    short       lightlevel;
+    lightlev_t  lightlevel;
     short       special;	 // special type code (highly encoded with fields)
     short       oldspecial;      //SoM: 3/6/2000: Remember if a sector was secret (for automap)
     short       tag;
@@ -421,7 +423,7 @@ typedef struct sector_s
                                     // realloc in P_AddFakeFloor
                                     // [WDJ] 7/2010 deallocate in P_SetupLevel
     int                 numattached;
-    ff_lightlist_t *    lightlist;  // fake floor lights
+    ff_light_t *        lightlist;  // array of fake floor lights
                                     // ZMalloc PU_LEVEL, in R_Prep3DFloors
     int                 numlights;
     boolean             moved;  // floor was moved

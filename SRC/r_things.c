@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
+// $Id: r_things.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1006,7 +1006,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
   int		sz_cut;		// where lightheight cuts on screen
   fixed_t	lightheight;
   sector_t*     sector;
-  ff_lightlist_t* ff_light;
+  ff_light_t*   ff_light; // lightlist item
   vissprite_t*  newsprite;
 
   sector = sprite->sector;
@@ -1056,7 +1056,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
     newsprite->cut |= SC_TOP;
     if(!(ff_light->caster->flags & FF_NOSHADE))
     {
-      int vlight = *ff_light->lightlevel  // visible light 0..255
+      lightlev_t  vlight = *ff_light->lightlevel  // visible light 0..255
           + ((ff_light->caster->flags & FF_FOG)? extralight_fog : extralight);
 
       spritelights =
@@ -1124,10 +1124,10 @@ static void R_ProjectSprite (mobj_t* thing)
     unsigned            rot;
     boolean             flip;
 
-    int                 index;
     byte                dist_pri;  // distance priority
 
     vissprite_t*        vis;
+    ff_light_t *        ff_light = NULL;  // lightlist light
 
     angle_t             ang;
     fixed_t             iscale;
@@ -1136,7 +1136,6 @@ static void R_ProjectSprite (mobj_t* thing)
     fixed_t             gz_top;
     int                 thingmodelsec;
     boolean	        thing_has_model;  // has a model, such as water
-    int                 light = 0;
 
 
     // transform the origin point
@@ -1253,11 +1252,10 @@ static void R_ProjectSprite (mobj_t* thing)
     thingsector = thing->subsector->sector;	 // [WDJ] 11/14/2009
     if(thingsector->numlights)
     {
-      int vlight;
-      light = R_GetPlaneLight(thingsector, gz_top);
-      vlight = *thingsector->lightlist[light].lightlevel;
-      if(!( thingsector->lightlist[light].caster
-            && (thingsector->lightlist[light].caster->flags & FF_FOG) ))
+      lightlev_t  vlight;
+      ff_light = R_GetPlaneLight(thingsector, gz_top);
+      vlight = *ff_light->lightlevel;
+      if(!( ff_light->caster && (ff_light->caster->flags & FF_FOG) ))
         vlight += extralight;
 
       spritelights =
@@ -1346,8 +1344,8 @@ static void R_ProjectSprite (mobj_t* thing)
     vis->sz_top = (centeryfrac - FixedMul(vis->gz_top - viewz, yscale)) >> FRACBITS;
     vis->sz_bot = (centeryfrac - FixedMul(vis->gz_bot - viewz, yscale)) >> FRACBITS;
     vis->cut = SC_NONE;	// none, false
-    vis->extra_colormap = (thingsector->numlights) ?
-        thingsector->lightlist[light].extra_colormap
+    vis->extra_colormap = (ff_light)?
+        ff_light->extra_colormap
         : thingsector->extra_colormap;
 
     iscale = FixedDiv (FRACUNIT, xscale);
@@ -1419,7 +1417,7 @@ static void R_ProjectSprite (mobj_t* thing)
         {
 
             // diminished light
-            index = xscale>>(LIGHTSCALESHIFT-detailshift);
+            int index = xscale>>(LIGHTSCALESHIFT-detailshift);
 
             if (index >= MAXLIGHTSCALE)
                 index = MAXLIGHTSCALE-1;
@@ -1460,7 +1458,7 @@ void R_AddSprites (sector_t* sec, int lightlevel)
     {
       if(sec->model < SM_fluid)   lightlevel = sec->lightlevel;
 
-      int vlight = lightlevel + extralight;
+      lightlev_t  vlight = lightlevel + extralight;
 
       spritelights =
           (vlight < 0) ? scalelight[0]
@@ -1660,10 +1658,11 @@ void R_DrawPSprite (pspdef_t* psp)
 
     if(viewer_sector->numlights)
     {
-      int vlight;  // 0..255
-      int light = R_GetPlaneLight(viewer_sector, viewmobj->z + (41 << FRACBITS));
-      vis->extra_colormap = viewer_sector->lightlist[light].extra_colormap;
-      vlight = *viewer_sector->lightlist[light].lightlevel + extralight;
+      lightlev_t  vlight;  // 0..255
+      ff_light_t * ff_light =
+	R_GetPlaneLight(viewer_sector, viewmobj->z + (41 << FRACBITS));
+      vis->extra_colormap = ff_light->extra_colormap;
+      vlight = *ff_light->lightlevel + extralight;
 
       spritelights =
           (vlight < 0) ? scalelight[0]
@@ -1687,8 +1686,7 @@ void R_DrawPSprite (pspdef_t* psp)
 void R_DrawPlayerSprites (void)
 {
     int         i = 0;
-    int         light = 0;
-    int         vlight;  // visible light 0..255
+    lightlev_t  vlight;  // visible light 0..255
     pspdef_t*   psp;
 
     int kikhak;
@@ -1701,8 +1699,9 @@ void R_DrawPlayerSprites (void)
     // get light level
     if(viewer_sector->numlights)
     {
-      light = R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
-      vlight = *viewer_sector->lightlist[light].lightlevel + extralight;
+      ff_light_t * ff_light =
+	R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
+      vlight = *ff_light->lightlevel + extralight;
     }
     else
       vlight = viewer_sector->lightlevel + extralight;

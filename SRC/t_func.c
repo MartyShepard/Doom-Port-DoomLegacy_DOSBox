@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1265 2016-09-20 17:24:23Z wesleyjohnson $
+// $Id: t_func.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -3227,7 +3227,7 @@ void SF_LightLevel(void)
     if (t_argc > 1)     // > 1: set
     {
         // set all sectors with tag
-        int arg_light = intvalue(t_argv[1]);
+        lightlev_t arg_light = intvalue(t_argv[1]);
         secnum = -1;  // init search
         while ((secnum = P_FindSectorFromTag(tagnum, secnum)) >= 0)
         {

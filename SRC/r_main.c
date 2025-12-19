@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1297 2017-02-13 18:50:29Z wesleyjohnson $
+// $Id: r_main.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -229,9 +229,9 @@ int                     num_extra_colormaps;
 extracolormap_t         extra_colormaps[MAXCOLORMAPS];
 
 // bumped light from gun blasts
-unsigned int    extralight;	 // extralight seen by most draws
-unsigned int    extralight_fog;  // partial extralight used by FF_FOG
-unsigned int    extralight_cm;   // partial extralight used by colormap->fog
+lightlev_t  extralight;	     // extralight seen by most draws
+lightlev_t  extralight_fog;  // partial extralight used by FF_FOG
+lightlev_t  extralight_cm;   // partial extralight used by colormap->fog
 
 consvar_t cv_chasecam       = {"chasecam","0",0,CV_OnOff};
 consvar_t cv_allowmlook     = {"allowmlook","1",CV_NETVAR,CV_YesNo};
@@ -1540,7 +1540,7 @@ void R_RenderPlayerView (player_t* player)
     if( view_fogfloor
         && ( view_fogfloor->flags & FF_FOGFACE  ) )
     {
-        int fog_extralight = (player->extralight * view_fogfloor->alpha) >> 7;
+        lightlev_t fog_extralight = (player->extralight * view_fogfloor->alpha) >> 7;
         R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 0 );  // random scale
         if( extralight )
            R_RenderFog( view_fogfloor, viewer_sector, fog_extralight, 32*FRACUNIT );

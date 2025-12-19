@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1236 2016-05-24 17:35:36Z wesleyjohnson $
+// $Id: r_plane.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -789,8 +789,8 @@ void R_DrawSinglePlane(visplane_t* pl)
   int  x;
   int  stop;
   int  angf;
-  int  addlight = (pl->extra_colormap && pl->extra_colormap->fog) ? extralight_cm : extralight;
-  int  vlight = pl->lightlevel;  // visible light 0..255
+  lightlev_t  addlight = (pl->extra_colormap && pl->extra_colormap->fog) ? extralight_cm : extralight;
+  lightlev_t  vlight = pl->lightlevel;  // visible light 0..255
 
   if (pl->minx > pl->maxx)
     return;

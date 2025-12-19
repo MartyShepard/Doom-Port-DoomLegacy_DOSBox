@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: r_bsp.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -363,9 +363,9 @@ int R_DoorClosed(void)
 //  back : When used for backsector
 // Called by R_Subsector, R_AddLine, R_RenderThickSideRange.
 // Called by HWR_Subsector, HWR_AddLine.
-sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec,
-                     int *floorlightlevel, int *ceilinglightlevel,
-                     boolean back)
+sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
+             /*OUT*/ lightlev_t *floorlightlevel,
+		     lightlev_t *ceilinglightlevel )
 {
   int  colormapnum = -1; //SoM: 4/4/2000
   int  floorlightsubst, ceilinglightsubst; // light from another sector
@@ -645,7 +645,7 @@ void R_AddLine (seg_t*  lineseg)
     if (!backsector)
         goto clipsolid;
 
-    backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
+    backsector = R_FakeFlat(backsector, &tempsec, true, /*OUT*/ NULL, NULL );
 
     // Closed door.
     if (backsector->ceilingheight <= frontsector->floorheight
@@ -836,11 +836,11 @@ void R_Subsector (int num)
     seg_t*              lineseg;
     subsector_t*        sub;
     static sector_t     tempsec; //SoM: 3/17/2000: Deep water hack
-    int                 floorlightlevel;
-    int                 ceilinglightlevel;
+    lightlev_t          floorlightlevel;
+    lightlev_t          ceilinglightlevel;
     extracolormap_t*    floorcolormap;
     extracolormap_t*    ceilingcolormap;
-    int                 light;
+    ff_light_t *        ff_light;  // lightlist index
 
 #ifdef RANGECHECK
     if (num>=numsubsectors)
@@ -860,8 +860,8 @@ void R_Subsector (int num)
     lineseg = &segs[sub->firstline];
 
     //SoM: 3/17/2000: Deep water/fake ceiling effect.
-    frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
-                             &ceilinglightlevel, false);
+    frontsector = R_FakeFlat(frontsector, &tempsec, false,
+			     /*OUT*/ &floorlightlevel, &ceilinglightlevel );
 
     floorcolormap = ceilingcolormap = frontsector->extra_colormap;
 
@@ -878,14 +878,15 @@ void R_Subsector (int num)
         sub->sector->moved = frontsector->moved = false;  // clear until next move
       }
 
-      light = R_GetPlaneLight(frontsector, frontsector->floorheight);
+      ff_light = R_GetPlaneLight(frontsector, frontsector->floorheight);
       if(frontsector->floorlightsec == -1)
-        floorlightlevel = *frontsector->lightlist[light].lightlevel;
-      floorcolormap = frontsector->lightlist[light].extra_colormap;
-      light = R_GetPlaneLight(frontsector, frontsector->ceilingheight);
+        floorlightlevel = *ff_light->lightlevel;
+      floorcolormap = ff_light->extra_colormap;
+
+      ff_light = R_GetPlaneLight(frontsector, frontsector->ceilingheight);
       if(frontsector->ceilinglightsec == -1)
-        ceilinglightlevel = *frontsector->lightlist[light].lightlevel;
-      ceilingcolormap = frontsector->lightlist[light].extra_colormap;
+        ceilinglightlevel = *ff_light->lightlevel;
+      ceilingcolormap = ff_light->extra_colormap;
     }
 
     sub->sector->extra_colormap = frontsector->extra_colormap;
@@ -948,14 +949,15 @@ void R_Subsector (int num)
 //DEBUG	 && ((viewz <= *fff->bottomheight && (fff->flags & FF_OUTER_PLANES))
 //DEBUG	     || (viewz >= *fff->bottomheight && (fff->flags & FF_INNER_PLANES))))
         {
-          light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
-          ffplane[numffplane].plane = R_FindPlane(*fff->bottomheight,
-                                  *fff->bottompic,
-                                  *frontsector->lightlist[light].lightlevel,
-                                  *fff->bottomxoffs,
-                                  *fff->bottomyoffs,
-                                  frontsector->lightlist[light].extra_colormap,
-                                  fff);
+          ff_light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
+          ffplane[numffplane].plane =
+	    R_FindPlane(*fff->bottomheight,
+                        *fff->bottompic,
+                        *ff_light->lightlevel,
+                        *fff->bottomxoffs,
+                        *fff->bottomyoffs,
+                        ff_light->extra_colormap,
+                        fff);
 
           ffplane[numffplane].height = *fff->bottomheight;
           ffplane[numffplane].ffloor = fff;
@@ -971,19 +973,21 @@ void R_Subsector (int num)
 //DEBUG	 && ((viewz >= *fff->topheight && (fff->flags & FF_OUTER_PLANES))
 //DEBUG         (viewz <= *fff->topheight && (fff->flags & FF_INNER_PLANES))))
         {
-              light = R_GetPlaneLight_viewz(frontsector, *fff->topheight);
-              ffplane[numffplane].plane = R_FindPlane(*fff->topheight,
-                                                     *fff->toppic,
-                                                     *frontsector->lightlist[light].lightlevel,
-                                                     *fff->topxoffs,
-                                                     *fff->topyoffs,
-                                                     frontsector->lightlist[light].extra_colormap,
-                                                     fff);
-              ffplane[numffplane].height = *fff->topheight;
-              ffplane[numffplane].ffloor = fff;
-              numffplane++;
-              if(numffplane >= MAXFFLOORS)
-                break;
+          ff_light = R_GetPlaneLight_viewz(frontsector, *fff->topheight);
+          ffplane[numffplane].plane =
+	    R_FindPlane(*fff->topheight,
+                        *fff->toppic,
+                        *ff_light->lightlevel,
+                        *fff->topxoffs,
+                        *fff->topyoffs,
+                        ff_light->extra_colormap,
+                        fff);
+
+          ffplane[numffplane].height = *fff->topheight;
+          ffplane[numffplane].ffloor = fff;
+          numffplane++;
+          if(numffplane >= MAXFFLOORS)
+            break;
         }
       }
     }
@@ -1036,17 +1040,14 @@ void R_Prep3DFloors(sector_t*  sector)
 
   if(count != sector->numlights)
   {
+    // Allocate the fake-floor light list.
     if(sector->lightlist)
       Z_Free(sector->lightlist);
-    sector->lightlist = Z_Malloc(sizeof(ff_lightlist_t) * count, PU_LEVEL, 0);
+    sector->lightlist = Z_Malloc(sizeof(ff_light_t) * count, PU_LEVEL, 0);
     sector->numlights = count;
-    memset(sector->lightlist, 0, sizeof(ff_lightlist_t) * count);
   }
-  else
-  {
-    // clear existing lightlist 
-    memset(sector->lightlist, 0, sizeof(ff_lightlist_t) * count);
-  }
+  // clear lightlist 
+  memset(sector->lightlist, 0, sizeof(ff_light_t) * count);
 
   // init [0] to sector light
   sector->lightlist[0].height = sector->ceilingheight + 1;
@@ -1143,48 +1144,54 @@ void R_Prep3DFloors(sector_t*  sector)
 
 
 // Find light under planeheight, plain version
-int   R_GetPlaneLight(sector_t* sector, fixed_t planeheight)
+// Return a fake-floor light.
+ff_light_t *  R_GetPlaneLight(sector_t* sector, fixed_t planeheight)
 {
-  int   i;
+  ff_light_t * light1 = & sector->lightlist[1];  // first fake-floor
 
-  for(i = 1; i < sector->numlights; i++)
-    if(sector->lightlist[i].height <= planeheight)
-      return i - 1;
+  // [0] is sector light, which is above all
+  // lightlist is highest first
+  for( ; light1 < & sector->lightlist[sector->numlights]; light1++)
+  {
+    if( light1->height <= planeheight)  break;
+  }
 
-  return sector->numlights - 1;
+  return light1 - 1;  // return previous light
 }
 
 
 // Find light under planeheight, slight difference according to viewz
-int   R_GetPlaneLight_viewz(sector_t* sector, fixed_t  planeheight)
+// Return a fake-floor light.
+ff_light_t *  R_GetPlaneLight_viewz(sector_t* sector, fixed_t  planeheight)
 {
-  int   i;
+  ff_light_t * light1 = & sector->lightlist[1];  // first fake-floor
+  ff_light_t * lightend = & sector->lightlist[sector->numlights];  // past last
 
 #if 0
   // faster
   if( viewz < planeheight )
   {
-      for(i = 1; i < sector->numlights; i++)
-        if(sector->lightlist[i].height < planeheight)   goto found;
+      for( ; light1 < lightend; light1++)
+        if(light1.height < planeheight)   goto found;
   }
   else
   {
-      for(i = 1; i < sector->numlights; i++)
-        if(sector->lightlist[i].height <= planeheight)  goto found;
+      for( ; light1 < lightend; light1++)
+        if(light1.height <= planeheight)   goto found;
   }
 #else
   // smaller
   if( viewz >= planeheight )
      return R_GetPlaneLight( sector, planeheight );
    
-  for(i = 1; i < sector->numlights; i++)
-        if(sector->lightlist[i].height < planeheight)   goto found;
+  for( ; light1 < lightend; light1++)
+        if(light1->height < planeheight)   goto found;
 #endif
   // not found
-  return sector->numlights - 1;
+  return light1 - 1;  // last light in list
 
 found:     
-  return i - 1;
+  return light1 - 1;  // previous light
 }
 
 

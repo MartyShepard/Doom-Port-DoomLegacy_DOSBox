@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01304 ]: w107 lightlev
+[01303*]: w106 whatsnew
+[01302*]: Small changes to the release script, dates updated in docs.
 [01301 ]: w106 version 1.46.3 and docs
 [01300 ]: w106 autoexec
 [01299 ]: w106 command line connect

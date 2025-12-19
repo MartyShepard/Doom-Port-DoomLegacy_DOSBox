@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: d_player.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -44,6 +44,8 @@
 
 #ifndef D_PLAYER_H
 #define D_PLAYER_H
+
+#include "doomtype.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -194,7 +196,7 @@ typedef struct player_s
     int                 specialsector;      //lava/slime/water...
 
     // So gun flashes light up areas.
-    int                 extralight;
+    lightlev_t          extralight;
 
     // Normally 0, which allows normal colormap.
     // pain=>REDCOLORMAP, invulnerability=>INVERSECOLORMAP, goggles=>1

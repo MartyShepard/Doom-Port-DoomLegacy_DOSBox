@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_spec.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -133,7 +133,7 @@ int P_FindLineFromTag(int tag, int start);
 
 int  P_FindLineFromLineTag(const line_t *line, int start); //SoM: 3/16/2000
 
-int  P_FindMinSurroundingLight ( sector_t* sector, int max );
+lightlev_t  P_FindMinSurroundingLight ( sector_t* sector, lightlev_t max );
 
 sector_t*  getNextSector ( line_t* line, sector_t* sec );
 
@@ -155,6 +155,7 @@ int  P_CheckTag(line_t *line);
 int EV_DoDonut(line_t* line);
 
 
+#ifdef SAVE_VERSION_144
 
 // [smite] NOTE: For the code in p_saveg.c to work, all the sector effects
 // must have a thinker and a sector_t* as their first data fields.
@@ -171,7 +172,7 @@ typedef struct
     int         count;  
     int         minlight, maxlight;
 
-} fireflicker_t;
+} fireflicker_144_t;
 
 
 
@@ -186,7 +187,7 @@ typedef struct
     int         maxtime;
     int         mintime;
 
-} lightflash_t;
+} lightflash_144_t;
 
 
 
@@ -201,7 +202,7 @@ typedef struct
     int         darktime;
     int         brighttime;
 
-} strobe_t;
+} strobe_144_t;
 
 
 
@@ -228,7 +229,85 @@ typedef struct
   int destlevel;
   int speed;
 
-} lightlevel_t;
+} lightfader_144_t;
+
+#endif
+
+
+// [smite] NOTE: For the code in p_saveg.c to work, all the sector effects
+// must have a thinker and a sector_t* as their first data fields.
+
+//
+// P_LIGHTS
+//
+typedef struct
+{
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;	  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
+    lightlev_t  minlight, maxlight;
+    int32_t     count;  
+
+} fireflicker_t;
+
+
+
+typedef struct
+{
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
+    lightlev_t  minlight, maxlight;
+    int32_t     mintime, maxtime;
+    int32_t     count;
+
+} lightflash_t;
+
+
+
+typedef struct
+{
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (count ... )
+    lightlev_t  minlight, maxlight;
+    int32_t     darktime;
+    int32_t     brighttime;
+    int32_t     count;
+
+} strobe_t;
+
+
+
+
+typedef struct
+{
+    thinker_t   thinker;  // must be first for ptr conversion
+    sector_t*   sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (minlight ... )
+    lightlev_t  minlight, maxlight;
+    int8_t      direction;    // 1 = up, -1 = down
+
+} glow_t;
+
+//SoM: thinker struct for fading lights. ToDo: Add effects for light
+// transition
+typedef struct
+{
+  thinker_t thinker;  // must be first for ptr conversion
+  sector_t *sector;  // saved
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (destlevel ... )
+  lightlev_t  destlight;
+  lightlev_t  speed;
+
+} lightfader_t;
+
+
 
 #define GLOWSPEED               8
 #define STROBEBRIGHT            5
@@ -252,8 +331,8 @@ void   T_Glow(glow_t* g);
 void   P_SpawnGlowingLight(sector_t* sector);
 
 
-void   P_FadeLight(int tag, int destvalue, int speed);
-void   T_LightFade(lightlevel_t *ll);
+void   P_FadeLight(int tag, lightlev_t destvalue, lightlev_t speed);
+void   T_LightFade(lightfader_t * lf);
 
 
 

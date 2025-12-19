@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1279 2016-11-29 18:53:52Z wesleyjohnson $
+// $Id: p_saveg.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1612,7 +1612,7 @@ enum
 // T_LightFlash, (lightflash_t: sector_t * swizzle),
 // T_StrobeFlash, (strobe_t: sector_t *),
 // T_Glow, (glow_t: sector_t *),
-// T_LightFade, (lightlevel_t: sector_t *),
+// T_LightFade, (lightfader_t: sector_t *),
 // T_PlatRaise, (plat_t: sector_t *), - active list
 // BP: added missing : T_FireFlicker
 //
@@ -1948,14 +1948,14 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_flash);
             lightflash_t *flash = (lightflash_t *)th;
-            WRITE_SECTOR_THINKER( flash, lightflash_t, count );
+            WRITE_SECTOR_THINKER( flash, lightflash_t, minlight );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_StrobeFlash)
         {
             WRITEBYTE(save_p, tc_strobe);
             strobe_t *strobe = (strobe_t *)th;
-            WRITE_SECTOR_THINKER( strobe, strobe_t, count );
+            WRITE_SECTOR_THINKER( strobe, strobe_t, minlight );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_Glow)
@@ -1971,14 +1971,14 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_fireflicker);
             fireflicker_t *fireflicker = (fireflicker_t *)th;
-            WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, count );
+            WRITE_SECTOR_THINKER( fireflicker, fireflicker_t, minlight );
             continue;
         }
         else if (th->function.acp1 == (actionf_p1) T_LightFade)
         {
             WRITEBYTE(save_p, tc_lightfade);
-            lightlevel_t *fade = (lightlevel_t *)th;
-            WRITE_SECTOR_THINKER( fade, lightlevel_t, destlevel );
+            lightfader_t *fade = (lightfader_t *)th;
+            WRITE_SECTOR_THINKER( fade, lightfader_t, destlight );
             continue;
         }
         else
@@ -2311,7 +2311,21 @@ void P_UnArchiveThinkers(void)
             case tc_flash:
               {
                 lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
-                READ_SECTOR_THINKER( flash, lightflash_t, count );
+#ifdef SAVE_VERSION_144
+                if( save_version < 147 )
+                {
+                  lightflash_144_t  lf;
+                  READ_SECTOR_THINKER( &lf, lightflash_t, count );
+                  flash->minlight = lf.minlight;
+                  flash->maxlight = lf.maxlight;
+                  flash->mintime = lf.mintime;
+                  flash->maxtime = lf.maxtime;
+                }
+                else		 
+#endif
+                {
+                READ_SECTOR_THINKER( flash, lightflash_t, minlight );
+                }
                 flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
               }
               break;
@@ -2319,7 +2333,22 @@ void P_UnArchiveThinkers(void)
             case tc_strobe:
               {
                 strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
-                READ_SECTOR_THINKER( strobe, strobe_t, count );
+#ifdef SAVE_VERSION_144
+                if( save_version < 147 )
+                {
+                  strobe_144_t  st;
+                  READ_SECTOR_THINKER( &st, strobe_144_t, count );
+                  strobe->minlight = st.minlight;
+                  strobe->maxlight = st.maxlight;
+                  strobe->darktime = st.darktime;
+                  strobe->brighttime = st.brighttime;
+                  strobe->count = st.count;
+                }
+                else		 
+#endif
+		{
+                READ_SECTOR_THINKER( strobe, strobe_t, minlight );
+                }
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
               }
               break;
@@ -2327,7 +2356,20 @@ void P_UnArchiveThinkers(void)
             case tc_glow:
               {
                 glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
+#ifdef SAVE_VERSION_144
+                if( save_version < 147 )
+                {
+                  glow_144_t  gl;
+                  READ_SECTOR_THINKER( &gl, glow_144_t, minlight );
+                  glow->minlight = gl.minlight;
+                  glow->maxlight = gl.maxlight;
+                  glow->direction = gl.direction;
+                }
+                else		 
+#endif
+		{
                 READ_SECTOR_THINKER( glow, glow_t, minlight );
+                }
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
               }
               break;
@@ -2335,15 +2377,40 @@ void P_UnArchiveThinkers(void)
             case tc_fireflicker:
               {
                 fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
-                READ_SECTOR_THINKER( fireflicker, fireflicker_t, count );
+#ifdef SAVE_VERSION_144
+                if( save_version < 147 )
+                {
+                  fireflicker_144_t  ff;
+                  READ_SECTOR_THINKER( &ff, fireflicker_144_t, count );
+                  fireflicker->minlight = ff.minlight;
+                  fireflicker->maxlight = ff.maxlight;
+                  fireflicker->count = ff.count;
+                }
+                else		 
+#endif
+		{
+                READ_SECTOR_THINKER( fireflicker, fireflicker_t, minlight );
+                }
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
               }
               break;
 
             case tc_lightfade:
               {
-                lightlevel_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
-                READ_SECTOR_THINKER( fade, lightlevel_t, destlevel );
+                lightfader_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
+#ifdef SAVE_VERSION_144
+                if( save_version < 147 )
+                {
+                  lightfader_144_t  lf;
+                  READ_SECTOR_THINKER( &lf, lightfader_144_t, destlevel );
+                  fade->destlight = gl.destlevel;
+                  fade->speed = gl.speed;
+                }
+                else		 
+#endif
+		{
+                READ_SECTOR_THINKER( fade, lightfader_t, destlight );
+                }
                 fade->thinker.function.acp1 = (actionf_p1) T_LightFade;
               }
               break;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: doomtype.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -257,5 +257,8 @@ typedef union {
 #define UINT2RGBA(a) (((a)&0xff)<<24)|(((a)&0xff00)<<8)|(((a)&0xff0000)>>8)|((((uint32_t)(a))&0xff000000)>>24)
 #define RGBA( r, g, b, a )  ((r)|((g)<<8)|((b)<<16)|((a)<<24))
 #endif
+
+// Lights values 0..255, but signed to detect underflow.
+typedef int16_t   lightlev_t;
 
 #endif  //__DOOMTYPE__

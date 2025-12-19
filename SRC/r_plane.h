@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1221 2016-04-07 17:21:49Z wesleyjohnson $
+// $Id: r_plane.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -74,8 +74,8 @@ typedef struct visplane_s
   fixed_t               height;
   fixed_t               viewz;
   angle_t               viewangle;
+  lightlev_t            lightlevel;
   int                   picnum;
-  int                   lightlevel;
   int                   minx, maxx;
 
   //SoM: 4/3/2000: Colormaps per sector!

@@ -5759,3 +5759,16 @@ patchfile = w106_18_version1463_1301_docs.patch
 - commit revision 1301
 Update the docs for Release 1.46.3.
 Update the version to 1.46.3.
+
+*** W106_whatsnew
+patchfile = w106_19_whatsnew.patch
+- commit revision 1303
+Update a missing bug fix in the whatsnew docs.
+
+*** W107_lightlev
+patchfile = w107_1_lightlev.patch
+- commit revision 1304
+Create a consistent light level type.
+Use the light level type consistently in all the code.
+Adjust and fix other type problems in the light level code.
+This will help to avoid sign-extension errors.

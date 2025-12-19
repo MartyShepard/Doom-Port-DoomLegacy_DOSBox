@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: r_segs.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -583,14 +583,14 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
 void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 {
     column_t*       col;
-    int             vlight;  // visible light 0..255
-    int             orient_light = 0;  // wall orientation effect
+    lightlev_t      vlight;  // visible light 0..255
+    lightlev_t      orient_light = 0;  // wall orientation effect
     int             texnum;
     int             i;
     fixed_t	    windowclip_top, windowclip_bottom;
     fixed_t         lightheight;
     fixed_t         realbot;
-    ff_lightlist_t  *ff_light;
+    ff_light_t      *ff_light;  // lightlist item
     r_lightlist_t   *rlight;  // rover dc_lightlist
 
     void (*colfunc_2s) (column_t*);
@@ -927,17 +927,16 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 {
     column_t*       col;
-    int             vlight;  // visible light 0..255
-    int             orient_light = 0;  // wall orientation effect
+    lightlev_t      vlight;  // visible light 0..255
+    lightlev_t      orient_light = 0;  // wall orientation effect
     int             texnum;
     sector_t        tempsec;
-    int             templight;
     int             base_fog_alpha;
     int             i, cnt;
     fixed_t         bottombounds = rdraw_viewheight << FRACBITS;
     fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
     fixed_t         offsetvalue = 0;
-    ff_lightlist_t  *ff_light;
+    ff_light_t      *ff_light; // light list item
     r_lightlist_t   *rlight; // rover dc_lightlist
     fixed_t         lheight;
 
@@ -1057,10 +1056,9 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         vlight = 255 + orient_light;
       else
       {
-	sector_t * lightsec = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false);
+	sector_t * lightsec = R_FakeFlat(frontsector, &tempsec, false,
+                                         /*OUT*/ NULL, NULL );
 	vlight = lightsec->lightlevel + extralight + orient_light;
-//        vlight = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
-//                    ->lightlevel + extralight;
       }
 
       walllights =
@@ -1348,7 +1346,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 
 
 // [WDJ] Render a fog sheet, generated from midtexture, with alpha
-void R_RenderFog( ffloor_t* fff, sector_t * intosec, int foglight,
+void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
 		  fixed_t scale )
 {
     line_t * fogline = fff->master;
@@ -1456,7 +1454,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, int foglight,
     }
     else
     {
-        int vlight = modelsec->lightlevel + foglight;
+        lightlev_t vlight = modelsec->lightlevel + foglight;
         xwalllights =
 	    (vlight < 0) ? scalelight[0]
 	  : (vlight >= 255) ? scalelight[LIGHTLEVELS-1]
@@ -1690,7 +1688,7 @@ void R_RenderSegLoop (void)
 
         if(dc_numlights)
         {
-          int vlight;
+          lightlev_t  vlight;
           r_lightlist_t * rlight;
 
           for(i = 0; i < dc_numlights; i++)
@@ -1960,10 +1958,10 @@ void R_StoreWallRange( int   start, int   stop)
     fixed_t             sineval;
     angle_t             distangle, offsetangle;
     fixed_t             vtop;
-    int                 vlight;  // visible light 0..255
-    int                 orient_light = 0;  // wall orientation effect
+    lightlev_t          vlight;  // visible light 0..255
+    lightlev_t          orient_light = 0;  // wall orientation effect
     int                 i, cnt;
-    ff_lightlist_t      *ff_light;
+    ff_light_t          *ff_light;  // light list item
     r_lightlist_t       *rlight;
     ffloor_t 		* bff, * fff;  // backsector fake floor, frontsector fake floor
 //    fixed_t             lheight;  // unused
