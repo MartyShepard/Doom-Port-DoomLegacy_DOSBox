@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: Vid_vesa.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -404,7 +404,9 @@ int VID_SetMode (modenum_t modenum)
     oldmode_p = currentmode_p;
     currentmode_p = newmode_p;
 
-    // initialize vidbuffer size for setmode
+    vid.draw_ready = 0;  // disable print reaching console
+
+    // initialize vidbuffer size for setmode_func
     vid.width  = currentmode_p->width;
     vid.height = currentmode_p->height;
     vid.bytepp = currentmode_p->bytesperpixel;

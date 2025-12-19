@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: console.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1200,7 +1200,7 @@ void GenPrintf_va (const byte emsg, const char *fmt, va_list ap)
        goto done;  // disable debug messages
 #endif
 
-    if( eout & EOUT_text )
+    if( (eout & EOUT_text) || (! vid.draw_ready) )
     {
         // Errors to terminal, and before graphics
         I_OutputMsg ("%s",txt);
@@ -1256,7 +1256,8 @@ void GenPrintf_va (const byte emsg, const char *fmt, va_list ap)
     // if not in display loop, force screen update
     if ( con_self_refresh || (emsg & EMSG_now) )
     {
-        if( graphics_state < VGS_active )   goto done;
+        // Protect against segfaults during video mode switch.
+        if( ! vid.draw_ready )   goto done;
         // Have graphics, but do not have refresh loop running.
 #if defined(SMIF_WIN_NATIVE) || defined(SMIF_OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
@@ -1273,7 +1274,8 @@ void GenPrintf_va (const byte emsg, const char *fmt, va_list ap)
     }
     else if ( ! con_video )
     {
-        if( graphics_state < VGS_active || ! vid.display )   goto done;
+        // Protect against segfaults during video mode switch.
+        if( ! vid.draw_ready )   goto done;
         // Text messages without con_video graphics.
         CON_DrawConsole ();  // Text with or without con_video
         I_FinishUpdate ();
@@ -1534,6 +1536,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 
 // Draw the console background, text, and prompt if enough places.
 // May use font1 or wad fonts.
+// Uses screens[0].
 //
 void CON_DrawConsole (void)
 {
@@ -1547,7 +1550,7 @@ void CON_DrawConsole (void)
         return;
 
     if ( rendermode != render_soft && use_font1 )
-        return;  // opengl graphics without hu_font loaded yet
+        return;  // opengl graphics, hu_font not loaded yet
 
     V_SetupFont( cv_con_fontsize.value, fip, V_NOSCALE );
 

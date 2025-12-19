@@ -998,7 +998,7 @@ Detect missing sidedefs, in P_LoadSubsectors.
 Detect bad sector number, in P_LoadSideDefs2.
 Detect bad seg number, in P_GroupLines.
 
-*** w57_blockmap_overlow_coping
+*** w57_blockmap_overflow_coping
 patchfile = w57_blockmap.patch
 - committed revision 697   by wesley johnson
 Fix blockmap loading to handle large blockmaps.
@@ -3170,6 +3170,7 @@ of guessed mem numbers.
 FreeBSD, remove use of kvm which requires kmem priv, and use sysctl instead.
 Applied FreeBSD patch from Alexey Dokuchaev.
 Fixes bug 0000610.
+Fixes partially bug 0601.
 
 *** w90_legacyhome
 patchfile = w90_5_legacyhome.patch
@@ -4401,6 +4402,9 @@ Implement I_Get_Prog_Dir, for all ports, so can reliably get legacy.wad.
 On some ports this can use special system calls.  The fallback code
 looks at argv[0] and extracts the directory.
 
+Under Win32, will also check the environment variable "UserProfile"
+as a home directory.
+
 *** W103_install_docs
 zipfile = w103_5_install_docs.zip
 - commit revision 1169
@@ -4499,6 +4503,7 @@ DoomLegacy identifies the flat picture to enable splash sounds.
 Boom did not have water splash sounds, and the splash sound
 remains when the flat changes.  When the sector flat picture
 changes, the sector floortype must be copied from the model sector too.
+Fixed bug 0319.
 
 *** W104_untab3
 patchfile = w104_7_untab3.patch
@@ -4709,6 +4714,7 @@ these are used by V_DrawString so it can use unscaled character positioning.
 Cleaned up the console draw code, adjusting the indent to make the
 console text more readable.
 Gave console and hud text proportional font drawing.
+Fixes Bug 0532.
 
 *** W105_ver
 patchfile = w105_1_ver.patch
@@ -5665,6 +5671,25 @@ Make the caller do the Setup to make it consistent for menus.
 Adjust connect menu position to give more room to the boxes.
 
 Fix the menu centering for video modes that pad the video lines.
+
+Fixes bug 629.
+
+*** W106_linux_sound
+patchfile = w106_11_linux_sound.patch
+- commit revision 1294
+Another attempt to fix drone notes in the X11 music server.
+This time it uses the ioctl to reset the sequencer, which reacts much
+faster.  Remove most of previous fixes, which did not work well.
+Mostly, the notes can be turned off, but if the mixer controls are
+touched too soon the drone notes will turn back on.  This requires some
+delays during the midi reset.
+
+The selected device in the sound menu now does not search when a
+specific device is selected.  The Midi, Synth, and Search selections
+will search the devices.  The default device is a preset of the musserver.
+The default selection is SEARCH1.
+For future expansion and to easily allow user modifications,
+have added SEARCH2, SEARCH3, Dev6, Dev7, Dev8, Dev9.
 
 
 

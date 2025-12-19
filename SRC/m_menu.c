@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1288 2016-12-30 17:47:59Z wesleyjohnson $
+// $Id: m_menu.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1043,6 +1043,7 @@ void M_StartServer( int choice )
     {
         dedicated = true;
         nodrawers = true;
+        vid.draw_ready = 0;
         I_ShutdownGraphics();
     }
     D_WaitPlayer_Setup();

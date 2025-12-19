@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1288 2016-12-30 17:47:59Z wesleyjohnson $
+// $Id: screen.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -164,6 +164,7 @@ void SCR_SetMode (void)
     if (setmodeneeded.modetype == MODE_NOP)
         return;                 //should never happen
 
+    // VID_SetMode will clear vid.draw_ready if it has print messages.
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
@@ -176,6 +177,14 @@ void SCR_SetMode (void)
     // video system interface, sets vid.recalc
     VID_SetMode(setmodeneeded);
 #endif
+
+    // The screens must be setup before any error or verbose messages are
+    // printed, or else it will segfault on the bad screen ptr.
+    // Redundant call, for some video drivers,
+    // but for other cases the video drivers have not setup the screens.
+    // Set the screen[x] ptrs on the new vidbuffers.
+    // Sets vid.draw_ready to indicate ready to draw messages.
+    V_Setup_VideoDraw();
 
     // No longer can use display, must fail
     if( rendermode == render_soft && vid.display == NULL )
@@ -318,11 +327,6 @@ void SCR_SetMode (void)
      default:
         goto bpp_err;
     }
-    vid.widthbytes = vid.width * vid.bytepp;  // to save multiplies
-    vid.fx_center = (float) vid.width * 0.5f;   
-    vid.fy_center = 2.0f / (float)vid.width;
-    vid.fx_scale2 = (float) vid.height * 0.5f;   
-    vid.fy_scale2 = 2.0f / (float)vid.height;
 
     V_SetPalette (0);
 
@@ -376,24 +380,14 @@ void SCR_Startup (void)
     if(dedicated)
         return;
 
-    vid.fdupx = (float)vid.width/BASEVIDWIDTH;//1.0;
-    vid.fdupy = (float)vid.height/BASEVIDHEIGHT; //1.0f;
-    vid.dupx = (int)vid.fdupx; //1;
-    vid.dupy = (int)vid.fdupy; //1;
-    vid.fx_center = (float) vid.width * 0.5f;   
-    vid.fx_scale2 = 2.0f / (float)vid.width;
-    vid.fy_center = (float) vid.height * 0.5f;   
-    vid.fy_scale2 = 2.0f / (float)vid.height;
-
-    //vid.baseratio = FRACUNIT; //Hurdler: not used anymore
-
-    vid.centerofs = 0;
+    V_Setup_VideoDraw();
 
 #ifdef USEASM
     ASM_PatchRowBytes(vid.ybytes);
 #endif
 
-    V_Setup_VideoDraw();
+    // Called too early to get Doom palette from wad.
+    V_Setup_Wad_VideoResc();
 
     V_SetPalette (0);
 }
@@ -407,32 +401,13 @@ void SCR_Startup (void)
 // Called from D_Display upon video mode change, after SCR_SetMode.
 void SCR_Recalc (void)
 {
-    if(dedicated || ! vid.recalc)
+    if( ! vid.recalc )
         return;
 
-    //added:18-02-98: scale 1,2,3 times in x and y the patches for the
-    //                menus and overlays... calculated once and for all
-    //                used by routines in v_video.c
-    //if ( rendermode == render_soft )
-    {
-        // leave it be 1 in hardware accelerated modes
-        vid.dupx = vid.width / BASEVIDWIDTH;
-        vid.dupy = vid.height / BASEVIDHEIGHT;
-        vid.fdupx = (float)vid.width / BASEVIDWIDTH;
-        vid.fdupy = (float)vid.height / BASEVIDHEIGHT;
-        //vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS); //Hurdler: not used anymore
-    }
-    vid.fx_center = (float) vid.width * 0.5f;   
-    vid.fx_scale2 = 2.0f / (float)vid.width;
-    vid.fy_center = (float) vid.height * 0.5f;   
-    vid.fy_scale2 = 2.0f / (float)vid.height;
+    if( dedicated )
+        return;
 
-
-    //added:18-02-98: calculate centering offset for the scaled menu
-    // Adds a left margin and top margin for CENTERMENU
-    // Fixed to account for video buffer line padding.
-    vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.ybytes) +
-                    (((vid.width%BASEVIDWIDTH)/2)  * vid.bytepp) ;
+    V_Setup_Wad_VideoResc();
 
     // patch the asm code depending on vid buffer rowbytes
 #ifdef USEASM
@@ -456,9 +431,6 @@ void SCR_Recalc (void)
 
     // r_main : x_to_viewangle, allocated at the maximum size.
     // r_things : negonearray, screenheightarray allocated max. size.
-
-    // set the screen[x] ptrs on the new vidbuffers
-    V_Setup_VideoDraw();
 
     // scr_viewsize doesn't change, neither detailLevel, but the pixels
     // per screenblock is different now, since we've changed resolution.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1288 2016-12-30 17:47:59Z wesleyjohnson $
+// $Id: v_video.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -152,7 +152,7 @@
 //#define ENABLE_CLIP_DRAWSCALED
 
 
-// [WDJ] Interfaces to port video drivers, common to all
+// [WDJ] Interfaces to port video control, common to all
 
 rendermode_e    rendermode=render_soft;
 
@@ -464,7 +464,8 @@ RGBA_t *pLocalPalette = NULL;
 int    num_palette = 0;
 #endif
 
-// keep a copy of the palette so that we can get the RGB
+// Update working palette when palette loaded, or gamma changes.
+// Keep a copy of the palette so that we can get the RGB
 // value for a color index at any time.
 static void LoadPalette(char *lumpname)
 {
@@ -545,9 +546,11 @@ void V_SetPalette(int palettenum)
     else
 #endif
     {
+#ifdef ENABLE_DRAWEXT
         if ( vid.bytepp > 1 )  // highcolor, truecolor
             R_Init_color8_translate(&pLocalPalette[palettenum * 256]);  // palette change
         else
+#endif
             I_SetPalette(&pLocalPalette[palettenum * 256]);
     }
 }
@@ -564,9 +567,11 @@ void V_SetPaletteLump(char *pal)
     else
 #endif
     {
+#ifdef ENABLE_DRAWEXT
         if ( vid.bytepp > 1 )  // highcolor, truecolor
             R_Init_color8_translate(pLocalPalette);  // palette change
         else
+#endif
             I_SetPalette(pLocalPalette);
     }
 }
@@ -617,8 +622,8 @@ void CV_gammafunc_OnChange(void)
 }
 
 
-// [WDJ] Init before calling port video driver
-// Common init to all port video drivers
+// [WDJ] Init before calling port video control.
+// Common init to all port video control.
 // Register video interface controls
 // Called once
 void V_Init_VideoControl( void )
@@ -2737,12 +2742,31 @@ int V_TextBHeight(char *text)
     return 16;
 }
 
+// Setup wad loadable video resources.
+// Also called before wad is read, to supply defaults.
+void V_Setup_Wad_VideoResc(void)
+{
+    LoadPalette("PLAYPAL");
+    FontBBaseLump = W_CheckNumForName("FONTB_S") + 1;
+
+#ifdef ENABLE_DRAWEXT
+    // This is also done, better, by SetPalette
+    //fab highcolor
+    if (( vid.bytepp > 1 ) && pLocalPalette )  // highcolor, truecolor
+    {
+        R_Init_color8_translate( pLocalPalette );  // no palette change
+    }
+#endif
+}
+
+
 // Setup Video and Drawing according to render and vidmode.
 // Software stuff, buffers are allocated at video mode setup
 // here we set the screens[x] pointers accordingly
 // WARNING :
 // - called at runtime (don't init cvar here)
-// Must be called after every video Init and SetMode
+// Must be called after every video Init and SetMode.
+// Some port video control may call this directly, because of print stmts.
 void V_Setup_VideoDraw(void)
 {
     // vid : from video setup
@@ -2750,18 +2774,52 @@ void V_Setup_VideoDraw(void)
 
     // Must init everything needed by DrawPixel, as that gets used for
     // many intro screens, before SCR_SetMode or SCR_Recalc are called.
-    LoadPalette("PLAYPAL");
-    FontBBaseLump = W_CheckNumForName("FONTB_S") + 1;
+
+    // [WDJ] Use vid.draw_ready to indicate that this setup has been done.
+    // Attempts to test other vars such as screen or drawmode is complicated
+    // by the odd usage of those vars in video functions, or OpenGL mode
+    // not using them at all.
+    // Using vid.draw_ready is less likely to get damaged later.
+   
+    // Setup everything needed to draw console, pics, and error messages.
+
+    // scale 1,2,3 times in x and y the patches for the
+    // menus and overlays... calculated once and for all
+    // used by routines in v_video.c
+    // leave it be 1 in hardware accelerated modes
+    vid.dupx = vid.width / BASEVIDWIDTH;
+    vid.dupy = vid.height / BASEVIDHEIGHT;
+    vid.fdupx = (float)vid.width / BASEVIDWIDTH;
+    vid.fdupy = (float)vid.height / BASEVIDHEIGHT;
+    //vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS); //Hurdler: not used anymore
+    vid.fx_center = (float) vid.width * 0.5f;   
+    vid.fx_scale2 = 2.0f / (float)vid.width;
+    vid.fy_center = (float) vid.height * 0.5f;   
+    vid.fy_scale2 = 2.0f / (float)vid.height;
+
+    //added:18-02-98: calculate centering offset for the scaled menu
+    // Adds a left margin and top margin for CENTERMENU
+    // Fixed to account for video buffer line padding.
+    vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.ybytes) +
+                    (((vid.width%BASEVIDWIDTH)/2)  * vid.bytepp) ;
+
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     // hardware modes do not use screens[] pointers
     if (rendermode != render_soft)
     {
+        // Hardware draw only.
         // be sure to cause a NULL read/write error so we detect it, in case of..
         for (i = 0; i < NUMSCREENS; i++)
             screens[i] = NULL;
+
+        vid.drawmode = DRAWGL;
+        if( graphics_state >= VGS_active )
+            vid.draw_ready = 1;
         return;
     }
 #endif
+
+    // Software draw only.
 
     if( vid.display == NULL )
     {
@@ -2775,7 +2833,7 @@ void V_Setup_VideoDraw(void)
     // [2] = wipe start screen, screenshot, (? Horz. draw)
     // [3] = wipe end screen
     screens[0] = vid.display;  // buffer or direct video
-    // buffers allocated by video driver, 0..(NUMSCREENS-1)
+    // buffers allocated by port video control, 0..(NUMSCREENS-1)
     for (i = 1; i < NUMSCREENS; i++)
         screens[i] = vid.screen1 + ((i-1) * vid.screen_size);
 
@@ -2792,7 +2850,7 @@ void V_Setup_VideoDraw(void)
         CONS_Printf(" screens[%d] = %x\n", i, screens[i]);
 #endif
 
-    // port video driver should check CanDraw before setting vid.bitpp
+    // port video control should check CanDraw before setting vid.bitpp
     switch( vid.bitpp )
     {
      case 8:
@@ -2822,13 +2880,8 @@ void V_Setup_VideoDraw(void)
         I_Error ("V_Setup_VideoDraw invalid bits per pixel: %d\n", vid.bitpp);
     }
 
-#ifdef ENABLE_DRAWEXT
-    //fab highcolor
-    if ( vid.bytepp > 1 )  // highcolor, truecolor
-    {
-        R_Init_color8_translate( pLocalPalette );  // no palette change
-    }
-#endif
+    if( screens[0] && (graphics_state >= VGS_active))
+        vid.draw_ready = 1;
     return;
 }
 

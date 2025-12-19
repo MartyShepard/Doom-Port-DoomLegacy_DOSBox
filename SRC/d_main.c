@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1283 2016-12-09 02:23:57Z wesleyjohnson $
+// $Id: d_main.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1290"
+#define SVN_REV "1295"
 #endif
 
 // Version number: major.minor.revision
@@ -1996,6 +1996,7 @@ void D_DoomMain()
     CON_Init();  // vid, zone independent
     EOUT_flags |= EOUT_con;  // all msgs to CON buffer
     use_font1 = 1;  // until PLAYPAL and fonts loaded
+    vid.draw_ready = 0;  // disable print reaching console
 
     //added:18-02-98:keep error messages until the final flush(stderr)
     if (setvbuf(stderr, NULL, _IOFBF, 1000))
@@ -2123,11 +2124,17 @@ void D_DoomMain()
     // may have some command line dependent init, like joystick
     I_SysInit();
 
+    dedicated = M_CheckParm("-dedicated") != 0;
+
     //--- Display Error Messages
     CONS_Printf("StartupGraphics...\n");
     // setup loading screen with dedicated=0 and vid=800,600
     V_Init_VideoControl();  // before I_StartupGraphics
-		
+    if( ! dedicated )
+    {
+        I_StartupGraphics();    // window
+        SCR_Startup();
+    }		
 #if defined( __DJGPP__ )
         // Diese Arguemente (für den Screen) werden für die DOS Version zu spät aufgerufen
         if( M_CheckParm("-highcolor") )
@@ -2153,10 +2160,6 @@ void D_DoomMain()
 	      I_Error( "-bpp invalid\n");
 	}
 #endif		
-
-    I_StartupGraphics();    // window
-    SCR_Startup();
-
     if( verbose > 1 )
         CONS_Printf("Init DEH, cht, menu\n");
     // save Doom, Heretic, Chex strings for DEH
@@ -2650,6 +2653,7 @@ restart_command:
     if( dedicated )
     {
         nodrawers = true;
+        vid.draw_ready = 0;        
         I_ShutdownGraphics();
         EOUT_flags = EOUT_log;
     }
@@ -3111,6 +3115,7 @@ void D_Quit_Save ( quit_severity_e severity )
         quitseq = 20;
         if( severity != QUIT_normal )
             I_Sleep( 3000 );  // to see some messages
+        vid.draw_ready = 0;        
         I_ShutdownGraphics();
     }
     if( quitseq < 22 )

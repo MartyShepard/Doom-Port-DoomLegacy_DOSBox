@@ -1,7 +1,12 @@
 * Not need to Compile.
 
+[01295 ]: w106 video mode change
+[01294*]: w106 linux sound
+[01293*]: Release bash script added.
+[01292*]: Fix macOS specific build options in src/Makefile
+[01291*]: Update macOS SDL main files
 [01290 ]: Disable IPX support on macOS
-[01289 ]: Fix typos
+[01289*]: Fix typos
 [01288 ]: w106 messagebox
 [01287 ]: w106 version 146.2 1287 docs
 [01286*]: w106 x11sound

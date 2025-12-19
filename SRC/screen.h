@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1277 2016-10-15 18:48:59Z wesleyjohnson $
+// $Id: screen.h 1295 2017-02-13 18:45:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -93,7 +93,7 @@ extern int stbar_height;   // status bar, may be scaled
 
 // WDJ 2012-2-6, provide structure to complete the draw capability
 typedef enum {
-  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32
+  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32, DRAWGL
 } drawmode_t;
 
 
@@ -135,6 +135,7 @@ typedef struct viddef_s
 //    byte        windowed;        // windowed or fullscreen mode ?
     byte        fullscreen;      // windowed or fullscreen mode ?
     byte        recalc;          // if true, recalc vid-based stuff
+    byte        draw_ready;      // true after vid and buffers are setup
  // special uses
     int         dupx,dupy;       // scale 1,2,3 value for menus & overlays
     float       fdupx,fdupy;     // same as dupx,dupy but exact value when aspect ratio isn't 320/200
