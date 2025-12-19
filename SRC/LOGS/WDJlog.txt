@@ -5784,3 +5784,12 @@ as the next smaller recognized size.  This will almost always be 64x64.
 The Heretic F_SKY1 flat has a size of 4, but it is never displayed.
 Fixes bug 0638.
 
+*** W107_monster_grav
+patchfile = w107_3_monster_grav.patch
+- commit revision 1306
+The gravity functions affect all players and monsters, but some old enemy
+logic puts monsters right on the floor.
+Added an enable to block the enemy monster code from overriding the
+gravity.  Added menu controls (monstergravity) and a demo field for it.
+Fixes bug 0632.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.h 1140 2015-04-03 13:39:08Z wesleyjohnson $
+// $Id: p_fab.h 1306 2017-04-07 17:20:56Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -36,6 +36,7 @@
   // consvar_t
 
 extern consvar_t cv_solidcorpse;        // p_enemy
+extern consvar_t cv_monstergravity;     // p_enemy
 extern consvar_t cv_bloodtime;
 
 void  DemoAdapt_p_fab(void);  // local enables of p_fab

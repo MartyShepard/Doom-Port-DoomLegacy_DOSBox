@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
+// $Id: p_fab.c 1306 2017-04-07 17:20:56Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -343,6 +343,7 @@ void D_Register_MiscCommands (void)
     // for p_enemy
     CV_RegisterVar (&cv_monbehavior);
     CV_RegisterVar (&cv_monsterfriction);
+    CV_RegisterVar (&cv_monstergravity);
     CV_RegisterVar (&cv_doorstuck);
     CV_RegisterVar (&cv_pickupflash);
 }
