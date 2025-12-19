@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1306 2017-04-07 17:20:56Z wesleyjohnson $
+// $Id: g_game.c 1309 2017-04-10 17:26:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -554,21 +554,28 @@ byte BestWeapon(player_t *player)
     return (BT_CHANGE | (newweapon<<BT_WEAPONSHIFT));
 }
 
-boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t *ev)
+// id : 0,1 for split player identity
+boolean G_InventoryResponder(player_t *ply, byte id,
+			     int gc[num_gamecontrols][2], event_t *ev)
 {
   // [WDJ] 1/9/2009 Do not get to process any keyup events, unless also saw
   // the keydown event.  Now other Responders intercepting
   // the keydown event work correctly.  Specifically heretic will no longer
   // use up an inventory item when game saving.
-  static boolean keyup_armed = false;
+  static byte keyup_armed[2] = {0,0};   // player1, player2
    
+#if 1
+  // Do not mess with inventory when menu or console are open.
+  if( menuactive || console_open )
+    return false;
+#endif
+
   if (! have_inventory)
     return false;
 
   switch (ev->type)
   {
     case ev_keydown:
-      keyup_armed = false;  // [WDJ] blanket disable of keyup events
       if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] )
       {
                 if( ply->st_inventoryTics )
@@ -584,7 +591,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                     }
                 }
                 ply->st_inventoryTics = 5*TICRATE;
-                return true;
+                goto used_key;
       }
       else if( ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
       {
@@ -605,11 +612,10 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                     }
                 }
                 ply->st_inventoryTics = 5*TICRATE;
-                return true;
+                goto used_key;
       }
       else if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] ){
-                keyup_armed = true;  // [WDJ] enable keyup event
-                return true;
+                goto arm_key;
       }
 
       break;
@@ -617,7 +623,7 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
     case ev_keyup:
       if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
       {
-          if( keyup_armed )  // [WDJ] Only if the keydown was not intercepted by some other responder
+          if( keyup_armed[id] )  // [WDJ] Only if the keydown was not intercepted by some other responder
           {
               if( ply->st_inventoryTics )
                  ply->st_inventoryTics = 0;
@@ -632,19 +638,28 @@ boolean G_InventoryResponder(player_t *ply, int gc[num_gamecontrols][2], event_t
                                     &ply->inventory[ply->inv_ptr].type, 1);
                   }
               }
-              return true;	// [WDJ] same as other event intercepts
+              goto used_key;
           }
       }
       else if( ev->data1 == gc[gc_invprev][0] || ev->data1 == gc[gc_invprev][1] ||
                ev->data1 == gc[gc_invnext][0] || ev->data1 == gc[gc_invnext][1] )
-        return true;
+          goto used_key;
       break;
 
     default:
       break; // shut up compiler
   }
 
+  keyup_armed[id] = 0;  // blanket unused
   return false;
+
+arm_key:
+  keyup_armed[id] = 1;  // ready for keyup event
+  return true;
+   
+used_key:
+  keyup_armed[id] = 0;  // used up
+  return true;
 }
 
 
@@ -1134,9 +1149,10 @@ boolean G_Responder (event_t* ev)
             goto handled; // status window ate it
         if (AM_Responder (ev))
             goto handled; // automap ate it
-        if (G_InventoryResponder (consoleplayer_ptr, gamecontrol, ev))
+        if (G_InventoryResponder (consoleplayer_ptr, 0, gamecontrol, ev))
             goto handled;
-        if (displayplayer2_ptr && G_InventoryResponder (displayplayer2_ptr, gamecontrol2, ev))
+        if (displayplayer2_ptr
+	    && G_InventoryResponder (displayplayer2_ptr, 1, gamecontrol2, ev))
             goto handled;
         //added:07-02-98: map the event (key/mouse/joy) to a gamecontrol
     }

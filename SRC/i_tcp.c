@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1299 2017-02-18 21:12:00Z wesleyjohnson $
+// $Id: i_tcp.c 1308 2017-04-10 17:23:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -411,8 +411,12 @@ byte  IPX_hashaddr(mysockaddr_t *a)
     // Not allowed to be 0.
     // Big endian, want final addr byte.
 #ifdef LINUX
+# ifdef FREEBSD
+    return ((byte)(a->ipx.sipx_addr.x_host.c_host[5])) | 0x80;
+# else
     // Linux: IPX address hash
     return ((byte)(a->ipx.sipx_node[5])) | 0x80;
+# endif
 #else
     // Windows, OS2, DJGPP: IPX address hash
     return ((byte)(a->ipx.sa_nodenum[5])) | 0x80;

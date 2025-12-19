@@ -5804,3 +5804,23 @@ being enabled for release code.
 Made DEFINE for controlling the light thinker read and write formats.
 The new lightlev savegame format is disabled, and has not yet been written
 by a release version, so the LIGHT147_VERSION define has a dummy value.
+
+*** W107_FreeBSD_IPX
+patchfile = w107_5_FreeBSD_IPX.patch
+- commit revision 1308
+A few lines of code for returning an IPX address value on FreeBSD.
+Supplied by Alexy Dokuchaev.
+Fixes bug 0639.
+
+*** W107_inventory
+patchfile = w107_6_inventory.patch
+- commit revision 1309
+A Heretic inventory item could be used up by a menu keypress.
+If the inventory item had been selected, then the menu entered,
+the same inventory keypress when used in the menu would leak into
+the inventory response and use up the item.
+Fix inventory response code to ignore keypresses during menu and
+console.
+Reset inventory key trigger when using a key, and for keyup,
+and give splitscreen player2 own state.
+Fixes bug 0641.

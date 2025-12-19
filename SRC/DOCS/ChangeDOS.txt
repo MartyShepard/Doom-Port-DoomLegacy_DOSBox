@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01309 ]: w107 inventory key (Heretic)
+[01308*]: w107 FreeBSD IPX
 [01307 ]: w107 savegame lightlev
 [01306 ]: w107 monster gravity
           Add menu Entry "Monstergravity"
