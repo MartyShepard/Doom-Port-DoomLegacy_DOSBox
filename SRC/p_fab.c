@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: p_fab.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -85,7 +85,9 @@ consvar_t cv_voodoo_mode = {"voodoo_mode", "3", CV_CALL|CV_SAVE|CV_NETVAR, voodo
 
 void Translucency_OnChange(void);
 
-consvar_t cv_translucency  = {"translucency" ,"1",CV_CALL|CV_SAVE,CV_OnOff, Translucency_OnChange};
+// Auto exists mostly as the best conversion of previous Off/On.
+CV_PossibleValue_t translucency_cons_t[]={{0,"Off"}, {1,"Auto"}, {2,"Boom"}, {3, "Legacy"}, {4, "All"}, {0,NULL}};
+consvar_t cv_translucency  = {"translucency" ,"1",CV_CALL|CV_SAVE, translucency_cons_t, Translucency_OnChange};
 
 //
 // Action routine, for the ROCKET thing.
@@ -248,7 +250,7 @@ void P_SetTranslucencies (void)
             tr_enable = true;
             break;
          case TE_boom: // ignore DoomLegacy extensions
-            if(tip->flag_mt & TRF_ext)  break;
+            if(tip->flag_mt & TRF_ext)  break;  // legacy extension
             // continue to TE_ext to test flag
          case TE_ext:  // all flag, including DoomLegacy extensions
             if(tip->flag_mt == TRF_noflag)  // does not check MF_TRANSLUCENT
@@ -276,16 +278,23 @@ void P_SetTranslucencies (void)
     }
 }
 
+// Auto -> TE_ext, extensions checked
+byte translucency_en_table[] =
+{ TE_off, TE_ext, TE_boom, TE_ext, TE_all };
+
 void Translucency_OnChange(void)
 {
     // [WDJ] Translucent control
-    // Does not use TE_boom yet, which has fewer transparent items.
+    // TE_boom has fewer transparent items.
     // TE_all (as before) unless DEH has set flags.
-    translucent_enable =
-     (cv_translucency.value==0)? TE_off  // reset translucent
-        : (flags_valid_deh ? TE_ext : TE_all);
-    if (!cv_fuzzymode.value)
-        P_SetTranslucencies();
+    translucent_enable = translucency_en_table[ cv_translucency.value ];
+    if( cv_translucency.value != 1 )  // not auto
+    {
+        if( flags_valid_deh
+           && ((translucent_enable == TE_off) || (translucent_enable == TE_all) ) )
+            GenPrintf( EMSG_hud, "DEH set translucency ignored\n" );
+    }
+    P_SetTranslucencies();
 }
 
 

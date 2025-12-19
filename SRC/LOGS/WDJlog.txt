@@ -5717,3 +5717,23 @@ Getting the estimated play time and using that for loop timing
 eliminates all but one status check.
 There were many other changes to fix logical mistakes.
 
+*** W106_cdrom
+patchfile = w106_14_shotgun_pos.patch
+- commit revision 1297
+The shotgun and other player weapons are a pixel too high, which leaves
+a visible scanline below them.  This is likely due to freelook, that
+heretic sprite is compatible with, but the Doom sprite is too small.
+For Doom (but not Heretic) move the weapon down 1 pixel.
+The position was checked against prboom and looks to be the same now.
+Fixes bug 0455 (from 2004).
+
+*** W106_shadow
+patchfile = w106_15_shadow.patch
+- commit revision 1298
+Control variables for translucency and fuzzy mode were confused together,
+and confused with smoke draw.
+Separated fuzzy shadow draw from translucency.  Put fuzzy shadow draw
+control in effects menu.
+Expanded translucency control in effects menu.
+Fixed Smoke draw function assign.
+Fixes bug 0631.

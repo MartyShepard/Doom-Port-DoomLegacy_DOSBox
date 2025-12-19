@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1278 2016-10-15 20:57:22Z wesleyjohnson $
+// $Id: r_things.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -939,12 +939,14 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     }
     else if (vis->translucentmap==VIS_SMOKESHADE)
     {
+        // Draw smoke
         // shadecolfunc uses 'reg_colormaps'
         colfunc = shadecolfunc;
     }
     else if (vis->translucentmap)
     {
-        colfunc = fuzzcolfunc;
+//        colfunc = fuzzcolfunc;
+        colfunc = (vis->mobjflags & MF_SHADOW)? fuzzcolfunc : transcolfunc;
         dc_translucent_index = vis->translucent_index;
         dc_translucentmap = vis->translucentmap;    //Fab:29-04-98: translucency table
     }
@@ -952,8 +954,6 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     {
         // translate green skin to another color
         colfunc = skincolfunc;
-//        dc_skintran = translationtables - 256 +
-//            ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
         dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
 
@@ -1381,8 +1381,11 @@ static void R_ProjectSprite (mobj_t* thing)
     // specific translucency
     if (thing->frame & FF_SMOKESHADE)
     {
+        // Draw smoke
         // not really a colormap ... see R_DrawVisSprite
-        vis->colormap = VIS_SMOKESHADE; 
+//        vis->colormap = VIS_SMOKESHADE; 
+        vis->colormap = NULL;
+        vis->translucentmap = VIS_SMOKESHADE; 
     }
     else
     {

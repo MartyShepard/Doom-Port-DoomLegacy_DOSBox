@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: r_main.c 1297 2017-02-13 18:50:29Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -964,7 +964,7 @@ void R_ExecuteSetViewSize (void)
     // Doom weapons are too high for high resolutions.
     if( ! raven_heretic_hexen )
        centerypsp += (rdraw_viewheight/400);
-		 
+
     pspritescale  = (rdraw_viewwidth<<FRACBITS)/BASEVIDWIDTH;
     pspriteiscale = (BASEVIDWIDTH<<FRACBITS)/rdraw_viewwidth;   // x axis scale
     //added:02-02-98:now aspect ratio correct for psprites

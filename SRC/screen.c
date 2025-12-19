@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: screen.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -116,6 +116,7 @@ const char * modetype_string[ MODE_other + 1 ] =
 
 // use original Doom fuzzy effect instead of translucency?
 void CV_Fuzzymode_OnChange();
+//CV_PossibleValue_t fuzzymode_cons_t[]={{0,"Translucent"}, {1,"Fuzzy"}, {0,NULL}};
 consvar_t   cv_fuzzymode = {"fuzzymode", "Off", CV_SAVE | CV_CALL, CV_OnOff, CV_Fuzzymode_OnChange};
 
 
@@ -344,12 +345,14 @@ void SCR_SetMode (void)
 // change drawer function when fuzzymode is changed
 void CV_Fuzzymode_OnChange(void)
 {
+  if( (rendermode != render_soft) && cv_fuzzymode.value )
+      GenPrintf(EMSG_hud, "OpenGL has only translucent shadow.\n" );
   switch(vid.drawmode)
   {
+   default:
    case DRAW8PAL:
      fuzzcolfunc = (cv_fuzzymode.value) ? R_DrawFuzzColumn_8 : R_DrawTranslucentColumn_8;
      break;
-   default:
 #if defined(ENABLE_DRAW15) || defined(ENABLE_DRAW16)
    case DRAW15:
    case DRAW16:

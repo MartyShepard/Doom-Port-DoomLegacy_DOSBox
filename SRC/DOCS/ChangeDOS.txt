@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01298 ]: w106 shadow and fuzzy draw control
+          Add New Menu Entries
+					
+[01297 ]: w106 shotgun position					
 [01296 ]: w106 cdrom
 [01295 ]: w106 video mode change
 [01294*]: w106 linux sound

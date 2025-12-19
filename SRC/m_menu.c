@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1296 2017-02-13 18:48:41Z wesleyjohnson $
+// $Id: m_menu.c 1298 2017-02-13 18:53:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1768,6 +1768,7 @@ void M_DrawSlider (int x, int y, int range)
 menuitem_t EffectsOptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,    "Translucency"     , &cv_translucency  , 0},
+    {IT_STRING | IT_CVAR,0,    "Fuzzy Shadow"     , &cv_fuzzymode     , 0},
     {IT_STRING | IT_CVAR,0,    "Splats"           , &cv_splats        , 0},
     {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
     {IT_STRING | IT_CVAR,0,    "Sprites limit"    , &cv_spritelim     , 0},
