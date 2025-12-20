@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1270 2016-09-20 17:40:09Z wesleyjohnson $
+// $Id: doomdef.h 1320 2017-05-23 14:22:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -50,11 +50,9 @@
 //#define TILTVIEW              // not finished
 //#define PERSPCORRECT          // not finished
 #define SPLITSCREEN
-#define ABSOLUTEANGLE           // work fine, soon #ifdef and old code remove
 //#define CLIENTPREDICTION2     // differant methode
 #define NEWLIGHT                // compute lighting with bsp (in construction)
 #define FRAGGLESCRIPT           // SoM: Activate FraggleScript
-#define FIXROVERBUGS // Fix some 3dfloor bugs. SSNTails 06-13-2002
 
 // For Boom demo compatibility, spawns friction thinkers
 #define FRICTIONTHINKER

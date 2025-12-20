@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_mobj.c 1320 2017-05-23 14:22:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -873,7 +873,6 @@ void P_ZMovement(mobj_t * mo)
     player_t *player = mo->player;
     boolean voodoo_mo = (player && (player->mo != mo));
 
-#ifdef FIXROVERBUGS
     // Intercept the stupid 'fall through 3dfloors' bug SSNTails 06-13-2002
     if (mo->subsector->sector->ffloors)
     {
@@ -902,7 +901,6 @@ void P_ZMovement(mobj_t * mo)
             }
         }
     }
-#endif
 
     // check for smooth step up
     if (player && (mo->z < mo->floorz)

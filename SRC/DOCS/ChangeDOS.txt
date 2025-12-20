@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01320 ]: w107 absolute angle
 [01319 ]: w107 downgrade
 [01318 ]: w107 EN_heretic
 [01317 ]: w107 EN_boom

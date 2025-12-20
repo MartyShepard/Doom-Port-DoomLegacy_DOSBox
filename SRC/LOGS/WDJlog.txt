@@ -5925,3 +5925,9 @@ Added Heretic and Normal settings to monster friction so they can be
 more easily set up for a particular usage.
 Fixed the jumping hack in p_map to test the demoversion number (instead of
 testing demoplayback for version numbers).
+
+*** W107_absolute_angle
+patchfile = w107_16_absolute_angle.patch
+- commit revision 1320
+Make the compile options FIXROVERBUGS, ABSOLUTEANGLE, the normal.
+Removed the compile tests.
