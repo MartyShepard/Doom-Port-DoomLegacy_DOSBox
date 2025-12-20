@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1305 2017-04-07 17:19:28Z wesleyjohnson $
+// $Id: p_setup.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1784,7 +1784,7 @@ boolean P_SetupLevel (int      to_episode,
     {
         if (playeringame[i])
         {
-            if (cv_deathmatch.value)
+            if( cv_deathmatch.EV )
             {
                 G_DoReborn(i);
             }

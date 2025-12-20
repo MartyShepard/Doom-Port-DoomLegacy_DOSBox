@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1281 2016-12-09 02:21:16Z wesleyjohnson $
+// $Id: d_clisrv.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1699,7 +1699,8 @@ void Got_NetXCmd_KickCmd(xcmd_t * xc)
 CV_PossibleValue_t maxplayers_cons_t[]={{1,"MIN"},{32,"MAX"},{0,NULL}};
 
 consvar_t cv_allownewplayer = {"sv_allownewplayers","1",0,CV_OnOff};
-consvar_t cv_maxplayers     = {"sv_maxplayers","32",CV_NETVAR,maxplayers_cons_t,NULL,32};
+consvar_t cv_maxplayers     =
+  {"sv_maxplayers","32",CV_NETVAR,maxplayers_cons_t,NULL,32};
 
 void Got_NetXCmd_AddPlayer(xcmd_t * xc);
 void Got_NetXCmd_AddBot(xcmd_t * xc);	//added by AC for acbot

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1314 2017-04-20 21:31:36Z wesleyjohnson $
+// $Id: v_video.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -578,7 +578,7 @@ void V_SetPaletteLump(char *pal)
 
 void CV_usegamma_OnChange(void)
 {
-    switch( cv_gammafunc.value ){
+    switch( cv_gammafunc.EV ){
      case 1:
         R_Generate_gamma_black_table();
         break;
@@ -616,7 +616,7 @@ byte  gammafunc_usage[4] =
   
 void CV_gammafunc_OnChange(void)
 {
-    byte gu = gammafunc_usage[cv_gammafunc.value];
+    byte gu = gammafunc_usage[cv_gammafunc.EV];
     MenuGammaFunc_dependencies( gu&GFU_GAMMA, gu&GFU_BLACK, gu&GFU_BRIGHT );
     CV_usegamma_OnChange();
 }
@@ -2103,8 +2103,8 @@ void V_DrawFadeScreen(void)
 {
     // vid : from video setup
     V_DrawFade( 0, vid.width, vid.height,
-                fadescreen_alpha[ cv_darkback.value ],
-                fadescreen_draw8[ cv_darkback.value ],
+                fadescreen_alpha[ cv_darkback.EV ],
+                fadescreen_draw8[ cv_darkback.EV ],
                 0 );
 }
 
@@ -2140,7 +2140,7 @@ byte fadecons_green[3] =
 //   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
 void V_DrawFadeConsBack(int x1, int x2, int y2)
 {
-    uint32_t tint = RGBA(0, fadecons_green[ cv_darkback.value ], 0, 0);
+    uint32_t tint = RGBA(0, fadecons_green[ cv_darkback.EV ], 0, 0);
 
 #ifdef HWRENDER
     // The green tint is weak for OpenGL.
@@ -2148,8 +2148,8 @@ void V_DrawFadeConsBack(int x1, int x2, int y2)
        tint = tint*2;  // works for small values of green < 127
 #endif
     V_DrawFade( x1, x2, y2,
-                fadecons_alpha[ cv_darkback.value ],
-                fadecons_draw8[ cv_darkback.value ],
+                fadecons_alpha[ cv_darkback.EV ],
+                fadecons_draw8[ cv_darkback.EV ],
                 tint );
 }
 

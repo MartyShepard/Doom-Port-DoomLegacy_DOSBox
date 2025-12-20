@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: st_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -695,7 +695,7 @@ static void ST_updateFaceWidget(void)
 
 boolean ST_SameTeam(player_t *a,player_t *b)
 {
-    switch (cv_teamplay.value) {
+    switch( cv_teamplay.EV ) {
        case 0 : return false;
        case 1 : return (a->skincolor == b->skincolor);
        case 2 : return (a->skin == b->skin);
@@ -715,8 +715,8 @@ int ST_PlayerFrags (int playernum)
     frags = player->addfrags;
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-        if ((cv_teamplay.value==0 && i != playernum)
-         || (cv_teamplay.value && !ST_SameTeam(&players[i], player)) )
+        if( ((cv_teamplay.EV == 0) && i != playernum)
+            || (cv_teamplay.EV && !ST_SameTeam(&players[i], player)) )
             frags += player->frags[i];
         else
             frags -= player->frags[i];
@@ -816,7 +816,7 @@ static void ST_updateWidgets(void)
     st_oldhealth = plyr->health;
 
     // used by the w_armsbg widget
-    st_notdeathmatch = !cv_deathmatch.value;
+    st_notdeathmatch = !cv_deathmatch.EV;
 
     st_fragscount = ST_PlayerFrags(statusbarplayer);
 
@@ -878,11 +878,11 @@ void ST_doPaletteStuff( player_t * plyr )
             palette = STARTREDPALS+NUMREDPALS-1;
     }
     else
-    if (plyr->bonuscount && (cv_pickupflash.value>=2))
+    if (plyr->bonuscount && (cv_pickupflash.EV>=2))
     {
         // Pickup object palette flash.
         palette = STARTBONUSPALS
-           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
+           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.EV]));
 
         if (palette >= (STARTBONUSPALS+NUMBONUSPALS))
             palette = STARTBONUSPALS+NUMBONUSPALS-1;
@@ -916,7 +916,7 @@ void ST_doPaletteStuff( player_t * plyr )
         {
             // Splitscreen cannot use palette effects when 8bit palette draw,
             // but other draw modes can.
-            if( ((cv_splitscreen.value == 0) || (vid.drawmode != DRAW8PAL))
+            if( ((cv_splitscreen.EV == 0) || (vid.drawmode != DRAW8PAL))
                 || !palette )
                 V_SetPalette (palette);
         }
@@ -958,7 +958,7 @@ static void ST_drawWidgets( void )
     // Draw stbar_fg, screen0 status bar
     V_SetupDraw( stbar_fg );  // for all STlib
 
-    if( cv_pickupflash.value == 1 )
+    if( cv_pickupflash.EV == 1 )
     {
         plyr = st_plyr;
         // Pickup flash on the status bar.
@@ -1011,7 +1011,7 @@ static void ST_drawWidgets( void )
 
     STlib_updateBinIcon(&w_armsbg);
 
-    if( cv_deathmatch.value )
+    if( cv_deathmatch.EV )
     {
         // frags on
         STlib_updateNum(&w_frags);
@@ -1097,7 +1097,7 @@ void ST_Drawer ( boolean refresh )
         // Overlay status over screen.
         // Any minimal state kept, must be per splitscreen (see hardware).
         // Does not use stlib.
-        if( cv_splitscreen.value )
+        if( cv_splitscreen.EV )
         {
             if((vid.drawmode != DRAW8PAL) && st_palette != 0 )
                 ST_Palette0();
@@ -1344,7 +1344,7 @@ static void ST_init_stbar(void)
 
 void ST_CalcPos(void)
 {
-    if( cv_scalestatusbar.value || cv_viewsize.value>=11 )
+    if( cv_scalestatusbar.EV || cv_viewsize.value>=11 )
     {
         // large scaled status bar
         stbar_fg = FG | V_SCALEPATCH | V_SCALESTART | V_TRANSLUCENTPATCH;
@@ -1625,7 +1625,7 @@ void ST_drawOverlayNum (int       x,            // right border!
 
     V_SetupDraw( FG | V_NOSCALE | V_SCALEPATCH | V_TRANSLUCENTPATCH );
    
-    if( pickup_flash && (cv_pickupflash.value == 1))
+    if( pickup_flash && (cv_pickupflash.EV == 1))
     {
         // Assume 3 digits  0..200
         V_DrawVidFill(x - (wfv*3), y, wfv*3, hf*vid.dupy, FLASH_COLOR);
@@ -1664,7 +1664,7 @@ static inline int SCY( int y, int y0 )
     // do not scale to resolution for hardware accelerated
     // because these modes always scale by default
     y = (int)( y * vid.fdupy );     // scale to resolution
-    if ( cv_splitscreen.value ) {
+    if( cv_splitscreen.EV ) {
         y >>= 1; // half sized screens
         y += y0; // base position of upper or lower screen
     }
@@ -1690,7 +1690,7 @@ void  ST_drawOverlayKeys( int x, int y, player_t * plyr )
     if( cards & 0x38 )
         yh -= yinc;
 
-    if( plyr->key_pickup && (cv_pickupflash.value == 1))
+    if( plyr->key_pickup && (cv_pickupflash.EV == 1))
     {
         V_DrawVidFill(x - (xinc*3), yh, (xinc*3), y - yh + yinc, FLASH_COLOR);
     }
@@ -1748,7 +1748,7 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
          case 'f': // draw frags
            st_fragscount = ST_PlayerFrags(plyr-players);
 
-           if (cv_deathmatch.value)
+           if (cv_deathmatch.EV)
            {
                ST_drawOverlayNum(SCX(300), SCY(2,y0),
                                  st_fragscount,
@@ -1784,7 +1784,7 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
 
          // added by Hurdler for single player only
          case 'e': // number of monster killed 
-           if ( (!cv_deathmatch.value) && (!cv_splitscreen.value) )
+           if( (!cv_deathmatch.EV) && (!cv_splitscreen.EV) )
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->killcount, totalkills);
@@ -1793,7 +1793,7 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
            break;
 
          case 's': // number of secrets found
-           if ( (!cv_deathmatch.value) && (!cv_splitscreen.value) )
+           if( (!cv_deathmatch.EV) && (!cv_splitscreen.EV) )
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->secretcount, totalsecret);

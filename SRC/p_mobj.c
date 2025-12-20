@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1320 2017-05-23 14:22:37Z wesleyjohnson $
+// $Id: p_mobj.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -199,7 +199,7 @@ void P_Set_Voodoo( int playernum, mobj_t * voodoo_mobj )
 void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
 {
     // Vanilla Doom does not voodoo when deathmatch.
-    if( (voodoo_mode == VM_vanilla) && (cv_deathmatch.value > 0) )
+    if( (voodoo_mode == VM_vanilla) && (cv_deathmatch.EV > 0) )
         return;
 
     if( playernum > 0 )
@@ -1502,7 +1502,7 @@ void P_MobjThinker(mobj_t * mobj)
     else
     {
         // check for nightmare respawn
-        if (!cv_respawnmonsters.value)
+        if( !cv_respawnmonsters.EV )
             goto done;
 
         if (!(mobj->flags & MF_COUNTKILL))
@@ -1840,7 +1840,7 @@ void P_RespawnSpecials(void)
     int i;
 
     // only respawn items in deathmatch
-    if (!cv_itemrespawn.value)
+    if( !cv_itemrespawn.EV )
         return; //
 
     // nothing left to respawn?
@@ -2050,7 +2050,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     {
         if( voodoo_mode != VM_vanilla )
         {
-            if( cv_solidcorpse.value )
+            if( cv_solidcorpse.EV )
             {
                 // convert to corpse
                 p->mo->flags |= MF_CORPSE|MF_SOLID;
@@ -2112,7 +2112,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     P_SetupPsprites(p);
 
     // give all cards in death match mode
-    if (cv_deathmatch.value)
+    if( cv_deathmatch.EV )
         p->cards = it_allkeys;
 
     if (playernum == consoleplayer)
@@ -2146,7 +2146,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     if (camera.chase == p)
         P_ResetCamera(p);
 
-   if( ! ( voodoo_mode == VM_vanilla && cv_deathmatch.value ) )
+   if( ! ( voodoo_mode == VM_vanilla && cv_deathmatch.EV ) )
    {
        // [WDJ] Create any missing personal voodoo dolls for this player
        // But not the last spawnpoint, otherwise deathmatch gets extraneous voodoo dolls.
@@ -2224,7 +2224,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
-        if (cv_deathmatch.value == 0 && demoversion < 128)
+        if( cv_deathmatch.EV == 0 && demoversion < 128)
             P_SpawnPlayer(mthing, playernum);
 
         return;
@@ -2250,11 +2250,11 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
 
     //SoM: 4/7/2000: Implement "not deathmatch" thing flag
-    if (netgame && cv_deathmatch.value && (mthing->options & MTF_NODM))
+    if( netgame && cv_deathmatch.EV && (mthing->options & MTF_NODM))
         return;
 
     //SoM: 4/7/2000: Implement "not cooperative" thing flag
-    if (netgame && !cv_deathmatch.value && (mthing->options & MTF_NOCOOP))
+    if( netgame && !cv_deathmatch.EV && (mthing->options & MTF_NOCOOP))
         return;
 
     if (gameskill == sk_baby)
@@ -2279,7 +2279,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
     }
 
     // don't spawn keycards and players in deathmatch
-    if (cv_deathmatch.value && mobjinfo[i].flags & MF_NOTDMATCH)
+    if( cv_deathmatch.EV && (mobjinfo[i].flags & MF_NOTDMATCH) )
         return;
 
     // don't spawn any monsters if -nomonsters
@@ -2533,7 +2533,7 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     int i;
 #endif
 
-    if ( ! cv_splats.value )  // obey splats option
+    if ( ! cv_splats.EV )  // obey splats option
         return; 
 
     // spawn the usual falling blood sprites at location
@@ -2763,7 +2763,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
 
     th->target = source;        // where it came from
 
-    if (cv_predictingmonsters.value || (source->eflags & MF_PREDICT))    //added by AC for predmonsters
+    if( cv_predictingmonsters.EV || (source->eflags & MF_PREDICT))  //added by AC for predmonsters
     {
         boolean canHit;
         fixed_t px, py, pz;
@@ -2868,7 +2868,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     ang = angle;
 
     //added:16-02-98: autoaim is now a toggle
-    if (source->player->autoaim_toggle && cv_allowautoaim.value)
+    if( source->player->autoaim_toggle && cv_allowautoaim.EV )
     {
         // see which target is to be aimed at
         slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
@@ -2896,7 +2896,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     //added:18-02-98: if not autoaim, or if the autoaim didnt aim something,
     //                use the mouseaiming
     // lar_linetarget returned by P_AimLineAttack
-    if (!(source->player->autoaim_toggle && cv_allowautoaim.value)
+    if( !(source->player->autoaim_toggle && cv_allowautoaim.EV )
         || (!lar_linetarget && demoversion > 111))
     {
         if (demoversion >= 128)

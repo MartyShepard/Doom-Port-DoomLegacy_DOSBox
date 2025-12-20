@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: s_sound.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -843,7 +843,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
     //                but of course not using M_Random().
     //added 16-08-02: added back by Judgecutor
     //Sound pitching for both Doom and Heretic
-    if (cv_rndsoundpitch.value)
+    if( cv_rndsoundpitch.EV )
     {
         if (EN_heretic)
         {

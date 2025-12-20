@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_segs.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2736,7 +2736,7 @@ void R_StoreWallRange( int   start, int   stop)
     }
 
 #ifdef BORIS_FIX
-    if (linedef->splats && cv_splats.value)
+    if( linedef->splats && cv_splats.EV )
     {
         // SoM: Isn't a bit wasteful to copy the ENTIRE array for every drawseg?
         memcpy(&last_ceilingclip[ds_p->x1], &ceilingclip[ds_p->x1], sizeof(short) * (ds_p->x2 - ds_p->x1 + 1));

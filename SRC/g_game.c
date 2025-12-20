@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1320 2017-05-23 14:22:37Z wesleyjohnson $
+// $Id: g_game.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -249,8 +249,20 @@ byte  EN_heretic;
 byte  EN_hexen;
 byte  EN_strife;
 
-// Secondary feature sets.
+// Secondary features.
+// [WDJ] Prevent demo from altering user game settings.
+// When a cv_ value range is less than 256, test the EV field (ON/OFF/ENUM).
+// Demo settings may change the cv_xxx.EV fields or EN_xxx variables.
+// The cv user settings will be restored after the demo by
+// CV_Restore_User_Settings (setting .EV from .value).
+// Derive EN_ enables for special code logic.  Need to be set in DemoAdapt
+// so they are set properly for games and demos.
+// Boom
+byte  EN_variable_friction;  // Boom demo flag, Heretic, and Legacy.
+byte  EN_pushers;
+// Heretic, Hexen
 byte  EN_inventory;   // Heretic, Hexen
+
 
 language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
@@ -441,7 +453,7 @@ void*     statcopy;                      // for statistics driver
 
 void ShowMessage_OnChange(void)
 {
-    if (!cv_showmessages.value)
+    if( !cv_showmessages.EV )
         CONS_Printf("%s\n",MSGOFF);
     else
         CONS_Printf("%s: %s\n",MSGON, cv_showmessages.string );
@@ -579,7 +591,7 @@ byte BestWeapon(player_t *player)
 
 // id : 0,1 for split player identity
 boolean G_InventoryResponder(player_t *ply, byte id,
-			     int gc[num_gamecontrols][2], event_t *ev)
+                             int gc[num_gamecontrols][2], event_t *ev)
 {
   // [WDJ] 1/9/2009 Do not get to process any keyup events, unless also saw
   // the keydown event.  Now other Responders intercepting
@@ -720,19 +732,19 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
     // a little clumsy, but then the g_input.c became a lot simpler!
     boolean strafe = G_KEY_DOWN(gc_strafe);
-    int speed  = G_KEY_DOWN(gc_speed) ^ (which_player == 0 ? cv_autorun.value : cv_autorun2.value);
+    int speed  = G_KEY_DOWN(gc_speed) ^ (which_player == 0 ? cv_autorun.EV : cv_autorun2.EV);
 
     boolean turnright = G_KEY_DOWN(gc_turnright);
     boolean turnleft  = G_KEY_DOWN(gc_turnleft);
-    boolean mouseaiming = G_KEY_DOWN(gc_mouseaiming) ^ (which_player == 0 ? cv_alwaysfreelook.value : cv_alwaysfreelook2.value);
+    boolean mouseaiming = G_KEY_DOWN(gc_mouseaiming) ^ (which_player == 0 ? cv_alwaysfreelook.EV : cv_alwaysfreelook2.EV);
 
 
     int forward = 0, side = 0; // these must not wrap around, so we need bigger ranges than chars
 
 #if defined( __DJGPP__ )	
     boolean   analogjoystickmove,gamepadjoystickmove;
-    analogjoystickmove  = cv_usejoystick.value && !Joystick.bGamepadStyle;
-    gamepadjoystickmove = cv_usejoystick.value &&  Joystick.bGamepadStyle;
+    analogjoystickmove  = cv_usejoystick.EV && !Joystick.bGamepadStyle;
+    gamepadjoystickmove = cv_usejoystick.EV &&  Joystick.bGamepadStyle;
     if(gamepadjoystickmove)
     {
         turnright = turnright || joyxmove > 0;
@@ -777,17 +789,17 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 #if !defined( __DJGPP__ )		
     if (G_KEY_DOWN(gc_forward))
 #else
-    if (gamekeydown[gcc[gc_forward][0]] || gamekeydown[gcc[gc_forward][1]] || (joyymove < 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
+    if (gamekeydown[gcc[gc_forward][0]] || gamekeydown[gcc[gc_forward][1]] || (joyymove < 0 && gamepadjoystickmove && !cv_joystickfreelook.EV))
 #endif			
         forward += forwardmove[speed];
 #if !defined( __DJGPP__ )					
     if (G_KEY_DOWN(gc_backward))
 #else
-    if (gamekeydown[gcc[gc_backward][0]] || gamekeydown[gcc[gc_backward][1]] || (joyymove > 0 && gamepadjoystickmove && !cv_joystickfreelook.value))
+    if (gamekeydown[gcc[gc_backward][0]] || gamekeydown[gcc[gc_backward][1]] || (joyymove > 0 && gamepadjoystickmove && !cv_joystickfreelook.EV))
 #endif			
         forward -= forwardmove[speed];
 #if defined( __DJGPP__ )					
-    if ( joyymove && analogjoystickmove && !cv_joystickfreelook.value) 
+    if ( joyymove && analogjoystickmove && !cv_joystickfreelook.EV) 
         forward -= ( (joyymove * forwardmove[1]) >> 10 ); // ANALOG!	
 #endif
     //added:07-02-98: some people strafe left & right with mouse buttons
@@ -805,7 +817,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         cmd->buttons |= BT_USE;
 
     //added:22-02-98: jump button
-    if (cv_allowjump.value && G_KEY_DOWN(gc_jump))
+    if (cv_allowjump.EV && G_KEY_DOWN(gc_jump))
         cmd->buttons |= BT_JUMP;
 
 
@@ -868,12 +880,12 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         keyboard_look[which_player] = false;
 
         // looking up/down
-        if (cv_mouse_invert.value)
+        if (cv_mouse_invert.EV)
             pitch -= mousey<<19;
         else
             pitch += mousey<<19;
       }
-      else if (cv_mouse_move.value)
+      else if (cv_mouse_move.EV)
         forward += mousey;
 
       if (strafe)
@@ -890,12 +902,12 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         keyboard_look[which_player] = false;
 
         // looking up/down
-        if (cv_mouse2_invert.value)
+        if (cv_mouse2_invert.EV)
           pitch -= mouse2y<<19;
         else
           pitch += mouse2y<<19;
       }
-      else if (cv_mouse2_move.value)
+      else if (cv_mouse2_move.EV)
         forward += mouse2y;
 
       if (strafe)
@@ -940,7 +952,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     cmd->sidemove += side;
 
     //26/02/2000: added by Hurdler: accept no mlook for network games
-    if (!cv_allowmlook.value)
+    if (!cv_allowmlook.EV)
         pitch = 0;
 
     pitch = G_ClipAimingPitch(pitch); // clip pitch to a reasonable sector
@@ -977,7 +989,7 @@ static fixed_t  originalsidemove[2] = {0x18, 0x28};
 
 void AllowTurbo_OnChange(void)
 {
-    if(!cv_allowturbo.value && netgame)
+    if(!cv_allowturbo.EV && netgame)
     {
         // like turbo 100
         forwardmove[0] = originalforwardmove[0];
@@ -993,7 +1005,7 @@ void Command_Turbo_f (void)
 {
     int     scale = 200;
 
-    if(!cv_allowturbo.value && netgame)
+    if(!cv_allowturbo.EV && netgame)
     {
         CONS_Printf("This server don't allow turbo\n");
         return;
@@ -1075,7 +1087,7 @@ void G_DoLoadLevel (boolean resetplayer)
         displayplayer_ptr = consoleplayer_ptr;
     }
 
-    if(!cv_splitscreen.value)
+    if(!cv_splitscreen.EV)
     {
         // [WDJ] Changed to a testable off for player 2
         displayplayer2 = -1;
@@ -1115,7 +1127,7 @@ boolean G_Responder (event_t* ev)
     // allow spy mode changes even during the demo
     if (gamestate == GS_LEVEL && ev->type == ev_keydown
         && ev->data1 == KEY_F12
-        && (singledemo || !cv_deathmatch.value) )
+        && (singledemo || !cv_deathmatch.EV) )
     {
         // spy mode
         do
@@ -1173,7 +1185,7 @@ boolean G_Responder (event_t* ev)
         if (G_InventoryResponder (consoleplayer_ptr, 0, gamecontrol, ev))
             goto handled;
         if (displayplayer2_ptr
-	    && G_InventoryResponder (displayplayer2_ptr, 1, gamecontrol2, ev))
+            && G_InventoryResponder (displayplayer2_ptr, 1, gamecontrol2, ev))
             goto handled;
         //added:07-02-98: map the event (key/mouse/joy) to a gamecontrol
     }
@@ -1368,7 +1380,7 @@ void G_PlayerFinishLevel (int player)
         if( p->inventory[i].count>1) 
             p->inventory[i].count = 1;
     }
-    if(!cv_deathmatch.value)
+    if(!cv_deathmatch.EV)
     {
         for(i = 0; i < MAXARTECONT; i++)
             P_PlayerUseArtifact(p, arti_fly);
@@ -1563,14 +1575,14 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
     // check for respawn in team-sector
     if(ssec->teamstartsec)
     {
-        if(cv_teamplay.value==1)
+        if(cv_teamplay.EV == 1)
         {
             // color
             if(player->skincolor!=(ssec->teamstartsec-1)) // -1 because wanted to know when it is set
                 goto failexit;
         }
         else
-        if(cv_teamplay.value==2)
+        if(cv_teamplay.EV == 2)
         {
             // skins
             if(player->skin!=(ssec->teamstartsec-1)) // -1 because wanted to know when it is set
@@ -1756,7 +1768,7 @@ void G_DoReborn (int playernum)
 
     // boris comment : this test is like 'single player game'
     //                 all this kind of hiden variable must be removed
-    if (!multiplayer && !cv_deathmatch.value)
+    if( !multiplayer && !cv_deathmatch.EV )
     {
         // reload the level from scratch
         G_DoLoadLevel (true);
@@ -1772,7 +1784,7 @@ void G_DoReborn (int playernum)
             player->mo->flags2 &= ~MF2_DONTDRAW;
         }
         // spawn at random spot if in death match
-        if (cv_deathmatch.value)   // 0=COOP
+        if( cv_deathmatch.EV )   // 0=COOP
         {
             if(G_DeathMatchSpawnPlayer (playernum))
                return;
@@ -1867,7 +1879,7 @@ void G_DoCompleted (void)
         {
           case 8:
             //BP add comment : no intermission screen
-            if(cv_deathmatch.value)
+            if( cv_deathmatch.EV )
                 wminfo.next = 0;
             else
             {
@@ -1889,7 +1901,7 @@ void G_DoCompleted (void)
     {
         if( !modifiedgame && gamemap == 5 )  // original chexquest ends at E1M5
         {
-                if(cv_deathmatch.value)
+                if( cv_deathmatch.EV )
                         wminfo.next=0;
                 else
                 {
@@ -2008,7 +2020,7 @@ void G_NextLevel (void)
 
     if ( gamemode == doom2_commercial)
     {
-        if(cv_deathmatch.value==0)
+        if( cv_deathmatch.EV == 0 )
         {
             switch (gamemap)
             {
@@ -2045,7 +2057,7 @@ void G_DoWorldDone (void)
         // not in demo because demo have the mapcommand on it
         if(server && !demoplayback) 
         {
-            if( cv_deathmatch.value==0 )
+            if( cv_deathmatch.EV == 0 )
                 // don't reset player between maps
                 COM_BufAddText (va("map \"%s\" -noresetplayers\n",G_BuildMapName(gameepisode,wminfo.next+1)));
             else
@@ -2377,6 +2389,7 @@ void G_InitNew (skill_e skill, char* mapname, boolean resetplayer)
     G_DoLoadLevel (resetplayer);
 }
 
+
 // [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
 // Done here to be near G_Downgrade.
 void G_set_gamemode( byte new_gamemode )
@@ -2407,12 +2420,14 @@ void G_set_gamemode( byte new_gamemode )
      default:
       break;
     }
-    return;
+    goto finish;
 
 not_doom:
     EN_heretic_hexen = EN_heretic || EN_hexen;
     EN_doom_etc = EN_mbf = EN_boom = 0;
     EN_inventory = 1;
+
+finish:
     return;
 }
 
@@ -2424,17 +2439,18 @@ not_doom:
 static
 void G_demo_defaults( void )
 {
-    cv_solidcorpse.value = 0;
-    cv_instadeath.value = 0;  // Die
-    cv_monstergravity.value = 0;
-    cv_doorstuck.value = 0;  // none
-    cv_monbehavior.value = 0;  // Vanilla
-    cv_monsterfriction.value = 0; // Vanilla
+    friction_model = FR_orig;
+    cv_solidcorpse.EV = 0;
+    cv_instadeath.EV = 0;  // Die
+    cv_monstergravity.EV = 0;
+    cv_doorstuck.EV = 0;  // none
+    cv_monbehavior.EV = 0;  // Vanilla
+    cv_monsterfriction.EV = 0; // Vanilla
     voodoo_mode = VM_vanilla;
-    EN_monster_friction = 0;  // default for demo
+    monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
    
     // Boom
-    cv_rndsoundpitch.value = EN_boom;  // normal in Boom, calls M_Random
+    cv_rndsoundpitch.EV = EN_boom;  // normal in Boom, calls M_Random
    
     EN_variable_friction = EN_boom;
     EN_pushers = EN_boom;
@@ -2442,12 +2458,21 @@ void G_demo_defaults( void )
 #ifdef DOORDELAY_CONTROL
     adj_ticks_per_sec = 35; // default
 #endif
+}
    
-    if (demoversion < 143 || demoversion >= 200 )
-    {
-        // setting defaults
-        monster_infight = INFT_none;
-    }
+
+static
+void G_restore_user_settings( void )
+{
+    // Force some restore to invoke CV_CALL functions.
+    cv_monbehavior.EV = 255;  // infight
+    cv_voodoo_mode.EV = 255;
+#ifdef DOORDELAY_CONTROL
+    cv_doordelay.EV = 255;
+#endif
+
+    // Restore all modifed cvar
+    CV_Restore_User_Settings();  //  Set EV = value
 }
 
 
@@ -2546,19 +2571,21 @@ boolean G_Downgrade(int version)
         EN_variable_friction = 1;  // of Boom 2.02
     }
 
-    friction_model =
-       (gamemode == heretic)? FR_heretic
-     : (gamemode == hexen)? FR_hexen
-     : (version <= 132)? FR_orig  // older legacy demos, and doom demos
-     : (version <= 143)? FR_boom  // old legacy demos
-     : (version > 200) ?
-       (
-          (version <= 202)? FR_boom  // boom 200, 201, 202
-        : (version == 203)? FR_mbf
-        : FR_prboom  // prboom
-       )
-     : ( demoplayback )? friction_model  // loaded by demo144 format
-     : FR_legacy;  // new model, default
+    if( !demoplayback || friction_model == FR_orig )
+    {
+        friction_model =
+           (gamemode == heretic)? FR_heretic
+         : (gamemode == hexen)? FR_hexen
+         : (version <= 132)? FR_orig  // older legacy demos, and doom demos
+         : (version <= 143)? FR_boom  // old legacy demos
+         : (version > 200) ?
+           (
+              (version <= 202)? FR_boom  // boom 200, 201, 202
+            : (version == 203)? FR_mbf
+            : FR_prboom  // prboom
+           )
+         : FR_legacy;  // new model, default
+    }
 
     // always true now, might be false in the future, if couldn't
     // go backward and disable all the features...
@@ -2809,58 +2836,39 @@ void G_BeginRecording (void)
     memset(oldcmd,0,sizeof(oldcmd));
 }
 
-// [WDJ] To prevent demo from altering game settings
-// Save such settings here that do not have other protection.
-byte pdss_settings_valid = 0;  // init not saved
-byte pdss_solidcorpse;
-byte pdss_instadeath;
-byte pdss_monstergravity;
-byte pdss_monsterfriction;
-byte pdss_monbehavior;
-byte pdss_rndsoundpitch;
-byte pdss_doorstuck;
 
 // The following are set by DemoAdapt:
 //  voodoo_mode,_doordelay;  // see DemoAdapt_p_fab
 
 // The following are init by starting a game (demos cannot occur during game):
 // deathmatch, multiplayer, nomonsters, respawnmonsters, fastmonsters
-// timelimit
+// timelimit.
+// Timelimit is NOT saved to config.
 
 // The following are set by G_Downgrade and/or G_DoPlayDemo:
-// EN_variable_friction, EN_pushers, EN_monster_friction
+// EN_variable_friction, EN_pushers
 
+static byte      pdss_settings_valid = 0;
 
 void playdemo_save_settings( void )
 {
+    // Still have a few settings that need save, restore.
     if( pdss_settings_valid == 0 )
     {
         pdss_settings_valid = 1;
-        pdss_solidcorpse = cv_solidcorpse.value;
-        pdss_instadeath = cv_instadeath.value;
-        pdss_monstergravity = cv_monstergravity.value;
-        pdss_monsterfriction = cv_monsterfriction.value;
-        pdss_monbehavior = cv_monbehavior.value;
-        pdss_rndsoundpitch = cv_rndsoundpitch.value; // calls M_Random
-        pdss_doorstuck = cv_doorstuck.value;
     }
-    cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
 }
 
 void playdemo_restore_settings( void )
 {
     if( pdss_settings_valid )
     {
-        cv_solidcorpse.value = pdss_solidcorpse;
-        cv_instadeath.value = pdss_instadeath;
-        cv_monstergravity.value = pdss_monstergravity;
-        cv_monsterfriction.value = pdss_monsterfriction;
-        cv_monbehavior.value = pdss_monbehavior;
-        cv_rndsoundpitch.value = pdss_rndsoundpitch; // calls M_Random
-        cv_doorstuck.value = pdss_doorstuck;
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
+
+    G_restore_user_settings();
 }
+
 
 //
 // G_PlayDemo
@@ -2886,8 +2894,14 @@ void G_DoPlayDemo (char *defdemoname)
     int     i, episode, map;
     boolean boomdemo = 0;
     byte  demo144_format = 0;
+    byte  boom_compatibility_mode = 0;  // Boom 2.00 compatibility flag
 
-    playdemo_save_settings();  // [WDJ] save user settings
+    playdemo_save_settings();  // [WDJ] Save user settings.
+   
+    // Enables that might be set directly by the demo.
+    // Defaults
+    EN_boom = 0;
+    EN_mbf = 0;
 
 //
 // load demo file / resource
@@ -2963,7 +2977,6 @@ void G_DoPlayDemo (char *defdemoname)
         if( *demo_p == 0x1d )
         {
             byte header[10];
-            byte compatibility;  // Boom 2.00 compatibility flags
             demo_p ++;
             for ( i=0; i<9; i++ )
             {
@@ -2972,14 +2985,14 @@ void G_DoPlayDemo (char *defdemoname)
             }
             header[i] = 0;
             // MBF and prboom header have compatibility level
-            compatibility = *demo_p++;
+            boom_compatibility_mode = *demo_p++;
 #ifdef DEBUG_DEMO
             debug_Printf( " Boom demo header: %s.\n", header );
-            debug_Printf( " compatibility 0x%x.\n", compatibility );
+            debug_Printf( " compatibility 0x%x.\n", boom_compatibility_mode );
 #endif
             boomdemo = 1;
-            EN_boom = ! compatibility;
-            cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
+            EN_boom = ! boom_compatibility_mode;
+            EN_mbf = EN_boom && (demoversion >= 203);
         }
         else
         {
@@ -2991,7 +3004,7 @@ void G_DoPlayDemo (char *defdemoname)
         CONS_Printf ("\2Demo is from an older game version\n");
 
     G_demo_defaults();  // Per EN_boom, EN_mbf
-   
+
     // header[1]: byte: skill level 0..4
     skill       = *demo_p++;
     // header[2]: byte: Doom episode 1..3, Doom2 and above use 1
@@ -3013,10 +3026,10 @@ void G_DoPlayDemo (char *defdemoname)
     if (demoversion < 127 || demo144_format || boomdemo)
     {
         // store it, using the console will set it too late
-        cv_deathmatch.value=*demo_p++;
+        cv_deathmatch.EV = *demo_p++;
     }
     else
-        demo_p++;  // legacy demo, ignore deathmatch
+        demo_p++;  // old legacy demo, ignore deathmatch
 
     if( ! boomdemo )
     {
@@ -3026,8 +3039,10 @@ void G_DoPlayDemo (char *defdemoname)
 #endif
         // header[5]: byte: respawn boolean
         if (demoversion < 128 || demo144_format)
+        {
             // store it, using the console will set it too late
-            cv_respawnmonsters.value=*demo_p++;
+            cv_respawnmonsters.EV = *demo_p++;
+        }
         else
             demo_p++;  // legacy demo, ignore respawnmonsters
 
@@ -3035,7 +3050,7 @@ void G_DoPlayDemo (char *defdemoname)
         if (demoversion < 128 || demo144_format)
         {
             // store it, using the console will set it too late
-            cv_fastmonsters.value=*demo_p++;
+            cv_fastmonsters.EV = *demo_p++;
             cv_fastmonsters.func();
         }
         else
@@ -3046,7 +3061,7 @@ void G_DoPlayDemo (char *defdemoname)
 #ifdef DEBUG_DEMO
         debug_Printf( " no monsters %i.\n", (int)nomonsters );
 #endif
-        cv_rndsoundpitch.value = 0;
+        cv_rndsoundpitch.EV = 0;
     }
 
     // header[8]: byte: viewing player 0..3, 0=player1
@@ -3074,6 +3089,8 @@ void G_DoPlayDemo (char *defdemoname)
     }
     else if( boomdemo )
     {
+        cv_rndsoundpitch.EV = EN_boom;  // normal in Boom, call M_Random
+
         // Boom ReadOptions
         // [WDJ] according to prboom
         // [0] monsters remember
@@ -3091,8 +3108,8 @@ void G_DoPlayDemo (char *defdemoname)
         debug_Printf( " respawn %i.\n", (int)demo_p[6] );
         debug_Printf( " fast monsters %i.\n", (int)demo_p[7] );
 #endif
-        cv_respawnmonsters.value = demo_p[6];  // respawn monsters, boolean
-        cv_fastmonsters.value = demo_p[7]; // fast monsters, boolean
+        cv_respawnmonsters.EV = demo_p[6];  // respawn monsters, boolean
+        cv_fastmonsters.EV = demo_p[7]; // fast monsters, boolean
         cv_fastmonsters.func();
         nomonsters = demo_p[8];  // nomonsters, boolean
 #ifdef DEBUG_DEMO
@@ -3117,15 +3134,19 @@ void G_DoPlayDemo (char *defdemoname)
             // [25] monkeys
             // [26..57] comp vector x32
             // [58] force old BSP
-            monster_infight = demo_p[14]; // monster_infight from demo is 0/1
-            cv_monbehavior.value = monster_infight? 2:5; // (infight:off)
+            // monster_infight from demo is 0/1
+            // Feature enables 1=ON, Do not notify NET
+            cv_monbehavior.EV = demo_p[14]? 2:5; // (infight:off)
+            // Pass EN_monster_friction, and flag cv_monsterfriction
             EN_monster_friction = demo_p[22];
-            cv_monsterfriction.value = 1;  // MBF
+            cv_monsterfriction.EV = 0x80;  // MBF, Vanilla;
+            // comp vectors 1=old demo compatibility
+            cv_doorstuck.EV = demo_p[26 + 13]? 0:2; // Vanilla : MBF
         }
         else
         {
             // Boom, not MBF
-            EN_doorstuck = EN_boom;
+            cv_doorstuck.EV = EN_boom;  // 1=Boom
         }
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
         // byte: player[1..32] present boolean
@@ -3137,6 +3158,14 @@ void G_DoPlayDemo (char *defdemoname)
 #endif
             playeringame[i] = *demo_p++;
         }
+
+        if( boom_compatibility_mode )
+        {
+#ifdef DEBUG_DEMO
+            debug_Printf( " Boom demo imitating Doom2\n" );
+#endif
+            demoversion = 110;  // imitate non-Boom demo
+        }
     }
     else
     {
@@ -3145,7 +3174,8 @@ void G_DoPlayDemo (char *defdemoname)
 #endif
         if(demoversion<128)
         {
-           cv_timelimit.value=*demo_p++;
+           // Here is a byte, but user value may exceed a byte.
+           cv_timelimit.value = *demo_p++;
            cv_timelimit.func();
         }
         else
@@ -3195,7 +3225,7 @@ void G_DoPlayDemo (char *defdemoname)
     {
         byte * demo_p_next = demo_p + 32;
         // more settings that affect playback
-        cv_solidcorpse.value = *demo_p++;
+        cv_solidcorpse.EV = *demo_p++;
 #ifdef DOORDELAY_CONTROL
         adj_ticks_per_sec = *demo_p++;  // 0 is not default
         if( adj_ticks_per_sec < 20 )  adj_ticks_per_sec = 35;  // default
@@ -3206,13 +3236,13 @@ void G_DoPlayDemo (char *defdemoname)
            voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
         else
            voodoo_mode = VM_auto;  // default
-        cv_instadeath.value = *demo_p++;  // voodoo doll instadeath, 0 is default
-        cv_monsterfriction.value = *demo_p++;
+        cv_instadeath.EV = *demo_p++;  // voodoo doll instadeath, 0 is default
+        cv_monsterfriction.EV = *demo_p++;
         friction_model = *demo_p++;
-        cv_rndsoundpitch.value = *demo_p++;  // uses M_Random
-        cv_monbehavior.value = *demo_p++;
-        cv_doorstuck.value = *demo_p++;
-        cv_monstergravity.value = *demo_p++;
+        cv_rndsoundpitch.EV = *demo_p++;  // uses M_Random
+        cv_monbehavior.EV = *demo_p++;
+        cv_doorstuck.EV = *demo_p++;
+        cv_monstergravity.EV = *demo_p++;
 
         demo_p = demo_p_next;  // skip rest of settings
         if( *demo_p++ != 0x55 )  goto broken_header;  // Sync mark, start of data
@@ -3255,14 +3285,14 @@ no_demo:
 // G_TimeDemo
 //             NOTE: name is a full filename for external demos
 //
-static int restorecv_vidwait;
+static byte EV_restore_cv_vidwait = 0;
 
 void G_TimeDemo (char* name)
 {
     nodrawers = M_CheckParm ("-nodraw");
     noblit = M_CheckParm ("-noblit");
-    restorecv_vidwait = cv_vidwait.value;
-    if( cv_vidwait.value )
+    EV_restore_cv_vidwait = cv_vidwait.EV;
+    if( cv_vidwait.EV )
         CV_Set( &cv_vidwait, "0");
     timingdemo = true;
     singletics = true;
@@ -3324,8 +3354,8 @@ boolean G_CheckDemoStatus (void)
         CONS_Printf ("\2Timed %i - Gametics in %i Realtics\n"
                      "\2%f Secondes, %f avg FPS\n"
                      ,leveltime,time,f1/TICRATE,f2/f1);
-        if( restorecv_vidwait != cv_vidwait.value )
-            CV_SetValue(&cv_vidwait, restorecv_vidwait);
+        if( EV_restore_cv_vidwait != cv_vidwait.EV )
+            CV_SetValue(&cv_vidwait, EV_restore_cv_vidwait);
         D_AdvanceDemo ();
         return true;
     }

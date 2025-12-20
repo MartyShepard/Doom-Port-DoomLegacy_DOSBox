@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: t_func.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -606,7 +606,7 @@ void SF_GameMode(void)
 {
     t_return.type = FSVT_int;
 
-    if (cv_deathmatch.value)    // Deathmatch!
+    if( cv_deathmatch.EV )    // Deathmatch!
         t_return.value.i = 2;
     else if (netgame || multiplayer)    // Cooperative
         t_return.value.i = 1;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1284 2016-12-19 03:07:07Z wesleyjohnson $
+// $Id: sb_bar.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -188,7 +188,7 @@ void SB_Heretic_Init(void)
     PatchINVBAR = W_CachePatchName("INVBAR", PU_LOCK_SB);
     PatchCHAIN = W_CachePatchName("CHAIN", PU_LOCK_SB);
 
-    if(cv_deathmatch.value)
+    if( cv_deathmatch.EV )
     {
         PatchSTATBAR = W_CachePatchName("STATBAR", PU_LOCK_SB);
     }
@@ -598,7 +598,7 @@ void SB_Heretic_Drawer( boolean refresh )
     if( st_overlay_on )
     {
         // Overlay status
-        if( cv_splitscreen.value )
+        if( cv_splitscreen.EV )
         {
             if((vid.drawmode != DRAW8PAL) && st_palette != 0 )
                 ST_Palette0();
@@ -772,11 +772,11 @@ void H_PaletteFlash( player_t * plyr )
         if (palette >= (STARTREDPALS+NUMREDPALS))
             palette = STARTREDPALS+NUMREDPALS-1;
     }
-    else if(plyr->bonuscount && (cv_pickupflash.value>=2))
+    else if(plyr->bonuscount && (cv_pickupflash.EV >= 2))
     {
         // Pickup object palette flash.
         palette = STARTBONUSPALS
-           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.value]));
+           + ((plyr->bonuscount+7)>>(pickupflash_table[cv_pickupflash.EV]));
 
         if (palette >= (STARTBONUSPALS+NUMBONUSPALS))
             palette = STARTBONUSPALS+NUMBONUSPALS-1;
@@ -802,7 +802,7 @@ void H_PaletteFlash( player_t * plyr )
         {
             // Splitscreen cannot use palette effects when 8bit palette draw,
             // but other draw modes can.
-            if( ((cv_splitscreen.value == 0) || (vid.drawmode != DRAW8PAL))
+            if( ((cv_splitscreen.EV == 0) || (vid.drawmode != DRAW8PAL))
                 || !palette )
                 V_SetPalette (palette);
         }
@@ -895,7 +895,7 @@ static void H_DrawMainBar( player_t * plyr )
     }
 
     // Frags
-    if(cv_deathmatch.value)
+    if( cv_deathmatch.EV )
     {
         temp = ST_PlayerFrags(plyr-players);
         if(temp != oldfrags)
@@ -910,7 +910,7 @@ static void H_DrawMainBar( player_t * plyr )
     }
     else
     {
-        if(plyr->health_pickup && ( cv_pickupflash.value == 1 ))
+        if(plyr->health_pickup && ( cv_pickupflash.EV == 1 ))
         {
             // Health pickup flash
             V_DrawScaledFill(stbar_x+57, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
@@ -930,7 +930,7 @@ static void H_DrawMainBar( player_t * plyr )
     }
 
     // Keys
-    if(plyr->key_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->key_pickup && ( cv_pickupflash.EV == 1 ))
     {
         // Key pickup flash
         V_DrawScaledFill(stbar_x+153, stbar_y+6, 10, 23, FLASH_KEYS_COLOR);
@@ -961,7 +961,7 @@ static void H_DrawMainBar( player_t * plyr )
 #endif
     }
     // Ammo
-    if(plyr->ammo_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->ammo_pickup && ( cv_pickupflash.EV == 1 ))
     {
         // Ammo pickup flash
         V_DrawScaledFill(stbar_x+108, stbar_y+5, 32, 11, FLASH_BLK_COLOR);
@@ -986,7 +986,7 @@ static void H_DrawMainBar( player_t * plyr )
     }
 
     // Armor
-    if(plyr->armor_pickup && ( cv_pickupflash.value == 1 ))
+    if(plyr->armor_pickup && ( cv_pickupflash.EV == 1 ))
     {
         // Armor pickup flash
         V_DrawScaledFill(stbar_x+224, stbar_y+13, 32, 11, FLASH_GRY_COLOR);
@@ -1054,7 +1054,7 @@ static void H_OverlayDrawer( byte status_position, player_t * plyr )
     int x;
     int temp;
     // Draw at original size.
-    int sby = cv_splitscreen.value ?
+    int sby = cv_splitscreen.EV ?
        (status_position ? (BASEVIDHEIGHT/2) - (BASEVIDHEIGHT-stbar_y) // player 1
        : stbar_y ) //  player 2
      : stbar_y;  // Single player
@@ -1063,7 +1063,7 @@ static void H_OverlayDrawer( byte status_position, player_t * plyr )
     H_UpdateState |= HUS_overlay;
 #endif
 
-    if(cv_pickupflash.value == 1)
+    if( cv_pickupflash.EV == 1 )
     {
         // OpenGL, the inventory at right edge of screen is at stbar_x+286
         // pickup flashes
@@ -1092,7 +1092,7 @@ static void H_OverlayDrawer( byte status_position, player_t * plyr )
     else
         DrBNumber(0, 5, sby+22);
 
-    if(cv_deathmatch.value)
+    if( cv_deathmatch.EV )
     {
         temp = ST_PlayerFrags(plyr-players);
         DrINumber(temp, 45, sby+27);

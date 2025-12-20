@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01322 ]: w107 EN demo
+          DOS: Joystick init Message Fixed
+					
 [01321 ]: w107 bot indent
 [01320 ]: w107 absolute angle
 [01319 ]: w107 downgrade

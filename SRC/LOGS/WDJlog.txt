@@ -5936,3 +5936,23 @@ Removed the compile tests.
 patchfile = w107_17_bot_indent.patch
 - commit revision 1321
 Indent the bot code properly and cleanup the alignment.
+
+*** W107_EN_demo
+patchfile = w107_18_EN_demo.patch
+- commit revision 1322
+Add byte EV field to control structure.
+It is updated from value whenever the user sets the value using a
+command function.
+The CV_Restore_User_Settings() function restores the
+user settings by copying the value to EV for every registered cv_ var.
+
+Demos can change the value without disturbing the user setting in value.
+After the demo, CV_Restore_User_Settings will restore the user values to EV.
+This eliminates the need for setting temp EN_ variables using OnChange
+functions just to support demo playback, for most variables.
+
+The byte EV field is faster to access for On/Off values and for enum values,
+which is the vast bulk of all control settings.  There are only a few
+values that need the 32 bit value size and those are generally not set
+from demos.
+It is also easier to see that it is a control enable, example cv_xxx.EV.

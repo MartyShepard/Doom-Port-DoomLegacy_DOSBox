@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
+// $Id: p_spec.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -166,11 +166,9 @@
 #include "hardware/hw3sound.h"
 
 // Feature enables.
-byte  EN_variable_friction = 1;
-byte  EN_pushers = 1;
 
 // [WDJ]
-byte  friction_model = FR_legacy;  // friction_model_e
+byte  friction_model = FR_legacy;
 
 byte  boom_detect = 0;
 byte  legacy_detect = 0;
@@ -1705,7 +1703,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 52:
         // EXIT!
-        if( cv_allowexitlevel.value )
+        if( cv_allowexitlevel.EV )
         {
             G_ExitLevel ();
             line->special = 0;  // heretic have right
@@ -1787,7 +1785,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 124:
         // Secret EXIT
-        if( cv_allowexitlevel.value )
+        if( cv_allowexitlevel.EV )
             G_SecretExitLevel ();
         break;
 
@@ -1958,7 +1956,7 @@ P_ActivateCrossedLine ( line_t*       line,
       case 105:
         if( EN_heretic )
         {
-            if( cv_allowexitlevel.value )
+            if( cv_allowexitlevel.EV )
             {
                 G_SecretExitLevel ();
                 goto W1clear;
@@ -2455,7 +2453,7 @@ void P_ShootSpecialLine ( mobj_t*       thing,
           {
             case 197:
               // Exit to next level
-              if( cv_allowexitlevel.value )
+              if( cv_allowexitlevel.EV )
               {
                   P_ChangeSwitchTexture(line,0);
                   G_ExitLevel();
@@ -2464,7 +2462,7 @@ void P_ShootSpecialLine ( mobj_t*       thing,
 
             case 198:
               // Exit to secret level
-              if( cv_allowexitlevel.value )
+              if( cv_allowexitlevel.EV )
               {
                   P_ChangeSwitchTexture(line,0);
                   G_SecretExitLevel();
@@ -2538,7 +2536,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
           if (instantdamage)
               P_DamageMobj (player->mo, NULL, NULL, 20);
 
-          if ((player->health <= 10) && cv_allowexitlevel.value)
+          if( (player->health <= 10) && cv_allowexitlevel.EV )
               G_ExitLevel();
           break;
 
@@ -2586,7 +2584,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 found_secret_area:
    player->secretcount++;
    //faB: useful only in single & coop.
-   if (!cv_deathmatch.value)
+   if( !cv_deathmatch.EV )
    {
        if( player == displayplayer_ptr )
            GenPrintf(EMSG_playmsg, "\2You found a secret area!\n");
@@ -3950,7 +3948,7 @@ boolean PIT_PushThing(mobj_t* thing)
        
         // Square law distance effect by Killough 10/98, from prboom (not in Boom)
         // [WDJ] Modified to float
-        if( EN_mbf && (speed > 0) )
+        if( EN_mbf_speed && (speed > 0) )
         {
             float fdx = thing->x - sx;
             float fdy = thing->y - sy;

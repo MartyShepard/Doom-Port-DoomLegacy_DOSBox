@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: m_menu.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -433,7 +433,7 @@ consvar_t cv_menusound = {"menusound", "1", CV_SAVE | CV_CALL, menusound_cons_t,
 
 void CV_menusound_OnChange(void)
 {
-    int menusound = cv_menusound.value;
+    byte menusound = cv_menusound.EV;
 
     switch ( gamemode )
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1320 2017-05-23 14:22:37Z wesleyjohnson $
+// $Id: p_user.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1467,7 +1467,7 @@ void P_ArtiTele(player_t *player)
     angle_t destAngle;
     mapthing_t * mtp;
     
-    if(cv_deathmatch.value)
+    if( cv_deathmatch.EV )
     {
         // Heretic use of P_Random
         i = P_Random()%numdmstarts;

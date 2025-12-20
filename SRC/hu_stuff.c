@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: hu_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -424,7 +424,7 @@ void HU_Ticker(void)
     }
     
     //deathmatch rankings overlay if press key or while in death view
-    if (cv_deathmatch.value)
+    if( cv_deathmatch.EV )
     {
         if (gamekeydown[gamecontrol[gc_scores][0]] ||
             gamekeydown[gamecontrol[gc_scores][1]] )

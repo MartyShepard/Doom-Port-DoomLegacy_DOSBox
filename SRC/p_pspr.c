@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_pspr.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -707,7 +707,7 @@ void P_BulletSlope (mobj_t* mo)
     angle_t     an;
 
     //added:18-02-98: if AUTOAIM, try to aim at something
-    if(!mo->player->autoaim_toggle || !cv_allowautoaim.value || demoversion<=111)
+    if(!mo->player->autoaim_toggle || !cv_allowautoaim.EV || demoversion<=111)
         goto notagetfound;
 
     // see which target is to be aimed at

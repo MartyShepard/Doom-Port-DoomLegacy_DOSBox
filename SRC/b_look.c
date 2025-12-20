@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_look.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 2002-2016 by DooM Legacy Team.
 //
@@ -269,14 +269,14 @@ void B_LookForThings (player_t* p)
     {
         if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
         {
-            itemWeight = 0;  //initialize to no weight, best items have greatest weight
+            itemWeight = 0;  // initialize to no weight, best items have greatest weight
             mo = (mobj_t *)currentthinker;
             thingDistance = P_AproxDistance (p->mo->x - mo->x, p->mo->y - mo->y);
 
             if (((mo->flags & MF_COUNTKILL)
                  || (mo->type == MT_SKULL)
                  || (mo->type == MT_BARREL))
-                && (mo->flags & MF_SOLID)) //its a monster thats not dead
+                && (mo->flags & MF_SOLID)) // its a monster thats not dead
             {
               enemyFound = true;
             }
@@ -284,7 +284,7 @@ void B_LookForThings (player_t* p)
             {
                 if ((p != mo->player) && (mo->flags & MF_SOLID))
                 {
-                    if( cv_deathmatch.value )
+                    if( cv_deathmatch.EV )
                         enemyFound = true;
                     else
                     {
@@ -347,15 +347,15 @@ void B_LookForThings (player_t* p)
                     {
 //  HERETIC??? --> ///////// bonuses/powerups ////////////////////////
                      case MT_ARTIINVULNERABILITY:  //invulnerability, always run to get it
-                        if (cv_deathmatch.value || !p->powers[pw_invulnerability])
+                        if( cv_deathmatch.EV || !p->powers[pw_invulnerability])
                             itemWeight = 10;
                         break;
                      case MT_ARTIINVISIBILITY:	//invisability
-                        if (cv_deathmatch.value || !p->powers[pw_invisibility])
+                        if( cv_deathmatch.EV || !p->powers[pw_invisibility])
                             itemWeight = 9;
                         break;
                      case MT_ARTISUPERHEAL:	//soul sphere
-                        if (cv_deathmatch.value || p->health < maxsoul)
+                        if( cv_deathmatch.EV || p->health < maxsoul)
                             itemWeight = 8;
                         break;
                      case MT_ITEMSHIELD2:	//blue armour, if we have >= maxarmour, its impossible to get
@@ -396,7 +396,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 6;
                         }
-                        else if (((cv_deathmatch.value == 2)
+                        else if( ((cv_deathmatch.EV == 2)
                                   || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_shell] < p->maxammo[am_shell])
                                  )
@@ -413,7 +413,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 6;
                         }
-                        else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_clip] < p->maxammo[am_clip]))
                             itemWeight = 3;
                         break;
@@ -428,7 +428,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 7;
                         }
-                        else if (((cv_deathmatch.value == 2)
+                        else if( ((cv_deathmatch.EV == 2)
                                   || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_misl] < p->maxammo[am_misl]))
                             itemWeight = 3;
@@ -444,7 +444,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 7;
                         }
-                        else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_cell] < p->maxammo[am_cell]))
                             itemWeight = 3;
                         break;
@@ -460,7 +460,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 7;
                         }
-                        else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_cell] < p->maxammo[am_cell]))
                             itemWeight = 3;
                         break;
@@ -475,7 +475,7 @@ void B_LookForThings (player_t* p)
                             else
                                 itemWeight = 7;
                         }
-                        else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                                  && (p->ammo[am_shell] < p->maxammo[am_shell]))
                             itemWeight = 3;
                         break;
@@ -552,7 +552,7 @@ void B_LookForThings (player_t* p)
                  case SPR_PINV:	//invulnrability always run to get it
                     if (gameskill > sk_nightmare)
                         break;
-                    if (cv_deathmatch.value || !p->powers[pw_invulnerability])
+                    if( cv_deathmatch.EV || !p->powers[pw_invulnerability])
                     {
                         // index by gameskill
                         static const byte  pinv_weight[5] = {2, 5, 6, 8, 10};
@@ -562,8 +562,8 @@ void B_LookForThings (player_t* p)
                  case SPR_MEGA: //megasphere
                     if (gameskill > sk_nightmare)
                         break;
-                    if (cv_deathmatch.value
-                        || (p->health < maxsoul || p->armorpoints < max_armor))
+                    if( cv_deathmatch.EV
+                        || (p->health < maxsoul || p->armorpoints < max_armor) )
                     {
                         static const byte  mega_weight[5] = {2, 4, 5, 7, 9};
                         itemWeight = mega_weight[ gameskill ];
@@ -572,7 +572,7 @@ void B_LookForThings (player_t* p)
                  case SPR_PINS:	//invisibility
                     if (gameskill > sk_nightmare)
                         break;
-                    if (cv_deathmatch.value || !p->powers[pw_invisibility])
+                    if( cv_deathmatch.EV || !p->powers[pw_invisibility] )
                     {
                         static const byte  pins_weight[5] = {2, 3, 5, 7, 9};
                         itemWeight = pins_weight[ gameskill ];
@@ -581,7 +581,7 @@ void B_LookForThings (player_t* p)
                  case SPR_SOUL:	//soul sphere
                     if (gameskill > sk_nightmare)
                         break;
-                    if (cv_deathmatch.value || p->health < maxsoul)
+                    if( cv_deathmatch.EV || p->health < maxsoul )
                     {
                         static const byte  soul_weight[5] = {1, 2, 4, 6, 9};
                         itemWeight = soul_weight[ gameskill ];
@@ -666,7 +666,7 @@ void B_LookForThings (player_t* p)
                         else
                             itemWeight = 6;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_shell] < p->maxammo[am_shell]))
                         itemWeight = 3;
                     break;
@@ -681,7 +681,7 @@ void B_LookForThings (player_t* p)
                         else
                             itemWeight = 6;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_clip] < p->maxammo[am_clip]))
                         itemWeight = 3;
                     break;
@@ -696,7 +696,7 @@ void B_LookForThings (player_t* p)
                        else
                             itemWeight = 7;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_misl] < p->maxammo[am_misl]))
                        itemWeight = 3;
                     break;
@@ -711,7 +711,7 @@ void B_LookForThings (player_t* p)
                         else
                             itemWeight = 7;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_cell] < p->maxammo[am_cell]))
                         itemWeight = 3;
                     break;
@@ -727,7 +727,7 @@ void B_LookForThings (player_t* p)
                         else
                             itemWeight = 7;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_cell] < p->maxammo[am_cell]))
                         itemWeight = 3;
                     break;
@@ -742,7 +742,7 @@ void B_LookForThings (player_t* p)
                         else
                             itemWeight = 7;
                     }
-                    else if (((cv_deathmatch.value == 2) || (mo->flags & MF_DROPPED))
+                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
                              && (p->ammo[am_shell] < p->maxammo[am_shell]))
                         itemWeight = 3;
                     break;

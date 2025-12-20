@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: wi_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1225,7 +1225,7 @@ boolean teamingame(int teamnum)
 {
    int i;
 
-   if (cv_teamplay.value == 1)
+   if( cv_teamplay.EV == 1 )
    {
        for(i=0;i<MAXPLAYERS;i++)
        {
@@ -1234,7 +1234,7 @@ boolean teamingame(int teamnum)
        }
    }
    else
-   if (cv_teamplay.value == 2)
+   if( cv_teamplay.EV == 2)
    {
        for(i=0;i<MAXPLAYERS;i++)
        {
@@ -1263,7 +1263,7 @@ static void WI_drawTeamsStats(void)
     //Fab:25-04-98: when you play, you quickly see your frags because your
     //  name is displayed white, when playback demo, you quickly see who's the
     //  view.
-    if(cv_teamplay.value==1)
+    if( cv_teamplay.EV == 1 )
         whiteplayer = demoplayback ? displayplayer_ptr->skincolor
                                    : consoleplayer_ptr->skincolor;
     else
@@ -1966,7 +1966,7 @@ void WI_Ticker(void)
     switch (state)
     {
       case StatCount:
-        if (cv_deathmatch.value)
+        if( cv_deathmatch.EV )
             WI_updateDeathmatchStats();
         else if (multiplayer)
             WI_updateNetgameStats();
@@ -2243,9 +2243,9 @@ void WI_Drawer (void)
     switch (state)
     {
       case StatCount:
-        if (cv_deathmatch.value)
+        if( cv_deathmatch.EV )
         {
-            if(cv_teamplay.value)
+            if( cv_teamplay.EV )
                 WI_drawTeamsStats();
             else
                 WI_drawDeathmatchStats();
@@ -2310,7 +2310,7 @@ void WI_Start(wbstartstruct_t* wbstartstruct)
     WI_initVariables(wbstartstruct);
     WI_loadData();
 
-    if (cv_deathmatch.value)
+    if( cv_deathmatch.EV )
         WI_initDeathmatchStats();
     else if (multiplayer)
         WI_initNetgameStats();

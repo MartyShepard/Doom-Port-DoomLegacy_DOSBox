@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
+// $Id: p_map.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -212,7 +212,7 @@ static boolean PIT_StompThing (mobj_t* thing)
             thing->momy *= -32;
             thing->momz += -8;
         }
-        switch( cv_instadeath.value )
+        switch( cv_instadeath.EV )
         {
          // 0: default .. DIE
          case 1: // Damage instead
@@ -225,7 +225,7 @@ static boolean PIT_StompThing (mobj_t* thing)
            break;
          default:
            // Block damage in deathmatch, it would always kill player1
-           if( cv_deathmatch.value > 0 )
+           if( cv_deathmatch.EV > 0 )
               damage = 0;
         }
     }
@@ -252,7 +252,8 @@ fixed_t  P_GetFriction( const mobj_t * mo )
     // and updates whenever sec->special is changed.  That is several fewer
     // tests in this heavily used code.
     got_movefactor = ORIG_FRICTION_FACTOR;
-    if( !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && EN_variable_friction )
+    if( EN_variable_friction
+        && !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) )
     {
         fixed_t mo_top = mo->z + mo->height;
         const msecnode_t * msnp = mo->touching_sectorlist;
@@ -321,6 +322,7 @@ int  P_GetMoveFactor(mobj_t* mo)
   if ( friction_model >= FR_boom )  // MBF, and Boom friction (NOT using friction thinker)
 #endif
   {
+      // EN_mbf
       // modern friction model, introduced in MBF
       P_GetFriction( mo );  // sets got_friction and got_movefactor
       if( got_friction < ORIG_FRICTION   // muddy, sludge
@@ -343,8 +345,8 @@ int  P_GetMoveFactor(mobj_t* mo)
   }
 #ifdef FRICTIONTHINKER
   // older demo friction
-  else if (EN_boom && EN_variable_friction &&
-      !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+  else if( EN_boom && EN_variable_friction
+      && !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)) )
   {
       // Boom friction, using friction thinker
       got_friction = mo->friction;
@@ -381,6 +383,7 @@ int  P_GetMoveFactor(mobj_t* mo)
 #endif
   else
   {
+      // Vanilla friction
       got_friction = ORIG_FRICTION;
       got_movefactor = ORIG_FRICTION_FACTOR;
   }

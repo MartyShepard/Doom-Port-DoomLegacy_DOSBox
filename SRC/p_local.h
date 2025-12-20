@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1319 2017-05-23 14:21:23Z wesleyjohnson $
+// $Id: p_local.h 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -276,7 +276,8 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 extern  consvar_t cv_monbehavior;
 extern  consvar_t cv_monsterfriction;
 extern  consvar_t cv_doorstuck;
-extern  byte  EN_doorstuck;
+extern  consvar_t cv_solidcorpse;        // p_enemy
+extern  consvar_t cv_monstergravity;     // p_enemy
 
 // when pushing a line 
 //#define MAXSPECIALCROSS 16
@@ -394,11 +395,13 @@ extern fixed_t  see_bottomslope;
 //
 #include "p_spec.h"
 
-// Secondary feature sets.
+// Secondary features.
 extern byte  EN_inventory;   // Heretic, Hexen
 extern byte  EN_variable_friction;
 extern byte  EN_pushers;
-extern byte  EN_monster_friction;  // MBF demo flag
+
+extern byte  EN_mbf_speed;
+extern byte  EN_monster_friction;
 
 typedef enum {
  // Boom values

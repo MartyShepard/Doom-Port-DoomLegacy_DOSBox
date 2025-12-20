@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_saveg.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -952,7 +952,8 @@ void P_ArchiveWorld(void)
         diff2 = 0;
 
         // we don't care of map in deathmatch !
-        if (((cv_deathmatch.value == 0) && (li->flags != LE_SWAP16(mld->flags))) || ((cv_deathmatch.value != 0) && ((li->flags & ~ML_MAPPED) != LE_SWAP16(mld->flags))))
+        if(((cv_deathmatch.EV == 0) && (li->flags != LE_SWAP16(mld->flags)))
+           || ((cv_deathmatch.EV != 0) && ((li->flags & ~ML_MAPPED) != LE_SWAP16(mld->flags))))
             diff |= LD_FLAG;
         if (li->special != LE_SWAP16(mld->special))
             diff |= LD_SPECIAL;

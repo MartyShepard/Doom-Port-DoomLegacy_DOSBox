@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_bsp.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -993,7 +993,7 @@ void R_Subsector (int num)
     }
 
 #ifdef FLOORSPLATS
-    if (sub->splats && cv_splats.value )
+    if( sub->splats && cv_splats.EV )
         R_AddVisibleFloorSplats (sub);
 #endif
 

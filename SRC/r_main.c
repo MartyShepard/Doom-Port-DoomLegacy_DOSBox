@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: r_main.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -265,7 +265,7 @@ consvar_t cv_boom_colormap   = {"boomcolormap", "0", CV_SAVE|CV_CALL, boom_color
 byte EN_boom_colormap = 1;  // compatibility, user preference
 void BoomColormap_detect(void)
 {
-    switch( cv_boom_colormap.value )
+    switch( cv_boom_colormap.EV )
     {
      default:
      case 0:  // sector colormap
@@ -309,17 +309,17 @@ void SplitScreen_OnChange(void)
     R_ExecuteSetViewSize();
 
     // change the menu
-    M_Player2_MenuEnable( cv_splitscreen.value );
+    M_Player2_MenuEnable( cv_splitscreen.EV );
 
     if( !demoplayback)
     {
-        if(cv_splitscreen.value)
+        if( cv_splitscreen.EV )
             CL_AddSplitscreenPlayer();
         else
             CL_RemoveSplitscreenPlayer();
 
         if(server && !netgame)
-            multiplayer=cv_splitscreen.value;
+            multiplayer = cv_splitscreen.EV;
     }
     else
     {
@@ -882,7 +882,7 @@ void R_ExecuteSetViewSize (void)
 
     setsizeneeded = false;
     // no reduced view in splitscreen mode
-    if( cv_splitscreen.value && cv_viewsize.value < 11 )
+    if( cv_splitscreen.EV && (cv_viewsize.value < 11) )
         CV_SetValue (&cv_viewsize, 11);
 
     // added by Hurdler
@@ -909,7 +909,7 @@ void R_ExecuteSetViewSize (void)
 
     stbar_height = (EN_heretic)? H_STBAR_HEIGHT : ST_HEIGHT;
 
-    if( cv_scalestatusbar.value || cv_viewsize.value>=11)
+    if( cv_scalestatusbar.EV || (cv_viewsize.value>=11) )
         stbar_height *= (rendermode==render_soft)? vid.dupy : vid.fdupy;
 
     //added 01-01-98: full screen view, without statusbar
@@ -928,7 +928,7 @@ void R_ExecuteSetViewSize (void)
     }
 
     // added 16-6-98:splitscreen
-    if( cv_splitscreen.value )
+    if( cv_splitscreen.EV )
         rdraw_viewheight >>= 1;
 
     detailshift = setdetail;
@@ -1161,7 +1161,7 @@ void R_SetupFrame (player_t* player)
     extralight_cm = extralight - (extralight>>2);  // 3/4 for colormap->fog
 
     // Chase camera setting must be maintained even with script camera running
-    if (cv_chasecam.value)
+    if( cv_chasecam.EV )
     {
         // with splitplayer, only the first player will get the chase camera
         if( !camera.chase )
@@ -1381,7 +1381,7 @@ void R_SetupFrame (player_t* player)
         aimingangle = G_ClipAimingPitch(aimingangle);	// limit aimingangle
 
         // [WDJ] cleaned up
-        dy = cv_splitscreen.value ? rdraw_viewheight*2 : rdraw_viewheight ;
+        dy = cv_splitscreen.EV ? rdraw_viewheight*2 : rdraw_viewheight ;
         dy = ( dy * AIMINGTODY(aimingangle) )/ BASEVIDHEIGHT ;
 
         yslope = &yslopetab[(3*rdraw_viewheight/2) - dy];
@@ -1548,7 +1548,7 @@ void R_RenderPlayerView (player_t* player)
 
     // If enabled, draw the weapon psprites on top of everything
     // but not on side views, nor on camera views.
-    if (cv_psprites.value && !viewangleoffset && !script_camera_on
+    if( cv_psprites.EV && !viewangleoffset && !script_camera_on
         && camera.chase != player )
         R_DrawPlayerSprites ();
 

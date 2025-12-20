@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: command.h 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -145,6 +145,7 @@ typedef struct CV_PossibleValue_s CV_PossibleValue_t;
 // MIN INC .. MAX : Label INC is the increment.
 // List of values : Next or previous value on the list.
 
+// [WDJ] Ptrs together for better packing. Beware many consts of this type.
 typedef struct consvar_s
 {
     char    *name;
@@ -152,11 +153,19 @@ typedef struct consvar_s
     uint32_t flags;            // flags see cvflags_t above
     CV_PossibleValue_t *PossibleValue;  // table of possible values
     void    (*func) (void);    // called on change, if CV_CALL set
-    int     value;             // for int and fixed_t
-    char    *string;           // value in string
-    uint16_t netid;            // used internaly : netid for send end receive
+    int32_t  value;            // for int and fixed_t
+    uint16_t netid;            // hashed netid for net send and receive
                                // used only with CV_NETVAR
+    byte     EV;  // [WDJ] byte value, set from value changes, set from demos.
+       // This saves user settings from being changed by demos.
+       // Do not make it an anything except byte.  Byte is efficient for most
+       // enables, and enum. Two bytes of space are free due to alignment.
+       // For most user settings this is slightly easier to manage than
+       // creating more EN vars.  For the exceptions, create a setting function
+       // to pass consvar settings to EN vars.
+    char    *string;           // value in string
     struct  consvar_s *next;
+
 } consvar_t;
 
 extern CV_PossibleValue_t CV_OnOff[];
@@ -176,6 +185,9 @@ void  CV_SetValue (consvar_t *var, int value);
 
 // it a setvalue but with a modulo at the maximum
 void  CV_AddValue (consvar_t *var, int increment);
+
+// Called after demo to restore the user settings.
+void  CV_Restore_User_Settings( void );
 
 // write all CV_SAVE variables to config file
 void  CV_SaveVariables (FILE *f);

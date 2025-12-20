@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: r_things.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1588,14 +1588,14 @@ void R_DrawPSprite (pspdef_t* psp)
     // store information in a vissprite
     vis = &avis;
     vis->mobjflags = 0;
-    vis->texturemid = (cv_splitscreen.value) ?
+    vis->texturemid = (cv_splitscreen.EV) ?
         (120<<(FRACBITS)) + FRACUNIT/2 - (psp->sy - sprlump->topoffset)
         : (BASEYCENTER<<FRACBITS) + FRACUNIT/2 - (psp->sy - sprlump->topoffset);
 
     if( EN_heretic_hexen )
     {
         if( rdraw_viewheight == vid.height
-            || (!cv_scalestatusbar.value && vid.dupy>1) )
+            || (!cv_scalestatusbar.EV && vid.dupy>1) )
             vis->texturemid -= PSpriteSY[viewplayer->readyweapon];
     }
 

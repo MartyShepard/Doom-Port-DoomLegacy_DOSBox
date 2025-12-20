@@ -221,9 +221,10 @@ void I_InitJoystick (void)
     if (cv_usejoystick.value && !M_CheckParm("-nojoy"))
     {
         joy_type = JOY_TYPE_4BUTTON;
-        if(initialise_joystick()==0) {
-
-            switch(cv_usejoystick.value) {
+        if(initialise_joystick()==0)
+				{
+            switch(cv_usejoystick.value)
+						{
                case 1 : joy_type = JOY_TYPE_4BUTTON; break;
                case 2 : joy_type = JOY_TYPE_STANDARD;    break;
                case 3 : joy_type = JOY_TYPE_6BUTTON;     break;
@@ -238,38 +239,89 @@ void I_InitJoystick (void)
                case 11: joy_type = JOY_TYPE_SNESPAD_LPT3;break;
                case 12: joy_type = JOY_TYPE_WINGWARRIOR; break;
             }
+						char JoyMessageA[128];
+						char JoyMessageB[128];
+						char JoyMessageC[128];
+						char JoyMessageD[128];
+						char JoyMessageE[128];
+						char JoyMessageF[128];
+						char JoyMessageG[128];
+						char JoyMessageH[128];
+						sprintf (JoyMessageA, "CENTER the joystick and press a button:\n");
+						sprintf (JoyMessageB, "\nPush the joystick to the UPPER LEFT  corner and press a button\n");
+						sprintf (JoyMessageC, "\nPush the joystick to the LOWER RIGHT corner and press a button\n");
+						sprintf (JoyMessageD, "Put HAT at CENTER and press a button\n");
+						sprintf (JoyMessageE, "Put HAT at UP     and press a button\n");
+						sprintf (JoyMessageF, "Put HAT at DOWN   and press a button\n");						
+						sprintf (JoyMessageG, "Put HAT at LEFT   and press a button\n");
+						sprintf (JoyMessageH, "Put HAT at RIGHT  and press a button\n");
+						
             // only gamepadstyle joysticks
             Joystick.bGamepadStyle=true;
-	    if (con_destlines==0)						
+	          if (con_destlines==0)						
                M_InitJoystick(cv_usejoystick.value);														 						
             else
             {
+					     if (console_open)						 
+							 {
+                  // Console Textmessage (Wenn der benutzer use_joystick verwendet)
+                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageA); I_WaitJoyButton ();
+                  initialise_joystick();
+                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageB); I_WaitJoyButton ();
+                  calibrate_joystick_tl();						
+                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageC); I_WaitJoyButton ();
+                  calibrate_joystick_br();					
+						   }
+							 else
+							 {
+                  printf("JOY_Init: %s",JoyMessageA); I_WaitJoyButton ();
+                  initialise_joystick();					
+                  printf("JOY_Init: %s",JoyMessageB); I_WaitJoyButton ();
+                  calibrate_joystick_tl();
+                  printf("JOY_Init: %s",JoyMessageC); I_WaitJoyButton ();
+                  calibrate_joystick_br();								 
+							 }
+							 						
 
-            CONS_Printf("\2CENTER the joystick and press a button:"); I_WaitJoyButton ();
-            initialise_joystick();
-            CONS_Printf("\nPush the joystick to the UPPER LEFT corner and press a button\n"); I_WaitJoyButton ();
-            calibrate_joystick_tl();
-            CONS_Printf("Push the joystick to the LOWER RIGHT corner and press a button\n"); I_WaitJoyButton ();
-            calibrate_joystick_br();
-            if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
-            {
-                CONS_Printf("Put Hat at Center and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_CENTRE);
-                CONS_Printf("Put Hat at Up and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_UP);
-                CONS_Printf("Put Hat at Down and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_DOWN);
-                CONS_Printf("Put Hat at Left and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_LEFT);
-                CONS_Printf("Put Hat at Right and press a button\n"); I_WaitJoyButton ();
-                calibrate_joystick_hat(JOY_HAT_RIGHT);
-            }
+               if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
+               {
+							    if (console_open)	
+							   {
+                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_CENTRE);
+                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageE); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_UP);
+                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageF); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_DOWN);
+                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageG); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_LEFT);
+                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageH); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_RIGHT);									 
+							   }
+							   else
+							   {
+                  printf("%s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_CENTRE);
+                  printf("%s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_UP);
+                  printf("%s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_DOWN);
+                  printf("%s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_LEFT);
+                  printf("%s",JoyMessageD); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_RIGHT);									 
+
+							   }
+               }
             }
             joystick_detected=1;
         }
         else
         {
-            CONS_Printf("\2No Joystick detected.\n");
+					if (console_open)
+						GenPrintf( EMSG_info|EMSG_all,"\2No Joystick detected.\n");
+					else
+            printf("No Joystick detected.\n");
         }
     }
 }

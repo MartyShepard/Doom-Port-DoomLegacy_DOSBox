@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_inter.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -94,8 +94,6 @@
 #include "s_sound.h"
 #include "r_main.h"
 #include "st_stuff.h"
-#include "p_fab.h"
-  // cv_solidcorpse
 #include "g_input.h"
   // cv_allowrocketjump
 
@@ -108,7 +106,8 @@
 int     maxammo[NUMAMMO] = {200, 50, 300, 50};
 int     clipammo[NUMAMMO] = {10, 4, 20, 1};
 
-consvar_t cv_fragsweaponfalling = {"fragsweaponfalling"   ,"0", CV_NETVAR, CV_YesNo};
+consvar_t cv_fragsweaponfalling
+  = {"fragsweaponfalling"   ,"0", CV_NETVAR, CV_YesNo};
 
 // added 4-2-98 (Boris) for dehacked patch
 // (i don't like that but do you see another solution ?)
@@ -144,7 +143,7 @@ int     MAXHEALTH= 100;
 void P_SetMessage(player_t *player, char *message, byte msglevel)
 {
     // This actually optimizes cheaper than a table.
-    switch( cv_showmessages.value )
+    switch( cv_showmessages.EV )
     {
      case 5: // dev level
      case 4: // debug level
@@ -396,7 +395,7 @@ boolean P_GiveWeapon ( player_t*     player,
     boolean     gaveweapon;
     int         ammo_count;
 
-    if (multiplayer && (cv_deathmatch.value!=2) && !dropped )
+    if( multiplayer && (cv_deathmatch.EV != 2) && !dropped )
     {
         // leave placed weapons forever on net games
         if (player->weaponowned[weapon])
@@ -406,7 +405,7 @@ boolean P_GiveWeapon ( player_t*     player,
         player->weapon_pickup = PICKUP_FLASH_TICS;
         player->weaponowned[weapon] = true;
 
-        if (cv_deathmatch.value)
+        if( cv_deathmatch.EV )
             P_GiveAmmo (player, player->weaponinfo[weapon].ammo, 5*clipammo[player->weaponinfo[weapon].ammo]);
         else
             P_GiveAmmo (player, player->weaponinfo[weapon].ammo, GetWeaponAmmo[weapon]);
@@ -419,7 +418,7 @@ boolean P_GiveWeapon ( player_t*     player,
         //added:16-01-98:changed consoleplayer to displayplayer
         //               (hear the sounds from the viewpoint)
         if (player == displayplayer_ptr
-            || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
+            || (cv_splitscreen.EV && player == displayplayer2_ptr))  // NULL when unused
             S_StartSound (NULL, sfx_wpnup);
         return false;
     }
@@ -675,7 +674,7 @@ static
 void P_SetDormantArtifact(mobj_t *arti)
 {
         arti->flags &= ~MF_SPECIAL;
-        if(cv_deathmatch.value && (arti->type != MT_ARTIINVULNERABILITY)
+        if( cv_deathmatch.EV && (arti->type != MT_ARTIINVULNERABILITY )
                 && (arti->type != MT_ARTIINVISIBILITY))
         {
                 P_SetMobjState(arti, S_DORMANTARTI1);
@@ -1379,7 +1378,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
 
     //added:16-01-98:consoleplayer -> displayplayer (hear sounds from viewpoint)
     if (player == displayplayer_ptr
-        || (cv_splitscreen.value && player == displayplayer2_ptr))  // NULL when unused
+        || (cv_splitscreen.EV && player == displayplayer2_ptr))  // NULL when unused
         S_StartSound (NULL, sound);
 }
 
@@ -1519,9 +1518,9 @@ void P_DeathMessages ( mobj_t*       target,
         {
             str = text[DEATHMSG_SUICIDE];
             snprintf(txt, BUFFSIZE, str, player_names[target->player - players]);
-	    txt[BUFFSIZE-1] = 0;
+            txt[BUFFSIZE-1] = 0;
             GenPrintf(EMSG_playmsg, txt);
-            if (cv_splitscreen.value)
+            if( cv_splitscreen.EV )
                 GenPrintf(EMSG_playmsg2, txt);
         }
         else
@@ -1583,9 +1582,9 @@ void P_DeathMessages ( mobj_t*       target,
             snprintf(txt, BUFFSIZE, str,
                      player_names[target->player - players],
                      player_names[source->player - players]);
-	    txt[BUFFSIZE-1] = 0;
+            txt[BUFFSIZE-1] = 0;
             GenPrintf(EMSG_playmsg, txt);
-            if (cv_splitscreen.value)
+            if( cv_splitscreen.EV )
                 GenPrintf(EMSG_playmsg2, txt);
         }
     }
@@ -1651,7 +1650,7 @@ void P_DeathMessages ( mobj_t*       target,
 // WARNING : check cv_fraglimit>0 before call this function !
 void P_CheckFragLimit(player_t *p)
 {
-    if(cv_teamplay.value)
+    if( cv_teamplay.EV )
     {
         int fragteam=0,i;
 
@@ -1704,7 +1703,7 @@ void P_KillMobj ( mobj_t*  target,
     int         drop_ammo_count = 0;
 
     // dead target is no more shootable
-    if( !cv_solidcorpse.value )
+    if( ! cv_solidcorpse.EV )
         target->flags &= ~MF_SHOOTABLE;
 
     target->flags &= ~(MF_FLOAT|MF_SKULLFLY);
@@ -1799,7 +1798,7 @@ void P_KillMobj ( mobj_t*  target,
         if (!source)
             target->player->frags[target->player-players]++;
 
-        if (!cv_solidcorpse.value)
+        if( ! cv_solidcorpse.EV )
             target->flags &= ~MF_SOLID;                     // does not block
         target->flags2 &= ~MF2_FLY;
         target->player->powers[pw_flight] = 0;
@@ -1854,7 +1853,7 @@ void P_KillMobj ( mobj_t*  target,
     // during the death frame of a thing.
 
     // Frags Weapon Falling support
-    if (target->player && cv_fragsweaponfalling.value )
+    if( target->player && cv_fragsweaponfalling.EV )
     {
         drop_ammo_count = P_AmmoInWeapon(target->player);
         //if (!drop_ammo_count)
@@ -1953,7 +1952,7 @@ void P_KillMobj ( mobj_t*  target,
     mo = P_SpawnMobj (target->x, target->y, demoversion<132 ? ONFLOORZ : target->floorz, item);
     mo->flags |= MF_DROPPED;    // special versions of items
 
-    if (!cv_fragsweaponfalling.value)
+    if( !cv_fragsweaponfalling.EV )
         drop_ammo_count = 0;    // Doom default ammo count
 
     mo->dropped_ammo_count = drop_ammo_count;
@@ -2371,7 +2370,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             // added momz (do it better for missiles explosion)
             if ( source
                  && demoversion>=124
-                 && (demoversion<129 || !cv_allowrocketjump.value))
+                 && (demoversion<129 || !cv_allowrocketjump.EV))
             {
                 int dist,z;
                 
@@ -2395,7 +2394,7 @@ boolean P_DamageMobj ( mobj_t*   target,
                 amomz = FixedMul (thrust, sine_ANG(ang));
             }
             else //SoM: 2/28/2000: Added new function.
-            if(demoversion >= 129 && cv_allowrocketjump.value)
+            if( demoversion >= 129 && cv_allowrocketjump.EV )
             {
                 fixed_t delta1 = abs(inflictor->z - target->z);
                 fixed_t delta2 = abs(inflictor->z - (target->z + target->height));
@@ -2545,17 +2544,17 @@ boolean P_DamageMobj ( mobj_t*   target,
             || (demoversion < 125) // old demoversion bypasses restrictions
             || (source==target)    // self-inflicted
             || (! multiplayer)     // single player
-            || ( (cv_deathmatch.value==0) && cv_teamdamage.value )  // coop
-            || ( (cv_deathmatch.value>0)      // deathmatch 1,2,3
-                 && ( (!cv_teamplay.value)    // no teams
-                      || cv_teamdamage.value  // can damage within team
+            || ( (cv_deathmatch.EV == 0) && cv_teamdamage.EV )  // coop
+            || ( (cv_deathmatch.EV > 0)      // deathmatch 1,2,3
+                 && ( (!cv_teamplay.EV)    // no teams
+                      || cv_teamdamage.EV  // can damage within team
                       || ! ST_SameTeam(source->player,player) // diff team
                     )
                  )
             )
         {
             if(damage >= player->health
-                && ((gameskill == sk_baby) || cv_deathmatch.value)
+                && ((gameskill == sk_baby) || cv_deathmatch.EV)
                 && !player->chickenTics)
             { // Try to use some inventory health
                 P_AutoUseHealth(player, damage-player->health+1);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
+// $Id: p_enemy.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -91,19 +91,18 @@
 
 void A_Fall (mobj_t *actor);
 void FastMonster_OnChange(void);
+void CV_monster_OnChange(void);
 
 // enable the solid corpses option : still not finished
-consvar_t cv_solidcorpse = {"solidcorpse","0",CV_NETVAR | CV_SAVE,CV_OnOff};
-consvar_t cv_fastmonsters = {"fastmonsters","0",CV_NETVAR | CV_CALL,CV_OnOff,FastMonster_OnChange};
-consvar_t cv_predictingmonsters = {"predictingmonsters","0",CV_NETVAR | CV_SAVE,CV_OnOff};	//added by AC for predmonsters
+consvar_t cv_solidcorpse =
+  {"solidcorpse","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+consvar_t cv_fastmonsters =
+  {"fastmonsters","0", CV_NETVAR | CV_CALL, CV_OnOff, FastMonster_OnChange};
+consvar_t cv_predictingmonsters =
+  {"predictingmonsters","0", CV_NETVAR | CV_SAVE, CV_OnOff};	//added by AC for predmonsters
 
-// [WDJ] Monster friction, doorstuck, infight
-void CV_monster_OnChange(void)
-{
-    DemoAdapt_p_enemy();
-}
-
-consvar_t cv_monstergravity = {"monstergravity","1", CV_NETVAR | CV_SAVE | CV_CALL, CV_OnOff, CV_monster_OnChange };
+consvar_t cv_monstergravity =
+  {"monstergravity","1", CV_NETVAR | CV_SAVE, CV_OnOff };
 
 // DarkWolf95: Monster Behavior
 CV_PossibleValue_t monbehavior_cons_t[]={
@@ -112,15 +111,20 @@ CV_PossibleValue_t monbehavior_cons_t[]={
    {2,"Infight"},
    {3,"Force Coop"},
    {4,"Force Infight"},
+   {5,"No Infight"},
    {0,NULL}};
-consvar_t cv_monbehavior = { "monsterbehavior", "0", CV_NETVAR | CV_CALL, monbehavior_cons_t, CV_monster_OnChange };
+consvar_t cv_monbehavior =
+  { "monsterbehavior", "0", CV_NETVAR | CV_CALL, monbehavior_cons_t, CV_monster_OnChange };
 
 CV_PossibleValue_t monsterfriction_t[] = {
    {0,"None"},
    {1,"MBF"},
    {2,"Momentum"},
+   {3,"Heretic"},
+   {20,"Normal"},
    {0,NULL} };
-consvar_t cv_monsterfriction = {"monsterfriction","2", CV_NETVAR | CV_SAVE | CV_CALL, monsterfriction_t, CV_monster_OnChange};
+consvar_t cv_monsterfriction =
+  {"monsterfriction","2", CV_NETVAR | CV_SAVE | CV_CALL, monsterfriction_t, CV_monster_OnChange};
 
 // Monster stuck on door edge
 CV_PossibleValue_t doorstuck_t[] = {
@@ -128,7 +132,8 @@ CV_PossibleValue_t doorstuck_t[] = {
    {1,"MBF"},
    {2,"Boom"},
    {0,NULL} };
-consvar_t cv_doorstuck = {"doorstuck","2", CV_NETVAR | CV_SAVE | CV_CALL, doorstuck_t, CV_monster_OnChange};
+consvar_t cv_doorstuck =
+  {"doorstuck","2", CV_NETVAR | CV_SAVE | CV_CALL, doorstuck_t, CV_monster_OnChange};
 
 
 
@@ -199,14 +204,14 @@ static const struct
     };
 
     int i;
-    if (cv_fastmonsters.value && !fast)
+    if( cv_fastmonsters.EV && !fast )
     {
         for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
             states[i].tics >>= 1;
         fast=true;
     }
     else
-    if(!cv_fastmonsters.value && fast)
+    if( !cv_fastmonsters.EV && fast )
     {
         for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
             states[i].tics <<= 1;
@@ -216,78 +221,87 @@ static const struct
     for(i = 0; MonsterMissileInfo[i].type != -1; i++)
     {
         mobjinfo[MonsterMissileInfo[i].type].speed
-            = MonsterMissileInfo[i].speed[cv_fastmonsters.value]<<FRACBITS;
+            = MonsterMissileInfo[i].speed[cv_fastmonsters.EV]<<FRACBITS;
     }
 }
 
 
 // Infight settings translated to INFT_ values.  MBF demo sets infight.
-byte  monster_infight = 0; //DarkWolf95:November 21, 2003: Monsters Infight!
-byte  monster_infight_deh = 0; // DEH input.
+byte  monster_infight; //DarkWolf95:November 21, 2003: Monsters Infight!
+byte  monster_infight_deh; // DEH input.
 
-byte  EN_monster_friction = 1;  // MBF demo flag, and legacy.
-byte  EN_mbf_enemyfactor = 0;
-byte  EN_monster_momentum = 0;
-byte  EN_skull_limit = 0;  // turn off pain skull gen limits
-byte  EN_old_pain_spawn = 0;
-byte  EN_doorstuck = 0;
-byte  EN_mbf_doorstuck = 0;
-byte  EN_monster_gravity = 0;
-byte  EN_mbf_speed;  // p_spec
+       byte  EN_monster_friction;
+static byte  EN_mbf_enemyfactor;
+static byte  EN_monster_momentum;
+static byte  EN_skull_limit;  // turn off pain skull gen limits
+static byte  EN_old_pain_spawn;
+static byte  EN_doorstuck;  // !comp[comp_doorstuck], Boom doorstuck or MBF doorstuck
+static byte  EN_mbf_doorstuck;  // MBF doorstuck
+       byte  EN_mbf_speed;  // p_spec
 
 
-// local version control
-void DemoAdapt_p_enemy( void )
+// [WDJ] Friction got too complicated, use lookup table.
+typedef enum {
+  FRE_monster_friction = 0x01,
+  FRE_monster_momentum = 0x02,
+  FRE_mbf_enemyfactor = 0x04,
+} friction_en_e;
+
+static const byte friction_table[] =
 {
-    // heretic demos have FR_orig friction, with special ice sector handling
-    // in P_Thrust (so monsters slip only on ice conveyor)
-    if( demoplayback && (friction_model != FR_legacy))
+  0,   // None
+  FRE_monster_friction | FRE_mbf_enemyfactor,  // MBF
+  FRE_monster_friction | FRE_monster_momentum,  // Momentum
+  // Heretic demos have FR_orig friction, with special ice sector handling
+  // in P_Thrust (so monsters slip only on ice sector)
+  0,   // Heretic
+};
+
+// [WDJ] Monster friction, doorstuck, infight
+void CV_monster_OnChange(void)
+{
+    // Set monster friction for Boom, MBF, prboom demo, by cv_monsterfriction.EV = 1.
+    if( (demoplayback && (friction_model != FR_legacy))
+	|| ( cv_monsterfriction.EV > 3 ) )
     {
-        // Demos where cv_monsterfriction is not set.
-        // EN_monster_friction set by Boom, MBF, prboom demo,
-        // defaulted by others.
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
+        // Where monster friction is determined by friction model,
+        // demo settings.
+	// If cv_monsterfriction == 0x80, then EN_monster_friction has
+        // already been set from the Boom demo compatiblity flag.
+	if( cv_monsterfriction.EV < 0x80 )
+            EN_monster_friction = EN_mbf_enemyfactor;  // MBF, PrBoom default
         EN_monster_momentum = 0;  // 2=momentum
     }
     else
     {
         // Legacy Demo, and User settings.
+        // Legacy Demo sets through cv_monsterfriction.
         // default: 2= momentum
-        EN_monster_friction = (cv_monsterfriction.value > 0);  // 0=none
-        EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
-        EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
+        register byte ft = friction_table[cv_monsterfriction.EV];
+        EN_monster_friction = (ft & FRE_monster_friction);
+        EN_mbf_enemyfactor = (ft & FRE_mbf_enemyfactor);
+        EN_monster_momentum = (ft & FRE_monster_momentum);
     }
-    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
-    EN_old_pain_spawn = ( demoversion < 143 );
-    EN_monster_gravity = ( demoversion >= VERSION147 ) && (cv_monstergravity.value > 0);
-    if( demoplayback && (demoversion < 144 || demoversion >= 200))
-    {
-        // Demos where cv_doorstuck is not set.
-        EN_mbf_doorstuck = EN_mbf;  // mbf demo
-        EN_doorstuck = EN_boom;
-    }
-    else
-    {
-        // Legacy Demo, and User settings.
-        EN_mbf_doorstuck = (cv_doorstuck.value == 1);  // 1=MBF
-        EN_doorstuck = (cv_doorstuck.value > 0 );  // 0=none, 2=Boom
-    }
+
+    // Demo sets through cv_doorstuck.
+    EN_mbf_doorstuck = (cv_doorstuck.EV == 1);  // 1=MBF
+    EN_doorstuck = (cv_doorstuck.EV > 0 );  // 0=none, 2=Boom
+
+    // Demo sets infight through cv_monbehavior.
     // Monster Infight enables, can be changed during game.
-    // Doom normal is no infight, no coop (see Boom).
+    // Doom normal is infight, no coop (see Boom).
     monster_infight = monster_infight_deh;  // from DEH
-    switch( cv_monbehavior.value )  // from menu option, or demo
+    switch( cv_monbehavior.EV )  // from menu option, or demo
     {
      case 0: // Normal  (infight)
+     case 2: // Infight default
        if( monster_infight_deh == INFT_none )  // no input
          monster_infight = INFT_infight;
        break;
      case 1: // Coop default
        if( monster_infight_deh == INFT_none )  // no input
          monster_infight = INFT_coop;
-       break;
-     case 2: // Infight default
-       if( monster_infight_deh == INFT_none )  // no input
-         monster_infight = INFT_infight;
        break;
      case 3: // Coop forced
        monster_infight = INFT_coop;
@@ -299,8 +313,20 @@ void DemoAdapt_p_enemy( void )
        monster_infight = INFT_none;
        break;
     }
+}
+
+
+// local version control
+void DemoAdapt_p_enemy( void )
+{
+    // Demo sets cv_monsterfriction.EV, and other cv_xxx.EV.
+    CV_monster_OnChange();
+
+    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
+    EN_old_pain_spawn = ( demoversion < 143 );
+    EN_mbf_speed = EN_mbf || (demoversion >= 145 && demoversion < 200);  // Legacy 1.45, 1.46
 #if 1
-    if( verbose > 1 )
+    if( demoplayback && verbose > 1 )
     { 
         GenPrintf(EMSG_ver, "friction_model=%i, EN_monster_friction=%i\n",
                 friction_model, EN_monster_friction );
@@ -522,6 +548,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 }
 
 
+
 //
 // P_MoveActor
 // Move in the current direction,
@@ -732,7 +759,7 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
 
     if (! (actor->flags & MF_FLOAT) )
     {
-      if( ! EN_monster_gravity )
+      if( ! cv_monstergravity.EV )
       {
         if(actor->z > actor->floorz)
            P_HitFloor(actor);
@@ -970,7 +997,7 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
     fixed_t     dist;
 
     if( EN_heretic
-	&& !multiplayer && players[0].health <= 0 )
+        && !multiplayer && players[0].health <= 0 )
     { // Single player game and player is dead, look for monsters
         return(P_LookForMonsters(actor));
     }
@@ -1175,7 +1202,7 @@ void A_Chase (mobj_t*   actor)
             actor->threshold--;
     }
 
-    if( EN_heretic && cv_fastmonsters.value)
+    if( EN_heretic && cv_fastmonsters.EV)
     { // Monsters move faster in nightmare mode
         actor->tics -= actor->tics/2;
         if(actor->tics < 3)
@@ -1225,7 +1252,7 @@ void A_Chase (mobj_t*   actor)
     if (actor->flags & MF_JUSTATTACKED)
     {
         actor->flags &= ~MF_JUSTATTACKED;
-        if (!cv_fastmonsters.value)
+        if( !cv_fastmonsters.EV )
             P_NewChaseDir (actor);
         return;
     }
@@ -1248,7 +1275,7 @@ void A_Chase (mobj_t*   actor)
         && (actor->target && actor->target->type != MT_NODE)
         && !(actor->eflags & MF_IGNOREPLAYER))
     {
-        if (!cv_fastmonsters.value && actor->movecount)
+        if( !cv_fastmonsters.EV && actor->movecount )
         {
             goto nomissile;
         }
@@ -2044,7 +2071,7 @@ void A_SkullAttack (mobj_t* actor)
     S_StartScreamSound(actor, actor->info->attacksound);
     A_FaceTarget (actor);
 
-    if (cv_predictingmonsters.value || (actor->eflags & MF_PREDICT))	//added by AC for predmonsters
+    if( cv_predictingmonsters.EV || (actor->eflags & MF_PREDICT) ) //added by AC for predmonsters
     {
 
                 boolean canHit;
@@ -2302,8 +2329,8 @@ void A_Pain (mobj_t* actor)
 void A_Fall (mobj_t *actor)
 {
     // actor is on ground, it can be walked over
-    if (!cv_solidcorpse.value)
-        actor->flags &= ~MF_SOLID;
+    if (!cv_solidcorpse.EV)
+        actor->flags &= ~MF_SOLID;  // not solid (vanilla doom)
 
     if( demoversion >= 131 )
     {
@@ -2591,7 +2618,7 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             }
         }
     }
-    if( cv_allowexitlevel.value )
+    if( cv_allowexitlevel.EV )
         G_ExitLevel ();
 done:
     return;
@@ -2798,7 +2825,7 @@ void A_BrainExplode (mobj_t* mo)
 
 void A_BrainDie (mobj_t*        mo)
 {
-    if(cv_allowexitlevel.value)
+    if( cv_allowexitlevel.EV )
        G_ExitLevel ();
 }
 
