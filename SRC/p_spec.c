@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_spec.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -165,12 +165,9 @@
 
 #include "hardware/hw3sound.h"
 
-//SoM: Enable Boom features?
-byte  EN_boom = 1;  // boom (demo compatibility=0)
+// Feature enables.
 byte  EN_variable_friction = 1;
 byte  EN_pushers = 1;
-byte  EN_mbf = 1;  // [WDJ] MBF enable
-                   // similar to prboom mbf_features, but as a flag
 byte  EN_monster_friction = 1;  // MBF demo flag, and legacy.
 byte  monster_infight = 0; //DarkWolf95:November 21, 2003: Monsters Infight!
 byte  monster_infight_deh = 0; // DEH input.
@@ -1410,7 +1407,7 @@ P_ActivateCrossedLine ( line_t*       line,
     forceuse = line->flags & ML_ALLTRIGGER && thing->type != MT_BLOOD;
 
     //  Triggers that other things can activate
-    if (!thing->player && gamemode != heretic)
+    if (EN_doom_etc && !thing->player)
     {
         // Things that should NOT trigger specials...
         switch(thing->type)
@@ -1542,7 +1539,7 @@ P_ActivateCrossedLine ( line_t*       line,
     if(!thing->player)
     {
         ok = 0;
-        if( gamemode == heretic
+        if( EN_heretic
             && (line->special == 4 || line->special==39 || line->special == 97) )
         {
             ok = 1;
@@ -1588,7 +1585,7 @@ P_ActivateCrossedLine ( line_t*       line,
             return;
     } // ! player
 
-    if (!P_CheckTag(line) && EN_boom)
+    if ( EN_boom && !P_CheckTag(line) )
       return;
 
     // Doom special linedefs
@@ -1623,7 +1620,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 8:
         // Build Stairs
-        if(EV_BuildStairs(line, (gamemode == heretic) ? 8*FRACUNIT : ST_build8) )
+        if(EV_BuildStairs(line, (EN_heretic)? 8*FRACUNIT : ST_build8) )
             goto W1clear;
         goto W1fail;
 
@@ -1764,7 +1761,7 @@ P_ActivateCrossedLine ( line_t*       line,
         goto W1fail;
 
       case 100:
-        if( gamemode == heretic )
+        if( EN_heretic )
         {
           EV_DoDoor( line, VD_normalDoor, VDOORSPEED * 3);
         }
@@ -1962,7 +1959,7 @@ P_ActivateCrossedLine ( line_t*       line,
         break;
 
       case 105:
-        if( gamemode == heretic )
+        if( EN_heretic )
         {
             if( cv_allowexitlevel.value )
             {
@@ -1978,10 +1975,10 @@ P_ActivateCrossedLine ( line_t*       line,
         break;
 
       case 106:
-        if( gamemode == heretic )
+        if( EN_heretic )
         {
             EV_BuildStairs (line, 16 * FRACUNIT);
-	    goto W1clear;
+            goto W1clear;
         }
         else
         {
@@ -1992,7 +1989,7 @@ P_ActivateCrossedLine ( line_t*       line,
         break;
 
       case 107:
-        if( gamemode != heretic ) // used for a switch !
+        if( EN_doom_etc ) // used for a switch !
         {
             // Doom, Boom.
             // Blazing Door Close (faster than TURBO!)
@@ -2121,7 +2118,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
             case 268: 
               if (!thing->player &&
-		  EV_SilentTeleport(line, side, thing))  goto W1clear;
+                  EV_SilentTeleport(line, side, thing))  goto W1clear;
               break;
 
             // Extended walk many retriggerable
@@ -2271,7 +2268,7 @@ P_ActivateCrossedLine ( line_t*       line,
   // Heretic, unconditional clear.
   // Boom, conditional on rtn, or demo_compatibility.
 W1fail:
-    if( gamemode == heretic )  goto W1clear;  // heretic is unconditional
+    if( EN_heretic )  goto W1clear;  // heretic is unconditional
     if( !EN_boom)  goto W1clear;
     // Boom conditional, do not clear until it works.
     return;
@@ -2403,23 +2400,32 @@ void P_ShootSpecialLine ( mobj_t*       thing,
     //  Impacts that other things can activate.
     if (!thing->player)
     {
+        // Check that monster can shoot line.
+        // Only does check, continue on to implement action.
         ok = 0;
         switch(line->special)
         {
+          // Doom, Heretic: 46
           case 46:
             // OPEN DOOR IMPACT
             ok = 1;
             break;
         }
         if (!ok)
-            return;
+            return;  // monster not allowed
     }
 
+#if 1   
     if(!P_CheckTag(line))
       return;
+#else
+    if(EN_boom && !P_CheckTag(line))
+      return;
+#endif
 
     switch(line->special)
     {
+      // Doom, Heretic: 24, 46, 47.
       case 24:
         // RAISE FLOOR
         if(EV_DoFloor( line, FT_raiseFloor) || !EN_boom)
@@ -2668,7 +2674,7 @@ void P_PlayerInSpecialSector (player_t* player)
     if (!player->specialsector)     // nothing special, exit
         return;
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         P_HerePlayerInSpecialSector(player);
         return;
@@ -2979,7 +2985,7 @@ void P_SpawnSpecials (void)
         if (sector->special&SECRET_MASK) //SoM: 3/8/2000: count secret flags
           totalsecret++;
 
-        switch (raven_heretic_hexen ? sector->special : sector->special&0x1F)
+        switch (EN_heretic_hexen ? sector->special : sector->special&0x1F)
         {
           case 1:
             // FLICKERING LIGHTS
@@ -2997,7 +3003,7 @@ void P_SpawnSpecials (void)
             break;
 
           case 4:
-            if( raven_heretic_hexen )
+            if( EN_heretic_hexen )
                 break; // see P_HerePlayerInSpecialSector, Scroll_EastLavaDamage
             // STROBE FAST/DEATH SLIME
             P_SpawnStrobeFlash(sector,FASTDARK,0);
@@ -3040,7 +3046,7 @@ void P_SpawnSpecials (void)
             break;
 
           case 15:
-            if( gamemode == heretic )
+            if( EN_heretic )
             {
                 sector->friction = FRICTION_LOW;  // ice sector
                 sector->movefactor = (ORIG_FRICTION_FACTOR/4);
@@ -3599,14 +3605,15 @@ static void P_SpawnScrollers(void)
          }
           break;
 
-        case 48:                  // scroll first side
+        case 48:  // Doom  // scroll first side
           Add_Scroller(SCROLL_side,  FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
           break;
 
         case 99: // heretic right scrolling
-          if(gamemode != heretic)
+          if(! EN_heretic)
               break; // doom use it as bluekeydoor
-        case 85:                  // jff 1/30/98 2-way scroll
+          // Heretic: fall through to implement scroller.
+        case 85:  // boom  // jff 1/30/98 2-way scroll
           Add_Scroller(SCROLL_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
           break;
       }
@@ -3789,7 +3796,7 @@ static void P_SpawnFriction( sector_t * sec )
 
             if (friction > ORIG_FRICTION)       // ice
             {
-                if( raven_heretic_hexen )
+                if( EN_heretic_hexen )
                 {
                   // heretic or hexen
                   // [WDJ] From ZDoom calc of momentum to equal heretic/hexen at friction=0xf900
@@ -3855,7 +3862,7 @@ void P_Update_Special_Sector( sector_t * sec, short new_special )
     // normal friction default
     sec->friction = FRICTION_NORM;
     sec->movefactor = ORIG_FRICTION_FACTOR;
-    if (gamemode == heretic
+    if (EN_heretic
         && new_special == 15 )   // Friction_Low
     {
         sec->friction = FRICTION_LOW;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1229 2016-05-24 17:04:54Z wesleyjohnson $
+// $Id: g_game.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -102,13 +102,14 @@ typedef enum
     ga_completed,
     ga_worlddone,
     //HeXen
+/*
     ga_initnew,
     ga_newgame,
     ga_loadgame,
     ga_savegame,
     ga_leavemap,
     ga_singlereborn
-
+*/
 } gameaction_e;
 
 extern  gameaction_e    gameaction;
@@ -172,6 +173,8 @@ void G_DoLoadLevel (boolean resetplayer);
 
 void G_DeferedPlayDemo (char* demo);
 
+// [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
+void G_set_gamemode( byte new_gamemode );
 boolean G_Downgrade(int version);
 
 // --- Save Games

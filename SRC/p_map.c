@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_map.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -177,11 +177,13 @@ static boolean PIT_StompThing (mobj_t* thing)
         return true;        // didn't hit it
 
     // monsters don't stomp things except on boss level
-    if ( gamemode!=heretic && !tm_thing->player && gamemap != 30)
+    if ( EN_doom_etc
+         && !tm_thing->player && gamemap != 30)
         return false;
 
     // Not allowed to stomp things
-    if ( gamemode==heretic && !(tm_thing->flags2 & MF2_TELESTOMP))
+    if ( EN_heretic
+         && !(tm_thing->flags2 & MF2_TELESTOMP))
         return false;
 
     int  damage = 10000;  // fatal
@@ -550,9 +552,9 @@ static boolean PIT_CheckThing (mobj_t* thing)
         tm_thing->momx = tm_thing->momy = tm_thing->momz = 0;
 
         P_SetMobjState (tm_thing,
-                        (gamemode == heretic) ? tm_thing->info->seestate
-                                              : tm_thing->info->spawnstate
-                        );
+                        (EN_heretic)? tm_thing->info->seestate
+                                    : tm_thing->info->spawnstate
+                       );
 
         goto ret_blocked;  // stop moving
     }
@@ -1261,10 +1263,12 @@ boolean P_TryMove ( mobj_t*       thing,
         thing->eflags |= MF_ONGROUND;
 
     P_SetThingPosition (thing);
-    if (thing->flags2 & MF2_FOOTCLIP
-        && P_GetThingFloorType (thing) != FLOOR_SOLID && gamemode == heretic )
+    if (EN_heretic
+        && thing->flags2 & MF2_FOOTCLIP
+        && P_GetThingFloorType (thing) != FLOOR_SOLID
+       )
         thing->flags2 |= MF2_FEETARECLIPPED;
-    else if (thing->flags2 & MF2_FEETARECLIPPED)
+    else if (thing->flags2 & MF2_FEETARECLIPPED)  // don't need this test
           thing->flags2 &= ~MF2_FEETARECLIPPED;
 
     // if any special lines were hit, do the effect
@@ -2106,7 +2110,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
     }
 
     // check for physical attacks on a ghost
-    if (gamemode == heretic
+    if (EN_heretic
         && (th->flags & MF_SHADOW)
         && la_shootthing->player->readyweapon == wp_staff)
         return true;
@@ -2177,11 +2181,14 @@ boolean PTR_ShootTraverse (intercept_t* in)
     {
         // Spawn bullet puffs or blood spots,
         // depending on target type.
-        if (in->d.thing->flags & MF_NOBLOOD && gamemode != heretic )
+        if ( EN_doom_etc
+             && in->d.thing->flags & MF_NOBLOOD )
+        {
             P_SpawnPuff (x,y,z);
+        }
         else
         {
-            if( gamemode == heretic )
+            if( EN_heretic )
             {
                 if(PuffType == MT_BLASTERPUFF1)
                   // Make blaster big puff
@@ -2189,7 +2196,8 @@ boolean PTR_ShootTraverse (intercept_t* in)
                 else
                     P_SpawnPuff(x, y, z);
             }    
-            if (hitplane) {
+            if (hitplane)
+            {
                 P_SpawnBloodSplats (x,y,z, la_damage, trace.dx, trace.dy);
                 return false;
             }
@@ -2338,7 +2346,7 @@ boolean PTR_UseTraverse (intercept_t* in)
         P_LineOpening (in->d.line);
         if (openrange <= 0)
         {
-            if( gamemode != heretic )
+            if( EN_doom_etc )
                 S_StartSound (usething, sfx_noway);
 
             // can't use through a wall
@@ -2544,7 +2552,7 @@ boolean PIT_ChangeSector (mobj_t*  thing)
     // crunch bodies to giblets
     if (thing->flags & MF_CORPSE)
     {
-        if( !raven_heretic_hexen )
+        if( EN_doom_etc )
         {
             // Doom crush
             P_SetMobjState (thing, S_GIBS);

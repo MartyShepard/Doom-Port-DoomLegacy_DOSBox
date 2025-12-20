@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1127 2014-07-08 20:05:54Z wesleyjohnson $
+// $Id: p_sight.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -451,7 +451,7 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
         return false;
     }
 /*  BP: it seam that it don't work :( TODO: fix it
-    if (gamemode == heretic )
+    if (EN_heretic )
     {
         //
         // check precisely
@@ -522,7 +522,7 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
         return false;
     }
 /*  BP: it seem that it don't work :( TODO: fix it
-    if (gamemode == heretic )
+    if (EN_heretic )
     {
         //
         // check precisely

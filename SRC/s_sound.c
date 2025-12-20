@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1313 2017-04-20 21:29:35Z wesleyjohnson $
+// $Id: s_sound.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -371,7 +371,7 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     byte * sfx_lump_data;
     int sfxlump;
 
-    if (gamemode == heretic){	// [WDJ] heretic names are different
+    if (EN_heretic) {	// [WDJ] heretic names are different
        sprintf(lmpname, "%s", sfx->name);
     }else{
        sprintf(lmpname, "ds%s", sfx->name);
@@ -399,7 +399,7 @@ void S_GetSfxLump( sfxinfo_t * sfx )
         // Heretic shareware: get many missing sound names at sound init,
         // but not after game starts.  These come from list of sounds
         // in sounds.c, but not all those are in the game.
-        if (gamemode == heretic)
+        if (EN_heretic)
             sfxlump = W_GetNumForName("keyup");
         else
             sfxlump = W_GetNumForName("dspistol");
@@ -718,7 +718,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
         goto done;
 
 #if 0
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         if( origin == NULL )
             origin = consoleplayer_ptr->mo;
@@ -845,7 +845,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
     //Sound pitching for both Doom and Heretic
     if (cv_rndsoundpitch.value)
     {
-        if (gamemode == heretic)
+        if (EN_heretic)
         {
             // Heretic
             sp1.pitch = 128 + (M_Random() & 7);
@@ -870,7 +870,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
     if (sp1.pitch > 255)
         sp1.pitch = 255;
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         // Heretic highest priority is 256, lowest 1.
         priority = sfx->priority * (10 - (sp1.dist/160) );
@@ -1274,7 +1274,7 @@ void S_ChangeMusic(int music_num, byte looping)
     // get lumpnum if neccessary
     if (!music->lumpnum)
     {
-        if (gamemode == heretic)
+        if (EN_heretic)
             music->lumpnum = W_GetNumForName(music->name);
         else
             music->lumpnum = W_GetNumForName(va("d_%s", music->name));
@@ -1427,7 +1427,7 @@ boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
 
     // Original had MAP08 making distant sound effects louder than near.
     // removed hack here for gamemap==8 (it made far sound still present)
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         // Heretic distance effect
         // Used sndmax: 0..31, default was 31.

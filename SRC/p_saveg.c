@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1307 2017-04-10 17:21:36Z wesleyjohnson $
+// $Id: p_saveg.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -657,7 +657,7 @@ void P_ArchivePlayers(void)
         }
         WRITEU16(save_p, flags);
 
-        if (have_inventory)
+        if (EN_inventory)
         {
             WRITEBYTE(save_p, ply->inventorySlotNum);
             for (j = 0; j < ply->inventorySlotNum; j++)
@@ -758,7 +758,7 @@ void P_UnArchivePlayers(void)
 
         flags = READU16(save_p);
 
-        if (have_inventory)
+        if (EN_inventory)
         {
             ply->inventorySlotNum = READBYTE(save_p);
             for (j = 0; j < ply->inventorySlotNum; j++)
@@ -779,7 +779,7 @@ void P_UnArchivePlayers(void)
         ply->didsecret = (flags & DIDSECRET) != 0;
 
         ply->viewheight = cv_viewheight.value << FRACBITS;
-        if (gamemode == heretic)
+        if (EN_heretic)
         {
             if (ply->powers[pw_weaponlevel2])
                 ply->weaponinfo = wpnlev2info;

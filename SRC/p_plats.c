@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_plats.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -61,7 +61,7 @@ void T_PlatRaise(plat_t* plat)
         res = T_MovePlane( plat->sector, plat->speed,
                            plat->high, plat->crush, 0, 1);
 
-        if ( gamemode == heretic && !(leveltime % (32*NEWTICRATERATIO)))
+        if ( EN_heretic && !(leveltime % (32*NEWTICRATERATIO)))
             S_StartSound ((mobj_t *) & plat->sector->soundorg,
                           sfx_stnmov);
 
@@ -99,7 +99,7 @@ void T_PlatRaise(plat_t* plat)
                   plat->status = PLATS_in_stasis;  //for reactivation of toggle
                 }
 
-                if( gamemode == heretic )
+                if( EN_heretic )
                 {
                     // Heretic: Must not remove others, or else can retrigger.
                     switch(plat->type)
@@ -166,7 +166,7 @@ void T_PlatRaise(plat_t* plat)
         }
         else
         {
-            if (gamemode == heretic && !(leveltime & 31))
+            if (EN_heretic && !(leveltime & 31))
                 S_StartSound ((mobj_t *) & plat->sector->soundorg,
                     sfx_stnmov);
         }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: m_cheat.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -238,7 +238,7 @@ boolean cht_Responder(event_t * ev)
 
     if (ev->type == ev_keydown)
     {
-        if (gamemode == heretic)
+        if (EN_heretic)
             return HandleCheats(ch);  // consoleplayer
 
         msg = NULL;

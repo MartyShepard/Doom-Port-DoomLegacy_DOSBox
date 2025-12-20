@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_user.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -292,7 +292,7 @@ byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
 void DemoAdapt_p_user( void )
 {
     EN_move_doom =
-       (gamemode != heretic)
+       EN_doom_etc
        && ( (demoversion<128)  // legacy demo and orig doom
             || (demoversion>=200 && demoversion <=202) // boom demo
             );
@@ -491,7 +491,7 @@ void P_MovePlayer (player_t* player)
             if(pmo->state == &states[S_PLAY])
                 P_SetMobjState(pmo, S_PLAY_RUN1);
     }
-    if( (gamemode == heretic) && (cmd->angleturn & BT_FLYDOWN) )
+    if( EN_heretic && (cmd->angleturn & BT_FLYDOWN) )
     {
         player->flyheight = -10;
     }
@@ -1217,7 +1217,8 @@ void P_PlayerThink (player_t* player)
             if(cmd->buttons&BT_EXTRAWEAPON)
                switch(newweapon) {
                   case wp_shotgun : 
-                       if( gamemode == doom2_commercial && player->weaponowned[wp_supershotgun])
+                       if( (gamemode == doom2_commercial)
+                            && player->weaponowned[wp_supershotgun])
                            newweapon = wp_supershotgun;
                        break;
                   case wp_fist :

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_doors.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -177,7 +177,7 @@ void T_VerticalDoor(vldoor_t * door)
                     case VD_genClose:
                         door->sector->ceilingdata = NULL;       //SoM: 3/6/2000
                         P_RemoveThinker(&door->thinker);        // unlink and free
-                        if (gamemode == heretic)
+                        if (EN_heretic)
                             S_StartSound((mobj_t *) & door->sector->soundorg, sfx_dorcls);
 
                         break;
@@ -268,7 +268,7 @@ void T_VerticalDoor(vldoor_t * door)
                     case VD_genBlazeCdO:
                         door->sector->ceilingdata = NULL;
                         P_RemoveThinker(&door->thinker);        // unlink and free
-                        if (gamemode == heretic)
+                        if (EN_heretic)
                             S_StopSound((mobj_t *) & door->sector->soundorg);
 
                         break;

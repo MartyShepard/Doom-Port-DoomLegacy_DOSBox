@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: d_main.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1317"
+#define SVN_REV "1318"
 #endif
 
 // Version number: major.minor.revision
@@ -1017,7 +1017,8 @@ void D_PageDrawer(char *lumpname)
             }
         }
     }
-    if (raven_heretic_hexen && demosequence != 2)     // big hack for legacy's credits
+    // big hack for legacy's credits
+    if (EN_heretic_hexen && (demosequence != 2))
     {
         V_DrawRawScreen_Num(0, 0, W_GetNumForName(lumpname), 320, 200);
         if (demosequence == 0 && pagetic <= 140)
@@ -1824,8 +1825,7 @@ void IdentifyVersion()
         gamedesc.iwad_filename[0] = other_iwad_filename;
     }
     gamedesc_id = gamedesc.gamedesc_id;
-    gamemode = gamedesc.gamemode;
-    raven_heretic_hexen = (gamemode == heretic) || (gamemode == hexen);
+    G_set_gamemode( gamedesc.gamemode );
     GenPrintf( EMSG_info, "IWAD recognized: %s\n", gamedesc.gname);
 
     if (gamedesc.gameflags & GD_unsupported)  goto unsupported_wad;

@@ -5899,3 +5899,17 @@ recognized as vars that are set by gamemode and demoversion.
 Collected the tests for EN_boom in the W1 types in p_spec to one place,
 where it is easier to manage.  Added a test for Heretic, and made it
 clear the line type unconditionally, as it should.
+
+*** W107_EN_heretic
+patchfile = w107_14_EN_heretic.patch
+- commit revision 1318
+Added EN_heretic, EN_hexen, EN_heretic_hexen, EN_inventory, EN_boom_etc, enables.
+They are set by G_set_gamemode, which also sets the gamemode.
+In scattered usage these are easier to read in the code.
+They also test faster and with less code than gamemode.
+The variable gamemode is still used where multiple tests and switches
+are used.
+Where an enable such as EN_heretic appears, it has been moved to be
+first in the if-stmt so to disable executing all tests, and any
+function calls in the rest of the if-stmt.  The existing tests for
+gamemode seem to have been stuck in the if-stmt whereever it was easiest.

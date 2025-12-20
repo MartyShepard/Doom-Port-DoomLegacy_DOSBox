@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_mobj.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -366,15 +366,17 @@ boolean P_SetMobjStateNF(mobj_t * mobj, statenum_t state)
 //
 void P_ExplodeMissile(mobj_t * mo)
 {
-    if (mo->type == MT_WHIRLWIND)
+    if (mo->type == MT_WHIRLWIND)  // Heretic
+    {
         if (++mo->special2 < 60)
             return;
+    }
 
     mo->momx = mo->momy = mo->momz = 0;
 
     P_SetMobjState(mo, mobjinfo[mo->type].deathstate);
 
-    if (gamemode != heretic)
+    if (EN_doom_etc)
     {
         mo->tics -= P_Random() & 3;
 
@@ -615,7 +617,7 @@ void P_XYMovement(mobj_t * mo)
             mo->momx = mo->momy = mo->momz = 0;
 
             //added:18-02-98: comment: set in 'search new direction' state?
-            P_SetMobjState(mo, ((gamemode == heretic) ? mo->info->seestate : mo->info->spawnstate));
+            P_SetMobjState(mo, ((EN_heretic)? mo->info->seestate : mo->info->spawnstate));
         }
         return;
     }
@@ -1164,7 +1166,7 @@ void P_NightmareRespawn(mobj_t * mobj)
 
     // spawn a teleport fog at old spot
     // because of removal of the body?
-    fog_height = (gamemode == heretic) ? TELEFOGHEIGHT : 0;
+    fog_height = (EN_heretic)? TELEFOGHEIGHT : 0;
     mo = P_SpawnMobj(mobj->x, mobj->y, z + fog_height, MT_TFOG);
     // initiate teleport sound
     S_StartSound(mo, sfx_telept);
@@ -1298,7 +1300,13 @@ void P_MobjCheckWater(mobj_t * mobj)
             else
                 mobj->eflags &= ~MF_UNDERWATER;
 
-            if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER)) && ((mobj->eflags & MF_TOUCHWATER) || (mobj->eflags & MF_UNDERWATER)) && mobj->type != MT_BLOOD && gamemode != heretic && mobj->type != MT_SMOK)
+            if (EN_doom_etc
+                && !(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
+                && ((mobj->eflags & MF_TOUCHWATER)
+                    || (mobj->eflags & MF_UNDERWATER))
+                && mobj->type != MT_BLOOD
+                && mobj->type != MT_SMOK
+               )
                 P_SpawnSplash(mobj, *rover->topheight);
         }
         return;
@@ -1655,7 +1663,11 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
             mobj->z = mobj->spawnpoint->z << FRACBITS;
     }
 
-    if (mobj->flags2 & MF2_FOOTCLIP && P_GetThingFloorType(mobj) != FLOOR_SOLID && mobj->floorz == mobj->subsector->sector->floorheight && gamemode == heretic)
+    if (EN_heretic
+        && mobj->flags2 & MF2_FOOTCLIP
+        && P_GetThingFloorType(mobj) != FLOOR_SOLID
+        && mobj->floorz == mobj->subsector->sector->floorheight
+       )
         mobj->flags2 |= MF2_FEETARECLIPPED;
     else
         mobj->flags2 &= ~MF2_FEETARECLIPPED;
@@ -1719,7 +1731,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     mo->reactiontime = (gameskill != sk_nightmare)? info->reactiontime : 0;
 
     if ((demoversion < 129 && mo->type != MT_CHASECAM)
-//	|| gamemode == heretic  // if played heretic demo this would be important
+//	|| EN_heretic  // if played heretic demo this would be important
         )
     {
         // Heretic use of P_Random
@@ -1736,10 +1748,12 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     mo->sprite = st->sprite;
     mo->frame = st->frame;    // FF_FRAMEMASK for frame, and other bits..
 
-    if (mo->flags2 & MF2_FOOTCLIP
+    // MorphMobj should only be callable from Heretic, used for chicken.
+    if ( EN_heretic
+        && mo->flags2 & MF2_FOOTCLIP
         && P_GetThingFloorType(mo) != FLOOR_SOLID
         && mo->floorz == mo->subsector->sector->floorheight
-        && gamemode == heretic)
+       )
         mo->flags2 |= MF2_FEETARECLIPPED;
     else
         mo->flags2 &= ~MF2_FEETARECLIPPED;
@@ -1854,7 +1868,7 @@ void P_RespawnSpecials(void)
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
 
-    if (gamemode != heretic)
+    if (EN_doom_etc)
     {
         // Spawn a teleport fog at the new spot.
         // Will move later to correct z, so that it is over the object,
@@ -1896,7 +1910,7 @@ void P_RespawnSpecials(void)
     mthing->mobj = mo;  // [WDJ] replace ref to old mobj (missing in PrBoom)
     mo->angle = wad_to_angle(mthing->angle);
 
-    if (gamemode == heretic)
+    if (EN_heretic)
         S_StartSound(mo, sfx_itmbk);
     else
     {
@@ -2226,7 +2240,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
     }
 
     // Check for boss spots
-    if (raven_heretic_hexen && mthing->type == 56)    // Monster_BossSpot
+    if (EN_heretic_hexen && (mthing->type == 56) )    // Monster_BossSpot
     {
         P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->angle * ANGLE_1);   // SSNTails 06-10-2003
         return;
@@ -2403,7 +2417,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 
     z += P_SignedRandom() << 10;
 
-    if (gamemode == heretic)
+    if (EN_heretic)
     {
         puff = P_SpawnMobj(x, y, z, PuffType);
         if (puff->info->attacksound)
@@ -2487,7 +2501,7 @@ boolean PTR_BloodTraverse(intercept_t * in)
         P_MakeDivline(li, &divl);
         frac = P_InterceptVector(&divl, &trace);
         // Chexquest: has green splats, BLUDA0, BLUDB0, and BLUDC0
-        if (gamemode == heretic)
+        if (EN_heretic)
         {
             // BLODC0 from heretic wad
             R_AddWallSplat(li, P_PointOnLineSide(bloodspawnpointx, bloodspawnpointy, li), "BLODC0", z, frac, SPLATDRAWMODE_TRANS);
@@ -2637,7 +2651,7 @@ int P_HitFloor(mobj_t * thing)
         return (FLOOR_SOLID);
     }
     floortype = P_GetThingFloorType(thing);
-    if (gamemode == heretic)
+    if (EN_heretic)
     {
 
         if (thing->type != MT_BLOOD)
@@ -2685,7 +2699,7 @@ int P_HitFloor(mobj_t * thing)
 //
 boolean P_CheckMissileSpawn(mobj_t * th)
 {
-    if (gamemode != heretic)
+    if (EN_doom_etc)
     {
         th->tics -= P_Random() & 3;
         if (th->tics < 1)
@@ -2790,7 +2804,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
-            if (gamemode == heretic)
+            if (EN_heretic)
                 ang += P_SignedRandom() << 21;
             else
                 ang += P_SignedRandom() << 20;
@@ -2813,7 +2827,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
-            if (gamemode == heretic)
+            if (EN_heretic)
                 ang += P_SignedRandom() << 21;
             else
                 ang += P_SignedRandom() << 20;

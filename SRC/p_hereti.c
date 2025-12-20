@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_heretic.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -237,7 +237,6 @@ void HereticPatchEngine(void)
 {
     ceilmovesound = sfx_dormov;
     doorclosesound = sfx_doropn;
-    have_inventory = true;
 
     // we can put such thinks in a dehacked lump, maybe for later
     S_sfx[sfx_oof].name        = "plroof";
@@ -631,7 +630,7 @@ void P_HerePlayerInSpecialSector(player_t *player)
         break;
         
     default:
-        CONS_Printf("P_PlayerInSpecialSector: "
+        I_SoftError( "P_PlayerInSpecialSector: "
                     "unknown special %i\n", sector->special);
     }
 }

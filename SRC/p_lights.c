@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_lights.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -40,6 +40,7 @@
 
 
 #include "doomincl.h"
+#include "doomstat.h"
 #include "p_local.h"
 #include "r_state.h"
 #include "z_zone.h"
@@ -75,7 +76,7 @@ void T_FireFlicker (fireflicker_t* flick)
 //
 // P_SpawnFireFlicker
 //
-void P_SpawnFireFlicker (sector_t*      sector)
+void P_SpawnFireFlicker (sector_t*  sector)
 {
     fireflicker_t*      flick;
 
@@ -131,7 +132,7 @@ void T_LightFlash (lightflash_t* flash)
 // After the map has been loaded, scan each sector
 // for specials that spawn thinkers
 //
-void P_SpawnLightFlash (sector_t*       sector)
+void P_SpawnLightFlash (sector_t* sector)
 {
     lightflash_t*       flash;
 
@@ -162,7 +163,7 @@ void P_SpawnLightFlash (sector_t*       sector)
 //
 // T_StrobeFlash
 //
-void T_StrobeFlash (strobe_t*           flash)
+void T_StrobeFlash (strobe_t*  flash)
 {
     if (--flash->count)
         return;
@@ -188,10 +189,8 @@ void T_StrobeFlash (strobe_t*           flash)
 // for specials that spawn thinkers
 //
 void
-P_SpawnStrobeFlash
-( sector_t*     sector,
-  int           fastOrSlow,
-  int           inSync )
+P_SpawnStrobeFlash( sector_t* sector,
+                    int fastOrSlow, int inSync )
 {
     strobe_t*   flash;
 
@@ -222,7 +221,7 @@ P_SpawnStrobeFlash
 //
 // Start strobing lights (usually from a trigger)
 //
-int EV_StartLightStrobing(line_t*      line)
+int EV_StartLightStrobing(line_t* line)
 {
     sector_t*   sec;
 

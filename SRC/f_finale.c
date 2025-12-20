@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: f_finale.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -107,7 +107,7 @@ void F_StartFinale (void)
       return;
     }
 
-    // Okay - IWAD dependend stuff.
+    // Okay - IWAD dependent stuff.
     // This has been changed severly, and
     //  some stuff might have changed in the process.
     switch ( gamemode )
@@ -274,7 +274,7 @@ boolean F_Responder (event_t *event)
            finale_palette = 0;
            V_DrawFill(0, 0, 320, 200, 0);  // clear pic to black
         }
-        if( gamemode == heretic )
+        if( EN_heretic )
         {
            // no support to draw heretic cast
            finalestage = 3;  // goto title
@@ -339,7 +339,7 @@ void F_Ticker (void)
                     finalecount = 0;
                     finalestage = 1;
                     wipegamestate = GS_FORCEWIPE;             // force a wipe
-                    if (!raven_heretic_hexen && gameepisode == 3)
+                    if (EN_doom_etc && gameepisode == 3)
                         S_StartMusic (mus_bunny);
                 }
             }
@@ -377,7 +377,7 @@ void F_TextWrite (void)
 #endif
 
     // draw some of the text onto the screen
-    if( raven_heretic_hexen )
+    if( EN_heretic_hexen )
     {
         cx = 20;
         cy = 5;
@@ -399,8 +399,8 @@ void F_TextWrite (void)
             break;
         if (c == '\n')
         {
-            cx = raven_heretic_hexen ? 20 : 10;
-            cy += raven_heretic_hexen ? 9 : 11;
+            cx = EN_heretic_hexen ? 20 : 10;
+            cy += EN_heretic_hexen ? 9 : 11;
             continue;
         }
 

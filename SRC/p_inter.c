@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1265 2016-09-20 17:24:23Z wesleyjohnson $
+// $Id: p_inter.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -265,12 +265,14 @@ boolean P_GiveAmmo ( player_t*     player,
     if (gameskill == sk_baby
         || gameskill == sk_nightmare)
     {
-        if( gamemode == heretic )
+        if( EN_heretic )
             count += count>>1;  // add 50% more
         else
+        {
             // give double ammo in trainer mode,
             // you'll need in nightmare
             count <<= 1;  // add 100% more
+        }
     }
 
 
@@ -315,7 +317,7 @@ boolean P_GiveAmmo ( player_t*     player,
        return true;
     }
     else //eof Boris
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         if( ( player->readyweapon == wp_staff
            || player->readyweapon == wp_gauntlets) 
@@ -538,7 +540,7 @@ boolean P_GivePower ( player_t* player, int power )
     if (power == pw_invulnerability)
     {
         // Already have it
-        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD )
+        if( EN_heretic_hexen && (player->powers[power] > BLINKTHRESHOLD ) )
             return false;
 
         player->powers[power] = INVULNTICS;
@@ -547,7 +549,7 @@ boolean P_GivePower ( player_t* player, int power )
     if(power == pw_weaponlevel2)
     {
         // Already have it
-        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD)
+        if( EN_heretic_hexen && (player->powers[power] > BLINKTHRESHOLD) )
             return false;
 
         player->powers[power] = WPNLEV2TICS;
@@ -557,7 +559,7 @@ boolean P_GivePower ( player_t* player, int power )
     if (power == pw_invisibility)
     {
         // Already have it
-        if( raven_heretic_hexen && player->powers[power] > BLINKTHRESHOLD)
+        if( EN_heretic_hexen && (player->powers[power] > BLINKTHRESHOLD) )
             return false;
 
         player->powers[power] = INVISTICS;
@@ -1099,7 +1101,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
             return;
         msg = GOTMAP;
         msglevel = 31;
-        if( gamemode != heretic )
+        if( EN_doom_etc )
             sound = sfx_getpow;
         break;
 
@@ -1365,7 +1367,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
     if( group == SPR_BKEY )  // all keys
     {
         // keycard
-        if( gamemode == heretic )
+        if( EN_heretic )
             sound = sfx_keyup;
         if (multiplayer)  return;  // leave keys in multiplayer
     }
@@ -1768,7 +1770,7 @@ void P_KillMobj ( mobj_t*  target,
         if (target->player)
         {
             source->player->frags[target->player-players]++;
-            if( gamemode == heretic )
+            if( EN_heretic )
             {
                 if(source->player == displayplayer_ptr
                 || source->player == displayplayer2_ptr )
@@ -1832,7 +1834,7 @@ void P_KillMobj ( mobj_t*  target,
 
     if ( target->info->xdeathstate
          && ( target->health < -(
-            (gamemode == heretic)? (target->info->spawnhealth>>1)  // heretic
+               (EN_heretic)? (target->info->spawnhealth>>1)  // heretic
                : target->info->spawnhealth  // doom
             ) )
        )
@@ -1858,7 +1860,7 @@ void P_KillMobj ( mobj_t*  target,
         //if (!drop_ammo_count)
         //    return;
         
-        if (gamemode == heretic)
+        if (EN_heretic)
         {
             switch (target->player->readyweapon)
             {
@@ -2327,7 +2329,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         ang = R_PointToAngle2 ( inflictor->x, inflictor->y,
                                 target->x, target->y);
 
-        if (gamemode == heretic )
+        if (EN_heretic )
             thrust = damage*(FRACUNIT>>3)*150/target->info->mass;
         else
             thrust = damage*(FRACUNIT>>3)*100/target->info->mass;
@@ -2344,7 +2346,7 @@ boolean P_DamageMobj ( mobj_t*   target,
 
         angf = ANGLE_TO_FINE(ang);
 
-        if(gamemode == heretic
+        if( EN_heretic
             && source && (source == inflictor)
             && source->player
             && source->player->powers[pw_weaponlevel2]
@@ -2448,9 +2450,9 @@ boolean P_DamageMobj ( mobj_t*   target,
         if (player->armortype)
         {
             if (player->armortype == 1)
-                saved = (gamemode == heretic)? damage>>1 : damage/3;
+                saved = (EN_heretic)? damage>>1 : damage/3;
             else
-                saved = (gamemode == heretic)? (damage>>1)+(damage>>2) : damage/2;
+                saved = (EN_heretic)? (damage>>1)+(damage>>2) : damage/2;
 
             if (player->armorpoints <= saved)
             {

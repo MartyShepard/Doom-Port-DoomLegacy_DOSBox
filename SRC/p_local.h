@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_local.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -393,14 +393,10 @@ extern fixed_t  see_bottomslope;
 //
 #include "p_spec.h"
 
-
-
-//SoM: 3/6/2000: Added public "boomsupport variable"
-extern byte  EN_boom;
+// Secondary feature sets.
+extern byte  EN_inventory;   // Heretic, Hexen
 extern byte  EN_variable_friction;
 extern byte  EN_pushers;
-extern byte  EN_mbf;  // [WDJ] MBF enable
-                   // similar to prboom mbf_features, but as a flag
 extern byte  EN_monster_friction;  // MBF demo flag
 
 typedef enum {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: r_draw.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -441,7 +441,7 @@ int viewborderlump[8];
 
 void R_InitViewBorder (void)
 {
-    if( raven_heretic_hexen )
+    if( EN_heretic_hexen )
     {   // Heretic, Hexen
         viewborderlump[BRDR_T]  = W_GetNumForName ("bordt");
         viewborderlump[BRDR_B]  = W_GetNumForName ("bordb");
@@ -516,7 +516,7 @@ void R_FillBackScreen (void)
        return;
 
     // viewwindow borders
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         step = 16;
         boff = 4; // borderoffset

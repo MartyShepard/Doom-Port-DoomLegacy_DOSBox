@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: b_look.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 2002-2016 by DooM Legacy Team.
 //
@@ -344,7 +344,7 @@ void B_LookForThings (player_t* p)
 	    else if (((mo->flags & MF_SPECIAL)
 		      || (mo->flags & MF_DROPPED))) //most likely a pickup
 	    {
-	        if(gamemode == heretic)
+	        if(EN_heretic)
 	        {
 		    switch (mo->type)
 		    {

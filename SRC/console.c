@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1315 2017-04-20 21:33:15Z wesleyjohnson $
+// $Id: console.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -337,7 +337,7 @@ static void CON_SetupBackColormap (void)
     {
         j = pal[i] + pal[i+1] + pal[i+2];
 
-        if( gamemode == heretic )
+        if( EN_heretic )
         {
             greenmap[k] = 209 + (float)j*15/(3*255);   //remaps to greens(209-224)
             graymap[k]  =       (float)j*35/(3*255);   //remaps to grays(0-35)           
@@ -353,7 +353,7 @@ static void CON_SetupBackColormap (void)
     // this one doesn't need to be aligned, unless you convert the
     // V_DrawMappedPatch() into optimised asm.
 
-    if( gamemode != heretic )
+    if( EN_doom_etc )
     {
         for(i=0; i<256; i++)
         {

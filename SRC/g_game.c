@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: g_game.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -221,20 +221,36 @@ void    G_DoWorldDone (void);
 //
 byte            demoversion;
 
+// Determined by menu selection, or demo.
 skill_e         gameskill;
 byte            gameepisode;  // current game episode number  1..4
 byte            gamemap;      // current game map number 1..31
 char            game_map_filename[MAX_WADPATH];      // an external wad filename
 
 
+// Determined by gamemode and wad.
 gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
+// [WDJ] Enables for fast (test for zero) feature tests in the engine.
+// These are set from gamemode.  Still use gamemode in the main setup.
+// Raven: Heretic, Hexen, and Strife may be Raven, but code reader
+// should not need to know that.  Keep names explicit for easy code reading.
+byte  EN_heretic_hexen;  // common features
+byte  EN_heretic;
+byte  EN_hexen;
+byte  EN_strife;
+byte  EN_doom_etc;  // doom, boom, mbf, common behavior  (not heretic, hexen, strife)
 
-boolean         raven_heretic_hexen = false;
-boolean         have_inventory = false;      // Heretic, Hexen
+// Set by gamemode, but may be enabled by demos too.
+byte  EN_boom;  // Boom features (boom demo compatibility=0)
+byte  EN_mbf;   // MBF (Marines Best Friend) enable (similar prboom mbf_features)
+// Secondary feature sets.
+byte  EN_inventory;   // Heretic, Hexen
+
 language_t      language = english;          // Language.
 boolean         modifiedgame;                  // Set if homebrew PWAD stuff has been added.
 
 
+// Engine state
 gamestate_e     gamestate = GS_NULL;
 gameaction_e    gameaction;
 boolean         paused;
@@ -267,6 +283,7 @@ tic_t           gametic;
 tic_t           levelstarttic;          // gametic at level start
 int             totalkills, totalitems, totalsecret;    // for intermission
 
+// Demo state
 char            demoname[32];
 boolean         demorecording;
 boolean         demoplayback;
@@ -570,7 +587,7 @@ boolean G_InventoryResponder(player_t *ply, byte id,
     return false;
 #endif
 
-  if (! have_inventory)
+  if (! EN_inventory)
     return false;
 
   switch (ev->type)
@@ -2354,6 +2371,45 @@ void G_InitNew (skill_e skill, char* mapname, boolean resetplayer)
     automapactive  = false;
 
     G_DoLoadLevel (resetplayer);
+}
+
+// [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
+// Done here to be near G_Downgrade.
+void G_set_gamemode( byte new_gamemode )
+{
+    gamemode = new_gamemode;
+    // Legacy defaults.
+    EN_doom_etc = 1;
+    EN_boom = 1;
+    EN_mbf = 1;
+    // Doom and doom-like defaults.
+    EN_heretic = EN_hexen = EN_strife = 0;
+    EN_heretic_hexen = 0;
+    EN_inventory = 0;
+    // Hexen and Strife are setup even though not implemented yet,
+    // as placeholders and to prevent bad assumptions.
+    switch( gamemode )
+    {
+     case heretic:
+      EN_heretic = 1;
+      goto not_doom;
+     case hexen:
+      EN_hexen = 1;
+      goto not_doom;
+     case strife:
+      EN_strife = 1;
+      goto not_doom;
+     case chexquest1:  // is doom
+     default:
+      break;
+    }
+    return;
+
+not_doom:
+    EN_heretic_hexen = EN_heretic || EN_hexen;
+    EN_doom_etc = EN_mbf = EN_boom = 0;
+    EN_inventory = 1;
+    return;
 }
 
 

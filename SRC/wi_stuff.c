@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1277 2016-10-15 18:48:59Z wesleyjohnson $
+// $Id: wi_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -475,7 +475,7 @@ static void WI_slamBackground(void)
    
     // vid : from video setup
     // draw background on screen0
-    if( gamemode == heretic && state == StatCount)
+    if( EN_heretic && state == StatCount)
         V_ScreenFlatFill( W_CheckNumForName("FLOOR16") );
     else
     if (rendermode==render_soft) 
@@ -960,15 +960,17 @@ static void WI_drawShowNextLoc(void)
     // draw animated background
     WI_drawAnimatedBack();
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         if( gameepisode < 4 )
             IN_DrawYAH();
     }
         //DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
-    if ( gamemode != doom2_commercial && wbs->epsd<=2 && !*info_interpic)
+    if ( (gamemode != doom2_commercial)
+         && wbs->epsd<=2 && !*info_interpic)
     {
+        // You are here  (YAH).
         last = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
 
         // draw a splat on taken cities.
@@ -985,8 +987,8 @@ static void WI_drawShowNextLoc(void)
     }
 
     // draws which level you are entering..
-    if ( (gamemode != doom2_commercial || wbs->next != 30) && 
-          gamemode != heretic)
+    if ( EN_doom_etc
+         && !((gamemode == doom2_commercial) && (wbs->next == 30)) )
         WI_drawEL();
 
 }
@@ -1061,7 +1063,7 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
     fragsort_t temp;
 
    
-    if( gamemode == heretic )
+    if( EN_heretic )
         colornum = 230;
     else
         colornum = 0x78;
@@ -1867,8 +1869,8 @@ static void WI_drawStats(void)
     // [WDJ] Display PAR for certain id games, unless modified,
     // but not PWAD unless BEX has set PARS.
     boolean draw_pars = pars_valid_bex
-     || ( (gamedesc.gameflags & GD_idwad)
-          && gamemode!=heretic
+     || ( EN_doom_etc
+          && (gamedesc.gameflags & GD_idwad)
           && (wbs->epsd < 3)
           && !modifiedgame );
     // line height
@@ -2055,13 +2057,13 @@ static void WI_loadData(void)
         }
 
         // you are here
-        yah[0] = W_CachePatchName(((gamemode == heretic) ? "IN_YAH" : "WIURH0"), PU_LOCK_SB);
+        yah[0] = W_CachePatchName(((EN_heretic)? "IN_YAH" : "WIURH0"), PU_LOCK_SB);
 
         // you are here (alt.)
         yah[1] = W_CachePatchName("WIURH1", PU_LOCK_SB);
 
         // splat
-        splat = W_CachePatchName(((gamemode == heretic) ? "IN_X" : "WISPLAT"), PU_LOCK_SB);
+        splat = W_CachePatchName(((EN_heretic)? "IN_X" : "WISPLAT"), PU_LOCK_SB);
 
         if (wbs->epsd < 3)
         {
@@ -2088,12 +2090,12 @@ static void WI_loadData(void)
     }
 
     // More hacks on minus sign.
-    wiminus = W_CachePatchName(((gamemode == heretic) ? "FONTB13" : "WIMINUS"), PU_LOCK_SB);
+    wiminus = W_CachePatchName(((EN_heretic)? "FONTB13" : "WIMINUS"), PU_LOCK_SB);
 
     for (i=0;i<10;i++)
     {
          // numbers 0-9
-        if( gamemode == heretic )
+        if( EN_heretic )
             sprintf(name, "FONTB%d", 16+i);
         else
             sprintf(name, "WINUM%d", i);
@@ -2101,9 +2103,9 @@ static void WI_loadData(void)
     }
 
     // percent sign
-    percent = W_CachePatchName(((gamemode == heretic) ? "FONTB05" : "WIPCNT"), PU_LOCK_SB);
+    percent = W_CachePatchName(((EN_heretic)? "FONTB05" : "WIPCNT"), PU_LOCK_SB);
 
-    if( gamemode != heretic )
+    if( EN_doom_etc )
     {
         // "finished"
         finished = W_CachePatchName("WIF", PU_LOCK_SB);
@@ -2147,7 +2149,7 @@ static void WI_loadData(void)
     }
     
     // ":"
-    colon = W_CachePatchName(((gamemode == heretic) ? "FONTB26" : "WICOLON"), PU_LOCK_SB);
+    colon = W_CachePatchName(((EN_heretic)? "FONTB26" : "WICOLON"), PU_LOCK_SB);
 
     // your face
     star = W_CachePatchName("STFST01", PU_LOCK_SB);  // never unlocked
@@ -2212,7 +2214,7 @@ static void WI_unloadData(void)
         Z_ChangeTag(percent, PU_UNLOCK_CACHE);
         Z_ChangeTag(colon, PU_UNLOCK_CACHE);
 
-        if( gamemode != heretic )
+        if( EN_doom_etc )
         {
 
             Z_ChangeTag(finished, PU_UNLOCK_CACHE);
@@ -2296,8 +2298,10 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
     plrs = wbs->plyr;
 
     if ( gamemode != ultdoom_retail )
+    {
       if (wbs->epsd > 2)
         wbs->epsd -= 3;
+    }
 }
 
 void WI_Start(wbstartstruct_t* wbstartstruct)

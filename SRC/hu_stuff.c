@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1273 2016-09-29 02:14:10Z wesleyjohnson $
+// $Id: hu_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -175,10 +175,10 @@ void HU_Init(void)
 
     // cache the heads-up font for entire game execution
     use_font1 = 0;
-    j = (gamemode == heretic) ? 1 : HU_FONTSTART;
+    j = (EN_heretic)? 1 : HU_FONTSTART;
     for (i=0; i<HU_FONTSIZE; i++)
     {
-        if( raven_heretic_hexen )
+        if( EN_heretic_hexen )
             sprintf(buffer, "FONTA%.2d", ((j>59)? 59 : j));
         else
             sprintf(buffer, "STCFN%.3d", j);

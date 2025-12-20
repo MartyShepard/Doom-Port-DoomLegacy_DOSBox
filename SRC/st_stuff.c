@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
+// $Id: st_stuff.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -833,7 +833,7 @@ void ST_Ticker (void)
     if( st_stopped )
         return;
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         SB_Heretic_Ticker();
         return;
@@ -1046,7 +1046,7 @@ void ST_Drawer ( boolean refresh )
     // Respond to these changes immediately, so cannot be in any setup.
     stbar_on = (cv_viewsize.value<11) || automapactive;
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         SB_Heretic_Drawer( refresh );
         return;
@@ -1493,7 +1493,7 @@ void ST_Start (void)
     // Doom and Heretic common.
     st_plyr = &players[statusbarplayer];
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         st_stopped = false;
         return;
@@ -1553,7 +1553,7 @@ void ST_Init (void)
     // [WDJ] Lock against other users of same patch releasing it!.
     scr_borderflat = W_CacheLumpNum (st_borderflat_num, PU_LOCK_SB);
 
-    if( gamemode == heretic )
+    if( EN_heretic )
     {
         SB_Heretic_Init();
         return;

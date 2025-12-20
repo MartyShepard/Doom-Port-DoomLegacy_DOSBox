@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_main.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -907,7 +907,7 @@ void R_ExecuteSetViewSize (void)
         CV_SetValue (&cv_detaillevel,setdetail);
     }
 
-    stbar_height = (gamemode == heretic)? H_STBAR_HEIGHT : ST_HEIGHT;
+    stbar_height = (EN_heretic)? H_STBAR_HEIGHT : ST_HEIGHT;
 
     if( cv_scalestatusbar.value || cv_viewsize.value>=11)
         stbar_height *= (rendermode==render_soft)? vid.dupy : vid.fdupy;
@@ -962,7 +962,7 @@ void R_ExecuteSetViewSize (void)
     // psprite scales
     centerypsp = rdraw_viewheight/2;  //added:06-02-98:psprite pos for freelook
     // Doom weapons are too high for high resolutions.
-    if( ! raven_heretic_hexen )
+    if( EN_doom_etc )
        centerypsp += (rdraw_viewheight/400);
 
     pspritescale  = (rdraw_viewwidth<<FRACBITS)/BASEVIDWIDTH;
@@ -1204,7 +1204,7 @@ void R_SetupFrame (player_t* player)
 #else
         // Player cam sees player status palette.
         // Can now handle splitplayer flashes.
-        if( gamemode == heretic )
+        if( EN_heretic )
             H_PaletteFlash( player );
         else
             ST_doPaletteStuff( player );
@@ -1229,7 +1229,7 @@ void R_SetupFrame (player_t* player)
 #endif
         
         // Can now handle splitplayer flashes.
-        if( gamemode == heretic )
+        if( EN_heretic )
             H_PaletteFlash( player );
         else
             ST_doPaletteStuff( player );

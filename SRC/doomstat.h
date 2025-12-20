@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: doomstat.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -93,6 +93,16 @@ typedef enum
     chexquest1	  // DarkWolf95:July 14, 2003: Chex Quest Support
 
 } gamemode_e;
+
+// Set from gamemode.
+extern byte  EN_heretic_hexen;  // common features
+extern byte  EN_heretic;
+extern byte  EN_hexen;
+extern byte  EN_strife;
+extern byte  EN_doom_etc;  // doom, boom, mbf, common behavior  (not heretic, hexen, strife)
+// Set by gamemode, but may be enabled by demos too.
+extern byte  EN_boom;  // Boom features (boom demo compatibility=0)
+extern byte  EN_mbf;   // MBF (Marines Best Friend) enable (similar prboom mbf_features)
 
 
 #if 0
