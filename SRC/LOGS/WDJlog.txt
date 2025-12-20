@@ -5979,3 +5979,9 @@ by only changing P_Random to PP_Random.
 patchfile = w107_21_think_mbf.patch
 - commit revision 1325
 Add the definitions, functions and lists for MBF friend and enemy class-lists.
+
+*** W107_skull_bounce
+patchfile = w107_22_skull_bounce.patch
+- commit revision 1326
+Add the code for the PrBoom skull bounce fix.
+

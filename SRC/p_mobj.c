@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_mobj.c 1326 2017-05-23 14:30:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1063,17 +1063,33 @@ void P_ZMovement(mobj_t * mo)
             S_StartSound(mo, sfx_ouch);
         }
 
+        // PrBoom: cph 2001/04/15 -
+        // Lost souls were meant to bounce off of ceilings;
+        // PrBoom: if (!comp[comp_soul] && mo->flags & MF_SKULLFLY)
+        if( mo->flags & MF_SKULLFLY )
+        {   // The skull slammed into something.
+            if( EN_skull_bounce_fix )
+                mo->momz = -mo->momz;  // skull bounces
+        }
+       
         // hit the ceiling
         if (mo->momz > 0)
             mo->momz = 0;
 
-        if (mo->flags & MF_SKULLFLY)
-        {       // the skull slammed into something
-            mo->momz = -mo->momz;  // skull bounces
+        // Vanilla skull bounce in wrong place.
+        // Upto DoomLegacy 1.46.3
+        if( ! EN_skull_bounce_fix && (mo->flags & MF_SKULLFLY) )
+        {   // the skull slammed into something
+            // We might have hit a ceiling but had downward momentum
+            // (e.g. ceiling is lowering onto skull), so for old demos we
+            // must still do the buggy momentum reversal.
+            // DoomLegacy (demoversion < 147)
+            mo->momz = -mo->momz;  // skull bounces (now momz >= 0)
         }
 
         if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
         {
+            // Heretic has this sky test, but PrBoom and EE do not.
             //SoM: 4/3/2000: Don't explode on the sky!
             if ( mo->subsector->sector->ceilingpic == skyflatnum
                  && mo->subsector->sector->ceilingheight == mo->ceilingz

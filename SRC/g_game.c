@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1324 2017-05-23 14:28:05Z wesleyjohnson $
+// $Id: g_game.c 1326 2017-05-23 14:30:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -260,6 +260,7 @@ byte  EN_strife;
 // Boom
 byte  EN_variable_friction;  // Boom demo flag, Heretic, and Legacy.
 byte  EN_pushers;
+byte  EN_skull_bounce_fix;  // !comp[comp_soul]
 // Heretic, Hexen
 byte  EN_inventory;   // Heretic, Hexen
 
@@ -2391,6 +2392,19 @@ void G_InitNew (skill_e skill, char* mapname, boolean resetplayer)
 }
 
 
+// Sets defaults according to current master EN_
+// Do not call after a Demo has set these settings.
+static
+void G_gamemode_EN_defaults( void )
+{
+    // Fixes and buggy.
+    // Heretic never fixed this, but PrBoom did.  Default to fixed.
+    EN_skull_bounce_fix = 1;  // Off only for old demos, incl Legacy demos.
+    // Boom
+    EN_pushers = EN_boom;
+}
+
+
 // [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
 // Done here to be near G_Downgrade.
 void G_set_gamemode( byte new_gamemode )
@@ -2429,6 +2443,7 @@ not_doom:
     EN_inventory = 1;
 
 finish:
+    G_gamemode_EN_defaults();
     return;
 }
 
@@ -2449,6 +2464,7 @@ void G_demo_defaults( void )
     cv_monsterfriction.EV = 0; // Vanilla
     voodoo_mode = VM_vanilla;
     monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
+    EN_skull_bounce_fix = 0;  // Vanilla and DoomLegacy < 1.47
    
     // Boom
     cv_rndsoundpitch.EV = EN_boom;  // normal in Boom, calls M_Random
@@ -2475,6 +2491,7 @@ void G_restore_user_settings( void )
     // Restore all modifed cvar
     CV_Restore_User_Settings();  //  Set EV = value
 }
+
 
 
 //added:03-02-98:
@@ -3144,6 +3161,7 @@ void G_DoPlayDemo (char *defdemoname)
             cv_monsterfriction.EV = 0x80;  // MBF, Vanilla;
             // comp vectors 1=old demo compatibility
             cv_doorstuck.EV = demo_p[26 + 13]? 0:2; // Vanilla : MBF
+            EN_skull_bounce_fix = ! demo_p[26 + 23];  // !comp[comp_soul]
         }
         else
         {

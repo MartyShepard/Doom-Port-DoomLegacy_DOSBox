@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_local.h 1326 2017-05-23 14:30:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -380,12 +380,18 @@ extern fixed_t  see_bottomslope;
 #include "p_spec.h"
 
 // Secondary features.
-extern byte  EN_inventory;   // Heretic, Hexen
 extern byte  EN_variable_friction;
+extern byte  EN_skull_bounce_fix;  // PrBoom 2001  !comp[comp_soul]
+
+// Boom
 extern byte  EN_pushers;
 
+// MBF
 extern byte  EN_mbf_speed;
 extern byte  EN_monster_friction;
+// Heretic, Hexen
+extern byte  EN_inventory;   // Heretic, Hexen
+
 
 typedef enum {
  // Boom values
