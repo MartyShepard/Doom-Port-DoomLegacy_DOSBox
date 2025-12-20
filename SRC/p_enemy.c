@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_enemy.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -220,6 +220,99 @@ static const struct
     }
 }
 
+
+// Infight settings translated to INFT_ values.  MBF demo sets infight.
+byte  monster_infight = 0; //DarkWolf95:November 21, 2003: Monsters Infight!
+byte  monster_infight_deh = 0; // DEH input.
+
+byte  EN_monster_friction = 1;  // MBF demo flag, and legacy.
+byte  EN_mbf_enemyfactor = 0;
+byte  EN_monster_momentum = 0;
+byte  EN_skull_limit = 0;  // turn off pain skull gen limits
+byte  EN_old_pain_spawn = 0;
+byte  EN_doorstuck = 0;
+byte  EN_mbf_doorstuck = 0;
+byte  EN_monster_gravity = 0;
+byte  EN_mbf_speed;  // p_spec
+
+
+// local version control
+void DemoAdapt_p_enemy( void )
+{
+    // heretic demos have FR_orig friction, with special ice sector handling
+    // in P_Thrust (so monsters slip only on ice conveyor)
+    if( demoplayback && (friction_model != FR_legacy))
+    {
+        // Demos where cv_monsterfriction is not set.
+        // EN_monster_friction set by Boom, MBF, prboom demo,
+        // defaulted by others.
+        EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
+        EN_monster_momentum = 0;  // 2=momentum
+    }
+    else
+    {
+        // Legacy Demo, and User settings.
+        // default: 2= momentum
+        EN_monster_friction = (cv_monsterfriction.value > 0);  // 0=none
+        EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
+        EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
+    }
+    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
+    EN_old_pain_spawn = ( demoversion < 143 );
+    EN_monster_gravity = ( demoversion >= VERSION147 ) && (cv_monstergravity.value > 0);
+    if( demoplayback && (demoversion < 144 || demoversion >= 200))
+    {
+        // Demos where cv_doorstuck is not set.
+        EN_mbf_doorstuck = EN_mbf;  // mbf demo
+        EN_doorstuck = EN_boom;
+    }
+    else
+    {
+        // Legacy Demo, and User settings.
+        EN_mbf_doorstuck = (cv_doorstuck.value == 1);  // 1=MBF
+        EN_doorstuck = (cv_doorstuck.value > 0 );  // 0=none, 2=Boom
+    }
+    // Monster Infight enables, can be changed during game.
+    // Doom normal is no infight, no coop (see Boom).
+    monster_infight = monster_infight_deh;  // from DEH
+    switch( cv_monbehavior.value )  // from menu option, or demo
+    {
+     case 0: // Normal  (infight)
+       if( monster_infight_deh == INFT_none )  // no input
+         monster_infight = INFT_infight;
+       break;
+     case 1: // Coop default
+       if( monster_infight_deh == INFT_none )  // no input
+         monster_infight = INFT_coop;
+       break;
+     case 2: // Infight default
+       if( monster_infight_deh == INFT_none )  // no input
+         monster_infight = INFT_infight;
+       break;
+     case 3: // Coop forced
+       monster_infight = INFT_coop;
+       break;
+     case 4: // Infight forced
+       monster_infight = INFT_infight;
+       break;
+     case 5: // No Infight
+       monster_infight = INFT_none;
+       break;
+    }
+#if 1
+    if( verbose > 1 )
+    { 
+        GenPrintf(EMSG_ver, "friction_model=%i, EN_monster_friction=%i\n",
+                friction_model, EN_monster_friction );
+        GenPrintf(EMSG_ver, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
+                EN_mbf_enemyfactor,  EN_monster_momentum );
+        GenPrintf(EMSG_ver, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
+                EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
+    }
+#endif
+}
+
+
 //
 // ENEMY THINKING
 // Enemies are always spawned
@@ -426,85 +519,6 @@ static boolean P_CheckMissileRange (mobj_t* actor)
 #endif
 
     return true;
-}
-
-
-
-byte EN_mbf_enemyfactor = 0;
-byte EN_monster_momentum = 0;
-byte EN_skull_limit = 0;  // turn off pain skull gen limits
-byte EN_old_pain_spawn = 0;
-byte EN_doorstuck = 0;
-byte EN_mbf_doorstuck = 0;
-byte EN_monster_gravity = 0;
-
-
-// local version control
-void DemoAdapt_p_enemy( void )
-{
-    // heretic demos have FR_orig friction, with special ice sector handling
-    // in P_Thrust (so monsters slip only on ice conveyor)
-    if( demoplayback && (friction_model != FR_legacy))
-    {
-        // EN_monster_friction set by Boom, MBF, prboom demo
-        // defaulted by others
-        EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
-        EN_monster_momentum = 0;  // 2=momentum
-    }
-    else
-    {
-        // default: 2= momentum
-        EN_monster_friction = (cv_monsterfriction.value > 0);  // 0=none
-        EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
-        EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
-    }
-    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
-    EN_old_pain_spawn = ( demoversion < 143 );
-//    EN_monster_gravity = ( demoversion >= 147 ) && (cv_monstergravity.value > 0);
-    EN_monster_gravity = ( demoversion >= 146 ) && (cv_monstergravity.value > 0); // DEBUG
-    if( demoplayback && (demoversion < 144 || demoversion >= 200))
-    {
-        EN_mbf_doorstuck = ( demoversion > 203 );  // mbf demo
-        EN_doorstuck = ( demoversion >= 200 );
-    }
-    else
-    {
-        EN_mbf_doorstuck = (cv_doorstuck.value == 1);  // 1=MBF
-        EN_doorstuck = (cv_doorstuck.value > 0 );  // 0=none, 2=Boom
-    }
-    // Monster Infight enables, can be changed during game.
-    // Doom normal is no infight, no coop (see Boom).
-    monster_infight = monster_infight_deh;  // from DEH
-    switch( cv_monbehavior.value )  // from menu option, or demo
-    {
-     case 0: // Normal  (no infight)
-       break;
-     case 1: // Coop default
-       if( monster_infight_deh == INFT_none )  // no input
-         monster_infight = INFT_coop;
-       break;
-     case 2: // Infight default
-       if( monster_infight_deh == INFT_none )  // no input
-         monster_infight = INFT_infight;
-       break;
-     case 3: // Coop forced
-       monster_infight = INFT_coop;
-       break;
-     case 4: // Infight forced
-       monster_infight = INFT_infight;
-       break;
-    }
-#if 1
-    if( verbose > 1 )
-    { 
-        GenPrintf(EMSG_ver, "friction_model=%i, EN_monster_friction=%i\n",
-                friction_model, EN_monster_friction );
-        GenPrintf(EMSG_ver, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
-                EN_mbf_enemyfactor,  EN_monster_momentum );
-        GenPrintf(EMSG_ver, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
-                EN_skull_limit, EN_old_pain_spawn, EN_doorstuck, EN_mbf_doorstuck );
-    }
-#endif
 }
 
 

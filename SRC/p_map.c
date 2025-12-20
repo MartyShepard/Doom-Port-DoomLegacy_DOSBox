@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_map.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1240,7 +1240,7 @@ boolean P_TryMove ( mobj_t*       thing,
     //added:28-02-98: gameplay hack : walk over a small wall while jumping
     //                stop jumping it succeeded
     // BP: removed in 1.28 because we can move in air now
-    if ( demoplayback<128 && demoplayback>=112
+    if( (demoversion >= 112) && (demoversion < 128)
          && thing->player
          && (thing->player->cheats & CF_JUMPOVER) )
     {

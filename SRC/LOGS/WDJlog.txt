@@ -5913,3 +5913,15 @@ Where an enable such as EN_heretic appears, it has been moved to be
 first in the if-stmt so to disable executing all tests, and any
 function calls in the rest of the if-stmt.  The existing tests for
 gamemode seem to have been stuck in the if-stmt whereever it was easiest.
+
+*** W107_downgrade
+patchfile = w107_15_downgrade.patch
+- commit revision 1319
+Cleanup and organize the demo enables.
+Use the EN_boom and EN_mbf enables to set demo defaults.
+Added a monster no-infight setting, and made Normal setting enable
+infighting (as in Vanilla Doom).
+Added Heretic and Normal settings to monster friction so they can be
+more easily set up for a particular usage.
+Fixed the jumping hack in p_map to test the demoversion number (instead of
+testing demoplayback for version numbers).

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_local.h 1319 2017-05-23 14:21:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -276,6 +276,7 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 extern  consvar_t cv_monbehavior;
 extern  consvar_t cv_monsterfriction;
 extern  consvar_t cv_doorstuck;
+extern  byte  EN_doorstuck;
 
 // when pushing a line 
 //#define MAXSPECIALCROSS 16
@@ -414,7 +415,7 @@ extern byte  monster_infight_deh; // DEH input.
 typedef enum {
   FR_orig, FR_boom, FR_mbf, FR_prboom, FR_legacy, FR_heretic, FR_hexen
 } friction_model_e;
-extern friction_model_e  friction_model;
+extern byte  friction_model;  // friction_model_e
 
 extern byte  boom_detect;
 extern byte  legacy_detect;

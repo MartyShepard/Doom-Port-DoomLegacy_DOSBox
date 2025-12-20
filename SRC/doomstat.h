@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: doomstat.h 1319 2017-05-23 14:21:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -74,6 +74,15 @@
 // We need the player data structure as well.
 #include "d_player.h"
 #include "d_clisrv.h"
+
+
+#if 1
+// TESTING
+#define  VERSION147  146
+#else
+// RELEASE, replace all VERSION147 with the value 147
+#define  VERSION147  147
+#endif
 
 // Game mode handling - identify IWAD version,
 //  handle IWAD dependend animations etc.

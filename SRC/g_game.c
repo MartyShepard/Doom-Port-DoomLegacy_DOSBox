@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: g_game.c 1319 2017-05-23 14:21:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -229,20 +229,26 @@ char            game_map_filename[MAX_WADPATH];      // an external wad filename
 
 
 // Determined by gamemode and wad.
-gamemode_e      gamemode = indetermined;       // Game Mode - identify IWAD as shareware, retail etc.
+gamemode_e  gamemode = indetermined;   // Game Mode - identify IWAD as shareware, retail etc.
+
 // [WDJ] Enables for fast (test for zero) feature tests in the engine.
+// Byte is efficient and fast to test for 0/1, int is not.
+// EN_xxx are enables, value = 0/1.
+// EV_xxx are enum,    when value = 0..255, use a byte for efficiency.
+
 // These are set from gamemode.  Still use gamemode in the main setup.
+// Set by gamemode, but may be enabled by demos too.
+byte  EN_doom_etc;  // doom, boom, mbf, common behavior  (not heretic, hexen, strife)
+byte  EN_boom;  // Boom features (boom demo compatibility=0)
+byte  EN_mbf;   // MBF (Marines Best Friend) enable (similar prboom mbf_features)
+
 // Raven: Heretic, Hexen, and Strife may be Raven, but code reader
 // should not need to know that.  Keep names explicit for easy code reading.
 byte  EN_heretic_hexen;  // common features
 byte  EN_heretic;
 byte  EN_hexen;
 byte  EN_strife;
-byte  EN_doom_etc;  // doom, boom, mbf, common behavior  (not heretic, hexen, strife)
 
-// Set by gamemode, but may be enabled by demos too.
-byte  EN_boom;  // Boom features (boom demo compatibility=0)
-byte  EN_mbf;   // MBF (Marines Best Friend) enable (similar prboom mbf_features)
 // Secondary feature sets.
 byte  EN_inventory;   // Heretic, Hexen
 
@@ -2413,6 +2419,40 @@ not_doom:
 }
 
 
+// Sets defaults according to current master EN_
+// Do not call after a Demo has set these settings.
+// Called after getting demoversion, EN_doom, etc, but before setting
+// individual demo settings.
+static
+void G_demo_defaults( void )
+{
+    cv_solidcorpse.value = 0;
+    cv_instadeath.value = 0;  // Die
+    cv_monstergravity.value = 0;
+    cv_doorstuck.value = 0;  // none
+    cv_monbehavior.value = 0;  // Vanilla
+    cv_monsterfriction.value = 0; // Vanilla
+    voodoo_mode = VM_vanilla;
+    EN_monster_friction = 0;  // default for demo
+   
+    // Boom
+    cv_rndsoundpitch.value = EN_boom;  // normal in Boom, calls M_Random
+   
+    EN_variable_friction = EN_boom;
+    EN_pushers = EN_boom;
+
+#ifdef DOORDELAY_CONTROL
+    adj_ticks_per_sec = 35; // default
+#endif
+   
+    if (demoversion < 143 || demoversion >= 200 )
+    {
+        // setting defaults
+        monster_infight = INFT_none;
+    }
+}
+
+
 //added:03-02-98:
 //
 //  'Downgrade' the game engine so that it is compatible with older demo
@@ -2487,28 +2527,26 @@ boolean G_Downgrade(int version)
     }
 
     //SoM: 3/17/2000: Demo compatability
-    if(version < 129) 
+    // EN_boom has been loaded from Boom demo compatiblity.
+    if(gamemode == heretic)
+    {
+        EN_boom = 0;  // expected to be OFF
+        EN_pushers = 0;
+        EN_variable_friction = 1;  // Needed for ICE E2M4
+    }
+    else if(version < 129 || ! EN_boom )
     {
         // Boom demo_compatibility mode  (boom demo version < 200)
-        EN_boom = 1;       // Boom (! demo_compatibility)
         EN_pushers = 0;
         EN_variable_friction = 0;
     }
-    else 
+    else if( version < 200 )
     {
-        EN_boom = 1;
-        if( version < 200 )  // flags loaded by (Boom, MBF, prboom) demos
-        {
-            // settings not loaded from demo
-            EN_pushers = 1;	// of Boom 2.02
-            EN_variable_friction = 1;  // of Boom 2.02
-        }
+        // Legacy
+        // Flags loaded by (Boom, MBF, prboom) demos, but not others.
+        EN_pushers = 1;	// of Boom 2.02
+        EN_variable_friction = 1;  // of Boom 2.02
     }
-
-    // [WDJ] enable of "Marine's Best Friend" feature emulation
-    EN_mbf =
-       (version >= 133 && version < 200) // legacy demos that use mbf
-       || (version > 203);  // MBF demo
 
     friction_model =
        (gamemode == heretic)? FR_heretic
@@ -2954,22 +2992,8 @@ void G_DoPlayDemo (char *defdemoname)
     if (demoversion < VERSION)
         CONS_Printf ("\2Demo is from an older game version\n");
 
-    EN_monster_friction = 0;  // default for demo
-
-    if (demoversion < 143 || demoversion >= 200 )
-    {
-        // setting defaults
-        cv_solidcorpse.value = 0;
-#ifdef DOORDELAY_CONTROL
-        adj_ticks_per_sec = 35; // default
-#endif
-        voodoo_mode = 0;  // Vanilla
-        cv_instadeath.value = 0;  // Die
-        cv_monbehavior.value = 0;  // do not notify NET
-        cv_monstergravity.value = 0;
-        monster_infight = INFT_none;
-    }
-
+    G_demo_defaults();  // Per EN_boom, EN_mbf
+   
     // header[1]: byte: skill level 0..4
     skill       = *demo_p++;
     // header[2]: byte: Doom episode 1..3, Doom2 and above use 1
@@ -2989,8 +3013,10 @@ void G_DoPlayDemo (char *defdemoname)
     debug_Printf( " play mode/deathmatch %i.\n", (int)demo_p[0] );
 #endif
     if (demoversion < 127 || demo144_format || boomdemo)
+    {
         // store it, using the console will set it too late
         cv_deathmatch.value=*demo_p++;
+    }
     else
         demo_p++;  // legacy demo, ignore deathmatch
 
@@ -3094,8 +3120,14 @@ void G_DoPlayDemo (char *defdemoname)
             // [26..57] comp vector x32
             // [58] force old BSP
             monster_infight = demo_p[14]; // monster_infight from demo is 0/1
-            cv_monbehavior.value = (monster_infight)? 2:0;  // do not notify NET
+            cv_monbehavior.value = monster_infight? 2:5; // (infight:off)
             EN_monster_friction = demo_p[22];
+            cv_monsterfriction.value = 1;  // MBF
+        }
+        else
+        {
+            // Boom, not MBF
+            EN_doorstuck = EN_boom;
         }
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
         // byte: player[1..32] present boolean
@@ -3175,7 +3207,7 @@ void G_DoPlayDemo (char *defdemoname)
         if( *demo_p >= 0x40 )  // Voodoo doll control
            voodoo_mode = *demo_p++ - 0x40;  // 0 is not default
         else
-           voodoo_mode = 3;  // default
+           voodoo_mode = VM_auto;  // default
         cv_instadeath.value = *demo_p++;  // voodoo doll instadeath, 0 is default
         cv_monsterfriction.value = *demo_p++;
         friction_model = *demo_p++;
