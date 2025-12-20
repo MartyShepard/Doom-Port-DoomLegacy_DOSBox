@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: r_things.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -927,15 +927,12 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 
     // Support for translated and translucent sprites. SSNTails 11-11-2002
     dr_alpha = 0;  // ensure use of translucent normally for all drawers
-    if(vis->mobjflags & MF_TRANSLATION && vis->translucentmap)
+    if((vis->mobjflags & MFT_TRANSLATION6) && vis->translucentmap)
     {
         colfunc = skintranscolfunc;
         dc_translucent_index = vis->translucent_index;
-//        dc_translucentmap = & translucenttables[TRANSLU_TABLE_INDEX(dc_translucent_index)];
         dc_translucentmap = vis->translucentmap;
-//	dc_skintran = translationtables - 256 +
-//	 ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
-        dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
+        dc_skintran = MFT_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
     else if (vis->translucentmap==VIS_SMOKESHADE)
     {
@@ -950,11 +947,11 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
         dc_translucent_index = vis->translucent_index;
         dc_translucentmap = vis->translucentmap;    //Fab:29-04-98: translucency table
     }
-    else if (vis->mobjflags & MF_TRANSLATION)
+    else if (vis->mobjflags & MFT_TRANSLATION6)
     {
         // translate green skin to another color
         colfunc = skincolfunc;
-        dc_skintran = MF_TO_SKINMAP( vis->mobjflags ); // skins 1..
+        dc_skintran = MFT_TO_SKINMAP( vis->mobjflags ); // skins 1..
     }
 
     if((vis->extra_colormap || view_colormap) && !fixedcolormap)
@@ -1101,14 +1098,9 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 //
 static void R_ProjectSprite (mobj_t* thing)
 {
-    fixed_t             tr_x;
-    fixed_t             tr_y;
-
-    fixed_t             gxt;
-    fixed_t             gyt;
-
-    fixed_t             tx;
-    fixed_t             tz;
+    fixed_t             tr_x, tr_y;
+    fixed_t             gxt, gyt;
+    fixed_t             tx, tz;
 
     fixed_t             xscale;
     fixed_t             yscale; //added:02-02-98:aaargll..if I were a math-guy!!!
@@ -1320,7 +1312,7 @@ static void R_ProjectSprite (mobj_t* thing)
 
     // [WDJ] Only pass water models, not colormap model sectors
     vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
-    vis->mobjflags = thing->flags;
+    vis->mobjflags = (thing->flags & MF_SHADOW) | (thing->tflags & MFT_TRANSLATION6);
     vis->scale = yscale;           //<<detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
@@ -1407,8 +1399,9 @@ static void R_ProjectSprite (mobj_t* thing)
             //  eg: negative effect of invulnerability
             vis->colormap = fixedcolormap;
         }
-        else if (((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK)) || (thing->flags & MF_SHADOW))
-                 && (!vis->extra_colormap || !vis->extra_colormap->fog))
+        else if( ( (thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK))
+                   || (thing->flags & MF_SHADOW) )
+                 && (!vis->extra_colormap || !vis->extra_colormap->fog)  )
         {
             // full bright : goggles
             vis->colormap = & reg_colormaps[0];

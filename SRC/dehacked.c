@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: dehacked.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -145,8 +145,8 @@ char* myfgets(char *buf, int bufsize, myfile_t *f)
     if( (devparm && verbose) || (verbose>1) )
     {
         // List DEH lines, but not blank lines.
-	if( i > 1 ) 
-	  GenPrintf(EMSG_errlog, "DEH: %s", buf);  // buf has \n
+        if( i > 1 )
+          GenPrintf(EMSG_errlog, "DEH: %s", buf);  // buf has \n
     }
     return buf;
 }
@@ -496,7 +496,7 @@ int flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_
 int raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
 // [WDJ] BEX flags 9/10/2011
-typedef enum { BFexit, BF1, BF2, BF2x } bex_flags_ctrl_e;
+typedef enum { BFexit, BF1, BF2, BF2x, BFT } bex_flags_ctrl_e;
 
 typedef struct {
     char *    name;
@@ -519,7 +519,9 @@ flag_name_t  BEX_flag_name_table[] =
   {"NOGRAVITY",  BF1, MF_NOGRAVITY }, // Does not feel gravity
   {"DROPOFF",    BF1, MF_DROPOFF }, // Can jump/drop from high places
   {"PICKUP",     BF1, MF_PICKUP }, // Can/will pick up items. (players)
-  {"NOCLIP",     BF1, MF_NOCLIP | MF_NOCLIPTHING }, // Does not clip against lines or Actors.
+  // two clip bits, set them both
+  {"NOCLIP",     BF1, MF_NOCLIP }, // Does not clip against lines.
+  {"NOCLIP",     BF2, MF2_NOCLIPTHING }, // Does not clip against Actors.
   // two slide bits, set them both
   {"SLIDE",      BF1, MF_SLIDE }, // Player: keep info about sliding along walls.
   {"SLIDE",      BF2, MF2_SLIDE }, // Slides against walls
@@ -537,12 +539,12 @@ flag_name_t  BEX_flag_name_table[] =
   {"SKULLFLY",   BF1, MF_SKULLFLY }, // Flying skulls, neither a cacodemon nor a missile.
   {"NOTDMATCH",  BF1, MF_NOTDMATCH }, // Not spawned in DM (keycards etc.)
   // 4 bits of player color translation (gray/red/brown)
-  {"TRANSLATION1", BF1, (1<<MF_TRANSSHIFT) },  // Boom
-  {"TRANSLATION2", BF1, (2<<MF_TRANSSHIFT) },  // Boom
-  {"TRANSLATION3", BF1, (4<<MF_TRANSSHIFT) },
-  {"TRANSLATION4", BF1, (8<<MF_TRANSSHIFT) },
-  {"TRANSLATION",  BF1, (1<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
-  {"UNUSED1     ", BF1, (2<<MF_TRANSSHIFT) },  // Boom/prboom compatibility
+  {"TRANSLATION1", BFT, (1<<MFT_TRANSSHIFT) },  // Boom
+  {"TRANSLATION2", BFT, (2<<MFT_TRANSSHIFT) },  // Boom
+  {"TRANSLATION3", BFT, (4<<MFT_TRANSSHIFT) },
+  {"TRANSLATION4", BFT, (8<<MFT_TRANSSHIFT) },
+  {"TRANSLATION",  BFT, (1<<MFT_TRANSSHIFT) },  // Boom/prboom compatibility
+  {"UNUSED1     ", BFT, (2<<MFT_TRANSSHIFT) },  // Boom/prboom compatibility
   // Boom/BEX
   {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
   // MBF/Prboom Extensions
@@ -638,7 +640,8 @@ static void readthing(myfile_t *f, int deh_thing_id )
   mobjinfo_t *  mip = & mobjinfo[ deh_thing_id - 1 ];
   char s[MAXLINELEN];
   char *word;
-  int value, flags1, flags2;
+  int value;
+  uint32_t flags1, flags2, tflags;
 
   do{
     if(myfgets(s,sizeof(s),f)!=NULL)  // get line
@@ -647,19 +650,21 @@ static void readthing(myfile_t *f, int deh_thing_id )
       value=searchvalue(s);
       word=strtok(s," ");
 
+      // Wads that use Bits: phobiata, hth2, DRCRYPT
       if(!strcasecmp(word,"Bits"))
       {
           boolean flags2x_hit = 0; // doomlegacy extensions hit
           flag_name_t * fnp; // BEX flag names ptr
 
-          flags1 = flags2 = 0;
+          flags1 = flags2 = tflags = 0;
           for(;;)
           {
               word = strtok(NULL, " +|\t=\n");
               if( word == NULL )  goto set_flags;
               if( word[0] == '\n' )   goto set_flags;
               // detect bits by integer value
-              if( isdigit( word[0] ) )
+              // MBF DRCRYPT.WAD sets color and MF_FRIEND using Bits, with neg value.
+              if( isdigit( word[0] ) || word[0] == '-' )
               {
                   // old style integer value, flags only (not flags2)
                   flags1 = atoi(word);  // numeric entry
@@ -667,22 +672,32 @@ static void readthing(myfile_t *f, int deh_thing_id )
                   {
                       // Boom bit defined in boomdeh.txt
                       // Was MF_FLOORHUGGER bit, and now need to determine which the PWAD means.
+                      // MBF DRCRYPT.WAD has object with bits =
+                      // MF_TRANSLUCENT, MF_COUNTKILL, MF_SHADOW, MF_SOLID, MF_SHOOTABLE.
                       GenPrintf(EMSG_errlog, "Sets flag MF_FLOORHUGGER or MF_TRANSLUCENT by numeric, guessing ");
-                      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM))
+                      if( flags1 & (MF_NOBLOCKMAP|MF_MISSILE|MF_NOGRAVITY|MF_COUNTITEM|MF_SHADOW))
                       {
                           // assume TRANSLUCENT, check for known exceptions
                           GenPrintf(EMSG_errlog, "MF_TRANSLUCENT\n");
                       }
                       else
                       {
+                          // Don't know of any wads setting FLOORHUGGER using
+                          // bits.
                           // assume FLOORHUGGER, check for known exceptions
                           flags1 &= ~MF_TRANSLUCENT;
-                          mip->flags2 |= MF2_FLOORHUGGER;
+                          flags2 |= MF2_FLOORHUGGER;
                           GenPrintf(EMSG_errlog, "MF_FLOORHUGGER\n");
                       }
                   }
-                  mip->flags = flags1; // we are still using same flags bit order
-                  flags_valid_deh = true;
+                  if( flags1 & MFO_TRANSLATION4 )
+                  {
+                      // Color translate, moved to tflags.
+                      GenPrintf(EMSG_errlog, "Sets color flag MF_TRANSLATE using Bits\n" );
+                      tflags |= (flags1 & MFO_TRANSLATION4) >> (MFO_TRANSSHIFT - MFT_TRANSSHIFT);
+                      flags1 &= ~MFO_TRANSLATION4;
+                  }
+                  // we are still using same flags bit order
                   goto next_line;
               }
               // handle BEX flag names
@@ -701,6 +716,9 @@ static void readthing(myfile_t *f, int deh_thing_id )
                        case BF2: // standard name that happens to be MF2
                          flags2 |= fnp->flagval;
                          break;
+                       case BFT: // standard name that happens to be MFT
+                         tflags |= fnp->flagval;
+                         break;
                        default:
                          goto name_unknown;
                       }
@@ -718,7 +736,6 @@ static void readthing(myfile_t *f, int deh_thing_id )
           }
 
         set_flags:
-          mip->flags = flags1;
           // clear std flags in flags2
           mip->flags2 &= ~(MF2_SLIDE|MF2_FLOORBOUNCE);
           if( flags2x_hit )
@@ -734,9 +751,11 @@ static void readthing(myfile_t *f, int deh_thing_id )
               mip->flags2 = flags2_default_value;
           }
 #endif
-          mip->flags2 |= flags2;
-          flags_valid_deh = true;
         next_line:
+          mip->flags = flags1;
+          mip->flags2 |= flags2;
+          mip->tflags = tflags;  // info extension has color now
+          flags_valid_deh = true;
           continue; // next line
       }
 

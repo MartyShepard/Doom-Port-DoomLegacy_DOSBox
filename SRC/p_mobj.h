@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1240 2016-06-14 17:12:33Z wesleyjohnson $
+// $Id: p_mobj.h 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -222,16 +222,12 @@ typedef enum
     //  in death match mode (e.g. key cards).
     MF_NOTDMATCH        = 0x2000000,
 
-    // Player sprites in multiplayer modes are modified
-    //  using an internal color lookup table for re-indexing.
-    // If 0x4 0x8 or 0xc,
-    //  use a translation table for player colormaps
-    MF_TRANSLATION      = 0x3C000000,    // 0xc000000, original 4color
-    MF_TRANSSHIFT       = 26,  // to shift MF_TRANSLATION bits to INT
-
-    // for chase camera, don't be blocked by things (partial clipping)
-    MF_NOCLIPTHING      = 0x40000000,
-
+    // MBF flags, in the position that MBF originally had them.
+    // This makes it easier to handle them in combination with other flags.
+    MF_TOUCHY           = 0x10000000, // killough 11/98: dies when solids touch it
+    MF_BOUNCES          = 0x20000000, // killough 7/11/98: for beta BFG fireballs
+    MF_FRIEND           = 0x40000000, // killough 7/18/98: friendly monsters
+   
     MF_TRANSLUCENT      = 0x80000000,  // from boomdeh.txt, previously was FLOORHUGGER
 
 } mobjflag_e;
@@ -268,7 +264,38 @@ typedef enum {
     MF2_DONTDRAW       =     0x00100000,      // don't generate a vissprite
     MF2_FLOORHUGGER    =     0x00200000,      // stays on the floor
         
+    // for chase camera, don't be blocked by things (partial clipping)
+    MF2_NOCLIPTHING    =     0x00400000,
 } mobjflag2_e;
+
+
+// [WDJ] Original flag positions, for deh, savegame fixes.
+typedef enum {
+    // Player sprites in multiplayer modes are modified
+    //  using an internal color lookup table for re-indexing.
+    // If 0x4 0x8 or 0xc,
+    //  use a translation table for player colormaps
+    MFO_TRANSLATION2     = 0x0C000000,    // original 2color
+    MFO_TRANSLATION4     = 0x3C000000,    // 4color
+    MFO_TRANSSHIFT       = 26,  // to shift MF_TRANSLATION bits to INT
+ 
+    // Earlier Legacy savegames only.
+    // for chase camera, don't be blocked by things (partial clipping)
+    MFO_NOCLIPTHING      = 0x40000000,
+} old_objflag_e;
+
+
+
+// Translation Flags, and other displaced flags.
+typedef enum {
+    // Player sprites in multiplayer modes are modified
+    // using an internal color lookup table for re-indexing.
+    // Use a translation table for player colormaps.
+    // Already shifted to indexing position, so MF_TO_SKINMAP has no shift.
+    MFT_TRANSLATION6     = 0x00003F00,    // 6 bit color
+    MFT_TRANSSHIFT       = 8,
+} mobjtflag_e;
+
 
 //
 //  New mobj extra flags
@@ -360,8 +387,9 @@ typedef struct mobj_s
     int                 tics;   // state tic counter
     state_t*            state;
     uint32_t            flags;  // mobjflag_e
-    uint32_t            eflags; //added:28-02-98: mobjeflag_e
     uint32_t            flags2; // heretic mobjflag2_e
+    uint32_t            tflags; // translation, drawing, settings, mobjtflag_e
+    uint32_t            eflags; //added:28-02-98: mobjeflag_e
     int                 special1;
     int                 special2;
     int                 health;

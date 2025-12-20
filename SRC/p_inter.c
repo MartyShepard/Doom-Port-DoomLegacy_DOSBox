@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_inter.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2059,7 +2059,7 @@ boolean P_ChickenMorphPlayer(player_t *player)
     pmo->flags2 |= oldflags2&MF2_FLY;  // preserve fly
     // Clear skin so it does not override chicken.
     pmo->skin = NULL;  // Chickens all look alike.
-    pmo->flags &= ~MF_TRANSLATION; // no color translation for chicken
+    pmo->tflags &= ~MFT_TRANSLATION6; // no color translation for chicken
     // spawnhealth for chicken is 100, this is 30
     player->health = pmo->health = MAXCHICKENHEALTH;
     player->armorpoints = player->armortype = 0;

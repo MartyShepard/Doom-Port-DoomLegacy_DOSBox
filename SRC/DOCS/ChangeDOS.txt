@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01323 ]: w107 color TRANSLATION
 [01322 ]: w107 EN demo
           DOS: Joystick init Message Fixed
 					

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1306 2017-04-07 17:20:56Z wesleyjohnson $
+// $Id: p_fab.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -292,7 +292,7 @@ void Translucency_OnChange(void)
     {
         if( flags_valid_deh
            && ((translucent_enable == TE_off) || (translucent_enable == TE_all) ) )
-            GenPrintf( EMSG_hud, "DEH set translucency ignored\n" );
+            GenPrintf( EMSG_hud, "DEH set translucency overridden by controls.\n" );
     }
     P_SetTranslucencies();
 }

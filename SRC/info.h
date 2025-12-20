@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: info.h 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2914,6 +2914,7 @@ typedef struct
     int16_t damage;
     uint32_t flags;   // mobjflag_e
     uint32_t flags2;  // from heretic/hexen  mobjflag2_e
+    uint32_t tflags;  // translation  mobjtflag_e
 } mobjinfo_t;
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];

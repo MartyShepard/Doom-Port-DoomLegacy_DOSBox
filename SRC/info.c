@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 1240 2016-06-14 17:12:33Z wesleyjohnson $
+// $Id: info.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -6170,8 +6170,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         16*FRACUNIT,    // height
         100,            // mass
         0,              // damage
-        MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOGRAVITY|MF_FLOAT|MF_NOCLIPTHING,  // flags
-        MF2_SLIDE
+        MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOGRAVITY|MF_FLOAT,  // flags
+        MF2_SLIDE|MF2_NOCLIPTHING
     },
     //added:9-06-98: spirit for movement prediction
     {           // MT_SPIRIT

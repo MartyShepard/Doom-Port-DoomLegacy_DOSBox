@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_user.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -670,7 +670,7 @@ boolean P_UndoPlayerChicken(player_t *player)
     }
     // Restore player skin and skincolor.
     pmo->skin = &skins[player->skin];  // restore player skin
-    pmo->flags |= (player->skincolor) << MF_TRANSSHIFT;
+    pmo->tflags |= (player->skincolor) << MFT_TRANSSHIFT;
     pmo->reactiontime = 18;
     player->chickenTics = 0;
 #ifndef PLAYER_CHICKEN_KEEPS_SHADOW

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: t_func.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -809,7 +809,9 @@ void SF_SkinColor(void)
         }
 
         players[playernum].skincolor = colour;
-        players[playernum].mo->flags = (players[playernum].mo->flags & ~MF_TRANSLATION) | ((players[playernum].mo->player->skincolor) << MF_TRANSSHIFT);
+        players[playernum].mo->tflags =
+           (players[playernum].mo->tflags & ~MFT_TRANSLATION6)
+           | (players[playernum].mo->player->skincolor);
 
         CV_SetValue (&cv_playercolor, colour);
     }

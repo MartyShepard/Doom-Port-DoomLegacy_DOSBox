@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_saveg.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -121,6 +121,8 @@
 #define READ_LF_VER_144    1
 // The lowest savegame version where the new light formats were written.
 #define LIGHT147_VERSION     999
+// Read old savegame flag positions
+#define READ_FLAGS144      146
 
 byte * save_p;
 boolean  save_game_abort = 0;
@@ -1586,6 +1588,7 @@ typedef enum
     MD_SPECIAL1 = 0x1000000,
     MD_SPECIAL2 = 0x2000000,
     MD_AMMO = 0x4000000,
+    MD_TFLAGS = 0x8000000,
 } mobj_diff_t;
 
 enum
@@ -1828,6 +1831,8 @@ void P_ArchiveThinkers(void)
                 diff |= MD_SPECIAL2;
             if (mobj->dropped_ammo_count)
                 diff |= MD_AMMO;
+            if (mobj->tflags)
+                diff |= MD_TFLAGS;
 
             WRITEBYTE(save_p, tc_mobj);	// mark as mobj
             WRITEU32(save_p, diff);
@@ -1904,6 +1909,8 @@ void P_ArchiveThinkers(void)
                 WRITE32(save_p, mobj->special2);
             if (diff & MD_AMMO)
                 WRITE32(save_p, mobj->dropped_ammo_count);
+            if (diff & MD_TFLAGS)
+                WRITE32(save_p, mobj->tflags);
         }
         // Use action as determinant of its owner.
         // acv == T_RemoveThinker : means deallocated (see P_RemoveThinker)
@@ -1975,8 +1982,8 @@ void P_ArchiveThinkers(void)
             WRITEBYTE(save_p, tc_flash);
             lightflash_t *flash = (lightflash_t *)th;
 #ifdef WRITE_LF_VER_144
-	    lightflash_144_t  lf;
-	    lf.count = flash->count;
+            lightflash_144_t  lf;
+            lf.count = flash->count;
             lf.minlight = flash->minlight;
             lf.maxlight = flash->maxlight;
             lf.maxtime = flash->maxtime;
@@ -2306,6 +2313,8 @@ void P_UnArchiveThinkers(void)
                     mobj->special2 = READ32(save_p);
                 if (diff & MD_AMMO)
                     mobj->dropped_ammo_count = READ32(save_p);
+                if (diff & MD_TFLAGS)
+                    mobj->tflags = READ32(save_p);
 
                 // [WDJ] Fix old savegames for corpse health < 0.
                 if((mobj->flags & MF_CORPSE) && (mobj->health >= 0))
@@ -2313,6 +2322,23 @@ void P_UnArchiveThinkers(void)
                     mobj->health = -mobj->health - (mobj->info->spawnhealth/2);
                 }
 
+#ifdef READ_FLAGS144
+                // [WDJ] Fix old savegame flag positions
+                if( sg_version < READ_FLAGS144 )
+                {
+                    // Old savegame, some flags have moved.
+                    if( mobj->flags & MFO_NOCLIPTHING )
+                    {
+                       mobj->flags &= ~MFO_NOCLIPTHING;
+                       mobj->flags2 |= MF2_NOCLIPTHING;
+                    }
+                    if( mobj->flags & MFO_TRANSLATION4 )
+                    {
+                       mobj->flags &= ~MFO_NOCLIPTHING;
+                       mobj->tflags |= (mobj->flags & MFO_TRANSLATION4) >> (MFO_TRANSSHIFT - MFT_TRANSSHIFT);
+                    }
+                }
+#endif
                 // now set deductable field
                 // TODO : save this too
                 mobj->skin = NULL;
@@ -2416,7 +2442,7 @@ void P_UnArchiveThinkers(void)
                 }
                 else		 
 #endif
-		{
+                {
                 READ_SECTOR_THINKER( strobe, strobe_t, minlight );
                 }
                 strobe->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
@@ -2437,7 +2463,7 @@ void P_UnArchiveThinkers(void)
                 }
                 else		 
 #endif
-		{
+                {
                 READ_SECTOR_THINKER( glow, glow_t, minlight );
                 }
                 glow->thinker.function.acp1 = (actionf_p1) T_Glow;
@@ -2458,7 +2484,7 @@ void P_UnArchiveThinkers(void)
                 }
                 else		 
 #endif
-		{
+                {
                 READ_SECTOR_THINKER( fireflicker, fireflicker_t, minlight );
                 }
                 fireflicker->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
@@ -2478,7 +2504,7 @@ void P_UnArchiveThinkers(void)
                 }
                 else		 
 #endif
-		{
+                {
                 READ_SECTOR_THINKER( fade, lightfader_t, destlight );
                 }
                 fade->thinker.function.acp1 = (actionf_p1) T_LightFade;
