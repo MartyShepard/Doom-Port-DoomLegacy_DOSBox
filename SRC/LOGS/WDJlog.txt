@@ -5931,3 +5931,8 @@ patchfile = w107_16_absolute_angle.patch
 - commit revision 1320
 Make the compile options FIXROVERBUGS, ABSOLUTEANGLE, the normal.
 Removed the compile tests.
+
+*** W107_bot_indent
+patchfile = w107_17_bot_indent.patch
+- commit revision 1321
+Indent the bot code properly and cleanup the alignment.

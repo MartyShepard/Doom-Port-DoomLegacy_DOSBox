@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: b_node.h 1321 2017-05-23 14:23:52Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -56,16 +56,16 @@ typedef enum
 typedef struct SearchNode_s
 {
     boolean  visited;
-	
+
     fixed_t  costDir[NUMBOTDIRS];	//the cost of going from this node in a particular dest
-	
+
     fixed_t  cost,
-	     f,
-	     heuristic,
-	     x, y;
+             f,
+             heuristic,
+             x, y;
 
     struct SearchNode_s  *pprevious, *pnext, *vnext, *vprevious,
-			 *dir[NUMBOTDIRS];
+                         *dir[NUMBOTDIRS];
 
 #ifdef SHOWBOTPATH
     mobj_t   *mo;
@@ -74,7 +74,7 @@ typedef struct SearchNode_s
 
 extern SearchNode_t***    botNodeArray;
 extern int    numbotnodes,
-	      xOffset, yOffset,
+              xOffset, yOffset,
               xSize, ySize;
 
 //boolean B_PTRPathTraverse (intercept_t *in);

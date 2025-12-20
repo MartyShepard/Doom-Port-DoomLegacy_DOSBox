@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: b_search.h 1321 2017-05-23 14:23:52Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -45,7 +45,7 @@ typedef struct
     fixed_t	currentSize;	// size of list
 
     SearchNode_t  *first,
-		  *last;
+                  *last;
 } LinkedList_t;
 
 LinkedList_t* B_LLCreate();

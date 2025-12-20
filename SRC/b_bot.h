@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_bot.h 1112 2014-06-03 21:54:41Z smite-meister $
+// $Id: b_bot.h 1321 2017-05-23 14:23:52Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -40,21 +40,21 @@ typedef struct
     byte	lastNumWeapons;	//used to check if got a new weapon
 
     int		blockedcount,
-		avoidtimer,	//used so if blocked by something, like a barrel will reverse, and try to get around it
-		strafetimer,
-		weaponchangetimer;
+                avoidtimer,	//used so if blocked by something, like a barrel will reverse, and try to get around it
+                strafetimer,
+                weaponchangetimer;
 
     fixed_t	lastMobjX,	//where last enemy was seen
-		lastMobjY;
+                lastMobjY;
 
     mobj_t	*bestSeenItem,	//best item seen
-		*bestItem,	//best item on map, not neccessarily seen
-		*closestEnemy,
-		*closestMissile,
-		*closestUnseenEnemy,//goes towards this enemy if have nothing else todo
-		*closestUnseenTeammate,//goes towards this teammate if have nothing else todo
-		*lastMobj,	//last enemy
-		*teammate;
+                *bestItem,	//best item on map, not neccessarily seen
+                *closestEnemy,
+                *closestMissile,
+                *closestUnseenEnemy,//goes towards this enemy if have nothing else todo
+                *closestUnseenTeammate,//goes towards this teammate if have nothing else todo
+                *lastMobj,	//last enemy
+                *teammate;
 
     LinkedList_t  *path;	//path to the best item on the map
     SearchNode_t  *destNode;	//the closest node to where wants to go
