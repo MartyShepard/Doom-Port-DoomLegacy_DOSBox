@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_think.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_think.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,7 +74,16 @@ typedef struct thinker_s
     struct thinker_s*   prev;
     struct thinker_s*   next;
     think_t             function;
-    
+
+    // killough 8/29/98: maintain thinkers in several equivalence classes,
+    // according to various criteria, so as to allow quicker searches.
+    struct thinker_s *  cnext, *cprev; // linked list thinkers in same class
+
+#ifdef REFERENCE_COUNTING
+    // killough 11/98: count of how many other objects reference
+    // this one using pointers. Used for garbage collection.
+    uint16_t  references;
+#endif
 } thinker_t;
 
 

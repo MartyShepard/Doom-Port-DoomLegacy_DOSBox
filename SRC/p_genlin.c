@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_genlin.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -26,6 +26,8 @@
 
 #include "doomincl.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
 #include "r_data.h"
 #include "g_game.h"
 #include "s_sound.h"

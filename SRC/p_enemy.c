@@ -76,15 +76,17 @@
 //-----------------------------------------------------------------------------
 
 #include "doomincl.h"
-#include "g_game.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
+#include "p_inter.h"
+  // P_KillMobj
+#include "g_game.h"
 #include "r_main.h"
 #include "r_state.h"
 #include "s_sound.h"
 #include "m_random.h"
 #include "t_script.h"
-#include "p_inter.h"
-  // P_KillMobj
 
 
 #include "hardware/hw3sound.h"

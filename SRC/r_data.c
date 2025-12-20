@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: r_data.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -97,16 +97,18 @@
 //-----------------------------------------------------------------------------
 
 #include "doomincl.h"
+#include "p_local.h"
+#include "p_tick.h"
+  // thinker
+#include "p_setup.h" //levelflats
 #include "g_game.h"
 #include "i_video.h"
 #include "r_local.h"
 #include "r_sky.h"
-#include "p_local.h"
 #include "r_data.h"
 #include "w_wad.h"
   // numwadfiles
 #include "z_zone.h"
-#include "p_setup.h" //levelflats
 #include "v_video.h" //pLocalPalette
 #include "m_swap.h"
 

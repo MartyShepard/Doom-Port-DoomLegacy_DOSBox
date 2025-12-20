@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_lights.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -42,6 +42,8 @@
 #include "doomincl.h"
 #include "doomstat.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
 #include "r_state.h"
 #include "z_zone.h"
 #include "m_random.h"

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01325 ]: w107 think mbf
 [01324 ]: w107 weapon recoil
           Added Console: weapon_recoil
 					

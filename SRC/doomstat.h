@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1319 2017-05-23 14:21:23Z wesleyjohnson $
+// $Id: doomstat.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -320,6 +320,7 @@ extern  int     totalsecret;
 //  WAD, partly set at startup time.
 
 extern  tic_t           gametic;
+extern  tic_t           leveltime;
 
 #ifdef CLIENTPREDICTION2
 extern  tic_t           localgametic;

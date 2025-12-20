@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
+// $Id: p_floor.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -57,6 +57,8 @@
 #include "doomincl.h"
 #include "doomstat.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
 #include "r_state.h"
 #include "s_sound.h"
 #include "z_zone.h"

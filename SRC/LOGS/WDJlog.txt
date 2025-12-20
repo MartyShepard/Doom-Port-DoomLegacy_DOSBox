@@ -5974,3 +5974,8 @@ Defined  cv_weapon_recoil.
 Added PP_Random and PP_SignedRandom defines, which just call P_Random.
 This allows using P_Random calls that pass a Boom pr_xxx attribute,
 by only changing P_Random to PP_Random.
+
+*** W107_think_mbf
+patchfile = w107_21_think_mbf.patch
+- commit revision 1325
+Add the definitions, functions and lists for MBF friend and enemy class-lists.

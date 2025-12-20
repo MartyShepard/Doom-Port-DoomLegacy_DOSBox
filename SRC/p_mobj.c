@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_mobj.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -125,14 +125,18 @@
 //-----------------------------------------------------------------------------
 
 #include "doomincl.h"
+#include "p_local.h"
   // memset
+#include "p_tick.h"
+  // think
+#include "p_inter.h"
+#include "p_fab.h"
+#include "p_setup.h"
+  //levelflats to test if mobj in water sector
 #include "g_game.h"
 #include "g_input.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
-#include "p_local.h"
-#include "p_inter.h"
-#include "p_setup.h"    //levelflats to test if mobj in water sector
 #include "r_main.h"
 #include "r_things.h"
 #include "r_sky.h"
@@ -143,7 +147,6 @@
 #include "r_splats.h"   //faB: in dev.
 
 #include "b_game.h"     //added by AC for acbot
-#include "p_fab.h"
 
 
 #if 1

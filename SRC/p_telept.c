@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_telept.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -47,11 +47,13 @@
 
 #include "doomincl.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
+#include "g_game.h"
 #include "r_state.h"
 #include "r_main.h"
   //SoM: 3/16/2000
 #include "s_sound.h"
-#include "g_game.h"
 
 
 

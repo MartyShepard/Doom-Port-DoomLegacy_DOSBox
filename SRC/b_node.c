@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_node.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -28,14 +28,16 @@
 
 #include "doomincl.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
+#include "p_maputl.h"
+#include "p_setup.h"
 #include "r_state.h"
 #include "r_main.h"
 #include "b_bot.h"
 #include "b_node.h"
 #include "z_zone.h"
 #include "g_game.h"
-#include "p_maputl.h"
-#include "p_setup.h"
 
 #define x2ClosestPosX(a) ((fixed_t)((float)(a)/(float)BOTNODEGRIDSIZE + 0.5) - xOffset)
 #define y2ClosestPosY(a) ((fixed_t)((float)(a)/(float)BOTNODEGRIDSIZE + 0.5) - yOffset)

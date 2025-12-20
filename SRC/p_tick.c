@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1311 2017-04-20 21:25:29Z wesleyjohnson $
+// $Id: p_tick.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -39,6 +39,7 @@
 
 
 #include "doomstat.h"
+#include "p_tick.h"
 #include "g_game.h"
 #include "p_local.h"
 #include "z_zone.h"
@@ -59,7 +60,15 @@ tic_t     leveltime;
 
 
 // Both the head and tail of the thinker list.
-thinker_t       thinkercap;
+// Linked by next, prev.
+thinker_t  thinkercap;
+// MBF, class-lists.
+// Linked by cnext, cprev.
+thinker_t  thinkerclasscap[NUMTHCLASS];
+
+#ifdef THINKER_INTERPOLATIONS
+static byte  newthinkerpresent = true;
+#endif
 
 
 //
@@ -67,6 +76,13 @@ thinker_t       thinkercap;
 //
 void P_InitThinkers (void)
 {
+    int i;
+
+    // [WDJ] MBF, from MBF, PrBoom.
+    // Init all class-list.
+    for( i=0; i<NUMTHCLASS; i++ )
+      thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = &thinkerclasscap[i];
+
     thinkercap.prev = thinkercap.next  = &thinkercap;
 }
 
@@ -83,6 +99,18 @@ void P_AddThinker (thinker_t* thinker)
     thinker->next = &thinkercap;
     thinker->prev = thinkercap.prev;
     thinkercap.prev = thinker;
+   
+    // From MBF, PrBoom
+#ifdef REFERENCE_COUNTING
+    thinker->references = 0;    // killough 11/98: init reference counter to 0
+#endif
+    // killough 8/29/98: set sentinel pointers, and then add to appropriate list
+    thinker->cnext = thinker->cprev = NULL;  // block remove
+    P_UpdateClassThink(thinker, TH_unknown);
+
+#ifdef THINKER_INTERPOLATIONS
+    newthinkerpresent = true;
+#endif
 }
 
 
@@ -95,15 +123,183 @@ void P_RemoveThinker (thinker_t* thinker)
 {
     // Setup an action function that does removal.
     thinker->function.acp1 = (actionf_p1) T_RemoveThinker;
+
+    // [WDJ] MBF, from MBF, PrBoom
+    // killough 8/29/98: remove immediately from class-list
+   
+    // haleyjd 11/09/06: NO! Doing this here was always suspect to me, and
+    // sure enough: if a monster's removed at the wrong time, it gets put
+    // back into the list improperly and starts causing an infinite loop in
+    // the AI code. We'll follow PrBoom's lead and create a th_delete class
+    // for thinkers awaiting deferred removal.
+
+    // [WDJ] Being in a delete list does nothing to stop being found.
+    // Delete class links, and let acp1 block linking again.
+    P_UpdateClassThink( thinker, TH_delete );
 }
 
 // Thinker function that removes the thinker.
+// In PrBoom, MBF, this is called P_RemoveThinkerDelayed, and is more
+// complicated, using reference counts and modifying currentthinker.
+// Our RunThinker handles removal better.
 void T_RemoveThinker( thinker_t* remthink )
 {
+    // [WDJ] MBF, from MBF, PrBoom
+#ifdef REFERENCE_COUNTING
+    if( remthink->references )  return;
+#endif
+    
+    // Remove from current class-list, if in one.
+    P_UpdateClassThink( remthink, TH_none );
+
     // Unlink and delete the thinker
     remthink->next->prev = remthink->prev;
     remthink->prev->next = remthink->next;
     Z_Free (remthink);  // mobj, etc.
+}
+
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine.
+// killough 8/29/98:
+// [WDJ] Heavily rewritten to eliminate unused class-lists.
+// Make readable.
+//
+// Maintain separate class-lists of friends and enemies, to permit more
+// efficient searches.
+//
+
+void P_UpdateClassThink(thinker_t *thinker, int tclass )
+{
+    register thinker_t * th;
+
+    if( tclass == TH_unknown )
+    {
+        // Find the class where the thinker belongs.
+        // Most common case first.
+        tclass = TH_misc;
+        if( thinker->function.acp1 == (actionf_p1)P_MobjThinker )
+        {
+            register mobj_t * mo = (mobj_t *) thinker;
+            if( mo->health > 0
+                && ( mo->flags & MF_COUNTKILL || mo->type == MT_SKULL) )
+            {
+                tclass = (mo->flags & MF_FRIEND)? TH_friends : TH_enemies;
+            }
+        }
+    }
+   
+    // Remove from current class-list, if in one.
+    th = thinker->cnext;
+    if( th != NULL)
+    {
+        th->cprev = thinker->cprev;
+        th->cprev->cnext = th;
+    }
+
+    // Prevent linking dead mobj.
+    if( thinker->function.acp1 == (actionf_p1)T_RemoveThinker
+        || tclass >= NUMTHCLASS )  // TH_none, etc.
+    {
+        // Not in any class-list.
+        // Prevent unlinking again.
+        thinker->cprev = thinker->cnext = NULL;
+        return;
+    }
+
+    // Add to the appropriate class-list.
+    th = &thinkerclasscap[tclass];
+    th->cprev->cnext = thinker;
+    thinker->cnext = th;
+    thinker->cprev = th->cprev;
+    th->cprev = thinker;
+    return;
+
+}
+
+// Move to be first or last.
+//  first : 0=last, 1=first.
+void P_MoveClassThink(thinker_t *thinker, byte first)
+{
+    register thinker_t * th;
+
+    // Remove from current thread, if in one.
+    th = thinker->cnext;
+    if( th != NULL)
+    {
+        th->cprev = thinker->cprev;
+        thinker->cprev->cnext = th;
+    }
+
+    // prevent linking dead mobj
+    if( thinker->function.acp1 == (actionf_p1)T_RemoveThinker )
+    {
+        // Not in any class-list.
+        // Prevent unlinking again.
+        thinker->cprev = thinker->cnext = NULL;
+        return;
+    }
+   
+    // Add to appropriate thread list.
+    register mobj_t * mo = (mobj_t *) thinker;
+    th = &thinkerclasscap[ (mo->flags & MF_FRIEND)? TH_friends : TH_enemies ];
+    if( first )
+    {
+        thinker->cprev = th;
+        thinker->cnext = th->cnext;
+        th->cnext->cprev = thinker;
+        th->cnext = thinker;
+    }
+    else
+    {   // Last
+        thinker->cnext = th;
+        thinker->cprev = th->cprev;
+        th->cprev->cnext = thinker;
+        th->cprev = thinker;
+    }
+}
+
+
+// Move range cap to th, to be last in class-list.
+//  cap: is a class-list.
+//  thnext: becomes new first in class-list.
+void P_MoveClasslistRangeLast( thinker_t * cap, thinker_t * thnext )
+{
+    // cap is head of a class-list.
+    // Link first in class-list to end of class-list.
+    cap->cnext->cprev = cap->cprev;
+    cap->cprev->cnext = cap->cnext;
+    // Break list before th.  Make thnext first in class-list.
+    register thinker_t * tp = thnext->cprev;
+    cap->cprev = tp;
+    tp->cnext = cap;
+    thnext->cprev = cap;
+    cap->cnext = thnext;
+}
+
+
+//
+// P_SetTarget
+//
+// This function is used to keep track of pointer references to mobj thinkers.
+// In Doom, objects such as lost souls could sometimes be removed despite
+// their still being referenced. In Boom, 'target' mobj fields were tested
+// during each gametic, and any objects pointed to by them would be prevented
+// from being removed. But this was incomplete, and was slow (every mobj was
+// checked during every gametic). Now, we keep a count of the number of
+// references, and delay removal until the count is 0.
+
+void P_SetTarget(mobj_t **mop, mobj_t *targ)
+{
+#ifdef REFERENCE_COUNTING
+  if(*mop)  // If there was a target already, decrease its refcount
+    (*mop)->thinker.references--;
+  *mop = targ;
+  if(targ)  // Set new target and if non-NULL, increase its counter
+    targ->thinker.references++;
+#else
+  // DoomLegacy does not do reference counting
+  *mop = targ;
+#endif
 }
 
 
@@ -119,12 +315,19 @@ void P_RunThinkers (void)
     while (currentthinker != &thinkercap)
     {
         next_thinker = currentthinker->next;  // because of T_RemoveThinker
+#ifdef THINKER_INTERPOLATIONS
+        if (newthinkerpresent)
+            R_ActivateThinkerInterpolations(currentthinker);
+#endif
         if (currentthinker->function.acp1)
         {
             currentthinker->function.acp1 (currentthinker);
         }
         currentthinker = next_thinker;
     }
+#ifdef THINKER_INTERPOLATIONS
+    newthinkerpresent = false;
+#endif
 }
 
 
@@ -135,15 +338,26 @@ void P_RunThinkers (void)
 
 void P_Ticker (void)
 {
-    int         i;
+    int  i;
 
     // run the tic
     if (paused || (!netgame && menuactive && !demoplayback))
         return;
 
-    for (i=0 ; i<MAXPLAYERS ; i++)
-        if (playeringame[i])
-            P_PlayerThink (&players[i]);
+#ifdef THINKER_INTERPOLATIONS
+    R_UpdateInterpolations();
+#endif
+
+    // From PrBoom, EternityEngine, may affect demo sync.
+    // Not if this is an intermission screen.
+    if( gamestate == GS_LEVEL || gamestate == GS_DEDICATEDSERVER )
+    {
+        for (i=0 ; i<MAXPLAYERS ; i++)
+        {
+            if (playeringame[i])
+                P_PlayerThink (&players[i]);
+        }
+    }
 
     P_RunThinkers ();
     P_UpdateSpecials ();

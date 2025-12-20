@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_local.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -95,10 +95,8 @@
 #include "command.h"
   // consvar_t
 #include "d_player.h"
-#include "d_think.h"
 #include "m_fixed.h"
 #include "m_bbox.h"
-#include "p_tick.h"
 #include "p_mobj.h"
 #include "r_defs.h"
 #include "p_maputl.h"
@@ -169,20 +167,6 @@ typedef enum {
 } voodoo_mode_e;
 extern voodoo_mode_e  voodoo_mode;
 extern player_t *  spechit_player; // last player to trigger switch or linedef
-
-
-//
-// P_TICK
-//
-
-// both the head and tail of the thinker list
-extern  thinker_t       thinkercap;
-
-
-void P_InitThinkers (void);
-void P_AddThinker (thinker_t* thinker);
-void P_RemoveThinker (thinker_t* thinker);  // Remove the thinker.
-void T_RemoveThinker (thinker_t* thinker);  // Thinker removal action
 
 
 //

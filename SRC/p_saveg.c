@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_saveg.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -89,13 +89,15 @@
   // offsetof
 
 #include "doomincl.h"
-#include "g_game.h"
 #include "p_local.h"
+#include "p_tick.h"
+  // think
+#include "p_setup.h"
+#include "g_game.h"
 #include "r_data.h"
 #include "r_state.h"
 #include "z_zone.h"
 #include "w_wad.h"
-#include "p_setup.h"
 #include "byteptr.h"
 #include "t_array.h"
 #include "t_vari.h"

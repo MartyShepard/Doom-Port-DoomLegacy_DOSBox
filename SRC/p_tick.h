@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: p_tick.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -36,6 +36,7 @@
 
 #include "doomtype.h"
   // tic_t
+#include "d_think.h"
 
 #ifdef __GNUG__
 #pragma interface
@@ -43,10 +44,55 @@
 
 extern tic_t leveltime;
 
+
+
 // Called by C_Ticker,
 // can call G_PlayerExited.
 // Carries out all thinking of monsters and players.
 void P_Ticker (void);
+
+
+// [WDJ] From PrBoom, MBF, EternityEngine, adapted.
+// killough 8/29/98: class-lists of thinkers, for more efficient searches
+// cph 2002/01/13: for consistency with the main thinker list, keep objects
+// pending deletion on a class-list too.
+typedef enum {
+// The only lists that are actually searched.
+  TH_friends,  // live friends
+  TH_enemies,  // live enemies
+  NUMTHCLASS,
+// Conceptual lists, not actually kept.
+  TH_misc,
+  TH_delete,
+// Actions without list.
+  TH_all,    // search all
+  TH_unknown,  // must classify
+  TH_none,
+} TH_class_e;
+
+
+// both the head and tail of the thinker list
+extern  thinker_t  thinkercap;
+extern  thinker_t  thinkerclasscap[];
+
+
+
+void P_InitThinkers (void);
+void P_AddThinker (thinker_t* thinker);
+void P_RemoveThinker (thinker_t* thinker);  // Remove the thinker.
+void T_RemoveThinker (thinker_t* thinker);  // Thinker removal action
+
+void P_UpdateClassThink(thinker_t *thinker, int tclass );
+// Move in class-list.
+//  first: 0=last, 1=first
+void P_MoveClassThink(thinker_t *thinker, byte first);
+// Move range cap to th, to be last in class-list.
+//  cap: is a class-list.
+//  thnext: becomes new first in class-list.
+void P_MoveClasslistRangeLast( thinker_t * cap, thinker_t * thnext );
+
+// Set the target, with reference counting.
+void P_SetTarget(mobj_t **mop, mobj_t *targ);
 
 
 #endif
