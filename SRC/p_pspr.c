@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_pspr.c 1324 2017-05-23 14:28:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -555,14 +555,50 @@ void A_Raise( player_t*     player,
 
 
 
+// [WDJ] Boom Weapon recoil, from PrBoom
+// phares
+// Weapons now recoil, amount depending on the weapon.
+//
+// The flash of the weapon firing was moved here so the recoil could be
+// synched with it, rather than the pressing of the trigger.
+// The BFG delay caused this to be necessary.
+
+// phares
+// The following array holds the recoil values
+static const int recoil_values[] =
+{
+  10, // wp_fist
+  10, // wp_pistol
+  30, // wp_shotgun
+  10, // wp_chaingun
+  100,// wp_missile
+  20, // wp_plasma
+  100,// wp_bfg
+  0,  // wp_chainsaw
+  80  // wp_supershotgun
+};
+
+static void A_fire_flash_recoil(player_t* player, int flash_state_offset)
+{
+    P_SetPsprite(player, ps_flash,
+        player->weaponinfo[player->readyweapon].flashstate + flash_state_offset );
+
+    // killough 3/27/98: prevent recoil in no-clipping mode
+    if( cv_weapon_recoil.EV && !(player->mo->flags & MF_NOCLIP) )
+    {
+        P_Thrust(player, ANG180+player->mo->angle,
+               (2048 * recoil_values[player->readyweapon]) );
+    }
+}
+
+
 //
 // A_GunFlash
 //
 void A_GunFlash ( player_t* player, pspdef_t* psp )
 {
     P_SetMobjState (player->mo, S_PLAY_ATK2);
-    P_SetPsprite (player,ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate);
+    A_fire_flash_recoil( player, 0 );
 }
 
 
@@ -580,14 +616,14 @@ void A_Punch ( player_t* player, pspdef_t* psp )
     mobj_t * pmo = player->mo;
     angle_t     angle;
     int         slope;
-    int damage = (P_Random() % 10 + 1)<<1;  // pr_punch
+    int damage = (PP_Random(pr_punch) % 10 + 1)<<1;
 
     if (player->powers[pw_strength])
         damage *= 10;
 
     // WARNING: don't put two P_Random in one line, or else
     // the evaluation order is ambiguous.
-    angle = pmo->angle + (P_SignedRandom()<<18);  // pr_punchangle
+    angle = pmo->angle + (PP_SignedRandom(pr_punchangle)<<18);
 
     slope = P_AimLineAttack (pmo, angle, MELEERANGE);
     P_LineAttack (pmo, angle, MELEERANGE, slope, damage);
@@ -609,12 +645,12 @@ void A_Punch ( player_t* player, pspdef_t* psp )
 void A_Saw ( player_t* player, pspdef_t* psp )
 {
     mobj_t * pmo = player->mo;
-    int      slope;
+    int  slope;
     // Random() must be in separate statements otherwise
     // evaluation order will be ambiguous (lose demo sync).
-    int      damage = 2*(P_Random()%10+1);  // pr_saw, first random is damage
+    int  damage = 2 * (PP_Random(pr_saw)%10+1);  // first random is damage
     // second random adds to angle, third random is subtraction
-    angle_t  angle = pmo->angle + (P_SignedRandom()<<18);  // pr_saw
+    angle_t  angle = pmo->angle + (PP_SignedRandom(pr_saw)<<18);
 
     // use meleerange + 1 so the puff doesn't skip the flash
     slope = P_AimLineAttack (pmo, angle, MELEERANGE+1);
@@ -683,10 +719,7 @@ void A_FirePlasma ( player_t*     player,
 {
     player->ammo[player->weaponinfo[player->readyweapon].ammo] -= player->weaponinfo[player->readyweapon].ammopershoot;
 
-    P_SetPsprite (player,
-                  ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate+(P_Random ()&1) );
-                  // pr_plasma
+    A_fire_flash_recoil( player, (PP_Random(pr_plasma)&1) );
 
     //added:16-02-98: added player arg3
     P_SpawnPlayerMissile (player->mo, MT_PLASMA);
@@ -708,7 +741,7 @@ void P_BulletSlope (mobj_t* mo)
 
     //added:18-02-98: if AUTOAIM, try to aim at something
     if(!mo->player->autoaim_toggle || !cv_allowautoaim.EV || demoversion<=111)
-        goto notagetfound;
+        goto no_target_found;
 
     // see which target is to be aimed at
     an = mo->angle;
@@ -723,16 +756,17 @@ void P_BulletSlope (mobj_t* mo)
         {
             an -= 2<<26;
             bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-        }
-        if(!lar_linetarget)
-        {
-notagetfound:
-            if(demoversion>=128)
-                bulletslope = AIMINGTOSLOPE(mo->player->aiming);
-            else
-                bulletslope = (mo->player->aiming<<FRACBITS)/160;
+            if(!lar_linetarget)  goto no_target_found;
         }
     }
+    return;
+   
+no_target_found:
+    if(demoversion>=128)
+        bulletslope = AIMINGTOSLOPE(mo->player->aiming);
+    else
+        bulletslope = (mo->player->aiming<<FRACBITS)/160;
+    return;
 }
 
 
@@ -747,13 +781,13 @@ void P_GunShot ( mobj_t*       mo,
     angle_t     angle;
     int         damage;
 
-    damage = 5*(P_Random ()%3+1); // pr_gunshot
+    damage = 5 * (PP_Random(pr_gunshot)%3+1);
     angle = mo->angle;
 
     if (!accurate)
     {
         // WARNING: don't put two P_Random on one line, ambiguous
-        angle += (P_SignedRandom()<<18);  // pr_misfire
+        angle += (PP_SignedRandom(pr_misfire)<<18);
     }
 
     P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
@@ -772,10 +806,7 @@ void A_FirePistol ( player_t*     player,
 
     P_SetMobjState (pmo, S_PLAY_ATK2);
     player->ammo[player->weaponinfo[player->readyweapon].ammo]--;
-
-    P_SetPsprite (player,
-                  ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate);
+    A_fire_flash_recoil( player, 0 );
 
     P_BulletSlope (pmo);
     P_GunShot (pmo, !player->refire);
@@ -795,9 +826,7 @@ void A_FireShotgun ( player_t*     player,
     P_SetMobjState (pmo, S_PLAY_ATK2);
 
     player->ammo[player->weaponinfo[player->readyweapon].ammo]--;
-    P_SetPsprite (player,
-                  ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate);
+    A_fire_flash_recoil( player, 0 );
 
     P_BulletSlope (pmo);
     for (i=0 ; i<7 ; i++)
@@ -821,10 +850,7 @@ void A_FireShotgun2 ( player_t*     player,
     P_SetMobjState (pmo, S_PLAY_ATK2);
 
     player->ammo[player->weaponinfo[player->readyweapon].ammo]-=2;
-
-    P_SetPsprite (player,
-                  ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate);
+    A_fire_flash_recoil( player, 0 );
 
     P_BulletSlope (pmo);
 
@@ -840,14 +866,11 @@ void A_FireShotgun2 ( player_t*     player,
         else
         {
             // [WDJ] Boom, P_Random order is damage, angle, slope
-            damage = 5*(P_Random ()%3+1);  // pr_shotgun
-            angle = pmo->angle + (P_SignedRandom() << 19);
-            slope = bulletslope + (P_SignedRandom()<<5);  // pr_shotgun
+            damage = 5 * (PP_Random(pr_shotgun)%3+1);
+            angle = pmo->angle + (PP_SignedRandom(pr_shotgun) << 19);
+            slope = bulletslope + (PP_SignedRandom(pr_shotgun)<<5);
         }
-        P_LineAttack (pmo,
-                      angle,
-                      MISSILERANGE,
-                      slope, damage);
+        P_LineAttack (pmo, angle, MISSILERANGE, slope, damage);
     }
 }
 
@@ -867,12 +890,7 @@ void A_FireCGun ( player_t*     player,
 
     P_SetMobjState (pmo, S_PLAY_ATK2);
     player->ammo[player->weaponinfo[player->readyweapon].ammo]--;
-
-    P_SetPsprite (player,
-                  ps_flash,
-                  player->weaponinfo[player->readyweapon].flashstate
-                      + psp->state
-                      - &states[S_CHAIN1] );
+    A_fire_flash_recoil( player, psp->state - &states[S_CHAIN1] );
 
     P_BulletSlope (pmo);
     P_GunShot (pmo, !player->refire);
@@ -905,8 +923,7 @@ void A_Light2 (player_t *player, pspdef_t *psp)
 //
 void A_BFGSpray (mobj_t* mo)
 {
-    int     i;
-    int     j;
+    int     i, j;
     int     damage;
     angle_t an;
     mobj_t  *extrabfg;;
@@ -916,25 +933,23 @@ void A_BFGSpray (mobj_t* mo)
     {
         an = mo->angle - ANG90/2 + ANG90/40*i;
 
-        // mo->target is the originator (player)
-        //  of the missile
+        // mo->target is the originator (player) of the missile.
         P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
 
         // lar_linetarget returned by P_AimLineAttack
         if (!lar_linetarget)
             continue;
 
-        extrabfg = P_SpawnMobj (lar_linetarget->x,
-                                lar_linetarget->y,
+        extrabfg = P_SpawnMobj (lar_linetarget->x, lar_linetarget->y,
                                 lar_linetarget->z + (lar_linetarget->height>>2),
                                 MT_EXTRABFG);
         extrabfg->target = mo->target;
 
         damage = 0;
         for (j=0;j<15;j++)
-            damage += (P_Random()&7) + 1;  // pr_bfg
+            damage += (PP_Random(pr_bfg)&7) + 1;
 
-        //BP: use extramobj as inflictor so we have the good death message
+        //BP: use extrabfg as inflictor so we have the good death message
         P_DamageMobj (lar_linetarget, extrabfg, mo->target, damage);
     }
 }

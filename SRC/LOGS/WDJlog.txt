@@ -5965,3 +5965,12 @@ DEH and BEX flags TRANSLATION bits are directed to tflags now.
 Move the NOCLIPTHING flag to flags2.  This is doomlegacy flag only used
 for the camera.
 This makes room in the standard location for Boom and MBF flags.
+
+*** W107_weapon_recoil
+patchfile = w107_20_weapon_recoil.patch
+- commit revision 1324
+Added the Boom weapon recoil, using code from PrBoom.
+Defined  cv_weapon_recoil.
+Added PP_Random and PP_SignedRandom defines, which just call P_Random.
+This allows using P_Random calls that pass a Boom pr_xxx attribute,
+by only changing P_Random to PP_Random.

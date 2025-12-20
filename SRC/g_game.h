@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: g_game.h 1324 2017-05-23 14:28:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -134,6 +134,7 @@ extern consvar_t  cv_crosshair;
 //extern consvar_t  cv_crosshairscale;
 extern consvar_t  cv_showmessages;
 extern consvar_t  cv_pickupflash;
+extern consvar_t  cv_weapon_recoil;  // Boom weapon recoil
 extern consvar_t  cv_fastmonsters;
 extern consvar_t  cv_predictingmonsters;  //added by AC for predmonsters
 

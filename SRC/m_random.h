@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.h 1055 2013-10-09 20:14:01Z wesleyjohnson $
+// $Id: m_random.h 1324 2017-05-23 14:28:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,6 +55,10 @@ int P_SignedRandom2 (char *a,int b);
 byte P_Random (void);
 int P_SignedRandom ();
 #endif
+
+// MBF, PrBoom
+#define  PP_Random(pr)  P_Random()
+#define  PP_SignedRandom(pr)  P_SignedRandom()
 
 // separate so to not affect demo playback
 byte A_Random (void);  // ambience

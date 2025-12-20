@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01324 ]: w107 weapon recoil
+          Added Console: weapon_recoil
+					
 [01323 ]: w107 color TRANSLATION
 [01322 ]: w107 EN demo
           DOS: Joystick init Message Fixed

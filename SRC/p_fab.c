@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_fab.c 1324 2017-05-23 14:28:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -346,6 +346,7 @@ void D_Register_MiscCommands (void)
     CV_RegisterVar (&cv_monstergravity);
     CV_RegisterVar (&cv_doorstuck);
     CV_RegisterVar (&cv_pickupflash);
+    CV_RegisterVar (&cv_weapon_recoil);
 }
 
 void  DemoAdapt_p_fab(void)  // local enables of p_fab
