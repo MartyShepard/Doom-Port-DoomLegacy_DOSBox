@@ -5985,3 +5985,15 @@ patchfile = w107_22_skull_bounce.patch
 - commit revision 1326
 Add the code for the PrBoom skull bounce fix.
 
+*** W107_mbf_mobj
+patchfile = w107_23_mbf_mobj.patch
+- commit revision 1327
+Add MBF fields and reorganized mobj_t.
+Put ptrs together so alignment does not create so much wasted padding.
+Put int16 together.
+
+Old size = 208 bytes.
+With MBF fields = 224 bytes.
+Reorganized with MBF fields = 212 bytes.
+
+

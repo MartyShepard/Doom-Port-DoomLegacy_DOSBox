@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_mobj.h 1327 2017-05-23 14:31:44Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -229,7 +229,6 @@ typedef enum
     MF_FRIEND           = 0x40000000, // killough 7/18/98: friendly monsters
    
     MF_TRANSLUCENT      = 0x80000000,  // from boomdeh.txt, previously was FLOORHUGGER
-
 } mobjflag_e;
 
 
@@ -262,6 +261,8 @@ typedef enum {
     MF2_TELESTOMP      =     0x00040000,      // mobj can stomp another
     MF2_FLOATBOB       =     0x00080000,      // use float bobbing z movement
     MF2_DONTDRAW       =     0x00100000,      // don't generate a vissprite
+   
+    // extra
     MF2_FLOORHUGGER    =     0x00200000,      // stays on the floor
         
     // for chase camera, don't be blocked by things (partial clipping)
@@ -282,7 +283,7 @@ typedef enum {
     // Earlier Legacy savegames only.
     // for chase camera, don't be blocked by things (partial clipping)
     MFO_NOCLIPTHING      = 0x40000000,
-} old_objflag_e;
+} old_mobjflag_e;
 
 
 
@@ -295,6 +296,13 @@ typedef enum {
     MFT_TRANSLATION6     = 0x00003F00,    // 6 bit color
     MFT_TRANSSHIFT       = 8,
 } mobjtflag_e;
+
+
+// Same friendness
+// Used often in MBF.
+// True if both FRIEND, or if both not FRIEND.
+#define SAME_FRIEND(s,t)  ((((s)->flags ^ (t)->flags) & MF_FRIEND) == 0)
+#define BOTH_FRIEND(s,t)  ((s)->flags & (t)->flags & MF_FRIEND)
 
 
 //
@@ -323,6 +331,11 @@ typedef enum
     MF_IGNOREPLAYER	 = 0x0040,
     // Actor will predict where the player will be
     MF_PREDICT		 = 0x0080,
+  // MBF
+    // Object is falling.
+    MF_FALLING           = 0x0100,
+    // Object is armed for TOUCHY explode.
+    MF_ARMED             = 0x0200
 } mobjeflag_e;
 
 
@@ -330,62 +343,49 @@ typedef enum
 #error MF_TRANSLATION can only handle NUMSKINCOLORS <= 16
 #endif
 
+
 // Map Object definition.
 typedef struct mobj_s
 {
     // List: thinker links.
     thinker_t           thinker;
 
-    // Info for drawing: position.
-    fixed_t             x;
-    fixed_t             y;
-    fixed_t             z;
-
     // More list: links in sector (if needed)
-    struct mobj_s*      snext;
-    struct mobj_s*      sprev;
-
-    //More drawing info: to determine current sprite.
-    angle_t             angle;  // orientation
-    spritenum_t         sprite; // used to find patch_t and flip value
-    int                 frame;  // frame number, plus bits see p_pspr.h
-
-    //Fab:02-08-98
-    // Skin overrides 'sprite' when non NULL (currently hack for player
-    // bodies so they 'remember' the skin).
-    // Secondary use is when player die and we play the die sound.
-    // Problem is he has already respawn and want the corpse to
-    // play the sound !!! (yeah it happens :\)
-    void*               skin;
+    struct mobj_s     * snext;
+    struct mobj_s     * sprev;
 
     // Interaction info, by BLOCKMAP.
     // Links in blocks (if needed).
-    struct mobj_s*      bnext;
-    struct mobj_s*      bprev;
+    struct mobj_s     * bnext;
+    struct mobj_s     * bprev;
 
     struct subsector_s* subsector;
+
+    // a linked list of sectors where this object appears
+    struct msecnode_s * touching_sectorlist;
+   
+    // Info for drawing: position.
+    fixed_t             x, y, z;
+    // Momentums, used to update position.
+    fixed_t             momx, momy, momz;
 
     // The closest interval over all contacted Sectors (or Things).
     fixed_t             floorz;
     fixed_t             ceilingz;
+    fixed_t             dropoffz;  // MBF, dropoff floor
 
     // For movement checking.
     fixed_t             radius;
     fixed_t             height;
 
-    // Momentums, used to update position.
-    fixed_t             momx;
-    fixed_t             momy;
-    fixed_t             momz;
+    //More drawing info: to determine current sprite.
+    angle_t             angle;  // orientation
+    spritenum_t         sprite; // used to find patch_t and flip value
+    uint32_t            frame;  // frame number, plus bits see p_pspr.h
 
     // If == validcount, already checked.
     //int                 validcount;
 
-    mobjtype_t          type;   // MT_*  (MT_PLAYER, MT_VILE, MT_BFG, etc.)
-    mobjinfo_t*         info;   // &mobjinfo[mobj->type]
-
-    int                 tics;   // state tic counter
-    state_t*            state;
     uint32_t            flags;  // mobjflag_e
     uint32_t            flags2; // heretic mobjflag2_e
     uint32_t            tflags; // translation, drawing, settings, mobjtflag_e
@@ -393,55 +393,75 @@ typedef struct mobj_s
     int                 special1;
     int                 special2;
     int                 health;
+    int                 tics;   // state tic counter
 
-    // Movement direction, movement generation (zig-zagging).
-    int                 movedir;        // 0-7
-    int                 movecount;      // when 0, select a new dir
+    mobjtype_t          type;   // MT_*  (MT_PLAYER, MT_VILE, MT_BFG, etc.)
 
+  // [WDJ] Better alignment if ptrs are kept together, and int16 are together.
+
+    mobjinfo_t        * info;   // &mobjinfo[mobj->type]
+    state_t           * state;
+
+    //Fab:02-08-98
+    // Skin overrides 'sprite' when non NULL (currently hack for player
+    // bodies so they 'remember' the skin).
+    // Secondary use is when player die and we play the die sound.
+    // Problem is he has already respawn and want the corpse to
+    // play the sound !!! (yeah it happens :\)
+    void              * skin;
+   
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
   union {
-    struct mobj_s*      target;
+    struct mobj_s     * target;
     uint32_t            target_id; // used during loading
   };
 
-    // Nodes
-    struct mobj_s*	nextnode;   // Next node object to chase after touching
-                                    // current target (which must be MT_NODE).
-    struct mobj_s*	targetnode; // Target node to remember when encountering a player
-    int			nodescript; // Script to run when this node is touched
-    int			nodewait;   // How many ticks to wait at this node
+    // Thing being chased/attacked for tracers.
+  union {
+    struct mobj_s     * tracer;
+    uint32_t            tracer_id; // used during loading
+  };
 
-    // Reaction time: if non 0, don't attack yet.
-    // Used by player to freeze a bit after teleporting.
-    int                 reactiontime;
-
-    // If >0, the target will be chased
-    // no matter what (even if shot)
-    int                 threshold;
+  union {
+    struct mobj_s     * lastenemy;    // MBF, last known enemy
+    uint32_t            lastenemy_id; // used during loading
+  };
 
     // Additional info record for player avatars only.
     // Only valid if type == MT_PLAYER
-    struct player_s*    player;
-
-    // Player number last looked for.
-    int                 lastlook;
+    struct player_s   * player;
 
     // For nightmare and itemrespawn respawn.
-    mapthing_t          *spawnpoint;
+    mapthing_t        * spawnpoint;
 
-    // Thing being chased/attacked for tracers.
-  union {
-    struct mobj_s*      tracer;
-    uint32_t            tracer_id; // used during loading
-  };
+    // Nodes
+    struct mobj_s     * nextnode;   // Next node object to chase after touching
+                                    // current target (which must be MT_NODE).
+    struct mobj_s     * targetnode; // Target node to remember when encountering a player
+    int			nodescript; // Script to run when this node is touched
+    int			nodewait;   // How many ticks to wait at this node
+
+    // Player number last looked for.
+    int8_t              lastlook;
+
+    // Movement direction, movement generation (zig-zagging).
+    int8_t              movedir;      // 0-7
+    int16_t             movecount;    // when 0, select a new dir
+
+    // Reaction time: if non 0, don't attack yet.
+    // Used by player to freeze a bit after teleporting.
+    int16_t             reactiontime;
+
+    // If >0, the target will be chased no matter what (even if shot).
+    int16_t             threshold;
+    int16_t             strafecount;  // MBF, monster strafing
+    int16_t             pursuecount;  // MBF, how long to pursue
+    int16_t             tipcount;     // MBF, torque simulation (gear)
 
     //SoM: Friction.
     int friction;
     int movefactor;
-
-    // a linked list of sectors where this object appears
-    struct msecnode_s* touching_sectorlist;
 
     // Support for Frag Weapon Falling
     // This field valid only for MF_DROPPED ammo and weapn objects
@@ -471,5 +491,14 @@ unsigned int P_Extra_Mapthing_Index( mapthing_t * mtp );
 
 // Traverse all Extra Mapthing that are in use
 mapthing_t * P_Traverse_Extra_Mapthing( mapthing_t * prev );
+
+// MBF
+#define  SENTIENT(mo)  (((mo)->health > 0) && ((mo)->info->seestate))
+
+// killough 11/98:
+// For torque simulation:
+// MBF, PrBoom  TIPSHIFT=OVERDRIVE, MAXTIPCOUNT=MAXGEAR
+#define TIPSHIFT     6
+#define MAXTIPCOUNT  22
 
 #endif
