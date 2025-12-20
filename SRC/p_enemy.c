@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1306 2017-04-07 17:20:56Z wesleyjohnson $
+// $Id: p_enemy.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -446,7 +446,7 @@ void DemoAdapt_p_enemy( void )
     // in P_Thrust (so monsters slip only on ice conveyor)
     if( demoplayback && (friction_model != FR_legacy))
     {
-        // monster_friction set by Boom, MBF, prboom demo
+        // EN_monster_friction set by Boom, MBF, prboom demo
         // defaulted by others
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
         EN_monster_momentum = 0;  // 2=momentum
@@ -454,7 +454,7 @@ void DemoAdapt_p_enemy( void )
     else
     {
         // default: 2= momentum
-        monster_friction = (cv_monsterfriction.value > 0);  // 0=none
+        EN_monster_friction = (cv_monsterfriction.value > 0);  // 0=none
         EN_mbf_enemyfactor = (cv_monsterfriction.value == 1);  // 1=MBF
         EN_monster_momentum = (cv_monsterfriction.value >= 2);  // 2=momentum
     }
@@ -497,8 +497,8 @@ void DemoAdapt_p_enemy( void )
 #if 1
     if( verbose > 1 )
     { 
-        GenPrintf(EMSG_ver, "friction_model=%i, monster_friction=%i\n",
-                friction_model, monster_friction );
+        GenPrintf(EMSG_ver, "friction_model=%i, EN_monster_friction=%i\n",
+                friction_model, EN_monster_friction );
         GenPrintf(EMSG_ver, "EN_mbf_enemyfactor=%i, EN_monster_momentum=%i\n",
                 EN_mbf_enemyfactor,  EN_monster_momentum );
         GenPrintf(EMSG_ver, "EN_skull_limit=%i, EN_old_pain_spawn=%i, EN_doorstuck=%i, EN_mbf_doorstuck=%i\n",
@@ -541,7 +541,7 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
 
     // [WDJ] Monsters too, killough 10/98
     // Otherwise they move too easily on mud and ice
-    if(monster_friction
+    if(EN_monster_friction
        && (actor->z <= actor->floorz)  // must be on floor
        && !(actor->flags2&MF2_FLY)  // not heretic flying monsters
        )

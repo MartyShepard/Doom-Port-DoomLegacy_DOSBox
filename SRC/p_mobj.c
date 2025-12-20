@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: p_mobj.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -818,7 +818,7 @@ missile_impact:
         && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
         && mo->subsector->sector->ceilingheight == mo->ceilingz)
     {
-        if (!boomsupport || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
+        if (!EN_boom || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
         {
             // Hack to prevent missiles exploding against the sky.
             // Does not handle sky floors.

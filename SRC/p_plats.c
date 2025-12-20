@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1316 2017-04-21 19:37:25Z wesleyjohnson $
+// $Id: p_plats.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -152,7 +152,7 @@ void T_PlatRaise(plat_t* plat)
             //jff 1/26/98 remove the plat if it bounced so it can be tried again
             //only affects plats that raise and bounce
     
-            if (boomsupport)
+            if (EN_boom)
             {
               switch(plat->type)
               {
@@ -165,9 +165,11 @@ void T_PlatRaise(plat_t* plat)
             }
         }
         else
+        {
             if (gamemode == heretic && !(leveltime & 31))
                 S_StartSound ((mobj_t *) & plat->sector->soundorg,
                     sfx_stnmov);
+        }
 
         break;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: p_doors.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -167,7 +167,7 @@ void T_VerticalDoor(vldoor_t * door)
                     case VD_genBlazeClose:
                         door->sector->ceilingdata = NULL;       // SoM: 3/6/2000
                         P_RemoveThinker(&door->thinker);        // unlink and free
-                        if (boomsupport)        //SoM: Removes the double closing sound of doors.
+                        if (EN_boom)        //SoM: Removes the double closing sound of doors.
                             S_StartSound((mobj_t *) & door->sector->soundorg, sfx_bdcls);
                         break;
 
@@ -198,7 +198,7 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                 }
                 //SoM: 3/6/2000: Code to turn lighting off in tagged sectors.
-                if (boomsupport && door->line && door->line->tag)
+                if (EN_boom && door->line && door->line->tag)
                 {
                     if (door->line->special > GenLockedBase && (door->line->special&6)==6)
                         EV_TurnTagLightsOff(door->line);
@@ -277,7 +277,7 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                 }
                 //SoM: 3/6/2000: turn lighting on in tagged sectors of manual doors
-                if (boomsupport && door->line && door->line->tag)
+                if (EN_boom && door->line && door->line->tag)
                 {
                     if (door->line->special > GenLockedBase && (door->line->special&6)==6)     //jff 3/9/98 all manual doors
                         EV_LightTurnOn(door->line, 0);

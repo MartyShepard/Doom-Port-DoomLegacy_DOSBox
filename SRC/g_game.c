@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1309 2017-04-10 17:26:10Z wesleyjohnson $
+// $Id: g_game.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -563,7 +563,7 @@ boolean G_InventoryResponder(player_t *ply, byte id,
   // the keydown event work correctly.  Specifically heretic will no longer
   // use up an inventory item when game saving.
   static byte keyup_armed[2] = {0,0};   // player1, player2
-   
+
 #if 1
   // Do not mess with inventory when menu or console are open.
   if( menuactive || console_open )
@@ -2434,23 +2434,23 @@ boolean G_Downgrade(int version)
     if(version < 129) 
     {
         // Boom demo_compatibility mode  (boom demo version < 200)
-        boomsupport = 0;       // Boom (! demo_compatibility)
-        allow_pushers = 0;
-        variable_friction = 0;
+        EN_boom = 1;       // Boom (! demo_compatibility)
+        EN_pushers = 0;
+        EN_variable_friction = 0;
     }
     else 
     {
-        boomsupport = 1;
+        EN_boom = 1;
         if( version < 200 )  // flags loaded by (Boom, MBF, prboom) demos
         {
             // settings not loaded from demo
-            allow_pushers = 1;	// of Boom 2.02
-            variable_friction = 1;  // of Boom 2.02
+            EN_pushers = 1;	// of Boom 2.02
+            EN_variable_friction = 1;  // of Boom 2.02
         }
     }
 
     // [WDJ] enable of "Marine's Best Friend" feature emulation
-    mbf_support =
+    EN_mbf =
        (version >= 133 && version < 200) // legacy demos that use mbf
        || (version > 203);  // MBF demo
 
@@ -2736,7 +2736,7 @@ byte pdss_doorstuck;
 // timelimit
 
 // The following are set by G_Downgrade and/or G_DoPlayDemo:
-// variable_friction, allow_pushers, monster_friction
+// EN_variable_friction, EN_pushers, EN_monster_friction
 
 
 void playdemo_save_settings( void )
@@ -2886,7 +2886,7 @@ void G_DoPlayDemo (char *defdemoname)
             debug_Printf( " compatibility 0x%x.\n", compatibility );
 #endif
             boomdemo = 1;
-            boomsupport = ! compatibility;
+            EN_boom = ! compatibility;
             cv_rndsoundpitch.value = 1;  // normal in Boom, call M_Random
         }
         else
@@ -2898,7 +2898,7 @@ void G_DoPlayDemo (char *defdemoname)
     if (demoversion < VERSION)
         CONS_Printf ("\2Demo is from an older game version\n");
 
-    monster_friction = 0;  // default for demo
+    EN_monster_friction = 0;  // default for demo
 
     if (demoversion < 143 || demoversion >= 200 )
     {
@@ -3005,8 +3005,8 @@ void G_DoPlayDemo (char *defdemoname)
         // [6] respawn
         // [7] fast monsters
         // [8] no monsters
-        variable_friction = demo_p[1];
-        allow_pushers = demo_p[3];
+        EN_variable_friction = demo_p[1];
+        EN_pushers = demo_p[3];
 #ifdef DEBUG_DEMO
         debug_Printf( " respawn %i.\n", (int)demo_p[6] );
         debug_Printf( " fast monsters %i.\n", (int)demo_p[7] );
@@ -3039,7 +3039,7 @@ void G_DoPlayDemo (char *defdemoname)
             // [58] force old BSP
             monster_infight = demo_p[14]; // monster_infight from demo is 0/1
             cv_monbehavior.value = (monster_infight)? 2:0;  // do not notify NET
-            monster_friction = demo_p[22];
+            EN_monster_friction = demo_p[22];
         }
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
         // byte: player[1..32] present boolean

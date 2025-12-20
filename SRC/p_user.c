@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_user.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -334,7 +334,7 @@ void P_MovePlayer (player_t* player)
                || (player->cheats & CF_FLYAROUND)   // cheat
                || (pmo->flags2&(MF2_ONMOBJ|MF2_FLY));  // heretic
 
-    if(variable_friction && onground)
+    if(EN_variable_friction && onground)
     {
         movefactor = P_GetMoveFactor(pmo); // gets got_movefactor, got_friction
 //        CONS_Printf("friction: %X, movefactor: %i\n", got_friction, movefactor);

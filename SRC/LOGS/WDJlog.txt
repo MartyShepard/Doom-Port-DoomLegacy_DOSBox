@@ -5889,3 +5889,13 @@ Boom code for the same linedef was releasing the thinker, allowing the
 platform to operate again.
 For gamemode heretic, made it use the heretic test, which does not
 remove the thinker for this linedef action.
+
+*** W107_EN_boom
+patchfile = w107_13_EN_boom.patch
+- commit revision 1317
+Changed some control variables naming and type, now EN_boom, EN_mbf,
+EN_pushers, EN_variable_friction.  The EN_ variables are easily
+recognized as vars that are set by gamemode and demoversion.
+Collected the tests for EN_boom in the W1 types in p_spec to one place,
+where it is easier to manage.  Added a test for Heretic, and made it
+clear the line type unconditionally, as it should.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1234 2016-05-24 17:19:37Z wesleyjohnson $
+// $Id: p_map.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -250,7 +250,7 @@ fixed_t  P_GetFriction( const mobj_t * mo )
     // and updates whenever sec->special is changed.  That is several fewer
     // tests in this heavily used code.
     got_movefactor = ORIG_FRICTION_FACTOR;
-    if( !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && variable_friction )
+    if( !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && EN_variable_friction )
     {
         fixed_t mo_top = mo->z + mo->height;
         const msecnode_t * msnp = mo->touching_sectorlist;
@@ -341,7 +341,7 @@ int  P_GetMoveFactor(mobj_t* mo)
   }
 #ifdef FRICTIONTHINKER
   // older demo friction
-  else if (boomsupport && variable_friction &&
+  else if (EN_boom && EN_variable_friction &&
       !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)))
   {
       // Boom friction, using friction thinker
@@ -1215,7 +1215,7 @@ boolean P_TryMove ( mobj_t*       thing,
                 // [WDJ] Meant to prevent walking off a dropoff, it also prevents
                 // getting away from one once the thing is over it.
                 // Monsters will repeat call until find successful direction.
-                if( !boomsupport || !allowdropoff )
+                if( !EN_boom || !allowdropoff )
                 {
                     goto block_move;  // inform caller, returning tmr_dropoffline
                 }
@@ -2367,7 +2367,7 @@ boolean PTR_UseTraverse (intercept_t* in)
 
     // can't use for than one special line in a row
     // SoM: USE MORE THAN ONE!
-    if(boomsupport && (in->d.line->flags&ML_PASSUSE))
+    if(EN_boom && (in->d.line->flags&ML_PASSUSE))
       return true;
     else
       return false;
@@ -2633,7 +2633,7 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
 {
   msecnode_t   *ns;
 
-  if (!boomsupport) // use the old routine for old demos though
+  if (!EN_boom) // use the old routine for old demos though
     return P_ChangeSector(sector,crunch);
 
   crush_nofit = false;

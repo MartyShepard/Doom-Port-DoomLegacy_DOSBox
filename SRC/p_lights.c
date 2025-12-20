@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: p_lights.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -318,7 +318,7 @@ int EV_LightTurnOn ( line_t* line, int bright )
                 }
             }
             sector-> lightlevel = tbright;
-            if(!boomsupport)
+            if(!EN_boom)
               bright = tbright;
         }
     }

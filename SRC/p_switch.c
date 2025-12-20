@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1261 2016-09-20 17:19:49Z wesleyjohnson $
+// $Id: p_switch.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -371,7 +371,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
     if (side)  goto nopass;
 
     //SoM: 3/18/2000: Add check for Generalized linedefs.
-    if (boomsupport)
+    if (EN_boom)
     {
       // pointer to line function is NULL by default, set non-null if
       // line special is push or switch generalized linedef type
@@ -506,7 +506,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
     }
     // monsters past this point have been checked OK for using the switch
 
-    if (!P_CheckTag(line) && boomsupport)  //disallow zero tag on some types
+    if (!P_CheckTag(line) && EN_boom)  //disallow zero tag on some types
       goto nopass;
 
     // do something
@@ -725,7 +725,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
         break;
 
       default:
-        if (boomsupport)
+        if (EN_boom)
         {
           switch (line->special)
           {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
+// $Id: p_floor.c 1317 2017-04-21 19:44:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -77,7 +77,7 @@ void DemoAdapt_p_floor( void )
     // TNT MAP30 relies upon the bug to get the height right on the stairs
     // at the red key card, and the stairs in the final room, where the
     // player must fire from the 2nd step from the top to hit the Boss.
-    EN_boom_stairbuild_fix = boomsupport && (gamedesc_id != GDESC_tnt);
+    EN_boom_stairbuild_fix = EN_boom && (gamedesc_id != GDESC_tnt);
 }
 
 
@@ -118,7 +118,7 @@ result_e T_MovePlane ( sector_t*     sector,
           // Move floor down
           newheight = sector->floorheight - speed;
           //SoM: 3/20/2000: Make splash when platform floor hits water
-          if((sector->model == SM_Legacy_water) && boomsupport)
+          if((sector->model == SM_Legacy_water) && EN_boom)
           {
             if((newheight < sectors[sector->modelsec].floorheight )
                && (sector->floorheight > sectors[sector->modelsec].floorheight))
@@ -162,15 +162,15 @@ result_e T_MovePlane ( sector_t*     sector,
           newheight = sector->floorheight + speed;
           // keep floor from moving thru ceilings
           //SoM: 3/20/2000: Make splash when platform floor hits water
-          if((sector->model == SM_Legacy_water) && boomsupport)
+          if((sector->model == SM_Legacy_water) && EN_boom)
           {
             if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->floorheight < sectors[sector->modelsec].floorheight))
               S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
           }
-//          destheight = (!boomsupport || dest<sector->ceilingheight)?
+//          destheight = (!EN_boom || dest<sector->ceilingheight)?
 //                          dest : sector->ceilingheight;
-          destheight = (boomsupport && (dest > sector->ceilingheight))?
+          destheight = (EN_boom && (dest > sector->ceilingheight))?
                 sector->ceilingheight : dest;
           if (newheight > destheight)
           { // reached dest, or start was above dest
@@ -190,7 +190,7 @@ result_e T_MovePlane ( sector_t*     sector,
             flag = P_CheckSector(sector,crush);
             if (flag == true)
             {
-              if (!boomsupport)
+              if (!EN_boom)
               {
                 if (crush == true)
                   return MP_crushed;
@@ -210,7 +210,7 @@ result_e T_MovePlane ( sector_t*     sector,
       {
           // Move ceiling down
           newheight = sector->ceilingheight - speed;
-          if((sector->model == SM_Legacy_water) && boomsupport)
+          if((sector->model == SM_Legacy_water) && EN_boom)
           {
             // make sound when ceiling hits water
             if((newheight < sectors[sector->modelsec].floorheight)
@@ -219,9 +219,9 @@ result_e T_MovePlane ( sector_t*     sector,
           }
           // moving a ceiling down
           // keep ceiling from moving thru floors
-//          destheight = (!boomsupport || dest>sector->floorheight)?
+//          destheight = (!EN_boom || dest>sector->floorheight)?
 //                          dest : sector->floorheight;
-          destheight = (boomsupport && (dest<sector->floorheight))?
+          destheight = (EN_boom && (dest<sector->floorheight))?
                 sector->floorheight : dest;
           if (newheight < destheight)
           { // reached dest, or start was below dest
@@ -253,7 +253,7 @@ result_e T_MovePlane ( sector_t*     sector,
       {
           // Move ceiling up
           newheight = sector->ceilingheight + speed;
-          if((sector->model == SM_Legacy_water) && boomsupport)
+          if((sector->model == SM_Legacy_water) && EN_boom)
           {
             // make sound when ceiling hits water
             if((newheight > sectors[sector->modelsec].floorheight)
@@ -657,7 +657,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
               fixed_t   minsize = FIXED_MAX;
               side_t*   side;
 
-              if (boomsupport) minsize = 32000<<FRACBITS; //SoM: 3/6/2000: ???
+              if (EN_boom) minsize = 32000<<FRACBITS; //SoM: 3/6/2000: ???
               mfloor->direction = 1;
 //              mfloor->sector = sec;
               mfloor->speed = FLOORSPEED;
@@ -668,7 +668,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
                   side = getSide(secnum,i,0);
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
-                      (!boomsupport && !side->bottomtexture))
+                      (!EN_boom && !side->bottomtexture))
                   {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
@@ -676,14 +676,14 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
                   side = getSide(secnum,i,1);
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
-                      (!boomsupport && !side->bottomtexture))
+                      (!EN_boom && !side->bottomtexture))
                   {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
                   }
                 }
               }
-              if (!boomsupport)
+              if (!EN_boom)
                 mfloor->floordestheight = mfloor->sector->floorheight + minsize;
               else
               {
@@ -836,9 +836,9 @@ int EV_BuildStairs ( line_t*  line, stair_e type )
       crushing = true;
       break;
   }
-  if( ! boomsupport ) // logic of above cases, crushing stairs only in Boom
+  if( ! EN_boom ) // logic of above cases, crushing stairs only in Boom
       crushing = false;
-  // [WDJ] init crush even when not boomsupport, same for all of stair.
+  // [WDJ] init crush even when not EN_boom, same for all of stair.
    
   secnum = -1; // init search FindSector
   // start a stair at each sector tagged the same as the linedef
@@ -973,7 +973,7 @@ int EV_DoDonut(line_t*  line)
                                           // pillar must be two-sided 
 
     // do not start the donut if the pool is already moving
-    if (boomsupport && P_SectorActive( S_floor_special, s2)) 
+    if (EN_boom && P_SectorActive( S_floor_special, s2)) 
       continue;                           //jff 5/7/98
                       
     // find a two sided line around the pool whose other side isn't the pillar
@@ -983,7 +983,7 @@ int EV_DoDonut(line_t*  line)
       // [WDJ] using ptr s = s2->linelist[i] gives larger code (by 32 bytes).
       //jff 3/29/98 use true two-sidedness, not the flag
       // killough 4/5/98: changed demo_compatibility to compatibility
-      if (!boomsupport)
+      if (!EN_boom)
       {
         if (!(s2->linelist[i]->flags & ML_TWOSIDED)
             || (s2->linelist[i]->backsector == s1))
