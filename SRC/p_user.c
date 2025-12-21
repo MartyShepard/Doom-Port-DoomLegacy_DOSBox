@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_user.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -323,8 +323,9 @@ void P_MovePlayer (player_t* player)
     // Do not let the player control movement
     //  if not onground.
     onground = (pmo->z <= pmo->floorz) 
-               || (player->cheats & CF_FLYAROUND)   // cheat
-               || (pmo->flags2&(MF2_ONMOBJ|MF2_FLY));  // heretic
+               || (pmo->flags & MF_BOUNCES) // MBF
+               || (pmo->flags2&(MF2_ONMOBJ|MF2_FLY))  // heretic
+               || (player->cheats & CF_FLYAROUND);   // cheat
 
     if(EN_variable_friction && onground)
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: doomdef.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -70,10 +70,6 @@
 // want to repeat from save game 20 times to get past these bad spots.
 #define DOORDELAY_CONTROL
   // See p_fab.c, giving it NETVAR status causes saved games to crash program.
-
-// [WDJ] MBF DOGS
-// There were conditional in MBF, so here too.
-#define DOGS
 
 // [WDJ] 6/22/2009  Generate gamma table using two settings,
 // and a selected function.

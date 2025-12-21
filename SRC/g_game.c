@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: g_game.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -752,8 +752,8 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
 #if defined( __DJGPP__ )	
     boolean   analogjoystickmove,gamepadjoystickmove;
-    analogjoystickmove  = cv_usejoystick.EV && !Joystick.bGamepadStyle;
-    gamepadjoystickmove = cv_usejoystick.EV &&  Joystick.bGamepadStyle;
+    analogjoystickmove  = cv_usejoystick.value && !Joystick.bGamepadStyle;
+    gamepadjoystickmove = cv_usejoystick.value &&  Joystick.bGamepadStyle;
     if(gamepadjoystickmove)
     {
         turnright = turnright || joyxmove > 0;
@@ -808,7 +808,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 #endif			
         forward -= forwardmove[speed];
 #if defined( __DJGPP__ )					
-    if ( joyymove && analogjoystickmove && !cv_joystickfreelook.EV) 
+    if ( joyymove && analogjoystickmove && !cv_joystickfreelook.value) 
         forward -= ( (joyymove * forwardmove[1]) >> 10 ); // ANALOG!	
 #endif
     //added:07-02-98: some people strafe left & right with mouse buttons
@@ -2497,7 +2497,7 @@ void G_demo_defaults( void )
     adj_ticks_per_sec = 35; // default
 #endif
 }
-   
+
 
 static
 void G_restore_user_settings( void )
@@ -3026,6 +3026,7 @@ void G_DoPlayDemo (char *defdemoname)
         EN_boom = (demoversion >= 129);
         EN_mbf = 0; // legacy demos before mbf
     }
+
 #ifdef SHOW_DEMOVERSION
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
 #endif
@@ -3209,7 +3210,7 @@ void G_DoPlayDemo (char *defdemoname)
             // monster_infight from demo is 0/1
             // Feature enables 1=ON, Do not notify NET
             cv_monbehavior.EV = demo_p[14]? 2:5; // (infight:off)
-#ifdef DOGS	   
+#ifdef DOGS
             cv_mbf_dogs.EV = demo_p[15];
 #endif
             EV_mbf_distfriend = ((demo_p[18]<<8) + demo_p[19]) << FRACBITS;

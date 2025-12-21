@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_items.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: d_items.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,6 +77,10 @@ typedef enum
   MTF_MPSPAWN     = 0x0010,  // Spawn in multiplayer
   MTF_NODM        = 0x0020,  // Do not spawn in deathmatch mode
   MTF_NOCOOP      = 0x0040,  // Do not spawn in coop mode
+
+// MBF
+  MTF_FRIEND      = 0x0080,  // Friend to player
+  MTF_RESERVED    = 0x0100,  // Reserved (identify bad editor)
 
 // DoomLegacy additions
 //Hurdler: special option to tell the things has been spawned by an FS

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: t_func.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -2037,7 +2037,7 @@ void SF_LineAttack(void)
     }
     else
     {
-        slope = P_AimLineAttack(mo, angle, MISSILERANGE);  // auto aim
+        slope = P_AimLineAttack(mo, angle, MISSILERANGE, 0);  // auto aim
     }
 
     P_LineAttack(mo, angle, MISSILERANGE, slope, damage);

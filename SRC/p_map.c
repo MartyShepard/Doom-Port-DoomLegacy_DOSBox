@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: p_map.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -105,12 +105,13 @@
 // TryMove, thing map global vars
 fixed_t         tm_bbox[4];	// box around the thing
 mobj_t*         tm_thing;	// the thing itself
-int             tm_flags;	// thing flags of tm_thing
+uint32_t        tm_flags;	// thing flags of tm_thing
 fixed_t         tm_x, tm_y;	// thing map position
  
 // TryMove, thing map return global vars
-boolean         tmr_floatok;    // If true, move would be ok
+byte            tmr_floatok;    // If true, move would be ok
                                 // if within "tmfloorz - tmceilingz".
+byte            tmr_felldown;   // MBF, went off deep dropoff
 fixed_t         tmr_floorz;	// floor and ceiling of new position
 fixed_t         tmr_ceilingz;
 fixed_t         tmr_dropoffz;   // the lowest point contacted (monster check)
@@ -238,7 +239,7 @@ static boolean PIT_StompThing (mobj_t* thing)
 // [WDJ] 3/2011 Get sector oriented friction.
 // This routine is based on one from prboom, by killough 8/28/98.
 // For most sectors it returns ORIG_FRICTION.
-// Return lowest value (most sticky friction).
+// A high return value is very little friction (ice).
 // It also considers being on sector borders and sector heights.
 
 fixed_t  got_friction;
@@ -445,6 +446,7 @@ boolean P_TeleportMove( mobj_t* thing, fixed_t x, fixed_t y )
 
     thing->floorz = tmr_floorz;
     thing->ceilingz = tmr_ceilingz;
+    thing->dropoffz = tmr_dropoffz;  // MBF
     thing->x = x;
     thing->y = y;
 
@@ -498,7 +500,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     if (thing == tm_thing)
         goto ret_pass;
 
-    if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE) ))
+    if( !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
         goto ret_pass;
 
 #ifdef CLIENTPREDICTION2
@@ -544,6 +546,36 @@ static boolean PIT_CheckThing (mobj_t* thing)
         }
     }
 
+    // [WDJ] From PrBoom, MBF
+    // killough 11/98:
+    //
+    // TOUCHY flag, for mines or other objects which die on contact with solids.
+    // If a solid object of a different type comes in contact with a touchy
+    // thing, and the touchy thing is not the sole one moving relative to fixed
+    // surroundings such as walls, then the touchy thing dies immediately.
+    if( thing->flags & MF_TOUCHY  // touchy object
+        && thing->health > 0      // touchy object is alive
+        && ((thing->eflags & MF_ARMED)  // Thing is an armed mine
+            || SENTIENT(thing))   // ... or a sentient thing
+      )
+    {
+        if( tm_thing->flags & MF_SOLID   // solid object touches it
+            && (thing->type != tm_thing->type  // only different species
+                || thing->type == MT_PLAYER ) // ... or different players
+            && thing_topz >= tm_thing->z    // touches vertically
+            && tmtopz >= thing->z
+            // PEs and lost souls are considered same
+            // but Barons & Knights are intentionally not.
+            // The following are 0 if the type matches the MT.
+            && ( (thing->type ^ MT_PAIN) | (tm_thing->type ^ MT_SKULL) )
+            && ( (thing->type ^ MT_SKULL) | (tm_thing->type ^ MT_PAIN) )
+          )
+        {
+            P_DamageMobj(thing, NULL, NULL, thing->health);  // kill object
+            goto ret_pass;
+        }
+    }
+
     // check for skulls slamming into things
     if (tm_flags & MF_SKULLFLY)
     {
@@ -564,9 +596,12 @@ static boolean PIT_CheckThing (mobj_t* thing)
 
 
     // missiles can hit other things
-    if (tm_thing->flags & MF_MISSILE)
+    // killough 8/10/98: bouncing non-solid things can hit other things too
+    if( (tm_thing->flags & MF_MISSILE)
+         || ((tm_thing->flags & (MF_BOUNCES | MF_SOLID)) == MF_BOUNCES)
+      )
     {
-       // Check for passing through a ghost (heretic)
+        // Check for passing through a ghost (heretic)
         if ((thing->flags & MF_SHADOW) && (tm_thing->flags2 & MF2_THRUGHOST))
             goto ret_pass;
 
@@ -575,11 +610,10 @@ static boolean PIT_CheckThing (mobj_t* thing)
         if (tmtopz < thing->z)  goto ret_pass;  // underneath
 
         if (tm_thing->target
-            && (
-                tm_thing->target->type == thing->type
+            &&( tm_thing->target->type == thing->type
                 || (tm_thing->target->type == MT_KNIGHT  && thing->type == MT_BRUISER)
                 || (tm_thing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) )
-            )
+           )
         {
             // Don't hit same species as originator.
             if (thing == tm_thing->target)
@@ -863,14 +897,17 @@ boolean PIT_CheckLine (line_t* ld)
     }
 
     // missile and Camera can cross uncrossable line
-    if (!(tm_thing->flags & MF_MISSILE) &&
-        !(tm_thing->type == MT_CHASECAM) )
+    // killough 8/10/98: allow bouncing objects to pass through as missiles
+    if (!(tm_thing->flags & (MF_MISSILE | MF_BOUNCES))
+        && !(tm_thing->type == MT_CHASECAM) )
     {
         if (ld->flags & ML_BLOCKING)
             goto ret_blocked;  // explicitly blocking everything
 
-        if ( !(tm_thing->player) &&
-             ld->flags & ML_BLOCKMONSTERS )
+        // killough 8/9/98: monster-blockers don't affect friends
+        if( ld->flags & ML_BLOCKMONSTERS
+            && !(tm_thing->player || (tm_thing->flags & MF_FRIEND) )
+          )
             goto ret_blocked;  // block monsters only
     }
 
@@ -1150,18 +1187,22 @@ static void CheckMissileImpact(mobj_t *mobj)
 // Attempt to move to a new position,
 // crossing special lines unless MF_TELEPORT is set.
 //
+//  allowdropoff : 0, 1 allow, 2 allow dog jump
 // Use tm_ global vars, and return tmr_ global vars.
 boolean P_TryMove ( mobj_t*       thing,
                     fixed_t       x,
                     fixed_t       y,
-                    boolean       allowdropoff)
+                    byte          allowdropoff)
 {
+    line_t*     ld;
     fixed_t     oldx, oldy;
+#if 0
+    fixed_t     onz;  // maybe standing on something
+#endif
     int         side;
     int         oldside;
-    line_t*     ld;
 
-    tmr_floatok = false;
+    tmr_felldown = tmr_floatok = false;
 
     if (!P_CheckPosition (thing, x, y))
         goto impact;  // solid wall or thing
@@ -1178,23 +1219,26 @@ boolean P_TryMove ( mobj_t*       thing,
 
         tmr_floatok = true;
 
-        if ( !(thing->flags & MF_TELEPORT)
-             && (thing->z+thing->height > tmr_ceilingz) // hit ceiling
-             && !(thing->flags2&MF2_FLY))  // not heretic fly
-            goto impact;  // mobj must lower itself to fit
-
         if(thing->flags2&MF2_FLY)  // heretic fly
         {
-            if(thing->z+thing->height > tmr_ceilingz) // hit ceiling
+            if((thing->z + thing->height) > tmr_ceilingz) // hit ceiling
             {
                 thing->momz = -8*FRACUNIT;
                 goto block_move;
             }
-            else if(thing->z < tmr_floorz && (tmr_floorz-tmr_dropoffz > 24*FRACUNIT))
+            else if( thing->z < tmr_floorz
+                     && (tmr_floorz - tmr_dropoffz > 24*FRACUNIT)
+                   )
             {
                 thing->momz = 8*FRACUNIT;
                 goto block_move;
             }
+        }
+        else
+	{   // not heretic fly
+            if(((thing->z + thing->height) > tmr_ceilingz) // hit ceiling
+               && !(thing->flags & MF_TELEPORT) )
+                goto impact;  // mobj must lower itself to fit
         }
 
         // jump out of water
@@ -1211,29 +1255,135 @@ boolean P_TryMove ( mobj_t*       thing,
            && tmr_floorz > thing->z)
             CheckMissileImpact(thing);
 
+#if 0
+// As MBF had it, disorganized.
+        if( !(thing->flags & (MF_DROPOFF|MF_FLOAT)) )
+        {
+            if( ! cv_mbf_dropoff.EV )
+            {
+                if( ( !EN_boom || (dropoff == 0)
+                      // fix demosync bug in mbf compatibility mode
+                      || (EN_mbf && compatibility_level <= prboom_2_compatibility)
+		    )
+		    && (tmr_floorz - tmr_dropoffz > 24*FRACUNIT)
+		  )
+		    return false;  // don't stand over a dropoff
+	    }
+	    else
+	    if( (dropoff == 0)  // dropoff not allowed
+		||( (dropoff == 2)  // large jump down (e.g. dogs)
+		    &&( (tmr_floorz - tmr_dropoffz > 128*FRACUNIT) // too far
+			|| !thing->target
+			|| thing->target->z > tmr_dropoffz) // target above dropoff
+		  )
+	      )
+	    {
+	        if( (EN_mbf && cv_monkeys.EV) ?
+		      thing->floorz - tmr_floorz > 24*FRACUNIT ||
+                      thing->dropoffz - tmr_dropoffz > 24*FRACUNIT)
+		    :  tmr_floorz - tmr_dropoffz > 24*FRACUNIT
+		    return false;
+	    }
+	    else
+	    { /* dropoff allowed -- check for whether it fell more than 24 */
+	        tmr_felldown = !(thing->flags & MF_NOGRAVITY) &&
+                               thing->z - tmfloorz > 24*FRACUNIT;
+	    }
+	}
+#endif
+       
         if( tmr_dropoffline )
         {
-            if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE  // excessive height
-                && !(thing->flags&(MF_DROPOFF|MF_FLOAT)) // not player, missile, shot, puff, etc.
-                && !tmr_floorthing )
+	    // [WDJ] Due to complexity of MBF and integration with DoomLegacy,
+	    // used some GOTO.  Do not try to fix this!
+	    // It is much more understandable this way.
+	    if( thing->flags&(MF_DROPOFF|MF_FLOAT) ) // player, missile, shot, puff, etc.
+	        goto ignore_dropoff;
+
+#if 0
+            // may be standing on something
+	    onz = ( tmr_floorthing && (thing->z > tmr_floorz) )?
+                    thing->z     // standing on thing
+                  : tmr_floorz;  // the usual floor
+#endif
+	   
+	    // MBF
+            if( cv_mbf_dropoff.EV )  // MBF dropoff
+	    {
+		if(((allowdropoff == 1)  // drop off allowed
+                    && (tmr_floorz - tmr_dropoffz > MAXSTEPMOVE))
+		  ||((allowdropoff == 2) // large jump down (e.g. dogs)
+		    &&((tmr_floorz - tmr_dropoffz > 128*FRACUNIT)
+			|| !thing->target
+			|| thing->target->z > tmr_dropoffz )) // target above dropoff
+		  )
+	        {
+		    // Dropoff too high.
+		    if( EN_mbf && cv_mbf_monkeys.EV )
+		    {
+		        // [WDJ] Still do not know what monkeys does.
+		        if( thing->floorz - tmr_floorz > 24*FRACUNIT
+			    || thing->dropoffz - tmr_dropoffz > 24*FRACUNIT)
+		            goto block_move;
+		        goto ignore_dropoff;
+		    }
+		    goto block_move;
+		}
+	        else
+                {
+		    // dropoff allowed
+                    // check for whether it fell more than 24.
+                    tmr_felldown = !(thing->flags & MF_NOGRAVITY)
+                                   && (thing->z - tmr_floorz > 24*FRACUNIT);
+		    goto got_dropoff;
+                }
+	    }
+
+            // DoomLegacy
+            // [WDJ] tmr_floorthing is for DoomLegacy versions 113..131.
+	    if( tmr_floorthing )  // standing on something
+	        goto ignore_dropoff;
+
+            // Doom, Boom
+            if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE )  // excessive height
             {
                 // [WDJ] Meant to prevent walking off a dropoff, it also prevents
                 // getting away from one once the thing is over it.
                 // Monsters will repeat call until find successful direction.
-                if( !EN_boom || !allowdropoff )
+                if( !EN_boom || (allowdropoff == 0) )
                 {
                     goto block_move;  // inform caller, returning tmr_dropoffline
                 }
+	        // MBF compatibility mode
+	        if( EN_mbf && demoversion <= 203 )
+		    goto block_move;
                 // [WDJ] Trying to moderate momentum here causes too many side-effects
                 // like barrels getting stuck at conveyor edge.
                 // Barrels only have momentum.
                 // Successful move, returning tmr_dropoffline.
+		goto got_dropoff;
             }
-            else
-            {
-                tmr_dropoffline = NULL;  // cancel notification
-            }
+
+ignore_dropoff:
+            // Necessary due to removal of a number of dependent tests.
+            tmr_dropoffline = NULL;  // cancel notification
         }
+got_dropoff:
+
+        // [WDJ] From PrBoom, MBF, EternityEngine
+        if( (thing->flags & MF_BOUNCES)    // killough 8/13/98
+            && !(thing->flags & (MF_MISSILE|MF_NOGRAVITY))
+            && !SENTIENT(thing)
+            && (tmr_floorz - thing->z > 16*FRACUNIT)
+          )
+            goto block_move; // too big a step up for bouncers under gravity
+
+        // killough 11/98: prevent falling objects from going up too many steps
+        if( thing->eflags & MF_FALLING
+            && (tmr_floorz - thing->z >
+                FixedMul(thing->momx,thing->momx)+FixedMul(thing->momy,thing->momy))
+          )
+            goto block_move;
     }
 
     // the move is ok,
@@ -1255,6 +1405,7 @@ boolean P_TryMove ( mobj_t*       thing,
     oldy = thing->y;
     thing->floorz = tmr_floorz;
     thing->ceilingz = tmr_ceilingz;
+    thing->dropoffz = tmr_dropoffz;  // MBF
     thing->x = x;
     thing->y = y;
 
@@ -1272,7 +1423,7 @@ boolean P_TryMove ( mobj_t*       thing,
        )
         thing->flags2 |= MF2_FEETARECLIPPED;
     else if (thing->flags2 & MF2_FEETARECLIPPED)  // don't need this test
-          thing->flags2 &= ~MF2_FEETARECLIPPED;
+        thing->flags2 &= ~MF2_FEETARECLIPPED;
 
     // if any special lines were hit, do the effect
     if ( !(thing->flags&(MF_TELEPORT|MF_NOCLIP)) &&
@@ -1309,8 +1460,165 @@ boolean P_TryMove ( mobj_t*       thing,
 impact:
     // hit something solid
     CheckMissileImpact(thing);
-block_move:       
+#if 0
+    // PrBoom unstuck code
+    return tmunstuck
+        && !(ceilingline && untouched(ceilingline))
+        && !(  floorline && untouched(  floorline));
+#endif
+block_move:
     return false;
+}
+
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine.
+// PIT_ApplyTorque
+//
+// killough 9/12/98:
+//
+// Apply "torque" to objects hanging off of ledges, so that they fall off.
+// It's not really torque, since Doom has no concept of rotation, but it's a
+// convincing effect which avoids anomalies such as lifeless objects hanging
+// more than halfway off of ledges, and allows objects to roll off of the
+// edges of moving lifts, or to slide up and then back down stairs,
+// or to fall into a ditch.
+// If more than one linedef is contacted, the effects are cumulative,
+// so balancing is possible.
+//
+static boolean PIT_ApplyTorque(line_t *ld)
+{
+   // If thing touches two-sided pivot linedef
+   if(ld->backsector
+      && tm_bbox[BOXRIGHT]  > ld->bbox[BOXLEFT]
+      && tm_bbox[BOXLEFT]   < ld->bbox[BOXRIGHT]
+      && tm_bbox[BOXTOP]    > ld->bbox[BOXBOTTOM]
+      && tm_bbox[BOXBOTTOM] < ld->bbox[BOXTOP]
+      && P_BoxOnLineSide(tm_bbox, ld) == -1 )
+   {
+      mobj_t *mo = tm_thing;
+      fixed_t x, y;
+
+      // lever arm
+      fixed_t dist =
+         + (ld->dx >> FRACBITS) * (mo->y >> FRACBITS)
+         - (ld->dy >> FRACBITS) * (mo->x >> FRACBITS) 
+         - (ld->dx >> FRACBITS) * (ld->v1->y >> FRACBITS)
+         + (ld->dy >> FRACBITS) * (ld->v1->x >> FRACBITS);
+
+      // dropoff direction
+      if(dist < 0 ?
+           ld->frontsector->floorheight < mo->z &&
+           ld->backsector->floorheight >= mo->z
+         : ld->backsector->floorheight < mo->z &&
+           ld->frontsector->floorheight >= mo->z
+        )
+      {
+         // At this point, we know that the object straddles a two-sided
+         // linedef, and that the object's center of mass is above-ground.
+
+         x = abs(ld->dx);
+         y = abs(ld->dy);
+
+         if(y > x)
+         {
+            register fixed_t t = x;
+            x = y;
+            y = t;
+         }
+
+         y = finesine[(tantoangle[FixedDiv(y,x)>>DBITS] +
+                      ANG90) >> ANGLETOFINESHIFT];
+
+         // Applied Momentum is proportional to distance between the
+         // object's center of mass and the pivot linedef.
+         //
+         // It is scaled by 2^(TIPSHIFT - tipcount). When tipcount is
+         // increased, the momentum gradually decreases to 0 for
+         // the same amount of pseudotorque, so that oscillations
+         // are prevented, yet it has a chance to reach equilibrium.
+
+         int tipping = TIPSHIFT - mo->tipcount;
+         if( tipping >= 0 )
+             y = y << tipping;
+         else
+             y = y >> -tipping;
+
+         dist = FixedDiv( FixedMul(dist, y), x);
+
+         // Apply momentum away from the pivot linedef.
+                 
+         x = FixedMul(ld->dy, dist);
+         y = FixedMul(ld->dx, dist);
+
+         // Avoid moving too fast all of a sudden (step into "overdrive")
+
+         dist = FixedMul(x,x) + FixedMul(y,y);
+
+         while(dist > FRACUNIT*4 && (mo->tipcount < MAXTIPCOUNT))
+         {
+            ++mo->tipcount;
+            x >>= 1;
+            y >>= 1;
+            dist >>= 1;
+         }
+         
+         mo->momx -= x;
+         mo->momy += y;
+      }
+   }
+   return true;
+}
+
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine.
+// P_ApplyTorque
+//
+// killough 9/12/98
+// Applies "torque" to objects, based on all contacted linedefs
+//
+void P_ApplyTorque(mobj_t *mo)
+{
+    int xl, xh, yl, yh;
+    int bx,by;
+    // Remember the current state, for tipcount-change
+    uint32_t moflags = mo->eflags;
+
+    validcount++; // prevents checking same line twice
+    tm_thing = mo;
+
+    tm_bbox[BOXLEFT] = mo->x - mo->radius;
+    tm_bbox[BOXRIGHT] = mo->x + mo->radius;
+    tm_bbox[BOXBOTTOM] = mo->y - mo->radius;
+    tm_bbox[BOXTOP] = mo->y + mo->radius;
+    xl = (tm_bbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+    xh = (tm_bbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+    yl = (tm_bbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+    yh = (tm_bbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+
+    // Find tipping lines that apply torque.
+    for(bx = xl ; bx <= xh ; bx++)
+    {
+        for(by = yl ; by <= yh ; by++)
+           P_BlockLinesIterator(bx, by, PIT_ApplyTorque);
+    }
+      
+    // If any momentum, mark object as 'falling' using engine-internal flags
+    if( mo->momx | mo->momy )
+        mo->eflags |= MF_FALLING;
+    else  // Clear the engine-internal flag indicating falling object.
+        mo->eflags &= ~MF_FALLING;
+
+    // If the object has been moving, step up the tipcount.
+    // This helps reach equilibrium and avoid oscillations.
+    //
+    // Doom has no concept of potential energy, much less
+    // of rotation, so we have to creatively simulate these 
+    // systems somehow :)
+
+    if(!((mo->eflags | moflags) & MF_FALLING))  // If not falling for a while,
+        mo->tipcount = 0;  // Reset it to full strength
+    else if(mo->tipcount < MAXTIPCOUNT)  // Else if not at max tipcount,
+        mo->tipcount++;    // lessen tipping
 }
 
 
@@ -1338,6 +1646,7 @@ boolean P_ThingHeightClip (mobj_t* thing)
     // tmr_ vars returned by P_CheckPosition
     thing->floorz = tmr_floorz;
     thing->ceilingz = tmr_ceilingz;
+    thing->dropoffz = tmr_dropoffz;  // MBF
     noncrush = (thing->ceilingz - thing->floorz >= thing->height);
     
     // walker in contact with floor (direct or indirect)
@@ -1663,6 +1972,8 @@ fixed_t         la_attackrange;  // max range of weapon
 
 fixed_t         lar_aimslope;
 
+// killough 8/2/98: for more intelligent autoaiming (with friends)
+static uint32_t  la_reject_flags;  // [WDJ]  MF_FRIEND or 0
 
 
 //
@@ -1804,8 +2115,14 @@ boolean PTR_AimTraverse (intercept_t* in)
         return true;
     }
 
-    if ( (!(th->flags&MF_SHOOTABLE)) || (th->flags&MF_CORPSE) || (th->type == MT_POD))
+    if( (!(th->flags & MF_SHOOTABLE))
+        || (th->flags & MF_CORPSE) || (th->type == MT_POD) )
         return true;                    // corpse or something
+
+    // killough 7/19/98, 8/2/98:
+    // friends don't aim at friends (except players), at least not first
+    if( (th->flags & la_reject_flags) && !th->player )
+        return true;
 
     // check angles to see if the thing can be aimed at
     dist = FixedMul (la_attackrange, in->frac);
@@ -2216,9 +2533,11 @@ boolean PTR_ShootTraverse (intercept_t* in)
 //
 // P_AimLineAttack
 //
+//  mbf_friend_protection is automatically disabled when not EN_mbf.
 fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
                           angle_t       angle,
-                          fixed_t       distance )
+                          fixed_t       distance,
+                          byte          mbf_friend_protection )
 {
     fixed_t     x2, y2;  // attack far endpoint
 
@@ -2229,6 +2548,9 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
 
     int angf = ANGLE_TO_FINE(angle);
     la_shootthing = atkr;
+   
+    la_reject_flags = ( EN_mbf && mbf_friend_protection )?
+                      ( atkr->flags & MF_FRIEND ) : 0;
 
     if(atkr->player && demoversion>=128)
     {
@@ -2254,7 +2576,8 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
         see_topslope = 100*FRACUNIT/160;
         see_bottomslope = -100*FRACUNIT/160;
     }
-    // setup global var for P_PathTraverse
+
+    // Setup global parameters for P_PathTraverse, P_AimTraverse.
     la_shootz = atkr->z + (atkr->height>>1) + 8*FRACUNIT;
     lar_lastz = la_shootz;  // default result
 
@@ -2262,6 +2585,9 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
 
     la_attackrange = distance;
     lar_linetarget = NULL;  // default result
+
+    // killough 8/2/98: prevent friends from aiming at friends
+    la_reject_flags = mbf_friend_protection? MF_FRIEND : 0;
 
     //added:15-02-98: comments
     // traverse all linedefs and mobjs from the blockmap containing atkr,
@@ -2427,12 +2753,21 @@ boolean PIT_RadiusAttack (mobj_t* thing)
     fixed_t     dz;
     fixed_t     dist;
 
-    if (!(thing->flags & MF_SHOOTABLE) )
+    // killough 8/20/98: allow bouncers to take damage
+    // (missile bouncers are already excluded with MF_NOBLOCKMAP)
+    if( !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)) )
         return true;
 
-    // Boss spider and cyborg
-    // take no damage from concussion.
-    if (thing->type == MT_CYBORG
+    // killough 8/10/98: allow grenades to hurt anyone, unless
+    // fired by Cyberdemons, in which case it won't hurt Cybers.
+    // EternityEngine has a more complicated system.
+    if( bombspot->flags & MF_BOUNCES )
+    {
+        if( thing->type == MT_CYBORG && bombsource->type == MT_CYBORG )
+            return true;
+    }
+    // Boss spider and cyborg take no damage from concussion.
+    else if (thing->type == MT_CYBORG
         || thing->type == MT_SPIDER
         || thing->type == MT_MINOTAUR 
         || thing->type == MT_SORCERER1
@@ -2576,6 +2911,15 @@ boolean PIT_ChangeSector (mobj_t*  thing)
     {
         P_RemoveMobj (thing);
 
+        goto done; // keep checking
+    }
+
+    // [WDJ] From Prboom, MBF, EternityEngine
+    // killough 11/98: kill touchy things immediately
+    if( (thing->flags & MF_TOUCHY)
+        && (thing->eflags & MF_ARMED || SENTIENT(thing)) )
+    {
+        P_DamageMobj(thing, NULL, NULL, thing->health);  // kill object
         goto done; // keep checking
     }
 

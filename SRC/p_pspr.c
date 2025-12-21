@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1324 2017-05-23 14:28:05Z wesleyjohnson $
+// $Id: p_pspr.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -625,7 +625,10 @@ void A_Punch ( player_t* player, pspdef_t* psp )
     // the evaluation order is ambiguous.
     angle = pmo->angle + (PP_SignedRandom(pr_punchangle)<<18);
 
-    slope = P_AimLineAttack (pmo, angle, MELEERANGE);
+    // [WDJ] MBF, Make autoaiming prefer enemies.
+    slope = P_AimLineAttack (pmo, angle, MELEERANGE, 1);  // MBF friend protect
+    if( EN_mbf && !lar_linetarget )
+        slope = P_AimLineAttack (pmo, angle, MELEERANGE, 0);
     P_LineAttack (pmo, angle, MELEERANGE, slope, damage);
 
     // turn to face target
@@ -653,7 +656,10 @@ void A_Saw ( player_t* player, pspdef_t* psp )
     angle_t  angle = pmo->angle + (PP_SignedRandom(pr_saw)<<18);
 
     // use meleerange + 1 so the puff doesn't skip the flash
-    slope = P_AimLineAttack (pmo, angle, MELEERANGE+1);
+    // [WDJ] MBF, Make autoaiming prefer enemies.
+    slope = P_AimLineAttack (pmo, angle, MELEERANGE+1, EN_mbf);  // MBF friend protect
+    if( EN_mbf && !lar_linetarget )
+        slope = P_AimLineAttack (pmo, angle, MELEERANGE+1, 0);
     P_LineAttack (pmo, angle, MELEERANGE+1, slope, damage);
 
     // lar_linetarget returned by P_LineAttack
@@ -737,27 +743,31 @@ fixed_t         bulletslope;
 //added:16-02-98: Fab comments: autoaim for the bullet-type weapons
 void P_BulletSlope (mobj_t* mo)
 {
+    byte    friend_protect;
     angle_t     an;
 
     //added:18-02-98: if AUTOAIM, try to aim at something
     if(!mo->player->autoaim_toggle || !cv_allowautoaim.EV || demoversion<=111)
         goto no_target_found;
 
-    // see which target is to be aimed at
-    an = mo->angle;
-    bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-
-    // lar_linetarget returned by P_AimLineAttack
-    if (!lar_linetarget)
+    // Try first with friend_protect, then without friend_protect.
+    for( friend_protect = EN_mbf; ;  )
     {
+        // see which target is to be aimed at
+        an = mo->angle;
+        bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT, friend_protect);
+
+        // lar_linetarget returned by P_AimLineAttack
+        if( lar_linetarget )  break;
         an += 1<<26;
-        bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-        if (!lar_linetarget)
-        {
-            an -= 2<<26;
-            bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-            if(!lar_linetarget)  goto no_target_found;
-        }
+        bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT, friend_protect);
+        if( lar_linetarget )  break;
+        an -= 2<<26;
+        bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT, friend_protect);
+        if( lar_linetarget )  break;
+        if( ! friend_protect )  goto no_target_found;
+        // MBF, retry without the friend protect.
+        friend_protect = 0;
     }
     return;
    
@@ -926,7 +936,7 @@ void A_BFGSpray (mobj_t* mo)
     int     i, j;
     int     damage;
     angle_t an;
-    mobj_t  *extrabfg;;
+    mobj_t  *extrabfg;
 
     // offset angles from its attack angle
     for (i=0 ; i<40 ; i++)
@@ -934,7 +944,10 @@ void A_BFGSpray (mobj_t* mo)
         an = mo->angle - ANG90/2 + ANG90/40*i;
 
         // mo->target is the originator (player) of the missile.
-        P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
+        // MBF: Make autoaiming prefer enemies.
+        P_AimLineAttack (mo->target, an, 16*64*FRACUNIT, EN_mbf);  // friend protect
+        if( EN_mbf && !lar_linetarget )
+            P_AimLineAttack (mo->target, an, 16*64*FRACUNIT, 0);
 
         // lar_linetarget returned by P_AimLineAttack
         if (!lar_linetarget)

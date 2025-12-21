@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_inter.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2212,9 +2212,11 @@ boolean P_DamageMobj ( mobj_t*   target,
     int         saved;
     player_t*   player;
     fixed_t     thrust;
+    boolean     mbf_justhit = false;  // MBF, delayed MF_JUSTHIT
     boolean     takedamage = true;  // block damage between members of same team
 
-    if ( !(target->flags & MF_SHOOTABLE) )
+    // killough 8/31/98: allow bouncers to take damage
+    if ( !(target->flags & (MF_SHOOTABLE | MF_BOUNCES)) )
         return false; // shouldn't happen...
 
     // [WDJ] Solid Corpse health < 0.
@@ -2339,7 +2341,8 @@ boolean P_DamageMobj ( mobj_t*   target,
         if ( damage < 40
              && damage > target->health
              && target->z - inflictor->z > 64*FRACUNIT
-             && (P_Random ()&1) )
+             && (PP_Random(pr_damagemobj) & 0x01)
+           )
         {
             ang += ANG180;
             thrust *= 4;
@@ -2413,7 +2416,11 @@ boolean P_DamageMobj ( mobj_t*   target,
                 target->player->spirit->momy += amomy;
                 target->player->spirit->momz += amomz;
             }
-#endif  
+#endif
+            // [WDJ] MBF
+            // killough 11/98: thrust objects hanging off ledges
+            if( target->eflags & MF_FALLING && (target->tipcount >= MAXTIPCOUNT) )
+                target->tipcount = 0;
         }
     }
    
@@ -2609,11 +2616,32 @@ boolean P_DamageMobj ( mobj_t*   target,
             return true;
         }
 
-
-        if ( (P_Random () < target->info->painchance)
-             && !(target->flags&(MF_SKULLFLY|MF_CORPSE)) )
+        // [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+        // killough 9/7/98: keep track of targets so that friends can help friends
+        if( EN_mbf )
         {
-            target->flags |= MF_JUSTHIT;    // fight back!
+            // If target is a player, set player's target to source,
+            // so that a friend can tell who is hurting a player
+            if (player)
+                P_SetTarget(&target->target, source);
+
+            // killough 9/8/98:
+            // If target's health is less than 50%, move it to the front of its list.
+            // This will slightly increase the chances that enemies will choose to
+            // "finish it off", but its main purpose is to alert friends of danger.
+            if( target->health*2 < target->info->spawnhealth )
+            {
+                P_MoveClassThink( &target->thinker, 1 );  // move first
+            }
+        }
+
+        if( (PP_Random(pr_painchance) < target->info->painchance)
+            && !(target->flags&(MF_SKULLFLY|MF_CORPSE)) )
+        {
+            if( EN_mbf )
+                mbf_justhit = true;  // defer setting MF_JUSTHIT to below
+            else
+                target->flags |= MF_JUSTHIT;    // fight back!
 
             P_SetMobjState (target, target->info->painstate);
         }
@@ -2624,17 +2652,51 @@ boolean P_DamageMobj ( mobj_t*   target,
     if ( (!target->threshold || target->type == MT_VILE)
          && source && source != target  // fixes bug where monster attacks self
          && source->type != MT_VILE
-         && !(source->flags2&MF2_BOSS)
-         && !(target->type == MT_SORCERER2 && source->type == MT_WIZARD))
+         && !(source->flags2 & MF2_BOSS)
+         && !( EN_mbf
+              && monster_infight != INFT_infight
+              && SAME_FRIEND(source, target)
+             )
+         && !(target->type == MT_SORCERER2 && source->type == MT_WIZARD)
+       )
     {
+        // killough 2/15/98: remember last enemy, to prevent sleeping early
+        // 2/21/98: Place priority on players
+        // killough 9/9/98: cleaned up, made more consistent:
+        if( !target->lastenemy
+            || target->lastenemy->health <= 0
+            ||( EN_mbf ?
+                  ( target->target != source
+                    && SAME_FRIEND(target, target->lastenemy) )
+                : ! target->lastenemy->player
+              )
+          )
+        {
+            // remember last enemy - killough
+            P_SetTarget(&target->lastenemy, target->target);
+        }
+
         // if not intent on another player,
         // chase after this one
+#if 1       
+        P_SetTarget(&target->target, source);       // killough 11/98
+#else
         target->target = source;
+#endif
         target->threshold = BASETHRESHOLD;
         if (target->state == &states[target->info->spawnstate]
             && target->info->seestate != S_NULL)
             P_SetMobjState (target, target->info->seestate);
     }
+
+    // killough 11/98: Don't attack a friend, unless hit by that friend.
+    // cph 2006/04/01 - implicitly this is only if mbf_features
+    if( mbf_justhit   // set by MBF to defer MF_JUSTHIT to here
+        && ( !target->target
+             || target->target == source
+             || !BOTH_FRIEND(target, target->target) )
+      )
+        target->flags |= MF_JUSTHIT;    // fight back!
 
     return takedamage;
 }

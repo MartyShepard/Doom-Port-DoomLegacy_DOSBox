@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_hpspr.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -436,7 +436,7 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
 
     damage = 1+(P_Random()&3);
     angle = pmo->angle;
-    slope = P_AimLineAttack(pmo, angle, MELEERANGE);
+    slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     // [WDJ] When PuffType is not set will get extraneous player mobj created.
     PuffType = MT_BEAKPUFF;  // param to P_SpawnPuff via LineAttack
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
@@ -466,7 +466,7 @@ void A_BeakAttackPL2(player_t *player, pspdef_t *psp)
 
     damage = HITDICE(4);
     angle = pmo->angle;
-    slope = P_AimLineAttack(pmo, angle, MELEERANGE);
+    slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     PuffType = MT_BEAKPUFF;  // param to P_SpawnPuff via LineAttack
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
     // lar_linetarget returned by P_LineAttack
@@ -496,7 +496,7 @@ void A_StaffAttackPL1(player_t *player, pspdef_t *psp)
     damage = 5+(P_Random()&15);
     angle = pmo->angle;
     angle += P_SignedRandom()<<18;
-    slope = P_AimLineAttack(pmo, angle, MELEERANGE);
+    slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     PuffType = MT_STAFFPUFF;
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
     // lar_linetarget returned by P_LineAttack
@@ -526,7 +526,7 @@ void A_StaffAttackPL2(player_t *player, pspdef_t *psp)
     damage = 18+(P_Random()&63);
     angle = pmo->angle;
     angle += P_SignedRandom()<<18;
-    slope = P_AimLineAttack(pmo, angle, MELEERANGE);
+    slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     PuffType = MT_STAFFPUFF2;
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
     // lar_linetarget returned by P_LineAttack
@@ -945,7 +945,7 @@ void A_DeathBallImpact(mobj_t *ball)
         { // Find new target
             for(i = 0; i < 16; i++)
             {
-                P_AimLineAttack(ball, angle, 10*64*FRACUNIT);
+                P_AimLineAttack(ball, angle, 10*64*FRACUNIT, 0);
                 // lar_linetarget returned by P_AimLineAttack
                 if(lar_linetarget && ball->target != lar_linetarget)
                 {
@@ -1428,7 +1428,7 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         angle += P_SignedRandom()<<18;
         PuffType = MT_GAUNTLETPUFF1;
     }
-    slope = P_AimLineAttack(pmo, angle, dist);
+    slope = P_AimLineAttack(pmo, angle, dist, 0);
     P_LineAttack(pmo, angle, dist, slope, damage);
     // lar_linetarget returned by P_LineAttack, P_AimLineAttack
     if(!lar_linetarget)

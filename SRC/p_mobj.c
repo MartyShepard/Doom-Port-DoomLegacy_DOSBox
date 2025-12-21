@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1326 2017-05-23 14:30:32Z wesleyjohnson $
+// $Id: p_mobj.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -125,8 +125,8 @@
 //-----------------------------------------------------------------------------
 
 #include "doomincl.h"
-#include "p_local.h"
   // memset
+#include "p_local.h"
 #include "p_tick.h"
   // think
 #include "p_inter.h"
@@ -251,6 +251,9 @@ CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}
 
 consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NULL };
 
+// Needed by MBF, so use it elsewhere too.
+#define GRAVITY1   FRACUNIT
+
 //Fab:26-07-98:
 consvar_t cv_gravity = { "gravity", "1", CV_NETVAR | CV_FLOAT | CV_SHOWMODIF };
 consvar_t cv_splats = { "splats", "1", CV_SAVE, CV_OnOff };
@@ -302,7 +305,6 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
         if (state == S_NULL)
         {
             // [WDJ] This can be dereferenced, even after being removed.
-//            mobj->state = (state_t *) S_NULL;
             mobj->state = &states[S_NULL];
             P_RemoveMobj(mobj);
             ret = false;
@@ -396,6 +398,7 @@ void P_ExplodeMissile(mobj_t * mo)
 //----------------------------------------------------------------------------
 //
 // PROC P_FloorBounceMissile
+// Heretic
 //
 //----------------------------------------------------------------------------
 
@@ -408,6 +411,7 @@ void P_FloorBounceMissile(mobj_t * mo)
 //----------------------------------------------------------------------------
 //
 // PROC P_ThrustMobj
+// Heretic
 //
 //----------------------------------------------------------------------------
 
@@ -484,7 +488,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
     // Stop when below minimum.
     // Players without commands, no player, and voodoo doll
     // [WDJ] Restored deleted voodoo checks, originally made by Killough 10/98,
-    // from examination of prboom and zdoom,.
+    // from examination of PrBoom and zdoom.
     if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
         && mo->momy > -STOPSPEED && mo->momy < STOPSPEED
         && (!player  // and voodoo_dolls
@@ -511,7 +515,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
             }
           }
         } // player
-#endif	   
+#endif
         mo->momx = 0;
         mo->momy = 0;
     }
@@ -551,7 +555,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
         {
 #if 1
             friction = P_GetFriction( mo );  // heretic friction in sector
-#else	   
+#else
             if (mo->subsector->sector->special == 15)      // Friction_Low
             {
                 friction = FRICTION_LOW;
@@ -560,11 +564,11 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
             {
                 friction = FRICTION_NORM;
             }
-#endif       
+#endif
         }
         else if(friction_model >= FR_mbf)
         {
-            // latest sector based friction model in common use (MBF, prboom, zdoom)
+            // latest sector based friction model in common use (MBF, PrBoom, zdoom)
             friction = P_GetFriction( mo );
         }
         else if(friction_model == FR_boom)
@@ -601,7 +605,7 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
 // Called by P_MobjThinker
 void P_XYMovement(mobj_t * mo)
 {
-    //when up against walls
+    // Heretic wind, when up against walls.
     static int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
     int numsteps = 1;
@@ -613,11 +617,13 @@ void P_XYMovement(mobj_t * mo)
     //added:18-02-98: if it's stopped
     if (!mo->momx && !mo->momy)
     {
+        // No momentum
         if (mo->flags & MF_SKULLFLY)
         {
             // the skull slammed into something
             mo->flags &= ~MF_SKULLFLY;
-            mo->momx = mo->momy = mo->momz = 0;
+            // mo->momz = 0;  // Doom, but momx=0, momy=0 already.
+            mo->momx = mo->momy = mo->momz = 0;  // Heretic
 
             //added:18-02-98: comment: set in 'search new direction' state?
             P_SetMobjState(mo, ((EN_heretic)? mo->info->seestate : mo->info->spawnstate));
@@ -671,12 +677,33 @@ void P_XYMovement(mobj_t * mo)
     xmove = mo->momx;
     ymove = mo->momy;
 
+#ifdef DEMO_COMP_MOVESTEP
+    // To make this demo compatible requires some additional demo tests.
+    // Demo compatiblity is not high priority for DoomLegacy, and this
+    // would only partially affect fireballs during some movements.
+    // It only affects how many steps are used to check for collisions.
+    // EN_doom_movestep = some demo test && ( !EN_boom || EN_heretic ).
+    // EN_doom_movestep  // comp[comp_moveblock]
+    if( EN_doom_movestep ) // Boom comp[comp_moveblock]
+    {
+        // Doom, Heretic, original incomplete test.
+        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2 )
+        {
+            xmove >>= 1;
+            ymove >>= 1;
+            numsteps = 2;
+        }
+    }
+    else
+    {
+#endif
+
     // [WDJ] 3/2011 Moved out of loop and converted to stepping.
     // Fixes mancubus fireballs which were too fast for collision tests,
     // makes steps equal in size, and makes loop test faster and predictable.
     // Boom bug had only the positive tests.
     if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
-        || ymove > MAXMOVE / 2 || ymove < -MAXMOVE/2 )
+        || ymove > MAXMOVE/2 || ymove < -MAXMOVE/2 )
     {
         xmove >>= 1;
         ymove >>= 1;
@@ -689,6 +716,9 @@ void P_XYMovement(mobj_t * mo)
         ymove >>= 1;
         numsteps *= 2;
     }
+#ifdef DEMO_COMP_MOVESTEP
+    }
+#endif
 
     oldx = mo->x;  // for later comparison in Boom bobbing reduction
     oldy = mo->y;
@@ -728,7 +758,7 @@ void P_XYMovement(mobj_t * mo)
             }
 
             // Boom has only player slides, but heretic has SLIDE attribute
-            if (mo->flags2 & MF2_SLIDE)
+            if (mo->flags2 & MF2_SLIDE)  // Heretic, and player.
             {   // try to slide along it
                 // Alters momx,momy, and calls P_TryMove
                 P_SlideMove(mo);
@@ -737,6 +767,53 @@ void P_XYMovement(mobj_t * mo)
             {
                 // TODO: put missile bounce here
                 goto missile_impact;
+            }
+            else
+            // MBF bounce
+            // [WDJ] From PrBoom and MBF source, rearranged, different order.
+            // By requiring tmr_blockingline for all, then when MF_BOUNCES
+            // hits something not a solid wall, it does not need another test
+            // of tmr_blockingline.
+            // Player (MF2_SLIDE), and MV_MISSILE are already handled
+            // before this test, instead of after as in PrBoom.
+            // With EN_variable_friction enabled (normal), ice gives bounce
+            // to all object and monsters that hit a lower wall.
+            if( EN_mbf
+                && tmr_blockingline  // solid wall
+                // && !(mo->flags & MF_MISSILE)  // already handled above
+                && ( (mo->flags & MF_BOUNCES)
+                     || ( EN_variable_friction
+                          // && tmr_blockingline  // solid wall
+                          && !player  // player MF2_SLIDE has precedence, redundant
+                          && mo->z <= mo->floorz  // hit lower wall
+                          && (P_GetFriction(mo) > ORIG_FRICTION)  // ice
+                        )
+                   )
+              )
+            {
+                // [WDJ] Bounce off wall, rewritten.
+                int tbx = (tmr_blockingline->dx >> FRACBITS);
+                int tby = (tmr_blockingline->dy >> FRACBITS);
+                int tun = tbx*tbx + tby*tby;
+                // [WDJ] Had no protection against short walls.
+                if( tun > 0 )
+                {
+                    // Reflect momentum away from wall.
+                    fixed_t mp = ((tbx * mo->momx) + (tby * mo->momy)) / tun;
+                    fixed_t mwx = FixedMul( mp, tmr_blockingline->dx );
+                    fixed_t mwy = FixedMul( mp, tmr_blockingline->dy );
+                    mo->momx = mwx*2 - mo->momx;
+                    mo->momy = mwy*2 - mo->momy;
+
+                    if( !(mo->flags & MF_NOGRAVITY) )
+                    {
+                        // Under gravity. Slow it down in direction
+                        // perpendicular to the wall.
+                        mo->momx = (mo->momx + mwx)/2;
+                        mo->momy = (mo->momy + mwy)/2;
+                    }
+                }
+                // continue movement
             }
             else
             {
@@ -774,6 +851,7 @@ void P_XYMovement(mobj_t * mo)
 //          P_XYFriction (mo, oldx, oldy);
     }
 
+    // No friction for missiles or skulls, when airborne.
     if ((mo->z > mo->floorz)
         && !(mo->flags2 & (MF2_FLY | MF2_ONMOBJ))
         && !(mo->eflags & MF_UNDERWATER))
@@ -781,20 +859,25 @@ void P_XYMovement(mobj_t * mo)
         return; // no friction when airborne
     }
 
-    if (mo->flags & MF_CORPSE)
+    // tmr_dropoffz is set by P_CheckPosition() and P_TryMove(), called earlier.
+    if( (mo->flags & MF_CORPSE)
+        || ((mo->flags & MF_BOUNCES) && (mo->z > tmr_dropoffz))  // hanging
+      )
     {
         // do not stop sliding
         //  if halfway off a step with some momentum
-        if (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 || mo->momy < -FRACUNIT / 4)
+        if (mo->momx > FRACUNIT/4 || mo->momx < -FRACUNIT/4
+            || mo->momy > FRACUNIT/4 || mo->momy < -FRACUNIT/4)
         {
             if (demoversion < 132)
             {
-                // original and Boom test
+                // original Vanilla, Heretic, and Boom test
                 if (mo->z != mo->subsector->sector->floorheight)
                     return;
             }
             else
             {
+                // Legacy
                 if (mo->z != mo->floorz)
                     return;
             }
@@ -819,22 +902,26 @@ missile_impact:
     if (tmr_ceilingline
         && tmr_ceilingline->backsector
         && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+        // Added tests, not in Boom, Heretic.
         && tmr_ceilingline->frontsector
         && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
         && mo->subsector->sector->ceilingheight == mo->ceilingz)
     {
-        if (!EN_boom || mo->z > tmr_ceilingline->backsector->ceilingheight) //SoM: 4/7/2000: DEMO'S
+        if (!EN_boom   //SoM: 4/7/2000: DEMO'S
+            || mo->z > tmr_ceilingline->backsector->ceilingheight)  // Boom
         {
             // Hack to prevent missiles exploding against the sky.
             // Does not handle sky floors.
             //SoM: 4/3/2000: Check frontsector as well..
-            if (mo->type == MT_BLOODYSKULL)
+            if (mo->type == MT_BLOODYSKULL)  // Heretic
             {
                 mo->momx = mo->momy = 0;
-                mo->momz = -FRACUNIT;
+                mo->momz = -GRAVITY1;
             }
             else
+            {
                 P_RemoveMobj(mo); // missile quietly dissappears
+            }
             return;
         }
     }
@@ -865,6 +952,39 @@ missile_impact:
     P_ExplodeMissile(mo);
     return;
 }
+
+
+// [WDJ] Have multiple places where our more complicated gravity
+// situations must be handled.
+static
+void  apply_gravity(mobj_t * mo)
+{
+    fixed_t gravityadd;
+
+    //Fab: NOT SURE WHETHER IT IS USEFUL, just put it here too
+    //     TO BE SURE there is no problem for the release..
+    //     (this is done in P_Mobjthinker below normally)
+    mo->eflags &= ~MF_JUSTHITFLOOR;
+
+    gravityadd = -cv_gravity.value / NEWTICRATERATIO;
+
+    // if waist under water, slow down the fall
+    if( mo->eflags & MF_UNDERWATER )
+    {
+        if( mo->eflags & MF_SWIMMING )
+            gravityadd = 0; // gameplay: no gravity while swimming
+        else
+            gravityadd >>= 2;
+    }
+    else if( mo->momz == 0 )
+    {
+        // mobj at stop, no floor, so feel the push of gravity!
+        gravityadd <<= 1;
+    }
+
+    mo->momz += gravityadd;
+}
+
 
 //
 // P_ZMovement
@@ -905,6 +1025,10 @@ void P_ZMovement(mobj_t * mo)
         }
     }
 
+    // MBF from PrBoom, modified.
+    if( (mo->flags & MF_BOUNCES)  // MBF
+        && mo->momz )  goto bouncer;
+
     // check for smooth step up
     if (player && (mo->z < mo->floorz)
         && !voodoo_mo  // voodoo does not pass this to player view
@@ -923,6 +1047,7 @@ void P_ZMovement(mobj_t * mo)
     // adjust height
     mo->z += mo->momz;
 
+zmove_floater:
     if ((mo->flags & MF_FLOAT) && mo->target)
     {
         // float down towards target if too close
@@ -956,12 +1081,12 @@ void P_ZMovement(mobj_t * mo)
         if (mo->flags & MF_MISSILE)
         {
             mo->z = mo->floorz;
-            if (mo->flags2 & MF2_FLOORBOUNCE)
+            if (mo->flags2 & MF2_FLOORBOUNCE)  // Heretic
             {
                 P_FloorBounceMissile(mo);
                 return;
             }
-            else if (mo->type == MT_MNTRFX2)
+            else if (mo->type == MT_MNTRFX2)  // Heretic
             {   // Minotaur floor fire can go up steps
                 return;
             }
@@ -974,13 +1099,30 @@ void P_ZMovement(mobj_t * mo)
                 }
             }
         }
+
         // Spawn splashes, etc.
         if ((mo->z - mo->momz) > mo->floorz)
             P_HitFloor(mo);
+
         mo->z = mo->floorz;
+
         // Note (id):
         //  somebody left this after the setting momz to 0,
         //  kinda useless there.
+     // From PrBoom
+     // cph - revised 2001/04/15 -
+     // This was a bug in the Doom/Doom 2 source; the following code
+     // is meant to make charging lost souls bounce off of floors, but it 
+     // was incorrectly placed after momz was set to 0.
+     // However, this bug was fixed in Doom95, Final/Ultimate Doom, and 
+     // the v1.10 source release (which is one reason why it failed to sync 
+     // some Doom2 v1.9 demos)
+     // PrBoom has this enabled by comp level.
+     /* (mo->flags & MF_SKULLFLY)
+        && (!comp[comp_soul] ||
+           (compatibility_level > doom2_19_compatibility &&
+            compatibility_level < prboom_4_compatibility)
+      */
         if (mo->flags & MF_SKULLFLY)
         {
             // the skull slammed into something
@@ -989,9 +1131,19 @@ void P_ZMovement(mobj_t * mo)
 
         if (mo->momz < 0)       // falling
         {
+            if( (mo->flags & MF_TOUCHY)  // MBF
+                && (mo->health > 0) && (mo->eflags & MF_ARMED) )
+            {
+                // Explode on floor.
+                P_DamageMobj( mo, NULL, NULL, mo->health );
+                // That ought to kill it, but on EASY skill it won't.
+                // PrBoom, EE, do not return here, probably for MISSILE test,
+                // which we have already done (because of Heretic).
+            }
+            else
             if (player
                 && !voodoo_mo  // voodoo does not pass this to player view
-                && (mo->momz < -8 * FRACUNIT)
+                && (mo->momz < (-8 * GRAVITY1))
                 && !(mo->flags2 & MF2_FLY)
                 )
             {
@@ -1009,6 +1161,7 @@ void P_ZMovement(mobj_t * mo)
 
             mo->momz = 0;
         }
+
         if (mo->info->crashstate && (mo->flags & MF_CORPSE))
         {
             P_SetMobjState(mo, mo->info->crashstate);
@@ -1025,31 +1178,10 @@ void P_ZMovement(mobj_t * mo)
     }
     else if (!(mo->flags & MF_NOGRAVITY))       // Gravity here!
     {
-        fixed_t gravityadd;
-
-        //Fab: NOT SURE WHETHER IT IS USEFUL, just put it here too
-        //     TO BE SURE there is no problem for the release..
-        //     (this is done in P_Mobjthinker below normally)
-        mo->eflags &= ~MF_JUSTHITFLOOR;
-
-        gravityadd = -cv_gravity.value / NEWTICRATERATIO;
-
-        // if waist under water, slow down the fall
-        if (mo->eflags & MF_UNDERWATER)
-        {
-            if (mo->eflags & MF_SWIMMING)
-                gravityadd = 0; // gameplay: no gravity while swimming
-            else
-                gravityadd >>= 2;
-        }
-        else if (mo->momz == 0)
-            // mobj at stop, no floor, so feel the push of gravity!
-            gravityadd <<= 1;
-
-        mo->momz += gravityadd;
+        apply_gravity( mo );
     }
 
-    if ((mo->z + mo->height) > mo->ceilingz)
+    if( mo->z > (mo->ceilingz - mo->height) )
     {
         mo->z = mo->ceilingz - mo->height;
 
@@ -1058,7 +1190,7 @@ void P_ZMovement(mobj_t * mo)
             && !voodoo_mo  // voodoo does not pass this to sound
             && (demoversion >= 112)
             && !(player->cheats & CF_FLYAROUND) && !(mo->flags2 & MF2_FLY)
-            && (mo->momz > 8 * FRACUNIT))
+            && (mo->momz > (8 * GRAVITY1)) )
         {
             S_StartSound(mo, sfx_ouch);
         }
@@ -1098,10 +1230,12 @@ void P_ZMovement(mobj_t * mo)
                 if (mo->type == MT_BLOODYSKULL)
                 {
                     mo->momx = mo->momy = 0;
-                    mo->momz = -FRACUNIT;
+                    mo->momz = -GRAVITY1;
                 }
                 else
+                { 
                     P_RemoveMobj(mo);
+                }
                 return;
             }
 
@@ -1117,7 +1251,137 @@ void P_ZMovement(mobj_t * mo)
     {
         mo->momz = FixedMul(mo->momz, FRICTION_NORM * 3 / 4);
     }
+    return;
 
+bouncer:
+    // [WDJ] From PrBoom and MBF source, modified.
+    // MBF bounce off walls, ceiling, floor.
+    mo->z += mo->momz;
+    if( mo->z <= mo->floorz )
+    {
+        // Hit floor, check for collision and bounce.
+        mo->z = mo->floorz;
+        if( mo->momz < 0 )
+        {
+            // Hit floor with momentum, handle bounce conditions.
+            mo->momz = -mo->momz;  // bounce off floor
+            if( !(mo->flags & MF_NOGRAVITY) )
+            {
+                if (mo->eflags & MF_UNDERWATER)  // Legacy
+                {
+                    apply_gravity(mo);
+                }
+                else
+                {
+                    // MBF gravity for floor bouncers.
+                    // Subject to gravity, bounce with decay.
+                    mo->momz = FixedMul( mo->momz,
+                        // Floaters fall slowly.
+                        (mo->flags & MF_FLOAT)?   (fixed_t)(FRACUNIT*0.85)
+                        // Dropoff modifies rate.
+                       :(mo->flags & MF_DROPOFF)? (fixed_t)(FRACUNIT*0.70)
+                       :                          (fixed_t)(FRACUNIT*0.45)
+                    );
+                }
+                // Detect when below rest speed.
+                if(abs(mo->momz) < ( mo->info->mass * (GRAVITY1*4/256)))
+                {
+                    mo->momz = 0;
+                }
+            }
+            // TOUCHY objects explode on impact
+            if( mo->flags & MF_TOUCHY
+                && (mo->eflags & MF_ARMED) && (mo->health > 0) )
+            {
+                // Explode on floor.
+                P_DamageMobj( mo, NULL, NULL, mo->health );
+                // That ought to kill it, but on EASY skill it won't.
+                // PrBoom did return here.
+                return;
+            }
+            goto check_sentient_floater;       
+        }
+    }
+    else if( mo->z > mo->ceilingz - mo->height )
+    {
+        // Hit ceiling, check for collision and bounce.
+        mo->z = mo->ceilingz - mo->height;
+        if( mo->momz > 0 )
+        {
+            // Hit ceiling with momentum, handle bounce conditions.
+            // Interact with ceiling type.
+            if( mo->subsector->sector->ceilingpic != skyflatnum )
+            {
+                // Normal bounce off building ceiling
+                mo->momz = -mo->momz;
+            }
+            else if( mo->flags & MF_MISSILE )
+            {
+                // Missiles do not bounce off skies.
+                P_RemoveMobj(mo);
+                // PrBoom did not return here, but should not use mo anymore.
+                // EE has return, but gave it a demo test.
+                // Cannot be SENTIENT.
+                return;
+            }
+            else if( mo->flags & MF_NOGRAVITY )
+            {
+                // Bounce off sky when gravity.
+                mo->momz = -mo->momz;
+            }
+#if 1
+            // From EternityEngine, without demo version test, level gravity.
+            // haleyjd 05/22/03: kludge for bouncers sticking to sky --
+            // if momz is still positive, the thing is still trying
+            // to go up, which it should not be doing, so apply some
+            // gravity to get it out of this code segment gradually
+            if( /*demo_version >= 331 && */ mo->momz > 0)
+            {
+               mo->momz -= mo->info->mass * (GRAVITY1/256);
+            }
+#endif
+            goto check_sentient_floater;       
+        }
+    }
+    else
+    {
+        if( !(mo->flags & MF_NOGRAVITY ) )
+        {
+            // Gravity, let it fall.
+            // Strange MBF bouncer gravity varies according to mass.
+            // (mass * GRAVITY1/256)
+            mo->momz -= mo->info->mass * (cv_gravity.value/(NEWTICRATERATIO*256));
+        }
+        goto check_sentient_floater;
+    }
+    
+    // It came to a stop
+    mo->momz = 0;
+
+    if( mo->flags & MF_MISSILE )
+    {
+        if( tmr_ceilingline
+            && tmr_ceilingline->backsector
+            && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+            && mo->z > tmr_ceilingline->backsector->ceilingheight )
+        {
+            // Sky, do not explode.
+            P_RemoveMobj(mo);
+        }
+        else
+        {
+            P_ExplodeMissile(mo);
+        }
+        // PrBoom did not return here, but should not use mo anymore.
+        // Cannot be SENTIENT.
+        return;
+    }
+
+check_sentient_floater:
+    // Give floating monsters a chance to move toward player.
+    if( (mo->flags & MF_FLOAT) && SENTIENT(mo) )
+        goto zmove_floater;  // re-enter ZMove to check floater
+    return;
 }
 
 //
@@ -1233,6 +1497,10 @@ void P_NightmareRespawn(mobj_t * mobj)
     else if (mthing->options & MTF_AMBUSH)
         mo->flags |= MF_AMBUSH;
 
+    // [WDJ] From MBF
+    // killough 11/98: transfer friendliness from deceased
+    mo->flags = (mo->flags & ~MF_FRIEND) | (mobj->flags & MF_FRIEND);
+
     mo->reactiontime = 18;
 
     // [WDJ] Move fog z over the monster.
@@ -1329,7 +1597,19 @@ void P_MobjCheckWater(mobj_t * mobj)
         return;
     }
     else
+    {
         mobj->eflags &= ~(MF_UNDERWATER | MF_TOUCHWATER);
+    }
+
+#if 0
+    // [WDJ] From EternityEngine, missile splash.
+    if( (mobj->flags & (MF_MISSILE | MF_BOUNCES) )
+    {
+        // Any time a missile or bouncer crosses, splash.
+        if( oldeflags != mobj->eflags )
+            P_SpawnSplash(mobj, z);
+    }
+#endif
 
 /*
     if( (mobj->eflags ^ oldeflags) & MF_TOUCHWATER)
@@ -1353,12 +1633,12 @@ void P_MobjCheckWater(mobj_t * mobj)
 static void PlayerLandedOnThing(mobj_t * mo, mobj_t * onmobj)
 {
     mo->player->deltaviewheight = mo->momz >> 3;
-    if (mo->momz < -23 * FRACUNIT)
+    if (mo->momz < (-23 * GRAVITY1))
     {
         //P_FallingDamage(mo->player);
         P_NoiseAlert(mo, mo);
     }
-    else if (mo->momz < -8 * FRACUNIT && !mo->player->chickenTics)
+    else if( (mo->momz < (-8 * GRAVITY1)) && !mo->player->chickenTics)
     {
         S_StartSound(mo, sfx_oof);
     }
@@ -1467,10 +1747,12 @@ void P_MobjThinker(mobj_t * mobj)
                 if (player && (player->mo == mobj))
                 {
                     // Player, not a voodoo doll
-                    if ((mobj->momz < -8 * FRACUNIT) && !(mobj->flags2 & MF2_FLY))
+                    if( (mobj->momz < (-8 * GRAVITY1))
+                        && !(mobj->flags2 & MF2_FLY))
                     {
                         PlayerLandedOnThing(mobj, onmo);
                     }
+
                     if (onmo->z + onmo->height - mobj->z <= 24 * FRACUNIT)
                     {
                         player->viewheight -= onmo->z + onmo->height - mobj->z;
@@ -1493,7 +1775,32 @@ void P_MobjThinker(mobj_t * mobj)
             goto done;     // mobj was removed
     }
     else
+    {
         mobj->eflags &= ~MF_JUSTHITFLOOR;
+
+        // MBF
+        if( ((mobj->momx | mobj->momy) == 0) && !SENTIENT(mobj) )
+        {
+            // At rest
+            mobj->eflags |= MF_ARMED;  // arm a mine which has come to rest.
+
+            // killough 9/12/98: objects fall off ledges if they are hanging off
+            // slightly push off of ledge if hanging more than halfway off
+            if( cv_mbf_falloff.EV
+                && (mobj->z > mobj->dropoffz)  // Only objects contacting dropoff
+                && !(mobj->flags & MF_NOGRAVITY)  // Only objects which fall
+              )
+            {
+                P_ApplyTorque(mobj);               // Apply torque
+            }
+            else
+            {
+                mobj->eflags &= ~MF_FALLING;
+                mobj->tipcount = 0;  // Reset torque
+            }
+        }
+    }
+
 
     // SoM: Floorhuggers stay on the floor always...
     // BP: tested here but never set ?!
@@ -1572,6 +1879,25 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     mobj->flags = info->flags;
     mobj->flags2 = info->flags2;
     mobj->tflags = info->tflags;
+
+    // MBF from PrBoom.
+    // killough 8/23/98: no friends, bouncers, or touchy things in old demos.
+    if(! EN_mbf )    // Vanilla or Boom demo
+    {
+        mobj->flags &= ~(MF_BOUNCES | MF_FRIEND | MF_TOUCHY);
+    }
+    // EternityEngine: if older demoMBF or Boom demo, and not deathmatch
+    else if((demoversion <= VERSION147) && (cv_deathmatch.value == 0))
+    {
+        // Except in old demos, players are always friends.
+        // Boom demo: 201, 202
+        // MBF demo: 203
+        if(type == MT_PLAYER)
+        {
+            // MBF player in Old MBF demo.
+            mobj->flags |= MF_FRIEND;
+        }
+    }
 
     mobj->health = info->spawnhealth;
 
@@ -1749,7 +2075,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     mo->reactiontime = (gameskill != sk_nightmare)? info->reactiontime : 0;
 
     if ((demoversion < 129 && mo->type != MT_CHASECAM)
-//	|| EN_heretic  // if played heretic demo this would be important
+//       || EN_heretic  // if played heretic demo this would be important
         )
     {
         // Heretic use of P_Random
@@ -2204,6 +2530,23 @@ void P_SpawnMapthing (mapthing_t* mthing)
     if (!mthing->type)
         return; //SoM: 4/7/2000: Ignore type-0 things as NOPs
 
+#if 1   
+   // From PrBoom, MBF, EternityEngine (so it must be a good thing).
+   // killough 11/98: clear flags unused by Doom
+   //
+   // We clear the flags unused in Doom if we see flag mask 256 set, since
+   // it is reserved to be 0 under the new scheme. A 1 in this reserved bit
+   // indicates it's a Doom wad made by a Doom editor which puts 1's in
+   // bits that weren't used in Doom (such as HellMaker wads). So we should
+   // then simply ignore all upper bits.
+   if( !EN_boom
+       || ((demoversion >= 203) && mthing->options & MTF_RESERVED))
+   {
+      // Clear bits that would be unused.
+      mthing->options &= MTF_EASY|MTF_NORMAL|MTF_HARD|MTF_AMBUSH|MTF_MPSPAWN;
+   }
+#endif
+
     // count deathmatch start positions
     if (mthing->type == 11)
     {
@@ -2239,6 +2582,37 @@ void P_SpawnMapthing (mapthing_t* mthing)
             P_SpawnVoodoo( playernum, playerstarts[playernum] );
         }
 
+        // [WDJ] From MBF, PrBoom, EternityEngine
+#ifdef DOGS
+        // killough 7/19/98: Marine's best friend :)
+        if (!netgame
+            && mthing->type > 1 && mthing->type <= dogs+1
+            // use secretcount to avoid multiple dogs in case of multiple starts
+            && (players[mthing->type - 1].secretcount == 0) )
+        {
+            players[mthing->type - 1].secretcount = 1;
+
+            // killough 10/98: force it to be a friend
+            mthing->options |= MTF_FRIEND;
+            i = MT_DOGS;  // MBF
+#ifdef HELPERTHING
+            if(HelperThing != -1) // haleyjd 9/22/99: deh, bex substitution
+            {
+                int type = HelperThing - 1;
+                if(type >= 0 && type < NUMMOBJTYPES)
+                {
+                    i = type;
+                }
+                else
+                {
+                    GenPrintf(EMSG_WARN, "Invalid value %i for helper, ignored.", HelperThing);
+                }
+            }
+#endif
+            goto spawnit;
+        }
+#endif
+       
         // save spots for respawning in network games
         playerstarts[playernum] = mthing;
 
@@ -2314,6 +2688,9 @@ void P_SpawnMapthing (mapthing_t* mthing)
         return;
     }
 
+#ifdef DOGS
+spawnit:
+#endif
     // spawn it
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
@@ -2334,8 +2711,19 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
     if (mobj->tics > 0)
         mobj->tics = 1 + (P_Random() % mobj->tics);
-    if (mobj->flags & MF_COUNTKILL)
+
+    if (EN_mbf
+        && !(mobj->flags & MF_FRIEND)
+        && (mthing->options & MTF_FRIEND)
+        )
+    {
+        mobj->flags |= MF_FRIEND;  // killough 10/98:
+        P_UpdateClassThink(&mobj->thinker, TH_friends); // transfer friendliness flag
+    }
+
+    if( (mobj->flags & MF_COUNTKILL) && !(mobj->flags & MF_FRIEND))
         totalkills++;
+
     if (mobj->flags & MF_COUNTITEM)
         totalitems++;
 
@@ -2883,6 +3271,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 
     fixed_t x, y, z;
     fixed_t slope = 0;
+    byte  friend_protect;
 
     // angle at which you fire, is player angle
     ang = angle;
@@ -2890,26 +3279,28 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     //added:16-02-98: autoaim is now a toggle
     if( source->player->autoaim_toggle && cv_allowautoaim.EV )
     {
-        // see which target is to be aimed at
-        slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
-
-        // lar_linetarget returned by P_AimLineAttack
-        if (!lar_linetarget)
+        // Try first with friend_protect, then without friend_protect.
+        for( friend_protect = EN_mbf; ; )
         {
+            // see which target is to be aimed at
+            slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT, friend_protect);
+            // lar_linetarget returned by P_AimLineAttack
+            if( lar_linetarget )  break;
+
             ang += 1 << 26;
-            slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
+            slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT, friend_protect);
+            if( lar_linetarget )  break;
 
-            if (!lar_linetarget)
-            {
-                ang -= 2 << 26;
-                slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT);
-            }
+            ang -= 2 << 26;
+            slope = P_AimLineAttack(source, ang, 16 * 64 * FRACUNIT, friend_protect);
+            if( lar_linetarget )  break;
 
-            if (!lar_linetarget)
-            {
-                ang = angle;
-                slope = 0;
-            }
+            // no target
+            ang = angle;
+            slope = 0;
+            if( ! friend_protect )  break;
+            // MBF retry without friend protect
+            friend_protect = 0;
         }
     }
 

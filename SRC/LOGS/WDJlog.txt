@@ -6002,3 +6002,9 @@ patchfile = w107_24_mbf_controls.patch
 MBF enables.
 The MBF option controls, cv vars.
 
+*** W107_mbf_move
+patchfile = w107_25_mbf_move.patch
+- commit revision 1329
+The bulk of the MBF TOUCHY, BOUNCES, FRIEND code.
+MBF movement and enemy interactions.
+

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01329 ]: w107 mbf move
 [01328 ]: w107 mbf controls
           DOS: 320x200 and noconfig fixed
 					

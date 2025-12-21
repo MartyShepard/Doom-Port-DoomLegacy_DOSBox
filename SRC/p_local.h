@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: p_local.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -299,13 +299,14 @@ void P_InitBrainTarget();
 // TryMove, thing map global vars
 extern fixed_t  tm_bbox[4];	// box around the thing
 extern mobj_t*  tm_thing;	// the thing itself
-extern int      tm_flags;	// thing flags of tm_thing
+extern uint32_t tm_flags;	// thing flags of tm_thing
 extern fixed_t  tm_x, tm_y;	// thing map position
 
 // TryMove, thing map response global vars
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
-extern boolean  tmr_floatok;  // floating thing ok to move
+extern byte     tmr_floatok;  // floating thing ok to move
+extern byte     tmr_felldown; // MBF, went off deep dropoff
 extern fixed_t  tmr_floorz;   // floor and ceiling of new position
 extern fixed_t  tmr_ceilingz;
 extern fixed_t  tmr_sectorceilingz;      //added:28-02-98: p_spawnmobj
@@ -313,13 +314,14 @@ extern mobj_t*  tmr_floorthing;   // standing on another thing
 extern line_t*  tmr_ceilingline;  // line that lowers ceiling, for missile sky test
 extern line_t*  tmr_blockingline; // stopping line that is solid
 extern line_t*  tmr_dropoffline;  // line that is dropoff edge
+extern fixed_t  tmr_dropoffz;   // the lowest point contacted (monster check)
 
 extern  msecnode_t*     sector_list;
 
 // P_CheckPosition, P_TryMove, P_CheckCrossLine
 // use tm_ global vars, and return tmr_ global vars
 boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
-boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y, boolean allowdropoff);
+boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y, byte allowdropoff);
 boolean P_CheckCrossLine (mobj_t* thing, fixed_t x, fixed_t y);
 
 boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
@@ -345,13 +347,16 @@ int     P_GetMoveFactor(mobj_t* mo);
 extern mobj_t*  lar_linetarget;  // who got hit (or NULL)
 extern fixed_t  la_attackrange;  // max range of weapon
 
-fixed_t P_AimLineAttack ( mobj_t* t1, angle_t angle, fixed_t distance );
+fixed_t P_AimLineAttack ( mobj_t* t1, angle_t angle, fixed_t distance,
+                          byte  mbf_friend_protection );
 
 void P_LineAttack ( mobj_t* t1, angle_t angle, fixed_t distance,
                     fixed_t slope, int damage );
 
 void P_RadiusAttack ( mobj_t* spot, mobj_t* source, int damage );
 
+// MBF
+void P_ApplyTorque(mobj_t *mo);
 
 
 //
@@ -462,7 +467,7 @@ void P_ActivateBeak(player_t *player);
 void P_PlayerUseArtifact(player_t *player, artitype_t arti);
 void P_DSparilTeleport(mobj_t *actor);
 void P_InitMonsters(void);
-boolean P_LookForMonsters(mobj_t *actor);
+boolean PH_LookForMonsters(mobj_t *actor);  // Heretic
 int P_GetThingFloorType(mobj_t *thing);
 mobj_t *P_CheckOnmobj(mobj_t *thing);
 void P_AddMaceSpot(mapthing_t *mthing);

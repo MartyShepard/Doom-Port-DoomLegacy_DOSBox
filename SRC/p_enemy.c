@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: p_enemy.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -94,6 +94,7 @@
 void A_Fall(mobj_t *actor);
 static void FastMonster_OnChange(void);
 void A_FaceTarget(mobj_t* actor);
+static int P_IsUnderDamage(mobj_t *actor);
 void CV_monster_OnChange(void);
 
 // enable the solid corpses option : still not finished
@@ -475,31 +476,29 @@ void P_NoiseAlert ( mobj_t* target, mobj_t* emmiter )
 //
 static boolean P_CheckMeleeRange (mobj_t* actor)
 {
-    mobj_t*     pl;
+    mobj_t *    pl = actor->target;
     fixed_t     dist;
 
-    if (!actor->target)
+    if(!pl)
         return false;
 
-    pl = actor->target;
-    dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
-
-#ifdef MF_FRIEND
     // [WDJ] prboom, killough, friend monsters do not attack other friend
-    if (actor->flags & pl->flags & MF_FRIEND )
+    if( BOTH_FRIEND(actor, pl) )
         return false;
-#endif
+
+    dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
     // [WDJ] FIXME pl->info may be NULL (seen in phobiata.wad)
     if (pl->info == NULL ) return false;
-    if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
+    if (dist >= (MELEERANGE - 20*FRACUNIT + pl->info->radius) )
         return false;
 
     //added:19-03-98: check height now, so that damn imps cant attack
     //                you if you stand on a higher ledge.
-    if ( demoversion>111 &&
-         ((pl->z > actor->z+actor->height) ||
-         (actor->z > pl->z + pl->height) ))
+    if( demoversion>111
+         && ((pl->z > actor->z + actor->height)
+             || (actor->z > pl->z + pl->height) )
+      )
          return false;
 
     if (! P_CheckSight (actor, actor->target) )
@@ -508,12 +507,43 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
     return true;
 }
 
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine
+//
+// P_HitFriend()
+//
+// killough 12/98
+// This function tries to prevent shooting at friends.
+// Known that (actor->flags & MF_FRIEND), checked by caller.
+static boolean P_HitFriend(mobj_t *actor)
+{
+    mobj_t * target = actor->target;
+
+    if( target )
+    {
+        P_AimLineAttack(actor,
+           R_PointToAngle2(actor->x, actor->y, target->x, target->y),
+           P_AproxDistance(actor->x - target->x, actor->y - target->y),
+           0 );
+        if( lar_linetarget
+            && lar_linetarget != target
+            && lar_linetarget->flags & MF_FRIEND
+//          But actor->flags & MF_FRIEND is already known to be set.
+// MBF:	    && SAME_FRIEND(lar_linetarget, actor)
+          )
+            return true;
+    }
+    return false;   
+}
+
+
 //
 // P_CheckMissileRange
 //
 static boolean P_CheckMissileRange (mobj_t* actor)
 {
-    fixed_t     dist;
+    mobj_t * target = actor->target;
+    fixed_t  dist;
 
     if (! P_CheckSight (actor, actor->target) )
         return false;
@@ -523,34 +553,37 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         // the target just hit the enemy,
         // so fight back!
         actor->flags &= ~MF_JUSTHIT;
-#ifdef MF_FRIEND
+
+        if( EN_heretic || demoversion < VERSION147 )
+            return true;
+
+        // [WDJ] MBF, from MBF, PrBoom
         // Boom has two calls of P_Random, which affect demos
+        // killough 7/18/98: no friendly fire at corpses
+        // killough 11/98: prevent too much infighting among friends
         return  !(actor->flags & MF_FRIEND)
-         ||( (actor->target->health > 0)
-             &&( !(actor->target->flags & MF_FRIEND)
-                 || (actor->target->player ?
-                     ((monster_infight == INFT_infight) || (P_Random()>128))  // pr_defect
-                     : !(actor->target->flags & MF_JUSTHIT) && P_Random()>128)  // pr_defect
+         ||( (target->health > 0)
+             &&( !(target->flags & MF_FRIEND)
+                 || (target->player ?
+                     // PrBoom, MBF, EternityEngine use P_Random(pr_defect)
+                     ((monster_infight == INFT_infight) || (PP_Random(pr_defect)>128))
+                     : !(target->flags & MF_JUSTHIT) && PP_Random(pr_defect)>128)
                 )
-            );
-#else
-        return true;
-#endif
+           );
     }
-#ifdef MF_FRIEND
-    // from prboom
+
+    // [WDJ] MBF, from MBF, PrBoom
     // killough 7/18/98: friendly monsters don't attack other friendly
     // monsters or players (except when attacked, and then only once)
-    if (actor->flags & actor->target->flags & MF_FRIEND)
-       return false;
-#endif
+    if( BOTH_FRIEND(actor, target) )
+        return false;
 
     if (actor->reactiontime)
         return false;   // do not attack yet
 
     // OPTIMIZE: get this from a global checksight
-    dist = P_AproxDistance ( actor->x-actor->target->x,
-                             actor->y-actor->target->y) - 64*FRACUNIT;
+    dist = P_AproxDistance ( actor->x - actor->target->x,
+                             actor->y - actor->target->y) - 64*FRACUNIT;
 
     if (!actor->info->meleestate)
         dist -= 128*FRACUNIT;   // no melee attack, so fire more
@@ -585,17 +618,81 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     if (actor->type == MT_CYBORG && dist > 160)
         dist = 160;
 
-    if (P_Random () < dist)   // pr_missrange
+    if (PP_Random(pr_missrange) < dist)
         return false;
 
-#ifdef MF_FRIEND
-    if (P_HitFriend(actor))
-        return false;
-#endif
+    if( actor->flags & MF_FRIEND )  // call is only useful if MBF FRIEND
+    {
+        if( P_HitFriend(actor) )
+            return false;
+    }
 
     return true;
 }
 
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine
+// P_IsOnLift
+//
+// killough 9/9/98:
+//
+// Returns true if the object is on a lift. Used for AI, since it may indicate
+// the need for crowded conditions, or that a monster should stay on the lift
+// for a while while it goes up or down.
+
+static boolean P_IsOnLift( const mobj_t *actor )
+{
+    const sector_t *sec = actor->subsector->sector;
+    line_t line;
+    int l;
+
+    // Short-circuit: it's on a lift which is active.
+    if( sec->floordata
+        && ((thinker_t *) sec->floordata)->function.acp1 == (actionf_p1) T_PlatRaise )
+        return true;
+
+    // Check to see if it is in a sector which can be activated as a lift.
+    line.tag = sec->tag;
+    if( line.tag == 0 )  return false;
+   
+    for( l = -1; (l = P_FindLineFromLineTag(&line, l)) >= 0; )
+    {
+        switch( lines[l].special )
+        {
+            case  10: case  14: case  15: case  20: case  21: case  22:
+            case  47: case  53: case  62: case  66: case  67: case  68:
+            case  87: case  88: case  95: case 120: case 121: case 122:
+            case 123: case 143: case 162: case 163: case 181: case 182:
+            case 144: case 148: case 149: case 211: case 227: case 228:
+            case 231: case 232: case 235: case 236:
+            return true;
+        }
+    }
+    return false;
+}
+
+
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine
+// P_IsUnderDamage
+// killough 9/9/98:
+// Used for AI.
+// Returns nonzero if the object is under damage based on their current position.
+// Returns 1 if the damage is moderate (ceiling crusher up),
+//        -1 if it is serious (ceiling crusher down).
+static int P_IsUnderDamage(mobj_t *actor)
+{
+    const msecnode_t * ts;  // touching sector
+    const ceiling_t * cl;   // Crushing ceiling
+    int dir = 0;
+
+    for( ts = actor->touching_sectorlist; ts; ts = ts->m_tnext )
+    {
+        cl = ts->m_sector->ceilingdata;
+        if( cl && (cl->thinker.function.acp1 == (actionf_p1) T_MoveCeiling) )
+            dir |= cl->direction;
+    }
+    return dir;
+}
 
 
 //
@@ -609,7 +706,9 @@ static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-470
 // Called multiple times in one step, by P_TryWalk, while trying to find valid path.
 // Called by P_TryWalk, A_Chase
 // Only called for actor things, not players, nor missiles.
-static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
+//  dropoff : 0, 1, 2 dog jump
+// Formerly P_Move.
+static boolean P_MoveActor (mobj_t* actor, byte dropoff)
 {
     fixed_t  tryx, tryy;
     fixed_t  old_momx, old_momy;
@@ -737,7 +836,11 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
     tryx = actor->x + speed * xspeed[actor->movedir];
     tryy = actor->y + speed * yspeed[actor->movedir];
 
-    if (!P_TryMove (actor, tryx, tryy, false))  // do not allow dropoff
+    // FIXME: P_TryMove needs to be fixed.
+    // dropoff is 0,1,2, and parameter is boolean.
+    if (!P_TryMove (actor, tryx, tryy, (dropoff > 0)))  // temp fix
+//    if (!P_TryMove (actor, tryx, tryy, dropoff))  // caller dropoff
+//    if (!P_TryMove (actor, tryx, tryy, false))  // do not allow dropoff
     {
         // blocked move
         // Monsters will be here multiple times in each step while
@@ -747,7 +850,7 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
 
         // open any specials
         // tmr_floatok, tmr_floorz returned by P_TryMove
-        if (actor->flags & MF_FLOAT && tmr_floatok)
+        if( (actor->flags & MF_FLOAT) && tmr_floatok )
         {
             // must adjust height
             if (actor->z < tmr_floorz)
@@ -769,25 +872,25 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
             ld = &lines[ spechit[numspechit] ];
             // [WDJ] FIXME: Monsters get stuck in the door track when
             // they see the door activation and nothing else.
-            // if the special is not a door
-            // that can be opened,
+            // If the special is not a door that can be opened,
             // return false
-            if (P_UseSpecialLine (actor, ld,0))
+            if( P_UseSpecialLine (actor, ld, 0) )
             {
                 if( EN_mbf_doorstuck && (ld == tmr_blockingline))
                    hit_block = 1;
                 good = true;
             }
         }
-        if ( good && EN_doorstuck )
+
+        if( good && EN_doorstuck )
         {
             // [WDJ] Calls of P_Random here in Boom, affects Demo sync.
             // A line blocking the monster got activated, a little randomness
             // to get unstuck from door frame.
             if (EN_mbf_doorstuck)
-                good = (P_Random() >= 230) ^ (hit_block);  // MBF, pr_opendoor
+                good = (PP_Random(pr_opendoor) >= 230) ^ (hit_block);  // MBF
             else
-                good = P_Random() & 3;  // Boom jff, 25% fail, pr_trywalk
+                good = PP_Random(pr_trywalk) & 3;  // Boom jff, 25% fail
         }
         return good;
     }
@@ -806,15 +909,84 @@ static boolean P_MoveActor (mobj_t* actor)  // formerly P_Move
     }
 
 
-    if (! (actor->flags & MF_FLOAT) )
+    if(! (actor->flags & MF_FLOAT) )
     {
-      if( ! cv_monstergravity.EV )
-      {
-        if(actor->z > actor->floorz)
-           P_HitFloor(actor);
-        actor->z = actor->floorz;
-      }
+        // Monster gravity, or MBF felldown, blocks this vanilla instant fall.
+        if(! ( cv_monstergravity.EV
+	       || (EN_mbf && tmr_felldown) ) )
+        {
+            if(actor->z > actor->floorz)
+               P_HitFloor(actor);
+            actor->z = actor->floorz;
+        }
     }
+    return true;
+}
+
+
+// [WDJ] From MBF, PrBoom
+// P_SmartMove
+// killough 9/12/98: Same as P_Move, except smarter
+static boolean P_SmartMove(mobj_t *actor)
+{
+    mobj_t * target = actor->target;
+    byte  on_lift;
+    byte  under_damage = 0;
+    byte  dropoff = 0;  // 0,1,2
+
+    // killough 9/12/98: Stay on a lift if target is on one
+    on_lift = cv_mbf_staylift.EV
+      && target
+      && target->health > 0
+      && target->subsector->sector->tag == actor->subsector->sector->tag
+      && P_IsOnLift(actor);
+
+    if( cv_mbf_monster_avoid_hazard.EV )
+        under_damage = P_IsUnderDamage(actor);  // 1, 0, -1
+
+#ifdef DOGS
+    // killough 10/98: allow dogs to drop off of taller ledges sometimes.
+    // dropoff==1 means always allow it,
+    // dropoff==2 means only up to 128 high,
+    // and only if the target is immediately on the other side of the line.
+
+    // haleyjd: allow all friends of HelperType to also jump down
+
+    if( cv_mbf_dog_jumping.EV
+        && (actor->type == MT_DOGS
+            || (actor->type == (HelperThing-1) && (actor->flags & MF_FRIEND)) )
+        && target
+        && SAME_FRIEND(target, actor)
+        && P_AproxDistance(actor->x - target->x, actor->y - target->y)
+             < FRACUNIT*144
+        && (PP_Random(pr_dropoff) < 235)
+      )
+        dropoff = 2;
+#endif
+
+    if( !P_MoveActor(actor, dropoff) )
+        return false;
+
+    // killough 9/9/98: avoid crushing ceilings or other damaging areas
+    if( on_lift
+        && (PP_Random(pr_stayonlift) < 230) // Stay on lift
+        && !P_IsOnLift(actor)
+      )
+        goto avoid_damage;
+    
+    if( cv_mbf_monster_avoid_hazard.EV
+        && (under_damage == 0) )
+    {
+        // Get away from damage
+        under_damage = P_IsUnderDamage(actor);
+        if( (under_damage < 0) || (PP_Random(pr_avoidcrush) < 200) )
+            goto avoid_damage;
+    }
+
+    return true;
+
+avoid_damage:
+    actor->movedir = DI_NODIR;  // avoid the area (most of the time anyway)
     return true;
 }
 
@@ -835,51 +1007,130 @@ line_t * trywalk_dropoffline;
 //
 static boolean P_TryWalk (mobj_t* actor)
 {
-    if (!P_MoveActor (actor))
+    if( !P_SmartMove(actor) )  // P_MoveActor()
     {
         // record if failing due to dropoff
         if( tmr_dropoffline )
             trywalk_dropoffline = tmr_dropoffline;
         return false;
     }
-    actor->movecount = P_Random()&15;
+    actor->movecount = PP_Random(pr_trywalk) & 0x0F;
     return true;
 }
 
 
 
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine
+// killough 11/98:
+//
+// Monsters try to move away from tall dropoffs.
+//
+// In Doom, they were never allowed to hang over dropoffs,
+// and would remain stuck if involuntarily forced over one.
+// This logic, combined with p_map.c (P_TryMove), allows
+// monsters to free themselves without making them tend to
+// hang over dropoffs.
 
-static void P_NewChaseDir (mobj_t*     actor)
+static fixed_t dropoff_r_deltax, dropoff_r_deltay, dropoff_floorz;
+
+// Always returns true, searches all lines.
+static boolean PIT_AvoidDropoff(line_t *line)
 {
-    fixed_t     deltax, deltay;
+    if( line->backsector // Ignore one-sided linedefs
+        && tm_bbox[BOXRIGHT]  > line->bbox[BOXLEFT]
+        && tm_bbox[BOXLEFT]   < line->bbox[BOXRIGHT]
+        && tm_bbox[BOXTOP]    > line->bbox[BOXBOTTOM] // Linedef must be contacted
+        && tm_bbox[BOXBOTTOM] < line->bbox[BOXTOP]
+        && P_BoxOnLineSide(tm_bbox, line) == -1
+      )
+    {
+        // Touching the line.
+        fixed_t front = line->frontsector->floorheight;
+        fixed_t back  = line->backsector->floorheight;
+        angle_t angle;
 
+        // The monster must contact one of the two floors,
+        // and the other must be a tall dropoff (more than 24).
+        if( back == dropoff_floorz
+            && front < dropoff_floorz - FRACUNIT*24 )
+        {
+            // front side dropoff
+            angle = R_PointToAngle2(0,0,line->dx,line->dy);
+        }
+        else if( front == dropoff_floorz
+             && back < dropoff_floorz - FRACUNIT*24 )
+        {
+            // back side dropoff       
+            angle = R_PointToAngle2(line->dx,line->dy,0,0);
+        }
+        else
+            return true;  // not a dropoff
+
+        // Move away from dropoff at a standard speed.
+        // Multiple contacted linedefs are cumulative
+        // (e.g. hanging over corner)
+        dropoff_r_deltax -= finesine[angle >> ANGLETOFINESHIFT]*32;
+        dropoff_r_deltay += finecosine[angle >> ANGLETOFINESHIFT]*32;
+    }
+    return true;
+}
+
+//
+// Driver for above
+//
+static fixed_t P_AvoidDropoff(mobj_t *actor)
+{
+    int yh, yl, xh, xl;
+    int bx, by;
+
+    tm_bbox[BOXTOP] = actor->y + actor->radius;
+    tm_bbox[BOXBOTTOM] = actor->y - actor->radius;
+    tm_bbox[BOXRIGHT] = actor->x + actor->radius;
+    tm_bbox[BOXLEFT] = actor->x - actor->radius;
+    yh = (tm_bbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+    yl = (tm_bbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+    xh = (tm_bbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+    xl = (tm_bbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+
+    // PIT_AvoidDropoff parameters
+    dropoff_floorz = actor->z;  // remember floor height
+    dropoff_r_deltax = dropoff_r_deltay = 0;  // outputs
+
+    // check lines
+
+    validcount++;
+    for( bx=xl ; bx<=xh ; bx++ )
+    {
+        for( by=yl ; by<=yh ; by++ )
+            P_BlockLinesIterator(bx, by, PIT_AvoidDropoff);  // all contacted lines
+    }
+
+    // Non-zero if movement prescribed, caller uses dropoff vars.
+    return dropoff_r_deltax | dropoff_r_deltay;
+}
+
+
+static
+void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
+{
     dirtype_t   d[3];
 
     int         tdir;
     dirtype_t   olddir = actor->movedir;
     dirtype_t   turnaround = opposite[olddir];
 
-    if (!actor->target)
-    {
-        I_SoftError ("P_NewChaseDir: called with no target");
-        return;
-    }
-
     trywalk_dropoffline = NULL;  // clear dropoff record
 
-    deltax = actor->target->x - actor->x;
-    deltay = actor->target->y - actor->y;
-
-    if (deltax>10*FRACUNIT)
+    if( deltax > 10*FRACUNIT )
         d[1]= DI_EAST;
-    else if (deltax<-10*FRACUNIT)
+    else if( deltax < -10*FRACUNIT )
         d[1]= DI_WEST;
     else
         d[1]= DI_NODIR;
 
-    if (deltay<-10*FRACUNIT)
+    if( deltay < -10*FRACUNIT )
         d[2]= DI_SOUTH;
-    else if (deltay>10*FRACUNIT)
+    else if( deltay > 10*FRACUNIT )
         d[2]= DI_NORTH;
     else
         d[2]= DI_NODIR;
@@ -889,88 +1140,80 @@ static void P_NewChaseDir (mobj_t*     actor)
         && d[2] != DI_NODIR)
     {
         actor->movedir = diags[((deltay<0)<<1)+(deltax>0)];
-        if (actor->movedir != turnaround && P_TryWalk(actor))
+        if( actor->movedir != turnaround
+            && P_TryWalk(actor) )
             goto accept_move;
     }
 
     // try other directions
-    if (P_Random() > 200
-        ||  abs(deltay)>abs(deltax))
+    if( PP_Random(pr_newchase) > 200
+        ||  abs(deltay) > abs(deltax))
     {
         tdir=d[1];
         d[1]=d[2];
         d[2]=tdir;
     }
 
-    if (d[1]==turnaround)
-        d[1]=DI_NODIR;
-    if (d[2]==turnaround)
-        d[2]=DI_NODIR;
+    if( d[1] == turnaround)
+        d[1] = DI_NODIR;
+    if( d[2] == turnaround)
+        d[2] = DI_NODIR;
 
-    if (d[1]!=DI_NODIR)
+    if( d[1] != DI_NODIR )
     {
         actor->movedir = d[1];
-        if (P_TryWalk(actor))
+        if( P_TryWalk(actor) )
         {
             // either moved forward or attacked
             goto accept_move;
         }
     }
 
-    if (d[2]!=DI_NODIR)
+    if( d[2] != DI_NODIR )
     {
-        actor->movedir =d[2];
-
-        if (P_TryWalk(actor))
+        actor->movedir = d[2];
+        if( P_TryWalk(actor) )
             goto accept_move;
     }
 
-    // there is no direct path to the player,
-    // so pick another direction.
-    if (olddir!=DI_NODIR)
+    // there is no direct path to the player, so pick another direction.
+    if( olddir != DI_NODIR )
     {
-        actor->movedir =olddir;
-
-        if (P_TryWalk(actor))
+        actor->movedir = olddir;
+        if( P_TryWalk(actor) )
             goto accept_move;
     }
 
     // randomly determine direction of search
-    if (P_Random()&1)
+    if( PP_Random(pr_newchasedir) & 0x01 )
     {
-        for ( tdir=DI_EAST;
-              tdir<=DI_SOUTHEAST;
-              tdir++ )
+        for( tdir = DI_EAST; tdir <= DI_SOUTHEAST; tdir++ )
         {
-            if (tdir!=turnaround)
+            if( tdir != turnaround )
             {
-                actor->movedir =tdir;
-
-                if ( P_TryWalk(actor) )
+                actor->movedir = tdir;
+                if( P_TryWalk(actor) )
                     goto accept_move;
             }
         }
     }
     else
     {
-        for ( tdir=DI_SOUTHEAST;
-              tdir >= DI_EAST;
-              tdir-- )
+        for( tdir = DI_SOUTHEAST; tdir >= DI_EAST; tdir-- )
         {
-            if (tdir!=turnaround)
+            if( tdir != turnaround )
             {
-                actor->movedir =tdir;
-
-                if ( P_TryWalk(actor) )
+                actor->movedir = tdir;
+                if( P_TryWalk(actor) )
                     goto accept_move;
             }
         }
     }
 
-    if (turnaround !=  DI_NODIR)
+    if( turnaround != DI_NODIR )
     {
-        actor->movedir =turnaround;
-        if ( P_TryWalk(actor) )
+        actor->movedir = turnaround;
+        if( P_TryWalk(actor) )
             goto accept_move;
     }
 
@@ -1029,6 +1272,171 @@ accept_move:
 }
 
 
+// [WDJ] MBF, from MBF, PrBoom, EternityEngine
+// Most of the original P_NewChaseDir is now in P_NewChaseDir_P2.
+static void P_NewChaseDir(mobj_t *actor)
+{
+    mobj_t *  target = actor->target;
+    fixed_t deltax = target->x - actor->x;
+    fixed_t deltay = target->y - actor->y;
+
+    if( !target )
+    {
+        I_SoftError ("P_NewChaseDir: called with no target");
+        return;
+    }
+
+    // killough 8/8/98: sometimes move away from target, keeping distance
+    //
+    // 1) Stay a certain distance away from a friend, to avoid being in their way
+    // 2) Take advantage over an enemy without missiles, by keeping distance
+    
+    actor->strafecount = 0;  // MBF
+
+    if( EN_mbf )
+    {
+        // CheckPosition has not been called, so tmr_dropoffz is not valid.
+        // MBF has mobj keep dropoffz field.
+        if( cv_mbf_dropoff.EV
+            && actor->floorz - actor->dropoffz > FRACUNIT*24
+            && actor->z <= actor->floorz
+            && !(actor->flags & (MF_DROPOFF|MF_FLOAT))
+            && P_AvoidDropoff(actor) // Move away from dropoff
+          )
+        {
+            P_NewChaseDir_P2(actor, dropoff_r_deltax, dropoff_r_deltay);
+
+            // If moving away from dropoff, set movecount to 1 so that
+            // small steps are taken to get monster away from dropoff.
+
+            actor->movecount = 1;
+            return;
+        }
+        else
+        {
+            fixed_t dist = P_AproxDistance(deltax, deltay);
+
+            // Move away from friends when too close, except
+            // in certain situations (e.g. a crowded lift)
+
+            if( BOTH_FRIEND(actor, target)
+                && dist < EV_mbf_distfriend
+                && !P_IsOnLift(target)
+                && !P_IsUnderDamage(actor)
+              )
+            {
+                deltax = -deltax;
+                deltay = -deltay;
+            }
+            else if( target->health > 0
+                     && ! SAME_FRIEND(actor, target) )
+            {   // Live enemy target
+                if( cv_mbf_monster_backing.EV
+                    && actor->info->missilestate
+                    && actor->type != MT_SKULL
+                    && ( (!target->info->missilestate
+                          && dist < MELEERANGE*2 )
+                        || (target->player
+                            && dist < MELEERANGE*3
+                            && (target->player->readyweapon == wp_fist
+                                || target->player->readyweapon == wp_chainsaw) ))
+                  )
+                {   // Back away from melee attacker
+                    actor->strafecount = PP_Random(pr_enemystrafe) & 0x0F;
+                    deltax = -deltax;
+                    deltay = -deltay;
+                }
+            }
+        }
+    }
+
+    P_NewChaseDir_P2(actor, deltax, deltay);
+
+    // If strafing, set movecount to strafecount so that old Doom
+    // logic still works the same, except in the strafing part
+
+    if (actor->strafecount)
+        actor->movecount = actor->strafecount;
+}
+
+
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine
+//
+// P_IsVisible
+//
+// killough 9/9/98: whether a target is visible to a monster
+//
+
+static boolean P_IsVisible(mobj_t *actor, mobj_t *mo, boolean allaround)
+{
+    if( !allaround )
+    {
+        // Not visible if not within 90 degree of facing, and outside MELEE range.
+        angle_t an = R_PointToAngle2(actor->x, actor->y, mo->x, mo->y)
+                     - actor->angle;
+
+        if( ( an > ANG90 && an < ANG270 )
+	    && ( P_AproxDistance((mo->x - actor->x), (mo->y - actor->y))
+		 > MELEERANGE )
+          )
+            return false;
+        // possibly visible, check sight
+    }
+    return P_CheckSight(actor, mo);
+}
+
+
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine
+//
+// PIT_FindTarget
+//
+// killough 9/5/98
+//
+// Finds monster targets for other monsters
+//
+
+static mobj_t * ft_current_actor;
+static int ft_current_allaround;
+
+static boolean PIT_FindTarget(mobj_t *mo)
+{
+    mobj_t *actor = ft_current_actor;
+
+    if( SAME_FRIEND(mo, actor)  // Invalid target
+        || ! (mo->health > 0)
+        || ! (mo->flags & MF_COUNTKILL || mo->type == MT_SKULL)
+      )
+        return true;  // reject, keep searching
+
+    // If the monster is already engaged in a one-on-one attack
+    // with a healthy friend, don't attack around 60% the time
+    {
+        const mobj_t * t2 = mo->target;  // target of this monster
+        if( t2
+            && t2->target == mo  // both targeting each other
+            && PP_Random(pr_skiptarget) > 100  // stuck with test order
+          )
+        {
+            // Already known that mo is not a friend.
+            if( ! SAME_FRIEND(t2, mo)  // is attacking a friend
+                && t2->health*2 >= t2->info->spawnhealth ) // friend health ok
+                return true;  // find someone else
+        }
+    }
+
+    if( !P_IsVisible(actor, mo, ft_current_allaround) )
+        return true;
+
+    P_SetTarget(&actor->lastenemy, actor->target);  // Remember previous target
+    P_SetTarget(&actor->target, mo);                // Found target
+
+    // Move the selected monster to the end of its class-list,
+    // so that it gets searched last next time.
+    P_MoveClassThink(&mo->thinker, 0);  // Last
+
+    return false;  // Found target
+}
+
 
 //
 // P_LookForPlayers
@@ -1039,68 +1447,93 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
                                   boolean       allaround )
 {
     int         c;
-    int         stop;
+    int         stop, stopc;
     player_t*   player;
-//    sector_t*   sector;
-    angle_t     an;
-    fixed_t     dist;
 
     if( EN_heretic
         && !multiplayer && players[0].health <= 0 )
     { // Single player game and player is dead, look for monsters
-        return(P_LookForMonsters(actor));
+        return(PH_LookForMonsters(actor));  // Heretic version
     }
 
     // Don't look for a player if ignoring
     if (actor->eflags & MF_IGNOREPLAYER)
                 return false;
 
+    // [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+    if( actor->flags & MF_FRIEND )
+    {   // killough 9/9/98: friendly monsters go about players differently
+        int anyone;
+
+#if 0
+        // If you want friendly monsters not to awaken unprovoked
+        if( !allaround )
+            return false;
+#endif
+
+        // Go back to a player, no matter whether it's visible or not
+        // Once looking for visible, second time anyone.
+        for( anyone=0; anyone<=1; anyone++ )
+        {
+            for( c=0; c<MAXPLAYERS; c++ )
+            {
+                if( playeringame[c]
+                    && players[c].playerstate == PST_LIVE
+                    && (anyone
+                        || P_IsVisible(actor, players[c].mo, allaround) )
+                  )
+                {
+                    P_SetTarget(&actor->target, players[c].mo);
+
+                    // killough 12/98:
+                    // get out of refiring loop, to avoid hitting player accidentally
+
+                    if( actor->info->missilestate )
+                    {
+                        P_SetMobjState(actor, actor->info->seestate);
+                        actor->flags &= ~MF_JUSTHIT;
+                    }
+
+                    return true;
+                }
+
+            }
+        }
+        return false;
+    }
+
 //        sector = actor->subsector->sector;
 
+    // This is not in PrBoom, EnternityEngine, and it uses P_Random !!!
     // BP: first time init, this allow minimum lastlook changes
-    if( actor->lastlook<0 && demoversion>=129 )
+    if( actor->lastlook<0 && demoversion>=129 && demoversion<200 )
         actor->lastlook = P_Random () % MAXPLAYERS;
 
     c = 0;
     stop = (actor->lastlook-1)&PLAYERSMASK;
+    stopc = ( !EN_mbf
+              && EN_boom  // !demo_compatibility
+              && cv_monster_remember.EV )? MAXPLAYERS : 2;  // killough 9/9/98
 
     for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
     {
         // done looking
-        if (actor->lastlook == stop)
-            return false;
+        if( actor->lastlook == stop )  goto done_looking;
 
-        if (!playeringame[actor->lastlook])
+        if( !playeringame[actor->lastlook] )
             continue;
 
-        if (c++ == 2)
-            return false;
+        if( c++ == stopc )  goto done_looking;
 
         player = &players[actor->lastlook];
 
         if (player->health <= 0)
             continue;           // dead
 
-        if (!P_CheckSight (actor, player->mo))
+        // MBF, PrBoom: IsVisible does same as previous code.
+        if( !P_IsVisible( actor, player->mo, allaround) )
             continue;           // out of sight
 
-        if (!allaround)
-        {
-            an = R_PointToAngle2 (actor->x,
-                                  actor->y,
-                                  player->mo->x,
-                                  player->mo->y)
-                - actor->angle;
-
-            if (an > ANG90 && an < ANG270)
-            {
-                dist = P_AproxDistance (player->mo->x - actor->x,
-                                        player->mo->y - actor->y);
-                // if real close, react anyway
-                if (dist > MELEERANGE)
-                    continue;   // behind back
-            }
-        }
         if( EN_heretic && player->mo->flags&MF_SHADOW)
         { // Player is invisible
             if((P_AproxDistance(player->mo->x-actor->x,
@@ -1125,13 +1558,195 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         }
 
         // New target found
+#if 0	
         actor->target = player->mo;
+#else
+        P_SetTarget(&actor->target, player->mo);
+#endif
+
+        // killough 9/9/98: give monsters a threshold towards getting players
+        // we don't want it to be too easy for a player with dogs :)
+        if( cv_mbf_pursuit.EV )  // !comp[comp_pursuit]
+            actor->threshold = 60;
+
+        return true;
+    }
+    return false;
+
+done_looking:
+    // [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+    // e6y
+    // Fixed Boom incompatibilities. The following code was missed.
+    // There are no more desyncs on Donce's demos on horror.wad (in PrBoom).
+
+    if( !EN_mbf
+        && EN_boom  // !demo_compatibility
+        && cv_monster_remember.EV )
+    {
+        // Use last known enemy if no players sighted -- killough 2/15/98:
+        if( actor->lastenemy && (actor->lastenemy->health > 0) )
+        {
+            actor->target = actor->lastenemy;
+            actor->lastenemy = NULL;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+//
+// Friendly monsters, by Lee Killough 7/18/98
+//
+// Friendly monsters go after other monsters first, but also return to owner
+// if they cannot find any targets.
+// A marine's best friend :)  killough 7/18/98, 9/98
+
+static boolean P_MBF_LookForMonsters(mobj_t *actor, boolean allaround)
+{
+    int x, y, d;
+    thinker_t *cap, *th;
+
+    if( ! EN_boom )
+        return false;
+
+    if( cv_monster_remember.EV
+        && actor->lastenemy
+        && actor->lastenemy->health > 0
+        && ! BOTH_FRIEND(actor->lastenemy, actor) // not friends
+      )
+    {
+        P_SetTarget(&actor->target, actor->lastenemy);
+        P_SetTarget(&actor->lastenemy, NULL);
         return true;
     }
 
-
+    // Old demos do not support monster-seeking bots
+    if( ! EN_mbf )
         return false;
+
+    // Search the class-list corresponding to this actor's potential targets
+    cap = &thinkerclasscap[actor->flags & MF_FRIEND ? TH_enemies : TH_friends];
+    if( cap->cnext == cap )  // When empty list, bail out early
+        return false;
+
+    // Search for new enemy
+    x = (actor->x - bmaporgx)>>MAPBLOCKSHIFT;
+    y = (actor->y - bmaporgy)>>MAPBLOCKSHIFT;
+
+    // Parameters PIT_FindTarget
+    ft_current_actor = actor;
+    ft_current_allaround = allaround;
+   
+    // Search first in the immediate vicinity.
+    if( !P_BlockThingsIterator(x, y, PIT_FindTarget) )
+        return true;
+
+    for (d=1; d<5; d++)
+    {
+        int i = 1 - d;
+
+        do{
+            if( !P_BlockThingsIterator(x+i, y-d, PIT_FindTarget )
+                || !P_BlockThingsIterator(x+i, y+d, PIT_FindTarget) )
+                return true;
+        }while (++i < d);
+
+        do{
+            if( !P_BlockThingsIterator(x-d, y+i, PIT_FindTarget )
+                || !P_BlockThingsIterator(x+d, y+i, PIT_FindTarget) )
+                return true;
+        }while (--i + d >= 0);
+    }
+
+    {   // Random number of monsters, to prevent patterns from forming
+        int n = (PP_Random(pr_friends) & 31) + 15;
+
+        for( th = cap->cnext; th != cap; th = th->cnext )
+        {
+            if( --n < 0 )
+            {
+                // Only a subset of the monsters were searched. Move all of
+                // the ones which were searched so far, to the end of the list.
+                P_MoveClasslistRangeLast( cap, th );
+                break;
+            }
+
+            if( !PIT_FindTarget((mobj_t *) th) )  // If target sighted
+                return true;
+        }
+    }
+
+    return false;  // No monster found
 }
+
+
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+//
+// P_LookForTargets
+//
+// killough 9/5/98: look for targets to go after, depending on kind of monster
+//
+
+static boolean P_LookForTargets(mobj_t *actor, int allaround)
+{
+  return (actor->flags & MF_FRIEND)?
+      P_MBF_LookForMonsters(actor, allaround)
+      || P_LookForPlayers (actor, allaround)
+    : P_LookForPlayers (actor, allaround)
+      || P_MBF_LookForMonsters(actor, allaround);
+}
+
+
+// [WDJ] MBF, From MBF, PrBoom, EternityEngine.
+//
+// P_HelpFriend
+//
+// killough 9/8/98: Help friends in danger of dying
+//
+
+static boolean P_HelpFriend(mobj_t *actor)
+{
+    thinker_t *cap, *th;
+
+    // If less than 33% health, self-preservation rules
+    if( actor->health*3 < actor->info->spawnhealth )
+        return false;
+
+    // Parameters PIT_FindTarget
+    ft_current_actor = actor;
+    ft_current_allaround = true;
+
+    // Possibly help a friend under 50% health
+    cap = &thinkerclasscap[actor->flags & MF_FRIEND ? TH_friends : TH_enemies];
+
+    for (th = cap->cnext; th != cap; th = th->cnext)
+    {
+        mobj_t * mo = (mobj_t *) th;  // thinker mobj 
+        if( mo->health*2 >= mo->info->spawnhealth )
+        {
+            if( PP_Random(pr_helpfriend) < 180 )
+                break;
+        }
+        else
+        {
+            if( mo->flags & MF_JUSTHIT
+                && mo->target
+                && mo->target != actor->target
+                && !PIT_FindTarget( mo->target)
+              )
+            {
+                // Ignore any attacking monsters, while searching for friend
+                actor->threshold = BASETHRESHOLD;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 
 //
 // ACTION ROUTINES
@@ -1147,7 +1762,7 @@ void A_Look (mobj_t* actor)
 
     
     // Is there a node we must follow?
-    if (actor->targetnode)
+    if( actor->targetnode )
     {
         actor->target = actor->targetnode;
         P_SetMobjState(actor, actor->info->seestate);
@@ -1237,7 +1852,7 @@ void A_Chase (mobj_t*   actor)
 
 
     // modify target threshold
-    if  (actor->threshold)
+    if( actor->threshold )
     {
         if (EN_doom_etc 
             && (!actor->target
@@ -1258,8 +1873,13 @@ void A_Chase (mobj_t*   actor)
             actor->tics = 3;
     }
 
-    // turn towards movement direction if not there yet
-    if (actor->movedir < 8)
+    // Turn towards movement direction if not there yet.
+    // killough 9/7/98: keep facing towards target if strafing or backing out
+    if( actor->strafecount )  // MBF
+    {
+        A_FaceTarget(actor);
+    }
+    else if( actor->movedir < 8 )
     {
         actor->angle &= (7<<29);
         delta = actor->angle - (actor->movedir << 29);
@@ -1285,15 +1905,41 @@ void A_Chase (mobj_t*   actor)
              || actor->target->type == MT_NODE
            ))
          && !(actor->eflags & MF_IGNOREPLAYER)
-        )
+       )
 #endif       
     {
+        // [WDJ] Recursion check from EternityEngine.
+        // haleyjd 07/26/04: Detect and prevent infinite recursion if
+        // Chase is called from a thing's spawnstate.
+        static byte  chase_recursion = 0;
+        static byte  chase_recursion_count = 0;  // [WDJ] too many messages
+
+        // If recursion is true at this point, P_SetMobjState sent
+        // us back here -- print an error message and return.
+        if( chase_recursion )
+        {
+            if( verbose > 1 && (chase_recursion_count++ == 0) )
+                GenPrintf( EMSG_warn, "Chase recursion detected\n");
+            return;
+        }
+
+        // set the flag true before calling P_SetMobjState
+        chase_recursion = 1;
+#if 1
+        // MBF
+        // look for a new target
+        if( P_LookForTargets(actor,true) )
+            return;     // got a new target
+#else       
         // look for a new target
         if (P_LookForPlayers(actor,true))
             return;     // got a new target
+#endif
 
         // This monster will start waiting again
         P_SetMobjState (actor, actor->info->spawnstate);
+       
+        chase_recursion = 0;
         return;
     }
 
@@ -1301,6 +1947,7 @@ void A_Chase (mobj_t*   actor)
     if (actor->flags & MF_JUSTATTACKED)
     {
         actor->flags &= ~MF_JUSTATTACKED;
+        // MBF: if( gameskill != nightmare && !fastparm )
         if( !cv_fastmonsters.EV )
             P_NewChaseDir (actor);
         return;
@@ -1316,6 +1963,13 @@ void A_Chase (mobj_t*   actor)
             S_StartAttackSound(actor, actor->info->attacksound);
 
         P_SetMobjState (actor, actor->info->meleestate);
+       
+        //MBF: killough 8/98: remember an attack
+        // cph - DEMOSYNC?
+        if( EN_mbf
+            && !actor->info->missilestate )
+            actor->flags |= MF_JUSTHIT;
+
         return;
     }
 
@@ -1340,6 +1994,8 @@ void A_Chase (mobj_t*   actor)
     // ?
   nomissile:
     // possibly choose another target
+#if 0
+    // DoomLegacy 1.46.3
     if (multiplayer
         && !actor->threshold
         && !P_CheckSight (actor, actor->target)
@@ -1350,8 +2006,72 @@ void A_Chase (mobj_t*   actor)
             return;     // got a new target
 
     }
+#endif
+    if( !actor->threshold )
+    {
+        // [WDJ] MBF, from MBF, PrBoom, EternityEngine.
+        if( ! EN_mbf )
+        {
+            // Doom, Boom, Legacy
+            if( multiplayer
+                && !P_CheckSight (actor, actor->target)
+                && (actor->target && actor->target->type != MT_NODE)
+                && !(actor->eflags & MF_IGNOREPLAYER))
+            {
+                if( P_LookForPlayers(actor,true) )
+                    return;     // got a new target
+            }
+        }
+        // MBF
+        // killough 7/18/98, 9/9/98: new monster AI
+        else if( cv_mbf_help_friend.EV && P_HelpFriend(actor) )
+            return;  // killough 9/8/98: Help friends in need.
+        // Look for new targets if current one is bad or is out of view.
+        else if( actor->pursuecount )
+            actor->pursuecount--;
+        else
+        {
+            // Our pursuit time has expired. We're going to think about
+            // changing targets.
+            actor->pursuecount = BASETHRESHOLD;
 
+            // Unless (we have a live target, and it's not friendly
+            // and we can see it)
+            // try to find a new one; return if sucessful.
+            if( !actor->target
+                || ! (actor->target->health > 0)
+                ||( (cv_mbf_pursuit.EV || multiplayer)
+                    && ! ( ( ! SAME_FRIEND(actor->target, actor)
+                             ||( !(actor->flags & MF_FRIEND)
+                                 && monster_infight == INFT_infight
+                               )
+                            )
+                            && P_CheckSight(actor, actor->target)
+                         )
+                  )
+              )
+            {
+                if( P_LookForTargets(actor, true) )
+                    return;
+            }
 
+            // Current target was good, or no new target was found.
+            // If monster is a missile-less friend, give up pursuit and
+            // return to player, if no attacks have occurred recently.
+
+            if( (actor->flags & MF_FRIEND) && !actor->info->missilestate )
+            {
+                // if recent action, keep fighting, else return to player.
+                if( actor->flags & MF_JUSTHIT)
+                    actor->flags &= ~MF_JUSTHIT;
+                else if( P_LookForPlayers(actor, true) )
+                    return;
+            }
+        }
+    }
+
+    if( actor->strafecount )  // MBF
+        actor->strafecount--;
 
     // Patrolling nodes
     if (actor->target && actor->target->type == MT_NODE)
@@ -1398,7 +2118,7 @@ void A_Chase (mobj_t*   actor)
 
     // chase towards player
     if (--actor->movecount<0
-        || !P_MoveActor (actor))
+        || !P_SmartMove(actor) )
     {
         P_NewChaseDir (actor);
     }
@@ -1453,7 +2173,7 @@ void A_PosAttack (mobj_t* actor)
 
     A_FaceTarget (actor);
     angle = actor->angle;
-    slope = P_AimLineAttack (actor, angle, MISSILERANGE);
+    slope = P_AimLineAttack (actor, angle, MISSILERANGE, 0);
 
     S_StartAttackSound(actor, sfx_pistol);
     angle += P_SignedRandom()<<20;
@@ -1474,7 +2194,7 @@ void A_SPosAttack (mobj_t* actor)
     S_StartAttackSound(actor, sfx_shotgn);
     A_FaceTarget (actor);
     bangle = actor->angle;
-    slope = P_AimLineAttack (actor, bangle, MISSILERANGE);
+    slope = P_AimLineAttack (actor, bangle, MISSILERANGE, 0);
 
     for (i=0 ; i<3 ; i++)
     {
@@ -1496,7 +2216,7 @@ void A_CPosAttack (mobj_t* actor)
     S_StartAttackSound(actor, sfx_shotgn);
     A_FaceTarget (actor);
     bangle = actor->angle;
-    slope = P_AimLineAttack (actor, bangle, MISSILERANGE);
+    slope = P_AimLineAttack (actor, bangle, MISSILERANGE, 0);
 
     angle  = (P_SignedRandom()<<20)+bangle;
 

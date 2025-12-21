@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: p_henemy.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -100,7 +100,7 @@ void P_AddBossSpot(fixed_t x, fixed_t y, angle_t angle)
 #define MONS_LOOK_RANGE (20*64*FRACUNIT)
 #define MONS_LOOK_LIMIT 64
 
-boolean P_LookForMonsters(mobj_t *actor)
+boolean PH_LookForMonsters(mobj_t *actor)
 {
     int count;
     mobj_t *mo;
