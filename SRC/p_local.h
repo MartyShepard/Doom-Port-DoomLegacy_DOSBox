@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1326 2017-05-23 14:30:32Z wesleyjohnson $
+// $Id: p_local.h 1328 2017-05-23 14:32:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -260,8 +260,23 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 extern  consvar_t cv_monbehavior;
 extern  consvar_t cv_monsterfriction;
 extern  consvar_t cv_doorstuck;
-extern  consvar_t cv_solidcorpse;        // p_enemy
-extern  consvar_t cv_monstergravity;     // p_enemy
+extern  consvar_t cv_solidcorpse;
+extern  consvar_t cv_monstergravity;
+extern  consvar_t cv_monster_remember;
+
+extern  consvar_t cv_mbf_dropoff;
+extern  consvar_t cv_mbf_falloff;
+extern  consvar_t cv_mbf_pursuit;
+extern  consvar_t cv_mbf_staylift;
+extern  consvar_t cv_mbf_monster_avoid_hazard;
+extern  consvar_t cv_mbf_monster_backing;
+extern  consvar_t cv_mbf_help_friend;
+extern  consvar_t cv_mbf_distfriend;
+extern  consvar_t cv_mbf_monkeys;
+#ifdef DOGS   
+extern  consvar_t cv_mbf_dogs;
+extern  consvar_t cv_mbf_dog_jumping;
+#endif
 
 // when pushing a line 
 //#define MAXSPECIALCROSS 16
@@ -387,8 +402,10 @@ extern byte  EN_skull_bounce_fix;  // PrBoom 2001  !comp[comp_soul]
 extern byte  EN_pushers;
 
 // MBF
+extern fixed_t EV_mbf_distfriend;
 extern byte  EN_mbf_speed;
 extern byte  EN_monster_friction;
+
 // Heretic, Hexen
 extern byte  EN_inventory;   // Heretic, Hexen
 

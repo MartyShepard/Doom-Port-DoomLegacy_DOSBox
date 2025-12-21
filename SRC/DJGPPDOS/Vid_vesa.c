@@ -84,6 +84,7 @@ static vesa_extra_t vesa_extra[MAX_VESA_MODES];
 //this is the only supported non-vesa mode : standard 320x200x256c.
 #define NUMVGAVIDMODES  1
 static int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
+static int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
 static vmode_t      vgavidmodes[NUMVGAVIDMODES+1] = {
   { // 0 mode, HIDDEN
     & vgavidmodes/*specialmodes*/[1],
@@ -92,7 +93,7 @@ static vmode_t      vgavidmodes[NUMVGAVIDMODES+1] = {
     INITIAL_WINDOW_WIDTH, 1,     // rowbytes, bytes per pixel
     MODE_window, 1,  // windowed, numpages
     NULL,
-    VGA_InitMode
+    TXT_InitMode
   },
   {
     NULL,
@@ -188,7 +189,7 @@ void *real2ptr(unsigned int real)
 void VID_InitVGAModes(void)
 {
     // do not include Mode 0 (INITIAL) in count
-    all_vidmodes = &vgavidmodes[1];
+    all_vidmodes = &vgavidmodes[0];
     num_all_vidmodes += NUMVGAVIDMODES;
 				
 }
@@ -211,11 +212,12 @@ range_t  VID_ModeRange( byte modetype )
     if(modetype == MODE_fullscreen)
     {   // fullscreen  2..
         mrange.first = NUMVGAVIDMODES;
-        mrange.last = mrange.first + num_full_vidmodes-1;
+        mrange.last = mrange.first + num_full_vidmodes;
     }
     else
     {   // window   1..,
 	      // does not include mode 0
+				//mrange.first = 1;
         mrange.last = num_all_vidmodes;
     }
     return mrange;
@@ -272,7 +274,11 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
 	    bestdist = tdist;
 	    modenum.index = mi;
 			
-	    if( tdist == 0 )  break;   // found exact match
+	    if( tdist == 0 )
+			{
+				//GenPrintf( EMSG_ver, "Vid_Init [VID_GetModeForSize]: mi %d\n",modenum.index);	
+				break;   // found exact match
+			}
 	}
 	mi++;
     }
@@ -325,14 +331,14 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
     // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     vmode_t *pv = all_vidmodes;  // window
     int mi = modenum.index-1;      // 0..
+		
     byte TextStartup=1;
 		
     if ( modenum.modetype == 0 )
     {
         pv = full_vidmodes;
-        mi = modenum.index - NUMVGAVIDMODES;  // 2..
+        mi = modenum.index;// - NUMVGAVIDMODES;  // 2..
     }
-
 
     if (!pv || mi < 0 ) 
 		{
@@ -345,13 +351,14 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
 
     while (mi--)
     {
-        pv = pv->next;			
+        pv = pv->next;
+
         if (!pv)
 				{
           //I_SoftError("VID_error 2\n");					
           goto fail;					
-				}
-    }
+				}		
+    }		
     return pv;
 fail:
     return NULL;
@@ -479,6 +486,8 @@ int VID_SetMode (modenum_t modenum)
     vid.fullscreen = set_fullscreen;
 
     debug_Printf("after VID_SetMode\n");
+
+    debug_Printf("vid.name     %s\n",currentmode_p->name);
     debug_Printf("vid.width    %d\n",vid.width);
     debug_Printf("vid.height   %d\n",vid.height);
     debug_Printf("vid.buffer   %x\n",vid.buffer);
@@ -894,14 +903,14 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     //set mode 0x13
     regs.h.ah = 0;
-    regs.h.al = 0x108/*0x13*/; // Benutze 0x108 (640x480 Textmodus als Start)
+    regs.h.al = 0x13; // Benutze 0x108 (640x480 Textmodus als Start)
     __dpmi_int(0x10, &regs);
 
     // here it is the standard VGA 64k window, not an LFB
     // (you could have 320x200x256c with LFB in the vesa modes)
     lvid->direct = (byte *) real2ptr (0xa0000);
     lvid->numpages = 1;
-    lvid->bytepp = currentmode_p->bytesperpixel+1;
+    lvid->bytepp = currentmode_p->bytesperpixel;
 
     return 1;
 }
@@ -1112,6 +1121,7 @@ void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn)
                  pv->rowbytes,
                  pv->numpages);
 }
+
 /* ========================================================================
    Folgendes wurde mit svn 1069 entfernt und von mir wieder eingefügt damit
  	 der Code funktioniert. Fixed.
@@ -1123,4 +1133,53 @@ static inline
 int VID_NumModes(void)
 {
   return ( vid.fullscreen )? num_full_vidmodes : num_all_vidmodes;
+}
+
+/* ========================================================================
+   zusätzliche funktionen... alles noch nicht final
+   ======================================================================== 
+*/
+void I_RequestConGraphics(void)
+{		
+    modenum_t mn = vid.modenum;
+		vmode_t     *pv;
+
+    GenPrintf( EMSG_ver, "I_RequestConGraphics...\n");
+	  GenPrintf( EMSG_ver, "I_RequestConGraphics [ Mode: %d ]\n",mn.index);
+		
+		if (mn.index==1)
+    {
+			// Refesh und nutze VGA_InitMode
+      all_vidmodes = &vgavidmodes[1];
+      mn.index=1;
+      VID_SetMode (mn);
+      pv = VID_GetModePtr(mn);
+      VID_GetModeForSize(pv->width, pv->height, 0 );
+			GenPrintf( EMSG_ver, "I_RequestConGraphics [ %dx%d NAME:%s ]\n",pv->width,pv->height,pv->name);
+    }
+}
+
+static
+int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
+{
+    __dpmi_regs   regs;
+
+    if (!VID_FreeAndAllocVidbuffer (lvid))
+       return FAIL_memory;  //no mem
+
+    //added:26-01-98: should clear video mem here
+
+    //set mode 0x13
+    regs.h.ah = 0;
+    regs.h.al = 0xFF;//0x108/*0x13*/; // Benutze 0x108 (640x480 Textmodus als Start)
+		regs.h.al +=0x9;
+    __dpmi_int(0x10, &regs);
+
+    // here it is the standard VGA 64k window, not an LFB
+    // (you could have 320x200x256c with LFB in the vesa modes)
+    lvid->direct = (byte *) real2ptr (0xa0000);
+    lvid->numpages = 1;
+    lvid->bytepp = currentmode_p->bytesperpixel+1;
+
+    return 1;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1326 2017-05-23 14:30:32Z wesleyjohnson $
+// $Id: g_game.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -261,8 +261,15 @@ byte  EN_strife;
 byte  EN_variable_friction;  // Boom demo flag, Heretic, and Legacy.
 byte  EN_pushers;
 byte  EN_skull_bounce_fix;  // !comp[comp_soul]
+// MBF  (1998-2000)
+byte  EN_mbf_pursuit;   // !comp[comp_pursuit]
+fixed_t EV_mbf_distfriend;
+#ifdef DOGS
+byte  EN_mbf_dogs;
+byte  EN_mbf_dog_jumping;
+#endif
 // Heretic, Hexen
-byte  EN_inventory;   // Heretic, Hexen
+byte  EN_inventory;
 
 
 language_t      language = english;          // Language.
@@ -2456,21 +2463,35 @@ static
 void G_demo_defaults( void )
 {
     friction_model = FR_orig;
+    monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
+    voodoo_mode = VM_vanilla;
     cv_solidcorpse.EV = 0;
     cv_instadeath.EV = 0;  // Die
     cv_monstergravity.EV = 0;
     cv_doorstuck.EV = 0;  // none
     cv_monbehavior.EV = 0;  // Vanilla
     cv_monsterfriction.EV = 0; // Vanilla
-    voodoo_mode = VM_vanilla;
-    monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
     EN_skull_bounce_fix = 0;  // Vanilla and DoomLegacy < 1.47
-   
+
     // Boom
     cv_rndsoundpitch.EV = EN_boom;  // normal in Boom, calls M_Random
    
     EN_variable_friction = EN_boom;
     EN_pushers = EN_boom;
+
+    // MBF
+    cv_mbf_dropoff.EV = EN_mbf;
+    cv_mbf_falloff.EV = EN_mbf;
+    cv_mbf_monster_avoid_hazard.EV = EN_mbf;
+    cv_mbf_monster_backing.EV = EN_mbf;
+    cv_mbf_pursuit.EV = EN_mbf;
+    cv_mbf_staylift.EV = EN_mbf;
+    cv_mbf_help_friend.EV = EN_mbf;
+    cv_mbf_monkeys.EV = EN_mbf;
+#ifdef DOGS
+    cv_mbf_dogs.EV = EN_mbf;
+    cv_mbf_dog_jumping.EV = EN_mbf;
+#endif
 
 #ifdef DOORDELAY_CONTROL
     adj_ticks_per_sec = 35; // default
@@ -2487,6 +2508,8 @@ void G_restore_user_settings( void )
 #ifdef DOORDELAY_CONTROL
     cv_doordelay.EV = 255;
 #endif
+
+    cv_mbf_distfriend.EV = ~cv_mbf_distfriend.value;  // forced mismatch
 
     // Restore all modifed cvar
     CV_Restore_User_Settings();  //  Set EV = value
@@ -2846,9 +2869,29 @@ void G_BeginRecording (void)
     *demo_p++ = cv_monbehavior.value;
     *demo_p++ = cv_doorstuck.value;
     *demo_p++ = cv_monstergravity.value;
+    // Boom and MBF derived controls.
+    *demo_p++ = cv_monster_remember.value;
+    *demo_p++ = cv_weapon_recoil.value;
+    *demo_p++ = cv_mbf_dropoff.value;
+    *demo_p++ = cv_mbf_falloff.value;
+    *demo_p++ = cv_mbf_pursuit.value;
+    *demo_p++ = cv_mbf_monster_avoid_hazard.value;
+    *demo_p++ = cv_mbf_monster_backing.value;
+    *demo_p++ = cv_mbf_staylift.value;
+    *demo_p++ = cv_mbf_help_friend.value;
+    *demo_p++ = (cv_mbf_distfriend.value >> 8);  // MSB
+    *demo_p++ = cv_mbf_distfriend.value & 0x0F;  // LSB
+    *demo_p++ = cv_mbf_monkeys.value;
+#ifdef DOGS
+    *demo_p++ = cv_mbf_dogs.value;
+    *demo_p++ = cv_mbf_dog_jumping.value;
+#else
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+#endif
     
     // empty space
-    for( i=10; i<32; i++ )  *demo_p++ = 0;
+    for( i=24; i<32; i++ )  *demo_p++ = 0;
 
     *demo_p++ = 0x55;   // Sync mark, start of data
     memset(oldcmd,0,sizeof(oldcmd));
@@ -2973,6 +3016,15 @@ void G_DoPlayDemo (char *defdemoname)
         // maybe DL header on old demo
         if( demoversion < 111 )  goto broken_header;
         if( demoversion < 143 )  demo144_format = 0;
+        // [WDJ] enable of "Marine's Best Friend" feature emulation
+        EN_boom = 1;
+        EN_mbf = (demoversion >= VERSION147);
+    }
+    else if( demoversion >= 111 && demoversion <= 143 )
+    {
+        // Older DoomLegacy Demos
+        EN_boom = (demoversion >= 129);
+        EN_mbf = 0; // legacy demos before mbf
     }
 #ifdef SHOW_DEMOVERSION
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
@@ -3120,6 +3172,7 @@ void G_DoPlayDemo (char *defdemoname)
         // [6] respawn
         // [7] fast monsters
         // [8] no monsters
+        cv_monster_remember.EV = demo_p[0];
         EN_variable_friction = demo_p[1];
         cv_weapon_recoil.EV = demo_p[2];
         EN_pushers = demo_p[3];
@@ -3156,11 +3209,26 @@ void G_DoPlayDemo (char *defdemoname)
             // monster_infight from demo is 0/1
             // Feature enables 1=ON, Do not notify NET
             cv_monbehavior.EV = demo_p[14]? 2:5; // (infight:off)
+#ifdef DOGS	   
+            cv_mbf_dogs.EV = demo_p[15];
+#endif
+            EV_mbf_distfriend = ((demo_p[18]<<8) + demo_p[19]) << FRACBITS;
+            cv_mbf_monster_backing.EV = demo_p[20];
+            cv_mbf_monster_avoid_hazard.EV = demo_p[21];
             // Pass EN_monster_friction, and flag cv_monsterfriction
             EN_monster_friction = demo_p[22];
             cv_monsterfriction.EV = 0x80;  // MBF, Vanilla;
-            // comp vectors 1=old demo compatibility
+            cv_mbf_help_friend.EV = demo_p[23];
+#ifdef DOGS
+            cv_mbf_dog_jumping.EV = demo_p[24];
+#endif
+            cv_mbf_monkeys.EV = demo_p[25];
+            // comp vectors at [26],  1=old demo compatibility
+            cv_mbf_dropoff.EV = ! demo_p[26 + 2];
+            cv_mbf_falloff.EV = ! demo_p[26 + 9];
+            cv_mbf_pursuit.EV = ! demo_p[26 + 12];
             cv_doorstuck.EV = demo_p[26 + 13]? 0:2; // Vanilla : MBF
+            cv_mbf_staylift.EV = ! demo_p[26 + 14];
             EN_skull_bounce_fix = ! demo_p[26 + 23];  // !comp[comp_soul]
         }
         else
@@ -3168,7 +3236,9 @@ void G_DoPlayDemo (char *defdemoname)
             // Boom, not MBF
             cv_doorstuck.EV = EN_boom;  // 1=Boom
         }
+
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
+
         // byte: player[1..32] present boolean
         // Boom saved room for 32 players even though only supported 4
         for (i=0 ; i<32 ; i++) {
@@ -3263,6 +3333,26 @@ void G_DoPlayDemo (char *defdemoname)
         cv_monbehavior.EV = *demo_p++;
         cv_doorstuck.EV = *demo_p++;
         cv_monstergravity.EV = *demo_p++;
+        // Boom and MBF derived controls.
+        cv_monster_remember.EV = *demo_p++;
+        cv_weapon_recoil.EV = *demo_p++;
+        cv_mbf_dropoff.EV = *demo_p++;
+        cv_mbf_falloff.EV = *demo_p++;
+        cv_mbf_pursuit.EV = *demo_p++;
+        cv_mbf_monster_avoid_hazard.EV = *demo_p++;
+        cv_mbf_monster_backing.EV = *demo_p++;
+        cv_mbf_staylift.EV = *demo_p++;
+        cv_mbf_help_friend.EV = *demo_p++;
+        EV_mbf_distfriend = ((demo_p[0]<<8) + demo_p[1]) << FRACBITS;
+        demo_p += 2;
+        cv_mbf_monkeys.EV = *demo_p++;
+#ifdef DOGS
+        cv_mbf_dogs.EV = *demo_p++;
+        cv_mbf_dog_jumping.EV = *demo_p++;
+#else
+        demo_p++;
+        demo_p++;
+#endif
 
         demo_p = demo_p_next;  // skip rest of settings
         if( *demo_p++ != 0x55 )  goto broken_header;  // Sync mark, start of data

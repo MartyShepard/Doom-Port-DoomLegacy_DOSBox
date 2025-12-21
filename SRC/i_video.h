@@ -81,6 +81,7 @@ int        BitsColor; // Definiert die Bit Palette
 extern void vsync(void);        //Allegro
 extern void _vsync_in(void);    //Allegro
 extern void _vsync_out_h(void); //Allegro
+void I_RequestConGraphics();
 #endif
 // added for OpenGL gamma correction
 extern consvar_t cv_grgammared;

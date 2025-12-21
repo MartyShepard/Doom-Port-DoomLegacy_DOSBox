@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01328 ]: w107 mbf controls
+          DOS: 320x200 and noconfig fixed
+					
 [01327 ]: w107 mbf mobj
 [01326 ]: w107 skull bounce					
 [01325 ]: w107 think mbf

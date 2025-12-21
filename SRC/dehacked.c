@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: dehacked.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -539,6 +539,7 @@ flag_name_t  BEX_flag_name_table[] =
   {"SKULLFLY",   BF1, MF_SKULLFLY }, // Flying skulls, neither a cacodemon nor a missile.
   {"NOTDMATCH",  BF1, MF_NOTDMATCH }, // Not spawned in DM (keycards etc.)
   // 4 bits of player color translation (gray/red/brown)
+  // PrBoom, MBF, EternityEngine have only 2 bits of color translation.
   {"TRANSLATION1", BFT, (1<<MFT_TRANSSHIFT) },  // Boom
   {"TRANSLATION2", BFT, (2<<MFT_TRANSSHIFT) },  // Boom
   {"TRANSLATION3", BFT, (4<<MFT_TRANSSHIFT) },
@@ -548,10 +549,9 @@ flag_name_t  BEX_flag_name_table[] =
   // Boom/BEX
   {"TRANSLUCENT", BF1, MF_TRANSLUCENT },  // Boom translucent
   // MBF/Prboom Extensions
-//  {"TOUCHY",  BFC_x, MF_TOUCHY }, // (MBF) Reacts upon contact
-  {"BOUNCES",  BF2, MF2_FLOORBOUNCE }, // (MBF) Bounces off walls, etc.
-      //  heretic bounce is approximation
-//  {"FRIEND",  BFC_x, MF_FRIEND }, // (MBF) Friend to player (dog, etc.)
+  {"TOUCHY",  BF1, MF_TOUCHY }, // (MBF) Reacts upon contact
+  {"BOUNCES", BF1, MF_BOUNCES },  // (MBF) Bounces off walls, etc.
+  {"FRIEND",  BF1, MF_FRIEND }, // (MBF) Friend to player (dog, etc.)
 
   {"MF2CLEAR",       BF2x, 0 }, // clear MF2 bits, no bits set
   // DoomLegacy 1.4x Extensions

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1324 2017-05-23 14:28:05Z wesleyjohnson $
+// $Id: p_fab.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -347,6 +347,19 @@ void D_Register_MiscCommands (void)
     CV_RegisterVar (&cv_doorstuck);
     CV_RegisterVar (&cv_pickupflash);
     CV_RegisterVar (&cv_weapon_recoil);
+    // MBF
+    CV_RegisterVar (&cv_mbf_monster_avoid_hazard);
+    CV_RegisterVar (&cv_mbf_monster_backing);
+    CV_RegisterVar (&cv_mbf_dropoff);
+    CV_RegisterVar (&cv_mbf_pursuit);
+#ifdef DOGS
+    CV_RegisterVar (&cv_mbf_dogs);
+    CV_RegisterVar (&cv_mbf_dog_jumping);
+#endif
+    CV_RegisterVar (&cv_mbf_distfriend);
+    CV_RegisterVar (&cv_mbf_staylift);
+    CV_RegisterVar (&cv_mbf_help_friend);
+    CV_RegisterVar (&cv_mbf_monkeys);
 }
 
 void  DemoAdapt_p_fab(void)  // local enables of p_fab

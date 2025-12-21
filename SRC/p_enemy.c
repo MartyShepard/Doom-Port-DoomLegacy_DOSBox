@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: p_enemy.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -91,8 +91,9 @@
 
 #include "hardware/hw3sound.h"
 
-void A_Fall (mobj_t *actor);
-void FastMonster_OnChange(void);
+void A_Fall(mobj_t *actor);
+static void FastMonster_OnChange(void);
+void A_FaceTarget(mobj_t* actor);
 void CV_monster_OnChange(void);
 
 // enable the solid corpses option : still not finished
@@ -171,7 +172,7 @@ static dirtype_t diags[] =
 
 
 
-
+static
 void FastMonster_OnChange(void)
 {
 static boolean fast=false;
@@ -228,6 +229,51 @@ static const struct
 }
 
 
+// MBF controls
+static void mbf_OnChange( void );
+
+
+consvar_t cv_monster_remember =
+  {"mon_remember","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // Boom monsters_remember
+
+consvar_t cv_mbf_dropoff = {"dropoff","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // !comp[comp_dropoff]
+consvar_t cv_mbf_falloff = {"falloff","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // !comp[comp_falloff]
+
+consvar_t cv_mbf_monster_avoid_hazard =
+  {"mon_avoidhazard","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF monster_avoid_hazards
+consvar_t cv_mbf_monster_backing =
+  {"mon_backing","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF monster_backing
+consvar_t cv_mbf_pursuit = {"pursuit","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // !comp[comp_pursuit]
+consvar_t cv_mbf_distfriend =
+  {"distfriend","128", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, mbf_OnChange};
+  // MBF distfriend
+consvar_t cv_mbf_staylift = {"staylift","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // !comp[comp_staylift]
+consvar_t cv_mbf_help_friend = {"helpfriend","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF help_friends
+consvar_t cv_mbf_monkeys = {"monkeys","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF monkeys
+#ifdef DOGS   
+consvar_t cv_mbf_dogs = {"dogs","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF dogs
+consvar_t cv_mbf_dog_jumping = {"dogjump","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF dog_jumping
+#endif
+
+static void mbf_OnChange( void )
+{
+    // Demo sets EV_mbf_distfriend.
+    EV_mbf_distfriend = cv_mbf_distfriend.value << FRACBITS;  // to fixed_t
+}
+
+
+
 // Infight settings translated to INFT_ values.  MBF demo sets infight.
 byte  monster_infight; //DarkWolf95:November 21, 2003: Monsters Infight!
 byte  monster_infight_deh; // DEH input.
@@ -258,6 +304,7 @@ static const byte friction_table[] =
   // in P_Thrust (so monsters slip only on ice sector)
   0,   // Heretic
 };
+
 
 // [WDJ] Monster friction, doorstuck, infight
 void CV_monster_OnChange(void)

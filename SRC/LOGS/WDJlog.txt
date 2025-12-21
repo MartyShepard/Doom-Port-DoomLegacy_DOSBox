@@ -5996,4 +5996,9 @@ Old size = 208 bytes.
 With MBF fields = 224 bytes.
 Reorganized with MBF fields = 212 bytes.
 
+*** W107_mbf_controls
+patchfile = w107_24_mbf_controls.patch
+- commit revision 1328
+MBF enables.
+The MBF option controls, cv vars.
 

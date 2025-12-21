@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1327"
+#define SVN_REV "1328"
 #endif
 
 // Version number: major.minor.revision
@@ -2639,6 +2639,13 @@ restart_command:
         I_Error ( "Shutdown due to fatal error.\n" );
     }
 
+#if defined( __DJGPP__ )				
+		    I_RequestConGraphics();
+        //SCR_SetMode();  // change video mode
+
+        //SCR_Recalc();				
+#endif
+
     //---------------------------------------------------- READY SCREEN
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
@@ -2681,10 +2688,10 @@ restart_command:
         // setup loading screen
         CONS_Printf("RequestFullGraphics...\n");
         I_RequestFullGraphics( cv_fullscreen.value );
-#endif			
+#endif
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
-        V_ClearDisplay();
+        V_ClearDisplay();	
 
 #ifdef HWRENDER
         EN_HWR_flashpalette = 0;  // software and default
@@ -2694,7 +2701,7 @@ restart_command:
         // we need the font of the console
         CONS_Printf(text[HU_INIT_NUM]);
         // switch off use_font1 when hu_font is loaded
-        HU_Init();  // dependent upon dedicated and raven
+        HU_Init();  // dependent upon dedicated and raven				
         CON_VideoInit();  // dependent upon vid, hu_font
         EOUT_flags = EOUT_log | EOUT_con;
     }
