@@ -6008,3 +6008,8 @@ patchfile = w107_25_mbf_move.patch
 The bulk of the MBF TOUCHY, BOUNCES, FRIEND code.
 MBF movement and enemy interactions.
 
+*** W107_mbf_lines
+patchfile = w107_24_mbf_lines.patch
+- commit revision 1330
+MBF linedef and switch changes.
+

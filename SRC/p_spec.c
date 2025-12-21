@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_spec.c 1330 2017-05-23 14:36:40Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -354,8 +354,6 @@ void P_InitPicAnims (void)
       lastanim->basepic = R_FlatNumForName (animdefs[i].startname);
     }
 
-
-//    lastanim->istexture = (boolean)animdefs[i].istexture; // != 0
     lastanim->istexture = ( animdefs[i].istexture != 0 ); // char to boolean
     lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
 
@@ -899,15 +897,23 @@ sector_t * P_FindModelFloorSector(fixed_t floordestheight, int secnum)
 
   sec = &sectors[secnum];
   linecount = sec->linecount;
-  for (i = 0; i < (!EN_boom && sec->linecount<linecount?
+  for (i = 0; i < ((!EN_boom && sec->linecount<linecount)?
                    sec->linecount : linecount); i++)
   {
     if ( twoSided(secnum, i) )
     {
+#if 1
+      // [WDJ] Improved execution, no division needed.
+      sec = getSector(secnum,i,
+                     ((getSide(secnum,i,0)->sector == &sectors[secnum])? 1:0 )
+		     );
+#else
+      // Boom original uses unnecessary division.
       if (getSide(secnum,i,0)->sector-sectors == secnum)
           sec = getSector(secnum,i,1);
       else
           sec = getSector(secnum,i,0);
+#endif
 
       if (sec->floorheight == floordestheight)
         return sec;
@@ -1225,14 +1231,17 @@ oof_blocked:
 //
 // Passed a linedef special class (floor, ceiling, lighting) and a sector
 // returns whether the sector is already busy with a linedef special of the
-// same class. If old demo compatibility true, all linedef special classes
-// are the same.
+// same class.
 //
 //
 boolean P_SectorActive( sector_special_e spt, sector_t *sec)
 {
   if (!EN_boom)
+  {
+    // For old demo compatibility, all linedef special classes
+    // are the same.
     return sec->floordata || sec->ceilingdata || sec->lightingdata;
+  }
   else
   {
     switch (spt)
@@ -1263,8 +1272,12 @@ boolean P_SectorActive( sector_special_e spt, sector_t *sec)
 //
 int P_CheckTag(line_t *line)
 {
+  // Only called when EN_boom.
+#if 0
+  // This test is extraneous, but if taken out adds 2K to the size ?
   if (!EN_boom)
     return 1;
+#endif
 
   if (line->tag)
     return 1;
@@ -1334,8 +1347,14 @@ int P_CheckTag(line_t *line)
     case 279:   // G1
       return 1;   // zero tag allowed
 
-    case 105: if( gamemode == heretic )
-                  return 1;
+#if 0
+    // Heretic cannot call this function.
+    // Heretic 105 does not use tag.
+    // Boom 105 does not allow zero tag, return 0.
+    case 105:
+      if( EN_heretic )
+        return 1;
+#endif
 
     default:
       break;
@@ -1589,7 +1608,7 @@ P_ActivateCrossedLine ( line_t*       line,
     // Note: could use some const's here.
     switch (line->special)
     {
-        // W1 TRIGGERS, from here to RETRIGGERS.
+        // W1 TRIGGERS, mostly
       case 2:
         // Open Door
         if(EV_DoDoor( line, VD_dooropen, VDOORSPEED) )  goto W1clear;
@@ -1693,10 +1712,30 @@ P_ActivateCrossedLine ( line_t*       line,
         goto W1fail;
 
       case 40:
-        // RaiseCeilingLowerFloor
-        if(EV_DoCeiling( line, CT_raiseToHighest ) || EV_DoFloor( line, FT_lowerFloorToLowest ) ||
-           !EN_boom)  goto W1clear;
-        goto W1fail;
+        // RaiseCeilingLowerFloor, but actually is RaiseCeilingToHighest
+	if( EN_boom )
+        {
+	    // Highest Neighbor ceiling, slow.
+            if(EV_DoCeiling( line, CT_raiseToHighest ) )  goto W1clear;
+            // Boom does not execute EV_DoFloor() here because for Boom it
+            // would succeed, making this linedef behave different than Doom.
+            // Boom can have simultaneous ceiling and floor operations.
+        }
+	else
+        {
+            // Doom, Heretic	   
+            EV_DoCeiling( line, CT_raiseToHighest );
+#if 0
+            // The docs do not mention a floor movement, but this code is
+            // in prboom and chocolate-doom.
+	    // Because the ceiling just created a thinker for all the same
+            // sectors, this floor operation will always be ignored.
+            // Disabled this code to ensure that it stays non-operative.
+	    EV_DoFloor( line, FT_lowerFloorToLowest );
+#endif
+            goto W1clear;
+        }
+        break;
 
       case 44:
         // Ceiling Crush
@@ -1819,10 +1858,11 @@ P_ActivateCrossedLine ( line_t*       line,
         break;
 
       // once-only triggers
-      case 275: //(1sided)
+      case 275: //(1sided, W1)
         if(side) break;
+        // Fall-through to RunScript (W1)
 
-      case 274: //(2sided)
+      case 274: //(2sided, W1)
         T_RunScript(line->tag, thing);
         goto W1clear;  // clear trigger
 
@@ -2282,10 +2322,9 @@ W1clear:
 // P_ShootSpecialLine - IMPACT SPECIALS
 // Called when a thing shoots a special line.
 //
-void P_ShootSpecialLine ( mobj_t*       thing,
-                          line_t*       line )
+void P_ShootSpecialLine ( mobj_t* thing, line_t* line )
 {
-    int         ok;
+    int  ok;
 
 
     //SoM: 3/7/2000: Another General type check
@@ -2412,13 +2451,8 @@ void P_ShootSpecialLine ( mobj_t*       thing,
             return;  // monster not allowed
     }
 
-#if 1   
-    if(!P_CheckTag(line))
-      return;
-#else
     if(EN_boom && !P_CheckTag(line))
       return;
-#endif
 
     switch(line->special)
     {
@@ -2442,8 +2476,8 @@ void P_ShootSpecialLine ( mobj_t*       thing,
         break;
 
       //SoM: FraggleScript
-      case 278:
-      case 279:
+      case 278:  // (GR)
+      case 279:  // (G1)
         T_RunScript(line->tag, thing);
         if(line->special == 279) line->special = 0;       // clear if G1
         break;
@@ -2516,8 +2550,10 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 
         case 16:
           // SUPER HELLSLIME DAMAGE
+          // 10/20 unit damage per 31 ticks.
         case 4:
           // STROBE HURT
+          // 10/20 unit damage, with blinking warning light.
           if (!player->powers[pw_ironfeet]  // rad suit is intermittant protection
               || (P_Random()<5) )  // pr_slimehurt
           {
@@ -2964,6 +3000,7 @@ void P_SpawnSpecials (void)
 
 #if 0
     // [WDJ] At one time this may have been important, but is not used now.
+    // Appears in prboom.
     int episode = 1;
     if (W_CheckNumForName("texture2") >= 0)
         episode = 2;
