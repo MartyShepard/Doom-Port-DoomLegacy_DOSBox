@@ -2581,7 +2581,8 @@ restart_command:
    
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
-#if defined( __DJGPP__ )				
+#if defined( __DJGPP__ )
+        V_ClearDisplay();		
 		    I_RequestConGraphics();
 #endif  
 #ifdef LAUNCHER   

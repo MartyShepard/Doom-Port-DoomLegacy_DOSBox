@@ -6050,3 +6050,10 @@ EN_doorlight : A Boom comp, but affects an MBF light effect.
 patchfile = w107_30_mbf_light.patch
 - commit revision 1334
 Opening doors generate the MBF gradual light effect.
+
+*** W107_mbf_telefrag
+patchfile = w107_31_mbf_telefrag.patch
+- commit revision 1335
+Implement the MBF telefrag which expands the determination of who
+can telefrag to include Bosses on any map.
+

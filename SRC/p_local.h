@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: p_local.h 1335 2017-05-30 15:38:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -324,7 +324,7 @@ boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y, byte allowdropoff);
 boolean P_CheckCrossLine (mobj_t* thing, fixed_t x, fixed_t y);
 
-boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
+boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y, byte stomp);
 void    P_SlideMove (mobj_t* mo);
 
 boolean P_CheckSight (mobj_t* t1, mobj_t* t2);
@@ -414,6 +414,7 @@ extern byte  EN_doorlight;
 // MBF
 extern fixed_t EV_mbf_distfriend;
 extern byte  EN_mbf_speed;
+extern byte  EN_mbf_telefrag;
 
 // Heretic, Hexen
 extern byte  EN_inventory;   // Heretic, Hexen

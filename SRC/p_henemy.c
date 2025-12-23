@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_henemy.c 1335 2017-05-30 15:38:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -714,7 +714,7 @@ void P_DSparilTeleport(mobj_t *actor)
     prev_x = actor->x;
     prev_y = actor->y;
     prev_z = actor->z;
-    if(P_TeleportMove(actor, x, y))
+    if(P_TeleportMove(actor, x, y, true)) // stomp uses MF2_TELESTOMP
     {
         mo = P_SpawnMobj(prev_x, prev_y, prev_z, MT_SOR2TELEFADE);
         S_StartObjSound(mo, sfx_telept);

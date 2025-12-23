@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: g_game.c 1335 2017-05-30 15:38:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -267,6 +267,7 @@ byte  EN_blazing_double_sound; // comp[comp_blazing]
 byte  EN_doorlight; // !comp[comp_doorlight]
 // MBF  (1998-2000)
 byte  EN_mbf_pursuit;   // !comp[comp_pursuit]
+byte  EN_mbf_telefrag;  // !comp[comp_telefrag]
 fixed_t EV_mbf_distfriend;
 #ifdef DOGS
 byte  EN_mbf_dogs;
@@ -2541,6 +2542,7 @@ void G_gamemode_EN_defaults( void )
     EN_doorlight = EN_boom;
     EN_blazing_double_sound = 0;
     // MBF
+    EN_mbf_telefrag = EN_mbf | EN_heretic;
 }
 
 
@@ -3365,6 +3367,7 @@ void G_DoPlayDemo (char *defdemoname)
             cv_mbf_monkeys.EV = demo_p[25];
             // comp vector at [26],  1=old demo compatibility
             byte * comp = demo_p + 26;
+            EN_mbf_telefrag = ! comp[comp_telefrag];
             cv_mbf_dropoff.EV = ! comp[comp_dropoff];
             EN_blazing_double_sound = comp[comp_blazing];  // Vanilla
             EN_doorlight = ! comp[comp_doorlight];
