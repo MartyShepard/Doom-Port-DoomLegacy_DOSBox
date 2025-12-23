@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: g_game.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1675,15 +1675,15 @@ boolean G_DeathMatchSpawnPlayer (int playernum)
         return false;
     }
 
-    if(demoversion<123)
-        n=20;  // Doom
+    if(demoversion<123 || demoversion>=200)
+        n=20;  // Doom, Boom
     else
         n=64;
 
     // Random select a deathmatch spot.  Try n times for an unoccupied one.
     for (j=0 ; j<n ; j++)
     {
-        i = P_Random() % numdmstarts;
+        i = PP_Random(pr_dmspawn) % numdmstarts;
         if (G_Player_SpawnSpot(playernum, deathmatchstarts[i]) )
             return true;
     }

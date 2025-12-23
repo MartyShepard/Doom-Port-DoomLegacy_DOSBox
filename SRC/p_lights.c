@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_lights.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,7 +63,7 @@ void T_FireFlicker (fireflicker_t* flick)
     if (--flick->count)
         return;
 
-    amount = (P_Random()&3)*16;
+    amount = (PP_Random(pr_lights)&3)*16;
 
     if (flick->sector->lightlevel - amount < flick->minlight)
         flick->sector->lightlevel = flick->minlight;
@@ -116,12 +116,12 @@ void T_LightFlash (lightflash_t* flash)
     if (flash->sector->lightlevel == flash->maxlight)
     {
         flash-> sector->lightlevel = flash->minlight;
-        flash->count = (P_Random()&flash->mintime)+1;
+        flash->count = (PP_Random(pr_lights)&flash->mintime)+1;
     }
     else
     {
         flash-> sector->lightlevel = flash->maxlight;
-        flash->count = (P_Random()&flash->maxtime)+1;
+        flash->count = (PP_Random(pr_lights)&flash->maxtime)+1;
     }
 
 }
@@ -152,7 +152,7 @@ void P_SpawnLightFlash (sector_t* sector)
     flash->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel);
     flash->maxtime = 64;
     flash->mintime = 7;
-    flash->count = (P_Random()&flash->maxtime)+1;
+    flash->count = (PP_Random(pr_lights)&flash->maxtime)+1;
 }
 
 
@@ -214,7 +214,7 @@ P_SpawnStrobeFlash( sector_t* sector,
     sector->special &= ~31; //SoM: 3/7/2000: Clear non-generalized sector type
 
     if (!inSync)
-        flash->count = (P_Random()&7)+1;
+        flash->count = (PP_Random(pr_lights)&7)+1;
     else
         flash->count = 1;
 }

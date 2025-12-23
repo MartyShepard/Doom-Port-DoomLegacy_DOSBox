@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_inter.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1845,7 +1845,7 @@ void P_KillMobj ( mobj_t*  target,
     else
         P_SetMobjState (target, target->info->deathstate);
 
-    target->tics -= P_Random()&3;
+    target->tics -= PP_Random(pr_killtics)&3;
 
     if (target->tics < 1)
         target->tics = 1;

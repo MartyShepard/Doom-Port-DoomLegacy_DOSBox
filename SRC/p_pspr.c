@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_pspr.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -870,7 +870,7 @@ void A_FireShotgun2 ( player_t*     player,
         {
             // Old legacy order, slope, damage, angle
             slope = bulletslope + (P_SignedRandom()<<5);
-            damage = 5*(P_Random ()%3+1);
+            damage = 5*(P_Random()%3+1);
             angle = pmo->angle + (P_SignedRandom() << 19);
         }
         else

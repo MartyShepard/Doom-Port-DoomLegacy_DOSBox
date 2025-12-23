@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_map.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -579,7 +579,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     // check for skulls slamming into things
     if (tm_flags & MF_SKULLFLY)
     {
-        damage = ((P_Random()%8)+1)*tm_thing->info->damage;
+        damage = ((PP_Random(pr_skullfly)%8)+1)*tm_thing->info->damage;
 
         P_DamageMobj (thing, tm_thing, tm_thing, damage);
 
@@ -664,7 +664,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         }
 
         // damage / explode
-        damage = ((P_Random()%8)+1)*tm_thing->info->damage;
+        damage = ((PP_Random(pr_damage)%8)+1)*tm_thing->info->damage;
         if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage)
             && (thing->flags & MF_NOBLOOD)==0
             && demoversion>=129
@@ -2942,8 +2942,8 @@ boolean PIT_ChangeSector (mobj_t*  thing)
                               thing->y,
                               thing->z + thing->height/2, MT_BLOOD);
             
-            mo->momx  = P_SignedRandom()<<12;
-            mo->momy  = P_SignedRandom()<<12;
+            mo->momx  = PP_SignedRandom(pr_crush)<<12;
+            mo->momy  = PP_SignedRandom(pr_crush)<<12;
         }
     }
 

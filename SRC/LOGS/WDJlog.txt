@@ -6028,3 +6028,10 @@ This only requires that the sector x,y,z and the mobj x,y,z be
 structured the same.
 The mobj is passed separatly so that its attributes can be accessed for
 mobj specific tests.
+
+*** W107_boom_PP
+patchfile = w107_28_boom_PP.patch
+- commit revision 1332
+Change P_Random calls that PrBoom has with a parameter to PP_Random
+calls that include that parameter.  At this time this only documents
+the Boom P_Random parameter and is implemented as a plain P_Random call.

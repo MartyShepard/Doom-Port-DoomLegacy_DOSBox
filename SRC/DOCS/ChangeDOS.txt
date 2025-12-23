@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01332 ]: w107 boom PP_Random
 [01331 ]: w107 mbf sound
           DOS: 320x200 and noconfig or specified resolutiion and bpp fixed
 					

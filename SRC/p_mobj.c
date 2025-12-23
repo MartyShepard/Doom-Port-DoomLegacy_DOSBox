@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_mobj.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -383,7 +383,7 @@ void P_ExplodeMissile(mobj_t * mo)
 
     if (EN_doom_etc)
     {
-        mo->tics -= P_Random() & 3;
+        mo->tics -= PP_Random(pr_explode) & 3;
 
         if (mo->tics < 1)
             mo->tics = 1;
@@ -1842,7 +1842,7 @@ void P_MobjThinker(mobj_t * mobj)
         if (leveltime % (32 * NEWTICRATERATIO))
             goto done;
 
-        if (P_Random() > 4)
+        if( PP_Random(pr_respawn) > 4 )
             goto done;
 
         P_NightmareRespawn(mobj);
@@ -1904,8 +1904,8 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     if (gameskill != sk_nightmare)
         mobj->reactiontime = info->reactiontime;
 
-    if (demoversion < 129 && mobj->type != MT_CHASECAM)
-        mobj->lastlook = P_Random() % MAXPLAYERS;
+    if( (demoversion < 129 || demoversion >= 200) && mobj->type != MT_CHASECAM)
+        mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;
     else
         mobj->lastlook = -1;    // stuff moved in P_enemy.P_LookForPlayer
 
@@ -2706,11 +2706,11 @@ spawnit:
     mobj->spawnpoint = mthing;
 
     // Seed random starting index for bobbing motion
-    if (mobj->flags2 & MF2_FLOATBOB)
+    if( EN_heretic && (mobj->flags2 & MF2_FLOATBOB) )
         mobj->health = P_Random();
 
     if (mobj->tics > 0)
-        mobj->tics = 1 + (P_Random() % mobj->tics);
+        mobj->tics = 1 + (PP_Random(pr_spawnthing) % mobj->tics);
 
     if (EN_mbf
         && !(mobj->flags & MF_FRIEND)
@@ -2821,7 +2821,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 {
     mobj_t *puff;
 
-    z += P_SignedRandom() << 10;
+    z += PP_SignedRandom(pr_spawnpuff) << 10;
 
     if (EN_heretic)
     {
@@ -2848,7 +2848,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 
         puff = P_SpawnMobj(x, y, z, MT_PUFF);
         puff->momz = FRACUNIT;
-        puff->tics -= P_Random() & 3;
+        puff->tics -= PP_Random(pr_spawnpuff) & 3;
 
         if (puff->tics < 1)
             puff->tics = 1;
@@ -3012,7 +3012,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
 {
     mobj_t *th;
 
-    z += P_SignedRandom() << 10;
+    z += PP_SignedRandom(pr_spawnblood) << 10;
     th = P_SpawnMobj(x, y, z, MT_BLOOD);
     if (demoversion >= 128)
     {
@@ -3020,7 +3020,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
         th->momy = P_SignedRandom() << 12;      //faB:19jan99
     }
     th->momz = FRACUNIT * 2;
-    th->tics -= P_Random() & 3;
+    th->tics -= PP_Random(pr_spawnblood) & 3;
 
     if (th->tics < 1)
         th->tics = 1;
@@ -3107,7 +3107,7 @@ boolean P_CheckMissileSpawn(mobj_t * th)
 {
     if (EN_doom_etc)
     {
-        th->tics -= P_Random() & 3;
+        th->tics -= PP_Random(pr_missile) & 3;
         if (th->tics < 1)
             th->tics = 1;
     }
@@ -3213,7 +3213,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
             if (EN_heretic)
                 ang += P_SignedRandom() << 21;
             else
-                ang += P_SignedRandom() << 20;
+                ang += PP_SignedRandom(pr_shadow) << 20;
         }
 
         th->angle = ang;

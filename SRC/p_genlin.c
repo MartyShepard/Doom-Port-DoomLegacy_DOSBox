@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_genlin.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -520,7 +520,7 @@ manual_lift:
         plat->high = P_FindHighestFloorSurrounding(sec);
         if (plat->high < sec->floorheight)
           plat->high = sec->floorheight;
-        plat->status = P_Random()&1;
+        plat->status = PP_Random(pr_genlift)&1;
         break;
       default:
         break;
