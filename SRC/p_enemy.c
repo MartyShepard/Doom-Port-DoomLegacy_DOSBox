@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_enemy.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1818,7 +1818,7 @@ void A_Look (mobj_t* actor)
          || (actor->flags2&MF2_BOSS))
         {
             // full volume
-            S_StartSound (NULL, sound);
+            S_StartSound(sound);
         }
         else
             S_StartScreamSound(actor, sound);
@@ -2131,7 +2131,7 @@ void A_Chase (mobj_t*   actor)
         if(actor->type == MT_WIZARD && P_Random() < 128)
             S_StartScreamSound(actor, actor->info->seesound);
         else if(actor->type == MT_SORCERER2)
-            S_StartSound(NULL, actor->info->activesound);
+            S_StartSound( actor->info->activesound );
         else
             S_StartScreamSound(actor, actor->info->activesound);
     }
@@ -2585,7 +2585,7 @@ void A_VileChase (mobj_t* actor)
                     actor->target = temp;
 
                     P_SetMobjState (actor, S_VILE_HEAL1);
-                    S_StartSound (corpsehit, sfx_slop);
+                    S_StartObjSound( corpsehit, sfx_slop );
                     info = corpsehit->info;
 
                     P_SetMobjState (corpsehit,info->raisestate);
@@ -2633,13 +2633,13 @@ void A_Fire (mobj_t* actor);
 
 void A_StartFire (mobj_t* actor)
 {
-    S_StartSound(actor,sfx_flamst);
+    S_StartObjSound(actor, sfx_flamst);
     A_Fire(actor);
 }
 
 void A_FireCrackle (mobj_t* actor)
 {
-    S_StartSound(actor,sfx_flame);
+    S_StartObjSound(actor, sfx_flame);
     A_Fire(actor);
 }
 
@@ -2715,7 +2715,7 @@ void A_VileAttack (mobj_t* actor)
     if (!P_CheckSight (actor, actor->target) )
         return;
 
-    S_StartSound (actor, sfx_barexp);
+    S_StartObjSound(actor, sfx_barexp);
     P_DamageMobj (actor->target, actor, actor, 20);
     actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
 
@@ -3072,7 +3072,7 @@ void A_Scream (mobj_t* actor)
         || actor->type == MT_CYBORG)
     {
         // full volume
-        S_StartSound (NULL, sound);
+        S_StartSound(sound);
     }
     else
         S_StartScreamSound(actor, sound);
@@ -3420,19 +3420,19 @@ void A_KeenDie (mobj_t* mo)
 
 void A_Hoof (mobj_t* mo)
 {
-    S_StartSound (mo, sfx_hoof);
+    S_StartObjSound(mo, sfx_hoof);
     A_Chase (mo);
 }
 
 void A_Metal (mobj_t* mo)
 {
-    S_StartSound (mo, sfx_metal);
+    S_StartObjSound(mo, sfx_metal);
     A_Chase (mo);
 }
 
 void A_BabyMetal (mobj_t* mo)
 {
-    S_StartSound (mo, sfx_bspwlk);
+    S_StartObjSound(mo, sfx_bspwlk);
     A_Chase (mo);
 }
 
@@ -3535,13 +3535,13 @@ void P_InitBrainTarget()
 
 void A_BrainAwake (mobj_t* mo)
 {
-    S_StartSound (NULL,sfx_bossit);
+    S_StartSound(sfx_bossit);
 }
 
 
 void A_BrainPain (mobj_t*       mo)
 {
-    S_StartSound (NULL,sfx_bospn);
+    S_StartSound(sfx_bospn);
 }
 
 
@@ -3566,7 +3566,7 @@ void A_BrainScream (mobj_t*     mo)
             th->tics = 1;
     }
 
-    S_StartSound (NULL,sfx_bosdth);
+    S_StartSound(sfx_bosdth);
 }
 
 
@@ -3624,7 +3624,7 @@ void A_BrainSpit (mobj_t*       mo)
                 ((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
         }
 
-        S_StartSound(NULL, sfx_bospit);
+        S_StartSound(sfx_bospit);
     }
 }
 
@@ -3635,7 +3635,7 @@ void A_SpawnFly (mobj_t* mo);
 // travelling cube sound
 void A_SpawnSound (mobj_t* mo)
 {
-    S_StartSound (mo,sfx_boscub);
+    S_StartObjSound(mo,sfx_boscub);
     A_SpawnFly(mo);
 }
 
@@ -3661,7 +3661,7 @@ void A_SpawnFly (mobj_t* mo)
 
     // First spawn teleport fog.
     fog = P_SpawnMobj (targ->x, targ->y, targ->z, MT_SPAWNFIRE);
-    S_StartSound (fog, sfx_telept);
+    S_StartObjSound(fog, sfx_telept);
 
     // Randomly select monster to spawn.
     r = P_Random ();

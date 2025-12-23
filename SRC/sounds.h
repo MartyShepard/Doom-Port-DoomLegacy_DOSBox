@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: sounds.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -595,9 +595,8 @@ typedef enum
 void   S_InitRuntimeSounds (void);
 // Add a new sound fx into a free sfx slot.
 // Return sfx id.
-sfxid_t  S_AddSoundFx (char *name, uint32_t flags);
+sfxid_t  S_AddSoundFx (const char *name, uint32_t flags);
 // Only can remove from sfx slots, the loadable sfx sounds.
-
 void   S_RemoveSoundFx (sfxid_t sfxid);
 
 

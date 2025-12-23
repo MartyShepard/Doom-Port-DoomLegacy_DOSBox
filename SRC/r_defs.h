@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_defs.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -203,16 +203,11 @@ typedef struct
 // Forward of LineDefs, for Sectors.
 struct line_s;
 
-// Each sector has a degenmobj_t in its center
-//  for sound origin purposes.
+// Each sector has an xyz_t in its center for sound origin purposes.
+// [WDJ] This replaces degenmobj_t, which was prone to breakage.
 // I suppose this does not handle sound from
 //  moving objects (doppler), because
 //  position is prolly just buffered, not updated.
-typedef struct
-{
-    thinker_t           thinker;        // not used for anything
-    fixed_t             x, y, z;
-} degenmobj_t;
 
 //SoM: 3/23/2000: Store fake planes in a resizable array instead of just by
 //heightsec field. Allows for multiple fake planes.
@@ -364,7 +359,7 @@ typedef struct sector_s
     int         blockbox[4];
 
     // origin for any sounds played by the sector
-    degenmobj_t soundorg;
+    xyz_t       soundorg;
 
     // if == validcount, already checked
     int         validcount;

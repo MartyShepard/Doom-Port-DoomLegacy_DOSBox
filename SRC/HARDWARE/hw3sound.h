@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: hw3sound.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 2001-2016 by DooM Legacy Team.
 //
@@ -67,7 +67,7 @@ extern int HW3S_I_StartSound(const void *origin, source3D_data_t *source_parm, c
 extern void HW3S_FillSourceParameters(mobj_t *origin, source3D_data_t *data, channel_type_t   c_type);
 
 extern void HW3S_StopSound(void *origin);
-extern void HW3S_StopSounds(void);
+extern void HW3S_StopLevelSound(void);
 
 extern void HW3S_BeginFrameUpdate();
 extern void HW3S_EndFrameUpdate();

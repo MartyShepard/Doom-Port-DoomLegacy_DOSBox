@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01331 ]: w107 mbf sound
+          DOS: 320x200 and noconfig or specified resolutiion and bpp fixed
+					
 [01330 ]: w107 mbf lines
 [01329 ]: w107 mbf move
 [01328 ]: w107 mbf controls

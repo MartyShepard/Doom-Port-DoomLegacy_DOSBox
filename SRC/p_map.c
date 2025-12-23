@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_map.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -644,7 +644,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         if (tm_thing->flags2 & MF2_RIP)
         {
             damage = ((P_Random () & 3) + 2) * tm_thing->info->damage;
-            S_StartSound (tm_thing, sfx_ripslop);
+            S_StartObjSound(tm_thing, sfx_ripslop);
             if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage) )
             {
                 if (!(thing->flags & MF_NOBLOOD))
@@ -2512,7 +2512,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
             {
                 if(PuffType == MT_BLASTERPUFF1)
                   // Make blaster big puff
-                    S_StartSound(P_SpawnMobj(x, y, z, MT_BLASTERPUFF2), sfx_blshit);
+                    S_StartObjSound(P_SpawnMobj(x, y, z, MT_BLASTERPUFF2), sfx_blshit);
                 else
                     P_SpawnPuff(x, y, z);
             }    
@@ -2676,7 +2676,7 @@ boolean PTR_UseTraverse (intercept_t* in)
         if (openrange <= 0)
         {
             if( EN_doom_etc )
-                S_StartSound (usething, sfx_noway);
+                S_StartObjSound(usething, sfx_noway);
 
             // can't use through a wall
             return false;
@@ -2896,7 +2896,7 @@ boolean PIT_ChangeSector (mobj_t*  thing)
             P_SetMobjState (thing, S_GIBS);
             thing->flags &= ~MF_SOLID;
             //added:22-02-98: lets have a neat 'crunch' sound!
-            S_StartSound (thing, sfx_slop);
+            S_StartObjSound(thing, sfx_slop);
             thing->skin = 0;
         }
         thing->height = 0;

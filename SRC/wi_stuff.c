@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: wi_stuff.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1041,7 +1041,7 @@ static void WI_updateDeathmatchStats(void)
     if (cnt_pause>0)   cnt_pause--;
     if (cnt_pause==0)
     {
-        S_StartSound(0, sfx_slop);
+        S_StartSound(sfx_slop);
 
         WI_initNoState();
     }
@@ -1510,7 +1510,7 @@ static void WI_updateNetgameStats(void)
             if (dofrags)
                 cnt_frags[i] = ST_PlayerFrags(i);
         }
-        S_StartSound(0, sfx_barexp);
+        S_StartSound(sfx_barexp);
         ng_state = 10;
     }
 
@@ -1609,7 +1609,7 @@ static void WI_updateNetgameStats(void)
 
         if (!stillticking)
         {
-            S_StartSound(0, sfx_pldeth);
+            S_StartSound(sfx_pldeth);
             ng_state++;
             goto done;
         }
@@ -1618,7 +1618,7 @@ static void WI_updateNetgameStats(void)
     {
         if (acceleratestage)
         {
-            S_StartSound(0, sfx_sgcock);
+            S_StartSound(sfx_sgcock);
             if ( gamemode == doom2_commercial )
                 WI_initNoState();
             else
@@ -1638,11 +1638,11 @@ static void WI_updateNetgameStats(void)
 
     // tick sound, a single place to change it
     if (!(bcnt&3))
-        S_StartSound(0, sfx_pistol);
+        S_StartSound(sfx_pistol);
     return;
    
 next_state:
-    S_StartSound(0, sfx_barexp);
+    S_StartSound(sfx_barexp);
     ng_state++;
 done:
     return;
@@ -1756,7 +1756,7 @@ static void WI_updateStats(void)
            (plrs[me].ssecret * 100) / wbs->maxsecret : -100;
         cnt_time = plrs[me].stime / TICRATE;
         cnt_par = wbs->partime / TICRATE;
-        S_StartSound(0, sfx_barexp);
+        S_StartSound(sfx_barexp);
         sp_state = 10;
     }
 
@@ -1830,7 +1830,7 @@ static void WI_updateStats(void)
     {
         if (acceleratestage)
         {
-            S_StartSound(0, sfx_sgcock);
+            S_StartSound(sfx_sgcock);
 
             if (gamemode == doom2_commercial)
                 WI_initNoState();
@@ -1851,12 +1851,12 @@ static void WI_updateStats(void)
    
     // tick sound, a single place to change it
     if (!(bcnt&3))
-        S_StartSound(0, sfx_pistol);
+        S_StartSound(sfx_pistol);
     return;
 
 next_state:
     // done incrementing the count
-    S_StartSound(0, sfx_barexp);
+    S_StartSound(sfx_barexp);
     sp_state++;
 done:
     return;

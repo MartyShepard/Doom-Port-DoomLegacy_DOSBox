@@ -96,7 +96,7 @@ static vmode_t      vgavidmodes[NUMVGAVIDMODES+1] = {
     TXT_InitMode
   },
   {
-    NULL,
+    & vgavidmodes/*specialmodes*/[2],
     "320x200",
     320, 200,  //(200.0/320.0)*(320.0/240.0),
     320, 1,    // rowbytes, bytes per pixel
@@ -211,7 +211,7 @@ range_t  VID_ModeRange( byte modetype )
     // INITIAL_WINDOW mode 0 is not included
     if(modetype == MODE_fullscreen)
     {   // fullscreen  2..
-        mrange.first = NUMVGAVIDMODES;
+        mrange.first = NUMVGAVIDMODES;//-1;
         mrange.last = mrange.first + num_full_vidmodes;
     }
     else
@@ -254,7 +254,7 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
     modenum_t  modenum = { MODE_NOP, 0 };
     int tdist;
     int bestdist = MAXINT;
-		int mi = 1;
+		int mi = 0;
     vmode_t * pv = all_vidmodes;
 
     if( rmodetype == MODE_fullscreen )
@@ -330,7 +330,7 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
 {
     // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     vmode_t *pv = all_vidmodes;  // window
-    int mi = modenum.index-1;      // 0..
+    int mi = modenum.index;//-1;      // 0..
 		
     byte TextStartup=1;
 		
@@ -338,6 +338,7 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
     {
         pv = full_vidmodes;
         mi = modenum.index;// - NUMVGAVIDMODES;  // 2..
+        debug_Printf("*VID_GetModePtr: %s\n",pv->name);
     }
 
     if (!pv || mi < 0 ) 
@@ -423,26 +424,26 @@ int VID_SetMode (modenum_t modenum)
     // Using Updated Commandline
     if( req_drawmode == REQ_highcolor)
     {
-        vid.bitpp = 15; vid.drawmode = DRAW15;
+        vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;
     }
     else if( req_drawmode == REQ_truecolor)
     {
-        vid.bitpp = 32; vid.drawmode = DRAW32;
+        vid.bitpp = 32; vid.drawmode = DRAW32;; vid.bytepp=4;
     }
     else if( req_drawmode == REQ_specific)
     {
         switch(req_bitpp)
         {
-          case 15: vid.bitpp = 15; vid.drawmode = DRAW15;  break;						
-          case 16: vid.bitpp = 16; vid.drawmode = DRAW16;  break;						
-          case 24: vid.bitpp = 24; vid.drawmode = DRAW24;  break;
-          case 32: vid.bitpp = 32; vid.drawmode = DRAW32;  break;
-          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL;break;
+          case 15: vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;  break;
+          case 16: vid.bitpp = 16; vid.drawmode = DRAW16; vid.bytepp=2;  break;						
+          case 24: vid.bitpp = 24; vid.drawmode = DRAW24; vid.bytepp=3;   break;
+          case 32: vid.bitpp = 32; vid.drawmode = DRAW32; vid.bytepp=4;   break;
+          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL; vid.bytepp=1;  break;
         }
     }
     else
     {
-        vid.bitpp = 8; vid.drawmode = DRAW8PAL;
+        vid.bitpp = 8; vid.drawmode = DRAW8PAL; vid.bytepp=1;  
     }
 		
     /* Nicht die 3 weiteren Zeilen entfernen. Sonst stürzt das Bild ab.*/
@@ -491,6 +492,8 @@ int VID_SetMode (modenum_t modenum)
     debug_Printf("vid.width    %d\n",vid.width);
     debug_Printf("vid.height   %d\n",vid.height);
     debug_Printf("vid.buffer   %x\n",vid.buffer);
+    debug_Printf("vid.bitpp    %d\n",vid.bitpp);			
+    debug_Printf("vid.byteppp  %d\n",vid.bytepp*8);		
     debug_Printf("vid.rowbytes %d\n",vid.direct_rowbytes);
     debug_Printf("vid.numpages %d\n",vid.numpages);
     debug_Printf("vid.recalc   %d\n",vid.recalc);
@@ -882,8 +885,8 @@ boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
     memset (lvid->buffer, 0, vidbuffersize);
 
 
- debug_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);
-   return true;
+    debug_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);
+    return true;
 }
 
 
@@ -926,7 +929,7 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     extra = currentmode_p->extradata;
 
-#ifdef DEBUG
+
  debug_Printf("\n\n=== VID_VesaInitMode DEBUG Mode: ===\n");
  debug_Printf("currentmode_p->Name %s\n",currentmode_p->name);
  debug_Printf(" Width   : %d\n",currentmode_p->width);
@@ -953,7 +956,6 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
  debug_Printf("currentmode_p->Extradata :\n");
  debug_Printf(" ->VesaMode  = %x\n",extra->vesamode);
  debug_Printf(" ->LinearMEM = %x\n\n",extra->linearmem);
-#endif
 
     //added:20-01-98:no page flipping now... TO DO!!!
     lvid->numpages = 1;
@@ -1139,24 +1141,87 @@ int VID_NumModes(void)
    zusätzliche funktionen... alles noch nicht final
    ======================================================================== 
 */
+static
+void I_RequestMode(modenum_t modenum)
+{
+  
+  int i;
+  int W;
+  int H;
+  int Bit;  
+  
+  vmode_t *vmode;  
+  vmode   =VID_GetModePtr(modenum);
+  
+  i  = modenum.index;
+  W  = vmode->width;
+	H  = vmode->height;
+	Bit= vmode->bytesperpixel*8;
+          
+  debug_Printf("I_RequestMode: %s: [%d] %dx%dx%dbit (Name: '%s')\n",(vmode->modetype==MODE_fullscreen)?"MODE_FullScreen":"MODE_Window    "
+                                                                          ,i
+                                                                          ,W
+                                                                          ,H
+                                                                          ,Bit
+                                                                          ,vmode->name);   
+}
+
+modenum_t I_RequestGetScreen(modenum_t modenum)
+{
+    int i;
+    int W;
+    int H;
+    int Bit;
+    char *ModeName;
+    
+    vmode_t *vmode; 
+    range_t  range = VID_ModeRange( MODE_fullscreen);     
+    
+    for (i=range.first ; i<=range.last ; i++)
+    {
+      modenum.index = i;
+      ModeName      = VID_GetModeName (modenum);
+      
+      vmode = VID_GetModePtr (modenum);
+      if( vmode )
+      {
+        I_RequestMode(modenum);
+      }
+    }
+      
+    /*
+     Manuelle Selection wenn keine Config oder Auflösung angegeben ist
+    */    
+    modenum.index = 1;
+    return modenum;
+}
+
 void I_RequestConGraphics(void)
 {		
-    modenum_t mn = vid.modenum;
-		vmode_t     *pv;
-
-    GenPrintf( EMSG_ver, "I_RequestConGraphics...\n");
-	  GenPrintf( EMSG_ver, "I_RequestConGraphics [ Mode: %d ]\n",mn.index);
-		
-		if (mn.index==1)
+    /*
+     initalisierung der Auflöung kurz bevor des Initial der Console Graphic
+    */    
+    modenum_t modenum = vid.modenum;    
+    debug_Printf("I_RequestConGraphics...\n");
+    debug_Printf("I_RequestConGraphics [ Mode: %d ]\n",modenum.index);
+    
+		if (modenum.index==0)
     {
-			// Refesh und nutze VGA_InitMode
-      all_vidmodes = &vgavidmodes[1];
-      mn.index=1;
-      VID_SetMode (mn);
-      pv = VID_GetModePtr(mn);
-      VID_GetModeForSize(pv->width, pv->height, 0 );
-			GenPrintf( EMSG_ver, "I_RequestConGraphics [ %dx%d NAME:%s ]\n",pv->width,pv->height,pv->name);
+			if (req_drawmode > 0)
+			{
+        /*
+        bei Auflösungen der Bit größe 15,16,24,32 den ersten Mode unter
+        vgavidmodes '320x200x8bit' überspringen
+        */
+        all_vidmodes = NULL;       
+        all_vidmodes = &vgavidmodes[1];
+			}      
+      modenum = I_RequestGetScreen(modenum);
+        
+      VID_SetMode (modenum);
     }
+    debug_Printf("I_RequestConGraphics: Selectet\n");   
+    I_RequestMode(modenum);
 }
 
 static
@@ -1183,3 +1248,4 @@ int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     return 1;
 }
+

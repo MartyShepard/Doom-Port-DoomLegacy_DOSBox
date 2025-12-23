@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: console.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1008,9 +1008,9 @@ static void CON_Print (byte control, char *msg)
          case '\3' :  // white text + sound
             text_color = 0x80; // white text
             if ( gamemode == doom2_commercial )
-                S_StartSound(0, sfx_radio);
+                S_StartSound(sfx_radio);
             else
-                S_StartSound(0, sfx_tink);
+                S_StartSound(sfx_tink);
             break;
          default:
             break;

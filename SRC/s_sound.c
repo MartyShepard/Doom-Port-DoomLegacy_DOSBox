@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: s_sound.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -236,15 +236,10 @@ typedef struct
 {
     // When empty, sfxinfo=NULL, priority=-0x3FFF.
     // sound information (if null, channel avail.)
-    sfxinfo_t *sfxinfo;
+    sfxinfo_t * sfxinfo;
+    const xyz_t * origin;    // origin of sound
     int16_t   priority;  // Heretic style signed priority, adjusted for dist,
-
-    // origin of sound
-    void *origin;
-
-    // handle of the sound being played
-    int handle;
-
+    int       handle;    // handle of the sound being played
 } channel_t;
 
 // The set of channels available.
@@ -273,7 +268,7 @@ typedef struct {
 } sound_param_t;
 
 static
-boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
+boolean S_AdjustSoundParams(const mobj_t * listener, const xyz_t * source,
                             /*OUT*/ sound_param_t * sp );
 
 static void S_StopChannel(int cnum);
@@ -546,14 +541,14 @@ void S_Init(int sfxVolume, int musicVolume)
 //
 
 //SoM: Stop all sounds, load level info, THEN start sounds.
-void S_StopSounds(void)
+void S_StopLevelSound(void)
 {
     int cnum;
 
 #ifdef HW3SOUND
     if (hws_mode != HWS_DEFAULT_MODE)
     {
-        HW3S_StopSounds();
+        HW3S_StopLevelSound();
         return;
     }
 #endif
@@ -567,7 +562,7 @@ void S_StopSounds(void)
 }
 
 // Called by P_SetupLevel.
-void S_StartSounds(void)
+void S_StartLevelSound(void)
 {
     int mnum;
 
@@ -622,7 +617,8 @@ void S_StartSounds(void)
 //   Return channel number, if none available, return -1.
 //
 //  priority : Heretic style ascending signed priority adjusted for distance
-static int S_get_channel(void *origin, sfxinfo_t * sfxinfo, int16_t priority )
+static int S_get_channel(const xyz_t *origin, sfxinfo_t * sfxinfo,
+                         int16_t priority )
 {
     // [WDJ] Like PrBoom, separate channel for player tagged sfx
     uint32_t kill_flags = (sfxinfo->flags & (SFX_player|SFX_saw)) | SFX_org_kill;
@@ -701,10 +697,17 @@ static int S_get_channel(void *origin, sfxinfo_t * sfxinfo, int16_t priority )
 
 
 // Does the sfx special case handling for all drivers.
+// [WDJ] Due to special mobj tests that this has acquired, sectors were
+// being cast as mobj and tested for fields they do not have.  Have split
+// the sound origin parameter from the mobj attribute tests.
 //  volume : 0..255
+//  origin : x,y,z of the sector or mobj (saved, don't use temps)
+//  mo : the origin mobj, for testing attributes
 // Called by StartSound.
 // Called by hardware S_StartAmbientSound.
-void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
+static
+void S_StartSoundAtVolume(const xyz_t *origin, const mobj_t * mo,
+                          sfxid_t sfx_id, int volume,
                           channel_type_t ct_type )
 {
     sound_param_t sp1;
@@ -712,16 +715,14 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
     sfxinfo_t * sfx;
     int cnum;
 
-    mobj_t *origin = (mobj_t *) origin_p;
-
-    if (nosoundfx || (origin && origin->type == MT_SPIRIT))
+    if (nosoundfx || (mo && mo->type == MT_SPIRIT))
         goto done;
 
 #if 0
     if( EN_heretic )
     {
         if( origin == NULL )
-            origin = consoleplayer_ptr->mo;
+            origin = & consoleplayer_ptr->mo->x;
         // volume = (volume*(snd_MaxVolume+1)*8)>>7;
     }
 #endif
@@ -747,10 +748,10 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
     sp1.pitch = NORM_PITCH;
     sp1.sep = 128;
 
-    if ((sfx->skinsound >= 0) && origin && origin->skin)
+    if( (sfx->skinsound >= 0) && mo && mo->skin )
     {
         // redirect player sound to the sound in the skin table
-        sfx_id = ((skin_t *) origin->skin)->soundsid[sfx->skinsound];
+        sfx_id = ((skin_t *) mo->skin)->soundsid[sfx->skinsound];
         sfx = &S_sfx[sfx_id];
     }
 
@@ -793,10 +794,10 @@ void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
 
     //added:16-01-98:changed consoleplayer to displayplayer
     //[WDJ] added displayplayer2_ptr tests, stop segfaults
-    if (origin
-        && (origin != displayplayer_ptr->mo)
+    if( origin
+        && (mo != displayplayer_ptr->mo)
         && !(cv_splitscreen.value && displayplayer2_ptr
-             && (origin == displayplayer2_ptr->mo) ) )
+             && (mo == displayplayer2_ptr->mo) ) )
     {
         sound_param_t sp2 = sp1;  // must save before AdjustSound
         boolean audible1, audible2;
@@ -938,27 +939,48 @@ done:
 }
 
 // Most sfx sounds are called through this interface.
-void S_StartSound(const void *origin, int sfx_id)
+//  origin : the position
+//  mo : mobj for testing attributes
+static inline
+void S_StartNormSound(const xyz_t * origin, const mobj_t * mo, sfxid_t sfx_id)
 {
     // the volume is handled 8 bits
-
-#ifdef HW3SOUND
-    if (hws_mode != HWS_DEFAULT_MODE)
-        HW3S_I_StartSound(origin, NULL, CT_NORMAL, sfx_id, 255, sp1.pitch, NORMAL_SEP);
-    else
-#endif
-        S_StartSoundAtVolume(origin, sfx_id, 255, CT_NORMAL);
+    S_StartSoundAtVolume(origin, mo, sfx_id, 255, CT_NORMAL);
 }
 
-
-void S_StartAttackSound(const void *origin, sfxid_t sfx_id)
+// Most plain sfx sounds are called through this interface.
+void S_StartSound( sfxid_t sfx_id )
 {
-    S_StartSoundAtVolume((void*)origin, sfx_id, 255, CT_ATTACK);
+    S_StartNormSound( NULL, NULL, sfx_id );  // No origin
 }
 
-void S_StartScreamSound(const void *origin, sfxid_t sfx_id)
+// Most switch sounds are called through this interface.
+void S_StartXYZSound(const xyz_t * origin, sfxid_t sfx_id)
+{
+    S_StartNormSound( origin, NULL, sfx_id );  // No mobj
+}
+
+// Most sector sfx sounds are called through this interface.
+void S_StartSecSound(const sector_t *sec, sfxid_t sfx_id)
+{
+    S_StartNormSound( &sec->soundorg, NULL, sfx_id );  // xyz_t *
+}
+
+// Most Mobj sfx sounds are called through this interface.
+void S_StartObjSound(const mobj_t *mo, sfxid_t sfx_id)
+{
+    // Requires that the x,y,z in an mobj_t be the same as xyz_t.
+    S_StartNormSound( (xyz_t*)&mo->x, mo, sfx_id );  // xyz_t *
+}
+
+void S_StartAttackSound(const mobj_t * mo, sfxid_t sfx_id)
+{
+    S_StartSoundAtVolume( (xyz_t*)&mo->x, mo, sfx_id, 255, CT_ATTACK);
+}
+
+void S_StartScreamSound(const mobj_t * mo, sfxid_t sfx_id)
 {  
-    S_StartSoundAtVolume((void*)origin, sfx_id, 255, CT_SCREAM);
+    S_StartSoundAtVolume( (xyz_t*)&mo->x, mo, sfx_id, 255, CT_SCREAM);
 }
 
 void S_StartAmbientSound(sfxid_t sfx_id, int volume)
@@ -971,12 +993,41 @@ void S_StartAmbientSound(sfxid_t sfx_id, int volume)
             volume = 255;
     }
 #endif
-    S_StartSoundAtVolume(NULL, sfx_id, volume, CT_AMBIENT);
+    S_StartSoundAtVolume(NULL, NULL, sfx_id, volume, CT_AMBIENT);
+}
+
+//
+// S_StartSoundName
+//  origin : the position
+//  mo : mobj for testing attributes
+// Starts an general sound using the given name.
+void S_StartXYZSoundName(const xyz_t *origin, const mobj_t * mo,
+                         const char *soundname)
+{
+    int sfxid;
+   
+    //Search existing sounds...
+    for (sfxid = sfx_None + 1; sfxid < NUMSFX; sfxid++)
+    {
+        if (!S_sfx[sfxid].name)
+            continue;
+
+        if (!strcasecmp(S_sfx[sfxid].name, soundname))
+            goto play_sfx;  // found name
+    }
+
+    // add soundname to S_sfx
+    // [WDJ] S_AddSoundFx now handles search for free slot and remove
+    // of least useful sfx when full.
+    sfxid = S_AddSoundFx(soundname, 0);
+
+ play_sfx:
+    S_StartNormSound(origin, mo, sfxid);
 }
 
 
-
-void S_StopSound(void *origin)
+static
+void S_StopXYZSound(const xyz_t *origin)
 {
     int cnum;
 
@@ -1003,6 +1054,17 @@ void S_StopSound(void *origin)
         }
     }
 }
+
+void S_StopSecSound(const sector_t *sec)
+{
+    S_StopXYZSound( &sec->soundorg );
+}
+
+void S_StopObjSound(const mobj_t *mo)
+{
+    S_StopXYZSound( (xyz_t*)&mo->x );
+}
+
 
 
 //
@@ -1137,9 +1199,9 @@ void S_UpdateSounds(void)
             // check non-local sounds for distance clipping
             //  or modify their params
             if (c->origin
-                && (listener != c->origin)
+                && (((xyz_t*)&listener->x) != c->origin)
                 && !(cv_splitscreen.value && displayplayer2_ptr
-                     && (c->origin == displayplayer2_ptr->mo) ) )
+                     && (c->origin == (xyz_t*)&displayplayer2_ptr->mo->x) ) )
             {
                 sound_param_t sp2 = sp1;
                 boolean audible1, audible2;
@@ -1361,7 +1423,7 @@ static void S_StopChannel(int cnum)
 //   sp : /*OUT*/ sep, volume, 0..255
 // Return true if the sound is audible.
 static
-boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
+boolean S_AdjustSoundParams(const mobj_t * listener, const xyz_t * source,
                             /*OUT*/ sound_param_t * sp )
 {
     int approx_dist;  // integer part of dist
@@ -1468,10 +1530,11 @@ boolean S_AdjustSoundParams(mobj_t * listener, mobj_t * source,
 
 
 // SoM: Searches through the channels and checks for origin or id.
-//   origin : the object to check,  if NULL do not check it
+//   origin : the origin position to check,  if NULL do not check it
 //   sfxid : the sfx to check,  if sfx_None do not check it
 // returns true if either is found.
-boolean  S_SoundPlaying(void *origin, sfxid_t sfxid)
+// Is called by S_AddSoundFx (with origin==NULL)
+boolean  S_SoundPlaying( xyz_t *origin, sfxid_t sfxid)
 {
     sfxinfo_t * sfx;
     int cnum;
@@ -1495,30 +1558,4 @@ boolean  S_SoundPlaying(void *origin, sfxid_t sfxid)
             return 1;
     }
     return 0;
-}
-
-//
-// S_StartSoundName
-// Starts a sound using the given name.
-void S_StartSoundName(void *mo, char *soundname)
-{
-    int sfxid;
-   
-    //Search existing sounds...
-    for (sfxid = sfx_None + 1; sfxid < NUMSFX; sfxid++)
-    {
-        if (!S_sfx[sfxid].name)
-            continue;
-
-        if (!strcasecmp(S_sfx[sfxid].name, soundname))
-            goto play_sfx;  // found name
-    }
-
-    // add soundname to S_sfx
-    // [WDJ] S_AddSoundFx now handles search for free slot and remove
-    // of least useful sfx when full.
-    sfxid = S_AddSoundFx(soundname, 0);
-
- play_sfx:
-    S_StartSound(mo, sfxid);
 }

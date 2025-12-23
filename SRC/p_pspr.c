@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_pspr.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -333,7 +333,7 @@ void P_FireWeapon (player_t* player)
                                   : player->weaponinfo[player->readyweapon].atkstate;
         // Play the sound for the initial gauntlet attack
         if( player->readyweapon == wp_gauntlets && !player->refire )
-            S_StartSound(pmo, sfx_gntuse);
+            S_StartObjSound(pmo, sfx_gntuse);
     }
     else
     {

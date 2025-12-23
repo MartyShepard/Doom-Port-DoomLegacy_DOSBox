@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_henemy.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -191,11 +191,11 @@ void A_KnightAttack(mobj_t *actor)
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(3));
-        S_StartSound(actor, sfx_kgtat2);
+        S_StartObjSound(actor, sfx_kgtat2);
         return;
     }
     // Throw axe
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(actor->type == MT_KNIGHTGHOST || P_Random() < 40)
     { // Red axe
         P_SpawnMissile(actor, actor->target, MT_REDAXE);
@@ -262,7 +262,7 @@ void A_ImpMeAttack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, 5+(P_Random()&7));
@@ -287,7 +287,7 @@ void A_ImpMsAttack(mobj_t *actor)
     }
     dest = actor->target;
     actor->flags |= MF_SKULLFLY;
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     A_FaceTarget(actor);
 
     int angf = ANGLE_TO_FINE(actor->angle);
@@ -316,7 +316,7 @@ void A_ImpMsAttack2(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, 5+(P_Random()&7));
@@ -477,7 +477,7 @@ void A_ChicPain(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->painsound);
+    S_StartObjSound(actor, actor->info->painsound);
 }
 
 //----------------------------------------------------------------------------
@@ -524,14 +524,14 @@ void A_MummyAttack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(2));
-        S_StartSound(actor, sfx_mumat2);
+        S_StartObjSound(actor, sfx_mumat2);
         return;
     }
-    S_StartSound(actor, sfx_mumat1);
+    S_StartObjSound(actor, sfx_mumat1);
 }
 
 //----------------------------------------------------------------------------
@@ -550,7 +550,7 @@ void A_MummyAttack2(mobj_t *actor)
     {
         return;
     }
-    //S_StartSound(actor, actor->info->attacksound);
+    //S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(2));
@@ -635,7 +635,7 @@ void A_Srcr1Attack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(8));
@@ -717,9 +717,9 @@ void P_DSparilTeleport(mobj_t *actor)
     if(P_TeleportMove(actor, x, y))
     {
         mo = P_SpawnMobj(prev_x, prev_y, prev_z, MT_SOR2TELEFADE);
-        S_StartSound(mo, sfx_telept);
+        S_StartObjSound(mo, sfx_telept);
         P_SetMobjState(actor, S_SOR2_TELE1);
-        S_StartSound(actor, sfx_telept);
+        S_StartObjSound(actor, sfx_telept);
         actor->z = actor->floorz;
         actor->angle = BossSpots[i%BossSpotCount].angle;
         actor->momx = actor->momy = actor->momz = 0;
@@ -763,7 +763,7 @@ void A_Srcr2Attack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(NULL, actor->info->attacksound);
+    S_StartSound( actor->info->attacksound );
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(20));
@@ -823,7 +823,7 @@ void A_GenWizard(mobj_t *actor)
     P_SetMobjState(actor, mobjinfo[actor->type].deathstate);
     actor->flags &= ~MF_MISSILE;
     fog = P_SpawnMobj(actor->x, actor->y, actor->z, MT_TFOG);
-    S_StartSound(fog, sfx_telept);
+    S_StartObjSound(fog, sfx_telept);
 }
 
 //----------------------------------------------------------------------------
@@ -858,12 +858,12 @@ void A_Sor2DthLoop(mobj_t *actor)
 //
 //----------------------------------------------------------------------------
 
-void A_SorZap(mobj_t *actor) {S_StartSound(NULL, sfx_sorzap);}
-void A_SorRise(mobj_t *actor) {S_StartSound(NULL, sfx_sorrise);}
-void A_SorDSph(mobj_t *actor) {S_StartSound(NULL, sfx_sordsph);}
-void A_SorDExp(mobj_t *actor) {S_StartSound(NULL, sfx_sordexp);}
-void A_SorDBon(mobj_t *actor) {S_StartSound(NULL, sfx_sordbon);}
-void A_SorSightSnd(mobj_t *actor) {S_StartSound(NULL, sfx_sorsit);}
+void A_SorZap(mobj_t *actor) {S_StartSound(sfx_sorzap);}
+void A_SorRise(mobj_t *actor) {S_StartSound(sfx_sorrise);}
+void A_SorDSph(mobj_t *actor) {S_StartSound(sfx_sordsph);}
+void A_SorDExp(mobj_t *actor) {S_StartSound(sfx_sordexp);}
+void A_SorDBon(mobj_t *actor) {S_StartSound(sfx_sordbon);}
+void A_SorSightSnd(mobj_t *actor) {S_StartSound(sfx_sorsit);}
 
 //----------------------------------------------------------------------------
 //
@@ -881,7 +881,7 @@ void A_MinotaurAtk1(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, sfx_stfpow);
+    S_StartObjSound(actor, sfx_stfpow);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(4));
@@ -912,7 +912,7 @@ void A_MinotaurDecide(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, sfx_minsit);
+    S_StartObjSound(actor, sfx_minsit);
     dist = P_AproxDistance(actor->x-target->x, actor->y-target->y);
     if(target->z+target->height > actor->z
         && target->z+target->height < actor->z+actor->height
@@ -985,7 +985,7 @@ void A_MinotaurAtk2(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, sfx_minat2);
+    S_StartObjSound(actor, sfx_minat2);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(5));
@@ -994,7 +994,7 @@ void A_MinotaurAtk2(mobj_t *actor)
     mo = P_SpawnMissile(actor, actor->target, MT_MNTRFX1);
     if(mo)
     {
-        S_StartSound(mo, sfx_minat2);
+        S_StartObjSound(mo, sfx_minat2);
         momz = mo->momz;
         angle = mo->angle;
         P_SpawnMissileAngle(actor, MT_MNTRFX1, angle-(ANG45/8), momz);
@@ -1034,7 +1034,7 @@ void A_MinotaurAtk3(mobj_t *actor)
         mo = P_SpawnMissile(actor, actor->target, MT_MNTRFX2);
         if(mo != NULL)
         {
-            S_StartSound(mo, sfx_minat1);
+            S_StartObjSound(mo, sfx_minat1);
         }
     }
     if(P_Random() < 192 && actor->special2 == 0)
@@ -1077,7 +1077,7 @@ void A_BeastAttack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(3));
@@ -1127,7 +1127,7 @@ void A_HHeadAttack(mobj_t *actor)
     if(randAttack < atkResolve1[dist])
     { // Ice ball
         P_SpawnMissile(actor, target, MT_HEADFX1);
-        S_StartSound(actor, sfx_hedat2);
+        S_StartObjSound(actor, sfx_hedat2);
     }
     else if(randAttack < atkResolve2[dist])
     { // Fire column
@@ -1140,7 +1140,7 @@ void A_HHeadAttack(mobj_t *actor)
                 fire = P_SpawnMobj(baseFire->x, baseFire->y, baseFire->z, MT_HEADFX3);
                 if(i == 0)
                 {
-                    S_StartSound(actor, sfx_hedat1);
+                    S_StartObjSound(actor, sfx_hedat1);
                 }
                 fire->target = baseFire->target;
                 fire->angle = baseFire->angle;
@@ -1162,7 +1162,7 @@ void A_HHeadAttack(mobj_t *actor)
             mo->tracer = target;
             mo->special2 = 50; // Timer for active sound
             mo->health = 20*TICRATE; // Duration
-            S_StartSound(actor, sfx_hedat3);
+            S_StartObjSound(actor, sfx_hedat3);
         }
     }
 }
@@ -1186,7 +1186,7 @@ void A_WhirlwindSeek(mobj_t *actor)
     if((actor->special2 -= 3) < 0)
     {
         actor->special2 = 58+(P_Random()&31);
-        S_StartSound(actor, sfx_hedat3);
+        S_StartObjSound(actor, sfx_hedat3);
     }
     if(actor->tracer
        && actor->tracer->flags&MF_SHADOW)
@@ -1251,7 +1251,7 @@ void A_SnakeAttack(mobj_t *actor)
         P_SetMobjState(actor, S_SNAKE_WALK1);
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     A_FaceTarget(actor);
     P_SpawnMissile(actor, actor->target, MT_SNAKEPRO_A);
 }
@@ -1269,7 +1269,7 @@ void A_SnakeAttack2(mobj_t *actor)
         P_SetMobjState(actor, S_SNAKE_WALK1);
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     A_FaceTarget(actor);
     P_SpawnMissile(actor, actor->target, MT_SNAKEPRO_B);
 }
@@ -1288,7 +1288,7 @@ void A_ClinkAttack(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         damage = ((P_Random()%7)+3);
@@ -1348,7 +1348,7 @@ void A_WizAtk3(mobj_t *actor)
     {
         return;
     }
-    S_StartSound(actor, actor->info->attacksound);
+    S_StartObjSound(actor, actor->info->attacksound);
     if(P_CheckMeleeRange(actor))
     {
         P_DamageMobj(actor->target, actor, actor, HITDICE(4));
@@ -1378,29 +1378,29 @@ void A_HScream(mobj_t *actor)
      case MT_SORCERER1:
      case MT_MINOTAUR:
         // Make boss death sounds full volume
-        S_StartSound(NULL, actor->info->deathsound);
+        S_StartSound(actor->info->deathsound);
         break;
      case MT_PLAYER:
         // Handle the different player death screams
         if(actor->special1 < 10)
         { // Wimpy death sound
-            S_StartSound(actor, sfx_plrwdth);
+            S_StartObjSound(actor, sfx_plrwdth);
         }
         else if(actor->health > -50)
         { // Normal death sound
-            S_StartSound(actor, actor->info->deathsound);
+            S_StartObjSound(actor, actor->info->deathsound);
         }
         else if(actor->health > -100)
         { // Crazy death sound
-            S_StartSound(actor, sfx_plrcdth);
+            S_StartObjSound(actor, sfx_plrcdth);
         }
         else
         { // Extreme death sound
-            S_StartSound(actor, sfx_gibdth);
+            S_StartObjSound(actor, sfx_gibdth);
         }
         break;
      default:
-        S_StartSound(actor, actor->info->deathsound);
+        S_StartObjSound(actor, actor->info->deathsound);
         break;
     }
 }
@@ -1552,7 +1552,7 @@ void A_MakePod(mobj_t *actor)
     }
     P_SetMobjState(mo, S_POD_GROW1);
     P_ThrustMobj(mo, P_Random()<<24, (fixed_t)(4.5*FRACUNIT));
-    S_StartSound(mo, sfx_newpod);
+    S_StartObjSound(mo, sfx_newpod);
     actor->special1++; // Increment generated pod count
 
     //mo->special2 = (int)actor; // Link the generator to the pod
@@ -1683,7 +1683,7 @@ void A_ESound(mobj_t *mo)
         sound = sfx_None;
         break;
     }
-    S_StartSound(mo, sound);
+    S_StartObjSound(mo, sound);
 }
 
 //----------------------------------------------------------------------------
@@ -1800,7 +1800,7 @@ void A_VolcanoBlast(mobj_t *volcano)
         blast->momx = FixedMul(1*FRACUNIT, cosine_ANG(angle));
         blast->momy = FixedMul(1*FRACUNIT, sine_ANG(angle));
         blast->momz = (2.5*FRACUNIT)+(P_Random()<<10);
-        S_StartSound(blast, sfx_volsht);
+        S_StartObjSound(blast, sfx_volsht);
         P_CheckMissileSpawn(blast);
     }
 }
@@ -1975,5 +1975,5 @@ void A_AddPlayerCorpse(mobj_t *actor)
 
 void A_FlameSnd(mobj_t *actor)
 {
-    S_StartSound(actor, sfx_hedat1); // Burn sound
+    S_StartObjSound(actor, sfx_hedat1); // Burn sound
 }

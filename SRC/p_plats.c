@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_plats.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,15 +64,13 @@ void T_PlatRaise(plat_t* plat)
                            plat->high, plat->crush, 0, 1);
 
         if ( EN_heretic && !(leveltime % (32*NEWTICRATERATIO)))
-            S_StartSound ((mobj_t *) & plat->sector->soundorg,
-                          sfx_stnmov);
+            S_StartSecSound(plat->sector, sfx_stnmov);
 
         if (plat->type == PLATT_raiseAndChange
             || plat->type == PLATT_raiseToNearestAndChange)
         {
             if (!(leveltime % (8*NEWTICRATERATIO)))
-                S_StartSound((mobj_t *)&plat->sector->soundorg,
-                             sfx_stnmov);
+                S_StartSecSound(plat->sector, sfx_stnmov);
         }
 
 
@@ -80,8 +78,7 @@ void T_PlatRaise(plat_t* plat)
         {
             plat->count = plat->wait;
             plat->status = PLATS_down;
-            S_StartSound((mobj_t *)&plat->sector->soundorg,
-                         sfx_pstart);
+            S_StartSecSound(plat->sector, sfx_pstart);
         }
         else
         {
@@ -93,7 +90,7 @@ void T_PlatRaise(plat_t* plat)
                 {
                   plat->count = plat->wait;
                   plat->status = PLATS_waiting;
-                  S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
+                  S_StartSecSound(plat->sector, sfx_pstop);
                 }
                 else // else go into stasis awaiting next toggle activation
                 {
@@ -143,7 +140,7 @@ void T_PlatRaise(plat_t* plat)
             {                           
               plat->count = plat->wait;
               plat->status = PLATS_waiting;
-              S_StartSound((mobj_t *)&plat->sector->soundorg,sfx_pstop);
+              S_StartSecSound(plat->sector, sfx_pstop);
             }
             else //SoM: 3/7/2000: instant toggles go into stasis awaiting next activation
             {
@@ -169,8 +166,7 @@ void T_PlatRaise(plat_t* plat)
         else
         {
             if (EN_heretic && !(leveltime & 31))
-                S_StartSound ((mobj_t *) & plat->sector->soundorg,
-                    sfx_stnmov);
+                S_StartSecSound(plat->sector, sfx_stnmov);
         }
 
         break;
@@ -182,7 +178,7 @@ void T_PlatRaise(plat_t* plat)
                 plat->status = PLATS_up;
             else
                 plat->status = PLATS_down;
-            S_StartSound((mobj_t *)&plat->sector->soundorg,sfx_pstart);
+            S_StartSecSound(plat->sector, sfx_pstart);
         }
       case  PLATS_in_stasis:
         break;
@@ -254,7 +250,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             sec->special = 0;
             sec->oldspecial = 0; //SoM: 3/7/2000: Clear old field.
 
-            S_StartSound((mobj_t *)&sec->soundorg,sfx_stnmov);
+            S_StartSecSound(sec, sfx_stnmov);
             break;
 
           case PLATT_raiseAndChange:
@@ -264,7 +260,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             plat->wait = 0;
             plat->status = PLATS_up;
 
-            S_StartSound((mobj_t *)&sec->soundorg,sfx_stnmov);
+            S_StartSecSound(sec, sfx_stnmov);
             break;
 
           case PLATT_downWaitUpStay:
@@ -277,7 +273,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             plat->high = sec->floorheight;
             plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->status = PLATS_down;
-            S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
+            S_StartSecSound(sec, sfx_pstart);
             break;
 
           case PLATT_blazeDWUS:
@@ -290,7 +286,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             plat->high = sec->floorheight;
             plat->wait = PLATWAIT * adj_ticks_per_sec;
             plat->status = PLATS_down;
-            S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
+            S_StartSecSound(sec, sfx_pstart);
             break;
 
           case PLATT_perpetualRaise:
@@ -308,7 +304,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
             plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
             plat->status = P_Random()&1;
 
-            S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
+            S_StartSecSound(sec, sfx_pstart);
             break;
 
           case PLATT_toggleUpDn: //SoM: 3/7/2000: Instant toggle.

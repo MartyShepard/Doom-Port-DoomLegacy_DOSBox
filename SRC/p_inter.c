@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_inter.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -421,7 +421,7 @@ boolean P_GiveWeapon ( player_t*     player,
         //               (hear the sounds from the viewpoint)
         if (player == displayplayer_ptr
             || (cv_splitscreen.EV && player == displayplayer2_ptr))  // NULL when unused
-            S_StartSound (NULL, sfx_wpnup);
+            S_StartSound(sfx_wpnup);
         return false;
     }
 
@@ -685,7 +685,7 @@ void P_SetDormantArtifact(mobj_t *arti)
         { // Don't respawn
                 P_SetMobjState(arti, S_DEADARTI1);
         }
-        S_StartSound(arti, sfx_artiup);
+        S_StartObjSound(arti, sfx_artiup);
 }
 
 //---------------------------------------------------------------------------
@@ -698,7 +698,7 @@ void A_RestoreArtifact(mobj_t *arti)
 {
         arti->flags |= MF_SPECIAL;
         P_SetMobjState(arti, arti->info->spawnstate);
-        S_StartSound(arti, sfx_itmbk);
+        S_StartObjSound(arti, sfx_itmbk);
 }
 
 //----------------------------------------------------------------------------
@@ -729,7 +729,7 @@ void A_RestoreSpecialThing1(mobj_t *thing)
                 P_RepositionMace(thing);
         }
         thing->flags2 &= ~MF2_DONTDRAW;
-        S_StartSound(thing, sfx_itmbk);
+        S_StartObjSound(thing, sfx_itmbk);
 }
 
 //---------------------------------------------------------------------------
@@ -1381,7 +1381,7 @@ void P_TouchSpecialThing ( mobj_t*       special,
     //added:16-01-98:consoleplayer -> displayplayer (hear sounds from viewpoint)
     if (player == displayplayer_ptr
         || (cv_splitscreen.EV && player == displayplayer2_ptr))  // NULL when unused
-        S_StartSound (NULL, sound);
+        S_StartSound(sound);
 }
 
 
@@ -1725,7 +1725,7 @@ void P_KillMobj ( mobj_t*  target,
         target->skin = 0;
 
         //added:22-02-98: lets have a neat 'crunch' sound!
-        S_StartSound (target, sfx_slop);
+        S_StartObjSound(target, sfx_slop);
         return;
     }
 
@@ -1775,7 +1775,7 @@ void P_KillMobj ( mobj_t*  target,
             {
                 if(source->player == displayplayer_ptr
                 || source->player == displayplayer2_ptr )
-                    S_StartSound(NULL, sfx_gfrag);
+                    S_StartSound(sfx_gfrag);
 
                 // Make a super chicken
                 if(source->player->chickenTics)
@@ -1827,7 +1827,7 @@ void P_KillMobj ( mobj_t*  target,
         if(target->flags2&MF2_FIREDAMAGE)
         { // Player flame death
             P_SetMobjState(target, S_PLAY_FDTH1);
-            //S_StartSound(target, sfx_hedat1); // Burn sound
+            //S_StartObjSound(target, sfx_hedat1); // Burn sound
             return;
         }
 */

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: hw3sound.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 2001-2016 by DooM Legacy Team.
 //
@@ -73,8 +73,9 @@ struct hardware3ds_s hw3ds_driver;
 
 typedef struct source_s
 {
-    sfxinfo_t       *sfxinfo;
-    void            *origin;
+    sfxinfo_t     * sfxinfo;
+    xyz_t         * origin;     // mobj or sector x,y,z position
+    mobj_t        * mo;         // mobile source
     int16_t         priority;   // Heretic style signed adjusted priority.
     int             handle;     // Internal source handle
     channel_type_t  type;       // Sound type (attack, scream, etc)
@@ -132,7 +133,7 @@ void HW3S_SetSourcesNum()
     // simultaneously) within zone memory.
     if (sources)
     {
-        HW3S_StopSounds();
+        HW3S_StopLevelSound();
         Z_Free(sources);
     }
 
@@ -185,7 +186,7 @@ static void HW3S_StopSource(int snum)
 
 
 //=============================================================================
-void HW3S_StopSound(void *origin)
+void HW3S_StopSound(xyz_t * origin)
 {
     int snum;
 
@@ -201,7 +202,7 @@ void HW3S_StopSound(void *origin)
 
 
 //=============================================================================
-void HW3S_StopSounds()
+void HW3S_StopLevelSound()
 {
     int snum;
 
@@ -220,7 +221,9 @@ void HW3S_StopSounds()
 
 
 //=============================================================================
-static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo, int16_t priority )
+static
+int HW3S_GetSource( const xyz_t * origin, const sfxinfo_t * sfxinfo,
+                    int16_t priority )
 {
     //
     //   If none available, return -1.  Otherwise source #.
@@ -229,7 +232,7 @@ static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo, int16_t priority )
     int    low_snum = -1;
     int16_t low_priority;
     int    snum;
-    source_t*   src;
+    source_t  * src;
 
     // Find an open source
     for (snum = 0, src = sources ; snum < num_sources; src++, snum++)
@@ -269,38 +272,53 @@ static int HW3S_GetSource( void* origin, sfxinfo_t* sfxinfo, int16_t priority )
 
 
 //=============================================================================
-void HW3S_FillSourceParameters(mobj_t           *origin, 
+void HW3S_FillSourceParameters( const xyz_t * origin, const mobj_t * mo,
                                source3D_data_t  *data, 
                                channel_type_t   c_type)
 {
     int angf;
     fixed_t x, y, z;
     
-    if (origin && origin != players[displayplayer].mo)
+    //[WDJ] added displayplayer2_ptr tests, stop segfaults
+    if( origin
+        && (mo != displayplayer_ptr->mo)
+        && !(cv_splitscreen.value && displayplayer2_ptr
+             && (mo == displayplayer2_ptr->mo) ) )
     {
         ZeroMemory(data, sizeof(source3D_data_t));
 
         data->max_distance = MAX_DISTANCE;
         data->min_distance = MIN_DISTANCE;
         
-        data->pos.momx = FIXED_TO_FLOAT(origin->momx);
-        data->pos.momy = FIXED_TO_FLOAT(origin->momy);
-        data->pos.momz = FIXED_TO_FLOAT(origin->momz);
-
-        x = origin->x;
-        y = origin->y;
-        z = origin->z;
-
-        if (c_type == CT_ATTACK)
+        if( mo )  // mobile source
         {
-            angf = ANGLE_TO_FINE(origin->angle);
+          data->pos.momx = FIXED_TO_FLOAT(mo->momx);
+          data->pos.momy = FIXED_TO_FLOAT(mo->momy);
+          data->pos.momz = FIXED_TO_FLOAT(mo->momz);
+
+          // mobj x,y,z are the same as origin, unless somebody is hacking
+          x = mo->x;
+          y = mo->y;
+          z = mo->z;
+
+          if (c_type == CT_ATTACK)
+          {
+            angf = ANGLE_TO_FINE(mo->angle);
             x += FixedMul(16*FRACUNIT, finecosine[angf]);
             y += FixedMul(16*FRACUNIT, finesine[angf]);
-            z += origin->height >> 1;
+            z += mo->height >> 1;
+          }
+          else if (c_type == CT_SCREAM)
+          {
+            z += mo->height - (5 * FRACUNIT);
+          }
         }
-
-        else if (c_type == CT_SCREAM)
-            z += origin->height - (5 * FRACUNIT);
+        else
+        {
+          x = origin->x;
+          y = origin->y;
+          z = origin->z;
+        }
 
         data->pos.x = FIXED_TO_FLOAT(x);
         data->pos.y = FIXED_TO_FLOAT(y);
@@ -326,20 +344,22 @@ static void make_outphase_sfx(void *dest, void *src, int size)
 
 
 //=============================================================================
-int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm,
+//  origin : sound position, in sector or mobj
+//  mo : mobj for attributes
+int HW3S_I_StartSound(const xyz_t * origin, const mobj_t * mo,
+                      const source3D_data_t *source_parm,
                       channel_type_t c_type, sfxid_t sfx_id, int16_t priority,
                       int volume, int pitch, int sep)
 {
     
     sfxinfo_t       *sfx;
-    mobj_t          *origin = (mobj_t*)origin_p;
     source3D_data_t source3d_data;
     sfx_data_t      sfx_data;
     int             s_num;
     source_t        *source;
 
     // Linked sfx, pitch, sep, distance adjustments, and splitscreen
-    // have all been handleded by S_StartSoundAtVolume(), before calling here.
+    // have all been handled by S_StartSoundAtVolume(), before calling here.
 
     sfx = &S_sfx[sfx_id];
 
@@ -358,9 +378,13 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm,
     sfx_data.length = *((unsigned short*) sfx->data + 2) + 4 * sizeof(unsigned short);
     sfx_data.priority = priority;  // use adjusted priority
         
-    if (origin && origin == players[displayplayer].mo)
+    if( origin
+        && ( (mo == displayplayer_ptr->mo)
+             || (cv_splitscreen.value && displayplayer2_ptr
+                 && (mo == displayplayer2_ptr->mo) ) )
+      )
     {
-
+        // player1 or player2
         if (c_type == CT_ATTACK)
             source = &p_attack_source;
         else
@@ -425,7 +449,7 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm,
             if (!source_parm)
             {
                 source_parm = &source3d_data;
-                HW3S_FillSourceParameters(origin, source_parm, c_type);
+                HW3S_FillSourceParameters( origin, mo, source_parm, c_type);
             }
 
             source->handle = HW3DS.pfnAdd3DSource(source_parm, &sfx_data);
@@ -440,7 +464,8 @@ int HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm,
         sfx->usefulness = -1;
 
     source->sfxinfo = sfx;
-    source->origin = origin;
+    source->origin = origin;  // sector or mobj xyz
+    source->mo = mo;  // mobile mobj with attributes
     source->priority = priority;	   
     HW3DS.pfnStartSource(source->handle);
     return s_num;
@@ -594,7 +619,7 @@ static void HW3S_Update3DSource(source_t *src)
 {
     source3D_data_t data;
 
-    HW3S_FillSourceParameters(src->origin, &data, src->type);
+    HW3S_FillSourceParameters(src->origin, src->mo, &data, src->type);
     HW3DS.pfnUpdate3DSource(src->handle, &data.pos);
 
 }
@@ -613,7 +638,9 @@ void HW3S_UpdateSources(void)
         {
             if (HW3DS.pfnIsPlaying(src->handle))
             {
-                if (src->origin)
+                // If it does not have mo,
+                // it is not mobile and would not need update.
+                if( src->origin && src->mo )
                 {
                     // Update positional sources
                     HW3S_Update3DSource(src);

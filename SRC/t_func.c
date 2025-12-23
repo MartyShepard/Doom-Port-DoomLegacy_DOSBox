@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: t_func.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -1299,7 +1299,7 @@ void SF_SpawnExplosion(void)
     t_return.type = FSVT_int;
     t_return.value.i = P_SetMobjState(spawn, spawn->info->deathstate);
     if (spawn->info->deathsound)
-        S_StartSound(spawn, spawn->info->deathsound);
+        S_StartObjSound(spawn, spawn->info->deathsound);
 done:
     return;
 
@@ -2834,7 +2834,7 @@ void SF_StartSound(void)
     mo = MobjForSvalue(t_argv[0]);
     if (!mo)  goto done;
 
-    S_StartSoundName(mo, t_argv[1].value.s);
+    S_StartXYZSoundName((xyz_t*)mo->x, mo, t_argv[1].value.s);
 done:
     return;
 
@@ -2867,7 +2867,7 @@ void SF_StartSectorSound(void)
     {
         // all sectors with the tagnum
         sector_t * sector = &sectors[secnum];
-        S_StartSoundName((mobj_t *) & sector->soundorg, t_argv[1].value.s);
+        S_StartXYZSoundName(&sector->soundorg, NULL, t_argv[1].value.s);
     }
 done:
     return;
@@ -2891,7 +2891,7 @@ void SF_AmbiantSound(void)
     if (t_argc != 1)  goto err_numarg;
     if (t_argv[0].type != FSVT_string)  goto err_notsound;
 
-    S_StartSoundName(NULL, t_argv[0].value.s);
+    S_StartXYZSoundName(NULL, NULL, t_argv[0].value.s);
 done:
     return;
 

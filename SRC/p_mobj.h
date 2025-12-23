@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_mobj.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -343,29 +343,20 @@ typedef enum
 #error MF_TRANSLATION can only handle NUMSKINCOLORS <= 16
 #endif
 
+
 // Map Object definition.
 typedef struct mobj_s
 {
     // List: thinker links.
     thinker_t           thinker;
 
-    // More list: links in sector (if needed)
-    struct mobj_s*      snext;
-    struct mobj_s*      sprev;
-
-    // Interaction info, by BLOCKMAP.
-    // Links in blocks (if needed).
-    struct mobj_s*      bnext;
-    struct mobj_s*      bprev;
-
-    struct subsector_s* subsector;
-
-    // a linked list of sectors where this object appears
-    struct msecnode_s*  touching_sectorlist;
-   
-    // Info for drawing: position.
+    // Drawing position, and sound position.
+    // Must be identical to xyz_t, replaces use of degenmobj_t.
     fixed_t             x, y, z;
 
+    // Momentums, used to update position.
+    fixed_t             momx, momy, momz;
+   
     // The closest interval over all contacted Sectors (or Things).
     fixed_t             floorz;
     fixed_t             ceilingz;
@@ -375,18 +366,14 @@ typedef struct mobj_s
     fixed_t             radius;
     fixed_t             height;
 
-    // Momentums, used to update position.
-    fixed_t             momx, momy, momz;
-
     //More drawing info: to determine current sprite.
     angle_t             angle;  // orientation
     spritenum_t         sprite; // used to find patch_t and flip value
-    int                 frame;  // frame number, plus bits see p_pspr.h
+    uint32_t            frame;  // frame number, plus bits see p_pspr.h
 
     // If == validcount, already checked.
     //int                 validcount;
 
-    int                 tics;   // state tic counter
     uint32_t            flags;  // mobjflag_e
     uint32_t            flags2; // heretic mobjflag2_e
     uint32_t            tflags; // translation, drawing, settings, mobjtflag_e
@@ -394,13 +381,28 @@ typedef struct mobj_s
     int                 special1;
     int                 special2;
     int                 health;
+    int                 tics;   // state tic counter
 
     mobjtype_t          type;   // MT_*  (MT_PLAYER, MT_VILE, MT_BFG, etc.)
 
   // [WDJ] Better alignment if ptrs are kept together, and int16 are together.
 
-    mobjinfo_t*         info;   // &mobjinfo[mobj->type]
-    state_t*            state;
+    mobjinfo_t        * info;   // &mobjinfo[mobj->type]
+    state_t           * state;
+
+    // More list: links in sector (if needed)
+    struct mobj_s     * snext;
+    struct mobj_s     * sprev;
+
+    // Interaction info, by BLOCKMAP.
+    // Links in blocks (if needed).
+    struct mobj_s     * bnext;
+    struct mobj_s     * bprev;
+
+    struct subsector_s* subsector;
+
+    // a linked list of sectors where this object appears
+    struct msecnode_s * touching_sectorlist;
 
     //Fab:02-08-98
     // Skin overrides 'sprite' when non NULL (currently hack for player
@@ -408,37 +410,37 @@ typedef struct mobj_s
     // Secondary use is when player die and we play the die sound.
     // Problem is he has already respawn and want the corpse to
     // play the sound !!! (yeah it happens :\)
-    void*               skin;
+    void              * skin;
    
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
   union {
-    struct mobj_s*      target;
+    struct mobj_s     * target;
     uint32_t            target_id; // used during loading
   };
 
     // Thing being chased/attacked for tracers.
   union {
-    struct mobj_s*      tracer;
+    struct mobj_s     * tracer;
     uint32_t            tracer_id; // used during loading
   };
 
   union {
-    struct mobj_s*      lastenemy;    // MBF, last known enemy
+    struct mobj_s     * lastenemy;    // MBF, last known enemy
     uint32_t            lastenemy_id; // used during loading
   };
 
     // Additional info record for player avatars only.
     // Only valid if type == MT_PLAYER
-    struct player_s*    player;
+    struct player_s   * player;
 
     // For nightmare and itemrespawn respawn.
-    mapthing_t *        spawnpoint;
+    mapthing_t        * spawnpoint;
 
     // Nodes
-    struct mobj_s*	nextnode;   // Next node object to chase after touching
+    struct mobj_s     * nextnode;   // Next node object to chase after touching
                                     // current target (which must be MT_NODE).
-    struct mobj_s*	targetnode; // Target node to remember when encountering a player
+    struct mobj_s     * targetnode; // Target node to remember when encountering a player
     int			nodescript; // Script to run when this node is touched
     int			nodewait;   // How many ticks to wait at this node
 
@@ -469,6 +471,7 @@ typedef struct mobj_s
 
     // WARNING : new field are not automaticely added to save game 
 } mobj_t;
+
 
 // check mobj against water content, before movement code
 void P_MobjCheckWater (mobj_t* mobj);

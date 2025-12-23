@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: f_finale.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -508,7 +508,7 @@ void F_CastTicker (void)
         if (castorder[castnum].name == NULL)
             castnum = 0;
         if (mobjinfo[castorder[castnum].type].seesound)
-            S_StartSound (NULL, mobjinfo[castorder[castnum].type].seesound);
+            S_StartSound(mobjinfo[castorder[castnum].type].seesound);
         caststate = &states[mobjinfo[castorder[castnum].type].seestate];
         castframes = 0;
     }
@@ -554,7 +554,7 @@ void F_CastTicker (void)
         }
 
         if (sfx)
-            S_StartSound (NULL, sfx);
+            S_StartSound(sfx);
     }
 
     if (castframes == 12)
@@ -611,7 +611,7 @@ boolean F_CastResponder (event_t* ev)
     castframes = 0;
     castattacking = false;
     if (mobjinfo[castorder[castnum].type].deathsound)
-        S_StartSound (NULL, mobjinfo[castorder[castnum].type].deathsound);
+        S_StartSound(mobjinfo[castorder[castnum].type].deathsound);
 
     return true;
 }
@@ -767,7 +767,7 @@ void F_BunnyScroll (void)
         stage = 6;
     if (stage > laststage)
     {
-        S_StartSound (NULL, sfx_pistol);
+        S_StartSound(sfx_pistol);
         laststage = stage;
     }
 

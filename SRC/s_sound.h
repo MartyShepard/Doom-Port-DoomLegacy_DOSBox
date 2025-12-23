@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1255 2016-08-29 21:28:38Z wesleyjohnson $
+// $Id: s_sound.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -62,6 +62,13 @@
   // sfxinfo_t
 #include "command.h"
   // consvar_t
+#include "m_fixed.h"
+#include "p_mobj.h"
+  // mobj_t
+#include "sounds.h"
+  // sfxinfo_t
+#include "r_defs.h"
+  // sector_t
 
 // killough 4/25/98: mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND (0x8000)
@@ -119,8 +126,8 @@ void S_Init (int sfxVolume, int musicVolume);
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-void S_StopSounds(void);
-void S_StartSounds(void);
+void S_StopLevelSound(void);
+void S_StartLevelSound(void);
 
 // [WDJ] Common routine for handling sfx names
 void S_GetSfxLump( sfxinfo_t * sfx );
@@ -137,23 +144,28 @@ typedef enum
     CT_AMBIENT
 } channel_type_t;
 
-//
-// Start sound for thing at <origin>
-//  using <sound_id> from sounds.h
-//
-void S_StartSound(const void* origin, int sound_id );
 
+// General sounds, no location.
+void S_StartSound( sfxid_t sfx_id );
+
+// Unusual sfx sounds are called through this interface.
+void S_StartXYZSound(const xyz_t * origin, sfxid_t sfx_id);
+void S_StartXYZSoundName(const xyz_t *origin, const mobj_t * mo,
+                         const char *soundname);
+
+// Most sector sfx sounds are called through this interface.
+void S_StartSecSound(const sector_t *sec, sfxid_t sfx_id);
+void S_StopSecSound(const sector_t *sec);
+
+// Most Mobj sfx sounds are called through this interface.
+void S_StartObjSound(const mobj_t *mo, sfxid_t sfx_id);
+void S_StopObjSound(const mobj_t *mo);
 // Special cases of 3D sources
+void S_StartAttackSound(const mobj_t *mo, sfxid_t sfx_id);
+void S_StartScreamSound(const mobj_t *mo, sfxid_t sfx_id);
+
+// Ambient sounds, with no location.
 void S_StartAmbientSound(sfxid_t sfx_id, int volume);
-void S_StartAttackSound(const void *origin, sfxid_t sfx_id);
-void S_StartScreamSound(const void *origin, sfxid_t sfx_id);
-
-// Will start a sound at a given volume.
-void S_StartSoundAtVolume(const void *origin_p, sfxid_t sfx_id, int volume,
-			  channel_type_t ct_type );
-
-// Stop sound for thing at <origin>
-void S_StopSound(void* origin);
 
 
 // Start music using <music_id> from sounds.h
@@ -185,8 +197,6 @@ void S_SetSfxVolume(int volume);
 //   origin : the object to check,  if NULL do not check it
 //   sfxid : the sfx to check,  if sfx_None do not check it
 // returns true if either is found.
-boolean  S_SoundPlaying(void *origin, sfxid_t sfxid);
-
-void S_StartSoundName(void *mo, char *soundname);
+boolean  S_SoundPlaying(xyz_t *origin, sfxid_t sfxid);
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1330 2017-05-23 14:36:40Z wesleyjohnson $
+// $Id: p_switch.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -248,29 +248,34 @@ void P_InitSwitchList(void)
 //
 // Start a button counting down till it turns off.
 //
+static
 void P_StartButton ( line_t*       line,
                      bwhere_e      w,
                      int           texture,
-                     int           time )
+                     int           timer )
 {
     int         i;
 
     // See if button is already pressed
     for (i = 0;i < MAXBUTTONS;i++)
+    {
       if (buttonlist[i].btimer && buttonlist[i].line == line)
         return;
+    }
 
     for (i = 0;i < MAXBUTTONS;i++)
+    {
         if (!buttonlist[i].btimer)
         {
             buttonlist[i].line = line;
             buttonlist[i].where = w;
             buttonlist[i].btexture = texture;
-            buttonlist[i].btimer = time;
-            // Bug fix: Save button sound origin as sector
-            buttonlist[i].soundorg = (mobj_t *)&line->frontsector->soundorg;
+            buttonlist[i].btimer = timer;
+            // Bug fix: Save button sound origin as sector (xyz_t*)
+            buttonlist[i].soundorg = &line->frontsector->soundorg;
             return;
         }
+    }
 
     I_Error("P_StartButton: no button slots left!");
 }
@@ -314,7 +319,7 @@ void P_ChangeSwitchTexture ( line_t*       line,
     {
         if (switchlist[i] == texTop)
         {
-            S_StartSound(buttonlist->soundorg,sound);
+            S_StartXYZSound(buttonlist->soundorg, sound);
             swside->toptexture = switchlist[i^1];
 
             if (useAgain)
@@ -326,7 +331,7 @@ void P_ChangeSwitchTexture ( line_t*       line,
         {
             if (switchlist[i] == texMid)
             {
-                S_StartSound(buttonlist->soundorg,sound);
+                S_StartXYZSound(buttonlist->soundorg, sound);
                 swside->midtexture = switchlist[i^1];
                 if (useAgain)
                     P_StartButton(line, B_middle_texture, switchlist[i], BUTTONTIME);
@@ -337,7 +342,7 @@ void P_ChangeSwitchTexture ( line_t*       line,
             {
                 if (switchlist[i] == texBot)
                 {
-                    S_StartSound(buttonlist->soundorg,sound);
+                    S_StartXYZSound(buttonlist->soundorg, sound);
                     swside->bottomtexture = switchlist[i^1];
 
                     if (useAgain)

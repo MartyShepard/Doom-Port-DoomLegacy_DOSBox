@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_user.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -687,7 +687,7 @@ boolean P_UndoPlayerChicken(player_t *player)
     int angf = ANGLE_TO_FINE( pmo->angle );
     fog = P_SpawnMobj(pmo->x+20*finecosine[angf], pmo->y+20*finesine[angf],
                       pmo->z+TELEFOGHEIGHT, MT_TFOG);
-    S_StartSound(fog, sfx_telept);
+    S_StartObjSound(fog, sfx_telept);
     P_PostChickenWeapon(player, weapon);
     return true;
 }
@@ -1165,12 +1165,12 @@ void P_PlayerThink (player_t* player)
                     fixed_t whater_height = waterz - pmo->subsector->sector->floorheight;
 
                     if( whater_height < (pmo->height>>2))
-                        S_StartSound (pmo, sfx_splash);
+                        S_StartObjSound(pmo, sfx_splash);
                     else
-                        S_StartSound (pmo, sfx_floush);
+                        S_StartObjSound(pmo, sfx_floush);
                 }
                 else
-                    S_StartSound (pmo, sfx_floush);
+                    S_StartObjSound(pmo, sfx_floush);
             }                   
         }
     }
@@ -1441,7 +1441,7 @@ void P_PlayerUseArtifact(player_t *player, artitype_t arti)
                 if(player == consoleplayer_ptr 
                    || player == displayplayer2_ptr ) // NULL when unused
                 {
-                    S_StartSound(NULL, sfx_artiuse);
+                    S_StartSound(sfx_artiuse);
                     H_ArtifactFlash = 4;
                 }
             }
@@ -1482,7 +1482,7 @@ void P_ArtiTele(player_t *player)
     destY = mtp->y<<FRACBITS;
     destAngle = wad_to_angle(mtp->angle);
     P_Teleport(player->mo, destX, destY, destAngle);
-    S_StartSound(NULL, sfx_wpnup); // Full volume laugh
+    S_StartSound(sfx_wpnup); // Full volume laugh
 }
 
 
@@ -1532,7 +1532,7 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
 #ifdef XPEREMNTAL_HW3S
                 S_StartScreamSound(pmo, sfx_wpnup);
 #else
-                S_StartSound(pmo, sfx_wpnup);
+                S_StartObjSound(pmo, sfx_wpnup);
 #endif
             }
         }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_floor.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -124,7 +124,7 @@ result_e T_MovePlane ( sector_t*     sector,
           {
             if((newheight < sectors[sector->modelsec].floorheight )
                && (sector->floorheight > sectors[sector->modelsec].floorheight))
-              S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
+              S_StartSecSound(sector, sfx_gloop);
           }
           // Moving a floor down
           if (newheight < dest)
@@ -168,7 +168,7 @@ result_e T_MovePlane ( sector_t*     sector,
           {
             if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->floorheight < sectors[sector->modelsec].floorheight))
-              S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
+              S_StartSecSound(sector, sfx_gloop);
           }
 //          destheight = (!EN_boom || dest<sector->ceilingheight)?
 //                          dest : sector->ceilingheight;
@@ -217,7 +217,7 @@ result_e T_MovePlane ( sector_t*     sector,
             // make sound when ceiling hits water
             if((newheight < sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight > sectors[sector->modelsec].floorheight))
-              S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
+              S_StartSecSound(sector, sfx_gloop);
           }
           // moving a ceiling down
           // keep ceiling from moving thru floors
@@ -260,7 +260,7 @@ result_e T_MovePlane ( sector_t*     sector,
             // make sound when ceiling hits water
             if((newheight > sectors[sector->modelsec].floorheight)
                && (sector->ceilingheight < sectors[sector->modelsec].floorheight))
-              S_StartSound((mobj_t *)&sector->soundorg, sfx_gloop);
+              S_StartSecSound(sector, sfx_gloop);
           }
           // moving a ceiling up
           if (newheight > dest)
@@ -338,7 +338,7 @@ void T_MoveFloor(floormove_t* mfloor)
     secmov = mfloor->sector;
 
     if (!(leveltime % (8*NEWTICRATERATIO)))
-        S_StartSound((mobj_t *)&secmov->soundorg, ceilmovesound);
+        S_StartSecSound(secmov, ceilmovesound);
 
     // [WDJ] Floortype was set by setup according to floorpic.
     // If the floorpic is changed, then also change the floortype.
@@ -429,7 +429,7 @@ void T_MoveFloor(floormove_t* mfloor)
 
         if ((mfloor->type == FT_buildStair && gamemode == heretic) || 
             gamemode != heretic)
-            S_StartSound((mobj_t *)&secmov->soundorg, sfx_pstop);
+            S_StartSecSound(secmov, sfx_pstop);
     }
 
 }
@@ -499,7 +499,7 @@ void T_MoveElevator(elevator_t* elevator)
 
   // make floor move sound
   if (!(leveltime % (8*NEWTICRATERATIO)))
-    S_StartSound((mobj_t *)&elevator->sector->soundorg, sfx_stnmov);
+    S_StartSecSound(elevator->sector, sfx_stnmov);
     
   if (res == MP_pastdest)            // if destination height acheived
   {
@@ -508,7 +508,7 @@ void T_MoveElevator(elevator_t* elevator)
     P_RemoveThinker(&elevator->thinker);    // remove elevator from actives
 
     // make floor stop sound
-    S_StartSound((mobj_t *)&elevator->sector->soundorg, sfx_pstop);
+    S_StartSecSound(elevator->sector, sfx_pstop);
   }
 }
 

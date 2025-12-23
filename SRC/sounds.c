@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: sounds.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -330,6 +330,16 @@ sfxinfo_t S_sfx[NUMSFX] =
   { "skeatk"   ,  70, NULL, 0, 99, -1 },
   { "radio\0"  ,  60, NULL, 0,  4, SKSRADIO },
 
+  // [WDJ] MBF, from MBF, modified for our table.
+#ifdef DOGS
+  // killough 11/98: dog sounds
+  { "dgsit\0"  ,  98, NULL, 0, 99, -1 },
+  { "dgatk\0"  ,  70, NULL, 0, 99, -1 },
+  { "dgact\0"  , 120, NULL, 0, 99, -1 },
+  { "dgdth\0"  ,  70, NULL, 0, 99, -1 },
+  { "dgpain"   ,  96, NULL, 0, 99, -1 },
+#endif
+
   //added:22-02-98: sound when the player avatar jumps in air 'hmpf!'
   { "jump\0\0" ,  60, NULL, 0,  4, SKSJUMP, SFX_player },
   { "ouch\0\0" ,  64, NULL, 0,  4, SKSOUCH, SFX_player },
@@ -516,7 +526,7 @@ void S_InitRuntimeSounds (void)
 
 // Add a new sound fx into a free sfx slot.
 // Return sfx id.
-sfxid_t  S_AddSoundFx (char *name, uint32_t flags)
+sfxid_t  S_AddSoundFx (const char *name, uint32_t flags)
 {
     uint16_t least_usefulness = 8000;
     sfxid_t  leastid = sfx_None;

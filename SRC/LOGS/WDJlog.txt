@@ -6009,7 +6009,22 @@ The bulk of the MBF TOUCHY, BOUNCES, FRIEND code.
 MBF movement and enemy interactions.
 
 *** W107_mbf_lines
-patchfile = w107_24_mbf_lines.patch
+patchfile = w107_26_mbf_lines.patch
 - commit revision 1330
 MBF linedef and switch changes.
 
+*** W107_mbf_sound
+patchfile = w107_27_mbf_sound.patch
+- commit revision 1331
+Added mbf DOG sounds.
+
+Removed the degenmobj being used for sector sounds.
+The previous code was casting the sector degenmobj as an mobj in order
+to use the x,y,z position.  However, mobj specific tests were then being
+done in the sound functions on fields that are not present in a sector.
+Made separate calls for sector, mobj, and plain sounds.
+The position of the sector and mobj is passed as an xyz_t ptr.
+This only requires that the sector x,y,z and the mobj x,y,z be
+structured the same.
+The mobj is passed separatly so that its attributes can be accessed for
+mobj specific tests.

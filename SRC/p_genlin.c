@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_genlin.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -563,7 +563,7 @@ manual_lift:
         break;
     }
 
-    S_StartSound((mobj_t *)&sec->soundorg,sfx_pstart);
+    S_StartSecSound(sec, sfx_pstart);
     P_AddActivePlat(plat); // add this plat to the list of active plats
 
     if (manual)  goto done;
@@ -939,8 +939,7 @@ manual_locked:
 
     // killough 4/15/98: fix generalized door opening sounds
     // (previously they always had the blazing door close sound)
-
-    S_StartSound((mobj_t *)&door->sector->soundorg,   // killough 4/15/98
+    S_StartSecSound(door->sector,   // killough 4/15/98
                  door->speed >= VDOORSPEED*4 ? sfx_bdopn : sfx_doropn);
 
     if (manual)  goto done;
@@ -1050,7 +1049,7 @@ manual_door:
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         if (door->topheight != sec->ceilingheight)
-          S_StartSound((mobj_t *)&door->sector->soundorg,sfx_bdopn);
+          S_StartSecSound(door->sector, sfx_bdopn);
         door->type = (Sped>=SPEED_Fast)? VD_genBlazeRaise : VD_genRaise;
         break;
       case DT_ODoor:
@@ -1058,20 +1057,20 @@ manual_door:
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         if (door->topheight != sec->ceilingheight)
-          S_StartSound((mobj_t *)&door->sector->soundorg,sfx_bdopn);
+          S_StartSecSound(door->sector, sfx_bdopn);
         door->type = (Sped>=SPEED_Fast)? VD_genBlazeOpen : VD_genOpen;
         break;
       case DT_CdODoor:
         door->topheight = sec->ceilingheight;
         door->direction = -1;
-        S_StartSound((mobj_t *)&door->sector->soundorg,sfx_dorcls);
+        S_StartSecSound(door->sector, sfx_dorcls);
         door->type = (Sped>=SPEED_Fast)? VD_genBlazeCdO : VD_genCdO;
         break;
       case DT_CDoor:
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
         door->direction = -1;
-        S_StartSound((mobj_t *)&door->sector->soundorg,sfx_dorcls);
+        S_StartSecSound(door->sector, sfx_dorcls);
         door->type = (Sped>=SPEED_Fast)? VD_genBlazeClose : VD_genClose;
         break;
       default:

@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1330"
+#define SVN_REV "1331"
 #endif
 
 // Version number: major.minor.revision
@@ -2581,7 +2581,9 @@ restart_command:
    
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
-
+#if defined( __DJGPP__ )				
+		    I_RequestConGraphics();
+#endif  
 #ifdef LAUNCHER   
     if ( fatal_error || init_sequence == 1 || (init_sequence == 0 && myargc < 2 ))
     {
@@ -2639,13 +2641,6 @@ restart_command:
         I_Error ( "Shutdown due to fatal error.\n" );
     }
 
-#if defined( __DJGPP__ )				
-		    I_RequestConGraphics();
-        //SCR_SetMode();  // change video mode
-
-        //SCR_Recalc();				
-#endif
-
     //---------------------------------------------------- READY SCREEN
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
@@ -2698,10 +2693,11 @@ restart_command:
         if( rendermode != render_soft )
             HWR_Startup();  // hardware render init
 #endif
+
         // we need the font of the console
-        CONS_Printf(text[HU_INIT_NUM]);
-        // switch off use_font1 when hu_font is loaded
-        HU_Init();  // dependent upon dedicated and raven				
+        CONS_Printf(text[HU_INIT_NUM]);      
+        // switch off use_font1 when hu_font is loaded       
+        HU_Init();  // dependent upon dedicated and raven        
         CON_VideoInit();  // dependent upon vid, hu_font
         EOUT_flags = EOUT_log | EOUT_con;
     }

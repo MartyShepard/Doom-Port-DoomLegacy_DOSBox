@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: m_cheat.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -905,7 +905,7 @@ static boolean HandleCheats(byte key)
         if (CheatAddKey(&Cheats[i], key, &eat))
         {
             Cheats[i].func(consoleplayer_ptr, &Cheats[i]);
-            S_StartSound(NULL, sfx_dorcls);
+            S_StartSound(sfx_dorcls);
         }
     }
     return (eat);

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: t_parse.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -814,7 +814,7 @@ void script_error(const char *fmt, ...)
     va_end(ap);
 
     // make a noise
-    S_StartSound(NULL, sfx_pldeth);
+    S_StartSound(sfx_pldeth);
 
     fs_killscript = true;
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fixed.h 1208 2016-01-19 19:47:33Z wesleyjohnson $
+// $Id: m_fixed.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -63,6 +63,13 @@ typedef int32_t fixed_t;
 #define FIXED_TO_FLOAT_MULT    (1.0f / 65536.0f)
 //#define FIXED_TO_FLOAT(x) (((float)(x)) / 65536.0)
 #define FIXED_TO_FLOAT(x) (((float)(x)) * FIXED_TO_FLOAT_MULT)
+
+
+typedef struct
+{
+    fixed_t    x, y, z;
+} xyz_t;
+
 
 //
 // Declare those functions:

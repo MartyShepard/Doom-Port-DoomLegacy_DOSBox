@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: p_hpspr.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -446,7 +446,7 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
     }
-    S_StartSound(pmo, sfx_chicpk1+(P_Random()%3));
+    S_StartObjSound(pmo, sfx_chicpk1+(P_Random()%3));
     player->chickenPeck = 12;
     psp->tics -= P_Random()&7;
 }
@@ -475,7 +475,7 @@ void A_BeakAttackPL2(player_t *player, pspdef_t *psp)
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
     }
-    S_StartSound(pmo, sfx_chicpk1+(P_Random()%3));
+    S_StartObjSound(pmo, sfx_chicpk1+(P_Random()%3));
     player->chickenPeck = 12;
     psp->tics -= P_Random()&3;
 }
@@ -502,7 +502,7 @@ void A_StaffAttackPL1(player_t *player, pspdef_t *psp)
     // lar_linetarget returned by P_LineAttack
     if(lar_linetarget)
     {
-        //S_StartSound(pmo, sfx_stfhit);
+        //S_StartObjSound(pmo, sfx_stfhit);
         // turn to face target
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
@@ -532,7 +532,7 @@ void A_StaffAttackPL2(player_t *player, pspdef_t *psp)
     // lar_linetarget returned by P_LineAttack
     if(lar_linetarget)
     {
-        //S_StartSound(pmo, sfx_stfpow);
+        //S_StartObjSound(pmo, sfx_stfpow);
         // turn to face target
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
@@ -551,7 +551,7 @@ void A_FireBlasterPL1(player_t *player, pspdef_t *psp)
     angle_t angle;
     int damage;
     
-    S_StartSound(pmo, sfx_gldhit);
+    S_StartObjSound(pmo, sfx_gldhit);
     player->ammo[am_blaster] -= USE_BLSR_AMMO_1;
     P_BulletSlope(pmo);
     damage = HITDICE(4);
@@ -560,7 +560,7 @@ void A_FireBlasterPL1(player_t *player, pspdef_t *psp)
         angle += P_SignedRandom()<<18;
     PuffType = MT_BLASTERPUFF1;
     P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
-    S_StartSound(pmo, sfx_blssht);
+    S_StartObjSound(pmo, sfx_blssht);
 }
 
 //----------------------------------------------------------------------------
@@ -651,7 +651,7 @@ void A_FireBlasterPL2(player_t *player, pspdef_t *psp)
     if( mo )
       mo->thinker.function.acp1 = (actionf_p1)P_BlasterMobjThinker;
 
-    S_StartSound(player->mo, sfx_blssht);
+    S_StartObjSound(player->mo, sfx_blssht);
 }
 
 //----------------------------------------------------------------------------
@@ -674,7 +674,7 @@ void A_FireGoldWandPL1(player_t *player, pspdef_t *psp)
         angle += P_SignedRandom()<<18;
     PuffType = MT_GOLDWANDPUFF1;
     P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
-    S_StartSound(pmo, sfx_gldhit);
+    S_StartObjSound(pmo, sfx_gldhit);
 }
 
 //----------------------------------------------------------------------------
@@ -705,7 +705,7 @@ void A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
         P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
         angle += ((ANG45/8)*2)/4;
     }
-    S_StartSound(pmo, sfx_gldhit);
+    S_StartObjSound(pmo, sfx_gldhit);
 }
 
 //----------------------------------------------------------------------------
@@ -737,7 +737,7 @@ void A_FireMacePL1B(player_t *player, pspdef_t *psp)
     fixed_t speed = ball->info->speed;
     ball->momx = (pmo->momx>>1) + FixedMul(speed, finecosine[angf]);
     ball->momy = (pmo->momy>>1) + FixedMul(speed, finesine[angf]);
-    S_StartSound(ball, sfx_lobsht);
+    S_StartObjSound(ball, sfx_lobsht);
     P_CheckMissileSpawn(ball);
 }
 
@@ -816,13 +816,13 @@ void A_MaceBallImpact(mobj_t *ball)
         ball->momz = (ball->momz*192)>>8;
         ball->flags2 &= ~MF2_FLOORBOUNCE;
         P_SetMobjState(ball, ball->info->spawnstate);
-        S_StartSound(ball, sfx_bounce);
+        S_StartObjSound(ball, sfx_bounce);
     }
     else
     { // Explode
         ball->flags |= MF_NOGRAVITY;
         ball->flags2 &= ~MF2_LOGRAV;
-        S_StartSound(ball, sfx_lobhit);
+        S_StartObjSound(ball, sfx_lobhit);
     }
 }
 
@@ -903,7 +903,7 @@ void A_FireMacePL2(player_t *player, pspdef_t *psp)
             mo->tracer = lar_linetarget;
         }
     }
-    S_StartSound(pmo, sfx_lobsht);
+    S_StartObjSound(pmo, sfx_lobsht);
 }
 
 //----------------------------------------------------------------------------
@@ -966,13 +966,13 @@ void A_DeathBallImpact(mobj_t *ball)
             ball->momy = FixedMul(ball->info->speed, finesine[angf]);
         }
         P_SetMobjState(ball, ball->info->spawnstate);
-        S_StartSound(ball, sfx_pstop);
+        S_StartObjSound(ball, sfx_pstop);
     }
     else
     { // Explode
         ball->flags |= MF_NOGRAVITY;
         ball->flags2 &= ~MF2_LOGRAV;
-        S_StartSound(ball, sfx_phohit);
+        S_StartObjSound(ball, sfx_phohit);
     }
 }
 
@@ -1111,7 +1111,7 @@ void A_FireSkullRodPL2(player_t *player, pspdef_t *psp)
         if(lar_linetarget)
             MissileMobj->tracer = lar_linetarget;
         
-        S_StartSound(MissileMobj, sfx_hrnpow);
+        S_StartObjSound(MissileMobj, sfx_hrnpow);
     }
 }
 
@@ -1227,7 +1227,7 @@ void A_SkullRodStorm(mobj_t *actor)
     P_CheckMissileSpawn(mo);
     if(!(actor->special1&31))
     {
-        S_StartSound(actor, sfx_ramrain);
+        S_StartObjSound(actor, sfx_ramrain);
     }
     actor->special1++;
 }
@@ -1358,7 +1358,7 @@ void A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
     mo->momz = FixedMul(mo->info->speed, slope);
     if(!player->refire || !(leveltime%38))
     {
-        S_StartSound(player->mo, sfx_phopow);
+        S_StartObjSound(player->mo, sfx_phopow);
     }
     P_CheckMissileSpawn(mo);
 }
@@ -1437,7 +1437,7 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
         {
             player->extralight = (player->extralight)? 0:LIGHT_UNIT;
         }
-        S_StartSound(pmo, sfx_gntful);
+        S_StartObjSound(pmo, sfx_gntful);
         return;
     }
     randVal = P_Random();
@@ -1456,11 +1456,11 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     if(player->powers[pw_weaponlevel2])
     {
         P_GiveHealth(player, damage>>1);
-        S_StartSound(pmo, sfx_gntpow);
+        S_StartObjSound(pmo, sfx_gntpow);
     }
     else
     {
-        S_StartSound(pmo, sfx_gnthit);
+        S_StartObjSound(pmo, sfx_gnthit);
     }
     // lar_linetarget returned by P_AimLineAttack, P_LineAttack
     // turn to face target

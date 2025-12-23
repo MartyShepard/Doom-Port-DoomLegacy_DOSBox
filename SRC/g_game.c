@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: g_game.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1646,7 +1646,7 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
     //added:16-01-98:consoleplayer -> displayplayer (hear snds from viewpt)
     // removed 9-12-98: why not ????
     if ( displayplayer_ptr->viewz != 1 )
-        S_StartSound (mo, sfx_telept);  // don't start sound on first frame
+        S_StartObjSound(mo, sfx_telept);  // don't start sound on first frame
 
 silent_spawn:
     // Spawn the player at the spawn spot.

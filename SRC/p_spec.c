@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1330 2017-05-23 14:36:40Z wesleyjohnson $
+// $Id: p_spec.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2811,7 +2811,7 @@ void P_UpdateSpecials (void)
                         buttonlist[i].btexture;
                     break;
                 }
-                S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
+                S_StartXYZSound(buttonlist[i].soundorg, sfx_swtchn);
                 memset(&buttonlist[i],0,sizeof(button_t));
             }
         }
