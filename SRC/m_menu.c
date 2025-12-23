@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: m_menu.c 1339 2017-06-21 16:09:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -295,6 +295,7 @@ static char    edit_buffer[SAVESTRINGSIZE];
 static void    (*edit_done_callback)(void) = NULL;  // call upon edit done
 
 // clear the savegamedisp from mslot to SAVEGAME_NUM_MSLOT
+static
 void clear_remaining_savegamedisp( int sgslot )
 {
     // fill out as empty any remaining menu positions
@@ -309,6 +310,7 @@ void clear_remaining_savegamedisp( int sgslot )
     }
 }
 
+static
 void setup_net_savegame( void )
 {
     strcpy( savegamedir, "net" );	// default for network play
@@ -364,7 +366,10 @@ typedef enum {
 
 typedef void (*menufunc_t)(int choice);
 
-static char input_char; // [smite] dirty hack, contains a second parameter to IT_KEYHANDLER functions (int choice is the key)
+// [smite] dirty hack, contains a second parameter to IT_KEYHANDLER functions
+// (int choice is the key)
+static char input_char;
+
 static inline boolean is_printable(char c) { return c >= ' ' && c <= '~'; }
 
 typedef union
@@ -396,35 +401,39 @@ typedef struct menuitem_s
 
 typedef struct menu_s
 {
-    char            *menutitlepic;
-    char            *menutitle;             // title as string for display with fontb if present
-    short           numitems;               // # of menu items
-    struct menu_s*  prevMenu;               // previous menu
-    menuitem_t*     menuitems;              // menu items
+    char          * menutitlepic;
+    char          * menutitle;             // title as string for display with fontb if present
+    menuitem_t    * menuitems;              // menu items
     void            (*drawroutine)(void);   // draw routine
-    short           x;
-    short           y;                      // x,y of menu
-    short           lastOn;                 // last item user was on in menu
     boolean         (*quitroutine)(void);   // called before quit a menu return true if we can
+    uint16_t        numitems;               // # of menu items
+    uint16_t        x;
+    uint16_t        y;                      // x,y of menu
+    byte            lastOn;                 // last item user was on in menu
 } menu_t;
 
+#define  NUM_MENUSTACK  8
+menu_t * menustack[ NUM_MENUSTACK+1 ];
+byte  menucnt = 0;
+
 // current menudef
-menu_t*   currentMenu = NULL;
-short     itemOn;                       // menu item skull is on
-short     skullAnimCounter;             // skull animation counter
-short     whichSkull;                   // which skull to draw
-int       SkullBaseLump;
+static menu_t  * currentMenu = NULL;
+static menuitem_t * menuline = NULL; // menu line that invoked a call or submenu
+static byte    itemOn;             // 0..40, menu item skull is on
+static int8_t  skullAnimCounter;   // 0..10, skull animation counter
+static byte    whichSkull;         // 0,1 which skull to draw
+static int     SkullBaseLump;
 
 // graphic name of skulls
-char      skullName[2][9] = {"M_SKULL1","M_SKULL2"};
+static char    skullName[2][9] = {"M_SKULL1","M_SKULL2"};
 
 // [WDJ] menu sounds
-static short menu_sfx_updown = sfx_menuud;
-static short menu_sfx_val = sfx_menuva;
-static short menu_sfx_enter = sfx_menuen;
-static short menu_sfx_open = sfx_menuop;
-static short menu_sfx_esc = sfx_menuop;
-static short menu_sfx_action = sfx_menuac;
+static sfxid_t menu_sfx_updown = sfx_menuud;
+static sfxid_t menu_sfx_val = sfx_menuva;
+static sfxid_t menu_sfx_enter = sfx_menuen;
+static sfxid_t menu_sfx_open = sfx_menuop;
+static sfxid_t menu_sfx_esc = sfx_menuop;
+static sfxid_t menu_sfx_action = sfx_menuac;
 
 CV_PossibleValue_t menusound_cons_t[] =
   {{0,"Auto"}, {1,"Legacy"}, {2,"Doom"}, {3,"Heretic"}, {0,NULL}};
@@ -503,38 +512,44 @@ void CV_menusound_OnChange(void)
 //
 // PROTOTYPES
 //
-void M_DrawSaveLoadBorder(int x, int y, boolean longer);
-void M_SetupNextMenu(menu_t *menudef);
-void M_Setup_prevMenu( void );
+static void M_DrawSaveLoadBorder(int x, int y, boolean longer);
+static void Push_Setup_Menu(menu_t *menudef);
+static void Pop_Menu( void );
 
 void M_DrawTextBox (int x, int y, int width, int lines);     //added:06-02-98:
-void M_DrawThermo(int x,int y,consvar_t *cv);
-void M_DrawEmptyCell(menu_t *menu,int item);
-void M_DrawSelCell(menu_t *menu,int item);
-void M_DrawSlider (int x, int y, int range);
-void M_CentreText(int y, char* string);        //added:30-01-98:writetext centered
+static void M_DrawThermo(int x,int y,consvar_t *cv);
+#if 0
+static void M_DrawEmptyCell(menu_t *menu,int item);
+static void M_DrawSelCell(menu_t *menu,int item);
+#endif
 
-void M_StartControlPanel(void);
-void M_StopMessage(int choice);
-void M_ClearMenus (boolean callexitmenufunc);
-int  M_StringHeight(char* string);
-void M_GameOption(int choice);
-void M_AdvOption(int choice);
-void M_NetOption(int choice);
+static void M_DrawSlider (int x, int y, int range);
+static void M_CentreText(int y, char* string); //added:30-01-98:writetext centered
+
+static void M_StopMessage(int choice);
+static void M_ClearMenus (boolean callexitmenufunc);
+static int  M_StringHeight(char* string);
+static void M_GameOption(int choice);
+static void M_AdvOption(int choice);
+static void M_NetOption(int choice);
 //28/08/99: added by Hurdler
-void M_OpenGLOption(int choice);
+static void M_OpenGLOption(int choice);
 
-menu_t MainDef,SingleMultiDef,TwoPlayerDef,MultiPlayerDef,SetupMultiPlayerDef,
-       EpiDef,NewDef,OptionsDef,VidModeDef,ControlDef,SoundDef,
-       ReadDef2,ReadDef1,SaveDef,LoadDef,ControlDef2,GameOptionDef,
-       AdvOptionsDef,EffectsOptionsDef,VideoOptionsDef,MouseOptionsDef,
-       NetOptionDef,ConnectOptionDef,ServerOptionsDef,MPOptionDef;
+menu_t MainDef, SoundDef, EpiDef, NewDef,
+  VidModeDef, VideoOptionsDef, MouseOptionsDef,
+  SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
+  ReadDef2, ReadDef1, SaveDef, LoadDef, 
+  ControlDef, ControlDef2, MControlDef,
+  OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
+  NetOptionDef, ConnectOptionDef, ServerOptionsDef,
+  MPOptionDef;
 
 
 //===========================================================================
 //Generic Stuffs (more easy to create menus :))
 //===========================================================================
 
+static
 void M_DrawMenuTitle(void)
 {
     if( FontBBaseLump && currentMenu->menutitle )
@@ -568,13 +583,14 @@ void M_DrawMenuTitle(void)
 }
 
 
-
+static
 void M_DrawGenericMenu(void)
 {
-    int x, y, i, w;
-    int cursory=0;
     fontinfo_t * fip = V_FontInfo();
     menuitem_t * mip;
+    int x, y, w;
+    int cursory=0;
+    byte i;
 
     // DRAW MENU
     // Draw to screen0, scaled
@@ -788,13 +804,8 @@ void M_QuitDOOM(int choice);
 
 enum
 {
-    newgame = 0,
-    loadgame,
-    savegame,
-    options,
-    readthis,	// referenced
-    quitdoom,	// referenced
-    main_end,
+    MM_readthis = 4,	// referenced
+    MM_quitdoom = 5,	// referenced
 } main_e;
 
 // Compatible with modifications to original graphics
@@ -821,10 +832,10 @@ menu_t  MainDef =
 {
     "M_DOOM",
     NULL,
-    main_end,
-    NULL,
     MainMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(MainMenu)/sizeof(menuitem_t),
     97,64,
     0
 };
@@ -833,19 +844,9 @@ menu_t  MainDef =
 //SINGLE/MULTI PLAYER GAME MENU
 //===========================================================================
 
-void M_SingleNewGame(int choice);
-void M_TwoPlayerMenu(int choice);
-void M_EndGame(int choice);
-
-#if 0
-enum
-{
-    sm_single = 0,
-    sm_2player,
-    sm_multi,
-    sm_end
-} singlemulti_e;
-#endif
+static void M_SingleNewGame(int choice);
+static void M_TwoPlayerMenu(int choice);
+static void M_EndGame(int choice);
 
 // DoomLegacy graphics from legacy.wad: M_SINGLE, M_2PLAYR, M_MULTI
 menuitem_t SingleMulti_Menu[] =
@@ -860,10 +861,10 @@ menu_t  SingleMultiDef =
 {
     "M_NGAME",
     "Single Multi New Game",
-    sizeof(SingleMulti_Menu)/sizeof(menuitem_t),
-    &MainDef,
     SingleMulti_Menu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(SingleMulti_Menu)/sizeof(menuitem_t),
     97,64,
     0
 };
@@ -962,13 +963,12 @@ menu_t  Connectdef =
 {
     "M_CONNEC", // in legacy.wad
     "Connect Server",
-    sizeof(ConnectMenu)/sizeof(menuitem_t),
-    &MultiPlayerDef,
     ConnectMenu,
     M_DrawConnectMenu,
+    M_CancelConnect,
+    sizeof(ConnectMenu)/sizeof(menuitem_t),
     27,40,
-    0,
-    M_CancelConnect
+    0
 };
 
 // Select Connect Menu
@@ -976,7 +976,7 @@ void M_ConnectMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
-    M_SetupNextMenu(&Connectdef);
+    Push_Setup_Menu(&Connectdef);
     M_Refresh(0);
 }
 
@@ -1087,10 +1087,10 @@ menu_t  ServerDef =
 {
     "M_STSERV", // in legacy.wad
     "Start Server",
-    sizeof(ServerMenu)/sizeof(menuitem_t),
-    &MultiPlayerDef,
     ServerMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(ServerMenu)/sizeof(menuitem_t),
     27,40,
     0,
 };
@@ -1104,26 +1104,20 @@ void M_StartServerMenu(int choice)
        : ServerMenu_EpisodeMap;  // Ult doom, Heretic
 
     // StartSplitScreenGame already set by TwoPlayer menu
-    M_SetupNextMenu(&ServerDef);
+    Push_Setup_Menu(&ServerDef);
     setup_net_savegame();
 }
 
 //===========================================================================
 //                            MULTI PLAYER MENU
 //===========================================================================
-void M_SetupMultiPlayer (int choice);
-void M_SetupMultiPlayer2 (int choice);
-void M_TwoPlayerMenu(int choice);
+static void M_SetupMultiPlayer1 (int choice);
+static void M_SetupMultiPlayer2 (int choice);
+static void M_TwoPlayerMenu(int choice);
 
 enum {
-    startsplitscreengame = 0,
-    setupplayer1,
-    setupplayer2,	// referenced in M_Player2_MenuEnable
-    multiplayeroptions,
-    connectmultiplayermenu,
-    startserver,
-    end_game,
-    multiplayer_end
+    MPM_player1 = 1, // referenced in M_Player2_MenuEnable
+    MPM_player2 = 2, // referenced in M_Player2_MenuEnable
 } multiplayer_e;
 
 // DoomLegacy graphics from legacy.wad: M_STSERV, M_CONNEC, M_2PLAYR, M_SETUPA, M_SETUPB
@@ -1132,7 +1126,7 @@ menuitem_t MultiPlayerMenu[] =
     // BIG font menu. BIG font does not work, lump is missing.
     // Cannot put all three options here.
     {IT_CALL | IT_PATCH,"M_2PLAYR","TWO PLAYER GAME",M_TwoPlayerMenu ,'n'},
-    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1" ,M_SetupMultiPlayer ,'s'},
+    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1" ,M_SetupMultiPlayer1 ,'s'},
     {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2" ,M_SetupMultiPlayer2 ,'t'},
     {IT_SUBMENU | IT_PATCH,"M_OPTION","OPTIONS"     ,&MPOptionDef ,'o'},
     {IT_CALL | IT_PATCH,"M_CONNEC","CONNECT SERVER" ,M_ConnectMenu ,'c'},
@@ -1144,10 +1138,10 @@ menu_t  MultiPlayerDef =
 {
     "M_MULTI", // in legacy.wad
     "Multiplayer",
-    multiplayer_end,
-    &SingleMultiDef,
     MultiPlayerMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(MultiPlayerMenu)/sizeof(menuitem_t),
     85,40,
     0
 };
@@ -1157,21 +1151,10 @@ menu_t  MultiPlayerDef =
 // Two Player menu
 //===========================================================================
 
-#if 0
-enum {
-    setupplayer1,
-    setupplayer2,
-    multiplayeroptions,
-    start,
-    multiplayer,
-    twoplayer_end
-} twoplayer_e;
-#endif
-
 // DoomLegacy graphics from legacy.wad: M_SETUPA, M_SETUPB, M_STSERV, M_MULTI
 menuitem_t TwoPlayerMenu[] =
 {
-    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer ,'s'},
+    {IT_CALL | IT_PATCH,"M_SETUPA","SETUP PLAYER 1",M_SetupMultiPlayer1 ,'s'},
     {IT_CALL | IT_PATCH,"M_SETUPB","SETUP PLAYER 2",M_SetupMultiPlayer2 ,'t'},
     {IT_CALL | IT_PATCH,"M_OPTION","OPTIONS"       ,M_NetOption ,'o'},
     {IT_CALL | IT_PATCH,"M_STSERV","START GAME"    ,M_StartServerMenu , 0},
@@ -1182,10 +1165,10 @@ menu_t  TwoPlayerDef =
 {
     "M_2PLAYR",  // from legacy.wad
     "Two Player",
-    sizeof(TwoPlayerMenu)/sizeof(menuitem_t),
-    &SingleMultiDef,
     TwoPlayerMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(TwoPlayerMenu)/sizeof(menuitem_t),
     85,40,
     0
 };
@@ -1193,10 +1176,9 @@ menu_t  TwoPlayerDef =
 
 void M_TwoPlayerMenu(int choice)
 {
-    TwoPlayerDef.prevMenu = currentMenu;
     StartSplitScreenGame = true;
     M_Player2_MenuEnable( 1 );
-    M_SetupNextMenu(&TwoPlayerDef);
+    Push_Setup_Menu(&TwoPlayerDef);
 }
 
 
@@ -1221,19 +1203,19 @@ menu_t  SecondMouseCfgdef =
 {
     "M_OPTTTL",
     "Options",
-    sizeof(SecondMouseCfgMenu)/sizeof(menuitem_t),
-    &SetupMultiPlayerDef,
     SecondMouseCfgMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(SecondMouseCfgMenu)/sizeof(menuitem_t),
     27,40,
-    0,
+    0
 };
 
 //===========================================================================
 // Second options for the splitscreen player
 //===========================================================================
 
-menuitem_t  SecondOptionsMenu[] =
+menuitem_t  Player2OptionsMenu[] =
 {
     //Hurdler: for now, only autorun is implemented 
     //         others should be implemented as well if we want to be complete
@@ -1244,14 +1226,14 @@ menuitem_t  SecondOptionsMenu[] =
 //    {IT_STRING | IT_CVAR,"Control per key" ,&cv_controlperkey2   ,0},
 };
 
-menu_t  SecondOptionsdef =
+menu_t  P2_OptionsDef =
 {
     "M_OPTTTL",
     "Options",
-    sizeof(SecondOptionsMenu)/sizeof(menuitem_t),
-    &SetupMultiPlayerDef,
-    SecondOptionsMenu,
+    Player2OptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(Player2OptionsMenu)/sizeof(menuitem_t),
     27,40,
     0,
 };
@@ -1259,25 +1241,26 @@ menu_t  SecondOptionsdef =
 //===========================================================================
 //MULTI PLAYER SETUP MENU
 //===========================================================================
-void M_DrawSetupMultiPlayerMenu(void);
-void M_HandleSetupMultiPlayer(int choice);
-void M_SetupControlsMenu(int choice);
-boolean M_QuitMultiPlayerMenu(void);
+static void M_DrawSetupMultiPlayerMenu(void);
+static void M_MultiPlayer_Responder(int choice);
+static void M_Setup_P1_Controls(int choice);
+static void M_Setup_P2_Controls(int choice);
+static boolean M_QuitMultiPlayerMenu(void);
 
 menuitem_t SetupMultiPlayerMenu[] =
 {
-    {IT_KEYHANDLER | IT_STRING          ,0,"Your name" ,M_HandleSetupMultiPlayer,0},
+    {IT_KEYHANDLER | IT_STRING          ,0,"Your name" ,M_MultiPlayer_Responder,0},
     {IT_CVAR | IT_STRING | IT_CV_NOPRINT | IT_YOFFSET, 0,"Your color",&cv_playercolor         ,16},
-    {IT_KEYHANDLER | IT_STRING | IT_YOFFSET, 0,"Your skin" ,M_HandleSetupMultiPlayer,96},
+    {IT_KEYHANDLER | IT_STRING | IT_YOFFSET, 0,"Your skin" ,M_MultiPlayer_Responder,96},
 #if 0
-    /* this line calls the setup controls for secondary player, only if numitems is > 3 */
+    // This line calls the setup controls for player2, only if numitems is > 3
     //Hurdler: uncomment this line when other options are available
-    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Player config...", &SecondOptionsdef, 110},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 config...", &P2_OptionsDef, 110},
 #else
     //... and remove this one
     {IT_STRING | IT_CVAR | IT_YOFFSET,   0,"Always Run"      ,&cv_autorun2         ,110},
 #endif
-    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Setup Controls...", M_SetupControlsMenu, 120},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 Controls...", M_Setup_P2_Controls, 120},
     {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Mouse config...", &SecondMouseCfgdef, 130}
 };
 
@@ -1295,13 +1278,12 @@ menu_t  SetupMultiPlayerDef =
 {
     "M_MULTI", // in legacy.wad
     "Multiplayer",
-    sizeof(SetupMultiPlayerMenu)/sizeof(menuitem_t),
-    &MultiPlayerDef,
     SetupMultiPlayerMenu,
     M_DrawSetupMultiPlayerMenu,
+    M_QuitMultiPlayerMenu,
+    sizeof(SetupMultiPlayerMenu)/sizeof(menuitem_t),
     27,40,
     0,
-    M_QuitMultiPlayerMenu
 };
 
 
@@ -1319,7 +1301,8 @@ static  consvar_t* setupm_cvskin;
 static  consvar_t* setupm_cvcolor;
 static  consvar_t* setupm_cvname;
 
-void M_SetupMultiPlayer (int choice)
+static
+void M_SetupMultiPlayer1 (int choice)
 {
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
@@ -1332,11 +1315,11 @@ void M_SetupMultiPlayer (int choice)
     setupm_cvskin = &cv_skin;
     setupm_cvcolor = &cv_playercolor;
     setupm_cvname = &cv_playername;
-    SetupMultiPlayerDef.prevMenu = currentMenu;
-    M_SetupNextMenu (&SetupMultiPlayerDef);
+    Push_Setup_Menu (&SetupMultiPlayerDef);
 }
 
 // start the multiplayer setup menu, for secondary player (splitscreen mode)
+static
 void M_SetupMultiPlayer2 (int choice)
 {
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
@@ -1344,28 +1327,27 @@ void M_SetupMultiPlayer2 (int choice)
     strcpy (setupm_name, cv_playername2.string);
     SetupMultiPlayerDef.numitems = setupmulti_end;          //activate the setup controls for player 2
 
-    // set for splitscreen secondary player
+    // set for splitscreen player 2
     SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = &cv_playercolor2;
     setupm_player = displayplayer2_ptr;  // player 2
     setupm_cvskin = &cv_skin2;
     setupm_cvcolor = &cv_playercolor2;
     setupm_cvname = &cv_playername2;
-    SetupMultiPlayerDef.prevMenu = currentMenu;
-    M_SetupNextMenu (&SetupMultiPlayerDef);
+    Push_Setup_Menu (&SetupMultiPlayerDef);
 }
 
 
-// called at cv_splitscreen changes
+// Called at cv_splitscreen changes (SplitScreen_OnChange)
 void M_Player2_MenuEnable( boolean player2_enable )
 {
 // activate setup for player 2
     if ( player2_enable )
-        MultiPlayerMenu[setupplayer2].status = IT_CALL | IT_PATCH;
+        MultiPlayerMenu[MPM_player2].status = IT_CALL | IT_PATCH;
     else
     {
-        MultiPlayerMenu[setupplayer2].status = IT_DISABLED;
-        if( MultiPlayerDef.lastOn==setupplayer2)
-            MultiPlayerDef.lastOn=setupplayer1;
+        MultiPlayerMenu[MPM_player2].status = IT_DISABLED;
+        if( MultiPlayerDef.lastOn == MPM_player2)
+            MultiPlayerDef.lastOn = MPM_player1;
     }
 }
 
@@ -1373,6 +1355,7 @@ void M_Player2_MenuEnable( boolean player2_enable )
 //
 //  Draw the multi player setup menu, had some fun with player anim
 //
+static
 void M_DrawSetupMultiPlayerMenu(void)
 {
     int             mx,my;
@@ -1398,8 +1381,8 @@ void M_DrawSetupMultiPlayerMenu(void)
     V_DrawString (mx+90, my+96,0, setupm_cvskin->string);
 
     // draw text cursor for name
-    if (itemOn==0 &&
-        skullAnimCounter<4)   //blink cursor
+    if (itemOn==0
+        && skullAnimCounter<4 )   //blink cursor
         V_DrawCharacter(mx+98+V_StringWidth(setupm_name), my, '_' | 0x80);  // white
 
     // draw box around guy
@@ -1435,7 +1418,8 @@ void M_DrawSetupMultiPlayerMenu(void)
 //
 // Handle Setup MultiPlayer Menu
 //
-void M_HandleSetupMultiPlayer (int key)
+static
+void M_MultiPlayer_Responder (int key)
 {
     int      l;
     boolean  exitmenu = false;  // exit to previous menu and send name change
@@ -1454,7 +1438,7 @@ void M_HandleSetupMultiPlayer (int key)
 
       case KEY_UPARROW:
         S_StartSound(menu_sfx_updown);
-        if (!itemOn)
+        if (itemOn == 0)
             itemOn = SetupMultiPlayerDef.numitems-1;
         else itemOn--;
         break;
@@ -1486,7 +1470,8 @@ void M_HandleSetupMultiPlayer (int key)
         break;
 
       case KEY_BACKSPACE:
-        if ( (l=strlen(setupm_name))!=0 && itemOn==0)
+        l = strlen(setupm_name);
+        if( l!=0 && itemOn==0 )
         {
             S_StartSound(menu_sfx_val);
             setupm_name[l-1]=0;
@@ -1523,10 +1508,11 @@ void M_HandleSetupMultiPlayer (int key)
 
     if (exitmenu)
     {
-        M_Setup_prevMenu();
+        Pop_Menu();
     }
 }
 
+static
 boolean M_QuitMultiPlayerMenu(void)
 {
     int      l;
@@ -1548,17 +1534,7 @@ boolean M_QuitMultiPlayerMenu(void)
 //                              EPISODE SELECT
 //===========================================================================
 
-void M_Episode(int choice);
-
-enum
-{
-    ep1,
-    ep2,
-    ep3,
-    ep4,
-    ep5,
-    ep_end
-} episodes_e;
+static void M_Episode(int choice);
 
 menuitem_t EpisodeMenu[]=
 {
@@ -1573,12 +1549,12 @@ menu_t  EpiDef =
 {
     "M_EPISOD",
     "Which Episode?",
-    ep_end,             // # of menu items
-    &MainDef,           // previous menu
     EpisodeMenu,        // menuitem_t ->
     M_DrawGenericMenu,  // drawing routine ->
+    NULL,
+    sizeof(EpisodeMenu)/sizeof(menuitem_t),
     48,63,              // x,y
-    ep1                 // lastOn, flags
+    0                   // lastOn, flags
 };
 
 //
@@ -1586,12 +1562,13 @@ menu_t  EpiDef =
 //
 int     epi;
 
+static
 void M_Episode(int choice)
 {
     if ( (gamemode == doom_shareware)
          && choice)
     {
-        M_SetupNextMenu(&ReadDef1);
+        Push_Setup_Menu(&ReadDef1);
         M_SimpleMessage(SWSTRING);
         return;
     }
@@ -1600,30 +1577,26 @@ void M_Episode(int choice)
     if ( (gamemode == doom_registered)
          && (choice > 2))
     {
-        I_Error("M_Episode: 4th episode requires UltimateDOOM\n");
+        GenPrintf( EMSG_warn, "M_Episode: 4th episode requires UltimateDOOM\n");
         choice = 0;
     }
 
     epi = choice;
-    M_SetupNextMenu(&NewDef);
+    Push_Setup_Menu(&NewDef);
 }
 
 
 //===========================================================================
 //                           NEW GAME FOR SINGLE PLAYER
 //===========================================================================
-void M_DrawNewGame(void);
+static void M_DrawNewGame(void);
 
-void M_ChooseSkill(int choice);
+static void M_ChooseSkill(int choice);
 
 enum
 {
-    killthings,
-    toorough,
-    hurtme,
-    violence,
-    nightmare,
-    newg_end
+    NG_violence = 3,
+    NG_nightmare = 4,
 } newgame_e;
 
 menuitem_t NewGameMenu[]=
@@ -1639,14 +1612,15 @@ menu_t  NewDef =
 {
     "M_NEWG",
     "New Game",
-    newg_end,           // # of menu items
-    &EpiDef,            // previous menu
     NewGameMenu,        // menuitem_t ->
     M_DrawNewGame,      // drawing routine ->
+    NULL,
+    sizeof(EpisodeMenu)/sizeof(menuitem_t),
     48,63,              // x,y
-    violence            // lastOn
+    NG_violence            // lastOn
 };
 
+static
 void M_DrawNewGame(void)
 {
     // Draw to screen0, scaled
@@ -1658,6 +1632,7 @@ void M_DrawNewGame(void)
     M_DrawGenericMenu();
 }
 
+static
 void M_SingleNewGame(int choice)
 {
     // to get out of two player game, and can then backout to multiplayer
@@ -1669,16 +1644,17 @@ void M_SingleNewGame(int choice)
     if ( gamemode == doom2_commercial
          || (gamemode == chexquest1 && !modifiedgame) //DarkWolf95: Support for Chex Quest
          )
-        M_SetupNextMenu(&NewDef);
+        Push_Setup_Menu(&NewDef);
     else
-        M_SetupNextMenu(&EpiDef);
+        Push_Setup_Menu(&EpiDef);
 }
 
-void M_VerifyNightmare(int ch);
+static void M_VerifyNightmare(int ch);
 
+static
 void M_ChooseSkill(int choice)
 {
-    if (choice == nightmare)
+    if (choice == NG_nightmare)
     {
         M_StartMessage(NIGHTMARE, M_VerifyNightmare, MM_YESNO);
         return;
@@ -1688,12 +1664,13 @@ void M_ChooseSkill(int choice)
     M_ClearMenus (true);
 }
 
+static
 void M_VerifyNightmare(int ch)
 {
     if (ch != 'y')
         return;
 
-    G_DeferedInitNew (nightmare, G_BuildMapName(epi+1,1), StartSplitScreenGame);
+    G_DeferedInitNew(NG_nightmare, G_BuildMapName(epi+1,1), StartSplitScreenGame);
     M_ClearMenus (true);
 }
 
@@ -1711,7 +1688,6 @@ menuitem_t OptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Crosshair"       ,&cv_crosshair       ,0},
 //    {IT_STRING | IT_CVAR,0,"Crosshair scale" ,&cv_crosshairscale  ,0},
     {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim         ,0},
-    {IT_STRING | IT_CVAR,0,"Control per key" ,&cv_controlperkey   ,0},
 
     {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Effects Options...",&EffectsOptionsDef ,60},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options..."  ,M_GameOption       ,0},
@@ -1720,18 +1696,17 @@ menuitem_t OptionsMenu[]=
     {IT_SUBMENU | IT_WHITESTRING,0,"Server Options...",&ServerOptionsDef  ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Sound Volume..."  ,&SoundDef          ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Video Options..." ,&VideoOptionsDef   ,0},
-    {IT_SUBMENU | IT_WHITESTRING,0,"Mouse Options..." ,&MouseOptionsDef   ,0},
-    {IT_CALL    | IT_WHITESTRING,0,"Setup Controls...",M_SetupControlsMenu,0}
+    {IT_SUBMENU | IT_WHITESTRING,0,"Setup Controls...",&MControlDef       ,0}
 };
 
 menu_t  OptionsDef =
 {
     "M_OPTTTL",
     "Options",
-    sizeof(OptionsMenu)/sizeof(menuitem_t),
-    &MainDef,
     OptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(OptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -1739,6 +1714,7 @@ menu_t  OptionsDef =
 //
 //  A smaller 'Thermo', with range given as percents (0-100)
 //
+static
 void M_DrawSlider (int x, int y, int range)
 {
     int i;
@@ -1767,28 +1743,29 @@ void M_DrawSlider (int x, int y, int range)
 
 menuitem_t EffectsOptionsMenu[]=
 {
-    {IT_STRING | IT_CVAR,0,    "Translucency"     , &cv_translucency  , 0},
-    {IT_STRING | IT_CVAR,0,    "Fuzzy Shadow"     , &cv_fuzzymode     , 0},
-    {IT_STRING | IT_CVAR,0,    "Splats"           , &cv_splats        , 0},
-    {IT_STRING | IT_CVAR,0,    "Max splats"       , &cv_maxsplats     , 0},
-    {IT_STRING | IT_CVAR,0,    "Sprites limit"    , &cv_spritelim     , 0},
-    {IT_STRING | IT_CVAR,0,    "Screens Link"     , &cv_screenslink   , 0},
-    {IT_STRING | IT_CVAR,0,    "Pickup Flash"     , &cv_pickupflash   , 0},
-    {IT_STRING | IT_CVAR,0,    "Random sound pitch",&cv_rndsoundpitch , 0},
-    {IT_STRING | IT_CVAR,0,    "Menu Sounds",       &cv_menusound     , 0},
-    {IT_STRING | IT_CVAR,0,    "Boom Colormap"    , &cv_boom_colormap , 0},
-    {IT_STRING | IT_CVAR,0,    "Water Effect"    , &cv_water_effect   , 0},
-    {IT_STRING | IT_CVAR,0,    "Fog Effect"      , &cv_fog_effect     , 0},
+    {IT_STRING | IT_CVAR,0, "Translucency"    , &cv_translucency  , 0},
+    {IT_STRING | IT_CVAR,0, "Fuzzy Shadow"    , &cv_fuzzymode     , 0},
+    {IT_STRING | IT_CVAR,0, "Splats"          , &cv_splats        , 0},
+    {IT_STRING | IT_CVAR,0, "Max splats"      , &cv_maxsplats     , 0},
+    {IT_STRING | IT_CVAR,0, "BloodTime"       , &cv_bloodtime     , 0},
+    {IT_STRING | IT_CVAR,0, "Sprites limit"   , &cv_spritelim     , 0},
+    {IT_STRING | IT_CVAR,0, "Pickup Flash"    , &cv_pickupflash   , 0},
+    {IT_STRING | IT_CVAR,0, "Boom Colormap"   , &cv_boom_colormap , 0},
+    {IT_STRING | IT_CVAR,0, "Invul skymap"    , &cv_invul_skymap  , 0},
+    {IT_STRING | IT_CVAR,0, "Water Effect"    , &cv_water_effect  , 0},
+    {IT_STRING | IT_CVAR,0, "Fog Effect"      , &cv_fog_effect    , 0},
+    {IT_STRING | IT_CVAR,0, "Menu Sounds"     , &cv_menusound     , 0},
+    {IT_STRING | IT_CVAR,0, "Screens Link"    , &cv_screenslink   , 0},
 };
 
 menu_t  EffectsOptionsDef =
 {
     "M_OPTTTL",
     "Effects",
-    sizeof(EffectsOptionsMenu)/sizeof(menuitem_t),
-    &OptionsDef,
     EffectsOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(EffectsOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -1829,14 +1806,16 @@ menu_t  VideoOptionsDef =
 {
     "M_OPTTTL",
     "Video Options",
-    sizeof(VideoOptionsMenu)/sizeof(menuitem_t),
-    &OptionsDef,
     VideoOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(VideoOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
 
+
+// Called by CV_gammafunc_OnChange.
 void MenuGammaFunc_dependencies( byte gamma_en,
                                  byte black_en, byte bright_en )
 {
@@ -1868,10 +1847,7 @@ menuitem_t MouseOptionsMenu[]=
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mouse x Speed", &cv_mouse_sens_x    ,0},
     {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,0,"Mouse y Speed", &cv_mouse_sens_y    ,0},
-#ifdef __DJGPP__			 
-    {IT_STRING | IT_CVAR,0,"Use Joystick", &cv_usejoystick    ,0}	 
-#endif
+     | IT_CV_SLIDER     ,0,"Mouse y Speed", &cv_mouse_sens_y    ,0}
 #if 0
 //[WDJ] disabled in 143beta_macosx
 //[segabor]
@@ -1886,10 +1862,10 @@ menu_t  MouseOptionsDef =
 {
     "M_OPTTTL",
     "Mouse Options",
-    sizeof(MouseOptionsMenu)/sizeof(menuitem_t),
-    &OptionsDef,
     MouseOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(MouseOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -1908,7 +1884,6 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Fast Monsters"       ,&cv_fastmonsters       ,0},
     {IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
-    {IT_STRING | IT_CVAR,0,"BloodTime"           ,&cv_bloodtime          ,0},
     {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Adv Options..."      ,M_AdvOption     ,120},
 //    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Network Options..."  ,M_NetOption     ,130}
     {IT_CALL   | IT_WHITESTRING,0,"Network Options..."  ,M_NetOption     ,0}
@@ -1918,14 +1893,15 @@ menu_t  GameOptionDef =
 {
     "M_OPTTTL",
     "Game Options",
-    sizeof(GameOptionsMenu)/sizeof(menuitem_t),
-    &OptionsDef,
     GameOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(GameOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
 
+static
 void M_GameOption(int choice)
 {
     if(!server)
@@ -1933,40 +1909,72 @@ void M_GameOption(int choice)
         M_SimpleMessage("You are not the server\nYou cannot change game options\n");
         return;
     }
-    M_SetupNextMenu(&GameOptionDef);
+    Push_Setup_Menu(&GameOptionDef);
 }
 
 //===========================================================================
 //                        Adv OPTIONS MENU
 //===========================================================================
 
-menuitem_t AdvOptionsMenu[]=
+menuitem_t AdvOption1Menu[]=
 {
     {IT_STRING | IT_CVAR,0,"Gravity"             ,&cv_gravity            ,0},
     {IT_STRING | IT_CVAR,0,"Monster gravity"     ,&cv_monstergravity     ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Monster friction"    ,&cv_monsterfriction    ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Monster door stuck"  ,&cv_doorstuck          ,0},  // [WDJ]
+    {IT_STRING | IT_CVAR,0,"Monster remember"    ,&cv_monster_remember   ,0},
+    {IT_STRING | IT_CVAR,0,"Mon avoid hazard"    ,&cv_mbf_monster_avoid_hazard ,0},
+    {IT_STRING | IT_CVAR,0,"Monster backing"     ,&cv_mbf_monster_backing ,0},
+    {IT_STRING | IT_CVAR,0,"Monster pursuit"     ,&cv_mbf_pursuit        ,0},
+    {IT_STRING | IT_CVAR,0,"Monster dropoff"     ,&cv_mbf_dropoff        ,0},
+    {IT_STRING | IT_CVAR,0,"Monster staylift"    ,&cv_mbf_staylift       ,0},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Next"  , &AdvOption2Def,130},
+};
+
+menuitem_t AdvOption2Menu[]=
+{
+    {IT_STRING | IT_CVAR,0,"Distance friend"     ,&cv_mbf_distfriend     ,0},
+    {IT_STRING | IT_CVAR,0,"Help friend"         ,&cv_mbf_help_friend    ,0},
+#ifdef DOGS   
+    {IT_STRING | IT_CVAR,0,"Dogs"                ,&cv_mbf_dogs           ,0},
+    {IT_STRING | IT_CVAR,0,"Dog jumping"         ,&cv_mbf_dog_jumping    ,0},
+#endif
+    {IT_STRING | IT_CVAR,0,"Monkeys"             ,&cv_mbf_monkeys        ,0},
+    {IT_STRING | IT_CVAR,0,"Falloff"             ,&cv_mbf_falloff        ,0},
     {IT_STRING | IT_CVAR,0,"Voodoo mode"         ,&cv_voodoo_mode        ,0},  // [WDJ]
     {IT_STRING | IT_CVAR,0,"Insta-death"         ,&cv_instadeath         ,0},  // [WDJ]
 #ifdef DOORDELAY_CONTROL
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
 #endif
-    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Games Options..."    ,M_GameOption    ,120},
-    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Network Options..."  ,M_NetOption     ,130}
+    {IT_STRING | IT_CVAR,0,"Zero Tags"           ,&cv_zerotags           ,0},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Games Options..."    ,M_GameOption    ,130},
 };
 
-menu_t  AdvOptionDef =
+menu_t  AdvOption1Def =
 {
     "M_OPTTTL",
-    "Adv Options",
-    sizeof(AdvOptionsMenu)/sizeof(menuitem_t),
-    &OptionsDef,
-    AdvOptionsMenu,
+    "Adv1 Options",
+    AdvOption1Menu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(AdvOption1Menu)/sizeof(menuitem_t),
     60,40,
     0
 };
 
+menu_t  AdvOption2Def =
+{
+    "M_OPTTTL",
+    "Adv2 Options",
+    AdvOption2Menu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(AdvOption2Menu)/sizeof(menuitem_t),
+    60,40,
+    0
+};
+
+static
 void M_AdvOption(int choice)
 {
     if(!server)
@@ -1974,7 +1982,7 @@ void M_AdvOption(int choice)
         M_SimpleMessage("You are not the server\nYou cannot change adv options\n");
         return;
     }
-    M_SetupNextMenu(&AdvOptionDef);
+    Push_Setup_Menu(&AdvOption1Def);
 }
 
 //===========================================================================
@@ -2004,14 +2012,15 @@ menu_t  NetOptionDef =
 {
     "M_OPTTTL",
     "Net Options",
-    sizeof(NetOptionsMenu)/sizeof(menuitem_t),
-    &MPOptionDef,
     NetOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(NetOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
 
+static
 void M_NetOption(int choice)
 {
     if(!server)
@@ -2019,8 +2028,7 @@ void M_NetOption(int choice)
         M_SimpleMessage("You are not the server\nYou cannot change network options\n");
         return;
     }
-    NetOptionDef.prevMenu = currentMenu;
-    M_SetupNextMenu(&NetOptionDef);
+    Push_Setup_Menu(&NetOptionDef);
 }
 
 //===========================================================================
@@ -2040,18 +2048,17 @@ menu_t  ConnectOptionDef =
 {
     "M_OPTTTL",
     "Connect Options",
-    sizeof(ConnectOptionMenu)/sizeof(menuitem_t),
-    &MPOptionDef,
     ConnectOptionMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(ConnectOptionMenu)/sizeof(menuitem_t),
     28,40,
     0
 };
 
 void M_ConnectOption(int choice)
 {
-    ConnectOptionDef.prevMenu = currentMenu;
-    M_SetupNextMenu(&ConnectOptionDef);
+    Push_Setup_Menu(&ConnectOptionDef);
 }
 
 
@@ -2071,10 +2078,10 @@ menu_t  ServerOptionsDef =
 {
     "M_OPTTTL",
     "Server Options",
-    sizeof(ServerOptionsMenu)/sizeof(menuitem_t),
-    &MPOptionDef,
     ServerOptionsMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(ServerOptionsMenu)/sizeof(menuitem_t),
     28,40,
     0
 };
@@ -2096,10 +2103,10 @@ menu_t  MPOptionDef =
 {
     "M_OPTTTL",
     "MultiPlayer Options",
-    sizeof(MPOptionMenu)/sizeof(menuitem_t),
-    &MultiPlayerDef,
     MPOptionMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(MPOptionMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -2112,12 +2119,6 @@ menu_t  MPOptionDef =
 void M_DrawReadThis1(void);
 void M_DrawReadThis2(void);
 
-enum
-{
-    rdthsempty1,
-    read1_end
-} read_e;
-
 menuitem_t ReadMenu1[] =
 {
     {IT_SUBMENU | IT_NOTHING,0,"",&ReadDef2,0}
@@ -2127,10 +2128,10 @@ menu_t  ReadDef1 =
 {
     NULL,
     NULL,
-    read1_end,
-    &MainDef,
     ReadMenu1,
     M_DrawReadThis1,
+    NULL,
+    sizeof(ReadMenu1)/sizeof(menuitem_t),
     280,185,
     0
 };
@@ -2165,12 +2166,6 @@ void M_DrawReadThis1(void)
 //                          Read This! MENU 2
 //===========================================================================
 
-enum
-{
-    rdthsempty2,
-    read2_end
-} read_e2;
-
 menuitem_t ReadMenu2[]=
 {
     {IT_SUBMENU | IT_NOTHING,0,"",&MainDef,0}
@@ -2180,10 +2175,10 @@ menu_t  ReadDef2 =
 {
     NULL,
     NULL,
-    read2_end,
-    &ReadDef1,
     ReadMenu2,
     M_DrawReadThis2,
+    NULL,
+    sizeof(ReadMenu2)/sizeof(menuitem_t),
     330,175,
     0
 };
@@ -2225,14 +2220,7 @@ void M_CDAudioVol (int choice);
 // [WDJ] unique names, mostly unused
 enum
 {
-    SVM_sfx_vol,
-    SVM_sfx_empty1,
-    SVM_music_vol,
-    SVM_sfx_empty2,
-    SVM_cdaudio_vol,
-    SVM_sfx_empty3,
-    SVM_sfx_mus_pref,
-    SVM_sound_end
+    SVM_sfx_vol = 0,
 } SVM_sound_e;
 
 // DoomLegacy graphics from legacy.wad: M_CDVOL
@@ -2258,16 +2246,17 @@ menuitem_t SoundMenu[]=
 #endif
     {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Music Pref",  &cv_musserver_opt },
 #endif
+    {IT_STRING | IT_CVAR,0, "Random sound pitch",   &cv_rndsoundpitch , 0},
 };
 
 menu_t  SoundDef =
 {
     "M_SVOL",
     "Sound Volume",
-    SVM_sound_end,
-    &OptionsDef,
     SoundMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(SoundMenu)/sizeof(menuitem_t),
     80,50,
     0
 };
@@ -2276,6 +2265,31 @@ menu_t  SoundDef =
 //===========================================================================
 //                          CONTROLS MENU
 //===========================================================================
+menuitem_t MControlMenu[]=
+{
+    {IT_STRING | IT_CVAR,0,"Control per key" ,&cv_controlperkey   ,0},
+#ifdef __DJGPP__			 
+    {IT_STRING | IT_CVAR,0,"Use Joystick", &cv_usejoystick    ,0},
+#endif    
+    {IT_SUBMENU | IT_WHITESTRING, 0,"Mouse Options..." ,&MouseOptionsDef   , 'm'},
+    {IT_SUBMENU | IT_WHITESTRING, 0,"Second Mouse config...", &SecondMouseCfgdef, 0},
+    {IT_CALL | IT_WHITESTRING, 0,"Player1 Controls...", M_Setup_P1_Controls, '1'},
+    {IT_CALL | IT_WHITESTRING, 0,"Player2 Controls...", M_Setup_P2_Controls, '2'},
+};
+
+menu_t  MControlDef =
+{
+    "M_OPTTTL",
+    "Controls",
+    MControlMenu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(MControlMenu)/sizeof(menuitem_t),
+    60,40,
+    0
+};
+
+
 void M_DrawControl(void);               // added 3-1-98
 void M_ChangeControl(int choice);
 
@@ -2308,10 +2322,10 @@ menu_t  ControlDef =
 {
     "M_CONTRO", // in legacy.wad
     "Setup Controls",
-    sizeof(ControlMenu)/sizeof(menuitem_t),
-    &OptionsDef,
     ControlMenu,
     M_DrawControl,
+    NULL,
+    sizeof(ControlMenu)/sizeof(menuitem_t),
     50,40,
     0
 };
@@ -2348,10 +2362,10 @@ menu_t  ControlDef2 =
 {
     "M_CONTRO", // in legacy.wad
     "Setup Controls",
-    sizeof(ControlMenu2)/sizeof(menuitem_t),
-    &OptionsDef,
     ControlMenu2,
     M_DrawControl,
+    NULL,
+    sizeof(ControlMenu2)/sizeof(menuitem_t),
     50,40,
     0
 };
@@ -2361,22 +2375,28 @@ menu_t  ControlDef2 =
 // Start the controls menu, setting it up for either the console player,
 // or the secondary splitscreen player
 //
-static  boolean setupcontrols_secondaryplayer;
+static  byte  controls_player;
 static  int   (*setupcontrols)[2];  // pointer to the gamecontrols of the player being edited
-void M_SetupControlsMenu (int choice)
+
+// called by player1 multiplayer setup menu
+void M_Setup_P1_Controls(int choice)
 {
     // set the gamecontrols to be edited
-    if (choice == setupmultiplayer_controls) {
-        setupcontrols_secondaryplayer = true;
-        setupcontrols = gamecontrol2;     // was called from secondary player's multiplayer setup menu
-    }
-    else {
-        setupcontrols_secondaryplayer = false;
-        setupcontrols = gamecontrol;        // was called from main Options (for console player, then)
-    }
+    // was called from main Controls (for console player, then)
+    controls_player = 0;
+    setupcontrols = gamecontrol;
     currentMenu->lastOn = itemOn;
-    ControlDef.prevMenu = currentMenu;
-    M_SetupNextMenu(&ControlDef);
+    Push_Setup_Menu(&ControlDef);
+}
+
+// called by player2 multiplayer setup menu
+void M_Setup_P2_Controls(int choice)
+{
+    // set the gamecontrols to be edited
+    controls_player = 1;
+    setupcontrols = gamecontrol2;
+    currentMenu->lastOn = itemOn;
+    Push_Setup_Menu(&ControlDef);
 }
 
 
@@ -2394,8 +2414,8 @@ void M_DrawControl(void)
     M_DrawGenericMenu();
 
     M_CentreText (ControlDef.y-12,
-        (setupcontrols_secondaryplayer ? "SET CONTROLS FOR SECONDARY PLAYER" :
-                                         "PRESS ENTER TO CHANGE, BACKSPACE TO CLEAR") );
+        (controls_player ? "PLAYER2: ENTER TO CHANGE, BACKSPACE TO CLEAR" :
+                           "PLAYER1: ENTER TO CHANGE, BACKSPACE TO CLEAR") );
 
     for(i=0;i<currentMenu->numitems;i++)
     {
@@ -2532,11 +2552,10 @@ menu_t  VidModeDef =
 {
     "M_VIDEO", // in legacy.wad
     "Video Mode",
-    1,                  // # of menu items
-    //sizeof(VideoModeMenu)/sizeof(menuitem_t),
-    &VideoOptionsDef,   // previous menu
     VideoModeMenu,      // menuitem_t ->
     M_DrawVideoMode,    // drawing routine ->
+    NULL,
+    sizeof(VideoModeMenu)/sizeof(menuitem_t),
     48,36,              // x,y
     0                   // lastOn
 };
@@ -2729,7 +2748,7 @@ void M_HandleVideoMode (int key)
 
       case KEY_ESCAPE:      //this one same as M_Responder
         S_StartSound(menu_sfx_esc);
-        M_Setup_prevMenu();
+        Pop_Menu();
         return;
 
         #if defined( __DJGPP__ ) // Fixed and translate the given key in DOS
@@ -2783,10 +2802,10 @@ menu_t  DirDef =
 //    "M_LOADG",	// LOAD GAME, really need SELECT DIR
     NULL,
     "Game Directory",
-    NUM_DIRLINE+1,
-    &LoadDef,
     LoadDirMenu,
     M_DrawDir,
+    NULL,
+    NUM_DIRLINE+1,
 //    80,54,
     (176-(SAVELINELEN*8/2)), 54-LINEHEIGHT,
     0
@@ -2850,8 +2869,9 @@ void M_DirSelect(int choice)
         // Existing directory selected
         strcpy( savegamedir, savegamedisp[sgslot].desc );
         scroll_index = 0; // start at top of directory
-        DirDef.prevMenu->lastOn = 1;
-        M_Setup_prevMenu();
+//        DirDef.prevMenu->lastOn = 1;
+        menustack[menucnt-1]->lastOn = 1;
+        Pop_Menu();
     }
     else if( slotindex )
     {
@@ -3025,8 +3045,7 @@ void M_Get_SaveDir (int choice)
 {
     // Any mode, directory is personal choice
     // Directory menu with choices
-    DirDef.prevMenu = currentMenu;	// return to Load or Save
-    M_SetupNextMenu(&DirDef);
+    Push_Setup_Menu(&DirDef);
     scroll_callback = M_Dir_scroll;
     delete_callback = M_Dir_delete;
 
@@ -3072,10 +3091,10 @@ menu_t  LoadDef =
 {
     "M_LOADG",
     "Load Game",
-    sizeof(LoadGameMenu)/sizeof(menuitem_t),
-    &MainDef,
     LoadGameMenu,
     M_DrawLoad,
+    NULL,
+    sizeof(LoadGameMenu)/sizeof(menuitem_t),
 //    80,54,
 #ifdef SAVEGAMEDIR
     (176-(SAVELINELEN*8/2)),54-LINEHEIGHT,
@@ -3370,7 +3389,7 @@ void M_LoadGame (int choice)
     }
 
     // Save game load menu with slot choices
-    M_SetupNextMenu(&LoadDef);
+    Push_Setup_Menu(&LoadDef);
 #ifdef SAVEGAME99
     scroll_callback = M_Savegame_scroll;
     delete_callback = M_Savegame_delete;
@@ -3406,10 +3425,10 @@ menu_t  SaveDef =
 {
     "M_SAVEG",
     "Save Game",
-    sizeof(SaveGameMenu)/sizeof(menuitem_t),
-    &MainDef,
     SaveGameMenu,
     M_DrawSave,
+    NULL,
+    sizeof(SaveGameMenu)/sizeof(menuitem_t),
 //    80,54,
 #ifdef SAVEGAMEDIR
     (176-(SAVELINELEN*8/2)),54-LINEHEIGHT,
@@ -3424,6 +3443,7 @@ menu_t  SaveDef =
 //
 // Draw border for the savegame description
 //
+static
 void M_DrawSaveLoadBorder(int x, int y, boolean longer )
 {
     int i;
@@ -3598,7 +3618,7 @@ void M_SaveGame (int choice)
     }
 
     // Save game menu with slot choices
-    M_SetupNextMenu(&SaveDef);
+    Push_Setup_Menu(&SaveDef);
 #ifdef SAVEGAME99
     delete_callback = M_Savegame_delete;
     scroll_callback = M_Savegame_scroll;
@@ -3814,6 +3834,7 @@ void M_QuitDOOM(int choice)
 //
 //      Menu Functions
 //
+static
 void M_DrawThermo ( int   x,
                     int   y,
                     consvar_t *cv)
@@ -3862,6 +3883,8 @@ void M_DrawThermo ( int   x,
 }
 
 
+#if 0
+static
 void M_DrawEmptyCell( menu_t*       menu,
                       int           item )
 {
@@ -3869,12 +3892,14 @@ void M_DrawEmptyCell( menu_t*       menu,
                        "M_CELL1" );
 }
 
+static
 void M_DrawSelCell ( menu_t*       menu,
                      int           item )
 {
     V_DrawScaledPatch_Name (menu->x - 10,  menu->y+item*LINEHEIGHT - 1,
                        "M_CELL2" );
 }
+#endif
 
 
 //
@@ -3978,7 +4003,8 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 //==========================================================================
 //                        Message is now a (hackable) Menu
 //==========================================================================
-void M_DrawMessageMenu(void);
+static void M_DrawMessageMenu(void);
+static void M_SetupMenu(menu_t *menudef);
 
 menuitem_t MessageMenu[]=
 {
@@ -3990,14 +4016,16 @@ menu_t MessageDef =
 {
     NULL,               // title
     NULL,
-    1,                  // # of menu items
-    NULL,               // previous menu       (TO HACK)
     MessageMenu,        // menuitem_t ->
     M_DrawMessageMenu,  // drawing routine ->
+    NULL,
+    sizeof(MessageMenu)/sizeof(menuitem_t),
     0,0,                // x,y                 (TO HACK)
     0                   // lastOn, flags       (TO HACK)
 };
 
+static menu_t * message_menu_back;
+static byte message_lines, message_length;
 
 void M_StartMessage ( const char*       string,
                       void*             routine,
@@ -4005,36 +4033,36 @@ void M_StartMessage ( const char*       string,
 {
     int   maxlen, i, lines;
     char * chp;
-   
+
+#define msgline  MessageDef.menuitems[0]   
+#define msgtext  msgline.text
     msgtmp[MSGTMP_LEN] = '\0';  // make sure it is terminated
-#define message MessageDef.menuitems[0].text
-    if( message )
-        Z_Free( message );
-    message = Z_StrDup(string);
-    DEBFILE(message);
+    if( msgtext )
+        Z_Free( msgtext );
+    msgtext = Z_StrDup(string);
+    DEBFILE(msgtext);
 
     M_StartControlPanel(); // can't put menuactiv to true
-    MessageDef.prevMenu = currentMenu;
-    MessageDef.menuitems[0].text     = message;
-    MessageDef.menuitems[0].alphaKey = itemtype;
+    msgline.text     = msgtext;
+    msgline.alphaKey = itemtype;
     switch(itemtype) {
         case MM_NOTHING:
-             MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-             MessageDef.menuitems[0].itemaction = M_StopMessage;
+             msgline.status     = IT_MSGHANDLER;
+             msgline.itemaction = M_StopMessage;
              break;
         case MM_YESNO:
-             MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-             MessageDef.menuitems[0].itemaction = routine;
+             msgline.status     = IT_MSGHANDLER;
+             msgline.itemaction = routine;
              break;
         case MM_EVENTHANDLER:
-             MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-             MessageDef.menuitems[0].itemaction = routine;
+             msgline.status     = IT_MSGHANDLER;
+             msgline.itemaction = routine;
              break;
     }
     //added:06-02-98: now draw a textbox around the message
     // compute length max and the numbers of lines
     maxlen = 4; // minimum box
-    chp = message;
+    chp = msgtext;
     for (lines=0;  ; lines++)
     {
         for (i = 0;  ; i++)
@@ -4058,11 +4086,13 @@ void M_StartMessage ( const char*       string,
         lines++;  // count as a line
 
     MessageDef.x=(BASEVIDWIDTH - (8*maxlen) - 16)/2;
-    MessageDef.y=(BASEVIDHEIGHT - M_StringHeight(message))/2;
+    MessageDef.y=(BASEVIDHEIGHT - M_StringHeight(msgtext))/2;
 
-    MessageDef.lastOn = (lines<<8)+maxlen;
+    // [WDJ] lastOn is not large enough for these parameters, nor appropriate.
+    message_lines = lines;
+    message_length = maxlen;
+    message_menu_back = currentMenu;
 
-//    M_SetupNextMenu();
     currentMenu = &MessageDef;
     itemOn=0;
 }
@@ -4076,6 +4106,7 @@ void M_SimpleMessage ( const char * string )
 #define MAXMSGLINELEN 256
 
 // Called by M_Drawer.
+static
 void M_DrawMessageMenu(void)
 {
     int    y;
@@ -4091,9 +4122,9 @@ void M_DrawMessageMenu(void)
     // Draw to screen0, scaled
     y=currentMenu->y;
     start = 0;
-    lines = currentMenu->lastOn>>8;
-    max = (currentMenu->lastOn & 0xFF)*8;
-    M_DrawTextBox (currentMenu->x,y-8,(max+7)>>3,lines);
+    lines = message_lines;
+    max = ((int)message_length) * 8;
+    M_DrawTextBox( currentMenu->x, y-8, (max+7)>>3,lines);
 
     while(*(msg+start))
     {
@@ -4138,14 +4169,15 @@ void M_DrawMessageMenu(void)
 }
 
 // default message handler
+static
 void M_StopMessage(int choice)
 {
     // Do not interfere with response menu changes
-    if( currentMenu == &MessageDef )
+    if( (currentMenu == &MessageDef) && message_menu_back )
     {
-         M_SetupNextMenu(MessageDef.prevMenu); // NULLS callbacks, caller must fix
-//         M_Setup_prevMenu();  // A little too much re-setup
+         M_SetupMenu(message_menu_back); // NULLS callbacks, caller must fix
          S_StartSound(menu_sfx_action);
+         message_menu_back = NULL;
     }
 }
 
@@ -4157,6 +4189,7 @@ void M_StopMessage(int choice)
 //
 //  Write a string centered using the hu_font
 //
+static
 void M_CentreText (int y, char* string)
 {
     int x;
@@ -4169,7 +4202,6 @@ void M_CentreText (int y, char* string)
 //
 // CONTROL PANEL
 //
-
 void M_ChangeCvar(int choice)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
@@ -4194,7 +4226,8 @@ void M_ChangeCvar(int choice)
 
 #define MAX_CVAR_STRING  512
 
-static boolean M_ChangeStringCvar(int key, char ch)
+static
+boolean M_ChangeStringCvar(int key, char ch)
 {
     consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
     char buf[ MAX_CVAR_STRING + 1 ];
@@ -4244,6 +4277,7 @@ boolean M_Responder (event_t* ev)
     static  int  mousex = 0;
 
     menufunc_t routine;  // for some casting problem
+    menuitem_t * r_menuline;
 
     int i;
     int key = KEY_NULL; // key pressed (if any)
@@ -4467,7 +4501,7 @@ boolean M_Responder (event_t* ev)
           case KEY_F5:
             S_StartSound(menu_sfx_open);
             M_StartControlPanel();
-            M_SetupNextMenu (&VidModeDef);
+            Push_Setup_Menu (&VidModeDef);
             //M_ChangeDetail(0);
             goto ret_true;
 
@@ -4480,7 +4514,7 @@ boolean M_Responder (event_t* ev)
           case KEY_F7:            // originally was End game
             S_StartSound(menu_sfx_open);
             M_StartControlPanel();
-            M_SetupNextMenu (&OptionsDef);
+            Push_Setup_Menu (&OptionsDef);
             //M_EndGame(0);
             goto ret_true;
 
@@ -4504,7 +4538,7 @@ boolean M_Responder (event_t* ev)
             S_StartSound(menu_sfx_open);
             // bring up the gamma menu
             M_StartControlPanel();
-            M_SetupNextMenu (&VideoOptionsDef);
+            Push_Setup_Menu (&VideoOptionsDef);
             goto ret_true;
 
           // Pop-up menu
@@ -4516,21 +4550,23 @@ boolean M_Responder (event_t* ev)
         return false;
     }
 
-    routine = currentMenu->menuitems[itemOn].itemaction;
+    if( ! currentMenu )  return false;
+    r_menuline = & currentMenu->menuitems[itemOn];
+    routine = r_menuline->itemaction;
 
     //added:30-01-98:
     // Handle menuitems which need a specific key handling
-    if(routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER )
+    if( routine && (r_menuline->status & IT_TYPE) == IT_KEYHANDLER )
     {
       input_char = ch;
       routine(key);
       goto ret_true;
     }
 
-    if(currentMenu->menuitems[itemOn].status==IT_MSGHANDLER)
+    if( r_menuline->status==IT_MSGHANDLER )
     {
         // special message menu
-        if(currentMenu->menuitems[itemOn].alphaKey == true)
+        if( r_menuline->alphaKey == true )
         {
           // [smite] just for this purpose since unraveling the IT_MSGHANDLER hack would be too harrowing
           if (tolower(ch) == 'n')
@@ -4554,24 +4590,25 @@ boolean M_Responder (event_t* ev)
             if (ev->type == ev_mouse || ev->type == ev_joystick )
             #endif
                 goto ret_true;
-            void (*cc_action)(event_t *) = currentMenu->menuitems[itemOn].itemaction;
+
+            void (*cc_action)(event_t *) = r_menuline->itemaction;
             if (cc_action)   cc_action(ev);
         }
         goto ret_true;
     }
 
     // BP: one of the more big hack i have never made
-    if( routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR )
+    if( routine && (r_menuline->status & IT_TYPE) == IT_CVAR )
     {
-        if( (currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING )
+        if( (r_menuline->status & IT_CVARTYPE) == IT_CV_STRING )
         {
             if (M_ChangeStringCvar(key, ch))
                 goto ret_true;
-            else
-                routine = NULL;
+
+            routine = NULL;
         }
         else
-            routine=M_ChangeCvar;
+            routine = M_ChangeCvar;
     }
 
     // Keys usable within menu
@@ -4659,8 +4696,8 @@ boolean M_Responder (event_t* ev)
 
       case KEY_LEFTARROW:
         if (  routine &&
-            ( (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
-            ||(currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR   ))
+            ( (r_menuline->status & IT_TYPE) == IT_ARROWS
+            ||(r_menuline->status & IT_TYPE) == IT_CVAR   ))
         {
             S_StartSound(menu_sfx_val);
             routine(0);
@@ -4669,8 +4706,8 @@ boolean M_Responder (event_t* ev)
 
       case KEY_RIGHTARROW:
         if ( routine &&
-            ( (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
-            ||(currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR   ))
+            ( (r_menuline->status & IT_TYPE) == IT_ARROWS
+            ||(r_menuline->status & IT_TYPE) == IT_CVAR   ))
         {
             S_StartSound(menu_sfx_val);
             routine(1);
@@ -4679,9 +4716,10 @@ boolean M_Responder (event_t* ev)
 
       case KEY_ENTER:
         currentMenu->lastOn = itemOn;
+        menuline = r_menuline;
         if ( routine )
         {
-            switch (currentMenu->menuitems[itemOn].status & IT_TYPE)  {
+            switch (menuline->status & IT_TYPE)  {
                 case IT_CVAR:
                 case IT_ARROWS:
                     routine(1);            // right arrow
@@ -4692,8 +4730,7 @@ boolean M_Responder (event_t* ev)
                     S_StartSound(menu_sfx_enter);
                     break;
                 case IT_SUBMENU:
-                    currentMenu->lastOn = itemOn;
-                    M_SetupNextMenu((menu_t *)currentMenu->menuitems[itemOn].itemaction);
+                    Push_Setup_Menu((menu_t *)menuline->itemaction);
                     S_StartSound(menu_sfx_enter);
                     break;
             }
@@ -4702,11 +4739,11 @@ boolean M_Responder (event_t* ev)
 
       case KEY_ESCAPE:
         currentMenu->lastOn = itemOn;
-        if (currentMenu->prevMenu)
+        if( menucnt )
         {
-            M_Setup_prevMenu();
+            Pop_Menu();
             itemOn = currentMenu->lastOn;
-            S_StartSound(menu_sfx_open); // it´s a matter of taste which sound to choose
+            S_StartSound(menu_sfx_open); // a matter of taste which sound to choose
         }
         else
         {
@@ -4719,7 +4756,7 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
 
       case KEY_BACKSPACE:
-        if((currentMenu->menuitems[itemOn].status)==IT_CONTROL)
+        if( r_menuline->status == IT_CONTROL )
         {
             S_StartSound(menu_sfx_val);
             // detach any keys associated to the game control
@@ -4727,9 +4764,10 @@ boolean M_Responder (event_t* ev)
             goto ret_true;
         }
         currentMenu->lastOn = itemOn;
-        if (currentMenu->prevMenu)
+        if( menucnt )
         {
-            currentMenu = currentMenu->prevMenu;
+            menucnt --;
+            currentMenu = menustack[ menucnt ];
             itemOn = currentMenu->lastOn;
             S_StartSound(menu_sfx_open);
         }
@@ -4785,6 +4823,7 @@ ret_updown:
 //
 //      Find string height from hu_font chars
 //
+static
 int M_StringHeight(char* string)
 {
     int      i;
@@ -4793,8 +4832,10 @@ int M_StringHeight(char* string)
 
     h = height;
     for (i = 0;i < (int)strlen(string);i++)
+    {
         if (string[i] == '\n')
             h += height;
+    }
 
     return h;
 }
@@ -4828,6 +4869,7 @@ void M_Drawer (void)
 //
 // M_StartControlPanel
 //
+// Called by G_Responder, M_Responder, M_QuickSave, M_StartMessage.
 void M_StartControlPanel (void)
 {
     // intro might call this repeatedly
@@ -4852,6 +4894,7 @@ void M_StartControlPanel (void)
 //
 // M_ClearMenus
 //
+static
 void M_ClearMenus (boolean callexitmenufunc)
 {
     if(!menuactive)
@@ -4868,16 +4911,15 @@ void M_ClearMenus (boolean callexitmenufunc)
 }
 
 
-//
-// M_SetupNextMenu
-//
-void M_SetupNextMenu(menu_t *menudef)
+static
+void M_SetupMenu(menu_t *menudef)
 {
-    if( currentMenu->quitroutine )
+    if( currentMenu && (currentMenu->quitroutine) )
     {
         if( !currentMenu->quitroutine())
             return; // we can't quit this menu (also used to set parameter from the menu)
     }
+
     // Menu history
     currentMenu = menudef;
     itemOn = currentMenu->lastOn;
@@ -4890,16 +4932,53 @@ void M_SetupNextMenu(menu_t *menudef)
     // this code go up until a enabled item found
     while(currentMenu->menuitems[itemOn].status==IT_DISABLED && itemOn)
         itemOn--;
+
     delete_callback = NULL;
     scroll_callback = NULL;
 }
 
-// Go back to the previous menu, reloading data if necessary
-void  M_Setup_prevMenu( void )
+
+//
+// Push_Setup_Menu
+//
+static
+void Push_Setup_Menu(menu_t *menudef)
 {
-    if (currentMenu->prevMenu)
+    int i;
+
+    // [WDJ] Menus use dynamic ordering, from multiple parent menus.
+    // Check for duplicate
+    if( menucnt > 0 )
     {
-       M_SetupNextMenu (currentMenu->prevMenu);
+        for( i = 0; i < menucnt; i++ )
+        {
+            if( menustack[i] == currentMenu )
+            {
+                // User is looping through menus.
+                menucnt = i+1;  // cut off the loop
+                goto setup;
+            }
+        }
+    }
+
+    if( menucnt < NUM_MENUSTACK )
+    {
+        // Normal push menu
+        menustack[ menucnt++ ] = currentMenu;
+    }
+
+setup:   
+    M_SetupMenu( menudef );
+}
+
+// Go back to the previous menu, reloading data if necessary
+static
+void Pop_Menu( void )
+{
+    if( menucnt )
+    {
+       M_SetupMenu( menustack[ -- menucnt ] );  // back out
+
        // refresh data
        if( currentMenu == &LoadDef )   M_LoadGame(0);
        if( currentMenu == &SaveDef )   M_SaveGame(0);
@@ -5025,10 +5104,9 @@ void M_Configure (void)
         // This is used because DOOM 2 had only one HELP
         //  page. I use CREDIT as second page now, but
         //  kept this hack for educational purposes.
-        MainMenu[readthis] = MainMenu[quitdoom];
+        MainMenu[MM_readthis] = MainMenu[MM_quitdoom];
         MainDef.numitems--;
         MainDef.y += 8;
-        NewDef.prevMenu = &MainDef;
         ReadDef1.drawroutine = M_DrawReadThis1;
         ReadDef1.x = 330;
         ReadDef1.y = 165;
@@ -5074,7 +5152,6 @@ void M_Configure (void)
           if( Chex_safe_pictures( "M_EPI1", NULL ) == NULL )
           {
               // Found Doom episode title in wad.
-#if 1
               // [WDJ] Coverup for Doom episode titles in chexquest1 wad
               // According to Chexquest3.
               EpisodeMenu[0].text = "Rescue on Baziok";
@@ -5087,9 +5164,6 @@ void M_Configure (void)
               EpisodeMenu[2].status = IT_CALL | IT_STRING2;
               EpisodeMenu[3].status = IT_CALL | IT_STRING2;
               EpisodeMenu[4].status = IT_CALL | IT_STRING2;
-#else
-              NewDef.prevMenu = &MainDef;  // disable access to episodes menu
-#endif	     
           }
           break;
 
@@ -5108,10 +5182,10 @@ void M_Configure (void)
 
 #ifdef HWRENDER
 
-void M_DrawOpenGLMenu(void);
-void M_OGL_DrawFogMenu(void);
-void M_OGL_DrawColorMenu(void);
-void M_HandleFogColor (int choice);
+static void M_DrawOpenGLMenu(void);
+static void M_OGL_DrawFogMenu(void);
+static void M_OGL_DrawColorMenu(void);
+static void M_HandleFogColor (int choice);
 
 menu_t OGL_LightingDef, OGL_FogDef, OGL_ColorDef, OGL_DevDef;
 
@@ -5170,10 +5244,10 @@ menu_t  OpenGLOptionDef =
 {
     "M_OPTTTL",
     "OPTIONS",
-    sizeof(OpenGLOptionsMenu)/sizeof(menuitem_t),
-    &VideoOptionsDef,
     OpenGLOptionsMenu,
     M_DrawOpenGLMenu,
+    NULL,
+    sizeof(OpenGLOptionsMenu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -5182,10 +5256,10 @@ menu_t  OGL_LightingDef =
 {
     "M_OPTTTL",
     "OPTIONS",
-    sizeof(OGL_LightingMenu)/sizeof(menuitem_t),
-    &OpenGLOptionDef,
     OGL_LightingMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(OGL_LightingMenu)/sizeof(menuitem_t),
     60,40,
     0,
 };
@@ -5194,10 +5268,10 @@ menu_t  OGL_FogDef =
 {
     "M_OPTTTL",
     "OPTIONS",
-    sizeof(OGL_FogMenu)/sizeof(menuitem_t),
-    &OpenGLOptionDef,
     OGL_FogMenu,
     M_OGL_DrawFogMenu,
+    NULL,
+    sizeof(OGL_FogMenu)/sizeof(menuitem_t),
     60,40,
     0,
 };
@@ -5206,10 +5280,10 @@ menu_t  OGL_ColorDef =
 {
     "M_OPTTTL",
     "OPTIONS",
-    sizeof(OGL_ColorMenu)/sizeof(menuitem_t),
-    &OpenGLOptionDef,
     OGL_ColorMenu,
     M_OGL_DrawColorMenu,
+    NULL,
+    sizeof(OGL_ColorMenu)/sizeof(menuitem_t),
     60,40,
     0,
 };
@@ -5218,10 +5292,10 @@ menu_t  OGL_DevDef =
 {
     "M_OPTTTL",
     "OPTIONS",
-    sizeof(OGL_DevMenu)/sizeof(menuitem_t),
-    &OpenGLOptionDef,
     OGL_DevMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(OGL_DevMenu)/sizeof(menuitem_t),
     60,40,
     0,
 };
@@ -5268,6 +5342,7 @@ void M_OGL_DrawFogMenu(void)
 //======================================================================
 // M_OGL_DrawColorMenu()
 //======================================================================
+static
 void M_OGL_DrawColorMenu(void)
 {
     int             mx,my;
@@ -5283,10 +5358,11 @@ void M_OGL_DrawColorMenu(void)
 //======================================================================
 // M_OpenGLOption()
 //======================================================================
+static
 void M_OpenGLOption(int choice)
 {
     if (rendermode != render_soft )
-        M_SetupNextMenu(&OpenGLOptionDef);
+        Push_Setup_Menu(&OpenGLOptionDef);
     else
         M_SimpleMessage("You are in software mode\nYou cannot change GL options\n");
 }
@@ -5295,6 +5371,7 @@ void M_OpenGLOption(int choice)
 //======================================================================
 // M_HandleFogColor()
 //======================================================================
+static
 void M_HandleFogColor(int key)
 {
     int      i, l;
@@ -5344,7 +5421,7 @@ void M_HandleFogColor(int key)
     }
     if (exitmenu)
     {
-        M_Setup_prevMenu();
+        Pop_Menu();
     }
 }
 
@@ -5355,21 +5432,6 @@ void M_HandleFogColor(int key)
 //===========================================================================
 //                        LAUNCH MENU
 //===========================================================================
-
-#if 0
-enum
-{
-    config_ent,
-    doomdir_ent,
-    game_ent,
-    iwad_ent,
-    file_ent,
-    switches_ent,
-    launch_ent,
-    quit_ent,
-    launch_end
-} launch_e;
-#endif
 
 // cv_ menu items
 // out only
@@ -5426,10 +5488,10 @@ menu_t  LaunchDef =
 {
     NULL,
     "Launch",
-    sizeof(LaunchMenu)/sizeof(menuitem_t),
-    NULL,
     LaunchMenu,
     M_DrawGenericMenu,
+    NULL,
+    sizeof(LaunchMenu)/sizeof(menuitem_t),
     10,10,  // x, y  (cursor at x-10)
     0
 };
@@ -5438,7 +5500,7 @@ menu_t  LaunchDef =
 void M_LaunchMenu( void )
 {
     M_StartControlPanel();
-    M_SetupNextMenu (&LaunchDef);
+    Push_Setup_Menu (&LaunchDef);
 
     M_Clear_Add_Param();  // clear previous param from this routine
     if( cv_game.string == NULL ) // first time inits

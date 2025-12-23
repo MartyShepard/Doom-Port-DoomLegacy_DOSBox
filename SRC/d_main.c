@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1338"
+#define SVN_REV "1339"
 #endif
 
 // Version number: major.minor.revision
@@ -1867,7 +1867,7 @@ fatal_err:
 #ifdef SMIF_PC_DOS
 void D_Titlebar(const char *title1, const char *title2)
 {
-    // DOOM LEGACY banner
+    // DOOM LEGACY banner 
     clrscr();
     textattr((BLUE << 4) + WHITE);
     clreol();
@@ -1985,9 +1985,8 @@ void D_DoomMain()
     french_early_text();
 #endif
 #if defined( __DJGPP__ )		
-    char dosroot[MAX_WADPATH];
-#endif
-						
+    char dosroot[MAX_WADPATH]; 
+#endif				
     // print version banner just once here, use it anywhere
     sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING);
     demoversion = VERSION;
@@ -2038,8 +2037,7 @@ void D_DoomMain()
       ListSupportetWads();
       exit(0);
     }
-#endif
-
+#endif       
     GenPrintf( EMSG_info|EMSG_all, "%s\n", legacytitle);
 
     // Find or make a default dir that is not root dir
@@ -2112,7 +2110,6 @@ void D_DoomMain()
 #endif
 
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
-
     CONS_Printf(text[Z_INIT_NUM]);
     // Cannot Init nor register cv_ vars until after Z_Init and some
     // other systems are init first.
@@ -2420,7 +2417,7 @@ restart_command:
     }
 #if 0 || defined( __DJGPP__ )
     if (M_CheckParm("-listdirs") || M_CheckParm("-ld"))    
-    Print_search_directories( EMSG_debug, 0x0F );
+    Print_search_directories( EMSG_debug, 0x0F );  
 #endif
 
     if( verbose )
@@ -2582,7 +2579,7 @@ restart_command:
    
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
-#if defined( __DJGPP__ )
+#if defined( __DJGPP__ )   
         V_ClearDisplay();		
 		    I_RequestConGraphics();
 #endif  
@@ -2695,8 +2692,7 @@ restart_command:
         if( rendermode != render_soft )
             HWR_Startup();  // hardware render init
 #endif
-
-        // we need the font of the console
+        // we need the font of the console       
         CONS_Printf(text[HU_INIT_NUM]);      
         // switch off use_font1 when hu_font is loaded       
         HU_Init();  // dependent upon dedicated and raven        
@@ -2869,7 +2865,7 @@ restart_command:
     // Music init is in I_StartupSound
     I_StartupSound();
 #if defined( __DJGPP__ )		
-    I_InitMusic();      // setup music buffer for quick mus2mid
+    I_InitMusic();      // setup music buffer for quick mus2mid  
 #endif		
     S_Init(cv_soundvolume.value, cv_musicvolume.value);
 
@@ -2880,7 +2876,7 @@ restart_command:
     // SoM: Init FraggleScript
     ////////////////////////////////
     T_Init();
-
+    
     // init all NETWORK
     CONS_Printf(text[D_CHECKNET_NUM]);
     if (D_Startup_NetGame())

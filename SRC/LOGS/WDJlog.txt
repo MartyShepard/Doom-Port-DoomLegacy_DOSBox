@@ -6081,3 +6081,14 @@ Add the Boom comp_skymap with a control, as cv_invul_skymap.
 The Boom fix makes the sky change with invulnerability.
 Add the Boom comp_zerotags with a control, as cv_zerotags.
 This prevents many linedef from using a sector TAG that is 0.
+
+*** W107_menu
+patchfile = w107_35_menu.patch
+- commit revision 1339
+Revised the menu system due to more menus and complicated menu paths.
+Change from a static prevMenu to a menu stack, with push and pop.
+With multiple ways of getting to a menu, more menus would need to save
+the previous menu.  It was possible in the prevMenu system to create a
+prevMenu loop and lock up the program.
+This fixes the problems with escaping a menu back to the wrong menu.
+Added the Boom and MBF menu controls, creating a new options page.

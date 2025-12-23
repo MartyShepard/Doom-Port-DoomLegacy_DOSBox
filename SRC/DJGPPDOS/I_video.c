@@ -354,6 +354,7 @@ void I_StartupGraphics( void )
    
     //added:26-01-98: VID_Init() must be done only once,
     //                use VID_SetMode() to change vid mode while in the game.
+    
     GenPrintf( EMSG_info, "Vid_Init...\n");
     VID_Init();
 

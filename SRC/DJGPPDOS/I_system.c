@@ -191,22 +191,75 @@ JoyType_t   Joystick;
 // I_Init
 //
 
+static byte I_GetKey_F(byte *key)
+{
+    union REGS regs;
 
+    regs.h.ah = 0x01;              // BIOS: Key available?
+    int86(0x16, &regs, &regs);
+    if (regs.x.flags & 0x40)       // ZF = 1 → keine Taste
+        return 0;
+
+    regs.h.ah = 0x00;              // BIOS: Read key
+    int86(0x16, &regs, &regs);
+    *key = regs.h.al;              // ASCII-Code
+    return 1;
+}
+
+void I_WaitJoyButton(void)
+{
+    byte key;
+
+    CON_Drawer();
+    I_FinishUpdate();        // page flip oder blit buffer
+
+    // Warte auf Joystick-Button ODER ESC-Taste
+    do {
+        poll_joystick();
+
+        // Tastatur abfragen (DOS-kompatibel)
+        if (I_GetKey_F(&key))          // oder deine eigene Key-Check-Funktion
+        {
+            if (key == 27)           // 27 = ESC-Taste (ASCII-Code)
+            {
+                CONS_Printf("Joystick calibration aborted (ESC).\n");
+                return;              // sofort abbrechen
+            }
+        }
+
+    } while (!(joy_b1 || joy_b2));
+
+    // Button gedrückt – warten, bis losgelassen
+    while (joy_b1 || joy_b2)
+    {
+        poll_joystick();
+
+        // Auch hier ESC erlauben (sicherer)
+        if (I_GetKey_F(&key) && key == 27)
+        {
+            CONS_Printf("Joystick calibration aborted (ESC).\n");
+            return;
+        }
+    }
+
+    CONS_Printf("Joystick button detected – continue calibration.\n\n");
+}
+/*
 void I_WaitJoyButton (void)
 {
      CON_Drawer ();
      I_FinishUpdate ();        // page flip or blit buffer
 
-     do {
-         poll_joystick();
-     } while (!(joy_b1 || joy_b2));
-
+     do {          
+         poll_joystick();         
+     } while (!(joy_b1 || joy_b2) );
+         
      while (joy_b1 || joy_b2)
          poll_joystick();
+         
 }
-
+*/
 void M_InitJoystick (int jvalue)
-
 {
   /*
   TODO: die Joystick über das Menü Konfiguieren
@@ -215,113 +268,86 @@ void M_InitJoystick (int jvalue)
 }
 void I_InitJoystick (void)
 {
-		
     //init the joystick
     joystick_detected=0;
     if (cv_usejoystick.value && !M_CheckParm("-nojoy"))
     {
-        joy_type = JOY_TYPE_4BUTTON;
-        if(initialise_joystick()==0)
-				{
-            switch(cv_usejoystick.value)
-						{
-               case 1 : joy_type = JOY_TYPE_4BUTTON; break;
-               case 2 : joy_type = JOY_TYPE_STANDARD;    break;
-               case 3 : joy_type = JOY_TYPE_6BUTTON;     break;
-               case 4 : joy_type = JOY_TYPE_WINGEX;      break;
-               case 5 : joy_type = JOY_TYPE_FSPRO;       break;
-               // new since 1.28 support from allegro 3.11
-               case 6 : joy_type = JOY_TYPE_8BUTTON;     break;
-               case 7 : joy_type = JOY_TYPE_SIDEWINDER;  break;
-               case 8 : joy_type = JOY_TYPE_GAMEPAD_PRO; break;
-               case 9 : joy_type = JOY_TYPE_SNESPAD_LPT1;break;
-               case 10: joy_type = JOY_TYPE_SNESPAD_LPT2;break;
-               case 11: joy_type = JOY_TYPE_SNESPAD_LPT3;break;
-               case 12: joy_type = JOY_TYPE_WINGWARRIOR; break;
-            }
-						char JoyMessageA[128];
-						char JoyMessageB[128];
-						char JoyMessageC[128];
-						char JoyMessageD[128];
-						char JoyMessageE[128];
-						char JoyMessageF[128];
-						char JoyMessageG[128];
-						char JoyMessageH[128];
-						sprintf (JoyMessageA, "CENTER the joystick and press a button:\n");
-						sprintf (JoyMessageB, "\nPush the joystick to the UPPER LEFT  corner and press a button\n");
-						sprintf (JoyMessageC, "\nPush the joystick to the LOWER RIGHT corner and press a button\n");
-						sprintf (JoyMessageD, "Put HAT at CENTER and press a button\n");
-						sprintf (JoyMessageE, "Put HAT at UP     and press a button\n");
-						sprintf (JoyMessageF, "Put HAT at DOWN   and press a button\n");						
-						sprintf (JoyMessageG, "Put HAT at LEFT   and press a button\n");
-						sprintf (JoyMessageH, "Put HAT at RIGHT  and press a button\n");
-						
-            // only gamepadstyle joysticks
-            Joystick.bGamepadStyle=true;
-	          if (con_destlines==0)						
-               M_InitJoystick(cv_usejoystick.value);														 						
-            else
+      CONS_Printf("Init Joystick ...\n");
+      joy_type = JOY_TYPE_4BUTTON;
+      if(initialise_joystick()==0)
+      {
+        switch(cv_usejoystick.value)
+        {
+            case 1 : joy_type = JOY_TYPE_4BUTTON; break;
+            case 2 : joy_type = JOY_TYPE_STANDARD;    break;
+            case 3 : joy_type = JOY_TYPE_6BUTTON;     break;
+            case 4 : joy_type = JOY_TYPE_WINGEX;      break;
+            case 5 : joy_type = JOY_TYPE_FSPRO;       break;
+            // new since 1.28 support from allegro 3.11
+            case 6 : joy_type = JOY_TYPE_8BUTTON;     break;
+            case 7 : joy_type = JOY_TYPE_SIDEWINDER;  break;
+            case 8 : joy_type = JOY_TYPE_GAMEPAD_PRO; break;
+            case 9 : joy_type = JOY_TYPE_SNESPAD_LPT1;break;
+            case 10: joy_type = JOY_TYPE_SNESPAD_LPT2;break;
+            case 11: joy_type = JOY_TYPE_SNESPAD_LPT3;break;
+            case 12: joy_type = JOY_TYPE_WINGWARRIOR; break;
+        }
+         char JoyMessageA[128];
+         char JoyMessageB[128];
+         char JoyMessageC[128];
+         char JoyMessageD[128];
+         char JoyMessageE[128];
+         char JoyMessageF[128];
+         char JoyMessageG[128];
+         char JoyMessageH[128];
+         sprintf (JoyMessageA, "CENTER the joystick and press a button.\n");
+         sprintf (JoyMessageB, "\nPush the joystick to the UPPER LEFT  corner and press a button.\n");
+         sprintf (JoyMessageC, "\nPush the joystick to the LOWER RIGHT corner and press a button.\n");
+         sprintf (JoyMessageD, "Put HAT at CENTER and press a button.\n");
+         sprintf (JoyMessageE, "Put HAT at UP     and press a button.\n");
+         sprintf (JoyMessageF, "Put HAT at DOWN   and press a button.\n");
+         sprintf (JoyMessageG, "Put HAT at LEFT   and press a button.\n");
+         sprintf (JoyMessageH, "Put HAT at RIGHT  and press a button.\n");
+            
+         // only gamepadstyle joysticks
+         Joystick.bGamepadStyle=true;
+         if (con_destlines==0)						
+            M_InitJoystick(cv_usejoystick.value);
+         else
+         {
+            if (con_destlines>0)						 
             {
-					     if (console_open)						 
-							 {
-                  // Console Textmessage (Wenn der benutzer use_joystick verwendet)
-                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageA); I_WaitJoyButton ();
-                  initialise_joystick();
-                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageB); I_WaitJoyButton ();
-                  calibrate_joystick_tl();						
-                  GenPrintf( EMSG_info|EMSG_all,"%s",JoyMessageC); I_WaitJoyButton ();
-                  calibrate_joystick_br();					
-						   }
-							 else
-							 {
-                  printf("JOY_Init: %s",JoyMessageA); I_WaitJoyButton ();
-                  initialise_joystick();					
-                  printf("JOY_Init: %s",JoyMessageB); I_WaitJoyButton ();
-                  calibrate_joystick_tl();
-                  printf("JOY_Init: %s",JoyMessageC); I_WaitJoyButton ();
-                  calibrate_joystick_br();								 
-							 }
-							 						
+              // Console Textmessage (Wenn der benutzer use_joystick verwendet)
+              CONS_Printf("%s",JoyMessageA); I_WaitJoyButton ();
+              initialise_joystick();
+              CONS_Printf("%s",JoyMessageB); I_WaitJoyButton ();
+              calibrate_joystick_tl();
+              CONS_Printf("%s",JoyMessageC); I_WaitJoyButton ();
+              calibrate_joystick_br();
+             }
 
-               if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
-               {
-							    if (console_open)	
-							   {
-                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageD); I_WaitJoyButton ();
+             if(joy_type== JOY_TYPE_WINGEX || joy_type == JOY_TYPE_FSPRO)
+             {
+                if (con_destlines>0)	
+                {
+                  CONS_Printf("JOY_Init: %s",JoyMessageD); I_WaitJoyButton ();
                   calibrate_joystick_hat(JOY_HAT_CENTRE);
-                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageE); I_WaitJoyButton ();
+                  CONS_Printf("JOY_Init: %s",JoyMessageE); I_WaitJoyButton ();
                   calibrate_joystick_hat(JOY_HAT_UP);
-                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageF); I_WaitJoyButton ();
+                  CONS_Printf("JOY_Init: %s",JoyMessageF); I_WaitJoyButton ();
                   calibrate_joystick_hat(JOY_HAT_DOWN);
-                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageG); I_WaitJoyButton ();
+                  CONS_Printf("JOY_Init: %s",JoyMessageG); I_WaitJoyButton ();
                   calibrate_joystick_hat(JOY_HAT_LEFT);
-                  GenPrintf( EMSG_info|EMSG_all,"JOY_Init: %s",JoyMessageH); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_RIGHT);									 
-							   }
-							   else
-							   {
-                  printf("%s",JoyMessageD); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_CENTRE);
-                  printf("%s",JoyMessageD); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_UP);
-                  printf("%s",JoyMessageD); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_DOWN);
-                  printf("%s",JoyMessageD); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_LEFT);
-                  printf("%s",JoyMessageD); I_WaitJoyButton ();
-                  calibrate_joystick_hat(JOY_HAT_RIGHT);									 
-
-							   }
-               }
-            }
-            joystick_detected=1;
+                  CONS_Printf("JOY_Init: %s",JoyMessageH); I_WaitJoyButton ();
+                  calibrate_joystick_hat(JOY_HAT_RIGHT);
+                }
+              }
+           }
+           joystick_detected=1;
         }
         else
-        {
-					if (console_open)
-						GenPrintf( EMSG_info|EMSG_all,"\2No Joystick detected.\n");
-					else
-            printf("No Joystick detected.\n");
+        {           
+           CONS_Printf("\2No Joystick detected.\n");
         }
     }
 }
@@ -1278,14 +1304,15 @@ void  I_StartupSystem(void)
 // Init system called by d_main
 void I_SysInit(void)
 {
-    CONS_Printf("DOS system ...\n");
-
+    CONS_Printf("DOS system ...\n");    
     CONS_Printf("I_StartupTimer...\n");
     I_StartupTimer();
 
-    CONS_Printf (text[I_INIT_NUM]);
     // Initialize the joystick subsystem.
-    I_InitJoystick();
+    I_InitJoystick(); 
+    
+    CONS_Printf (text[I_INIT_NUM]);
+
 		
     /* Is already in i_main.c */
     //I_StartupSystem();
