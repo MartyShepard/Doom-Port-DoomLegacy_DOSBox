@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_main.h 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -196,6 +196,7 @@ extern consvar_t cv_detaillevel;
 extern consvar_t cv_scalestatusbar;
 extern consvar_t cv_grtranslucenthud;
 extern consvar_t cv_boom_colormap;
+extern consvar_t cv_invul_skymap;
 extern consvar_t cv_water_effect;
 extern consvar_t cv_fog_effect;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_fab.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -344,11 +344,14 @@ void D_Register_MiscCommands (void)
     // for p_enemy
     CV_RegisterVar (&cv_monbehavior);
     CV_RegisterVar (&cv_monsterfriction);
+    CV_RegisterVar (&cv_monster_remember);
     CV_RegisterVar (&cv_monstergravity);
     CV_RegisterVar (&cv_doorstuck);
     CV_RegisterVar (&cv_pickupflash);
     CV_RegisterVar (&cv_weapon_recoil);
+    CV_RegisterVar (&cv_zerotags);
     // MBF
+    CV_RegisterVar (&cv_mbf_falloff);
     CV_RegisterVar (&cv_mbf_monster_avoid_hazard);
     CV_RegisterVar (&cv_mbf_monster_backing);
     CV_RegisterVar (&cv_mbf_dropoff);

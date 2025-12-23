@@ -332,7 +332,7 @@ enum {
 // comp_falloff - MBF encourages things to drop off of overhangs
 //   cv_mbf_falloff = ! comp_falloff
 // comp_floors - fixes for moving floors bugs
-// comp_skymap
+// comp_skymap - original Doom invul skymap colormap
 // comp_pursuit - MBF AI change, limited pursuit?
 //   cv_mbf_pursuit = ! comp_pursuit
 // comp_doorstuck - monsters stuck in doors fix
@@ -2615,7 +2615,9 @@ void G_demo_defaults( void )
     EN_variable_friction = EN_boom;
     EN_pushers = EN_boom;
     EN_doorlight = EN_boom;
-    EN_blazing_double_sound = ! EN_boom;
+    cv_invul_skymap.EV = EN_boom;  // 0=Vanilla, 1=Boom
+    cv_zerotags.EV = EN_boom;  // 0=Vanilla, 1=Boom
+    EN_blazing_double_sound = EN_doom_etc && ! EN_boom;
 
     // MBF
     cv_mbf_dropoff.EV = EN_mbf;
@@ -2770,6 +2772,13 @@ boolean G_Downgrade(int version)
            )
          : FR_legacy;  // new model, default
     }
+
+#if 0
+    // EN_boom_invul_skymap, was not enabled for DoomLegacy before 1.47,
+    // but does not affect demo sync.  Is a matter of preference.
+    if( demoversion < 147 )
+        cv_invul_skymap.EV = 0;
+#endif
 
     // always true now, might be false in the future, if couldn't
     // go backward and disable all the features...
@@ -3015,6 +3024,8 @@ void G_BeginRecording (void)
     // Boom and MBF derived controls.
     *demo_p++ = cv_monster_remember.value;
     *demo_p++ = cv_weapon_recoil.value;
+    *demo_p++ = cv_invul_skymap.value;
+    *demo_p++ = cv_zerotags.value;
     *demo_p++ = cv_mbf_dropoff.value;
     *demo_p++ = cv_mbf_falloff.value;
     *demo_p++ = cv_mbf_pursuit.value;
@@ -3378,10 +3389,12 @@ void G_DoPlayDemo (char *defdemoname)
             EN_doorlight = ! comp[comp_doorlight];
             EN_boom_physics = ! comp[comp_model];
             cv_mbf_falloff.EV = ! comp[comp_falloff];
+            cv_invul_skymap.EV = ! comp[comp_pursuit];  // 0=Vanilla, 1=Boom
             cv_mbf_pursuit.EV = ! comp[comp_pursuit];
             cv_doorstuck.EV = comp[comp_doorstuck]? 0:2; // Vanilla : MBF
             cv_mbf_staylift.EV = ! comp[comp_staylift];
             EN_skull_bounce_fix = ! comp[comp_soul];
+            cv_zerotags.EV = ! comp[comp_zerotags]; // 0=Vanilla, 1=Boom
         }
         else
         {
@@ -3488,6 +3501,8 @@ void G_DoPlayDemo (char *defdemoname)
         // Boom and MBF derived controls.
         cv_monster_remember.EV = *demo_p++;
         cv_weapon_recoil.EV = *demo_p++;
+        cv_invul_skymap.EV = *demo_p++;
+        cv_zerotags.EV = *demo_p++;
         cv_mbf_dropoff.EV = *demo_p++;
         cv_mbf_falloff.EV = *demo_p++;
         cv_mbf_pursuit.EV = *demo_p++;

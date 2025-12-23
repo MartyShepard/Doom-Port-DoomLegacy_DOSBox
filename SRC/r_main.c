@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: r_main.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -282,6 +282,12 @@ void BoomColormap_detect(void)
        break;
     }
 }
+
+CV_PossibleValue_t invul_skymap_cons_t[]={
+   {0,"Vanilla"},  // Vanilla no colormap change
+   {1,"Boom"},     // Boom colormap change
+   {0,NULL} };
+consvar_t cv_invul_skymap  = {"invul_skymap", "1", CV_SAVE, invul_skymap_cons_t};
 
 // matches fogwater_effect_e
 CV_PossibleValue_t  fogwater_effect_cons_t[]={
@@ -1608,6 +1614,7 @@ void R_Register_EngineStuff (void)
 #endif
 
     CV_RegisterVar (&cv_boom_colormap);
+    CV_RegisterVar (&cv_invul_skymap);
     CV_RegisterVar (&cv_water_effect);
     CV_RegisterVar (&cv_fog_effect);
 }

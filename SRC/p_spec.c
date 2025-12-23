@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_spec.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -175,6 +175,13 @@ byte  friction_model = FR_legacy;
 
 byte  boom_detect = 0;
 byte  legacy_detect = 0;
+
+CV_PossibleValue_t zerotags_cons_t[]={
+   {0,"Allow"},
+   {1,"Boom"},
+   {0,NULL}};
+consvar_t cv_zerotags = {"zerotag","1", CV_NETVAR | CV_SAVE, zerotags_cons_t};
+  // !comp[comp_zerotags]
 
 
 
@@ -1291,13 +1298,8 @@ boolean P_SectorActive( sector_special_e spt, sector_t *sec)
 int P_CheckTag(line_t *line)
 {
   // Only called when EN_boom.
-#if 0
-  // This test is extraneous, but if taken out adds 2K to the size ?
-  if (!EN_boom)
-    return 1;
-#endif
 
-  if (line->tag)
+  if( line->tag )
     return 1;
 
   switch(line->special)
@@ -1605,7 +1607,7 @@ P_CrossSpecialLine ( line_t * line, int side, mobj_t* thing )
             return;
     } // ! player
 
-    if ( EN_boom && !P_CheckTag(line) )
+    if( EN_boom && (cv_zerotags.EV > 0) && !P_CheckTag(line) )
       return;
 
     // Doom special linedefs

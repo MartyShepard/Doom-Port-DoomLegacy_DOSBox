@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_plane.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -700,17 +700,14 @@ void R_DrawPlanes (void)
 // cy = centery;
 // centery = (rdraw_viewheight/2);
 
-            // Sky is allways drawn full bright,
-            //  i.e. colormaps[0] is used.
-            // Because of this hack, sky is not affected
-            //  by INVUL inverse mapping.
-#if 0
-            // BP: this fix sky not inversed in invuln but it is a original doom2 feature (bug?)
-            if(fixedcolormap)
+            // [WDJ] Invul sky bug fix from PrBoom.
+            // Vanilla: Sky is always drawn full bright, i.e. colormaps[0],
+            // thus the sky is not affected by INVUL inverse mapping.
+            if(cv_invul_skymap.EV && fixedcolormap)
                 dc_colormap = fixedcolormap;
             else
-#endif
-            dc_colormap = reg_colormaps;  // [0]
+                dc_colormap = reg_colormaps;  // [0]
+
             dc_texturemid = skytexturemid;
             dc_texheight = textureheight[skytexture] >> FRACBITS;
             for (x=pl->minx ; x <= pl->maxx ; x++)

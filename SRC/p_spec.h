@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1334 2017-05-30 15:37:24Z wesleyjohnson $
+// $Id: p_spec.h 1338 2017-06-21 16:07:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -82,6 +82,9 @@
 #define MO_TELEPORTMAN          14
 
 #define SAVE_VERSION_144
+
+
+extern consvar_t  cv_zerotags;
 
 // at game start
 void    P_InitPicAnims (void);

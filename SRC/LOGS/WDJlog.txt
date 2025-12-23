@@ -6073,3 +6073,11 @@ This makes it easier to use in tests for Legacy demoversion.
 Many demoversion tests such as  (demoversion > 132)  are being
 triggered for Boom and MBF demos too (which have demoversion 200 .. 203).
 A test such as  (EV_legacy > 132)  will not trigger for Boom or MBF demos.
+
+*** W107_boom_skymap
+patchfile = w107_34_boom_skymap.patch
+- commit revision 1338
+Add the Boom comp_skymap with a control, as cv_invul_skymap.
+The Boom fix makes the sky change with invulnerability.
+Add the Boom comp_zerotags with a control, as cv_zerotags.
+This prevents many linedef from using a sector TAG that is 0.
