@@ -6105,3 +6105,9 @@ EN_boom_floor: enables some fixes to limit movement of lift ceilings
   and floors.
 EN_skull_limit: enables removing the skull limit
 EN_old_pain_spawn: enables the fix to where spawning skulls are allowed
+
+*** W107_gravity
+patchfile = w107_37_gravity.patch
+- commit revision 1341
+Combine the DoomLegacy monster gravity control with the Boom comp and
+MBF felldown.

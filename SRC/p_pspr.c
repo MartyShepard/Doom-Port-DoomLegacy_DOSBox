@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_pspr.c 1341 2017-06-21 16:12:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -770,7 +770,7 @@ void P_BulletSlope (mobj_t* mo)
         friend_protect = 0;
     }
     return;
-   
+
 no_target_found:
     if(demoversion>=128)
         bulletslope = AIMINGTOSLOPE(mo->player->aiming);
