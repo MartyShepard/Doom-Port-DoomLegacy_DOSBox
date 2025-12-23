@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: d_main.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1334"
+#define SVN_REV "1336"
 #endif
 
 // Version number: major.minor.revision
@@ -2154,6 +2154,7 @@ void D_DoomMain()
     }			
     if( verbose > 1 )
         CONS_Printf("Init DEH, cht, menu\n");
+    P_clear_state_ext();  // init state_ext
     // save Doom, Heretic, Chex strings for DEH
     DEH_Init();  // Init DEH before files and lumps loaded
     cht_Init();	 // init iwad independent cheats info, needed by Responder

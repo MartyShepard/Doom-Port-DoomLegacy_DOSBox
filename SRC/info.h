@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: info.h 1336 2017-05-30 15:39:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2559,12 +2559,25 @@ typedef struct
   // void       (*action) ();
   actionf_t     action;
   statenum_t    nextstate;
-//  long          misc1, misc2;
+  uint16_t      state_ext_id;  // rarely used information
 } state_t;
 
 extern state_t  states[NUMSTATES];
 extern char *sprnames[NUMSPRITES+1];
 
+
+typedef struct
+{
+    int32_t    parm1, parm2;  // MBF misc1, misc2 parameters
+} state_ext_t;
+
+extern state_ext_t * state_ext;  // dynamic
+
+state_ext_t *  P_state_ext( state_t * state );
+// Give it an ext_state.
+state_ext_t *  P_create_state_ext( state_t * state );
+// Clear and init the ext_state.
+void  P_clear_state_ext( void );
 
 
 typedef enum {

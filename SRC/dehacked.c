@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: dehacked.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -825,6 +825,14 @@ static void readframe(myfile_t* f, int deh_frame_id)
       }
       else if(!strcasecmp(word1,"Duration"))     fsp->tics     =value;
       else if(!strcasecmp(word1,"Next"))         fsp->nextstate=value;
+      else if(!strcasecmp(word1,"Unknown"))
+      {
+        // MBF uses these for parameters.
+        state_ext_t * sep = P_create_state_ext( fsp );
+	if( word2[0] == '1' ) sep->parm1 = value;
+	else if( word2[0] == '2' ) sep->parm2 = value;
+	
+      }
       else deh_error("Frame %d : unknown word '%s'\n", deh_frame_id,word1);
     }
   } while(s[0]!='\n' && !myfeof(f));

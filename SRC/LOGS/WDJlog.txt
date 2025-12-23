@@ -6057,3 +6057,9 @@ patchfile = w107_31_mbf_telefrag.patch
 Implement the MBF telefrag which expands the determination of who
 can telefrag to include Bosses on any map.
 
+*** W107_mbf_func
+patchfile = w107_32_mbf_func.patch
+- commit revision 1336
+Implement the MBF codepointers, somewhat altered.
+Mostly copied over from MBF and PrBoom.
+

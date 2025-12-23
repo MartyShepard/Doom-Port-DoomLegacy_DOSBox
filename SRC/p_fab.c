@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1328 2017-05-23 14:32:33Z wesleyjohnson $
+// $Id: p_fab.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -373,4 +373,68 @@ void  DemoAdapt_p_fab(void)  // local enables of p_fab
         // cv_instadeath not covered here
         VoodooMode_OnChange();
     }
+}
+
+
+// [WDJ] State ext storage.
+state_ext_t *  state_ext = NULL;
+static unsigned int  num_state_ext_alloc = 0;
+static unsigned int  num_state_ext_used = 0;
+
+
+state_ext_t *  P_state_ext( state_t * state )
+{
+    return  &state_ext[ state->state_ext_id ];
+}
+
+#define STATE_EXT_INC  64
+// Give it an state_ext.
+state_ext_t *  P_create_state_ext( state_t * state )
+{
+    if( state->state_ext_id == 0 )
+    {
+        // does not already have one
+        if( num_state_ext_used >= num_state_ext_alloc )
+        {
+            // Grow the ext states
+            int reqnum = num_state_ext_alloc + STATE_EXT_INC;
+            state_ext_t * ns = (state_ext_t*)
+                 realloc( state_ext, reqnum * sizeof(state_ext_t) );
+            if( ns == NULL )
+            {
+                I_SoftError( "Realloc of states failed\n" );
+                return &state_ext[0];
+            }
+            state_ext = ns;
+            memset( &ns[num_state_ext_alloc], 0, STATE_EXT_INC * sizeof(state_ext_t));
+            num_state_ext_alloc = reqnum;
+        }
+        state->state_ext_id = num_state_ext_used++;
+    }
+
+    return  &state_ext[ state->state_ext_id ];
+}
+
+// Clear and init the state_ext.
+void  P_clear_state_ext( void )
+{
+    state_t * s;
+
+    if( state_ext && (num_state_ext_alloc > 256) )
+    {
+        free( state_ext );
+        state_ext = NULL;
+    }
+
+    if( state_ext == NULL )
+    {
+        num_state_ext_used = 1;  // 0 is always dummy
+        num_state_ext_alloc = 64;
+        state_ext = (state_ext_t*) malloc( num_state_ext_alloc * sizeof(state_ext_t) );
+        memset( state_ext, 0, num_state_ext_alloc * sizeof(state_ext_t));
+    }
+   
+    // Init all states to dummy.
+    for( s = states; s < &states[NUMSTATES]; s++ )
+       s->state_ext_id = 0;
 }
