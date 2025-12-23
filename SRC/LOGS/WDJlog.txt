@@ -6092,3 +6092,16 @@ the previous menu.  It was possible in the prevMenu system to create a
 prevMenu loop and lock up the program.
 This fixes the problems with escaping a menu back to the wrong menu.
 Added the Boom and MBF menu controls, creating a new options page.
+
+*** W107_boom3
+patchfile = w107_36_boom3.patch
+- commit revision 1340
+More boom patches concerning comp flags.
+Many of these control existing fixes in DoomLegacy.
+EN_catch_respawn_0: enables the fix for (0,0) respawn.
+EN_invul_god: enables the fix to make god mode impervious to damage.
+EN_boom_physics: enables some boom physic differences
+EN_boom_floor: enables some fixes to limit movement of lift ceilings
+  and floors.
+EN_skull_limit: enables removing the skull limit
+EN_old_pain_spawn: enables the fix to where spawning skulls are allowed

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_inter.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2452,11 +2452,15 @@ boolean P_DamageMobj ( mobj_t*   target,
 
         // Below certain threshold,
         // ignore damage in GOD mode, or with INVUL power.
-        if ( damage < 1000
-             && ( (player->cheats&CF_GODMODE)
-                  || player->powers[pw_invulnerability] ) )
+        if( (player->cheats&CF_GODMODE) || player->powers[pw_invulnerability] )
         {
-            return false;
+            // Boom, MBF: killough 3/26/98: make god mode 100%
+            // !comp[comp_god]
+            if( (player->cheats&CF_GODMODE) && EN_invul_god )
+                return false;
+
+            if( damage < 1000 )
+                return false;
         }
 
         if (player->armortype)

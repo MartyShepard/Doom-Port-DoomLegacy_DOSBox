@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: p_floor.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -146,7 +146,10 @@ result_e T_MovePlane ( sector_t*     sector,
           { // floor moving down
             sector->floorheight = newheight;  // intermediate position
             flag = P_CheckSector(sector,crush);
-            if(flag == true && sector->numattached) // 3D floor only
+            // PrBoom: EN_boom_floor = !comp[comp_floors]
+            // Vanilla compatibility, or 3D floor.
+            if( flag == true
+                && (!EN_boom_floor || sector->numattached) )
             {
               // Diff here between Boom and original Doom.
               // This code not in Boom, added back by prboom.
@@ -170,10 +173,11 @@ result_e T_MovePlane ( sector_t*     sector,
                && (sector->floorheight < sectors[sector->modelsec].floorheight))
               S_StartSecSound(sector, sfx_gloop);
           }
-//          destheight = (!EN_boom || dest<sector->ceilingheight)?
-//                          dest : sector->ceilingheight;
-          destheight = (EN_boom && (dest > sector->ceilingheight))?
-                sector->ceilingheight : dest;
+
+          destheight = dest;  // Vanilla and usual case
+          if( EN_boom_floor && (dest > sector->ceilingheight) )
+              destheight = sector->ceilingheight;  // limit at ceiling
+
           if (newheight > destheight)
           { // reached dest, or start was above dest
             sector->floorheight = destheight;  // final position
@@ -192,7 +196,7 @@ result_e T_MovePlane ( sector_t*     sector,
             flag = P_CheckSector(sector,crush);
             if (flag == true)
             {
-              if (!EN_boom)
+              if(!EN_boom_floor)
               {
                 if (crush == true)
                   return MP_crushed;
@@ -219,12 +223,13 @@ result_e T_MovePlane ( sector_t*     sector,
                && (sector->ceilingheight > sectors[sector->modelsec].floorheight))
               S_StartSecSound(sector, sfx_gloop);
           }
+
           // moving a ceiling down
           // keep ceiling from moving thru floors
-//          destheight = (!EN_boom || dest>sector->floorheight)?
-//                          dest : sector->floorheight;
-          destheight = (EN_boom && (dest<sector->floorheight))?
-                sector->floorheight : dest;
+          destheight = dest;
+          if( EN_boom_floor && (dest < sector->floorheight) )
+              destheight = sector->floorheight;
+
           if (newheight < destheight)
           { // reached dest, or start was below dest
             sector->ceilingheight = destheight;  // final position
@@ -659,7 +664,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
               fixed_t   minsize = FIXED_MAX;
               side_t*   side;
 
-	      // Prevents height overflow.
+              // Prevents height overflow.
               if(EN_boom_physics) minsize = 32000<<FRACBITS; //SoM: 3/6/2000:
 
               mfloor->direction = 1;
@@ -689,12 +694,12 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
               }
               if(!EN_boom_physics)
               {
-		// Vanilla: may overflow
+                // Vanilla: may overflow
                 mfloor->floordestheight = mfloor->sector->floorheight + minsize;
               }
               else
               {
-	        // Boom: prevent overflow (jff 3/13/98), modified [WDJ]
+                // Boom: prevent overflow (jff 3/13/98), modified [WDJ]
                 register fixed_t fdh =
                   (mfloor->sector->floorheight>>FRACBITS) + (minsize>>FRACBITS);
                 if( fdh > 32000 )  fdh = 32000;
@@ -980,7 +985,7 @@ int EV_DoDonut(line_t*  line)
                                           // pillar must be two-sided 
 
     // do not start the donut if the pool is already moving
-    if (EN_boom && P_SectorActive( S_floor_special, s2)) 
+    if( EN_boom_floor && P_SectorActive( S_floor_special, s2) ) 
       continue;                           //jff 5/7/98
                       
     // find a two sided line around the pool whose other side isn't the pillar

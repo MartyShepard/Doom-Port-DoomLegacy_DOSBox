@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_mobj.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -149,12 +149,8 @@
 #include "b_game.h"     //added by AC for acbot
 
 
-#if 1
-// [WDJ] Not controlled yet
-#define  EN_catch_respawn_0   1
-#else
-byte EN_catch_respawn_0 = 1;  // enable catch Nightmare respawn at (0,0)
-#endif
+byte  EN_catch_respawn_0;  // enable catch Nightmare respawn at (0,0)
+  // ! comp[comp_respawn]
 
 
 // [WDJ] Voodoo doll 4/30/2009
@@ -286,7 +282,7 @@ static const fixed_t FloatBobOffsets[64] = {
 boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
 {
     static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
-    static int recursion;       // detects recursion
+    static int recursion = 0;  // detects recursion
    
     boolean ret = true;         // return value
     state_t *st;
@@ -294,11 +290,14 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
     //remember states seen, to detect cycles:
 
     statenum_t *seenstate = seenstate_tab;      // pointer to table
-    statenum_t i = state;       // initial state
+    statenum_t st1 = state;       // initial state
     statenum_t tempstate[NUMSTATES];    // for use with recursion
 
     if (recursion++)    // if recursion detected,
-        memset(seenstate = tempstate, 0, sizeof tempstate);     // clear state table
+    {
+        seenstate = tempstate;
+        memset(tempstate, 0, sizeof tempstate);  // clear state table
+    }
 
     do
     {
@@ -324,17 +323,23 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
             st->action.acp1(mobj);
 
         seenstate[state] = 1 + st->nextstate;   // killough 4/9/98
-
         state = st->nextstate;
-    } while (!mobj->tics && !seenstate[state]);   // killough 4/9/98
+        if( seenstate[state] )  break;  // killough 4/9/98
+
+    } while(!mobj->tics);
 
     if (ret && !mobj->tics)     // killough 4/9/98: detect state cycles
         GenPrintf(EMSG_warn, "Warning: State Cycle Detected");
 
-    if (!--recursion)
+    if(--recursion == 0)
     {
-        for (; (state = seenstate[i]); i = state - 1)
-            seenstate[i] = 0;   // killough 4/9/98: erase memory of states
+        // Only upon seenstate_tab
+        while( seenstate_tab[st1] )
+        {
+            register statenum_t st2 = seenstate_tab[st1] - 1;
+            seenstate_tab[st1] = 0;   // killough 4/9/98: erase memory of states
+            st1 = st2;
+        }
     }
 
     return ret;

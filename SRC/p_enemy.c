@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_enemy.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -285,8 +285,8 @@ byte  monster_infight_deh; // DEH input.
        byte  EN_monster_friction;
 static byte  EN_mbf_enemyfactor;
 static byte  EN_monster_momentum;
-static byte  EN_skull_limit;  // turn off pain skull gen limits
-static byte  EN_old_pain_spawn;
+       byte  EN_skull_limit;  // comp[comp_pain], enable pain skull limits
+       byte  EN_old_pain_spawn;  // comp[comp_skull], can spit skull through walls
 static byte  EN_doorstuck;  // !comp[comp_doorstuck], Boom doorstuck or MBF doorstuck
 static byte  EN_mbf_doorstuck;  // MBF doorstuck
        byte  EN_mbf_speed;  // p_spec
@@ -336,6 +336,10 @@ void CV_monster_OnChange(void)
         EN_mbf_enemyfactor = (ft & FRE_mbf_enemyfactor);
         EN_monster_momentum = (ft & FRE_monster_momentum);
     }
+#ifdef FRICTIONTHINKER
+    EN_boom_friction_thinker = (friction_model == FR_boom)
+           && EN_variable_friction;
+#endif
 
     // Demo sets through cv_doorstuck.
     EN_mbf_doorstuck = (cv_doorstuck.EV == 1);  // 1=MBF
@@ -375,9 +379,14 @@ void DemoAdapt_p_enemy( void )
     // Demo sets cv_monsterfriction.EV, and other cv_xxx.EV.
     CV_monster_OnChange();
 
-    EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
-    EN_old_pain_spawn = ( demoversion < 143 );
+    if( demoversion < 200 )
+    {
+        EN_skull_limit = ( demoversion <= 132 );  // doom demos
+        EN_old_pain_spawn = ( demoversion < 143 );
+    }
+
     EN_mbf_speed = EN_mbf || (EV_legacy >= 145);  // Legacy 1.45, 1.46
+
 #if 1
     if( demoplayback && verbose > 1 )
     { 
@@ -706,7 +715,8 @@ static int P_IsUnderDamage(mobj_t *actor)
 static const fixed_t xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
 static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
-// Called multiple times in one step, by P_TryWalk, while trying to find valid path.
+// Called multiple times in one step, by P_TryWalk, while trying to find
+// valid path for an actor.
 // Called by P_TryWalk, A_Chase
 // Only called for actor things, not players, nor missiles.
 //  dropoff : 0, 1, 2 dog jump
@@ -916,7 +926,7 @@ static boolean P_MoveActor (mobj_t* actor, byte dropoff)
     {
         // Monster gravity, or MBF felldown, blocks this vanilla instant fall.
         if(! ( cv_monstergravity.EV
-	       || (EN_mbf && tmr_felldown) ) )
+               || (EN_mbf && tmr_felldown) ) )
         {
             if(actor->z > actor->floorz)
                P_HitFloor(actor);
@@ -2490,10 +2500,10 @@ void A_SkelFist (mobj_t*        actor)
 // PIT_VileCheck
 // Detect a corpse that could be raised.
 //
-mobj_t*         corpsehit;
-mobj_t*         vileobj;
-fixed_t         viletryx;
-fixed_t         viletryy;
+// PIT_VileCheck Global parameter
+static mobj_t * vile_r_corpse;  // OUT
+static mobj_t * vileobj;
+static xyz_t    vile_pos;
 
 boolean PIT_VileCheck (mobj_t*  thing)
 {
@@ -2511,33 +2521,40 @@ boolean PIT_VileCheck (mobj_t*  thing)
 
     maxdist = thing->info->radius + mobjinfo[MT_VILE].radius;
 
-    if ( abs(thing->x - viletryx) > maxdist
-         || abs(thing->y - viletryy) > maxdist )
+    if ( abs(thing->x - vile_pos.x) > maxdist
+         || abs(thing->y - vile_pos.y) > maxdist )
         return true;            // not actually touching
 
-    corpsehit = thing;
-    corpsehit->momx = corpsehit->momy = 0;
+    // [WDJ] Prevent raise of corpse on another 3d floor.
+    // Because corpse may have 0 height, use only vile reach.
+    if( thing->z > (vile_pos.z + mobjinfo[MT_VILE].height)
+        || thing->z < (vile_pos.z - 20*FRACUNIT) )  // reasonable reach down
+        return true;
+
+    vile_r_corpse = thing;
+    vile_r_corpse->momx = vile_r_corpse->momy = 0;
 #if 0
     // [WDJ] The original code.  Corpse heights are not this simple.
     // Would touch another monster and get stuck.
-    corpsehit->height <<= 2;
-    check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
-    corpsehit->height >>= 2;
+    // In PrBoom this is enabled by comp[comp_vile].
+    vile_r_corpse->height <<= 2;
+    check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
+    vile_r_corpse->height >>= 2;
 #endif
     // [WDJ] Test with revived sizes from info, to fix monsters stuck together bug.
     // Must test as it would be revived, and then restore after the check
     // (because a collision could be found).
     // From considering the same fix in zdoom and prboom.
-    fixed_t corpse_height = corpsehit->height;
-    corpsehit->height = corpsehit->info->height; // revived height
-    fixed_t corpse_radius = corpsehit->radius;
-    corpsehit->radius = corpsehit->info->radius; // revived radius
-    int corpse_flags = corpsehit->flags;
-    corpsehit->flags |= MF_SOLID; // revived would be SOLID
-    check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
-    corpsehit->height = corpse_height;
-    corpsehit->radius = corpse_radius;
-    corpsehit->flags = corpse_flags;
+    fixed_t corpse_height = vile_r_corpse->height;
+    vile_r_corpse->height = vile_r_corpse->info->height; // revived height
+    fixed_t corpse_radius = vile_r_corpse->radius;
+    vile_r_corpse->radius = vile_r_corpse->info->radius; // revived radius
+    int corpse_flags = vile_r_corpse->flags;
+    vile_r_corpse->flags |= MF_SOLID; // revived would be SOLID
+    check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
+    vile_r_corpse->height = corpse_height;
+    vile_r_corpse->radius = corpse_radius;
+    vile_r_corpse->flags = corpse_flags;
 
     return !check;	// stop searching when no collisions found
 }
@@ -2555,58 +2572,59 @@ void A_VileChase (mobj_t* actor)
 
     int    bx, by;
 
-    mobjinfo_t*         info;
-    mobj_t*             temp;
+    mobjinfo_t * info;
+    mobj_t     * temp;
 
     if (actor->movedir != DI_NODIR)
     {
         // check for corpses to raise
-        viletryx =
-            actor->x + actor->info->speed*xspeed[actor->movedir];
-        viletryy =
-            actor->y + actor->info->speed*yspeed[actor->movedir];
+        // Parameters to VileCheck.
+        vile_pos.x =
+            actor->x + actor->info->speed * xspeed[actor->movedir];
+        vile_pos.y =
+            actor->y + actor->info->speed * yspeed[actor->movedir];
+        vile_pos.z = actor->z;
 
-        xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        yl = (viletryy - bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        yh = (viletryy - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+        xl = (vile_pos.x - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+        xh = (vile_pos.x - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+        yl = (vile_pos.y - bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+        yh = (vile_pos.y - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
 
         vileobj = actor;
         for (bx=xl ; bx<=xh ; bx++)
         {
             for (by=yl ; by<=yh ; by++)
             {
-                // Call PIT_VileCheck to check
-                // whether object is a corpse
-                // that canbe raised.
+                // Call PIT_VileCheck to check whether object is a corpse
+                // that can be raised.
                 if (!P_BlockThingsIterator(bx,by,PIT_VileCheck))
                 {
                     // got one!
                     temp = actor->target;
-                    actor->target = corpsehit;
+                    actor->target = vile_r_corpse;
                     A_FaceTarget (actor);
                     actor->target = temp;
 
                     P_SetMobjState (actor, S_VILE_HEAL1);
-                    S_StartObjSound( corpsehit, sfx_slop );
-                    info = corpsehit->info;
+                    S_StartObjSound( vile_r_corpse, sfx_slop );
+                    info = vile_r_corpse->info;
 
-                    P_SetMobjState (corpsehit,info->raisestate);
+                    P_SetMobjState (vile_r_corpse,info->raisestate);
                     if( demoversion<129 )
                     {
                         // original code, with ghost bug
                         // does not work when monster has been crushed
-                        corpsehit->height <<= 2;
+                        vile_r_corpse->height <<= 2;
                     }
                     else
                     {
                         // fix vile revives crushed monster as ghost bug
-                        corpsehit->height = info->height;
-                        corpsehit->radius = info->radius;
+                        vile_r_corpse->height = info->height;
+                        vile_r_corpse->radius = info->radius;
                     }
-                    corpsehit->flags = info->flags;
-                    corpsehit->health = info->spawnhealth;
-                    corpsehit->target = NULL;
+                    vile_r_corpse->flags = info->flags;
+                    vile_r_corpse->health = info->spawnhealth;
+                    vile_r_corpse->target = NULL;
 
                     return;
                 }
@@ -2921,8 +2939,9 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
     mobj_t*     newmobj;
     int         prestep;
 
-#if 1
-    if( EN_skull_limit ) {
+
+    if( EN_skull_limit )  // Boom comp_pain
+    {
     //  --------------- SKULL LIMIT CODE -----------------
 //  Original Doom code that limits the number of skulls to 20
     int         count;
@@ -2942,10 +2961,10 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
 
     // if there are already 20 skulls on the level,
     // don't spit another one
-    if (count > EN_skull_limit)
+    if (count > 20)
         goto no_skull;
+
     }
-#endif   
 
     // okay, there's place for another one
     prestep =
@@ -2956,7 +2975,7 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
     y = actor->y + FixedMul (prestep, sine_ANG(angle));
     z = actor->z + 8*FRACUNIT;
 
-    if( EN_old_pain_spawn )
+    if( EN_old_pain_spawn )  // Boom comp_skull
     {
        newmobj = P_SpawnMobj (x, y, z, MT_SKULL);
     }
@@ -3201,9 +3220,8 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             && (boss_type != MT_KEEN))
                 goto no_action;
     }
-#if 1
     // [WDJ] Untested
-    // This could be done with compatibility switch, as in prboom.
+    // This could be done with compatibility switch (comp_666), as in prboom.
     else if( (gamemode == doom_shareware || gamemode == doom_registered)
              && gameepisode < 4 )
     {
@@ -3219,7 +3237,6 @@ void A_Bosstype_Death (mobj_t* mo, int boss_type)
             if (boss_type == MT_BRUISER)
                 goto no_action;
     }
-#endif   
     else
     {
         switch(gameepisode)
@@ -3919,4 +3936,5 @@ void A_LineEffect(mobj_t *mo)
     sep->parm1 = fake_line.special;
 #endif
 }
+
 #include "p_henemy.c"

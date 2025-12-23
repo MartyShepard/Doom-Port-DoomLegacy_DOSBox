@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: p_spec.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3670,6 +3670,8 @@ static void P_SpawnScrollers(void)
 */
 
 #ifdef FRICTIONTHINKER
+byte  EN_boom_friction_thinker;
+
 // Adds friction thinker.
 // [WDJ] Obsolete. Only kept for Boom demo.
 static void Add_Friction(int friction, int movefactor, int affectee)
@@ -3694,8 +3696,16 @@ void T_Friction(friction_t *f)
     msecnode_t* node;
     boolean foundfloor = false;
 
+    // [WDJ] This is only enabled by EN_boom_friction_thinker, which requires
+    // (friction_model == FR_boom) && EN_variable_friction.
+    // But they could switch models during play ...?
+#if 1
+    if( !EN_boom_friction_thinker )
+        return;
+#else
     if (!EN_boom || !EN_variable_friction)
         return;
+#endif
 
     sec = sectors + f->affectee;
 
@@ -3790,11 +3800,6 @@ void T_Friction(friction_t *f)
 // Called before playing game or playing demo
 static void P_SpawnFriction( sector_t * sec )
 {
-#ifdef FRICTIONTHINKER
-    // friction thinkers were used in Boom demos and old legacy demos
-    boolean frictionthinker = (friction_model == FR_boom);
-#endif
-   
     int i;
     line_t * lnp = lines;
     register int fsecn;
@@ -3862,7 +3867,7 @@ static void P_SpawnFriction( sector_t * sec )
                 sec->movefactor = movefactor;
 #ifdef FRICTIONTHINKER
                 // [WDJ] Friction thinkers are obsolete.
-                if( frictionthinker )
+                if( EN_boom_friction_thinker )
                 {
                     // Thinkers used only for some demos.
                     Add_Friction(friction, movefactor, sec-sectors);
@@ -3880,7 +3885,7 @@ static void P_SpawnFriction( sector_t * sec )
                 sectors[fsecn].movefactor = movefactor;
 #ifdef FRICTIONTHINKER
                 // [WDJ] Friction thinkers are obsolete.
-                if( frictionthinker )
+                if( EN_boom_friction_thinker )
                 {
                     // Thinkers used only for some demos.
                     Add_Friction(friction, movefactor, fsecn);

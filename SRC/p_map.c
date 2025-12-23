@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_map.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -183,7 +183,7 @@ static boolean PIT_StompThing (mobj_t* thing)
 
     // monsters don't stomp things except on boss level
     if( !tm_stomp_telefrag ) // killough 8/9/98: make consistent across all levels
-         return false;
+        return false;
 
     int  damage = 10000;  // fatal
     if( (tm_thing->player && (tm_thing->player->mo != tm_thing))
@@ -237,6 +237,7 @@ static boolean PIT_StompThing (mobj_t* thing)
 // [WDJ] 3/2011 Get sector oriented friction.
 // This routine is based on one from prboom, by killough 8/28/98.
 // For most sectors it returns ORIG_FRICTION.
+// Return lowest value (most sticky friction).
 // A high return value is very little friction (ice).
 // It also considers being on sector borders and sector heights.
 
@@ -344,7 +345,7 @@ int  P_GetMoveFactor(mobj_t* mo)
   }
 #ifdef FRICTIONTHINKER
   // older demo friction
-  else if( EN_boom && EN_variable_friction
+  else if( EN_boom_friction_thinker
       && !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)) )
   {
       // Boom friction, using friction thinker
@@ -721,7 +722,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
 
     //added:24-02-98:compatibility with old demos, it used to return with...
     //added:27-02-98:for version 112+, nonsolid things pass through other things
-#if 1
     // For all versions, check thing !SOLID eventually leads to return true.
     if ( !(thing->flags & MF_SOLID) )
        goto ret_pass;
@@ -765,23 +765,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
     // Already known: (thing->flags & MF_SOLID)
     //  (tm_thing->flags & MF_SOLID), !(tm_thing->flags & MF_NOCLIP)
     if ( !(thing->flags & MF_NOCLIP) )
-#else
-    // As it was previous to 2014.
-    if( EV_legacy < 112 || EV_legacy >= 132 || !(tm_thing->flags & MF_SOLID))
-        return !(thing->flags & MF_SOLID);
-
-    // [WDJ] This z-checking code is for DoomLegacy versions 113..131.
-    // After version 132, the heretic z-checking code was added (PASSMOBJ),
-    // which is more specific.
-    // This code causes monsters to escape ledges on top of other monsters.
- 
-    //added:22-02-98: added z checking at last
-    //SoM: 3/10/2000: Treat noclip things as non-solid!
-    if (   (thing->flags & MF_SOLID)
-        && (tm_thing->flags & MF_SOLID)
-        && !(thing->flags & MF_NOCLIP)
-        && !(tm_thing->flags & MF_NOCLIP))
-#endif
     {
         // Only apply when tm_thing and thing are both SOLID, and !NOCLIP.
 
@@ -2396,20 +2379,26 @@ boolean PTR_ShootTraverse (intercept_t* in)
             if (z > li->frontsector->ceilingheight)
                 return false;
 
-            //added:24-02-98: compatibility with older demos
-            if (demoversion<112)
-            {
-                diffheights = true;
-                hitplane = false;
-            }
-
             // it's a sky hack wall
-            if  ((!hitplane &&      //added:18-02-98:not for shots on planes
-                 li->backsector &&
-                 diffheights &&    //added:18-02-98:skip only REAL sky hacks
-                                   //   eg: they use different ceil heights.
-                 li->backsector->ceilingpic == skyflatnum))
-              return false;
+            if( li->backsector && (li->backsector->ceilingpic == skyflatnum))
+            {
+                if(demoversion<112)
+                    return false;
+
+                if( EV_legacy )
+                {
+                    //added:18-02-98:not for shots on planes
+                    //added:18-02-98:skip only REAL sky hacks
+                    //   eg: they use different ceil heights.
+                    if( !hitplane && diffheights )
+                        return false;
+                }
+                else if( EN_boom )
+                {
+                    if( li->backsector->ceilingheight < z )
+                        return false;
+                }
+            }
         }
 
         if(sector && sector->ffloors)
@@ -2952,7 +2941,7 @@ boolean PIT_ChangeSector (mobj_t*  thing)
             || (!(leveltime % (16*NEWTICRATERATIO))
                 && !(thing->flags&MF_NOBLOOD)) )
         {
-	    // Doom, Boom, Heretic
+            // Doom, Boom, Heretic
             // spray blood in a random direction
             mo = P_SpawnMobj (thing->x,
                               thing->y,
