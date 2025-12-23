@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01342 ]: w107 sight
 [01341 ]: w107 gravity combine
 [01340 ]: w107 boom patches 3
 [01339 ]: w107 menu

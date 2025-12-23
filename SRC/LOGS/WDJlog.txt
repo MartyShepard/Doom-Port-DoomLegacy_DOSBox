@@ -6111,3 +6111,9 @@ patchfile = w107_37_gravity.patch
 - commit revision 1341
 Combine the DoomLegacy monster gravity control with the Boom comp and
 MBF felldown.
+
+*** W107_sight
+patchfile = w107_38_sight.patch
+- commit revision 1342
+Revise some of the monster sight functions to get better compatibility with
+Boom and MBF, and to take advantage of improvements.

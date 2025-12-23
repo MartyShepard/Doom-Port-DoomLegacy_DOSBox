@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_sight.c 1342 2017-06-21 16:14:12Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,12 +53,12 @@ fixed_t         see_topslope;
 fixed_t         see_bottomslope;   // slopes to top and bottom of target
 
 // Check Sight internal global vars
-divline_t       cs_trace;        // from t1 to t2
-subsector_t *   cs_t2_subsector; // location of t2
-fixed_t         cs_t2x, cs_t2y;
-fixed_t         cs_startz;       // eye z of looker
+static divline_t       cs_trace;        // from t1 to t2
+static subsector_t *   cs_t2_subsector; // location of t2
+static fixed_t         cs_t2x, cs_t2y;
+static fixed_t         cs_startz;       // eye z of looker
 
-int             cs_sightcounts[2];	  // ??? debugging
+static int             cs_sightcounts[2];  // ??? debugging
 
 
 //
@@ -67,11 +67,6 @@ int             cs_sightcounts[2];	  // ??? debugging
 //
 static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
 {
-    fixed_t     dx;
-    fixed_t     dy;
-    fixed_t     left;
-    fixed_t     right;
-
     if (!node->dx)
     {
         if (x==node->x)
@@ -95,11 +90,8 @@ static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
         return node->dx > 0;
     }
 
-    dx = (x - node->x);
-    dy = (y - node->y);
-
-    left =  (node->dy>>FRACBITS) * (dx>>FRACBITS);
-    right = (dy>>FRACBITS) * (node->dx>>FRACBITS);
+    fixed_t left =  (node->dy>>FRACBITS) * ((x - node->x)>>FRACBITS);
+    fixed_t right = ((y - node->y)>>FRACBITS) * (node->dx>>FRACBITS);
 
     if (right < left)
         return 0;       // front side
@@ -116,21 +108,18 @@ static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
 //
 static fixed_t P_InterceptVector2( divline_t* v2, divline_t* v1 )
 {
-    fixed_t     frac;
     fixed_t     num;
     fixed_t     den;
 
     den = FixedMul (v1->dy>>8,v2->dx) - FixedMul(v1->dx>>8,v2->dy);
 
     if (den == 0)
-        return 0;
-    //  I_Error ("P_InterceptVector: parallel");
+        return 0;  // parallel
 
     num = FixedMul ( (v1->x - v2->x)>>8 ,v1->dy) +
         FixedMul ( (v2->y - v1->y)>>8 , v1->dx);
-    frac = FixedDiv (num , den);
 
-    return frac;
+    return  FixedDiv (num , den);  // frac
 }
 
 
@@ -239,19 +228,17 @@ static void intercept_ffloor( subsector_t * ssec, fixed_t frac )
 //
 static boolean P_CrossSubsector (int num)
 {
-    seg_t*              seg;
-    line_t*             line;
-    int                 s1, s2;
-    int                 count;
-    subsector_t*        sub;
-    sector_t*           front;
-    sector_t*           back;
+    seg_t  * seg;
+    line_t * line;
+    subsector_t * sub;
+    sector_t * front, * back;
+    vertex_t * v1, * v2;
     fixed_t             opentop, openbottom;
     divline_t           divl;
-    vertex_t*           v1;
-    vertex_t*           v2;
     fixed_t             frac;  // 1.0
     fixed_t             slope;
+    int   s1, s2;
+    int   count;
 
 #ifdef RANGECHECK
     if (num>=numsubsectors)
@@ -288,6 +275,10 @@ static boolean P_CrossSubsector (int num)
             continue;
 
         line->validcount = validcount;
+       
+        // [WDJ] PrBoom does bounding box check here, but it causes the
+        // original Doom demos to lose sync. We also lose sync because
+        // of the Sleeping Sargent bug fix in P_DivlineSide.
 
         // Check the vertex of the line segment against the sight trace.
         v1 = line->v1;
@@ -326,21 +317,19 @@ static boolean P_CrossSubsector (int num)
 
         // possible occluder
         // because of ceiling height differences
-        if (front->ceilingheight < back->ceilingheight)
-            opentop = front->ceilingheight;
-        else
-            opentop = back->ceilingheight;
+        opentop = min( front->ceilingheight, back->ceilingheight );
 
         // because of floor height differences
-        if (front->floorheight > back->floorheight)
-            openbottom = front->floorheight;
-        else
-            openbottom = back->floorheight;
+        openbottom = max( front->floorheight, back->floorheight );
 
         // quick test for totally closed doors
         if (openbottom >= opentop)
             return false;               // stop
+       
+        // PrBoom: test against minz, maxz, here.
 
+        // PrBoom: InterceptVector2 only for PrBoom5 or PrBoom6 compatibility.
+        // EternityEngine: only use InterceptVector2
         // Test the sight lines across this linedef segment.
         // Fraction of the sight trace covered.
         frac = P_InterceptVector2 (&cs_trace, &divl);
@@ -386,37 +375,40 @@ static boolean P_CrossSubsector (int num)
 //
 static boolean P_CrossBSPNode (int bspnum)
 {
-    node_t*     bsp;
-    int         side;
+  node_t * bsp;
+  int      side;
 
-    if (bspnum & NF_SUBSECTOR)
-    {
-        if (bspnum == -1)
-            return P_CrossSubsector (0);
-        else
-            return P_CrossSubsector (bspnum&(~NF_SUBSECTOR));
-    }
-
+  // [WDJ] Remove tail recursion, similar to PrBoom.
+  while( !(bspnum & NF_SUBSECTOR) )
+  {
     bsp = &nodes[bspnum];
 
     // decide which side the start point is on
     side = P_DivlineSide (cs_trace.x, cs_trace.y, (divline_t *)bsp);
-    if (side == 2)
-        side = 0;       // an "on" should cross both sides
+    side &= 0x01;  // 2 ==> 0, an "on" should cross both sides
 
-    // cross the starting side
-    if (!P_CrossBSPNode (bsp->children[side]) )
-        return false;
-
-    // the partition plane is crossed here
-    if (side == P_DivlineSide (cs_t2x, cs_t2y, (divline_t *)bsp))
+    // [WDJ] As in PrBoom and EternityEngine.
+    // The partition plane is crossed here.
+    if( side == P_DivlineSide( cs_t2x, cs_t2y, (divline_t *)bsp) )
     {
-        // the line doesn't touch the other side
-        return true;
+        // cross the starting side, using loop
+        bspnum = bsp->children[side]; // the line doesn't touch the other side
     }
+    else
+    {
+        // the partition plane is crossed here
+        if( !P_CrossBSPNode( bsp->children[side]) )
+            return false;   // cross the starting side
 
-    // cross the ending side
-    return P_CrossBSPNode (bsp->children[side^1]);
+        // cross the ending side, using loop
+        bspnum = bsp->children[side^1];
+    }
+  }
+
+  if( bspnum == -1 )
+      return P_CrossSubsector (0);
+   
+  return P_CrossSubsector( bspnum & ~NF_SUBSECTOR );
 }
 
 
@@ -450,7 +442,38 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
         // can't possibly be connected
         return false;
     }
-/*  BP: it seam that it don't work :( TODO: fix it
+
+#if 0
+    // [WDJ] From PrBoom
+    // But our sector_t does not have heightsec field.
+    // killough 4/19/98: make fake floors and ceilings block monster view
+    const sector_t * s1p = t1->subsector->sector;
+    const sector_t * s2p = t2->subsector->sector;
+
+    if( s1p->heightsec != -1 )
+    {
+        s1 = &sectors[s1p->heightsec];
+        if( (t1->z + t1->height <= s1p->floorheight
+             && t2->z >= s1p->floorheight )
+           || (t1->z >= s1p->ceilingheight
+               && t2->z + t1->height <= s1p->ceilingheight) )
+            return false;
+    }
+  
+    if( s2p->heightsec != -1 )
+    { 
+        s2p = &sectors[s2p->heightsec];
+
+        if( (t2->z + t2->height <= s2p->floorheight
+             && t1->z >= s2p->floorheight )
+           || (t2->z >= s2p->ceilingheight
+               && t1->z + t2->height <= s2p->ceilingheight) )
+            return false;
+   }
+#endif
+
+#if 0
+//  BP: it seem that it don't work :( TODO: fix it
     if (EN_heretic )
     {
         //
@@ -462,7 +485,15 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
         
         return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
     }
-*/    
+#endif
+
+    // [WDJ] MBF, From MBF, PrBoom.
+    // killough 11/98: shortcut for melee situations.
+    // same subsector? obviously visible
+    // cph - compatibility optioned for demo sync, cf HR06-UV.LMP
+    if( EN_mbf && (t1->subsector == t2->subsector) )
+        return true;
+
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
     cs_sightcounts[1]++;
@@ -472,8 +503,8 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
     cs_startz = t1->z + t1->height - (t1->height>>2);  // eyes at 3/4
     // Slope is (height / horz.), where horz. is measured such that the
     // the distance from eyes to target = 1.  Slope here is (height/1).
-    see_topslope = (t2->z + t2->height) - cs_startz;   // head of target
-    see_bottomslope = (t2->z) - cs_startz;             // feet of target
+    see_bottomslope = t2->z - cs_startz;           // feet of target
+    see_topslope = see_bottomslope + t2->height;   // head of target
 
     cs_trace.x = t1->x;
     cs_trace.y = t1->y;
@@ -498,8 +529,7 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
 //
 boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t pz )
 {
-    int         s1;
-    int         s2;
+    int         s1, s2;
     int         pnum;
     int         bytenum;
     int         bitnum;
@@ -521,7 +551,9 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
         // can't possibly be connected
         return false;
     }
-/*  BP: it seem that it don't work :( TODO: fix it
+
+#if 0
+//  BP: it seem that it don't work :( TODO: fix it
     if (EN_heretic )
     {
         //
@@ -533,7 +565,15 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
         
         return P_SightPathTraverse ( t1->x, t1->y, t2->x, t2->y );
     }
-*/    
+#endif
+
+    // [WDJ] MBF, From MBF, PrBoom.
+    // killough 11/98: shortcut for melee situations.
+    // same subsector? obviously visible
+    // cph - compatibility optioned for demo sync, cf HR06-UV.LMP
+    if( EN_mbf && (t1->subsector == t2->subsector) )
+        return true;
+
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
     cs_sightcounts[1]++;
@@ -541,8 +581,8 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
     validcount++;
 
     cs_startz = t1->z + t1->height - (t1->height>>2);
-    see_topslope = (pz+t2->height) - cs_startz;
-    see_bottomslope = (pz) - cs_startz;
+    see_bottomslope = (pz) - cs_startz;           // feet of target
+    see_topslope = see_bottomslope + t2->height;   // head of target
 
     cs_trace.x = t1->x;
     cs_trace.y = t1->y;
