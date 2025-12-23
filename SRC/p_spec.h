@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_spec.h 1334 2017-05-30 15:37:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -103,9 +103,7 @@ boolean P_UseSpecialLine ( mobj_t* thing, line_t* line, int side );
 
 void    P_ShootSpecialLine ( mobj_t* thing, line_t* line );
 
-void    P_CrossSpecialLine ( int linenum, int side, mobj_t* thing );
-
-void    P_ActivateCrossedLine ( line_t* line, int side, mobj_t* thing);
+void    P_CrossSpecialLine ( line_t* line, int side, mobj_t* thing );
 
 void    P_PlayerInSpecialSector (player_t* player);
 
@@ -327,7 +325,8 @@ void   P_SpawnStrobeFlash ( sector_t* sector, int fastOrSlow, int inSync );
 int    EV_StartLightStrobing(line_t* line);
 int    EV_TurnTagLightsOff(line_t* line);
 
-int    EV_LightTurnOn ( line_t* line, int bright );
+int    EV_LightTurnOn ( line_t* line, lightlev_t bright );
+int    EV_LightTurnOnPartway(line_t *line, fixed_t level);
 
 void   T_Glow(glow_t* g);
 void   P_SpawnGlowingLight(sector_t* sector);
@@ -531,6 +530,8 @@ typedef struct
     // when it reaches 0, start going down
     int         topcountdown;
 
+    // killough 10/98: sector tag for gradual lighting effects.
+    int16_t     lighttag;
 } vldoor_t;
 
 

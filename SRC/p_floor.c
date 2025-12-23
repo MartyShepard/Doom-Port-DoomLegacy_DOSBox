@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_floor.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -659,7 +659,9 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
               fixed_t   minsize = FIXED_MAX;
               side_t*   side;
 
-              if (EN_boom) minsize = 32000<<FRACBITS; //SoM: 3/6/2000: ???
+	      // Prevents height overflow.
+              if(EN_boom_physics) minsize = 32000<<FRACBITS; //SoM: 3/6/2000:
+
               mfloor->direction = 1;
 //              mfloor->sector = sec;
               mfloor->speed = FLOORSPEED;
@@ -670,7 +672,7 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
                   side = getSide(secnum,i,0);
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
-                      (!EN_boom && !side->bottomtexture))
+                      (!EN_boom_physics && !side->bottomtexture))
                   {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
@@ -678,22 +680,25 @@ int EV_DoFloor ( line_t* line, floor_e floortype )
                   side = getSide(secnum,i,1);
                   // jff 8/14/98 don't scan texture 0, its not real
                   if (side->bottomtexture > 0 ||
-                      (!EN_boom && !side->bottomtexture))
+                      (!EN_boom_physics && !side->bottomtexture))
                   {
                     if (textureheight[side->bottomtexture] < minsize)
                       minsize = textureheight[side->bottomtexture];
                   }
                 }
               }
-              if (!EN_boom)
+              if(!EN_boom_physics)
+              {
+		// Vanilla: may overflow
                 mfloor->floordestheight = mfloor->sector->floorheight + minsize;
+              }
               else
               {
-                mfloor->floordestheight =
+	        // Boom: prevent overflow (jff 3/13/98), modified [WDJ]
+                register fixed_t fdh =
                   (mfloor->sector->floorheight>>FRACBITS) + (minsize>>FRACBITS);
-                if (mfloor->floordestheight>32000)
-                  mfloor->floordestheight = 32000;        //jff 3/13/98 do not
-                mfloor->floordestheight<<=FRACBITS;       // allow height overflow
+                if( fdh > 32000 )  fdh = 32000;
+                mfloor->floordestheight = fdh<<FRACBITS;
               }
             break;
           }
@@ -985,7 +990,7 @@ int EV_DoDonut(line_t*  line)
       // [WDJ] using ptr s = s2->linelist[i] gives larger code (by 32 bytes).
       //jff 3/29/98 use true two-sidedness, not the flag
       // killough 4/5/98: changed demo_compatibility to compatibility
-      if (!EN_boom)
+      if(!EN_boom_physics)
       {
         if (!(s2->linelist[i]->flags & ML_TWOSIDED)
             || (s2->linelist[i]->backsector == s1))

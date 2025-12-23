@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_map.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1235,7 +1235,7 @@ boolean P_TryMove ( mobj_t*       thing,
             }
         }
         else
-	{   // not heretic fly
+        {   // not heretic fly
             if(((thing->z + thing->height) > tmr_ceilingz) // hit ceiling
                && !(thing->flags & MF_TELEPORT) )
                 goto impact;  // mobj must lower itself to fit
@@ -1264,85 +1264,85 @@ boolean P_TryMove ( mobj_t*       thing,
                 if( ( !EN_boom || (dropoff == 0)
                       // fix demosync bug in mbf compatibility mode
                       || (EN_mbf && compatibility_level <= prboom_2_compatibility)
-		    )
-		    && (tmr_floorz - tmr_dropoffz > 24*FRACUNIT)
-		  )
-		    return false;  // don't stand over a dropoff
-	    }
-	    else
-	    if( (dropoff == 0)  // dropoff not allowed
-		||( (dropoff == 2)  // large jump down (e.g. dogs)
-		    &&( (tmr_floorz - tmr_dropoffz > 128*FRACUNIT) // too far
-			|| !thing->target
-			|| thing->target->z > tmr_dropoffz) // target above dropoff
-		  )
-	      )
-	    {
-	        if( (EN_mbf && cv_monkeys.EV) ?
-		      thing->floorz - tmr_floorz > 24*FRACUNIT ||
+                    )
+                    && (tmr_floorz - tmr_dropoffz > 24*FRACUNIT)
+                  )
+                    return false;  // don't stand over a dropoff
+            }
+            else
+            if( (dropoff == 0)  // dropoff not allowed
+                ||( (dropoff == 2)  // large jump down (e.g. dogs)
+                    &&( (tmr_floorz - tmr_dropoffz > 128*FRACUNIT) // too far
+                        || !thing->target
+                        || thing->target->z > tmr_dropoffz) // target above dropoff
+                  )
+              )
+            {
+                if( (EN_mbf && cv_monkeys.EV) ?
+                      thing->floorz - tmr_floorz > 24*FRACUNIT ||
                       thing->dropoffz - tmr_dropoffz > 24*FRACUNIT)
-		    :  tmr_floorz - tmr_dropoffz > 24*FRACUNIT
-		    return false;
-	    }
-	    else
-	    { /* dropoff allowed -- check for whether it fell more than 24 */
-	        tmr_felldown = !(thing->flags & MF_NOGRAVITY) &&
+                    :  tmr_floorz - tmr_dropoffz > 24*FRACUNIT
+                    return false;
+            }
+            else
+            { /* dropoff allowed -- check for whether it fell more than 24 */
+                tmr_felldown = !(thing->flags & MF_NOGRAVITY) &&
                                thing->z - tmfloorz > 24*FRACUNIT;
-	    }
-	}
+            }
+        }
 #endif
        
         if( tmr_dropoffline )
         {
-	    // [WDJ] Due to complexity of MBF and integration with DoomLegacy,
-	    // used some GOTO.  Do not try to fix this!
-	    // It is much more understandable this way.
-	    if( thing->flags&(MF_DROPOFF|MF_FLOAT) ) // player, missile, shot, puff, etc.
-	        goto ignore_dropoff;
+            // [WDJ] Due to complexity of MBF and integration with DoomLegacy,
+            // used some GOTO.  Do not try to fix this!
+            // It is much more understandable this way.
+            if( thing->flags&(MF_DROPOFF|MF_FLOAT) ) // player, missile, shot, puff, etc.
+                goto ignore_dropoff;
 
 #if 0
             // may be standing on something
-	    onz = ( tmr_floorthing && (thing->z > tmr_floorz) )?
+            onz = ( tmr_floorthing && (thing->z > tmr_floorz) )?
                     thing->z     // standing on thing
                   : tmr_floorz;  // the usual floor
 #endif
-	   
-	    // MBF
+
+            // MBF
             if( cv_mbf_dropoff.EV )  // MBF dropoff
-	    {
-		if(((allowdropoff == 1)  // drop off allowed
+            {
+                if(((allowdropoff == 1)  // drop off allowed
                     && (tmr_floorz - tmr_dropoffz > MAXSTEPMOVE))
-		  ||((allowdropoff == 2) // large jump down (e.g. dogs)
-		    &&((tmr_floorz - tmr_dropoffz > 128*FRACUNIT)
-			|| !thing->target
-			|| thing->target->z > tmr_dropoffz )) // target above dropoff
-		  )
-	        {
-		    // Dropoff too high.
-		    if( EN_mbf && cv_mbf_monkeys.EV )
-		    {
-		        // [WDJ] Still do not know what monkeys does.
-		        if( thing->floorz - tmr_floorz > 24*FRACUNIT
-			    || thing->dropoffz - tmr_dropoffz > 24*FRACUNIT)
-		            goto block_move;
-		        goto ignore_dropoff;
-		    }
-		    goto block_move;
-		}
-	        else
+                  ||((allowdropoff == 2) // large jump down (e.g. dogs)
+                    &&((tmr_floorz - tmr_dropoffz > 128*FRACUNIT)
+                        || !thing->target
+                        || thing->target->z > tmr_dropoffz )) // target above dropoff
+                  )
                 {
-		    // dropoff allowed
+                    // Dropoff too high.
+                    if( EN_mbf && cv_mbf_monkeys.EV )
+                    {
+                        // [WDJ] Still do not know what monkeys does.
+                        if( thing->floorz - tmr_floorz > 24*FRACUNIT
+                            || thing->dropoffz - tmr_dropoffz > 24*FRACUNIT)
+                            goto block_move;
+                        goto ignore_dropoff;
+                    }
+                    goto block_move;
+                }
+                else
+                {
+                    // dropoff allowed
                     // check for whether it fell more than 24.
                     tmr_felldown = !(thing->flags & MF_NOGRAVITY)
                                    && (thing->z - tmr_floorz > 24*FRACUNIT);
-		    goto got_dropoff;
+                    goto got_dropoff;
                 }
-	    }
+            }
 
             // DoomLegacy
             // [WDJ] tmr_floorthing is for DoomLegacy versions 113..131.
-	    if( tmr_floorthing )  // standing on something
-	        goto ignore_dropoff;
+            if( tmr_floorthing )  // standing on something
+                goto ignore_dropoff;
 
             // Doom, Boom
             if( tmr_floorz > tmr_dropoffz + MAXSTEPMOVE )  // excessive height
@@ -1354,14 +1354,14 @@ boolean P_TryMove ( mobj_t*       thing,
                 {
                     goto block_move;  // inform caller, returning tmr_dropoffline
                 }
-	        // MBF compatibility mode
-	        if( EN_mbf && demoversion <= 203 )
-		    goto block_move;
+                // MBF compatibility mode
+                if( EN_mbf && demoversion <= 203 )
+                    goto block_move;
                 // [WDJ] Trying to moderate momentum here causes too many side-effects
                 // like barrels getting stuck at conveyor edge.
                 // Barrels only have momentum.
                 // Successful move, returning tmr_dropoffline.
-		goto got_dropoff;
+                goto got_dropoff;
             }
 
 ignore_dropoff:
@@ -1449,7 +1449,7 @@ got_dropoff:
                             spechit_player = thing->player;
                         }
                     }
-                    P_CrossSpecialLine (ld-lines, oldside, thing);
+                    P_CrossSpecialLine(ld, oldside, thing);
                 }
             }
         }

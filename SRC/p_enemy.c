@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_enemy.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1376,8 +1376,8 @@ static boolean P_IsVisible(mobj_t *actor, mobj_t *mo, boolean allaround)
                      - actor->angle;
 
         if( ( an > ANG90 && an < ANG270 )
-	    && ( P_AproxDistance((mo->x - actor->x), (mo->y - actor->y))
-		 > MELEERANGE )
+            && ( P_AproxDistance((mo->x - actor->x), (mo->y - actor->y))
+                 > MELEERANGE )
           )
             return false;
         // possibly visible, check sight

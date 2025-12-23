@@ -1,7 +1,8 @@
+
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_spec.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -174,6 +175,8 @@ byte  friction_model = FR_legacy;
 
 byte  boom_detect = 0;
 byte  legacy_detect = 0;
+
+
 
 
 //SoM: 3/7/2000
@@ -354,6 +357,7 @@ void P_InitPicAnims (void)
       lastanim->basepic = R_FlatNumForName (animdefs[i].startname);
     }
 
+
     lastanim->istexture = ( animdefs[i].istexture != 0 ); // char to boolean
     lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
 
@@ -480,7 +484,7 @@ sector_t*  getSector ( int currentSector, int linelisti, int side )
 //SoM: 3/7/2000: Use the boom method
 int  twoSided ( int sector, int linelisti )
 {
-  return EN_boom?
+  return EN_boom_physics?
     ((sectors[sector].linelist[linelisti])->sidenum[1] != NULL_INDEX)
     :
     ((sectors[sector].linelist[linelisti])->flags & ML_TWOSIDED);  // Doom, Heretic
@@ -497,7 +501,7 @@ int  twoSided ( int sector, int linelisti )
 //SoM: 3/7/2000: Use boom method.
 sector_t*  getNextSector ( line_t* line,  sector_t* sec )
 {
-  if (!EN_boom)
+  if(!EN_boom_physics)
   {
     // Doom, Heretic
     // Not needed with Boom backsector test returning NULL.
@@ -508,7 +512,7 @@ sector_t*  getNextSector ( line_t* line,  sector_t* sec )
   if (line->frontsector == sec)
   {
     // Boom, do not repeat same sector, see floor->highest_floor.
-    if (EN_boom && line->backsector==sec)
+    if( EN_boom_physics && line->backsector==sec )
       return NULL;
     return line->backsector;  // Doom, Heretic
   }
@@ -559,6 +563,12 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
     sector_t*           other;
     fixed_t             highfloor = -FIXED_MAX;
 
+#if 0
+    // DoomLegacy uses -FIXED_MAX, and assumes there will be an adjacent sector.
+    // [WDJ] From Boom, prevent overflow.
+    highfloor = EN_boom_physics? -32000*FRACUNIT : -500*FRACUNIT;
+#endif
+   
     for (i=0 ;i < sec->linecount ; i++)
     {
         // for each line in sector linelist
@@ -746,7 +756,7 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
     fixed_t             height = FIXED_MAX;
 
     // [WDJ] removed extra foundsector test that defeated this limit.
-    if (EN_boom) height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
+    if(EN_boom_physics)  height = 32000*FRACUNIT; //SoM: 3/7/2000: Remove ovf
                                               
     for (i=0 ;i < sec->linecount ; i++)
     {
@@ -774,6 +784,12 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
     line_t*     check;
     sector_t*   other;
     fixed_t     height = -FIXED_MAX;
+
+#if 0
+    // DoomLegacy uses -FIXED_MAX, and assumes there will be an adjacent sector.
+    // [WDJ] From Boom, prevent overflow.
+    height = EN_boom_physics? -32000*FRACUNIT : 0;
+#endif
 
     for (i=0 ;i < sec->linecount ; i++)
     {
@@ -808,7 +824,8 @@ fixed_t P_FindShortestTextureAround(int secnum)
   int i;
   sector_t *sec = &sectors[secnum];
 
-  if (EN_boom)
+  // Boom (jff): prevent overflow in height calcs.
+  if( EN_boom_physics )
     minsize = 32000<<FRACBITS;
 
   for (i = 0; i < sec->linecount; i++)
@@ -851,7 +868,8 @@ fixed_t P_FindShortestUpperAround(int secnum)
   int i;
   sector_t *sec = &sectors[secnum];
 
-  if (EN_boom)
+  // Boom (jff): prevent overflow in height calcs.
+  if( EN_boom_physics )
     minsize = 32000<<FRACBITS;
 
   for (i = 0; i < sec->linecount; i++)
@@ -1401,21 +1419,7 @@ boolean P_WasSecret(sector_t *sec)
 //  to cross a line with a non 0 special.
 //
 void
-P_CrossSpecialLine ( int           linenum,
-                     int           side,
-                     mobj_t*       thing )
-{
-    line_t*     line;
-    line = &lines[linenum];
-
-    P_ActivateCrossedLine(line, side, thing);
-}
-
-
-void
-P_ActivateCrossedLine ( line_t*       line,
-                        int           side,
-                        mobj_t*       thing)
+P_CrossSpecialLine ( line_t * line, int side, mobj_t* thing )
 {
     int         ok;
     int         forceuse; //SoM: 4/26/2000: ALLTRIGGER should allow monsters to use generalized types too!
@@ -1713,7 +1717,7 @@ P_ActivateCrossedLine ( line_t*       line,
 
       case 40:
         // RaiseCeilingLowerFloor, but actually is RaiseCeilingToHighest
-	if( EN_boom )
+        if( EN_boom )
         {
 	    // Highest Neighbor ceiling, slow.
             if(EV_DoCeiling( line, CT_raiseToHighest ) )  goto W1clear;

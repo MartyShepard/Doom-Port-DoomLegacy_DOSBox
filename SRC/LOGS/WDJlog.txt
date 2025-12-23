@@ -6035,3 +6035,18 @@ patchfile = w107_28_boom_PP.patch
 Change P_Random calls that PrBoom has with a parameter to PP_Random
 calls that include that parameter.  At this time this only documents
 the Boom P_Random parameter and is implemented as a plain P_Random call.
+
+*** W107_boom_physics
+patchfile = w107_29_boom_physics.patch
+- commit revision 1333
+Add support for Boom effects.
+Document the Boom comp flags better, as we implement them (if).
+EN_boom_physics : previous enabled as EN_boom, are now sensitive to comp.
+EN_skull_bounce_floor : Boom skull bounce comp.
+EN_blazing_double_sound : Boom comp, just easier to implement than work around.
+EN_doorlight : A Boom comp, but affects an MBF light effect.
+
+*** W107_mbf_light
+patchfile = w107_30_mbf_light.patch
+- commit revision 1334
+Opening doors generate the MBF gradual light effect.

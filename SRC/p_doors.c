@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_doors.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_doors.c 1334 2017-05-30 15:37:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -159,7 +159,21 @@ void T_VerticalDoor(vldoor_t * door)
 
         case -1:
             // DOWN
-            res = T_MovePlane(dsec, door->speed, dsec->floorheight, false,1,door->direction);
+            res = T_MovePlane(dsec, door->speed, dsec->floorheight,
+                              false, 1, door->direction);
+
+            // [WDJ] MBF gradual light, from MBF, PrBoom, EternityEngine.
+            // killough 10/98: implement gradual lighting effects.
+            // e6y: "Tagged doors don't trigger special lighting" handled wrong
+            if( EN_doorlight
+                && door->lighttag
+                && door->topheight - dsec->floorheight )
+            {
+                EV_LightTurnOnPartway(door->line,
+                   FixedDiv(dsec->ceilingheight - dsec->floorheight,
+                            door->topheight - dsec->floorheight) );
+            }
+            
             if (res == MP_pastdest)
             {
                 switch (door->type)
@@ -170,7 +184,8 @@ void T_VerticalDoor(vldoor_t * door)
                     case VD_genBlazeClose:
                         dsec->ceilingdata = NULL;       // SoM: 3/6/2000
                         P_RemoveThinker(&door->thinker);        // unlink and free
-                        if (EN_boom)        //SoM: Removes the double closing sound of doors.
+                        //SoM: Removes the double closing sound of doors.
+                        if( EN_blazing_double_sound ) // comp[comp_blazing]
                             S_StartSecSound(dsec, sfx_bdcls);
                         break;
 
@@ -200,10 +215,16 @@ void T_VerticalDoor(vldoor_t * door)
                     default:
                         break;
                 }
+
+#if 0	       
+                // [WDJ] Replaced by MBF gradual lighting.
+                // This does not exist in MBF, PrBoom, EternityEngine.
                 //SoM: 3/6/2000: Code to turn lighting off in tagged sectors.
-                if (EN_boom && door->line && door->line->tag)
+                if( EN_boom
+                    && door->line && door->line->tag )
                 {
-                    if (door->line->special > GenLockedBase && (door->line->special&6)==6)
+                    if (door->line->special > GenLockedBase
+                        && (door->line->special&6)==6)
                         EV_TurnTagLightsOff(door->line);
                     else
                     {
@@ -226,6 +247,15 @@ void T_VerticalDoor(vldoor_t * door)
                         }
                     }
                 }
+#endif	       
+                // From PrBoom.  Not in MBF, EternityEngine.
+                // e6y: "Tagged doors don't trigger special lighting" handled wrong
+                if( !EN_mbf
+                    && door->lighttag
+                    && door->topheight - dsec->floorheight )
+                {
+                    EV_LightTurnOnPartway(door->line, 0);
+                }
             }
             else if (res == MP_crushed)
             {
@@ -238,7 +268,8 @@ void T_VerticalDoor(vldoor_t * door)
                         break;
                     default:
                         door->direction = 1;
-                        // [WDJ] Bug from DoomWiki, blaze door hits something and raises with normal sound.
+                        // [WDJ] Bug from DoomWiki, blaze door hits something
+                        // and raises with normal sound.
                         // Test for type of door and play appropriate sound.
                         S_StartSecSound(dsec,
                              (door->speed >= 4) ? sfx_bdopn : sfx_doropn);
@@ -249,7 +280,20 @@ void T_VerticalDoor(vldoor_t * door)
 
         case 1:
             // UP
-            res = T_MovePlane(dsec, door->speed, door->topheight, false,1,door->direction);
+            res = T_MovePlane(dsec, door->speed, door->topheight,
+                              false, 1, door->direction);
+
+            // killough 10/98: implement gradual lighting effects.
+            // e6y: "Tagged doors don't trigger special lighting" handled wrong
+            if( EN_doorlight
+                && door->lighttag
+                && door->topheight - door->sector->floorheight )
+            {
+                EV_LightTurnOnPartway(door->line,
+                   FixedDiv(dsec->ceilingheight - dsec->floorheight,
+                            door->topheight - dsec->floorheight));
+            }
+
             if (res == MP_pastdest)
             {
                 switch (door->type)
@@ -278,10 +322,16 @@ void T_VerticalDoor(vldoor_t * door)
                     default:
                         break;
                 }
+
+#if 0
+                // [WDJ] Replaced by MBF gradual lighting.
+                // This does not exist in MBF, PrBoom, EternityEngine.
                 //SoM: 3/6/2000: turn lighting on in tagged sectors of manual doors
-                if (EN_boom && door->line && door->line->tag)
+                if( EN_boom
+                    && door->line && door->line->tag)
                 {
-                    if (door->line->special > GenLockedBase && (door->line->special&6)==6)     //jff 3/9/98 all manual doors
+                    if (door->line->special > GenLockedBase
+                        && (door->line->special&6)==6)     //jff 3/9/98 all manual doors
                         EV_LightTurnOn(door->line, 0);
                     else
                     {
@@ -303,6 +353,15 @@ void T_VerticalDoor(vldoor_t * door)
                                 break;
                         }
                     }
+                }
+#endif
+                // From PrBoom.  Not in MBF, EternityEngine.
+                // e6y: "Tagged doors don't trigger special lighting" handled wrong
+                if( !EN_mbf
+                    && door->lighttag
+                    && door->topheight - door->sector->floorheight )
+                {
+                    EV_LightTurnOnPartway(door->line, FRACUNIT);
                 }
             }
             break;
@@ -389,6 +448,7 @@ int EV_DoDoor(line_t * line, vldoor_e type, fixed_t speed)
         door->topwait = VDOORWAIT;
         door->speed = speed;
         door->line = line;      //SoM: 3/6/2000: Remember the line that triggered the door.
+        door->lighttag = 0;  // killough 10/98: no light effects with tagged doors
 
         switch (type)
         {
@@ -647,6 +707,9 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
     door->speed = VDOORSPEED;
     door->topwait = VDOORWAIT;
     door->line = line;  // SoM: 3/6/2000: remember line that triggered the door
+   
+    // killough 10/98: use gradual lighting changes if nonzero tag given
+    door->lighttag = EN_doorlight ? line->tag : 0;
 
     switch (line->special)
     {
@@ -673,6 +736,9 @@ EV_VerticalDoor ( line_t* line, mobj_t* thing )
             door->type = VD_blazeOpen;
             line->special = 0;
             door->speed = VDOORSPEED * 4;
+            break;
+        default:
+            door->lighttag = 0;  // others, no light change
             break;
     }
 
@@ -711,6 +777,7 @@ void P_SpawnDoorCloseIn30(sector_t * sec)
     door->speed = VDOORSPEED;
     door->topcountdown = 30 * adj_ticks_per_sec;  // [WDJ]
     door->line = NULL;  //SoM: Remember the line that triggered the door.
+    door->lighttag = 0;
 }
 
 //
@@ -738,6 +805,7 @@ P_SpawnDoorRaiseIn5Mins ( sector_t* sec, int secnum )
     door->topwait = VDOORWAIT;
     door->topcountdown = 5 * 60 * adj_ticks_per_sec;  // [WDJ]
     door->line = NULL;  //SoM: 3/6/2000: You know....
+    door->lighttag = 0;
 }
 
 // ==========================================================================

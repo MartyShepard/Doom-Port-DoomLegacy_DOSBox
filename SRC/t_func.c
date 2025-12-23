@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: t_func.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -3681,7 +3681,7 @@ void SF_LineTrigger(void)
     sf_tmpline.frontsector = NULL;
 
     P_UseSpecialLine(fs_run_trigger, &sf_tmpline, 0);      // Try using it
-    P_ActivateCrossedLine(&sf_tmpline, 0, fs_run_trigger); // Try crossing it
+    P_CrossSpecialLine(&sf_tmpline, 0, fs_run_trigger); // Try crossing it
 done:
     return;
 

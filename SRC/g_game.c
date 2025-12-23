@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: g_game.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -261,6 +261,10 @@ byte  EN_strife;
 byte  EN_variable_friction;  // Boom demo flag, Heretic, and Legacy.
 byte  EN_pushers;
 byte  EN_skull_bounce_fix;  // !comp[comp_soul]
+byte  EN_skull_bounce_floor; // PrBoom has this enabled by comp level.
+byte  EN_boom_physics; // !comp[comp_model]
+byte  EN_blazing_double_sound; // comp[comp_blazing]
+byte  EN_doorlight; // !comp[comp_doorlight]
 // MBF  (1998-2000)
 byte  EN_mbf_pursuit;   // !comp[comp_pursuit]
 fixed_t EV_mbf_distfriend;
@@ -270,6 +274,130 @@ byte  EN_mbf_dog_jumping;
 #endif
 // Heretic, Hexen
 byte  EN_inventory;
+
+// [WDJ] PrBoom compatibility enum, to read Boom demo.
+enum {
+  comp_telefrag,
+  comp_dropoff,
+  comp_vile,
+  comp_pain,
+  comp_skull,
+  comp_blazing,
+  comp_doorlight,
+  comp_model,
+  comp_god,
+  comp_falloff,
+  comp_floors,
+  comp_skymap,
+  comp_pursuit,
+  comp_doorstuck,
+  comp_staylift,
+  comp_zombie,
+  comp_stairs,
+  comp_infcheat,
+  comp_zerotags,
+  comp_moveblock,
+  comp_respawn,
+  comp_sound,
+  comp_666,
+  comp_soul,
+  comp_maskedanim,
+  COMP_NUM,
+  COMP_TOTAL=32
+};
+
+
+// -------------------------------------------
+// Boom and MBF compatibility flags
+//   cv or EN : DoomLegacy handling of the demo flags.
+// compatibility - turn off Boom features
+//   ! EN_boom
+// comp_telefrag - monsters used to telefrag only on MAP30,
+//   now they do it for spawners only.
+//   EN_telefrag = ! comp_telefrag // demo support only
+// comp_dropoff - MBF encourages things to drop off of overhangs
+//   cv_mbf_dropoff = ! comp_dropoff
+// comp_vile - original Doom archville bugs like ghosts
+// comp_pain - original Doom limits Pain Elementals from spawning too many skulls
+// comp_skull - original Doom let skulls be spit through walls by Pain Elementals
+// comp_blazing - original Doom duplicated blazing door sound
+//   EN_blazing_double_sound = comp_blazing
+// comp_doorlight - MBF made door lighting changes more gradual
+//   EN_doorlight = ! comp[comp_doorlight]
+// comp_model - improvements to the game physics
+//   EN_boom_physics = ! comp_model
+// comp_god - fixes to God mode
+// comp_falloff - MBF encourages things to drop off of overhangs
+//   cv_mbf_falloff = ! comp_falloff
+// comp_floors - fixes for moving floors bugs
+// comp_skymap
+// comp_pursuit - MBF AI change, limited pursuit?
+//   cv_mbf_pursuit = ! comp_pursuit
+// comp_doorstuck - monsters stuck in doors fix
+//   cv_mbf_doorstuck = ! comp_doorstuck
+// comp_staylift - MBF AI change, monsters try to stay on lifts
+//   cv_mbf_staylift = ! comp_staylift
+// comp_zombie - prevent dead players triggering stuff
+// comp_stairs - see p_floor.c
+// comp_infcheat - FIXME
+// comp_zerotags - allow zero tags in wads
+// comp_moveblock - enables keygrab and mancubi shots going thru walls
+// comp_respawn - objects which aren't on the map at game start respawn at (0,0)
+//   cph - this is the inverse of comp_respawnfix from eternity.
+// comp_sound - see s_sound.c
+// comp_666 - enables tag 666 in non-ExM8 levels
+// comp_soul - enables lost souls bouncing (see P_ZMovement)
+//   EN_skull_bounce_fix = ! comp_soul // normally on
+// comp_maskedanim - 2s mid textures don't animate
+
+#if 0
+  static const struct {
+    complevel_t fix; // level at which fix/change was introduced
+    complevel_t opt; // level at which fix/change was made optional
+  } levels[] = {
+    // comp_doorstuck - monsters stuck in doors fix
+    { boom_202_compatibility, mbf_compatibility },
+
+    // comp_vile - original Doom archville bugs like ghosts
+    // comp_pain - original Doom limits Pain Elementals from spawning too many skulls
+    // comp_skull - original Doom let skulls be spit through walls by Pain Elementals
+    // comp_blazing - original Doom duplicated blazing door sound
+    // comp_doorlight - MBF made door lighting changes more gradual
+    // comp_model - improvements to the game physics
+    // comp_god - fixes to God mode
+    // comp_skymap
+    // comp_zerotags - allow zero tags in wads */
+    { boom_compatibility, mbf_compatibility },
+
+    // comp_floors - fixes for moving floors bugs
+    // comp_stairs - see p_floor.c
+    { boom_compatibility_compatibility, mbf_compatibility },
+     
+    // comp_telefrag - monsters used to telefrag only on MAP30, now they do it for spawners only
+    // comp_dropoff - MBF encourages things to drop off of overhangs
+    // comp_falloff - MBF encourages things to drop off of overhangs
+    // comp_pursuit - MBF AI change, limited pursuit?
+    // comp_staylift - MBF AI change, monsters try to stay on lifts
+    // comp_infcheat - FIXME
+    { mbf_compatibility, mbf_compatibility },
+     
+    // comp_zombie - prevent dead players triggering stuff
+    { lxdoom_1_compatibility, mbf_compatibility },
+    // comp_moveblock - enables keygrab and mancubi shots going thru walls
+    { lxdoom_1_compatibility, prboom_2_compatibility },
+    // comp_respawn - objects which aren't on the map at game start respawn at (0,0)
+    { prboom_2_compatibility, prboom_2_compatibility },
+    // comp_sound - see s_sound.c
+    { boom_compatibility_compatibility, prboom_3_compatibility },
+    // comp_666 - enables tag 666 in non-ExM8 levels
+    { ultdoom_compatibility, prboom_4_compatibility },
+    // comp_soul - enables lost souls bouncing (see P_ZMovement)
+    { prboom_4_compatibility, prboom_4_compatibility },
+    // comp_maskedanim - 2s mid textures don't animate
+    { doom_1666_compatibility, prboom_4_compatibility },
+  };
+#endif
+
 
 
 language_t      language = english;          // Language.
@@ -2407,8 +2535,12 @@ void G_gamemode_EN_defaults( void )
     // Fixes and buggy.
     // Heretic never fixed this, but PrBoom did.  Default to fixed.
     EN_skull_bounce_fix = 1;  // Off only for old demos, incl Legacy demos.
+    EN_skull_bounce_floor = 1;
     // Boom
     EN_pushers = EN_boom;
+    EN_doorlight = EN_boom;
+    EN_blazing_double_sound = 0;
+    // MBF
 }
 
 
@@ -2478,6 +2610,8 @@ void G_demo_defaults( void )
    
     EN_variable_friction = EN_boom;
     EN_pushers = EN_boom;
+    EN_doorlight = EN_boom;
+    EN_blazing_double_sound = ! EN_boom;
 
     // MBF
     cv_mbf_dropoff.EV = EN_mbf;
@@ -2589,6 +2723,11 @@ boolean G_Downgrade(int version)
         for(i=0;i<MAXPLAYERS;i++)
             players[i].autoaim_toggle = true;
     }
+
+    // PrBoom has this enabled by comp level.
+    // It is only off for old Doom demos.
+    EN_skull_bounce_floor = EN_skull_bounce_fix
+       || ( demoversion > 109 && demoversion < 212 );
 
     //SoM: 3/17/2000: Demo compatability
     // EN_boom has been loaded from Boom demo compatiblity.
@@ -3224,13 +3363,17 @@ void G_DoPlayDemo (char *defdemoname)
             cv_mbf_dog_jumping.EV = demo_p[24];
 #endif
             cv_mbf_monkeys.EV = demo_p[25];
-            // comp vectors at [26],  1=old demo compatibility
-            cv_mbf_dropoff.EV = ! demo_p[26 + 2];
-            cv_mbf_falloff.EV = ! demo_p[26 + 9];
-            cv_mbf_pursuit.EV = ! demo_p[26 + 12];
-            cv_doorstuck.EV = demo_p[26 + 13]? 0:2; // Vanilla : MBF
-            cv_mbf_staylift.EV = ! demo_p[26 + 14];
-            EN_skull_bounce_fix = ! demo_p[26 + 23];  // !comp[comp_soul]
+            // comp vector at [26],  1=old demo compatibility
+            byte * comp = demo_p + 26;
+            cv_mbf_dropoff.EV = ! comp[comp_dropoff];
+            EN_blazing_double_sound = comp[comp_blazing];  // Vanilla
+            EN_doorlight = ! comp[comp_doorlight];
+            EN_boom_physics = ! comp[comp_model];
+            cv_mbf_falloff.EV = ! comp[comp_falloff];
+            cv_mbf_pursuit.EV = ! comp[comp_pursuit];
+            cv_doorstuck.EV = comp[comp_doorstuck]? 0:2; // Vanilla : MBF
+            cv_mbf_staylift.EV = ! comp[comp_staylift];
+            EN_skull_bounce_fix = ! comp[comp_soul];
         }
         else
         {

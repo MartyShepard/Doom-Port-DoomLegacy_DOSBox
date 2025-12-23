@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_lights.c 1334 2017-05-30 15:37:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -282,46 +282,47 @@ int EV_TurnTagLightsOff(line_t* line)
 
 //
 // TURN LINE'S TAG LIGHTS ON
+// Turn tagged sectors to specified or max neighbor level.
 //
-int EV_LightTurnOn ( line_t* line, int bright )
+//  bright: light level,  0= use max neighbor light level
+//  return 1
+int EV_LightTurnOn ( line_t* line, lightlev_t bright )
 {
-    int         i;
-    int         j;
+    int         fsecn, j;
+    lightlev_t  sll;  // set or max light level
     sector_t*   sector;
-    sector_t*   temp;
-    line_t*     templine;
+    sector_t*   adjsec;
+    line_t*     adjline;
 
-    sector = sectors;
-
-    for (i=0; i<numsectors; i++, sector++)
+    fsecn = -1;
+    while ((fsecn = P_FindSectorFromLineTag(line, fsecn)) >= 0)
     {
-        // for each sector
-        int tbright = bright; //SoM: 3/7/2000: Search for maximum per sector
-        if (sector->tag == line->tag)
+        // For each sector with matching Tag
+        sll = bright; //SoM: 3/7/2000: Search for maximum per sector
+        sector = &sectors[fsecn];
+       
+        // For each sector with matching tag
+        if( bright == 0 )
         {
-            // for each sector with matching tag
-            // bright = 0 means to search
-            // for highest light level in surrounding sectors
-            if (!bright)
+            // Find max adjacent light.
+            for (j = 0; j < sector->linecount; j++)
             {
-                for (j = 0; j < sector->linecount; j++)
-                {
-                    // for each line in sector linelist
-                    templine = sector->linelist[j];
-                    temp = getNextSector(templine,sector);
+                // for each line in sector linelist
+                adjline = sector->linelist[j];
+                adjsec = getNextSector(adjline,sector);
 
-                    if (!temp)
-                        continue;
+                if( !adjsec )
+                    continue;
 
-                    // find any brighter light level
-                    if (temp->lightlevel > tbright) //SoM: 3/7/2000
-                        tbright = temp->lightlevel;
-                }
+                // find any brighter light level
+                if( sll < adjsec->lightlevel ) //SoM: 3/7/2000
+                    sll = adjsec->lightlevel;
             }
-            sector-> lightlevel = tbright;
-            if(!EN_boom)
-              bright = tbright;
         }
+        sector->lightlevel = sll;
+
+        if( !EN_boom_physics )  // old behavior
+            bright = sll;  // maximums are not independent
     }
     return 1;
 }
@@ -437,5 +438,53 @@ achieved_target:
 
   lf->sector->lightingdata = NULL;          // clear lightingdata
   P_RemoveThinker(&lf->thinker);            // remove thinker       
+}
+
+
+// [WDJ] From MBF, PrBoom
+// killough 10/98:
+//
+// Used for doors with gradual lighting effects.
+// Turn light in tagged sectors to specified or max neighbor level.
+//
+//   line :  has sector TAG
+//   level : light level fraction, 0=min, 1=max, else interpolate min..max
+// Returns true
+int EV_LightTurnOnPartway(line_t *line, fixed_t level)
+{
+  sector_t * sector;
+  int i, j;
+  int minll, maxll;
+
+  if (level < 0)          // clip at extremes
+    level = 0;
+  if (level > FRACUNIT)
+    level = FRACUNIT;
+
+  // search all sectors for ones with same tag as activating line
+  i = -1;
+  while ( (i = P_FindSectorFromLineTag(line,i)) >= 0 )
+  {
+      sector = &sectors[i];
+      maxll = 0;
+      minll = sector->lightlevel;
+
+      for (j = 0; j < sector->linecount; j++)
+      {
+          sector_t * adjsec = getNextSector(sector->linelist[j], sector);
+          if(adjsec)
+          {
+              if( maxll < adjsec->lightlevel )
+                  maxll = adjsec->lightlevel;
+              if( minll > adjsec->lightlevel )
+                  minll = adjsec->lightlevel;
+          }
+      }
+
+      // Set level in-between extremes
+      sector->lightlevel =
+        (level * maxll + (FRACUNIT-level) * minll) >> FRACBITS;
+  }
+  return 1;
 }
 

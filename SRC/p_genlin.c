@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_genlin.c 1334 2017-05-30 15:37:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -914,6 +914,13 @@ manual_locked:
     door->topheight -= 4*FRACUNIT;
     door->direction = 1;
 
+    // [WDJ] MBF gradual light, From MBF, PrBoom.
+    // killough 10/98: implement gradual lighting.
+    door->lighttag =
+        ( EN_doorlight
+          && (line->special&6) == 6
+          && line->special > GenLockedBase ) ? line->tag : 0;
+
     // setup speed of door motion
     switch(Sped)
     {
@@ -1039,6 +1046,13 @@ manual_door:
         break;
     }
     door->line = line;
+
+    // [WDJ] MBF gradual light, From MBF, PrBoom.
+    // killough 10/98: implement gradual lighting.
+    door->lighttag =
+        ( EN_doorlight
+          && (line->special&6) == 6
+          && line->special > GenLockedBase ) ? line->tag : 0;
 
     // set kind of door, whether it opens then close, opens, closes etc.
     // assign target heights accordingly
