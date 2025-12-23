@@ -6063,3 +6063,13 @@ patchfile = w107_32_mbf_func.patch
 Implement the MBF codepointers, somewhat altered.
 Mostly copied over from MBF and PrBoom.
 
+*** W107_EN_legacy
+patchfile = w107_33_legacy.patch
+- commit revision 1337
+Add the EV_legacy control var.  It holds the legacy version (demoversion)
+only when in Legacy mode, such as playing Heretic, or a Legacy demo.
+When playing a Vanilla demo, or Boom demo, or MBF demo, it is 0.
+This makes it easier to use in tests for Legacy demoversion.
+Many demoversion tests such as  (demoversion > 132)  are being
+triggered for Boom and MBF demos too (which have demoversion 200 .. 203).
+A test such as  (EV_legacy > 132)  will not trigger for Boom or MBF demos.

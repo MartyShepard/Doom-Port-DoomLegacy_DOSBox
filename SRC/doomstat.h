@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: doomstat.h 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -112,6 +112,7 @@ extern byte  EN_doom_etc;  // doom, boom, mbf, common behavior  (not heretic, he
 // Set by gamemode, but may be enabled by demos too.
 extern byte  EN_boom;  // Boom features (boom demo compatibility=0)
 extern byte  EN_mbf;   // MBF (Marines Best Friend) enable (similar prboom mbf_features)
+extern byte  EV_legacy; // DoomLegacy version, 0 when some other demo.
 
 
 #if 0

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_setup.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1790,7 +1790,7 @@ boolean P_SetupLevel (int      to_episode,
             {
                 G_DoReborn(i);
             }
-            else if( demoversion>=128 )
+            else if( EV_legacy >= 128 )
             {
                 G_CoopSpawnPlayer(i);
             }

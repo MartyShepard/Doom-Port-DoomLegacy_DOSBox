@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1335 2017-05-30 15:38:25Z wesleyjohnson $
+// $Id: p_map.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -532,7 +532,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     thing_topz = thing->z + thing->height;
 
 #if 1   
-    if (demoversion >= 145)
+    if( EV_legacy >= 145 )
     {
         // [WDJ] Fix problem with monsters on 3dfloors being stuck to monsters
         // on other levels.
@@ -679,7 +679,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         damage = ((PP_Random(pr_damage)%8)+1)*tm_thing->info->damage;
         if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage)
             && (thing->flags & MF_NOBLOOD)==0
-            && demoversion>=129
+            && (EV_legacy >= 129)
             )
         {
              P_SpawnBloodSplats (tm_thing->x, tm_thing->y, tm_thing->z, damage, thing->momx, thing->momy);
@@ -707,7 +707,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     }
     // check again for special pickup
     if(tm_thing->flags & MF_SPECIAL
-       && demoversion>=132)
+       && (EV_legacy >= 132) )
     {
         solid = tm_thing->flags&MF_SOLID;
         if (thing->flags&MF_PICKUP)
@@ -747,7 +747,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     }
 
     // old versions
-    if ( demoversion<112 || demoversion>=132 )
+    if( EV_legacy < 112 || EV_legacy >= 132 )
       goto ret_blocked;
 
     // [WDJ] This strange check is for DoomLegacy versions 113..131.
@@ -767,7 +767,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     if ( !(thing->flags & MF_NOCLIP) )
 #else
     // As it was previous to 2014.
-    if (demoversion<112 || demoversion>=132 || !(tm_thing->flags & MF_SOLID))
+    if( EV_legacy < 112 || EV_legacy >= 132 || !(tm_thing->flags & MF_SOLID))
         return !(thing->flags & MF_SOLID);
 
     // [WDJ] This z-checking code is for DoomLegacy versions 113..131.
@@ -901,7 +901,7 @@ boolean PIT_CheckLine (line_t* ld)
       // one sided line
       if( tm_thing->flags & MF_MISSILE
          && ld->special
-         && demoversion>=132
+         && (EV_legacy >= 132)
          )
           add_spechit(ld);
 
@@ -952,7 +952,7 @@ boolean PIT_CheckLine (line_t* ld)
     // Missiles now explode on wall surface instead of within wall.
     // Needed for fix of Mancubus fireball going through wall.
     if ( tm_thing->flags & MF_MISSILE
-         && demoversion>=144)
+         && (EV_legacy >= 144) )
     {
         // Check if missile hit low or high on side of this wall
         if ( tm_thing->z < openbottom
@@ -1183,7 +1183,7 @@ static void CheckMissileImpact(mobj_t *mobj)
 {
     int i;
     
-    if( demoversion<132 || !numspechit
+    if( (EV_legacy < 132) || !numspechit
         || !(mobj->flags&MF_MISSILE) || !mobj->target)
         return;
 
@@ -1405,7 +1405,7 @@ got_dropoff:
     //added:28-02-98: gameplay hack : walk over a small wall while jumping
     //                stop jumping it succeeded
     // BP: removed in 1.28 because we can move in air now
-    if( (demoversion >= 112) && (demoversion < 128)
+    if( (EV_legacy >= 112) && (EV_legacy < 128)
          && thing->player
          && (thing->player->cheats & CF_JUMPOVER) )
     {
@@ -1429,6 +1429,7 @@ got_dropoff:
         thing->eflags |= MF_ONGROUND;
 
     P_SetThingPosition (thing);
+
     if (EN_heretic
         && thing->flags2 & MF2_FOOTCLIP
         && P_GetThingFloorType (thing) != FLOOR_SOLID
@@ -2373,7 +2374,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
         }
         //SPLAT TEST ----------------------------------------------------------
         #ifdef WALLSPLATS
-        if (!hitplane && demoversion>=129)
+        if( !hitplane && (EV_legacy >= 129) )
         {
             divline_t   divl;
             fixed_t     frac;
@@ -2494,7 +2495,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
     y = trace.y + FixedMul (trace.dy, frac);
     z = la_shootz + FixedMul (lar_aimslope, FixedMul(frac, la_attackrange));
 
-    if (demoversion<125)
+    if( EV_legacy < 125 )
     {
         // Spawn bullet puffs or blood spots,
         // depending on target type.
@@ -2509,7 +2510,7 @@ boolean PTR_ShootTraverse (intercept_t* in)
     else
         hitplane = false;
 
-    if (demoversion>=125)
+    if( EV_legacy >= 125 )
     {
         // Spawn bullet puffs or blood spots,
         // depending on target type.
@@ -2564,7 +2565,7 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
     la_reject_flags = ( EN_mbf && mbf_friend_protection )?
                       ( atkr->flags & MF_FRIEND ) : 0;
 
-    if(atkr->player && demoversion>=128)
+    if(atkr->player && (EV_legacy >= 128) )
     {
         fixed_t cosineaiming= cosine_ANG( atkr->player->aiming );
         fixed_t aimtan = tangent_ANG( atkr->player->aiming );
@@ -2578,6 +2579,7 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
     }
     else
     {
+        // Doom, Boom
         x2 = atkr->x + (distance>>FRACBITS) * finecosine[angf];
         y2 = atkr->y + (distance>>FRACBITS) * finesine[angf];
 
@@ -2644,13 +2646,14 @@ void P_LineAttack ( mobj_t*       atkr,   // attacker
     la_damage = damage;
 
     // player autoaimed attack, 
-    if(demoversion<128 || !atkr->player)
+    if( (EV_legacy < 128) || !atkr->player)
     {   
         x2 = atkr->x + (distance>>FRACBITS)*finecosine[angf]; 
         y2 = atkr->y + (distance>>FRACBITS)*finesine[angf];   
     }
     else
     {
+        // Legacy player, with aiming.
         fixed_t cosineaiming=cosine_ANG(atkr->player->aiming);
 
         x2 = atkr->x + FixedMul(FixedMul(distance,finecosine[angf]), cosineaiming);
@@ -2794,9 +2797,9 @@ boolean PIT_RadiusAttack (mobj_t* thing)
 
     //added:22-02-98: now checks also z dist for rockets exploding
     //                above yer head...
-    if (demoversion>=112)
+    if( EV_legacy >= 112 )
     {
-        dz = abs(thing->z+(thing->height>>1) - bombspot->z);
+        dz = abs(thing->z + (thing->height>>1) - bombspot->z);
         dist = dist > dz ? dist : dz;
     }
     dist >>= FRACBITS;
@@ -2825,7 +2828,7 @@ boolean PIT_RadiusAttack (mobj_t* thing)
         // must be in direct path
         if( P_DamageMobj (thing, bombspot, bombsource, damage)
             && (thing->flags & MF_NOBLOOD)==0
-            && demoversion>=129 )
+            && (EV_legacy >= 129) )
             P_SpawnBloodSplats (thing->x,thing->y,thing->z, damage, momx, momy);
     }
 
@@ -2945,10 +2948,11 @@ boolean PIT_ChangeSector (mobj_t*  thing)
         // Crushing damage
         P_DamageMobj(thing,NULL,NULL,10);
 
-        if( demoversion<132
+        if( (EV_legacy < 132)
             || (!(leveltime % (16*NEWTICRATERATIO))
                 && !(thing->flags&MF_NOBLOOD)) )
         {
+	    // Doom, Boom, Heretic
             // spray blood in a random direction
             mo = P_SpawnMobj (thing->x,
                               thing->y,

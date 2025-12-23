@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
+// $Id: p_fab.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -103,8 +103,8 @@ void A_SmokeTrailer (mobj_t* actor)
         return;
 
     // spawn a puff of smoke behind the rocket
-    if (demoversion<125 && // rocket trails spawnpuff from v1.11 to v1.24
-        demoversion>=111) // skull trails since v1.25
+    if( (EV_legacy < 125)  // rocket trails spawnpuff from v1.11 to v1.24
+        && (EV_legacy >= 111) ) // skull trails since v1.25
         P_SpawnPuff (actor->x, actor->y, actor->z);
 
     // add the smoke behind the rocket
@@ -113,7 +113,8 @@ void A_SmokeTrailer (mobj_t* actor)
                       actor->z, MT_SMOK);
 
     th->momz = FRACUNIT;
-    th->tics -= P_Random()&3;
+    // Do not use P_Random during Doom and Boom demos.
+    th->tics -= (EV_legacy ? P_Random() : A_Random() ) & 3;
     if (th->tics < 1)
         th->tics = 1;
 }

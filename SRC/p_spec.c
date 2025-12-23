@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: p_spec.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -924,7 +924,7 @@ sector_t * P_FindModelFloorSector(fixed_t floordestheight, int secnum)
       // [WDJ] Improved execution, no division needed.
       sec = getSector(secnum,i,
                      ((getSide(secnum,i,0)->sector == &sectors[secnum])? 1:0 )
-		     );
+                     );
 #else
       // Boom original uses unnecessary division.
       if (getSide(secnum,i,0)->sector-sectors == secnum)
@@ -1719,23 +1719,23 @@ P_CrossSpecialLine ( line_t * line, int side, mobj_t* thing )
         // RaiseCeilingLowerFloor, but actually is RaiseCeilingToHighest
         if( EN_boom )
         {
-	    // Highest Neighbor ceiling, slow.
+            // Highest Neighbor ceiling, slow.
             if(EV_DoCeiling( line, CT_raiseToHighest ) )  goto W1clear;
             // Boom does not execute EV_DoFloor() here because for Boom it
             // would succeed, making this linedef behave different than Doom.
             // Boom can have simultaneous ceiling and floor operations.
         }
-	else
+        else
         {
             // Doom, Heretic	   
             EV_DoCeiling( line, CT_raiseToHighest );
 #if 0
             // The docs do not mention a floor movement, but this code is
             // in prboom and chocolate-doom.
-	    // Because the ceiling just created a thinker for all the same
+            // Because the ceiling just created a thinker for all the same
             // sectors, this floor operation will always be ignored.
             // Disabled this code to ensure that it stays non-operative.
-	    EV_DoFloor( line, FT_lowerFloorToLowest );
+            EV_DoFloor( line, FT_lowerFloorToLowest );
 #endif
             goto W1clear;
         }
@@ -2537,7 +2537,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 
                   // spawn a puff of smoke
                   //debug_Printf ("damage!\n"); //debug
-                  if( demoversion>=125 )
+                  if( EV_legacy >= 125 )
                       P_SpawnSmoke (player->mo->x, player->mo->y, player->mo->z);
               }
           }
@@ -2664,7 +2664,7 @@ void P_PlayerOnSpecial3DFloor(player_t* player)
       if(player->mo->z != *rover->topheight)
         continue;
 
-      if ((demoversion >= 125)
+      if( (EV_legacy >= 125)
         && (player->mo->eflags & MF_JUSTHITFLOOR)
         && (sector->model < SM_fluid) // not water
         && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
@@ -2729,7 +2729,7 @@ void P_PlayerInSpecialSector (player_t* player)
             return;
 
     //Fab: jumping in lava/slime does instant damage (no jump cheat)
-    if ((demoversion >= 125)
+    if( (EV_legacy >= 125)
         && (player->mo->eflags & MF_JUSTHITFLOOR)
         && (sector->model < SM_fluid)  // not in water
         && (leveltime % (2*NEWTICRATERATIO))) //SoM: penalize jumping less.
@@ -4040,7 +4040,7 @@ void T_Pusher(pusher_t *p)
     // Be sure the special sector type is still turned on. If so, proceed.
     // Else, bail out; the sector type has been changed on us.
 
-    if(demoversion <= 140)
+    if( EV_legacy <= 140 )
     {
         if (!(sec->special & PUSH_MASK))
             return;
@@ -4114,8 +4114,9 @@ void T_Pusher(pusher_t *p)
 
     // constant pushers PP_wind and PP_current
 
-    if(demoversion <= 140)
+    if( EV_legacy <= 140 )
     {
+        // Old Legacy, Boom, MBF
         if (sec->model > SM_fluid) // special water sector
         {
            sm_ht = sectors[sec->modelsec].floorheight;

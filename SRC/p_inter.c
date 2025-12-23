@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1332 2017-05-30 15:35:01Z wesleyjohnson $
+// $Id: p_inter.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1738,13 +1738,13 @@ void P_KillMobj ( mobj_t*  target,
         source->player)
         target->target = source;
 
-    if( demoversion < 131 )
+    if( EV_legacy < 131 )  // old Legacy, Boom, MBF
     {
         // Version 131 and after this is done later in A_Fall.
         // (this fix the stepping monster)
         target->flags   |= MF_CORPSE|MF_DROPOFF;
         target->height >>= 2;
-        if( demoversion>=112 )
+        if( EV_legacy >= 112 )
             target->radius -= (target->radius>>4);      //for solid corpses
     }
     // show death messages, only if it concern the console player
@@ -1951,7 +1951,9 @@ void P_KillMobj ( mobj_t*  target,
     }
 
     // SoM: Damnit! Why not use the target's floorz?
-    mo = P_SpawnMobj (target->x, target->y, demoversion<132 ? ONFLOORZ : target->floorz, item);
+    // Doom, Boom, MBF use ONFLOORZ.
+    mo = P_SpawnMobj (target->x, target->y,
+                      ((EV_legacy < 132) ? ONFLOORZ : target->floorz), item);
     mo->flags |= MF_DROPPED;    // special versions of items
 
     if( !cv_fragsweaponfalling.EV )
@@ -2374,9 +2376,10 @@ boolean P_DamageMobj ( mobj_t*   target,
             
             // added momz (do it better for missiles explosion)
             if ( source
-                 && demoversion>=124
-                 && (demoversion<129 || !cv_allowrocketjump.EV))
+                 && (EV_legacy >= 124)
+                 && ((EV_legacy < 129) || !cv_allowrocketjump.EV))
             {
+                // Legacy
                 int dist,z;
                 
                 if(source==target) // rocket in yourself (suicide)
@@ -2399,8 +2402,9 @@ boolean P_DamageMobj ( mobj_t*   target,
                 amomz = FixedMul (thrust, sine_ANG(ang));
             }
             else //SoM: 2/28/2000: Added new function.
-            if( demoversion >= 129 && cv_allowrocketjump.EV )
+            if( (EV_legacy >= 129) && cv_allowrocketjump.EV )
             {
+                // Legacy rocket jump.
                 fixed_t delta1 = abs(inflictor->z - target->z);
                 fixed_t delta2 = abs(inflictor->z - (target->z + target->height));
                 amomz = (abs(amomx) + abs(amomy))>>1;
@@ -2550,7 +2554,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             || (! source->player)  // monster attack
             || voodoo_target	   // allowed voodoo damage
             || (damage>1000)       // telefrag and death-ball
-            || (demoversion < 125) // old demoversion bypasses restrictions
+            || (EV_legacy < 125)   // old demoversion bypasses restrictions
             || (source==target)    // self-inflicted
             || (! multiplayer)     // single player
             || ( (cv_deathmatch.EV == 0) && cv_teamdamage.EV )  // coop

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: p_mobj.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -523,8 +523,8 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
     {
         // not stopped
         // [WDJ] 3/2011 new bobbing and friction here, mostly Killough etal. 10/98.
-        if ((mo->eflags & MF_UNDERWATER)
-            && demoversion >= 128 )
+        if( (mo->eflags & MF_UNDERWATER)
+            && (EV_legacy >= 128) )
         {
             // slow down in water, not too much for playability issues
             friction = FRICTION_NORM *3/4;
@@ -869,7 +869,7 @@ void P_XYMovement(mobj_t * mo)
         if (mo->momx > FRACUNIT/4 || mo->momx < -FRACUNIT/4
             || mo->momy > FRACUNIT/4 || mo->momy < -FRACUNIT/4)
         {
-            if (demoversion < 132)
+            if( EV_legacy < 132 )
             {
                 // original Vanilla, Heretic, and Boom test
                 if (mo->z != mo->subsector->sector->floorheight)
@@ -930,7 +930,7 @@ missile_impact:
     //SPLAT TEST ----------------------------------------------------------
 #ifdef WALLSPLATS
     // tmr_blockingline returned by P_TryMove
-    if (tmr_blockingline && demoversion >= 129) //set by last P_TryMove() that failed
+    if( tmr_blockingline && (EV_legacy >= 129) ) //set by last P_TryMove() that failed
     {
         divline_t divl;
         divline_t misl;
@@ -1182,7 +1182,7 @@ zmove_floater:
         //added:22-02-98: player avatar hits his head on the ceiling, ouch!
         if (player
             && !voodoo_mo  // voodoo does not pass this to sound
-            && (demoversion >= 112)
+            && (EV_legacy >= 112)
             && !(player->cheats & CF_FLYAROUND) && !(mo->flags2 & MF2_FLY)
             && (mo->momz > (8 * GRAVITY1)) )
         {
@@ -1208,7 +1208,7 @@ zmove_floater:
             // We might have hit a ceiling but had downward momentum
             // (e.g. ceiling is lowering onto skull), so for old demos we
             // must still do the buggy momentum reversal.
-            // DoomLegacy (demoversion < 147)
+            // DoomLegacy (EV_legacy < 147)
             mo->momz = -mo->momz;  // skull bounces (now momz >= 0)
         }
 
@@ -1218,7 +1218,7 @@ zmove_floater:
             //SoM: 4/3/2000: Don't explode on the sky!
             if ( mo->subsector->sector->ceilingpic == skyflatnum
                  && mo->subsector->sector->ceilingheight == mo->ceilingz
-                 && demoversion >= 129)
+                 && (EV_legacy >= 129) )
             {
                 if (mo->type == MT_BLOODYSKULL)
                 {
@@ -1238,7 +1238,7 @@ zmove_floater:
     }
 
     // z friction in water
-    if ((demoversion >= 128)
+    if( (EV_legacy >= 128)
         && ((mo->eflags & (MF_TOUCHWATER | MF_UNDERWATER)))
         && !(mo->flags & (MF_MISSILE | MF_SKULLFLY)) )
     {
@@ -1526,7 +1526,7 @@ void P_MobjCheckWater(mobj_t * mobj)
     fixed_t mo_half = mobj->z + (mobj->info->height>>1);
     fixed_t z;
 
-    if (demoversion < 128
+    if( (EV_legacy < 128)
         || mobj->type == MT_SPLASH || mobj->type == MT_SPIRIT)        // splash don't do splash
         return;
     //
@@ -1611,10 +1611,10 @@ void P_MobjCheckWater(mobj_t * mobj)
         CONS_Printf("underwater %d\n",mobj->eflags & MF_UNDERWATER ? 1 : 0);
 */
     // blood doesnt make noise when it falls in water
-    if (!(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
+    if( !(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
         && ((mobj->eflags & (MF_TOUCHWATER | MF_UNDERWATER)) )
         && mobj->type != MT_BLOOD
-        && demoversion < 132)
+        && (EV_legacy < 132) )
         P_SpawnSplash(mobj, z); //SoM: 3/17/2000
 }
 
@@ -1656,7 +1656,7 @@ void P_MobjThinker(mobj_t * mobj)
     if ((mobj->type == MT_PLAYER)
         && (player)
         && ((player->cmd.angleturn & (TICCMD_XY | TICCMD_RECEIVED)) == (TICCMD_XY | TICCMD_RECEIVED)) && (mobj->player->playerstate == PST_LIVE)
-        && demoversion > 130)
+        && (EV_legacy > 130) )
     {
         int oldx = mobj->x, oldy = mobj->y;
 
@@ -1702,11 +1702,11 @@ void P_MobjThinker(mobj_t * mobj)
     {
         // BP: since version 1.31 we use heretic z-checking code
         //     kept old code for backward demo compatibility
-        if (demoversion < 131)
+        if( EV_legacy < 131 )
         {
 
             // if didnt check things Z while XYMovement, do the necessary now
-            if (!checkedpos && (demoversion >= 112))
+            if( !checkedpos && (EV_legacy >= 112) )
             {
                 // FIXME : should check only with things, not lines
                 P_CheckPosition(mobj, mobj->x, mobj->y);
@@ -1879,12 +1879,13 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     {
         mobj->flags &= ~(MF_BOUNCES | MF_FRIEND | MF_TOUCHY);
     }
-    // EternityEngine: if older demoMBF or Boom demo, and not deathmatch
-    else if((demoversion <= VERSION147) && (cv_deathmatch.value == 0))
+    // EternityEngine: new EE demo has different method.
+    else if((demoversion >= VERSION147) && (cv_deathmatch.value == 0))
     {
-        // Except in old demos, players are always friends.
+        // DoomLegacy >= 147, or MBF or Boom demo, and not deathmatch
         // Boom demo: 201, 202
         // MBF demo: 203
+        // Players are always friends.
         if(type == MT_PLAYER)
         {
             // MBF player in Old MBF demo.
@@ -1897,10 +1898,10 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     if (gameskill != sk_nightmare)
         mobj->reactiontime = info->reactiontime;
 
-    if( (demoversion < 129 || demoversion >= 200) && mobj->type != MT_CHASECAM)
-        mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;
-    else
+    if( (EV_legacy >= 129) || (mobj->type == MT_CHASECAM) )
         mobj->lastlook = -1;    // stuff moved in P_enemy.P_LookForPlayer
+    else
+        mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;  // Boom, MBF
 
     // do not set the state with P_SetMobjState,
     // because action routines can not be called yet
@@ -2067,7 +2068,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
     // Other things that SpawnMobj did that may be relevant
     mo->reactiontime = (gameskill != sk_nightmare)? info->reactiontime : 0;
 
-    if ((demoversion < 129 && mo->type != MT_CHASECAM)
+    if( ((EV_legacy < 129) && mo->type != MT_CHASECAM )
 //       || EN_heretic  // if played heretic demo this would be important
         )
     {
@@ -2463,7 +2464,7 @@ void P_SpawnPlayer(mapthing_t * mthing, int playernum )
     }
 
 #ifdef CLIENTPREDICTION2
-    if (demoversion > 132)
+    if( EV_legacy > 132 )
     {
         //added 1-6-98 : for movement prediction
         if (p->spirit)
@@ -2611,7 +2612,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
-        if( cv_deathmatch.EV == 0 && demoversion < 128)
+        if( cv_deathmatch.EV == 0 && (EV_legacy < 128) )
             P_SpawnPlayer(mthing, playernum);
 
         return;
@@ -2741,7 +2742,7 @@ void P_SpawnSplash(mobj_t * mo, fixed_t z)
     mobj_t *th;
     //fixed_t     z;
 
-    if (demoversion < 125)
+    if( EV_legacy < 125 )
         return;
 
 #if 0   
@@ -2790,7 +2791,7 @@ void P_SpawnSmoke(fixed_t x, fixed_t y, fixed_t z)
 {
     mobj_t *th;
 
-    if (demoversion < 125)
+    if( EV_legacy < 125 )
         return;
 
     x = x - ((P_Random() & 8) * FRACUNIT) - 4 * FRACUNIT;
@@ -2942,7 +2943,7 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     P_SpawnBlood(x, y, z, damage);
     //debug_Printf ("spawned blood counter %d\n", counter++);
 
-    if (demoversion < 129)
+    if( EV_legacy < 129 )
         return;
 
 #ifdef WALLSPLATS
@@ -3007,7 +3008,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
 
     z += PP_SignedRandom(pr_spawnblood) << 10;
     th = P_SpawnMobj(x, y, z, MT_BLOOD);
-    if (demoversion >= 128)
+    if( EV_legacy >= 128 )
     {
         th->momx = P_SignedRandom() << 12;      //faB:19jan99
         th->momy = P_SignedRandom() << 12;      //faB:19jan99
@@ -3247,7 +3248,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     }
 
     dist = P_CheckMissileSpawn(th);
-    if (demoversion < 131)
+    if( EV_legacy < 131 )
         return th;
 
     return dist ? th : NULL;
@@ -3301,9 +3302,9 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     //                use the mouseaiming
     // lar_linetarget returned by P_AimLineAttack
     if( !(source->player->autoaim_toggle && cv_allowautoaim.EV )
-        || (!lar_linetarget && demoversion > 111))
+        || (!lar_linetarget && (EV_legacy > 111)) )
     {
-        if (demoversion >= 128)
+        if( EV_legacy >= 128 )
             slope = AIMINGTOSLOPE(source->player->aiming);
         else
             slope = (source->player->aiming << FRACBITS) / 160;
@@ -3329,7 +3330,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     th->momy = FixedMul(speed, finesine[angf]);
     th->momz = FixedMul(speed, slope);
 
-    if (demoversion >= 128)
+    if( EV_legacy >= 128 )
     {   // 1.28 fix, allow full aiming must be much precise
         fixed_t aimcosine = cosine_ANG( source->player->aiming );
         th->momx = FixedMul(th->momx, aimcosine);
@@ -3345,7 +3346,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
 
     slope = P_CheckMissileSpawn(th);
 
-    if (demoversion < 131)
+    if( EV_legacy < 131 )
         return th;
 
     return slope ? th : NULL;

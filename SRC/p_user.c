@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_user.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -289,14 +289,13 @@ byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
 // local version control
 void DemoAdapt_p_user( void )
 {
+    // Move for Doom, Boom, MBF demo
     EN_move_doom =
        EN_doom_etc
-       && ( (demoversion<128)  // legacy demo and orig doom
-            || (demoversion>=200 && demoversion <=202) // boom demo
-            );
+       && (EV_legacy < 128);  // Legacy demo, orig Doom, Boom, MBF
 
     // abs angle in legacy demos only
-    EN_cmd_abs_angle = (demoversion >= 125) && (demoversion < 200);
+    EN_cmd_abs_angle = (EV_legacy >= 125);
 }
 
 
@@ -352,7 +351,7 @@ void P_MovePlayer (player_t* player)
 
     if( EN_move_doom )
     {
-        // Doom and Boom movement
+        // Doom, Boom, MBF movement
         boolean  jumpover = player->cheats & CF_JUMPOVER;  // legacy cheat
         if (cmd->forwardmove && (onground || jumpover))
         {
@@ -1143,7 +1142,7 @@ void P_PlayerThink (player_t* player)
     // TODO water splashes
     //
 #if 0
-    if (demoversion>=125 && player->specialsector == )
+    if( (EV_legacy >= 125) && player->specialsector == )
     {
         if ((pmo->momx >  (2*FRACUNIT) ||
              pmo->momx < (-2*FRACUNIT) ||
@@ -1188,6 +1187,7 @@ void P_PlayerThink (player_t* player)
         newweapon = (cmd->buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT;
         if(demoversion<128)
         {
+            // Old Doom, !EN_boom
             if (newweapon == wp_fist
                 && player->weaponowned[wp_chainsaw]
                 && !(player->readyweapon == wp_chainsaw

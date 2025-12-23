@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: p_sight.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -146,7 +146,7 @@ static void intercept_ffloor( subsector_t * ssec, fixed_t frac )
     ffloor_t * ff;  // fake floor
 
     // This was not present for any previous version.
-    if( demoversion < 145 )  return;
+    if( EV_legacy < 145 )  return;
 
     // This ignores blocking floors that are not solid, and only maintains
     // one sight gap through the 3d floors.
@@ -161,71 +161,71 @@ static void intercept_ffloor( subsector_t * ssec, fixed_t frac )
 
         if( cs_startz > th )
         {
-	   // look down on floor
-	   clip_frac_t = frac;
-	   clip_frac_b = prev_frac;
-	}
+           // look down on floor
+           clip_frac_t = frac;
+           clip_frac_b = prev_frac;
+        }
         else if ( cs_startz < bh )
         {
-	   // look up at floor
-	   clip_frac_t = prev_frac;
-	   clip_frac_b = frac;
+           // look up at floor
+           clip_frac_t = prev_frac;
+           clip_frac_b = frac;
         }
         else
         {
-	   // edge of floor at eye height
-	   clip_frac_t = prev_frac;
-	   clip_frac_b = prev_frac;
+           // edge of floor at eye height
+           clip_frac_t = prev_frac;
+           clip_frac_b = prev_frac;
         }
         // Quick rejects.
         if( FixedMul( see_bottomslope, clip_frac_t ) > (th - cs_startz) )
-	   continue;  // bottom sight is above highest part of floor
+           continue;  // bottom sight is above highest part of floor
         if( FixedMul( see_topslope, clip_frac_b ) < (bh - cs_startz) )
-	   continue;  // top sight is below lowest part of floor
+           continue;  // top sight is below lowest part of floor
        
         // Compare the occlusion slopes to the sight line slopes.
         t_slope = FixedDiv (th - cs_startz , clip_frac_t);
-	b_slope = FixedDiv (bh - cs_startz , clip_frac_b);
+        b_slope = FixedDiv (bh - cs_startz , clip_frac_b);
 
         // Assume t_slope > b_slope.
-	// Assume see_topslope > see_bottomslope.
-	// Assume b_slope < see_topslope and t_slope > see_bottomslope.
+        // Assume see_topslope > see_bottomslope.
+        // Assume b_slope < see_topslope and t_slope > see_bottomslope.
         if( b_slope <= see_bottomslope )
         {
-	    if( t_slope >= see_topslope )
-	    {
-	        // This occurs most often, so make it first test.
-	        see_bottomslope = FIXED_MAX; // total occlusion
-	        see_topslope = FIXED_MIN;
-	        break;
-	    }
-	    // (t_slope < see_topslope)
-	    see_bottomslope = t_slope;  // th clips bottom sight
+            if( t_slope >= see_topslope )
+            {
+                // This occurs most often, so make it first test.
+                see_bottomslope = FIXED_MAX; // total occlusion
+                see_topslope = FIXED_MIN;
+                break;
+            }
+            // (t_slope < see_topslope)
+            see_bottomslope = t_slope;  // th clips bottom sight
         }
         else
         {
-	    // (b_slope > see_bottomslope).
-	    // If this is simplified there will be overflow math errors in
-	    // (see_topslope - t_slope) when near the viewer (t_slope -> FIXED_MAX).
-	    if( t_slope >= see_topslope )
-	    {
-	        see_topslope = b_slope;  // bh clips top sight
-	    }
-	    else
-	    {
-	        // The 3dfloor is in the middle of the sight lines.
-	        // Trying to clip both top and bottom will loose everything.
-	        // Keep only the largest gap in the sight lines.
-	        // Block the 3dfloor and lose the other sight gap.
-	        if( (see_topslope - t_slope) > (b_slope - see_bottomslope) )
-	        {
-		    see_bottomslope = t_slope;  // th clips bottom sight
-		}
-	        else if( b_slope < see_topslope )
-	        {
-		    see_topslope = b_slope;  // bh clips top sight
-	        }
-	    }
+            // (b_slope > see_bottomslope).
+            // If this is simplified there will be overflow math errors in
+            // (see_topslope - t_slope) when near the viewer (t_slope -> FIXED_MAX).
+            if( t_slope >= see_topslope )
+            {
+                see_topslope = b_slope;  // bh clips top sight
+            }
+            else
+            {
+                // The 3dfloor is in the middle of the sight lines.
+                // Trying to clip both top and bottom will loose everything.
+                // Keep only the largest gap in the sight lines.
+                // Block the 3dfloor and lose the other sight gap.
+                if( (see_topslope - t_slope) > (b_slope - see_bottomslope) )
+                {
+                    see_bottomslope = t_slope;  // th clips bottom sight
+                }
+                else if( b_slope < see_topslope )
+                {
+                    see_topslope = b_slope;  // bh clips top sight
+                }
+            }
         }
         if (see_topslope <= see_bottomslope)  break;  // cannot see
     }
@@ -263,15 +263,15 @@ static boolean P_CrossSubsector (int num)
     if( sub == cs_t2_subsector )
     {
         // This is the subsector that t2 is within, so there cannot be
-	// any new linedef crossings.
+        // any new linedef crossings.
         if( sub->sector->ffloors )
         {
-	    // Clip for the 3dfloors.
-	    intercept_ffloor( sub, FRACUNIT );
+            // Clip for the 3dfloors.
+            intercept_ffloor( sub, FRACUNIT );
 
-	    if (see_topslope <= see_bottomslope)
-	       return false;               // stop
-	}
+            if (see_topslope <= see_bottomslope)
+               return false;               // stop
+        }
         return true;
     }
 
@@ -364,12 +364,12 @@ static boolean P_CrossSubsector (int num)
 
         if( sub->sector->ffloors )
         {
-	    // Clip for the 3dfloors.
-	    intercept_ffloor( sub, frac );
+            // Clip for the 3dfloors.
+            intercept_ffloor( sub, frac );
 
-	    if (see_topslope <= see_bottomslope)
-	       return false;               // stop
-	}
+            if (see_topslope <= see_bottomslope)
+               return false;               // stop
+        }
         prev_frac = frac;
     }
 

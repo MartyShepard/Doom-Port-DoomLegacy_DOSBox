@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: d_netcmd.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -568,7 +568,7 @@ void Got_NetXCmd_NameColor(xcmd_t * xc)
 
     // Players 0..(MAXPLAYERS-1) are init as Player 1 ..
     // name
-    if (demoversion >= 128)
+    if( EV_legacy >= 128 )
     {
         if (strcasecmp(pname, lcp))
             CONS_Printf("%s renamed to %s\n", pname, lcp);
@@ -591,9 +591,9 @@ void Got_NetXCmd_NameColor(xcmd_t * xc)
     if( (byte*)lcp >= xc->endpos )  goto done;
 
     // skin
-    if (demoversion < 120 || demoversion >= 125)
+    if( EV_legacy < 120 || EV_legacy >= 125 )
     {
-        if (demoversion >= 128)
+        if( EV_legacy >= 128 )
         {
             SetPlayerSkin(xc->playernum, lcp);
             SKIPSTRING(lcp);
@@ -827,11 +827,11 @@ void Got_NetXCmd_Mapcmd(xcmd_t * xc)
     // Format: skill byte, (no_reset_players, no_monsters) byte,
     //         map_name str0.
     skill = READBYTE(xc->curpos);
-    if (demoversion >= 128)
+    if( EV_legacy >= 128 )
     {
         // [WDJ] Do not use boolean nomonsters as an int.
         opt = READBYTE(xc->curpos);
-        if (demoversion >= 129)
+        if( EV_legacy >= 129 )
         {
             nomonsters = ( (opt & 0x01) != 0 );
             resetplayer = ( (opt & 0x02) == 0 );
@@ -884,7 +884,7 @@ void Command_Pause(void)
 void Got_NetXCmd_Pause(xcmd_t * xc)
 {
     // Format: (pause) byte.
-    if (demoversion < 131)
+    if( EV_legacy < 131 )
         paused ^= 1;
     else
         paused = READBYTE(xc->curpos);

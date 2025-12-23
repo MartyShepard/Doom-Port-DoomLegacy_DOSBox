@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
+// $Id: p_enemy.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -18,6 +18,9 @@
 //
 //
 // $Log: p_enemy.c,v $
+// Include: DOS DJGPP Fixes
+
+//
 // Revision 1.20  2004/07/27 08:19:36  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -312,14 +315,14 @@ void CV_monster_OnChange(void)
 {
     // Set monster friction for Boom, MBF, prboom demo, by cv_monsterfriction.EV = 1.
     if( (demoplayback && (friction_model != FR_legacy))
-	|| ( cv_monsterfriction.EV > 3 ) )
+        || ( cv_monsterfriction.EV > 3 ) )
     {
         EN_mbf_enemyfactor = (friction_model >= FR_mbf) && (friction_model <= FR_prboom);
         // Where monster friction is determined by friction model,
         // demo settings.
-	// If cv_monsterfriction == 0x80, then EN_monster_friction has
+        // If cv_monsterfriction == 0x80, then EN_monster_friction has
         // already been set from the Boom demo compatiblity flag.
-	if( cv_monsterfriction.EV < 0x80 )
+        if( cv_monsterfriction.EV < 0x80 )
             EN_monster_friction = EN_mbf_enemyfactor;  // MBF, PrBoom default
         EN_monster_momentum = 0;  // 2=momentum
     }
@@ -374,7 +377,7 @@ void DemoAdapt_p_enemy( void )
 
     EN_skull_limit = ( demoversion <= 132 ) ? 20 : 0;  // doom demos
     EN_old_pain_spawn = ( demoversion < 143 );
-    EN_mbf_speed = EN_mbf || (demoversion >= 145 && demoversion < 200);  // Legacy 1.45, 1.46
+    EN_mbf_speed = EN_mbf || (EV_legacy >= 145);  // Legacy 1.45, 1.46
 #if 1
     if( demoplayback && verbose > 1 )
     { 
@@ -495,7 +498,7 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
 
     //added:19-03-98: check height now, so that damn imps cant attack
     //                you if you stand on a higher ledge.
-    if( demoversion>111
+    if( (EV_legacy > 111)
          && ((pl->z > actor->z + actor->height)
              || (actor->z > pl->z + pl->height) )
       )
@@ -554,8 +557,8 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         // so fight back!
         actor->flags &= ~MF_JUSTHIT;
 
-        if( EN_heretic || demoversion < VERSION147 )
-            return true;
+        if( EN_heretic || (demoversion < VERSION147) )
+            return true;  // Old Legacy, Old Doom
 
         // [WDJ] MBF, from MBF, PrBoom
         // Boom has two calls of P_Random, which affect demos
@@ -1506,7 +1509,7 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
 
     // This is not in PrBoom, EnternityEngine, and it uses P_Random !!!
     // BP: first time init, this allow minimum lastlook changes
-    if( actor->lastlook<0 && demoversion>=129 && demoversion<200 )
+    if( (actor->lastlook < 0) && (EV_legacy >= 129) )
         actor->lastlook = P_Random () % MAXPLAYERS;
 
     c = 0;
@@ -3101,7 +3104,7 @@ void A_Fall (mobj_t *actor)
     if (!cv_solidcorpse.EV)
         actor->flags &= ~MF_SOLID;  // not solid (vanilla doom)
 
-    if( demoversion >= 131 )
+    if( EV_legacy >= 131 )
     {
         // Before version 131 this is done later in P_KillMobj.
         actor->flags   |= MF_CORPSE|MF_DROPOFF;
@@ -3838,25 +3841,25 @@ void A_Scratch(mobj_t *mo)
     // [WDJ] Unraveled from horrible one-liner.
     A_FaceTarget(mo);       
     if( ! P_CheckMeleeRange(mo) )  return;
-
-    // parm2: sound
-    sfxid_t sfx2 = sep->parm2;  // misc2
-    if( sfx2 )
+    if( sep->parm2 )
     {
-       S_StartObjSound(mo, sfx2);
+#if !defined(__DJGPP__)
+       S_StartSound(mo, sep->parm2);
+#else
+       S_StartObjSound(mo, sep->parm2);
+#endif
     }
-
     P_DamageMobj(mo->target, mo, mo, sep->parm1);
 }
 
-// MBF
-void A_PlaySound_MBF(mobj_t* mo)
+void A_PlaySound(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
-    if( sep->parm2 )  // misc2: global sound enable
-        S_StartSound( sep->parm1 );  // misc1: sound
-    else
-        S_StartObjSound( mo, sep->parm1 );  // misc1: sound
+#if defined(__DJGPP__)
+    S_StartObjSound( sep->parm2 ? NULL : mo, sep->parm1 );
+#else
+    S_StartSound( sep->parm2 ? NULL : mo, sep->parm1 );
+#endif
 }
 
 void A_RandomJump(mobj_t *mo)
@@ -3916,5 +3919,4 @@ void A_LineEffect(mobj_t *mo)
     sep->parm1 = fake_line.special;
 #endif
 }
-
 #include "p_henemy.c"
