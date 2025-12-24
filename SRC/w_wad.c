@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1280 2016-11-29 18:55:27Z wesleyjohnson $
+// $Id: w_wad.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -193,7 +193,7 @@ marker_ident_t  marker_ident[ NUM_MARKER_IDENT ] =
 
 
 // Make the name into numerical for easy compares.
-static void  numerical_name( const char * name, lump_name_t * numname )
+void  numerical_name( const char * name, lump_name_t * numname )
 {
     numname->namecode = 0;  // clear
     strncpy (numname->s, name, 8);
@@ -272,7 +272,7 @@ int W_LoadWadFile (const char *filename)
         nameonly(filenamebuf); // only search for the name
 
         // findfile returns dir+filename
-	// Owner security permissions.
+        // Owner security permissions.
         fs = findfile(filenamebuf, NULL, false, /*OUT*/ filenamebuf);
         if( fs == FS_NOTFOUND )
         {
@@ -406,7 +406,7 @@ int W_LoadWadFile (const char *filename)
     for (i=0; i<numlumps; i++)
     {
         //store the software patch lump number for each GlidePatch
-        grPatch[i].patchlump = (filenum<<16) + i;  // form file/lump
+        grPatch[i].patchlump = WADLUMP(filenum,i);  // form file/lump
     }
     wadfile->hwrcache = grPatch;
 #endif
@@ -555,11 +555,11 @@ int W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
                     || lump_p->lump_namespace == within_namespace )
                 {
                     // Return wad/lump identifier
-                    return ((i<<16) + j);
+                    return  WADLUMP(i,j);
                 }
                 // Wrong namespace.
                 if( alternate == -1 )  // remember first lump found
-                   alternate = ((i<<16) + j);  // wad/lump identifier
+                   alternate = WADLUMP(i,j);  // wad/lump identifier
             }
         }
     }
@@ -606,7 +606,7 @@ int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
             // Fast numerical name compare.
             if ( *(uint64_t *)lump_p->name == name8.namecode )
             {
-                return ((wadid<<16)+i);
+                return WADLUMP(wadid,i);
             }
         }
     }
@@ -657,7 +657,7 @@ int W_CheckNumForNameFirst (char* name)
         {
             if ( *(uint64_t *)lump_p->name == name8.namecode )
             {
-                return ((i<<16) + j);
+                return WADLUMP(i,j);
             }
         }
     }

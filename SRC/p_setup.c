@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: p_setup.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -540,20 +540,11 @@ int P_PrecacheLevelFlats( void )
 //
 int P_AddLevelFlat ( char* flatname )
 {
-    union {
-        char    s[9];
-        int     x[2];
-    } name8;
-
-    levelflat_t* lfp;
+    lump_name_t name8;
+    levelflat_t * lfp;
     int         i;
-    int         v1,v2;
 
-    strncpy (name8.s,flatname,8);   // make it two ints for fast compares
-    name8.s[8] = 0;                 // in case the name was a fill 8 chars
-    strupr (name8.s);               // case insensitive
-    v1 = name8.x[0];
-    v2 = name8.x[1];
+    numerical_name( flatname, & name8 );  // fast compares
 
     if( levelflats )
     {
@@ -561,8 +552,8 @@ int P_AddLevelFlat ( char* flatname )
         lfp = & levelflats[0];
         for (i=0; i<numlevelflats; i++)
         {
-            if ( *(int *)lfp->name == v1
-                 && *(int *)&lfp->name[4] == v2)
+            // Fast numerical name compare.
+            if( *(uint64_t *)lfp->name == name8.namecode )
             {
                 goto found_level_flat;  // return i
             }
@@ -584,6 +575,7 @@ int P_AddLevelFlat ( char* flatname )
         // must zero because unanimated are left to defaults
         memset( &new_levelflats[numlevelflats], 0,
                 (levelflat_max - numlevelflats)*sizeof(levelflat_t) );
+
         if( levelflats )
         {
             memcpy (new_levelflats, levelflats, numlevelflats*sizeof(levelflat_t));
@@ -597,8 +589,7 @@ int P_AddLevelFlat ( char* flatname )
     numlevelflats++;
 
     // store the name
-    *((int*)lfp->name) = v1;
-    *((int*)&lfp->name[4]) = v2;
+    *(uint64_t *)lfp->name = name8.namecode;
 
     // store the flat lump number
     lfp->lumpnum = R_FlatNumForName (flatname);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: r_things.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -339,7 +339,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
     for (l=startlump ; l<endlump ; l++)
     {
-        lumpnum = (wadnum<<16) + l;	// as used by read lump routines
+        lumpnum = WADLUMP(wadnum,l);	// as used by read lump routines
         if (*(int *)lumpinfo[l].name == intname)
         {
             frame = lumpinfo[l].name[4] - 'A';
@@ -2391,17 +2391,16 @@ void SetPlayerSkin (int playernum, char *skinname)
 //
 int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
 {
+    lump_name_t name8;
+    uint64_t mask6;  // big endian, little endian
     int         i;
-    int         v1;
     lumpinfo_t* lump_p;
 
-    union {
-                char    s[4];
-                int     x;
-    } name4;
+    name8.namecode = -1; // make 6 char mask
+    name8.s[6] = name8.s[7] = 0;
+    mask6 = name8.namecode;
 
-    strncpy (name4.s, "S_SK", 4);
-    v1 = name4.x;
+    numerical_name( "S_SKIN", & name8 );  // fast compares
 
     // scan forward, start at <startlump>
     if (startlump < wadfiles[wadid]->numlumps)
@@ -2409,11 +2408,10 @@ int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
         lump_p = wadfiles[wadid]->lumpinfo + startlump;
         for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
         {
-            if ( *(int *)lump_p->name == v1 &&
-                 lump_p->name[4] == 'I'     &&
-                 lump_p->name[5] == 'N')
+	    // Only check first 6 characters.
+            if( (*(uint64_t *)lump_p->name & mask6) == name8.namecode )
             {
-                return ((wadid<<16)+i);
+                return WADLUMP(wadid,i);
             }
         }
     }

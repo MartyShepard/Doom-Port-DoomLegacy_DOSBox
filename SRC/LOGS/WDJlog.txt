@@ -6216,3 +6216,7 @@ patchfile = w107_50_mbf_state.patch
 Fix the MBF function, RandomState, to use the DEH state translation.
 This is similar to an EternityEngine fix.
 
+*** W107_numname
+patchfile = w107_51_numname.patch
+- commit revision 1355
+Use numerical_name to search for flats.
