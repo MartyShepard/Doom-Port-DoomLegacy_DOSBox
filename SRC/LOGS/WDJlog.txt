@@ -6196,4 +6196,13 @@ Make a type for the tag values which is uint16_t.
 This affects the savegame, but am maintaining the old structures
 for reading old savegames.
 
+*** W107_playergibs
+patchfile = w107_48_playergibs.patch
+- commit revision 1352
+Fix P_DamageMobj to allow player gibs again.
+Reported by Eckert.
+
+Moved the voodoo intercept of damage earlier so that the tests
+on armor and attributes are done on the voodoo redirected target.
+
 

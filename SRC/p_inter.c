@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: p_inter.c 1352 2017-07-29 18:29:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2221,11 +2221,79 @@ boolean P_DamageMobj ( mobj_t*   target,
     angle_t     ang;
     int         angf;
     int         saved;
-    player_t*   player;
+    player_t*   player;  // always target->player
     fixed_t     thrust;
+    boolean     voodoo_target = false;
     boolean     mbf_justhit = false;  // MBF, delayed MF_JUSTHIT
     boolean     takedamage = true;  // block damage between members of same team
 
+    player = target->player;
+
+    // [WDJ] 7/2017 Moved the voodoo intercept of damage to be tested earlier
+    // because of the weapons and armor specific player checks that
+    // can get applied to the wrong player otherwise.
+    // This code can change the target of the damage.
+    // If we ever implement the player as a monster, this code needs to be first.
+    if( player )
+    {
+        // [WDJ] 2/7/2011 Intercept voodoo damage
+        voodoo_target = (player->mo != target);
+        if( voodoo_target )
+        {
+            mobj_t * voodoo_thing = target;
+            if(voodoo_mode >= VM_target)
+            {
+                // Multiplayer and single player:
+                // try to find someone appropriate, instead of spawn point player.
+                // Target source player causing damage
+                if( source && source->player
+                    && (source->player->mo == source) )
+                {
+                    // Shooting any voodoo doll, select shooting player
+                    player = source->player;
+                }
+                // Target last player to trigger a switch or linedef.
+                else if( spechit_player && spechit_player->mo )
+                {
+                    player = spechit_player;
+                }
+            }
+
+            if(! player->mo )  // this player is not present
+            {
+                if( voodoo_mode < VM_target )
+                {
+                    // remove this voodoo doll to avoid segfaults
+                    P_RemoveMobj( voodoo_thing );
+                }
+                return false;
+            }
+
+            if( voodoo_mode == VM_vanilla )
+            {
+                target->health -= damage;  // damage the voodoo too
+            }
+            else
+            {
+                if( multiplayer && (damage > player->health))
+                {
+                    // Kill the voodoo, so it cannot kill after respawn.
+                    // Voodoo doll in crusher is game fatal otherwise.
+                    voodoo_thing->health = 0;
+                    voodoo_thing->player = NULL;
+                    P_KillMobj ( voodoo_thing, inflictor, source );
+                    spechit_player = NULL;  // cancel voodoo damage
+                }
+                // let player mobj get the damage, no Zombies
+                target = player->mo;
+            }
+        }
+
+        if( gameskill == sk_baby )
+	    damage >>= 1;   // take half damage in trainer mode
+    }
+   
+ 
     // killough 8/31/98: allow bouncers to take damage
     if ( !(target->flags & (MF_SHOOTABLE | MF_BOUNCES)) )
         return false; // shouldn't happen...
@@ -2242,10 +2310,6 @@ boolean P_DamageMobj ( mobj_t*   target,
 
         target->momx = target->momy = target->momz = 0;
     }
-
-    player = target->player;
-    if (player && gameskill == sk_baby)
-        damage >>= 1;   // take half damage in trainer mode
 
     // Special damage types
     if(inflictor)
@@ -2277,13 +2341,13 @@ boolean P_DamageMobj ( mobj_t*   target,
             { // Don't allow cheap boss kills
                 break;
             }
-            else if(target->player)
+            else if(player)
             { // Player specific checks
-                if(target->player->powers[pw_invulnerability])
+                if(player->powers[pw_invulnerability])
                 { // Can't hurt invulnerable players
                     break;
                 }
-                if(P_AutoUseChaosDevice(target->player))
+                if(P_AutoUseChaosDevice(player))
                 { // Player was saved using chaos device
                     return false;
                 }
@@ -2291,7 +2355,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             damage = 10000; // Something's gonna die
             break;
         case MT_PHOENIXFX2: // Flame thrower
-            if(target->player && P_Random() < 128)
+            if(player && P_Random() < 128)
             { // Freeze player for a bit
                 target->reactiontime += 4;
             }
@@ -2421,13 +2485,14 @@ boolean P_DamageMobj ( mobj_t*   target,
                 if(delta1 >= delta2 && inflictor->momz < 0)
                     amomz = -amomz;
             }
+
             target->momz += amomz;
 #ifdef CLIENTPREDICTION2
-            if( target->player && target->player->spirit )
+            if( player && player->spirit )
             {
-                target->player->spirit->momx += amomx;
-                target->player->spirit->momy += amomy;
-                target->player->spirit->momz += amomz;
+                player->spirit->momx += amomx;
+                player->spirit->momy += amomy;
+                player->spirit->momz += amomz;
             }
 #endif
             // [WDJ] MBF
@@ -2458,7 +2523,6 @@ boolean P_DamageMobj ( mobj_t*   target,
             damage = target->health - 1;
         }
 
-
         // Below certain threshold,
         // ignore damage in GOD mode, or with INVUL power.
         if( (player->cheats&CF_GODMODE) || player->powers[pw_invulnerability] )
@@ -2488,58 +2552,6 @@ boolean P_DamageMobj ( mobj_t*   target,
             player->armorpoints -= saved;
             damage -= saved;
         }
-
-        // [WDJ] 2/7/2011 Intercept voodoo damage
-        boolean voodoo_target = (player->mo != target);
-        if( voodoo_target )
-        {
-            mobj_t * voodoo_thing = target;
-            if(voodoo_mode >= VM_target)
-            {
-                // Multiplayer and single player:
-                // try to find someone appropriate, instead of spawn point player.
-                // Target source player causing damage
-                if( source && source->player
-                    && (source->player->mo == source) )
-                {
-                    // Shooting any voodoo doll, select shooting player
-                    player = source->player;
-                }
-                // Target last player to trigger a switch or linedef.
-                else if( spechit_player && spechit_player->mo )
-                {
-                    player = spechit_player;
-                }
-            }
-            if(! player->mo )  // this player is not present
-            {
-                if( voodoo_mode < VM_target )
-                {
-                    // remove this voodoo doll to avoid segfaults
-                    P_RemoveMobj( voodoo_thing );
-                }
-                return false;
-            }
-            if( voodoo_mode == VM_vanilla )
-            {
-                target->health -= damage;  // damage the voodoo too
-            }
-            else
-            {
-                if( multiplayer && (damage > player->health))
-                {
-                    // Kill the voodoo, so it cannot kill after respawn.
-                    // Voodoo doll in crusher is game fatal otherwise.
-                    voodoo_thing->health = 0;
-                    voodoo_thing->player = NULL;
-                    P_KillMobj ( voodoo_thing, inflictor, source );
-                    spechit_player = NULL;  // cancel voodoo damage
-                }
-                // let player mobj get the damage, no Zombies
-                target = player->mo;
-            }
-        }
-
 
         // added team play and teamdamage (view logboris at 13-8-98 to understand)
         // [WDJ] 2/7/2011  Allow damage to player when:
@@ -2583,14 +2595,16 @@ boolean P_DamageMobj ( mobj_t*   target,
                 && ((gameskill == sk_baby) || cv_deathmatch.EV)
                 && !player->chickenTics)
             { // Try to use some inventory health
-                P_AutoUseHealth(player, damage-player->health+1);
+                P_AutoUseHealth(player, damage - player->health + 1);
             }
 
+	    // Update player health here, because they may die before
+	    // reaching the later player update.
             player->health -= damage;   // mirror mobj health here for Dave
             if (player->health < 0)
                 player->health = 0;
-            if( player->mo )
-                player->mo->health = player->health; // keep mobj and player health same
+	    // [WDJ] If player->mo is updated here, it prevents player gibs.
+	    // target = player->mo, as set in voodoo logic.
 
             player->damagecount += damage;  // add damage after armor / invuln
 
@@ -2607,14 +2621,11 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
         player->attacker = source;
     }
-    else
-    {
-        // non-player damage applied
-        target->health -= damage;
-    }
 
     if( takedamage )
     {
+        target->health -= damage;
+
         // check for kill
         if (target->health <= 0)
         {
@@ -2631,6 +2642,13 @@ boolean P_DamageMobj ( mobj_t*   target,
 
             P_KillMobj ( target, inflictor, source );
             return true;
+        }
+  
+        // This must be after KillMobj, so target damage can be negative.
+        if( player )
+	{
+            if( player->mo )
+                player->mo->health = player->health; // keep mobj and player health same
         }
 
         // [WDJ] MBF, From MBF, PrBoom, EternityEngine.
