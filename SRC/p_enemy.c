@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_enemy.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -268,9 +268,9 @@ consvar_t cv_mbf_help_friend = {"helpfriend","1", CV_NETVAR | CV_SAVE, CV_OnOff}
 consvar_t cv_mbf_monkeys = {"monkeys","0", CV_NETVAR | CV_SAVE, CV_OnOff};
   // MBF monkeys (climb steep stairs)
 #ifdef DOGS   
-consvar_t cv_mbf_dogs = {"dogs","0", CV_NETVAR | CV_SAVE, CV_OnOff};
-  // MBF dogs
-consvar_t cv_mbf_dog_jumping = {"dogjump","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+consvar_t cv_mbf_dogs = {"dogs_cnt","0", CV_NETVAR | CV_SAVE, CV_Unsigned};
+  // MBF single player (and coop) dogs (0..3)
+consvar_t cv_mbf_dog_jumping = {"dogjump","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // MBF dog_jumping
 #endif
 
@@ -971,7 +971,7 @@ static boolean P_SmartMove(mobj_t *actor)
     // haleyjd: allow all friends of Helper_MT Type to also jump down
 
     if( cv_mbf_dog_jumping.EV
-        && (actor->type == MT_DOGS
+        && (actor->type == MT_DOG
             || ((actor->type == helper_MT) && (actor->flags & MF_FRIEND)) )
         && target
         && SAME_FRIEND(target, actor)

@@ -1,7 +1,8 @@
 * Not need to Compile.
 
+[01348 ]: w107_44 mbf dogs
 [01347 ]: w107 43 deh translate
-          DOS: Heretic Crash
+          DOS: Commit causes Heretic Crash
 					
 [01346 ]: w107_42 fixes
 [01345 ]: w107 mbf deh

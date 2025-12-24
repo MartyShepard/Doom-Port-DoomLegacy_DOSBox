@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1324 2017-05-23 14:28:05Z wesleyjohnson $
+// $Id: g_game.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -161,6 +161,12 @@ void G_CoopSpawnPlayer (int playernum);
 void G_PlayerReborn (int player);
 
 void G_AddPlayer( int playernum );
+
+#ifdef DOGS
+extern byte  extra_dog_count;
+boolean  G_SpawnExtraDog( mapthing_t * spot );
+void  G_KillDog( mobj_t * mo );
+#endif
 
 // ---- Game load
 

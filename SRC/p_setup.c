@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_setup.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1828,6 +1828,12 @@ boolean P_SetupLevel (int      to_episode,
                 G_CoopSpawnPlayer(i);
             }
         }
+#ifdef DOGS       
+        else if( extra_dog_count < cv_mbf_dogs.EV )
+        {
+            G_SpawnExtraDog( playerstarts[i] );
+        }
+#endif       
     }
 
     // clear special respawning que

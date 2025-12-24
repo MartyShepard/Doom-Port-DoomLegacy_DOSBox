@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1347 2017-07-29 18:21:14Z wesleyjohnson $
+// $Id: dehacked.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -624,6 +624,7 @@ const uint32_t flags2_default_value = 0; // other ports like prboom
 #endif
 
 
+
 // Standardized state ranges
 enum {
 // Doom
@@ -631,13 +632,11 @@ enum {
 // TNT
   STS_TNT1 = 967,
 // MBF
-  // TODO
   STS_GRENADE = 968,
   STS_DOGS_PR_STND = 972,
   STS_DOGS_RAISE6 = 998,
   STS_MUSHROOM = 1075,
 // Doom Beta
-  // not implemented
   STS_OLDBFG1 = 999,
   STS_BSKUL_DIE8 = 1074,
 // HERETIC
@@ -713,6 +712,11 @@ statenum_t  deh_frame_to_state( int deh_frame )
        return deh_frame;
      if( deh_frame == STS_TNT1 )
        return S_TNT1;
+     if( deh_frame >= STS_GRENADE
+	 && deh_frame <= STS_DOGS_RAISE6 )
+       return deh_frame + (S_GRENADE - STS_GRENADE);
+     if( deh_frame == STS_MUSHROOM )
+       return S_MUSHROOM;
   }
 
 null_frame:

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: g_game.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -272,12 +272,15 @@ byte  EN_boom_floor; // !comp[comp_floors]
 byte  EN_mbf_pursuit;   // !comp[comp_pursuit]
 byte  EN_mbf_telefrag;  // !comp[comp_telefrag]
 fixed_t EV_mbf_distfriend;
-#ifdef DOGS
-byte  EN_mbf_dogs;
-byte  EN_mbf_dog_jumping;
-#endif
 // Heretic, Hexen
 byte  EN_inventory;
+
+#ifdef DOGS
+byte  extra_dog_count = 0;
+static   uint16_t  extra_dog_respawn = 0;  // save on extra tests
+#define  EXTRA_DOG_RESPAWN_TIME   (5 * TICRATE)
+#endif
+
 
 // [WDJ] PrBoom compatibility enum, to read Boom demo.
 enum {
@@ -1203,6 +1206,10 @@ void G_DoLoadLevel (boolean resetplayer)
         players[i].addfrags = 0;
     }
 
+#ifdef DOGS   
+    extra_dog_count = 0;
+#endif
+
     // game_map_filename is external wad
     if (!P_SetupLevel (gameepisode, gamemap, gameskill, game_map_filename ))
     {
@@ -1392,6 +1399,19 @@ void G_Ticker (void)
                     players[i].st_inventoryTics--;
             }
         }
+#ifdef DOGS
+        // [WDJ] MBF dogs, extension for DoomLegacy.
+        if( extra_dog_respawn )  // coop respawn
+        {
+            extra_dog_respawn--;  // counter
+            if( extra_dog_respawn == 0 )
+            {
+                G_SpawnExtraDog( NULL );
+                if( extra_dog_count < cv_mbf_dogs.EV )
+                    extra_dog_count = EXTRA_DOG_RESPAWN_TIME;
+            }
+        }
+#endif
     }
 
     // Do things to change the game state.
@@ -1482,6 +1502,178 @@ void G_Ticker (void)
 }
 
 
+
+
+
+// Spawn Test
+// [WDJ] Use a temporary mobj to test position.
+// This can be modified to suit,
+// and being static does not leave dangling ptrs into stack space.
+// Need flags, flags2, radius, height.
+static mobj_t  tstobj;
+
+//  testtype: determines the test mobj size, how much radius is needed
+// Return false when an collision with an existing object would occur.
+static
+boolean  test_spot_unoccupied( mobjtype_t testtype, fixed_t x, fixed_t y, fixed_t z )
+
+{
+    // [WDJ] Test spawn spot for any player or blocking object.
+    // Needed for spawning off of map spawn spots, and for multiple players.
+    // Spawn test position is already set.
+    // MF_SOLID is required to test against objects.
+    // MF_PICKUP is off to prevent picking up objects.
+    // MF2_PASSMOBJ is off, as in Heretic.
+    tstobj.x = x;
+    tstobj.y = y;
+    tstobj.z = z;
+    tstobj.player = NULL;  // so cannot take damage during test
+    tstobj.type = testtype;
+    tstobj.info = &mobjinfo[testtype];
+    tstobj.radius = tstobj.info->radius;
+    tstobj.height = tstobj.info->height;
+    tstobj.flags2 = tstobj.info->flags2 & ~MF2_PASSMOBJ;
+    tstobj.flags = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF;
+    return  P_CheckPosition( &tstobj, x, y );
+}
+
+
+boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot );
+
+
+// Extra dynamic spawn spots
+// Kept static because mobj will keep a ptr to it, and NULL is not good either.
+mapthing_t extra_coop_spawn;  // roving coop spawn
+// Static spawn index, so if a player gets a difficult spawn,
+// it does not repeat every spawn.
+static int32_t spind = 1;
+
+
+boolean  scatter_spawn( mobjtype_t spawn_type, int playernum, mapthing_t * spot )
+{
+    int i;
+
+    extra_coop_spawn = * spot;  // copy, will be modified
+    tstobj.x = spot->x<<16;  // spot map location
+    tstobj.y = spot->y<<16;
+   
+    for(i=255; i>0; i--)
+    {
+        spind += 83;  // scatter the pattern with prime 83
+        // The low 8 bits of rv will cycle through all patterns in 256 iter.
+        // Range (-15..15) * (player_radius + 2)
+        extra_coop_spawn.x = spot->x + (((spind & 0x0F) - 8) * 18);
+        extra_coop_spawn.y = spot->y + ((((spind >> 4) & 0x0F) - 8) * 18);
+        
+        // Not allowed to cross any blocking lines, to keep it out of the void.
+        if( P_CheckCrossLine( &tstobj, extra_coop_spawn.x<<16, extra_coop_spawn.y<<16 ) )  continue;
+
+        if( spawn_type == MT_PLAYER )
+        {
+            if (G_Player_SpawnSpot(playernum, &extra_coop_spawn) )
+                return true;
+        }
+#ifdef DOGS
+        else
+        {
+            if (G_SpawnExtraDog(&extra_coop_spawn) )
+                return true;
+        }
+#endif       
+    }
+    return false;
+}
+
+
+
+#ifdef DOGS
+// [WDJ] Spawn dogs.
+// MBF spawns extra dogs at map load, only for single player.
+// DoomLegacy also spawns dogs for Coop.
+
+// Do not modify level map spot due to reusing them during coop.
+// A player may join and use a spot that was previously used for a dog.
+static mapthing_t  extra_dog_spot;
+
+// Spawn extra player dog.
+// These are dogs that start as player spots, limited by cv_mbf_dogs.
+// Dogs that are level map objects spawn normally, as monsters or friends.
+boolean  G_SpawnExtraDog( mapthing_t * spot )
+{
+    fixed_t       x, y;
+    sector_t *    sec;
+
+    // Spawn a dog on one of the unused player starts, up to cv_mbf_dogs.
+    // Avoid multiple dogs in case of multiple starts, using playerstart.
+    // Extra playerstarts will already be voodoo doll spots.
+    if( extra_dog_count >= cv_mbf_dogs.EV )  goto no_more_dogs;
+
+    if( cv_deathmatch.EV )  goto no_more_dogs;
+   
+    if( spot == NULL )
+    {
+        // [WDJ] Have run out of start spots.
+        // This is a recursive call.
+        int i;
+        // Try to spawn near one of the other player spots.
+        for (i=0 ; i<MAXPLAYERS ; i++)
+        {
+            if( playerstarts[i] == NULL )  continue;
+            if( scatter_spawn( MT_DOG, 0, playerstarts[i] )  )
+                return true;
+        }
+        return false;
+    }
+   
+    // Avoid modify of level map things.
+    memcpy( &extra_dog_spot, spot, sizeof(mapthing_t) );
+
+    // killough 10/98: force it to be a friend
+    // [WDJ] Make sure it is not blocked (MTF_MPSPAWN, MTF_NODM, MTF_NOCOOP).
+    extra_dog_spot.options |= MTF_FRIEND | 0x07;
+    extra_dog_spot.options &= ~(MTF_MPSPAWN | MTF_NODM | MTF_NOCOOP);
+
+    // haleyjd 9/22/99: deh, bex substitution	       
+    extra_dog_spot.type = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
+
+    // [WDJ] Test spawn spot for any player or blocking object.
+    // Use tstobj, so do not need player mobj.  There may not be one.
+    // The spawn spot location.
+    x = extra_dog_spot.x << FRACBITS;
+    y = extra_dog_spot.y << FRACBITS;
+    sec = R_PointInSubsector(x,y)->sector;
+    if( ! test_spot_unoccupied( extra_dog_spot.type, x, y, sec->floorheight ) )
+        return false;
+   
+    // SpawnMapthing keeps a reference to the spawn spot in the mobj.
+    P_SpawnMapthing( &extra_dog_spot );
+
+    extra_dog_count ++;
+    return true;
+
+no_more_dogs:
+    extra_dog_respawn = 0;
+    return false;
+}
+
+// To deal with respawning dog issues.
+void  G_KillDog( mobj_t * mo )
+{
+    if( mo->spawnpoint != &extra_dog_spot )  return;
+
+    if( !(mo->flags & MF_FRIEND) )  return;
+
+    if( multiplayer && (cv_deathmatch.EV == 0)  // coop respawn
+        && !cv_respawnmonsters.EV  )  // not otherwise respawned
+    {
+        extra_dog_count --;
+        if( extra_dog_respawn == 0 )
+            extra_dog_respawn = EXTRA_DOG_RESPAWN_TIME;
+    }
+}
+
+#endif
+
 //
 // PLAYER STRUCTURE FUNCTIONS
 // also see P_SpawnPlayer in P_Things
@@ -1564,6 +1756,7 @@ void VerifFavoritWeapon (player_t *player);
 // Called after a player dies
 // almost everything is cleared and initialized
 //
+// Called by P_SpawnPlayer when PST_REBORN.
 void G_PlayerReborn (int player)
 {
     player_t*   p;
@@ -1653,11 +1846,6 @@ void G_PlayerReborn (int player)
         p->maxammo[i] = maxammo[i];
 }
 
-// [WDJ] Use a temporary mobj to test position.
-// This can be modified to suit,
-// and being static does not leave dangling ptrs into stack space.
-// Need flags, flags2, radius, height.
-static mobj_t  tstobj;
 
 //
 // G_Player_SpawnSpot
@@ -1681,9 +1869,12 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
     if(!spot || spot->type<0)   goto failexit;
     if( ! player )   goto failexit;
 
+    // [WDJ] kill bob momentum or player will keep bobbing at spawn spot
+    player->bob_momx = player->bob_momy = 0;
+
     // The spawn spot location
-    tstobj.x = x = spot->x << FRACBITS;
-    tstobj.y = y = spot->y << FRACBITS;
+    x = spot->x << FRACBITS;
+    y = spot->y << FRACBITS;
 
 #if 0
     // First spawn with no checks, is only kept because it is in Doom.
@@ -1711,9 +1902,9 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
 
     ss = R_PointInSubsector (x,y);
     ssec = ss->sector;
-    tstobj.z = ssec->floorheight;
 
-    // check for respawn in team-sector
+    // check for respawn in team-sector.
+    // Dogs do not know how to play teams.
     if(ssec->teamstartsec)
     {
         if(cv_teamplay.EV == 1)
@@ -1731,24 +1922,10 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
         }
     }
    
-    // [WDJ] kill bob momentum or player will keep bobbing at spawn spot
-    player->bob_momx = player->bob_momy = 0;
-
     // [WDJ] Test spawn spot for any player or blocking object.
     // Use tstobj, so do not need player mobj.  There may not be one.
-    // Needed for spawning off of map spawn spots, and for multiple players.
-    // Spawn test position is already set.
-    // MF_SOLID is required to test against objects.
-    // MF_PICKUP is off to prevent picking up objects.
-    // MF2_PASSMOBJ is off, as in Heretic.
-    tstobj.player = NULL;  // so cannot take damage during test
-    tstobj.type = MT_PLAYER;
-    tstobj.info = &mobjinfo[MT_PLAYER];
-    tstobj.radius = tstobj.info->radius;
-    tstobj.height = tstobj.info->height;
-    tstobj.flags2 = tstobj.info->flags2 & ~MF2_PASSMOBJ;
-    tstobj.flags = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF;
-    if( ! P_CheckPosition (&tstobj, x, y) )   goto failexit;
+    if( ! test_spot_unoccupied( MT_PLAYER, x, y, ssec->floorheight ) )
+        goto failexit;
    
     // Spawn Spot accepted. Start spawn process.
 
@@ -1783,7 +1960,6 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
 silent_spawn:
     // Spawn the player at the spawn spot.
     P_SpawnPlayer (spot, playernum);
-   
     return true;
 
 failexit:
@@ -1807,7 +1983,7 @@ boolean G_DeathMatchSpawnPlayer (int playernum)
         return false;
     }
 
-    if(demoversion<123 || demoversion>=200)
+    if( EV_legacy < 123 )
         n=20;  // Doom, Boom
     else
         n=64;
@@ -1816,7 +1992,7 @@ boolean G_DeathMatchSpawnPlayer (int playernum)
     for (j=0 ; j<n ; j++)
     {
         i = PP_Random(pr_dmspawn) % numdmstarts;
-        if (G_Player_SpawnSpot(playernum, deathmatchstarts[i]) )
+        if( G_Player_SpawnSpot( playernum, deathmatchstarts[i]) )
             return true;
     }
 
@@ -1837,13 +2013,13 @@ void G_CoopSpawnPlayer (int playernum)
     int i;
 
     // Check for the COOP player spot unoccupied.
-    if (G_Player_SpawnSpot(playernum, coop_spawn) )
+    if( G_Player_SpawnSpot(playernum, coop_spawn) )
         return;
 
     // Try to spawn at one of the other players spots.
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-        if (G_Player_SpawnSpot(playernum, playerstarts[i]) )
+        if( G_Player_SpawnSpot( playernum, playerstarts[i]) )
             return;
     }
 
@@ -1861,29 +2037,8 @@ void G_CoopSpawnPlayer (int playernum)
 
     if( coop_spawn )
     {
-        // Static spawn index, so if a player gets a difficult spawn,
-        // it does not repeat every spawn.
-        static int32_t spind = 1;
-
-        mapthing_t rcs = * coop_spawn;  // roving coop spawn
-        mobj_t spot1;  // param to P_CheckCrossLine
-        spot1.x = coop_spawn->x<<16;  // coop_spawn map location
-        spot1.y = coop_spawn->y<<16;
-
-        for(i=255; i>0; i--)
-        {
-            spind += 83;  // scatter the pattern with prime 83
-            // The low 8 bits of rv will cycle through all patterns in 256 iter.
-            // Range (-15..15) * (player_radius + 2)
-            rcs.x = coop_spawn->x + (((spind & 0x0F) - 8) * 18);
-            rcs.y = coop_spawn->y + ((((spind >> 4) & 0x0F) - 8) * 18);
-        
-            // Not allowed to cross any blocking lines, to keep it out of the void.
-            if( P_CheckCrossLine( &spot1, rcs.x<<16, rcs.y<<16 ) )  continue;
-
-            if (G_Player_SpawnSpot(playernum, &rcs) )
-                return;
-        }
+        if( scatter_spawn( MT_PLAYER, playernum, coop_spawn )  )
+            return;
     }
 
     // Try to use a deathmatch spot.

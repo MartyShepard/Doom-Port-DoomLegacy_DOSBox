@@ -6160,10 +6160,20 @@ Rearranged the player slide and bounces code.
 From PrBoom, no oof when dead.
 Added checks and error handling on level load functions.
 
-*** W107_deh_trans
+*** W107_deh_translate
 patchfile = w107_43_deh_trans.patch
 - commit revision 1347
 Fix the dehacked state pointers so that the standard state values
 are translated to the DoomLegacy internal state indexes.
 This will allow Heretic DEH patches to work, and is
 necessary for the MBF DOG states to be found by DEH.
+
+*** W107_mbf_dogs
+patchfile = w107_44_mbf_dogs.patch
+- commit revision 1348
+Added the MBF dogs codes.
+Added the MBF dogs sound names.
+MBF and PrBoom only have dogs for single player.
+In DoomLegacy they also can be used in coop games, and will respawn.
+The respawn delay is fixed at 5 seconds.
+

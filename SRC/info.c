@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: info.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -66,6 +66,7 @@
 #include "action.h"
 
 char *sprnames[NUMSPRITES+1] = {
+// Doom
     "TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
     "MISF","SAWG","PLSG","PLSF","BFGG","BFGF","BLUD","PUFF","BAL1","BAL2",
     "PLSS","PLSE","MISL","BFS1","BFE1","BFE2","TFOG","IFOG","PLAY","POSS",
@@ -81,7 +82,7 @@ char *sprnames[NUMSPRITES+1] = {
     "COL5","TBLU","TGRN","TRED","SMBT","SMGT","SMRT","HDB1","HDB2","HDB3",
     "HDB4","HDB5","HDB6","POB1","POB2","BRS1","TLMP","TLP2","SMOK","SPLA",
     "TNT1", //SoM: 4/8/2000: INVISIBLE SPRITE!
-
+// Heretic
     "IMPX","ACLO","PTN1","SHLD","SHD2","BAGH","SPMP","INVS","PTN2","SOAR",
     "INVU","PWBK","EGGC","EGGM","FX01","SPHL","TRCH","FBMB","XPL1","ATLP",
     "PPOD","AMG1","SPSH","LVAS","SLDG","SKH1","SKH2","SKH3","SKH4","CHDL",
@@ -95,6 +96,10 @@ char *sprnames[NUMSPRITES+1] = {
     "WZRD","FX11","FX10","KNIG","SPAX","RAXE","SRCR","FX14","SOR2","SDTH",
     "FX16","MNTR","FX12","FX13","AKYY","BKYY","CKYY","AMG2","AMM1","AMM2",
     "AMC1","AMC2","AMS1","AMS2","AMP1","AMP2","AMB1","AMB2",
+// MBF
+#ifdef DOGS
+    "DOGS", // MBF
+#endif
 
     NULL /* shit! 19990907 by Kin */
 };
@@ -2302,7 +2307,79 @@ state_t states[NUMSTATES] = {
     { SPR_TROO,32768,  4,  {A_StartFS}         ,S_DUMMY         },  // S_DUMMY
     { SPR_TROO,32768,  4,  {A_StartWeaponFS}   ,S_DUMMY2        },  // S_DUMMY2
 
+   
+// MBF
+    // killough 8/9/98: grenade
+    { SPR_MISL,32768, 1000, {A_Die},      S_GRENADE},   // S_GRENADE
+
+    // killough 8/10/98: variable damage explosion
+    { SPR_MISL,32769,    4, {A_Scream},   S_DETONATE2}, // S_DETONATE
+    { SPR_MISL,32770,    6, {A_Detonate}, S_DETONATE3}, // S_DETONATE2
+    { SPR_MISL,32771,   10, {NULL},       S_NULL},      // S_DETONATE3
+
+#ifdef DOGS
+    // killough 7/19/98: Marine's best friend :)
+    { SPR_DOGS, 0, 10, {A_Look},  S_DOGS_STND2},  // S_DOGS_STND
+    { SPR_DOGS, 1, 10, {A_Look},  S_DOGS_STND}, // S_DOGS_STND2
+    { SPR_DOGS, 0,  2, {A_Chase}, S_DOGS_RUN2}, // S_DOGS_RUN1
+    { SPR_DOGS, 0,  2, {A_Chase}, S_DOGS_RUN3}, // S_DOGS_RUN2
+    { SPR_DOGS, 1,  2, {A_Chase}, S_DOGS_RUN4}, // S_DOGS_RUN3
+    { SPR_DOGS, 1,  2, {A_Chase}, S_DOGS_RUN5}, // S_DOGS_RUN4
+    { SPR_DOGS, 2,  2, {A_Chase}, S_DOGS_RUN6}, // S_DOGS_RUN5
+    { SPR_DOGS, 2,  2, {A_Chase}, S_DOGS_RUN7}, // S_DOGS_RUN6
+    { SPR_DOGS, 3,  2, {A_Chase}, S_DOGS_RUN8}, // S_DOGS_RUN7
+    { SPR_DOGS, 3,  2, {A_Chase}, S_DOGS_RUN1}, // S_DOGS_RUN8
+    { SPR_DOGS, 4,  8, {A_FaceTarget}, S_DOGS_ATK2},  // S_DOGS_ATK1
+    { SPR_DOGS, 5,  8, {A_FaceTarget}, S_DOGS_ATK3},  // S_DOGS_ATK2
+    { SPR_DOGS, 6,  8, {A_SargAttack}, S_DOGS_RUN1},  // S_DOGS_ATK3
+    { SPR_DOGS, 7,  2, {NULL},    S_DOGS_PAIN2}, // S_DOGS_PAIN
+    { SPR_DOGS, 7,  2, {A_Pain},  S_DOGS_RUN1}, // S_DOGS_PAIN2
+    { SPR_DOGS, 8,  8, {NULL},    S_DOGS_DIE2}, // S_DOGS_DIE1
+    { SPR_DOGS, 9,  8, {A_Scream},S_DOGS_DIE3}, // S_DOGS_DIE2
+    { SPR_DOGS,10,  4, {NULL},    S_DOGS_DIE4}, // S_DOGS_DIE3
+    { SPR_DOGS,11,  4, {A_Fall},  S_DOGS_DIE5}, // S_DOGS_DIE4
+    { SPR_DOGS,12,  4, {NULL},    S_DOGS_DIE6}, // S_DOGS_DIE5
+    { SPR_DOGS,13, -1, {NULL},    S_NULL},      // S_DOGS_DIE6
+    { SPR_DOGS,13,  5, {NULL},    S_DOGS_RAISE2}, // S_DOGS_RAISE1
+    { SPR_DOGS,12,  5, {NULL},    S_DOGS_RAISE3}, // S_DOGS_RAISE2
+    { SPR_DOGS,11,  5, {NULL},    S_DOGS_RAISE4}, // S_DOGS_RAISE3
+    { SPR_DOGS,10,  5, {NULL},    S_DOGS_RAISE5}, // S_DOGS_RAISE4
+    { SPR_DOGS, 9,  5, {NULL},    S_DOGS_RAISE6}, // S_DOGS_RAISE5
+    { SPR_DOGS, 8,  5, {NULL},    S_DOGS_RUN1},   // S_DOGS_RAISE6
+#else
+    // if dogs are disabled, dummy states are required for dehacked compatibility
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_STND
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_STND2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN1
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN3
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN4
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN5
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN6
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN7
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RUN8
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_ATK1
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_ATK2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_ATK3
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_PAIN
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_PAIN2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE1
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE3
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE4
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE5
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_DIE6
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE1
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE2
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE3
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE4
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE5
+    { 0,0,-1,{NULL},S_NULL}, // S_DOGS_RAISE6
+#endif
+    // killough 10/98: mushroom effect
+    { SPR_MISL,32769,    8, {A_Mushroom}, S_EXPLODE2},  // S_MUSHROOM
 };
+
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
@@ -2499,7 +2576,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         10,             // damage
         MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_TRANSLUCENT,  // flags
-	   // was not translucent in Boom
+           // was not translucent in Boom
         0
     },
 
@@ -2836,7 +2913,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         50,             // mass
         3,              // damage
         MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_TRANSLUCENT, // flags
-	   // was not translucent in Boom
+           // was not translucent in Boom
         0
     },
 
@@ -5855,7 +5932,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // deathstate
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
-	S_NULL,         // raisestate
+        S_NULL,         // raisestate
         0,              // speed
         32*FRACUNIT,            // radius
         96*FRACUNIT,            // height
@@ -6319,8 +6396,36 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     //SoM: Dogs, and BetaBFG are NOT implemented! These things are here to
     //hold spaces.
-    {                 // MT_DOGS
+    // Marine's best friend :)      // killough 7/19/98
+    {   // MT_DOGS
       888,            // doomednum
+#ifdef DOGS
+      S_DOGS_STND,    // spawnstate
+      500,            // spawnhealth
+      S_DOGS_RUN1,    // seestate
+      sfx_dgsit,      // seesound
+      sfx_dgact,      // activesound
+      8,              // reactiontime
+      sfx_dgatk,      // attacksound
+      S_DOGS_PAIN,    // painstate
+      180,            // painchance
+      sfx_dgpain,     // painsound
+      S_DOGS_ATK1,    // meleestate
+      0,              // missilestate
+      S_NULL,         // crashstate
+      S_DOGS_DIE1,    // deathstate
+      S_NULL,         // xdeathstate
+      sfx_dgdth,      // deathsound
+      S_DOGS_RAISE1,  // raisestate
+      10,             // speed
+      12*FRACUNIT,    // radius
+      28*FRACUNIT,    // height
+      100,            // mass
+      0,              // damage
+      MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL, // flags
+      0               // flags2
+#else
+      // Dummy Dogs, does not use any name that is not present without DOGS.
       S_TNT1,         // spawnstate
       500,            // spawnhealth
       S_TNT1,         // seestate
@@ -6344,7 +6449,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
       100,            // mass
       0,              // damage
       MF_NOSECTOR|MF_NOBLOCKMAP, // flags
-      0
+      0               // flags2
+#endif
     },
 
     {                   // MT_PLASMA1
@@ -10942,7 +11048,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
      0,                         // damage
      MF_NOBLOCKMAP | MF_NOSECTOR,       // flags
      0                          // flags2
-     }
+     },
 
 };
 

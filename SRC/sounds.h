@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: sounds.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -418,6 +418,14 @@ typedef enum
     sfx_skesit,
     sfx_skeatk,
     sfx_radio,
+#ifdef DOGS
+    // killough 11/98: dog sounds
+    sfx_dgsit,
+    sfx_dgatk,
+    sfx_dgact,
+    sfx_dgdth,
+    sfx_dgpain,
+#endif
     //added:22-02-98: player avatar jumps
     sfx_jump,
     //added:22-02-98: player hits something hard and says 'ouch!'

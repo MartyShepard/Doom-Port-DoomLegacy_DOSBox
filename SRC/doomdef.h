@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: doomdef.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -143,6 +143,9 @@
 #if defined( WIN32 ) && !defined( LAUNCHER )
 #define LAUNCHER
 #endif
+
+// [WDJ] 7/6/2017  MBF DOGS
+#define DOGS
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.

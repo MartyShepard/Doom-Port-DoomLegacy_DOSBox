@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
+// $Id: info.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -332,6 +332,11 @@ SPR_AMP1,
 SPR_AMP2,
 SPR_AMB1,
 SPR_AMB2,
+
+// MBF
+#ifdef DOGS
+    SPR_DOGS, // MBF
+#endif
 
     NUMSPRITES
 
@@ -2529,6 +2534,44 @@ S_SND_WATERFALL,
 S_DUMMY,        // Exl: Tox's FS script running states
 S_DUMMY2,
 
+// MBF
+  S_GRENADE,   // killough 8/9/98: grenade launcher
+  S_DETONATE,  // killough 8/9/98: detonation of objects
+  S_DETONATE2,
+  S_DETONATE3,
+
+  // always count dog states, even if dogs are disabled
+  // MBF DOGS
+  S_DOGS_STND,
+  S_DOGS_STND2,
+  S_DOGS_RUN1,
+  S_DOGS_RUN2,
+  S_DOGS_RUN3,
+  S_DOGS_RUN4,
+  S_DOGS_RUN5,
+  S_DOGS_RUN6,
+  S_DOGS_RUN7,
+  S_DOGS_RUN8,
+  S_DOGS_ATK1,
+  S_DOGS_ATK2,
+  S_DOGS_ATK3,
+  S_DOGS_PAIN,
+  S_DOGS_PAIN2,
+  S_DOGS_DIE1,
+  S_DOGS_DIE2,
+  S_DOGS_DIE3,
+  S_DOGS_DIE4,
+  S_DOGS_DIE5,
+  S_DOGS_DIE6,
+  S_DOGS_RAISE1,
+  S_DOGS_RAISE2,
+  S_DOGS_RAISE3,
+  S_DOGS_RAISE4,
+  S_DOGS_RAISE5,
+  S_DOGS_RAISE6,
+
+  S_MUSHROOM,  // killough 10/98: mushroom explosion effect
+   
     NUMSTATES
 } statenum_e;
 
@@ -2723,7 +2766,7 @@ typedef enum {
     MT_SPLASH,      // test water splash
     MT_PUSH,    //SoM: 3/8/2000: controls push source
     MT_PULL,    //SoM: 3/8/2000: controls pull source
-    MT_DOGS,    //SoM: ToDo!
+    MT_DOG,     //[WDJ] 6/2017
     MT_PLASMA1, //SoM: Hold the place.
     MT_PLASMA2, //SoM: Hold the place.
     MT_CAMERA,  //SoM: SMMU Camera objects.

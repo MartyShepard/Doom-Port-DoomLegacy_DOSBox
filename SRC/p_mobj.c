@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_mobj.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -768,6 +768,15 @@ void P_XYMovement(mobj_t * mo)
                 goto missile_impact;
             }
 
+            // [WDJ] MBF BOUNCES and Heretic SLIDE conflict, one or the other.
+            // Boom has only player slides, but heretic has SLIDE attribute
+            if (mo->flags2 & MF2_SLIDE)  // Heretic, and player.
+            {   // try to slide along it
+                // Alters momx,momy, and calls P_TryMove
+                P_SlideMove(mo);
+                continue;
+            }
+
             // MBF bounce
             // [WDJ] From PrBoom and MBF source, rearranged, different order.
             // MF_MISSILE is already handled before this test, instead of
@@ -780,7 +789,6 @@ void P_XYMovement(mobj_t * mo)
                      || ( EN_variable_friction
                           && tmr_blockingline  // solid wall
                           && !player  // player MF2_SLIDE has precedence, redundant
-                          && !(mo->flags2 & MF2_SLIDE)  // player slide
                           && mo->z <= mo->floorz  // hit lower wall
                           && (P_GetFriction(mo) > ORIG_FRICTION)  // ice
                         )
@@ -812,13 +820,6 @@ void P_XYMovement(mobj_t * mo)
                     }
                 }
                 continue;  // continue movement
-            }
-
-            // Boom has only player slides, but heretic has SLIDE attribute
-            if (mo->flags2 & MF2_SLIDE)  // Heretic, and player.
-            {   // try to slide along it
-                // Alters momx,momy, and calls P_TryMove
-                P_SlideMove(mo);
             }
 
     zero_mom:
@@ -2598,44 +2599,35 @@ void P_SpawnMapthing (mapthing_t* mthing)
             P_SpawnVoodoo( playernum, playerstarts[playernum] );
         }
 
-        // [WDJ] From MBF, PrBoom, EternityEngine
-#ifdef DOGS
-        // killough 7/19/98: Marine's best friend :)
-        if (!netgame
-            && mthing->type > 1 && mthing->type <= dogs+1
-            // use secretcount to avoid multiple dogs in case of multiple starts
-            && (players[mthing->type - 1].secretcount == 0) )
-        {
-            players[mthing->type - 1].secretcount = 1;
-
-            // killough 10/98: force it to be a friend
-            mthing->options |= MTF_FRIEND;
-            i = MT_DOGS;  // MBF
-#ifdef HELPERTHING
-            if(HelperThing != -1) // haleyjd 9/22/99: deh, bex substitution
-            {
-                int type = HelperThing - 1;
-                if(type >= 0 && type < NUMMOBJTYPES)
-                {
-                    i = type;
-                }
-                else
-                {
-                    GenPrintf(EMSG_WARN, "Invalid value %i for helper, ignored.", HelperThing);
-                }
-            }
-#endif
-            goto spawnit;
-        }
-#endif
-       
         // save spots for respawning in network games
         playerstarts[playernum] = mthing;
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
         if( cv_deathmatch.EV == 0 && (EV_legacy < 128) )
+        {
+#ifdef DOGS
+            // [WDJ] From MBF, PrBoom, EternityEngine
+            // Kept for demo compatibility.
+            // killough 7/19/98: Marine's best friend :)
+            // Spawn a dog for player starts (2..), up to cv_mbf_dogs.
+            // Avoid multiple dogs in case of multiple starts, using secretcount,
+            // which the missing players apparantly do not need.
+            // Playerstart will not be set.
+            if( !netgame
+                && playernum > 0 && playernum <= cv_mbf_dogs.EV
+                && (players[playernum].secretcount == 0) )
+            {
+                players[playernum].secretcount = 1;
+                // killough 10/98: force it to be a friend
+                mthing->options |= MTF_FRIEND;
+                // haleyjd 9/22/99: deh, bex substitution	       
+                i = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
+                goto spawnit;
+            }
+#endif
             P_SpawnPlayer(mthing, playernum);
+        }
 
         return;
     }
