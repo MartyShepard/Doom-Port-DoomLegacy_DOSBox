@@ -6239,3 +6239,12 @@ as the skin selection choice.
 Change the way that the skin choices are updated to the network.
 Improve the skin setting functions to support this.
 Make the skins storage dynamic, with a maximum of 128 skins.
+
+*** W107_no_net
+patchfile = w107_53_no_net.patch
+- commit revision 1358
+Make the network XCMD so that when the network is not connected
+it will flush the XCMD buffer instead of generating
+an error message.  There is no point in saving stale XCMD
+in the buffer.  The name, skin, and color of the player
+will be updated when the connect.
