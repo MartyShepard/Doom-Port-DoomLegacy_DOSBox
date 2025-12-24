@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
+// $Id: dehacked.c 1345 2017-07-29 18:14:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -95,6 +95,8 @@
 boolean deh_loaded = false;
 byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
 byte  pars_valid_bex = false;  // have valid PAR values (from BEX), boolean
+
+uint16_t helper_MT = 0xFFFF;  // Substitute helper thing (like DOG).
 
 static boolean  bex_include_notext = 0;  // bex include with skip deh text
 
@@ -801,6 +803,9 @@ Sprite number = 10
 Sprite subnumber = 32968
 Duration = 200
 Next frame = 200
+// used as param 1 and param2 by MBF functions
+Unknown 1 = 5
+Unknown 2 = 17
 */
 static void readframe(myfile_t* f, int deh_frame_id)
 {
@@ -820,18 +825,22 @@ static void readframe(myfile_t* f, int deh_frame_id)
 
       if(!strcasecmp(word1,"Sprite"))
       {
+        // Syntax: Sprite number = <num>
              if(!strcasecmp(word2,"number"))     fsp->sprite   =value;
+        // Syntax: Sprite subnumber = <num>
         else if(!strcasecmp(word2,"subnumber"))  fsp->frame    =value;
       }
+        // Syntax: Duration = <num>
       else if(!strcasecmp(word1,"Duration"))     fsp->tics     =value;
+        // Syntax: Next frame = <num>
       else if(!strcasecmp(word1,"Next"))         fsp->nextstate=value;
       else if(!strcasecmp(word1,"Unknown"))
       {
-        // MBF uses these for parameters.
+        // Syntax: Unknown 2 = <num>
+        // MBF uses these for parameters (parm1, parm2)
         state_ext_t * sep = P_create_state_ext( fsp );
-	if( word2[0] == '1' ) sep->parm1 = value;
-	else if( word2[0] == '2' ) sep->parm2 = value;
-	
+        if( word2[0] == '1' ) sep->parm1 = value;
+        else if( word2[0] == '2' ) sep->parm2 = value;
       }
       else deh_error("Frame %d : unknown word '%s'\n", deh_frame_id,word1);
     }
@@ -1561,7 +1570,7 @@ static void bex_strings( myfile_t* f, byte bex_permission )
             // protect file names against attack
             if( i == SAVEGAMENAME_NUM )
             {
-                if( filename_reject( stxt, 10 )  goto no_text_change;
+                if( filename_reject( stxt, 10 ) )  goto no_text_change;
             }
 #endif
             if( i >= perm_min && text_index < NUMTEXT)
@@ -1715,6 +1724,22 @@ bex_codeptr_t  bex_action_table[] = {
    {"SpawnFly", {A_SpawnFly}},
    {"BrainExplode", {A_BrainExplode}},
 
+   // [WDJ] MBF function ptrs, from MBF, EternityEngine.
+   {"Detonate", {A_Detonate}},  // Radius damage, variable damage
+   {"Mushroom", {A_Mushroom}},  // Mushroom explosion
+   {"Die", {A_Die}},  // MBF, kill an object
+   {"Spawn", {A_Spawn}},  // SpawnMobj(x,y, parm2, parm1-1)
+   {"Turn", {A_Turn}},  // Turn by parm1 degrees
+   {"Face", {A_Face}},  // Turn to face parm1 degrees
+   {"Scratch", {A_Scratch}},  // Melee attack
+   {"PlaySound", {A_PlaySound}},  // Play Sound parm1
+      // if parm2 = 0 then mobj sound, else unassociated sound.
+   {"RandomJump", {A_RandomJump}},  // Random transition to mobj state parm1
+      // probability parm2
+   {"LineEffect", {A_LineEffect}},  // Trigger line type parm1, tag = parm2
+   
+   {"KeepChasing", {A_KeepChasing}},  // MBF, from EnternityEngine
+   
    { NULL, {NULL} }  // table term
 };
 
@@ -1766,6 +1791,53 @@ static void bex_codeptr( myfile_t* f )
     continue;
   }
 }
+
+
+// [WDJ] MBF helper, From PrBoom (not in MBF)
+// haleyjd 9/22/99
+//
+// Allows handy substitution of any thing for helper dogs.  DEH patches
+// are being made frequently for this purpose and it requires a complete
+// rewiring of the DOG thing.  I feel this is a waste of effort, and so
+// have added this new [HELPER] BEX block
+
+// BEX [HELPER] section
+static void bex_helper( myfile_t* f )
+{
+  char s[MAXLINELEN];
+  int  tn, nn;
+   
+  // format:
+  // [HELPER]
+  // TYPE = <num>
+
+  for(;;)
+  {
+    if( ! myfgets_nocom(s, sizeof(s), f) )
+       break; // no more lines
+
+    if( s[0] == '\n' ) continue;  // blank line
+    if( s[0] == 0 ) break;
+    if( strncasecmp( s, "TYPE", 4 ) != 0 )  break;  // not a TYPE line
+    nn = sscanf( &s[4], " = %d", &tn );
+
+    if( nn != 1 )
+    {
+        deh_error( "Bad TYPE syntax\n" );
+        continue;
+    }
+
+    // In BEX things are 1..
+    if( tn <= 0 || tn > ENDDOOM_MT )
+    {
+        deh_error( "Bad BEX thing number %d\n", tn );
+        continue;
+    }
+
+    helper_MT = tn - 1;  // mobj MT  (in BEX things are 1.. )
+  }
+}
+   
 
 // include another DEH or BEX file
 void bex_include( char * inclfilename )
@@ -2101,6 +2173,11 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
       else if(!strncmp(word, "[CODEPTR]", 9))
       {
         bex_codeptr(f);
+        continue;
+      }
+      else if(!strncmp(word, "[HELPER]", 8))
+      {
+        bex_helper(f);
         continue;
       }
       else if(!strncmp(word, "INCLUDE", 7))

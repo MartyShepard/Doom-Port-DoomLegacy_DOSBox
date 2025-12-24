@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
+// $Id: p_enemy.c 1345 2017-07-29 18:14:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1874,6 +1874,23 @@ void A_Look (mobj_t* actor)
     P_SetMobjState (actor, actor->info->seestate);
 }
 
+
+// [WDJ] Functions from PrBoom, MBF, EternityEngine.
+
+// killough 10/98:
+// Allows monsters to continue movement while attacking
+// EternityEngine makes it BEX available.
+//
+void A_KeepChasing(mobj_t *actor)
+{
+  if (actor->movecount)
+  {
+      actor->movecount--;
+      if (actor->strafecount)
+        actor->strafecount--;
+      P_SmartMove(actor);
+  }
+}
 
 //
 // A_Chase

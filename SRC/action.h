@@ -222,5 +222,17 @@ void A_MntrFloorFire ();
 void A_ESound ();
 void A_StartFS();		// Exl: Toxicfluff's FS actions
 void A_StartWeaponFS(); //
+// [WDJ] MBF functions
+void A_Die();
+void A_Detonate();
+void A_Mushroom();
+void A_Spawn();
+void A_Turn();
+void A_Face();
+void A_Scratch();
+void A_PlaySound();
+void A_RandomJump();
+void A_LineEffect();
+void A_KeepChasing();  // EternityEngine
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: p_local.h 1345 2017-07-29 18:14:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -277,6 +277,7 @@ extern  consvar_t cv_mbf_monkeys;
 extern  consvar_t cv_mbf_dogs;
 extern  consvar_t cv_mbf_dog_jumping;
 #endif
+extern  uint16_t helper_MT;  // Substitute helper thing (like DOG).
 
 // when pushing a line 
 //#define MAXSPECIALCROSS 16
