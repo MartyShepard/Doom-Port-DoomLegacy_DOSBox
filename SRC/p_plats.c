@@ -192,10 +192,10 @@ void T_PlatRaise(plat_t* plat)
 //
 int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 {
-    plat_t*     plat;
+    plat_t    * plat;
+    sector_t  * sec;
     int         secnum;
     int         rtn = 0;
-    sector_t*   sec;
 
     //  Activate all <type> plats that are PLATS_in_stasis
     switch(type)
@@ -328,7 +328,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
 
 
 //SoM: 3/7/2000: Use boom limit removal
-void P_ActivateInStasis(int tag)
+void P_ActivateInStasis( uint16_t tag )
 {
   platlist_t *pl;
   for (pl=activeplats; pl; pl=pl->next)

@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: p_spec.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -987,16 +987,20 @@ sector_t *P_FindModelCeilingSector(fixed_t ceildestheight,int secnum)
 
 
 
+#define TAGHASH( tag, hashsize )   ((unsigned int) tag & (unsigned) hashsize)
 //
 // RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
 //
 //SoM: 3/7/2000: Killough wrote this to improve the process.
+//  line : the linedef with the search tag
+//  start : -1 first iteration, previous return value otherwise.
+// Return sector index.
 // Return -1 when not found
 int  P_FindSectorFromLineTag ( line_t* line, int start )
 {
   start = (start >= 0) ?
     sectors[start].nexttag
-    : sectors[(unsigned) line->tag % (unsigned) numsectors].firsttag;
+    : sectors[ TAGHASH( line->tag, numsectors )].firsttag;
   while (start >= 0 && sectors[start].tag != line->tag)
     start = sectors[start].nexttag;
   return start;
@@ -1008,11 +1012,11 @@ int  P_FindSectorFromLineTag ( line_t* line, int start )
 // P_FindSectorFromTag
 // Used by FraggleScript
 // Return -1 when not found
-int  P_FindSectorFromTag( int tag, int start )
+int  P_FindSectorFromTag( uint16_t tag, int start )
 {
   start = (start >= 0) ?
     sectors[start].nexttag
-    : sectors[(unsigned) tag % (unsigned) numsectors].firsttag;
+    : sectors[ TAGHASH( tag, numsectors )].firsttag;
   while (start >= 0 && sectors[start].tag != tag)
     start = sectors[start].nexttag;
   return start;
@@ -1020,11 +1024,11 @@ int  P_FindSectorFromTag( int tag, int start )
 
 //DarkWolf95:July 23, 2003: Needed for SF_SetLineTexture
 // Return -1 when not found
-int P_FindLineFromTag(int tag, int start)
+int P_FindLineFromTag( uint16_t tag, int start)
 {
   start = (start >= 0) ?
      lines[start].nexttag
-     : lines[(unsigned) tag % (unsigned) numlines].firsttag;
+     : lines[ TAGHASH( tag, numlines )].firsttag;
   while (start >= 0 && lines[start].tag != tag)
     start = lines[start].nexttag;
   return start;
@@ -1037,12 +1041,11 @@ int P_FindLineFromLineTag(const line_t *line, int start)
 {
   start = (start >= 0) ?
      lines[start].nexttag
-     : lines[(unsigned) line->tag % (unsigned) numlines].firsttag;
+     : lines[ TAGHASH( line->tag, numlines )].firsttag;
   while (start >= 0 && lines[start].tag != line->tag)
     start = lines[start].nexttag;
   return start;
 }
-
 
 
 //SoM: 3/7/2000: Oh joy!
@@ -1055,7 +1058,7 @@ static void P_InitTagLists(void)
     sectors[i].firsttag = -1;
   for (i=numsectors; --i>=0; )
   {
-      int j = (unsigned) sectors[i].tag % (unsigned) numsectors;
+      unsigned int j = TAGHASH( sectors[i].tag, numsectors );
       sectors[i].nexttag = sectors[j].firsttag;
       sectors[j].firsttag = i;
   }
@@ -1064,7 +1067,7 @@ static void P_InitTagLists(void)
     lines[i].firsttag = -1;
   for (i=numlines; --i>=0; )
   {
-      int j = (unsigned) lines[i].tag % (unsigned) numlines;
+      unsigned int j = TAGHASH( lines[i].tag, numlines );
       lines[i].nexttag = lines[j].firsttag;
       lines[j].firsttag = i;
   }

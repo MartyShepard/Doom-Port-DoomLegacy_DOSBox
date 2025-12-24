@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1333 2017-05-30 15:36:16Z wesleyjohnson $
+// $Id: t_func.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -2851,7 +2851,8 @@ err_notsound:
 // StartSectorSound( tagnum, sound_lump_name )
 void SF_StartSectorSound(void)
 {
-    int tagnum, secnum;
+    int secnum;
+    uint16_t tagnum;
 
     if (t_argc != 2)  goto err_numarg;
     if (t_argv[1].type != FSVT_string)  goto err_notsound;
@@ -2913,8 +2914,9 @@ err_notsound:
 // SectorEffect(tagnum, effect)
 void SF_SectorEffect(void)
 {
-    int tagnum, select, secnum;
     sector_t * sector;
+    int select, secnum;
+    uint16_t tagnum;
 
     if (t_argc != 2)  goto err_numarg;  // [WDJ]
 
@@ -2999,8 +3001,9 @@ err_numarg:
 // Return when Set floorheight: 1=default, 0=crushing
 void SF_FloorHeight(void)
 {
-    int tagnum, secnum;
     int returnval = 1;  // When Set floorheight: 1=default, 0=crushing
+    int secnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3056,8 +3059,9 @@ err_nosector:
 void SF_MoveFloor(void)
 {
     int secnum;
-    int tagnum, platspeed;
+    int platspeed;
     fixed_t destheight;
+    uint16_t tagnum;
 
     if (t_argc < 2)  goto err_numarg;
 
@@ -3104,8 +3108,9 @@ err_numarg:
 // Return when Set ceilingheight: 1=default, 0=crushing
 void SF_CeilingHeight(void)
 {
-    int tagnum, secnum;
     int returnval = 1;  // When Set ceilingheight: 1=default, 0=crushing
+    int secnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3161,8 +3166,9 @@ err_nosector:
 void SF_MoveCeiling(void)
 {
     int secnum;
-    int tagnum, platspeed;
+    int platspeed;
     fixed_t destheight;
+    uint16_t tagnum;
 
     if (t_argc < 2)  goto err_numarg;
 
@@ -3213,7 +3219,7 @@ void SF_LightLevel(void)
 {
     sector_t *sector;
     int secnum;
-    int tagnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3277,8 +3283,9 @@ err_numarg:
 // FloorTexture( tagnum, {flatname} )
 void SF_FloorTexture(void)
 {
-    int tagnum, secnum;
     sector_t *sector;
+    int secnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3324,8 +3331,9 @@ err_nosector:
 // mapnum= -1 removes the colormap
 void SF_SectorColormap(void)
 {
-    int tagnum, secnum;
     sector_t *sector;
+    int secnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3382,8 +3390,9 @@ err_nosector:
 // CeilingTexture( tagnum, {flatname} )
 void SF_CeilingTexture(void)
 {
-    int tagnum, secnum;
     sector_t *sector;
+    int secnum;
+    uint16_t tagnum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -3426,7 +3435,7 @@ err_nosector:
 
 void SF_ChangeHubLevel(void)
 {
-/*  int tagnum;
+/*  uint16_t tagnum;
 
   if(!t_argc)
     {
@@ -3483,7 +3492,7 @@ void SF_OpenDoor(void)
 {
     int speed;
     int wait_time;
-    int tagnum;
+    uint16_t tagnum;
 
     if (t_argc < 1)  goto err_numarg;
 
@@ -3515,7 +3524,7 @@ err_numarg:
 void SF_CloseDoor(void)
 {
     int speed;
-    int tagnum;
+    uint16_t tagnum;
 
     if (t_argc < 1)  goto err_numarg;
 
@@ -3601,10 +3610,11 @@ err_numarg:
 // sectionflags: 1 = top 2 = mid 4 = bot
 void SF_SetLineTexture(void)
 {
-    int tagnum, linenum;
+    int linenum;
     unsigned int side;
     int sectionflags;
 //    line_t *line;
+    uint16_t tagnum;
 
     if(t_argc != 4)  goto err_numarg;
 

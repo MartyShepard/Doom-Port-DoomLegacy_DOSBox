@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1350 2017-07-29 18:27:43Z wesleyjohnson $
+// $Id: p_saveg.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -125,6 +125,12 @@
 #define LIGHT147_VERSION     999
 // Read old savegame flag positions
 #define READ_FLAGS144      146
+// For now write in VERSION 144 format.
+#define WRITE_PLAT144   1
+// Enable code for reading VERSION 144 format plat thinkers.
+// The lowest savegame version where the new plat format was written.
+#define READ_PLAT144    999
+
 
 byte * save_p;
 boolean  save_game_abort = 0;
@@ -1726,7 +1732,23 @@ void  WRITE_ceiling( ceiling_t* ceilp, byte active )
 void  WRITE_plat( plat_t* platp, byte active )
 {
     WRITEBYTE(save_p, tc_plat);  // platform marker
+#ifdef WRITE_PLAT144
+    // Different Field layout.
+    plat_144_t  pt;
+    pt.type = platp->type;
+    pt.speed = platp->speed;
+    pt.low = platp->low;
+    pt.high = platp->high;
+    pt.crush = platp->crush;
+    pt.tag = platp->tag;
+    pt.wait = platp->wait;
+    pt.count = platp->count;
+    pt.status = platp->status;
+    pt.oldstatus = platp->oldstatus;
+    WRITE144_SECTOR_THINKER( platp, &pt, plat_144_t, type );
+#else
     WRITE_SECTOR_THINKER( platp, plat_t, type );
+#endif
     // platlist* does not need to be saved
     WRITEBYTE(save_p, active); // active or stopped plat
 }
@@ -2455,7 +2477,27 @@ void P_UnArchiveThinkers(void)
             case tc_plat:
               {
                 plat_t *plat = Z_Malloc(sizeof(*plat), PU_LEVEL, NULL);
+#ifdef READ_PLAT144
+                if( sg_version < READ_PLAT144 )
+                {
+                  plat_144_t  pt;
+                  READ144_SECTOR_THINKER( plat, &pt, plat_144_t, type );
+                  plat->type = pt.type;
+                  plat->speed = pt.speed;
+                  plat->low = pt.low;
+                  plat->high = pt.high;
+                  plat->crush = pt.crush;
+                  plat->tag = pt.tag;
+                  plat->wait = pt.wait;
+                  plat->count = pt.count;
+                  plat->status = pt.status;
+                  plat->oldstatus = pt.oldstatus;
+                }
+                else		 
+#endif
+		{
                 READ_SECTOR_THINKER( plat, plat_t, type );
+                }
                 plat->sector->floordata = plat;
                 byte moving = READBYTE(save_p); // moving plat?
                 plat->thinker.function.acp1 = moving ? (actionf_p1)T_PlatRaise : NULL;

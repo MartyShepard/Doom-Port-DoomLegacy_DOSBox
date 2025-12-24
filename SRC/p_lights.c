@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_lights.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -382,7 +382,7 @@ void P_SpawnGlowingLight( sector_t*  sector)
 //
 // Fade all the lights in sectors with a particular tag to a new value
 //
-void P_FadeLight(int tag, lightlev_t destvalue, lightlev_t speed)
+void P_FadeLight( uint16_t tag, lightlev_t destvalue, lightlev_t speed)
 {
   lightfader_t * lf;
 

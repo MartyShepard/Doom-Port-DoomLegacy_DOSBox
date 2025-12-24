@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1350 2017-07-29 18:27:43Z wesleyjohnson $
+// $Id: p_spec.h 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -129,10 +129,10 @@ fixed_t  P_FindHighestCeilingSurrounding(sector_t* sec);
 
 int     P_FindSectorFromLineTag ( line_t* line, int start );
 
-int     P_FindSectorFromTag ( int tag, int start );
+int     P_FindSectorFromTag ( uint16_t tag, int start );
 
 //DarkWolf95:July 23, 2003: Needed for SF_SetLineTexture
-int P_FindLineFromTag(int tag, int start);
+int P_FindLineFromTag(uint16_t tag, int start);
 
 int  P_FindLineFromLineTag(const line_t *line, int start); //SoM: 3/16/2000
 
@@ -335,7 +335,7 @@ void   T_Glow(glow_t* g);
 void   P_SpawnGlowingLight(sector_t* sector);
 
 
-void   P_FadeLight(int tag, lightlev_t destvalue, lightlev_t speed);
+void   P_FadeLight(uint16_t tag, lightlev_t destvalue, lightlev_t speed);
 void   T_LightFade(lightfader_t * lf);
 
 
@@ -453,12 +453,27 @@ typedef struct
     fixed_t     speed;
     fixed_t     low, high;	// floor heights
     boolean     crush;		// enables crushing damage
+    uint16_t    tag;
+    int         wait;
+    int         count;	
+    platstat_e  status, oldstatus;  // up, down, in_statis etc.
+} plat_t;
+
+#ifdef SAVE_VERSION_144
+typedef struct
+{
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
+    plattype_e  type;
+    fixed_t     speed;
+    fixed_t     low, high;	// floor heights
+    boolean     crush;		// enables crushing damage
     int         tag;
     int         wait;
     int         count;	
     platstat_e  status, oldstatus;  // up, down, in_statis etc.
-
-} plat_t;
+} plat_144_t;
+#endif
 
 //SoM: 3/6/2000: Boom's improved code without limits.
 typedef struct platlist {
@@ -482,7 +497,7 @@ int     EV_DoPlat ( line_t* line, plattype_e type, int amount );
 void    P_AddActivePlat(plat_t* plat);
 void    P_RemoveActivePlat(plat_t* plat);
 int     EV_StopPlat(line_t* line);
-void    P_ActivateInStasis(int tag);
+void    P_ActivateInStasis(uint16_t tag);
 
 
 //
@@ -534,7 +549,7 @@ typedef struct
     int         topcountdown;
 
     // killough 10/98: sector tag for gradual lighting effects.
-    int16_t     lighttag;
+    uint16_t     lighttag;
 } vldoor_t;
 
 

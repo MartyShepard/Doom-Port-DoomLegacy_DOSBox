@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: r_defs.h 1351 2017-07-29 18:28:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -345,7 +345,7 @@ typedef struct sector_s
     lightlev_t  lightlevel;
     short       special;	 // special type code (highly encoded with fields)
     short       oldspecial;      //SoM: 3/6/2000: Remember if a sector was secret (for automap)
-    short       tag;
+    uint16_t    tag;
     int nexttag,firsttag;        //SoM: 3/6/2000: by killough: improves searches for tags.
 
     // 0 = untraversed, 1,2 = sndlines -1
@@ -508,7 +508,7 @@ typedef struct line_s
         // [WDJ] flags should be unsigned, but binary gets larger??
         // test shows that unsigned costs 4 more bytes per (flag & ML_bit)
     short       special;  // special linedef code
-    short       tag;	  // special affects sectors with same tag id
+    uint16_t    tag;	  // special affects sectors with same tag id
 
     // Visual appearance: SideDefs.
     uint16_t    sidenum[2]; //  sidenum[1] will be NULL_INDEX if one sided
