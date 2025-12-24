@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_tick.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -104,8 +104,8 @@ void P_AddThinker (thinker_t* thinker)
 #ifdef REFERENCE_COUNTING
     thinker->references = 0;    // killough 11/98: init reference counter to 0
 #endif
-    // killough 8/29/98: set sentinel pointers, and then add to appropriate list
-    thinker->cnext = thinker->cprev = NULL;  // block remove
+    // killough 8/29/98: init pointers, and then add to appropriate list
+    thinker->cnext = thinker->cprev = NULL;  // init
     P_UpdateClassThink(thinker, TH_unknown);
 
 #ifdef THINKER_INTERPOLATIONS
@@ -208,9 +208,9 @@ void P_UpdateClassThink(thinker_t *thinker, int tclass )
 
     // Add to the appropriate class-list.
     th = &thinkerclasscap[tclass];
-    th->cprev->cnext = thinker;
     thinker->cnext = th;
     thinker->cprev = th->cprev;
+    th->cprev->cnext = thinker;
     th->cprev = thinker;
     return;
 
@@ -277,8 +277,9 @@ void P_MoveClasslistRangeLast( thinker_t * cap, thinker_t * thnext )
 }
 
 
+#ifdef REFERENCE_COUNTING
 //
-// P_SetTarget
+// P_SetReference
 //
 // This function is used to keep track of pointer references to mobj thinkers.
 // In Doom, objects such as lost souls could sometimes be removed despite
@@ -288,19 +289,16 @@ void P_MoveClasslistRangeLast( thinker_t * cap, thinker_t * thnext )
 // checked during every gametic). Now, we keep a count of the number of
 // references, and delay removal until the count is 0.
 
-void P_SetTarget(mobj_t **mop, mobj_t *targ)
+//  rm_mo: remove reference
+//  add_mo:  add reference
+void P_SetReference(mobj_t *rm_mo, mobj_t *add_mo)
 {
-#ifdef REFERENCE_COUNTING
-  if(*mop)  // If there was a target already, decrease its refcount
-    (*mop)->thinker.references--;
-  *mop = targ;
+  if(rm_mo)  // If there was a target already, decrease its refcount
+    rm_mo->thinker.references--;
   if(targ)  // Set new target and if non-NULL, increase its counter
-    targ->thinker.references++;
-#else
-  // DoomLegacy does not do reference counting
-  *mop = targ;
-#endif
+    add_mo->thinker.references++;
 }
+#endif
 
 
 //
@@ -340,9 +338,22 @@ void P_Ticker (void)
 {
     int  i;
 
+#ifdef BASETIC_DEMOSYNC   
+ // [WDJ] From PrBoom.
+ // Pause if in menu and at least one tic has been run.
+ // killough 9/29/98: note that this ties in with basetic,
+ // since G_Ticker does the pausing during recording or playback,
+ // and compenates by incrementing basetic.
+ // All of this complicated mess is used to preserve demo sync.
+ // PrBoom and EternityEngine test (players[consoleplayer].viewz != 1)
+    // run the tic
+    if (paused || (!netgame && menuactive && !demoplayback && ticked ))
+        return;
+#else
     // run the tic
     if (paused || (!netgame && menuactive && !demoplayback))
         return;
+#endif
 
 #ifdef THINKER_INTERPOLATIONS
     R_UpdateInterpolations();

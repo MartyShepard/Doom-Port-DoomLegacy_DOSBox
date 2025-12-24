@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1342 2017-06-21 16:14:12Z wesleyjohnson $
+// $Id: p_enemy.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -438,6 +438,7 @@ static void P_RecursiveSound ( sector_t*  sec, byte soundblocks )
 
     sec->validcount = validcount;
     sec->soundtraversed = soundblocks+1;
+    P_SetReference(sec->soundtarget, soundtarget);
     sec->soundtarget = soundtarget;
 
     for (i=0 ; i<sec->linecount ; i++)
@@ -531,6 +532,7 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
 // killough 12/98
 // This function tries to prevent shooting at friends.
 // Known that (actor->flags & MF_FRIEND), checked by caller.
+// Return true if aiming would hit a friend.
 static boolean P_HitFriend(mobj_t *actor)
 {
     mobj_t * target = actor->target;
@@ -541,10 +543,11 @@ static boolean P_HitFriend(mobj_t *actor)
            R_PointToAngle2(actor->x, actor->y, target->x, target->y),
            P_AproxDistance(actor->x - target->x, actor->y - target->y),
            0 );
+        // Because actor is already known to have MF_FRIEND (tested by caller),
+        // replace SAME_FRIEND with simpler test of MF_FRIEND.
         if( lar_linetarget
             && lar_linetarget != target
             && lar_linetarget->flags & MF_FRIEND
-//          But actor->flags & MF_FRIEND is already known to be set.
 // MBF:	    && SAME_FRIEND(lar_linetarget, actor)
           )
             return true;
@@ -556,6 +559,7 @@ static boolean P_HitFriend(mobj_t *actor)
 //
 // P_CheckMissileRange
 //
+// Return true if good to fire missile.
 static boolean P_CheckMissileRange (mobj_t* actor)
 {
     mobj_t * target = actor->target;
@@ -673,6 +677,7 @@ static boolean P_IsOnLift( const mobj_t *actor )
    
     for( l = -1; (l = P_FindLineFromLineTag(&line, l)) >= 0; )
     {
+// [WDJ] This is only MBF. Does not include Heretic or expansions.       
         switch( lines[l].special )
         {
             case  10: case  14: case  15: case  20: case  21: case  22:
@@ -721,7 +726,7 @@ static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-470
 
 // Called multiple times in one step, by P_TryWalk, while trying to find
 // valid path for an actor.
-// Called by P_TryWalk, A_Chase
+// Called by P_SmartMove, indirectly P_TryWalk, A_Chase.
 // Only called for actor things, not players, nor missiles.
 //  dropoff : 0, 1, 2 dog jump
 // Formerly P_Move.
@@ -853,11 +858,7 @@ static boolean P_MoveActor (mobj_t* actor, byte dropoff)
     tryx = actor->x + speed * xspeed[actor->movedir];
     tryy = actor->y + speed * yspeed[actor->movedir];
 
-    // FIXME: P_TryMove needs to be fixed.
-    // dropoff is 0,1,2, and parameter is boolean.
-    if (!P_TryMove (actor, tryx, tryy, (dropoff > 0)))  // temp fix
-//    if (!P_TryMove (actor, tryx, tryy, dropoff))  // caller dropoff
-//    if (!P_TryMove (actor, tryx, tryy, false))  // do not allow dropoff
+    if( !P_TryMove (actor, tryx, tryy, dropoff) )  // caller dropoff
     {
         // blocked move
         // Monsters will be here multiple times in each step while
@@ -1444,8 +1445,10 @@ static boolean PIT_FindTarget(mobj_t *mo)
     if( !P_IsVisible(actor, mo, ft_current_allaround) )
         return true;
 
-    P_SetTarget(&actor->lastenemy, actor->target);  // Remember previous target
-    P_SetTarget(&actor->target, mo);                // Found target
+    P_SetReference(actor->lastenemy, actor->target);  // Remember previous target
+    actor->lastenemy = actor->target;
+    P_SetReference(actor->target, mo);                // Found target
+    actor->target = mo;
 
     // Move the selected monster to the end of its class-list,
     // so that it gets searched last next time.
@@ -1497,7 +1500,8 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
                         || P_IsVisible(actor, players[c].mo, allaround) )
                   )
                 {
-                    P_SetTarget(&actor->target, players[c].mo);
+                    P_SetReference(actor->target, players[c].mo);
+                    actor->target = players[c].mo;
 
                     // killough 12/98:
                     // get out of refiring loop, to avoid hitting player accidentally
@@ -1578,11 +1582,8 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
         }
 
         // New target found
-#if 0
+        P_SetReference(actor->target, player->mo);
         actor->target = player->mo;
-#else
-        P_SetTarget(&actor->target, player->mo);
-#endif
 
         // killough 9/9/98: give monsters a threshold towards getting players
         // we don't want it to be too easy for a player with dogs :)
@@ -1639,8 +1640,10 @@ static boolean P_MBF_LookForMonsters(mobj_t *actor, boolean allaround)
         && ! BOTH_FRIEND(actor->lastenemy, actor) // not friends
       )
     {
-        P_SetTarget(&actor->target, actor->lastenemy);
-        P_SetTarget(&actor->lastenemy, NULL);
+        P_SetReference(actor->target, actor->lastenemy);
+        actor->target = actor->lastenemy;
+        P_SetReference(actor->lastenemy, NULL);
+        actor->lastenemy = NULL;
         return true;
     }
 
@@ -1713,11 +1716,14 @@ static boolean P_MBF_LookForMonsters(mobj_t *actor, boolean allaround)
 
 static boolean P_LookForTargets(mobj_t *actor, int allaround)
 {
-  return (actor->flags & MF_FRIEND)?
-      P_MBF_LookForMonsters(actor, allaround)
-      || P_LookForPlayers (actor, allaround)
-    : P_LookForPlayers (actor, allaround)
-      || P_MBF_LookForMonsters(actor, allaround);
+    if( actor->flags & MF_FRIEND )
+    {
+        return P_MBF_LookForMonsters(actor, allaround)
+               || P_LookForPlayers (actor, allaround);
+    }
+
+    return P_LookForPlayers (actor, allaround)
+           || P_MBF_LookForMonsters(actor, allaround);
 }
 
 
@@ -1792,24 +1798,42 @@ void A_Look (mobj_t* actor)
     }
 
     actor->threshold = 0;       // any shot will wake up
-    targ = actor->subsector->sector->soundtarget;
 
-    if (targ && (targ->flags & MF_SHOOTABLE) )
+    // [WDJ] From Prboom, MBF, EternityEngine
+    // killough 7/18/98:
+    // Friendly monsters go after other monsters first, but also return to
+    // player, without attacking them, if they cannot find any targets.
+    actor->pursuecount = 0;
+
+    if( actor->flags & MF_FRIEND )
     {
-        actor->target = targ;
-
-        if ( actor->flags & MF_AMBUSH )
-        {
-            if (P_CheckSight (actor, actor->target))
-                goto seeyou;
-        }
-        else
-            goto seeyou;
+        if( P_LookForTargets(actor, false) )  goto seeyou;
     }
 
+    targ = actor->subsector->sector->soundtarget;
+    if( targ && (targ->flags & MF_SHOOTABLE) )
+    {
+        P_SetReference( actor->target, targ );       
+        actor->target = targ;
 
-    if (!P_LookForPlayers (actor, false) )
+        if( !(actor->flags & MF_AMBUSH) )   goto seeyou;
+        if( P_CheckSight(actor, targ) )     goto seeyou;
+    }
+
+#if 0   
+    if( !EN_mbf )
+    {
+        if( P_LookForPlayers (actor, false) )   goto seeyou;
         return;
+    }
+#endif
+
+    if( !(actor->flags & MF_FRIEND) )
+    {
+        // Look for Players, then monsters.
+        if( P_LookForTargets(actor, false) )  goto seeyou;
+    }
+    return;
 
     // go into chase state
   seeyou:
@@ -1950,18 +1974,18 @@ void A_Chase (mobj_t*   actor)
 #if 1
         // MBF
         // look for a new target
-        if( P_LookForTargets(actor,true) )
-            return;     // got a new target
+        if( ! P_LookForTargets(actor,true) )
 #else       
         // look for a new target
-        if (P_LookForPlayers(actor,true))
-            return;     // got a new target
+        if( ! P_LookForPlayers(actor,true) )
 #endif
+        {
+            // None found
+            // This monster will start waiting again
+            P_SetMobjState (actor, actor->info->spawnstate);
+        }
 
-        // This monster will start waiting again
-        P_SetMobjState (actor, actor->info->spawnstate);
-       
-        chase_recursion = 0;
+        chase_recursion = 0; // Must clear this, in either case.
         return;
     }
 
@@ -2401,6 +2425,7 @@ void A_SkelMissile (mobj_t* actor)
     {
         mo->x += mo->momx;
         mo->y += mo->momy;
+        P_SetReference(mo->tracer, actor->target);       
         mo->tracer = actor->target;
     }
 }
@@ -2607,42 +2632,63 @@ void A_VileChase (mobj_t* actor)
                 // Call PIT_VileCheck to check whether object is a corpse
                 // that can be raised.
                 if (!P_BlockThingsIterator(bx,by,PIT_VileCheck))
-                {
-                    // got one!
-                    temp = actor->target;
-                    actor->target = vile_r_corpse;
-                    A_FaceTarget (actor);
-                    actor->target = temp;
-
-                    P_SetMobjState (actor, S_VILE_HEAL1);
-                    S_StartObjSound( vile_r_corpse, sfx_slop );
-                    info = vile_r_corpse->info;
-
-                    P_SetMobjState (vile_r_corpse,info->raisestate);
-                    if( demoversion<129 )
-                    {
-                        // original code, with ghost bug
-                        // does not work when monster has been crushed
-                        vile_r_corpse->height <<= 2;
-                    }
-                    else
-                    {
-                        // fix vile revives crushed monster as ghost bug
-                        vile_r_corpse->height = info->height;
-                        vile_r_corpse->radius = info->radius;
-                    }
-                    vile_r_corpse->flags = info->flags;
-                    vile_r_corpse->health = info->spawnhealth;
-                    vile_r_corpse->target = NULL;
-
-                    return;
-                }
+                    goto raise_corpse;
             }
         }
     }
 
     // Return to normal attack.
     A_Chase (actor);
+    return;
+
+raise_corpse:
+    // got one!
+    temp = actor->target;
+    actor->target = vile_r_corpse;  // do not change reference
+    A_FaceTarget (actor);
+    actor->target = temp;  // reference is still correct
+
+    P_SetMobjState (actor, S_VILE_HEAL1);
+    S_StartObjSound( vile_r_corpse, sfx_slop );
+    info = vile_r_corpse->info;
+
+    P_SetMobjState (vile_r_corpse,info->raisestate);
+    if( demoversion<129 )
+    {
+        // original code, with ghost bug
+        // does not work when monster has been crushed
+        vile_r_corpse->height <<= 2;
+    }
+    else
+    {
+        // fix vile revives crushed monster as ghost bug
+        vile_r_corpse->height = info->height;
+        vile_r_corpse->radius = info->radius;
+    }
+    vile_r_corpse->flags = info->flags & ~MF_FRIEND;
+    vile_r_corpse->health = info->spawnhealth;
+    P_SetReference(vile_r_corpse->target, NULL);
+    vile_r_corpse->target = NULL;
+
+    if( EN_mbf )
+    {
+        // killough 7/18/98:
+        // friendliness is transferred from vile to raised corpse
+        vile_r_corpse->flags =
+            (info->flags & ~(MF_FRIEND|MF_JUSTHIT)) | (actor->flags & MF_FRIEND);
+
+#if 0
+        if( vile_r_corpse->flags & (MF_FRIEND | MF_COUNTKILL) == MF_FRIEND)
+            totallive++;
+#endif
+
+        P_SetReference(vile_r_corpse->lastenemy, NULL);
+        vile_r_corpse->lastenemy = NULL;
+
+        // killough 8/29/98: add to appropriate thread.
+        P_UpdateClassThink( &vile_r_corpse->thinker, TH_unknown );
+    }
+    return;
 }
 
 
@@ -2721,9 +2767,13 @@ void A_VileTarget (mobj_t*      actor)
                        actor->target->y,
                        actor->target->z, MT_FIRE);
 
+    P_SetReference(actor->tracer, fog);
     actor->tracer = fog;
+    P_SetReference(fog->target, actor);
     fog->target = actor;
+    P_SetReference(fog->tracer, actor->target);
     fog->tracer = actor->target;
+
     A_Fire (fog);
 }
 
@@ -3009,12 +3059,20 @@ A_PainShootSkull( mobj_t* actor, angle_t angle )
        }
     }
 
+    // [WDJ] From PrBoom, MBF, EternityEngine.
+    // killough 7/20/98: PEs shoot lost souls with the same friendliness
+    newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
+    P_UpdateClassThink(&newmobj->thinker, TH_unknown);
+
     // Check for movements.
     if (!P_TryMove (newmobj, newmobj->x, newmobj->y, false))
        goto remove_skull;
 
     if( actor->target && (actor->target->health > 0) )
+    {
+        P_SetReference( newmobj->target, actor->target );
         newmobj->target = actor->target;
+    }
     
     A_SkullAttack (newmobj);
     return;
@@ -3051,6 +3109,7 @@ void A_PainAttack (mobj_t* actor)
    
     if (actor->target->health <= 0 )
     {
+       P_SetReference(actor->target, NULL);
        actor->target = NULL;
        return;
     }
@@ -3648,9 +3707,15 @@ void A_BrainSpit (mobj_t*       mo)
         newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
         if(newmobj)
         {
+            P_SetReference( newmobj->target, targ);
             newmobj->target = targ;
             newmobj->reactiontime =
                 ((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
+            
+            // [WDJ] MBF: From PrBoom, MBF, EternityEngine.
+            // killough 7/18/98: brain friendliness is transferred
+            newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+            P_UpdateClassThink(&newmobj->thinker, TH_unknown);
         }
 
         S_StartSound(sfx_bospit);

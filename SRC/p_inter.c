@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: p_inter.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1736,7 +1736,10 @@ void P_KillMobj ( mobj_t*  target,
     if ((target->type == MT_BARREL || target->type == MT_POD) &&
         source &&
         source->player)
+    {
+        P_SetReference(target->target, source);
         target->target = source;
+    }
 
     if( EV_legacy < 131 )  // old Legacy, Boom, MBF
     {
@@ -2630,8 +2633,11 @@ boolean P_DamageMobj ( mobj_t*   target,
         {
             // If target is a player, set player's target to source,
             // so that a friend can tell who is hurting a player
-            if (player)
-                P_SetTarget(&target->target, source);
+            if(player)
+            {
+                P_SetReference(target->target, source);
+                target->target = source;
+            }
 
             // killough 9/8/98:
             // If target's health is less than 50%, move it to the front of its list.
@@ -2681,18 +2687,17 @@ boolean P_DamageMobj ( mobj_t*   target,
           )
         {
             // remember last enemy - killough
-            P_SetTarget(&target->lastenemy, target->target);
+            P_SetReference(target->lastenemy, target->target);
+            target->lastenemy = target->target;
         }
 
         // if not intent on another player,
         // chase after this one
-#if 1       
-        P_SetTarget(&target->target, source);       // killough 11/98
-#else
+        P_SetReference(target->target, source);       // killough 11/98
         target->target = source;
-#endif
+
         target->threshold = BASETHRESHOLD;
-        if (target->state == &states[target->info->spawnstate]
+        if( target->state == &states[target->info->spawnstate]
             && target->info->seestate != S_NULL)
             P_SetMobjState (target, target->info->seestate);
     }

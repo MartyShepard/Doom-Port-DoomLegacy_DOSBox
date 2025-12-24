@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: p_mobj.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2165,6 +2165,21 @@ void P_RemoveMobj(mobj_t * mobj)
     // stop any playing sound
     S_StopObjSound(mobj);
 
+#ifdef REFERENCE_COUNTING
+ // [WDJ] From PrBoom.
+ // DoomLegacy is not implementing reference counting, so this does nothing.
+ // killough 11/98:
+ //
+ // Remove any references to other mobjs.
+ //
+ // Older demos might depend on the fields being left alone, however,
+ // if multiple thinkers reference each other indirectly before the
+ // end of the current tic.
+    P_SetReference(mobj->target,    NULL);
+    P_SetReference(mobj->tracer,    NULL);
+    P_SetReference(mobj->lastenemy, NULL);
+#endif
+
     // free block
     P_RemoveThinker((thinker_t *) mobj);   // does Z_Free() mobj
 }
@@ -3066,6 +3081,7 @@ int P_HitFloor(mobj_t * thing)
                 case FLOOR_WATER:
                     P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SPLASHBASE);
                     mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_HSPLASH);
+                    P_SetReference(mo->target, thing);
                     mo->target = thing;
                     mo->momx = P_SignedRandom() << 8;
                     mo->momy = P_SignedRandom() << 8;
@@ -3081,6 +3097,7 @@ int P_HitFloor(mobj_t * thing)
                 case FLOOR_SLUDGE:
                     P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGESPLASH);
                     mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGECHUNK);
+                    P_SetReference(mo->target, thing);
                     mo->target = thing;
                     mo->momx = P_SignedRandom() << 8;
                     mo->momy = P_SignedRandom() << 8;
@@ -3168,6 +3185,7 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     if (th->info->seesound)
         S_StartObjSound(th, th->info->seesound);
 
+    P_SetReference(th->target, source);
     th->target = source;        // where it came from
 
     if( cv_predictingmonsters.EV || (source->eflags & MF_PREDICT))  //added by AC for predmonsters
@@ -3326,6 +3344,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     if (th->info->seesound)
         S_StartObjSound(th, th->info->seesound);
 
+    P_SetReference( th->target, source );
     th->target = source;
 
     th->angle = ang;

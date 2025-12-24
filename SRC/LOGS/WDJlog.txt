@@ -6124,3 +6124,13 @@ patchfile = w107_39_mbf_unstuck.patch
 Add the MBF unstuck code.
 Adjust the MBF dropoff code.
 Fix an MBF demosync bug fix.
+
+*** W107_mbf_move_bug
+patchfile = w107_40_mbf_move_bug.patch
+- commit revision 1344
+Fix a bug in mbf move code.
+This fixes the monsters that stood around after killing another monster.
+Change mbf P_SetTarget to P_SetReference, which is a now a nop, and
+let each routine set its own target ptrs.
+Update to some other code changes that were made during the search for
+the bug.
