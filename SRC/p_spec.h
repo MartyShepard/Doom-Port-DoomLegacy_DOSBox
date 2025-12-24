@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: p_spec.h 1350 2017-07-29 18:27:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -536,6 +536,21 @@ typedef struct
     // killough 10/98: sector tag for gradual lighting effects.
     int16_t     lighttag;
 } vldoor_t;
+
+
+#ifdef SAVE_VERSION_144
+typedef struct
+{
+ // State to be saved in save game (p_saveg.c)
+ // Savegame saves fields (type ... )
+    vldoor_e    type;
+    fixed_t     topheight;
+    fixed_t     speed;
+    int         direction;
+    int         topwait;
+    int         topcountdown;
+} vldoor_144_t;
+#endif
 
 
 

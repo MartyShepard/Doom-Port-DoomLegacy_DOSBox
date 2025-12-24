@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: p_saveg.c 1350 2017-07-29 18:27:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1591,6 +1591,9 @@ typedef enum
     MD_SPECIAL2 = 0x2000000,
     MD_AMMO = 0x4000000,
     MD_TFLAGS = 0x8000000,
+    MD_MBFCOUNT = 0x10000000,
+    MD_MBFTIP = 0x20000000,
+    MD_MBF_LASTENEMY = 0x40000000,
 } mobj_diff_t;
 
 enum
@@ -1835,6 +1838,12 @@ void P_ArchiveThinkers(void)
                 diff |= MD_AMMO;
             if (mobj->tflags)
                 diff |= MD_TFLAGS;
+            if (mobj->pursuecount || mobj->strafecount)
+                diff |= MD_MBFCOUNT;
+            if (mobj->tipcount || mobj->dropoffz < mobj->floorz)
+                diff |= MD_MBFTIP;
+            if (mobj->lastenemy)
+                diff |= MD_MBF_LASTENEMY;
 
             WRITEBYTE(save_p, tc_mobj);	// mark as mobj
             WRITEU32(save_p, diff);
@@ -1913,6 +1922,18 @@ void P_ArchiveThinkers(void)
                 WRITE32(save_p, mobj->dropped_ammo_count);
             if (diff & MD_TFLAGS)
                 WRITE32(save_p, mobj->tflags);
+            if (diff & MD_MBFCOUNT)
+            {
+                WRITE16(save_p, mobj->strafecount);
+                WRITE16(save_p, mobj->pursuecount);
+            }
+            if (diff & MD_MBFTIP)
+            {
+                WRITE16(save_p, mobj->tipcount);
+                WRITEFIXED(save_p, mobj->dropoffz);
+            }
+            if (diff & MD_MBF_LASTENEMY)
+                WRITE_MobjPointerID(save_p, mobj->lastenemy);
         }
         // Use action as determinant of its owner.
         // acv == T_RemoveThinker : means deallocated (see P_RemoveThinker)
@@ -1968,7 +1989,14 @@ void P_ArchiveThinkers(void)
         {
             WRITEBYTE(save_p, tc_door);  // door marker
             vldoor_t *door = (vldoor_t *)th;
+#ifdef WRITE_LF_VER_144
+            // Field layout is identical, just missing lighttag.
+            vldoor_144_t  vld;
+            memcpy( &vld.type, &door->type, sizeof(vld));
+            WRITE144_SECTOR_THINKER( door, &vld, vldoor_144_t, type );
+#else
             WRITE_SECTOR_THINKER( door, vldoor_t, type );
+#endif
             WRITE_LINE_PTR( door->line );  // can be NULL
             continue;
         }
@@ -2317,6 +2345,23 @@ void P_UnArchiveThinkers(void)
                     mobj->dropped_ammo_count = READ32(save_p);
                 if (diff & MD_TFLAGS)
                     mobj->tflags = READ32(save_p);
+                if (diff & MD_MBFCOUNT)
+                {
+                    mobj->strafecount = READ16(save_p);
+                    mobj->pursuecount = READ16(save_p);
+                }
+                if (diff & MD_MBFTIP)
+                {
+                    mobj->tipcount = READ16(save_p);
+                    mobj->dropoffz = READFIXED(save_p);
+                }
+                else
+                {
+                    mobj->dropoffz = mobj->floorz;	   
+                }
+                if (diff & MD_MBF_LASTENEMY)
+                  mobj->lastenemy_id = READU32(save_p); // same here
+	   
 
                 // [WDJ] Fix old savegames for corpse health < 0.
                 if((mobj->flags & MF_CORPSE) && (mobj->health >= 0))
@@ -2334,9 +2379,9 @@ void P_UnArchiveThinkers(void)
                        mobj->flags &= ~MFO_NOCLIPTHING;
                        mobj->flags2 |= MF2_NOCLIPTHING;
                     }
-                    if( mobj->flags & MFO_TRANSLATION4 )
+                    if( mobj->flags & MFO_TRANSLATION4 )  // color
                     {
-                       mobj->flags &= ~MFO_NOCLIPTHING;
+                       mobj->flags &= ~MFO_TRANSLATION4;
                        mobj->tflags |= (mobj->flags & MFO_TRANSLATION4) >> (MFO_TRANSSHIFT - MFT_TRANSSHIFT);
                     }
                 }
@@ -2378,7 +2423,20 @@ void P_UnArchiveThinkers(void)
             case tc_door:
               {
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
+#ifdef READ_LF_VER_144
+                if( sg_version < LIGHT147_VERSION )
+                {
+		  // Field layout is identical, just missing lighttag.
+                  vldoor_144_t  vld;
+                  READ144_SECTOR_THINKER( door, &vld, vldoor_144_t, type );
+                  memcpy( &door->type, &vld.type, sizeof(vld));
+                  door->lighttag = 0;
+                }
+                else		 
+#endif
+                {
                 READ_SECTOR_THINKER( door, vldoor_t, type );
+                }
                 READ_LINE_PTR( door->line );  // can be NULL
                 door->sector->ceilingdata = door;
                 door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
@@ -2571,6 +2629,9 @@ void P_UnArchiveThinkers(void)
 
         if (mobj->target)
           mobj->target = GetMobjPointer(mobj->target_id);
+
+        if (mobj->lastenemy)
+          mobj->lastenemy = GetMobjPointer(mobj->lastenemy_id);
       }
     }
     return;
@@ -2851,6 +2912,7 @@ void P_UnArchiveFSVariables(fs_variable_t **vars)
     {
         // [smite] TODO fs_variable_t should simply inherit fs_value_t, but...
         fs_value_t s;
+        s.value.mobj = NULL; // compiler complaint
         s.type = sv->type;
 
         P_UnArchiveSValue(&s);

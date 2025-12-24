@@ -6183,3 +6183,10 @@ patchfile = w107_45_nosync.patch
 This code is disabled by ifdef.
 Elaborate code from PrBoom that keeps demo sync.
 
+*** W107_savegame
+patchfile = w107_46_savegame.patch
+- commit revision 1350
+Update the savegame code to also save the new MBF fields.
+Am maintaining the old structures for reading old savegames.
+
+
