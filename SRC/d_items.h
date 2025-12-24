@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_items.h 1329 2017-05-23 14:35:58Z wesleyjohnson $
+// $Id: d_items.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -250,12 +250,12 @@ typedef struct
 {
     ammotype_t  ammo;
     int         ammopershoot;
-    int         upstate;
-    int         downstate;
-    int         readystate;
-    int         atkstate;
-    int         holdatkstate;
-    int         flashstate;
+    statenum_t  upstate;
+    statenum_t  downstate;
+    statenum_t  readystate;
+    statenum_t  atkstate;
+    statenum_t  holdatkstate;
+    statenum_t  flashstate;
 
 } weaponinfo_t;
 

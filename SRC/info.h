@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1336 2017-05-30 15:39:21Z wesleyjohnson $
+// $Id: info.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2536,7 +2536,6 @@ S_DUMMY2,
 #if NUMSTATES >= 0xFFFE
 #error  NUMSTATES exceeds 16 bits
 #endif
-typedef uint16_t  statenum_t;
 
 
 typedef struct

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: doomtype.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -260,5 +260,7 @@ typedef union {
 
 // Lights values 0..255, but signed to detect underflow.
 typedef int16_t   lightlev_t;
+
+typedef uint16_t  statenum_t;
 
 #endif  //__DOOMTYPE__

@@ -6159,3 +6159,11 @@ Moved call of AddThinker to appear after setting a critical field.
 Rearranged the player slide and bounces code.
 From PrBoom, no oof when dead.
 Added checks and error handling on level load functions.
+
+*** W107_deh_trans
+patchfile = w107_43_deh_trans.patch
+- commit revision 1347
+Fix the dehacked state pointers so that the standard state values
+are translated to the DoomLegacy internal state indexes.
+This will allow Heretic DEH patches to work, and is
+necessary for the MBF DOG states to be found by DEH.

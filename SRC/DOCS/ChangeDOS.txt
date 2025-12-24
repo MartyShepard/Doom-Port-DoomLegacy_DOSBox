@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01347 ]: w107 43 deh translate
+          DOS: Heretic Crash
+					
 [01346 ]: w107_42 fixes
 [01345 ]: w107 mbf deh
 [01344 ]: w107 mbf move bug

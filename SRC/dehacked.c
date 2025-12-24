@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: dehacked.c 1347 2017-07-29 18:21:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -624,6 +624,113 @@ const uint32_t flags2_default_value = 0; // other ports like prboom
 #endif
 
 
+// Standardized state ranges
+enum {
+// Doom
+  STS_TECH2LAMP4 = 966,
+// TNT
+  STS_TNT1 = 967,
+// MBF
+  // TODO
+  STS_GRENADE = 968,
+  STS_DOGS_PR_STND = 972,
+  STS_DOGS_RAISE6 = 998,
+  STS_MUSHROOM = 1075,
+// Doom Beta
+  // not implemented
+  STS_OLDBFG1 = 999,
+  STS_BSKUL_DIE8 = 1074,
+// HERETIC
+  STH_FREETARGMOBJ = 1,
+  STH_PODGENERATOR = 114,
+  STH_SPLASH1 = 115,  // is S_HSPLASH1
+  STH_TFOG1 = 223,  // is S_HTFOG1
+  STH_TFOG13 = 235,
+  STH_LIGHTDONE = 236,  // is S_HLIGHTDONE, but unused
+  STH_STAFFREADY = 237,
+  STH_CRBOWFX4_2 = 562,
+  STH_BLOOD1 = 563,  // mapped to S_BLOOD1 (S_HBLOOD dis)
+  STH_BLOOD3 = 565,
+  STH_BLOODSPLATTER1 = 566,
+  STH_BLOODSPLATTERX = 569,
+  STH_PLAY = 570, // mapped to S_PLAY (Heretic S_PLAY dis)
+  STH_PLAY_XDIE9 = 596,
+  STH_PLAY_FDTH1 = 597,  // unmapped, TODO
+  STH_PLAY_FDTH20 = 616,
+  STH_BLOODYSKULL1 = 617,
+  STH_REDAXE3 = 986,
+  STH_SND_WATERFALL = 1204,
+};
+
+#if STS_TECH2LAMP4 != S_TECH2LAMP4
+# error  "DEH: state S_TECH2LAMP4 error"
+#endif
+#if STH_PODGENERATOR != (S_PODGENERATOR - S_FREETARGMOBJ + STH_FREETARGMOBJ)
+# error  "DEH: state S_PODGENERATOR error"
+#endif
+#if STH_SND_WATERFALL != (S_SND_WATERFALL - S_BLOODYSKULL1 + STH_BLOODYSKULL1)
+# error  "DEH: state S_SND_WATERFALL error"
+#endif
+
+
+// Translate deh frame number to internal state index.
+// return S_NULL when invalid state (deh frame)
+static
+statenum_t  deh_frame_to_state( int deh_frame )
+{
+  // Some old wads had negative frame numbers, which should be S_NULL.
+  if( deh_frame <= 0 )  goto null_frame;
+ 
+  // remapping
+  if( EN_heretic )
+  {
+     if( deh_frame <= STH_CRBOWFX4_2 )
+       return deh_frame + (S_FREETARGMOBJ - STH_FREETARGMOBJ);
+     // STH_BLOOD Mapped to the doom blood
+     if( deh_frame >= STH_BLOOD1
+	 && deh_frame <= STH_BLOOD3 )
+       return deh_frame + (S_BLOOD1 - STH_BLOOD1);
+     if( deh_frame >= STH_BLOODSPLATTER1
+	 && deh_frame <= STH_BLOODSPLATTERX )
+       return deh_frame + (S_BLOODSPLATTER1 - STH_BLOODSPLATTER1);
+     // STH_PLAY Mapped to the doom player, except for STH_PLAY_FDTH.
+     if( deh_frame >= STH_PLAY
+	 && deh_frame <= STH_PLAY_XDIE9 )
+       return deh_frame + (S_PLAY - STH_PLAY);
+#if 0
+     // TODO
+     if( deh_frame >= STH_PLAY_FDTH1
+	 && deh_frame <= STH_PLAY_FDTH20 )
+       return deh_frame + (S_PLAY_FDTH1 - STH_PLAY_FDTH1);
+#endif
+     if( deh_frame >= STH_BLOODYSKULL1
+	 && deh_frame <= STH_SND_WATERFALL )
+       return deh_frame + (S_BLOODYSKULL1 - STH_BLOODYSKULL1);
+  }
+  else
+  {
+     if( deh_frame <= STS_TECH2LAMP4 )
+       return deh_frame;
+     if( deh_frame == STS_TNT1 )
+       return S_TNT1;
+  }
+
+null_frame:
+  return S_NULL;
+}
+
+
+// Implement assigns of a state num, from deh.
+static
+void  set_state( statenum_t * snp, int deh_frame_id )
+{
+  statenum_t si = deh_frame_to_state(deh_frame_id);
+  *snp = si;  // valid or S_NULL
+  if( deh_frame_id > 0 && si == S_NULL )
+    GenPrintf(EMSG_errlog, "DEH/BEX set state has bad frame id: %i\n", deh_frame_id );
+}
+
+
 static int searchvalue(char *s)
 {
   while(s[0]!='=' && s[0]!='\0') s++;
@@ -636,6 +743,7 @@ static int searchvalue(char *s)
   }
 }
 
+// Have read  "Thing <deh_thing_id>"
 static void readthing(myfile_t *f, int deh_thing_id )
 {
   // DEH thing 1.. , but mobjinfo array is 0..
@@ -763,28 +871,28 @@ static void readthing(myfile_t *f, int deh_thing_id )
 
       // set the value in apropriet field
       else if(!strcasecmp(word,"ID"))           mip->doomednum   =value;
-      else if(!strcasecmp(word,"Initial"))      mip->spawnstate  =value;
+      else if(!strcasecmp(word,"Initial"))      set_state( &mip->spawnstate, value );
       else if(!strcasecmp(word,"Hit"))          mip->spawnhealth =value;
-      else if(!strcasecmp(word,"First"))        mip->seestate    =value;
+      else if(!strcasecmp(word,"First"))        set_state( &mip->seestate, value );
       else if(!strcasecmp(word,"Alert"))        mip->seesound    =value;
       else if(!strcasecmp(word,"Reaction"))     mip->reactiontime=value;
       else if(!strcasecmp(word,"Attack"))       mip->attacksound =value;
-      else if(!strcasecmp(word,"Injury"))       mip->painstate   =value;
+      else if(!strcasecmp(word,"Injury"))       set_state( &mip->painstate, value );
       else if(!strcasecmp(word,"Pain"))
            {
              word=strtok(NULL," ");
              if(!strcasecmp(word,"chance"))     mip->painchance  =value;
              else if(!strcasecmp(word,"sound")) mip->painsound   =value;
            }
-      else if(!strcasecmp(word,"Close"))        mip->meleestate  =value;
-      else if(!strcasecmp(word,"Far"))          mip->missilestate=value;
+      else if(!strcasecmp(word,"Close"))        set_state( &mip->meleestate, value );
+      else if(!strcasecmp(word,"Far"))          set_state( &mip->missilestate, value );
       else if(!strcasecmp(word,"Death"))
            {
              word=strtok(NULL," ");
-             if(!strcasecmp(word,"frame"))      mip->deathstate  =value;
+             if(!strcasecmp(word,"frame"))      set_state( &mip->deathstate, value );
              else if(!strcasecmp(word,"sound")) mip->deathsound  =value;
            }
-      else if(!strcasecmp(word,"Exploding"))    mip->xdeathstate =value;
+      else if(!strcasecmp(word,"Exploding"))    set_state( &mip->xdeathstate, value );
       else if(!strcasecmp(word,"Speed"))        mip->speed       =value;
       else if(!strcasecmp(word,"Width"))        mip->radius      =value;
       else if(!strcasecmp(word,"Height"))       mip->height      =value;
@@ -792,12 +900,13 @@ static void readthing(myfile_t *f, int deh_thing_id )
       else if(!strcasecmp(word,"Missile"))      mip->damage      =value;
       else if(!strcasecmp(word,"Action"))       mip->activesound =value;
       else if(!strcasecmp(word,"Bits2"))        mip->flags2      =value;
-      else if(!strcasecmp(word,"Respawn"))      mip->raisestate  =value;
+      else if(!strcasecmp(word,"Respawn"))      set_state( &mip->raisestate, value );
       else deh_error("Thing %d : unknown word '%s'\n", deh_thing_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f)); //finish when the line is empty
 }
 
+// Have read  "Frame <deh_frame_id>"
 /*
 Sprite number = 10
 Sprite subnumber = 32968
@@ -809,11 +918,21 @@ Unknown 2 = 17
 */
 static void readframe(myfile_t* f, int deh_frame_id)
 {
-  state_t *  fsp = & states[ deh_frame_id ];
+  state_t * fsp;
   char s[MAXLINELEN];
   char *word1,*word2;
   int value;
+   
+  // Syntax: "Frame <num>"
+  int si = deh_frame_to_state(deh_frame_id);
+  if( si == S_NULL )
+  {
+    deh_error("Frame %d don't exist\n", deh_frame_id);
+    return;
+  }
 
+  fsp = & states[ si ];
+   
   do{
     if(myfgets_nocom(s,sizeof(s),f)!=NULL)
     {
@@ -833,7 +952,7 @@ static void readframe(myfile_t* f, int deh_frame_id)
         // Syntax: Duration = <num>
       else if(!strcasecmp(word1,"Duration"))     fsp->tics     =value;
         // Syntax: Next frame = <num>
-      else if(!strcasecmp(word1,"Next"))         fsp->nextstate=value;
+      else if(!strcasecmp(word1,"Next"))         set_state( &fsp->nextstate, value );
       else if(!strcasecmp(word1,"Unknown"))
       {
         // Syntax: Unknown 2 = <num>
@@ -842,10 +961,48 @@ static void readframe(myfile_t* f, int deh_frame_id)
         if( word2[0] == '1' ) sep->parm1 = value;
         else if( word2[0] == '2' ) sep->parm2 = value;
       }
-      else deh_error("Frame %d : unknown word '%s'\n", deh_frame_id,word1);
+      else deh_error("Frame %d : unknown word '%s'\n", deh_frame_id, word1);
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
+
+// Have read  "Pointer <xref>"
+// The xref is a dehacked cross ref number.
+static
+void  readpointer( myfile_t* f, int xref )
+{
+  char s[MAXLINELEN];
+  char *word2;
+  int  i;
+  statenum_t si, sj;
+
+  // Syntax: "Pointer <xref> (Frame  <deh_frame_id>)"
+  word2 = strtok(NULL," "); // get keyword "Frame"
+  word2 = strtok(NULL,")");
+  if( ! word2 )
+  {
+    deh_error("Pointer %i (Frame ... ) : missing ')'\n", xref );
+    return;
+  }
+   
+  i = atoi(word2);
+  si = deh_frame_to_state(i);		  
+  if( si == S_NULL )
+  {
+    deh_error("Pointer %i : Frame %d don't exist\n", xref, i);
+    return;
+  }
+
+  // [WDJ] For some reason PrBoom and EE do this in a loop,
+  // and then print out a BEX equivalent line.
+  // Syntax: "Codep Frame <deh_frame_id>"
+  if( myfgets(s,sizeof(s),f) != NULL )
+  {
+    sj = deh_frame_to_state( searchvalue(s) );
+    states[si].action = deh_actions[sj];
+  }
+}
+
 
 static void readsound(myfile_t* f, int deh_sound_id)
 {
@@ -1750,7 +1907,7 @@ static void bex_codeptr( myfile_t* f )
 {
   char funcname[BEX_KEYW_LEN];
   char s[MAXLINELEN];
-  int  framenum, nn, i;
+  int  framenum, nn, i, si;
    
   // format:
   // [CODEPTR]
@@ -1768,7 +1925,8 @@ static void bex_codeptr( myfile_t* f )
         deh_error( "Bad FRAME syntax\n" );
         continue;
     }
-    if( framenum < 0 || framenum > NUMSTATES )
+    si = deh_frame_to_state(framenum);
+    if( si == S_NULL )
     {
         deh_error( "Bad BEX FRAME number %d\n", framenum );
         continue;
@@ -1780,7 +1938,7 @@ static void bex_codeptr( myfile_t* f )
         if(!strcasecmp(bex_action_table[i].kstr, funcname))  // BEX action search
         {
             // change the sprite behavior at the framenum
-            states[framenum].action.acv = bex_action_table[i].action.acv;
+            states[si].action.acv = bex_action_table[i].action.acv;
             goto next_keyw;
         }
     }
@@ -1886,11 +2044,12 @@ static void readweapon(myfile_t *f, int deh_weapon_id)
       word=strtok(s," ");
 
            if(!strcasecmp(word,"Ammo"))       wip->ammo      =value;
-      else if(!strcasecmp(word,"Deselect"))   wip->upstate   =value;
-      else if(!strcasecmp(word,"Select"))     wip->downstate =value;
-      else if(!strcasecmp(word,"Bobbing"))    wip->readystate=value;
-      else if(!strcasecmp(word,"Shooting"))   wip->atkstate  = wip->holdatkstate = value;
-      else if(!strcasecmp(word,"Firing"))     wip->flashstate=value;
+      else if(!strcasecmp(word,"Deselect"))   set_state( &wip->upstate, value );
+      else if(!strcasecmp(word,"Select"))     set_state( &wip->downstate, value );
+      else if(!strcasecmp(word,"Bobbing"))    set_state( &wip->readystate, value );
+      else if(!strcasecmp(word,"Shooting")) { set_state( &wip->atkstate, value );
+					      wip->holdatkstate = wip->atkstate; }
+      else if(!strcasecmp(word,"Firing"))     set_state( &wip->flashstate, value );
       else deh_error("Weapon %d : unknown word '%s'\n", deh_weapon_id,word);
     }
   } while(s[0]!='\n' && !myfeof(f));
@@ -2213,28 +2372,12 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
         else if(!strcasecmp(word,"Frame"))
              {
                // "Frame <num>"
-               if(i<NUMSTATES && i>=0)
-                  readframe(f,i);
-               else
-                  deh_error("Frame %d don't exist\n",i);
+               readframe(f,i);
              }
         else if(!strcasecmp(word,"Pointer"))
              {
-               // "Pointer <num>"
-               word=strtok(NULL," "); // get frame
-               if((word=strtok(NULL,")"))!=NULL)
-               {
-                 i=atoi(word);
-                 if(i<NUMSTATES && i>=0)
-                 {
-                   if(myfgets(s,sizeof(s),f)!=NULL)
-                     states[i].action=deh_actions[searchvalue(s)];
-                 }
-                 else
-                    deh_error("Pointer : Frame %d don't exist\n",i);
-               }
-               else
-                   deh_error("pointer (Frame %d) : missing ')'\n",i);
+               // "Pointer <xref>"
+               readpointer(f,i);
              }
         else if(!strcasecmp(word,"Sound"))
              {
