@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: hu_stuff.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -973,8 +973,8 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
     {
         if (playeringame[i])
         {
-            team = (cv_teamplay.value==1) ? players[i].skincolor
-                                          : players[i].skin;
+            team = (cv_teamplay.EV==1) ? players[i].skincolor
+                                       : players[i].skin;
 
             for(j=0; j<scorelines; j++)
             {
@@ -986,7 +986,7 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
                          {
                              if(playeringame[k])
                              {
-                                 int k_indx = (cv_teamplay.value==1) ?
+                                 int k_indx = (cv_teamplay.EV==1) ?
                                      players[k].skincolor : players[k].skin;
                                  fragtbl[team][k_indx] += players[i].frags[k];
                              }
@@ -1020,7 +1020,7 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
                     {
                         if(playeringame[k])
                         {
-                            int k_indx = (cv_teamplay.value==1) ?
+                            int k_indx = (cv_teamplay.EV==1) ?
                                 players[k].skincolor : players[k].skin;
                             fragtbl[team][k_indx] += players[i].frags[k];
                         }
@@ -1098,7 +1098,7 @@ void HU_drawDeathmatchRankings (void)
         large = true;
     }
 
-    if(cv_teamplay.value==0)
+    if(cv_teamplay.EV==0)
         WI_drawRanking(title, 80, y, fragtab, scorelines, large, whiteplayer, 32);
     else
     {

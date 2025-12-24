@@ -6150,3 +6150,12 @@ Syntax is
    [HELPER]
    TYPE = 43
 
+*** W107_fixes4
+patchfile = w107_42_fixes4.patch
+- commit revision 1346
+Misc. small fixes, mostly MBF related.
+Change default values for some mbf controls.
+Moved call of AddThinker to appear after setting a critical field.
+Rearranged the player slide and bounces code.
+From PrBoom, no oof when dead.
+Added checks and error handling on level load functions.

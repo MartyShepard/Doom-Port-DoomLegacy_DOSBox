@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1334 2017-05-30 15:37:24Z wesleyjohnson $
+// $Id: p_lights.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -87,14 +87,14 @@ void P_SpawnFireFlicker (sector_t*  sector)
     sector->special &= ~31; //SoM: Clear non-generalized sector type
 
     flick = Z_Malloc ( sizeof(*flick), PU_LEVSPEC, 0);
-
-    P_AddThinker (&flick->thinker);
-
     flick->thinker.function.acp1 = (actionf_p1) T_FireFlicker;
+
     flick->sector = sector;
     flick->maxlight = sector->lightlevel;
     flick->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel)+16;
     flick->count = 4;
+
+    P_AddThinker (&flick->thinker);
 }
 
 
@@ -142,10 +142,8 @@ void P_SpawnLightFlash (sector_t* sector)
     sector->special &= ~31; //SoM: 3/7/2000: Clear non-generalized type
 
     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
-
-    P_AddThinker (&flash->thinker);
-
     flash->thinker.function.acp1 = (actionf_p1) T_LightFlash;
+
     flash->sector = sector;
     flash->maxlight = sector->lightlevel;
 
@@ -153,6 +151,8 @@ void P_SpawnLightFlash (sector_t* sector)
     flash->maxtime = 64;
     flash->mintime = 7;
     flash->count = (PP_Random(pr_lights)&flash->maxtime)+1;
+
+    P_AddThinker (&flash->thinker);
 }
 
 
@@ -197,13 +197,11 @@ P_SpawnStrobeFlash( sector_t* sector,
     strobe_t*   flash;
 
     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
-
-    P_AddThinker (&flash->thinker);
+    flash->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
 
     flash->sector = sector;
     flash->darktime = fastOrSlow;
     flash->brighttime = STROBEBRIGHT;
-    flash->thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
     flash->maxlight = sector->lightlevel;
     flash->minlight = P_FindMinSurroundingLight(sector, sector->lightlevel);
 
@@ -217,6 +215,8 @@ P_SpawnStrobeFlash( sector_t* sector,
         flash->count = (PP_Random(pr_lights)&7)+1;
     else
         flash->count = 1;
+
+    P_AddThinker (&flash->thinker);
 }
 
 
@@ -364,16 +364,16 @@ void P_SpawnGlowingLight( sector_t*  sector)
     glow_t* gp;
 
     gp = Z_Malloc( sizeof(*gp), PU_LEVSPEC, 0);
-
-    P_AddThinker(& gp->thinker);
+    gp->thinker.function.acp1 = (actionf_p1) T_Glow;
 
     gp->sector = sector;
     gp->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel);
     gp->maxlight = sector->lightlevel;
-    gp->thinker.function.acp1 = (actionf_p1) T_Glow;
     gp->direction = -1;
 
     sector->special &= ~0x1F; //SoM: 3/7/2000: Reset only non-generic types.
+
+    P_AddThinker(& gp->thinker);
 }
 
 

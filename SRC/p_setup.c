@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: p_setup.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -250,11 +250,9 @@ typedef struct mapdata_s {
 
 
 // BLOCKMAP
-// Created from axis aligned bounding box
-// of the map, a rectangular array of
+// Created from axis aligned bounding box of the map, a rectangular array of
 // blocks of size ...
-// Used to speed up collision detection
-// by spatial subdivision in 2D.
+// Used to speed up collision detection by spatial subdivision in 2D.
 //
 // Blockmap size.
 int             bmapwidth;
@@ -268,24 +266,21 @@ uint32_t *      blockmaphead; // Big blockmap, SSNTails
 fixed_t         bmaporgx;
 fixed_t         bmaporgy;
 // for thing chains
-mobj_t**        blocklinks;
+mobj_t   **     blocklinks;
 
 
 // REJECT
 // For fast sight rejection.
-// Speeds up enemy AI by skipping detailed
-//  LineOf Sight calculation.
-// Without special effect, this could be
-//  used as a PVS lookup as well.
-//
-byte*           rejectmatrix;
+// Speeds up enemy AI by skipping detailed LineOf Sight calculation.
+// Without special effect, this could be used as a PVS lookup as well.
+byte     *      rejectmatrix;
 
 
 // Maintain single and multi player starting spots.
-mapthing_t      *deathmatchstarts[MAX_DM_STARTS];
+mapthing_t  *   deathmatchstarts[MAX_DM_STARTS];
 int             numdmstarts;
 //mapthing_t**    deathmatch_p;
-mapthing_t      *playerstarts[MAXPLAYERS];
+mapthing_t  *   playerstarts[MAXPLAYERS];
 
 
 //
@@ -328,7 +323,6 @@ void P_LoadVertexes (int lump)
 //
 // Computes the line length in frac units, the glide render needs this
 //
-
 float P_SegLength (seg_t* seg)
 {
     double      dx,dy;
@@ -361,6 +355,12 @@ void P_LoadSegs (int lump)
     data = W_CacheLumpNum (lump,PU_STATIC);  // segs lump temp
     // [WDJ] Do endian as read from segs lump temp
 
+    if( !data || (numsegs < 1))
+    {
+        I_SoftError( "Bad segs data\n" );
+        return;
+    }
+   
     ml = (mapseg_t *)data;
     li = segs;
     for (i=0 ; i<numsegs ; i++, li++, ml++)
@@ -415,7 +415,7 @@ void P_LoadSegs (int lump)
         li->side = side;
         li->sidedef = &sides[ldef->sidenum[side]];
         li->frontsector = sides[ldef->sidenum[side]].sector;
-        if (ldef-> flags & ML_TWOSIDED)
+        if( ldef-> flags & ML_TWOSIDED && (ldef->sidenum[side^1] != NULL_INDEX) )
             li->backsector = sides[ldef->sidenum[side^1]].sector;
         else
             li->backsector = NULL;
@@ -444,6 +444,12 @@ void P_LoadSubsectors (int lump)
     subsectors = Z_Malloc (numsubsectors*sizeof(subsector_t), PU_LEVEL, NULL);
     data = W_CacheLumpNum (lump,PU_STATIC);  // subsectors lump temp
     // [WDJ] Do endian as read from subsectors temp lump
+
+    if( !data || (numsubsectors < 1))
+    {
+        I_SoftError( "Bad subsector data\n" );
+        return;
+    }
 
     ms = (mapsubsector_t *)data;
     memset (subsectors,0, numsubsectors*sizeof(subsector_t));
@@ -626,6 +632,12 @@ void P_LoadSectors (int lump)
     data = W_CacheLumpNum (lump,PU_STATIC);  // mapsector lump temp
     // [WDJ] Fix endian as transfer from temp to internal.
 
+    if( !data || (numsectors < 1))
+    {
+        I_SoftError( "Bad sector data\n" );
+        return;
+    }
+   
     // [WDJ] init growing flats array
     numlevelflats = 0;
     levelflat_max = 0;
@@ -661,12 +673,6 @@ void P_LoadSectors (int lump)
         ss->lightlevel = LE_SWAP16(ms->lightlevel);
         ss->special = LE_SWAP16(ms->special);
         ss->tag = LE_SWAP16(ms->tag);
-
-#ifdef DCK_WATER_TEST
-        //added:31-03-98: quick hack to test water with DCK
-/*        if (ss->tag < 0)
-            CONS_Printf("Level uses dck-water-hack\n");*/
-#endif
 
         ss->thinglist = NULL;
         ss->touching_thinglist = NULL; //SoM: 4/7/2000
@@ -733,6 +739,13 @@ void P_LoadNodes (int lump)
     data = W_CacheLumpNum (lump,PU_STATIC);  // mapnode_t array temp
     // [WDJ] Fix endian as transfer from temp to internal.
 
+    // No nodes and one subsector is a trivial but legal map.
+    if( (!data || (numnodes < 1)) && (numsubsectors > 1))
+    {
+        I_SoftError( "Bad node data\n" );
+        return;
+    }
+
     mn = (mapnode_t *)data;
     no = nodes;
 
@@ -777,6 +790,12 @@ void P_LoadThings (int lump)
     nummapthings     = W_LumpLength(lump) / sizeof(doom_mapthing_t);
     mapthings        = Z_Malloc(nummapthings * sizeof(mapthing_t), PU_LEVEL, NULL);
 
+    if( !data || (nummapthings < 1))
+    {
+        I_SoftError( "Bad things data\n" );
+        return;
+    }
+
     //SoM: Because I put a new member into the mapthing_t for use with
     //fragglescript, the format has changed and things won't load correctly
     //using the old method.
@@ -804,6 +823,12 @@ void P_LoadThings (int lump)
                mt->options &= ~MTF_MPSPAWN;  // Remove multiplayer only flag
         }
 
+#if 0
+        // PrBoom does legality checking here.
+        // May need this for special thing detection and engine setup.
+        P_SetupMapthing(mt);
+#endif
+
         P_SpawnMapthing (mt);
     }
 
@@ -829,6 +854,12 @@ void P_LoadLineDefs (int lump)
     memset (lines, 0, numlines*sizeof(line_t));
     data = W_CacheLumpNum (lump,PU_STATIC);  // temp linedefs array
     // [WDJ] Fix endian as transfer from lump temp to internal.
+
+    if( !data || (numlines < 1))
+    {
+        I_SoftError( "Bad linedefs data\n" );
+        return;
+    }
 
     mld = (maplinedef_t *)data;
     ld = lines;
@@ -875,6 +906,8 @@ void P_LoadLineDefs (int lump)
             ld->bbox[BOXBOTTOM] = v2->y;
             ld->bbox[BOXTOP] = v1->y;
         }
+
+        // Set soundorg in P_GroupLines
 
         // NULL_INDEX = no sidedef
         ld->sidenum[0] = LE_SWAP16(mld->sidenum[0]);
@@ -944,6 +977,7 @@ void P_LoadLineDefs2()
          {
              int eff = ld->translu_eff;  // TRANSLU_med, or TRANSLU_ext + lumpid
              short tag = ld->tag;
+//             uint16_t tag = ld->tag;  // change when lines[] changes
              if( tag )
              {
                  // Same tagged linedef get it too (both sidedefs).
@@ -1623,7 +1657,6 @@ boolean P_SetupLevel (int      to_episode,
 
     // Initial height of PointOfView
     // will be set by player think.
-
     players[consoleplayer].viewz = 1;
 
     // [WDJ] 7/2010 Free allocated memory in sectors before PU_LEVEL purge

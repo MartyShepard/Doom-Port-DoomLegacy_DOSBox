@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
+// $Id: p_mobj.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -762,40 +762,33 @@ void P_XYMovement(mobj_t * mo)
                 }
             }
 
-            // Boom has only player slides, but heretic has SLIDE attribute
-            if (mo->flags2 & MF2_SLIDE)  // Heretic, and player.
-            {   // try to slide along it
-                // Alters momx,momy, and calls P_TryMove
-                P_SlideMove(mo);
-            }
-            else if (mo->flags & MF_MISSILE)
+            if (mo->flags & MF_MISSILE)
             {
                 // TODO: put missile bounce here
                 goto missile_impact;
             }
-            else
+
             // MBF bounce
             // [WDJ] From PrBoom and MBF source, rearranged, different order.
-            // By requiring tmr_blockingline for all, then when MF_BOUNCES
-            // hits something not a solid wall, it does not need another test
-            // of tmr_blockingline.
-            // Player (MF2_SLIDE), and MV_MISSILE are already handled
-            // before this test, instead of after as in PrBoom.
+            // MF_MISSILE is already handled before this test, instead of
+            // after as in PrBoom.
             // With EN_variable_friction enabled (normal), ice gives bounce
             // to all object and monsters that hit a lower wall.
             if( EN_mbf
-                && tmr_blockingline  // solid wall
                 // && !(mo->flags & MF_MISSILE)  // already handled above
                 && ( (mo->flags & MF_BOUNCES)
                      || ( EN_variable_friction
-                          // && tmr_blockingline  // solid wall
+                          && tmr_blockingline  // solid wall
                           && !player  // player MF2_SLIDE has precedence, redundant
+                          && !(mo->flags2 & MF2_SLIDE)  // player slide
                           && mo->z <= mo->floorz  // hit lower wall
                           && (P_GetFriction(mo) > ORIG_FRICTION)  // ice
                         )
                    )
               )
             {
+                if( ! tmr_blockingline )  goto zero_mom;
+
                 // [WDJ] Bounce off wall, rewritten.
                 int tbx = (tmr_blockingline->dx >> FRACBITS);
                 int tby = (tmr_blockingline->dy >> FRACBITS);
@@ -818,13 +811,19 @@ void P_XYMovement(mobj_t * mo)
                         mo->momy = (mo->momy + mwy)/2;
                     }
                 }
-                // continue movement
+                continue;  // continue movement
             }
-            else
-            {
-                mo->momx = mo->momy = 0;
-                break;  // otherwise does not stop
+
+            // Boom has only player slides, but heretic has SLIDE attribute
+            if (mo->flags2 & MF2_SLIDE)  // Heretic, and player.
+            {   // try to slide along it
+                // Alters momx,momy, and calls P_TryMove
+                P_SlideMove(mo);
             }
+
+    zero_mom:
+            mo->momx = mo->momy = 0;
+            break;  // otherwise does not stop
         }
     } while ( --numsteps );
 
@@ -867,6 +866,7 @@ void P_XYMovement(mobj_t * mo)
     // tmr_dropoffz is set by P_CheckPosition() and P_TryMove(), called earlier.
     if( (mo->flags & MF_CORPSE)
         || ((mo->flags & MF_BOUNCES) && (mo->z > tmr_dropoffz))  // hanging
+        || (mo->eflags & MF_FALLING)  // falling	
       )
     {
         // do not stop sliding
@@ -888,6 +888,7 @@ void P_XYMovement(mobj_t * mo)
             }
         }
     }
+
     P_XYFriction(mo, oldx, oldy); // thing friction
     return;
 
@@ -1151,7 +1152,8 @@ zmove_floater:
                 // after hitting the ground (hard),
                 // and utter appropriate sound.
                 player->deltaviewheight = mo->momz >> 3;
-                S_StartObjSound(mo, sfx_oof);
+                if( mo->health > 0 )  // PrBoom, cph, no oof when dead.
+                  S_StartObjSound(mo, sfx_oof);
             }
 
             // set it once and not continuously
@@ -1358,6 +1360,7 @@ bouncer:
 
     if( mo->flags & MF_MISSILE )
     {
+        // A BOUNCER MISSILE
         if( tmr_ceilingline
             && tmr_ceilingline->backsector
             && tmr_ceilingline->backsector->ceilingpic == skyflatnum
@@ -1371,7 +1374,7 @@ bouncer:
             P_ExplodeMissile(mo);
         }
         // PrBoom did not return here, but should not use mo anymore.
-        // Cannot be SENTIENT.
+        // Even if you believe in SENTIENT MISSILE, it is gone.
         return;
     }
 
@@ -1379,6 +1382,7 @@ check_sentient_floater:
     // Give floating monsters a chance to move toward player.
     if( (mo->flags & MF_FLOAT) && SENTIENT(mo) )
         goto zmove_floater;  // re-enter ZMove to check floater
+
     return;
 }
 
@@ -1703,7 +1707,8 @@ void P_MobjThinker(mobj_t * mobj)
     else
         //added:28-02-98: always do the gravity bit now, that's simpler
         //                BUT CheckPosition only if wasn't do before.
-    if ((mobj->eflags & MF_ONGROUND) == 0 || (mobj->z != mobj->floorz) || mobj->momz)
+    if( (mobj->eflags & MF_ONGROUND) == 0
+        || (mobj->z != mobj->floorz) || mobj->momz)
     {
         // BP: since version 1.31 we use heretic z-checking code
         //     kept old code for backward demo compatibility
@@ -2371,13 +2376,10 @@ extern byte weapontobutton[NUMWEAPONS];
 //  between levels.
 //
 // BP: spawn it at a playerspawn mapthing, [WDJ] as playernum
-void P_SpawnPlayer(mapthing_t * mthing, int playernum )
+void P_SpawnPlayer( mapthing_t * mthing, int playernum )
 {
     player_t *p;
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-
+    fixed_t x, y, z;
     mobj_t *mobj;
 
 //    [WDJ] 2/8/2011 relied on mangled type field, prevented re-searching for voodoo
@@ -2545,7 +2547,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
         return; //SoM: 4/7/2000: Ignore type-0 things as NOPs
 
 #if 1   
-   // From PrBoom, MBF, EternityEngine (so it must be a good thing).
+   // From PrBoom, MBF, EternityEngine, (so it must be a good thing).
    // killough 11/98: clear flags unused by Doom
    //
    // We clear the flags unused in Doom if we see flag mask 256 set, since

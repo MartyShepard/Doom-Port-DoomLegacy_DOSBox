@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1335 2017-05-30 15:38:25Z wesleyjohnson $
+// $Id: p_henemy.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1953,12 +1953,9 @@ void A_FreeTargMobj(mobj_t *mo)
 //
 //----------------------------------------------------------------------------
 
-/*#define BODYQUESIZE 32
-mobj_t *bodyque[BODYQUESIZE];
-int bodyqueslot;*/
-
 void A_AddPlayerCorpse(mobj_t *actor)
 {
+    // Using the bodyque defined in g_game.c.
     if(bodyqueslot >= BODYQUESIZE)
     { // Too many player corpses - remove an old one
         P_RemoveMobj(bodyque[bodyqueslot%BODYQUESIZE]);

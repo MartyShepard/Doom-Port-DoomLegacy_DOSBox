@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1343 2017-06-21 16:15:06Z wesleyjohnson $
+// $Id: p_map.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -880,6 +880,7 @@ static byte  tm_touches( line_t *ld )
 // PIT_CheckLine
 // Adjusts tmr_floorz and tmr_ceilingz as lines are contacted.
 //
+static
 boolean PIT_CheckLine (line_t* ld)
 {
     if (tm_bbox[BOXRIGHT] <= ld->bbox[BOXLEFT]
@@ -974,7 +975,8 @@ boolean PIT_CheckLine (line_t* ld)
     // were in the floor.
     // Missiles now explode on wall surface instead of within wall.
     // Needed for fix of Mancubus fireball going through wall.
-    if ( tm_thing->flags & MF_MISSILE
+    // [WDJ] Added MF_BOUNCES, due to exclusion in test above.
+    if ( tm_thing->flags & (MF_MISSILE | MF_BOUNCES)
          && (EV_legacy >= 144) )
     {
         // Check if missile hit low or high on side of this wall
@@ -1941,13 +1943,7 @@ void P_SlideMove (mobj_t* mo)
 
     // move up to the wall
     if (tsm_bestslidefrac == FRACUNIT+1)
-    {
-        // the move must have hit the middle, so stairstep
-      stairstep:
-        if (!P_TryMove (mo, mo->x, mo->y + mo->momy, true)) //SoM: 4/10/2000
-            P_TryMove (mo, mo->x + mo->momx, mo->y, true);  //Allow things to
-        return;                                             //drop off.
-    }
+        goto stairstep;  // the move must have hit the middle, so stairstep
 
     // fudge a bit to make sure it doesn't hit
     tsm_bestslidefrac -= 0x800;
@@ -1962,7 +1958,7 @@ void P_SlideMove (mobj_t* mo)
 
     // Now continue along the wall.
     // First calculate remainder.
-    tsm_bestslidefrac = FRACUNIT-(tsm_bestslidefrac+0x800);
+    tsm_bestslidefrac = FRACUNIT - (tsm_bestslidefrac+0x800);
 
     if (tsm_bestslidefrac > FRACUNIT)
         tsm_bestslidefrac = FRACUNIT;
@@ -2005,6 +2001,26 @@ void P_SlideMove (mobj_t* mo)
     {
         goto retry;
     }
+    return;
+
+stairstep:
+    //SoM: 4/10/2000  Allow things to drop off.
+    if( !P_TryMove (mo, mo->x, mo->y + mo->momy, true) )
+    {
+      if( !P_TryMove (mo, mo->x + mo->momx, mo->y, true) )
+      {
+        // killough 10/98: keep buggy code around for old Boom demos
+        // cph 2000/09//23: buggy code was only in Boom v2.01
+        if( demoversion == 201 )
+        {
+          // phares 5/4/98: kill momentum if you can't move at all
+          // This eliminates player bobbing if pressed against a wall
+          // while on ice.
+          mo->momx = mo->momy = 0;
+        }
+      }
+    }
+    return;
 }
 
 
@@ -2647,9 +2663,6 @@ fixed_t P_AimLineAttack ( mobj_t*       atkr, // attacker
 
     la_attackrange = distance;
     lar_linetarget = NULL;  // default result
-
-    // killough 8/2/98: prevent friends from aiming at friends
-    la_reject_flags = mbf_friend_protection? MF_FRIEND : 0;
 
     //added:15-02-98: comments
     // traverse all linedefs and mobjs from the blockmap containing atkr,

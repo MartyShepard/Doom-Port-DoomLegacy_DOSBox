@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1345 2017-07-29 18:14:24Z wesleyjohnson $
+// $Id: p_enemy.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -242,16 +242,16 @@ static void mbf_OnChange( void );
 
 
 consvar_t cv_monster_remember =
-  {"mon_remember","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  {"mon_remember","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // Boom monsters_remember
 
-consvar_t cv_mbf_dropoff = {"dropoff","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+consvar_t cv_mbf_dropoff = {"dropoff","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // !comp[comp_dropoff]
-consvar_t cv_mbf_falloff = {"falloff","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+consvar_t cv_mbf_falloff = {"falloff","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // !comp[comp_falloff]
 
 consvar_t cv_mbf_monster_avoid_hazard =
-  {"mon_avoidhazard","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  {"mon_avoidhazard","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // MBF monster_avoid_hazards
 consvar_t cv_mbf_monster_backing =
   {"mon_backing","0", CV_NETVAR | CV_SAVE, CV_OnOff};
@@ -260,13 +260,13 @@ consvar_t cv_mbf_pursuit = {"pursuit","0", CV_NETVAR | CV_SAVE, CV_OnOff};
   // !comp[comp_pursuit]
 consvar_t cv_mbf_distfriend =
   {"distfriend","128", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, mbf_OnChange};
-  // MBF distfriend
-consvar_t cv_mbf_staylift = {"staylift","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+  // MBF distfriend (0..999)
+consvar_t cv_mbf_staylift = {"staylift","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // !comp[comp_staylift]
-consvar_t cv_mbf_help_friend = {"helpfriend","0", CV_NETVAR | CV_SAVE, CV_OnOff};
+consvar_t cv_mbf_help_friend = {"helpfriend","1", CV_NETVAR | CV_SAVE, CV_OnOff};
   // MBF help_friends
 consvar_t cv_mbf_monkeys = {"monkeys","0", CV_NETVAR | CV_SAVE, CV_OnOff};
-  // MBF monkeys
+  // MBF monkeys (climb steep stairs)
 #ifdef DOGS   
 consvar_t cv_mbf_dogs = {"dogs","0", CV_NETVAR | CV_SAVE, CV_OnOff};
   // MBF dogs
@@ -968,11 +968,11 @@ static boolean P_SmartMove(mobj_t *actor)
     // dropoff==2 means only up to 128 high,
     // and only if the target is immediately on the other side of the line.
 
-    // haleyjd: allow all friends of HelperType to also jump down
+    // haleyjd: allow all friends of Helper_MT Type to also jump down
 
     if( cv_mbf_dog_jumping.EV
         && (actor->type == MT_DOGS
-            || (actor->type == (HelperThing-1) && (actor->flags & MF_FRIEND)) )
+            || ((actor->type == helper_MT) && (actor->flags & MF_FRIEND)) )
         && target
         && SAME_FRIEND(target, actor)
         && P_AproxDistance(actor->x - target->x, actor->y - target->y)
@@ -2454,8 +2454,8 @@ void A_Tracer (mobj_t* actor)
     angle_t     exact;
     fixed_t     dist;
     fixed_t     slope;
-    mobj_t*     dest;
-    mobj_t*     th;
+    mobj_t    * dest;
+    mobj_t    * th;
 
     if (gametic % (4 * NEWTICRATERATIO))
         return;

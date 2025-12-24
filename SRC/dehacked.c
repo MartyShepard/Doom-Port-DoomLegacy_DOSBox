@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1345 2017-07-29 18:14:24Z wesleyjohnson $
+// $Id: dehacked.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1737,7 +1737,7 @@ bex_codeptr_t  bex_action_table[] = {
    {"RandomJump", {A_RandomJump}},  // Random transition to mobj state parm1
       // probability parm2
    {"LineEffect", {A_LineEffect}},  // Trigger line type parm1, tag = parm2
-   
+
    {"KeepChasing", {A_KeepChasing}},  // MBF, from EnternityEngine
    
    { NULL, {NULL} }  // table term
