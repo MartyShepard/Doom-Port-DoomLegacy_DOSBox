@@ -6177,3 +6177,9 @@ MBF and PrBoom only have dogs for single player.
 In DoomLegacy they also can be used in coop games, and will respawn.
 The respawn delay is fixed at 5 seconds.
 
+*** W107_nosync
+patchfile = w107_45_nosync.patch
+- commit revision 1349
+This code is disabled by ifdef.
+Elaborate code from PrBoom that keeps demo sync.
+

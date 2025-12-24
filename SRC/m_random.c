@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: m_random.c 1349 2017-07-29 18:26:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,9 +74,9 @@ byte P_Random ()
     return rndtable[++prndindex];
 }
 
-// lot of code used P_Random()-P_Random() since C don't define 
-// evaluation order it is compiler dependent so this allows network play 
-// between different compilers
+// Alot of code used P_Random()-P_Random().
+// Because C does not define the evaluation order, it is compiler dependent
+// so this allows network play between different compilers
 int P_SignedRandom ()
 {
     int r = P_Random();
@@ -138,4 +138,64 @@ byte B_Random (void)
     brndindex += 11;
     return rndtable[brndindex];
 }
+
+#if 0
+// [WDJ] This mess is one reason we do not want get caught up in
+// maintaining demo sync.
+// This has been simplified from what appears in PrBoom, to make it
+// more comprehensible.
+int P_Random(pr_class_t pr_class)
+{
+  // killough 2/16/98:  We always update both sets of random number
+  // generators, to ensure repeatability if the demo_compatibility
+  // flag is changed while the program is running. Changing the
+  // demo_compatibility flag does not change the sequences generated,
+  // only which one is selected from.
+  //
+  // All of this RNG stuff is tricky as far as demo sync goes --
+  // it's like playing with explosives :) Lee
+
+  int compat = 0;
+  uint32_t boom;
+  
+  if( pr_class == pr_misc )
+  {
+    rng.prndindex = (rng.prndindex + 1) & 255;
+    compat = rng.prndindex;
+  }
+  else
+  {
+    rng.rndindex = (rng.rndindex + 1) & 255;
+    compat = rng.rndindex;
+    // killough 3/31/98:
+    // If demo sync insurance is not requested, use much more unstable
+    // method by putting everything except pr_misc into pr_all_in_one
+    if( !demo_insurance )
+      pr_class = pr_all_in_one;
+  }
+
+  boom = rng.seed[pr_class];
+
+  // killough 3/26/98: add pr_class*2 to addend
+  rng.seed[pr_class] = boom * 1664525ul + 221297ul + pr_class*2;
+
+  if (demo_compatibility)
+    return rndtable[compat];
+
+  boom >>= 20;
+
+  // killough 3/30/98: use gametic-levelstarttic to shuffle RNG
+  // killough 3/31/98: but only if demo insurance requested,
+  // since it's unnecessary for random shuffling otherwise
+  // killough 9/29/98: but use basetic now instead of levelstarttic
+  // cph - DEMOSYNC - this change makes MBF demos work,
+  //       but does it break Boom ones?
+
+  if (demo_insurance)
+    boom += (gametic - basetic)*7;
+
+  return boom & 255;
+}
+#endif
+
 

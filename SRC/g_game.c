@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: g_game.c 1349 2017-07-29 18:26:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -442,6 +442,12 @@ player_t *      displayplayer2_ptr = NULL;  // NULL when not in use
 
 tic_t           gametic;
 tic_t           levelstarttic;          // gametic at level start
+#ifdef BASETIC_DEMOSYNC
+// [WDJ] From PrBoom, basetic.
+// A modified levelstarttic for old demos.
+tic_t  basetic;
+#endif
+
 int             totalkills, totalitems, totalsecret;    // for intermission
 
 // Demo state
@@ -1185,6 +1191,11 @@ void G_DoLoadLevel (boolean resetplayer)
     int             i;
 
     levelstarttic = gametic;        // for time calculation
+#ifdef BASETIC_DEMOSYNC
+    // [WDJ] Derived from PrBoom, gametic demosync.
+    basetic = ( !EN_boom && !EN_mbf ) ? gametic  // killough 9/29/98
+                : 0;  // [WDJ] Do not leave it uninitialized
+#endif
     gameplay_msg = false;
 
     // Reset certain attributes
@@ -1435,6 +1446,25 @@ void G_Ticker (void)
         }
     }
 
+#ifdef BASETIC_DEMOSYNC
+  // [WDJ] From PrBoom, MBF, EternityEngine
+  // killough 9/29/98: Skip some commands while pausing during demo playback,
+  // or while the menu is active.
+  //
+  // Increment basetic and skip processing if a demo being played back is
+  // paused or if the menu is active while a non-net game is being played,
+  // to maintain sync while allowing pauses.
+  //
+  // P_Ticker() does not stop netgames if a menu is activated, so
+  // we do not need to stop if a menu is pulled up during netgames.
+    if( paused & 2
+        || (!demoplayback && menuactive && !netgame ) )
+    {
+        basetic++;  // For revenant tracers and RNG -- we must maintain sync
+        goto main_actions;
+    }
+#endif
+
     buf = gametic%BACKUPTICS;
 
     // read/write demo and check turbo cheat
@@ -1467,6 +1497,9 @@ void G_Ticker (void)
         }
     }
 
+#ifdef BASETIC_DEMOSYNC
+main_actions:
+#endif
     // do main actions
     switch (gamestate)
     {
@@ -1502,9 +1535,6 @@ void G_Ticker (void)
 }
 
 
-
-
-
 // Spawn Test
 // [WDJ] Use a temporary mobj to test position.
 // This can be modified to suit,
@@ -1516,7 +1546,6 @@ static mobj_t  tstobj;
 // Return false when an collision with an existing object would occur.
 static
 boolean  test_spot_unoccupied( mobjtype_t testtype, fixed_t x, fixed_t y, fixed_t z )
-
 {
     // [WDJ] Test spawn spot for any player or blocking object.
     // Needed for spawning off of map spawn spots, and for multiple players.
@@ -2485,6 +2514,15 @@ void G_DoLoadGame (int slot)
     if( P_Savegame_Closefile( 0 ) < 0 )  goto load_failed;
     // savegame buffer deallocated, and file closed
 
+#ifdef BASETIC_DEMOSYNC
+# if 0
+    // [WDJ] PrBoom savegames indirectly save the gametic.
+    // I see no need for a demo fix to affect savegames.
+    // killough 11/98: load revenant tracer state
+    basetic = gametic - *save_p++;
+# endif
+#endif
+
     gameaction = ga_nothing;
     gamestate = GS_LEVEL;
 
@@ -3286,6 +3324,11 @@ void G_DoPlayDemo (char *defdemoname)
     EN_boom = 0;
     EN_mbf = 0;
     EV_legacy = 0;
+
+#ifdef BASETIC_DEMOSYNC
+    // [WDJ] From PrBoom, keep some old demos in sync.
+    basetic = gametic;  // killough 9/29/98
+#endif
 
 //
 // load demo file / resource
