@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1340 2017-06-21 16:10:38Z wesleyjohnson $
+// $Id: p_map.c 1343 2017-06-21 16:15:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -104,10 +104,11 @@
 
 // TryMove, thing map global vars
 fixed_t         tm_bbox[4];	// box around the thing
-mobj_t*         tm_thing;	// the thing itself
+mobj_t        * tm_thing;	// the thing itself
 uint32_t        tm_flags;	// thing flags of tm_thing
 fixed_t         tm_x, tm_y;	// thing map position
- 
+static byte     tm_mbf_unstuck; // mbf player unstick
+
 // TryMove, thing map return global vars
 byte            tmr_floatok;    // If true, move would be ok
                                 // if within "tmfloorz - tmceilingz".
@@ -117,7 +118,7 @@ fixed_t         tmr_ceilingz;
 fixed_t         tmr_dropoffz;   // the lowest point contacted (monster check)
 
 // [WDJ] tmr_floorthing is in demoversion 113..131, otherwise NULL
-mobj_t*         tmr_floorthing; // standing on another thing
+mobj_t        * tmr_floorthing; // standing on another thing
                                 // the thing corresponding to tmr_floorz
                                 // or NULL if tmr_floorz is from a sector
 
@@ -127,16 +128,17 @@ fixed_t         tmr_sectorceilingz;
 
 // keep track of the line that lowers the ceiling,
 // so missiles don't explode against sky hack walls
-line_t*         tmr_ceilingline;
+line_t        * tmr_ceilingline;
+line_t        * tmr_floorline;  // MBF: highest touched floor
 
 // set by PIT_CheckLine() for any line that stopped the PIT_CheckLine()
 // that is, for any line which is 'solid'
-line_t*         tmr_blockingline;
-line_t*         tmr_dropoffline;
+line_t        * tmr_blockingline;
+line_t        * tmr_dropoffline;
 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
-int             *spechit = NULL;                //SoM: 3/15/2000: Limit removal
+int           * spechit = NULL;                //SoM: 3/15/2000: Limit removal
                 // realloc, never deallocated
 int             numspechit = 0;
 
@@ -144,7 +146,7 @@ int             numspechit = 0;
 player_t *      spechit_player = NULL;
 
 //SoM: 3/15/2000
-msecnode_t*  sector_list = NULL;
+msecnode_t * sector_list = NULL;
 
 // [WDJ] only used in PIT_CrossLine (line_t* ld)
 //SoM: 3/15/2000, [WDJ] modified for general usage
@@ -849,6 +851,30 @@ ret_blocked:
 }
 
 
+// [WDJ] MBF, from PrBoom, MBF
+// killough 8/1/98: used to test intersection between thing and line
+// assuming NO movement occurs -- used to avoid sticky situations.
+// ! untouched
+//
+// Return true when tm_thing touches the line
+static byte  tm_touches( line_t *ld )
+{
+  fixed_t ubbox[4];
+  fixed_t radius = tm_thing->radius;
+
+  ubbox[BOXRIGHT] = tm_thing->x + radius;
+  ubbox[BOXLEFT] = tm_thing->x - radius;
+  if(    (ubbox[BOXRIGHT] <= ld->bbox[BOXLEFT])
+      || (ubbox[BOXLEFT] >= ld->bbox[BOXRIGHT]) )
+      return 0;
+  ubbox[BOXTOP] = tm_thing->y + radius;
+  ubbox[BOXBOTTOM] = tm_thing->y - radius;
+  if(    (ubbox[BOXTOP] <= ld->bbox[BOXBOTTOM])
+      || (ubbox[BOXBOTTOM] >= ld->bbox[BOXTOP]) )
+      return 0;
+  return  P_BoxOnLineSide(ubbox, ld) == -1;
+}
+
 
 //
 // PIT_CheckLine
@@ -888,6 +914,13 @@ boolean PIT_CheckLine (line_t* ld)
          )
           add_spechit(ld);
 
+      // [WDJ] MBF player unstick.
+      if( tm_mbf_unstuck && tm_touches(ld) )
+      {
+        return  FixedMul(tm_x - tm_thing->x, ld->dy)
+              > FixedMul(tm_y - tm_thing->y, ld->dx);
+      }
+
       goto ret_blocked;  // blocked by one sided line
     }
 
@@ -897,7 +930,11 @@ boolean PIT_CheckLine (line_t* ld)
         && !(tm_thing->type == MT_CHASECAM) )
     {
         if (ld->flags & ML_BLOCKING)
+        {
+            if( tm_mbf_unstuck && tm_touches(ld) )
+                return true;
             goto ret_blocked;  // explicitly blocking everything
+        }
 
         // killough 8/9/98: monster-blockers don't affect friends
         if( ld->flags & ML_BLOCKMONSTERS
@@ -917,7 +954,10 @@ boolean PIT_CheckLine (line_t* ld)
     }
 
     if (openbottom > tmr_floorz)
+    {
         tmr_sectorfloorz = tmr_floorz = openbottom;
+        tmr_floorline = ld;
+    }
 
     if (lowfloor < tmr_dropoffz)
     {
@@ -1063,8 +1103,13 @@ boolean P_CheckPosition ( mobj_t* thing, fixed_t x, fixed_t y )
     tm_bbox[BOXRIGHT] = x + tm_thing->radius;
     tm_bbox[BOXLEFT] = x - tm_thing->radius;
 
+    tm_mbf_unstuck = EN_mbf
+       && thing->player
+       && thing->player->mo == thing;  // not voodoo doll
+
     cp_newsubsec = R_PointInSubsector (x,y);
-    tmr_ceilingline = tmr_blockingline = tmr_dropoffline = NULL;
+    tmr_ceilingline = tmr_floorline = NULL;
+    tmr_blockingline = tmr_dropoffline = NULL;
 
     // The base floor / ceiling is from the subsector
     // that contains the point.
@@ -1209,19 +1254,20 @@ boolean P_TryMove ( mobj_t*       thing,
 #endif
     {
         fixed_t maxstep = MAXSTEPMOVE;
-        if (tmr_ceilingz - tmr_floorz < thing->height)
-            goto impact;  // doesn't fit
+
+        if( tmr_ceilingz - tmr_floorz < thing->height )
+            goto boom_conditional_impact;  // thing doesn't fit room
 
         tmr_floatok = true;
 
-        if(thing->flags2&MF2_FLY)  // heretic fly
+        if( thing->flags2 & MF2_FLY )  // heretic fly
         {
             if((thing->z + thing->height) > tmr_ceilingz) // hit ceiling
             {
                 thing->momz = -8*FRACUNIT;
                 goto block_move;
             }
-            else if( thing->z < tmr_floorz
+            else if( thing->z < tmr_floorz  // hit floor
                      && (tmr_floorz - tmr_dropoffz > 24*FRACUNIT)
                    )
             {
@@ -1233,18 +1279,19 @@ boolean P_TryMove ( mobj_t*       thing,
         {   // not heretic fly
             if(((thing->z + thing->height) > tmr_ceilingz) // hit ceiling
                && !(thing->flags & MF_TELEPORT) )
-                goto impact;  // mobj must lower itself to fit
+                goto boom_conditional_impact;  // mobj must lower itself to fit
         }
 
         // jump out of water
         if((thing->eflags & (MF_UNDERWATER|MF_TOUCHWATER))==(MF_UNDERWATER|MF_TOUCHWATER))
-            maxstep=37*FRACUNIT;
+            maxstep = 37*FRACUNIT;
 
+        // Hit step, check step height.
+        // The Minotaur floor fire (MT_MNTRFX2) can step up any amount.
         if ( !(thing->flags & MF_TELEPORT) 
-             // The Minotaur floor fire (MT_MNTRFX2) can step up any amount
              && thing->type != MT_MNTRFX2
              && (tmr_floorz - thing->z > maxstep ) )
-            goto impact;  // too big a step up
+            goto boom_conditional_impact;  // too big a step up
 
         if((thing->flags & MF_MISSILE)
            && tmr_floorz > thing->z)
@@ -1305,12 +1352,17 @@ boolean P_TryMove ( mobj_t*       thing,
             // MBF
             if( cv_mbf_dropoff.EV )  // MBF dropoff
             {
-                if(((allowdropoff == 1)  // drop off allowed
+                if(  (allowdropoff == 0)
+#if 0		     
+                  ||((allowdropoff == 1)  // drop off allowed
                     && (tmr_floorz - tmr_dropoffz > MAXSTEPMOVE))
+#endif
+#ifdef DOGS
                   ||((allowdropoff == 2) // large jump down (e.g. dogs)
                     &&((tmr_floorz - tmr_dropoffz > 128*FRACUNIT)
                         || !thing->target
                         || thing->target->z > tmr_dropoffz )) // target above dropoff
+#endif
                   )
                 {
                     // Dropoff too high.
@@ -1322,7 +1374,10 @@ boolean P_TryMove ( mobj_t*       thing,
                             goto block_move;
                         goto ignore_dropoff;
                     }
-                    goto block_move;
+                    else if( tmr_floorz - tmr_dropoffz > 24*FRACUNIT )
+                        goto block_move;
+
+                    goto ignore_dropoff;
                 }
                 else
                 {
@@ -1350,7 +1405,8 @@ boolean P_TryMove ( mobj_t*       thing,
                     goto block_move;  // inform caller, returning tmr_dropoffline
                 }
                 // MBF compatibility mode
-                if( EN_mbf && demoversion <= 203 )
+                // Fix demosync bug in mbf compatibility mode.
+                if( EN_mbf && demoversion <= 210 )
                     goto block_move;
                 // [WDJ] Trying to moderate momentum here causes too many side-effects
                 // like barrels getting stuck at conveyor edge.
@@ -1376,7 +1432,7 @@ got_dropoff:
         // killough 11/98: prevent falling objects from going up too many steps
         if( thing->eflags & MF_FALLING
             && (tmr_floorz - thing->z >
-                FixedMul(thing->momx,thing->momx)+FixedMul(thing->momy,thing->momy))
+                FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
           )
             goto block_move;
     }
@@ -1453,15 +1509,18 @@ got_dropoff:
 
     return true;
 
+boom_conditional_impact:
+    // PrBoom unstuck code
+    if( tm_mbf_unstuck )
+    {
+      return !(tmr_ceilingline && ! tm_touches(tmr_ceilingline))
+             && !(  tmr_floorline && ! tm_touches(  tmr_floorline));
+    }
+
 impact:
     // hit something solid
     CheckMissileImpact(thing);
-#if 0
-    // PrBoom unstuck code
-    return tmunstuck
-        && !(ceilingline && untouched(ceilingline))
-        && !(  floorline && untouched(  floorline));
-#endif
+
 block_move:
     return false;
 }

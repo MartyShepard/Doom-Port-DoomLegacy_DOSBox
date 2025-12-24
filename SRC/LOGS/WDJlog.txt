@@ -6117,3 +6117,10 @@ patchfile = w107_38_sight.patch
 - commit revision 1342
 Revise some of the monster sight functions to get better compatibility with
 Boom and MBF, and to take advantage of improvements.
+
+*** W107_mbf_unstuck
+patchfile = w107_39_mbf_unstuck.patch
+- commit revision 1343
+Add the MBF unstuck code.
+Adjust the MBF dropoff code.
+Fix an MBF demosync bug fix.
