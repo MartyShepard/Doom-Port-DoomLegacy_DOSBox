@@ -6205,4 +6205,9 @@ Reported by Eckert.
 Moved the voodoo intercept of damage earlier so that the tests
 on armor and attributes are done on the voodoo redirected target.
 
+*** W107_heretic_deh
+patchfile = w107_49_heretic_deh.patch
+- commit revision 1353
+Include some code pointers for heretic DEH, from EternityEngine.
+
 
