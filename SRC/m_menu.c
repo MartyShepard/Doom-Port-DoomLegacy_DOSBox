@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: m_menu.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1371,11 +1371,10 @@ static
 void M_DrawSetupMultiPlayerMenu(void)
 {
     spritedef_t   * sprdef;
-    spriteframe_t * sprframe;
+    sprite_frot_t * sprfrot;
     patch_t       * patch;
     byte          * colormap;
     int             mx,my;
-    int             lump;
     int             st;
 
     // Draw to screen0, scaled
@@ -1410,8 +1409,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 
     // skin 0 is default player sprite
     sprdef    = &skins[R_SkinAvailable(setupm_cvskin->string)]->spritedef;
-    sprframe  = &sprdef->spriteframes[ multi_state->frame & FF_FRAMEMASK];
-    lump  = sprframe->lumppat[0];
+    sprfrot = get_framerotation( sprdef, multi_state->frame & FF_FRAMEMASK, 0 );
 
     colormap = (setupm_cvcolor->value) ?
          SKIN_TO_SKINMAP( setupm_cvcolor->value )
@@ -1422,7 +1420,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 
     // draw player sprite
     // temp usage of sprite lump, until end of function
-    patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix
+    patch = W_CachePatchNum (sprfrot->lumppat, PU_CACHE_DEFAULT);  // endian fix
     if( itemOn>0 )  // Edit skin or color
     {
       // Some skins are too large for the screen, cause segfault.

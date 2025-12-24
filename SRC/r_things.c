@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: r_things.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -202,9 +202,19 @@ short           screenheightarray[MAXVIDWIDTH];
 spritedef_t*    sprites;
 int             numsprites;
 
-spriteframe_t   sprtemp[29];
-int             maxframe;
-char*           spritename;
+static char          * spritename;
+
+// spritetmp
+#define MAX_FRAMES   29
+static spriteframe_t   sprfrm[MAX_FRAMES];
+static int             maxframe;
+
+#ifdef ROT16
+#define  NUM_SPRITETMP_ROT   16
+#else
+#define  NUM_SPRITETMP_ROT   8
+#endif
+static sprite_frot_t   sprfrot[MAX_FRAMES * NUM_SPRITETMP_ROT];
 
 
 // ==========================================================================
@@ -215,81 +225,273 @@ char*           spritename;
 //
 // ==========================================================================
 
+
+spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, int frame_num )
+{
+   return & spritedef->spriteframe[ frame_num ];
+}
+
+sprite_frot_t *  get_framerotation( const spritedef_t * spritedef,
+                                    int frame_num, byte rotation )
+{
+   return & spritedef->framerotation[ (frame_num * spritedef->frame_rot) + rotation ];
+}
+
+const byte srp_to_num_rot[4] = { 0, 1, 8, 16 };
+
+
+// Convert sprfrot formats.
+
+// The pattern of named rotations to draw rotations.
+// Index rotation_char order.
+static const byte rotation_char_to_draw[16] =
+{ 0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15 };
+
+static
+void  transfer_to_spritetmp( const spritedef_t * spritedef )
+{
+    int   src_frames =  spritedef->numframes;
+    byte  src_frame_rot = spritedef->frame_rot;
+    spriteframe_t * fmv, * fmp, * fmp_end;
+    sprite_frot_t * rtv, * rtv_nxt, * rtp, * rtp_nxt;
+    byte r, srp;
+
+    // From
+    fmv = spritedef->spriteframe;
+    rtv = spritedef->framerotation;
+    // To
+    fmp = & sprfrm[0];
+    fmp_end = & sprfrm[src_frames];
+    rtp = & sprfrot[0];
+
+    // Temp frame size is at the max (8 or 16).
+    for( ; fmp < fmp_end; fmp++, fmv++ )
+    {
+        // Index the next frame first.
+        rtv_nxt = rtv + src_frame_rot;
+        rtp_nxt = rtp + NUM_SPRITETMP_ROT;
+        // Adapt the rotation pattern to fill the temp array.
+        srp = fmv->rotation_pattern;
+        fmp->rotation_pattern = srp;
+        switch( srp )
+        {
+         case SRP_1:
+            // Duplicate into all rotations so later PWAD can alter it properly.
+            for( r=0; r<NUM_SPRITETMP_ROT; r++ )
+            {
+                memcpy( rtp, rtv, sizeof(sprite_frot_t) );
+                rtp++;
+            }
+            break;
+
+         case SRP_8:
+            // Copy 8 rotations.
+            memcpy( rtp, rtv, sizeof(sprite_frot_t) * 8 );
+            break;
+
+#ifdef ROT16
+         case SRP_16:
+            // Copy 16 rotation draw order into rotation_char order.
+            for( r=0; r<16; r++ )
+            {
+                int rd = rotation_char_to_draw[r];
+                memcpy( &rtp[r], &rtv[rd], sizeof(sprite_frot_t) );
+            }
+            break;
+#endif
+         default:
+            break;
+        }
+        rtv = rtv_nxt;
+        rtp = rtp_nxt;
+    }
+}
+
+static
+void  transfer_from_spritetmp( spritedef_t * spritedef,
+                               const byte dst_srp, const byte dst_frame_rot )
+{
+    int   dst_frames =  spritedef->numframes;
+    spriteframe_t * fmv, * fmp, * fmp_end;
+    sprite_frot_t * rtv, * rtv_nxt, * rtp, * rtp_nxt;
+    byte srp;
+#ifdef ROT16
+    byte r;
+#endif
+
+    // From spritetmp
+    fmp = & sprfrm[0];
+    fmp_end = & sprfrm[dst_frames];
+    rtp = & sprfrot[0];
+    // To
+    fmv = spritedef->spriteframe;
+    rtv = spritedef->framerotation;
+   
+    for( ; fmp < fmp_end; fmp++, fmv++ )
+    {
+        rtv_nxt = rtv + dst_frame_rot;
+        rtp_nxt = rtp + NUM_SPRITETMP_ROT;
+        srp = fmp->rotation_pattern;
+        fmv->rotation_pattern = srp;
+        switch( srp )
+        {
+         case SRP_1:
+            // copy 1 rotations
+            memcpy( rtv, rtp, sizeof(sprite_frot_t) );
+            break;
+
+         case SRP_8:
+            // copy 8 rotations
+            memcpy( rtv, rtp, sizeof(sprite_frot_t) * 8 );
+            break;
+
+#ifdef ROT16
+         case SRP_16:
+            // copy 16 rotation draw order into rotation_char order.
+            for( r=0; r<16; r++ )
+            {
+                int rd = rotation_char_to_draw[r];
+                memcpy( &rtv[rd], &rtp[r], sizeof(sprite_frot_t) );
+            }
+            break;
+#endif
+         default:
+           break;
+        }
+        rtv = rtv_nxt;
+        rtp = rtp_nxt;
+    }
+}
+
+
 //
 //
 //
-void R_InstallSpriteLump ( int           lumppat,     // graphics patch
-                           short         spritelump_id, // spritelump_t
-                           unsigned int  frame,
-                           unsigned int  rotation,
+static
+void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
+                           uint16_t      spritelump_id, // spritelump_t
+                           byte          frame,
+                           char          rotation_char,
                            boolean       flipped )
 {
-    int         r;
+    int    r;
+    byte   rotation = 0;
+    byte   frame_srp;
+    spriteframe_t * fmp;
+    sprite_frot_t * rtp;
 
-    if (frame >= 29 || rotation > 8)
+#ifdef ROT16
+    // The rotations are saved in the sprfrot in the rotation_char order.
+    // They are converted to draw index order when the sprfrot is saved.
+    if( rotation_char == '0' )
     {
-        I_SoftError("R_InstallSpriteLump: "
-                "Bad frame characters in lump %i", spritelump_id);
+        rotation = 0;
+    }
+    else if((rotation_char >= '1') && (rotation_char <= '9'))
+    {
+        rotation = rotation_char - '1';  // 0..8
+    }
+    else if((rotation_char >= 'A') && (rotation_char <= 'F'))
+    {
+        rotation = rotation_char - 'A' + 10 - 1;  // 9..15
+    }
+    else if((rotation_char >= 'a') && (rotation_char <= 'f'))
+    {
+        rotation = rotation_char - 'a' + 10 - 1;  // 9..15
+    }
+#else
+    if( rotation_char == '0' )
+    {
+        rotation = 0;
+    }
+    else if((rotation_char >= '1') && (rotation_char <= '8'))
+    {
+        rotation = rotation_char - '1';  // 0..7
+    }
+#endif
+
+    if( frame >= MAX_FRAMES || rotation >= NUM_SPRITETMP_ROT )
+    {
+        I_SoftError("R_InstallSpriteLump: Bad frame characters in lump %i\n",
+                    spritelump_id);
         return;
     }
 
     if ((int)frame > maxframe)
         maxframe = frame;
 
-    if (rotation == 0)
+    fmp = & sprfrm[frame];
+    frame_srp = fmp->rotation_pattern;
+    rtp = & sprfrot[ (frame * NUM_SPRITETMP_ROT) + rotation ];
+
+    if( rotation_char == '0' )
     {
         // the lump should be used for all rotations
-        if (sprtemp[frame].rotate == 0 && devparm)
+        if( devparm )
         {
-            GenPrintf(EMSG_dev,
-               "R_InitSprites: Sprite %s frame %c has multiple rot=0 lump\n",
-               spritename, 'A'+frame);
+            if( frame_srp == SRP_1 )
+            {
+                GenPrintf(EMSG_dev,
+                 "R_InitSprites: Sprite %s frame %c has multiple rot=0 lump\n",
+                 spritename, 'A'+frame);
+            }
+            else if( frame_srp >= SRP_8 )
+            {
+                GenPrintf(EMSG_dev,
+                 "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
+                 spritename, 'A'+frame);
+            }
         }
-
-        if (sprtemp[frame].rotate == 1 && devparm)
+        fmp->rotation_pattern = SRP_1;
+#if 0
+        // Only rotation 0.
+        rtp->lumppat = lumppat;
+        rtp->spritelump_id  = spritelump_id;
+        rtp->flip = (byte)flipped;
+#else
+        // Fill the whole array with the single rotation so any later overwrites with
+        // SRP_8 will keep the single rotation as the default.
+        for (r=0 ; r<NUM_SPRITETMP_ROT ; r++)
         {
-            GenPrintf(EMSG_dev,
-               "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
-               spritename, 'A'+frame);
+            rtp->lumppat = lumppat;
+            rtp->spritelump_id  = spritelump_id;
+            rtp->flip = (byte)flipped;
+            rtp++;
         }
-
-        sprtemp[frame].rotate = 0;
-        for (r=0 ; r<8 ; r++)
-        {
-            sprtemp[frame].lumppat[r] = lumppat;
-            sprtemp[frame].spritelump_id[r]  = spritelump_id;
-            sprtemp[frame].flip[r] = (byte)flipped;
-        }
+#endif
         return;
     }
 
-    // the lump is only used for one rotation
-    if (sprtemp[frame].rotate == 0 && devparm)
+    // The lump is one rotation in a set.
+    if( (frame_srp == SRP_1) && devparm )
     {
         GenPrintf(EMSG_dev,
            "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
            spritename, 'A'+frame);
     }
+   
+#ifdef ROT16
+    byte new_frame_srp = ( rotation > 7 )? SRP_16 : SRP_8;
+    if( fmp->rotation_pattern < new_frame_srp )
+        fmp->rotation_pattern = new_frame_srp;
+#else
+    fmp->rotation_pattern = SRP_8;
+#endif
 
-    sprtemp[frame].rotate = 1;
-
-    // make 0 based
-    rotation--;
-
-    if (sprtemp[frame].spritelump_id[rotation] != -1 && devparm)
+    if( (rtp->spritelump_id != -1) && devparm )
     {
         GenPrintf(EMSG_dev,
            "R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it\n",
-           spritename, 'A'+frame, '1'+rotation);
+           spritename, 'A'+frame, rotation_char );
     }
 
     // lumppat & spritelump_id are the same for original Doom, but different
     // when using sprites in pwad : the lumppat points the new graphics
     // [WDJ] Nope, lump patch and size data both come from the lump.
     // This is the only func that changes them, and they are always both updated.
-    sprtemp[frame].lumppat[rotation] = lumppat;
-    sprtemp[frame].spritelump_id[rotation] = spritelump_id;
-    sprtemp[frame].flip[rotation] = (byte)flipped;
+    rtp->lumppat = lumppat;
+    rtp->spritelump_id = spritelump_id;
+    rtp->flip = (byte)flipped;
 }
 
 
@@ -308,17 +510,22 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 //
 boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum, int startlump, int endlump)
 {
+    spriteframe_t * fmp;
+    sprite_frot_t * rtp;
     lumpinfo_t *lumpinfo;
     uint32_t    numname;
     int         l, lumpnum, lumpfnd = 0;
     int         frame;
-    int         rotation;
     int         spritelump_id;
     patch_t     patch;	// temp for read header
+    byte        array_srp = SRP_NULL;
+    byte        rotation, frame_rot;
+    char        rotation_char;
 
     numname = *(uint32_t *)sprname;
 
-    memset (sprtemp,-1, sizeof(sprtemp));
+    memset (sprfrot,-1, sizeof(sprfrot));
+    memset (sprfrm, 0, sizeof(sprfrm));
     maxframe = -1;
  
     // are we 'patching' a sprite already loaded ?
@@ -326,8 +533,8 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     if (spritedef->numframes) // (then spriteframes is not null)
     {
         // copy the already defined sprite frames
-        memcpy (sprtemp, spritedef->spriteframes,
-                spritedef->numframes * sizeof(spriteframe_t));
+        // Extract to sprfrot format.
+        transfer_to_spritetmp( spritedef );
         maxframe = spritedef->numframes - 1;
     }
 
@@ -343,7 +550,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
         if (*(uint32_t *)lumpinfo[l].name == numname)
         {
             frame = lumpinfo[l].name[4] - 'A';
-            rotation = lumpinfo[l].name[5] - '0';
+            rotation_char = lumpinfo[l].name[5];
 
             // skip NULL sprites from very old dmadds pwads
             if (W_LumpLength( lumpnum )<=8)
@@ -379,13 +586,13 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             //----------------------------------------------------
 
             lumpfnd = lumpnum;
-            R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation, false);
+            R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation_char, false);
 
             if (lumpinfo[l].name[6])
             {
                 frame = lumpinfo[l].name[6] - 'A';
-                rotation = lumpinfo[l].name[7] - '0';
-                R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation, true);
+                rotation_char = lumpinfo[l].name[7];
+                R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation_char, true);
             }
         }
     }
@@ -412,66 +619,99 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
     maxframe++;
 
+    array_srp = SRP_NULL;
     //
     //  some checks to help development
     //
     for (frame = 0 ; frame < maxframe ; frame++)
     {
-        switch ((int)sprtemp[frame].rotate)
+        fmp = & sprfrm[ frame ];
+        rtp = & sprfrot[frame * NUM_SPRITETMP_ROT];
+        if( array_srp < fmp->rotation_pattern )
+            array_srp = fmp->rotation_pattern;
+
+        switch( fmp->rotation_pattern )
         {
-          case -1:
+          case SRP_NULL:
             // no rotations were found for that frame at all
 #ifdef DEBUG_CHEXQUEST
             // [WDJ] 4/28/2009 Chexquest
             // [WDJ] not fatal, some wads have broken sprite but still play
-            debug_Printf( "R_InitSprites: No patches found "
-                     "for %s frame %c \n", sprname, frame+'A');
+            debug_Printf( "R_InitSprites: No patches found for %s frame %c \n",
+                          sprname, frame+'A');
 #else
-            I_SoftError ("R_InitSprites: No patches found "
-                     "for %s frame %c", sprname, frame+'A');
+            I_SoftError ("R_InitSprites: No patches found for %s frame %c\n",
+                         sprname, frame+'A');
 #endif
             break;
 
-          case 0:
+          case SRP_1:
             // only the first rotation is needed
             break;
 
-          case 1:
+          case SRP_8:
             // must have all 8 frames
             for (rotation=0 ; rotation<8 ; rotation++)
             {
                 // we test the patch lump, or the id lump whatever
                 // if it was not loaded the two are -1
-                if (sprtemp[frame].lumppat[rotation] == -1)
+                if( rtp->lumppat == -1)
                 {
-                    I_SoftError("R_InitSprites: Sprite %s frame %c "
-                             "is missing rotations",
-                             sprname, frame+'A');
+                    I_SoftError("R_InitSprites: Sprite %s frame %c is missing rotation %i\n",
+                             sprname, frame+'A', rotation);
                     // Limp, use the last sprite lump read for this sprite.
-                    sprtemp[frame].lumppat[rotation] = lumpfnd;
+                    rtp->lumppat = lumpfnd;
                 }
+                rtp++;
             }
             break;
+
+#ifdef ROT16
+          case SRP_16:
+            // must have all 16 frames
+            for (rotation=0 ; rotation<16 ; rotation++)
+            {
+                // we test the patch lump, or the id lump whatever
+                // if it was not loaded the two are -1
+                if( rtp->lumppat == -1)
+                {
+                    I_SoftError("R_InitSprites: Sprite %s frame %c is missing rotation %i\n",
+                             sprname, frame+'A', rotation);
+                    // Limp, use the last sprite lump read for this sprite.
+                    rtp->lumppat = lumpfnd;
+                }
+                rtp++;
+            }
+            break;
+#endif
         }
     }
 
-    // allocate space for the frames present and copy sprtemp to it
-    if (spritedef->numframes &&             // has been allocated
-        spritedef->numframes < maxframe)   // more frames are defined ?
+    frame_rot = srp_to_num_rot[ array_srp ];
+   
+    // allocate space for the frames present and copy spritetmp to it
+    if( spritedef->numframes                // has been allocated
+        && (spritedef->numframes < maxframe  // more frames are defined
+            || spritedef->frame_rot < frame_rot) ) // more rotations are defined
     {
-        Z_Free (spritedef->spriteframes);
-        spritedef->spriteframes = NULL;
+        Z_Free (spritedef->spriteframe);
+        Z_Free (spritedef->framerotation);
+        spritedef->spriteframe = NULL;
+        spritedef->framerotation = NULL;
     }
 
     // allocate this sprite's frames
-    if (spritedef->spriteframes == NULL)
+    if (spritedef->spriteframe == NULL)
     {
-        spritedef->spriteframes =
+        spritedef->spriteframe =
             Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+        spritedef->framerotation =
+            Z_Malloc (maxframe * frame_rot * sizeof(sprite_frot_t), PU_STATIC, NULL);
     }
 
     spritedef->numframes = maxframe;
-    memcpy (spritedef->spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
+    spritedef->frame_rot = frame_rot;
+    transfer_from_spritetmp( spritedef, array_srp, frame_rot );
 
     return true;
 }
@@ -1102,16 +1342,17 @@ static void R_ProjectSprite (mobj_t* thing)
     fixed_t             xscale;
     fixed_t             yscale; //added:02-02-98:aaargll..if I were a math-guy!!!
 
-    int                 x1, x2;
+    int                 x1, x2, fr;
 
     sector_t*		thingsector;	 // [WDJ] 11/14/2009
    
     spritedef_t*        sprdef;
-    spriteframe_t*      sprframe;
+    spriteframe_t *     sprframe;
+    sprite_frot_t *     sprfrot;
     spritelump_t *      sprlump;
 
-    unsigned            rot;
-    boolean             flip;
+    unsigned int        rot;
+    byte                flip;
 
     byte                dist_pri;  // distance priority
 
@@ -1178,38 +1419,44 @@ static void R_ProjectSprite (mobj_t* thing)
 #endif
 
     // [WDJ] segfault control in heretic shareware, not all sprites present
-    if( (byte*)sprdef->spriteframes < (byte*)0x1000 )
+    if( (byte*)sprdef->spriteframe < (byte*)0x1000 )
     {
-        I_SoftError("R_ProjectSprite: sprframes ptr NULL for sprite %d\n", thing->sprite );
+        I_SoftError("R_ProjectSprite: sprframe ptr NULL for sprite %d\n", thing->sprite );
         return;
     }
 
-    sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
+    fr = thing->frame & FF_FRAMEMASK;
+    sprframe = get_spriteframe( sprdef, fr );
 
-#ifdef PARANOIA
-    //heretic hack
-    if( !sprframe ) {
-        // [WDJ] Give msg and don't draw it
-        I_SoftError("R_ProjectSprite: sprframe NULL for sprite %d\n", thing->sprite);
-        return;
-    }
-#endif
-
-    if (sprframe->rotate)
+    if( sprframe->rotation_pattern == SRP_1 )
     {
-        // choose a different rotation based on player view
-        ang = R_PointToAngle (thing->x, thing->y);
-        rot = (ang-thing->angle+(unsigned)(ANG45/2)*9)>>29;
-        flip = (boolean)sprframe->flip[rot];
+        // use single rotation for all views
+        rot = 0;  //Fab: for vis->patch below
     }
     else
     {
-        // use single rotation for all views
-        rot = 0;                        //Fab: for vis->patch below
-        flip = (boolean)sprframe->flip[0];
+        // choose a different rotation based on player view
+        ang = R_PointToAngle(thing->x, thing->y);       // uses viewx,viewy
+
+        if( sprframe->rotation_pattern == SRP_8)
+        {
+            // 8 direction rotation pattern
+            rot = (ang - thing->angle + (unsigned) (ANG45/2) * 9) >> 29;
+        }
+#ifdef ROT16
+        else if( sprframe->rotation_pattern == SRP_16)
+        {
+            // 16 direction rotation pattern
+            rot = (ang - thing->angle + (unsigned) (ANG45/4) * 17) >> 28;
+        }
+#endif
+        else return;
     }
+   
+    sprfrot = get_framerotation( sprdef, fr, rot );
     //Fab: [WDJ] spritelump_id is the index
-    sprlump = &spritelumps[sprframe->spritelump_id[rot]];
+    sprlump = &spritelumps[sprfrot->spritelump_id];
+    flip = sprfrot->flip;
 
     // calculate edges of the shape
     if( flip )
@@ -1356,7 +1603,7 @@ static void R_ProjectSprite (mobj_t* thing)
     //Fab: lumppat is the lump number of the patch to use, this is different
     //     than spritelump_id for sprites-in-pwad : the graphics are patched
     // [WDJ] Nope, both are updated from the lump together.
-    vis->patch = sprframe->lumppat[rot];
+    vis->patch = sprfrot->lumppat;
 
 
 //
@@ -1485,11 +1732,11 @@ const int PSpriteSY[NUMWEAPONS] =
 void R_DrawPSprite (pspdef_t* psp)
 {
     fixed_t             tx;
-    int                 x1, x2;
+    int                 x1, x2, fr;
     spritedef_t*        sprdef;
-    spriteframe_t*      sprframe;
+//    spriteframe_t*      sprframe;
+    sprite_frot_t *     sprfrot;
     spritelump_t*       sprlump;
-    boolean             flip;
     vissprite_t*        vis;
     vissprite_t         avis;
 
@@ -1517,26 +1764,20 @@ void R_DrawPSprite (pspdef_t* psp)
 #endif
    
     // [WDJ] segfault control in heretic shareware, not all sprites present
-    if( (byte*)sprdef->spriteframes < (byte*)0x1000 )
+    if( (byte*)sprdef->spriteframe < (byte*)0x1000 )
     {
-        I_SoftError("R_DrawPSprite: sprframes ptr NULL for state %d\n", psp->state );
+        I_SoftError("R_DrawPSprite: sprframe ptr NULL for state %d\n", psp->state );
         return;
     }
+
+    fr = psp->state->frame & FF_FRAMEMASK;
+//    sprframe = get_spriteframe( sprdef, fr );
+
+    // use single rotation for all views
+    sprfrot = get_framerotation( sprdef, fr, 0 );
    
-    sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
-
-#ifdef PARANOIA
-    //Fab:debug
-    if (sprframe==NULL) {
-        // [WDJ] Give msg and don't draw it
-        I_SoftError("R_DrawPSprite: sprframes NULL for state %d\n", psp->state - states);
-        return;
-    }
-#endif
-
     //Fab: see the notes in R_ProjectSprite about spritelump_id,lumppat
-    sprlump = &spritelumps[sprframe->spritelump_id[0]];
-    flip = (boolean)sprframe->flip[0];
+    sprlump = &spritelumps[sprfrot->spritelump_id];
 
     // calculate edges of the shape
 
@@ -1549,7 +1790,7 @@ void R_DrawPSprite (pspdef_t* psp)
     // [WDJ] I don't think that weapon sprites need flip, but prboom
     // and prboom-plus are still supporting it, so maybe there are some.
     // There being one viewpoint per offset, probably do not need this.
-    if( flip )
+    if( sprfrot->flip )
     {
         // debug_Printf("Player weapon flip detected!\n" );
         tx -= sprlump->width - sprlump->offset;  // Fraggle's flip offset
@@ -1595,7 +1836,7 @@ void R_DrawPSprite (pspdef_t* psp)
     vis->x2 = (x2 >= rdraw_viewwidth) ? rdraw_viewwidth-1 : x2;
     vis->scale = pspriteyscale;  //<<detailshift;
 
-    if (flip)
+    if( sprfrot->flip )
     {
         vis->xiscale = -pspriteiscale;
         vis->startfrac = sprlump->width - 1;
@@ -1610,7 +1851,7 @@ void R_DrawPSprite (pspdef_t* psp)
         vis->startfrac += vis->xiscale*(vis->x1-x1);
 
     //Fab: see above for more about spritelump_id,lumppat
-    vis->patch = sprframe->lumppat[0];
+    vis->patch = sprfrot->lumppat;
     vis->translucentmap = NULL;
     vis->translucent_index = 0;
     if (viewplayer->mo->flags & MF_SHADOW)      // invisibility effect

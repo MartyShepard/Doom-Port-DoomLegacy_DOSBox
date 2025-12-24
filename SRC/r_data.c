@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1325 2017-05-23 14:29:10Z wesleyjohnson $
+// $Id: r_data.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2820,11 +2820,12 @@ void R_PrecacheLevel (void)
     char*  texturepresent;
     char*  spritepresent;
 
-    int i,j,k;
+    int i,j,k,n;
     int lump;
 
     thinker_t*          th;
-    spriteframe_t*      sf;
+    spriteframe_t *     sf;
+    sprite_frot_t *     sv;
 
     //int numgenerated;  //faB:debug
 
@@ -2914,11 +2915,13 @@ void R_PrecacheLevel (void)
 
         for (j=0 ; j<sprites[i].numframes ; j++)
         {
-            sf = &sprites[i].spriteframes[j];
-            for (k=0 ; k<8 ; k++)
+            sf = get_spriteframe( &sprites[i], j );
+            n = srp_to_num_rot[ sf->rotation_pattern ];
+            for (k=0 ; k<n ; k++)
             {
+                sv = get_framerotation( &sprites[i], j, k );
                 //Fab: see R_InitSprites for more about lumppat,lumpid
-                lump = sf->lumppat[k];
+                lump = sv->lumppat;
                 if(devparm)
                    spritememory += W_LumpLength(lump);
                 W_CachePatchNum(lump , PU_CACHE);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: r_defs.h 1359 2017-10-16 16:23:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -900,37 +900,46 @@ typedef struct vissprite_s
 } vissprite_t;
 
 
+typedef enum { SRP_NULL, SRP_1, SRP_8, SRP_16 }  sprite_rotation_pattern_e;
+
 //
-// Sprites are patches with a special naming convention
-//  so they can be recognized by R_InitSprites.
-// The base name is NNNNFx or NNNNFxFx, with
-//  x indicating the rotation, x = 0, 1-7.
+// A sprite is a patch_t that is assumed to represent a three dimensional
+// object and may have multiple rotations pre-drawn.
+// Sprites are patches with a special naming convention so they can be
+// recognized by R_InitSprites.
+// The base name is combined with frame (F) and rotation (x) characters.
+// A sprite with only one patch for all views: NNNNF0.
+// With rotation it is named NNNNFx or NNNNFxFx, with
+//   x = 1 .. 8, indicating the rotation.
+// The second frame uses Horizontal flipping (to save space),
+//  thus NNNNF2F5 defines a mirrored patch with F2 normal and F5 flipped.
 // The sprite and frame specified by a thing_t
 //  is range checked at run time.
-// A sprite is a patch_t that is assumed to represent
-//  a three dimensional object and may have multiple
-//  rotations pre drawn.
-// Horizontal flipping is used to save space,
-//  thus NNNNF2F5 defines a mirrored patch.
-// Some sprites will only have one picture used
-// for all views: NNNNF0
-//
+
+// [WDJ] Tried to get better packing.
+// Having two levels of structure requires two levels of decoding, and
+// even more cache wasted due to field alignments.
+// This arrangement eliminates most conditional tests.
+// It allows storing 1-rotation sprites in a smaller allocation.
+// There may be enhancements later, so optimization of this structure
+// will be a waste of effort.  Trying to put the rotation_pattern in
+// the structure just results in an irregular structure.
+
+
+// Per frame rotation
+// size 8
 typedef struct
 {
-    // If rotate is false, use rot=0 for any position.
-    // Note: Then as all eight entries are always available,
-    //  we will fill them all with the same values.
-    boolean     rotate;
+    uint32_t    lumppat;   // lump number 16:16 wad:lump
+    uint16_t    spritelump_id; // into spritelumps[]
+    byte        flip;    // Flip bit (1 = flip)
+} sprite_frot_t;
 
-    // Lump to use for view angles 0-7.
-    int         lumppat[8];   // lump number 16:16 wad:lump
-    short       spritelump_id[8]; // into spritelumps[]
-
-    // Flip bit (1 = flip) to use for view angles 0-7.
-    byte        flip[8];
-
+// Per frame, often has multiple rotations.
+typedef struct
+{
+    byte        rotation_pattern;  // sprite_rotation_pattern_e
 } spriteframe_t;
-
 
 
 //
@@ -939,9 +948,15 @@ typedef struct
 typedef struct
 {
     int                 numframes;
-    spriteframe_t*      spriteframes;
-
+    byte                frame_rot; // array indexing step
+    spriteframe_t *     spriteframe;  // array[numframes]
+    sprite_frot_t *     framerotation;  // array[numframes * frame_rot]
 } spritedef_t;
 
+spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, int frame_num );
+sprite_frot_t *  get_framerotation( const spritedef_t * spritedef,
+				    int frame_num, byte rotation );
+
+extern const byte srp_to_num_rot[4];
 
 #endif

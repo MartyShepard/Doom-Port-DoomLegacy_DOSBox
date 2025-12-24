@@ -6248,3 +6248,12 @@ it will flush the XCMD buffer instead of generating
 an error message.  There is no point in saving stale XCMD
 in the buffer.  The name, skin, and color of the player
 will be updated when the connect.
+
+*** W107_sprite_rot16
+patchfile = w107_55_sprite_rot16.patch
+- commit revision 1359
+Sprites can now have 16 rotation positions.
+This uses a naming system in use by EDGE.
+The normal 8 positions still apply (1,2,3,4,5,6,7,8).
+It adds 8 more positions between the existing 8 rotation positions.
+The 16 positions are (1,8,2,9,3,A,4,B,5,C,6,D,7,E,8,F).

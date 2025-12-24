@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01359 ]: w107 sprite rot16
 [01358 ]: w107 54 no net
 [01357 ]: w107 53 skins
 [01356 ]: w107_52 hexen detect
