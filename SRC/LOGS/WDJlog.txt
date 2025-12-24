@@ -6210,4 +6210,9 @@ patchfile = w107_49_heretic_deh.patch
 - commit revision 1353
 Include some code pointers for heretic DEH, from EternityEngine.
 
+*** W107_mbf_state
+patchfile = w107_50_mbf_state.patch
+- commit revision 1354
+Fix the MBF function, RandomState, to use the DEH state translation.
+This is similar to an EternityEngine fix.
 

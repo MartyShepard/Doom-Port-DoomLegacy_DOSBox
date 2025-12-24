@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1345 2017-07-29 18:14:24Z wesleyjohnson $
+// $Id: p_local.h 1354 2017-07-29 18:34:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -508,5 +508,7 @@ boolean P_GiveArtifact(player_t *player, artitype_t arti, mobj_t *mo);
 boolean P_ChickenMorphPlayer(player_t *player);
 void P_Massacre(void);
 void P_AddBossSpot(fixed_t x, fixed_t y, angle_t angle);
+
+statenum_t  deh_frame_to_state( int deh_frame );
 
 #endif  // P_LOCAL_H

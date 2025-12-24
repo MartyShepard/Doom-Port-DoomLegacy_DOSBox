@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1349 2017-07-29 18:26:35Z wesleyjohnson $
+// $Id: p_enemy.c 1354 2017-07-29 18:34:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -4000,8 +4000,13 @@ void A_PlaySound(mobj_t *mo)
 void A_RandomJump(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
+
+    // As in EternityEngine, test first, then use Random Number.
+    statenum_t si = deh_frame_to_state( sep->parm1 );
+    if( si == S_NULL )  return;
+    
     if( PP_Random(pr_randomjump) < sep->parm2 )
-        P_SetMobjState(mo, sep->parm1);
+        P_SetMobjState(mo, si);
 }
 
 //

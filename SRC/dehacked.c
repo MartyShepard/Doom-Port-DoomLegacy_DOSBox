@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1353 2017-07-29 18:30:55Z wesleyjohnson $
+// $Id: dehacked.c 1354 2017-07-29 18:34:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -674,7 +674,6 @@ enum {
 
 // Translate deh frame number to internal state index.
 // return S_NULL when invalid state (deh frame)
-static
 statenum_t  deh_frame_to_state( int deh_frame )
 {
   // Some old wads had negative frame numbers, which should be S_NULL.
