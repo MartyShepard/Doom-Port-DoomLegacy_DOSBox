@@ -6220,3 +6220,8 @@ This is similar to an EternityEngine fix.
 patchfile = w107_51_numname.patch
 - commit revision 1355
 Use numerical_name to search for flats.
+
+*** W107_hexen_detect
+patchfile = w107_52_hexen_detect.patch
+- commit revision 1356
+Detect Hexen wads, and issue an appropriate hud message.

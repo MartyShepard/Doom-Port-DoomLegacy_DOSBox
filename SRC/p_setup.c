@@ -283,6 +283,45 @@ int             numdmstarts;
 mapthing_t  *   playerstarts[MAXPLAYERS];
 
 
+#if 0
+// [WDJ] Checks from PrBoom.
+
+// figgi 08/21/00 -- constants and globals for glBsp support
+#define gNd2  0x32644E67
+#define gNd3  0x33644E67
+#define gNd4  0x34644E67
+#define gNd5  0x35644E67
+#define ZNOD  0x444F4E5A
+#define ZGLN  0x4E4C475A
+#define GL_VERT_OFFSET  4
+
+
+
+static void P_GetNodesVersion(int lumpnum, int gl_lumpnum)
+{
+  const void * data;
+
+  data = W_CacheLumpNum(gl_lumpnum+ML_GL_VERTS);
+  if ( (gl_lumpnum > lumpnum) && (forceOldBsp == false) && (compatibility_level >= prboom_2_compatibility) ) {
+    // Check for gNd2, gNd3, gNd4, gNd5
+    if( !strcasecmp( data, "gNd", 3) {
+      nodesVersion = gNd4;
+      I_SoftError("GL Nodes not supported\n");
+    }
+  } else {
+    data = W_CacheLumpNum(lumpnum + ML_NODES);
+    if( !strcasecmp(data, "ZNOD", 4) )
+      I_SoftError("ZDoom nodes not supported");
+
+    data = W_CacheLumpNum(lumpnum + ML_SSECTORS);
+    if( !strcasecmp(data, "ZGLN", 4) )
+      I_SoftError("ZDoom GL nodes not supported");
+  }
+}
+#endif
+
+
+
 //
 // P_LoadVertexes
 //
@@ -1525,27 +1564,66 @@ char *levellumps[] =
   "NODES",        // ML_NODES,    BSP nodes
   "SECTORS",      // ML_SECTORS,  Sectors, from editing
   "REJECT",       // ML_REJECT,   LUT, sector-sector visibility
-  "BLOCKMAP"      // ML_BLOCKMAP  LUT, motion clipping, walls/grid element
+  "BLOCKMAP",     // ML_BLOCKMAP  LUT, motion clipping, walls/grid element
+  "BEHAVIOR",     // ML_BEHAVIOR  Hexen
 };
 
 
+#if 0
+// Unused
 //
-// P_CheckLevel
-// Checks a lump and returns whether or not it is a level header lump.
-boolean P_CheckLevel(int lumpnum)
+// Checks for the normal level header lumps.
+//   lump : the header lump
+static
+boolean  P_CheckHeaderLumps(int lump)
 {
   int  i;
-  int  file, lump;
-  
+  int  filen, lumpn;
+
+  filen = WADFILENUM(lump);
+  if( filen > numwadfiles )  goto fail;
+  lumpn = LUMPNUM(lump);
+
   for(i=ML_THINGS; i<=ML_BLOCKMAP; i++)
   {
-      file = lumpnum >> 16;
-      lump = (lumpnum & 0xffff) + i;
-      if(file > numwadfiles || lump > wadfiles[file]->numlumps ||
-         strncmp(wadfiles[file]->lumpinfo[lump].name, levellumps[i], 8) )
-        return false;
+      int li = lumpn + i;
+      if( li > wadfiles[filen]->numlumps )  goto fail;
+      if( strncmp(wadfiles[filen]->lumpinfo[li].name, levellumps[i], 8) )  goto fail;
   }
-  return true;    // all right
+  return true;
+
+fail:
+  return false;
+}
+#endif
+
+
+// Checks a lump and returns whether or not it is a level header lump.
+//  ml : a specific lump type or 0 to search all
+static
+int  P_CheckLumpName(int lump, int ml)
+{
+  int  ml2;
+  int  filen, lumpn;
+
+  filen = WADFILENUM(lump);
+  if( filen > numwadfiles )  goto fail;
+  lumpn = LUMPNUM(lump);
+
+  ml2 = ml;
+  if( ml == 0)
+  {   // search
+      ml = ML_THINGS;
+      ml2 = ML_BEHAVIOR;
+  }
+  for( ; ml<=ml2; ml++)
+  {
+      if( lumpn > wadfiles[filen]->numlumps )  goto fail;
+      if( strncmp(wadfiles[filen]->lumpinfo[lumpn].name, levellumps[ml], 8) == 0 )
+          return ml;
+  }
+fail:
+  return -1;
 }
 
 
@@ -1624,6 +1702,7 @@ boolean P_SetupLevel (int      to_episode,
                       skill_e  to_skill,
                       char*    map_wadname)      // for wad files
 {
+    char  *errstr;
     char  *sl_mapname = NULL;
     int   i;
 
@@ -1713,7 +1792,8 @@ boolean P_SetupLevel (int      to_episode,
             level_id.mapname==NULL)            // no maps were found
         {
             // go back to title screen if no map is loaded
-            return false;
+            errstr = "No Maps";
+            goto load_reject;
         }
 
         // From the added wad, returned by P_AddWadFile().
@@ -1760,6 +1840,13 @@ boolean P_SetupLevel (int      to_episode,
     // SoM: WOO HOO!
     // SoM: DOH!
     //R_InitPortals ();
+
+    // [WDJ] Check on Hexen-format maps, idea from PrBoom.
+    if( P_CheckLumpName( level_lumpnum+ML_BEHAVIOR, ML_BEHAVIOR ) == ML_BEHAVIOR )
+    {
+        errstr = "Hexen format not supported";
+        goto load_reject;
+    }
 
     // note: most of this ordering is important
     P_LoadBlockMap (level_lumpnum+ML_BLOCKMAP);
@@ -1873,6 +1960,13 @@ boolean P_SetupLevel (int      to_episode,
 
     //debug_Printf("P_SetupLevel: %d vertexs %d segs %d subsector\n",numvertexes,numsegs,numsubsectors);
     return true;
+
+load_reject:
+    // If want error messages to be seen, need a delay, or else the screen will be redrawn.
+    GenPrintf( EMSG_hud|EMSG_now, "%s: %s\n", errstr, level_mapname );
+    I_Sleep(4000);
+    I_SoftError("%s: %s\n", errstr, level_mapname);
+    return false;
 }
 
 

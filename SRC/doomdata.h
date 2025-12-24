@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdata.h 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: doomdata.h 1356 2017-07-29 18:37:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -71,7 +71,8 @@ enum
   ML_NODES,             // BSP nodes
   ML_SECTORS,           // Sectors, from editing
   ML_REJECT,            // LUT, sector-sector visibility        
-  ML_BLOCKMAP           // LUT, motion clipping, walls/grid element
+  ML_BLOCKMAP,          // LUT, motion clipping, walls/grid element
+  ML_BEHAVIOR,          // Hexen
 };
 
 
