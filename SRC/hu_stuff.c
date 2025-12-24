@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: hu_stuff.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -245,7 +245,7 @@ void TeamPlay_OnChange(void)
     {
         // skins
         for(i=0; i<numskins; i++)
-            set_team_name( i, skins[i].name);
+            set_team_name( i, skins[i]->name);
     }
 }
 

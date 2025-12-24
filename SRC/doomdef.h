@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: doomdef.h 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -258,7 +258,7 @@
 // Limit MAXPLAYERS (and others) to 250.
 // TODO: ... more!!!
 #define MAXPLAYERS              32
-#define MAXSKINS                MAXPLAYERS
+#define MAXSKINS                128
 #define PLAYERSMASK             (MAXPLAYERS-1)
 #define MAXPLAYERNAME           21
 // Limit MAXTEAMS to 250.

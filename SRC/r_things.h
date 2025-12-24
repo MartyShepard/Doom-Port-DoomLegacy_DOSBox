@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_things.h 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -56,11 +56,14 @@
 #ifndef R_THINGS_H
 #define R_THINGS_H
 
+#include "doomtype.h"
 #include "r_defs.h"
   // m_fixed.h, sector_t
 #include "sounds.h"
 #include "command.h"
   // consvar_t
+#include "d_player.h"
+  
 
 // MAXVISSPRITES was 128, then 256 (2-2-98)
 #define MAXVISSPRITES   16000
@@ -122,18 +125,16 @@ typedef struct
     char        faceprefix[4];          // 3 chars+'\0', default is "STF"
 
     // specific sounds per skin
-    short       soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
-
+    sfxid_t     soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
 } skin_t;
 
 extern int       numskins;
-extern skin_t    skins[MAXSKINS+1];
-//extern CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
+extern skin_t *  skins[MAXSKINS+1];
 extern consvar_t cv_skin;
 
-//void    R_InitSkins (void);
-void    SetPlayerSkin(int playernum,char *skinname);
-int     R_SkinAvailable (char* name);
+void    SetPlayerSkin_by_index( player_t * player, int index );
+void    SetPlayerSkin(int playernum, const char *skinname);
+int     R_SkinAvailable( const char* name );
 void    R_AddSkins (int wadnum);
 
 void    R_InitDrawNodes();

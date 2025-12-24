@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1339 2017-06-21 16:09:23Z wesleyjohnson $
+// $Id: m_menu.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1041,6 +1041,7 @@ void M_StartServer( int choice )
     multiplayer = true;
     if( choice == 9 )
     {
+        // Dedicated server menu choice.
         dedicated = true;
         nodrawers = true;
         vid.draw_ready = 0;        
@@ -1054,10 +1055,12 @@ void M_StartServer( int choice )
                       cv_monsters.value, cv_skill.value));
     // skin change
     if (StartSplitScreenGame
-        && ( ! displayplayer2_ptr
-             || (cv_skin2.value != displayplayer2_ptr->skin) ) )
+        && ! ( displayplayer2_ptr
+             && displayplayer2_ptr->skin
+             && (strcasecmp(cv_skin2.string, skins[displayplayer2_ptr->skin]->name) == 0 )
+             ) )
     {
-        COM_BufAddText ( va("%s \"%s\"", cv_skin2.name, skins[cv_skin2.value].name));
+        COM_BufAddText ( va("%s \"%s\"", cv_skin2.name, cv_skin2.string));
     }
 }
 
@@ -1247,21 +1250,27 @@ static void M_Setup_P1_Controls(int choice);
 static void M_Setup_P2_Controls(int choice);
 static boolean M_QuitMultiPlayerMenu(void);
 
+#define PLBOXW    8
+#define PLBOXH    9
+#define PLBOXX    90
+#define PLBOXY    8
+#define PLSKINNAMEY 96
+
 menuitem_t SetupMultiPlayerMenu[] =
 {
     {IT_KEYHANDLER | IT_STRING          ,0,"Your name" ,M_MultiPlayer_Responder,0},
     {IT_CVAR | IT_STRING | IT_CV_NOPRINT | IT_YOFFSET, 0,"Your color",&cv_playercolor         ,16},
-    {IT_KEYHANDLER | IT_STRING | IT_YOFFSET, 0,"Your skin" ,M_MultiPlayer_Responder,96},
+    {IT_KEYHANDLER | IT_STRING | IT_YOFFSET, 0,"Your skin" ,M_MultiPlayer_Responder, PLSKINNAMEY},
 #if 0
     // This line calls the setup controls for player2, only if numitems is > 3
     //Hurdler: uncomment this line when other options are available
-    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 config...", &P2_OptionsDef, 110},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 config...", &P2_OptionsDef, PLSKINNAMEY+14},
 #else
     //... and remove this one
-    {IT_STRING | IT_CVAR | IT_YOFFSET,   0,"Always Run"      ,&cv_autorun2         ,110},
+    {IT_STRING | IT_CVAR | IT_YOFFSET,   0,"Always Run"      ,&cv_autorun2         ,  PLSKINNAMEY+14},
 #endif
-    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 Controls...", M_Setup_P2_Controls, 120},
-    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Mouse config...", &SecondMouseCfgdef, 130}
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Player2 Controls...", M_Setup_P2_Controls, PLSKINNAMEY+24},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Second Mouse config...", &SecondMouseCfgdef, PLSKINNAMEY+34}
 };
 
 enum {
@@ -1287,8 +1296,6 @@ menu_t  SetupMultiPlayerDef =
 };
 
 
-#define PLBOXW    8
-#define PLBOXH    9
 
 static  int       multi_tics;
 static  state_t*  multi_state;
@@ -1300,21 +1307,24 @@ static  player_t*  setupm_player;
 static  consvar_t* setupm_cvskin;
 static  consvar_t* setupm_cvcolor;
 static  consvar_t* setupm_cvname;
+static  byte       setupm_skinindex;
 
 static
 void M_SetupMultiPlayer1 (int choice)
 {
+    // set for player 1
+    setupm_player = consoleplayer_ptr;
+    setupm_cvname = &cv_playername;
+    strcpy (setupm_name, cv_playername.string);
+    setupm_cvskin = &cv_skin;
+    setupm_skinindex = R_SkinAvailable( cv_skin.string );
+    setupm_cvcolor = &cv_playercolor;
+
+    SetupMultiPlayerDef.numitems = setupmultiplayer_skin +1;      //remove player2 setup controls and mouse2 
+    SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = setupm_cvcolor;
+
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
-    strcpy(setupm_name, cv_playername.string);
-    SetupMultiPlayerDef.numitems = setupmultiplayer_skin +1;      //remove player2 setup controls and mouse2 
-
-    // set for player 1
-    SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = &cv_playercolor;
-    setupm_player = consoleplayer_ptr;
-    setupm_cvskin = &cv_skin;
-    setupm_cvcolor = &cv_playercolor;
-    setupm_cvname = &cv_playername;
     Push_Setup_Menu (&SetupMultiPlayerDef);
 }
 
@@ -1322,17 +1332,19 @@ void M_SetupMultiPlayer1 (int choice)
 static
 void M_SetupMultiPlayer2 (int choice)
 {
+    // set for splitscreen player 2
+    setupm_player = displayplayer2_ptr;  // player 2
+    setupm_cvname = &cv_playername2;
+    strcpy (setupm_name, cv_playername2.string);
+    setupm_cvskin = &cv_skin2;
+    setupm_skinindex = R_SkinAvailable( cv_skin2.string );
+    setupm_cvcolor = &cv_playercolor2;
+
+    SetupMultiPlayerDef.numitems = setupmulti_end;          //activate the setup controls for player 2
+    SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = setupm_cvcolor;
+   
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
-    strcpy (setupm_name, cv_playername2.string);
-    SetupMultiPlayerDef.numitems = setupmulti_end;          //activate the setup controls for player 2
-
-    // set for splitscreen player 2
-    SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = &cv_playercolor2;
-    setupm_player = displayplayer2_ptr;  // player 2
-    setupm_cvskin = &cv_skin2;
-    setupm_cvcolor = &cv_playercolor2;
-    setupm_cvname = &cv_playername2;
     Push_Setup_Menu (&SetupMultiPlayerDef);
 }
 
@@ -1358,13 +1370,13 @@ void M_Player2_MenuEnable( boolean player2_enable )
 static
 void M_DrawSetupMultiPlayerMenu(void)
 {
+    spritedef_t   * sprdef;
+    spriteframe_t * sprframe;
+    patch_t       * patch;
+    byte          * colormap;
     int             mx,my;
-    spritedef_t*    sprdef;
-    spriteframe_t*  sprframe;
     int             lump;
-    patch_t*        patch;
     int             st;
-    byte*           colormap;
 
     // Draw to screen0, scaled
     mx = SetupMultiPlayerDef.x;
@@ -1374,19 +1386,16 @@ void M_DrawSetupMultiPlayerMenu(void)
     M_DrawGenericMenu();
 
     // draw name string
-    M_DrawTextBox(mx+90,my-8,MAXPLAYERNAME,1);
-    V_DrawString (mx+98,my,0,setupm_name);
+    M_DrawTextBox(mx+PLBOXX, my-8, MAXPLAYERNAME, 1);
+    V_DrawString (mx+PLBOXX+8 ,my, 0, setupm_name);
 
     // draw skin string
-    V_DrawString (mx+90, my+96,0, setupm_cvskin->string);
+    V_DrawString (mx+PLBOXX, my+PLSKINNAMEY, 0, setupm_cvskin->string);
 
     // draw text cursor for name
     if (itemOn==0
         && skullAnimCounter<4 )   //blink cursor
         V_DrawCharacter(mx+98+V_StringWidth(setupm_name), my, '_' | 0x80);  // white
-
-    // draw box around guy
-    M_DrawTextBox(mx+90,my+8, PLBOXW, PLBOXH);
 
     // anim the player in the box
     if (--multi_tics<=0)
@@ -1400,7 +1409,7 @@ void M_DrawSetupMultiPlayerMenu(void)
     }
 
     // skin 0 is default player sprite
-    sprdef    = &skins[R_SkinAvailable(setupm_cvskin->string)].spritedef;
+    sprdef    = &skins[R_SkinAvailable(setupm_cvskin->string)]->spritedef;
     sprframe  = &sprdef->spriteframes[ multi_state->frame & FF_FRAMEMASK];
     lump  = sprframe->lumppat[0];
 
@@ -1408,10 +1417,24 @@ void M_DrawSetupMultiPlayerMenu(void)
          SKIN_TO_SKINMAP( setupm_cvcolor->value )
        : reg_colormaps;  // default green skin
 
+    // draw box around guy
+    M_DrawTextBox(mx+PLBOXX,my+PLBOXY, PLBOXW, PLBOXH);
+
     // draw player sprite
     // temp usage of sprite lump, until end of function
     patch = W_CachePatchNum (lump, PU_CACHE_DEFAULT);  // endian fix
-    V_DrawMappedPatch (mx+98+(PLBOXW*8/2),my+16+(PLBOXH*8)-8, patch, colormap);
+    if( itemOn>0 )  // Edit skin or color
+    {
+      // Some skins are too large for the screen, cause segfault.
+      V_DrawMappedPatch_Box (mx+PLBOXX+8+(PLBOXW*8/2),my+PLBOXY+8+(PLBOXH*8)-8, patch, colormap,
+                           1, 0, 300, my+PLBOXY+8+PLBOXH*8 );
+    }
+    else
+    {
+      // Some skins are too large for the box
+      V_DrawMappedPatch_Box (mx+PLBOXX+8+(PLBOXW*8/2),my+PLBOXY+8+(PLBOXH*8)-8, patch, colormap,
+                           mx+PLBOXX+8, my+PLBOXY+8, PLBOXW*8, PLBOXH*8 );
+    }
 }
 
 
@@ -1422,10 +1445,6 @@ static
 void M_MultiPlayer_Responder (int key)
 {
     int      l;
-    boolean  exitmenu = false;  // exit to previous menu and send name change
-    int      myskin;
-
-    myskin  = setupm_cvskin->value;
 
     switch (key)
     {
@@ -1446,28 +1465,30 @@ void M_MultiPlayer_Responder (int key)
       case KEY_LEFTARROW:
         if (itemOn==2)       //player skin
         {
-            S_StartSound(menu_sfx_val);
-            myskin--;
+            // unsigned skin index
+            if(setupm_skinindex == 0)
+                setupm_skinindex = numskins;
+
+            setupm_skinindex--;
+            goto change_skin;
         }
         break;
 
       case KEY_RIGHTARROW:
         if (itemOn==2)       //player skin
         {
-            S_StartSound(menu_sfx_val);
-            myskin++;
+            setupm_skinindex++;
+            goto change_skin;
         }
         break;
 
       case KEY_ENTER:
         S_StartSound(menu_sfx_enter);
-        exitmenu = true;
-        break;
+        goto exitmenu;
 
       case KEY_ESCAPE:
         S_StartSound(menu_sfx_esc);
-        exitmenu = true;
-        break;
+        goto exitmenu;
 
       case KEY_BACKSPACE:
         l = strlen(setupm_name);
@@ -1493,23 +1514,31 @@ void M_MultiPlayer_Responder (int key)
         }
         break;
     }
+    return;
+
+change_skin:
+    S_StartSound(menu_sfx_val);
 
     // check skin
-    if (myskin <0)
-        myskin = numskins-1;
-    if (myskin >numskins-1)
-        myskin = 0;
+    if( setupm_skinindex > numskins-1 )
+        setupm_skinindex = 0;
+
+    if( skins[setupm_skinindex] == NULL )  return;
 
     // check skin change
     // If not updated here then another chance after server start
-    if (setupm_player && myskin != setupm_player->skin)
-        COM_BufAddText ( va("%s \"%s\"",setupm_cvskin->name ,skins[myskin].name));
-    setupm_cvskin->value = myskin;
-
-    if (exitmenu)
+    // The skin select is the name, not the index.
+    CV_Set( setupm_cvskin, skins[setupm_skinindex]->name );  // does net update
+    if( setupm_player )
     {
-        Pop_Menu();
+        setupm_player->skin = setupm_skinindex;
     }
+    return;
+
+exitmenu:
+    // Exit to previous menu.
+    Pop_Menu();
+    return;
 }
 
 static
@@ -1523,8 +1552,8 @@ boolean M_QuitMultiPlayerMenu(void)
         for (l= strlen(setupm_name)-1;
              l>=0 && setupm_name[l]==' '; l--)
             setupm_name[l]=0;
-        COM_BufAddText ( va("%s \"%s\"",setupm_cvname->name ,setupm_name));
-        
+
+        CV_Set( setupm_cvname, setupm_name );  // does net update
     }
     return true;
 }

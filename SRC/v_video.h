@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: v_video.h 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -213,6 +213,10 @@ void  V_SetupFont( int font_size, fontinfo_t * fip, uint32_t option );
 void V_DrawMappedPatch ( int x, int y,
                          patch_t*      patch,
                          byte*         colormap );
+
+// Limited by box
+void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap,
+                           int box_x, int box_y, int box_w, int box_h );
 
 // with temp patch load to cache
 void V_DrawMappedPatch_Name ( int x, int y,

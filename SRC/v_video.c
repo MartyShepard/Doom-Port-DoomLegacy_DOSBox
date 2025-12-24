@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: v_video.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1046,7 +1046,7 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
     int count;
     fixed_t col, wf, ofs;
 
-    // draw an hardware converted patch
+    // draw a hardware converted patch
 #ifdef HWRENDER
     if (rendermode != render_soft)
     {
@@ -1107,6 +1107,113 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
     }
 
 }
+
+
+// Limited by box.
+//  x, y : draw at screen coordinates, scaled by drawinfo
+//  box_x, box_y : box upper left corner
+//  box_w, box_h : box size
+void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap, int box_x, int box_y, int box_w, int box_h )
+{
+    // vid : from video setup
+    // drawinfo : from V_SetupDraw
+    column_t *column;
+    byte *source;  // within column
+    byte *dest;  // within video buffer
+
+    int count, draw_x, draw_y, draw_y1, bx1, bx2, by1, by2;
+    fixed_t col, wf, ofs;
+
+    // draw a hardware converted patch
+#ifdef HWRENDER
+    if (rendermode != render_soft)
+    {
+        // Fully subject to drawinfo.
+        HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags, colormap);
+        return;
+    }
+#endif
+
+    // [WDJ] Draw to screens, by line, padded, 8bpp .. 32bpp
+    // Offsets are subject to DRAWSCALE dup.
+    draw_y1 = (y * drawinfo.y0bytes) - (patch->topoffset * drawinfo.ybytes);
+    draw_x = (x * drawinfo.x0bytes) - (patch->leftoffset * drawinfo.xbytes);
+    by1 = (box_y * drawinfo.y0bytes);
+    by2 = by1 + (box_h * drawinfo.ybytes);
+    bx1 = (box_x * drawinfo.x0bytes);
+    bx2 = bx1 + (box_w * drawinfo.xbytes);
+
+#ifdef DIRTY_RECT
+    if (drawinfo.screen == 0)
+        V_MarkRect(box_x, box_y, box_w * drawinfo.dupx, box_h * drawinfo.dupy);
+#endif
+
+    col = 0;
+    if( draw_x < bx1 )  // Left edge of box
+    {
+        // Clip at left of box
+        col = ((bx1 - draw_x) / vid.bytepp) * drawinfo.x_unitfrac;
+        draw_x = bx1;
+    }
+
+    wf = patch->width << FRACBITS;
+
+    for ( ; col < wf; col += drawinfo.x_unitfrac)
+    {
+        column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
+
+        while (column->topdelta != 0xff)
+        {
+            source = (byte *) column + 3;
+            draw_y = draw_y1 + (column->topdelta * drawinfo.ybytes);
+            count = column->length * drawinfo.dupy;
+            column = (column_t *) ((byte *) column + column->length + 4);  // next column in patch
+            ofs = 0;
+
+            if( draw_y < by1 )  // Top of box
+            {
+                // Clip at top of box
+                int diff = ((by1 - draw_y) / vid.ybytes);  // excess count
+                count -= diff;
+                if( count <= 0 )  continue;
+                ofs = diff * drawinfo.y_unitfrac;	   
+                draw_y += diff * vid.ybytes;
+            }
+            if( (draw_y + (count * vid.ybytes)) > by2 )  // Bottom of box
+            {
+                // Clip at bottom of box
+                count = (draw_y - by2) / vid.ybytes;
+                if( count <= 0 )  continue;
+            }
+
+            dest = drawinfo.drawp + draw_y + draw_x;
+#ifdef ENABLE_DRAWEXT
+            if(vid.drawmode != DRAW8PAL)
+            {
+                while (count--)
+                {
+                    V_DrawPixel( dest, 0, colormap[ source[ofs >> FRACBITS]] );
+                    dest += vid.ybytes;
+                    ofs += drawinfo.y_unitfrac;
+                }
+            }
+            else
+#endif
+            {
+                // DRAW8PAL
+                while (count--)
+                { 
+                    *dest = colormap[ source[ofs >> FRACBITS]];
+                    dest += vid.ybytes;
+                    ofs += drawinfo.y_unitfrac;
+                }
+            }
+        }
+        draw_x += vid.bytepp;
+        if( draw_x > bx2 )  break;  // Right edge of box
+    }
+}
+
 
 //  per drawinfo
 // with temp patch load to cache

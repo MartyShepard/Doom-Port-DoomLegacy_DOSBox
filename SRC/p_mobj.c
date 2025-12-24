@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1349 2017-07-29 18:26:35Z wesleyjohnson $
+// $Id: p_mobj.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2451,7 +2451,8 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     // set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
     // (usefulness : when body mobj is detached from player (who respawns),
     //  the dead body mobj retain the skin through the 'spritedef' override).
-    mobj->skin = &skins[p->skin];
+    mobj->skin = skins[p->skin];
+    if( mobj->skin == NULL )  mobj->skin = skins[0];
 
     mobj->angle = wad_to_angle(mthing->angle);
     if (playernum == consoleplayer)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
+// $Id: r_things.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -308,19 +308,19 @@ void R_InstallSpriteLump ( int           lumppat,     // graphics patch
 //
 boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum, int startlump, int endlump)
 {
+    lumpinfo_t *lumpinfo;
+    uint32_t    numname;
     int         l, lumpnum, lumpfnd = 0;
-    int         intname;
     int         frame;
     int         rotation;
     int         spritelump_id;
-    lumpinfo_t* lumpinfo;
     patch_t     patch;	// temp for read header
 
-    intname = *(int *)sprname;
+    numname = *(uint32_t *)sprname;
 
     memset (sprtemp,-1, sizeof(sprtemp));
     maxframe = -1;
-
+ 
     // are we 'patching' a sprite already loaded ?
     // if so, it might patch only certain frames, not all
     if (spritedef->numframes) // (then spriteframes is not null)
@@ -340,7 +340,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     for (l=startlump ; l<endlump ; l++)
     {
         lumpnum = WADLUMP(wadnum,l);	// as used by read lump routines
-        if (*(int *)lumpinfo[l].name == intname)
+        if (*(uint32_t *)lumpinfo[l].name == numname)
         {
             frame = lumpinfo[l].name[4] - 'A';
             rotation = lumpinfo[l].name[5] - '0';
@@ -443,13 +443,13 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
                 // we test the patch lump, or the id lump whatever
                 // if it was not loaded the two are -1
                 if (sprtemp[frame].lumppat[rotation] == -1)
-	        {
+                {
                     I_SoftError("R_InitSprites: Sprite %s frame %c "
                              "is missing rotations",
                              sprname, frame+'A');
                     // Limp, use the last sprite lump read for this sprite.
                     sprtemp[frame].lumppat[rotation] = lumpfnd;
-		}
+                }
             }
             break;
         }
@@ -484,10 +484,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 void R_AddSpriteDefs (char** namelist, int wadnum)
 {
     int         i;
-
-    int         start;
-    int         end;
-
+    int         start, end;
     int         addsprites;
 
     // find the sprites section in this pwad
@@ -676,7 +673,7 @@ void R_InitSprites (char** namelist)
     // now check for skins
     //
 
-    // it can be is do before loading config for skin cvar possible value
+    // all that can be before loading config is to load possible skins
     R_InitSkins ();
     for (i=0; i<numwadfiles; i++)
         R_AddSkins (i);
@@ -1654,7 +1651,7 @@ void R_DrawPSprite (pspdef_t* psp)
     {
       lightlev_t  vlight;  // 0..255
       ff_light_t * ff_light =
-	R_GetPlaneLight(viewer_sector, viewmobj->z + (41 << FRACBITS));
+        R_GetPlaneLight(viewer_sector, viewmobj->z + (41 << FRACBITS));
       vis->extra_colormap = ff_light->extra_colormap;
       vlight = *ff_light->lightlevel + extralight;
 
@@ -1694,7 +1691,7 @@ void R_DrawPlayerSprites (void)
     if(viewer_sector->numlights)
     {
       ff_light_t * ff_light =
-	R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
+        R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
       vlight = *ff_light->lightlevel + extralight;
     }
     else
@@ -2276,20 +2273,77 @@ void R_DrawMasked (void)
 //
 // ==========================================================================
 
-int         numskins=0;
-skin_t      skins[MAXSKINS+1];
-// don't work because it must be initialized before the config load
-//#define SKINVALUES
-#ifdef SKINVALUES
-CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
-#endif
+// This does not deallocate the skins memory.
+#define SKIN_ALLOC   8
+int         numskins = 0;
+skin_t *    skins[MAXSKINS+1];
+skin_t *    skin_free = NULL;
+skin_t      marine;
 
-void Sk_SetDefaultValue(skin_t *skin)
+
+static
+int  get_skin_slot(void)
+{
+    skin_t * sk;
+    int si, i;
+
+    // Find unused skin slot, or add one.
+    for(si=0; si<numskins; si++ )
+    {
+        if( skins[si] == NULL )  break;
+    }
+    if( si >= MAXSKINS )  goto none;
+
+    // Get skin alloc.
+    if( skin_free == NULL )
+    {
+        i = SKIN_ALLOC;
+        sk = (skin_t*) malloc( sizeof(skin_t) * SKIN_ALLOC );
+        if( sk == NULL )   goto none;
+        // Link to free list
+        while( i-- )
+        {
+            *(skin_t**)sk = skin_free;  // link
+            skin_free = sk++;
+        }
+    }
+
+    sk = skin_free;
+    skin_free = *(skin_t**)sk;  // unlink
+    skins[si] = sk;
+    if( si >= numskins )  numskins = si+1;
+    return si;
+
+none:
+    return 0xFFFF;
+}
+
+static
+void  free_skin( int skin_num )
+{
+    skin_t * sk;
+    
+    if( skin_num >= MAXSKINS )  return;
+    sk = skins[skin_num];
+    if( sk == NULL )  return;
+
+    skins[skin_num] = NULL;
+    *(skin_t**)sk = skin_free;  // Link into free list
+    skin_free = sk;
+
+    while( numskins>0 && (skins[numskins-1] == NULL) )
+    {
+        numskins --;
+    }
+    // Cannot move existing skins
+}
+
+static
+void Skin_SetDefaultValue(skin_t *skin)
 {
     int   i;
-    //
+
     // setup the 'marine' as default skin
-    //
     memset (skin, 0, sizeof(skin_t));
     strcpy (skin->name, DEFAULTSKIN);
     strcpy (skin->faceprefix, "STF");
@@ -2300,7 +2354,7 @@ void Sk_SetDefaultValue(skin_t *skin)
             skin->soundsid[S_sfx[i].skinsound] = i;
         }
     }
-    memcpy(&skins[0].spritedef, &sprites[SPR_PLAY], sizeof(spritedef_t));
+//    memcpy(&skin->spritedef, &sprites[SPR_PLAY], sizeof(spritedef_t));
 }
 
 //
@@ -2308,84 +2362,98 @@ void Sk_SetDefaultValue(skin_t *skin)
 //
 void R_InitSkins (void)
 {
-#ifdef SKINVALUES
-    int i;
+    skin_free = NULL;
 
-    for(i=0;i<=MAXSKINS;i++)
-    {
-        skin_cons_t[i].value=0;
-        skin_cons_t[i].strvalue=NULL;
-    }
-#endif
-
+    memset (skins, 0, sizeof(skins));
+   
     // initialize free sfx slots for skin sounds
     S_InitRuntimeSounds ();
 
-    // skin[0] = marine skin
-    Sk_SetDefaultValue(&skins[0]);
-#ifdef SKINVALUES
-    skin_cons_t[0].strvalue=skins[0].name;
-#endif
-
     // make the standard Doom2 marine as the default skin
+    // skin[0] = marine skin
+    skins[0] = & marine;
+    Skin_SetDefaultValue( & marine );
+    memcpy(&marine.spritedef, &sprites[SPR_PLAY], sizeof(spritedef_t));
     numskins = 1;
 }
 
-// returns true if the skin name is found (loaded from pwad)
-// warning return 0 (the default skin) if not found
-int R_SkinAvailable (char* name)
+// Returns the skin index if the skin name is found (loaded from pwad).
+// Return 0 (the default skin) if not found.
+int R_SkinAvailable (const char* name)
 {
     int  i;
 
     for (i=0;i<numskins;i++)
     {
-        if (strcasecmp(skins[i].name,name)==0)
+        if( skins[i] && strcasecmp(skins[i]->name, name)==0)
             return i;
     }
     return 0;
 }
 
+
+void SetPlayerSkin_by_index( player_t * player, int index )
+{
+    skin_t * sk;
+
+    if( index >= numskins )   goto default_skin;
+   
+    sk = skins[index];
+    if( sk == NULL )   goto default_skin;
+    
+    // Change the face graphics
+    if( player == &players[statusbarplayer]
+        // for save time test it there is a real change
+        && !( skins[player->skin] && strcmp (skins[player->skin]->faceprefix, sk->faceprefix)==0 )
+        )
+    {
+        ST_unloadFaceGraphics();
+        ST_loadFaceGraphics(sk->faceprefix);
+    }
+
+set_skin:
+    // Record the player skin.
+    player->skin = index;
+ 
+    // A copy of the skin value so that dead body detached from
+    // respawning player keeps the skin
+    if( player->mo )
+        player->mo->skin = sk;
+    return;
+
+default_skin:
+    index = 0;  // the old marine skin
+    sk = &marine;
+    goto set_skin;
+}
+
+
 // network code calls this when a 'skin change' is received
-void SetPlayerSkin (int playernum, char *skinname)
+void  SetPlayerSkin (int playernum, const char *skinname)
 {
     int   i;
 
     for(i=0;i<numskins;i++)
     {
         // search in the skin list
-        if (strcasecmp(skins[i].name,skinname)==0)
+        if( skins[i] && strcasecmp(skins[i]->name,skinname)==0)
         {
-            // change the face graphics
-            if (playernum==statusbarplayer &&
-            // for save time test it there is a real change
-                strcmp (skins[players[playernum].skin].faceprefix, skins[i].faceprefix) )
-            {
-                ST_unloadFaceGraphics ();
-                ST_loadFaceGraphics (skins[i].faceprefix);
-            }
-
-            players[playernum].skin = i;
-            if (players[playernum].mo)
-                players[playernum].mo->skin = &skins[i];
-
+            SetPlayerSkin_by_index( &players[playernum], i );
             return;
         }
     }
 
     GenPrintf(EMSG_warn, "Skin %s not found\n", skinname);
-    players[playernum].skin = 0;  // not found put the old marine skin
-
-    // a copy of the skin value
-    // so that dead body detached from respawning player keeps the skin
-    if (players[playernum].mo)
-        players[playernum].mo->skin = &skins[0];
+    // not found put the old marine skin
+    SetPlayerSkin_by_index( &players[playernum], 0 );
 }
+
 
 //
 // Add skins from a pwad, each skin preceded by 'S_SKIN' marker
 //
 
-// Does the same is in w_wad, but check only for
+// Does the same as in w_wad, but check only for
 // the first 6 characters (this is so we can have S_SKIN1, S_SKIN2..
 // for wad editors that don't like multiple resources of the same name)
 //
@@ -2408,7 +2476,7 @@ int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
         lump_p = wadfiles[wadid]->lumpinfo + startlump;
         for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
         {
-	    // Only check first 6 characters.
+            // Only check first 6 characters.
             if( (*(uint64_t *)lump_p->name & mask6) == name8.namecode )
             {
                 return WADLUMP(wadid,i);
@@ -2423,18 +2491,20 @@ int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
 //
 void R_AddSkins (int wadnum)
 {
-    int         lumpnum;
-    int         lastlump;
+    int         lumpnum, lastlump, lumpn;
 
     lumpinfo_t* lumpinfo;
-    char*       sprname=NULL;
-    int         intname;
+    char*       sprname;
+    uint32_t    numname;
 
     char*       buf;
     char*       buf2;
 
     char*       token;
     char*       value;
+   
+    skin_t *    sk;
+    int         skin_index;
 
     int         i,size;
 
@@ -2443,14 +2513,27 @@ void R_AddSkins (int wadnum)
     //
 
     lastlump = 0;
-    while ( (lumpnum=W_CheckForSkinMarkerInPwad (wadnum, lastlump))!=-1 )
+    for(;;)
     {
-        if (numskins>MAXSKINS)
+        sprname = NULL;
+
+        lumpnum = W_CheckForSkinMarkerInPwad (wadnum, lastlump);
+        if( lumpnum == -1 )  break;
+
+        lumpn = LUMPNUM(lumpnum);
+        lastlump = lumpn + 1;  // prevent repeating same skin
+
+        skin_index = get_skin_slot();
+        if( skin_index > MAXSKINS )
         {
-            GenPrintf(EMSG_warn, "ignored skin (%d skins maximum)\n", MAXSKINS);
-            lastlump++;
+            GenPrintf(EMSG_warn, "ignored skin lump %d (%d skins maximum)\n", lumpn, MAXSKINS);
             continue; //faB:so we know how many skins couldn't be added
         }
+        sk = skins[skin_index];
+
+        // set defaults
+        Skin_SetDefaultValue(sk);
+        sprintf (sk->name,"skin %d", numskins-1);
 
         buf  = W_CacheLumpNum (lumpnum, PU_CACHE);
         size = W_LumpLength (lumpnum);
@@ -2460,14 +2543,10 @@ void R_AddSkins (int wadnum)
         if(!buf2)
         {
              I_SoftError("R_AddSkins: No more free memory\n");
-             return;
-	}
+             goto skin_error;
+        }
         memcpy (buf2,buf,size);
         buf2[size] = '\0';
-
-        // set defaults
-        Sk_SetDefaultValue(&skins[numskins]);
-        sprintf (skins[numskins].name,"skin %d",numskins);
 
         // parse
         token = strtok (buf2, "\r\n= ");
@@ -2485,8 +2564,8 @@ void R_AddSkins (int wadnum)
 
             if (!value)
             {
-                I_SoftError("R_AddSkins: syntax error in S_SKIN lump# %d in WAD %s\n", lumpnum&0xFFFF, wadfiles[wadnum]->filename);
-                return;
+                I_SoftError("R_AddSkins: syntax error in S_SKIN lump# %d in WAD %s\n", lumpn, wadfiles[wadnum]->filename);
+                goto skin_error;
             }
 
             if (!strcasecmp(token,"name"))
@@ -2496,16 +2575,16 @@ void R_AddSkins (int wadnum)
                 // default skin name set above
                 if (!R_SkinAvailable (value))
                 {
-                    strncpy (skins[numskins].name, value, SKINNAMESIZE);
-                    strlwr (skins[numskins].name);
+                    strncpy (sk->name, value, SKINNAMESIZE);
+                    strlwr (sk->name);
                 }
             }
             else
             if (!strcasecmp(token,"face"))
             {
-                strncpy (skins[numskins].faceprefix, value, 3);
-                skins[numskins].faceprefix[3] = 0;
-                strupr (skins[numskins].faceprefix);
+                strncpy (sk->faceprefix, value, 3);
+                sk->faceprefix[3] = 0;
+                strupr (sk->faceprefix);
             }
             else
             if (!strcasecmp(token,"sprite"))
@@ -2524,7 +2603,7 @@ void R_AddSkins (int wadnum)
                     if (S_sfx[i].skinsound!=-1 &&
                         !strcasecmp(S_sfx[i].name, token+2) )
                     {
-                        skins[numskins].soundsid[S_sfx[i].skinsound]=
+                        sk->soundsid[S_sfx[i].skinsound]=
                             S_AddSoundFx(value+2, S_sfx[i].flags);
                         found=true;
                     }
@@ -2532,8 +2611,8 @@ void R_AddSkins (int wadnum)
                 if(!found)
                 {
                     I_SoftError("R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n",
-                               token, lumpnum&0xFFFF, wadfiles[wadnum]->filename);
-                    return;
+                               token, lumpn, wadfiles[wadnum]->filename);
+                    goto skin_error;
                 }
             }
 next_token:
@@ -2543,20 +2622,19 @@ next_token:
         // if no sprite defined use sprite just after this one
         if( !sprname )
         {
-            lumpnum &= 0xFFFF;      // get rid of wad number
-            lumpnum++;
+            lumpn++;
             lumpinfo = wadfiles[wadnum]->lumpinfo;
 
             // get the base name of this skin's sprite (4 chars)
-            sprname = lumpinfo[lumpnum].name;
-            intname = *(int *)sprname;
+            sprname = lumpinfo[lumpn].name;
+            numname = *(uint32_t *)sprname;
 
             // skip to end of this skin's frames
-            lastlump = lumpnum;
-            while (*(int *)lumpinfo[lastlump].name == intname)
+            lastlump = lumpn;
+            while (*(uint32_t *)lumpinfo[lastlump].name == numname)
                 lastlump++;
             // allocate (or replace) sprite frames, and set spritedef
-            R_AddSingleSpriteDef (sprname, &skins[numskins].spritedef, wadnum, lumpnum, lastlump);
+            R_AddSingleSpriteDef (sprname, &sk->spritedef, wadnum, lumpn, lastlump);
         }
         else
         {
@@ -2564,25 +2642,27 @@ next_token:
             char **name;
             boolean found = false;
             for(name = sprnames;*name;name++)
+            {
                 if( strcmp(*name, sprname) == 0 )
                 {
                     found = true;
-                    skins[numskins].spritedef = sprites[sprnames-name];
+                    sk->spritedef = sprites[sprnames-name];
                 }
+            }
 
             // not found so make a new one
             if( !found )
-                R_AddSingleSpriteDef (sprname, &skins[numskins].spritedef, wadnum, 0, MAXINT);
+                R_AddSingleSpriteDef (sprname, &sk->spritedef, wadnum, 0, MAXINT);
+
         }
 
-        CONS_Printf ("added skin '%s'\n", skins[numskins].name);
-#ifdef SKINVALUES
-        skin_cons_t[numskins].value=numskins;
-        skin_cons_t[numskins].strvalue=skins[numskins].name;
-#endif
+        CONS_Printf ("added skin '%s'\n", sk->name);
 
-        numskins++;
         free(buf2);
     }
+    return;
+   
+skin_error:
+    free_skin(skin_index);	       
     return;
 }
