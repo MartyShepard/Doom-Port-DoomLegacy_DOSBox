@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_draw.h 1365 2017-10-17 01:36:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -108,7 +108,13 @@ extern byte*            dc_skintran;  // ptr to selected skin table
 
 // for skin = 1..(MAXSKINNUM-1), skin=0 does not use translation
 #define SKIN_TO_SKINMAP( skin )  (&skintranstables[ ((skin)-1)<<8 ])
-// for flags containing MF_TRANSLATION bits, 0=original skin
+
+// For flags containing MF_TRANSLATION bits, 0=original skin
+// [WDJ] MFT_TRANSHIFT is a constant, defined in p_mobj.h.
+// Depending upon the value of MFT_TRANSHIFT, there are three possible cases for the shift.
+// Only one of these definitions is used.
+// SVN1363: MFT_TRANSHIFT==8, so only the first definition gets used, there is no need for a shift.
+// All three are here, just in case someone changes MFT_TRANSSHIFT later.  You never know.
 #if MFT_TRANSHIFT == 8
 #define MFT_TO_SKINMAP( flags )  (&skintranstables[ ((flags) & MFT_TRANSLATION6) - 256 ])
 #elif MFT_TRANSLATE > 8
