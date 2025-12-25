@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_main.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1037,6 +1037,14 @@ void R_ExecuteSetViewSize (void)
 
 void R_Init (void)
 {
+#if defined DEBUG_WINDOWED || defined PARANOIA
+    // [WDJ] Some checks that could not be done at compile-time (enum).
+    if( MFT_TO_SKINMAP( 1<<MFT_TRANSSHIFT ) != (&skintranstables[ 0 ]) )
+        I_Error( "MFT_TO_SKINMAP  broken, check MFT_TRANSSHIFT\n" );
+    if( (int)MFT_TRANSSHIFT >= (int)MFO_TRANSSHIFT )
+        I_Error( "MFO_TRANSSHIFT - MFT_TRANSSHIFT  broken, check MFT_TRANSHIFT\n" );
+#endif
+
     if(dedicated)
         return;
 

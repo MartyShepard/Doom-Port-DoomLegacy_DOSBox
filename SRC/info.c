@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: info.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -11063,6 +11063,10 @@ void P_PatchInfoTables( void )
         mobjinfo[i].reactiontime *= NEWTICRATERATIO;
         //mobjinfo[i].speed        /= NEWTICRATERATIO;
     }
+#if defined DEBUG_WINDOWED || defined PARANOIA
+    if( NUMSTATES >= 0xFFFE )
+        I_Error( "NUMSTATES exceeds 16 bits\n" );
+#endif
     for (i=0;i<NUMSTATES;i++)
     {
         states[i].tics *= NEWTICRATERATIO;

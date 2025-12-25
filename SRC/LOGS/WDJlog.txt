@@ -6307,9 +6307,24 @@ patchfile = w107_61_TRAN.patch
 Comments and brackets, to clarify problems discovered by
 Adam Stylinkski.
 
-*** W107_TRAN
+*** W107_patch_list
 patchfile = w107_62_patch_list.patch
 - commit revision 1366
 Make functions for handling patch lists.
 These allow simpler loading and release of patches.
 Some simplifications in wi_stuff, st_stuff, and sb_bar.
+
+*** W107_ifdef_enum
+patchfile = w107_63_ifdef_enum.patch
+- commit revision 1367
+Fix of #ifdef tests of enum constants, discovered by Adam Stylinski.
+This includes MFT_TRANSSHIFT, dehacked constants, NUMSTATES, etc..
+Compilers like gcc, will not see the constant when it is in a #ifdef,
+and will test it as a value 0, instead of generating a warning or error.
+
+Enabled compiler flag -Wundef to detect these during debug compiles,
+or when PARANOIA is enabled.
+Example> make DEBUG=1
+
+Removed the MFT_TRANSSHIFT compile-time test.  Instead included some
+PARANOIA tests that detect inconsistencies in the values.

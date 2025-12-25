@@ -193,6 +193,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomincl.h"
+  // MAX_WADPATH
 
 #ifdef __WIN32__
 #include <direct.h>
@@ -208,7 +210,6 @@
 #endif
 
 
-#include "doomincl.h"
 #include "doomstat.h"
 
 #include "command.h"
@@ -312,7 +313,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1366"
+#define SVN_REV "1367"
 #endif
 
 // Version number: major.minor.revision

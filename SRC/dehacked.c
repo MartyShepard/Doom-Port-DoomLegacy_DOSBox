@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: dehacked.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -660,16 +660,6 @@ enum {
   STH_REDAXE3 = 986,
   STH_SND_WATERFALL = 1204,
 };
-
-#if STS_TECH2LAMP4 != S_TECH2LAMP4
-# error  "DEH: state S_TECH2LAMP4 error"
-#endif
-#if STH_PODGENERATOR != (S_PODGENERATOR - S_FREETARGMOBJ + STH_FREETARGMOBJ)
-# error  "DEH: state S_PODGENERATOR error"
-#endif
-#if STH_SND_WATERFALL != (S_SND_WATERFALL - S_BLOODYSKULL1 + STH_BLOODYSKULL1)
-# error  "DEH: state S_SND_WATERFALL error"
-#endif
 
 
 // Translate deh frame number to internal state index.
@@ -2713,6 +2703,15 @@ void DEH_Init(void)
   for(i=0;i<NUMTEXT;i++)
       deh_text[i]=text[i];
   monster_infight_deh = INFT_none; // not set
+#if defined DEBUG_WINDOWED || defined PARANOIA
+  // [WDJ] Checks of constants that I could not do at compile-time (enums).
+  if( (int)STS_TECH2LAMP4 != (int)S_TECH2LAMP4 )
+    I_Error( "DEH: state S_TECH2LAMP4 error\n" );
+  if( STH_PODGENERATOR != (S_PODGENERATOR - S_FREETARGMOBJ + STH_FREETARGMOBJ ))
+    I_Error( "DEH: state S_PODGENERATOR error" );
+  if( STH_SND_WATERFALL != (S_SND_WATERFALL - S_BLOODYSKULL1 + STH_BLOODYSKULL1 ))
+    I_Error( "DEH: state S_SND_WATERFALL error\n" );
+#endif
 }
 
 #ifdef BEX_LANGUAGE

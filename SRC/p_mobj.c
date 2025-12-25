@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: p_mobj.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -127,6 +127,7 @@
 #include "doomincl.h"
   // memset
 #include "p_local.h"
+  // p_mobj.h
 #include "p_tick.h"
   // think
 #include "p_inter.h"

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_mobj.h 1367 2017-11-01 01:15:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -295,6 +295,7 @@ typedef enum {
     // Already shifted to indexing position, so MF_TO_SKINMAP has no shift.
     MFT_TRANSLATION6     = 0x00003F00,    // 6 bit color
     MFT_TRANSSHIFT       = 8,
+    // If MFT_TRANSSHIFT is changed, defines in r_draw.h must be fixed too.
 } mobjtflag_e;
 
 
