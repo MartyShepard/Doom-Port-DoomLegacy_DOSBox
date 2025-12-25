@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_switch.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -561,7 +561,7 @@ boolean P_UseSpecialLine ( mobj_t*       thing,
 
       case 11:
         // Exit level
-        if(cv_allowexitlevel.value)
+        if(cv_allowexitlevel.EV)
         {
             P_ChangeSwitchTexture(line,0);
             G_ExitLevel ();

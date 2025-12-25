@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: d_clisrv.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -259,16 +259,15 @@ ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
 static textbuf_t  textcmds[BACKUPTICS][MAXPLAYERS];
   // The first byte of textcmd is the length.
 
-consvar_t cv_playdemospeed  = {"playdemospeed","0",0,CV_Unsigned};
+consvar_t cv_playdemospeed  = {"playdemospeed","0",CV_VALUE,CV_Unsigned};
 
-consvar_t cv_server1 = { "server1", "192.168.1.255", CV_SAVE, NULL };
-consvar_t cv_server2 = { "server2", "", CV_SAVE, NULL };
-consvar_t cv_server3 = { "server3", "", CV_SAVE, NULL };
+consvar_t cv_server1 = { "server1", "192.168.1.255", CV_STRING|CV_SAVE, NULL };
+consvar_t cv_server2 = { "server2", "", CV_STRING|CV_SAVE, NULL };
+consvar_t cv_server3 = { "server3", "", CV_STRING|CV_SAVE, NULL };
 
 CV_PossibleValue_t downloadfiles_cons_t[] = {{0,"Allowed"}
                                            ,{1,"No Download"}
                                            ,{0,NULL}};
-
 
 consvar_t cv_downloadfiles = {"downloadfiles"  ,"0", CV_SAVE, downloadfiles_cons_t};
 
@@ -604,7 +603,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
     netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
-    netbuffer->u.serverinfo.deathmatch = cv_deathmatch.value;
+    netbuffer->u.serverinfo.deathmatch = cv_deathmatch.EV;  // and command line
     strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
     if(game_map_filename[0])
     {
@@ -865,7 +864,7 @@ static void repair_handler( byte nnode )
                 {
                   case 'q':
                   case KEY_ESCAPE:
-		     goto reset_to_title_exit;
+                     goto reset_to_title_exit;
                 }
 
                 // Server upkeep

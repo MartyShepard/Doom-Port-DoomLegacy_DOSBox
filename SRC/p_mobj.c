@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
+// $Id: p_mobj.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -237,16 +237,10 @@ void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
 }
 
 // protos.
-CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}
-, {56, "MAX"}
-, {0, NULL}
-};
-CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}
-, {MAXLEVELSPLATS, "MAX"}
-, {0, NULL}
-};
+CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}, {56, "MAX"}, {0, NULL} };
+CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}, {MAXLEVELSPLATS, "MAX"}, {0, NULL} };
 
-consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NULL };
+consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, CV_VALUE, viewheight_cons_t, NULL };
 
 // Needed by MBF, so use it elsewhere too.
 #define GRAVITY1   FRACUNIT
@@ -1537,7 +1531,7 @@ no_respawn:
 
 
 consvar_t cv_respawnmonsters = { "respawnmonsters", "0", CV_NETVAR, CV_OnOff };
-consvar_t cv_respawnmonsterstime = { "respawnmonsterstime", "12", CV_NETVAR, CV_Unsigned };
+consvar_t cv_respawnmonsterstime = { "respawnmonsterstime", "12", CV_NETVAR|CV_VALUE, CV_Unsigned };
 
 //
 // P_MobjCheckWater : check for water, set stuff in mobj_t struct for
@@ -1905,7 +1899,7 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->flags &= ~(MF_BOUNCES | MF_FRIEND | MF_TOUCHY);
     }
     // EternityEngine: new EE demo has different method.
-    else if((demoversion >= VERSION147) && (cv_deathmatch.value == 0))
+    else if((demoversion >= VERSION147) && (cv_deathmatch.EV == 0))
     {
         // DoomLegacy >= 147, or MBF or Boom demo, and not deathmatch
         // Boom demo: 201, 202
@@ -2204,7 +2198,7 @@ void P_RemoveMobj(mobj_t * mobj)
     P_RemoveThinker((thinker_t *) mobj);   // does Z_Free() mobj
 }
 
-consvar_t cv_itemrespawntime = { "respawnitemtime", "30", CV_NETVAR, CV_Unsigned };
+consvar_t cv_itemrespawntime = { "respawnitemtime", "30", CV_NETVAR|CV_VALUE, CV_Unsigned };
 consvar_t cv_itemrespawn = { "respawnitem", "0", CV_NETVAR, CV_OnOff };
 
 //

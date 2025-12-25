@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: d_netcmd.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -228,10 +228,10 @@ consvar_t cv_usemouse = { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, 
 consvar_t cv_usemouse2 = { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 };
 
 #ifdef LMOUSE2
-consvar_t cv_mouse2port = { "mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t };
-consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE, NULL };
+consvar_t cv_mouse2port = { "mouse2port", "/dev/gpmdata", CV_SAVE|CV_STRING, mouse2port_cons_t };
+consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE|CV_STRING, NULL };
 #else
-consvar_t cv_mouse2port = { "mouse2port", "COM2", CV_SAVE, mouse2port_cons_t };
+consvar_t cv_mouse2port = { "mouse2port", "COM2", CV_SAVE|CV_STRING, mouse2port_cons_t };
 #endif
 CV_PossibleValue_t teamplay_cons_t[] = { {0, "Off"}, {1, "Color"}, {2, "Skin"}, {3, NULL} };
 CV_PossibleValue_t deathmatch_cons_t[] = { {0, "Coop"}, {1, "1"}, {2, "2"}, {3, "3"}, {0, NULL} };
@@ -240,8 +240,8 @@ CV_PossibleValue_t fraglimit_cons_t[] = { {0, "MIN"}, {1000, "MAX"}, {0, NULL} }
 consvar_t cv_teamplay = { "teamplay", "0", CV_NETVAR | CV_CALL, teamplay_cons_t, TeamPlay_OnChange };
 consvar_t cv_teamdamage = { "teamdamage", "0", CV_NETVAR, CV_OnOff };
 
-consvar_t cv_fraglimit = { "fraglimit", "0", CV_NETVAR | CV_CALL | CV_NOINIT, fraglimit_cons_t, FragLimit_OnChange };
-consvar_t cv_timelimit = { "timelimit", "0", CV_NETVAR | CV_CALL | CV_NOINIT, CV_Unsigned, TimeLimit_OnChange };
+consvar_t cv_fraglimit = { "fraglimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, fraglimit_cons_t, FragLimit_OnChange };
+consvar_t cv_timelimit = { "timelimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, CV_Unsigned, TimeLimit_OnChange };
 consvar_t cv_deathmatch = { "deathmatch", "0", CV_NETVAR | CV_CALL, deathmatch_cons_t, Deathmatch_OnChange };
 consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL };
 
@@ -844,8 +844,11 @@ void Got_NetXCmd_Mapcmd(xcmd_t * xc)
     strncpy(mapname, (char*)xc->curpos, MAX_WADPATH-1);
     mapname[MAX_WADPATH-1] = '\0';
     xc->curpos += strlen(mapname) + 1;
-
-    CONS_Printf("Warping to map...\n");
+#if defined( __DJGPP__ )
+    CONS_Printf("Warping to map: ...\n");
+#else
+    CONS_Printf("Warping to map: %s ...\n",mapname);
+#endif
     if (demoplayback && !timingdemo)
         precache = false;
     G_InitNew(skill, mapname, resetplayer);
@@ -1002,6 +1005,7 @@ void FragLimit_OnChange(void)
 {
     int i;
 
+    // CV_VALUE, may be too large for EV
     if (cv_fraglimit.value > 0)
     {
         for (i = 0; i < MAXPLAYERS; i++)
@@ -1013,6 +1017,7 @@ uint32_t  timelimit_tics = 0;
 
 void TimeLimit_OnChange(void)
 {
+    // CV_VALUE, may be too large for EV
     if (cv_timelimit.value)
     {
         GenPrintf(EMSG_hud, "Levels will end after %d minute(s).\n", cv_timelimit.value);
@@ -1027,16 +1032,19 @@ void TimeLimit_OnChange(void)
 
 void P_RespawnWeapons(void);
 
+// deathmatch (0..3)
+byte deathmatch_to_itemrespawn[4]    = { 0, 0, 1, 1 };
+byte deathmatch_to_weaponsrespawn[4] = { 0, 1, 0, 1 };
 void Deathmatch_OnChange(void)
 {
+    // Within a CV_CALL routine, use CV_Set_by_OnChange.
     if (server)
     {
-        if( cv_deathmatch.EV >= 2 )
-            CV_SetValue(&cv_itemrespawn, 1);
-        else
-            CV_SetValue(&cv_itemrespawn, 0);
+        // itemrespawn for deathmatch 2,3
+        CV_Set_by_OnChange( &cv_itemrespawn,
+            deathmatch_to_itemrespawn[ cv_deathmatch.EV ] );
     }
-    if( cv_deathmatch.EV == 1 || cv_deathmatch.EV == 3 )
+    if( deathmatch_to_weaponsrespawn[ cv_deathmatch.EV ] )
         P_RespawnWeapons();
 
     // give all key to the players

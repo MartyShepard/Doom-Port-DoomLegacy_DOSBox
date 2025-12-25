@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: p_fab.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -59,8 +59,9 @@ void DoorDelay_OnChange( void )
 }
 
 //consvar_t cv_doordelay = {"doordelay","1",CV_NETVAR|CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
-consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
-
+#if defined (__DJGPP__)
+  consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange}; //Wurde mit Commit 1371 entfernt. Warum?
+#endif
 #endif
 
 
@@ -74,7 +75,7 @@ voodoo_mode_e  voodoo_mode;
 void VoodooMode_OnChange( void )
 {
    // config file saves cv_voodoo_mode but changes to voodoo_mode do not get saved.
-   voodoo_mode = (voodoo_mode_e) cv_voodoo_mode.value;
+   voodoo_mode = (voodoo_mode_e) cv_voodoo_mode.EV;
 }
 
 CV_PossibleValue_t voodoo_mode_cons_t[]={{0,"Vanilla"}, {1,"Multispawn"}, {2,"Target"}, {3, "Auto"}, {0,NULL}};
@@ -309,12 +310,13 @@ void BloodTime_OnChange (void);
 
 CV_PossibleValue_t bloodtime_cons_t[]={{1,"MIN"},{3600,"MAX"},{0,NULL}};
 // how much tics to last for the last (third) frame of blood (S_BLOODx)
-consvar_t cv_bloodtime = {"bloodtime","20",CV_NETVAR|CV_CALL|CV_SAVE,bloodtime_cons_t,BloodTime_OnChange};
+consvar_t cv_bloodtime = {"bloodtime","20",CV_NETVAR|CV_VALUE|CV_CALL|CV_SAVE,bloodtime_cons_t,BloodTime_OnChange};
 
 // Called when var. 'bloodtime' is changed : set the blood states duration
 //
 void BloodTime_OnChange (void)
 {
+    // CV_VALUE
     states[S_BLOOD1].tics = 8;
     states[S_BLOOD2].tics = 8;
     states[S_BLOOD3].tics = (cv_bloodtime.value*TICRATE) - 16;

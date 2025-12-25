@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: g_game.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2682,8 +2682,14 @@ void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer)
 
     if( server && skill == sk_nightmare )
     {
+        // NETVAR, not saved        
+#if 1       
+        CV_SetParam(&cv_respawnmonsters,1);
+        CV_SetParam(&cv_fastmonsters,1);
+#else
         CV_SetValue(&cv_respawnmonsters,1);
         CV_SetValue(&cv_fastmonsters,1);
+#endif
     }
 
     // for internal maps only
@@ -3202,9 +3208,10 @@ void G_BeginRecording (void)
     *demo_p++ = gameskill;
     *demo_p++ = gameepisode;
     *demo_p++ = gamemap;
-    *demo_p++ = cv_deathmatch.value;
-    *demo_p++ = cv_respawnmonsters.value;
-    *demo_p++ = cv_fastmonsters.value;
+    // Save EV value to get correct values when invoked by command line or saved game.
+    *demo_p++ = cv_deathmatch.EV;
+    *demo_p++ = cv_respawnmonsters.EV;
+    *demo_p++ = cv_fastmonsters.EV;
     *demo_p++ = nomonsters;
     *demo_p++ = consoleplayer;
     *demo_p++ = cv_timelimit.value;      // just to be compatible with old demo (no more used)
@@ -3219,38 +3226,38 @@ void G_BeginRecording (void)
     }
    
     // more settings that affect playback
-    *demo_p++ = cv_solidcorpse.value;
+    *demo_p++ = cv_solidcorpse.EV;
 #ifdef DOORDELAY_CONTROL
     *demo_p++ = adj_ticks_per_sec;  // doordelay, 0 is not default
 #else
     *demo_p++ = 0; 	// no doordelay
 #endif
     *demo_p++ = 0x40 + voodoo_mode;  // 0 is not default
-    *demo_p++ = cv_instadeath.value;  // voodoo doll instadeath, 0 is default
-    *demo_p++ = cv_monsterfriction.value;
+    *demo_p++ = cv_instadeath.EV;  // voodoo doll instadeath, 0 is default
+    *demo_p++ = cv_monsterfriction.EV;
     *demo_p++ = friction_model;
-    *demo_p++ = cv_rndsoundpitch.value;  // uses M_Random
-    *demo_p++ = cv_monbehavior.value;
-    *demo_p++ = cv_doorstuck.value;
-    *demo_p++ = cv_monstergravity.value;
+    *demo_p++ = cv_rndsoundpitch.EV;  // uses M_Random
+    *demo_p++ = cv_monbehavior.EV;
+    *demo_p++ = cv_doorstuck.EV;
+    *demo_p++ = cv_monstergravity.EV;
     // Boom and MBF derived controls.
-    *demo_p++ = cv_monster_remember.value;
-    *demo_p++ = cv_weapon_recoil.value;
-    *demo_p++ = cv_invul_skymap.value;
-    *demo_p++ = cv_zerotags.value;
-    *demo_p++ = cv_mbf_dropoff.value;
-    *demo_p++ = cv_mbf_falloff.value;
-    *demo_p++ = cv_mbf_pursuit.value;
-    *demo_p++ = cv_mbf_monster_avoid_hazard.value;
-    *demo_p++ = cv_mbf_monster_backing.value;
-    *demo_p++ = cv_mbf_staylift.value;
-    *demo_p++ = cv_mbf_help_friend.value;
+    *demo_p++ = cv_monster_remember.EV;
+    *demo_p++ = cv_weapon_recoil.EV;
+    *demo_p++ = cv_invul_skymap.EV;
+    *demo_p++ = cv_zerotags.EV;
+    *demo_p++ = cv_mbf_dropoff.EV;
+    *demo_p++ = cv_mbf_falloff.EV;
+    *demo_p++ = cv_mbf_pursuit.EV;
+    *demo_p++ = cv_mbf_monster_avoid_hazard.EV;
+    *demo_p++ = cv_mbf_monster_backing.EV;
+    *demo_p++ = cv_mbf_staylift.EV;
+    *demo_p++ = cv_mbf_help_friend.EV;
     *demo_p++ = (cv_mbf_distfriend.value >> 8);  // MSB
     *demo_p++ = cv_mbf_distfriend.value & 0x0F;  // LSB
-    *demo_p++ = cv_mbf_monkeys.value;
+    *demo_p++ = cv_mbf_monkeys.EV;
 #ifdef DOGS
-    *demo_p++ = cv_mbf_dogs.value;
-    *demo_p++ = cv_mbf_dog_jumping.value;
+    *demo_p++ = cv_mbf_dogs.EV;
+    *demo_p++ = cv_mbf_dog_jumping.EV;
 #else
     *demo_p++ = 0;
     *demo_p++ = 0;

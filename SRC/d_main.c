@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1370 2017-11-01 01:20:14Z wesleyjohnson $
+// $Id: d_main.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -241,6 +241,7 @@
 #include "p_setup.h"
 #include "p_fab.h"
 #include "p_info.h"
+#include "p_local.h"
 
 #include "r_main.h"
 #include "r_local.h"
@@ -313,7 +314,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1370"
+#define SVN_REV "1371"
 #endif
 
 // Version number: major.minor.revision
@@ -1168,6 +1169,8 @@ void D_DoAdvanceDemo(void)
 // Called by M_Responder and M_Setup_prevMenu, when exiting menu and not playing game
 void D_StartTitle(void)
 {
+    if( command_EV_param )
+        CV_Restore_User_Settings();  // remove temp settings   
     gameaction = ga_nothing;
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
@@ -2796,29 +2799,42 @@ restart_command:
       I_InitCD();
 #endif
 
+    if (M_CheckParm("-splitscreen"))
+        CV_SetParam(&cv_splitscreen, 1);
+   
     // Affects only the game started at the command line.
+    // CV_NETVAR are sent by string, CV_SAVE are saved by string.
     nomonsters = M_CheckParm("-nomonsters");
 
     if (M_CheckParm("-respawn"))
-      COM_BufAddText("respawnmonsters 1\n");
+      CV_SetParam( &cv_respawnmonsters, 1 );  // NETVAR
+//      COM_BufAddText("respawnmonsters 1\n");
     if (M_CheckParm("-coopmonsters"))
-      COM_BufAddText("monsterbehavior 1\n");
+      CV_SetParam( &cv_monbehavior, 1 );  // NETVAR, SAVE
+//      COM_BufAddText("monsterbehavior 1\n");
     if (M_CheckParm("-infight"))
-      COM_BufAddText("monsterbehavior 2\n");
+      CV_SetParam( &cv_monbehavior, 2 );  // NETVAR, SAVE
+//      COM_BufAddText("monsterbehavior 2\n");
     if (M_CheckParm("-teamplay"))
-        COM_BufAddText("teamplay 1\n");
+      CV_SetParam( &cv_teamplay, 1 );  // NETVAR
+//        COM_BufAddText("teamplay 1\n");
     if (M_CheckParm("-teamskin"))
-        COM_BufAddText("teamplay 2\n");
-    if (M_CheckParm("-splitscreen"))
-        CV_SetValue(&cv_splitscreen, 1);
+      CV_SetParam( &cv_teamplay, 2 );  // NETVAR
+//        COM_BufAddText("teamplay 2\n");
+    // Setting deathmatch also sets cv_itemrespawn (d_netcmd).
     if (M_CheckParm("-altdeath"))
-        COM_BufAddText("deathmatch 2\n");
+      CV_SetParam( &cv_deathmatch, 2 );  // NETVAR
+//      COM_BufAddText("deathmatch 2\n");
     else if (M_CheckParm("-deathmatch"))
-        COM_BufAddText("deathmatch 1\n");
+      CV_SetParam( &cv_deathmatch, 1 );  // NETVAR
+//        COM_BufAddText("deathmatch 1\n");
     if (M_CheckParm("-fast"))
-        COM_BufAddText("fastmonsters 1\n");
+      CV_SetParam( &cv_fastmonsters, 1 );  // NETVAR
+//        COM_BufAddText("fastmonsters 1\n");
+    //added by AC
     if (M_CheckParm("-predicting"))
-        COM_BufAddText("predictingmonsters 1\n");       //added by AC
+      CV_SetParam( &cv_predictingmonsters, 1 );  // NETVAR
+//        COM_BufAddText("predictingmonsters 1\n");
 
     if (M_CheckParm("-timer"))
     {
@@ -2829,13 +2845,17 @@ restart_command:
         }
         else
         {
-            COM_BufAddText(va("timelimit %s\n", s));
+            // May be larger than EV, so cannot use CV_SetParam.
+            CV_Set( &cv_timelimit, s );  // NETVAR
+//            COM_BufAddText(va("timelimit %s\n", s));
         }
     }
 
     if (M_CheckParm("-avg"))
     {
-        COM_BufAddText("timelimit 20\n");
+        // May be larger than EV, so cannot use CV_SetParam.
+        CV_SetValue( &cv_timelimit, 20 );  // NETVAR
+//        COM_BufAddText("timelimit 20\n");
         CONS_Printf(text[AUSTIN_NUM]);
     }
 
@@ -2882,7 +2902,7 @@ restart_command:
     // SoM: Init FraggleScript
     ////////////////////////////////
     T_Init_FS();
-    
+
     // init all NETWORK
     CONS_Printf(text[D_CHECKNET_NUM]);
     if (D_Startup_NetGame())
@@ -2951,8 +2971,10 @@ restart_command:
             G_DeferedPlayDemo(demo_name);
         }
         else
+        {
             CONS_Printf("Timing Benchmark Demo %s.\n", demo_name);					
             G_TimeDemo(demo_name);
+        }
         gamestate = wipegamestate = GS_NULL;
 
         return;

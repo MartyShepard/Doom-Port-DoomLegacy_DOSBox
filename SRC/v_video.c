@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: v_video.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -224,11 +224,11 @@ CV_PossibleValue_t gamma_func_t[] = {
    {0,NULL} };
 consvar_t cv_gammafunc = { "gammafunc", "2", CV_SAVE | CV_CALL, gamma_func_t, CV_gammafunc_OnChange };
 CV_PossibleValue_t gamma_bl_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
-consvar_t cv_black = { "black", "0", CV_SAVE | CV_CALL, gamma_bl_cons_t, CV_usegamma_OnChange };
+consvar_t cv_black = { "black", "0", CV_VALUE | CV_SAVE | CV_CALL, gamma_bl_cons_t, CV_usegamma_OnChange };
 CV_PossibleValue_t gamma_br_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
-consvar_t cv_bright = { "bright", "0", CV_SAVE | CV_CALL, gamma_br_cons_t, CV_usegamma_OnChange };
+consvar_t cv_bright = { "bright", "0", CV_VALUE | CV_SAVE | CV_CALL, gamma_br_cons_t, CV_usegamma_OnChange };
 CV_PossibleValue_t gamma_cons_t[] = { {-12, "MIN"}, {12, "MAX"}, {0, NULL} };
-consvar_t cv_usegamma = { "gamma", "0", CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
+consvar_t cv_usegamma = { "gamma", "0", CV_VALUE | CV_SAVE | CV_CALL, gamma_cons_t, CV_usegamma_OnChange };
 
 static byte gammatable[256];	// shared by all gamma table generators
 

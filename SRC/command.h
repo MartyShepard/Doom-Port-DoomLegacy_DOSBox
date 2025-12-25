@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: command.h 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -126,13 +126,16 @@ typedef enum
     CV_FLOAT  = 0x10, // the value is fixed 16:16, where unit is FRACUNIT
                       // (allow user to enter 0.45 for ex)
                       // WARNING: currently only supports set with CV_Set()
-    CV_NOTINNET = 0x20, // some varaiable can't be changed in network but is not netvar (ex: splitscreen)
-    CV_MODIFIED = 0x40, // this bit is set when cvar is modified
-    CV_SHOWMODIF = 0x80,  // say something when modified
-    CV_SHOWMODIFONETIME = 0x100,  // same but will be reset to 0 when modified, set in toggle
+    CV_VALUE  = 0x20, // Value is too large for EV, but not a string.
+    CV_STRING = 0x40, // String value.
+    CV_NET_LOCK = 0x100, // some variable can't be changed in network but is not netvar (ex: splitscreen)
     CV_HIDEN   = 0x200,   // variable is not part of the cvar list so cannot be accessed by the console
                           // can only be set when we have the pointer to hit 
                           // used on the menu
+    CV_EV_PARAM = 0x1000, // A command line param is in EV.
+    CV_MODIFIED = 0x2000, // this bit is set when cvar is modified
+    CV_SHOWMODIF = 0x4000,  // say something when modified
+    CV_SHOWMODIF_ONCE = 0x8000,  // same, but resets this flag to 0 after showing, set in toggle
 } cvflags_t;
 
 struct CV_PossibleValue_s {
@@ -159,14 +162,15 @@ typedef struct consvar_s
                                // used only with CV_NETVAR
     byte     EV;  // [WDJ] byte value, set from value changes, set from demos.
        // This saves user settings from being changed by demos.
-       // Do not make it an anything except byte.  Byte is efficient for most
+       // Do not make it anything except byte.  Byte is efficient for most
        // enables, and enum. Two bytes of space are free due to alignment.
        // For most user settings this is slightly easier to manage than
        // creating more EN vars.  For the exceptions, create a setting function
        // to pass consvar settings to EN vars.
     char *  string;      // value in string
+       // Saved user config is in string.
        // When pointing to a PossibleValue, it will need to be a const char *.
-       // Otherwise, it is allocated with Z_Alloc, and freeded with Z_Free.
+       // Otherwise, it is allocated with Z_Alloc, Z_Free.
     struct  consvar_s *next;
 
 } consvar_t;
@@ -174,6 +178,8 @@ typedef struct consvar_s
 extern CV_PossibleValue_t CV_OnOff[];
 extern CV_PossibleValue_t CV_YesNo[];
 extern CV_PossibleValue_t CV_Unsigned[];
+extern CV_PossibleValue_t CV_uint16[];
+extern CV_PossibleValue_t CV_byte[];
 // register a variable for use at the console
 void  CV_RegisterVar (consvar_t *variable);
 
@@ -181,11 +187,19 @@ void  CV_RegisterVar (consvar_t *variable);
 //  partial : partial variable name
 const char * CV_CompleteVar (const char * partial, int skips);
 
-// equivalent to "<varname> <value>" typed at the console
-void  CV_Set (consvar_t *var, const char * value);
+// Sets a var to a string value.
+void  CV_Set (consvar_t *var, const char * str_value);
 
 // expands value to a string and calls CV_Set
 void  CV_SetValue (consvar_t *var, int value);
+
+// Set a command line parameter value.
+void  CV_SetParam (consvar_t *var, int value);
+extern byte command_EV_param;
+
+// If a OnChange func tries to change other values,
+// this function should be used.
+void CV_Set_by_OnChange (consvar_t *cvar, int value);
 
 // it a setvalue but with a modulo at the maximum
 void  CV_AddValue (consvar_t *var, int increment);

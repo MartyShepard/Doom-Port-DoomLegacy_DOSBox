@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: m_menu.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -874,11 +874,7 @@ menu_t  SingleMultiDef =
 // Connect Menu
 //===========================================================================
 
-CV_PossibleValue_t serversearch_cons_t[] = {{0,"Local Lan"}
-                                           ,{1,"Internet"}
-                                           ,{0,NULL}};
-
-
+CV_PossibleValue_t serversearch_cons_t[] = {{0,"Local Lan"}, {1,"Internet"}, {0,NULL}};
 consvar_t cv_serversearch = {"serversearch"    ,"0",CV_HIDEN,serversearch_cons_t};
 
 #define FIRSTSERVERLINE 3
@@ -1644,7 +1640,7 @@ menu_t  NewDef =
     NULL,
     sizeof(EpisodeMenu)/sizeof(menuitem_t),
     48,63,              // x,y
-    NG_violence            // lastOn
+    0/*NG_violence*/    // lastOn
 };
 
 static
@@ -5484,6 +5480,7 @@ static void CV_game_OnChange(void)
         rs = "Auto";
         cv_game.value = (cv_game.value <1)? -1 : GDESC_other;
     }
+    // Update display string from GameDesc.
     if( cv_game.string )
        Z_Free( cv_game.string );  // remove the string from CV_Set
     cv_game.string = Z_StrDup( rs );

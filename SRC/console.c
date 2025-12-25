@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: console.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -222,10 +222,10 @@ static char  con_buffer[CON_BUFFERSIZE];
 
 
 // how many seconds the hud messages lasts on the screen
-consvar_t   cons_msgtimeout = {"con_hudtime","5",CV_SAVE,CV_Unsigned};
+consvar_t   cons_msgtimeout = {"con_hudtime","5",CV_VALUE|CV_SAVE,CV_Unsigned};
 
 // number of lines console move per frame
-consvar_t   cons_speed = {"con_speed","8",CV_CALL|CV_SAVE,CV_Unsigned,&CONS_speed_Change};
+consvar_t   cons_speed = {"con_speed","8",CV_VALUE|CV_CALL|CV_SAVE,CV_Unsigned,&CONS_speed_Change};
 
 // percentage of screen height to use for console
 consvar_t   cons_height = {"con_height","50",CV_SAVE,CV_Unsigned};
@@ -501,8 +501,8 @@ static void CON_RecalcSize ( int width )
 #ifdef CONSOLE_PROPORTIONAL
         // Averages shorter text, but could overrun right margin.
         // Proportional width of print is (hu_font[c].width * dupx + 1).
-	// As drawfont.xinc is fixed, and some characters are wider ('M', 'W'),
-	// it is still possible to overrun the right margin.
+        // As drawfont.xinc is fixed, and some characters are wider ('M', 'W'),
+        // it is still possible to overrun the right margin.
         new_conwidth = (width - con_indent - con_indent) / (drawfont.xinc + 1);
 #else
         // Fixed font size, between left and right margin.
@@ -539,7 +539,7 @@ static void CON_RecalcSize ( int width )
     {
         for(i=oldcon_cy+1; i<oldcon_cy+oldnumlines; i++)
         {
-	    char * con2p = &con2[(i% oldnumlines)*oldcon_width];
+            char * con2p = &con2[(i% oldnumlines)*oldcon_width];
             if( *con2p )
             {
                 memcpy(line2, con2p, oldcon_width);

@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01371 ]: w107 cv
+          DOS: Compile Fix because Undefined cv_doordelay.
+					
 [01370 ]: w107 hu
 [01369 ]: w107 netid
 [01368 ]: w107 const char

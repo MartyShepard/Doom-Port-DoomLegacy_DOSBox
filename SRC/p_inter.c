@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1352 2017-07-29 18:29:51Z wesleyjohnson $
+// $Id: p_inter.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1652,24 +1652,23 @@ void P_DeathMessages ( mobj_t*       target,
 // WARNING : check cv_fraglimit>0 before call this function !
 void P_CheckFragLimit(player_t *p)
 {
+    int fragteam = 0;
     if( cv_teamplay.EV )
     {
-        int fragteam=0,i;
-
+        int i;
         for(i=0;i<MAXPLAYERS;i++)
         {
             if(ST_SameTeam(p,&players[i]))
                 fragteam += ST_PlayerFrags(i);
         }
-
-        if(cv_fraglimit.value<=fragteam)
-            G_ExitLevel();
     }
     else
     {
-        if(cv_fraglimit.value<=ST_PlayerFrags(p-players))
-            G_ExitLevel();
+        fragteam = ST_PlayerFrags(p - players);
     }
+    // CV_VALUE, may be too large for EV
+    if( fragteam >= cv_fraglimit.value )
+        G_ExitLevel();
 }
 
 
@@ -2290,7 +2289,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         }
 
         if( gameskill == sk_baby )
-	    damage >>= 1;   // take half damage in trainer mode
+            damage >>= 1;   // take half damage in trainer mode
     }
    
  
@@ -2598,13 +2597,13 @@ boolean P_DamageMobj ( mobj_t*   target,
                 P_AutoUseHealth(player, damage - player->health + 1);
             }
 
-	    // Update player health here, because they may die before
-	    // reaching the later player update.
+            // Update player health here, because they may die before
+            // reaching the later player update.
             player->health -= damage;   // mirror mobj health here for Dave
             if (player->health < 0)
                 player->health = 0;
-	    // [WDJ] If player->mo is updated here, it prevents player gibs.
-	    // target = player->mo, as set in voodoo logic.
+            // [WDJ] If player->mo is updated here, it prevents player gibs.
+            // target = player->mo, as set in voodoo logic.
 
             player->damagecount += damage;  // add damage after armor / invuln
 
@@ -2646,7 +2645,7 @@ boolean P_DamageMobj ( mobj_t*   target,
   
         // This must be after KillMobj, so target damage can be negative.
         if( player )
-	{
+        {
             if( player->mo )
                 player->mo->health = player->health; // keep mobj and player health same
         }

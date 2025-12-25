@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1370 2017-11-01 01:20:14Z wesleyjohnson $
+// $Id: hu_stuff.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -220,14 +220,14 @@ void TeamPlay_OnChange(void)
     int i;
     // Change the name of the teams
 
-    if(cv_teamplay.value==1)
+    if(cv_teamplay.EV == 1)
     {
         // color
         for(i=0; i<NUMSKINCOLORS; i++)
             set_team_name( i, Color_Names[i]);
     }
     else
-    if(cv_teamplay.value==2)
+    if(cv_teamplay.EV == 2)
     {
         // skins
         for(i=0; i<numskins; i++)

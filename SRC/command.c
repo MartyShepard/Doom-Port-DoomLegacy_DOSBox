@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1369 2017-11-01 01:18:54Z wesleyjohnson $
+// $Id: command.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -89,7 +89,7 @@ static void    COM_Wait_f (void);
 static void    COM_Help_f (void);
 static void    COM_Toggle_f (void);
 
-static boolean    CV_Command (void);
+static boolean    CV_Var_Command (void);
 static char *  CV_StringValue (const char * var_name);
 static consvar_t  *consvar_vars;       // list of registered console variables
 
@@ -99,7 +99,9 @@ static const char *  COM_Parse (const char * data, boolean script);
 
 CV_PossibleValue_t CV_OnOff[] =    {{0,"Off"}, {1,"On"},    {0,NULL}};
 CV_PossibleValue_t CV_YesNo[] =     {{0,"No"} , {1,"Yes"},   {0,NULL}};
+CV_PossibleValue_t CV_uint16[]=   {{0,"MIN"}, {0xFFFF,"MAX"}, {0,NULL}};
 CV_PossibleValue_t CV_Unsigned[]=   {{0,"MIN"}, {999999999,"MAX"}, {0,NULL}};
+CV_PossibleValue_t CV_byte[]=   {{0,"MIN"}, {255,"MAX"}, {0,NULL}};
 
 #define COM_BUF_SIZE    8192   // command buffer size
 
@@ -335,7 +337,7 @@ int COM_Argc (void)
 
 // Returns string pointer for given argument number
 //
-char *COM_Argv (int arg)
+char * COM_Argv (int arg)
 {
     if ( arg >= com_argc || arg < 0 )
         return com_null_string;
@@ -550,7 +552,7 @@ static void COM_ExecuteString (const char *text, boolean script)
     // check cvars
     // Hurdler: added at Ebola's request ;)
     // (don't flood the console in software mode with bad gr_xxx command)
-    if (!CV_Command () && con_destlines)
+    if (!CV_Var_Command () && con_destlines)
     {
         CONS_Printf ("Unknown command '%s'\n", com_argv[0]);
     }
@@ -769,7 +771,7 @@ static void COM_Toggle_f(void)
     }
 
     // netcvar don't change imediately
-    cvar->flags |= CV_SHOWMODIFONETIME;
+    cvar->flags |= CV_SHOWMODIF_ONCE;  // show modification, reset flag
     if( carg.num==3 )
         CV_AddValue(cvar, atol( carg.arg[2] ));
     else
@@ -886,7 +888,7 @@ fail_cleanup:
 // =========================================================================
 
 static char       *cv_null_string = "";
-
+byte    command_EV_param = 0;
 
 //  Search if a variable has been registered
 //  returns true if given variable has been registered
@@ -941,61 +943,56 @@ static consvar_t * CV_FindNetVar (uint16_t netid)
     return NULL;
 }
 
-static void Setvalue (consvar_t *var, const char * valstr);
+static byte OnChange_user_enable = 0;
+static void set_cv_str_value (consvar_t *var, const char * valstr, byte call_enable, byte user_enable );
 
 //  Register a variable, that can be used later at the console
 //
-void CV_RegisterVar (consvar_t *variable)
+void CV_RegisterVar (consvar_t *cvar)
 {
     // first check to see if it has already been defined
-    if (CV_FindVar (variable->name))
+    if (CV_FindVar (cvar->name))
     {
-        CONS_Printf ("Variable %s is already defined\n", variable->name);
+        CONS_Printf ("Variable %s is already defined\n", cvar->name);
         return;
     }
 
     // check for overlap with a command
-    if (COM_Exists (variable->name))
+    if (COM_Exists (cvar->name))
     {
-        CONS_Printf ("%s is a command name\n", variable->name);
+        CONS_Printf ("%s is a command name\n", cvar->name);
         return;
     }
 
-    // check net variables
-    if (variable->flags & CV_NETVAR)
+    cvar->string = NULL;
+
+    // check net cvars
+    if (cvar->flags & CV_NETVAR)
     {
-        variable->netid = CV_ComputeNetid (variable->name);
-        if (CV_FindNetVar(variable->netid))
-            I_Error("Variable %s have same netid\n",variable->name);
+        cvar->netid = CV_ComputeNetid (cvar->name);
+        if (CV_FindNetVar(cvar->netid))
+            I_Error("Variable %s has duplicate netid\n",cvar->name);
     }
 
-    // link the variable in
-    if( !(variable->flags & CV_HIDEN) )
+    // link the cvar in
+    if( !(cvar->flags & CV_HIDEN) )
     {
-        variable->next = consvar_vars;
-        consvar_vars = variable;
+        cvar->next = consvar_vars;
+        consvar_vars = cvar;
     }
-    variable->string = NULL;
-
-    // copy the value off, because future sets will Z_Free it
-    //variable->string = Z_StrDup (variable->string);
 
 #ifdef PARANOIA
-    if ((variable->flags & CV_NOINIT) && !(variable->flags & CV_CALL))
+    if ((cvar->flags & CV_NOINIT) && !(cvar->flags & CV_CALL))
         I_Error("variable %s have CV_NOINIT without CV_CALL\n");
-    if ((variable->flags & CV_CALL) && !variable->func)
+    if ((cvar->flags & CV_CALL) && !cvar->func)
         I_Error("variable %s have cv_call flags without func");
 #endif
-    if (variable->flags & CV_NOINIT)
-        variable->flags &=~CV_CALL;
+    set_cv_str_value(cvar, cvar->defaultvalue,
+                     ((cvar->flags & CV_NOINIT) == 0), // call_enable
+                     1 );  // user_enable, default is a user setting		     
 
-    Setvalue(variable,variable->defaultvalue);
-
-    if (variable->flags & CV_NOINIT)
-        variable->flags |= CV_CALL;
-
-    // the SetValue will set this bit
-    variable->flags &= ~CV_MODIFIED;
+    // set_cv_str_value will have set this bit
+    cvar->flags &= ~CV_MODIFIED;
 }
 
 
@@ -1003,12 +1000,12 @@ void CV_RegisterVar (consvar_t *variable)
 //
 static char * CV_StringValue (const char * var_name)
 {
-    consvar_t *var;
+    consvar_t *cvar;
 
-    var = CV_FindVar (var_name);
-    if (!var)
+    cvar = CV_FindVar (var_name);
+    if (!cvar)
         return cv_null_string;
-    return var->string;
+    return cvar->string;
 }
 
 
@@ -1016,7 +1013,7 @@ static char * CV_StringValue (const char * var_name)
 //
 const char * CV_CompleteVar (const char * partial, int skips)
 {
-    consvar_t   *cvar;
+    consvar_t  *cvar;
     int         len;
 
     len = strlen(partial);
@@ -1038,134 +1035,172 @@ const char * CV_CompleteVar (const char * partial, int skips)
 }
 
 
-// Set value to the variable, no check only for internal use
-//
-static void Setvalue (consvar_t *var, const char * valstr)
+// Set variable value, for user settings, save games, and network settings.
+// When enabled, it also changes the user saved value in string.
+// Also updates value and EV.
+//  call_enable : when 0, blocks CV_CALL
+//  user_enable : enable setting the string value (user save value)
+static void set_cv_str_value (consvar_t *cvar, const char * valstr, byte call_enable, byte user_enable )
 {
     char  value_str[64];  // print %d cannot exceed 64
+    int i, ival;
 
 #ifdef PARANOIA
     if( valstr == NULL )
     {
-        I_SoftError( "SetValue NULL string: %s\n", var->name );
+        I_SoftError( "set_cv_str_value passed NULL string: %s\n", cvar->name );
         return;
     }
 #endif
 
-    if(var->PossibleValue)
-    {
-        int v=atoi(valstr);
+    ival = atoi(valstr);  // enum and integer values
 
-        if(!strcasecmp(var->PossibleValue[0].strvalue,"MIN"))
+    if(cvar->PossibleValue)
+    {
+        if( strcasecmp(cvar->PossibleValue[0].strvalue,"MIN") == 0)
         {   // bounded cvar
-            int i;
-            // search for maximum
-            for(i=1;var->PossibleValue[i].strvalue!=NULL;i++)
+            // search for MAX
+            for(i=1; cvar->PossibleValue[i].strvalue!=NULL; i++)
             {
-                if(!strcasecmp(var->PossibleValue[i].strvalue,"MAX"))
+                if(!strcasecmp(cvar->PossibleValue[i].strvalue,"MAX"))
                     break;
             }
 
 #ifdef PARANOIA
-            if(var->PossibleValue[i].strvalue==NULL)
-                I_Error("Bounded cvar \"%s\" without Maximum !",var->name);
+            if(cvar->PossibleValue[i].strvalue==NULL)
+                I_Error("Bounded cvar \"%s\" without MAX !", cvar->name);
 #endif
             // [WDJ] Cannot print into const string.
-            if(v < var->PossibleValue[0].value)
+            if(ival < cvar->PossibleValue[0].value)
             {
-                v = var->PossibleValue[0].value;
-                sprintf(value_str,"%d", v);
+                ival = cvar->PossibleValue[0].value;
+                sprintf(value_str,"%d", ival);
                 valstr = value_str;
             }
-            if(v > var->PossibleValue[i].value)
+            if(ival > cvar->PossibleValue[i].value)
             {
-                v = var->PossibleValue[i].value;
-                sprintf(value_str,"%d", v);
+                ival = cvar->PossibleValue[i].value;
+                sprintf(value_str,"%d", ival);
                 valstr = value_str;
             }
         }
         else
         {
             // waw spaghetti programming ! :)
-            int i;
 
-            // check first strings
-            for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
+            // check for string match
+            for(i=0; cvar->PossibleValue[i].strvalue!=NULL; i++)
             {
-                if(!strcasecmp(var->PossibleValue[i].strvalue,valstr))
+                if(!strcasecmp(cvar->PossibleValue[i].strvalue, valstr))
                     goto found;
             }
-            if(!v)
+            // If valstr is not a number, then it cannot be used as an index.
+            if( ival == 0 )
             {
                if(strcmp(valstr,"0")!=0) // !=0 if valstr!="0"
                     goto error;
             }
-            // check int now
-            for(i=0;var->PossibleValue[i].strvalue!=NULL;i++)
+            // check as enum index
+            for(i=0; cvar->PossibleValue[i].strvalue!=NULL; i++)
             {
-                if(v==var->PossibleValue[i].value)
+                if(ival == cvar->PossibleValue[i].value)
                     goto found;
             }
+            goto error;
 
-error:      // not found
-            CONS_Printf("\"%s\" is not a possible value for \"%s\"\n", valstr, var->name);
-            if(var->defaultvalue==valstr)
-                I_Error("Variable %s default value \"%s\" is not a possible value\n",var->name,var->defaultvalue);
-            return;
 found:
-            // When value is from PossibleValue, string is a const char *.
-            var->value =var->PossibleValue[i].value;
-            var->string= (char*) var->PossibleValue[i].strvalue;
+            ival = cvar->PossibleValue[i].value;
+            if( user_enable )
+            {
+                cvar->value = ival;
+                // When value is from PossibleValue, string is a const char *.
+                cvar->string = (char*) cvar->PossibleValue[i].strvalue;
+            }
             goto finish;
         }
     }
 
-    // free the old value string
-    if(var->string)
-        Z_Free (var->string);
-
-    var->string = Z_StrDup (valstr);
-
-    if (var->flags & CV_FLOAT)
+    // CV_STRING has no temp values, and is used for network addresses.
+    // Block it for security reasons, to prevent redirecting.
+    // Only change the cvar string when user is making the change.
+    if( user_enable )
     {
-        double d;
-        d = atof (var->string);
-        var->value = d * FRACUNIT;
+        // free the old value string
+        if(cvar->string)
+            Z_Free (cvar->string);
+
+        cvar->string = Z_StrDup (valstr);
     }
-    else
-        var->value = atoi (var->string);
+
+    // Update value when set by user, or if flagged as numeric value.
+    // CV_uint16, CV_Unsigned may not fit into EV.
+    if( user_enable
+        || ( cvar->flags & (CV_FLOAT | CV_VALUE) ) )
+    {
+        if( cvar->flags & CV_FLOAT )
+        {
+            double d = atof( valstr );
+            cvar->value = d * FRACUNIT;
+        }
+        else
+            cvar->value = ival;
+    }
 
 finish:
-    if( var->flags & CV_SHOWMODIFONETIME || var->flags & CV_SHOWMODIF)
+    if( cvar->flags & (CV_SHOWMODIF | CV_SHOWMODIF_ONCE) )
     {
-        CONS_Printf("%s set to %s\n",var->name,var->string);
-        var->flags &= ~CV_SHOWMODIFONETIME;
+        CONS_Printf("%s set to %s\n", cvar->name, valstr );
+        cvar->flags &= ~CV_SHOWMODIF_ONCE;
     }
-    DEBFILE(va("%s set to %s\n",var->name,var->string));
-    var->flags |= CV_MODIFIED;
-    var->EV = var->value;  // user setting of active value
+    DEBFILE(va("%s set to %s\n", cvar->name, cvar->string));
+    cvar->flags |= CV_MODIFIED;
+    cvar->EV = ival;  // user setting of active value
     // raise 'on change' code
-    if (var->flags & CV_CALL)
-        var->func ();
+    if( call_enable
+        && (cvar->flags & CV_CALL) && (cvar->func) )
+    {
+        OnChange_user_enable = user_enable;
+        cvar->func ();
+    }
+    return;
+
+error: // not found
+    CONS_Printf("\"%s\" is not a possible value for \"%s\"\n", valstr, cvar->name);
+    if( strcasecmp(cvar->defaultvalue, valstr) == 0 )
+    { 
+        I_SoftError("Variable %s default value \"%s\" is not a possible value\n",
+                    cvar->name, cvar->defaultvalue);
+    }
+    return;
 }
 
 // Called after demo to restore the user settings.
+// Copies value to EV.
 void CV_Restore_User_Settings( void )
 {
-    consvar_t  *cvar;
+    consvar_t * cvar;
 
     // Check for modified cvar
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
-        if( cvar->EV != (byte)cvar->value )
+        if( cvar->flags & CV_VALUE )
+        {
+            cvar->value = atoi( cvar->string );
+        }
+        if( (cvar->EV != (byte)cvar->value)
+            || (cvar->value >> 8)
+            || (cvar->flags & CV_EV_PARAM) )
         {
             cvar->EV = cvar->value;  // user setting of active value
             // Use func to restore state dependent upon this setting.
             // raise 'on change' code
             if( cvar->flags & CV_CALL )
                 cvar->func();
+
+            cvar->flags &= ~CV_EV_PARAM;
         }
     }
+    command_EV_param = 0;
 }
 
 
@@ -1174,12 +1209,14 @@ void CV_Restore_User_Settings( void )
 //      2 byte for variable identification
 //      then the value of the variable followed with a 0 byte (like str)
 //
+// Receive network game settings, or restore save game.
 void Got_NetXCmd_NetVar(xcmd_t * xc)
 {
     byte * bp = xc->curpos;	// macros READ,SKIP want byte*
 
     consvar_t *cvar = CV_FindNetVar(READU16(bp));
     char *svalue = (char *)bp;
+
     while( *(bp++) ) {  // find 0 term
        if( bp > xc->endpos )  goto buff_overrun;  // bad string
     }
@@ -1189,7 +1226,8 @@ void Got_NetXCmd_NetVar(xcmd_t * xc)
         CONS_Printf("\2Netvar not found\n");
         return;
     }
-    Setvalue(cvar,svalue);
+
+    set_cv_str_value(cvar, svalue, 1, 0);  // CALL, temp
     return;
 
 buff_overrun:
@@ -1201,21 +1239,45 @@ buff_overrun:
 // Called by SV_Send_ServerConfig, P_SaveGame.
 void CV_SaveNetVars(xcmd_t * xc)
 {
+    char buf[32];
+    char * vp;
     consvar_t  *cvar;
     byte * bp = xc->curpos;	// macros want byte*
+    
 
-    // we must send all cvar because on the other side maybe
-    // it have a cvar modified and here not (same for true savegame)
+    // We must send all NETVAR cvar, because on another machine,
+    // some of them may have a different value.
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
-        if (cvar->flags & CV_NETVAR)
+        if( ! (cvar->flags & CV_NETVAR) )  continue;
+
+        // Command line settings goto network games and savegames.
+        // CV_STRING do not have temp values.
+        if( cvar->flags & (CV_EV_PARAM | CV_VALUE)
+//            || ! (cvar->flags & CV_STRING)
+          )
         {
-            // potential buffer overrun test
-            if((bp + 2 + strlen( cvar->string)) > xc->endpos )  goto buff_overrun;
-            // Format:  netid uint16, var_string str0.
-            WRITE16(bp,cvar->netid);
-            bp = write_string(bp, cvar->string);
+            if( cvar->flags & CV_VALUE )
+            {
+                // May be too large for EV, send the value.
+                sprintf (buf, "%d", cvar->value);
+            }
+            else
+            {
+                // Send the EV param value instead.
+                sprintf (buf, "%d", cvar->EV);
+            }
+            vp = buf;
         }
+        else
+        {
+            vp = cvar->string;	       
+        }
+        // potential buffer overrun test
+        if((bp + 2 + strlen(vp)) > xc->endpos )  goto buff_overrun;
+        // Format:  netid uint16, var_string str0.
+        WRITE16(bp,cvar->netid);
+        bp = write_string(bp, vp);
     }
     xc->curpos = bp;	// return updated ptr only once
     return;
@@ -1247,24 +1309,30 @@ buff_overrun:
 
 #define SET_BUFSIZE 128
 
-//  does as if "<varname> <value>" is entered at the console
-//
-void CV_Set (consvar_t *var, const char *value)
+// Sets a var to a string value.
+// called by CV_Var_Command to handle "<varname> <value>" entered at the console
+void CV_Set (consvar_t *cvar, const char *str_value)
 {
     //changed = strcmp(var->string, value);
 #ifdef PARANOIA
-    if(!var)
+    if(!cvar)
         I_Error("CV_Set : no variable\n");
-    if(!var->string)
-        I_Error("cv_Set : %s no string set ?!\n",var->name);
+    if(!cvar->string)
+        I_Error("CV_Set : %s no string set ?!\n", cvar->name);
 #endif
-    if (strcasecmp(var->string, value)==0)
+    if(strcasecmp(cvar->string, str_value) == 0)
         return; // no changes
 
     if (netgame)
     {
       // in a netgame, certain cvars are handled differently
-      if (var->flags & CV_NETVAR)
+      if (cvar->flags & CV_NET_LOCK)
+      {
+        CONS_Printf("This variable cannot be changed during a netgame.\n");
+        return;
+      }
+
+      if( cvar->flags & CV_NETVAR )
       {
         if (!server)
         {
@@ -1272,65 +1340,92 @@ void CV_Set (consvar_t *var, const char *value)
             return;
         }
 
+        // Change user settings too, but want only one CV_CALL.
+        set_cv_str_value(cvar, str_value, 0, 1); // no CALL, user
+
         // send the value of the variable
         byte buf[SET_BUFSIZE], *p; // macros want byte*
         p = buf;
         // Format:  netid uint16, var_string str0.
-        WRITEU16(p, var->netid);
-        p = write_stringn(p, value, SET_BUFSIZE-2-1);
+        WRITEU16(p, cvar->netid);
+        p = write_stringn(p, str_value, SET_BUFSIZE-2-1);
         Send_NetXCmd(XD_NETVAR, buf, (p - buf));
-        return;
-      }
-      else if (var->flags & CV_NOTINNET)
-      {
-        CONS_Printf("This variable cannot be changed during a netgame.\n");
         return;
       }
     }
 
-    Setvalue(var, value);
+    set_cv_str_value(cvar, str_value, 1, 1);  // CALL, user
 }
 
 
 //  Expands value to string before calling CV_Set ()
 //
-void CV_SetValue (consvar_t *var, int value)
+void CV_SetValue (consvar_t *cvar, int value)
 {
     char    val[32];
 
     sprintf (val, "%d", value);
-    CV_Set (var, val);
+    CV_Set (cvar, val);
 }
+
+// Set a command line parameter value (temporary).
+// This should not affect owner saved values.
+void CV_SetParam (consvar_t *cvar, int value)
+{
+    command_EV_param = 1;  // flag to undo these later
+    cvar->EV = value;   // temp setting, during game play
+    cvar->flags |= CV_EV_PARAM;
+    if( cvar->flags & CV_CALL )
+        cvar->func();
+}
+
+// If a OnChange func tries to change other values,
+// this function should be used.
+// It will determine the same user_enable.
+void CV_Set_by_OnChange (consvar_t *cvar, int value)
+{
+    byte saved_user_enable = OnChange_user_enable;
+    if( OnChange_user_enable )
+    {
+        CV_SetValue( cvar, value );
+    }
+    else
+    {
+        CV_SetParam( cvar, value );
+    }
+    OnChange_user_enable = saved_user_enable;
+}
+
 
 #define MINpv 0
 
-void CV_AddValue (consvar_t *var, int increment)
+void CV_AddValue (consvar_t *cvar, int increment)
 {
-    int   newvalue = var->value + increment;
+    int   newvalue = cvar->value + increment;
 
-    if( var->PossibleValue )
+    if( cvar->PossibleValue )
     {
-        if( strcmp(var->PossibleValue[MINpv].strvalue,"MIN")==0 )
+        if( strcmp(cvar->PossibleValue[MINpv].strvalue,"MIN")==0 )
         {
             // MIN .. MAX
-            int min_value = var->PossibleValue[MINpv].value; 
+            int min_value = cvar->PossibleValue[MINpv].value; 
             int max_value = MAXINT;
             int max;
 
             // Search the list.
             for(max=0; max<99 ; max++)
             {
-                if( var->PossibleValue[max].strvalue == NULL )
+                if( cvar->PossibleValue[max].strvalue == NULL )
                    break;
-                if( strcmp(var->PossibleValue[max].strvalue,"INC")==0 )
+                if( strcmp(cvar->PossibleValue[max].strvalue,"INC")==0 )
                 {
                     // Has an INC
-                    newvalue = var->value
-                     + (increment * var->PossibleValue[max].value);
+                    newvalue = cvar->value
+                     + (increment * cvar->PossibleValue[max].value);
                 }
                 else
                 {
-                   max_value = var->PossibleValue[max].value;
+                   max_value = cvar->PossibleValue[max].value;
                 }
             }
 
@@ -1341,7 +1436,7 @@ void CV_AddValue (consvar_t *var, int increment)
             newvalue = min_value
              + ((newvalue - min_value) % (max_value - min_value + 1));
 
-            CV_SetValue(var,newvalue);
+            CV_SetValue(cvar,newvalue);
         }
         else
         {
@@ -1349,22 +1444,27 @@ void CV_AddValue (consvar_t *var, int increment)
             int max,currentindice=-1,newindice;
 
             // this code do not support more than same value for differant PossibleValue
-            for(max=0; var->PossibleValue[max].strvalue!=NULL; max++)
+            for(max=0; cvar->PossibleValue[max].strvalue!=NULL; max++)
             {
-                if( var->PossibleValue[max].value==var->value )
+                if( cvar->PossibleValue[max].value == cvar->value )
                     currentindice=max;
             }
             max--;
 #ifdef PARANOIA
             if( currentindice==-1 )
-                I_Error("CV_AddValue : current value %d not found in possible value\n",var->value);
+            {
+                I_SoftError("CV_AddValue : current value %d not found in possible value\n", cvar->value);
+                return;
+            }
 #endif
             newindice=(currentindice+increment+max+1) % (max+1);
-            CV_Set(var,var->PossibleValue[newindice].strvalue);
+            CV_Set(cvar, cvar->PossibleValue[newindice].strvalue);
         }
     }
     else
-        CV_SetValue(var,newvalue);
+    {
+        CV_SetValue(cvar,newvalue);
+    }
 }
 
 
@@ -1373,26 +1473,27 @@ void CV_AddValue (consvar_t *var, int increment)
 //  Returns false if the passed command was not recognised as
 //  console variable.
 //
-static boolean CV_Command (void)
+static boolean CV_Var_Command (void)
 {
-    consvar_t      *v;
+    consvar_t   *cvar;
     COM_args_t  carg;
     
     COM_Args( &carg );
 
     // check variables
-    v = CV_FindVar ( carg.arg[0] );
-    if (!v)
+    cvar = CV_FindVar ( carg.arg[0] );
+    if(!cvar)
         return false;
 
     // perform a variable print or set
     if ( carg.num == 1 )
     {
-        CONS_Printf ("\"%s\" is \"%s\" default is \"%s\"\n", v->name, v->string, v->defaultvalue);
+        CONS_Printf ("\"%s\" is \"%s\" default is \"%s\"\n",
+                     cvar->name, cvar->string, cvar->defaultvalue);
         return true;
     }
 
-    CV_Set (v, carg.arg[1] );
+    CV_Set (cvar, carg.arg[1] );
     return true;
 }
 
@@ -1401,7 +1502,7 @@ static boolean CV_Command (void)
 //
 void CV_SaveVariables (FILE *f)
 {
-    consvar_t      *cvar;
+    consvar_t *cvar;
 
     for (cvar = consvar_vars ; cvar ; cvar=cvar->next)
     {

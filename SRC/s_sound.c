@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: s_sound.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -170,7 +170,8 @@ consvar_t cv_sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
 
 #ifdef MACOS_DI
 // specific to macos directory
-consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_Unsigned };
+consvar_t play_mode = { "play_mode", "0", CV_SAVE, CV_byte };
+  // enum playmode_t (0..2)
 #endif
 
 // pause cd music
@@ -193,7 +194,7 @@ consvar_t cv_rndsoundpitch = { "rndsoundpitch", "Off", CV_SAVE, CV_OnOff };
 
 // number of channels available
 static void SetChannelsNum(void);
-consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_Unsigned, SetChannelsNum };
+consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_byte, SetChannelsNum };
 
 #ifdef SURROUND
 consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };

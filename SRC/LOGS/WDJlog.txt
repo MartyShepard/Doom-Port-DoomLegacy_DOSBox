@@ -6347,3 +6347,17 @@ patchfile = w107_66_hu.patch
 - commit revision 1370
 Split hu init into load graphics, release graphics,
 and register functions.
+
+*** W107_cv
+patchfile = w107_67_cv.patch
+- commit revision 1371
+Set command line values into cv variables directly using a new function
+CV_SetParam, instead of through console command lines.  Values set using
+CV_SetParam are temporary, only setting EV (and value for some cv), but
+not changing the string which is saved as the user config.
+Sending NETVAL to other machines, and saving NETVAR in savegame, also
+do not change the user config in the cv string.  They set EV as a
+temporary value instead.  Starting a game via Display Title function
+resets all these values to the user config value.
+
+This stops savegames and netgames from changing the saved user config.
