@@ -6335,3 +6335,9 @@ patchfile = w107_64_const_char.patch
 Compiled with the -Wwrite-string flag to detect problems.
 Change many function parameters from char* to const char*.
 Fixed some functions to not modify their string parameters.
+
+*** W107_netid
+patchfile = w107_65_netid.patch
+- commit revision 1369
+Compute netid as unit16_t (instead of unsigned short)
+to prevent machine differences.
