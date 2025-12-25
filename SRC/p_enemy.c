@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_enemy.c 1364 2017-10-17 01:35:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -18,8 +18,6 @@
 //
 //
 // $Log: p_enemy.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.20  2004/07/27 08:19:36  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -3977,11 +3975,7 @@ void A_Scratch(mobj_t *mo)
 
     if( sep->parm2 )
     {
-#if !defined(__DJGPP__)
-       S_StartSound(mo, sep->parm2);
-#else
        S_StartObjSound(mo, sep->parm2);
-#endif
     }
 
     P_DamageMobj(mo->target, mo, mo, sep->parm1);
@@ -3990,11 +3984,10 @@ void A_Scratch(mobj_t *mo)
 void A_PlaySound(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
-#if defined(__DJGPP__)
-    S_StartObjSound( sep->parm2 ? NULL : mo, sep->parm1 );
-#else
-    S_StartSound( sep->parm2 ? NULL : mo, sep->parm1 );
-#endif
+    if( sep->parm2 )
+        S_StartSound( sep->parm1 );
+    else
+        S_StartObjSound( mo, sep->parm1 );
 }
 
 void A_RandomJump(mobj_t *mo)

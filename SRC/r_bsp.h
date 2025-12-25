@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_bsp.h 1364 2017-10-17 01:35:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -91,7 +91,7 @@ void R_RenderBSPNode (int bspnum);
 
 sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
              /*OUT*/ lightlev_t *floorlightlevel,
-		     lightlev_t *ceilinglightlevel );
+                     lightlev_t *ceilinglightlevel );
 
 // Find light under planeheight, plain version
 ff_light_t *  R_GetPlaneLight(sector_t* sector, fixed_t planeheight);

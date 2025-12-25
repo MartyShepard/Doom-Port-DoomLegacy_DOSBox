@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_bsp.c 1364 2017-10-17 01:35:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -179,7 +179,7 @@ void R_ClipSolidWallSegment( int first, int last )
                 new_seg_end = & solidsegs[MAXSEGS-4];
             }
 
-	    // Shift segs up from start to new_seg_end.
+            // Shift segs up from start to new_seg_end.
             if( start < new_seg_end )
             {
                 memmove( start+1, start,
@@ -365,7 +365,7 @@ int R_DoorClosed(void)
 // Called by HWR_Subsector, HWR_AddLine.
 sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
              /*OUT*/ lightlev_t *floorlightlevel,
-		     lightlev_t *ceilinglightlevel )
+                     lightlev_t *ceilinglightlevel )
 {
   int  colormapnum = -1; //SoM: 4/4/2000
   int  floorlightsubst, ceilinglightsubst; // light from another sector
@@ -861,7 +861,7 @@ void R_Subsector (int num)
 
     //SoM: 3/17/2000: Deep water/fake ceiling effect.
     frontsector = R_FakeFlat(frontsector, &tempsec, false,
-			     /*OUT*/ &floorlightlevel, &ceilinglightlevel );
+                             /*OUT*/ &floorlightlevel, &ceilinglightlevel );
 
     floorcolormap = ceilingcolormap = frontsector->extra_colormap;
 
@@ -951,7 +951,7 @@ void R_Subsector (int num)
         {
           ff_light = R_GetPlaneLight_viewz(frontsector, *fff->bottomheight);
           ffplane[numffplane].plane =
-	    R_FindPlane(*fff->bottomheight,
+            R_FindPlane(*fff->bottomheight,
                         *fff->bottompic,
                         *ff_light->lightlevel,
                         *fff->bottomxoffs,
@@ -975,7 +975,7 @@ void R_Subsector (int num)
         {
           ff_light = R_GetPlaneLight_viewz(frontsector, *fff->topheight);
           ffplane[numffplane].plane =
-	    R_FindPlane(*fff->topheight,
+            R_FindPlane(*fff->topheight,
                         *fff->toppic,
                         *ff_light->lightlevel,
                         *fff->topxoffs,

@@ -6241,7 +6241,7 @@ Improve the skin setting functions to support this.
 Make the skins storage dynamic, with a maximum of 128 skins.
 
 *** W107_no_net
-patchfile = w107_53_no_net.patch
+patchfile = w107_54_no_net.patch
 - commit revision 1358
 Make the network XCMD so that when the network is not connected
 it will flush the XCMD buffer instead of generating
@@ -6291,3 +6291,19 @@ For now this function is a dummy, because the patch_t and MipPatch_t
 have identical patch width, height, topoffset, and leftoffset fields.
 This identifies where there are going to be problems if this
 should ever change.
+
+*** W107_svn_fix
+patchfile = w107_60_svn_fix.patch
+- commit revision 1364
+Fix of p_enemy compilation errors, discovered by Adam Stylinski.
+Comparison of SVN to my current working directory showed significant
+differences.  I do not know where or when this occured.
+I generated a patch to cover all the differences,
+which were extensive.  Most were indenting.
+
+*** W107_TRAN
+patchfile = w107_61_TRAN.patch
+- commit revision 1365
+Comments and brackets, to clarify problems discovered by
+Adam Stylinkski.
+

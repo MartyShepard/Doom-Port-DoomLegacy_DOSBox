@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01364 ]: w107 60 svn diff fix
+          Schon seltsam das ihm das nicht aufgefallen ist?
+					
 [01363 ]: w107 patch width func
 [01362 ]: w107 texname error
 [01361 ]: w107 initnames
